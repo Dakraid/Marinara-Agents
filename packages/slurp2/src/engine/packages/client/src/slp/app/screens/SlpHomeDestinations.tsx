@@ -1,6 +1,6 @@
 import { SlpShell } from "../../modules/chrome/SlpShell";
 import { SlurpWalletView } from "./SlpScreenWallet";
-import { SLURP_PLACEHOLDER_BALANCE, EmptyState, DisclosureBadge } from "./SlpHomeHelpers";
+import { EmptyState, DisclosureBadge } from "./SlpHomeHelpers";
 import { SlurpInboxView } from "./SlpScreenMessages";
 import { SlurpStudioView } from "./SlpScreenStudio";
 import { ChevronLeft, ChevronRight, Loader2, Plus, TriangleAlert, UserRound } from "lucide-react";
@@ -31,14 +31,12 @@ export function renderSlurpHomeDestinations({
     shellPersonaAccount,
     sourcePickerLoading,
     viewerPersonaId,
-    viewerWalletsQuery,
   } = model;
   if (navigation.mode === "creator" && navigation.view === "wallet") {
     return (
       <SlpShell {...shellProps}>
         <SlurpWalletView
           personaId={viewerPersonaId}
-          fallbackCoins={viewerWalletsQuery.data?.[viewerPersonaId ?? ""]?.coins ?? SLURP_PLACEHOLDER_BALANCE}
           personaName={shellPersonaAccount?.displayName ?? ""}
           personaAvatarUrl={shellPersonaAccount?.avatarUrl ?? null}
           personaAvatarCrop={shellPersonaAccount?.avatarCrop ?? null}

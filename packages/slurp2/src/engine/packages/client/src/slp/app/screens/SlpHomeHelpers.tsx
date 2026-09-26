@@ -68,7 +68,6 @@ export type SlurpViewerCreator = NonNullable<ReturnType<typeof useCreatorViewer>
 // ---------------------------------------------------------------------------
 
 export const SLP_CREATOR_FEED_WINDOW_SIZE = 20;
-export const SLURP_PLACEHOLDER_BALANCE = 1111;
 export const STAGE_PERSONALITY_MAX_LENGTH = 1000;
 
 export const EMPTY_SLP_CREATOR_POST_DRAFT: SlpCreatorPostDraft = {

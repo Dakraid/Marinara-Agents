@@ -60,12 +60,17 @@ export function SlurpMomentsShelf({
   onOpenMoment,
   onAddStory,
   embedded = false,
+  isLoading = false,
+  isError = false,
 }: {
   moments: SlurpMoment[];
   newSinceAt: string | null;
   onOpenMoment: (postId: string) => void;
   onAddStory?: () => void;
   embedded?: boolean;
+  /** While the feed is loading or failed, "nothing new" would be a lie. The feed below owns Try again. */
+  isLoading?: boolean;
+  isError?: boolean;
 }) {
   const { t: localizeUi } = useUiTranslation();
   const seenCreators = new Set<string>();
@@ -116,7 +121,13 @@ export function SlurpMomentsShelf({
               role="status"
             >
               <Clock3 size={17} className="shrink-0 text-[var(--noodle-accent)]" aria-hidden="true" />
-              <span className="text-xs leading-5 text-pretty">{localizeUi("ui.slurp.moments.empty")}</span>
+              <span className="text-xs leading-5 text-pretty">
+                {isError
+                  ? localizeUi("ui.slurp.moments.error", { defaultValue: "Could not load Stories." })
+                  : isLoading
+                    ? localizeUi("ui.slurp.state.loading", { defaultValue: "Loading…" })
+                    : localizeUi("ui.slurp.moments.empty")}
+              </span>
             </div>
           ) : (
             creatorMoments.map((moment) => {

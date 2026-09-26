@@ -10,9 +10,10 @@ import {
   Trash2,
   UserRound,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { useDismiss } from "../../base/chrome/slp-popover-hooks";
 import type { SlpPostCardCtx, SlpPostCardModel } from "./SlpPostTypes";
 import { slpPostImagePrompt } from "./SlpPostHelpers";
 import { api } from "../../../lib/api-client";
@@ -56,6 +57,8 @@ export function SlpPostMenu({
   const [deepDetailsOpen, setDeepDetailsOpen] = useState(false);
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  useDismiss(postMenuOpen, () => ctx.setPostMenuId(null), rootRef);
 
   const downloadShareCard = (filename: string) => {
     void downloadSlpShareCard(toSlpShareCardInput(post), filename).catch((error: unknown) =>
@@ -81,7 +84,7 @@ export function SlpPostMenu({
   };
 
   return (
-    <div className="relative shrink-0">
+    <div ref={rootRef} className="relative shrink-0">
       {ctx.postManagement && (
         <SlpDeepDetailsModal postId={post.id} open={deepDetailsOpen} onClose={() => setDeepDetailsOpen(false)} />
       )}

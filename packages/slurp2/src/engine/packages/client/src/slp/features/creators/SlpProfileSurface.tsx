@@ -79,7 +79,8 @@ interface SlurpProfileSurfaceProps<TTab extends string = SlurpProfileTab> {
   featuredContent?: ReactNode;
   spotlight?: boolean;
   status?: "online" | "away" | "offline";
-  stats?: { followers: number; subscribers: number; likes: number };
+  /** `subscribers` is null while the list is loading or failed, so the header shows a dash, not a false 0. */
+  stats?: { followers: number; subscribers: number | null; likes: number };
   bioQuote?: ReactNode;
   bioCollapsible?: boolean;
 }
@@ -387,7 +388,7 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <Users size={14} aria-hidden="true" />
-                  <strong className="text-[var(--foreground)]">{stats.subscribers}</strong>{" "}
+                  <strong className="text-[var(--foreground)]">{stats.subscribers ?? "–"}</strong>{" "}
                   {localizeUi("ui.slurp.profile.subscribers", { defaultValue: "Subscribers" })}
                 </span>
                 <span className="inline-flex items-center gap-1.5">
@@ -415,15 +416,20 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
                 {bioContent && bioCollapsible && (
                   <details className="group/bio">
                     <summary className="list-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]">
-                      <div className="line-clamp-4">{bioContent}</div>
+                      {/* The full text follows the summary once open, so the clamped preview steps aside. */}
+                      <div className="line-clamp-4 group-open/bio:hidden">{bioContent}</div>
                       <span className="mt-1 block text-xs font-bold text-[var(--noodle-accent)] group-open/bio:hidden">
                         {localizeUi("ui.slurp.profile.expandBio", { defaultValue: "Show more" })}
                       </span>
                     </summary>
                     <div className="mt-1">{bioContent}</div>
-                    <span className="mt-1 block text-xs font-bold text-[var(--noodle-accent)]">
+                    <button
+                      type="button"
+                      onClick={(event) => event.currentTarget.closest("details")?.removeAttribute("open")}
+                      className="mt-1 block text-xs font-bold text-[var(--noodle-accent)]"
+                    >
                       {localizeUi("ui.slurp.profile.collapseBio", { defaultValue: "Show less" })}
-                    </span>
+                    </button>
                   </details>
                 )}
                 {bioContent && !bioCollapsible && <div>{bioContent}</div>}

@@ -122,6 +122,15 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
             <div className="flex justify-center py-12" role="status">
               <Loader2 size={22} className="animate-spin text-[var(--noodle-accent)]" />
             </div>
+          ) : followersQuery.isError && !followersQuery.data ? (
+            <EmptyState
+              title={localizeUi("ui.slurp.profile.followersCouldNotBeLoaded", {
+                defaultValue: "Followers could not be loaded",
+              })}
+              action={localizeUi("capabilities.actions.tryAgain")}
+              onAction={() => void followersQuery.refetch()}
+              icon={TriangleAlert}
+            />
           ) : (followersQuery.data?.items.length ?? 0) > 0 ? (
             <div>
               {followersQuery.data!.items.map((follower) => (

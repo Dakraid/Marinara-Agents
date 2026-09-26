@@ -102,7 +102,7 @@ export function ViewerHub({
   /** Called once the feed is actually on screen — entering NoodleR is not the same as seeing it. */
   onFeedShown: () => void;
   onOpenWallet: () => void;
-  walletCoins: number;
+  walletCoins: number | null;
   onLoadMore: () => Promise<boolean>;
   hasMore: boolean;
   isLoading: boolean;
@@ -341,16 +341,23 @@ export function ViewerHub({
             {isRefreshing ? <Loader2 size={17} className="animate-spin" /> : <RefreshCw size={17} aria-hidden="true" />}
           </button>
           <SlpLogo className="pointer-events-none absolute start-1/2 h-9 w-14 -translate-x-1/2 rtl:translate-x-1/2" />
-          {/* ponytail: placeholder balance, wire to the real wallet when there is one. */}
           {/* The desktop sidebar carries the same balance, so it only shows where there is no sidebar. */}
           <button
             type="button"
             onClick={onOpenWallet}
             className="ms-auto flex h-11 max-w-full items-center gap-1.5 overflow-hidden rounded-full px-3 text-sm font-semibold tabular-nums text-[var(--muted-foreground)] ring-1 ring-inset ring-[var(--noodle-divider)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] @min-[1024px]:hidden"
-            aria-label={localizeUi("ui.slurp.wallet.balance", { amount: walletCoins })}
-            title={localizeUi("ui.slurp.wallet.balance", { amount: walletCoins })}
+            aria-label={
+              walletCoins === null
+                ? localizeUi("ui.slurp.navigation.wallet")
+                : localizeUi("ui.slurp.wallet.balance", { amount: walletCoins })
+            }
+            title={
+              walletCoins === null
+                ? localizeUi("ui.slurp.navigation.wallet")
+                : localizeUi("ui.slurp.wallet.balance", { amount: walletCoins })
+            }
           >
-            <SlurpCoinAmount amount={walletCoins} watchAmount={walletCoins} />
+            <SlurpCoinAmount amount={walletCoins ?? "…"} watchAmount={walletCoins ?? undefined} />
           </button>
         </div>
       </div>
@@ -362,6 +369,8 @@ export function ViewerHub({
         onOpenMoment={setActiveMomentId}
         onAddStory={onAddStory}
         embedded
+        isLoading={isLoading}
+        isError={isError}
       />
       <div className="hidden border-b border-[var(--noodle-divider)] py-3 @min-[1024px]:block @min-[1024px]:px-4 @min-[1280px]:hidden">
         <SubscriptionSections

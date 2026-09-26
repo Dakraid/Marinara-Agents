@@ -1,7 +1,7 @@
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { ViewerHub } from "./screens/SlpScreenHub";
-import { SLURP_PLACEHOLDER_BALANCE, errorMessage, EmptyState, SlpCreatorFrame } from "./screens/SlpHomeHelpers";
+import { errorMessage, EmptyState, SlpCreatorFrame } from "./screens/SlpHomeHelpers";
 import { ImagePromptReviewModal } from "../../components/ui/ImagePromptReviewModal";
 import { ChatImageLightbox } from "../../components/chat/ChatImageLightbox";
 import { SlurpOnboardingWizard } from "../features/onboarding/SlpOnboardingPanel";
@@ -173,22 +173,23 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
       (unreadCountQuery.data?.inboundUnread ?? 0),
     // The studio is only meaningful for a persona that operates a Creator.
     hasOperatedCreator: Boolean(myCreatorProfile),
-    walletBalanceLabel: `${viewerWalletsQuery.data?.[viewerPersonaId ?? ""]?.coins ?? SLURP_PLACEHOLDER_BALANCE}`,
+    walletBalanceLabel: activeWalletCoins === null ? undefined : `${activeWalletCoins}`,
     walletBalance: viewerWalletsQuery.data?.[viewerPersonaId ?? ""]?.coins,
     personaBannerUrl: myCreatorProfile?.bannerUrl ?? null,
-    onBecomeCreator: shellPersonaAccount
-      ? () => {
-          onNavigate({ mode: "creator", view: "create-profile", sourceAccountId: shellPersonaAccount.id });
-          setMobileDrawerOpen(false);
-        }
-      : undefined,
+    onBecomeCreator:
+      shellPersonaAccount && accountsQuery.isSuccess
+        ? () => {
+            onNavigate({ mode: "creator", view: "create-profile", sourceAccountId: shellPersonaAccount.id });
+            setMobileDrawerOpen(false);
+          }
+        : undefined,
     onOpenProfile: async () => {
       if (!(await prepareNavigationAwayFromProfileEditor())) return;
       setMobileDrawerOpen(false);
       onNavigate(
         mainAuthorProfile
           ? { mode: "creator", view: "profile", accountId: mainAuthorProfile.id }
-          : shellPersonaAccount
+          : shellPersonaAccount && accountsQuery.isSuccess
             ? { mode: "creator", view: "create-profile", sourceAccountId: shellPersonaAccount.id }
             : { mode: "creator", view: "profiles" },
       );
@@ -405,12 +406,19 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
       />
       <Modal
         open={gateOpen && !splashOpen}
-        onClose={() => undefined}
+        // The X and Escape mean Leave Slurp: the gate has no other way out, and the X used to do nothing.
+        onClose={() => {
+          // ponytail: the Engine Modal gives no way to tell a backdrop tap from the X, so a click that
+          // did not land on a button is the backdrop. Upgrade path: a `dismissOnBackdrop` Modal prop.
+          const event = window.event;
+          if (event?.type === "click" && !(event.target instanceof Element && event.target.closest("button"))) return;
+          onLeave?.();
+        }}
         title={localizeUi("ui.noodle.noodlemodetoggle.noodler")}
         width="max-w-md"
         panelClassName="noodle-icon-scope"
         panelStyle={getSlpAccentStyle(SLP_PINK)}
-        closeDisabled
+        closeDisabled={!onLeave}
       >
         <SlurpAgeGate
           personaName={shellPersonaAccount?.displayName ?? ""}

@@ -20,11 +20,11 @@ import { useToggleCreatorSubscription } from "../../features/feed/slp-feed-viewe
 import { useTranslation as useUiTranslation } from "react-i18next";
 import type { AvatarCrop } from "@marinara-engine/shared";
 import { SlurpCoinAmount } from "../../modules/coin/SlpCoin";
+import { ErrorState, LoadingState } from "../../modules/chrome/SlpStateKit";
 import { SlpCreatorFrame } from "./SlpHomeHelpers";
 
 export function SlurpWalletView({
   personaId,
-  fallbackCoins,
   personaName,
   personaAvatarUrl,
   personaAvatarCrop,
@@ -32,8 +32,6 @@ export function SlurpWalletView({
   onBack,
 }: {
   personaId: string | null;
-  /** Shown until the wallet loads, so the balance never flashes zero. */
-  fallbackCoins: number;
   personaName: string;
   personaAvatarUrl: string | null;
   personaAvatarCrop: AvatarCrop | null;
@@ -57,7 +55,6 @@ export function SlurpWalletView({
   const creatorByHandle = new Map((creatorsQuery.data ?? []).map((profile) => [profile.handle, profile]));
   const wallet = walletQuery.data;
   const creator = studioQuery.data?.creators[0] ?? null;
-  const coins = wallet?.coins ?? fallbackCoins;
   const subscriptions = wallet ? Object.entries(wallet.subscriptions) : [];
   // A spend/earn split is the one number the ledger cannot show at a glance.
   const spent = (wallet?.ledger ?? []).reduce((total, entry) => total + (entry.amount < 0 ? -entry.amount : 0), 0);
@@ -102,6 +99,19 @@ export function SlurpWalletView({
       return { icon: MessageCircle, tone: "bg-sky-500/14 text-sky-300" };
     return { icon: Gift, tone: "bg-amber-500/14 text-amber-300" };
   };
+  // No balance is shown until the wallet has really loaded: a made-up number reads as real money.
+  if (!wallet) {
+    return (
+      <SlpCreatorFrame onBack={onBack} title={localizeUi("ui.slurp.navigation.wallet")} action={<span />}>
+        {walletQuery.isError || !personaId ? (
+          <ErrorState onRetry={() => void walletQuery.refetch()} />
+        ) : (
+          <LoadingState />
+        )}
+      </SlpCreatorFrame>
+    );
+  }
+  const coins = wallet.coins;
   return (
     <SlpCreatorFrame onBack={onBack} title={localizeUi("ui.slurp.navigation.wallet")} action={<span />}>
       <div className="mx-auto flex w-full max-w-[40rem] flex-col gap-5 px-3 py-4 sm:px-5 sm:py-5">

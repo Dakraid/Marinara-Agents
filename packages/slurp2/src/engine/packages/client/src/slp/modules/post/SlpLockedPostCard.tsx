@@ -102,6 +102,9 @@ export function LockedSlurpPostCard({
   const replyCount = post.replyCount ?? 0;
   const openProfile = onOpenProfile ? () => onOpenProfile(profile.id) : undefined;
   const revealed = Boolean(demo && demoUnlocked);
+  // The demo's real title is a punchline; showing it while locked spoils the reveal, on the card
+  // and in the unlock sheet alike.
+  const shownTitle = demo && !revealed ? (demo.lockedTitle ?? post.title) : post.title;
   // A locked post's URL resolves to a server-blurred teaser, not the original bytes. Where no
   // teaser can be built the server sends nothing and only the frame renders.
   const postImages = post.images ?? [];
@@ -401,11 +404,7 @@ export function LockedSlurpPostCard({
         )}
 
         {/* Title */}
-        {(() => {
-          // The demo's real title is a punchline; showing it while locked spoils the reveal.
-          const title = demo && !revealed ? (demo.lockedTitle ?? post.title) : post.title;
-          return title && <h3 className="mt-3 text-lg font-bold leading-snug">{title}</h3>;
-        })()}
+        {shownTitle && <h3 className="mt-3 text-lg font-bold leading-snug">{shownTitle}</h3>}
 
         {/* Body: a short teaser until unlocked; the private copy is never reconstructed client-side. */}
         {revealed && demo ? (
@@ -471,7 +470,7 @@ export function LockedSlurpPostCard({
                     name: profile.displayName,
                   })}
                 </span>
-                {post.title && <span className="mt-2 block break-words text-sm font-bold">{post.title}</span>}
+                {shownTitle && <span className="mt-2 block break-words text-sm font-bold">{shownTitle}</span>}
                 <span className="mt-1 block text-xs text-[var(--muted-foreground)]">
                   {localizeUi("ui.slurp.locked.teaser", { defaultValue: "A little something from tonight…" })}
                 </span>

@@ -1,6 +1,7 @@
 import { Copy, Heart, MessageCircle, MoreHorizontal, Pencil, Flag, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
+import { useDismiss, useFlipAboveNav, useKeepInViewport } from "../../base/chrome/slp-popover-hooks";
 
 const ITEM_CLASS = "flex min-h-9 w-full items-center gap-2 px-3 text-start transition-colors hover:bg-[var(--accent)]";
 
@@ -28,13 +29,18 @@ export function SlpInteractionMenu({
   const { t: localizeUi } = useUiTranslation();
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  useDismiss(open, close, rootRef);
+  const flipUp = useFlipAboveNav(open, menuRef);
+  const shift = useKeepInViewport(open, menuRef);
   const run = (action: () => void) => {
     close();
     action();
   };
 
   return (
-    <div className="relative shrink-0">
+    <div ref={rootRef} className="relative shrink-0">
       <button
         type="button"
         aria-label={localizeUi("ui.noodle.noodlepostcard.commentActions", { defaultValue: "Comment actions" })}
@@ -48,7 +54,13 @@ export function SlpInteractionMenu({
       </button>
       {open && (
         <div
+          ref={menuRef}
           role="menu"
+          // Inline, not a class: an arbitrary `bottom-[…]` that only Slurp uses is not in the Engine safelist.
+          style={{
+            ...(flipUp ? { top: "auto", bottom: "calc(100% + 0.25rem)" } : {}),
+            ...(shift ? { transform: `translateX(${shift}px)` } : {}),
+          }}
           className="absolute end-0 top-[calc(100%+0.25rem)] z-40 min-w-44 overflow-hidden rounded-lg border border-[var(--noodle-divider)] bg-[var(--background)] py-1 text-xs shadow-2xl shadow-black/30"
         >
           <button type="button" role="menuitem" onClick={() => run(onReply)} className={ITEM_CLASS}>

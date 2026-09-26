@@ -28,7 +28,6 @@ import { SlpPostSurfaceMenu } from "../../modules/post/SlpPostMenu";
 import { downloadSlpShareCard, toSlpShareCardInput } from "../../modules/post/slp-share-card";
 import {
   errorMessage,
-  isSlurpStory,
   toSlpPostCardModel,
   DisclosureBadge,
   LoadMoreFeedButton,
@@ -287,6 +286,7 @@ export function StageProfileView({
     subscriberTotal,
     followerTotal,
     profileLikeTotal,
+    postTabCounts,
     viewingOwnCreator,
     creatorStatus,
     profileLocation,
@@ -442,7 +442,11 @@ export function StageProfileView({
         }}
         leadingActions={<SlpProfileLeadingActions model={model} />}
         status={creatorStatus}
-        stats={{ followers: followerTotal, subscribers: subscriberTotal, likes: profileLikeTotal }}
+        stats={{
+          followers: followerTotal,
+          subscribers: subscribersQuery.data ? subscriberTotal : null,
+          likes: profileLikeTotal,
+        }}
         location={profileLocation}
         bioContent={profileBioBody ? <p className="whitespace-pre-wrap text-sm leading-6">{profileBioBody}</p> : null}
         bioCollapsible={profileBioBody.length > 280 || profileBioBody.split("\n").length > 4}
@@ -450,13 +454,13 @@ export function StageProfileView({
         tabs={[
           {
             id: "posts",
-            label: `${localizeUi("ui.noodle.profile.tabs.posts")} (${posts.filter((post) => !isSlurpStory(post)).length})`,
+            label: `${localizeUi("ui.noodle.profile.tabs.posts")} (${postTabCounts.posts})`,
           },
           {
             id: "media",
-            label: `${localizeUi("ui.noodle.profile.tabs.media")} (${posts.filter((post) => Boolean(post.imageUrl)).length})`,
+            label: `${localizeUi("ui.noodle.profile.tabs.media")} (${postTabCounts.media})`,
           },
-          { id: "stories", label: `${localizeUi("ui.slurp.stories.archive")} (${posts.filter(isSlurpStory).length})` },
+          { id: "stories", label: `${localizeUi("ui.slurp.stories.archive")} (${postTabCounts.stories})` },
           {
             id: "subscribers",
             label: localizeUi("ui.noodle.stageProfile.tabs.subscribers", {

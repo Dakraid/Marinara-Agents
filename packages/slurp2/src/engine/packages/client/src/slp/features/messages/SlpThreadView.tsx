@@ -9,6 +9,7 @@ import { Info, Loader2 } from "lucide-react";
 import { getApiErrorMessage } from "../../../lib/api-client";
 import { useSlurpThreadViewModel } from "./slp-thread-actions";
 import type { SlurpThreadViewProps } from "./slp-thread-view-model";
+import { ErrorState, LoadingState } from "../../modules/chrome/SlpStateKit";
 import { SlpThreadHeader } from "./SlpThreadHeader";
 import { SlpThreadComposer } from "./SlpThreadComposer";
 import { SlpThreadDrawer } from "./SlpThreadDrawer";
@@ -56,7 +57,11 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
     waitingNote,
     canForceReply,
     holdTyping,
+    threadQuery,
   } = model;
+  // Until the conversation has loaded there is nothing to read and no policy to send under, so the
+  // composer stays away instead of offering a live input on a blank screen.
+  const notLoaded = !threadQuery.data;
   return (
     <div className="flex min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-hidden bg-[color-mix(in_srgb,var(--slurp-surface)_45%,transparent)]">
       <SlpThreadHeader model={model} />
@@ -72,6 +77,17 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
         className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-3 py-4"
       >
         <div className="mx-auto flex min-w-0 w-full max-w-2xl flex-col gap-3">
+          {notLoaded &&
+            (threadQuery.isError ? (
+              <ErrorState
+                title={localizeUi("ui.slurp.messages.threadLoadError", {
+                  defaultValue: "Could not load this conversation",
+                })}
+                onRetry={() => void threadQuery.refetch()}
+              />
+            ) : (
+              <LoadingState />
+            ))}
           {(olderCount > 0 || nextOlderCursor) && (
             <button
               type="button"
@@ -300,7 +316,7 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
         </p>
       )}
 
-      <SlpThreadComposer model={model} />
+      {!notLoaded && <SlpThreadComposer model={model} />}
 
       <SlpThreadDrawer model={model} />
     </div>

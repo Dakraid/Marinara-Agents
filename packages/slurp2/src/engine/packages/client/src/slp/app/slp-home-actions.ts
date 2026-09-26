@@ -445,7 +445,9 @@ function useSlurpHomeActions(state: SlurpHomeBaseState) {
   const openPostComposer = () => {
     if (mainAuthorProfile) {
       onNavigate({ mode: "creator", view: "profile", accountId: mainAuthorProfile.id });
-    } else if (shellPersonaAccount) {
+    } else if (shellPersonaAccount && accountsQuery.isSuccess) {
+      // Only a loaded, empty list proves there is no Creator yet. While accounts load or failed, the
+      // profiles view shows the wait or Try again instead of inviting a second Creator.
       onNavigate({ mode: "creator", view: "create-profile", sourceAccountId: shellPersonaAccount.id });
     } else {
       onNavigate({ mode: "creator", view: "profiles" });

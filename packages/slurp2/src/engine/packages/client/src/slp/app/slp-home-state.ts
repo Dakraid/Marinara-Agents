@@ -64,7 +64,6 @@ import {
   EMPTY_SLP_CREATOR_POST_DRAFT,
   isEmptyCreatorPostDraft,
   errorMessage,
-  SLURP_PLACEHOLDER_BALANCE,
 } from "./screens/SlpHomeHelpers";
 import { useSlpPostCardController } from "../modules/post/SlpPostHooks";
 import type { ImagePromptReviewItem } from "../../components/ui/ImagePromptReviewModal";
@@ -100,7 +99,7 @@ export function useSlurpHomeBaseState({ navigation, onNavigate, onLeave }: Slurp
   const setStoredPersonaId = useSlurpUIStore((state) => state.setViewerPersonaId);
   const personas = personasQuery.data ?? [];
   const viewerPersonaId = useSlpViewerPersonaId();
-  const activeWalletCoins = viewerWalletsQuery.data?.[viewerPersonaId ?? ""]?.coins ?? SLURP_PLACEHOLDER_BALANCE;
+  const activeWalletCoins = viewerWalletsQuery.data?.[viewerPersonaId ?? ""]?.coins ?? null;
   const viewerAccounts = personas.map(
     (persona) =>
       ({

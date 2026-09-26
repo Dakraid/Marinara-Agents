@@ -146,8 +146,22 @@ export function useStageProfileViewModel(props: StageProfileViewProps) {
   const subscribers = subscribersQuery.data?.pages.flatMap((page) => page.items) ?? [];
   const subscriberTotal = subscribersQuery.data?.pages[0]?.total ?? subscribers.length;
   const followerTotal = connectionCounts[profile.id]?.followers ?? 0;
-  const profileLikeTotal = posts.reduce((total, post) => total + (post.likeCount ?? 0), 0);
-  const latestActivityAt = posts.reduce((latest, post) => Math.max(latest, Date.parse(post.createdAt)), 0);
+  // The posts response wraps each post as `{ viewerPost }` or `{ managed, viewerPost }`. Header counts,
+  // likes and last activity read the post inside the wrapper, never the wrapper itself.
+  const wrappedPosts = posts.flatMap((entry) => {
+    const post = ("managed" in entry ? entry.managed : null) ?? entry.viewerPost;
+    return post ? [post] : [];
+  });
+  const postTabCounts = {
+    posts: wrappedPosts.filter((post) => !isSlurpStory(post)).length,
+    media: wrappedPosts.filter((post) => Boolean(post.imageUrl)).length,
+    stories: wrappedPosts.filter(isSlurpStory).length,
+  };
+  const profileLikeTotal = posts.reduce((total, entry) => total + (entry.viewerPost?.likeCount ?? 0), 0);
+  const latestActivityAt = wrappedPosts.reduce((latest, post) => {
+    const at = Date.parse(post.createdAt);
+    return Number.isNaN(at) ? latest : Math.max(latest, at);
+  }, 0);
   const viewingOwnCreator = profile.sourceAccountId === viewerAccount?.entityId;
   const creatorStatus = viewingOwnCreator
     ? "online"
@@ -274,6 +288,7 @@ export function useStageProfileViewModel(props: StageProfileViewProps) {
     subscriberTotal,
     followerTotal,
     profileLikeTotal,
+    postTabCounts,
     latestActivityAt,
     viewingOwnCreator,
     creatorStatus,

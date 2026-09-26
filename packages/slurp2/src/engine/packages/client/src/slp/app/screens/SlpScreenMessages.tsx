@@ -23,6 +23,7 @@ import {
 import { useSlurpThreads } from "../../features/messages/slp-messages-hooks";
 import { cn } from "../../../lib/utils";
 import { Avatar } from "../../base/chrome/SlpChrome";
+import { ErrorState } from "../../modules/chrome/SlpStateKit";
 import { SlpCreatorFrame } from "./SlpHomeHelpers";
 import { formatTime } from "../../base/ui/slp-date-time";
 import { SlurpMessagesView } from "../../features/messages/SlpMessages";
@@ -218,6 +219,11 @@ function SlurpInboxHub({
                 <p className="rounded-2xl bg-[var(--slurp-surface)] px-5 py-8 text-center text-xs text-[var(--muted-foreground)] ring-1 ring-inset ring-white/[0.05]">
                   {localizeUi("ui.slurp.inbox.loadingMessages", { defaultValue: "Loading messages…" })}
                 </p>
+              ) : threadsQuery.isError && !threadsQuery.data ? (
+                <ErrorState
+                  title={localizeUi("ui.slurp.messages.loadError", { defaultValue: "Could not load your messages" })}
+                  onRetry={() => void threadsQuery.refetch()}
+                />
               ) : visibleThreads.length === 0 ? (
                 <p className="rounded-2xl bg-[var(--slurp-surface)] px-5 py-8 text-center text-xs text-[var(--muted-foreground)] ring-1 ring-inset ring-white/[0.05]">
                   {needle
@@ -699,6 +705,11 @@ function SlurpNotificationsView({
         <p className="rounded-2xl bg-[var(--slurp-surface)] px-5 py-8 text-center text-xs text-[var(--muted-foreground)] ring-1 ring-inset ring-white/[0.05]">
           {localizeUi("ui.slurp.inbox.loadingActivity", { defaultValue: "Loading activity…" })}
         </p>
+      ) : notificationsQuery.isError && !notificationsQuery.data ? (
+        <ErrorState
+          title={localizeUi("ui.slurp.inbox.activityError", { defaultValue: "Could not load your activity" })}
+          onRetry={() => void notificationsQuery.refetch()}
+        />
       ) : visibleGroups.length === 0 ? (
         <p className="rounded-2xl bg-[var(--slurp-surface)] px-5 py-8 text-center text-xs text-[var(--muted-foreground)] ring-1 ring-inset ring-white/[0.05]">
           {localizeUi("ui.slurp.events.empty", {

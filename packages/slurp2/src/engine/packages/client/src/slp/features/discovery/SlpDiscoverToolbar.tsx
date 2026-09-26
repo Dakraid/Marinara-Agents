@@ -1,10 +1,12 @@
 import { Check, Coins, LayoutGrid, List, Tags, UsersRound, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { useSlurpSettings } from "../settings/slp-settings-contract";
 import { groupSlurpDiscoveryTags, type SlurpDiscoverLayout, type SlurpDiscoverSort } from "./slp-discovery";
 import type { SlurpDiscoveryGender } from "../../base/state/slp-state-types";
 import { cn } from "../../../lib/utils";
+import { SLURP_TOGGLE_ACTIVE_CLASS } from "../../base/chrome/SlpChrome";
+import { useKeepInViewport } from "../../base/chrome/slp-popover-hooks";
 
 const triggerClass =
   "inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--noodle-divider)] bg-[var(--slurp-surface)] px-3 text-xs font-bold transition-colors hover:border-[var(--noodle-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]";
@@ -26,6 +28,8 @@ function FilterMenu({
   setOpenMenu: (id: string | null) => void;
   children: React.ReactNode;
 }) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const shift = useKeepInViewport(openMenu === menuId, panelRef);
   return (
     <details
       className="group relative"
@@ -42,7 +46,11 @@ function FilterMenu({
         <Icon size={15} aria-hidden="true" />
         {label}
       </summary>
-      <div className="absolute left-0 top-full z-30 mt-2 min-w-64 rounded-xl border border-[var(--noodle-divider)] bg-[var(--slurp-surface-raised,var(--background))] p-3 shadow-[var(--slurp-shadow-modal)]">
+      <div
+        ref={panelRef}
+        style={shift ? { transform: `translateX(${shift}px)` } : undefined}
+        className="absolute left-0 top-full z-30 mt-2 min-w-64 rounded-xl border border-[var(--noodle-divider)] bg-[var(--slurp-surface-raised,var(--background))] p-3 shadow-[var(--slurp-shadow-modal)]"
+      >
         {children}
       </div>
     </details>
@@ -112,10 +120,7 @@ export function SlurpDiscoverToolbar({
           type="button"
           aria-pressed={notSubscribed}
           onClick={() => onNotSubscribedChange(!notSubscribed)}
-          className={cn(
-            triggerClass,
-            notSubscribed && "border-[var(--noodle-accent)] bg-[var(--noodle-accent)] text-white",
-          )}
+          className={cn(triggerClass, notSubscribed && SLURP_TOGGLE_ACTIVE_CLASS)}
         >
           {notSubscribed && <Check size={14} aria-hidden="true" />}
           {localizeUi("ui.slurp.discover.notSubscribed", { defaultValue: "Not subscribed" })}
@@ -266,7 +271,7 @@ export function SlurpDiscoverToolbar({
                 onClick={() => onLayoutChange(value)}
                 className={cn(
                   "flex h-8 w-8 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]",
-                  layout === value && "bg-[var(--noodle-accent)] text-white",
+                  layout === value && SLURP_TOGGLE_ACTIVE_CLASS,
                 )}
               >
                 <Icon size={15} aria-hidden="true" />

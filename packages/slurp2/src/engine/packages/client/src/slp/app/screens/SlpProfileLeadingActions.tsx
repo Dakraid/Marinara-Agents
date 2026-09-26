@@ -1,4 +1,6 @@
 import { BookmarkCheck, BookmarkPlus, MessageCircle } from "lucide-react";
+import { useRef } from "react";
+import { useDismiss, useKeepInViewport } from "../../base/chrome/slp-popover-hooks";
 import { showConfirmDialog } from "../../../lib/app-dialogs";
 import { cn } from "../../../lib/utils";
 import { SlurpCoinAmount, SlurpCoinBurst } from "../../modules/coin/SlpCoin";
@@ -26,6 +28,10 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
     viewerCreator,
     viewingOwnCreator,
   } = model;
+  const tipRootRef = useRef<HTMLDivElement | null>(null);
+  const tipPanelRef = useRef<HTMLDivElement | null>(null);
+  useDismiss(tipOpen, () => setTipOpen(false), tipRootRef);
+  const tipShift = useKeepInViewport(tipOpen, tipPanelRef);
 
   return !editing && !viewingOwnCreator && viewerCreator ? (
     <>
@@ -90,7 +96,7 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
         {!viewerCreator.subscribed && (
           <>
             {" · "}
-            <SlurpCoinAmount amount={`${slurpSubscriptionPriceOf(profile)} / week`} />
+            <SlurpCoinAmount amount={`${slurpSubscriptionPriceOf(viewerCreator)} / week`} />
           </>
         )}
       </button>
@@ -117,7 +123,7 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
             ? localizeUi("ui.slurp.profile.messagingUnavailable", { defaultValue: "Messaging unavailable" })
             : localizeUi("ui.slurp.profile.message", { defaultValue: "Message" })}
       </button>
-      <div className="relative">
+      <div ref={tipRootRef} className="relative">
         <button
           type="button"
           disabled={tipCreator.isPending}
@@ -127,7 +133,11 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
           {localizeUi("ui.slurp.profile.tip", { defaultValue: "Tip" })}
         </button>
         {tipOpen && (
-          <div className="absolute end-0 top-[calc(100%+0.5rem)] z-20 w-56 rounded-lg border border-[var(--noodle-divider)] bg-[var(--background)] p-3 shadow-xl">
+          <div
+            ref={tipPanelRef}
+            style={tipShift ? { transform: `translateX(${tipShift}px)` } : undefined}
+            className="absolute end-0 top-[calc(100%+0.5rem)] z-20 w-56 rounded-lg border border-[var(--noodle-divider)] bg-[var(--background)] p-3 shadow-xl"
+          >
             <p className="text-xs font-semibold text-[var(--muted-foreground)]">
               {localizeUi("ui.slurp.profile.tipAmount", { defaultValue: "Tip amount" })}
             </p>

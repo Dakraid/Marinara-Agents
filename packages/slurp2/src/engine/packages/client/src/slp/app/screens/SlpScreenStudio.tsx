@@ -5,6 +5,7 @@ import type { SlurpStudioCreator } from "../../features/economy/slp-economy-cont
 import { useSetSlurpGoal, useSlurpPayout, useSlurpStudio } from "../../features/economy/slp-economy-hooks";
 import { cn } from "../../../lib/utils";
 import { Avatar } from "../../base/chrome/SlpChrome";
+import { ErrorState } from "../../modules/chrome/SlpStateKit";
 import { SlpCreatorFrame } from "./SlpHomeHelpers";
 import { formatTime } from "../../base/ui/slp-date-time";
 import { BroadcastPanel } from "../../features/messages/SlpMessages";
@@ -79,6 +80,11 @@ function SlurpStudioView({
           <p className="px-1 text-sm text-[var(--muted-foreground)]">
             {localizeUi("ui.slurp.studio.loading", { defaultValue: "Loading…" })}
           </p>
+        ) : studioQuery.isError && !studioQuery.data ? (
+          <ErrorState
+            title={localizeUi("ui.slurp.studio.loadError", { defaultValue: "Could not load your Studio" })}
+            onRetry={() => void studioQuery.refetch()}
+          />
         ) : creators.length === 0 ? (
           <div className="rounded-xl bg-[var(--slurp-surface)] px-6 py-14 text-center ring-1 ring-inset ring-[var(--noodle-divider)]">
             <p className="text-sm font-bold">

@@ -40,8 +40,8 @@ const home = read("packages/slurp2/src/engine/packages/client/src/components/slu
 assert.match(home, /ui\.slurp\.profile\.subscribeBenefits/u, "The inline subscription offer must explain its benefits");
 assert.match(
   home,
-  /slurpSubscriptionPriceOf\(profile\)\} \/ week/u,
-  "The subscription action must show its weekly price",
+  /slurpSubscriptionPriceOf\(viewerCreator\)\} \/ week/u,
+  "The subscription action must show its weekly price, read from the viewer scope (the Creator record has none)",
 );
 assert.match(home, /ui\.slurp\.profile\.cancelSubscriptionConfirm/u);
 const messages = read("packages/slurp2/src/engine/packages/client/src/components/slurp/SlurpMessages.tsx");

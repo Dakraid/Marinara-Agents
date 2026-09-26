@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { Avatar } from "../../base/chrome/SlpChrome";
+import { ErrorState, LoadingState } from "../../modules/chrome/SlpStateKit";
 import { SlurpEmptyArtwork } from "../../base/chrome/SlpEmptyArtwork";
 import { formatTime } from "../../base/ui/slp-date-time";
 import type { SlurpThread } from "../../features/messages/slp-messages-contract";
@@ -418,7 +419,14 @@ export function SlurpMessagesView({
           <h2 id="slurp-message-inbox" className="sr-only">
             {localizeUi("ui.slurp.messages.conversations", { defaultValue: "Conversations" })}
           </h2>
-          {visibleActive.length === 0 && filter === "all" ? (
+          {threadsQuery.isPending ? (
+            <LoadingState label={localizeUi("ui.slurp.inbox.loadingMessages", { defaultValue: "Loading messages…" })} />
+          ) : threadsQuery.isError && !threadsQuery.data ? (
+            <ErrorState
+              title={localizeUi("ui.slurp.messages.loadError", { defaultValue: "Could not load your messages" })}
+              onRetry={() => void threadsQuery.refetch()}
+            />
+          ) : visibleActive.length === 0 && filter === "all" ? (
             <div className="relative isolate overflow-hidden rounded-xl bg-[linear-gradient(145deg,var(--slurp-surface-raised),var(--slurp-surface))] px-6 py-9 text-center shadow-[var(--slurp-shadow-raised)] ring-1 ring-inset ring-white/[0.06]">
               <SlurpEmptyArtwork className="absolute inset-0 -z-10" />
               <MessageCircle size={28} className="mx-auto text-[var(--noodle-accent)]" />
@@ -451,10 +459,10 @@ export function SlurpMessagesView({
     return <div className="mx-auto flex h-full w-full max-w-5xl flex-1 flex-col">{inbox}</div>;
 
   return (
-    <div className="grid h-full min-h-0 w-full flex-1 md:grid-cols-[minmax(19rem,22rem)_minmax(0,1fr)]">
+    <div className="grid h-full min-h-0 w-full flex-1 grid-cols-[minmax(0,1fr)] md:grid-cols-[minmax(19rem,22rem)_minmax(0,1fr)]">
       <aside
         className={cn(
-          "min-h-0 flex-col border-e border-[var(--noodle-divider)]",
+          "min-h-0 min-w-0 flex-col border-e border-[var(--noodle-divider)]",
           conversationOpen ? "hidden md:flex" : "flex",
         )}
       >
