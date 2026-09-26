@@ -453,7 +453,7 @@ function BlockOutline({
                   type="button"
                   aria-current={selected ? "step" : undefined}
                   onClick={() => onSelect(entry.id)}
-                  className={`flex min-h-10 w-full items-center gap-2 rounded-lg px-2 text-start text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] ${selected ? "bg-[var(--slurp-nav-active)] text-[var(--slurp-text)]" : "text-[var(--slurp-muted)] hover:bg-[var(--slurp-canvas)] hover:text-[var(--slurp-text)]"}`}
+                  className={`flex min-h-10 w-full items-center gap-2 rounded-lg px-2 text-start text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] ${selected ? "bg-[image:var(--slurp-nav-active)] text-[var(--slurp-text)]" : "text-[var(--slurp-muted)] hover:bg-[var(--slurp-canvas)] hover:text-[var(--slurp-text)]"}`}
                 >
                   <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--slurp-canvas)] text-[0.68rem] font-black tabular-nums ring-1 ring-inset ring-[var(--slurp-outline)]">
                     {index + 1}

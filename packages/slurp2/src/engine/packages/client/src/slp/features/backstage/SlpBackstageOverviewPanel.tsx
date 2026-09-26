@@ -135,7 +135,7 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
 
   return (
     <div className="space-y-4">
-      <section className="relative isolate overflow-hidden rounded-xl bg-[var(--slurp-hero)] p-4 text-white shadow-[0_30px_70px_-38px_rgba(184,28,102,0.9)] sm:p-5">
+      <section className="relative isolate overflow-hidden rounded-xl bg-[image:var(--slurp-hero)] p-4 text-white shadow-[0_30px_70px_-38px_rgba(184,28,102,0.9)] sm:p-5">
         <span
           className="pointer-events-none absolute -end-12 -top-20 -z-10 h-64 w-64 rounded-full border-[2rem] border-white/10"
           aria-hidden="true"

@@ -12,6 +12,7 @@ import { type SlpPostCardModel } from "../../modules/post/SlpPostTypes";
 import { SlurpArcTimelineCard } from "../../features/projects/SlpArcTimelineCard";
 import { useNearViewportSlurpMediaSrc } from "../../base/media/slp-media-src";
 import { SlurpProfileSurface } from "../../features/creators/SlpProfileSurface";
+import { SlpBalanceChip } from "../../modules/chrome/SlpShell";
 import { HelpTooltip } from "../../../components/ui/HelpTooltip";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { SlurpInlineAdTile } from "../../features/ads/SlpInlineAd";
@@ -91,7 +92,7 @@ export function SlurpProfileMediaTile({
   const { t: localizeUi } = useUiTranslation();
   const { src: source, observe } = useNearViewportSlurpMediaSrc(post.imageUrl, { width: 480 });
   return (
-    <div ref={observe} className="relative aspect-square overflow-hidden bg-[var(--background)]">
+    <div ref={observe} className="relative aspect-square overflow-hidden bg-[var(--slurp-surface-raised)]">
       <button
         type="button"
         onClick={() => source && onOpenImage(source, post.id)}
@@ -108,7 +109,7 @@ export function SlurpProfileMediaTile({
             className="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.03] motion-reduce:transition-none motion-reduce:hover:scale-100"
           />
         ) : (
-          <div className="h-full w-full bg-[var(--muted)]" />
+          <div className="h-full w-full animate-pulse bg-[var(--slurp-surface-raised)] motion-reduce:animate-none" />
         )}
       </button>
       <div className="absolute end-2 top-2 z-10" onClick={(event) => event.stopPropagation()}>
@@ -183,8 +184,9 @@ export function SlurpMediaWall({
     );
   }
   return (
-    <div className="bg-[var(--slurp-canvas)] pb-6">
-      <div className="grid grid-cols-2 gap-px bg-[var(--noodle-divider)] @min-[620px]:grid-cols-3">
+    <div className="pb-6">
+      {/* Same inset and radius as the feed cards; every tile (picture or ad) gets the same frame. */}
+      <div className="grid grid-cols-2 gap-1.5 px-3 @min-[620px]:grid-cols-3 sm:px-4 [&>*]:overflow-hidden [&>*]:rounded-xl [&>*]:shadow-[var(--slurp-shadow-raised)]">
         {tiles.map((post, index) => {
           // The slot maths counts tiles, not source posts: the wall drops locked and text posts, so
           // indexing off the feed would leave the cadence uneven and some slots permanently empty.
@@ -305,15 +307,20 @@ export function StageProfileView({
     <>
       <SlurpProfileSurface
         mobileHeader={
-          <button
-            type="button"
-            onClick={onBack}
-            className="absolute start-2 top-2 z-20 flex h-11 w-11 items-center justify-center rounded-lg bg-black/50 text-white backdrop-blur-sm hover:bg-black/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white @min-[1024px]:hidden"
-            title={localizeUi("ui.slurp.profile.back")}
-            aria-label={localizeUi("ui.slurp.profile.back")}
-          >
-            <ChevronLeft size={22} className="rtl:-scale-x-100" />
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={onBack}
+              className="absolute start-2 top-2 z-20 flex h-11 w-11 items-center justify-center rounded-lg bg-black/50 text-white backdrop-blur-sm hover:bg-black/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white @min-[1024px]:hidden"
+              title={localizeUi("ui.slurp.profile.back")}
+              aria-label={localizeUi("ui.slurp.profile.back")}
+            >
+              <ChevronLeft size={22} className="rtl:-scale-x-100" />
+            </button>
+            {/* Phones: the balance sits top right over the banner (the coin-fly target), except while
+              the banner's own edit buttons are there. */}
+            {!editing && <SlpBalanceChip className="absolute end-2 top-2 z-20" />}
+          </>
         }
         account={profile}
         displayHandle={editing ? editDraft.handle : profile.handle}

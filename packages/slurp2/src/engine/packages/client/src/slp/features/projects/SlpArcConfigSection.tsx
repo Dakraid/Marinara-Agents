@@ -216,7 +216,7 @@ export function ArcConfigSection({
               return (
                 <label
                   key={type.id}
-                  className={`inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full px-3 text-sm ring-1 ring-inset focus-within:ring-2 focus-within:ring-[var(--slurp-focus,var(--noodle-accent))] ${on ? "bg-[var(--slurp-nav-active)] font-semibold ring-[var(--noodle-accent)]/45" : "text-[var(--slurp-muted,var(--muted-foreground))] ring-[var(--slurp-outline,var(--border))]"}`}
+                  className={`inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full px-3 text-sm ring-1 ring-inset focus-within:ring-2 focus-within:ring-[var(--slurp-focus,var(--noodle-accent))] ${on ? "bg-[image:var(--slurp-nav-active)] font-semibold ring-[var(--noodle-accent)]/45" : "text-[var(--slurp-muted,var(--muted-foreground))] ring-[var(--slurp-outline,var(--border))]"}`}
                 >
                   <input
                     type="checkbox"

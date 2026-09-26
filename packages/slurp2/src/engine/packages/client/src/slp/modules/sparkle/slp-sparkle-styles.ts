@@ -103,6 +103,27 @@ export const SLP_SPARKLE_STYLES = `
   .slp-motes::before { background-image: ${MOTES_NEAR}; opacity: 0.5; }
   .slp-motes::after { background-image: ${MOTES_FAR}; opacity: 0.4; }
   :root { --slp-star-mask: ${SLP_SPARKLE_MASKS.star}; }
+  /* Unlock: the veil over a freshly revealed post clears from the centre out (hole grows, blur
+     and sparkle fade). Needs @property for the hole; without it the veil still fades. */
+  @property --slp-veil-hole { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
+  .slp-veil-dissolve {
+    -webkit-mask-image: radial-gradient(circle at 50% 45%, transparent var(--slp-veil-hole), #000 calc(var(--slp-veil-hole) + 22%));
+    mask-image: radial-gradient(circle at 50% 45%, transparent var(--slp-veil-hole), #000 calc(var(--slp-veil-hole) + 22%));
+    backdrop-filter: blur(14px) saturate(0.9); -webkit-backdrop-filter: blur(14px) saturate(0.9);
+  }
+  /* A picture that is still being drawn: a soft light sweep over the reserved frame, once every 4 s
+     (the sweep itself takes the first 1.8 s). */
+  .slp-image-shimmer {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(120% 80% at 20% 10%, color-mix(in srgb, ${PINK} 18%, transparent), transparent 60%),
+      radial-gradient(90% 70% at 85% 90%, color-mix(in srgb, ${VIOLET} 16%, transparent), transparent 60%);
+  }
+  .slp-image-shimmer::after {
+    content: ""; position: absolute; inset: 0; opacity: 0.9;
+    background: linear-gradient(100deg, transparent 30%, rgb(255 255 255 / 0.10) 45%, rgb(255 255 255 / 0.18) 50%, rgb(255 255 255 / 0.10) 55%, transparent 70%) no-repeat;
+    background-size: 250% 100%; background-position: 120% 0;
+  }
 
   @media (prefers-reduced-motion: no-preference) {
     .slp-glint { animation: slp-glint 900ms ${EASE} 180ms 1 both; }
@@ -113,6 +134,8 @@ export const SLP_SPARKLE_STYLES = `
     .slp-twinkle { animation: slp-twinkle 700ms ${EASE} var(--slp-twinkle-delay, 0ms) 1 both; }
     .slp-motes::before { animation: slp-drift 90s linear infinite, slp-breathe-motes 6s ease-in-out infinite alternate; }
     .slp-motes::after { animation: slp-drift-far 140s linear infinite, slp-breathe-motes 9s ease-in-out -3s infinite alternate; }
+    .slp-veil-dissolve { animation: slp-veil-dissolve 1000ms cubic-bezier(0.45, 0, 0.3, 1) 120ms both; }
+    .slp-image-shimmer::after { animation: slp-image-sweep 4s ease-in-out infinite; }
     [data-slp-paused], [data-slp-paused]::before, [data-slp-paused]::after { animation-play-state: paused !important; }
   }
   @keyframes slp-glint { 0% { opacity: 1; background-position: 130% 0; } 100% { opacity: 1; background-position: -30% 0; } }
@@ -130,6 +153,14 @@ export const SLP_SPARKLE_STYLES = `
     0% { opacity: 0; transform: scale(0.4) rotate(-20deg); } 60% { opacity: 1; transform: scale(1.15) rotate(8deg); }
     100% { opacity: 0.85; transform: scale(1) rotate(0deg); }
   }
+  @media (prefers-reduced-motion: reduce) { .slp-veil-dissolve { display: none; } }
+  @keyframes slp-veil-dissolve {
+    0% { --slp-veil-hole: 0%; opacity: 1; backdrop-filter: blur(14px) saturate(0.9); -webkit-backdrop-filter: blur(14px) saturate(0.9); }
+    25% { --slp-veil-hole: 6%; opacity: 1; backdrop-filter: blur(12px) saturate(0.9); -webkit-backdrop-filter: blur(12px) saturate(0.9); }
+    75% { opacity: 0.85; }
+    100% { --slp-veil-hole: 110%; opacity: 0; backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); }
+  }
+  @keyframes slp-image-sweep { 0% { background-position: 120% 0; } 45%, 100% { background-position: -20% 0; } }
   @keyframes slp-drift { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -300px, 0); } }
   @keyframes slp-drift-far { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -210px, 0); } }
   @keyframes slp-breathe-motes { from { opacity: 0.22; } to { opacity: 0.55; } }

@@ -27,7 +27,9 @@ const images = slurp2Source(
 assert.match(home, /useState<"list" \| "wall">\("list"\)/u, "The feed must default to the list layout");
 assert.match(home, /feedLayout === "wall" \? \(\s*<SlurpMediaWall/u, "The wall layout must replace the post list");
 
-// Small polish stays structural: icon-only mobile navigation, useful empty states, and no empty rail.
+// Small polish stays structural: the mobile navigation, useful empty states, and no empty rail.
+// Updated in redesign step 2 (user-approved): step 1 replaced the icon-only pink nav with the floating
+// pill — small visible labels, muted icons, pink ink + tint on the active tab.
 const mobileNavigation = shell.slice(
   shell.indexOf('data-component="NoodleView.MobileBottomNav"'),
   shell.indexOf("</nav>", shell.indexOf('data-component="NoodleView.MobileBottomNav"')),
@@ -39,16 +41,22 @@ for (const label of [
   "ui.slurp.navigation.search",
   "ui.slurp.navigation.more",
 ]) {
-  assert.match(mobileNavigation, new RegExp(`aria-label=\\{[\\s\\S]*${label.replaceAll(".", "\\.")}`, "u"));
+  assert.match(mobileNavigation, new RegExp(`label=\\{[\\s\\S]*${label.replaceAll(".", "\\.")}`, "u"));
 }
+const navTab = shell.slice(shell.indexOf("function SlpNavTab"), shell.indexOf("export function SlpShell"));
+assert.match(navTab, /aria-label=\{badge > 0 \? `\$\{label\}, /u, "each tab is named by its label (plus the count)");
 // 48px: compact, and still above the 44px minimum touch target.
-assert.match(shell, /h-12 grid-flow-col/u, "mobile navigation must keep its touch-target height");
-assert.doesNotMatch(
-  mobileNavigation,
-  /<span className="max-w-full truncate px-1">/u,
-  "mobile navigation must hide text labels",
+assert.match(navTab, /relative flex h-12 min-w-11/u, "mobile navigation must keep its touch-target height");
+assert.match(
+  navTab,
+  /<span aria-hidden="true" className=\{cn\(SLP_TYPE\.caption/u,
+  "mobile navigation shows small labels",
 );
-assert.match(mobileNavigation, /!text-\[var\(--noodle-accent\)\]/u, "mobile navigation icons must stay pink");
+assert.match(
+  navTab,
+  /text-\[var\(--slurp-muted\)\][\s\S]*?active &&[\s\S]*?text-\[var\(--slurp-ink\)\]/u,
+  "icons stay muted; the active tab takes the pink ink",
+);
 assert.match(home, /ui\.slurp\.empty\.clearSearch/u, "empty search must offer a recovery action");
 assert.match(home, /ui\.slurp\.empty\.browseAll/u, "an empty Following feed must offer all creators");
 assert.match(

@@ -30,7 +30,9 @@ assert.match(shell, /resetKey: activeView/u, "a new screen brings the nav back")
 assert.match(shell, /data-\[slp-nav-hidden\]:pb-0/u);
 assert.match(
   shell,
-  /function SlpNavTab[\s\S]*?h-12[\s\S]*?bg-\[var\(--slurp-nav-active\)\]/u,
+  // Step 2: the tint is a gradient, so it needs the `image:` hint (`bg-[var(...)]` compiled to an
+  // invalid background-color and painted nothing).
+  /function SlpNavTab[\s\S]*?h-12[\s\S]*?bg-\[image:var\(--slurp-nav-active\)\]/u,
   "48 px tabs, tint when active",
 );
 assert.match(shell, /aria-label=\{badge > 0 \? `\$\{label\}, /u, "the count is read with the label, not glued to it");
@@ -52,7 +54,9 @@ assert.doesNotMatch(appState.slice(0, appState.indexOf("renderSlurpHomeCreatorFl
 // Desktop sidebar: a Studio row (B19) and the shared balance chip.
 assert.equal((shell.match(/onClick=\{onOpenStudio\}/gu) ?? []).length, 2, "Studio in the More sheet and the sidebar");
 assert.match(shell, /walletChip\("h-7 px-2\.5 text-xs"\)/u);
-assert.match(hub, /SLP_BALANCE_CHIP_CLASS/u);
+// Step 2: the hub uses the one shared chip (the user asked for a shared component, not copies).
+assert.match(hub, /<SlpBalanceChip \/>/u);
+assert.match(shell, /export function SlpBalanceChip[\s\S]*?SLP_BALANCE_CHIP_CLASS/u);
 
 // More is an SlpSheet; Pulse closes it first so Pulse is not hidden under the sheet.
 assert.match(shell, /<SlpSheet\s+open=\{mobileDrawerOpen\}/u);

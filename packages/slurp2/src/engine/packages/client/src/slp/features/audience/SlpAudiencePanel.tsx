@@ -128,7 +128,7 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
                           type="button"
                           aria-pressed={audienceDraft.preset === preset}
                           onClick={() => setAudienceDraft({ ...audienceDraft, preset })}
-                          className={`min-h-14 rounded-lg p-3 text-start text-sm font-semibold ring-1 ring-inset focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] ${audienceDraft.preset === preset ? "bg-[var(--slurp-nav-active)] ring-[var(--noodle-accent)]/45" : "bg-[var(--slurp-surface-raised)] ring-[var(--slurp-outline)]"}`}
+                          className={`min-h-14 rounded-lg p-3 text-start text-sm font-semibold ring-1 ring-inset focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] ${audienceDraft.preset === preset ? "bg-[image:var(--slurp-nav-active)] ring-[var(--noodle-accent)]/45" : "bg-[var(--slurp-surface-raised)] ring-[var(--slurp-outline)]"}`}
                         >
                           {t(`ui.slurp.settings.simulation.presets.${preset}`)}
                         </button>

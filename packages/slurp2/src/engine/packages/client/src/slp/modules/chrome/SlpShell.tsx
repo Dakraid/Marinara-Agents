@@ -18,11 +18,20 @@ import {
   Wallet,
 } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
-import { type ComponentProps, type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
+import {
+  type ComponentProps,
+  createContext,
+  type CSSProperties,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "../../../lib/utils";
 import { useDialogFocusScope } from "../../../hooks/use-dialog-focus-scope";
 import { useTranslation as useUiTranslation } from "react-i18next";
-import { SlurpCoinAmount } from "../coin/SlpCoin";
+import { SlurpCoinAmount, slpCoinPlainText } from "../coin/SlpCoin";
 import { SlpCanvasMotes, SlpShimmer, SlpTwinkle } from "../sparkle/SlpSparkle";
 import {
   Avatar,
@@ -61,6 +70,40 @@ export function SlpWordmark() {
   );
 }
 
+/** The balance and the way to the Wallet, provided by the shell so every phone header can show the chip. */
+const SlpBalanceContext = createContext<{ coins: number | null; onOpen?: () => void }>({ coins: null });
+
+/**
+ * The coin balance chip for phone headers (hub, profile, thread, Discover). It is the coin-fly
+ * target, so every spend lands on it; desktop hides it because the sidebar Wallet row shows the
+ * balance. Renders nothing outside the shell.
+ */
+export function SlpBalanceChip({ className }: { className?: string }) {
+  const { t: localizeUi } = useUiTranslation();
+  const { coins, onOpen } = useContext(SlpBalanceContext);
+  if (!onOpen) return null;
+  const label =
+    coins === null
+      ? localizeUi("ui.slurp.navigation.wallet")
+      : slpCoinPlainText(localizeUi("ui.slurp.wallet.balance", { amount: coins }));
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className={cn(
+        "flex h-11 max-w-full shrink-0 items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] @min-[1024px]:hidden",
+        className,
+      )}
+      aria-label={label}
+      title={label}
+    >
+      <span className={cn(SLP_BALANCE_CHIP_CLASS, "h-9 transition-colors hover:bg-[var(--accent)]")}>
+        <SlurpCoinAmount amount={coins ?? "…"} watchAmount={coins ?? undefined} />
+      </span>
+    </button>
+  );
+}
+
 /** Unread / new counts on a nav entry: a pink pill with a small sparkle on its corner. */
 function SlpNavBadge({ count }: { count: number }) {
   if (count <= 0) return null;
@@ -93,7 +136,7 @@ function SlpNavTab({
       className={cn(
         "relative flex h-12 min-w-11 flex-col items-center justify-center gap-0.5 rounded-full px-1 text-[var(--slurp-muted)] transition-[background-color,color,box-shadow,transform] duration-[var(--slurp-motion-fast)] hover:text-[var(--slurp-text)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100 [&_svg]:!text-current",
         active &&
-          "bg-[var(--slurp-nav-active)] text-[var(--slurp-ink)] shadow-[0_6px_18px_-8px_color-mix(in_srgb,var(--noodle-accent)_75%,transparent)] ring-1 ring-inset ring-[var(--noodle-accent)]/45 hover:text-[var(--slurp-ink)]",
+          "bg-[image:var(--slurp-nav-active)] text-[var(--slurp-ink)] shadow-[0_6px_18px_-8px_color-mix(in_srgb,var(--noodle-accent)_75%,transparent)] ring-1 ring-inset ring-[var(--noodle-accent)]/45 hover:text-[var(--slurp-ink)]",
         className,
       )}
     >
@@ -582,7 +625,9 @@ export function SlpShell({
                 transition={{ duration: prefersReducedMotion ? 0.12 : 0.18, ease: "easeOut" }}
                 className="flex min-h-0 w-full flex-1 flex-col"
               >
-                {children}
+                <SlpBalanceContext.Provider value={{ coins: walletBalance ?? null, onOpen: onOpenWallet }}>
+                  {children}
+                </SlpBalanceContext.Provider>
               </motion.div>
             </main>
             {slurpActive && resolvedContextualRail === "blank" ? (

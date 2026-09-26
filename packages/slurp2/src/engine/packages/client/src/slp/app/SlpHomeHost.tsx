@@ -346,8 +346,6 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
         scope={viewerQuery.data}
         newSinceAt={viewerQuery.data ? (frozenFeedSeenAt[viewerQuery.data.viewer.id] ?? null) : null}
         onFeedShown={markFeedShown}
-        onOpenWallet={goToWallet}
-        walletCoins={activeWalletCoins}
         onLoadMore={model.viewerQuery.loadMore}
         hasMore={Boolean(model.viewerQuery.data?.nextCursor)}
         isLoading={viewerQuery.isLoading}

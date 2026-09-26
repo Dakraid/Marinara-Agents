@@ -95,7 +95,7 @@ export function SlpPublishingPanel(page: SlpBackstagePageProps) {
                   setCustomPaceOpen(false);
                   void updatePatch(slurpActivityPresetPatch(preset));
                 }}
-                className={`min-h-16 rounded-xl p-3 text-start ring-1 ring-inset transition-[background-color,transform] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:opacity-50 ${!customPaceOpen && activityPreset === preset ? "bg-[var(--slurp-nav-active)] ring-[var(--noodle-accent)]/45" : "bg-[var(--slurp-surface-raised)] ring-[var(--slurp-outline)] hover:bg-[color-mix(in_srgb,var(--noodle-accent)_7%,var(--slurp-surface-raised))]"}`}
+                className={`min-h-16 rounded-xl p-3 text-start ring-1 ring-inset transition-[background-color,transform] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:opacity-50 ${!customPaceOpen && activityPreset === preset ? "bg-[image:var(--slurp-nav-active)] ring-[var(--noodle-accent)]/45" : "bg-[var(--slurp-surface-raised)] ring-[var(--slurp-outline)] hover:bg-[color-mix(in_srgb,var(--noodle-accent)_7%,var(--slurp-surface-raised))]"}`}
               >
                 <span className="block text-sm font-semibold">{t(`ui.slurp.settings.presets.${preset}`)}</span>
                 <span className="mt-1 block text-xs text-[var(--muted-foreground)]">
@@ -112,7 +112,7 @@ export function SlpPublishingPanel(page: SlpBackstagePageProps) {
               aria-pressed={customPaceOpen || activityPreset === null}
               disabled={updateSettings.isPending}
               onClick={() => setCustomPaceOpen(true)}
-              className={`min-h-16 rounded-xl p-3 text-start ring-1 ring-inset transition-[background-color,transform] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:opacity-50 ${customPaceOpen || activityPreset === null ? "bg-[var(--slurp-nav-active)] ring-[var(--noodle-accent)]/45" : "bg-[var(--slurp-surface-raised)] ring-[var(--slurp-outline)] hover:bg-[color-mix(in_srgb,var(--noodle-accent)_7%,var(--slurp-surface-raised))]"}`}
+              className={`min-h-16 rounded-xl p-3 text-start ring-1 ring-inset transition-[background-color,transform] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:opacity-50 ${customPaceOpen || activityPreset === null ? "bg-[image:var(--slurp-nav-active)] ring-[var(--noodle-accent)]/45" : "bg-[var(--slurp-surface-raised)] ring-[var(--slurp-outline)] hover:bg-[color-mix(in_srgb,var(--noodle-accent)_7%,var(--slurp-surface-raised))]"}`}
             >
               <span className="block text-sm font-semibold">{t("ui.slurp.settings.presets.custom")}</span>
               <span className="mt-1 block text-xs text-[var(--slurp-muted)]">

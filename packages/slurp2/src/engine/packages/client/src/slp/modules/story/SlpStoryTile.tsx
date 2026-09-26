@@ -1,61 +1,103 @@
 import { Lock } from "lucide-react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import type { ReactNode } from "react";
+import { cn } from "../../../lib/utils";
+import { Avatar } from "../../base/chrome/SlpChrome";
 import { SlpRingGlint } from "../sparkle/SlpSparkle";
 import type { SlpCreatorPostView } from "../../../../../shared/src/slp/slp-social.types.js";
+import type { AvatarCrop } from "@marinara-engine/shared";
 
 type StoryCreator = {
   profile: {
     id: string;
     displayName: string;
     handle: string;
+    avatarUrl?: string | null;
+    avatarCrop?: AvatarCrop | null;
   };
 };
 
+/** One size for Story tiles, their skeleton and the Add Story tile (tall photo tiles, design step 2). */
+export const SLP_STORY_TILE_SIZE_CLASS = "h-[8.25rem] w-[5.5rem] @min-[1024px]:h-[9rem] @min-[1024px]:w-[6rem]";
+
 export type SlpStoryTileProps = {
   creator: StoryCreator;
-  post: Pick<SlpCreatorPostView, "id" | "imageUrl" | "locked">;
+  post: Pick<SlpCreatorPostView, "id" | "imageUrl" | "locked"> & { content?: string | null };
   mediaSrc: string | null;
   fallback: ReactNode;
   isNew: boolean;
   onOpen: () => void;
 };
 
+/**
+ * A tall photo tile with the Creator's avatar on it. Unseen = hero ring with a travelling glint;
+ * seen = no ring and a dimmer picture, so the new ones lead without a label.
+ */
 export function SlpStoryTile({ creator, post, mediaSrc, fallback, isNew, onOpen }: SlpStoryTileProps) {
   const { t: localizeUi } = useUiTranslation();
+  const text = post.content?.trim();
   return (
     <button
       type="button"
       onClick={onOpen}
-      className="group relative aspect-[3/4] w-[4.75rem] shrink-0 snap-start overflow-hidden rounded-xl bg-[var(--slurp-surface-raised)] text-start shadow-[0_10px_24px_-18px_rgba(0,0,0,0.95)] outline outline-1 -outline-offset-1 outline-white/10 transition-transform active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--noodle-accent)] @min-[1024px]:w-[5.25rem] motion-reduce:transition-none motion-reduce:active:scale-100"
-      aria-label={localizeUi("ui.slurp.moments.open", { name: creator.profile.displayName })}
+      className={cn(
+        SLP_STORY_TILE_SIZE_CLASS,
+        "group relative shrink-0 snap-start overflow-hidden rounded-2xl bg-[var(--slurp-surface-raised)] text-start transition-transform active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] motion-reduce:transition-none motion-reduce:active:scale-100",
+        isNew
+          ? "shadow-[0_10px_24px_-14px_color-mix(in_srgb,var(--noodle-accent)_75%,transparent)]"
+          : "shadow-[var(--slurp-shadow-raised)]",
+      )}
+      aria-label={
+        localizeUi("ui.slurp.moments.open", { name: creator.profile.displayName }) +
+        (isNew ? `, ${localizeUi("ui.slurp.moments.new")}` : "")
+      }
     >
-      {mediaSrc ? (
-        <img
-          src={mediaSrc}
-          alt=""
-          decoding="async"
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
-        />
-      ) : (
-        <span className="absolute inset-0 flex items-center justify-center bg-[linear-gradient(145deg,color-mix(in_srgb,var(--noodle-accent)_14%,var(--slurp-surface-raised)),var(--slurp-surface))]">
-          {fallback}
+      <span
+        className={cn(
+          "absolute inset-0 transition-[filter,opacity] duration-[var(--slurp-motion-base)]",
+          !isNew && "opacity-60 saturate-[0.65] group-hover:opacity-80",
+        )}
+        aria-hidden="true"
+      >
+        {mediaSrc ? (
+          <img
+            src={mediaSrc}
+            alt=""
+            decoding="async"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+          />
+        ) : text ? (
+          // A text Story shows its words on the hero gradient, like the viewer does.
+          <span className="flex h-full w-full items-center bg-[image:var(--slurp-hero)] px-2 pb-6 pt-9 text-[11px] font-extrabold leading-[14px] text-[var(--slurp-on-hero)] [overflow-wrap:anywhere]">
+            <span className="line-clamp-4">{text}</span>
+          </span>
+        ) : (
+          <span className="flex h-full w-full items-center justify-center bg-[linear-gradient(145deg,color-mix(in_srgb,var(--noodle-accent)_14%,var(--slurp-surface-raised)),var(--slurp-surface))]">
+            {fallback}
+          </span>
+        )}
+      </span>
+      <span
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-[linear-gradient(to_top,rgba(9,5,12,0.9),rgba(9,5,12,0.3)_60%,transparent)]"
+        aria-hidden="true"
+      />
+      <span
+        className={cn(
+          "absolute start-1.5 top-1.5 rounded-full p-[2px]",
+          isNew ? "bg-[image:var(--slurp-hero)]" : "bg-white/35",
+        )}
+        aria-hidden="true"
+      >
+        <span className="block rounded-full bg-[var(--slurp-surface)] p-[1.5px]">
+          <Avatar account={creator.profile} size="sm" />
         </span>
-      )}
-      <span
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-[linear-gradient(to_top,rgba(9,5,12,0.92),rgba(9,5,12,0.26)_58%,transparent)]"
-        aria-hidden="true"
-      />
-      <span
-        className={`absolute inset-x-2 top-2 h-0.5 rounded-full ${isNew ? "bg-[var(--noodle-accent)] shadow-[0_0_10px_var(--noodle-accent)]" : "bg-white/45"}`}
-        aria-hidden="true"
-      />
+      </span>
       {post.locked && (
-        <span className="absolute end-1.5 top-3.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/65 text-white backdrop-blur-sm ring-1 ring-inset ring-white/15">
-          <Lock size={11} aria-hidden="true" />
+        <span className="absolute end-1.5 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/55 text-white ring-1 ring-inset ring-white/15 backdrop-blur-sm">
+          <Lock size={12} aria-hidden="true" />
         </span>
       )}
-      <span className="absolute inset-x-2 bottom-2 truncate text-xs font-bold text-white drop-shadow-sm">
+      <span className="absolute inset-x-2 bottom-2 truncate text-xs font-semibold text-white drop-shadow-sm">
         {creator.profile.displayName}
       </span>
       {isNew && <SlpRingGlint />}

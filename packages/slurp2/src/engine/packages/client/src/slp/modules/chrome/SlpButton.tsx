@@ -70,11 +70,21 @@ export function SlpButton({
  * so "selected" never reads like "primary".
  */
 const CHIP_SELECTED =
-  "bg-[var(--slurp-nav-active)] text-[var(--slurp-text)] ring-1 ring-inset ring-[var(--noodle-accent)]/45 [&_svg]:!text-[var(--slurp-ink)]";
+  "bg-[image:var(--slurp-nav-active)] text-[var(--slurp-text)] ring-1 ring-inset ring-[var(--noodle-accent)]/45 [&_svg]:!text-[var(--slurp-ink)]";
 const CHIP_IDLE =
   "text-[var(--slurp-muted)] ring-1 ring-inset ring-[var(--noodle-divider)] hover:text-[var(--slurp-text)] hover:bg-[var(--accent)] [&_svg]:!text-current";
 const CHIP =
   "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold tabular-nums transition-colors duration-[var(--slurp-motion-base)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none";
+
+/**
+ * A static label in the chip look (post access "Public post" / "Locked"): same pill and ring, but
+ * 24 px and not a control. `selected` gives it the pink tint + ring of a selected chip.
+ */
+export const slpTagClass = (selected = false) =>
+  cn(
+    "inline-flex h-6 shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2.5 text-[11px] font-semibold leading-none",
+    selected ? CHIP_SELECTED : "text-[var(--slurp-muted)] ring-1 ring-inset ring-[var(--noodle-divider)]",
+  );
 
 /** A toggle or a quick pick (filters, tip amounts). `selected` is announced as pressed. */
 export function SlpChip({

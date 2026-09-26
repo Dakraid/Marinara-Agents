@@ -7,7 +7,8 @@ import { cn } from "../../../lib/utils";
 import type { SlpPostCardCtx } from "../../modules/post/SlpPostTypes";
 import { SlurpCoinAmount } from "../../modules/coin/SlpCoin";
 import { SlpStoryTile } from "../../modules/story/SlpStoryTile";
-import { playSlpPop } from "../../modules/sparkle/SlpSparkle";
+import { playSlpPop, SlpTwinkle } from "../../modules/sparkle/SlpSparkle";
+import { SlpButton, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
 import { useSlurpMediaSrc } from "../../base/media/slp-media-src";
 import { ProfileInitial } from "../../base/chrome/SlpChrome";
 import { SlurpSparkleVeil } from "../../base/chrome/SlpSparkleVeil";
@@ -102,17 +103,18 @@ export function SlurpMomentsShelf({
     >
       <div className="relative">
         <div className="pointer-events-none absolute inset-y-0 end-0 z-10 w-8 bg-[linear-gradient(to_left,var(--slurp-surface),transparent)]" />
-        <div className="flex snap-x gap-2.5 overflow-x-auto px-4 pb-1 pe-10 [scroll-padding-inline-start:1rem] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden @min-[1024px]:px-5 @min-[1024px]:[scroll-padding-inline-start:1.25rem]">
+        <div className="flex snap-x gap-2.5 overflow-x-auto px-4 py-1 pe-10 [scroll-padding-inline-start:1rem] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden @min-[1024px]:px-5 @min-[1024px]:[scroll-padding-inline-start:1.25rem]">
           {onAddStory && (
+            // Smaller than a Story on purpose: it is an action, not content, so it should not compete.
             <button
               type="button"
               onClick={onAddStory}
-              className="group flex aspect-[3/4] w-[4.75rem] shrink-0 snap-start flex-col items-center justify-center gap-2 rounded-xl bg-[color-mix(in_srgb,var(--noodle-accent)_7%,var(--slurp-surface-raised))] text-[var(--noodle-accent-foreground)] outline outline-1 -outline-offset-1 outline-[color-mix(in_srgb,var(--noodle-accent)_34%,transparent)] transition-[background-color,transform] hover:bg-[color-mix(in_srgb,var(--noodle-accent)_12%,var(--slurp-surface-raised))] active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--noodle-accent)] @min-[1024px]:w-[5.25rem] motion-reduce:transition-none motion-reduce:active:scale-100"
+              className="group flex h-[8.25rem] w-16 shrink-0 snap-start flex-col items-center justify-center gap-2 rounded-2xl bg-[var(--slurp-tint)] px-1 text-[var(--slurp-ink)] shadow-[var(--slurp-highlight)] transition-[background-color,transform] hover:bg-[color-mix(in_srgb,var(--noodle-accent)_22%,var(--slurp-surface-raised))] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] @min-[1024px]:h-[9rem] motion-reduce:transition-none motion-reduce:active:scale-100"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-full border border-dashed border-current/70 transition-transform group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100">
-                <Plus size={17} strokeWidth={2} aria-hidden="true" />
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] shadow-[var(--slurp-glow)] transition-transform group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100 [&_svg]:!text-[var(--slurp-on-accent)]">
+                <Plus size={18} strokeWidth={2.25} aria-hidden="true" />
               </span>
-              <span className="px-1 text-center text-[0.68rem] font-bold leading-tight">
+              <span className="text-center text-[11px] font-semibold leading-[14px]">
                 {localizeUi("ui.slurp.moments.add")}
               </span>
             </button>
@@ -198,6 +200,8 @@ export function SlurpMomentViewer({
   );
   const likeCount = moment.post.likeCount ?? rootLikes.length;
   const unlockPrice = (moment.post as { unlockPrice?: unknown }).unlockPrice;
+  // No picture at all (not one still loading): the Story is its words, drawn big on the canvas.
+  const textStory = !moment.post.imageUrl && !moment.post.locked ? moment.post.content?.trim() || null : null;
   const recordView = useRecordSlurpStoryView();
   const recordedStoryViews = useRef(new Set<string>());
   const storyViews = useSlurpStoryViews(moment.post.id, personaId, isOwner);
@@ -261,6 +265,30 @@ export function SlurpMomentViewer({
                 moment.post.locked && "saturate-[0.88]",
               )}
             />
+          ) : textStory ? (
+            // A text Story is the words themselves: big type on the hero gradient, not an empty canvas.
+            <div className="absolute inset-0 isolate flex items-center justify-center overflow-hidden bg-[image:var(--slurp-hero)] px-8 py-28">
+              <SlpTwinkle
+                points={[
+                  { x: "12%", y: "22%", size: 14 },
+                  { x: "84%", y: "18%", size: 10 },
+                  { x: "78%", y: "74%", size: 16 },
+                  { x: "16%", y: "80%", size: 9 },
+                ]}
+              />
+              <p
+                className={cn(
+                  "text-balance text-center text-[var(--slurp-on-hero)] [overflow-wrap:anywhere] [text-shadow:0_2px_18px_rgb(0_0_0/0.25)]",
+                  textStory.length <= 60
+                    ? "text-[28px] font-extrabold leading-[32px]"
+                    : textStory.length <= 160
+                      ? "text-[22px] font-extrabold leading-[28px]"
+                      : "text-[17px] font-bold leading-[24px]",
+                )}
+              >
+                {textStory}
+              </p>
+            </div>
           ) : (
             <div
               className="absolute inset-0 animate-pulse bg-[var(--slurp-surface-raised)] motion-reduce:animate-none"
@@ -356,13 +384,13 @@ export function SlurpMomentViewer({
       side={
         <div data-component="SlurpHome.MomentViewer" className="flex flex-col gap-3 p-4 text-shadow-sm">
           {moment.post.locked && (
-            <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[var(--accent)] px-2.5 py-1 text-[0.68rem] font-bold uppercase tracking-[0.12em] ring-1 ring-inset ring-[var(--noodle-divider)]">
-              <Lock size={11} aria-hidden="true" /> {localizeUi("ui.slurp.locked.blurredPreview")}
+            <span className="inline-flex h-6 w-fit items-center gap-1 rounded-full bg-white/12 px-2.5 text-[11px] font-semibold ring-1 ring-inset ring-white/20 backdrop-blur-sm">
+              <Lock size={12} aria-hidden="true" /> {localizeUi("ui.slurp.locked.blurredPreview")}
             </span>
           )}
           {moment.post.title && <h3 className="text-lg font-bold leading-tight">{moment.post.title}</h3>}
-          {!moment.post.locked && moment.post.content && (
-            <p className="text-sm leading-6 text-white/80">{moment.post.content}</p>
+          {!moment.post.locked && moment.post.content && !textStory && (
+            <p className="text-sm leading-6 text-white/85">{moment.post.content}</p>
           )}
           {(!moment.post.locked || mediaSrc) && (
             <div className="flex items-center gap-2">
@@ -427,27 +455,29 @@ export function SlurpMomentViewer({
           )}
           {moment.post.locked && (
             <div className="grid gap-2">
-              <button
-                type="button"
+              <SlpPrimaryButton
                 disabled={unlockPending}
                 onClick={() => void Promise.resolve(onUnlock(moment.post.id)).catch(() => undefined)}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-[var(--slurp-on-accent)] hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:opacity-50 [&_svg]:!text-[var(--slurp-on-accent)]"
               >
-                <Eye size={15} aria-hidden="true" /> {localizeUi("ui.slurp.moments.unlock")}
-                {typeof unlockPrice === "number" && <SlurpCoinAmount amount={unlockPrice} />}
-              </button>
-              <button
-                type="button"
+                <Eye size={16} aria-hidden="true" /> {localizeUi("ui.slurp.moments.unlock")}
+                {typeof unlockPrice === "number" && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <SlurpCoinAmount amount={unlockPrice} />
+                  </>
+                )}
+              </SlpPrimaryButton>
+              <SlpButton
                 disabled={subscriptionPending}
+                className="text-white"
                 onClick={() =>
                   void Promise.resolve(
                     onToggleSubscription(moment.creator.profile.id, moment.creator.subscribed),
                   ).catch(() => undefined)
                 }
-                className="min-h-11 rounded-lg bg-[var(--accent)] px-3 text-xs font-bold ring-1 ring-inset ring-[var(--noodle-divider)] hover:bg-[var(--noodle-accent)]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:opacity-50"
               >
                 {localizeUi("ui.slurp.profile.subscribe")}
-              </button>
+              </SlpButton>
             </div>
           )}
         </div>

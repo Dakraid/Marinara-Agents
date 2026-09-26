@@ -93,13 +93,16 @@ export function SlpSkeleton({
       )}
       {shape === "stories" &&
         items.map((index) => (
-          <Bone key={index} className="aspect-[3/4] w-[4.75rem] shrink-0 rounded-xl @min-[1024px]:w-[5.25rem]" />
+          <Bone
+            key={index}
+            className="h-[8.25rem] w-[5.5rem] shrink-0 rounded-2xl @min-[1024px]:h-[9rem] @min-[1024px]:w-[6rem]"
+          />
         ))}
       {shape === "hub" && (
         <div className="space-y-6">
           <div className="flex gap-2.5 overflow-hidden">
             {items.map((index) => (
-              <Bone key={index} className="aspect-[3/4] w-[4.75rem] shrink-0 rounded-xl" />
+              <Bone key={index} className="h-[8.25rem] w-[5.5rem] shrink-0 rounded-2xl" />
             ))}
           </div>
           {[0, 1].map((card) => (

@@ -45,7 +45,7 @@ export function ShapeSetting({
   ) => (
     <label
       key={id}
-      className={`flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl p-2 text-center ring-1 ring-inset transition-colors focus-within:ring-2 focus-within:ring-[var(--slurp-focus,var(--noodle-accent))] motion-reduce:transition-none ${checked ? "bg-[var(--slurp-nav-active)] ring-[var(--noodle-accent)]/45" : "bg-[var(--slurp-canvas,var(--background))] ring-[var(--slurp-outline,var(--border))] hover:bg-[var(--accent)]/40"}`}
+      className={`flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl p-2 text-center ring-1 ring-inset transition-colors focus-within:ring-2 focus-within:ring-[var(--slurp-focus,var(--noodle-accent))] motion-reduce:transition-none ${checked ? "bg-[image:var(--slurp-nav-active)] ring-[var(--noodle-accent)]/45" : "bg-[var(--slurp-canvas,var(--background))] ring-[var(--slurp-outline,var(--border))] hover:bg-[var(--accent)]/40"}`}
     >
       <input type="radio" name={name} checked={checked} onChange={onPick} className="sr-only" />
       {/* The frame is the shape itself, scaled to fit a 40 px box. */}

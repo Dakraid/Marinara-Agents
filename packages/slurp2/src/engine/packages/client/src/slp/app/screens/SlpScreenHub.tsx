@@ -1,6 +1,7 @@
 import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SlpSheet, SlpSheetItem } from "../../modules/chrome/SlpSheet";
-import { SlpWordmark } from "../../modules/chrome/SlpShell";
+import { SlpBalanceChip, SlpWordmark } from "../../modules/chrome/SlpShell";
+import { SlpSegment } from "../../modules/chrome/SlpButton";
 import { SLP_CREATOR_FEED_WINDOW_SIZE } from "./SlpHomeHelpers";
 import { SlurpMomentsShelf, SlurpMomentViewer } from "./SlpScreenMoments";
 import { SubscriptionSections } from "./SlpScreenSubscriptions";
@@ -20,17 +21,10 @@ import { useCreatorViewer } from "../../features/feed/slp-feed-viewer-hooks";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { SlpPostCardCtx } from "../../modules/post/SlpPostTypes";
-import { SlurpCoinAmount, slpCoinPlainText } from "../../modules/coin/SlpCoin";
 import { LockedSlurpPostCard } from "../../modules/post/SlpLockedPostCard";
 import { SlpPostCard } from "../../modules/post/SlpPostCard";
 import { SlurpMediaWall } from "./SlpScreenProfile";
-import {
-  SLURP_TOGGLE_ACTIVE_CLASS,
-  NewSinceLastVisitDivider,
-  HIDE_ON_SCROLL_CLASS,
-  SLP_BALANCE_CHIP_CLASS,
-  useHideOnScroll,
-} from "../../base/chrome/SlpChrome";
+import { NewSinceLastVisitDivider, HIDE_ON_SCROLL_CLASS, useHideOnScroll } from "../../base/chrome/SlpChrome";
 import { SlurpInlineAd } from "../../features/ads/SlpInlineAd";
 import { type SlurpDiscoverLayout } from "../../features/discovery/slp-discovery";
 import {
@@ -86,8 +80,6 @@ export function ViewerHub({
   storyLifetimeHours,
   newSinceAt,
   onFeedShown,
-  onOpenWallet,
-  walletCoins,
   onLoadMore,
   hasMore,
 }: {
@@ -103,8 +95,6 @@ export function ViewerHub({
   newSinceAt: string | null;
   /** Called once the feed is actually on screen — entering NoodleR is not the same as seeing it. */
   onFeedShown: () => void;
-  onOpenWallet: () => void;
-  walletCoins: number | null;
   onLoadMore: () => Promise<boolean>;
   hasMore: boolean;
   isLoading: boolean;
@@ -320,73 +310,22 @@ export function ViewerHub({
 
   return (
     <div ref={setScroller} className="min-h-0 flex-1 overflow-y-auto">
-      {/* Keep the feed controls attached to the scroller so the bar follows the reader's scroll. */}
+      {/* Phones only: the desktop sidebar already carries the brand and the balance. */}
       <div
         ref={setStickyHeader}
         className={cn(
           // Glass: the feed scrolls under the bar and shows through the blur.
-          "sticky top-0 z-30 border-b border-[var(--noodle-divider)] bg-[color-mix(in_srgb,var(--noodle-accent)_6%,var(--slurp-glass))] shadow-[var(--slurp-shadow-floating),var(--slurp-highlight)] backdrop-blur-xl",
+          "sticky top-0 z-30 border-b border-[var(--noodle-divider)] bg-[color-mix(in_srgb,var(--noodle-accent)_6%,var(--slurp-glass))] shadow-[var(--slurp-shadow-floating),var(--slurp-highlight)] backdrop-blur-xl @min-[1024px]:hidden",
           HIDE_ON_SCROLL_CLASS,
         )}
         data-component="SlurpHome.StickyHeader"
       >
         <div
-          className="relative flex h-14 items-center gap-1 px-3 @min-[1024px]:px-5"
+          className="relative flex h-14 items-center justify-between gap-1 px-3"
           data-component="SlurpHome.HeaderBar"
         >
-          {/* The desktop sidebar carries the brand and the balance, so the bar keeps only the menu there. */}
-          <span className="@min-[1024px]:hidden">
-            <SlpWordmark />
-          </span>
-          <button
-            ref={headerMenuRef}
-            type="button"
-            onClick={() => setHeaderMenuOpen((open) => !open)}
-            aria-haspopup="menu"
-            aria-expanded={headerMenuOpen}
-            className="ms-auto flex h-11 w-11 items-center justify-center rounded-full text-[var(--slurp-muted)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] [&_svg]:!text-current"
-            title={localizeUi("ui.slurp.home.moreActions", { defaultValue: "More actions" })}
-            aria-label={localizeUi("ui.slurp.home.moreActions", { defaultValue: "More actions" })}
-          >
-            {isRefreshing ? <Loader2 size={20} className="animate-spin" /> : <Ellipsis size={20} aria-hidden="true" />}
-          </button>
-          <SlpSheet
-            open={headerMenuOpen}
-            onClose={() => setHeaderMenuOpen(false)}
-            title={localizeUi("ui.slurp.home.moreActions", { defaultValue: "More actions" })}
-            kind="menu"
-            anchorRef={headerMenuRef}
-          >
-            <SlpSheetItem
-              disabled={isRefreshing}
-              onSelect={() => {
-                setHeaderMenuOpen(false);
-                onRefresh();
-              }}
-            >
-              <RefreshCw aria-hidden="true" />
-              {localizeUi("ui.noodle.noodlehome.refreshTimeline")}
-            </SlpSheetItem>
-          </SlpSheet>
-          <button
-            type="button"
-            onClick={onOpenWallet}
-            className="flex h-11 max-w-full shrink-0 items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] @min-[1024px]:hidden"
-            aria-label={
-              walletCoins === null
-                ? localizeUi("ui.slurp.navigation.wallet")
-                : slpCoinPlainText(localizeUi("ui.slurp.wallet.balance", { amount: walletCoins }))
-            }
-            title={
-              walletCoins === null
-                ? localizeUi("ui.slurp.navigation.wallet")
-                : slpCoinPlainText(localizeUi("ui.slurp.wallet.balance", { amount: walletCoins }))
-            }
-          >
-            <span className={cn(SLP_BALANCE_CHIP_CLASS, "h-9 transition-colors hover:bg-[var(--accent)]")}>
-              <SlurpCoinAmount amount={walletCoins ?? "…"} watchAmount={walletCoins ?? undefined} />
-            </span>
-          </button>
+          <SlpWordmark />
+          <SlpBalanceChip />
         </div>
       </div>
       {/* Part of the page, not the bar: the strip belongs to Home, so it stays put while the
@@ -397,7 +336,8 @@ export function ViewerHub({
         onOpenMoment={setActiveMomentId}
         onAddStory={onAddStory}
         embedded
-        isLoading={isLoading}
+        // No feed yet (loading, or the query has not started) is not "nothing new".
+        isLoading={isLoading || (!scope && !isError)}
         isError={isError}
       />
       <div className="hidden border-b border-[var(--noodle-divider)] py-3 @min-[1024px]:block @min-[1024px]:px-4 @min-[1280px]:hidden">
@@ -430,77 +370,70 @@ export function ViewerHub({
       {!isLoading && !isError && scope && (
         <div className="pb-2 @min-[1024px]:bg-[var(--slurp-canvas)]">
           <div className="relative isolate overflow-hidden px-3 @min-[1024px]:px-5" data-slurp-home-masthead>
-            {/* Flat underline tabs: the accent marks the active feed, nothing else competes with the posts. */}
-            <div className="flex items-center justify-between gap-3">
-              <div
-                className="relative grid flex-1 grid-cols-2 @min-[1024px]:max-w-xs"
-                role="tablist"
-                aria-label={localizeUi("ui.noodle.viewerhub.feedTabs")}
+            {/* One row, one purpose: which feed, how to show it, and the hub's ⋯ (refresh). */}
+            <div className="flex items-center gap-2">
+              <SlpSegment
+                label={localizeUi("ui.noodle.viewerhub.feedTabs")}
+                value={tab}
+                onChange={onTabChange}
+                className="min-w-0"
+                options={[
+                  { value: "following", label: localizeUi("ui.noodle.viewerhub.tabs.following") },
+                  { value: "all", label: localizeUi("ui.noodle.viewerhub.tabs.allCreators") },
+                ]}
+              />
+              <SlpSegment
+                label={localizeUi("ui.slurp.home.layout.label", { defaultValue: "Feed layout" })}
+                value={feedLayout}
+                onChange={setFeedLayout}
+                className="ms-auto shrink-0"
+                options={[
+                  {
+                    value: "list",
+                    label: localizeUi("ui.slurp.home.layout.list", { defaultValue: "List" }),
+                    icon: <List size={17} aria-hidden="true" />,
+                  },
+                  {
+                    value: "wall",
+                    label: localizeUi("ui.slurp.home.layout.wall", { defaultValue: "Media wall" }),
+                    icon: <LayoutGrid size={17} aria-hidden="true" />,
+                  },
+                ]}
+              />
+              <button
+                ref={headerMenuRef}
+                type="button"
+                onClick={() => setHeaderMenuOpen((open) => !open)}
+                aria-haspopup="menu"
+                aria-expanded={headerMenuOpen}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--slurp-muted)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] [&_svg]:!text-current"
+                title={localizeUi("ui.slurp.home.moreActions", { defaultValue: "More actions" })}
+                aria-label={localizeUi("ui.slurp.home.moreActions", { defaultValue: "More actions" })}
               >
-                {(
-                  [
-                    { id: "following", label: localizeUi("ui.noodle.viewerhub.tabs.following") },
-                    { id: "all", label: localizeUi("ui.noodle.viewerhub.tabs.allCreators") },
-                  ] as const
-                ).map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => onTabChange(option.id)}
-                    role="tab"
-                    aria-selected={tab === option.id}
-                    className={cn(
-                      "relative flex min-h-11 items-center justify-center px-3 text-sm font-bold text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)]",
-                      tab === option.id && "text-[var(--foreground)]",
-                    )}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-                {/* One underline that travels, rather than two that blink in and out. Half the row
-                  wide so the transform is a plain 0/100%, with the bar centred inside it. */}
-                <span
-                  className={cn(
-                    "pointer-events-none absolute bottom-0 left-0 h-0.5 w-1/2 transition-transform duration-200 ease-out motion-reduce:transition-none",
-                    tab === "all" && "translate-x-full",
-                  )}
-                  aria-hidden="true"
+                {isRefreshing ? (
+                  <Loader2 size={20} className="animate-spin" />
+                ) : (
+                  <Ellipsis size={20} aria-hidden="true" />
+                )}
+              </button>
+              <SlpSheet
+                open={headerMenuOpen}
+                onClose={() => setHeaderMenuOpen(false)}
+                title={localizeUi("ui.slurp.home.moreActions", { defaultValue: "More actions" })}
+                kind="menu"
+                anchorRef={headerMenuRef}
+              >
+                <SlpSheetItem
+                  disabled={isRefreshing}
+                  onSelect={() => {
+                    setHeaderMenuOpen(false);
+                    onRefresh();
+                  }}
                 >
-                  <span className="mx-auto block h-full w-12 rounded-full bg-[var(--noodle-accent)]" />
-                </span>
-              </div>
-              {/* List or media wall. Same feed, two ways to read it. */}
-              <div className="flex shrink-0 items-center gap-1 rounded-full bg-[var(--accent)] p-1 ring-1 ring-inset ring-[var(--noodle-divider)]">
-                {(
-                  [
-                    {
-                      id: "list",
-                      icon: List,
-                      label: localizeUi("ui.slurp.home.layout.list", { defaultValue: "List" }),
-                    },
-                    {
-                      id: "wall",
-                      icon: LayoutGrid,
-                      label: localizeUi("ui.slurp.home.layout.wall", { defaultValue: "Media wall" }),
-                    },
-                  ] as const
-                ).map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => setFeedLayout(option.id)}
-                    aria-pressed={feedLayout === option.id}
-                    title={option.label}
-                    aria-label={option.label}
-                    className={cn(
-                      "flex h-8 w-8 items-center justify-center rounded-full text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]",
-                      feedLayout === option.id && SLURP_TOGGLE_ACTIVE_CLASS,
-                    )}
-                  >
-                    <option.icon size={17} aria-hidden="true" />
-                  </button>
-                ))}
-              </div>
+                  <RefreshCw aria-hidden="true" />
+                  {localizeUi("ui.noodle.noodlehome.refreshTimeline")}
+                </SlpSheetItem>
+              </SlpSheet>
             </div>
           </div>
         </div>
@@ -721,8 +654,14 @@ export function ViewerHub({
           moment={activeMoment}
           personaId={scope?.viewer.entityId ?? null}
           isOwner={activeMoment.creator.profile.sourceAccountId === scope?.viewer.entityId}
-          index={activeMomentIndex}
-          total={moments.length}
+          // Progress counts this Creator's Stories only, so the bar shows where one Creator ends.
+          index={
+            moments.filter(
+              (moment, position) =>
+                position < activeMomentIndex && moment.creator.profile.id === activeMoment.creator.profile.id,
+            ).length
+          }
+          total={moments.filter((moment) => moment.creator.profile.id === activeMoment.creator.profile.id).length}
           unlockPending={unlockPending}
           subscriptionPending={togglePending}
           onClose={() => setActiveMomentId(null)}

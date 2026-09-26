@@ -110,7 +110,7 @@ export function ChoiceSetting<T extends string>({
               return variant === "cards" ? (
                 <label
                   key={option.value}
-                  className={`flex min-h-16 items-start gap-3 rounded-xl p-3 text-start ring-1 ring-inset transition-colors focus-within:ring-2 focus-within:ring-[var(--slurp-focus,var(--noodle-accent))] motion-reduce:transition-none ${off ? "cursor-not-allowed opacity-50" : "cursor-pointer"} ${checked ? "bg-[var(--slurp-nav-active)] ring-[var(--noodle-accent)]/45" : "bg-[var(--slurp-canvas,var(--background))] ring-[var(--slurp-outline,var(--border))] hover:bg-[var(--accent)]/40"}`}
+                  className={`flex min-h-16 items-start gap-3 rounded-xl p-3 text-start ring-1 ring-inset transition-colors focus-within:ring-2 focus-within:ring-[var(--slurp-focus,var(--noodle-accent))] motion-reduce:transition-none ${off ? "cursor-not-allowed opacity-50" : "cursor-pointer"} ${checked ? "bg-[image:var(--slurp-nav-active)] ring-[var(--noodle-accent)]/45" : "bg-[var(--slurp-canvas,var(--background))] ring-[var(--slurp-outline,var(--border))] hover:bg-[var(--accent)]/40"}`}
                 >
                   {input}
                   {Icon && (
@@ -132,7 +132,7 @@ export function ChoiceSetting<T extends string>({
               ) : (
                 <label
                   key={option.value}
-                  className={`flex min-h-10 min-w-0 items-center justify-center rounded-md px-3 text-center text-sm font-semibold transition-colors focus-within:ring-2 focus-within:ring-[var(--slurp-focus,var(--noodle-accent))] motion-reduce:transition-none ${oneRow ? "" : "flex-auto"} ${off ? "cursor-not-allowed" : "cursor-pointer"} ${checked ? "bg-[var(--slurp-nav-active)] text-[var(--slurp-text,var(--foreground))] shadow-sm ring-1 ring-inset ring-[var(--noodle-accent)]/45" : "text-[var(--slurp-muted,var(--muted-foreground))] hover:text-[var(--slurp-text,var(--foreground))]"}`}
+                  className={`flex min-h-10 min-w-0 items-center justify-center rounded-md px-3 text-center text-sm font-semibold transition-colors focus-within:ring-2 focus-within:ring-[var(--slurp-focus,var(--noodle-accent))] motion-reduce:transition-none ${oneRow ? "" : "flex-auto"} ${off ? "cursor-not-allowed" : "cursor-pointer"} ${checked ? "bg-[image:var(--slurp-nav-active)] text-[var(--slurp-text,var(--foreground))] shadow-sm ring-1 ring-inset ring-[var(--noodle-accent)]/45" : "text-[var(--slurp-muted,var(--muted-foreground))] hover:text-[var(--slurp-text,var(--foreground))]"}`}
                 >
                   {input}
                   <span className="truncate">{option.label}</span>

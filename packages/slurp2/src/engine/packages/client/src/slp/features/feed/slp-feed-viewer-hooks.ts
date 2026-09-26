@@ -284,7 +284,12 @@ export function useCreateCreatorInteraction() {
                 createdAt: new Date().toISOString(),
               };
               if (post.interactions.some((item) => item.id === interaction.id)) return post;
-              return { ...post, interactions: [...post.interactions, interaction] };
+              // Cards show `likeCount` (real likes + crowd), so a post like moves it with the heart.
+              return {
+                ...post,
+                interactions: [...post.interactions, interaction],
+                likeCount: input.parentInteractionId ? post.likeCount : post.likeCount + 1,
+              };
             }),
           })),
         };
@@ -333,21 +338,23 @@ export function useRemoveCreatorInteraction() {
           ...current,
           creators: current.creators.map((creator) => ({
             ...creator,
-            posts: creator.posts.map((post) =>
-              post.id !== input.postId
-                ? post
-                : {
-                    ...post,
-                    interactions: post.interactions.filter(
-                      (interaction) =>
-                        !(
-                          interaction.actorAccountId === (input.actorAccountId ?? input.personaId) &&
-                          interaction.type === input.type &&
-                          (interaction.parentInteractionId ?? null) === (input.parentInteractionId ?? null)
-                        ),
-                    ),
-                  },
-            ),
+            posts: creator.posts.map((post) => {
+              if (post.id !== input.postId) return post;
+              const interactions = post.interactions.filter(
+                (interaction) =>
+                  !(
+                    interaction.actorAccountId === (input.actorAccountId ?? input.personaId) &&
+                    interaction.type === input.type &&
+                    (interaction.parentInteractionId ?? null) === (input.parentInteractionId ?? null)
+                  ),
+              );
+              const removed = post.interactions.length - interactions.length;
+              return {
+                ...post,
+                interactions,
+                likeCount: input.parentInteractionId ? post.likeCount : Math.max(0, post.likeCount - removed),
+              };
+            }),
           })),
         };
       });

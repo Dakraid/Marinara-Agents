@@ -46,7 +46,7 @@ export function PersonaIdentityCard({
         {bannerSrc ? (
           <img src={bannerSrc} alt="" decoding="async" className="h-full w-full object-cover" />
         ) : (
-          <span className="block h-full w-full bg-[var(--slurp-hero)] opacity-80" aria-hidden="true" />
+          <span className="block h-full w-full bg-[image:var(--slurp-hero)] opacity-80" aria-hidden="true" />
         )}
         <span
           className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[var(--slurp-surface-raised)] to-transparent"

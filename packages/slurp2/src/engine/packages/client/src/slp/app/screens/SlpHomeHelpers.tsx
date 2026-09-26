@@ -253,7 +253,8 @@ export function SlurpAccessTransition({
     previousLocked.current = locked;
     if (!revealed) return;
     setCelebrating(true);
-    const timer = window.setTimeout(() => setCelebrating(false), reduceMotion ? 350 : 1_000);
+    // Long enough for the veil to dissolve (slp-veil-dissolve: 120 ms delay + 1 s).
+    const timer = window.setTimeout(() => setCelebrating(false), reduceMotion ? 350 : 1_200);
     return () => window.clearTimeout(timer);
   }, [locked, reduceMotion]);
 
@@ -279,7 +280,7 @@ export function SlurpAccessTransition({
           transition={{ duration: reduceMotion ? 0.12 : 0.42, ease: "easeOut" }}
         >
           {children}
-          {celebrating && !locked && <SlurpSparkleVeil className="z-20 rounded-xl opacity-80" />}
+          {celebrating && !locked && <SlurpSparkleVeil className="slp-veil-dissolve z-20 rounded-2xl" />}
         </motion.div>
       </AnimatePresence>
     </motion.div>
@@ -487,7 +488,9 @@ export function SlurpMediaDialog({
       title={title}
       width={story ? "max-w-xl" : "max-w-6xl"}
       mobileFullscreen
-      contentClassName="p-0 sm:p-0"
+      // `!`: the Modal content area carries px-5 py-4, which beats a plain p-0 in the CSS order and
+      // left the Story and the picture inset on phones.
+      contentClassName="!p-0"
       panelClassName={cn(
         "noodle-icon-scope overflow-hidden",
         story &&
@@ -499,23 +502,26 @@ export function SlurpMediaDialog({
       <div
         className={cn(
           "flex h-full min-h-0 flex-col",
-          story ? "relative sm:h-[min(90vh,56rem)]" : "sm:h-[min(84vh,48rem)] sm:flex-row",
+          story
+            ? "relative sm:h-[min(90vh,56rem)]"
+            : // Phones scroll the whole post, so the picture keeps most of the screen and the card follows it.
+              "max-sm:overflow-y-auto sm:h-[min(84vh,48rem)] sm:flex-row",
         )}
       >
         <div
           className={cn(
-            "relative flex flex-1 items-center justify-center overflow-hidden bg-black",
-            story ? "min-h-0" : "min-h-[16rem] sm:min-h-0",
+            "relative flex items-center justify-center overflow-hidden bg-black",
+            story ? "min-h-0 flex-1" : "h-[min(72dvh,40rem)] shrink-0 sm:h-auto sm:min-h-0 sm:flex-1",
           )}
         >
           {media}
         </div>
         <aside
           className={cn(
-            "flex min-h-0 w-full shrink-0 flex-col overflow-y-auto",
+            "flex w-full shrink-0 flex-col",
             story
-              ? "absolute inset-x-0 bottom-0 z-20 max-h-[46%] bg-gradient-to-t from-black via-black/88 to-transparent px-1 pb-2 pt-16 text-white"
-              : "border-t border-[var(--noodle-divider)] bg-[var(--slurp-surface)] sm:w-[24rem] sm:border-s sm:border-t-0 @min-[1280px]:w-[26rem]",
+              ? "absolute inset-x-0 bottom-0 z-20 max-h-[46%] min-h-0 overflow-y-auto bg-gradient-to-t from-black via-black/88 to-transparent px-1 pb-2 pt-16 text-white"
+              : "bg-[var(--slurp-surface-raised)] shadow-[var(--slurp-highlight)] sm:min-h-0 sm:w-[24rem] sm:overflow-y-auto @min-[1280px]:w-[26rem]",
           )}
         >
           {side}
@@ -560,7 +566,7 @@ export function SlurpPostDialog({
               src={source}
               alt={localizeUi("ui.noodle.post.imageBy", { name: authorName })}
               decoding="async"
-              className="relative z-10 max-h-full max-w-full object-contain outline outline-1 -outline-offset-1 outline-white/10"
+              className="relative z-10 h-full w-full object-contain"
             />
             {gallery.length > 1 && (
               <>
@@ -582,30 +588,32 @@ export function SlurpPostDialog({
                     <ChevronRight size={22} className="rtl:rotate-180" aria-hidden="true" />
                   </button>
                 </span>
-                <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center gap-2 bg-gradient-to-t from-black/80 to-transparent px-3 pb-3 pt-10">
-                  <p className="text-xs font-bold tabular-nums text-white/80" aria-live="polite">
-                    {localizeUi("ui.slurp.post.imageCounter", {
-                      index: index + 1,
-                      total: gallery.length,
-                      defaultValue: "{{index}} of {{total}}",
-                    })}
-                  </p>
-                  <ol className="flex max-w-full gap-2 overflow-x-auto pb-1">
-                    {gallery.map((imageUrl, position) => (
-                      <li key={`${imageUrl}-${position}`}>
-                        <SlurpPostDialogThumb
-                          imageUrl={imageUrl}
-                          selected={position === index}
-                          label={localizeUi("ui.slurp.post.showImage", {
-                            index: position + 1,
-                            defaultValue: "Show image {{index}}",
-                          })}
-                          onSelect={() => setIndex(position)}
-                        />
-                      </li>
-                    ))}
-                  </ol>
-                </div>
+                <p
+                  className="absolute start-1/2 top-3 z-20 -translate-x-1/2 rounded-full bg-black/55 px-2.5 py-1 text-xs font-semibold tabular-nums text-white ring-1 ring-inset ring-white/15 backdrop-blur-md"
+                  aria-live="polite"
+                >
+                  {localizeUi("ui.slurp.post.imageCounter", {
+                    index: index + 1,
+                    total: gallery.length,
+                    defaultValue: "{{index}} of {{total}}",
+                  })}
+                </p>
+                {/* Thumbnails sit under the picture, not on it. */}
+                <ol className="absolute inset-x-0 bottom-0 z-20 flex gap-1.5 overflow-x-auto bg-gradient-to-t from-black/70 to-transparent px-3 pb-3 pt-8 [justify-content:safe_center]">
+                  {gallery.map((imageUrl, position) => (
+                    <li key={`${imageUrl}-${position}`}>
+                      <SlurpPostDialogThumb
+                        imageUrl={imageUrl}
+                        selected={position === index}
+                        label={localizeUi("ui.slurp.post.showImage", {
+                          index: position + 1,
+                          defaultValue: "Show image {{index}}",
+                        })}
+                        onSelect={() => setIndex(position)}
+                      />
+                    </li>
+                  ))}
+                </ol>
               </>
             )}
           </>
@@ -641,8 +649,8 @@ function SlurpPostDialogThumb({
       aria-current={selected ? "true" : undefined}
       onClick={onSelect}
       className={cn(
-        "size-14 overflow-hidden rounded-lg bg-black/40 ring-1 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white",
-        selected ? "ring-2 ring-white" : "opacity-60 ring-white/25 hover:opacity-100",
+        "size-10 overflow-hidden rounded-lg bg-black/40 ring-1 transition-[opacity,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white",
+        selected ? "scale-105 ring-2 ring-white" : "opacity-55 ring-white/25 hover:opacity-100",
       )}
     >
       {source && <img src={source} alt="" decoding="async" className="h-full w-full object-cover" />}

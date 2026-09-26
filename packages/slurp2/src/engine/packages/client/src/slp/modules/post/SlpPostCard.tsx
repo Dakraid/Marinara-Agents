@@ -11,12 +11,16 @@ import type { ChatImage } from "../../../hooks/use-gallery";
 import { useNearViewportSlurpMediaSrc } from "../../base/media/slp-media-src";
 import { Avatar, labelClass } from "../../base/chrome/SlpChrome";
 import { playSlpPop } from "../sparkle/SlpSparkle";
+import { slpTagClass } from "../chrome/SlpButton";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { Image as ImageIcon } from "lucide-react";
 import { fieldClass, slpPostImagePrompt, textareaClass } from "./SlpPostHelpers";
 import {
-  countInteractions,
   createSlpLightboxImage,
+  SLP_FEED_MEDIA_FRAME_CLASS,
+  SlpPostImageSlot,
+  slpPostImageSlotState,
+  slpPostLikeCount,
   slpIconButtonClass,
   SlurpClampedText,
   slurpReplyThreads,
@@ -29,10 +33,8 @@ import { SlpPollCard } from "./SlpPollCard";
 import { PostImageEditControls } from "./SlpPostImageEditControls";
 import { SlpPostImageNav } from "./SlpPostImageNav";
 import { SlpPostMenu } from "./SlpPostMenu";
-import { toast } from "sonner";
 import { SlpReplyRow } from "./SlpReplyRow";
 import { SlpReplyComposer } from "./SlpReplyComposer";
-const SLURP_FEED_MEDIA_RATIO_CLASS = "aspect-[4/3] sm:aspect-[16/10]";
 export function SlpPostCard({
   post,
   ctx,
@@ -153,6 +155,7 @@ export function SlpPostCard({
   } = useNearViewportSlurpMediaSrc(activeImage?.imageUrl ?? post.imageUrl, { width: 960 });
   const displayedImageUrl = !hideImage && postImageSrc && postImageSrc !== failedImageUrl ? postImageSrc : null;
   const imageGenerationPending = ctx.generatingPostImageId === post.id;
+  const imageSlot = hideImage ? null : slpPostImageSlotState(post, imageGenerationPending, ctx.postManagement);
   const postMenuOpen = ctx.postMenuId === post.id;
   const reachBadge = slurpPostWentViral({ accountId: post.authorAccountId, postId: post.id, createdAt: post.createdAt })
     ? "viral"
@@ -246,6 +249,13 @@ export function SlpPostCard({
     ? (accountById.get(replyTarget.actorAccountId) ?? replyTarget.actorSnapshot)
     : author;
   const postLikePending = reactionPendingFor(post.id, "like");
+  const likeCount = slpPostLikeCount(post, rootPostInteractions);
+  const mediaFrame =
+    surface === "profile" ? "w-full rounded-xl aspect-[4/3] sm:aspect-[16/10]" : SLP_FEED_MEDIA_FRAME_CLASS;
+  const actionClass = cn(
+    slpIconButtonClass,
+    "rounded-full text-[13px] !text-[var(--slurp-muted)] hover:!text-[var(--slurp-text)] [&_svg]:!text-current",
+  );
   const postReplyPending = createInteractionPendingFor(post.id, "reply", replyParentInteractionId);
   const pollVotePending = createInteractionPendingFor(post.id, "vote");
   const editingExistingPoll = Boolean(poll && pollEditing);
@@ -353,20 +363,21 @@ export function SlpPostCard({
       className={cn(
         surface === "profile"
           ? "border-b border-[var(--noodle-divider)] px-4 py-5 transition-colors last:border-b-0 hover:bg-[var(--accent)]/20"
-          : "rounded-xl bg-[var(--slurp-surface)] px-4 py-5 shadow-[0_1px_0_var(--noodle-divider),0_20px_42px_-36px_rgba(0,0,0,0.95)] ring-1 ring-inset ring-[var(--noodle-divider)] transition-[background-color,box-shadow] hover:bg-[var(--slurp-surface-raised)] hover:shadow-[0_1px_0_color-mix(in_srgb,var(--noodle-accent)_30%,transparent),0_24px_46px_-32px_rgba(0,0,0,0.95)] motion-reduce:transition-none",
+          : // Glossy raised card: no border, soft shadow, 1 px top highlight; pictures run edge to edge.
+            "rounded-2xl bg-[var(--slurp-surface-raised)] px-4 py-4 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] transition-shadow duration-[var(--slurp-motion-base)] hover:shadow-[var(--slurp-shadow-floating),var(--slurp-highlight)] motion-reduce:transition-none",
         surface !== "profile" &&
           postKind === "poll" &&
-          "bg-[linear-gradient(145deg,var(--slurp-surface),color-mix(in_srgb,var(--noodle-accent)_5%,var(--slurp-surface)))]",
+          "bg-[linear-gradient(145deg,var(--slurp-surface-raised),color-mix(in_srgb,var(--noodle-accent)_6%,var(--slurp-surface-raised)))]",
         postMenuOpen && "relative z-40",
       )}
     >
-      <div className="flex gap-3">
+      <div className="flex items-center gap-3">
         {author ? (
           <button
             type="button"
             onClick={openPostAuthor}
             disabled={!canOpenAuthorProfile}
-            className="h-fit rounded-full text-left transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
+            className="h-fit shrink-0 rounded-full text-left transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
             title={
               canOpenAuthorProfile
                 ? localizeUi("ui.noodle.noodlehome.viewValue1", {
@@ -380,14 +391,15 @@ export function SlpPostCard({
         ) : (
           <AtSign size={28} className="text-[var(--noodle-accent-foreground)]" />
         )}
-        <div className="flex min-w-0 flex-1 items-start gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            {/* One line whatever the name (B17): the name truncates, the chip keeps its size. */}
+            <div className="flex min-w-0 items-center gap-2">
               <button
                 type="button"
                 onClick={openPostAuthor}
                 disabled={!canOpenAuthorProfile}
-                className="rounded-lg font-semibold transition-colors enabled:hover:text-[var(--noodle-accent-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:cursor-default"
+                className="min-w-0 truncate rounded-lg text-[15px] font-bold leading-5 transition-colors enabled:hover:text-[var(--noodle-accent-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:cursor-default"
               >
                 {author?.displayName ?? localizeUi("ui.slurp.profile.fallbackUser")}
               </button>
@@ -396,21 +408,21 @@ export function SlpPostCard({
                 title={localizeUi(
                   post.access === "locked" ? "ui.noodle.postaccess.unlocked.hint" : "ui.noodle.postaccess.public.hint",
                 )}
-                className={cn(
-                  "rounded-lg px-2 py-1 text-xs font-bold ring-1 ring-inset",
-                  post.access === "locked"
-                    ? "bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent-foreground)] ring-[var(--noodle-accent)]/25"
-                    : "bg-[var(--accent)] text-[var(--muted-foreground)] ring-[var(--noodle-divider)]",
-                )}
+                className={slpTagClass(post.access === "locked")}
               >
                 {localizeUi(post.access === "locked" ? "ui.noodle.postaccess.unlocked" : "ui.noodle.postaccess.public")}
               </span>
             </div>
-            <p className="text-xs font-medium !text-[var(--noodle-accent-foreground)]">
-              @{author?.handle ?? localizeUi("ui.slurp.profile.fallbackHandle")} ·{" "}
-              <SlpTimestamp value={post.createdAt} tappable />
+            <p className="mt-0.5 flex min-w-0 items-center text-xs font-medium leading-4 text-[var(--slurp-muted)]">
+              <span className="min-w-0 truncate">
+                @{author?.handle ?? localizeUi("ui.slurp.profile.fallbackHandle")}
+              </span>
+              <span className="shrink-0 whitespace-pre"> · </span>
+              <span className="shrink-0">
+                <SlpTimestamp value={post.createdAt} tappable />
+              </span>
               {reachBadge && (
-                <span className="ms-1.5 inline-flex items-center gap-1 rounded-full bg-[var(--noodle-accent)]/15 px-1.5 py-px text-[11px] font-bold text-[var(--noodle-accent-foreground)]">
+                <span className="ms-1.5 inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--noodle-accent)]/15 px-1.5 py-px text-[11px] font-bold text-[var(--noodle-accent-foreground)]">
                   {reachBadge === "viral" ? (
                     <Flame size={10} aria-hidden="true" />
                   ) : (
@@ -445,10 +457,8 @@ export function SlpPostCard({
           <div
             ref={observePostImage}
             className={cn(
-              "relative mt-4 flex max-h-[32rem] justify-center overflow-hidden bg-black/20 text-left ring-1 ring-inset ring-white/10 ring-offset-[var(--background)]",
-              surface === "profile"
-                ? "w-full rounded-xl"
-                : "-mx-4 w-[calc(100%+2rem)] rounded-none sm:mx-0 sm:w-full sm:rounded-xl",
+              "relative mt-3 flex max-h-[32rem] justify-center overflow-hidden bg-black/20 text-left",
+              surface === "profile" ? "w-full rounded-xl ring-1 ring-inset ring-white/10" : "-mx-4 w-[calc(100%+2rem)]",
             )}
           >
             {displayedImageUrl && (
@@ -472,7 +482,7 @@ export function SlpPostCard({
             )}
             {!displayedImageUrl ? (
               <span
-                className="block aspect-[4/3] w-full animate-pulse bg-[var(--muted)] motion-reduce:animate-none sm:aspect-[16/10]"
+                className={cn("block animate-pulse bg-[var(--muted)] motion-reduce:animate-none", mediaFrame)}
                 aria-hidden="true"
               />
             ) : imageCrop ? (
@@ -485,12 +495,7 @@ export function SlpPostCard({
                 })}
               />
             ) : (
-              <div
-                className={cn(
-                  "relative w-full overflow-hidden rounded-xl bg-[var(--slurp-media-stage,#17131a)]",
-                  SLURP_FEED_MEDIA_RATIO_CLASS,
-                )}
-              >
+              <div className={cn("relative overflow-hidden bg-[var(--slurp-media-stage,#17131a)]", mediaFrame)}>
                 <img
                   src={displayedImageUrl}
                   onError={() => setFailedImageUrl(displayedImageUrl)}
@@ -507,20 +512,27 @@ export function SlpPostCard({
               <SlpPostImageNav total={post.images.length} index={activeImageIndex} onSelect={setActiveImageIndex} />
             )}
           </div>
-        ) : post.imagePrompt && ctx.postManagement ? (
+        ) : imageSlot && (imageSlot === "pending" || promptDraft === null) ? (
+          <SlpPostImageSlot
+            state={imageSlot}
+            countFromMount={imageGenerationPending}
+            error={typeof post.metadata?.imageGenerationError === "string" ? post.metadata.imageGenerationError : null}
+            onRetry={
+              ctx.generatePostImage && shownImagePrompt?.trim()
+                ? () => ctx.generatePostImage?.(post, shownImagePrompt.trim())
+                : undefined
+            }
+            onEditPrompt={ctx.generatePostImage ? () => setPromptDraft(shownImagePrompt ?? "") : undefined}
+            className={surface === "profile" ? "mt-3 rounded-xl" : "-mx-4 mt-3 w-[calc(100%+2rem)]"}
+          />
+        ) : post.imagePrompt && ctx.postManagement && promptDraft === null ? (
           // Managers only. The draft is working material, and viewers were shown a block of prompt
           // text under every post whose picture had not been drawn yet.
           <div className="relative mt-3 rounded-xl border border-[var(--noodle-accent)]/35 bg-[var(--noodle-accent)]/10 p-3 pr-14 text-xs leading-5">
             <span className="mb-1 flex items-center gap-1.5 font-semibold text-[var(--noodle-accent-foreground)]">
               <ImageIcon size={13} aria-hidden="true" />
-              {post.metadata?.imageGenerationFailed === true
-                ? localizeUi("ui.slurp.image.failed", { defaultValue: "Picture failed" })
-                : localizeUi("ui.noodle.noodlepostcard.imagePrompt")}
+              {localizeUi("ui.noodle.noodlepostcard.imagePrompt")}
             </span>
-            {post.metadata?.imageGenerationFailed === true &&
-              typeof post.metadata.imageGenerationError === "string" && (
-                <span className="mb-1 block text-[var(--muted-foreground)]">{post.metadata.imageGenerationError}</span>
-              )}
             {post.imagePrompt}
             {ctx.postManagement && ctx.generatePostImage && promptDraft === null && (
               <button
@@ -673,10 +685,13 @@ export function SlpPostCard({
             onOpenProfile={openProfile}
           />
         )}
-        <div className="mt-5 flex items-center gap-2 border-t border-[var(--noodle-divider)] pt-3 tabular-nums">
+        <div className="-ms-3 mt-2 flex items-center gap-1 tabular-nums">
           <button
             type="button"
-            className={cn(slpIconButtonClass, "rounded-lg", likedByPersona && "bg-[var(--noodle-accent)]/10")}
+            className={cn(
+              actionClass,
+              likedByPersona && "!text-[var(--slurp-ink)] [&_svg]:!text-[var(--noodle-accent)]",
+            )}
             disabled={!personaAccount || postLikePending}
             onClick={(event) => {
               if (!likedByPersona) playSlpPop(event.currentTarget.querySelector("svg") ?? event.currentTarget);
@@ -700,11 +715,11 @@ export function SlpPostCard({
                 likedByPersona && "scale-110",
               )}
             />
-            {countInteractions(rootPostInteractions, "like")}
+            {likeCount}
           </button>
           <button
             type="button"
-            className={cn(slpIconButtonClass, "rounded-lg hover:text-[var(--noodle-accent-foreground)]")}
+            className={actionClass}
             disabled={!personaAccount}
             onClick={() => openReplyComposer(post.id)}
             title={localizeUi("ui.noodle.noodlepostcard.reply")}
@@ -716,7 +731,7 @@ export function SlpPostCard({
         </div>
         <SlurpLikedBy
           likes={rootPostInteractions.filter((interaction) => interaction.type === "like")}
-          total={countInteractions(rootPostInteractions, "like")}
+          total={likeCount}
           creatorAccountId={post.authorAccountId}
         />
         {replyPostId === post.id && !replyParentInteractionId && renderReplyComposer(false)}

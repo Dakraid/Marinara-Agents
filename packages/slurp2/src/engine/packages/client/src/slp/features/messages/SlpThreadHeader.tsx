@@ -5,6 +5,7 @@ import { SlurpRapportBadge, SlurpTierLadder } from "./SlpMessageInsights";
 import { SlpAnchoredPopover } from "../../base/chrome/SlpAnchoredPopover";
 import { HeaderIconButton } from "./SlpThreadChrome";
 import { SlurpCoinAmount } from "../../modules/coin/SlpCoin";
+import { SlpBalanceChip } from "../../modules/chrome/SlpShell";
 import type { SlurpThreadViewModel } from "./slp-thread-actions";
 
 /** The conversation header, its search bar, the commission ribbon and the request banner. */
@@ -194,6 +195,8 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
             </button>
           )}
         </div>
+        {/* The coin-fly target on phones: a tip or unlock in the thread lands on it. */}
+        <SlpBalanceChip className="ms-auto" />
         {/* Four header icons do not fit beside a name on a phone, so they fold into one menu there. */}
         {(relationship || threadId) && (
           <button
@@ -205,7 +208,7 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
             aria-label={localizeUi("ui.slurp.messages.moreActions", { defaultValue: "More actions" })}
             title={localizeUi("ui.slurp.messages.moreActions", { defaultValue: "More actions" })}
             className={cn(
-              "relative ml-auto flex min-h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[var(--muted-foreground)] transition-[background-color,transform] hover:bg-[var(--slurp-surface)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100 sm:hidden",
+              "relative flex min-h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[var(--muted-foreground)] transition-[background-color,transform] hover:bg-[var(--slurp-surface)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100 sm:hidden",
               headerMenuOpen && "bg-[var(--slurp-surface)] text-[var(--foreground)]",
             )}
           >

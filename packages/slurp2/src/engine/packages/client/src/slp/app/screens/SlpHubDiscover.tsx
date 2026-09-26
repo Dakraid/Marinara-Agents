@@ -1,4 +1,5 @@
 import { SlpEmptyState } from "../../modules/chrome/SlpStateKit";
+import { SlpBalanceChip } from "../../modules/chrome/SlpShell";
 import { ChevronLeft, Search, X } from "lucide-react";
 import { LoadMoreFeedButton, SLP_CREATOR_FEED_WINDOW_SIZE } from "./SlpHomeHelpers";
 import { HIDE_ON_SCROLL_CLASS } from "../../base/chrome/SlpChrome";
@@ -95,6 +96,7 @@ export function SlpHubDiscover({
             </button>
           )}
         </label>
+        <SlpBalanceChip />
       </div>
 
       {!searchTerm && (
