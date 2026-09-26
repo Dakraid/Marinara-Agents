@@ -13,7 +13,6 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-  useSyncExternalStore,
   type CSSProperties,
   type KeyboardEvent,
   type PointerEvent,
@@ -24,21 +23,10 @@ import { createPortal } from "react-dom";
 import { cn } from "../../../lib/utils";
 import { ModalPortalContext } from "../../../components/ui/Modal";
 import { useDialogFocusScope } from "../../../hooks/use-dialog-focus-scope";
-import { getSlpAccentStyle, SLP_TYPE, useSlpAccent } from "../../base/chrome/SlpChrome";
+import { getSlpAccentStyle, SLP_TYPE, useSlpAccent, useSlpMediaQuery } from "../../base/chrome/SlpChrome";
 import { SLP_MOTION, slpPrefersReducedMotion } from "../../base/chrome/slp-motion";
 
-const WIDE_QUERY = "(min-width: 768px)";
-const subscribeWide = (onChange: () => void) => {
-  const query = matchMedia(WIDE_QUERY);
-  query.addEventListener("change", onChange);
-  return () => query.removeEventListener("change", onChange);
-};
-const useWideScreen = () =>
-  useSyncExternalStore(
-    subscribeWide,
-    () => matchMedia(WIDE_QUERY).matches,
-    () => false,
-  );
+const useWideScreen = () => useSlpMediaQuery("(min-width: 768px)");
 
 /** Closes the Slurp overlay that is open now, so a second one never stacks on top of it. */
 let closeOpenOverlay: (() => void) | null = null;

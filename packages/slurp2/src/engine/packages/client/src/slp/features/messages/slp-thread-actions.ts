@@ -1,5 +1,4 @@
 import { slpCoinPlainText } from "../../modules/coin/SlpCoin";
-import { useDismissablePopover } from "./SlpMessageInsights";
 import { useLayoutEffect, useRef } from "react";
 import { toast } from "sonner";
 import { isCommissionRequest } from "./commissions/SlpCommissions";
@@ -28,9 +27,6 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
     composerTipNote,
     creatorReply,
     draft,
-    headerMenuOpen,
-    headerMenuRef,
-    headerMenuTriggerRef,
     localizeUi,
     messaging,
     ownsCreator,
@@ -43,22 +39,17 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
     setComposerTipNote,
     setDraft,
     setError,
-    setHeaderMenuOpen,
     setHiddenReplyIds,
     setPending,
     setReplyStatus,
     setSendRequest,
     setStandaloneTip,
-    setTierOpen,
     setToolTab,
     setToolsOpen,
     setTyping,
     subscribed,
     targetCreatorAccountId,
     thread,
-    tierOpen,
-    tierPopoverRef,
-    tierTriggerRef,
     tip,
     typing,
     typingTimeoutRef,
@@ -129,9 +120,6 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
     textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`;
   }, [draft]);
 
-  useDismissablePopover(headerMenuOpen, setHeaderMenuOpen, headerMenuRef, headerMenuTriggerRef);
-  useDismissablePopover(tierOpen, setTierOpen, tierPopoverRef, tierTriggerRef);
-
   const scrollToLatest = () => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     bottomRef.current?.scrollIntoView({ block: "end", behavior: reduceMotion ? "auto" : "smooth" });
@@ -194,7 +182,7 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
         title: localizeUi("ui.slurp.messages.sendRequestTitle", { defaultValue: "Send message request?" }),
         message: slpCoinPlainText(
           localizeUi("ui.slurp.messages.sendRequestDetail", {
-            defaultValue: "This costs {{fee}} <coin/>. It opens the conversation but does not guarantee a reply.",
+            defaultValue: "This costs {{fee}} <coin/>. It opens the chat. They reply if they feel like it.",
             fee: messaging.requestFee,
           }),
         ),
@@ -276,7 +264,7 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
           }),
         ),
         message: localizeUi("ui.slurp.messages.sendTipDetail", {
-          defaultValue: "A tip is a gift. It does not guarantee a reply.",
+          defaultValue: "A gift, no strings. They reply if they feel like it.",
         }),
         confirmLabel: localizeUi("ui.slurp.messages.sendTipConfirm", { defaultValue: "Send tip" }),
       });

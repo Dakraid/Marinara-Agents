@@ -1,10 +1,12 @@
-import { BriefcaseBusiness, Image as ImageIcon, Lock, MessageCircle, Palette } from "lucide-react";
+import { BriefcaseBusiness, Image as ImageIcon, MessageCircle, Palette } from "lucide-react";
+import { SlpLockGlyph } from "../../base/chrome/SlpGlyphs";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { SlurpCoin } from "../../modules/coin/SlpCoin";
 import { useSlurpConnections } from "../../base/state/slp-host-connections";
 import { useCreateSlurpCommission } from "../../features/messages/commissions/slp-commission-hooks";
 import type { SlurpMessage } from "../../features/messages/slp-messages-contract";
+
 import {
   useDraftSlurpCreatorReply,
   useForceSlurpReply,
@@ -34,6 +36,9 @@ import { useSlurpSettings, useUpdateSlurpSettings } from "../../features/setting
  * creator, a thread already generating, and a missing connection were all the same blank screen.
  */
 import { SLURP_MESSAGE_PAGE, type SlurpConversationDrawerMode } from "./SlpMessages";
+
+/** The one reading column for bubbles and composer on wide screens (~720 px). */
+export const SLP_THREAD_COLUMN_CLASS = "mx-auto w-full max-w-[45rem]";
 
 export interface SlurpThreadViewProps {
   threadId: string | null;
@@ -120,16 +125,12 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
   // Set when older entries are about to mount, so the viewport can be pinned to what it was on.
   const growAnchorRef = useRef<number | null>(null);
   const landedAtBottomRef = useRef(false);
-  const drawerRef = useRef<HTMLDialogElement | null>(null);
-  const drawerTriggerRef = useRef<HTMLButtonElement | null>(null);
   const searchTriggerRef = useRef<HTMLButtonElement | null>(null);
   const headerMenuTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const headerMenuRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [tierOpen, setTierOpen] = useState(false);
   const tierTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const tierPopoverRef = useRef<HTMLDivElement | null>(null);
   const [awayFromBottom, setAwayFromBottom] = useState(false);
   const messageSearchInputRef = useRef<HTMLInputElement | null>(null);
   const thread = threadQuery.data?.thread ?? null;
@@ -261,7 +262,7 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
             },
             {
               id: "creator",
-              icon: Lock,
+              icon: SlpLockGlyph,
               label: localizeUi("ui.slurp.messages.lockedContent", { defaultValue: "Locked content" }),
               detail: localizeUi("ui.slurp.messages.lockedContentDetail", { defaultValue: "Send a paid message" }),
               group: "creator" as const,
@@ -396,32 +397,9 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
     // `visibleCount`: a match in an older page only exists after the effect above mounts it.
   }, [currentSearchMatch, messageSearchIndex, searchMessageIds, visibleCount]);
 
-  useEffect(() => {
-    const dialog = drawerRef.current;
-    if (!dialog) return;
-    if (drawerMode && !dialog.open) {
-      // The mobile header menu closes before the drawer opens, so focus is already on <body>.
-      // The menu button is then the control that opened it.
-      const active = document.activeElement;
-      drawerTriggerRef.current =
-        active instanceof HTMLButtonElement && active !== document.body ? active : headerMenuTriggerRef.current;
-      dialog.showModal();
-    } else if (!drawerMode && dialog.open) {
-      dialog.close();
-    }
-    // Every open tab locks the page. The cleanup ran on each tab switch and unlocked it.
-    if (drawerMode) document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [drawerMode]);
-
-  const closeDrawer = () => {
-    const trigger = drawerTriggerRef.current;
-    setDrawerMode(null);
-    document.body.style.overflow = "";
-    window.requestAnimationFrame(() => trigger?.focus());
-  };
+  // Details / Memories / Commissions: an SlpSheet (phones, tablets) or a docked column (desktop);
+  // the sheet traps and returns focus itself.
+  const closeDrawer = () => setDrawerMode(null);
 
   const messageScrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -608,18 +586,14 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
     bottomRef,
     growAnchorRef,
     landedAtBottomRef,
-    drawerRef,
-    drawerTriggerRef,
     searchTriggerRef,
     headerMenuTriggerRef,
-    headerMenuRef,
     composerRef,
     headerMenuOpen,
     setHeaderMenuOpen,
     tierOpen,
     setTierOpen,
     tierTriggerRef,
-    tierPopoverRef,
     awayFromBottom,
     setAwayFromBottom,
     messageSearchInputRef,

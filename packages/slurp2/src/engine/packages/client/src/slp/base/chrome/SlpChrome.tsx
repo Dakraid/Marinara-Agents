@@ -6,7 +6,16 @@
 // ──────────────────────────────────────────────
 import { UserRound } from "lucide-react";
 import { useReducedMotion } from "framer-motion";
-import { createContext, type CSSProperties, type SyntheticEvent, useContext, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  type CSSProperties,
+  type SyntheticEvent,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { AvatarCrop } from "@marinara-engine/shared";
 import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
 import { cn, getAvatarCropStyle } from "../../../lib/utils";
@@ -14,6 +23,7 @@ import { useSlurpMediaSrc } from "../media/slp-media-src";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { SLURP_LOGO_SRC } from "./slp-logo";
 import { SLP_MOTION } from "./slp-motion";
+import { initials } from "./slp-initials";
 
 export const SLP_BLUE = "#7EA7FF";
 export const SLP_PINK = "#FF7EC1";
@@ -33,6 +43,19 @@ export const BOTTOM_SAFE_INSET =
 // The accent hex that drives `--noodle-accent` for every reused Noodle surface.
 // Provided at the shell root so descendants inherit via CSS var, and read here
 // so portaled popovers/modals (which escape the shell's CSS scope) can re-apply it.
+/** A live `matchMedia` answer (false on the server). Phones are `< 768px`, as for SlpSheet. */
+export function useSlpMediaQuery(query: string): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const list = matchMedia(query);
+      list.addEventListener("change", onChange);
+      return () => list.removeEventListener("change", onChange);
+    },
+    () => matchMedia(query).matches,
+    () => false,
+  );
+}
+
 export const SlpAccentContext = createContext<string>(SLP_BLUE);
 export const useSlpAccent = () => useContext(SlpAccentContext);
 // Icons take the pink *ink*, not the pink fill: the fill (#FF7EC1) is ~2.2:1 on the light canvas.
@@ -141,18 +164,18 @@ export const SLP_TYPE = {
 /** The one uppercase style in Slurp: a settings-group heading. Not for any other label. */
 export const SLP_EYEBROW_CLASS = "text-xs font-bold uppercase tracking-[0.14em] text-[var(--noodle-accent-foreground)]";
 
-export const labelClass = `${SLP_TYPE.meta} text-[var(--marinara-chat-chrome-panel-muted)]`;
+/**
+ * The settings-group recipe for fan pages (design language §7 Group / Row): one raised surface, no
+ * border, hairline rows. Headed by `SLP_EYEBROW_CLASS`, never boxed inside another box.
+ */
+export const SLP_GROUP_CLASS =
+  "overflow-hidden rounded-2xl bg-[var(--slurp-surface-raised)] shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] divide-y divide-[var(--noodle-divider)]";
 
-export function initials(name: string) {
-  return (
-    name
-      .split(/\s+/)
-      .map((part) => part[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase() || "N"
-  );
-}
+/** A search field on a fan page: a raised pill with room for a leading 16 px icon at `start-4`. */
+export const SLP_SEARCH_FIELD_CLASS =
+  "h-11 w-full rounded-full bg-[var(--slurp-surface-raised)] ps-11 pe-4 text-base shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] outline-none placeholder:text-[var(--slurp-muted)] focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] sm:text-sm";
+
+export const labelClass = `${SLP_TYPE.meta} text-[var(--marinara-chat-chrome-panel-muted)]`;
 
 export function SlpLogo({ className, src = SLP_LOGO_SRC }: { className?: string; src?: string }) {
   return <img src={src} alt="" className={cn("object-contain", className)} />;

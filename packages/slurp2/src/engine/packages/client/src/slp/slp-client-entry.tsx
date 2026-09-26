@@ -147,6 +147,11 @@ const SLURP_SHELL_STYLES = `
     :where(img[data-slp-fade]) { filter: none; transition: opacity 120ms linear; }
   }
   @keyframes slp-img-frame-sweep { 0% { background-position: 120% 0; } 70%, 100% { background-position: -20% 0; } }
+  /* A conversation on a phone is a full-screen task: its layer slides in from the side (push navigation). */
+  @media (prefers-reduced-motion: no-preference) {
+    .slp-task-in { animation: slp-task-in 320ms var(--slurp-ease, ease-out) both; }
+  }
+  @keyframes slp-task-in { from { opacity: 0; transform: translate3d(28px, 0, 0); } to { opacity: 1; transform: none; } }
   /* The ambient canvas (SlpCanvasAmbient): a new photo's colour fades in slowly over the last one. */
   .slp-ambient-in { animation: slp-ambient-in 1200ms var(--slurp-ease, ease-out) both; }
   @keyframes slp-ambient-in { from { opacity: 0; } to { opacity: 1; } }

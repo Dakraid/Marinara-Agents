@@ -1,9 +1,10 @@
-import { Megaphone, Minus, Plus } from "lucide-react";
+import { Megaphone } from "lucide-react";
 import { SlpLockGlyph } from "../../base/chrome/SlpGlyphs";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
-import { SlurpCoin, SlurpCoinAmount, SlurpCoinBurst, SlpCoinText } from "../../modules/coin/SlpCoin";
+import { SlurpCoinAmount, SlpCoinText } from "../../modules/coin/SlpCoin";
+import { SlpChip, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
 import { useSlurpWallet } from "../economy/slp-economy-contract";
 import { TIP_PRESETS } from "./SlpMessages";
 import {
@@ -454,15 +455,12 @@ const TIP_MAX = 9999;
 export function SlurpTipPanel({
   personaId,
   busy,
-  sendingAmount,
   allowAttach,
   onSendNow,
   onAttach,
 }: {
   personaId: string | null;
   busy: boolean;
-  /** The amount a send is in flight for, so its coin burst plays. */
-  sendingAmount: number | null;
   /** A Creator tipping from their own side has no "next message" to carry it. */
   allowAttach: boolean;
   onSendNow: (amount: number, note: string) => void;
@@ -484,43 +482,16 @@ export function SlurpTipPanel({
   };
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl bg-[var(--slurp-surface)] p-3 ring-1 ring-inset ring-[var(--noodle-divider)]">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => pick(amount - 5)}
-            disabled={amount <= 1}
-            aria-label={localizeUi("ui.slurp.messages.tipLess", { defaultValue: "Less" })}
-            className="flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-inset ring-[var(--noodle-divider)] transition-transform active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-40 motion-reduce:active:scale-100"
-          >
-            <Minus size={14} aria-hidden="true" />
-          </button>
-          <p
-            aria-live="polite"
-            className="relative flex min-w-24 items-center justify-center gap-1.5 text-2xl font-black tabular-nums"
-          >
-            <SlurpCoinBurst active={sendingAmount === amount} />
-            {valid ? amount : "–"}
-            <SlurpCoin size={22} />
-          </p>
-          <button
-            type="button"
-            onClick={() => pick(amount + 5)}
-            disabled={amount >= TIP_MAX}
-            aria-label={localizeUi("ui.slurp.messages.tipMore", { defaultValue: "More" })}
-            className="flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-inset ring-[var(--noodle-divider)] transition-transform active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-40 motion-reduce:active:scale-100"
-          >
-            <Plus size={14} aria-hidden="true" />
-          </button>
-        </div>
-        {balance !== undefined && (
-          <p className={cn("text-xs text-[var(--muted-foreground)]", short && "text-red-600 dark:text-red-400")}>
-            {localizeUi("ui.slurp.messages.tipBalance", { defaultValue: "Balance" })}{" "}
-            <SlurpCoinAmount amount={balance} />
-          </p>
-        )}
-      </div>
+    <div className="flex flex-col gap-3 px-1">
+      {/* One way to pick the amount: the chips or Other. The old ± stepper and big number said it twice. */}
+      {balance !== undefined && (
+        <p
+          aria-live="polite"
+          className={cn("text-xs text-[var(--slurp-muted)]", short && "text-[var(--slurp-danger)]")}
+        >
+          {localizeUi("ui.slurp.messages.tipBalance", { defaultValue: "Balance" })} <SlurpCoinAmount amount={balance} />
+        </p>
+      )}
 
       <div
         role="group"
@@ -528,20 +499,9 @@ export function SlurpTipPanel({
         className="flex flex-wrap items-center gap-1.5"
       >
         {TIP_PRESETS.map((preset) => (
-          <button
-            key={preset}
-            type="button"
-            aria-pressed={!custom && amount === preset}
-            onClick={() => pick(preset)}
-            className={cn(
-              "min-h-10 rounded-full px-4 text-xs font-bold tabular-nums ring-1 ring-inset ring-[var(--noodle-accent)]/40 transition-[background-color,transform] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:active:scale-100",
-              !custom && amount === preset
-                ? "bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)]"
-                : "text-[var(--noodle-accent-foreground)] hover:bg-[var(--noodle-accent)]/10",
-            )}
-          >
-            {preset}
-          </button>
+          <SlpChip key={preset} selected={!custom && amount === preset} onClick={() => pick(preset)}>
+            <SlurpCoinAmount amount={preset} />
+          </SlpChip>
         ))}
         <label className="sr-only" htmlFor="slurp-tip-custom">
           {localizeUi("ui.slurp.messages.customTipAmount", { defaultValue: "Custom tip amount" })}
@@ -558,7 +518,7 @@ export function SlurpTipPanel({
             setAmount(Math.floor(Number(event.target.value)));
           }}
           placeholder={localizeUi("ui.slurp.messages.customTipPlaceholder", { defaultValue: "Other" })}
-          className="h-10 w-24 rounded-full bg-[var(--slurp-canvas,var(--background))] px-4 text-xs tabular-nums outline-none ring-1 ring-inset ring-[var(--noodle-divider)] focus:ring-2 focus:ring-[var(--slurp-focus)]"
+          className="h-11 w-24 rounded-full bg-[var(--slurp-surface)] px-4 text-base tabular-nums outline-none ring-1 ring-inset ring-[var(--noodle-divider)] focus:ring-2 focus:ring-[var(--slurp-focus)] sm:text-[13px]"
         />
       </div>
 
@@ -571,14 +531,14 @@ export function SlurpTipPanel({
         maxLength={280}
         onChange={(event) => setNote(event.target.value)}
         placeholder={localizeUi("ui.slurp.messages.tipNoteOptional", { defaultValue: "Add a note (optional)" })}
-        className="h-10 rounded-full bg-[var(--slurp-canvas,var(--background))] px-4 text-sm outline-none ring-1 ring-inset ring-[var(--noodle-divider)] focus:ring-2 focus:ring-[var(--slurp-focus)]"
+        className="h-11 rounded-full bg-[var(--slurp-surface)] px-4 text-base outline-none ring-1 ring-inset ring-[var(--noodle-divider)] placeholder:text-[var(--slurp-muted)] focus:ring-2 focus:ring-[var(--slurp-focus)] sm:text-sm"
       />
 
       {allowAttach && (
         <label className="flex min-h-10 cursor-pointer items-center justify-between gap-3 px-1 text-xs font-semibold">
           <span>
             {localizeUi("ui.slurp.messages.tipWithMessage", { defaultValue: "With my next message" })}
-            <span className="block text-[0.68rem] font-normal text-[var(--muted-foreground)]">
+            <span className="block text-xs font-normal text-[var(--slurp-muted)]">
               {localizeUi("ui.slurp.messages.tipWithMessageHint", {
                 defaultValue: "The tip goes with the next message you send.",
               })}
@@ -598,11 +558,10 @@ export function SlurpTipPanel({
         </label>
       )}
 
-      <button
-        type="button"
+      <SlpPrimaryButton
         disabled={busy || !personaId || !valid || (short && !withAttach)}
         onClick={() => (withAttach ? onAttach(amount, note.trim()) : onSendNow(amount, note.trim()))}
-        className="flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-[var(--noodle-accent)] px-4 text-sm font-bold text-[var(--slurp-on-accent)] transition-transform active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:active:scale-100"
+        className="w-full"
       >
         {short && !withAttach ? (
           localizeUi("ui.slurp.messages.tipNotEnough", { defaultValue: "Not enough coins" })
@@ -615,10 +574,10 @@ export function SlurpTipPanel({
             {localizeUi("ui.slurp.messages.tipSendNow", { defaultValue: "Send {{amount}} <coin/>", amount })}
           </SlpCoinText>
         )}
-      </button>
-      <p className="text-center text-[0.65rem] text-[var(--muted-foreground)]">
+      </SlpPrimaryButton>
+      <p className="text-center text-xs text-[var(--slurp-muted)]">
         {localizeUi("ui.slurp.messages.sendTipDetail", {
-          defaultValue: "A tip is a gift. It does not guarantee a reply.",
+          defaultValue: "A gift, no strings. They reply if they feel like it.",
         })}
       </p>
     </div>

@@ -11,13 +11,13 @@ import {
   Search,
   ShieldCheck,
   Star,
-  Trash2,
   UserRound,
 } from "lucide-react";
 import { SlpHeartGlyph, SlpLockGlyph, SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { useState, type ReactNode } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
+import { SlpSegment } from "../../modules/chrome/SlpButton";
 import { SlurpPromptDebugPanel, useDismissablePopover } from "./SlpMessageInsightParts";
 export { SlurpPromptDebugPanel, useDismissablePopover };
 import type { SlurpRapport, SlurpThreadRelationship } from "./slp-messages-contract";
@@ -197,7 +197,7 @@ function StatusRow({
 function Field({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="min-w-0 rounded-xl bg-[var(--slurp-surface-raised)] px-2.5 py-2">
-      <div className="text-[0.6rem] uppercase tracking-[0.08em] text-[var(--muted-foreground)]">{label}</div>
+      <div className="text-xs text-[var(--slurp-muted)]">{label}</div>
       <div className="mt-0.5 break-words font-bold capitalize">{value}</div>
       {hint && <div className="mt-1 text-[0.65rem] leading-snug text-[var(--muted-foreground)]">{hint}</div>}
     </div>
@@ -301,7 +301,7 @@ export function SlurpTierLadder({ tier, className }: { tier: SlurpRapport["tier"
             </span>
             <span
               className={cn(
-                "w-full truncate text-center text-[0.62rem] leading-tight",
+                "w-full hyphens-auto break-words text-center text-[11px] leading-[13px]",
                 isCurrent ? "font-black text-[var(--foreground)]" : "text-[var(--muted-foreground)]",
               )}
             >
@@ -314,15 +314,7 @@ export function SlurpTierLadder({ tier, className }: { tier: SlurpRapport["tier"
   );
 }
 
-export function SlurpRelationshipPanel({
-  relationship,
-  onReset,
-  resetting,
-}: {
-  relationship: NonNullable<SlurpThreadRelationship>;
-  onReset: (() => void) | null;
-  resetting: boolean;
-}) {
+export function SlurpRelationshipPanel({ relationship }: { relationship: NonNullable<SlurpThreadRelationship> }) {
   const [advanced, setAdvanced] = useState(false);
   const { t: localizeUi } = useUiTranslation();
   const { creatorState, threadState, availability } = relationship;
@@ -339,53 +331,43 @@ export function SlurpRelationshipPanel({
   const modifiers = creatorState.modifiers ?? [];
 
   return (
-    <div className="mx-3 mt-2 flex max-h-[min(78vh,44rem)] min-h-0 shrink-0 flex-col overflow-hidden rounded-2xl bg-[var(--slurp-surface)] text-xs ring-1 ring-inset ring-[var(--noodle-divider)]">
-      <header className="shrink-0 border-b border-[var(--noodle-divider)] p-3">
+    <div className="mx-2 mt-1 flex min-h-0 shrink-0 flex-col overflow-hidden rounded-2xl bg-[var(--slurp-surface-raised)] text-xs shadow-[var(--slurp-highlight)]">
+      <header className="shrink-0 border-b border-[var(--noodle-divider)] p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-sm font-bold">Conversation overview</h2>
-            <p className="mt-1 text-3xl font-bold capitalize leading-none">{humanizeValue(relationship.tier)}</p>
-            <p className="mt-1.5 text-[0.68rem] text-[var(--muted-foreground)]">
+            <h2 className="text-xs font-semibold text-[var(--slurp-muted)]">Conversation overview</h2>
+            <p className="mt-0.5 text-xl font-extrabold capitalize leading-[26px]">
+              {humanizeValue(relationship.tier)}
+            </p>
+            <p className="mt-0.5 text-xs text-[var(--slurp-muted)]">
               {advanced
                 ? `Rapport ${relationship.score}/100 · mood ${mood > 0 ? `+${mood}` : mood}`
                 : `Where you stand with them · ${moodWord(mood)} right now`}
             </p>
-            <div
-              className="mt-3"
-              role="meter"
-              aria-label={localizeUi("ui.slurp.messages.relationshipLevel", { defaultValue: "Relationship level" })}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={relationship.score}
-              aria-valuetext={humanizeValue(relationship.tier)}
-            >
-              <SlurpTierLadder tier={relationship.tier as SlurpRapport["tier"]} />
-            </div>
           </div>
           {/* Both words are on screen, one selected. A single button that swapped its own label
               left it ambiguous whether it named the current mode or the one it would switch to. */}
-          <div
-            role="group"
-            aria-label="Detail level"
-            className="flex shrink-0 gap-0.5 rounded-lg bg-[var(--slurp-surface-raised)] p-0.5"
-          >
-            {([false, true] as const).map((mode) => (
-              <button
-                key={String(mode)}
-                type="button"
-                aria-pressed={advanced === mode}
-                onClick={() => setAdvanced(mode)}
-                className={cn(
-                  "min-h-9 rounded-[7px] px-2.5 text-[0.7rem] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none",
-                  advanced === mode
-                    ? "bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]"
-                    : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]",
-                )}
-              >
-                {mode ? "Advanced" : "Basic"}
-              </button>
-            ))}
-          </div>
+          <SlpSegment
+            label="Detail level"
+            value={advanced ? "advanced" : "basic"}
+            onChange={(value) => setAdvanced(value === "advanced")}
+            options={[
+              { value: "basic", label: "Basic" },
+              { value: "advanced", label: "Advanced" },
+            ]}
+            className="shrink-0"
+          />
+        </div>
+        <div
+          className="mt-4"
+          role="meter"
+          aria-label={localizeUi("ui.slurp.messages.relationshipLevel", { defaultValue: "Relationship level" })}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={relationship.score}
+          aria-valuetext={humanizeValue(relationship.tier)}
+        >
+          <SlurpTierLadder tier={relationship.tier as SlurpRapport["tier"]} />
         </div>
       </header>
 
@@ -690,23 +672,6 @@ export function SlurpRelationshipPanel({
           </div>
         )}
       </div>
-
-      {onReset && (
-        <footer className="shrink-0 border-t border-[var(--noodle-divider)] p-3">
-          <button
-            type="button"
-            disabled={resetting}
-            onClick={onReset}
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2 text-[0.7rem] font-bold text-red-600 ring-1 ring-inset ring-red-500/30 hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 dark:text-red-400"
-          >
-            <Trash2 size={14} aria-hidden="true" /> Clear conversation
-          </button>
-          <p className="mt-1.5 text-[0.65rem] text-[var(--muted-foreground)]">
-            Deletes every message here and closes any unfinished commission. What they remember of you is kept, and so
-            are coins, unlocks and finished commissions.
-          </p>
-        </footer>
-      )}
     </div>
   );
 }

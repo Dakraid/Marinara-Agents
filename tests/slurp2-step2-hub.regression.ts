@@ -51,10 +51,11 @@ for (const path of [
   "app/screens/SlpScreenHub.tsx",
   "app/screens/SlpScreenProfile.tsx",
   "app/screens/SlpHubDiscover.tsx",
-  "features/messages/SlpThreadHeader.tsx",
 ]) {
   assert.match(src(path), /<SlpBalanceChip/u, `${path} shows the shared chip`);
 }
+// Step 4 (user, 2026-09-26): no wallet coins in the thread header.
+assert.doesNotMatch(src("features/messages/SlpThreadHeader.tsx"), /<SlpBalanceChip/u);
 assert.doesNotMatch(hub, /SLP_BALANCE_CHIP_CLASS/u, "no copy of the chip in the hub");
 
 // Story shelf: no "Nothing new yet" before the feed exists; tall tiles with the Creator's avatar;

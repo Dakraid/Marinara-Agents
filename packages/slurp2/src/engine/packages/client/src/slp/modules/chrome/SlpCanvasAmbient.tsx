@@ -1,7 +1,7 @@
 // ──────────────────────────────────────────────
-// Ambient canvas (de-vibe pass): the room behind the app on a wide screen takes a soft wash of
+// Ambient canvas (de-vibe pass): the room behind the app takes a soft wash of
 // colour from the biggest photo in view, like a TV's ambient light. It replaces the three radial
-// orbs. Calm on purpose: it looks again at most once a second, only changes when another photo
+// orbs. On phones it shows behind the see-through nav and between cards, a little quieter. Calm on purpose: it looks again at most once a second, only changes when another photo
 // leads, and cross-fades slowly; no fade under reduced motion.
 // ──────────────────────────────────────────────
 import { useEffect, useRef, useState, type CSSProperties } from "react";
@@ -49,7 +49,7 @@ export function SlpCanvasAmbient() {
       ref={ref}
       aria-hidden="true"
       data-slp-canvas-ambient=""
-      className="pointer-events-none absolute inset-0 -z-10 hidden overflow-hidden opacity-[0.22] @min-[1024px]:block"
+      className="pointer-events-none absolute inset-0 -z-10 overflow-hidden opacity-[0.16] @min-[1024px]:opacity-[0.22]"
     >
       {layers.previous && !still && (
         <div key={layers.previous} style={{ ...LAYER, backgroundImage: `url("${layers.previous}")` }} />
