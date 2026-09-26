@@ -593,7 +593,7 @@ export function SlpOnboardingSteps({ model }: { model: SlurpOnboardingWizardMode
                     {name ? (
                       <>
                         <span className="font-semibold">{name}</span>
-                        {" — "}
+                        {" · "}
                       </>
                     ) : null}
                     {entry.reason}

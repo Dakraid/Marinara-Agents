@@ -20,8 +20,8 @@ import {
   RefreshCw,
   RotateCcw,
   Save,
-  Sparkles,
 } from "lucide-react";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -299,7 +299,7 @@ export function OverviewActivity({
           tone="waiting"
         />
         <ActivityRow
-          icon={<Sparkles size={15} />}
+          icon={<SlpSparkleGlyph size={15} />}
           label={t("ui.slurp.settings.overview.activity.textUsage")}
           value={usage}
           detail={t("ui.slurp.settings.overview.activity.today")}

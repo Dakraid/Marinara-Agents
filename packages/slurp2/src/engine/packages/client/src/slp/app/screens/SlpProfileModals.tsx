@@ -1,4 +1,5 @@
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { toast } from "sonner";
 import { Modal } from "../../../components/ui/Modal";
 import { getSlpAccentStyle } from "../../base/chrome/SlpChrome";
@@ -91,7 +92,7 @@ export function SlpProfileModals({ model }: { model: StageProfileViewModel }) {
               {generateProfileArtwork.isPending ? (
                 <Loader2 size={14} className="animate-spin" />
               ) : (
-                <Sparkles size={14} />
+                <SlpSparkleGlyph size={14} />
               )}
               {localizeUi("ui.slurp.artwork.generate")}
             </button>

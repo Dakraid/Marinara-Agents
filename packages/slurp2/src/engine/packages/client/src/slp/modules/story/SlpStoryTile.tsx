@@ -1,4 +1,4 @@
-import { Lock } from "lucide-react";
+import { SlpLockGlyph } from "../../base/chrome/SlpGlyphs";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import type { ReactNode } from "react";
 import { cn } from "../../../lib/utils";
@@ -100,7 +100,7 @@ export function SlpStoryTile({ creator, post, mediaSrc, fallback, isNew, onOpen 
       </span>
       {post.locked && (
         <span className="absolute end-1.5 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/55 text-white ring-1 ring-inset ring-white/15 backdrop-blur-sm">
-          <Lock size={12} aria-hidden="true" />
+          <SlpLockGlyph size={12} aria-hidden="true" />
         </span>
       )}
       <span className="absolute inset-x-2 bottom-2 truncate text-xs font-semibold text-white drop-shadow-sm">

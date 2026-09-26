@@ -1,4 +1,5 @@
-import { AlertTriangle, CheckCircle2, ChevronRight, Image, Sparkles } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronRight, Image } from "lucide-react";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { ShapeSetting } from "../../modules/settings/SlpShapeSetting";
 
 import { AdvancedGroup, Field, NumberSetting, SettingsGroup, Toggle } from "../../modules/settings/SlpSettingsControls";
@@ -49,7 +50,7 @@ export function SlpImagesPanel(page: SlpBackstagePageProps) {
             }}
             className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-xs font-semibold ring-1 ring-inset ring-[var(--slurp-outline)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
           >
-            <Sparkles size={14} aria-hidden="true" />
+            <SlpSparkleGlyph size={14} aria-hidden="true" />
             {t("ui.slurp.settings.backstage.wizard.imagesTitle", { defaultValue: "Set up images" })}
           </button>
         }

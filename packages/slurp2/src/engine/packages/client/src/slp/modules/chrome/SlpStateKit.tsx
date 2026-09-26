@@ -1,4 +1,5 @@
-import { ExternalLink, MessageCircle, Sparkles, TriangleAlert, type LucideIcon } from "lucide-react";
+import { ExternalLink, MessageCircle, TriangleAlert, type LucideIcon } from "lucide-react";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
@@ -217,7 +218,7 @@ export function SlpEmptyState({
   detail,
   action,
   onAction,
-  icon: Icon = Sparkles,
+  icon: Icon = SlpSparkleGlyph,
 }: {
   title: string;
   detail?: string;

@@ -28,7 +28,7 @@ const lines = (value: string) =>
 export function slpCanonAnchorDraft(anchors: SlpCanonAnchors | null): SlpCanonAnchorDraft {
   return {
     people: (anchors?.people ?? [])
-      .map((person) => (person.relation ? `${person.name} — ${person.relation}` : person.name))
+      .map((person) => (person.relation ? `${person.name} - ${person.relation}` : person.name))
       .join("\n"),
     places: (anchors?.places ?? []).join("\n"),
     work: (anchors?.work ?? []).join("\n"),

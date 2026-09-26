@@ -1,7 +1,8 @@
 import { SlpTimestamp } from "../../base/ui/SlpTimestamp";
 import { Fragment, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
-import { Heart, MessageCircle } from "lucide-react";
+import { MessageCircle } from "lucide-react";
+import { SlpHeartGlyph } from "../../base/chrome/SlpGlyphs";
 import { canManageSlpReply } from "../../../../../shared/src/slp/slp-interactions.js";
 import { type SlpAccount, type SlpInteraction } from "../../../../../shared/src/slp/slp-social.types.js";
 import type { SlpPostCardModel } from "./SlpPostTypes";
@@ -243,9 +244,9 @@ export function SlpReplyRow({
               }
               aria-busy={reactionPendingFor(post.id, "like", reply.id)}
             >
-              <Heart
+              <SlpHeartGlyph
                 size={14}
-                fill={likedReplyByPersona ? "currentColor" : "none"}
+                filled={likedReplyByPersona}
                 strokeWidth={likedReplyByPersona ? 2.4 : 2}
                 className={cn(
                   "transition-[fill,transform] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",

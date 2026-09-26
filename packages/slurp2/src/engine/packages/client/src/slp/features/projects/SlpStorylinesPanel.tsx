@@ -1,4 +1,5 @@
-import { Moon, Sparkles, Zap } from "lucide-react";
+import { Moon, Zap } from "lucide-react";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -19,7 +20,7 @@ import {
 } from "../../modules/creator/slp-story-activity-presets";
 import type { SlpBackstagePageProps } from "../backstage/slp-backstage-contract";
 
-const PRESET_ICONS = { calm: Moon, lively: Sparkles, handsOff: Zap } as const;
+const PRESET_ICONS = { calm: Moon, lively: SlpSparkleGlyph, handsOff: Zap } as const;
 
 /**
  * Everything that makes stories happen, in one place: whether events and storylines start by

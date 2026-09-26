@@ -5,7 +5,8 @@ import { StageProfileSourcePicker, DisclosureStep } from "./SlpScreenCreateProfi
 import { toast } from "sonner";
 import { StageProfileForm } from "../../features/creators/SlpStageProfileForm";
 import { openSlpCreatorSettings } from "../../features/creators/settings/slp-creator-settings-store";
-import { ChevronRight, LayoutGrid, Pencil, Plus, Sparkles } from "lucide-react";
+import { ChevronRight, LayoutGrid, Pencil, Plus } from "lucide-react";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { cn } from "../../../lib/utils";
 import { SLP_EYEBROW_CLASS, SLP_PAGE_SCROLL_CLASS } from "../../base/chrome/SlpChrome";
 import { SlurpCreatorProfileCard } from "../../modules/creator/SlpCreatorProfileCard";
@@ -341,7 +342,7 @@ export function renderSlurpHomeCreatorFlow({
               },
               {
                 label: localizeUi("ui.slurp.profile.addStory", { defaultValue: "Add story" }),
-                icon: Sparkles,
+                icon: SlpSparkleGlyph,
                 action: () => {
                   updateNoodlerPostDraft(selectedProfile.id, { postType: "story", poll: null, title: "" });
                   setComposerOpenSignal((tick) => tick + 1);

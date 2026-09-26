@@ -6,17 +6,14 @@
 // Split out of components/slurp/SlurpShell.tsx in Slice 10. It renders a wallet balance through
 // modules/coin, so it is a reusable module rather than base/ chrome.
 // ──────────────────────────────────────────────
+import { AtSign, ChartNoAxesColumn, ChevronDown, Settings2, Wallet } from "lucide-react";
 import {
-  AtSign,
-  ChartNoAxesColumn,
-  ChevronDown,
-  Home,
-  MessageCircle,
-  Search,
-  Settings2,
-  User,
-  Wallet,
-} from "lucide-react";
+  SlpDiscoverGlyph,
+  SlpHubGlyph,
+  SlpInboxGlyph,
+  SlpMoreGlyph,
+  SlpProfileGlyph,
+} from "../../base/chrome/SlpGlyphs";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   type ComponentProps,
@@ -52,6 +49,7 @@ import {
   SLP_TYPE,
   useHideOnScroll,
 } from "../../base/chrome/SlpChrome";
+import { SlpCanvasAmbient } from "./SlpCanvasAmbient";
 import { SlpSheet } from "./SlpSheet";
 import { PersonaIdentityCard, PersonaList } from "./SlpPersonaSwitcher";
 import { SlpPulseCard, SlpPulsePanel } from "./SlpPulse";
@@ -66,7 +64,7 @@ export function SlpWordmark() {
         <SlpShimmer />
       </span>
       <SlpLogo src={NOODLER_LOGO_SRC} className="h-8 w-12" />
-      <span className="text-xl font-black leading-none tracking-[-0.02em]">{SLURP_NAME}</span>
+      <span className="slp-display text-xl leading-none">{SLURP_NAME}</span>
     </span>
   );
 }
@@ -401,6 +399,7 @@ export function SlpShell({
             )}
             data-slurp-desktop-frame={slurpActive ? resolvedContextualRail : undefined}
           >
+            {slurpActive && <SlpCanvasAmbient />}
             <aside className="hidden w-[14rem] shrink-0 border-r border-[var(--noodle-divider)] bg-[radial-gradient(circle_at_12%_6%,color-mix(in_srgb,var(--noodle-accent)_13%,transparent),transparent_16rem),linear-gradient(180deg,color-mix(in_srgb,var(--slurp-glass)_92%,transparent),color-mix(in_srgb,var(--slurp-glass)_70%,transparent))] shadow-[var(--slurp-highlight)] backdrop-blur-xl @min-[1024px]:flex @min-[1024px]:flex-col">
               <div className="flex min-h-0 flex-1 flex-col px-4 py-4">
                 <div className="mb-5 flex h-12 items-center gap-3 px-2">
@@ -408,7 +407,7 @@ export function SlpShell({
                     src={slpCreatorActive || slurpActive ? NOODLER_LOGO_SRC : SLP_LOGO_SRC}
                     className="h-10 w-16"
                   />
-                  {slurpActive && <span className="text-lg font-black">{SLURP_NAME}</span>}
+                  {slurpActive && <span className="slp-display text-lg">{SLURP_NAME}</span>}
                 </div>
                 {desktopSidebar ?? (
                   <nav
@@ -421,7 +420,7 @@ export function SlpShell({
                       aria-current={homeActive ? "page" : undefined}
                       className={cn(SLURP_ROW_CLASS, homeActive && SLURP_ROW_ACTIVE_CLASS)}
                     >
-                      <Home size={22} className="!text-[var(--noodle-accent-foreground)]" />
+                      <SlpHubGlyph size={22} filled={homeActive} className="!text-[var(--noodle-accent-foreground)]" />
                       {desktopHomeLabel}
                     </button>
                     {onOpenSearch && (
@@ -431,7 +430,11 @@ export function SlpShell({
                         aria-current={activeView === "search" ? "page" : undefined}
                         className={cn(SLURP_ROW_CLASS, activeView === "search" && SLURP_ROW_ACTIVE_CLASS)}
                       >
-                        <Search size={22} className="!text-[var(--noodle-accent-foreground)]" />
+                        <SlpDiscoverGlyph
+                          size={22}
+                          filled={activeView === "search"}
+                          className="!text-[var(--noodle-accent-foreground)]"
+                        />
                         {slpCreatorActive
                           ? localizeUi("ui.noodle.noodleshell.discover")
                           : slurpActive
@@ -446,7 +449,11 @@ export function SlpShell({
                         aria-current={activeView === "messages" ? "page" : undefined}
                         className={cn(SLURP_ROW_CLASS, activeView === "messages" && SLURP_ROW_ACTIVE_CLASS)}
                       >
-                        <MessageCircle size={22} className="!text-[var(--noodle-accent-foreground)]" />
+                        <SlpInboxGlyph
+                          size={22}
+                          filled={activeView === "messages"}
+                          className="!text-[var(--noodle-accent-foreground)]"
+                        />
                         <span className="min-w-0 flex-1">
                           {localizeUi("ui.slurp.navigation.messages", { defaultValue: "Inbox" })}
                         </span>
@@ -464,7 +471,11 @@ export function SlpShell({
                         aria-current={activeView === "profile" ? "page" : undefined}
                         className={cn(SLURP_ROW_CLASS, activeView === "profile" && SLURP_ROW_ACTIVE_CLASS)}
                       >
-                        <User size={22} className="!text-[var(--noodle-accent-foreground)]" />
+                        <SlpProfileGlyph
+                          size={22}
+                          filled={activeView === "profile"}
+                          className="!text-[var(--noodle-accent-foreground)]"
+                        />
                         {slurpActive
                           ? localizeUi("ui.slurp.navigation.profile")
                           : localizeUi("ui.noodle.noodlehome.profile")}
@@ -690,7 +701,7 @@ export function SlpShell({
               aria-current={homeActive ? "page" : undefined}
               label={slurpActive ? desktopHomeLabel : homeLabel}
               badge={noodlerUnseenCount}
-              icon={<Home size={20} strokeWidth={homeActive ? 2.25 : 1.75} />}
+              icon={<SlpHubGlyph size={20} filled={homeActive} />}
             />
             {onOpenProfile && (
               <SlpNavTab
@@ -700,7 +711,7 @@ export function SlpShell({
                 label={
                   slurpActive ? localizeUi("ui.slurp.navigation.profile") : localizeUi("ui.noodle.noodlehome.profile")
                 }
-                icon={<User size={20} strokeWidth={activeView === "profile" ? 2.25 : 1.75} />}
+                icon={<SlpProfileGlyph size={20} filled={activeView === "profile"} />}
               />
             )}
             {onOpenMessages && (
@@ -710,7 +721,7 @@ export function SlpShell({
                 aria-current={activeView === "messages" ? "page" : undefined}
                 label={localizeUi("ui.slurp.navigation.messages", { defaultValue: "Inbox" })}
                 badge={notificationCount}
-                icon={<MessageCircle size={20} strokeWidth={activeView === "messages" ? 2.25 : 1.75} />}
+                icon={<SlpInboxGlyph size={20} filled={activeView === "messages"} />}
               />
             )}
             {onOpenSearch && (
@@ -725,7 +736,7 @@ export function SlpShell({
                       ? localizeUi("ui.slurp.navigation.search", { defaultValue: "Discover" })
                       : localizeUi("ui.noodle.noodlehome.searchNoodle")
                 }
-                icon={<Search size={20} strokeWidth={activeView === "search" ? 2.25 : 1.75} />}
+                icon={<SlpDiscoverGlyph size={20} filled={activeView === "search"} />}
               />
             )}
             <SlpNavTab
@@ -741,7 +752,11 @@ export function SlpShell({
                   : localizeUi("ui.noodle.noodleshell.noodleAccountMenu")
               }
               icon={
-                personaAccount ? <Avatar account={personaAccount} size="xs" /> : <AtSign size={20} strokeWidth={1.75} />
+                personaAccount ? (
+                  <Avatar account={personaAccount} size="xs" />
+                ) : (
+                  <SlpMoreGlyph size={20} filled={mobileDrawerOpen} />
+                )
               }
             />
           </div>

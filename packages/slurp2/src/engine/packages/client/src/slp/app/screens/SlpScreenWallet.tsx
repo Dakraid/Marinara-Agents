@@ -1,5 +1,6 @@
 import { WalletCards } from "lucide-react";
-import { ArrowDown, Crown, Gift, Lock, type LucideIcon, MessageCircle, RotateCcw } from "lucide-react";
+import { ArrowDown, Crown, Gift, type LucideIcon, MessageCircle, RotateCcw } from "lucide-react";
+import { SlpLockGlyph } from "../../base/chrome/SlpGlyphs";
 import { Avatar } from "../../base/chrome/SlpChrome";
 import { HelpTooltip } from "../../../components/ui/HelpTooltip";
 import { SlurpCoin, SlurpCoinBurst, SlpCoinText } from "../../modules/coin/SlpCoin";
@@ -91,7 +92,7 @@ export function SlurpWalletView({
   };
   const entryAppearance = (kind: string): { icon: LucideIcon; tone: string } => {
     if (kind === "tip" || kind === "income") return { icon: Gift, tone: "bg-emerald-500/14 text-emerald-300" };
-    if (kind === "unlock" || kind === "ppv") return { icon: Lock, tone: "bg-violet-500/14 text-violet-300" };
+    if (kind === "unlock" || kind === "ppv") return { icon: SlpLockGlyph, tone: "bg-violet-500/14 text-violet-300" };
     if (kind === "subscribe" || kind === "renew") return { icon: Crown, tone: "bg-fuchsia-500/14 text-fuchsia-300" };
     if (kind === "payout" || kind === "topUp")
       return { icon: ArrowDown, tone: "bg-[var(--noodle-accent)]/14 text-[var(--noodle-accent-foreground)]" };
@@ -158,7 +159,7 @@ export function SlurpWalletView({
                 <SlurpCoinAmount
                   amount={creator.earnings.coins}
                   watchAmount={creator.earnings.coins}
-                  className="mt-2 text-4xl font-black leading-none tabular-nums"
+                  className="slp-display mt-2 text-4xl leading-none tabular-nums"
                   size={28}
                 />
                 <p className="mt-0.5 text-[0.7rem] text-[var(--muted-foreground)]">
@@ -215,7 +216,7 @@ export function SlurpWalletView({
                   })}
                 />
               </div>
-              <p className="mt-2 flex items-center gap-2 text-4xl font-black leading-none tabular-nums">
+              <p className="slp-display mt-2 flex items-center gap-2 text-4xl leading-none tabular-nums">
                 <SlurpCoinAmount amount={coins} watchAmount={coins} size={26} />
               </p>
               <p className="mt-1 text-xs text-[var(--muted-foreground)]">

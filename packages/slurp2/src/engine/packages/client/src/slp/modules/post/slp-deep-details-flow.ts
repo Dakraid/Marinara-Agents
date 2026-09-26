@@ -90,9 +90,9 @@ function postNodes(data: SlpDeepDetailsResponse, details: SlpDeepDetailsRecord):
     .map(([intent, weight]) => `${intent} ${weight}`)
     .join(", ");
   const scene = details.modelOutput.scene;
-  const sceneShort = scene ? [scene.setting, scene.action].filter(Boolean).join(" — ") : null;
+  const sceneShort = scene ? [scene.setting, scene.action].filter(Boolean).join(" · ") : null;
   const project = plan.project
-    ? `${plan.project.title}${plan.project.chapter ? ` — ${plan.project.chapter}` : ""}`
+    ? `${plan.project.title}${plan.project.chapter ? ` · ${plan.project.chapter}` : ""}`
     : null;
   return [
     {

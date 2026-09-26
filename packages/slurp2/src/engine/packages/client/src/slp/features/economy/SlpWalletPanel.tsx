@@ -27,7 +27,7 @@ export function SlpWalletPanel(page: SlpBackstagePageProps) {
         <p>
           {t("ui.slurp.settings.wallet.explainer", {
             defaultValue:
-              "With SlurpCoins off, prices are decoration and nothing is ever charged. With them on, unlocking a post and subscribing to a creator both cost SlurpCoins, and running out has consequences: a subscription you cannot pay for lapses.",
+              "Off: every unlock and subscription is on the house. On: unlocking a post and subscribing to a creator take SlurpCoins from your wallet, and running out has consequences: a subscription you cannot pay for lapses.",
           })}
         </p>
         <p>
@@ -41,10 +41,10 @@ export function SlpWalletPanel(page: SlpBackstagePageProps) {
         <Toggle
           settingKey="walletEnabled"
           label={t("ui.slurp.settings.wallet.enabled", {
-            defaultValue: "SlurpCoins actually cost something",
+            defaultValue: "Spending costs SlurpCoins",
           })}
           detail={t("ui.slurp.settings.wallet.enabledDetail", {
-            defaultValue: "Off keeps prices as decoration, which is how Slurp has always behaved.",
+            defaultValue: "Off puts every unlock and subscription on the house.",
           })}
           value={settings.walletEnabled}
           onChange={(value) => update("walletEnabled", value)}

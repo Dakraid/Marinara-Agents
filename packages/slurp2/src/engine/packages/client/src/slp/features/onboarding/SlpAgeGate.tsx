@@ -1,7 +1,8 @@
 // Slurp opt-in surface: explain the feature, then require an explicit adult confirmation.
 // The explainer runs first because this modal is the opt-in — the user has to be able to learn
 // what NoodleR is, and back out, before Creator setup starts.
-import { Check, CreditCard, Loader2, Lock, Sparkles, Users } from "lucide-react";
+import { Check, CreditCard, Loader2, Users } from "lucide-react";
+import { SlpLockGlyph, SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 
@@ -128,8 +129,8 @@ export function SlurpAgeGate({ personaName, onComplete, onCelebrate, onLeave, is
         <ul className="space-y-2.5">
           {[
             { icon: <Users size={15} />, key: "noodle" },
-            { icon: <Lock size={15} />, key: "noodler" },
-            { icon: <Sparkles size={15} />, key: "you" },
+            { icon: <SlpLockGlyph size={15} />, key: "noodler" },
+            { icon: <SlpSparkleGlyph size={15} />, key: "you" },
           ].map((row) => (
             <li
               key={row.key}
@@ -201,7 +202,7 @@ export function SlurpAgeGate({ personaName, onComplete, onCelebrate, onLeave, is
         {charged ? (
           <>
             <Check size={13} className="text-emerald-500" />
-            {tt("cardFree", "Charged $0.00 — it's free, we can't afford servers.")}
+            {tt("cardFree", "Charged $0.00. It's free, we can't afford servers.")}
           </>
         ) : (
           <>

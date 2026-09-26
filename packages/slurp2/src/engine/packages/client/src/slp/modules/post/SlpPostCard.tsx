@@ -1,5 +1,6 @@
 import { SlpTimestamp } from "../../base/ui/SlpTimestamp";
-import { AtSign, ChevronDown, Heart, Flame, TrendingUp, MessageCircle, RefreshCw } from "lucide-react";
+import { AtSign, ChevronDown, Flame, TrendingUp, MessageCircle, RefreshCw } from "lucide-react";
+import { SlpHeartGlyph } from "../../base/chrome/SlpGlyphs";
 import { Fragment, useMemo, useRef, useState } from "react";
 import { slurpPostWentViral, slurpReachWeek } from "../../../../../shared/src/slp/slp-reach.js";
 import { readSlpPollFromMetadata } from "../../../../../shared/src/slp/slp-polls.js";
@@ -706,10 +707,9 @@ export function SlpPostCard({
             aria-busy={postLikePending}
             data-noodle-reaction="like"
           >
-            <Heart
+            <SlpHeartGlyph
               size={18}
-              fill={likedByPersona ? "currentColor" : "none"}
-              strokeWidth={likedByPersona ? 2.4 : 2}
+              filled={likedByPersona}
               className={cn(
                 "transition-[fill,transform] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
                 likedByPersona && "scale-110",

@@ -1,4 +1,5 @@
-import { Lock, Megaphone, Minus, Plus } from "lucide-react";
+import { Megaphone, Minus, Plus } from "lucide-react";
+import { SlpLockGlyph } from "../../base/chrome/SlpGlyphs";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
@@ -155,7 +156,7 @@ export function CreatorMessageTools({
           aria-expanded={open}
           className="flex min-h-11 w-full items-center gap-2 px-3 text-left text-xs font-bold transition-colors hover:bg-[var(--noodle-accent)]/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none"
         >
-          <Lock size={14} className="text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
+          <SlpLockGlyph size={14} className="text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
           {localizeUi("ui.slurp.messages.sendPpv", { defaultValue: "Send locked content" })}
         </button>
       )}

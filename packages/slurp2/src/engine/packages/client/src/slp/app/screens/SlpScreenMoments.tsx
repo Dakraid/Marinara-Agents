@@ -1,4 +1,5 @@
-import { ChevronLeft, ChevronRight, Clock3, Eye, Heart, Link, Lock, Maximize2, Minimize2, Plus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock3, Eye, Link, Maximize2, Minimize2, Plus, X } from "lucide-react";
+import { SlpHeartGlyph, SlpLockGlyph } from "../../base/chrome/SlpGlyphs";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import type { SlpCreatorPostView } from "../../../../../shared/src/slp/slp-social.types.js";
@@ -382,7 +383,7 @@ export function SlurpMomentViewer({
         <div data-component="SlurpHome.MomentViewer" className="flex flex-col gap-3 p-4 text-shadow-sm">
           {moment.post.locked && (
             <span className="inline-flex h-6 w-fit items-center gap-1 rounded-full bg-white/12 px-2.5 text-[11px] font-semibold ring-1 ring-inset ring-white/20 backdrop-blur-sm">
-              <Lock size={12} aria-hidden="true" /> {localizeUi("ui.slurp.locked.blurredPreview")}
+              <SlpLockGlyph size={12} aria-hidden="true" /> {localizeUi("ui.slurp.locked.blurredPreview")}
             </span>
           )}
           {moment.post.title && <h3 className="text-lg font-bold leading-tight">{moment.post.title}</h3>}
@@ -406,7 +407,7 @@ export function SlurpMomentViewer({
                     liked && "text-[var(--noodle-accent)]",
                   )}
                 >
-                  <Heart size={17} fill={liked ? "currentColor" : "none"} aria-hidden="true" />
+                  <SlpHeartGlyph size={17} filled={liked} aria-hidden="true" />
                   {likeCount}
                 </button>
               )}

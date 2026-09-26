@@ -6,17 +6,15 @@ import {
   Coffee,
   Crown,
   Handshake,
-  Heart,
-  Lock,
   MessageCircle,
   Palette,
   Search,
   ShieldCheck,
-  Sparkles,
   Star,
   Trash2,
   UserRound,
 } from "lucide-react";
+import { SlpHeartGlyph, SlpLockGlyph, SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { useState, type ReactNode } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
@@ -260,7 +258,7 @@ export function SlurpRapportBadge({ rapport, ownsCreator }: { rapport: SlurpRapp
 }
 
 const SLURP_TIERS = ["stranger", "acquaintance", "regular", "favourite", "whale"] as const;
-const SLURP_TIER_ICONS: Record<SlurpRapport["tier"], typeof Heart> = {
+const SLURP_TIER_ICONS: Record<SlurpRapport["tier"], typeof SlpHeartGlyph> = {
   stranger: UserRound,
   acquaintance: Handshake,
   regular: Coffee,
@@ -439,7 +437,7 @@ export function SlurpRelationshipPanel({
             </PanelSection>
 
             <PanelSection
-              icon={Sparkles}
+              icon={SlpSparkleGlyph}
               title="This conversation"
               summary={`${humanizeValue(threadState.posture)} · ${humanizeValue(threadState.adultLevel)}`}
               defaultOpen
@@ -478,7 +476,7 @@ export function SlurpRelationshipPanel({
               />
               {cooling && (
                 <StatusRow
-                  icon={Lock}
+                  icon={SlpLockGlyph}
                   tone="warning"
                   title="Taking space from this conversation"
                   detail="She is not answering until the cool-off ends."
@@ -585,7 +583,7 @@ export function SlurpRelationshipPanel({
           </div>
         ) : (
           <div className="flex flex-col">
-            <PanelSection icon={Sparkles} title="Right now" summary={humanizeValue(moodWord(mood))} defaultOpen>
+            <PanelSection icon={SlpSparkleGlyph} title="Right now" summary={humanizeValue(moodWord(mood))} defaultOpen>
               <DivergingBar
                 label="How this conversation is going"
                 value={mood}
@@ -596,7 +594,7 @@ export function SlurpRelationshipPanel({
               />
               {cooling ? (
                 <StatusRow
-                  icon={Lock}
+                  icon={SlpLockGlyph}
                   tone="warning"
                   title="Taking space from this conversation"
                   detail="Give them some time. They will pick it back up afterwards."
@@ -644,7 +642,7 @@ export function SlurpRelationshipPanel({
                 {ADULT_LEVEL_HINT[threadState.adultLevel]}
               </p>
               <StatusRow
-                icon={blockedBy ? Lock : Heart}
+                icon={blockedBy ? SlpLockGlyph : SlpHeartGlyph}
                 tone={blockedBy ? "warning" : "good"}
                 title={blockedBy ? "This is as far as it goes for now" : "There is room for this to go further"}
                 detail={
@@ -682,7 +680,7 @@ export function SlurpRelationshipPanel({
               </div>
               {relationship.strikes > 0 && (
                 <StatusRow
-                  icon={Lock}
+                  icon={SlpLockGlyph}
                   tone="warning"
                   title={`${relationship.strikes} strike${relationship.strikes === 1 ? "" : "s"} on this conversation`}
                   detail="Two inside a fortnight and they stop answering for good."

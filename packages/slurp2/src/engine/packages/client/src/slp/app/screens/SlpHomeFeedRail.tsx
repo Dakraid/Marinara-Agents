@@ -1,4 +1,5 @@
-import { Crown, Heart, Search, X } from "lucide-react";
+import { Crown, Search, X } from "lucide-react";
+import { SlpHeartGlyph } from "../../base/chrome/SlpGlyphs";
 import { SubscriptionSections } from "./SlpScreenSubscriptions";
 import { cn } from "../../../lib/utils";
 import { Avatar } from "../../base/chrome/SlpChrome";
@@ -72,7 +73,7 @@ export function SlpHomeFeedRail({ model, showDiscovery }: Pick<SlurpHomeHostView
               >
                 {(
                   [
-                    ["likes", Heart, localizeUi("ui.slurp.discover.likes", { defaultValue: "Likes" })],
+                    ["likes", SlpHeartGlyph, localizeUi("ui.slurp.discover.likes", { defaultValue: "Likes" })],
                     [
                       "subscribers",
                       Crown,
@@ -142,7 +143,7 @@ export function SlpHomeFeedRail({ model, showDiscovery }: Pick<SlurpHomeHostView
                           {discoverRank === "subscribers" ? (
                             <Crown size={12} aria-hidden="true" />
                           ) : (
-                            <Heart size={12} fill="currentColor" aria-hidden="true" />
+                            <SlpHeartGlyph size={12} filled aria-hidden="true" />
                           )}
                           {score.toLocaleString()}
                         </span>

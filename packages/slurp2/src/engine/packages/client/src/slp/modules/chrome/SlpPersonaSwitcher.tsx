@@ -1,5 +1,6 @@
 // Persona identity card and switcher list, split out of components/slurp/SlurpShell.tsx in Slice 10.
-import { AtSign, Sparkles } from "lucide-react";
+import { AtSign } from "lucide-react";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 
 import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
 import { cn } from "../../../lib/utils";
@@ -110,7 +111,7 @@ export function PersonaIdentityCard({
             onClick={action}
             className="mt-3 flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-[var(--noodle-accent)]/12 text-xs font-bold text-[var(--noodle-accent-foreground)] ring-1 ring-inset ring-[var(--noodle-accent)]/30 transition-colors hover:bg-[var(--noodle-accent)]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
           >
-            <Sparkles size={14} />
+            <SlpSparkleGlyph size={14} />
             {localizeUi("ui.slurp.account.becomeCreator", { defaultValue: "Become a creator" })}
           </button>
         )}

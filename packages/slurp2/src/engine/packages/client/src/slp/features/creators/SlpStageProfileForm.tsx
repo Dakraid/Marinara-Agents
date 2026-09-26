@@ -2,18 +2,8 @@ import { createPortal } from "react-dom";
 import { useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { ModalPortalContext } from "../../../components/ui/Modal";
 import { useTranslation as useUiTranslation } from "react-i18next";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  ChevronDown,
-  Link,
-  Loader2,
-  Sparkles,
-  Trash2,
-  Upload,
-  UserRound,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, Link, Loader2, Trash2, Upload, UserRound } from "lucide-react";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import type { SlpCreatorStageProfile, SlpIdentityDisclosure } from "../../../../../shared/src/slp/slp-social.types.js";
 import type { SlurpStageProfileInput } from "../../base/state/slp-state-types";
 import { getSlpAccentStyle, SLP_PINK, ProfileInitial } from "../../base/chrome/SlpChrome";
@@ -414,7 +404,7 @@ export function StageProfileForm({
         <div className="rounded-lg border border-[var(--noodle-divider)] bg-[var(--accent)]/40 p-4">
           <div className="flex items-start gap-3">
             <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent-foreground)]">
-              <Sparkles size={16} />
+              <SlpSparkleGlyph size={16} />
             </span>
             <div className="min-w-0">
               <p className="text-sm font-bold">
@@ -593,14 +583,14 @@ export function StageProfileForm({
               disabled={isPending}
               className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-[var(--noodle-divider)] px-3 text-sm font-semibold hover:bg-[var(--accent)] disabled:opacity-50"
             >
-              <Sparkles size={16} className="text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
+              <SlpSparkleGlyph size={16} className="text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
               {localizeUi("ui.noodle.stageprofileform.aiGuidance")}
             </button>
           ) : (
             <details className="group overflow-visible rounded-lg border border-[var(--noodle-divider)]">
               <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--accent)]/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)] [&::-webkit-details-marker]:hidden">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent-foreground)]">
-                  <Sparkles size={16} />
+                  <SlpSparkleGlyph size={16} />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-bold">{localizeUi("ui.noodle.stageprofileform.aiGuidance")}</span>
@@ -730,7 +720,7 @@ export function StageProfileForm({
                     disabled={isGenerating || isPending || connections.length === 0}
                     className="inline-flex min-h-11 w-40 shrink-0 items-center justify-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] hover:opacity-90 disabled:opacity-50"
                   >
-                    {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}{" "}
+                    {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <SlpSparkleGlyph size={16} />}{" "}
                     {isGenerating
                       ? localizeUi("ui.noodle.stageprofileform.generatingDraft")
                       : previousDraft

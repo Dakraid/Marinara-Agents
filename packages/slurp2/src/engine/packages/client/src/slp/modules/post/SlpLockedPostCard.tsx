@@ -4,10 +4,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
-  Heart,
   Image as ImageIcon,
   Loader2,
-  Lock,
   MessageCircle,
   MoreHorizontal,
   Pencil,
@@ -17,6 +15,7 @@ import {
   Dices,
   ScanSearch,
 } from "lucide-react";
+import { SlpHeartGlyph, SlpLockGlyph } from "../../base/chrome/SlpGlyphs";
 import { useRef, useState, type MouseEvent } from "react";
 import type { SlpCreatorPostView, SlpCreatorStageProfile } from "../../../../../shared/src/slp/slp-social.types.js";
 import { cn } from "../../../lib/utils";
@@ -269,7 +268,7 @@ export function LockedSlurpPostCard({
               {profile.displayName}
             </button>
             <span title={localizeUi("ui.noodle.postaccess.locked.hint")} className={slpTagClass(true)}>
-              <Lock size={12} aria-hidden="true" />
+              <SlpLockGlyph size={12} aria-hidden="true" />
               {revealed && demo ? demo.unlockedLabel : localizeUi("ui.noodle.postaccess.locked")}
             </span>
           </div>
@@ -476,7 +475,7 @@ export function LockedSlurpPostCard({
             )}
             {/* The lock is a state cue; the accessible image text already describes the preview. */}
             {!revealed && (
-              // Lock and price sit together in the middle of the veil.
+              // SlpLockGlyph and price sit together in the middle of the veil.
               <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 px-4">
                 <SlpSparkleLock />
                 {unlockPrompt}
@@ -512,7 +511,7 @@ export function LockedSlurpPostCard({
         <div className="mt-3 flex min-h-11 items-center gap-5 text-[13px] font-semibold tabular-nums text-[var(--slurp-muted)] [&_svg]:!text-current">
           {/* The icons are decorative, so the counts carry their own labels for screen readers. */}
           <span className="flex items-center gap-1.5">
-            <Heart size={18} aria-hidden="true" /> {likeCount}
+            <SlpHeartGlyph size={18} aria-hidden="true" /> {likeCount}
             <span className="sr-only">{localizeUi("ui.noodle.noodlehome.likes")}</span>
           </span>
           <span className="flex items-center gap-1.5">
@@ -557,7 +556,7 @@ export function LockedSlurpPostCard({
                   className="h-full w-full scale-110 object-cover blur-[4px]"
                 />
                 <span className="absolute inset-0 flex items-center justify-center bg-black/30 text-white [&_svg]:!text-white">
-                  <Lock size={16} strokeWidth={2.25} aria-hidden="true" />
+                  <SlpLockGlyph size={16} strokeWidth={2.25} aria-hidden="true" />
                 </span>
               </span>
             )}

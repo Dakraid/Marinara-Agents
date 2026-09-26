@@ -110,7 +110,8 @@ export function SlurpAudienceConfigSettings({
       <SectionTitle
         title={t("ui.slurp.settings.aiBudget.title", { defaultValue: "AI budget" })}
         detail={t("ui.slurp.settings.aiBudget.detail", {
-          defaultValue: "The free simulation always runs. These limits only control model-written text.",
+          defaultValue:
+            "Likes, follows and every number always run free. These limits only control model-written text.",
         })}
       />
 
@@ -128,7 +129,7 @@ export function SlurpAudienceConfigSettings({
               onChange={(event) => void saveBudget({ ...budget, mode: event.target.value as SlurpModelBudget["mode"] })}
             >
               <option value="off">
-                {t("ui.slurp.settings.aiBudget.modes.off", { defaultValue: "Off — banks only" })}
+                {t("ui.slurp.settings.aiBudget.modes.off", { defaultValue: "Off: banks only" })}
               </option>
               <option value="present">
                 {t("ui.slurp.settings.aiBudget.modes.present", { defaultValue: "Replies and activity you turned on" })}

@@ -35,7 +35,7 @@ const FIELDS: Record<Group, NumberField[]> = {
     {
       path: ["clock", "catchUpHours"],
       label: "Catch-up limit",
-      detail: "Longest absence one tick simulates.",
+      detail: "Longest absence one tick catches up on.",
       advanced: true,
     },
     {
@@ -55,7 +55,7 @@ const FIELDS: Record<Group, NumberField[]> = {
     {
       path: ["reach", "ceiling"],
       label: "Follower ceiling",
-      detail: "The largest invented audience a creator grows into.",
+      detail: "The largest audience a creator grows into.",
     },
     {
       path: ["reach", "growthDays"],

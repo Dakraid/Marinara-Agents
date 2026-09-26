@@ -1,5 +1,6 @@
 import { SlpCoinText } from "../../modules/coin/SlpCoin";
-import { ChevronDown, SlidersHorizontal, Sparkles } from "lucide-react";
+import { ChevronDown, SlidersHorizontal } from "lucide-react";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { useDeferredValue, useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { SlurpPromotion } from "../ads/slp-ads-contract";
@@ -438,7 +439,7 @@ export function SlurpBackstagePreview({
             <div className="flex items-center gap-3">
               <span className="grid h-10 w-10 place-items-center rounded-full bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]">
                 {target === "improve" ? (
-                  <Sparkles size={18} aria-hidden="true" />
+                  <SlpSparkleGlyph size={18} aria-hidden="true" />
                 ) : (
                   <SlidersHorizontal size={18} aria-hidden="true" />
                 )}

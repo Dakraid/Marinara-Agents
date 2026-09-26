@@ -6,10 +6,10 @@ import { cn } from "../../../lib/utils";
 import { SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { formatUpcomingDay } from "../../base/ui/slp-date-time";
 import { SlurpCoin, SlurpCoinAmount, SlurpCoinBurst, SlpCoinText, slpCoinPlainText } from "../../modules/coin/SlpCoin";
-import { SlpButton, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
+import { SlpButton, SlpPrimaryButton, slpButtonClass } from "../../modules/chrome/SlpButton";
 import { SlpSheet } from "../../modules/chrome/SlpSheet";
 import { useSlpBalance } from "../../modules/chrome/SlpShell";
-import { playSlpPop, playSlpSpendMoment } from "../../modules/sparkle/SlpSparkle";
+import { playSlpBurst, playSlpPop, playSlpSpendMoment } from "../../modules/sparkle/SlpSparkle";
 import { slurpSubscriptionPriceOf } from "./SlpHomeHelpers";
 import type { StageProfileViewModel } from "./slp-profile-view-model";
 
@@ -75,7 +75,16 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
       disabled={subscriptionPending}
       className="w-full whitespace-nowrap"
       onClickCapture={(event) => playSlpPop(event.currentTarget)}
-      onClick={() => void Promise.resolve(onToggleSubscription(profile.id, false)).catch(() => undefined)}
+      onClick={(event) => {
+        const origin = event.currentTarget.getBoundingClientRect();
+        void Promise.resolve(onToggleSubscription(profile.id, false)).then(
+          () => {
+            playSlpBurst(origin);
+            toast.success(localizeUi("ui.slurp.profile.subscriptionResumed", { defaultValue: "Subscription resumed" }));
+          },
+          () => undefined,
+        );
+      }}
     >
       {localizeUi("ui.slurp.profile.resumeSubscription", { defaultValue: "Resume subscription" })}
     </SlpPrimaryButton>
@@ -136,6 +145,22 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
     </SlpButton>
   );
 
+  // Cancelled but still paid: a static chip in the Follow slot says so until the end date.
+  const endingChip = subscriptionState.kind === "cancelled" && (
+    // Two lines, so the end day never truncates in the narrow first column.
+    <span
+      className={cn(slpButtonClass("secondary"), "min-w-0 cursor-default gap-1.5 whitespace-nowrap px-3 text-[13px]")}
+    >
+      <Check size={16} strokeWidth={2.5} aria-hidden="true" />
+      <span className="flex min-w-0 flex-col items-start leading-tight">
+        <span className="max-w-full truncate">{localizeUi("ui.slurp.profile.subscribed")}</span>
+        <span className={cn(SLP_TYPE.caption, "max-w-full truncate text-[var(--slurp-muted)]")}>
+          {localizeUi("ui.slurp.profile.endsDay", { defaultValue: "ends {{day}}", day: day(subscriptionState.until) })}
+        </span>
+      </span>
+    </span>
+  );
+
   const followLabel = viewerCreator.followed
     ? localizeUi("ui.noodle.connections.tabs.following")
     : localizeUi("ui.slurp.profile.follow");
@@ -156,12 +181,7 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
           price: subscriptionState.price,
         })}
       </SlpCoinText>
-    ) : subscriptionState.kind === "cancelled" ? (
-      localizeUi("ui.slurp.profile.endsOn", {
-        defaultValue: "Subscription ends {{day}} · it won't renew",
-        day: day(subscriptionState.until),
-      })
-    ) : !renewing ? (
+    ) : subscriptionState.kind === "cancelled" ? null : !renewing ? (
       localizeUi("ui.slurp.profile.subscribeBenefits", {
         defaultValue: "Faster replies · Free chat photos · Subscriber-only posts",
       })
@@ -178,13 +198,15 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
           messaging === "paid"
             ? "grid-cols-[auto_minmax(0,1fr)_auto]"
             : // "Subscribed ✓" needs a little more room than Message and Tip.
-              renewing
+              renewing || endingChip
               ? "grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)]"
               : "grid-cols-3",
         )}
       >
         {renewing ? (
           subscribedButton
+        ) : endingChip ? (
+          endingChip
         ) : (
           <SlpButton
             variant="quiet"

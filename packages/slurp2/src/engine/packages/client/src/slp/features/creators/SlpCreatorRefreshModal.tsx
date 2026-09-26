@@ -1,4 +1,5 @@
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 
 import { Modal } from "../../../components/ui/Modal";
 
@@ -133,7 +134,7 @@ export function SlpCreatorRefreshModal(page: SlpBackstagePageProps) {
             }
             className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] disabled:opacity-50"
           >
-            {refreshCreators.isPending ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+            {refreshCreators.isPending ? <Loader2 size={14} className="animate-spin" /> : <SlpSparkleGlyph size={14} />}
             <span role={refreshCreators.isPending ? "status" : undefined}>
               {refreshCreators.isPending
                 ? t("ui.slurp.settings.refresh.remaining", { count: refreshRemaining })

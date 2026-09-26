@@ -118,8 +118,10 @@ export function getSlpAccentStyle(accent: string, style: CSSProperties = {}): CS
     "--muted-foreground": "var(--slurp-muted)",
     "--border": "var(--slurp-outline)",
     "--accent": "color-mix(in srgb, var(--noodle-accent) 10%, var(--slurp-surface-raised))",
+    // One soft wash from the top. The rest of the room's colour comes from the photo on screen
+    // (SlpCanvasAmbient); the three radial orbs read as a stock template.
     "--slurp-canvas-art":
-      "radial-gradient(ellipse 48rem 34rem at 8% -12%, color-mix(in srgb, var(--noodle-accent) 28%, transparent), transparent 68%), radial-gradient(ellipse 42rem 36rem at 96% 6%, color-mix(in srgb, var(--slurp-violet) 22%, transparent), transparent 70%), radial-gradient(ellipse 34rem 28rem at 62% 98%, color-mix(in srgb, var(--slurp-coral) 15%, transparent), transparent 72%), linear-gradient(180deg, color-mix(in srgb, var(--noodle-accent) 7%, transparent), transparent 30rem)",
+      "linear-gradient(180deg, color-mix(in srgb, var(--noodle-accent) 6%, transparent), transparent 30rem)",
     ...style,
   } as CSSProperties;
 }

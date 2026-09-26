@@ -110,6 +110,7 @@ export const SLP_SPARKLE_STYLES = `
     .slp-shimmer::after { animation: slp-sheen 7s ${EASE} 600ms infinite; }
     .slp-ring::before { animation: slp-ring-glint 7s ${EASE} infinite; }
     .slp-twinkle { animation: slp-twinkle 700ms ${EASE} var(--slp-twinkle-delay, 0ms) 1 both; }
+    .slp-twinkle-fade { animation: slp-twinkle-fade 1500ms ${EASE} var(--slp-twinkle-delay, 0ms) 1 both; }
     .slp-veil-dissolve { animation: slp-veil-dissolve 1000ms cubic-bezier(0.45, 0, 0.3, 1) 120ms both; }
     .slp-image-shimmer::after { animation: slp-image-sweep 4s ease-in-out infinite; }
     [data-slp-paused], [data-slp-paused]::before, [data-slp-paused]::after { animation-play-state: paused !important; }
@@ -128,6 +129,10 @@ export const SLP_SPARKLE_STYLES = `
   @keyframes slp-twinkle {
     0% { opacity: 0; transform: scale(0.4) rotate(-20deg); } 60% { opacity: 1; transform: scale(1.15) rotate(8deg); }
     100% { opacity: 0.85; transform: scale(1) rotate(0deg); }
+  }
+  @keyframes slp-twinkle-fade {
+    0% { opacity: 0; transform: scale(0.4) rotate(-20deg); } 28% { opacity: 1; transform: scale(1.15) rotate(8deg); }
+    47% { opacity: 0.85; transform: scale(1) rotate(0deg); } 100% { opacity: 0; transform: scale(0.8) rotate(0deg); }
   }
   @media (prefers-reduced-motion: reduce) { .slp-veil-dissolve { display: none; } }
   @keyframes slp-veil-dissolve {

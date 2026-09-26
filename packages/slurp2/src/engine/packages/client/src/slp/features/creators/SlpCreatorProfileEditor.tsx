@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ImagePlus, Loader2, Sparkles, Trash2, Upload, UserRound } from "lucide-react";
+import { ImagePlus, Loader2, Trash2, Upload, UserRound } from "lucide-react";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type {
@@ -261,7 +262,7 @@ function CreatorArtworkControls({
                 <Upload size={15} aria-hidden="true" /> {t("ui.noodle.stageprofileform.uploadAvatar")}
               </button>
               <button type="button" disabled={busy} onClick={() => startGeneration("avatar")} className={quietButton}>
-                <Sparkles size={15} aria-hidden="true" /> {t("ui.slurp.artwork.generateAvatar")}
+                <SlpSparkleGlyph size={15} aria-hidden="true" /> {t("ui.slurp.artwork.generateAvatar")}
               </button>
               {creator.sourceAccountId && creator.disclosureMode === "open" && (
                 <button
@@ -299,7 +300,7 @@ function CreatorArtworkControls({
                 <ImagePlus size={15} aria-hidden="true" /> {t("ui.noodle.noodleprofilesurface.uploadBanner")}
               </button>
               <button type="button" disabled={busy} onClick={() => startGeneration("banner")} className={quietButton}>
-                <Sparkles size={15} aria-hidden="true" /> {t("ui.slurp.artwork.generateBanner")}
+                <SlpSparkleGlyph size={15} aria-hidden="true" /> {t("ui.slurp.artwork.generateBanner")}
               </button>
             </div>
           </div>
@@ -397,7 +398,7 @@ function CreatorArtworkControls({
               {generateArtwork.isPending ? (
                 <Loader2 size={15} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
               ) : (
-                <Sparkles size={15} aria-hidden="true" />
+                <SlpSparkleGlyph size={15} aria-hidden="true" />
               )}
               {t("ui.slurp.artwork.generate")}
             </button>

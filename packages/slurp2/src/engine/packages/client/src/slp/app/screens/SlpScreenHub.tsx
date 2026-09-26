@@ -3,7 +3,6 @@ import { SlpBalanceChip, SlpWordmark } from "../../modules/chrome/SlpShell";
 import { SlpSegment } from "../../modules/chrome/SlpButton";
 import { SLP_CREATOR_FEED_WINDOW_SIZE } from "./SlpHomeHelpers";
 import { SlurpMomentsShelf, SlurpMomentViewer } from "./SlpScreenMoments";
-import { SubscriptionSections } from "./SlpScreenSubscriptions";
 import { ArrowUp, LayoutGrid, List, Search, UserRound } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -131,7 +130,6 @@ export function ViewerHub({
   const reduceMotion = useReducedMotion();
   const [scroller, setScroller] = useState<HTMLDivElement | null>(null);
   const setStickyHeader = useHideOnScroll(scroller);
-  const [discoverCollapsed, setDiscoverCollapsed] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [visibleFeedCount, setVisibleFeedCount] = useState(SLP_CREATOR_FEED_WINDOW_SIZE);
   const [activeMomentId, setActiveMomentId] = useState<string | null>(null);
@@ -397,8 +395,9 @@ export function ViewerHub({
                 )}
                 <ArrowUp size={16} strokeWidth={2.25} aria-hidden="true" />
                 {localizeUi("ui.slurp.feed.newPosts", { count: heldPosts.length })}
-                {/* A new post is a good moment: two stars pop on the corners once (static under reduced motion). */}
+                {/* A new post is a good moment: two stars pop on the corners once, then fade (static under reduced motion). */}
                 <SlpTwinkle
+                  fade
                   points={[
                     { x: "-5px", y: "-6px", size: 11 },
                     { x: "calc(100% - 4px)", y: "calc(100% - 8px)", size: 9 },
@@ -421,17 +420,6 @@ export function ViewerHub({
         isLoading={isLoading || (!scope && !isError)}
         isError={isError}
       />
-      <div className="hidden border-b border-[var(--noodle-divider)] py-3 @min-[1024px]:block @min-[1024px]:px-4 @min-[1280px]:hidden">
-        <SubscriptionSections
-          creators={(scope?.creators ?? []).filter(
-            (creator) => creator.profile.id !== authorProfile?.id && !creator.subscribed,
-          )}
-          onOpenProfile={postCardCtx.openAuthorProfile}
-          compact
-          collapsed={discoverCollapsed}
-          onToggleCollapsed={() => setDiscoverCollapsed((value) => !value)}
-        />
-      </div>
       {!isLoading && !isError && scope && (
         <div className="pb-2 pt-4 @min-[1024px]:bg-[var(--slurp-canvas)]">
           <div className="relative isolate overflow-hidden px-3 @min-[1024px]:px-5" data-slurp-home-masthead>

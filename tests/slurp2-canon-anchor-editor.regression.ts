@@ -23,7 +23,7 @@ const anchors: SlpCanonAnchors = {
 
 // Editing without changes gives back the same anchors, palette kept.
 const draft = slpCanonAnchorDraft(anchors);
-assert.equal(draft.people, "Cloud — old friend\nMary-Jane");
+assert.equal(draft.people, "Cloud - old friend\nMary-Jane");
 assert.deepEqual(slpCanonAnchorsFromDraft(draft, anchors.palette), anchors);
 
 // Blank lines and routine lines without a time drop out; heat stays within 0-3 and min <= max.
@@ -41,7 +41,7 @@ assert.equal(slpCanonAnchorDraft(null).people, "");
 // "Name — relation" chip (commas included) round-trips through the same parser.
 const chipDraft = slpCanonAnchorDraft(anchors);
 const chips = chipDraft.people.split("\n");
-assert.deepEqual(chips, ["Cloud — old friend", "Mary-Jane"]);
+assert.deepEqual(chips, ["Cloud - old friend", "Mary-Jane"]);
 const withChip = { ...chipDraft, people: [...chips, "Tifa — neighbour, bartender"].join("\n") };
 assert.deepEqual(slpCanonAnchorsFromDraft(withChip, anchors.palette).people.at(-1), {
   name: "Tifa",

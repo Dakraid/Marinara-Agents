@@ -1,4 +1,5 @@
-import { CalendarDays, ChevronLeft, ChevronRight, Clock3, List, Sparkles } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Clock3, List } from "lucide-react";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { useMemo, useState } from "react";
 
 import type { SlpStoryCalendarItem } from "../../../../../shared/src/slp/slp-story-engine.js";
@@ -138,7 +139,7 @@ export function SlpCalendarPanel(page: SlpBackstagePageProps) {
           aria-label="Calendar legend"
         >
           <span className="inline-flex items-center gap-2 rounded-full bg-[var(--slurp-violet)]/10 px-3 py-2">
-            <Sparkles size={13} aria-hidden="true" /> Event
+            <SlpSparkleGlyph size={13} aria-hidden="true" /> Event
           </span>
           <span className="inline-flex items-center gap-2 rounded-full bg-[var(--noodle-accent)]/10 px-3 py-2">
             <Clock3 size={13} aria-hidden="true" /> Plan or activity

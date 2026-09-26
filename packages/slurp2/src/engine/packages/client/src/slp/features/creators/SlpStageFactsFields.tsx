@@ -36,7 +36,7 @@ export function SlurpStageFactsFields({
             maxLength={2000}
             onChange={(event) => onChange({ appearance: event.target.value })}
             placeholder={localizeUi("ui.slurp.stageProfile.appearancePlaceholder", {
-              defaultValue: "Body, face, hair, marks — the things that must look the same in every picture.",
+              defaultValue: "Body, face, hair, marks: the things that must look the same in every picture.",
             })}
             className={`${textareaClass} !min-h-0`}
           />

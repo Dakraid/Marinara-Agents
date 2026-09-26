@@ -25,7 +25,7 @@ export function SlurpInlineAdTile({
         type="button"
         onClick={onAction}
         className="group block h-full w-full text-left focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)]"
-        aria-label={`${labels.sponsored}: ${promotion.brand} — ${promotion.actionLabel ?? labels.actionFallback}`}
+        aria-label={`${labels.sponsored}: ${promotion.brand}, ${promotion.actionLabel ?? labels.actionFallback}`}
       >
         {promotion.imageUrl ? (
           <SlurpMediaImg

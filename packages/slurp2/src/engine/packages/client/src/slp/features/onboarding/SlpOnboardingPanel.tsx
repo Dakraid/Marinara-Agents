@@ -10,10 +10,9 @@ import {
   Eye,
   Image as ImageIcon,
   Loader2,
-  Lock,
   SlidersHorizontal,
-  Sparkles,
 } from "lucide-react";
+import { SlpLockGlyph, SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import type { SlpCreatorOnboardingCompletion } from "../../../../../shared/src/slp/slp-creator-onboarding.js";
 import type {
   SlpCreatorPostView,
@@ -219,7 +218,7 @@ export function SlurpOnboardingWizard(props: WizardProps) {
             {intro === 0 && (
               <div className="space-y-4 max-sm:space-y-3">
                 <StepHeading
-                  icon={<Sparkles size={18} />}
+                  icon={<SlpSparkleGlyph size={18} />}
                   title={t("ui.noodle.noodlerwizard.intro.info.title")}
                   help={t("ui.noodle.noodlerwizard.intro.info.help")}
                 />
@@ -326,7 +325,7 @@ export function SlurpOnboardingWizard(props: WizardProps) {
             {intro === 3 && (
               <div className="space-y-4 max-sm:space-y-3">
                 <StepHeading
-                  icon={<Lock size={18} />}
+                  icon={<SlpLockGlyph size={18} />}
                   title={t("ui.noodle.noodlerwizard.intro.locked.title")}
                   help={t("ui.noodle.noodlerwizard.intro.locked.help")}
                 />
@@ -427,7 +426,7 @@ export function SlurpOnboardingWizard(props: WizardProps) {
             {intro === null && setupLane === null && (
               <div className="space-y-5">
                 <StepHeading
-                  icon={<Sparkles size={18} />}
+                  icon={<SlpSparkleGlyph size={18} />}
                   title={t("ui.noodle.noodlerwizard.handoff.title")}
                   help={t("ui.noodle.noodlerwizard.handoff.help")}
                 />
@@ -441,7 +440,7 @@ export function SlurpOnboardingWizard(props: WizardProps) {
                     className="group rounded-xl border border-[var(--noodle-accent)]/60 bg-gradient-to-br from-[var(--noodle-accent)]/22 to-[var(--noodle-accent)]/6 p-5 text-left shadow-sm shadow-[var(--noodle-accent)]/15 transition-[transform,box-shadow,background-color] hover:-translate-y-0.5 hover:shadow-md hover:shadow-[var(--noodle-accent)]/25 motion-reduce:transform-none"
                   >
                     <span className="flex items-center gap-2 text-base font-bold">
-                      <Sparkles size={17} className="text-[var(--noodle-accent-foreground)]" />
+                      <SlpSparkleGlyph size={17} className="text-[var(--noodle-accent-foreground)]" />
                       {t("ui.noodle.noodlerwizard.handoff.easy.title")}
                     </span>
                     <span className="mt-2 block text-sm leading-6 text-[var(--slurp-muted)]">

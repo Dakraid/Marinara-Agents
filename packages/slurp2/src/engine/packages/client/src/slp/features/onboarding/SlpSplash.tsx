@@ -136,7 +136,8 @@ export function SlurpSplash({ open, onDismiss }: { open: boolean; onDismiss: () 
         <div className="flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm leading-6">
           <AlertTriangle size={18} aria-hidden="true" className="mt-1 shrink-0 text-amber-500" />
           <span>
-            Slurp can use text and image models without always asking first. One click may cost more than you expect.
+            Heads up: Slurp calls your text and image models on its own, and one tap can call them more than once. Your
+            provider may bill every call.
           </span>
         </div>
 

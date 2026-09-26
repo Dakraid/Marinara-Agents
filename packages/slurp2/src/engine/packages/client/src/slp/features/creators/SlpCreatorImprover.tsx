@@ -1,4 +1,5 @@
-import { AlertCircle, CheckCircle2, Loader2, Pause, Play, Sparkles, WandSparkles } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Pause, Play, WandSparkles } from "lucide-react";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { useMemo, useState } from "react";
 import type { SlpCreatorManagedStageProfile } from "../../../../../shared/src/slp/slp-social.types.js";
 import {
@@ -285,7 +286,7 @@ export function SlurpCreatorImprover({
             {createJob.isPending ? (
               <Loader2 size={16} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
             ) : (
-              <Sparkles size={16} aria-hidden="true" />
+              <SlpSparkleGlyph size={16} aria-hidden="true" />
             )}
             Generate proposals
           </button>

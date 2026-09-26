@@ -227,7 +227,7 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
         <div className="space-y-4">
           <p className="text-xs leading-5 text-[var(--muted-foreground)]">
             {t("ui.slurp.settings.audience.characterFansDetail", {
-              defaultValue: "Invite your Engine characters to read posts and join the audience simulation.",
+              defaultValue: "Invite your Engine characters to read posts and join the audience.",
             })}
           </p>
           <Field

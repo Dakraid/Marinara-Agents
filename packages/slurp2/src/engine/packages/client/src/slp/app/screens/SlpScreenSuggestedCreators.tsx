@@ -1,4 +1,4 @@
-import { Sparkles } from "lucide-react";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { SlurpCreatorProfileCard } from "../../modules/creator/SlpCreatorProfileCard";
 import type { SlurpViewerCreator } from "./SlpHomeHelpers";
@@ -22,7 +22,7 @@ export function SlurpInlineSuggestedCreators({
         <h2 id="slurp-inline-suggested-creators" className="text-sm font-bold">
           {localizeUi("ui.slurp.suggestedCreators")}
         </h2>
-        <Sparkles size={15} className="shrink-0 text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
+        <SlpSparkleGlyph size={15} className="shrink-0 text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
       </div>
       <div className="mt-2 flex snap-x gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {creators.map((creator) => (

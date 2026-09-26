@@ -1,4 +1,5 @@
-import { Check, Code2, Copy, Play, RefreshCw, Sparkles } from "lucide-react";
+import { Check, Code2, Copy, Play, RefreshCw } from "lucide-react";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { SlurpPromptBlockOverride, SlurpReusablePromptInstruction } from "../../base/state/slp-state-types";
@@ -347,7 +348,7 @@ function PreviewResultCard({ label, data }: { label: string; data: SlurpPromptRe
   return (
     <article className="rounded-lg bg-[var(--slurp-canvas)] p-3 ring-1 ring-inset ring-[var(--slurp-outline)]">
       <p className="flex items-center gap-1.5 text-xs font-bold text-[var(--noodle-accent-foreground)]">
-        <Sparkles size={13} aria-hidden="true" /> {label}
+        <SlpSparkleGlyph size={13} aria-hidden="true" /> {label}
       </p>
       {data.title && <h4 className="mt-2 text-sm font-bold text-balance">{data.title}</h4>}
       <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6">{data.content}</p>

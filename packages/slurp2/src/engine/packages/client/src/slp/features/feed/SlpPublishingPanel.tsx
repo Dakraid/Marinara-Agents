@@ -1,4 +1,5 @@
-import { FileText, Sparkles } from "lucide-react";
+import { FileText } from "lucide-react";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 
 import {
   AdvancedGroup,
@@ -48,7 +49,7 @@ export function SlpPublishingPanel(page: SlpBackstagePageProps) {
             onClick={openRefresh}
             className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] shadow-sm transition-[opacity,transform] hover:opacity-90 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:opacity-50"
           >
-            <Sparkles size={15} aria-hidden="true" />
+            <SlpSparkleGlyph size={15} aria-hidden="true" />
             {t("ui.slurp.settings.refresh.title")}
           </button>
         }

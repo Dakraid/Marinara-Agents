@@ -250,8 +250,7 @@ export function SettingsGroup({ title, children }: { title: string; children: Re
 }
 export function GuidanceBox({ title, detail }: { title: string; detail: string }) {
   return (
-    <div className="relative overflow-hidden rounded-xl bg-[var(--noodle-accent)]/[0.065] p-4 ring-1 ring-inset ring-[var(--noodle-accent)]/20 sm:p-5">
-      <span className="absolute inset-y-3 start-0 w-0.5 rounded-full bg-[var(--noodle-accent)]" aria-hidden="true" />
+    <div className="rounded-xl bg-[var(--noodle-accent)]/[0.065] p-4 ring-1 ring-inset ring-[var(--noodle-accent)]/20 sm:p-5">
       <p className="text-sm font-bold text-[var(--noodle-accent-foreground)]">{title}</p>
       <p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--muted-foreground)] text-pretty">{detail}</p>
     </div>

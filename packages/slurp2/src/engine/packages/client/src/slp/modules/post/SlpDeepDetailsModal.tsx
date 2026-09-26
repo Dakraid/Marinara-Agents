@@ -166,7 +166,7 @@ export function SlpDeepDetailsModal({ postId, open, onClose }: { postId: string;
                     [
                       "Project",
                       details?.plan.project
-                        ? `${details.plan.project.title}${details.plan.project.chapter ? ` — ${details.plan.project.chapter}` : ""}`
+                        ? `${details.plan.project.title}${details.plan.project.chapter ? ` · ${details.plan.project.chapter}` : ""}`
                         : null,
                     ],
                     ["Post number", details ? String(details.sequence + 1) : null],

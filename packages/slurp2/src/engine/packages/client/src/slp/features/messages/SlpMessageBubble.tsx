@@ -1,4 +1,5 @@
-import { Check, CheckCheck, Heart, Lock, Moon } from "lucide-react";
+import { Check, CheckCheck, Moon } from "lucide-react";
+import { SlpHeartGlyph, SlpLockGlyph } from "../../base/chrome/SlpGlyphs";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { useSlurpMediaSrc } from "../../base/media/slp-media-src";
 import { showConfirmDialog } from "../../../lib/app-dialogs";
@@ -341,7 +342,7 @@ export function MessageBubble({
               className="relative inline-flex min-h-11 items-center gap-1.5 overflow-visible rounded-full bg-[var(--noodle-accent)]/12 px-3 text-left font-semibold text-[var(--noodle-accent-foreground)] transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-60 motion-reduce:active:scale-100"
             >
               <SlurpCoinBurst active={unlock.isPending} />
-              <Lock size={13} aria-hidden="true" />
+              <SlpLockGlyph size={13} aria-hidden="true" />
               {localizeUi("ui.slurp.messages.unlock", {
                 defaultValue: "Unlock for",
               })}
@@ -361,7 +362,7 @@ export function MessageBubble({
                 mine ? "-left-2.5" : "-right-2.5",
               )}
             >
-              <Heart size={12} fill="currentColor" />
+              <SlpHeartGlyph size={12} filled />
             </span>
           )}
         </div>
@@ -369,7 +370,7 @@ export function MessageBubble({
           <button
             type="button"
             aria-pressed={hearted}
-            aria-label={localizeUi("ui.slurp.messages.heart", { defaultValue: "Heart message" })}
+            aria-label={localizeUi("ui.slurp.messages.heart", { defaultValue: "SlpHeartGlyph message" })}
             onClick={(event) => toggleHeart(event.currentTarget.querySelector("svg") ?? event.currentTarget)}
             className={cn(
               "flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-[opacity,transform,color] active:scale-90 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:active:scale-100",
@@ -378,7 +379,7 @@ export function MessageBubble({
                 : "text-[var(--muted-foreground)] opacity-0 group-hover/bubble:opacity-100 [@media(hover:none)]:opacity-50",
             )}
           >
-            <Heart size={15} fill={hearted ? "currentColor" : "none"} aria-hidden="true" />
+            <SlpHeartGlyph size={15} filled={hearted} aria-hidden="true" />
           </button>
         )}
       </div>

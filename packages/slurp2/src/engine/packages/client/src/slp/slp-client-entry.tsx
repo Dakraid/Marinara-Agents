@@ -14,6 +14,7 @@ import { useSlurpUIStore } from "./base/state/slp-package-store";
 import { configureSlurpPackageState } from "./base/state/slp-package-store";
 import { ModalPortalContext } from "../components/ui/Modal";
 import { AppDialogRenderer } from "../components/ui/AppDialogRenderer";
+import { SLP_DISPLAY_FONT_STYLES } from "./base/chrome/slp-display-font";
 import { SLP_SPARKLE_STYLES } from "./modules/sparkle/slp-sparkle-styles";
 import { BOTTOM_SAFE_INSET, getSlpAccentStyle, SLP_PINK, SlpAccentContext } from "./base/chrome/SlpChrome";
 import { SlpErrorState } from "./modules/chrome/SlpStateKit";
@@ -81,7 +82,7 @@ const SLURP_TOAST_STYLES = `
     border-radius: 16px;
     background: var(--slurp-surface-raised, var(--background));
     color: var(--slurp-text, var(--foreground));
-    box-shadow: var(--slp-toast-bar, 0 0 #0000), 0 16px 40px color-mix(in srgb, #000 24%, transparent), 0 0 0 1px color-mix(in srgb, #fff 5%, transparent) inset;
+    box-shadow: 0 16px 40px color-mix(in srgb, #000 24%, transparent), 0 0 0 1px color-mix(in srgb, #fff 5%, transparent) inset;
     backdrop-filter: blur(16px);
   }
   [data-sonner-toast].slp-toast [data-title] { font-weight: 700; line-height: 1.25; }
@@ -92,18 +93,17 @@ const SLURP_TOAST_STYLES = `
     color: var(--slurp-on-accent, var(--slurp-surface, var(--background)));
     font-weight: 700;
   }
-  /* Token accents instead of Sonner's rich colours: a 3 px bar on the start edge and a tinted icon.
-     Success is the good moment, so it gets the pink bar and a soft pink glint from the left. */
+  /* Token accents instead of Sonner's rich colours: a soft tint of the tone and a tinted icon, no
+     stripe. Success is the good moment, so it gets the pink tint. */
   [data-sonner-toast].slp-toast[data-type="success"] {
-    --slp-toast-bar: inset 3px 0 0 var(--noodle-accent);
-    background: linear-gradient(90deg, color-mix(in srgb, var(--noodle-accent) 16%, var(--slurp-surface-raised)), var(--slurp-surface-raised) 45%);
+    background: color-mix(in srgb, var(--noodle-accent) 14%, var(--slurp-surface-raised));
   }
   [data-sonner-toast].slp-toast[data-type="success"] [data-icon] { color: var(--slurp-ink); }
-  [data-sonner-toast].slp-toast[data-type="error"] { --slp-toast-bar: inset 3px 0 0 var(--slurp-danger); }
+  [data-sonner-toast].slp-toast[data-type="error"] { background: color-mix(in srgb, var(--slurp-danger) 10%, var(--slurp-surface-raised)); }
   [data-sonner-toast].slp-toast[data-type="error"] [data-icon] { color: var(--slurp-danger); }
-  [data-sonner-toast].slp-toast[data-type="warning"] { --slp-toast-bar: inset 3px 0 0 var(--slurp-warning); }
+  [data-sonner-toast].slp-toast[data-type="warning"] { background: color-mix(in srgb, var(--slurp-warning) 10%, var(--slurp-surface-raised)); }
   [data-sonner-toast].slp-toast[data-type="warning"] [data-icon] { color: var(--slurp-warning); }
-  [data-sonner-toast].slp-toast[data-type="info"] { --slp-toast-bar: inset 3px 0 0 var(--slurp-violet); }
+  [data-sonner-toast].slp-toast[data-type="info"] { background: color-mix(in srgb, var(--slurp-violet) 10%, var(--slurp-surface-raised)); }
   [data-sonner-toast].slp-toast[data-type="info"] [data-icon] { color: var(--slurp-violet); }
   /* Below 1024 px the floating nav owns the bottom edge: bottom toasts sit above it
      (56 px pill + 10 px gap + 10 px air), above the home indicator on iOS. */
@@ -147,6 +147,9 @@ const SLURP_SHELL_STYLES = `
     :where(img[data-slp-fade]) { filter: none; transition: opacity 120ms linear; }
   }
   @keyframes slp-img-frame-sweep { 0% { background-position: 120% 0; } 70%, 100% { background-position: -20% 0; } }
+  /* The ambient canvas (SlpCanvasAmbient): a new photo's colour fades in slowly over the last one. */
+  .slp-ambient-in { animation: slp-ambient-in 1200ms var(--slurp-ease, ease-out) both; }
+  @keyframes slp-ambient-in { from { opacity: 0; } to { opacity: 1; } }
 `;
 
 function syncSlurpPackageStyles() {
@@ -158,7 +161,7 @@ function syncSlurpPackageStyles() {
 
   const style = existing ?? document.createElement("style");
   style.id = SLURP_STYLE_ID;
-  style.textContent = `${slurpPackageStyles}\n${SLURP_ICON_COLOR_FIX}\n${SLURP_TOAST_STYLES}\n${SLURP_SHELL_STYLES}\n${SLP_SPARKLE_STYLES}`;
+  style.textContent = `${slurpPackageStyles}\n${SLURP_ICON_COLOR_FIX}\n${SLURP_TOAST_STYLES}\n${SLURP_SHELL_STYLES}\n${SLP_SPARKLE_STYLES}\n${SLP_DISPLAY_FONT_STYLES}`;
   if (!existing) document.head.appendChild(style);
 }
 

@@ -7,13 +7,13 @@ import {
   Palette,
   ShieldCheck,
   Shirt,
-  Sparkles,
   TriangleAlert,
   UserRound,
   UsersRound,
   Workflow,
   type LucideIcon,
 } from "lucide-react";
+import { SlpSparkleGlyph } from "../../../base/chrome/SlpGlyphs";
 import type { ComponentType } from "react";
 
 import {
@@ -138,7 +138,7 @@ export const SLP_CREATOR_SETTINGS_BLOCKS: readonly SlpCreatorSettingsBlockEntry[
   },
   {
     id: "improve",
-    icon: Sparkles,
+    icon: SlpSparkleGlyph,
     labelKey: "ui.slurp.settings.creators.tabs.improve",
     defaultLabel: "Improve",
     Component: SlpCreatorImproveSection,
@@ -212,7 +212,7 @@ export const SLP_CREATOR_SETTINGS_SECTIONS: readonly SlpCreatorSettingsSection[]
   },
   {
     id: "tools",
-    icon: Sparkles,
+    icon: SlpSparkleGlyph,
     labelKey: "ui.slurp.settings.creators.tabs.tools",
     defaultLabel: "Tools",
     blocks: blocks("improve", "danger"),

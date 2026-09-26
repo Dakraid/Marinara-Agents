@@ -1,4 +1,5 @@
-import { BriefcaseBusiness, Check, Loader2, Sparkles } from "lucide-react";
+import { BriefcaseBusiness, Check, Loader2 } from "lucide-react";
+import { SlpSparkleGlyph } from "../../../base/chrome/SlpGlyphs";
 import { useEffect, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../../lib/utils";
@@ -166,7 +167,7 @@ export function CommissionRow({
       <div className="flex min-w-0 items-start justify-between gap-2 sm:gap-3">
         <div className="min-w-0">
           <p className="flex items-center gap-1.5 text-sm font-black">
-            <Sparkles size={15} className="text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
+            <SlpSparkleGlyph size={15} className="text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
             {localizeUi("ui.slurp.messages.commissionTitle", { defaultValue: "Commission" })}
           </p>
           <p className="mt-1 break-words font-semibold text-[var(--muted-foreground)]">

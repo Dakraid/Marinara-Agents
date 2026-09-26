@@ -1,4 +1,5 @@
-import { MapPin, Sparkles, Upload } from "lucide-react";
+import { MapPin, Upload } from "lucide-react";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import type { ChangeEvent, CSSProperties, ReactNode, RefObject } from "react";
 import { cn } from "../../../lib/utils";
 import { Avatar, SLP_IMG_FRAME_CLASS, SLP_TYPE, SlurpMediaImg } from "../../base/chrome/SlpChrome";
@@ -172,7 +173,7 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
           title={localizeUi("ui.slurp.artwork.generateAvatar")}
           aria-label={localizeUi("ui.slurp.artwork.generateAvatar")}
         >
-          <Sparkles size={12} className="!text-white" />
+          <SlpSparkleGlyph size={12} className="!text-white" />
         </button>
       )}
       {avatarUpload && (
@@ -197,7 +198,7 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
   ) : (
     <h1
       className={cn(
-        "max-w-full text-[28px] font-extrabold leading-8 tracking-[-0.02em] text-balance [overflow-wrap:anywhere]",
+        "slp-display max-w-full text-[28px] leading-8 text-balance [overflow-wrap:anywhere]",
         "@min-[680px]:text-3xl @min-[1040px]:text-4xl",
       )}
     >
@@ -491,7 +492,7 @@ function ProfileBanner({
           title={localizeUi("ui.slurp.artwork.generateBanner")}
           aria-label={localizeUi("ui.slurp.artwork.generateBanner")}
         >
-          <Sparkles size={13} className="!text-white" />
+          <SlpSparkleGlyph size={13} className="!text-white" />
         </button>
       )}
       {banner.fileRef && (
@@ -517,7 +518,7 @@ function ProfileStats({
     return (
       <p className="mt-3">
         <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-[var(--slurp-tint)] px-3 text-xs font-bold text-[var(--slurp-ink)] shadow-[var(--slurp-highlight)]">
-          <Sparkles size={13} aria-hidden="true" className="!text-current" />
+          <SlpSparkleGlyph size={13} aria-hidden="true" className="!text-current" />
           {localizeUi("ui.slurp.profile.newOnSlurp", { defaultValue: "New on Slurp" })}
         </span>
       </p>

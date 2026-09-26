@@ -1,4 +1,5 @@
-import { Copy, Heart, MessageCircle, MoreHorizontal, Pencil, Flag, Trash2 } from "lucide-react";
+import { Copy, MessageCircle, MoreHorizontal, Pencil, Flag, Trash2 } from "lucide-react";
+import { SlpHeartGlyph } from "../../base/chrome/SlpGlyphs";
 import { useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { SlpSheet, SlpSheetGroup, SlpSheetItem } from "../chrome/SlpSheet";
@@ -54,7 +55,7 @@ export function SlpInteractionMenu({
             {localizeUi("ui.noodle.noodlepostcard.reply")}
           </SlpSheetItem>
           <SlpSheetItem onSelect={run(onLike)}>
-            <Heart size={14} fill={liked ? "currentColor" : "none"} />
+            <SlpHeartGlyph size={14} filled={liked} />
             {localizeUi(liked ? "ui.noodle.noodlepostcard.unlikeComment" : "ui.noodle.noodlepostcard.likeComment")}
           </SlpSheetItem>
           <SlpSheetItem onSelect={run(onCopy)}>

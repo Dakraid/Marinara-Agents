@@ -71,14 +71,23 @@ const DEFAULT_TWINKLES = [
   { x: "14%", y: "82%", size: 8 },
 ];
 
-/** Static sparkle glyphs placed round an illustration; each twinkles once on appear. */
-export function SlpTwinkle({ points = DEFAULT_TWINKLES }: { points?: { x: string; y: string; size: number }[] }) {
+/**
+ * Static sparkle glyphs placed round an illustration; each twinkles once on appear. `fade` lets
+ * them go after the pop (a passing moment, such as the new-posts pill), instead of staying.
+ */
+export function SlpTwinkle({
+  points = DEFAULT_TWINKLES,
+  fade = false,
+}: {
+  points?: { x: string; y: string; size: number }[];
+  fade?: boolean;
+}) {
   return (
     <>
       {points.map((point, index) => (
         <span
           key={index}
-          className="slp-twinkle"
+          className={fade ? "slp-twinkle slp-twinkle-fade" : "slp-twinkle"}
           aria-hidden="true"
           style={
             {

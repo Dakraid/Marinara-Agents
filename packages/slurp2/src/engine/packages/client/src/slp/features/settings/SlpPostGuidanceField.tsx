@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { toast } from "sonner";
 import { useGenerateSlurpPostGuidance, useUpdateSlurpPostGuidance } from "./slp-post-guidance-contract";
 import type { SlurpPostAccess, SlurpPostGuidance } from "./slp-post-guidance-contract";
@@ -116,7 +117,7 @@ export function SlurpPostGuidanceField({
             {generate.isPending ? (
               <Loader2 size={14} className="animate-spin" />
             ) : (
-              <Sparkles size={14} className="text-[var(--noodle-accent-foreground)]" />
+              <SlpSparkleGlyph size={14} className="text-[var(--noodle-accent-foreground)]" />
             )}
             {generateLabel}
           </button>

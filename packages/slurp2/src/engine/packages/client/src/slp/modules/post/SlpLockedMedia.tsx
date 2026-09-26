@@ -1,4 +1,5 @@
-import { Image as ImageIcon, Images, Lock } from "lucide-react";
+import { Image as ImageIcon, Images } from "lucide-react";
+import { SlpLockGlyph } from "../../base/chrome/SlpGlyphs";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { useNearViewportSlurpMediaSrc } from "../../base/media/slp-media-src";
@@ -23,7 +24,7 @@ export function SlpSparkleLock({ small = false }: { small?: boolean }) {
       )}
       aria-hidden="true"
     >
-      <Lock size={small ? 16 : 22} strokeWidth={2.25} />
+      <SlpLockGlyph size={small ? 16 : 22} strokeWidth={2.25} />
       <SlpRingGlint />
       <SlpTwinkle points={[{ x: small ? "70%" : "74%", y: small ? "-6px" : "-4px", size: small ? 9 : 12 }]} />
     </span>

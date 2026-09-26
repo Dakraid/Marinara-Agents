@@ -29,7 +29,8 @@ import {
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { ProfileInitial, SLURP_TOGGLE_ACTIVE_CLASS } from "../../base/chrome/SlpChrome";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Lock, Loader2, Pencil, Send, Sparkles, Trash2 } from "lucide-react";
+import { ChevronDown, Loader2, Pencil, Send, Trash2 } from "lucide-react";
+import { SlpLockGlyph, SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { cn } from "../../../lib/utils";
 import {
   errorMessage,
@@ -443,7 +444,7 @@ export function NoodlerPostComposer({
                     : "text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)]",
                 )}
               >
-                <Sparkles size={13} />
+                <SlpSparkleGlyph size={13} />
                 {localizeUi("ui.slurp.composer.aiImage", { defaultValue: "AI image" })}
               </button>
               <div ref={accessToolRef} className="relative">
@@ -457,7 +458,7 @@ export function NoodlerPostComposer({
                   })}
                   title={localizeUi(`ui.noodle.postaccess.${access}.hint`)}
                 >
-                  <Lock size={13} />
+                  <SlpLockGlyph size={13} />
                   {localizeUi(`ui.noodle.postaccess.${access}`)}
                 </button>
               </div>
@@ -484,7 +485,7 @@ export function NoodlerPostComposer({
             disabled={composerBusy || Boolean(pendingImage) || postType === "story"}
             className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--noodle-divider)] px-3 text-xs font-bold hover:bg-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {guidePending ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+            {guidePending ? <Loader2 size={13} className="animate-spin" /> : <SlpSparkleGlyph size={13} />}
             {guidePending
               ? localizeUi("ui.noodle.noodlerpostcomposer.guiding")
               : localizeUi("ui.noodle.noodlerpostcomposer.guide_bf073fa")}
