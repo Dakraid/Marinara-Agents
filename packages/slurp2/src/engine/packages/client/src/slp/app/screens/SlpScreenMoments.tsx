@@ -11,6 +11,7 @@ import { playSlpPop } from "../../modules/sparkle/SlpSparkle";
 import { useSlurpMediaSrc } from "../../base/media/slp-media-src";
 import { ProfileInitial } from "../../base/chrome/SlpChrome";
 import { SlurpSparkleVeil } from "../../base/chrome/SlpSparkleVeil";
+import { SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SlpPostSurfaceMenu } from "../../modules/post/SlpPostMenu";
 import { api } from "../../../lib/api-client";
 import { downloadSlpShareCard, toSlpShareCardInput } from "../../modules/post/slp-share-card";
@@ -116,7 +117,9 @@ export function SlurpMomentsShelf({
               </span>
             </button>
           )}
-          {creatorMoments.length === 0 ? (
+          {creatorMoments.length === 0 && isLoading && !isError ? (
+            <SlpSkeleton shape="stories" count={4} />
+          ) : creatorMoments.length === 0 ? (
             <div
               className="flex min-h-24 min-w-[12rem] max-w-xs items-center gap-2.5 text-[var(--muted-foreground)]"
               role="status"
@@ -125,9 +128,7 @@ export function SlurpMomentsShelf({
               <span className="text-xs leading-5 text-pretty">
                 {isError
                   ? localizeUi("ui.slurp.moments.error", { defaultValue: "Could not load Stories." })
-                  : isLoading
-                    ? localizeUi("ui.slurp.state.loading", { defaultValue: "Loading…" })
-                    : localizeUi("ui.slurp.moments.empty")}
+                  : localizeUi("ui.slurp.moments.empty")}
               </span>
             </div>
           ) : (

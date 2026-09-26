@@ -5,7 +5,7 @@ import { useSlurpSettings } from "../settings/slp-settings-contract";
 import { groupSlurpDiscoveryTags, type SlurpDiscoverLayout, type SlurpDiscoverSort } from "./slp-discovery";
 import type { SlurpDiscoveryGender } from "../../base/state/slp-state-types";
 import { cn } from "../../../lib/utils";
-import { SLURP_TOGGLE_ACTIVE_CLASS } from "../../base/chrome/SlpChrome";
+import { SlpChip, SlpSegment } from "../../modules/chrome/SlpButton";
 import { useKeepInViewport } from "../../base/chrome/slp-popover-hooks";
 
 const triggerClass =
@@ -116,15 +116,10 @@ export function SlurpDiscoverToolbar({
   return (
     <div className="space-y-3 border-y border-[var(--noodle-divider)] bg-[linear-gradient(110deg,color-mix(in_srgb,var(--slurp-surface)_96%,transparent),color-mix(in_srgb,var(--noodle-accent)_5%,var(--slurp-surface)))] px-4 py-4 sm:px-5">
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          aria-pressed={notSubscribed}
-          onClick={() => onNotSubscribedChange(!notSubscribed)}
-          className={cn(triggerClass, notSubscribed && SLURP_TOGGLE_ACTIVE_CLASS)}
-        >
+        <SlpChip selected={notSubscribed} onClick={() => onNotSubscribedChange(!notSubscribed)}>
           {notSubscribed && <Check size={14} aria-hidden="true" />}
           {localizeUi("ui.slurp.discover.notSubscribed", { defaultValue: "Not subscribed" })}
-        </button>
+        </SlpChip>
         <FilterMenu
           label={`${localizeUi("ui.slurp.discover.genderLabel", { defaultValue: "Gender" })}${genders.size ? ` · ${genders.size}` : ""}`}
           icon={UsersRound}
@@ -255,30 +250,19 @@ export function SlurpDiscoverToolbar({
             ))}
           </select>
         </label>
-        <div
-          className="flex rounded-full border border-[var(--noodle-divider)] bg-[var(--slurp-surface)] p-1"
-          role="group"
-          aria-label={localizeUi("ui.slurp.discover.view", { defaultValue: "Creator view" })}
-        >
-          {(["grid", "list"] as const).map((value) => {
+        <SlpSegment
+          label={localizeUi("ui.slurp.discover.view", { defaultValue: "Creator view" })}
+          value={layout}
+          onChange={onLayoutChange}
+          options={(["grid", "list"] as const).map((value) => {
             const Icon = value === "grid" ? LayoutGrid : List;
-            return (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={layout === value}
-                aria-label={localizeUi(`ui.slurp.discover.view.${value}`, { defaultValue: `${value} view` })}
-                onClick={() => onLayoutChange(value)}
-                className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]",
-                  layout === value && SLURP_TOGGLE_ACTIVE_CLASS,
-                )}
-              >
-                <Icon size={15} aria-hidden="true" />
-              </button>
-            );
+            return {
+              value,
+              label: localizeUi(`ui.slurp.discover.view.${value}`, { defaultValue: `${value} view` }),
+              icon: <Icon size={15} aria-hidden="true" />,
+            };
           })}
-        </div>
+        />
       </div>
       {filtersActive && (
         <div className="flex items-center justify-between gap-3">

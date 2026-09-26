@@ -3,7 +3,7 @@ import { ArrowDown, ChevronLeft, Plus, Send, X } from "lucide-react";
 import { CommissionRequest } from "./commissions/SlpCommissions";
 import { CreatorMessageTools, FanImageTool, SlurpTipPanel } from "./SlpMessageTools";
 import { cn } from "../../../lib/utils";
-import { SlurpCoin } from "../../modules/coin/SlpCoin";
+import { SlurpCoinAmount } from "../../modules/coin/SlpCoin";
 import { SlurpConnectionSwitcher } from "./SlpThreadChrome";
 import type { SlurpThreadViewModel } from "./slp-thread-actions";
 
@@ -396,11 +396,8 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
           )}
           {composerTipAmount > 0 && (
             <div className="slurp-bubble-in flex items-center gap-2 self-start rounded-full bg-[var(--noodle-accent)]/12 py-1 pl-3 pr-1 text-xs font-bold text-[var(--noodle-accent-foreground)] ring-1 ring-inset ring-[var(--noodle-accent)]/30">
-              <SlurpCoin size={14} />
-              {localizeUi("ui.slurp.messages.tipAttached", {
-                defaultValue: "{{amount}} coin tip goes with this message",
-                amount: composerTipAmount,
-              })}
+              {localizeUi("ui.slurp.messages.tipAttached", { defaultValue: "Tip attached" })}
+              <SlurpCoinAmount amount={composerTipAmount} />
               {composerTipNote && (
                 <span className="max-w-40 truncate font-normal text-[var(--muted-foreground)]">
                   “{composerTipNote}”

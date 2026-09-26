@@ -1,3 +1,4 @@
+import { SlpTimestamp } from "../../base/ui/SlpTimestamp";
 import { ArrowLeft, MessageCircle, Plus, Search } from "lucide-react";
 import type { SlurpComposeTarget } from "../../features/messages/slp-messages-contract";
 import { useOpenSlurpCreatorThread, useSlurpComposeTargets } from "../../features/messages/slp-messages-hooks";
@@ -5,9 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { Avatar } from "../../base/chrome/SlpChrome";
-import { ErrorState, LoadingState } from "../../modules/chrome/SlpStateKit";
+import { SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SlurpEmptyArtwork } from "../../base/chrome/SlpEmptyArtwork";
-import { formatTime } from "../../base/ui/slp-date-time";
 import type { SlurpThread } from "../../features/messages/slp-messages-contract";
 import { useSlurpThreads } from "../../features/messages/slp-messages-hooks";
 import { toast } from "sonner";
@@ -119,7 +119,7 @@ export function SlurpMessagesView({
   onExit?: (() => void) | null;
   exitTitle?: string;
 }) {
-  const { t: localizeUi, i18n } = useUiTranslation();
+  const { t: localizeUi } = useUiTranslation();
   const [openThreadId, setOpenThreadId] = useState<string | null>(initialThreadId);
   // Opening a chat from a profile lands in it directly, and backing out returns to the inbox
   // rather than to the profile, so Messages behaves the same however you arrived.
@@ -383,7 +383,6 @@ export function SlurpMessagesView({
                   creatorAvatarUrl: null,
                   viewerUnread: thread.creatorUnread,
                 }}
-                locale={i18n.language}
                 onOpen={() => openFromList(thread.id)}
                 selected={thread.id === openThreadId}
               />
@@ -403,7 +402,6 @@ export function SlurpMessagesView({
               <ThreadRow
                 key={thread.id}
                 thread={thread}
-                locale={i18n.language}
                 onOpen={() => openFromList(thread.id)}
                 pending
                 selected={thread.id === openThreadId}
@@ -420,9 +418,9 @@ export function SlurpMessagesView({
             {localizeUi("ui.slurp.messages.conversations", { defaultValue: "Conversations" })}
           </h2>
           {threadsQuery.isPending ? (
-            <LoadingState label={localizeUi("ui.slurp.inbox.loadingMessages", { defaultValue: "Loading messages…" })} />
+            <SlpSkeleton label={localizeUi("ui.slurp.inbox.loadingMessages", { defaultValue: "Loading messages…" })} />
           ) : threadsQuery.isError && !threadsQuery.data ? (
-            <ErrorState
+            <SlpErrorState
               title={localizeUi("ui.slurp.messages.loadError", { defaultValue: "Could not load your messages" })}
               onRetry={() => void threadsQuery.refetch()}
             />
@@ -444,7 +442,6 @@ export function SlurpMessagesView({
               <ThreadRow
                 key={thread.id}
                 thread={thread}
-                locale={i18n.language}
                 onOpen={() => openFromList(thread.id)}
                 selected={thread.id === openThreadId}
               />
@@ -503,13 +500,11 @@ export function SlurpMessagesView({
 
 function ThreadRow({
   thread,
-  locale,
   onOpen,
   pending = false,
   selected = false,
 }: {
   thread: SlurpThread;
-  locale: string;
   onOpen: () => void;
   pending?: boolean;
   selected?: boolean;
@@ -552,12 +547,10 @@ function ThreadRow({
           {thread.lastMessagePreview || localizeUi("ui.slurp.messages.noMessages", { defaultValue: "No messages yet" })}
         </span>
       </span>
-      <time
-        dateTime={thread.lastMessageAt}
+      <SlpTimestamp
+        value={thread.lastMessageAt}
         className="shrink-0 self-start pt-0.5 text-[0.65rem] tabular-nums text-[var(--muted-foreground)]"
-      >
-        {formatTime(thread.lastMessageAt, locale)}
-      </time>
+      />
       {thread.viewerUnread > 0 && (
         <span
           className="ml-1 inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)] px-1.5 text-[0.65rem] font-black tabular-nums text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]"

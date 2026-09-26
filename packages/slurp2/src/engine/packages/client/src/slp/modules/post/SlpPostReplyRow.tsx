@@ -1,3 +1,4 @@
+import { SlpTimestamp } from "../../base/ui/SlpTimestamp";
 import { Fragment, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { Heart, MessageCircle } from "lucide-react";
@@ -7,7 +8,6 @@ import type { SlpPostCardModel } from "./SlpPostTypes";
 import type { ChatImage } from "../../../hooks/use-gallery";
 import { cn } from "../../../lib/utils";
 import { Avatar, SlurpMediaImg } from "../../base/chrome/SlpChrome";
-import { formatTime } from "../../base/ui/slp-date-time";
 import { createSlpLightboxImage, slpCommentActionClass, textareaClass } from "./SlpPostHelpers";
 import { SlpTextContent } from "./SlpMarkdownRenderer";
 import { SlpInteractionMenu } from "./SlpInteractionMenu";
@@ -73,7 +73,7 @@ export function SlpPostReplyRow({
   setImageLightbox,
   renderReplyComposer,
 }: SlpPostReplyRowProps) {
-  const { t: localizeUi, i18n } = useUiTranslation();
+  const { t: localizeUi } = useUiTranslation();
   const actorAccount = accountById.get(reply.actorAccountId) ?? null;
   const actor = actorAccount ?? reply.actorSnapshot;
   const parentReply = reply.parentInteractionId ? (replyById.get(reply.parentInteractionId) ?? null) : null;
@@ -150,7 +150,7 @@ export function SlpPostReplyRow({
               @{actor?.handle ?? localizeUi("ui.slurp.profile.fallbackHandle")}
             </span>
             <span className="!text-[var(--noodle-accent-foreground)] opacity-75">
-              · {formatTime(reply.createdAt, i18n.language)}
+              · <SlpTimestamp value={reply.createdAt} tappable />
             </span>
           </div>
           {parentActor && parentReply?.parentInteractionId && (

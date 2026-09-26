@@ -30,14 +30,18 @@ assert.match(src("app/SlpHomeHost.tsx"), /shellPersonaAccount && accountsQuery\.
 assert.match(src("app/slp-home-actions.ts"), /shellPersonaAccount && accountsQuery\.isSuccess/u);
 assert.match(src("features/messages/SlpThreadView.tsx"), /const notLoaded = !threadQuery\.data/u);
 
-// B7: every improvised menu shares one Escape / outside-tap hook.
+// B7: every former improvised menu is an SlpSheet (step 0c), which closes on Escape and outside tap.
 for (const file of [
   "modules/post/SlpPostMenu.tsx",
   "modules/post/SlpInteractionMenu.tsx",
   "app/screens/SlpProfileLeadingActions.tsx",
 ]) {
-  assert.match(src(file), /useDismiss\(/u, `${file} must close on Escape and outside tap`);
+  assert.match(src(file), /<SlpSheet\b/u, `${file} must close on Escape and outside tap`);
 }
+const sheet = src("modules/chrome/SlpSheet.tsx");
+assert.match(sheet, /event\.key === "Escape"/u);
+assert.match(sheet, /addEventListener\("pointerdown", outside\)/u);
+assert.match(sheet, /onClick=\{requestClose\}/u, "a scrim tap closes the phone sheet and the modal");
 
 // B9: the selected Discover segment keeps a visible icon.
 assert.doesNotMatch(src("features/discovery/SlpDiscoverToolbar.tsx"), /bg-\[var\(--noodle-accent\)\] text-white/u);

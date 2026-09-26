@@ -1,3 +1,4 @@
+import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SLP_CREATOR_FEED_WINDOW_SIZE } from "./SlpHomeHelpers";
 import { SlurpMomentsShelf, SlurpMomentViewer } from "./SlpScreenMoments";
 import { SubscriptionSections } from "./SlpScreenSubscriptions";
@@ -17,7 +18,7 @@ import { useCreatorViewer } from "../../features/feed/slp-feed-viewer-hooks";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { SlpPostCardCtx } from "../../modules/post/SlpPostTypes";
-import { SlurpCoinAmount } from "../../modules/coin/SlpCoin";
+import { SlurpCoinAmount, slpCoinPlainText } from "../../modules/coin/SlpCoin";
 import { LockedSlurpPostCard } from "../../modules/post/SlpLockedPostCard";
 import { SlpPostCard } from "../../modules/post/SlpPostCard";
 import { SlurpMediaWall } from "./SlpScreenProfile";
@@ -31,7 +32,6 @@ import {
 import { SlurpInlineAd } from "../../features/ads/SlpInlineAd";
 import { type SlurpDiscoverLayout } from "../../features/discovery/slp-discovery";
 import {
-  EmptyState,
   SlurpFeedSkeleton,
   SlurpAccessTransition,
   toSlpPostCardModel,
@@ -205,19 +205,18 @@ export function ViewerHub({
   if (personas.length === 0) {
     if (personasError) {
       return (
-        <EmptyState
+        <SlpErrorState
           title={localizeUi("ui.noodle.viewerhub.couldNotLoadPersonas")}
           detail={localizeUi("ui.noodle.viewerhub.personaAccessDetail")}
-          action={localizeUi("capabilities.actions.tryAgain")}
-          onAction={onRetryPersonas}
+          onRetry={onRetryPersonas}
         />
       );
     }
     if (personasLoading) {
-      return <EmptyState title={localizeUi("ui.noodle.viewerhub.loadingPersonas")} detail="" />;
+      return <SlpSkeleton label={localizeUi("ui.noodle.viewerhub.loadingPersonas")} />;
     }
     return (
-      <EmptyState
+      <SlpEmptyState
         title={localizeUi("ui.noodle.viewerhub.createAPersonaToBrowseNoodler")}
         detail={localizeUi("ui.noodle.viewerhub.personaAccessDetail")}
       />
@@ -349,12 +348,12 @@ export function ViewerHub({
             aria-label={
               walletCoins === null
                 ? localizeUi("ui.slurp.navigation.wallet")
-                : localizeUi("ui.slurp.wallet.balance", { amount: walletCoins })
+                : slpCoinPlainText(localizeUi("ui.slurp.wallet.balance", { amount: walletCoins }))
             }
             title={
               walletCoins === null
                 ? localizeUi("ui.slurp.navigation.wallet")
-                : localizeUi("ui.slurp.wallet.balance", { amount: walletCoins })
+                : slpCoinPlainText(localizeUi("ui.slurp.wallet.balance", { amount: walletCoins }))
             }
           >
             <SlurpCoinAmount amount={walletCoins ?? "…"} watchAmount={walletCoins ?? undefined} />
@@ -489,15 +488,14 @@ export function ViewerHub({
           <SlurpFeedSkeleton />
         </div>
       ) : isError ? (
-        <EmptyState
+        <SlpErrorState
           title={localizeUi("ui.noodle.viewerhub.noodlerCouldNotBeLoadedForThisPersona")}
-          action={localizeUi("capabilities.actions.tryAgain")}
-          onAction={onRetry}
+          onRetry={onRetry}
         />
       ) : scope && scope.creators.length > 0 ? (
         <>
           {feed.length === 0 ? (
-            <EmptyState
+            <SlpEmptyState
               title={
                 searchTerm
                   ? localizeUi("ui.noodle.viewerhub.noSearchResults")
@@ -662,7 +660,7 @@ export function ViewerHub({
           )}
         </>
       ) : (
-        <EmptyState
+        <SlpEmptyState
           title={
             authorProfile
               ? localizeUi("ui.noodle.viewerhub.noOtherStageProfilesAreVisibleToThisPersona")

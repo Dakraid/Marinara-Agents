@@ -1,3 +1,4 @@
+import { SlpCoinText } from "../coin/SlpCoin";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { SlpAnchoredPopover } from "../../base/chrome/SlpAnchoredPopover";
@@ -69,7 +70,7 @@ export function SlurpFanCard({
             })
           : null,
         member.tie && member.tie.spent > 0
-          ? localizeUi("ui.slurp.studio.fanSpent", { defaultValue: "{{count}}", count: member.tie.spent })
+          ? localizeUi("ui.slurp.studio.fanSpent", { defaultValue: "{{count}} <coin/>", count: member.tie.spent })
           : null,
         ...member.traits,
       ].filter(Boolean)
@@ -94,7 +95,11 @@ export function SlurpFanCard({
               <>
                 <p className="text-sm font-bold">{member.displayName}</p>
                 <p className="text-xs text-[var(--muted-foreground)]">@{member.handle}</p>
-                {facts.length > 0 && <p className="mt-2 text-xs text-[var(--muted-foreground)]">{facts.join(" · ")}</p>}
+                {facts.length > 0 && (
+                  <p className="mt-2 text-xs text-[var(--muted-foreground)]">
+                    <SlpCoinText>{facts.join(" · ")}</SlpCoinText>
+                  </p>
+                )}
                 <p className="mt-2 text-xs text-[var(--muted-foreground)]">
                   {localizeUi("ui.slurp.audience.aroundSince", {
                     date: new Date(member.tie?.firstSeenAt ?? member.joinedAt).toLocaleDateString(),

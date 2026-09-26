@@ -4,7 +4,7 @@ import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../../lib/utils";
 import { useSlurpMediaSrc } from "../../../base/media/slp-media-src";
 import { formatTime } from "../../../base/ui/slp-date-time";
-import { SlurpCoin, SlurpCoinAmount, SlurpCoinBurst } from "../../../modules/coin/SlpCoin";
+import { SlurpCoin, SlurpCoinAmount, SlurpCoinBurst, SlpCoinText } from "../../../modules/coin/SlpCoin";
 import { useSlurpWallet } from "../../economy/slp-economy-contract";
 import {
   useAcceptSlurpCommission,
@@ -252,10 +252,12 @@ export function CommissionRow({
       {ownsCreator && commission.state === "quoted" && pendingOffer !== null && (
         <div className="mt-3 flex min-w-0 flex-wrap items-center gap-2 rounded-xl bg-[var(--noodle-accent)]/10 p-3">
           <span className="font-semibold">
-            {localizeUi("ui.slurp.messages.commissionOfferReceived", {
-              defaultValue: "The fan offers {{amount}} coins.",
-              amount: pendingOffer,
-            })}
+            <SlpCoinText>
+              {localizeUi("ui.slurp.messages.commissionOfferReceived", {
+                defaultValue: "The fan offers {{amount}} <coin/>.",
+                amount: pendingOffer,
+              })}
+            </SlpCoinText>
           </span>
           <button
             type="button"
@@ -283,10 +285,12 @@ export function CommissionRow({
         (commission.state === "brief" || commission.state === "quoted") &&
         (commission.suggestedPrice !== undefined && commission.state === "brief" ? (
           <p className="mt-3 text-xs text-[var(--muted-foreground)]">
-            {localizeUi("ui.slurp.messages.commissionSuggestedQuote", {
-              defaultValue: "Your pricing suggests {{amount}} coins for this brief.",
-              amount: commission.suggestedPrice,
-            })}
+            <SlpCoinText>
+              {localizeUi("ui.slurp.messages.commissionSuggestedQuote", {
+                defaultValue: "Your pricing suggests {{amount}} <coin/> for this brief.",
+                amount: commission.suggestedPrice,
+              })}
+            </SlpCoinText>
           </p>
         ) : null)}
 
@@ -297,7 +301,6 @@ export function CommissionRow({
               defaultValue: commission.state === "quoted" ? "Update quote" : "Quote price",
             })}
             <span className="flex h-11 items-center gap-1.5 rounded-xl bg-[var(--slurp-canvas,var(--background))] px-3 ring-1 ring-inset ring-[var(--noodle-divider)] focus-within:ring-2 focus-within:ring-[var(--noodle-accent)]">
-              <SlurpCoin size={15} />
               <input
                 id={`slurp-quote-${commission.id}`}
                 type="number"
@@ -307,6 +310,7 @@ export function CommissionRow({
                 onChange={(event) => setPrice(Math.max(1, Math.floor(Number(event.target.value) || 0)))}
                 className="w-20 bg-transparent text-sm tabular-nums outline-none"
               />
+              <SlurpCoin size={15} />
             </span>
           </label>
           <button
@@ -378,10 +382,12 @@ export function CommissionRow({
           </button>
           {wallet.data && wallet.data.coins < commission.price && (
             <span className="text-xs text-red-600 dark:text-red-400">
-              {localizeUi("ui.slurp.messages.commissionBalanceShort", {
-                defaultValue: "You need {{amount}} more coins.",
-                amount: commission.price - wallet.data.coins,
-              })}
+              <SlpCoinText>
+                {localizeUi("ui.slurp.messages.commissionBalanceShort", {
+                  defaultValue: "You need {{amount}} <coin/> more.",
+                  amount: commission.price - wallet.data.coins,
+                })}
+              </SlpCoinText>
             </span>
           )}
         </div>
@@ -389,10 +395,12 @@ export function CommissionRow({
 
       {!ownsCreator && commission.state === "quoted" && pendingOffer !== null && (
         <p className="mt-3 font-semibold text-[var(--muted-foreground)]">
-          {localizeUi("ui.slurp.messages.commissionOfferPending", {
-            defaultValue: "You offered {{amount}} coins. Waiting for the Creator.",
-            amount: pendingOffer,
-          })}
+          <SlpCoinText>
+            {localizeUi("ui.slurp.messages.commissionOfferPending", {
+              defaultValue: "You offered {{amount}} <coin/>. Waiting for the Creator.",
+              amount: pendingOffer,
+            })}
+          </SlpCoinText>
         </p>
       )}
 
@@ -401,7 +409,6 @@ export function CommissionRow({
           <label htmlFor={`slurp-offer-${commission.id}`} className="flex flex-col gap-1 font-bold">
             {localizeUi("ui.slurp.messages.commissionOfferLabel", { defaultValue: "Offer a lower price" })}
             <span className="flex h-11 items-center gap-1.5 rounded-xl bg-[var(--slurp-canvas,var(--background))] px-3 ring-1 ring-inset ring-[var(--noodle-divider)] focus-within:ring-2 focus-within:ring-[var(--noodle-accent)]">
-              <SlurpCoin size={15} />
               <input
                 id={`slurp-offer-${commission.id}`}
                 type="number"
@@ -411,6 +418,7 @@ export function CommissionRow({
                 onChange={(event) => setOffer(Math.max(1, Math.floor(Number(event.target.value) || 0)))}
                 className="w-20 bg-transparent text-sm tabular-nums outline-none"
               />
+              <SlurpCoin size={15} />
             </span>
           </label>
           <button

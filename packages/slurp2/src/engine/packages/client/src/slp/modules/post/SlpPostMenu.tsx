@@ -13,7 +13,7 @@ import {
 import { useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { useDismiss } from "../../base/chrome/slp-popover-hooks";
+import { SlpSheet, SlpSheetGroup, SlpSheetItem } from "../chrome/SlpSheet";
 import type { SlpPostCardCtx, SlpPostCardModel } from "./SlpPostTypes";
 import { slpPostImagePrompt } from "./SlpPostHelpers";
 import { api } from "../../../lib/api-client";
@@ -55,10 +55,8 @@ export function SlpPostMenu({
 }) {
   const { t: localizeUi } = useUiTranslation();
   const [deepDetailsOpen, setDeepDetailsOpen] = useState(false);
-  const [downloadOpen, setDownloadOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement | null>(null);
-  useDismiss(postMenuOpen, () => ctx.setPostMenuId(null), rootRef);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   const downloadShareCard = (filename: string) => {
     void downloadSlpShareCard(toSlpShareCardInput(post), filename).catch((error: unknown) =>
@@ -83,8 +81,14 @@ export function SlpPostMenu({
       );
   };
 
+  const close = () => ctx.setPostMenuId(null);
+  const run = (action: () => void) => () => {
+    close();
+    action();
+  };
+
   return (
-    <div ref={rootRef} className="relative shrink-0">
+    <div className="relative shrink-0">
       {ctx.postManagement && (
         <SlpDeepDetailsModal postId={post.id} open={deepDetailsOpen} onClose={() => setDeepDetailsOpen(false)} />
       )}
@@ -97,180 +101,97 @@ export function SlpPostMenu({
         targetId={post.id}
       />
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => ctx.setPostMenuId((current) => (current === post.id ? null : post.id))}
         className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
         title={localizeUi("ui.noodle.noodlepostcard.postActions")}
         aria-label={localizeUi("ui.noodle.noodlepostcard.postActions")}
+        aria-haspopup="menu"
         aria-expanded={postMenuOpen}
       >
         <MoreHorizontal size={18} />
       </button>
-      {postMenuOpen && (
-        <div
-          role="menu"
-          className="absolute end-0 top-[calc(100%+0.25rem)] z-30 min-w-40 overflow-hidden rounded-lg border border-[var(--noodle-divider)] bg-[var(--background)] py-1 text-xs shadow-2xl shadow-black/30"
-        >
-          <div className="relative">
-            <button
-              type="button"
-              role="menuitem"
-              aria-expanded={downloadOpen}
-              onClick={() => setDownloadOpen((open) => !open)}
-              className="flex min-h-10 w-full items-center gap-2 px-3 text-start transition-colors hover:bg-[var(--accent)]"
-            >
-              <Download size={14} />
-              {localizeUi("ui.slurp.post.download", { defaultValue: "Download" })}
-            </button>
-            {downloadOpen && (
-              <div role="menu" className="border-t border-[var(--noodle-divider)] bg-[var(--accent)]/40 py-1">
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    ctx.setPostMenuId(null);
-                    downloadImage();
-                  }}
-                  className="flex min-h-9 w-full items-center gap-2 px-6 text-start transition-colors hover:bg-[var(--accent)]"
-                >
-                  {localizeUi("ui.slurp.post.downloadImage", { defaultValue: "Download image" })}
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    ctx.setPostMenuId(null);
-                    downloadShareCard(`slurp-${post.id}-card.png`);
-                  }}
-                  className="flex min-h-9 w-full items-center gap-2 px-6 text-start transition-colors hover:bg-[var(--accent)]"
-                >
-                  {localizeUi("ui.slurp.post.downloadCard", { defaultValue: "Download post card" })}
-                </button>
-              </div>
-            )}
-          </div>
-          <div className="my-1 border-t border-[var(--noodle-divider)]" />
-          <button
-            type="button"
-            onClick={() => {
-              ctx.setPostMenuId(null);
-              if (onShare) onShare();
-              else downloadShareCard(`slurp-${post.id}.png`);
-            }}
-            className="flex min-h-10 w-full items-center gap-2 px-3 text-start transition-colors hover:bg-[var(--accent)]"
-          >
+      <SlpSheet
+        kind="menu"
+        open={postMenuOpen}
+        onClose={close}
+        anchorRef={triggerRef}
+        title={localizeUi("ui.noodle.noodlepostcard.postActions")}
+      >
+        <SlpSheetGroup>
+          <SlpSheetItem onSelect={run(() => (onShare ? onShare() : downloadShareCard(`slurp-${post.id}.png`)))}>
             <Share2 size={14} />
             {localizeUi("ui.slurp.post.share", { defaultValue: "Share post" })}
-          </button>
-          <div className="my-1 border-t border-[var(--noodle-divider)]" />
+          </SlpSheetItem>
+          <SlpSheetItem onSelect={run(downloadImage)}>
+            <Download size={14} />
+            {localizeUi("ui.slurp.post.downloadImage", { defaultValue: "Download image" })}
+          </SlpSheetItem>
+          <SlpSheetItem onSelect={run(() => downloadShareCard(`slurp-${post.id}-card.png`))}>
+            <Download size={14} />
+            {localizeUi("ui.slurp.post.downloadCard", { defaultValue: "Download post card" })}
+          </SlpSheetItem>
           {openCreator && (
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                ctx.setPostMenuId(null);
-                openCreator();
-              }}
-              className="flex min-h-10 w-full items-center gap-2 px-3 text-start transition-colors hover:bg-[var(--accent)]"
-            >
+            <SlpSheetItem onSelect={run(openCreator)}>
               <UserRound size={14} />
               {localizeUi("ui.slurp.post.openCreator", { defaultValue: "Open creator" })}
-            </button>
+            </SlpSheetItem>
           )}
           {onReport || ctx.personaAccount ? (
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                ctx.setPostMenuId(null);
-                if (onReport) onReport();
-                else setReportOpen(true);
-              }}
-              className="flex min-h-10 w-full items-center gap-2 px-3 text-start transition-colors hover:bg-[var(--accent)]"
-            >
+            <SlpSheetItem onSelect={run(() => (onReport ? onReport() : setReportOpen(true)))}>
               <Flag size={14} />
               {localizeUi("ui.slurp.post.report", { defaultValue: "Report post" })}
-            </button>
+            </SlpSheetItem>
           ) : null}
-          {hasImageContext && (
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                ctx.setPostMenuId(null);
-                setImageContextOpen((open) => !open);
-              }}
-              className="flex min-h-10 w-full items-center gap-2 px-3 text-start transition-colors hover:bg-[var(--accent)]"
-            >
-              <ImageIcon size={14} />
-              {imageContextOpen
-                ? localizeUi("ui.slurp.post.hideImageContext", { defaultValue: "Hide image context" })
-                : localizeUi("ui.slurp.post.showImageContext", { defaultValue: "Show image context" })}
-            </button>
-          )}
-          {ctx.postManagement && (
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                ctx.setPostMenuId(null);
-                setDeepDetailsOpen(true);
-              }}
-              className="flex min-h-10 w-full items-center gap-2 px-3 text-start transition-colors hover:bg-[var(--accent)]"
-            >
-              <ScanSearch size={14} />
-              {localizeUi("ui.slurp.deepDetails.title", { defaultValue: "Deep details" })}
-            </button>
-          )}
-          {ctx.postManagement && (
-            <>
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  ctx.setPostMenuId(null);
-                  startEditingPost(editablePost);
-                }}
-                className="flex min-h-10 w-full items-center gap-2 px-3 text-start transition-colors hover:bg-[var(--accent)]"
-              >
+        </SlpSheetGroup>
+        {(ctx.postManagement || hasImageContext) && (
+          // Operator actions stay inline but come last and quieter than fan actions (design language §8).
+          <SlpSheetGroup label={localizeUi("ui.slurp.post.creatorTools", { defaultValue: "Creator tools" })}>
+            {ctx.postManagement && (
+              <SlpSheetItem tone="muted" onSelect={run(() => startEditingPost(editablePost))}>
                 <Pencil size={14} />
                 {localizeUi("ui.noodle.noodlepostcard.edit")}
-              </button>
-              {ctx.generatePostImage && (
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    ctx.setPostMenuId(null);
-                    setPromptDraft(slpPostImagePrompt(post) ?? "");
-                  }}
-                  disabled={imageGenerationPending}
-                  className="flex min-h-10 w-full items-center gap-2 px-3 text-start transition-colors hover:bg-[var(--accent)] disabled:opacity-50"
-                >
-                  <RefreshCw
-                    size={14}
-                    className={imageGenerationPending ? "animate-spin motion-reduce:animate-none" : ""}
-                  />
-                  {post.imageUrl
-                    ? localizeUi("ui.slurp.image.regenerate", { defaultValue: "Regenerate image" })
-                    : localizeUi("ui.slurp.image.generate")}
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  ctx.setPostMenuId(null);
-                  deleteNoodlePost(post);
-                }}
-                className="flex min-h-10 w-full items-center gap-2 px-3 text-start text-[var(--slurp-danger)] transition-colors hover:bg-[var(--slurp-danger)]/10 [&_svg]:!text-[var(--slurp-danger)]"
+              </SlpSheetItem>
+            )}
+            {ctx.postManagement && ctx.generatePostImage && (
+              <SlpSheetItem
+                tone="muted"
+                disabled={imageGenerationPending}
+                onSelect={run(() => setPromptDraft(slpPostImagePrompt(post) ?? ""))}
               >
+                <RefreshCw
+                  size={14}
+                  className={imageGenerationPending ? "animate-spin motion-reduce:animate-none" : ""}
+                />
+                {post.imageUrl
+                  ? localizeUi("ui.slurp.image.regenerate", { defaultValue: "Regenerate image" })
+                  : localizeUi("ui.slurp.image.generate")}
+              </SlpSheetItem>
+            )}
+            {hasImageContext && (
+              <SlpSheetItem tone="muted" onSelect={run(() => setImageContextOpen((open) => !open))}>
+                <ImageIcon size={14} />
+                {imageContextOpen
+                  ? localizeUi("ui.slurp.post.hideImageContext", { defaultValue: "Hide image context" })
+                  : localizeUi("ui.slurp.post.showImageContext", { defaultValue: "Show image context" })}
+              </SlpSheetItem>
+            )}
+            {ctx.postManagement && (
+              <SlpSheetItem tone="muted" onSelect={run(() => setDeepDetailsOpen(true))}>
+                <ScanSearch size={14} />
+                {localizeUi("ui.slurp.deepDetails.title", { defaultValue: "Deep details" })}
+              </SlpSheetItem>
+            )}
+            {ctx.postManagement && (
+              <SlpSheetItem tone="danger" onSelect={run(() => deleteNoodlePost(post))}>
                 <Trash2 size={14} />
                 {localizeUi("lorebook.editor.batch.delete")}
-              </button>
-            </>
-          )}
-        </div>
-      )}
+              </SlpSheetItem>
+            )}
+          </SlpSheetGroup>
+        )}
+      </SlpSheet>
     </div>
   );
 }

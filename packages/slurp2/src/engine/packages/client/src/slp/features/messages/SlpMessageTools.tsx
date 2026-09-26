@@ -2,7 +2,7 @@ import { Lock, Megaphone, Minus, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
-import { SlurpCoin, SlurpCoinAmount, SlurpCoinBurst } from "../../modules/coin/SlpCoin";
+import { SlurpCoin, SlurpCoinAmount, SlurpCoinBurst, SlpCoinText } from "../../modules/coin/SlpCoin";
 import { useSlurpWallet } from "../economy/slp-economy-contract";
 import { TIP_PRESETS } from "./SlpMessages";
 import {
@@ -500,8 +500,8 @@ export function SlurpTipPanel({
             className="relative flex min-w-24 items-center justify-center gap-1.5 text-2xl font-black tabular-nums"
           >
             <SlurpCoinBurst active={sendingAmount === amount} />
-            <SlurpCoin size={22} />
             {valid ? amount : "–"}
+            <SlurpCoin size={22} />
           </p>
           <button
             type="button"
@@ -603,11 +603,17 @@ export function SlurpTipPanel({
         onClick={() => (withAttach ? onAttach(amount, note.trim()) : onSendNow(amount, note.trim()))}
         className="flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-[var(--noodle-accent)] px-4 text-sm font-bold text-[var(--slurp-on-accent)] transition-transform active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:active:scale-100"
       >
-        {short && !withAttach
-          ? localizeUi("ui.slurp.messages.tipNotEnough", { defaultValue: "Not enough coins" })
-          : withAttach
-            ? localizeUi("ui.slurp.messages.tipAttach", { defaultValue: "Attach {{amount}} coins", amount })
-            : localizeUi("ui.slurp.messages.tipSendNow", { defaultValue: "Send {{amount}} coins", amount })}
+        {short && !withAttach ? (
+          localizeUi("ui.slurp.messages.tipNotEnough", { defaultValue: "Not enough coins" })
+        ) : withAttach ? (
+          <SlpCoinText>
+            {localizeUi("ui.slurp.messages.tipAttach", { defaultValue: "Attach {{amount}} <coin/>", amount })}
+          </SlpCoinText>
+        ) : (
+          <SlpCoinText>
+            {localizeUi("ui.slurp.messages.tipSendNow", { defaultValue: "Send {{amount}} <coin/>", amount })}
+          </SlpCoinText>
+        )}
       </button>
       <p className="text-center text-[0.65rem] text-[var(--muted-foreground)]">
         {localizeUi("ui.slurp.messages.sendTipDetail", {

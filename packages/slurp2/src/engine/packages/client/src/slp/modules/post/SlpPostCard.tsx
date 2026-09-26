@@ -1,3 +1,4 @@
+import { SlpTimestamp } from "../../base/ui/SlpTimestamp";
 import { AtSign, ChevronDown, Heart, Flame, TrendingUp, MessageCircle, RefreshCw } from "lucide-react";
 import { Fragment, useMemo, useRef, useState } from "react";
 import { slurpPostWentViral, slurpReachWeek } from "../../../../../shared/src/slp/slp-reach.js";
@@ -12,7 +13,6 @@ import { Avatar, labelClass } from "../../base/chrome/SlpChrome";
 import { playSlpPop } from "../sparkle/SlpSparkle";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { Image as ImageIcon } from "lucide-react";
-import { formatTime } from "../../base/ui/slp-date-time";
 import { fieldClass, slpPostImagePrompt, textareaClass } from "./SlpPostHelpers";
 import {
   countInteractions,
@@ -51,7 +51,7 @@ export function SlpPostCard({
    */
   hideImage?: boolean;
 }) {
-  const { t: localizeUi, i18n } = useUiTranslation();
+  const { t: localizeUi } = useUiTranslation();
   const {
     personaAccount,
     editingPostId,
@@ -408,7 +408,7 @@ export function SlpPostCard({
             </div>
             <p className="text-xs font-medium !text-[var(--noodle-accent-foreground)]">
               @{author?.handle ?? localizeUi("ui.slurp.profile.fallbackHandle")} ·{" "}
-              {formatTime(post.createdAt, i18n.language)}
+              <SlpTimestamp value={post.createdAt} tappable />
               {reachBadge && (
                 <span className="ms-1.5 inline-flex items-center gap-1 rounded-full bg-[var(--noodle-accent)]/15 px-1.5 py-px text-[11px] font-bold text-[var(--noodle-accent-foreground)]">
                   {reachBadge === "viral" ? (

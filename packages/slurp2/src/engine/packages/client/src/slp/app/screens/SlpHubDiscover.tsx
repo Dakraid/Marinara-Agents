@@ -1,5 +1,6 @@
+import { SlpEmptyState } from "../../modules/chrome/SlpStateKit";
 import { ChevronLeft, Search, X } from "lucide-react";
-import { EmptyState, LoadMoreFeedButton, SLP_CREATOR_FEED_WINDOW_SIZE } from "./SlpHomeHelpers";
+import { LoadMoreFeedButton, SLP_CREATOR_FEED_WINDOW_SIZE } from "./SlpHomeHelpers";
 import { HIDE_ON_SCROLL_CLASS } from "../../base/chrome/SlpChrome";
 import { SlurpCreatorProfileCard } from "../../modules/creator/SlpCreatorProfileCard";
 import { SlurpDiscoverToolbar } from "../../features/discovery/SlpDiscoverToolbar";
@@ -148,7 +149,7 @@ export function SlpHubDiscover({
               )}
             </div>
           ) : (
-            <EmptyState
+            <SlpEmptyState
               title={localizeUi("ui.noodle.viewerhub.noSearchResults")}
               detail={localizeUi("ui.slurp.empty.searchDetail")}
               action={localizeUi("ui.slurp.empty.clearSearch")}

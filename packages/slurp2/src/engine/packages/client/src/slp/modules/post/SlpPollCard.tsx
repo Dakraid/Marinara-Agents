@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { SlpAccount, SlpInteraction, SlpPoll } from "../../../../../shared/src/slp/slp-social.types.js";
 import { cn } from "../../../lib/utils";
 import { Avatar } from "../../base/chrome/SlpChrome";
+import { formatSlpPercent } from "../../base/ui/slp-number-format";
 import { useTranslation as useUiTranslation } from "react-i18next";
 
 export function SlpPollCard({
@@ -24,7 +25,7 @@ export function SlpPollCard({
   onVote: (optionId: string) => void;
   onOpenProfile: (account: SlpAccount) => void;
 }) {
-  const { t: localizeUi } = useUiTranslation();
+  const { t: localizeUi, i18n } = useUiTranslation();
   const totalVotes = votes.length;
   const [showVoters, setShowVoters] = useState(false);
   return (
@@ -74,7 +75,9 @@ export function SlpPollCard({
                 <span className="relative flex min-w-0 flex-1 items-center gap-2">
                   {selected && <Check size={14} className="shrink-0 text-[var(--noodle-accent-foreground)]" />}
                   <span className="min-w-0 flex-1 break-words">{option.label}</span>
-                  <span className="shrink-0 text-[var(--muted-foreground)]">{percentage}%</span>
+                  <span className="shrink-0 tabular-nums text-[var(--muted-foreground)]">
+                    {formatSlpPercent(percentage / 100, i18n.language)}
+                  </span>
                 </span>
               </button>
               {showVoters && optionVotes > 0 && (

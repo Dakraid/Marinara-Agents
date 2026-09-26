@@ -1,9 +1,10 @@
+import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SlpShell } from "../../modules/chrome/SlpShell";
 import { SlurpWalletView } from "./SlpScreenWallet";
-import { EmptyState, DisclosureBadge } from "./SlpHomeHelpers";
+import { DisclosureBadge } from "./SlpHomeHelpers";
 import { SlurpInboxView } from "./SlpScreenMessages";
 import { SlurpStudioView } from "./SlpScreenStudio";
-import { ChevronLeft, ChevronRight, Loader2, Plus, TriangleAlert, UserRound } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, TriangleAlert, UserRound } from "lucide-react";
 import { ProfileInitial } from "../../base/chrome/SlpChrome";
 import { isSlurpDiscoveryProfileIncomplete } from "../../features/discovery/slp-discovery";
 import type { SlurpHomeHostView } from "./SlpHomeCreatorFlow";
@@ -160,15 +161,11 @@ export function renderSlurpHomeDestinations({
               </button>
             </div>
             {accountsQuery.isLoading ? (
-              <div className="flex justify-center py-16">
-                <Loader2 size={24} className="animate-spin text-[var(--noodle-accent-foreground)]" />
-              </div>
+              <SlpSkeleton count={3} />
             ) : accountsQuery.isError ? (
-              <EmptyState
+              <SlpErrorState
                 title={localizeUi("ui.noodle.noodlerhome.stageProfilesCouldNotBeLoaded")}
-                action={localizeUi("capabilities.actions.tryAgain")}
-                onAction={retryAccountsOrReload}
-                icon={TriangleAlert}
+                onRetry={retryAccountsOrReload}
               />
             ) : accountsQuery.data && accountsQuery.data.length > 0 ? (
               <div className="divide-y divide-[var(--noodle-divider)]">
@@ -213,7 +210,7 @@ export function renderSlurpHomeDestinations({
             ) : (
               // With no profiles and no eligible sources loaded, the create button is disabled, so a
               // failed sources query would leave the page with nothing to act on but a page reload.
-              <EmptyState
+              <SlpEmptyState
                 title={
                   eligibleAccountsQuery.isError
                     ? localizeUi("ui.noodle.noodlerhome.sourcesUnavailable")

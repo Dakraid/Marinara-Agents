@@ -185,7 +185,8 @@ export function SlurpCreatorProfileCard({
                 <>
                   {localizeUi("ui.slurp.discover.subscribe", { defaultValue: "Subscribe" })} ·{" "}
                   <SlurpCoinAmount
-                    amount={`${creator.subscriptionPrice ?? DEFAULT_SLURP_SUBSCRIPTION_PRICE}/week`}
+                    amount={creator.subscriptionPrice ?? DEFAULT_SLURP_SUBSCRIPTION_PRICE}
+                    suffix={localizeUi("ui.slurp.unlocksheet.perWeek", { defaultValue: "/ week" })}
                     size={13}
                   />
                 </>

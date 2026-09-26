@@ -1,3 +1,4 @@
+import { SlpCoinText } from "../../modules/coin/SlpCoin";
 import {
   SLURP_AWAY_STATUSES,
   SLURP_AWAY_TITLE_FALLBACKS,
@@ -9,7 +10,7 @@ import { Info, Loader2 } from "lucide-react";
 import { getApiErrorMessage } from "../../../lib/api-client";
 import { useSlurpThreadViewModel } from "./slp-thread-actions";
 import type { SlurpThreadViewProps } from "./slp-thread-view-model";
-import { ErrorState, LoadingState } from "../../modules/chrome/SlpStateKit";
+import { SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SlpThreadHeader } from "./SlpThreadHeader";
 import { SlpThreadComposer } from "./SlpThreadComposer";
 import { SlpThreadDrawer } from "./SlpThreadDrawer";
@@ -79,14 +80,14 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
         <div className="mx-auto flex min-w-0 w-full max-w-2xl flex-col gap-3">
           {notLoaded &&
             (threadQuery.isError ? (
-              <ErrorState
+              <SlpErrorState
                 title={localizeUi("ui.slurp.messages.threadLoadError", {
                   defaultValue: "Could not load this conversation",
                 })}
                 onRetry={() => void threadQuery.refetch()}
               />
             ) : (
-              <LoadingState />
+              <SlpSkeleton shape="thread" count={5} />
             ))}
           {(olderCount > 0 || nextOlderCursor) && (
             <button
@@ -103,27 +104,31 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
           )}
           {messages.length === 0 && messaging && (
             <p className="mx-auto max-w-sm rounded-xl bg-[var(--slurp-surface)] px-4 py-3 text-center text-xs text-[var(--muted-foreground)] ring-1 ring-inset ring-[var(--noodle-divider)]">
-              {messaging.dmPolicy === "closed"
-                ? localizeUi("ui.slurp.messages.policyClosed", {
-                    defaultValue: "{{name}} has direct messages turned off.",
-                    name: creator?.displayName ?? "",
-                  })
-                : messaging.dmPolicy === "paid" && !subscribed
-                  ? localizeUi("ui.slurp.messages.policyPaid", {
-                      defaultValue: "Your first message costs {{fee}} coins unless you subscribe.",
-                      fee: messaging.requestFee,
-                    }) +
+              {messaging.dmPolicy === "closed" ? (
+                localizeUi("ui.slurp.messages.policyClosed", {
+                  defaultValue: "{{name}} has direct messages turned off.",
+                  name: creator?.displayName ?? "",
+                })
+              ) : messaging.dmPolicy === "paid" && !subscribed ? (
+                <SlpCoinText>
+                  {localizeUi("ui.slurp.messages.policyPaid", {
+                    defaultValue: "Your first message costs {{fee}} <coin/> unless you subscribe.",
+                    fee: messaging.requestFee,
+                  }) +
                     " " +
                     localizeUi("ui.slurp.messages.requestFeeHint", {
                       defaultValue: "The fee opens the thread. It does not guarantee a reply.",
-                    })
-                  : messaging.dmPolicy === "subscribers" && !subscribed
-                    ? localizeUi("ui.slurp.messages.policySubscribers", {
-                        defaultValue: "You are not subscribed, so your first message goes to their requests.",
-                      })
-                    : localizeUi("ui.slurp.messages.policyOpen", {
-                        defaultValue: "Say hello.",
-                      })}
+                    })}
+                </SlpCoinText>
+              ) : messaging.dmPolicy === "subscribers" && !subscribed ? (
+                localizeUi("ui.slurp.messages.policySubscribers", {
+                  defaultValue: "You are not subscribed, so your first message goes to their requests.",
+                })
+              ) : (
+                localizeUi("ui.slurp.messages.policyOpen", {
+                  defaultValue: "Say hello.",
+                })
+              )}
             </p>
           )}
           {visibleTimeline.map((entry, index) => {

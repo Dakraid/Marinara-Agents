@@ -1,3 +1,5 @@
+import { SlpCoinText, slpCoinPlainText } from "../../modules/coin/SlpCoin";
+import { SlpTimestamp } from "../../base/ui/SlpTimestamp";
 import {
   Bell,
   BriefcaseBusiness,
@@ -23,9 +25,8 @@ import {
 import { useSlurpThreads } from "../../features/messages/slp-messages-hooks";
 import { cn } from "../../../lib/utils";
 import { Avatar } from "../../base/chrome/SlpChrome";
-import { ErrorState } from "../../modules/chrome/SlpStateKit";
+import { SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SlpCreatorFrame } from "./SlpHomeHelpers";
-import { formatTime } from "../../base/ui/slp-date-time";
 import { SlurpMessagesView } from "../../features/messages/SlpMessages";
 
 function SlurpInboxHub({
@@ -39,7 +40,7 @@ function SlurpInboxHub({
   onOpenMessages: (threadId?: string | null) => void;
   onOpenProfile: (accountId: string) => void;
 }) {
-  const { t: localizeUi, i18n } = useUiTranslation();
+  const { t: localizeUi } = useUiTranslation();
   const threadsQuery = useSlurpThreads(personaId);
   const [search, setSearch] = useState("");
   const activityRef = useRef<HTMLElement | null>(null);
@@ -92,7 +93,7 @@ function SlurpInboxHub({
         icon: BriefcaseBusiness,
         title,
         context: localizeUi("ui.slurp.inbox.commissionContext", {
-          defaultValue: "{{who}} · {{amount}} coins",
+          defaultValue: "{{who}} · {{amount}} <coin/>",
           who: thread?.creatorDisplayName ?? localizeUi("ui.slurp.events.someone", { defaultValue: "Someone" }),
           amount: commission.price,
         }),
@@ -165,7 +166,9 @@ function SlurpInboxHub({
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-bold">{item.title}</span>
-                      <span className="block truncate text-xs text-[var(--muted-foreground)]">{item.context}</span>
+                      <span className="block truncate text-xs text-[var(--muted-foreground)]">
+                        <SlpCoinText>{item.context}</SlpCoinText>
+                      </span>
                     </span>
                     <span className="hidden min-h-10 shrink-0 items-center rounded-lg px-3 text-xs font-bold text-[var(--noodle-accent-foreground)] sm:inline-flex">
                       {item.action}
@@ -216,11 +219,12 @@ function SlurpInboxHub({
             </header>
             <div className="flex flex-col gap-2">
               {threadsQuery.isPending ? (
-                <p className="rounded-2xl bg-[var(--slurp-surface)] px-5 py-8 text-center text-xs text-[var(--muted-foreground)] ring-1 ring-inset ring-white/[0.05]">
-                  {localizeUi("ui.slurp.inbox.loadingMessages", { defaultValue: "Loading messages…" })}
-                </p>
+                <SlpSkeleton
+                  count={3}
+                  label={localizeUi("ui.slurp.inbox.loadingMessages", { defaultValue: "Loading messages…" })}
+                />
               ) : threadsQuery.isError && !threadsQuery.data ? (
-                <ErrorState
+                <SlpErrorState
                   title={localizeUi("ui.slurp.messages.loadError", { defaultValue: "Could not load your messages" })}
                   onRetry={() => void threadsQuery.refetch()}
                 />
@@ -273,12 +277,10 @@ function SlurpInboxHub({
                       </span>
                     </span>
                     <span className="flex shrink-0 flex-col items-end gap-1 self-stretch py-1">
-                      <time
-                        dateTime={thread.lastMessageAt}
+                      <SlpTimestamp
+                        value={thread.lastMessageAt}
                         className="text-[0.65rem] tabular-nums text-[var(--muted-foreground)]"
-                      >
-                        {formatTime(thread.lastMessageAt, i18n.language)}
-                      </time>
+                      />
                       {thread.viewerUnread > 0 && (
                         <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--noodle-accent)] px-1.5 text-[0.65rem] font-black tabular-nums text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]">
                           {thread.viewerUnread}
@@ -414,7 +416,7 @@ function SlurpNotificationsView({
   search?: string;
   hiddenSubjectIds?: ReadonlySet<string>;
 }) {
-  const { t: localizeUi, i18n } = useUiTranslation();
+  const { t: localizeUi } = useUiTranslation();
   const notificationsQuery = useSlurpNotifications(personaId);
   const { mutate: markSeen } = useMarkSlurpNotificationsSeen();
   const unseen = notificationsQuery.data?.unseen ?? [];
@@ -450,7 +452,7 @@ function SlurpNotificationsView({
   const groupSummary = (group: Extract<SlurpEventGroup, { type: "group" }>) =>
     group.total > 0
       ? localizeUi("ui.slurp.events.coinsReceived", {
-          defaultValue: "{{count}} coins received",
+          defaultValue: "{{count}} <coin/> received",
           count: group.total,
         })
       : localizeUi(`ui.slurp.events.group.${group.kind}`, {
@@ -501,7 +503,7 @@ function SlurpNotificationsView({
     if (!needle) return true;
     const haystack = [
       group.type === "group" ? groupTitle(group.kind) : "",
-      ...events.map((event) => `${event.actorLabel ?? ""} ${describeEvent(event)}`),
+      ...events.map((event) => `${event.actorLabel ?? ""} ${slpCoinPlainText(describeEvent(event))}`),
     ]
       .join(" ")
       .toLocaleLowerCase();
@@ -570,7 +572,9 @@ function SlurpNotificationsView({
                       {group.count}
                     </span>
                   </span>
-                  <span className="block truncate text-xs text-[var(--muted-foreground)]">{groupSummary(group)}</span>
+                  <span className="block truncate text-xs text-[var(--muted-foreground)]">
+                    <SlpCoinText>{groupSummary(group)}</SlpCoinText>
+                  </span>
                 </span>
                 <ChevronDown
                   size={17}
@@ -607,13 +611,13 @@ function SlurpNotificationsView({
                             <EventIcon size={14} aria-hidden="true" />
                           </span>
                         )}
-                        <span className="min-w-0 flex-1 text-xs font-semibold leading-5">{describeEvent(event)}</span>
-                        <time
-                          dateTime={event.createdAt}
+                        <span className="min-w-0 flex-1 text-xs font-semibold leading-5">
+                          <SlpCoinText>{describeEvent(event)}</SlpCoinText>
+                        </span>
+                        <SlpTimestamp
+                          value={event.createdAt}
                           className="shrink-0 text-[0.65rem] tabular-nums text-[var(--muted-foreground)]"
-                        >
-                          {formatTime(event.createdAt, i18n.language)}
-                        </time>
+                        />
                         {destination && (
                           <ChevronRight
                             size={14}
@@ -660,11 +664,11 @@ function SlurpNotificationsView({
             <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full", appearance.tone)}>
               <EventIcon size={17} strokeWidth={2} aria-hidden="true" />
             </span>
-            <span className="min-w-0 pt-0.5 text-sm font-semibold leading-5">{describeEvent(group.event)}</span>
+            <span className="min-w-0 pt-0.5 text-sm font-semibold leading-5">
+              <SlpCoinText>{describeEvent(group.event)}</SlpCoinText>
+            </span>
           </span>
-          <time dateTime={at} className="shrink-0 text-[0.65rem] tabular-nums text-[var(--muted-foreground)]">
-            {formatTime(at, i18n.language)}
-          </time>
+          <SlpTimestamp value={at} className="shrink-0 text-[0.65rem] tabular-nums text-[var(--muted-foreground)]" />
         </>
       );
       return (
@@ -702,11 +706,9 @@ function SlurpNotificationsView({
         )}
       </header>
       {notificationsQuery.isPending ? (
-        <p className="rounded-2xl bg-[var(--slurp-surface)] px-5 py-8 text-center text-xs text-[var(--muted-foreground)] ring-1 ring-inset ring-white/[0.05]">
-          {localizeUi("ui.slurp.inbox.loadingActivity", { defaultValue: "Loading activity…" })}
-        </p>
+        <SlpSkeleton label={localizeUi("ui.slurp.inbox.loadingActivity", { defaultValue: "Loading activity…" })} />
       ) : notificationsQuery.isError && !notificationsQuery.data ? (
-        <ErrorState
+        <SlpErrorState
           title={localizeUi("ui.slurp.inbox.activityError", { defaultValue: "Could not load your activity" })}
           onRetry={() => void notificationsQuery.refetch()}
         />

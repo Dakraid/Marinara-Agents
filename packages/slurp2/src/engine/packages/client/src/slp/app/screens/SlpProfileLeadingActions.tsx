@@ -1,9 +1,9 @@
 import { BookmarkCheck, BookmarkPlus, MessageCircle } from "lucide-react";
 import { useRef } from "react";
-import { useDismiss, useKeepInViewport } from "../../base/chrome/slp-popover-hooks";
 import { showConfirmDialog } from "../../../lib/app-dialogs";
-import { SlurpCoinAmount, SlurpCoinBurst } from "../../modules/coin/SlpCoin";
-import { SlpPrimaryButton } from "../../modules/chrome/SlpButton";
+import { SlurpCoinAmount, SlurpCoinBurst, SlpCoinText } from "../../modules/coin/SlpCoin";
+import { SlpChip, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
+import { SlpSheet } from "../../modules/chrome/SlpSheet";
 import { playSlpSpendMoment } from "../../modules/sparkle/SlpSparkle";
 import { slurpSubscriptionPriceOf } from "./SlpHomeHelpers";
 import type { StageProfileViewModel } from "./slp-profile-view-model";
@@ -29,14 +29,26 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
     viewerCreator,
     viewingOwnCreator,
   } = model;
-  const tipRootRef = useRef<HTMLDivElement | null>(null);
-  const tipPanelRef = useRef<HTMLDivElement | null>(null);
-  useDismiss(tipOpen, () => setTipOpen(false), tipRootRef);
-  const tipShift = useKeepInViewport(tipOpen, tipPanelRef);
-  // The popover closes on send, so the spend moment starts from the Tip button that opened it.
+  const tipButtonRef = useRef<HTMLButtonElement | null>(null);
+  // The sheet closes on send, so the spend moment starts from the Tip button that opened it.
   const playTipMoment = () => {
-    const tipButton = tipRootRef.current?.querySelector("button");
-    if (tipButton) playSlpSpendMoment(tipButton);
+    if (tipButtonRef.current) playSlpSpendMoment(tipButtonRef.current);
+  };
+  const sendTip = (amount: number) => {
+    if (!viewerAccount?.entityId) return;
+    tipCreator.mutate(
+      {
+        accountId: profile.id,
+        personaId: viewerAccount.entityId,
+        amount,
+        requestId:
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random()}`,
+      },
+      { onSuccess: playTipMoment },
+    );
+    setTipOpen(false);
   };
 
   return !editing && !viewingOwnCreator && viewerCreator ? (
@@ -107,7 +119,10 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
           <SlurpCoinBurst active={subscriptionPending} />
           {localizeUi("ui.slurp.profile.subscribe")}
           {" · "}
-          <SlurpCoinAmount amount={`${slurpSubscriptionPriceOf(viewerCreator)} / week`} />
+          <SlurpCoinAmount
+            amount={slurpSubscriptionPriceOf(viewerCreator)}
+            suffix={localizeUi("ui.slurp.unlocksheet.perWeek", { defaultValue: "/ week" })}
+          />
         </SlpPrimaryButton>
       )}
       {!viewerCreator.subscribed && (
@@ -124,97 +139,68 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
         className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-[var(--noodle-divider)] px-4 text-sm font-bold transition-[background-color,opacity,transform] hover:bg-[var(--accent)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:active:scale-100"
       >
         <MessageCircle size={16} aria-hidden="true" />
-        {offerMessaging?.dmPolicy === "paid" && !viewerCreator.subscribed && offerMessaging.requestFee > 0
-          ? localizeUi("ui.slurp.profile.requestMessage", {
-              defaultValue: "Request message · {{count}} coins",
+        {offerMessaging?.dmPolicy === "paid" && !viewerCreator.subscribed && offerMessaging.requestFee > 0 ? (
+          <SlpCoinText>
+            {localizeUi("ui.slurp.profile.requestMessage", {
+              defaultValue: "Request message · {{count}} <coin/>",
               count: offerMessaging.requestFee,
-            })
-          : offerMessaging?.dmPolicy === "closed"
-            ? localizeUi("ui.slurp.profile.messagingUnavailable", { defaultValue: "Messaging unavailable" })
-            : localizeUi("ui.slurp.profile.message", { defaultValue: "Message" })}
-      </button>
-      <div ref={tipRootRef} className="relative">
-        <button
-          type="button"
-          disabled={tipCreator.isPending}
-          onClick={() => setTipOpen((open) => !open)}
-          className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--noodle-divider)] px-4 text-sm font-bold transition-[background-color,opacity,transform] hover:bg-[var(--accent)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:opacity-50"
-        >
-          {localizeUi("ui.slurp.profile.tip", { defaultValue: "Tip" })}
-        </button>
-        {tipOpen && (
-          <div
-            ref={tipPanelRef}
-            style={tipShift ? { transform: `translateX(${tipShift}px)` } : undefined}
-            className="absolute end-0 top-[calc(100%+0.5rem)] z-20 w-56 rounded-lg border border-[var(--noodle-divider)] bg-[var(--background)] p-3 shadow-xl"
-          >
-            <p className="text-xs font-semibold text-[var(--muted-foreground)]">
-              {localizeUi("ui.slurp.profile.tipAmount", { defaultValue: "Tip amount" })}
-            </p>
-            <div className="mt-2 grid grid-cols-4 gap-1.5">
-              {[1, 5, 10, 25].map((amount) => (
-                <button
-                  key={amount}
-                  type="button"
-                  onClick={() => {
-                    if (!viewerAccount?.entityId) return;
-                    tipCreator.mutate(
-                      {
-                        accountId: profile.id,
-                        personaId: viewerAccount.entityId,
-                        amount,
-                        requestId:
-                          typeof crypto !== "undefined" && "randomUUID" in crypto
-                            ? crypto.randomUUID()
-                            : `${Date.now()}-${Math.random()}`,
-                      },
-                      { onSuccess: playTipMoment },
-                    );
-                    setTipOpen(false);
-                  }}
-                  className="min-h-9 rounded-md bg-[var(--accent)] text-xs font-bold hover:bg-[var(--noodle-accent)]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
-                >
-                  {amount}
-                </button>
-              ))}
-            </div>
-            <div className="mt-2 flex gap-1.5">
-              <input
-                type="number"
-                min={1}
-                max={9999}
-                value={customTip}
-                onChange={(event) => setCustomTip(event.target.value)}
-                aria-label={localizeUi("ui.slurp.profile.customTip", { defaultValue: "Custom tip amount" })}
-                className="min-h-11 min-w-0 flex-1 rounded-xl border border-[var(--noodle-divider)] bg-[var(--background)] px-3 text-sm"
-              />
-              <SlpPrimaryButton
-                disabled={!viewerAccount?.entityId || !Number.isInteger(Number(customTip)) || Number(customTip) < 1}
-                onClick={() => {
-                  if (!viewerAccount?.entityId) return;
-                  tipCreator.mutate(
-                    {
-                      accountId: profile.id,
-                      personaId: viewerAccount.entityId,
-                      amount: Number(customTip),
-                      requestId:
-                        typeof crypto !== "undefined" && "randomUUID" in crypto
-                          ? crypto.randomUUID()
-                          : `${Date.now()}-${Math.random()}`,
-                    },
-                    { onSuccess: playTipMoment },
-                  );
-                  setCustomTip("");
-                  setTipOpen(false);
-                }}
-                className="px-4"
-              >
-                {localizeUi("ui.slurp.profile.sendTip", { defaultValue: "Send" })}
-              </SlpPrimaryButton>
-            </div>
-          </div>
+            })}
+          </SlpCoinText>
+        ) : offerMessaging?.dmPolicy === "closed" ? (
+          localizeUi("ui.slurp.profile.messagingUnavailable", { defaultValue: "Messaging unavailable" })
+        ) : (
+          localizeUi("ui.slurp.profile.message", { defaultValue: "Message" })
         )}
-      </div>
+      </button>
+      <button
+        ref={tipButtonRef}
+        type="button"
+        disabled={tipCreator.isPending}
+        aria-haspopup="dialog"
+        aria-expanded={tipOpen}
+        onClick={() => setTipOpen((open) => !open)}
+        className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--noodle-divider)] px-4 text-sm font-bold transition-[background-color,opacity,transform] hover:bg-[var(--accent)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:opacity-50"
+      >
+        {localizeUi("ui.slurp.profile.tip", { defaultValue: "Tip" })}
+      </button>
+      <SlpSheet
+        open={tipOpen}
+        onClose={() => setTipOpen(false)}
+        anchorRef={tipButtonRef}
+        title={localizeUi("ui.slurp.profile.tipAmount", { defaultValue: "Tip amount" })}
+      >
+        <div className="px-3 pb-1 pt-2">
+          {/* One tap sends: the price is on the chip, and the spend moment is the feedback. */}
+          <div className="grid grid-cols-4 gap-2">
+            {[1, 5, 10, 25].map((amount) => (
+              <SlpChip key={amount} disabled={!viewerAccount?.entityId} onClick={() => sendTip(amount)}>
+                <SlurpCoinAmount amount={amount} />
+              </SlpChip>
+            ))}
+          </div>
+          <div className="mt-3 flex gap-2">
+            <input
+              type="number"
+              min={1}
+              max={9999}
+              value={customTip}
+              onChange={(event) => setCustomTip(event.target.value)}
+              aria-label={localizeUi("ui.slurp.profile.customTip", { defaultValue: "Custom tip amount" })}
+              className="min-h-11 min-w-0 flex-1 rounded-xl border border-[var(--noodle-divider)] bg-[var(--slurp-surface)] px-3 text-sm"
+            />
+            <SlpPrimaryButton
+              disabled={!viewerAccount?.entityId || !Number.isInteger(Number(customTip)) || Number(customTip) < 1}
+              onClick={() => {
+                sendTip(Number(customTip));
+                setCustomTip("");
+              }}
+              className="px-4"
+            >
+              {localizeUi("ui.slurp.profile.sendTip", { defaultValue: "Send" })}
+            </SlpPrimaryButton>
+          </div>
+        </div>
+      </SlpSheet>
     </>
   ) : null;
 }

@@ -5,12 +5,12 @@ import type { SlurpStudioCreator } from "../../features/economy/slp-economy-cont
 import { useSetSlurpGoal, useSlurpPayout, useSlurpStudio } from "../../features/economy/slp-economy-hooks";
 import { cn } from "../../../lib/utils";
 import { Avatar } from "../../base/chrome/SlpChrome";
-import { ErrorState } from "../../modules/chrome/SlpStateKit";
+import { SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SlpCreatorFrame } from "./SlpHomeHelpers";
 import { formatTime } from "../../base/ui/slp-date-time";
 import { BroadcastPanel } from "../../features/messages/SlpMessages";
 import { SlurpProjectsPanel } from "../../features/projects/SlpProjectsBoard";
-import { SlurpCoin, SlurpCoinAmount, SlurpCoinBurst } from "../../modules/coin/SlpCoin";
+import { SlurpCoinAmount, SlurpCoinBurst, SlpCoinText } from "../../modules/coin/SlpCoin";
 import { errorMessage } from "./SlpHomeHelpers";
 
 function SlurpStudioView({
@@ -77,11 +77,13 @@ function SlurpStudioView({
         </div>
 
         {studioQuery.isPending ? (
-          <p className="px-1 text-sm text-[var(--muted-foreground)]">
-            {localizeUi("ui.slurp.studio.loading", { defaultValue: "Loading…" })}
-          </p>
+          <SlpSkeleton
+            shape="card"
+            count={3}
+            label={localizeUi("ui.slurp.studio.loading", { defaultValue: "Loading…" })}
+          />
         ) : studioQuery.isError && !studioQuery.data ? (
-          <ErrorState
+          <SlpErrorState
             title={localizeUi("ui.slurp.studio.loadError", { defaultValue: "Could not load your Studio" })}
             onRetry={() => void studioQuery.refetch()}
           />
@@ -135,14 +137,21 @@ function SlurpStudioView({
                     label: localizeUi("ui.slurp.studio.earned", { defaultValue: "Earned" }),
                     value: creator.earnings.lifetime,
                     change: creator.earningsDelta,
+                    coins: true,
                   },
                 ].map((stat) => (
                   <div key={stat.label} className="rounded-lg bg-[var(--accent)] p-3">
                     <p className="text-[0.65rem] font-bold uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
                       {stat.label}
                     </p>
-                    <p className="mt-1 flex items-baseline gap-1.5">
-                      <span className="text-xl font-black tabular-nums">{stat.value.toLocaleString()}</span>
+                    <p className="mt-1 flex flex-wrap items-baseline gap-x-1.5">
+                      <span className="text-xl font-black tabular-nums">
+                        {"coins" in stat ? (
+                          <SlurpCoinAmount amount={stat.value} size={16} />
+                        ) : (
+                          stat.value.toLocaleString()
+                        )}
+                      </span>
                       {delta(stat.change)}
                     </p>
                   </div>
@@ -214,22 +223,24 @@ function SlurpStudioView({
                           </span>
                           {/* A name with no history is still wallpaper, so say what they have done. */}
                           <span className="block truncate text-[0.7rem] text-[var(--muted-foreground)]">
-                            {[
-                              localizeUi(`ui.slurp.studio.stage.${fan.stage}`, { defaultValue: fan.stage }),
-                              // Steady is the default and says nothing worth a line.
-                              fan.audienceArc && fan.audienceArc !== "steady"
-                                ? localizeUi(`ui.slurp.studio.audienceArc.${fan.audienceArc}`)
-                                : null,
-                              fan.spent > 0
-                                ? localizeUi("ui.slurp.studio.fanSpent", {
-                                    defaultValue: "{{count}}",
-                                    count: fan.spent,
-                                  })
-                                : null,
-                              ...fan.traits,
-                            ]
-                              .filter(Boolean)
-                              .join(" · ")}
+                            <SlpCoinText>
+                              {[
+                                localizeUi(`ui.slurp.studio.stage.${fan.stage}`, { defaultValue: fan.stage }),
+                                // Steady is the default and says nothing worth a line.
+                                fan.audienceArc && fan.audienceArc !== "steady"
+                                  ? localizeUi(`ui.slurp.studio.audienceArc.${fan.audienceArc}`)
+                                  : null,
+                                fan.spent > 0
+                                  ? localizeUi("ui.slurp.studio.fanSpent", {
+                                      defaultValue: "{{count}} <coin/>",
+                                      count: fan.spent,
+                                    })
+                                  : null,
+                                ...fan.traits,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </SlpCoinText>
                           </span>
                         </span>
                         <time
@@ -353,14 +364,17 @@ function SlurpGoalEditor({ creator, personaId }: { creator: SlurpStudioCreator; 
           />
         </div>
         <p className="mt-1 text-xs tabular-nums text-[var(--muted-foreground)]">
-          {creator.goal.met
-            ? localizeUi("ui.slurp.studio.goalMet", { defaultValue: "Goal met." })
-            : localizeUi("ui.slurp.studio.goalProgress", {
-                defaultValue: "{{raised}} of {{target}}",
+          {creator.goal.met ? (
+            localizeUi("ui.slurp.studio.goalMet", { defaultValue: "Goal met." })
+          ) : (
+            <SlpCoinText>
+              {localizeUi("ui.slurp.studio.goalProgress", {
+                defaultValue: "{{raised}} of {{target}} <coin/>",
                 raised: creator.goal.raised.toLocaleString(),
                 target: creator.goal.target.toLocaleString(),
-              })}{" "}
-          <SlurpCoin size={14} />
+              })}
+            </SlpCoinText>
+          )}
         </p>
       </div>
     ) : (
@@ -444,9 +458,9 @@ function SlurpPayoutRow({ creator, personaId }: { creator: SlurpStudioCreator; p
           {localizeUi("ui.slurp.studio.payoutTitle", { defaultValue: "Available to withdraw today" })}
         </span>
         <span className="block text-[0.7rem] text-[var(--muted-foreground)]">
-          <SlurpCoinAmount amount={creator.payoutAllowance.toLocaleString()} />
+          <SlurpCoinAmount amount={creator.payoutAllowance} />
           {", from "}
-          <SlurpCoinAmount amount={creator.earnings.coins.toLocaleString()} watchAmount={creator.earnings.coins} />
+          <SlurpCoinAmount amount={creator.earnings.coins} watchAmount={creator.earnings.coins} />
           {" earned and unspent."}
         </span>
       </span>

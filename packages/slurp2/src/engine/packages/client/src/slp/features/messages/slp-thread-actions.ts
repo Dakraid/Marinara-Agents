@@ -1,3 +1,4 @@
+import { slpCoinPlainText } from "../../modules/coin/SlpCoin";
 import { useDismissablePopover } from "./SlpMessageInsights";
 import { useLayoutEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -151,10 +152,12 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
         });
         toast.success(
           result.kind === "coins"
-            ? localizeUi("ui.slurp.messages.cheatCoinsAccepted", {
-                defaultValue: "Development wallet set to {{coins}} coins.",
-                coins: result.coins,
-              })
+            ? slpCoinPlainText(
+                localizeUi("ui.slurp.messages.cheatCoinsAccepted", {
+                  defaultValue: "Development wallet set to {{coins}} <coin/>.",
+                  coins: result.coins,
+                }),
+              )
             : result.kind === "force_creator_photo"
               ? "Creator photo generation started."
               : result.kind === "force_ppv"
@@ -189,10 +192,12 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
     if (!ownsCreator && feeDue && messaging?.dmPolicy === "paid" && !subscribed && messaging.requestFee > 0) {
       const confirmed = await showConfirmDialog({
         title: localizeUi("ui.slurp.messages.sendRequestTitle", { defaultValue: "Send message request?" }),
-        message: localizeUi("ui.slurp.messages.sendRequestDetail", {
-          defaultValue: "This costs {{fee}} coins. It opens the conversation but does not guarantee a reply.",
-          fee: messaging.requestFee,
-        }),
+        message: slpCoinPlainText(
+          localizeUi("ui.slurp.messages.sendRequestDetail", {
+            defaultValue: "This costs {{fee}} <coin/>. It opens the conversation but does not guarantee a reply.",
+            fee: messaging.requestFee,
+          }),
+        ),
         confirmLabel: localizeUi("ui.slurp.messages.sendRequestConfirm", { defaultValue: "Send request" }),
       });
       if (!confirmed) return;
@@ -264,10 +269,12 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
     setActiveTipAmount(amount);
     try {
       const confirmed = await showConfirmDialog({
-        title: localizeUi("ui.slurp.messages.sendTipTitle", {
-          defaultValue: "Send {{amount}} coins as a tip?",
-          amount,
-        }),
+        title: slpCoinPlainText(
+          localizeUi("ui.slurp.messages.sendTipTitle", {
+            defaultValue: "Send {{amount}} <coin/> as a tip?",
+            amount,
+          }),
+        ),
         message: localizeUi("ui.slurp.messages.sendTipDetail", {
           defaultValue: "A tip is a gift. It does not guarantee a reply.",
         }),

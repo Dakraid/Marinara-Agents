@@ -9,6 +9,7 @@
  * with no second list to keep in step. Editing any value stores the whole tuning object — the
  * server fills anything missing from Realistic — and moves the preset to `custom`.
  */
+import { SlpCoinText } from "../../modules/coin/SlpCoin";
 import { RotateCcw } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -326,10 +327,12 @@ export function SlurpSimulationSettings({
 
       <SettingsGroup title={t("ui.slurp.settings.simulation.estimate.title")}>
         <p className="text-xs leading-5 text-[var(--muted-foreground)]">
-          {t("ui.slurp.settings.simulation.estimate.detail", {
-            followers: SLURP_ESTIMATE_SAMPLE.realFollowers,
-            price: SLURP_ESTIMATE_SAMPLE.price,
-          })}
+          <SlpCoinText>
+            {t("ui.slurp.settings.simulation.estimate.detail", {
+              followers: SLURP_ESTIMATE_SAMPLE.realFollowers,
+              price: SLURP_ESTIMATE_SAMPLE.price,
+            })}
+          </SlpCoinText>
         </p>
         <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {(

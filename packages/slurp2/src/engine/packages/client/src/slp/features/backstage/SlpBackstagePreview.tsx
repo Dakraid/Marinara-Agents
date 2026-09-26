@@ -1,3 +1,4 @@
+import { SlpCoinText } from "../../modules/coin/SlpCoin";
 import { ChevronDown, SlidersHorizontal, Sparkles } from "lucide-react";
 import { useDeferredValue, useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -85,7 +86,7 @@ export function outcomeSummary(
       });
     case "wallet":
       return t(key, {
-        defaultValue: "Coins {{state}} · {{cost}}/week",
+        defaultValue: "Coins {{state}} · {{cost}} <coin/> / week",
         state: onOff(t, settings.walletEnabled),
         cost: settings.walletSubscriptionCost,
       });
@@ -445,7 +446,7 @@ export function SlurpBackstagePreview({
               <div className="min-w-0">
                 <h3 className="truncate text-sm font-bold">{SLP_BACKSTAGE_TARGET_LABELS[target]}</h3>
                 <p className="mt-0.5 text-xs leading-5 text-[var(--slurp-muted)] text-pretty" aria-live="polite">
-                  {outcomeSummary(t, target, proposed, creatorCount)}
+                  <SlpCoinText>{outcomeSummary(t, target, proposed, creatorCount)}</SlpCoinText>
                 </p>
               </div>
             </div>
@@ -455,7 +456,9 @@ export function SlurpBackstagePreview({
               <p className="font-semibold text-[var(--slurp-muted)]">
                 {t("ui.slurp.settings.backstage.preview.current", { defaultValue: "Current" })}
               </p>
-              <p className="mt-1 font-bold text-pretty">{outcomeSummary(t, target, current, creatorCount)}</p>
+              <p className="mt-1 font-bold text-pretty">
+                <SlpCoinText>{outcomeSummary(t, target, current, creatorCount)}</SlpCoinText>
+              </p>
             </div>
             <div className="rounded-lg bg-[color-mix(in_srgb,var(--noodle-accent)_9%,var(--slurp-surface-raised))] p-3 ring-1 ring-inset ring-[color-mix(in_srgb,var(--noodle-accent)_25%,transparent)]">
               <p className="font-semibold text-[var(--noodle-accent-foreground)]">

@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
-import { Modal } from "../../../components/ui/Modal";
+import { SLP_TYPE } from "../../base/chrome/SlpChrome";
+import { SlpButton } from "../chrome/SlpButton";
+import { SlpRadioRow, SlpSheet } from "../chrome/SlpSheet";
 import { SLP_REPORT_REASONS, useReportSlpContent, type SlpReportReason } from "./slp-post-action-hooks";
 
 /**
@@ -50,68 +52,59 @@ export function SlpReportModal({
     if (!canSubmit) return;
     void report.mutateAsync({ personaId, postId, targetType, targetId, reason, details }).catch(() => undefined);
   };
+  const name = useId();
   return (
-    <Modal
+    <SlpSheet
       open={open}
-      onClose={report.isPending ? () => undefined : onClose}
+      onClose={onClose}
+      closeDisabled={report.isPending}
       title={localizeUi("ui.slurp.post.report", { defaultValue: "Report content" })}
     >
       {report.isSuccess ? (
-        <p className="p-4 text-sm">
+        <p className="px-3 pb-2 pt-1 text-sm">
           {localizeUi("ui.slurp.post.reportSubmitted", { defaultValue: "Report submitted." })}
         </p>
       ) : (
-        <div className="space-y-4 p-4">
+        <div className="space-y-4 px-1 pt-1">
           {report.isError && (
-            <p role="alert" className="text-sm text-red-400">
+            <p role="alert" className="px-2 text-sm text-[var(--slurp-danger)]">
               {report.error instanceof Error
                 ? report.error.message
                 : localizeUi("ui.slurp.post.reportFailed", { defaultValue: "The report could not be sent." })}
             </p>
           )}
-          <label className="block space-y-1 text-sm font-semibold">
-            <span>{localizeUi("ui.slurp.post.reportReason", { defaultValue: "Reason" })}</span>
-            <select
-              value={reason}
-              onChange={(event) => setReason(event.target.value as typeof reason)}
-              className="h-10 w-full rounded-lg border border-[var(--noodle-divider)] bg-[var(--background)] px-3"
-            >
-              {SLP_REPORT_REASONS.map((value) => (
-                <option key={value} value={value}>
-                  {localizeUi(`ui.slurp.post.reportReasons.${value}`, { defaultValue: REASON_LABELS[value] })}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block space-y-1 text-sm font-semibold">
-            <span>{localizeUi("ui.slurp.post.reportDetails", { defaultValue: "Details" })}</span>
+          <fieldset className="min-w-0">
+            <legend className={`${SLP_TYPE.meta} px-2 pb-1 text-[var(--slurp-muted)]`}>
+              {localizeUi("ui.slurp.post.reportReason", { defaultValue: "Reason" })}
+            </legend>
+            {SLP_REPORT_REASONS.map((value) => (
+              <SlpRadioRow key={value} name={name} checked={reason === value} onChange={() => setReason(value)}>
+                {localizeUi(`ui.slurp.post.reportReasons.${value}`, { defaultValue: REASON_LABELS[value] })}
+              </SlpRadioRow>
+            ))}
+          </fieldset>
+          <label className="block space-y-1 px-2">
+            <span className={`${SLP_TYPE.meta} block text-[var(--slurp-muted)]`}>
+              {localizeUi("ui.slurp.post.reportDetails", { defaultValue: "Details" })}
+            </span>
             <textarea
               value={details}
               onChange={(event) => setDetails(event.target.value)}
-              rows={4}
+              rows={3}
               maxLength={2000}
-              className="w-full rounded-lg border border-[var(--noodle-divider)] bg-[var(--background)] p-3 text-sm"
+              className="w-full rounded-xl border border-[var(--noodle-divider)] bg-[var(--slurp-surface)] p-3 text-sm"
             />
           </label>
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="min-h-10 rounded-lg px-4 font-semibold hover:bg-[var(--accent)]"
-            >
+          <div className="sticky bottom-0 flex justify-end gap-2 bg-[linear-gradient(to_top,var(--slurp-surface)_70%,transparent)] px-2 pb-1 pt-3">
+            <SlpButton variant="tertiary" onClick={onClose} disabled={report.isPending}>
               {localizeUi("chat.delete.dialog.cancel")}
-            </button>
-            <button
-              type="button"
-              onClick={submit}
-              disabled={!canSubmit || report.isPending}
-              className="min-h-10 rounded-lg bg-[var(--noodle-accent)] px-4 font-bold text-[var(--slurp-on-accent)] disabled:opacity-50"
-            >
+            </SlpButton>
+            <SlpButton onClick={submit} disabled={!canSubmit || report.isPending}>
               {localizeUi("ui.slurp.post.reportSubmit", { defaultValue: "Submit report" })}
-            </button>
+            </SlpButton>
           </div>
         </div>
       )}
-    </Modal>
+    </SlpSheet>
   );
 }

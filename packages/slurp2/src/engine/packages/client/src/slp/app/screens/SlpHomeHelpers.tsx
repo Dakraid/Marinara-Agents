@@ -221,8 +221,6 @@ export function slpCreatorGoalOf(
 // Shared small components
 // ---------------------------------------------------------------------------
 
-import { UserRound } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { SlurpSparkleVeil } from "../../base/chrome/SlpSparkleVeil";
@@ -328,38 +326,6 @@ export function DisclosureBadge({ mode, detail }: { mode: SlpIdentityDisclosure 
       buttonClassName="rounded-full border border-[var(--noodle-divider)] px-2 py-0.5 text-[0.68rem] font-bold capitalize text-[var(--muted-foreground)] opacity-100 [&_svg]:hidden"
       text={<span>{detail ?? defaultDetail}</span>}
     />
-  );
-}
-
-export function EmptyState({
-  title,
-  detail,
-  action,
-  onAction,
-  icon: Icon = UserRound,
-}: {
-  title: string;
-  detail?: string;
-  action?: string;
-  onAction?: () => void;
-  /** Defaults to a person, which is wrong for an empty search or an empty feed. */
-  icon?: LucideIcon;
-}) {
-  return (
-    <div className="px-8 py-8 text-center sm:py-16">
-      <Icon size={36} className="mx-auto !text-[var(--noodle-accent-foreground)]" />
-      <p className="mt-4 font-bold">{title}</p>
-      {detail && <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[var(--muted-foreground)]">{detail}</p>}
-      {action && onAction && (
-        <button
-          type="button"
-          onClick={onAction}
-          className="mt-5 min-h-11 rounded-lg border border-[var(--noodle-divider)] px-4 text-sm font-bold transition-[background-color,transform] hover:bg-[var(--accent)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100"
-        >
-          {action}
-        </button>
-      )}
-    </div>
   );
 }
 

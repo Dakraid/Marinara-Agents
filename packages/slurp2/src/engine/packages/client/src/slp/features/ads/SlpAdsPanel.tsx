@@ -1,3 +1,4 @@
+import { SlpCoinText } from "../../modules/coin/SlpCoin";
 import { Image, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { BackstagePageHeader } from "../../modules/settings/SlpSettingsKit";
 
@@ -57,12 +58,14 @@ export function SlpAdsPanel(page: SlpBackstagePageProps) {
         <p>{t("ui.slurp.settings.ads.explainerPool")}</p>
         {settings.walletEnabled && settings.walletAdReward > 0 && (
           <p>
-            {t("ui.slurp.settings.ads.explainerEarning", {
-              defaultValue:
-                "Acting on an ad pays {{reward}} SlurpCoins, up to {{cap}} a day. Change either in SlurpCoins.",
-              reward: settings.walletAdReward,
-              cap: settings.walletAdDailyCap,
-            })}
+            <SlpCoinText>
+              {t("ui.slurp.settings.ads.explainerEarning", {
+                defaultValue:
+                  "Acting on an ad pays {{reward}} <coin/>, up to {{cap}} a day. Change either in SlurpCoins.",
+                reward: settings.walletAdReward,
+                cap: settings.walletAdDailyCap,
+              })}
+            </SlpCoinText>
           </p>
         )}
       </HowItWorks>

@@ -1,6 +1,7 @@
+import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SlurpProfileMediaTile } from "./SlpScreenProfile";
-import { Loader2, TriangleAlert } from "lucide-react";
-import { SlurpAccessTransition, EmptyState } from "./SlpHomeHelpers";
+import { Loader2 } from "lucide-react";
+import { SlurpAccessTransition } from "./SlpHomeHelpers";
 import { Avatar } from "../../base/chrome/SlpChrome";
 import { SlurpFanCard } from "../../modules/audience/SlpFanCard";
 import { LockedSlurpPostCard } from "../../modules/post/SlpLockedPostCard";
@@ -53,19 +54,11 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
             </p>
           </div>
           {subscribersQuery.isLoading ? (
-            <div
-              className="flex justify-center py-12"
-              role="status"
-              aria-label={localizeUi("ui.noodle.stageprofileview.loadingSubscribers")}
-            >
-              <Loader2 size={22} className="animate-spin text-[var(--noodle-accent-foreground)]" />
-            </div>
+            <SlpSkeleton label={localizeUi("ui.noodle.stageprofileview.loadingSubscribers")} />
           ) : subscribersQuery.isError ? (
-            <EmptyState
+            <SlpErrorState
               title={localizeUi("ui.noodle.stageprofileview.subscribersCouldNotBeLoaded")}
-              action={localizeUi("capabilities.actions.tryAgain")}
-              onAction={() => void subscribersQuery.refetch()}
-              icon={TriangleAlert}
+              onRetry={() => void subscribersQuery.refetch()}
             />
           ) : subscribers.length > 0 ? (
             <div>
@@ -108,7 +101,7 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
               )}
             </div>
           ) : (
-            <EmptyState
+            <SlpEmptyState
               title={localizeUi("ui.noodle.stageprofileview.noSubscribersYet")}
               detail={localizeUi("ui.noodle.stageprofileview.subscribersEmptyDetail")}
             />
@@ -119,17 +112,13 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
           {/* Followers were a number everywhere and a list nowhere. The funnel held the people all
             along; the named cast is capped, so the rest stays the count in the header. */}
           {followersQuery.isLoading ? (
-            <div className="flex justify-center py-12" role="status">
-              <Loader2 size={22} className="animate-spin text-[var(--noodle-accent-foreground)]" />
-            </div>
+            <SlpSkeleton />
           ) : followersQuery.isError && !followersQuery.data ? (
-            <EmptyState
+            <SlpErrorState
               title={localizeUi("ui.slurp.profile.followersCouldNotBeLoaded", {
                 defaultValue: "Followers could not be loaded",
               })}
-              action={localizeUi("capabilities.actions.tryAgain")}
-              onAction={() => void followersQuery.refetch()}
-              icon={TriangleAlert}
+              onRetry={() => void followersQuery.refetch()}
             />
           ) : (followersQuery.data?.items.length ?? 0) > 0 ? (
             <div>
@@ -160,7 +149,7 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
               </p>
             </div>
           ) : (
-            <EmptyState title={localizeUi("ui.slurp.profile.followersEmpty")} />
+            <SlpEmptyState title={localizeUi("ui.slurp.profile.followersEmpty")} />
           )}
         </div>
       ) : viewerIsLoading || isLoading ? (
@@ -168,18 +157,14 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
           <Loader2 size={22} className="animate-spin text-[var(--noodle-accent-foreground)]" />
         </div>
       ) : viewerIsError ? (
-        <EmptyState
+        <SlpErrorState
           title={localizeUi("ui.noodle.stageprofileview.viewerAccessCouldNotBeLoaded")}
-          action={localizeUi("capabilities.actions.tryAgain")}
-          onAction={onRetryViewer}
-          icon={TriangleAlert}
+          onRetry={onRetryViewer}
         />
       ) : isError ? (
-        <EmptyState
+        <SlpErrorState
           title={localizeUi("ui.noodle.stageprofileview.noodlerPostsCouldNotBeLoaded")}
-          action={localizeUi("capabilities.actions.tryAgain")}
-          onAction={onRetry}
-          icon={TriangleAlert}
+          onRetry={onRetry}
         />
       ) : activeTab === "media" ? (
         imagePosts.length > 0 ? (
@@ -189,7 +174,7 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
             ))}
           </div>
         ) : (
-          <EmptyState title={emptyTabTitle} />
+          <SlpEmptyState title={emptyTabTitle} />
         )
       ) : visiblePosts.length > 0 ? (
         visiblePosts.map((item) => {
@@ -280,7 +265,7 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
           );
         })
       ) : (
-        <EmptyState title={emptyTabTitle} />
+        <SlpEmptyState title={emptyTabTitle} />
       )}
     </>
   );

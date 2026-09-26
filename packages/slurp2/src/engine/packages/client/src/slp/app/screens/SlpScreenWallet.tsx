@@ -2,7 +2,7 @@ import { WalletCards } from "lucide-react";
 import { ArrowDown, Crown, Gift, Lock, type LucideIcon, MessageCircle, RotateCcw } from "lucide-react";
 import { Avatar } from "../../base/chrome/SlpChrome";
 import { HelpTooltip } from "../../../components/ui/HelpTooltip";
-import { SlurpCoin, SlurpCoinBurst } from "../../modules/coin/SlpCoin";
+import { SlurpCoin, SlurpCoinBurst, SlpCoinText } from "../../modules/coin/SlpCoin";
 import { SlpShimmer } from "../../modules/sparkle/SlpSparkle";
 import { cn } from "../../../lib/utils";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
@@ -21,7 +21,7 @@ import { useToggleCreatorSubscription } from "../../features/feed/slp-feed-viewe
 import { useTranslation as useUiTranslation } from "react-i18next";
 import type { AvatarCrop } from "@marinara-engine/shared";
 import { SlurpCoinAmount } from "../../modules/coin/SlpCoin";
-import { ErrorState, LoadingState } from "../../modules/chrome/SlpStateKit";
+import { SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SlpCreatorFrame } from "./SlpHomeHelpers";
 
 export function SlurpWalletView({
@@ -105,9 +105,12 @@ export function SlurpWalletView({
     return (
       <SlpCreatorFrame onBack={onBack} title={localizeUi("ui.slurp.navigation.wallet")} action={<span />}>
         {walletQuery.isError || !personaId ? (
-          <ErrorState onRetry={() => void walletQuery.refetch()} />
+          <SlpErrorState
+            title={localizeUi("ui.slurp.wallet.loadError", { defaultValue: "Could not load your wallet" })}
+            onRetry={() => void walletQuery.refetch()}
+          />
         ) : (
-          <LoadingState />
+          <SlpSkeleton shape="card" />
         )}
       </SlpCreatorFrame>
     );
@@ -153,7 +156,7 @@ export function SlurpWalletView({
                   />
                 </div>
                 <SlurpCoinAmount
-                  amount={creator.earnings.coins.toLocaleString()}
+                  amount={creator.earnings.coins}
                   watchAmount={creator.earnings.coins}
                   className="mt-2 text-4xl font-black leading-none tabular-nums"
                   size={28}
@@ -213,7 +216,7 @@ export function SlurpWalletView({
                 />
               </div>
               <p className="mt-2 flex items-center gap-2 text-4xl font-black leading-none tabular-nums">
-                <SlurpCoinAmount amount={coins.toLocaleString()} watchAmount={coins} size={26} />
+                <SlurpCoinAmount amount={coins} watchAmount={coins} size={26} />
               </p>
               <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                 {localizeUi("ui.slurp.wallet.readyToSpend", { defaultValue: "Ready to spend" })}
@@ -241,11 +244,15 @@ export function SlurpWalletView({
                     })}
                 <HelpTooltip
                   side="left"
-                  text={localizeUi("ui.slurp.wallet.refillHelp", {
-                    defaultValue:
-                      "Once per Slurp day, you can refill when your Fan wallet is below {{amount}} coins. The countdown shows the next eligibility check.",
-                    amount: wallet?.refillFloor ?? 0,
-                  })}
+                  text={
+                    <SlpCoinText>
+                      {localizeUi("ui.slurp.wallet.refillHelp", {
+                        defaultValue:
+                          "Once per Slurp day, you can refill when your Fan wallet is below {{amount}} <coin/>. The countdown shows the next eligibility check.",
+                        amount: wallet?.refillFloor ?? 0,
+                      })}
+                    </SlpCoinText>
+                  }
                 />
               </span>
             </div>
@@ -385,7 +392,10 @@ export function SlurpWalletView({
                     </span>
                     <span className="ms-auto flex shrink-0 flex-col items-end">
                       <span className="text-xs tabular-nums text-[var(--muted-foreground)]">
-                        <SlurpCoinAmount amount={`${subscription.price} / week`} />
+                        <SlurpCoinAmount
+                          amount={subscription.price}
+                          suffix={localizeUi("ui.slurp.unlocksheet.perWeek", { defaultValue: "/ week" })}
+                        />
                       </span>
                       <button
                         type="button"

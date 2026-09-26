@@ -1,3 +1,4 @@
+import { SlpTimestamp } from "../../base/ui/SlpTimestamp";
 import {
   Bell,
   ChevronLeft,
@@ -16,17 +17,16 @@ import {
   Dices,
   ScanSearch,
 } from "lucide-react";
-import { useState, type MouseEvent } from "react";
+import { useRef, useState, type MouseEvent } from "react";
 import type { SlpCreatorPostView, SlpCreatorStageProfile } from "../../../../../shared/src/slp/slp-social.types.js";
 import { cn } from "../../../lib/utils";
 import { useNearViewportSlurpMediaSrc } from "../../base/media/slp-media-src";
-import { Modal } from "../../../components/ui/Modal";
 import { ProfileInitial } from "../../base/chrome/SlpChrome";
-import { formatTime } from "../../base/ui/slp-date-time";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { SlurpCelebrationRing, SlurpSparkleVeil } from "../../base/chrome/SlpSparkleVeil";
-import { SlurpCoin, SlurpCoinBurst } from "../coin/SlpCoin";
+import { SlurpCoin, SlurpCoinBurst, SlpCoinText } from "../coin/SlpCoin";
 import { SlpPrimaryButton } from "../chrome/SlpButton";
+import { SlpSheet, SlpSheetGroup, SlpSheetItem } from "../chrome/SlpSheet";
 import { playSlpBurst, playSlpSpendMoment } from "../sparkle/SlpSparkle";
 import { api } from "../../../lib/api-client";
 import { toast } from "sonner";
@@ -89,7 +89,7 @@ export function LockedSlurpPostCard({
     onReveal?: () => void;
   };
 }) {
-  const { t: localizeUi, i18n } = useUiTranslation();
+  const { t: localizeUi } = useUiTranslation();
   const [unlockSheetOpen, setUnlockSheetOpen] = useState(false);
   const [transaction, setTransaction] = useState<
     "subscribe" | "unlock" | "gamble" | "unlock-offer" | "subscription-offer" | null
@@ -100,6 +100,8 @@ export function LockedSlurpPostCard({
   const [demoUnlocked, setDemoUnlocked] = useState(false);
   const [deepDetailsOpen, setDeepDetailsOpen] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const menuTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const unlockTriggerRef = useRef<HTMLButtonElement | null>(null);
   const likeCount = post.likeCount ?? 0;
   const replyCount = post.replyCount ?? 0;
   const openProfile = onOpenProfile ? () => onOpenProfile(profile.id) : undefined;
@@ -122,16 +124,18 @@ export function LockedSlurpPostCard({
     button: Element,
   ) => {
     if (transaction) return;
-    // Measured now: the sheet closes on success, and the spend moment starts where the tap was.
-    const origin = button.getBoundingClientRect();
+    // The sheet closes on success, so the spend moment starts from the post's own Unlock button (a
+    // stable point in the feed), measured now; the tapped sheet row is the fallback.
+    const trigger = unlockTriggerRef.current?.getBoundingClientRect();
+    const origin = trigger && trigger.width > 0 ? trigger : button.getBoundingClientRect();
     setTransaction(kind);
     try {
       if (demo) {
         await new Promise((resolve) => window.setTimeout(resolve, 420));
         setDemoUnlocked(true);
+        setUnlockSheetOpen(false);
         playSlpSpendMoment(origin);
         demo.onReveal?.();
-        setUnlockSheetOpen(false);
         setTransaction(null);
         return;
       }
@@ -141,22 +145,26 @@ export function LockedSlurpPostCard({
         const result = await onGambleUnlock(post.id);
         spent = result.outcome !== "free" && result.outcome !== "already-unlocked";
         toast.success(
-          result.outcome === "already-unlocked"
-            ? localizeUi("ui.slurp.unlocksheet.alreadyUnlocked", { defaultValue: "You already unlocked this post." })
-            : result.outcome === "free"
-              ? localizeUi("ui.slurp.unlocksheet.gambleFreeResult", { defaultValue: "Unlocked this post for free." })
-              : localizeUi("ui.slurp.unlocksheet.gamblePaidResult", {
-                  defaultValue: "Unlocked this post for {{amount}} coins.",
-                  amount: result.amount,
-                }),
+          result.outcome === "already-unlocked" ? (
+            localizeUi("ui.slurp.unlocksheet.alreadyUnlocked", { defaultValue: "You already unlocked this post." })
+          ) : result.outcome === "free" ? (
+            localizeUi("ui.slurp.unlocksheet.gambleFreeResult", { defaultValue: "Unlocked this post for free." })
+          ) : (
+            <SlpCoinText>
+              {localizeUi("ui.slurp.unlocksheet.gamblePaidResult", {
+                defaultValue: "Unlocked this post for {{amount}} <coin/>.",
+                amount: result.amount,
+              })}
+            </SlpCoinText>
+          ),
         );
       } else if (kind === "subscribe") await onToggleSubscription(profile.id, subscribed);
       else if (kind === "unlock-offer" && unlockOffer) await unlockOffer.onUnlock(post.id, unlockOffer.newPrice);
       else if (kind === "subscription-offer" && subscriptionOffer)
         await subscriptionOffer.onSubscribe(profile.id, subscribed, subscriptionOffer.newPrice);
+      setUnlockSheetOpen(false);
       if (spent) playSlpSpendMoment(origin);
       else playSlpBurst(origin);
-      setUnlockSheetOpen(false);
       setTransaction(null);
     } catch {
       // The parent owns the error message. Keep the sheet open so the viewer can try again.
@@ -165,7 +173,11 @@ export function LockedSlurpPostCard({
   };
   const unlockPrompt = !revealed && !controllerOnly && (
     <div className={hasMediaPreview ? "flex flex-col items-center gap-2" : "mt-4 flex flex-wrap items-center gap-3"}>
-      <SlpPrimaryButton disabled={unlockPending || subscriptionPending} onClick={() => setUnlockSheetOpen(true)}>
+      <SlpPrimaryButton
+        ref={unlockTriggerRef}
+        disabled={unlockPending || subscriptionPending}
+        onClick={() => setUnlockSheetOpen(true)}
+      >
         <Eye size={16} strokeWidth={2.25} aria-hidden="true" />
         {localizeUi("ui.noodle.lockednoodlerpostcard.unlock")}
         <SlpCreatorFictionalPrice amount={slpCreatorUnlockPriceOf(post)} />
@@ -186,7 +198,7 @@ export function LockedSlurpPostCard({
       data-noodle-post-id={post.id}
       className={cn(
         "group/locked relative rounded-xl bg-[linear-gradient(145deg,var(--slurp-surface-raised),var(--slurp-surface))] px-4 py-5 shadow-[0_1px_0_color-mix(in_srgb,var(--noodle-accent)_32%,transparent),0_22px_48px_-34px_rgba(0,0,0,0.95)] ring-1 ring-inset ring-[var(--noodle-accent)]/25",
-        postMenuOpen ? "z-40" : "z-0",
+        "z-0",
       )}
     >
       <div
@@ -232,16 +244,18 @@ export function LockedSlurpPostCard({
             </span>
           </div>
           <p className="text-xs font-medium !text-[var(--noodle-accent-foreground)]">
-            @{profile.handle} · {formatTime(post.createdAt, i18n.language)}
+            @{profile.handle} · <SlpTimestamp value={post.createdAt} tappable />
           </p>
         </div>
         <div className="relative shrink-0">
           <button
+            ref={menuTriggerRef}
             type="button"
-            onClick={() => setPostMenuOpen((open) => !open)}
+            onClick={() => setPostMenuOpen(!postMenuOpen)}
             className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
             title={localizeUi("ui.noodle.noodlepostcard.postActions")}
             aria-label={localizeUi("ui.noodle.noodlepostcard.postActions")}
+            aria-haspopup="menu"
             aria-expanded={postMenuOpen}
           >
             <MoreHorizontal size={18} />
@@ -249,60 +263,63 @@ export function LockedSlurpPostCard({
           {!demo && (
             <SlpDeepDetailsModal postId={post.id} open={deepDetailsOpen} onClose={() => setDeepDetailsOpen(false)} />
           )}
-          {postMenuOpen && (
-            <div className="absolute end-0 top-[calc(100%+0.25rem)] z-50 min-w-40 overflow-hidden rounded-lg border border-[var(--noodle-divider)] bg-[var(--background)] py-1 text-xs shadow-2xl shadow-black/30">
-              {/* Every Creator is the player's to manage, so a locked post opens its record like any other. */}
-              {!demo && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPostMenuOpen(false);
-                    setDeepDetailsOpen(true);
-                  }}
-                  className="flex min-h-10 w-full items-center gap-2 px-3 text-start hover:bg-[var(--accent)]"
-                >
-                  <ScanSearch size={14} />
-                  {localizeUi("ui.slurp.deepDetails.title", { defaultValue: "Deep details" })}
-                </button>
-              )}
-              {onManage && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPostMenuOpen(false);
-                    onManage();
-                  }}
-                  className="flex min-h-10 w-full items-center gap-2 px-3 text-start hover:bg-[var(--accent)]"
-                >
-                  <Pencil size={14} />
-                  {localizeUi("ui.noodle.lockednoodlerpostcard.managePost")}
-                </button>
-              )}
+          <SlpSheet
+            kind="menu"
+            open={postMenuOpen}
+            onClose={() => setPostMenuOpen(false)}
+            anchorRef={menuTriggerRef}
+            title={localizeUi("ui.noodle.noodlepostcard.postActions")}
+          >
+            <SlpSheetGroup>
               {shownMediaSrc && (
-                <button
-                  type="button"
-                  onClick={() => {
+                <SlpSheetItem
+                  onSelect={() => {
                     setPostMenuOpen(false);
                     void api
                       .download(`/slurp2/noodler/posts/${encodeURIComponent(post.id)}/media`, `slurp-${post.id}-teaser`)
                       .catch(() => undefined);
                   }}
-                  className="flex min-h-10 w-full items-center gap-2 px-3 text-start hover:bg-[var(--accent)]"
                 >
                   <Download size={14} />
                   {localizeUi("ui.slurp.post.downloadImage", { defaultValue: "Download image" })}
-                </button>
+                </SlpSheetItem>
               )}
-              <button
-                type="button"
-                className="flex min-h-10 w-full items-center gap-2 px-3 text-start text-[var(--muted-foreground)] opacity-60"
-                onClick={() => setPostMenuOpen(false)}
-              >
+              {/* Sharing a locked post is not built yet; the row says so instead of doing nothing. */}
+              <SlpSheetItem disabled onSelect={() => setPostMenuOpen(false)}>
                 <Share2 size={14} />
                 {localizeUi("ui.slurp.post.share", { defaultValue: "Share post" })}
-              </button>
-            </div>
-          )}
+              </SlpSheetItem>
+            </SlpSheetGroup>
+            {(!demo || onManage) && (
+              <SlpSheetGroup label={localizeUi("ui.slurp.post.creatorTools", { defaultValue: "Creator tools" })}>
+                {onManage && (
+                  <SlpSheetItem
+                    tone="muted"
+                    onSelect={() => {
+                      setPostMenuOpen(false);
+                      onManage();
+                    }}
+                  >
+                    <Pencil size={14} />
+                    {localizeUi("ui.noodle.lockednoodlerpostcard.managePost")}
+                  </SlpSheetItem>
+                )}
+                {/* Every Creator is the player's to manage, so a locked post opens its record like any other. */}
+                {!demo && (
+                  <SlpSheetItem
+                    tone="muted"
+                    onSelect={() => {
+                      setPostMenuOpen(false);
+                      setDeepDetailsOpen(true);
+                    }}
+                  >
+                    <ScanSearch size={14} />
+                    {localizeUi("ui.slurp.deepDetails.title", { defaultValue: "Deep details" })}
+                  </SlpSheetItem>
+                )}
+              </SlpSheetGroup>
+            )}
+          </SlpSheet>
         </div>
       </div>
 
@@ -446,19 +463,12 @@ export function LockedSlurpPostCard({
           </span>
         </div>
       </div>
-      <Modal
+      <SlpSheet
         open={unlockSheetOpen}
-        onClose={() => !transaction && setUnlockSheetOpen(false)}
+        onClose={() => setUnlockSheetOpen(false)}
         title={localizeUi("ui.noodle.unlocksheet.title")}
         width="max-w-xl"
         closeDisabled={transaction !== null}
-        panelStyle={{
-          "--background": "var(--slurp-surface)",
-          "--foreground": "var(--slurp-text)",
-          "--muted-foreground": "var(--slurp-muted)",
-          "--border": "color-mix(in srgb, var(--noodle-accent) 28%, transparent)",
-          "--accent": "color-mix(in srgb, var(--noodle-accent) 14%, transparent)",
-        }}
       >
         <div data-component="SlurpHome.UnlockSheet" className="relative isolate overflow-hidden px-1 pb-1">
           {transaction && <SlurpSparkleVeil className="z-20 opacity-80" />}
@@ -631,7 +641,7 @@ export function LockedSlurpPostCard({
             )}
           </div>
         </div>
-      </Modal>
+      </SlpSheet>
     </article>
   );
 }

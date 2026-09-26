@@ -1,7 +1,8 @@
+import { SlpEmptyState, SlpErrorState } from "../modules/chrome/SlpStateKit";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { ViewerHub } from "./screens/SlpScreenHub";
-import { errorMessage, EmptyState, SlpCreatorFrame } from "./screens/SlpHomeHelpers";
+import { errorMessage, SlpCreatorFrame } from "./screens/SlpHomeHelpers";
 import { ImagePromptReviewModal } from "../../components/ui/ImagePromptReviewModal";
 import { ChatImageLightbox } from "../../components/chat/ChatImageLightbox";
 import { SlurpOnboardingWizard } from "../features/onboarding/SlpOnboardingPanel";
@@ -302,10 +303,9 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
     return (
       <SlpShell {...shellProps}>
         <SlpCreatorFrame onBack={exitToCreatorHub} title={localizeUi("ui.noodle.noodlemodetoggle.noodler")}>
-          <EmptyState
+          <SlpErrorState
             title={localizeUi("ui.noodle.noodlerhome.noodlerCouldNotBeLoaded")}
-            action={localizeUi("capabilities.actions.tryAgain")}
-            onAction={retryAccountsOrReload}
+            onRetry={retryAccountsOrReload}
           />
         </SlpCreatorFrame>
       </SlpShell>
@@ -319,7 +319,7 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
     return (
       <SlpShell {...shellProps}>
         <SlpCreatorFrame onBack={goToHub} title={localizeUi("ui.noodle.noodlehome.profile")}>
-          <EmptyState title={localizeUi("ui.noodle.viewerhub.thisPersonaHasNoLinkedNoodlerProfile")} />
+          <SlpEmptyState title={localizeUi("ui.noodle.viewerhub.thisPersonaHasNoLinkedNoodlerProfile")} />
         </SlpCreatorFrame>
       </SlpShell>
     );

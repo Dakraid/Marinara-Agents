@@ -40,7 +40,8 @@ const home = read("packages/slurp2/src/engine/packages/client/src/components/slu
 assert.match(home, /ui\.slurp\.profile\.subscribeBenefits/u, "The inline subscription offer must explain its benefits");
 assert.match(
   home,
-  /slurpSubscriptionPriceOf\(viewerCreator\)\} \/ week/u,
+  // Step 0c: the price is a number (so it gets separators) and "/ week" is the coin amount's suffix.
+  /amount=\{slurpSubscriptionPriceOf\(viewerCreator\)\}\s+suffix=\{localizeUi\("ui\.slurp\.unlocksheet\.perWeek"/u,
   "The subscription action must show its weekly price, read from the viewer scope (the Creator record has none)",
 );
 assert.match(home, /ui\.slurp\.profile\.cancelSubscriptionConfirm/u);

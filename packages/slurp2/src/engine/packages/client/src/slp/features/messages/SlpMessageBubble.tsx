@@ -5,7 +5,7 @@ import { showConfirmDialog } from "../../../lib/app-dialogs";
 import { cn } from "../../../lib/utils";
 import { Avatar } from "../../base/chrome/SlpChrome";
 import { formatTime } from "../../base/ui/slp-date-time";
-import { SlurpCoin, SlurpCoinAmount, SlurpCoinBurst } from "../../modules/coin/SlpCoin";
+import { SlurpCoin, SlurpCoinAmount, SlurpCoinBurst, slpCoinPlainText, SlpCoinText } from "../../modules/coin/SlpCoin";
 import { playSlpPop } from "../../modules/sparkle/SlpSparkle";
 import type { SlurpMessage, SlurpThreadRelationship } from "../../features/messages/slp-messages-contract";
 import { useReactToSlurpMessage, useUnlockSlurpMessage } from "../../features/messages/slp-message-action-hooks";
@@ -209,7 +209,6 @@ export function MessageBubble({
           "flex w-full max-w-sm self-center items-center justify-center gap-2 rounded-2xl bg-[var(--noodle-accent)]/12 px-4 py-3 text-xs font-bold text-[var(--noodle-accent-foreground)] ring-1 ring-inset ring-[var(--noodle-accent)]/20",
         )}
       >
-        <SlurpCoin size={16} aria-hidden="true" />
         {localizeUi("ui.slurp.messages.tipSent", { defaultValue: "Tip sent" })}{" "}
         <SlurpCoinAmount amount={message.price} />
       </div>
@@ -329,10 +328,12 @@ export function MessageBubble({
                 if (!personaId) return;
                 const confirmed = await showConfirmDialog({
                   title: localizeUi("ui.slurp.messages.unlockTitle", { defaultValue: "Unlock this photo?" }),
-                  message: localizeUi("ui.slurp.messages.unlockDetail", {
-                    defaultValue: "This costs {{amount}} coins.",
-                    amount: message.price,
-                  }),
+                  message: slpCoinPlainText(
+                    localizeUi("ui.slurp.messages.unlockDetail", {
+                      defaultValue: "This costs {{amount}} <coin/>.",
+                      amount: message.price,
+                    }),
+                  ),
                   confirmLabel: localizeUi("ui.slurp.messages.unlockConfirm", { defaultValue: "Unlock photo" }),
                 });
                 if (confirmed) unlock.mutate({ personaId, messageId: message.id });
@@ -445,10 +446,12 @@ export function SlurpPlatformActionCard({
           {localizeUi("ui.slurp.messages.tipFeatureTitle", { defaultValue: "Tip sent" })}
         </span>
         <span className="mt-0.5 block text-xs leading-5 text-[var(--muted-foreground)]">
-          {localizeUi("ui.slurp.messages.tipFeatureDetail", {
-            defaultValue: "{{amount}} coins were sent as a gift. It does not guarantee a reply.",
-            amount: message.price,
-          })}
+          <SlpCoinText>
+            {localizeUi("ui.slurp.messages.tipFeatureDetail", {
+              defaultValue: "{{amount}} <coin/> were sent as a gift. It does not guarantee a reply.",
+              amount: message.price,
+            })}
+          </SlpCoinText>
         </span>
         {relationship && (
           <span className="mt-1 block text-[0.68rem] font-semibold text-[var(--noodle-accent-foreground)]">
