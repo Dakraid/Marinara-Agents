@@ -28,7 +28,8 @@ import { SlurpCoin, SlurpCoinAmount, SlurpCoinBurst, SlpCoinText } from "../coin
 import { SlpPrimaryButton, slpTagClass } from "../chrome/SlpButton";
 import { SLP_FEED_MEDIA_FRAME_CLASS } from "./SlpPostHelpers";
 import { SlpSheet, SlpSheetGroup, SlpSheetItem } from "../chrome/SlpSheet";
-import { playSlpBurst, playSlpSpendMoment } from "../sparkle/SlpSparkle";
+import { playSlpBurst, playSlpSpendMoment, SlpRingGlint, SlpShimmer, SlpTwinkle } from "../sparkle/SlpSparkle";
+import { SLP_PILL_TWINKLES, SlpLockedContentsChip, SlpSparkleLock } from "./SlpLockedMedia";
 import { api } from "../../../lib/api-client";
 import { toast } from "sonner";
 import { slpHasGambleOffer } from "../../../../../shared/src/slp/slp-post-offers.js";
@@ -171,40 +172,66 @@ export function LockedSlurpPostCard({
     }
   };
   const unlockPrice = slpCreatorUnlockPriceOf(post);
+  const onMedia = hasMediaPreview;
   const unlockPrompt = !revealed && !controllerOnly && (
     <div
       className={
-        hasMediaPreview
-          ? "pointer-events-auto flex flex-col items-center gap-2"
-          : "mt-4 flex flex-wrap items-center gap-3"
+        onMedia ? "pointer-events-auto flex flex-col items-center gap-2.5" : "mt-4 flex flex-col items-start gap-2"
       }
     >
-      {/* The glowing price pill: the price is on the button before the tap (design language §7). */}
-      <SlpPrimaryButton
-        ref={unlockTriggerRef}
-        disabled={unlockPending || subscriptionPending}
-        onClick={() => setUnlockSheetOpen(true)}
-        className="shadow-[0_0_0_1px_color-mix(in_srgb,white_30%,transparent),0_10px_34px_-6px_var(--noodle-accent),var(--slurp-highlight)]"
-      >
-        {localizeUi("ui.noodle.lockednoodlerpostcard.unlock")}
-        {unlockPrice !== null && (
-          <>
-            <span aria-hidden="true">·</span>
-            <SlurpCoinAmount amount={unlockPrice} className="font-extrabold" />
-          </>
-        )}
-      </SlpPrimaryButton>
-      <span
-        className={
-          hasMediaPreview
-            ? "text-xs font-semibold text-white/85 [text-shadow:0_1px_6px_rgb(0_0_0/0.6)]"
-            : "text-xs font-medium text-[var(--slurp-muted)]"
-        }
-      >
-        {localizeUi("ui.slurp.locked.includedForSubscribers", { defaultValue: "Included for subscribers" })}
+      {/* The glowing price pill: the price is on the button before the tap (design language §7).
+          Mixed-candy twinkles land round it once, as it appears. */}
+      <span className="relative isolate inline-flex">
+        <SlpTwinkle points={SLP_PILL_TWINKLES} />
+        <SlpPrimaryButton
+          ref={unlockTriggerRef}
+          disabled={unlockPending || subscriptionPending}
+          onClick={() => setUnlockSheetOpen(true)}
+          className="shadow-[0_0_0_1px_color-mix(in_srgb,white_30%,transparent),0_10px_34px_-6px_var(--noodle-accent),var(--slurp-highlight)]"
+        >
+          {localizeUi("ui.noodle.lockednoodlerpostcard.unlock")}
+          {unlockPrice !== null && (
+            <>
+              <span aria-hidden="true">·</span>
+              <SlurpCoinAmount amount={unlockPrice} className="font-extrabold" />
+            </>
+          )}
+        </SlpPrimaryButton>
       </span>
+      {/* The comparison that sells the subscription, one tap away (same spend as the sheet's row). */}
+      {typeof subscriptionPrice === "number" && subscriptionPrice >= 0 && !subscribed ? (
+        <button
+          type="button"
+          data-slurp-locked-subscribe
+          disabled={subscriptionPending || transaction !== null}
+          onClick={(event) => void runTransaction("subscribe", event.currentTarget)}
+          className={cn(
+            "min-h-8 rounded-full px-2 text-xs font-semibold underline-offset-2 transition-opacity hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-60",
+            onMedia ? "text-white/90 [text-shadow:0_1px_6px_rgb(0_0_0/0.65)]" : "-ms-2 text-[var(--slurp-ink)]",
+          )}
+        >
+          <SlpCoinText>
+            {localizeUi("ui.slurp.locked.orSubscribe", {
+              defaultValue: "or included with Subscribe · {{price}} <coin/> / week",
+              price: subscriptionPrice,
+            })}
+          </SlpCoinText>
+        </button>
+      ) : (
+        <span
+          className={
+            onMedia
+              ? "text-xs font-semibold text-white/85 [text-shadow:0_1px_6px_rgb(0_0_0/0.6)]"
+              : "text-xs font-medium text-[var(--slurp-muted)]"
+          }
+        >
+          {localizeUi("ui.slurp.locked.includedForSubscribers", { defaultValue: "Included for subscribers" })}
+        </span>
+      )}
     </div>
   );
+  // What is behind the veil, said plainly: "4 photos", "1 photo".
+  const photoCount = Math.max(postImages.length, requestedMediaUrl || post.hasImage ? 1 : 0);
   return (
     <article
       data-noodle-post-id={post.id}
@@ -407,6 +434,24 @@ export function LockedSlurpPostCard({
               />
             )}
             {!revealed && <SlurpSparkleVeil className={transaction ? "opacity-100" : ""} />}
+            {!revealed && (
+              // Signature surface (design language §2/§3): slow ambient sparkle over the veil and a
+              // hero-gradient frame whose glint travels round the picture.
+              <>
+                <span
+                  className="pointer-events-none absolute inset-0 isolate z-[5] opacity-80 mix-blend-screen"
+                  aria-hidden="true"
+                >
+                  <SlpShimmer />
+                </span>
+                <SlpRingGlint />
+                <span
+                  className="pointer-events-none absolute inset-0 z-[1] shadow-[inset_0_0_48px_-12px_var(--noodle-accent)]"
+                  aria-hidden="true"
+                />
+              </>
+            )}
+            {!revealed && photoCount > 0 && <SlpLockedContentsChip count={photoCount} />}
             {postImages.length > 1 && (
               <div className="pointer-events-none absolute inset-x-2 top-1/2 z-20 flex -translate-y-1/2 justify-between">
                 <button
@@ -431,12 +476,7 @@ export function LockedSlurpPostCard({
             {!revealed && (
               // Lock and price sit together in the middle of the veil.
               <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 px-4">
-                <span
-                  className="flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-white shadow-[0_8px_24px_-10px_rgba(0,0,0,0.8),inset_0_1px_0_rgb(255_255_255/0.25)] ring-1 ring-inset ring-white/25 backdrop-blur-md [&_svg]:!text-white"
-                  aria-hidden="true"
-                >
-                  <Lock size={22} strokeWidth={2.25} />
-                </span>
+                <SlpSparkleLock />
                 {unlockPrompt}
               </div>
             )}

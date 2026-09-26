@@ -19,6 +19,8 @@ export type SlurpWalletEntry = {
   amount: number;
   at: string;
   note?: string;
+  /** Spends name who was paid, so a profile can tell "you were subscribed here" from "never". */
+  binding?: { viewerAccountId: string; creatorAccountId: string };
 };
 export type SlurpWallet = {
   coins: number;
@@ -29,7 +31,8 @@ export type SlurpWallet = {
   nextRefillAt?: string;
   ledger: SlurpWalletEntry[];
   earnedToday: { ad: number; engagement: number };
-  subscriptions: Record<string, { paidThroughAt: string; price: number }>;
+  /** `cancelled`: access runs to `paidThroughAt`, then it ends instead of renewing. */
+  subscriptions: Record<string, { paidThroughAt: string; price: number; cancelled?: boolean }>;
 };
 export type SlurpTopFan = {
   id: string;

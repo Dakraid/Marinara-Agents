@@ -1,12 +1,21 @@
 import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SlurpProfileMediaTile } from "./SlpScreenProfile";
-import { Loader2 } from "lucide-react";
-import { SlurpAccessTransition } from "./SlpHomeHelpers";
+import { Images, Loader2, PenLine, UserPlus } from "lucide-react";
+import { useState } from "react";
+import { isSlurpStory, SlurpAccessTransition, slurpSubscriptionPriceOf } from "./SlpHomeHelpers";
+import { SlurpMomentShelfTile, SlurpMomentViewer } from "./SlpScreenMoments";
 import { Avatar } from "../../base/chrome/SlpChrome";
 import { SlurpFanCard } from "../../modules/audience/SlpFanCard";
+import { SlpButton } from "../../modules/chrome/SlpButton";
+import { SlurpCoinAmount, SlurpCoinBurst } from "../../modules/coin/SlpCoin";
 import { LockedSlurpPostCard } from "../../modules/post/SlpLockedPostCard";
+import { SlpLockedMediaTile } from "../../modules/post/SlpLockedMedia";
 import { SlpPostCard } from "../../modules/post/SlpPostCard";
+import { playSlpSpendMoment, SlpShimmer } from "../../modules/sparkle/SlpSparkle";
 import type { StageProfileViewModel } from "./slp-profile-view-model";
+
+/** Stories younger than this still wear the ring on the profile's Story row. */
+const STORY_LIVE_MS = 24 * 60 * 60 * 1000;
 
 /** The profile's post list: the tab the viewer picked, rendered from the screen's model. */
 export function SlpProfilePostCards({ model }: { model: StageProfileViewModel }) {
@@ -14,20 +23,27 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
     activeTab,
     emptyTabTitle,
     followersQuery,
+    followPending,
     i18n,
-    imagePosts,
     isError,
     isLoading,
     localizeUi,
+    lockedPosts,
     managedCreator,
     onRetry,
     onRetryViewer,
+    onToggleFollow,
     onToggleSubscription,
     onUnlock,
+    openComposer,
     postCardCtx,
+    posts,
     profile,
+    projectedPosts,
+    showProfilePost,
     setOpenImagePostId,
     setRevealedManagedPostIds,
+    storyMoments,
     subscriberTotal,
     subscribers,
     subscribersQuery,
@@ -38,8 +54,28 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
     viewerCreator,
     viewerIsError,
     viewerIsLoading,
+    viewingOwnCreator,
     visiblePosts,
   } = model;
+  const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
+  const activeStoryIndex = storyMoments.findIndex((moment) => moment.post.id === activeStoryId);
+  const activeStory = storyMoments[activeStoryIndex] ?? null;
+  // Media: every picture post in page order, open ones as pictures and locked ones as teasers.
+  const mediaTiles = projectedPosts.flatMap((item) => {
+    if (item.kind === "locked") {
+      return !isSlurpStory(item.post) && typeof item.post.imageUrl === "string"
+        ? [{ kind: "locked" as const, post: item.post }]
+        : [];
+    }
+    if (item.kind === "card" || item.kind === "managed-reveal") {
+      return !isSlurpStory(item.model) && typeof item.model.imageUrl === "string"
+        ? [{ kind: "open" as const, post: { ...item.model, imageUrl: item.model.imageUrl } }]
+        : [];
+    }
+    return [];
+  });
+  const showPaywall =
+    activeTab === "posts" && !viewingOwnCreator && viewerCreator && !viewerCreator.subscribed && lockedPosts.length > 0;
 
   return (
     <>
@@ -153,9 +189,7 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
           )}
         </div>
       ) : viewerIsLoading || isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 size={22} className="animate-spin text-[var(--noodle-accent-foreground)]" />
-        </div>
+        <SlpSkeleton shape={activeTab === "media" ? "grid" : "posts"} />
       ) : viewerIsError ? (
         <SlpErrorState
           title={localizeUi("ui.noodle.stageprofileview.viewerAccessCouldNotBeLoaded")}
@@ -167,106 +201,267 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
           onRetry={onRetry}
         />
       ) : activeTab === "media" ? (
-        imagePosts.length > 0 ? (
-          <div className="grid grid-cols-2 gap-px bg-[var(--noodle-divider)] @min-[620px]:grid-cols-3">
-            {imagePosts.map((post) => (
-              <SlurpProfileMediaTile key={post.id} post={post} onOpenImage={(_url, id) => setOpenImagePostId(id)} />
+        mediaTiles.length > 0 ? (
+          // 3 columns, hairline gaps, no ⋯ on tiles; locked pictures sell the subscription as teasers.
+          <div className="mt-3 grid grid-cols-3 gap-0.5 overflow-hidden @min-[680px]:rounded-xl">
+            {mediaTiles.map((tile) =>
+              tile.kind === "open" ? (
+                <SlurpProfileMediaTile
+                  key={tile.post.id}
+                  post={tile.post}
+                  withMenu={false}
+                  onOpenImage={(_url, id) => setOpenImagePostId(id)}
+                />
+              ) : (
+                <SlpLockedMediaTile
+                  key={tile.post.id}
+                  imageUrl={tile.post.imageUrl ?? null}
+                  unlockPrice={(tile.post as { unlockPrice?: number }).unlockPrice ?? null}
+                  label={localizeUi("ui.slurp.profile.openLockedPost", { defaultValue: "Open locked post" })}
+                  onOpen={() => showProfilePost(tile.post.id)}
+                />
+              ),
+            )}
+          </div>
+        ) : (
+          <SlpEmptyState title={emptyTabTitle} icon={Images} />
+        )
+      ) : activeTab === "stories" ? (
+        storyMoments.length > 0 ? (
+          // A highlights row: the Creator's Stories as tall tiles, played in the Story viewer.
+          <div className="flex snap-x gap-2.5 overflow-x-auto px-4 py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden @min-[680px]:px-0">
+            {storyMoments.map((moment) => (
+              <SlurpMomentShelfTile
+                key={moment.post.id}
+                moment={moment}
+                isNew={Date.now() - Date.parse(moment.post.createdAt) < STORY_LIVE_MS}
+                onOpen={() => setActiveStoryId(moment.post.id)}
+              />
             ))}
           </div>
         ) : (
           <SlpEmptyState title={emptyTabTitle} />
         )
       ) : visiblePosts.length > 0 ? (
-        visiblePosts.map((item) => {
-          const itemId = item.kind === "locked" || item.kind === "controller-locked" ? item.post.id : item.model.id;
-          const locked = item.kind === "locked" || item.kind === "controller-locked";
-          return (
-            <SlurpAccessTransition
-              key={itemId}
-              postId={itemId}
-              locked={locked}
-              menuOpen={postCardCtx.postMenuId === itemId}
-            >
-              {item.kind === "locked" || item.kind === "controller-locked" ? (
-                <div className="p-3 @min-[680px]:px-0">
-                  <LockedSlurpPostCard
-                    post={item.post}
-                    profile={profile}
-                    subscriptionPrice={viewerCreator?.subscriptionPrice}
-                    postMenuOpen={postCardCtx.postMenuId === itemId}
-                    setPostMenuOpen={(open) => postCardCtx.setPostMenuId(open ? itemId : null)}
-                    controllerOnly={item.kind === "controller-locked"}
-                    subscribed={viewerCreator?.subscribed ?? false}
-                    unlockPending={unlockPending}
-                    subscriptionPending={subscriptionPending}
-                    onUnlock={onUnlock}
-                    onGambleUnlock={postCardCtx.gambleUnlockPost}
-                    unlockOffer={postCardCtx.unlockOffer}
-                    subscriptionOffer={postCardCtx.subscriptionOffer}
-                    onToggleSubscription={onToggleSubscription}
-                    onManage={() => {
-                      setRevealedManagedPostIds((current) => {
-                        const next = new Set(current);
-                        next.add(item.post.id);
-                        return next;
-                      });
-                    }}
-                    onGenerateImage={
-                      item.post.imagePrompt
-                        ? () =>
-                            postCardCtx.generatePostImage?.({
-                              id: item.post.id,
-                              authorAccountId: item.post.authorAccountId,
-                            })
-                        : undefined
-                    }
-                    imageGenerationPending={postCardCtx.generatingPostImageId === item.post.id}
-                  />
-                </div>
-              ) : item.kind === "managed-reveal" ? (
-                <div>
-                  <div className="flex min-h-11 items-center justify-between gap-3 border-b border-[var(--noodle-divider)] bg-[var(--noodle-accent)]/5 px-4">
-                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">
-                      {localizeUi("ui.noodle.stageprofileview.controllerViewHiddenFrom")}{" "}
-                      {viewerAccount?.displayName ?? localizeUi("ui.noodle.stageprofileview.thisViewer")}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
+        <>
+          {showPaywall && <SlpPaywallCard model={model} />}
+          {visiblePosts.map((item) => {
+            const itemId = item.kind === "locked" || item.kind === "controller-locked" ? item.post.id : item.model.id;
+            const locked = item.kind === "locked" || item.kind === "controller-locked";
+            return (
+              <SlurpAccessTransition
+                key={itemId}
+                postId={itemId}
+                locked={locked}
+                menuOpen={postCardCtx.postMenuId === itemId}
+              >
+                {item.kind === "locked" || item.kind === "controller-locked" ? (
+                  <div className="p-3 @min-[680px]:px-0">
+                    <LockedSlurpPostCard
+                      post={item.post}
+                      profile={profile}
+                      subscriptionPrice={viewerCreator?.subscriptionPrice}
+                      postMenuOpen={postCardCtx.postMenuId === itemId}
+                      setPostMenuOpen={(open) => postCardCtx.setPostMenuId(open ? itemId : null)}
+                      controllerOnly={item.kind === "controller-locked"}
+                      subscribed={viewerCreator?.subscribed ?? false}
+                      unlockPending={unlockPending}
+                      subscriptionPending={subscriptionPending}
+                      onUnlock={onUnlock}
+                      onGambleUnlock={postCardCtx.gambleUnlockPost}
+                      unlockOffer={postCardCtx.unlockOffer}
+                      subscriptionOffer={postCardCtx.subscriptionOffer}
+                      onToggleSubscription={onToggleSubscription}
+                      onManage={() => {
                         setRevealedManagedPostIds((current) => {
                           const next = new Set(current);
-                          next.delete(item.model.id);
+                          next.add(item.post.id);
                           return next;
-                        })
+                        });
+                      }}
+                      onGenerateImage={
+                        item.post.imagePrompt
+                          ? () =>
+                              postCardCtx.generatePostImage?.({
+                                id: item.post.id,
+                                authorAccountId: item.post.authorAccountId,
+                              })
+                          : undefined
                       }
-                      className="min-h-11 shrink-0 px-2 text-xs font-bold text-[var(--noodle-accent-foreground)]"
-                    >
-                      {localizeUi("ui.noodle.stageprofileview.hide")}
-                    </button>
+                      imageGenerationPending={postCardCtx.generatingPostImageId === item.post.id}
+                    />
                   </div>
+                ) : item.kind === "managed-reveal" ? (
+                  <div>
+                    <div className="flex min-h-11 items-center justify-between gap-3 border-b border-[var(--noodle-divider)] bg-[var(--noodle-accent)]/5 px-4">
+                      <span className="text-xs font-semibold text-[var(--muted-foreground)]">
+                        {localizeUi("ui.noodle.stageprofileview.controllerViewHiddenFrom")}{" "}
+                        {viewerAccount?.displayName ?? localizeUi("ui.noodle.stageprofileview.thisViewer")}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setRevealedManagedPostIds((current) => {
+                            const next = new Set(current);
+                            next.delete(item.model.id);
+                            return next;
+                          })
+                        }
+                        className="min-h-11 shrink-0 px-2 text-xs font-bold text-[var(--noodle-accent-foreground)]"
+                      >
+                        {localizeUi("ui.noodle.stageprofileview.hide")}
+                      </button>
+                    </div>
+                    <SlpPostCard
+                      surface="profile"
+                      post={item.model}
+                      ctx={{ ...postCardCtx, personaAccount: null, postManagement: managedCreator }}
+                    />
+                  </div>
+                ) : (
                   <SlpPostCard
                     surface="profile"
                     post={item.model}
-                    ctx={{ ...postCardCtx, personaAccount: null, postManagement: managedCreator }}
+                    ctx={{
+                      ...postCardCtx,
+                      personaAccount: viewerActorAccount,
+                      postManagement: managedCreator,
+                    }}
                   />
-                </div>
-              ) : (
-                <SlpPostCard
-                  surface="profile"
-                  post={item.model}
-                  ctx={{
-                    ...postCardCtx,
-                    personaAccount: viewerActorAccount,
-                    postManagement: managedCreator,
-                  }}
-                />
-              )}
-            </SlurpAccessTransition>
-          );
-        })
+                )}
+              </SlurpAccessTransition>
+            );
+          })}
+        </>
+      ) : activeTab === "posts" && posts.length === 0 ? (
+        // Nobody has posted here yet: say who, and offer the one useful next step.
+        viewingOwnCreator ? (
+          <SlpEmptyState
+            icon={PenLine}
+            title={localizeUi("ui.slurp.profile.ownEmptyTitle", { defaultValue: "Your page is ready" })}
+            detail={localizeUi("ui.slurp.profile.ownEmptyDetail", {
+              defaultValue: "Post something and your followers see it in their feed.",
+            })}
+            action={localizeUi("ui.slurp.profile.createFirstPost", { defaultValue: "Create your first post" })}
+            onAction={openComposer}
+          />
+        ) : (
+          <SlpEmptyState
+            icon={UserPlus}
+            title={localizeUi("ui.slurp.profile.emptyTitle", {
+              defaultValue: "{{name}} hasn't posted yet",
+              name: profile.displayName,
+            })}
+            detail={
+              viewerCreator?.followed
+                ? localizeUi("ui.slurp.profile.emptyFollowing", {
+                    defaultValue: "You follow this page, so the first post shows up in your feed.",
+                  })
+                : localizeUi("ui.slurp.profile.emptyDetail", {
+                    defaultValue: "Follow to see the first post in your feed.",
+                  })
+            }
+            action={
+              viewerCreator && !viewerCreator.followed && !viewerCreator.subscribed
+                ? localizeUi("ui.slurp.profile.follow")
+                : undefined
+            }
+            onAction={() => !followPending && onToggleFollow(profile.id, false)}
+          />
+        )
       ) : (
         <SlpEmptyState title={emptyTabTitle} />
       )}
+      {activeStory && (
+        <SlurpMomentViewer
+          key={activeStory.post.id}
+          moment={activeStory}
+          personaId={viewerAccount?.entityId ?? null}
+          isOwner={viewingOwnCreator}
+          index={activeStoryIndex}
+          total={storyMoments.length}
+          unlockPending={unlockPending}
+          subscriptionPending={subscriptionPending}
+          onClose={() => setActiveStoryId(null)}
+          onPrevious={
+            activeStoryIndex > 0 ? () => setActiveStoryId(storyMoments[activeStoryIndex - 1]!.post.id) : undefined
+          }
+          onNext={
+            activeStoryIndex < storyMoments.length - 1
+              ? () => setActiveStoryId(storyMoments[activeStoryIndex + 1]!.post.id)
+              : undefined
+          }
+          onUnlock={onUnlock}
+          onToggleSubscription={onToggleSubscription}
+          onOpenProfile={postCardCtx.openAuthorProfile}
+          ctx={postCardCtx}
+        />
+      )}
     </>
+  );
+}
+
+/**
+ * What a subscription opens, before the first locked card (03 §6): blurred thumbnails under the
+ * Sparkle Veil in a hero-gradient frame, the count, and Subscribe with its weekly price.
+ */
+function SlpPaywallCard({ model }: { model: StageProfileViewModel }) {
+  const { localizeUi, lockedPosts, lockedTeasers, onToggleSubscription, profile, subscriptionPending, viewerCreator } =
+    model;
+  if (!viewerCreator) return null;
+  const thumbs = [0, 1, 2].map((index) => lockedTeasers[index] ?? null);
+  return (
+    <section
+      data-slurp-paywall
+      className="mx-3 mt-3 rounded-2xl bg-[image:var(--slurp-hero)] p-[1.5px] shadow-[0_18px_40px_-26px_var(--noodle-accent)] @min-[680px]:mx-0"
+    >
+      <div className="overflow-hidden rounded-[14.5px] bg-[var(--slurp-surface-raised)] p-3">
+        <div className="relative grid grid-cols-3 gap-1.5">
+          {/* Ambient sparkle over the pictures only, never over the text below. */}
+          <span className="pointer-events-none absolute inset-0 isolate z-[5] mix-blend-screen" aria-hidden="true">
+            <SlpShimmer />
+          </span>
+          {thumbs.map((teaser, index) => (
+            <SlpLockedMediaTile
+              key={teaser?.id ?? `empty-${index}`}
+              imageUrl={teaser?.imageUrl ?? null}
+              label=""
+              className="rounded-xl"
+            />
+          ))}
+        </div>
+        <p className="mt-3 text-[15px] font-bold leading-5">
+          {localizeUi("ui.slurp.profile.paywallTitle", {
+            count: lockedPosts.length,
+            defaultValue: "{{count}} posts for subscribers",
+          })}
+        </p>
+        <p className="mt-0.5 text-xs leading-4 text-[var(--slurp-muted)]">
+          {localizeUi("ui.slurp.profile.paywallDetail", {
+            count: lockedTeasers.length,
+            defaultValue: "{{count}} photos inside · new ones every week",
+          })}
+        </p>
+        <SlpButton
+          disabled={subscriptionPending}
+          className="mt-3 w-full"
+          onClick={(event) => {
+            const origin = event.currentTarget.getBoundingClientRect();
+            void Promise.resolve(onToggleSubscription(profile.id, false)).then(
+              () => playSlpSpendMoment(origin),
+              () => undefined,
+            );
+          }}
+        >
+          <SlurpCoinBurst active={subscriptionPending} />
+          {localizeUi("ui.slurp.profile.subscribe")}
+          <span aria-hidden="true">·</span>
+          <SlurpCoinAmount
+            amount={slurpSubscriptionPriceOf(viewerCreator)}
+            suffix={localizeUi("ui.slurp.unlocksheet.perWeek", { defaultValue: "/ week" })}
+          />
+        </SlpButton>
+      </div>
+    </section>
   );
 }

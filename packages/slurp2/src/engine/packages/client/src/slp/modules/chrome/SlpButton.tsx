@@ -45,6 +45,9 @@ const VARIANTS = {
   /** Pink tint: the second choice next to a primary, or the main action where a spend is not involved. */
   secondary:
     "bg-[var(--slurp-tint)] text-[var(--slurp-text)] shadow-[var(--slurp-highlight)] hover:bg-[color-mix(in_srgb,var(--noodle-accent)_22%,var(--slurp-surface-raised))] [&_svg]:!text-[var(--slurp-ink)]",
+  /** Neutral raised glass: the quiet actions beside a primary (Follow, Message, Tip), so pink stays for the primary. */
+  quiet:
+    "bg-[var(--slurp-surface-raised)] text-[var(--slurp-text)] shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] hover:bg-[color-mix(in_srgb,var(--noodle-accent)_8%,var(--slurp-surface-raised))] disabled:shadow-none disabled:hover:bg-[var(--slurp-surface-raised)] [&_svg]:!text-[var(--slurp-ink)]",
   /** Text only, in pink ink: Cancel, Report bug, See all. */
   tertiary: "px-3 text-[var(--slurp-ink)] hover:bg-[var(--accent)] [&_svg]:!text-current",
   /** Danger ink on a faint danger tint: delete, leave, cancel a subscription. */

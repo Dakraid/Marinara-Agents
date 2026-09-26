@@ -280,12 +280,15 @@ export function Avatar({
   account,
   size = "md",
   solid = false,
+  className,
 }: {
   account: Pick<SlpAccount, "displayName" | "avatarUrl"> & {
     avatarCrop?: AvatarCrop | null;
   };
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   solid?: boolean;
+  /** Overrides the size classes (the profile hero sizes its avatar per layout). */
+  className?: string;
 }) {
   const dimension =
     // `xs` exists for the persona badge that overlaps a Creator avatar: `sm` is h-8, which on an
@@ -308,6 +311,7 @@ export function Avatar({
         className={cn(
           dimension,
           "relative aspect-square flex-none overflow-hidden rounded-full border border-[var(--noodle-accent)]/30",
+          className,
         )}
       >
         {avatarSrc && (
@@ -329,6 +333,7 @@ export function Avatar({
         dimension,
         "flex aspect-square flex-none items-center justify-center rounded-full text-xs font-bold !text-[var(--noodle-accent-foreground)] ring-1 ring-[var(--noodle-accent)]/25",
         solid ? "bg-[color-mix(in_srgb,var(--noodle-accent)_15%,var(--background))]" : "bg-[var(--noodle-accent)]/15",
+        className,
       )}
     >
       {initials(account.displayName)}

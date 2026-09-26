@@ -88,3 +88,20 @@ export function formatFullTime(value: string, locale: string) {
     () => new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short", hour12: browserHour12 }),
   ).format(date);
 }
+
+/**
+ * A day ahead, as short as it can be said: "Fri" inside the next six days, "Oct 2" after that,
+ * "Oct 2, 2027" in another year. For "renews Fri" / "ends Fri" on a subscription.
+ */
+export function formatUpcomingDay(value: string, locale: string, now = Date.now()) {
+  const date = new Date(value);
+  const at = date.getTime();
+  if (Number.isNaN(at)) return "";
+  if (at >= now && at - now < 6 * DAY)
+    return cached(`${locale}:weekday`, () => new Intl.DateTimeFormat(locale, { weekday: "short" })).format(date);
+  const sameYear = date.getFullYear() === new Date(now).getFullYear();
+  return cached(
+    `${locale}:date:${sameYear}`,
+    () => new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" }) }),
+  ).format(date);
+}

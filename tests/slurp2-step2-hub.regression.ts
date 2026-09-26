@@ -66,7 +66,7 @@ assert.doesNotMatch(hub, /SLP_BALANCE_CHIP_CLASS/u, "no copy of the chip in the 
 assert.match(hub, /isLoading=\{isLoading \|\| \(!scope && !isError\)\}/u);
 assert.match(tile, /<Avatar account=\{creator\.profile\} size="sm" \/>/u);
 assert.match(tile, /\{isNew && <SlpRingGlint \/>\}/u);
-assert.match(tile, /!isNew && "opacity-60 saturate-\[0\.65\]/u);
+assert.match(tile, /!isNew && "opacity-80 saturate-\[0\.8\]/u);
 
 // Story viewer: a text Story is big type on the hero gradient, the caption is not repeated, and the
 // progress bar counts only this Creator's Stories.

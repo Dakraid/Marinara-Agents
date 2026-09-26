@@ -73,6 +73,9 @@ export function SlpWordmark() {
 /** The balance and the way to the Wallet, provided by the shell so every phone header can show the chip. */
 const SlpBalanceContext = createContext<{ coins: number | null; onOpen?: () => void }>({ coins: null });
 
+/** The viewer's coin balance inside the shell (null while it loads or outside the shell). */
+export const useSlpBalance = () => useContext(SlpBalanceContext).coins;
+
 /**
  * The coin balance chip for phone headers (hub, profile, thread, Discover). It is the coin-fly
  * target, so every spend lands on it; desktop hides it because the sidebar Wallet row shows the

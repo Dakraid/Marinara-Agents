@@ -31,7 +31,7 @@ export type SlpStoryTileProps = {
 
 /**
  * A tall photo tile with the Creator's avatar on it. Unseen = hero ring with a travelling glint;
- * seen = no ring and a dimmer picture, so the new ones lead without a label.
+ * seen = no ring, 80 % opacity and slightly muted, so the new ones lead without a label.
  */
 export function SlpStoryTile({ creator, post, mediaSrc, fallback, isNew, onOpen }: SlpStoryTileProps) {
   const { t: localizeUi } = useUiTranslation();
@@ -55,7 +55,7 @@ export function SlpStoryTile({ creator, post, mediaSrc, fallback, isNew, onOpen 
       <span
         className={cn(
           "absolute inset-0 transition-[filter,opacity] duration-[var(--slurp-motion-base)]",
-          !isNew && "opacity-60 saturate-[0.65] group-hover:opacity-80",
+          !isNew && "opacity-80 saturate-[0.8] group-hover:opacity-100",
         )}
         aria-hidden="true"
       >
@@ -82,13 +82,11 @@ export function SlpStoryTile({ creator, post, mediaSrc, fallback, isNew, onOpen 
         aria-hidden="true"
       />
       <span
-        className={cn(
-          "absolute start-1.5 top-1.5 rounded-full p-[2px]",
-          isNew ? "bg-[image:var(--slurp-hero)]" : "bg-white/35",
-        )}
+        // Seen: no ring at all, so only new Stories carry the hero ring (step 2 follow-up).
+        className={cn("absolute start-1.5 top-1.5 rounded-full", isNew && "bg-[image:var(--slurp-hero)] p-[2px]")}
         aria-hidden="true"
       >
-        <span className="block rounded-full bg-[var(--slurp-surface)] p-[1.5px]">
+        <span className={cn("block rounded-full", isNew && "bg-[var(--slurp-surface)] p-[1.5px]")}>
           <Avatar account={creator.profile} size="sm" />
         </span>
       </span>

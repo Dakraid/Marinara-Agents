@@ -7,6 +7,7 @@ import { StageProfileForm } from "../../features/creators/SlpStageProfileForm";
 import { openSlpCreatorSettings } from "../../features/creators/settings/slp-creator-settings-store";
 import { ChevronRight, LayoutGrid, Pencil, Plus, Sparkles } from "lucide-react";
 import { cn } from "../../../lib/utils";
+import { SLP_EYEBROW_CLASS } from "../../base/chrome/SlpChrome";
 import { SlurpCreatorProfileCard } from "../../modules/creator/SlpCreatorProfileCard";
 import { StageProfileView } from "./SlpScreenProfile";
 import type { ReactNode } from "react";
@@ -313,17 +314,14 @@ export function renderSlurpHomeCreatorFlow({
       .filter(
         (creator) => creator.profile.id !== selectedProfile.id && creator.profile.sourceAccountId !== viewerPersonaId,
       )
-      .slice(0, 2);
+      .slice(0, 5);
     const profileRail = ownsSelectedProfile ? (
       <aside
         className="relative hidden w-[20rem] shrink-0 overflow-hidden px-4 py-5 @min-[1280px]:block"
         aria-labelledby="slurp-creator-tools-heading"
       >
         <div className="sticky top-4 space-y-3">
-          <h2
-            id="slurp-creator-tools-heading"
-            className="px-1 text-xs font-black uppercase tracking-[0.14em] text-[var(--muted-foreground)]"
-          >
+          <h2 id="slurp-creator-tools-heading" className={cn(SLP_EYEBROW_CLASS, "px-1")}>
             {localizeUi("ui.slurp.profile.creatorTools", { defaultValue: "Creator tools" })}
           </h2>
           <section className="overflow-hidden rounded-2xl bg-[var(--slurp-surface)] shadow-[var(--slurp-shadow-floating)] ring-1 ring-inset ring-[var(--noodle-divider)]">
@@ -378,19 +376,20 @@ export function renderSlurpHomeCreatorFlow({
         aria-labelledby="slurp-similar-creators-heading"
       >
         <div className="sticky top-4 space-y-3">
-          <h2
-            id="slurp-similar-creators-heading"
-            className="px-1 text-xs font-black uppercase tracking-[0.14em] text-[var(--muted-foreground)]"
-          >
+          <h2 id="slurp-similar-creators-heading" className={cn(SLP_EYEBROW_CLASS, "px-1")}>
             {localizeUi("ui.slurp.profile.similarCreators", { defaultValue: "More creators" })}
           </h2>
-          {similarCreators.map((creator) => (
-            <SlurpCreatorProfileCard
-              key={creator.profile.id}
-              creator={creator}
-              onOpenProfile={(accountId) => onNavigate({ mode: "creator", view: "profile", accountId })}
-            />
-          ))}
+          {/* Compact rows in one raised group (design step 3): five Creators fit where two tall cards did. */}
+          <div className="rounded-2xl bg-[var(--slurp-surface-raised)] p-1 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
+            {similarCreators.map((creator) => (
+              <SlurpCreatorProfileCard
+                key={creator.profile.id}
+                creator={creator}
+                layout="row"
+                onOpenProfile={(accountId) => onNavigate({ mode: "creator", view: "profile", accountId })}
+              />
+            ))}
+          </div>
         </div>
       </aside>
     ) : undefined;
@@ -416,7 +415,7 @@ export function renderSlurpHomeCreatorFlow({
             slurpSettings={slurpSettingsQuery.data ?? null}
             postCardCtx={postCardCtx}
             viewerAccounts={viewerAccounts}
-            connectionCounts={connectionCountsQuery.data ?? {}}
+            connectionCounts={connectionCountsQuery.data ?? null}
             viewerIsLoading={Boolean(viewerPersonaId) && !viewerQuery.data && viewerQuery.isLoading}
             viewerIsError={Boolean(viewerPersonaId) && !viewerQuery.data && viewerQuery.isError}
             onRetryViewer={() => void viewerQuery.refetch()}

@@ -352,23 +352,7 @@ export function ViewerHub({
         />
       </div>
       {!isLoading && !isError && scope && (
-        <div className="flex items-end justify-between gap-4 px-4 pb-3 pt-7 sm:px-5 @min-[1024px]:bg-[linear-gradient(180deg,color-mix(in_srgb,var(--noodle-accent)_3%,var(--slurp-canvas)),var(--slurp-canvas))]">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[var(--slurp-warm)]" aria-hidden="true" />
-              <h2 className="text-lg font-black tracking-tight">{localizeUi("ui.slurp.home.latestDrops")}</h2>
-            </div>
-            <p className="mt-1 hidden text-xs leading-5 text-[var(--muted-foreground)] sm:block">
-              {localizeUi("ui.slurp.home.latestDropsDetail")}
-            </p>
-          </div>
-          <span className="hidden shrink-0 rounded-full bg-[var(--slurp-surface-raised)] px-2.5 py-1 text-xs font-semibold tabular-nums text-[var(--muted-foreground)] ring-1 ring-inset ring-[var(--noodle-divider)] sm:inline-flex">
-            {localizeUi("ui.slurp.home.postCount", { count: feed.length })}
-          </span>
-        </div>
-      )}
-      {!isLoading && !isError && scope && (
-        <div className="pb-2 @min-[1024px]:bg-[var(--slurp-canvas)]">
+        <div className="pb-2 pt-4 @min-[1024px]:bg-[var(--slurp-canvas)]">
           <div className="relative isolate overflow-hidden px-3 @min-[1024px]:px-5" data-slurp-home-masthead>
             {/* One row, one purpose: which feed, how to show it, and the hub's ⋯ (refresh). */}
             <div className="flex items-center gap-2">

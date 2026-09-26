@@ -4,7 +4,7 @@ import { cn } from "../../../lib/utils";
 import { useNearViewportSlurpMediaSrc } from "../../base/media/slp-media-src";
 import { ProfileInitial } from "../../base/chrome/SlpChrome";
 import { SlurpEmptyArtwork } from "../../base/chrome/SlpEmptyArtwork";
-import { Check, Loader2 } from "lucide-react";
+import { Check, ChevronRight, Loader2 } from "lucide-react";
 import { DEFAULT_SLURP_SUBSCRIPTION_PRICE, SlurpCoinAmount } from "../coin/SlpCoin";
 import type { SlurpDiscoverLayout } from "../../base/state/slp-state-types";
 import type { SlurpDiscoveryGender } from "../../base/state/slp-state-types";
@@ -38,7 +38,8 @@ export function SlurpCreatorProfileCard({
 }: {
   creator: SlurpCreatorProfileCardCreator;
   onOpenProfile?: (accountId: string) => void;
-  layout?: SlurpDiscoverLayout;
+  /** "row": one compact line (avatar, name, one line of bio) for narrow rails. */
+  layout?: SlurpDiscoverLayout | "row";
   showDiscoveryActions?: boolean;
   subscriptionPending?: boolean;
   onToggleSubscription?: (accountId: string, subscribed: boolean) => void;
@@ -70,6 +71,33 @@ export function SlurpCreatorProfileCard({
       return;
     onToggleSubscription(creator.profile.id, creator.subscribed);
   };
+
+  if (layout === "row") {
+    return (
+      <button
+        type="button"
+        onClick={openProfile}
+        disabled={!openProfile}
+        className={cn(
+          "flex min-h-14 w-full min-w-0 items-center gap-3 rounded-xl px-2.5 py-2 text-start transition-colors hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] disabled:cursor-default",
+          className,
+        )}
+      >
+        <ProfileInitial profile={creator.profile} />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[13px] font-bold leading-5">{creator.profile.displayName}</span>
+          <span className="block truncate text-xs leading-4 text-[var(--slurp-muted)]">
+            {creator.profile.bio?.trim() || `@${creator.profile.handle}`}
+          </span>
+        </span>
+        {creator.subscribed ? (
+          <Check size={16} aria-hidden="true" className="shrink-0 text-[var(--slurp-ink)]" />
+        ) : (
+          <ChevronRight size={16} aria-hidden="true" className="shrink-0 text-[var(--slurp-muted)]" />
+        )}
+      </button>
+    );
+  }
 
   return (
     <article

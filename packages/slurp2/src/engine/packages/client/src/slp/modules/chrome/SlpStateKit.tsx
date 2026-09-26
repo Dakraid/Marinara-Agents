@@ -21,15 +21,16 @@ function Bone({ className }: { className: string }) {
 
 /**
  * A skeleton shaped like the content it stands in for: `rows` (inbox, lists, followers), `thread`
- * (chat bubbles), `card` (wallet, Studio: a big block and rows), `stories` (the Story shelf) or `hub`
- * (the whole hub while Slurp itself loads: a Story row and two post cards).
+ * (chat bubbles), `card` (wallet, Studio: a big block and rows), `stories` (the Story shelf), `hub`
+ * (the whole hub while Slurp itself loads: a Story row and two post cards), `posts` (two post cards)
+ * or `grid` (a 3-column media grid).
  */
 export function SlpSkeleton({
   shape = "rows",
   count = 4,
   label,
 }: {
-  shape?: "rows" | "thread" | "card" | "stories" | "hub";
+  shape?: "rows" | "thread" | "card" | "stories" | "hub" | "posts" | "grid";
   count?: number;
   label?: string;
 }) {
@@ -98,13 +99,22 @@ export function SlpSkeleton({
             className="h-[8.25rem] w-[5.5rem] shrink-0 rounded-2xl @min-[1024px]:h-[9rem] @min-[1024px]:w-[6rem]"
           />
         ))}
-      {shape === "hub" && (
+      {shape === "grid" && (
+        <div className="grid grid-cols-3 gap-0.5">
+          {Array.from({ length: 9 }, (_, index) => (
+            <Bone key={index} className="aspect-square rounded-md" />
+          ))}
+        </div>
+      )}
+      {(shape === "hub" || shape === "posts") && (
         <div className="space-y-6">
-          <div className="flex gap-2.5 overflow-hidden">
-            {items.map((index) => (
-              <Bone key={index} className="h-[8.25rem] w-[5.5rem] shrink-0 rounded-2xl" />
-            ))}
-          </div>
+          {shape === "hub" && (
+            <div className="flex gap-2.5 overflow-hidden">
+              {items.map((index) => (
+                <Bone key={index} className="h-[8.25rem] w-[5.5rem] shrink-0 rounded-2xl" />
+              ))}
+            </div>
+          )}
           {[0, 1].map((card) => (
             <div key={card} className="space-y-3">
               <div className="flex items-center gap-3">
