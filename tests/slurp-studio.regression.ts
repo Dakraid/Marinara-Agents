@@ -134,7 +134,8 @@ assert.match(routes, /goal: context\.goalByAccountId\.get\(account\.id\) \?\? nu
 assert.match(home, /function slpCreatorGoalOf/u);
 assert.match(
   home,
-  /goalForViewer && !editing && \(/u,
+  // Step 3.2: the goal moved under the tabs; the editing guard wraps the whole fan-card slot now.
+  /afterTabsContent=\{\s+editing \? null : \([\s\S]*?\{goalForViewer && \(/u,
   "The audience goal must render without taking the composer's slot",
 );
 const disclosure = slurp2Source(join(root, "server/src/services/slurp/slurp-disclosure.ts"));

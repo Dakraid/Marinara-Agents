@@ -113,7 +113,7 @@ assert.match(
 assert.match(viewerHooks, /mergeSlpFeedFirstPage\(qc\.getQueryData/u);
 assert.match(
   hub,
-  /holdNewSlpFeedPosts\(\s*fullFeed,\s*!searchTerm && feedMark\?\.key === feedMarkKey \? feedMark\.at : null,?\s*\)/u,
+  /holdNewSlpFeedPosts\(\s*fullFeed,\s*!searchTerm && feedMark\?\.key === feedMarkKey \? feedMark\.at : null,/u,
 );
 assert.match(hub, /data-component="SlurpHome\.NewPosts"/u);
 assert.match(hub, /sticky top-\[68px\] z-20 flex h-0/u, "the pill floats without moving the feed");

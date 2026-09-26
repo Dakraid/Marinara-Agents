@@ -4095,6 +4095,7 @@
   "ui.slurp.profile.stat.likes_other": "likes",
   "ui.slurp.profile.newPost": "New post",
   "ui.slurp.profile.resubscribe": "Resubscribe",
+  "ui.slurp.profile.resumeSubscription": "Resume subscription",
   "ui.slurp.profile.cancelSubscriptionUntil": "You keep subscriber access until {{day}}. It won't renew after that.",
   "ui.slurp.profile.keepSubscription": "Keep subscription",
   "ui.slurp.profile.renewsOn": "Subscribed · renews {{day}} · {{price}} <coin/> / week",

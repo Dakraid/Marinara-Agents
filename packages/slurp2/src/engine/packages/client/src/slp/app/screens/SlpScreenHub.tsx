@@ -24,12 +24,14 @@ import { LockedSlurpPostCard } from "../../modules/post/SlpLockedPostCard";
 import { SlpPostCard } from "../../modules/post/SlpPostCard";
 import { SlurpMediaWall } from "./SlpScreenProfile";
 import {
+  Avatar,
   NewSinceLastVisitDivider,
   HIDE_ON_SCROLL_CLASS,
   SLP_BAR_GLASS_CLASS,
   SLP_PAGE_SCROLL_CLASS,
   useHideOnScroll,
 } from "../../base/chrome/SlpChrome";
+import { SlpTwinkle } from "../../modules/sparkle/SlpSparkle";
 import { SlurpInlineAd } from "../../features/ads/SlpInlineAd";
 import { type SlurpDiscoverLayout } from "../../features/discovery/slp-discovery";
 import {
@@ -204,7 +206,12 @@ export function ViewerHub({
   const { shown: feed, held: heldPosts } = holdNewSlpFeedPosts(
     fullFeed,
     !searchTerm && feedMark?.key === feedMarkKey ? feedMark.at : null,
+    ({ creator }) => Boolean(scope) && creator.profile.sourceAccountId === scope?.viewer.entityId,
   );
+  // Up to three faces of who posted, newest first, one per Creator.
+  const heldPosters = [
+    ...new Map(heldPosts.map(({ creator }) => [creator.profile.id, creator.profile])).values(),
+  ].slice(0, 3);
   const showHeldPosts = () => {
     if (newestFeedAt !== null) setFeedMark({ key: feedMarkKey, at: newestFeedAt });
     setVisibleFeedCount((count) => count + heldPosts.length);
@@ -370,9 +377,33 @@ export function ViewerHub({
               className="pointer-events-auto flex h-11 items-center rounded-full px-1 focus-visible:outline-none [&:focus-visible>span]:ring-2 [&:focus-visible>span]:ring-[var(--slurp-focus)] [&:focus-visible>span]:ring-offset-2"
               data-component="SlurpHome.NewPosts"
             >
-              <span className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--noodle-accent)] pe-4 ps-3 text-[13px] font-bold text-[var(--slurp-on-accent)] shadow-[var(--slurp-glow),var(--slurp-shadow-floating)] [&_svg]:!text-[var(--slurp-on-accent)]">
+              <span
+                className={cn(
+                  "relative flex h-9 items-center gap-1.5 rounded-full bg-[var(--noodle-accent)] pe-4 text-[13px] font-bold text-[var(--slurp-on-accent)] shadow-[var(--slurp-glow),var(--slurp-shadow-floating)] [&_svg]:!text-[var(--slurp-on-accent)]",
+                  heldPosters.length > 0 ? "ps-1.5" : "ps-3",
+                )}
+              >
+                {heldPosters.length > 0 && (
+                  <span className="flex" aria-hidden="true">
+                    {heldPosters.map((profile) => (
+                      <Avatar
+                        key={profile.id}
+                        account={profile}
+                        size="xs"
+                        className="-ms-2 h-6 w-6 border-2 border-[var(--noodle-accent)] bg-[var(--slurp-surface)] text-[9px] first:ms-0"
+                      />
+                    ))}
+                  </span>
+                )}
                 <ArrowUp size={16} strokeWidth={2.25} aria-hidden="true" />
                 {localizeUi("ui.slurp.feed.newPosts", { count: heldPosts.length })}
+                {/* A new post is a good moment: two stars pop on the corners once (static under reduced motion). */}
+                <SlpTwinkle
+                  points={[
+                    { x: "-5px", y: "-6px", size: 11 },
+                    { x: "calc(100% - 4px)", y: "calc(100% - 8px)", size: 9 },
+                  ]}
+                />
               </span>
             </motion.button>
           )}

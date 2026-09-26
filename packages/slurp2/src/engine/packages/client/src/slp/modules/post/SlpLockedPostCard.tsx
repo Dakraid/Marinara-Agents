@@ -454,7 +454,7 @@ export function LockedSlurpPostCard({
               </>
             )}
             {!revealed && photoCount > 0 && <SlpLockedContentsChip count={photoCount} />}
-            {postImages.length > 1 && (
+            {revealed && postImages.length > 1 && (
               <div className="pointer-events-none absolute inset-x-2 top-1/2 z-20 flex -translate-y-1/2 justify-between">
                 <button
                   type="button"

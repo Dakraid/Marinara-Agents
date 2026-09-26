@@ -38,7 +38,13 @@ assert.deepEqual(slpProfileSubscriptionState({ creatorId: "c1", subscribed: true
   price: 30,
 });
 assert.equal(
-  slpProfileSubscriptionState({ creatorId: "c1", subscribed: true, wallet: wallet({ cancelled: true }) }).kind,
+  slpProfileSubscriptionState({
+    creatorId: "c1",
+    subscribed: true,
+    wallet: wallet({ cancelled: true }),
+    // Step 3.2: the state reads the clock (past `until` a cancelled one has ended), so pin "now".
+    at: new Date("2026-09-28T10:00:00.000Z"),
+  }).kind,
   "cancelled",
 );
 assert.equal(
@@ -68,10 +74,8 @@ assert.equal(formatUpcomingDay("2027-01-05T12:00:00.000Z", "en-US", now), "Jan 5
 assert.equal(formatUpcomingDay("2026-09-20T12:00:00.000Z", "en-US", now), "Sep 20");
 assert.equal(formatUpcomingDay("not a date", "en-US", now), "");
 
-// Both headers and both action rows stay in the bundle behind one constant until the user picks.
-assert.match(surface, /export const SLP_PROFILE_LAYOUT = \{ header: "hero", actions: "pills" \} as \{/u);
-assert.match(surface, /SLP_PROFILE_LAYOUT\.header === "compact"/u);
-assert.match(actions, /SLP_PROFILE_LAYOUT\.actions === "icons"/u);
+// Step 3.2: the user picked big hero + pills, so the switch and the losing variants are gone.
+assert.doesNotMatch(surface + actions, /SLP_PROFILE_LAYOUT|compact \?|icons \?/u);
 
 // B36: status is a dot on the avatar (word for screen readers), not a floating chip.
 assert.match(surface, /STATUS_DOT\[status\]/u);
@@ -111,7 +115,7 @@ assert.match(cards, /ui\.slurp\.profile\.emptyTitle/u);
 // Operator bits live in one collapsible Creator tools card under the tabs; storyline effects too.
 assert.match(
   screen,
-  /afterTabsContent=\{managedCreator && !editing \? <SlpCreatorToolsCard model=\{model\} \/> : null\}/u,
+  /afterTabsContent=\{\s+editing \? null : \([\s\S]*?\{managedCreator && <SlpCreatorToolsCard model=\{model\} \/>\}/u,
 );
 assert.doesNotMatch(screen, /DisclosureBadge|HelpTooltip/u, "the identity chip left the fan header");
 assert.doesNotMatch(arcs.slice(0, arcs.indexOf("export function SlurpArcEffectsList")), /effectLine/u);

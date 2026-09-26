@@ -9,20 +9,6 @@ import { useTranslation as useUiTranslation } from "react-i18next";
 type SlurpProfileTab = "posts" | "likes" | "media";
 
 /**
- * Design review switch (step 3): the user compares both headers and both action rows by
- * screenshot, then picks one of each. Read as properties (not folded constants) so both variants
- * stay in the bundle until then.
- *
- * ponytail: two layouts live side by side until the pick; delete the losing branch of each then.
- */
-export const SLP_PROFILE_LAYOUT = { header: "hero", actions: "pills" } as {
-  /** hero: shorter cinematic banner, 104 px avatar with the glint ring, 28 px name. compact: 3:1 banner, 88 px avatar. */
-  header: "hero" | "compact";
-  /** pills: full-width Subscribe + three equal pills. icons: Subscribe + three 44 px round icon buttons. */
-  actions: "pills" | "icons";
-};
-
-/**
  * Editing happens in place: a field keeps the exact typography it had a moment ago and only gains
  * an editable surface. Editing used to swap the whole identity block for a stacked form with tiny
  * labels, so you lost your bearings the instant you clicked Edit and could not tell what the
@@ -80,9 +66,7 @@ interface SlurpProfileSurfaceProps<TTab extends string = SlurpProfileTab> {
   tabs?: Array<{ id: TTab; label: string; count?: number | null; ariaLabel?: string; management?: boolean }>;
   activeTab: TTab;
   onTabChange: (tab: TTab) => void;
-  /** Fan-facing cards between the header and the tabs (tip goal, storyline). */
-  preTabsContent?: ReactNode;
-  /** Right under the sticky tabs, above the list: the muted Creator tools card. */
+  /** Right under the sticky tabs, above the list: the Posts tab's fan cards and the Creator tools card. */
   afterTabsContent?: ReactNode;
   postList: ReactNode;
   postPanelId?: string;
@@ -106,7 +90,6 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
   tabs,
   activeTab,
   onTabChange,
-  preTabsContent,
   afterTabsContent,
   postList,
   postPanelId = "slurp-profile-panel",
@@ -116,7 +99,6 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
   bioCollapsible = true,
 }: SlurpProfileSurfaceProps<TTab>) {
   const { t: localizeUi } = useUiTranslation();
-  const compact = SLP_PROFILE_LAYOUT.header === "compact";
   const editing = Boolean(editor?.isEditing);
   const resolvedTabs =
     tabs ??
@@ -151,7 +133,7 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
             title={localizeUi("editor.avatar.upload")}
             aria-label={localizeUi("editor.avatar.upload")}
           >
-            <ProfileAvatar account={account} compact={compact} />
+            <ProfileAvatar account={account} />
             {avatarUpload.uploadTarget === "avatar" ? (
               <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 text-[11px] font-semibold text-white">
                 {localizeUi("ui.noodle.noodleprofilesurface.uploading_de27240")}
@@ -166,7 +148,7 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
             )}
           </button>
         ) : (
-          <ProfileAvatar account={account} compact={compact} />
+          <ProfileAvatar account={account} />
         )}
         {!editing && <SlpRingGlint />}
       </span>
@@ -215,8 +197,7 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
   ) : (
     <h1
       className={cn(
-        "max-w-full font-extrabold tracking-[-0.02em] text-balance [overflow-wrap:anywhere]",
-        compact ? "text-[22px] leading-7" : "text-[28px] leading-8",
+        "max-w-full text-[28px] font-extrabold leading-8 tracking-[-0.02em] text-balance [overflow-wrap:anywhere]",
         "@min-[680px]:text-3xl @min-[1040px]:text-4xl",
       )}
     >
@@ -308,54 +289,27 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
       style={accent ? ({ "--noodle-accent": accent } as CSSProperties) : undefined}
     >
       {mobileHeader}
-      {banner && <ProfileBanner banner={banner} account={account} compact={compact} />}
+      {banner && <ProfileBanner banner={banner} account={account} />}
 
       <div
         className={cn(
           "relative z-10 px-4 @min-[680px]:grid @min-[680px]:grid-cols-[auto_minmax(0,1fr)] @min-[680px]:items-start @min-[680px]:gap-x-6 @min-[680px]:px-6 @min-[1040px]:gap-x-8 @min-[1040px]:px-8",
           // The avatar rides half over the banner's pink fade.
-          banner ? (compact ? "-mt-12" : "-mt-16") : "pt-5",
+          banner ? "-mt-16" : "pt-5",
           "@min-[680px]:-mt-16",
         )}
         data-slurp-creator-hero
-        data-slurp-profile-header={SLP_PROFILE_LAYOUT.header}
       >
-        {compact ? (
-          <>
-            {/* Compact: the name sits beside the avatar, then stats and actions right away. */}
-            <div className="flex items-end gap-3 @min-[680px]:block">
-              {avatar}
-              <div className="min-w-0 flex-1 pb-1 @min-[680px]:hidden">
-                {name}
-                {handle}
-              </div>
-            </div>
-            <div className="min-w-0 @min-[680px]:pt-16">
-              <div className="hidden @min-[680px]:block">
-                {name}
-                {handle}
-              </div>
-              {statsRow}
-              {actions}
-              {bio}
-              {locationLine}
-              {editing && editor?.privateFields && <div className="mt-4 w-full space-y-3">{editor.privateFields}</div>}
-            </div>
-          </>
-        ) : (
-          <>
-            {avatar}
-            <div className="mt-3 min-w-0 @min-[680px]:mt-0 @min-[680px]:pt-16">
-              {name}
-              {handle}
-              {statsRow}
-              {bio}
-              {locationLine}
-              {actions}
-              {editing && editor?.privateFields && <div className="mt-4 w-full space-y-3">{editor.privateFields}</div>}
-            </div>
-          </>
-        )}
+        {avatar}
+        <div className="mt-3 min-w-0 @min-[680px]:mt-0 @min-[680px]:pt-16">
+          {name}
+          {handle}
+          {statsRow}
+          {bio}
+          {locationLine}
+          {actions}
+          {editing && editor?.privateFields && <div className="mt-4 w-full space-y-3">{editor.privateFields}</div>}
+        </div>
       </div>
 
       {editing && editor && (
@@ -376,10 +330,6 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
             {editor.isSaving ? localizeUi("ui.noodle.noodlehome.saving") : localizeUi("ui.noodle.noodlehome.save")}
           </button>
         </div>
-      )}
-
-      {preTabsContent && !editing && (
-        <div className="mt-5 space-y-3 px-3 @min-[680px]:px-5 @min-[1040px]:px-8">{preTabsContent}</div>
       )}
 
       <div className="mt-5 @min-[680px]:mx-5 @min-[1040px]:mx-8">
@@ -441,32 +391,29 @@ function formatSlpCompact(value: number) {
   return new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
-function ProfileAvatar({ account, compact }: { account: Parameters<typeof Avatar>[0]["account"]; compact: boolean }) {
+function ProfileAvatar({ account }: { account: Parameters<typeof Avatar>[0]["account"] }) {
   return (
     <Avatar
       account={account}
       size="xl"
       className={cn(
-        compact ? "h-[88px] w-[88px]" : "h-[104px] w-[104px]",
-        "border-0 text-4xl font-extrabold @min-[680px]:h-32 @min-[680px]:w-32 @min-[1040px]:h-36 @min-[1040px]:w-36",
+        "h-[104px] w-[104px] border-0 text-4xl font-extrabold @min-[680px]:h-32 @min-[680px]:w-32 @min-[1040px]:h-36 @min-[1040px]:w-36",
       )}
     />
   );
 }
 
 /**
- * The banner: shorter and cinematic (hero) or 3:1 (compact), never taller than 240 px, fading into
+ * The banner: short and cinematic, never taller than 240 px, fading into
  * the page through a pink glow. No banner: the avatar blurred into a wash, or a pink wash with a
  * few sparkles, instead of the old decorative wave.
  */
 function ProfileBanner({
   banner,
   account,
-  compact,
 }: {
   banner: NonNullable<SlurpProfileSurfaceProps["banner"]>;
   account: Parameters<typeof Avatar>[0]["account"];
-  compact: boolean;
 }) {
   const { t: localizeUi } = useUiTranslation();
   return (
@@ -479,7 +426,7 @@ function ProfileBanner({
         disabled={!banner.canEdit || banner.uploadTarget === "banner"}
         className={cn(
           "relative block w-full overflow-hidden text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] disabled:cursor-default",
-          compact ? "aspect-[3/1] max-h-60" : "h-52 @min-[540px]:h-56 @min-[760px]:h-60",
+          "h-52 @min-[540px]:h-56 @min-[760px]:h-60",
           banner.uploadTarget === "banner" && "cursor-wait opacity-80",
           banner.url && SLP_IMG_FRAME_CLASS,
         )}

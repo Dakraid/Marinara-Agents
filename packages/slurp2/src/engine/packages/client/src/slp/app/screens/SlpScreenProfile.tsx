@@ -405,58 +405,63 @@ export function StageProfileView({
         ]}
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        preTabsContent={
-          goalForViewer || arcsQuery.data?.arcs.length ? (
+        afterTabsContent={
+          editing ? null : (
             <>
-              {goalForViewer && !editing && (
-                <section className="rounded-2xl bg-[var(--slurp-surface-raised)] px-4 py-3.5 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
-                  <div className="flex items-center gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-[var(--slurp-muted)]">
-                        {localizeUi("ui.slurp.profile.tipGoal", { defaultValue: "Tip goal" })}
+              {/* Fan cards open the Posts tab (step 3.2), so the header ends on its actions. */}
+              {activeTab === "posts" && (goalForViewer || arcsQuery.data?.arcs.length) ? (
+                <div className="mx-3 mt-3 space-y-3 @min-[680px]:mx-0">
+                  {goalForViewer && (
+                    <section className="rounded-2xl bg-[var(--slurp-surface-raised)] px-4 py-3.5 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
+                      <div className="flex items-center gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-[var(--slurp-muted)]">
+                            {localizeUi("ui.slurp.profile.tipGoal", { defaultValue: "Tip goal" })}
+                          </p>
+                          <p className="truncate text-[15px] font-bold leading-5">{goalForViewer.label}</p>
+                        </div>
+                        {/* The natural action next to a goal: open the tip sheet. */}
+                        {!viewingOwnCreator && viewerCreator && !goalForViewer.met && (
+                          <SlpButton onClick={() => setTipOpen(true)} className="min-h-9 shrink-0 px-3.5 text-xs">
+                            {localizeUi("ui.slurp.profile.chipIn", { defaultValue: "Chip in" })}
+                          </SlpButton>
+                        )}
+                      </div>
+                      <div className="mt-3 h-2 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--slurp-text)_10%,transparent)]">
+                        <div
+                          className="h-full rounded-full bg-[var(--noodle-accent)] shadow-[0_0_10px_var(--noodle-accent)] transition-[width] motion-reduce:transition-none"
+                          style={{ width: `${Math.round(Math.min(1, goalForViewer.progress) * 100)}%` }}
+                        />
+                      </div>
+                      <p className="mt-1.5 text-xs tabular-nums text-[var(--slurp-muted)]">
+                        {goalForViewer.met ? (
+                          localizeUi("ui.slurp.profile.goalMet", { defaultValue: "Goal met" })
+                        ) : (
+                          <SlpCoinText>
+                            {localizeUi("ui.slurp.profile.goalProgressCoins", {
+                              defaultValue: "{{raised}} of {{target}} <coin/> · {{percent}}",
+                              raised: formatSlpNumber(goalForViewer.raised, i18n.language),
+                              target: formatSlpNumber(goalForViewer.target, i18n.language),
+                              percent: formatSlpPercent(Math.min(1, goalForViewer.progress), i18n.language),
+                            })}
+                          </SlpCoinText>
+                        )}
                       </p>
-                      <p className="truncate text-[15px] font-bold leading-5">{goalForViewer.label}</p>
-                    </div>
-                    {/* The natural action next to a goal: open the tip sheet. */}
-                    {!viewingOwnCreator && viewerCreator && !goalForViewer.met && (
-                      <SlpButton onClick={() => setTipOpen(true)} className="min-h-9 shrink-0 px-3.5 text-xs">
-                        {localizeUi("ui.slurp.profile.chipIn", { defaultValue: "Chip in" })}
-                      </SlpButton>
-                    )}
-                  </div>
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--slurp-text)_10%,transparent)]">
-                    <div
-                      className="h-full rounded-full bg-[var(--noodle-accent)] shadow-[0_0_10px_var(--noodle-accent)] transition-[width] motion-reduce:transition-none"
-                      style={{ width: `${Math.round(Math.min(1, goalForViewer.progress) * 100)}%` }}
+                    </section>
+                  )}
+                  {arcsQuery.data && (
+                    <SlurpArcTimelineCard
+                      arcs={arcsQuery.data.arcs}
+                      onOpenPost={showProfilePost}
+                      onOpenProfile={postCardCtx.openAuthorProfile}
                     />
-                  </div>
-                  <p className="mt-1.5 text-xs tabular-nums text-[var(--slurp-muted)]">
-                    {goalForViewer.met ? (
-                      localizeUi("ui.slurp.profile.goalMet", { defaultValue: "Goal met" })
-                    ) : (
-                      <SlpCoinText>
-                        {localizeUi("ui.slurp.profile.goalProgressCoins", {
-                          defaultValue: "{{raised}} of {{target}} <coin/> · {{percent}}",
-                          raised: formatSlpNumber(goalForViewer.raised, i18n.language),
-                          target: formatSlpNumber(goalForViewer.target, i18n.language),
-                          percent: formatSlpPercent(Math.min(1, goalForViewer.progress), i18n.language),
-                        })}
-                      </SlpCoinText>
-                    )}
-                  </p>
-                </section>
-              )}
-              {arcsQuery.data && (
-                <SlurpArcTimelineCard
-                  arcs={arcsQuery.data.arcs}
-                  onOpenPost={showProfilePost}
-                  onOpenProfile={postCardCtx.openAuthorProfile}
-                />
-              )}
+                  )}
+                </div>
+              ) : null}
+              {managedCreator && <SlpCreatorToolsCard model={model} />}
             </>
-          ) : null
+          )
         }
-        afterTabsContent={managedCreator && !editing ? <SlpCreatorToolsCard model={model} /> : null}
         postList={cards}
         accent={profileAccent(profile.id)}
       />
@@ -553,39 +558,43 @@ function SlpCreatorToolsCard({ model }: { model: ReturnType<typeof useStageProfi
         hidden={!creatorToolsOpen}
         className="space-y-4 border-t border-[var(--noodle-divider)] px-4 pb-4 pt-3"
       >
-        <div className="flex flex-wrap gap-2">
-          <SlpButton variant="quiet" onClick={onEdit} className="min-h-10 px-3.5 text-xs">
-            <Pencil size={14} aria-hidden="true" />
-            {localizeUi("ui.slurp.profile.editProfile", { defaultValue: "Edit profile" })}
-          </SlpButton>
-          {/* Automation used to open a dialog of its own here. It is a Creator setting like the
-              rest, so it opens the one place they all live now. */}
-          {!personaBackedCreator && (
-            <>
-              <SlpButton
-                variant="quiet"
-                onClick={() => openSlpCreatorSettings(profile.id, { tab: "automation" })}
-                className="min-h-10 px-3.5 text-xs"
-              >
-                {autoPosting.enabled
-                  ? localizeUi("ui.noodle.stageprofileview.automationOn")
-                  : localizeUi("ui.noodle.stageprofileview.automation")}
-              </SlpButton>
-              {/* Generating a post talks to the provider, so it keeps its own disclosure gate and
-                  stays an action here rather than moving in with the settings. */}
-              <SlpButton
-                variant="quiet"
-                disabled={runNowPending}
-                onClick={() => onRunNow(profile.id)}
-                className="min-h-10 px-3.5 text-xs"
-              >
-                {runNowPending
-                  ? localizeUi("ui.noodle.stageprofileview.running")
-                  : localizeUi("ui.noodle.stageprofileview.runNow")}
-              </SlpButton>
-            </>
-          )}
-        </div>
+        {/* The own page edits from its action row, and a persona-backed Creator has no automation,
+            so the own page has no buttons here. */}
+        {!viewingOwnCreator && (
+          <div className="flex flex-wrap gap-2">
+            <SlpButton variant="quiet" onClick={onEdit} className="min-h-10 px-3.5 text-xs">
+              <Pencil size={14} aria-hidden="true" />
+              {localizeUi("ui.slurp.profile.editProfile", { defaultValue: "Edit profile" })}
+            </SlpButton>
+            {/* Automation used to open a dialog of its own here. It is a Creator setting like the
+                rest, so it opens the one place they all live now. */}
+            {!personaBackedCreator && (
+              <>
+                <SlpButton
+                  variant="quiet"
+                  onClick={() => openSlpCreatorSettings(profile.id, { tab: "automation" })}
+                  className="min-h-10 px-3.5 text-xs"
+                >
+                  {autoPosting.enabled
+                    ? localizeUi("ui.noodle.stageprofileview.automationOn")
+                    : localizeUi("ui.noodle.stageprofileview.automation")}
+                </SlpButton>
+                {/* Generating a post talks to the provider, so it keeps its own disclosure gate and
+                    stays an action here rather than moving in with the settings. */}
+                <SlpButton
+                  variant="quiet"
+                  disabled={runNowPending}
+                  onClick={() => onRunNow(profile.id)}
+                  className="min-h-10 px-3.5 text-xs"
+                >
+                  {runNowPending
+                    ? localizeUi("ui.noodle.stageprofileview.running")
+                    : localizeUi("ui.noodle.stageprofileview.runNow")}
+                </SlpButton>
+              </>
+            )}
+          </div>
+        )}
         <div>
           <p className="text-xs font-semibold text-[var(--slurp-muted)]">
             {localizeUi("ui.slurp.profile.identity", { defaultValue: "Identity" })}

@@ -42,16 +42,18 @@ export function mergeSlpFeedFirstPage<Scope extends FeedScope>(current: Scope | 
 
 /**
  * Splits a newest-first feed at the reader's mark: posts newer than `acceptedAt` are held back for the
- * "New posts" pill, the rest are shown. No mark yet (first load) shows everything.
+ * "New posts" pill, the rest are shown. No mark yet (first load) shows everything. The reader's own
+ * posts (`isOwn`) are never held: they just made them and expect to see them at once.
  */
 export function holdNewSlpFeedPosts<Item extends { post: { createdAt: string } }>(
   feed: readonly Item[],
   acceptedAt: number | null,
+  isOwn: (item: Item) => boolean = () => false,
 ): { shown: Item[]; held: Item[] } {
   if (acceptedAt === null) return { shown: [...feed], held: [] };
   const shown: Item[] = [];
   const held: Item[] = [];
-  for (const item of feed) (time(item.post.createdAt) > acceptedAt ? held : shown).push(item);
+  for (const item of feed) (time(item.post.createdAt) > acceptedAt && !isOwn(item) ? held : shown).push(item);
   return { shown, held };
 }
 

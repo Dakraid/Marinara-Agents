@@ -448,6 +448,24 @@ export function subscriptionPaidThrough(at: Date, economy: SlurpEconomy = SLURP_
   return new Date(at.getTime() + economy.subscriptionDays * 86_400_000).toISOString();
 }
 
+/**
+ * Resume a cancelled subscription inside the period already paid for: drop the `cancelled` flag and
+ * nothing else. No charge, no ledger entry, same `paidThroughAt` and locked price, so the renewal
+ * sweep bills the next period at the usual time. Returns the wallet unchanged when there is nothing
+ * to resume (not cancelled, or the period has run out, which is a new charge instead).
+ */
+export function resumeSubscription(wallet: SlurpWallet, creatorAccountId: string, at: Date): SlurpWallet {
+  const current = wallet.subscriptions[creatorAccountId];
+  if (!current?.cancelled || !(Date.parse(current.paidThroughAt) > at.getTime())) return wallet;
+  return {
+    ...wallet,
+    subscriptions: {
+      ...wallet.subscriptions,
+      [creatorAccountId]: { paidThroughAt: current.paidThroughAt, price: current.price },
+    },
+  };
+}
+
 export type SlurpRenewalResult = {
   wallet: SlurpWallet;
   /** Creators whose period was extended, and what each was charged. */

@@ -69,8 +69,9 @@ const beforeFollow = home.slice(0, followButton);
 assert.match(
   beforeFollow.slice(beforeFollow.lastIndexOf("leadingActions=")),
   // 0.0.8 dropped the static badge: the subscribe button already shows the subscription, so the
-  // follow toggle is simply hidden while subscribed.
-  /\{!viewerCreator\.subscribed && \(/u,
+  // follow toggle is simply hidden while subscribed. Step 3.2: "subscribed" means renewing; a
+  // cancelled one gets the fan row again under Resume subscription.
+  /\{renewing \? \(/u,
   "the follow toggle must be gated on viewerCreator.subscribed",
 );
 

@@ -1,11 +1,10 @@
-import { Check, HandCoins, MessageCircle, Pencil, Plus, UserCheck, UserPlus } from "lucide-react";
+import { Check, Pencil, Plus } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { showConfirmDialog } from "../../../lib/app-dialogs";
 import { cn } from "../../../lib/utils";
 import { SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { formatUpcomingDay } from "../../base/ui/slp-date-time";
-import { SLP_PROFILE_LAYOUT } from "../../features/creators/SlpProfileSurface";
 import { SlurpCoin, SlurpCoinAmount, SlurpCoinBurst, SlpCoinText, slpCoinPlainText } from "../../modules/coin/SlpCoin";
 import { SlpButton, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
 import { SlpSheet } from "../../modules/chrome/SlpSheet";
@@ -17,9 +16,9 @@ import type { StageProfileViewModel } from "./slp-profile-view-model";
 const TIP_AMOUNTS = [5, 10, 25, 50];
 
 /**
- * The profile's action row (design step 3). Another Creator: Subscribe, then Follow · Message · Tip
- * (layout "pills": full-width Subscribe and three equal pills; "icons": Subscribe and three 44 px
- * round buttons). The own Creator: New post · Edit profile.
+ * The profile's action row (design step 3). Another Creator: full-width Subscribe (or Resume
+ * subscription while a cancelled one is still paid), then Follow · Message · Tip; subscribed:
+ * ✓ Subscribed · Message · Tip. The own Creator: New post · Edit profile.
  */
 export function SlpProfileLeadingActions({ model }: { model: StageProfileViewModel }) {
   const {
@@ -39,7 +38,6 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
     viewerCreator,
     viewingOwnCreator,
   } = model;
-  const icons = SLP_PROFILE_LAYOUT.actions === "icons";
   if (editing) return null;
   if (viewingOwnCreator) {
     return (
@@ -58,6 +56,10 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
   if (!viewerCreator) return null;
 
   const subscribed = viewerCreator.subscribed;
+  // Cancelled (or run out before the wallet caught up) reads as not subscribed: the pink button
+  // leads again, as Resume while the paid period lasts, as Resubscribe after it.
+  const resumable = subscriptionState.kind === "cancelled";
+  const renewing = subscribed && !resumable && subscriptionState.kind !== "ended";
   const messaging =
     offerMessaging?.dmPolicy === "closed"
       ? ("closed" as const)
@@ -67,10 +69,20 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
   const requestFee = offerMessaging?.requestFee ?? 0;
   const day = (iso: string) => formatUpcomingDay(iso, i18n.language);
 
-  const subscribeButton = (
+  const subscribeButton = resumable ? (
+    // Resuming charges nothing now (the server keeps the paid period), so no price and no coin flight.
     <SlpPrimaryButton
       disabled={subscriptionPending}
-      className={cn("whitespace-nowrap", icons ? "min-w-0 flex-1 px-4" : "w-full")}
+      className="w-full whitespace-nowrap"
+      onClickCapture={(event) => playSlpPop(event.currentTarget)}
+      onClick={() => void Promise.resolve(onToggleSubscription(profile.id, false)).catch(() => undefined)}
+    >
+      {localizeUi("ui.slurp.profile.resumeSubscription", { defaultValue: "Resume subscription" })}
+    </SlpPrimaryButton>
+  ) : (
+    <SlpPrimaryButton
+      disabled={subscriptionPending}
+      className="w-full whitespace-nowrap"
       onClick={(event) => {
         // One tap, no confirmation: the spend moment is the feedback (design language §7).
         const origin = event.currentTarget.getBoundingClientRect();
@@ -112,34 +124,17 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
     });
     if (confirmed) await Promise.resolve(onToggleSubscription(profile.id, true)).catch(() => undefined);
   };
-  const subscribedLabel = (
-    <>
+  const subscribedButton = (
+    <SlpButton
+      disabled={subscriptionPending}
+      onClick={() => void cancelSubscription()}
+      className="gap-1.5 whitespace-nowrap px-3 text-[13px]"
+      aria-haspopup="dialog"
+    >
       <Check size={16} strokeWidth={2.5} aria-hidden="true" />
       {localizeUi("ui.slurp.profile.subscribed")}
-    </>
+    </SlpButton>
   );
-  // A cancelled subscription cannot be cancelled again (or resumed: the server keeps it cancelled),
-  // so it is a label, and the line below says when it ends.
-  const subscribedButton =
-    subscriptionState.kind === "cancelled" ? (
-      <span
-        className={cn(
-          "inline-flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--slurp-tint)] px-3 text-[13px] font-bold text-[var(--slurp-text)] [&_svg]:!text-[var(--slurp-ink)]",
-          icons && "min-w-0 flex-1",
-        )}
-      >
-        {subscribedLabel}
-      </span>
-    ) : (
-      <SlpButton
-        disabled={subscriptionPending}
-        onClick={() => void cancelSubscription()}
-        className={cn("gap-1.5 whitespace-nowrap px-3 text-[13px]", icons && "min-w-0 flex-1 text-sm")}
-        aria-haspopup="dialog"
-      >
-        {subscribedLabel}
-      </SlpButton>
-    );
 
   const followLabel = viewerCreator.followed
     ? localizeUi("ui.noodle.connections.tabs.following")
@@ -148,19 +143,9 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
   const popOnFollow = (target: HTMLElement) => {
     if (!viewerCreator.followed) playSlpPop(target);
   };
-  const messageName =
-    messaging === "closed"
-      ? localizeUi("ui.slurp.profile.messagingUnavailable", { defaultValue: "Messaging unavailable" })
-      : messaging === "paid"
-        ? slpCoinPlainText(
-            localizeUi("ui.slurp.profile.requestMessage", {
-              defaultValue: "Request message · {{count}} <coin/>",
-              count: requestFee,
-            }),
-          )
-        : localizeUi("ui.slurp.profile.message", { defaultValue: "Message" });
+  const closedLabel = localizeUi("ui.slurp.profile.messagingUnavailable", { defaultValue: "Messaging unavailable" });
 
-  const tip = <SlpTipSheet model={model} icon={icons} />;
+  const tip = <SlpTipSheet model={model} />;
 
   const statusLine: ReactNode =
     subscriptionState.kind === "active" ? (
@@ -176,108 +161,66 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
         defaultValue: "Subscription ends {{day}} · it won't renew",
         day: day(subscriptionState.until),
       })
-    ) : !subscribed ? (
+    ) : !renewing ? (
       localizeUi("ui.slurp.profile.subscribeBenefits", {
         defaultValue: "Faster replies · Free chat photos · Subscriber-only posts",
       })
     ) : null;
 
   return (
-    <div data-slurp-profile-actions={SLP_PROFILE_LAYOUT.actions} className="min-w-0 @min-[680px]:max-w-lg">
-      {icons ? (
-        <div className="flex items-center gap-1.5">
-          {subscribed ? subscribedButton : subscribeButton}
-          {!viewerCreator.subscribed && (
-            <SlpButton
-              variant="quiet"
-              disabled={followPending}
-              aria-pressed={viewerCreator.followed}
-              aria-label={followLabel}
-              title={followLabel}
-              onClickCapture={(event) => popOnFollow(event.currentTarget)}
-              onClick={() => onToggleFollow(profile.id, viewerCreator.followed)}
-              className={cn("w-11 shrink-0 px-0", viewerCreator.followed && "bg-[var(--slurp-tint)]")}
-            >
-              {viewerCreator.followed ? <UserCheck size={18} /> : <UserPlus size={18} />}
-            </SlpButton>
-          )}
+    <div data-slurp-profile-actions className="min-w-0 @min-[680px]:max-w-lg">
+      {renewing ? null : subscribeButton}
+      <div
+        className={cn(
+          "grid gap-2",
+          !renewing && "mt-2",
+          // A paid request names its price, so Message takes the room the others do not need.
+          messaging === "paid"
+            ? "grid-cols-[auto_minmax(0,1fr)_auto]"
+            : // "Subscribed ✓" needs a little more room than Message and Tip.
+              renewing
+              ? "grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)]"
+              : "grid-cols-3",
+        )}
+      >
+        {renewing ? (
+          subscribedButton
+        ) : (
           <SlpButton
             variant="quiet"
-            disabled={messaging === "closed"}
-            onClick={() => onOpenMessages(profile.id)}
-            aria-label={messageName}
-            title={messageName}
-            className="w-11 shrink-0 overflow-visible px-0"
-          >
-            <MessageCircle size={18} />
-            {messaging === "paid" && (
-              // The request fee rides on the icon, so the price is visible before the tap.
-              <span
-                aria-hidden="true"
-                className="absolute -end-1.5 -top-1.5 inline-flex h-[18px] items-center gap-0.5 rounded-full bg-[var(--slurp-surface-raised)] px-1.5 text-[11px] font-bold tabular-nums text-[var(--slurp-text)] shadow-[var(--slurp-shadow-raised)] ring-1 ring-inset ring-[var(--noodle-divider)]"
-              >
-                {requestFee}
-                <SlurpCoin size={10} />
-              </span>
-            )}
-          </SlpButton>
-          {tip}
-        </div>
-      ) : (
-        <>
-          {subscribed ? null : subscribeButton}
-          <div
+            disabled={followPending}
+            aria-pressed={viewerCreator.followed}
+            onClickCapture={(event) => popOnFollow(event.currentTarget)}
+            onClick={() => onToggleFollow(profile.id, viewerCreator.followed)}
             className={cn(
-              "grid gap-2",
-              !subscribed && "mt-2",
-              // A paid request names its price, so Message takes the room the others do not need.
-              messaging === "paid"
-                ? "grid-cols-[auto_minmax(0,1fr)_auto]"
-                : // "Subscribed ✓" needs a little more room than Message and Tip.
-                  subscribed
-                  ? "grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)]"
-                  : "grid-cols-3",
+              "min-w-0 whitespace-nowrap px-3 text-[13px]",
+              viewerCreator.followed && "bg-[var(--slurp-tint)]",
             )}
           >
-            {viewerCreator.subscribed && subscribedButton}
-            {!viewerCreator.subscribed && (
-              <SlpButton
-                variant="quiet"
-                disabled={followPending}
-                aria-pressed={viewerCreator.followed}
-                onClickCapture={(event) => popOnFollow(event.currentTarget)}
-                onClick={() => onToggleFollow(profile.id, viewerCreator.followed)}
-                className={cn(
-                  "min-w-0 whitespace-nowrap px-3 text-[13px]",
-                  viewerCreator.followed && "bg-[var(--slurp-tint)]",
-                )}
-              >
-                {followLabel}
-              </SlpButton>
-            )}
-            <SlpButton
-              variant="quiet"
-              disabled={messaging === "closed"}
-              onClick={() => onOpenMessages(profile.id)}
-              aria-label={messaging === "closed" ? messageName : undefined}
-              title={messaging === "closed" ? messageName : undefined}
-              className="min-w-0 whitespace-nowrap px-3 text-[13px]"
-            >
-              {messaging === "paid" ? (
-                <SlpCoinText>
-                  {localizeUi("ui.slurp.profile.requestMessage", {
-                    defaultValue: "Request message · {{count}} <coin/>",
-                    count: requestFee,
-                  })}
-                </SlpCoinText>
-              ) : (
-                localizeUi("ui.slurp.profile.message", { defaultValue: "Message" })
-              )}
-            </SlpButton>
-            {tip}
-          </div>
-        </>
-      )}
+            {followLabel}
+          </SlpButton>
+        )}
+        <SlpButton
+          variant="quiet"
+          disabled={messaging === "closed"}
+          onClick={() => onOpenMessages(profile.id)}
+          aria-label={messaging === "closed" ? closedLabel : undefined}
+          title={messaging === "closed" ? closedLabel : undefined}
+          className="min-w-0 whitespace-nowrap px-3 text-[13px]"
+        >
+          {messaging === "paid" ? (
+            <SlpCoinText>
+              {localizeUi("ui.slurp.profile.requestMessage", {
+                defaultValue: "Request message · {{count}} <coin/>",
+                count: requestFee,
+              })}
+            </SlpCoinText>
+          ) : (
+            localizeUi("ui.slurp.profile.message", { defaultValue: "Message" })
+          )}
+        </SlpButton>
+        {tip}
+      </div>
       {(statusLine || messaging === "closed") && (
         <p
           className={cn(
@@ -302,7 +245,7 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
  * Tip: a glass sheet with 5 / 10 / 25 / 50 © bubbles and a custom amount. One tap sends — no
  * confirmation (user decision); the bubble bursts and the coins fly to the balance chip.
  */
-function SlpTipSheet({ model, icon }: { model: StageProfileViewModel; icon: boolean }) {
+function SlpTipSheet({ model }: { model: StageProfileViewModel }) {
   const { customTip, localizeUi, profile, setCustomTip, setTipOpen, tipCreator, tipOpen, viewerAccount } = model;
   const tipButtonRef = useRef<HTMLButtonElement | null>(null);
   const coins = useSlpBalance();
@@ -358,12 +301,10 @@ function SlpTipSheet({ model, icon }: { model: StageProfileViewModel; icon: bool
         disabled={tipCreator.isPending}
         aria-haspopup="dialog"
         aria-expanded={tipOpen}
-        aria-label={icon ? label : undefined}
-        title={icon ? label : undefined}
         onClick={() => setTipOpen((open) => !open)}
-        className={icon ? "w-11 shrink-0 px-0" : "min-w-0 whitespace-nowrap px-3 text-[13px]"}
+        className="min-w-0 whitespace-nowrap px-3 text-[13px]"
       >
-        {icon ? <HandCoins size={18} /> : label}
+        {label}
       </SlpButton>
       <SlpSheet
         open={tipOpen}
