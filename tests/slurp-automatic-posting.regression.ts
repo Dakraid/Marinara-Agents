@@ -59,7 +59,8 @@ const viewerHook = hooks.slice(
   hooks.indexOf("export function useCreatorViewer"),
   hooks.indexOf("/**\n * Unseen-post count"),
 );
-assert.match(viewerHook, /refetchInterval: enabled && personaId \? 120_000 : false/u);
+// Step 3.1 (user): the feed keeps itself fresh instead of a refresh button, so it polls every 30 s (was 120 s).
+assert.match(viewerHook, /refetchInterval: enabled && personaId \? 30_000 : false/u);
 assert.match(hooks, /invalidateQueries\(\{ queryKey: slpKeys\.viewer\(personaId\) \}\)/u);
 assert.match(storage, /autoPostGenerationMode: z\.enum\(\["pre_generate", "on_demand"\]\)/u);
 assert.match(

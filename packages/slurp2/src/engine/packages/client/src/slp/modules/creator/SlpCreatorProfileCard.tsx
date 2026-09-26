@@ -2,7 +2,7 @@ import { useTranslation as useUiTranslation } from "react-i18next";
 import type { AvatarCrop } from "@marinara-engine/shared";
 import { cn } from "../../../lib/utils";
 import { useNearViewportSlurpMediaSrc } from "../../base/media/slp-media-src";
-import { ProfileInitial } from "../../base/chrome/SlpChrome";
+import { ProfileInitial, slpImgFade } from "../../base/chrome/SlpChrome";
 import { SlurpEmptyArtwork } from "../../base/chrome/SlpEmptyArtwork";
 import { Check, ChevronRight, Loader2 } from "lucide-react";
 import { DEFAULT_SLURP_SUBSCRIPTION_PRICE, SlurpCoinAmount } from "../coin/SlpCoin";
@@ -116,11 +116,13 @@ export function SlurpCreatorProfileCard({
       >
         {bannerSrc ? (
           <img
+            key={bannerSrc}
             src={bannerSrc}
             alt=""
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-cover outline -outline-offset-1 outline-white/10 transition-transform duration-300 group-hover:scale-[1.015] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+            {...slpImgFade}
+            className="h-full w-full object-cover outline -outline-offset-1 outline-white/10 transition-[transform,opacity,filter] duration-[360ms] group-hover:scale-[1.015] motion-reduce:transition-opacity motion-reduce:group-hover:scale-100"
           />
         ) : (
           <SlurpEmptyArtwork className="absolute inset-0 opacity-90" />

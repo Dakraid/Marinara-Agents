@@ -10,7 +10,7 @@ import { SlpStoryTile } from "../../modules/story/SlpStoryTile";
 import { playSlpPop, SlpTwinkle } from "../../modules/sparkle/SlpSparkle";
 import { SlpButton, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
 import { useSlurpMediaSrc } from "../../base/media/slp-media-src";
-import { ProfileInitial } from "../../base/chrome/SlpChrome";
+import { ProfileInitial, slpImgFade } from "../../base/chrome/SlpChrome";
 import { SlurpSparkleVeil } from "../../base/chrome/SlpSparkleVeil";
 import { SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SlpPostSurfaceMenu } from "../../modules/post/SlpPostMenu";
@@ -237,64 +237,61 @@ export function SlurpMomentViewer({
       title={localizeUi("ui.slurp.moments.fromCreator", { name: moment.creator.profile.displayName })}
       onClose={onClose}
       variant="story"
+      pictured={!textStory}
       media={
         <>
           {mediaSrc && (
-            <img
-              src={mediaSrc}
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-0 h-full w-full scale-110 object-cover opacity-40 blur-2xl"
-            />
+            <span aria-hidden="true" className="absolute inset-0 scale-110 opacity-40 blur-2xl">
+              <img key={mediaSrc} src={mediaSrc} alt="" {...slpImgFade} className="h-full w-full object-cover" />
+            </span>
           )}
-          {mediaSrc ? (
-            <img
-              src={mediaSrc}
-              decoding="async"
-              fetchPriority="high"
-              alt={
-                moment.post.locked
-                  ? localizeUi("ui.noodle.lockednoodlerpostcard.lockedImageFrom", {
-                      name: moment.creator.profile.displayName,
-                    })
-                  : localizeUi("ui.noodle.post.imageBy", { name: moment.creator.profile.displayName })
-              }
-              className={cn(
-                "relative h-full w-full",
-                fitImage ? "object-contain" : "object-cover",
-                moment.post.locked && "saturate-[0.88]",
-              )}
-            />
-          ) : textStory ? (
-            // A text Story is the words themselves: big type on the hero gradient, not an empty canvas.
-            <div className="absolute inset-0 isolate flex items-center justify-center overflow-hidden bg-[image:var(--slurp-hero)] px-8 py-28">
-              <SlpTwinkle
-                points={[
-                  { x: "12%", y: "22%", size: 14 },
-                  { x: "84%", y: "18%", size: 10 },
-                  { x: "78%", y: "74%", size: 16 },
-                  { x: "16%", y: "80%", size: 9 },
-                ]}
-              />
-              <p
+          {
+            mediaSrc ? (
+              <img
+                key={mediaSrc}
+                src={mediaSrc}
+                {...slpImgFade}
+                decoding="async"
+                fetchPriority="high"
+                alt={
+                  moment.post.locked
+                    ? localizeUi("ui.noodle.lockednoodlerpostcard.lockedImageFrom", {
+                        name: moment.creator.profile.displayName,
+                      })
+                    : localizeUi("ui.noodle.post.imageBy", { name: moment.creator.profile.displayName })
+                }
                 className={cn(
-                  "text-balance text-center text-[var(--slurp-on-hero)] [overflow-wrap:anywhere] [text-shadow:0_2px_18px_rgb(0_0_0/0.25)]",
-                  textStory.length <= 60
-                    ? "text-[28px] font-extrabold leading-[32px]"
-                    : textStory.length <= 160
-                      ? "text-[22px] font-extrabold leading-[28px]"
-                      : "text-[17px] font-bold leading-[24px]",
+                  "relative h-full w-full",
+                  fitImage ? "object-contain" : "object-cover",
+                  moment.post.locked && "saturate-[0.88]",
                 )}
-              >
-                {textStory}
-              </p>
-            </div>
-          ) : (
-            <div
-              className="absolute inset-0 animate-pulse bg-[var(--slurp-surface-raised)] motion-reduce:animate-none"
-              aria-hidden="true"
-            />
-          )}
+              />
+            ) : textStory ? (
+              // A text Story is the words themselves: big type on the hero gradient, not an empty canvas.
+              <div className="absolute inset-0 isolate flex items-center justify-center overflow-hidden bg-[image:var(--slurp-hero)] px-8 py-28">
+                <SlpTwinkle
+                  points={[
+                    { x: "12%", y: "22%", size: 14 },
+                    { x: "84%", y: "18%", size: 10 },
+                    { x: "78%", y: "74%", size: 16 },
+                    { x: "16%", y: "80%", size: 9 },
+                  ]}
+                />
+                <p
+                  className={cn(
+                    "text-balance text-center text-[var(--slurp-on-hero)] [overflow-wrap:anywhere] [text-shadow:0_2px_18px_rgb(0_0_0/0.25)]",
+                    textStory.length <= 60
+                      ? "text-[28px] font-extrabold leading-[32px]"
+                      : textStory.length <= 160
+                        ? "text-[22px] font-extrabold leading-[28px]"
+                        : "text-[17px] font-bold leading-[24px]",
+                  )}
+                >
+                  {textStory}
+                </p>
+              </div>
+            ) : null /* while the picture is fetched, the dialog's frame itself shimmers */
+          }
           {moment.post.locked && mediaSrc && <SlurpSparkleVeil />}
           <div
             className="absolute inset-x-3 top-3 z-10 flex gap-1"

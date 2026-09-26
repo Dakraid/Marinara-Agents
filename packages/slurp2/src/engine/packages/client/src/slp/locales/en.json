@@ -1408,6 +1408,8 @@
   "ui.slurp.feed.postDeleted": "Post deleted",
   "ui.slurp.feed.postDeletedCountdown": "This post will disappear permanently in {{seconds}}s.",
   "ui.slurp.feed.refreshed": "Slurp feed refreshed.",
+  "ui.slurp.feed.newPosts_one": "{{count}} new post",
+  "ui.slurp.feed.newPosts_other": "{{count}} new posts",
   "ui.slurp.feed.restorePost": "Restore",
   "ui.slurp.feed.deleteInProgress": "The post is being removed…",
   "ui.slurp.feed.deletingPost": "Deleting post…",

@@ -16,6 +16,7 @@ import type { SlurpPageCursor } from "../../base/state/slp-page-cursor.js";
 import { cursorQuery } from "../../base/state/slp-page-cursor.js";
 import { slpKeys } from "../../base/state/slp-query-keys.js";
 import type { SlurpViewerScope } from "../../base/state/slp-state-types.js";
+import { mergeSlpFeedFirstPage } from "./slp-feed-refresh.js";
 
 function mergeSlurpViewerShell(
   current: SlpCreatorViewerScope | undefined,
@@ -56,20 +57,23 @@ export function useCreatorViewer(personaId: string | null, enabled = true) {
         posts.push(item.post);
         postsByCreator.set(item.creatorAccountId, posts);
       }
-      return {
+      const fresh = {
         ...page,
         creators: page.creators.map((creator) => ({
           ...creator,
           posts: postsByCreator.get(creator.profile.id) ?? [],
         })),
       };
+      // A poll refetches page one only; the pages loaded with "Load more" stay.
+      return mergeSlpFeedFirstPage(qc.getQueryData<typeof fresh>(slpKeys.viewer(personaId ?? "none")), fresh);
     },
     enabled: enabled && Boolean(personaId),
     staleTime: 30_000,
     gcTime: 10 * 60_000,
-    // The unseen-count poll already announces new posts; the full page only needs a slow refresh.
-    // ponytail: fixed 2-minute poll; refetch on a count change if that feels stale.
-    refetchInterval: enabled && personaId ? 120_000 : false,
+    // The feed keeps itself fresh (there is no refresh button): every 30 s while the tab is visible,
+    // and on focus (the Slurp query client's default), like creators and notifications. New posts
+    // wait behind the Hub's "New posts" pill, so a poll never moves what the reader is looking at.
+    refetchInterval: enabled && personaId ? 30_000 : false,
     refetchIntervalInBackground: false,
   });
   const loadMore = async () => {

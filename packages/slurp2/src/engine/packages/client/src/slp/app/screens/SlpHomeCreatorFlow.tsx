@@ -7,7 +7,7 @@ import { StageProfileForm } from "../../features/creators/SlpStageProfileForm";
 import { openSlpCreatorSettings } from "../../features/creators/settings/slp-creator-settings-store";
 import { ChevronRight, LayoutGrid, Pencil, Plus, Sparkles } from "lucide-react";
 import { cn } from "../../../lib/utils";
-import { SLP_EYEBROW_CLASS } from "../../base/chrome/SlpChrome";
+import { SLP_EYEBROW_CLASS, SLP_PAGE_SCROLL_CLASS } from "../../base/chrome/SlpChrome";
 import { SlurpCreatorProfileCard } from "../../modules/creator/SlpCreatorProfileCard";
 import { StageProfileView } from "./SlpScreenProfile";
 import type { ReactNode } from "react";
@@ -395,7 +395,7 @@ export function renderSlurpHomeCreatorFlow({
     ) : undefined;
     return (
       <SlpShell {...shellProps} contextualRail={profileRail ? "populated" : "spanning"} rightRail={profileRail}>
-        <div className="h-full min-h-0 overflow-y-auto">
+        <div className={cn("h-full min-h-0 overflow-y-auto", SLP_PAGE_SCROLL_CLASS)}>
           <StageProfileView
             key={`${selectedProfile.id}:${shellPersonaAccount?.id ?? "no-viewer"}`}
             profile={selectedProfile}

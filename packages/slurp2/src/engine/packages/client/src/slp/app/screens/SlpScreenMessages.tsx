@@ -24,7 +24,7 @@ import {
 } from "../../features/notifications/slp-notification-hooks";
 import { useSlurpThreads } from "../../features/messages/slp-messages-hooks";
 import { cn } from "../../../lib/utils";
-import { Avatar } from "../../base/chrome/SlpChrome";
+import { Avatar, SLP_PAGE_SCROLL_CLASS } from "../../base/chrome/SlpChrome";
 import { SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SlpCreatorFrame } from "./SlpHomeHelpers";
 import { SlurpMessagesView } from "../../features/messages/SlpMessages";
@@ -110,7 +110,7 @@ function SlurpInboxHub({
   }, [initialActivity]);
 
   return (
-    <div className="h-full overflow-y-auto px-3 py-4 sm:px-5 sm:py-5">
+    <div className={cn("h-full overflow-y-auto px-3 py-4 sm:px-5 sm:py-5", SLP_PAGE_SCROLL_CLASS)}>
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
         <div className="relative">
           <Search

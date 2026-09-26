@@ -62,7 +62,8 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
 
   return (
     <>
-      <div className="relative shrink-0 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5">
+      {/* Pinned above the floating nav; drops to the edge while the nav is away. */}
+      <div className="relative mb-[var(--slp-nav-live,0px)] shrink-0 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5">
         {awayFromBottom && (
           <button
             type="button"

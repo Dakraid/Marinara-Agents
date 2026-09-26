@@ -5,7 +5,8 @@ import { DisclosureBadge } from "./SlpHomeHelpers";
 import { SlurpInboxView } from "./SlpScreenMessages";
 import { SlurpStudioView } from "./SlpScreenStudio";
 import { ChevronLeft, ChevronRight, Plus, TriangleAlert, UserRound } from "lucide-react";
-import { ProfileInitial } from "../../base/chrome/SlpChrome";
+import { ProfileInitial, SLP_PAGE_SCROLL_CLASS } from "../../base/chrome/SlpChrome";
+import { cn } from "../../../lib/utils";
 import { isSlurpDiscoveryProfileIncomplete } from "../../features/discovery/slp-discovery";
 import type { SlurpHomeHostView } from "./SlpHomeCreatorFlow";
 
@@ -95,7 +96,7 @@ export function renderSlurpHomeDestinations({
     return (
       <SlpShell {...shellProps}>
         <div className="flex h-full min-h-0 flex-col">
-          <main className="min-h-0 flex-1 overflow-y-auto">
+          <main className={cn("min-h-0 flex-1 overflow-y-auto", SLP_PAGE_SCROLL_CLASS)}>
             <div className="flex min-h-14 flex-wrap items-center gap-3 border-b border-[var(--noodle-divider)] px-4 py-3">
               {navigation.returnToSettings && (
                 <button

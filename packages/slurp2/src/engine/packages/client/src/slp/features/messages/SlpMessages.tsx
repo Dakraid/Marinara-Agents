@@ -5,7 +5,7 @@ import { useOpenSlurpCreatorThread, useSlurpComposeTargets } from "../../feature
 import { useEffect, useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
-import { Avatar } from "../../base/chrome/SlpChrome";
+import { Avatar, SLP_PAGE_SCROLL_CLASS } from "../../base/chrome/SlpChrome";
 import { SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SlurpEmptyArtwork } from "../../base/chrome/SlpEmptyArtwork";
 import type { SlurpThread } from "../../features/messages/slp-messages-contract";
@@ -250,7 +250,9 @@ export function SlurpMessagesView({
           </h1>
         </header>
       )}
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 py-4 sm:px-4">
+      <div
+        className={cn("flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 py-4 sm:px-4", SLP_PAGE_SCROLL_CLASS)}
+      >
         <div className="flex min-h-10 items-center justify-between gap-3">
           <h2 className="text-sm font-black">
             {localizeUi("ui.slurp.messages.conversations", { defaultValue: "Conversations" })}

@@ -6,7 +6,7 @@
 // ──────────────────────────────────────────────
 import { UserRound } from "lucide-react";
 import { useReducedMotion } from "framer-motion";
-import { createContext, type CSSProperties, useContext, useEffect, useRef, useState } from "react";
+import { createContext, type CSSProperties, type SyntheticEvent, useContext, useEffect, useRef, useState } from "react";
 import type { AvatarCrop } from "@marinara-engine/shared";
 import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
 import { cn, getAvatarCropStyle } from "../../../lib/utils";
@@ -231,7 +231,7 @@ export function useHideOnScroll(
 
     // A bar that takes keyboard focus while hidden comes back, so focus never sits off screen.
     const show = () => setHidden(false);
-    bar.style.transition = `transform ${SLP_MOTION.base}ms ${SLP_MOTION.ease}`;
+    bar.style.transition = `transform ${SLP_MOTION.bar}ms ${SLP_MOTION.ease}`;
     scroller.addEventListener("scroll", update, { passive: true, capture: true });
     bar.addEventListener("focusin", show);
     return () => {
@@ -248,6 +248,31 @@ export function useHideOnScroll(
 
 /** Base classes for a sticky bar driven by {@link useHideOnScroll}. */
 export const HIDE_ON_SCROLL_CLASS = "will-change-transform";
+
+/** The one bar glass: the phone header and the floating nav pill see through exactly the same. */
+export const SLP_BAR_GLASS_CLASS =
+  "bg-[color-mix(in_srgb,var(--noodle-accent)_6%,var(--slurp-glass))] backdrop-blur-xl";
+
+/**
+ * A screen's own vertical scroller. Content scrolls behind the floating phone nav, so only the end of
+ * the list gets room to clear it (`--slp-nav-space`, set by the shell; 0 on desktop). The spacer goes
+ * on the innermost marked scroller only (injected CSS in slp-client-entry.tsx), so a frame that wraps
+ * a scrolling list does not become scrollable itself.
+ */
+export const SLP_PAGE_SCROLL_CLASS = "slp-page-scroll";
+
+/**
+ * Pictures arrive softly, never with a pop (CSS in slp-client-entry.tsx). The frame that directly
+ * holds the `<img>` gets `SLP_IMG_FRAME_CLASS`: it keeps its size and shows a soft pink shimmer until
+ * the picture has loaded, including while a package image is still being fetched. The `<img>` gets
+ * `slpImgFade`: it fades in and un-blurs once loaded. Key the `<img>` by its src, so a new picture
+ * in the same frame fades in too.
+ */
+export const SLP_IMG_FRAME_CLASS = "slp-img-frame";
+const markSlpImgLoaded = (event: SyntheticEvent<HTMLImageElement>) =>
+  event.currentTarget.setAttribute("data-slp-loaded", "");
+// A failed picture also ends the shimmer; its caller shows its own fallback.
+export const slpImgFade = { "data-slp-fade": "", onLoad: markSlpImgLoaded, onError: markSlpImgLoaded };
 
 /** Boundary marker between posts arrived since the last visit and everything already read. */
 export function NewSinceLastVisitDivider() {
@@ -273,7 +298,7 @@ export function SlurpMediaImg({
 }: { src: string | null | undefined } & Omit<React.ComponentProps<"img">, "src">) {
   const resolved = useSlurpMediaSrc(src);
   if (!resolved) return null;
-  return <img src={resolved} {...props} />;
+  return <img key={resolved} src={resolved} {...slpImgFade} {...props} />;
 }
 
 export function Avatar({
@@ -305,21 +330,29 @@ export function Avatar({
   // NoodleR avatars are served by the package's own route, which a bare <img> cannot
   // authenticate against; the hook swaps those for a fetched object URL and passes the rest through.
   const avatarSrc = useSlurpMediaSrc(account.avatarUrl, { width: size === "xl" || size === "lg" ? 320 : 96 });
-  if (avatarSrc) {
+  if (account.avatarUrl) {
+    // The initials hold the frame while the picture is fetched and loaded, then the picture fades in
+    // over them; a picture that never arrives leaves the initials, not an empty ring.
     return (
       <div
         className={cn(
           dimension,
-          "relative aspect-square flex-none overflow-hidden rounded-full border border-[var(--noodle-accent)]/30",
+          SLP_IMG_FRAME_CLASS,
+          "relative flex aspect-square flex-none items-center justify-center overflow-hidden rounded-full border border-[var(--noodle-accent)]/30 text-xs font-bold !text-[var(--noodle-accent-foreground)]",
           className,
         )}
       >
+        <span data-slp-img-placeholder aria-hidden="true">
+          {initials(account.displayName)}
+        </span>
         {avatarSrc && (
           <img
+            key={avatarSrc}
             src={avatarSrc}
             alt=""
             decoding="async"
-            className="h-full w-full object-cover"
+            {...slpImgFade}
+            className="absolute inset-0 h-full w-full object-cover"
             style={getAvatarCropStyle(account.avatarCrop)}
           />
         )}

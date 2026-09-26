@@ -26,6 +26,7 @@ import {
   profileAccent,
 } from "../../features/creators/SlpStageProfileForm";
 import { cn } from "../../../lib/utils";
+import { SLP_IMG_FRAME_CLASS, slpImgFade } from "../../base/chrome/SlpChrome";
 import { api } from "../../../lib/api-client";
 import { SlpPostSurfaceMenu } from "../../modules/post/SlpPostMenu";
 import { downloadSlpShareCard, toSlpShareCardInput } from "../../modules/post/slp-share-card";
@@ -63,19 +64,22 @@ export function SlurpProfileMediaTile({
         type="button"
         onClick={() => source && onOpenImage(source, post.id)}
         disabled={!source}
-        className="h-full w-full text-left focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)] disabled:cursor-wait"
+        className={cn(
+          "block h-full w-full text-left focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)] disabled:cursor-wait",
+          SLP_IMG_FRAME_CLASS,
+        )}
         aria-label={post.title || localizeUi("ui.slurp.post.openImage")}
       >
-        {source ? (
+        {source && (
           <img
+            key={source}
             src={source}
             alt={post.title || ""}
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.03] motion-reduce:transition-none motion-reduce:hover:scale-100"
+            {...slpImgFade}
+            className="h-full w-full object-cover transition-[transform,opacity,filter] duration-[360ms] hover:scale-[1.03] motion-reduce:transition-opacity motion-reduce:hover:scale-100"
           />
-        ) : (
-          <div className="h-full w-full animate-pulse bg-[var(--slurp-surface-raised)] motion-reduce:animate-none" />
         )}
       </button>
       {withMenu && (

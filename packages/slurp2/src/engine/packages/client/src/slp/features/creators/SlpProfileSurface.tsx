@@ -1,7 +1,7 @@
 import { MapPin, Sparkles, Upload } from "lucide-react";
 import type { ChangeEvent, CSSProperties, ReactNode, RefObject } from "react";
 import { cn } from "../../../lib/utils";
-import { Avatar, SLP_TYPE, SlurpMediaImg } from "../../base/chrome/SlpChrome";
+import { Avatar, SLP_IMG_FRAME_CLASS, SLP_TYPE, SlurpMediaImg } from "../../base/chrome/SlpChrome";
 import { formatSlpNumber } from "../../base/ui/slp-number-format";
 import { SlpRingGlint, SlpTwinkle } from "../../modules/sparkle/SlpSparkle";
 import { useTranslation as useUiTranslation } from "react-i18next";
@@ -481,6 +481,7 @@ function ProfileBanner({
           "relative block w-full overflow-hidden text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] disabled:cursor-default",
           compact ? "aspect-[3/1] max-h-60" : "h-52 @min-[540px]:h-56 @min-[760px]:h-60",
           banner.uploadTarget === "banner" && "cursor-wait opacity-80",
+          banner.url && SLP_IMG_FRAME_CLASS,
         )}
         title={banner.canEdit ? localizeUi("ui.noodle.noodleprofilesurface.uploadBanner") : undefined}
         aria-label={banner.canEdit ? localizeUi("ui.noodle.noodleprofilesurface.uploadBanner") : undefined}

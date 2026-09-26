@@ -4,6 +4,7 @@ import type { SlpPostImageCrop } from "../../../../../shared/src/slp/slp-social.
 import { cn } from "../../../lib/utils";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { useSlurpMediaSrc } from "./slp-media-src";
+import { SLP_IMG_FRAME_CLASS, slpImgFade } from "../chrome/SlpChrome";
 
 type CropAspect = "original" | "square" | "portrait" | "landscape";
 
@@ -372,7 +373,10 @@ export function PostImageFrame({
     const framed = naturalRatio ? Math.min(16 / 9, Math.max(0.8, naturalRatio)) : 4 / 3;
     return (
       <div
-        className="relative flex w-full items-center justify-center overflow-hidden rounded-xl bg-[var(--slurp-media-stage,#17131a)]"
+        className={cn(
+          "relative flex w-full items-center justify-center overflow-hidden rounded-xl bg-[var(--slurp-media-stage,#17131a)]",
+          SLP_IMG_FRAME_CLASS,
+        )}
         style={{ aspectRatio: framed, maxHeight: framed < 1 ? maxHeight * 1.45 : maxHeight }}
       >
         <ImageWithSource
@@ -407,7 +411,10 @@ export function PostImageFrame({
   };
   return (
     <div
-      className="relative mx-auto w-full overflow-hidden rounded-xl bg-[var(--slurp-media-stage,#17131a)]"
+      className={cn(
+        "relative mx-auto w-full overflow-hidden rounded-xl bg-[var(--slurp-media-stage,#17131a)]",
+        SLP_IMG_FRAME_CLASS,
+      )}
       style={{ aspectRatio, maxWidth: maxHeight * aspectRatio }}
     >
       <ImageWithSource
@@ -429,14 +436,34 @@ export function PostImageFrame({
   );
 }
 
-function ImageWithSource({ source, ...props }: { source: string } & Omit<React.ComponentProps<"img">, "src">) {
+function ImageWithSource({
+  source,
+  onLoad,
+  onError,
+  ...props
+}: { source: string } & Omit<React.ComponentProps<"img">, "src">) {
   const imageRef = useRef<HTMLImageElement>(null);
   // Package media needs the admin header a bare `src` cannot send; see useSlurpMediaSrc.
   const resolved = useSlurpMediaSrc(source);
   useEffect(() => {
     if (imageRef.current && resolved) imageRef.current.src = safeImageSource(resolved);
   }, [resolved]);
-  return <img ref={imageRef} {...props} />;
+  return (
+    <img
+      key={resolved ?? ""}
+      ref={imageRef}
+      {...props}
+      {...slpImgFade}
+      onLoad={(event) => {
+        slpImgFade.onLoad(event);
+        onLoad?.(event);
+      }}
+      onError={(event) => {
+        slpImgFade.onError(event);
+        onError?.(event);
+      }}
+    />
+  );
 }
 
 function isValidCrop(crop: SlpPostImageCrop): boolean {

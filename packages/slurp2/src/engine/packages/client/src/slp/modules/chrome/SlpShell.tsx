@@ -32,7 +32,7 @@ import { cn } from "../../../lib/utils";
 import { useDialogFocusScope } from "../../../hooks/use-dialog-focus-scope";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { SlurpCoinAmount, slpCoinPlainText } from "../coin/SlpCoin";
-import { SlpCanvasMotes, SlpShimmer, SlpTwinkle } from "../sparkle/SlpSparkle";
+import { SlpShimmer, SlpTwinkle } from "../sparkle/SlpSparkle";
 import {
   Avatar,
   BOTTOM_SAFE_INSET,
@@ -48,6 +48,7 @@ import {
   SLURP_ROW_ACTIVE_CLASS,
   SLURP_ROW_CLASS,
   SLP_BALANCE_CHIP_CLASS,
+  SLP_BAR_GLASS_CLASS,
   SLP_TYPE,
   useHideOnScroll,
 } from "../../base/chrome/SlpChrome";
@@ -204,7 +205,7 @@ export function SlpShell({
   const setMobileNav = useHideOnScroll(scrollRoot, {
     hiddenTransform: "translate3d(0, calc(100% + 1.5rem + var(--slurp-bottom-safe-inset)), 0)",
     resetKey: activeView,
-    // While the pill is away the page takes its space back (the `data-slp-nav-hidden` padding on the main column).
+    // While the pill is away, bars pinned to the bottom (the thread composer) drop to the edge (`--slp-nav-live`).
     onHiddenChange: (hidden) => scrollRoot?.toggleAttribute("data-slp-nav-hidden", hidden),
   });
   const pulsePanelRef = useRef<HTMLElement | null>(null);
@@ -267,7 +268,15 @@ export function SlpShell({
           // the push. Clipping stops that. `clip` is used because `hidden` would turn this into a
           // scroll container and break every sticky header inside it.
           "mari-chrome-token-scope relative flex h-full min-h-0 flex-col overflow-x-clip bg-[var(--background)] text-[var(--foreground)] antialiased",
-          slurpActive && "bg-[var(--slurp-canvas)] @min-[1024px]:bg-[var(--slurp-outer)]",
+          slurpActive &&
+            cn(
+              "bg-[var(--slurp-canvas)] @min-[1024px]:bg-[var(--slurp-outer)]",
+              // Room the floating nav needs at the end of a list: the pill (48 px tab + 4 px padding
+              // each side, in rem so it follows the Engine's font size) + 10 px above the edge + 12 px
+              // air, plus the home indicator. `--slp-nav-live` is the same room for bottom bars, but 0
+              // while the nav is away. Desktop has no floating nav.
+              "[--slp-nav-space:calc(3.5rem+22px+var(--slurp-bottom-safe-inset))] [--slp-nav-live:var(--slp-nav-space)] @min-[1024px]:[--slp-nav-space:0px]",
+            ),
           NOODLE_ICON_SCOPE_CLASS,
         )}
         data-component="NoodleView"
@@ -392,7 +401,6 @@ export function SlpShell({
             )}
             data-slurp-desktop-frame={slurpActive ? resolvedContextualRail : undefined}
           >
-            {slurpActive && <SlpCanvasMotes />}
             <aside className="hidden w-[14rem] shrink-0 border-r border-[var(--noodle-divider)] bg-[radial-gradient(circle_at_12%_6%,color-mix(in_srgb,var(--noodle-accent)_13%,transparent),transparent_16rem),linear-gradient(180deg,color-mix(in_srgb,var(--slurp-glass)_92%,transparent),color-mix(in_srgb,var(--slurp-glass)_70%,transparent))] shadow-[var(--slurp-highlight)] backdrop-blur-xl @min-[1024px]:flex @min-[1024px]:flex-col">
               <div className="flex min-h-0 flex-1 flex-col px-4 py-4">
                 <div className="mb-5 flex h-12 items-center gap-3 px-2">
@@ -610,8 +618,9 @@ export function SlpShell({
                 "flex min-h-0 w-full min-w-0 flex-1 flex-col @min-[1024px]:pb-0",
                 slurpActive
                   ? cn(
-                      // The floating nav: 56 px pill + 10 px gap above the screen edge.
-                      "pb-[calc(66px+var(--slurp-bottom-safe-inset))] data-[slp-nav-hidden]:pb-0 @min-[1024px]:pb-0",
+                      // No bottom padding: every screen scrolls behind the glass nav, and only the end of
+                      // each list keeps room for it (`SLP_PAGE_SCROLL_CLASS`).
+                      "data-[slp-nav-hidden]:[--slp-nav-live:0px]",
                       reserveContextualRail && "@min-[1280px]:border-r @min-[1280px]:border-[var(--noodle-divider)]",
                     )
                   : "pb-[calc(48px+var(--slurp-bottom-safe-inset))] @min-[1024px]:max-w-[680px] @min-[1024px]:border-r @min-[1024px]:border-[var(--noodle-divider)]",
@@ -663,7 +672,10 @@ export function SlpShell({
             on the way up, and sits above the home indicator on iOS. */}
         <nav
           ref={setMobileNav}
-          className="absolute inset-x-3 bottom-[calc(10px+var(--slurp-bottom-safe-inset))] z-50 mx-auto max-w-md rounded-full bg-[color-mix(in_srgb,var(--noodle-accent)_8%,var(--slurp-glass))] p-1 shadow-[var(--slurp-shadow-floating),var(--slurp-highlight)] ring-1 ring-inset ring-[var(--noodle-divider)] backdrop-blur-xl will-change-transform @min-[1024px]:hidden"
+          className={cn(
+            "absolute inset-x-3 bottom-[calc(10px+var(--slurp-bottom-safe-inset))] z-50 mx-auto max-w-md rounded-full p-1 shadow-[var(--slurp-shadow-floating),var(--slurp-highlight)] ring-1 ring-inset ring-[var(--noodle-divider)] will-change-transform @min-[1024px]:hidden",
+            SLP_BAR_GLASS_CLASS,
+          )}
           aria-label={
             slurpActive
               ? localizeUi("ui.slurp.navigation.mobileNav")

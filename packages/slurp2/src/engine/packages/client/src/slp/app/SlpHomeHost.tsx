@@ -7,7 +7,13 @@ import { ChatImageLightbox } from "../../components/chat/ChatImageLightbox";
 import { SlurpOnboardingWizard } from "../features/onboarding/SlpOnboardingPanel";
 import { SlurpAgeGate, SlurpConfetti } from "../features/onboarding/SlpAgeGate";
 import { SlurpSplash } from "../features/onboarding/SlpSplash";
-import { getSlpAccentStyle, SLP_PERSONA_SWITCHER_PAGE_SIZE, SLP_PINK } from "../base/chrome/SlpChrome";
+import {
+  getSlpAccentStyle,
+  SLP_PAGE_SCROLL_CLASS,
+  SLP_PERSONA_SWITCHER_PAGE_SIZE,
+  SLP_PINK,
+} from "../base/chrome/SlpChrome";
+import { cn } from "../../lib/utils";
 import { SlpShell, SlpWordmark } from "../modules/chrome/SlpShell";
 import { SlpSharePostModal } from "../features/messages/SlpSharePostModal";
 import { SlpCreatorSettingsModal } from "../features/creators/settings/SlpCreatorSettingsModal";
@@ -298,7 +304,7 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
           <header className="flex h-14 shrink-0 items-center border-b border-[var(--noodle-divider)] px-3 @min-[1024px]:hidden">
             <SlpWordmark />
           </header>
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className={cn("min-h-0 flex-1 overflow-y-auto", SLP_PAGE_SCROLL_CLASS)}>
             {accountsQuery.isError ? (
               <SlpErrorState
                 title={localizeUi("ui.noodle.noodlerhome.noodlerCouldNotBeLoaded")}
@@ -351,16 +357,6 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
         isLoading={viewerQuery.isLoading}
         isError={viewerQuery.isError}
         onRetry={() => void viewerQuery.refetch()}
-        onRefresh={() =>
-          void viewerQuery.refetch().then(({ error }) => {
-            if (error) {
-              toast.error(errorMessage(error, localizeUi("ui.noodle.noodlerhome.couldNotRefreshNoodlerCreators")));
-              return;
-            }
-            toast.success(localizeUi("ui.slurp.feed.refreshed"));
-          })
-        }
-        isRefreshing={viewerQuery.isRefetching}
         unlockPending={unlockPost.isPending}
         postCardCtx={postCardCtx}
         onUnlock={(postId) => {

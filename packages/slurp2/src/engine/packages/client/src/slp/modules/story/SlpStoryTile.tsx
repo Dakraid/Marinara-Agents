@@ -2,7 +2,7 @@ import { Lock } from "lucide-react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import type { ReactNode } from "react";
 import { cn } from "../../../lib/utils";
-import { Avatar } from "../../base/chrome/SlpChrome";
+import { Avatar, SLP_IMG_FRAME_CLASS, slpImgFade } from "../../base/chrome/SlpChrome";
 import { SlpRingGlint } from "../sparkle/SlpSparkle";
 import type { SlpCreatorPostView } from "../../../../../shared/src/slp/slp-social.types.js";
 import type { AvatarCrop } from "@marinara-engine/shared";
@@ -59,13 +59,21 @@ export function SlpStoryTile({ creator, post, mediaSrc, fallback, isNew, onOpen 
         )}
         aria-hidden="true"
       >
-        {mediaSrc ? (
-          <img
-            src={mediaSrc}
-            alt=""
-            decoding="async"
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
-          />
+        {post.imageUrl ? (
+          // The picture's frame shimmers while it is fetched, then the picture fades in (no text or
+          // avatar flashing first).
+          <span className={cn("block h-full w-full", SLP_IMG_FRAME_CLASS)}>
+            {mediaSrc && (
+              <img
+                key={mediaSrc}
+                src={mediaSrc}
+                alt=""
+                decoding="async"
+                {...slpImgFade}
+                className="h-full w-full object-cover transition-[transform,opacity,filter] duration-[360ms] group-hover:scale-[1.03] motion-reduce:transition-opacity motion-reduce:group-hover:scale-100"
+              />
+            )}
+          </span>
         ) : text ? (
           // A text Story shows its words on the hero gradient, like the viewer does.
           <span className="flex h-full w-full items-center bg-[image:var(--slurp-hero)] px-2 pb-6 pt-9 text-[11px] font-extrabold leading-[14px] text-[var(--slurp-on-hero)] [overflow-wrap:anywhere]">

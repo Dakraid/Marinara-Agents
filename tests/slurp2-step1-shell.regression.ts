@@ -19,15 +19,16 @@ assert.match(
   /navigation\.view === "profile"\s*\?[\s\S]{0,160}navigation\.accountId === mainAuthorProfile\?\.id\s*\?\s*\("profile" as const\)\s*:\s*null/u,
 );
 
-// Floating pill nav: glass, one tab component with aria-current, hides on scroll through the shared hook,
-// and gives its space back while it is away.
+// Floating pill nav: glass, one tab component with aria-current, hides on scroll through the shared hook.
+// Step 3.1 (user): the pill uses the header's glass, and screens scroll behind it (no reserved padding;
+// only list ends and bottom bars keep room, see slurp2-step3.1-shell-polish).
 const nav = shell.slice(shell.indexOf('data-component="NoodleView.MobileBottomNav"') - 900);
 assert.match(nav, /ref=\{setMobileNav\}/u);
-assert.match(nav, /rounded-full bg-\[color-mix\(in_srgb,var\(--noodle-accent\)_8%,var\(--slurp-glass\)\)\]/u);
+assert.match(nav, /rounded-full p-1[\s\S]*?SLP_BAR_GLASS_CLASS/u);
 assert.match(nav, /bottom-\[calc\(10px\+var\(--slurp-bottom-safe-inset\)\)\]/u, "safe-area aware");
 assert.match(shell, /useHideOnScroll\(scrollRoot,/u);
 assert.match(shell, /resetKey: activeView/u, "a new screen brings the nav back");
-assert.match(shell, /data-\[slp-nav-hidden\]:pb-0/u);
+assert.match(shell, /data-\[slp-nav-hidden\]:\[--slp-nav-live:0px\]/u);
 assert.match(
   shell,
   // Step 2: the tint is a gradient, so it needs the `image:` hint (`bg-[var(...)]` compiled to an
@@ -62,9 +63,9 @@ assert.match(shell, /export function SlpBalanceChip[\s\S]*?SLP_BALANCE_CHIP_CLAS
 assert.match(shell, /<SlpSheet\s+open=\{mobileDrawerOpen\}/u);
 assert.match(shell, /const openPulseFromDrawer = \(\) => \{\s*onMobileDrawerOpenChange\(false\);/u);
 
-// Hub header: wordmark left, refresh behind the ⋯ menu, chip right.
+// Hub header: wordmark left, chip right. Step 3.1 (user): the refresh ⋯ is gone, the feed updates itself.
 assert.match(hub, /<SlpWordmark \/>/u);
-assert.match(hub, /<SlpSheet[\s\S]*?kind="menu"[\s\S]*?anchorRef=\{headerMenuRef\}[\s\S]*?onRefresh\(\);/u);
+assert.doesNotMatch(hub, /onRefresh|headerMenuRef/u);
 
 // Toasts: the Engine's position and theme, token accents (no richColors), scoped CSS, above the pill.
 assert.doesNotMatch(entry, /richColors/u);

@@ -21,7 +21,7 @@ import { useRef, useState, type MouseEvent } from "react";
 import type { SlpCreatorPostView, SlpCreatorStageProfile } from "../../../../../shared/src/slp/slp-social.types.js";
 import { cn } from "../../../lib/utils";
 import { useNearViewportSlurpMediaSrc } from "../../base/media/slp-media-src";
-import { ProfileInitial } from "../../base/chrome/SlpChrome";
+import { ProfileInitial, slpImgFade } from "../../base/chrome/SlpChrome";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { SlurpCelebrationRing, SlurpSparkleVeil } from "../../base/chrome/SlpSparkleVeil";
 import { SlurpCoin, SlurpCoinAmount, SlurpCoinBurst, SlpCoinText } from "../coin/SlpCoin";
@@ -375,6 +375,8 @@ export function LockedSlurpPostCard({
                 src={shownMediaSrc}
                 loading="lazy"
                 decoding="async"
+                // Fades in once; the unlock keeps this element, so the full picture replaces the teaser under the veil.
+                {...slpImgFade}
                 onError={() => setFailedMediaSrc(shownMediaSrc)}
                 alt={
                   revealed
@@ -551,6 +553,7 @@ export function LockedSlurpPostCard({
                   alt=""
                   loading="lazy"
                   decoding="async"
+                  {...slpImgFade}
                   className="h-full w-full scale-110 object-cover blur-[4px]"
                 />
                 <span className="absolute inset-0 flex items-center justify-center bg-black/30 text-white [&_svg]:!text-white">

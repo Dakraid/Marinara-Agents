@@ -38,13 +38,9 @@ for (const file of walk(slp)) {
 // Step 1 follow-ups: the hub bar is phones only; its ⋯ sits beside the feed tabs; one shared balance
 // chip (the coin-fly target) in the hub, profile, thread and Discover phone headers.
 assert.match(hub, /data-component="SlurpHome\.StickyHeader"/u);
-assert.match(hub, /backdrop-blur-xl @min-\[1024px\]:hidden/u, "no desktop hub header bar");
-const tabsRow = hub.slice(hub.indexOf("data-slurp-home-masthead"));
-assert.ok(
-  tabsRow.indexOf("<SlpSegment") < tabsRow.indexOf("ui.slurp.home.moreActions") &&
-    tabsRow.indexOf("ui.slurp.home.moreActions") < tabsRow.indexOf("refreshTimeline"),
-  "the ⋯ (refresh) lives next to the feed tabs",
-);
+assert.match(hub, /@min-\[1024px\]:hidden",\s*SLP_BAR_GLASS_CLASS/u, "no desktop hub header bar");
+// Step 3.1 (user): the ⋯ next to the feed tabs held only refresh, so both are gone.
+assert.doesNotMatch(hub, /ui\.slurp\.home\.moreActions|refreshTimeline/u);
 assert.match(shell, /export function SlpBalanceChip/u);
 assert.match(
   shell,

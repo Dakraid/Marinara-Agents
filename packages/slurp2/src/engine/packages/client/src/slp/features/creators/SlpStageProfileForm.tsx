@@ -136,7 +136,7 @@ export function WizardFooter({
   const { t: localizeUi } = useUiTranslation();
   const labels = ["Source", "Disclosure", "Profile"];
   return (
-    <div className="sticky bottom-0 z-[60] shrink-0 border-t border-[var(--noodle-divider)] bg-[var(--background)] px-4 pb-3 pt-3 sm:px-6">
+    <div className="sticky bottom-[var(--slp-nav-live,0px)] z-[60] shrink-0 border-t border-[var(--noodle-divider)] bg-[var(--background)] px-4 pb-3 pt-3 sm:px-6">
       {showProgress && (
         <div
           className="mb-3 flex items-center justify-center gap-1.5"

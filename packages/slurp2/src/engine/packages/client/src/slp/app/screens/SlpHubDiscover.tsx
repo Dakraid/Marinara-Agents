@@ -2,7 +2,7 @@ import { SlpEmptyState } from "../../modules/chrome/SlpStateKit";
 import { SlpBalanceChip } from "../../modules/chrome/SlpShell";
 import { ChevronLeft, Search, X } from "lucide-react";
 import { LoadMoreFeedButton, SLP_CREATOR_FEED_WINDOW_SIZE } from "./SlpHomeHelpers";
-import { HIDE_ON_SCROLL_CLASS } from "../../base/chrome/SlpChrome";
+import { HIDE_ON_SCROLL_CLASS, SLP_PAGE_SCROLL_CLASS } from "../../base/chrome/SlpChrome";
 import { SlurpCreatorProfileCard } from "../../modules/creator/SlpCreatorProfileCard";
 import { SlurpDiscoverToolbar } from "../../features/discovery/SlpDiscoverToolbar";
 import { cn } from "../../../lib/utils";
@@ -58,7 +58,11 @@ export function SlpHubDiscover({
   visibleSearchResults: HubResults;
 }) {
   return (
-    <div ref={setScroller} className="min-h-0 flex-1 overflow-y-auto" data-component="SlurpHome.Discover">
+    <div
+      ref={setScroller}
+      className={cn("min-h-0 flex-1 overflow-y-auto", SLP_PAGE_SCROLL_CLASS)}
+      data-component="SlurpHome.Discover"
+    >
       <div
         ref={setStickyHeader}
         className={cn(

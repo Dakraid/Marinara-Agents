@@ -2,7 +2,7 @@
 // Slurp's sparkle system (design language §3). Props in, no feature hooks.
 //
 // Ambient layers (React, CSS in slp-sparkle-styles.ts): SlpGlint, SlpShimmer, SlpRingGlint,
-// SlpTwinkle, SlpCanvasMotes. Each is an absolutely positioned span at z-index -1: put it inside a
+// SlpTwinkle. Each is an absolutely positioned span at z-index -1: put it inside a
 // `relative isolate` parent and it paints over the parent's background but under its content.
 //
 // Reward moments (imperative, Web Animations): playSlpBurst, playSlpPop, playSlpCoinFly,
@@ -62,12 +62,6 @@ export function SlpShimmer() {
 export function SlpRingGlint() {
   const ref = useSlpAmbientPause<HTMLSpanElement>();
   return <span ref={ref} className="slp-ring" aria-hidden="true" data-slp-sparkle="ring" />;
-}
-
-/** Floating candy motes for the app canvas. Two drifting texture tiles, not DOM nodes per mote. */
-export function SlpCanvasMotes() {
-  const ref = useSlpAmbientPause<HTMLSpanElement>();
-  return <span ref={ref} className="slp-motes" aria-hidden="true" data-slp-sparkle="motes" />;
 }
 
 const DEFAULT_TWINKLES = [

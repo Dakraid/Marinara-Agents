@@ -225,7 +225,14 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { SlurpSparkleVeil } from "../../base/chrome/SlpSparkleVeil";
 import { cn } from "../../../lib/utils";
-import { getSlpAccentStyle, SLP_PINK, ProfileInitial } from "../../base/chrome/SlpChrome";
+import {
+  getSlpAccentStyle,
+  SLP_PINK,
+  ProfileInitial,
+  SLP_IMG_FRAME_CLASS,
+  SLP_PAGE_SCROLL_CLASS,
+  slpImgFade,
+} from "../../base/chrome/SlpChrome";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { useSlurpMediaSrc } from "../../base/media/slp-media-src";
 import { Modal } from "../../../components/ui/Modal";
@@ -375,7 +382,7 @@ export function SlpCreatorFrame({
           </span>
         )}
       </header>
-      <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
+      <main className={cn("min-h-0 flex-1 overflow-y-auto", SLP_PAGE_SCROLL_CLASS)}>{children}</main>
     </div>
   );
 }
@@ -473,12 +480,15 @@ export function SlurpMediaDialog({
   media,
   side,
   variant = "post",
+  pictured = true,
 }: {
   title: string;
   onClose: () => void;
   media: ReactNode;
   side: ReactNode;
   variant?: "post" | "story";
+  /** False for a text Story: no picture is coming, so the stage does not shimmer. */
+  pictured?: boolean;
 }) {
   const story = variant === "story";
   return (
@@ -511,6 +521,7 @@ export function SlurpMediaDialog({
         <div
           className={cn(
             "relative flex items-center justify-center overflow-hidden bg-black",
+            pictured && SLP_IMG_FRAME_CLASS,
             story ? "min-h-0 flex-1" : "h-[min(72dvh,40rem)] shrink-0 sm:h-auto sm:min-h-0 sm:flex-1",
           )}
         >
@@ -556,16 +567,16 @@ export function SlurpPostDialog({
       media={
         source ? (
           <>
+            {/* The blur sits on the wrapper, so the picture inside can fade in like the main one. */}
+            <span aria-hidden="true" className="absolute inset-0 scale-110 opacity-25 blur-3xl">
+              <img key={source} src={source} alt="" {...slpImgFade} className="h-full w-full object-cover" />
+            </span>
             <img
-              src={source}
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-0 h-full w-full scale-110 object-cover opacity-25 blur-3xl"
-            />
-            <img
+              key={source}
               src={source}
               alt={localizeUi("ui.noodle.post.imageBy", { name: authorName })}
               decoding="async"
+              {...slpImgFade}
               className="relative z-10 h-full w-full object-contain"
             />
             {gallery.length > 1 && (
@@ -617,9 +628,8 @@ export function SlurpPostDialog({
               </>
             )}
           </>
-        ) : (
-          <div className="h-full w-full animate-pulse bg-[var(--slurp-surface-raised)] motion-reduce:animate-none" />
-        )
+        ) : // While the picture is fetched, the dialog's frame itself shimmers (SLP_IMG_FRAME_CLASS).
+        null
       }
       // The dialog owns the picture, so the card must not draw it. The card is told to skip the
       // picture rather than handed a post with its image fields blanked: everything else that
@@ -653,7 +663,9 @@ function SlurpPostDialogThumb({
         selected ? "scale-105 ring-2 ring-white" : "opacity-55 ring-white/25 hover:opacity-100",
       )}
     >
-      {source && <img src={source} alt="" decoding="async" className="h-full w-full object-cover" />}
+      {source && (
+        <img key={source} src={source} alt="" decoding="async" {...slpImgFade} className="h-full w-full object-cover" />
+      )}
     </button>
   );
 }

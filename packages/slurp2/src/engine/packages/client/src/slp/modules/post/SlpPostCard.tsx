@@ -9,7 +9,7 @@ import { type SlpAccount, type SlpInteraction } from "../../../../../shared/src/
 import { cn } from "../../../lib/utils";
 import type { ChatImage } from "../../../hooks/use-gallery";
 import { useNearViewportSlurpMediaSrc } from "../../base/media/slp-media-src";
-import { Avatar, labelClass } from "../../base/chrome/SlpChrome";
+import { Avatar, labelClass, SLP_IMG_FRAME_CLASS, slpImgFade } from "../../base/chrome/SlpChrome";
 import { playSlpPop } from "../sparkle/SlpSparkle";
 import { slpTagClass } from "../chrome/SlpButton";
 import { useTranslation as useUiTranslation } from "react-i18next";
@@ -250,8 +250,13 @@ export function SlpPostCard({
     : author;
   const postLikePending = reactionPendingFor(post.id, "like");
   const likeCount = slpPostLikeCount(post, rootPostInteractions);
-  const mediaFrame =
-    surface === "profile" ? "w-full rounded-xl aspect-[4/3] sm:aspect-[16/10]" : SLP_FEED_MEDIA_FRAME_CLASS;
+  const mediaFrame = cn(
+    surface === "profile" ? "w-full rounded-xl aspect-[4/3] sm:aspect-[16/10]" : SLP_FEED_MEDIA_FRAME_CLASS,
+    SLP_IMG_FRAME_CLASS, // shimmers until its picture has loaded
+  );
+  const imageAlt = localizeUi("ui.noodle.post.imageBy", {
+    name: author?.displayName ?? localizeUi("ui.slurp.profile.fallbackUser"),
+  });
   const actionClass = cn(
     slpIconButtonClass,
     "rounded-full text-[13px] !text-[var(--slurp-muted)] hover:!text-[var(--slurp-text)] [&_svg]:!text-current",
@@ -481,27 +486,22 @@ export function SlpPostCard({
               />
             )}
             {!displayedImageUrl ? (
-              <span
-                className={cn("block animate-pulse bg-[var(--muted)] motion-reduce:animate-none", mediaFrame)}
-                aria-hidden="true"
-              />
+              <span className={cn("block", mediaFrame)} aria-hidden="true" />
             ) : imageCrop ? (
               <PostImageFrame
                 src={displayedImageUrl}
                 onError={() => setFailedImageUrl(displayedImageUrl)}
                 crop={imageCrop}
-                alt={localizeUi("ui.noodle.post.imageBy", {
-                  name: author?.displayName ?? localizeUi("ui.slurp.profile.fallbackUser"),
-                })}
+                alt={imageAlt}
               />
             ) : (
               <div className={cn("relative overflow-hidden bg-[var(--slurp-media-stage,#17131a)]", mediaFrame)}>
                 <img
+                  key={displayedImageUrl}
                   src={displayedImageUrl}
+                  {...slpImgFade}
                   onError={() => setFailedImageUrl(displayedImageUrl)}
-                  alt={localizeUi("ui.noodle.post.imageBy", {
-                    name: author?.displayName ?? localizeUi("ui.slurp.profile.fallbackUser"),
-                  })}
+                  alt={imageAlt}
                   loading="lazy"
                   decoding="async"
                   className="h-full w-full object-cover"

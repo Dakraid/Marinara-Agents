@@ -1,12 +1,11 @@
 import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
-import { SlpSheet, SlpSheetItem } from "../../modules/chrome/SlpSheet";
 import { SlpBalanceChip, SlpWordmark } from "../../modules/chrome/SlpShell";
 import { SlpSegment } from "../../modules/chrome/SlpButton";
 import { SLP_CREATOR_FEED_WINDOW_SIZE } from "./SlpHomeHelpers";
 import { SlurpMomentsShelf, SlurpMomentViewer } from "./SlpScreenMoments";
 import { SubscriptionSections } from "./SlpScreenSubscriptions";
-import { Ellipsis, LayoutGrid, List, Loader2, RefreshCw, Search, UserRound } from "lucide-react";
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowUp, LayoutGrid, List, Search, UserRound } from "lucide-react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
 import type { Persona } from "@marinara-engine/shared";
@@ -24,7 +23,13 @@ import { SlpPostCardCtx } from "../../modules/post/SlpPostTypes";
 import { LockedSlurpPostCard } from "../../modules/post/SlpLockedPostCard";
 import { SlpPostCard } from "../../modules/post/SlpPostCard";
 import { SlurpMediaWall } from "./SlpScreenProfile";
-import { NewSinceLastVisitDivider, HIDE_ON_SCROLL_CLASS, useHideOnScroll } from "../../base/chrome/SlpChrome";
+import {
+  NewSinceLastVisitDivider,
+  HIDE_ON_SCROLL_CLASS,
+  SLP_BAR_GLASS_CLASS,
+  SLP_PAGE_SCROLL_CLASS,
+  useHideOnScroll,
+} from "../../base/chrome/SlpChrome";
 import { SlurpInlineAd } from "../../features/ads/SlpInlineAd";
 import { type SlurpDiscoverLayout } from "../../features/discovery/slp-discovery";
 import {
@@ -36,6 +41,7 @@ import {
   LoadMoreFeedButton,
 } from "./SlpHomeHelpers";
 import { deriveSlurpHubView } from "./slp-hub-view";
+import { holdNewSlpFeedPosts, newestSlpFeedTime } from "../../features/feed/slp-feed-refresh";
 import { useSlurpHubDiscoveryFilters } from "./slp-hub-discovery-filters";
 import { SlurpInlineSuggestedCreators } from "./SlpScreenSuggestedCreators";
 import { SlpHubDiscover } from "./SlpHubDiscover";
@@ -57,8 +63,6 @@ export function ViewerHub({
   isLoading,
   isError,
   onRetry,
-  onRefresh,
-  isRefreshing,
   unlockPending,
   postCardCtx,
   onUnlock,
@@ -100,8 +104,6 @@ export function ViewerHub({
   isLoading: boolean;
   isError: boolean;
   onRetry: () => void;
-  onRefresh: () => void;
-  isRefreshing: boolean;
   unlockPending: boolean;
   postCardCtx: SlpPostCardCtx;
   onUnlock: (postId: string) => void;
@@ -127,8 +129,6 @@ export function ViewerHub({
   const reduceMotion = useReducedMotion();
   const [scroller, setScroller] = useState<HTMLDivElement | null>(null);
   const setStickyHeader = useHideOnScroll(scroller);
-  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
-  const headerMenuRef = useRef<HTMLButtonElement | null>(null);
   const [discoverCollapsed, setDiscoverCollapsed] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [visibleFeedCount, setVisibleFeedCount] = useState(SLP_CREATOR_FEED_WINDOW_SIZE);
@@ -176,7 +176,13 @@ export function ViewerHub({
     if (feedIsOnScreen) onFeedShown();
   }, [feedIsOnScreen, onFeedShown]);
   const searchTerm = search.trim().toLowerCase();
-  const { moments, feed, searchResults, discoveredCreators, suggestedCreators } = useMemo(
+  const {
+    moments,
+    feed: fullFeed,
+    searchResults,
+    discoveredCreators,
+    suggestedCreators,
+  } = useMemo(
     () =>
       deriveSlurpHubView({
         creators: scope?.creators ?? [],
@@ -187,6 +193,23 @@ export function ViewerHub({
       }),
     [authorProfile?.id, momentCutoff, scope, searchTerm, tab],
   );
+  // The feed updates itself; posts that arrive while the reader is here wait behind the "New posts"
+  // pill (the mark is per persona and tab), so the list never jumps under their thumb.
+  const feedMarkKey = `${scope?.viewer.id ?? ""}\u0000${tab}`;
+  const [feedMark, setFeedMark] = useState<{ key: string; at: number } | null>(null);
+  const newestFeedAt = newestSlpFeedTime(fullFeed);
+  useEffect(() => {
+    if (newestFeedAt !== null && feedMark?.key !== feedMarkKey) setFeedMark({ key: feedMarkKey, at: newestFeedAt });
+  }, [feedMark?.key, feedMarkKey, newestFeedAt]);
+  const { shown: feed, held: heldPosts } = holdNewSlpFeedPosts(
+    fullFeed,
+    !searchTerm && feedMark?.key === feedMarkKey ? feedMark.at : null,
+  );
+  const showHeldPosts = () => {
+    if (newestFeedAt !== null) setFeedMark({ key: feedMarkKey, at: newestFeedAt });
+    setVisibleFeedCount((count) => count + heldPosts.length);
+    scroller?.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+  };
   const discover = useSlurpHubDiscoveryFilters({
     discoveredCreators,
     connectionCounts,
@@ -309,13 +332,14 @@ export function ViewerHub({
   }
 
   return (
-    <div ref={setScroller} className="min-h-0 flex-1 overflow-y-auto">
+    <div ref={setScroller} className={cn("min-h-0 flex-1 overflow-y-auto", SLP_PAGE_SCROLL_CLASS)}>
       {/* Phones only: the desktop sidebar already carries the brand and the balance. */}
       <div
         ref={setStickyHeader}
         className={cn(
           // Glass: the feed scrolls under the bar and shows through the blur.
-          "sticky top-0 z-30 border-b border-[var(--noodle-divider)] bg-[color-mix(in_srgb,var(--noodle-accent)_6%,var(--slurp-glass))] shadow-[var(--slurp-shadow-floating),var(--slurp-highlight)] backdrop-blur-xl @min-[1024px]:hidden",
+          "sticky top-0 z-30 border-b border-[var(--noodle-divider)] shadow-[var(--slurp-shadow-floating),var(--slurp-highlight)] @min-[1024px]:hidden",
+          SLP_BAR_GLASS_CLASS,
           HIDE_ON_SCROLL_CLASS,
         )}
         data-component="SlurpHome.StickyHeader"
@@ -327,6 +351,32 @@ export function ViewerHub({
           <SlpWordmark />
           <SlpBalanceChip />
         </div>
+      </div>
+      {/* Zero height, so the pill floats over the top of the feed without moving it. Under the phone
+          header (56 px + 12 px air); on desktop there is no header. */}
+      <div
+        className="pointer-events-none sticky top-[68px] z-20 flex h-0 justify-center @min-[1024px]:top-3"
+        aria-live="polite"
+      >
+        <AnimatePresence>
+          {heldPosts.length > 0 && (
+            <motion.button
+              type="button"
+              onClick={showHeldPosts}
+              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
+              className="pointer-events-auto flex h-11 items-center rounded-full px-1 focus-visible:outline-none [&:focus-visible>span]:ring-2 [&:focus-visible>span]:ring-[var(--slurp-focus)] [&:focus-visible>span]:ring-offset-2"
+              data-component="SlurpHome.NewPosts"
+            >
+              <span className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--noodle-accent)] pe-4 ps-3 text-[13px] font-bold text-[var(--slurp-on-accent)] shadow-[var(--slurp-glow),var(--slurp-shadow-floating)] [&_svg]:!text-[var(--slurp-on-accent)]">
+                <ArrowUp size={16} strokeWidth={2.25} aria-hidden="true" />
+                {localizeUi("ui.slurp.feed.newPosts", { count: heldPosts.length })}
+              </span>
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
       {/* Part of the page, not the bar: the strip belongs to Home, so it stays put while the
           sticky header does its own hide-on-scroll dance above it. */}
@@ -354,7 +404,7 @@ export function ViewerHub({
       {!isLoading && !isError && scope && (
         <div className="pb-2 pt-4 @min-[1024px]:bg-[var(--slurp-canvas)]">
           <div className="relative isolate overflow-hidden px-3 @min-[1024px]:px-5" data-slurp-home-masthead>
-            {/* One row, one purpose: which feed, how to show it, and the hub's ⋯ (refresh). */}
+            {/* One row, one purpose: which feed and how to show it. No refresh: the feed updates itself. */}
             <div className="flex items-center gap-2">
               <SlpSegment
                 label={localizeUi("ui.noodle.viewerhub.feedTabs")}
@@ -384,40 +434,6 @@ export function ViewerHub({
                   },
                 ]}
               />
-              <button
-                ref={headerMenuRef}
-                type="button"
-                onClick={() => setHeaderMenuOpen((open) => !open)}
-                aria-haspopup="menu"
-                aria-expanded={headerMenuOpen}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--slurp-muted)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] [&_svg]:!text-current"
-                title={localizeUi("ui.slurp.home.moreActions", { defaultValue: "More actions" })}
-                aria-label={localizeUi("ui.slurp.home.moreActions", { defaultValue: "More actions" })}
-              >
-                {isRefreshing ? (
-                  <Loader2 size={20} className="animate-spin" />
-                ) : (
-                  <Ellipsis size={20} aria-hidden="true" />
-                )}
-              </button>
-              <SlpSheet
-                open={headerMenuOpen}
-                onClose={() => setHeaderMenuOpen(false)}
-                title={localizeUi("ui.slurp.home.moreActions", { defaultValue: "More actions" })}
-                kind="menu"
-                anchorRef={headerMenuRef}
-              >
-                <SlpSheetItem
-                  disabled={isRefreshing}
-                  onSelect={() => {
-                    setHeaderMenuOpen(false);
-                    onRefresh();
-                  }}
-                >
-                  <RefreshCw aria-hidden="true" />
-                  {localizeUi("ui.noodle.noodlehome.refreshTimeline")}
-                </SlpSheetItem>
-              </SlpSheet>
             </div>
           </div>
         </div>

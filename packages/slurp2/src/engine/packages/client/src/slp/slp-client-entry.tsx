@@ -117,6 +117,38 @@ const SLURP_TOAST_STYLES = `
   }
 `;
 
+/**
+ * Shell polish (step 3.1). Screens scroll behind the floating nav, so only the end of the innermost
+ * page scroller keeps room for it. Pictures wait in a shimmering frame, then fade in and un-blur
+ * (`SLP_IMG_FRAME_CLASS` / `slpImgFade` in base/chrome/SlpChrome.tsx).
+ */
+const SLURP_SHELL_STYLES = `
+  .slp-page-scroll:not(:has(.slp-page-scroll))::after {
+    content: ""; display: block; flex: none; height: var(--slp-nav-space, 0px);
+  }
+  :where(.slp-img-frame) { transition: background-color 360ms var(--slurp-ease, ease-out); }
+  .slp-img-frame:not(:has(> img[data-slp-loaded])) {
+    background-color: color-mix(in srgb, var(--noodle-accent) 9%, var(--slurp-surface-raised, #211624));
+    background-image: linear-gradient(100deg, transparent 30%, rgb(255 255 255 / 0.07) 45%, rgb(255 255 255 / 0.13) 50%, rgb(255 255 255 / 0.07) 55%, transparent 70%);
+    background-size: 250% 100%; background-repeat: no-repeat; background-position: 120% 0;
+  }
+  /* :where() keeps these at zero specificity, so a picture's own opacity, blur or transition wins. */
+  :where(img[data-slp-fade]) {
+    opacity: 0; filter: blur(12px);
+    transition: opacity 360ms var(--slurp-ease, ease-out), filter 420ms var(--slurp-ease, ease-out);
+  }
+  :where(img[data-slp-fade][data-slp-loaded]) { opacity: 1; filter: none; }
+  .slp-img-frame > [data-slp-img-placeholder] { transition: opacity 360ms var(--slurp-ease, ease-out); }
+  .slp-img-frame:has(> img[data-slp-loaded]) > [data-slp-img-placeholder] { opacity: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    .slp-img-frame:not(:has(> img[data-slp-loaded])) { animation: slp-img-frame-sweep 1.8s ease-in-out infinite; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :where(img[data-slp-fade]) { filter: none; transition: opacity 120ms linear; }
+  }
+  @keyframes slp-img-frame-sweep { 0% { background-position: 120% 0; } 70%, 100% { background-position: -20% 0; } }
+`;
+
 function syncSlurpPackageStyles() {
   const existing = document.getElementById(SLURP_STYLE_ID);
   if (!document.querySelector(SLURP_ELEMENT_TAG) || !slurpPackageStyles) {
@@ -126,7 +158,7 @@ function syncSlurpPackageStyles() {
 
   const style = existing ?? document.createElement("style");
   style.id = SLURP_STYLE_ID;
-  style.textContent = `${slurpPackageStyles}\n${SLURP_ICON_COLOR_FIX}\n${SLURP_TOAST_STYLES}\n${SLP_SPARKLE_STYLES}`;
+  style.textContent = `${slurpPackageStyles}\n${SLURP_ICON_COLOR_FIX}\n${SLURP_TOAST_STYLES}\n${SLURP_SHELL_STYLES}\n${SLP_SPARKLE_STYLES}`;
   if (!existing) document.head.appendChild(style);
 }
 

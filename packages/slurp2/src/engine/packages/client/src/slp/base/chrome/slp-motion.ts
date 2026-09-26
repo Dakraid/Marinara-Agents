@@ -5,6 +5,8 @@ export const SLP_MOTION = {
   fast: 120,
   base: 200,
   slow: 320,
+  /** Header and bottom nav hiding / coming back on scroll: slower than a sheet, so it reads as a glide. */
+  bar: 360,
   ease: "cubic-bezier(0.2, 0.8, 0.2, 1)",
 } as const;
 

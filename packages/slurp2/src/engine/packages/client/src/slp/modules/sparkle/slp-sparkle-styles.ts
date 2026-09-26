@@ -1,6 +1,6 @@
 // ──────────────────────────────────────────────
 // Slurp's sparkle system: the CSS for the ambient layers in SlpSparkle.tsx (glint, shimmer, ring
-// glint, twinkle, canvas motes). Injected once by slp-client-entry.tsx next to the toast styles, so
+// glint, twinkle). Injected once by slp-client-entry.tsx next to the toast styles, so
 // it does not depend on the package Tailwind build or the Engine safelist.
 //
 // Rules (design language §3): ambient cycles are ≥ 4 s and low opacity, they pause off-screen and in
@@ -32,22 +32,6 @@ function candyTile(width: number, height: number, candies: Candy[]) {
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
 
-// Hand-placed so the tiles never clump and never repeat visibly at phone width.
-const MOTES_NEAR = candyTile(260, 300, [
-  { kind: "star", x: 34, y: 42, size: 12, color: PINK, opacity: 0.95 },
-  { kind: "star", x: 196, y: 78, size: 9, color: VIOLET, opacity: 0.9 },
-  { kind: "heart", x: 118, y: 150, size: 9, color: PINK, opacity: 0.8 },
-  { kind: "star", x: 228, y: 226, size: 13, color: GOLD, opacity: 0.9 },
-  { kind: "coin", x: 62, y: 250, size: 4, color: GOLD, opacity: 0.95 },
-  { kind: "star", x: 150, y: 276, size: 7, color: BLUSH, opacity: 0.9 },
-]);
-const MOTES_FAR = candyTile(180, 210, [
-  { kind: "star", x: 22, y: 30, size: 5, color: BLUSH, opacity: 0.8 },
-  { kind: "coin", x: 120, y: 18, size: 2, color: GOLD, opacity: 0.9 },
-  { kind: "star", x: 150, y: 110, size: 4, color: VIOLET, opacity: 0.8 },
-  { kind: "star", x: 64, y: 160, size: 6, color: PINK, opacity: 0.75 },
-  { kind: "coin", x: 170, y: 196, size: 2, color: PINK, opacity: 0.9 },
-]);
 const SHIMMER_TILE = candyTile(120, 90, [
   { kind: "star", x: 18, y: 20, size: 8, color: "#fff", opacity: 0.9 },
   { kind: "star", x: 92, y: 14, size: 5, color: GOLD, opacity: 0.9 },
@@ -65,7 +49,7 @@ export const SLP_SPARKLE_COLORS = [PINK, VIOLET, GOLD, PINK, BLUSH] as const;
 const EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)";
 
 export const SLP_SPARKLE_STYLES = `
-  .slp-glint, .slp-shimmer, .slp-ring, .slp-motes {
+  .slp-glint, .slp-shimmer, .slp-ring {
     position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit;
   }
   .slp-glint {
@@ -96,12 +80,6 @@ export const SLP_SPARKLE_STYLES = `
     background: var(--slp-twinkle-color, ${PINK}); -webkit-mask: ${"var(--slp-star-mask)"} center / contain no-repeat;
     mask: ${"var(--slp-star-mask)"} center / contain no-repeat; opacity: 0.85;
   }
-  .slp-motes { overflow: hidden; }
-  .slp-motes::before, .slp-motes::after {
-    content: ""; position: absolute; inset: 0 0 -320px 0; background-repeat: repeat;
-  }
-  .slp-motes::before { background-image: ${MOTES_NEAR}; opacity: 0.5; }
-  .slp-motes::after { background-image: ${MOTES_FAR}; opacity: 0.4; }
   :root { --slp-star-mask: ${SLP_SPARKLE_MASKS.star}; }
   /* Unlock: the veil over a freshly revealed post clears from the centre out (hole grows, blur
      and sparkle fade). Needs @property for the hole; without it the veil still fades. */
@@ -132,8 +110,6 @@ export const SLP_SPARKLE_STYLES = `
     .slp-shimmer::after { animation: slp-sheen 7s ${EASE} 600ms infinite; }
     .slp-ring::before { animation: slp-ring-glint 7s ${EASE} infinite; }
     .slp-twinkle { animation: slp-twinkle 700ms ${EASE} var(--slp-twinkle-delay, 0ms) 1 both; }
-    .slp-motes::before { animation: slp-drift 90s linear infinite, slp-breathe-motes 6s ease-in-out infinite alternate; }
-    .slp-motes::after { animation: slp-drift-far 140s linear infinite, slp-breathe-motes 9s ease-in-out -3s infinite alternate; }
     .slp-veil-dissolve { animation: slp-veil-dissolve 1000ms cubic-bezier(0.45, 0, 0.3, 1) 120ms both; }
     .slp-image-shimmer::after { animation: slp-image-sweep 4s ease-in-out infinite; }
     [data-slp-paused], [data-slp-paused]::before, [data-slp-paused]::after { animation-play-state: paused !important; }
@@ -161,7 +137,4 @@ export const SLP_SPARKLE_STYLES = `
     100% { --slp-veil-hole: 110%; opacity: 0; backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); }
   }
   @keyframes slp-image-sweep { 0% { background-position: 120% 0; } 45%, 100% { background-position: -20% 0; } }
-  @keyframes slp-drift { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -300px, 0); } }
-  @keyframes slp-drift-far { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -210px, 0); } }
-  @keyframes slp-breathe-motes { from { opacity: 0.22; } to { opacity: 0.55; } }
 `;

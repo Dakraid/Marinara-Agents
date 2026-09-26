@@ -3,6 +3,7 @@ import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { useNearViewportSlurpMediaSrc } from "../../base/media/slp-media-src";
 import { SlurpSparkleVeil } from "../../base/chrome/SlpSparkleVeil";
+import { slpImgFade } from "../../base/chrome/SlpChrome";
 import { SlurpCoinAmount } from "../coin/SlpCoin";
 import { SlpRingGlint, SlpTwinkle } from "../sparkle/SlpSparkle";
 
@@ -55,10 +56,12 @@ export function SlpLockedMediaTile({
     <>
       {src && (
         <img
+          key={src}
           src={src}
           alt=""
           loading="lazy"
           decoding="async"
+          {...slpImgFade}
           className="h-full w-full scale-110 object-cover blur-[8px]"
         />
       )}

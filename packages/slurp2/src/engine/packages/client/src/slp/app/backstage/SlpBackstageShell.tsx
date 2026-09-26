@@ -1,4 +1,6 @@
 import { AlertTriangle, CheckCircle2, ChevronLeft, Loader2, RefreshCw } from "lucide-react";
+import { SLP_PAGE_SCROLL_CLASS } from "../../base/chrome/SlpChrome";
+import { cn } from "../../../lib/utils";
 
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -132,7 +134,12 @@ export function SlpBackstageShell({
 
   return (
     <>
-      <main className="min-h-0 flex-1 overflow-y-auto bg-[var(--slurp-canvas)] pb-[calc(5rem+env(safe-area-inset-bottom))] text-[var(--slurp-text)] sm:pb-8">
+      <main
+        className={cn(
+          "min-h-0 flex-1 overflow-y-auto bg-[var(--slurp-canvas)] pb-8 text-[var(--slurp-text)]",
+          SLP_PAGE_SCROLL_CLASS,
+        )}
+      >
         <div className="mx-auto flex w-full flex-col gap-4 p-3 sm:p-5 lg:gap-6 lg:p-6" data-slurp-settings-layout>
           {/* The header answers three questions and nothing else: which page am I on, where do I
               find a setting, and is my change saved. No card around it: the page title is the
