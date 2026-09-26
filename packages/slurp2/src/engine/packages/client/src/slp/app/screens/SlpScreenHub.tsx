@@ -32,7 +32,6 @@ import {
 } from "../../base/chrome/SlpChrome";
 import { SlpTwinkle } from "../../modules/sparkle/SlpSparkle";
 import { SlurpInlineAd } from "../../features/ads/SlpInlineAd";
-import { type SlurpDiscoverLayout } from "../../features/discovery/slp-discovery";
 import {
   SlurpFeedSkeleton,
   SlurpAccessTransition,
@@ -134,16 +133,9 @@ export function ViewerHub({
   const [visibleFeedCount, setVisibleFeedCount] = useState(SLP_CREATOR_FEED_WINDOW_SIZE);
   const [activeMomentId, setActiveMomentId] = useState<string | null>(null);
   const [feedLayout, setFeedLayout] = useState<"list" | "wall">("list");
-  const [discoverLayout, setDiscoverLayout] = useState<SlurpDiscoverLayout>(() => {
-    if (typeof window === "undefined") return "grid";
-    return window.localStorage.getItem("slurp2.discover.layout") === "list" ? "list" : "grid";
-  });
   const [openPostId, setOpenPostId] = useState<string | null>(null);
   const [momentNow] = useState(() => Date.now());
   const momentCutoff = momentNow - storyLifetimeHours * 60 * 60 * 1000;
-  useEffect(() => {
-    window.localStorage.setItem("slurp2.discover.layout", discoverLayout);
-  }, [discoverLayout]);
   const inlineAdsQuery = useSlurpInlineAds(scope?.viewer.entityId ?? null, null, [
     tab === "all" ? "discover" : "following",
     new Date().getHours() >= 18 ? "night" : "day",
@@ -182,6 +174,7 @@ export function ViewerHub({
     searchResults,
     discoveredCreators,
     suggestedCreators,
+    storyCreatorIds,
   } = useMemo(
     () =>
       deriveSlurpHubView({
@@ -311,12 +304,53 @@ export function ViewerHub({
     </SlurpAccessTransition>
   );
 
+  // One ad card for the feed and Discover (native post style).
+  const renderInlineAd = (ad: NonNullable<ReturnType<typeof inlineAdForIndex>>) => (
+    <SlurpInlineAd
+      promotion={ad}
+      labels={{
+        sponsored: localizeUi("ui.slurp.ads.sponsored"),
+        hide: localizeUi("ui.slurp.ads.hide"),
+        hideBrand: localizeUi("ui.slurp.ads.hideBrand"),
+        actionFallback: localizeUi("ui.slurp.ads.view"),
+      }}
+      onAction={() => {
+        // The rating system has no positive signal without this.
+        recordSlurpAdAction.mutate({ personaId: scope!.viewer.entityId, promotionId: ad.id });
+        toast.info(localizeUi("ui.slurp.ads.opened", { brand: ad.brand }));
+      }}
+      // A silently failed hide leaves the ad on screen, so say so rather than
+      // letting the reader think it worked.
+      onHide={() =>
+        hideSlurpAd.mutate(
+          { personaId: scope!.viewer.entityId, promotionId: ad.id },
+          {
+            onError: (error) => toast.error(errorMessage(error, localizeUi("ui.slurp.ads.hideFailed"))),
+          },
+        )
+      }
+      onHideBrand={() =>
+        hideSlurpAdBrand.mutate(
+          { personaId: scope!.viewer.entityId, brand: ad.brand },
+          {
+            onError: (error) => toast.error(errorMessage(error, localizeUi("ui.slurp.ads.hideFailed"))),
+          },
+        )
+      }
+    />
+  );
+
   if (discoveryOpen) {
     return (
       <SlpHubDiscover
         discover={discover}
-        discoverLayout={discoverLayout}
-        setDiscoverLayout={setDiscoverLayout}
+        discoverAd={
+          inlineAdsEnabled && inlineAdsQuery.data?.items?.[0] ? renderInlineAd(inlineAdsQuery.data.items[0]) : null
+        }
+        storyCreatorIds={storyCreatorIds}
+        isLoading={isLoading && !scope}
+        isError={isError && !scope}
+        onRetry={onRetry}
         discoveryInputRef={discoveryInputRef}
         localizeUi={localizeUi}
         onCloseDiscovery={onCloseDiscovery}
@@ -569,47 +603,13 @@ export function ViewerHub({
                         // answer to a question, not a place to sell.
                         const ad = inlineAdForIndex(index);
                         if (!inlineAdsEnabled || searchTerm || !ad) return null;
-                        return (
-                          <SlurpInlineAd
-                            promotion={ad}
-                            labels={{
-                              sponsored: localizeUi("ui.slurp.ads.sponsored"),
-                              hide: localizeUi("ui.slurp.ads.hide"),
-                              hideBrand: localizeUi("ui.slurp.ads.hideBrand"),
-                              actionFallback: localizeUi("ui.slurp.ads.view"),
-                            }}
-                            onAction={() => {
-                              // The rating system has no positive signal without this.
-                              recordSlurpAdAction.mutate({ personaId: scope!.viewer.entityId, promotionId: ad.id });
-                              toast.info(localizeUi("ui.slurp.ads.opened", { brand: ad.brand }));
-                            }}
-                            // A silently failed hide leaves the ad on screen, so say so rather than
-                            // letting the reader think it worked.
-                            onHide={() =>
-                              hideSlurpAd.mutate(
-                                { personaId: scope!.viewer.entityId, promotionId: ad.id },
-                                {
-                                  onError: (error) =>
-                                    toast.error(errorMessage(error, localizeUi("ui.slurp.ads.hideFailed"))),
-                                },
-                              )
-                            }
-                            onHideBrand={() =>
-                              hideSlurpAdBrand.mutate(
-                                { personaId: scope!.viewer.entityId, brand: ad.brand },
-                                {
-                                  onError: (error) =>
-                                    toast.error(errorMessage(error, localizeUi("ui.slurp.ads.hideFailed"))),
-                                },
-                              )
-                            }
-                          />
-                        );
+                        return renderInlineAd(ad);
                       })()}
                       {tab === "all" && !searchTerm && index === Math.min(2, visibleFeed.length - 1) && (
                         <SlurpInlineSuggestedCreators
                           creators={suggestedCreators}
                           onOpenProfile={postCardCtx.openAuthorProfile}
+                          storyCreatorIds={storyCreatorIds}
                         />
                       )}
                     </Fragment>

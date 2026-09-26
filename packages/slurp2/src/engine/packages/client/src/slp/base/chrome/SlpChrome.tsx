@@ -171,6 +171,10 @@ export const SLP_EYEBROW_CLASS = "text-xs font-bold uppercase tracking-[0.14em] 
 export const SLP_GROUP_CLASS =
   "overflow-hidden rounded-2xl bg-[var(--slurp-surface-raised)] shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] divide-y divide-[var(--noodle-divider)]";
 
+/** A rail list (profile "More creators", hub rail): compact rows in one raised group, no hairlines. */
+export const SLP_RAIL_GROUP_CLASS =
+  "rounded-2xl bg-[var(--slurp-surface-raised)] p-1 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]";
+
 /** A search field on a fan page: a raised pill with room for a leading 16 px icon at `start-4`. */
 export const SLP_SEARCH_FIELD_CLASS =
   "h-11 w-full rounded-full bg-[var(--slurp-surface-raised)] ps-11 pe-4 text-base shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] outline-none placeholder:text-[var(--slurp-muted)] focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] sm:text-sm";

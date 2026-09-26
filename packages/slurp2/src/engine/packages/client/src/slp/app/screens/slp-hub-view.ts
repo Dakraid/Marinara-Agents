@@ -8,7 +8,7 @@ export type SlurpMoment = {
 
 /**
  * What the Hub shows, derived from one viewer scope: the moment reel, the feed, the search hits,
- * everyone discoverable and the three creators it suggests.
+ * everyone discoverable, the three creators it suggests and who has a live Story.
  *
  * It is pure so the Hub can memoise it on the five inputs below and so a test can run it without
  * a render.
@@ -66,5 +66,21 @@ export function deriveSlurpHubView({
     suggestedCreators: creators
       .filter((creator) => creator.profile.id !== authorProfileId && !creator.followed)
       .slice(0, 3),
+    // Every Creator with a live Story, on either tab: their avatar gets the Story ring everywhere.
+    storyCreatorIds: slurpLiveStoryCreatorIds(creators, momentCutoff),
   };
+}
+
+/** The Creators with at least one Story newer than `cutoff` (ms): their avatars wear the Story ring. */
+export function slurpLiveStoryCreatorIds(
+  creators: readonly Pick<SlurpViewerCreator, "profile" | "posts">[],
+  cutoff: number,
+): Set<string> {
+  return new Set(
+    creators
+      .filter((creator) =>
+        creator.posts.some((post) => isSlurpStory(post) && new Date(post.createdAt).getTime() >= cutoff),
+      )
+      .map((creator) => creator.profile.id),
+  );
 }

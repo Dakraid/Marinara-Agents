@@ -8,7 +8,7 @@ import { openSlpCreatorSettings } from "../../features/creators/settings/slp-cre
 import { ChevronRight, LayoutGrid, Pencil, Plus } from "lucide-react";
 import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { cn } from "../../../lib/utils";
-import { SLP_EYEBROW_CLASS, SLP_PAGE_SCROLL_CLASS } from "../../base/chrome/SlpChrome";
+import { SLP_EYEBROW_CLASS, SLP_PAGE_SCROLL_CLASS, SLP_RAIL_GROUP_CLASS } from "../../base/chrome/SlpChrome";
 import { SlurpCreatorProfileCard } from "../../modules/creator/SlpCreatorProfileCard";
 import { StageProfileView } from "./SlpScreenProfile";
 import type { ReactNode } from "react";
@@ -381,7 +381,7 @@ export function renderSlurpHomeCreatorFlow({
             {localizeUi("ui.slurp.profile.similarCreators", { defaultValue: "More creators" })}
           </h2>
           {/* Compact rows in one raised group (design step 3): five Creators fit where two tall cards did. */}
-          <div className="rounded-2xl bg-[var(--slurp-surface-raised)] p-1 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
+          <div className={SLP_RAIL_GROUP_CLASS}>
             {similarCreators.map((creator) => (
               <SlurpCreatorProfileCard
                 key={creator.profile.id}

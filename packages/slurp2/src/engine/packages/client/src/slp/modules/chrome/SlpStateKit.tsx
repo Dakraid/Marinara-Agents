@@ -24,14 +24,14 @@ function Bone({ className }: { className: string }) {
  * A skeleton shaped like the content it stands in for: `rows` (inbox, lists, followers), `thread`
  * (chat bubbles), `card` (wallet, Studio: a big block and rows), `stories` (the Story shelf), `hub`
  * (the whole hub while Slurp itself loads: a Story row and two post cards), `posts` (two post cards)
- * or `grid` (a 3-column media grid).
+ * `grid` (a 3-column media grid) or `creators` (Discover: a Featured banner and a 2-column card grid).
  */
 export function SlpSkeleton({
   shape = "rows",
   count = 4,
   label,
 }: {
-  shape?: "rows" | "thread" | "card" | "stories" | "hub" | "posts" | "grid";
+  shape?: "rows" | "thread" | "card" | "stories" | "hub" | "posts" | "grid" | "creators";
   count?: number;
   label?: string;
 }) {
@@ -47,7 +47,11 @@ export function SlpSkeleton({
       className={cn(
         SLP_TYPE.meta,
         "text-[var(--slurp-muted)]",
-        shape === "stories" ? "px-2" : shape === "hub" ? "pb-4 text-center" : "pt-3 text-center",
+        shape === "stories"
+          ? "px-2"
+          : shape === "hub" || shape === "creators"
+            ? "pb-4 text-center"
+            : "pt-3 text-center",
       )}
     >
       {localizeUi("ui.slurp.state.stillConnecting", { defaultValue: "Still connecting…" })}
@@ -56,8 +60,8 @@ export function SlpSkeleton({
   return (
     <div role="status" aria-busy="true" className={cn(shape === "stories" ? "flex items-center gap-2.5" : "px-4 py-4")}>
       <span className="sr-only">{label ?? localizeUi("ui.slurp.state.loading", { defaultValue: "Loading…" })}</span>
-      {/* The hub skeleton is taller than a phone, so its wait message leads instead of trailing. */}
-      {slow && shape === "hub" && stillConnecting}
+      {/* The hub and Discover skeletons are taller than a phone, so their wait message leads instead of trailing. */}
+      {slow && (shape === "hub" || shape === "creators") && stillConnecting}
       {shape === "rows" &&
         items.map((index) => (
           <div key={index} className="flex items-center gap-3 py-2.5">
@@ -100,6 +104,21 @@ export function SlpSkeleton({
             className="h-[8.25rem] w-[5.5rem] shrink-0 rounded-2xl @min-[1024px]:h-[9rem] @min-[1024px]:w-[6rem]"
           />
         ))}
+      {shape === "creators" && (
+        <div className="space-y-4">
+          <Bone className="aspect-[4/3] w-[86%] rounded-3xl" />
+          <div className="grid grid-cols-2 gap-2.5">
+            {[0, 1, 2, 3].map((index) => (
+              <div key={index} className="space-y-2 rounded-2xl pb-3">
+                <Bone className="aspect-[16/10] w-full rounded-2xl" />
+                <Bone className="h-3 w-3/5 rounded-full" />
+                <Bone className="h-3 w-4/5 rounded-full" />
+                <Bone className="h-11 w-full rounded-full" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {shape === "grid" && (
         <div className="grid grid-cols-3 gap-0.5">
           {Array.from({ length: 9 }, (_, index) => (
@@ -131,7 +150,7 @@ export function SlpSkeleton({
           ))}
         </div>
       )}
-      {slow && shape !== "hub" && stillConnecting}
+      {slow && shape !== "hub" && shape !== "creators" && stillConnecting}
     </div>
   );
 }
