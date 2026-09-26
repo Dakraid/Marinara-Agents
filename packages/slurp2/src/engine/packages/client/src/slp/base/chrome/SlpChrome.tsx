@@ -6,7 +6,7 @@
 // ──────────────────────────────────────────────
 import { UserRound } from "lucide-react";
 import { useReducedMotion } from "framer-motion";
-import { createContext, type CSSProperties, useContext, useEffect, useState } from "react";
+import { createContext, type CSSProperties, useContext, useEffect, useRef, useState } from "react";
 import type { AvatarCrop } from "@marinara-engine/shared";
 import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
 import { cn, getAvatarCropStyle } from "../../../lib/utils";
@@ -46,7 +46,10 @@ export const NOODLE_ICON_SCOPE_CLASS = "[&_:where(svg)]:text-[var(--noodle-accen
 export const SLURP_ROW_CLASS =
   "relative flex min-h-11 w-full items-center gap-3 overflow-hidden rounded-lg px-3 text-start text-sm font-semibold transition-[background-color,color,transform] hover:bg-[var(--accent)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:active:scale-100";
 export const SLURP_ROW_ACTIVE_CLASS =
-  "bg-[color-mix(in_srgb,var(--noodle-accent)_24%,var(--slurp-surface-raised))] text-[var(--foreground)] before:absolute before:inset-y-2 before:start-0 before:w-0.5 before:rounded-full before:bg-[var(--noodle-accent)]";
+  "bg-[color-mix(in_srgb,var(--noodle-accent)_24%,var(--slurp-surface-raised))] text-[var(--foreground)] ring-1 ring-inset ring-[var(--noodle-accent)]/45 shadow-[0_6px_18px_-8px_color-mix(in_srgb,var(--noodle-accent)_70%,transparent)]";
+/** The coin balance chip (phone hub header, desktop sidebar Wallet row): glass pill with a warm ring. */
+export const SLP_BALANCE_CHIP_CLASS =
+  "inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--slurp-surface-raised)] px-3 text-[13px] font-bold tabular-nums text-[var(--slurp-text)] shadow-[var(--slurp-highlight)] ring-1 ring-inset ring-[color-mix(in_srgb,var(--slurp-warm)_40%,transparent)]";
 /** Selected state for the small pill toggles (feed layout, filters). Same fill, no left bar. */
 export const SLURP_TOGGLE_ACTIVE_CLASS =
   "bg-[color-mix(in_srgb,var(--noodle-accent)_28%,var(--slurp-surface-raised))] text-[var(--foreground)] ring-1 ring-inset ring-[var(--noodle-accent)]/50";
@@ -56,6 +59,8 @@ export const SLP_CREATOR_ADD_MARK = "+R";
 export const SLP_LOGO_SRC = SLURP_LOGO_SRC;
 export const NOODLER_LOGO_SRC = SLURP_LOGO_SRC;
 export const SLURP_NAME = "Slurp";
+/** The Slurp bug channel on the Marinara Discord: the same link as the release splash. */
+export const SLP_DISCORD_BUG_URL = "https://discord.com/channels/1417099416812392641/1539355721853046926";
 export const SLP_PERSONA_SWITCHER_PAGE_SIZE = 5;
 
 export function getSlpAccentStyle(accent: string, style: CSSProperties = {}): CSSProperties {
@@ -151,49 +156,92 @@ export function SlpLogo({ className, src = SLP_LOGO_SRC }: { className?: string;
   return <img src={src} alt="" className={cn("object-contain", className)} />;
 }
 
-/** Hide mobile chrome after deliberate movement and restore it after deliberate upward movement. */
-export function useHideOnScroll(scroller: HTMLElement | null) {
-  const [bar, setBar] = useState<HTMLDivElement | null>(null);
+/**
+ * Hide mobile chrome after deliberate movement and restore it after deliberate upward movement.
+ * Listens in the capture phase, so `scroller` may be the scroll container itself or any ancestor of
+ * the screens' own scroll containers (the shell's bottom nav). A change of `resetKey` (a new screen)
+ * shows the bar again.
+ */
+export function useHideOnScroll(
+  scroller: HTMLElement | null,
+  {
+    hiddenTransform = "translate3d(0, -100%, 0)",
+    resetKey,
+    onHiddenChange,
+  }: {
+    hiddenTransform?: string;
+    resetKey?: unknown;
+    /** For a caller that gives the bar's space back while it is hidden. */
+    onHiddenChange?: (hidden: boolean) => void;
+  } = {},
+) {
+  const [bar, setBar] = useState<HTMLElement | null>(null);
   const reduceMotion = useReducedMotion();
+  const onHiddenChangeRef = useRef(onHiddenChange);
+  onHiddenChangeRef.current = onHiddenChange;
 
   useEffect(() => {
     if (!scroller || !bar || reduceMotion) return;
     const DIRECTION_THRESHOLD = 24;
-    let previousTop = scroller.scrollTop;
+    let source: EventTarget | null = null;
+    let previousTop = 0;
     let directionDistance = 0;
     let movingDownLast = true;
     let hidden = false;
+    // Giving the bar's space back resizes the scroller, and near the end of a page the browser then
+    // clamps scrollTop. That scroll is ours, not the reader's, so it must not flip the bar back.
+    let settleUntil = 0;
+    const setHidden = (next: boolean) => {
+      if (next === hidden) return;
+      hidden = next;
+      directionDistance = 0;
+      settleUntil = performance.now() + 300;
+      bar.style.transform = hidden ? hiddenTransform : "translate3d(0, 0, 0)";
+      onHiddenChangeRef.current?.(hidden);
+    };
 
-    const update = () => {
-      const top = scroller.scrollTop;
-      const delta = top - previousTop;
-      previousTop = top;
-      if (top <= 0) {
+    const update = (event: Event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const top = target.scrollTop;
+      // A different scroll container (a new list, a nested panel) starts its own count.
+      if (target !== source) {
+        source = target;
+        previousTop = top;
         directionDistance = 0;
-        hidden = false;
-        bar.style.transform = "translate3d(0, 0, 0)";
         return;
       }
+      const delta = top - previousTop;
+      previousTop = top;
+      if (performance.now() < settleUntil) return;
+      // Sideways scrollers (the Story shelf) never move vertically, so they never touch the bar.
       if (!delta) return;
+      if (top <= 0) {
+        setHidden(false);
+        return;
+      }
       const movingDown = delta > 0;
       // Distance accumulates while the direction holds and restarts when it turns, so a
       // slow drag back up still adds up to the threshold instead of resetting each event.
       directionDistance = movingDown === movingDownLast ? directionDistance + Math.abs(delta) : Math.abs(delta);
       movingDownLast = movingDown;
       if (movingDown === hidden || directionDistance < DIRECTION_THRESHOLD) return;
-      hidden = movingDown;
-      directionDistance = 0;
-      bar.style.transform = hidden ? "translate3d(0, -100%, 0)" : "translate3d(0, 0, 0)";
+      setHidden(movingDown);
     };
 
-    bar.style.transition = "transform 180ms ease-out";
-    scroller.addEventListener("scroll", update, { passive: true });
+    // A bar that takes keyboard focus while hidden comes back, so focus never sits off screen.
+    const show = () => setHidden(false);
+    bar.style.transition = `transform ${SLP_MOTION.base}ms ${SLP_MOTION.ease}`;
+    scroller.addEventListener("scroll", update, { passive: true, capture: true });
+    bar.addEventListener("focusin", show);
     return () => {
-      scroller.removeEventListener("scroll", update);
+      scroller.removeEventListener("scroll", update, { capture: true });
+      bar.removeEventListener("focusin", show);
       bar.style.transition = "";
       bar.style.transform = "";
+      if (hidden) onHiddenChangeRef.current?.(false);
     };
-  }, [scroller, bar, reduceMotion]);
+  }, [scroller, bar, reduceMotion, hiddenTransform, resetKey]);
 
   return setBar;
 }

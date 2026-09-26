@@ -428,7 +428,7 @@ const features = [
           "Die Neufassung von Slurp. Sie wird neben Slurp Legacy installiert und behaelt eigene, getrennte Daten: Erstelle ein lokales Creator-Profil aus einem Engine-Charakter oder einer Engine-Persona, veroeffentliche oeffentliche oder gesperrte Beitraege und simuliere Abonnements und Publikumsaktivitaet.",
         homeBrowserTab: {
           label: "Slurp.",
-          ariaLabel: "Slurp. oeffnen",
+          ariaLabel: "Slurp oeffnen",
         },
       },
       ko: {
@@ -437,7 +437,7 @@ const features = [
           "Slurp\uc758 \ub9ac\uba54\uc774\uc2a4\ud130\uc785\ub2c8\ub2e4. Slurp Legacy\uc640 \ud568\uaed8 \uc124\uce58\ub418\uba70 \ub370\uc774\ud130\ub97c \ub530\ub85c \ubcf4\uad00\ud569\ub2c8\ub2e4. Engine \uce90\ub9ad\ud130\ub098 Engine \ud398\ub974\uc18c\ub098\ub85c \ub85c\uceec \ud06c\ub9ac\uc5d0\uc774\ud130 \ud504\ub85c\ud544\uc744 \ub9cc\ub4e4\uace0, \uacf5\uac1c \ub610\ub294 \uc7a0\uae34 \uac8c\uc2dc\ubb3c\uc744 \uac8c\uc2dc\ud558\uba70, \uad6c\ub3c5 \ubc0f \uccad\uc911 \ud65c\ub3d9\uc744 \uc2dc\ubbac\ub808\uc774\uc158\ud569\ub2c8\ub2e4.",
         homeBrowserTab: {
           label: "Slurp.",
-          ariaLabel: "Slurp. \uc5f4\uae30",
+          ariaLabel: "Slurp \uc5f4\uae30",
         },
       },
       pl: {
@@ -446,7 +446,7 @@ const features = [
           "Odnowiona wersja Slurp. Instaluje sie obok Slurp Legacy i przechowuje wlasne, oddzielne dane: utworz lokalny profil tworcy z postaci silnika lub persony silnika, publikuj publiczne lub zablokowane posty i symuluj subskrypcje oraz aktywnosc publicznosci.",
         homeBrowserTab: {
           label: "Slurp.",
-          ariaLabel: "Otworz Slurp.",
+          ariaLabel: "Otworz Slurp",
         },
       },
     },
@@ -473,7 +473,8 @@ const features = [
       slots: ["home-browser-tab"],
       homeBrowserTab: {
         label: "Slurp.",
-        ariaLabel: "Open Slurp.",
+        // The visual wordmark keeps its period; the accessible name does not ("Open Slurp full stop").
+        ariaLabel: "Open Slurp",
         iconPaths: ["slurp2-logo.png"],
       },
     },

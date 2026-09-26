@@ -1,9 +1,11 @@
 import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
+import { SlpSheet, SlpSheetItem } from "../../modules/chrome/SlpSheet";
+import { SlpWordmark } from "../../modules/chrome/SlpShell";
 import { SLP_CREATOR_FEED_WINDOW_SIZE } from "./SlpHomeHelpers";
 import { SlurpMomentsShelf, SlurpMomentViewer } from "./SlpScreenMoments";
 import { SubscriptionSections } from "./SlpScreenSubscriptions";
-import { LayoutGrid, List, Loader2, RefreshCw, Search, UserRound } from "lucide-react";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Ellipsis, LayoutGrid, List, Loader2, RefreshCw, Search, UserRound } from "lucide-react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
 import type { Persona } from "@marinara-engine/shared";
@@ -26,7 +28,7 @@ import {
   SLURP_TOGGLE_ACTIVE_CLASS,
   NewSinceLastVisitDivider,
   HIDE_ON_SCROLL_CLASS,
-  SlpLogo,
+  SLP_BALANCE_CHIP_CLASS,
   useHideOnScroll,
 } from "../../base/chrome/SlpChrome";
 import { SlurpInlineAd } from "../../features/ads/SlpInlineAd";
@@ -135,6 +137,8 @@ export function ViewerHub({
   const reduceMotion = useReducedMotion();
   const [scroller, setScroller] = useState<HTMLDivElement | null>(null);
   const setStickyHeader = useHideOnScroll(scroller);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const headerMenuRef = useRef<HTMLButtonElement | null>(null);
   const [discoverCollapsed, setDiscoverCollapsed] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [visibleFeedCount, setVisibleFeedCount] = useState(SLP_CREATOR_FEED_WINDOW_SIZE);
@@ -320,31 +324,54 @@ export function ViewerHub({
       <div
         ref={setStickyHeader}
         className={cn(
-          "sticky top-0 z-30 border-b border-white/[0.055] bg-[var(--slurp-surface,var(--background))] shadow-[var(--slurp-shadow-modal)] backdrop-blur-xl @min-[1024px]:bg-[linear-gradient(110deg,color-mix(in_srgb,var(--slurp-surface,var(--background))_91%,transparent),color-mix(in_srgb,var(--noodle-accent)_10%,var(--slurp-surface))_55%,color-mix(in_srgb,var(--slurp-violet)_8%,var(--slurp-surface)))]",
+          // Glass: the feed scrolls under the bar and shows through the blur.
+          "sticky top-0 z-30 border-b border-[var(--noodle-divider)] bg-[color-mix(in_srgb,var(--noodle-accent)_6%,var(--slurp-glass))] shadow-[var(--slurp-shadow-floating),var(--slurp-highlight)] backdrop-blur-xl",
           HIDE_ON_SCROLL_CLASS,
         )}
         data-component="SlurpHome.StickyHeader"
       >
         <div
-          className="relative flex h-14 items-center border-b border-[var(--noodle-divider)] px-3 @min-[1024px]:px-5"
+          className="relative flex h-14 items-center gap-1 px-3 @min-[1024px]:px-5"
           data-component="SlurpHome.HeaderBar"
         >
+          {/* The desktop sidebar carries the brand and the balance, so the bar keeps only the menu there. */}
+          <span className="@min-[1024px]:hidden">
+            <SlpWordmark />
+          </span>
           <button
+            ref={headerMenuRef}
             type="button"
-            onClick={onRefresh}
-            disabled={isRefreshing}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:cursor-not-allowed disabled:opacity-50"
-            title={localizeUi("ui.noodle.noodlehome.refreshTimeline")}
-            aria-label={localizeUi("ui.noodle.noodlehome.refreshTimeline")}
+            onClick={() => setHeaderMenuOpen((open) => !open)}
+            aria-haspopup="menu"
+            aria-expanded={headerMenuOpen}
+            className="ms-auto flex h-11 w-11 items-center justify-center rounded-full text-[var(--slurp-muted)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] [&_svg]:!text-current"
+            title={localizeUi("ui.slurp.home.moreActions", { defaultValue: "More actions" })}
+            aria-label={localizeUi("ui.slurp.home.moreActions", { defaultValue: "More actions" })}
           >
-            {isRefreshing ? <Loader2 size={17} className="animate-spin" /> : <RefreshCw size={17} aria-hidden="true" />}
+            {isRefreshing ? <Loader2 size={20} className="animate-spin" /> : <Ellipsis size={20} aria-hidden="true" />}
           </button>
-          <SlpLogo className="pointer-events-none absolute start-1/2 h-9 w-14 -translate-x-1/2 rtl:translate-x-1/2" />
-          {/* The desktop sidebar carries the same balance, so it only shows where there is no sidebar. */}
+          <SlpSheet
+            open={headerMenuOpen}
+            onClose={() => setHeaderMenuOpen(false)}
+            title={localizeUi("ui.slurp.home.moreActions", { defaultValue: "More actions" })}
+            kind="menu"
+            anchorRef={headerMenuRef}
+          >
+            <SlpSheetItem
+              disabled={isRefreshing}
+              onSelect={() => {
+                setHeaderMenuOpen(false);
+                onRefresh();
+              }}
+            >
+              <RefreshCw aria-hidden="true" />
+              {localizeUi("ui.noodle.noodlehome.refreshTimeline")}
+            </SlpSheetItem>
+          </SlpSheet>
           <button
             type="button"
             onClick={onOpenWallet}
-            className="ms-auto flex h-11 max-w-full items-center gap-1.5 overflow-hidden rounded-full px-3 text-sm font-semibold tabular-nums text-[var(--muted-foreground)] ring-1 ring-inset ring-[var(--noodle-divider)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] @min-[1024px]:hidden"
+            className="flex h-11 max-w-full shrink-0 items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] @min-[1024px]:hidden"
             aria-label={
               walletCoins === null
                 ? localizeUi("ui.slurp.navigation.wallet")
@@ -356,7 +383,9 @@ export function ViewerHub({
                 : slpCoinPlainText(localizeUi("ui.slurp.wallet.balance", { amount: walletCoins }))
             }
           >
-            <SlurpCoinAmount amount={walletCoins ?? "…"} watchAmount={walletCoins ?? undefined} />
+            <span className={cn(SLP_BALANCE_CHIP_CLASS, "h-9 transition-colors hover:bg-[var(--accent)]")}>
+              <SlurpCoinAmount amount={walletCoins ?? "…"} watchAmount={walletCoins ?? undefined} />
+            </span>
           </button>
         </div>
       </div>

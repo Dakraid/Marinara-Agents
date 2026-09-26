@@ -1,5 +1,4 @@
-import { SlpEmptyState, SlpErrorState } from "../modules/chrome/SlpStateKit";
-import { Loader2 } from "lucide-react";
+import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../modules/chrome/SlpStateKit";
 import { toast } from "sonner";
 import { ViewerHub } from "./screens/SlpScreenHub";
 import { errorMessage, SlpCreatorFrame } from "./screens/SlpHomeHelpers";
@@ -9,7 +8,7 @@ import { SlurpOnboardingWizard } from "../features/onboarding/SlpOnboardingPanel
 import { SlurpAgeGate, SlurpConfetti } from "../features/onboarding/SlpAgeGate";
 import { SlurpSplash } from "../features/onboarding/SlpSplash";
 import { getSlpAccentStyle, SLP_PERSONA_SWITCHER_PAGE_SIZE, SLP_PINK } from "../base/chrome/SlpChrome";
-import { SlpShell } from "../modules/chrome/SlpShell";
+import { SlpShell, SlpWordmark } from "../modules/chrome/SlpShell";
 import { SlpSharePostModal } from "../features/messages/SlpSharePostModal";
 import { SlpCreatorSettingsModal } from "../features/creators/settings/SlpCreatorSettingsModal";
 import { SlpBackstageShell } from "../app/backstage/SlpBackstageShell";
@@ -105,7 +104,10 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
       navigation.mode === "creator-settings"
         ? ("settings" as const)
         : navigation.mode === "creator" && navigation.view === "profile"
-          ? ("profile" as const)
+          ? // Only the viewer's own Creator is "Profile"; another Creator's page highlights no tab (B14).
+            navigation.accountId === mainAuthorProfile?.id
+            ? ("profile" as const)
+            : null
           : navigation.mode === "creator" && navigation.view === "search"
             ? ("search" as const)
             : navigation.mode === "creator" && navigation.view === "messages"
@@ -287,27 +289,26 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
     />
   );
 
-  if (accountsQuery.isLoading) {
+  // While Slurp itself loads or failed, the nav counts would come from other queries and lie over an
+  // empty screen, so they stay hidden until the app is really there.
+  if (accountsQuery.isLoading || accountsQuery.isError) {
     return (
-      <SlpShell {...shellProps}>
-        <SlpCreatorFrame onBack={exitToCreatorHub} title={localizeUi("ui.noodle.noodlemodetoggle.noodler")}>
-          <div className="flex justify-center py-16">
-            <Loader2 size={24} className="animate-spin text-[var(--noodle-accent-foreground)]" />
+      <SlpShell {...shellProps} noodlerUnseenCount={0} notificationCount={0}>
+        <div className="flex h-full min-h-0 flex-col">
+          <header className="flex h-14 shrink-0 items-center border-b border-[var(--noodle-divider)] px-3 @min-[1024px]:hidden">
+            <SlpWordmark />
+          </header>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {accountsQuery.isError ? (
+              <SlpErrorState
+                title={localizeUi("ui.noodle.noodlerhome.noodlerCouldNotBeLoaded")}
+                onRetry={retryAccountsOrReload}
+              />
+            ) : (
+              <SlpSkeleton shape="hub" count={5} label={localizeUi("ui.slurp.state.loading")} />
+            )}
           </div>
-        </SlpCreatorFrame>
-      </SlpShell>
-    );
-  }
-
-  if (accountsQuery.isError) {
-    return (
-      <SlpShell {...shellProps}>
-        <SlpCreatorFrame onBack={exitToCreatorHub} title={localizeUi("ui.noodle.noodlemodetoggle.noodler")}>
-          <SlpErrorState
-            title={localizeUi("ui.noodle.noodlerhome.noodlerCouldNotBeLoaded")}
-            onRetry={retryAccountsOrReload}
-          />
-        </SlpCreatorFrame>
+        </div>
       </SlpShell>
     );
   }

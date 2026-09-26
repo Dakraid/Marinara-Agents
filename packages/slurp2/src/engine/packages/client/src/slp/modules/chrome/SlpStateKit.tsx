@@ -1,10 +1,11 @@
-import { Sparkles, TriangleAlert, type LucideIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ExternalLink, MessageCircle, Sparkles, TriangleAlert, type LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
-import { SLP_TYPE } from "../../base/chrome/SlpChrome";
+import { SLP_DISCORD_BUG_URL, SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { SlpTwinkle } from "../sparkle/SlpSparkle";
-import { SlpButton, slpButtonClass } from "./SlpButton";
+import { SlpButton } from "./SlpButton";
+import { SlpSheet, SlpSheetItem } from "./SlpSheet";
 
 // The state kit (design language §7): a wait looks like the content it waits for, a failure says what
 // failed and offers Try again, and an empty list says what to do next.
@@ -20,14 +21,15 @@ function Bone({ className }: { className: string }) {
 
 /**
  * A skeleton shaped like the content it stands in for: `rows` (inbox, lists, followers), `thread`
- * (chat bubbles), `card` (wallet, Studio: a big block and rows) or `stories` (the Story shelf).
+ * (chat bubbles), `card` (wallet, Studio: a big block and rows), `stories` (the Story shelf) or `hub`
+ * (the whole hub while Slurp itself loads: a Story row and two post cards).
  */
 export function SlpSkeleton({
   shape = "rows",
   count = 4,
   label,
 }: {
-  shape?: "rows" | "thread" | "card" | "stories";
+  shape?: "rows" | "thread" | "card" | "stories" | "hub";
   count?: number;
   label?: string;
 }) {
@@ -38,9 +40,22 @@ export function SlpSkeleton({
     return () => window.clearTimeout(timer);
   }, []);
   const items = Array.from({ length: count }, (_, index) => index);
+  const stillConnecting = (
+    <p
+      className={cn(
+        SLP_TYPE.meta,
+        "text-[var(--slurp-muted)]",
+        shape === "stories" ? "px-2" : shape === "hub" ? "pb-4 text-center" : "pt-3 text-center",
+      )}
+    >
+      {localizeUi("ui.slurp.state.stillConnecting", { defaultValue: "Still connecting…" })}
+    </p>
+  );
   return (
     <div role="status" aria-busy="true" className={cn(shape === "stories" ? "flex items-center gap-2.5" : "px-4 py-4")}>
       <span className="sr-only">{label ?? localizeUi("ui.slurp.state.loading", { defaultValue: "Loading…" })}</span>
+      {/* The hub skeleton is taller than a phone, so its wait message leads instead of trailing. */}
+      {slow && shape === "hub" && stillConnecting}
       {shape === "rows" &&
         items.map((index) => (
           <div key={index} className="flex items-center gap-3 py-2.5">
@@ -80,24 +95,75 @@ export function SlpSkeleton({
         items.map((index) => (
           <Bone key={index} className="aspect-[3/4] w-[4.75rem] shrink-0 rounded-xl @min-[1024px]:w-[5.25rem]" />
         ))}
-      {slow && (
-        <p
-          className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]", shape === "stories" ? "px-2" : "pt-3 text-center")}
-        >
-          {localizeUi("ui.slurp.state.stillConnecting", { defaultValue: "Still connecting…" })}
-        </p>
+      {shape === "hub" && (
+        <div className="space-y-6">
+          <div className="flex gap-2.5 overflow-hidden">
+            {items.map((index) => (
+              <Bone key={index} className="aspect-[3/4] w-[4.75rem] shrink-0 rounded-xl" />
+            ))}
+          </div>
+          {[0, 1].map((card) => (
+            <div key={card} className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Bone className="size-10 shrink-0 rounded-full" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Bone className="h-3 w-2/5 rounded-full" />
+                  <Bone className="h-3 w-1/4 rounded-full" />
+                </div>
+              </div>
+              <Bone className="h-3 w-4/5 rounded-full" />
+              <Bone className="h-48 rounded-xl" />
+            </div>
+          ))}
+        </div>
       )}
+      {slow && shape !== "hub" && stillConnecting}
     </div>
   );
 }
 
-// ponytail: the report link opens a prefilled GitHub issue; swap for an in-app report flow if one appears.
+// ponytail: reports leave Slurp (Discord channel or a prefilled GitHub issue); swap for an in-app report flow if one appears.
 const BUG_REPORT_URL = "https://github.com/Pasta-Devs/Marinara-Agents/issues/new";
 const bugReportHref = (cause: string) =>
   `${BUG_REPORT_URL}?${new URLSearchParams({
     title: `Slurp: ${cause}`,
     body: `What I was doing:\n\nWhat Slurp said: ${cause}\n`,
   }).toString()}`;
+
+/** "Report bug": a small sheet with the two places a report can go. */
+function SlpReportBug({ cause }: { cause: string }) {
+  const { t: localizeUi } = useUiTranslation();
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const openLink = (href: string) => {
+    window.open(href, "_blank", "noopener,noreferrer");
+    setOpen(false);
+  };
+  const title = localizeUi("ui.slurp.state.reportBug", { defaultValue: "Report bug" });
+  return (
+    <>
+      <SlpButton
+        ref={triggerRef}
+        variant="tertiary"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        {title}
+      </SlpButton>
+      <SlpSheet open={open} onClose={() => setOpen(false)} title={title} kind="menu" anchorRef={triggerRef}>
+        <SlpSheetItem onSelect={() => openLink(SLP_DISCORD_BUG_URL)}>
+          <MessageCircle aria-hidden="true" />
+          {localizeUi("ui.slurp.state.reportOnDiscord", { defaultValue: "Report on Discord" })}
+        </SlpSheetItem>
+        <SlpSheetItem onSelect={() => openLink(bugReportHref(cause))}>
+          <ExternalLink aria-hidden="true" />
+          {localizeUi("ui.slurp.state.openGithubIssue", { defaultValue: "Open GitHub issue" })}
+        </SlpSheetItem>
+      </SlpSheet>
+    </>
+  );
+}
 
 /** A failure: an icon, what failed, that nothing was lost, Try again, and a way to report it. */
 export function SlpErrorState({
@@ -126,9 +192,7 @@ export function SlpErrorState({
       </p>
       <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
         <SlpButton onClick={onRetry}>{localizeUi("capabilities.actions.tryAgain")}</SlpButton>
-        <a href={bugReportHref(cause)} target="_blank" rel="noreferrer" className={slpButtonClass("tertiary")}>
-          {localizeUi("ui.slurp.state.reportBug", { defaultValue: "Report bug" })}
-        </a>
+        <SlpReportBug cause={cause} />
       </div>
     </div>
   );
