@@ -89,7 +89,12 @@ assert.match(font, /Open Font License/u, "the OFL notice travels with the font")
 assert.match(client("slp-client-entry.tsx"), /\$\{SLP_DISPLAY_FONT_STYLES\}/u);
 assert.match(shell, /className="slp-display text-xl leading-none">\{SLURP_NAME\}/u);
 assert.match(client("features/creators/SlpProfileSurface.tsx"), /"slp-display max-w-full text-\[28px\]/u);
-assert.equal(client("app/screens/SlpScreenWallet.tsx").match(/slp-display mt-2/gu)?.length, 2);
+// Step 6 moved the earnings balance into the shared Collect card: still two Fraunces balances.
+assert.equal(
+  (client("app/screens/SlpScreenWallet.tsx") + client("app/screens/SlpCollectCard.tsx")).match(/slp-display mt-/gu)
+    ?.length,
+  2,
+);
 
 // ── Copy: no em dashes, nothing that says the world is not real ──
 const locales = ["en", "de", "ko", "pl"].map((lang) => ({

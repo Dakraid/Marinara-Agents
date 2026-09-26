@@ -463,7 +463,8 @@ export function SlurpTipPanel({
   busy: boolean;
   /** A Creator tipping from their own side has no "next message" to carry it. */
   allowAttach: boolean;
-  onSendNow: (amount: number, note: string) => void;
+  /** `origin`: where the spend moment starts (the Send button, measured at the tap). */
+  onSendNow: (amount: number, note: string, origin: DOMRect) => void;
   onAttach: (amount: number, note: string) => void;
 }) {
   const { t: localizeUi } = useUiTranslation();
@@ -560,7 +561,11 @@ export function SlurpTipPanel({
 
       <SlpPrimaryButton
         disabled={busy || !personaId || !valid || (short && !withAttach)}
-        onClick={() => (withAttach ? onAttach(amount, note.trim()) : onSendNow(amount, note.trim()))}
+        onClick={(event) =>
+          withAttach
+            ? onAttach(amount, note.trim())
+            : onSendNow(amount, note.trim(), event.currentTarget.getBoundingClientRect())
+        }
         className="w-full"
       >
         {short && !withAttach ? (

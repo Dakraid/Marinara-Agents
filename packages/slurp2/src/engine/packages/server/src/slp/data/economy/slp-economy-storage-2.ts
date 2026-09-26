@@ -133,11 +133,16 @@ export function createEconomyStorage2(context: SlurpStorageContext) {
           let earningsValue: string | null = null;
           let paymentCompleted = false;
           try {
+            // Only the gamble passes `freeOnUnaffordable`; its note says so, so the wallet ledger can
+            // show the outcome ("Gamble unlock · Free" / "−75") after the toast is gone.
+            const note = freeOnUnaffordable ? `gamble: ${postId}` : postId;
             const charged =
-              spend(wallet, "unlock", price, new Date(), postId) ??
-              (freeOnUnaffordable ? spend(wallet, "unlock", 0, new Date(), postId) : null);
+              spend(wallet, "unlock", price, new Date(), note) ??
+              (freeOnUnaffordable ? spend(wallet, "unlock", 0, new Date(), note) : null);
             if (!charged) return null;
-            chargedAmount = Math.abs(charged.receipts[postId]?.amount ?? 0);
+            // The spend carries no receipt id, so `receipts[postId]` was always empty and every unlock
+            // reported 0: no Creator share, no income note, and a paid gamble told the fan "free".
+            chargedAmount = wallet.coins - charged.coins;
             const post = (await db.select().from(slpPosts).where(eq(slpPosts.id, postId)))[0];
             if (post) {
               earningsKey = slurpEarningsKey(post.authorAccountId);

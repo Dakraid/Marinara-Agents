@@ -305,9 +305,10 @@ export function ViewerHub({
   );
 
   // One ad card for the feed and Discover (native post style).
-  const renderInlineAd = (ad: NonNullable<ReturnType<typeof inlineAdForIndex>>) => (
+  const renderInlineAd = (ad: NonNullable<ReturnType<typeof inlineAdForIndex>>, wide = false) => (
     <SlurpInlineAd
       promotion={ad}
+      wide={wide}
       labels={{
         sponsored: localizeUi("ui.slurp.ads.sponsored"),
         hide: localizeUi("ui.slurp.ads.hide"),
@@ -345,7 +346,9 @@ export function ViewerHub({
       <SlpHubDiscover
         discover={discover}
         discoverAd={
-          inlineAdsEnabled && inlineAdsQuery.data?.items?.[0] ? renderInlineAd(inlineAdsQuery.data.items[0]) : null
+          inlineAdsEnabled && inlineAdsQuery.data?.items?.[0]
+            ? renderInlineAd(inlineAdsQuery.data.items[0], true)
+            : null
         }
         storyCreatorIds={storyCreatorIds}
         isLoading={isLoading && !scope}

@@ -2,7 +2,7 @@ import { slpCoinPlainText } from "../../modules/coin/SlpCoin";
 import { useLayoutEffect, useRef } from "react";
 import { toast } from "sonner";
 import { isCommissionRequest } from "./commissions/SlpCommissions";
-import { showConfirmDialog } from "../../../lib/app-dialogs";
+import { playSlpSpendMoment } from "../../modules/sparkle/SlpSparkle";
 import { useSlurpThreadViewState, type SlurpThreadViewProps, type SlurpThreadViewState } from "./slp-thread-view-model";
 
 /** `crypto.randomUUID` exists only in a secure context; a plain-HTTP LAN Engine does not have one. */
@@ -177,19 +177,13 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
       return;
     }
     const feeDue = !thread || thread.requestFeePaid <= 0;
-    if (!ownsCreator && feeDue && messaging?.dmPolicy === "paid" && !subscribed && messaging.requestFee > 0) {
-      const confirmed = await showConfirmDialog({
-        title: localizeUi("ui.slurp.messages.sendRequestTitle", { defaultValue: "Send message request?" }),
-        message: slpCoinPlainText(
-          localizeUi("ui.slurp.messages.sendRequestDetail", {
-            defaultValue: "This costs {{fee}} <coin/>. It opens the chat. They reply if they feel like it.",
-            fee: messaging.requestFee,
-          }),
-        ),
-        confirmLabel: localizeUi("ui.slurp.messages.sendRequestConfirm", { defaultValue: "Send request" }),
-      });
-      if (!confirmed) return;
-    }
+    // A paid first message is one tap (design step 6): the price sits in the Send button before the
+    // tap, and the spend moment plays from that button once the message is through.
+    const paidRequest =
+      !ownsCreator && feeDue && messaging?.dmPolicy === "paid" && !subscribed && messaging.requestFee > 0;
+    const sendOrigin = paidRequest
+      ? composerRef.current?.form?.querySelector('button[type="submit"]')?.getBoundingClientRect()
+      : undefined;
     // Cancel any active typing animation when fan interrupts
     if (typing) {
       cancelTyping();
@@ -231,6 +225,7 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
         tip: composerTipAmount > 0 ? { amount: composerTipAmount, note: composerTipNote.trim() } : null,
       });
       setSendRequest(null);
+      if (sendOrigin) playSlpSpendMoment(sendOrigin);
       setPending({ content, id: result.message.id, startedAt: optimisticStartedAt });
       setReplyStatus(result.replyStatus ?? null);
       if (result.tipError) setError(result.tipError);
@@ -251,24 +246,12 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
     }
   };
 
-  const sendTip = async (amount: number, note = "") => {
+  /** One tap (design step 6): the price is on the button, the spend moment is the feedback. */
+  const sendTip = async (amount: number, note = "", origin?: DOMRect) => {
     if (!personaId || !targetCreatorAccountId || busy) return;
     setError(null);
     setActiveTipAmount(amount);
     try {
-      const confirmed = await showConfirmDialog({
-        title: slpCoinPlainText(
-          localizeUi("ui.slurp.messages.sendTipTitle", {
-            defaultValue: "Send {{amount}} <coin/> as a tip?",
-            amount,
-          }),
-        ),
-        message: localizeUi("ui.slurp.messages.sendTipDetail", {
-          defaultValue: "A gift, no strings. They reply if they feel like it.",
-        }),
-        confirmLabel: localizeUi("ui.slurp.messages.sendTipConfirm", { defaultValue: "Send tip" }),
-      });
-      if (!confirmed) return;
       const tipKey = `${personaId}:${targetCreatorAccountId}:${amount}:${note}`;
       if (tipRequestRef.current?.key !== tipKey) tipRequestRef.current = { id: newRequestId(), key: tipKey };
       const result = await tip.mutateAsync({
@@ -281,6 +264,7 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
       tipRequestRef.current = null;
       setStandaloneTip(result.message);
       setToolsOpen(false);
+      if (origin) playSlpSpendMoment(origin);
       setToolTab(null);
       if (result.reply) holdTyping(result.typingMs ?? 0, result.reply.id);
     } catch (cause) {

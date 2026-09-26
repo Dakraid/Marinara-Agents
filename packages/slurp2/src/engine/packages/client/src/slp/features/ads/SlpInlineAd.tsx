@@ -75,8 +75,11 @@ export function SlurpInlineAd({
   onHideBrand,
   onAction,
   labels,
+  wide = false,
 }: {
   promotion: SlurpPromotion;
+  /** Discover: a 16:9 picture, so the ad sits between grid rows instead of filling the phone. */
+  wide?: boolean;
   onHide: () => void;
   onHideBrand?: () => void;
   onAction: () => void;
@@ -122,7 +125,8 @@ export function SlurpInlineAd({
       {promotion.imageUrl && !imageFailed && (
         <div
           className={cn(
-            "relative -mx-4 mt-3 aspect-[4/5] max-h-[32rem] w-[calc(100%+2rem)] overflow-hidden bg-[var(--slurp-media-stage,#17131a)]",
+            "relative -mx-4 mt-3 w-[calc(100%+2rem)] overflow-hidden bg-[var(--slurp-media-stage,#17131a)]",
+            wide ? "aspect-[16/9]" : "aspect-[4/5] max-h-[32rem]",
             SLP_IMG_FRAME_CLASS,
           )}
         >

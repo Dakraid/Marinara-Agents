@@ -105,3 +105,52 @@ export function formatUpcomingDay(value: string, locale: string, now = Date.now(
     () => new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" }) }),
   ).format(date);
 }
+
+/** The local calendar day of a time, as a sortable key ("2026-09-27"). */
+export function slpDayKey(value: string | number | Date) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+/**
+ * A day heading for a list grouped by day (wallet ledger): "Today", "Yesterday", then "Tue, Sep 23",
+ * with the year only for another year. Today / Yesterday come from Intl, so every locale gets its word.
+ */
+export function formatDayHeading(value: string, locale: string, now = Date.now()) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const today = new Date(now);
+  const midnight = (day: Date) => new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
+  const daysAgo = Math.round((midnight(today) - midnight(date)) / DAY);
+  if (daysAgo === 0 || daysAgo === 1) {
+    const word = cached(`${locale}:day-auto`, () => new Intl.RelativeTimeFormat(locale, { numeric: "auto" })).format(
+      -daysAgo,
+      "day",
+    );
+    return word.charAt(0).toLocaleUpperCase(locale) + word.slice(1);
+  }
+  const sameYear = date.getFullYear() === today.getFullYear();
+  return cached(
+    `${locale}:day-heading:${sameYear}`,
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        ...(sameYear ? {} : { year: "numeric" }),
+      }),
+  ).format(date);
+}
+
+/** Runs of items that share a local day, newest first as given (the list must already be sorted). */
+export function groupSlpByDay<T extends { at: string }>(items: readonly T[]): { day: string; items: T[] }[] {
+  const groups: { day: string; items: T[] }[] = [];
+  for (const item of items) {
+    const day = slpDayKey(item.at);
+    const last = groups[groups.length - 1];
+    if (last?.day === day) last.items.push(item);
+    else groups.push({ day, items: [item] });
+  }
+  return groups;
+}

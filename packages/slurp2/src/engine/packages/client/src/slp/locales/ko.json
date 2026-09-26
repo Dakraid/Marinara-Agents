@@ -745,7 +745,7 @@
   "ui.noodle.noodlerhome.notificationsComingSoon": "Slurp 알림은 아직 제공되지 않습니다.",
   "ui.noodle.noodlerhome.refreshNoodlerNow": "지금 Slurp 새로고침",
   "ui.noodle.noodlerhome.runsAnAutomaticStylePostNowForEveryCreator": "자동 게시가 활성화된 모든 크리에이터에 대해 지금 자동 게시 형식의 게시물을 생성합니다.",
-  "ui.noodle.noodlerhome.searchPostsOrCreators": "게시물 또는 @크리에이터 검색",
+  "ui.noodle.noodlerhome.searchPostsOrCreators": "Slurp 검색",
   "ui.noodle.noodlerhome.setIdentityDisclosure": "정체성 공개 수준 설정",
   "ui.noodle.noodlerhome.shouldThisCreatorPostAutomatically": "이 크리에이터의 자동 게시를 활성화하시겠습니까?",
   "ui.noodle.noodlerhome.sourcesUnavailable": "소스를 사용할 수 없음",

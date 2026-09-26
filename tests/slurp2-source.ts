@@ -41,6 +41,8 @@ export const SLURP2_SOURCE_MODULES: Record<string, readonly string[]> = {
     "packages/client/src/slp/app/screens/SlpProfileLeadingActions.tsx",
     "packages/client/src/slp/app/screens/SlpScreenStudio.tsx",
     "packages/client/src/slp/app/screens/SlpScreenWallet.tsx",
+    // Step 6: the one Collect card (earnings → Wallet) that Studio and Wallet share.
+    "packages/client/src/slp/app/screens/SlpCollectCard.tsx",
     "packages/client/src/slp/modules/story/SlpStoryTile.tsx",
   ],
   // Slice 9 split Backstage into a thin host, an explicit panel registry and feature-owned panels.

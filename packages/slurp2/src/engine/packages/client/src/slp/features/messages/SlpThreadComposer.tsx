@@ -455,7 +455,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
             personaId={personaId}
             busy={busy || !targetCreatorAccountId}
             allowAttach={!ownsCreator}
-            onSendNow={(amount, note) => void sendTip(amount, note)}
+            onSendNow={(amount, note, origin) => void sendTip(amount, note, origin)}
             onAttach={(amount, note) => {
               setComposerTipAmount(amount);
               setComposerTipNote(note);

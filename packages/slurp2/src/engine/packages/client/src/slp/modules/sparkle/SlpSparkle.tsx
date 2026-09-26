@@ -312,6 +312,40 @@ export function playSlpCoinFly(origin: SlpOrigin, target: Element | null = visib
 }
 
 /**
+ * Coin rain (balance up: collect, refill): a few coins drop into the balance from above and land
+ * with a Pop, 600 ms. The balance's own `SlurpCoinAmount` counts up alongside.
+ */
+export function playSlpCoinRain(target: Element, count = 5) {
+  const rect = rectOf(target);
+  if (slpPrefersReducedMotion()) return staticSparkle(rect);
+  const layer = openRewardLayer("rain");
+  if (!layer) return;
+  const coins = Array.from({ length: count }, (_, index) => {
+    const size = 20 - (index % 3) * 3;
+    const node = document.createElement("img");
+    node.src = SLURP_COIN_SRC;
+    node.alt = "";
+    Object.assign(node.style, { position: "absolute", left: "0", top: "0", width: `${size}px`, height: `${size}px` });
+    layer.appendChild(node);
+    // Spread across the number, a little wider than it, landing on its middle line.
+    const x = rect.left + rect.width * ((index + 0.5) / count) + (Math.random() - 0.5) * 10;
+    const y1 = rect.top + rect.height / 2;
+    const y0 = y1 - 70 - Math.random() * 30;
+    const spin = (Math.random() - 0.5) * 220;
+    return node.animate(
+      [
+        { transform: at(x, y0, size, 0.8), opacity: 0 },
+        { transform: at(x, y0 + 12, size, 1, spin / 4), opacity: 1, offset: 0.2 },
+        { transform: at(x, y1, size, 0.9, spin), opacity: 1, offset: 0.85, easing: "ease-out" },
+        { transform: at(x, y1 + 2, size, 0.5, spin), opacity: 0 },
+      ],
+      { duration: 600, delay: index * 60, easing: "cubic-bezier(0.55, 0, 0.9, 0.4)", fill: "both" },
+    );
+  });
+  closeWhenDone(layer, [...coins, ...popInto(layer, rect, 560)]);
+}
+
+/**
  * The spend moment (no confirmation): a Burst on the button, coins fly to the balance chip and land
  * with a Pop. The chip's `SlurpCoinAmount` counts the balance down when the wallet refetches.
  */

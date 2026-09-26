@@ -2,7 +2,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import type { SlurpStudioCreator } from "../../features/economy/slp-economy-contract";
-import { useSetSlurpGoal, useSlurpPayout, useSlurpStudio } from "../../features/economy/slp-economy-hooks";
+import { useSetSlurpGoal, useSlurpStudio } from "../../features/economy/slp-economy-hooks";
 import { cn } from "../../../lib/utils";
 import { Avatar } from "../../base/chrome/SlpChrome";
 import { SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
@@ -10,8 +10,9 @@ import { SlpCreatorFrame } from "./SlpHomeHelpers";
 import { formatTime } from "../../base/ui/slp-date-time";
 import { BroadcastPanel } from "../../features/messages/SlpMessages";
 import { SlurpProjectsPanel } from "../../features/projects/SlpProjectsBoard";
-import { SlurpCoinAmount, SlurpCoinBurst, SlpCoinText } from "../../modules/coin/SlpCoin";
+import { SlurpCoinAmount, SlpCoinText } from "../../modules/coin/SlpCoin";
 import { errorMessage } from "./SlpHomeHelpers";
+import { SlpCollectCard } from "./SlpCollectCard";
 
 function SlurpStudioView({
   personaId,
@@ -183,7 +184,7 @@ function SlurpStudioView({
                 </div>
               )}
 
-              {creator.payoutAllowance > 0 && personaId && <SlurpPayoutRow creator={creator} personaId={personaId} />}
+              {personaId && <SlpCollectCard creator={creator} personaId={personaId} burst />}
 
               <SlurpGoalEditor creator={creator} personaId={personaId} />
 
@@ -439,49 +440,4 @@ function SlurpGoalEditor({ creator, personaId }: { creator: SlurpStudioCreator; 
   );
 }
 
-/**
- * Move earnings into spending money.
- *
- * This is the step that connects the two seats the player occupies: a Creator who does well funds
- * their habit as a fan. Without it earnings are a scoreboard attached to nothing.
- *
- * The daily allowance is shown rather than the balance, because the allowance is the number that
- * decides what you can actually do today.
- */
-function SlurpPayoutRow({ creator, personaId }: { creator: SlurpStudioCreator; personaId: string }) {
-  const { t: localizeUi } = useUiTranslation();
-  const payout = useSlurpPayout();
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-[var(--accent)] p-3">
-      <span className="min-w-0">
-        <span className="block text-xs font-bold">
-          {localizeUi("ui.slurp.studio.payoutTitle", { defaultValue: "Available to withdraw today" })}
-        </span>
-        <span className="block text-[0.7rem] text-[var(--muted-foreground)]">
-          <SlurpCoinAmount amount={creator.payoutAllowance} />
-          {", from "}
-          <SlurpCoinAmount amount={creator.earnings.coins} watchAmount={creator.earnings.coins} />
-          {" earned and unspent."}
-        </span>
-      </span>
-      <button
-        type="button"
-        disabled={payout.isPending}
-        onClick={() =>
-          payout.mutate(
-            { creatorAccountId: creator.id, personaId, amount: creator.payoutAllowance },
-            { onError: (error) => toast.error(errorMessage(error)) },
-          )
-        }
-        className="relative min-h-10 shrink-0 overflow-visible rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] transition-transform active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
-      >
-        <SlurpCoinBurst active={payout.isPending} direction="earn" />
-        {payout.isPending
-          ? localizeUi("ui.slurp.studio.payoutPending", { defaultValue: "Withdrawing…" })
-          : localizeUi("ui.slurp.studio.payout", { defaultValue: "Withdraw" })}
-      </button>
-    </div>
-  );
-}
-
-export { SlurpStudioView, SlurpGoalEditor, SlurpPayoutRow };
+export { SlurpStudioView, SlurpGoalEditor };
