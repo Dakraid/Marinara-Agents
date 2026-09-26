@@ -42,7 +42,7 @@ export function SlurpInlineAdTile({
         {/* An unlabelled ad inside a wall of real posts reads as a post. The gradient keeps the
             label legible on any image without hiding the image behind a panel. */}
         <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2 pt-6">
-          <span className="block text-[0.6rem] font-bold uppercase tracking-[0.14em] text-[var(--noodle-accent)]">
+          <span className="block text-[0.6rem] font-bold uppercase tracking-[0.14em] text-[var(--noodle-accent-foreground)]">
             <Megaphone size={10} aria-hidden="true" className="mr-1 inline align-[-1px]" />
             {labels.sponsored}
           </span>
@@ -91,11 +91,11 @@ export function SlurpInlineAd({
         />
       ) : null}
       <div className="flex items-start gap-3 p-4">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent)]">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent-foreground)]">
           <Megaphone size={16} aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[var(--noodle-accent)]">
+          <p className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[var(--noodle-accent-foreground)]">
             {labels.sponsored}
           </p>
           <h2 className="mt-1 break-words text-sm font-bold">{promotion.brand}</h2>

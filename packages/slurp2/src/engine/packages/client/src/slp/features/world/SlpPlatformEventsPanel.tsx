@@ -343,12 +343,16 @@ export function SlurpPlatformEventsSettings({
                     onClick={() => open(item)}
                     className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
                   >
-                    <CalendarDays size={16} aria-hidden="true" className="shrink-0 text-[var(--noodle-accent)]" />
+                    <CalendarDays
+                      size={16}
+                      aria-hidden="true"
+                      className="shrink-0 text-[var(--noodle-accent-foreground)]"
+                    />
                     <span className={cn("min-w-0 flex-1 truncate text-sm font-bold", !item.enabled && "opacity-60")}>
                       {item.name}
                     </span>
                     {activeIds.has(item.id) && (
-                      <span className="rounded-full bg-[var(--noodle-accent)]/15 px-2 py-0.5 text-xs font-bold text-[var(--noodle-accent)]">
+                      <span className="rounded-full bg-[var(--noodle-accent)]/15 px-2 py-0.5 text-xs font-bold text-[var(--noodle-accent-foreground)]">
                         {t("ui.slurp.settings.events.active", { defaultValue: "Running now" })}
                       </span>
                     )}

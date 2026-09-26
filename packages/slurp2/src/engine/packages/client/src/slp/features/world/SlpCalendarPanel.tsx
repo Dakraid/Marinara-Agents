@@ -33,9 +33,9 @@ const itemTone = (item: SlpStoryCalendarItem) =>
   item.kind === "occasion"
     ? "bg-[var(--slurp-violet)]/12 text-[var(--slurp-violet)] ring-[var(--slurp-violet)]/25"
     : item.kind === "plan"
-      ? "bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent)] ring-[var(--noodle-accent)]/30"
+      ? "bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent-foreground)] ring-[var(--noodle-accent)]/30"
       : item.status === "active"
-        ? "bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent)] ring-[var(--noodle-accent)]/30"
+        ? "bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent-foreground)] ring-[var(--noodle-accent)]/30"
         : "bg-[var(--slurp-surface-raised)] text-[var(--slurp-text)] ring-[var(--slurp-outline)]";
 
 export function SlpCalendarPanel(page: SlpBackstagePageProps) {
@@ -103,7 +103,7 @@ export function SlpCalendarPanel(page: SlpBackstagePageProps) {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--noodle-accent)]">When</p>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--noodle-accent-foreground)]">When</p>
           <h2 className="mt-1 text-2xl font-black tracking-tight">Your Slurp calendar</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--slurp-muted)]">
             Events are context. Active items are work in progress. Nothing publishes only because it appears here.
@@ -188,7 +188,7 @@ export function SlpCalendarPanel(page: SlpBackstagePageProps) {
           className={`${view === "month" ? "" : "hidden"} overflow-hidden rounded-2xl bg-[var(--slurp-surface-raised)] shadow-[var(--slurp-shadow)] ring-1 ring-inset ring-[var(--slurp-outline)]`}
         >
           <div className="flex items-center gap-3 border-b border-[var(--slurp-outline)] px-4 py-3">
-            <CalendarDays size={18} className="text-[var(--noodle-accent)]" aria-hidden="true" />
+            <CalendarDays size={18} className="text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
             <h3 id="slurp-calendar-month" className="text-base font-black">
               {monthLabel.format(month)}
             </h3>
@@ -244,7 +244,7 @@ export function SlpCalendarPanel(page: SlpBackstagePageProps) {
           className="rounded-2xl bg-[var(--slurp-surface-raised)] p-4 shadow-[var(--slurp-shadow)] ring-1 ring-inset ring-[var(--slurp-outline)]"
         >
           <div className="flex items-center gap-3">
-            <List size={18} className="text-[var(--noodle-accent)]" aria-hidden="true" />
+            <List size={18} className="text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
             <h3 id="slurp-calendar-agenda" className="text-base font-black">
               Agenda
             </h3>

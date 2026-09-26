@@ -78,7 +78,7 @@ export function SlpBackstageSidebar({
             >
               <Icon
                 size={17}
-                className={section === item ? "text-[var(--noodle-accent)]" : "text-[var(--slurp-muted)]"}
+                className={section === item ? "text-[var(--noodle-accent-foreground)]" : "text-[var(--slurp-muted)]"}
                 aria-hidden="true"
               />
               {t(`ui.slurp.settings.backstage.sections.${item}`, {
@@ -127,7 +127,7 @@ export function SlpBackstageHome({
                   className="flex min-h-16 w-full items-center gap-3 px-4 py-2.5 text-start transition-colors hover:bg-[var(--slurp-surface-raised)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none"
                 >
                   <span
-                    className="grid size-9 shrink-0 place-items-center rounded-lg bg-[color-mix(in_srgb,var(--noodle-accent)_16%,var(--slurp-surface-raised))] text-[var(--noodle-accent)]"
+                    className="grid size-9 shrink-0 place-items-center rounded-lg bg-[color-mix(in_srgb,var(--noodle-accent)_16%,var(--slurp-surface-raised))] text-[var(--noodle-accent-foreground)]"
                     aria-hidden="true"
                   >
                     <Icon size={18} />

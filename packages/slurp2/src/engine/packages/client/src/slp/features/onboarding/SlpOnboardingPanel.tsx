@@ -254,7 +254,7 @@ export function SlurpOnboardingWizard(props: WizardProps) {
                       key={item.key}
                       className="flex items-start gap-3 rounded-lg border border-[var(--noodle-accent)]/35 bg-[var(--noodle-accent)]/10 px-3 py-2.5 text-sm leading-6"
                     >
-                      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent)]">
+                      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent-foreground)]">
                         {item.icon}
                       </span>
                       <span>{t(`ui.noodle.noodlerwizard.intro.attention.${item.key}`)}</span>
@@ -286,7 +286,7 @@ export function SlurpOnboardingWizard(props: WizardProps) {
                     />
                     <p className="mt-3 font-bold max-sm:mt-2 max-sm:text-xs">{demoProfile.displayName}</p>
                     <p className="text-xs text-[var(--slurp-muted)]">@{demoProfile.handle}</p>
-                    <p className="mt-2 text-xs font-semibold text-[var(--noodle-accent)] max-sm:mt-1 max-sm:text-[0.625rem]">
+                    <p className="mt-2 text-xs font-semibold text-[var(--noodle-accent-foreground)] max-sm:mt-1 max-sm:text-[0.625rem]">
                       {t(`ui.noodle.noodlerwizard.identityPreview.${disclosure}.connection`)}
                     </p>
                   </div>
@@ -309,7 +309,9 @@ export function SlurpOnboardingWizard(props: WizardProps) {
                       >
                         <span className="flex items-center justify-between gap-2 text-sm font-bold">
                           {t(`ui.noodle.noodlerwizard.disclosure.${value}.title`)}
-                          {disclosure === value && <Check size={15} className="shrink-0 text-[var(--noodle-accent)]" />}
+                          {disclosure === value && (
+                            <Check size={15} className="shrink-0 text-[var(--noodle-accent-foreground)]" />
+                          )}
                         </span>
                         <span className="mt-0.5 block text-xs leading-5 text-[var(--slurp-muted)] max-sm:line-clamp-2 max-sm:leading-4">
                           {t(`ui.noodle.noodlerwizard.disclosure.${value}.detail`)}
@@ -439,13 +441,13 @@ export function SlurpOnboardingWizard(props: WizardProps) {
                     className="group rounded-xl border border-[var(--noodle-accent)]/60 bg-gradient-to-br from-[var(--noodle-accent)]/22 to-[var(--noodle-accent)]/6 p-5 text-left shadow-sm shadow-[var(--noodle-accent)]/15 transition-[transform,box-shadow,background-color] hover:-translate-y-0.5 hover:shadow-md hover:shadow-[var(--noodle-accent)]/25 motion-reduce:transform-none"
                   >
                     <span className="flex items-center gap-2 text-base font-bold">
-                      <Sparkles size={17} className="text-[var(--noodle-accent)]" />
+                      <Sparkles size={17} className="text-[var(--noodle-accent-foreground)]" />
                       {t("ui.noodle.noodlerwizard.handoff.easy.title")}
                     </span>
                     <span className="mt-2 block text-sm leading-6 text-[var(--slurp-muted)]">
                       {t("ui.noodle.noodlerwizard.handoff.easy.detail")}
                     </span>
-                    <span className="mt-4 flex items-center gap-1 text-sm font-bold text-[var(--noodle-accent)]">
+                    <span className="mt-4 flex items-center gap-1 text-sm font-bold text-[var(--noodle-accent-foreground)]">
                       {t("ui.noodle.noodlerwizard.handoff.easy.action")}
                       <ChevronRight size={15} />
                     </span>

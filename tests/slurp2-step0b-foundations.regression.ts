@@ -19,6 +19,9 @@ for (const token of ["--slurp-ink", "--slurp-tint", "--slurp-glow", "--slurp-on-
 }
 assert.match(chrome, /NOODLE_ICON_SCOPE_CLASS = "\[&_:where\(svg\)\]:text-\[var\(--noodle-accent-foreground\)\]"/u);
 
+// The primary CTA is the Slurp pink fill with plum text (user decision after the 0b screenshots).
+assert.match(src("modules/chrome/SlpButton.tsx"), /bg-\[var\(--noodle-accent\)\] text-\[var\(--slurp-on-accent\)\]/u);
+
 // Text on pink fills uses the token, never a hard-coded zinc.
 for (const file of walk(slp)) {
   assert.doesNotMatch(readFileSync(file, "utf8"), /text-zinc-950/u, `${file} must use --slurp-on-accent`);

@@ -135,7 +135,7 @@ export function SlurpAgeGate({ personaName, onComplete, onCelebrate, onLeave, is
               key={row.key}
               className="flex items-start gap-3 rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm leading-6"
             >
-              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)]/12 text-[var(--noodle-accent)]">
+              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)]/12 text-[var(--noodle-accent-foreground)]">
                 {row.icon}
               </span>
               <span>{t(`ui.noodle.noodlerwizard.intro.what.${row.key}`)}</span>
@@ -175,7 +175,7 @@ export function SlurpAgeGate({ personaName, onComplete, onCelebrate, onLeave, is
 
       <div className="relative aspect-[16/10] overflow-hidden rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-950 p-4 text-zinc-100 shadow-lg">
         <div className="flex items-center justify-between">
-          <CreditCard size={26} className="text-[var(--noodle-accent)]" />
+          <CreditCard size={26} className="text-[var(--noodle-accent-foreground)]" />
           <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">
             {tt("cardBrand", "Pastapay")}
           </span>

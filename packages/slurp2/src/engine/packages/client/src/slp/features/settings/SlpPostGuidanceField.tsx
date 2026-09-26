@@ -116,7 +116,7 @@ export function SlurpPostGuidanceField({
             {generate.isPending ? (
               <Loader2 size={14} className="animate-spin" />
             ) : (
-              <Sparkles size={14} className="text-[var(--noodle-accent)]" />
+              <Sparkles size={14} className="text-[var(--noodle-accent-foreground)]" />
             )}
             {generateLabel}
           </button>

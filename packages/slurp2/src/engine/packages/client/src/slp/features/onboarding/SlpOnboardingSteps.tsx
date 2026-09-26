@@ -85,7 +85,7 @@ export function SlpOnboardingSteps({ model }: { model: SlurpOnboardingWizardMode
               <button
                 type="button"
                 onClick={() => setSetupLane(setupLane === "easy" ? "customize" : "easy")}
-                className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-[var(--noodle-accent)]/40 px-3 text-xs font-bold text-[var(--noodle-accent)] transition-colors hover:bg-[var(--noodle-accent)]/10"
+                className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-[var(--noodle-accent)]/40 px-3 text-xs font-bold text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10"
               >
                 <SlidersHorizontal size={13} />
                 {t(
@@ -98,7 +98,7 @@ export function SlpOnboardingSteps({ model }: { model: SlurpOnboardingWizardMode
           </div>
           {accounts.length > 0 && (
             <div className="sticky top-0 z-10 -mt-1 flex items-center justify-between gap-3 rounded-lg border border-[var(--noodle-accent)]/25 bg-[color-mix(in_srgb,var(--noodle-accent)_8%,var(--background))] px-3 py-1.5">
-              <span className="text-xs font-bold text-[var(--noodle-accent)]">
+              <span className="text-xs font-bold text-[var(--noodle-accent-foreground)]">
                 {t("ui.noodle.noodlerwizard.selectedCount", {
                   count: selected.size,
                 })}
@@ -115,7 +115,7 @@ export function SlpOnboardingSteps({ model }: { model: SlurpOnboardingWizardMode
                     ),
                   )
                 }
-                className="min-h-10 shrink-0 px-1 text-xs font-bold text-[var(--noodle-accent)] disabled:opacity-40"
+                className="min-h-10 shrink-0 px-1 text-xs font-bold text-[var(--noodle-accent-foreground)] disabled:opacity-40"
               >
                 {selected.size > 0 ? t("ui.noodle.noodlerwizard.selectNone") : t("ui.noodle.noodlerwizard.selectAll")}
               </button>
@@ -127,14 +127,14 @@ export function SlpOnboardingSteps({ model }: { model: SlurpOnboardingWizardMode
               <button
                 type="button"
                 onClick={() => void eligible.refetch()}
-                className="mt-2 min-h-10 px-2 text-sm font-bold text-[var(--noodle-accent)]"
+                className="mt-2 min-h-10 px-2 text-sm font-bold text-[var(--noodle-accent-foreground)]"
               >
                 {t("capabilities.actions.tryAgain")}
               </button>
             </div>
           ) : accounts.length === 0 && !eligible.isLoading && !eligible.hasNextPage ? (
             <div className="flex flex-col items-center py-8 text-center">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--noodle-accent)]/12 text-[var(--noodle-accent)]">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--noodle-accent)]/12 text-[var(--noodle-accent-foreground)]">
                 <Users size={22} />
               </span>
               <p className="mt-3 max-w-md text-sm leading-6 text-[var(--slurp-muted)]">
@@ -422,7 +422,7 @@ export function SlpOnboardingSteps({ model }: { model: SlurpOnboardingWizardMode
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="min-h-9 shrink-0 px-2 text-xs font-bold text-[var(--noodle-accent)]"
+                  className="min-h-9 shrink-0 px-2 text-xs font-bold text-[var(--noodle-accent-foreground)]"
                 >
                   {t("ui.noodle.noodlerwizard.change")}
                 </button>
@@ -640,7 +640,7 @@ export function SlpOnboardingSteps({ model }: { model: SlurpOnboardingWizardMode
                   );
                 })();
               }}
-              className="mt-5 flex min-h-10 items-center gap-2 rounded-lg border border-[var(--noodle-accent)]/40 px-4 text-sm font-bold text-[var(--noodle-accent)] disabled:opacity-50"
+              className="mt-5 flex min-h-10 items-center gap-2 rounded-lg border border-[var(--noodle-accent)]/40 px-4 text-sm font-bold text-[var(--noodle-accent-foreground)] disabled:opacity-50"
             >
               <RefreshCw size={15} className={pending ? "animate-spin" : ""} />
               {t("ui.noodle.noodlerwizard.retrySettings")}
@@ -657,7 +657,7 @@ export function SlpOnboardingSteps({ model }: { model: SlurpOnboardingWizardMode
                 type="button"
                 disabled={pending}
                 onClick={() => void finish()}
-                className="mt-5 flex min-h-10 items-center gap-2 rounded-lg border border-[var(--noodle-accent)]/40 px-4 text-sm font-bold text-[var(--noodle-accent)] disabled:opacity-50"
+                className="mt-5 flex min-h-10 items-center gap-2 rounded-lg border border-[var(--noodle-accent)]/40 px-4 text-sm font-bold text-[var(--noodle-accent-foreground)] disabled:opacity-50"
               >
                 <RefreshCw size={15} className={pending ? "animate-spin" : ""} />
                 {t("capabilities.actions.tryAgain")}
@@ -669,7 +669,7 @@ export function SlpOnboardingSteps({ model }: { model: SlurpOnboardingWizardMode
               type="button"
               disabled={refreshTargeted.isPending}
               onClick={() => void runGeneration(failedIds)}
-              className="mt-5 flex min-h-10 items-center gap-2 rounded-lg border border-[var(--noodle-accent)]/40 px-4 text-sm font-bold text-[var(--noodle-accent)] disabled:opacity-50"
+              className="mt-5 flex min-h-10 items-center gap-2 rounded-lg border border-[var(--noodle-accent)]/40 px-4 text-sm font-bold text-[var(--noodle-accent-foreground)] disabled:opacity-50"
             >
               <RefreshCw size={15} className={refreshTargeted.isPending ? "animate-spin" : ""} />
               {t("ui.noodle.noodlerwizard.retryFailed")}

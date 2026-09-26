@@ -137,7 +137,7 @@ export function SlurpPromptBlockBuilder({
             <ArrowLeft size={18} className="rtl:rotate-180" aria-hidden="true" />
           </button>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold text-[var(--noodle-accent)]">
+            <p className="text-xs font-bold text-[var(--noodle-accent-foreground)]">
               {t("ui.slurp.settings.prompts.studioTitle", { defaultValue: "Prompt Studio" })} /{" "}
               {promptGroupName(selectedPrompt.group)}
             </p>
@@ -154,7 +154,7 @@ export function SlurpPromptBlockBuilder({
                   defaultValue: "{{count}} blocks",
                 })}
               </span>
-              <span className="rounded-full bg-[var(--slurp-surface-raised)] px-2.5 py-1 text-[var(--noodle-accent)] ring-1 ring-inset ring-[var(--noodle-accent)]/30 tabular-nums">
+              <span className="rounded-full bg-[var(--slurp-surface-raised)] px-2.5 py-1 text-[var(--noodle-accent-foreground)] ring-1 ring-inset ring-[var(--noodle-accent)]/30 tabular-nums">
                 {customCount > 0
                   ? t("ui.slurp.settings.prompts.customCount", {
                       count: customCount,
@@ -247,7 +247,7 @@ export function SlurpPromptBlockBuilder({
           {overviewContent}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--noodle-accent)]">
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--noodle-accent-foreground)]">
                 {t("ui.slurp.settings.prompts.producePipeline", { defaultValue: "Produce pipeline" })}
               </p>
               <h2 id="slurp-prompt-recipes-title" className="mt-1 text-lg font-black text-balance">
@@ -323,7 +323,7 @@ export function SlurpPromptBlockBuilder({
               <button
                 type="button"
                 onClick={() => setQuery("")}
-                className="mt-2 min-h-10 px-3 text-sm font-bold text-[var(--noodle-accent)]"
+                className="mt-2 min-h-10 px-3 text-sm font-bold text-[var(--noodle-accent-foreground)]"
               >
                 {t("ui.slurp.settings.prompts.clearRecipeSearch", { defaultValue: "Clear search" })}
               </button>
@@ -370,7 +370,7 @@ function RecipeCard({
       onClick={onOpen}
       className="group flex min-h-20 w-full items-center gap-3 border-b border-[var(--slurp-outline)] p-3 text-start transition-colors last:border-b-0 hover:bg-[color-mix(in_srgb,var(--noodle-accent)_6%,var(--slurp-surface-raised))] focus-visible:relative focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] sm:p-4"
     >
-      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[var(--slurp-canvas)] text-[var(--noodle-accent)]">
+      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[var(--slurp-canvas)] text-[var(--noodle-accent-foreground)]">
         <SlidersHorizontal size={17} aria-hidden="true" />
       </span>
       <span className="min-w-0 flex-1 sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-4">
@@ -389,7 +389,7 @@ function RecipeCard({
               return (
                 <span
                   key={entry.id}
-                  className={`rounded-md px-1.5 py-0.5 text-[0.65rem] font-semibold ring-1 ring-inset ${custom ? "text-[var(--noodle-accent)] ring-[var(--noodle-accent)]/40" : "text-[var(--slurp-muted)] ring-[var(--slurp-outline)]"} ${off ? "line-through opacity-50" : ""}`}
+                  className={`rounded-md px-1.5 py-0.5 text-[0.65rem] font-semibold ring-1 ring-inset ${custom ? "text-[var(--noodle-accent-foreground)] ring-[var(--noodle-accent)]/40" : "text-[var(--slurp-muted)] ring-[var(--slurp-outline)]"} ${off ? "line-through opacity-50" : ""}`}
                 >
                   {blockName(entry.id)}
                 </span>

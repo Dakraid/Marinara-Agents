@@ -283,7 +283,7 @@ export function SlpCreatorSettingsModal({
                       <Icon
                         size={15}
                         aria-hidden="true"
-                        className={selected ? "text-[var(--noodle-accent)]" : undefined}
+                        className={selected ? "text-[var(--noodle-accent-foreground)]" : undefined}
                       />
                       <span className="truncate">{t(section.labelKey, { defaultValue: section.defaultLabel })}</span>
                     </button>
@@ -342,7 +342,7 @@ export function SlpCreatorSettingsModal({
                           {t(section.labelKey, { defaultValue: section.defaultLabel })}
                         </span>
                         {selected && (
-                          <span className="text-xs text-[var(--noodle-accent)]">
+                          <span className="text-xs text-[var(--noodle-accent-foreground)]">
                             {t("ui.slurp.settings.creators.currentSection", { defaultValue: "Current" })}
                           </span>
                         )}

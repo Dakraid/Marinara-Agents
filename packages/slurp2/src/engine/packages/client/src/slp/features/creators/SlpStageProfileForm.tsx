@@ -399,7 +399,7 @@ export function StageProfileForm({
                       {option.detail}
                     </span>
                   </span>
-                  {isSelected && <Check size={14} className="mt-0.5 shrink-0 text-[var(--noodle-accent)]" />}
+                  {isSelected && <Check size={14} className="mt-0.5 shrink-0 text-[var(--noodle-accent-foreground)]" />}
                 </button>
               );
             })}
@@ -413,7 +413,7 @@ export function StageProfileForm({
       <div className="px-4 py-5 sm:px-6 @min-[1024px]:py-6">
         <div className="rounded-lg border border-[var(--noodle-divider)] bg-[var(--accent)]/40 p-4">
           <div className="flex items-start gap-3">
-            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent)]">
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent-foreground)]">
               <Sparkles size={16} />
             </span>
             <div className="min-w-0">
@@ -531,7 +531,7 @@ export function StageProfileForm({
               <span className="relative block">
                 <span
                   aria-hidden="true"
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-semibold text-[var(--noodle-accent)]"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-semibold text-[var(--noodle-accent-foreground)]"
                 >
                   @
                 </span>
@@ -593,13 +593,13 @@ export function StageProfileForm({
               disabled={isPending}
               className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-[var(--noodle-divider)] px-3 text-sm font-semibold hover:bg-[var(--accent)] disabled:opacity-50"
             >
-              <Sparkles size={16} className="text-[var(--noodle-accent)]" aria-hidden="true" />
+              <Sparkles size={16} className="text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
               {localizeUi("ui.noodle.stageprofileform.aiGuidance")}
             </button>
           ) : (
             <details className="group overflow-visible rounded-lg border border-[var(--noodle-divider)]">
               <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--accent)]/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)] [&::-webkit-details-marker]:hidden">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent)]">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent-foreground)]">
                   <Sparkles size={16} />
                 </span>
                 <span className="min-w-0 flex-1">
@@ -653,7 +653,7 @@ export function StageProfileForm({
                           (isGenerating || isPending) && "cursor-not-allowed opacity-50",
                         )}
                       >
-                        <Link size={18} className="shrink-0 !text-[var(--noodle-accent)]" />
+                        <Link size={18} className="shrink-0 !text-[var(--noodle-accent-foreground)]" />
                         <span className="truncate text-xs font-semibold">
                           {selectedConnection?.name ?? "Default connection"}
                         </span>
@@ -742,7 +742,7 @@ export function StageProfileForm({
                   <button
                     type="button"
                     onClick={onUndoDraft}
-                    className="mt-1 flex min-h-11 w-full items-center justify-center text-xs font-semibold text-[var(--noodle-accent)] hover:underline"
+                    className="mt-1 flex min-h-11 w-full items-center justify-center text-xs font-semibold text-[var(--noodle-accent-foreground)] hover:underline"
                   >
                     {localizeUi("ui.noodle.stageprofileform.undoAiChanges")}
                   </button>

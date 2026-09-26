@@ -47,7 +47,7 @@ export function SlpCreatorRefreshModal(page: SlpBackstagePageProps) {
                 type="button"
                 onClick={() => setRefreshAccountIds(new Set(automationCreators.map((creator) => creator.id)))}
                 disabled={refreshCreators.isPending}
-                className="text-[var(--noodle-accent)] hover:underline"
+                className="text-[var(--noodle-accent-foreground)] hover:underline"
               >
                 {t("ui.slurp.settings.refresh.selectAll")}
               </button>
@@ -87,7 +87,7 @@ export function SlpCreatorRefreshModal(page: SlpBackstagePageProps) {
                   <span className="block truncate text-xs text-[var(--muted-foreground)]">@{creator.handle}</span>
                 </span>
                 {creator.autoPosting.enabled && (
-                  <span className="text-[0.625rem] font-semibold text-[var(--noodle-accent)]">
+                  <span className="text-[0.625rem] font-semibold text-[var(--noodle-accent-foreground)]">
                     {t("ui.slurp.settings.creators.autoPostShort")}
                   </span>
                 )}

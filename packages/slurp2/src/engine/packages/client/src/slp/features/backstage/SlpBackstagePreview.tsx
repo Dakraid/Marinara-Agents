@@ -121,7 +121,7 @@ function CompareRow({ label, current, proposed }: { label: string; current: Reac
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 py-1.5">
       <dt className="text-[var(--slurp-muted)]">{label}</dt>
-      <dd className={cn("font-semibold tabular-nums", changed && "text-[var(--noodle-accent)]")}>
+      <dd className={cn("font-semibold tabular-nums", changed && "text-[var(--noodle-accent-foreground)]")}>
         {changed ? (
           <>
             {current} → {proposed}
@@ -423,7 +423,7 @@ export function SlurpBackstagePreview({
       <div className="xl:sticky xl:top-4">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--noodle-accent)]">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--noodle-accent-foreground)]">
               {t("ui.slurp.settings.backstage.preview.label", { defaultValue: "Live preview" })}
             </p>
             <h2 className="mt-1 text-base font-bold text-balance">
@@ -458,7 +458,7 @@ export function SlurpBackstagePreview({
               <p className="mt-1 font-bold text-pretty">{outcomeSummary(t, target, current, creatorCount)}</p>
             </div>
             <div className="rounded-lg bg-[color-mix(in_srgb,var(--noodle-accent)_9%,var(--slurp-surface-raised))] p-3 ring-1 ring-inset ring-[color-mix(in_srgb,var(--noodle-accent)_25%,transparent)]">
-              <p className="font-semibold text-[var(--noodle-accent)]">
+              <p className="font-semibold text-[var(--noodle-accent-foreground)]">
                 {t("ui.slurp.settings.backstage.preview.proposed", { defaultValue: "Proposed" })}
               </p>
               <p className="mt-1 font-bold">

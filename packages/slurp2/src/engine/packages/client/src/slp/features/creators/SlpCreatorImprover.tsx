@@ -122,7 +122,7 @@ export function SlurpCreatorImprover({
                 key={label}
                 type="button"
                 onClick={() => setSelected(new Set(pick()))}
-                className="min-h-11 rounded-lg px-3 text-sm font-semibold text-[var(--noodle-accent)] ring-1 ring-inset ring-[var(--noodle-accent)]/35 hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+                className="min-h-11 rounded-lg px-3 text-sm font-semibold text-[var(--noodle-accent-foreground)] ring-1 ring-inset ring-[var(--noodle-accent)]/35 hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
               >
                 {label}
               </button>
@@ -304,7 +304,7 @@ export function SlurpCreatorImprover({
         >
           <div className="flex flex-wrap items-start gap-3" aria-live="polite">
             <div className="me-auto">
-              <p className="text-xs font-bold uppercase tracking-[0.13em] text-[var(--noodle-accent)]">
+              <p className="text-xs font-bold uppercase tracking-[0.13em] text-[var(--noodle-accent-foreground)]">
                 Latest proposal job
               </p>
               <h3 id="slurp-improvement-review-title" className="mt-1 text-base font-black text-balance">
@@ -345,7 +345,7 @@ export function SlurpCreatorImprover({
                 type="button"
                 disabled={setJobState.isPending}
                 onClick={() => setJobState.mutate({ jobId: latestJob.id, action: "resume" })}
-                className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-xs font-bold text-[var(--noodle-accent)] ring-1 ring-inset ring-[var(--noodle-accent)]/35 hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-xs font-bold text-[var(--noodle-accent-foreground)] ring-1 ring-inset ring-[var(--noodle-accent)]/35 hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
               >
                 <Play size={15} aria-hidden="true" /> Resume
               </button>
@@ -366,7 +366,7 @@ export function SlurpCreatorImprover({
                   type="button"
                   disabled={!pendingProposals.length}
                   onClick={() => setSelectedProposals(new Set(pendingProposals.map((proposal) => proposal.id)))}
-                  className="min-h-10 rounded-lg px-3 text-xs font-bold text-[var(--noodle-accent)] hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-40"
+                  className="min-h-10 rounded-lg px-3 text-xs font-bold text-[var(--noodle-accent-foreground)] hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-40"
                 >
                   Select all pending
                 </button>
@@ -418,7 +418,7 @@ export function SlurpCreatorImprover({
                             </span>
                           </span>
                           <span className="rounded-lg bg-[color-mix(in_srgb,var(--noodle-accent)_8%,var(--slurp-surface-raised))] p-3">
-                            <span className="block text-[0.68rem] font-bold uppercase tracking-[0.1em] text-[var(--noodle-accent)]">
+                            <span className="block text-[0.68rem] font-bold uppercase tracking-[0.1em] text-[var(--noodle-accent-foreground)]">
                               Proposed
                             </span>
                             <span className="mt-1 block whitespace-pre-wrap text-xs leading-5">

@@ -109,7 +109,7 @@ export function SlurpSplash({ open, onDismiss }: { open: boolean; onDismiss: () 
             <svg
               aria-hidden="true"
               viewBox="0 0 28 44"
-              className="absolute -left-2 top-1/2 h-10 w-7 -translate-y-1/2 overflow-visible text-[var(--noodle-accent)] sm:-left-3 sm:h-12 sm:w-8"
+              className="absolute -left-2 top-1/2 h-10 w-7 -translate-y-1/2 overflow-visible text-[var(--noodle-accent-foreground)] sm:-left-3 sm:h-12 sm:w-8"
             >
               <path
                 d="M22 4 13 0M18 22H4m18 18-9 4"

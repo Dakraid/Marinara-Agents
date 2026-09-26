@@ -132,7 +132,7 @@ export function ArcLibraryEditor({
       <section className="space-y-3 rounded-xl bg-[color-mix(in_srgb,var(--noodle-accent)_7%,var(--slurp-surface-raised))] p-4 ring-1 ring-inset ring-[var(--noodle-accent)]/25">
         <label className="block space-y-2 text-sm font-semibold">
           <span className="flex items-center gap-1.5">
-            <Sparkles size={15} className="text-[var(--noodle-accent)]" aria-hidden="true" />
+            <Sparkles size={15} className="text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
             {t("ui.slurp.settings.arcLibrary.aiBrief", { defaultValue: "Describe the arc to AI" })}
           </span>
           <span className="block text-xs font-normal text-[var(--slurp-muted)]">
@@ -220,7 +220,7 @@ export function ArcLibraryEditor({
                   {type.name}
                 </span>
                 {type.builtin && (
-                  <span className="rounded-full bg-[var(--noodle-accent)]/10 px-2 py-0.5 text-[0.65rem] font-bold text-[var(--noodle-accent)]">
+                  <span className="rounded-full bg-[var(--noodle-accent)]/10 px-2 py-0.5 text-[0.65rem] font-bold text-[var(--noodle-accent-foreground)]">
                     {t("ui.slurp.settings.arcLibrary.builtIn", { defaultValue: "Built in" })}
                   </span>
                 )}

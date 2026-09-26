@@ -36,7 +36,7 @@ function StatusTile({
           type="button"
           onClick={() => useSlpCreatorSettingsStore.getState().setTab(block)}
           aria-label={t("ui.slurp.settings.creators.overview.openLabel", { name: title })}
-          className={`-me-2 inline-flex size-11 items-center justify-center rounded-lg text-[var(--noodle-accent)] hover:bg-[var(--slurp-canvas)] ${focusRing}`}
+          className={`-me-2 inline-flex size-11 items-center justify-center rounded-lg text-[var(--noodle-accent-foreground)] hover:bg-[var(--slurp-canvas)] ${focusRing}`}
         >
           <ArrowUpRight size={17} aria-hidden="true" />
         </button>

@@ -113,7 +113,7 @@ function SlpPromptPipelineBlock({
               {category}
             </span>
             {customized && (
-              <span className="inline-flex min-h-6 items-center gap-1 rounded-full bg-[color-mix(in_srgb,var(--noodle-accent)_12%,transparent)] px-2 text-[0.7rem] font-bold text-[var(--noodle-accent)]">
+              <span className="inline-flex min-h-6 items-center gap-1 rounded-full bg-[color-mix(in_srgb,var(--noodle-accent)_12%,transparent)] px-2 text-[0.7rem] font-bold text-[var(--noodle-accent-foreground)]">
                 <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
                 {t("ui.slurp.settings.prompts.custom", { defaultValue: "Custom" })}
               </span>
@@ -189,7 +189,7 @@ function SlpPromptPipelineBlock({
           <>
             <div className="rounded-lg bg-[var(--slurp-canvas)] ring-1 ring-inset ring-[var(--slurp-outline)]">
               {liveText !== undefined && enabled && (
-                <p className="border-b border-[var(--slurp-outline)] px-3 py-1.5 text-[0.7rem] font-semibold text-[var(--noodle-accent)]">
+                <p className="border-b border-[var(--slurp-outline)] px-3 py-1.5 text-[0.7rem] font-semibold text-[var(--noodle-accent-foreground)]">
                   {t("ui.slurp.settings.prompts.liveForCreator", { defaultValue: "As the preview Creator gets it" })}
                 </p>
               )}
@@ -208,7 +208,7 @@ function SlpPromptPipelineBlock({
                   type="button"
                   disabled={!shownText}
                   onClick={() => onUpdate({ ...entry, text: shownText })}
-                  className="inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-bold text-[var(--noodle-accent)] ring-1 ring-inset ring-[var(--noodle-accent)]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-40"
+                  className="inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-bold text-[var(--noodle-accent-foreground)] ring-1 ring-inset ring-[var(--noodle-accent)]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-40"
                 >
                   <PencilLine size={14} aria-hidden="true" />
                   {t("ui.slurp.settings.prompts.overrideBlock", { defaultValue: "Write my own" })}

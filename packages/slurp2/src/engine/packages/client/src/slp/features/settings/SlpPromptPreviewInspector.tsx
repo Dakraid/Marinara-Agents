@@ -121,7 +121,7 @@ export function SlpPromptPreviewInspector({
       className="min-w-0 space-y-4 rounded-xl bg-[var(--slurp-surface-raised)] p-4 ring-1 ring-inset ring-[var(--slurp-outline)] xl:sticky xl:top-3 xl:max-h-[calc(100dvh-1.5rem)] xl:overflow-y-auto"
     >
       <div>
-        <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--noodle-accent)]">
+        <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--noodle-accent-foreground)]">
           {t("ui.slurp.settings.prompts.previewInspector", { defaultValue: "Try your changes" })}
         </p>
         <h3 id="slurp-prompt-preview-title" className="mt-1 text-lg font-black text-balance">
@@ -289,7 +289,7 @@ export function SlpPromptPreviewInspector({
           type="button"
           disabled={currentPreview.isPending}
           onClick={() => currentPreview.mutate(resultInput(currentBlocks, currentInstructions))}
-          className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg px-3 text-xs font-bold text-[var(--noodle-accent)] ring-1 ring-inset ring-[var(--noodle-accent)]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-45"
+          className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg px-3 text-xs font-bold text-[var(--noodle-accent-foreground)] ring-1 ring-inset ring-[var(--noodle-accent)]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-45"
         >
           <RefreshCw size={14} aria-hidden="true" />
           {currentPreview.isPending
@@ -325,7 +325,7 @@ export function SlpPromptPreviewInspector({
                   .then(() => setPromptCopied(true))
                   .catch(() => setPromptCopied(false));
               }}
-              className="inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-bold text-[var(--noodle-accent)] ring-1 ring-inset ring-[var(--slurp-outline)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-bold text-[var(--noodle-accent-foreground)] ring-1 ring-inset ring-[var(--slurp-outline)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
             >
               {promptCopied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
               {promptCopied
@@ -346,7 +346,7 @@ function PreviewResultCard({ label, data }: { label: string; data: SlurpPromptRe
   const { t } = useTranslation();
   return (
     <article className="rounded-lg bg-[var(--slurp-canvas)] p-3 ring-1 ring-inset ring-[var(--slurp-outline)]">
-      <p className="flex items-center gap-1.5 text-xs font-bold text-[var(--noodle-accent)]">
+      <p className="flex items-center gap-1.5 text-xs font-bold text-[var(--noodle-accent-foreground)]">
         <Sparkles size={13} aria-hidden="true" /> {label}
       </p>
       {data.title && <h4 className="mt-2 text-sm font-bold text-balance">{data.title}</h4>}

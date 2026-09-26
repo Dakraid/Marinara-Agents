@@ -48,7 +48,7 @@ export function SlpCreatorSettingsTab({
                 id={`slp-creator-block-${block.id}`}
                 className="flex items-center gap-2 text-base font-bold tracking-tight"
               >
-                <Icon size={17} aria-hidden="true" className="text-[var(--noodle-accent)]" />
+                <Icon size={17} aria-hidden="true" className="text-[var(--noodle-accent-foreground)]" />
                 {t(block.labelKey, { defaultValue: block.defaultLabel })}
               </h2>
               {content}

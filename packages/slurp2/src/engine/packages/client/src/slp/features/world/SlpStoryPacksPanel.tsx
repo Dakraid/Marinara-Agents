@@ -141,7 +141,11 @@ export function SlpStoryPacksPanel({ arcs, events }: { arcs: SlurpArcType[]; eve
               className="space-y-3 rounded-xl bg-[var(--slurp-surface-raised)] p-4 ring-1 ring-inset ring-[var(--slurp-outline)]"
             >
               <div className="flex items-start gap-3">
-                <PackageOpen size={18} aria-hidden="true" className="mt-0.5 shrink-0 text-[var(--noodle-accent)]" />
+                <PackageOpen
+                  size={18}
+                  aria-hidden="true"
+                  className="mt-0.5 shrink-0 text-[var(--noodle-accent-foreground)]"
+                />
                 <div>
                   <h3 className="font-bold">{pack.name}</h3>
                   <p className="mt-1 text-xs leading-5 text-[var(--slurp-muted)]">{pack.description}</p>
@@ -198,7 +202,7 @@ export function SlpStoryPacksPanel({ arcs, events }: { arcs: SlurpArcType[]; eve
                     {entry.kind === "arc" && (
                       <button
                         type="button"
-                        className="inline-flex min-h-10 items-center gap-1 rounded-lg px-2 text-xs font-bold text-[var(--noodle-accent)] hover:bg-[var(--slurp-surface-raised)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+                        className="inline-flex min-h-10 items-center gap-1 rounded-lg px-2 text-xs font-bold text-[var(--noodle-accent-foreground)] hover:bg-[var(--slurp-surface-raised)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
                         aria-expanded={expandedEntries[entryKey(entry)] ?? false}
                         onClick={() =>
                           setExpandedEntries({

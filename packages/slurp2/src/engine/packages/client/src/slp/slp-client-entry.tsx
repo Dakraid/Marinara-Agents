@@ -160,7 +160,7 @@ class SlurpErrorBoundary extends Component<{ children: ReactNode }, { error: Err
         <button
           type="button"
           onClick={() => this.setState({ error: null })}
-          className="inline-flex min-h-10 items-center rounded-lg border border-[var(--noodle-accent)]/40 px-3 font-semibold text-[var(--noodle-accent)]"
+          className="inline-flex min-h-10 items-center rounded-lg border border-[var(--noodle-accent)]/40 px-3 font-semibold text-[var(--noodle-accent-foreground)]"
         >
           {localization.t("capabilities.actions.tryAgain")}
         </button>

@@ -119,7 +119,7 @@ export function SlpCreatorsPanel(page: SlpBackstagePageProps) {
             {t("ui.slurp.settings.creators.add")}
           </button>
           <button type="button" onClick={openImprove} className={quietButton}>
-            <Sparkles size={14} className="text-[var(--noodle-accent)]" aria-hidden="true" />
+            <Sparkles size={14} className="text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
             {t("ui.slurp.settings.creators.improve", { defaultValue: "Improve with AI" })}
           </button>
         </div>
@@ -240,7 +240,7 @@ export function SlpCreatorsPanel(page: SlpBackstagePageProps) {
                     <CheckCircle2
                       size={18}
                       aria-hidden="true"
-                      className={selected ? "text-[var(--noodle-accent)]" : "text-[var(--slurp-muted)]/40"}
+                      className={selected ? "text-[var(--noodle-accent-foreground)]" : "text-[var(--slurp-muted)]/40"}
                     />
                   )}
                   <Avatar account={creator} size="sm" />

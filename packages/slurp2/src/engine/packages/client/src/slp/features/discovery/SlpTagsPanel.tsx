@@ -191,7 +191,7 @@ export function SlurpTagsSettings({
                     className={cn(
                       "inline-flex min-h-10 items-center gap-2 rounded-full border px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]",
                       active
-                        ? "border-[var(--noodle-accent)] bg-[var(--noodle-accent)]/10 text-[var(--noodle-accent)]"
+                        ? "border-[var(--noodle-accent)] bg-[var(--noodle-accent)]/10 text-[var(--noodle-accent-foreground)]"
                         : "border-[var(--slurp-outline)] hover:bg-[var(--slurp-surface-raised)]",
                     )}
                   >

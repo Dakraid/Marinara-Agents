@@ -47,7 +47,7 @@ export function SlurpArcTimelineCard({
         <span className="flex shrink-0 gap-1 text-[0.65rem] font-semibold">
           {shown.tone && <span className="rounded-full bg-[var(--accent)] px-2 py-0.5">{shown.tone}</span>}
           {complete && (
-            <span className="rounded-full bg-[var(--noodle-accent)]/15 px-2 py-0.5 text-[var(--noodle-accent)]">
+            <span className="rounded-full bg-[var(--noodle-accent)]/15 px-2 py-0.5 text-[var(--noodle-accent-foreground)]">
               ✓ {localizeUi("ui.slurp.arcs.done", { defaultValue: "Finished" })}
             </span>
           )}
@@ -107,7 +107,7 @@ export function SlurpArcTimelineCard({
                     {shown.openChoice && index > shown.chapter ? "?" : label}
                   </span>
                   {state === "current" && shown.openChoice && (
-                    <span className="block text-[var(--noodle-accent)]">
+                    <span className="block text-[var(--noodle-accent-foreground)]">
                       {localizeUi("ui.slurp.arcs.voting", {
                         defaultValue: "Fans are voting: {{question}}",
                         question: shown.openChoice.question,
@@ -128,7 +128,7 @@ export function SlurpArcTimelineCard({
                     ))}
                   {(() => {
                     const line = effectLine(shown.history.findLast((entry) => entry.chapter === index)?.effects);
-                    return line ? <span className="block text-[var(--noodle-accent)]">{line}</span> : null;
+                    return line ? <span className="block text-[var(--noodle-accent-foreground)]">{line}</span> : null;
                   })()}
                   {postIds.length > 0 && onOpenPost && (
                     <span className="ml-2 inline-flex flex-wrap gap-2">

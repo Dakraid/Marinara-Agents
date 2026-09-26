@@ -252,7 +252,7 @@ export function SlurpProjectsPanel({
                   ].join(" · ")}
                 </span>
                 {project.twist && (
-                  <span className="block truncate text-[0.7rem] text-[var(--noodle-accent)]">
+                  <span className="block truncate text-[0.7rem] text-[var(--noodle-accent-foreground)]">
                     {localizeUi("ui.slurp.projects.twistPending", {
                       defaultValue: "Twist for the next post: {{twist}}",
                       twist: project.twist,

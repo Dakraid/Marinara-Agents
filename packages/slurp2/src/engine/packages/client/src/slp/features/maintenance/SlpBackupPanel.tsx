@@ -138,7 +138,7 @@ export function SlpBackupPanel(page: SlpBackstagePageProps) {
               aria-labelledby="slurp-restore-preview-title"
             >
               <div className="bg-[color-mix(in_srgb,var(--noodle-accent)_10%,var(--slurp-surface-raised))] p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--noodle-accent)]">
+                <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--noodle-accent-foreground)]">
                   {t("ui.slurp.settings.maintenance.restore.eyebrow", { defaultValue: "Restore preview" })}
                 </p>
                 <h3
