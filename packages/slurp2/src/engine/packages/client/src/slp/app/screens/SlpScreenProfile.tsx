@@ -537,7 +537,7 @@ export function StageProfileView({
                   <button
                     type="button"
                     onClick={onEdit}
-                    className="group/edit flex min-h-11 items-center px-2 text-xs font-bold text-[var(--noodle-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)]"
+                    className="group/edit flex min-h-11 items-center px-2 text-xs font-bold text-[var(--noodle-accent-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)]"
                   >
                     <span className="rounded-lg bg-[color-mix(in_srgb,var(--noodle-accent)_18%,transparent)] px-2.5 py-1.5 transition-[background-color,transform] group-hover/edit:bg-[color-mix(in_srgb,var(--noodle-accent)_26%,transparent)] group-active/edit:scale-[0.96] motion-reduce:transition-none motion-reduce:group-active/edit:scale-100">
                       {localizeUi("ui.noodle.stageprofileview.editProfile")}
@@ -620,7 +620,7 @@ export function StageProfileView({
           featuredPost && !bannerSrc && activeTab === "posts" ? (
             <div className="border-b border-[var(--noodle-divider)] bg-[var(--noodle-accent)]/[0.04] px-4 py-4 sm:px-6">
               <div className="mb-3 flex items-center justify-between gap-3">
-                <span className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[var(--noodle-accent)]">
+                <span className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[var(--noodle-accent-foreground)]">
                   {localizeUi("ui.slurp.profile.featuredDrop")}
                 </span>
                 <span className="text-xs text-[var(--muted-foreground)]">{profile.displayName}</span>

@@ -195,7 +195,7 @@ export function PostImageCropEditor({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="flex items-center gap-2 text-sm font-bold">
-            <Crop size={15} className="text-[var(--noodle-accent)]" />
+            <Crop size={15} className="text-[var(--noodle-accent-foreground)]" />
             {localizeUi("ui.noodle.postimagecropeditor.frameImage")}
           </h3>
           <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
@@ -296,7 +296,7 @@ export function PostImageCropEditor({
               className={cn(
                 "min-h-9 flex-1 rounded-lg px-2 text-xs font-bold transition-colors disabled:opacity-50",
                 aspect === option.value
-                  ? "bg-[var(--noodle-accent)] text-zinc-950 [&_svg]:!text-zinc-950"
+                  ? "bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]"
                   : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]",
               )}
             >
@@ -338,7 +338,7 @@ export function PostImageCropEditor({
           type="button"
           onClick={apply}
           disabled={!crop || busy}
-          className="min-h-10 rounded-full bg-[var(--noodle-accent)] px-5 text-xs font-bold text-zinc-950 [&_svg]:!text-zinc-950 disabled:opacity-50"
+          className="min-h-10 rounded-full bg-[var(--noodle-accent)] px-5 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] disabled:opacity-50"
         >
           {applying
             ? localizeUi("ui.noodle.postimagecropeditor.applying")

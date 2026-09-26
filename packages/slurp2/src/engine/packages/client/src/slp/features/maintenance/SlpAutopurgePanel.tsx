@@ -207,7 +207,7 @@ export function SlpAutopurgePanel(page: SlpBackstagePageProps) {
             type="button"
             disabled={runAutopurge.isPending}
             onClick={() => void runAutopurgeNow()}
-            className={`inline-flex min-h-11 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-bold text-[var(--noodle-accent-foreground)] hover:opacity-90 disabled:opacity-50 ${focusRing}`}
+            className={`inline-flex min-h-11 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-bold text-[var(--slurp-on-accent)] hover:opacity-90 disabled:opacity-50 ${focusRing}`}
           >
             {runAutopurge.isPending ? (
               <Loader2 size={15} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />

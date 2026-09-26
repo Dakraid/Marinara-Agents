@@ -365,7 +365,7 @@ export function NoodlerPostComposer({
               }}
               disabled={composerBusy}
               aria-expanded="true"
-              className="inline-flex min-h-8 min-w-0 items-center gap-1.5 rounded-lg px-1 text-xs font-bold text-[var(--noodle-accent)] hover:bg-[var(--accent)] disabled:opacity-50"
+              className="inline-flex min-h-8 min-w-0 items-center gap-1.5 rounded-lg px-1 text-xs font-bold text-[var(--noodle-accent-foreground)] hover:bg-[var(--accent)] disabled:opacity-50"
             >
               <ChevronDown size={14} />
               <span className="truncate">
@@ -439,7 +439,7 @@ export function NoodlerPostComposer({
                 className={cn(
                   "inline-flex h-9 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold disabled:opacity-50",
                   generateImage
-                    ? "bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent)]"
+                    ? "bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent-foreground)]"
                     : "text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)]",
                 )}
               >
@@ -503,7 +503,7 @@ export function NoodlerPostComposer({
             type="button"
             onClick={() => void publish()}
             disabled={composerBusy || Boolean(pendingImage) || (!body.trim() && !image && !pollIsValid)}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--noodle-accent)] px-4 text-xs font-bold text-zinc-950 transition-[opacity,scale] hover:opacity-90 active:scale-[0.96] [&_svg]:!text-zinc-950 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--noodle-accent)] px-4 text-xs font-bold text-[var(--slurp-on-accent)] transition-[opacity,scale] hover:opacity-90 active:scale-[0.96] [&_svg]:!text-[var(--slurp-on-accent)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {manualPending ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
             {manualPending
@@ -709,7 +709,7 @@ export function NoodlerPostComposer({
       {image && !pendingImage && (
         <div className="mb-3 overflow-hidden rounded-xl border border-[var(--noodle-divider)] bg-[var(--noodle-accent)]/10">
           <SlpCreatorDraftImageFrame image={image} />
-          <div className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-[var(--noodle-accent)]">
+          <div className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-[var(--noodle-accent-foreground)]">
             <span>{localizeUi("ui.noodle.noodlehome.attachedImage")}</span>
             <div className="flex items-center gap-1">
               <button
@@ -743,7 +743,7 @@ export function NoodlerPostComposer({
               type="button"
               onClick={() => toggleTool("poll")}
               disabled={composerBusy}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--noodle-accent)] hover:bg-[var(--noodle-accent)]/10 disabled:opacity-50"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--noodle-accent-foreground)] hover:bg-[var(--noodle-accent)]/10 disabled:opacity-50"
               aria-label={localizeUi("ui.noodle.noodlehome.editDraftPoll")}
               title={localizeUi("ui.noodle.noodlehome.editPoll")}
             >

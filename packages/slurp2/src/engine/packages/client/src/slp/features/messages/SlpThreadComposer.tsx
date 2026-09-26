@@ -147,7 +147,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
                               onClick={() => setToolTab(tab.id)}
                               className="flex min-h-16 items-center gap-3 rounded-2xl bg-[var(--slurp-surface)] px-3 text-left ring-1 ring-inset ring-[var(--noodle-divider)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/[0.08] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100"
                             >
-                              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--noodle-accent)]/12 text-[var(--noodle-accent)]">
+                              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--noodle-accent)]/12 text-[var(--noodle-accent-foreground)]">
                                 <tab.icon size={18} aria-hidden="true" />
                               </span>
                               <span className="min-w-0">
@@ -243,7 +243,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
                           ),
                         );
                     }}
-                    className="min-h-11 rounded-xl bg-[var(--noodle-accent)] px-4 text-xs font-bold text-zinc-950 disabled:opacity-50"
+                    className="min-h-11 rounded-xl bg-[var(--noodle-accent)] px-4 text-xs font-bold text-[var(--slurp-on-accent)] disabled:opacity-50"
                   >
                     {requestFanReply.isPending
                       ? localizeUi("ui.slurp.messages.requesting", { defaultValue: "Requesting…" })
@@ -279,7 +279,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
                         className={cn(
                           "min-h-10 rounded-lg px-2 text-xs font-semibold ring-1 ring-inset ring-[var(--noodle-divider)]",
                           requestHint === value &&
-                            "bg-[var(--noodle-accent)] text-zinc-950 ring-[var(--noodle-accent)]",
+                            "bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] ring-[var(--noodle-accent)]",
                         )}
                       >
                         {localizeUi(`ui.slurp.messages.requestHint.${value}`, { defaultValue: label })}
@@ -309,7 +309,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
                           ),
                         );
                     }}
-                    className="min-h-11 rounded-xl bg-[var(--noodle-accent)] px-4 text-xs font-bold text-zinc-950 disabled:opacity-50"
+                    className="min-h-11 rounded-xl bg-[var(--noodle-accent)] px-4 text-xs font-bold text-[var(--slurp-on-accent)] disabled:opacity-50"
                   >
                     {requestReply.isPending
                       ? localizeUi("ui.slurp.messages.requesting", { defaultValue: "Requesting…" })
@@ -355,7 +355,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
                           ),
                         );
                     }}
-                    className="min-h-11 self-start rounded-xl px-3 text-xs font-bold text-[var(--noodle-accent)] ring-1 ring-inset ring-[var(--noodle-accent)]/40 transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/10 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
+                    className="min-h-11 self-start rounded-xl px-3 text-xs font-bold text-[var(--noodle-accent-foreground)] ring-1 ring-inset ring-[var(--noodle-accent)]/40 transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/10 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
                   >
                     {draftReply.isPending
                       ? localizeUi("ui.slurp.messages.drafting", { defaultValue: "Writing…" })
@@ -395,7 +395,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
             </div>
           )}
           {composerTipAmount > 0 && (
-            <div className="slurp-bubble-in flex items-center gap-2 self-start rounded-full bg-[var(--noodle-accent)]/12 py-1 pl-3 pr-1 text-xs font-bold text-[var(--noodle-accent)] ring-1 ring-inset ring-[var(--noodle-accent)]/30">
+            <div className="slurp-bubble-in flex items-center gap-2 self-start rounded-full bg-[var(--noodle-accent)]/12 py-1 pl-3 pr-1 text-xs font-bold text-[var(--noodle-accent-foreground)] ring-1 ring-inset ring-[var(--noodle-accent)]/30">
               <SlurpCoin size={14} />
               {localizeUi("ui.slurp.messages.tipAttached", {
                 defaultValue: "{{amount}} coin tip goes with this message",
@@ -442,8 +442,8 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
               aria-expanded={toolsOpen}
               aria-label={localizeUi("ui.slurp.messages.toggleTools", { defaultValue: "Message tools" })}
               className={cn(
-                "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[var(--muted-foreground)] transition-[background-color,color,transform] hover:bg-[var(--noodle-accent)]/10 hover:text-[var(--noodle-accent)] active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100",
-                toolsOpen && "bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent)]",
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[var(--muted-foreground)] transition-[background-color,color,transform] hover:bg-[var(--noodle-accent)]/10 hover:text-[var(--noodle-accent-foreground)] active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100",
+                toolsOpen && "bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent-foreground)]",
               )}
             >
               <Plus
@@ -489,7 +489,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
               className={cn(
                 "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-[background-color,color,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none",
                 draft.trim()
-                  ? "bg-[var(--noodle-accent)] text-zinc-950 [&_svg]:!text-zinc-950 active:scale-90 motion-reduce:active:scale-100 disabled:opacity-50"
+                  ? "bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] active:scale-90 motion-reduce:active:scale-100 disabled:opacity-50"
                   : "text-[var(--muted-foreground)] opacity-50",
               )}
               aria-label={localizeUi("ui.slurp.messages.send", { defaultValue: "Send" })}

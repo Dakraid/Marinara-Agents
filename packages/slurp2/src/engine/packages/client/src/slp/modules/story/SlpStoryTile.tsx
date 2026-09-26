@@ -1,6 +1,7 @@
 import { Lock } from "lucide-react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import type { ReactNode } from "react";
+import { SlpRingGlint } from "../sparkle/SlpSparkle";
 import type { SlpCreatorPostView } from "../../../../../shared/src/slp/slp-social.types.js";
 
 type StoryCreator = {
@@ -57,6 +58,7 @@ export function SlpStoryTile({ creator, post, mediaSrc, fallback, isNew, onOpen 
       <span className="absolute inset-x-2 bottom-2 truncate text-xs font-bold text-white drop-shadow-sm">
         {creator.profile.displayName}
       </span>
+      {isNew && <SlpRingGlint />}
     </button>
   );
 }

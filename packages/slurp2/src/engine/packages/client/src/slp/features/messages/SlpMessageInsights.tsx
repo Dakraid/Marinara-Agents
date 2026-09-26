@@ -37,7 +37,7 @@ const PANEL_TONES = {
   accent: {
     fill: "bg-[var(--noodle-accent)]",
     track: "bg-[color-mix(in_srgb,var(--noodle-accent)_18%,transparent)]",
-    text: "text-[var(--noodle-accent)]",
+    text: "text-[var(--noodle-accent-foreground)]",
     ring: "ring-[color-mix(in_srgb,var(--noodle-accent)_40%,transparent)]",
   },
   good: {
@@ -223,7 +223,7 @@ function PanelSection({
     <details open={defaultOpen} className="border-b border-[var(--noodle-divider)] last:border-b-0">
       <summary className="group flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 py-2.5 font-bold [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 items-center gap-2">
-          <Icon size={15} className="shrink-0 text-[var(--noodle-accent)]" aria-hidden="true" />
+          <Icon size={15} className="shrink-0 text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
           <span className="truncate">{title}</span>
         </span>
         <span className="flex shrink-0 items-center gap-1.5">
@@ -252,7 +252,7 @@ export function SlurpRapportBadge({ rapport, ownsCreator }: { rapport: SlurpRapp
         ownsCreator ? `ui.slurp.rapport.creatorHint.${rapport.tier}` : `ui.slurp.rapport.viewerHint.${rapport.tier}`,
       )}
       aria-label={localizeUi(`ui.slurp.rapport.tier.${rapport.tier}`)}
-      className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent)]"
+      className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent-foreground)]"
     >
       <Icon size={12} aria-hidden="true" />
     </span>
@@ -293,7 +293,7 @@ export function SlurpTierLadder({ tier, className }: { tier: SlurpRapport["tier"
               className={cn(
                 "flex h-9 w-9 items-center justify-center rounded-full ring-2 transition-transform motion-reduce:transition-none",
                 reached
-                  ? "bg-[var(--noodle-accent)] ring-[var(--noodle-accent)] [&_svg]:!text-zinc-950"
+                  ? "bg-[var(--noodle-accent)] ring-[var(--noodle-accent)] [&_svg]:!text-[var(--slurp-on-accent)]"
                   : "bg-[var(--slurp-surface-raised)] ring-[var(--slurp-outline)] [&_svg]:!text-[var(--muted-foreground)]",
                 isCurrent &&
                   "scale-110 shadow-[0_0_0_4px_color-mix(in_srgb,var(--noodle-accent)_25%,transparent),0_0_18px_color-mix(in_srgb,var(--noodle-accent)_55%,transparent)]",
@@ -380,7 +380,7 @@ export function SlurpRelationshipPanel({
                 className={cn(
                   "min-h-9 rounded-[7px] px-2.5 text-[0.7rem] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none",
                   advanced === mode
-                    ? "bg-[var(--noodle-accent)] text-zinc-950 [&_svg]:!text-zinc-950"
+                    ? "bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]"
                     : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]",
                 )}
               >
@@ -428,7 +428,7 @@ export function SlurpRelationshipPanel({
                       <li
                         key={`${modifier.kind}-${modifier.until}`}
                         title={modifier.source || undefined}
-                        className="rounded-full bg-[color-mix(in_srgb,var(--noodle-accent)_15%,transparent)] px-2 py-0.5 text-[0.65rem] font-bold text-[var(--noodle-accent)]"
+                        className="rounded-full bg-[color-mix(in_srgb,var(--noodle-accent)_15%,transparent)] px-2 py-0.5 text-[0.65rem] font-bold text-[var(--noodle-accent-foreground)]"
                       >
                         {humanizeValue(modifier.kind)}
                       </li>
@@ -618,7 +618,7 @@ export function SlurpRelationshipPanel({
                     {modifiers.map((modifier) => (
                       <li
                         key={`${modifier.kind}-${modifier.until}`}
-                        className="rounded-full bg-[color-mix(in_srgb,var(--noodle-accent)_15%,transparent)] px-2 py-0.5 text-[0.65rem] font-bold text-[var(--noodle-accent)]"
+                        className="rounded-full bg-[color-mix(in_srgb,var(--noodle-accent)_15%,transparent)] px-2 py-0.5 text-[0.65rem] font-bold text-[var(--noodle-accent-foreground)]"
                       >
                         {humanizeValue(modifier.kind)}
                       </li>

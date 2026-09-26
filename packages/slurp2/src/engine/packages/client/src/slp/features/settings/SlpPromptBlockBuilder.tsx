@@ -183,7 +183,7 @@ export function SlurpPromptBlockBuilder({
             type="button"
             aria-pressed={mobileView === "build"}
             onClick={() => setMobileView("build")}
-            className={`min-h-11 rounded-md px-3 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] ${mobileView === "build" ? "bg-[var(--noodle-accent)] text-zinc-950" : "text-[var(--slurp-muted)]"}`}
+            className={`min-h-11 rounded-md px-3 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] ${mobileView === "build" ? "bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)]" : "text-[var(--slurp-muted)]"}`}
           >
             {t("ui.slurp.settings.prompts.buildTab", { defaultValue: "Build" })}
           </button>
@@ -191,7 +191,7 @@ export function SlurpPromptBlockBuilder({
             type="button"
             aria-pressed={mobileView === "preview"}
             onClick={() => setMobileView("preview")}
-            className={`min-h-11 rounded-md px-3 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] ${mobileView === "preview" ? "bg-[var(--noodle-accent)] text-zinc-950" : "text-[var(--slurp-muted)]"}`}
+            className={`min-h-11 rounded-md px-3 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] ${mobileView === "preview" ? "bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)]" : "text-[var(--slurp-muted)]"}`}
           >
             {t("ui.slurp.settings.prompts.previewResultTab", { defaultValue: "Preview" })}
           </button>

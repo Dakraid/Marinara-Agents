@@ -531,7 +531,7 @@ export function SlurpOnboardingWizard(props: WizardProps) {
                   type="button"
                   disabled={intro === 3 && !postExplored}
                   onClick={() => setIntro(intro < LAST_INTRO ? ((intro + 1) as Intro) : null)}
-                  className="flex min-h-10 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-bold text-zinc-950 [&_svg]:!text-zinc-950 disabled:opacity-50 max-sm:px-3"
+                  className="flex min-h-10 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] disabled:opacity-50 max-sm:px-3"
                 >
                   {intro < LAST_INTRO ? t("ui.noodle.noodlerwizard.continue") : t("ui.noodle.noodlerwizard.introDone")}
                   <ChevronRight size={15} />
@@ -546,7 +546,7 @@ export function SlurpOnboardingWizard(props: WizardProps) {
                       else if (setupLane === "easy" && step === 1) setStep(4);
                       else setStep((step + 1) as Step);
                     }}
-                    className="flex min-h-10 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-bold text-zinc-950 [&_svg]:!text-zinc-950 disabled:opacity-50 max-sm:px-3 max-sm:text-xs"
+                    className="flex min-h-10 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] disabled:opacity-50 max-sm:px-3 max-sm:text-xs"
                   >
                     {pending && <Loader2 size={15} className="animate-spin" />}
                     {step === 4
@@ -570,7 +570,7 @@ export function SlurpOnboardingWizard(props: WizardProps) {
                     onSeeFeed?.();
                     if (!onSeeFeed) onClose();
                   }}
-                  className="min-h-10 rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-bold text-zinc-950 [&_svg]:!text-zinc-950"
+                  className="min-h-10 rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]"
                 >
                   {t("ui.noodle.noodlerwizard.openAllCreators")}
                 </button>
@@ -620,7 +620,7 @@ export function SlurpOnboardingWizard(props: WizardProps) {
                 setProviderConfirmationOpen(false);
                 void performFinish();
               }}
-              className="min-h-10 rounded-lg bg-[var(--noodle-accent)] px-4 text-xs font-bold !text-zinc-950 [&_svg]:!text-zinc-950"
+              className="min-h-10 rounded-lg bg-[var(--noodle-accent)] px-4 text-xs font-bold !text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]"
             >
               {t("ui.slurp.actions.continue")}
             </button>
@@ -634,7 +634,7 @@ export function SlurpOnboardingWizard(props: WizardProps) {
 export function StepHeading({ icon, title, help }: { icon: ReactNode; title: string; help: string }) {
   return (
     <div className="flex gap-3 max-sm:gap-2">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--noodle-accent)] to-[var(--noodle-accent)]/70 text-zinc-950 shadow-sm shadow-[var(--noodle-accent)]/30 max-sm:h-8 max-sm:w-8">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--noodle-accent)] to-[var(--noodle-accent)]/70 text-[var(--slurp-on-accent)] shadow-sm shadow-[var(--noodle-accent)]/30 max-sm:h-8 max-sm:w-8">
         {icon}
       </span>
       <div className="min-w-0">

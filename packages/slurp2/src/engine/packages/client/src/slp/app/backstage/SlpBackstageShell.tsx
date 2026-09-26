@@ -102,7 +102,7 @@ export function SlpBackstageShell({
         <button
           type="button"
           onClick={() => void settingsQuery.refetch()}
-          className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-[var(--noodle-accent)]/40 px-3 font-semibold text-[var(--noodle-accent)]"
+          className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-[var(--noodle-accent)]/40 px-3 font-semibold text-[var(--noodle-accent-foreground)]"
         >
           <RefreshCw size={14} />
           {t("capabilities.actions.tryAgain")}
@@ -156,7 +156,7 @@ export function SlpBackstageShell({
             <button
               type="button"
               onClick={() => onNavigate({ ...navigation, section: undefined, target: undefined })}
-              className="-ms-2 inline-flex min-h-11 w-fit items-center gap-1 rounded-lg px-2 text-sm font-semibold text-[var(--noodle-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] @min-[1024px]:hidden"
+              className="-ms-2 inline-flex min-h-11 w-fit items-center gap-1 rounded-lg px-2 text-sm font-semibold text-[var(--noodle-accent-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] @min-[1024px]:hidden"
             >
               <ChevronLeft size={18} className="rtl:rotate-180" aria-hidden="true" />
               {t("ui.slurp.settings.title")}

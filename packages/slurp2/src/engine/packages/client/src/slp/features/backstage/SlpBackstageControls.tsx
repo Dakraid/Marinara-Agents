@@ -42,7 +42,7 @@ export function SlurpBackstageApplyBar({
         type="button"
         disabled={pending}
         onClick={onApply}
-        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--noodle-accent)] px-4 text-sm font-black text-zinc-950 [&_svg]:!text-zinc-950 shadow-sm hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:opacity-50"
+        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--noodle-accent)] px-4 text-sm font-black text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] shadow-sm hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:opacity-50"
       >
         <Check size={16} aria-hidden="true" />{" "}
         {t("ui.slurp.settings.backstage.apply.apply", { defaultValue: "Apply changes" })}

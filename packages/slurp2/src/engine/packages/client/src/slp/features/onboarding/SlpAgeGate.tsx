@@ -146,7 +146,7 @@ export function SlurpAgeGate({ personaName, onComplete, onCelebrate, onLeave, is
         <button
           type="button"
           onClick={() => setExplained(true)}
-          className="h-12 rounded-lg bg-[var(--noodle-accent)] text-base font-black uppercase tracking-wide text-zinc-950 transition-[opacity,transform] [&_svg]:!text-zinc-950 hover:opacity-90 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] motion-reduce:transition-none motion-reduce:active:scale-100"
+          className="h-12 rounded-lg bg-[var(--noodle-accent)] text-base font-black uppercase tracking-wide text-[var(--slurp-on-accent)] transition-[opacity,transform] [&_svg]:!text-[var(--slurp-on-accent)] hover:opacity-90 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] motion-reduce:transition-none motion-reduce:active:scale-100"
         >
           {tt("explainerContinue", "Got it, continue")}
         </button>
@@ -228,7 +228,7 @@ export function SlurpAgeGate({ personaName, onComplete, onCelebrate, onLeave, is
         type="button"
         onClick={enter}
         disabled={!charged || !confirmedAdult || isPending}
-        className="h-12 rounded-lg bg-[var(--noodle-accent)] text-base font-black uppercase tracking-wide text-zinc-950 transition-[opacity,transform] [&_svg]:!text-zinc-950 hover:opacity-90 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none motion-reduce:active:scale-100"
+        className="h-12 rounded-lg bg-[var(--noodle-accent)] text-base font-black uppercase tracking-wide text-[var(--slurp-on-accent)] transition-[opacity,transform] [&_svg]:!text-[var(--slurp-on-accent)] hover:opacity-90 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none motion-reduce:active:scale-100"
       >
         {isPending ? <Loader2 size={18} className="mx-auto animate-spin" /> : tt("enter", "Enter Slurp")}
       </button>

@@ -146,7 +146,7 @@ function SlurpInboxHub({
                   {localizeUi("ui.slurp.inbox.waiting", { defaultValue: "Things waiting for you" })}
                 </p>
               </div>
-              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--noodle-accent)]/14 px-2 text-[0.7rem] font-black tabular-nums text-[var(--noodle-accent)]">
+              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--noodle-accent)]/14 px-2 text-[0.7rem] font-black tabular-nums text-[var(--noodle-accent-foreground)]">
                 {attention.length}
               </span>
             </header>
@@ -160,14 +160,14 @@ function SlurpInboxHub({
                     onClick={() => onOpenMessages(item.threadId)}
                     className="group flex min-h-14 w-full items-center gap-3 rounded-xl px-2 py-2 text-start transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/[0.055] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100 sm:px-3"
                   >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)]/12 text-[var(--noodle-accent)]">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)]/12 text-[var(--noodle-accent-foreground)]">
                       <Icon size={18} strokeWidth={2} aria-hidden="true" />
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-bold">{item.title}</span>
                       <span className="block truncate text-xs text-[var(--muted-foreground)]">{item.context}</span>
                     </span>
-                    <span className="hidden min-h-10 shrink-0 items-center rounded-lg px-3 text-xs font-bold text-[var(--noodle-accent)] sm:inline-flex">
+                    <span className="hidden min-h-10 shrink-0 items-center rounded-lg px-3 text-xs font-bold text-[var(--noodle-accent-foreground)] sm:inline-flex">
                       {item.action}
                     </span>
                     <ChevronRight
@@ -183,7 +183,7 @@ function SlurpInboxHub({
               <button
                 type="button"
                 onClick={() => onOpenMessages(null)}
-                className="min-h-11 w-full rounded-xl px-3 text-start text-xs font-bold text-[var(--noodle-accent)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/[0.055] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100"
+                className="min-h-11 w-full rounded-xl px-3 text-start text-xs font-bold text-[var(--noodle-accent-foreground)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/[0.055] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100"
               >
                 {localizeUi("ui.slurp.inbox.moreAttention", {
                   defaultValue: "{{count}} more requiring attention",
@@ -197,19 +197,19 @@ function SlurpInboxHub({
         <div className="grid items-start gap-6 min-[58rem]:grid-cols-[minmax(0,3fr)_minmax(20rem,2fr)]">
           <section aria-labelledby="slurp-inbox-messages" className="min-w-0">
             <header className="mb-3 flex min-h-11 items-center gap-2">
-              <MessageCircle size={19} className="text-[var(--noodle-accent)]" aria-hidden="true" />
+              <MessageCircle size={19} className="text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
               <h2 id="slurp-inbox-messages" className="text-base font-black">
                 {localizeUi("ui.slurp.inbox.messages", { defaultValue: "Messages" })}
               </h2>
               {unread > 0 && (
-                <span className="rounded-full bg-[var(--noodle-accent)]/13 px-2 py-1 text-[0.68rem] font-bold tabular-nums text-[var(--noodle-accent)]">
+                <span className="rounded-full bg-[var(--noodle-accent)]/13 px-2 py-1 text-[0.68rem] font-bold tabular-nums text-[var(--noodle-accent-foreground)]">
                   {localizeUi("ui.slurp.inbox.unread", { defaultValue: "{{count}} unread", count: unread })}
                 </span>
               )}
               <button
                 type="button"
                 onClick={() => onOpenMessages(null)}
-                className="ms-auto min-h-11 rounded-lg px-2 text-xs font-bold text-[var(--noodle-accent)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/10 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100"
+                className="ms-auto min-h-11 rounded-lg px-2 text-xs font-bold text-[var(--noodle-accent-foreground)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/10 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100"
               >
                 {localizeUi("ui.slurp.inbox.seeAllMessages", { defaultValue: "See all messages" })}
               </button>
@@ -246,7 +246,7 @@ function SlurpInboxHub({
                         account={{ displayName: thread.creatorDisplayName, avatarUrl: thread.creatorAvatarUrl }}
                         size="md"
                       />
-                      <span className="absolute -bottom-1 -end-1 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--noodle-accent)] text-zinc-950 [&_svg]:!text-zinc-950 ring-2 ring-[var(--slurp-surface)]">
+                      <span className="absolute -bottom-1 -end-1 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] ring-2 ring-[var(--slurp-surface)]">
                         <MessageCircle size={11} strokeWidth={2.5} aria-hidden="true" />
                       </span>
                     </span>
@@ -280,7 +280,7 @@ function SlurpInboxHub({
                         {formatTime(thread.lastMessageAt, i18n.language)}
                       </time>
                       {thread.viewerUnread > 0 && (
-                        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--noodle-accent)] px-1.5 text-[0.65rem] font-black tabular-nums text-zinc-950 [&_svg]:!text-zinc-950">
+                        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--noodle-accent)] px-1.5 text-[0.65rem] font-black tabular-nums text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]">
                           {thread.viewerUnread}
                         </span>
                       )}
@@ -461,7 +461,7 @@ function SlurpNotificationsView({
 
   const eventAppearance = (kind: string): { icon: LucideIcon; tone: string } => {
     if (kind === "message" || kind === "commission_requested")
-      return { icon: MessageCircle, tone: "bg-[var(--noodle-accent)]/14 text-[var(--noodle-accent)]" };
+      return { icon: MessageCircle, tone: "bg-[var(--noodle-accent)]/14 text-[var(--noodle-accent-foreground)]" };
     if (kind === "comment" || kind === "returned" || kind === "audience_arc")
       return { icon: Heart, tone: "bg-sky-500/14 text-sky-300" };
     if (kind === "arc_phase" || kind === "arc_complete" || kind === "arc_started")
@@ -687,7 +687,7 @@ function SlurpNotificationsView({
   const content = (
     <div className="flex w-full flex-col">
       <header className="mb-3 flex min-h-11 items-center gap-2">
-        <Bell size={19} className="text-[var(--noodle-accent)]" aria-hidden="true" />
+        <Bell size={19} className="text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
         <h2 id="slurp-inbox-activity" className="text-base font-black">
           {localizeUi("ui.slurp.inbox.activityTitle", { defaultValue: "Activity" })}
         </h2>
@@ -695,7 +695,7 @@ function SlurpNotificationsView({
           <button
             type="button"
             onClick={() => markSeen(personaId)}
-            className="ms-auto min-h-11 rounded-lg px-2 text-xs font-bold text-[var(--noodle-accent)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/10 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100"
+            className="ms-auto min-h-11 rounded-lg px-2 text-xs font-bold text-[var(--noodle-accent-foreground)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/10 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100"
           >
             {localizeUi("ui.slurp.events.markAllRead", { defaultValue: "Mark as read" })}
           </button>

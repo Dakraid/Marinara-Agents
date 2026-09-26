@@ -25,7 +25,7 @@ export function SlpHomeFeedRail({ model, showDiscovery }: Pick<SlurpHomeHostView
     >
       <div className="sticky top-4 space-y-6">
         <label className="flex min-h-11 items-center gap-2 rounded-xl bg-[var(--slurp-glass)] px-3 text-sm shadow-[var(--slurp-shadow-floating)] ring-1 ring-inset ring-white/[0.06] backdrop-blur-xl transition-[background-color,box-shadow] focus-within:bg-[var(--slurp-surface-raised)] focus-within:ring-2 focus-within:ring-[var(--noodle-accent)]">
-          <Search size={17} className="shrink-0 !text-[var(--noodle-accent)]" />
+          <Search size={17} className="shrink-0 !text-[var(--noodle-accent-foreground)]" />
           <input
             value={feedSearch}
             onChange={(event) => setFeedSearch(event.target.value)}
@@ -36,7 +36,7 @@ export function SlpHomeFeedRail({ model, showDiscovery }: Pick<SlurpHomeHostView
             <button
               type="button"
               onClick={() => setFeedSearch("")}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--noodle-accent)] hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--noodle-accent-foreground)] hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
               title={localizeUi("ui.noodle.noodlehome.clearSearch")}
             >
               <X size={13} />
@@ -90,7 +90,7 @@ export function SlpHomeFeedRail({ model, showDiscovery }: Pick<SlurpHomeHostView
                     className={cn(
                       "flex h-8 w-8 items-center justify-center rounded-full text-[var(--muted-foreground)] transition-[background-color,color,transform] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none",
                       discoverRank === value &&
-                        "bg-[var(--noodle-accent)] text-zinc-950 [&_svg]:!text-zinc-950 shadow-sm",
+                        "bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] shadow-sm",
                     )}
                   >
                     <Icon size={14} fill={discoverRank === value ? "currentColor" : "none"} aria-hidden="true" />
@@ -125,7 +125,7 @@ export function SlpHomeFeedRail({ model, showDiscovery }: Pick<SlurpHomeHostView
                           className={cn(
                             "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[0.68rem] font-black tabular-nums",
                             index === 0
-                              ? "bg-[var(--noodle-accent)] text-zinc-950 [&_svg]:!text-zinc-950"
+                              ? "bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]"
                               : "bg-[var(--accent)] text-[var(--muted-foreground)]",
                           )}
                         >
@@ -138,7 +138,7 @@ export function SlpHomeFeedRail({ model, showDiscovery }: Pick<SlurpHomeHostView
                             @{creator.profile.handle}
                           </span>
                         </span>
-                        <span className="flex shrink-0 items-center gap-1 text-xs font-black tabular-nums text-[var(--noodle-accent)]">
+                        <span className="flex shrink-0 items-center gap-1 text-xs font-black tabular-nums text-[var(--noodle-accent-foreground)]">
                           {discoverRank === "subscribers" ? (
                             <Crown size={12} aria-hidden="true" />
                           ) : (

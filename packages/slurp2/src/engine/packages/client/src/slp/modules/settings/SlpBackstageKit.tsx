@@ -132,7 +132,7 @@ function ScheduleAgendaRow({
           type="button"
           disabled={pending}
           onClick={() => setDayOpen(true)}
-          className="ms-auto min-h-11 rounded-lg px-3 text-sm font-semibold text-[var(--noodle-accent)] hover:bg-[var(--slurp-canvas,var(--accent))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:opacity-50"
+          className="ms-auto min-h-11 rounded-lg px-3 text-sm font-semibold text-[var(--noodle-accent-foreground)] hover:bg-[var(--slurp-canvas,var(--accent))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:opacity-50"
         >
           {t("ui.slurp.settings.creators.anotherDay")}
         </button>
@@ -254,7 +254,7 @@ export function OverviewActivity({
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
-          <Activity size={17} className="shrink-0 text-[var(--noodle-accent)]" aria-hidden="true" />
+          <Activity size={17} className="shrink-0 text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
           <h2 id="slurp-activity-title" className="text-sm font-black">
             {t("ui.slurp.settings.overview.activity.title")}
           </h2>
@@ -263,7 +263,7 @@ export function OverviewActivity({
           <button
             type="button"
             onClick={onRetry}
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-[var(--noodle-accent)] hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-[var(--noodle-accent-foreground)] hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
           >
             <RefreshCw size={13} aria-hidden="true" />
             {t("capabilities.actions.tryAgain")}
@@ -336,7 +336,7 @@ export function ActivityRow({
 }) {
   const toneClass =
     tone === "active"
-      ? "text-[var(--noodle-accent)]"
+      ? "text-[var(--noodle-accent-foreground)]"
       : tone === "waiting"
         ? "text-[var(--slurp-warning)]"
         : "text-[var(--slurp-success)]";
@@ -347,7 +347,7 @@ export function ActivityRow({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-xs font-semibold text-[var(--slurp-muted)]">{label}</span>
-        {detail && <span className="block truncate text-[0.68rem] text-[var(--slurp-muted)]">{detail}</span>}
+        {detail && <span className="block truncate text-xs text-[var(--slurp-muted)]">{detail}</span>}
       </span>
       <span className={`shrink-0 text-sm font-black ${toneClass}`}>{value}</span>
     </div>
@@ -382,13 +382,13 @@ export function PromptCard({
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--noodle-accent)]/10 text-[var(--noodle-accent)]">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--noodle-accent)]/10 text-[var(--noodle-accent-foreground)]">
           <FileText size={16} />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-semibold">{title}</p>
-            <span className="rounded-full border border-[var(--noodle-accent)]/30 bg-[var(--noodle-accent)]/10 px-2 py-0.5 text-[0.625rem] font-semibold text-[var(--noodle-accent)]">
+            <span className="rounded-full border border-[var(--noodle-accent)]/30 bg-[var(--noodle-accent)]/10 px-2 py-0.5 text-[11px] font-semibold text-[var(--noodle-accent-foreground)]">
               {isDefault ? t("ui.slurp.settings.prompts.default") : t("ui.slurp.settings.prompts.custom")}
             </span>
           </div>
@@ -398,7 +398,7 @@ export function PromptCard({
             type="button"
             onClick={onRestore}
             disabled={disabled}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-[var(--noodle-accent)] hover:bg-[var(--noodle-accent)]/10 disabled:opacity-45"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-[var(--noodle-accent-foreground)] hover:bg-[var(--noodle-accent)]/10 disabled:opacity-45"
           >
             <RotateCcw size={13} />
             {restoreLabel ?? t("ui.slurp.settings.prompts.restoreDefault")}
@@ -410,7 +410,7 @@ export function PromptCard({
           disabled={disabled}
           className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg border border-[var(--border)] px-3 text-xs font-semibold hover:bg-[var(--accent)] disabled:opacity-45"
         >
-          <Pencil size={14} className="text-[var(--noodle-accent)]" />
+          <Pencil size={14} className="text-[var(--noodle-accent-foreground)]" />
           {t("ui.slurp.settings.prompts.edit")}
         </button>
       </div>
@@ -425,7 +425,7 @@ export function PromptCard({
             type="button"
             aria-expanded={expanded}
             onClick={() => setExpanded((open) => !open)}
-            className="mt-1 min-h-11 text-xs font-semibold text-[var(--noodle-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+            className="mt-1 min-h-11 text-xs font-semibold text-[var(--noodle-accent-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
           >
             {expanded ? t("ui.slurp.settings.prompts.showLess") : t("ui.slurp.settings.prompts.showAll")}
           </button>
@@ -475,7 +475,7 @@ export function PromptEditor({
             type="button"
             onClick={onRestore}
             disabled={pending}
-            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-[var(--noodle-accent)]/35 px-3 text-xs font-semibold text-[var(--noodle-accent)] disabled:opacity-45"
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-[var(--noodle-accent)]/35 px-3 text-xs font-semibold text-[var(--noodle-accent-foreground)] disabled:opacity-45"
           >
             <RotateCcw size={13} />
             {restoreLabel ?? t("ui.slurp.settings.prompts.restoreDefault")}
@@ -493,7 +493,7 @@ export function PromptEditor({
               type="button"
               onClick={() => void onSave()}
               disabled={!value.trim() || pending}
-              className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg bg-[var(--noodle-accent)] px-4 text-xs font-bold text-zinc-950 [&_svg]:!text-zinc-950 disabled:opacity-45"
+              className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg bg-[var(--noodle-accent)] px-4 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] disabled:opacity-45"
             >
               {pending ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
               {saveLabel ?? t("ui.slurp.settings.prompts.save")}

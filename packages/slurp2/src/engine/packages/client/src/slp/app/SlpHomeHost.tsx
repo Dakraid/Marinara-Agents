@@ -291,7 +291,7 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
       <SlpShell {...shellProps}>
         <SlpCreatorFrame onBack={exitToCreatorHub} title={localizeUi("ui.noodle.noodlemodetoggle.noodler")}>
           <div className="flex justify-center py-16">
-            <Loader2 size={24} className="animate-spin text-[var(--noodle-accent)]" />
+            <Loader2 size={24} className="animate-spin text-[var(--noodle-accent-foreground)]" />
           </div>
         </SlpCreatorFrame>
       </SlpShell>

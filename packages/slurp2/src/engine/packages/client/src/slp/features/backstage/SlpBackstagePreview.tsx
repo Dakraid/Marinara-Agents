@@ -435,7 +435,7 @@ export function SlurpBackstagePreview({
         <PreviewFrame>
           <div className="rounded-xl bg-[linear-gradient(135deg,color-mix(in_srgb,var(--noodle-accent)_18%,var(--slurp-surface-raised)),color-mix(in_srgb,var(--slurp-violet)_12%,var(--slurp-surface-raised)))] p-4 ring-1 ring-inset ring-[var(--slurp-outline)]">
             <div className="flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-[var(--noodle-accent)] text-zinc-950 [&_svg]:!text-zinc-950">
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]">
                 {target === "improve" ? (
                   <Sparkles size={18} aria-hidden="true" />
                 ) : (

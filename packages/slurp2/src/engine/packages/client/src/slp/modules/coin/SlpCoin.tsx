@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "../../../lib/utils";
+import { useSlpCountedValue } from "../../base/chrome/slp-motion";
 
 /**
  * The coin, inlined as a data URI rather than fetched from the package asset route.
@@ -53,6 +54,14 @@ export function SlurpCoinAmount({
   const reduceMotion = useReducedMotion();
   const previousAmount = useRef(watchAmount);
   const [change, setChange] = useState<{ amount: number; direction: "earn" | "spend"; revision: number } | null>(null);
+  // A live balance counts to its new value instead of jumping. Keeps the caller's grouping style.
+  const counted = useSlpCountedValue(watchAmount);
+  const shownAmount =
+    watchAmount === undefined || counted === undefined || counted === watchAmount
+      ? amount
+      : String(amount) === String(watchAmount)
+        ? String(counted)
+        : counted.toLocaleString();
 
   useEffect(() => {
     const previous = previousAmount.current;
@@ -78,7 +87,7 @@ export function SlurpCoinAmount({
       )}
       data-slurp-coin-balance={watchAmount === undefined ? undefined : "true"}
     >
-      <span>{amount}</span>
+      <span>{shownAmount}</span>
       <motion.span
         className="inline-flex"
         animate={

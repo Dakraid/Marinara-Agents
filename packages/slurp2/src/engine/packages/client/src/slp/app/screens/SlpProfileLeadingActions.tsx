@@ -2,8 +2,9 @@ import { BookmarkCheck, BookmarkPlus, MessageCircle } from "lucide-react";
 import { useRef } from "react";
 import { useDismiss, useKeepInViewport } from "../../base/chrome/slp-popover-hooks";
 import { showConfirmDialog } from "../../../lib/app-dialogs";
-import { cn } from "../../../lib/utils";
 import { SlurpCoinAmount, SlurpCoinBurst } from "../../modules/coin/SlpCoin";
+import { SlpPrimaryButton } from "../../modules/chrome/SlpButton";
+import { playSlpSpendMoment } from "../../modules/sparkle/SlpSparkle";
 import { slurpSubscriptionPriceOf } from "./SlpHomeHelpers";
 import type { StageProfileViewModel } from "./slp-profile-view-model";
 
@@ -32,6 +33,11 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
   const tipPanelRef = useRef<HTMLDivElement | null>(null);
   useDismiss(tipOpen, () => setTipOpen(false), tipRootRef);
   const tipShift = useKeepInViewport(tipOpen, tipPanelRef);
+  // The popover closes on send, so the spend moment starts from the Tip button that opened it.
+  const playTipMoment = () => {
+    const tipButton = tipRootRef.current?.querySelector("button");
+    if (tipButton) playSlpSpendMoment(tipButton);
+  };
 
   return !editing && !viewingOwnCreator && viewerCreator ? (
     <>
@@ -40,7 +46,7 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
           type="button"
           disabled={followPending}
           onClick={() => onToggleFollow(profile.id, viewerCreator.followed)}
-          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[var(--noodle-divider)] text-[var(--noodle-accent)] transition-[background-color,opacity,transform] hover:bg-[var(--accent)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[var(--noodle-divider)] text-[var(--noodle-accent-foreground)] transition-[background-color,opacity,transform] hover:bg-[var(--accent)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:cursor-not-allowed disabled:opacity-50"
           aria-label={
             viewerCreator.followed
               ? localizeUi("ui.noodle.connections.tabs.following")
@@ -56,50 +62,54 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
           {viewerCreator.followed ? <BookmarkCheck size={19} /> : <BookmarkPlus size={19} />}
         </button>
       )}
-      <button
-        type="button"
-        disabled={subscriptionPending}
-        onClick={() =>
-          void (async () => {
-            // One click used to cancel a paid subscription with no warning.
-            if (
-              viewerCreator.subscribed &&
-              !(await showConfirmDialog({
-                title: localizeUi("ui.slurp.profile.cancelSubscription", {
-                  defaultValue: "Cancel subscription?",
-                }),
-                message: localizeUi("ui.slurp.profile.cancelSubscriptionDetail", {
-                  defaultValue:
-                    "You keep subscriber access until the week you already paid for ends. It will not renew after that.",
-                }),
-                confirmLabel: localizeUi("ui.slurp.profile.cancelSubscriptionConfirm", {
-                  defaultValue: "Cancel subscription",
-                }),
-                tone: "destructive",
-              }))
-            )
-              return;
-            await Promise.resolve(onToggleSubscription(profile.id, viewerCreator.subscribed)).catch(() => undefined);
-          })()
-        }
-        className={cn(
-          "relative inline-flex min-h-11 items-center justify-center overflow-visible rounded-lg px-5 text-sm font-bold transition-[background-color,opacity,transform] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:cursor-not-allowed disabled:opacity-50",
-          viewerCreator.subscribed
-            ? "border border-[var(--noodle-accent)]/50 bg-[var(--noodle-accent)]/10 text-[var(--noodle-accent-foreground)] hover:bg-[var(--noodle-accent)]/15"
-            : "bg-[var(--noodle-accent)] text-zinc-950 [&_svg]:!text-zinc-950 hover:opacity-90",
-        )}
-      >
-        <SlurpCoinBurst active={subscriptionPending && !viewerCreator.subscribed} />
-        {viewerCreator.subscribed
-          ? localizeUi("ui.slurp.profile.subscribed")
-          : localizeUi("ui.slurp.profile.subscribe")}
-        {!viewerCreator.subscribed && (
-          <>
-            {" · "}
-            <SlurpCoinAmount amount={`${slurpSubscriptionPriceOf(viewerCreator)} / week`} />
-          </>
-        )}
-      </button>
+      {viewerCreator.subscribed ? (
+        <button
+          type="button"
+          disabled={subscriptionPending}
+          onClick={() =>
+            void (async () => {
+              // One click used to cancel a paid subscription with no warning.
+              if (
+                !(await showConfirmDialog({
+                  title: localizeUi("ui.slurp.profile.cancelSubscription", {
+                    defaultValue: "Cancel subscription?",
+                  }),
+                  message: localizeUi("ui.slurp.profile.cancelSubscriptionDetail", {
+                    defaultValue:
+                      "You keep subscriber access until the week you already paid for ends. It will not renew after that.",
+                  }),
+                  confirmLabel: localizeUi("ui.slurp.profile.cancelSubscriptionConfirm", {
+                    defaultValue: "Cancel subscription",
+                  }),
+                  tone: "destructive",
+                }))
+              )
+                return;
+              await Promise.resolve(onToggleSubscription(profile.id, true)).catch(() => undefined);
+            })()
+          }
+          className="relative inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--noodle-accent)]/50 bg-[var(--noodle-accent)]/10 px-5 text-sm font-bold text-[var(--noodle-accent-foreground)] transition-[background-color,opacity,transform] hover:bg-[var(--noodle-accent)]/15 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {localizeUi("ui.slurp.profile.subscribed")}
+        </button>
+      ) : (
+        <SlpPrimaryButton
+          disabled={subscriptionPending}
+          onClick={(event) => {
+            // One tap, no confirmation: the spend moment is the feedback (design language §7).
+            const origin = event.currentTarget.getBoundingClientRect();
+            void Promise.resolve(onToggleSubscription(profile.id, false)).then(
+              () => playSlpSpendMoment(origin),
+              () => undefined,
+            );
+          }}
+        >
+          <SlurpCoinBurst active={subscriptionPending} />
+          {localizeUi("ui.slurp.profile.subscribe")}
+          {" · "}
+          <SlurpCoinAmount amount={`${slurpSubscriptionPriceOf(viewerCreator)} / week`} />
+        </SlpPrimaryButton>
+      )}
       {!viewerCreator.subscribed && (
         <span className="max-w-52 text-[0.68rem] leading-4 text-[var(--muted-foreground)]">
           {localizeUi("ui.slurp.profile.subscribeBenefits", {
@@ -148,15 +158,18 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
                   type="button"
                   onClick={() => {
                     if (!viewerAccount?.entityId) return;
-                    tipCreator.mutate({
-                      accountId: profile.id,
-                      personaId: viewerAccount.entityId,
-                      amount,
-                      requestId:
-                        typeof crypto !== "undefined" && "randomUUID" in crypto
-                          ? crypto.randomUUID()
-                          : `${Date.now()}-${Math.random()}`,
-                    });
+                    tipCreator.mutate(
+                      {
+                        accountId: profile.id,
+                        personaId: viewerAccount.entityId,
+                        amount,
+                        requestId:
+                          typeof crypto !== "undefined" && "randomUUID" in crypto
+                            ? crypto.randomUUID()
+                            : `${Date.now()}-${Math.random()}`,
+                      },
+                      { onSuccess: playTipMoment },
+                    );
                     setTipOpen(false);
                   }}
                   className="min-h-9 rounded-md bg-[var(--accent)] text-xs font-bold hover:bg-[var(--noodle-accent)]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
@@ -173,29 +186,31 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
                 value={customTip}
                 onChange={(event) => setCustomTip(event.target.value)}
                 aria-label={localizeUi("ui.slurp.profile.customTip", { defaultValue: "Custom tip amount" })}
-                className="min-w-0 flex-1 rounded-md border border-[var(--noodle-divider)] bg-[var(--background)] px-2 text-sm"
+                className="min-h-11 min-w-0 flex-1 rounded-xl border border-[var(--noodle-divider)] bg-[var(--background)] px-3 text-sm"
               />
-              <button
-                type="button"
+              <SlpPrimaryButton
                 disabled={!viewerAccount?.entityId || !Number.isInteger(Number(customTip)) || Number(customTip) < 1}
                 onClick={() => {
                   if (!viewerAccount?.entityId) return;
-                  tipCreator.mutate({
-                    accountId: profile.id,
-                    personaId: viewerAccount.entityId,
-                    amount: Number(customTip),
-                    requestId:
-                      typeof crypto !== "undefined" && "randomUUID" in crypto
-                        ? crypto.randomUUID()
-                        : `${Date.now()}-${Math.random()}`,
-                  });
+                  tipCreator.mutate(
+                    {
+                      accountId: profile.id,
+                      personaId: viewerAccount.entityId,
+                      amount: Number(customTip),
+                      requestId:
+                        typeof crypto !== "undefined" && "randomUUID" in crypto
+                          ? crypto.randomUUID()
+                          : `${Date.now()}-${Math.random()}`,
+                    },
+                    { onSuccess: playTipMoment },
+                  );
                   setCustomTip("");
                   setTipOpen(false);
                 }}
-                className="min-h-9 rounded-md bg-[var(--noodle-accent)] px-2 text-xs font-bold text-zinc-950 [&_svg]:!text-zinc-950 disabled:opacity-50"
+                className="px-4"
               >
                 {localizeUi("ui.slurp.profile.sendTip", { defaultValue: "Send" })}
-              </button>
+              </SlpPrimaryButton>
             </div>
           </div>
         )}

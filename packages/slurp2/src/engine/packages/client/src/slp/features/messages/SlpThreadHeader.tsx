@@ -54,7 +54,7 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
           type="button"
           onClick={onBack}
           className={cn(
-            "flex h-11 w-11 items-center justify-center rounded-full text-[var(--noodle-accent)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/10 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100",
+            "flex h-11 w-11 items-center justify-center rounded-full text-[var(--noodle-accent-foreground)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/10 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100",
             desktopSplit && "md:hidden",
           )}
           aria-label={localizeUi("ui.slurp.messages.backToInbox", { defaultValue: "Back to inbox" })}
@@ -118,7 +118,7 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
             aria-haspopup="dialog"
             onClick={() => setTierOpen((open) => !open)}
             className={cn(
-              "flex h-9 shrink-0 items-center gap-1.5 rounded-full px-1 text-[0.72rem] font-bold text-[var(--noodle-accent)] transition-colors hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] sm:pe-3",
+              "flex h-9 shrink-0 items-center gap-1.5 rounded-full px-1 text-[0.72rem] font-bold text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] sm:pe-3",
               tierOpen && "bg-[var(--noodle-accent)]/10",
             )}
             aria-label={localizeUi("ui.slurp.messages.relationshipStatus", {
@@ -267,7 +267,7 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
                     <Icon size={16} className="shrink-0 text-[var(--muted-foreground)]" aria-hidden="true" />
                     <span className="min-w-0 flex-1 truncate">{label}</span>
                     {"badge" in item && (item.badge ?? 0) > 0 && (
-                      <span className="min-w-5 rounded-full bg-[var(--noodle-accent)] px-1.5 text-center text-[0.65rem] font-black leading-5 text-zinc-950">
+                      <span className="min-w-5 rounded-full bg-[var(--noodle-accent)] px-1.5 text-center text-[0.65rem] font-black leading-5 text-[var(--slurp-on-accent)]">
                         {item.badge}
                       </span>
                     )}
@@ -358,7 +358,11 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
             onClick={() => setCommissionRibbonOpen((open) => !open)}
             className="mx-auto flex min-h-11 w-full max-w-2xl items-center gap-2.5 rounded-xl px-2 text-start transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/[0.05] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100"
           >
-            <BriefcaseBusiness size={17} className="shrink-0 text-[var(--noodle-accent)]" aria-hidden="true" />
+            <BriefcaseBusiness
+              size={17}
+              className="shrink-0 text-[var(--noodle-accent-foreground)]"
+              aria-hidden="true"
+            />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-xs font-bold capitalize">
                 {localizeUi("ui.slurp.messages.commissionRibbon", {
@@ -430,7 +434,7 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
                 type="button"
                 disabled={resolveRequest.isPending}
                 onClick={() => resolveRequest.mutate({ threadId: thread.id, personaId, decision: "accept" })}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-[var(--noodle-accent)] px-4 text-xs font-bold text-zinc-950 [&_svg]:!text-zinc-950 transition-transform active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-[var(--noodle-accent)] px-4 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] transition-transform active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
               >
                 <Check size={14} /> {localizeUi("ui.slurp.messages.accept", { defaultValue: "Accept" })}
               </button>

@@ -56,7 +56,7 @@ export function BroadcastPanel({ creatorAccountId, personaId }: { creatorAccount
         aria-expanded={open}
         className="flex min-h-10 w-full items-center gap-2 px-3 text-start text-xs font-semibold text-[var(--muted-foreground)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/[0.05] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100"
       >
-        <Megaphone size={15} className="text-[var(--noodle-accent)]" aria-hidden="true" />
+        <Megaphone size={15} className="text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
         {localizeUi("ui.slurp.messages.broadcast", { defaultValue: "Broadcast to subscribers" })}
       </button>
       {open && (
@@ -83,7 +83,7 @@ export function BroadcastPanel({ creatorAccountId, personaId }: { creatorAccount
               type="button"
               disabled={!draft.trim() || broadcast.isPending}
               onClick={() => void submit()}
-              className="min-h-11 shrink-0 rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-zinc-950 [&_svg]:!text-zinc-950 disabled:opacity-50"
+              className="min-h-11 shrink-0 rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] disabled:opacity-50"
             >
               {localizeUi("ui.slurp.messages.broadcastSend", { defaultValue: "Send broadcast" })}
             </button>
@@ -155,7 +155,7 @@ export function CreatorMessageTools({
           aria-expanded={open}
           className="flex min-h-11 w-full items-center gap-2 px-3 text-left text-xs font-bold transition-colors hover:bg-[var(--noodle-accent)]/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none"
         >
-          <Lock size={14} className="text-[var(--noodle-accent)]" aria-hidden="true" />
+          <Lock size={14} className="text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
           {localizeUi("ui.slurp.messages.sendPpv", { defaultValue: "Send locked content" })}
         </button>
       )}
@@ -190,7 +190,7 @@ export function CreatorMessageTools({
               type="button"
               disabled={!content.trim() || price <= 0 || sendPpv.isPending}
               onClick={() => void submit()}
-              className="ml-auto min-h-9 rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-zinc-950 [&_svg]:!text-zinc-950 disabled:opacity-50"
+              className="ml-auto min-h-9 rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] disabled:opacity-50"
             >
               {localizeUi("ui.slurp.messages.ppvSend", { defaultValue: "Send locked" })}
             </button>
@@ -250,7 +250,7 @@ export function CreatorMessageTools({
                   },
                 );
             }}
-            className="mt-2 min-h-10 rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-zinc-950 [&_svg]:!text-zinc-950 disabled:opacity-50"
+            className="mt-2 min-h-10 rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] disabled:opacity-50"
           >
             {sendImage.isPending ? "Making…" : "Generate and send"}
           </button>
@@ -300,7 +300,7 @@ export function FanImageTool({
                 onClick={() => setSelectedMode(option)}
                 className={cn(
                   "min-h-10 flex-1 rounded-lg px-3 text-xs font-bold ring-1 ring-inset ring-[var(--noodle-divider)]",
-                  activeMode === option && "bg-[var(--noodle-accent)] text-zinc-950",
+                  activeMode === option && "bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)]",
                 )}
               >
                 {option === "upload" ? "Upload" : "Generate"}
@@ -341,7 +341,7 @@ export function FanImageTool({
               type="button"
               disabled={activeMode === "upload" ? !file : !prompt.trim()}
               onClick={() => setReviewing(true)}
-              className="min-h-10 self-end rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-zinc-950 [&_svg]:!text-zinc-950 disabled:opacity-50"
+              className="min-h-10 self-end rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] disabled:opacity-50"
             >
               Review photo
             </button>
@@ -381,7 +381,7 @@ export function FanImageTool({
                       setError(cause instanceof Error ? cause.message : "Could not send that picture.");
                     });
                 }}
-                className="min-h-10 rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-zinc-950 [&_svg]:!text-zinc-950 disabled:opacity-50"
+                className="min-h-10 rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] disabled:opacity-50"
               >
                 {send.isPending || generate.isPending ? "Sending…" : "Send photo"}
               </button>
@@ -535,8 +535,8 @@ export function SlurpTipPanel({
             className={cn(
               "min-h-10 rounded-full px-4 text-xs font-bold tabular-nums ring-1 ring-inset ring-[var(--noodle-accent)]/40 transition-[background-color,transform] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:active:scale-100",
               !custom && amount === preset
-                ? "bg-[var(--noodle-accent)] text-zinc-950"
-                : "text-[var(--noodle-accent)] hover:bg-[var(--noodle-accent)]/10",
+                ? "bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)]"
+                : "text-[var(--noodle-accent-foreground)] hover:bg-[var(--noodle-accent)]/10",
             )}
           >
             {preset}
@@ -601,7 +601,7 @@ export function SlurpTipPanel({
         type="button"
         disabled={busy || !personaId || !valid || (short && !withAttach)}
         onClick={() => (withAttach ? onAttach(amount, note.trim()) : onSendNow(amount, note.trim()))}
-        className="flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-[var(--noodle-accent)] px-4 text-sm font-bold text-zinc-950 transition-transform active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:active:scale-100"
+        className="flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-[var(--noodle-accent)] px-4 text-sm font-bold text-[var(--slurp-on-accent)] transition-transform active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:active:scale-100"
       >
         {short && !withAttach
           ? localizeUi("ui.slurp.messages.tipNotEnough", { defaultValue: "Not enough coins" })

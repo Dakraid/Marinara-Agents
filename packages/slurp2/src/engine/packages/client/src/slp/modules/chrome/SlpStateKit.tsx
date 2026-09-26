@@ -8,7 +8,7 @@ export function LoadingState({ label }: { label?: string }) {
     <div role="status" className="flex flex-col items-center gap-3 px-8 py-12 text-center">
       <Loader2
         size={24}
-        className="animate-spin text-[var(--noodle-accent)] motion-reduce:animate-none"
+        className="animate-spin text-[var(--noodle-accent-foreground)] motion-reduce:animate-none"
         aria-hidden="true"
       />
       <p className="text-sm text-[var(--muted-foreground)]">

@@ -105,7 +105,7 @@ export function SlpReportModal({
               type="button"
               onClick={submit}
               disabled={!canSubmit || report.isPending}
-              className="min-h-10 rounded-lg bg-[var(--noodle-accent)] px-4 font-bold text-zinc-950 disabled:opacity-50"
+              className="min-h-10 rounded-lg bg-[var(--noodle-accent)] px-4 font-bold text-[var(--slurp-on-accent)] disabled:opacity-50"
             >
               {localizeUi("ui.slurp.post.reportSubmit", { defaultValue: "Submit report" })}
             </button>

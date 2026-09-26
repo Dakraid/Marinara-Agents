@@ -5,7 +5,6 @@ import { useTranslation as useUiTranslation } from "react-i18next";
 import {
   textareaClass,
   fieldClass,
-  labelClass,
   SLP_MEDIA_PICKER_TABS,
   SLP_TEXT_MEDIA_PICKER_TABS,
   SlpMentionSuggestions,
@@ -14,6 +13,7 @@ import {
   createSlpLightboxImage,
 } from "./SlpPostHelpers";
 import { SlpAnchoredPopover } from "../../base/chrome/SlpAnchoredPopover";
+import { labelClass } from "../../base/chrome/SlpChrome";
 import { ConversationMediaPickerPanel } from "../../../components/chat/ConversationMediaPickerPanel";
 import { ImageIcon, Smile, X } from "lucide-react";
 
@@ -101,7 +101,7 @@ export function SlpReplyComposer({
       {replyParentInteractionId && replyTargetActor && (
         <p className="mb-2 text-xs text-[var(--muted-foreground)]">
           {localizeUi("ui.noodle.noodlepostcard.replyingTo")}{" "}
-          <span className="font-semibold text-[var(--noodle-accent)]">@{replyTargetActor.handle}</span>
+          <span className="font-semibold text-[var(--noodle-accent-foreground)]">@{replyTargetActor.handle}</span>
         </p>
       )}
       <textarea
@@ -189,7 +189,7 @@ export function SlpReplyComposer({
           </button>
           <button
             type="button"
-            className="h-8 rounded-full bg-[var(--noodle-accent)] px-4 text-xs font-bold text-zinc-950 [&_svg]:!text-zinc-950 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-8 rounded-full bg-[var(--noodle-accent)] px-4 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={(!replyHasText && !replyImageUrl.trim()) || postReplyPending}
             onClick={() => submitReply(post)}
           >
@@ -211,7 +211,7 @@ export function SlpReplyComposer({
               type="button"
               onClick={() => replyImageFileRef.current?.click()}
               disabled={uploadGlobalImages.isPending}
-              className="h-9 w-full rounded-full bg-[var(--noodle-accent)] px-4 text-xs font-bold text-zinc-950 [&_svg]:!text-zinc-950 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-9 w-full rounded-full bg-[var(--noodle-accent)] px-4 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {uploadGlobalImages.isPending
                 ? localizeUi("ui.noodle.noodleprofilesurface.uploading")
@@ -219,7 +219,7 @@ export function SlpReplyComposer({
             </button>
             <div
               data-component="NoodleView.ReplyImageDivider"
-              className="flex items-center gap-2 text-[0.625rem] font-semibold uppercase tracking-normal text-[var(--noodle-accent)]"
+              className="flex items-center gap-2 text-xs font-semibold text-[var(--noodle-accent-foreground)]"
             >
               <span className="h-px flex-1 bg-[var(--noodle-divider)]" />
               {localizeUi("ui.noodle.noodlehome.or")}
@@ -237,7 +237,7 @@ export function SlpReplyComposer({
             <button
               type="button"
               onClick={applyReplyImageUrl}
-              className="h-9 w-full rounded-full border border-[var(--noodle-divider)] px-4 text-xs font-bold text-[var(--noodle-accent)] transition-colors hover:bg-[var(--noodle-accent)]/10"
+              className="h-9 w-full rounded-full border border-[var(--noodle-divider)] px-4 text-xs font-bold text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10"
             >
               {localizeUi("ui.noodle.noodlehome.attachUrl")}
             </button>

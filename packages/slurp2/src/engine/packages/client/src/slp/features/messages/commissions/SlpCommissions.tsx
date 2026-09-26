@@ -81,7 +81,7 @@ export function CommissionRequest({
               onSubmit(brief.trim());
               setBrief("");
             }}
-            className="min-h-11 rounded-xl bg-[var(--noodle-accent)] px-4 text-xs font-bold text-zinc-950 [&_svg]:!text-zinc-950 transition-transform active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
+            className="min-h-11 rounded-xl bg-[var(--noodle-accent)] px-4 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] transition-transform active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
           >
             {localizeUi("ui.slurp.messages.commissionSend", { defaultValue: "Send request" })}
           </button>
@@ -166,7 +166,7 @@ export function CommissionRow({
       <div className="flex min-w-0 items-start justify-between gap-2 sm:gap-3">
         <div className="min-w-0">
           <p className="flex items-center gap-1.5 text-sm font-black">
-            <Sparkles size={15} className="text-[var(--noodle-accent)]" aria-hidden="true" />
+            <Sparkles size={15} className="text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
             {localizeUi("ui.slurp.messages.commissionTitle", { defaultValue: "Commission" })}
           </p>
           <p className="mt-1 break-words font-semibold text-[var(--muted-foreground)]">
@@ -174,7 +174,7 @@ export function CommissionRow({
           </p>
         </div>
         {commission.price > 0 && (
-          <span className="shrink-0 rounded-full bg-[var(--slurp-surface-raised)] px-2.5 py-1 font-bold tabular-nums text-[var(--noodle-accent)] ring-1 ring-inset ring-[var(--noodle-accent)]/20">
+          <span className="shrink-0 rounded-full bg-[var(--slurp-surface-raised)] px-2.5 py-1 font-bold tabular-nums text-[var(--noodle-accent-foreground)] ring-1 ring-inset ring-[var(--noodle-accent)]/20">
             <SlurpCoinAmount amount={commission.price} />
           </span>
         )}
@@ -208,7 +208,7 @@ export function CommissionRow({
                 className={cn(
                   "relative z-10 flex h-6 w-6 items-center justify-center rounded-full text-xs font-black ring-2 ring-[var(--slurp-surface)]",
                   index <= currentStep
-                    ? "bg-[var(--noodle-accent)] text-zinc-950 [&_svg]:!text-zinc-950"
+                    ? "bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]"
                     : "bg-[var(--slurp-surface-raised)] text-[var(--muted-foreground)]",
                 )}
               >
@@ -267,7 +267,7 @@ export function CommissionRow({
                 localizeUi("ui.slurp.messages.commissionOfferTaken", { defaultValue: "Offer accepted." }),
               )
             }
-            className="min-h-11 rounded-xl bg-[var(--noodle-accent)] px-4 font-bold text-zinc-950 [&_svg]:!text-zinc-950 transition-transform active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
+            className="min-h-11 rounded-xl bg-[var(--noodle-accent)] px-4 font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] transition-transform active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
           >
             {localizeUi("ui.slurp.messages.commissionTakeOffer", { defaultValue: "Accept offer" })}
           </button>
@@ -319,7 +319,7 @@ export function CommissionRow({
                 localizeUi("ui.slurp.messages.commissionQuoteSent", { defaultValue: "Quote sent." }),
               )
             }
-            className="min-h-11 max-w-full rounded-xl bg-[var(--noodle-accent)] px-4 font-bold text-zinc-950 [&_svg]:!text-zinc-950 transition-transform active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
+            className="min-h-11 max-w-full rounded-xl bg-[var(--noodle-accent)] px-4 font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] transition-transform active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
           >
             {quote.isPending
               ? localizeUi("ui.slurp.messages.commissionQuotePending", { defaultValue: "Sending quote…" })
@@ -367,7 +367,7 @@ export function CommissionRow({
                 }),
               )
             }
-            className="relative inline-flex min-h-11 max-w-full items-center gap-1.5 overflow-visible rounded-xl bg-[var(--noodle-accent)] px-4 font-bold text-zinc-950 [&_svg]:!text-zinc-950 transition-transform active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
+            className="relative inline-flex min-h-11 max-w-full items-center gap-1.5 overflow-visible rounded-xl bg-[var(--noodle-accent)] px-4 font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] transition-transform active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
           >
             <SlurpCoinBurst active={accept.isPending} />
             {accept.isPending && <Loader2 size={15} className="animate-spin" aria-hidden="true" />}
@@ -448,7 +448,7 @@ export function CommissionRow({
       )}
 
       {commission.state === "accepted" && commission.deliverAt && (
-        <p className="mt-3 flex items-center gap-1.5 font-semibold text-[var(--noodle-accent)]">
+        <p className="mt-3 flex items-center gap-1.5 font-semibold text-[var(--noodle-accent-foreground)]">
           <Loader2 size={13} className="animate-spin motion-reduce:hidden" aria-hidden="true" />
           {localizeUi("ui.slurp.messages.commissionArriving", {
             defaultValue: "Being made. Arriving around {{time}}.",
@@ -503,7 +503,7 @@ export function CommissionRow({
                 localizeUi("ui.slurp.messages.commissionDeliverFailed", { defaultValue: "Could not deliver that." }),
               )
             }
-            className="ml-auto min-h-11 rounded-xl bg-[var(--noodle-accent)] px-4 font-bold text-zinc-950 [&_svg]:!text-zinc-950 transition-transform active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
+            className="ml-auto min-h-11 rounded-xl bg-[var(--noodle-accent)] px-4 font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] transition-transform active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
           >
             {localizeUi("ui.slurp.messages.commissionDeliver", { defaultValue: "Deliver" })}
           </button>
@@ -533,7 +533,7 @@ export function CommissionRow({
       )}
 
       {success && (
-        <p role="status" className="mt-2 text-[var(--noodle-accent)]">
+        <p role="status" className="mt-2 text-[var(--noodle-accent-foreground)]">
           {success}
         </p>
       )}
@@ -572,7 +572,7 @@ export function SlurpCommissionsPanel({
         <button
           type="button"
           onClick={onAskCommission}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--noodle-accent)] px-4 text-xs font-bold text-zinc-950 [&_svg]:!text-zinc-950"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--noodle-accent)] px-4 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]"
         >
           <BriefcaseBusiness size={15} aria-hidden="true" />
           Ask for commission

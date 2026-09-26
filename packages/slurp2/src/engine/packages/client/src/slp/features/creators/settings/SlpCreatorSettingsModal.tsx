@@ -407,7 +407,7 @@ export function SlpCreatorSettingsModal({
                   type="button"
                   disabled={profileSaveState.isPending || !profileDirty}
                   onClick={profileSaveState.save}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-bold text-zinc-950 disabled:opacity-50"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-bold text-[var(--slurp-on-accent)] disabled:opacity-50"
                 >
                   {profileSaveState.isPending ? (
                     <Loader2 size={15} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />

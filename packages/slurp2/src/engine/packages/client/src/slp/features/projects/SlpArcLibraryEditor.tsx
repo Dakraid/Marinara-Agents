@@ -154,7 +154,7 @@ export function ArcLibraryEditor({
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-bold text-zinc-950 [&_svg]:!text-zinc-950 hover:opacity-90 disabled:opacity-50"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] hover:opacity-90 disabled:opacity-50"
             disabled={busy || generate.isPending || !brief.trim() || !creatorAccountId || !personaId}
             onClick={() => void generateDraft()}
           >

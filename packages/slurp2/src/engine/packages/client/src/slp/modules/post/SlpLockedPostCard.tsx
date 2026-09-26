@@ -16,7 +16,7 @@ import {
   Dices,
   ScanSearch,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import type { SlpCreatorPostView, SlpCreatorStageProfile } from "../../../../../shared/src/slp/slp-social.types.js";
 import { cn } from "../../../lib/utils";
 import { useNearViewportSlurpMediaSrc } from "../../base/media/slp-media-src";
@@ -26,6 +26,8 @@ import { formatTime } from "../../base/ui/slp-date-time";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { SlurpCelebrationRing, SlurpSparkleVeil } from "../../base/chrome/SlpSparkleVeil";
 import { SlurpCoin, SlurpCoinBurst } from "../coin/SlpCoin";
+import { SlpPrimaryButton } from "../chrome/SlpButton";
+import { playSlpBurst, playSlpSpendMoment } from "../sparkle/SlpSparkle";
 import { api } from "../../../lib/api-client";
 import { toast } from "sonner";
 import { slpHasGambleOffer } from "../../../../../shared/src/slp/slp-post-offers.js";
@@ -115,21 +117,29 @@ export function LockedSlurpPostCard({
   const [failedMediaSrc, setFailedMediaSrc] = useState<string | null>(null);
   const shownMediaSrc = mediaSrc && mediaSrc !== failedMediaSrc ? mediaSrc : null;
   const hasMediaPreview = Boolean(requestedMediaUrl || post.hasImage || (onGenerateImage && post.imagePrompt));
-  const runTransaction = async (kind: "subscribe" | "unlock" | "gamble" | "unlock-offer" | "subscription-offer") => {
+  const runTransaction = async (
+    kind: "subscribe" | "unlock" | "gamble" | "unlock-offer" | "subscription-offer",
+    button: Element,
+  ) => {
     if (transaction) return;
+    // Measured now: the sheet closes on success, and the spend moment starts where the tap was.
+    const origin = button.getBoundingClientRect();
     setTransaction(kind);
     try {
       if (demo) {
         await new Promise((resolve) => window.setTimeout(resolve, 420));
         setDemoUnlocked(true);
+        playSlpSpendMoment(origin);
         demo.onReveal?.();
         setUnlockSheetOpen(false);
         setTransaction(null);
         return;
       }
+      let spent = true;
       if (kind === "unlock") await onUnlock(post.id);
       else if (kind === "gamble" && onGambleUnlock) {
         const result = await onGambleUnlock(post.id);
+        spent = result.outcome !== "free" && result.outcome !== "already-unlocked";
         toast.success(
           result.outcome === "already-unlocked"
             ? localizeUi("ui.slurp.unlocksheet.alreadyUnlocked", { defaultValue: "You already unlocked this post." })
@@ -144,6 +154,8 @@ export function LockedSlurpPostCard({
       else if (kind === "unlock-offer" && unlockOffer) await unlockOffer.onUnlock(post.id, unlockOffer.newPrice);
       else if (kind === "subscription-offer" && subscriptionOffer)
         await subscriptionOffer.onSubscribe(profile.id, subscribed, subscriptionOffer.newPrice);
+      if (spent) playSlpSpendMoment(origin);
+      else playSlpBurst(origin);
       setUnlockSheetOpen(false);
       setTransaction(null);
     } catch {
@@ -153,20 +165,15 @@ export function LockedSlurpPostCard({
   };
   const unlockPrompt = !revealed && !controllerOnly && (
     <div className={hasMediaPreview ? "flex flex-col items-center gap-2" : "mt-4 flex flex-wrap items-center gap-3"}>
-      <button
-        type="button"
-        disabled={unlockPending || subscriptionPending}
-        onClick={() => setUnlockSheetOpen(true)}
-        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[var(--noodle-accent)] px-5 text-sm font-black text-zinc-950 shadow-[0_10px_26px_-14px_var(--noodle-accent)] transition-[opacity,transform] hover:opacity-90 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 [&_svg]:!text-zinc-950"
-      >
-        <Eye size={16} strokeWidth={2.4} aria-hidden="true" />
+      <SlpPrimaryButton disabled={unlockPending || subscriptionPending} onClick={() => setUnlockSheetOpen(true)}>
+        <Eye size={16} strokeWidth={2.25} aria-hidden="true" />
         {localizeUi("ui.noodle.lockednoodlerpostcard.unlock")}
         <SlpCreatorFictionalPrice amount={slpCreatorUnlockPriceOf(post)} />
-      </button>
+      </SlpPrimaryButton>
       <span
         className={
           hasMediaPreview
-            ? "text-[0.68rem] font-semibold text-white/72 drop-shadow-sm"
+            ? "text-xs font-semibold text-white/72 drop-shadow-sm"
             : "text-xs font-medium text-[var(--muted-foreground)]"
         }
       >
@@ -212,13 +219,13 @@ export function LockedSlurpPostCard({
               type="button"
               onClick={openProfile}
               disabled={!openProfile}
-              className="rounded-lg font-semibold transition-colors enabled:hover:text-[var(--noodle-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:cursor-default"
+              className="rounded-lg font-semibold transition-colors enabled:hover:text-[var(--noodle-accent-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:cursor-default"
             >
               {profile.displayName}
             </button>
             <span
               title={localizeUi("ui.noodle.postaccess.locked.hint")}
-              className="inline-flex items-center gap-1 rounded-lg bg-[var(--noodle-accent)]/12 px-2 py-1 text-[0.68rem] font-bold text-[var(--noodle-accent)] ring-1 ring-inset ring-[var(--noodle-accent)]/20"
+              className="inline-flex items-center gap-1 rounded-lg bg-[var(--noodle-accent)]/12 px-2 py-1 text-xs font-bold text-[var(--noodle-accent-foreground)] ring-1 ring-inset ring-[var(--noodle-accent)]/20"
             >
               <Lock size={11} />
               {revealed && demo ? demo.unlockedLabel : localizeUi("ui.noodle.postaccess.locked")}
@@ -232,7 +239,7 @@ export function LockedSlurpPostCard({
           <button
             type="button"
             onClick={() => setPostMenuOpen((open) => !open)}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--noodle-accent)] transition-colors hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
             title={localizeUi("ui.noodle.noodlepostcard.postActions")}
             aria-label={localizeUi("ui.noodle.noodlepostcard.postActions")}
             aria-expanded={postMenuOpen}
@@ -392,7 +399,7 @@ export function LockedSlurpPostCard({
             {/* The lock is a state cue; the accessible image text already describes the preview. */}
             {!revealed && (
               <span className="pointer-events-none absolute inset-x-0 top-[36%] flex justify-center" aria-hidden="true">
-                <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-[#24131f] text-[var(--noodle-accent)] shadow-[0_12px_28px_-14px_rgba(0,0,0,0.95),inset_0_0_0_1px_rgba(255,111,174,0.18)]">
+                <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-[#24131f] text-[var(--noodle-accent-foreground)] shadow-[0_12px_28px_-14px_rgba(0,0,0,0.95),inset_0_0_0_1px_rgba(255,111,174,0.18)]">
                   <Lock size={27} strokeWidth={2.4} />
                 </span>
               </span>
@@ -497,17 +504,17 @@ export function LockedSlurpPostCard({
               type="button"
               data-noodler-unlock-action="post"
               disabled={unlockPending || transaction !== null}
-              onClick={() => void runTransaction("unlock")}
+              onClick={(event) => void runTransaction("unlock", event.currentTarget)}
               className="relative flex min-h-[4.75rem] w-full items-center gap-3 overflow-visible rounded-xl border border-[var(--noodle-accent)]/45 bg-[var(--slurp-surface-raised)] px-4 py-3 text-left shadow-[var(--slurp-shadow-raised)] transition-[background-color,transform,box-shadow] hover:bg-[color-mix(in_srgb,var(--noodle-accent)_7%,var(--slurp-surface-raised))] hover:shadow-[var(--slurp-shadow-floating)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
             >
               <SlurpCoinBurst active={transaction === "unlock"} />
               {transaction === "unlock" ? (
                 <Loader2
                   size={20}
-                  className="shrink-0 animate-spin text-[var(--noodle-accent)] motion-reduce:animate-none"
+                  className="shrink-0 animate-spin text-[var(--noodle-accent-foreground)] motion-reduce:animate-none"
                 />
               ) : (
-                <Eye size={20} className="shrink-0 text-[var(--noodle-accent)]" />
+                <Eye size={20} className="shrink-0 text-[var(--noodle-accent-foreground)]" />
               )}
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-black">
@@ -530,22 +537,22 @@ export function LockedSlurpPostCard({
               type="button"
               data-noodler-unlock-action="subscribe"
               disabled={subscriptionPending || transaction !== null}
-              onClick={() => void runTransaction("subscribe")}
+              onClick={(event) => void runTransaction("subscribe", event.currentTarget)}
               className="relative flex min-h-[5.25rem] w-full items-center gap-3 overflow-visible rounded-xl bg-[linear-gradient(115deg,color-mix(in_srgb,var(--slurp-coral)_22%,var(--slurp-surface-raised)),color-mix(in_srgb,var(--slurp-violet)_20%,var(--slurp-surface-raised)))] px-4 py-3 text-left shadow-[0_18px_42px_-30px_var(--noodle-accent)] ring-1 ring-inset ring-[var(--noodle-accent)]/55 transition-[filter,transform,box-shadow] hover:brightness-110 hover:shadow-[0_22px_48px_-28px_var(--noodle-accent)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
             >
               <SlurpCoinBurst active={transaction === "subscribe"} />
               {transaction === "subscribe" ? (
                 <Loader2
                   size={20}
-                  className="shrink-0 animate-spin text-[var(--noodle-accent)] motion-reduce:animate-none"
+                  className="shrink-0 animate-spin text-[var(--noodle-accent-foreground)] motion-reduce:animate-none"
                 />
               ) : (
-                <Bell size={20} className="shrink-0 text-[var(--noodle-accent)]" />
+                <Bell size={20} className="shrink-0 text-[var(--noodle-accent-foreground)]" />
               )}
               <span className="min-w-0 flex-1">
                 <span className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-black">{localizeUi("ui.noodle.unlocksheet.subscribe")}</span>
-                  <span className="rounded-full bg-black/20 px-2 py-0.5 text-[0.62rem] font-black uppercase tracking-[0.08em] text-amber-200 ring-1 ring-inset ring-amber-200/40">
+                  <span className="rounded-full bg-black/20 px-2 py-0.5 text-[11px] font-bold text-amber-200 ring-1 ring-inset ring-amber-200/40">
                     {localizeUi("ui.slurp.unlocksheet.bestValue", { defaultValue: "Best value" })}
                   </span>
                 </span>
@@ -566,7 +573,7 @@ export function LockedSlurpPostCard({
                 type="button"
                 data-slurp-gamble-unlock
                 disabled={unlockPending || transaction !== null}
-                onClick={() => void runTransaction("gamble")}
+                onClick={(event) => void runTransaction("gamble", event.currentTarget)}
                 className="relative flex min-h-[4.75rem] w-full items-center gap-3 overflow-visible rounded-xl bg-[linear-gradient(110deg,color-mix(in_srgb,var(--slurp-coral)_18%,var(--slurp-surface-raised)),color-mix(in_srgb,#facc15_13%,var(--slurp-surface-raised)))] px-4 py-3 text-left shadow-[0_14px_34px_-26px_rgba(250,204,21,.65)] ring-1 ring-inset ring-amber-200/25 transition-[filter,transform,box-shadow] hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200 disabled:opacity-50 motion-reduce:transition-none"
               >
                 <SlurpCoinBurst active={transaction === "gamble"} />
@@ -580,7 +587,7 @@ export function LockedSlurpPostCard({
                     <span className="text-sm font-black">
                       {localizeUi("ui.slurp.unlocksheet.gamble", { defaultValue: "Gamble" })}
                     </span>
-                    <span className="rounded-full bg-amber-100/10 px-2 py-0.5 text-[0.62rem] font-black text-amber-100 ring-1 ring-inset ring-amber-100/25">
+                    <span className="rounded-full bg-amber-100/10 px-2 py-0.5 text-[11px] font-black text-amber-100 ring-1 ring-inset ring-amber-100/25">
                       {localizeUi("ui.slurp.unlocksheet.gambleAvailability", { defaultValue: "1 in 3 posts" })}
                     </span>
                   </span>
@@ -603,8 +610,8 @@ export function LockedSlurpPostCard({
                 newPrice={unlockOffer.newPrice}
                 busy={transaction === "unlock-offer"}
                 disabled={unlockPending || transaction !== null}
-                onClick={() => void runTransaction("unlock-offer")}
-                icon={<Eye size={20} className="shrink-0 text-[var(--noodle-accent)]" />}
+                onClick={(event) => void runTransaction("unlock-offer", event.currentTarget)}
+                icon={<Eye size={20} className="shrink-0 text-[var(--noodle-accent-foreground)]" />}
                 localizeUi={localizeUi}
               />
             )}
@@ -617,8 +624,8 @@ export function LockedSlurpPostCard({
                 suffix={localizeUi("ui.slurp.unlocksheet.perWeek", { defaultValue: "/ week" })}
                 busy={transaction === "subscription-offer"}
                 disabled={subscriptionPending || transaction !== null}
-                onClick={() => void runTransaction("subscription-offer")}
-                icon={<Bell size={20} className="shrink-0 text-[var(--noodle-accent)]" />}
+                onClick={(event) => void runTransaction("subscription-offer", event.currentTarget)}
+                icon={<Bell size={20} className="shrink-0 text-[var(--noodle-accent-foreground)]" />}
                 localizeUi={localizeUi}
               />
             )}
@@ -652,7 +659,7 @@ function SlpCreatorFictionalPrice({ amount, suffix }: { amount?: number | null; 
     >
       <span>{localizeUi("ui.noodle.unlocksheet.price", { amount })}</span>
       <SlurpCoin size={15} />
-      {suffix && <span className="text-[0.65rem] font-bold text-[var(--muted-foreground)]">{suffix}</span>}
+      {suffix && <span className="text-[11px] font-bold text-[var(--muted-foreground)]">{suffix}</span>}
     </span>
   );
 }
@@ -676,7 +683,7 @@ function SlpDiscountOfferButton({
   suffix?: string;
   busy: boolean;
   disabled: boolean;
-  onClick: () => void;
+  onClick: (event: MouseEvent<HTMLButtonElement>) => void;
   icon: React.ReactNode;
   localizeUi: (key: string, options?: Record<string, unknown>) => string;
 }) {
@@ -694,7 +701,7 @@ function SlpDiscountOfferButton({
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-black">{actionLabel}</span>
-          <span className="rounded-full bg-[var(--slurp-success)]/15 px-2 py-0.5 text-[0.62rem] font-black text-[var(--slurp-success)] ring-1 ring-inset ring-[var(--slurp-success)]/35">
+          <span className="rounded-full bg-[var(--slurp-success)]/15 px-2 py-0.5 text-[11px] font-black text-[var(--slurp-success)] ring-1 ring-inset ring-[var(--slurp-success)]/35">
             {label || localizeUi("ui.slurp.unlocksheet.specialOffer", { defaultValue: "Special offer" })}
           </span>
         </span>

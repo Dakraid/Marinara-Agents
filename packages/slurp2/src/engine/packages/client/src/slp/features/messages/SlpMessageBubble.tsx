@@ -6,6 +6,7 @@ import { cn } from "../../../lib/utils";
 import { Avatar } from "../../base/chrome/SlpChrome";
 import { formatTime } from "../../base/ui/slp-date-time";
 import { SlurpCoin, SlurpCoinAmount, SlurpCoinBurst } from "../../modules/coin/SlpCoin";
+import { playSlpPop } from "../../modules/sparkle/SlpSparkle";
 import type { SlurpMessage, SlurpThreadRelationship } from "../../features/messages/slp-messages-contract";
 import { useReactToSlurpMessage, useUnlockSlurpMessage } from "../../features/messages/slp-message-action-hooks";
 
@@ -124,7 +125,7 @@ export function SlurpBubbleTail({ mine, color }: { mine: boolean; color: string 
 /** A plain bubble surface, shared by messages, the pending echo and the typing indicator. */
 export function slurpBubbleSurface(mine: boolean): string {
   return mine
-    ? "bg-[linear-gradient(180deg,color-mix(in_srgb,var(--noodle-accent)_82%,white),var(--noodle-accent))] text-zinc-950 [&_svg]:!text-zinc-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_1px_2px_rgba(0,0,0,0.12)]"
+    ? "bg-[linear-gradient(180deg,color-mix(in_srgb,var(--noodle-accent)_82%,white),var(--noodle-accent))] text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_1px_2px_rgba(0,0,0,0.12)]"
     : "bg-[var(--slurp-surface)] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_2px_rgba(0,0,0,0.08)] ring-1 ring-inset ring-[var(--noodle-divider)]";
 }
 export const SLURP_BUBBLE_TAIL_COLOR = { mine: "var(--noodle-accent)", theirs: "var(--slurp-surface)" };
@@ -162,7 +163,7 @@ export function SlurpAwayAnimation({ account }: { account: Parameters<typeof Ava
           <span className="flex h-24 w-24 items-center justify-center rounded-full bg-[var(--slurp-surface-raised)]" />
         )}
       </span>
-      <span className="slurp-away-moon absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--slurp-surface-raised)] text-[var(--noodle-accent)] shadow-[var(--slurp-shadow-raised)] ring-1 ring-[var(--noodle-divider)] sm:right-3 sm:top-3">
+      <span className="slurp-away-moon absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--slurp-surface-raised)] text-[var(--noodle-accent-foreground)] shadow-[var(--slurp-shadow-raised)] ring-1 ring-[var(--noodle-divider)] sm:right-3 sm:top-3">
         <Moon size={14} fill="currentColor" />
       </span>
       {[0, 1.2, 2.4].map((delay, index) => (
@@ -205,7 +206,7 @@ export function MessageBubble({
     return (
       <div
         className={cn(
-          "flex w-full max-w-sm self-center items-center justify-center gap-2 rounded-2xl bg-[var(--noodle-accent)]/12 px-4 py-3 text-xs font-bold text-[var(--noodle-accent)] ring-1 ring-inset ring-[var(--noodle-accent)]/20",
+          "flex w-full max-w-sm self-center items-center justify-center gap-2 rounded-2xl bg-[var(--noodle-accent)]/12 px-4 py-3 text-xs font-bold text-[var(--noodle-accent-foreground)] ring-1 ring-inset ring-[var(--noodle-accent)]/20",
         )}
       >
         <SlurpCoin size={16} aria-hidden="true" />
@@ -245,7 +246,7 @@ export function MessageBubble({
             />
           )}
           <div className="px-3.5 py-3">
-            <p className="text-xs font-bold text-[var(--noodle-accent)]">
+            <p className="text-xs font-bold text-[var(--noodle-accent-foreground)]">
               {localizeUi("ui.slurp.messages.postPreview", { defaultValue: "Shared post" })}
             </p>
             {/* A post can now be shared into any chat, so the card names its author. */}
@@ -280,7 +281,7 @@ export function MessageBubble({
   if (message.kind === "broadcast") {
     return (
       <div className="self-start max-w-[88%] rounded-2xl rounded-bl-md bg-[var(--slurp-surface)] px-3.5 py-2.5 ring-1 ring-inset ring-[var(--noodle-divider)]">
-        <p className="mb-1 text-[0.65rem] font-black uppercase tracking-[0.08em] text-[var(--noodle-accent)]">
+        <p className="mb-1 text-[0.65rem] font-black uppercase tracking-[0.08em] text-[var(--noodle-accent-foreground)]">
           {localizeUi("ui.slurp.messages.broadcastLabel", { defaultValue: "Broadcast" })}
         </p>
         <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{message.content}</p>
@@ -292,8 +293,9 @@ export function MessageBubble({
   }
   const hearted = message.metadata.reaction === "heart";
   const canHeart = message.role === "creator" && !ownsCreator && Boolean(personaId);
-  const toggleHeart = () => {
+  const toggleHeart = (origin: Element) => {
     if (!canHeart || !personaId) return;
+    if (!hearted) playSlpPop(origin, { bounce: origin instanceof SVGElement });
     react.mutate({ personaId, messageId: message.id, reaction: hearted ? null : "heart" });
   };
   const closesGroup = group === "single" || group === "last";
@@ -311,7 +313,7 @@ export function MessageBubble({
     >
       <div className={cn("relative flex items-center gap-1.5", mine && "flex-row-reverse")}>
         <div
-          onDoubleClick={toggleHeart}
+          onDoubleClick={(event) => toggleHeart(event.currentTarget)}
           style={{ borderRadius: bubbleRadius(group, mine) }}
           className={cn(
             "slurp-bubble-shape relative whitespace-pre-wrap break-words px-3.5 py-2 text-[0.95rem] leading-snug sm:text-sm sm:leading-relaxed",
@@ -335,7 +337,7 @@ export function MessageBubble({
                 });
                 if (confirmed) unlock.mutate({ personaId, messageId: message.id });
               }}
-              className="relative inline-flex min-h-11 items-center gap-1.5 overflow-visible rounded-full bg-[var(--noodle-accent)]/12 px-3 text-left font-semibold text-[var(--noodle-accent)] transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-60 motion-reduce:active:scale-100"
+              className="relative inline-flex min-h-11 items-center gap-1.5 overflow-visible rounded-full bg-[var(--noodle-accent)]/12 px-3 text-left font-semibold text-[var(--noodle-accent-foreground)] transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-60 motion-reduce:active:scale-100"
             >
               <SlurpCoinBurst active={unlock.isPending} />
               <Lock size={13} aria-hidden="true" />
@@ -367,7 +369,7 @@ export function MessageBubble({
             type="button"
             aria-pressed={hearted}
             aria-label={localizeUi("ui.slurp.messages.heart", { defaultValue: "Heart message" })}
-            onClick={toggleHeart}
+            onClick={(event) => toggleHeart(event.currentTarget.querySelector("svg") ?? event.currentTarget)}
             className={cn(
               "flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-[opacity,transform,color] active:scale-90 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:active:scale-100",
               hearted
@@ -402,7 +404,7 @@ export function MessageBubble({
             <span
               className={cn(
                 "ml-1.5 inline-flex items-center gap-1 font-semibold",
-                message.readAt && "text-[var(--noodle-accent)]",
+                message.readAt && "text-[var(--noodle-accent-foreground)]",
               )}
               title={localizeUi(message.readAt ? "ui.slurp.messages.seen" : "ui.slurp.messages.delivered", {
                 defaultValue: message.readAt ? "Seen" : "Delivered",
@@ -435,7 +437,7 @@ export function SlurpPlatformActionCard({
   const { t: localizeUi } = useUiTranslation();
   return (
     <article className="mx-auto flex w-full max-w-md items-center gap-3 rounded-lg bg-[var(--slurp-surface-raised)] px-4 py-3 shadow-[var(--slurp-shadow-raised)] ring-1 ring-inset ring-[var(--noodle-divider)]">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)]/12 text-[var(--noodle-accent)]">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)]/12 text-[var(--noodle-accent-foreground)]">
         <SlurpCoin size={17} aria-hidden="true" />
       </span>
       <span className="min-w-0 flex-1">
@@ -449,7 +451,7 @@ export function SlurpPlatformActionCard({
           })}
         </span>
         {relationship && (
-          <span className="mt-1 block text-[0.68rem] font-semibold text-[var(--noodle-accent)]">
+          <span className="mt-1 block text-[0.68rem] font-semibold text-[var(--noodle-accent-foreground)]">
             {localizeUi("ui.slurp.messages.relationshipAfterTip", {
               defaultValue: "Relationship: {{tier}}",
               tier: localizeUi(`ui.slurp.rapport.tier.${relationship.tier}`),

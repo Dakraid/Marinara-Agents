@@ -347,7 +347,7 @@ export function EmptyState({
 }) {
   return (
     <div className="px-8 py-8 text-center sm:py-16">
-      <Icon size={36} className="mx-auto !text-[var(--noodle-accent)]" />
+      <Icon size={36} className="mx-auto !text-[var(--noodle-accent-foreground)]" />
       <p className="mt-4 font-bold">{title}</p>
       {detail && <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[var(--muted-foreground)]">{detail}</p>}
       {action && onAction && (
@@ -395,7 +395,7 @@ export function SlpCreatorFrame({
           <button
             type="button"
             onClick={onBack}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--noodle-accent)] hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--noodle-accent-foreground)] hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
             aria-label={localizeUi("ui.noodle.noodlerframe.back")}
           >
             <ArrowLeft size={18} className="rtl:-scale-x-100" />
@@ -403,7 +403,7 @@ export function SlpCreatorFrame({
         )}
         <h1 className="min-w-0 flex-1 truncate text-sm font-semibold">{title}</h1>
         {action ?? (
-          <span className="rounded-full bg-[var(--noodle-accent)]/10 px-2.5 py-1 text-[0.65rem] font-bold text-[var(--noodle-accent)]">
+          <span className="rounded-full bg-[var(--noodle-accent)]/10 px-2.5 py-1 text-[0.65rem] font-bold text-[var(--noodle-accent-foreground)]">
             {localizeUi("ui.noodle.noodlerframe.noodler")}
           </span>
         )}
@@ -480,7 +480,7 @@ export function LoadMoreFeedButton({
       onClick={onLoadMore}
       disabled={loading}
       aria-busy={loading}
-      className="min-h-11 w-full border-b border-[var(--noodle-divider)] px-4 py-3 text-sm font-bold text-[var(--noodle-accent)] hover:bg-[var(--noodle-accent)]/10"
+      className="min-h-11 w-full border-b border-[var(--noodle-divider)] px-4 py-3 text-sm font-bold text-[var(--noodle-accent-foreground)] hover:bg-[var(--noodle-accent)]/10"
     >
       {loading ? (
         <Loader2

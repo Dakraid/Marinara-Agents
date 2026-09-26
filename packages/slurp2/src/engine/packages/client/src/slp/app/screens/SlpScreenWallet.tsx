@@ -3,6 +3,7 @@ import { ArrowDown, Crown, Gift, Lock, type LucideIcon, MessageCircle, RotateCcw
 import { Avatar } from "../../base/chrome/SlpChrome";
 import { HelpTooltip } from "../../../components/ui/HelpTooltip";
 import { SlurpCoin, SlurpCoinBurst } from "../../modules/coin/SlpCoin";
+import { SlpShimmer } from "../../modules/sparkle/SlpSparkle";
 import { cn } from "../../../lib/utils";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
 import { formatTime } from "../../base/ui/slp-date-time";
@@ -93,7 +94,7 @@ export function SlurpWalletView({
     if (kind === "unlock" || kind === "ppv") return { icon: Lock, tone: "bg-violet-500/14 text-violet-300" };
     if (kind === "subscribe" || kind === "renew") return { icon: Crown, tone: "bg-fuchsia-500/14 text-fuchsia-300" };
     if (kind === "payout" || kind === "topUp")
-      return { icon: ArrowDown, tone: "bg-[var(--noodle-accent)]/14 text-[var(--noodle-accent)]" };
+      return { icon: ArrowDown, tone: "bg-[var(--noodle-accent)]/14 text-[var(--noodle-accent-foreground)]" };
     if (kind === "reversal") return { icon: RotateCcw, tone: "bg-rose-500/14 text-rose-300" };
     if (kind === "commission" || kind === "messageRequest")
       return { icon: MessageCircle, tone: "bg-sky-500/14 text-sky-300" };
@@ -161,7 +162,7 @@ export function SlurpWalletView({
                   {localizeUi("ui.slurp.wallet.creatorEarningsSource", { defaultValue: "From your creator page" })}
                 </p>
               </div>
-              <span className="rounded-full bg-black/12 px-3 py-2 text-xs font-black tabular-nums text-[var(--noodle-accent)] ring-1 ring-inset ring-[var(--noodle-accent)]/25">
+              <span className="rounded-full bg-black/12 px-3 py-2 text-xs font-black tabular-nums text-[var(--noodle-accent-foreground)] ring-1 ring-inset ring-[var(--noodle-accent)]/25">
                 {localizeUi("ui.slurp.wallet.availableAmount", {
                   defaultValue: "{{amount}} available",
                   amount: creator.payoutAllowance.toLocaleString(),
@@ -181,7 +182,7 @@ export function SlurpWalletView({
                     { onError: (error) => toast.error(errorMessage(error)) },
                   )
                 }
-                className="relative inline-flex min-h-11 items-center justify-center gap-2 overflow-visible rounded-full bg-[var(--noodle-accent)] px-6 text-xs font-black text-zinc-950 [&_svg]:!text-zinc-950 shadow-[0_12px_28px_-16px_var(--noodle-accent)] transition-[opacity,transform] hover:opacity-90 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--slurp-surface)] disabled:opacity-45 motion-reduce:transition-none motion-reduce:active:scale-100"
+                className="relative inline-flex min-h-11 items-center justify-center gap-2 overflow-visible rounded-full bg-[var(--noodle-accent)] px-6 text-xs font-black text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] shadow-[0_12px_28px_-16px_var(--noodle-accent)] transition-[opacity,transform] hover:opacity-90 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--slurp-surface)] disabled:opacity-45 motion-reduce:transition-none motion-reduce:active:scale-100"
               >
                 <SlurpCoinBurst active={payout.isPending} direction="earn" />
                 <ArrowDown size={16} strokeWidth={2.5} aria-hidden="true" />
@@ -193,10 +194,11 @@ export function SlurpWalletView({
           )}
           <div
             className={cn(
-              "flex items-center justify-between gap-4 bg-[linear-gradient(120deg,color-mix(in_srgb,var(--slurp-violet)_7%,var(--slurp-surface)),var(--slurp-surface))] px-4 pb-5 sm:px-6 sm:pb-6",
+              "relative isolate flex items-center justify-between gap-4 bg-[linear-gradient(120deg,color-mix(in_srgb,var(--slurp-violet)_7%,var(--slurp-surface)),var(--slurp-surface))] px-4 pb-5 sm:px-6 sm:pb-6",
               creator ? "pt-8" : "pt-5",
             )}
           >
+            <SlpShimmer />
             <div>
               <div className="flex items-center gap-2.5 text-xs font-semibold text-[var(--muted-foreground)]">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-500/14 text-sky-300 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
@@ -289,7 +291,7 @@ export function SlurpWalletView({
                 <button
                   type="submit"
                   disabled={setDevWalletCoins.isPending || devCoins.trim() === ""}
-                  className="min-h-10 rounded-lg bg-amber-400 px-3 text-xs font-black text-zinc-950 disabled:opacity-50"
+                  className="min-h-10 rounded-lg bg-amber-400 px-3 text-xs font-black text-[var(--slurp-on-accent)] disabled:opacity-50"
                 >
                   {setDevWalletCoins.isPending ? "Setting..." : "Set coins"}
                 </button>
@@ -327,7 +329,7 @@ export function SlurpWalletView({
                 className={cn(
                   "min-h-10 rounded-full px-3 text-sm font-semibold text-[var(--muted-foreground)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]",
                   ledgerMode === mode &&
-                    "bg-[var(--slurp-surface)] text-[var(--noodle-accent)] shadow-[var(--slurp-shadow-raised)]",
+                    "bg-[var(--slurp-surface)] text-[var(--noodle-accent-foreground)] shadow-[var(--slurp-shadow-raised)]",
                 )}
               >
                 {mode === "spending"

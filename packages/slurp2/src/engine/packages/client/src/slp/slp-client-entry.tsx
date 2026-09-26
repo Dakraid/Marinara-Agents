@@ -1,4 +1,4 @@
-import { Component, useEffect, useState, type ErrorInfo, type ReactNode } from "react";
+import { Component, useEffect, useState, type CSSProperties, type ErrorInfo, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import i18next from "i18next";
@@ -14,6 +14,7 @@ import { useSlurpUIStore } from "./base/state/slp-package-store";
 import { configureSlurpPackageState } from "./base/state/slp-package-store";
 import { ModalPortalContext } from "../components/ui/Modal";
 import { AppDialogRenderer } from "../components/ui/AppDialogRenderer";
+import { SLP_SPARKLE_STYLES } from "./modules/sparkle/slp-sparkle-styles";
 
 const SLURP_ELEMENT_TAG = "marinara-capability-slurp2";
 const SLURP_STYLE_ID = "marinara-capability-slurp2-styles";
@@ -56,7 +57,11 @@ let slurpPackageStyles = "";
  * follow their own button's text colour instead.
  */
 const SLURP_ICON_COLOR_FIX =
-  "[data-marinara-accent-animation] .mari-chrome-token-scope svg:not(.mari-rgb-static-icon){color:inherit;stroke:currentColor;}";
+  "[data-marinara-accent-animation] .mari-chrome-token-scope svg:not(.mari-rgb-static-icon){color:inherit;stroke:currentColor;}" +
+  // Icons on photos and scrims (carousel arrows, lock badges) sit in a `text-white` control. The
+  // shell paints every icon in the pink ink, which is dark plum in light mode, so these follow
+  // their control's white instead.
+  ':is(marinara-capability-slurp2,[data-marinara-capability-scope="slurp2"]) .text-white svg:not([class*="text-"]){color:inherit;}';
 
 const SLURP_TOAST_STYLES = `
   [data-sonner-toaster][data-sonner-theme] {
@@ -107,7 +112,7 @@ function syncSlurpPackageStyles() {
 
   const style = existing ?? document.createElement("style");
   style.id = SLURP_STYLE_ID;
-  style.textContent = `${slurpPackageStyles}\n${SLURP_ICON_COLOR_FIX}\n${SLURP_TOAST_STYLES}`;
+  style.textContent = `${slurpPackageStyles}\n${SLURP_ICON_COLOR_FIX}\n${SLURP_TOAST_STYLES}\n${SLP_SPARKLE_STYLES}`;
   if (!existing) document.head.appendChild(style);
 }
 
@@ -194,7 +199,11 @@ function SlurpPackageRoot({ element }: { element: CapabilityElement }) {
     <I18nextProvider i18n={localization}>
       <QueryClientProvider client={client}>
         <ModalPortalContext.Provider value={element.__portal ?? element}>
-          <div className="h-full min-h-0 overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
+          <div
+            className="h-full min-h-0 overflow-hidden bg-[var(--background)] text-[var(--foreground)]"
+            // Screens outside the Slurp shell (Backstage panels) still paint text on pink fills.
+            style={{ "--slurp-on-accent": "#2a0a1b" } as CSSProperties}
+          >
             <SlurpErrorBoundary>
               <SlpApp navigation={navigation} onNavigate={setNavigation} onLeave={onLeave} />
               <AppDialogRenderer />
@@ -237,7 +246,9 @@ class MarinaraSlurpElement extends HTMLElement {
       this.__portal.style.setProperty("--foreground", "#fff7fc");
       this.__portal.style.setProperty("--muted-foreground", "#d8c9d4");
       this.__portal.style.setProperty("--noodle-accent", "#ff7ec1");
-      this.__portal.style.setProperty("--noodle-accent-foreground", "#17121b");
+      // Pink ink (text/icons) on this dark portal; text *on* a pink fill uses --slurp-on-accent.
+      this.__portal.style.setProperty("--noodle-accent-foreground", "#ff9bd0");
+      this.__portal.style.setProperty("--slurp-on-accent", "#2a0a1b");
       document.body.appendChild(this.__portal);
     }
     this.__root ??= createRoot(this);

@@ -117,7 +117,7 @@ export function ChoiceSetting<T extends string>({
                     <Icon
                       size={18}
                       aria-hidden="true"
-                      className={`mt-0.5 shrink-0 ${checked ? "text-[var(--noodle-accent)]" : "text-[var(--slurp-muted,var(--muted-foreground))]"}`}
+                      className={`mt-0.5 shrink-0 ${checked ? "text-[var(--noodle-accent-foreground)]" : "text-[var(--slurp-muted,var(--muted-foreground))]"}`}
                     />
                   )}
                   <span className="min-w-0">

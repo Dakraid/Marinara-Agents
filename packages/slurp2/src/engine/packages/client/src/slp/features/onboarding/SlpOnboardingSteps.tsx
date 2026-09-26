@@ -176,7 +176,7 @@ export function SlpOnboardingSteps({ model }: { model: SlurpOnboardingWizardMode
                     className={cn(
                       "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border",
                       selected.has(account.id)
-                        ? "border-[var(--noodle-accent)] bg-[var(--noodle-accent)] text-zinc-950 [&_svg]:!text-zinc-950"
+                        ? "border-[var(--noodle-accent)] bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]"
                         : "border-[var(--slurp-outline)]",
                     )}
                   >
@@ -554,7 +554,7 @@ export function SlpOnboardingSteps({ model }: { model: SlurpOnboardingWizardMode
         <div className="flex min-h-[20rem] flex-col items-center justify-center text-center">
           <div
             className={cn(
-              "flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[var(--noodle-accent)] to-[var(--noodle-accent)]/70 text-zinc-950 shadow-lg shadow-[var(--noodle-accent)]/25",
+              "flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[var(--noodle-accent)] to-[var(--noodle-accent)]/70 text-[var(--slurp-on-accent)] shadow-lg shadow-[var(--noodle-accent)]/25",
               completion === "generated" &&
                 "ring-4 ring-[var(--noodle-accent)]/20 transition-shadow duration-500 motion-reduce:transition-none",
             )}

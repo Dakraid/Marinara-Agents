@@ -21,7 +21,7 @@ export function SlpPulseCard({ open, onOpen }: { open: boolean; onOpen: () => vo
       aria-controls="slurp-pulse-panel"
       className="group relative flex min-h-11 w-full items-center gap-2.5 overflow-hidden rounded-md bg-[color-mix(in_srgb,var(--noodle-accent)_9%,var(--slurp-surface-raised))] px-3 text-start ring-1 ring-inset ring-[var(--noodle-accent)]/18 transition-[background-color,transform,box-shadow] hover:bg-[var(--accent)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:active:scale-100"
     >
-      <span className="relative flex h-7 w-7 shrink-0 items-center justify-center text-[var(--noodle-accent)]">
+      <span className="relative flex h-7 w-7 shrink-0 items-center justify-center text-[var(--noodle-accent-foreground)]">
         {activeCount > 0 && (
           <>
             <span className="absolute h-7 w-7 rounded-full border border-[var(--noodle-accent)]/18 motion-safe:animate-ping motion-reduce:animate-none" />
@@ -45,7 +45,7 @@ export function SlpPulseCard({ open, onOpen }: { open: boolean; onOpen: () => vo
           {t("ui.slurp.pulse.title", { defaultValue: "Pulse" })}
         </span>
         {activeCount > 0 && (
-          <span className="block truncate text-[0.68rem] leading-4 text-[var(--muted-foreground)]">
+          <span className="block truncate text-xs leading-4 text-[var(--muted-foreground)]">
             {activeCount} {t("ui.slurp.pulse.runningShort", { defaultValue: "running" })}
           </span>
         )}
@@ -103,7 +103,7 @@ export function SlpPulsePanel({
       >
         <div className="flex items-start justify-between gap-4 border-b border-[var(--noodle-divider)] px-5 py-4">
           <div>
-            <div className="flex items-center gap-2 text-[var(--noodle-accent)]">
+            <div className="flex items-center gap-2 text-[var(--noodle-accent-foreground)]">
               {groups.active.length > 0 ? (
                 <motion.span
                   animate={{ scale: [1, 1.08, 1] }}
@@ -119,7 +119,7 @@ export function SlpPulsePanel({
                 {t("ui.slurp.pulse.title", { defaultValue: "Pulse" })}
               </h2>
             </div>
-            <p className="mt-1 text-[0.68rem] text-[var(--muted-foreground)]">
+            <p className="mt-1 text-xs text-[var(--muted-foreground)]">
               {queueSummary || t("ui.slurp.pulse.description", { defaultValue: "Background activity" })}
             </p>
           </div>
@@ -171,7 +171,11 @@ export function SlpPulsePanel({
               </h3>
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--muted-foreground)]">
                 {tasks.active.length > 0 ? (
-                  <Loader2 size={14} className="animate-spin text-[var(--noodle-accent)]" aria-hidden="true" />
+                  <Loader2
+                    size={14}
+                    className="animate-spin text-[var(--noodle-accent-foreground)]"
+                    aria-hidden="true"
+                  />
                 ) : (
                   <CheckCircle2 size={14} className="text-emerald-500" aria-hidden="true" />
                 )}
@@ -503,7 +507,7 @@ function PulseTaskRow({
       {account ? (
         <Avatar account={account} size="xs" />
       ) : (
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)]/12 text-[var(--noodle-accent)]">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)]/12 text-[var(--noodle-accent-foreground)]">
           {running ? (
             <Loader2 size={15} className="animate-spin" aria-hidden="true" />
           ) : task.status === "error" || task.status === "failed" ? (
@@ -518,11 +522,11 @@ function PulseTaskRow({
         <span className="block truncate text-xs text-[var(--muted-foreground)]">
           {scope} {elapsed ? `· ${elapsed}` : ""}
         </span>
-        <span className="block truncate text-[0.68rem] text-[var(--muted-foreground)]">{detail}</span>
+        <span className="block truncate text-xs text-[var(--muted-foreground)]">{detail}</span>
       </span>
       <span
         className={cn(
-          "shrink-0 text-[0.68rem] font-semibold",
+          "shrink-0 text-xs font-semibold",
           task.status === "error" || task.status === "failed"
             ? "text-[var(--slurp-danger)]"
             : "text-[var(--muted-foreground)]",
@@ -584,7 +588,7 @@ function PulseGroupCard({
           aria-expanded={expanded}
           className="relative z-10 flex min-h-16 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)]"
         >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--noodle-accent)]/10 text-[var(--noodle-accent)]">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--noodle-accent)]/10 text-[var(--noodle-accent-foreground)]">
             {attention ? (
               <CircleAlert size={16} aria-hidden="true" />
             ) : running ? (
@@ -599,10 +603,10 @@ function PulseGroupCard({
               {scope ?? nameSummary ?? taskSummary(group.tasks[0], t)}
             </span>
             {nameSummary && scope && (
-              <span className="block truncate text-[0.68rem] text-[var(--muted-foreground)]">{nameSummary}</span>
+              <span className="block truncate text-xs text-[var(--muted-foreground)]">{nameSummary}</span>
             )}
           </span>
-          <span className="flex shrink-0 items-center gap-2 text-[0.68rem] font-semibold text-[var(--muted-foreground)]">
+          <span className="flex shrink-0 items-center gap-2 text-xs font-semibold text-[var(--muted-foreground)]">
             {group.tasks.length > 1 && <span>{group.tasks.length}</span>}
             {group.tasks.length > 1 ? (
               <ChevronDown
@@ -639,7 +643,7 @@ function PulseGroupCard({
               type="button"
               onClick={() => setShowAllTasks((value) => !value)}
               aria-expanded={showAllTasks}
-              className="min-h-9 rounded-md px-2 text-start text-[0.68rem] font-semibold text-[var(--noodle-accent)] hover:bg-[var(--noodle-accent)]/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
+              className="min-h-9 rounded-md px-2 text-start text-xs font-semibold text-[var(--noodle-accent-foreground)] hover:bg-[var(--noodle-accent)]/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
             >
               {showAllTasks
                 ? t("ui.slurp.pulse.showFewer", { defaultValue: "Show fewer" })
@@ -767,7 +771,7 @@ function PulseAction({
       disabled={disabled}
       className="flex min-h-14 items-center gap-2 rounded-xl bg-[var(--slurp-surface-raised)] px-3 text-start text-sm font-semibold ring-1 ring-inset ring-[var(--noodle-divider)] transition-[background-color,transform] hover:bg-[var(--accent)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:cursor-wait disabled:opacity-55 motion-reduce:transition-none motion-reduce:active:scale-100"
     >
-      <span className="shrink-0 text-[var(--noodle-accent)]">{icon}</span>
+      <span className="shrink-0 text-[var(--noodle-accent-foreground)]">{icon}</span>
       {label}
     </button>
   );

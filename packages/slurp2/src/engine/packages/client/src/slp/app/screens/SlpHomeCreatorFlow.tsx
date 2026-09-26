@@ -208,7 +208,7 @@ export function renderSlurpHomeCreatorFlow({
                     },
                   )
                 }
-                className="h-10 flex-1 rounded-full border border-transparent bg-[var(--noodle-accent)] px-3 text-xs font-bold text-zinc-950 [&_svg]:!text-zinc-950 disabled:opacity-50"
+                className="h-10 flex-1 rounded-full border border-transparent bg-[var(--noodle-accent)] px-3 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] disabled:opacity-50"
               >
                 {setupAutoPosting.isPending
                   ? localizeUi("ui.noodle.noodlerhome.enabling_5c258f0")
@@ -364,7 +364,7 @@ export function renderSlurpHomeCreatorFlow({
                   index > 0 && "border-t border-[var(--noodle-divider)]",
                 )}
               >
-                <Icon size={17} className="text-[var(--noodle-accent)]" aria-hidden="true" />
+                <Icon size={17} className="text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
                 <span className="flex-1">{label}</span>
                 <ChevronRight size={15} className="text-[var(--muted-foreground)]" aria-hidden="true" />
               </button>

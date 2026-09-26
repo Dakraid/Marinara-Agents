@@ -100,7 +100,7 @@ export function renderSlurpHomeDestinations({
                 <button
                   type="button"
                   onClick={() => onNavigate(navigation.returnToSettings!)}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--noodle-accent)] hover:bg-[var(--accent)]"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--noodle-accent-foreground)] hover:bg-[var(--accent)]"
                   aria-label={localizeUi("ui.noodle.socialsettings.backToSettings")}
                   title={localizeUi("ui.noodle.socialsettings.backToSettings")}
                 >
@@ -153,7 +153,7 @@ export function renderSlurpHomeDestinations({
                         ? localizeUi("ui.noodle.noodlerhome.everyEligibleAccountAlreadyHasAStageProfile")
                         : undefined
                 }
-                className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-zinc-950 [&_svg]:!text-zinc-950 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Plus size={15} />
                 {localizeUi("ui.noodle.noodlerhome.newProfile")}
@@ -161,7 +161,7 @@ export function renderSlurpHomeDestinations({
             </div>
             {accountsQuery.isLoading ? (
               <div className="flex justify-center py-16">
-                <Loader2 size={24} className="animate-spin text-[var(--noodle-accent)]" />
+                <Loader2 size={24} className="animate-spin text-[var(--noodle-accent-foreground)]" />
               </div>
             ) : accountsQuery.isError ? (
               <EmptyState

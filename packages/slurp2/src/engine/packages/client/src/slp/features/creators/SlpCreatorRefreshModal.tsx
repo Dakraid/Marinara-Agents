@@ -105,7 +105,7 @@ export function SlpCreatorRefreshModal(page: SlpBackstagePageProps) {
                 aria-pressed={refreshAccess === access}
                 disabled={refreshCreators.isPending}
                 onClick={() => setRefreshAccess(access)}
-                className={`min-h-10 rounded-lg text-sm font-semibold capitalize ${refreshAccess === access ? "bg-[var(--noodle-accent)] text-zinc-950 [&_svg]:!text-zinc-950" : "text-[var(--muted-foreground)] hover:bg-[var(--accent)]"}`}
+                className={`min-h-10 rounded-lg text-sm font-semibold capitalize ${refreshAccess === access ? "bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]" : "text-[var(--muted-foreground)] hover:bg-[var(--accent)]"}`}
               >
                 {access}
               </button>
@@ -131,7 +131,7 @@ export function SlpCreatorRefreshModal(page: SlpBackstagePageProps) {
                 { onSettled: () => setRefreshModalOpen(false) },
               )
             }
-            className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-xs font-bold text-zinc-950 [&_svg]:!text-zinc-950 disabled:opacity-50"
+            className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] disabled:opacity-50"
           >
             {refreshCreators.isPending ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
             <span role={refreshCreators.isPending ? "status" : undefined}>

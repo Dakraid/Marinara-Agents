@@ -67,13 +67,13 @@ export function SlpHubDiscover({
         <button
           type="button"
           onClick={onCloseDiscovery}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[var(--noodle-accent)] transition-colors hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
           aria-label={localizeUi("ui.noodle.noodlerframe.back")}
         >
           <ChevronLeft size={22} />
         </button>
         <label className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full bg-[var(--accent)] px-4 text-base ring-1 ring-inset ring-[var(--noodle-divider)] transition-colors focus-within:ring-[var(--noodle-accent)] sm:text-sm">
-          <Search size={18} className="shrink-0 text-[var(--noodle-accent)]" />
+          <Search size={18} className="shrink-0 text-[var(--noodle-accent-foreground)]" />
           <span className="sr-only">{localizeUi("ui.noodle.noodlerhome.searchPostsOrCreators")}</span>
           <input
             ref={discoveryInputRef}
@@ -87,7 +87,7 @@ export function SlpHubDiscover({
             <button
               type="button"
               onClick={() => onSearchChange("")}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--noodle-accent)] hover:bg-[var(--noodle-accent)]/10"
+              className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--noodle-accent-foreground)] hover:bg-[var(--noodle-accent)]/10"
               aria-label={localizeUi("ui.noodle.noodlehome.clearSearch")}
             >
               <X size={14} />
@@ -98,7 +98,7 @@ export function SlpHubDiscover({
 
       {!searchTerm && (
         <header className="relative isolate overflow-hidden px-4 pb-5 pt-7 sm:px-5">
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--noodle-accent)]">Slurp</p>
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--noodle-accent-foreground)]">Slurp</p>
           <h1 className="mt-1 text-2xl font-bold text-balance">{localizeUi("ui.slurp.discover.title")}</h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--muted-foreground)]">
             {localizeUi("ui.slurp.discover.detail")}
@@ -190,7 +190,7 @@ export function SlpHubDiscover({
               <button
                 type="button"
                 onClick={discover.clear}
-                className="mt-3 min-h-10 rounded-full px-4 text-sm font-bold text-[var(--noodle-accent)] hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
+                className="mt-3 min-h-10 rounded-full px-4 text-sm font-bold text-[var(--noodle-accent-foreground)] hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
               >
                 {localizeUi("ui.slurp.discover.clearFilters", { defaultValue: "Clear filters" })}
               </button>

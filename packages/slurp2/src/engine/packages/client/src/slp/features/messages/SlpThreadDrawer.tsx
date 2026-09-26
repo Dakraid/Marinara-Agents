@@ -133,7 +133,7 @@ export function SlpThreadDrawer({ model }: { model: SlurpThreadViewModel }) {
                       <button
                         type="button"
                         onClick={() => onOpenProfile(headerProfileId)}
-                        className="min-h-10 shrink-0 rounded-xl px-3 text-xs font-bold text-[var(--noodle-accent)] ring-1 ring-inset ring-[var(--noodle-accent)]/35 transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/10 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100"
+                        className="min-h-10 shrink-0 rounded-xl px-3 text-xs font-bold text-[var(--noodle-accent-foreground)] ring-1 ring-inset ring-[var(--noodle-accent)]/35 transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/10 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100"
                       >
                         {localizeUi("ui.slurp.messages.viewProfile", { defaultValue: "View profile" })}
                       </button>

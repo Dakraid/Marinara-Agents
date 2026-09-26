@@ -240,7 +240,7 @@ export function SlurpMessagesView({
           <button
             type="button"
             onClick={onExit}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--noodle-accent)] transition-colors hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
             aria-label={localizeUi("ui.noodle.noodlerframe.back", { defaultValue: "Back" })}
           >
             <ArrowLeft size={18} className="rtl:-scale-x-100" aria-hidden="true" />
@@ -257,7 +257,7 @@ export function SlurpMessagesView({
           </h2>
           <div className="flex items-center gap-2">
             {unread > 0 && (
-              <span className="shrink-0 rounded-full bg-[var(--noodle-accent)]/12 px-2.5 py-1 text-[0.7rem] font-bold tabular-nums text-[var(--noodle-accent)]">
+              <span className="shrink-0 rounded-full bg-[var(--noodle-accent)]/12 px-2.5 py-1 text-[0.7rem] font-bold tabular-nums text-[var(--noodle-accent-foreground)]">
                 {localizeUi("ui.slurp.messages.unreadTotal", { defaultValue: "{{count}} unread", count: unread })}
               </span>
             )}
@@ -265,7 +265,7 @@ export function SlurpMessagesView({
               type="button"
               onClick={() => setComposePickerOpen((open) => !open)}
               aria-expanded={composePickerOpen}
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--noodle-accent)]/35 px-3 text-xs font-bold text-[var(--noodle-accent)] transition-colors hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--noodle-accent)]/35 px-3 text-xs font-bold text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
             >
               <Plus size={15} aria-hidden="true" />
               {localizeUi("ui.slurp.messages.newChat", { defaultValue: "New chat" })}
@@ -353,7 +353,7 @@ export function SlurpMessagesView({
               className={cn(
                 "min-h-11 rounded-full px-3 text-xs font-semibold text-[var(--muted-foreground)] ring-1 ring-inset ring-[var(--noodle-divider)] transition-colors",
                 filter === option &&
-                  "bg-[var(--noodle-accent)] text-zinc-950 [&_svg]:!text-zinc-950 ring-[var(--noodle-accent)]",
+                  "bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] ring-[var(--noodle-accent)]",
               )}
             >
               {localizeUi(`ui.slurp.messages.filter.${option}`, {
@@ -429,7 +429,7 @@ export function SlurpMessagesView({
           ) : visibleActive.length === 0 && filter === "all" ? (
             <div className="relative isolate overflow-hidden rounded-xl bg-[linear-gradient(145deg,var(--slurp-surface-raised),var(--slurp-surface))] px-6 py-9 text-center shadow-[var(--slurp-shadow-raised)] ring-1 ring-inset ring-white/[0.06]">
               <SlurpEmptyArtwork className="absolute inset-0 -z-10" />
-              <MessageCircle size={28} className="mx-auto text-[var(--noodle-accent)]" />
+              <MessageCircle size={28} className="mx-auto text-[var(--noodle-accent-foreground)]" />
               <p className="mt-3 text-sm font-bold">
                 {localizeUi("ui.slurp.messages.emptyTitle", { defaultValue: "No conversations yet" })}
               </p>
@@ -485,7 +485,7 @@ export function SlurpMessagesView({
       ) : (
         <div className="hidden min-h-0 items-center justify-center bg-[color-mix(in_srgb,var(--slurp-surface)_45%,transparent)] px-6 text-center md:flex">
           <div className="max-w-xs">
-            <MessageCircle size={28} className="mx-auto text-[var(--noodle-accent)]" aria-hidden="true" />
+            <MessageCircle size={28} className="mx-auto text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
             <p className="mt-3 text-sm font-bold">
               {localizeUi("ui.slurp.messages.chooseConversation", { defaultValue: "Choose a conversation" })}
             </p>
@@ -537,7 +537,7 @@ function ThreadRow({
         {(thread.subscribed || pending) && (
           <span className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5">
             {thread.subscribed && (
-              <span className="shrink-0 rounded-full bg-[var(--noodle-accent)]/12 px-1.5 py-0.5 text-[0.6rem] font-bold text-[var(--noodle-accent)]">
+              <span className="shrink-0 rounded-full bg-[var(--noodle-accent)]/12 px-1.5 py-0.5 text-[0.6rem] font-bold text-[var(--noodle-accent-foreground)]">
                 {localizeUi("ui.slurp.messages.subscribed", { defaultValue: "Subscribed" })}
               </span>
             )}
@@ -560,7 +560,7 @@ function ThreadRow({
       </time>
       {thread.viewerUnread > 0 && (
         <span
-          className="ml-1 inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)] px-1.5 text-[0.65rem] font-black tabular-nums text-zinc-950 [&_svg]:!text-zinc-950"
+          className="ml-1 inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)] px-1.5 text-[0.65rem] font-black tabular-nums text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]"
           aria-label={localizeUi("ui.slurp.messages.unreadCount", {
             defaultValue: "{{count}} unread",
             count: thread.viewerUnread,

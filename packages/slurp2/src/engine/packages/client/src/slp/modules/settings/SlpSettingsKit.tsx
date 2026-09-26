@@ -72,7 +72,7 @@ export function SummaryRow({
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-xl bg-[var(--slurp-surface-raised)] p-3 ring-1 ring-inset ring-[var(--slurp-outline)] sm:flex-nowrap sm:p-4">
       <span
-        className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-[var(--slurp-canvas)] text-[var(--noodle-accent)]"
+        className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-[var(--slurp-canvas)] text-[var(--noodle-accent-foreground)]"
         aria-hidden="true"
       >
         {icon}
@@ -96,7 +96,7 @@ export function SummaryRow({
           type="button"
           onClick={onAction}
           className={cn(
-            "inline-flex min-h-11 items-center rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-bold text-zinc-950 [&_svg]:!text-zinc-950 hover:brightness-105",
+            "inline-flex min-h-11 items-center rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] hover:brightness-105",
             focusRing,
           )}
         >
@@ -190,7 +190,9 @@ export function BackstageWizard<P extends string, S extends object>({
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--noodle-accent)]">{title}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--noodle-accent-foreground)]">
+            {title}
+          </p>
           <h2 className="text-lg font-bold">{heading}</h2>
         </div>
         <span className="rounded-full bg-[var(--slurp-canvas)] px-3 py-1 text-xs font-semibold ring-1 ring-inset ring-[var(--slurp-outline)]">
@@ -218,7 +220,7 @@ export function BackstageWizard<P extends string, S extends object>({
                 {changed.map((key) => (
                   <div key={key} className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 py-1.5">
                     <dt className="truncate text-[var(--slurp-muted)]">{key}</dt>
-                    <dd className="max-w-52 truncate font-semibold text-[var(--noodle-accent)]">
+                    <dd className="max-w-52 truncate font-semibold text-[var(--noodle-accent-foreground)]">
                       {typeof proposed[key] === "object"
                         ? t("ui.slurp.settings.backstage.preview.updated", { defaultValue: "Updated" })
                         : `${String(current[key])} → ${String(proposed[key])}`}
@@ -266,7 +268,7 @@ export function BackstageWizard<P extends string, S extends object>({
             disabled={pending || changed.length === 0}
             onClick={() => onApply(patch)}
             className={cn(
-              "inline-flex min-h-11 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-black text-zinc-950 [&_svg]:!text-zinc-950 disabled:opacity-50",
+              "inline-flex min-h-11 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-black text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] disabled:opacity-50",
               focusRing,
             )}
           >

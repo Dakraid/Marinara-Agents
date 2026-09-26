@@ -45,7 +45,7 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
       {activeTab === "subscribers" ? (
         <div>
           <div className="border-b border-[var(--noodle-divider)] bg-[var(--slurp-surface-raised,var(--background))] px-4 py-4 sm:px-5">
-            <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--noodle-accent)]">
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--noodle-accent-foreground)]">
               {localizeUi("ui.slurp.profile.managementData")}
             </p>
             <p className="mt-1 text-sm text-[var(--muted-foreground)]">
@@ -58,7 +58,7 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
               role="status"
               aria-label={localizeUi("ui.noodle.stageprofileview.loadingSubscribers")}
             >
-              <Loader2 size={22} className="animate-spin text-[var(--noodle-accent)]" />
+              <Loader2 size={22} className="animate-spin text-[var(--noodle-accent-foreground)]" />
             </div>
           ) : subscribersQuery.isError ? (
             <EmptyState
@@ -120,7 +120,7 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
             along; the named cast is capped, so the rest stays the count in the header. */}
           {followersQuery.isLoading ? (
             <div className="flex justify-center py-12" role="status">
-              <Loader2 size={22} className="animate-spin text-[var(--noodle-accent)]" />
+              <Loader2 size={22} className="animate-spin text-[var(--noodle-accent-foreground)]" />
             </div>
           ) : followersQuery.isError && !followersQuery.data ? (
             <EmptyState
@@ -165,7 +165,7 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
         </div>
       ) : viewerIsLoading || isLoading ? (
         <div className="flex justify-center py-12">
-          <Loader2 size={22} className="animate-spin text-[var(--noodle-accent)]" />
+          <Loader2 size={22} className="animate-spin text-[var(--noodle-accent-foreground)]" />
         </div>
       ) : viewerIsError ? (
         <EmptyState
@@ -254,7 +254,7 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
                           return next;
                         })
                       }
-                      className="min-h-11 shrink-0 px-2 text-xs font-bold text-[var(--noodle-accent)]"
+                      className="min-h-11 shrink-0 px-2 text-xs font-bold text-[var(--noodle-accent-foreground)]"
                     >
                       {localizeUi("ui.noodle.stageprofileview.hide")}
                     </button>

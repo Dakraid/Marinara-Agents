@@ -95,7 +95,7 @@ export function SlurpFanCard({
                 <p className="text-sm font-bold">{member.displayName}</p>
                 <p className="text-xs text-[var(--muted-foreground)]">@{member.handle}</p>
                 {facts.length > 0 && <p className="mt-2 text-xs text-[var(--muted-foreground)]">{facts.join(" · ")}</p>}
-                <p className="mt-2 text-[0.7rem] text-[var(--muted-foreground)]">
+                <p className="mt-2 text-xs text-[var(--muted-foreground)]">
                   {localizeUi("ui.slurp.audience.aroundSince", {
                     date: new Date(member.tie?.firstSeenAt ?? member.joinedAt).toLocaleDateString(),
                   })}

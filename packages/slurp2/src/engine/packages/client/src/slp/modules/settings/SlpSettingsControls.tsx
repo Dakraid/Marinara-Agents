@@ -8,6 +8,8 @@ import { ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useId, useRef, useState } from "react";
 import { SettingAnchor, type SlpSettingKey } from "./SlpSettingsKit";
+import { SLP_EYEBROW_CLASS } from "../../base/chrome/SlpChrome";
+import { cn } from "../../../lib/utils";
 
 /**
  * Saves a number in order. A slow older request cannot land after a newer one and persist a stale
@@ -236,12 +238,10 @@ export function SectionTitle({ title, detail }: { title: string; detail: string 
 export function SettingsGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section
-      className="rounded-xl bg-[var(--slurp-surface-raised,var(--background))] px-4 py-3 shadow-[var(--slurp-shadow-raised)] sm:px-5"
+      className="rounded-xl bg-[var(--slurp-surface-raised,var(--background))] px-4 py-3 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] sm:px-5"
       aria-label={title}
     >
-      <h3 className="pb-1 pt-1 text-xs font-bold uppercase tracking-[0.14em] text-[var(--noodle-accent-foreground)]">
-        {title}
-      </h3>
+      <h3 className={cn("pb-1 pt-1", SLP_EYEBROW_CLASS)}>{title}</h3>
       <div className="divide-y divide-[var(--slurp-outline,var(--border))] [&>*]:py-3.5 [&>*:last-child]:pb-1.5">
         {children}
       </div>
@@ -252,7 +252,7 @@ export function GuidanceBox({ title, detail }: { title: string; detail: string }
   return (
     <div className="relative overflow-hidden rounded-xl bg-[var(--noodle-accent)]/[0.065] p-4 ring-1 ring-inset ring-[var(--noodle-accent)]/20 sm:p-5">
       <span className="absolute inset-y-3 start-0 w-0.5 rounded-full bg-[var(--noodle-accent)]" aria-hidden="true" />
-      <p className="text-sm font-bold text-[var(--noodle-accent)]">{title}</p>
+      <p className="text-sm font-bold text-[var(--noodle-accent-foreground)]">{title}</p>
       <p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--muted-foreground)] text-pretty">{detail}</p>
     </div>
   );
@@ -375,7 +375,7 @@ export function Toggle({
 export function HowItWorks({ label, children }: { label: string; children: ReactNode }) {
   return (
     <details className="group text-xs leading-5 text-[var(--slurp-muted,var(--muted-foreground))]">
-      <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1 rounded-lg font-semibold text-[var(--noodle-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] [&::-webkit-details-marker]:hidden">
+      <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1 rounded-lg font-semibold text-[var(--noodle-accent-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] [&::-webkit-details-marker]:hidden">
         {label}
         <ChevronRight
           size={15}

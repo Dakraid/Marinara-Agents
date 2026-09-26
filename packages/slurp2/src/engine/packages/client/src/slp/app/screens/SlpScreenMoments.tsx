@@ -7,6 +7,7 @@ import { cn } from "../../../lib/utils";
 import type { SlpPostCardCtx } from "../../modules/post/SlpPostTypes";
 import { SlurpCoinAmount } from "../../modules/coin/SlpCoin";
 import { SlpStoryTile } from "../../modules/story/SlpStoryTile";
+import { playSlpPop } from "../../modules/sparkle/SlpSparkle";
 import { useSlurpMediaSrc } from "../../base/media/slp-media-src";
 import { ProfileInitial } from "../../base/chrome/SlpChrome";
 import { SlurpSparkleVeil } from "../../base/chrome/SlpSparkleVeil";
@@ -105,7 +106,7 @@ export function SlurpMomentsShelf({
             <button
               type="button"
               onClick={onAddStory}
-              className="group flex aspect-[3/4] w-[4.75rem] shrink-0 snap-start flex-col items-center justify-center gap-2 rounded-xl bg-[color-mix(in_srgb,var(--noodle-accent)_7%,var(--slurp-surface-raised))] text-[var(--noodle-accent)] outline outline-1 -outline-offset-1 outline-[color-mix(in_srgb,var(--noodle-accent)_34%,transparent)] transition-[background-color,transform] hover:bg-[color-mix(in_srgb,var(--noodle-accent)_12%,var(--slurp-surface-raised))] active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--noodle-accent)] @min-[1024px]:w-[5.25rem] motion-reduce:transition-none motion-reduce:active:scale-100"
+              className="group flex aspect-[3/4] w-[4.75rem] shrink-0 snap-start flex-col items-center justify-center gap-2 rounded-xl bg-[color-mix(in_srgb,var(--noodle-accent)_7%,var(--slurp-surface-raised))] text-[var(--noodle-accent-foreground)] outline outline-1 -outline-offset-1 outline-[color-mix(in_srgb,var(--noodle-accent)_34%,transparent)] transition-[background-color,transform] hover:bg-[color-mix(in_srgb,var(--noodle-accent)_12%,var(--slurp-surface-raised))] active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--noodle-accent)] @min-[1024px]:w-[5.25rem] motion-reduce:transition-none motion-reduce:active:scale-100"
             >
               <span className="flex h-9 w-9 items-center justify-center rounded-full border border-dashed border-current/70 transition-transform group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100">
                 <Plus size={17} strokeWidth={2} aria-hidden="true" />
@@ -120,7 +121,7 @@ export function SlurpMomentsShelf({
               className="flex min-h-24 min-w-[12rem] max-w-xs items-center gap-2.5 text-[var(--muted-foreground)]"
               role="status"
             >
-              <Clock3 size={17} className="shrink-0 text-[var(--noodle-accent)]" aria-hidden="true" />
+              <Clock3 size={17} className="shrink-0 text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
               <span className="text-xs leading-5 text-pretty">
                 {isError
                   ? localizeUi("ui.slurp.moments.error", { defaultValue: "Could not load Stories." })
@@ -368,9 +369,10 @@ export function SlurpMomentViewer({
                 <button
                   type="button"
                   disabled={!ctx.personaAccount || ctx.reactionPendingFor(moment.post.id, "like")}
-                  onClick={() =>
-                    ctx.reactToPost(toSlpPostCardModel(moment.post, moment.creator.profile), "like", liked)
-                  }
+                  onClick={(event) => {
+                    if (!liked) playSlpPop(event.currentTarget.querySelector("svg") ?? event.currentTarget);
+                    ctx.reactToPost(toSlpPostCardModel(moment.post, moment.creator.profile), "like", liked);
+                  }}
                   aria-pressed={liked}
                   aria-label={localizeUi(liked ? "ui.noodle.post.unlikeLabel" : "ui.noodle.post.likeLabel")}
                   className={cn(
@@ -428,7 +430,7 @@ export function SlurpMomentViewer({
                 type="button"
                 disabled={unlockPending}
                 onClick={() => void Promise.resolve(onUnlock(moment.post.id)).catch(() => undefined)}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-zinc-950 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:opacity-50 [&_svg]:!text-zinc-950"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-[var(--slurp-on-accent)] hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:opacity-50 [&_svg]:!text-[var(--slurp-on-accent)]"
               >
                 <Eye size={15} aria-hidden="true" /> {localizeUi("ui.slurp.moments.unlock")}
                 {typeof unlockPrice === "number" && <SlurpCoinAmount amount={unlockPrice} />}

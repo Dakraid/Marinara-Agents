@@ -40,7 +40,7 @@ function SlurpStudioView({
       <span
         className={cn(
           "text-xs font-bold tabular-nums",
-          value > 0 ? "text-[var(--noodle-accent)]" : "text-[var(--muted-foreground)]",
+          value > 0 ? "text-[var(--noodle-accent-foreground)]" : "text-[var(--muted-foreground)]",
         )}
       >
         {value > 0 ? `+${value.toLocaleString()}` : value.toLocaleString()}
@@ -67,7 +67,7 @@ function SlurpStudioView({
               type="button"
               onClick={() => setShowPerformance((open) => !open)}
               aria-expanded={showPerformance}
-              className="text-xs font-bold text-[var(--noodle-accent)] hover:underline"
+              className="text-xs font-bold text-[var(--noodle-accent-foreground)] hover:underline"
             >
               {showPerformance
                 ? localizeUi("ui.slurp.studio.hidePerformance", { defaultValue: "Hide performance" })
@@ -179,7 +179,7 @@ function SlurpStudioView({
               <SlurpGoalEditor creator={creator} personaId={personaId} />
 
               {creator.milestonesCrossed.length > 0 && (
-                <p className="rounded-lg bg-[var(--noodle-accent)]/10 px-3 py-2 text-xs font-bold text-[var(--noodle-accent)]">
+                <p className="rounded-lg bg-[var(--noodle-accent)]/10 px-3 py-2 text-xs font-bold text-[var(--noodle-accent-foreground)]">
                   {localizeUi("ui.slurp.studio.crossed", {
                     defaultValue: "Passed {{targets}} followers since your last visit.",
                     targets: creator.milestonesCrossed.map((value) => value.toLocaleString()).join(", "),
@@ -341,7 +341,7 @@ function SlurpGoalEditor({ creator, personaId }: { creator: SlurpStudioCreator; 
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="shrink-0 text-xs font-bold text-[var(--noodle-accent)] hover:underline"
+            className="shrink-0 text-xs font-bold text-[var(--noodle-accent-foreground)] hover:underline"
           >
             {localizeUi("ui.slurp.studio.goalEdit", { defaultValue: "Edit" })}
           </button>
@@ -367,7 +367,7 @@ function SlurpGoalEditor({ creator, personaId }: { creator: SlurpStudioCreator; 
       <button
         type="button"
         onClick={() => setEditing(true)}
-        className="self-start rounded-lg px-2 py-1 text-xs font-bold text-[var(--noodle-accent)] ring-1 ring-inset ring-[var(--noodle-accent)]/40 hover:bg-[var(--noodle-accent)]/10"
+        className="self-start rounded-lg px-2 py-1 text-xs font-bold text-[var(--noodle-accent-foreground)] ring-1 ring-inset ring-[var(--noodle-accent)]/40 hover:bg-[var(--noodle-accent)]/10"
       >
         {localizeUi("ui.slurp.studio.goalAdd", { defaultValue: "Set a tip goal" })}
       </button>
@@ -415,7 +415,7 @@ function SlurpGoalEditor({ creator, personaId }: { creator: SlurpStudioCreator; 
             type="button"
             disabled={setGoal.isPending || !label.trim()}
             onClick={() => submit(label.trim())}
-            className="min-h-9 rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-zinc-950 [&_svg]:!text-zinc-950 disabled:opacity-50"
+            className="min-h-9 rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] disabled:opacity-50"
           >
             {localizeUi("ui.slurp.studio.goalSave", { defaultValue: "Save goal" })}
           </button>
@@ -459,7 +459,7 @@ function SlurpPayoutRow({ creator, personaId }: { creator: SlurpStudioCreator; p
             { onError: (error) => toast.error(errorMessage(error)) },
           )
         }
-        className="relative min-h-10 shrink-0 overflow-visible rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-zinc-950 [&_svg]:!text-zinc-950 transition-transform active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
+        className="relative min-h-10 shrink-0 overflow-visible rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] transition-transform active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
       >
         <SlurpCoinBurst active={payout.isPending} direction="earn" />
         {payout.isPending

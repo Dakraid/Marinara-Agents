@@ -74,7 +74,7 @@ export function PersonaIdentityCard({
             </span>
           ) : (
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--noodle-accent)]/15 ring-[3px] ring-[var(--slurp-surface-raised)]">
-              <AtSign size={24} className="text-[var(--noodle-accent)]" />
+              <AtSign size={24} className="text-[var(--noodle-accent-foreground)]" />
             </span>
           )}
           {/* Name sits below the avatar on the plain card, never over the banner art. */}
@@ -176,7 +176,7 @@ export function PersonaList({
               )}
               {linkedIds?.has(account.id) && (
                 <span
-                  className="mt-0.5 block text-[0.65rem] font-semibold text-[var(--noodle-accent)]"
+                  className="mt-0.5 block text-[11px] font-semibold text-[var(--noodle-accent-foreground)]"
                   aria-label={localizeUi("ui.noodle.noodleshell.noodlerProfileLinked")}
                 >
                   {localizeUi("ui.noodle.noodleshell.noodlerLinked")}
@@ -196,7 +196,7 @@ export function PersonaConnectionCounts({ counts }: { counts?: { fans: number; f
   const { t: localizeUi } = useUiTranslation();
   if (!counts) return null;
   return (
-    <span className="mt-0.5 flex items-center gap-1.5 text-[0.68rem] text-[var(--muted-foreground)]">
+    <span className="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]">
       <span className="tabular-nums">{localizeUi("ui.slurp.account.fans", { amount: counts.fans })}</span>
       <span aria-hidden="true" className="h-3 w-px bg-[var(--noodle-divider)]" />
       <span className="tabular-nums">{localizeUi("ui.slurp.account.followers", { amount: counts.followers })}</span>

@@ -234,7 +234,7 @@ export function SlpPromptPreviewInspector({
           // instead of leaving a dimmed control that looks broken.
           disabled={pending}
           onClick={runPreview}
-          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-black text-zinc-950 transition-transform active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-45 motion-reduce:transition-none motion-reduce:active:scale-100"
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-black text-[var(--slurp-on-accent)] transition-transform active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-45 motion-reduce:transition-none motion-reduce:active:scale-100"
         >
           {view === "result" ? <Play size={16} aria-hidden="true" /> : <Code2 size={16} aria-hidden="true" />}
           {pending

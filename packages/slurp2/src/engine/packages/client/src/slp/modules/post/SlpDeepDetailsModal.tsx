@@ -44,7 +44,10 @@ export function SlpDeepDetailsModal({ postId, open, onClose }: { postId: string;
     >
       {query.isLoading ? (
         <div className="flex justify-center py-16" role="status">
-          <Loader2 size={22} className="animate-spin text-[var(--noodle-accent)] motion-reduce:animate-none" />
+          <Loader2
+            size={22}
+            className="animate-spin text-[var(--noodle-accent-foreground)] motion-reduce:animate-none"
+          />
         </div>
       ) : query.isError || !data ? (
         <p role="alert" className="py-10 text-center text-sm text-[var(--destructive)]">
@@ -113,7 +116,7 @@ export function SlpDeepDetailsModal({ postId, open, onClose }: { postId: string;
                     onClick={() => setView(value)}
                     className={`min-h-10 rounded-lg border px-3 text-xs font-semibold transition-colors ${
                       view === value
-                        ? "border-[var(--noodle-accent)] bg-[var(--noodle-accent)]/10 text-[var(--noodle-accent)]"
+                        ? "border-[var(--noodle-accent)] bg-[var(--noodle-accent)]/10 text-[var(--noodle-accent-foreground)]"
                         : "border-[var(--border)] hover:bg-[var(--accent)]"
                     }`}
                   >
@@ -409,7 +412,7 @@ function PromptMessage({ role, content }: { role: string; content: string }) {
           const body = heading ? part.split("\n").slice(1).join("\n") : part;
           return (
             <div key={index} className="px-3 py-2.5">
-              {heading && <p className="mb-1 text-xs font-bold text-[var(--noodle-accent)]">{heading[1]}</p>}
+              {heading && <p className="mb-1 text-xs font-bold text-[var(--noodle-accent-foreground)]">{heading[1]}</p>}
               <pre className="whitespace-pre-wrap break-words font-sans text-xs leading-5 text-[var(--foreground)]">
                 {body.trim()}
               </pre>
@@ -430,7 +433,9 @@ function WeightBars({ weights, highlight }: { weights: Record<string, number>; h
       <p className="text-xs font-semibold text-[var(--muted-foreground)]">Saved intent weights</p>
       {entries.map(([intent, weight]) => (
         <div key={intent} className="grid grid-cols-[8rem_minmax(0,1fr)_2.5rem] items-center gap-2 text-xs">
-          <span className={intent === highlight ? "font-bold text-[var(--noodle-accent)]" : ""}>{intent}</span>
+          <span className={intent === highlight ? "font-bold text-[var(--noodle-accent-foreground)]" : ""}>
+            {intent}
+          </span>
           <span className="h-2 overflow-hidden rounded-full bg-[var(--slurp-canvas)]">
             <span
               className="block h-full rounded-full bg-[var(--noodle-accent)]"

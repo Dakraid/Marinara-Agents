@@ -4,7 +4,7 @@ import type { SlpPostImageCrop } from "../../../../../shared/src/slp/slp-social.
 import { readSlpPostImageCrop } from "../../../../../shared/src/slp/slp-post-images.js";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { PostImageCropEditor, PostImageFrame } from "../../base/media/SlpPostImageCropEditor";
-import { labelClass } from "./SlpPostHelpers";
+import { labelClass } from "../../base/chrome/SlpChrome";
 import type { SlpPostCardModel, SlpPostImageUpdate } from "./SlpPostTypes";
 
 type SlpPostImageCropSource =
@@ -75,7 +75,7 @@ export function PostImageEditControls({
               : localizeUi("ui.noodle.noodlehome.adjustCrop")
           }
           aria-busy={editing.loading}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--noodle-accent)] transition-colors hover:bg-[var(--noodle-accent)]/10 disabled:opacity-50"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10 disabled:opacity-50"
         >
           {editing.loading ? <Loader2 size={15} className="animate-spin" /> : <Crop size={15} />}
         </button>
@@ -115,7 +115,7 @@ export function PostImageEditControls({
                 disabled={disabled || editing.loading}
                 title={localizeUi("ui.noodle.postimageeditcontrols.attachReplacementImage")}
                 aria-label={localizeUi("ui.noodle.postimageeditcontrols.attachReplacementImage")}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--noodle-divider)] text-[var(--noodle-accent)] transition-colors hover:bg-[var(--noodle-accent)]/10 disabled:opacity-50"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--noodle-divider)] text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10 disabled:opacity-50"
               >
                 <ImagePlus size={15} />
               </button>
@@ -125,7 +125,7 @@ export function PostImageEditControls({
                 disabled={disabled}
                 title={localizeUi("ui.noodle.postimageeditcontrols.undoImageRemoval")}
                 aria-label={localizeUi("ui.noodle.postimageeditcontrols.undoImageRemoval")}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--noodle-divider)] text-[var(--noodle-accent)] transition-colors hover:bg-[var(--noodle-accent)]/10 disabled:opacity-50"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--noodle-divider)] text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10 disabled:opacity-50"
               >
                 <RotateCcw size={15} />
               </button>
@@ -139,7 +139,7 @@ export function PostImageEditControls({
                   disabled={disabled || editing.loading}
                   title={localizeUi("ui.noodle.postimageeditcontrols.addImage")}
                   aria-label={localizeUi("ui.noodle.postimageeditcontrols.addImage")}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--noodle-divider)] text-[var(--noodle-accent)] transition-colors hover:bg-[var(--noodle-accent)]/10 disabled:opacity-50"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--noodle-divider)] text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10 disabled:opacity-50"
                 >
                   <ImagePlus size={15} />
                 </button>

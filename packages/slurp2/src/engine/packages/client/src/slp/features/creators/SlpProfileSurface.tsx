@@ -207,7 +207,7 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
               aria-hidden="true"
             />
             {banner.uploadTarget === "banner" && (
-              <span className="absolute end-2 top-2 rounded-full bg-[var(--marinara-chat-chrome-panel-bg)] px-3 py-1.5 text-xs font-semibold text-[var(--noodle-accent)] shadow-lg ring-1 ring-[var(--marinara-chat-chrome-panel-border)]">
+              <span className="absolute end-2 top-2 rounded-full bg-[var(--marinara-chat-chrome-panel-bg)] px-3 py-1.5 text-xs font-semibold text-[var(--noodle-accent-foreground)] shadow-lg ring-1 ring-[var(--marinara-chat-chrome-panel-border)]">
                 {localizeUi("ui.noodle.noodleprofilesurface.uploading")}
               </span>
             )}
@@ -336,7 +336,7 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
         <div className="mt-4 grid w-full min-w-0 items-start gap-4 text-left @min-[680px]:mt-0">
           <div className="flex min-w-0 flex-col items-start">
             {identityEyebrow && (
-              <div className="mb-1.5 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[var(--noodle-accent)]">
+              <div className="mb-1.5 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[var(--noodle-accent-foreground)]">
                 {identityEyebrow}
               </div>
             )}
@@ -407,7 +407,7 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
               />
             ) : (
               <div className="mt-3 max-w-[65ch] text-sm leading-relaxed text-[var(--muted-foreground)] text-pretty">
-                <span className="mb-1 block text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[var(--noodle-accent)]">
+                <span className="mb-1 block text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[var(--noodle-accent-foreground)]">
                   {localizeUi("ui.slurp.profile.bioLabel", { defaultValue: "Bio" })}
                 </span>
                 {bioQuote && (
@@ -418,7 +418,7 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
                     <summary className="list-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]">
                       {/* The full text follows the summary once open, so the clamped preview steps aside. */}
                       <div className="line-clamp-4 group-open/bio:hidden">{bioContent}</div>
-                      <span className="mt-1 block text-xs font-bold text-[var(--noodle-accent)] group-open/bio:hidden">
+                      <span className="mt-1 block text-xs font-bold text-[var(--noodle-accent-foreground)] group-open/bio:hidden">
                         {localizeUi("ui.slurp.profile.expandBio", { defaultValue: "Show more" })}
                       </span>
                     </summary>
@@ -426,7 +426,7 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
                     <button
                       type="button"
                       onClick={(event) => event.currentTarget.closest("details")?.removeAttribute("open")}
-                      className="mt-1 block text-xs font-bold text-[var(--noodle-accent)]"
+                      className="mt-1 block text-xs font-bold text-[var(--noodle-accent-foreground)]"
                     >
                       {localizeUi("ui.slurp.profile.collapseBio", { defaultValue: "Show less" })}
                     </button>
@@ -438,7 +438,7 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
             {!editor?.isEditing && contentActions}
             {editor?.isEditing ? (
               <span className="mt-2 flex w-full items-center gap-1.5 text-sm text-[var(--muted-foreground)]">
-                <MapPin size={15} className="shrink-0 text-[var(--noodle-accent)]" />
+                <MapPin size={15} className="shrink-0 text-[var(--noodle-accent-foreground)]" />
                 <input
                   value={editor.location}
                   onChange={(event) => editor.onLocationChange(event.target.value)}
@@ -450,7 +450,7 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
             ) : (
               location && (
                 <p className="mt-2 flex items-center gap-1.5 text-sm text-[var(--muted-foreground)]">
-                  <MapPin size={15} className="text-[var(--noodle-accent)]" />
+                  <MapPin size={15} className="text-[var(--noodle-accent-foreground)]" />
                   {location}
                 </p>
               )
@@ -464,7 +464,7 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
                 <button
                   type="button"
                   onClick={connections.onOpenFollowing}
-                  className="min-h-11 px-1 transition-colors hover:text-[var(--noodle-accent)]"
+                  className="min-h-11 px-1 transition-colors hover:text-[var(--noodle-accent-foreground)]"
                 >
                   <span className="font-bold text-[var(--foreground)]">{connections.followingCount}</span>{" "}
                   {localizeUi("ui.noodle.noodleprofilesurface.following")}
@@ -472,7 +472,7 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
                 <button
                   type="button"
                   onClick={connections.onOpenFollowers}
-                  className="min-h-11 px-1 transition-colors hover:text-[var(--noodle-accent)]"
+                  className="min-h-11 px-1 transition-colors hover:text-[var(--noodle-accent-foreground)]"
                 >
                   <span className="font-bold text-[var(--foreground)]">{connections.followerCount}</span>{" "}
                   {localizeUi("ui.noodle.noodleprofilesurface.followers")}
@@ -509,7 +509,7 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
                   type="button"
                   onClick={() => (editor.isEditing ? editor.onSave() : editor.onStartEditing())}
                   disabled={editor.isEditing ? !editor.canSave || editor.isSaving : false}
-                  className="min-h-11 rounded-e-2xl border-s border-black/10 bg-[var(--noodle-accent)] px-4 text-xs font-black text-zinc-950 [&_svg]:!text-zinc-950 transition-[opacity,transform] hover:opacity-90 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
+                  className="min-h-11 rounded-e-2xl border-s border-black/10 bg-[var(--noodle-accent)] px-4 text-xs font-black text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] transition-[opacity,transform] hover:opacity-90 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
                 >
                   {editor.isEditing
                     ? editor.isSaving

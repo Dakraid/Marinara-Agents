@@ -12,6 +12,7 @@ import { createSlpLightboxImage, slpCommentActionClass, textareaClass } from "./
 import { SlpTextContent } from "./SlpMarkdownRenderer";
 import { SlpInteractionMenu } from "./SlpInteractionMenu";
 import { SlpReportModal } from "./SlpReportModal";
+import { playSlpPop } from "../sparkle/SlpSparkle";
 
 export interface SlpReplyRowProps {
   reply: SlpInteraction;
@@ -139,7 +140,7 @@ export function SlpReplyRow({
               type="button"
               onClick={() => openProfile(actorAccount)}
               disabled={!actorAccount}
-              className="max-w-full truncate font-semibold !text-[var(--foreground)] transition-colors enabled:hover:!text-[var(--noodle-accent)] disabled:cursor-default"
+              className="max-w-full truncate font-semibold !text-[var(--foreground)] transition-colors enabled:hover:!text-[var(--noodle-accent-foreground)] disabled:cursor-default"
             >
               {actor?.displayName ?? localizeUi("ui.slurp.profile.fallbackUser")}
             </button>
@@ -155,7 +156,7 @@ export function SlpReplyRow({
                 <button
                   type="button"
                   onClick={() => openProfile(parentActorAccount)}
-                  className="font-medium text-[var(--noodle-accent)] hover:underline focus-visible:rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]/70"
+                  className="font-medium text-[var(--noodle-accent-foreground)] hover:underline focus-visible:rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]/70"
                   aria-label={localizeUi("ui.noodle.profile.viewHandleProfile", {
                     handle: parentActorAccount.handle,
                   })}
@@ -163,7 +164,7 @@ export function SlpReplyRow({
                   @{parentActorAccount.handle}
                 </button>
               ) : (
-                <span className="text-[var(--noodle-accent)]">@{parentActor.handle}</span>
+                <span className="text-[var(--noodle-accent-foreground)]">@{parentActor.handle}</span>
               )}
             </p>
           )}
@@ -189,7 +190,7 @@ export function SlpReplyRow({
                   type="button"
                   onClick={() => saveEditedReply(post, reply)}
                   disabled={(!editingReplyContent.trim() && !reply.imageUrl) || updateInteraction.isPending}
-                  className="h-8 rounded-full bg-[var(--noodle-accent)] px-4 text-xs font-bold text-zinc-950 [&_svg]:!text-zinc-950 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="h-8 rounded-full bg-[var(--noodle-accent)] px-4 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {updateInteraction.isPending
                     ? localizeUi("ui.noodle.noodlehome.saving")
@@ -225,7 +226,10 @@ export function SlpReplyRow({
           <div className="mt-1.5 flex items-center gap-3">
             <button
               type="button"
-              onClick={() => reactToReply(post, reply, likedReplyByPersona)}
+              onClick={(event) => {
+                if (!likedReplyByPersona) playSlpPop(event.currentTarget.querySelector("svg") ?? event.currentTarget);
+                reactToReply(post, reply, likedReplyByPersona);
+              }}
               disabled={!personaAccount || reactionPendingFor(post.id, "like", reply.id)}
               className={cn(
                 slpCommentActionClass,

@@ -1,0 +1,136 @@
+// ──────────────────────────────────────────────
+// Slurp's sparkle system: the CSS for the ambient layers in SlpSparkle.tsx (glint, shimmer, ring
+// glint, twinkle, canvas motes). Injected once by slp-client-entry.tsx next to the toast styles, so
+// it does not depend on the package Tailwind build or the Engine safelist.
+//
+// Rules (design language §3): ambient cycles are ≥ 4 s and low opacity, they pause off-screen and in
+// a hidden tab (`data-slp-paused`, set by `useSlpAmbientPause`), and everything is static under
+// reduced motion. Textures are single SVG tiles, not DOM nodes.
+// ──────────────────────────────────────────────
+
+const PINK = "#ff7ec1";
+const VIOLET = "#c29af1";
+const GOLD = "#f6c56b";
+const BLUSH = "#ffd6ec";
+
+const STAR_PATH = "M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z";
+const HEART_PATH = "M12 21S4 15.8 4 10a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11Z";
+
+type Candy = { kind: "star" | "heart" | "coin"; x: number; y: number; size: number; color: string; opacity: number };
+
+/** One tile of mixed candy: mostly four-point stars, a few tiny hearts and coin glints. */
+function candyTile(width: number, height: number, candies: Candy[]) {
+  const shapes = candies
+    .map(({ kind, x, y, size, color, opacity }) => {
+      if (kind === "coin")
+        return `<circle cx="${x}" cy="${y}" r="${size / 2}" fill="${color}" fill-opacity="${opacity}"/>`;
+      const path = kind === "star" ? STAR_PATH : HEART_PATH;
+      return `<path d="${path}" fill="${color}" fill-opacity="${opacity}" transform="translate(${x - size / 2} ${y - size / 2}) scale(${size / 24})"/>`;
+    })
+    .join("");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${shapes}</svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+}
+
+// Hand-placed so the tiles never clump and never repeat visibly at phone width.
+const MOTES_NEAR = candyTile(260, 300, [
+  { kind: "star", x: 34, y: 42, size: 12, color: PINK, opacity: 0.95 },
+  { kind: "star", x: 196, y: 78, size: 9, color: VIOLET, opacity: 0.9 },
+  { kind: "heart", x: 118, y: 150, size: 9, color: PINK, opacity: 0.8 },
+  { kind: "star", x: 228, y: 226, size: 13, color: GOLD, opacity: 0.9 },
+  { kind: "coin", x: 62, y: 250, size: 4, color: GOLD, opacity: 0.95 },
+  { kind: "star", x: 150, y: 276, size: 7, color: BLUSH, opacity: 0.9 },
+]);
+const MOTES_FAR = candyTile(180, 210, [
+  { kind: "star", x: 22, y: 30, size: 5, color: BLUSH, opacity: 0.8 },
+  { kind: "coin", x: 120, y: 18, size: 2, color: GOLD, opacity: 0.9 },
+  { kind: "star", x: 150, y: 110, size: 4, color: VIOLET, opacity: 0.8 },
+  { kind: "star", x: 64, y: 160, size: 6, color: PINK, opacity: 0.75 },
+  { kind: "coin", x: 170, y: 196, size: 2, color: PINK, opacity: 0.9 },
+]);
+const SHIMMER_TILE = candyTile(120, 90, [
+  { kind: "star", x: 18, y: 20, size: 8, color: "#fff", opacity: 0.9 },
+  { kind: "star", x: 92, y: 14, size: 5, color: GOLD, opacity: 0.9 },
+  { kind: "coin", x: 60, y: 48, size: 2, color: "#fff", opacity: 0.9 },
+  { kind: "star", x: 104, y: 70, size: 6, color: BLUSH, opacity: 0.9 },
+  { kind: "heart", x: 34, y: 74, size: 5, color: BLUSH, opacity: 0.7 },
+]);
+
+export const SLP_SPARKLE_MASKS = {
+  star: `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="${STAR_PATH}"/></svg>`)}")`,
+  heart: `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="${HEART_PATH}"/></svg>`)}")`,
+};
+export const SLP_SPARKLE_COLORS = [PINK, VIOLET, GOLD, PINK, BLUSH] as const;
+
+const EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)";
+
+export const SLP_SPARKLE_STYLES = `
+  .slp-glint, .slp-shimmer, .slp-ring, .slp-motes {
+    position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit;
+  }
+  .slp-glint {
+    background: linear-gradient(105deg, transparent 38%, rgb(255 255 255 / 0.42) 50%, transparent 62%) no-repeat;
+    background-size: 300% 100%; background-position: 130% 0; opacity: 0;
+  }
+  .slp-shimmer { overflow: hidden; }
+  .slp-shimmer::before {
+    content: ""; position: absolute; inset: 0; background: ${SHIMMER_TILE}; opacity: 0.32;
+  }
+  .slp-shimmer::after {
+    content: ""; position: absolute; inset: 0; opacity: 0;
+    background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.16) 50%, transparent 65%) no-repeat;
+    background-size: 300% 100%; background-position: 130% 0;
+  }
+  .slp-ring {
+    inset: 0; z-index: 1; padding: 2.5px; background: var(--slurp-hero, ${PINK});
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    overflow: hidden;
+  }
+  .slp-ring::before {
+    content: ""; position: absolute; inset: -50%; opacity: 0;
+    background: conic-gradient(from 0deg, transparent 0 70%, rgb(255 255 255 / 0.95) 86%, transparent 98%);
+  }
+  .slp-twinkle {
+    position: absolute; pointer-events: none; width: var(--slp-twinkle-size, 10px); height: var(--slp-twinkle-size, 10px);
+    background: var(--slp-twinkle-color, ${PINK}); -webkit-mask: ${"var(--slp-star-mask)"} center / contain no-repeat;
+    mask: ${"var(--slp-star-mask)"} center / contain no-repeat; opacity: 0.85;
+  }
+  .slp-motes { overflow: hidden; }
+  .slp-motes::before, .slp-motes::after {
+    content: ""; position: absolute; inset: 0 0 -320px 0; background-repeat: repeat;
+  }
+  .slp-motes::before { background-image: ${MOTES_NEAR}; opacity: 0.5; }
+  .slp-motes::after { background-image: ${MOTES_FAR}; opacity: 0.4; }
+  :root { --slp-star-mask: ${SLP_SPARKLE_MASKS.star}; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .slp-glint { animation: slp-glint 900ms ${EASE} 180ms 1 both; }
+    *:hover > .slp-glint { animation-name: slp-glint-again; }
+    .slp-shimmer::before { animation: slp-breathe 5s ease-in-out infinite alternate; }
+    .slp-shimmer::after { animation: slp-sheen 7s ${EASE} 600ms infinite; }
+    .slp-ring::before { animation: slp-ring-glint 7s ${EASE} infinite; }
+    .slp-twinkle { animation: slp-twinkle 700ms ${EASE} var(--slp-twinkle-delay, 0ms) 1 both; }
+    .slp-motes::before { animation: slp-drift 90s linear infinite, slp-breathe-motes 6s ease-in-out infinite alternate; }
+    .slp-motes::after { animation: slp-drift-far 140s linear infinite, slp-breathe-motes 9s ease-in-out -3s infinite alternate; }
+    [data-slp-paused], [data-slp-paused]::before, [data-slp-paused]::after { animation-play-state: paused !important; }
+  }
+  @keyframes slp-glint { 0% { opacity: 1; background-position: 130% 0; } 100% { opacity: 1; background-position: -30% 0; } }
+  @keyframes slp-glint-again { 0% { opacity: 1; background-position: 130% 0; } 100% { opacity: 1; background-position: -30% 0; } }
+  @keyframes slp-breathe { from { opacity: 0.18; } to { opacity: 0.42; } }
+  @keyframes slp-sheen {
+    0% { opacity: 1; background-position: 130% 0; } 22% { opacity: 1; background-position: -30% 0; }
+    23%, 100% { opacity: 0; background-position: -30% 0; }
+  }
+  @keyframes slp-ring-glint {
+    0% { opacity: 0; transform: rotate(0deg); } 4% { opacity: 1; }
+    20% { opacity: 1; transform: rotate(360deg); } 24%, 100% { opacity: 0; transform: rotate(360deg); }
+  }
+  @keyframes slp-twinkle {
+    0% { opacity: 0; transform: scale(0.4) rotate(-20deg); } 60% { opacity: 1; transform: scale(1.15) rotate(8deg); }
+    100% { opacity: 0.85; transform: scale(1) rotate(0deg); }
+  }
+  @keyframes slp-drift { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -300px, 0); } }
+  @keyframes slp-drift-far { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -210px, 0); } }
+  @keyframes slp-breathe-motes { from { opacity: 0.22; } to { opacity: 0.55; } }
+`;

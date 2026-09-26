@@ -145,7 +145,7 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
                   <div
                     id="slurp-unread-marker"
                     role="separator"
-                    className="flex scroll-mt-16 items-center gap-3 py-1 text-[0.68rem] font-bold text-[var(--noodle-accent)]"
+                    className="flex scroll-mt-16 items-center gap-3 py-1 text-[0.68rem] font-bold text-[var(--noodle-accent-foreground)]"
                   >
                     <span className="h-px flex-1 bg-[var(--noodle-accent)]/40" aria-hidden="true" />
                     {localizeUi("ui.slurp.messages.newMessages", { defaultValue: "New messages" })}
@@ -183,7 +183,7 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
                   Date.parse(message.createdAt) >= pending.startedAt),
             ) && (
               <div className="flex max-w-[88%] flex-col items-end gap-1 self-end opacity-60 sm:max-w-[78%]">
-                <div className="whitespace-pre-wrap break-words rounded-[1.15rem] rounded-br-[0.35rem] bg-[var(--noodle-accent)] px-3.5 py-2.5 text-sm leading-relaxed text-zinc-950 [&_svg]:!text-zinc-950 shadow-[var(--slurp-shadow-raised)]">
+                <div className="whitespace-pre-wrap break-words rounded-[1.15rem] rounded-br-[0.35rem] bg-[var(--noodle-accent)] px-3.5 py-2.5 text-sm leading-relaxed text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] shadow-[var(--slurp-shadow-raised)]">
                   {pending.content}
                 </div>
               </div>
@@ -200,7 +200,7 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
               {waitingNote && SLURP_AWAY_STATUSES.has(waitingNote) ? (
                 <>
                   <SlurpAwayAnimation account={headerAccount ?? null} />
-                  <p className="-mt-1 inline-flex items-center gap-1.5 rounded-full bg-[var(--noodle-accent)]/12 px-3 py-1 text-[0.62rem] font-bold uppercase text-[var(--noodle-accent)]">
+                  <p className="-mt-1 inline-flex items-center gap-1.5 rounded-full bg-[var(--noodle-accent)]/12 px-3 py-1 text-[0.62rem] font-bold uppercase text-[var(--noodle-accent-foreground)]">
                     <span className="h-1.5 w-1.5 rounded-full bg-[var(--noodle-accent)]" aria-hidden="true" />
                     {localizeUi("ui.slurp.messages.away", { defaultValue: "Away" })}
                   </p>
@@ -212,7 +212,7 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
                   </h3>
                 </>
               ) : (
-                <Info size={17} className="mt-2 text-[var(--noodle-accent)]" aria-hidden="true" />
+                <Info size={17} className="mt-2 text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
               )}
               <p
                 id="slurp-away-detail"
@@ -260,7 +260,7 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
                       setError(getApiErrorMessage(cause, "The reply could not be written."));
                     }
                   }}
-                  className="min-h-9 rounded-full px-3 text-[0.7rem] font-semibold text-[var(--noodle-accent)] ring-1 ring-inset ring-[var(--noodle-accent)]/35 transition-[background-color,opacity] hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-40"
+                  className="min-h-9 rounded-full px-3 text-[0.7rem] font-semibold text-[var(--noodle-accent-foreground)] ring-1 ring-inset ring-[var(--noodle-accent)]/35 transition-[background-color,opacity] hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-40"
                 >
                   {localizeUi("ui.slurp.messages.forceReply", { defaultValue: "Get reply now" })}
                 </button>
@@ -299,7 +299,7 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
               aria-live="polite"
               className="flex max-w-[88%] items-center gap-2 self-end rounded-2xl rounded-br-md bg-[var(--noodle-accent)]/15 px-3.5 py-2.5 text-xs text-[var(--muted-foreground)] ring-1 ring-inset ring-[var(--noodle-accent)]/25"
             >
-              <Loader2 size={14} className="animate-spin text-[var(--noodle-accent)]" aria-hidden="true" />
+              <Loader2 size={14} className="animate-spin text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
               {localizeUi("ui.slurp.messages.preparingImage", {
                 defaultValue: "{{name}} is preparing an image…",
                 name: creator?.displayName ?? "The Creator",

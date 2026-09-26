@@ -86,7 +86,7 @@ export function SlpProfileModals({ model }: { model: StageProfileViewModel }) {
                   },
                 );
               }}
-              className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-xs font-bold text-zinc-950 [&_svg]:!text-zinc-950 disabled:opacity-50"
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] disabled:opacity-50"
             >
               {generateProfileArtwork.isPending ? (
                 <Loader2 size={14} className="animate-spin" />

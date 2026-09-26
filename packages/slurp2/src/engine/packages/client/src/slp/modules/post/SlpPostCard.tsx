@@ -8,11 +8,12 @@ import { type SlpAccount, type SlpInteraction } from "../../../../../shared/src/
 import { cn } from "../../../lib/utils";
 import type { ChatImage } from "../../../hooks/use-gallery";
 import { useNearViewportSlurpMediaSrc } from "../../base/media/slp-media-src";
-import { Avatar } from "../../base/chrome/SlpChrome";
+import { Avatar, labelClass } from "../../base/chrome/SlpChrome";
+import { playSlpPop } from "../sparkle/SlpSparkle";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { Image as ImageIcon } from "lucide-react";
 import { formatTime } from "../../base/ui/slp-date-time";
-import { fieldClass, labelClass, slpPostImagePrompt, textareaClass } from "./SlpPostHelpers";
+import { fieldClass, slpPostImagePrompt, textareaClass } from "./SlpPostHelpers";
 import {
   countInteractions,
   createSlpLightboxImage,
@@ -268,7 +269,7 @@ export function SlpPostCard({
         type="button"
         onClick={() => saveEditedPost(post)}
         disabled={saveEditDisabled}
-        className="h-8 rounded-full bg-[var(--noodle-accent)] px-4 text-xs font-bold text-zinc-950 [&_svg]:!text-zinc-950 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        className="h-8 rounded-full bg-[var(--noodle-accent)] px-4 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {updatePostPending ? localizeUi("ui.noodle.noodlehome.saving") : localizeUi("ui.noodle.noodlehome.save")}
       </button>
@@ -377,7 +378,7 @@ export function SlpPostCard({
             <Avatar account={author} />
           </button>
         ) : (
-          <AtSign size={28} className="text-[var(--noodle-accent)]" />
+          <AtSign size={28} className="text-[var(--noodle-accent-foreground)]" />
         )}
         <div className="flex min-w-0 flex-1 items-start gap-2">
           <div className="min-w-0 flex-1">
@@ -386,7 +387,7 @@ export function SlpPostCard({
                 type="button"
                 onClick={openPostAuthor}
                 disabled={!canOpenAuthorProfile}
-                className="rounded-lg font-semibold transition-colors enabled:hover:text-[var(--noodle-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:cursor-default"
+                className="rounded-lg font-semibold transition-colors enabled:hover:text-[var(--noodle-accent-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:cursor-default"
               >
                 {author?.displayName ?? localizeUi("ui.slurp.profile.fallbackUser")}
               </button>
@@ -396,9 +397,9 @@ export function SlpPostCard({
                   post.access === "locked" ? "ui.noodle.postaccess.unlocked.hint" : "ui.noodle.postaccess.public.hint",
                 )}
                 className={cn(
-                  "rounded-lg px-2 py-1 text-[0.68rem] font-bold ring-1 ring-inset",
+                  "rounded-lg px-2 py-1 text-xs font-bold ring-1 ring-inset",
                   post.access === "locked"
-                    ? "bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent)] ring-[var(--noodle-accent)]/25"
+                    ? "bg-[var(--noodle-accent)]/15 text-[var(--noodle-accent-foreground)] ring-[var(--noodle-accent)]/25"
                     : "bg-[var(--accent)] text-[var(--muted-foreground)] ring-[var(--noodle-divider)]",
                 )}
               >
@@ -409,7 +410,7 @@ export function SlpPostCard({
               @{author?.handle ?? localizeUi("ui.slurp.profile.fallbackHandle")} ·{" "}
               {formatTime(post.createdAt, i18n.language)}
               {reachBadge && (
-                <span className="ms-1.5 inline-flex items-center gap-1 rounded-full bg-[var(--noodle-accent)]/15 px-1.5 py-px text-[0.62rem] font-bold text-[var(--noodle-accent)]">
+                <span className="ms-1.5 inline-flex items-center gap-1 rounded-full bg-[var(--noodle-accent)]/15 px-1.5 py-px text-[11px] font-bold text-[var(--noodle-accent-foreground)]">
                   {reachBadge === "viral" ? (
                     <Flame size={10} aria-hidden="true" />
                   ) : (
@@ -510,7 +511,7 @@ export function SlpPostCard({
           // Managers only. The draft is working material, and viewers were shown a block of prompt
           // text under every post whose picture had not been drawn yet.
           <div className="relative mt-3 rounded-xl border border-[var(--noodle-accent)]/35 bg-[var(--noodle-accent)]/10 p-3 pr-14 text-xs leading-5">
-            <span className="mb-1 flex items-center gap-1.5 font-semibold text-[var(--noodle-accent)]">
+            <span className="mb-1 flex items-center gap-1.5 font-semibold text-[var(--noodle-accent-foreground)]">
               <ImageIcon size={13} aria-hidden="true" />
               {post.metadata?.imageGenerationFailed === true
                 ? localizeUi("ui.slurp.image.failed", { defaultValue: "Picture failed" })
@@ -526,7 +527,7 @@ export function SlpPostCard({
                 type="button"
                 onClick={() => setPromptDraft(shownImagePrompt ?? "")}
                 disabled={imageGenerationPending}
-                className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-full text-[var(--noodle-accent)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/15 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
+                className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-full text-[var(--noodle-accent-foreground)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/15 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
                 title={localizeUi("ui.slurp.image.generate")}
                 aria-label={localizeUi("ui.slurp.image.generate")}
                 aria-busy={imageGenerationPending}
@@ -541,7 +542,7 @@ export function SlpPostCard({
         ) : null}
         {promptDraft !== null && (
           <div className="mt-3 rounded-xl border border-[var(--noodle-accent)]/35 bg-[var(--noodle-accent)]/10 p-3 text-xs leading-5">
-            <span className="mb-1 flex items-center gap-1.5 font-semibold text-[var(--noodle-accent)]">
+            <span className="mb-1 flex items-center gap-1.5 font-semibold text-[var(--noodle-accent-foreground)]">
               <ImageIcon size={13} aria-hidden="true" />
               {localizeUi("ui.noodle.noodlepostcard.imagePrompt")}
             </span>
@@ -561,7 +562,7 @@ export function SlpPostCard({
                   ctx.generatePostImage?.(post, promptDraft.trim());
                   setPromptDraft(null);
                 }}
-                className="min-h-9 rounded-lg bg-[var(--noodle-accent)] px-3 font-semibold text-zinc-950 disabled:opacity-50"
+                className="min-h-9 rounded-lg bg-[var(--noodle-accent)] px-3 font-semibold text-[var(--slurp-on-accent)] disabled:opacity-50"
               >
                 {localizeUi("ui.slurp.image.generate")}
               </button>
@@ -579,7 +580,7 @@ export function SlpPostCard({
           <div className="mt-3 space-y-2 rounded-xl border border-[var(--noodle-accent)]/35 bg-[var(--noodle-accent)]/10 p-3 text-xs leading-5">
             {contextImagePrompt?.trim() && (
               <div>
-                <span className="mb-1 flex items-center gap-1.5 font-semibold text-[var(--noodle-accent)]">
+                <span className="mb-1 flex items-center gap-1.5 font-semibold text-[var(--noodle-accent-foreground)]">
                   <ImageIcon size={13} aria-hidden="true" />
                   {localizeUi("ui.noodle.noodlepostcard.imagePrompt")}
                 </span>
@@ -588,7 +589,7 @@ export function SlpPostCard({
             )}
             {imageDescription && (
               <div>
-                <span className="mb-1 block font-semibold text-[var(--noodle-accent)]">
+                <span className="mb-1 block font-semibold text-[var(--noodle-accent-foreground)]">
                   {localizeUi("ui.slurp.post.imageDescription", { defaultValue: "Vision model description" })}
                 </span>
                 <p className="whitespace-pre-wrap break-words">{imageDescription}</p>
@@ -677,7 +678,10 @@ export function SlpPostCard({
             type="button"
             className={cn(slpIconButtonClass, "rounded-lg", likedByPersona && "bg-[var(--noodle-accent)]/10")}
             disabled={!personaAccount || postLikePending}
-            onClick={() => reactToPost(post, "like", likedByPersona)}
+            onClick={(event) => {
+              if (!likedByPersona) playSlpPop(event.currentTarget.querySelector("svg") ?? event.currentTarget);
+              reactToPost(post, "like", likedByPersona);
+            }}
             title={
               likedByPersona
                 ? localizeUi("ui.noodle.noodlepostcard.unlike")
@@ -700,7 +704,7 @@ export function SlpPostCard({
           </button>
           <button
             type="button"
-            className={cn(slpIconButtonClass, "rounded-lg hover:text-[var(--noodle-accent)]")}
+            className={cn(slpIconButtonClass, "rounded-lg hover:text-[var(--noodle-accent-foreground)]")}
             disabled={!personaAccount}
             onClick={() => openReplyComposer(post.id)}
             title={localizeUi("ui.noodle.noodlepostcard.reply")}
@@ -722,7 +726,7 @@ export function SlpPostCard({
               <button
                 type="button"
                 onClick={() => setCommentsExpanded((expanded) => !expanded)}
-                className="flex min-h-10 w-full items-center justify-between gap-2 px-2 text-start text-xs font-semibold text-[var(--noodle-accent)] transition-colors hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)]"
+                className="flex min-h-10 w-full items-center justify-between gap-2 px-2 text-start text-xs font-semibold text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)]"
                 aria-expanded={commentsExpanded}
               >
                 <span>
@@ -758,7 +762,7 @@ export function SlpPostCard({
                           type="button"
                           onClick={() => toggleThread(thread.root.id)}
                           aria-expanded={threadOpen}
-                          className="mb-2 min-h-8 rounded px-1 text-xs font-semibold text-[var(--noodle-accent)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
+                          className="mb-2 min-h-8 rounded px-1 text-xs font-semibold text-[var(--noodle-accent-foreground)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
                         >
                           {threadOpen
                             ? localizeUi("ui.noodle.noodlepostcard.hideReplies", { defaultValue: "Hide replies" })

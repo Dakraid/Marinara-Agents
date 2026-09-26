@@ -334,7 +334,7 @@ export function ViewerHub({
             type="button"
             onClick={onRefresh}
             disabled={isRefreshing}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--noodle-accent)] transition-colors hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:cursor-not-allowed disabled:opacity-50"
             title={localizeUi("ui.noodle.noodlehome.refreshTimeline")}
             aria-label={localizeUi("ui.noodle.noodlehome.refreshTimeline")}
           >
@@ -384,7 +384,7 @@ export function ViewerHub({
         />
       </div>
       {!isLoading && !isError && scope && (
-        <div className="flex items-end justify-between gap-4 bg-[var(--slurp-canvas)] px-4 pb-3 pt-7 sm:px-5 @min-[1024px]:bg-[linear-gradient(180deg,color-mix(in_srgb,var(--noodle-accent)_3%,var(--slurp-canvas)),var(--slurp-canvas))]">
+        <div className="flex items-end justify-between gap-4 px-4 pb-3 pt-7 sm:px-5 @min-[1024px]:bg-[linear-gradient(180deg,color-mix(in_srgb,var(--noodle-accent)_3%,var(--slurp-canvas)),var(--slurp-canvas))]">
           <div>
             <div className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-[var(--slurp-warm)]" aria-hidden="true" />
@@ -400,7 +400,7 @@ export function ViewerHub({
         </div>
       )}
       {!isLoading && !isError && scope && (
-        <div className="bg-[var(--slurp-canvas)] pb-2">
+        <div className="pb-2 @min-[1024px]:bg-[var(--slurp-canvas)]">
           <div className="relative isolate overflow-hidden px-3 @min-[1024px]:px-5" data-slurp-home-masthead>
             {/* Flat underline tabs: the accent marks the active feed, nothing else competes with the posts. */}
             <div className="flex items-center justify-between gap-3">
@@ -479,7 +479,7 @@ export function ViewerHub({
       )}
       {isLoading ? (
         <div className="relative">
-          <div className="flex items-center gap-2 px-4 pt-4 text-xs font-semibold text-[var(--noodle-accent)] sm:px-5">
+          <div className="flex items-center gap-2 px-4 pt-4 text-xs font-semibold text-[var(--noodle-accent-foreground)] sm:px-5">
             <span className="relative flex h-5 w-5 items-center justify-center" aria-hidden="true">
               <span className="absolute h-5 w-5 rounded-full border border-[var(--noodle-accent)]/25 motion-safe:animate-ping motion-reduce:animate-none" />
               <span className="h-2 w-2 rounded-full bg-[var(--noodle-accent)]" />
@@ -564,7 +564,7 @@ export function ViewerHub({
               total={feed.length}
             />
           ) : (
-            <div className="space-y-4 bg-[var(--slurp-canvas)] px-3 pb-6 sm:px-4">
+            <div className="space-y-4 px-3 pb-6 sm:px-4 @min-[1024px]:bg-[var(--slurp-canvas)]">
               <AnimatePresence initial={false} mode="popLayout">
                 {visibleFeed.map((item, index) => (
                   <motion.div

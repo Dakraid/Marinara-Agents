@@ -99,7 +99,7 @@ export function SlpPostMenu({
       <button
         type="button"
         onClick={() => ctx.setPostMenuId((current) => (current === post.id ? null : post.id))}
-        className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--noodle-accent)] transition-colors hover:bg-[var(--noodle-accent)]/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
+        className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
         title={localizeUi("ui.noodle.noodlepostcard.postActions")}
         aria-label={localizeUi("ui.noodle.noodlepostcard.postActions")}
         aria-expanded={postMenuOpen}

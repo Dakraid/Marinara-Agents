@@ -47,7 +47,7 @@ export function Chip({ label, value }: { label: string; value: string | null }) 
   return (
     <span className="inline-flex min-h-7 items-center gap-1.5 rounded-full bg-[var(--slurp-surface-raised)] px-2.5 text-xs ring-1 ring-inset ring-[var(--slurp-outline)]">
       <span className="text-[var(--muted-foreground)]">{label}</span>
-      <span className="font-bold text-[var(--noodle-accent)]">{value}</span>
+      <span className="font-bold text-[var(--noodle-accent-foreground)]">{value}</span>
     </span>
   );
 }
@@ -69,7 +69,7 @@ export function Section({
   return (
     <section className="rounded-xl bg-[var(--slurp-surface-raised)] p-4 ring-1 ring-inset ring-[var(--slurp-outline)]">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <h4 className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-[var(--noodle-accent)]">
+        <h4 className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-[var(--noodle-accent-foreground)]">
           {step !== undefined && (
             <span className="inline-flex size-6 items-center justify-center rounded-full bg-[var(--slurp-canvas)] tabular-nums ring-1 ring-inset ring-[var(--slurp-outline)]">
               {step}
@@ -140,7 +140,7 @@ export function CopyButton({ value, label }: { value: string; label: string }) {
           .then(() => setCopied(true))
           .catch(() => setCopied(false));
       }}
-      className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-bold text-[var(--noodle-accent)] ring-1 ring-inset ring-[var(--slurp-outline)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+      className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-bold text-[var(--noodle-accent-foreground)] ring-1 ring-inset ring-[var(--slurp-outline)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
     >
       {copied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
       {copied ? "Copied" : label}

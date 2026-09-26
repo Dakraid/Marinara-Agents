@@ -291,7 +291,7 @@ export function SlurpDiscoverToolbar({
           <button
             type="button"
             onClick={onClear}
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-xs font-bold text-[var(--noodle-accent)] hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-xs font-bold text-[var(--noodle-accent-foreground)] hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
           >
             <X size={14} aria-hidden="true" />
             {localizeUi("ui.slurp.discover.clearFilters", { defaultValue: "Clear filters" })}

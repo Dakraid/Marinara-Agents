@@ -24,10 +24,8 @@ export const fieldClass =
   "mari-chrome-field h-9 w-full min-w-0 rounded-lg border border-[var(--marinara-chat-chrome-panel-border)] bg-[var(--background)] px-3 text-xs text-[var(--foreground)] outline-none transition-colors focus:border-[var(--noodle-accent)]";
 export const textareaClass =
   "mari-chrome-field min-h-24 w-full min-w-0 resize-y rounded-lg border border-[var(--marinara-chat-chrome-panel-border)] bg-[var(--background)] p-3 text-xs leading-relaxed text-[var(--foreground)] outline-none transition-colors focus:border-[var(--noodle-accent)]";
-export const labelClass =
-  "text-[0.68rem] font-semibold uppercase tracking-normal text-[var(--marinara-chat-chrome-panel-muted)]";
 export const slpIconButtonClass =
-  "inline-flex h-11 min-w-11 items-center justify-center gap-1 rounded-lg px-3 text-xs font-semibold !text-[var(--noodle-accent)] transition-colors hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:!text-[var(--noodle-accent)]";
+  "inline-flex h-11 min-w-11 items-center justify-center gap-1 rounded-lg px-3 text-xs font-semibold !text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:!text-[var(--noodle-accent-foreground)]";
 export const slpCommentActionClass =
   "inline-flex h-7 items-center justify-center gap-1 rounded-full !text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10 active:bg-[var(--noodle-accent)]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]/70 disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:!text-[var(--noodle-accent-foreground)]";
 /** Groups depth-first replies into top-level threads. Deeper replies stay flat inside their thread. */
@@ -60,7 +58,7 @@ export function SlurpClampedText(props: Parameters<typeof SlpTextContent>[0] & {
           type="button"
           onClick={() => setExpanded((value) => !value)}
           aria-expanded={expanded}
-          className="mt-1 rounded text-xs font-semibold text-[var(--noodle-accent)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
+          className="mt-1 rounded text-xs font-semibold text-[var(--noodle-accent-foreground)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
         >
           {expanded
             ? localizeUi("ui.noodle.noodlepostcard.showLess", { defaultValue: "Show less" })
@@ -130,7 +128,7 @@ export function SlpMentionSuggestions({
             <Avatar account={account} size="sm" />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-xs font-semibold">{account.displayName}</span>
-              <span className="block truncate text-[0.68rem] text-[var(--noodle-accent)]">@{account.handle}</span>
+              <span className="block truncate text-xs text-[var(--noodle-accent-foreground)]">@{account.handle}</span>
             </span>
           </button>
         ))

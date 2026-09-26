@@ -183,7 +183,7 @@ export function WizardFooter({
             type="button"
             onClick={onNext}
             disabled={nextDisabled || disabled}
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-5 text-sm font-bold text-zinc-950 [&_svg]:!text-zinc-950 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-5 text-sm font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {localizeUi("ui.noodle.wizardfooter.continue")} <ArrowRight size={16} />
           </button>
@@ -728,7 +728,7 @@ export function StageProfileForm({
                     type="button"
                     onClick={onGenerate}
                     disabled={isGenerating || isPending || connections.length === 0}
-                    className="inline-flex min-h-11 w-40 shrink-0 items-center justify-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-bold text-zinc-950 [&_svg]:!text-zinc-950 hover:opacity-90 disabled:opacity-50"
+                    className="inline-flex min-h-11 w-40 shrink-0 items-center justify-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-4 text-sm font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] hover:opacity-90 disabled:opacity-50"
                   >
                     {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}{" "}
                     {isGenerating
@@ -764,7 +764,7 @@ export function StageProfileForm({
               type="button"
               onClick={onSave}
               disabled={!canSave}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-5 text-sm font-bold text-zinc-950 [&_svg]:!text-zinc-950 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--noodle-accent)] px-5 text-sm font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isPending ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
               {isPending

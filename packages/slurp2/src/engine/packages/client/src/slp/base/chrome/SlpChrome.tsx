@@ -13,6 +13,7 @@ import { cn, getAvatarCropStyle } from "../../../lib/utils";
 import { useSlurpMediaSrc } from "../media/slp-media-src";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { SLURP_LOGO_SRC } from "./slp-logo";
+import { SLP_MOTION } from "./slp-motion";
 
 export const SLP_BLUE = "#7EA7FF";
 export const SLP_PINK = "#FF7EC1";
@@ -34,7 +35,8 @@ export const BOTTOM_SAFE_INSET =
 // so portaled popovers/modals (which escape the shell's CSS scope) can re-apply it.
 export const SlpAccentContext = createContext<string>(SLP_BLUE);
 export const useSlpAccent = () => useContext(SlpAccentContext);
-export const NOODLE_ICON_SCOPE_CLASS = "[&_:where(svg)]:text-[var(--noodle-accent)]";
+// Icons take the pink *ink*, not the pink fill: the fill (#FF7EC1) is ~2.2:1 on the light canvas.
+export const NOODLE_ICON_SCOPE_CLASS = "[&_:where(svg)]:text-[var(--noodle-accent-foreground)]";
 // NoodleR's mark. Untranslated on purpose — it is branding, not copy — and a constant so the
 // localization audit does not read it as a hardcoded string. Meaning is carried by the adjacent
 // label or tooltip, never by the mark alone.
@@ -59,7 +61,23 @@ export const SLP_PERSONA_SWITCHER_PAGE_SIZE = 5;
 export function getSlpAccentStyle(accent: string, style: CSSProperties = {}): CSSProperties {
   return {
     "--noodle-accent": accent,
+    // Pink *ink*: text and icons. The fill above is for surfaces, rings and sparkles only.
     "--noodle-accent-foreground": "light-dark(#8d174f, #ff9bd0)",
+    "--slurp-ink": "var(--noodle-accent-foreground)",
+    // Selected chips/rows, own bubbles, callouts.
+    "--slurp-tint": "color-mix(in srgb, var(--noodle-accent) 14%, var(--slurp-surface-raised))",
+    // Extra halo for the primary CTA and signature cards only.
+    "--slurp-glow": "0 10px 28px -10px color-mix(in srgb, var(--noodle-accent) 50%, transparent)",
+    // Text on a pink fill. Dark plum in both themes, because the fill does not change with the theme.
+    "--slurp-on-accent": "#2a0a1b",
+    // Text on the hero gradient, which is dark in both themes.
+    "--slurp-on-hero": "#fff",
+    // The 1 px top highlight of a raised surface.
+    "--slurp-highlight": "inset 0 1px 0 light-dark(rgb(255 255 255 / 0.7), rgb(255 255 255 / 0.06))",
+    "--slurp-motion-fast": `${SLP_MOTION.fast}ms`,
+    "--slurp-motion-base": `${SLP_MOTION.base}ms`,
+    "--slurp-motion-slow": `${SLP_MOTION.slow}ms`,
+    "--slurp-ease": SLP_MOTION.ease,
     "--noodle-divider": "light-dark(rgba(95, 32, 67, 0.18), rgba(255, 187, 222, 0.13))",
     "--slurp-canvas": "light-dark(#fff6fb, #100a12)",
     // The room the app sits in on a wide screen. Neutral purple, so the canvas gradients
@@ -101,8 +119,22 @@ export function getSlpAccentStyle(accent: string, style: CSSProperties = {}): CS
   } as CSSProperties;
 }
 
-export const labelClass =
-  "text-[0.68rem] font-semibold uppercase tracking-normal text-[var(--marinara-chat-chrome-panel-muted)]";
+/**
+ * The compact type scale (design language §4). Six steps; nothing under 11 px. Numbers and money
+ * add `tabular-nums` themselves.
+ */
+export const SLP_TYPE = {
+  caption: "text-[11px] leading-[14px] font-semibold",
+  meta: "text-xs leading-4 font-medium",
+  body: "text-[13px] leading-[19px]",
+  title: "text-[15px] leading-5 font-bold",
+  screen: "text-xl leading-[26px] font-extrabold tracking-[-0.01em]",
+  hero: "text-[28px] leading-8 font-extrabold",
+} as const;
+/** The one uppercase style in Slurp: a settings-group heading. Not for any other label. */
+export const SLP_EYEBROW_CLASS = "text-xs font-bold uppercase tracking-[0.14em] text-[var(--noodle-accent-foreground)]";
+
+export const labelClass = `${SLP_TYPE.meta} text-[var(--marinara-chat-chrome-panel-muted)]`;
 
 export function initials(name: string) {
   return (
@@ -175,7 +207,7 @@ export function NewSinceLastVisitDivider() {
   return (
     <div className="flex items-center gap-3 border-b border-[var(--noodle-divider)] px-4 py-2">
       <span className="h-px flex-1 bg-[var(--noodle-accent)]/30" />
-      <span className="text-[0.68rem] font-bold uppercase tracking-wide text-[var(--noodle-accent)]">
+      <span className="text-xs font-bold text-[var(--noodle-accent-foreground)]">
         {localizeUi("ui.noodle.viewerhub.newSinceYourLastVisit")}
       </span>
       <span className="h-px flex-1 bg-[var(--noodle-accent)]/30" />

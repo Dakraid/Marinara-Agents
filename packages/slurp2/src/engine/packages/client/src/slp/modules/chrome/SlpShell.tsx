@@ -24,6 +24,7 @@ import { cn } from "../../../lib/utils";
 import { useDialogFocusScope } from "../../../hooks/use-dialog-focus-scope";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { SlurpCoinAmount } from "../coin/SlpCoin";
+import { SlpCanvasMotes } from "../sparkle/SlpSparkle";
 import {
   Avatar,
   BOTTOM_SAFE_INSET,
@@ -193,7 +194,7 @@ export function SlpShell({
                     ref={mobileDrawerCloseRef}
                     type="button"
                     onClick={() => onMobileDrawerOpenChange(false)}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--noodle-accent)] transition-colors hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
                     title={localizeUi("capabilities.actions.close")}
                     aria-label={
                       slurpActive
@@ -279,7 +280,7 @@ export function SlpShell({
                       <span className={labelClass}>{localizeUi("ui.noodle.noodleshell.switchAccount")}</span>
                       <ChevronDown
                         size={18}
-                        className="shrink-0 !text-[var(--noodle-accent)] transition-transform group-open:rotate-180"
+                        className="shrink-0 !text-[var(--noodle-accent-foreground)] transition-transform group-open:rotate-180"
                         aria-hidden="true"
                       />
                     </summary>
@@ -295,7 +296,7 @@ export function SlpShell({
                       <button
                         type="button"
                         onClick={onLoadMorePersonaAccounts}
-                        className="mt-1 h-9 w-full rounded-lg text-xs font-semibold text-[var(--noodle-accent)] transition-colors hover:bg-[var(--noodle-accent)]/10"
+                        className="mt-1 h-9 w-full rounded-lg text-xs font-semibold text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10"
                       >
                         {localizeUi("ui.noodle.noodlehome.loadMore", {
                           visible: visiblePersonaAccounts.length,
@@ -312,13 +313,14 @@ export function SlpShell({
         <div className="flex min-h-0 flex-1 justify-center overflow-hidden">
           <div
             className={cn(
-              "flex min-h-0 w-full justify-center",
+              "relative isolate flex min-h-0 w-full justify-center",
               slurpActive
                 ? "max-w-[1680px] @min-[1024px]:bg-[var(--slurp-canvas)] @min-[1024px]:[background-image:var(--slurp-canvas-art)]"
                 : "max-w-[1360px]",
             )}
             data-slurp-desktop-frame={slurpActive ? resolvedContextualRail : undefined}
           >
+            {slurpActive && <SlpCanvasMotes />}
             <aside className="hidden w-[14rem] shrink-0 border-r border-[var(--noodle-divider)] bg-[radial-gradient(circle_at_12%_6%,color-mix(in_srgb,var(--noodle-accent)_13%,transparent),transparent_16rem),linear-gradient(180deg,color-mix(in_srgb,var(--slurp-surface-raised,var(--background))_96%,transparent),var(--background)_42%)] @min-[1024px]:flex @min-[1024px]:flex-col">
               <div className="flex min-h-0 flex-1 flex-col px-4 py-4">
                 <div className="mb-5 flex h-12 items-center gap-3 px-2">
@@ -339,7 +341,7 @@ export function SlpShell({
                       aria-current={homeActive ? "page" : undefined}
                       className={cn(SLURP_ROW_CLASS, homeActive && SLURP_ROW_ACTIVE_CLASS)}
                     >
-                      <Home size={22} className="!text-[var(--noodle-accent)]" />
+                      <Home size={22} className="!text-[var(--noodle-accent-foreground)]" />
                       {desktopHomeLabel}
                     </button>
                     {onOpenSearch && (
@@ -349,7 +351,7 @@ export function SlpShell({
                         aria-current={activeView === "search" ? "page" : undefined}
                         className={cn(SLURP_ROW_CLASS, activeView === "search" && SLURP_ROW_ACTIVE_CLASS)}
                       >
-                        <Search size={22} className="!text-[var(--noodle-accent)]" />
+                        <Search size={22} className="!text-[var(--noodle-accent-foreground)]" />
                         {slpCreatorActive
                           ? localizeUi("ui.noodle.noodleshell.discover")
                           : slurpActive
@@ -364,12 +366,12 @@ export function SlpShell({
                         aria-current={activeView === "messages" ? "page" : undefined}
                         className={cn(SLURP_ROW_CLASS, activeView === "messages" && SLURP_ROW_ACTIVE_CLASS)}
                       >
-                        <MessageCircle size={22} className="!text-[var(--noodle-accent)]" />
+                        <MessageCircle size={22} className="!text-[var(--noodle-accent-foreground)]" />
                         <span className="min-w-0 flex-1">
                           {localizeUi("ui.slurp.navigation.messages", { defaultValue: "Inbox" })}
                         </span>
                         {notificationCount > 0 && (
-                          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--noodle-accent)] px-1.5 text-[0.65rem] font-black tabular-nums text-zinc-950 [&_svg]:!text-zinc-950">
+                          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--noodle-accent)] px-1.5 text-[11px] font-black tabular-nums text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]">
                             {notificationCount}
                           </span>
                         )}
@@ -382,7 +384,7 @@ export function SlpShell({
                         aria-current={activeView === "profile" ? "page" : undefined}
                         className={cn(SLURP_ROW_CLASS, activeView === "profile" && SLURP_ROW_ACTIVE_CLASS)}
                       >
-                        <User size={22} className="!text-[var(--noodle-accent)]" />
+                        <User size={22} className="!text-[var(--noodle-accent-foreground)]" />
                         {slurpActive
                           ? localizeUi("ui.slurp.navigation.profile")
                           : localizeUi("ui.noodle.noodlehome.profile")}
@@ -395,7 +397,7 @@ export function SlpShell({
                         aria-current={activeView === "wallet" ? "page" : undefined}
                         className={cn(SLURP_ROW_CLASS, activeView === "wallet" && SLURP_ROW_ACTIVE_CLASS)}
                       >
-                        <Wallet size={22} className="!text-[var(--noodle-accent)]" />
+                        <Wallet size={22} className="!text-[var(--noodle-accent-foreground)]" />
                         <span className="min-w-0 flex-1">
                           {localizeUi("ui.slurp.navigation.wallet", { defaultValue: "Wallet" })}
                         </span>
@@ -412,7 +414,7 @@ export function SlpShell({
                       aria-current={activeView === "settings" ? "page" : undefined}
                       className={cn(SLURP_ROW_CLASS, activeView === "settings" && SLURP_ROW_ACTIVE_CLASS)}
                     >
-                      <Settings2 size={22} className="!text-[var(--noodle-accent)]" />
+                      <Settings2 size={22} className="!text-[var(--noodle-accent-foreground)]" />
                       {localizeUi("navigation.topbar.settings")}
                     </button>
                   </nav>
@@ -449,7 +451,7 @@ export function SlpShell({
                         <button
                           type="button"
                           onClick={onLoadMorePersonaAccounts}
-                          className="mt-1 h-9 w-full rounded-lg text-xs font-semibold text-[var(--noodle-accent)] transition-colors hover:bg-[var(--noodle-accent)]/10"
+                          className="mt-1 h-9 w-full rounded-lg text-xs font-semibold text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10"
                         >
                           {localizeUi("ui.noodle.noodlehome.loadMore", {
                             visible: visiblePersonaAccounts.length,
@@ -485,7 +487,7 @@ export function SlpShell({
                         )}
                       </span>
                     ) : (
-                      <AtSign size={28} className="!text-[var(--noodle-accent)]" />
+                      <AtSign size={28} className="!text-[var(--noodle-accent-foreground)]" />
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold">
@@ -500,7 +502,7 @@ export function SlpShell({
                           : localizeUi("ui.noodle.noodleshell.pickAPersona")}
                       </p>
                       {creatorIdentity && personaAccount && (
-                        <p className="truncate text-[0.68rem] text-[var(--muted-foreground)]">
+                        <p className="truncate text-xs text-[var(--muted-foreground)]">
                           {localizeUi("ui.slurp.account.asPersona", {
                             defaultValue: "as {{persona}}",
                             persona: personaAccount.displayName,
@@ -511,7 +513,7 @@ export function SlpShell({
                     <ChevronDown
                       size={18}
                       className={cn(
-                        "shrink-0 !text-[var(--noodle-accent)] transition-transform",
+                        "shrink-0 !text-[var(--noodle-accent-foreground)] transition-transform",
                         accountSwitcherOpen && "rotate-180",
                       )}
                       aria-hidden="true"
@@ -593,14 +595,14 @@ export function SlpShell({
               }
               aria-current={homeActive ? "page" : undefined}
               className={cn(
-                "relative flex flex-col items-center justify-center text-[var(--noodle-accent)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/10 active:scale-[0.96] active:bg-[var(--noodle-accent)]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:active:scale-100",
+                "relative flex flex-col items-center justify-center text-[var(--noodle-accent-foreground)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/10 active:scale-[0.96] active:bg-[var(--noodle-accent)]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:active:scale-100",
                 homeActive ? "bg-[var(--noodle-accent)]/[0.07]" : undefined,
               )}
             >
-              <Home size={20} strokeWidth={homeActive ? 2.6 : 2} className="!text-[var(--noodle-accent)]" />
+              <Home size={20} strokeWidth={homeActive ? 2.6 : 2} className="!text-[var(--noodle-accent-foreground)]" />
               {/* The drawer used to carry this badge; the bottom bar is the only Home entry now. */}
               {noodlerUnseenCount > 0 && (
-                <span className="absolute end-[22%] top-1 min-w-4 rounded-full bg-[var(--noodle-accent)] px-1 text-center text-[0.6rem] font-black leading-4 text-zinc-950 [&_svg]:!text-zinc-950">
+                <span className="absolute end-[22%] top-1 min-w-4 rounded-full bg-[var(--noodle-accent)] px-1 text-center text-[11px] font-black leading-4 text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]">
                   {noodlerUnseenCount > 99 ? "99+" : noodlerUnseenCount}
                 </span>
               )}
@@ -614,14 +616,14 @@ export function SlpShell({
                 }
                 aria-current={activeView === "profile" ? "page" : undefined}
                 className={cn(
-                  "relative flex flex-col items-center justify-center text-[var(--noodle-accent)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/10 active:scale-[0.96] active:bg-[var(--noodle-accent)]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:active:scale-100",
+                  "relative flex flex-col items-center justify-center text-[var(--noodle-accent-foreground)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/10 active:scale-[0.96] active:bg-[var(--noodle-accent)]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:active:scale-100",
                   activeView === "profile" && "bg-[var(--noodle-accent)]/[0.07]",
                 )}
               >
                 <User
                   size={20}
                   strokeWidth={activeView === "profile" ? 2.6 : 2}
-                  className={"!text-[var(--noodle-accent)]"}
+                  className={"!text-[var(--noodle-accent-foreground)]"}
                 />
               </button>
             )}
@@ -632,17 +634,17 @@ export function SlpShell({
                 aria-label={localizeUi("ui.slurp.navigation.messages", { defaultValue: "Inbox" })}
                 aria-current={activeView === "messages" ? "page" : undefined}
                 className={cn(
-                  "relative flex flex-col items-center justify-center text-[var(--noodle-accent)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/10 active:scale-[0.96] active:bg-[var(--noodle-accent)]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:active:scale-100",
+                  "relative flex flex-col items-center justify-center text-[var(--noodle-accent-foreground)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/10 active:scale-[0.96] active:bg-[var(--noodle-accent)]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:active:scale-100",
                   activeView === "messages" && "bg-[var(--noodle-accent)]/[0.07]",
                 )}
               >
                 <MessageCircle
                   size={20}
                   strokeWidth={activeView === "messages" ? 2.6 : 2}
-                  className={"!text-[var(--noodle-accent)]"}
+                  className={"!text-[var(--noodle-accent-foreground)]"}
                 />
                 {notificationCount > 0 && (
-                  <span className="absolute end-[22%] top-1 min-w-4 rounded-full bg-[var(--noodle-accent)] px-1 text-center text-[0.6rem] font-black leading-4 text-zinc-950 [&_svg]:!text-zinc-950">
+                  <span className="absolute end-[22%] top-1 min-w-4 rounded-full bg-[var(--noodle-accent)] px-1 text-center text-[11px] font-black leading-4 text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]">
                     {notificationCount > 99 ? "99+" : notificationCount}
                   </span>
                 )}
@@ -661,14 +663,14 @@ export function SlpShell({
                 }
                 aria-current={activeView === "search" ? "page" : undefined}
                 className={cn(
-                  "relative flex flex-col items-center justify-center text-[var(--noodle-accent)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/10 active:scale-[0.96] active:bg-[var(--noodle-accent)]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:active:scale-100",
+                  "relative flex flex-col items-center justify-center text-[var(--noodle-accent-foreground)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/10 active:scale-[0.96] active:bg-[var(--noodle-accent)]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:active:scale-100",
                   activeView === "search" && "bg-[var(--noodle-accent)]/[0.07]",
                 )}
               >
                 <Search
                   size={20}
                   strokeWidth={activeView === "search" ? 2.6 : 2}
-                  className={"!text-[var(--noodle-accent)]"}
+                  className={"!text-[var(--noodle-accent-foreground)]"}
                 />
               </button>
             )}
@@ -684,7 +686,7 @@ export function SlpShell({
                   : localizeUi("ui.noodle.noodleshell.noodleAccountMenu")
               }
               className={cn(
-                "relative flex flex-col items-center justify-center text-[var(--noodle-accent)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/10 active:scale-[0.96] active:bg-[var(--noodle-accent)]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:active:scale-100",
+                "relative flex flex-col items-center justify-center text-[var(--noodle-accent-foreground)] transition-[background-color,transform] hover:bg-[var(--noodle-accent)]/10 active:scale-[0.96] active:bg-[var(--noodle-accent)]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:active:scale-100",
                 mobileDrawerOpen && "bg-[var(--noodle-accent)]/[0.07]",
               )}
             >
@@ -692,7 +694,7 @@ export function SlpShell({
                 <Avatar account={personaAccount} size="sm" />
               ) : (
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--noodle-accent)]/15 ring-1 ring-[var(--noodle-accent)]/25">
-                  <AtSign size={18} className="!text-[var(--noodle-accent)]" />
+                  <AtSign size={18} className="!text-[var(--noodle-accent-foreground)]" />
                 </span>
               )}
             </button>
