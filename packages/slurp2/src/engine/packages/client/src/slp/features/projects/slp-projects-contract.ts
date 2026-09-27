@@ -21,6 +21,8 @@ export type SlurpProject = {
   history: SlurpArcHistoryEntry[];
   completedAt: string | null;
   twist: string;
+  /** Staying on the current chapter until the player moves on. */
+  held?: boolean;
   choices: (SlurpArcChoice | null)[];
   pollPostId: string | null;
   pollClosesAt: string | null;

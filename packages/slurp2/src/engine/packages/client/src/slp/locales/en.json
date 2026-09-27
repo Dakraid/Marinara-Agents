@@ -2663,7 +2663,7 @@
   "ui.slurp.projects.endEarly": "End early",
   "ui.slurp.projects.twistPlaceholder": "What happens next? Leave empty for a random twist.",
   "ui.slurp.projects.twistPending": "Twist for the next post: {{twist}}",
-  "ui.slurp.projects.readOnly": "Storylines run by themselves. Turn on \"Let me steer storylines\" in Settings → Storylines to steer them.",
+  "ui.slurp.projects.readOnly": "Chapters are yours to steer here. Pausing, twists and ending a storyline need \"Let me steer storylines\" in Settings → Storylines.",
   "ui.slurp.projects.profileProposal": "The storyline wants to change the profile:",
   "ui.slurp.projects.profileRevert": "The storyline ended. Put the profile back?",
   "ui.slurp.projects.profileBio": "Bio: {{value}}",
@@ -4575,5 +4575,14 @@
   "ui.slurp.settings.fanTypes.voiceDraftFailed": "Could not draft a voice.",
   "ui.slurp.messages.editDetails": "Edit values and options",
   "ui.slurp.messages.detailsSaveError": "Could not save the change. Try again.",
-  "ui.slurp.messages.editDetailsNeedsThread": "Start a conversation to edit its details."
+  "ui.slurp.messages.editDetailsNeedsThread": "Start a conversation to edit its details.",
+  "ui.slurp.projects.chapterNow": "Now: {{chapter}}",
+  "ui.slurp.projects.chapterHeld": "Staying on “{{chapter}}” until you move on.",
+  "ui.slurp.projects.hold": "Stay on this chapter",
+  "ui.slurp.projects.release": "Let it move on",
+  "ui.slurp.projects.moveOn": "Move on now",
+  "ui.slurp.projects.addNext": "Add what happens next",
+  "ui.slurp.projects.addNextLabel": "What happens next",
+  "ui.slurp.projects.addNextPlaceholder": "The first night in the new flat",
+  "ui.slurp.projects.renameLabel": "Chapter name"
 }

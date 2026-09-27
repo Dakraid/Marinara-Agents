@@ -16,7 +16,7 @@ import {
   SLURP_ARC_PACES,
   SLURP_PROJECT_MAX_ACTIVE,
 } from "../../modules/projects/slp-project.js";
-import { SLURP_ARC_DIRECTOR_ACTIONS } from "../../modules/projects/slp-arc-progress.js";
+import { SLURP_ARC_CHAPTER_ACTIONS, SLURP_ARC_DIRECTOR_ACTIONS } from "../../modules/projects/slp-arc-progress.js";
 import { SLURP_ARC_TWIST_MAX_LENGTH } from "../../modules/projects/slp-project.js";
 import {
   SLURP_ARC_AUTO_MODES,
@@ -204,8 +204,8 @@ export async function slpProjectsRoutes(app: FastifyInstance, deps: SlpRouteDeps
   });
 
   /**
-   * One Director mode action on an arc. Refused with 403 while `arcDirectorMode` is off, so the
-   * arcs run by themselves unless the player turned directing on.
+   * One Director mode action on an arc. Chapter actions are always open; the rest are refused with
+   * 403 while `arcDirectorMode` is off, so the arcs run by themselves unless directing is on.
    */
   app.post("/slurp/accounts/:id/projects/:projectId/director", async (req, reply) => {
     const parsed = z
@@ -216,7 +216,9 @@ export async function slpProjectsRoutes(app: FastifyInstance, deps: SlpRouteDeps
       })
       .safeParse(req.body ?? {});
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
-    if (!(await noodle.getSettings()).arcDirectorMode) {
+    // Chapter control is the player's steering and always open; pausing, twists, votes and ending
+    // an arc stay Director tools.
+    if (!SLURP_ARC_CHAPTER_ACTIONS.includes(parsed.data.action) && !(await noodle.getSettings()).arcDirectorMode) {
       return reply.code(403).send({ error: "Turn on Director mode in Settings → Arcs to direct arcs." });
     }
     const viewer = await resolveViewerPersona(parsed.data.personaId);

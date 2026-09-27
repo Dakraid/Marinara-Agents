@@ -4,6 +4,7 @@
 import { useSlurpSettings } from "../settings/slp-settings-contract";
 import { ArcConfigSection } from "./SlpArcConfigSection";
 import { ProjectEditor, canSave } from "./SlpProjectEditor";
+import { SlpArcChapterControls } from "./SlpArcChapterControls";
 import { useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import type { SlurpProject } from "./slp-projects-contract";
@@ -306,6 +307,11 @@ export function SlurpProjectsPanel({
                     </span>
                   </span>
                 )}
+                <SlpArcChapterControls
+                  project={project}
+                  busy={busy}
+                  onAct={(action, value) => act(project, action, value)}
+                />
                 {director &&
                   (project.status === "active" || project.status === "paused") &&
                   project.choices[project.chapter] && (
@@ -418,32 +424,7 @@ export function SlurpProjectsPanel({
                         ? localizeUi("ui.slurp.projects.pause", { defaultValue: "Pause" })
                         : localizeUi("ui.slurp.projects.resume", { defaultValue: "Resume" })}
                     </button>
-                    {project.chapter > 0 && (
-                      <button type="button" onClick={() => act(project, "back")} className="underline" disabled={busy}>
-                        {localizeUi("ui.slurp.projects.back", { defaultValue: "Go back" })}
-                      </button>
-                    )}
-                    {project.chapter < project.chapters.length - 1 && (
-                      <button type="button" onClick={() => act(project, "skip")} className="underline" disabled={busy}>
-                        {localizeUi("ui.slurp.projects.skip", { defaultValue: "Skip chapter" })}
-                      </button>
-                    )}
-                    {project.chapters.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setDirecting({
-                            id: project.id,
-                            action: "label",
-                            value: project.chapters[project.chapter] ?? "",
-                          })
-                        }
-                        className="underline"
-                        disabled={busy}
-                      >
-                        {localizeUi("ui.slurp.projects.renameChapter", { defaultValue: "Rename chapter" })}
-                      </button>
-                    )}
+                    {/* Back, skip and rename live in the chapter controls under the arc now. */}
                     <button
                       type="button"
                       onClick={() => setDirecting({ id: project.id, action: "twist", value: "" })}
