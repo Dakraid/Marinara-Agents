@@ -8,10 +8,15 @@ import { slurpImageBrief, slurpImageNegativePrompt } from "../../modules/feed/sl
 import { slurpCameraSourcePhoto, type SlurpCameraSource } from "../../modules/feed/slp-camera-source.js";
 import { slurpVisualBriefFromSituation } from "../../modules/feed/slp-visual-brief.js";
 import { slurpPostSexualLevel } from "../../modules/feed/slp-post-guidance.js";
-import { slurpEffortPhoto, type SlurpPostEffort } from "../../modules/creators/slp-production-profile.js";
+import {
+  slurpEffortPhoto,
+  slurpProductionPhoto,
+  type SlurpPostEffort,
+  type SlurpProductionStyle,
+} from "../../modules/creators/slp-production-profile.js";
 import { slurpArcImageLine } from "../../modules/projects/slp-arc-progress.js";
 import { protectCreatorGeneratedIdentity } from "../../base/identity/slp-identity-protection.js";
-import type { SlpWardrobeLook, SlpWardrobeScene } from "../../../../../shared/src/slp/slp-wardrobe.js";
+import type { SlpSceneShot, SlpWardrobeLook, SlpWardrobeScene } from "../../../../../shared/src/slp/slp-wardrobe.js";
 
 /**
  * The two pictures briefs for one post: the prose draft the image prompt is built from, and the
@@ -26,6 +31,7 @@ export function slurpPostPictureBriefs(input: {
   variation: SlurpPostVariation | null | undefined;
   camera: SlurpCameraSource | null | undefined;
   effort: SlurpPostEffort;
+  productionStyle?: SlurpProductionStyle;
   shoot?: { place: string; company: string; brief?: string } | null;
   axes: Pick<SlurpPostAxes, "intent"> | null | undefined;
   story?: boolean;
@@ -40,11 +46,15 @@ export function slurpPostPictureBriefs(input: {
   selectedWardrobe?: SlpWardrobeLook | null;
   disclosureMode: SlpIdentityDisclosure;
   publicIdentity: Parameters<typeof protectCreatorGeneratedIdentity>[2];
+  /** A set's extra pictures, as the post model planned them. */
+  shots?: readonly SlpSceneShot[];
 }): {
   draftImagePrompt: string | null;
   visualBrief: SlurpVisualBrief | undefined;
   /** What the level and the one-person rule forbid, for the provider's negative prompt. */
   negativePrompt: string | undefined;
+  /** One brief per planned extra picture, each complete on its own. */
+  shotBriefs: { draftPrompt: string; visualBrief: SlurpVisualBrief | undefined }[];
 } {
   const { variation, camera } = input;
   // Identity protection applies to the image prompt too, not only post text. The arc's chapter line
@@ -58,6 +68,7 @@ export function slurpPostPictureBriefs(input: {
   // Produce mode briefs the picture from the situation, never from the caption the model just
   // wrote. Identity protection still applies: the brief carries the Creator's own place and
   // company, so a Secret Creator's details must be redacted here exactly as they are in the text.
+  const effortPhoto = `${slurpProductionPhoto(input.productionStyle ?? "homemade")}; ${slurpEffortPhoto(input.effort)}`;
   const imageDraft =
     // A post direction can ask the model for its own imagePrompt; a returned one is honoured.
     normalizeSlpImagePrompt(input.modelImagePrompt) ??
@@ -67,7 +78,7 @@ export function slurpPostPictureBriefs(input: {
           variation,
           story: input.story,
           shoot: input.shoot,
-          effortPhoto: slurpEffortPhoto(input.effort),
+          effortPhoto,
           sexualLevel,
           stageFacts: input.stageFacts,
           scene: input.scene,
@@ -88,7 +99,7 @@ export function slurpPostPictureBriefs(input: {
             variation,
             axes: input.axes,
             cameraInstruction: slurpCameraSourcePhoto(camera),
-            effortInstruction: slurpEffortPhoto(input.effort),
+            effortInstruction: effortPhoto,
             shoot: input.shoot,
             story: input.story,
             access: input.access,
@@ -98,5 +109,17 @@ export function slurpPostPictureBriefs(input: {
           })
         : undefined,
     negativePrompt: input.postImages && camera && variation ? slurpImageNegativePrompt(sexualLevel) : undefined,
+    // Each extra picture is briefed exactly like the first, so it reaches the image model as a
+    // complete picture. A shot that names its own outfit wears it; otherwise it keeps the chosen look.
+    shotBriefs: (input.shots ?? []).flatMap((shot) => {
+      const brief = slurpPostPictureBriefs({
+        ...input,
+        shots: undefined,
+        modelImagePrompt: null,
+        scene: shot,
+        selectedWardrobe: shot.outfit?.trim() ? null : input.selectedWardrobe,
+      });
+      return brief.draftImagePrompt ? [{ draftPrompt: brief.draftImagePrompt, visualBrief: brief.visualBrief }] : [];
+    }),
   };
 }

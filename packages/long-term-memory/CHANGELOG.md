@@ -1,5 +1,45 @@
 # Long-Term Memory changelog
 
+## 1.3.24 — 2026-09-27
+
+- Reconcile extracted candidates against notes committed after the extraction snapshot, so importing several sources at once (or two imports running at the same time) reuses the first memory instead of creating a duplicate under a second ID.
+- Never revive an archived or resolved memory as a reconciliation target, including when a stale batch projection still shows it active.
+
+## 1.3.23 — 2026-09-27
+
+- Stop sending the whole vault's existing notes to the extraction model: the prompt now carries only the source, and the server matches extracted candidates against existing memories after extraction, so prompt size no longer grows with the vault.
+- Remove the now-unused existing-note prompt-token setting from Memory Settings; stale saved values are discarded on load instead of blocking the settings.
+
+## 1.3.22 — 2026-09-26
+
+- Reuse an existing memory when an extracted candidate names the same subject as a note already in the vault, instead of creating a second note under a different ID.
+- Leave a candidate unattached and require review when it plausibly matches more than one existing note, so an ambiguous duplicate is never created or applied automatically.
+
+## 1.3.21 — 2026-09-26
+
+- Filter more common filler, modal, and discourse words from keyword extraction and recall matching, and normalize curly apostrophes so contractions such as `I’m` are recognized as stop words.
+- Add a Memory Settings stop-word list and a default-on toggle that keeps listed words out of generated keywords; listed words also cannot trigger recall, and stored or manual keywords are never rewritten or removed.
+
+## 1.3.20 — 2026-09-25
+
+- Show spinning import progress only on source rows included in the running task; keep other import icons visible and disabled until it finishes.
+
+## 1.3.19 — 2026-09-24
+
+- Keep distinct trusted characters and relationship pairs on separate memory targets, preserve resolved target identities through normalization, and bound provider-generated event IDs after server naming.
+
+## 1.3.18 — 2026-09-24
+
+- Surface conflicting legacy ID/title and duplicate subject notes during extraction instead of selecting one automatically; leave identity merges to the existing explicit preview and confirmation flow. Block ambiguous link application until the draft's link is explicitly edited to a scoped candidate.
+
+## 1.3.17 — 2026-09-24
+
+- Record bounded diagnostics for invalid recovery candidate subject IDs when draft validation fails, without logging candidate memory text.
+
+## 1.3.16 — 2026-09-23
+
+- Stop automatically binding short names and fuzzy spelling variants to characters; keep those matches reviewable instead of assigning a subject without evidence. A reviewed subject-bound alias choice can rename the existing canonical character note to the chosen alias.
+
 ## 1.3.15 — 2026-09-23
 
 - Normalize rejected recovery candidate subject IDs before validation and storage so mixed-case names remain available for review without changing canonical identity checks.

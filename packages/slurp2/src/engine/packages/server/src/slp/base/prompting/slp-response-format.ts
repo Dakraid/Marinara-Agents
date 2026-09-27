@@ -108,7 +108,26 @@ const profilesSchema = {
   additionalProperties: false,
 } as const;
 
-function slpCreatorPostSchema(allowImagePrompt: boolean, allowScenePlan: boolean, contentMaxLength: number) {
+const slpSceneShotJsonSchema = {
+  type: "object",
+  properties: {
+    setting: { type: "string", maxLength: 500 },
+    action: { type: "string", maxLength: 500 },
+    expression: { type: "string", maxLength: 300 },
+    visualDirection: { type: "string", maxLength: 500 },
+    outfit: { type: "string", maxLength: 300 },
+  },
+  required: ["setting", "action", "expression", "visualDirection", "outfit"],
+  additionalProperties: false,
+} as const;
+
+function slpCreatorPostSchema(
+  allowImagePrompt: boolean,
+  allowScenePlan: boolean,
+  contentMaxLength: number,
+  sceneShots: number,
+) {
+  const withShots = allowScenePlan && sceneShots > 0;
   return {
     type: "object",
     properties: {
@@ -120,7 +139,11 @@ function slpCreatorPostSchema(allowImagePrompt: boolean, allowScenePlan: boolean
       },
       // With images enabled the prompt is mandatory: a nullable field made models skip images.
       ...(allowImagePrompt
-        ? { imagePrompt: { type: "string", minLength: 1, maxLength: SLP_REPLY_HARD_MAX_LENGTH } }
+        ? {
+            imagePrompt: {
+              anyOf: [{ type: "string", minLength: 1, maxLength: SLP_REPLY_HARD_MAX_LENGTH }, { type: "null" }],
+            },
+          }
         : {}),
       ...(allowScenePlan
         ? {
@@ -139,12 +162,17 @@ function slpCreatorPostSchema(allowImagePrompt: boolean, allowScenePlan: boolean
             },
           }
         : {}),
+      ...(withShots
+        ? { shots: { type: "array", minItems: sceneShots, maxItems: sceneShots, items: slpSceneShotJsonSchema } }
+        : {}),
     },
-    required: allowScenePlan
-      ? ["title", "content", "scene"]
-      : allowImagePrompt
-        ? ["title", "content", "imagePrompt"]
-        : ["title", "content"],
+    required: withShots
+      ? ["title", "content", "scene", "shots"]
+      : allowScenePlan
+        ? ["title", "content", "scene"]
+        : allowImagePrompt
+          ? ["title", "content", "imagePrompt"]
+          : ["title", "content"],
     additionalProperties: false,
   } as const;
 }
@@ -266,8 +294,9 @@ const slpCreatorFanActivitySchema = {
     targetPostId: { type: "string" },
     type: { type: "string", enum: ["like", "reply"] },
     content: nullableString,
+    parentInteractionId: { anyOf: [{ type: "string" }, { type: "null" }] },
   },
-  required: ["actorHandle", "creatorAccountId", "targetPostId", "type", "content"],
+  required: ["actorHandle", "creatorAccountId", "targetPostId", "type", "content", "parentInteractionId"],
   additionalProperties: false,
 } as const;
 
@@ -281,7 +310,12 @@ export function slpResponseFormat(
     | "noodler_reply"
     | "noodler_dm"
     | "noodler_fan_activity",
-  options: { allowImagePrompt?: boolean; allowScenePlan?: boolean; contentMaxLength?: number } = {},
+  options: {
+    allowImagePrompt?: boolean;
+    allowScenePlan?: boolean;
+    contentMaxLength?: number;
+    sceneShots?: number;
+  } = {},
 ): { type: string; [key: string]: unknown } {
   if (!isOpenAIGpt56Model(model)) return { type: "json_object" };
   const schema =
@@ -311,6 +345,7 @@ export function slpResponseFormat(
                     options.allowImagePrompt === true,
                     options.allowScenePlan === true,
                     options.contentMaxLength ?? SLP_POST_HARD_MAX_LENGTH,
+                    options.sceneShots ?? 0,
                   );
   return {
     type: "json_schema",
