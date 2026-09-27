@@ -1,6 +1,6 @@
 import { slpIsOwnActor } from "../../../../../shared/src/slp/slp-interactions.js";
 import { SlpTimestamp } from "../../base/ui/SlpTimestamp";
-import { AtSign, ChevronDown, ChevronRight, Flame, Info, TrendingUp, MessageCircle, RefreshCw, X } from "lucide-react";
+import { AtSign, ChevronDown, ChevronRight, Info, MessageCircle, RefreshCw, X } from "lucide-react";
 import { SlpHeartGlyph } from "../../base/chrome/SlpGlyphs";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { slurpPostWentViral, slurpReachWeek } from "../../../../../shared/src/slp/slp-reach.js";
@@ -14,6 +14,7 @@ import { useNearViewportSlurpMediaSrc } from "../../base/media/slp-media-src";
 import { Avatar, SLP_IMG_FRAME_CLASS, slpImgFade } from "../../base/chrome/SlpChrome";
 import { playSlpPop } from "../sparkle/SlpSparkle";
 import { slpTagClass } from "../chrome/SlpButton";
+import { SlpPostPartnership, SlpReachBadge } from "./SlpPostPartnership";
 import { SlpPostEditSheet } from "./SlpPostEditSheet";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { Image as ImageIcon } from "lucide-react";
@@ -434,19 +435,9 @@ export function SlpPostCard({
               <span className="shrink-0">
                 <SlpTimestamp value={post.createdAt} tappable />
               </span>
-              {reachBadge && (
-                <span className="ms-1.5 inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--noodle-accent)]/15 px-1.5 py-px text-[11px] font-bold text-[var(--noodle-accent-foreground)]">
-                  {reachBadge === "viral" ? (
-                    <Flame size={10} aria-hidden="true" />
-                  ) : (
-                    <TrendingUp size={10} aria-hidden="true" />
-                  )}
-                  {reachBadge === "viral"
-                    ? localizeUi("ui.slurp.post.viral", { defaultValue: "Went viral" })
-                    : localizeUi("ui.slurp.post.featured", { defaultValue: "Featured" })}
-                </span>
-              )}
+              {reachBadge && <SlpReachBadge badge={reachBadge} />}
             </p>
+            <SlpPostPartnership partnership={post.partnership} onOpenProfile={ctx.openAuthorProfile} />
           </div>
           <SlpPostMenu
             post={post}

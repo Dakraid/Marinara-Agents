@@ -8,6 +8,7 @@ import type {
   SlpInteractionType,
   SlpPost,
   SlpPostImageCrop,
+  SlpPostPartnership,
 } from "../../../../../shared/src/slp/slp-social.types.js";
 import type { ConversationMediaPickerTabId } from "../../../components/chat/ConversationMediaPickerPanel";
 import type { ChatImage } from "../../../hooks/use-gallery";
@@ -76,6 +77,8 @@ export type SlpPostCardModel = Pick<
    * Optional because a managed post inside the composer has no projection behind it.
    */
   likeCount?: number;
+  /** A joint collab post or a paid partnership: the label under the name. */
+  partnership?: SlpPostPartnership | null;
 };
 
 export interface SlpPostCardTitleEditingCap {

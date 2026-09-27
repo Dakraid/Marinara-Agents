@@ -875,6 +875,41 @@ async function main() {
     );
   }
 
+  // 10. Client: labels on the post, the real author on the partner's page, Studio steering, offers.
+  {
+    const card = read("client/src/slp/modules/post/SlpPostCard.tsx");
+    assert.match(card, /<SlpPostPartnership partnership=\{post\.partnership\}/u);
+    const helpers = read("client/src/slp/app/screens/SlpHomeHelpers.tsx");
+    assert.match(helpers, /const host = view\.authorAccountId !== profile\.id \? view\.partnership\?\.host : null;/u);
+    const studio = read("client/src/slp/app/screens/SlpScreenStudio.tsx");
+    assert.ok(
+      studio.indexOf("<SlpCollectCard") < studio.indexOf("<SlpBrandOffers") &&
+        studio.indexOf("<SlpBrandOffers") < studio.indexOf("<SlpStudioStat"),
+      "brand offers right after the money",
+    );
+    assert.ok(
+      studio.lastIndexOf("<SlpStudioStorylineGroup>") < studio.indexOf("<SlpCollabsPanel"),
+      "collabs after the Creators",
+    );
+    const panel = read("client/src/slp/features/projects/SlpCollabsPanel.tsx");
+    for (const action of [
+      "actions.push.mutate",
+      "actions.block.mutate",
+      "actions.unblock.mutate",
+      "actions.suggest.mutate",
+      "actions.cool.mutate",
+      "actions.decline.mutate",
+    ])
+      assert.ok(panel.includes(action), action);
+    assert.match(read("client/src/slp/locales/en.json"), /"ui\.slurp\.earnings\.entry\.sponsor": "Paid partnership"/u);
+    const viewer = read("server/src/slp/features/viewer/slp-viewer-context.ts");
+    assert.match(
+      viewer,
+      /if \(!stamp \|\| stamp\.declined \|\| stamp\.kind === "rival"\) return null;/u,
+      "no label on a rivalry post or a refusal",
+    );
+  }
+
   console.log("slurp2 creator ties regression passed");
 }
 

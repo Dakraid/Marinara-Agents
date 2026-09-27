@@ -1,5 +1,5 @@
 import { useId, useState, type ReactNode } from "react";
-import { BookOpen, ChevronDown, TrendingDown, TrendingUp } from "lucide-react";
+import { BookOpen, ChevronDown, Handshake, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import type { SlurpStudioCreator } from "../../features/economy/slp-economy-contract";
@@ -14,6 +14,7 @@ import { SlpCreatorFrame } from "./SlpHomeHelpers";
 import { formatRelativeTime, formatTime } from "../../base/ui/slp-date-time";
 import { BroadcastPanel } from "../../features/messages/SlpMessages";
 import { SlurpProjectsPanel } from "../../features/projects/SlpProjectsBoard";
+import { SlpBrandOffers, SlpCollabsPanel } from "../../features/projects/SlpCollabsPanel";
 import { SlpCoinText } from "../../modules/coin/SlpCoin";
 import { errorMessage } from "./SlpHomeHelpers";
 import { SlpCollectCard } from "./SlpCollectCard";
@@ -119,6 +120,7 @@ function SlurpStudioView({
 
               {/* Money first: the same Creator earnings card as the Wallet, with Collect. */}
               {personaId && <SlpCollectCard creator={creator} personaId={personaId} burst />}
+              {personaId && <SlpBrandOffers personaId={personaId} creatorId={creator.id} />}
 
               {/* Fans next: value first, a sentence-case label that wraps instead of overflowing
                   (B18), and a small trend under the value. */}
@@ -305,6 +307,17 @@ function SlurpStudioView({
             </section>
           ))
         )}
+
+        {/* Between all Creators, not one: collabs, rivalries and brand deals (7b-c). */}
+        {personaId && studioQuery.data && (
+          <SlpStudioGroup
+            icon={Handshake}
+            title={localizeUi("ui.slurp.ties.title")}
+            detail={localizeUi("ui.slurp.ties.detail")}
+          >
+            <SlpCollabsPanel personaId={personaId} />
+          </SlpStudioGroup>
+        )}
       </div>
     </SlpCreatorFrame>
   );
@@ -362,9 +375,18 @@ function SlpStudioStat({
   );
 }
 
-/** The storyline settings, in one collapsed group at the end of a Creator's Studio. */
-function SlpStudioStorylineGroup({ children }: { children: ReactNode }) {
-  const { t: localizeUi } = useUiTranslation();
+/** Operator settings in one collapsed group: a Creator's storyline, or collabs between Creators. */
+function SlpStudioGroup({
+  icon: Icon,
+  title,
+  detail,
+  children,
+}: {
+  icon: LucideIcon;
+  title: string;
+  detail: string;
+  children: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const id = useId();
   return (
@@ -376,16 +398,10 @@ function SlpStudioStorylineGroup({ children }: { children: ReactNode }) {
         aria-controls={id}
         className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-4 text-start text-[var(--slurp-muted)] transition-colors hover:text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] [&_svg]:!text-current"
       >
-        <BookOpen size={18} aria-hidden="true" className="shrink-0" />
+        <Icon size={18} aria-hidden="true" className="shrink-0" />
         <span className="min-w-0 flex-1">
-          <span className={cn(SLP_TYPE.body, "block font-semibold text-[var(--slurp-text)]")}>
-            {localizeUi("ui.slurp.studio.storyline", { defaultValue: "Storyline" })}
-          </span>
-          <span className={cn(SLP_TYPE.meta, "block truncate")}>
-            {localizeUi("ui.slurp.studio.storylineDetail", {
-              defaultValue: "What the posts are about, and where they go",
-            })}
-          </span>
+          <span className={cn(SLP_TYPE.body, "block font-semibold text-[var(--slurp-text)]")}>{title}</span>
+          <span className={cn(SLP_TYPE.meta, "block truncate")}>{detail}</span>
         </span>
         <ChevronDown
           size={16}
@@ -397,6 +413,22 @@ function SlpStudioStorylineGroup({ children }: { children: ReactNode }) {
         {open && children}
       </div>
     </section>
+  );
+}
+
+/** The storyline settings, in one collapsed group at the end of a Creator's Studio. */
+function SlpStudioStorylineGroup({ children }: { children: ReactNode }) {
+  const { t: localizeUi } = useUiTranslation();
+  return (
+    <SlpStudioGroup
+      icon={BookOpen}
+      title={localizeUi("ui.slurp.studio.storyline", { defaultValue: "Storyline" })}
+      detail={localizeUi("ui.slurp.studio.storylineDetail", {
+        defaultValue: "What the posts are about, and where they go",
+      })}
+    >
+      {children}
+    </SlpStudioGroup>
   );
 }
 

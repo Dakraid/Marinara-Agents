@@ -248,7 +248,7 @@ export function createSlpViewerContext(
               (interaction) =>
                 interaction.type === "story_view" && interaction.actorAccountId === context.viewerActorAccountId,
             ),
-            partnership: slurpPostPartnership(post.metadata, (id) => context.accountById.get(id)),
+            partnership: slurpPostPartnership(post, (id) => context.accountById.get(id)),
             linkedPostId:
               post.metadata.noodlerPostType === "story" && typeof post.metadata.noodlerLinkedPostId === "string"
                 ? post.metadata.noodlerLinkedPostId
@@ -315,15 +315,19 @@ export type SlpRouteDeps = SlpRouteHost & SlpViewerContext;
  * none; a partner the viewer cannot see is left out.
  */
 function slurpPostPartnership(
-  metadata: Record<string, unknown>,
-  account: (id: string) => { displayName: string; handle: string } | undefined,
+  post: { authorAccountId: string; metadata: Record<string, unknown> },
+  account: (id: string) => { id: string; displayName: string; handle: string; avatarUrl?: string | null } | undefined,
 ): SlpPostPartnership | null {
-  const stamp = readSlurpTieStamp(metadata);
+  const stamp = readSlurpTieStamp(post.metadata);
   if (!stamp || stamp.declined || stamp.kind === "rival") return null;
+  const author = account(post.authorAccountId);
+  const host = author
+    ? { id: author.id, name: author.displayName, handle: author.handle, avatarUrl: author.avatarUrl ?? null }
+    : null;
   if (stamp.kind === "sponsor")
-    return stamp.brand ? { withAccountId: null, withName: null, withHandle: null, brand: stamp.brand } : null;
+    return stamp.brand ? { host, withAccountId: null, withName: null, withHandle: null, brand: stamp.brand } : null;
   const partner = stamp.partnerId ? account(stamp.partnerId) : undefined;
   return partner
-    ? { withAccountId: stamp.partnerId!, withName: partner.displayName, withHandle: partner.handle, brand: null }
+    ? { host, withAccountId: partner.id, withName: partner.displayName, withHandle: partner.handle, brand: null }
     : null;
 }

@@ -45,7 +45,7 @@ const TONE = {
 
 function entryAppearance(kind: string, gamble: boolean): { icon: LucideIcon; tone: string } {
   if (gamble) return { icon: Dices, tone: TONE.warm };
-  if (kind === "tip" || kind === "income") return { icon: Gift, tone: TONE.success };
+  if (kind === "tip" || kind === "income" || kind === "sponsor") return { icon: Gift, tone: TONE.success };
   if (kind === "unlock" || kind === "ppv") return { icon: SlpLockGlyph, tone: TONE.violet };
   if (kind === "subscribe" || kind === "renew") return { icon: Crown, tone: TONE.pink };
   if (kind === "payout" || kind === "topUp") return { icon: ArrowDown, tone: TONE.warm };

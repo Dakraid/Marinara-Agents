@@ -144,6 +144,8 @@ export function parsePrice(value: string): number | null {
 }
 
 export function toSlpPostCardModel(view: SlpCreatorPostView, profile: SlpCreatorStageProfile): SlpPostCardModel {
+  // A joint post on the partner's page is still by its host.
+  const host = view.authorAccountId !== profile.id ? view.partnership?.host : null;
   return {
     id: view.id,
     authorAccountId: view.authorAccountId,
@@ -154,16 +156,19 @@ export function toSlpPostCardModel(view: SlpCreatorPostView, profile: SlpCreator
     imagePrompt: view.imagePrompt,
     images: view.images,
     metadata: view.metadata ?? {},
-    authorSnapshot: {
-      id: profile.id,
-      handle: profile.handle,
-      displayName: profile.displayName,
-      avatarUrl: profile.avatarUrl,
-      avatarCrop: profile.avatarCrop,
-    },
+    authorSnapshot: host
+      ? { id: host.id, handle: host.handle, displayName: host.name, avatarUrl: host.avatarUrl, avatarCrop: null }
+      : {
+          id: profile.id,
+          handle: profile.handle,
+          displayName: profile.displayName,
+          avatarUrl: profile.avatarUrl,
+          avatarCrop: profile.avatarCrop,
+        },
     createdAt: view.createdAt,
     interactions: view.interactions,
     likeCount: view.likeCount ?? undefined,
+    partnership: view.partnership ?? null,
   };
 }
 

@@ -440,6 +440,8 @@ export interface SlpCreatorPostView {
 
 /** Who a post was made with: another Creator's page, or a brand that paid for it. */
 export interface SlpPostPartnership {
+  /** Who wrote it, so a joint post on the partner's page still shows its real author. */
+  host: { id: string; name: string; handle: string; avatarUrl: string | null } | null;
   withAccountId: string | null;
   withName: string | null;
   withHandle: string | null;
