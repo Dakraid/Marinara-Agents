@@ -28,7 +28,7 @@ function SlurpStudioView({
   onOpenProfile: (accountId: string) => void;
 }) {
   const { t: localizeUi, i18n } = useUiTranslation();
-  const studioQuery = useSlurpStudio(personaId);
+  const studioQuery = useSlurpStudio(personaId, true, true);
   // Diegetic by default, optimisation behind a door.
   //
   // A Creator would check her earnings, her followers, and who keeps showing up — those are in

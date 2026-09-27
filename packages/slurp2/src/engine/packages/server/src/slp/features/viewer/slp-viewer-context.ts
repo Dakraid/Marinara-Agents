@@ -112,6 +112,8 @@ export function createSlpViewerContext(
         profile: context.profileById.get(account.id)!,
         subscribed: context.subscribedIds.has(account.id),
         followed: context.followedIds.has(account.id),
+        // The persona's own Creator, without exposing the source id the disclosure strips (R1-021).
+        ownedByViewer: creatorBelongsToViewer(account, context.viewer),
         // The creator's own weekly price when it has set one, else the Slurp-wide default.
         subscriptionPrice: context.subscriptionPrices[account.id] ?? SLP_CREATOR_SUBSCRIPTION_COST,
         goal: context.goalByAccountId.get(account.id) ?? null,

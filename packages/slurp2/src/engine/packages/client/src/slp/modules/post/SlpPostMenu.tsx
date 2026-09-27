@@ -1,3 +1,4 @@
+import { slpIsOwnActor } from "../../../../../shared/src/slp/slp-interactions.js";
 import {
   Download,
   Flag,
@@ -155,7 +156,8 @@ export function SlpPostMenu({
               {localizeUi("ui.slurp.post.openCreator", { defaultValue: "Open creator" })}
             </SlpSheetItem>
           )}
-          {onReport || ctx.personaAccount ? (
+          {/* Your own Creator's post cannot be reported (the server refuses with 403, R1-033). */}
+          {onReport || (ctx.personaAccount && !slpIsOwnActor(ctx.personaAccount, post.authorAccountId)) ? (
             <SlpSheetItem onSelect={run(() => (onReport ? onReport() : setReportOpen(true)))}>
               <Flag size={14} />
               {localizeUi("ui.slurp.post.report", { defaultValue: "Report post" })}

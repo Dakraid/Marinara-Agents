@@ -28,9 +28,16 @@ export function useHideSlurpAd() {
   });
 }
 export function useRecordSlurpAdAction() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ personaId, promotionId }: { personaId: string; promotionId: string }) =>
       api.post(`/slurp2/slurp/viewer/ads/${encodeURIComponent(promotionId)}/action`, { personaId }),
+    // An ad tap can pay coins; the balance chip and the Wallet show it at once (R1-093).
+    onSuccess: (_result, input) =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: [...slpKeys.noodlerRoot(), "wallet", input.personaId] }),
+        qc.invalidateQueries({ queryKey: [...slpKeys.noodlerRoot(), "viewer-wallets"] }),
+      ]),
   });
 }
 export function useHideSlurpAdBrand() {

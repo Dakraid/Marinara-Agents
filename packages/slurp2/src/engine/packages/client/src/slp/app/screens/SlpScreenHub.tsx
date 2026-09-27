@@ -1,7 +1,7 @@
 import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SlpBalanceChip, SlpWordmark } from "../../modules/chrome/SlpShell";
 import { SlpSegment } from "../../modules/chrome/SlpButton";
-import { SLP_CREATOR_FEED_WINDOW_SIZE } from "./SlpHomeHelpers";
+import { isSlurpStory, SLP_CREATOR_FEED_WINDOW_SIZE, type SlurpViewerCreator } from "./SlpHomeHelpers";
 import { SlurpMomentsShelf, SlurpMomentViewer } from "./SlpScreenMoments";
 import { ArrowUp, LayoutGrid, List, Search, UserRound } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState } from "react";
@@ -15,7 +15,7 @@ import {
   useRecordSlurpAdAction,
   useSlurpInlineAds,
 } from "../../features/ads/slp-ads-hooks";
-import { useCreatorViewer } from "../../features/feed/slp-feed-viewer-hooks";
+import { useCreatorViewer, useSlurpViewerFeedSlice } from "../../features/feed/slp-feed-viewer-hooks";
 import { useSlurpWallet } from "../../features/economy/slp-economy-hooks";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
@@ -169,10 +169,27 @@ export function ViewerHub({
     if (feedIsOnScreen) onFeedShown();
   }, [feedIsOnScreen, onFeedShown]);
   const searchTerm = search.trim().toLowerCase();
+  // Search and Following come from the server, page by page (R1-084); the loaded feed alone missed
+  // older posts. The derived view below still gives Stories, Creators and the "all" feed.
+  const sliceActive = Boolean(searchTerm) || tab === "following";
+  const slice = useSlurpViewerFeedSlice(scope?.viewer.entityId ?? null, searchTerm ? "all" : tab, search);
+  const sliceItems = useMemo(() => {
+    if (!sliceActive || !slice.data) return null;
+    const byId = new Map<string, SlurpViewerCreator>();
+    for (const page of slice.data.pages) for (const creator of page.creators) byId.set(creator.profile.id, creator);
+    for (const creator of scope?.creators ?? []) byId.set(creator.profile.id, creator);
+    return slice.data.pages
+      .flatMap((page) => page.items)
+      .filter((item) => !isSlurpStory(item.post))
+      .flatMap((item) => {
+        const creator = byId.get(item.creatorAccountId);
+        return creator ? [{ post: item.post, creator }] : [];
+      });
+  }, [scope?.creators, slice.data, sliceActive]);
   const {
     moments,
-    feed: fullFeed,
-    searchResults,
+    feed: derivedFeed,
+    searchResults: derivedSearchResults,
     discoveredCreators,
     suggestedCreators,
     storyCreatorIds,
@@ -187,6 +204,18 @@ export function ViewerHub({
       }),
     [authorProfile?.id, momentCutoff, scope, searchTerm, tab],
   );
+  const fullFeed = !searchTerm && sliceItems ? sliceItems : derivedFeed;
+  const searchResults = searchTerm && sliceItems ? sliceItems : derivedSearchResults;
+  // "Load more" pages whichever list is on screen; the total is the server's count, not a guess (R1-042).
+  const feedHasMore = sliceActive ? Boolean(slice.hasNextPage) : hasMore;
+  const loadMoreFeed = sliceActive
+    ? async () => {
+        if (!slice.hasNextPage) return false;
+        await slice.fetchNextPage();
+        return true;
+      }
+    : onLoadMore;
+  const serverTotal = sliceActive ? slice.data?.pages[0]?.total : (scope as { total?: number } | undefined)?.total;
   // The feed updates itself; posts that arrive while the reader is here wait behind the "New posts"
   // pill (the mark is per persona and tab), so the list never jumps under their thumb.
   const feedMarkKey = `${scope?.viewer.id ?? ""}\u0000${tab}`;
@@ -198,7 +227,7 @@ export function ViewerHub({
   const { shown: feed, held: heldPosts } = holdNewSlpFeedPosts(
     fullFeed,
     !searchTerm && feedMark?.key === feedMarkKey ? feedMark.at : null,
-    ({ creator }) => Boolean(scope) && creator.profile.sourceAccountId === scope?.viewer.entityId,
+    ({ creator }) => (creator as { ownedByViewer?: boolean }).ownedByViewer === true,
   );
   // Up to three faces of who posted, newest first, one per Creator.
   const heldPosters = [
@@ -259,7 +288,7 @@ export function ViewerHub({
   const newSince = newSinceAt ? new Date(newSinceAt).getTime() : NaN;
   const isNewToViewer = ({ post, creator }: (typeof feed)[number]) =>
     !Number.isNaN(newSince) &&
-    creator.profile.sourceAccountId !== scope?.viewer.id &&
+    !((creator as { ownedByViewer?: boolean }).ownedByViewer === true) &&
     new Date(post.createdAt).getTime() > newSince;
   let lastNewIndex = -1;
   if (!searchTerm) {
@@ -579,9 +608,14 @@ export function ViewerHub({
               onLoadMore={
                 visibleFeed.length < feed.length
                   ? () => setVisibleFeedCount((count) => Math.min(feed.length, count + SLP_CREATOR_FEED_WINDOW_SIZE))
-                  : undefined
+                  : feedHasMore
+                    ? () =>
+                        void loadMoreFeed().then((loaded) => {
+                          if (loaded) setVisibleFeedCount((count) => count + SLP_CREATOR_FEED_WINDOW_SIZE);
+                        })
+                    : undefined
               }
-              total={feed.length}
+              total={Math.max(feed.length, serverTotal ?? 0)}
             />
           ) : (
             <div className="space-y-4 px-3 pb-6 sm:px-4 @min-[1024px]:bg-[var(--slurp-canvas)]">
@@ -623,10 +657,10 @@ export function ViewerHub({
                   </motion.div>
                 ))}
               </AnimatePresence>
-              {(visibleFeed.length < feed.length || hasMore) && (
+              {(visibleFeed.length < feed.length || feedHasMore) && (
                 <LoadMoreFeedButton
                   visible={visibleFeed.length}
-                  total={hasMore ? Math.max(feed.length + 1, visibleFeed.length + 1) : feed.length}
+                  total={Math.max(feed.length, serverTotal ?? 0, feedHasMore ? visibleFeed.length + 1 : 0)}
                   onLoadMore={async () => {
                     if (visibleFeed.length < feed.length) {
                       setVisibleFeedCount((count) => Math.min(feed.length, count + SLP_CREATOR_FEED_WINDOW_SIZE));
@@ -634,7 +668,7 @@ export function ViewerHub({
                     }
                     setLoadingMore(true);
                     try {
-                      if (await onLoadMore()) {
+                      if (await loadMoreFeed()) {
                         setVisibleFeedCount((count) => count + SLP_CREATOR_FEED_WINDOW_SIZE);
                       }
                     } finally {
@@ -679,7 +713,7 @@ export function ViewerHub({
           key={activeMoment.post.id}
           moment={activeMoment}
           personaId={scope?.viewer.entityId ?? null}
-          isOwner={activeMoment.creator.profile.sourceAccountId === scope?.viewer.entityId}
+          isOwner={(activeMoment.creator as { ownedByViewer?: boolean }).ownedByViewer === true}
           // Progress counts this Creator's Stories only, so the bar shows where one Creator ends.
           index={
             moments.filter(

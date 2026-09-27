@@ -110,7 +110,8 @@ assert.match(
   viewerHooks,
   /refetchInterval: enabled && personaId \? 30_000 : false,\s*refetchIntervalInBackground: false/u,
 );
-assert.match(viewerHooks, /mergeSlpFeedFirstPage\(qc\.getQueryData/u);
+// Fix phase 1 (R1-023): the cached feed is read once, and a post action asks for one deep reload.
+assert.match(viewerHooks, /return deep \? fresh : mergeSlpFeedFirstPage\(cached/u);
 assert.match(
   hub,
   /holdNewSlpFeedPosts\(\s*fullFeed,\s*!searchTerm && feedMark\?\.key === feedMarkKey \? feedMark\.at : null,/u,

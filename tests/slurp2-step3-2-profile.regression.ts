@@ -122,7 +122,8 @@ assert.deepEqual(
 );
 assert.equal(holdNewSlpFeedPosts(feed, mark).held.length, 2, "without the predicate nothing changes");
 const hub = client("app/screens/SlpScreenHub.tsx");
-assert.match(hub, /creator\.profile\.sourceAccountId === scope\?\.viewer\.entityId/u);
+// Fix phase 1 (R1-021): the server flags the persona's own Creator (the source id never reached the feed).
+assert.match(hub, /\(\{ creator \}\) => \(creator as \{ ownedByViewer\?: boolean \}\)\.ownedByViewer === true,/u);
 // The pill shows up to three posters' faces and pops two stars once (static under reduced motion).
 assert.match(
   hub,
