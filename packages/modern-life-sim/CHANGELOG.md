@@ -1,3 +1,9 @@
+## 0.2.1 — 2026-09-27
+- Models that think before they answer, like GLM or DeepSeek, no longer get cut off halfway: every call leaves them room to think, and one that still runs out gets a second try with more room.
+- Reasoning has a new option, none, for models that can answer without thinking first.
+- Pictures no longer flicker or load again while others are being painted, in Settings and on every other screen.
+- Text on the phone, in the Guide and in What's New is sharp again.
+
 ## 0.2.0 — 2026-09-27
 - It looks more like a game: a new title screen, a welcome, a first-day card, the GUIDE (a searchable how-it-works app on your phone), a relationship chart in Contacts, and a redone profile.
 - Everyone gets their own personality, read from their card, instead of twelve fixed types.
