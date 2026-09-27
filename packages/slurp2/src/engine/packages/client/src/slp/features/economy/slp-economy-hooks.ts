@@ -53,6 +53,9 @@ export function useSlurpStudio(personaId: string | null, enabled = true, markVis
   const marked = useRef(false);
   return useQuery({
     queryKey: [...slpKeys.noodlerRoot(), "studio", personaId ?? "none", markVisit ? "visit" : "read"],
+    // Read once per visit; actions invalidate it.
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
     queryFn: () => {
       const mark = markVisit && !marked.current;
       marked.current = true;
@@ -63,7 +66,6 @@ export function useSlurpStudio(personaId: string | null, enabled = true, markVis
     enabled: Boolean(personaId) && enabled,
     // A visit starts with a fresh read, so the mark is taken when the page opens.
     ...(markVisit ? { refetchOnMount: "always" as const } : {}),
-    refetchOnWindowFocus: false,
   });
 }
 export function useSlurpWallet(personaId: string | null) {

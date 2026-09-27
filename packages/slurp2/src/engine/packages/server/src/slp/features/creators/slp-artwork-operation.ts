@@ -16,6 +16,7 @@ import {
 import { resolveCreatorImageConnectionId } from "../../base/media/slp-image-connections.js";
 import { resolveCreatorArtwork } from "./slp-public-profiles-service.js";
 import { tryCreatorAccountOperation } from "../../base/locking/slp-account-operation-lock.js";
+import { slurpArtworkGaps } from "../../modules/creators/slp-artwork-gaps.js";
 import type { SlpCreatorArtworkPromptOptions } from "../../../../../shared/src/slp/slp-social.types.js";
 
 export type SlpCreatorArtworkOutcome = "idle" | "inherited" | "avatar" | "banner" | "unavailable";
@@ -145,10 +146,23 @@ export async function backfillNextCreatorArtwork(db: DB): Promise<SlpCreatorArtw
   const settings = await noodle.getSettings();
 
   const profiles = await noodle.listNoodlerStageProfiles();
-  const target = profiles.find((profile) => !profile.avatarUrl || !profile.bannerUrl);
-  if (!target) return "idle";
-  const kind: "avatar" | "banner" = target.avatarUrl ? "banner" : "avatar";
+  // The first missing picture that can make progress. An open Creator whose source has no banner
+  // to borrow stays "idle" forever, and taking only the first gap stalled every Creator after it
+  // (R1-056). A generating Creator still gets its avatar before its banner.
+  for (const { target, kind } of slurpArtworkGaps(profiles)) {
+    const outcome = await backfillCreatorArtwork(db, noodle, settings, target, kind);
+    if (outcome !== "idle") return outcome;
+  }
+  return "idle";
+}
 
+async function backfillCreatorArtwork(
+  db: DB,
+  noodle: ReturnType<typeof createSlurpStorage>,
+  settings: Awaited<ReturnType<ReturnType<typeof createSlurpStorage>["getSettings"]>>,
+  target: { id: string },
+  kind: "avatar" | "banner",
+): Promise<SlpCreatorArtworkOutcome> {
   const locked = await tryCreatorAccountOperation(target.id, async () => {
     const account = await noodle.getNoodlerAccountById(target.id);
     if (!account) return "idle" as const;

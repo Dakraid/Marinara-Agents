@@ -181,8 +181,14 @@ export interface SlpPostCardCtx {
   /** Post image crop, replacement, and removal capability. */
   imageEditing?: SlpPostCardImageEditingCap;
   /** Generate a missing post image from its saved prompt. */
-  generatePostImage?: (post: Pick<SlpPostCardModel, "id" | "authorAccountId">, imagePrompt?: string) => void;
-  generatingPostImageId?: string | null;
+  /** `asWritten`: the prompt comes from the redraw box and is sent to the provider as written. */
+  generatePostImage?: (
+    post: Pick<SlpPostCardModel, "id" | "authorAccountId">,
+    imagePrompt?: string,
+    asWritten?: boolean,
+  ) => void;
+  /** Every post whose picture is being drawn right now; two draws each keep their state (R1-059). */
+  generatingPostImageIds?: readonly string[];
   sharePost?: (post: SlpPostCardModel) => void;
   /** Optional event offer. Omit to keep the discounted unlock action hidden. */
   unlockOffer?: SlpPostUnlockOffer;

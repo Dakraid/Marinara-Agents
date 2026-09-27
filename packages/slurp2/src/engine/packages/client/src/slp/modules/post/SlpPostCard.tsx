@@ -167,7 +167,7 @@ export function SlpPostCard({
     loading: postImageLoading,
   } = useNearViewportSlurpMediaSrc(activeImage?.imageUrl ?? post.imageUrl, { width: 960 });
   const displayedImageUrl = !hideImage && postImageSrc && postImageSrc !== failedImageUrl ? postImageSrc : null;
-  const imageGenerationPending = ctx.generatingPostImageId === post.id;
+  const imageGenerationPending = ctx.generatingPostImageIds?.includes(post.id) === true;
   const imageSlot = hideImage ? null : slpPostImageSlotState(post, imageGenerationPending, ctx.postManagement);
   // The post dialog shows the same post as the card behind it; its own key keeps the ⋯ menu and
   // the composer in one card instead of both (R1-029).
@@ -575,7 +575,7 @@ export function SlpPostCard({
                 type="button"
                 disabled={!promptDraft.trim() || imageGenerationPending}
                 onClick={() => {
-                  ctx.generatePostImage?.(post, promptDraft.trim());
+                  ctx.generatePostImage?.(post, promptDraft.trim(), true);
                   setPromptDraft(null);
                 }}
                 className="min-h-9 rounded-lg bg-[var(--noodle-accent)] px-3 font-semibold text-[var(--slurp-on-accent)] disabled:opacity-50"

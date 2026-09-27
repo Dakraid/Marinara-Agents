@@ -37,8 +37,10 @@ import {
   selectSlpImageProviderPrompt,
   ensureSlpImageAppearance,
   slurpImageLook,
+  slurpWithoutCameraDevice,
   stripAppearanceLabel,
 } from "../../base/media/slp-image-prompt.js";
+import { slurpImageNegativePrompt, slurpImageNegativeTerms } from "../../modules/feed/slp-image-brief.js";
 import { slurpImageExtension } from "../../base/media/slp-image-format.js";
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
 
@@ -99,6 +101,8 @@ type CreatorPostImageInput = {
     | "enableImageInterpretation"
     | "imageWidth"
     | "imageHeight"
+    | "storyImageWidth"
+    | "storyImageHeight"
     | "characterImageInstructions"
     | "promptBlocks"
     | "generationConnectionId"
@@ -122,8 +126,16 @@ type CreatorPostImageInput = {
   admissionMode?: ConnectionAdmissionMode;
   width?: number;
   height?: number;
+  /** A Story picture: drawn at the Story size unless the caller names its own size. */
+  story?: boolean;
   compositionGuard?: string;
+  /**
+   * This path's own negative terms. Absent, every Creator picture gets the shared ones (no phone,
+   * no second copy of the Creator) plus its visual brief's level; an empty string means none.
+   */
   negativePromptAdditions?: string;
+  /** False when the picture is not the Creator's work, so the Creator spends no energy on it. */
+  chargeEnergy?: boolean;
   suppressCharacterContext?: boolean;
   suppressStageAppearance?: boolean;
   suppressCreatorDetails?: boolean;
@@ -483,8 +495,13 @@ async function generateCreatorPostImageRun(
       guidanceContext: [configuredImageInstructions, connectionImageInstructions],
     }),
   );
+  // Every path lands here, so the device is removed here: the caption or a stored draft may still
+  // say "I held my phone up" (R1-050). A prompt a human approved is sent as written.
+  const finalPromptScene = skipInterpretation
+    ? finalPromptBase
+    : slurpWithoutCameraDevice(finalPromptBase) || finalPromptBase;
   const finalPrompt = [
-    ensureSlpImageAppearance(finalPromptBase, redactIdentity(stageAppearance)),
+    ensureSlpImageAppearance(finalPromptScene, redactIdentity(stageAppearance)),
     input.compositionGuard,
   ]
     .filter(Boolean)
@@ -497,20 +514,13 @@ async function generateCreatorPostImageRun(
         reviewedOverride?.negativePrompt ||
         undefined
       : compiledPrompt.negativePrompt || undefined;
-  // Deduplicated: the style profile and the level both add "text, watermark" and the like.
-  const finalNegativePrompt =
-    [
-      ...new Set(
-        [baseNegativePrompt, input.negativePromptAdditions]
-          .filter(Boolean)
-          .join(",")
-          .split(",")
-          .map((term) => term.trim())
-          .filter(Boolean),
-      ),
-    ].join(", ") || undefined;
-  const outputWidth = input.width ?? input.settings.imageWidth;
-  const outputHeight = input.height ?? input.settings.imageHeight;
+  const finalNegativePrompt = slurpImageNegativeTerms(
+    baseNegativePrompt,
+    input.negativePromptAdditions ?? slurpImageNegativePrompt(input.visualBrief?.sexualLevel),
+  );
+  // Chosen here rather than by each caller, so a scheduled or redrawn Story is a Story too (R1-052).
+  const outputWidth = input.width ?? (input.story ? input.settings.storyImageWidth : input.settings.imageWidth);
+  const outputHeight = input.height ?? (input.story ? input.settings.storyImageHeight : input.settings.imageHeight);
   run.finalPrompt = finalPrompt;
   run.negativePrompt = finalNegativePrompt ?? null;
   run.size = { width: outputWidth ?? null, height: outputHeight ?? null };
@@ -597,10 +607,12 @@ async function generateCreatorPostImageRun(
   const provider = input.imageConnection.provider ?? "image_generation";
   // Only a picture that exists costs anything. The preview path returns above, and a failed
   // attempt threw before here, so a Creator is never charged for work that produced nothing.
-  try {
-    await createSlurpStorage(input.db).adjustCreatorState(input.account.id, { energy: -SLURP_ENERGY_COST.image });
-  } catch (error) {
-    logger.warn(error, "[slurp] Could not charge image energy for %s", input.account.id);
+  if (input.chargeEnergy !== false) {
+    try {
+      await createSlurpStorage(input.db).adjustCreatorState(input.account.id, { energy: -SLURP_ENERGY_COST.image });
+    } catch (error) {
+      logger.warn(error, "[slurp] Could not charge image energy for %s", input.account.id);
+    }
   }
   const file =
     stageSlurpImageWithHost(

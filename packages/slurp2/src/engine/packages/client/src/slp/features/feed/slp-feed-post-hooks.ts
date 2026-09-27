@@ -281,10 +281,22 @@ export function useGenerateCreatorPostImage() {
   const qc = useQueryClient();
   return useMutation({
     mutationKey: ["slurp", "generate-post-image"],
-    mutationFn: ({ id, accountId, imagePrompt }: { id: string; accountId: string; imagePrompt?: string }) =>
+    mutationFn: ({
+      id,
+      accountId,
+      imagePrompt,
+      asWritten,
+    }: {
+      id: string;
+      accountId: string;
+      imagePrompt?: string;
+      /** The prompt came from the redraw box and goes to the provider as written. */
+      asWritten?: boolean;
+    }) =>
       api.post<SlpCreatorManagedPost>(`/slurp2/slurp/posts/${encodeURIComponent(id)}/image/generate`, {
         accountId,
         ...(imagePrompt ? { imagePrompt } : {}),
+        ...(imagePrompt && asWritten ? { asWritten: true } : {}),
         replace: true,
         debugMode: useSlurpUIStore.getState().debugMode,
       }),

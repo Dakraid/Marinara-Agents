@@ -59,6 +59,8 @@ export async function planSlurpPost(
     isTeaser: boolean;
     imagesEnabled: boolean;
     previewOnly?: boolean;
+    /** The reserve prepares this post, which draws one picture: no photo set. */
+    singlePicture?: boolean;
     slotId?: string | null;
     at: Date;
     dueAt?: Date | null;
@@ -150,6 +152,7 @@ export async function planSlurpPost(
           textOnlyRate: strategy.textOnlyRate,
           access: request.access ?? "public",
           intentsAllowed: beat ? slurpBeatIntents(beat.type) : undefined,
+          singlePicture: ctx.singlePicture,
         })
       : null;
   const drawnAxes =

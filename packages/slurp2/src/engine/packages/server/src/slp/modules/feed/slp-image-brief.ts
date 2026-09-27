@@ -43,8 +43,20 @@ const LEVEL_NEGATIVE: Record<SlurpExplicitLevel, string> = {
 const SHARED_NEGATIVE =
   "second person, extra people, duplicate person, twins, extra limbs, disembodied hands, smartphone, holding phone, selfie stick, text, watermark";
 
-export function slurpImageNegativePrompt(level: SlurpExplicitLevel): string {
-  return [LEVEL_NEGATIVE[level], SHARED_NEGATIVE].filter(Boolean).join(", ");
+/** Without a level (a redraw or a scheduled picture that kept none), only the shared terms apply. */
+export function slurpImageNegativePrompt(level?: SlurpExplicitLevel): string {
+  return [level ? LEVEL_NEGATIVE[level] : "", SHARED_NEGATIVE].filter(Boolean).join(", ");
+}
+
+/** Negative-prompt parts as one list, deduplicated: the style profile and the level both add "text, watermark". */
+export function slurpImageNegativeTerms(...parts: readonly (string | null | undefined)[]): string | undefined {
+  const terms = parts
+    .filter(Boolean)
+    .join(",")
+    .split(",")
+    .map((term) => term.trim())
+    .filter(Boolean);
+  return [...new Set(terms)].join(", ") || undefined;
 }
 
 function sentence(value: string | null | undefined): string {

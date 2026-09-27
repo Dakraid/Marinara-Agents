@@ -216,6 +216,39 @@ export function slurpViewerImageOnCooldown(
   return slurpViewerImageReadyAt(messages, cooldownMinutes, now) !== null;
 }
 
+/**
+ * The draft for a photo the player took and sends in a chat: the persona's own appearance, no
+ * Creator (R1-054). The photo may not show the sender at all, so the look is conditional.
+ */
+export function slurpViewerPhotoPrompt(brief: string, appearance: string): string {
+  return [
+    "A photo the sender took themselves and sends in a private chat.",
+    `The photo shows: ${brief}`,
+    appearance ? `If the sender is in the photo, they look like this: ${appearance}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+/**
+ * The chat uploads among some messages' metadata: only files in the shared messages folder. A
+ * Creator's own message media lives in that Creator's folder, and a thread can hold another
+ * Creator's files (a media offer), so nothing outside the folder is returned.
+ */
+export function slurpUploadedMessageMediaPaths(
+  metadata: readonly Record<string, unknown>[],
+  messagesFolder: string,
+): string[] {
+  return metadata.flatMap((entry) => {
+    const path = entry.noodlerMediaPath;
+    return typeof path === "string" &&
+      path.startsWith(messagesFolder) &&
+      !path.slice(messagesFolder.length).includes("..")
+      ? [path]
+      : [];
+  });
+}
+
 /** When the viewer may draw the next picture (ISO), or null when they may draw one now. */
 export function slurpViewerImageReadyAt(
   messages: readonly { role: string; createdAt: string; metadata: { generatedContext?: unknown } }[],

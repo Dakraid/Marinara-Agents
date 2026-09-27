@@ -43,7 +43,8 @@ export function createCreatorSlpImagesService(db: DB) {
     retryStoredPrompt?: boolean;
     admissionMode?: ConnectionAdmissionMode;
   }): Promise<
-    { ok: true; finalized: number; deferred: number } | { ok: false; error: "missing_connection"; message: string }
+    | { ok: true; finalized: number; deferred: number; busy: number }
+    | { ok: false; error: "missing_connection"; message: string }
   > => {
     const settings = await noodle.getSettings();
     let finalized = 0;
@@ -51,6 +52,9 @@ export function createCreatorSlpImagesService(db: DB) {
     // a busy connection. The caller must not read these as a provider failure, or a healthy
     // system backs its own polling off while the user is simply using the connection.
     let deferred = 0;
+    // The two deferrals the player can act on, counted apart so a redraw can say which (R1-048).
+    let missingConnection = 0;
+    let busy = 0;
     for (const promptOverride of input.prompts) {
       const claimToken = newId();
       // Reuses the shared post-image claim; the NoodleR-account check below rejects any
@@ -75,6 +79,7 @@ export function createCreatorSlpImagesService(db: DB) {
       if (!imageConnection) {
         await noodle.releasePostImageClaim(claimed.id, claimToken);
         deferred += 1;
+        missingConnection += 1;
         continue;
       }
       if (!claimed.imagePrompt) {
@@ -96,6 +101,7 @@ export function createCreatorSlpImagesService(db: DB) {
       };
       const renewalTimer = setInterval(() => void renewClaim(), REVIEWED_IMAGE_CLAIM_RENEW_MS);
       renewalTimer.unref?.();
+      const story = claimed.metadata.noodlerPostType === "story" || claimed.metadata.noodlerStoryPending === true;
 
       let image: Awaited<ReturnType<typeof generateCreatorPostImage>>;
       try {
@@ -112,7 +118,10 @@ export function createCreatorSlpImagesService(db: DB) {
           db,
           debugMode: input.debugMode,
           promptOverride,
-          retryStoredPrompt: input.retryStoredPrompt,
+          story,
+          // A prompt the player sent "as written" from the redraw box stays as written when it is
+          // retried, by Try again or by the automatic pass (R1-055).
+          retryStoredPrompt: input.retryStoredPrompt && claimed.metadata.imagePromptAsWritten !== true,
           admissionMode: input.admissionMode,
           onImageRun: slurpDeepDetailsImageRunRecorder(
             db,
@@ -127,6 +136,7 @@ export function createCreatorSlpImagesService(db: DB) {
         if (slpIsAdmissionFailure(error)) {
           await noodle.releasePostImageClaim(claimed.id, claimToken);
           deferred += 1;
+          busy += 1;
           continue;
         }
         logger.warn(error, "[slurp] Failed to generate reviewed image for %s", account.displayName);
@@ -185,7 +195,7 @@ export function createCreatorSlpImagesService(db: DB) {
         image.stagedMedia?.promote();
         const ok = await noodle.finalizePostImageClaim(claimed.id, claimToken, {
           imageUrl: slpCreatorPostMediaUrl(claimed.id),
-          metadata: image.metadata,
+          metadata: { ...image.metadata, ...(story ? { noodlerPostType: "story" } : {}) },
         });
         if (!ok) {
           image.stagedMedia?.compensate();
@@ -202,7 +212,16 @@ export function createCreatorSlpImagesService(db: DB) {
         throw error;
       }
     }
-    return { ok: true, finalized, deferred };
+    // Nothing could be drawn because no image connection resolves: say so, instead of a busy
+    // message the player cannot act on.
+    if (finalized === 0 && missingConnection > 0 && missingConnection === input.prompts.length) {
+      return {
+        ok: false,
+        error: "missing_connection",
+        message: "No image generation connection is configured.",
+      };
+    }
+    return { ok: true, finalized, deferred, busy };
   };
 
   return {

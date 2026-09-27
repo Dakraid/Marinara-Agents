@@ -175,6 +175,11 @@ export function slurpPostAxes(
     access?: "public" | "locked";
     /** The intents a planned beat can serve. See `slp-post-beat.ts`. Absent means any. */
     intentsAllowed?: readonly SlurpContentIntent[];
+    /**
+     * Only one picture can be drawn for this post. The reserve prepares a post with one picture, so
+     * a set drawn there announced several pictures and published one (R1-053).
+     */
+    singlePicture?: boolean;
   },
 ): SlurpPostAxes {
   // A Story can be a thank-you or a request as well as a passing moment. It cannot be a set or a
@@ -202,7 +207,15 @@ export function slurpPostAxes(
   // be. 50 is the shipped balance, so an unset strategy changes nothing.
   const lean = (decided.textOnlyRate ?? 50) / 50;
   const textOnly = Math.min(90, Math.round(TEXT_ONLY_WEIGHTS[intent] * lean));
-  const multiImageWeight = intent === "set" ? 45 : intent === "callback" ? 25 : intent === "request" ? 20 : 0;
+  const multiImageWeight = decided.singlePicture
+    ? 0
+    : intent === "set"
+      ? 45
+      : intent === "callback"
+        ? 25
+        : intent === "request"
+          ? 20
+          : 0;
   const delivery = slurpWeightedPick("delivery", creatorAccountId, sequence, [
     { value: "text_only" as const, weight: textOnly },
     { value: "new_capture" as const, weight: Math.max(0, 100 - textOnly - multiImageWeight) },

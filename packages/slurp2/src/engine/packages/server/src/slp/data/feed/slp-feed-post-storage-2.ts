@@ -175,13 +175,41 @@ export function createFeedPostStorage2(context: SlurpStorageContext) {
       });
     },
     /** Give a post back its previous picture unless another request now holds its image claim. */
-    async restorePostImageIfUnclaimed(id: string, imageUrl: string, at = now()): Promise<boolean> {
+    /**
+     * Give a post back the picture a failed redraw replaced, with the prompt that picture was drawn
+     * from, and without the failed attempt's marks: the picture on screen did not fail.
+     */
+    async restorePostImageIfUnclaimed(
+      id: string,
+      imageUrl: string,
+      imagePrompt?: string | null,
+      at = now(),
+    ): Promise<boolean> {
       return db.transaction(async (tx) => {
         const rows = await tx.select().from(slpPosts).where(eq(slpPosts.id, id));
         const row = rows[0];
         if (!row || row.imageUrl) return false;
         if (row.imageClaimToken && row.imageClaimLeaseUntil && row.imageClaimLeaseUntil > at) return false;
-        await tx.update(slpPosts).set({ imageUrl, updatedAt: at }).where(eq(slpPosts.id, id));
+        const metadata = parseRecord(row.metadata);
+        for (const key of [
+          "imageGenerationFailed",
+          "imageGenerationError",
+          "imageRetryAttempts",
+          "imageRetryPrompt",
+          "imageRetryNegativePrompt",
+          "imagePromptAsWritten",
+        ]) {
+          delete metadata[key];
+        }
+        await tx
+          .update(slpPosts)
+          .set({
+            imageUrl,
+            ...(imagePrompt !== undefined && { imagePrompt }),
+            metadata: JSON.stringify(metadata),
+            updatedAt: at,
+          })
+          .where(eq(slpPosts.id, id));
         return true;
       });
     },
@@ -344,6 +372,12 @@ export function createFeedPostStorage2(context: SlurpStorageContext) {
           }
         }
         if (media) nextMetadata.noodlerMediaPath = media.noodlerMediaPath;
+        // Removing the picture of a photo set removes the whole set; otherwise the second picture
+        // became the post picture (R1-051). The caller unlinks the files.
+        if (input.removeImage) {
+          delete nextMetadata.postMedia;
+          await tx.delete(slpPostMedia).where(eq(slpPostMedia.postId, id));
+        }
         if (input.removeImage || input.imageCrop === null) delete nextMetadata.imageCrop;
         else if (input.imageCrop !== undefined) nextMetadata.imageCrop = input.imageCrop;
         await tx

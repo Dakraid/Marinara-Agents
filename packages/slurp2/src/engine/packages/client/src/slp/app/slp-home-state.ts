@@ -521,26 +521,27 @@ export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onL
     openAuthorProfile: (accountId) => onNavigate({ mode: "creator", view: "profile", accountId }),
   });
   const generatePostImage = useGenerateCreatorPostImage();
-  const [generatingPostImageId, setGeneratingPostImageId] = useState<string | null>(null);
+  const [generatingPostImageIds, setGeneratingPostImageIds] = useState<readonly string[]>([]);
   /** The post whose share picker is open, or null. */
   const [sharingPost, setSharingPost] = useState<SlpPostCardModel | null>(null);
   const handleGeneratePostImage = (
     post: Pick<SlpCreatorManagedPost, "id" | "authorAccountId">,
     imagePrompt?: string,
+    asWritten?: boolean,
   ) => {
-    setGeneratingPostImageId(post.id);
+    setGeneratingPostImageIds((current) => [...current, post.id]);
     generatePostImage.mutate(
-      { id: post.id, accountId: post.authorAccountId, imagePrompt },
+      { id: post.id, accountId: post.authorAccountId, imagePrompt, asWritten },
       {
         onError: (error) => toast.error(errorMessage(error, localizeUi("ui.slurp.image.generateFailed"))),
-        onSettled: () => setGeneratingPostImageId(null),
+        onSettled: () => setGeneratingPostImageIds((current) => current.filter((id) => id !== post.id)),
       },
     );
   };
   const postCardCtx = {
     ...postCardController.ctx,
     generatePostImage: handleGeneratePostImage,
-    generatingPostImageId,
+    generatingPostImageIds,
     gambleUnlockPost: viewerPersonaId
       ? async (postId: string) => {
           try {
@@ -778,8 +779,7 @@ export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onL
     deleteNoodleReply,
     postCardController,
     generatePostImage,
-    generatingPostImageId,
-    setGeneratingPostImageId,
+    generatingPostImageIds,
     handleGeneratePostImage,
     postCardCtx,
     sharingPost,

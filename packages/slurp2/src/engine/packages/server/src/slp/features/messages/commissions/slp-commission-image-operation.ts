@@ -6,6 +6,7 @@ import { createSlurpStorage } from "../../../data/slp-storage.js";
 import { generateCreatorPostImage } from "../../media/slp-media-contract.js";
 import { resolveCreatorImageConnectionId } from "../../../base/media/slp-image-connections.js";
 import { resolveSlurpCreatorMenu } from "../../../data/settings/slp-post-guidance-storage.js";
+import { slurpViewerPhotoPrompt } from "../../../modules/messages/slp-messaging.js";
 
 /**
  * Draw the piece a fan commissioned.
@@ -56,6 +57,59 @@ export async function generateSlurpCommissionImage(
     db,
     debugMode: false,
     previewOnly: false,
+  });
+  const mediaPath = image.metadata.noodlerMediaPath;
+  if (typeof mediaPath !== "string" || !image.stagedMedia) {
+    image.stagedMedia?.compensate();
+    return "unavailable";
+  }
+  return {
+    mediaPath,
+    promote: () => image.stagedMedia?.promote(),
+    compensate: () => image.stagedMedia?.compensate(),
+  };
+}
+
+/**
+ * Draw the photo the player took and sends in a chat (R1-054). It is the player's photo, not the
+ * Creator's work: the persona's own appearance, no Creator face, name or references, and the
+ * Creator spends no energy. The Creator's image connection and style still draw it, as before.
+ */
+export async function generateSlurpViewerPhoto(
+  db: DB,
+  input: { creatorAccountId: string; personaId: string; brief: string },
+): Promise<{ mediaPath: string; promote: () => void; compensate: () => void } | "unavailable"> {
+  const noodle = createSlurpStorage(db);
+  const connections = createConnectionsStorage(db);
+  const account = await noodle.getNoodlerAccountById(input.creatorAccountId);
+  if (!account) return "unavailable";
+  const mappedId = await resolveCreatorImageConnectionId(db, account.id);
+  const imageConnection =
+    (mappedId ? await connections.getWithKey(mappedId) : null) ?? (await connections.getDefaultForImageGeneration());
+  if (!imageConnection) return "unavailable";
+  const characters = createCharactersStorage(db);
+  const appearance = (await characters.getPersona(input.personaId))?.appearance?.trim() ?? "";
+  const brief = input.brief.trim().slice(0, 2000);
+  const image = await generateCreatorPostImage({
+    account,
+    linkedPublicAccount: null,
+    disclosureMode: "open",
+    postContent: brief,
+    draftPrompt: slurpViewerPhotoPrompt(brief, appearance),
+    settings: await noodle.getSettings(),
+    characters,
+    promptOverrides: createPromptOverridesStorage(db),
+    imageConnection,
+    db,
+    debugMode: false,
+    previewOnly: false,
+    suppressCharacterContext: true,
+    suppressStageAppearance: true,
+    suppressCreatorDetails: true,
+    // The shared terms are for a Creator's own photo ("no second person"); the player's photo can
+    // show anyone. Only the device stays out of it.
+    negativePromptAdditions: "smartphone, holding phone, selfie stick, text, watermark",
+    chargeEnergy: false,
   });
   const mediaPath = image.metadata.noodlerMediaPath;
   if (typeof mediaPath !== "string" || !image.stagedMedia) {

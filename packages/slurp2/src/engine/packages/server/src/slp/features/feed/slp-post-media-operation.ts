@@ -153,7 +153,9 @@ export async function finishSlurpPostImage<T>(input: {
     }
     const post = await persist({
       imagePrompt: prompt,
-      metadata: { imagePendingReview: true },
+      // A Story waiting for its reviewed picture is not a Story yet (it has no picture); the marker
+      // lets the reviewed draw use the Story size and make it one.
+      metadata: { imagePendingReview: true, ...(input.story ? { noodlerStoryPending: true } : {}) },
     });
     return {
       post,

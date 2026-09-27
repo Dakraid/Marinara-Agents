@@ -450,8 +450,10 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   walletCreatorRevenueSharePercent: SLURP_DEFAULT_ECONOMY.creatorRevenueSharePercent,
   inlineAdsLorebookId: null,
   inlineAdsLorebookRevision: null,
+  // Exact 4:5, the feed's own frame: 2:3 was cropped in the feed and cut in half on profiles
+  // (R1-062). A default only; a stored size is never rewritten.
   imageWidth: 1024,
-  imageHeight: 1536,
+  imageHeight: 1280,
   storyRate: SLURP_DEFAULT_STORY_RATE,
   storyImagesEnabled: true,
   storyLifetimeHours: 72,

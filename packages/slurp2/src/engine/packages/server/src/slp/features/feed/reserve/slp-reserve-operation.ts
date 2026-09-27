@@ -246,6 +246,7 @@ export async function prepareNextCreatorReservePost(db: DB, at = new Date()): Pr
               postContent: payload.content,
               draftPrompt: payload.imagePrompt,
               visualBrief: payload.visualBrief ?? undefined,
+              story: payload.metadata.noodlerPostType === "story",
               settings,
               characters: createCharactersStorage(db),
               promptOverrides: createPromptOverridesStorage(db),

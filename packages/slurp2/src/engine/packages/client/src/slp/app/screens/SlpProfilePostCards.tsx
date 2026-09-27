@@ -292,7 +292,7 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
                               })
                           : undefined
                       }
-                      imageGenerationPending={postCardCtx.generatingPostImageId === item.post.id}
+                      imageGenerationPending={postCardCtx.generatingPostImageIds?.includes(item.post.id) === true}
                     />
                   </div>
                 ) : item.kind === "managed-reveal" ? (

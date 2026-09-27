@@ -9,7 +9,10 @@ import { z } from "zod";
 import { existsSync } from "node:fs";
 import { basename, dirname } from "node:path";
 import { resolveSlurpMediaOffer } from "../../modules/economy/slp-media-offer.js";
-import { generateSlurpCommissionImage } from "./commissions/slp-commission-image-operation.js";
+import {
+  generateSlurpCommissionImage,
+  generateSlurpViewerPhoto,
+} from "./commissions/slp-commission-image-operation.js";
 import { replyToSlurpMessage } from "./slp-message-operation.js";
 import { trySlurpWrite } from "../../base/locking/slp-operation-lock.js";
 import { personaQuerySchema } from "../../modules/messages/slp-messages-schemas.js";
@@ -252,8 +255,9 @@ export async function slpMessagesMediaRoutes(app: FastifyInstance, messaging: Sl
       cooldownMinutes > 0 ? slurpViewerImageReadyAt(await messages.listMessages(thread.id), cooldownMinutes) : null;
     // `retryAt` lets the chat say when ("Draw again at 4:30 PM") in the reader's own clock.
     if (readyAt) return reply.code(429).send({ error: "You can generate another picture later.", retryAt: readyAt });
-    const drawn = await generateSlurpCommissionImage(app.db, {
+    const drawn = await generateSlurpViewerPhoto(app.db, {
       creatorAccountId: thread.creatorAccountId,
+      personaId: parsed.data.personaId,
       brief: parsed.data.prompt,
     });
     if (drawn === "unavailable") return reply.code(503).send({ error: "Image generation is not available." });

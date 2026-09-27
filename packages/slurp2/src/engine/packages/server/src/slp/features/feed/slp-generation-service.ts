@@ -239,6 +239,7 @@ export async function generateCreatorPost(
       isTeaser,
       imagesEnabled,
       previewOnly: input.previewOnly,
+      singlePicture: input.prepareOnly === true,
       slotId: input.slotId,
       at: input.generatedAt ?? new Date(),
       dueAt: input.publicationTime ?? null,
@@ -625,7 +626,7 @@ export async function generateCreatorPost(
       debugMode,
       admissionMode: input.admissionMode,
       negativePromptAdditions: negativePrompt,
-      ...(storyVariation ? { width: settings.storyImageWidth, height: settings.storyImageHeight } : {}),
+      story: storyVariation,
     };
   };
 

@@ -38,6 +38,9 @@ import {
   slurpImprovementProposals,
 } from "../../../db/schema/slurp.js";
 import { readCreatorAccountMediaPath, readCreatorAvatarMediaPath } from "../../base/identity/slp-avatar.js";
+import { NOODLER_MEDIA_PREFIX, unlinkCreatorMedia } from "../../base/media/slp-media.js";
+import { slurpUploadedMessageMediaPaths } from "../../modules/messages/slp-messaging.js";
+import { parseRecord } from "../../modules/records/slp-storage-model.js";
 import { newId, now } from "../../../utils/id-generator.js";
 import {
   compareMinimizedCreatorSourceSnapshot,
@@ -168,6 +171,9 @@ export function createCreatorsStorage3(context: SlurpStorageContext) {
           ? await db.select().from(slpInteractions).where(inArray(slpInteractions.postId, postIds))
           : [];
       const interactionIds = interactionRows.map((interaction) => interaction.id);
+      // The player's chat uploads live in the shared messages folder, not the Creator's, so the
+      // folder removal after this delete does not reach them (R1-061).
+      const uploadedMessageMedia: string[] = [];
       await db.transaction(async (tx) => {
         if (postIds.length > 0) {
           await tx.delete(slpActivityDigests).where(inArray(slpActivityDigests.sourcePostId, postIds));
@@ -207,6 +213,13 @@ export function createCreatorsStorage3(context: SlurpStorageContext) {
           .where(or(eq(slurpThreads.viewerAccountId, id), eq(slurpThreads.creatorAccountId, id)));
         const threadIds = threadRows.map((row) => row.id);
         if (threadIds.length > 0) {
+          const messageRows = await tx.select().from(slurpMessages).where(inArray(slurpMessages.threadId, threadIds));
+          uploadedMessageMedia.push(
+            ...slurpUploadedMessageMediaPaths(
+              messageRows.map((row) => parseRecord(row.metadata)),
+              `${NOODLER_MEDIA_PREFIX}messages/`,
+            ),
+          );
           await tx.delete(slurpMessages).where(inArray(slurpMessages.threadId, threadIds));
           await tx.delete(slurpReplyBubbles).where(inArray(slurpReplyBubbles.threadId, threadIds));
           await tx.delete(slurpMessageClaims).where(inArray(slurpMessageClaims.threadId, threadIds));
@@ -231,6 +244,7 @@ export function createCreatorsStorage3(context: SlurpStorageContext) {
         await tx.delete(slpAccounts).where(and(eq(slpAccounts.id, id), eq(slpAccounts.platform, "slurp")));
         await tx._fileStore.flush();
       });
+      for (const mediaPath of uploadedMessageMedia) unlinkCreatorMedia(mediaPath);
       await this.clearWardrobe(id);
       return existing;
     },
