@@ -95,7 +95,12 @@ export async function drainSlurpAudienceReplies(db: DB, limit = MAX_PER_DRAIN): 
       const post = posts.find((entry) => entry.id === comment.postId);
       if (!post) continue;
 
-      const claim = await noodle.claimNoodlerAudienceReply(creator.id, comment.id);
+      const claim = await noodle.claimNoodlerAudienceReply(
+        creator.id,
+        comment.id,
+        undefined,
+        settings.creatorRepliesPerDay,
+      );
       if (claim.status === "exhausted") return written;
       if (claim.status !== "claimed") continue;
 

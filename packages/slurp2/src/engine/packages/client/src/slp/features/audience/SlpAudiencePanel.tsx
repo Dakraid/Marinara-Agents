@@ -527,6 +527,21 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
               />
             </Field>
           </div>
+          <Field
+            settingKey="creatorRepliesPerDay"
+            label={t("ui.slurp.settings.audience.creatorRepliesPerDay", { defaultValue: "Creator replies per day" })}
+            detail={t("ui.slurp.settings.audience.creatorRepliesPerDayDetail", {
+              defaultValue:
+                "How many comments Creators answer in 24 hours, yours and your fans' together. When it runs out, they answer again the next day.",
+            })}
+          >
+            <NumberSetting
+              value={settings.creatorRepliesPerDay}
+              min={1}
+              max={200}
+              onSave={(value) => update("creatorRepliesPerDay", value)}
+            />
+          </Field>
           <SettingAnchor settingKey="worldActivity">
             <ChoiceSetting
               label={t("ui.slurp.settings.audience.activityTitle")}

@@ -13,6 +13,7 @@ import { generateSlurpCommissionImage } from "./commissions/slp-commission-image
 import { replyToSlurpMessage } from "./slp-message-operation.js";
 import { trySlurpWrite } from "../../base/locking/slp-operation-lock.js";
 import { personaQuerySchema } from "../../modules/messages/slp-messages-schemas.js";
+import { slurpViewerImageOnCooldown } from "../../modules/messages/slp-messaging.js";
 import type { SlpMessagesContext } from "./slp-messages-context.js";
 
 const MESSAGE_MEDIA_MAX_BYTES = 20 * 1024 * 1024;
@@ -245,13 +246,10 @@ export async function slpMessagesMediaRoutes(app: FastifyInstance, messaging: Sl
     if (thread.state === "declined") return reply.code(403).send({ error: "This conversation is closed." });
     if (thread.coolUntil && thread.coolUntil > new Date().toISOString())
       return reply.code(409).send({ error: "This conversation is cooling off." });
-    const recentImage = (await messages.listMessages(thread.id)).some(
-      (message) =>
-        message.role === "viewer" &&
-        message.metadata.generatedContext === "viewer" &&
-        Date.now() - Date.parse(message.createdAt) < 3 * 60 * 60_000,
-    );
-    if (recentImage) return reply.code(429).send({ error: "You can generate another picture later." });
+    // The wait between two drawn pictures is the player's setting (minutes, 0 = off).
+    const cooldownMinutes = (await slurp.getSettings()).messagesViewerImageCooldownMinutes;
+    if (cooldownMinutes > 0 && slurpViewerImageOnCooldown(await messages.listMessages(thread.id), cooldownMinutes))
+      return reply.code(429).send({ error: "You can generate another picture later." });
     const drawn = await generateSlurpCommissionImage(app.db, {
       creatorAccountId: thread.creatorAccountId,
       brief: parsed.data.prompt,

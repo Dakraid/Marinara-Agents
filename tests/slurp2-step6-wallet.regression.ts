@@ -79,7 +79,8 @@ for (const [key, value] of Object.entries(en))
 // ── Subscriptions: rows, one-tap Cancel with Undo (resumes, no charge), Resume while cancelled ──
 assert.match(
   walletView,
-  /toast\(\s*localizeUi\("ui\.slurp\.wallet\.cancelled"[\s\S]*?action: \{[\s\S]*?resume\(creatorAccountId\)/u,
+  // Step 6.5: the toast moved into the shared helper (profile + Discover use it too).
+  /showSlpSubscriptionCancelledToast\(\{[\s\S]*?endsDay: day\(paidThroughAt\),\s+onUndo: \(\) => resume\(creatorAccountId\)/u,
 );
 assert.match(walletView, /subscription\.cancelled \? \([\s\S]*?ui\.slurp\.wallet\.resume/u);
 assert.doesNotMatch(walletView, /showConfirmDialog/u, "no confirm sheet");

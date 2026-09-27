@@ -43,6 +43,8 @@ import {
 } from "../../../../../shared/src/slp/slp-platform-events.js";
 import { slurpNormalizeReactionBanks, SlurpReactionBanks } from "../world/slp-reaction-bank.js";
 import { slurpModelBudgetSchema } from "../../../../../shared/src/slp/slp-model-budget.js";
+import { DEFAULT_SLP_CREATOR_REPLIES_PER_24_HOURS } from "../../../../../shared/src/slp/slp-social.schema.js";
+import { SLURP_COOL_OFF_HOURS } from "../world/slp-stance.js";
 import {
   SLURP_DEFAULT_PLATFORM_SCALE,
   SLURP_DEFAULT_WORLD_ACTIVITY,
@@ -327,6 +329,15 @@ export const slurpSettingsSchema = z.object({
   messagesRecentPostAwayMaxMinutes: z.number().int().min(0).max(1440),
   messagesStalePostAwayMinMinutes: z.number().int().min(0).max(1440),
   messagesStalePostAwayMaxMinutes: z.number().int().min(0).max(1440),
+  /** Minutes between two pictures you draw into one chat. 0 turns the wait off. */
+  messagesViewerImageCooldownMinutes: z.number().int().min(0).max(10080),
+  /** Minutes a Creator stays away after they have had enough. 0 = they do not step away (the strike still counts). */
+  messagesCoolOffMinutes: z.number().int().min(0).max(10080),
+  /**
+   * Creator replies to comments in any 24 hours, installation-wide (your comments and the
+   * audience's share it). No "off": the audience drain runs on page loads and this is its only cap.
+   */
+  creatorRepliesPerDay: z.number().int().min(1).max(200),
   autopurgeEnabled: z.boolean(),
   autopurgeRetentionValue: z.number().int().min(1).max(365),
   autopurgeRetentionUnit: z.enum(["days", "weeks", "months"]),
@@ -557,6 +568,9 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   messagesDefaultRequestFee: SLURP_DEFAULT_CREATOR_MESSAGING.requestFee,
   messagesDefaultPpvPrice: SLURP_DEFAULT_CREATOR_MESSAGING.ppvPrice,
   ...SLURP_DEFAULT_REPLY_DELAYS,
+  messagesViewerImageCooldownMinutes: 180,
+  messagesCoolOffMinutes: SLURP_COOL_OFF_HOURS * 60,
+  creatorRepliesPerDay: DEFAULT_SLP_CREATOR_REPLIES_PER_24_HOURS,
   autopurgeEnabled: false,
   autopurgeRetentionValue: 4,
   autopurgeRetentionUnit: "weeks",

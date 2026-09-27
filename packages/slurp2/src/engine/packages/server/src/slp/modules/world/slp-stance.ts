@@ -33,6 +33,7 @@ import { describeSlurpMood } from "./slp-mood.js";
  *
  * Long enough to be a real consequence, short enough that a session is not ended by it. The fan is
  * told what happened and when it lifts, because a refusal that looks like a bug is a bug.
+ * The default of the `messagesCoolOffMinutes` setting (the player can shorten it or turn it off).
  */
 export const SLURP_COOL_OFF_HOURS = 6;
 

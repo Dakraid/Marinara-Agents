@@ -543,5 +543,14 @@
   "ui.slurp.appearance.modeDetail": "Lege fest, wann Slurp sichtbare Merkmale aus einer Karte automatisch übernimmt. Ungeprüfte Merkmale können für Bilder genutzt werden und erscheinen unter Handlungsbedarf.",
   "ui.slurp.appearance.mode.ask": "Jedes Ergebnis prüfen",
   "ui.slurp.appearance.mode.highConfidence": "Eindeutige Merkmale automatisch übernehmen",
-  "ui.slurp.appearance.mode.always": "Alle brauchbaren Ergebnisse übernehmen"
+  "ui.slurp.appearance.mode.always": "Alle brauchbaren Ergebnisse übernehmen",
+  "ui.slurp.settings.messaging.cooldownsTitle": "Wartezeiten",
+  "ui.slurp.settings.messaging.viewerImageCooldown": "Wartezeit zwischen deinen Bildern",
+  "ui.slurp.settings.messaging.viewerImageCooldownDetail": "Minuten, bis du im selben Chat das nächste Bild zeichnen kannst. 0 heißt: keine Wartezeit.",
+  "ui.slurp.settings.messaging.coolOff": "Auszeit nach einem Streit",
+  "ui.slurp.settings.messaging.coolOffDetail": "Minuten, die ein Creator wegbleibt, wenn es ihm reicht. 0 heißt: Er bleibt im Chat. Zwei Streits in zwei Wochen beenden den Chat trotzdem.",
+  "ui.slurp.settings.audience.creatorRepliesPerDay": "Creator-Antworten pro Tag",
+  "ui.slurp.settings.audience.creatorRepliesPerDayDetail": "Wie viele Kommentare Creator in 24 Stunden beantworten, deine und die deiner Fans zusammen. Ist das Limit erreicht, antworten sie am nächsten Tag wieder.",
+  "ui.slurp.wallet.cancelledNoDay": "Abonnement gekündigt",
+  "ui.slurp.wallet.personaWallet": "Wallet von {{name}}"
 }

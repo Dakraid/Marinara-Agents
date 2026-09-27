@@ -142,6 +142,12 @@ export type SlurpSettings = {
   messagesRecentPostAwayMaxMinutes: number;
   messagesStalePostAwayMinMinutes: number;
   messagesStalePostAwayMaxMinutes: number;
+  /** Minutes between two pictures you draw into one chat; 0 = no wait. */
+  messagesViewerImageCooldownMinutes: number;
+  /** Minutes a Creator stays away after they have had enough; 0 = they do not step away. */
+  messagesCoolOffMinutes: number;
+  /** Creator replies to comments in any 24 hours (1–200). */
+  creatorRepliesPerDay: number;
   autopurgeEnabled: boolean;
   autopurgeRetentionValue: number;
   autopurgeRetentionUnit: "days" | "weeks" | "months";

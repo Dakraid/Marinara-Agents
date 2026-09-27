@@ -204,6 +204,24 @@ export const SLURP_DEFAULT_REPLY_DELAYS: SlurpReplyDelays = {
   messagesStalePostAwayMaxMinutes: 120,
 };
 
+/**
+ * Whether the viewer drew a picture into this chat less than `cooldownMinutes` ago (the
+ * `messagesViewerImageCooldownMinutes` setting). 0 turns the wait off.
+ */
+export function slurpViewerImageOnCooldown(
+  messages: readonly { role: string; createdAt: string; metadata: { generatedContext?: unknown } }[],
+  cooldownMinutes: number,
+  now = Date.now(),
+): boolean {
+  if (cooldownMinutes <= 0) return false;
+  return messages.some(
+    (message) =>
+      message.role === "viewer" &&
+      message.metadata.generatedContext === "viewer" &&
+      now - Date.parse(message.createdAt) < cooldownMinutes * MINUTE,
+  );
+}
+
 /** A point inside a player-set range. A range entered backwards still reads as a range. */
 export function slurpDelayInRange(min: number, max: number, variance: number): number {
   return Math.min(min, max) + variance * Math.abs(max - min);

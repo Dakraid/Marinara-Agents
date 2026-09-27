@@ -555,5 +555,14 @@
   "ui.slurp.appearance.modeDetail": "Wybierz, kiedy Slurp automatycznie zatwierdza cechy wizualne z karty. Cechy oczekujące na przegląd mogą być używane na obrazach i pojawią się na liście wymagającej uwagi.",
   "ui.slurp.appearance.mode.ask": "Sprawdzaj każdy wynik",
   "ui.slurp.appearance.mode.highConfidence": "Automatycznie zatwierdzaj pewne cechy",
-  "ui.slurp.appearance.mode.always": "Zatwierdzaj każdy użyteczny wynik"
+  "ui.slurp.appearance.mode.always": "Zatwierdzaj każdy użyteczny wynik",
+  "ui.slurp.settings.messaging.cooldownsTitle": "Czasy oczekiwania",
+  "ui.slurp.settings.messaging.viewerImageCooldown": "Przerwa między twoimi zdjęciami",
+  "ui.slurp.settings.messaging.viewerImageCooldownDetail": "Minuty, zanim narysujesz kolejne zdjęcie w tym samym czacie. 0 oznacza brak czekania.",
+  "ui.slurp.settings.messaging.coolOff": "Przerwa po kłótni",
+  "ui.slurp.settings.messaging.coolOffDetail": "Minuty, przez które Twórca znika, gdy ma dość. 0 oznacza, że zostaje w czacie. Dwie kłótnie w dwa tygodnie nadal kończą czat.",
+  "ui.slurp.settings.audience.creatorRepliesPerDay": "Odpowiedzi Twórców dziennie",
+  "ui.slurp.settings.audience.creatorRepliesPerDayDetail": "Ile komentarzy Twórcy odpowiadają w ciągu 24 godzin, twoich i twoich fanów razem. Gdy limit się skończy, odpowiadają znowu następnego dnia.",
+  "ui.slurp.wallet.cancelledNoDay": "Subskrypcja anulowana",
+  "ui.slurp.wallet.personaWallet": "Portfel: {{name}}"
 }

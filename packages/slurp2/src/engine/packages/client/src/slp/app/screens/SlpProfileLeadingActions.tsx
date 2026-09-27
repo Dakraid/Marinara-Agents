@@ -1,13 +1,13 @@
 import { Check, Pencil, Plus } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { showConfirmDialog } from "../../../lib/app-dialogs";
 import { cn } from "../../../lib/utils";
 import { SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { formatUpcomingDay } from "../../base/ui/slp-date-time";
 import { SlurpCoin, SlurpCoinAmount, SlurpCoinBurst, SlpCoinText, slpCoinPlainText } from "../../modules/coin/SlpCoin";
 import { SlpButton, SlpPrimaryButton, slpButtonClass } from "../../modules/chrome/SlpButton";
 import { SlpSheet } from "../../modules/chrome/SlpSheet";
+import { showSlpSubscriptionCancelledToast } from "../../modules/chrome/slp-subscription-toast";
 import { useSlpBalance } from "../../modules/chrome/SlpShell";
 import { playSlpBurst, playSlpPop, playSlpSpendMoment } from "../../modules/sparkle/SlpSparkle";
 import { slurpSubscriptionPriceOf } from "./SlpHomeHelpers";
@@ -113,32 +113,31 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
     </SlpPrimaryButton>
   );
 
-  const cancelSubscription = async () => {
+  // One tap cancels (design step 6); the toast offers Undo, which resumes inside the paid week.
+  const cancelSubscription = () => {
     const until = subscriptionState.kind === "active" ? subscriptionState.until : null;
-    // One click used to cancel a paid subscription with no warning.
-    const confirmed = await showConfirmDialog({
-      title: localizeUi("ui.slurp.profile.cancelSubscription", { defaultValue: "Cancel subscription?" }),
-      message: until
-        ? localizeUi("ui.slurp.profile.cancelSubscriptionUntil", {
-            defaultValue: "You keep subscriber access until {{day}}. It won't renew after that.",
-            day: day(until),
-          })
-        : localizeUi("ui.slurp.profile.cancelSubscriptionDetail", {
-            defaultValue:
-              "You keep subscriber access until the week you already paid for ends. It will not renew after that.",
-          }),
-      confirmLabel: localizeUi("ui.slurp.profile.cancelSubscriptionConfirm", { defaultValue: "Cancel subscription" }),
-      cancelLabel: localizeUi("ui.slurp.profile.keepSubscription", { defaultValue: "Keep subscription" }),
-      tone: "destructive",
-    });
-    if (confirmed) await Promise.resolve(onToggleSubscription(profile.id, true)).catch(() => undefined);
+    void Promise.resolve(onToggleSubscription(profile.id, true)).then(
+      () =>
+        showSlpSubscriptionCancelledToast({
+          localizeUi,
+          endsDay: until ? day(until) : null,
+          onUndo: () =>
+            Promise.resolve(onToggleSubscription(profile.id, false)).then(
+              () =>
+                toast.success(
+                  localizeUi("ui.slurp.profile.subscriptionResumed", { defaultValue: "Subscription resumed" }),
+                ),
+              () => undefined,
+            ),
+        }),
+      () => undefined,
+    );
   };
   const subscribedButton = (
     <SlpButton
       disabled={subscriptionPending}
-      onClick={() => void cancelSubscription()}
+      onClick={cancelSubscription}
       className="gap-1.5 whitespace-nowrap px-3 text-[13px]"
-      aria-haspopup="dialog"
     >
       <Check size={16} strokeWidth={2.5} aria-hidden="true" />
       {localizeUi("ui.slurp.profile.subscribed")}

@@ -16,6 +16,7 @@ import {
   formatFullTime,
   formatUpcomingDay,
   groupSlpByDay,
+  slpDayKey,
 } from "../../base/ui/slp-date-time";
 import {
   useClaimSlurpDailyRefill,
@@ -27,6 +28,7 @@ import { useCreatorAccounts } from "../../features/creators/slp-creators-hooks";
 import { useToggleCreatorSubscription } from "../../features/feed/slp-feed-viewer-hooks";
 import { SlpButton, SlpSegment } from "../../modules/chrome/SlpButton";
 import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
+import { showSlpSubscriptionCancelledToast } from "../../modules/chrome/slp-subscription-toast";
 import { SlpCreatorFrame } from "./SlpHomeHelpers";
 import { SlpCollectCard } from "./SlpCollectCard";
 
@@ -54,6 +56,7 @@ function entryAppearance(kind: string, gamble: boolean): { icon: LucideIcon; ton
 
 export function SlurpWalletView({
   personaId,
+  personaName,
   onBack,
 }: {
   personaId: string | null;
@@ -90,22 +93,18 @@ export function SlurpWalletView({
       playSlpCoinRain(balanceRef.current);
   }, [liveCoins]);
 
-  // The refill countdown ticks once a second; when it runs out the wallet is read again, so the
-  // refill button turns on by itself.
+  // The refill line names a calm clock time ("Next refill 5:48 AM"); at that time the wallet is read
+  // again, so the refill button turns on by itself.
   const refillReady = wallet?.refillAvailable === true;
   const nextRefillAt = wallet?.nextRefillAt;
-  const [countdownNow, setCountdownNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!nextRefillAt || refillReady) return;
-    const timer = window.setInterval(() => setCountdownNow(Date.now()), 1_000);
-    return () => window.clearInterval(timer);
-  }, [nextRefillAt, refillReady]);
-  const refillRemaining = nextRefillAt ? Math.max(0, new Date(nextRefillAt).getTime() - countdownNow) : null;
-  const refillDue = refillRemaining === 0 && !refillReady;
   const refetchWallet = walletQuery.refetch;
   useEffect(() => {
-    if (refillDue) void refetchWallet();
-  }, [refillDue, refetchWallet]);
+    if (!nextRefillAt || refillReady) return;
+    // Clamped to the 32-bit timer limit; a later boundary re-arms after the next read.
+    const wait = Math.min(Math.max(0, new Date(nextRefillAt).getTime() - Date.now()) + 500, 2_000_000_000);
+    const timer = window.setTimeout(() => void refetchWallet(), wait);
+    return () => window.clearTimeout(timer);
+  }, [nextRefillAt, refillReady, refetchWallet]);
 
   const creatorName = (entry: LedgerEntry) => {
     const id = entry.binding?.creatorAccountId;
@@ -162,23 +161,15 @@ export function SlurpWalletView({
           localizeUi("ui.slurp.wallet.resumeFailed", { defaultValue: "Could not resume. Try again in a moment." }),
         ),
     );
-  // One tap cancels; the toast offers Undo (design step 6). Undo resumes inside the paid week, so it
-  // charges nothing.
+  // One tap cancels; the toast offers Undo, which resumes inside the paid week (no charge).
   const cancel = (creatorAccountId: string, paidThroughAt: string) =>
     setSubscription(creatorAccountId, true).then(
       () =>
-        toast(
-          localizeUi("ui.slurp.wallet.cancelled", {
-            defaultValue: "Subscription cancelled · ends {{day}}",
-            day: day(paidThroughAt),
-          }),
-          {
-            action: {
-              label: localizeUi("ui.slurp.wallet.undo", { defaultValue: "Undo" }),
-              onClick: () => void resume(creatorAccountId),
-            },
-          },
-        ),
+        showSlpSubscriptionCancelledToast({
+          localizeUi,
+          endsDay: day(paidThroughAt),
+          onUndo: () => resume(creatorAccountId),
+        }),
       () =>
         toast.error(
           localizeUi("ui.slurp.wallet.cancelFailed", {
@@ -197,18 +188,20 @@ export function SlurpWalletView({
 
   const refillLine = refillReady
     ? localizeUi("ui.slurp.wallet.refillReady", { defaultValue: "Your refill is ready." })
-    : refillRemaining !== null
+    : nextRefillAt
       ? localizeUi("ui.slurp.wallet.refillCountdown", {
-          defaultValue: "Next refill in {{countdown}}",
-          countdown: [
-            refillRemaining / 3_600_000,
-            (refillRemaining % 3_600_000) / 60_000,
-            (refillRemaining % 60_000) / 1_000,
-          ]
-            .map((part) => String(Math.floor(part)).padStart(2, "0"))
-            .join(":"),
+          defaultValue: "Next refill {{time}}",
+          // Today: the clock time only; a later day names the weekday first.
+          time:
+            slpDayKey(nextRefillAt) === slpDayKey(Date.now())
+              ? formatClockTime(nextRefillAt, i18n.language)
+              : `${formatUpcomingDay(nextRefillAt, i18n.language)} ${formatClockTime(nextRefillAt, i18n.language)}`,
         })
       : null;
+  // The page header already says "Wallet", so the card names whose wallet it is.
+  const walletTitle = personaName.trim()
+    ? localizeUi("ui.slurp.wallet.personaWallet", { defaultValue: "{{name}}'s wallet", name: personaName.trim() })
+    : localizeUi("ui.slurp.navigation.wallet");
 
   return (
     <SlpCreatorFrame onBack={onBack} title={localizeUi("ui.slurp.navigation.wallet")} action={<span />}>
@@ -221,7 +214,7 @@ export function SlurpWalletView({
         >
           <SlpShimmer />
           <p className="flex items-center gap-1 text-[13px] font-semibold opacity-90">
-            {localizeUi("ui.slurp.navigation.wallet")}
+            {walletTitle}
             <HelpTooltip
               side="bottom"
               className="[&_svg]:!text-white"

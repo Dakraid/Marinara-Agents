@@ -9,7 +9,7 @@ import { describeSlurpDayVibe } from "../world/slp-world-contract.js";
 import { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
 import { newId, now } from "../../../utils/id-generator.js";
 import { slurpPollBackoffMs } from "../../base/model/slp-poll-backoff.js";
-import { activeSlurpStrikes, SLURP_COOL_OFF_HOURS, type SlurpStanceLatitude } from "../../modules/world/slp-stance.js";
+import { activeSlurpStrikes, type SlurpStanceLatitude } from "../../modules/world/slp-stance.js";
 import { resolveSlurpCreatorAvailability } from "../../modules/creators/slp-creator-schedule-context.js";
 import { createCharactersStorage } from "../../../services/storage/characters.storage.js";
 import { isCreatorNightQuietTime } from "../feed/slp-feed-contract.js";
@@ -230,7 +230,12 @@ export function startSlurpFollowUpScheduler(app: FastifyInstance, registerStop?:
                 .catch((error: unknown) =>
                   logger.warn(error, "[slurp-follow-up] Could not record creator state signals"),
                 );
-              await applyFollowUpBoundary(messages, threadRow.id, reply.latitude).catch((error: unknown) =>
+              await applyFollowUpBoundary(
+                messages,
+                threadRow.id,
+                reply.latitude,
+                settings.messagesCoolOffMinutes,
+              ).catch((error: unknown) =>
                 logger.warn(error, "[slurp-follow-up] Could not apply the conversation boundary"),
               );
 
@@ -304,9 +309,10 @@ async function applyFollowUpBoundary(
   messages: ReturnType<typeof createSlurpMessagesStorage>,
   threadId: string,
   latitude: SlurpStanceLatitude,
+  coolOffMinutes: number,
 ): Promise<void> {
   if (latitude === "cool_off") {
-    await messages.beginCoolOff(threadId, SLURP_COOL_OFF_HOURS);
+    await messages.beginCoolOff(threadId, coolOffMinutes / 60);
     return;
   }
   if (latitude === "close") await messages.closeThreadByCreator(threadId);

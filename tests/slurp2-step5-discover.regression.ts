@@ -146,9 +146,10 @@ assert.match(
   client("app/screens/slp-hub-view.ts"),
   /storyCreatorIds: slurpLiveStoryCreatorIds\(creators, momentCutoff\)/u,
 );
-// One-tap Subscribe with the spend moment; cancel still asks.
+// One-tap Subscribe with the spend moment; step 6.5: cancel is one tap + an Undo toast.
 assert.match(card, /playSlpSpendMoment\(origin\)/u);
-assert.match(card, /showConfirmDialog/u);
+assert.match(card, /showSlpSubscriptionCancelledToast/u);
+assert.doesNotMatch(card, /showConfirmDialog/u);
 // Filters: chip row + one sheet, count on the chip, selected = SlpChip (tint + ring).
 assert.match(toolbar, /role="toolbar"/u);
 assert.match(toolbar, /<SlpSheet open=\{sheetOpen\}/u);

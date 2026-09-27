@@ -68,6 +68,7 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
     "fanActivityRunsPerDay",
     "fanLikesPerRefresh",
     "fanRepliesPerRefresh",
+    "creatorRepliesPerDay",
     "fanArchetypeWeights",
     "audienceCharacterLimit",
     "simulationTuning",
@@ -107,6 +108,8 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
     "messagesRecentPostAwayMaxMinutes",
     "messagesStalePostAwayMinMinutes",
     "messagesStalePostAwayMaxMinutes",
+    "messagesViewerImageCooldownMinutes",
+    "messagesCoolOffMinutes",
   ],
   wallet: [
     "walletEnabled",

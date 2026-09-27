@@ -2508,7 +2508,7 @@
   "ui.slurp.wallet.moving": "Collecting…",
   "ui.slurp.wallet.notSpendable": "Not spendable yet",
   "ui.slurp.wallet.readyToSpend": "Ready to spend",
-  "ui.slurp.wallet.refillCountdown": "Next refill in {{countdown}}",
+  "ui.slurp.wallet.refillCountdown": "Next refill {{time}}",
   "ui.slurp.wallet.refillHelp": "Once per Slurp day, when your Wallet is below {{amount}} <coin/>.",
   "ui.slurp.wallet.spending": "Spending",
   "ui.slurp.wallet.history": "Wallet history",
@@ -4177,5 +4177,14 @@
   "ui.slurp.wallet.resumeFailed": "Could not resume. Try again in a moment.",
   "ui.slurp.wallet.earningsLoadError": "Could not load your earnings",
   "ui.slurp.wallet.entry.gamble": "Gamble unlock",
-  "ui.slurp.wallet.free": "Free"
+  "ui.slurp.wallet.free": "Free",
+  "ui.slurp.settings.messaging.cooldownsTitle": "Cooldowns",
+  "ui.slurp.settings.messaging.viewerImageCooldown": "Wait between your pictures",
+  "ui.slurp.settings.messaging.viewerImageCooldownDetail": "Minutes before you can draw another picture into the same chat. 0 means no wait.",
+  "ui.slurp.settings.messaging.coolOff": "Time away after a fight",
+  "ui.slurp.settings.messaging.coolOffDetail": "Minutes a Creator stays away when they have had enough. 0 means they stay in the chat. Two fights in two weeks still end the chat.",
+  "ui.slurp.settings.audience.creatorRepliesPerDay": "Creator replies per day",
+  "ui.slurp.settings.audience.creatorRepliesPerDayDetail": "How many comments Creators answer in 24 hours, yours and your fans' together. When it runs out, they answer again the next day.",
+  "ui.slurp.wallet.cancelledNoDay": "Subscription cancelled",
+  "ui.slurp.wallet.personaWallet": "{{name}}'s wallet"
 }

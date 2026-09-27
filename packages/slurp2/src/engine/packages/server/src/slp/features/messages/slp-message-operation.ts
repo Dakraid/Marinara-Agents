@@ -18,7 +18,7 @@ import { tryCreatorAccountOperation } from "../../base/locking/slp-account-opera
 import { generateSlurpMessageReply, SlurpMessageBudgetUnavailableError } from "./slp-message-generation-service.js";
 import { describeSlurpDayVibe } from "../world/slp-world-contract.js";
 import { recoverSlurpMood } from "../../modules/world/slp-mood.js";
-import { activeSlurpStrikes, SLURP_COOL_OFF_HOURS, type SlurpStanceLatitude } from "../../modules/world/slp-stance.js";
+import { activeSlurpStrikes, type SlurpStanceLatitude } from "../../modules/world/slp-stance.js";
 import {
   resolveSlurpCreatorAvailability,
   resolveSlurpCreatorScheduleTraits,
@@ -516,8 +516,8 @@ export async function replyToSlurpMessage(
           .catch((error: unknown) => logger.warn(error, "[slurp-message] Could not record creator state signals"));
         // The reply is written first and the boundary applied after it, so the fan always receives
         // the words the creator actually left them with rather than silence.
-        await applyBoundary(messagesStore, thread.id, reply.latitude).catch((error: unknown) =>
-          logger.warn(error, "[slurp-message] Could not apply the conversation boundary"),
+        await applyBoundary(messagesStore, thread.id, reply.latitude, settings.messagesCoolOffMinutes).catch(
+          (error: unknown) => logger.warn(error, "[slurp-message] Could not apply the conversation boundary"),
         );
         if (reply.latitude === "cool_off" || reply.latitude === "close") {
           const events = createSlurpEventsStorage(db);
@@ -595,9 +595,10 @@ async function applyBoundary(
   messagesStore: ReturnType<typeof createSlurpMessagesStorage>,
   threadId: string,
   latitude: SlurpStanceLatitude,
+  coolOffMinutes: number,
 ): Promise<void> {
   if (latitude === "cool_off") {
-    await messagesStore.beginCoolOff(threadId, SLURP_COOL_OFF_HOURS);
+    await messagesStore.beginCoolOff(threadId, coolOffMinutes / 60);
     return;
   }
   if (latitude === "close") await messagesStore.closeThreadByCreator(threadId);

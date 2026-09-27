@@ -101,8 +101,9 @@ assert.match(cards, /amount=\{slurpSubscriptionPriceOf\(viewerCreator\)\}/u);
 assert.match(actions, /const TIP_AMOUNTS = \[5, 10, 25, 50\]/u);
 assert.match(actions, /onSuccess: \(\) => \{\s+setTipOpen\(false\);\s+playSlpSpendMoment\(origin\);/u);
 assert.doesNotMatch(actions, /showConfirmDialog\(\{[^}]*tip/iu, "no confirmation before a tip");
-// Cancel names the date and keeps a clear "Keep subscription".
-assert.match(actions, /cancelLabel: localizeUi\("ui\.slurp\.profile\.keepSubscription"/u);
+// Cancel names the date. Step 6.5 (orchestrator decision 1): one tap + an Undo toast replaces the
+// "Keep subscription" confirm, like the Wallet.
+assert.match(actions, /showSlpSubscriptionCancelledToast\(\{\s+localizeUi,\s+endsDay: until \? day\(until\) : null,/u);
 
 // Paywall card for non-subscribers; Media shows locked teasers and no ⋯; Stories play in the viewer.
 assert.match(cards, /<SlpPaywallCard model=\{model\} \/>/u);

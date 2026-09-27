@@ -280,6 +280,41 @@ export function SlpMessagingPanel(page: SlpBackstagePageProps) {
             />
           </div>
         </AdvancedGroup>
+        <AdvancedGroup title={t("ui.slurp.settings.messaging.cooldownsTitle", { defaultValue: "Cooldowns" })} count={2}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              settingKey="messagesViewerImageCooldownMinutes"
+              label={t("ui.slurp.settings.messaging.viewerImageCooldown", {
+                defaultValue: "Wait between your pictures",
+              })}
+              detail={t("ui.slurp.settings.messaging.viewerImageCooldownDetail", {
+                defaultValue: "Minutes before you can draw another picture into the same chat. 0 means no wait.",
+              })}
+            >
+              <NumberSetting
+                value={settings.messagesViewerImageCooldownMinutes}
+                min={0}
+                max={10080}
+                onSave={(value) => update("messagesViewerImageCooldownMinutes", value)}
+              />
+            </Field>
+            <Field
+              settingKey="messagesCoolOffMinutes"
+              label={t("ui.slurp.settings.messaging.coolOff", { defaultValue: "Time away after a fight" })}
+              detail={t("ui.slurp.settings.messaging.coolOffDetail", {
+                defaultValue:
+                  "Minutes a Creator stays away when they have had enough. 0 means they stay in the chat. Two fights in two weeks still end the chat.",
+              })}
+            >
+              <NumberSetting
+                value={settings.messagesCoolOffMinutes}
+                min={0}
+                max={10080}
+                onSave={(value) => update("messagesCoolOffMinutes", value)}
+              />
+            </Field>
+          </div>
+        </AdvancedGroup>
       </SettingsGroup>
       <SettingsGroup title={t("ui.slurp.settings.messaging.defaultsTitle")}>
         <p className="text-xs leading-5 text-[var(--muted-foreground)]">
