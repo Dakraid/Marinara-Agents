@@ -12,6 +12,10 @@ import {
   undoSlpSceneChip,
 } from "../packages/slurp2/src/engine/packages/client/src/slp/features/onboarding/slp-scene-draft.ts";
 import {
+  slpSceneGuidance,
+  slpSceneTranscript,
+} from "../packages/slurp2/src/engine/packages/client/src/slp/features/onboarding/slp-scene-draft.ts";
+import {
   buildSlpSceneTurnMessages,
   readSlpSceneTurn,
   sanitizeSlpScenePatch,
@@ -195,5 +199,59 @@ for (const [preset, moments] of Object.entries(SLP_SCENE_MOMENTS)) {
   });
   assert.ok(parsed.success, preset);
 }
+
+// 10. Slice 2: a suggested action and "Let it play" write the host line too; the direction stays out of the chat.
+for (const [preset, ids] of Object.entries(SLP_SCENE_ACTIONS)) {
+  for (const id of ids) {
+    const [prompt] = buildSlpSceneTurnMessages({
+      request: {
+        preset: preset as keyof typeof SLP_SCENE_ACTIONS,
+        moment: SLP_SCENE_MOMENTS[preset as keyof typeof SLP_SCENE_MOMENTS][0],
+        action: { kind: "suggest", id: id as never },
+        transcript: [],
+        draft: {},
+        locked: [],
+        direction: "",
+        disclosureMode: "hinted",
+      },
+      newcomerCanon: "",
+      helper: preset === "seat" ? { displayName: "Mia", handle: "mia", bio: "", stagePersonality: "" } : null,
+      allowedTags: [],
+    });
+    assert.match(prompt.content, /Next, write the host doing this: \S/u, `${preset}/${id} has a brief`);
+    assert.match(prompt.content, /Write one short line for the host/u, `${preset}/${id} writes the host`);
+  }
+}
+const [autoPrompt] = buildSlpSceneTurnMessages({
+  request: {
+    preset: "friend",
+    moment: "bio",
+    action: { kind: "continue" },
+    transcript: [],
+    draft: {},
+    locked: [],
+    direction: "",
+    disclosureMode: "hinted",
+  },
+  newcomerCanon: "",
+  allowedTags: [],
+});
+assert.match(autoPrompt.content, /move on by itself for one exchange/u);
+assert.doesNotMatch(autoPrompt.content, /direction for the whole scene/u, "no direction, no direction line");
+const guidanceItems = [
+  ...Array.from({ length: 60 }, (_, i) => ({
+    id: `l${i}`,
+    kind: "line" as const,
+    speaker: "newcomer" as const,
+    text: `line ${i} ${"x".repeat(60)}`,
+  })),
+  { id: "p", kind: "patch" as const, chipId: "c", fields: ["bio" as const], redraft: false },
+];
+const guidance = slpSceneGuidance(guidanceItems, "Slurp Support", "keep it casual");
+assert.ok(guidance.length <= 2000, "the redraft guidance fits the draft route");
+assert.match(guidance, /Direction: keep it casual/u);
+assert.match(guidance, /line 59 /u, "the newest lines win the space");
+assert.doesNotMatch(guidance, /line 0 /u);
+assert.equal(slpSceneTranscript(guidanceItems).length, 40, "a turn sends the last 40 lines");
 
 console.log("slurp2-scene-onboarding: ok");

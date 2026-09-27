@@ -14,6 +14,7 @@ import { SlpRadioRow, SlpSheet } from "../../modules/chrome/SlpSheet";
 import { SlpWizardFooter, SlpWizardProgress } from "../../modules/chrome/SlpWizardChrome";
 import { ChoiceSetting } from "../../modules/settings/SlpSettingsInputs";
 import { useSlurpSettings } from "../settings/slp-settings-contract";
+import { SlpSceneActions } from "./SlpSceneActions";
 import { SlpSceneChat } from "./SlpSceneChat";
 import { useSlpSceneModel, type SlpSceneSetup } from "./slp-scene-model";
 import { SlpScenePreview } from "./SlpScenePreview";
@@ -269,8 +270,8 @@ function SceneStage({
         })}
         label={t(`ui.slurp.scene.moment.${model.moment}`)}
       />
-      <div className="grid min-h-0 flex-1 gap-4 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-        <div className="flex min-h-0 flex-col">
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        <div className="flex min-h-0 min-w-0 flex-col">
           {/* Phones: the page as one line on top, the whole page in a sheet. */}
           <button
             type="button"
@@ -300,7 +301,9 @@ function SceneStage({
             host={host}
             newcomer={newcomer}
             placeholder={t(`ui.slurp.scene.composer.${setup.preset}`, { name: hostName })}
-          />
+          >
+            <SlpSceneActions model={model} />
+          </SlpSceneChat>
         </div>
         <div className="min-h-0 overflow-y-auto pe-1 max-sm:hidden">{preview(true)}</div>
       </div>

@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   SLP_SCENE_MOMENTS,
-  SLP_SCENE_TRANSCRIPT_MAX,
   type SlpSceneAction,
   type SlpSceneDraft,
   type SlpSceneField,
-  type SlpSceneLine,
   type SlpSceneMoment,
   type SlpScenePatch,
   type SlpScenePreset,
@@ -27,15 +25,13 @@ import {
   slpSceneStageProfile,
   toggleSlpSceneLock,
   undoSlpSceneChip,
+  slpSceneGuidance,
+  slpSceneTranscript,
   type SlpSceneDraftState,
+  type SlpSceneItem,
 } from "./slp-scene-draft";
 import { useEnqueueCreatorFirstPosts } from "./slp-first-post-hooks";
 import { useSlpSceneTurn } from "./slp-scene-hooks";
-
-export type SlpSceneItem =
-  | { id: string; kind: "line"; speaker: SlpSceneLine["speaker"]; text: string }
-  | { id: string; kind: "patch"; chipId: string; fields: SlpSceneField[]; redraft: boolean }
-  | { id: string; kind: "note"; text: string };
 
 export type SlpSceneSetup = {
   preset: SlpScenePreset;
@@ -43,34 +39,6 @@ export type SlpSceneSetup = {
   disclosureMode: SlpIdentityDisclosure;
   connectionId?: string;
 };
-
-/** What the transcript sends back: the lines only, newest last, capped. */
-export function slpSceneTranscript(items: readonly SlpSceneItem[]): SlpSceneLine[] {
-  return items
-    .flatMap((item) => (item.kind === "line" ? [{ speaker: item.speaker, text: item.text }] : []))
-    .slice(-SLP_SCENE_TRANSCRIPT_MAX);
-}
-
-/** The chat as guidance for a full redraft: newest lines first win the 2000 characters. */
-export function slpSceneGuidance(items: readonly SlpSceneItem[], hostLabel: string, direction: string): string {
-  const lines = slpSceneTranscript(items).map(
-    (line) => `${line.speaker === "host" ? hostLabel : "Newcomer"}: ${line.text}`,
-  );
-  const head = [
-    "Build the page from what the newcomer said in this sign-up chat. Keep their words and taste.",
-    direction ? `Direction: ${direction}` : "",
-  ]
-    .filter(Boolean)
-    .join("\n");
-  const kept: string[] = [];
-  let length = head.length;
-  for (const line of lines.reverse()) {
-    if (length + line.length + 1 > 1990) break;
-    kept.unshift(line);
-    length += line.length + 1;
-  }
-  return [head, ...kept].join("\n");
-}
 
 /**
  * The role-play sign-up's whole working state: the chat, the live page draft with its locks and
@@ -98,8 +66,19 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
   const create = useCreateCreatorStageProfile();
   const strategy = useUpdateCreatorStrategy();
   const firstPost = useEnqueueCreatorFirstPosts();
+  // The chat is read back by the next turn before React renders (autopilot), so writes go through the ref.
   const itemsRef = useRef(items);
-  itemsRef.current = items;
+  const append = useCallback((added: SlpSceneItem[]) => {
+    itemsRef.current = [...itemsRef.current, ...added];
+    setItems(itemsRef.current);
+  }, []);
+  // Autopilot runs several turns from one press; each turn must see the moment and direction of now.
+  const momentRef = useRef(moment);
+  momentRef.current = moment;
+  const directionRef = useRef(direction);
+  directionRef.current = direction;
+  const [autoLeft, setAutoLeft] = useState(0);
+  const autoStop = useRef(false);
 
   const commit = useCallback((next: SlpSceneDraftState) => {
     draftRef.current = next;
@@ -128,8 +107,9 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
         !retry && action.kind === "say" && setup.preset !== "seat"
           ? [{ id: generateClientId(), kind: "line", speaker: "host", text: action.text }]
           : [];
-      const before = [...itemsRef.current, ...own];
-      if (own.length) setItems(before);
+      if (own.length) append(own);
+      const before = itemsRef.current;
+      const moment = momentRef.current;
       try {
         const result = await turn.mutateAsync({
           preset: setup.preset,
@@ -140,7 +120,7 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
           transcript: slpSceneTranscript(before),
           draft: draftRef.current.draft,
           locked: draftRef.current.locked,
-          direction,
+          direction: directionRef.current,
           ...(setup.connectionId ? { connectionId: setup.connectionId } : {}),
         });
         const lines: SlpSceneItem[] = result.lines.map((line) => ({
@@ -150,12 +130,15 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
           text: line.text,
         }));
         const chip = applyPatch(result.patch, false);
-        setItems((current) => [...current, ...lines, ...(chip ? [chip] : [])]);
+        append([...lines, ...(chip ? [chip] : [])]);
         if (result.momentDone) {
           setDoneMoments((current) => (current.includes(moment) ? current : [...current, moment]));
           // Support asks one question after another; the other roles linger until the player moves on.
           const next = moments[moments.indexOf(moment) + 1];
-          if (setup.preset === "support" && next) setMoment(next);
+          if (setup.preset === "support" && next) {
+            momentRef.current = next;
+            setMoment(next);
+          }
         }
         return true;
       } catch (reason) {
@@ -163,7 +146,20 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
         return false;
       }
     },
-    [applyPatch, direction, moment, moments, setup, turn],
+    [append, applyPatch, moments, setup, turn],
+  );
+
+  /** Let the scene run by itself for a few exchanges; stops on the first failure or on Stop. */
+  const autopilot = useCallback(
+    async (turns = 3) => {
+      autoStop.current = false;
+      for (let left = turns; left > 0 && !autoStop.current; left--) {
+        setAutoLeft(left);
+        if (!(await send({ kind: "continue" }))) break;
+      }
+      setAutoLeft(0);
+    },
+    [send],
   );
 
   // The newcomer speaks first.
@@ -191,13 +187,13 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
         ...(setup.connectionId ? { connectionId: setup.connectionId } : {}),
       });
       const chip = applyPatch(slpSceneRedraftPatch(result), true);
-      if (chip) setItems((current) => [...current, chip]);
+      if (chip) append([chip]);
       return true;
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
       return false;
     }
-  }, [applyPatch, direction, hostLabel, redraft, setup]);
+  }, [append, applyPatch, direction, hostLabel, redraft, setup]);
 
   /** Register the page. A page that still misses its basics gets one redraft first. */
   const finish = useCallback(async () => {
@@ -228,7 +224,6 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
     setup,
     moments,
     moment,
-    setMoment,
     doneMoments,
     items,
     draft: draftState.draft,
@@ -238,11 +233,21 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
     setDirection,
     error,
     created,
-    busy: turn.isPending || redraft.isPending || create.isPending,
+    busy: turn.isPending || redraft.isPending || create.isPending || autoLeft > 0,
     talking: turn.isPending,
     updating: redraft.isPending,
     registering: create.isPending,
     send,
+    autopilot,
+    autoLeft,
+    stopAutopilot: () => {
+      autoStop.current = true;
+    },
+    /** Move to another moment: skip ahead, go back, or linger by not moving at all. */
+    goTo: (next: SlpSceneMoment) => {
+      momentRef.current = next;
+      setMoment(next);
+    },
     retry: () => (lastAction.current ? send(lastAction.current, true) : Promise.resolve(false)),
     updatePage,
     finish,

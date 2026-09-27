@@ -9,6 +9,8 @@
  */
 import {
   SLP_SCENE_FIELDS,
+  SLP_SCENE_TRANSCRIPT_MAX,
+  type SlpSceneLine,
   type SlpSceneDraft,
   type SlpSceneField,
   type SlpScenePatch,
@@ -184,4 +186,37 @@ export function slpSceneRedraftPatch(result: {
   if (result.gender) patch.gender = result.gender;
   if (result.tags?.length) patch.tags = result.tags;
   return patch;
+}
+
+export type SlpSceneItem =
+  | { id: string; kind: "line"; speaker: SlpSceneLine["speaker"]; text: string }
+  | { id: string; kind: "patch"; chipId: string; fields: SlpSceneField[]; redraft: boolean }
+  | { id: string; kind: "note"; text: string };
+
+/** What the transcript sends back: the lines only, newest last, capped. */
+export function slpSceneTranscript(items: readonly SlpSceneItem[]): SlpSceneLine[] {
+  return items
+    .flatMap((item) => (item.kind === "line" ? [{ speaker: item.speaker, text: item.text }] : []))
+    .slice(-SLP_SCENE_TRANSCRIPT_MAX);
+}
+
+/** The chat as guidance for a full redraft: newest lines first win the 2000 characters. */
+export function slpSceneGuidance(items: readonly SlpSceneItem[], hostLabel: string, direction: string): string {
+  const lines = slpSceneTranscript(items).map(
+    (line) => `${line.speaker === "host" ? hostLabel : "Newcomer"}: ${line.text}`,
+  );
+  const head = [
+    "Build the page from what the newcomer said in this sign-up chat. Keep their words and taste.",
+    direction ? `Direction: ${direction}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const kept: string[] = [];
+  let length = head.length;
+  for (const line of lines.reverse()) {
+    if (length + line.length + 1 > 1990) break;
+    kept.unshift(line);
+    length += line.length + 1;
+  }
+  return [head, ...kept].join("\n");
 }
