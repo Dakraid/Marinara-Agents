@@ -496,8 +496,8 @@ export async function runCreatorFanActivity(input: {
 
 export async function getCreatorFanActivityStatus(db: DB, at = new Date()) {
   const plan = await readCurrentPlan(db, at);
-  const storage = createSlurpStorage(db);
-  const settings = await storage.getSettings();
+  const noodle = createSlurpStorage(db);
+  const settings = await noodle.getSettings();
   const automaticRuns = plan?.runs.filter((run) => !run.manual) ?? [];
   const lastRun = plan
     ? ([...plan.runs]
@@ -512,7 +512,7 @@ export async function getCreatorFanActivityStatus(db: DB, at = new Date()) {
     localDate: plan?.localDate ?? localPlanDate(at),
     // Skipped runs spent nothing; counting them showed "5/6 used" on days when nothing ran.
     usedRuns: automaticRuns.filter((run) => run.status !== "scheduled" && run.status !== "skipped").length,
-    runLimit: slpCreatorFanActivityRunLimit(settings, at, await storage.platformInfluenceStory()),
+    runLimit: slpCreatorFanActivityRunLimit(settings, at, await noodle.platformInfluenceStory()),
     lastRun,
   };
 }

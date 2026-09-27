@@ -24,9 +24,17 @@ assert.match(
   /Math\.min\(boosted, settings\.modelBudget\.jobs\.thread\.maxPerDay\)/u,
   "fan activity uses the lower configured and thread model limits",
 );
-assert.match(fanActivityOperation, /slpCreatorFanActivityRunLimit\(settings\),/gu);
+// Fix phase 1b (R1-112): the limit also reads the story engine's occurrences; both callers pass them the same way.
+assert.match(
+  fanActivityOperation,
+  /slpCreatorFanActivityRunLimit\(settings, at, await noodle\.platformInfluenceStory\(\)\),/gu,
+);
 assert.equal(
-  [...fanActivityOperation.matchAll(/slpCreatorFanActivityRunLimit\(settings\),/gu)].length,
+  [
+    ...fanActivityOperation.matchAll(
+      /slpCreatorFanActivityRunLimit\(settings, at, await noodle\.platformInfluenceStory\(\)\),/gu,
+    ),
+  ].length,
   2,
   "plan reconciliation and status use the same authoritative limit",
 );
