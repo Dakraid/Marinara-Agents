@@ -133,6 +133,8 @@ export function createSlpViewerContext(
     /** Social proof on the paywall. Null for a post the viewer can already read. */
     unlockCount: number | null;
     story: boolean;
+    /** This persona has watched the Story (the shelf ring means "not watched yet", R1-024). */
+    watched: boolean;
     linkedPostId: string | null;
   };
 
@@ -240,6 +242,10 @@ export function createSlpViewerContext(
             // The post's own price, which the unlock route charges when the wallet is enabled.
             unlockPrice: locked ? slpCreatorUnlockPriceFromMetadata(post.metadata) : null,
             story: post.metadata.noodlerPostType === "story",
+            watched: (interactionsByPostId.get(post.id) ?? []).some(
+              (interaction) =>
+                interaction.type === "story_view" && interaction.actorAccountId === context.viewerActorAccountId,
+            ),
             linkedPostId:
               post.metadata.noodlerPostType === "story" && typeof post.metadata.noodlerLinkedPostId === "string"
                 ? post.metadata.noodlerLinkedPostId

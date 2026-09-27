@@ -280,7 +280,19 @@ export async function slpProjectsRoutes(app: FastifyInstance, deps: SlpRouteDeps
       arcs: projects
         .filter((project) => project.status !== "suggested")
         .map((project) => {
-          const { id, title, tone, chapters, chapter, status, startedAt, completedAt, choices, pollClosesAt } = project;
+          const {
+            id,
+            title,
+            tone,
+            chapters,
+            chapter,
+            status,
+            startedAt,
+            completedAt,
+            choices,
+            pollClosesAt,
+            pollPostId,
+          } = project;
           const crossover = slurpCrossoverForViewer(project, creator.id, visible);
           return {
             id,
@@ -302,7 +314,10 @@ export async function slpProjectsRoutes(app: FastifyInstance, deps: SlpRouteDeps
               };
             }),
             // Only the open question, not the branches it would add.
-            openChoice: choices[chapter] ? { question: choices[chapter]!.question, closesAt: pollClosesAt } : null,
+            // The poll post itself: "the chapter's latest post" could be one whose votes never count (R1-067).
+            openChoice: choices[chapter]
+              ? { question: choices[chapter]!.question, closesAt: pollClosesAt, pollPostId: pollPostId ?? null }
+              : null,
           };
         }),
     };

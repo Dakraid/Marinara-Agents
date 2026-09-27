@@ -66,7 +66,7 @@ export type SlurpArcTimeline = Pick<
   SlurpProject,
   "id" | "title" | "tone" | "chapters" | "chapter" | "status" | "startedAt" | "completedAt" | "history"
 > & {
-  openChoice: { question: string; closesAt: string | null } | null;
+  openChoice: { question: string; closesAt: string | null; pollPostId?: string | null } | null;
   /** The other Creators in a crossover this viewer may see. */
   partners?: { id: string; handle: string; displayName: string; avatarUrl: string | null }[];
 };

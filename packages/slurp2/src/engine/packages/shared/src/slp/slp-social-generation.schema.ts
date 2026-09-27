@@ -83,6 +83,8 @@ const slpCreatorGenerationRequestShape = {
   contentIntent: z.enum(SLURP_CONTENT_INTENTS).optional(),
   /** One-shot delivery. It is paired with an intent so incompatible combinations fail early. */
   contentDelivery: z.enum(SLURP_CONTENT_DELIVERIES).optional(),
+  /** The Locked price the player set in the composer; absent uses the Creator's own (R1-026). */
+  unlockPrice: z.number().int().min(1).max(100_000).optional(),
 };
 
 export const slpCreatorGenerationRequestSchema = z

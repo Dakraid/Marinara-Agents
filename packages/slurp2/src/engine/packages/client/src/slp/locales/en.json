@@ -1384,6 +1384,8 @@
   "ui.slurp.events.group.tip": "{{count}} tips, {{total}} <coin/>",
   "ui.slurp.events.group.unlock": "{{count}} unlocks, {{total}} <coin/>",
   "ui.slurp.events.single.audience_arc": "{{who}} is getting more into your posts.",
+  "ui.slurp.events.single.audience_arc_burnout": "{{who}} has been around less lately.",
+  "ui.slurp.events.single.audience_arc_overattached": "{{who}} can't get enough of you.",
   "ui.slurp.events.single.comment": "{{who}} commented on your post.",
   "ui.slurp.events.single.commission_accepted": "{{who}} accepted a commission for {{amount}} <coin/>.",
   "ui.slurp.events.single.commission_requested": "{{who}} asked you for a commission.",
@@ -4281,5 +4283,9 @@
   "ui.slurp.post.reportDone": "Done",
   "ui.slurp.post.reportDuplicate": "You already reported this",
   "ui.slurp.post.reportWhatNext": "Slurp's team has it now. The creator gets a private heads-up, without your name.",
-  "ui.slurp.deepDetails.retrying": "Retrying…"
+  "ui.slurp.deepDetails.retrying": "Retrying…",
+  "ui.slurp.creators.generateOutcome": "{{made}} new, {{skipped}} skipped, {{failed}} could not post.",
+  "ui.slurp.settings.searchLabel.autoPostingScheduleEnabled": "Automatic posting",
+  "ui.slurp.settings.searchLabel.simulationTuning": "Audience tuning",
+  "ui.slurp.wallet.notEnoughCoins": "Not enough coins. Top up in your Wallet."
 }

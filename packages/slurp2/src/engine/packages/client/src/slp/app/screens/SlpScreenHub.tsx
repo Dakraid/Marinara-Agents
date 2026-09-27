@@ -78,6 +78,7 @@ export function ViewerHub({
   onAddStory,
   onOpenAuthorProfile,
   onToggleSubscription,
+  onAddCreators,
   togglePending,
   connectionCounts,
   inlineAdsEnabled,
@@ -117,6 +118,8 @@ export function ViewerHub({
   onTabChange: (tab: "following" | "all") => void;
   authorProfile: SlurpManagedStageProfile | null;
   onAddStory: () => void;
+  /** Open the setup wizard's "Add creators" step from an empty Hub. */
+  onAddCreators?: () => void;
   /** Open the persona's own Creator profile from the empty feed. */
   onOpenAuthorProfile?: () => void;
   onToggleSubscription: (creatorAccountId: string, subscribed: boolean) => void;
@@ -689,12 +692,15 @@ export function ViewerHub({
               : localizeUi("ui.noodle.viewerhub.noStageProfilesAreVisibleToThisPersona")
           }
           detail={authorProfile ? localizeUi("ui.noodle.viewerhub.ownStageProfileStillAvailable") : undefined}
+          // First run ended here with no way on: with no Creators at all, the action adds some (R1-131).
           action={
             authorProfile && onOpenAuthorProfile
               ? localizeUi("ui.noodle.viewerhub.viewValue1", { value1: authorProfile.displayName })
-              : undefined
+              : onAddCreators
+                ? localizeUi("ui.noodle.noodlerwizard.addCreators")
+                : undefined
           }
-          onAction={authorProfile ? onOpenAuthorProfile : undefined}
+          onAction={authorProfile ? onOpenAuthorProfile : onAddCreators}
         />
       )}
       {/* A gallery post can carry its pictures in `images` with no single `imageUrl`. */}

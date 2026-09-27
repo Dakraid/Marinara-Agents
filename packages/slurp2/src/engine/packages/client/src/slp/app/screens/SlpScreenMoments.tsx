@@ -61,7 +61,6 @@ export function SlurpMomentShelfTile({
 
 export function SlurpMomentsShelf({
   moments,
-  newSinceAt,
   onOpenMoment,
   onAddStory,
   embedded = false,
@@ -78,16 +77,19 @@ export function SlurpMomentsShelf({
   isError?: boolean;
 }) {
   const { t: localizeUi } = useUiTranslation();
-  const seenCreators = new Set<string>();
-  const creatorMoments = moments.filter((moment) => {
-    if (seenCreators.has(moment.creator.profile.id)) return false;
-    seenCreators.add(moment.creator.profile.id);
-    return true;
-  });
-  const seenAt = newSinceAt ? new Date(newSinceAt).getTime() : NaN;
+  // One tile per Creator, on its first Story this persona has not watched (else its first). The ring
+  // means "not watched yet", from recorded views, not "posted since your last visit" (R1-024).
+  const watched = (moment: (typeof moments)[number]) => (moment.post as { watched?: boolean }).watched === true;
+  const tileByCreator = new Map<string, (typeof moments)[number]>();
+  for (const moment of moments) {
+    const current = tileByCreator.get(moment.creator.profile.id);
+    if (!current || (watched(current) && !watched(moment))) tileByCreator.set(moment.creator.profile.id, moment);
+  }
+  const creatorMoments = [...tileByCreator.values()];
+  const isUnwatched = (moment: (typeof moments)[number]) => !watched(moment);
   creatorMoments.sort((left, right) => {
-    const leftNew = !Number.isNaN(seenAt) && new Date(left.post.createdAt).getTime() > seenAt;
-    const rightNew = !Number.isNaN(seenAt) && new Date(right.post.createdAt).getTime() > seenAt;
+    const leftNew = isUnwatched(left);
+    const rightNew = isUnwatched(right);
     if (leftNew !== rightNew) return leftNew ? -1 : 1;
     return new Date(right.post.createdAt).getTime() - new Date(left.post.createdAt).getTime();
   });
@@ -137,7 +139,7 @@ export function SlurpMomentsShelf({
             </div>
           ) : (
             creatorMoments.map((moment) => {
-              const isNew = !Number.isNaN(seenAt) && new Date(moment.post.createdAt).getTime() > seenAt;
+              const isNew = isUnwatched(moment);
               return (
                 <SlurpMomentShelfTile
                   key={moment.creator.profile.id}

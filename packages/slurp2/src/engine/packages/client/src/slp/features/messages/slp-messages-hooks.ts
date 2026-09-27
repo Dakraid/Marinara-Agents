@@ -212,12 +212,17 @@ export function useSlurpCompose(creatorAccountId: string | null, personaId: stri
   });
 }
 export function useRecordSlurpStoryView() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: { storyId: string; personaId: string }) =>
       api.post<{ viewed: boolean; duplicate: boolean }>(
         `/slurp2/slurp/stories/${encodeURIComponent(input.storyId)}/view`,
         { personaId: input.personaId },
       ),
+    // A first view drops the Story's ring on the shelf (R1-024).
+    onSuccess: (result, input) => {
+      if (!result.duplicate) void qc.invalidateQueries({ queryKey: slpKeys.viewer(input.personaId) });
+    },
   });
 }
 export function useSlurpStoryViews(storyId: string | null, personaId: string | null, enabled = true) {

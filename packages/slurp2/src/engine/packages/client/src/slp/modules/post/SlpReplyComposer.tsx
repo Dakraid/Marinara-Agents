@@ -18,6 +18,8 @@ import { ConversationMediaPickerPanel } from "../../../components/chat/Conversat
 import { ImageIcon, Smile, X } from "lucide-react";
 
 export interface SlpReplyComposerProps {
+  /** "Ask for a reply" from the Creator; absent on the Creator's own posts (R1-027). */
+  askForReply?: { asked: boolean; setAsked: (asked: boolean) => void };
   nested: boolean;
   post: SlpPostCardModel;
   replyParentInteractionId: string | null;
@@ -89,6 +91,7 @@ export function SlpReplyComposer({
   appendToReply,
   mediaPickerTab,
   setMediaPickerTab,
+  askForReply,
 }: SlpReplyComposerProps) {
   const { t: localizeUi } = useUiTranslation();
 
@@ -180,6 +183,17 @@ export function SlpReplyComposer({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {askForReply && (
+            <label className="flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]">
+              <input
+                type="checkbox"
+                checked={askForReply.asked}
+                onChange={(event) => askForReply.setAsked(event.target.checked)}
+                className="h-3.5 w-3.5 accent-[var(--noodle-accent)]"
+              />
+              {localizeUi("ui.noodle.noodlepostcard.askForReply")}
+            </label>
+          )}
           <button
             type="button"
             onClick={clearReplyComposer}

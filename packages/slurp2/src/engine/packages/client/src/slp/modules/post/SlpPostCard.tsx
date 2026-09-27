@@ -329,6 +329,11 @@ export function SlpPostCard({
       appendToReply={appendToReply}
       mediaPickerTab={mediaPickerTab}
       setMediaPickerTab={setMediaPickerTab}
+      askForReply={
+        ctx.creatorReplyRequest && !slpIsOwnActor(personaAccount, post.authorAccountId)
+          ? ctx.creatorReplyRequest
+          : undefined
+      }
     />
   );
   const renderReplyRow = (reply: SlpInteraction, nested: boolean) => (

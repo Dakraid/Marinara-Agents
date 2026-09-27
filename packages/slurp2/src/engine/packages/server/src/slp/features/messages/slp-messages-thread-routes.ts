@@ -94,9 +94,15 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
         .filter((thread) => thread.state !== "declined")
         .map((thread) => ({ ...thread, side: "viewer" as const })),
       inbound: inboundViews.filter((thread) => thread.state !== "declined"),
-      unread: threads.reduce((sum, thread) => sum + thread.viewerUnread, 0),
+      // Counted over the threads the list shows, like the nav badge: a closed thread is hidden, so
+      // its unread never cleared (R1-007).
+      unread: threads
+        .filter((thread) => thread.state !== "declined")
+        .reduce((sum, thread) => sum + thread.viewerUnread, 0),
       // Unread on the Creator side is what the player owes an answer to.
-      inboundUnread: inboundViews.reduce((sum, thread) => sum + thread.creatorUnread, 0),
+      inboundUnread: inboundViews
+        .filter((thread) => thread.state !== "declined")
+        .reduce((sum, thread) => sum + thread.creatorUnread, 0),
       attentionCommissions,
     };
   });
@@ -333,6 +339,8 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
               thread.mood <= -40 && audienceTone === "unfiltered" ? "hostile" : thread.mood >= 20 ? "friendly" : "none",
             creatorState: await slurp.getCreatorState(thread.creatorAccountId),
             threadState: thread.threadState,
+            // Same as the thread route, so a chat opened from a profile lists its follow-ups (R1-008).
+            scheduledFollowUps: thread.scheduledFollowUps,
           }
         : undefined,
       // The client shows the gate before the first message is written, so it must know the

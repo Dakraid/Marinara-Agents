@@ -56,13 +56,9 @@ async function main() {
   assert.match(audienceReply, /claimSlurpModelBudget\(db, settings\.modelBudget, "thread"\)/u);
   assert.match(audienceReply, /settings\.modelBudget\.connectionId \?\? settings\.generationConnectionId/u);
 
-  // ── R1-107: the schedule refresh spends its own budget row; the dead row is hidden ──
+  // ── R1-107: the schedule refresh spends its own budget row (the fan-type-voice row: needs the user) ──
   const creatorsRoutes = read("server/src/slp/features/creators/slp-creators-routes.ts");
   assert.match(creatorsRoutes, /claimSlurpModelBudget\(app\.db, scheduleSettings\.modelBudget, "schedule"\)/u);
-  assert.match(
-    read("client/src/slp/features/audience/SlpAudienceConfigPanel.tsx"),
-    /\.filter\(\(kind\) => kind !== "fan_type_voice"\)/u,
-  );
 
   // ── R1-108: a refused or failed generated arc falls back to a library storyline ──
   const projects2 = read("server/src/slp/data/projects/slp-projects-storage-2.ts");

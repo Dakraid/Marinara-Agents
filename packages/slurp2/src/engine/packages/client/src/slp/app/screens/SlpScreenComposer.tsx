@@ -1,3 +1,5 @@
+import { useSlurpCreatorMessagingSettings } from "../../features/messages/slp-messages-hooks";
+import { useSlpViewerPersonaId } from "../../features/creators/slp-creators-hooks";
 import {
   SLP_CREATOR_POST_CONTENT_MAX_LENGTH,
   SLP_CREATOR_POST_GUIDE_MAX_LENGTH,
@@ -91,7 +93,10 @@ export function NoodlerPostComposer({
     composerSettings && composerSettings.storyImageHeight > 0
       ? composerSettings.storyImageWidth / composerSettings.storyImageHeight
       : 4 / 5;
-  const usualUnlockPrice = composerSettings?.walletUnlockCost ?? 25;
+  // The Creator's own unlock price, the one the server stamps on a locked post (weekly dynamic
+  // pricing moves it); the Slurp-wide price only until it loads (R1-025).
+  const creatorPrices = useSlurpCreatorMessagingSettings(profile.id, useSlpViewerPersonaId()).data;
+  const usualUnlockPrice = creatorPrices?.messaging.unlockPrice ?? composerSettings?.walletUnlockCost ?? 25;
   const [postError, setPostError] = useState<string | null>(null);
   const [guideError, setGuideError] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<SlpCreatorComposerTool | null>(null);

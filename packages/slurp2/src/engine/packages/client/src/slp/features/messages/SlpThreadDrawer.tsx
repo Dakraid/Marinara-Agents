@@ -32,8 +32,10 @@ export function SlpThreadDrawer({ model }: { model: SlurpThreadViewModel }) {
     setDrawerMode,
     setToolTab,
     setToolsOpen,
-    threadId,
+    threadId: threadIdProp,
+    thread,
   } = model;
+  const threadId = thread?.id ?? threadIdProp;
   const docked = useSlpMediaQuery("(min-width: 1280px)");
   const title =
     drawerMode === "prompt"

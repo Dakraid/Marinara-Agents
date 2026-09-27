@@ -107,7 +107,9 @@ export function useSlurpHomePostActions({
     },
   ) => {
     if (!viewerPersonaId) return;
-    if (input.askForReply && !(await confirmProviderDisclosure())) return;
+    // Cancel on the AI cost note posts the comment without a reply request; it used to drop the
+    // comment the player had typed (R1-027).
+    const askForReply = input.askForReply && (await confirmProviderDisclosure());
     const viewerReply = await createInteraction.mutateAsync(
       {
         postId: post.id,
@@ -120,7 +122,7 @@ export function useSlurpHomePostActions({
         onError: (error) => toast.error(errorMessage(error, localizeUi("ui.noodle.noodlerhome.couldNotPostThisReply"))),
       },
     );
-    if (!input.askForReply) return;
+    if (!askForReply) return;
     try {
       await triggerCreatorReply.mutateAsync({
         postId: post.id,

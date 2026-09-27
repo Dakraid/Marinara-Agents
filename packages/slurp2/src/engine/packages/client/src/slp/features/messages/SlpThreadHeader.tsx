@@ -60,10 +60,13 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
     setOlderCursor,
     setTierOpen,
     thread,
-    threadId,
+    threadId: threadIdProp,
     tierOpen,
     tierTriggerRef,
   } = model;
+  // A chat opened from a profile is addressed by its Creator; once it loads it has a thread like any
+  // other, so Search, Memories, Commissions and Clear show there too (R1-008).
+  const threadId = thread?.id ?? threadIdProp;
   const tierLabel = thread?.rapport ? localizeUi(`ui.slurp.rapport.tier.${thread.rapport.tier}`) : "";
   const closeSearch = () => {
     setMessageSearchOpen(false);

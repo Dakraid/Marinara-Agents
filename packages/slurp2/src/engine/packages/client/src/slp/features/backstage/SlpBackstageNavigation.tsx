@@ -16,6 +16,7 @@ import {
   type SlpBackstageTarget,
 } from "../../base/navigation/slp-backstage-target";
 import { SLP_BACKSTAGE_SETTING_PLACEMENT } from "./slp-backstage-placement";
+import { SLP_BACKSTAGE_LABEL_KEYS } from "./slp-backstage-label-keys";
 
 export const humanize = (value: string) =>
   value
@@ -78,9 +79,11 @@ export function SlurpBackstageSearch({
   const inputRef = useRef<HTMLInputElement>(null);
   // The phone settings home and the page header can both hold a search box.
   const inputId = useId();
-  /** The setting's own translated label where one exists; otherwise the key made readable. */
-  const labelFor = (key: keyof SlurpSettings) =>
-    i18n.exists(`ui.slurp.settings.${key}`) ? t(`ui.slurp.settings.${key}`) : humanize(key);
+  /** The label the setting shows on its page (R1-132); the key made readable only as a last resort. */
+  const labelFor = (key: keyof SlurpSettings) => {
+    const labelKey = SLP_BACKSTAGE_LABEL_KEYS[key] ?? `ui.slurp.settings.${key}`;
+    return i18n.exists(labelKey) ? t(labelKey) : humanize(key);
+  };
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {

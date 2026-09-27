@@ -410,6 +410,7 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
             ? () => onNavigate({ mode: "creator", view: "profile", accountId: mainAuthorProfile.id })
             : undefined
         }
+        onAddCreators={() => setOnboardingMode("add-creators")}
         onToggleSubscription={toggleCreatorSubscription}
         togglePending={toggleSubscription.isPending || toggleFollow.isPending}
         connectionCounts={connectionCountsQuery.data ?? {}}

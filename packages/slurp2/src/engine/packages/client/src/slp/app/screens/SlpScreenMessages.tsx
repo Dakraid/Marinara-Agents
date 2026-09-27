@@ -380,7 +380,13 @@ function SlurpNotificationsView({
   const unseenIds = new Set(unseen.flatMap((entry) => (entry.type === "single" ? [entry.event.id] : entry.ids)));
   const describeEvent = (event: SlurpEventItem) => {
     const { kind, amount, actorLabel } = event;
-    const line = localizeUi(`ui.slurp.events.single.${kind}`, {
+    // A fan's direction change names its direction: burning out or getting too attached is not
+    // "getting more into your posts" (R1-085).
+    const arcKey =
+      kind === "audience_arc" && (event.subjectId === "burnout" || event.subjectId === "overattached")
+        ? `ui.slurp.events.single.audience_arc_${event.subjectId}`
+        : `ui.slurp.events.single.${kind}`;
+    const line = localizeUi(arcKey, {
       defaultValue: kind,
       amount,
       who: actorLabel ?? localizeUi("ui.slurp.events.someone", { defaultValue: "Someone" }),

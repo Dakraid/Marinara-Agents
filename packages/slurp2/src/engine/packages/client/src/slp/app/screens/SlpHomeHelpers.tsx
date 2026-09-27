@@ -1,3 +1,5 @@
+import i18next from "i18next";
+import { slpErrorText } from "../../base/ui/slp-error-text";
 import type { SlpCreatorContentFormat } from "../../features/feed/slp-feed-contract";
 import type { SlurpContentDelivery, SlurpContentIntent } from "../../../../../shared/src/slp/slp-content-axes.js";
 import { AnimatePresence } from "framer-motion";
@@ -196,7 +198,11 @@ export function serializeCreatorPostGuide(title: string, body: string) {
 }
 
 export function errorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
+  return slpErrorText(
+    error,
+    fallback,
+    i18next.t("ui.slurp.wallet.notEnoughCoins", { defaultValue: "Not enough coins. Top up in your Wallet." }),
+  );
 }
 
 export function slpCreatorGoalOf(

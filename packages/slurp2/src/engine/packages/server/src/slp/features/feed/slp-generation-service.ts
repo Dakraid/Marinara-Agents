@@ -594,7 +594,8 @@ export async function generateCreatorPost(
       // unlock price and keeps it across refreshes and edits instead of falling back to 1.
       ...(input.request.access === "locked"
         ? slpCreatorUnlockPriceMetadata(
-            (await createSlurpMessagesStorage(db).getCreatorMessaging(account.id)).unlockPrice ??
+            input.request.unlockPrice ??
+              (await createSlurpMessagesStorage(db).getCreatorMessaging(account.id)).unlockPrice ??
               settings.walletUnlockCost,
           )
         : {}),

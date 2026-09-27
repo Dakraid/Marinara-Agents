@@ -390,6 +390,8 @@ function isTerminalTask(status: string) {
     "discarded",
     "sent",
     "cancelled",
+    // A fan run that found nothing to do ends as "skipped"; Pulse showed it "Working" forever (R1-103).
+    "skipped",
   ]).has(status);
 }
 

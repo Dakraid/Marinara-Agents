@@ -36,8 +36,9 @@ export function SlurpArcTimelineCard({
   const complete = shown.status === "complete";
   const total = shown.chapters.length;
   const at = complete ? total : Math.min(shown.chapter, total - 1);
-  // The poll post of the open vote is the latest post of the current chapter, when there is one.
-  const votePostId = shown.openChoice ? postsFor(shown.chapter).at(-1) : undefined;
+  // The open vote's own poll post. Until it is posted there is nothing to vote on, so the card says
+  // nothing about voting (R1-067).
+  const votePostId = shown.openChoice?.pollPostId ?? undefined;
   return (
     <section className="rounded-2xl bg-[var(--slurp-surface-raised)] px-4 py-3.5 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
       <div className="flex items-start justify-between gap-3">
@@ -129,7 +130,7 @@ export function SlurpArcTimelineCard({
                       ? localizeUi("ui.slurp.arcs.decidedByVote", { defaultValue: "Decided by the vote" })
                       : label}
                   </span>
-                  {state === "current" && shown.openChoice && (
+                  {state === "current" && shown.openChoice && votePostId && (
                     <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                       <span className="min-w-0 flex-1 text-[var(--slurp-ink)]">
                         {localizeUi("ui.slurp.arcs.voting", {

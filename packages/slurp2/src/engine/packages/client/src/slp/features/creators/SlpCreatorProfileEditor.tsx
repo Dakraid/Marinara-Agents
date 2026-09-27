@@ -21,7 +21,7 @@ import { showConfirmDialog } from "../../../lib/app-dialogs";
 import { confirmSlurpAvatarReview, StageProfileForm } from "./SlpStageProfileForm";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
 import { Avatar, SlurpMediaImg } from "../../base/chrome/SlpChrome";
-import { accentButton, focusRing, quietButton } from "./slp-creator-classes";
+import { accentButton, focusRing, quietButton, selectClass } from "./slp-creator-classes";
 
 /**
  * The Creator's own profile fields, inside Backstage.
@@ -60,6 +60,9 @@ export function SlurpCreatorProfileEditor({
     [creator],
   );
   const [draft, setDraft] = useState<SlurpStageProfileInput>(initialDraft);
+  // The profile's location line; "Edit profile" could not reach it, only "Redraft with AI" (R1-069).
+  const initialLocation = (creator as { location?: string }).location ?? "";
+  const [location, setLocation] = useState(initialLocation);
   const saveStateRef = useRef<{ isPending: boolean; dirty: boolean; save: () => void; discard: () => void }>({
     isPending: false,
     dirty: false,
@@ -69,6 +72,7 @@ export function SlurpCreatorProfileEditor({
 
   const save = async () => {
     const input = { ...draft, handle: draft.handle.replace(/^@+/u, "") };
+    const nextLocation = location.trim();
     const review = await confirmSlurpAvatarReview({
       existing: creator,
       nextDisclosure: input.disclosureMode,
@@ -77,7 +81,12 @@ export function SlurpCreatorProfileEditor({
     });
     if (!review.proceed) return;
     updateProfile.mutate(
-      { accountId: creator.id, ...input, ...(review.confirmAvatarReview && { confirmAvatarReview: true }) },
+      {
+        accountId: creator.id,
+        ...input,
+        location: nextLocation,
+        ...(review.confirmAvatarReview && { confirmAvatarReview: true }),
+      },
       {
         onSuccess: () => {
           setDraft(input);
@@ -89,16 +98,18 @@ export function SlurpCreatorProfileEditor({
     );
   };
 
+  const dirty = JSON.stringify(draft) !== JSON.stringify(initialDraft) || location !== initialLocation;
   useEffect(() => {
-    onDirtyChange?.(JSON.stringify(draft) !== JSON.stringify(initialDraft));
-  }, [draft, initialDraft, onDirtyChange]);
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
 
   saveStateRef.current = {
     isPending: updateProfile.isPending,
-    dirty: JSON.stringify(draft) !== JSON.stringify(initialDraft),
+    dirty,
     save: () => void save(),
     discard: () => {
       setDraft(initialDraft);
+      setLocation(initialLocation);
       onDirtyChange?.(false);
     },
   };
@@ -110,7 +121,7 @@ export function SlurpCreatorProfileEditor({
       save: () => saveStateRef.current.save(),
       discard: () => saveStateRef.current.discard(),
     });
-  }, [onSaveStateChange, updateProfile.isPending, draft, initialDraft]);
+  }, [onSaveStateChange, updateProfile.isPending, draft, initialDraft, location]);
 
   return (
     <div className="space-y-5">
@@ -151,6 +162,17 @@ export function SlurpCreatorProfileEditor({
         showFooter={false}
         showAvatarControls={false}
       />
+      <label className="block space-y-1">
+        <span className="text-xs font-semibold">{t("ui.noodle.noodleprofilesurface.location")}</span>
+        <input
+          value={location}
+          maxLength={120}
+          disabled={updateProfile.isPending}
+          onChange={(event) => setLocation(event.target.value)}
+          placeholder={t("ui.noodle.noodleprofilesurface.somewhereCozy")}
+          className={selectClass}
+        />
+      </label>
     </div>
   );
 }

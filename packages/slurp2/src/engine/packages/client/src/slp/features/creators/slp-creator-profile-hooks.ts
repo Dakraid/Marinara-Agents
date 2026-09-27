@@ -89,6 +89,7 @@ export function useUpdateCreatorStageProfile() {
       sourceSnapshot?: SlpCreatorSourceSnapshot;
       sourceRevisionToken?: string;
       confirmAvatarReview?: boolean;
+      location?: string;
     } & SlurpStageProfileInput) =>
       api.put<SlurpManagedStageProfile>(`/slurp2/slurp/accounts/${encodeURIComponent(accountId)}/stage-profile`, {
         ...input,

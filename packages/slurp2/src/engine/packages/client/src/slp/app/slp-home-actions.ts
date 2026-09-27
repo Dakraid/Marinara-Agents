@@ -368,6 +368,7 @@ function useSlurpHomeActions(state: SlurpHomeBaseState) {
     generateImage,
     contentIntent,
     contentDelivery,
+    unlockPrice,
   }: SlpCreatorPostSubmission) => {
     if (!(await confirmProviderDisclosure())) return;
     const guide = serializeCreatorPostGuide(title, body);
@@ -378,6 +379,7 @@ function useSlurpHomeActions(state: SlurpHomeBaseState) {
       ...(generateImage ? { generateImage: true } : {}),
       ...(contentIntent ? { contentIntent } : {}),
       ...(contentDelivery ? { contentDelivery } : {}),
+      ...(access === "locked" && unlockPrice ? { unlockPrice } : {}),
       access,
       image,
       poll,
