@@ -55,4 +55,4 @@ export {
   useGenerateCreatorStageProfileDraft,
   useUpdateCreatorStageProfile,
 } from "./slp-creator-profile-hooks.js";
-export { useUpdateCreatorStrategy } from "./slp-creators-hooks.js";
+export { useSlpViewerPersonaId, useUpdateCreatorStrategy } from "./slp-creators-hooks.js";

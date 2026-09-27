@@ -197,10 +197,10 @@ export type SlpSceneItem =
   | { id: string; kind: "photo"; photo: "avatar" | "banner"; imageUrl: string };
 
 /** What the transcript sends back: the lines only, newest last, capped. */
-export function slpSceneTranscript(items: readonly SlpSceneItem[]): SlpSceneLine[] {
+export function slpSceneTranscript(items: readonly SlpSceneItem[], max = SLP_SCENE_TRANSCRIPT_MAX): SlpSceneLine[] {
   return items
     .flatMap((item) => (item.kind === "line" ? [{ speaker: item.speaker, text: item.text }] : []))
-    .slice(-SLP_SCENE_TRANSCRIPT_MAX);
+    .slice(-max);
 }
 
 /** The chat as guidance for a full redraft: newest lines first win the 2000 characters. */

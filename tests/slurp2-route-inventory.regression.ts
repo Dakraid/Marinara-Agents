@@ -191,6 +191,7 @@ const EXPECTED = [
   "POST /slurp/auto-post/refresh-targeted",
   "POST /slurp/fan-activity/refresh-now",
   "POST /slurp/first-posts/enqueue",
+  "POST /slurp/onboarding/scene/keep",
   "POST /slurp/onboarding/scene/turn",
   "POST /slurp/notifications/seen",
   "POST /slurp/post-guidance-draft",
@@ -243,8 +244,9 @@ const RETAINED_OLD_PATHS = new Set([
   "GET /noodler/posts/:id/media/:position",
 ]);
 const ADDED_ROUTES = new Set([
-  // Overnight plan item 7: one exchange of the role-play Creator sign-up.
+  // Overnight plan item 7: one exchange of the role-play Creator sign-up, and keeping its chat.
   "POST /slurp/onboarding/scene/turn",
+  "POST /slurp/onboarding/scene/keep",
   // Fix phase 1 (R1-047): closing the picture review ends the wait.
   "POST /slurp/refresh/images/cancel",
   // 0.2.47: "Save to Slurp" from an Engine chat.
@@ -331,12 +333,12 @@ const EXPECTED_HANDLER_COUNTS = {
   "features/media": 7,
   "features/messages": 40,
   "features/notifications": 3,
-  "features/onboarding": 5,
+  "features/onboarding": 6,
   "features/projects": 15,
   "features/settings": 7,
   "features/world": 11,
 } as const;
-const EXPECTED_METHOD_COUNTS = { DELETE: 15, GET: 74, PATCH: 16, POST: 115, PUT: 6 } as const;
+const EXPECTED_METHOD_COUNTS = { DELETE: 15, GET: 74, PATCH: 16, POST: 116, PUT: 6 } as const;
 
 const root = join(import.meta.dirname, "../packages/slurp2/src/engine/packages/server/src/slp");
 const registration = /\bapp\.(get|post|put|patch|delete|addContentTypeParser)(?:<[^()]*?>)?\(\s*["'`]([^"'`]+)["'`]/gu;
@@ -391,7 +393,7 @@ const methodCounts = Object.fromEntries(
     }, new Map<string, number>()),
 );
 assert.deepEqual(methodCounts, EXPECTED_METHOD_COUNTS, "HTTP method multiset changed from staging");
-assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 226);
+assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 227);
 assert.deepEqual(handlerCounts, EXPECTED_HANDLER_COUNTS, "handler count changed in a feature");
 assert.ok(foundRoutes.includes("POST /slurp/posts/:id/media"), "the renamed POST media route must remain registered");
 assert.ok(

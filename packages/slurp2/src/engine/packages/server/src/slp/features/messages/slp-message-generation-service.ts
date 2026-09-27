@@ -367,7 +367,14 @@ export function buildSlurpMessageChat(input: {
     scheduleContext:
       protect(input.scheduleContext) || "No active Conversation Schedule is available for this Creator today.",
     conversation: input.history.slice(-HISTORY_TURNS).map((message) => ({
-      from: message.role === "creator" ? "you" : "the fan",
+      // A kept sign-up chat names who said a host line (Slurp Support, a helping Creator), so it is
+      // never read as the fan's words.
+      from:
+        message.role === "creator"
+          ? "you"
+          : typeof message.metadata?.sceneSpeaker === "string"
+            ? `${protect(String(message.metadata?.sceneSpeaker))} (during your Slurp sign-up)`
+            : "the fan",
       // A tip is a message with no words. Rendering it as one is what lets the creator thank
       // the fan for it, which is the single most obvious thing a real creator does.
       text:

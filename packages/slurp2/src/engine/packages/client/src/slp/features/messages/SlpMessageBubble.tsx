@@ -497,6 +497,10 @@ export function MessageBubble({
         fresh && "slurp-bubble-in",
       )}
     >
+      {/* A kept sign-up chat says who spoke when it was not the player (Slurp Support, a helper). */}
+      {typeof message.metadata?.sceneSpeaker === "string" && !joinsAbove && (
+        <p className="px-2 text-xs font-semibold text-[var(--slurp-muted)]">{String(message.metadata.sceneSpeaker)}</p>
+      )}
       {message.kind === "ppv" && (locked || message.imageUrl) && (
         // The shared locked media tile: blurred stage, Sparkle Veil, lock and price. Bought, it is the
         // picture in the same frame, and the veil dissolves off it once.

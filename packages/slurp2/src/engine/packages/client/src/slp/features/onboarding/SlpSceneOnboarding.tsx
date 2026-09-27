@@ -1,7 +1,7 @@
 // The role-play Creator sign-up (overnight plan item 7): pick who signs up and how, then play the
 // scene while the page fills in beside the chat. "Finish registration" is always there; the old
 // wizard stays one tap away as "Quick setup".
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronRight, Loader2 } from "lucide-react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import type { SlpScenePreset } from "../../../../../shared/src/slp/slp-scene.js";
@@ -9,6 +9,7 @@ import type { SlpAccount, SlpIdentityDisclosure } from "../../../../../shared/sr
 import { cn } from "../../../lib/utils";
 import { Avatar, SLP_GROUP_CLASS, SLP_TYPE, useSlpMediaQuery } from "../../base/chrome/SlpChrome";
 import { noteSlpAiUseOnce } from "../../modules/chrome/SlpAiMark";
+import { playSlpBurst } from "../../modules/sparkle/SlpSparkle";
 import { SlpChip, SlpPrimaryButton, SlpSegment } from "../../modules/chrome/SlpButton";
 import { SlpRadioRow, SlpSheet } from "../../modules/chrome/SlpSheet";
 import { SlpWizardFooter, SlpWizardProgress } from "../../modules/chrome/SlpWizardChrome";
@@ -29,6 +30,7 @@ type SlpScenePerson = Pick<SlpAccount, "id" | "displayName" | "handle" | "avatar
 export function SlpSceneOnboarding({
   accounts,
   connectionId,
+  defaultDisclosure = "hinted",
   onBack,
   onQuickSetup,
   onFinished,
@@ -36,6 +38,8 @@ export function SlpSceneOnboarding({
 }: {
   accounts: readonly SlpAccount[];
   connectionId?: string;
+  /** The page-name choice from the welcome, as the first pick. */
+  defaultDisclosure?: SlpIdentityDisclosure;
   onBack: () => void;
   onQuickSetup: () => void;
   onFinished: () => void;
@@ -47,6 +51,7 @@ export function SlpSceneOnboarding({
     return (
       <SceneSetup
         accounts={accounts}
+        defaultDisclosure={defaultDisclosure}
         onBack={onBack}
         onQuickSetup={onQuickSetup}
         onStart={(next) => {
@@ -71,11 +76,13 @@ export function SlpSceneOnboarding({
 
 function SceneSetup({
   accounts,
+  defaultDisclosure,
   onBack,
   onQuickSetup,
   onStart,
 }: {
   accounts: readonly SlpAccount[];
+  defaultDisclosure: SlpIdentityDisclosure;
   onBack: () => void;
   onQuickSetup: () => void;
   onStart: (setup: Omit<SlpSceneSetup, "connectionId">) => void;
@@ -83,7 +90,7 @@ function SceneSetup({
   const { t } = useUiTranslation();
   const [sourceId, setSourceId] = useState<string | null>(null);
   const [preset, setPreset] = useState<SlpScenePreset>(SLP_SCENE_OFFERED[0]);
-  const [disclosure, setDisclosure] = useState<SlpIdentityDisclosure>("hinted");
+  const [disclosure, setDisclosure] = useState<SlpIdentityDisclosure>(defaultDisclosure);
   const [helperId, setHelperId] = useState<string | null>(null);
   // The creator seat needs somebody already on Slurp to do the helping.
   const creators = useCreatorAccounts().data ?? [];
@@ -244,8 +251,12 @@ function SceneStage({
   const [pageOpen, setPageOpen] = useState(false);
   const phone = useSlpMediaQuery("(max-width: 639px)");
   const [missingNote, setMissingNote] = useState("");
+  const liveRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    if (model.created) onFinished();
+    if (!model.created) return;
+    // A page going live is a reward moment: a Burst off the new photo.
+    if (liveRef.current) playSlpBurst(liveRef.current, 12);
+    onFinished();
     // Once per page: onFinished marks the first run as done.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [model.created]);
@@ -294,13 +305,20 @@ function SceneStage({
     return (
       <>
         <div className="my-auto flex flex-col items-center gap-3 py-6 text-center">
-          <Avatar account={{ displayName: model.created.displayName, avatarUrl: newcomerAvatar }} size="lg" />
+          <div ref={liveRef}>
+            <Avatar account={{ displayName: model.created.displayName, avatarUrl: newcomerAvatar }} size="lg" />
+          </div>
           <h3 tabIndex={-1} data-autofocus className={cn(SLP_TYPE.screen, "text-balance outline-none")}>
             {t("ui.slurp.scene.done.title", { name: model.created.displayName })}
           </h3>
           <p className={cn(SLP_TYPE.body, "max-w-sm text-pretty text-[var(--slurp-muted)]")}>
             {t("ui.slurp.scene.done.help", { handle: model.created.handle })}
           </p>
+          {model.created.kept && (
+            <p className={cn(SLP_TYPE.meta, "max-w-sm text-pretty text-[var(--slurp-muted)]")}>
+              {t("ui.slurp.scene.done.kept", { name: model.created.displayName })}
+            </p>
+          )}
         </div>
         <SlpWizardFooter
           skip={{ label: t("ui.slurp.scene.done.another"), onClick: onAnother }}

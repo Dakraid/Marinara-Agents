@@ -22,9 +22,17 @@ import {
   sanitizeSlpScenePatch,
   slpSceneWritesHost,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/onboarding/slp-scene-prompt.ts";
+import { slpSceneThreadMessages } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/onboarding/slp-scene-thread.ts";
+import {
+  SLP_SITE_WELCOME_OPTIONS,
+  slpSiteWelcomeLead,
+  slpSiteWelcomeNext,
+  slpSiteWelcomeSetting,
+} from "../packages/slurp2/src/engine/packages/client/src/slp/features/onboarding/slp-site-welcome.ts";
 import {
   SLP_SCENE_ACTIONS,
   SLP_SCENE_MOMENTS,
+  slpSceneKeepRequestSchema,
   slpSceneTurnRequestSchema,
 } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-scene.ts";
 
@@ -306,5 +314,64 @@ assert.match(
 assert.match(seatSystem.content, /Write one short line for the host \(Mia Rose\)/u);
 assert.match(seatUser.content, /# Mia Rose \(@miarose\)\nPole dance and pink hair\./u);
 assert.match(seatUser.content, /Mia Rose: Welcome, babe\./u);
+
+// 13. Slice 5: the kept chat. Newcomer lines are the Creator's; host lines are the player's, named
+// when the player did not say them as themselves; oldest first, ending before now.
+const now = new Date("2026-09-27T12:00:00.000Z");
+const kept = slpSceneThreadMessages({
+  preset: "support",
+  hostName: "Slurp Support",
+  lines: [
+    { speaker: "newcomer", text: "hi" },
+    { speaker: "host", text: "Name?" },
+    { speaker: "newcomer", text: "Velvet" },
+  ],
+  now,
+});
+assert.deepEqual(
+  kept.map((message) => [message.role, message.metadata.sceneSpeaker ?? null]),
+  [
+    ["creator", null],
+    ["viewer", "Slurp Support"],
+    ["creator", null],
+  ],
+);
+assert.ok(
+  kept.every((message, i) => i === 0 || message.createdAt > kept[i - 1].createdAt),
+  "oldest first",
+);
+assert.ok(kept.at(-1)!.createdAt < now.toISOString(), "all in the past");
+assert.equal(
+  slpSceneThreadMessages({ preset: "friend", hostName: "You", lines: [{ speaker: "host", text: "omg" }], now })[0]
+    .metadata.sceneSpeaker,
+  undefined,
+  "the friend is the player: no name above their own words",
+);
+assert.equal(
+  slpSceneThreadMessages({ preset: "seat", hostName: "Mira Vale", lines: [{ speaker: "host", text: "hey" }], now })[0]
+    .metadata.sceneSpeaker,
+  "Mira Vale",
+);
+assert.ok(
+  slpSceneKeepRequestSchema.safeParse({ preset: "friend", creatorAccountId: "c", viewerPersonaId: "p", lines: [] })
+    .success === false,
+  "nothing to keep, nothing sent",
+);
+
+// 14. Slice 5: the player's own join (roles swapped). Support asks in order; answers map to settings.
+assert.equal(slpSiteWelcomeNext({}), "who");
+assert.equal(slpSiteWelcomeNext({ who: "watch", pace: "lively" }), "pictures");
+assert.equal(slpSiteWelcomeNext({ who: "run", pace: "manual", pictures: "no", nights: "yes", names: "open" }), null);
+assert.equal(slpSiteWelcomeLead({ who: "watch" }), "feed", "a watcher goes to the feed");
+assert.equal(slpSiteWelcomeLead({ who: "both" }), "signup");
+assert.equal(slpSiteWelcomeLead({}), "signup", "nothing answered: sign someone up (the old tour's end)");
+assert.deepEqual(slpSiteWelcomeSetting("pace", "veryActive"), { kind: "pace", value: "veryActive" });
+assert.deepEqual(slpSiteWelcomeSetting("pictures", "yes"), { kind: "pictures", value: true });
+assert.deepEqual(slpSiteWelcomeSetting("nights", "no"), { kind: "nights", value: false });
+assert.deepEqual(slpSiteWelcomeSetting("names", "open"), { kind: "names", value: "open" });
+assert.equal(slpSiteWelcomeSetting("who", "watch"), null);
+for (const [question, options] of Object.entries(SLP_SITE_WELCOME_OPTIONS)) {
+  assert.ok(options.length >= 2, `${question} offers a real choice`);
+}
 
 console.log("slurp2-scene-onboarding: ok");

@@ -14,6 +14,7 @@ import {
   useCreateCreatorStageProfile,
   useGenerateCreatorArtwork,
   useGenerateCreatorStageProfileDraft,
+  useSlpViewerPersonaId,
   useUpdateCreatorStageProfile,
   useUpdateCreatorStrategy,
 } from "../creators/slp-creators-contract";
@@ -34,7 +35,7 @@ import {
   type SlpSceneItem,
 } from "./slp-scene-draft";
 import { useEnqueueCreatorFirstPosts } from "./slp-first-post-hooks";
-import { useSlpSceneTurn } from "./slp-scene-hooks";
+import { useSlpSceneKeep, useSlpSceneTurn } from "./slp-scene-hooks";
 
 export type SlpSceneSetup = {
   preset: SlpScenePreset;
@@ -65,7 +66,13 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
   const [doneMoments, setDoneMoments] = useState<SlpSceneMoment[]>([]);
   const [direction, setDirection] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [created, setCreated] = useState<{ id: string; displayName: string; handle: string } | null>(null);
+  const [created, setCreated] = useState<{
+    id: string;
+    displayName: string;
+    handle: string;
+    /** The chat became their first DM thread. */
+    kept: boolean;
+  } | null>(null);
   const turn = useSlpSceneTurn();
   const redraft = useGenerateCreatorStageProfileDraft();
   const create = useCreateCreatorStageProfile();
@@ -73,6 +80,8 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
   const artwork = useGenerateCreatorArtwork();
   const strategy = useUpdateCreatorStrategy();
   const firstPost = useEnqueueCreatorFirstPosts();
+  const keep = useSlpSceneKeep();
+  const viewerPersonaId = useSlpViewerPersonaId();
   // The chat is read back by the next turn before React renders (autopilot), so writes go through the ref.
   const itemsRef = useRef(items);
   const append = useCallback((added: SlpSceneItem[]) => {
@@ -245,9 +254,25 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
     if (limits) await strategy.mutateAsync({ accountId: saved.id, strategyText: limits }).catch(() => undefined);
     // The first post is written in the background, like "first posts now" in Quick setup.
     firstPost.mutate({ executionId: generateClientId(), accountIds: [saved.id] });
-    setCreated({ id: saved.id, displayName: draft.displayName, handle: draft.handle });
+    // The chat stays as their first DM thread with the player's persona (never with the page
+    // itself). Nothing to keep, or no persona: the page is still live.
+    const lines = slpSceneTranscript(itemsRef.current, 120);
+    const kept =
+      viewerPersonaId && lines.length
+        ? await keep
+            .mutateAsync({
+              preset: setup.preset,
+              creatorAccountId: saved.id,
+              viewerPersonaId,
+              hostName: hostLabel,
+              lines,
+            })
+            .then((result) => result.status === "kept")
+            .catch(() => false)
+        : false;
+    setCreated({ id: saved.id, displayName: draft.displayName, handle: draft.handle, kept });
     return [];
-  }, [firstPost, savePage, strategy]);
+  }, [firstPost, hostLabel, keep, savePage, setup.preset, strategy, viewerPersonaId]);
 
   /**
    * The first photo shoot: the real image pipeline draws the profile photo, then the cover, from
@@ -298,10 +323,16 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
     error,
     created,
     busy:
-      turn.isPending || redraft.isPending || create.isPending || update.isPending || autoLeft > 0 || shooting !== null,
+      keep.isPending ||
+      turn.isPending ||
+      redraft.isPending ||
+      create.isPending ||
+      update.isPending ||
+      autoLeft > 0 ||
+      shooting !== null,
     talking: turn.isPending,
     updating: redraft.isPending,
-    registering: create.isPending || update.isPending,
+    registering: create.isPending || update.isPending || keep.isPending,
     accountId,
     shooting,
     photos,

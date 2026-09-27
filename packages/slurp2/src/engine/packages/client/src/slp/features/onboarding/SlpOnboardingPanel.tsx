@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronRight, Coins, Cpu, Image as ImageIcon, Loader2, MessagesSquare, SlidersHorizontal } from "lucide-react";
 import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import type { SlpCreatorOnboardingCompletion } from "../../../../../shared/src/slp/slp-creator-onboarding.js";
@@ -25,6 +25,7 @@ import { useSlurpOnboardingWizardModel } from "./slp-onboarding-wizard-model";
 import { SLP_SETUP_STEPS, slpOnboardingProgress } from "./slp-onboarding-progress";
 import { SlpOnboardingSteps } from "./SlpOnboardingSteps";
 import { SlpSceneOnboarding } from "./SlpSceneOnboarding";
+import { SlpSiteWelcome } from "./SlpSiteWelcome";
 
 export type Step = 1 | 2 | 3 | 4 | 5;
 /** The teaching screens that run ahead of the numbered steps on first run. */
@@ -130,6 +131,12 @@ export function SlurpOnboardingWizard(props: WizardProps) {
   } = model;
   const progress = slpOnboardingProgress({ intro, setupLane, step });
   const scene = intro === null && setupLane === "scene";
+  // The first-run welcome is the sign-up scene with the roles swapped; the old tour is one tap away.
+  const [tour, setTour] = useState(false);
+  useEffect(() => {
+    if (open) setTour(false);
+  }, [open]);
+  const welcome = intro !== null && !tour && !selectionOnly;
   // The Engine Modal focuses its X on open, which rings it after a tap. Move the first focus to the
   // screen heading once the Modal has run its own focus step (two frames).
   const frameRef = useRef<HTMLDivElement | null>(null);
@@ -247,10 +254,20 @@ export function SlurpOnboardingWizard(props: WizardProps) {
           className={cn(
             "flex max-h-[min(78vh,46rem)] min-h-[26rem] flex-col text-[var(--slurp-text)] max-sm:min-h-0 max-sm:max-h-none max-sm:flex-1 max-sm:self-stretch",
             // The scene's chat scrolls inside a fixed frame instead of growing the dialog.
-            scene && "h-[min(78vh,46rem)] max-sm:h-auto",
+            (scene || welcome) && "h-[min(78vh,46rem)] max-sm:h-auto",
           )}
         >
-          {scene ? (
+          {welcome ? (
+            <SlpSiteWelcome
+              settings={model}
+              onSignUp={() => {
+                setIntro(null);
+                setSetupLane("scene");
+              }}
+              onFeed={() => void skip()}
+              onTour={() => setTour(true)}
+            />
+          ) : scene ? (
             <SlpSceneOnboarding
               accounts={accounts}
               connectionId={model.generationConnectionId || undefined}
@@ -259,7 +276,12 @@ export function SlurpOnboardingWizard(props: WizardProps) {
                 setSetupLane("easy");
                 setStep(1);
               }}
-              onFinished={() => props.onComplete?.()}
+              defaultDisclosure={disclosure}
+              onFinished={() => {
+                // The pace, nights and pictures picked on the way in are saved like Quick setup saves them.
+                void model.saveSettings("completed");
+                props.onComplete?.();
+              }}
               onSeeFeed={() => {
                 onSeeFeed?.();
                 if (!onSeeFeed) onClose();
