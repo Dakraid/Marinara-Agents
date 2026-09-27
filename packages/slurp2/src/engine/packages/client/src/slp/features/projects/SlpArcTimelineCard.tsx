@@ -213,7 +213,7 @@ export function SlurpArcTimelineCard({
 }
 
 /** Operator view of the storyline: what each chapter did to the numbers, under the current cap. */
-export function SlurpArcEffectsList({ arcs }: { arcs: SlurpArcTimeline[] }) {
+export function SlurpArcEffectsList({ arcs, heading }: { arcs: SlurpArcTimeline[]; heading?: string }) {
   const { t: localizeUi } = useUiTranslation();
   // Effects are stored as the chapter wrote them and shown as they apply under the current cap.
   const cap = { off: 0, small: 10, big: 50 }[useSlurpSettings().data?.arcStatEffects ?? "small"];
@@ -238,18 +238,22 @@ export function SlurpArcEffectsList({ arcs }: { arcs: SlurpArcTimeline[] }) {
   });
   if (rows.length === 0) return null;
   return (
-    <ul className="space-y-1.5 text-xs leading-4">
-      {rows.map((row) => (
-        <li key={row.index} className="flex gap-2">
-          <span className="w-4 shrink-0 font-bold tabular-nums text-[var(--slurp-muted)]">{row.index + 1}</span>
-          <span className="min-w-0">
-            <span className="block font-semibold">{row.label}</span>
-            {row.line && <span className="block text-[var(--slurp-muted)]">{row.line}</span>}
-            {row.votes && <span className="block text-[var(--slurp-muted)]">{row.votes}</span>}
-          </span>
-        </li>
-      ))}
-    </ul>
+    <div>
+      {/* The heading comes with the rows, so it never stands over nothing (R1-079). */}
+      {heading && <p className="mb-1.5 text-xs font-semibold text-[var(--slurp-muted)]">{heading}</p>}
+      <ul className="space-y-1.5 text-xs leading-4">
+        {rows.map((row) => (
+          <li key={row.index} className="flex gap-2">
+            <span className="w-4 shrink-0 font-bold tabular-nums text-[var(--slurp-muted)]">{row.index + 1}</span>
+            <span className="min-w-0">
+              <span className="block font-semibold">{row.label}</span>
+              {row.line && <span className="block text-[var(--slurp-muted)]">{row.line}</span>}
+              {row.votes && <span className="block text-[var(--slurp-muted)]">{row.votes}</span>}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

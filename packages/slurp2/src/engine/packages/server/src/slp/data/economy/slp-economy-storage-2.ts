@@ -292,6 +292,8 @@ export function createEconomyStorage2(context: SlurpStorageContext) {
         this.getCreatorSubscriptionPrice(creatorAccountId),
         this.getSettings(),
       ]);
+      // SlurpCoins off: everything is on the house, and the buttons say no price (R1-077).
+      if (!settings.walletEnabled) return 0;
       return slurpSubscriptionCharge(
         base,
         createSlpActiveModifierProvider([slurpPlatformEventModifierSource(settings.platformEvents)]),

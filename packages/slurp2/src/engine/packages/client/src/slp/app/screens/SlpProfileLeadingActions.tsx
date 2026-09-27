@@ -96,7 +96,8 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
         // One tap, no confirmation: the spend moment is the feedback (design language §7).
         const origin = event.currentTarget.getBoundingClientRect();
         void Promise.resolve(onToggleSubscription(profile.id, false)).then(
-          () => playSlpSpendMoment(origin),
+          // Nothing is spent when SlurpCoins are off (price 0), so no coin moment (R1-077).
+          () => (slurpSubscriptionPriceOf(viewerCreator) > 0 ? playSlpSpendMoment(origin) : undefined),
           () => undefined,
         );
       }}
@@ -105,11 +106,15 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
       {subscriptionState.kind === "ended"
         ? localizeUi("ui.slurp.profile.resubscribe", { defaultValue: "Resubscribe" })
         : localizeUi("ui.slurp.profile.subscribe")}
-      <span aria-hidden="true">·</span>
-      <SlurpCoinAmount
-        amount={slurpSubscriptionPriceOf(viewerCreator)}
-        suffix={localizeUi("ui.slurp.unlocksheet.perWeek", { defaultValue: "/ week" })}
-      />
+      {slurpSubscriptionPriceOf(viewerCreator) > 0 && (
+        <>
+          <span aria-hidden="true">·</span>
+          <SlurpCoinAmount
+            amount={slurpSubscriptionPriceOf(viewerCreator)}
+            suffix={localizeUi("ui.slurp.unlocksheet.perWeek", { defaultValue: "/ week" })}
+          />
+        </>
+      )}
     </SlpPrimaryButton>
   );
 

@@ -258,6 +258,15 @@ function useSlurpHomeActions(state: SlurpHomeBaseState) {
           }),
         );
       }
+      // A new character Creator is asked whether it should post on its own; the step was never
+      // reached (R1-075). Persona Creators post by hand, so they skip it.
+      const personaSource = (state.personas ?? []).some(
+        (persona: { id: string }) => persona.id === profile.sourceAccountId,
+      );
+      if (!editingProfileId && profile.sourceAccountId && !personaSource) {
+        setAutoPostSetupId(profile.id);
+        setCreationStep("automatic");
+      }
     };
     const onError = async (error: unknown) => {
       if (!editingProfileId && draftNoodleAccountId && error instanceof ApiError && error.status === 409) {

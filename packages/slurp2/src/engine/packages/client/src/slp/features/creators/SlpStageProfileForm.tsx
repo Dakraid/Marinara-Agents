@@ -85,10 +85,11 @@ export function disclosureOptions(t: ReturnType<typeof useUiTranslation>["t"]): 
   return [
     {
       value: "open",
-      label: "Linked identity",
-      shortLabel: "Open",
-      detail: "This Creator may openly use the source identity.",
-      guidance: "Names, handles, recognizable details, and continuity may carry over.",
+      // From the locale like the other modes (R1-081); the guidance was a shorter English copy.
+      label: t("ui.noodle.disclosure.open.label"),
+      shortLabel: t("ui.noodle.disclosure.open.shortLabel"),
+      detail: t("ui.noodle.disclosure.open.detail"),
+      guidance: t("ui.noodle.disclosure.open.guidance"),
     },
     {
       value: "hinted",

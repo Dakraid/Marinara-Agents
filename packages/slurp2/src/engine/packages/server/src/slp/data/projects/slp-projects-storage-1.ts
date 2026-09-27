@@ -199,6 +199,7 @@ export function createProjectsStorage1(context: SlurpStorageContext) {
       await writeProjects(creatorAccountId, [project, ...rest]);
       for (const id of project.creatorIds.slice(1))
         await writeProjects(id, [slurpCrossoverView(project, id), ...(await loadProjects(id))]);
+      await this.recordArcChange(creatorAccountId, { ...project, status: "suggested" }, project);
       return slurpCrossoverView(project, creatorAccountId);
     },
     /**
@@ -403,8 +404,11 @@ export function createProjectsStorage1(context: SlurpStorageContext) {
       const pollNote = poll ? `, fans chose: ${poll.winner}` : "";
       const label = `${after.chapters.length ? `${after.title} (${slurpProjectChapter(after)})` : after.title}${pollNote}`;
       // A chapter's mood arrives through the ordinary modifier list, so it expires like any other feeling.
+      // A new chapter, or a storyline that just started (created active or accepted): the first
+      // chapter's mood applied to nobody before (R1-071).
+      const started = after.status === "active" && before.status !== "active";
       const mood =
-        after.chapter !== before.chapter && after.status !== "complete"
+        (after.chapter !== before.chapter || started) && after.status !== "complete"
           ? slurpArcChapterMood(after, (await this.getSettings()).arcAffectsMood)
           : null;
       // A crossover moves every participant: mood and events reach each of them.

@@ -179,13 +179,17 @@ export function createProjectsStorage2(context: SlurpStorageContext) {
           [slurpCrossoverView(project, partnerId), ...(await loadProjects(partnerId))],
           at,
         );
+      if (project.status === "active")
+        await this.recordArcChange(creatorAccountId, { ...project, status: "suggested" }, project);
       // The cooldown starts for every participant.
       for (const id of isSlurpCrossover(project) ? project.creatorIds : [creatorAccountId]) {
         await settingsStore.set(slurpArcAutoKey(id), at.toISOString());
-        await this.recordCreatorEvent(id, "arc_started", {
-          actorLabel: project.title,
-          subjectId: project.id,
-        });
+        // Only a storyline that really started is news; a suggestion waits in Storylines (R1-080).
+        if (project.status === "active")
+          await this.recordCreatorEvent(id, "arc_started", {
+            actorLabel: project.title,
+            subjectId: project.id,
+          });
       }
       return slurpCrossoverView(project, creatorAccountId);
     },

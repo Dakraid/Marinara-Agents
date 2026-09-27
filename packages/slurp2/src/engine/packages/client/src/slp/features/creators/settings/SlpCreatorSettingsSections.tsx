@@ -252,7 +252,12 @@ export function SlpCreatorCollaborationsSection({ creator, active }: SlpCreatorS
   const accounts = useCreatorAccounts(active);
   const settings = useSlurpSettings(active);
   const updateSettings = useUpdateSlurpSettings();
-  if (!accounts.data || !settings.data) return <p className="text-sm text-[var(--slurp-muted)]">Loading...</p>;
+  if (!accounts.data || !settings.data)
+    return (
+      <p className="text-sm text-[var(--slurp-muted)]">
+        {t("ui.slurp.settings.loading", { defaultValue: "Loading…" })}
+      </p>
+    );
   return (
     <SettingAnchor settingKey="creatorCollabs">
       <CreatorCollabsEditor

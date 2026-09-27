@@ -9,8 +9,8 @@ import { Avatar, SlurpMediaImg } from "../../../base/chrome/SlpChrome";
 import { useCreatorReserveStatus, useUpdateCreatorAutoPosting } from "../../feed/slp-feed-contract";
 import { useSlurpProjects } from "../../projects/slp-projects-contract";
 import { useSlurpContinuity } from "../slp-continuity-hooks";
-import { useSlpViewerPersonaId } from "../slp-creators-hooks";
-import { focusRing, quietButton } from "../slp-creator-classes";
+import { useSlpPersonaBackedCreator, useSlpViewerPersonaId } from "../slp-creators-hooks";
+import { focusRing, noteClass, quietButton } from "../slp-creator-classes";
 import type { SlpCreatorSettingsSectionProps } from "./slp-creator-settings-contract";
 import { useSlpCreatorSettingsStore, type SlpCreatorSettingsBlock } from "./slp-creator-settings-store";
 
@@ -52,6 +52,7 @@ function StatusTile({
  */
 export function SlpCreatorOverviewSection({ creator, active }: SlpCreatorSettingsSectionProps) {
   const { t, i18n } = useTranslation();
+  const personaBacked = useSlpPersonaBackedCreator(creator);
   const reserveStatus = useCreatorReserveStatus(active);
   const status = reserveStatus.data?.creators.find((entry) => entry.accountId === creator.id);
   const updateAuto = useUpdateCreatorAutoPosting();
@@ -135,31 +136,36 @@ export function SlpCreatorOverviewSection({ creator, active }: SlpCreatorSetting
           title={t("ui.slurp.settings.creators.tabs.posting", { defaultValue: "Posting" })}
           block="automation"
         >
-          <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-[var(--slurp-text)]">
-            <span className="font-semibold">
-              {creator.autoPosting.enabled
-                ? t("ui.slurp.settings.creators.filters.active")
-                : t("ui.slurp.settings.creators.filters.paused")}
-            </span>
-            <input
-              type="checkbox"
-              role="switch"
-              aria-label={t("ui.slurp.settings.creators.overview.autoPost")}
-              checked={creator.autoPosting.enabled}
-              disabled={updateAuto.isPending}
-              onChange={(event) =>
-                updateAuto.mutate(
-                  { accountId: creator.id, enabled: event.target.checked },
-                  { onError: (error) => toast.error(errorMessage(error)) },
-                )
-              }
-              className="peer sr-only"
-            />
-            <span
-              aria-hidden="true"
-              className="relative h-6 w-10 shrink-0 rounded-full bg-[var(--muted-foreground)]/25 transition-colors after:absolute after:left-1 after:top-1 after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-transform peer-checked:bg-[var(--noodle-accent)] peer-checked:after:translate-x-4 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:after:transition-none"
-            />
-          </label>
+          {/* A persona Creator posts only by hand, so the switch could only fail (R1-074). */}
+          {personaBacked ? (
+            <p className={noteClass}>{t("ui.slurp.settings.creators.personaAutomationDetail")}</p>
+          ) : (
+            <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-[var(--slurp-text)]">
+              <span className="font-semibold">
+                {creator.autoPosting.enabled
+                  ? t("ui.slurp.settings.creators.filters.active")
+                  : t("ui.slurp.settings.creators.filters.paused")}
+              </span>
+              <input
+                type="checkbox"
+                role="switch"
+                aria-label={t("ui.slurp.settings.creators.overview.autoPost")}
+                checked={creator.autoPosting.enabled}
+                disabled={updateAuto.isPending}
+                onChange={(event) =>
+                  updateAuto.mutate(
+                    { accountId: creator.id, enabled: event.target.checked },
+                    { onError: (error) => toast.error(errorMessage(error)) },
+                  )
+                }
+                className="peer sr-only"
+              />
+              <span
+                aria-hidden="true"
+                className="relative h-6 w-10 shrink-0 rounded-full bg-[var(--muted-foreground)]/25 transition-colors after:absolute after:left-1 after:top-1 after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-transform peer-checked:bg-[var(--noodle-accent)] peer-checked:after:translate-x-4 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:after:transition-none"
+              />
+            </label>
+          )}
           {status?.nextPreparedAt && (
             <p>
               {t("ui.slurp.settings.creators.nextPost", { date: formatDateTime(status.nextPreparedAt, i18n.language) })}

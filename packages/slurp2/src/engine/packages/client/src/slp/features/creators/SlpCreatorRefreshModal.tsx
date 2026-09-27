@@ -108,7 +108,7 @@ export function SlpCreatorRefreshModal(page: SlpBackstagePageProps) {
                 onClick={() => setRefreshAccess(access)}
                 className={`min-h-10 rounded-lg text-sm font-semibold capitalize ${refreshAccess === access ? "bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]" : "text-[var(--muted-foreground)] hover:bg-[var(--accent)]"}`}
               >
-                {access}
+                {t(`ui.slurp.composer.audience.${access}`)}
               </button>
             ))}
           </div>

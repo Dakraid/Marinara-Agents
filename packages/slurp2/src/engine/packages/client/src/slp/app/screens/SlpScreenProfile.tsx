@@ -621,12 +621,10 @@ function SlpCreatorToolsCard({ model }: { model: ReturnType<typeof useStageProfi
           </p>
         </div>
         {hasEffects && (
-          <div>
-            <p className="mb-1.5 text-xs font-semibold text-[var(--slurp-muted)]">
-              {localizeUi("ui.slurp.arcs.effectsHeading", { defaultValue: "Storyline effects" })}
-            </p>
-            <SlurpArcEffectsList arcs={arcsQuery.data!.arcs} />
-          </div>
+          <SlurpArcEffectsList
+            arcs={arcsQuery.data!.arcs}
+            heading={localizeUi("ui.slurp.arcs.effectsHeading", { defaultValue: "Storyline effects" })}
+          />
         )}
       </div>
     </section>
