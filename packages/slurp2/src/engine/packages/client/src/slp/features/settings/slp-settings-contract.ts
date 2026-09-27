@@ -70,7 +70,6 @@ export type SlurpSettings = {
   generationConnectionId: string | null;
   imageContextMode: "auto" | "imagePrompt" | "vision";
   imageContextConnectionId: string | null;
-  imageGenerationConnectionId: string | null;
   imageStyleProfileId: string | null;
   imageGenerationPrompt: string;
   imagePromptInterpretation: string;
@@ -81,10 +80,6 @@ export type SlurpSettings = {
   autoPostingImagesEnabled: boolean;
   allowRandomUsers: boolean;
   allowProfessorMari: boolean;
-  participantSelectionMode: "all" | "random" | "exact";
-  participantMin: number;
-  participantMax: number;
-  invitedCharacterGroupIds: string[];
   /** Characters the user put in the audience. Value is a Fan Type id, or true to derive one. */
   audienceCharacters: Record<string, string | boolean>;
   /** Character groups whose members join the audience. Per-character entries win. */
@@ -103,8 +98,6 @@ export type SlurpSettings = {
   classicPromptBlocks: Record<string, SlurpPromptBlockOverride[]>;
   promptInstructions: SlurpReusablePromptInstruction[];
   professorMariCreatorSource: boolean;
-  enableEnhancedTimelineWriting: boolean;
-  includeCharacterSchedules: boolean;
   enableLorebookContext: boolean;
   postPlanner: "classic" | "beats";
   sharedPreseed: boolean;

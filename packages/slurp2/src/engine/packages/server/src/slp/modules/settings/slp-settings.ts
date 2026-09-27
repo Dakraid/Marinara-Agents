@@ -168,7 +168,6 @@ export const slurpSettingsSchema = z.object({
   imageContextMode: z.enum(["auto", "imagePrompt", "vision"]),
   /** Describes pictures for image context. Null uses the Creator text connection. */
   imageContextConnectionId: z.string().nullable(),
-  imageGenerationConnectionId: z.string().nullable(),
   /**
    * Engine image style profile for Slurp pictures. Null uses the connection's profile, then the
    * Engine default. When set, the connection's own prompt prefixes are left out: a chosen style
@@ -186,10 +185,6 @@ export const slurpSettingsSchema = z.object({
   /** Ambient roster entity ids the user deleted; the seeder never recreates these. */
   dismissedAmbientProfileIds: z.array(z.string()),
   allowProfessorMari: z.boolean(),
-  participantSelectionMode: z.enum(["all", "random", "exact"]),
-  participantMin: z.number().int().min(1).max(24),
-  participantMax: z.number().int().min(1).max(24),
-  invitedCharacterGroupIds: z.array(z.string()),
   /**
    * Characters the user put in the audience.
    *
@@ -249,8 +244,6 @@ export const slurpSettingsSchema = z.object({
       }),
     )
     .max(100),
-  enableEnhancedTimelineWriting: z.boolean(),
-  includeCharacterSchedules: z.boolean(),
   enableLorebookContext: z.boolean(),
   /**
    * How ordinary posts are planned. `classic` lets the model pick the subject; `beats` picks a
@@ -486,7 +479,6 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   generationConnectionId: null,
   imageContextMode: "auto",
   imageContextConnectionId: null,
-  imageGenerationConnectionId: null,
   imageStyleProfileId: null,
   imageGenerationPrompt: SLP_CREATOR_DEFAULT_IMAGE_GENERATION_PROMPT,
   imagePromptInterpretation: SLP_CREATOR_DEFAULT_IMAGE_PROMPT_INTERPRETATION,
@@ -503,10 +495,6 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   allowRandomUsers: false,
   dismissedAmbientProfileIds: [],
   allowProfessorMari: false,
-  participantSelectionMode: "random",
-  participantMin: 1,
-  participantMax: 4,
-  invitedCharacterGroupIds: [],
   audienceCharacters: {},
   audienceCharacterGroupIds: [],
   audienceCharacterLimit: 5,
@@ -520,8 +508,6 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   promptBlocks: {} satisfies SlurpPromptBlockOverrides,
   classicPromptBlocks: {} satisfies SlurpPromptBlockOverrides,
   professorMariCreatorSource: true,
-  enableEnhancedTimelineWriting: false,
-  includeCharacterSchedules: false,
   enableLorebookContext: false,
   // Beats by default since 0.2.55: the fixes for same-y, canon-less, tame posts live there.
   postPlanner: "beats",
@@ -606,6 +592,21 @@ export function isSlurpViewerActorAccount(account: Pick<SlurpAccount, "invited" 
 // Callers get a clone because some of them build on the returned object.
 let cachedSettingsRaw: string | null = null;
 let cachedSettings: SlurpSettings | null = null;
+
+/**
+ * Keys retired in fix phase 1b (R1-136): nothing read them. Stored copies are safe to leave: the
+ * normalizer below only takes the keys it knows, the PATCH schema strips unknown keys, and the next
+ * save writes the settings without them. Listed so a test can prove old data still loads.
+ */
+export const SLURP_RETIRED_SETTINGS_KEYS = [
+  "imageGenerationConnectionId",
+  "invitedCharacterGroupIds",
+  "includeCharacterSchedules",
+  "enableEnhancedTimelineWriting",
+  "participantSelectionMode",
+  "participantMin",
+  "participantMax",
+] as const;
 
 export function normalizeSlurpSettings(raw: unknown): SlurpSettings {
   if (typeof raw !== "string" && raw !== null) return normalizeSlurpSettingsUncached(raw);

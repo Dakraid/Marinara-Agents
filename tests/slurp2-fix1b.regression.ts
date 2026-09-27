@@ -114,4 +114,40 @@ assert.match(
   /"\/slurp2\/fan-types\/voice-draft"/u,
 );
 
+// R1-136: retired settings keys. Old stored settings (and old backups) still load: the normalizer builds
+// only from the known defaults, the PATCH schema strips unknown keys, and the next save drops them.
+// (The server settings module needs the Engine host, so this reads the source.)
+const settingsSource = readSlurp2Source("server", "modules/settings/slp-settings.ts");
+const retired = [...settingsSource.matchAll(/^  "(\w+)",$/gmu)]
+  .map((match) => match[1]!)
+  .filter((key) => settingsSource.indexOf(`"${key}",`) > settingsSource.indexOf("SLURP_RETIRED_SETTINGS_KEYS"));
+assert.equal(retired.length >= 7, true, "the retired list names the keys");
+assert.match(
+  settingsSource,
+  /Object\.entries\(DEFAULT_SLURP_SETTINGS\)\.map\(\(\[key, value\]\) => \[key, rawRecord\[key\] \?\? value\]\)/u,
+  "unknown stored keys are ignored on read",
+);
+assert.doesNotMatch(
+  readSlurp2Source("server", "features/settings/slp-settings-routes.ts"),
+  /slurpSettingsSchema\.partial\(\)\.strict\(\)/u,
+);
+for (const key of [
+  "imageGenerationConnectionId",
+  "invitedCharacterGroupIds",
+  "includeCharacterSchedules",
+  "enableEnhancedTimelineWriting",
+  "participantSelectionMode",
+  "participantMin",
+  "participantMax",
+]) {
+  const uses = settingsSource.split(new RegExp(`\\b${key}\\b`, "u")).length - 1;
+  assert.equal(uses, 1, `${key} is only in the retired list`);
+  for (const file of [
+    "features/settings/slp-settings-contract.ts",
+    "features/backstage/slp-backstage-placement.ts",
+    "features/settings/slp-settings-defaults.ts",
+  ])
+    assert.doesNotMatch(readSlurp2Source("client", file), new RegExp(`\\b${key}\\b`, "u"), `${file}: ${key}`);
+}
+
 console.log("slurp2 fix phase 1b: ok");
