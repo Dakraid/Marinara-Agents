@@ -13,6 +13,8 @@ export function useSendSlurpMessage() {
       content: string;
       requestId?: string;
       tip?: { amount: number; note?: string } | null;
+      /** Written as Slurp Support (Slurp's staff), not as the persona. */
+      asSupport?: boolean;
     }) => api.post<SlurpSendResponse>("/slurp2/messages/send", input),
     // Settled, not success: a request that timed out may still have been stored.
     onSettled: () => invalidateSlurpMessages(queryClient),

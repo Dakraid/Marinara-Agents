@@ -18,6 +18,7 @@ const newRequestId = () =>
 function useSlurpThreadActions(state: SlurpThreadViewState) {
   const {
     activeConversationRef,
+    asSupport,
     availability,
     bottomRef,
     busy,
@@ -170,7 +171,7 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
       return;
     }
     const optimisticStartedAt = Date.now();
-    if (!skipCommissionCheck && !ownsCreator && isCommissionRequest(content)) {
+    if (!skipCommissionCheck && !ownsCreator && !asSupport && isCommissionRequest(content)) {
       setCommissionPrefill(content);
       setToolsOpen(true);
       setToolTab("commission");
@@ -181,7 +182,7 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
     // A paid first message is one tap (design step 6): the price sits in the Send button before the
     // tap, and the spend moment plays from that button once the message is through.
     const paidRequest =
-      !ownsCreator && feeDue && messaging?.dmPolicy === "paid" && !subscribed && messaging.requestFee > 0;
+      !ownsCreator && !asSupport && feeDue && messaging?.dmPolicy === "paid" && !subscribed && messaging.requestFee > 0;
     const sendOrigin = paidRequest
       ? composerRef.current?.form?.querySelector('button[type="submit"]')?.getBoundingClientRect()
       : undefined;
@@ -223,15 +224,19 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
         creatorAccountId: targetCreatorAccountId,
         content,
         requestId,
-        tip: composerTipAmount > 0 ? { amount: composerTipAmount, note: composerTipNote.trim() } : null,
+        // Slurp Support never tips; an attached tip waits in the composer for the persona.
+        tip: !asSupport && composerTipAmount > 0 ? { amount: composerTipAmount, note: composerTipNote.trim() } : null,
+        ...(asSupport ? { asSupport: true } : {}),
       });
       setSendRequest(null);
       if (sendOrigin) playSlpSpendMoment(sendOrigin);
       setPending({ content, id: result.message.id, startedAt: optimisticStartedAt });
       setReplyStatus(result.replyStatus ?? null);
       if (result.tipError) setError(result.tipError);
-      setComposerTipAmount(0);
-      setComposerTipNote("");
+      if (!asSupport) {
+        setComposerTipAmount(0);
+        setComposerTipNote("");
+      }
       holdTyping(result.reply ? (result.typingMs ?? 0) : 0, result.reply?.id);
     } catch (cause) {
       // Put the words back in the box. Losing a typed message to a failed request is the one

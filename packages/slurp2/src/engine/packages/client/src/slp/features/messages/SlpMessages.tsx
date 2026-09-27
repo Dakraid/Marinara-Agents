@@ -1,5 +1,5 @@
 import { SlpTimestamp } from "../../base/ui/SlpTimestamp";
-import { ArrowLeft, MessageCircle, Plus, Search } from "lucide-react";
+import { ArrowLeft, Headset, MessageCircle, Plus, Search } from "lucide-react";
 import type { SlurpComposeTarget } from "../../features/messages/slp-messages-contract";
 import { useOpenSlurpCreatorThread, useSlurpComposeTargets } from "../../features/messages/slp-messages-hooks";
 import { useEffect, useRef, useState } from "react";
@@ -151,6 +151,13 @@ export function SlurpMessagesView({
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "unread" | "requests">("all");
   const [composePickerOpen, setComposePickerOpen] = useState(false);
+  // "Write as Slurp Support": the picker lists Creators, and the chat opens in Support's voice.
+  const [supportPick, setSupportPick] = useState(false);
+  const [startAsSupport, setStartAsSupport] = useState(false);
+  const closeComposePicker = () => {
+    setComposePickerOpen(false);
+    setSupportPick(false);
+  };
   const composeTargetsQuery = useSlurpComposeTargets(personaId, composePickerOpen);
   const openCreatorThread = useOpenSlurpCreatorThread();
   const threadsQuery = useSlurpThreads(personaId);
@@ -223,14 +230,17 @@ export function SlurpMessagesView({
 
   const openFromList = (threadId: string) => {
     openedDirectly.current = false;
+    setStartAsSupport(false);
     setComposeWith(null);
     setOpenThreadId(threadId);
   };
 
   const openNewChat = async (target: SlurpComposeTarget) => {
+    const asSupport = supportPick && target.kind === "creator";
     if (target.threadId) {
       openFromList(target.threadId);
-      setComposePickerOpen(false);
+      setStartAsSupport(asSupport);
+      closeComposePicker();
       return;
     }
     if (target.kind === "character" && target.creatorAccountId && personaId) {
@@ -254,7 +264,8 @@ export function SlurpMessagesView({
       openedDirectly.current = true;
       setOpenThreadId(null);
       setComposeWith(target.id);
-      setComposePickerOpen(false);
+      setStartAsSupport(asSupport);
+      closeComposePicker();
     }
   };
 
@@ -441,13 +452,46 @@ export function SlurpMessagesView({
       </div>
       <SlpSheet
         open={composePickerOpen}
-        onClose={() => setComposePickerOpen(false)}
+        onClose={closeComposePicker}
         title={localizeUi("ui.slurp.messages.newChat", { defaultValue: "New chat" })}
       >
+        <button
+          type="button"
+          aria-pressed={supportPick}
+          onClick={() => setSupportPick((value) => !value)}
+          className={cn(
+            "mb-2 flex min-h-14 w-full items-center gap-3 rounded-xl px-3 py-2 text-start transition-colors hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)]",
+            supportPick && "bg-[var(--slurp-tint)]",
+          )}
+          // Inline: a ring colour only Slurp uses is not in the Engine's class safelist.
+          style={
+            supportPick
+              ? { boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--noodle-accent) 45%, transparent)" }
+              : undefined
+          }
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--slurp-tint)] text-[var(--slurp-ink)]">
+            <Headset size={20} className="!text-current" aria-hidden="true" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[15px] font-bold leading-5">
+              {localizeUi("ui.slurp.messages.supportPick", { defaultValue: "Write as Slurp Support" })}
+            </span>
+            <span className="block text-xs leading-4 text-[var(--slurp-muted)]">
+              {localizeUi("ui.slurp.messages.supportPickDetail", {
+                defaultValue: "Talk to a Creator as Slurp's staff team.",
+              })}
+            </span>
+          </span>
+        </button>
         <p className="px-3 pb-2 text-xs text-[var(--slurp-muted)]">
-          {localizeUi("ui.slurp.messages.newChatDetail", {
-            defaultValue: "Choose a Creator or invited character.",
-          })}
+          {supportPick
+            ? localizeUi("ui.slurp.messages.supportPickTarget", {
+                defaultValue: "Pick a Creator. You write as Slurp Support.",
+              })
+            : localizeUi("ui.slurp.messages.newChatDetail", {
+                defaultValue: "Choose a Creator or invited character.",
+              })}
         </p>
         {composeTargetsQuery.isLoading ? (
           <SlpSkeleton
@@ -463,24 +507,30 @@ export function SlurpMessagesView({
           </p>
         ) : (
           <div className="flex flex-col gap-0.5">
-            {(composeTargetsQuery.data?.targets ?? []).map((target: SlurpComposeTarget) => (
-              <button
-                key={`${target.kind}:${target.id}`}
-                type="button"
-                onClick={() => openNewChat(target)}
-                className="flex min-h-14 w-full items-center gap-3 rounded-xl px-3 py-2 text-start transition-colors hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)]"
-              >
-                <Avatar account={{ displayName: target.displayName, avatarUrl: target.avatarUrl }} size="md" />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[15px] font-bold leading-5">{target.displayName}</span>
-                  <span className="block truncate text-xs text-[var(--slurp-muted)]">
-                    {target.kind === "character"
-                      ? localizeUi("ui.slurp.messages.newChatCharacter", { defaultValue: "Invited character" })
-                      : `@${target.handle}`}
+            {(composeTargetsQuery.data?.targets ?? [])
+              // Support writes to Creators; your own Creator page has no chat with you.
+              .filter(
+                (target: SlurpComposeTarget) =>
+                  !supportPick || (target.kind === "creator" && !ownedCreatorAccountIds.includes(target.id)),
+              )
+              .map((target: SlurpComposeTarget) => (
+                <button
+                  key={`${target.kind}:${target.id}`}
+                  type="button"
+                  onClick={() => openNewChat(target)}
+                  className="flex min-h-14 w-full items-center gap-3 rounded-xl px-3 py-2 text-start transition-colors hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)]"
+                >
+                  <Avatar account={{ displayName: target.displayName, avatarUrl: target.avatarUrl }} size="md" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[15px] font-bold leading-5">{target.displayName}</span>
+                    <span className="block truncate text-xs text-[var(--slurp-muted)]">
+                      {target.kind === "character"
+                        ? localizeUi("ui.slurp.messages.newChatCharacter", { defaultValue: "Invited character" })
+                        : `@${target.handle}`}
+                    </span>
                   </span>
-                </span>
-              </button>
-            ))}
+                </button>
+              ))}
           </div>
         )}
       </SlpSheet>
@@ -504,11 +554,12 @@ export function SlurpMessagesView({
         <SlurpThreadView
           // One instance per conversation. Reusing it across threads carried drafts, pending echoes,
           // open tools, older pages and the send request id from one conversation into the next.
-          key={`${openThreadId ?? ""}:${composeWith ?? ""}`}
+          key={`${openThreadId ?? ""}:${composeWith ?? ""}:${startAsSupport ? "support" : ""}`}
           threadId={openThreadId}
           creatorAccountId={composeWith}
           personaId={personaId}
           ownedCreatorAccountIds={ownedCreatorAccountIds}
+          startAsSupport={startAsSupport}
           unreadAtOpen={openThread ? { viewer: openThread.viewerUnread, creator: openThread.creatorUnread } : null}
           onBack={closeConversation}
           onOpenProfile={onOpenProfile}

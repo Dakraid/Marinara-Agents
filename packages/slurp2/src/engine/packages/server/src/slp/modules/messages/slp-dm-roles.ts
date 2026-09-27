@@ -1,0 +1,269 @@
+/**
+ * Who is who in a direct-message thread, said once and plainly.
+ *
+ * The DM prompts used to label every line "you" or "the fan" and render events as bracketed
+ * speech, so a model could not tell a Creator writing to another Creator from a fan, read Slurp
+ * Support's sign-up lines or a commission notice as the fan talking, and lost track of who had
+ * written first. This builds the one role header and the speaker-named transcript both sides of a
+ * thread use: the Creator's reply (`slp-message-generation-service.ts`) and the fan's answer
+ * (`slp-fan-reply-service.ts`).
+ *
+ * Pure, so every thread kind is built and read in tests.
+ */
+
+/** A name as it appears in the chat. */
+export type SlurpDmParty = { name: string; handle: string };
+
+/** The message fields the transcript reads. A subset of `SlurpMessage`. */
+export type SlurpDmLine = {
+  id: string;
+  role: "viewer" | "creator";
+  kind: string;
+  content: string;
+  price: number;
+  unlockedAt: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+};
+
+export type SlurpDmTranscriptLine = {
+  /** Who said or did it. The writer's own lines read "you (Name)". */
+  from: string;
+  /** Something that happened in the chat, never words anyone typed. */
+  event?: string;
+  /** Their words, when there are any. */
+  text?: string;
+  image?: string;
+  at: string;
+};
+
+export type SlurpDmRoleInput = {
+  /** Which side the model writes: the Creator ("creator") or the person writing to them ("viewer"). */
+  writer: "creator" | "viewer";
+  creator: SlurpDmParty;
+  viewer: SlurpDmParty;
+  /** The viewer's own Creator page, when they run an open one: this is then Creator to Creator. */
+  viewerPage?: SlurpDmParty | null;
+  openedBy?: "viewer" | "creator" | null;
+  /** Coins the viewer paid to send the first message. */
+  requestFee?: number;
+  /** The Creator has not answered this message request yet. */
+  isRequest?: boolean;
+};
+
+const at = (party: SlurpDmParty) => (party.handle ? `${party.name} (@${party.handle})` : party.name);
+
+/** The writer's own label on a line. */
+export function slurpDmSelfLabel(name: string): string {
+  return `you (${name})`;
+}
+
+/** Slurp's own staff voice. The kept sign-up chat may have named it; see `slurpSupportName`. */
+export const SLURP_SUPPORT_NAME = "Slurp Support";
+
+/**
+ * Someone other than the viewer speaking on the viewer's side: a sign-up host (Slurp Support, a
+ * helping Creator) in a kept sign-up chat, or the player writing as Slurp Support (`supportVoice`).
+ */
+function sideSpeaker(line: SlurpDmLine): { name: string; live: boolean } | null {
+  const speaker = line.metadata?.sceneSpeaker;
+  if (line.role !== "viewer" || typeof speaker !== "string" || !speaker.trim()) return null;
+  return { name: speaker.trim(), live: line.metadata?.supportVoice === true };
+}
+
+/**
+ * The Support name this thread already uses, so the player writing as Support continues the kept
+ * sign-up chat's Support rather than starting a second one.
+ */
+export function slurpSupportName(history: readonly Pick<SlurpDmLine, "role" | "metadata">[]): string {
+  for (const line of history) {
+    const speaker = line.metadata?.sceneSpeaker;
+    if (
+      line.role === "viewer" &&
+      typeof speaker === "string" &&
+      speaker.trim() &&
+      (line.metadata?.supportVoice === true || line.metadata?.signUpScene === "support")
+    )
+      return speaker.trim();
+  }
+  return SLURP_SUPPORT_NAME;
+}
+
+/** How a side speaker is labelled on their lines. */
+function sideLabel(speaker: { name: string; live: boolean }): string {
+  return speaker.live ? `${speaker.name} (Slurp staff)` : `${speaker.name} (during the sign-up)`;
+}
+
+/**
+ * The role header: who you are, who you are writing to, who they are to you, who wrote first,
+ * and whose turn this is. Plain in-world sentences, no labels, like the flavour brief.
+ */
+export function slurpDmRoleHeader(input: SlurpDmRoleInput & { history: readonly SlurpDmLine[] }): string {
+  const creator = input.creator.name;
+  const viewer = input.viewer.name;
+  const me = input.writer === "creator" ? creator : viewer;
+  const them = input.writer === "creator" ? viewer : creator;
+  const lines: string[] = [];
+  if (input.writer === "creator") {
+    lines.push(
+      `You are ${at(input.creator)}, a Creator on Slurp. This is your private chat with ${at(input.viewer)}.`,
+      input.viewerPage
+        ? `${viewer} runs a Creator page on Slurp too (${at(input.viewerPage)}). This is one Creator writing to another: talk to ${viewer} as a fellow Creator, not as a customer, though they can still subscribe or buy like anyone.`
+        : `${viewer} is a fan writing to you.`,
+    );
+  } else {
+    lines.push(
+      `You are ${at(input.viewer)}, a fan on Slurp. This is your private chat with ${at(input.creator)}, a Creator on Slurp.`,
+    );
+  }
+
+  const speakers = input.history.map(sideSpeaker);
+  const liveSupport = [...new Set(speakers.filter((speaker) => speaker?.live).map((speaker) => speaker!.name))];
+  const signUpHelpers = [
+    ...new Set(speakers.filter((speaker) => speaker && !speaker.live).map((speaker) => speaker!.name)),
+  ];
+  for (const support of liveSupport)
+    lines.push(
+      `${support} is Slurp's own staff team. ${support} writes in this chat too, on ${viewer}'s side, and every such line is marked "${support} (Slurp staff)". ${support} is not ${viewer} and not a fan, and nothing ${support} says is a fact about ${viewer}.`,
+    );
+
+  if (input.history.some((line) => line.metadata?.signUpScene)) {
+    lines.push(
+      input.writer === "creator"
+        ? `This chat began as your sign-up on Slurp, the moment your page was made.`
+        : `This chat began as ${creator}'s sign-up on Slurp, the moment their page was made.`,
+    );
+    for (const helper of signUpHelpers)
+      lines.push(
+        liveSupport.includes(helper)
+          ? `Lines marked "${helper} (during the sign-up)" are ${helper} signing you up.`
+          : `Lines marked "${helper} (during the sign-up)" were said by ${helper}, who helped with the sign-up. ${helper} is not in this chat any more; every other line on that side is ${viewer}.`,
+      );
+  } else if (speakers[0]?.live) {
+    lines.push(`${speakers[0].name} wrote to ${input.writer === "creator" ? "you" : creator} first.`);
+  } else if (input.openedBy === "creator") {
+    lines.push(input.writer === "creator" ? `You wrote to ${viewer} first.` : `${creator} wrote to you first.`);
+  } else if (input.openedBy === "viewer") {
+    const fee = Math.max(0, Math.round(input.requestFee ?? 0));
+    lines.push(
+      input.writer === "creator"
+        ? `${viewer} wrote to you first${fee > 0 ? ` and paid ${fee} coins to send that first message` : ""}.`
+        : `You wrote to ${creator} first${fee > 0 ? ` and paid ${fee} coins to send that first message` : ""}.`,
+    );
+  }
+  if (input.isRequest && input.writer === "creator")
+    lines.push(`You have not answered ${viewer} yet: this is still a message request.`);
+
+  // Whose turn it is, and to whom. A follow-up after your own message must not read as answering
+  // yourself, and a Support line must be answered as Support, never as the fan.
+  const last = input.history.at(-1);
+  const lastSpeaker = last ? sideSpeaker(last) : null;
+  if (!last) lines.push(`Nothing has been said yet. You write the first message to ${them}.`);
+  else if (lastSpeaker?.live && input.writer === "creator")
+    lines.push(
+      `Right now ${lastSpeaker.name} is writing to you, not ${viewer}. Your message answers ${lastSpeaker.name}: talk to Slurp's staff as ${me} would, and do not address ${viewer}. Where these instructions speak of a fan, they mean ${viewer}, not ${lastSpeaker.name}.`,
+    );
+  else if (last.role === input.writer && !lastSpeaker)
+    lines.push(
+      `The newest line is your own, and ${them} has not answered it. Your message follows up on it; it does not answer yourself.`,
+    );
+  else lines.push(`Your message answers ${lastSpeaker ? "the newest line" : `${them}'s newest message`}.`);
+
+  lines.push(
+    `Every line in "conversation" names who said it; "${slurpDmSelfLabel(me)}" is you. A line with "event" is something that happened in the chat (a tip, an unlock, a shared post, a commission step, a message sent to all subscribers), not words anyone typed.`,
+    input.writer === "creator"
+      ? `In the data, "creator" is you and "fan" is ${viewer}. Write only ${me}'s next message. Never write anyone else's words, and never write as Slurp.`
+      : `In the data, "fan" is you and "creator" is ${creator}. Write only ${me}'s next message. Never write ${them}'s words, and never write as Slurp or anyone else.`,
+  );
+  return lines.join("\n");
+}
+
+const lowerFirst = (value: string) => value.charAt(0).toLowerCase() + value.slice(1);
+
+/**
+ * The conversation with a speaker name on every line and events as events.
+ *
+ * `protect` redacts a concealed Creator's identity; `image` describes a message's picture;
+ * `postUnlocked` says whether the viewer already owns a shared locked post.
+ */
+export function slurpDmTranscript(
+  history: readonly SlurpDmLine[],
+  input: Pick<SlurpDmRoleInput, "writer" | "creator" | "viewer"> & {
+    protect?: (value: string) => string;
+    image?: (line: SlurpDmLine) => string | undefined;
+    postUnlocked?: (postId: unknown) => boolean;
+  },
+): SlurpDmTranscriptLine[] {
+  const protect = input.protect ?? ((value: string) => value);
+  const creatorSide = input.writer === "creator";
+  const creatorLabel = creatorSide ? slurpDmSelfLabel(input.creator.name) : input.creator.name;
+  const viewerLabel = creatorSide ? input.viewer.name : slurpDmSelfLabel(input.viewer.name);
+  // How the other side is named inside an event sentence.
+  const creatorObject = creatorSide ? "you" : input.creator.name;
+  const viewerObject = creatorSide ? input.viewer.name : "you";
+  return history.map((line) => {
+    const speaker = sideSpeaker(line);
+    const from = speaker ? protect(sideLabel(speaker)) : line.role === "creator" ? creatorLabel : viewerLabel;
+    const toObject = line.role === "creator" ? viewerObject : creatorObject;
+    const words = line.content?.trim() ? protect(line.content.trim()) : undefined;
+    const image = input.image?.(line);
+    const out = (event: string | undefined, text: string | undefined): SlurpDmTranscriptLine => ({
+      from,
+      ...(event ? { event } : {}),
+      ...(text ? { text } : {}),
+      ...(image ? { image } : {}),
+      at: line.createdAt,
+    });
+    switch (line.kind) {
+      case "tip":
+        return out(`tipped ${toObject} ${line.price} coins`, words);
+      case "ppv":
+        return out(
+          `sent ${toObject} locked content for ${line.price} coins (${line.unlockedAt ? "unlocked" : "still locked"})`,
+          undefined,
+        );
+      case "broadcast":
+        return out(
+          `sent this to all ${creatorSide ? "your" : `${input.creator.name}'s`} subscribers at once, not only to ${viewerObject}`,
+          words,
+        );
+      case "post_preview": {
+        const title = protect(String(line.metadata?.title ?? line.content));
+        const locked = line.metadata?.access === "locked";
+        const owned = locked && input.postUnlocked?.(line.metadata?.postId);
+        const whose = creatorSide ? "your" : `${input.creator.name}'s`;
+        return out(
+          `shared ${whose} post "${title}"${locked ? (owned ? `, a locked post ${viewerObject} already unlocked` : ", a locked post") : ""}`,
+          undefined,
+        );
+      }
+      case "commission_brief":
+        return out(`asked ${toObject} for a commission`, words);
+      case "commission_quote":
+        return out(
+          /stands/iu.test(line.content)
+            ? `kept the commission price at ${line.price} coins`
+            : `quoted ${line.price} coins for the commission`,
+          undefined,
+        );
+      case "commission_delivery":
+        return out(`delivered the finished commission to ${toObject}`, words);
+      case "system": {
+        const notice = protect(line.content.trim());
+        // "Accepted the quote…", "Offered 30 coins…": the sender did it.
+        if (/^(accepted|offered)\b/iu.test(notice)) return out(lowerFirst(notice), undefined);
+        // Everything else is Slurp's own notice about the thread, named in the chat's own terms.
+        return {
+          from: "Slurp",
+          event: notice
+            .replace(/\bThe fan\b/gu, creatorSide ? input.viewer.name : "You")
+            .replace(/\bThe Creator\b/gu, creatorSide ? "You" : input.creator.name),
+          ...(image ? { image } : {}),
+          at: line.createdAt,
+        };
+      }
+      default:
+        return out(undefined, words ?? "");
+    }
+  });
+}

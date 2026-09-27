@@ -6,6 +6,7 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  Headset,
   MoreVertical,
   Search,
   Trash2,
@@ -27,6 +28,7 @@ const ICON_BUTTON =
 export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
   const {
     activeCommission,
+    asSupport,
     availability,
     commissionRibbonOpen,
     commissions,
@@ -58,6 +60,9 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
     setMessageSearchIndex,
     setMessageSearchOpen,
     setOlderCursor,
+    setSupportChoice,
+    supportName,
+    targetCreatorAccountId,
     setTierOpen,
     thread,
     threadId: threadIdProp,
@@ -104,6 +109,8 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
             );
         }
       : null;
+  // The player may speak as Slurp Support (Slurp's staff) in any chat with a Creator they do not run.
+  const canSwitchVoice = Boolean(personaId && targetCreatorAccountId && !ownsCreator);
   const menuAction = (run: () => void) => () => {
     setHeaderMenuOpen(false);
     run();
@@ -197,7 +204,7 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
             <Search size={18} aria-hidden="true" />
           </button>
         )}
-        {(relationship || threadId) && (
+        {(relationship || threadId || canSwitchVoice) && (
           <button
             ref={headerMenuTriggerRef}
             type="button"
@@ -276,6 +283,19 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
             </SlpSheetItem>
           )}
         </SlpSheetGroup>
+        {canSwitchVoice && (
+          <SlpSheetGroup>
+            <SlpSheetItem onSelect={menuAction(() => setSupportChoice(!asSupport))}>
+              {asSupport ? <UserRound aria-hidden="true" /> : <Headset aria-hidden="true" />}
+              {asSupport
+                ? localizeUi("ui.slurp.messages.supportVoiceOff", { defaultValue: "Back to your persona" })
+                : localizeUi("ui.slurp.messages.supportVoiceOn", {
+                    defaultValue: "Switch to {{name}}",
+                    name: supportName,
+                  })}
+            </SlpSheetItem>
+          </SlpSheetGroup>
+        )}
         {clearConversation && (
           <SlpSheetGroup>
             <SlpSheetItem tone="danger" disabled={resetThread.isPending} onSelect={menuAction(clearConversation)}>

@@ -37,6 +37,7 @@ import {
   type SlurpCreatorStateSignal,
 } from "../../modules/creators/slp-creator-state.js";
 import { activeSlurpStrikes } from "../../modules/world/slp-stance.js";
+import { slurpSupportName } from "../../modules/messages/slp-dm-roles.js";
 import { SLURP_ONLINE_AFTER_DELIVERY_MINUTES } from "../../modules/messages/slp-conversation-momentum.js";
 import { createAppSettingsStorage } from "../../../services/storage/app-settings.storage.js";
 import { createSlurpEventsStorage } from "../notifications/slp-notification-storage.js";
@@ -108,8 +109,12 @@ export function createMessagesStorageActions(context: SlurpMessagesContext) {
       creatorAccountId: string,
       content: string,
       requestId?: string,
+      /** The player writes as Slurp Support: staff reach any Creator, and the line is Support's, not the fan's. */
+      options: { asSupport?: boolean } = {},
     ): Promise<SlurpSendResult> {
-      const opened = await context.storage.openThread(viewerAccountId, creatorAccountId, "viewer");
+      const opened = options.asSupport
+        ? await context.storage.openThread(viewerAccountId, creatorAccountId, "creator", "waive")
+        : await context.storage.openThread(viewerAccountId, creatorAccountId, "viewer");
       if (opened.status !== "ok") return opened;
       if (requestId) {
         const existing = (await context.storage.listMessages(opened.thread.id)).find(
@@ -117,14 +122,23 @@ export function createMessagesStorageActions(context: SlurpMessagesContext) {
         );
         if (existing) return { status: "sent", thread: opened.thread, message: existing };
       }
+      // One continuous Support per thread: the name the kept sign-up chat gave Support is reused.
+      const support = options.asSupport
+        ? { sceneSpeaker: slurpSupportName(await context.storage.listMessages(opened.thread.id)), supportVoice: true }
+        : null;
       const message = await context.storage.appendMessage(opened.thread.id, {
         id: requestId ? `dm:${requestId}:message` : undefined,
         senderAccountId: viewerAccountId,
         role: "viewer",
         content,
-        metadata: requestId ? { requestId } : undefined,
+        metadata: requestId || support ? { ...(requestId ? { requestId } : {}), ...support } : undefined,
       });
       if (!message) return { status: "not_found" };
+      // Slurp's staff writing is not a fan engaging: no event, no tie.
+      if (support) {
+        const thread = await context.storage.getThreadById(opened.thread.id);
+        return { status: "sent", thread: thread ?? opened.thread, message };
+      }
       await slurp.recordCreatorEvent(creatorAccountId, "message", {
         subjectId: opened.thread.id,
         actorLabel: viewerAccountId,

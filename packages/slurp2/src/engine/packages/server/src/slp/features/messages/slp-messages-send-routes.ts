@@ -23,6 +23,8 @@ const sendSchema = z.object({
     .object({ amount: z.number().int().min(1).max(9999), note: z.string().trim().max(280).default("") })
     .nullable()
     .optional(),
+  /** The player writes this one as Slurp Support (Slurp's staff), not as their persona. Support never tips. */
+  asSupport: z.boolean().optional(),
 });
 
 const tipSchema = z.object({
@@ -110,6 +112,7 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
       parsed.data.creatorAccountId,
       parsed.data.content,
       parsed.data.requestId,
+      { asSupport: parsed.data.asSupport === true },
     );
     if (sent.status === "not_found") return reply.code(404).send({ error: "Creator not found" });
     if (sent.status === "closed") return reply.code(403).send({ error: "This Creator is not accepting messages." });
@@ -119,7 +122,7 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
     let outcome;
     let tipError: string | null = null;
     let replyTriggerMessageId = sent.message.id;
-    if (parsed.data.tip) {
+    if (parsed.data.tip && !parsed.data.asSupport) {
       const tipped = await messages.tipInThread(
         viewer.id,
         parsed.data.creatorAccountId,

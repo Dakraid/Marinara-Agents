@@ -50,6 +50,8 @@ export interface SlurpThreadViewProps {
   onBack: () => void;
   onOpenProfile: (accountId: string) => void;
   desktopSplit?: boolean;
+  /** Opened from "Write as Slurp Support": the player writes as Slurp's staff from the first line. */
+  startAsSupport?: boolean;
 }
 
 /**
@@ -69,6 +71,7 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
     onBack,
     onOpenProfile,
     desktopSplit,
+    startAsSupport,
   } = props;
   const { t: localizeUi, i18n } = useUiTranslation();
   const byThread = useSlurpThread(threadId, personaId);
@@ -223,6 +226,20 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
     .map(({ commission, at }) => `${commission.id}:${commission.state}:${commission.updatedAt}:${at}`)
     .join("|");
   const subscribed = thread?.subscribed ?? threadQuery.data?.subscribed ?? false;
+  // The player can write as Slurp Support (Slurp's staff) in any chat with a Creator. A chat whose
+  // last line from this side was Support's opens as Support again; the name is the one the kept
+  // sign-up chat gave Support, so it stays one Support.
+  const [supportChoice, setSupportChoice] = useState<boolean | null>(startAsSupport ? true : null);
+  const lastOwnLine = messages.findLast((message) => message.role === "viewer");
+  const asSupport = !ownsCreator && (supportChoice ?? lastOwnLine?.metadata.supportVoice === true);
+  const supportName =
+    messages
+      .map((message) => message.metadata.sceneSpeaker)
+      .find(
+        (speaker, index): speaker is string =>
+          typeof speaker === "string" &&
+          (messages[index]!.metadata.supportVoice === true || messages[index]!.metadata.signUpScene === "support"),
+      ) ?? "Slurp Support";
   const headerAccount = ownsCreator ? counterpart : creator;
   const headerProfileId = ownsCreator ? thread?.viewerAccountId : targetCreatorAccountId;
   const busy = send.isPending || tip.isPending || creatorReply.isPending || draftReply.isPending;
@@ -504,6 +521,9 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
   const canForceReply = Boolean(personaId && thread && !ownsCreator && (thread.needsReply || waitingNote === "queued"));
 
   return {
+    asSupport,
+    setSupportChoice,
+    supportName,
     threadId,
     creatorAccountId,
     personaId,

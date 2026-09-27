@@ -445,7 +445,9 @@ export async function replyToSlurpMessage(
       }
       // After the message is safely stored. The conversation's mood and what she now knows are
       // worth keeping, but never at the price of the reply itself.
-      if (stored) {
+      // A reply to Slurp Support (the player writing as Slurp's staff) says nothing about the fan: it
+      // must not move their mood, memories or relationship.
+      if (stored && trigger.metadata?.supportVoice !== true) {
         await messagesStore
           .recordReplyOutcome(thread.id, {
             moodShift: reply.moodShift,
@@ -453,7 +455,8 @@ export async function replyToSlurpMessage(
             stateSignals: reply.stateSignals,
           })
           .catch((error: unknown) => logger.warn(error, "[slurp-message] Could not record the reply outcome"));
-
+      }
+      if (stored) {
         // Whoever just answered is, for the next few minutes, obviously around: every reply keeps
         // her online briefly, and a hot conversation keeps her longer.
         const hotDuration =

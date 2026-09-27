@@ -1,5 +1,5 @@
 import { requestHintGuidance } from "./SlpMessages";
-import { ArrowDown, ChevronLeft, Plus, Send, X } from "lucide-react";
+import { ArrowDown, ChevronLeft, Headset, Plus, Send, X } from "lucide-react";
 import { CommissionRequest } from "./commissions/SlpCommissions";
 import { CreatorMessageTools, FanImageTool, SlurpTipPanel } from "./SlpMessageTools";
 import { cn } from "../../../lib/utils";
@@ -14,6 +14,7 @@ import type { SlurpThreadViewModel } from "./slp-thread-actions";
 /** The message composer: a glass bar with add, the draft and send; the tools open in a sheet. */
 export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
   const {
+    asSupport,
     awayFromBottom,
     busy,
     commissionPrefill,
@@ -44,6 +45,8 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
     setPreparingImage,
     setReplyStatus,
     setRequestHint,
+    setSupportChoice,
+    supportName,
     setToolTab,
     setToolsOpen,
     settingsQuery,
@@ -66,7 +69,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
   // A paid first message says its price where it is spent: on the Send button. The server charges it
   // only when no thread exists yet (a thread the Creator opened costs nothing), so neither does this.
   const sendFee =
-    !ownsCreator && !thread && messaging?.dmPolicy === "paid" && !subscribed && messaging.requestFee > 0
+    !ownsCreator && !thread && !asSupport && messaging?.dmPolicy === "paid" && !subscribed && messaging.requestFee > 0
       ? messaging.requestFee
       : 0;
   const closeTools = () => {
@@ -133,7 +136,26 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
           </div>
         )}
         <div className={cn(SLP_THREAD_COLUMN_CLASS, "flex flex-col gap-2")}>
-          {composerTipAmount > 0 && (
+          {asSupport && (
+            // Whose voice the next line is in, one tap from switching back.
+            <div className="slurp-bubble-in flex h-9 items-center gap-2 self-start rounded-full bg-[var(--slurp-tint)] ps-3 pe-1 text-xs font-semibold text-[var(--slurp-text)]">
+              <Headset size={14} aria-hidden="true" />
+              {localizeUi("ui.slurp.messages.supportVoiceChip", {
+                defaultValue: "Writing as {{name}}",
+                name: supportName,
+              })}
+              <button
+                type="button"
+                onClick={() => setSupportChoice(false)}
+                aria-label={localizeUi("ui.slurp.messages.supportVoiceOff", { defaultValue: "Back to your persona" })}
+                title={localizeUi("ui.slurp.messages.supportVoiceOff", { defaultValue: "Back to your persona" })}
+                className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+              >
+                <X size={14} aria-hidden="true" />
+              </button>
+            </div>
+          )}
+          {composerTipAmount > 0 && !asSupport && (
             <div className="slurp-bubble-in flex h-9 items-center gap-2 self-start rounded-full bg-[var(--slurp-tint)] ps-3 pe-1 text-xs font-semibold text-[var(--slurp-text)]">
               {localizeUi("ui.slurp.messages.tipAttached", { defaultValue: "Tip attached" })}
               <SlurpCoinAmount amount={composerTipAmount} className="tabular-nums" />
@@ -214,7 +236,14 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
                   void submit();
                 }
               }}
-              placeholder={localizeUi("ui.slurp.messages.composerPlaceholder", { defaultValue: "Write a message…" })}
+              placeholder={
+                asSupport
+                  ? localizeUi("ui.slurp.messages.supportVoicePlaceholder", {
+                      defaultValue: "Message as {{name}}…",
+                      name: supportName,
+                    })
+                  : localizeUi("ui.slurp.messages.composerPlaceholder", { defaultValue: "Write a message…" })
+              }
               className="max-h-40 min-h-9 min-w-0 flex-1 resize-none bg-transparent px-1.5 py-1.5 text-base leading-6 outline-none placeholder:text-[var(--muted-foreground)] sm:text-sm sm:leading-6"
             />
             <button

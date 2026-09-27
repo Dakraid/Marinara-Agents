@@ -92,6 +92,7 @@ import {
 } from "../../base/model/slp-model-worker.js";
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
 import { SLURP_PERFORMED_INTIMACY } from "../../modules/creators/slp-performance.js";
+import { slurpDmRoleHeader, slurpDmTranscript, type SlurpDmParty } from "../../modules/messages/slp-dm-roles.js";
 
 type GenerationConnection = NonNullable<Awaited<ReturnType<ReturnType<typeof createConnectionsStorage>["getWithKey"]>>>;
 
@@ -125,6 +126,11 @@ export function buildSlurpMessageChat(input: {
   subscribed: boolean;
   dmPolicy: SlurpDmPolicy;
   isRequest: boolean;
+  /** Who wrote first, and what the first message cost. See `slp-dm-roles.ts`. */
+  openedBy?: "viewer" | "creator" | null;
+  requestFee?: number;
+  /** The viewer's own open Creator page: the chat is then Creator to Creator. */
+  viewerPage?: SlurpDmParty | null;
   /** Everything about how to behave, already resolved. See `slurp-stance.ts`. */
   stance: SlurpStance;
   /** Facts kept from earlier in this conversation, beyond the history window. */
@@ -163,13 +169,29 @@ export function buildSlurpMessageChat(input: {
   const protect = (value: string | null | undefined) =>
     protectCreatorGeneratedIdentity(value, input.disclosureMode, input.publicIdentity) ?? "";
   const known = input.notes && input.notes.length > 0 ? notesForPrompt(input.notes) : null;
+  const parties = {
+    creator: { name: protect(input.creator.displayName), handle: protect(input.creator.handle) },
+    viewer: { name: protect(input.viewer.displayName) || "this fan", handle: protect(input.viewer.handle) },
+  };
+  const roleHeader = slurpDmRoleHeader({
+    writer: "creator",
+    ...parties,
+    viewerPage: input.viewerPage
+      ? { name: protect(input.viewerPage.name), handle: protect(input.viewerPage.handle) }
+      : null,
+    openedBy: input.openedBy,
+    requestFee: input.requestFee,
+    isRequest: input.isRequest,
+    // The whole stored history, so a sign-up chat is still known once it scrolls out of the window.
+    history: input.history,
+  });
   const system = composeSlurpPromptBlocks(
     "dmReply",
     [
       {
         id: "task",
         kind: "editable" as const,
-        text: "You write exactly one direct message from one Slurp creator to one fan, inside a private chat. Write only as the supplied creator's stage persona. Never write the fan's side of the conversation.",
+        text: "You write exactly one direct message from one Slurp creator to the other person in a private chat. \"# This chat\" says who you are, who they are, and who wrote first. Write only as the supplied creator's stage persona. Never write the other person's side of the conversation.",
       },
       { id: "platform", kind: "required" as const, text: SLURP_PLATFORM_CONTEXT },
       { id: "safety", kind: "required" as const, text: NOODLER_UNTRUSTED_CONTENT_INSTRUCTION },
@@ -371,42 +393,22 @@ export function buildSlurpMessageChat(input: {
     // same fix in buildNoodlerPostMessages.
     scheduleContext:
       protect(input.scheduleContext) || "No active Conversation Schedule is available for this Creator today.",
-    conversation: input.history.slice(-HISTORY_TURNS).map((message) => ({
-      // A kept sign-up chat names who said a host line (Slurp Support, a helping Creator), so it is
-      // never read as the fan's words.
-      from:
-        message.role === "creator"
-          ? "you"
-          : typeof message.metadata?.sceneSpeaker === "string"
-            ? `${protect(String(message.metadata?.sceneSpeaker))} (during your Slurp sign-up)`
-            : "the fan",
-      // A tip is a message with no words. Rendering it as one is what lets the creator thank
-      // the fan for it, which is the single most obvious thing a real creator does.
-      text:
-        message.kind === "tip"
-          ? `[tipped you ${message.price} coins${message.content ? `: ${protect(message.content)}` : ""}]`
-          : message.kind === "ppv"
-            ? `[sent locked content for ${message.price} coins${message.unlockedAt ? ", which the fan unlocked" : ", still locked"}]`
-            : message.kind === "post_preview"
-              ? // A bare title read as the fan typing it. Say what it is and whether they own it.
-                `[${message.role === "creator" ? "you shared" : "shared"} your post "${protect(String(message.metadata?.title ?? message.content))}"${
-                  message.metadata?.access === "locked"
-                    ? input.recentPosts?.some((post) => post.id === message.metadata?.postId && post.unlockedByFan)
-                      ? ", a locked post the fan already unlocked"
-                      : ", a locked post"
-                    : ""
-                }]`
-              : protect(message.content),
-      image: input.imageContexts?.has(message.id) ? protect(input.imageContexts.get(message.id)) : undefined,
-      at: message.createdAt,
-    })),
+    // A speaker name on every line and events as events: see `slp-dm-roles.ts`.
+    conversation: slurpDmTranscript(input.history.slice(-HISTORY_TURNS), {
+      writer: "creator",
+      ...parties,
+      protect,
+      image: (message) =>
+        input.imageContexts?.has(message.id) ? protect(input.imageContexts.get(message.id)) : undefined,
+      postUnlocked: (postId) => Boolean(input.recentPosts?.some((post) => post.id === postId && post.unlockedByFan)),
+    }),
   };
 
   return [
     { role: "system", content: system },
     {
       role: "user",
-      content: `# Untrusted Slurp data\n${JSON.stringify(data, null, 2)}${
+      content: `# This chat\n${roleHeader}\n\n# Untrusted Slurp data\n${JSON.stringify(data, null, 2)}${
         input.flavourBrief?.trim() ? `\n\n# Who you are\n${protect(input.flavourBrief)}` : ""
       }`,
     },
@@ -471,6 +473,25 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
   const disclosureMode = input.creator.settings.privacy.identityDisclosure ?? "open";
   const publicIdentity = await resolveNoodlerPublicIdentity(input.db, input.creator);
   const details = input.threadId ? await createSlurpMessagesStorage(input.db).getDetailsOverrides(input.threadId) : {};
+  // Who wrote first, and whether the one writing runs a Creator page of their own: the role
+  // header needs both. Only an open page is named, so a concealed page is never linked to its owner.
+  const thread = input.threadId
+    ? await createSlurpMessagesStorage(input.db)
+        .getThreadById(input.threadId)
+        .catch(() => null)
+    : null;
+  const viewerPageAccount =
+    input.viewer.kind === "random_user"
+      ? null
+      : await slurp.getSlurpAccountForEntity(input.viewer.kind, input.viewer.entityId, "creator").catch(() => null);
+  const viewerPage =
+    viewerPageAccount &&
+    !viewerPageAccount.invited &&
+    viewerPageAccount.id !== input.creator.id &&
+    viewerPageAccount.id !== input.viewer.id &&
+    (viewerPageAccount.settings.privacy.identityDisclosure ?? "open") === "open"
+      ? { name: viewerPageAccount.displayName, handle: viewerPageAccount.handle }
+      : null;
   const settings = await slurp.getSettings();
   const prompts = slurpPromptContext(settings);
   const source = await slurp.resolveAccountSource(input.creator);
@@ -626,6 +647,9 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
     contentMenu: await resolveSlurpCreatorMenu(input.db, input.creator.id).catch(() => ""),
     platformEvents: await resolveSlurpEventInstruction(input.db, input.creator.id, new Date()),
     imageContexts,
+    openedBy: thread?.openedBy ?? null,
+    requestFee: thread?.requestFeePaid ?? 0,
+    viewerPage,
     fanVoice,
     fanMemory,
     stance,
