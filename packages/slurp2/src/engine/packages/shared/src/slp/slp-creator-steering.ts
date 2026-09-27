@@ -5,6 +5,7 @@
  *
  * Every field is plain words the player typed or picked. Nothing here is a number the model sees.
  */
+import { SLP_SPICE_CHIP_MAX, SLP_SPICE_CHIPS_MAX, slpSpiceList } from "./slp-spice.js";
 
 export const SLP_STEERING_MOODS = ["bright", "cozy", "restless", "low", "flirty", "stressed"] as const;
 export type SlpSteeringMood = (typeof SLP_STEERING_MOODS)[number];
@@ -43,6 +44,12 @@ export type SlpCreatorSteering = {
   avoid: string[];
   pace: SlpSteeringPace;
   nudges: SlpCreatorNudge[];
+  /** What turns them on and what they like showing (spice). */
+  turnOns: string[];
+  /** What they never do, on the page or in chats. Always wins over the player's taste. */
+  hardNoes: string[];
+  /** The sign-up chat's likes and noes were moved here out of the strategy text. */
+  limitsMoved: boolean;
 };
 
 export const SLP_DEFAULT_STEERING: SlpCreatorSteering = {
@@ -53,6 +60,9 @@ export const SLP_DEFAULT_STEERING: SlpCreatorSteering = {
   avoid: [],
   pace: "usual",
   nudges: [],
+  turnOns: [],
+  hardNoes: [],
+  limitsMoved: false,
 };
 
 const text = (value: unknown, max: number) =>
@@ -85,5 +95,8 @@ export function normalizeSlpCreatorSteering(raw: unknown): SlpCreatorSteering {
       }))
       .filter((entry) => entry.id && entry.text)
       .slice(0, SLP_STEERING_NUDGES_MAX),
+    turnOns: slpSpiceList(value.turnOns, SLP_SPICE_CHIP_MAX, SLP_SPICE_CHIPS_MAX),
+    hardNoes: slpSpiceList(value.hardNoes, SLP_SPICE_CHIP_MAX, SLP_SPICE_CHIPS_MAX),
+    limitsMoved: value.limitsMoved === true,
   };
 }

@@ -670,6 +670,13 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
       disclosureMode,
       use: "dm",
       sequence: input.history.length,
+      // How far the chat goes: subscribers get the Creator's level, others the tease. The player's
+      // own taste only reaches a chat with the player.
+      chat: {
+        subscribed: input.subscribed,
+        player: input.viewer.kind === "persona" && !fanVoice,
+        seed: `${input.creator.id}:${input.viewer.id}`,
+      },
       ownLines: [
         ...input.history
           .filter((message) => message.role === "creator" && message.kind === "text")

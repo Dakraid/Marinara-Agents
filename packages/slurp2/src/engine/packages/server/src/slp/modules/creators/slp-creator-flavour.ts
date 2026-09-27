@@ -51,6 +51,8 @@ export type SlurpFlavourSource = {
   steering?: SlpCreatorSteering | null;
   /** What the player's other Agents know, already in plain sentences. Optional (a setting). */
   lately?: readonly SlurpLatelyLine[];
+  /** How spicy they are and what they will never do, already plain sentences (`slurpSpiceBriefLines`). */
+  spice?: readonly string[];
 };
 
 export type SlurpFlavourBrief = {
@@ -334,6 +336,7 @@ export function compileSlurpFlavourBrief(
     bits.length ? `A few true things about you to draw on this time. ${bits.map((bit) => bit.text).join(" ")}` : "",
     sample ? `How you sound, in a line of yours from before (match the voice, never reuse the words): “${sample}”` : "",
     [...life, texture, signatureLine].filter(Boolean).join(" "),
+    (source.spice ?? []).join(" "),
     writing
       ? "Use one or two of these where they fit, never as a list. What happens is decided in the post brief; this is how you would do it."
       : "Let this colour how you write. Never quote it or list it back.",

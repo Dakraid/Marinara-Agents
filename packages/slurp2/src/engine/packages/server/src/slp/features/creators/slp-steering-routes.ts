@@ -15,10 +15,46 @@ import {
   removeSlurpCreatorNudge,
 } from "../../data/creators/slp-steering-storage.js";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
+import {
+  SLP_SPICE_CHIP_MAX,
+  SLP_SPICE_CHIPS_MAX,
+  SLP_SPICE_LEVELS,
+  SLP_SPICE_TO_EXPLICIT,
+  slpSpiceFromExplicit,
+} from "../../../../../shared/src/slp/slp-spice.js";
+import { resolveSlurpSpiceCreator } from "../../data/creators/slp-flavour-source.js";
+import { getSlurpPostGuidance, updateSlurpPostGuidance } from "../../data/settings/slp-post-guidance-storage.js";
+import { slurpTasteFit } from "../../modules/creators/slp-spice.js";
 import { slurpSteeringContentChanged } from "../../modules/feed/slp-prepared-rewrite.js";
 import { countSlurpPreparedRewrite, rewriteSlurpPreparedPosts } from "../../data/feed/reserve/slp-reserve-rewrite.js";
 
 const topics = z.array(z.string().trim().min(1).max(SLP_STEERING_TOPIC_MAX)).max(SLP_STEERING_TOPICS_MAX);
+const spiceChips = z.array(z.string().trim().min(1).max(SLP_SPICE_CHIP_MAX)).max(SLP_SPICE_CHIPS_MAX);
+
+/**
+ * The Creator's spice beside the steering: their own level (or the Slurp-wide default), the limit
+ * above it, and which of the player's tastes they lean into.
+ */
+async function creatorSpice(
+  db: FastifyInstance["db"],
+  noodle: SlpRouteDeps["noodle"],
+  account: NonNullable<Awaited<ReturnType<SlpRouteDeps["noodle"]["getNoodlerAccountById"]>>>,
+) {
+  const { spice, creator } = await resolveSlurpSpiceCreator(db, {
+    account,
+    source: await noodle.resolveAccountSource(account),
+    disclosureMode: "open",
+  });
+  const own = (await getSlurpPostGuidance(db)).creators[account.id]?.level ?? "";
+  return {
+    level: slpSpiceFromExplicit(spice.level),
+    own: Boolean(own),
+    max: spice.spice.max,
+    leans: spice.spice.tastes
+      .filter((taste) => slurpTasteFit(taste.text, creator, spice.spice.never) > 0)
+      .map((taste) => taste.text),
+  };
+}
 
 /**
  * The player's steering for one Creator: what is going on in their life, how often they post,
@@ -30,11 +66,20 @@ export async function slpSteeringRoutes(app: FastifyInstance, deps: SlpRouteDeps
     const { id } = req.params as { id: string };
     return (await noodle.getNoodlerAccountById(id))?.id ?? null;
   };
+  // Every answer carries the spice too, so the card's cached copy never loses it.
+  const answer = async (id: string, steering: Awaited<ReturnType<typeof readSlurpCreatorSteering>>) => {
+    const account = await noodle.getNoodlerAccountById(id);
+    const spice = account ? await creatorSpice(app.db, noodle, account).catch(() => null) : null;
+    return { steering, spice };
+  };
 
   app.get("/slurp/accounts/:id/steering", async (req, reply) => {
     const id = await creatorId(req);
     if (!id) return reply.code(404).send({ error: "Creator account not found" });
-    return { steering: await readSlurpCreatorSteering(app.db, id) };
+    const account = await noodle.getNoodlerAccountById(id);
+    // Reading the spice moves the sign-up chat's likes and noes out of the strategy text first.
+    const spice = account ? await creatorSpice(app.db, noodle, account).catch(() => null) : null;
+    return { steering: await readSlurpCreatorSteering(app.db, id), spice };
   });
 
   app.patch("/slurp/accounts/:id/steering", async (req, reply) => {
@@ -46,18 +91,35 @@ export async function slpSteeringRoutes(app: FastifyInstance, deps: SlpRouteDeps
         push: topics.optional(),
         avoid: topics.optional(),
         pace: z.enum(SLP_STEERING_PACES).optional(),
+        turnOns: spiceChips.optional(),
+        hardNoes: spiceChips.optional(),
+        /** The Creator's own level; null goes back to the Slurp-wide default. */
+        spiceLevel: z.enum(SLP_SPICE_LEVELS).nullable().optional(),
       })
       .strict()
       .safeParse(req.body ?? {});
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
     const id = await creatorId(req);
     if (!id) return reply.code(404).send({ error: "Creator account not found" });
+    const { spiceLevel, ...patch } = parsed.data;
     const before = await readSlurpCreatorSteering(app.db, id);
-    const steering = await patchSlurpCreatorSteering(app.db, id, parsed.data);
+    const steering = await patchSlurpCreatorSteering(app.db, id, patch);
+    let levelChanged = false;
+    if (spiceLevel !== undefined) {
+      const level = spiceLevel ? SLP_SPICE_TO_EXPLICIT[spiceLevel] : "";
+      await updateSlurpPostGuidance(app.db, (current) => {
+        const entry = current.creators[id] ?? { public: "", locked: "", menu: "", level: "" };
+        levelChanged = entry.level !== level;
+        return { ...current, creators: { ...current.creators, [id]: { ...entry, level } } };
+      });
+    }
     // Posts already written keep the old steering. The app asks whether to rewrite them; the
     // count is only sent when what the posts say changed.
-    const prepared = slurpSteeringContentChanged(before, steering) ? await countSlurpPreparedRewrite(app.db, id) : null;
-    return { steering, prepared: prepared?.posts ? prepared : null };
+    const prepared =
+      levelChanged || slurpSteeringContentChanged(before, steering)
+        ? await countSlurpPreparedRewrite(app.db, id)
+        : null;
+    return { ...(await answer(id, steering)), prepared: prepared?.posts ? prepared : null };
   });
 
   /** The player's answer "Rewrite" to the question above. "Keep" sends nothing. */
@@ -77,13 +139,13 @@ export async function slpSteeringRoutes(app: FastifyInstance, deps: SlpRouteDeps
     if (!id) return reply.code(404).send({ error: "Creator account not found" });
     const steering = await addSlurpCreatorNudge(app.db, id, parsed.data);
     if (!steering) return reply.code(409).send({ error: "That is plenty of ideas for now. Let one go out first." });
-    return { steering };
+    return answer(id, steering);
   });
 
   app.delete("/slurp/accounts/:id/steering/ideas/:ideaId", async (req, reply) => {
     const id = await creatorId(req);
     if (!id) return reply.code(404).send({ error: "Creator account not found" });
     const { ideaId } = req.params as { ideaId: string };
-    return { steering: await removeSlurpCreatorNudge(app.db, id, ideaId) };
+    return answer(id, await removeSlurpCreatorNudge(app.db, id, ideaId));
   });
 }

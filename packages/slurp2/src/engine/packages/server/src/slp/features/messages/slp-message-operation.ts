@@ -39,6 +39,8 @@ import {
 import { generateSlurpCommissionImage } from "./commissions/slp-commission-image-operation.js";
 import { slurpMessageMediaUrl } from "../../base/media/slp-media.js";
 import { resolveSlurpMediaOffer } from "../../modules/economy/slp-media-offer.js";
+import { slurpDmSpiceLevel } from "../../modules/creators/slp-spice.js";
+import { resolveSlurpExplicitLevel } from "../../data/settings/slp-post-guidance-storage.js";
 import { slurpCreatorStateCanUseMedia } from "../../modules/creators/slp-creator-state.js";
 import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
 import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
@@ -403,19 +405,25 @@ export async function replyToSlurpMessage(
         // `enableImagePrompts`, an internal flag with no control that is off on every install, so
         // no Creator ever sent a picture in a chat (R1-122). No image connection → "unavailable".
         const imageAllowedBySettings = creator.settings.scheduler.autoPosting?.imagesEnabled === true;
+        // Decided before the picture: a paid (PPV) picture goes as far as the Creator does, a free
+        // one to somebody who has not subscribed stays a tease.
+        const offer = resolveSlurpMediaOffer({
+          intent: reply.imageMode === "hostile" ? "hostile" : "friendly",
+          rapportTier: thread.rapport.tier,
+          subscribed,
+          configuredPrice: messaging.ppvPrice,
+        });
+        const creatorLevel = await resolveSlurpExplicitLevel(db, thread.creatorAccountId).catch(
+          () => "suggestive" as const,
+        );
         const drawn = imageAllowedBySettings
           ? await generateSlurpCommissionImage(db, {
               creatorAccountId: thread.creatorAccountId,
               brief: `${reply.image.prompt}\nImage mode: ${reply.imageMode}`,
+              level: offer.price > 0 ? creatorLevel : slurpDmSpiceLevel(creatorLevel, subscribed),
             })
           : "unavailable";
         if (drawn !== "unavailable") {
-          const offer = resolveSlurpMediaOffer({
-            intent: reply.imageMode === "hostile" ? "hostile" : "friendly",
-            rapportTier: thread.rapport.tier,
-            subscribed,
-            configuredPrice: messaging.ppvPrice,
-          });
           const price = offer.price;
           const imageMessage = await messagesStore.appendMessage(thread.id, {
             senderAccountId: thread.creatorAccountId,

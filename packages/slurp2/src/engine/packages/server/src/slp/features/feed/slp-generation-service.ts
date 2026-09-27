@@ -9,6 +9,7 @@ import { isDebugAgentsEnabled } from "../../../config/runtime-config.js";
 import { newId } from "../../../utils/id-generator.js";
 import type { DB } from "../../../db/connection.js";
 import { describeSlurpPostCondition } from "./slp-post-condition-service.js";
+import { planSlurpPostSpice } from "./slp-post-spice.js";
 import { logger, logDebugOverride } from "../../../lib/logger.js";
 import { clampGenerationMaxOutputTokens } from "../../../services/generation/output-token-limits.js";
 import { resolveStoredChatOptions } from "../../../services/generation/generation-parameters.js";
@@ -20,11 +21,7 @@ import {
   resolveSlurpExplicitLevel,
   resolveSlurpPostGuidance,
 } from "../../data/settings/slp-post-guidance-storage.js";
-import {
-  SLURP_BUILT_IN_EXPLICIT_LEVEL,
-  slurpPostLevelInstruction,
-  slurpPostSexualLevel,
-} from "../../modules/feed/slp-post-guidance.js";
+import { SLURP_BUILT_IN_EXPLICIT_LEVEL, slurpPostLevelInstruction } from "../../modules/feed/slp-post-guidance.js";
 import { createCharactersStorage } from "../../../services/storage/characters.storage.js";
 import { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
@@ -190,7 +187,7 @@ export async function generateCreatorPost(
   const nudge = !input.request.noodlerPostGuide?.trim() && !input.previewOnly ? (steering?.nudges[0] ?? null) : null;
   const classicIdea = nudge && settings.postPlanner !== "beats" ? nudge.text : "";
   const directed = Boolean(input.request.noodlerPostGuide?.trim() || classicIdea);
-  const variation = directed
+  let variation = directed
     ? null
     : slurpPostVariation(account.id, sequence, settings.storyImagesEnabled ? settings.storyRate : "off");
   // A project claims this post only if the rotation gives it one. Player direction stands both
@@ -237,38 +234,47 @@ export async function generateCreatorPost(
     await recordSlurpBeatFacts(db, account, recentPosts, input.generatedAt ?? new Date());
   // What this post is for, as opposed to what it is about, and how it goes out. Story and teaser
   // are passed in rather than chosen again, so the decisions cannot contradict each other.
-  const { axes, shoot, reusedMedia, reusedSource, opportunity, demandTopic, continuityInstruction, campaignId, beat } =
-    await planSlurpPost(db, {
-      account,
-      request: input.request,
-      strategy,
-      sequence,
-      directed,
-      storyVariation,
-      isTeaser,
-      imagesEnabled,
-      previewOnly: input.previewOnly,
-      singlePicture: input.prepareOnly === true,
-      slotId: input.slotId,
-      at: input.generatedAt ?? new Date(),
-      dueAt: input.publicationTime ?? null,
-      beats:
-        settings.postPlanner === "beats"
-          ? {
-              canonText: sourceCharacterContext,
-              connection: input.connection,
-              fallbackConnection,
-              arc: project ? slurpArcBeat(project) : null,
-              day: beatDay,
-              steering,
-              nudge,
-              life: { account, tags: account.settings.profile.tags ?? [], rate: settings.lifeMomentRate },
-              shared: settings.sharedPreseed
-                ? { tags: account.settings.profile.tags ?? [], worldEvents: settings.sharedWorldEvents }
-                : null,
-            }
-          : null,
-    });
+  const {
+    axes,
+    shoot,
+    reusedMedia,
+    reusedSource,
+    opportunity,
+    demandTopic,
+    continuityInstruction,
+    campaignId,
+    beat: plannedBeat,
+  } = await planSlurpPost(db, {
+    account,
+    request: input.request,
+    strategy,
+    sequence,
+    directed,
+    storyVariation,
+    isTeaser,
+    imagesEnabled,
+    previewOnly: input.previewOnly,
+    singlePicture: input.prepareOnly === true,
+    slotId: input.slotId,
+    at: input.generatedAt ?? new Date(),
+    dueAt: input.publicationTime ?? null,
+    beats:
+      settings.postPlanner === "beats"
+        ? {
+            canonText: sourceCharacterContext,
+            connection: input.connection,
+            fallbackConnection,
+            arc: project ? slurpArcBeat(project) : null,
+            day: beatDay,
+            steering,
+            nudge,
+            life: { account, tags: account.settings.profile.tags ?? [], rate: settings.lifeMomentRate },
+            shared: settings.sharedPreseed
+              ? { tags: account.settings.profile.tags ?? [], worldEvents: settings.sharedWorldEvents }
+              : null,
+          }
+        : null,
+  });
   // The rotation varies length; the intent rules out lengths that contradict its job.
   const format = input.request.format ?? (variation ? slurpIntentFormat(axes?.intent, variation.format) : "caption");
   // Text-only by intent, not by failure: no brief, no image call, and no gallery stand-in.
@@ -326,9 +332,28 @@ export async function generateCreatorPost(
   // is what an install with nothing configured would have used anyway.
   const dialLevel = await resolveSlurpExplicitLevel(db, account.id).catch(() => SLURP_BUILT_IN_EXPLICIT_LEVEL);
   // Beats plan the heat per post, up to the dial; caption and picture both read this one level.
-  const explicitLevel = beat
-    ? slurpPlannedExplicitLevel(dialLevel, beat.heatFloor ?? 0, account.id, sequence)
+  const explicitLevel = plannedBeat
+    ? slurpPlannedExplicitLevel(dialLevel, plannedBeat.heatFloor ?? 0, account.id, sequence)
     : dialLevel;
+  // What makes this post spicy, in this Creator's own way. Locked posts get it; teasers hint at it.
+  const spiced = await planSlurpPostSpice(db, {
+    account,
+    source: linkedPublicAccount,
+    disclosureMode,
+    access: input.request.access,
+    intent: axes?.intent,
+    teaser: isTeaser,
+    directed,
+    explicitLevel,
+    dialLevel,
+    collabs: settings.creatorCollabs,
+    recentPosts,
+    sequence,
+    variation,
+    beat: plannedBeat,
+  });
+  const { postLevel, angle: spiceAngle, beat } = spiced;
+  variation = spiced.variation;
   const flavourBrief = await resolveSlurpCreatorFlavour(db, {
     account,
     source: linkedPublicAccount,
@@ -337,6 +362,7 @@ export async function generateCreatorPost(
     sequence,
     steering,
     ownLines: recentPosts.filter((post) => post.access !== "locked").map((post) => post.content),
+    spice: spiced.spice,
   });
   const messages = buildNoodlerPostMessages({
     account,
@@ -361,9 +387,8 @@ export async function generateCreatorPost(
     accessInstruction: [
       await resolveSlurpPostGuidance(db, account.id, input.request.access),
       isTeaser ? SLURP_TEASER_INSTRUCTION : "",
-      slurpPostLevelInstruction(
-        slurpPostSexualLevel({ level: explicitLevel, access: input.request.access, intent: axes?.intent }),
-      ),
+      slurpPostLevelInstruction(postLevel),
+      spiceAngle?.line ?? "",
     ]
       .filter(Boolean)
       .join("\n\n"),
@@ -488,6 +513,7 @@ export async function generateCreatorPost(
     postImages,
     access: input.request.access,
     explicitLevel,
+    partner: spiceAngle?.partner?.company ?? null,
     modelImagePrompt: generated.imagePrompt,
     stageFacts: account.settings.stage,
     scene: generated.scene,
@@ -606,6 +632,8 @@ export async function generateCreatorPost(
       ...(shootId ? { shootId } : {}),
       // The planned beat, so later planning can record what this post established once it publishes.
       ...(beat ? { slurpBeat: { type: beat.type, line: beat.line, anchor: beat.anchor } } : {}),
+      // What made it spicy, so unlocks, likes and tips can teach Slurp the player's taste.
+      ...spiced.metadata,
       ...(wardrobeSelection.look ? { wardrobeLookId: wardrobeSelection.look.id } : {}),
       ...(wardrobeSelection.fallback
         ? {

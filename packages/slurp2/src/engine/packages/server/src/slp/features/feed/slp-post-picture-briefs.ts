@@ -38,6 +38,8 @@ export function slurpPostPictureBriefs(input: {
   postImages: boolean;
   access: SlurpPostAccess;
   explicitLevel: SlurpExplicitLevel;
+  /** Who is in a spicy partner scene with them. See `slp-spice.ts`. */
+  partner?: string | null;
   /** The model's own idea, used only when there is no situation to brief from. */
   modelImagePrompt: string | null | undefined;
   /** This Creator's own look and life. See `SlpCreatorStageFacts`. */
@@ -87,6 +89,7 @@ export function slurpPostPictureBriefs(input: {
           stageFacts: input.stageFacts,
           scene: input.scene,
           selectedWardrobe: input.selectedWardrobe,
+          partner: input.partner,
         })
       : null);
   // How the picture was taken is the camera's job; the scene the writer planned must not show the
@@ -115,7 +118,10 @@ export function slurpPostPictureBriefs(input: {
             clothing: input.selectedWardrobe?.description ?? input.scene?.outfit ?? input.stageFacts?.wardrobe ?? null,
           })
         : undefined,
-    negativePrompt: input.postImages && camera && variation ? slurpImageNegativePrompt(sexualLevel) : undefined,
+    negativePrompt:
+      input.postImages && camera && variation
+        ? slurpImageNegativePrompt(sexualLevel, Boolean(input.partner))
+        : undefined,
     // Each extra picture is briefed exactly like the first, so it reaches the image model as a
     // complete picture. A shot that names its own outfit wears it; otherwise it keeps the chosen look.
     shotBriefs: (input.shots ?? []).flatMap((shot) => {

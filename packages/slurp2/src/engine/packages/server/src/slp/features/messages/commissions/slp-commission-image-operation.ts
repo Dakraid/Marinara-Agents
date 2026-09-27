@@ -5,7 +5,12 @@ import { createPromptOverridesStorage } from "../../../../services/storage/promp
 import { createSlurpStorage } from "../../../data/slp-storage.js";
 import { generateCreatorPostImage } from "../../media/slp-media-contract.js";
 import { resolveCreatorImageConnectionId } from "../../../base/media/slp-image-connections.js";
-import { resolveSlurpCreatorMenu } from "../../../data/settings/slp-post-guidance-storage.js";
+import {
+  resolveSlurpCreatorMenu,
+  resolveSlurpExplicitLevel,
+} from "../../../data/settings/slp-post-guidance-storage.js";
+import { slurpImageNegativePrompt, slurpLevelPhoto } from "../../../modules/feed/slp-image-brief.js";
+import type { SlurpExplicitLevel } from "../../../modules/feed/slp-post-guidance.js";
 import { slurpViewerPhotoPrompt } from "../../../modules/messages/slp-messaging.js";
 
 /**
@@ -20,7 +25,12 @@ import { slurpViewerPhotoPrompt } from "../../../modules/messages/slp-messaging.
  */
 export async function generateSlurpCommissionImage(
   db: DB,
-  input: { creatorAccountId: string; brief: string },
+  input: {
+    creatorAccountId: string;
+    brief: string;
+    /** How far the picture goes. Absent: the Creator's own level (a paid piece or a locked PPV). */
+    level?: SlurpExplicitLevel;
+  },
 ): Promise<{ mediaPath: string; promote: () => void; compensate: () => void } | "unavailable"> {
   const noodle = createSlurpStorage(db);
   const connections = createConnectionsStorage(db);
@@ -39,6 +49,7 @@ export async function generateSlurpCommissionImage(
   const settings = await noodle.getSettings();
   const contentPolicy = await resolveSlurpCreatorMenu(db, account.id).catch(() => "");
   const brief = input.brief.trim().slice(0, 2000);
+  const level = input.level ?? (await resolveSlurpExplicitLevel(db, account.id).catch(() => "suggestive" as const));
   const image = await generateCreatorPostImage({
     account,
     linkedPublicAccount,
@@ -48,7 +59,10 @@ export async function generateSlurpCommissionImage(
       `A commissioned piece by ${account.displayName}, made to order for one fan.`,
       `The fan asked for this: ${brief}`,
       "Draw what they asked for. Keep the creator exactly as their card describes them.",
+      slurpLevelPhoto(level),
     ].join("\n"),
+    // The same image connection as every post; the level is the Creator's, under the Slurp-wide limit.
+    negativePromptAdditions: slurpImageNegativePrompt(level),
     contentPolicy,
     settings,
     characters: createCharactersStorage(db),
