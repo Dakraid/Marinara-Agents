@@ -42,6 +42,24 @@ import { resolveSlurpMediaOffer } from "../../modules/economy/slp-media-offer.js
 import { slurpCreatorStateCanUseMedia } from "../../modules/creators/slp-creator-state.js";
 import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
 import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
+import { slurpSupportName } from "../../modules/messages/slp-dm-roles.js";
+import {
+  applySlurpSupportTalk,
+  isSlurpSupportThread,
+  type SlurpSupportTalkStore,
+} from "../../modules/messages/slp-support.js";
+import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
+import { emptySlpAccountSettings } from "../../modules/records/slp-storage-model.js";
+import {
+  addSlurpCreatorNudge,
+  patchSlurpCreatorSteering,
+  readSlurpCreatorSteering,
+} from "../../data/creators/slp-steering-storage.js";
+import {
+  createSlurpContinuityFact,
+  findSlurpContinuityFactBySourceHash,
+} from "../../data/continuity/slp-continuity-storage.js";
+import { slurpContinuityIdentityOf } from "../../modules/continuity/slp-continuity-rules.js";
 
 export type SlurpReplyOutcome =
   | { status: "replied"; message: SlurpMessage; pacing: SlurpReplyPacing }
@@ -88,10 +106,13 @@ export async function replyToSlurpMessage(
     slurp.getNoodlerAccountById(thread.creatorAccountId),
     slurp.getViewer(thread.viewerAccountId),
   ]);
+  // Slurp Support's own thread: the one writing is Slurp's staff, named as the thread names them.
+  const support = isSlurpSupportThread(thread);
   // A hand-operated Creator's fans are audience members, not personas. The draft still needs them
   // as the one being answered; `getViewer` alone made every draft for them ineligible.
   const viewer =
     personaViewer ??
+    (support ? slurpSupportAccount(slurpSupportName(await messagesStore.listMessages(thread.id, 120))) : null) ??
     (input.operatorDraft && creator ? await resolveAudienceFanAccount(db, thread.viewerAccountId, creator) : null);
   // A persona-backed Creator is operated by hand: it never auto-posts and it never answers a DM
   // on its own either. The operator writes the answer through the draft-reply route.
@@ -369,7 +390,8 @@ export async function replyToSlurpMessage(
         history
           .slice(-12)
           .some((message) => message.kind === "post_preview" && message.metadata?.postId === reply.sharedPost!.id);
-      if (reply.sharedPost && !alreadyShared) {
+      // Staff are not sold to: no shared posts and no pictures in Support's thread.
+      if (reply.sharedPost && !alreadyShared && !support) {
         const postAccess = reply.sharedPost.access === "locked" ? "locked" : "public";
         const previewLocked =
           postAccess === "locked" ||
@@ -394,6 +416,7 @@ export async function replyToSlurpMessage(
       if (
         reply.image &&
         reply.canSendImage &&
+        !support &&
         slurpCreatorStateCanUseMedia(creatorState, thread.threadState) &&
         // Unattended replies never draw: the picture costs money the player did not ask to spend.
         // A forced reply is a person pressing a button, so it may, like an ordinary send.
@@ -455,6 +478,16 @@ export async function replyToSlurpMessage(
             stateSignals: reply.stateSignals,
           })
           .catch((error: unknown) => logger.warn(error, "[slurp-message] Could not record the reply outcome"));
+      }
+      // Support's own thread: the talk may change the Creator (mood, focus, plans, memory), never a fan.
+      if (stored && support) {
+        await applySlurpSupportTalk(slurpSupportTalkStore(db, creator), {
+          thread,
+          trigger,
+          outcome: { moodShift: reply.moodShift, remember: reply.remember, stateSignals: reply.stateSignals },
+          staff: reply.staff,
+          supportName: viewer.displayName,
+        }).catch((error: unknown) => logger.warn(error, "[slurp-message] Could not apply the talk with Slurp Support"));
       }
       if (stored) {
         // Whoever just answered is, for the next few minutes, obviously around: every reply keeps
@@ -530,15 +563,19 @@ export async function replyToSlurpMessage(
           }
         }
 
-        await slurp
-          .recordCreatorStateSignals(thread.creatorAccountId, reply.stateSignals)
-          .catch((error: unknown) => logger.warn(error, "[slurp-message] Could not record creator state signals"));
+        // The signals say what a fan did, and Support is not a fan. Nor can a Creator shut the
+        // platform's staff out of their inbox.
+        if (!support)
+          await slurp
+            .recordCreatorStateSignals(thread.creatorAccountId, reply.stateSignals)
+            .catch((error: unknown) => logger.warn(error, "[slurp-message] Could not record creator state signals"));
         // The reply is written first and the boundary applied after it, so the fan always receives
         // the words the creator actually left them with rather than silence.
-        await applyBoundary(messagesStore, thread.id, reply.latitude, settings.messagesCoolOffMinutes).catch(
-          (error: unknown) => logger.warn(error, "[slurp-message] Could not apply the conversation boundary"),
-        );
-        if (reply.latitude === "cool_off" || reply.latitude === "close") {
+        if (!support)
+          await applyBoundary(messagesStore, thread.id, reply.latitude, settings.messagesCoolOffMinutes).catch(
+            (error: unknown) => logger.warn(error, "[slurp-message] Could not apply the conversation boundary"),
+          );
+        if (!support && (reply.latitude === "cool_off" || reply.latitude === "close")) {
           const events = createSlurpEventsStorage(db);
           const operator = creator.sourceKind === "persona" ? creator.sourceEntityId : null;
           if (operator) {
@@ -578,6 +615,64 @@ export async function replyToSlurpMessage(
   } finally {
     await release();
   }
+}
+
+/** Support's talk, written through the real stores: Support's thread, the steering, the continuity. */
+function slurpSupportTalkStore(
+  db: DB,
+  creator: SlpAccount & { sourceKind?: string | null; sourceEntityId?: string | null },
+): SlurpSupportTalkStore<Parameters<ReturnType<typeof createSlurpMessagesStorage>["recordReplyOutcome"]>[1]> {
+  return {
+    recordThreadOutcome: (threadId, outcome) => createSlurpMessagesStorage(db).recordReplyOutcome(threadId, outcome),
+    readSteering: (creatorAccountId) => readSlurpCreatorSteering(db, creatorAccountId),
+    patchSteering: async (creatorAccountId, patch) => {
+      await patchSlurpCreatorSteering(db, creatorAccountId, patch);
+    },
+    // A full ideas list refuses rather than dropping one of the player's own.
+    addIdea: async (creatorAccountId, text) => {
+      await addSlurpCreatorNudge(db, creatorAccountId, { text, story: false });
+    },
+    hasMemory: async (creatorAccountId, sourceHash) =>
+      Boolean(await findSlurpContinuityFactBySourceHash(db, creatorAccountId, sourceHash)),
+    // The Creator's own private memory: read by their posts and every chat, never tied to one fan.
+    addMemory: async (_creatorAccountId, memory) => {
+      const identity = slurpContinuityIdentityOf(creator);
+      if (!identity) return;
+      await createSlurpContinuityFact(db, {
+        ...identity,
+        factType: "circumstance",
+        text: memory.text,
+        audienceScope: "creator_private",
+        realityScope: "slurp",
+        threadId: memory.threadId,
+        source: "slurp_message",
+        evidence: memory.evidence,
+        sourceHash: memory.sourceHash,
+        contribution: "generated",
+      });
+    },
+  };
+}
+
+/** Support as the one the Creator is talking to. Not a persona and not a fan: no page, no wallet. */
+function slurpSupportAccount(name: string): SlpAccount {
+  return {
+    id: SLURP_SUPPORT_ACCOUNT_ID,
+    // `random_user` keeps every "does this person run a Creator page" lookup away from it.
+    kind: "random_user",
+    entityId: SLURP_SUPPORT_ACCOUNT_ID,
+    handle: "slurpsupport",
+    displayName: name,
+    bio: "",
+    avatarUrl: null,
+    avatarCrop: null,
+    invited: false,
+    settings: emptySlpAccountSettings() as SlpAccount["settings"],
+    platform: "slurp",
+    noodleAccountId: null,
+    createdAt: "",
+    updatedAt: "",
+  };
 }
 
 /** An audience member or ambient account, shaped as the account the reply prompt reads. */

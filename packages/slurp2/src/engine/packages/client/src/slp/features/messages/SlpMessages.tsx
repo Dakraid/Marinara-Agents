@@ -28,6 +28,7 @@ import { toast } from "sonner";
  */
 import { BroadcastPanel } from "./SlpMessageTools";
 import { SlurpThreadView } from "./SlpThreadView";
+import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
 
 export { BroadcastPanel };
 
@@ -371,6 +372,7 @@ export function SlurpMessagesView({
                     creatorAvatarUrl: null,
                     viewerUnread: thread.creatorUnread,
                   }}
+                  supportTag={false}
                   onOpen={() => openFromList(thread.id)}
                   pending={thread.state === "request"}
                   selected={thread.id === openThreadId}
@@ -560,6 +562,12 @@ export function SlurpMessagesView({
           personaId={personaId}
           ownedCreatorAccountIds={ownedCreatorAccountIds}
           startAsSupport={startAsSupport}
+          onSwitchVoice={(creatorAccountId, asSupport) => {
+            // Support's thread and the persona's are two threads: open the other one.
+            setOpenThreadId(null);
+            setComposeWith(creatorAccountId);
+            setStartAsSupport(asSupport);
+          }}
           unreadAtOpen={openThread ? { viewer: openThread.viewerUnread, creator: openThread.creatorUnread } : null}
           onBack={closeConversation}
           onOpenProfile={onOpenProfile}
@@ -591,6 +599,7 @@ export function ThreadRow({
   pending = false,
   selected = false,
   toCreator = false,
+  supportTag = thread.viewerAccountId === SLURP_SUPPORT_ACCOUNT_ID && !toCreator,
 }: {
   thread: SlurpThread;
   onOpen: () => void;
@@ -598,6 +607,8 @@ export function ThreadRow({
   selected?: boolean;
   /** A fan wrote to one of your Creators: you answer as the Creator. */
   toCreator?: boolean;
+  /** Slurp Support's thread with this Creator: the player writes in it as Support, from any persona. */
+  supportTag?: boolean;
 }) {
   const { t: localizeUi } = useUiTranslation();
   const unread = thread.viewerUnread > 0;
@@ -622,12 +633,17 @@ export function ThreadRow({
               {localizeUi("ui.slurp.inbox.toCreatorTag", { defaultValue: "To your Creator" })}
             </span>
           )}
+          {supportTag && (
+            <span className={slpTagClass(true)}>
+              {localizeUi("ui.slurp.messages.supportTag", { defaultValue: "As Slurp Support" })}
+            </span>
+          )}
           {pending && (
             <span className={slpTagClass()}>
               {localizeUi("ui.slurp.messages.pending", { defaultValue: "Pending" })}
             </span>
           )}
-          {thread.subscribed && !toCreator && !pending && (
+          {thread.subscribed && !toCreator && !pending && !supportTag && (
             <span className={slpTagClass()}>
               {localizeUi("ui.slurp.messages.subscribed", { defaultValue: "Subscribed" })}
             </span>

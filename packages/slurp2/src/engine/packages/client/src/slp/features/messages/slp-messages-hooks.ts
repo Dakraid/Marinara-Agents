@@ -180,9 +180,16 @@ export function useSlurpRequestAction(threadId: string | null, personaId: string
  * The conversation with one creator, started or not. Used when the player opens a chat from a
  * profile, where there may be no thread yet and creating one on sight would charge a fee.
  */
-export function useSlurpCompose(creatorAccountId: string | null, personaId: string | null) {
+/** `support`: Slurp Support's one thread with this Creator, the same from every persona. */
+export function useSlurpCompose(creatorAccountId: string | null, personaId: string | null, support = false) {
   return useQuery({
-    queryKey: [...slpKeys.noodlerRoot(), "messages", "compose", creatorAccountId ?? "none", personaId ?? "none"],
+    queryKey: [
+      ...slpKeys.noodlerRoot(),
+      "messages",
+      "compose",
+      creatorAccountId ?? "none",
+      support ? "support" : (personaId ?? "none"),
+    ],
     queryFn: () =>
       api.get<{
         thread: SlurpThread | null;
@@ -203,7 +210,7 @@ export function useSlurpCompose(creatorAccountId: string | null, personaId: stri
         subscribed?: boolean;
         relationship?: SlurpThreadRelationship;
       }>(
-        `/slurp2/messages/compose?personaId=${encodeURIComponent(personaId!)}&creatorAccountId=${encodeURIComponent(creatorAccountId!)}`,
+        `/slurp2/messages/compose?personaId=${encodeURIComponent(personaId!)}&creatorAccountId=${encodeURIComponent(creatorAccountId!)}${support ? "&support=1" : ""}`,
       ),
     enabled: Boolean(creatorAccountId && personaId),
     // Same poll as `useSlurpThread`. Without it a chat opened from a profile never saw the

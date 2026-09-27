@@ -2904,6 +2904,7 @@
   "ui.slurp.messages.supportPickTarget": "Pick a Creator. You write as Slurp Support.",
   "ui.slurp.messages.supportVoiceOn": "Switch to {{name}}",
   "ui.slurp.messages.supportVoiceOff": "Back to your persona",
+  "ui.slurp.messages.supportTag": "As Slurp Support",
   "ui.slurp.messages.supportVoiceChip": "Writing as {{name}}",
   "ui.slurp.messages.supportVoicePlaceholder": "Message as {{name}}…",
   "ui.slurp.messages.newChatEmpty": "No Creators are available.",

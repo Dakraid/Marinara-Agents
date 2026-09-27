@@ -93,6 +93,8 @@ import {
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
 import { SLURP_PERFORMED_INTIMACY } from "../../modules/creators/slp-performance.js";
 import { slurpDmRoleHeader, slurpDmTranscript, type SlurpDmParty } from "../../modules/messages/slp-dm-roles.js";
+import { protectSlurpSupportStaff } from "../../modules/messages/slp-support.js";
+import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
 
 type GenerationConnection = NonNullable<Awaited<ReturnType<ReturnType<typeof createConnectionsStorage>["getWithKey"]>>>;
 
@@ -173,9 +175,12 @@ export function buildSlurpMessageChat(input: {
     creator: { name: protect(input.creator.displayName), handle: protect(input.creator.handle) },
     viewer: { name: protect(input.viewer.displayName) || "this fan", handle: protect(input.viewer.handle) },
   };
+  // Slurp Support's own thread: the one writing is Slurp's staff, never a fan.
+  const support = input.viewer.id === SLURP_SUPPORT_ACCOUNT_ID;
   const roleHeader = slurpDmRoleHeader({
     writer: "creator",
     ...parties,
+    support,
     viewerPage: input.viewerPage
       ? { name: protect(input.viewerPage.name), handle: protect(input.viewerPage.handle) }
       : null,
@@ -333,7 +338,7 @@ export function buildSlurpMessageChat(input: {
         : {}),
       ...(input.fanMemory ? { memory: input.fanMemory } : {}),
     },
-    relationship: describeSlurpRapport(input.rapport, protect(input.viewer.displayName) || "this fan"),
+    relationship: support ? undefined : describeSlurpRapport(input.rapport, parties.viewer.name),
     ...(known
       ? {
           knownAboutFan: {
@@ -704,6 +709,7 @@ function protectNoteOperation(
 
 export async function generateSlurpMessageReply(input: SlurpMessagePromptInput): Promise<SlurpGeneratedDmReply> {
   const { messages, stance, disclosureMode, publicIdentity, recentPosts } = await buildSlurpMessagePrompt(input);
+  const support = input.viewer.id === SLURP_SUPPORT_ACCOUNT_ID;
   const budget = (await createSlurpStorage(input.db).getSettings()).modelBudget;
   const context = input.workerContext ?? "present";
   if (!input.skipBudgetCap && !slurpModelWorkerAllows(budget, context))
@@ -750,7 +756,9 @@ export async function generateSlurpMessageReply(input: SlurpMessagePromptInput):
     }),
     stream: false,
     debugMode,
-    responseFormat: slpResponseFormat(input.connection.model, "noodler_dm"),
+    responseFormat: support
+      ? slpResponseFormat(input.connection.model, "noodler_dm", { staff: true })
+      : slpResponseFormat(input.connection.model, "noodler_dm"),
   });
   const content = response.content ?? "";
   logDebugOverride(
@@ -784,5 +792,9 @@ export async function generateSlurpMessageReply(input: SlurpMessagePromptInput):
       generated.sharePost !== undefined && recentPosts[generated.sharePost] ? recentPosts[generated.sharePost] : null,
     image: generated.image,
     followUp: generated.followUp,
+    // Support's thread only; stored and fed back into later prompts, so redacted like a note.
+    staff: protectSlurpSupportStaff(support ? generated.staff : undefined, (value) =>
+      protectBoundedCreatorGeneratedText(value, disclosureMode, publicIdentity, 400),
+    ),
   };
 }

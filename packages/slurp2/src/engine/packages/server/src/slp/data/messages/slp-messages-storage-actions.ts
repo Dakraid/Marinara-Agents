@@ -38,6 +38,7 @@ import {
 } from "../../modules/creators/slp-creator-state.js";
 import { activeSlurpStrikes } from "../../modules/world/slp-stance.js";
 import { slurpSupportName } from "../../modules/messages/slp-dm-roles.js";
+import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
 import { SLURP_ONLINE_AFTER_DELIVERY_MINUTES } from "../../modules/messages/slp-conversation-momentum.js";
 import { createAppSettingsStorage } from "../../../services/storage/app-settings.storage.js";
 import { createSlurpEventsStorage } from "../notifications/slp-notification-storage.js";
@@ -112,6 +113,9 @@ export function createMessagesStorageActions(context: SlurpMessagesContext) {
       /** The player writes as Slurp Support: staff reach any Creator, and the line is Support's, not the fan's. */
       options: { asSupport?: boolean } = {},
     ): Promise<SlurpSendResult> {
+      // Support writes from its own account, so a Creator has one Support thread whichever persona
+      // the player writes from (`slp-support.ts`). Staff reach any Creator without a fee.
+      if (options.asSupport) viewerAccountId = SLURP_SUPPORT_ACCOUNT_ID;
       const opened = options.asSupport
         ? await context.storage.openThread(viewerAccountId, creatorAccountId, "creator", "waive")
         : await context.storage.openThread(viewerAccountId, creatorAccountId, "viewer");

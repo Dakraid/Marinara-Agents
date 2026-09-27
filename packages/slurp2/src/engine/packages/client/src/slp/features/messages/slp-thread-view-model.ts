@@ -6,6 +6,7 @@ import { SlurpCoin } from "../../modules/coin/SlpCoin";
 import { useSlurpConnections } from "../../base/state/slp-host-connections";
 import { useCreateSlurpCommission } from "../../features/messages/commissions/slp-commission-hooks";
 import type { SlurpMessage } from "../../features/messages/slp-messages-contract";
+import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
 
 import {
   useDraftSlurpCreatorReply,
@@ -50,8 +51,13 @@ export interface SlurpThreadViewProps {
   onBack: () => void;
   onOpenProfile: (accountId: string) => void;
   desktopSplit?: boolean;
-  /** Opened from "Write as Slurp Support": the player writes as Slurp's staff from the first line. */
+  /** Opened from "Write as Slurp Support": Slurp Support's one thread with this Creator. */
   startAsSupport?: boolean;
+  /**
+   * "Switch to Slurp Support" / "Back to your persona": the other voice is a different thread
+   * (Support has one thread per Creator, shared by every persona), so the inbox opens that one.
+   */
+  onSwitchVoice?: (creatorAccountId: string, asSupport: boolean) => void;
 }
 
 /**
@@ -72,11 +78,12 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
     onOpenProfile,
     desktopSplit,
     startAsSupport,
+    onSwitchVoice,
   } = props;
   const { t: localizeUi, i18n } = useUiTranslation();
   const byThread = useSlurpThread(threadId, personaId);
   const olderMessages = useSlurpOlderMessages();
-  const byCreator = useSlurpCompose(threadId ? null : creatorAccountId, personaId);
+  const byCreator = useSlurpCompose(threadId ? null : creatorAccountId, personaId, Boolean(startAsSupport));
   const threadQuery = threadId ? byThread : byCreator;
   const send = useSendSlurpMessage();
   const cheat = useSlurpCheatDirective();
@@ -168,7 +175,9 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
   const targetCreatorAccountId = thread?.creatorAccountId ?? creator?.id ?? creatorAccountId;
   const ownsCreator = Boolean(targetCreatorAccountId && ownedCreatorAccountIds.includes(targetCreatorAccountId));
   // A Creator answers many fans from one account, so on that side the draft belongs to the thread.
-  const draftStorageKey = `slurp2-message-draft:${personaId ?? "none"}:${targetCreatorAccountId ?? "none"}${ownsCreator && threadId ? `:${threadId}` : ""}`;
+  // Slurp Support's own thread (`slp-support.ts`): the player writes in it as Support, from any persona.
+  const supportThread = thread ? thread.viewerAccountId === SLURP_SUPPORT_ACCOUNT_ID : Boolean(startAsSupport);
+  const draftStorageKey = `slurp2-message-draft:${supportThread ? "support" : (personaId ?? "none")}:${targetCreatorAccountId ?? "none"}${ownsCreator && threadId ? `:${threadId}` : ""}`;
   const messaging = threadQuery.data?.messaging;
   const commissions = useMemo(() => threadQuery.data?.commissions ?? [], [threadQuery.data?.commissions]);
   const relationship = "relationship" in (threadQuery.data ?? {}) ? threadQuery.data?.relationship : undefined;
@@ -226,12 +235,12 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
     .map(({ commission, at }) => `${commission.id}:${commission.state}:${commission.updatedAt}:${at}`)
     .join("|");
   const subscribed = thread?.subscribed ?? threadQuery.data?.subscribed ?? false;
-  // The player can write as Slurp Support (Slurp's staff) in any chat with a Creator. A chat whose
-  // last line from this side was Support's opens as Support again; the name is the one the kept
-  // sign-up chat gave Support, so it stays one Support.
-  const [supportChoice, setSupportChoice] = useState<boolean | null>(startAsSupport ? true : null);
-  const lastOwnLine = messages.findLast((message) => message.role === "viewer");
-  const asSupport = !ownsCreator && (supportChoice ?? lastOwnLine?.metadata.supportVoice === true);
+  // The player can write as Slurp Support (Slurp's staff) to any Creator they do not run. Support
+  // has its own thread; the name is the one the kept sign-up chat gave Support, so it stays one Support.
+  const asSupport = !ownsCreator && supportThread;
+  const setSupportChoice = (next: boolean) => {
+    if (targetCreatorAccountId && next !== asSupport) onSwitchVoice?.(targetCreatorAccountId, next);
+  };
   const supportName =
     messages
       .map((message) => message.metadata.sceneSpeaker)

@@ -171,8 +171,8 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
             )}
           </span>
         </button>
-        {thread?.rapport && (
-          // The tier icon (the word too on wider screens) in a 44 px target.
+        {thread?.rapport && !asSupport && (
+          // The tier icon (the word too on wider screens) in a 44 px target. Slurp's staff are no fan tier.
           <button
             ref={tierTriggerRef}
             type="button"

@@ -35,7 +35,7 @@ const tipSchema = z.object({
   requestId: z.string().trim().min(8).max(100).optional(),
 });
 export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: SlpMessagesContext) {
-  const { freshView, maskForViewer, messages, ownsCreator, requireViewer, slurp } = messaging;
+  const { freshView, maskForViewer, messages, ownsCreator, requireViewer, seatIn, slurp } = messaging;
 
   app.post("/messages/share-post", async (req, reply) => {
     const parsed = z
@@ -282,7 +282,8 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
     const viewer = await requireViewer(parsed.data.personaId);
     if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
     const thread = await messages.getThreadById(threadId);
-    if (!thread || thread.viewerAccountId !== viewer.id) return reply.code(404).send({ error: "Thread not found" });
+    if (!thread || (await seatIn(viewer.id, thread)) !== "viewer")
+      return reply.code(404).send({ error: "Thread not found" });
     const triggerMessageId = await messages.latestViewerMessageId(thread.id);
     if (!triggerMessageId) return reply.code(400).send({ error: "Nothing to reply to yet." });
     // Bubbles from the last answer are still arriving; a second answer would interleave with them.
@@ -306,7 +307,8 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
     const viewer = await requireViewer(parsed.data.personaId);
     if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
     const thread = await messages.getThreadById(threadId);
-    if (!thread || thread.viewerAccountId !== viewer.id) return reply.code(404).send({ error: "Thread not found" });
+    if (!thread || (await seatIn(viewer.id, thread)) !== "viewer")
+      return reply.code(404).send({ error: "Thread not found" });
     const triggerMessageId = await messages.latestViewerMessageId(thread.id);
     if (!triggerMessageId) return reply.code(400).send({ error: "Send a message before requesting a reply." });
     const outcome = await replyToSlurpMessage(app.db, {

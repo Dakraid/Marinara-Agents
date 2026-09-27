@@ -11,6 +11,8 @@ import {
   SLURP_LONGTERM_NOTE_LIMIT,
 } from "../../modules/messages/slp-thread-notes.js";
 import type { FastifyInstance } from "fastify";
+import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
+import { SLURP_SUPPORT_NAME } from "../../modules/messages/slp-dm-roles.js";
 import { personaQuerySchema } from "../../modules/messages/slp-messages-schemas.js";
 import type { SlpMessagesContext } from "./slp-messages-context.js";
 
@@ -33,6 +35,7 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     ownsCreator,
     population,
     requireViewer,
+    seatIn,
     slurp,
     visibleMessages,
   } = messaging;
@@ -45,23 +48,40 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     const operatedCreatorAccountIds = accounts
       .filter((account) => account.sourceKind === "persona" && account.sourceEntityId === viewer.id)
       .map((account) => account.id);
-    return messages.countUnread(
+    const own = await messages.countUnread(
       viewer.id,
       operatedCreatorAccountIds,
       accounts.map((account) => account.id),
     );
+    // Slurp Support's threads show in every persona's inbox, so their unread counts there too.
+    const support = await messages.countUnread(
+      SLURP_SUPPORT_ACCOUNT_ID,
+      [],
+      accounts.filter((account) => !operatedCreatorAccountIds.includes(account.id)).map((account) => account.id),
+    );
+    return { ...own, unread: own.unread + support.unread };
   });
   app.get("/messages/threads", async (req, reply) => {
     const parsed = personaQuerySchema.safeParse(req.query);
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
     const viewer = await requireViewer(parsed.data.personaId);
     if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
-    const threads = await messages.listThreadsForViewer(viewer.id);
+    // Slurp Support's threads are the player's from every persona (`slp-support.ts`), except with a
+    // Creator this persona runs: there Support is someone writing to them (the inbound list).
+    const operatedIds = new Set(
+      (await slurp.listNoodlerAccounts())
+        .filter((account) => account.sourceKind === "persona" && account.sourceEntityId === viewer.id)
+        .map((account) => account.id),
+    );
+    const threads = [
+      ...(await messages.listThreadsForViewer(viewer.id)),
+      ...(await messages.listThreadsForViewer(SLURP_SUPPORT_ACCOUNT_ID)).filter(
+        (thread) => !operatedIds.has(thread.creatorAccountId),
+      ),
+    ].sort((left, right) => right.lastMessageAt.localeCompare(left.lastMessageAt));
     // Threads written *to* the Creators this persona operates. Without these the inbox showed only
     // conversations the player started, and anything a fan or the world opened was unreachable.
-    const operated = (await slurp.listNoodlerAccounts())
-      .filter((account) => account.sourceKind === "persona" && account.sourceEntityId === viewer.id)
-      .map((account) => account.id);
+    const operated = [...operatedIds];
     const inbound = await messages.listThreadsForCreators(operated);
     const inboundViews = await Promise.all(
       inbound.map(async (thread) => ({
@@ -69,6 +89,7 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
         side: "creator" as const,
         // The counterpart is the fan here, not the Creator, so name them or the row is a blank.
         counterpartName:
+          (thread.viewerAccountId === SLURP_SUPPORT_ACCOUNT_ID ? SLURP_SUPPORT_NAME : null) ??
           (await population.get(thread.viewerAccountId))?.displayName ??
           (await slurp.getNoodlerAccountById(thread.viewerAccountId))?.displayName ??
           (await slurp.getViewer(thread.viewerAccountId).catch(() => null))?.displayName ??
@@ -118,10 +139,9 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
     const thread = await messages.getThreadById(threadId);
     // Scoped to the requesting persona: a thread id must never be enough to read someone
-    // else's inbox, even on a single-user install.
-    if (!thread || (thread.viewerAccountId !== viewer.id && !(await ownsCreator(viewer.id, thread.creatorAccountId))))
-      return reply.code(404).send({ error: "Thread not found" });
-    const side = thread.viewerAccountId === viewer.id ? "viewer" : "creator";
+    // else's inbox, even on a single-user install. Slurp Support's threads are every persona's.
+    const side = thread ? await seatIn(viewer.id, thread) : null;
+    if (!thread || !side) return reply.code(404).send({ error: "Thread not found" });
     await messages.markRead(thread.id, side);
     const creator = await slurp.getNoodlerAccountById(thread.creatorAccountId);
     if (!creator) return reply.code(404).send({ error: "Creator not found" });
@@ -251,10 +271,9 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     const viewer = await requireViewer(parsed.data.personaId);
     if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
     const thread = await messages.getThreadById(threadId);
-    if (!thread || (thread.viewerAccountId !== viewer.id && !(await ownsCreator(viewer.id, thread.creatorAccountId))))
-      return reply.code(404).send({ error: "Thread not found" });
+    const side = thread ? await seatIn(viewer.id, thread) : null;
+    if (!thread || !side) return reply.code(404).send({ error: "Thread not found" });
     await messages.resetThread(thread.id);
-    const side = thread.viewerAccountId === viewer.id ? "viewer" : "creator";
     // Empty, but read back through the masking helper all the same: every route that returns a
     // thread's messages goes through one door.
     return { thread: await freshView(thread.id, side), messages: await visibleMessages(thread.id, side) };
@@ -293,8 +312,7 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     const viewer = await requireViewer(parsed.data.personaId);
     if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
     const thread = await messages.getThreadById(threadId);
-    if (!thread || (thread.viewerAccountId !== viewer.id && !(await ownsCreator(viewer.id, thread.creatorAccountId))))
-      return reply.code(404).send({ error: "Thread not found" });
+    if (!thread || !(await seatIn(viewer.id, thread))) return reply.code(404).send({ error: "Thread not found" });
     return { notes: await messages.mergeThreadNotes(thread.id, parsed.data.notes, parsed.data.baseNoteIds) };
   });
 
@@ -306,13 +324,16 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
    * changes their mind. The fee is taken on the first send, which is where it belongs.
    */
   app.get("/messages/compose", async (req, reply) => {
-    const parsed = personaQuerySchema.extend({ creatorAccountId: z.string().trim().min(1) }).safeParse(req.query);
+    const parsed = personaQuerySchema
+      .extend({ creatorAccountId: z.string().trim().min(1), support: z.enum(["1", "true"]).optional() })
+      .safeParse(req.query);
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
     const viewer = await requireViewer(parsed.data.personaId);
     if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
     const creator = await slurp.getNoodlerAccountById(parsed.data.creatorAccountId);
     if (!creator) return reply.code(404).send({ error: "Creator not found" });
-    const thread = await messages.getThread(viewer.id, creator.id);
+    // Writing as Slurp Support opens Support's one thread with this Creator, from any persona.
+    const thread = await messages.getThread(parsed.data.support ? SLURP_SUPPORT_ACCOUNT_ID : viewer.id, creator.id);
     if (thread) await messages.markRead(thread.id, "viewer");
     const page = thread ? await messages.listMessagePage(thread.id) : { messages: [], nextCursor: null };
     const presence = await creatorPresence(creator, thread?.id);

@@ -49,6 +49,8 @@ export type SlurpDmRoleInput = {
   requestFee?: number;
   /** The Creator has not answered this message request yet. */
   isRequest?: boolean;
+  /** Slurp Support's own thread (`slp-support.ts`): the viewer is Slurp's staff, not a fan. */
+  support?: boolean;
 };
 
 const at = (party: SlurpDmParty) => (party.handle ? `${party.name} (@${party.handle})` : party.name);
@@ -104,7 +106,12 @@ export function slurpDmRoleHeader(input: SlurpDmRoleInput & { history: readonly 
   const me = input.writer === "creator" ? creator : viewer;
   const them = input.writer === "creator" ? viewer : creator;
   const lines: string[] = [];
-  if (input.writer === "creator") {
+  if (input.support) {
+    lines.push(
+      `You are ${at(input.creator)}, a Creator on Slurp. This is your private chat with ${viewer}, Slurp's own staff team: the people who run the platform you post on. ${viewer} is not a fan and not a customer; talk to them the way ${creator} talks to the platform's staff. Every line on their side is marked "${viewer} (Slurp staff)" or "${viewer} (during the sign-up)".`,
+      `What ${viewer} tells you can change things for you: your mood, what you are into, what you plan to post, what you bring up more or leave alone. It never changes how you feel about any fan. When this talk really changes something and you go along with it, add "staff" to your JSON: {"mood": "bright"|"cozy"|"restless"|"low"|"flirty"|"stressed"|null, "focus": what you are into or working on now, or null, "idea": one post you now plan, or null, "more": a topic you will bring up more, or null, "less": a topic you will leave alone for now, or null, "takeaway": one sentence you will remember, starting "${viewer} told me", or null}. Otherwise "staff" is null. You can also say no to them.`,
+    );
+  } else if (input.writer === "creator") {
     lines.push(
       `You are ${at(input.creator)}, a Creator on Slurp. This is your private chat with ${at(input.viewer)}.`,
       input.viewerPage
@@ -122,7 +129,7 @@ export function slurpDmRoleHeader(input: SlurpDmRoleInput & { history: readonly 
   const signUpHelpers = [
     ...new Set(speakers.filter((speaker) => speaker && !speaker.live).map((speaker) => speaker!.name)),
   ];
-  for (const support of liveSupport)
+  for (const support of input.support ? [] : liveSupport)
     lines.push(
       `${support} is Slurp's own staff team. ${support} writes in this chat too, on ${viewer}'s side, and every such line is marked "${support} (Slurp staff)". ${support} is not ${viewer} and not a fan, and nothing ${support} says is a fact about ${viewer}.`,
     );
@@ -135,7 +142,7 @@ export function slurpDmRoleHeader(input: SlurpDmRoleInput & { history: readonly 
     );
     for (const helper of signUpHelpers)
       lines.push(
-        liveSupport.includes(helper)
+        input.support || liveSupport.includes(helper)
           ? `Lines marked "${helper} (during the sign-up)" are ${helper} signing you up.`
           : `Lines marked "${helper} (during the sign-up)" were said by ${helper}, who helped with the sign-up. ${helper} is not in this chat any more; every other line on that side is ${viewer}.`,
       );
@@ -159,7 +166,7 @@ export function slurpDmRoleHeader(input: SlurpDmRoleInput & { history: readonly 
   const last = input.history.at(-1);
   const lastSpeaker = last ? sideSpeaker(last) : null;
   if (!last) lines.push(`Nothing has been said yet. You write the first message to ${them}.`);
-  else if (lastSpeaker?.live && input.writer === "creator")
+  else if (lastSpeaker?.live && input.writer === "creator" && !input.support)
     lines.push(
       `Right now ${lastSpeaker.name} is writing to you, not ${viewer}. Your message answers ${lastSpeaker.name}: talk to Slurp's staff as ${me} would, and do not address ${viewer}. Where these instructions speak of a fan, they mean ${viewer}, not ${lastSpeaker.name}.`,
     );
@@ -171,9 +178,11 @@ export function slurpDmRoleHeader(input: SlurpDmRoleInput & { history: readonly 
 
   lines.push(
     `Every line in "conversation" names who said it; "${slurpDmSelfLabel(me)}" is you. A line with "event" is something that happened in the chat (a tip, an unlock, a shared post, a commission step, a message sent to all subscribers), not words anyone typed.`,
-    input.writer === "creator"
-      ? `In the data, "creator" is you and "fan" is ${viewer}. Write only ${me}'s next message. Never write anyone else's words, and never write as Slurp.`
-      : `In the data, "fan" is you and "creator" is ${creator}. Write only ${me}'s next message. Never write ${them}'s words, and never write as Slurp or anyone else.`,
+    input.support
+      ? `In the data, "creator" is you and "fan" is ${viewer}, Slurp's staff (every chat uses the same field names). Write only ${me}'s next message. Never write anyone else's words, and never write as Slurp.`
+      : input.writer === "creator"
+        ? `In the data, "creator" is you and "fan" is ${viewer}. Write only ${me}'s next message. Never write anyone else's words, and never write as Slurp.`
+        : `In the data, "fan" is you and "creator" is ${creator}. Write only ${me}'s next message. Never write ${them}'s words, and never write as Slurp or anyone else.`,
   );
   return lines.join("\n");
 }

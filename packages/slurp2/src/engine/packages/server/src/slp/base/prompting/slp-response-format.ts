@@ -299,6 +299,32 @@ const slpCreatorDmSchema = {
   additionalProperties: false,
 } as const;
 
+const slpCreatorStaffDmSchema = {
+  ...slpCreatorDmSchema,
+  properties: {
+    ...slpCreatorDmSchema.properties,
+    staff: {
+      anyOf: [
+        {
+          type: "object",
+          properties: {
+            mood: { type: ["string", "null"], enum: ["bright", "cozy", "restless", "low", "flirty", "stressed", null] },
+            focus: nullableString,
+            idea: nullableString,
+            more: nullableString,
+            less: nullableString,
+            takeaway: nullableString,
+          },
+          required: ["mood", "focus", "idea", "more", "less", "takeaway"],
+          additionalProperties: false,
+        },
+        { type: "null" },
+      ],
+    },
+  },
+  required: [...slpCreatorDmSchema.required, "staff"],
+} as const;
+
 const slpCreatorFanActivitySchema = {
   type: "object",
   properties: {
@@ -329,6 +355,8 @@ export function slpResponseFormat(
     contentMaxLength?: number;
     sceneShots?: number;
     claims?: boolean;
+    /** A reply in Slurp Support's thread may say what the talk changed ("staff", `slp-support.ts`). */
+    staff?: boolean;
   } = {},
 ): { type: string; [key: string]: unknown } {
   if (!isOpenAIGpt56Model(model)) return { type: "json_object" };
@@ -342,7 +370,9 @@ export function slpResponseFormat(
           : kind === "noodler_reply"
             ? noodlerReplySchema
             : kind === "noodler_dm"
-              ? slpCreatorDmSchema
+              ? options.staff
+                ? slpCreatorStaffDmSchema
+                : slpCreatorDmSchema
               : kind === "noodler_fan_activity"
                 ? {
                     type: "object",

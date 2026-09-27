@@ -11,6 +11,7 @@ import { type StoredZipEntry, jsonEntry, writeStoredZip, readStoredZip } from ".
 import { createWriteStream } from "fs";
 import { finished } from "node:stream/promises";
 import type { FastifyInstance } from "fastify";
+import { migrateSlurpSupportThreads } from "../../data/messages/slp-support-migration.js";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
 
 /**
@@ -281,6 +282,8 @@ export function createSlpBackupJobs(app: FastifyInstance, deps: SlpRouteDeps) {
       job.detail = `Restoring ${job.creators} creator${job.creators === 1 ? "" : "s"} and ${job.posts} post${job.posts === 1 ? "" : "s"}.`;
       const result = await noodle.importSlurpBackup({ settings, tables, importSettings });
       job.skipped = result.skipped;
+      // An older backup keeps Slurp Support's lines inside persona chats; give them Support's own threads.
+      await migrateSlurpSupportThreads(app.db);
 
       job.stage = "writing-media";
       job.detail = "Restoring media files.";

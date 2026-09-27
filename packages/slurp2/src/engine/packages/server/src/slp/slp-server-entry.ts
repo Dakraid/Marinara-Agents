@@ -33,6 +33,7 @@ import { startSlurpWorldScheduler } from "./features/world/slp-world-scheduler-s
 import { slpStoryRoutes } from "./features/world/slp-story-routes.js";
 import { createSlurpActivationLifecycle } from "./base/locking/slp-activation-lifecycle.js";
 import { createSlurpMessagesStorage } from "./data/slp-storage.js";
+import { migrateSlurpSupportThreads } from "./data/messages/slp-support-migration.js";
 import { createSlurpStorage } from "./data/slp-storage.js";
 import { createSlurpPopulationStorage } from "./data/audience/slp-audience-storage-funnel.js";
 import * as slurpSchema from "../db/schema/slurp.js";
@@ -130,6 +131,9 @@ export async function activate({
     const population = createSlurpPopulationStorage(app.db);
     const messagesStorage = createSlurpMessagesStorage(app.db);
     await messagesStorage.recoverPendingPayments();
+    // Slurp Support has one thread per Creator; older data (and restored backups) kept its lines in
+    // persona chats. Idempotent, so it runs on every start.
+    await migrateSlurpSupportThreads(app.db);
     // Capability routes are registered through the host's revocable privileged route slots.
     // Noodle's existing plugin creates storage adapters while it registers, so expose only the
     // host database on the otherwise constrained collector.
