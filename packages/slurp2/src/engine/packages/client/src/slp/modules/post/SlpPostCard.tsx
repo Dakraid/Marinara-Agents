@@ -1,7 +1,7 @@
 import { SlpTimestamp } from "../../base/ui/SlpTimestamp";
 import { AtSign, ChevronDown, Flame, TrendingUp, MessageCircle, RefreshCw } from "lucide-react";
 import { SlpHeartGlyph } from "../../base/chrome/SlpGlyphs";
-import { Fragment, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { slurpPostWentViral, slurpReachWeek } from "../../../../../shared/src/slp/slp-reach.js";
 import { readSlpPollFromMetadata } from "../../../../../shared/src/slp/slp-polls.js";
 import { readSlpPostImageCrop } from "../../../../../shared/src/slp/slp-post-images.js";
@@ -10,12 +10,13 @@ import { type SlpAccount, type SlpInteraction } from "../../../../../shared/src/
 import { cn } from "../../../lib/utils";
 import type { ChatImage } from "../../../hooks/use-gallery";
 import { useNearViewportSlurpMediaSrc } from "../../base/media/slp-media-src";
-import { Avatar, labelClass, SLP_IMG_FRAME_CLASS, slpImgFade } from "../../base/chrome/SlpChrome";
+import { Avatar, SLP_IMG_FRAME_CLASS, slpImgFade } from "../../base/chrome/SlpChrome";
 import { playSlpPop } from "../sparkle/SlpSparkle";
 import { slpTagClass } from "../chrome/SlpButton";
+import { SlpPostEditSheet } from "./SlpPostEditSheet";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { Image as ImageIcon } from "lucide-react";
-import { fieldClass, slpPostImagePrompt, textareaClass } from "./SlpPostHelpers";
+import { slpPostImagePrompt } from "./SlpPostHelpers";
 import {
   createSlpLightboxImage,
   SLP_FEED_MEDIA_FRAME_CLASS,
@@ -28,14 +29,16 @@ import {
 } from "./SlpPostHelpers";
 import type { SlpPostCardCtx, SlpPostCardModel } from "./SlpPostTypes";
 import { SlurpLikedBy } from "../audience/SlpFanCard";
-import { SlpPollComposer } from "../poll/SlpPollComposer";
 import { PostImageFrame } from "../../base/media/SlpPostImageCropEditor";
 import { SlpPollCard } from "./SlpPollCard";
-import { PostImageEditControls } from "./SlpPostImageEditControls";
 import { SlpPostImageNav } from "./SlpPostImageNav";
 import { SlpPostMenu } from "./SlpPostMenu";
 import { SlpReplyRow } from "./SlpReplyRow";
 import { SlpReplyComposer } from "./SlpReplyComposer";
+// ponytail: one edit sheet app-wide (only one post is edited at a time); if its owner card unmounts
+// mid-edit the other copy does not take over. Move the sheet to the controller if that matters.
+let slpEditSheetOwned = false;
+
 export function SlpPostCard({
   post,
   ctx,
@@ -59,7 +62,6 @@ export function SlpPostCard({
     personaAccount,
     editingPostId,
     editingPostContent,
-    setEditingPostContent,
     replyPostId,
     replyParentInteractionId,
     replyText,
@@ -75,8 +77,6 @@ export function SlpPostCard({
     replyMediaToolRef,
     startEditingPost,
     deleteNoodlePost,
-    cancelEditingPost,
-    saveEditedPost,
     reactToPost,
     reactToReply,
     openReplyComposer,
@@ -87,7 +87,6 @@ export function SlpPostCard({
     reactionPendingFor,
     createInteractionPendingFor,
     updatePostPending,
-    titleEditing,
     media,
     replyManagement,
     mentions,
@@ -143,6 +142,18 @@ export function SlpPostCard({
   const selectReplyMention: (account: SlpAccount) => void = mentions?.selectReplyMention ?? (() => {});
   const { imageEditing, pollEditing } = ctx;
   const isEditingPost = Boolean(ctx.postManagement) && editingPostId === post.id;
+  // One card owns the edit sheet: the same post can be on screen twice (the list and its dialog),
+  // and a second sheet would close the first, which cancels the edit.
+  const [ownsEditSheet, setOwnsEditSheet] = useState(false);
+  useEffect(() => {
+    if (!isEditingPost || slpEditSheetOwned) return;
+    slpEditSheetOwned = true;
+    setOwnsEditSheet(true);
+    return () => {
+      slpEditSheetOwned = false;
+      setOwnsEditSheet(false);
+    };
+  }, [isEditingPost]);
   const imageCrop = readSlpPostImageCrop(post.metadata);
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -272,25 +283,6 @@ export function SlpPostCard({
     updatePostPending ||
     Boolean(imageEditing?.loading) ||
     Boolean(imageEditing?.cropSource);
-  const postEditActions = (
-    <>
-      <button
-        type="button"
-        onClick={cancelEditingPost}
-        className="h-8 rounded-full border border-[var(--noodle-divider)] px-4 text-xs font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--accent)]"
-      >
-        {localizeUi("chat.delete.dialog.cancel")}
-      </button>
-      <button
-        type="button"
-        onClick={() => saveEditedPost(post)}
-        disabled={saveEditDisabled}
-        className="h-8 rounded-full bg-[var(--noodle-accent)] px-4 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {updatePostPending ? localizeUi("ui.noodle.noodlehome.saving") : localizeUi("ui.noodle.noodlehome.save")}
-      </button>
-    </>
-  );
   const renderReplyComposer = (nested: boolean) => (
     <SlpReplyComposer
       nested={nested}
@@ -459,7 +451,7 @@ export function SlpPostCard({
         </div>
       </div>
       <div>
-        {(isEditingPost && imageEditing) || hideImage ? null : displayedImageUrl || postImageLoading ? (
+        {hideImage ? null : displayedImageUrl || postImageLoading ? (
           <div
             ref={observePostImage}
             className={cn(
@@ -610,71 +602,19 @@ export function SlpPostCard({
             )}
           </div>
         )}
-        {isEditingPost ? (
-          <div className="mt-2 space-y-2">
-            {titleEditing && (
-              <label className="block space-y-1">
-                <span className={labelClass}>{localizeUi("ui.noodle.noodlepostcard.titleOptional")}</span>
-                <input
-                  value={titleEditing.editingPostTitle}
-                  onChange={(event) => titleEditing.setEditingPostTitle(event.target.value)}
-                  maxLength={titleEditing.maxLength}
-                  className={fieldClass}
-                  placeholder={localizeUi("ui.noodle.noodlepostcard.postTitle")}
-                />
-              </label>
-            )}
-            <textarea
-              value={editingPostContent}
-              onChange={(event) => setEditingPostContent(event.target.value)}
-              className={cn(textareaClass, "min-h-28")}
-              placeholder={localizeUi("ui.noodle.noodlepostcard.editPost")}
+        <>
+          {post.title && <h3 className="mt-2 break-words text-lg font-bold leading-snug">{post.title}</h3>}
+          {!poll || ctx.deduplicatePollBody === false || post.content.trim() !== poll.question ? (
+            <SlurpClampedText
+              content={post.content}
+              accountByHandle={accountByHandle}
+              onOpenProfile={openProfile}
+              className={cn("leading-6", post.title ? "mt-1" : "mt-2")}
+              clampLength={ctx.postShowMoreLength}
             />
-            {imageEditing && (
-              <PostImageEditControls
-                post={editablePost}
-                editing={imageEditing}
-                disabled={updatePostPending}
-                footer={editingExistingPoll ? null : postEditActions}
-              />
-            )}
-            {editingExistingPoll && pollEditing && (
-              <SlpPollComposer
-                value={pollEditing.value}
-                onChange={pollEditing.setValue}
-                onClose={cancelEditingPost}
-                onSubmit={() => saveEditedPost(post)}
-                submitLabel={
-                  updatePostPending
-                    ? localizeUi("ui.noodle.noodlehome.saving")
-                    : localizeUi("ui.noodle.noodlehome.save")
-                }
-                submitDisabled={saveEditDisabled}
-                disabled={updatePostPending}
-                title={localizeUi("ui.noodle.noodlehome.editPoll")}
-                closeLabel={localizeUi("ui.noodle.noodlepostcard.cancelPostEditing")}
-                action={postEditActions}
-              />
-            )}
-            {!imageEditing && !editingExistingPoll && (
-              <div className="flex flex-wrap justify-end gap-2">{postEditActions}</div>
-            )}
-          </div>
-        ) : (
-          <>
-            {post.title && <h3 className="mt-2 break-words text-lg font-bold leading-snug">{post.title}</h3>}
-            {!poll || ctx.deduplicatePollBody === false || post.content.trim() !== poll.question ? (
-              <SlurpClampedText
-                content={post.content}
-                accountByHandle={accountByHandle}
-                onOpenProfile={openProfile}
-                className={cn("leading-6", post.title ? "mt-1" : "mt-2")}
-                clampLength={ctx.postShowMoreLength}
-              />
-            ) : null}
-          </>
-        )}
-        {poll && !isEditingPost && (
+          ) : null}
+        </>
+        {poll && (
           <SlpPollCard
             poll={poll}
             votes={pollVotes}
@@ -795,6 +735,16 @@ export function SlpPostCard({
           </div>
         )}
       </div>
+      {ownsEditSheet && (
+        <SlpPostEditSheet
+          open={isEditingPost}
+          post={post}
+          editablePost={editablePost}
+          ctx={ctx}
+          editingExistingPoll={editingExistingPoll}
+          saveEditDisabled={saveEditDisabled}
+        />
+      )}
     </article>
   );
 }

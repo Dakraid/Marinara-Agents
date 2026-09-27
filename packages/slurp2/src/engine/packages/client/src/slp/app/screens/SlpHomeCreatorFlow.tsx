@@ -402,6 +402,7 @@ export function renderSlurpHomeCreatorFlow({
             profile={selectedProfile}
             profileDraft={editingProfileId === selectedProfile.id ? profileDraft : null}
             composerOpenSignal={composerOpenSignal}
+            onComposerOpened={() => setComposerOpenSignal(0)}
             onProfileChange={(patch) => setProfileDraft((current) => (current ? { ...current, ...patch } : current))}
             onCancelEdit={closeProfileEditor}
             onSaveEdit={(location) => void saveProfile(location)}

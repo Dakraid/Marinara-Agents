@@ -23,6 +23,8 @@ export const SLURP2_SOURCE_MODULES: Record<string, readonly string[]> = {
     "packages/client/src/slp/app/screens/SlpHomeDestinations.tsx",
     "packages/client/src/slp/app/screens/SlpHomeFeedRail.tsx",
     "packages/client/src/slp/app/screens/SlpScreenComposer.tsx",
+    // Step 7: the composer's access chips (Public · Subscribers · Locked · price).
+    "packages/client/src/slp/modules/post/SlpComposerAudience.tsx",
     "packages/client/src/slp/app/screens/SlpScreenMoments.tsx",
     "packages/client/src/slp/app/screens/SlpScreenSubscriptions.tsx",
     "packages/client/src/slp/app/screens/SlpScreenSuggestedCreators.tsx",
@@ -143,6 +145,8 @@ export const SLURP2_SOURCE_MODULES: Record<string, readonly string[]> = {
     "packages/client/src/slp/modules/post/SlpMarkdownRenderer.tsx",
     "packages/client/src/slp/modules/post/SlpPollCard.tsx",
     "packages/client/src/slp/modules/post/SlpPostImageEditControls.tsx",
+    // Step 7: post edit moved from the card into one full-screen sheet.
+    "packages/client/src/slp/modules/post/SlpPostEditSheet.tsx",
     "packages/client/src/slp/modules/post/SlpPostReplyRow.tsx",
     "packages/client/src/slp/modules/post/SlpPostReplyComposer.tsx",
     "packages/client/src/slp/modules/post/SlpPostComposerShell.tsx",

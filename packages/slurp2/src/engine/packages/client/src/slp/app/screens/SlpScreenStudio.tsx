@@ -1,16 +1,20 @@
-import { useState } from "react";
+import { useId, useState, type ReactNode } from "react";
+import { BookOpen, ChevronDown, TrendingDown, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import type { SlurpStudioCreator } from "../../features/economy/slp-economy-contract";
 import { useSetSlurpGoal, useSlurpStudio } from "../../features/economy/slp-economy-hooks";
 import { cn } from "../../../lib/utils";
-import { Avatar } from "../../base/chrome/SlpChrome";
-import { SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
+import { Avatar, SLP_EYEBROW_CLASS, SLP_GROUP_CLASS, SLP_TYPE } from "../../base/chrome/SlpChrome";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
+import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
+import { SlpButton, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
+import { formatSlpNumber } from "../../base/ui/slp-number-format";
 import { SlpCreatorFrame } from "./SlpHomeHelpers";
-import { formatTime } from "../../base/ui/slp-date-time";
+import { formatRelativeTime, formatTime } from "../../base/ui/slp-date-time";
 import { BroadcastPanel } from "../../features/messages/SlpMessages";
 import { SlurpProjectsPanel } from "../../features/projects/SlpProjectsBoard";
-import { SlurpCoinAmount, SlpCoinText } from "../../modules/coin/SlpCoin";
+import { SlpCoinText } from "../../modules/coin/SlpCoin";
 import { errorMessage } from "./SlpHomeHelpers";
 import { SlpCollectCard } from "./SlpCollectCard";
 
@@ -28,54 +32,38 @@ function SlurpStudioView({
   // Diegetic by default, optimisation behind a door.
   //
   // A Creator would check her earnings, her followers, and who keeps showing up — those are in
-  // character. A milestone progress bar and a per-post performance breakdown are a game HUD, and
+  // character. A milestone progress bar and a per-post reach breakdown are a game HUD, and
   // leaving them on screen invites playing the meta instead of the character. They stay one tap
   // away for when that is what you want.
   const [showPerformance, setShowPerformance] = useState(false);
   const creators = studioQuery.data?.creators ?? [];
   const since = studioQuery.data?.since ?? null;
 
-  const delta = (value: number | null) => {
-    if (value === null || value === 0) return null;
-    return (
-      <span
-        className={cn(
-          "text-xs font-bold tabular-nums",
-          value > 0 ? "text-[var(--noodle-accent-foreground)]" : "text-[var(--muted-foreground)]",
-        )}
-      >
-        {value > 0 ? `+${value.toLocaleString()}` : value.toLocaleString()}
-      </span>
-    );
-  };
-
   return (
     <SlpCreatorFrame onBack={onBack} title={localizeUi("ui.slurp.navigation.studio")} action={<span />}>
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-4 sm:p-5">
-        <div className="flex flex-wrap items-baseline justify-between gap-3 px-1">
-          {since ? (
-            <p className="text-xs text-[var(--muted-foreground)]">
-              {localizeUi("ui.slurp.studio.since", {
-                defaultValue: "Changes since {{date}}",
-                date: formatTime(since, i18n.language),
-              })}
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 sm:p-5">
+        {creators.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+            <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>
+              {since
+                ? localizeUi("ui.slurp.studio.since", {
+                    defaultValue: "Changes since {{date}}",
+                    date: formatTime(since, i18n.language),
+                  })
+                : localizeUi("ui.slurp.studio.firstVisit", { defaultValue: "Trends start from your next visit" })}
             </p>
-          ) : (
-            <span />
-          )}
-          {creators.length > 0 && (
-            <button
-              type="button"
+            <SlpButton
+              variant="tertiary"
               onClick={() => setShowPerformance((open) => !open)}
               aria-expanded={showPerformance}
-              className="text-xs font-bold text-[var(--noodle-accent-foreground)] hover:underline"
+              className="min-h-9 text-xs"
             >
               {showPerformance
                 ? localizeUi("ui.slurp.studio.hidePerformance", { defaultValue: "Hide performance" })
                 : localizeUi("ui.slurp.studio.showPerformance", { defaultValue: "Show performance" })}
-            </button>
-          )}
-        </div>
+            </SlpButton>
+          </div>
+        )}
 
         {studioQuery.isPending ? (
           <SlpSkeleton
@@ -89,86 +77,95 @@ function SlurpStudioView({
             onRetry={() => void studioQuery.refetch()}
           />
         ) : creators.length === 0 ? (
-          <div className="rounded-xl bg-[var(--slurp-surface)] px-6 py-14 text-center ring-1 ring-inset ring-[var(--noodle-divider)]">
-            <p className="text-sm font-bold">
-              {localizeUi("ui.slurp.studio.emptyTitle", { defaultValue: "No Creators yet" })}
-            </p>
-            <p className="mx-auto mt-1 max-w-sm text-xs text-[var(--muted-foreground)]">
-              {localizeUi("ui.slurp.studio.emptyDetail", {
-                defaultValue: "Make this persona a Creator to see how its posts are doing.",
-              })}
-            </p>
-          </div>
+          <SlpEmptyState
+            title={localizeUi("ui.slurp.studio.emptyTitle", { defaultValue: "No Creators yet" })}
+            detail={localizeUi("ui.slurp.studio.emptyDetail", {
+              defaultValue: "Make this persona a Creator to see how its posts are doing.",
+            })}
+          />
         ) : (
           creators.map((creator) => (
             <section
               key={creator.id}
               aria-labelledby={`slurp-studio-${creator.id}`}
-              className="flex flex-col gap-4 rounded-xl bg-[var(--slurp-surface)] p-4 ring-1 ring-inset ring-[var(--noodle-divider)]"
+              className="flex flex-col gap-4"
+              data-slurp-studio-creator
             >
-              <button
-                type="button"
-                onClick={() => onOpenProfile(creator.id)}
-                className="flex items-center gap-3 rounded-lg px-1 py-1 text-left hover:bg-[var(--noodle-accent)]/[0.06]"
-              >
-                <Avatar account={{ displayName: creator.displayName, avatarUrl: creator.avatarUrl }} size="md" />
-                <span className="min-w-0">
-                  <span id={`slurp-studio-${creator.id}`} className="block truncate text-sm font-bold">
-                    {creator.displayName}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onOpenProfile(creator.id)}
+                  className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl px-1 py-1 text-start transition-colors hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+                >
+                  <Avatar account={{ displayName: creator.displayName, avatarUrl: creator.avatarUrl }} size="md" />
+                  <span className="min-w-0">
+                    <span id={`slurp-studio-${creator.id}`} className={cn(SLP_TYPE.title, "block truncate")}>
+                      {creator.displayName}
+                    </span>
+                    <span className={cn(SLP_TYPE.meta, "block truncate text-[var(--slurp-muted)]")}>
+                      @{creator.handle}
+                    </span>
                   </span>
-                  <span className="block truncate text-xs text-[var(--muted-foreground)]">@{creator.handle}</span>
-                </span>
-              </button>
-
-              {personaId && <BroadcastPanel creatorAccountId={creator.id} personaId={personaId} />}
-
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  {
-                    label: localizeUi("ui.slurp.studio.followers", { defaultValue: "Followers" }),
-                    value: creator.followers,
-                    change: creator.followersDelta,
-                  },
-                  {
-                    label: localizeUi("ui.slurp.studio.subscribers", { defaultValue: "Subscribers" }),
-                    value: creator.subscribers,
-                    change: null,
-                  },
-                  {
-                    label: localizeUi("ui.slurp.studio.earned", { defaultValue: "Earned" }),
-                    value: creator.earnings.lifetime,
-                    change: creator.earningsDelta,
-                    coins: true,
-                  },
-                ].map((stat) => (
-                  <div key={stat.label} className="rounded-lg bg-[var(--accent)] p-3">
-                    <p className="text-[0.65rem] font-bold uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
-                      {stat.label}
-                    </p>
-                    <p className="mt-1 flex flex-wrap items-baseline gap-x-1.5">
-                      <span className="text-xl font-black tabular-nums">
-                        {"coins" in stat ? (
-                          <SlurpCoinAmount amount={stat.value} size={16} />
-                        ) : (
-                          stat.value.toLocaleString()
-                        )}
-                      </span>
-                      {delta(stat.change)}
-                    </p>
-                  </div>
-                ))}
+                </button>
+                {personaId && (
+                  <BroadcastPanel
+                    creatorAccountId={creator.id}
+                    personaId={personaId}
+                    subscriberCount={creator.subscribers}
+                    creator={{ displayName: creator.displayName, avatarUrl: creator.avatarUrl }}
+                  />
+                )}
               </div>
 
+              {/* Money first: the same Creator earnings card as the Wallet, with Collect. */}
+              {personaId && <SlpCollectCard creator={creator} personaId={personaId} burst />}
+
+              {/* Fans next: value first, a sentence-case label that wraps instead of overflowing
+                  (B18), and a small trend under the value. */}
+              <div className="grid grid-cols-3 gap-2">
+                <SlpStudioStat
+                  value={creator.subscribers}
+                  label={localizeUi("ui.slurp.studio.subscribers", { defaultValue: "Subscribers" })}
+                  trend={creator.subscribersDelta}
+                />
+                <SlpStudioStat
+                  value={creator.followersDelta}
+                  signed
+                  label={localizeUi("ui.slurp.studio.newFans", { defaultValue: "New fans" })}
+                  detail={localizeUi("ui.slurp.studio.followersTotal", {
+                    defaultValue: "{{formatted}} followers",
+                    count: creator.followers,
+                    formatted: formatSlpNumber(creator.followers, i18n.language),
+                  })}
+                />
+                <SlpStudioStat
+                  value={creator.likes?.thisWeek ?? null}
+                  label={localizeUi("ui.slurp.studio.likesThisWeek", { defaultValue: "Likes this week" })}
+                  trend={creator.likes ? creator.likes.thisWeek - creator.likes.lastWeek : null}
+                  trendLabel={localizeUi("ui.slurp.studio.vsLastWeek", { defaultValue: "vs last week" })}
+                />
+              </div>
+
+              {creator.milestonesCrossed.length > 0 && (
+                <p className={cn(SLP_TYPE.meta, "flex items-center gap-2 px-1 text-[var(--slurp-ink)]")}>
+                  <SlpSparkleGlyph size={14} aria-hidden="true" />
+                  {localizeUi("ui.slurp.studio.crossed", {
+                    defaultValue: "Passed {{targets}} followers since your last visit.",
+                    targets: creator.milestonesCrossed.map((value) => value.toLocaleString()).join(", "),
+                  })}
+                </p>
+              )}
+
               {showPerformance && creator.milestone.next !== null && (
-                <div>
+                <div className="px-1">
                   <div className="flex items-baseline justify-between gap-3">
-                    <p className="text-xs font-bold">
+                    <p className={cn(SLP_TYPE.body, "font-semibold")}>
                       {localizeUi("ui.slurp.studio.nextMilestone", {
                         defaultValue: "Next milestone: {{target}} followers",
                         target: creator.milestone.next.toLocaleString(),
                       })}
                     </p>
-                    <p className="text-xs tabular-nums text-[var(--muted-foreground)]">
+                    <p className={cn(SLP_TYPE.meta, "tabular-nums text-[var(--slurp-muted)]")}>
                       {localizeUi("ui.slurp.studio.remaining", {
                         defaultValue: "{{count}} to go",
                         count: creator.milestone.remaining.toLocaleString(),
@@ -184,46 +181,25 @@ function SlurpStudioView({
                 </div>
               )}
 
-              {personaId && <SlpCollectCard creator={creator} personaId={personaId} burst />}
-
               <SlurpGoalEditor creator={creator} personaId={personaId} />
 
-              {creator.milestonesCrossed.length > 0 && (
-                <p className="rounded-lg bg-[var(--noodle-accent)]/10 px-3 py-2 text-xs font-bold text-[var(--noodle-accent-foreground)]">
-                  {localizeUi("ui.slurp.studio.crossed", {
-                    defaultValue: "Passed {{targets}} followers since your last visit.",
-                    targets: creator.milestonesCrossed.map((value) => value.toLocaleString()).join(", "),
-                  })}
-                </p>
-              )}
-
-              {/* What this Creator is posting about, above who is reading it: the thread is the
-                  thing the player steers, and the audience is the result. */}
-              {personaId && (
-                <SlurpProjectsPanel
-                  personaId={personaId}
-                  creatorAccountId={creator.id}
-                  otherCreators={creators.filter((other) => other.id !== creator.id)}
-                />
-              )}
-
               {creator.topFans.length > 0 && (
-                <div>
-                  <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
+                <div className="space-y-2">
+                  <h3 className={cn(SLP_EYEBROW_CLASS, "px-1")}>
                     {localizeUi("ui.slurp.studio.topFans", { defaultValue: "Who is showing up" })}
                   </h3>
-                  <ul className="mt-2 flex flex-col divide-y divide-[var(--noodle-divider)]">
+                  <ul className={SLP_GROUP_CLASS}>
                     {creator.topFans.map((fan) => (
-                      <li key={fan.id} className="flex items-center justify-between gap-3 py-2">
+                      <li key={fan.id} className="flex min-h-14 items-center justify-between gap-3 px-4 py-2">
                         <span className="min-w-0">
-                          <span className="block truncate text-xs font-semibold">
+                          <span className={cn(SLP_TYPE.body, "block truncate font-semibold")}>
                             {fan.displayName}
                             {fan.handle && (
-                              <span className="ml-1 font-normal text-[var(--muted-foreground)]">@{fan.handle}</span>
+                              <span className="ms-1 font-normal text-[var(--slurp-muted)]">@{fan.handle}</span>
                             )}
                           </span>
                           {/* A name with no history is still wallpaper, so say what they have done. */}
-                          <span className="block truncate text-[0.7rem] text-[var(--muted-foreground)]">
+                          <span className={cn(SLP_TYPE.meta, "block truncate text-[var(--slurp-muted)]")}>
                             <SlpCoinText>
                               {[
                                 localizeUi(`ui.slurp.studio.stage.${fan.stage}`, { defaultValue: fan.stage }),
@@ -246,9 +222,10 @@ function SlurpStudioView({
                         </span>
                         <time
                           dateTime={fan.firstSeenAt}
-                          className="shrink-0 text-[0.65rem] tabular-nums text-[var(--muted-foreground)]"
+                          title={formatTime(fan.firstSeenAt, i18n.language)}
+                          className={cn(SLP_TYPE.meta, "shrink-0 tabular-nums text-[var(--slurp-muted)]")}
                         >
-                          {formatTime(fan.firstSeenAt, i18n.language)}
+                          {formatRelativeTime(fan.firstSeenAt, i18n.language)}
                         </time>
                       </li>
                     ))}
@@ -256,21 +233,21 @@ function SlurpStudioView({
                 </div>
               )}
 
-              {showPerformance && creator.posts.length > 0 && (
-                <div>
-                  <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
+              {creator.posts.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className={cn(SLP_EYEBROW_CLASS, "px-1")}>
                     {localizeUi("ui.slurp.studio.recentPosts", { defaultValue: "Recent posts" })}
                   </h3>
-                  <ul className="mt-2 flex flex-col divide-y divide-[var(--noodle-divider)]">
+                  <ul className={SLP_GROUP_CLASS}>
                     {creator.posts.map((post) => (
-                      <li key={post.id} className="flex items-center justify-between gap-3 py-2">
+                      <li key={post.id} className="flex min-h-14 items-center justify-between gap-3 px-4 py-2">
                         <span className="min-w-0">
-                          <span className="block truncate text-xs font-semibold">
+                          <span className={cn(SLP_TYPE.body, "block truncate font-semibold")}>
                             {post.title || localizeUi("ui.slurp.studio.untitled", { defaultValue: "Untitled post" })}
                           </span>
-                          <span className="block text-[0.7rem] text-[var(--muted-foreground)]">
+                          <span className={cn(SLP_TYPE.meta, "block truncate text-[var(--slurp-muted)]")}>
                             {[
-                              formatTime(post.createdAt, i18n.language),
+                              formatRelativeTime(post.createdAt, i18n.language),
                               post.locked ? localizeUi("ui.slurp.studio.locked", { defaultValue: "locked" }) : null,
                               post.hasImage ? localizeUi("ui.slurp.studio.withImage", { defaultValue: "image" }) : null,
                             ]
@@ -278,24 +255,27 @@ function SlurpStudioView({
                               .join(" · ")}
                           </span>
                         </span>
-                        <span className="shrink-0 text-right">
-                          <span className="block text-xs font-bold tabular-nums">
-                            {localizeUi("ui.slurp.studio.reached", {
-                              defaultValue: "{{count}} reached",
-                              count: post.reach.toLocaleString(),
+                        <span className="shrink-0 text-end">
+                          <span className={cn(SLP_TYPE.meta, "block font-semibold tabular-nums")}>
+                            {localizeUi("ui.slurp.studio.likes", {
+                              defaultValue: "{{count}} likes",
+                              count: post.likeCount.toLocaleString(),
                             })}
                           </span>
-                          <span className="block text-[0.7rem] tabular-nums text-[var(--muted-foreground)]">
+                          <span className={cn(SLP_TYPE.meta, "block tabular-nums text-[var(--slurp-muted)]")}>
                             {[
-                              localizeUi("ui.slurp.studio.likes", {
-                                defaultValue: "{{count}} likes",
-                                count: post.likeCount.toLocaleString(),
-                              }),
                               localizeUi("ui.slurp.studio.comments", {
                                 defaultValue: "{{count}} comments",
                                 count: post.replyCount.toLocaleString(),
                               }),
-                              post.unlockCount !== null
+                              // Reach and unlocks are the performance view's numbers.
+                              showPerformance
+                                ? localizeUi("ui.slurp.studio.reached", {
+                                    defaultValue: "{{count}} reached",
+                                    count: post.reach.toLocaleString(),
+                                  })
+                                : null,
+                              showPerformance && post.unlockCount !== null
                                 ? localizeUi("ui.slurp.studio.unlocks", {
                                     defaultValue: "{{count}} unlocks",
                                     count: post.unlockCount.toLocaleString(),
@@ -311,11 +291,112 @@ function SlurpStudioView({
                   </ul>
                 </div>
               )}
+
+              {/* The storyline is operator configuration: closed until asked for, after the fans. */}
+              {personaId && (
+                <SlpStudioStorylineGroup>
+                  <SlurpProjectsPanel
+                    personaId={personaId}
+                    creatorAccountId={creator.id}
+                    otherCreators={creators.filter((other) => other.id !== creator.id)}
+                  />
+                </SlpStudioStorylineGroup>
+              )}
             </section>
           ))
         )}
       </div>
     </SlpCreatorFrame>
+  );
+}
+
+/** A Studio stat tile: the number first and large, a sentence-case label, then a small trend. */
+function SlpStudioStat({
+  value,
+  label,
+  trend = null,
+  trendLabel,
+  detail,
+  signed = false,
+}: {
+  value: number | null;
+  label: string;
+  trend?: number | null;
+  trendLabel?: string;
+  detail?: string;
+  /** The value is itself a change ("+42 new fans"). */
+  signed?: boolean;
+}) {
+  const { i18n } = useUiTranslation();
+  const format = (count: number, withSign: boolean) =>
+    `${withSign && count > 0 ? "+" : ""}${formatSlpNumber(count, i18n.language)}`;
+  return (
+    <div className="flex min-w-0 flex-col rounded-2xl bg-[var(--slurp-surface-raised)] p-3 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
+      <span className="text-[22px] font-extrabold leading-7 tabular-nums">
+        {value === null ? "–" : format(value, signed)}
+      </span>
+      <span className={cn(SLP_TYPE.meta, "mt-0.5 text-[var(--slurp-muted)] [overflow-wrap:anywhere]")}>{label}</span>
+      {trend !== null && trend !== 0 ? (
+        <span
+          className={cn(
+            SLP_TYPE.caption,
+            "mt-1.5 inline-flex w-fit items-center gap-0.5 rounded-full px-1.5 py-0.5 tabular-nums",
+            trend > 0
+              ? "bg-[color-mix(in_srgb,var(--slurp-success)_14%,transparent)] text-[var(--slurp-success)]"
+              : "bg-[var(--accent)] text-[var(--slurp-muted)]",
+          )}
+          title={trendLabel}
+        >
+          {trend > 0 ? (
+            <TrendingUp size={12} aria-hidden="true" className="!text-current" />
+          ) : (
+            <TrendingDown size={12} aria-hidden="true" className="!text-current" />
+          )}
+          {format(trend, true)}
+          {trendLabel && <span className="sr-only"> {trendLabel}</span>}
+        </span>
+      ) : detail ? (
+        <span className={cn(SLP_TYPE.caption, "mt-1.5 truncate font-medium text-[var(--slurp-muted)]")}>{detail}</span>
+      ) : null}
+    </div>
+  );
+}
+
+/** The storyline settings, in one collapsed group at the end of a Creator's Studio. */
+function SlpStudioStorylineGroup({ children }: { children: ReactNode }) {
+  const { t: localizeUi } = useUiTranslation();
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  return (
+    <section className="rounded-2xl bg-[var(--slurp-surface-raised)] shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        aria-controls={id}
+        className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-4 text-start text-[var(--slurp-muted)] transition-colors hover:text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] [&_svg]:!text-current"
+      >
+        <BookOpen size={18} aria-hidden="true" className="shrink-0" />
+        <span className="min-w-0 flex-1">
+          <span className={cn(SLP_TYPE.body, "block font-semibold text-[var(--slurp-text)]")}>
+            {localizeUi("ui.slurp.studio.storyline", { defaultValue: "Storyline" })}
+          </span>
+          <span className={cn(SLP_TYPE.meta, "block truncate")}>
+            {localizeUi("ui.slurp.studio.storylineDetail", {
+              defaultValue: "What the posts are about, and where they go",
+            })}
+          </span>
+        </span>
+        <ChevronDown
+          size={16}
+          aria-hidden="true"
+          className={cn("shrink-0 transition-transform motion-reduce:transition-none", open && "rotate-180")}
+        />
+      </button>
+      <div id={id} hidden={!open} className="border-t border-[var(--noodle-divider)] px-4 pb-4 pt-3">
+        {open && children}
+      </div>
+    </section>
   );
 }
 
@@ -347,24 +428,25 @@ function SlurpGoalEditor({ creator, personaId }: { creator: SlurpStudioCreator; 
 
   if (!editing) {
     return creator.goal ? (
-      <div>
-        <div className="flex items-baseline justify-between gap-3">
-          <p className="min-w-0 truncate text-xs font-bold">{creator.goal.label}</p>
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="shrink-0 text-xs font-bold text-[var(--noodle-accent-foreground)] hover:underline"
-          >
+      <div className="rounded-2xl bg-[var(--slurp-surface-raised)] p-4 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
+        <div className="flex items-center justify-between gap-3">
+          <p className="min-w-0">
+            <span className={cn(SLP_TYPE.meta, "block text-[var(--slurp-muted)]")}>
+              {localizeUi("ui.slurp.studio.tipGoal", { defaultValue: "Tip goal" })}
+            </span>
+            <span className={cn(SLP_TYPE.body, "block truncate font-semibold")}>{creator.goal.label}</span>
+          </p>
+          <SlpButton variant="tertiary" onClick={() => setEditing(true)} className="min-h-9 shrink-0 text-xs">
             {localizeUi("ui.slurp.studio.goalEdit", { defaultValue: "Edit" })}
-          </button>
+          </SlpButton>
         </div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--accent)]">
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--accent)]">
           <div
             className="h-full rounded-full bg-[var(--noodle-accent)] transition-[width] motion-reduce:transition-none"
             style={{ width: `${Math.round(creator.goal.progress * 100)}%` }}
           />
         </div>
-        <p className="mt-1 text-xs tabular-nums text-[var(--muted-foreground)]">
+        <p className={cn(SLP_TYPE.meta, "mt-1.5 tabular-nums text-[var(--slurp-muted)]")}>
           {creator.goal.met ? (
             localizeUi("ui.slurp.studio.goalMet", { defaultValue: "Goal met." })
           ) : (
@@ -379,61 +461,57 @@ function SlurpGoalEditor({ creator, personaId }: { creator: SlurpStudioCreator; 
         </p>
       </div>
     ) : (
-      <button
-        type="button"
-        onClick={() => setEditing(true)}
-        className="self-start rounded-lg px-2 py-1 text-xs font-bold text-[var(--noodle-accent-foreground)] ring-1 ring-inset ring-[var(--noodle-accent)]/40 hover:bg-[var(--noodle-accent)]/10"
-      >
+      <SlpButton variant="secondary" onClick={() => setEditing(true)} className="self-start">
         {localizeUi("ui.slurp.studio.goalAdd", { defaultValue: "Set a tip goal" })}
-      </button>
+      </SlpButton>
     );
   }
 
+  const fieldClass =
+    "h-11 rounded-xl bg-[var(--slurp-canvas,var(--background))] px-3 text-base outline-none ring-1 ring-inset ring-[var(--noodle-divider)] focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] sm:text-sm";
   return (
-    <div className="flex flex-col gap-2 rounded-lg bg-[var(--accent)] p-3">
-      <label className="sr-only" htmlFor={`slurp-goal-label-${creator.id}`}>
-        {localizeUi("ui.slurp.studio.goalLabel", { defaultValue: "Goal" })}
-      </label>
-      <input
-        id={`slurp-goal-label-${creator.id}`}
-        value={label}
-        maxLength={80}
-        onChange={(event) => setLabel(event.target.value)}
-        placeholder={localizeUi("ui.slurp.studio.goalPlaceholder", { defaultValue: "New set on Friday…" })}
-        className="h-10 w-full rounded-lg bg-[var(--slurp-canvas,var(--background))] px-3 text-sm outline-none ring-1 ring-inset ring-[var(--noodle-divider)] focus:ring-2 focus:ring-[var(--noodle-accent)]"
-      />
-      <div className="flex items-center gap-2">
-        <label htmlFor={`slurp-goal-target-${creator.id}`} className="text-xs font-bold text-[var(--muted-foreground)]">
-          {localizeUi("ui.slurp.studio.goalTarget", { defaultValue: "Target" })}
-        </label>
+    <div className="flex flex-col gap-3 rounded-2xl bg-[var(--slurp-surface-raised)] p-4 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
+      <label className="flex flex-col gap-1" htmlFor={`slurp-goal-label-${creator.id}`}>
+        <span className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>
+          {localizeUi("ui.slurp.studio.goalLabel", { defaultValue: "Goal" })}
+        </span>
         <input
-          id={`slurp-goal-target-${creator.id}`}
-          type="number"
-          min={1}
-          max={1_000_000}
-          value={target}
-          onChange={(event) => setTarget(Math.max(1, Math.floor(Number(event.target.value) || 0)))}
-          className="h-9 w-28 rounded-lg bg-[var(--slurp-canvas,var(--background))] px-2 text-sm tabular-nums outline-none ring-1 ring-inset ring-[var(--noodle-divider)] focus:ring-2 focus:ring-[var(--noodle-accent)]"
+          id={`slurp-goal-label-${creator.id}`}
+          value={label}
+          maxLength={80}
+          onChange={(event) => setLabel(event.target.value)}
+          placeholder={localizeUi("ui.slurp.studio.goalPlaceholder", { defaultValue: "New set on Friday…" })}
+          className={cn(fieldClass, "w-full")}
         />
-        <div className="ml-auto flex gap-2">
+      </label>
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="flex flex-col gap-1" htmlFor={`slurp-goal-target-${creator.id}`}>
+          <span className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>
+            {localizeUi("ui.slurp.studio.goalTarget", { defaultValue: "Target" })}
+          </span>
+          <input
+            id={`slurp-goal-target-${creator.id}`}
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={1_000_000}
+            value={target}
+            onChange={(event) => setTarget(Math.max(1, Math.floor(Number(event.target.value) || 0)))}
+            className={cn(fieldClass, "w-28 tabular-nums")}
+          />
+        </label>
+        <div className="ms-auto flex gap-2">
           {creator.goal && (
-            <button
-              type="button"
-              disabled={setGoal.isPending}
-              onClick={() => submit(null)}
-              className="min-h-9 rounded-lg px-3 text-xs font-bold text-[var(--muted-foreground)] ring-1 ring-inset ring-[var(--noodle-divider)] disabled:opacity-50"
-            >
+            <SlpButton variant="tertiary" disabled={setGoal.isPending} onClick={() => submit(null)}>
               {localizeUi("ui.slurp.studio.goalClear", { defaultValue: "Clear" })}
-            </button>
+            </SlpButton>
           )}
-          <button
-            type="button"
-            disabled={setGoal.isPending || !label.trim()}
-            onClick={() => submit(label.trim())}
-            className="min-h-9 rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] disabled:opacity-50"
-          >
+          <SlpButton variant="tertiary" disabled={setGoal.isPending} onClick={() => setEditing(false)}>
+            {localizeUi("chat.delete.dialog.cancel")}
+          </SlpButton>
+          <SlpPrimaryButton disabled={setGoal.isPending || !label.trim()} onClick={() => submit(label.trim())}>
             {localizeUi("ui.slurp.studio.goalSave", { defaultValue: "Save goal" })}
-          </button>
+          </SlpPrimaryButton>
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@ import { useStageProfileViewModel, type StageProfileViewProps } from "./slp-prof
 import { SlpProfileModals } from "./SlpProfileModals";
 import { SlpProfilePostCards } from "./SlpProfilePostCards";
 import { SlpProfileLeadingActions } from "./SlpProfileLeadingActions";
-import { ChevronDown, ChevronLeft, Pencil, Wrench } from "lucide-react";
+import { ChevronDown, ChevronLeft, Pencil, Plus, Wrench } from "lucide-react";
 import { Fragment } from "react";
 import type { SlpCreatorPostView, SlpCreatorStageProfile } from "../../../../../shared/src/slp/slp-social.types.js";
 import type { SlurpPromotion } from "../../features/ads/slp-ads-contract";
@@ -14,6 +14,7 @@ import { useNearViewportSlurpMediaSrc } from "../../base/media/slp-media-src";
 import { SlurpProfileSurface } from "../../features/creators/SlpProfileSurface";
 import { SlpBalanceChip } from "../../modules/chrome/SlpShell";
 import { SlpButton, slpTagClass } from "../../modules/chrome/SlpButton";
+import { SlpUsesAiMark } from "../../modules/chrome/SlpAiMark";
 import { SlpCoinText } from "../../modules/coin/SlpCoin";
 import { formatSlpNumber, formatSlpPercent } from "../../base/ui/slp-number-format";
 import { useTranslation as useUiTranslation } from "react-i18next";
@@ -473,6 +474,23 @@ export function StageProfileView({
         />
       )}
       <SlpProfileModals model={model} />
+      {managedCreator && (
+        <NoodlerPostComposer
+          key={profile.id}
+          open={model.composerOpen}
+          onClose={() => model.setComposerOpen(false)}
+          profile={profile}
+          availablePosts={model.posts}
+          draft={model.draft}
+          onDraftChange={model.onDraftChange}
+          onClearDraft={model.onClearDraft}
+          onDiscardDraft={model.onDiscardDraft}
+          onManualPost={model.onManualPost}
+          onGuidedPost={model.onGuidedPost}
+          manualPending={model.manualPending}
+          guidePending={model.guidePending}
+        />
+      )}
     </>
   );
 }
@@ -486,21 +504,12 @@ function SlpCreatorToolsCard({ model }: { model: ReturnType<typeof useStageProfi
   const {
     arcsQuery,
     autoPosting,
-    composerOpenSignal,
     creatorToolsOpen,
-    draft,
-    guidePending,
     localizeUi,
-    manualPending,
-    onClearDraft,
-    onDiscardDraft,
-    onDraftChange,
     onEdit,
-    onGuidedPost,
-    onManualPost,
     onRunNow,
+    openComposer,
     personaBackedCreator,
-    posts,
     profile,
     runNowPending,
     setCreatorToolsOpen,
@@ -562,6 +571,10 @@ function SlpCreatorToolsCard({ model }: { model: ReturnType<typeof useStageProfi
             so the own page has no buttons here. */}
         {!viewingOwnCreator && (
           <div className="flex flex-wrap gap-2">
+            <SlpButton variant="quiet" onClick={() => openComposer()} className="min-h-10 px-3.5 text-xs">
+              <Plus size={14} aria-hidden="true" />
+              {localizeUi("ui.slurp.profile.newPost", { defaultValue: "New post" })}
+            </SlpButton>
             <SlpButton variant="quiet" onClick={onEdit} className="min-h-10 px-3.5 text-xs">
               <Pencil size={14} aria-hidden="true" />
               {localizeUi("ui.slurp.profile.editProfile", { defaultValue: "Edit profile" })}
@@ -590,6 +603,7 @@ function SlpCreatorToolsCard({ model }: { model: ReturnType<typeof useStageProfi
                   {runNowPending
                     ? localizeUi("ui.noodle.stageprofileview.running")
                     : localizeUi("ui.noodle.stageprofileview.runNow")}
+                  <SlpUsesAiMark />
                 </SlpButton>
               </>
             )}
@@ -614,22 +628,6 @@ function SlpCreatorToolsCard({ model }: { model: ReturnType<typeof useStageProfi
             <SlurpArcEffectsList arcs={arcsQuery.data!.arcs} />
           </div>
         )}
-        <div className="-mx-4 -mb-4">
-          <NoodlerPostComposer
-            key={profile.id}
-            profile={profile}
-            openSignal={composerOpenSignal}
-            availablePosts={posts}
-            draft={draft}
-            onDraftChange={onDraftChange}
-            onClearDraft={onClearDraft}
-            onDiscardDraft={onDiscardDraft}
-            onManualPost={onManualPost}
-            onGuidedPost={onGuidedPost}
-            manualPending={manualPending}
-            guidePending={guidePending}
-          />
-        </div>
       </div>
     </section>
   );

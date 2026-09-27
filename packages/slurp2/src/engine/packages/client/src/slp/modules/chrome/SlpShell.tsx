@@ -15,18 +15,8 @@ import {
   SlpProfileGlyph,
 } from "../../base/chrome/SlpGlyphs";
 import { motion, useReducedMotion } from "framer-motion";
-import {
-  type ComponentProps,
-  createContext,
-  type CSSProperties,
-  type ReactNode,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { type ComponentProps, createContext, type CSSProperties, type ReactNode, useContext, useState } from "react";
 import { cn } from "../../../lib/utils";
-import { useDialogFocusScope } from "../../../hooks/use-dialog-focus-scope";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { SlurpCoinAmount, slpCoinPlainText } from "../coin/SlpCoin";
 import { SlpShimmer, SlpTwinkle } from "../sparkle/SlpSparkle";
@@ -183,7 +173,6 @@ export function SlpShell({
   onGeneratePosts,
   onRunAudience,
   audiencePending,
-  onCompose,
   notificationCount = 0,
   hasOperatedCreator = false,
   walletBalanceLabel,
@@ -206,9 +195,6 @@ export function SlpShell({
     // While the pill is away, bars pinned to the bottom (the thread composer) drop to the edge (`--slp-nav-live`).
     onHiddenChange: (hidden) => scrollRoot?.toggleAttribute("data-slp-nav-hidden", hidden),
   });
-  const pulsePanelRef = useRef<HTMLElement | null>(null);
-  const pulseCloseRef = useRef<HTMLButtonElement | null>(null);
-  const pulseTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [pulseOpen, setPulseOpen] = useState(false);
   const prefersReducedMotion = Boolean(useReducedMotion());
   const hasMorePersonaAccounts = visiblePersonaAccounts.length < sortedPersonaAccounts.length;
@@ -230,26 +216,9 @@ export function SlpShell({
   const onMobileHomeTap = () => {
     onOpenMobileHomeDestination();
   };
-  useDialogFocusScope(pulseOpen, pulsePanelRef, pulseCloseRef, pulseTriggerRef);
-  useEffect(() => {
-    if (!pulseOpen) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setPulseOpen(false);
-    };
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [pulseOpen]);
-
-  const openPulse = () => {
-    pulseTriggerRef.current = document.activeElement instanceof HTMLButtonElement ? document.activeElement : null;
-    setPulseOpen(true);
-  };
-  // Pulse opens over the shell, so the More sheet closes first and focus returns to the More tab.
-  const openPulseFromDrawer = () => {
-    onMobileDrawerOpenChange(false);
-    pulseTriggerRef.current = mobileDrawerTriggerRef?.current ?? null;
-    setPulseOpen(true);
-  };
+  // Pulse is a SlpSheet: opening it closes the More sheet (one overlay at a time, B8), and the
+  // sheet's focus scope hands focus back to whatever opened it.
+  const openPulse = () => setPulseOpen(true);
   const walletChip = (className: string) =>
     walletBalanceLabel && (
       <span className={cn(SLP_BALANCE_CHIP_CLASS, className)}>
@@ -350,7 +319,7 @@ export function SlpShell({
                 {localizeUi("navigation.topbar.settings")}
               </button>
             </nav>
-            {slurpActive && <SlpPulseCard open={pulseOpen} onOpen={openPulseFromDrawer} />}
+            {slurpActive && <SlpPulseCard open={pulseOpen} onOpen={openPulse} />}
             {/*
               The drawer used to render the whole persona list open, so the identity card
               was pushed off-screen on any install with more than a couple of personas.
@@ -667,12 +636,7 @@ export function SlpShell({
 
         <SlpPulsePanel
           open={pulseOpen}
-          panelRef={pulsePanelRef}
-          closeRef={pulseCloseRef}
           onClose={() => setPulseOpen(false)}
-          onCompose={onCompose}
-          onOpenMessages={onOpenMessages}
-          onOpenSettings={onOpenSettings}
           onGeneratePosts={onGeneratePosts}
           onRunAudience={onRunAudience}
           audiencePending={audiencePending}

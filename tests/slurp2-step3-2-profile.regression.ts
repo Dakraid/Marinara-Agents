@@ -95,7 +95,8 @@ assert.match(screen, /\{activeTab === "posts" && \(goalForViewer \|\| arcsQuery\
 const tools = screen.slice(screen.indexOf("function SlpCreatorToolsCard"));
 assert.match(
   tools,
-  /\{!viewingOwnCreator && \(\s*<div className="flex flex-wrap gap-2">\s*<SlpButton variant="quiet" onClick=\{onEdit\}/u,
+  // Step 7: a world Creator's tools start with "New post" (the composer sheet), then Edit profile.
+  /\{!viewingOwnCreator && \(\s*<div className="flex flex-wrap gap-2">\s*<SlpButton variant="quiet" onClick=\{\(\) => openComposer\(\)\}[\s\S]*?<\/SlpButton>\s*<SlpButton variant="quiet" onClick=\{onEdit\}/u,
 );
 assert.match(actions, /if \(viewingOwnCreator\) \{[\s\S]*?onClick=\{onEdit\}/u, "the own row keeps Edit profile");
 

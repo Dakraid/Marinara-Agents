@@ -147,7 +147,9 @@ assert.match(disclosure, /AUDIENCE_FIELDS\.map/u, "the audience projection must 
 // leaving them on screen invites playing the meta instead of the character.
 assert.match(home, /const \[showPerformance, setShowPerformance\] = useState\(false\)/u);
 assert.match(home, /showPerformance && creator\.milestone\.next !== null/u);
-assert.match(home, /showPerformance && creator\.posts\.length > 0/u);
+// Step 7: recent posts (likes, comments) are part of the page; reach and unlocks stay behind the door.
+assert.match(home, /showPerformance\s*\?\s*localizeUi\("ui\.slurp\.studio\.reached"/u);
+assert.match(home, /showPerformance && post\.unlockCount !== null/u);
 // Earnings, followers, top fans, and the tip goal stay visible without asking.
 assert.doesNotMatch(home, /showPerformance && creator\.topFans/u, "who is showing up is in character");
 

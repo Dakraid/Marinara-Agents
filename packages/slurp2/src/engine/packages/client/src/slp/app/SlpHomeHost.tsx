@@ -99,7 +99,6 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
     confirmReviewedImagePrompts,
     toggleCreatorSubscription,
     mainAuthorProfile,
-    openPostComposer,
     openStoryComposer,
   } = model;
   const personaSourceIds = new Set(personas.map((persona) => persona.id));
@@ -204,7 +203,6 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
       );
     },
     onOpenSettings: openSettings,
-    onCompose: openPostComposer,
     // Every NoodleR branch spreads shellProps, so these mount once wherever the user is. The
     // Creator settings modal is opened from Backstage, from a Creator's profile and from a
     // settings search result, so it cannot belong to any one of those screens.

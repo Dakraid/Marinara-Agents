@@ -22,9 +22,11 @@ export function useSlpPostImageEditor(loadPostImage?: (post: SlpPostCardModel) =
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const revisionRef = useRef(0);
+  const beforeRemoveRef = useRef<SlpPostImageUpdate | null>(null);
 
   const reset = () => {
     revisionRef.current += 1;
+    beforeRemoveRef.current = null;
     setUpdate(null);
     setCropSource(null);
     setLoading(false);
@@ -99,12 +101,15 @@ export function useSlpPostImageEditor(loadPostImage?: (post: SlpPostCardModel) =
           applyCrop,
           cancelCrop: () => setCropSource(null),
           remove: () => {
+            // Undo brings back what was there, crop or replacement included (design step 7).
+            beforeRemoveRef.current = update?.kind === "remove" ? beforeRemoveRef.current : update;
             setUpdate({ kind: "remove" });
             setCropSource(null);
             setError(null);
           },
           restore: () => {
-            setUpdate(null);
+            setUpdate(beforeRemoveRef.current);
+            beforeRemoveRef.current = null;
             setCropSource(null);
             setError(null);
           },

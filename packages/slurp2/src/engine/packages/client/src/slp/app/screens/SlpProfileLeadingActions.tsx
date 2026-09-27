@@ -42,7 +42,7 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
   if (viewingOwnCreator) {
     return (
       <div className="grid grid-cols-2 gap-2">
-        <SlpButton variant="quiet" onClick={openComposer} className="px-3">
+        <SlpButton variant="quiet" onClick={() => openComposer()} className="px-3">
           <Plus size={16} aria-hidden="true" />
           {localizeUi("ui.slurp.profile.newPost", { defaultValue: "New post" })}
         </SlpButton>

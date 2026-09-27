@@ -13,7 +13,7 @@ import { generateSlurpCommissionImage } from "./commissions/slp-commission-image
 import { replyToSlurpMessage } from "./slp-message-operation.js";
 import { trySlurpWrite } from "../../base/locking/slp-operation-lock.js";
 import { personaQuerySchema } from "../../modules/messages/slp-messages-schemas.js";
-import { slurpViewerImageOnCooldown } from "../../modules/messages/slp-messaging.js";
+import { slurpViewerImageReadyAt } from "../../modules/messages/slp-messaging.js";
 import type { SlpMessagesContext } from "./slp-messages-context.js";
 
 const MESSAGE_MEDIA_MAX_BYTES = 20 * 1024 * 1024;
@@ -248,8 +248,10 @@ export async function slpMessagesMediaRoutes(app: FastifyInstance, messaging: Sl
       return reply.code(409).send({ error: "This conversation is cooling off." });
     // The wait between two drawn pictures is the player's setting (minutes, 0 = off).
     const cooldownMinutes = (await slurp.getSettings()).messagesViewerImageCooldownMinutes;
-    if (cooldownMinutes > 0 && slurpViewerImageOnCooldown(await messages.listMessages(thread.id), cooldownMinutes))
-      return reply.code(429).send({ error: "You can generate another picture later." });
+    const readyAt =
+      cooldownMinutes > 0 ? slurpViewerImageReadyAt(await messages.listMessages(thread.id), cooldownMinutes) : null;
+    // `retryAt` lets the chat say when ("Draw again at 4:30 PM") in the reader's own clock.
+    if (readyAt) return reply.code(429).send({ error: "You can generate another picture later.", retryAt: readyAt });
     const drawn = await generateSlurpCommissionImage(app.db, {
       creatorAccountId: thread.creatorAccountId,
       brief: parsed.data.prompt,

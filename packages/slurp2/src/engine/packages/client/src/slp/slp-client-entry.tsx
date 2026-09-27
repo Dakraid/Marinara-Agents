@@ -1,4 +1,5 @@
-import { Component, useEffect, useState, type CSSProperties, type ErrorInfo, type ReactNode } from "react";
+import { Component, useContext, useEffect, useState, type CSSProperties, type ErrorInfo, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import i18next from "i18next";
@@ -70,11 +71,15 @@ const SLURP_ICON_COLOR_FIX =
 const SLURP_TOAST_STYLES = `
   [data-slp-toaster] [data-sonner-toaster] {
     --width: min(380px, calc(100vw - 32px));
-    z-index: 100;
+    /* The toaster renders in the package portal next to Slurp's sheets (10000) and their popovers
+       (10001), and above them: an Undo toast raised inside a full-screen sheet must be seen and tapped. */
+    z-index: 10002;
     /* Sonner sets its own system font stack; Slurp toasts use the Engine font like the rest of Slurp. */
     font-family: inherit;
   }
   [data-sonner-toast].slp-toast {
+    /* The package portal does not take pointer events itself; its sheets and toasts opt back in. */
+    pointer-events: auto;
     width: var(--width);
     min-height: 52px;
     padding: 12px 14px;
@@ -252,6 +257,9 @@ const engineTheme = () => (document.documentElement.dataset.theme === "light" ? 
  * capability prop would make it live.
  */
 function SlpToaster() {
+  // The package portal, where the sheets render: the app root is a fixed stacking context below it,
+  // so a toaster left in the app could never show above a sheet.
+  const portal = useContext(ModalPortalContext);
   const [position] = useState(engineToastPosition);
   const [theme, setTheme] = useState(engineTheme);
   useEffect(() => {
@@ -259,7 +267,7 @@ function SlpToaster() {
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     return () => observer.disconnect();
   }, []);
-  return (
+  const toaster = (
     <div
       data-slp-toaster=""
       className="contents"
@@ -278,6 +286,7 @@ function SlpToaster() {
       />
     </div>
   );
+  return portal ? createPortal(toaster, portal) : toaster;
 }
 
 function SlurpPackageRoot({ element }: { element: CapabilityElement }) {

@@ -6,6 +6,15 @@ import { useTranslation as useUiTranslation } from "react-i18next";
 import { useSlurpMediaSrc } from "./slp-media-src";
 import { SLP_IMG_FRAME_CLASS, slpImgFade } from "../chrome/SlpChrome";
 
+// The chip and pill looks of `modules/chrome/SlpButton` (a base file cannot import a module): selected =
+// pink tint + ring, pills at least 40 px here because they sit inside a sheet row.
+const PILL =
+  "inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full px-4 text-[13px] font-semibold tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none";
+const CHIP_SELECTED =
+  "bg-[image:var(--slurp-nav-active)] text-[var(--slurp-text)] ring-1 ring-inset ring-[var(--noodle-accent)]/45";
+const CHIP_IDLE =
+  "text-[var(--slurp-muted)] ring-1 ring-inset ring-[var(--noodle-divider)] hover:bg-[var(--accent)] hover:text-[var(--slurp-text)]";
+
 type CropAspect = "original" | "square" | "portrait" | "landscape";
 
 interface NormalizedCrop {
@@ -30,20 +39,12 @@ function safeImageSource(source: string): string {
   }
 }
 
-const ASPECT_OPTIONS: Array<{ value: CropAspect; labelKey: string }> = [
-  {
-    value: "original",
-    labelKey: "ui.noodle.postimagecropeditor.aspect.original",
-  },
-  { value: "square", labelKey: "ui.noodle.postimagecropeditor.aspect.square" },
-  {
-    value: "portrait",
-    labelKey: "ui.noodle.postimagecropeditor.aspect.portrait",
-  },
-  {
-    value: "landscape",
-    labelKey: "ui.noodle.postimagecropeditor.aspect.landscape",
-  },
+// The feed's shape first (4:5), then square and wide; "Original" keeps the picture as it is.
+const ASPECT_OPTIONS: Array<{ value: CropAspect; ratio?: string; labelKey: string }> = [
+  { value: "portrait", ratio: "4:5", labelKey: "ui.noodle.postimagecropeditor.aspect.portrait" },
+  { value: "square", ratio: "1:1", labelKey: "ui.noodle.postimagecropeditor.aspect.square" },
+  { value: "landscape", ratio: "16:9", labelKey: "ui.noodle.postimagecropeditor.aspect.landscape" },
+  { value: "original", labelKey: "ui.noodle.postimagecropeditor.aspect.original" },
 ];
 
 export function PostImageCropEditor({
@@ -192,14 +193,14 @@ export function PostImageCropEditor({
   };
 
   return (
-    <section className="mb-3 space-y-3 rounded-xl border border-[var(--noodle-divider)] bg-[var(--noodle-accent)]/5 p-3">
+    <section className="space-y-3 rounded-2xl bg-[var(--slurp-surface-raised)] p-3 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h3 className="flex items-center gap-2 text-sm font-bold">
-            <Crop size={15} className="text-[var(--noodle-accent-foreground)]" />
+        <div className="min-w-0">
+          <h3 className="flex items-center gap-2 text-[15px] font-bold leading-5">
+            <Crop size={16} className="text-[var(--slurp-ink)]" aria-hidden="true" />
             {localizeUi("ui.noodle.postimagecropeditor.frameImage")}
           </h3>
-          <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+          <p className="mt-0.5 text-xs leading-4 text-[var(--slurp-muted)]">
             {localizeUi("ui.noodle.postimagecropeditor.dragTheFrameToPositionTheImage")}
           </p>
         </div>
@@ -207,9 +208,9 @@ export function PostImageCropEditor({
           type="button"
           onClick={reset}
           disabled={busy}
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-xs font-bold text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)] disabled:opacity-50"
+          className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-[var(--slurp-muted)] hover:bg-[var(--accent)] hover:text-[var(--slurp-text)] disabled:opacity-50 [&_svg]:!text-current"
         >
-          <RotateCcw size={13} />
+          <RotateCcw size={14} aria-hidden="true" />
           {localizeUi("ui.characters.charactercliptrimmodal.reset")}
         </button>
       </div>
@@ -282,30 +283,34 @@ export function PostImageCropEditor({
         </div>
       </div>
 
-      <div className="space-y-2">
-        <div className={cn("flex flex-wrap gap-1 rounded-lg bg-[var(--background)] p-1", lockedRatio && "hidden")}>
-          {ASPECT_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              aria-pressed={aspect === option.value}
-              disabled={busy}
-              onClick={() => {
-                setAspect(option.value);
-                setCenter({ x: 0.5, y: 0.5 });
-              }}
-              className={cn(
-                "min-h-9 flex-1 rounded-lg px-2 text-xs font-bold transition-colors disabled:opacity-50",
-                aspect === option.value
-                  ? "bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]"
-                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]",
-              )}
-            >
-              {localizeUi(option.labelKey)}
-            </button>
-          ))}
-        </div>
-        <label className="flex items-center gap-3 text-xs font-bold text-[var(--muted-foreground)]">
+      <div className="space-y-3">
+        {/* Shape chips are the main control; zoom is the fine-tune below them. */}
+        {!lockedRatio && (
+          <div
+            className="flex flex-wrap gap-2"
+            role="group"
+            aria-label={localizeUi("ui.slurp.crop.shape", { defaultValue: "Shape" })}
+          >
+            {ASPECT_OPTIONS.map((option) => (
+              <button
+                type="button"
+                key={option.value}
+                aria-pressed={aspect === option.value}
+                disabled={busy}
+                aria-label={localizeUi(option.labelKey)}
+                title={localizeUi(option.labelKey)}
+                onClick={() => {
+                  setAspect(option.value);
+                  setCenter({ x: 0.5, y: 0.5 });
+                }}
+                className={cn(PILL, "min-w-14 px-3.5", aspect === option.value ? CHIP_SELECTED : CHIP_IDLE)}
+              >
+                {option.ratio ?? localizeUi(option.labelKey)}
+              </button>
+            ))}
+          </div>
+        )}
+        <label className="flex items-center gap-3 text-xs font-medium text-[var(--slurp-muted)]">
           {localizeUi("ui.noodle.postimagecropeditor.zoom")}
           <input
             type="range"
@@ -331,7 +336,7 @@ export function PostImageCropEditor({
           type="button"
           onClick={onCancel}
           disabled={busy}
-          className="min-h-10 rounded-full border border-[var(--noodle-divider)] px-4 text-xs font-bold disabled:opacity-50"
+          className={cn(PILL, "text-[var(--slurp-ink)] hover:bg-[var(--accent)]")}
         >
           {localizeUi("chat.delete.dialog.cancel")}
         </button>
@@ -339,7 +344,10 @@ export function PostImageCropEditor({
           type="button"
           onClick={apply}
           disabled={!crop || busy}
-          className="min-h-10 rounded-full bg-[var(--noodle-accent)] px-5 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] disabled:opacity-50"
+          className={cn(
+            PILL,
+            "bg-[var(--slurp-tint)] font-bold text-[var(--slurp-text)] shadow-[var(--slurp-highlight)] hover:bg-[color-mix(in_srgb,var(--noodle-accent)_22%,var(--slurp-surface-raised))]",
+          )}
         >
           {applying
             ? localizeUi("ui.noodle.postimagecropeditor.applying")

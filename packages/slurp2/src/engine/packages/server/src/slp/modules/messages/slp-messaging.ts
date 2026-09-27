@@ -213,13 +213,24 @@ export function slurpViewerImageOnCooldown(
   cooldownMinutes: number,
   now = Date.now(),
 ): boolean {
-  if (cooldownMinutes <= 0) return false;
-  return messages.some(
-    (message) =>
-      message.role === "viewer" &&
-      message.metadata.generatedContext === "viewer" &&
-      now - Date.parse(message.createdAt) < cooldownMinutes * MINUTE,
-  );
+  return slurpViewerImageReadyAt(messages, cooldownMinutes, now) !== null;
+}
+
+/** When the viewer may draw the next picture (ISO), or null when they may draw one now. */
+export function slurpViewerImageReadyAt(
+  messages: readonly { role: string; createdAt: string; metadata: { generatedContext?: unknown } }[],
+  cooldownMinutes: number,
+  now = Date.now(),
+): string | null {
+  if (cooldownMinutes <= 0) return null;
+  let latest = -Infinity;
+  for (const message of messages) {
+    if (message.role !== "viewer" || message.metadata.generatedContext !== "viewer") continue;
+    const at = Date.parse(message.createdAt);
+    if (at > latest) latest = at;
+  }
+  const readyAt = latest + cooldownMinutes * MINUTE;
+  return readyAt > now ? new Date(readyAt).toISOString() : null;
 }
 
 /** A point inside a player-set range. A range entered backwards still reads as a range. */

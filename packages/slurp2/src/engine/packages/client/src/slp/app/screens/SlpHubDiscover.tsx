@@ -15,6 +15,7 @@ import { SlpCreatorAvatar, SlurpCreatorProfileCard } from "../../modules/creator
 import { SlurpDiscoverToolbar } from "../../features/discovery/SlpDiscoverToolbar";
 import { cn } from "../../../lib/utils";
 import type { useTranslation } from "react-i18next";
+import type { SlurpWallet } from "../../features/economy/slp-economy-contract";
 import type { useHideOnScroll } from "../../base/chrome/SlpChrome";
 import type { ViewerHub } from "./SlpScreenHub";
 import type { deriveSlurpHubView } from "./slp-hub-view";
@@ -151,6 +152,7 @@ export function SlpHubDiscover({
   isLoading,
   isError,
   onRetry,
+  walletSubscriptions,
 }: {
   discover: Discover;
   discoveryInputRef: HubProps["discoveryInputRef"];
@@ -174,13 +176,22 @@ export function SlpHubDiscover({
   isLoading: boolean;
   isError: boolean;
   onRetry: () => void;
+  walletSubscriptions?: SlurpWallet["subscriptions"];
 }) {
   const openProfile = postCardCtx.openAuthorProfile ?? (() => undefined);
   const searchLabel = localizeUi("ui.noodle.noodlerhome.searchPostsOrCreators");
   const creatorCard = (creator: Discover["filtered"][number], layout: "grid" | "featured" = "grid") => (
     <SlurpCreatorProfileCard
       key={creator.profile.id}
-      creator={creator}
+      creator={{
+        ...creator,
+        subscription: walletSubscriptions?.[creator.profile.id]
+          ? {
+              until: walletSubscriptions[creator.profile.id].paidThroughAt,
+              cancelled: Boolean(walletSubscriptions[creator.profile.id].cancelled),
+            }
+          : null,
+      }}
       layout={layout}
       onOpenProfile={postCardCtx.openAuthorProfile}
       showDiscoveryActions

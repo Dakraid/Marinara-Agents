@@ -84,7 +84,11 @@ export type SlurpStudioCreator = {
   topFans: SlurpTopFan[];
   /** Null on a first visit: "no change yet" and "measured no change" are different. */
   followersDelta: number | null;
+  /** Null until a visit has recorded a subscriber count to compare with. */
+  subscribersDelta: number | null;
   earningsDelta: number | null;
+  /** Likes on posts put up this week and the week before (the "Likes this week" tile). */
+  likes?: { thisWeek: number; lastWeek: number };
   milestonesCrossed: number[];
   posts: SlurpStudioPost[];
 };

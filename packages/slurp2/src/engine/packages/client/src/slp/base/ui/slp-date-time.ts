@@ -106,6 +106,13 @@ export function formatUpcomingDay(value: string, locale: string, now = Date.now(
   ).format(date);
 }
 
+/** A clock time ahead: "4:30 PM" today, "Fri 4:30 PM" on a later day ("Next refill …", "Draw again at …"). */
+export function formatUpcomingClock(value: string, locale: string, now = Date.now()) {
+  const clock = formatClockTime(value, locale);
+  if (!clock || slpDayKey(value) === slpDayKey(now)) return clock;
+  return `${formatUpcomingDay(value, locale, now)} ${clock}`;
+}
+
 /** The local calendar day of a time, as a sortable key ("2026-09-27"). */
 export function slpDayKey(value: string | number | Date) {
   const date = new Date(value);

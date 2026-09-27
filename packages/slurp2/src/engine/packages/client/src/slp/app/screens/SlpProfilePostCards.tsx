@@ -240,7 +240,11 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
             ))}
           </div>
         ) : (
-          <SlpEmptyState title={emptyTabTitle} />
+          <SlpEmptyState
+            title={emptyTabTitle}
+            action={viewingOwnCreator ? localizeUi("ui.slurp.moments.add", { defaultValue: "Add Story" }) : undefined}
+            onAction={() => openComposer("story")}
+          />
         )
       ) : visiblePosts.length > 0 ? (
         <>
@@ -343,7 +347,7 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
               defaultValue: "Post something and your followers see it in their feed.",
             })}
             action={localizeUi("ui.slurp.profile.createFirstPost", { defaultValue: "Create your first post" })}
-            onAction={openComposer}
+            onAction={() => openComposer("post")}
           />
         ) : (
           <SlpEmptyState

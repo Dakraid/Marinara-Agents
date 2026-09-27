@@ -12,6 +12,7 @@ import {
 import { slurpFollowerMilestone, slurpMilestonesCrossed } from "../../modules/world/slp-milestones.js";
 import { slurpGoalProgress } from "../../modules/projects/slp-goal.js";
 import { slurpPayoutAllowance } from "../../modules/economy/slp-earnings.js";
+import { slurpLikesByWeek } from "../../modules/economy/slp-studio-stats.js";
 import { isSlurpViewerActorAccount } from "../../modules/settings/slp-settings.js";
 import type { FastifyInstance } from "fastify";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
@@ -33,9 +34,12 @@ export async function slpStudioRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
     const at = new Date();
     const snapshot = await readSlurpStudioSnapshot(app.db, viewer.id);
 
+    // Two weeks of posts for the likes trend; the list shows the newest six.
+    // ponytail: newest 30 posts per Creator; a Creator posting more than 30 times in two weeks
+    // undercounts last week's likes. Add a dated query if that ever matters.
     const postsByAccount = await noodle.listNoodlerPostsByAccounts(
       operated.map((account) => account.id),
-      6,
+      30,
     );
     const allPostIds = [...postsByAccount.values()].flat().map((post) => post.id);
     const interactions = allPostIds.length > 0 ? await noodle.listNoodlerInteractions(allPostIds) : [];
@@ -103,6 +107,9 @@ export async function slpStudioRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
             firstSeenAt: entry.tie.firstSeenAt,
           })),
         );
+        const subscribers =
+          (await noodle.listSubscriptionsForCreator(account.id)).length +
+          ((await population.countSubscribersForCreators([account.id])).get(account.id) ?? 0);
         return {
           id: account.id,
           handle: account.handle,
@@ -110,9 +117,9 @@ export async function slpStudioRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
           avatarUrl: account.avatarUrl,
           topFans: cast.filter((fan) => fan.displayName),
           followers,
-          subscribers:
-            (await noodle.listSubscriptionsForCreator(account.id)).length +
-            ((await population.countSubscribersForCreators([account.id])).get(account.id) ?? 0),
+          subscribers,
+          subscribersDelta: typeof previous?.subscribers === "number" ? subscribers - previous.subscribers : null,
+          likes: slurpLikesByWeek(posts, at),
           earnings,
           milestone: slurpFollowerMilestone(followers),
           goal: goal ? slurpGoalProgress(goal, earnings.lifetime) : null,
@@ -125,7 +132,7 @@ export async function slpStudioRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
               : null,
           earningsDelta: previous ? earnings.lifetime - previous.lifetimeEarnings : null,
           milestonesCrossed: previous ? slurpMilestonesCrossed(previous.followers, followers) : [],
-          posts,
+          posts: posts.slice(0, 6),
         };
       }),
     );
@@ -145,7 +152,11 @@ export async function slpStudioRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
       creators: Object.fromEntries(
         creators.map((creator) => [
           creator.id,
-          { followers: creator.followers, lifetimeEarnings: creator.earnings.lifetime },
+          {
+            followers: creator.followers,
+            lifetimeEarnings: creator.earnings.lifetime,
+            subscribers: creator.subscribers,
+          },
         ]),
       ),
     });

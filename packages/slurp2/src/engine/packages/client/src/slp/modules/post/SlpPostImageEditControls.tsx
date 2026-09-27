@@ -1,10 +1,13 @@
-import { Crop, ImagePlus, Loader2, RotateCcw, Trash2 } from "lucide-react";
+import { Crop, ImagePlus, Loader2, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { cn } from "../../../lib/utils";
+import { SlpButton } from "../chrome/SlpButton";
 import { useEffect, useMemo, type ChangeEvent, type RefObject } from "react";
 import type { SlpPostImageCrop } from "../../../../../shared/src/slp/slp-social.types.js";
 import { readSlpPostImageCrop } from "../../../../../shared/src/slp/slp-post-images.js";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { PostImageCropEditor, PostImageFrame } from "../../base/media/SlpPostImageCropEditor";
-import { labelClass } from "../../base/chrome/SlpChrome";
+import { SLP_TYPE } from "../../base/chrome/SlpChrome";
 import type { SlpPostCardModel, SlpPostImageUpdate } from "./SlpPostTypes";
 
 type SlpPostImageCropSource =
@@ -29,21 +32,24 @@ interface SlpPostCardImageEditingCap {
   restore: () => void;
 }
 
+/**
+ * The post picture in the edit sheet (design step 7): the picture, then labelled Crop · Replace ·
+ * Remove. Remove is one tap and the toast offers Undo; the change is only sent on Save.
+ */
 export function PostImageEditControls({
   post,
   editing,
   disabled,
-  footer,
 }: {
   post: SlpPostCardModel;
   editing: SlpPostCardImageEditingCap;
   disabled: boolean;
-  footer: React.ReactNode;
 }) {
   const { t: localizeUi } = useUiTranslation();
   const replacement = editing.update?.kind === "replace" ? editing.update : null;
   const removed = editing.update?.kind === "remove";
   const hasImage = Boolean(replacement || (!removed && post.imageUrl));
+  const busy = disabled || editing.loading;
 
   if (editing.cropSource) {
     return (
@@ -57,43 +63,19 @@ export function PostImageEditControls({
     );
   }
 
-  const imageActions =
-    hasImage && !removed ? (
-      <div className="absolute right-2 top-2 z-10 flex items-center gap-0.5 rounded-full bg-[var(--background)] p-1 shadow-lg ring-1 ring-[var(--noodle-divider)]">
-        <button
-          type="button"
-          onClick={() => editing.beginCrop(post)}
-          disabled={disabled || editing.loading}
-          title={
-            editing.loading
-              ? localizeUi("ui.noodle.postimageeditcontrols.loadingImage")
-              : localizeUi("ui.noodle.noodlehome.adjustCrop")
-          }
-          aria-label={
-            editing.loading
-              ? localizeUi("ui.noodle.postimageeditcontrols.loadingImage")
-              : localizeUi("ui.noodle.noodlehome.adjustCrop")
-          }
-          aria-busy={editing.loading}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10 disabled:opacity-50"
-        >
-          {editing.loading ? <Loader2 size={15} className="animate-spin" /> : <Crop size={15} />}
-        </button>
-        <button
-          type="button"
-          onClick={editing.remove}
-          disabled={disabled || editing.loading}
-          title={localizeUi("ui.noodle.noodlehome.removeImage")}
-          aria-label={localizeUi("ui.noodle.noodlehome.removeImage")}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--destructive)] transition-colors hover:bg-[var(--destructive)]/10 disabled:opacity-50"
-        >
-          <Trash2 size={15} />
-        </button>
-      </div>
-    ) : null;
+  const remove = () => {
+    editing.remove();
+    toast(localizeUi("ui.slurp.composer.imageRemovedOnSave", { defaultValue: "Picture removed when you save" }), {
+      action: {
+        label: localizeUi("ui.slurp.wallet.undo", { defaultValue: "Undo" }),
+        onClick: () => editing.restore(),
+      },
+    });
+  };
+  const chooseFile = () => editing.fileInputRef.current?.click();
 
   return (
-    <section className="space-y-2 rounded-xl border border-[var(--noodle-divider)] bg-[var(--noodle-accent)]/5 p-3">
+    <section className="space-y-2" aria-label={localizeUi("ui.noodle.postimageeditcontrols.postImage")}>
       <input
         ref={editing.fileInputRef}
         type="file"
@@ -101,79 +83,63 @@ export function PostImageEditControls({
         className="hidden"
         onChange={editing.selectReplacement}
       />
-      <div className="flex items-center justify-between gap-3">
-        <span className={labelClass}>{localizeUi("ui.noodle.postimageeditcontrols.postImage")}</span>
-        <div className="flex items-center gap-1">
-          {removed ? (
-            <>
-              <span className="mr-1 text-xs font-semibold text-[var(--muted-foreground)]">
-                {localizeUi("ui.noodle.postimageeditcontrols.removedWhenSaved")}
-              </span>
-              <button
-                type="button"
-                onClick={() => editing.fileInputRef.current?.click()}
-                disabled={disabled || editing.loading}
-                title={localizeUi("ui.noodle.postimageeditcontrols.attachReplacementImage")}
-                aria-label={localizeUi("ui.noodle.postimageeditcontrols.attachReplacementImage")}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--noodle-divider)] text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10 disabled:opacity-50"
-              >
-                <ImagePlus size={15} />
-              </button>
-              <button
-                type="button"
-                onClick={editing.restore}
-                disabled={disabled}
-                title={localizeUi("ui.noodle.postimageeditcontrols.undoImageRemoval")}
-                aria-label={localizeUi("ui.noodle.postimageeditcontrols.undoImageRemoval")}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--noodle-divider)] text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10 disabled:opacity-50"
-              >
-                <RotateCcw size={15} />
-              </button>
-            </>
-          ) : (
-            <>
-              {!hasImage && (
-                <button
-                  type="button"
-                  onClick={() => editing.fileInputRef.current?.click()}
-                  disabled={disabled || editing.loading}
-                  title={localizeUi("ui.noodle.postimageeditcontrols.addImage")}
-                  aria-label={localizeUi("ui.noodle.postimageeditcontrols.addImage")}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--noodle-divider)] text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/10 disabled:opacity-50"
-                >
-                  <ImagePlus size={15} />
-                </button>
-              )}
-            </>
-          )}
-        </div>
-      </div>
       {replacement ? (
-        <div className="relative overflow-hidden rounded-lg">
-          <FileImagePreview file={replacement.file} crop={replacement.crop} />
-          {imageActions}
-        </div>
-      ) : !removed && post.imageUrl ? (
-        <div className="relative overflow-hidden rounded-lg">
-          <PostImageFrame
-            src={post.imageUrl}
-            crop={editing.update?.kind === "crop" ? editing.update.crop : readSlpPostImageCrop(post.metadata)}
-            alt={localizeUi("ui.noodle.postimageeditcontrols.currentPost")}
-            maxHeight={240}
-          />
-          {imageActions}
-        </div>
+        <FileImagePreview file={replacement.file} crop={replacement.crop} />
+      ) : hasImage && post.imageUrl ? (
+        <PostImageFrame
+          src={post.imageUrl}
+          crop={editing.update?.kind === "crop" ? editing.update.crop : readSlpPostImageCrop(post.metadata)}
+          alt={localizeUi("ui.noodle.postimageeditcontrols.currentPost")}
+          maxHeight={320}
+        />
       ) : (
-        <div className="grid min-h-24 place-items-center rounded-lg border border-dashed border-[var(--noodle-divider)] text-xs text-[var(--muted-foreground)]">
-          {localizeUi("ui.noodle.postimageeditcontrols.noImageAttached")}
+        <div className="grid min-h-32 place-items-center rounded-2xl bg-[var(--slurp-surface-raised)] p-4 text-center shadow-[var(--slurp-highlight)] ring-1 ring-inset ring-[var(--noodle-divider)]">
+          <div className="space-y-3">
+            <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>
+              {removed
+                ? localizeUi("ui.noodle.postimageeditcontrols.removedWhenSaved")
+                : localizeUi("ui.noodle.postimageeditcontrols.noImageAttached")}
+            </p>
+            <SlpButton variant="secondary" disabled={busy} onClick={chooseFile} className="min-h-10 px-4 text-[13px]">
+              <ImagePlus size={16} aria-hidden="true" />
+              {localizeUi("ui.noodle.postimageeditcontrols.addImage")}
+            </SlpButton>
+          </div>
+        </div>
+      )}
+      {hasImage && (
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <SlpButton
+            variant="quiet"
+            disabled={busy}
+            aria-busy={editing.loading}
+            onClick={() => editing.beginCrop(post)}
+            className="min-h-10 px-4 text-[13px]"
+          >
+            {editing.loading ? (
+              <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+            ) : (
+              <Crop size={16} aria-hidden="true" />
+            )}
+            {editing.loading
+              ? localizeUi("ui.noodle.postimageeditcontrols.loadingImage")
+              : localizeUi("ui.slurp.composer.crop", { defaultValue: "Crop" })}
+          </SlpButton>
+          <SlpButton variant="quiet" disabled={busy} onClick={chooseFile} className="min-h-10 px-4 text-[13px]">
+            <ImagePlus size={16} aria-hidden="true" />
+            {localizeUi("ui.slurp.composer.replace", { defaultValue: "Replace" })}
+          </SlpButton>
+          <SlpButton variant="danger" disabled={busy} onClick={remove} className="min-h-10 px-4 text-[13px]">
+            <Trash2 size={16} aria-hidden="true" />
+            {localizeUi("ui.slurp.composer.remove", { defaultValue: "Remove" })}
+          </SlpButton>
         </div>
       )}
       {editing.error && (
-        <p role="alert" className="text-xs text-[var(--destructive)]">
+        <p role="alert" className="text-xs text-[var(--slurp-danger)]">
           {editing.error}
         </p>
       )}
-      <div className="-mx-3 -mb-3 flex flex-wrap justify-end gap-2 px-3 pb-3 pt-1">{footer}</div>
     </section>
   );
 }
@@ -187,7 +153,7 @@ function FileImagePreview({ file, crop }: { file: File; crop: SlpPostImageCrop }
       src={url}
       crop={crop}
       alt={localizeUi("ui.noodle.fileimagepreview.replacementPostPreview")}
-      maxHeight={240}
+      maxHeight={320}
     />
   );
 }

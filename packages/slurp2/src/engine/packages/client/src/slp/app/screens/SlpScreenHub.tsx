@@ -16,6 +16,7 @@ import {
   useSlurpInlineAds,
 } from "../../features/ads/slp-ads-hooks";
 import { useCreatorViewer } from "../../features/feed/slp-feed-viewer-hooks";
+import { useSlurpWallet } from "../../features/economy/slp-economy-hooks";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { SlpPostCardCtx } from "../../modules/post/SlpPostTypes";
@@ -215,6 +216,8 @@ export function ViewerHub({
     searchTerm,
     onSearchChange,
   });
+  // The paid period of each subscription, so a Discover card can say "ends Thu" after a cancel.
+  const walletSubscriptions = useSlurpWallet(scope?.viewer.entityId ?? null).data?.subscriptions;
   // "Create a persona" is a claim about the user's data, so it waits for the personas query to
   // actually succeed instead of speaking for a cold or failed load.
   if (personas.length === 0) {
@@ -369,6 +372,7 @@ export function ViewerHub({
         setVisibleFeedCount={setVisibleFeedCount}
         togglePending={togglePending}
         visibleSearchResults={visibleSearchResults}
+        walletSubscriptions={walletSubscriptions}
       />
     );
   }

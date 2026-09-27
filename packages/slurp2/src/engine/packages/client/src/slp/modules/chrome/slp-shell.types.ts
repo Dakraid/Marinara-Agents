@@ -76,8 +76,6 @@ export interface SlpShellProps {
   personaBannerUrl?: string | null;
   /** Offered on the identity card when the active persona runs no Creator profile. */
   onBecomeCreator?: () => void;
-  /** Omit on surfaces with no scoped equivalent. */
-  onCompose?: (opener: HTMLElement) => void;
   /** Replaces the desktop nav below the mark — used by Settings, which takes the column over. */
   desktopSidebar?: ReactNode;
   /** Optional right-hand rail (search box, suggestions, etc). Omitted entirely on surfaces that don't need one. */

@@ -8,6 +8,7 @@ import { Check, ChevronRight, Loader2 } from "lucide-react";
 import { DEFAULT_SLURP_SUBSCRIPTION_PRICE, SlurpCoinAmount } from "../coin/SlpCoin";
 import type { SlurpDiscoveryGender } from "../../base/state/slp-state-types";
 import { toast } from "sonner";
+import { formatUpcomingDay } from "../../base/ui/slp-date-time";
 import { SlpButton, SlpPrimaryButton } from "../chrome/SlpButton";
 import { showSlpSubscriptionCancelledToast } from "../chrome/slp-subscription-toast";
 import { playSlpSpendMoment, SlpGlint, SlpRingGlint } from "../sparkle/SlpSparkle";
@@ -28,6 +29,8 @@ export type SlurpCreatorProfileCardCreator = {
   followed: boolean;
   subscribed: boolean;
   subscriptionPrice?: number | null;
+  /** The paid period, when the wallet knows it: "ends Thu" in the cancel toast, Resume while cancelled. */
+  subscription?: { until: string; cancelled: boolean } | null;
   /** Their posts, when known: a Creator with no banner shows their newest free picture as the cover. */
   posts?: Parameters<typeof slurpCreatorCoverUrl>[0]["posts"];
 };
@@ -67,27 +70,42 @@ function SlpCreatorSubscribeButton({
   onToggleSubscription,
   primary = false,
 }: SubscriptionProps & { creator: SlurpCreatorProfileCardCreator; primary?: boolean }) {
-  const { t: localizeUi } = useUiTranslation();
+  const { t: localizeUi, i18n } = useUiTranslation();
   const price = creator.subscriptionPrice ?? DEFAULT_SLURP_SUBSCRIPTION_PRICE;
   const perWeek = localizeUi("ui.slurp.unlocksheet.perWeek", { defaultValue: "/ week" });
   const subscribeLabel = localizeUi("ui.slurp.discover.subscribe", { defaultValue: "Subscribe" });
   if (!onToggleSubscription) return null;
   if (creator.subscribed) {
+    const until = creator.subscription?.until ?? null;
+    const endsDay = until && Date.parse(until) > Date.now() ? formatUpcomingDay(until, i18n.language) : null;
+    // Resuming inside the paid week charges nothing.
+    const resume = () =>
+      Promise.resolve(onToggleSubscription(creator.profile.id, false)).then(
+        () =>
+          toast.success(localizeUi("ui.slurp.profile.subscriptionResumed", { defaultValue: "Subscription resumed" })),
+        () => undefined,
+      );
+    // Cancelled but still paid: the card says when it ends and offers Resume, like the profile.
+    if (creator.subscription?.cancelled && endsDay) {
+      return (
+        <SlpButton
+          variant="secondary"
+          disabled={subscriptionPending}
+          onClick={() => void resume()}
+          className="w-full gap-1.5 px-3 text-[13px]"
+        >
+          <span>{localizeUi("ui.slurp.discover.resume", { defaultValue: "Resume" })}</span>
+          <span aria-hidden="true">·</span>
+          <span className="truncate text-xs font-semibold text-[var(--slurp-warning)]">
+            {localizeUi("ui.slurp.profile.endsDay", { defaultValue: "ends {{day}}", day: endsDay })}
+          </span>
+        </SlpButton>
+      );
+    }
     // One tap cancels (design step 6); the toast offers Undo, which resumes inside the paid week.
     const cancel = () =>
       void Promise.resolve(onToggleSubscription(creator.profile.id, true)).then(
-        () =>
-          showSlpSubscriptionCancelledToast({
-            localizeUi,
-            onUndo: () =>
-              Promise.resolve(onToggleSubscription(creator.profile.id, false)).then(
-                () =>
-                  toast.success(
-                    localizeUi("ui.slurp.profile.subscriptionResumed", { defaultValue: "Subscription resumed" }),
-                  ),
-                () => undefined,
-              ),
-          }),
+        () => showSlpSubscriptionCancelledToast({ localizeUi, endsDay, onUndo: resume }),
         () => undefined,
       );
     return (

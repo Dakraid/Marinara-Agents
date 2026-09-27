@@ -20,6 +20,8 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
+import { X } from "lucide-react";
+import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { ModalPortalContext } from "../../../components/ui/Modal";
 import { useDialogFocusScope } from "../../../hooks/use-dialog-focus-scope";
@@ -47,6 +49,9 @@ export function SlpSheet({
   anchorRef,
   closeDisabled = false,
   width = "max-w-md",
+  size = "auto",
+  headerAccessory,
+  footer,
   children,
 }: {
   open: boolean;
@@ -61,8 +66,20 @@ export function SlpSheet({
   closeDisabled?: boolean;
   /** Width of the centred modal on wide screens. */
   width?: string;
+  /**
+   * "full": a full-screen task (composer, post edit; design language §8). On phones the glass
+   * sheet fills the screen below the status bar and gets a close button; wide screens keep the
+   * centred modal at a fixed height, so the sticky footer stays put.
+   */
+  size?: "auto" | "full";
+  /** Sits at the end of the title row (a Post | Story switch). */
+  headerAccessory?: ReactNode;
+  /** A bar pinned under the scrolling body (a sticky "Post" / "Save"). */
+  footer?: ReactNode;
   children: ReactNode;
 }) {
+  const { t: localizeUi } = useUiTranslation();
+  const full = size === "full";
   const wide = useWideScreen();
   const mode = !wide ? "sheet" : anchorRef ? "popover" : "modal";
   const accent = useSlpAccent();
@@ -159,6 +176,9 @@ export function SlpSheet({
       ? {
           onPointerDown: (event: PointerEvent<HTMLDivElement>) => {
             if (closeDisabled) return;
+            // A control in the header (close, a Post | Story switch) keeps its tap: capturing the
+            // pointer here would retarget its click to the header.
+            if (event.target instanceof Element && event.target.closest("button, a, input, select, textarea")) return;
             drag.current = { y: event.clientY, at: performance.now() };
             event.currentTarget.setPointerCapture(event.pointerId);
           },
@@ -233,10 +253,11 @@ export function SlpSheet({
           "pointer-events-auto isolate flex flex-col overflow-hidden outline-none",
           mode === "sheet" &&
             "absolute inset-x-0 bottom-0 max-h-[88dvh] rounded-t-[20px] bg-[color-mix(in_srgb,var(--noodle-accent)_7%,var(--slurp-glass))] shadow-[0_-18px_44px_-26px_color-mix(in_srgb,var(--noodle-accent)_70%,transparent),var(--slurp-highlight)] backdrop-blur-2xl",
+          mode === "sheet" && full && "top-[max(0.5rem,env(safe-area-inset-top))] max-h-none",
           mode === "popover" &&
             "fixed w-72 max-h-[calc(100dvh-1.5rem)] rounded-2xl bg-[var(--slurp-surface-raised)] shadow-[var(--slurp-shadow-floating),var(--slurp-highlight)] ring-1 ring-inset ring-[var(--noodle-divider)]",
           mode === "modal" &&
-            `relative w-full ${width} max-h-[min(88dvh,52rem)] rounded-[20px] bg-[var(--slurp-surface)] shadow-[var(--slurp-shadow-modal),var(--slurp-highlight)] ring-1 ring-inset ring-[var(--noodle-divider)]`,
+            `relative w-full ${width} ${full ? "h-[min(88dvh,52rem)]" : ""} max-h-[min(88dvh,52rem)] rounded-[20px] bg-[var(--slurp-surface)] shadow-[var(--slurp-shadow-modal),var(--slurp-highlight)] ring-1 ring-inset ring-[var(--noodle-divider)]`,
         )}
       >
         {mode === "sheet" && (
@@ -260,19 +281,47 @@ export function SlpSheet({
                 className="mx-auto mb-3 block h-1.5 w-10 rounded-full bg-[var(--slurp-muted)]/40"
               />
             )}
-            <h2 className={cn(SLP_TYPE.title, "truncate")}>{title}</h2>
+            {full || headerAccessory ? (
+              <div className="flex min-h-10 items-center gap-2">
+                {full && (
+                  <button
+                    type="button"
+                    onClick={requestClose}
+                    disabled={closeDisabled}
+                    aria-label={localizeUi("capabilities.actions.close")}
+                    className="-ms-2 grid size-10 shrink-0 place-items-center rounded-full text-[var(--slurp-muted)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 [&_svg]:!text-current"
+                  >
+                    <X size={20} aria-hidden="true" />
+                  </button>
+                )}
+                <h2 className={cn(SLP_TYPE.title, "min-w-0 flex-1 truncate")}>{title}</h2>
+                {headerAccessory}
+              </div>
+            ) : (
+              <h2 className={cn(SLP_TYPE.title, "truncate")}>{title}</h2>
+            )}
           </div>
         )}
         <div
           className={cn(
             "min-h-0 flex-1 overflow-y-auto overscroll-contain",
-            mode === "sheet" && "px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]",
+            mode === "sheet" && (footer ? "px-2 pb-3" : "px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]"),
             mode === "modal" && "px-3 pb-4",
             mode === "popover" && (kind === "menu" ? "px-1 py-1" : "px-2 pb-3"),
           )}
         >
           {body}
         </div>
+        {footer && (
+          <div
+            className={cn(
+              "shrink-0 border-t border-[var(--noodle-divider)] px-4 pt-3",
+              mode === "sheet" ? "pb-[max(0.75rem,env(safe-area-inset-bottom))]" : "pb-4",
+            )}
+          >
+            {footer}
+          </div>
+        )}
       </div>
     </div>,
     portal ?? document.body,

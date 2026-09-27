@@ -28,7 +28,8 @@ assert.equal(slurpViewerImageOnCooldown([], 180, now), false);
 const mediaRoutes = server("features/messages/slp-messages-media-routes.ts");
 assert.match(
   mediaRoutes,
-  /messagesViewerImageCooldownMinutes;\s+if \(\s*cooldownMinutes > 0 &&\s+slurpViewerImageOnCooldown\(await messages\.listMessages\(thread\.id\), cooldownMinutes\)\s*\)\s+return reply\.code\(429\)/u,
+  // Step 7: the helper now returns when the wait ends, so the 429 can say "Draw again at 4:30 PM".
+  /messagesViewerImageCooldownMinutes;\s+const readyAt =\s+cooldownMinutes > 0 \? slurpViewerImageReadyAt\(await messages\.listMessages\(thread\.id\), cooldownMinutes\) : null;[\s\S]*?if \(readyAt\) return reply\.code\(429\)/u,
   "the route reads the setting and answers 429 only through the helper",
 );
 assert.doesNotMatch(mediaRoutes, /3 \* 60 \* 60_000/u, "no hard-coded 3 hours left");
@@ -123,10 +124,15 @@ for (const [name, source] of [
   assert.match(source, /showSlpSubscriptionCancelledToast\(\{/u, `${name}: Undo toast`);
   assert.match(
     source,
-    /onUndo: \(\) =>\s+Promise\.resolve\(onToggleSubscription\([^)]+, false\)\)/u,
+    // Step 7: Discover names its resume (it also backs the card's Resume button).
+    /onUndo: (?:\(\) =>\s+Promise\.resolve\(onToggleSubscription\([^)]+, false\)\)|resume \})/u,
     `${name}: Undo resumes`,
   );
 }
+assert.match(
+  profileCard,
+  /const resume = \(\) =>\s+Promise\.resolve\(onToggleSubscription\(creator\.profile\.id, false\)\)/u,
+);
 // 2. The Wallet card names whose wallet it is.
 const walletView = client("app/screens/SlpScreenWallet.tsx");
 assert.match(walletView, /ui\.slurp\.wallet\.personaWallet/u);

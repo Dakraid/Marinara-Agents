@@ -1,13 +1,24 @@
-import { Activity, CheckCircle2, ChevronDown, CircleAlert, Loader2, Settings2, X } from "lucide-react";
+import {
+  Activity,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  CircleAlert,
+  Loader2,
+  Play,
+  SlidersHorizontal,
+} from "lucide-react";
 import { useMutationState, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { type ReactNode, type RefObject, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
-import { Avatar } from "../../base/chrome/SlpChrome";
+import { Avatar, SLP_EYEBROW_CLASS, SLP_GROUP_CLASS, SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { api } from "../../../lib/api-client.js";
 import { cn } from "../../../lib/utils";
 import { sortSlpPulseScheduled } from "./slp-pulse-order";
+import { SlpSheet } from "./SlpSheet";
+import { noteSlpAiUseOnce, SlpUsesAiMark } from "./SlpAiMark";
 
 export function SlpPulseCard({ open, onOpen }: { open: boolean; onOpen: () => void }) {
   const { t } = useUiTranslation();
@@ -18,30 +29,18 @@ export function SlpPulseCard({ open, onOpen }: { open: boolean; onOpen: () => vo
       type="button"
       onClick={onOpen}
       aria-expanded={open}
-      aria-controls="slurp-pulse-panel"
+      aria-haspopup="dialog"
       className="group relative flex min-h-11 w-full items-center gap-2.5 overflow-hidden rounded-md bg-[color-mix(in_srgb,var(--noodle-accent)_9%,var(--slurp-surface-raised))] px-3 text-start ring-1 ring-inset ring-[var(--noodle-accent)]/18 transition-[background-color,transform,box-shadow] hover:bg-[var(--accent)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:active:scale-100"
     >
       <span className="relative flex h-7 w-7 shrink-0 items-center justify-center text-[var(--noodle-accent-foreground)]">
+        <Activity size={17} strokeWidth={2.4} aria-hidden="true" />
+        {/* A still live dot, not a looping ping (marinara-design §7: no decorative loops). */}
         {activeCount > 0 && (
-          <>
-            <span className="absolute h-7 w-7 rounded-full border border-[var(--noodle-accent)]/18 motion-safe:animate-ping motion-reduce:animate-none" />
-            <span className="absolute h-9 w-9 rounded-full border border-[var(--noodle-accent)]/10 motion-safe:animate-[ping_1.8s_cubic-bezier(0,0,0.2,1)_infinite] motion-reduce:animate-none" />
-          </>
-        )}
-        {activeCount > 0 ? (
-          <motion.span
-            animate={{ scale: [1, 1.14, 1] }}
-            transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
-            className="inline-flex motion-reduce:transform-none"
-          >
-            <Activity size={17} strokeWidth={2.4} aria-hidden="true" />
-          </motion.span>
-        ) : (
-          <Activity size={17} strokeWidth={2.4} aria-hidden="true" />
+          <span className="absolute end-0 top-0.5 size-2 rounded-full bg-[var(--noodle-accent)] ring-2 ring-[var(--slurp-surface-raised)]" />
         )}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-black leading-5">
+        <span className="block truncate text-sm font-bold leading-5">
           {t("ui.slurp.pulse.title", { defaultValue: "Pulse" })}
         </span>
         {activeCount > 0 && (
@@ -54,10 +53,12 @@ export function SlpPulseCard({ open, onOpen }: { open: boolean; onOpen: () => vo
   );
 }
 
+/**
+ * Pulse: what Slurp is doing in the background, and the two things you can start by hand. A
+ * SlpSheet, so it never stacks on the More sheet (B8): opening it closes that one.
+ */
 export function SlpPulsePanel({
   open,
-  panelRef,
-  closeRef,
   onClose,
   onGeneratePosts,
   onRunAudience,
@@ -65,8 +66,6 @@ export function SlpPulsePanel({
   accounts = [],
 }: {
   open: boolean;
-  panelRef: RefObject<HTMLElement | null>;
-  closeRef: RefObject<HTMLButtonElement | null>;
   onClose: () => void;
   onGeneratePosts?: () => void;
   onRunAudience?: () => void;
@@ -82,181 +81,115 @@ export function SlpPulsePanel({
   const taskAccounts = [...accounts, ...(serverTasks.data?.accounts ?? [])].filter(
     (account, index, all) => all.findIndex((candidate) => candidate.id === account.id) === index,
   );
-  if (!open) return null;
-
-  const runAction = (action: (() => void) | undefined, close = true) => {
-    action?.();
-    if (action && close) onClose();
-  };
+  const busy = groups.active.length > 0;
+  const heading = (id: string, label: string, danger = false) => (
+    <h3 id={id} className={cn(SLP_EYEBROW_CLASS, "px-1", danger && "text-[var(--slurp-danger)]")}>
+      {label}
+    </h3>
+  );
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-end bg-black/45 md:items-stretch md:justify-end" onClick={onClose}>
-      <aside
-        id="slurp-pulse-panel"
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="slurp-pulse-title"
-        tabIndex={-1}
-        onClick={(event) => event.stopPropagation()}
-        className="flex max-h-[86dvh] w-full flex-col overflow-hidden rounded-t-2xl bg-[var(--slurp-canvas,var(--background))] text-[var(--foreground)] shadow-[var(--slurp-shadow-floating)] ring-1 ring-inset ring-[var(--noodle-divider)] md:my-4 md:ms-[15rem] md:me-auto md:max-h-none md:w-[min(25rem,calc(100vw-15rem))] md:rounded-2xl"
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-[var(--noodle-divider)] px-5 py-4">
-          <div>
-            <div className="flex items-center gap-2 text-[var(--noodle-accent-foreground)]">
-              {groups.active.length > 0 ? (
-                <motion.span
-                  animate={{ scale: [1, 1.08, 1] }}
-                  transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
-                  className="inline-flex motion-reduce:transform-none"
-                >
-                  <Activity size={18} aria-hidden="true" />
-                </motion.span>
-              ) : (
-                <Activity size={18} aria-hidden="true" />
-              )}
-              <h2 id="slurp-pulse-title" className="text-lg font-black">
-                {t("ui.slurp.pulse.title", { defaultValue: "Pulse" })}
-              </h2>
-            </div>
-            <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-              {queueSummary || t("ui.slurp.pulse.description", { defaultValue: "Background activity" })}
-            </p>
-          </div>
-          <button
-            type="button"
-            ref={closeRef}
-            onClick={onClose}
-            aria-label={t("ui.slurp.pulse.close", { defaultValue: "Close Pulse" })}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[var(--muted-foreground)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
-          >
-            <X size={19} aria-hidden="true" />
-          </button>
-        </div>
+    <SlpSheet open={open} onClose={onClose} title={t("ui.slurp.pulse.title", { defaultValue: "Pulse" })}>
+      <div id="slurp-pulse-panel" className="space-y-6 px-2 pb-2">
+        {/* One status line: working, queued and scheduled counts, or "All quiet". */}
+        <p className={cn(SLP_TYPE.meta, "-mt-1 flex items-center gap-2 px-1 text-[var(--slurp-muted)]")}>
+          {busy ? (
+            <span className="size-2 shrink-0 rounded-full bg-[var(--noodle-accent)]" aria-hidden="true" />
+          ) : (
+            <CheckCircle2 size={14} className="shrink-0 text-[var(--slurp-success)]" aria-hidden="true" />
+          )}
+          {queueSummary ||
+            `${t("ui.slurp.pulse.quiet", { defaultValue: "All quiet" })} · ${t("ui.slurp.pulse.nothingScheduled", {
+              defaultValue: "nothing scheduled",
+            })}`}
+        </p>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
-          <section aria-labelledby="slurp-pulse-actions" className="space-y-3">
-            <h3
-              id="slurp-pulse-actions"
-              className="text-xs font-black uppercase tracking-[0.14em] text-[var(--slurp-muted)]"
-            >
-              {t("ui.slurp.pulse.automationSettings", { defaultValue: "Automation settings" })}
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              <PulseAction
-                icon={<Settings2 size={17} aria-hidden="true" />}
-                label={t("ui.slurp.pulse.generatePosts", { defaultValue: "Generate posts" })}
-                onClick={() => runAction(onGeneratePosts)}
-              />
-              <PulseAction
-                icon={<Settings2 size={17} aria-hidden="true" />}
-                label={
-                  audiencePending
-                    ? t("ui.slurp.pulse.runningAudience", { defaultValue: "Running audience" })
-                    : t("ui.slurp.pulse.runAudience", { defaultValue: "Run audience" })
-                }
-                onClick={() => runAction(onRunAudience, false)}
-                disabled={audiencePending}
-              />
-            </div>
-          </section>
-
-          <section aria-labelledby="slurp-pulse-now" className="mt-6 space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <h3
-                id="slurp-pulse-now"
-                className="text-xs font-black uppercase tracking-[0.14em] text-[var(--slurp-muted)]"
-              >
-                {t("ui.slurp.pulse.now", { defaultValue: "Now" })}
-              </h3>
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--muted-foreground)]">
-                {tasks.active.length > 0 ? (
-                  <Loader2
-                    size={14}
-                    className="animate-spin text-[var(--noodle-accent-foreground)]"
-                    aria-hidden="true"
-                  />
+        <section aria-labelledby="slurp-pulse-actions" className="space-y-2">
+          {heading("slurp-pulse-actions", t("ui.slurp.pulse.runNow", { defaultValue: "Run now" }))}
+          <div className={SLP_GROUP_CLASS}>
+            <PulseAction
+              icon={<SlidersHorizontal size={18} aria-hidden="true" />}
+              label={t("ui.slurp.pulse.generatePosts", { defaultValue: "Generate posts" })}
+              detail={t("ui.slurp.pulse.generatePostsDetail", { defaultValue: "Opens post settings in Backstage" })}
+              trailing={<ChevronRight size={16} aria-hidden="true" />}
+              onClick={() => {
+                onGeneratePosts?.();
+                onClose();
+              }}
+            />
+            {/* One tap runs it; the ✦ AI mark says it uses the AI connection (design step 7). */}
+            <PulseAction
+              icon={
+                audiencePending ? (
+                  <Loader2 size={18} className="animate-spin" aria-hidden="true" />
                 ) : (
-                  <CheckCircle2 size={14} className="text-emerald-500" aria-hidden="true" />
-                )}
-                {tasks.active.length > 0
-                  ? t("ui.slurp.pulse.runningCount", {
-                      defaultValue: "{{count}} running",
-                      count: groups.active.length,
-                    })
-                  : t("ui.slurp.pulse.quiet", { defaultValue: "All quiet" })}
-              </span>
+                  <Play size={18} aria-hidden="true" />
+                )
+              }
+              label={
+                audiencePending
+                  ? t("ui.slurp.pulse.runningAudience", { defaultValue: "Running audience" })
+                  : t("ui.slurp.pulse.runAudience", { defaultValue: "Run audience" })
+              }
+              detail={t("ui.slurp.pulse.runAudienceDetail", { defaultValue: "Fans like, comment and reply now" })}
+              trailing={<SlpUsesAiMark />}
+              onClick={() => {
+                noteSlpAiUseOnce(t);
+                onRunAudience?.();
+              }}
+              disabled={audiencePending || !onRunAudience}
+            />
+          </div>
+        </section>
+
+        {busy && (
+          <section aria-labelledby="slurp-pulse-now" className="space-y-2">
+            {heading(
+              "slurp-pulse-now",
+              t("ui.slurp.pulse.runningCount", { defaultValue: "{{count}} running", count: groups.active.length }),
+            )}
+            <div className="space-y-2">
+              {groups.active.map((group) => (
+                <PulseGroupCard key={group.id} group={group} accounts={taskAccounts} t={t} />
+              ))}
             </div>
-            {groups.active.length > 0 ? (
-              <div className="space-y-2">
-                {groups.active.map((group) => (
-                  <PulseGroupCard key={group.id} group={group} accounts={taskAccounts} t={t} />
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center gap-3 rounded-xl bg-[var(--slurp-surface-raised)] px-4 py-3 ring-1 ring-inset ring-[var(--noodle-divider)]">
-                <CheckCircle2 size={16} className="shrink-0 text-emerald-500" aria-hidden="true" />
-                <p className="text-sm font-semibold">
-                  {t("ui.slurp.pulse.noWork", { defaultValue: "No background work is running." })}
-                </p>
-              </div>
-            )}
           </section>
+        )}
 
-          {groups.attention.length > 0 && (
-            <section aria-labelledby="slurp-pulse-attention" className="mt-7 space-y-3">
-              <h3
-                id="slurp-pulse-attention"
-                className="text-xs font-black uppercase tracking-[0.14em] text-[var(--slurp-danger)]"
-              >
-                {t("ui.slurp.pulse.attention", { defaultValue: "Needs attention" })}
-              </h3>
-              <div className="space-y-2">
-                {groups.attention.map((group) => (
-                  <PulseGroupCard key={group.id} group={group} accounts={taskAccounts} t={t} attention />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {groups.scheduled.length > 0 && (
-            <section aria-labelledby="slurp-pulse-scheduled" className="mt-7 space-y-3">
-              <h3
-                id="slurp-pulse-scheduled"
-                className="text-xs font-black uppercase tracking-[0.14em] text-[var(--slurp-muted)]"
-              >
-                {t("ui.slurp.pulse.scheduled", { defaultValue: "Scheduled" })}
-              </h3>
-              <div className="space-y-2">
-                {groups.scheduled.map((group) => (
-                  <PulseGroupCard key={group.id} group={group} accounts={taskAccounts} t={t} />
-                ))}
-              </div>
-            </section>
-          )}
-
-          <section aria-labelledby="slurp-pulse-recent" className="mt-7">
-            <h3
-              id="slurp-pulse-recent"
-              className="text-xs font-black uppercase tracking-[0.14em] text-[var(--slurp-muted)]"
-            >
-              {t("ui.slurp.pulse.recent", { defaultValue: "Recent" })}
-            </h3>
-            {groups.recent.length > 0 ? (
-              <div className="mt-3 space-y-2">
-                {groups.recent.slice(0, 5).map((group) => (
-                  <PulseGroupCard key={group.id} group={group} accounts={taskAccounts} t={t} />
-                ))}
-              </div>
-            ) : (
-              <p className="mt-3 text-sm text-[var(--muted-foreground)]">
-                {t("ui.slurp.pulse.noRecent", { defaultValue: "Completed work will appear here." })}
-              </p>
-            )}
+        {groups.attention.length > 0 && (
+          <section aria-labelledby="slurp-pulse-attention" className="space-y-2">
+            {heading("slurp-pulse-attention", t("ui.slurp.pulse.attention", { defaultValue: "Needs attention" }), true)}
+            <div className="space-y-2">
+              {groups.attention.map((group) => (
+                <PulseGroupCard key={group.id} group={group} accounts={taskAccounts} t={t} attention />
+              ))}
+            </div>
           </section>
-        </div>
-      </aside>
-    </div>
+        )}
+
+        {groups.scheduled.length > 0 && (
+          <section aria-labelledby="slurp-pulse-scheduled" className="space-y-2">
+            {heading("slurp-pulse-scheduled", t("ui.slurp.pulse.scheduled", { defaultValue: "Scheduled" }))}
+            <div className="space-y-2">
+              {groups.scheduled.map((group) => (
+                <PulseGroupCard key={group.id} group={group} accounts={taskAccounts} t={t} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {groups.recent.length > 0 && (
+          <section aria-labelledby="slurp-pulse-recent" className="space-y-2">
+            {heading("slurp-pulse-recent", t("ui.slurp.pulse.recent", { defaultValue: "Recent" }))}
+            <div className="space-y-2">
+              {groups.recent.slice(0, 5).map((group) => (
+                <PulseGroupCard key={group.id} group={group} accounts={taskAccounts} t={t} />
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    </SlpSheet>
   );
 }
 
@@ -756,11 +689,15 @@ function pulseTaskLabel(key: string, t: (key: string, options?: Record<string, u
 function PulseAction({
   icon,
   label,
+  detail,
+  trailing,
   onClick,
   disabled = false,
 }: {
   icon: ReactNode;
   label: string;
+  detail?: string;
+  trailing?: ReactNode;
   onClick: () => void;
   disabled?: boolean;
 }) {
@@ -769,10 +706,14 @@ function PulseAction({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex min-h-14 items-center gap-2 rounded-xl bg-[var(--slurp-surface-raised)] px-3 text-start text-sm font-semibold ring-1 ring-inset ring-[var(--noodle-divider)] transition-[background-color,transform] hover:bg-[var(--accent)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:cursor-wait disabled:opacity-55 motion-reduce:transition-none motion-reduce:active:scale-100"
+      className="flex min-h-14 w-full items-center gap-3 px-4 py-2 text-start transition-colors hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] disabled:cursor-wait disabled:opacity-55 motion-reduce:transition-none"
     >
-      <span className="shrink-0 text-[var(--noodle-accent-foreground)]">{icon}</span>
-      {label}
+      <span className="shrink-0 text-[var(--slurp-ink)] [&_svg]:!text-current">{icon}</span>
+      <span className="min-w-0 flex-1">
+        <span className={cn(SLP_TYPE.body, "block font-semibold")}>{label}</span>
+        {detail && <span className={cn(SLP_TYPE.meta, "block truncate text-[var(--slurp-muted)]")}>{detail}</span>}
+      </span>
+      {trailing && <span className="shrink-0 text-[var(--slurp-muted)] [&_svg]:!text-current">{trailing}</span>}
     </button>
   );
 }

@@ -75,8 +75,10 @@ export interface StageProfileViewProps {
   subscriptionPending: boolean;
   /** Opens Messages in this Creator's chat. No thread is created until something is sent. */
   onOpenMessages: (creatorAccountId: string) => void;
-  /** Increments each time the profile rail asks the composer to open. */
+  /** Above 0 while the rail or the hub's "Add Story" asks for the composer; the profile opens it and calls `onComposerOpened`. */
   composerOpenSignal: number;
+  /** Clears the request, so coming back to the profile later does not open the composer again. */
+  onComposerOpened?: () => void;
 }
 
 /**
@@ -102,13 +104,16 @@ export function useStageProfileViewModel(props: StageProfileViewProps) {
   const { t: localizeUi, i18n } = useUiTranslation();
   const bannerSrc = useSlurpMediaSrc(profile.bannerUrl, { width: 1280 });
   const [automationOpen, setAutomationOpen] = useState(false);
-  // Open on a Creator this persona operates, where posting is the reason for the visit. On a
-  // world-run Creator the tools are still reachable, but they are not what you came to read.
-  const [creatorToolsOpen, setCreatorToolsOpen] = useState(
-    viewerAccounts.some((account) => account.id === profile.sourceAccountId),
-  );
+  // Closed by default: posting moved to the composer sheet (design step 7), so what is left here
+  // (identity, storyline effects, automation) is operator detail, quieter than the page itself.
+  const [creatorToolsOpen, setCreatorToolsOpen] = useState(false);
+  // The composer is one full-screen sheet (design step 7), opened from "New post", the rail's
+  // "Create post" / "Add story" and the hub's "Add Story".
+  const [composerOpen, setComposerOpen] = useState(false);
   useEffect(() => {
-    if (composerOpenSignal > 0) setCreatorToolsOpen(true);
+    if (composerOpenSignal <= 0) return;
+    setComposerOpen(true);
+    props.onComposerOpened?.();
   }, [composerOpenSignal]);
   const updateAutoPosting = useUpdateCreatorAutoPosting();
   const updateFanActivity = useUpdateCreatorFanActivity();
@@ -123,11 +128,10 @@ export function useStageProfileViewModel(props: StageProfileViewProps) {
     subscribed: viewerCreator?.subscribed ?? false,
     wallet: walletQuery.data,
   });
-  // "New post" on the own profile opens the Creator tools card and its composer, like the rail does.
-  const [localComposerSignal, setLocalComposerSignal] = useState(0);
-  const openComposer = () => {
-    setCreatorToolsOpen(true);
-    setLocalComposerSignal((tick) => tick + 1);
+  const openComposer = (postType?: "post" | "story") => {
+    if (postType === "story") props.onDraftChange({ postType, poll: null, title: "" });
+    else if (postType === "post") props.onDraftChange({ postType, linkedPostId: null });
+    setComposerOpen(true);
   };
   const [locationDraft, setLocationDraft] = useState(
     () => (profile as SlurpManagedStageProfile & { location?: string }).location ?? "",
@@ -313,8 +317,8 @@ export function useStageProfileViewModel(props: StageProfileViewProps) {
     setCustomTip,
     subscriptionState,
     openComposer,
-    // The rail's signal plus the page's own "New post" button.
-    composerOpenSignal: composerOpenSignal + localComposerSignal,
+    composerOpen,
+    setComposerOpen,
     lockedPosts,
     lockedTeasers,
     storyMoments,

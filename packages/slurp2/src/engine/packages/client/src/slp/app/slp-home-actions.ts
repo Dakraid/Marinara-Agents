@@ -68,6 +68,7 @@ function useSlurpHomeActions(state: SlurpHomeBaseState) {
     toggleFollow,
     toggleSubscription,
     updateNoodlerPostDraft,
+    setComposerOpenSignal,
     updateProfile,
     updateProfileLocation,
     viewerPersonaId,
@@ -454,9 +455,11 @@ function useSlurpHomeActions(state: SlurpHomeBaseState) {
     }
     setMobileDrawerOpen(false);
   };
+  // The hub's "Add Story": the own profile, with the composer sheet open in Story mode.
   const openStoryComposer = () => {
     if (mainAuthorProfile) {
       updateNoodlerPostDraft(mainAuthorProfile.id, { postType: "story", poll: null, title: "" });
+      setComposerOpenSignal((tick) => tick + 1);
     }
     openPostComposer();
   };

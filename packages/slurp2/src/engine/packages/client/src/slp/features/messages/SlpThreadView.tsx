@@ -19,6 +19,7 @@ import {
   useSlpMediaQuery,
 } from "../../base/chrome/SlpChrome";
 import { SlpButton } from "../../modules/chrome/SlpButton";
+import { noteSlpAiUseOnce, SlpUsesAiMark } from "../../modules/chrome/SlpAiMark";
 import { SlpCanvasAmbient } from "../../modules/chrome/SlpCanvasAmbient";
 import { getApiErrorMessage } from "../../../lib/api-client";
 import { useSlurpThreadViewModel } from "./slp-thread-actions";
@@ -308,6 +309,7 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
                         const forcedThreadId = thread.id;
                         setError(null);
                         setTyping(true);
+                        noteSlpAiUseOnce(localizeUi);
                         try {
                           const result = await forceReply.mutateAsync({
                             personaId: forcedPersonaId,
@@ -334,6 +336,7 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
                       className="mt-1 text-xs"
                     >
                       {localizeUi("ui.slurp.messages.forceReply", { defaultValue: "Get reply now" })}
+                      <SlpUsesAiMark />
                     </SlpButton>
                   )}
                 </section>

@@ -2,7 +2,7 @@
  * The mark a Creator home measures its "since your last visit" numbers from.
  *
  * A delta needs two readings, and Slurp only ever stored the current one. This holds the previous
- * one per persona: followers and lifetime earnings for each Creator that persona operates, plus
+ * one per persona: followers, subscribers and lifetime earnings for each Creator that persona operates, plus
  * when it was taken.
  *
  * Written on every studio read, so the mark is always "your last visit". That means opening the
@@ -16,7 +16,7 @@ const key = (personaId: string) => `slurp2.persona.${personaId}.studio`;
 export type SlurpStudioSnapshot = {
   at: string;
   platformScale?: number;
-  creators: Record<string, { followers: number; lifetimeEarnings: number }>;
+  creators: Record<string, { followers: number; lifetimeEarnings: number; subscribers?: number }>;
 };
 
 export async function readSlurpStudioSnapshot(db: DB, personaId: string): Promise<SlurpStudioSnapshot | null> {
@@ -31,7 +31,14 @@ export async function readSlurpStudioSnapshot(db: DB, personaId: string): Promis
       // would render as NaN in the one place the player looks to understand what changed.
       if (typeof value?.followers !== "number" || typeof value?.lifetimeEarnings !== "number") continue;
       if (!Number.isFinite(value.followers) || !Number.isFinite(value.lifetimeEarnings)) continue;
-      creators[id] = { followers: value.followers, lifetimeEarnings: value.lifetimeEarnings };
+      creators[id] = {
+        followers: value.followers,
+        lifetimeEarnings: value.lifetimeEarnings,
+        // Older marks have no subscriber count; that Creator's subscriber trend starts next visit.
+        ...(typeof value.subscribers === "number" && Number.isFinite(value.subscribers)
+          ? { subscribers: value.subscribers }
+          : {}),
+      };
     }
     return { at: parsed.at, platformScale: parsed.platformScale, creators };
   } catch {
