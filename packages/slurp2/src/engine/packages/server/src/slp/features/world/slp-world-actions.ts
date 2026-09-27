@@ -151,7 +151,7 @@ export async function applyAction(
   }
 
   if (action.kind === "message") {
-    const messages = createSlurpMessagesStorage(db);
+    const messages = createSlurpMessagesStorage(db, () => noodle);
     const sent = await messages.sendViewerMessage(
       action.actorAccountId,
       action.creatorAccountId,
@@ -173,7 +173,7 @@ export async function applyAction(
   }
 
   if (action.kind === "commission") {
-    const messages = createSlurpMessagesStorage(db);
+    const messages = createSlurpMessagesStorage(db, () => noodle);
     const brief = slurpCommissionBrief(`${action.creatorAccountId}:${action.actorAccountId}:${at.toISOString()}`);
     const commission = await messages.createCommission(action.actorAccountId, action.creatorAccountId, brief);
     // `"open_request"` means this fan already has one waiting. Piling on a second is exactly what

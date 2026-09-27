@@ -72,13 +72,28 @@ export function createStoryEngineStorage({ settingsStore }: SlurpStorageContext)
         activationKey,
         blueprint: structuredClone(event),
         participantIds: selectSlpEventParticipants(event, accounts, activationKey),
-        status: event.automation === "auto" ? "active" : "suggested",
+        // "Start now" is the player's own decision, so it runs whatever the automation choice is
+        // (that choice governs what starts by itself) and applies its outcomes like any start (R1-111).
+        status: "active",
         startsAt: at.toISOString(),
         endsAt: new Date(at.getTime() + duration * 86_400_000).toISOString(),
         createdAt: at.toISOString(),
         triggerEvidence: "Started manually",
       };
-      await write(SLP_STORY_OCCURRENCES_KEY, [occurrence, ...(await this.listStoryOccurrences())]);
+      const result = applySlpStoryOutcomes({
+        outcomes: event.outcomes,
+        participants: occurrence.participantIds,
+        sourceKind: "event",
+        sourceId: occurrence.id,
+        at,
+        facts: await this.listStoryFacts(),
+        opportunities: await this.listArcOpportunities(),
+      });
+      await Promise.all([
+        write(SLP_STORY_FACTS_KEY, result.facts),
+        write(SLP_STORY_OPPORTUNITIES_KEY, result.opportunities),
+        write(SLP_STORY_OCCURRENCES_KEY, [occurrence, ...(await this.listStoryOccurrences())]),
+      ]);
       return occurrence;
     },
     async setStoryOccurrenceStatus(

@@ -186,8 +186,11 @@ export async function topUpSlurpReactionBank(
       logger.warn(error, "[slurp-bank] Could not read the comment bank answer");
       return "unavailable";
     }
-    const merged = mergeSlurpReactionBankBatch(banks, parsed, targets);
-    if (merged === banks) return "unavailable";
+    // Merge into the bank as it is now, not as it was before the model call: an edit the player saved
+    // while the call ran would otherwise be overwritten (R1-118).
+    const current = (await noodle.getSettings()).audienceReactionBank;
+    const merged = mergeSlurpReactionBankBatch(current, parsed, targets);
+    if (merged === current) return "unavailable";
     await noodle.updateSettings({ audienceReactionBank: merged });
     logger.info(
       "[slurp-bank] Grew %d comment banks (shared now %d)",

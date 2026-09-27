@@ -265,6 +265,27 @@ export function slurpPlatformEventInstruction(
   ].join("\n");
 }
 
+/**
+ * Which events are running at `at`, by the same rule as the prompt above: a current occurrence
+ * decides its event (a started manual event runs, a dismissed or suggested one does not), and only
+ * events with no current occurrence fall back to their date.
+ */
+export function slurpRunningPlatformEventIds(
+  events: readonly SlurpPlatformEvent[],
+  occurrences: SlurpStoryPromptState["occurrences"],
+  at: Date,
+): Set<string> {
+  const now = at.getTime();
+  const current = occurrences.filter((item) => Date.parse(item.startsAt) <= now && now < Date.parse(item.endsAt));
+  const decided = new Set(current.map((item) => item.blueprintId));
+  return new Set([
+    ...slurpActivePlatformEvents(events, at)
+      .map((item) => item.id)
+      .filter((id) => !decided.has(id)),
+    ...current.filter((item) => item.status === "active").map((item) => item.blueprintId),
+  ]);
+}
+
 export function slurpActivePlatformInfluences(events: readonly SlurpPlatformEvent[], at: Date): SlpInfluence[] {
   return slurpActivePlatformEvents(events, at).flatMap((item) =>
     item.influences.map((effect) => ({

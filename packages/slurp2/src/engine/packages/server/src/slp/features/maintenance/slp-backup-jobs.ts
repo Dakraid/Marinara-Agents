@@ -1,4 +1,5 @@
 import { unlink, readdir, readFile, stat } from "node:fs/promises";
+import { slurpAccountRowIsCreator } from "../../../../../shared/src/slp/slp-audience-characters.js";
 import { DATA_DIR } from "../../../utils/data-dir.js";
 import { join } from "path";
 import { randomUUID } from "node:crypto";
@@ -151,7 +152,7 @@ export function createSlpBackupJobs(app: FastifyInstance, deps: SlpRouteDeps) {
       job.stage = "reading-data";
       job.detail = "Reading Slurp database records.";
       const backup = await noodle.exportSlurpBackup();
-      job.creators = backup.tables.accounts.length;
+      job.creators = backup.tables.accounts.filter(slurpAccountRowIsCreator).length;
       job.posts = backup.tables.posts.length;
       job.interactions = backup.tables.interactions.length;
       const mediaFiles = await listCreatorMediaFiles();
@@ -252,7 +253,7 @@ export function createSlpBackupJobs(app: FastifyInstance, deps: SlpRouteDeps) {
       summary: {
         sourcePackage: manifest.sourcePackage,
         exportedAt: manifest.exportedAt ?? null,
-        creators: tables.accounts?.length ?? 0,
+        creators: (tables.accounts ?? []).filter(slurpAccountRowIsCreator).length,
         posts: tables.posts?.length ?? 0,
         interactions: tables.interactions?.length ?? 0,
         mediaFiles: mediaEntries.length,
@@ -272,7 +273,7 @@ export function createSlpBackupJobs(app: FastifyInstance, deps: SlpRouteDeps) {
       const inspection = inspectRestoreArchive(archive);
       const { tables, settings, mediaEntries } = inspection;
 
-      job.creators = tables.accounts?.length ?? 0;
+      job.creators = (tables.accounts ?? []).filter(slurpAccountRowIsCreator).length;
       job.posts = tables.posts?.length ?? 0;
       job.interactions = tables.interactions?.length ?? 0;
       job.stage = "writing-data";

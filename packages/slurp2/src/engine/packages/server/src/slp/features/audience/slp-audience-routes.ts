@@ -365,6 +365,10 @@ export async function slpAudienceRoutes(app: FastifyInstance, deps: SlpRouteDeps
       if (result.status === "busy") return reply.code(409).send({ error: "Slurp fan activity is already running." });
       if (result.status === "limit_reached")
         return reply.code(429).send({ error: "Today's audience activity limit has been reached." });
+      if (result.status === "ai_off")
+        return reply
+          .code(409)
+          .send({ error: "AI budget is set to Off, so the audience cannot run. Change it under AI budget." });
       if (result.status === "connection_required") {
         return reply.code(400).send({ error: "Select a Slurp generation connection first." });
       }

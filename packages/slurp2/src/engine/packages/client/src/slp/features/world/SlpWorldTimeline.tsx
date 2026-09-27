@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useSetStoryOccurrenceStatus, useSlpStoryTimeline } from "./slp-story-hooks.js";
 
 const button =
@@ -10,19 +11,24 @@ const button =
 export function SlpWorldTimeline() {
   const timeline = useSlpStoryTimeline();
   const setStatus = useSetStoryOccurrenceStatus();
+  const { t } = useTranslation();
   return (
     <section aria-labelledby="slurp-world-timeline-heading" className="space-y-3">
       <div>
         <h2 id="slurp-world-timeline-heading" className="text-base font-black">
-          World timeline
+          {t("ui.slurp.world.timeline.title", { defaultValue: "World timeline" })}
         </h2>
         <p className="mt-1 text-sm text-[var(--slurp-muted)]">
-          Suggestions, active events, and recent history keep their original participants and rules.
+          {t("ui.slurp.world.timeline.detail", {
+            defaultValue: "Suggestions, active events, and recent history keep their original participants and rules.",
+          })}
         </p>
       </div>
       {(timeline.data?.occurrences ?? []).length === 0 ? (
         <p className="text-sm text-[var(--slurp-muted)]">
-          No event occurrences yet. Start a manual event or wait for a scheduled date.
+          {t("ui.slurp.world.timeline.empty", {
+            defaultValue: "No event occurrences yet. Start a manual event or wait for a scheduled date.",
+          })}
         </p>
       ) : (
         <ul className="space-y-3">
@@ -35,7 +41,12 @@ export function SlpWorldTimeline() {
                 <div>
                   <h3 className="font-bold">{occurrence.blueprint.name}</h3>
                   <p className="mt-1 text-xs text-[var(--slurp-muted)]">
-                    {occurrence.status} · {occurrence.participantIds.length} Creators · {occurrence.triggerEvidence}
+                    {t(`ui.slurp.world.timeline.status.${occurrence.status}`, { defaultValue: occurrence.status })} ·{" "}
+                    {t("ui.slurp.world.timeline.creators", {
+                      defaultValue: "{{count}} Creators",
+                      count: occurrence.participantIds.length,
+                    })}{" "}
+                    · {occurrence.triggerEvidence}
                   </p>
                 </div>
                 {occurrence.status === "suggested" && (
@@ -45,14 +56,14 @@ export function SlpWorldTimeline() {
                       type="button"
                       onClick={() => setStatus.mutate({ id: occurrence.id, status: "dismissed" })}
                     >
-                      Dismiss
+                      {t("ui.slurp.world.timeline.dismiss", { defaultValue: "Dismiss" })}
                     </button>
                     <button
                       className={button}
                       type="button"
                       onClick={() => setStatus.mutate({ id: occurrence.id, status: "active" })}
                     >
-                      Start event
+                      {t("ui.slurp.world.timeline.start", { defaultValue: "Start event" })}
                     </button>
                   </div>
                 )}
@@ -62,7 +73,7 @@ export function SlpWorldTimeline() {
                     type="button"
                     onClick={() => setStatus.mutate({ id: occurrence.id, status: "completed" })}
                   >
-                    End event
+                    {t("ui.slurp.world.timeline.end", { defaultValue: "End event" })}
                   </button>
                 )}
               </div>

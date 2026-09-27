@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { slurpAccountRowIsCreator } from "../../../../../shared/src/slp/slp-audience-characters.js";
 import { previewSlurpAutopurge, runSlurpAutopurge } from "./slp-autopurge.js";
 import {
   slpAccounts,
@@ -56,7 +57,7 @@ export async function slpMaintenanceRoutes(app: FastifyInstance, deps: SlpRouteD
       generatedAt: now(),
       operations: getSlurpOperationStatus(),
       content: {
-        creators: accounts.length,
+        creators: accounts.filter(slurpAccountRowIsCreator).length,
         posts: posts.length,
         interactions: interactions.length,
         messages: messages.length,

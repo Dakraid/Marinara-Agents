@@ -51,7 +51,12 @@ import {
 } from "../../../../../shared/src/slp/slp-audience-characters.js";
 import { createCharactersStorage } from "../../../services/storage/characters.storage.js";
 import { newId } from "../../../utils/id-generator.js";
-import { claimSlurpModelBudget, slurpModelWorkerAllows } from "../../base/model/slp-model-worker.js";
+import {
+  claimSlurpModelBudget,
+  getSlurpModelBudgetLedger,
+  slurpModelWorkerAllows,
+  spendSlurpModelBudget,
+} from "../../base/model/slp-model-worker.js";
 
 const FAN_PLAN_ROW_PREFIX = "fan-day:";
 
@@ -83,6 +88,7 @@ export type SlpCreatorFanRunResult = {
     | "disabled"
     | "busy"
     | "limit_reached"
+    | "ai_off"
     | "connection_required"
     | "connection_not_found"
     | "no_eligible_posts"
@@ -369,10 +375,10 @@ export async function runCreatorFanActivity(input: {
       // "background", every run was refused under the default "present" budget mode — nothing
       // detects presence — so automatic audience activity never ran. The daily caps still apply.
       const workerContext = "present";
-      if (
-        !slurpModelWorkerAllows(settings.modelBudget, workerContext) ||
-        !(await claimSlurpModelBudget(input.db, settings.modelBudget, "thread", at))
-      ) {
+      if (!slurpModelWorkerAllows(settings.modelBudget, workerContext)) return { status: "ai_off", created: 0 };
+      // Look without spending: the call is claimed below, once the run has somebody to write for,
+      // so a run with no eligible posts no longer uses a call (R1-113).
+      if (!spendSlurpModelBudget(settings.modelBudget, await getSlurpModelBudgetLedger(input.db, at), "thread")) {
         return { status: "limit_reached", created: 0 };
       }
       await writePlan(input.db, plan);
@@ -446,6 +452,13 @@ export async function runCreatorFanActivity(input: {
         plan = finishSlpFanActivityRun(plan, run.id, "skipped", at);
         await writePlan(input.db, plan);
         return { status: "no_eligible_posts", created: 0, runId: run.id };
+      }
+      // ponytail: another worker can spend the last call between the look above and this claim; the
+      // run is then skipped rather than retried. Reserve-and-release on the ledger if that matters.
+      if (!(await claimSlurpModelBudget(input.db, settings.modelBudget, "thread", at))) {
+        plan = finishSlpFanActivityRun(plan, run.id, "skipped", at);
+        await writePlan(input.db, plan);
+        return { status: "limit_reached", created: 0, runId: run.id };
       }
 
       try {

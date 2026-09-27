@@ -172,7 +172,16 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
       onNavigate({ mode: "creator-settings", section: "overview", target: "overview", openRefresh: true });
     },
     onRunAudience: () => {
-      refreshAudienceNow.mutate();
+      // The hook's own toasts are off here (Pulse shows progress), but a failure still needs its reason.
+      refreshAudienceNow.mutate(undefined, {
+        onError: (error) =>
+          toast.error(
+            errorMessage(
+              error,
+              localizeUi("ui.slurp.settings.manual.audienceFailed", { defaultValue: "Audience activity failed." }),
+            ),
+          ),
+      });
     },
     audiencePending: refreshAudienceNow.isPending,
     notificationCount:

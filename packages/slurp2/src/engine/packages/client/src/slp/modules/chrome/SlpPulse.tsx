@@ -12,6 +12,8 @@ import { useMutationState, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { type ReactNode, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
+import i18next from "i18next";
+import { formatRelativeTime } from "../../base/ui/slp-date-time";
 import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
 import { Avatar, SLP_EYEBROW_CLASS, SLP_GROUP_CLASS, SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { api } from "../../../lib/api-client.js";
@@ -420,9 +422,7 @@ function PulseTaskRow({
       : (account?.displayName ?? t("ui.slurp.pulse.slurpTask", { defaultValue: "Slurp task" }));
   const progress =
     task.progress && task.progress.total > 0 ? `${task.progress.completed}/${task.progress.total}` : undefined;
-  const elapsed = task.publishAt
-    ? `in ${formatPulseUntil(task.publishAt)}`
-    : formatPulseAge(task.updatedAt ?? task.createdAt);
+  const elapsed = task.publishAt ? formatPulseUntil(task.publishAt) : formatPulseAge(task.updatedAt ?? task.createdAt);
   const detail =
     task.detail ||
     (progress ? t("ui.slurp.pulse.progress", { defaultValue: "{{progress}} complete", progress }) : status);
@@ -597,7 +597,7 @@ function PulseGroupCard({
 function pulseGroupLabel(kind: string, t: (key: string, options?: Record<string, unknown>) => string) {
   const labels: Record<string, [string, string]> = {
     "post-production": ["ui.slurp.pulse.generatePosts", "Generate posts"],
-    "audience-activity": ["ui.slurp.pulse.runAudience", "Audience activity"],
+    "audience-activity": ["ui.slurp.pulse.audienceActivity", "Audience activity"],
     conversation: ["ui.slurp.pulse.conversation", "Conversation work"],
     "creator-improvement": ["ui.slurp.pulse.creatorImprovement", "Creator improvements"],
     commission: ["ui.slurp.pulse.commission", "Commission work"],
@@ -616,12 +616,14 @@ function taskSummary(task: PulseTask | undefined, t: (key: string, options?: Rec
   return task.detail || progress || pulseTaskStatus(task.status, !isTerminalTask(task.status), t);
 }
 
+/** "in 5m", "in 2h", "in 3d", in the UI language. */
 function formatPulseUntil(value: string) {
   const minutes = Math.max(0, Math.round((Date.parse(value) - Date.now()) / 60_000));
-  if (minutes < 60) return `${minutes}m`;
+  const format = new Intl.RelativeTimeFormat(i18next.language, { style: "narrow" });
+  if (minutes < 60) return format.format(minutes, "minute");
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
+  if (hours < 24) return format.format(hours, "hour");
+  return format.format(Math.floor(hours / 24), "day");
 }
 
 function pulseTaskStatus(
@@ -647,14 +649,9 @@ function pulseTaskStatus(
   return t("ui.slurp.pulse.complete", { defaultValue: "Complete" });
 }
 
+/** The shared list timestamp ("now", "4m", "2h", …) in the UI language. */
 function formatPulseAge(value?: string) {
-  if (!value) return "";
-  const seconds = Math.max(0, Math.floor((Date.now() - Date.parse(value)) / 1000));
-  if (seconds < 10) return "Just now";
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  return `${Math.floor(minutes / 60)}h`;
+  return value ? formatRelativeTime(value, i18next.language) : "";
 }
 
 function readAccountIds(variables: unknown): string[] {

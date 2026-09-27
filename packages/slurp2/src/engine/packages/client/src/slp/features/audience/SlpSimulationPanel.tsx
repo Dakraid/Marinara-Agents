@@ -31,7 +31,11 @@ type Group = (typeof GROUPS)[number];
 
 const FIELDS: Record<Group, NumberField[]> = {
   clock: [
-    { path: ["clock", "tickMinutes"], label: "Tick length", detail: "Minutes of world time one tick covers." },
+    {
+      path: ["clock", "tickMinutes"],
+      label: "Background tick every",
+      detail: "Real minutes between world ticks while Run in the background is on.",
+    },
     {
       path: ["clock", "catchUpHours"],
       label: "Catch-up limit",
@@ -234,7 +238,8 @@ const TOGGLES: Record<string, { path: Path; label: string; detail: string; advan
     {
       path: ["clock", "backgroundTimer"],
       label: "Run in the background",
-      detail: "Keep the world moving while Slurp is closed.",
+      detail:
+        "Tick the world on the background timer, even while Slurp is closed. Off, it still catches up when you open Slurp and about four times a day.",
     },
   ],
   world: [

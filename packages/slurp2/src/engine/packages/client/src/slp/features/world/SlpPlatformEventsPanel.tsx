@@ -1,4 +1,4 @@
-import { useStartStoryEvent } from "./slp-story-hooks";
+import { useSlpStoryTimeline, useStartStoryEvent } from "./slp-story-hooks";
 import { toast } from "sonner";
 import { CalendarDays, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 
 import {
   SLURP_PLATFORM_EVENT_GUIDANCE_MAX,
-  slurpActivePlatformEvents,
+  slurpRunningPlatformEventIds,
   slurpPlatformEventSchema,
   slurpPlatformEventsDefault,
   type SlurpPlatformEvent,
@@ -54,7 +54,8 @@ export function SlurpPlatformEventsSettings({
   const { t, i18n } = useTranslation();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<SlurpPlatformEvent | null>(null);
-  const activeIds = new Set(slurpActivePlatformEvents(events, new Date()).map((item) => item.id));
+  const timeline = useSlpStoryTimeline();
+  const activeIds = slurpRunningPlatformEventIds(events, timeline.data?.occurrences ?? [], new Date());
   const sorted = [...events].sort((a, b) => eventOrder(a) - eventOrder(b) || a.name.localeCompare(b.name));
   const valid = draft ? slurpPlatformEventSchema.safeParse(draft).success : false;
 
@@ -178,7 +179,7 @@ export function SlurpPlatformEventsSettings({
         {draft.activation.kind === "annual" && (
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 text-xs font-semibold">
-              {t("ui.slurp.settings.events.start", { defaultValue: "Starts every year" })}
+              {t("ui.slurp.settings.events.startsEveryYear", { defaultValue: "Starts every year" })}
               <input
                 type="date"
                 value={dateValue(draft)}

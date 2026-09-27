@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { AdvancedGroup, SettingsGroup } from "../../modules/settings/SlpSettingsControls";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
 import { formatDateTime } from "../../base/ui/slp-date-time";
+import { SlpErrorState } from "../../modules/chrome/SlpStateKit";
 import { quietButton, selectClass } from "./slp-creator-classes";
 import {
   useSlurpContinuity,
@@ -53,8 +54,8 @@ export function SlurpContinuityPanel({
   lifeDetails?: ReactNode;
 }) {
   const { t, i18n } = useTranslation();
-  const act = useSlurpContinuityAction(creatorAccountId);
-  const edit = useSlurpContinuityEdit(creatorAccountId);
+  const act = useSlurpContinuityAction();
+  const edit = useSlurpContinuityEdit();
   const [filter, setFilter] = useState("");
   const [filters, setFilters] = useState<SlurpContinuityFilters>({});
   const activeFilters = Object.values(filters).filter(Boolean).length;
@@ -82,6 +83,8 @@ export function SlurpContinuityPanel({
       </p>
     );
   }
+  // A failed load must not read as an empty memory ("Nothing yet.").
+  if (query.isError) return <SlpErrorState onRetry={() => void query.refetch()} />;
 
   const scope = (value: string) => continuityLabel(t, "scope", value);
   const factLine = (fact: SlurpContinuityFactView) => (
