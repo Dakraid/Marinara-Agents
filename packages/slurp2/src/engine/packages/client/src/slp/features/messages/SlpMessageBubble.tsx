@@ -588,7 +588,7 @@ export function MessageBubble({
           {slpErrorText(
             unlock.error,
             localizeUi("ui.slurp.messages.unlockFailed", { defaultValue: "Unlock failed." }),
-            localizeUi("ui.slurp.wallet.notEnoughCoins", { defaultValue: "Not enough coins. Top up in your Wallet." }),
+            localizeUi("ui.slurp.wallet.notEnoughCoins", { defaultValue: "Not enough coins." }),
           )}
         </p>
       )}

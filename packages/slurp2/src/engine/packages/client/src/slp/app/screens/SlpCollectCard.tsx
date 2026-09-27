@@ -84,6 +84,9 @@ export function SlpCollectCard({
                 amount: allowance,
               })}
             </SlpCoinText>
+          ) : creator.earnings.coins <= 0 ? (
+            // Nothing earned is not "all collected" (R1-087).
+            localizeUi("ui.slurp.wallet.nothingToCollect", { defaultValue: "Nothing to collect yet." })
           ) : (
             localizeUi("ui.slurp.wallet.collectedToday", {
               defaultValue: "All collected for today. More after the daily reset.",

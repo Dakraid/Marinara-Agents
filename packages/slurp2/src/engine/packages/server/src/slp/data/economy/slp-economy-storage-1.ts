@@ -132,7 +132,10 @@ export function createEconomyStorage1(context: SlurpStorageContext) {
         // not change what an existing subscription costs, so this path never sees a modifier:
         // plan §1 keeps a subscription renewing at its agreed price.
         if (existing[0] && settings.walletEnabled && existingWallet) {
-          const charged = spend(existingWallet, "subscribe", basePrice, at, creatorAccountId);
+          const charged = spend(existingWallet, "subscribe", basePrice, at, creatorAccountId, undefined, {
+            viewerAccountId,
+            creatorAccountId,
+          });
           if (!charged) {
             await this.unsubscribe(viewerAccountId, creatorAccountId, true);
             return null;
@@ -209,7 +212,10 @@ export function createEconomyStorage1(context: SlurpStorageContext) {
           : 0;
         const previousWallet = existingWallet ?? (await getWalletNow(viewerAccountId));
         const charged = settings.walletEnabled
-          ? spend(previousWallet, "subscribe", price, at, creatorAccountId)
+          ? spend(previousWallet, "subscribe", price, at, creatorAccountId, undefined, {
+              viewerAccountId,
+              creatorAccountId,
+            })
           : previousWallet;
         if (!charged) return null;
         const walletAfterCharge = settings.walletEnabled

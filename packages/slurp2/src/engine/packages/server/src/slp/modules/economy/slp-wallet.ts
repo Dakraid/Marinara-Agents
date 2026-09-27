@@ -486,6 +486,8 @@ export function renewSubscriptions(
   at: Date,
   /** Creators that no longer exist. Their subscriptions end without a charge (a removed Creator bills nobody). */
   goneCreatorIds: ReadonlySet<string> = new Set(),
+  /** Binds each renewal line to its Creator, so the Wallet can offer Resubscribe (R1-090). */
+  viewerAccountId?: string,
 ): SlurpRenewalResult {
   let next = wallet;
   const renewed: { creatorAccountId: string; price: number }[] = [];
@@ -506,7 +508,15 @@ export function renewSubscriptions(
       next = { ...next, subscriptions: remaining };
       continue;
     }
-    const charged = spend(next, "renew", subscription.price, at, creatorAccountId);
+    const charged = spend(
+      next,
+      "renew",
+      subscription.price,
+      at,
+      creatorAccountId,
+      undefined,
+      viewerAccountId ? { viewerAccountId, creatorAccountId } : undefined,
+    );
     if (!charged) {
       lapsed.push(creatorAccountId);
       const remaining = { ...next.subscriptions };

@@ -201,7 +201,7 @@ export function errorMessage(error: unknown, fallback: string): string {
   return slpErrorText(
     error,
     fallback,
-    i18next.t("ui.slurp.wallet.notEnoughCoins", { defaultValue: "Not enough coins. Top up in your Wallet." }),
+    i18next.t("ui.slurp.wallet.notEnoughCoins", { defaultValue: "Not enough coins." }),
   );
 }
 

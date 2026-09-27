@@ -15,6 +15,9 @@ import { readGarnishLorebookContext } from "./slp-garnish-lorebook.js";
 export type GarnishLorebookSyncOutcome = "disabled" | "unchanged" | "missing" | "synced" | "failed";
 
 /** Regenerate the pool when the selected lorebook has changed since the last sync. */
+
+/** Back-off per lorebook after a failed sync. ponytail: in memory; a restart retries once. */
+const failedSyncs = new Map<string, { revision: string; tries: number; retryAt: number }>();
 export async function syncGarnishAdsWithLorebook(
   db: DB,
   pool: GarnishAdsStorage,
@@ -31,6 +34,10 @@ export async function syncGarnishAdsWithLorebook(
     return "missing";
   }
   if (!options.force && context.revision === settings.inlineAdsLorebookRevision) return "unchanged";
+  // A failed run waits before it tries the same revision again: each try is two model calls, and the
+  // scheduler polls every minute (R1-094). A new revision or a forced run goes at once.
+  const failed = failedSyncs.get(settings.inlineAdsLorebookId);
+  if (!options.force && failed?.revision === context.revision && Date.now() < failed.retryAt) return "failed";
 
   try {
     const items = await generateGarnishAds(db, pool, {
@@ -51,6 +58,13 @@ export async function syncGarnishAdsWithLorebook(
     return "synced";
   } catch (error) {
     logger.warn(error, "[garnish-ads] Could not sync the ad pool to its lorebook");
+    const tries = failed?.revision === context.revision ? failed.tries + 1 : 1;
+    failedSyncs.set(settings.inlineAdsLorebookId, {
+      revision: context.revision,
+      tries,
+      // 10 minutes, doubling, at most a day.
+      retryAt: Date.now() + Math.min(24 * 60, 10 * 2 ** (tries - 1)) * 60_000,
+    });
     return "failed";
   }
 }

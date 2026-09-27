@@ -385,7 +385,9 @@ function SlurpNotificationsView({
     const arcKey =
       kind === "audience_arc" && (event.subjectId === "burnout" || event.subjectId === "overattached")
         ? `ui.slurp.events.single.audience_arc_${event.subjectId}`
-        : `ui.slurp.events.single.${kind}`;
+        : kind === "subscribed" && event.subjectId === "renewed"
+          ? "ui.slurp.events.single.subscribed_renewed"
+          : `ui.slurp.events.single.${kind}`;
     const line = localizeUi(arcKey, {
       defaultValue: kind,
       amount,

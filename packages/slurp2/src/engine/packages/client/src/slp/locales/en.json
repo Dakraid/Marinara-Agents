@@ -1827,11 +1827,11 @@
   "ui.slurp.settings.ads.imported_other": "Imported {{count}} ads.",
   "ui.slurp.settings.ads.importing": "Importing…",
   "ui.slurp.settings.ads.lorebook": "Lorebook",
-  "ui.slurp.settings.ads.lorebookDetail": "Generate ads that fit a lorebook's setting. Slurp regenerates the pool by itself when the book changes.",
+  "ui.slurp.settings.ads.lorebookDetail": "Generate ads that fit a lorebook's setting. When the book changes, Slurp adds new ads that fit it; your existing ads stay.",
   "ui.slurp.settings.ads.lorebookNone": "No lorebook",
   "ui.slurp.settings.ads.lorebookSync.disabled": "Select a lorebook first.",
   "ui.slurp.settings.ads.lorebookSync.missing": "That lorebook is gone or empty. The link was removed.",
-  "ui.slurp.settings.ads.lorebookSync.synced": "Ads regenerated from the lorebook.",
+  "ui.slurp.settings.ads.lorebookSync.synced": "New ads added from the lorebook.",
   "ui.slurp.settings.ads.lorebookSync.unchanged": "The lorebook has not changed since the last sync.",
   "ui.slurp.settings.ads.lorebookSyncNow": "Sync now",
   "ui.slurp.settings.ads.lorebookSyncing": "Syncing…",
@@ -4288,7 +4288,7 @@
   "ui.slurp.creators.generateOutcome": "{{made}} new, {{skipped}} skipped, {{failed}} could not post.",
   "ui.slurp.settings.searchLabel.autoPostingScheduleEnabled": "Automatic posting",
   "ui.slurp.settings.searchLabel.simulationTuning": "Audience tuning",
-  "ui.slurp.wallet.notEnoughCoins": "Not enough coins. Top up in your Wallet.",
+  "ui.slurp.wallet.notEnoughCoins": "Not enough coins.",
   "ui.slurp.messages.photoUpload": "Upload",
   "ui.slurp.messages.photoGenerate": "Draw it",
   "ui.slurp.messages.photoDescribe": "Describe the photo you took",
@@ -4296,5 +4296,9 @@
   "ui.slurp.messages.photoSend": "Send photo",
   "ui.slurp.composer.purposeGuideOnly": "Purpose and delivery shape Guide drafts.",
   "ui.slurp.post.saveImageFailed": "Could not save the post as an image.",
-  "ui.slurp.moments.subscribePrice": "Subscribe · {{price}} <coin/> / week"
+  "ui.slurp.moments.subscribePrice": "Subscribe · {{price}} <coin/> / week",
+  "ui.slurp.wallet.nothingToCollect": "Nothing to collect yet.",
+  "ui.slurp.wallet.entry.refund": "Refund",
+  "ui.slurp.wallet.entry.subscriptionEnded": "Subscription ended",
+  "ui.slurp.events.single.subscribed_renewed": "{{who}} renewed their subscription."
 }

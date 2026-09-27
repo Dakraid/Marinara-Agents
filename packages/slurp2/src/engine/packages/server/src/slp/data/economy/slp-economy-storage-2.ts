@@ -218,7 +218,7 @@ export function createEconomyStorage2(context: SlurpStorageContext) {
         for (const creatorAccountId of Object.keys(stored.subscriptions))
           if (!(await this.getNoodlerAccountById(creatorAccountId, { includeHidden: true })))
             gone.add(creatorAccountId);
-        const renewal = renewSubscriptions(stored, at, gone);
+        const renewal = renewSubscriptions(stored, at, gone, viewerAccountId);
         if (renewal.wallet === stored) return stored;
         const walletAfterRenewal = renewal.lapsed.reduce(
           (wallet, creatorAccountId) => recordWalletActivity(wallet, "renew", 0, at, creatorAccountId),

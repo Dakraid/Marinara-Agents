@@ -40,7 +40,7 @@ export function errorMessage(error: unknown, fallback?: string) {
   return slpErrorText(
     error,
     fallback ?? i18next.t("ui.slurp.settings.saveState.error", { defaultValue: "Could not update settings." }),
-    i18next.t("ui.slurp.wallet.notEnoughCoins", { defaultValue: "Not enough coins. Top up in your Wallet." }),
+    i18next.t("ui.slurp.wallet.notEnoughCoins", { defaultValue: "Not enough coins." }),
   );
 }
 

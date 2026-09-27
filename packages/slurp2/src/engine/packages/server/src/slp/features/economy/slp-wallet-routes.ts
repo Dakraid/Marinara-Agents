@@ -66,7 +66,8 @@ export async function slpWalletRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
       ...wallet,
       cheatsEnabled: process.env.NODE_ENV === "development" && process.env.CHEATS_ENABLED === "true",
       refillFloor: settings.walletStipendFloor,
-      nextRefillAt: nextRefillAt.toISOString(),
+      // No refill to wait for when the Wallet or the refill (floor 0) is off (R1-092).
+      nextRefillAt: settings.walletEnabled && settings.walletStipendFloor > 0 ? nextRefillAt.toISOString() : null,
       refillAvailable:
         settings.walletEnabled && wallet.stipendOn !== today && wallet.coins < settings.walletStipendFloor,
     };

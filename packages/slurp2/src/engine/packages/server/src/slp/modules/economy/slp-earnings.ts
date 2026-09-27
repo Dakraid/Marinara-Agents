@@ -25,6 +25,7 @@
  * Existing installs keep whatever income already reached their persona wallets. Nothing is
  * migrated, because that money is already spent or already counted.
  */
+import { slurpDayKey } from "./slp-wallet.js";
 
 export type SlurpEarningsEntryKind =
   | "unlock"
@@ -99,7 +100,9 @@ export function slurpPayoutAllowance(earnings: SlurpEarnings, at: Date): number 
   return Math.max(0, Math.min(daily - takenToday, earnings.coins));
 }
 
-const dayKey = (at: Date) => at.toISOString().slice(0, 10);
+// The Slurp day, like the wallet's refill (starts 08:00 host time), not the UTC day (R1-087).
+// ponytail: the default start hour; pass walletDayStartHour through if players move it.
+const dayKey = (at: Date) => slurpDayKey(at);
 
 const LEDGER_LIMIT = 60;
 

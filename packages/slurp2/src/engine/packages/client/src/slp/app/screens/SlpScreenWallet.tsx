@@ -85,13 +85,17 @@ export function SlurpWalletView({
 
   // Coin rain when the balance goes up (collect, refill); the amount counts up by itself.
   const balanceRef = useRef<HTMLParagraphElement | null>(null);
-  const shownCoins = useRef<number | undefined>(undefined);
+  const shownCoins = useRef<{ personaId: string | null; coins: number | undefined }>({
+    personaId: null,
+    coins: undefined,
+  });
   useEffect(() => {
-    const previous = shownCoins.current;
-    shownCoins.current = liveCoins;
+    // Switching to a richer persona is not money arriving: the baseline resets per persona (R1-099).
+    const previous = shownCoins.current.personaId === personaId ? shownCoins.current.coins : undefined;
+    shownCoins.current = { personaId, coins: liveCoins };
     if (previous !== undefined && liveCoins !== undefined && liveCoins > previous && balanceRef.current)
       playSlpCoinRain(balanceRef.current);
-  }, [liveCoins]);
+  }, [liveCoins, personaId]);
 
   // The refill line names a calm clock time ("Next refill 5:48 AM"); at that time the wallet is read
   // again, so the refill button turns on by itself.
@@ -117,7 +121,7 @@ export function SlurpWalletView({
     const profile = creatorName(entry);
     if (profile) return profile.displayName;
     if (!entry.note || entry.kind === "unlock" || entry.kind === "ppv" || entry.kind === "topUp") return null;
-    const normalized = entry.note.replace(/^(?:payout|renew|subscribe|tip):\s*/u, "");
+    const normalized = entry.note.replace(/^(?:payout|renew|subscribe|tip|refund):\s*/u, "");
     return /^[A-Za-z0-9_-]{16,}$/u.test(normalized) ? null : normalized;
   };
 
@@ -184,7 +188,12 @@ export function SlurpWalletView({
   const entryLabel = (entry: LedgerEntry) =>
     ledgerMode === "earnings"
       ? localizeUi(`ui.slurp.earnings.entry.${entry.kind}`, { defaultValue: entry.kind })
-      : localizeUi(`ui.slurp.wallet.entry.${entry.kind}`, { defaultValue: entry.kind });
+      : // A refund is money back, not income; a 0-coin renewal is a subscription that ended (R1-088, R1-089).
+        entry.kind === "income" && entry.note?.startsWith("refund:")
+        ? localizeUi("ui.slurp.wallet.entry.refund", { defaultValue: "Refund" })
+        : entry.kind === "renew" && entry.amount === 0
+          ? localizeUi("ui.slurp.wallet.entry.subscriptionEnded", { defaultValue: "Subscription ended" })
+          : localizeUi(`ui.slurp.wallet.entry.${entry.kind}`, { defaultValue: entry.kind });
 
   const refillLine = refillReady
     ? localizeUi("ui.slurp.wallet.refillReady", { defaultValue: "Your refill is ready." })
@@ -491,7 +500,7 @@ export function SlurpWalletView({
                           >
                             {gamble && entry.amount === 0 ? (
                               localizeUi("ui.slurp.wallet.free", { defaultValue: "Free" })
-                            ) : (
+                            ) : entry.kind === "renew" && entry.amount === 0 ? null : (
                               <SlurpCoinAmount
                                 amount={entry.amount > 0 ? `+${entry.amount}` : entry.amount}
                                 size={15}

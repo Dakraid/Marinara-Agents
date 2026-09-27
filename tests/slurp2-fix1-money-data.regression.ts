@@ -39,7 +39,7 @@ assert.deepEqual(
 assert.equal(renewSubscriptions(wallet, at).wallet.coins, 450);
 const economy2 = read("server/src/slp/data/economy/slp-economy-storage-2.ts");
 assert.match(economy2, /getNoodlerAccountById\(creatorAccountId, \{ includeHidden: true \}\)\)\)\s*gone\.add/u);
-assert.match(economy2, /renewSubscriptions\(stored, at, gone\)/u);
+assert.match(economy2, /renewSubscriptions\(stored, at, gone(?:, viewerAccountId)?\)/u);
 
 // ── R1-101: a restore reloads everything and drops staged edits ──
 const backup = read("client/src/slp/features/maintenance/SlpBackupPanel.tsx");
