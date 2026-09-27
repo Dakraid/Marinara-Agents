@@ -157,6 +157,12 @@ export const SLURP2_SOURCE_MODULES: Record<string, readonly string[]> = {
     "packages/client/src/slp/modules/post/SlpReplyRow.tsx",
     "packages/client/src/slp/modules/post/SlpReplyComposer.tsx",
     "packages/client/src/slp/modules/post/SlpLockedPostCard.tsx",
+    "packages/client/src/slp/modules/post/SlpUnlockOfferRows.tsx",
+  ],
+  // Fix phase 1b: the unlock sheet's price rows moved into their own file.
+  "packages/client/src/slp/modules/post/SlpLockedPostCard.tsx": [
+    "packages/client/src/slp/modules/post/SlpLockedPostCard.tsx",
+    "packages/client/src/slp/modules/post/SlpUnlockOfferRows.tsx",
   ],
   "packages/client/src/slp/modules/post/SlpCreatorPostMenu.tsx": [
     "packages/client/src/slp/modules/post/SlpPostMenu.tsx",
