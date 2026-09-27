@@ -6,6 +6,7 @@ import type { ImagePromptOverride } from "../../components/ui/ImagePromptReviewM
 import { confirmSlurpAvatarReview } from "../features/creators/SlpStageProfileForm";
 import { ApiError } from "../../lib/api-client";
 import { toast } from "sonner";
+import { useCancelCreatorImagePrompts } from "../features/feed/slp-feed-post-hooks";
 import { useSlurpHomeBaseState, type SlurpHomeBaseState } from "./slp-home-state";
 import type { SlurpHomeProps } from "./slp-home.types";
 
@@ -17,6 +18,7 @@ import type { SlurpHomeProps } from "./slp-home.types";
  * halves joined and is what the host still calls.
  */
 function useSlurpHomeActions(state: SlurpHomeBaseState) {
+  const cancelImagePrompts = useCancelCreatorImagePrompts();
   const {
     navigation,
     onNavigate,
@@ -418,6 +420,15 @@ function useSlurpHomeActions(state: SlurpHomeBaseState) {
     );
   };
 
+  const cancelReviewedImagePrompts = () => {
+    if (!imagePromptReview) return;
+    setImagePromptReview(null);
+    cancelImagePrompts.mutate({
+      targetAccountId: imagePromptReview.accountId,
+      ids: imagePromptReview.items.map((item) => item.id),
+    });
+  };
+
   const toggleCreatorSubscription = (creatorAccountId: string, subscribed: boolean) => {
     if (!viewerPersonaId) return Promise.resolve();
     return toggleSubscription
@@ -476,6 +487,7 @@ function useSlurpHomeActions(state: SlurpHomeBaseState) {
     submitGuidedPost,
     submitRunNow,
     confirmReviewedImagePrompts,
+    cancelReviewedImagePrompts,
     toggleCreatorSubscription,
     toggleCreatorFollow,
     mainAuthorProfile,

@@ -66,6 +66,9 @@ export function mapViewer(
     convoDisplayName?: string | null;
     avatarPath?: string | null;
     avatarCrop?: unknown;
+    /** The persona's public profile: DM replies read it as the fan's "about" (Plane 326, R1-001). */
+    aboutMe?: string | null;
+    description?: string | null;
     createdAt?: string;
     updatedAt?: string;
   },
@@ -76,7 +79,7 @@ export function mapViewer(
     entityId: personaId,
     handle: normalizeHandle(persona.convoDisplayName || persona.name, personaId),
     displayName: persona.convoDisplayName || persona.name || "User",
-    bio: "",
+    bio: persona.aboutMe || persona.description || "",
     avatarUrl: persona.avatarPath ?? null,
     avatarCrop: normalizeAvatarCrop(persona.avatarCrop),
     invited: true,

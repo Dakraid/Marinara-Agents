@@ -12,6 +12,7 @@ import { describeSlurpDayVibe } from "../world/slp-world-contract.js";
 import type { FastifyInstance } from "fastify";
 import { personaQuerySchema } from "../../modules/messages/slp-messages-schemas.js";
 import type { SlpMessagesContext } from "./slp-messages-context.js";
+import { SLURP_FUNNEL_STAGES } from "../../../../../shared/src/slp/slp-population.js";
 
 /**
  * An image a paid message carries.
@@ -186,9 +187,17 @@ export async function slpMessagesCreatorRoutes(app: FastifyInstance, messaging: 
       const wallet = await slurp.getWallet(subscription.viewerAccountId);
       if (wallet.subscriptions[creatorAccountId]) activeSubscribers.push(subscription);
     }
+    // The sheet's "To 37 subscribers" counts audience subscribers too (ties at subscriber or
+    // later), so they get the broadcast as well (R1-002). A persona on both lists gets it once.
+    const recipients = new Set(activeSubscribers.map((subscription) => subscription.viewerAccountId));
+    const subscriberFloor = SLURP_FUNNEL_STAGES.indexOf("subscriber");
+    for (const tie of await population.listTiesForCreator(creatorAccountId)) {
+      if (SLURP_FUNNEL_STAGES.indexOf(tie.stage as (typeof SLURP_FUNNEL_STAGES)[number]) >= subscriberFloor)
+        recipients.add(tie.memberId);
+    }
     const sent = [];
-    for (const subscription of activeSubscribers) {
-      const message = await messages.sendCreatorMessage(creatorAccountId, subscription.viewerAccountId, {
+    for (const viewerAccountId of recipients) {
+      const message = await messages.sendCreatorMessage(creatorAccountId, viewerAccountId, {
         content: parsed.data.content,
         kind: "broadcast",
       });

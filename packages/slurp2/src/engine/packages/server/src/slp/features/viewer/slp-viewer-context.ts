@@ -85,8 +85,12 @@ export function createSlpViewerContext(
         ),
       ),
     );
+    // The persona's fan account: likes, comments and votes on other Creators' posts are stored
+    // under it, so the client needs it to recognise them as the player's own (R1-020).
+    const fanActor = await noodle.getSlurpAccountForEntity("persona", viewer.entityId, "viewer").catch(() => null);
     return {
       viewer,
+      viewerActorAccountId: fanActor?.id ?? null,
       visibleAccounts,
       goalByAccountId,
       subscriptionPrices,
@@ -103,6 +107,7 @@ export function createSlpViewerContext(
   function buildViewerShell(context: ViewerContext) {
     return {
       viewer: context.viewer,
+      viewerActorAccountId: context.viewerActorAccountId,
       creators: context.visibleAccounts.map((account) => ({
         profile: context.profileById.get(account.id)!,
         subscribed: context.subscribedIds.has(account.id),

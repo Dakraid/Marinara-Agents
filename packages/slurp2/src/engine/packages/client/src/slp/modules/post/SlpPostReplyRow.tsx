@@ -3,7 +3,9 @@ import { Fragment, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { MessageCircle } from "lucide-react";
 import { SlpHeartGlyph } from "../../base/chrome/SlpGlyphs";
-import { canManageSlpReply } from "../../../../../shared/src/slp/slp-interactions.js";
+import { canManageSlpReply, slpIsOwnActor } from "../../../../../shared/src/slp/slp-interactions.js";
+
+type SlpOwnAccount = { fanActorAccountId?: string | null };
 import { type SlpAccount, type SlpInteraction } from "../../../../../shared/src/slp/slp-social.types.js";
 import type { SlpPostCardModel } from "./SlpPostTypes";
 import type { ChatImage } from "../../../hooks/use-gallery";
@@ -84,7 +86,7 @@ export function SlpPostReplyRow({
     (interaction) => interaction.type === "like" && interaction.parentInteractionId === reply.id,
   );
   const likedReplyByPersona = personaAccount
-    ? replyLikes.some((interaction) => interaction.actorAccountId === personaAccount.id)
+    ? replyLikes.some((interaction) => slpIsOwnActor(personaAccount, interaction.actorAccountId))
     : false;
   const canManageReply = canManageReplyOverride
     ? canManageReplyOverride(reply)
@@ -94,6 +96,7 @@ export function SlpPostReplyRow({
           actorKind: actorAccount?.kind ?? reply.actorSnapshot?.kind,
           actorAccountId: reply.actorAccountId,
           personaAccountId: personaAccount.id,
+          fanActorAccountId: (personaAccount as SlpOwnAccount).fanActorAccountId,
         }),
       );
   const copyReply = () => {

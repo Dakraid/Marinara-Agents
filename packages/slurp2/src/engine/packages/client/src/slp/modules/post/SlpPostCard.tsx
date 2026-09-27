@@ -1,3 +1,4 @@
+import { slpIsOwnActor } from "../../../../../shared/src/slp/slp-interactions.js";
 import { SlpTimestamp } from "../../base/ui/SlpTimestamp";
 import { AtSign, ChevronDown, ChevronRight, Flame, Info, TrendingUp, MessageCircle, RefreshCw, X } from "lucide-react";
 import { SlpHeartGlyph } from "../../base/chrome/SlpGlyphs";
@@ -168,7 +169,10 @@ export function SlpPostCard({
   const displayedImageUrl = !hideImage && postImageSrc && postImageSrc !== failedImageUrl ? postImageSrc : null;
   const imageGenerationPending = ctx.generatingPostImageId === post.id;
   const imageSlot = hideImage ? null : slpPostImageSlotState(post, imageGenerationPending, ctx.postManagement);
-  const postMenuOpen = ctx.postMenuId === post.id;
+  // The post dialog shows the same post as the card behind it; its own key keeps the ⋯ menu and
+  // the composer in one card instead of both (R1-029).
+  const surfaceKey = hideImage ? `dialog:${post.id}` : post.id;
+  const postMenuOpen = ctx.postMenuId === surfaceKey;
   const reachBadge = slurpPostWentViral({ accountId: post.authorAccountId, postId: post.id, createdAt: post.createdAt })
     ? "viral"
     : slurpReachWeek(post.authorAccountId, post.createdAt) === "featured"
@@ -202,11 +206,11 @@ export function SlpPostCard({
       )
     : [];
   const personaPollVote = personaAccount
-    ? (pollVotes.find((interaction) => interaction.actorAccountId === personaAccount.id)?.content ?? null)
+    ? (pollVotes.find((interaction) => slpIsOwnActor(personaAccount, interaction.actorAccountId))?.content ?? null)
     : null;
   const likedByPersona = personaAccount
     ? rootPostInteractions.some(
-        (interaction) => interaction.type === "like" && interaction.actorAccountId === personaAccount.id,
+        (interaction) => interaction.type === "like" && slpIsOwnActor(personaAccount, interaction.actorAccountId),
       )
     : false;
   const { replies, replyById, orderedReplies, replyLikesByParentId } = useMemo(() => {
@@ -442,6 +446,7 @@ export function SlpPostCard({
           <SlpPostMenu
             post={post}
             ctx={ctx}
+            menuKey={surfaceKey}
             postMenuOpen={postMenuOpen}
             editablePost={editablePost}
             startEditingPost={startEditingPost}
@@ -698,7 +703,7 @@ export function SlpPostCard({
             type="button"
             className={actionClass}
             disabled={!personaAccount}
-            onClick={() => openReplyComposer(post.id)}
+            onClick={() => openReplyComposer(post.id, null, surfaceKey)}
             title={localizeUi("ui.noodle.noodlepostcard.reply")}
             aria-label={localizeUi("ui.noodle.noodlepostcard.reply")}
           >
@@ -711,7 +716,10 @@ export function SlpPostCard({
           total={likeCount}
           creatorAccountId={post.authorAccountId}
         />
-        {replyPostId === post.id && !replyParentInteractionId && renderReplyComposer(false)}
+        {replyPostId === post.id &&
+          (ctx.replyKey ?? post.id) === surfaceKey &&
+          !replyParentInteractionId &&
+          renderReplyComposer(false)}
         {replies.length > 0 && (
           <div className="mt-3 border-t border-[var(--noodle-divider)]">
             {replyThreads.length > 2 && (

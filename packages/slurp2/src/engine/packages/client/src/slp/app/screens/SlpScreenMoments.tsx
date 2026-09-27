@@ -1,3 +1,4 @@
+import { slpIsOwnActor } from "../../../../../shared/src/slp/slp-interactions.js";
 import { ChevronLeft, ChevronRight, Clock3, Eye, Link, Maximize2, Minimize2, Plus, X } from "lucide-react";
 import { SlpHeartGlyph, SlpLockGlyph } from "../../base/chrome/SlpGlyphs";
 import { useEffect, useRef, useState } from "react";
@@ -196,9 +197,7 @@ export function SlurpMomentViewer({
   const rootLikes = moment.post.interactions.filter(
     (interaction) => interaction.type === "like" && !interaction.parentInteractionId,
   );
-  const liked = Boolean(
-    ctx.personaAccount && rootLikes.some((interaction) => interaction.actorAccountId === ctx.personaAccount!.id),
-  );
+  const liked = Boolean(rootLikes.some((interaction) => slpIsOwnActor(ctx.personaAccount, interaction.actorAccountId)));
   const likeCount = moment.post.likeCount ?? rootLikes.length;
   const unlockPrice = (moment.post as { unlockPrice?: unknown }).unlockPrice;
   // No picture at all (not one still loading): the Story is its words, drawn big on the canvas.

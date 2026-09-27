@@ -26,6 +26,7 @@ import { SlpReportModal } from "./SlpReportModal";
 export function SlpPostMenu({
   post,
   ctx,
+  menuKey = post.id,
   postMenuOpen,
   editablePost,
   startEditingPost,
@@ -41,6 +42,8 @@ export function SlpPostMenu({
 }: {
   post: SlpPostCardModel;
   ctx: SlpPostCardCtx;
+  /** Which card the ⋯ menu belongs to; the post dialog uses its own (R1-029). */
+  menuKey?: string;
   postMenuOpen: boolean;
   editablePost: SlpPostCardModel;
   startEditingPost: (post: SlpPostCardModel) => void;
@@ -104,7 +107,7 @@ export function SlpPostMenu({
       <button
         ref={triggerRef}
         type="button"
-        onClick={() => ctx.setPostMenuId((current) => (current === post.id ? null : post.id))}
+        onClick={() => ctx.setPostMenuId((current) => (current === menuKey ? null : menuKey))}
         className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--noodle-accent)]/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
         title={localizeUi("ui.noodle.noodlepostcard.postActions")}
         aria-label={localizeUi("ui.noodle.noodlepostcard.postActions")}

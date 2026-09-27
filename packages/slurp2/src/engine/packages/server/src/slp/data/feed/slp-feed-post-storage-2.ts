@@ -208,6 +208,7 @@ export function createFeedPostStorage2(context: SlurpStorageContext) {
         // finalized (success or failed) row never keeps contradictory pending lifecycle state.
         const mergedMetadata = { ...parseRecord(row.metadata), ...input.metadata };
         delete mergedMetadata.imagePendingReview;
+        delete mergedMetadata.imageGenerationDeferred;
         if (input.imageUrl) {
           delete mergedMetadata.imageGenerationFailed;
           delete mergedMetadata.imageGenerationError;
@@ -337,6 +338,7 @@ export function createFeedPostStorage2(context: SlurpStorageContext) {
             "imageGenerationFailed",
             "imageGenerationError",
             "imagePendingReview",
+            "imageGenerationDeferred",
           ]) {
             delete nextMetadata[key];
           }

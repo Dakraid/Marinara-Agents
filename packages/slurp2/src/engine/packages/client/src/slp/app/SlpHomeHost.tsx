@@ -83,7 +83,6 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
     unlockPost,
     confirmImagePrompts,
     imagePromptReview,
-    setImagePromptReview,
     prepareNavigationAwayFromProfileEditor,
     goToHub,
     goToNoodlerSearch,
@@ -97,6 +96,7 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
     closeOnboarding,
     redraftFromSource,
     confirmReviewedImagePrompts,
+    cancelReviewedImagePrompts,
     toggleCreatorSubscription,
     mainAuthorProfile,
     openStoryComposer,
@@ -208,6 +208,42 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
     // settings search result, so it cannot belong to any one of those screens.
     overlays: (
       <>
+        {/* The image prompt review, the share picker, the age gate and "What's new" belong to no one
+            screen: mounted here, "Send in a chat" works on a profile and the gate and the release
+            sheet show wherever Slurp opens (R1-028, R1-135). */}
+        <ImagePromptReviewModal
+          open={Boolean(imagePromptReview)}
+          items={imagePromptReview?.items ?? []}
+          isSubmitting={confirmImagePrompts.isPending}
+          onCancel={cancelReviewedImagePrompts}
+          onConfirm={confirmReviewedImagePrompts}
+        />
+        <Modal
+          open={gateOpen && !splashOpen}
+          // The X and Escape mean Leave Slurp: the gate has no other way out, and the X used to do nothing.
+          onClose={() => leaveUnlessBackdrop(onLeave)}
+          title={localizeUi("ui.noodle.noodlemodetoggle.noodler")}
+          width="max-w-md"
+          panelClassName="noodle-icon-scope"
+          panelStyle={getSlpAccentStyle(SLP_PINK)}
+          closeDisabled={!onLeave}
+        >
+          <SlurpAgeGate
+            personaName={shellPersonaAccount?.displayName ?? ""}
+            onComplete={enterFromGate}
+            onCelebrate={() => setGateCelebrating(true)}
+            onLeave={onLeave}
+            isPending={false}
+          />
+        </Modal>
+        <SlpSharePostModal
+          post={model.sharingPost}
+          personaId={viewerPersonaId}
+          open={Boolean(model.sharingPost)}
+          onClose={() => model.setSharingPost(null)}
+        />
+        <SlurpSplash open={splashOpen} onDismiss={() => setSplashOpen(false)} onLeave={onLeave} />
+        {gateCelebrating && <SlurpConfetti fixed />}
         {postCardController.imageLightbox && (
           <ChatImageLightbox
             image={postCardController.imageLightbox}
@@ -283,15 +319,8 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
 
   // Shared review layer: Guide generation can be triggered from both the selected stage-profile
   // view and the hub, so the confirmation modal must render on every branch that owns that action.
-  const reviewModal = (
-    <ImagePromptReviewModal
-      open={Boolean(imagePromptReview)}
-      items={imagePromptReview?.items ?? []}
-      isSubmitting={confirmImagePrompts.isPending}
-      onCancel={() => setImagePromptReview(null)}
-      onConfirm={confirmReviewedImagePrompts}
-    />
-  );
+  // Mounted once in the shell overlays; the screen branches get nothing to render twice.
+  const reviewModal = null;
 
   // While Slurp itself loads or failed, the nav counts would come from other queries and lie over an
   // empty screen, so they stay hidden until the app is really there.
@@ -397,33 +426,6 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
         }}
         onSkipped={() => setOnboardingState("completed")}
       />
-      <Modal
-        open={gateOpen && !splashOpen}
-        // The X and Escape mean Leave Slurp: the gate has no other way out, and the X used to do nothing.
-        onClose={() => leaveUnlessBackdrop(onLeave)}
-        title={localizeUi("ui.noodle.noodlemodetoggle.noodler")}
-        width="max-w-md"
-        panelClassName="noodle-icon-scope"
-        panelStyle={getSlpAccentStyle(SLP_PINK)}
-        closeDisabled={!onLeave}
-      >
-        <SlurpAgeGate
-          personaName={shellPersonaAccount?.displayName ?? ""}
-          onComplete={enterFromGate}
-          onCelebrate={() => setGateCelebrating(true)}
-          onLeave={onLeave}
-          isPending={false}
-        />
-      </Modal>
-      <SlpSharePostModal
-        post={model.sharingPost}
-        personaId={viewerPersonaId}
-        open={Boolean(model.sharingPost)}
-        onClose={() => model.setSharingPost(null)}
-      />
-      <SlurpSplash open={splashOpen} onDismiss={() => setSplashOpen(false)} onLeave={onLeave} />
-      {gateCelebrating && <SlurpConfetti fixed />}
-      {reviewModal}
     </SlpShell>
   );
 }

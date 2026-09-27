@@ -380,7 +380,10 @@ export async function replyToSlurpMessage(
         // A forced reply is a person pressing a button, so it may, like an ordinary send.
         input.background !== true
       ) {
-        const imageAllowedBySettings = settings.enableImagePrompts === true;
+        // The Creator's own Images switch, the one its posts use. The old gate read
+        // `enableImagePrompts`, an internal flag with no control that is off on every install, so
+        // no Creator ever sent a picture in a chat (R1-122). No image connection → "unavailable".
+        const imageAllowedBySettings = creator.settings.scheduler.autoPosting?.imagesEnabled === true;
         const recentGeneratedImage = history.some(
           (message) =>
             message.imageUrl &&

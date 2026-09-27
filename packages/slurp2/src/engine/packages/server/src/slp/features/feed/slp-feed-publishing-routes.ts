@@ -310,6 +310,15 @@ export async function slpFeedPublishingRoutes(app: FastifyInstance, deps: SlpRou
     return { finalized: result.finalized };
   });
 
+  app.post("/slurp/refresh/images/cancel", async (req, reply) => {
+    const parsed = z
+      .object({ ids: z.array(z.string().min(1)).min(1).max(20) })
+      .strict()
+      .safeParse(req.body);
+    if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
+    return { cancelled: await slpCreatorImages.cancelReviewedImages(parsed.data.ids) };
+  });
+
   app.post("/refresh", async (req, reply) => {
     let decoded: DecodedCreatorMediaRequest<z.output<typeof slurpCreatorGenerationRequestSchema>>;
     try {

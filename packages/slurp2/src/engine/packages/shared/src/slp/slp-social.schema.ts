@@ -386,7 +386,9 @@ export const slpStageProfileDraftRequestSchema = z
     noodlerAccountId: z.string().min(1).optional(),
     disclosureMode: slpIdentityDisclosureSchema,
     guidance: z.string().trim().max(2000).default(""),
-    currentDraft: slpStageProfileSchema.partial().optional(),
+    // The editor sends its whole form, discovery fields (gender, tags, location) included. The draft
+    // reads only the stage fields, so the rest is dropped instead of failing the request (R1-070).
+    currentDraft: z.object(slpStageProfileShape).partial().optional(),
     connectionId: z.string().min(1).optional(),
   })
   .strict()

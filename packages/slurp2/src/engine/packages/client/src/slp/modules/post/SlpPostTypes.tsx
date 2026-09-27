@@ -121,6 +121,8 @@ export interface SlpPostCardCtx {
   editingPostContent: string;
   setEditingPostContent: React.Dispatch<React.SetStateAction<string>>;
   replyPostId: string | null;
+  /** The card that shows the post-level composer (`dialog:<id>` for the post dialog). */
+  replyKey?: string | null;
   replyParentInteractionId: string | null;
   replyText: string;
   replyHasText: boolean;

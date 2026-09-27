@@ -118,6 +118,7 @@ export function useSlurpHomeBaseState({ navigation, onNavigate, onLeave }: Slurp
     (shellPersonaAccount &&
       accountsQuery.data?.find((profile) => profile.sourceAccountId === shellPersonaAccount.id)) ||
     null;
+  const viewerQuery = useCreatorViewer(viewerPersonaId, viewerSurfaceActive);
   const viewerActorAccount = shellPersonaAccount
     ? ({
         ...shellPersonaAccount,
@@ -133,6 +134,9 @@ export function useSlurpHomeBaseState({ navigation, onNavigate, onLeave }: Slurp
               updatedAt: myCreatorProfile.updatedAt,
             }
           : {}),
+        // Likes, comments and votes on other Creators' posts are stored under this fan account (R1-020).
+        fanActorAccountId: (viewerQuery.data as { viewerActorAccountId?: string | null } | undefined)
+          ?.viewerActorAccountId,
       } as SlpAccount)
     : null;
   const [accountSwitcherOpen, setAccountSwitcherOpen] = useState(false);
@@ -250,7 +254,6 @@ export function useSlurpHomeBaseState({ navigation, onNavigate, onLeave }: Slurp
   const [gateCelebrating, setGateCelebrating] = useState(false);
   const gatePresentedRef = useRef(false);
   const onboardingPresentedRef = useRef(false);
-  const viewerQuery = useCreatorViewer(viewerPersonaId, viewerSurfaceActive);
   const noodlerUnseenCount = useCreatorUnseenCount(viewerPersonaId);
   const notificationUnseenCountQuery = useSlurpNotificationUnseenCount(viewerPersonaId);
   const unreadCountQuery = useSlurpUnreadCount(viewerPersonaId);

@@ -126,6 +126,9 @@ export function useSlpPostCardController(options: SlpPostCardControllerOptions) 
   const [editingPostTitle, setEditingPostTitle] = useState("");
   const [editingPostPoll, setEditingPostPoll] = useState<SlpPollInput | null>(null);
   const [replyPostId, setReplyPostId] = useState<string | null>(null);
+  // Which card shows the post-level composer: the post dialog shows the same post as the card
+  // behind it, so the post id alone opened a composer in both (R1-029).
+  const [replyKey, setReplyKey] = useState<string | null>(null);
   const [replyParentInteractionId, setReplyParentInteractionId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const [replyHasText, setReplyHasText] = useState(false);
@@ -140,6 +143,7 @@ export function useSlpPostCardController(options: SlpPostCardControllerOptions) 
 
   const clearReplyComposer = () => {
     setReplyPostId(null);
+    setReplyKey(null);
     setReplyParentInteractionId(null);
     setReplyText("");
     replyValueRef.current = "";
@@ -160,9 +164,10 @@ export function useSlpPostCardController(options: SlpPostCardControllerOptions) 
     setPostMenuId(null);
     cancelEditingPost();
   };
-  const openReplyComposer = (postId: string, parentInteractionId: string | null = null) => {
+  const openReplyComposer = (postId: string, parentInteractionId: string | null = null, key: string = postId) => {
     clearReplyComposer();
     setReplyPostId(postId);
+    setReplyKey(key);
     setReplyParentInteractionId(parentInteractionId);
   };
   const handleReplyChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
@@ -236,6 +241,7 @@ export function useSlpPostCardController(options: SlpPostCardControllerOptions) 
     editingPostContent,
     setEditingPostContent,
     replyPostId,
+    replyKey,
     replyParentInteractionId,
     replyText,
     replyHasText,

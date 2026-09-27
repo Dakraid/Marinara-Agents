@@ -85,4 +85,5 @@ export type SlurpArcType = SlpArcBlueprint;
 
 /** The per-Creator storyline overrides, also shown as a tab in Creator settings. */
 export { ArcConfigSection } from "./SlpArcConfigSection";
+export { SlurpProjectsPanel } from "./SlpProjectsBoard";
 export { useSlurpProjects } from "./slp-projects-hooks";

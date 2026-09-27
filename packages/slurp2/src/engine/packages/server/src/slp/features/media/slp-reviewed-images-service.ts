@@ -209,6 +209,34 @@ export function createCreatorSlpImagesService(db: DB) {
     generateReviewedImages,
 
     /**
+     * The player closed the picture review without drawing. The post stops waiting ("Drawing the
+     * picture…" forever, R1-047) and shows the failed slot with Try again; the automatic retry
+     * leaves it alone, because the player chose not to draw it now.
+     */
+    async cancelReviewedImages(postIds: readonly string[]): Promise<number> {
+      let cancelled = 0;
+      for (const id of postIds) {
+        const token = newId();
+        const claimed = await noodle.claimPostImage(id, token, imageClaimLeaseUntil());
+        if (!claimed) continue;
+        if (claimed.metadata.imagePendingReview !== true) {
+          await noodle.releasePostImageClaim(id, token);
+          continue;
+        }
+        const done = await noodle.finalizePostImageClaim(id, token, {
+          imageUrl: null,
+          metadata: {
+            imageGenerationFailed: true,
+            imageGenerationError: "The picture was not drawn.",
+            imageRetryAttempts: SLP_CREATOR_POST_IMAGE_RETRY_LIMIT,
+          },
+        });
+        if (done) cancelled += 1;
+      }
+      return cancelled;
+    },
+
+    /**
      * Redraw one post that published without its picture. Runs on the reserve poll, so it takes
      * a single post per pass and yields the image connection to anything the user started.
      */

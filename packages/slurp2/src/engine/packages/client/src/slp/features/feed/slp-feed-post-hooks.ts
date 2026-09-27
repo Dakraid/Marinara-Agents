@@ -143,6 +143,20 @@ export function useConfirmCreatorImagePrompts() {
       ]),
   });
 }
+/** Closing the picture review without drawing ends the wait on the server (R1-047). */
+export function useCancelCreatorImagePrompts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationKey: ["slurp", "cancel-post-images"],
+    mutationFn: (input: { targetAccountId: string; ids: string[] }) =>
+      api.post<{ cancelled: number }>("/slurp2/slurp/refresh/images/cancel", { ids: input.ids }),
+    onSettled: (_result, _error, input) =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: slpKeys.noodlerPosts(input.targetAccountId) }),
+        qc.invalidateQueries({ queryKey: slpKeys.slpCreatorViewers() }),
+      ]),
+  });
+}
 export function useCreateCreatorPost() {
   const qc = useQueryClient();
   return useMutation({
