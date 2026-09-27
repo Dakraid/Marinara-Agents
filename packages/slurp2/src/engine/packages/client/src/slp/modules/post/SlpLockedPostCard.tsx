@@ -31,7 +31,8 @@ import { playSlpBurst, playSlpSpendMoment, SlpRingGlint, SlpShimmer, SlpTwinkle 
 import { SLP_PILL_TWINKLES, SlpLockedContentsChip, SlpSparkleLock } from "./SlpLockedMedia";
 import { api } from "../../../lib/api-client";
 import { toast } from "sonner";
-import { slpHasGambleOffer } from "../../../../../shared/src/slp/slp-post-offers.js";
+import { slpCanAffordGamble, slpHasGambleOffer } from "../../../../../shared/src/slp/slp-post-offers.js";
+import { useSlpBalance } from "../chrome/SlpShell";
 import type { SlpPostSubscriptionOffer, SlpPostUnlockOffer } from "./SlpPostTypes";
 import { SlpDeepDetailsModal } from "./SlpDeepDetailsModal";
 
@@ -171,6 +172,9 @@ export function LockedSlurpPostCard({
     }
   };
   const unlockPrice = slpCreatorUnlockPriceOf(post);
+  const coins = useSlpBalance();
+  // The bet needs the losing side covered (user, fix phase 1b): no free win for a short balance.
+  const gambleBlocked = unlockPrice !== null && !slpCanAffordGamble(coins, unlockPrice);
   const onMedia = hasMediaPreview;
   const unlockPrompt = !revealed && !controllerOnly && (
     <div
@@ -634,7 +638,7 @@ export function LockedSlurpPostCard({
               <button
                 type="button"
                 data-slurp-gamble-unlock
-                disabled={unlockPending || transaction !== null}
+                disabled={unlockPending || transaction !== null || gambleBlocked}
                 onClick={(event) => void runTransaction("gamble", event.currentTarget)}
                 className="relative flex min-h-16 w-full items-center gap-3 overflow-visible rounded-2xl px-4 py-3 text-left shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] transition-[background-color,transform,filter] duration-[var(--slurp-motion-fast)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 bg-[var(--slurp-surface-raised)] hover:bg-[color-mix(in_srgb,var(--slurp-warm)_8%,var(--slurp-surface-raised))]"
               >
@@ -656,9 +660,18 @@ export function LockedSlurpPostCard({
                     </span>
                   </span>
                   <span className="block text-[13px] leading-[18px] text-[color-mix(in_srgb,var(--slurp-text)_74%,transparent)]">
-                    {localizeUi("ui.slurp.unlocksheet.gambleDetail", {
-                      defaultValue: "50% free, 50% at 3x price. Either way, this post unlocks.",
-                    })}
+                    {gambleBlocked && unlockPrice !== null ? (
+                      <SlpCoinText>
+                        {localizeUi("ui.slurp.unlocksheet.gambleNeedsCoins", {
+                          defaultValue: "You need {{amount}} <coin/> to take the bet.",
+                          amount: unlockPrice * 3,
+                        })}
+                      </SlpCoinText>
+                    ) : (
+                      localizeUi("ui.slurp.unlocksheet.gambleDetail", {
+                        defaultValue: "50% free, 50% at 3x price. Either way, this post unlocks.",
+                      })
+                    )}
                   </span>
                 </span>
                 {/* The real numbers, not "3x" (one coin rule): free, or three times the unlock price. */}

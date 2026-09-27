@@ -4,7 +4,11 @@ import {
 } from "../../../../../shared/src/slp/slp-social.schema.js";
 import { type SlpCreatorSubscriber } from "../../../../../shared/src/slp/slp-social.types.js";
 import { randomInt } from "node:crypto";
-import { slpGambleUnlockPrice, slpHasGambleOffer } from "../../../../../shared/src/slp/slp-post-offers.js";
+import {
+  slpCanAffordGamble,
+  slpGambleUnlockPrice,
+  slpHasGambleOffer,
+} from "../../../../../shared/src/slp/slp-post-offers.js";
 import { z } from "zod";
 import { slurpDayKey, SLURP_DEV_CHEAT_MAX_COINS } from "../../modules/economy/slp-wallet.js";
 import {
@@ -377,6 +381,16 @@ export async function slpWalletRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
       return reply.code(404).send({ error: "Slurp post not found" });
     }
     const basePrice = slpCreatorUnlockPriceFromMetadata(post.metadata);
+    const settings = await noodle.getSettings();
+    if (settings.walletEnabled) {
+      const wallet = await noodle.getWallet(viewer.id);
+      // Checked before the roll: a fan who cannot pay the losing side cannot take the bet.
+      if (!slpCanAffordGamble(wallet.coins, basePrice)) {
+        return reply
+          .code(402)
+          .send({ error: "Not enough coins", price: slpGambleUnlockPrice(basePrice, false), coins: wallet.coins });
+      }
+    }
     const free = randomInt(2) === 0;
     const price = slpGambleUnlockPrice(basePrice, free);
     const result = await noodle.unlockPost(viewer.id, post.id, price, true);

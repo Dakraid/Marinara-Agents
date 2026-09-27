@@ -4549,5 +4549,6 @@
   "ui.slurp.site.nextLabel": "What next",
   "ui.slurp.site.signUp": "Sign someone up",
   "ui.slurp.site.feed": "Go to the feed",
-  "ui.slurp.site.tour": "Show me around"
+  "ui.slurp.site.tour": "Show me around",
+  "ui.slurp.unlocksheet.gambleNeedsCoins": "You need {{amount}} <coin/> to take the bet."
 }
