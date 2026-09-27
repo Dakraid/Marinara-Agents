@@ -4,6 +4,7 @@ import {
   CalendarClock,
   ChevronRight,
   Coins,
+  Flame,
   Globe2,
   LayoutDashboard,
   PenLine,
@@ -35,6 +36,7 @@ export const SLP_BACKSTAGE_SECTION_ICONS: Record<SlpBackstageSection, LucideIcon
   content: BookOpen,
   world: Globe2,
   fans: Coins,
+  spice: Flame,
   prompts: PenLine,
   maintenance: Wrench,
 };

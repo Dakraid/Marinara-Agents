@@ -7,6 +7,7 @@ export const SLP_BACKSTAGE_SECTIONS = [
   "content",
   "world",
   "fans",
+  "spice",
   "prompts",
   "maintenance",
 ] as const;
@@ -33,6 +34,7 @@ export const SLP_BACKSTAGE_TARGETS = [
   "general",
   "images",
   "connections",
+  "spice",
   "prompts",
   "autopurge",
 ] as const;
@@ -46,6 +48,7 @@ export const SLP_BACKSTAGE_TARGETS_BY_SECTION: Record<SlpBackstageSection, reado
   content: ["storylines", "arcs", "packs"],
   world: ["events", "calendar"],
   fans: ["audience", "messaging", "wallet", "ads", "tags"],
+  spice: ["spice"],
   prompts: ["prompts"],
   maintenance: ["autopurge"],
 };
@@ -58,6 +61,7 @@ export const SLP_BACKSTAGE_DEFAULT_TARGET: Record<SlpBackstageSection, SlpBackst
   fans: "audience",
   content: "storylines",
   automation: "general",
+  spice: "spice",
   prompts: "prompts",
   maintenance: "autopurge",
 };
@@ -70,6 +74,7 @@ export const SLP_BACKSTAGE_SECTION_LABELS: Record<SlpBackstageSection, string> =
   fans: "Fans & money",
   content: "Storylines",
   automation: "Posting",
+  spice: "Spice",
   prompts: "Writing",
   maintenance: "Maintenance",
 };
@@ -91,6 +96,7 @@ export const SLP_BACKSTAGE_TARGET_LABELS: Record<SlpBackstageTarget, string> = {
   general: "Publishing",
   images: "Images",
   connections: "Text & chats",
+  spice: "Spice",
   prompts: "Prompts",
   autopurge: "Storage and backup",
 };

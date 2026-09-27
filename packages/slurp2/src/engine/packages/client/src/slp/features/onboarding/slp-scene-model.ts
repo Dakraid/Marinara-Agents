@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { api } from "../../../lib/api-client";
 import {
   SLP_SCENE_MOMENTS,
   type SlpSceneAction,
@@ -16,13 +17,12 @@ import {
   useGenerateCreatorStageProfileDraft,
   useSlpViewerPersonaId,
   useUpdateCreatorStageProfile,
-  useUpdateCreatorStrategy,
 } from "../creators/slp-creators-contract";
 import {
   applySlpScenePatch,
   editSlpSceneField,
   slpSceneInitialState,
-  slpSceneLimitsText,
+  slpSceneSpicePatch,
   slpSceneMissing,
   slpSceneRedraftPatch,
   slpSceneShootGuidance,
@@ -80,7 +80,6 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
   const create = useCreateCreatorStageProfile();
   const update = useUpdateCreatorStageProfile();
   const artwork = useGenerateCreatorArtwork();
-  const strategy = useUpdateCreatorStrategy();
   const firstPost = useEnqueueCreatorFirstPosts();
   const keep = useSlpSceneKeep();
   const viewerPersonaId = useSlpViewerPersonaId();
@@ -250,9 +249,11 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
   /** What finishing adds to a saved page: its limits line, the first post and the kept chat. */
   const completeSignUp = useCallback(
     async (id: string, draft: SlpSceneDraft) => {
-      const limits = slpSceneLimitsText(draft);
-      // The page exists now; a missed strategy line is not worth failing the sign-up over.
-      if (limits) await strategy.mutateAsync({ accountId: id, strategyText: limits }).catch(() => undefined);
+      const spice = slpSceneSpicePatch(draft);
+      // The limits are the Creator's spice now. The page exists; a missed save is not worth failing
+      // the sign-up over.
+      if (spice)
+        await api.patch(`/slurp2/slurp/accounts/${encodeURIComponent(id)}/steering`, spice).catch(() => undefined);
       // The first post is written in the background, like "first posts now" in Quick setup.
       firstPost.mutate({ executionId: generateClientId(), accountIds: [id] });
       // The chat stays as their first DM thread with the player's persona (never with the page
@@ -265,7 +266,7 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
             .catch(() => false)
         : false;
     },
-    [firstPost, hostLabel, keep, setup.preset, strategy, viewerPersonaId],
+    [firstPost, hostLabel, keep, setup.preset, viewerPersonaId],
   );
 
   /** "Finish registration": save the page, then its limits line and the first post. */
