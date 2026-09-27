@@ -23,3 +23,31 @@ const longReply = Array.from({ length: 8 }, (_, index) => `This is sentence numb
 );
 assert.equal(splitSlurpReplyBurst(longReply, true, 4).length, 4, "a limit of 4 can send four messages");
 assert.equal(splitSlurpReplyBurst(longReply, true, 1).length <= 2, true);
+
+// ── Plane 220 (+ 221): "Refresh now" works with the scheduled audience switched off ──
+const fanOperation = pkg("server/src/slp/features/audience/slp-fan-activity-operation.ts");
+const runBody = fanOperation.slice(fanOperation.indexOf("export async function runCreatorFanActivity("));
+assert.match(
+  runBody,
+  /const settings = fanActivitySettingsFor\(await noodle\.getSettings\(\), input\.mode === "manual"\);/u,
+  "a manual run reads the switch as on",
+);
+assert.ok(
+  runBody.indexOf("fanActivitySettingsFor(") < runBody.indexOf('return { status: "disabled"'),
+  "the disabled early return sees the manual settings",
+);
+assert.match(fanOperation, /return manual \? \{ \.\.\.settings, fanActivityEnabled: true \} : settings;/u);
+assert.match(fanOperation, /const effective = fanActivitySettingsFor\(settings, manual\);/u);
+assert.match(fanOperation, /resolveCreatorFanActivityPolicy\(effective, creator\)\.enabled/u);
+assert.match(fanOperation, /id: activity\.id,\s+manual,/u, "the storage write knows the run was manual");
+assert.match(
+  pkg("server/src/slp/data/feed/slp-feed-interaction-storage-3.ts"),
+  /if \(\(!settings\.fanActivityEnabled && !input\.manual\) \|\| override\?\.enabled === false\) return null;/u,
+  "a Creator switched off on their own page stays off, even for a manual run",
+);
+assert.doesNotMatch(
+  pkg("client/src/slp/features/audience/SlpAudiencePanel.tsx"),
+  /disabled=\{refreshFans\.isPending \|\| !settings\.fanActivityEnabled\}/u,
+  "Refresh now is not greyed out by the schedule switch",
+);
+assert.match(en["ui.slurp.settings.audience.enabledDetail"] ?? "", /Refresh now still/u);

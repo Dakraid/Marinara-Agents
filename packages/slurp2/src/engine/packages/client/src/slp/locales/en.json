@@ -1897,7 +1897,7 @@
   "ui.slurp.settings.audience.createdNone": "No audience actions were created.",
   "ui.slurp.settings.audience.detail": "Let Slurp create likes and replies from synthetic audience members.",
   "ui.slurp.settings.audience.enabled": "Audience activity",
-  "ui.slurp.settings.audience.enabledDetail": "Run scheduled audience interactions for creator posts.",
+  "ui.slurp.settings.audience.enabledDetail": "Fans like and comment on creator posts on a schedule. When this is off, Refresh now still brings fans in once.",
   "ui.slurp.settings.audience.likes": "Likes",
   "ui.slurp.settings.audience.perRun": "Activity per run",
   "ui.slurp.settings.audience.perRunDetail": "Set the maximum number of each interaction type.",

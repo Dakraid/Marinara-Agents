@@ -69,7 +69,7 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
         <button
           type="button"
           onClick={() => refreshFans.mutate()}
-          disabled={refreshFans.isPending || !settings.fanActivityEnabled}
+          disabled={refreshFans.isPending}
           className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-[var(--border)] px-3 text-xs font-semibold hover:bg-[var(--accent)] disabled:opacity-50"
         >
           <RefreshCw size={14} className={refreshFans.isPending ? "animate-spin" : ""} />

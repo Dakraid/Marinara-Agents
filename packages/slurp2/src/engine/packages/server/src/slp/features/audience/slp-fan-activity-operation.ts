@@ -232,6 +232,12 @@ async function findRecoverablePlan(db: DB) {
   return null;
 }
 
+// The switch turns on the scheduled audience. "Refresh now" is the player asking for one run, so
+// it works with the switch off; a Creator switched off on their own page stays off either way.
+function fanActivitySettingsFor(settings: SlurpSettings, manual: boolean): SlurpSettings {
+  return manual ? { ...settings, fanActivityEnabled: true } : settings;
+}
+
 async function reconcilePlan(db: DB, settings: SlurpSettings, at: Date) {
   const noodle = createSlurpStorage(db);
   const creators = await noodle.listNoodlerAccounts();
@@ -258,6 +264,8 @@ async function applyAcceptedActivities(
   finishedAt: Date,
 ) {
   const noodle = createSlurpStorage(db);
+  const manual = run.manual === true;
+  const effective = fanActivitySettingsFor(settings, manual);
   let current = plan;
   let created = 0;
   // ponytail: interaction creation is idempotent by activity.id (see createNoodlerFanInteraction),
@@ -265,12 +273,13 @@ async function applyAcceptedActivities(
   for (const activity of run.acceptedActivities) {
     if (activity.applied) continue;
     const creator = await noodle.getNoodlerAccountById(activity.creatorId);
-    if (!creator || !resolveCreatorFanActivityPolicy(settings, creator).enabled) {
+    if (!creator || !resolveCreatorFanActivityPolicy(effective, creator).enabled) {
       current = markSlpFanActivityApplied(current, run.id, activity.id);
       continue;
     }
     const result = await noodle.createNoodlerFanInteraction(activity.targetPostId, {
       id: activity.id,
+      manual,
       creatorAccountId: activity.creatorId,
       actorId: activity.actorId,
       actorSnapshot: activity.snapshot as SlpAuthorSnapshot,
@@ -318,7 +327,7 @@ export async function runCreatorFanActivity(input: {
   const operation = await trySlpOperation<SlpCreatorFanRunResult>("noodler-fan-activity", async () => {
     const at = input.at ?? new Date();
     const noodle = createSlurpStorage(input.db);
-    const settings = await noodle.getSettings();
+    const settings = fanActivitySettingsFor(await noodle.getSettings(), input.mode === "manual");
     const recoverable = await findRecoverablePlan(input.db);
     if (recoverable?.interrupted) {
       const abandoned = finishSlpFanActivityRun(recoverable.plan, recoverable.run.id, "abandoned", at);

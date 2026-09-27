@@ -362,8 +362,6 @@ export async function slpAudienceRoutes(app: FastifyInstance, deps: SlpRouteDeps
         mode: "manual",
         debugMode: (req.body as { debugMode?: unknown } | undefined)?.debugMode === true,
       });
-      if (result.status === "disabled")
-        return reply.code(409).send({ error: "Audience activity is off. Turn it on under Audience first." });
       if (result.status === "busy") return reply.code(409).send({ error: "Slurp fan activity is already running." });
       if (result.status === "limit_reached")
         return reply.code(429).send({ error: "Today's audience activity limit has been reached." });
