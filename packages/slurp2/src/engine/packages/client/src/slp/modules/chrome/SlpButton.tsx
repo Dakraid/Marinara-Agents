@@ -1,4 +1,5 @@
 import type { ComponentProps, ReactNode } from "react";
+import { Check } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { playSlpPop, SlpGlint } from "../sparkle/SlpSparkle";
 
@@ -154,5 +155,22 @@ export function SlpSegment<T extends string>({
         );
       })}
     </div>
+  );
+}
+
+/** The square check mark of a checkbox or multi-select row (a round mark reads as a radio). Decorative: the row carries the state. */
+export function SlpSquareCheck({ checked }: { checked: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "grid size-5 shrink-0 place-items-center rounded-[5px] ring-2 ring-inset transition-colors duration-[var(--slurp-motion-fast)] motion-reduce:transition-none",
+        checked
+          ? "bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] ring-[var(--noodle-accent)] [&_svg]:!text-[var(--slurp-on-accent)]"
+          : "ring-[var(--slurp-muted)]/50",
+      )}
+    >
+      {checked && <Check size={14} strokeWidth={3} />}
+    </span>
   );
 }

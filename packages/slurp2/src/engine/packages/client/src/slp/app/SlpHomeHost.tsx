@@ -6,7 +6,7 @@ import { ImagePromptReviewModal } from "../../components/ui/ImagePromptReviewMod
 import { ChatImageLightbox } from "../../components/chat/ChatImageLightbox";
 import { SlurpOnboardingWizard } from "../features/onboarding/SlpOnboardingPanel";
 import { SlurpAgeGate, SlurpConfetti } from "../features/onboarding/SlpAgeGate";
-import { SlurpSplash } from "../features/onboarding/SlpSplash";
+import { leaveUnlessBackdrop, SlurpSplash } from "../features/onboarding/SlpSplash";
 import {
   getSlpAccentStyle,
   SLP_PAGE_SCROLL_CLASS,
@@ -400,13 +400,7 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
       <Modal
         open={gateOpen && !splashOpen}
         // The X and Escape mean Leave Slurp: the gate has no other way out, and the X used to do nothing.
-        onClose={() => {
-          // ponytail: the Engine Modal gives no way to tell a backdrop tap from the X, so a click that
-          // did not land on a button is the backdrop. Upgrade path: a `dismissOnBackdrop` Modal prop.
-          const event = window.event;
-          if (event?.type === "click" && !(event.target instanceof Element && event.target.closest("button"))) return;
-          onLeave?.();
-        }}
+        onClose={() => leaveUnlessBackdrop(onLeave)}
         title={localizeUi("ui.noodle.noodlemodetoggle.noodler")}
         width="max-w-md"
         panelClassName="noodle-icon-scope"
@@ -427,7 +421,7 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
         open={Boolean(model.sharingPost)}
         onClose={() => model.setSharingPost(null)}
       />
-      <SlurpSplash open={splashOpen} onDismiss={() => setSplashOpen(false)} />
+      <SlurpSplash open={splashOpen} onDismiss={() => setSplashOpen(false)} onLeave={onLeave} />
       {gateCelebrating && <SlurpConfetti fixed />}
       {reviewModal}
     </SlpShell>

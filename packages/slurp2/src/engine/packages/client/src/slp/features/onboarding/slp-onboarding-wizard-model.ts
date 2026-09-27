@@ -26,7 +26,6 @@ import {
 } from "../../modules/creator/slp-activity-presets";
 import {
   DEMO_PROFILE,
-  disclosureLabel,
   DEFAULT_POSTS_PER_DAY,
   type CompletionKind,
   type Intro,
@@ -65,9 +64,6 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
   const [exceptions, setExceptions] = useState<Record<string, SlpIdentityDisclosure>>({});
   const [autoPostingEnabled, setAutoPostingEnabled] = useState(true);
   const [postsPerDay, setPostsPerDay] = useState(DEFAULT_POSTS_PER_DAY);
-  // Typed value kept apart from the committed one: clamping per keystroke made the first digit
-  // of a two-digit pace snap back to 1, and the field impossible to clear.
-  const [postsPerDayDraft, setPostsPerDayDraft] = useState(String(DEFAULT_POSTS_PER_DAY));
   const [nightQuiet, setNightQuiet] = useState(true);
   const [imagesEnabled, setImagesEnabled] = useState(false);
   // Empty means the Slurp-wide default image connection. Chosen here because the first post is
@@ -144,7 +140,6 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
     );
     const persistedPostsPerDay = settings.postsPerDay ?? DEFAULT_POSTS_PER_DAY;
     setPostsPerDay(persistedPostsPerDay);
-    setPostsPerDayDraft(String(persistedPostsPerDay));
     setAutoPostingEnabled(settings.autoPostingScheduleEnabled);
     setActivityChoice(slurpActivityPresetForSettings(settings));
     setNightQuiet(settings.nightQuiet);
@@ -182,7 +177,6 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
     setAutoPostingEnabled(patch.autoPostingScheduleEnabled);
     if (patch.postsPerDay !== undefined) {
       setPostsPerDay(patch.postsPerDay);
-      setPostsPerDayDraft(String(patch.postsPerDay));
     }
   };
   // A persona Creator is skipped by design (it never auto-posts), so it is not a failure.
@@ -369,50 +363,6 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
   };
   const pending =
     bulkCreate.isPending || updateSlurpSettings.isPending || refreshTargeted.isPending || enqueueFirstPosts.isPending;
-  const summaries =
-    setupLane === "easy"
-      ? [
-          {
-            step: 1 as Step,
-            label: t("ui.noodle.noodlerwizard.characters"),
-            value: t("ui.noodle.noodlerwizard.selectedCount", {
-              count: selected.size,
-            }),
-          },
-          {
-            step: 4 as Step,
-            label: t("ui.noodle.noodlerwizard.review"),
-            value: t("ui.noodle.noodlerwizard.readyToCreate"),
-          },
-        ]
-      : [
-          {
-            step: 1 as Step,
-            label: t("ui.noodle.noodlerwizard.characters"),
-            value: t("ui.noodle.noodlerwizard.selectedCount", {
-              count: selected.size,
-            }),
-          },
-          {
-            step: 2 as Step,
-            label: t("ui.noodle.noodlerwizard.disclosure.title"),
-            value: disclosureLabel(disclosure, t),
-          },
-          {
-            step: 3 as Step,
-            label: t("ui.noodle.noodlerwizard.activity"),
-            value: autoPostingEnabled
-              ? t("ui.noodle.noodlerwizard.postsSummary", {
-                  count: postsPerDay,
-                })
-              : t("ui.noodle.noodlerwizard.manualOnly"),
-          },
-          {
-            step: 4 as Step,
-            label: t("ui.noodle.noodlerwizard.images"),
-            value: imagesEnabled ? t("ui.noodle.noodlerwizard.on") : t("ui.noodle.noodlerwizard.off"),
-          },
-        ];
 
   return {
     open,
@@ -453,8 +403,6 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
     setAutoPostingEnabled,
     postsPerDay,
     setPostsPerDay,
-    postsPerDayDraft,
-    setPostsPerDayDraft,
     nightQuiet,
     setNightQuiet,
     imagesEnabled,
@@ -511,7 +459,6 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
     performFinish,
     finish,
     pending,
-    summaries,
   };
 }
 

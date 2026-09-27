@@ -50,7 +50,9 @@ assert.doesNotMatch(src("features/discovery/SlpDiscoverToolbar.tsx"), /bg-\[var\
 assert.match(src("features/creators/SlpProfileSurface.tsx"), /line-clamp-4 group-open\/bio:hidden/u);
 
 // B15: the age gate X and Escape mean Leave; the modal is no longer closeDisabled while Leave exists.
-assert.match(src("app/SlpHomeHost.tsx"), /closest\("button"\)\)\) return;\s+onLeave\?\.\(\)/u);
+// (Step 8 moved the handler into one helper shared with the first-run splash.)
+assert.match(src("features/onboarding/SlpSplash.tsx"), /closest\("button"\)\)\) return;\s+onLeave\?\.\(\)/u);
+assert.match(src("app/SlpHomeHost.tsx"), /onClose=\{\(\) => leaveUnlessBackdrop\(onLeave\)\}/u);
 assert.match(src("app/SlpHomeHost.tsx"), /closeDisabled=\{!onLeave\}/u);
 
 // B16: the unlock sheet uses the same masked title as the card.

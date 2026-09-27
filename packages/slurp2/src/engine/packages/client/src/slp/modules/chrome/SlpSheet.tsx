@@ -405,7 +405,7 @@ export function SlpRadioRow({
     <label
       className={cn(
         SLP_TYPE.body,
-        "flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 font-medium transition-colors duration-[var(--slurp-motion-fast)] focus-within:ring-2 focus-within:ring-inset focus-within:ring-[var(--slurp-focus)] motion-reduce:transition-none",
+        "flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 font-medium transition-colors duration-[var(--slurp-motion-fast)] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-inset has-[:focus-visible]:ring-[var(--slurp-focus)] motion-reduce:transition-none",
         checked
           ? "bg-[image:var(--slurp-nav-active)] ring-1 ring-inset ring-[var(--noodle-accent)]/45"
           : "hover:bg-[var(--accent)]",

@@ -38,7 +38,9 @@ assert.match(splash, /earlierReleases\.length > 0/u, "one unseen release must no
 assert.match(splash, /I understand this is alpha software and I use it at my own risk\./u);
 assert.match(splash, /if \(!approved\) return/u);
 assert.match(splash, /localStorage\.setItem\(SEEN_KEY, SLURP2_VERSION\)/u);
-assert.match(splash, /panelClassName="\[&>div:first-child>button\]:hidden"/u);
+// Step 8: the X is no longer hidden; X and Escape mean Leave Slurp (a real exit from first-run consent).
+assert.doesNotMatch(splash, /panelClassName="\[&>div:first-child>button\]:hidden"/u);
+assert.match(splash, /onClose=\{\(\) => leaveUnlessBackdrop\(onLeave\)\}[\s\S]*?closeDisabled=\{!onLeave\}/u);
 assert.match(splash, /panelStyle=\{getSlpAccentStyle\(SLP_PINK\)\}/u);
 assert.match(splash, /topRef\.current\?\.focus\(\{ preventScroll: true \}\)/u);
 
