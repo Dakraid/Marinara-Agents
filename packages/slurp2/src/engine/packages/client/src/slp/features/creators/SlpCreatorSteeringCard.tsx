@@ -10,6 +10,7 @@ import {
   SLP_STEERING_TEXT_MAX,
   type SlpSteeringMood,
   type SlpSteeringPace,
+  type SlpSteeringSupportNote,
 } from "../../../../../shared/src/slp/slp-creator-steering.js";
 import { ChipListInput } from "../../modules/settings/SlpSettingsInputs";
 import { Toggle } from "../../modules/settings/SlpSettingsControls";
@@ -74,6 +75,52 @@ function PillChoice<T extends string>({
   );
 }
 
+/** "After talking with Slurp Support: focus on travel" with Undo, until the player changes those fields. */
+function SupportNote({
+  note,
+  pending,
+  onUndo,
+  onKeep,
+}: {
+  note: SlpSteeringSupportNote;
+  pending: boolean;
+  onUndo: () => void;
+  onKeep: () => void;
+}) {
+  const { t } = useTranslation();
+  const parts = [
+    note.mood && t("ui.slurp.steering.support.mood", { mood: t(`ui.slurp.steering.moods.${note.mood}`).toLowerCase() }),
+    note.focus && t("ui.slurp.steering.support.focus", { focus: note.focus }),
+    note.more && t("ui.slurp.steering.support.more", { topic: note.more }),
+    note.less && t("ui.slurp.steering.support.less", { topic: note.less }),
+    note.idea && t("ui.slurp.steering.support.idea", { idea: note.idea }),
+    note.memory && t("ui.slurp.steering.support.memory"),
+  ].filter(Boolean);
+  return (
+    <div
+      data-slurp-steering-support
+      className="flex items-start gap-2 rounded-xl bg-[var(--slurp-tint)] py-2 pe-1 ps-3 ring-1 ring-inset ring-[var(--noodle-accent)]/30"
+    >
+      <p className="min-w-0 flex-1 py-1.5 text-sm leading-5 text-[var(--slurp-text)] [overflow-wrap:anywhere]">
+        <span className="font-semibold">{t("ui.slurp.steering.support.title")}</span> {parts.join(" · ")}
+      </p>
+      <SlpButton variant="secondary" disabled={pending} onClick={onUndo} className="min-h-11 shrink-0 px-3.5 text-xs">
+        {t("ui.slurp.steering.support.undo")}
+      </SlpButton>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={onKeep}
+        aria-label={t("ui.slurp.steering.support.keep")}
+        title={t("ui.slurp.steering.support.keep")}
+        className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--slurp-muted)] hover:text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+      >
+        <X size={16} aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
+
 /**
  * What the player steers about one Creator, in their own words: mood, what is going on in their
  * life, what they are into, topics to bring up or leave out, how often they post, and one-off ideas
@@ -93,7 +140,8 @@ export function SlpCreatorSteeringCard({
 }) {
   const { t } = useTranslation();
   const query = useSlurpCreatorSteering(creatorId);
-  const { patch, addIdea, removeIdea, rewritePrepared } = useSlurpCreatorSteeringMutations(creatorId);
+  const { patch, addIdea, removeIdea, rewritePrepared, undoSupport, keepSupport } =
+    useSlurpCreatorSteeringMutations(creatorId);
   const steering = query.data?.steering;
   const [lifePhase, setLifePhase] = useState("");
   const [focus, setFocus] = useState("");
@@ -149,6 +197,20 @@ export function SlpCreatorSteeringCard({
         </h3>
         <p className="mt-0.5 text-xs leading-5 text-[var(--slurp-muted)]">{t("ui.slurp.steering.intro", { name })}</p>
       </div>
+
+      {steering.support && (
+        <SupportNote
+          note={steering.support}
+          pending={undoSupport.isPending || keepSupport.isPending}
+          onUndo={() =>
+            undoSupport.mutate(undefined, {
+              onSuccess: () => toast.success(t("ui.slurp.steering.support.undone", { name })),
+              onError,
+            })
+          }
+          onKeep={() => keepSupport.mutate(undefined, { onError })}
+        />
+      )}
 
       <PillChoice<SlpSteeringMood | "none">
         layout="wrap"

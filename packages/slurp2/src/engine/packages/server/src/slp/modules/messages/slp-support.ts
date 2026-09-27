@@ -21,6 +21,7 @@ import {
   SLP_STEERING_TOPICS_MAX,
   type SlpCreatorSteering,
   type SlpSteeringMood,
+  type SlpSteeringSupportNote,
 } from "../../../../../shared/src/slp/slp-creator-steering.js";
 import { SLURP_SUPPORT_NAME, type SlurpDmLine } from "./slp-dm-roles.js";
 
@@ -192,7 +193,10 @@ export type SlurpSupportTalkStore<Outcome> = {
     creatorAccountId: string,
     patch: Partial<Pick<SlpCreatorSteering, "mood" | "focus" | "push" | "avoid">>,
   ): Promise<void>;
-  addIdea(creatorAccountId: string, text: string): Promise<void>;
+  /** The new idea's id, or null when the list was full. */
+  addIdea(creatorAccountId: string, text: string): Promise<string | null>;
+  /** Shown in Creator tools with Undo ("After talking with Support: …"). */
+  noteChange(creatorAccountId: string, note: SlpSteeringSupportNote): Promise<void>;
   /** One memory per Support line, so a retried reply never stores it twice. */
   hasMemory(creatorAccountId: string, sourceHash: string): Promise<boolean>;
   addMemory(
@@ -216,6 +220,7 @@ export async function applySlurpSupportTalk<Outcome>(
     outcome: Outcome;
     staff: unknown;
     supportName: string;
+    at?: Date;
   },
 ): Promise<void> {
   if (!isSlurpSupportThread(input.thread)) return;
@@ -223,15 +228,45 @@ export async function applySlurpSupportTalk<Outcome>(
   await store.recordThreadOutcome(input.thread.id, input.outcome);
   const takeaway = readSlurpSupportTakeaway(input.staff, input.supportName);
   if (!takeaway) return;
-  const patch = slurpSupportSteeringPatch(await store.readSteering(creatorAccountId), takeaway);
+  const before = await store.readSteering(creatorAccountId);
+  const patch = slurpSupportSteeringPatch(before, takeaway);
   if (patch) await store.patchSteering(creatorAccountId, patch);
-  if (takeaway.idea) await store.addIdea(creatorAccountId, takeaway.idea);
+  const ideaId = takeaway.idea ? await store.addIdea(creatorAccountId, takeaway.idea) : null;
   const sourceHash = `support:${input.trigger.id}`;
-  if (takeaway.takeaway && !(await store.hasMemory(creatorAccountId, sourceHash)))
+  let memory: string | null = null;
+  if (takeaway.takeaway && !(await store.hasMemory(creatorAccountId, sourceHash))) {
     await store.addMemory(creatorAccountId, {
       text: takeaway.takeaway,
       threadId: input.thread.id,
       evidence: input.trigger.content,
       sourceHash,
     });
+    memory = sourceHash;
+  }
+  if (patch || ideaId || memory)
+    await store.noteChange(creatorAccountId, {
+      at: (input.at ?? new Date()).toISOString(),
+      mood: patch?.mood ?? null,
+      focus: patch?.focus ?? "",
+      more: takeaway.more,
+      less: takeaway.less,
+      idea: ideaId ? takeaway.idea : "",
+      ideaId,
+      memory,
+      before: { mood: before.mood, focus: before.focus, push: before.push, avoid: before.avoid },
+    });
+}
+
+/**
+ * What Undo puts back: every steering field the talk changed returns to what it said before. The
+ * idea and the memory are removed by the caller (they live elsewhere).
+ */
+export function slurpSupportUndoPatch(
+  note: SlpSteeringSupportNote,
+): Partial<Pick<SlpCreatorSteering, "mood" | "focus" | "push" | "avoid">> {
+  return {
+    ...(note.mood ? { mood: note.before.mood } : {}),
+    ...(note.focus ? { focus: note.before.focus } : {}),
+    ...(note.more || note.less ? { push: note.before.push, avoid: note.before.avoid } : {}),
+  };
 }

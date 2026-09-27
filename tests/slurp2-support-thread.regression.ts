@@ -302,7 +302,12 @@ async function main() {
         steering = { ...steering, ...patch };
         writes.push({ what: "steering", id: creatorAccountId, value: patch });
       },
-      addIdea: async (creatorAccountId, text) => void writes.push({ what: "idea", id: creatorAccountId, value: text }),
+      addIdea: async (creatorAccountId, text) => {
+        writes.push({ what: "idea", id: creatorAccountId, value: text });
+        return null;
+      },
+      // 7b-c: the note for Creator tools; covered by tests/slurp2-creator-ties.regression.ts.
+      noteChange: async () => undefined,
       hasMemory: async (_creatorAccountId, sourceHash) => memories.has(sourceHash),
       addMemory: async (creatorAccountId, memory) => {
         memories.add(memory.sourceHash);

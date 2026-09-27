@@ -14,6 +14,7 @@ import {
   SLP_STEERING_PACE_FACTOR,
   type SlpCreatorNudge,
   type SlpCreatorSteering,
+  type SlpSteeringSupportNote,
 } from "../../../../../shared/src/slp/slp-creator-steering.js";
 
 export const slurpSteeringKey = (creatorAccountId: string) => `slurp2.creator.${creatorAccountId}.steering`;
@@ -33,14 +34,34 @@ async function write(db: DB, creatorAccountId: string, steering: SlpCreatorSteer
   return next;
 }
 
-/** Change the life fields and the pace. The ideas list has its own calls, so a save never drops one. */
+/**
+ * Change the life fields and the pace. The ideas list has its own calls, so a save never drops one.
+ * The player changing a field Support set replaces Support's note: there is nothing left to undo.
+ */
 export async function patchSlurpCreatorSteering(
   db: DB,
   creatorAccountId: string,
-  patch: Partial<Omit<SlpCreatorSteering, "nudges">>,
+  patch: Partial<Omit<SlpCreatorSteering, "nudges" | "support">>,
+  options: { keepSupportNote?: boolean } = {},
 ): Promise<SlpCreatorSteering> {
   const current = await readSlurpCreatorSteering(db, creatorAccountId);
-  return write(db, creatorAccountId, { ...current, ...patch, nudges: current.nudges });
+  const touchesNote = ["mood", "focus", "push", "avoid"].some((key) => key in patch);
+  return write(db, creatorAccountId, {
+    ...current,
+    ...patch,
+    nudges: current.nudges,
+    support: options.keepSupportNote || !touchesNote ? current.support : null,
+  });
+}
+
+/** What the last talk with Slurp Support changed, for the note in Creator tools. */
+export async function noteSlurpSupportChange(
+  db: DB,
+  creatorAccountId: string,
+  note: SlpSteeringSupportNote | null,
+): Promise<SlpCreatorSteering> {
+  const current = await readSlurpCreatorSteering(db, creatorAccountId);
+  return write(db, creatorAccountId, { ...current, support: note });
 }
 
 /** Queue an idea. The oldest goes first; a full list refuses rather than dropping one. */

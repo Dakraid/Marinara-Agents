@@ -10,12 +10,18 @@ import {
 } from "../../../../../shared/src/slp/slp-creator-steering.js";
 import {
   addSlurpCreatorNudge,
+  noteSlurpSupportChange,
   patchSlurpCreatorSteering,
   readSlurpCreatorSteering,
   removeSlurpCreatorNudge,
 } from "../../data/creators/slp-steering-storage.js";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
 import { slurpSteeringContentChanged } from "../../modules/feed/slp-prepared-rewrite.js";
+import { slurpSupportUndoPatch } from "../../modules/messages/slp-support.js";
+import {
+  findSlurpContinuityFactBySourceHash,
+  moveSlurpContinuityStatus,
+} from "../../data/continuity/slp-continuity-storage.js";
 import { countSlurpPreparedRewrite, rewriteSlurpPreparedPosts } from "../../data/feed/reserve/slp-reserve-rewrite.js";
 
 const topics = z.array(z.string().trim().min(1).max(SLP_STEERING_TOPIC_MAX)).max(SLP_STEERING_TOPICS_MAX);
@@ -85,5 +91,25 @@ export async function slpSteeringRoutes(app: FastifyInstance, deps: SlpRouteDeps
     if (!id) return reply.code(404).send({ error: "Creator account not found" });
     const { ideaId } = req.params as { ideaId: string };
     return { steering: await removeSlurpCreatorNudge(app.db, id, ideaId) };
+  });
+
+  /** Undo what the last talk with Slurp Support changed: the fields, its waiting idea, its memory. */
+  app.post("/slurp/accounts/:id/steering/support-undo", async (req, reply) => {
+    const id = await creatorId(req);
+    if (!id) return reply.code(404).send({ error: "Creator account not found" });
+    const note = (await readSlurpCreatorSteering(app.db, id)).support;
+    if (!note) return reply.code(409).send({ error: "There is nothing from Slurp Support to undo." });
+    await patchSlurpCreatorSteering(app.db, id, slurpSupportUndoPatch(note));
+    if (note.ideaId) await removeSlurpCreatorNudge(app.db, id, note.ideaId);
+    const memory = note.memory ? await findSlurpContinuityFactBySourceHash(app.db, id, note.memory) : null;
+    if (memory) await moveSlurpContinuityStatus(app.db, "fact", memory.id, "retracted").catch(() => false);
+    return { steering: await noteSlurpSupportChange(app.db, id, null) };
+  });
+
+  /** Keep what Support changed and hide the note. */
+  app.delete("/slurp/accounts/:id/steering/support-note", async (req, reply) => {
+    const id = await creatorId(req);
+    if (!id) return reply.code(404).send({ error: "Creator account not found" });
+    return { steering: await noteSlurpSupportChange(app.db, id, null) };
   });
 }

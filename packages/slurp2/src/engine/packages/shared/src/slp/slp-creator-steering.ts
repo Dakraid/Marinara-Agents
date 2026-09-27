@@ -43,6 +43,23 @@ export type SlpCreatorSteering = {
   avoid: string[];
   pace: SlpSteeringPace;
   nudges: SlpCreatorNudge[];
+  /** What the last talk with Slurp Support changed, so Creator tools can show it and undo it. */
+  support: SlpSteeringSupportNote | null;
+};
+
+/** One talk with Slurp Support: what it changed and what the fields said before, for Undo. */
+export type SlpSteeringSupportNote = {
+  at: string;
+  mood: SlpSteeringMood | null;
+  focus: string;
+  more: string;
+  less: string;
+  idea: string;
+  /** The queued idea Support added, removed again on Undo when it is still waiting. */
+  ideaId: string | null;
+  /** The memory Support left (its continuity source hash), retired on Undo. */
+  memory: string | null;
+  before: Pick<SlpCreatorSteering, "mood" | "focus" | "push" | "avoid">;
 };
 
 export const SLP_DEFAULT_STEERING: SlpCreatorSteering = {
@@ -53,6 +70,7 @@ export const SLP_DEFAULT_STEERING: SlpCreatorSteering = {
   avoid: [],
   pace: "usual",
   nudges: [],
+  support: null,
 };
 
 const text = (value: unknown, max: number) =>
@@ -66,12 +84,39 @@ function topics(value: unknown): string[] {
     .slice(0, SLP_STEERING_TOPICS_MAX);
 }
 
+const mood = (value: unknown): SlpSteeringMood | null =>
+  SLP_STEERING_MOODS.includes(value as SlpSteeringMood) ? (value as SlpSteeringMood) : null;
+
+function supportNote(raw: unknown): SlpSteeringSupportNote | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const value = raw as Record<string, unknown>;
+  const before = value.before && typeof value.before === "object" ? (value.before as Record<string, unknown>) : {};
+  const at = text(value.at, 40);
+  if (!at) return null;
+  return {
+    at,
+    mood: mood(value.mood),
+    focus: text(value.focus, SLP_STEERING_TEXT_MAX),
+    more: text(value.more, SLP_STEERING_TOPIC_MAX),
+    less: text(value.less, SLP_STEERING_TOPIC_MAX),
+    idea: text(value.idea, SLP_STEERING_NUDGE_MAX),
+    ideaId: text(value.ideaId, 64) || null,
+    memory: text(value.memory, 200) || null,
+    before: {
+      mood: mood(before.mood),
+      focus: text(before.focus, SLP_STEERING_TEXT_MAX),
+      push: topics(before.push),
+      avoid: topics(before.avoid),
+    },
+  };
+}
+
 export function normalizeSlpCreatorSteering(raw: unknown): SlpCreatorSteering {
   const value = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
   return {
     focus: text(value.focus, SLP_STEERING_TEXT_MAX),
     lifePhase: text(value.lifePhase, SLP_STEERING_TEXT_MAX),
-    mood: SLP_STEERING_MOODS.includes(value.mood as SlpSteeringMood) ? (value.mood as SlpSteeringMood) : null,
+    mood: mood(value.mood),
     push: topics(value.push),
     avoid: topics(value.avoid),
     pace: SLP_STEERING_PACES.includes(value.pace as SlpSteeringPace) ? (value.pace as SlpSteeringPace) : "usual",
@@ -85,5 +130,6 @@ export function normalizeSlpCreatorSteering(raw: unknown): SlpCreatorSteering {
       }))
       .filter((entry) => entry.id && entry.text)
       .slice(0, SLP_STEERING_NUDGES_MAX),
+    support: supportNote(value.support),
   };
 }

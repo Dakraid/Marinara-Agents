@@ -20,7 +20,7 @@ export function useSlurpCreatorSteeringMutations(creatorId: string) {
   const store = (answer: SteeringAnswer) => qc.setQueryData(key(creatorId), answer);
   return {
     patch: useMutation({
-      mutationFn: (patch: Partial<Omit<SlpCreatorSteering, "nudges">>) =>
+      mutationFn: (patch: Partial<Omit<SlpCreatorSteering, "nudges" | "support">>) =>
         api.patch<PatchAnswer>(path(creatorId), patch),
       onSuccess: store,
     }),
@@ -30,6 +30,14 @@ export function useSlurpCreatorSteeringMutations(creatorId: string) {
     addIdea: useMutation({
       mutationFn: (idea: { text: string; story: boolean }) =>
         api.post<SteeringAnswer>(`${path(creatorId)}/ideas`, idea),
+      onSuccess: store,
+    }),
+    undoSupport: useMutation({
+      mutationFn: () => api.post<SteeringAnswer>(`${path(creatorId)}/support-undo`, {}),
+      onSuccess: store,
+    }),
+    keepSupport: useMutation({
+      mutationFn: () => api.delete<SteeringAnswer>(`${path(creatorId)}/support-note`),
       onSuccess: store,
     }),
     removeIdea: useMutation({

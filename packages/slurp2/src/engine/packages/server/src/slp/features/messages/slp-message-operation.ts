@@ -52,6 +52,7 @@ import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-supp
 import { emptySlpAccountSettings } from "../../modules/records/slp-storage-model.js";
 import {
   addSlurpCreatorNudge,
+  noteSlurpSupportChange,
   patchSlurpCreatorSteering,
   readSlurpCreatorSteering,
 } from "../../data/creators/slp-steering-storage.js";
@@ -626,11 +627,13 @@ function slurpSupportTalkStore(
     recordThreadOutcome: (threadId, outcome) => createSlurpMessagesStorage(db).recordReplyOutcome(threadId, outcome),
     readSteering: (creatorAccountId) => readSlurpCreatorSteering(db, creatorAccountId),
     patchSteering: async (creatorAccountId, patch) => {
-      await patchSlurpCreatorSteering(db, creatorAccountId, patch);
+      await patchSlurpCreatorSteering(db, creatorAccountId, patch, { keepSupportNote: true });
     },
     // A full ideas list refuses rather than dropping one of the player's own.
-    addIdea: async (creatorAccountId, text) => {
-      await addSlurpCreatorNudge(db, creatorAccountId, { text, story: false });
+    addIdea: async (creatorAccountId, text) =>
+      (await addSlurpCreatorNudge(db, creatorAccountId, { text, story: false }))?.nudges.at(-1)?.id ?? null,
+    noteChange: async (creatorAccountId, note) => {
+      await noteSlurpSupportChange(db, creatorAccountId, note);
     },
     hasMemory: async (creatorAccountId, sourceHash) =>
       Boolean(await findSlurpContinuityFactBySourceHash(db, creatorAccountId, sourceHash)),
