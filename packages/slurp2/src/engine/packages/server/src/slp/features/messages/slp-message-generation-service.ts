@@ -299,6 +299,11 @@ export function buildSlurpMessageChat(input: {
       // Only for a generated audience member; a player persona writes their own side and needs no
       // description. Context for the creator's reply, never an instruction to write the fan's part.
       ...(input.fanVoice ? { voice: input.fanVoice } : {}),
+      // A player persona's public profile (its About me or card description), so the creator knows
+      // who is writing. Short, like a profile a creator would glance at; still never a voice.
+      ...(!input.fanVoice && input.viewer.bio?.trim()
+        ? { about: protect(input.viewer.bio).slice(0, SLURP_FAN_VOICE_PROMPT_MAX) }
+        : {}),
       ...(input.fanMemory ? { memory: input.fanMemory } : {}),
     },
     relationship: describeSlurpRapport(input.rapport, protect(input.viewer.displayName) || "this fan"),

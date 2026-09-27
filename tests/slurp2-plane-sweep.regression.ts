@@ -85,3 +85,11 @@ assert.match(overview, /runningProjects\.map\(\(project\) => \(\s*<p key=\{proje
   assert.equal(quiet.earnedToday, 0);
   assert.equal(slurpDayVibe(quiet), "quiet", "a real 24 hours with nothing is still quiet");
 }
+
+// ── Plane 326 (part): a DM reply knows who the player persona is ──
+// The fan's public profile (a persona's About me or card description) reaches the DM prompt,
+// capped, and only for a player persona: a generated fan or invited character already has a voice.
+assert.match(
+  pkg("server/src/slp/features/messages/slp-message-generation-service.ts"),
+  /\.\.\.\(!input\.fanVoice && input\.viewer\.bio\?\.trim\(\)\s*\? \{ about: protect\(input\.viewer\.bio\)\.slice\(0, SLURP_FAN_VOICE_PROMPT_MAX\) \}\s*: \{\}\),/u,
+);
