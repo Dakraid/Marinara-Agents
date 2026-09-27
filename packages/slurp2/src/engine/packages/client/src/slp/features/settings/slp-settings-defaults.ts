@@ -55,9 +55,7 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
     "imageGenerationPrompt",
     "enableImageInterpretation",
     "imagePromptInterpretation",
-    "promptPresets",
     "promptBlocks",
-    "promptInstructions",
   ],
   audience: [
     "audienceTone",
@@ -152,6 +150,9 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
  * no control in Settings.
  */
 export const SLURP_SETTINGS_NOT_RESET: readonly (keyof SlurpSettings)[] = [
+  // Saved presets and reusable instructions are the player's own writing (R1-121).
+  "promptPresets",
+  "promptInstructions",
   "classicPromptBlocks",
   "fanTypes",
   "platformEvents",

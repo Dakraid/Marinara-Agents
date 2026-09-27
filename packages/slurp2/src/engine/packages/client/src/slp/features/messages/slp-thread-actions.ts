@@ -176,7 +176,8 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
       setToolTab("commission");
       return;
     }
-    const feeDue = !thread || thread.requestFeePaid <= 0;
+    // The server charges the request fee only when it creates the thread.
+    const feeDue = !thread;
     // A paid first message is one tap (design step 6): the price sits in the Send button before the
     // tap, and the spend moment plays from that button once the message is through.
     const paidRequest =

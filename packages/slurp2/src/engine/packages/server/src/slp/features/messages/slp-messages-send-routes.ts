@@ -63,8 +63,12 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
     // post it is. A missing author is not worth refusing the share over.
     const author =
       post.authorAccountId === creator.id ? creator : await slurp.getNoodlerAccountById(post.authorAccountId);
-    const opened = await messages.openThread(viewer.id, creator.id, "viewer");
+    const opened = await messages.openThread(viewer.id, creator.id, "viewer", "refuse");
     if (opened.status === "closed") return reply.code(403).send({ error: "This Creator is not accepting messages." });
+    if (opened.status === "fee_required")
+      return reply
+        .code(409)
+        .send({ error: "Send them a message first to start this chat.", required: opened.required });
     if (opened.status === "insufficient_funds")
       return reply.code(402).send({ error: "Not enough coins.", required: opened.required });
     if (opened.status !== "ok") return reply.code(404).send({ error: "Could not open conversation" });

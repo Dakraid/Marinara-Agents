@@ -488,10 +488,16 @@ export function createMessagesStorageBase(context: SlurpMessagesContext) {
       viewerAccountId: string,
       creatorAccountId: string,
       openedBy: "viewer" | "creator" = "viewer",
+      /**
+       * The paid-DM request fee on a new thread. "waive": a tip or commission is already a payment to
+       * this Creator. "refuse": the caller shows no price (a shared post), so it asks for a message first.
+       */
+      requestFee: "charge" | "waive" | "refuse" = "charge",
     ): Promise<
       | { status: "ok"; thread: SlurpThread }
       | { status: "closed" }
       | { status: "insufficient_funds"; required: number }
+      | { status: "fee_required"; required: number }
       | { status: "not_found" }
     > {
       const creator = await slurp.getNoodlerAccountById(creatorAccountId);
@@ -519,11 +525,13 @@ export function createMessagesStorageBase(context: SlurpMessagesContext) {
       if (!admission.allowed) return { status: "closed" };
 
       const settings = await slurp.getSettings();
+      if (requestFee === "refuse" && settings.walletEnabled && admission.fee > 0)
+        return { status: "fee_required", required: admission.fee };
       let feePaid = 0;
       let chargedByThisCall = false;
       const messageRequestId = `message-request:${viewerAccountId}:${creatorAccountId}`;
       const messageRequestCreditId = `${messageRequestId}:credit`;
-      if (settings.walletEnabled && admission.fee > 0) {
+      if (settings.walletEnabled && admission.fee > 0 && requestFee === "charge") {
         const paymentIntent = await createSlurpPaymentIntent(
           slurp,
           {

@@ -8,6 +8,7 @@ import {
   normalizeSlurpDiscoveryTags,
 } from "../../modules/discovery/slp-discovery-profile.js";
 import { SLURP_ARC_LIBRARY_SEED } from "../../modules/projects/slp-arc-library.js";
+import { isSlurpPreferenceSettingKey } from "../../modules/maintenance/slp-backup.js";
 import {
   slpAccounts,
   slpAccountSubscriptions,
@@ -270,9 +271,10 @@ export function createCreatorsStorage1(context: SlurpStorageContext) {
       importSettings?: boolean;
     }): Promise<{ tables: Record<string, number>; settings: number; skipped: string[] }> {
       const skipped: string[] = [];
-      const replaceSettings =
-        backup.importSettings === true &&
-        Object.keys(backup.settings ?? {}).some((key) => key.startsWith(SLURP_SETTINGS_NAMESPACE));
+      const carriesKeys = Object.keys(backup.settings ?? {}).some((key) => key.startsWith(SLURP_SETTINGS_NAMESPACE));
+      const replaceSettings = backup.importSettings === true && carriesKeys;
+      // Data keys (wallets, earnings, storylines…) come back with the tables; preferences only on opt-in.
+      const restoresKey = (key: string) => replaceSettings || !isSlurpPreferenceSettingKey(key);
       const written: Record<string, number> = {};
       const incoming = backup.tables ?? {};
       for (const name of Object.keys(incoming)) {
@@ -294,26 +296,28 @@ export function createCreatorsStorage1(context: SlurpStorageContext) {
           for (const value of values) await tx.insert(table).values(value);
           written[name] = values.length;
         }
-        if (replaceSettings) {
+        if (carriesKeys) {
           const settingsTx = createAppSettingsStorage(tx);
           const stale = await tx
             .select()
             .from(appSettings)
             .where(like(appSettings.key, `${SLURP_SETTINGS_NAMESPACE}%`));
-          for (const row of stale) await settingsTx.remove(String(row.key));
+          for (const row of stale) if (restoresKey(String(row.key))) await settingsTx.remove(String(row.key));
           for (const [key, value] of Object.entries(backup.settings ?? {})) {
             // A backup must never reach outside this package's own settings namespace.
             if (!key.startsWith(SLURP_SETTINGS_NAMESPACE)) {
               skipped.push(key);
               continue;
             }
-            await settingsTx.set(key, value);
+            if (restoresKey(key)) await settingsTx.set(key, value);
           }
         }
         await tx._fileStore.flush();
       });
       const settingsCount = replaceSettings
-        ? Object.keys(backup.settings ?? {}).filter((key) => key.startsWith(SLURP_SETTINGS_NAMESPACE)).length
+        ? Object.keys(backup.settings ?? {}).filter(
+            (key) => key.startsWith(SLURP_SETTINGS_NAMESPACE) && isSlurpPreferenceSettingKey(key),
+          ).length
         : 0;
       return { tables: written, settings: settingsCount, skipped };
     },

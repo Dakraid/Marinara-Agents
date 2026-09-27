@@ -81,7 +81,7 @@ export function createSlpViewerContext(
     const subscriptionPrices = Object.fromEntries(
       await Promise.all(
         visibleAccounts.map(
-          async (account) => [account.id, await noodle.getCreatorSubscriptionPrice(account.id)] as const,
+          async (account) => [account.id, await noodle.getCreatorSubscriptionCharge(account.id)] as const,
         ),
       ),
     );

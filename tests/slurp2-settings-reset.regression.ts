@@ -41,6 +41,7 @@ assert.deepEqual(changedSlurpSettingKeys(changed, defaults, "audience"), [], "eq
 const settingsView = slurp2BackstageSource();
 assert.match(settingsView, /save\(slurpSettingsResetPatch\(settings, defaults, target\)\)/u);
 const routes = slurp2Source("packages/slurp2/src/engine/packages/server/src/routes/slurp.routes.ts");
-assert.match(routes, /app\.get\("\/settings\/defaults", async \(\) => DEFAULT_SLURP_SETTINGS\)/u);
+// R1-125: the defaults are normalized like stored settings, so a fresh install differs in nothing.
+assert.match(routes, /app\.get\("\/settings\/defaults", async \(\) => normalizeSlurpSettings\(null\)\)/u);
 
 console.log("slurp2 settings reset regression passed");

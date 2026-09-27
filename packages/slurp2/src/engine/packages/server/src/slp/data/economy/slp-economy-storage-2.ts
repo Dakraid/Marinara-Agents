@@ -2,6 +2,9 @@ import { and, eq, or } from "../../../db/file-query.js";
 import { SlpPostUnlock } from "../../../../../shared/src/slp/slp-social.types.js";
 import { isSlurpFileUniqueConstraintError } from "../../base/host/slp-file-errors.js";
 import { slpCreatorUnlockPriceFromMetadata } from "../../modules/economy/slp-prices.js";
+import { createSlpActiveModifierProvider } from "../../base/modifiers/slp-active-modifier-provider.js";
+import { slurpSubscriptionCharge } from "../../modules/economy/slp-creator-pricing.js";
+import { slurpPlatformEventModifierSource } from "../../../../../shared/src/slp/slp-platform-events.js";
 import {
   applyStipend,
   credit,
@@ -211,7 +214,11 @@ export function createEconomyStorage2(context: SlurpStorageContext) {
         const previousWalletValue = await settingsStore.get(slurpWalletKey(viewerAccountId));
         const previousViewerSettingsValue = await settingsStore.get(slurpViewerSettingsKey(viewerAccountId));
         const at = new Date();
-        const renewal = renewSubscriptions(stored, at);
+        const gone = new Set<string>();
+        for (const creatorAccountId of Object.keys(stored.subscriptions))
+          if (!(await this.getNoodlerAccountById(creatorAccountId, { includeHidden: true })))
+            gone.add(creatorAccountId);
+        const renewal = renewSubscriptions(stored, at, gone);
         if (renewal.wallet === stored) return stored;
         const walletAfterRenewal = renewal.lapsed.reduce(
           (wallet, creatorAccountId) => recordWalletActivity(wallet, "renew", 0, at, creatorAccountId),
@@ -275,6 +282,21 @@ export function createEconomyStorage2(context: SlurpStorageContext) {
     async getCreatorSubscriptionPrice(creatorAccountId: string): Promise<number> {
       const [prices, settings] = await Promise.all([readCreatorPrices(), this.getSettings()]);
       return prices[creatorAccountId] ?? settings.walletSubscriptionCost;
+    },
+    /**
+     * What a new subscription costs right now: the weekly price moved by any running platform event,
+     * exactly as `subscribe` charges it. Buttons, the 402 check and the price filter read this (R1-066).
+     */
+    async getCreatorSubscriptionCharge(creatorAccountId: string, at: Date = new Date()): Promise<number> {
+      const [base, settings] = await Promise.all([
+        this.getCreatorSubscriptionPrice(creatorAccountId),
+        this.getSettings(),
+      ]);
+      return slurpSubscriptionCharge(
+        base,
+        createSlpActiveModifierProvider([slurpPlatformEventModifierSource(settings.platformEvents)]),
+        at,
+      );
     },
     /** Set a creator's own weekly price, or clear it back to the Slurp-wide default with `null`. */
     async setCreatorSubscriptionPrice(creatorAccountId: string, price: number | null): Promise<void> {

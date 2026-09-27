@@ -481,11 +481,22 @@ export type SlurpRenewalResult = {
  * ponytail: a viewer away for a month is charged one period, not four. Bill every missed period
  * only if back-billing ever turns out to matter.
  */
-export function renewSubscriptions(wallet: SlurpWallet, at: Date): SlurpRenewalResult {
+export function renewSubscriptions(
+  wallet: SlurpWallet,
+  at: Date,
+  /** Creators that no longer exist. Their subscriptions end without a charge (a removed Creator bills nobody). */
+  goneCreatorIds: ReadonlySet<string> = new Set(),
+): SlurpRenewalResult {
   let next = wallet;
   const renewed: { creatorAccountId: string; price: number }[] = [];
   const lapsed: string[] = [];
   for (const [creatorAccountId, subscription] of Object.entries(wallet.subscriptions)) {
+    if (goneCreatorIds.has(creatorAccountId)) {
+      const remaining = { ...next.subscriptions };
+      delete remaining[creatorAccountId];
+      next = { ...next, subscriptions: remaining };
+      continue;
+    }
     if (Date.parse(subscription.paidThroughAt) > at.getTime()) continue;
     // Cancelled during the paid period: the period is over now, so it ends rather than renews.
     if (subscription.cancelled) {

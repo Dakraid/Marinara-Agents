@@ -62,13 +62,10 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
       thread || (tab.id !== "photo" && tab.id !== "generated-photo" && tab.id !== "request" && tab.id !== "creator"),
   );
   const activeTab = availableTabs.find((tab) => tab.id === toolTab) ?? null;
-  // A paid first message says its price where it is spent: on the Send button.
+  // A paid first message says its price where it is spent: on the Send button. The server charges it
+  // only when no thread exists yet (a thread the Creator opened costs nothing), so neither does this.
   const sendFee =
-    !ownsCreator &&
-    (!thread || thread.requestFeePaid <= 0) &&
-    messaging?.dmPolicy === "paid" &&
-    !subscribed &&
-    messaging.requestFee > 0
+    !ownsCreator && !thread && messaging?.dmPolicy === "paid" && !subscribed && messaging.requestFee > 0
       ? messaging.requestFee
       : 0;
   const closeTools = () => {

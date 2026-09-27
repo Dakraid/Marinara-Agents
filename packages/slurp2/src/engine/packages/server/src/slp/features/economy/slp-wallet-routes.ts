@@ -236,7 +236,7 @@ export async function slpWalletRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
     if (!subscription) {
       const [wallet, price] = await Promise.all([
         noodle.getWallet(viewer.id),
-        noodle.getCreatorSubscriptionPrice(creator.id),
+        noodle.getCreatorSubscriptionCharge(creator.id),
       ]);
       if (wallet.coins < price) return reply.code(402).send({ error: "Not enough coins", price, coins: wallet.coins });
       return reply.code(400).send({ error: "Could not subscribe to this stage profile" });

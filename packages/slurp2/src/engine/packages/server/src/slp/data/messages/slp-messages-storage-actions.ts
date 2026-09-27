@@ -165,7 +165,7 @@ export function createMessagesStorageActions(context: SlurpMessagesContext) {
       note: string,
       requestId?: string,
     ): Promise<SlurpSendResult> {
-      const opened = await context.storage.openThread(viewerAccountId, creatorAccountId, "viewer");
+      const opened = await context.storage.openThread(viewerAccountId, creatorAccountId, "viewer", "waive");
       if (opened.status !== "ok") return opened;
       const settings = await slurp.getSettings();
       const tipId = requestId ?? newId();

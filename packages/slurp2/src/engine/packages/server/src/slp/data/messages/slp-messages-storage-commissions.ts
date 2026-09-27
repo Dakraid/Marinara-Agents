@@ -126,7 +126,7 @@ export function createMessagesStorageCommissions(context: SlurpMessagesContext) 
       creatorAccountId: string,
       brief: string,
     ): Promise<SlurpCommission | "open_request" | null> {
-      const opened = await context.storage.openThread(viewerAccountId, creatorAccountId, "viewer");
+      const opened = await context.storage.openThread(viewerAccountId, creatorAccountId, "viewer", "waive");
       if (opened.status !== "ok") return null;
       const timestamp = now();
       const row = {

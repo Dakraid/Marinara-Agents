@@ -1,6 +1,8 @@
 import { AlertTriangle, Download, Loader2, RefreshCw, Trash2, Upload } from "lucide-react";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { slpKeys } from "../../base/state/slp-query-keys";
 import { SectionTitle } from "../../modules/settings/SlpSettingsControls";
 import {
   applySlurpRestoreInspection,
@@ -17,6 +19,7 @@ import { errorMessage, formatBytes } from "../../modules/settings/slp-backstage-
 
 /** Backup and data: export, restore and the destructive delete actions. */
 export function SlpBackupPanel(page: SlpBackstagePageProps) {
+  const queryClient = useQueryClient();
   const {
     onRestartOnboarding,
     t,
@@ -227,6 +230,9 @@ export function SlpBackupPanel(page: SlpBackstagePageProps) {
                           setRestoreInspection(null);
                           setRestoreFileName("");
                           const done = await followBackupJob(job);
+                          // Everything on screen predates the restore: drop staged edits and reload it all.
+                          page.setDraftPatch({});
+                          await queryClient.invalidateQueries({ queryKey: slpKeys.all });
                           toast.success(
                             t("ui.slurp.settings.advanced.restoreSuccess", {
                               creators: done.creators,
