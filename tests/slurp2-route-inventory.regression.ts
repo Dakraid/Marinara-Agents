@@ -6,6 +6,7 @@ import { join } from "node:path";
 // parser. The route list below is the post-rename inventory. BASELINE is derived from it through
 // the explicit mapping table, so a method change or a missing route cannot pass by rebaselining.
 const EXPECTED = [
+  "PATCH /messages/threads/:threadId/details",
   "GET /slurp/posts/:id/deep-details",
   "GET /continuity",
   "GET /continuity/:creatorAccountId",
@@ -245,6 +246,7 @@ const RETAINED_OLD_PATHS = new Set([
   "GET /noodler/posts/:id/media/:position",
 ]);
 const ADDED_ROUTES = new Set([
+  "PATCH /messages/threads/:threadId/details",
   // Fix phase 1b (R1-107): "Draft voice" in the fan type editor.
   "POST /fan-types/voice-draft",
   // Overnight plan item 7: one exchange of the role-play Creator sign-up, and keeping its chat.
@@ -334,14 +336,14 @@ const EXPECTED_HANDLER_COUNTS = {
   "features/feed": 39,
   "features/maintenance": 14,
   "features/media": 7,
-  "features/messages": 40,
+  "features/messages": 41,
   "features/notifications": 3,
   "features/onboarding": 6,
   "features/projects": 15,
   "features/settings": 7,
   "features/world": 11,
 } as const;
-const EXPECTED_METHOD_COUNTS = { DELETE: 15, GET: 74, PATCH: 16, POST: 117, PUT: 6 } as const;
+const EXPECTED_METHOD_COUNTS = { DELETE: 15, GET: 74, PATCH: 17, POST: 117, PUT: 6 } as const;
 
 const root = join(import.meta.dirname, "../packages/slurp2/src/engine/packages/server/src/slp");
 const registration = /\bapp\.(get|post|put|patch|delete|addContentTypeParser)(?:<[^()]*?>)?\(\s*["'`]([^"'`]+)["'`]/gu;
@@ -396,7 +398,7 @@ const methodCounts = Object.fromEntries(
     }, new Map<string, number>()),
 );
 assert.deepEqual(methodCounts, EXPECTED_METHOD_COUNTS, "HTTP method multiset changed from staging");
-assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 228);
+assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 229);
 assert.deepEqual(handlerCounts, EXPECTED_HANDLER_COUNTS, "handler count changed in a feature");
 assert.ok(foundRoutes.includes("POST /slurp/posts/:id/media"), "the renamed POST media route must remain registered");
 assert.ok(

@@ -460,6 +460,7 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
   const slurp = createSlurpStorage(input.db);
   const disclosureMode = input.creator.settings.privacy.identityDisclosure ?? "open";
   const publicIdentity = await resolveNoodlerPublicIdentity(input.db, input.creator);
+  const details = input.threadId ? await createSlurpMessagesStorage(input.db).getDetailsOverrides(input.threadId) : {};
   const settings = await slurp.getSettings();
   const prompts = slurpPromptContext(settings);
   const source = await slurp.resolveAccountSource(input.creator);
@@ -471,7 +472,7 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
       .then((byAccount) => byAccount.get(input.creator.id) ?? [])
       .catch(() => []),
   ]);
-  const availability =
+  const naturalAvailability =
     input.availability ??
     (source
       ? await resolveSlurpCreatorAvailability(
@@ -483,6 +484,7 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
           settings,
         )
       : { online: true, activity: null, minutesUntilOnline: 0 });
+  const availability = { ...naturalAvailability, ...details.availability };
   const characterCanon = await resolveCreatorCharacterCanon(input.db, source, disclosureMode);
   // The fan's direction, and what the creator has posted lately. Both were already stored and
   // neither reached the one prompt where a fan is most likely to mention them.
@@ -545,17 +547,21 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
     ),
     audienceArc: tie ? slurpAudienceArcDescription(tie.audienceArc) : null,
     creatorArc,
-    dayVibe: input.dayVibe ?? null,
+    dayVibe: details.dayVibe !== undefined ? details.dayVibe : (input.dayVibe ?? null),
     availability,
     subscribed: input.subscribed,
     isRequest: input.isRequest,
     // The audience dial reaches private chat for the first time. It governed comments and
     // reactions only, so a maintainer who chose `unfiltered` still met a uniformly
     // accommodating creator in every DM.
-    tone: readSlurpAudienceTone(settings.audienceTone),
+    tone: details.audienceTone ?? readSlurpAudienceTone(settings.audienceTone),
     coolingOff: input.coolingOff ?? false,
     strikes: input.strikes ?? 0,
   });
+  if (details.imageMode !== undefined && !input.coolingOff) {
+    stance.imageMode = details.imageMode;
+    stance.canSendImage = details.imageMode !== "none";
+  }
   // Pictures reach the model through the one image context setting: the thread's own pictures, and
   // the Creator's recent posts a fan is likely to mention. The creator is one side of this thread,
   // so a locked picture in it is theirs to see. Recent posts use stored prompts and saved

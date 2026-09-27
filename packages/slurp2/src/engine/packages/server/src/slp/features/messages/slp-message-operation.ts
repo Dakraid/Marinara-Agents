@@ -142,10 +142,12 @@ export async function replyToSlurpMessage(
       )
     : { online: true, activity: null, minutesUntilOnline: 0 };
   // An open conversation window keeps the Creator online; momentum alone never wakes her.
-  const availability =
+  const details = await messagesStore.getDetailsOverrides(thread.id);
+  const naturalAvailability =
     thread.extendedOnlineUntil && thread.extendedOnlineUntil > new Date().toISOString()
       ? { online: true, activity: "chatting", minutesUntilOnline: 0 }
       : scheduled;
+  const availability = { ...naturalAvailability, ...details.availability };
 
   const history = await messagesStore.listMessages(thread.id, 60);
   const trigger = history.find((message) => message.id === input.triggerMessageId);
@@ -278,7 +280,8 @@ export async function replyToSlurpMessage(
         threadId: thread.id,
         threadState: thread.threadState,
         creatorState,
-        dayVibe: await describeSlurpDayVibe(db, thread.creatorAccountId),
+        dayVibe:
+          details.dayVibe !== undefined ? details.dayVibe : await describeSlurpDayVibe(db, thread.creatorAccountId),
         coolingOff: false,
         strikes: activeSlurpStrikes(thread.strikes, thread.lastStrikeAt),
         connection,

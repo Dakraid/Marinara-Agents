@@ -1,5 +1,20 @@
 # Slurp Remastered release notes
 
+## 0.2.78 — 2026-09-27
+
+- Restyle the update sheet header with a larger animated G face, accent tint and integrated alpha reminder.
+- Replace the cost warning with a direct reminder that Slurp uses background image and text generation.
+
+## 0.2.77 — 2026-09-27
+
+- Restore G’s animated face, introduction and alpha reminder in the themed update sheet.
+- Remember Details edit mode per conversation and viewer in this browser. Turning it off keeps saved edits.
+- Expose the displayed state timestamps and conversation cooldown for inline editing too.
+
+## 0.2.76 — 2026-09-27
+
+- Added an edit toggle at the bottom of messaging Details → Advanced. Numbers become inline sliders, options become selectors, and context can be edited directly. Calculated values use saved overrides without changing payment records.
+
 ## 0.2.75 — 2026-09-26
 
 - Fewer selfies and mirror shots: posts now use a propped-up phone, video stills or a friend with the camera more often. Mirror shots are rare, because the image model drew the Creator twice.

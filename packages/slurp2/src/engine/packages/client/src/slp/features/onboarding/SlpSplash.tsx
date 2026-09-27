@@ -288,6 +288,33 @@ function SlurpWhatsNew({ open, seen, onDismiss }: { open: boolean; seen: string 
       }
     >
       <div data-component="SlurpSplash" className="flex flex-col gap-4 px-3 pb-2">
+        <section
+          className="overflow-hidden rounded-2xl p-4 shadow-[var(--slurp-highlight)]"
+          style={{
+            background:
+              "linear-gradient(135deg, color-mix(in srgb, var(--noodle-accent) 14%, var(--slurp-surface-raised)), var(--slurp-surface-raised))",
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="relative flex h-24 w-24 shrink-0 items-center justify-center sm:h-32 sm:w-32">
+              <span
+                aria-hidden="true"
+                className="absolute inset-2 rounded-full bg-[var(--noodle-accent)]/15 shadow-[0_0_32px_color-mix(in_srgb,var(--noodle-accent)_20%,transparent)]"
+              />
+              <img src={GUNTERLIE_AVATAR_SRC} alt="" className="relative h-full w-full object-contain" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-2xl font-black leading-tight sm:text-3xl">Hey, I’m G.</h2>
+              <p className={cn(SLP_TYPE.body, "mt-1 text-pretty text-[var(--slurp-muted)]")}>
+                The dude responsible for all the bugs.
+              </p>
+            </div>
+          </div>
+          <p className={cn(SLP_TYPE.body, "mt-3 border-t border-[var(--noodle-divider)] pt-3 text-pretty")}>
+            You’re testing <span className="font-bold">alpha</span> software. It’s unfinished, occasionally feral, and
+            absolutely full of bugs.
+          </p>
+        </section>
         {featuredRelease && (
           <section>
             <h3
@@ -344,7 +371,7 @@ function SlurpWhatsNew({ open, seen, onDismiss }: { open: boolean; seen: string 
 
         <p className={cn(SLP_TYPE.meta, "flex items-start gap-2 text-pretty text-[var(--slurp-muted)]")}>
           <AlertTriangle size={16} aria-hidden="true" className="mt-px shrink-0 text-[var(--slurp-warning)]" />
-          Heads up, still true: Slurp runs on your own text and image connections, so your provider may bill every call.
+          Keep in mind: Slurp uses image and text generation in the background. Be sure you can afford that.
         </p>
 
         <DiscordRow>

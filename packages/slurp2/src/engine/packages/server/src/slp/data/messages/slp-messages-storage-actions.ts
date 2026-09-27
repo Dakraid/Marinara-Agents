@@ -1,3 +1,7 @@
+import {
+  slpDetailsOverridesSchema,
+  type SlpMessageDetailsPatch,
+} from "../../../../../shared/src/slp/slp-message-details.js";
 // ──────────────────────────────────────────────
 // Storage: Slurp direct messages
 // ──────────────────────────────────────────────
@@ -328,6 +332,8 @@ export function createMessagesStorageActions(context: SlurpMessagesContext) {
       const facts = await context.storage.rapportFactsFor(viewerAccountId, creatorAccountId);
       // Paid commissions too; the line said "tips, unlocks and commissions" and counted two (R1-018).
       const thread = await context.storage.getThread(viewerAccountId, creatorAccountId);
+      const overrides = thread ? await context.storage.getDetailsOverrides(thread.id) : {};
+      if (overrides.spentCoins !== undefined) return overrides.spentCoins;
       const commissions = thread ? await context.storage.listCommissionsForThread(thread.id) : [];
       const commissionCoins = commissions
         .filter((entry) => ["accepted", "cancellation_pending", "delivered"].includes(entry.state))
@@ -509,6 +515,60 @@ export function createMessagesStorageActions(context: SlurpMessagesContext) {
       const current = (await context.storage.getThreadById(threadId))?.extendedOnlineUntil ?? null;
       if (current && current >= until) return;
       await context.storage.setExtendedOnline(threadId, until);
+    },
+    async getDetailsOverrides(threadId: string) {
+      const stored = await settingsStore.get(`slurp2.messages.details.${threadId}`);
+      return slpDetailsOverridesSchema.parse(json(stored ?? "{}"));
+    },
+    async saveDetailsOverrides(threadId: string, patch: SlpMessageDetailsPatch): Promise<void> {
+      const previous = await context.storage.getDetailsOverrides(threadId);
+      const changes = slpDetailsOverridesSchema.parse(
+        Object.fromEntries(Object.entries(patch).filter(([key]) => key in slpDetailsOverridesSchema.shape)),
+      );
+      const next = {
+        ...previous,
+        ...changes,
+        ...(changes.availability ? { availability: { ...previous.availability, ...changes.availability } } : {}),
+        ...(changes.contributionPoints
+          ? { contributionPoints: { ...previous.contributionPoints, ...changes.contributionPoints } }
+          : {}),
+      };
+      await settingsStore.set(`slurp2.messages.details.${threadId}`, JSON.stringify(next));
+    },
+    async setThreadDetails(threadId: string, patch: SlpMessageDetailsPatch): Promise<void> {
+      await db.transaction(async (tx) => {
+        const row = (await tx.select().from(slurpThreads).where(eq(slurpThreads.id, threadId)))[0];
+        if (!row) return;
+        const thread = mapThread(row);
+        const timestamp = now();
+        await tx
+          .update(slurpThreads)
+          .set({
+            ...(patch.coolUntil === undefined ? {} : { coolUntil: patch.coolUntil }),
+            ...(patch.mood === undefined ? {} : { mood: String(patch.mood), moodUpdatedAt: timestamp }),
+            ...(patch.strikes === undefined ? {} : { strikes: String(patch.strikes), lastStrikeAt: timestamp }),
+            ...(patch.score === undefined && patch.tier === undefined
+              ? {}
+              : {
+                  rapport: JSON.stringify({
+                    ...thread.rapport,
+                    ...(patch.score === undefined ? {} : { score: patch.score }),
+                    ...(patch.tier === undefined ? {} : { tier: patch.tier }),
+                  }),
+                }),
+            ...(patch.threadState
+              ? {
+                  threadState: JSON.stringify({
+                    ...thread.threadState,
+                    ...patch.threadState,
+                    updatedAt: patch.threadState.updatedAt ?? timestamp,
+                  }),
+                }
+              : {}),
+            updatedAt: timestamp,
+          })
+          .where(eq(slurpThreads.id, threadId));
+      });
     },
     async adjustCheatState(threadId: string, input: { mood?: number; rapport?: number }): Promise<SlurpThread | null> {
       const thread = await context.storage.getThreadById(threadId);

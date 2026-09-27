@@ -322,3 +322,9 @@ modules, rejected alternative, and migration consequence.
 - **Migration consequence:** legacy calendar rows normalize into annual blueprints. Existing running
   arcs remain copied snapshots. Occurrences, facts, opportunities, and checkpoints use package-owned
   settings records and therefore travel with the existing backup/restore namespace.
+
+## Messaging Details edits (2026-09-27)
+
+- The client and server share `slp-message-details.ts` for the closed set of editable fields, enum choices and numeric bounds.
+- Creator and conversation state edits write their existing records. Calculated rapport and context edits live in per-thread `slurp2.messages.details.*` settings and are consumed by thread views, rapport scoring and message preparation. Editing displayed spending never creates a payment or alters the ledger.
+- The Details toggle only enables controls; switching it off does not undo saved edits.

@@ -1392,5 +1392,8 @@
   "ui.slurp.settings.audience.creatorRepliesPerDay": "하루 크리에이터 답글 수",
   "ui.slurp.settings.audience.creatorRepliesPerDayDetail": "크리에이터가 24시간 동안 답하는 댓글 수입니다. 내 댓글과 팬 댓글을 합친 수입니다. 다 쓰면 다음 날 다시 답합니다.",
   "ui.slurp.wallet.cancelledNoDay": "구독이 취소되었습니다",
-  "ui.slurp.wallet.personaWallet": "{{name}}의 지갑"
+  "ui.slurp.wallet.personaWallet": "{{name}}의 지갑",
+  "ui.slurp.messages.editDetails": "값과 옵션 편집",
+  "ui.slurp.messages.detailsSaveError": "변경 사항을 저장하지 못했습니다. 다시 시도하세요.",
+  "ui.slurp.messages.editDetailsNeedsThread": "대화를 시작하면 세부 정보를 편집할 수 있습니다."
 }

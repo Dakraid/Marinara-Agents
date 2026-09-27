@@ -107,7 +107,14 @@ export function SlpThreadDrawer({ model }: { model: SlurpThreadViewModel }) {
             )}
           </section>
         )}
-        {relationship && <SlurpRelationshipPanel relationship={relationship} />}
+        {relationship && (
+          <SlurpRelationshipPanel
+            key={threadId}
+            relationship={relationship}
+            threadId={threadId}
+            personaId={personaId}
+          />
+        )}
       </>
     );
 

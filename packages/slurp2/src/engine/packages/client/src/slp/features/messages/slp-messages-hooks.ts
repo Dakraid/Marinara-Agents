@@ -1,3 +1,4 @@
+import type { SlpMessageDetailsPatch } from "../../../../../shared/src/slp/slp-message-details.js";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { api } from "../../../lib/api-client.js";
@@ -289,5 +290,14 @@ export function useSetSlurpCreatorMessaging() {
       );
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: slpKeys.noodlerRoot() }),
+  });
+}
+
+export function useSetSlurpMessageDetails(threadId: string | null, personaId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: SlpMessageDetailsPatch) =>
+      api.patch(`/slurp2/messages/threads/${encodeURIComponent(threadId!)}/details`, { personaId, ...patch }),
+    onSuccess: () => invalidateSlurpMessages(queryClient),
   });
 }

@@ -184,6 +184,24 @@ export function createCreatorsStorage1(context: SlurpStorageContext) {
       await settingsStore.set(`${SLURP_CREATOR_STATE_KEY}.${creatorAccountId}`, JSON.stringify(recovered));
       return recovered;
     },
+    async setCreatorDetails(creatorAccountId: string, patch: Partial<SlurpCreatorState>): Promise<void> {
+      const current = await this.getCreatorState(creatorAccountId);
+      // A chosen feeling must clear the settling band or the next read immediately erases it.
+      const emotionIntensity =
+        patch.emotionIntensity ??
+        ((patch.emotion && patch.emotion !== "content") || (patch.intent && patch.intent !== "none")
+          ? Math.max(50, current.emotionIntensity)
+          : current.emotionIntensity);
+      await settingsStore.set(
+        `${SLURP_CREATOR_STATE_KEY}.${creatorAccountId}`,
+        JSON.stringify({
+          ...current,
+          ...patch,
+          emotionIntensity,
+          updatedAt: patch.updatedAt ?? new Date().toISOString(),
+        }),
+      );
+    },
     /**
      * Move one Creator's shared state by a bounded delta.
      *

@@ -552,5 +552,8 @@
   "ui.slurp.settings.audience.creatorRepliesPerDay": "Creator-Antworten pro Tag",
   "ui.slurp.settings.audience.creatorRepliesPerDayDetail": "Wie viele Kommentare Creator in 24 Stunden beantworten, deine und die deiner Fans zusammen. Ist das Limit erreicht, antworten sie am nächsten Tag wieder.",
   "ui.slurp.wallet.cancelledNoDay": "Abonnement gekündigt",
-  "ui.slurp.wallet.personaWallet": "Wallet von {{name}}"
+  "ui.slurp.wallet.personaWallet": "Wallet von {{name}}",
+  "ui.slurp.messages.editDetails": "Werte und Optionen bearbeiten",
+  "ui.slurp.messages.detailsSaveError": "Die Änderung konnte nicht gespeichert werden. Versuche es erneut.",
+  "ui.slurp.messages.editDetailsNeedsThread": "Starte ein Gespräch, um seine Details zu bearbeiten."
 }

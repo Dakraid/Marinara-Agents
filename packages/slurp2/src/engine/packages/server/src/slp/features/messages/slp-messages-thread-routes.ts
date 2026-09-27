@@ -126,7 +126,8 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     const creator = await slurp.getNoodlerAccountById(thread.creatorAccountId);
     if (!creator) return reply.code(404).send({ error: "Creator not found" });
     const presence = await creatorPresence(creator, thread.id);
-    const audienceTone = readSlurpAudienceTone((await slurp.getSettings()).audienceTone);
+    const details = thread ? await messages.getDetailsOverrides(thread.id) : {};
+    const audienceTone = details.audienceTone ?? readSlurpAudienceTone((await slurp.getSettings()).audienceTone);
     const counterpart =
       side === "creator"
         ? ((await population.get(thread.viewerAccountId)) ??
@@ -166,11 +167,13 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
         notes: thread.notes,
         spentCoins: await messages.spentWithCreator(thread.viewerAccountId, thread.creatorAccountId),
         coolUntil: thread.coolUntil,
-        dayVibe: await describeSlurpDayVibe(app.db, thread.creatorAccountId),
+        dayVibe:
+          details.dayVibe !== undefined ? details.dayVibe : await describeSlurpDayVibe(app.db, thread.creatorAccountId),
         availability: presence.creatorAvailability,
         audienceTone,
         imageMode:
-          thread.mood <= -40 && audienceTone === "unfiltered" ? "hostile" : thread.mood >= 20 ? "friendly" : "none",
+          details.imageMode ??
+          (thread.mood <= -40 && audienceTone === "unfiltered" ? "hostile" : thread.mood >= 20 ? "friendly" : "none"),
         creatorState: await slurp.getCreatorState(thread.creatorAccountId),
         threadState: thread.threadState,
         scheduledFollowUps: thread.scheduledFollowUps,
@@ -313,7 +316,9 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     if (thread) await messages.markRead(thread.id, "viewer");
     const page = thread ? await messages.listMessagePage(thread.id) : { messages: [], nextCursor: null };
     const presence = await creatorPresence(creator, thread?.id);
-    const audienceTone = thread ? readSlurpAudienceTone((await slurp.getSettings()).audienceTone) : null;
+    const details = thread ? await messages.getDetailsOverrides(thread.id) : {};
+    const audienceTone =
+      details.audienceTone ?? (thread ? readSlurpAudienceTone((await slurp.getSettings()).audienceTone) : null);
     return {
       thread: thread ? await freshView(thread.id) : null,
       messages: page.messages.map(maskForViewer),
@@ -332,11 +337,19 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
             notes: thread.notes,
             spentCoins: await messages.spentWithCreator(thread.viewerAccountId, thread.creatorAccountId),
             coolUntil: thread.coolUntil,
-            dayVibe: await describeSlurpDayVibe(app.db, thread.creatorAccountId),
+            dayVibe:
+              details.dayVibe !== undefined
+                ? details.dayVibe
+                : await describeSlurpDayVibe(app.db, thread.creatorAccountId),
             availability: presence.creatorAvailability,
             audienceTone,
             imageMode:
-              thread.mood <= -40 && audienceTone === "unfiltered" ? "hostile" : thread.mood >= 20 ? "friendly" : "none",
+              details.imageMode ??
+              (thread.mood <= -40 && audienceTone === "unfiltered"
+                ? "hostile"
+                : thread.mood >= 20
+                  ? "friendly"
+                  : "none"),
             creatorState: await slurp.getCreatorState(thread.creatorAccountId),
             threadState: thread.threadState,
             // Same as the thread route, so a chat opened from a profile lists its follow-ups (R1-008).

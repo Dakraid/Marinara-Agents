@@ -1,3 +1,5 @@
+import { SlpMessageDetailsEditor, SlpEditableDetail, useSlpDetailEditing } from "./SlpMessageDetailsEditor";
+import { Toggle } from "../../modules/settings/SlpSettingsControls";
 import {
   Activity,
   BriefcaseBusiness,
@@ -79,25 +81,30 @@ function Meter({
   hint?: string;
 }) {
   const tones = PANEL_TONES[tone];
+  const editing = useSlpDetailEditing(label);
   return (
     <div>
-      <div className="mb-1 flex items-baseline justify-between gap-2">
+      <div className="mb-1 flex items-center justify-between gap-2">
         <span className="text-[0.7rem] text-[var(--muted-foreground)]">{label}</span>
-        <span className="text-[0.72rem] font-bold tabular-nums">{value}</span>
+        <span className="min-w-0 flex-1 text-right text-[0.72rem] font-bold tabular-nums">
+          <SlpEditableDetail label={label}>{value}</SlpEditableDetail>
+        </span>
       </div>
-      <div
-        role="meter"
-        aria-valuenow={clampPercent(value)}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label={label}
-        className={cn("h-1.5 overflow-hidden rounded-full", tones.track)}
-      >
+      {!editing && (
         <div
-          className={cn("h-full rounded-r-[4px] transition-[width] motion-reduce:transition-none", tones.fill)}
-          style={{ width: `${clampPercent(value)}%` }}
-        />
-      </div>
+          role="meter"
+          aria-valuenow={clampPercent(value)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={label}
+          className={cn("h-1.5 overflow-hidden rounded-full", tones.track)}
+        >
+          <div
+            className={cn("h-full rounded-r-[4px] transition-[width] motion-reduce:transition-none", tones.fill)}
+            style={{ width: `${clampPercent(value)}%` }}
+          />
+        </div>
+      )}
       {hint && <p className="mt-1 text-[0.65rem] leading-snug text-[var(--muted-foreground)]">{hint}</p>}
     </div>
   );
@@ -110,6 +117,7 @@ function DivergingBar({
   negativeLabel,
   positiveLabel,
   reading,
+  fieldKey,
 }: {
   label: string;
   value: number;
@@ -117,24 +125,33 @@ function DivergingBar({
   negativeLabel?: string;
   positiveLabel?: string;
   reading?: string;
+  fieldKey?: string;
 }) {
+  const editing = useSlpDetailEditing(fieldKey ?? label);
   const share = max > 0 ? Math.min(1, Math.abs(value) / max) : 0;
   const tones = value < 0 ? PANEL_TONES.serious : PANEL_TONES.accent;
   return (
     <div>
-      <div className="mb-1 flex items-baseline justify-between gap-2">
+      <div className="mb-1 flex items-center justify-between gap-2">
         <span className="text-[0.7rem] text-[var(--muted-foreground)]">{label}</span>
-        <span className={cn("text-[0.72rem] font-bold", value < 0 && tones.text)}>
-          {reading ?? (value > 0 ? `+${value}` : String(value))}
+        <span className={cn("min-w-0 flex-1 text-right text-[0.72rem] font-bold", value < 0 && tones.text)}>
+          <SlpEditableDetail label={label} fieldKey={fieldKey}>
+            {reading ?? (value > 0 ? `+${value}` : String(value))}
+          </SlpEditableDetail>
         </span>
       </div>
-      <div className="relative h-1.5 rounded-full bg-[color-mix(in_srgb,var(--muted-foreground)_16%,transparent)]">
-        <div className="absolute inset-y-[-2px] left-1/2 w-px -translate-x-1/2 bg-[var(--muted-foreground)]/45" />
-        <div
-          className={cn("absolute inset-y-0 rounded-full transition-[width] motion-reduce:transition-none", tones.fill)}
-          style={value < 0 ? { right: "50%", width: `${share * 50}%` } : { left: "50%", width: `${share * 50}%` }}
-        />
-      </div>
+      {!editing && (
+        <div className="relative h-1.5 rounded-full bg-[color-mix(in_srgb,var(--muted-foreground)_16%,transparent)]">
+          <div className="absolute inset-y-[-2px] left-1/2 w-px -translate-x-1/2 bg-[var(--muted-foreground)]/45" />
+          <div
+            className={cn(
+              "absolute inset-y-0 rounded-full transition-[width] motion-reduce:transition-none",
+              tones.fill,
+            )}
+            style={value < 0 ? { right: "50%", width: `${share * 50}%` } : { left: "50%", width: `${share * 50}%` }}
+          />
+        </div>
+      )}
       {(negativeLabel || positiveLabel) && (
         <div className="mt-1 flex justify-between text-[0.6rem] text-[var(--muted-foreground)]">
           <span>{negativeLabel}</span>
@@ -149,9 +166,11 @@ function Stepper({ steps, current, label }: { steps: readonly string[]; current:
   const index = steps.indexOf(current);
   return (
     <div>
-      <div className="mb-1 flex items-baseline justify-between gap-2">
+      <div className="mb-1 flex items-center justify-between gap-2">
         <span className="text-[0.7rem] text-[var(--muted-foreground)]">{label}</span>
-        <span className="text-[0.72rem] font-bold capitalize">{humanizeValue(current)}</span>
+        <span className="min-w-0 flex-1 text-right text-[0.72rem] font-bold capitalize">
+          <SlpEditableDetail label={label}>{humanizeValue(current)}</SlpEditableDetail>
+        </span>
       </div>
       <ol className="flex gap-[2px]" aria-label={`${label}: ${humanizeValue(current)}`}>
         {steps.map((step, position) => (
@@ -198,7 +217,9 @@ function Field({ label, value, hint }: { label: string; value: string; hint?: st
   return (
     <div className="min-w-0 rounded-xl bg-[var(--slurp-surface-raised)] px-2.5 py-2">
       <div className="text-xs text-[var(--slurp-muted)]">{label}</div>
-      <div className="mt-0.5 break-words font-bold capitalize">{value}</div>
+      <div className="mt-0.5 break-words font-bold capitalize">
+        <SlpEditableDetail label={label}>{value}</SlpEditableDetail>
+      </div>
       {hint && <div className="mt-1 text-[0.65rem] leading-snug text-[var(--muted-foreground)]">{hint}</div>}
     </div>
   );
@@ -314,8 +335,32 @@ export function SlurpTierLadder({ tier, className }: { tier: SlurpRapport["tier"
   );
 }
 
-export function SlurpRelationshipPanel({ relationship }: { relationship: NonNullable<SlurpThreadRelationship> }) {
-  const [advanced, setAdvanced] = useState(false);
+export function SlurpRelationshipPanel({
+  relationship,
+  threadId,
+  personaId,
+}: {
+  relationship: NonNullable<SlurpThreadRelationship>;
+  threadId: string | null;
+  personaId: string | null;
+}) {
+  const editKey = `slurp2:details-edit:${personaId}:${threadId}`;
+  const [editable, setEditable] = useState(() => {
+    try {
+      return localStorage.getItem(editKey) === "true";
+    } catch {
+      return false;
+    }
+  });
+  const [advanced, setAdvanced] = useState(editable);
+  const changeEditable = (value: boolean) => {
+    setEditable(value);
+    try {
+      localStorage.setItem(editKey, String(value));
+    } catch {
+      /* Editing still works without storage. */
+    }
+  };
   const { t: localizeUi } = useUiTranslation();
   const { creatorState, threadState, availability } = relationship;
   const cooling = Boolean(relationship.coolUntil && relationship.coolUntil > new Date().toISOString());
@@ -331,7 +376,12 @@ export function SlurpRelationshipPanel({ relationship }: { relationship: NonNull
   const modifiers = creatorState.modifiers ?? [];
 
   return (
-    <div className="mx-2 mt-1 flex min-h-0 shrink-0 flex-col overflow-hidden rounded-2xl bg-[var(--slurp-surface-raised)] text-xs shadow-[var(--slurp-highlight)]">
+    <SlpMessageDetailsEditor
+      relationship={relationship}
+      threadId={threadId}
+      personaId={personaId}
+      enabled={advanced && editable}
+    >
       <header className="shrink-0 border-b border-[var(--noodle-divider)] p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -400,21 +450,23 @@ export function SlurpRelationshipPanel({ relationship }: { relationship: NonNull
               />
               <div>
                 <p className="mb-1 text-[0.7rem] text-[var(--muted-foreground)]">True right now ({modifiers.length})</p>
-                {modifiers.length === 0 ? (
-                  <p className="text-[0.68rem] text-[var(--muted-foreground)]">Nothing in particular today.</p>
-                ) : (
-                  <ul className="flex flex-wrap gap-1.5">
-                    {modifiers.map((modifier) => (
-                      <li
-                        key={`${modifier.kind}-${modifier.until}`}
-                        title={modifier.source || undefined}
-                        className="rounded-full bg-[color-mix(in_srgb,var(--noodle-accent)_15%,transparent)] px-2 py-0.5 text-[0.65rem] font-bold text-[var(--noodle-accent-foreground)]"
-                      >
-                        {humanizeValue(modifier.kind)}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <SlpEditableDetail label="True right now">
+                  {modifiers.length === 0 ? (
+                    <p className="text-[0.68rem] text-[var(--muted-foreground)]">Nothing in particular today.</p>
+                  ) : (
+                    <ul className="flex flex-wrap gap-1.5">
+                      {modifiers.map((modifier) => (
+                        <li
+                          key={`${modifier.kind}-${modifier.until}`}
+                          title={modifier.source || undefined}
+                          className="rounded-full bg-[color-mix(in_srgb,var(--noodle-accent)_15%,transparent)] px-2 py-0.5 text-[0.65rem] font-bold text-[var(--noodle-accent-foreground)]"
+                        >
+                          {humanizeValue(modifier.kind)}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </SlpEditableDetail>
               </div>
             </PanelSection>
 
@@ -464,6 +516,7 @@ export function SlurpRelationshipPanel({ relationship }: { relationship: NonNull
                   detail="She is not answering until the cool-off ends."
                 />
               )}
+              <Field label="Cool-off until" value={relationship.coolUntil ?? "Not cooling off"} />
               <Meter
                 label="Sexual comfort"
                 value={threadState.sexualComfort}
@@ -500,6 +553,7 @@ export function SlurpRelationshipPanel({ relationship }: { relationship: NonNull
                     .map((entry) => (
                       <DivergingBar
                         key={entry.key}
+                        fieldKey={`contribution:${entry.key}`}
                         label={entry.detail}
                         value={entry.points}
                         max={Math.max(...relationship.contributions.map((row) => Math.abs(row.points)), 1)}
@@ -513,13 +567,13 @@ export function SlurpRelationshipPanel({ relationship }: { relationship: NonNull
               <div className="grid grid-cols-2 gap-2">
                 <Field label="Availability" value={availability.online ? "Available" : "Away"} />
                 <Field label="Activity" value={availability.activity ?? "Nothing recorded"} />
-                {availability.minutesUntilOnline !== null && !availability.online && (
+                {(editable || (availability.minutesUntilOnline !== null && !availability.online)) && (
                   <Field
                     label="Back in"
                     value={
-                      availability.minutesUntilOnline < 60
-                        ? `~${Math.round(availability.minutesUntilOnline)}min`
-                        : `~${Math.round(availability.minutesUntilOnline / 60)}hr`
+                      (availability.minutesUntilOnline ?? 0) < 60
+                        ? `~${Math.round(availability.minutesUntilOnline ?? 0)}min`
+                        : `~${Math.round((availability.minutesUntilOnline ?? 0) / 60)}hr`
                     }
                   />
                 )}
@@ -552,16 +606,36 @@ export function SlurpRelationshipPanel({ relationship }: { relationship: NonNull
                     ["Spent", `${relationship.spentCoins} coins`],
                   ] as const
                 ).map(([term, value]) => (
-                  <div key={term} className="flex justify-between gap-2 border-b border-[var(--noodle-divider)] py-0.5">
+                  <div
+                    key={term}
+                    className={cn(
+                      "flex justify-between gap-2 border-b border-[var(--noodle-divider)] py-0.5",
+                      editable && "flex-col",
+                    )}
+                  >
                     <dt className="text-[var(--muted-foreground)]">{term}</dt>
-                    <dd className="font-bold">{value}</dd>
+                    <dd className="min-w-0 flex-1 text-right font-bold">
+                      <SlpEditableDetail label={term}>{value}</SlpEditableDetail>
+                    </dd>
                   </div>
                 ))}
               </dl>
               <p className="text-[0.65rem] text-[var(--muted-foreground)]">
-                Creator state updated {creatorState.updatedAt}. Conversation state updated {threadState.updatedAt}.
+                Creator state updated{" "}
+                <SlpEditableDetail label="Creator updated at">{creatorState.updatedAt}</SlpEditableDetail>. Conversation
+                state updated{" "}
+                <SlpEditableDetail label="Conversation updated at">{threadState.updatedAt}</SlpEditableDetail>.
               </p>
             </PanelSection>
+            <Toggle
+              compact
+              label={localizeUi("ui.slurp.messages.editDetails")}
+              value={editable}
+              onChange={changeEditable}
+              disabledReason={
+                !threadId || !personaId ? localizeUi("ui.slurp.messages.editDetailsNeedsThread") : undefined
+              }
+            />
           </div>
         ) : (
           <div className="flex flex-col">
@@ -672,6 +746,6 @@ export function SlurpRelationshipPanel({ relationship }: { relationship: NonNull
           </div>
         )}
       </div>
-    </div>
+    </SlpMessageDetailsEditor>
   );
 }

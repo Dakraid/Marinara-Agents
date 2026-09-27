@@ -4554,5 +4554,8 @@
   "ui.slurp.settings.aiBudget.paced": "World work spreads its calls evenly over the day; replies to your own messages are never held back.",
   "ui.slurp.settings.fanTypes.voiceDraft": "Draft voice",
   "ui.slurp.settings.fanTypes.voiceDrafting": "Writing…",
-  "ui.slurp.settings.fanTypes.voiceDraftFailed": "Could not draft a voice."
+  "ui.slurp.settings.fanTypes.voiceDraftFailed": "Could not draft a voice.",
+  "ui.slurp.messages.editDetails": "Edit values and options",
+  "ui.slurp.messages.detailsSaveError": "Could not save the change. Try again.",
+  "ui.slurp.messages.editDetailsNeedsThread": "Start a conversation to edit its details."
 }

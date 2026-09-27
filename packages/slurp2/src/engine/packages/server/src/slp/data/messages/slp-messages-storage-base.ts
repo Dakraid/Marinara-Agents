@@ -1,3 +1,4 @@
+import { slpOverrideRapport } from "../../../../../shared/src/slp/slp-message-details.js";
 // ──────────────────────────────────────────────
 // Storage: Slurp direct messages
 // ──────────────────────────────────────────────
@@ -126,6 +127,10 @@ export function createMessagesStorageBase(context: SlurpMessagesContext) {
       return rows[0] ? context.storage.withFollowUps(mapThread(rows[0])) : null;
     },
     async withFollowUps(thread: SlurpThread): Promise<SlurpThread> {
+      thread = {
+        ...thread,
+        rapport: slpOverrideRapport(thread.rapport, await context.storage.getDetailsOverrides(thread.id)),
+      };
       const rows = await db.select().from(slurpFollowUps).where(eq(slurpFollowUps.threadId, thread.id));
       if (rows.length === 0 && thread.scheduledFollowUps.length > 0) {
         await context.storage.addScheduledFollowUps(thread.id, thread.scheduledFollowUps);
@@ -420,7 +425,9 @@ export function createMessagesStorageBase(context: SlurpMessagesContext) {
       // Apply subscriber boost: subscribers gain rapport 1.5x faster from conversation and effort
       // Arc stat effects on fan loyalty scale here, the one place rapport is scored.
       const gain = await slurp.arcEffectMultiplier(creatorAccountId, "loyalty");
-      return scoreSlurpRapport(facts, messaging.rapportWeights, { subscriberBoost: true, gain });
+      const computed = scoreSlurpRapport(facts, messaging.rapportWeights, { subscriberBoost: true, gain });
+      const thread = await context.storage.getThread(viewerAccountId, creatorAccountId);
+      return thread ? slpOverrideRapport(computed, await context.storage.getDetailsOverrides(thread.id)) : computed;
     },
     /**
      * The facts behind one pair's rapport.

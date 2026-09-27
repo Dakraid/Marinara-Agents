@@ -1,3 +1,4 @@
+import { slpMessageDetailsRoutes } from "./slp-message-details-routes.js";
 import type { FastifyInstance } from "fastify";
 import { slpCommissionsRoutes } from "./commissions/slp-commissions-routes.js";
 import { createSlpMessagesContext } from "./slp-messages-context.js";
@@ -15,6 +16,7 @@ export async function slpMessagesRoutes(
 ) {
   const messaging = createSlpMessagesContext(app, dependencies, messages);
   await slpMessagesThreadRoutes(app, messaging);
+  await slpMessageDetailsRoutes(app, messaging);
   await slpMessagesSendRoutes(app, messaging);
   await slpMessagesCreatorRoutes(app, messaging);
   await slpCommissionsRoutes(app, messaging);

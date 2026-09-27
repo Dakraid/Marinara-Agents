@@ -360,6 +360,24 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.2.78",
+          "date": "2026-09-27",
+          "notes": "- Restyle the update sheet header with a larger animated G face, accent tint and integrated alpha reminder.\n- Replace the cost warning with a direct reminder that Slurp uses background image and text generation.",
+          "highlight": false
+        },
+        {
+          "version": "0.2.77",
+          "date": "2026-09-27",
+          "notes": "- Restore G’s animated face, introduction and alpha reminder in the themed update sheet.\n- Remember Details edit mode per conversation and viewer in this browser. Turning it off keeps saved edits.\n- Expose the displayed state timestamps and conversation cooldown for inline editing too.",
+          "highlight": false
+        },
+        {
+          "version": "0.2.76",
+          "date": "2026-09-27",
+          "notes": "- Added an edit toggle at the bottom of messaging Details → Advanced. Numbers become inline sliders, options become selectors, and context can be edited directly. Calculated values use saved overrides without changing payment records.",
+          "highlight": false
+        },
+        {
           "version": "0.2.75",
           "date": "2026-09-26",
           "notes": "- Fewer selfies and mirror shots: posts now use a propped-up phone, video stills or a friend with the camera more often. Mirror shots are rare, because the image model drew the Creator twice.\n- Pictures no longer show the phone: phone and selfie words are removed from every picture prompt, and the negative prompt names phones and doubled people.\n- Creators copy each other less: a post sees what the other Creators' pictures showed (clothes, room), and its own history lists subjects instead of camera words.\n- More variety: more places, moments, company and post ideas to draw from.\n- From staging 0.2.41: the world tick blocks the Engine much less. Slurp settings are validated once per change instead of on every read, and the tick now pauses between Creators, commissions, and actions so other pages and packages can respond.",
@@ -459,24 +477,6 @@
           "version": "0.2.59",
           "date": "2026-09-25",
           "notes": "- New Story activity preset on the Storylines page: Calm, Lively, or Hands-off sets events, storylines, and shared ideas in one step; your own mix shows as Custom.\n- Creator settings have a Storylines tab for that Creator's storyline overrides. The daily routine now says it sets where the Creator is and when they reply, not post times. Life details show only when post ideas come from the Creator's life, and the old audience mix appears only while it differs from the defaults.",
-          "highlight": false
-        },
-        {
-          "version": "0.2.58",
-          "date": "2026-09-25",
-          "notes": "- Settings are easier to find: Stories & events has a new Storylines page with one \"Start things by themselves\" card for events and storylines, the storyline rules, and Shared ideas; Posting has a new \"What gets posted\" group with post ideas and free teaser posts.\n- Settings that have no effect right now stay visible and say why, for example \"Only for automatic posting\", instead of disappearing. Rarely needed storyline settings sit under Advanced.",
-          "highlight": false
-        },
-        {
-          "version": "0.2.57",
-          "date": "2026-09-25",
-          "notes": "- Clearer names in Settings: arcs, plans, and projects are now called storylines, occasions are events, and the post planner is \"Post ideas come from\". Several help texts were corrected, among them the event automation text, which wrongly said it also starts storylines.",
-          "highlight": false
-        },
-        {
-          "version": "0.2.56",
-          "date": "2026-09-25",
-          "notes": "- A Creator's limits and saved notes no longer drop out of post and message prompts after a week of Beats posts; only the newest few post notes stay active.\n- Beats no longer rejects correct short names such as Mia or Kai, or people an arc chapter or a callback names, so fewer posts are rewritten.\n- Posts that answer a promise or a campaign step keep it when they are retried or rewritten, and prepared posts are only rewritten when the character card or schedule really changed.\n- Several moments saved from one chat without a message id are all kept, and Canon anchors you edited are not replaced by a background read.\n- Smaller Beats fixes: the heat floor matches the card, a named person is never told to be alone, an arc teaser gets no second subject, and a locked post's moment is never a callback in a public post.",
           "highlight": false
         }
       ]

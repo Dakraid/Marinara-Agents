@@ -45,6 +45,11 @@ export function createSlpMessagesContext(
       }
     }
 
+    if (threadId) {
+      const overrides = await messages.getDetailsOverrides(threadId);
+      availability = { ...availability, ...overrides.availability };
+    }
+
     return {
       creatorLastActiveAt: latestPost?.createdAt ?? null,
       creatorLastMessageAt: latestMessage,

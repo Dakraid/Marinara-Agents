@@ -101,7 +101,8 @@ export function startSlurpFollowUpScheduler(app: FastifyInstance, registerStop?:
             const coolingOff = Boolean(thread.coolUntil && thread.coolUntil > new Date().toISOString());
             const source = await slurp.resolveAccountSource(creator);
             const latestPost = await slurp.getNoodlerLatestPublishedPost(creator.id);
-            const availability = source
+            const details = await messages.getDetailsOverrides(thread.id);
+            const naturalAvailability = source
               ? await resolveSlurpCreatorAvailability(
                   createCharactersStorage(app.db),
                   source,
@@ -111,6 +112,7 @@ export function startSlurpFollowUpScheduler(app: FastifyInstance, registerStop?:
                   settings,
                 )
               : { online: true, activity: null, minutesUntilOnline: 0 };
+            const availability = { ...naturalAvailability, ...details.availability };
             const quiet = settings.nightQuiet && isCreatorNightQuietTime(new Date());
             if (coolingOff || quiet || (!availability.online && availability.minutesUntilOnline !== null)) {
               const delayMinutes = coolingOff
