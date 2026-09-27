@@ -51,3 +51,8 @@ assert.doesNotMatch(
   "Refresh now is not greyed out by the schedule switch",
 );
 assert.match(en["ui.slurp.settings.audience.enabledDetail"] ?? "", /Refresh now still/u);
+
+// ── Plane 236: the Creator Overview names the storyline that is running, not only a count ──
+const overview = pkg("client/src/slp/features/creators/settings/SlpCreatorOverviewSection.tsx");
+assert.match(overview, /const runningProjects = projects\.filter\(\(project\) => project\.status === "active"\);/u);
+assert.match(overview, /runningProjects\.map\(\(project\) => \(\s*<p key=\{project\.id\}[^>]*>\s*\{project\.title\}/u);

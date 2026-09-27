@@ -71,7 +71,8 @@ export function SlpCreatorOverviewSection({ creator, active }: SlpCreatorSetting
         : []),
   ];
 
-  const running = projects.filter((project) => project.status === "active").length;
+  const runningProjects = projects.filter((project) => project.status === "active");
+  const running = runningProjects.length;
   const suggested = projects.filter((project) => project.status === "suggested").length;
 
   return (
@@ -171,6 +172,12 @@ export function SlpCreatorOverviewSection({ creator, active }: SlpCreatorSetting
           block="storylines"
         >
           <p>{t("ui.slurp.settings.creators.overview.running", { count: running })}</p>
+          {/* Which storyline, not only how many: the Creator's current story at a glance. */}
+          {runningProjects.map((project) => (
+            <p key={project.id} className="truncate font-semibold text-[var(--slurp-text)]">
+              {project.title}
+            </p>
+          ))}
           {suggested > 0 && <p>{t("ui.slurp.settings.creators.overview.suggested", { count: suggested })}</p>}
         </StatusTile>
         <StatusTile title={t("ui.slurp.settings.creators.tabs.memory", { defaultValue: "Memory" })} block="continuity">
