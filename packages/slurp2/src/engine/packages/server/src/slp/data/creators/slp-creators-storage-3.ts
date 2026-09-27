@@ -349,7 +349,13 @@ export function createCreatorsStorage3(context: SlurpStorageContext) {
           gender: stageProfile.gender,
           tags: stageProfile.tags,
         },
-        scheduler: { autoPosting: defaultAutoPostingSettings() },
+        // "Enable images for new creators" applies to every new Creator, not only the wizard's (R1-123).
+        scheduler: {
+          autoPosting: {
+            ...defaultAutoPostingSettings(),
+            imagesEnabled: (await this.getSettings()).autoPostingImagesEnabled === true,
+          },
+        },
         ...(slurpStageFacts(stageProfile) && {
           stage: slurpStageFacts(stageProfile)!,
         }),

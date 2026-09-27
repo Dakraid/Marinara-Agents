@@ -197,7 +197,8 @@ function SlpPromptPipelineBlock({
                 {enabled
                   ? shownText ||
                     t("ui.slurp.settings.prompts.previewEmpty", {
-                      defaultValue: "This block adds nothing until runtime context is available.",
+                      defaultValue:
+                        "Filled in when this prompt runs, from the Creator and the moment. The live preview covers the post prompt.",
                     })
                   : t("ui.slurp.settings.prompts.blockDisabled", { defaultValue: "Disabled" })}
               </pre>

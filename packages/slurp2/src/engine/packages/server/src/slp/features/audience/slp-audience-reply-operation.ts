@@ -16,6 +16,7 @@
  * decided by the same rapport the rest of the system runs on, so a regular who asked a real
  * question gets a real answer and a passer-by does not.
  */
+import { claimSlurpModelBudget, slurpModelWorkerAllows } from "../../base/model/slp-model-worker.js";
 import type { DB } from "../../../db/connection.js";
 import { logger } from "../../../lib/logger.js";
 import { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
@@ -50,7 +51,13 @@ const RECENT_POSTS_PER_CREATOR = 4;
 export async function drainSlurpAudienceReplies(db: DB, limit = MAX_PER_DRAIN): Promise<number> {
   const noodle = createSlurpStorage(db);
   const settings = await noodle.getSettings();
-  const connection = await resolveSlurpTextConnection(createConnectionsStorage(db), settings.generationConnectionId);
+  // A written answer is a model call like any other: it follows the AI budget's mode, its
+  // connection and its daily caps (R1-105). It only runs with the player present.
+  if (!slurpModelWorkerAllows(settings.modelBudget, "present")) return 0;
+  const connection = await resolveSlurpTextConnection(
+    createConnectionsStorage(db),
+    settings.modelBudget.connectionId ?? settings.generationConnectionId,
+  );
   if (!connection) return 0;
 
   const population = createSlurpPopulationStorage(db);
@@ -103,6 +110,10 @@ export async function drainSlurpAudienceReplies(db: DB, limit = MAX_PER_DRAIN): 
       );
       if (claim.status === "exhausted") return written;
       if (claim.status !== "claimed") continue;
+      if (!(await claimSlurpModelBudget(db, settings.modelBudget, "thread"))) {
+        await noodle.releaseNoodlerCreatorReplyClaim(claim.claimId).catch(() => undefined);
+        return written;
+      }
 
       const locked = await tryCreatorAccountOperation(creator.id, async () => {
         try {

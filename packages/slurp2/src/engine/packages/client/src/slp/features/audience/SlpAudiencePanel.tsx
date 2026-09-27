@@ -501,7 +501,16 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
             <Field
               settingKey="fanActivityRunsPerDay"
               label={t("ui.slurp.settings.audience.runsPerDay")}
-              detail={t("ui.slurp.settings.audience.runsPerDayDetail")}
+              detail={
+                // The "Comment threads" AI budget caps the runs; say so instead of capping silently (R1-104).
+                settings.fanActivityRunsPerDay > settings.modelBudget.jobs.thread.maxPerDay
+                  ? t("ui.slurp.settings.audience.runsPerDayCapped", {
+                      count: settings.modelBudget.jobs.thread.maxPerDay,
+                      defaultValue:
+                        "Your AI budget allows {{count}} a day. Raise Comment threads under AI budget for more.",
+                    })
+                  : t("ui.slurp.settings.audience.runsPerDayDetail")
+              }
             >
               <NumberSetting
                 value={settings.fanActivityRunsPerDay}

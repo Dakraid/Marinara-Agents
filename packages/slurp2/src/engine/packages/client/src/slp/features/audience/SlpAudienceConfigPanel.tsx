@@ -192,7 +192,8 @@ export function SlurpAudienceConfigSettings({
 
         <SettingsGroup title={t("ui.slurp.settings.aiBudget.jobs", { defaultValue: "Text jobs" })}>
           <div className="space-y-3">
-            {SLURP_MODEL_JOB_KINDS.map((kind) => {
+            {/* No Slurp path drafts fan type voices with the model yet, so that row would switch nothing (R1-107). */}
+            {SLURP_MODEL_JOB_KINDS.filter((kind) => kind !== "fan_type_voice").map((kind) => {
               const policy = budget.jobs[kind];
               return (
                 <div key={kind} className="rounded-lg border border-[var(--border)] p-3">

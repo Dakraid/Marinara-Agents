@@ -122,7 +122,7 @@ export function createProjectsStorage2(context: SlurpStorageContext) {
       const config = resolveSlurpArcConfig(settings, await this.getArcConfig(creatorAccountId));
       if (config.autoMode === "off") return null;
       const creator = await this.getNoodlerAccountById(creatorAccountId, { includeHidden: true });
-      const roll = async () => {
+      const roll = async (source = config.source) => {
         const projects = await this.listProjects(creatorAccountId);
         // ponytail: reads every Creator's projects per roll (O(n²) per maintenance tick); pass the count in from the world tick if Creator counts grow large.
         let concurrentAuto = 0;
@@ -141,7 +141,7 @@ export function createProjectsStorage2(context: SlurpStorageContext) {
           createdAt: creator?.createdAt ?? null,
           concurrentAuto,
           maxConcurrentAuto: settings.arcMaxConcurrentAuto,
-          source: config.source,
+          source,
         });
         return { pick, projects };
       };
@@ -159,9 +159,16 @@ export function createProjectsStorage2(context: SlurpStorageContext) {
         // so another arc started meanwhile still counts against the cap and the cooldown.
         const raw = await generate(creatorAccountId, partnerId ? [partnerId] : []).catch(() => null);
         project = slurpGeneratedArcProject(newId(), raw, at, { origin: "auto", status });
-        if (!project) return null;
         ({ pick, projects } = await roll());
         if (!pick) return null;
+        // The budget refused the call (the default AI mode does for unattended work) or it failed:
+        // the Creator still gets a storyline, from the library (R1-108).
+        if (!project) {
+          ({ pick, projects } = await roll("library"));
+          if (!pick || !("type" in pick)) return null;
+          project = makeSlurpProject(newId(), { type: pick.type, origin: "auto" }, at);
+          if (project) project = { ...project, status };
+        }
       }
       if (!project) return null;
       project = slurpCrossoverStart(project, partnerId ? [creatorAccountId, partnerId] : []);

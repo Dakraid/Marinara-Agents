@@ -194,7 +194,13 @@ export function SlpBackstageShell({
                       ? t("ui.slurp.settings.saveState.error")
                       : saveState === "saved"
                         ? t("ui.slurp.settings.saveState.saved")
-                        : t("ui.slurp.settings.autoSave")}
+                        : // Only Overview saves each switch at once; every other page stages edits
+                          // until "Apply changes" (R1-129).
+                          section === "overview"
+                          ? t("ui.slurp.settings.autoSave")
+                          : t("ui.slurp.settings.stagedSave", {
+                              defaultValue: "Changes wait for Apply changes.",
+                            })}
                 </p>
                 <SlurpBackstageSearch
                   onSelect={(nextSection, nextTarget, settingKey) =>

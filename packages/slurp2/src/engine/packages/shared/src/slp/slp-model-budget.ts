@@ -33,7 +33,8 @@ export const slurpModelBudgetSchema = z
       .object({
         dm_reply: jobPolicy(1, 40),
         rewrite: jobPolicy(2, 12),
-        thread: jobPolicy(3, 6),
+        // 8 = the default "Runs per day", so the shipped audience is not capped below itself (R1-104).
+        thread: jobPolicy(3, 8),
         brief: jobPolicy(4, 6),
         bank_grow: jobPolicy(5, 2),
         arc: jobPolicy(6, 2),

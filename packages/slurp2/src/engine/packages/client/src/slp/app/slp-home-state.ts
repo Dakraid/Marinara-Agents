@@ -69,12 +69,13 @@ import { useSlpPostCardController } from "../modules/post/SlpPostHooks";
 import type { ImagePromptReviewItem } from "../../components/ui/ImagePromptReviewModal";
 import type { SlurpNavigationState } from "../base/navigation/slp-navigation.types";
 import { useTranslation as useUiTranslation } from "react-i18next";
-import { confirmLeaveSlurpBackstage } from "../features/backstage/SlpBackstageControls";
+import { useSlpBackstageLeaveGuard } from "../features/backstage/SlpBackstageControls";
 import { SLP_PERSONA_SWITCHER_PAGE_SIZE } from "../base/chrome/SlpChrome";
 import { toast } from "sonner";
 import { slurp2SplashPending } from "../features/onboarding/SlpSplash";
 import type { SlurpHomeProps } from "./slp-home.types";
-export function useSlurpHomeBaseState({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
+export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onLeave }: SlurpHomeProps) {
+  const onNavigate = useSlpBackstageLeaveGuard(navigation, navigateRaw);
   const { t: localizeUi } = useUiTranslation();
   const creatorView = navigation.mode === "creator" ? navigation.view : null;
   const viewerSurfaceActive = creatorView !== null && ["hub", "search", "profile"].includes(creatorView);
@@ -224,7 +225,6 @@ export function useSlurpHomeBaseState({ navigation, onNavigate, onLeave }: Slurp
       tone: "destructive",
     });
   const exitToCreatorHub = async () => {
-    if (navigation.mode === "creator-settings" && !(await confirmLeaveSlurpBackstage(localizeUi))) return;
     if (!(await confirmDiscardProfileDraft())) return;
     if (!(await confirmDiscardNoodlerPostDrafts())) return;
     clearProfileEditorState();

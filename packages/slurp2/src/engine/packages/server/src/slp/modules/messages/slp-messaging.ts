@@ -489,12 +489,18 @@ export function splitSlurpReplyBurst(content: string, allow: boolean, limit = 3)
     else sentences.push(part);
   }
   if (sentences.length < 2) return [trimmed];
-  // Pack into at most `limit` bubbles, keeping them roughly even so one is not a single word.
-  const target = Math.min(limit, Math.max(2, Math.round(sentences.length / 2)));
-  const perBubble = Math.ceil(sentences.length / target);
+  // Aim at `limit` (the player's "up to this many"), one sentence or more per bubble, but keep each
+  // bubble worth sending: about 20 characters or more. Halving the sentences first meant a limit of
+  // 3 or 4 almost never applied (R1-003).
+  let target = Math.min(limit, sentences.length);
+  while (target > 2 && trimmed.length / target < 20) target -= 1;
+  if (target < 2) return [trimmed];
+  // Spread the sentences evenly, so a limit of 4 over 4 sentences really sends four.
   const bubbles: string[] = [];
-  for (let index = 0; index < sentences.length; index += perBubble) {
-    bubbles.push(sentences.slice(index, index + perBubble).join(" "));
+  for (let index = 0; index < target; index += 1) {
+    const from = Math.floor((index * sentences.length) / target);
+    const to = Math.floor(((index + 1) * sentences.length) / target);
+    bubbles.push(sentences.slice(from, to).join(" "));
   }
   return bubbles.filter(Boolean);
 }

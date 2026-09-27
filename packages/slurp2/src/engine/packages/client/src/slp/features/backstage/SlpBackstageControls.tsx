@@ -1,5 +1,5 @@
 import { Check, X } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { showConfirmDialog } from "../../../lib/app-dialogs";
@@ -83,4 +83,26 @@ export function confirmLeaveSlurpBackstage(
     cancelLabel: t("ui.slurp.settings.backstage.leave.stay", { defaultValue: "Stay" }),
     tone: "destructive",
   });
+}
+
+/**
+ * Navigation that asks before it drops staged settings. Only "Back to Slurp" asked; leaving through
+ * Profile, Inbox, Discover, Wallet or Studio lost the edits without a word (R1-130). Stable across
+ * renders, so it can sit in effect dependency lists like the plain callback it wraps.
+ */
+export function useSlpBackstageLeaveGuard<Target extends { mode: string }>(
+  navigation: { mode: string },
+  navigate: (next: Target) => void,
+): (next: Target) => void {
+  const { t } = useTranslation();
+  const latest = useRef({ navigation, navigate, t });
+  latest.current = { navigation, navigate, t };
+  const [guarded] = useState(() => (next: Target) => {
+    const { navigation: current, navigate: go, t: translate } = latest.current;
+    if (current.mode !== "creator-settings" || next.mode === "creator-settings") return go(next);
+    void confirmLeaveSlurpBackstage(translate as never).then((leave) => {
+      if (leave) latest.current.navigate(next);
+    });
+  });
+  return guarded;
 }

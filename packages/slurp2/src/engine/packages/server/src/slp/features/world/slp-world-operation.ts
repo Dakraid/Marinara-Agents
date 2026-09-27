@@ -141,6 +141,17 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
       /** How many people the world keeps on hand to act. Small: actions per tick are capped anyway. */
       const WORLD_AUDIENCE_POOL = tuning.pulse.poolSize;
       if (activity === 0) {
+        // "Off" silences the world around the Creators, not their own lives: storylines still move
+        // on and start (R1-109). Prices and churn read audience demand, which is frozen with it.
+        for (const account of await noodle.listNoodlerAccounts()) {
+          await yieldToEngine();
+          await noodle.tickProjects(account.id, until).catch(() => []);
+          await noodle
+            .rollAutoArc(account.id, until, (id, partnerIds) =>
+              generateSlurpArc(db, id, partnerIds, "", { kind: "background" }),
+            )
+            .catch(() => null);
+        }
         await writeLastTick(db, until);
         return { status: "idle" as const, actions: 0 };
       }

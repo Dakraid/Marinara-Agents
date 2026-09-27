@@ -110,13 +110,17 @@ export async function replyToSlurpMessage(
   // Occasions may slow or speed replies ("messages.reply-delay"); the editor offered it, nothing read it.
   const replyDelays = {
     ...settingsForDelays,
-    messagesMaxReplyDelayMinutes: Math.max(
-      1,
-      Math.round(
-        settingsForDelays.messagesMaxReplyDelayMinutes *
-          slurpInfluenceMultiplier(settingsForDelays.platformEvents, new Date(), "messages.reply-delay"),
-      ),
-    ),
+    // 0 means "always answer right away" and stays 0; the old floor of 1 queued the reply (R1-004).
+    messagesMaxReplyDelayMinutes:
+      settingsForDelays.messagesMaxReplyDelayMinutes <= 0
+        ? 0
+        : Math.max(
+            1,
+            Math.round(
+              settingsForDelays.messagesMaxReplyDelayMinutes *
+                slurpInfluenceMultiplier(settingsForDelays.platformEvents, new Date(), "messages.reply-delay"),
+            ),
+          ),
   };
   const scheduled = source
     ? await resolveSlurpCreatorAvailability(

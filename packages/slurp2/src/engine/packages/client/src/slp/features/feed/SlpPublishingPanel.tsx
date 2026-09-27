@@ -15,6 +15,7 @@ import { ChoiceSetting, StatusStrip } from "../../modules/settings/SlpSettingsIn
 import { BackstagePageHeader, SettingAnchor } from "../../modules/settings/SlpSettingsKit";
 
 import type { SlurpSettings } from "../settings/slp-settings-contract";
+import { useCreatorAccounts } from "../creators/slp-creators-contract";
 import {
   SLURP_ACTIVITY_PRESETS,
   slurpActivityPresetPatch,
@@ -24,6 +25,10 @@ import type { SlpBackstagePageProps } from "../backstage/slp-backstage-contract"
 
 /** Publishing: how often posts go out, the schedule, carryover and post length. */
 export function SlpPublishingPanel(page: SlpBackstagePageProps) {
+  // Stories need a Creator that draws pictures. The "new creators" default says nothing about the
+  // Creators that already post (R1-124); unknown while the list loads, so nothing locks early.
+  const creatorList = useCreatorAccounts().data;
+  const creatorsDrawPictures = !creatorList || creatorList.some((creator) => creator.autoPosting.imagesEnabled);
   const {
     t,
     updateSettings,
@@ -161,7 +166,7 @@ export function SlpPublishingPanel(page: SlpBackstagePageProps) {
           disabledReason={
             !settings.autoPostingScheduleEnabled
               ? t("ui.slurp.settings.hints.autoPostingOnly")
-              : !settings.autoPostingImagesEnabled
+              : !creatorsDrawPictures
                 ? t("ui.slurp.settings.hints.needsImages")
                 : null
           }
@@ -172,9 +177,7 @@ export function SlpPublishingPanel(page: SlpBackstagePageProps) {
             { value: "often", label: t("ui.slurp.settings.storyRateOften") },
           ]}
           value={settings.storyRate}
-          disabled={
-            updateSettings.isPending || !settings.autoPostingScheduleEnabled || !settings.autoPostingImagesEnabled
-          }
+          disabled={updateSettings.isPending || !settings.autoPostingScheduleEnabled || !creatorsDrawPictures}
           onChange={(value: SlurpSettings["storyRate"]) => void update("storyRate", value)}
         />
         <Toggle
