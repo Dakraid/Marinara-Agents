@@ -1,7 +1,11 @@
 import { randomUUID } from "node:crypto";
 
 import type { SlurpStorageContext } from "../host/slp-storage-context.js";
-import type { SlpEventOccurrence } from "../../../../../shared/src/slp/slp-story-engine.js";
+import type { SlpEventOccurrence, SlpInfluenceTarget } from "../../../../../shared/src/slp/slp-story-engine.js";
+import {
+  slurpInfluenceMultiplier,
+  type SlurpInfluenceStory,
+} from "../../../../../shared/src/slp/slp-platform-events.js";
 import {
   SLP_STORY_FACTS_KEY,
   SLP_STORY_OCCURRENCES_KEY,
@@ -19,6 +23,38 @@ export function createStoryEngineStorage({ settingsStore }: SlurpStorageContext)
   return {
     async listStoryOccurrences() {
       return readSlpOccurrences(await settingsStore.get(SLP_STORY_OCCURRENCES_KEY));
+    },
+    /** Occurrences plus the Creator's tags: what an event influence needs besides the date (R1-112). */
+    async platformInfluenceStory(creatorAccountId?: string): Promise<SlurpInfluenceStory> {
+      const [occurrences, creator] = await Promise.all([
+        this.listStoryOccurrences().catch(() => []),
+        creatorAccountId ? this.getNoodlerAccountById(creatorAccountId).catch(() => null) : null,
+      ]);
+      return {
+        occurrences,
+        creator: creatorAccountId ? { id: creatorAccountId, tags: creator?.settings.profile.tags ?? [] } : undefined,
+      };
+    },
+    /** The running events' multiplier on one target, for one Creator or (no id) for everybody. */
+    async platformInfluenceMultiplier(target: SlpInfluenceTarget, creatorAccountId?: string, at = new Date()) {
+      const settings = await this.getSettings();
+      return slurpInfluenceMultiplier(
+        settings.platformEvents,
+        at,
+        target,
+        await this.platformInfluenceStory(creatorAccountId),
+      );
+    },
+    /**
+     * Settings as the post reserve reads them: "feed.posting-rate" events scale posts per day for
+     * everybody (it is one Slurp-wide setting), inside the setting's own 1–96 range.
+     */
+    async getPostingSettings(at = new Date()) {
+      const settings = await this.getSettings();
+      const rate = await this.platformInfluenceMultiplier("feed.posting-rate", undefined, at);
+      return rate === 1
+        ? settings
+        : { ...settings, postsPerDay: Math.min(96, Math.max(1, Math.round(settings.postsPerDay * rate))) };
     },
     async listStoryFacts() {
       return readSlpStoryFacts(await settingsStore.get(SLP_STORY_FACTS_KEY));

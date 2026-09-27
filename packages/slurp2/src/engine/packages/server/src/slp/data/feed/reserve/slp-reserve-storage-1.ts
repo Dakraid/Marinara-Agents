@@ -197,7 +197,8 @@ export function createReserveStorage1(context: SlurpStorageContext) {
     }): Promise<string | null> {
       const id = newId();
       return db.transaction(async (tx) => {
-        const settings = await this.getSettings();
+        // Posting settings: "feed.posting-rate" events scale posts per day here (R1-112).
+        const settings = await this.getPostingSettings();
         const publishMs = Date.parse(input.publishAt);
         const posts = await tx.select().from(slpPosts).where(eq(slpPosts.authorAccountId, input.creatorAccountId));
         const prepared = await tx
@@ -281,7 +282,8 @@ export function createReserveStorage1(context: SlurpStorageContext) {
     ): Promise<"updated" | "not_found" | "not_future" | "not_editable" | "conflict"> {
       const publishMs = Date.parse(publishAt);
       if (Number.isNaN(publishMs) || publishMs <= at.getTime()) return "not_future";
-      const settings = await this.getSettings();
+      // Posting settings: "feed.posting-rate" events scale posts per day here (R1-112).
+      const settings = await this.getPostingSettings();
       let mediaPath: string | null = null;
       const result = await db.transaction(async (tx) => {
         const current = (await tx.select().from(slpCreatorPreparedPosts).where(eq(slpCreatorPreparedPosts.id, id)))[0];
@@ -386,7 +388,8 @@ export function createReserveStorage1(context: SlurpStorageContext) {
     },
     async discardPreparedPostsAfterManualPost(creatorAccountId: string, manualCreatedAt: string): Promise<number> {
       const start = Date.parse(manualCreatedAt);
-      const settings = await this.getSettings();
+      // Posting settings: "feed.posting-rate" events scale posts per day here (R1-112).
+      const settings = await this.getPostingSettings();
       const end = start + slurpCreatorPostingIntervalMs(settings.postsPerDay);
       const rows = await db
         .select()

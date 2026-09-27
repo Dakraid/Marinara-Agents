@@ -16,6 +16,10 @@ import {
   cleanSlpFanVoiceDraft,
   slpFanVoiceDraftSchema,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/audience/slp-fan-voice-draft.ts";
+import {
+  slurpInfluenceMultiplier,
+  slurpPlatformEventsDefault,
+} from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-platform-events.ts";
 import { slurp2Source } from "./slurp2-source.ts";
 
 const root = "packages/slurp2/src/engine/packages";
@@ -149,5 +153,61 @@ for (const key of [
   ])
     assert.doesNotMatch(readSlurp2Source("client", file), new RegExp(`\\b${key}\\b`, "u"), `${file}: ${key}`);
 }
+
+// R1-112: influences follow occurrences and targets, and every target has a reader.
+const valentines = slurpPlatformEventsDefault().find((event) => event.id === "valentines")!;
+const growthEvent = {
+  ...valentines,
+  influences: [{ target: "audience.growth" as const, operation: "multiply" as const, value: 2 }],
+};
+const onDay = new Date(Date.UTC(2026, 1, 14, 12));
+const offDay = new Date(Date.UTC(2026, 2, 3, 12));
+const occurrence = (status: string, participantIds: string[] = [], at = onDay) => ({
+  blueprintId: "valentines",
+  status,
+  participantIds,
+  startsAt: new Date(at.getTime() - 3600e3).toISOString(),
+  endsAt: new Date(at.getTime() + 3600e3).toISOString(),
+});
+const growth = (at: Date, story = {}) => slurpInfluenceMultiplier([growthEvent], at, "audience.growth", story);
+assert.equal(growth(onDay), 2, "on its date with no occurrence yet");
+assert.equal(growth(offDay), 1);
+assert.equal(growth(onDay, { occurrences: [occurrence("dismissed")] }), 1, "a dismissed occurrence stops it");
+assert.equal(growth(onDay, { occurrences: [occurrence("suggested")] }), 1, "a suggestion does not run");
+assert.equal(
+  growth(offDay, { occurrences: [occurrence("active", [], offDay)] }),
+  2,
+  "a started manual event runs off-date",
+);
+const aimed = { occurrences: [occurrence("active", ["c1"])] };
+assert.equal(growth(onDay, { ...aimed, creator: { id: "c1" } }), 2, "its participant");
+assert.equal(growth(onDay, { ...aimed, creator: { id: "c2" } }), 1, "not another Creator");
+assert.equal(growth(onDay, aimed), 1, "a Slurp-wide reader only counts events for everybody");
+const selected = { ...growthEvent, target: { kind: "selected" as const, creatorIds: ["c1"] } };
+assert.equal(
+  slurpInfluenceMultiplier([selected], onDay, "audience.growth", { creator: { id: "c2" } }),
+  1,
+  "date fallback honours targets",
+);
+const readers: [string, RegExp][] = [
+  [
+    "data/projects/slp-projects-storage-1.ts",
+    /growth: "audience\.growth",\s*earnings: "economy\.creator-earnings",\s*loyalty: "audience\.loyalty"/u,
+  ],
+  ["data/host/slp-storage-context.ts", /"economy\.creator-earnings", \{/u],
+  ["features/world/slp-world-operation.ts", /platformInfluenceMultiplier\("feed\.reach", account\.id, until\)/u],
+  ["data/world/slp-story-engine-storage.ts", /platformInfluenceMultiplier\("feed\.posting-rate", undefined, at\)/u],
+  ["features/feed/reserve/slp-reserve-operation.ts", /await noodle\.getPostingSettings\(at\)/u],
+  [
+    "features/messages/slp-message-operation.ts",
+    /"messages\.reply-delay",\s*await slurp\.platformInfluenceStory\(creator\.id\)/u,
+  ],
+  ["features/audience/slp-fan-activity-operation.ts", /"audience\.activity", story\)/u],
+  [
+    "data/economy/slp-economy-storage-2.ts",
+    /slurpPlatformEventModifierSource\(\s*settings\.platformEvents,\s*await this\.platformInfluenceStory\(creatorAccountId\),?\s*\)/u,
+  ],
+];
+for (const [file, pattern] of readers) assert.match(readSlurp2Source("server", file), pattern, file);
 
 console.log("slurp2 fix phase 1b: ok");

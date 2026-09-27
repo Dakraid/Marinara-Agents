@@ -286,32 +286,78 @@ export function slurpRunningPlatformEventIds(
   ]);
 }
 
-export function slurpActivePlatformInfluences(events: readonly SlurpPlatformEvent[], at: Date): SlpInfluence[] {
-  return slurpActivePlatformEvents(events, at).flatMap((item) =>
-    item.influences.map((effect) => ({
-      ...effect,
-      source: { kind: "platform-event" as const, id: item.id, label: item.name },
-    })),
+/**
+ * What an influence needs to know besides the date (R1-112): the story engine's occurrences (a started
+ * manual event runs, a dismissed or suggested one does not) and the Creator it is read for (targets).
+ * With no Creator only events aimed at everybody count.
+ */
+export type SlurpInfluenceStory = {
+  occurrences?: readonly Pick<
+    SlurpStoryPromptState["occurrences"][number],
+    "blueprintId" | "status" | "startsAt" | "endsAt" | "participantIds"
+  >[];
+  creator?: { id: string; tags?: readonly string[] };
+};
+
+/** The influences running at `at` for one Creator, by the same rule as the prompt and "Running now". */
+export function slurpActivePlatformInfluences(
+  events: readonly SlurpPlatformEvent[],
+  at: Date,
+  story: SlurpInfluenceStory = {},
+): SlpInfluence[] {
+  const now = at.getTime();
+  const { creator } = story;
+  const current = (story.occurrences ?? []).filter(
+    (item) => Date.parse(item.startsAt) <= now && now < Date.parse(item.endsAt),
   );
+  const decided = new Set(current.map((item) => item.blueprintId));
+  const started = new Set(
+    current
+      .filter(
+        (item) =>
+          item.status === "active" &&
+          (item.participantIds.length === 0 || (creator !== undefined && item.participantIds.includes(creator.id))),
+      )
+      .map((item) => item.blueprintId),
+  );
+  const dated = new Set(
+    slurpActivePlatformEvents(events, at)
+      .filter((item) => !decided.has(item.id) && slurpPlatformEventTargets(item, creator))
+      .map((item) => item.id),
+  );
+  return events
+    .filter((item) => item.enabled && (started.has(item.id) || dated.has(item.id)))
+    .flatMap((item) =>
+      item.influences.map((effect) => ({
+        ...effect,
+        source: { kind: "platform-event" as const, id: item.id, label: item.name },
+      })),
+    );
 }
 
 /**
- * Product of the active "multiply" influences on one target. Occasions could set reply delay,
- * audience activity, and other targets in the editor, but only subscription price was ever read.
+ * Product of the running "multiply" influences on one target for one Creator. Every target the editor
+ * offers is read somewhere (R1-112): growth, loyalty and earnings next to the storyline effects, reach
+ * in the world tick, posting rate in the post reserve, activity, reply delay and subscription price.
  */
 export function slurpInfluenceMultiplier(
   events: readonly SlurpPlatformEvent[],
   at: Date,
   target: SlpInfluence["target"],
+  story: SlurpInfluenceStory = {},
 ): number {
-  return slurpActivePlatformInfluences(events, at)
+  return slurpActivePlatformInfluences(events, at, story)
     .filter((effect) => effect.target === target && effect.operation === "multiply")
     .reduce((product, effect) => product * effect.value, 1);
 }
 
 /** Compatibility adapter for the original subscription-price modifier seam. */
-export function slurpActivePlatformEventModifiers(events: readonly SlurpPlatformEvent[], at: Date): SlpModifier[] {
-  return slurpActivePlatformInfluences(events, at).flatMap((effect) =>
+export function slurpActivePlatformEventModifiers(
+  events: readonly SlurpPlatformEvent[],
+  at: Date,
+  story: SlurpInfluenceStory = {},
+): SlpModifier[] {
+  return slurpActivePlatformInfluences(events, at, story).flatMap((effect) =>
     effect.target === "economy.subscription-price"
       ? [
           {
@@ -325,6 +371,9 @@ export function slurpActivePlatformEventModifiers(events: readonly SlurpPlatform
   );
 }
 
-export function slurpPlatformEventModifierSource(events: readonly SlurpPlatformEvent[]): SlpModifierSource {
-  return (at) => slurpActivePlatformEventModifiers(events, at);
+export function slurpPlatformEventModifierSource(
+  events: readonly SlurpPlatformEvent[],
+  story: SlurpInfluenceStory = {},
+): SlpModifierSource {
+  return (at) => slurpActivePlatformEventModifiers(events, at, story);
 }

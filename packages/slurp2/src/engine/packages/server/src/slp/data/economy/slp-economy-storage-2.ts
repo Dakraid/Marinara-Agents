@@ -296,7 +296,12 @@ export function createEconomyStorage2(context: SlurpStorageContext) {
       if (!settings.walletEnabled) return 0;
       return slurpSubscriptionCharge(
         base,
-        createSlpActiveModifierProvider([slurpPlatformEventModifierSource(settings.platformEvents)]),
+        createSlpActiveModifierProvider([
+          slurpPlatformEventModifierSource(
+            settings.platformEvents,
+            await this.platformInfluenceStory(creatorAccountId),
+          ),
+        ]),
         at,
       );
     },

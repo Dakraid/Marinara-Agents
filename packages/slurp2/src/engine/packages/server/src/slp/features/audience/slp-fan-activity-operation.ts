@@ -1,5 +1,8 @@
 import type { SlpAuthorSnapshot } from "../../../../../shared/src/slp/slp-social.types.js";
-import { slurpInfluenceMultiplier } from "../../../../../shared/src/slp/slp-platform-events.js";
+import {
+  slurpInfluenceMultiplier,
+  type SlurpInfluenceStory,
+} from "../../../../../shared/src/slp/slp-platform-events.js";
 import type { DB } from "../../../db/connection.js";
 import { eq } from "../../../db/file-query.js";
 import { slpCreatorFanActivityState } from "../../../db/schema/slurp.js";
@@ -72,10 +75,14 @@ export function slpCreatorFanActivityRunLimit(
   settings: Pick<SlurpSettings, "fanActivityRunsPerDay" | "modelBudget"> &
     Partial<Pick<SlurpSettings, "platformEvents">>,
   at = new Date(),
+  /** Occurrences, so a started manual event counts and a dismissed one does not (R1-112). */
+  story: SlurpInfluenceStory = {},
 ) {
   // Occasions may raise or lower audience activity ("audience.activity"); the budget cap still wins.
+  // The day plan is shared by every Creator, so only events aimed at everybody move it.
   const boosted = Math.round(
-    settings.fanActivityRunsPerDay * slurpInfluenceMultiplier(settings.platformEvents ?? [], at, "audience.activity"),
+    settings.fanActivityRunsPerDay *
+      slurpInfluenceMultiplier(settings.platformEvents ?? [], at, "audience.activity", story),
   );
   return Math.min(boosted, settings.modelBudget.jobs.thread.maxPerDay);
 }
@@ -256,7 +263,7 @@ async function reconcilePlan(db: DB, settings: SlurpSettings, at: Date) {
     await readCurrentPlan(db, at),
     eligibleIds,
     at,
-    slpCreatorFanActivityRunLimit(settings),
+    slpCreatorFanActivityRunLimit(settings, at, await noodle.platformInfluenceStory()),
   );
   await writePlan(db, plan);
   return plan;
@@ -489,7 +496,8 @@ export async function runCreatorFanActivity(input: {
 
 export async function getCreatorFanActivityStatus(db: DB, at = new Date()) {
   const plan = await readCurrentPlan(db, at);
-  const settings = await createSlurpStorage(db).getSettings();
+  const storage = createSlurpStorage(db);
+  const settings = await storage.getSettings();
   const automaticRuns = plan?.runs.filter((run) => !run.manual) ?? [];
   const lastRun = plan
     ? ([...plan.runs]
@@ -504,7 +512,7 @@ export async function getCreatorFanActivityStatus(db: DB, at = new Date()) {
     localDate: plan?.localDate ?? localPlanDate(at),
     // Skipped runs spent nothing; counting them showed "5/6 used" on days when nothing ran.
     usedRuns: automaticRuns.filter((run) => run.status !== "scheduled" && run.status !== "skipped").length,
-    runLimit: slpCreatorFanActivityRunLimit(settings),
+    runLimit: slpCreatorFanActivityRunLimit(settings, at, await storage.platformInfluenceStory()),
     lastRun,
   };
 }

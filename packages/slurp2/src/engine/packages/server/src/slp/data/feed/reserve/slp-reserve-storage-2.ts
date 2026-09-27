@@ -54,7 +54,8 @@ export function createReserveStorage2(context: SlurpStorageContext) {
   } = context;
   const storage = {
     async publishDueNoodlerPreparedPosts(at = new Date()): Promise<number> {
-      const settings = await this.getSettings();
+      // Posting settings: "feed.posting-rate" events scale posts per day here (R1-112).
+      const settings = await this.getPostingSettings();
       if (!settings.autoPostingScheduleEnabled) return 0;
       const due = (await this.listNoodlerPreparedPosts()).filter(
         (item) => item.state === "prepared" && Date.parse(item.publishAt) <= at.getTime(),
@@ -228,7 +229,8 @@ export function createReserveStorage2(context: SlurpStorageContext) {
       return published;
     },
     async reconcileNoodlerPreparedPosts(at = new Date()): Promise<number> {
-      const settings = await this.getSettings();
+      // Posting settings: "feed.posting-rate" events scale posts per day here (R1-112).
+      const settings = await this.getPostingSettings();
       const repaired = await db.transaction(async (tx) => {
         const [items, posts] = await Promise.all([
           tx.select().from(slpCreatorPreparedPosts),
@@ -372,7 +374,8 @@ export function createReserveStorage2(context: SlurpStorageContext) {
       return repaired + discarded.length;
     },
     async getNoodlerReserveStatus(at = new Date()): Promise<SlurpReserveStatus> {
-      const settings = await this.getSettings();
+      // Posting settings: "feed.posting-rate" events scale posts per day here (R1-112).
+      const settings = await this.getPostingSettings();
       const state = await this.ensureNoodlerReserveState(at);
       const effectiveMs = Date.parse(state.lastObservedBudgetTime);
       const cutoff = effectiveMs - ROLLING_DAY_MS;

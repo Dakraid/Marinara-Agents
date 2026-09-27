@@ -62,6 +62,8 @@ export function createEconomyStorage1(context: SlurpStorageContext) {
     async subscribe(viewerAccountId: string, creatorAccountId: string): Promise<SlpAccountSubscription | null> {
       if (viewerAccountId === creatorAccountId) return null;
       const settings = await this.getSettings();
+      // Only events running for this Creator move the charge (R1-112).
+      const influenceStory = await this.platformInfluenceStory(creatorAccountId);
       return enqueueFinancial(async () => {
         const viewer = await this.getViewer(viewerAccountId);
         if (!viewer) return null;
@@ -206,7 +208,9 @@ export function createEconomyStorage1(context: SlurpStorageContext) {
         const price = settings.walletEnabled
           ? slurpSubscriptionCharge(
               basePrice,
-              createSlpActiveModifierProvider([slurpPlatformEventModifierSource(settings.platformEvents)]),
+              createSlpActiveModifierProvider([
+                slurpPlatformEventModifierSource(settings.platformEvents, influenceStory),
+              ]),
               at,
             )
           : 0;

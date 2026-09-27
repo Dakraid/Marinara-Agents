@@ -122,7 +122,12 @@ export async function replyToSlurpMessage(
             1,
             Math.round(
               settingsForDelays.messagesMaxReplyDelayMinutes *
-                slurpInfluenceMultiplier(settingsForDelays.platformEvents, new Date(), "messages.reply-delay"),
+                slurpInfluenceMultiplier(
+                  settingsForDelays.platformEvents,
+                  new Date(),
+                  "messages.reply-delay",
+                  await slurp.platformInfluenceStory(creator.id),
+                ),
             ),
           ),
   };

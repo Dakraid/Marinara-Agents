@@ -18,6 +18,8 @@ import {
   SlurpProject,
 } from "../../modules/projects/slp-project.js";
 import { slurpArcEffectMultiplier } from "../../modules/projects/slp-arc-progress.js";
+import { SLP_STORY_OCCURRENCES_KEY, readSlpOccurrences } from "../../modules/world/events/slp-story-runtime.js";
+import { slurpInfluenceMultiplier } from "../../../../../shared/src/slp/slp-platform-events.js";
 import { isSlurpCrossover } from "../../modules/projects/slp-project.js";
 import {
   readSlurpCrossoverRef,
@@ -262,8 +264,16 @@ export function createSlurpStorageContext(db: DB) {
     id?: string,
   ) => {
     const settings = normalizeSlurpSettings(await settingsStore.get(SLURP_SETTINGS_KEY));
+    // Storyline effects and platform events aimed at this Creator both move earnings (R1-112).
+    // ponytail: no tags here, so a date-only event aimed at tags misses; occurrences carry tag targets.
+    const occurrences = readSlpOccurrences(await settingsStore.get(SLP_STORY_OCCURRENCES_KEY));
     amount = Math.floor(
-      amount * slurpArcEffectMultiplier(await loadProjects(creatorAccountId), "earnings", settings.arcStatEffects),
+      amount *
+        slurpArcEffectMultiplier(await loadProjects(creatorAccountId), "earnings", settings.arcStatEffects) *
+        slurpInfluenceMultiplier(settings.platformEvents, new Date(), "economy.creator-earnings", {
+          occurrences,
+          creator: { id: creatorAccountId },
+        }),
     );
     const current = readSlurpEarnings(await settingsStore.get(slurpEarningsKey(creatorAccountId)));
     const next = earnCreatorIncome(current, kind, amount, new Date(), note, id);

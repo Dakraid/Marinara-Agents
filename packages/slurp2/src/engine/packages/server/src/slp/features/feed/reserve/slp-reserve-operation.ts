@@ -57,7 +57,8 @@ export function isCreatorNightQuietTime(at: Date): boolean {
 
 export async function prepareNextCreatorReservePost(db: DB, at = new Date()): Promise<SlurpReservePollOutcome> {
   const noodle = createSlurpStorage(db);
-  const settings = await noodle.getSettings();
+  // "feed.posting-rate" events scale posts per day; the reserve storage reads the same value (R1-112).
+  const settings = await noodle.getPostingSettings(at);
   if (!settings.autoPostingScheduleEnabled || settings.postsPerDay <= 0) return "disabled";
   const state = await noodle.ensureNoodlerReserveState(at);
   if (at.getTime() < Date.parse(state.preparationNotBefore)) return "holding";

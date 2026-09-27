@@ -564,7 +564,10 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
               },
               until,
               tuning.reach,
-            ) * (await noodle.arcEffectMultiplier(account.id, "growth")),
+            ) *
+              (await noodle.arcEffectMultiplier(account.id, "growth")) *
+              // "feed.reach" events widen or narrow who sees this Creator's posts (R1-112).
+              (await noodle.platformInfluenceMultiplier("feed.reach", account.id, until)),
           ),
           recentPostIds: slurpQuestionPostIds(
             postsByAccount.get(account.id) ?? [],

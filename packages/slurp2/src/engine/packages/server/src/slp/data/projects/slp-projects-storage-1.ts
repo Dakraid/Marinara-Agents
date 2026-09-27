@@ -360,13 +360,22 @@ export function createProjectsStorage1(context: SlurpStorageContext) {
       await this.recordArcChange(creatorAccountId, current, next);
       return next;
     },
-    /** The running arcs' multiplier for one stat, under `arcStatEffects`. */
+    /**
+     * The running arcs' multiplier for one stat, under `arcStatEffects`, times the platform events
+     * aimed at this Creator on the same stat (R1-112: growth, loyalty and earnings were never read).
+     */
     async arcEffectMultiplier(creatorAccountId: string, stat: SlurpArcEffectStat): Promise<number> {
-      return slurpArcEffectMultiplier(
+      const arcs = slurpArcEffectMultiplier(
         await this.listProjects(creatorAccountId),
         stat,
         (await this.getSettings()).arcStatEffects,
       );
+      const target = {
+        growth: "audience.growth",
+        earnings: "economy.creator-earnings",
+        loyalty: "audience.loyalty",
+      } as const;
+      return arcs * (await this.platformInfluenceMultiplier(target[stat], creatorAccountId));
     },
     /**
      * Apply or reject an arc's pending profile change. Apply writes through the ordinary profile
