@@ -21,6 +21,7 @@ import {
   makeSlurpProject,
 } from "./slp-project.js";
 import { slpArcBlueprintSchema } from "../../../../../shared/src/slp/slp-story-engine.js";
+import { slurpLifeFits, slurpNeverSentences } from "../feed/slp-life-moments.js";
 
 export const SLURP_ARC_TYPE_NAME_MAX_LENGTH = 80;
 
@@ -112,7 +113,66 @@ export const SLURP_ARC_LIBRARY_SEED: readonly SlurpArcType[] = [
     ["going out again", 5, 10],
     ["fine, actually", 4, 8],
   ]),
+  seed("new_look", "A new look", "Changing their look, from being tired of the old one to getting used to the new.", [
+    ["tired of the old look", 2, 4],
+    ["the appointment", 1, 1],
+    ["the reveal", 1, 2],
+    ["getting used to it", 3, 7],
+  ]),
+  seed("busy_season", "Crunch time", "Work piles up, the days get long, and then it is over.", [
+    ["the workload piles up", 2, 4],
+    ["long days", 4, 8],
+    ["the deadline", 1, 2],
+    ["breathing again", 2, 4],
+  ]),
+  seed("new_hobby", "A new hobby", "Trying something new, being bad at it, and sticking with it anyway.", [
+    ["trying it once", 1, 3],
+    ["hooked", 3, 6],
+    ["the first real attempt", 2, 4],
+    ["part of the routine", 4, 8],
+  ]),
+  seed("saving_up", "Saving up", "Putting money aside for one thing they really want.", [
+    ["the goal", 1, 3],
+    ["cutting back", 5, 10],
+    ["a setback", 2, 4],
+    ["finally getting it", 1, 3],
+  ]),
+  seed("family_visit", "Family visiting", "Family comes to stay for a few days.", [
+    ["the announcement", 1, 3],
+    ["getting the place ready", 2, 3],
+    ["the visit", 2, 5],
+    ["quiet again", 1, 3],
+  ]),
 ];
+
+const PARTNER =
+  /\b(partner|girlfriend|boyfriend|wife|husband|fianc\w*|dating|relationship|married|lover|Freundin|Freund|Ehe\w*)\b/iu;
+const FAMILY =
+  /\b(family|mother|father|mom|mum|dad|parents?|sister|brother|siblings?|grandma|grandpa|aunt|uncle|cousin|Mutter|Vater|Eltern|Schwester|Bruder|Familie|Oma|Opa)\b/iu;
+const WORK = /\b(work\w*|jobs?|shifts?|office|boss|clients?|studio|career|Arbeit|Job|Schicht)\b/iu;
+
+/**
+ * What a built-in storyline needs from a Creator's card, and what a "never" sentence would rule
+ * out. A storyline that does not fit a Creator is never started for them on its own: a breakup
+ * needs someone to break up with. Types without an entry fit everyone the tags allow.
+ */
+const ARC_FIT: Readonly<Record<string, { needs?: RegExp; topic?: RegExp }>> = {
+  breakup: { needs: PARTNER, topic: /\b(relationship|dating|breakups?)\b/iu },
+  family_visit: { needs: FAMILY, topic: /\bfamily\b/iu },
+  busy_season: { needs: WORK, topic: /\bwork\w*/iu },
+  new_job: { topic: /\bjobs?\b/iu },
+  fitness: { topic: /\b(gym|work ?outs?|exercis\w*|sports?|fitness)\b/iu },
+  moving: { topic: /\bmov(e|ing)\b/iu },
+  trip: { topic: /\b(travel\w*|trips?)\b/iu },
+  new_look: { topic: /\b(hair\w*|look|makeovers?)\b/iu },
+  saving_up: { topic: /\bsav(e|ing)\b/iu },
+};
+
+/** Whether a library storyline fits this Creator's card (text plus tags). */
+export function slurpArcFitsCreator(type: Pick<SlurpArcType, "id">, creatorText: string): boolean {
+  const rule = ARC_FIT[type.id];
+  return !rule || slurpLifeFits(rule, { text: creatorText, never: slurpNeverSentences(creatorText) });
+}
 
 /**
  * The library for settings stored before it existed. Types left out of the old `arcAllowedKinds`
@@ -130,10 +190,17 @@ export function slurpArcLibraryFromLegacy(allowedKinds: unknown): SlurpArcType[]
 /** Upgrade each saved blueprint independently so one damaged entry cannot erase the library. */
 export function slurpNormalizeArcLibrary(value: unknown, allowedKinds?: unknown): SlurpArcType[] {
   if (!Array.isArray(value)) return slurpArcLibraryFromLegacy(allowedKinds);
-  return value.flatMap((item) => {
+  const library = value.flatMap((item) => {
     const parsed = slpArcBlueprintSchema.safeParse(item);
     return parsed.success ? [parsed.data] : [];
   });
+  // A built-in type added in a later version joins a saved library. Deleting a built-in hides it,
+  // so a type the player removed is still there (hidden) and never comes back on its own.
+  const known = new Set(library.map((type) => type.id));
+  return [
+    ...library,
+    ...SLURP_ARC_LIBRARY_SEED.filter((type) => !known.has(type.id)).map((type) => structuredClone(type)),
+  ];
 }
 
 export const SLURP_ARC_AUTO_MODES = ["off", "suggest", "auto"] as const;
@@ -283,6 +350,8 @@ export function slurpAutoArcPick(input: {
   concurrentAuto?: number;
   maxConcurrentAuto?: number;
   source?: SlurpArcSource;
+  /** The Creator's card text and tags. When given, a type that does not fit them is never picked. */
+  creatorText?: string;
 }): { type: SlurpArcType } | { generated: true } | null {
   if (input.projects.some((project) => project.status === "active" || project.status === "suggested")) return null;
   if (input.maxConcurrentAuto !== undefined && (input.concurrentAuto ?? 0) >= input.maxConcurrentAuto) return null;
@@ -294,7 +363,8 @@ export function slurpAutoArcPick(input: {
       (!input.allowedTypeIds || input.allowedTypeIds.includes(type.id)) &&
       // Knockout: a once-type this Creator already had, in any state, never comes back on its own.
       !(slurpArcTypeIsOnce(type) && input.projects.some((project) => project.typeId === type.id)) &&
-      (type.tags.length === 0 || type.tags.some((tag) => creatorTags.has(tag.toLocaleLowerCase()))),
+      (type.tags.length === 0 || type.tags.some((tag) => creatorTags.has(tag.toLocaleLowerCase()))) &&
+      (input.creatorText === undefined || slurpArcFitsCreator(type, input.creatorText)),
   );
   const source = input.source ?? "library";
   if (allowed.length === 0 && source === "library") return null;

@@ -22,6 +22,7 @@ import {
   slurpGeneratedArcProject,
 } from "../../modules/projects/slp-arc-library.js";
 import { isSlurpCrossover } from "../../modules/projects/slp-project.js";
+import { readSlurpCreatorFitText } from "../creators/slp-flavour-source.js";
 import {
   slurpCrossoverPartner,
   slurpCrossoverStart,
@@ -122,6 +123,10 @@ export function createProjectsStorage2(context: SlurpStorageContext) {
       const config = resolveSlurpArcConfig(settings, await this.getArcConfig(creatorAccountId));
       if (config.autoMode === "off") return null;
       const creator = await this.getNoodlerAccountById(creatorAccountId, { includeHidden: true });
+      // Only a storyline that fits this Creator's card starts on its own (no breakup without a partner).
+      const creatorText = creator
+        ? await readSlurpCreatorFitText(db, { account: creator, source: await this.resolveAccountSource(creator) })
+        : "";
       const roll = async (source = config.source) => {
         const projects = await this.listProjects(creatorAccountId);
         // ponytail: reads every Creator's projects per roll (O(n²) per maintenance tick); pass the count in from the world tick if Creator counts grow large.
@@ -142,6 +147,7 @@ export function createProjectsStorage2(context: SlurpStorageContext) {
           concurrentAuto,
           maxConcurrentAuto: settings.arcMaxConcurrentAuto,
           source,
+          creatorText,
         });
         return { pick, projects };
       };

@@ -119,3 +119,40 @@ export async function resolveSlurpCreatorFlavour(
     return "";
   }
 }
+
+/**
+ * What "does this fit them" is judged on, outside a post (an automatic storyline): the card as it
+ * is now, the anchors, and the Creator's tags. Empty when nothing could be read, which fits only
+ * the storylines that need nothing.
+ */
+export async function readSlurpCreatorFitText(
+  db: DB,
+  input: {
+    account: Pick<SlpAccount, "id"> & { settings: { profile: { tags?: string[] } } };
+    source: Pick<SlpAccount, "kind" | "entityId"> | null;
+  },
+): Promise<string> {
+  try {
+    const card = await readFlavourCard(db, input.source, "open");
+    const anchors = await readAnchors(db, input.account.id);
+    return [
+      card?.card.description ?? "",
+      card?.card.personality ?? "",
+      card?.card.backstory ?? "",
+      ...(anchors
+        ? [
+            ...anchors.people.map((person) => `${person.name} ${person.relation}`),
+            ...anchors.places,
+            ...anchors.work,
+            ...anchors.habits,
+          ]
+        : []),
+      ...(input.account.settings.profile.tags ?? []),
+    ]
+      .filter(Boolean)
+      .join("\n");
+  } catch (error) {
+    logger.warn(error, "[slurp] Could not read the card for a storyline fit check");
+    return "";
+  }
+}

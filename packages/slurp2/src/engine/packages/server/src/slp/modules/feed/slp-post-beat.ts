@@ -85,9 +85,10 @@ export type SlurpBeat = {
   type: SlurpBeatType;
   /**
    * `arc`: the beat is the Creator's active arc chapter, not a card anchor. `steer`: the player's
-   * idea, focus, or pushed topic. Both may change the Creator's life, as their text says.
+   * idea, focus, or pushed topic. Both may change the Creator's life, as their text says. `life`:
+   * a day-to-day life moment (see `slp-life-moments.ts`); like a card beat, it changes nothing lasting.
    */
-  anchorKind: SlurpAnchorKind | "arc" | "steer";
+  anchorKind: SlurpAnchorKind | "arc" | "steer" | "life";
   anchor: string;
   line: string;
   /** Named people in the beat. Empty means alone. */
@@ -431,6 +432,7 @@ export function parseSlurpBeat(raw: unknown): SlurpBeat | null {
       !(
         beat.anchorKind === "arc" ||
         beat.anchorKind === "steer" ||
+        beat.anchorKind === "life" ||
         SLURP_ANCHOR_KINDS.includes(beat.anchorKind as SlurpAnchorKind)
       ) ||
       typeof beat.anchor !== "string" ||

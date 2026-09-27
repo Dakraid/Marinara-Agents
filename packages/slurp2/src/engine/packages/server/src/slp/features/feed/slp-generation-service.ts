@@ -262,6 +262,7 @@ export async function generateCreatorPost(
               day: beatDay,
               steering,
               nudge,
+              life: { account, tags: account.settings.profile.tags ?? [] },
               shared: settings.sharedPreseed
                 ? { tags: account.settings.profile.tags ?? [], worldEvents: settings.sharedWorldEvents }
                 : null,

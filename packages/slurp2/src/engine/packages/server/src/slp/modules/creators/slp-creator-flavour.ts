@@ -24,6 +24,7 @@
 import type { SlpCreatorSteering, SlpSteeringMood } from "../../../../../shared/src/slp/slp-creator-steering.js";
 import type { SlurpCanonAnchors } from "../feed/slp-post-beat.js";
 import { slurpWeightedPick } from "../feed/slp-weighted.js";
+import { SLURP_NEVER_PATTERN } from "../feed/slp-life-moments.js";
 
 export type SlurpFlavourUse = "post" | "story" | "dm" | "comment" | "delivery";
 
@@ -114,12 +115,17 @@ function takeUpTo(sentences: string[], max: number): { taken: string[]; rest: st
 
 const VOICE =
   /\b(say|says|said|talks?|speaks?|swears?|curses?|calls?|voice|accent|slang|laugh|laughs|giggles?|sarcas\w*|teases?|jokes?|emoji|types?|texts?|lowercase|phrase|words?|mumbles?|sings?|whispers?|redet|sagt|flucht|spricht)\b/iu;
-const NEVER = /\b(never|won'?t|refuses?|hates?|can'?t stand|avoids?|dislikes?|nie|niemals|hasst)\b/iu;
 const HABIT =
   /\b(always|often|usually|every (morning|day|night|week)|habit|tends? to|loves?|obsessed|collects?|can'?t help|ständig|immer|liebt)\b/iu;
 
 function cardKind(sentence: string): string {
-  return VOICE.test(sentence) ? "voice" : NEVER.test(sentence) ? "never" : HABIT.test(sentence) ? "habit" : "life";
+  return VOICE.test(sentence)
+    ? "voice"
+    : SLURP_NEVER_PATTERN.test(sentence)
+      ? "never"
+      : HABIT.test(sentence)
+        ? "habit"
+        : "life";
 }
 
 function anchorBits(anchors: SlurpCanonAnchors | null | undefined): Bit[] {

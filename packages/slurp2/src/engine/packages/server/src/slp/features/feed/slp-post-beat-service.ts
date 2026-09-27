@@ -21,6 +21,8 @@ import {
   type SlurpDayMoment,
 } from "../../modules/feed/slp-post-beat.js";
 import { slurpUsableSharedIdeas, type SlurpSharedIdea } from "../../modules/feed/slp-shared-preseed.js";
+import { slurpLifeBeat } from "../../modules/feed/slp-life-moments.js";
+import { readSlurpLifeSignals } from "../../data/feed/slp-life-signals.js";
 import { selectSlurpReference, slurpReferenceCandidates } from "../../modules/feed/slp-post-reference.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { SLURP_CANON_ANCHORS_KEY as ANCHORS_KEY } from "../../data/creators/slp-flavour-source.js";
@@ -41,7 +43,7 @@ import {
   resolveSlurpCreatorScheduleBlocks,
   slurpTimelineMoment,
 } from "../../modules/creators/slp-creator-schedule-context.js";
-import type { SlpCreatorManagedPost } from "../../../../../shared/src/slp/slp-social.types.js";
+import type { SlpAccount, SlpCreatorManagedPost } from "../../../../../shared/src/slp/slp-social.types.js";
 import type { SlpCreatorNudge, SlpCreatorSteering } from "../../../../../shared/src/slp/slp-creator-steering.js";
 
 type SlurpBeatConnection = Parameters<typeof createSlurpPostProvider>[0]["connection"] & { model: string };
@@ -61,6 +63,8 @@ export type SlurpBeatContext = {
   steering?: SlpCreatorSteering | null;
   /** The player's next idea for this Creator. It is this post's beat, ahead of the arc. */
   nudge?: SlpCreatorNudge | null;
+  /** Day-to-day life moments: the account (for what really happened) and its tags (for what fits). */
+  life?: { account: Pick<SlpAccount, "id" | "createdAt">; tags: readonly string[] } | null;
 };
 
 /** Beat facts kept active at once; older ones expire so real notes are not crowded out. */
@@ -214,6 +218,24 @@ export async function planSlurpBeat(
     if (!read) return null;
     const anchors = slurpAnchorsWithout(read, input.context.steering?.avoid ?? []);
     const history = await readSlurpBeatHistory(db, input.accountId, input.at);
+    // A day-to-day life moment takes some ordinary slots: only one that fits this Creator.
+    if (input.context.life) {
+      const { signals, usedLife } = await readSlurpLifeSignals(db, input.context.life.account, input.at);
+      const life = slurpLifeBeat(
+        input.accountId,
+        input.sequence,
+        {
+          text: [input.context.canonText, ...input.context.life.tags].join("\n"),
+          anchors,
+          avoid: input.context.steering?.avoid ?? [],
+        },
+        signals,
+        history,
+        usedLife,
+        input.intents,
+      );
+      if (life) return life;
+    }
     const shared = input.shared
       ? slurpUsableSharedIdeas({ ...input.shared, usedToday: history.sharedToday ?? {} })
       : [];
