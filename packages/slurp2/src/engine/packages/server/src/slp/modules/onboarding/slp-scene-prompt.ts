@@ -199,13 +199,14 @@ export function sanitizeSlpScenePatch(
   for (const field of SLP_SCENE_TEXT_FIELDS) {
     if (locked.has(field) || typeof value[field] !== "string") continue;
     if (context.disclosureMode === "open" && (field === "displayName" || field === "handle")) continue;
-    let text = clampSlurpDraftText(value[field] as string, SLP_SCENE_FIELD_LIMITS[field]);
+    let text = (value[field] as string).trim();
     if (field === "handle") text = text.replace(/^@+/u, "").replace(/\s+/gu, "_");
     if (!text) continue;
     const protectedText = protectCreatorGeneratedIdentity(text, context.disclosureMode, context.publicIdentity) ?? "";
     // A stage name or handle that had to be rewritten is the real name: drop it, never save "you-know-who".
     if ((field === "displayName" || field === "handle") && protectedText !== text) continue;
-    if (protectedText) patch[field] = protectedText;
+    const limited = clampSlurpDraftText(protectedText, SLP_SCENE_FIELD_LIMITS[field]);
+    if (limited) patch[field] = limited;
   }
   if (!locked.has("gender")) {
     const gender = readSlurpDraftGender(value.gender);
@@ -238,10 +239,15 @@ export function readSlpSceneTurn(
     const line = entry as Record<string, unknown>;
     const speaker = line.speaker === "host" ? "host" : line.speaker === "newcomer" ? "newcomer" : null;
     if (!speaker || (speaker === "host" && !context.writesHost)) continue;
-    const text = protectCreatorGeneratedIdentity(
-      typeof line.text === "string" ? clampSlurpDraftText(line.text, SLP_SCENE_LINE_MAX) : "",
-      context.disclosureMode,
-      context.publicIdentity,
+    // Protect first, then cut: the replacement can be longer than the name it replaces, and a
+    // line over the limit would fail every later turn that sends it back.
+    const text = clampSlurpDraftText(
+      protectCreatorGeneratedIdentity(
+        typeof line.text === "string" ? line.text : "",
+        context.disclosureMode,
+        context.publicIdentity,
+      ) ?? "",
+      SLP_SCENE_LINE_MAX,
     );
     if (text) lines.push({ speaker, text });
     if (lines.length === SLP_SCENE_LINES_PER_TURN) break;

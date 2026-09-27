@@ -408,8 +408,18 @@ function SceneStage({
         <div className="px-1 pb-4">{preview(false)}</div>
       </SlpSheet>
       <SlpWizardFooter
-        back={{ label: t("ui.noodle.noodlerwizard.back"), onClick: onBack, disabled: model.registering }}
-        skip={{ label: t("ui.slurp.scene.quick"), onClick: onQuickSetup, disabled: model.registering }}
+        // Once the page is saved (the photo shoot does that), leaving would strand a half-registered
+        // Creator with no limits, first post or kept chat: from here the way out is Finish.
+        back={
+          model.accountId
+            ? undefined
+            : { label: t("ui.noodle.noodlerwizard.back"), onClick: onBack, disabled: model.registering }
+        }
+        skip={
+          model.accountId
+            ? undefined
+            : { label: t("ui.slurp.scene.quick"), onClick: onQuickSetup, disabled: model.registering }
+        }
         primary={
           <SlpPrimaryButton
             disabled={model.busy}

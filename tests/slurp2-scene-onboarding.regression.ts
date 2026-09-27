@@ -44,8 +44,8 @@ let step = applySlpScenePatch(
   "c1",
 );
 assert.ok(step.chip);
-assert.deepEqual(step.chip.fields, ["bio", "tags"], "an unchanged value is not a change");
-assert.deepEqual(step.chip.before, { bio: "", tags: [] });
+assert.deepEqual(step.chip?.fields, ["bio", "tags"], "an unchanged value is not a change");
+assert.deepEqual(step.chip?.before, { bio: "", tags: [] });
 state = step.state;
 assert.equal(state.draft.bio, "Hi, I'm new.");
 assert.equal(applySlpScenePatch(state, { bio: "Hi, I'm new." }, "c-none").chip, null, "no change, no chip");
@@ -340,16 +340,30 @@ assert.ok(
   kept.every((message, i) => i === 0 || message.createdAt > kept[i - 1].createdAt),
   "oldest first",
 );
-assert.ok(kept.at(-1)!.createdAt < now.toISOString(), "all in the past");
+assert.equal(kept.at(-1)!.createdAt, now.toISOString(), "the last line is at now, so the inbox preview moves to it");
 assert.equal(
-  slpSceneThreadMessages({ preset: "friend", hostName: "You", lines: [{ speaker: "host", text: "omg" }], now })[0]
-    .metadata.sceneSpeaker,
+  slpSceneThreadMessages({
+    preset: "friend",
+    hostName: "You",
+    lines: [
+      { speaker: "host", text: "omg" },
+      { speaker: "newcomer", text: "hi" },
+    ],
+    now,
+  })[0].metadata.sceneSpeaker,
   undefined,
   "the friend is the player: no name above their own words",
 );
 assert.equal(
-  slpSceneThreadMessages({ preset: "seat", hostName: "Mira Vale", lines: [{ speaker: "host", text: "hey" }], now })[0]
-    .metadata.sceneSpeaker,
+  slpSceneThreadMessages({
+    preset: "seat",
+    hostName: "Mira Vale",
+    lines: [
+      { speaker: "host", text: "hey" },
+      { speaker: "newcomer", text: "hi" },
+    ],
+    now,
+  })[0].metadata.sceneSpeaker,
   "Mira Vale",
 );
 assert.ok(
@@ -372,6 +386,63 @@ assert.deepEqual(slpSiteWelcomeSetting("names", "open"), { kind: "names", value:
 assert.equal(slpSiteWelcomeSetting("who", "watch"), null);
 for (const [question, options] of Object.entries(SLP_SITE_WELCOME_OPTIONS)) {
   assert.ok(options.length >= 2, `${question} offers a real choice`);
+}
+
+// 15. Review fixes.
+// Undo never removes a newer patch, even one that set the same value again.
+{
+  let undoState = slpSceneInitialState();
+  undoState = applySlpScenePatch(undoState, { bio: "x" }, "A").state;
+  undoState = applySlpScenePatch(undoState, { bio: "y" }, "B").state;
+  undoState = applySlpScenePatch(undoState, { bio: "x" }, "C").state;
+  undoState = undoSlpSceneChip(undoState, "A");
+  assert.equal(undoState.draft.bio, "x", "C still owns the bio");
+  undoState = undoSlpSceneChip(undoState, "C");
+  assert.equal(undoState.draft.bio, "y", "undoing C goes back to B");
+}
+// The kept chat ends on the Creator's last word, and its last line is at now (the inbox preview).
+{
+  const trimmed = slpSceneThreadMessages({
+    preset: "support",
+    hostName: "Slurp Support",
+    lines: [
+      { speaker: "newcomer", text: "hi" },
+      { speaker: "host", text: "Name?" },
+      { speaker: "newcomer", text: "Velvet" },
+      { speaker: "host", text: "Stamped." },
+      { speaker: "host", text: "Welcome." },
+    ],
+    now,
+  });
+  assert.deepEqual(
+    trimmed.map((message) => message.content),
+    ["hi", "Name?", "Velvet"],
+  );
+  assert.equal(trimmed.at(-1)!.createdAt, now.toISOString());
+  assert.deepEqual(
+    slpSceneThreadMessages({ preset: "friend", hostName: "", lines: [{ speaker: "host", text: "hey" }], now }),
+    [],
+    "only host lines: nothing to keep",
+  );
+}
+// A protected line is cut after the rename, so it always fits the next turn's schema.
+{
+  const shortName = { displayName: "Al", handle: "al", sourceIdentifiers: ["Al"] };
+  const longLine = readSlpSceneTurn(
+    { lines: [{ speaker: "newcomer", text: Array.from({ length: 400 }, () => "Al").join(" ") }] },
+    { locked: [], allowedTags: [], disclosureMode: "hinted", publicIdentity: shortName, writesHost: false },
+  );
+  assert.ok(longLine && longLine.lines[0].text.length <= 1200, "protected text still fits 1200");
+  assert.ok(
+    slpSceneTurnRequestSchema.safeParse({
+      preset: "friend",
+      sourceAccountId: "a",
+      disclosureMode: "hinted",
+      moment: "bio",
+      action: { kind: "continue" },
+      transcript: longLine!.lines,
+    }).success,
+  );
 }
 
 console.log("slurp2-scene-onboarding: ok");

@@ -17,7 +17,6 @@ import {
   resolveStoredMaxTokens,
 } from "../../../services/generation/generation-parameters.js";
 import { clampGenerationMaxOutputTokens } from "../../../services/generation/output-token-limits.js";
-import { parseGameJsonish } from "../../../services/game/jsonish.js";
 import { withConnectionFallbackProvider } from "../../../services/llm/connection-fallback-provider.js";
 import { createLLMProvider } from "../../../services/llm/provider-registry.js";
 import { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
@@ -35,15 +34,16 @@ import { slpCreatorPublicIdentityFor } from "../feed/slp-feed-contract.js";
 
 type GenerationConnection = NonNullable<Awaited<ReturnType<ReturnType<typeof createConnectionsStorage>["getWithKey"]>>>;
 
-function readAnswer(content: string): unknown {
-  const answer = content.trim();
+/** The JSON object in an answer (fences and prose around it allowed); jsonrepair for loose quoting. */
+function readAnswer(answer: string): unknown {
+  const start = answer.indexOf("{");
+  const end = answer.lastIndexOf("}");
+  const body = start >= 0 && end > start ? answer.slice(start, end + 1) : answer;
   try {
-    return parseGameJsonish(answer);
+    return JSON.parse(body);
   } catch {
-    const start = answer.indexOf("{");
-    const end = answer.lastIndexOf("}");
     try {
-      return JSON.parse(jsonrepair(start >= 0 && end > start ? answer.slice(start, end + 1) : answer));
+      return JSON.parse(jsonrepair(body));
     } catch {
       return null;
     }

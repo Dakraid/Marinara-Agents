@@ -93,9 +93,18 @@ const slpSceneLineSchema = z
   .strict();
 export type SlpSceneLine = z.infer<typeof slpSceneLineSchema>;
 
+const sceneText = (field: (typeof SLP_SCENE_TEXT_FIELDS)[number]) => z.string().max(SLP_SCENE_FIELD_LIMITS[field]);
 const slpSceneDraftSchema = z
   .object({
-    ...Object.fromEntries(SLP_SCENE_TEXT_FIELDS.map((field) => [field, z.string().max(SLP_SCENE_FIELD_LIMITS[field])])),
+    displayName: sceneText("displayName"),
+    handle: sceneText("handle"),
+    bio: sceneText("bio"),
+    stagePersonality: sceneText("stagePersonality"),
+    appearance: sceneText("appearance"),
+    wardrobe: sceneText("wardrobe"),
+    locations: sceneText("locations"),
+    turnOns: sceneText("turnOns"),
+    hardNoes: sceneText("hardNoes"),
     gender: z.enum(["male", "female", "other"]).nullable(),
     tags: z.array(z.string().max(40)).max(12),
     spice: z.enum(SLP_SCENE_SPICE).nullable(),

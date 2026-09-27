@@ -20,7 +20,9 @@ export async function keepSlpSceneTranscript(
   const opened = await messages.openThread(request.viewerPersonaId, creator.id, "creator", "waive");
   if (opened.status !== "ok") return { status: "skipped" };
   if ((await messages.listMessages(opened.thread.id, 1)).length > 0) return { status: "skipped" };
-  for (const message of slpSceneThreadMessages({ ...request, now: new Date() })) {
+  const kept = slpSceneThreadMessages({ ...request, now: new Date() });
+  if (!kept.length) return { status: "skipped" };
+  for (const message of kept) {
     await messages.appendMessage(opened.thread.id, {
       senderAccountId: message.role === "creator" ? creator.id : request.viewerPersonaId,
       ...message,

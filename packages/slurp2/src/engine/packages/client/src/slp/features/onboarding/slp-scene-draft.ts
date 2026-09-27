@@ -86,6 +86,9 @@ export function undoSlpSceneChip(state: SlpSceneDraftState, chipId: string): Slp
   if (!chip || chip.undone) return state;
   const restore: SlpScenePatch = {};
   for (const field of chip.fields) {
+    // A newer live chip owns the field now, even when it set the same value again.
+    const newest = [...state.chips].reverse().find((entry) => !entry.undone && entry.fields.includes(field));
+    if (newest?.id !== chip.id) continue;
     if (state.locked.includes(field) || !same(state.draft[field], chip.after[field])) continue;
     Object.assign(restore, { [field]: chip.before[field] });
   }
