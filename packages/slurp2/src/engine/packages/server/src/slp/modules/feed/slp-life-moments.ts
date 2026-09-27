@@ -104,7 +104,7 @@ const STYLE =
 const COOKING = /\b(cook\w*|bak(e|es|er|ing)|chef|kitchen|recipes?|food|foodie|Küche|kochen|backen|Backstube)\b/iu;
 const HOME = /\b(home|flat|apartment|room|house|plants?|cat|dog|pet|Wohnung|Zuhause)\b/iu;
 /** A personality that starts or answers drama. Everyone else never gets a drama moment. */
-const DRAMATIC =
+export const SLURP_DRAMATIC =
   /\b(drama\w*|sassy|sass|petty|fiery|hot-?headed|temper\w*|confrontational|jealous|bratty|brat|feisty|outspoken|diva|messy|provocative|savage|shady|bitchy|zickig|frech)\b/iu;
 
 /**
@@ -326,7 +326,7 @@ const POOL: readonly LifeMoment[] = [
     id: "copycat",
     kind: "drama",
     type: "opinion",
-    needs: DRAMATIC,
+    needs: SLURP_DRAMATIC,
     line: "Someone on Slurp is very clearly copying your style, and you have thoughts about it.",
     topic: /\bdrama\b/iu,
     weight: 0.5,
@@ -335,7 +335,7 @@ const POOL: readonly LifeMoment[] = [
     id: "shade",
     kind: "drama",
     type: "opinion",
-    needs: DRAMATIC,
+    needs: SLURP_DRAMATIC,
     line: "Another creator threw a little shade your way, and you answer in your own style.",
     topic: /\bdrama\b/iu,
     weight: 0.5,
@@ -344,7 +344,7 @@ const POOL: readonly LifeMoment[] = [
     id: "misread",
     kind: "drama",
     type: "opinion",
-    needs: DRAMATIC,
+    needs: SLURP_DRAMATIC,
     line: "People misread something you posted, and you set it straight.",
     topic: /\bdrama\b/iu,
     weight: 0.5,

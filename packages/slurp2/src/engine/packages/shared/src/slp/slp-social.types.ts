@@ -434,6 +434,16 @@ export interface SlpCreatorPostView {
   interactions: SlpInteraction[];
   likeCount: number;
   replyCount: number;
+  /** A joint collab post (the partner) or a paid partnership (the brand). Shown even while locked. */
+  partnership?: SlpPostPartnership | null;
+}
+
+/** Who a post was made with: another Creator's page, or a brand that paid for it. */
+export interface SlpPostPartnership {
+  withAccountId: string | null;
+  withName: string | null;
+  withHandle: string | null;
+  brand: string | null;
 }
 
 export interface SlpCreatorViewerCreator {

@@ -134,6 +134,7 @@ export async function planSlurpPost(
           context: ctx.beats,
           intents: isTeaser ? ["teaser"] : ["casual", "set", "behind_the_scenes", "appreciation", "business"],
           at,
+          previewOnly,
           shared:
             ctx.beats.shared && !previewOnly
               ? await slurpSharedIdeasFor(db, {

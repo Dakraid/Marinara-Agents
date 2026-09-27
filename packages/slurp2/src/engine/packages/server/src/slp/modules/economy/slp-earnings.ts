@@ -35,6 +35,8 @@ export type SlurpEarningsEntryKind =
   | "messageRequest"
   | "ppv"
   | "commission"
+  /** A brand paid for a sponsored post. See `slp-brand-deals.ts`. */
+  | "sponsor"
   /** Moved out to spending money. Negative, and it must not touch `lifetime`. */
   | "payout"
   /** A failed charge being undone. Negative. */
@@ -114,6 +116,7 @@ const EARNINGS_ENTRY_KINDS = new Set<SlurpEarningsEntryKind>([
   "messageRequest",
   "ppv",
   "commission",
+  "sponsor",
   "payout",
   "reversal",
 ]);

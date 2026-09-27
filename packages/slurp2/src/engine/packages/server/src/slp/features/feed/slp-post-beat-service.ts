@@ -25,6 +25,7 @@ import { slurpLifeBeat, type SlurpLifeMomentRate } from "../../modules/feed/slp-
 import { readSlurpLifeSignals } from "../../data/feed/slp-life-signals.js";
 import { selectSlurpReference, slurpReferenceCandidates } from "../../modules/feed/slp-post-reference.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
+import { planSlurpTieBeat } from "../projects/slp-projects-contract.js";
 import { SLURP_CANON_ANCHORS_KEY as ANCHORS_KEY } from "../../data/creators/slp-flavour-source.js";
 import {
   normalizeSlurpCanonAnchors,
@@ -213,11 +214,23 @@ export async function planSlurpBeat(
     at: Date;
     /** Level 1 ideas before the daily cap. See `slurpSharedIdeasFor`. */
     shared?: { world: SlurpSharedIdea[]; niche: Record<string, SlurpSharedIdea[]>; topics: string[] } | null;
+    /** A prompt preview: plans nothing for real. */
+    previewOnly?: boolean;
   },
 ): Promise<SlurpBeat | null> {
   try {
     const read = await slurpBeatAnchorsFor(db, input.accountId, input.context, input.at);
     if (input.context.nudge) return slurpNudgeBeat(input.context.nudge, read, input.intents);
+    // A collab they host or a brand deal they took is a commitment; a rivalry post now and then (7b-c).
+    const tie = await planSlurpTieBeat(db, {
+      creatorId: input.accountId,
+      creatorText: input.context.canonText,
+      sequence: input.sequence,
+      intents: input.intents,
+      at: input.at,
+      previewOnly: input.previewOnly,
+    });
+    if (tie) return tie;
     const steered = slurpSteeredBeat(input.accountId, input.sequence, input.context.steering, read, input.intents);
     if (steered) return steered;
     if (!read) return null;

@@ -65,6 +65,8 @@ export type SlurpAccount = Omit<SlpAccount, "settings"> & {
 
 export type SlpCreatorPostPageOptions = {
   accountIds: string[];
+  /** Posts by someone else that belong on this page too: joint collab posts. */
+  extraPostIds?: string[];
   creatorSearchAccountIds?: string[];
   readableContentAccountIds?: string[];
   unlockedPostIds?: string[];

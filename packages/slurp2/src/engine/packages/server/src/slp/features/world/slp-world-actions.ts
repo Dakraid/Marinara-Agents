@@ -13,11 +13,14 @@ import {
   slurpAudienceOpener,
   slurpAudienceQuestion,
   slurpAudienceReactionFrom,
+  slurpRivalryComment,
   SLURP_SHIPPED_TYPE_REACTIONS,
   slurpCommissionBrief,
 } from "../../modules/world/slp-world-copy.js";
 import { slurpReactionBodiesForType, type SlurpReactionBanks } from "../../modules/world/slp-reaction-bank.js";
 import { enqueueSlurpPendingText } from "./slp-pending-text-service.js";
+import { readSlurpTieStamp } from "../../modules/projects/slp-tie-stamp.js";
+import { hash } from "../../modules/projects/slp-project.js";
 import { type SlurpWorldAction } from "../../../../../shared/src/slp/slp-world.js";
 import { slurpPulseTieAdvance, type SlurpPulseAction } from "../../../../../shared/src/slp/slp-world-pulse.js";
 
@@ -137,7 +140,8 @@ export async function applyAction(
       return false;
     }
     const operationId = `audience-unlock:${action.postId}:${actor.id}`;
-    await noodle.creditCreatorIncome(action.creatorAccountId, action.amount, "unlock", operationId);
+    // A collab post pays both pages.
+    await noodle.creditPostIncome(action.postId, action.creatorAccountId, action.amount, "unlock", operationId);
     await population
       .advanceTie(actor.id, action.creatorAccountId, {
         stage: "liker",
@@ -256,13 +260,17 @@ export async function applyPulse(
     : actor.fanTypeId || actor.archetype
       ? slurpResolveFanType(fanTypes, actor).id
       : slurpPickFanType(fanTypes, actor.id).id;
+  const sides = isComment ? await rivalrySides(noodle, action.postId) : null;
   const result = await noodle.createNoodlerWorldInteraction(action.postId, {
     creatorAccountId: action.creatorAccountId,
     actorId: actor.id,
     type: isComment ? "reply" : "like",
     // Tier 1 copy, so this stays free: the pulse runs unattended and must never call the model.
     content: isComment
-      ? slurpAudienceReactionFrom(
+      ? // Under a rivalry post about half the crowd picks a side (7b-c).
+        sides && hash(`${action.postId}:${actor.id}:side`) % 2 === 0
+        ? slurpRivalryComment(`${action.postId}:${actor.id}`, sides.self, sides.rival)
+        : slurpAudienceReactionFrom(
           `${action.postId}:${actor.id}`,
           slurpReactionBodiesForType(banks, fanTypeId, SLURP_SHIPPED_TYPE_REACTIONS[fanTypeId ?? ""] ?? []),
         )
@@ -280,4 +288,19 @@ export async function applyPulse(
   if (!result.created && (!before || !after || after.stage === before.stage)) return false;
   await population.touch(actor.id).catch(() => undefined);
   return true;
+}
+
+/** The two names under a rivalry post, or null for any other post. */
+async function rivalrySides(
+  noodle: ReturnType<typeof createSlurpStorage>,
+  postId: string,
+): Promise<{ self: string; rival: string } | null> {
+  const post = await noodle.getNoodlerPostById(postId).catch(() => null);
+  const stamp = post ? readSlurpTieStamp(post.metadata) : null;
+  if (!post || stamp?.kind !== "rival" || !stamp.partnerId) return null;
+  const [self, rival] = await Promise.all([
+    noodle.getNoodlerAccountById(post.authorAccountId),
+    noodle.getNoodlerAccountById(stamp.partnerId),
+  ]);
+  return self && rival ? { self: self.displayName, rival: rival.displayName } : null;
 }

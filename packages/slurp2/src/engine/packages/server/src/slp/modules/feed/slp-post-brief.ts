@@ -233,7 +233,7 @@ export function checkSlurpBeatClaims(
     [
       ...beat.cast,
       ...selfNames,
-      beat.anchorKind === "arc" || beat.anchorKind === "steer" ? beat.line : "",
+      beat.anchorKind === "arc" || beat.anchorKind === "steer" || beat.tie ? beat.line : "",
       beat.reference?.text ?? "",
     ].flatMap(nameWords),
   );

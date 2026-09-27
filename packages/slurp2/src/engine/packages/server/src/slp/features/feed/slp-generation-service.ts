@@ -606,6 +606,8 @@ export async function generateCreatorPost(
       ...(shootId ? { shootId } : {}),
       // The planned beat, so later planning can record what this post established once it publishes.
       ...(beat ? { slurpBeat: { type: beat.type, line: beat.line, anchor: beat.anchor } } : {}),
+      // A collab, a sponsored post or a rivalry post: labels, the partner's page, the split, the fee.
+      ...(beat?.tie ? { slurpTie: beat.tie } : {}),
       ...(wardrobeSelection.look ? { wardrobeLookId: wardrobeSelection.look.id } : {}),
       ...(wardrobeSelection.fallback
         ? {

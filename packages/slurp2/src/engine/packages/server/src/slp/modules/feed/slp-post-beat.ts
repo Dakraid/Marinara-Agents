@@ -25,6 +25,7 @@ import { SLURP_VISUAL_SEXUAL_LEVELS, type SlurpVisualSexualLevel } from "../../b
 import type { SlurpSharedIdea } from "./slp-shared-preseed.js";
 import { SLURP_REFERENCE_KINDS, type SlurpBeatReference } from "./slp-post-reference.js";
 import type { SlpCreatorSteering } from "../../../../../shared/src/slp/slp-creator-steering.js";
+import { readSlurpTieStamp, type SlurpTieStamp } from "../projects/slp-tie-stamp.js";
 
 /** Shared ideas weigh more than a deck line of the same kind, so level 1 is actually used. */
 const SHARED_IDEA_BOOST = 1.5;
@@ -115,8 +116,9 @@ export type SlurpBeat = {
    * `arc`: the beat is the Creator's active arc chapter, not a card anchor. `steer`: the player's
    * idea, focus, or pushed topic. Both may change the Creator's life, as their text says. `life`:
    * a day-to-day life moment (see `slp-life-moments.ts`); like a card beat, it changes nothing lasting.
+   * `collab`, `sponsor`, `rival`: a collab, a brand deal or a rivalry (see `slp-tie-beats.ts`).
    */
-  anchorKind: SlurpAnchorKind | "arc" | "steer" | "life";
+  anchorKind: SlurpAnchorKind | "arc" | "steer" | "life" | "collab" | "sponsor" | "rival";
   anchor: string;
   line: string;
   /** Named people in the beat. Empty means alone. */
@@ -132,7 +134,11 @@ export type SlurpBeat = {
   reference?: SlurpBeatReference;
   /** The player's one-off idea this beat carries out; used once, then removed. */
   nudgeId?: string;
+  /** The collab, deal or rivalry this beat carries out, stamped on the post as `slurpTie`. */
+  tie?: SlurpTieStamp;
 };
+
+const TIE_KINDS: readonly string[] = ["collab", "sponsor", "rival"];
 
 type SlurpBeatDeck = {
   /** Intents this beat can serve. `request` and `callback` stay intent-first: they need a source. */
@@ -461,6 +467,7 @@ export function parseSlurpBeat(raw: unknown): SlurpBeat | null {
         beat.anchorKind === "arc" ||
         beat.anchorKind === "steer" ||
         beat.anchorKind === "life" ||
+        TIE_KINDS.includes(beat.anchorKind as string) ||
         SLURP_ANCHOR_KINDS.includes(beat.anchorKind as SlurpAnchorKind)
       ) ||
       typeof beat.anchor !== "string" ||
@@ -480,6 +487,10 @@ export function parseSlurpBeat(raw: unknown): SlurpBeat | null {
       ...(typeof beat.heatFloor === "number" ? { heatFloor: beat.heatFloor } : {}),
       ...(parseReference(beat.reference) ?? {}),
       ...(typeof beat.nudgeId === "string" ? { nudgeId: beat.nudgeId } : {}),
+      ...(() => {
+        const tie = readSlurpTieStamp({ slurpTie: beat.tie });
+        return tie ? { tie } : {};
+      })(),
     };
   } catch {
     return null;

@@ -12,6 +12,7 @@ import { slpCreatorsRoutes } from "./features/creators/slp-creators-routes.js";
 import { slpSteeringRoutes } from "./features/creators/slp-steering-routes.js";
 import { slpDiscoveryRoutes } from "./features/discovery/slp-discovery-routes.js";
 import { slpStudioRoutes } from "./features/economy/slp-studio-routes.js";
+import { slpCreatorTiesRoutes } from "./features/projects/slp-creator-ties-routes.js";
 import { slpWalletRoutes } from "./features/economy/slp-wallet-routes.js";
 import { slpFeedPostRoutes } from "./features/feed/slp-feed-post-routes.js";
 import { slpFeedPublishingRoutes } from "./features/feed/slp-feed-publishing-routes.js";
@@ -72,6 +73,7 @@ export async function mountSlpRoutes(app: FastifyInstance) {
   await slpMediaRoutes(app, deps);
   await slpNotificationsRoutes(app, deps, slpCatchUpWorldOnOpen);
   await slpStudioRoutes(app, deps);
+  await slpCreatorTiesRoutes(app, deps);
   await slpFeedViewerRoutes(app, deps);
   await slpAdsRoutes(app, deps);
   await slpFeedPostRoutes(app, deps);

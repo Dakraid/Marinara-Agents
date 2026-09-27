@@ -255,6 +255,32 @@ export function slurpAudienceReactionFrom(seed: string, pool: readonly string[])
 }
 
 /**
+ * Fans taking sides under a rivalry post (7b-c). Tier 1 like every pulse comment: free, and vague
+ * enough to be true of any spat. `{self}` is the poster, `{rival}` the other Creator.
+ */
+const RIVALRY_SIDES = [
+  "team {self} forever",
+  "ok but {rival} did it first tho",
+  "not {rival} catching strays again 😭",
+  "the way this is 100% about {rival}",
+  "grabbing popcorn 🍿",
+  "{self} would never. {rival} on the other hand…",
+  "you are both iconic, can we not",
+  "{rival} fans in shambles",
+  "staying neutral (I am team {self})",
+  "this is giving subtweet",
+  "I like {rival} too, don't make me choose",
+  "the receipts better be coming",
+] as const;
+
+export function slurpRivalryComment(seed: string, self: string, rival: string): string {
+  return RIVALRY_SIDES[pickIndex(seed, "rivalry-side", RIVALRY_SIDES.length)]!.replaceAll("{self}", self).replaceAll(
+    "{rival}",
+    rival,
+  );
+}
+
+/**
  * What a creator says back to a three-word comment.
  *
  * The other half of the free tier. A creator who never answers reads as a bot, but "obsessed 😍"

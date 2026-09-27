@@ -3,10 +3,12 @@ import type {
   SlpAccount,
   SlpCreatorManagedPost,
   SlpCreatorPostView,
+  SlpPostPartnership,
 } from "../../../../../shared/src/slp/slp-social.types.js";
 import { projectCreatorAudienceProfile } from "../../modules/creators/slp-disclosure.js";
 import { isSlurpViewerActorAccount } from "../../modules/settings/slp-settings.js";
 import { canViewCreatorPost } from "../../base/identity/slp-access.js";
+import { readSlurpTieStamp } from "../../modules/projects/slp-tie-stamp.js";
 import { slurpGoalProgress } from "../../modules/projects/slp-goal.js";
 import { SLP_CREATOR_SUBSCRIPTION_COST, slpCreatorUnlockPriceFromMetadata } from "../../modules/economy/slp-prices.js";
 import { slurpPlatformScaleMultiplier } from "../../modules/audience/slp-scale.js";
@@ -246,6 +248,7 @@ export function createSlpViewerContext(
               (interaction) =>
                 interaction.type === "story_view" && interaction.actorAccountId === context.viewerActorAccountId,
             ),
+            partnership: slurpPostPartnership(post.metadata, (id) => context.accountById.get(id)),
             linkedPostId:
               post.metadata.noodlerPostType === "story" && typeof post.metadata.noodlerLinkedPostId === "string"
                 ? post.metadata.noodlerLinkedPostId
@@ -306,3 +309,21 @@ export type SlpViewerContext = ReturnType<typeof createSlpViewerContext>;
 
 /** Everything a Slurp route module receives from the server entry. */
 export type SlpRouteDeps = SlpRouteHost & SlpViewerContext;
+
+/**
+ * The public label of a joint or sponsored post. A rivalry post and a "turned it down" post carry
+ * none; a partner the viewer cannot see is left out.
+ */
+function slurpPostPartnership(
+  metadata: Record<string, unknown>,
+  account: (id: string) => { displayName: string; handle: string } | undefined,
+): SlpPostPartnership | null {
+  const stamp = readSlurpTieStamp(metadata);
+  if (!stamp || stamp.declined || stamp.kind === "rival") return null;
+  if (stamp.kind === "sponsor")
+    return stamp.brand ? { withAccountId: null, withName: null, withHandle: null, brand: stamp.brand } : null;
+  const partner = stamp.partnerId ? account(stamp.partnerId) : undefined;
+  return partner
+    ? { withAccountId: stamp.partnerId!, withName: partner.displayName, withHandle: partner.handle, brand: null }
+    : null;
+}

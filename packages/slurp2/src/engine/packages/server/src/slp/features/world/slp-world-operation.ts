@@ -9,6 +9,7 @@
  * model, so briefs and questions come from the combinatorial bank in `slurp-world-copy.ts`.
  * Auto-posting is the one exception to that rule and it lives in its own scheduler.
  */
+import { advanceSlurpCreatorTies } from "../projects/slp-projects-contract.js";
 import {
   slurpCommissionQuote,
   slurpDynamicPriceTarget,
@@ -121,6 +122,10 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
       const storyStorage = createSlurpStorage(db);
       // Occurrences are a clock/ledger concern, so they advance even when ambient activity is off.
       await storyStorage.reconcileStoryEvents(until);
+      // Collabs, rivalries and brand deals: their own clock, and their posts settle every tick (7b-c).
+      await advanceSlurpCreatorTies(db, until).catch((error: unknown) =>
+        logger.warn(error, "[slurp-world] Collabs and deals could not move on this tick"),
+      );
       const since = await readLastTick(db);
       if (!since) {
         await writeLastTick(db, until);

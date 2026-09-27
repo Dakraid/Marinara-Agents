@@ -42,8 +42,8 @@ export function slurpPreparedRewriteCost(
 
 /**
  * Whether a rewritten slot may drop its plan and be planned again under the new steering. A plan
- * that carries a promise, a campaign stage, a storyline chapter, or one of the player's ideas keeps
- * its reason: only the words are written again.
+ * that carries a promise, a campaign stage, a storyline chapter, one of the player's ideas, or a
+ * collab / brand deal / rivalry keeps its reason: only the words are written again.
  */
 export function slurpPlanRewritable(
   plan: { sourceEventId: string | null; beat: SlurpBeat | null } | null,
@@ -54,6 +54,7 @@ export function slurpPlanRewritable(
     !plan!.sourceEventId &&
     !claimedByCampaign &&
     plan!.beat?.anchorKind !== "arc" &&
-    !plan!.beat?.nudgeId
+    !plan!.beat?.nudgeId &&
+    !plan!.beat?.tie
   );
 }
