@@ -4605,7 +4605,7 @@
   "ui.slurp.steering.support.idea": "idea “{{idea}}”",
   "ui.slurp.steering.support.memory": "remembers what Support said",
   "ui.slurp.steering.support.undo": "Undo",
-  "ui.slurp.steering.support.keep": "Keep these changes",
+  "ui.slurp.steering.support.keep": "Keep",
   "ui.slurp.steering.support.undone": "{{name}} is back to how things were before the talk.",
   "ui.slurp.steering.intro": "You pick what happens. {{name}} decides how, in their own way.",
   "ui.slurp.steering.loadFailed": "Could not load this. Try again in a moment.",

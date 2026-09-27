@@ -99,24 +99,19 @@ function SupportNote({
   return (
     <div
       data-slurp-steering-support
-      className="flex items-start gap-2 rounded-xl bg-[var(--slurp-tint)] py-2 pe-1 ps-3 ring-1 ring-inset ring-[var(--noodle-accent)]/30"
+      className="space-y-3 rounded-xl bg-[var(--slurp-tint)] p-3 ring-1 ring-inset ring-[var(--noodle-accent)]/30"
     >
-      <p className="min-w-0 flex-1 py-1.5 text-sm leading-5 text-[var(--slurp-text)] [overflow-wrap:anywhere]">
+      <p className="text-sm leading-5 text-[var(--slurp-text)] [overflow-wrap:anywhere]">
         <span className="font-semibold">{t("ui.slurp.steering.support.title")}</span> {parts.join(" · ")}
       </p>
-      <SlpButton variant="secondary" disabled={pending} onClick={onUndo} className="min-h-11 shrink-0 px-3.5 text-xs">
-        {t("ui.slurp.steering.support.undo")}
-      </SlpButton>
-      <button
-        type="button"
-        disabled={pending}
-        onClick={onKeep}
-        aria-label={t("ui.slurp.steering.support.keep")}
-        title={t("ui.slurp.steering.support.keep")}
-        className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--slurp-muted)] hover:text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
-      >
-        <X size={16} aria-hidden="true" />
-      </button>
+      <div className="flex gap-2">
+        <SlpButton variant="secondary" disabled={pending} onClick={onUndo} className="min-h-11 flex-1 px-3.5 text-sm">
+          {t("ui.slurp.steering.support.undo")}
+        </SlpButton>
+        <SlpButton variant="quiet" disabled={pending} onClick={onKeep} className="min-h-11 flex-1 px-3.5 text-sm">
+          {t("ui.slurp.steering.support.keep")}
+        </SlpButton>
+      </div>
     </div>
   );
 }
