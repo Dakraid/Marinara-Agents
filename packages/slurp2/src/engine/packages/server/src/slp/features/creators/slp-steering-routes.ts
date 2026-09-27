@@ -15,6 +15,7 @@ import {
   removeSlurpCreatorNudge,
 } from "../../data/creators/slp-steering-storage.js";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
+import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
 import {
   SLP_SPICE_CHIP_MAX,
   SLP_SPICE_CHIPS_MAX,
@@ -37,12 +38,12 @@ const spiceChips = z.array(z.string().trim().min(1).max(SLP_SPICE_CHIP_MAX)).max
  */
 async function creatorSpice(
   db: FastifyInstance["db"],
-  noodle: SlpRouteDeps["noodle"],
-  account: NonNullable<Awaited<ReturnType<SlpRouteDeps["noodle"]["getNoodlerAccountById"]>>>,
+  account: Pick<SlpAccount, "id"> & { settings: { strategy?: unknown } },
+  source: Pick<SlpAccount, "kind" | "entityId"> | null,
 ) {
   const { spice, creator } = await resolveSlurpSpiceCreator(db, {
     account,
-    source: await noodle.resolveAccountSource(account),
+    source,
     disclosureMode: "open",
   });
   const own = (await getSlurpPostGuidance(db)).creators[account.id]?.level ?? "";
@@ -69,7 +70,9 @@ export async function slpSteeringRoutes(app: FastifyInstance, deps: SlpRouteDeps
   // Every answer carries the spice too, so the card's cached copy never loses it.
   const answer = async (id: string, steering: Awaited<ReturnType<typeof readSlurpCreatorSteering>>) => {
     const account = await noodle.getNoodlerAccountById(id);
-    const spice = account ? await creatorSpice(app.db, noodle, account).catch(() => null) : null;
+    const spice = account
+      ? await creatorSpice(app.db, account, await noodle.resolveAccountSource(account)).catch(() => null)
+      : null;
     return { steering, spice };
   };
 
@@ -78,7 +81,9 @@ export async function slpSteeringRoutes(app: FastifyInstance, deps: SlpRouteDeps
     if (!id) return reply.code(404).send({ error: "Creator account not found" });
     const account = await noodle.getNoodlerAccountById(id);
     // Reading the spice moves the sign-up chat's likes and noes out of the strategy text first.
-    const spice = account ? await creatorSpice(app.db, noodle, account).catch(() => null) : null;
+    const spice = account
+      ? await creatorSpice(app.db, account, await noodle.resolveAccountSource(account)).catch(() => null)
+      : null;
     return { steering: await readSlurpCreatorSteering(app.db, id), spice };
   });
 

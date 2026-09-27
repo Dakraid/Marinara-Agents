@@ -73,8 +73,8 @@ export function recordSlurpTasteSignal(
   const run = async () => {
     const fromCreator = source.creatorId
       ? ((await createSlurpStorage(db).listNoodlerPostsByAccount(source.creatorId, 8))
-          .map((post) => slurpSpiceLabelsOf(post.metadata))
-          .find((labels) => labels.length) ?? [])
+          .map((post: { metadata?: unknown }) => slurpSpiceLabelsOf(post.metadata))
+          .find((labels: string[]) => labels.length) ?? [])
       : [];
     await updateSlurpSpice(db, (state) => {
       const all = [
