@@ -25,6 +25,9 @@ import {
   slurpArcTypeFromProject,
 } from "../../modules/projects/slp-arc-library.js";
 import { slurpCrossoverForViewer } from "../../modules/projects/slp-arc-crossover.js";
+import { slurpDisclosureMode } from "../../modules/creators/slp-disclosure.js";
+import { protectCreatorGeneratedIdentity, type PublicIdentity } from "../../base/identity/slp-identity-protection.js";
+import { resolveNoodlerPublicIdentity } from "../feed/slp-feed-contract.js";
 import { isSlurpViewerActorAccount } from "../../modules/settings/slp-settings.js";
 import { generateSlurpArc, SlurpArcGenerationFailure } from "./slp-arc-generation-service.js";
 import type { FastifyInstance } from "fastify";
@@ -249,8 +252,9 @@ export async function slpProjectsRoutes(app: FastifyInstance, deps: SlpRouteDeps
   /**
    * The arc timeline for a profile. Unlike `/projects`, any viewer may read it, but only the story
    * parts: title, tone, chapters, history. Never the direction, the twist, or suggestions. A Creator
-   * hidden from the viewer shows nothing, and a Creator with a protected identity shows arcs to the
-   * owner only, because arc text is typed by the player and is not passed through disclosure.
+   * hidden from the viewer shows nothing. Fans see the storylines of Hinted Creators too (user, fix
+   * phase 1b, R1-073): arc text is typed by the player or the model, so for anyone but the owner it
+   * goes through the same identity protection as posts, for the Creator and every Hinted participant.
    */
   app.get("/slurp/accounts/:id/arcs", async (req, reply) => {
     const parsed = z.object({ personaId: z.string().trim().min(1) }).safeParse(req.query ?? {});
@@ -259,8 +263,6 @@ export async function slpProjectsRoutes(app: FastifyInstance, deps: SlpRouteDeps
     if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
     const creator = await noodle.getNoodlerAccountById((req.params as { id: string }).id);
     if (!creator || isSlurpViewerActorAccount(creator)) return { arcs: [] };
-    const owner = creatorBelongsToViewer(creator, viewer);
-    if (!owner && (creator.settings.privacy.identityDisclosure ?? "open") !== "open") return { arcs: [] };
     const projects = await noodle.listProjects(creator.id);
     // Crossover participants go through the same rules one by one: a participant hidden from this
     // viewer, or with a protected identity, is left out, and so are the posts they published.
@@ -269,13 +271,20 @@ export async function slpProjectsRoutes(app: FastifyInstance, deps: SlpRouteDeps
       const account = await noodle.getNoodlerAccountById(id);
       if (account) participants.set(id, account);
     }
-    const visible = (id: string) => {
-      const account = participants.get(id);
-      return Boolean(
-        account &&
-        (creatorBelongsToViewer(account, viewer) || (account.settings.privacy.identityDisclosure ?? "open") === "open"),
+    const visible = (id: string) => participants.has(id);
+    // Names the viewer may not read: the linked identity of every Hinted Creator they do not own.
+    const hidden: PublicIdentity[] = [];
+    for (const account of [creator, ...participants.values()]) {
+      if (creatorBelongsToViewer(account, viewer)) continue;
+      if (slurpDisclosureMode(account.settings.privacy.identityDisclosure ?? "open") === "open") continue;
+      const identity = await resolveNoodlerPublicIdentity(app.db, account).catch(() => null);
+      if (identity) hidden.push(identity);
+    }
+    const protect = (text: string) =>
+      hidden.reduce(
+        (current, identity) => protectCreatorGeneratedIdentity(current, "hinted", identity) ?? current,
+        text,
       );
-    };
     return {
       arcs: projects
         .filter((project) => project.status !== "suggested")
@@ -296,9 +305,9 @@ export async function slpProjectsRoutes(app: FastifyInstance, deps: SlpRouteDeps
           const crossover = slurpCrossoverForViewer(project, creator.id, visible);
           return {
             id,
-            title,
+            title: protect(title),
             tone,
-            chapters,
+            chapters: chapters.map(protect),
             chapter,
             status,
             startedAt,
@@ -316,7 +325,11 @@ export async function slpProjectsRoutes(app: FastifyInstance, deps: SlpRouteDeps
             // Only the open question, not the branches it would add.
             // The poll post itself: "the chapter's latest post" could be one whose votes never count (R1-067).
             openChoice: choices[chapter]
-              ? { question: choices[chapter]!.question, closesAt: pollClosesAt, pollPostId: pollPostId ?? null }
+              ? {
+                  question: protect(choices[chapter]!.question),
+                  closesAt: pollClosesAt,
+                  pollPostId: pollPostId ?? null,
+                }
               : null,
           };
         }),

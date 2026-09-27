@@ -10,6 +10,7 @@ import {
   slurpModelBudgetSchema,
   spendSlurpModelBudget,
 } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-model-budget.ts";
+import { protectCreatorGeneratedIdentity } from "../packages/slurp2/src/engine/packages/server/src/slp/base/identity/slp-identity-protection.ts";
 import { slurp2Source } from "./slurp2-source.ts";
 
 const root = "packages/slurp2/src/engine/packages";
@@ -67,5 +68,19 @@ assert.match(
   readSlurp2Source("server", "features/projects/slp-arc-generation-service.ts"),
   /workerContext === "background" && !\(await slurpModelBudgetPaceOpen\(db, settings\.modelBudget, "arc"\)\)/u,
 );
+
+// R1-073: fans see Hinted Creators' storylines; the linked name never reaches them.
+const identity = { displayName: "Aria Stone", handle: "aria.stone", sourceIdentifiers: ["Aria"] };
+assert.equal(
+  protectCreatorGeneratedIdentity("Aria Stone moves to Berlin", "hinted", identity),
+  "you-know-who moves to Berlin",
+);
+const arcsRoute = readSlurp2Source("server", "features/projects/slp-projects-routes.ts");
+const arcsHandler = arcsRoute.slice(
+  arcsRoute.indexOf('"/slurp/accounts/:id/arcs"'),
+  arcsRoute.indexOf("A Creator's arc overrides"),
+);
+assert.doesNotMatch(arcsHandler, /identityDisclosure[^\n]*return \{ arcs: \[\] \}/u, "no Open-only gate");
+assert.match(arcsHandler, /question: protect\(choices\[chapter\]!\.question\)/u);
 
 console.log("slurp2 fix phase 1b: ok");
