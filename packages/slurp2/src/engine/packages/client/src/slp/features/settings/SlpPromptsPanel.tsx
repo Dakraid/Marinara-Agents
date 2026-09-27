@@ -56,7 +56,7 @@ export function SlpPromptsPanel(page: SlpBackstagePageProps) {
           summary={t("ui.slurp.settings.prompts.voiceOutcomeDetail", {
             defaultValue: "Tone, language, maturity, and context shared across Creator writing.",
           })}
-          customized={!generationGuidanceIsDefault || settings.enableLorebookContext}
+          customized={!generationGuidanceIsDefault || settings.enableLorebookContext || !settings.flavourFromAgents}
         >
           <PromptCard
             title={t("ui.slurp.settings.prompts.generationGuidance")}
@@ -75,6 +75,13 @@ export function SlpPromptsPanel(page: SlpBackstagePageProps) {
               detail={t("ui.slurp.settings.prompts.lorebookContextDetail")}
               value={settings.enableLorebookContext}
               onChange={(value) => update("enableLorebookContext", value)}
+            />
+            <Toggle
+              settingKey="flavourFromAgents"
+              label={t("ui.slurp.settings.prompts.flavourFromAgents")}
+              detail={t("ui.slurp.settings.prompts.flavourFromAgentsDetail")}
+              value={settings.flavourFromAgents}
+              onChange={(value) => update("flavourFromAgents", value)}
             />
           </PromptOptions>
         </SlpPromptOutcomeSection>

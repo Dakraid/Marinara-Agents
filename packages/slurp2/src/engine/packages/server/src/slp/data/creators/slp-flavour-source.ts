@@ -19,6 +19,7 @@ import {
 } from "../../modules/creators/slp-creator-flavour.js";
 import type { SlurpCanonAnchors } from "../../modules/feed/slp-post-beat.js";
 import { readSlurpCreatorSteering } from "./slp-steering-storage.js";
+import { readSlurpAgentMemoryLines } from "./slp-agent-memory-source.js";
 import { createSlurpStorage } from "../slp-storage.js";
 
 /** The beats planner's anchor cache, one entry per Creator. Written by `slp-post-beat-service.ts`. */
@@ -97,6 +98,15 @@ export async function resolveSlurpCreatorFlavour(
   },
 ): Promise<string> {
   try {
+    // What the player's other Agents know about them, when the setting allows (on by default).
+    // Open identities only: another Agent's notes can carry the backstory a concealed Creator hides.
+    const settings = await createSlurpStorage(db)
+      .getSettings()
+      .catch(() => null);
+    const agents =
+      input.disclosureMode === "open" && settings?.flavourFromAgents
+        ? await readSlurpAgentMemoryLines(db, input.source)
+        : [];
     const card = await readFlavourCard(db, input.source, input.disclosureMode);
     const ownLines =
       input.ownLines ??
@@ -111,6 +121,7 @@ export async function resolveSlurpCreatorFlavour(
         anchors: await readAnchors(db, input.account.id),
         ownLines,
         steering: input.steering ?? (await readSlurpCreatorSteering(db, input.account.id)),
+        lately: agents,
       },
       { use: input.use, sequence: input.sequence },
     ).text;

@@ -115,6 +115,7 @@ export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBac
   promptBlocks: prompts("prompt block builder", "prompt order", "prompt blocks"),
   professorMariCreatorSource: automation("general", "Professor Mari creator", "new creators"),
   enableLorebookContext: prompts("lorebook context"),
+  flavourFromAgents: prompts("other agents", "long-term memory", "character tracker", "world state", "persona stats"),
   postPlanner: automation("general", "post ideas", "post planner", "beats", "subjects"),
   sharedPreseed: content("storylines", "shared ideas", "world tick", "niche"),
   sharedWorldEvents: content("storylines", "slurp-wide events", "platform events"),

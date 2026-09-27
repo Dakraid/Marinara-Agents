@@ -86,6 +86,7 @@ export const SLP_BACKSTAGE_LABEL_KEYS: Partial<Record<keyof SlurpSettings, strin
   promptBlocks: "ui.slurp.settings.prompts.studioTitle",
   professorMariCreatorSource: "ui.slurp.settings.prompts.professorMari",
   enableLorebookContext: "ui.slurp.settings.prompts.lorebookContext",
+  flavourFromAgents: "ui.slurp.settings.prompts.flavourFromAgents",
   postPlanner: "ui.slurp.settings.strip.teasers",
   sharedPreseed: "ui.slurp.settings.storyActivity.title",
   sharedWorldEvents: "ui.slurp.settings.prompts.sharedWorldEvents",

@@ -37,6 +37,9 @@ export type SlurpFlavourCard = {
   alternate_greetings?: readonly string[];
 };
 
+/** A plain sentence another Agent knows about them (see `slp-agent-memory-source.ts`). */
+export type SlurpLatelyLine = { kind: "memory" | "mood" | "outfit" | "look" | "stat" | "weather"; text: string };
+
 export type SlurpFlavourSource = {
   accountId: string;
   /** The name `{{char}}` resolves to. */
@@ -46,6 +49,8 @@ export type SlurpFlavourSource = {
   /** Their own past captions or chat lines, newest first. Callers leave out anything paid. */
   ownLines?: readonly string[];
   steering?: SlpCreatorSteering | null;
+  /** What the player's other Agents know, already in plain sentences. Optional (a setting). */
+  lately?: readonly SlurpLatelyLine[];
 };
 
 export type SlurpFlavourBrief = {
@@ -77,6 +82,7 @@ const KIND_WEIGHT: Record<string, number> = {
   jokes: 1.5,
   objects: 1,
   life: 1,
+  lately: 1.5,
 };
 
 const MOOD_LINE: Record<SlpSteeringMood, string> = {
@@ -284,7 +290,11 @@ export function compileSlurpFlavourBrief(
   // A topic the player wants left alone is left out of the details and the voice line too.
   const avoided = (value: string) =>
     (source.steering?.avoid ?? []).some((topic) => value.toLocaleLowerCase().includes(topic.toLocaleLowerCase()));
-  const pool = [...cardBits, ...anchorBits(source.anchors)].filter((bit) => !avoided(bit.text));
+  // Another Agent's mood reading gives way to the mood the player set.
+  const latelyBits = (source.lately ?? [])
+    .filter((line) => !(line.kind === "mood" && source.steering?.mood))
+    .map((line) => ({ key: `lately:${line.kind}:${line.text.slice(0, 40)}`, kind: "lately", text: line.text }));
+  const pool = [...cardBits, ...anchorBits(source.anchors), ...latelyBits].filter((bit) => !avoided(bit.text));
   // Two halves that alternate, so consecutive requests never share a detail. Tiny pools share.
   const halves = [0, 1].map((side) => pool.filter((bit) => half(source.accountId, bit.key) === side));
   const usable = halves.every((list) => list.length > 0) ? halves[sequence % 2]! : pool;

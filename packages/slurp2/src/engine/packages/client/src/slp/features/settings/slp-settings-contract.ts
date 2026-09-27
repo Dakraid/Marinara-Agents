@@ -99,6 +99,7 @@ export type SlurpSettings = {
   promptInstructions: SlurpReusablePromptInstruction[];
   professorMariCreatorSource: boolean;
   enableLorebookContext: boolean;
+  flavourFromAgents: boolean;
   postPlanner: "classic" | "beats";
   sharedPreseed: boolean;
   sharedWorldEvents: boolean;

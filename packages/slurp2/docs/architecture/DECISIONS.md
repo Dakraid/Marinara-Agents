@@ -328,3 +328,20 @@ modules, rejected alternative, and migration consequence.
 - The client and server share `slp-message-details.ts` for the closed set of editable fields, enum choices and numeric bounds.
 - Creator and conversation state edits write their existing records. Calculated rapport and context edits live in per-thread `slurp2.messages.details.*` settings and are consumed by thread views, rapport scoring and message preparation. Editing displayed spending never creates a payment or alters the ledger.
 - The Details toggle only enables controls; switching it off does not undo saved edits.
+
+## Life moments and other Agents' data in the flavour brief (2026-09-27)
+
+- **Life moments** (`modules/feed/slp-life-moments.ts`) are a beat source between the player's steering and the
+  card deck: day-to-day moments from the Creator's own anchors plus a shared pool, used only when the card fits
+  (a word test on card, tags and anchors; a card "never" sentence rules a moment out). Milestones, viral posts,
+  gifts and comment fights need a real signal (`data/feed/slp-life-signals.ts`). Beat `anchorKind: "life"`,
+  keyed `sharedId: "life:…"`, so the existing per-day cap and beat history carry the variety rules. No new AI call.
+- **Storyline fit:** automatic storylines pass the Creator's card text to `slurpAutoArcPick`; a built-in type
+  whose needs are missing (a breakup without a partner) is never started on its own. Built-in types added in a
+  later version join a saved library; deleting a built-in keeps hiding it.
+- **Other Agents' data** (`data/creators/slp-agent-memory-source.ts`), behind the `flavourFromAgents` setting (on by
+  default): read-only reads of the Engine `game_state_snapshots` table (Character Tracker, World State, Persona
+  Stats; the package holds `chat-read`) through the Engine schema already in `sources/engine`, and Long-Term
+  Memory's in-process `long-term-memory:storage` service through the Engine service registry. None of these
+  Agents offers a documented read contract; any failure yields no lines. Rejected: a new Engine snapshot file
+  (`game-state.storage.ts`), which would change the captured Engine sources.

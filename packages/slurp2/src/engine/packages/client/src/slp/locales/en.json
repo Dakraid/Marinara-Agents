@@ -2968,6 +2968,8 @@
   "ui.slurp.settings.prompts.professorMariDetail": "Allow the Engine's built-in Professor Mari to be picked as a new Creator source. Existing Creators keep working either way.",
   "ui.slurp.settings.prompts.lorebookContext": "Lorebook context",
   "ui.slurp.settings.prompts.lorebookContextDetail": "Add matching lorebook entries from each Creator's character or persona to their posts. Entries can target Slurp with the \"slurp\" generation trigger.",
+  "ui.slurp.settings.prompts.flavourFromAgents": "What your other Agents know",
+  "ui.slurp.settings.prompts.flavourFromAgentsDetail": "Creators can draw on what Long-Term Memory, Character Tracker, World State and Persona Stats know about them: memories, outfits, mood, weather. Slurp only reads it and never changes those Agents.",
   "ui.slurp.settings.storyActivity.title": "Story activity",
   "ui.slurp.settings.storyActivity.calm": "Calm",
   "ui.slurp.settings.storyActivity.lively": "Lively",
