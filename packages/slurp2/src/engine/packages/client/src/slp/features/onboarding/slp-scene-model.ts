@@ -244,35 +244,49 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
     }
   }, [create, setup, update, updatePage]);
 
+  /** What finishing adds to a saved page: its limits line, the first post and the kept chat. */
+  const completeSignUp = useCallback(
+    async (id: string, draft: SlpSceneDraft) => {
+      const limits = slpSceneLimitsText(draft);
+      // The page exists now; a missed strategy line is not worth failing the sign-up over.
+      if (limits) await strategy.mutateAsync({ accountId: id, strategyText: limits }).catch(() => undefined);
+      // The first post is written in the background, like "first posts now" in Quick setup.
+      firstPost.mutate({ executionId: generateClientId(), accountIds: [id] });
+      // The chat stays as their first DM thread with the player's persona (never with the page
+      // itself). Nothing to keep, or no persona: the page is still live.
+      const lines = slpSceneTranscript(itemsRef.current, 120);
+      return viewerPersonaId && lines.length
+        ? await keep
+            .mutateAsync({ preset: setup.preset, creatorAccountId: id, viewerPersonaId, hostName: hostLabel, lines })
+            .then((result) => result.status === "kept")
+            .catch(() => false)
+        : false;
+    },
+    [firstPost, hostLabel, keep, setup.preset, strategy, viewerPersonaId],
+  );
+
   /** "Finish registration": save the page, then its limits line and the first post. */
   const finish = useCallback(async () => {
     const saved = await savePage();
     if (!saved || "missing" in saved) return saved ? saved.missing : null;
     const draft: SlpSceneDraft = draftRef.current.draft;
-    const limits = slpSceneLimitsText(draft);
-    // The page exists now; a missed strategy line is not worth failing the sign-up over.
-    if (limits) await strategy.mutateAsync({ accountId: saved.id, strategyText: limits }).catch(() => undefined);
-    // The first post is written in the background, like "first posts now" in Quick setup.
-    firstPost.mutate({ executionId: generateClientId(), accountIds: [saved.id] });
-    // The chat stays as their first DM thread with the player's persona (never with the page
-    // itself). Nothing to keep, or no persona: the page is still live.
-    const lines = slpSceneTranscript(itemsRef.current, 120);
-    const kept =
-      viewerPersonaId && lines.length
-        ? await keep
-            .mutateAsync({
-              preset: setup.preset,
-              creatorAccountId: saved.id,
-              viewerPersonaId,
-              hostName: hostLabel,
-              lines,
-            })
-            .then((result) => result.status === "kept")
-            .catch(() => false)
-        : false;
+    const kept = await completeSignUp(saved.id, draft);
     setCreated({ id: saved.id, displayName: draft.displayName, handle: draft.handle, kept });
     return [];
-  }, [firstPost, hostLabel, keep, savePage, setup.preset, strategy, viewerPersonaId]);
+  }, [completeSignUp, savePage]);
+
+  /**
+   * The dialog closed after the photo shoot saved the page (step 10 answer): the page is live, so it
+   * is finished quietly with what the chat has so far, never left half-registered. A save that
+   * still misses a field keeps the page as the shoot saved it.
+   */
+  const finishOnClose = useCallback(async () => {
+    const id = accountRef.current;
+    if (!id) return false;
+    const saved = await savePage().catch(() => null);
+    await completeSignUp(saved && !("missing" in saved) ? saved.id : id, draftRef.current.draft);
+    return true;
+  }, [completeSignUp, savePage]);
 
   /**
    * The first photo shoot: the real image pipeline draws the profile photo, then the cover, from
@@ -351,6 +365,7 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
     retry: () => (lastAction.current ? send(lastAction.current, true) : Promise.resolve(false)),
     updatePage,
     finish,
+    finishOnClose,
     undo: (chipId: string) => commit(undoSlpSceneChip(draftRef.current, chipId)),
     edit: <F extends SlpSceneField>(field: F, value: SlpSceneDraft[F]) =>
       commit(editSlpSceneField(draftRef.current, field, value)),

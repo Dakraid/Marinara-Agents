@@ -210,4 +210,25 @@ const readers: [string, RegExp][] = [
 ];
 for (const [file, pattern] of readers) assert.match(readSlurp2Source("server", file), pattern, file);
 
+// Step 10 answer: closing the sign-up dialog after the photo shoot still finishes the page.
+const sceneModel = readSlurp2Source("client", "features/onboarding/slp-scene-model.ts");
+const finishOnClose = sceneModel.slice(sceneModel.indexOf("const finishOnClose = useCallback"));
+assert.match(
+  finishOnClose,
+  /const id = accountRef\.current;\s*if \(!id\) return false;/u,
+  "only a page the shoot saved",
+);
+assert.match(finishOnClose, /await completeSignUp\(/u, "limits line, first post and kept chat, like Finish");
+assert.match(
+  sceneModel,
+  /const finish = useCallback[\s\S]*?await completeSignUp\(saved\.id, draft\)/u,
+  "Finish shares the same steps",
+);
+const sceneStage = readSlurp2Source("client", "features/onboarding/SlpSceneOnboarding.tsx");
+assert.match(
+  sceneStage,
+  /if \(!last\.accountId \|\| last\.created \|\| last\.registering\) return;\s*void last\.finishOnClose\(\)\.then\(\(finished\) => finished && done\(\)\)/u,
+  "on unmount: finish a saved, unfinished page and mark the first run done",
+);
+
 console.log("slurp2 fix phase 1b: ok");

@@ -252,6 +252,18 @@ function SceneStage({
   const phone = useSlpMediaQuery("(max-width: 639px)");
   const [missingNote, setMissingNote] = useState("");
   const liveRef = useRef<HTMLDivElement | null>(null);
+  // Closing the dialog after the photo shoot still finishes the page (step 10 answer): limits line,
+  // first post, kept chat and the first run marked done. No half-registered Creators.
+  const latest = useRef({ model, onFinished });
+  latest.current = { model, onFinished };
+  useEffect(
+    () => () => {
+      const { model: last, onFinished: done } = latest.current;
+      if (!last.accountId || last.created || last.registering) return;
+      void last.finishOnClose().then((finished) => finished && done());
+    },
+    [],
+  );
   useEffect(() => {
     if (!model.created) return;
     // A page going live is a reward moment: a Burst off the new photo.
