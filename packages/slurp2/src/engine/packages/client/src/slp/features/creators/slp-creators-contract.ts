@@ -49,5 +49,10 @@ export { useCreatorEligibleAccounts } from "./slp-creators-hooks.js";
 export { useCreatorAccounts } from "./slp-creators-hooks.js";
 
 // The role-play sign-up drafts, creates and registers one Creator, and a Creator can help.
-export { useCreateCreatorStageProfile, useGenerateCreatorStageProfileDraft } from "./slp-creator-profile-hooks.js";
+export {
+  useCreateCreatorStageProfile,
+  useGenerateCreatorArtwork,
+  useGenerateCreatorStageProfileDraft,
+  useUpdateCreatorStageProfile,
+} from "./slp-creator-profile-hooks.js";
 export { useUpdateCreatorStrategy } from "./slp-creators-hooks.js";

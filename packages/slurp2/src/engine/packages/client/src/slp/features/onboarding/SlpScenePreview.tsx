@@ -10,7 +10,7 @@ import {
   type SlpSceneField,
 } from "../../../../../shared/src/slp/slp-scene.js";
 import { cn } from "../../../lib/utils";
-import { Avatar, SLP_GROUP_CLASS, SLP_TYPE } from "../../base/chrome/SlpChrome";
+import { Avatar, SLP_GROUP_CLASS, SLP_IMG_FRAME_CLASS, SLP_TYPE, SlurpMediaImg } from "../../base/chrome/SlpChrome";
 import { SlpUsesAiMark } from "../../modules/chrome/SlpAiMark";
 import { SlpButton, SlpChip, SlpSegment } from "../../modules/chrome/SlpButton";
 
@@ -80,16 +80,17 @@ export function SlpScenePreview({
         </SlpButton>
       </div>
       <div className="overflow-hidden rounded-2xl bg-[var(--slurp-surface-raised)] shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
-        <div
-          className="h-20 bg-[image:var(--slurp-nav-active)] bg-cover bg-center"
-          style={bannerUrl ? { backgroundImage: `url(${bannerUrl})` } : undefined}
-        />
-        <div className="-mt-8 flex items-end gap-3 px-4 pb-3">
+        <div className={cn(SLP_IMG_FRAME_CLASS, "relative h-20 bg-[image:var(--slurp-nav-active)]")}>
+          {bannerUrl && (
+            <SlurpMediaImg src={bannerUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          )}
+        </div>
+        <div className="-mt-8 flex items-start gap-3 px-4 pb-3">
           <Avatar
             account={{ displayName: name, avatarUrl: avatarUrl ?? null }}
             className="h-16 w-16 ring-2 ring-[var(--slurp-surface-raised)]"
           />
-          <div className="min-w-0 pb-0.5">
+          <div className="min-w-0 pt-9">
             <p className={cn(SLP_TYPE.title, "truncate", !draft.displayName && "text-[var(--slurp-muted)]")}>{name}</p>
             <p className={cn(SLP_TYPE.meta, "truncate text-[var(--slurp-muted)]")}>
               @{draft.handle || t("ui.slurp.scene.page.noHandle")}

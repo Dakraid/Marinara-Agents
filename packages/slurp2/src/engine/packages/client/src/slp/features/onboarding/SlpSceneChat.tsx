@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowUp, RotateCcw } from "lucide-react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
-import { Avatar, SLP_TYPE } from "../../base/chrome/SlpChrome";
+import { Avatar, SLP_IMG_FRAME_CLASS, SLP_TYPE, SlurpMediaImg } from "../../base/chrome/SlpChrome";
 import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { SlpButton } from "../../modules/chrome/SlpButton";
 import { slurpBubbleSurface } from "../messages/slp-messages-contract";
@@ -53,6 +53,27 @@ export function SlpSceneChat({
               >
                 {item.text}
               </p>
+            );
+          if (item.kind === "photo")
+            return (
+              <figure
+                key={item.id}
+                className={cn(
+                  SLP_IMG_FRAME_CLASS,
+                  "relative my-1.5 shrink-0 self-center overflow-hidden rounded-2xl bg-[var(--slurp-surface-raised)] shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]",
+                  item.photo === "avatar" ? "aspect-square w-40" : "aspect-[3/1] w-full max-w-sm",
+                )}
+              >
+                <SlurpMediaImg src={item.imageUrl} alt="" className="h-full w-full object-cover" />
+                <figcaption
+                  className={cn(
+                    SLP_TYPE.caption,
+                    "absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2.5 pb-1.5 pt-4 text-white",
+                  )}
+                >
+                  {t(`ui.slurp.scene.photo.${item.photo}`)}
+                </figcaption>
+              </figure>
             );
           if (item.kind === "patch") {
             const chip = chips.get(item.chipId);

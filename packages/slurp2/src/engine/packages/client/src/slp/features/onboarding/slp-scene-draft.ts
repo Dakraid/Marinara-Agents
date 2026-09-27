@@ -191,7 +191,8 @@ export function slpSceneRedraftPatch(result: {
 export type SlpSceneItem =
   | { id: string; kind: "line"; speaker: SlpSceneLine["speaker"]; text: string }
   | { id: string; kind: "patch"; chipId: string; fields: SlpSceneField[]; redraft: boolean }
-  | { id: string; kind: "note"; text: string };
+  | { id: string; kind: "note"; text: string }
+  | { id: string; kind: "photo"; photo: "avatar" | "banner"; imageUrl: string };
 
 /** What the transcript sends back: the lines only, newest last, capped. */
 export function slpSceneTranscript(items: readonly SlpSceneItem[]): SlpSceneLine[] {
@@ -219,4 +220,17 @@ export function slpSceneGuidance(items: readonly SlpSceneItem[], hostLabel: stri
     length += line.length + 1;
   }
   return [head, ...kept].join("\n");
+}
+
+/** What the image pipeline is asked for at the first photo shoot. */
+export function slpSceneShootGuidance(kind: "avatar" | "banner", outfit: string, place: string): string {
+  return [
+    kind === "avatar"
+      ? "The first profile photo from their first photo shoot."
+      : "The cover photo from the same first photo shoot, a wide shot of the place.",
+    outfit.trim() ? `Outfit: ${outfit.trim().slice(0, 400)}.` : "",
+    place.trim() ? `Place: ${place.trim().slice(0, 400)}.` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 }

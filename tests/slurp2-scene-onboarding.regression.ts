@@ -7,6 +7,7 @@ import {
   slpSceneLimitsText,
   slpSceneMissing,
   slpSceneRedraftPatch,
+  slpSceneShootGuidance,
   slpSceneStageProfile,
   toggleSlpSceneLock,
   undoSlpSceneChip,
@@ -253,5 +254,17 @@ assert.match(guidance, /Direction: keep it casual/u);
 assert.match(guidance, /line 59 /u, "the newest lines win the space");
 assert.doesNotMatch(guidance, /line 0 /u);
 assert.equal(slpSceneTranscript(guidanceItems).length, 40, "a turn sends the last 40 lines");
+
+// 11. Slice 3: the photo shoot asks the image pipeline for the chosen outfit and place.
+assert.equal(
+  slpSceneShootGuidance("avatar", " red slip dress ", "rooftop at dusk"),
+  "The first profile photo from their first photo shoot. Outfit: red slip dress. Place: rooftop at dusk.",
+);
+assert.match(slpSceneShootGuidance("banner", "", "neon diner"), /^The cover photo[^]*Place: neon diner\.$/u);
+assert.doesNotMatch(slpSceneShootGuidance("banner", "", "neon diner"), /Outfit/u, "an empty outfit is left out");
+assert.ok(
+  slpSceneShootGuidance("avatar", "x".repeat(3000), "y".repeat(3000)).length < 2000,
+  "fits the artwork guidance limit",
+);
 
 console.log("slurp2-scene-onboarding: ok");

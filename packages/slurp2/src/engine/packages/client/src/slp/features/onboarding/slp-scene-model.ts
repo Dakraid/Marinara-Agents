@@ -12,7 +12,9 @@ import type { SlpAccount, SlpIdentityDisclosure } from "../../../../../shared/sr
 import { generateClientId } from "../../../lib/utils";
 import {
   useCreateCreatorStageProfile,
+  useGenerateCreatorArtwork,
   useGenerateCreatorStageProfileDraft,
+  useUpdateCreatorStageProfile,
   useUpdateCreatorStrategy,
 } from "../creators/slp-creators-contract";
 import {
@@ -22,6 +24,7 @@ import {
   slpSceneLimitsText,
   slpSceneMissing,
   slpSceneRedraftPatch,
+  slpSceneShootGuidance,
   slpSceneStageProfile,
   toggleSlpSceneLock,
   undoSlpSceneChip,
@@ -64,6 +67,8 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
   const turn = useSlpSceneTurn();
   const redraft = useGenerateCreatorStageProfileDraft();
   const create = useCreateCreatorStageProfile();
+  const update = useUpdateCreatorStageProfile();
+  const artwork = useGenerateCreatorArtwork();
   const strategy = useUpdateCreatorStrategy();
   const firstPost = useEnqueueCreatorFirstPosts();
   // The chat is read back by the next turn before React renders (autopilot), so writes go through the ref.
@@ -195,30 +200,82 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
     }
   }, [append, applyPatch, direction, hostLabel, redraft, setup]);
 
-  /** Register the page. A page that still misses its basics gets one redraft first. */
-  const finish = useCallback(async () => {
+  const [accountId, setAccountId] = useState<string | null>(null);
+  const accountRef = useRef<string | null>(null);
+  /**
+   * Save the page as it is now: create it the first time, update it after that (the photo shoot
+   * needs a real page to hang the pictures on). A page that still misses its basics gets one
+   * redraft first; what is still missing after that comes back for the player to fill in.
+   */
+  const savePage = useCallback(async (): Promise<{ id: string } | { missing: string[] } | null> => {
     setError(null);
     if (slpSceneMissing(draftRef.current.draft).length && !(await updatePage())) return null;
     const missing = slpSceneMissing(draftRef.current.draft);
-    if (missing.length) return missing;
+    if (missing.length) return { missing };
+    const stageProfile = slpSceneStageProfile(draftRef.current.draft, setup.disclosureMode);
     try {
-      const draft: SlpSceneDraft = draftRef.current.draft;
-      const profile = await create.mutateAsync({
-        sourceAccountId: setup.source.id,
-        stageProfile: slpSceneStageProfile(draft, setup.disclosureMode),
-      });
-      const limits = slpSceneLimitsText(draft);
-      // The page exists now; a missed strategy line is not worth failing the sign-up over.
-      if (limits) await strategy.mutateAsync({ accountId: profile.id, strategyText: limits }).catch(() => undefined);
-      // The first post is written in the background, like "first posts now" in Quick setup.
-      firstPost.mutate({ executionId: generateClientId(), accountIds: [profile.id] });
-      setCreated({ id: profile.id, displayName: profile.displayName, handle: profile.handle });
-      return [];
+      if (accountRef.current) {
+        await update.mutateAsync({ accountId: accountRef.current, ...stageProfile });
+        return { id: accountRef.current };
+      }
+      const profile = await create.mutateAsync({ sourceAccountId: setup.source.id, stageProfile });
+      accountRef.current = profile.id;
+      setAccountId(profile.id);
+      return { id: profile.id };
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
       return null;
     }
-  }, [create, firstPost, setup, strategy, updatePage]);
+  }, [create, setup, update, updatePage]);
+
+  /** "Finish registration": save the page, then its limits line and the first post. */
+  const finish = useCallback(async () => {
+    const saved = await savePage();
+    if (!saved || "missing" in saved) return saved ? saved.missing : null;
+    const draft: SlpSceneDraft = draftRef.current.draft;
+    const limits = slpSceneLimitsText(draft);
+    // The page exists now; a missed strategy line is not worth failing the sign-up over.
+    if (limits) await strategy.mutateAsync({ accountId: saved.id, strategyText: limits }).catch(() => undefined);
+    // The first post is written in the background, like "first posts now" in Quick setup.
+    firstPost.mutate({ executionId: generateClientId(), accountIds: [saved.id] });
+    setCreated({ id: saved.id, displayName: draft.displayName, handle: draft.handle });
+    return [];
+  }, [firstPost, savePage, strategy]);
+
+  /**
+   * The first photo shoot: the real image pipeline draws the profile photo, then the cover, from
+   * the chosen outfit and place. The page is saved first so the pictures have somewhere to live.
+   */
+  const [shooting, setShooting] = useState<"avatar" | "banner" | null>(null);
+  const [photos, setPhotos] = useState<{ avatarUrl: string | null; bannerUrl: string | null }>({
+    avatarUrl: null,
+    bannerUrl: null,
+  });
+  const shoot = useCallback(
+    async (outfit: string, place: string) => {
+      const saved = await savePage();
+      if (!saved || "missing" in saved) return saved ? saved.missing : null;
+      for (const kind of ["avatar", "banner"] as const) {
+        setShooting(kind);
+        try {
+          const profile = (await artwork.mutateAsync({
+            accountId: saved.id,
+            kind,
+            guidance: slpSceneShootGuidance(kind, outfit, place),
+          })) as { avatarUrl: string | null; bannerUrl?: string | null };
+          const imageUrl = kind === "avatar" ? profile.avatarUrl : (profile.bannerUrl ?? null);
+          setPhotos((current) => ({ ...current, [kind === "avatar" ? "avatarUrl" : "bannerUrl"]: imageUrl }));
+          if (imageUrl) append([{ id: generateClientId(), kind: "photo", photo: kind, imageUrl }]);
+        } catch (reason) {
+          setError(reason instanceof Error ? reason.message : String(reason));
+          break;
+        }
+      }
+      setShooting(null);
+      return [];
+    },
+    [append, artwork, savePage],
+  );
 
   return {
     setup,
@@ -233,10 +290,15 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
     setDirection,
     error,
     created,
-    busy: turn.isPending || redraft.isPending || create.isPending || autoLeft > 0,
+    busy:
+      turn.isPending || redraft.isPending || create.isPending || update.isPending || autoLeft > 0 || shooting !== null,
     talking: turn.isPending,
     updating: redraft.isPending,
-    registering: create.isPending,
+    registering: create.isPending || update.isPending,
+    accountId,
+    shooting,
+    photos,
+    shoot,
     send,
     autopilot,
     autoLeft,

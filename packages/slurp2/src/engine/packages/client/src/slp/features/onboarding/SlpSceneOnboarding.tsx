@@ -2,14 +2,14 @@
 // scene while the page fills in beside the chat. "Finish registration" is always there; the old
 // wizard stays one tap away as "Quick setup".
 import { useEffect, useMemo, useState } from "react";
-import { ChevronRight, Loader2 } from "lucide-react";
+import { Check, ChevronRight, Loader2 } from "lucide-react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import type { SlpScenePreset } from "../../../../../shared/src/slp/slp-scene.js";
 import type { SlpAccount, SlpIdentityDisclosure } from "../../../../../shared/src/slp/slp-social.types.js";
 import { cn } from "../../../lib/utils";
 import { Avatar, SLP_GROUP_CLASS, SLP_TYPE, useSlpMediaQuery } from "../../base/chrome/SlpChrome";
 import { noteSlpAiUseOnce } from "../../modules/chrome/SlpAiMark";
-import { SlpPrimaryButton, SlpSegment } from "../../modules/chrome/SlpButton";
+import { SlpChip, SlpPrimaryButton, SlpSegment } from "../../modules/chrome/SlpButton";
 import { SlpRadioRow, SlpSheet } from "../../modules/chrome/SlpSheet";
 import { SlpWizardFooter, SlpWizardProgress } from "../../modules/chrome/SlpWizardChrome";
 import { ChoiceSetting } from "../../modules/settings/SlpSettingsInputs";
@@ -18,9 +18,10 @@ import { SlpSceneActions } from "./SlpSceneActions";
 import { SlpSceneChat } from "./SlpSceneChat";
 import { useSlpSceneModel, type SlpSceneSetup } from "./slp-scene-model";
 import { SlpScenePreview } from "./SlpScenePreview";
+import { SlpSceneShoot } from "./SlpSceneShoot";
 
 /** The presets a player can pick today. */
-export const SLP_SCENE_OFFERED: readonly SlpScenePreset[] = ["support"];
+export const SLP_SCENE_OFFERED: readonly SlpScenePreset[] = ["friend", "support"];
 
 export function SlpSceneOnboarding({
   accounts,
@@ -207,7 +208,17 @@ function SceneStage({
   }, [model.created]);
 
   const newcomerName = model.draft.displayName || setup.source.displayName;
-  const newcomer = { name: newcomerName, avatarUrl: setup.source.avatarUrl, mine: false };
+  // After the photo shoot the page wears its new photo everywhere.
+  const newcomerAvatar = model.photos.avatarUrl ?? setup.source.avatarUrl;
+  const newcomer = { name: newcomerName, avatarUrl: newcomerAvatar, mine: false };
+  const showMissing = (missing: string[]) => {
+    setMissingNote(
+      t("ui.slurp.scene.missing", {
+        list: missing.map((field) => t(`ui.slurp.scene.field.${field}`)).join(", "),
+      }),
+    );
+    if (phone) setPageOpen(true);
+  };
   const host = { name: hostName, avatarUrl: null, mine: setup.preset !== "seat" };
   const lastPatch = [...model.items].reverse().find((item) => item.kind === "patch");
   const recent =
@@ -226,7 +237,8 @@ function SceneStage({
       fixed={fixed}
       recent={recent}
       allowedTags={allowedTags}
-      avatarUrl={setup.source.avatarUrl}
+      avatarUrl={newcomerAvatar}
+      bannerUrl={model.photos.bannerUrl}
       updating={model.updating}
       onUpdatePage={() => void model.updatePage()}
       onEdit={model.edit}
@@ -238,7 +250,7 @@ function SceneStage({
     return (
       <>
         <div className="my-auto flex flex-col items-center gap-3 py-6 text-center">
-          <Avatar account={{ displayName: model.created.displayName, avatarUrl: setup.source.avatarUrl }} size="lg" />
+          <Avatar account={{ displayName: model.created.displayName, avatarUrl: newcomerAvatar }} size="lg" />
           <h3 tabIndex={-1} data-autofocus className={cn(SLP_TYPE.screen, "text-balance outline-none")}>
             {t("ui.slurp.scene.done.title", { name: model.created.displayName })}
           </h3>
@@ -270,6 +282,28 @@ function SceneStage({
         })}
         label={t(`ui.slurp.scene.moment.${model.moment}`)}
       />
+      {/* Support asks in order; the other roles can skip, go back or linger in any moment. */}
+      {setup.preset !== "support" && (
+        <div
+          role="toolbar"
+          aria-label={t("ui.slurp.scene.momentsLabel")}
+          className="-mx-1 -mt-1 flex gap-1 overflow-x-auto px-1 pb-2 [scrollbar-width:none]"
+        >
+          {model.moments.map((entry) => (
+            <SlpChip
+              key={entry}
+              selected={entry === model.moment}
+              aria-current={entry === model.moment ? "step" : undefined}
+              disabled={model.busy}
+              className="min-h-8 shrink-0 whitespace-nowrap px-2.5 text-xs"
+              onClick={() => model.goTo(entry)}
+            >
+              {model.doneMoments.includes(entry) && <Check size={12} aria-hidden="true" />}
+              {t(`ui.slurp.scene.moment.${entry}`)}
+            </SlpChip>
+          ))}
+        </div>
+      )}
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <div className="flex min-h-0 min-w-0 flex-col">
           {/* Phones: the page as one line on top, the whole page in a sheet. */}
@@ -278,7 +312,7 @@ function SceneStage({
             onClick={() => setPageOpen(true)}
             className="mb-1 flex min-h-11 items-center gap-2.5 rounded-2xl bg-[var(--slurp-surface-raised)] px-3 py-1.5 text-start shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] sm:hidden"
           >
-            <Avatar account={{ displayName: newcomerName, avatarUrl: setup.source.avatarUrl }} size="sm" />
+            <Avatar account={{ displayName: newcomerName, avatarUrl: newcomerAvatar }} size="sm" />
             <span className="min-w-0 flex-1">
               <span className={cn(SLP_TYPE.body, "block truncate font-semibold")}>
                 {model.draft.displayName || t("ui.slurp.scene.page.noName")}
@@ -302,6 +336,7 @@ function SceneStage({
             newcomer={newcomer}
             placeholder={t(`ui.slurp.scene.composer.${setup.preset}`, { name: hostName })}
           >
+            {model.moment === "shoot" && <SlpSceneShoot model={model} onMissing={showMissing} />}
             <SlpSceneActions model={model} />
           </SlpSceneChat>
         </div>
@@ -319,14 +354,7 @@ function SceneStage({
             onClick={async () => {
               setMissingNote("");
               const missing = await model.finish();
-              if (missing?.length) {
-                setMissingNote(
-                  t("ui.slurp.scene.missing", {
-                    list: missing.map((field) => t(`ui.slurp.scene.field.${field}`)).join(", "),
-                  }),
-                );
-                if (phone) setPageOpen(true);
-              }
+              if (missing?.length) showMissing(missing);
             }}
           >
             {model.registering && <Loader2 size={16} aria-hidden="true" className="animate-spin" />}
