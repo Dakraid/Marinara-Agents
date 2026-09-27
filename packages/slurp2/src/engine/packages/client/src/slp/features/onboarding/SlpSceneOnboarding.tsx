@@ -2,7 +2,7 @@
 // scene while the page fills in beside the chat. "Finish registration" is always there; the old
 // wizard stays one tap away as "Quick setup".
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronRight, Loader2 } from "lucide-react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import type { SlpScenePreset } from "../../../../../shared/src/slp/slp-scene.js";
 import type { SlpAccount, SlpIdentityDisclosure } from "../../../../../shared/src/slp/slp-social.types.js";
@@ -10,16 +10,18 @@ import { cn } from "../../../lib/utils";
 import { Avatar, SLP_GROUP_CLASS, SLP_TYPE, useSlpMediaQuery } from "../../base/chrome/SlpChrome";
 import { noteSlpAiUseOnce } from "../../modules/chrome/SlpAiMark";
 import { playSlpBurst } from "../../modules/sparkle/SlpSparkle";
-import { SlpChip, SlpPrimaryButton, SlpSegment } from "../../modules/chrome/SlpButton";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
+import { SlpButton, SlpPrimaryButton, SlpSegment } from "../../modules/chrome/SlpButton";
 import { SlpRadioRow, SlpSheet } from "../../modules/chrome/SlpSheet";
-import { SlpWizardFooter, SlpWizardProgress } from "../../modules/chrome/SlpWizardChrome";
+import { SlpWizardFooter } from "../../modules/chrome/SlpWizardChrome";
 import { ChoiceSetting } from "../../modules/settings/SlpSettingsInputs";
 import { useCreatorAccounts } from "../creators/slp-creators-contract";
 import { useSlurpSettings } from "../settings/slp-settings-contract";
 import { SlpSceneActions } from "./SlpSceneActions";
-import { SlpSceneChat } from "./SlpSceneChat";
+import { SlpSceneChat, slpScenePatchNote } from "./SlpSceneChat";
+import { slpSceneMissing, slpSceneProgress } from "./slp-scene-draft";
 import { useSlpSceneModel, type SlpSceneSetup } from "./slp-scene-model";
-import { SlpScenePreview } from "./SlpScenePreview";
+import { SlpScenePreview, SlpSceneProgressBar } from "./SlpScenePreview";
 import { SlpSceneShoot } from "./SlpSceneShoot";
 
 /** The presets a player can pick today. */
@@ -292,8 +294,10 @@ function SceneStage({
     lastPatch?.kind === "patch" && !model.chips.find((chip) => chip.id === lastPatch.chipId)?.undone
       ? lastPatch.fields
       : [];
+  const lastChip = lastPatch?.kind === "patch" ? model.chips.find((chip) => chip.id === lastPatch.chipId) : undefined;
+  const change = lastPatch?.kind === "patch" && recent.length ? slpScenePatchNote(t, lastPatch, lastChip) : "";
+  const progress = slpSceneProgress(model.draft, Boolean(model.photos.avatarUrl));
   const fixed = setup.disclosureMode === "open" ? (["displayName", "handle"] as const) : [];
-  const momentIndex = model.moments.indexOf(model.moment);
   const pageTitle = t(`ui.slurp.scene.page.title.${setup.preset === "support" ? "support" : "page"}`);
   const preview = (heading: boolean) => (
     <SlpScenePreview
@@ -303,11 +307,11 @@ function SceneStage({
       locked={model.locked}
       fixed={fixed}
       recent={recent}
+      recentKey={lastPatch?.id}
+      progress={progress}
       allowedTags={allowedTags}
       avatarUrl={newcomerAvatar}
       bannerUrl={model.photos.bannerUrl}
-      updating={model.updating}
-      onUpdatePage={() => void model.updatePage()}
       onEdit={model.edit}
       onToggleLock={model.toggleLock}
     />
@@ -344,65 +348,76 @@ function SceneStage({
     ? t("ui.slurp.scene.registering")
     : model.updating
       ? t("ui.slurp.scene.updating")
-      : missingNote;
+      : missingNote ||
+        (progress.ready
+          ? t("ui.slurp.scene.ready")
+          : t("ui.slurp.scene.needs", {
+              list: slpSceneMissing(model.draft)
+                .map((field) => t(`ui.slurp.scene.field.${field}`))
+                .join(", "),
+            }));
+  const finishLabel = (
+    <>
+      {model.registering && <Loader2 size={16} aria-hidden="true" className="animate-spin" />}
+      {t("ui.slurp.scene.finish")}
+    </>
+  );
+  const finish = async () => {
+    setMissingNote("");
+    const missing = await model.finish();
+    if (missing?.length) showMissing(missing);
+  };
   return (
     <>
-      <SlpWizardProgress
-        current={momentIndex + 1}
-        total={model.moments.length}
-        stepOf={t(`ui.slurp.scene.progress.${setup.preset === "support" ? "support" : "moment"}`, {
-          current: momentIndex + 1,
-          total: model.moments.length,
-        })}
-        label={t(`ui.slurp.scene.moment.${model.moment}`)}
-      />
-      {/* Support asks in order; the other roles can skip, go back or linger in any moment. */}
-      {setup.preset !== "support" && (
-        <div
-          role="toolbar"
-          aria-label={t("ui.slurp.scene.momentsLabel")}
-          className="-mx-1 -mt-1 flex gap-1 overflow-x-auto px-1 pb-2 [scrollbar-width:none]"
-        >
-          {model.moments.map((entry) => (
-            <SlpChip
-              key={entry}
-              selected={entry === model.moment}
-              aria-current={entry === model.moment ? "step" : undefined}
-              disabled={model.busy}
-              className="min-h-8 shrink-0 whitespace-nowrap px-2.5 text-xs"
-              onClick={() => model.goTo(entry)}
-            >
-              {model.doneMoments.includes(entry) && <Check size={12} aria-hidden="true" />}
-              {t(`ui.slurp.scene.moment.${entry}`)}
-            </SlpChip>
-          ))}
-        </div>
-      )}
+      {/* Who the player is in this scene, and where the scene is now. */}
+      <p className={cn(SLP_TYPE.body, "pb-2 text-pretty")}>
+        <span className="font-semibold">
+          {t(`ui.slurp.scene.role.${setup.preset}`, { name: setup.source.displayName, helper: hostName })}
+        </span>
+        <span className="text-[var(--slurp-muted)]">
+          {" · "}
+          {t("ui.slurp.scene.now", { moment: t(`ui.slurp.scene.moment.${model.moment}`) })}
+        </span>
+      </p>
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <div className="flex min-h-0 min-w-0 flex-col">
-          {/* Phones: the page as one line on top, the whole page in a sheet. */}
+          {/* Phones: the page as a peek on top (what just changed, how far it is), one tap to the sheet. */}
           <button
+            key={lastPatch?.id}
             type="button"
             onClick={() => setPageOpen(true)}
-            className="mb-1 flex min-h-11 items-center gap-2.5 rounded-2xl bg-[var(--slurp-surface-raised)] px-3 py-1.5 text-start shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] sm:hidden"
+            className={cn(
+              "mb-1 rounded-2xl bg-[var(--slurp-surface-raised)] px-3 pb-2.5 pt-1.5 text-start shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] sm:hidden",
+              change && "slp-field-glow",
+            )}
           >
-            <Avatar account={{ displayName: newcomerName, avatarUrl: newcomerAvatar }} size="sm" />
-            <span className="min-w-0 flex-1">
-              <span className={cn(SLP_TYPE.body, "block truncate font-semibold")}>
-                {model.draft.displayName || t("ui.slurp.scene.page.noName")}
+            <span className="flex min-h-11 items-center gap-2.5">
+              <Avatar account={{ displayName: newcomerName, avatarUrl: newcomerAvatar }} size="sm" />
+              <span className="min-w-0 flex-1">
+                <span className={cn(SLP_TYPE.body, "block truncate font-semibold")}>
+                  {model.draft.displayName || t("ui.slurp.scene.page.noName")}
+                </span>
+                <span
+                  className={cn(
+                    SLP_TYPE.meta,
+                    "flex items-center gap-1 truncate",
+                    change ? "text-[var(--slurp-text)]" : "text-[var(--slurp-muted)]",
+                  )}
+                >
+                  {change && (
+                    <SlpSparkleGlyph size={12} aria-hidden="true" className="shrink-0 text-[var(--slurp-ink)]" />
+                  )}
+                  <span className="truncate">
+                    {change || `@${model.draft.handle || t("ui.slurp.scene.page.noHandle")}`}
+                  </span>
+                </span>
               </span>
-              <span className={cn(SLP_TYPE.meta, "block truncate text-[var(--slurp-muted)]")}>
-                {recent.length
-                  ? t("ui.slurp.scene.patch", {
-                      fields: recent.map((field) => t(`ui.slurp.scene.field.${field}`)).join(", "),
-                    })
-                  : `@${model.draft.handle || t("ui.slurp.scene.page.noHandle")}`}
+              <span className="flex shrink-0 items-center gap-0.5 text-xs font-bold text-[var(--slurp-ink)]">
+                {pageTitle}
+                <ChevronRight size={14} aria-hidden="true" className="rtl:rotate-180" />
               </span>
             </span>
-            <span className="flex shrink-0 items-center gap-0.5 text-xs font-bold text-[var(--slurp-ink)]">
-              {pageTitle}
-              <ChevronRight size={14} aria-hidden="true" className="rtl:rotate-180" />
-            </span>
+            <SlpSceneProgressBar progress={progress} />
           </button>
           <SlpSceneChat
             model={model}
@@ -432,18 +447,18 @@ function SceneStage({
             ? undefined
             : { label: t("ui.slurp.scene.quick"), onClick: onQuickSetup, disabled: model.registering }
         }
+        // Finish always works (it fills what is missing first); once the page has what it needs to
+        // go live it becomes the lit-up main button.
         primary={
-          <SlpPrimaryButton
-            disabled={model.busy}
-            onClick={async () => {
-              setMissingNote("");
-              const missing = await model.finish();
-              if (missing?.length) showMissing(missing);
-            }}
-          >
-            {model.registering && <Loader2 size={16} aria-hidden="true" className="animate-spin" />}
-            {t("ui.slurp.scene.finish")}
-          </SlpPrimaryButton>
+          progress.ready ? (
+            <SlpPrimaryButton disabled={model.busy} onClick={() => void finish()}>
+              {finishLabel}
+            </SlpPrimaryButton>
+          ) : (
+            <SlpButton disabled={model.busy} onClick={() => void finish()}>
+              {finishLabel}
+            </SlpButton>
+          )
         }
         note={status}
       />

@@ -65,6 +65,8 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
   const [moment, setMoment] = useState<SlpSceneMoment>(moments[0]);
   const [doneMoments, setDoneMoments] = useState<SlpSceneMoment[]>([]);
   const [direction, setDirection] = useState("");
+  /** The player has done something themselves (the "your turn" hint goes away). */
+  const [acted, setActed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<{
     id: string;
@@ -116,6 +118,7 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
     async (action: SlpSceneAction, retry = false) => {
       if (turn.isPending) return false;
       setError(null);
+      if (action.kind !== "open") setActed(true);
       lastAction.current = action;
       // The player's own words are a host line, except in the seat, where they are a whisper. A
       // retry sends the same words again without writing them twice.
@@ -334,6 +337,7 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
     chips: draftState.chips,
     direction,
     setDirection,
+    acted,
     error,
     created,
     busy:

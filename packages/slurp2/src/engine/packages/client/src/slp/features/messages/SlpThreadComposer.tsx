@@ -109,7 +109,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
       {/* Pinned above the floating nav; glides to the edge with the nav while it is away. */}
       <div
         className="relative mb-[var(--slp-nav-live,0px)] shrink-0 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5"
-        style={{ transition: `margin-bottom ${SLP_MOTION.bar}ms ${SLP_MOTION.ease}` }}
+        style={{ transition: `margin-bottom ${SLP_MOTION.bar}ms ${SLP_MOTION.barEase}` }}
       >
         {awayFromBottom && (
           // Its own row just above the composer, at the end edge: the chat ends above it, so the

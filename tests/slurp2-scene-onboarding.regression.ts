@@ -14,6 +14,9 @@ import {
 } from "../packages/slurp2/src/engine/packages/client/src/slp/features/onboarding/slp-scene-draft.ts";
 import {
   slpSceneGuidance,
+  slpSceneProgress,
+  slpScenePatchHeadline,
+  slpSceneSuggestions,
   slpSceneTranscript,
 } from "../packages/slurp2/src/engine/packages/client/src/slp/features/onboarding/slp-scene-draft.ts";
 import {
@@ -443,6 +446,54 @@ for (const [question, options] of Object.entries(SLP_SITE_WELCOME_OPTIONS)) {
       transcript: longLine!.lines,
     }).success,
   );
+}
+
+// Onboarding pass 2: page progress in the player's words, "Name set: …" notes, the lit-up first reply.
+{
+  const empty = slpSceneInitialState().draft;
+  const none = slpSceneProgress(empty);
+  assert.deepEqual([none.done, none.total, none.ready], [0, 6, false]);
+  const named = { ...empty, displayName: "Velvet Moth", handle: "velvetmoth" };
+  assert.equal(slpSceneProgress({ ...named, handle: "" }).parts[0]!.done, false, "a name needs its handle too");
+  const ready = { ...named, gender: "female" as const, tags: ["art", "music", "fashion"] };
+  const mid = slpSceneProgress(ready);
+  assert.deepEqual([mid.done, mid.ready], [2, true], "name + tags: ready to go live, 2 of 6");
+  assert.equal(mid.ready, slpSceneMissing(ready).length === 0, "ready is the rule Finish checks");
+  assert.equal(slpSceneProgress({ ...ready, tags: ["art"] }).ready, false);
+  assert.equal(
+    slpSceneProgress(ready, true).parts.find((part) => part.id === "look")!.done,
+    true,
+    "a photo counts as the look",
+  );
+  assert.equal(slpSceneProgress({ ...ready, spice: "flirty" }).parts.at(-1)!.done, true);
+
+  assert.deepEqual(slpScenePatchHeadline(["displayName", "handle"], { displayName: " Velvet Moth ", handle: "vm" }), {
+    field: "displayName",
+    value: "Velvet Moth",
+  });
+  assert.deepEqual(slpScenePatchHeadline(["handle"], { handle: "vm" }), { field: "handle", value: "vm" });
+  assert.equal(
+    slpScenePatchHeadline(["bio", "tags"], { bio: "x", tags: ["a"] }),
+    null,
+    "several fields: listed, not quoted",
+  );
+  assert.equal(slpScenePatchHeadline(["bio"], { bio: "x".repeat(41) }), null, "long values are not quoted");
+  assert.equal(slpScenePatchHeadline(["gender"], { gender: "female" }), null, "enum values need their label");
+
+  assert.equal(slpSceneSuggestions("support", "look")[0], "askLook");
+  assert.equal(slpSceneSuggestions("support", "review")[0], "stamp");
+  assert.equal(slpSceneSuggestions("friend", "name")[0], "suggestName");
+  assert.equal(slpSceneSuggestions("seat", "name")[0], "bolder");
+  assert.equal(slpSceneSuggestions("friend", "shoot")[0], "lookTogether");
+  for (const preset of ["support", "friend", "seat"] as const)
+    for (const moment of SLP_SCENE_MOMENTS[preset]) {
+      const list = slpSceneSuggestions(preset, moment);
+      assert.deepEqual(
+        [...list].sort(),
+        [...SLP_SCENE_ACTIONS[preset]].sort(),
+        `${preset}/${moment}: same set, reordered`,
+      );
+    }
 }
 
 console.log("slurp2-scene-onboarding: ok");

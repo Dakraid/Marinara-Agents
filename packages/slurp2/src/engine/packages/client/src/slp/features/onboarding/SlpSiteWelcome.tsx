@@ -96,6 +96,8 @@ export function SlpSiteWelcome({
   );
   return (
     <>
+      {/* Roles swapped: here the player is the one being asked. */}
+      <p className={cn(SLP_TYPE.body, "pb-2 font-semibold text-pretty")}>{t("ui.slurp.site.role")}</p>
       <SlpWizardProgress
         current={index + 1}
         total={SLP_SITE_WELCOME_QUESTIONS.length}

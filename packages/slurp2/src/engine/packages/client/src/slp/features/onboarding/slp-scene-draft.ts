@@ -8,8 +8,12 @@
  * Pure, so the rules run in tests.
  */
 import {
+  SLP_SCENE_ACTIONS,
   SLP_SCENE_FIELDS,
   SLP_SCENE_TRANSCRIPT_MAX,
+  type SlpSceneActionId,
+  type SlpSceneMoment,
+  type SlpScenePreset,
   type SlpSceneLine,
   type SlpSceneDraft,
   type SlpSceneField,
@@ -127,6 +131,73 @@ export function slpSceneMissing(draft: SlpSceneDraft): ("displayName" | "handle"
   if (!draft.gender) missing.push("gender");
   if (draft.tags.length < SLP_SCENE_MIN_TAGS) missing.push("tags");
   return missing;
+}
+
+/** The page parts the player sees ticking off, in the order the chat usually reaches them. */
+export const SLP_SCENE_PROGRESS = ["name", "look", "bio", "voice", "tags", "limits"] as const;
+export type SlpSceneProgressPart = (typeof SLP_SCENE_PROGRESS)[number];
+
+/**
+ * How far the page is, in the player's words: which parts are done, and whether the page has
+ * what it needs to go live (the same rule Finish checks).
+ */
+export function slpSceneProgress(draft: SlpSceneDraft, hasPhoto = false) {
+  const done: Record<SlpSceneProgressPart, boolean> = {
+    name: Boolean(draft.displayName.trim() && draft.handle.trim()),
+    look: hasPhoto || Boolean(draft.appearance.trim()),
+    bio: Boolean(draft.bio.trim()),
+    voice: Boolean(draft.stagePersonality.trim()),
+    tags: Boolean(draft.gender) && draft.tags.length >= SLP_SCENE_MIN_TAGS,
+    limits: Boolean(draft.spice || draft.turnOns.trim() || draft.hardNoes.trim()),
+  };
+  const parts = SLP_SCENE_PROGRESS.map((id) => ({ id, done: done[id] }));
+  return {
+    parts,
+    done: parts.filter((part) => part.done).length,
+    total: parts.length,
+    ready: slpSceneMissing(draft).length === 0,
+  };
+}
+
+/**
+ * The one field a change note names with the value the patch set ("Name set: Velvet Moth"), or null
+ * when the note just lists the fields. The name wins; otherwise only a lone short value is quoted.
+ */
+export function slpScenePatchHeadline(
+  fields: readonly SlpSceneField[],
+  values: SlpScenePatch,
+): { field: SlpSceneField; value: string } | null {
+  const text = (field: SlpSceneField) => {
+    const value = values[field];
+    return typeof value === "string" ? value.trim() : "";
+  };
+  if (fields.includes("displayName") && text("displayName"))
+    return { field: "displayName", value: text("displayName") };
+  const field = fields.length === 1 ? fields[0] : undefined;
+  if (!field || field === "gender" || field === "spice") return null;
+  const value = text(field);
+  return value && value.length <= 40 ? { field, value } : null;
+}
+
+/** The suggestion that fits each moment best; it goes first and is the highlighted one. */
+const SLP_SCENE_MOMENT_LEAD: Partial<Record<SlpSceneMoment, readonly SlpSceneActionId[]>> = {
+  name: ["askName", "suggestName", "bolder"],
+  about: ["askAbout"],
+  look: ["askLook"],
+  voice: ["joke"],
+  limits: ["tease", "joke"],
+  review: ["stamp"],
+  arrival: ["hypeUp"],
+  shoot: ["lookTogether"],
+  bio: ["hypeUp"],
+  firstPost: ["hypeUp"],
+};
+
+/** The preset's suggestions for this moment, the best fit first; the row shows the first few. */
+export function slpSceneSuggestions(preset: SlpScenePreset, moment: SlpSceneMoment): SlpSceneActionId[] {
+  const all = SLP_SCENE_ACTIONS[preset] as readonly SlpSceneActionId[];
+  const lead = all.find((id) => SLP_SCENE_MOMENT_LEAD[moment]?.includes(id));
+  return lead ? [lead, ...all.filter((id) => id !== lead)] : [...all];
 }
 
 /** The stage profile the create route takes. The limits go to the strategy, not the page. */

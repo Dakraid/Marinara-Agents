@@ -221,7 +221,7 @@ export function SlpShell({
       scrollRoot?.toggleAttribute("data-slp-nav-hidden", hidden);
       const fade = navFadeRef.current;
       if (!fade) return;
-      fade.style.transition = `transform ${SLP_MOTION.bar}ms ${SLP_MOTION.ease}`;
+      fade.style.transition = `transform ${SLP_MOTION.bar}ms ${SLP_MOTION.barEase}`;
       fade.style.transform = hidden ? "translate3d(0, 100%, 0)" : "";
     },
   });

@@ -1,7 +1,8 @@
-// The live page of the role-play sign-up: what the chat has filled in so far. Every field can be
-// edited by hand (which locks it) and locked or unlocked; a locked field is never patched again.
-import { useState } from "react";
-import { Loader2, Lock, LockOpen, Pencil } from "lucide-react";
+// The live page of the role-play sign-up: what the chat has filled in so far, how far it is, and
+// the field the chat just changed, lit up for a moment. Every field can be edited by hand (which
+// locks it, so the chat keeps it); a locked field shows its lock and can be unlocked.
+import { useEffect, useRef, useState } from "react";
+import { Check, Lock, Pencil } from "lucide-react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import {
   SLP_SCENE_FIELD_LIMITS,
@@ -11,8 +12,10 @@ import {
 } from "../../../../../shared/src/slp/slp-scene.js";
 import { cn } from "../../../lib/utils";
 import { Avatar, SLP_GROUP_CLASS, SLP_IMG_FRAME_CLASS, SLP_TYPE, SlurpMediaImg } from "../../base/chrome/SlpChrome";
-import { SlpUsesAiMark } from "../../modules/chrome/SlpAiMark";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
+import { slpPrefersReducedMotion } from "../../base/chrome/slp-motion";
 import { SlpButton, SlpChip, SlpSegment } from "../../modules/chrome/SlpButton";
+import { slpSceneProgress, type SlpSceneProgressPart } from "./slp-scene-draft";
 
 const ROWS: SlpSceneField[] = [
   "displayName",
@@ -29,6 +32,70 @@ const ROWS: SlpSceneField[] = [
   "hardNoes",
 ];
 const LONG: SlpSceneField[] = ["bio", "stagePersonality", "appearance", "wardrobe", "locations"];
+/** The label of each progress part, borrowed from the field or moment it stands for. */
+export const SLP_SCENE_PART_LABEL: Record<SlpSceneProgressPart, string> = {
+  name: "ui.slurp.scene.field.displayName",
+  look: "ui.slurp.scene.field.appearance",
+  bio: "ui.slurp.scene.field.bio",
+  voice: "ui.slurp.scene.field.stagePersonality",
+  tags: "ui.slurp.scene.field.tags",
+  limits: "ui.slurp.scene.moment.limits",
+};
+
+/** "3 of 6 done" with a thin bar; `parts` adds the checklist chips under it. */
+export function SlpSceneProgressBar({
+  progress,
+  parts = false,
+}: {
+  progress: ReturnType<typeof slpSceneProgress>;
+  parts?: boolean;
+}) {
+  const { t } = useUiTranslation();
+  const label = t("ui.slurp.scene.progress.count", { done: progress.done, total: progress.total });
+  return (
+    <div>
+      <div className="flex items-center gap-2.5">
+        <span className={cn(SLP_TYPE.meta, "shrink-0 whitespace-nowrap font-semibold text-[var(--slurp-text)]")}>
+          {label}
+        </span>
+        <div
+          role="progressbar"
+          aria-label={label}
+          aria-valuemin={0}
+          aria-valuemax={progress.total}
+          aria-valuenow={progress.done}
+          className="h-1 min-w-10 flex-1 overflow-hidden rounded-full bg-[var(--noodle-divider)]"
+        >
+          <span
+            className="block h-full rounded-full bg-[var(--noodle-accent)] transition-[width] duration-[var(--slurp-motion-slow)] ease-[var(--slurp-ease)] motion-reduce:transition-none"
+            style={{ width: `${Math.round((progress.done / progress.total) * 100)}%` }}
+          />
+        </div>
+      </div>
+      {parts && (
+        <ul className="mt-2 flex flex-wrap gap-1">
+          {progress.parts.map((part) => (
+            <li
+              key={part.id}
+              className={cn(
+                "inline-flex min-h-7 items-center gap-1 rounded-full px-2.5 text-xs font-semibold",
+                part.done
+                  ? "bg-[var(--slurp-tint)] text-[var(--slurp-text)]"
+                  : "text-[var(--slurp-muted)] ring-1 ring-inset ring-[var(--noodle-divider)]",
+              )}
+            >
+              {part.done && <Check size={12} aria-hidden="true" className="shrink-0 text-[var(--slurp-ink)]" />}
+              {t(SLP_SCENE_PART_LABEL[part.id])}
+              <span className="sr-only">
+                {part.done ? t("ui.slurp.scene.progress.done") : t("ui.slurp.scene.page.empty")}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export function SlpScenePreview({
   title,
@@ -37,11 +104,11 @@ export function SlpScenePreview({
   locked,
   fixed,
   recent,
+  recentKey,
+  progress,
   allowedTags,
   avatarUrl,
   bannerUrl,
-  updating,
-  onUpdatePage,
   onEdit,
   onToggleLock,
 }: {
@@ -54,30 +121,31 @@ export function SlpScenePreview({
   fixed: readonly SlpSceneField[];
   /** Fields the newest patch changed, marked for a moment. */
   recent: readonly SlpSceneField[];
+  /** Changes with every new patch, so the glow plays again for the next one. */
+  recentKey?: string;
+  progress: ReturnType<typeof slpSceneProgress>;
   allowedTags: readonly string[];
   avatarUrl?: string | null;
   bannerUrl?: string | null;
-  updating: boolean;
-  onUpdatePage: () => void;
   onEdit: <F extends SlpSceneField>(field: F, value: SlpSceneDraft[F]) => void;
   onToggleLock: (field: SlpSceneField) => void;
 }) {
   const { t } = useUiTranslation();
   const [editing, setEditing] = useState<SlpSceneField | null>(null);
   const name = draft.displayName || t("ui.slurp.scene.page.noName");
+  const glow = (field: SlpSceneField) => recent.includes(field);
+  // A new name shows on the page card at the top: bring the top back instead of the row.
+  const firstRecent = ROWS.find(glow);
+  const topRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (recentKey && (firstRecent === "displayName" || firstRecent === "handle"))
+      topRef.current?.scrollIntoView({ block: "nearest", behavior: slpPrefersReducedMotion() ? "auto" : "smooth" });
+  }, [recentKey, firstRecent]);
   return (
     <section aria-label={title} className="flex min-h-0 flex-col gap-3">
-      <div className="flex min-h-11 items-center justify-between gap-2">
-        {heading && <h4 className={cn(SLP_TYPE.title, "min-w-0 truncate")}>{title}</h4>}
-        <SlpButton
-          variant="quiet"
-          className="ms-auto min-h-9 shrink-0 px-3 text-xs"
-          disabled={updating}
-          onClick={onUpdatePage}
-        >
-          {updating ? <Loader2 size={14} aria-hidden="true" className="animate-spin" /> : <SlpUsesAiMark />}
-          {t("ui.slurp.scene.page.update")}
-        </SlpButton>
+      {heading && <h4 className={cn(SLP_TYPE.title, "flex min-h-11 min-w-0 items-center truncate")}>{title}</h4>}
+      <div ref={topRef}>
+        <SlpSceneProgressBar progress={progress} parts />
       </div>
       <div className="overflow-hidden rounded-2xl bg-[var(--slurp-surface-raised)] shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
         <div className={cn(SLP_IMG_FRAME_CLASS, "relative h-20 bg-[image:var(--slurp-nav-active)]")}>
@@ -91,22 +159,37 @@ export function SlpScenePreview({
             className="h-16 w-16 ring-2 ring-[var(--slurp-surface-raised)]"
           />
           <div className="min-w-0 pt-9">
-            <p className={cn(SLP_TYPE.title, "truncate", !draft.displayName && "text-[var(--slurp-muted)]")}>{name}</p>
+            <p
+              key={glow("displayName") ? recentKey : undefined}
+              className={cn(
+                SLP_TYPE.title,
+                "truncate rounded-md",
+                !draft.displayName && "text-[var(--slurp-muted)]",
+                glow("displayName") && "slp-field-glow",
+              )}
+            >
+              {name}
+            </p>
             <p className={cn(SLP_TYPE.meta, "truncate text-[var(--slurp-muted)]")}>
               @{draft.handle || t("ui.slurp.scene.page.noHandle")}
             </p>
           </div>
         </div>
       </div>
+      <p className={cn(SLP_TYPE.meta, "-mb-1 px-1 text-pretty text-[var(--slurp-muted)]")}>
+        {t("ui.slurp.scene.page.lockHint")}
+      </p>
       <ul className={SLP_GROUP_CLASS}>
         {ROWS.map((field) => (
           <FieldRow
-            key={field}
+            // A new patch remounts the row it changed, so its glow plays again.
+            key={glow(field) ? `${field}-${recentKey}` : field}
             field={field}
             draft={draft}
             locked={locked.includes(field)}
             fixed={fixed.includes(field)}
             recent={recent.includes(field)}
+            scrollTo={field === firstRecent && field !== "displayName" && field !== "handle"}
             editing={editing === field}
             allowedTags={allowedTags}
             onEditStart={() => setEditing(field)}
@@ -126,6 +209,7 @@ function FieldRow({
   locked,
   fixed,
   recent,
+  scrollTo,
   editing,
   allowedTags,
   onEditStart,
@@ -138,6 +222,8 @@ function FieldRow({
   locked: boolean;
   fixed: boolean;
   recent: boolean;
+  /** This row is the first one the newest patch changed. */
+  scrollTo: boolean;
   editing: boolean;
   allowedTags: readonly string[];
   onEditStart: () => void;
@@ -148,6 +234,12 @@ function FieldRow({
   const { t } = useUiTranslation();
   const label = t(`ui.slurp.scene.field.${field}`);
   const value = draft[field];
+  // The first field the chat just filled scrolls into view, so its glow is seen (rows remount per patch).
+  const rowRef = useRef<HTMLLIElement | null>(null);
+  useEffect(() => {
+    if (scrollTo)
+      rowRef.current?.scrollIntoView({ block: "nearest", behavior: slpPrefersReducedMotion() ? "auto" : "smooth" });
+  }, [scrollTo]);
   const shown =
     field === "gender"
       ? draft.gender && t(`ui.slurp.scene.gender.${draft.gender}`)
@@ -158,27 +250,30 @@ function FieldRow({
           : (value as string);
   return (
     <li
+      ref={rowRef}
       className={cn(
         "px-4 py-2.5 transition-colors duration-[var(--slurp-motion-slow)] motion-reduce:transition-none",
-        recent && "bg-[var(--slurp-tint)]",
+        recent && "slp-field-glow bg-[var(--slurp-tint)]",
       )}
     >
       <div className="flex items-center gap-1">
-        <span className={cn(SLP_TYPE.meta, "min-w-0 flex-1 truncate text-[var(--slurp-muted)]")}>
-          {label}
-          {fixed && <span className="ps-1.5">· {t("ui.slurp.scene.page.publicName")}</span>}
+        <span
+          className={cn(SLP_TYPE.meta, "flex min-w-0 flex-1 items-center gap-1 truncate text-[var(--slurp-muted)]")}
+        >
+          {recent && <SlpSparkleGlyph size={12} aria-hidden="true" className="shrink-0 text-[var(--slurp-ink)]" />}
+          <span className="truncate">{label}</span>
+          {fixed && <span className="shrink-0 ps-0.5">· {t("ui.slurp.scene.page.publicName")}</span>}
         </span>
         {!fixed && !editing && (
           <>
+            {/* Only a locked field shows its lock (tap to unlock); an edit locks the field by itself. */}
+            {locked && (
+              <IconButton label={t("ui.slurp.scene.page.unlock", { field: label })} pressed onClick={onToggleLock}>
+                <Lock size={14} aria-hidden="true" />
+              </IconButton>
+            )}
             <IconButton label={t("ui.slurp.scene.page.edit", { field: label })} onClick={onEditStart}>
               <Pencil size={14} aria-hidden="true" />
-            </IconButton>
-            <IconButton
-              label={t(locked ? "ui.slurp.scene.page.unlock" : "ui.slurp.scene.page.lock", { field: label })}
-              pressed={locked}
-              onClick={onToggleLock}
-            >
-              {locked ? <Lock size={14} aria-hidden="true" /> : <LockOpen size={14} aria-hidden="true" />}
             </IconButton>
           </>
         )}

@@ -10,6 +10,11 @@ export const SLP_MOTION = {
    * glide (user on a phone, fix phase 1b: 360 ms still felt abrupt).
    */
   bar: 500,
+  /**
+   * The bars' own curve: a sine ease-in-out (soft ends, top speed only ~1.6× linear), so the 500 ms glide is spread over the whole move
+   * instead of front-loaded like `ease` (onboarding pass 2: the slide still read as quick).
+   */
+  barEase: "cubic-bezier(0.37, 0, 0.63, 1)",
   ease: "cubic-bezier(0.2, 0.8, 0.2, 1)",
 } as const;
 

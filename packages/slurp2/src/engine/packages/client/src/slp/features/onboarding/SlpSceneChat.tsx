@@ -8,7 +8,23 @@ import { Avatar, SLP_IMG_FRAME_CLASS, SLP_TYPE, SlurpMediaImg } from "../../base
 import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { SlpButton } from "../../modules/chrome/SlpButton";
 import { slurpBubbleSurface } from "../messages/slp-messages-contract";
+import { slpScenePatchHeadline, type SlpSceneChip } from "./slp-scene-draft";
 import type { SlpSceneModel } from "./slp-scene-model";
+
+/** What one page change says, in the chat and on the phone's page peek: "Name set: Velvet Moth". */
+export function slpScenePatchNote(
+  t: (key: string, options?: Record<string, unknown>) => string,
+  item: { fields: readonly SlpSceneChip["fields"][number][]; redraft: boolean },
+  chip: SlpSceneChip | undefined,
+) {
+  if (item.redraft) return t("ui.slurp.scene.patchRedraft");
+  const headline = chip ? slpScenePatchHeadline(item.fields, chip.after) : null;
+  if (headline)
+    return t("ui.slurp.scene.patchSet", { field: t(`ui.slurp.scene.field.${headline.field}`), value: headline.value });
+  return t("ui.slurp.scene.patch", {
+    fields: item.fields.map((field) => t(`ui.slurp.scene.field.${field}`)).join(", "),
+  });
+}
 
 export type SlpSceneSpeakerView = { name: string; avatarUrl: string | null; mine: boolean };
 
@@ -86,15 +102,14 @@ export function SlpSceneChat({
             );
           if (item.kind === "patch") {
             const chip = chips.get(item.chipId);
-            const fields = item.fields.map((field) => t(`ui.slurp.scene.field.${field}`)).join(", ");
             return (
               <div
                 key={item.id}
-                className="my-1 flex min-h-9 items-center gap-1 self-center rounded-full bg-[var(--slurp-tint)] ps-3 pe-1 text-xs font-semibold text-[var(--slurp-text)] shadow-[var(--slurp-highlight)]"
+                className="my-1 flex min-h-9 max-w-full items-center gap-1 self-center rounded-full bg-[var(--slurp-tint)] ps-3 pe-1 text-xs font-semibold text-[var(--slurp-text)] shadow-[var(--slurp-highlight)]"
               >
                 <SlpSparkleGlyph size={12} aria-hidden="true" className="shrink-0 text-[var(--slurp-ink)]" />
-                <span className={cn("px-1", chip?.undone && "text-[var(--slurp-muted)] line-through")}>
-                  {item.redraft ? t("ui.slurp.scene.patchRedraft") : t("ui.slurp.scene.patch", { fields })}
+                <span className={cn("min-w-0 truncate px-1", chip?.undone && "text-[var(--slurp-muted)] line-through")}>
+                  {slpScenePatchNote(t, item, chip)}
                 </span>
                 {chip && !chip.undone ? (
                   <SlpButton variant="tertiary" className="min-h-9 px-2.5 text-xs" onClick={() => model.undo(chip.id)}>

@@ -260,7 +260,7 @@ export function useHideOnScroll(
 
     // A bar that takes keyboard focus while hidden comes back, so focus never sits off screen.
     const show = () => setHidden(false);
-    bar.style.transition = `transform ${SLP_MOTION.bar}ms ${SLP_MOTION.ease}`;
+    bar.style.transition = `transform ${SLP_MOTION.bar}ms ${SLP_MOTION.barEase}`;
     scroller.addEventListener("scroll", update, { passive: true, capture: true });
     bar.addEventListener("focusin", show);
     return () => {

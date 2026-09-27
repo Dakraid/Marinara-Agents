@@ -162,7 +162,9 @@ assert.match(src("features/creators/SlpStageProfileForm.tsx"), /sticky bottom-\[
 // phone): 360 ms still felt abrupt, the glide is now 450–550 ms.
 const bar = Number(motion.match(/bar: (\d+),/u)?.[1]);
 assert.ok(bar >= 450 && bar <= 550, `bar motion ${bar} ms`);
-assert.match(chrome, /bar\.style\.transition = `transform \$\{SLP_MOTION\.bar\}ms \$\{SLP_MOTION\.ease\}`/u);
+// Onboarding pass 2 (user): the bars glide on their own even ease-in-out, not the front-loaded design ease.
+assert.match(chrome, /bar\.style\.transition = `transform \$\{SLP_MOTION\.bar\}ms \$\{SLP_MOTION\.barEase\}`/u);
+assert.match(motion, /barEase: "cubic-bezier\(0\.37, 0, 0\.63, 1\)"/u);
 assert.match(chrome, /if \(!scroller \|\| !bar \|\| reduceMotion\) return;/u);
 
 // Point 6: pictures wait in a shimmering frame, then fade in and un-blur; the image rules stay at zero
