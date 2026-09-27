@@ -281,8 +281,9 @@ export async function replyToSlurpMessage(
       // Two or three messages when the conversation is going well, one when it is not. A creator
       // who always answers in exactly one tidy block reads as a form letter.
       // Settings caps the burst, energy still decides whether it earns the top of that cap. A limit
-      // of one is a player asking for the tidy block instead of the texting rhythm.
-      const burstLimit = Math.min(settings.messagesReplyBubbleLimit, creatorState.energy >= 70 ? 3 : 2);
+      // of one is a player asking for the tidy block instead of the texting rhythm. The top is the
+      // setting itself: a fixed 3 here made the stepper's 4 a value that never applied.
+      const burstLimit = Math.min(settings.messagesReplyBubbleLimit, creatorState.energy >= 70 ? Infinity : 2);
       const shouldSplit = allowMultiBubbleSplit(talkativenessProfile.talkativeness, currentMood);
       const bubbles = splitSlurpReplyBurst(
         reply.content,
