@@ -20,6 +20,7 @@
         "initiativeModifier": -1,
         "abilities": { "str": 21, "dex": 9, "con": 15, "int": 18, "wis": 15, "cha": 18 },
         "saves": { "con_save": 6, "int_save": 8, "wis_save": 6 },
+        "checks": { "might": 5, "agility": -1 },
         "tier": "cr_10",
         "traits": [
           {
@@ -98,11 +99,79 @@
         "environment": ["Desert", "Hills", "Temple", "Urban"]
       },
       "creature": {
-        "health": { "dice": "2d8" },
-        "defense": 10,
-        "speed": 30,
-        "initiativeModifier": 0,
-        "abilities": { "str": 10, "dex": 10, "con": 10, "int": 10, "wis": 14, "cha": 11 },
+        "sheet": {
+          "abilities": { "str": 10, "dex": 10, "con": 10, "int": 10, "wis": 14, "cha": 11 },
+          "skills": { "medicine": "proficient", "religion": "proficient" },
+          "saves": {},
+          "bonuses": {},
+          "fields": {
+            "level": 1,
+            "class": "Cleric",
+            "ac": 10,
+            "speed": 30,
+            "hp_max": 9,
+            "spellcasting_ability": "wis",
+            "slots_max_1": 3
+          },
+          "lists": {
+            "spells": [
+              {
+                "name": "Light",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: Touch. Duration: 1 hour. Components: V, M.",
+                "_catalog": "spells/light"
+              },
+              {
+                "name": "Sacred Flame",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 60 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/sacred-flame"
+              },
+              {
+                "name": "Thaumaturgy",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Transmutation. Casting time: action. Range: 30 feet. Duration: 1 minute. Components: V.",
+                "_catalog": "spells/thaumaturgy"
+              },
+              {
+                "name": "Bless",
+                "level": 1,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Enchantment. Casting time: action. Range: 30 feet. Duration: 1 minute. Components: V, S, M.",
+                "_catalog": "spells/bless"
+              },
+              {
+                "name": "Cure Wounds",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: Touch. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/cure-wounds"
+              },
+              {
+                "name": "Sanctuary",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: bonus action. Range: 30 feet. Duration: 1 minute. Components: V, S, M.",
+                "_catalog": "spells/sanctuary"
+              }
+            ]
+          }
+        },
         "tier": "cr_1_4",
         "traits": [
           {
@@ -134,6 +203,7 @@
         "initiativeModifier": 2,
         "abilities": { "str": 23, "dex": 14, "con": 21, "int": 14, "wis": 13, "cha": 17 },
         "saves": { "dex_save": 7, "con_save": 10, "wis_save": 6, "cha_save": 8 },
+        "checks": { "might": 6, "agility": 2 },
         "immune": ["acid"],
         "tier": "cr_14",
         "traits": [
@@ -244,6 +314,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 25, "dex": 10, "con": 23, "int": 16, "wis": 15, "cha": 19 },
         "saves": { "dex_save": 5, "con_save": 11, "wis_save": 7, "cha_save": 9 },
+        "checks": { "might": 7, "agility": 0 },
         "immune": ["lightning"],
         "tier": "cr_16",
         "traits": [
@@ -358,6 +429,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 23, "dex": 10, "con": 21, "int": 14, "wis": 13, "cha": 17 },
         "saves": { "dex_save": 5, "con_save": 10, "wis_save": 6, "cha_save": 8 },
+        "checks": { "might": 6, "agility": 0 },
         "immune": ["fire"],
         "tier": "cr_13",
         "traits": [
@@ -471,6 +543,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 25, "dex": 10, "con": 23, "int": 16, "wis": 15, "cha": 19 },
         "saves": { "dex_save": 5, "con_save": 11, "wis_save": 7, "cha_save": 9 },
+        "checks": { "might": 7, "agility": 0 },
         "immune": ["lightning"],
         "tier": "cr_15",
         "traits": [
@@ -589,6 +662,7 @@
         "initiativeModifier": 1,
         "abilities": { "str": 23, "dex": 12, "con": 21, "int": 18, "wis": 15, "cha": 17 },
         "saves": { "dex_save": 6, "con_save": 10, "wis_save": 7, "cha_save": 8 },
+        "checks": { "might": 6, "agility": 1 },
         "immune": ["acid"],
         "tier": "cr_14",
         "traits": [
@@ -707,6 +781,7 @@
         "initiativeModifier": 2,
         "abilities": { "str": 27, "dex": 14, "con": 25, "int": 16, "wis": 15, "cha": 24 },
         "saves": { "dex_save": 8, "con_save": 13, "wis_save": 8, "cha_save": 13 },
+        "checks": { "might": 8, "agility": 2 },
         "immune": ["fire"],
         "tier": "cr_17",
         "traits": [
@@ -825,6 +900,7 @@
         "initiativeModifier": 1,
         "abilities": { "str": 23, "dex": 12, "con": 21, "int": 18, "wis": 15, "cha": 17 },
         "saves": { "dex_save": 6, "con_save": 10, "wis_save": 7, "cha_save": 8 },
+        "checks": { "might": 6, "agility": 1 },
         "immune": ["poison"],
         "conditionImmunities": ["poisoned"],
         "tier": "cr_15",
@@ -936,6 +1012,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 27, "dex": 10, "con": 25, "int": 16, "wis": 13, "cha": 21 },
         "saves": { "dex_save": 6, "con_save": 13, "wis_save": 7, "cha_save": 11 },
+        "checks": { "might": 8, "agility": 0 },
         "immune": ["fire"],
         "tier": "cr_17",
         "traits": [
@@ -1045,6 +1122,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 27, "dex": 10, "con": 25, "int": 16, "wis": 13, "cha": 21 },
         "saves": { "dex_save": 5, "con_save": 12, "wis_save": 6, "cha_save": 10 },
+        "checks": { "might": 8, "agility": 0 },
         "immune": ["cold"],
         "tier": "cr_16",
         "traits": [
@@ -1162,6 +1240,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 22, "dex": 10, "con": 22, "int": 8, "wis": 12, "cha": 12 },
         "saves": { "dex_save": 5, "con_save": 11, "wis_save": 6, "cha_save": 6 },
+        "checks": { "might": 6, "agility": 0 },
         "immune": ["cold"],
         "tier": "cr_13",
         "traits": [
@@ -1279,6 +1358,7 @@
         "speed": 90,
         "initiativeModifier": 5,
         "abilities": { "str": 14, "dex": 20, "con": 14, "int": 6, "wis": 10, "cha": 6 },
+        "checks": { "might": 2, "agility": 5 },
         "resist": ["bludgeoning", "lightning", "piercing", "slashing", "thunder"],
         "immune": ["poison"],
         "conditionImmunities": ["grappled", "paralyzed", "petrified", "poisoned", "prone", "restrained", "unconscious"],
@@ -1340,6 +1420,7 @@
         "initiativeModifier": 2,
         "abilities": { "str": 27, "dex": 14, "con": 25, "int": 16, "wis": 15, "cha": 19 },
         "saves": { "dex_save": 9, "con_save": 14, "wis_save": 9, "cha_save": 11 },
+        "checks": { "might": 8, "agility": 2 },
         "immune": ["acid"],
         "tier": "cr_21",
         "traits": [
@@ -1450,6 +1531,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 29, "dex": 10, "con": 27, "int": 18, "wis": 17, "cha": 21 },
         "saves": { "dex_save": 7, "con_save": 15, "wis_save": 10, "cha_save": 12 },
+        "checks": { "might": 9, "agility": 0 },
         "immune": ["lightning"],
         "tier": "cr_23",
         "traits": [
@@ -1564,6 +1646,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 27, "dex": 10, "con": 25, "int": 16, "wis": 15, "cha": 19 },
         "saves": { "dex_save": 6, "con_save": 13, "wis_save": 8, "cha_save": 10 },
+        "checks": { "might": 8, "agility": 0 },
         "immune": ["fire"],
         "tier": "cr_20",
         "traits": [
@@ -1686,6 +1769,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 29, "dex": 10, "con": 27, "int": 18, "wis": 17, "cha": 21 },
         "saves": { "dex_save": 7, "con_save": 15, "wis_save": 10, "cha_save": 12 },
+        "checks": { "might": 9, "agility": 0 },
         "immune": ["lightning"],
         "tier": "cr_22",
         "traits": [
@@ -1804,6 +1888,7 @@
         "initiativeModifier": 1,
         "abilities": { "str": 27, "dex": 12, "con": 25, "int": 20, "wis": 17, "cha": 19 },
         "saves": { "dex_save": 8, "con_save": 14, "wis_save": 10, "cha_save": 11 },
+        "checks": { "might": 8, "agility": 1 },
         "immune": ["acid"],
         "tier": "cr_21",
         "traits": [
@@ -1926,6 +2011,7 @@
         "initiativeModifier": 2,
         "abilities": { "str": 30, "dex": 14, "con": 29, "int": 18, "wis": 17, "cha": 28 },
         "saves": { "dex_save": 9, "con_save": 16, "wis_save": 10, "cha_save": 16 },
+        "checks": { "might": 10, "agility": 2 },
         "immune": ["fire"],
         "tier": "cr_24",
         "traits": [
@@ -2044,6 +2130,7 @@
         "initiativeModifier": 1,
         "abilities": { "str": 27, "dex": 12, "con": 25, "int": 20, "wis": 17, "cha": 19 },
         "saves": { "dex_save": 8, "con_save": 14, "wis_save": 10, "cha_save": 11 },
+        "checks": { "might": 8, "agility": 1 },
         "immune": ["poison"],
         "conditionImmunities": ["poisoned"],
         "tier": "cr_22",
@@ -2155,6 +2242,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 30, "dex": 10, "con": 29, "int": 18, "wis": 15, "cha": 23 },
         "saves": { "dex_save": 7, "con_save": 16, "wis_save": 9, "cha_save": 13 },
+        "checks": { "might": 10, "agility": 0 },
         "immune": ["fire"],
         "tier": "cr_24",
         "traits": [
@@ -2269,6 +2357,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 30, "dex": 10, "con": 29, "int": 18, "wis": 15, "cha": 23 },
         "saves": { "dex_save": 7, "con_save": 16, "wis_save": 9, "cha_save": 13 },
+        "checks": { "might": 10, "agility": 0 },
         "immune": ["cold"],
         "tier": "cr_23",
         "traits": [
@@ -2386,6 +2475,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 26, "dex": 10, "con": 26, "int": 10, "wis": 13, "cha": 14 },
         "saves": { "dex_save": 6, "con_save": 14, "wis_save": 7, "cha_save": 8 },
+        "checks": { "might": 8, "agility": 0 },
         "immune": ["cold"],
         "tier": "cr_20",
         "traits": [
@@ -2493,12 +2583,180 @@
       "summary": "Large monstrosity, lawful neutral. Armor Class 17, 199 hit points, challenge rating 17.",
       "filters": { "challenge": 17, "type": "Monstrosity", "size": "Large", "environment": ["Desert", "Ruins"] },
       "creature": {
-        "health": { "dice": "19d10+95" },
-        "defense": 17,
-        "speed": 40,
-        "initiativeModifier": 0,
-        "abilities": { "str": 22, "dex": 10, "con": 20, "int": 16, "wis": 18, "cha": 23 },
-        "saves": { "dex_save": 6, "con_save": 11, "int_save": 9, "wis_save": 10 },
+        "sheet": {
+          "abilities": { "str": 22, "dex": 10, "con": 20, "int": 16, "wis": 18, "cha": 23 },
+          "skills": { "arcana": "proficient", "perception": "proficient", "religion": "proficient" },
+          "saves": {
+            "dex_save": "proficient",
+            "con_save": "proficient",
+            "int_save": "proficient",
+            "wis_save": "proficient"
+          },
+          "bonuses": {
+            "dex_save": 2,
+            "con_save": 2,
+            "int_save": 2,
+            "wis_save": 2,
+            "arcana": 2,
+            "perception": 2,
+            "religion": 8
+          },
+          "fields": {
+            "level": 12,
+            "class": "Cleric",
+            "ac": 17,
+            "speed": 40,
+            "hp_max": 199,
+            "spellcasting_ability": "wis",
+            "slots_max_1": 4,
+            "slots_max_2": 3,
+            "slots_max_3": 3,
+            "slots_max_4": 3,
+            "slots_max_5": 2,
+            "slots_max_6": 1,
+            "spell_attack_extra": 2,
+            "spell_dc_extra": 2
+          },
+          "lists": {
+            "spells": [
+              {
+                "name": "Sacred Flame",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 60 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/sacred-flame"
+              },
+              {
+                "name": "Spare the Dying",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Necromancy. Casting time: action. Range: Touch. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/spare-the-dying"
+              },
+              {
+                "name": "Thaumaturgy",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Transmutation. Casting time: action. Range: 30 feet. Duration: 1 minute. Components: V.",
+                "_catalog": "spells/thaumaturgy"
+              },
+              {
+                "name": "Command",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Enchantment. Casting time: action. Range: 60 feet. Duration: 1 round. Components: V.",
+                "_catalog": "spells/command"
+              },
+              {
+                "name": "Detect Evil and Good",
+                "level": 1,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Divination. Casting time: action. Range: Self. Duration: 10 minutes. Components: V, S.",
+                "_catalog": "spells/detect-evil-and-good"
+              },
+              {
+                "name": "Detect Magic",
+                "level": 1,
+                "ritual": true,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Divination. Casting time: action. Range: Self. Duration: 10 minutes. Components: V, S.",
+                "_catalog": "spells/detect-magic"
+              },
+              {
+                "name": "Lesser Restoration",
+                "level": 2,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: action. Range: Touch. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/lesser-restoration"
+              },
+              {
+                "name": "Zone of Truth",
+                "level": 2,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Enchantment. Casting time: action. Range: 60 feet. Duration: 10 minutes. Components: V, S.",
+                "_catalog": "spells/zone-of-truth"
+              },
+              {
+                "name": "Dispel Magic",
+                "level": 3,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: action. Range: 120 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/dispel-magic"
+              },
+              {
+                "name": "Tongues",
+                "level": 3,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Divination. Casting time: action. Range: Touch. Duration: 1 hour. Components: V, M.",
+                "_catalog": "spells/tongues"
+              },
+              {
+                "name": "Banishment",
+                "level": 4,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: action. Range: 60 feet. Duration: 1 minute. Components: V, S, M.",
+                "_catalog": "spells/banishment"
+              },
+              {
+                "name": "Freedom of Movement",
+                "level": 4,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: action. Range: Touch. Duration: 1 hour. Components: V, S, M.",
+                "_catalog": "spells/freedom-of-movement"
+              },
+              {
+                "name": "Flame Strike",
+                "level": 5,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 60 feet. Duration: instantaneous. Components: V, S, M.",
+                "_catalog": "spells/flame-strike"
+              },
+              {
+                "name": "Greater Restoration",
+                "level": 5,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: action. Range: Touch. Duration: instantaneous. Components: V, S, M.",
+                "_catalog": "spells/greater-restoration"
+              },
+              {
+                "name": "Heroes' Feast",
+                "level": 6,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Conjuration. Casting time: 10 minutes. Range: 30 feet. Duration: instantaneous. Components: V, S, M.",
+                "_catalog": "spells/heroes-feast"
+              }
+            ]
+          }
+        },
         "immune": ["bludgeoning", "piercing", "psychic", "slashing"],
         "conditionImmunities": ["charmed", "frightened"],
         "tier": "cr_17",
@@ -2574,6 +2832,7 @@
         "speed": 25,
         "initiativeModifier": 0,
         "abilities": { "str": 14, "dex": 11, "con": 13, "int": 1, "wis": 3, "cha": 1 },
+        "checks": { "might": 2, "agility": 0 },
         "immune": ["poison", "psychic"],
         "conditionImmunities": ["blinded", "charmed", "deafened", "frightened", "paralyzed", "petrified", "poisoned"],
         "tier": "cr_1",
@@ -2625,6 +2884,7 @@
         "speed": 30,
         "initiativeModifier": 0,
         "abilities": { "str": 17, "dex": 11, "con": 13, "int": 1, "wis": 13, "cha": 6 },
+        "checks": { "might": 3, "agility": 0 },
         "tier": "cr_2",
         "traits": [{ "name": "Speed", "text": "30 ft., burrow 10 ft." }],
         "actions": [
@@ -2659,6 +2919,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 16, "dex": 14, "con": 14, "int": 6, "wis": 12, "cha": 7 },
+        "checks": { "might": 5, "agility": 2 },
         "tier": "cr_1_2",
         "traits": [{ "name": "Speed", "text": "30 ft., climb 30 ft." }],
         "actions": [
@@ -2698,12 +2959,260 @@
         "environment": ["Forest", "Laboratory", "Urban"]
       },
       "creature": {
-        "health": { "dice": "18d8+18" },
-        "defense": 12,
-        "speed": 30,
-        "initiativeModifier": 2,
-        "abilities": { "str": 10, "dex": 14, "con": 12, "int": 20, "wis": 15, "cha": 16 },
-        "saves": { "int_save": 9, "wis_save": 6 },
+        "sheet": {
+          "abilities": { "str": 10, "dex": 14, "con": 12, "int": 20, "wis": 15, "cha": 16 },
+          "skills": { "arcana": "proficient", "history": "proficient" },
+          "saves": { "int_save": "proficient", "wis_save": "proficient" },
+          "bonuses": { "int_save": -2, "wis_save": -2, "arcana": 2, "history": 2 },
+          "fields": {
+            "level": 18,
+            "class": "Wizard",
+            "ac": 12,
+            "speed": 30,
+            "hp_max": 99,
+            "spellcasting_ability": "int",
+            "slots_max_1": 4,
+            "slots_max_2": 3,
+            "slots_max_3": 3,
+            "slots_max_4": 3,
+            "slots_max_5": 3,
+            "slots_max_6": 1,
+            "slots_max_7": 1,
+            "slots_max_8": 1,
+            "slots_max_9": 1,
+            "spell_attack_extra": -2,
+            "spell_dc_extra": -2
+          },
+          "lists": {
+            "spells": [
+              {
+                "name": "Fire Bolt",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 120 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/fire-bolt"
+              },
+              {
+                "name": "Light",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: Touch. Duration: 1 hour. Components: V, M.",
+                "_catalog": "spells/light"
+              },
+              {
+                "name": "Mage Hand",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Conjuration. Casting time: action. Range: 30 feet. Duration: 1 minute. Components: V, S.",
+                "_catalog": "spells/mage-hand"
+              },
+              {
+                "name": "Prestidigitation",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Transmutation. Casting time: action. Range: 10 feet. Duration: 1 hour. Components: V, S.",
+                "_catalog": "spells/prestidigitation"
+              },
+              {
+                "name": "Shocking Grasp",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: Touch. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/shocking-grasp"
+              },
+              {
+                "name": "Detect Magic",
+                "level": 1,
+                "ritual": true,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Divination. Casting time: action. Range: Self. Duration: 10 minutes. Components: V, S.",
+                "_catalog": "spells/detect-magic"
+              },
+              {
+                "name": "Identify",
+                "level": 1,
+                "ritual": true,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Divination. Casting time: 1 minute. Range: Touch. Duration: instantaneous. Components: V, S, M.",
+                "_catalog": "spells/identify"
+              },
+              {
+                "name": "Mage Armor",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: action. Range: Touch. Duration: 8 hours. Components: V, S, M.",
+                "_catalog": "spells/mage-armor"
+              },
+              {
+                "name": "Magic Missile",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 120 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/magic-missile"
+              },
+              {
+                "name": "Detect Thoughts",
+                "level": 2,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Divination. Casting time: action. Range: Self. Duration: 1 minute. Components: V, S, M.",
+                "_catalog": "spells/detect-thoughts"
+              },
+              {
+                "name": "Mirror Image",
+                "level": 2,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Illusion. Casting time: action. Range: Self. Duration: 1 minute. Components: V, S.",
+                "_catalog": "spells/mirror-image"
+              },
+              {
+                "name": "Misty Step",
+                "level": 2,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Conjuration. Casting time: bonus action. Range: Self. Duration: instantaneous. Components: V.",
+                "_catalog": "spells/misty-step"
+              },
+              {
+                "name": "Counterspell",
+                "level": 3,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: reaction. Range: 60 feet. Duration: instantaneous. Components: S.",
+                "_catalog": "spells/counterspell"
+              },
+              {
+                "name": "Fly",
+                "level": 3,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Transmutation. Casting time: action. Range: Touch. Duration: 10 minutes. Components: V, S, M.",
+                "_catalog": "spells/fly"
+              },
+              {
+                "name": "Lightning Bolt",
+                "level": 3,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: Self. Duration: instantaneous. Components: V, S, M.",
+                "_catalog": "spells/lightning-bolt"
+              },
+              {
+                "name": "Banishment",
+                "level": 4,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: action. Range: 60 feet. Duration: 1 minute. Components: V, S, M.",
+                "_catalog": "spells/banishment"
+              },
+              {
+                "name": "Fire Shield",
+                "level": 4,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: Self. Duration: 10 minutes. Components: V, S, M.",
+                "_catalog": "spells/fire-shield"
+              },
+              {
+                "name": "Stoneskin",
+                "level": 4,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: action. Range: Touch. Duration: 1 hour. Components: V, S, M.",
+                "_catalog": "spells/stoneskin"
+              },
+              {
+                "name": "Cone of Cold",
+                "level": 5,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: Self. Duration: instantaneous. Components: V, S, M.",
+                "_catalog": "spells/cone-of-cold"
+              },
+              {
+                "name": "Scrying",
+                "level": 5,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Divination. Casting time: 10 minutes. Range: Self. Duration: 10 minutes. Components: V, S, M.",
+                "_catalog": "spells/scrying"
+              },
+              {
+                "name": "Wall of Force",
+                "level": 5,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 120 feet. Duration: 10 minutes. Components: V, S, M.",
+                "_catalog": "spells/wall-of-force"
+              },
+              {
+                "name": "Globe of Invulnerability",
+                "level": 6,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: action. Range: Self. Duration: 1 minute. Components: V, S, M.",
+                "_catalog": "spells/globe-of-invulnerability"
+              },
+              {
+                "name": "Teleport",
+                "level": 7,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Conjuration. Casting time: action. Range: 10 feet. Duration: instantaneous. Components: V.",
+                "_catalog": "spells/teleport"
+              },
+              {
+                "name": "Mind Blank",
+                "level": 8,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: action. Range: Touch. Duration: 24 hours. Components: V, S.",
+                "_catalog": "spells/mind-blank"
+              },
+              {
+                "name": "Time Stop",
+                "level": 9,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Transmutation. Casting time: action. Range: Self. Duration: instantaneous. Components: V.",
+                "_catalog": "spells/time-stop"
+              }
+            ]
+          }
+        },
         "resist": ["piercing"],
         "tier": "cr_12",
         "traits": [
@@ -2746,6 +3255,7 @@
         "initiativeModifier": 3,
         "abilities": { "str": 11, "dex": 16, "con": 14, "int": 13, "wis": 11, "cha": 10 },
         "saves": { "dex_save": 6, "int_save": 4 },
+        "checks": { "might": 0, "agility": 6 },
         "resist": ["poison"],
         "tier": "cr_8",
         "traits": [
@@ -2807,6 +3317,7 @@
         "speed": 20,
         "initiativeModifier": -1,
         "abilities": { "str": 3, "dex": 8, "con": 11, "int": 10, "wis": 10, "cha": 6 },
+        "checks": { "might": -4, "agility": -1 },
         "resist": ["piercing"],
         "vulnerable": ["fire"],
         "tier": "cr_0",
@@ -2839,6 +3350,7 @@
         "speed": 20,
         "initiativeModifier": -2,
         "abilities": { "str": 19, "dex": 6, "con": 15, "int": 10, "wis": 10, "cha": 7 },
+        "checks": { "might": 4, "agility": -2 },
         "resist": ["bludgeoning", "piercing"],
         "vulnerable": ["fire"],
         "tier": "cr_2",
@@ -2876,6 +3388,7 @@
         "speed": 50,
         "initiativeModifier": 1,
         "abilities": { "str": 14, "dex": 12, "con": 12, "int": 2, "wis": 10, "cha": 5 },
+        "checks": { "might": 2, "agility": 1 },
         "tier": "cr_1_4",
         "actions": [
           {
@@ -2901,6 +3414,7 @@
         "initiativeModifier": 1,
         "abilities": { "str": 17, "dex": 12, "con": 15, "int": 12, "wis": 13, "cha": 10 },
         "saves": { "con_save": 4 },
+        "checks": { "might": 3, "agility": 1 },
         "immune": ["fire", "poison"],
         "conditionImmunities": ["poisoned"],
         "tier": "cr_2",
@@ -2945,6 +3459,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 8, "dex": 14, "con": 11, "int": 4, "wis": 12, "cha": 6 },
+        "checks": { "might": -1, "agility": 2 },
         "tier": "cr_0",
         "traits": [
           { "name": "Speed", "text": "30 ft., climb 30 ft." },
@@ -2976,6 +3491,7 @@
         "speed": 20,
         "initiativeModifier": 0,
         "abilities": { "str": 4, "dex": 11, "con": 12, "int": 2, "wis": 12, "cha": 5 },
+        "checks": { "might": -3, "agility": 0 },
         "tier": "cr_0",
         "traits": [
           { "name": "Speed", "text": "20 ft., burrow 5 ft." },
@@ -3005,6 +3521,7 @@
         "initiativeModifier": 2,
         "abilities": { "str": 26, "dex": 15, "con": 22, "int": 20, "wis": 16, "cha": 22 },
         "saves": { "str_save": 14, "con_save": 12, "wis_save": 9, "cha_save": 12 },
+        "checks": { "might": 8, "agility": 2 },
         "resist": ["bludgeoning", "cold", "lightning", "piercing", "slashing"],
         "immune": ["fire", "poison"],
         "conditionImmunities": ["poisoned"],
@@ -3104,6 +3621,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 11, "dex": 12, "con": 12, "int": 10, "wis": 10, "cha": 10 },
+        "checks": { "might": 0, "agility": 1 },
         "tier": "cr_1_8",
         "actions": [
           {
@@ -3156,6 +3674,7 @@
         "initiativeModifier": 3,
         "abilities": { "str": 15, "dex": 16, "con": 14, "int": 14, "wis": 11, "cha": 14 },
         "saves": { "str_save": 4, "dex_save": 5, "wis_save": 2 },
+        "checks": { "might": 4, "agility": 3 },
         "tier": "cr_2",
         "traits": [
           {
@@ -3189,6 +3708,14 @@
             "damage": { "dice": "1d4", "flat": 3, "type": "piercing" },
             "reach": 5,
             "range": { "normal": 20, "long": 60 }
+          },
+          {
+            "id": "parry",
+            "name": "Parry",
+            "budget": "reaction",
+            "self": true,
+            "reaction": { "on": "hit" },
+            "applies": [{ "condition": "parrying_2", "duration": { "rounds": 1 }, "endsAfter": "attacked" }]
           }
         ]
       }
@@ -3205,6 +3732,7 @@
         "initiativeModifier": 3,
         "abilities": { "str": 16, "dex": 17, "con": 18, "int": 12, "wis": 14, "cha": 14 },
         "saves": { "str_save": 6, "con_save": 7, "wis_save": 5, "cha_save": 5 },
+        "checks": { "might": 3, "agility": 3 },
         "resist": ["bludgeoning", "cold", "piercing", "slashing"],
         "immune": ["fire", "poison"],
         "conditionImmunities": ["poisoned"],
@@ -3281,6 +3809,7 @@
         "speed": 20,
         "initiativeModifier": -1,
         "abilities": { "str": 16, "dex": 8, "con": 15, "int": 2, "wis": 8, "cha": 7 },
+        "checks": { "might": 3, "agility": -1 },
         "tier": "cr_3",
         "traits": [
           {
@@ -3311,6 +3840,7 @@
         "speed": 5,
         "initiativeModifier": 2,
         "abilities": { "str": 2, "dex": 15, "con": 8, "int": 2, "wis": 12, "cha": 4 },
+        "checks": { "might": -4, "agility": 2 },
         "tier": "cr_0",
         "traits": [
           { "name": "Speed", "text": "5 ft., fly 30 ft." },
@@ -3344,6 +3874,7 @@
         "initiativeModifier": 2,
         "abilities": { "str": 16, "dex": 15, "con": 15, "int": 9, "wis": 11, "cha": 11 },
         "saves": { "str_save": 5, "con_save": 4, "wis_save": 2 },
+        "checks": { "might": 3, "agility": 2 },
         "resist": ["bludgeoning", "cold", "piercing", "slashing"],
         "immune": ["fire", "poison"],
         "conditionImmunities": ["poisoned"],
@@ -3420,6 +3951,7 @@
         "speed": 50,
         "initiativeModifier": 3,
         "abilities": { "str": 23, "dex": 16, "con": 18, "int": 7, "wis": 14, "cha": 12 },
+        "checks": { "might": 6, "agility": 3 },
         "immune": ["lightning"],
         "tier": "cr_11",
         "traits": [{ "name": "Speed", "text": "50 ft., climb 40 ft." }],
@@ -3491,6 +4023,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 16, "dex": 12, "con": 17, "int": 9, "wis": 11, "cha": 9 },
+        "checks": { "might": 3, "agility": 1 },
         "tier": "cr_2",
         "traits": [
           {
@@ -3521,6 +4054,7 @@
         "speed": 40,
         "initiativeModifier": 0,
         "abilities": { "str": 15, "dex": 10, "con": 14, "int": 2, "wis": 12, "cha": 7 },
+        "checks": { "might": 2, "agility": 0 },
         "tier": "cr_1_2",
         "traits": [
           { "name": "Speed", "text": "40 ft., climb 30 ft." },
@@ -3567,6 +4101,7 @@
         "initiativeModifier": 2,
         "abilities": { "str": 15, "dex": 14, "con": 13, "int": 10, "wis": 11, "cha": 13 },
         "saves": { "dex_save": 4, "con_save": 3, "wis_save": 2, "cha_save": 3 },
+        "checks": { "might": 2, "agility": 2 },
         "immune": ["acid"],
         "tier": "cr_2",
         "traits": [
@@ -3611,6 +4146,7 @@
         "speed": 20,
         "initiativeModifier": -3,
         "abilities": { "str": 16, "dex": 5, "con": 16, "int": 1, "wis": 6, "cha": 1 },
+        "checks": { "might": 3, "agility": -3 },
         "immune": ["acid", "cold", "lightning", "slashing"],
         "conditionImmunities": ["blinded", "charmed", "deafened", "frightened", "prone"],
         "tier": "cr_4",
@@ -3631,6 +4167,10 @@
           {
             "name": "Spider Climb",
             "text": "The pudding can climb difficult surfaces, including upside down on ceilings, without needing to make an ability check."
+          },
+          {
+            "name": "Split",
+            "text": "When a pudding that is Medium or larger is subjected to lightning or slashing damage, it splits into two new puddings if it has at least 10 hit points. Each new pudding has hit points equal to half the original pudding's, rounded down. New puddings are one size smaller than the original pudding."
           }
         ],
         "actions": [
@@ -3661,6 +4201,7 @@
         "speed": 40,
         "initiativeModifier": 3,
         "abilities": { "str": 12, "dex": 17, "con": 12, "int": 10, "wis": 13, "cha": 11 },
+        "checks": { "might": 1, "agility": 3 },
         "tier": "cr_1_4",
         "traits": [
           {
@@ -3700,6 +4241,7 @@
         "speed": 10,
         "initiativeModifier": 2,
         "abilities": { "str": 6, "dex": 14, "con": 10, "int": 3, "wis": 14, "cha": 5 },
+        "checks": { "might": -2, "agility": 2 },
         "tier": "cr_1_8",
         "traits": [
           { "name": "Speed", "text": "10 ft., fly 60 ft." },
@@ -3733,6 +4275,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 17, "dex": 10, "con": 15, "int": 12, "wis": 11, "cha": 15 },
         "saves": { "dex_save": 2, "con_save": 4, "wis_save": 2, "cha_save": 4 },
+        "checks": { "might": 3, "agility": 0 },
         "immune": ["lightning"],
         "tier": "cr_3",
         "traits": [{ "name": "Speed", "text": "30 ft., burrow 15 ft., fly 60 ft." }],
@@ -3779,6 +4322,7 @@
         "speed": 40,
         "initiativeModifier": 0,
         "abilities": { "str": 13, "dex": 11, "con": 12, "int": 2, "wis": 9, "cha": 5 },
+        "checks": { "might": 1, "agility": 0 },
         "tier": "cr_1_4",
         "traits": [
           {
@@ -3814,6 +4358,7 @@
         "initiativeModifier": 3,
         "abilities": { "str": 18, "dex": 16, "con": 18, "int": 13, "wis": 14, "cha": 16 },
         "saves": { "int_save": 5, "wis_save": 6, "cha_save": 7 },
+        "checks": { "might": 4, "agility": 3 },
         "resist": ["bludgeoning", "cold", "piercing", "slashing"],
         "immune": ["fire", "poison"],
         "conditionImmunities": ["poisoned"],
@@ -3879,6 +4424,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 15, "dex": 10, "con": 13, "int": 10, "wis": 11, "cha": 13 },
         "saves": { "dex_save": 2, "con_save": 3, "wis_save": 2, "cha_save": 3 },
+        "checks": { "might": 2, "agility": 0 },
         "immune": ["fire"],
         "tier": "cr_1",
         "traits": [
@@ -3922,6 +4468,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 17, "dex": 10, "con": 15, "int": 12, "wis": 11, "cha": 15 },
         "saves": { "dex_save": 2, "con_save": 4, "wis_save": 2, "cha_save": 4 },
+        "checks": { "might": 3, "agility": 0 },
         "immune": ["lightning"],
         "tier": "cr_2",
         "traits": [
@@ -3970,6 +4517,7 @@
         "speed": 40,
         "initiativeModifier": 0,
         "abilities": { "str": 19, "dex": 10, "con": 16, "int": 2, "wis": 13, "cha": 7 },
+        "checks": { "might": 4, "agility": 0 },
         "tier": "cr_1",
         "traits": [
           { "name": "Speed", "text": "40 ft., climb 30 ft." },
@@ -4020,6 +4568,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 15, "dex": 14, "con": 13, "int": 8, "wis": 11, "cha": 9 },
+        "checks": { "might": 2, "agility": 2 },
         "tier": "cr_1",
         "traits": [
           {
@@ -4072,6 +4621,7 @@
         "speed": 40,
         "initiativeModifier": 0,
         "abilities": { "str": 19, "dex": 11, "con": 21, "int": 2, "wis": 10, "cha": 5 },
+        "checks": { "might": 4, "agility": 0 },
         "tier": "cr_5",
         "traits": [
           {
@@ -4108,6 +4658,7 @@
         "initiativeModifier": -1,
         "abilities": { "str": 16, "dex": 8, "con": 14, "int": 2, "wis": 8, "cha": 5 },
         "saves": { "str_save": 0, "dex_save": 0, "con_save": 0, "int_save": 0, "wis_save": 0, "cha_save": 0 },
+        "checks": { "might": 0, "agility": 0 },
         "tier": "cr_1_8",
         "actions": [
           {
@@ -4132,6 +4683,7 @@
         "speed": 40,
         "initiativeModifier": 2,
         "abilities": { "str": 3, "dex": 15, "con": 10, "int": 3, "wis": 12, "cha": 7 },
+        "checks": { "might": -4, "agility": 2 },
         "tier": "cr_0",
         "traits": [
           { "name": "Speed", "text": "40 ft., climb 30 ft." },
@@ -4165,6 +4717,7 @@
         "speed": 50,
         "initiativeModifier": 2,
         "abilities": { "str": 18, "dex": 14, "con": 14, "int": 9, "wis": 13, "cha": 11 },
+        "checks": { "might": 6, "agility": 2 },
         "tier": "cr_2",
         "traits": [
           {
@@ -4231,6 +4784,7 @@
         "initiativeModifier": 2,
         "abilities": { "str": 18, "dex": 15, "con": 18, "int": 11, "wis": 12, "cha": 14 },
         "saves": { "con_save": 7, "wis_save": 4, "cha_save": 5 },
+        "checks": { "might": 4, "agility": 2 },
         "resist": ["bludgeoning", "cold", "piercing", "slashing"],
         "immune": ["fire", "poison"],
         "conditionImmunities": ["poisoned"],
@@ -4252,6 +4806,10 @@
           {
             "name": "Magic Resistance",
             "text": "The devil has advantage on saving throws against spells and other magical effects."
+          },
+          {
+            "name": "Unnerving Mask",
+            "text": "When a creature the devil can see starts its turn within 30 feet of the devil, the devil can create the illusion that it looks like one of the creature's departed loved ones or bitter enemies. If the creature can see the devil, it must succeed on a DC 14 Wisdom saving throw or be frightened until the end of its turn."
           }
         ],
         "actions": [
@@ -4300,6 +4858,7 @@
         "speed": 30,
         "initiativeModifier": 0,
         "abilities": { "str": 19, "dex": 11, "con": 19, "int": 3, "wis": 14, "cha": 10 },
+        "checks": { "might": 4, "agility": 0 },
         "tier": "cr_6",
         "traits": [
           {
@@ -4372,6 +4931,7 @@
         "speed": 30,
         "initiativeModifier": 0,
         "abilities": { "str": 19, "dex": 10, "con": 16, "int": 5, "wis": 11, "cha": 5 },
+        "checks": { "might": 4, "agility": 0 },
         "immune": ["poison"],
         "conditionImmunities": ["poisoned"],
         "tier": "cr_4",
@@ -4459,6 +5019,7 @@
         "speed": 20,
         "initiativeModifier": -1,
         "abilities": { "str": 20, "dex": 9, "con": 18, "int": 3, "wis": 8, "cha": 1 },
+        "checks": { "might": 5, "agility": -1 },
         "immune": ["acid", "bludgeoning", "piercing", "poison", "psychic", "slashing"],
         "conditionImmunities": ["charmed", "frightened", "paralyzed", "petrified", "poisoned"],
         "tier": "cr_9",
@@ -4527,6 +5088,7 @@
         "speed": 10,
         "initiativeModifier": 2,
         "abilities": { "str": 17, "dex": 15, "con": 12, "int": 13, "wis": 12, "cha": 14 },
+        "checks": { "might": 3, "agility": 2 },
         "tier": "cr_8",
         "traits": [
           {
@@ -4597,6 +5159,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 27, "dex": 10, "con": 22, "int": 12, "wis": 16, "cha": 16 },
         "saves": { "con_save": 10, "wis_save": 7, "cha_save": 7 },
+        "checks": { "might": 8, "agility": 0 },
         "tier": "cr_9",
         "traits": [
           {
@@ -4647,6 +5210,7 @@
         "speed": 20,
         "initiativeModifier": 1,
         "abilities": { "str": 6, "dex": 12, "con": 12, "int": 2, "wis": 13, "cha": 5 },
+        "checks": { "might": -2, "agility": 1 },
         "tier": "cr_1_2",
         "traits": [{ "name": "Speed", "text": "20 ft., fly 40 ft." }],
         "actions": [
@@ -4685,6 +5249,7 @@
         "speed": 30,
         "initiativeModifier": 0,
         "abilities": { "str": 10, "dex": 10, "con": 10, "int": 10, "wis": 10, "cha": 10 },
+        "checks": { "might": 0, "agility": 0 },
         "tier": "cr_0",
         "actions": [
           {
@@ -4709,6 +5274,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 15, "dex": 14, "con": 12, "int": 1, "wis": 10, "cha": 3 },
+        "checks": { "might": 2, "agility": 2 },
         "tier": "cr_1_4",
         "traits": [{ "name": "Speed", "text": "30 ft., swim 30 ft." }],
         "actions": [
@@ -4743,6 +5309,7 @@
         "initiativeModifier": 1,
         "abilities": { "str": 15, "dex": 12, "con": 13, "int": 14, "wis": 11, "cha": 13 },
         "saves": { "dex_save": 3, "con_save": 3, "wis_save": 2, "cha_save": 3 },
+        "checks": { "might": 2, "agility": 1 },
         "immune": ["acid"],
         "tier": "cr_1",
         "traits": [
@@ -4791,6 +5358,7 @@
         "initiativeModifier": 5,
         "abilities": { "str": 16, "dex": 20, "con": 17, "int": 18, "wis": 20, "cha": 18 },
         "saves": { "con_save": 5, "wis_save": 7, "cha_save": 6 },
+        "checks": { "might": 3, "agility": 5 },
         "resist": ["radiant"],
         "immune": ["bludgeoning", "piercing", "psychic", "slashing"],
         "tier": "cr_4",
@@ -4847,6 +5415,7 @@
         "speed": 20,
         "initiativeModifier": 0,
         "abilities": { "str": 2, "dex": 11, "con": 10, "int": 1, "wis": 8, "cha": 2 },
+        "checks": { "might": -4, "agility": 0 },
         "tier": "cr_0",
         "traits": [
           { "name": "Speed", "text": "20 ft., swim 20 ft." },
@@ -4875,6 +5444,7 @@
         "speed": 20,
         "initiativeModifier": 0,
         "abilities": { "str": 15, "dex": 10, "con": 13, "int": 2, "wis": 10, "cha": 5 },
+        "checks": { "might": 2, "agility": 0 },
         "tier": "cr_1_2",
         "traits": [
           { "name": "Speed", "text": "20 ft., swim 20 ft." },
@@ -4903,11 +5473,98 @@
         "environment": ["Desert", "Forest", "Hills", "Ruins", "Sewer", "Temple", "Urban"]
       },
       "creature": {
-        "health": { "dice": "6d8+6" },
-        "defense": 13,
-        "speed": 30,
-        "initiativeModifier": 2,
-        "abilities": { "str": 11, "dex": 14, "con": 12, "int": 10, "wis": 13, "cha": 14 },
+        "sheet": {
+          "abilities": { "str": 11, "dex": 14, "con": 12, "int": 10, "wis": 13, "cha": 14 },
+          "skills": { "deception": "proficient", "persuasion": "proficient", "religion": "proficient" },
+          "saves": {},
+          "bonuses": {},
+          "fields": {
+            "level": 4,
+            "class": "Cleric",
+            "ac": 13,
+            "speed": 30,
+            "hp_max": 22,
+            "spellcasting_ability": "wis",
+            "slots_max_1": 4,
+            "slots_max_2": 3
+          },
+          "lists": {
+            "spells": [
+              {
+                "name": "Light",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: Touch. Duration: 1 hour. Components: V, M.",
+                "_catalog": "spells/light"
+              },
+              {
+                "name": "Sacred Flame",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 60 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/sacred-flame"
+              },
+              {
+                "name": "Thaumaturgy",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Transmutation. Casting time: action. Range: 30 feet. Duration: 1 minute. Components: V.",
+                "_catalog": "spells/thaumaturgy"
+              },
+              {
+                "name": "Command",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Enchantment. Casting time: action. Range: 60 feet. Duration: 1 round. Components: V.",
+                "_catalog": "spells/command"
+              },
+              {
+                "name": "Inflict Wounds",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Necromancy. Casting time: action. Range: Touch. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/inflict-wounds"
+              },
+              {
+                "name": "Shield of Faith",
+                "level": 1,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: bonus action. Range: 60 feet. Duration: 10 minutes. Components: V, S, M.",
+                "_catalog": "spells/shield-of-faith"
+              },
+              {
+                "name": "Hold Person",
+                "level": 2,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Enchantment. Casting time: action. Range: 60 feet. Duration: 1 minute. Components: V, S, M.",
+                "_catalog": "spells/hold-person"
+              },
+              {
+                "name": "Spiritual Weapon",
+                "level": 2,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: bonus action. Range: 60 feet. Duration: 1 minute. Components: V, S.",
+                "_catalog": "spells/spiritual-weapon"
+              }
+            ]
+          }
+        },
         "tier": "cr_2",
         "traits": [
           {
@@ -4954,6 +5611,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 11, "dex": 12, "con": 10, "int": 10, "wis": 11, "cha": 10 },
+        "checks": { "might": 0, "agility": 1 },
         "tier": "cr_1_8",
         "traits": [
           {
@@ -4989,6 +5647,7 @@
         "speed": 10,
         "initiativeModifier": 1,
         "abilities": { "str": 16, "dex": 12, "con": 13, "int": 2, "wis": 10, "cha": 5 },
+        "checks": { "might": 3, "agility": 1 },
         "tier": "cr_1_2",
         "traits": [
           {
@@ -5030,6 +5689,7 @@
         "speed": 40,
         "initiativeModifier": 2,
         "abilities": { "str": 15, "dex": 14, "con": 14, "int": 3, "wis": 13, "cha": 6 },
+        "checks": { "might": 2, "agility": 2 },
         "tier": "cr_1",
         "traits": [
           {
@@ -5068,6 +5728,7 @@
         "speed": 20,
         "initiativeModifier": 2,
         "abilities": { "str": 15, "dex": 14, "con": 14, "int": 12, "wis": 10, "cha": 9 },
+        "checks": { "might": 2, "agility": 2 },
         "tier": "cr_1_2",
         "traits": [
           {
@@ -5127,6 +5788,7 @@
         "speed": 50,
         "initiativeModifier": 3,
         "abilities": { "str": 11, "dex": 16, "con": 11, "int": 2, "wis": 14, "cha": 5 },
+        "checks": { "might": 0, "agility": 3 },
         "tier": "cr_0",
         "actions": [
           {
@@ -5152,6 +5814,7 @@
         "initiativeModifier": 4,
         "abilities": { "str": 18, "dex": 18, "con": 18, "int": 17, "wis": 20, "cha": 20 },
         "saves": { "wis_save": 9, "cha_save": 9 },
+        "checks": { "might": 4, "agility": 4 },
         "resist": ["bludgeoning", "piercing", "radiant", "slashing"],
         "conditionImmunities": ["charmed", "frightened"],
         "tier": "cr_10",
@@ -5225,6 +5888,7 @@
         "speed": 50,
         "initiativeModifier": 2,
         "abilities": { "str": 17, "dex": 15, "con": 15, "int": 3, "wis": 12, "cha": 7 },
+        "checks": { "might": 3, "agility": 2 },
         "tier": "cr_1",
         "traits": [
           {
@@ -5267,6 +5931,7 @@
         "initiativeModifier": 2,
         "abilities": { "str": 21, "dex": 15, "con": 22, "int": 15, "wis": 16, "cha": 20 },
         "saves": { "dex_save": 6, "wis_save": 7, "cha_save": 9 },
+        "checks": { "might": 5, "agility": 2 },
         "immune": ["lightning", "thunder"],
         "tier": "cr_11",
         "traits": [
@@ -5339,6 +6004,7 @@
         "speed": 30,
         "initiativeModifier": 4,
         "abilities": { "str": 11, "dex": 18, "con": 14, "int": 11, "wis": 12, "cha": 14 },
+        "checks": { "might": 0, "agility": 4 },
         "conditionImmunities": ["charmed"],
         "tier": "cr_3",
         "traits": [
@@ -5389,6 +6055,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 18, "dex": 10, "con": 12, "int": 2, "wis": 11, "cha": 7 },
         "saves": { "str_save": 0, "dex_save": 0, "con_save": 0, "int_save": 0, "wis_save": 0, "cha_save": 0 },
+        "checks": { "might": 0, "agility": 0 },
         "tier": "cr_1_4",
         "actions": [
           {
@@ -5419,6 +6086,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 25, "dex": 10, "con": 20, "int": 10, "wis": 12, "cha": 12 },
         "saves": { "dex_save": 6, "con_save": 11, "wis_save": 7 },
+        "checks": { "might": 7, "agility": 0 },
         "resist": ["fire"],
         "tier": "cr_17",
         "traits": [
@@ -5490,6 +6158,7 @@
         "speed": 20,
         "initiativeModifier": 0,
         "abilities": { "str": 11, "dex": 11, "con": 12, "int": 5, "wis": 8, "cha": 3 },
+        "checks": { "might": 0, "agility": 0 },
         "resist": ["cold", "fire", "lightning"],
         "immune": ["poison"],
         "conditionImmunities": ["poisoned"],
@@ -5549,6 +6218,7 @@
         "speed": 30,
         "initiativeModifier": 3,
         "abilities": { "str": 16, "dex": 16, "con": 18, "int": 13, "wis": 14, "cha": 12 },
+        "checks": { "might": 3, "agility": 3 },
         "tier": "cr_6",
         "traits": [
           {
@@ -5629,6 +6299,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 10, "dex": 14, "con": 10, "int": 11, "wis": 11, "cha": 12 },
+        "checks": { "might": 0, "agility": 2 },
         "tier": "cr_1_4",
         "traits": [
           {
@@ -5677,11 +6348,107 @@
         "environment": ["Arctic", "Coast", "Desert", "Forest", "Grassland", "Hills", "Mountain", "Swamp", "Underworld"]
       },
       "creature": {
-        "health": { "dice": "5d8+5" },
-        "defense": 11,
-        "speed": 30,
-        "initiativeModifier": 1,
-        "abilities": { "str": 10, "dex": 12, "con": 13, "int": 12, "wis": 15, "cha": 11 },
+        "sheet": {
+          "abilities": { "str": 10, "dex": 12, "con": 13, "int": 12, "wis": 15, "cha": 11 },
+          "skills": { "medicine": "proficient", "nature": "proficient", "perception": "proficient" },
+          "saves": {},
+          "bonuses": {},
+          "fields": {
+            "level": 4,
+            "class": "Druid",
+            "ac": 11,
+            "speed": 30,
+            "hp_max": 27,
+            "spellcasting_ability": "wis",
+            "slots_max_1": 4,
+            "slots_max_2": 3
+          },
+          "lists": {
+            "spells": [
+              {
+                "name": "Druidcraft",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Transmutation. Casting time: action. Range: 30 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/druidcraft"
+              },
+              {
+                "name": "Produce Flame",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Conjuration. Casting time: action. Range: Self. Duration: 10 minutes. Components: V, S.",
+                "_catalog": "spells/produce-flame"
+              },
+              {
+                "name": "Shillelagh",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Transmutation. Casting time: bonus action. Range: Touch. Duration: 1 minute. Components: V, S, M.",
+                "_catalog": "spells/shillelagh"
+              },
+              {
+                "name": "Entangle",
+                "level": 1,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Conjuration. Casting time: action. Range: 90 feet. Duration: 1 minute. Components: V, S.",
+                "_catalog": "spells/entangle"
+              },
+              {
+                "name": "Longstrider",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Transmutation. Casting time: action. Range: Touch. Duration: 1 hour. Components: V, S, M.",
+                "_catalog": "spells/longstrider"
+              },
+              {
+                "name": "Speak with Animals",
+                "level": 1,
+                "ritual": true,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Divination. Casting time: action. Range: Self. Duration: 10 minutes. Components: V, S.",
+                "_catalog": "spells/speak-with-animals"
+              },
+              {
+                "name": "Thunderwave",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: Self. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/thunderwave"
+              },
+              {
+                "name": "Animal Messenger",
+                "level": 2,
+                "ritual": true,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Enchantment. Casting time: action. Range: 30 feet. Duration: 24 hours. Components: V, S, M.",
+                "_catalog": "spells/animal-messenger"
+              },
+              {
+                "name": "Barkskin",
+                "level": 2,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Transmutation. Casting time: action. Range: Touch. Duration: 1 hour. Components: V, S, M.",
+                "_catalog": "spells/barkskin"
+              }
+            ]
+          }
+        },
         "tier": "cr_2",
         "traits": [
           {
@@ -5716,6 +6483,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 10, "dex": 12, "con": 11, "int": 14, "wis": 15, "cha": 18 },
+        "checks": { "might": 0, "agility": 1 },
         "tier": "cr_1",
         "traits": [
           {
@@ -5770,6 +6538,7 @@
         "speed": 25,
         "initiativeModifier": 0,
         "abilities": { "str": 14, "dex": 11, "con": 14, "int": 11, "wis": 10, "cha": 9 },
+        "checks": { "might": 2, "agility": 0 },
         "resist": ["poison"],
         "tier": "cr_1",
         "traits": [
@@ -5835,6 +6604,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 5, "dex": 14, "con": 10, "int": 9, "wis": 11, "cha": 10 },
+        "checks": { "might": -3, "agility": 2 },
         "vulnerable": ["fire"],
         "immune": ["poison"],
         "conditionImmunities": ["poisoned"],
@@ -5893,6 +6663,7 @@
         "speed": 10,
         "initiativeModifier": 2,
         "abilities": { "str": 6, "dex": 15, "con": 10, "int": 2, "wis": 14, "cha": 7 },
+        "checks": { "might": -2, "agility": 2 },
         "tier": "cr_0",
         "traits": [
           { "name": "Speed", "text": "10 ft., fly 60 ft." },
@@ -5926,6 +6697,7 @@
         "speed": 30,
         "initiativeModifier": -1,
         "abilities": { "str": 20, "dex": 8, "con": 20, "int": 5, "wis": 10, "cha": 5 },
+        "checks": { "might": 5, "agility": -1 },
         "resist": ["bludgeoning", "piercing", "slashing"],
         "vulnerable": ["thunder"],
         "immune": ["poison"],
@@ -5982,6 +6754,7 @@
         "initiativeModifier": 1,
         "abilities": { "str": 22, "dex": 12, "con": 24, "int": 16, "wis": 15, "cha": 16 },
         "saves": { "int_save": 7, "wis_save": 6, "cha_save": 7 },
+        "checks": { "might": 6, "agility": 1 },
         "immune": ["fire"],
         "tier": "cr_11",
         "traits": [
@@ -6038,6 +6811,7 @@
         "initiativeModifier": -1,
         "abilities": { "str": 22, "dex": 9, "con": 17, "int": 3, "wis": 11, "cha": 6 },
         "saves": { "str_save": 0, "dex_save": 0, "con_save": 0, "int_save": 0, "wis_save": 0, "cha_save": 0 },
+        "checks": { "might": 0, "agility": 0 },
         "tier": "cr_4",
         "traits": [
           {
@@ -6081,6 +6855,7 @@
         "speed": 50,
         "initiativeModifier": 0,
         "abilities": { "str": 16, "dex": 10, "con": 12, "int": 2, "wis": 10, "cha": 6 },
+        "checks": { "might": 3, "agility": 0 },
         "tier": "cr_1_4",
         "traits": [
           {
@@ -6120,6 +6895,7 @@
         "initiativeModifier": 3,
         "abilities": { "str": 18, "dex": 16, "con": 18, "int": 14, "wis": 14, "cha": 18 },
         "saves": { "dex_save": 7, "con_save": 8, "wis_save": 6, "cha_save": 8 },
+        "checks": { "might": 4, "agility": 3 },
         "resist": ["bludgeoning", "cold", "piercing", "slashing"],
         "immune": ["fire", "poison"],
         "conditionImmunities": ["poisoned"],
@@ -6177,6 +6953,14 @@
             "save": { "save": "con_save", "difficulty": 14, "onSuccess": "none" },
             "applies": [{ "condition": "poisoned", "duration": "instant" }],
             "range": { "normal": 150, "long": 600 }
+          },
+          {
+            "id": "parry",
+            "name": "Parry",
+            "budget": "reaction",
+            "self": true,
+            "reaction": { "on": "hit" },
+            "applies": [{ "condition": "parrying_4", "duration": { "rounds": 1 }, "endsAfter": "attacked" }]
           }
         ]
       }
@@ -6192,6 +6976,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 14, "dex": 15, "con": 13, "int": 7, "wis": 12, "cha": 8 },
+        "checks": { "might": 2, "agility": 2 },
         "tier": "cr_2",
         "traits": [
           {
@@ -6278,6 +7063,7 @@
         "speed": 40,
         "initiativeModifier": -1,
         "abilities": { "str": 21, "dex": 8, "con": 17, "int": 6, "wis": 10, "cha": 8 },
+        "checks": { "might": 5, "agility": -1 },
         "tier": "cr_4",
         "traits": [
           {
@@ -6331,6 +7117,7 @@
         "speed": 50,
         "initiativeModifier": 3,
         "abilities": { "str": 10, "dex": 17, "con": 16, "int": 6, "wis": 10, "cha": 7 },
+        "checks": { "might": 0, "agility": 3 },
         "resist": ["bludgeoning", "piercing", "slashing"],
         "immune": ["fire", "poison"],
         "conditionImmunities": ["grappled", "paralyzed", "petrified", "poisoned", "prone", "restrained", "unconscious"],
@@ -6396,6 +7183,7 @@
         "initiativeModifier": -1,
         "abilities": { "str": 25, "dex": 9, "con": 23, "int": 10, "wis": 14, "cha": 13 },
         "saves": { "dex_save": 3, "con_save": 10, "cha_save": 5 },
+        "checks": { "might": 11, "agility": -1 },
         "immune": ["fire"],
         "tier": "cr_9",
         "actions": [
@@ -6465,6 +7253,7 @@
         "speed": 30,
         "initiativeModifier": -1,
         "abilities": { "str": 19, "dex": 9, "con": 18, "int": 6, "wis": 10, "cha": 5 },
+        "checks": { "might": 4, "agility": -1 },
         "immune": ["bludgeoning", "lightning", "piercing", "poison", "slashing"],
         "conditionImmunities": ["charmed", "frightened", "paralyzed", "petrified", "poisoned"],
         "tier": "cr_5",
@@ -6530,6 +7319,7 @@
         "speed": 30,
         "initiativeModifier": 4,
         "abilities": { "str": 4, "dex": 18, "con": 11, "int": 2, "wis": 12, "cha": 5 },
+        "checks": { "might": -3, "agility": 4 },
         "tier": "cr_1_8",
         "traits": [
           { "name": "Speed", "text": "30 ft., fly 60 ft., swim 30 ft." },
@@ -6562,6 +7352,7 @@
         "initiativeModifier": 2,
         "abilities": { "str": 12, "dex": 15, "con": 11, "int": 1, "wis": 5, "cha": 1 },
         "saves": { "dex_save": 4 },
+        "checks": { "might": 1, "agility": 2 },
         "immune": ["poison", "psychic"],
         "conditionImmunities": ["blinded", "charmed", "deafened", "frightened", "paralyzed", "petrified", "poisoned"],
         "tier": "cr_1_4",
@@ -6605,6 +7396,7 @@
         "initiativeModifier": -1,
         "abilities": { "str": 23, "dex": 9, "con": 21, "int": 9, "wis": 10, "cha": 12 },
         "saves": { "con_save": 8, "wis_save": 3, "cha_save": 4 },
+        "checks": { "might": 9, "agility": -1 },
         "immune": ["cold"],
         "tier": "cr_8",
         "actions": [
@@ -6659,6 +7451,7 @@
         "speed": 30,
         "initiativeModifier": 0,
         "abilities": { "str": 15, "dex": 11, "con": 16, "int": 6, "wis": 11, "cha": 7 },
+        "checks": { "might": 2, "agility": 0 },
         "resist": ["bludgeoning", "piercing", "slashing"],
         "immune": ["poison"],
         "conditionImmunities": ["petrified", "poisoned"],
@@ -6723,6 +7516,7 @@
         "speed": 15,
         "initiativeModifier": -4,
         "abilities": { "str": 14, "dex": 3, "con": 20, "int": 1, "wis": 6, "cha": 1 },
+        "checks": { "might": 2, "agility": -4 },
         "conditionImmunities": ["blinded", "charmed", "deafened", "frightened", "prone"],
         "tier": "cr_2",
         "traits": [
@@ -6797,6 +7591,7 @@
         "speed": 30,
         "initiativeModifier": 3,
         "abilities": { "str": 16, "dex": 17, "con": 10, "int": 11, "wis": 10, "cha": 8 },
+        "checks": { "might": 3, "agility": 3 },
         "resist": ["necrotic"],
         "immune": ["poison"],
         "conditionImmunities": ["charmed", "poisoned"],
@@ -6875,6 +7670,7 @@
         "speed": 40,
         "initiativeModifier": 1,
         "abilities": { "str": 7, "dex": 13, "con": 10, "int": 10, "wis": 12, "cha": 17 },
+        "checks": { "might": -2, "agility": 1 },
         "resist": ["acid", "bludgeoning", "fire", "lightning", "piercing", "slashing", "thunder"],
         "immune": ["cold", "necrotic", "poison"],
         "conditionImmunities": [
@@ -6978,6 +7774,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 13, "dex": 15, "con": 10, "int": 7, "wis": 10, "cha": 6 },
+        "checks": { "might": 1, "agility": 2 },
         "immune": ["poison"],
         "conditionImmunities": ["charmed", "poisoned"],
         "tier": "cr_1",
@@ -7026,6 +7823,7 @@
         "speed": 40,
         "initiativeModifier": 2,
         "abilities": { "str": 23, "dex": 14, "con": 18, "int": 7, "wis": 12, "cha": 7 },
+        "checks": { "might": 9, "agility": 2 },
         "tier": "cr_7",
         "traits": [{ "name": "Speed", "text": "40 ft., climb 40 ft." }],
         "actions": [
@@ -7065,6 +7863,7 @@
         "speed": 30,
         "initiativeModifier": 0,
         "abilities": { "str": 13, "dex": 10, "con": 15, "int": 2, "wis": 12, "cha": 5 },
+        "checks": { "might": 1, "agility": 0 },
         "tier": "cr_1_4",
         "traits": [
           { "name": "Speed", "text": "30 ft., burrow 10 ft." },
@@ -7115,6 +7914,7 @@
         "speed": 10,
         "initiativeModifier": 3,
         "abilities": { "str": 15, "dex": 16, "con": 11, "int": 2, "wis": 12, "cha": 6 },
+        "checks": { "might": 2, "agility": 3 },
         "tier": "cr_1_4",
         "traits": [
           { "name": "Speed", "text": "10 ft., fly 60 ft." },
@@ -7152,6 +7952,7 @@
         "speed": 40,
         "initiativeModifier": 0,
         "abilities": { "str": 17, "dex": 10, "con": 16, "int": 2, "wis": 7, "cha": 5 },
+        "checks": { "might": 3, "agility": 0 },
         "tier": "cr_2",
         "traits": [
           {
@@ -7191,6 +7992,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 5, "dex": 14, "con": 12, "int": 1, "wis": 7, "cha": 3 },
+        "checks": { "might": -3, "agility": 2 },
         "tier": "cr_1_4",
         "traits": [
           {
@@ -7227,6 +8029,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 19, "dex": 14, "con": 12, "int": 1, "wis": 10, "cha": 3 },
+        "checks": { "might": 4, "agility": 2 },
         "tier": "cr_2",
         "traits": [{ "name": "Speed", "text": "30 ft., swim 30 ft." }],
         "actions": [
@@ -7260,6 +8063,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 13, "dex": 15, "con": 11, "int": 1, "wis": 9, "cha": 3 },
+        "checks": { "might": 1, "agility": 2 },
         "tier": "cr_1_8",
         "traits": [
           { "name": "Speed", "text": "30 ft., swim 30 ft." },
@@ -7288,6 +8092,7 @@
         "speed": 30,
         "initiativeModifier": -1,
         "abilities": { "str": 21, "dex": 9, "con": 17, "int": 2, "wis": 10, "cha": 7 },
+        "checks": { "might": 5, "agility": -1 },
         "tier": "cr_5",
         "traits": [
           { "name": "Speed", "text": "30 ft., swim 50 ft." },
@@ -7340,6 +8145,7 @@
         "speed": 10,
         "initiativeModifier": 3,
         "abilities": { "str": 16, "dex": 17, "con": 13, "int": 8, "wis": 14, "cha": 10 },
+        "checks": { "might": 3, "agility": 3 },
         "tier": "cr_1",
         "traits": [
           { "name": "Speed", "text": "10 ft., fly 80 ft." },
@@ -7390,6 +8196,7 @@
         "speed": 60,
         "initiativeModifier": 3,
         "abilities": { "str": 19, "dex": 16, "con": 14, "int": 7, "wis": 14, "cha": 10 },
+        "checks": { "might": 4, "agility": 3 },
         "tier": "cr_2",
         "traits": [
           {
@@ -7428,6 +8235,7 @@
         "speed": 30,
         "initiativeModifier": 0,
         "abilities": { "str": 8, "dex": 10, "con": 12, "int": 1, "wis": 7, "cha": 3 },
+        "checks": { "might": -1, "agility": 0 },
         "tier": "cr_0",
         "traits": [
           {
@@ -7458,6 +8266,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 12, "dex": 13, "con": 11, "int": 2, "wis": 10, "cha": 3 },
+        "checks": { "might": 1, "agility": 1 },
         "tier": "cr_1_4",
         "traits": [
           {
@@ -7499,6 +8308,7 @@
         "speed": 40,
         "initiativeModifier": 0,
         "abilities": { "str": 17, "dex": 11, "con": 12, "int": 3, "wis": 12, "cha": 6 },
+        "checks": { "might": 3, "agility": 0 },
         "tier": "cr_1_2",
         "traits": [
           {
@@ -7538,6 +8348,7 @@
         "speed": 50,
         "initiativeModifier": 2,
         "abilities": { "str": 16, "dex": 14, "con": 14, "int": 2, "wis": 12, "cha": 7 },
+        "checks": { "might": 3, "agility": 2 },
         "tier": "cr_1",
         "traits": [
           {
@@ -7573,6 +8384,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 15, "dex": 12, "con": 13, "int": 2, "wis": 10, "cha": 5 },
+        "checks": { "might": 2, "agility": 1 },
         "tier": "cr_1_4",
         "traits": [
           { "name": "Speed", "text": "30 ft., climb 30 ft." },
@@ -7608,6 +8420,7 @@
         "speed": 10,
         "initiativeModifier": 1,
         "abilities": { "str": 17, "dex": 13, "con": 13, "int": 4, "wis": 10, "cha": 4 },
+        "checks": { "might": 3, "agility": 1 },
         "tier": "cr_1",
         "traits": [
           {
@@ -7650,6 +8463,7 @@
         "speed": 5,
         "initiativeModifier": 2,
         "abilities": { "str": 13, "dex": 15, "con": 12, "int": 8, "wis": 13, "cha": 10 },
+        "checks": { "might": 1, "agility": 2 },
         "tier": "cr_1_4",
         "traits": [
           { "name": "Speed", "text": "5 ft., fly 60 ft." },
@@ -7704,6 +8518,7 @@
         "speed": 30,
         "initiativeModifier": 4,
         "abilities": { "str": 10, "dex": 18, "con": 13, "int": 2, "wis": 10, "cha": 3 },
+        "checks": { "might": 0, "agility": 4 },
         "tier": "cr_1_4",
         "traits": [
           {
@@ -7740,6 +8555,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 7, "dex": 15, "con": 11, "int": 2, "wis": 10, "cha": 4 },
+        "checks": { "might": -2, "agility": 2 },
         "tier": "cr_1_8",
         "traits": [
           { "name": "Keen Smell", "text": "The rat has advantage on Wisdom (Perception) checks that rely on smell." },
@@ -7776,6 +8592,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 7, "dex": 15, "con": 11, "int": 2, "wis": 10, "cha": 4 },
+        "checks": { "might": -2, "agility": 2 },
         "tier": "cr_1_8",
         "traits": [
           {
@@ -7811,6 +8628,7 @@
         "speed": 40,
         "initiativeModifier": 1,
         "abilities": { "str": 15, "dex": 13, "con": 15, "int": 1, "wis": 9, "cha": 3 },
+        "checks": { "might": 2, "agility": 1 },
         "tier": "cr_3",
         "traits": [
           {
@@ -7858,6 +8676,7 @@
         "speed": 40,
         "initiativeModifier": 2,
         "abilities": { "str": 12, "dex": 15, "con": 11, "int": 2, "wis": 12, "cha": 5 },
+        "checks": { "might": 1, "agility": 2 },
         "tier": "cr_1_2",
         "traits": [
           { "name": "Speed", "text": "0 ft., swim 40 ft." },
@@ -7890,6 +8709,7 @@
         "speed": 50,
         "initiativeModifier": 0,
         "abilities": { "str": 23, "dex": 11, "con": 21, "int": 1, "wis": 10, "cha": 5 },
+        "checks": { "might": 6, "agility": 0 },
         "tier": "cr_5",
         "traits": [
           { "name": "Speed", "text": "0 ft., swim 50 ft." },
@@ -7927,6 +8747,7 @@
         "speed": 30,
         "initiativeModifier": 3,
         "abilities": { "str": 14, "dex": 16, "con": 12, "int": 2, "wis": 11, "cha": 4 },
+        "checks": { "might": 2, "agility": 3 },
         "tier": "cr_1",
         "traits": [
           {
@@ -7984,6 +8805,7 @@
         "speed": 20,
         "initiativeModifier": 1,
         "abilities": { "str": 15, "dex": 13, "con": 13, "int": 2, "wis": 10, "cha": 3 },
+        "checks": { "might": 2, "agility": 1 },
         "tier": "cr_1",
         "traits": [
           {
@@ -8020,6 +8842,7 @@
         "speed": 10,
         "initiativeModifier": 0,
         "abilities": { "str": 15, "dex": 10, "con": 15, "int": 6, "wis": 12, "cha": 7 },
+        "checks": { "might": 2, "agility": 0 },
         "tier": "cr_1",
         "traits": [
           { "name": "Speed", "text": "10 ft., fly 60 ft." },
@@ -8077,6 +8900,7 @@
         "speed": 10,
         "initiativeModifier": 2,
         "abilities": { "str": 10, "dex": 14, "con": 10, "int": 1, "wis": 10, "cha": 3 },
+        "checks": { "might": 0, "agility": 2 },
         "tier": "cr_1_2",
         "traits": [
           {
@@ -8113,6 +8937,7 @@
         "speed": 40,
         "initiativeModifier": 3,
         "abilities": { "str": 11, "dex": 16, "con": 10, "int": 4, "wis": 12, "cha": 5 },
+        "checks": { "might": 0, "agility": 3 },
         "tier": "cr_1_8",
         "traits": [
           {
@@ -8148,6 +8973,7 @@
         "speed": 40,
         "initiativeModifier": 3,
         "abilities": { "str": 12, "dex": 16, "con": 13, "int": 3, "wis": 12, "cha": 4 },
+        "checks": { "might": 1, "agility": 3 },
         "tier": "cr_1_4",
         "traits": [
           {
@@ -8193,6 +9019,7 @@
         "speed": 10,
         "initiativeModifier": -1,
         "abilities": { "str": 10, "dex": 8, "con": 16, "int": 3, "wis": 10, "cha": 6 },
+        "checks": { "might": 0, "agility": -1 },
         "conditionImmunities": ["prone"],
         "tier": "cr_2",
         "traits": [
@@ -8245,6 +9072,7 @@
         "initiativeModifier": 2,
         "abilities": { "str": 20, "dex": 15, "con": 21, "int": 19, "wis": 17, "cha": 16 },
         "saves": { "str_save": 9, "con_save": 9, "wis_save": 7, "cha_save": 7 },
+        "checks": { "might": 5, "agility": 2 },
         "resist": ["bludgeoning", "cold", "fire", "lightning", "piercing", "slashing"],
         "immune": ["poison"],
         "conditionImmunities": ["poisoned"],
@@ -8312,6 +9140,7 @@
         "initiativeModifier": 2,
         "abilities": { "str": 18, "dex": 15, "con": 16, "int": 10, "wis": 12, "cha": 15 },
         "saves": { "str_save": 7, "dex_save": 5, "con_save": 6 },
+        "checks": { "might": 10, "agility": 2 },
         "tier": "cr_5",
         "traits": [
           {
@@ -8356,6 +9185,14 @@
             "save": { "save": "str_save", "difficulty": 15, "onSuccess": "none" },
             "applies": [{ "condition": "prone", "duration": "instant" }],
             "reach": 5
+          },
+          {
+            "id": "parry",
+            "name": "Parry",
+            "budget": "reaction",
+            "self": true,
+            "reaction": { "on": "hit" },
+            "applies": [{ "condition": "parrying_3", "duration": { "rounds": 1 }, "endsAfter": "attacked" }]
           }
         ]
       }
@@ -8376,6 +9213,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 14, "dex": 12, "con": 11, "int": 6, "wis": 10, "cha": 7 },
+        "checks": { "might": 2, "agility": 1 },
         "tier": "cr_1_2",
         "traits": [
           {
@@ -8432,6 +9270,7 @@
         "speed": 40,
         "initiativeModifier": 0,
         "abilities": { "str": 12, "dex": 10, "con": 11, "int": 2, "wis": 10, "cha": 5 },
+        "checks": { "might": 1, "agility": 0 },
         "tier": "cr_0",
         "traits": [
           {
@@ -8485,6 +9324,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 8, "dex": 14, "con": 10, "int": 10, "wis": 8, "cha": 8 },
+        "checks": { "might": -1, "agility": 2 },
         "tier": "cr_1_4",
         "traits": [
           {
@@ -8529,6 +9369,7 @@
         "initiativeModifier": 2,
         "abilities": { "str": 19, "dex": 14, "con": 17, "int": 14, "wis": 11, "cha": 16 },
         "saves": { "dex_save": 4, "con_save": 5, "wis_save": 2, "cha_save": 5 },
+        "checks": { "might": 4, "agility": 2 },
         "immune": ["fire"],
         "tier": "cr_3",
         "traits": [
@@ -8577,6 +9418,7 @@
         "speed": 40,
         "initiativeModifier": 0,
         "abilities": { "str": 20, "dex": 11, "con": 18, "int": 2, "wis": 12, "cha": 7 },
+        "checks": { "might": 5, "agility": 0 },
         "conditionImmunities": ["petrified"],
         "tier": "cr_5",
         "traits": [
@@ -8636,6 +9478,7 @@
         "speed": 10,
         "initiativeModifier": -2,
         "abilities": { "str": 12, "dex": 6, "con": 16, "int": 1, "wis": 6, "cha": 2 },
+        "checks": { "might": 1, "agility": -2 },
         "resist": ["acid", "cold", "fire"],
         "conditionImmunities": ["blinded", "charmed", "deafened", "frightened", "prone"],
         "tier": "cr_1_2",
@@ -8682,6 +9525,7 @@
         "initiativeModifier": 1,
         "abilities": { "str": 15, "dex": 12, "con": 13, "int": 14, "wis": 11, "cha": 13 },
         "saves": { "dex_save": 3, "con_save": 3, "wis_save": 2, "cha_save": 3 },
+        "checks": { "might": 2, "agility": 1 },
         "immune": ["poison"],
         "conditionImmunities": ["poisoned"],
         "tier": "cr_2",
@@ -8727,6 +9571,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 18, "dex": 12, "con": 16, "int": 13, "wis": 14, "cha": 14 },
+        "checks": { "might": 4, "agility": 1 },
         "tier": "cr_3",
         "traits": [
           {
@@ -8787,6 +9632,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 14, "dex": 14, "con": 11, "int": 3, "wis": 14, "cha": 5 },
+        "checks": { "might": 2, "agility": 2 },
         "resist": ["bludgeoning", "piercing", "slashing"],
         "tier": "cr_2",
         "traits": [
@@ -8840,6 +9686,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 18, "dex": 15, "con": 16, "int": 2, "wis": 13, "cha": 8 },
+        "checks": { "might": 4, "agility": 2 },
         "tier": "cr_2",
         "traits": [
           { "name": "Speed", "text": "30 ft., fly 80 ft." },
@@ -8893,6 +9740,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 16, "dex": 12, "con": 12, "int": 9, "wis": 8, "cha": 6 },
+        "checks": { "might": 5, "agility": 1 },
         "conditionImmunities": ["blinded"],
         "tier": "cr_1_4",
         "traits": [
@@ -8942,6 +9790,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 13, "dex": 12, "con": 12, "int": 10, "wis": 11, "cha": 10 },
+        "checks": { "might": 1, "agility": 1 },
         "tier": "cr_1_8",
         "traits": [
           {
@@ -8973,12 +9822,171 @@
         "environment": ["Astral Plane", "Caves", "Desert", "Forest", "Mountain", "Ruins", "Temple"]
       },
       "creature": {
-        "health": { "dice": "15d10+45" },
-        "defense": 18,
-        "speed": 40,
-        "initiativeModifier": 4,
-        "abilities": { "str": 19, "dex": 18, "con": 16, "int": 16, "wis": 19, "cha": 18 },
-        "saves": { "dex_save": 8, "con_save": 7, "int_save": 7, "wis_save": 8, "cha_save": 8 },
+        "sheet": {
+          "abilities": { "str": 19, "dex": 18, "con": 16, "int": 16, "wis": 19, "cha": 18 },
+          "skills": {},
+          "saves": {
+            "dex_save": "proficient",
+            "con_save": "proficient",
+            "int_save": "proficient",
+            "wis_save": "proficient",
+            "cha_save": "proficient"
+          },
+          "bonuses": {},
+          "fields": {
+            "level": 11,
+            "class": "Cleric",
+            "ac": 18,
+            "speed": 40,
+            "hp_max": 127,
+            "spellcasting_ability": "wis",
+            "slots_max_1": 4,
+            "slots_max_2": 3,
+            "slots_max_3": 3,
+            "slots_max_4": 3,
+            "slots_max_5": 2,
+            "slots_max_6": 1
+          },
+          "lists": {
+            "spells": [
+              {
+                "name": "Mending",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Transmutation. Casting time: 1 minute. Range: Touch. Duration: instantaneous. Components: V, S, M.",
+                "_catalog": "spells/mending"
+              },
+              {
+                "name": "Sacred Flame",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 60 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/sacred-flame"
+              },
+              {
+                "name": "Thaumaturgy",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Transmutation. Casting time: action. Range: 30 feet. Duration: 1 minute. Components: V.",
+                "_catalog": "spells/thaumaturgy"
+              },
+              {
+                "name": "Command",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Enchantment. Casting time: action. Range: 60 feet. Duration: 1 round. Components: V.",
+                "_catalog": "spells/command"
+              },
+              {
+                "name": "Cure Wounds",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: Touch. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/cure-wounds"
+              },
+              {
+                "name": "Shield of Faith",
+                "level": 1,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: bonus action. Range: 60 feet. Duration: 10 minutes. Components: V, S, M.",
+                "_catalog": "spells/shield-of-faith"
+              },
+              {
+                "name": "Calm Emotions",
+                "level": 2,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Enchantment. Casting time: action. Range: 60 feet. Duration: 1 minute. Components: V, S.",
+                "_catalog": "spells/calm-emotions"
+              },
+              {
+                "name": "Hold Person",
+                "level": 2,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Enchantment. Casting time: action. Range: 60 feet. Duration: 1 minute. Components: V, S, M.",
+                "_catalog": "spells/hold-person"
+              },
+              {
+                "name": "Bestow Curse",
+                "level": 3,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Necromancy. Casting time: action. Range: Touch. Duration: 1 minute. Components: V, S.",
+                "_catalog": "spells/bestow-curse"
+              },
+              {
+                "name": "Clairvoyance",
+                "level": 3,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Divination. Casting time: 10 minutes. Range: 1 mile. Duration: 10 minutes. Components: V, S, M.",
+                "_catalog": "spells/clairvoyance"
+              },
+              {
+                "name": "Banishment",
+                "level": 4,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: action. Range: 60 feet. Duration: 1 minute. Components: V, S, M.",
+                "_catalog": "spells/banishment"
+              },
+              {
+                "name": "Freedom of Movement",
+                "level": 4,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: action. Range: Touch. Duration: 1 hour. Components: V, S, M.",
+                "_catalog": "spells/freedom-of-movement"
+              },
+              {
+                "name": "Flame Strike",
+                "level": 5,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 60 feet. Duration: instantaneous. Components: V, S, M.",
+                "_catalog": "spells/flame-strike"
+              },
+              {
+                "name": "Geas",
+                "level": 5,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Enchantment. Casting time: 1 minute. Range: 60 feet. Duration: 30 days. Components: V.",
+                "_catalog": "spells/geas"
+              },
+              {
+                "name": "True Seeing",
+                "level": 6,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Divination. Casting time: action. Range: Touch. Duration: 1 hour. Components: V, S, M.",
+                "_catalog": "spells/true-seeing"
+              }
+            ]
+          }
+        },
         "immune": ["poison"],
         "conditionImmunities": ["charmed", "poisoned"],
         "tier": "cr_10",
@@ -9026,11 +10034,169 @@
       "summary": "Large monstrosity, lawful neutral. Armor Class 17, 136 hit points, challenge rating 11.",
       "filters": { "challenge": 11, "type": "Monstrosity", "size": "Large", "environment": ["Desert", "Ruins"] },
       "creature": {
-        "health": { "dice": "16d10+48" },
-        "defense": 17,
-        "speed": 40,
-        "initiativeModifier": 2,
-        "abilities": { "str": 18, "dex": 15, "con": 16, "int": 18, "wis": 18, "cha": 18 },
+        "sheet": {
+          "abilities": { "str": 18, "dex": 15, "con": 16, "int": 18, "wis": 18, "cha": 18 },
+          "skills": {
+            "arcana": "proficient",
+            "history": "proficient",
+            "perception": "proficient",
+            "religion": "proficient"
+          },
+          "saves": {},
+          "bonuses": { "arcana": 4, "history": 4 },
+          "fields": {
+            "level": 9,
+            "class": "Wizard",
+            "ac": 17,
+            "speed": 40,
+            "hp_max": 136,
+            "spellcasting_ability": "int",
+            "slots_max_1": 4,
+            "slots_max_2": 3,
+            "slots_max_3": 3,
+            "slots_max_4": 3,
+            "slots_max_5": 1
+          },
+          "lists": {
+            "spells": [
+              {
+                "name": "Mage Hand",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Conjuration. Casting time: action. Range: 30 feet. Duration: 1 minute. Components: V, S.",
+                "_catalog": "spells/mage-hand"
+              },
+              {
+                "name": "Minor Illusion",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Illusion. Casting time: action. Range: 30 feet. Duration: 1 minute. Components: S, M.",
+                "_catalog": "spells/minor-illusion"
+              },
+              {
+                "name": "Prestidigitation",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Transmutation. Casting time: action. Range: 10 feet. Duration: 1 hour. Components: V, S.",
+                "_catalog": "spells/prestidigitation"
+              },
+              {
+                "name": "Detect Magic",
+                "level": 1,
+                "ritual": true,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Divination. Casting time: action. Range: Self. Duration: 10 minutes. Components: V, S.",
+                "_catalog": "spells/detect-magic"
+              },
+              {
+                "name": "Identify",
+                "level": 1,
+                "ritual": true,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Divination. Casting time: 1 minute. Range: Touch. Duration: instantaneous. Components: V, S, M.",
+                "_catalog": "spells/identify"
+              },
+              {
+                "name": "Shield",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: reaction. Range: Self. Duration: 1 round. Components: V, S.",
+                "_catalog": "spells/shield"
+              },
+              {
+                "name": "Darkness",
+                "level": 2,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 60 feet. Duration: 10 minutes. Components: V, M.",
+                "_catalog": "spells/darkness"
+              },
+              {
+                "name": "Locate Object",
+                "level": 2,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Divination. Casting time: action. Range: Self. Duration: 10 minutes. Components: V, S, M.",
+                "_catalog": "spells/locate-object"
+              },
+              {
+                "name": "Suggestion",
+                "level": 2,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Enchantment. Casting time: action. Range: 30 feet. Duration: 8 hours. Components: V, M.",
+                "_catalog": "spells/suggestion"
+              },
+              {
+                "name": "Dispel Magic",
+                "level": 3,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: action. Range: 120 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/dispel-magic"
+              },
+              {
+                "name": "Remove Curse",
+                "level": 3,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: action. Range: Touch. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/remove-curse"
+              },
+              {
+                "name": "Tongues",
+                "level": 3,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Divination. Casting time: action. Range: Touch. Duration: 1 hour. Components: V, M.",
+                "_catalog": "spells/tongues"
+              },
+              {
+                "name": "Banishment",
+                "level": 4,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: action. Range: 60 feet. Duration: 1 minute. Components: V, S, M.",
+                "_catalog": "spells/banishment"
+              },
+              {
+                "name": "Greater Invisibility",
+                "level": 4,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Illusion. Casting time: action. Range: Touch. Duration: 1 minute. Components: V, S.",
+                "_catalog": "spells/greater-invisibility"
+              },
+              {
+                "name": "Legend Lore",
+                "level": 5,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Divination. Casting time: 10 minutes. Range: Self. Duration: instantaneous. Components: V, S, M.",
+                "_catalog": "spells/legend-lore"
+              }
+            ]
+          }
+        },
         "resist": ["bludgeoning", "piercing", "slashing"],
         "immune": ["psychic"],
         "conditionImmunities": ["charmed", "frightened"],
@@ -9103,6 +10269,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 16, "dex": 13, "con": 14, "int": 10, "wis": 11, "cha": 10 },
+        "checks": { "might": 5, "agility": 1 },
         "resist": ["fire"],
         "tier": "cr_5",
         "traits": [
@@ -9175,6 +10342,7 @@
         "speed": 20,
         "initiativeModifier": 1,
         "abilities": { "str": 12, "dex": 13, "con": 12, "int": 7, "wis": 10, "cha": 13 },
+        "checks": { "might": 1, "agility": 1 },
         "tier": "cr_1",
         "traits": [{ "name": "Speed", "text": "20 ft., fly 40 ft." }],
         "actions": [
@@ -9232,6 +10400,7 @@
         "speed": 10,
         "initiativeModifier": 3,
         "abilities": { "str": 5, "dex": 16, "con": 8, "int": 2, "wis": 14, "cha": 6 },
+        "checks": { "might": -3, "agility": 3 },
         "tier": "cr_0",
         "traits": [
           { "name": "Speed", "text": "10 ft., fly 60 ft." },
@@ -9274,6 +10443,7 @@
         "speed": 50,
         "initiativeModifier": 1,
         "abilities": { "str": 17, "dex": 12, "con": 14, "int": 6, "wis": 13, "cha": 6 },
+        "checks": { "might": 3, "agility": 1 },
         "immune": ["fire"],
         "tier": "cr_3",
         "traits": [
@@ -9320,6 +10490,7 @@
         "initiativeModifier": 3,
         "abilities": { "str": 19, "dex": 17, "con": 20, "int": 5, "wis": 12, "cha": 13 },
         "saves": { "str_save": 7, "con_save": 8, "wis_save": 4 },
+        "checks": { "might": 4, "agility": 3 },
         "resist": ["bludgeoning", "cold", "fire", "lightning", "piercing", "slashing"],
         "immune": ["poison"],
         "conditionImmunities": ["poisoned"],
@@ -9387,6 +10558,7 @@
         "speed": 40,
         "initiativeModifier": -1,
         "abilities": { "str": 21, "dex": 8, "con": 19, "int": 5, "wis": 9, "cha": 6 },
+        "checks": { "might": 5, "agility": -1 },
         "tier": "cr_5",
         "actions": [
           {
@@ -9430,6 +10602,7 @@
         "speed": 40,
         "initiativeModifier": 1,
         "abilities": { "str": 17, "dex": 13, "con": 13, "int": 2, "wis": 12, "cha": 8 },
+        "checks": { "might": 3, "agility": 1 },
         "tier": "cr_1",
         "traits": [
           { "name": "Speed", "text": "40 ft., fly 60 ft." },
@@ -9483,6 +10656,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 13, "dex": 12, "con": 12, "int": 10, "wis": 10, "cha": 9 },
+        "checks": { "might": 1, "agility": 1 },
         "tier": "cr_1_2",
         "traits": [
           {
@@ -9525,6 +10699,7 @@
         "speed": 20,
         "initiativeModifier": 2,
         "abilities": { "str": 4, "dex": 15, "con": 11, "int": 10, "wis": 10, "cha": 7 },
+        "checks": { "might": -3, "agility": 2 },
         "immune": ["poison"],
         "conditionImmunities": ["charmed", "poisoned"],
         "tier": "cr_0",
@@ -9561,6 +10736,7 @@
         "initiativeModifier": 3,
         "abilities": { "str": 22, "dex": 17, "con": 21, "int": 12, "wis": 16, "cha": 17 },
         "saves": { "str_save": 10, "dex_save": 7, "wis_save": 7, "cha_save": 7 },
+        "checks": { "might": 6, "agility": 3 },
         "resist": ["bludgeoning", "cold", "piercing", "slashing"],
         "immune": ["fire", "poison"],
         "conditionImmunities": ["poisoned"],
@@ -9633,6 +10809,7 @@
         "speed": 40,
         "initiativeModifier": 1,
         "abilities": { "str": 18, "dex": 13, "con": 15, "int": 1, "wis": 10, "cha": 4 },
+        "checks": { "might": 4, "agility": 1 },
         "tier": "cr_2",
         "traits": [
           { "name": "Speed", "text": "0 ft., swim 40 ft." },
@@ -9670,6 +10847,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 20, "dex": 12, "con": 20, "int": 2, "wis": 10, "cha": 7 },
+        "checks": { "might": 5, "agility": 1 },
         "tier": "cr_8",
         "traits": [
           { "name": "Speed", "text": "30 ft., swim 30 ft." },
@@ -9718,6 +10896,7 @@
         "speed": 50,
         "initiativeModifier": 1,
         "abilities": { "str": 11, "dex": 13, "con": 12, "int": 2, "wis": 12, "cha": 5 },
+        "checks": { "might": 0, "agility": 1 },
         "tier": "cr_0",
         "traits": [
           {
@@ -9749,6 +10928,7 @@
         "initiativeModifier": 2,
         "abilities": { "str": 21, "dex": 14, "con": 18, "int": 18, "wis": 15, "cha": 18 },
         "saves": { "dex_save": 7, "con_save": 9, "wis_save": 7, "cha_save": 9 },
+        "checks": { "might": 5, "agility": 2 },
         "resist": ["bludgeoning", "piercing", "slashing"],
         "immune": ["fire", "poison"],
         "conditionImmunities": ["poisoned"],
@@ -9831,6 +11011,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 7, "dex": 13, "con": 10, "int": 9, "wis": 11, "cha": 12 },
+        "checks": { "might": -2, "agility": 1 },
         "vulnerable": ["bludgeoning", "fire"],
         "immune": ["cold", "poison"],
         "conditionImmunities": ["poisoned"],
@@ -9886,6 +11067,7 @@
         "speed": 20,
         "initiativeModifier": 3,
         "abilities": { "str": 6, "dex": 17, "con": 13, "int": 11, "wis": 12, "cha": 14 },
+        "checks": { "might": -2, "agility": 3 },
         "resist": ["bludgeoning", "cold", "piercing", "slashing"],
         "immune": ["fire", "poison"],
         "conditionImmunities": ["poisoned"],
@@ -9946,6 +11128,7 @@
         "speed": 50,
         "initiativeModifier": 4,
         "abilities": { "str": 16, "dex": 19, "con": 14, "int": 10, "wis": 15, "cha": 11 },
+        "checks": { "might": 3, "agility": 4 },
         "resist": ["bludgeoning", "piercing", "slashing"],
         "immune": ["poison"],
         "conditionImmunities": ["grappled", "paralyzed", "petrified", "poisoned", "prone", "restrained", "unconscious"],
@@ -10025,6 +11208,7 @@
         "speed": 30,
         "initiativeModifier": -1,
         "abilities": { "str": 24, "dex": 9, "con": 20, "int": 3, "wis": 11, "cha": 1 },
+        "checks": { "might": 7, "agility": -1 },
         "immune": ["bludgeoning", "fire", "piercing", "poison", "psychic", "slashing"],
         "conditionImmunities": ["charmed", "frightened", "paralyzed", "petrified", "poisoned"],
         "tier": "cr_16",
@@ -10100,6 +11284,7 @@
         "speed": 40,
         "initiativeModifier": 2,
         "abilities": { "str": 8, "dex": 15, "con": 11, "int": 3, "wis": 12, "cha": 6 },
+        "checks": { "might": -1, "agility": 2 },
         "tier": "cr_0",
         "traits": [
           {
@@ -10134,6 +11319,7 @@
         "speed": 60,
         "initiativeModifier": 0,
         "abilities": { "str": 19, "dex": 10, "con": 13, "int": 3, "wis": 12, "cha": 7 },
+        "checks": { "might": 4, "agility": 0 },
         "tier": "cr_3",
         "traits": [
           { "name": "Speed", "text": "0 ft., swim 60 ft." },
@@ -10173,6 +11359,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 16, "dex": 11, "con": 14, "int": 11, "wis": 11, "cha": 15 },
         "saves": { "con_save": 4, "wis_save": 2 },
+        "checks": { "might": 3, "agility": 0 },
         "tier": "cr_3",
         "traits": [
           {
@@ -10203,6 +11390,14 @@
             "toHit": 2,
             "damage": { "dice": "1d10", "type": "piercing" },
             "range": { "normal": 100, "long": 400 }
+          },
+          {
+            "id": "parry",
+            "name": "Parry",
+            "budget": "reaction",
+            "self": true,
+            "reaction": { "on": "hit" },
+            "applies": [{ "condition": "parrying_2", "duration": { "rounds": 1 }, "endsAfter": "attacked" }]
           }
         ]
       }
@@ -10237,6 +11432,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 7, "dex": 15, "con": 9, "int": 8, "wis": 7, "cha": 8 },
+        "checks": { "might": -2, "agility": 2 },
         "tier": "cr_1_8",
         "traits": [
           {
@@ -10285,6 +11481,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 30, "dex": 11, "con": 25, "int": 22, "wis": 18, "cha": 20 },
         "saves": { "str_save": 17, "dex_save": 7, "con_save": 14, "int_save": 13, "wis_save": 11 },
+        "checks": { "might": 10, "agility": 0 },
         "immune": ["bludgeoning", "lightning", "piercing", "slashing"],
         "conditionImmunities": ["frightened", "paralyzed"],
         "tier": "cr_23",
@@ -10388,6 +11585,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 16, "dex": 13, "con": 15, "int": 14, "wis": 15, "cha": 16 },
+        "checks": { "might": 3, "agility": 1 },
         "tier": "cr_4",
         "traits": [
           {
@@ -10443,6 +11641,7 @@
         "speed": 15,
         "initiativeModifier": -3,
         "abilities": { "str": 10, "dex": 5, "con": 11, "int": 1, "wis": 11, "cha": 3 },
+        "checks": { "might": 0, "agility": -3 },
         "resist": ["cold"],
         "immune": ["fire", "poison"],
         "conditionImmunities": ["charmed", "frightened", "poisoned"],
@@ -10477,12 +11676,282 @@
         "environment": ["Laboratory", "Ruins", "Shadowfell", "Tomb"]
       },
       "creature": {
-        "health": { "dice": "18d8+54" },
-        "defense": 17,
-        "speed": 30,
-        "initiativeModifier": 3,
-        "abilities": { "str": 11, "dex": 16, "con": 16, "int": 20, "wis": 14, "cha": 16 },
-        "saves": { "con_save": 10, "int_save": 12, "wis_save": 9 },
+        "sheet": {
+          "abilities": { "str": 11, "dex": 16, "con": 16, "int": 20, "wis": 14, "cha": 16 },
+          "skills": {
+            "arcana": "proficient",
+            "history": "proficient",
+            "insight": "proficient",
+            "perception": "proficient"
+          },
+          "saves": { "con_save": "proficient", "int_save": "proficient", "wis_save": "proficient" },
+          "bonuses": {
+            "con_save": 1,
+            "int_save": 1,
+            "wis_save": 1,
+            "arcana": 7,
+            "history": 1,
+            "insight": 1,
+            "perception": 1
+          },
+          "fields": {
+            "level": 18,
+            "class": "Wizard",
+            "ac": 17,
+            "speed": 30,
+            "hp_max": 135,
+            "spellcasting_ability": "int",
+            "slots_max_1": 4,
+            "slots_max_2": 3,
+            "slots_max_3": 3,
+            "slots_max_4": 3,
+            "slots_max_5": 3,
+            "slots_max_6": 1,
+            "slots_max_7": 1,
+            "slots_max_8": 1,
+            "slots_max_9": 1,
+            "spell_attack_extra": 1,
+            "spell_dc_extra": 1
+          },
+          "lists": {
+            "spells": [
+              {
+                "name": "Mage Hand",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Conjuration. Casting time: action. Range: 30 feet. Duration: 1 minute. Components: V, S.",
+                "_catalog": "spells/mage-hand"
+              },
+              {
+                "name": "Prestidigitation",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Transmutation. Casting time: action. Range: 10 feet. Duration: 1 hour. Components: V, S.",
+                "_catalog": "spells/prestidigitation"
+              },
+              {
+                "name": "Ray of Frost",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 60 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/ray-of-frost"
+              },
+              {
+                "name": "Detect Magic",
+                "level": 1,
+                "ritual": true,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Divination. Casting time: action. Range: Self. Duration: 10 minutes. Components: V, S.",
+                "_catalog": "spells/detect-magic"
+              },
+              {
+                "name": "Magic Missile",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 120 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/magic-missile"
+              },
+              {
+                "name": "Shield",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: reaction. Range: Self. Duration: 1 round. Components: V, S.",
+                "_catalog": "spells/shield"
+              },
+              {
+                "name": "Thunderwave",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: Self. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/thunderwave"
+              },
+              {
+                "name": "Detect Thoughts",
+                "level": 2,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Divination. Casting time: action. Range: Self. Duration: 1 minute. Components: V, S, M.",
+                "_catalog": "spells/detect-thoughts"
+              },
+              {
+                "name": "Invisibility",
+                "level": 2,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Illusion. Casting time: action. Range: Touch. Duration: 1 hour. Components: V, S, M.",
+                "_catalog": "spells/invisibility"
+              },
+              {
+                "name": "Acid Arrow",
+                "level": 2,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 90 feet. Duration: instantaneous. Components: V, S, M.",
+                "_catalog": "spells/acid-arrow"
+              },
+              {
+                "name": "Mirror Image",
+                "level": 2,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Illusion. Casting time: action. Range: Self. Duration: 1 minute. Components: V, S.",
+                "_catalog": "spells/mirror-image"
+              },
+              {
+                "name": "Animate Dead",
+                "level": 3,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Necromancy. Casting time: 1 minute. Range: 10 feet. Duration: instantaneous. Components: V, S, M.",
+                "_catalog": "spells/animate-dead"
+              },
+              {
+                "name": "Counterspell",
+                "level": 3,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: reaction. Range: 60 feet. Duration: instantaneous. Components: S.",
+                "_catalog": "spells/counterspell"
+              },
+              {
+                "name": "Dispel Magic",
+                "level": 3,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: action. Range: 120 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/dispel-magic"
+              },
+              {
+                "name": "Fireball",
+                "level": 3,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 150 feet. Duration: instantaneous. Components: V, S, M.",
+                "_catalog": "spells/fireball"
+              },
+              {
+                "name": "Blight",
+                "level": 4,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Necromancy. Casting time: action. Range: 30 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/blight"
+              },
+              {
+                "name": "Dimension Door",
+                "level": 4,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Conjuration. Casting time: action. Range: 500 feet. Duration: instantaneous. Components: V.",
+                "_catalog": "spells/dimension-door"
+              },
+              {
+                "name": "Cloudkill",
+                "level": 5,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Conjuration. Casting time: action. Range: 120 feet. Duration: 10 minutes. Components: V, S.",
+                "_catalog": "spells/cloudkill"
+              },
+              {
+                "name": "Scrying",
+                "level": 5,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Divination. Casting time: 10 minutes. Range: Self. Duration: 10 minutes. Components: V, S, M.",
+                "_catalog": "spells/scrying"
+              },
+              {
+                "name": "Disintegrate",
+                "level": 6,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Transmutation. Casting time: action. Range: 60 feet. Duration: instantaneous. Components: V, S, M.",
+                "_catalog": "spells/disintegrate"
+              },
+              {
+                "name": "Globe of Invulnerability",
+                "level": 6,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: action. Range: Self. Duration: 1 minute. Components: V, S, M.",
+                "_catalog": "spells/globe-of-invulnerability"
+              },
+              {
+                "name": "Finger of Death",
+                "level": 7,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Necromancy. Casting time: action. Range: 60 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/finger-of-death"
+              },
+              {
+                "name": "Plane Shift",
+                "level": 7,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Conjuration. Casting time: action. Range: Touch. Duration: instantaneous. Components: V, S, M.",
+                "_catalog": "spells/plane-shift"
+              },
+              {
+                "name": "Dominate Monster",
+                "level": 8,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Enchantment. Casting time: action. Range: 60 feet. Duration: 1 hour. Components: V, S.",
+                "_catalog": "spells/dominate-monster"
+              },
+              {
+                "name": "Power Word Stun",
+                "level": 8,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Enchantment. Casting time: action. Range: 60 feet. Duration: instantaneous. Components: V.",
+                "_catalog": "spells/power-word-stun"
+              },
+              {
+                "name": "Power Word Kill",
+                "level": 9,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Enchantment. Casting time: action. Range: 60 feet. Duration: instantaneous. Components: V.",
+                "_catalog": "spells/power-word-kill"
+              }
+            ]
+          }
+        },
         "resist": ["cold", "lightning", "necrotic"],
         "immune": ["bludgeoning", "piercing", "poison", "slashing"],
         "conditionImmunities": ["charmed", "frightened", "paralyzed", "poisoned"],
@@ -10576,6 +12045,7 @@
         "speed": 50,
         "initiativeModifier": 2,
         "abilities": { "str": 17, "dex": 15, "con": 13, "int": 3, "wis": 12, "cha": 8 },
+        "checks": { "might": 3, "agility": 2 },
         "tier": "cr_1",
         "traits": [
           { "name": "Keen Smell", "text": "The lion has advantage on Wisdom (Perception) checks that rely on smell." },
@@ -10625,6 +12095,7 @@
         "speed": 20,
         "initiativeModifier": 0,
         "abilities": { "str": 2, "dex": 11, "con": 10, "int": 1, "wis": 8, "cha": 3 },
+        "checks": { "might": -4, "agility": 0 },
         "tier": "cr_0",
         "traits": [{ "name": "Speed", "text": "20 ft., climb 20 ft." }],
         "actions": [
@@ -10680,6 +12151,7 @@
         "speed": 30,
         "initiativeModifier": 0,
         "abilities": { "str": 15, "dex": 10, "con": 13, "int": 7, "wis": 12, "cha": 7 },
+        "checks": { "might": 2, "agility": 0 },
         "tier": "cr_1_2",
         "traits": [
           { "name": "Speed", "text": "30 ft., swim 30 ft." },
@@ -10753,12 +12225,175 @@
         ]
       },
       "creature": {
-        "health": { "dice": "9d8" },
-        "defense": 12,
-        "speed": 30,
-        "initiativeModifier": 2,
-        "abilities": { "str": 9, "dex": 14, "con": 11, "int": 17, "wis": 12, "cha": 11 },
-        "saves": { "int_save": 6, "wis_save": 4 },
+        "sheet": {
+          "abilities": { "str": 9, "dex": 14, "con": 11, "int": 17, "wis": 12, "cha": 11 },
+          "skills": { "arcana": "proficient", "history": "proficient" },
+          "saves": { "int_save": "proficient", "wis_save": "proficient" },
+          "bonuses": { "int_save": -1, "wis_save": -1, "arcana": -1, "history": -1 },
+          "fields": {
+            "level": 9,
+            "class": "Wizard",
+            "ac": 12,
+            "speed": 30,
+            "hp_max": 40,
+            "spellcasting_ability": "int",
+            "slots_max_1": 4,
+            "slots_max_2": 3,
+            "slots_max_3": 3,
+            "slots_max_4": 3,
+            "slots_max_5": 1,
+            "spell_attack_extra": -1,
+            "spell_dc_extra": -1
+          },
+          "lists": {
+            "spells": [
+              {
+                "name": "Fire Bolt",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 120 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/fire-bolt"
+              },
+              {
+                "name": "Light",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: Touch. Duration: 1 hour. Components: V, M.",
+                "_catalog": "spells/light"
+              },
+              {
+                "name": "Mage Hand",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Conjuration. Casting time: action. Range: 30 feet. Duration: 1 minute. Components: V, S.",
+                "_catalog": "spells/mage-hand"
+              },
+              {
+                "name": "Prestidigitation",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Transmutation. Casting time: action. Range: 10 feet. Duration: 1 hour. Components: V, S.",
+                "_catalog": "spells/prestidigitation"
+              },
+              {
+                "name": "Detect Magic",
+                "level": 1,
+                "ritual": true,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Divination. Casting time: action. Range: Self. Duration: 10 minutes. Components: V, S.",
+                "_catalog": "spells/detect-magic"
+              },
+              {
+                "name": "Mage Armor",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: action. Range: Touch. Duration: 8 hours. Components: V, S, M.",
+                "_catalog": "spells/mage-armor"
+              },
+              {
+                "name": "Magic Missile",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 120 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/magic-missile"
+              },
+              {
+                "name": "Shield",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: reaction. Range: Self. Duration: 1 round. Components: V, S.",
+                "_catalog": "spells/shield"
+              },
+              {
+                "name": "Misty Step",
+                "level": 2,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Conjuration. Casting time: bonus action. Range: Self. Duration: instantaneous. Components: V.",
+                "_catalog": "spells/misty-step"
+              },
+              {
+                "name": "Suggestion",
+                "level": 2,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Enchantment. Casting time: action. Range: 30 feet. Duration: 8 hours. Components: V, M.",
+                "_catalog": "spells/suggestion"
+              },
+              {
+                "name": "Counterspell",
+                "level": 3,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: reaction. Range: 60 feet. Duration: instantaneous. Components: S.",
+                "_catalog": "spells/counterspell"
+              },
+              {
+                "name": "Fireball",
+                "level": 3,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 150 feet. Duration: instantaneous. Components: V, S, M.",
+                "_catalog": "spells/fireball"
+              },
+              {
+                "name": "Fly",
+                "level": 3,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Transmutation. Casting time: action. Range: Touch. Duration: 10 minutes. Components: V, S, M.",
+                "_catalog": "spells/fly"
+              },
+              {
+                "name": "Greater Invisibility",
+                "level": 4,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Illusion. Casting time: action. Range: Touch. Duration: 1 minute. Components: V, S.",
+                "_catalog": "spells/greater-invisibility"
+              },
+              {
+                "name": "Ice Storm",
+                "level": 4,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 300 feet. Duration: instantaneous. Components: V, S, M.",
+                "_catalog": "spells/ice-storm"
+              },
+              {
+                "name": "Cone of Cold",
+                "level": 5,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: Self. Duration: instantaneous. Components: V, S, M.",
+                "_catalog": "spells/cone-of-cold"
+              }
+            ]
+          }
+        },
         "tier": "cr_6",
         "traits": [
           {
@@ -10795,6 +12430,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 8, "dex": 12, "con": 12, "int": 7, "wis": 10, "cha": 10 },
+        "checks": { "might": -1, "agility": 1 },
         "vulnerable": ["cold"],
         "immune": ["fire", "poison"],
         "conditionImmunities": ["poisoned"],
@@ -10856,6 +12492,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 7, "dex": 15, "con": 12, "int": 8, "wis": 11, "cha": 10 },
+        "checks": { "might": -2, "agility": 2 },
         "resist": ["bludgeoning", "piercing", "slashing"],
         "immune": ["fire"],
         "tier": "cr_1_2",
@@ -10900,6 +12537,7 @@
         "speed": 40,
         "initiativeModifier": -1,
         "abilities": { "str": 24, "dex": 9, "con": 21, "int": 3, "wis": 11, "cha": 6 },
+        "checks": { "might": 7, "agility": -1 },
         "tier": "cr_6",
         "traits": [
           {
@@ -10943,6 +12581,7 @@
         "speed": 30,
         "initiativeModifier": 3,
         "abilities": { "str": 17, "dex": 16, "con": 17, "int": 7, "wis": 12, "cha": 8 },
+        "checks": { "might": 3, "agility": 3 },
         "tier": "cr_3",
         "traits": [
           {
@@ -11010,6 +12649,7 @@
         "initiativeModifier": 5,
         "abilities": { "str": 18, "dex": 20, "con": 20, "int": 18, "wis": 16, "cha": 20 },
         "saves": { "str_save": 9, "con_save": 10, "wis_save": 8, "cha_save": 10 },
+        "checks": { "might": 4, "agility": 5 },
         "resist": ["bludgeoning", "cold", "fire", "lightning", "piercing", "slashing"],
         "immune": ["poison"],
         "conditionImmunities": ["poisoned"],
@@ -11059,6 +12699,14 @@
             "toHit": 9,
             "damage": { "dice": "2d10", "flat": 4, "type": "bludgeoning" },
             "reach": 10
+          },
+          {
+            "id": "parry",
+            "name": "Parry",
+            "budget": "reaction",
+            "self": true,
+            "reaction": { "on": "hit" },
+            "applies": [{ "condition": "parrying_5", "duration": { "rounds": 1 }, "endsAfter": "attacked" }]
           }
         ]
       }
@@ -11074,6 +12722,7 @@
         "speed": 40,
         "initiativeModifier": 2,
         "abilities": { "str": 13, "dex": 14, "con": 12, "int": 3, "wis": 12, "cha": 7 },
+        "checks": { "might": 1, "agility": 2 },
         "tier": "cr_1_8",
         "traits": [
           {
@@ -11111,6 +12760,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 10, "dex": 15, "con": 16, "int": 12, "wis": 13, "cha": 15 },
+        "checks": { "might": 0, "agility": 2 },
         "tier": "cr_6",
         "traits": [
           {
@@ -11181,6 +12831,7 @@
         "speed": 10,
         "initiativeModifier": 1,
         "abilities": { "str": 10, "dex": 13, "con": 12, "int": 11, "wis": 11, "cha": 12 },
+        "checks": { "might": 0, "agility": 1 },
         "tier": "cr_1_8",
         "traits": [
           {
@@ -11219,6 +12870,7 @@
         "speed": 10,
         "initiativeModifier": 0,
         "abilities": { "str": 18, "dex": 10, "con": 15, "int": 8, "wis": 10, "cha": 9 },
+        "checks": { "might": 4, "agility": 0 },
         "tier": "cr_2",
         "traits": [
           {
@@ -11282,6 +12934,7 @@
         "speed": 15,
         "initiativeModifier": 1,
         "abilities": { "str": 17, "dex": 12, "con": 15, "int": 5, "wis": 13, "cha": 8 },
+        "checks": { "might": 3, "agility": 1 },
         "immune": ["acid"],
         "conditionImmunities": ["prone"],
         "tier": "cr_2",
@@ -11339,6 +12992,7 @@
         "speed": 40,
         "initiativeModifier": 0,
         "abilities": { "str": 18, "dex": 11, "con": 16, "int": 6, "wis": 16, "cha": 9 },
+        "checks": { "might": 4, "agility": 0 },
         "tier": "cr_3",
         "traits": [
           {
@@ -11382,6 +13036,7 @@
         "speed": 40,
         "initiativeModifier": 0,
         "abilities": { "str": 18, "dex": 11, "con": 15, "int": 6, "wis": 8, "cha": 5 },
+        "checks": { "might": 4, "agility": 0 },
         "vulnerable": ["bludgeoning"],
         "immune": ["poison"],
         "conditionImmunities": ["poisoned"],
@@ -11433,6 +13088,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 14, "dex": 10, "con": 13, "int": 2, "wis": 10, "cha": 5 },
         "saves": { "str_save": 0, "dex_save": 0, "con_save": 0, "int_save": 0, "wis_save": 0, "cha_save": 0 },
+        "checks": { "might": 0, "agility": 0 },
         "tier": "cr_1_8",
         "traits": [
           {
@@ -11473,6 +13129,7 @@
         "initiativeModifier": -1,
         "abilities": { "str": 16, "dex": 8, "con": 15, "int": 6, "wis": 10, "cha": 12 },
         "saves": { "wis_save": 2 },
+        "checks": { "might": 3, "agility": -1 },
         "resist": ["bludgeoning", "piercing", "slashing"],
         "vulnerable": ["fire"],
         "immune": ["bludgeoning", "necrotic", "piercing", "poison", "slashing"],
@@ -11537,12 +13194,172 @@
         "environment": ["Desert", "Ruins", "Shadowfell", "Temple", "Tomb"]
       },
       "creature": {
-        "health": { "dice": "13d8+39" },
-        "defense": 17,
-        "speed": 20,
-        "initiativeModifier": 0,
-        "abilities": { "str": 18, "dex": 10, "con": 17, "int": 11, "wis": 18, "cha": 16 },
-        "saves": { "con_save": 8, "int_save": 5, "wis_save": 9, "cha_save": 8 },
+        "sheet": {
+          "abilities": { "str": 18, "dex": 10, "con": 17, "int": 11, "wis": 18, "cha": 16 },
+          "skills": { "history": "proficient", "religion": "proficient" },
+          "saves": {
+            "con_save": "proficient",
+            "int_save": "proficient",
+            "wis_save": "proficient",
+            "cha_save": "proficient"
+          },
+          "bonuses": { "con_save": 1, "int_save": 1, "wis_save": 1, "cha_save": 1, "history": 1, "religion": 1 },
+          "fields": {
+            "level": 10,
+            "class": "Cleric",
+            "ac": 17,
+            "speed": 20,
+            "hp_max": 97,
+            "spellcasting_ability": "wis",
+            "slots_max_1": 4,
+            "slots_max_2": 3,
+            "slots_max_3": 3,
+            "slots_max_4": 3,
+            "slots_max_5": 2,
+            "slots_max_6": 1,
+            "spell_attack_extra": 1,
+            "spell_dc_extra": 1
+          },
+          "lists": {
+            "spells": [
+              {
+                "name": "Sacred Flame",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 60 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/sacred-flame"
+              },
+              {
+                "name": "Thaumaturgy",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Transmutation. Casting time: action. Range: 30 feet. Duration: 1 minute. Components: V.",
+                "_catalog": "spells/thaumaturgy"
+              },
+              {
+                "name": "Command",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Enchantment. Casting time: action. Range: 60 feet. Duration: 1 round. Components: V.",
+                "_catalog": "spells/command"
+              },
+              {
+                "name": "Guiding Bolt",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 120 feet. Duration: 1 round. Components: V, S.",
+                "_catalog": "spells/guiding-bolt"
+              },
+              {
+                "name": "Shield of Faith",
+                "level": 1,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: bonus action. Range: 60 feet. Duration: 10 minutes. Components: V, S, M.",
+                "_catalog": "spells/shield-of-faith"
+              },
+              {
+                "name": "Hold Person",
+                "level": 2,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Enchantment. Casting time: action. Range: 60 feet. Duration: 1 minute. Components: V, S, M.",
+                "_catalog": "spells/hold-person"
+              },
+              {
+                "name": "Silence",
+                "level": 2,
+                "ritual": true,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Illusion. Casting time: action. Range: 120 feet. Duration: 10 minutes. Components: V, S.",
+                "_catalog": "spells/silence"
+              },
+              {
+                "name": "Spiritual Weapon",
+                "level": 2,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: bonus action. Range: 60 feet. Duration: 1 minute. Components: V, S.",
+                "_catalog": "spells/spiritual-weapon"
+              },
+              {
+                "name": "Animate Dead",
+                "level": 3,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Necromancy. Casting time: 1 minute. Range: 10 feet. Duration: instantaneous. Components: V, S, M.",
+                "_catalog": "spells/animate-dead"
+              },
+              {
+                "name": "Dispel Magic",
+                "level": 3,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: action. Range: 120 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/dispel-magic"
+              },
+              {
+                "name": "Divination",
+                "level": 4,
+                "ritual": true,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Divination. Casting time: action. Range: Self. Duration: instantaneous. Components: V, S, M.",
+                "_catalog": "spells/divination"
+              },
+              {
+                "name": "Guardian of Faith",
+                "level": 4,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Conjuration. Casting time: action. Range: 30 feet. Duration: 8 hours. Components: V.",
+                "_catalog": "spells/guardian-of-faith"
+              },
+              {
+                "name": "Contagion",
+                "level": 5,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Necromancy. Casting time: action. Range: Touch. Duration: 7 days. Components: V, S.",
+                "_catalog": "spells/contagion"
+              },
+              {
+                "name": "Insect Plague",
+                "level": 5,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Conjuration. Casting time: action. Range: 300 feet. Duration: 10 minutes. Components: V, S, M.",
+                "_catalog": "spells/insect-plague"
+              },
+              {
+                "name": "Harm",
+                "level": 6,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Necromancy. Casting time: action. Range: 60 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/harm"
+              }
+            ]
+          }
+        },
         "vulnerable": ["bludgeoning"],
         "immune": ["bludgeoning", "necrotic", "piercing", "poison", "slashing"],
         "conditionImmunities": ["charmed", "frightened", "paralyzed", "poisoned"],
@@ -11647,6 +13464,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 21, "dex": 10, "con": 22, "int": 19, "wis": 12, "cha": 15 },
         "saves": { "con_save": 11, "int_save": 9, "wis_save": 6, "cha_save": 7 },
+        "checks": { "might": 5, "agility": 0 },
         "resist": ["bludgeoning", "cold", "fire", "lightning", "piercing", "slashing"],
         "immune": ["poison"],
         "conditionImmunities": ["poisoned"],
@@ -11734,6 +13552,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 18, "dex": 15, "con": 16, "int": 16, "wis": 14, "cha": 16 },
+        "checks": { "might": 4, "agility": 2 },
         "resist": ["bludgeoning", "cold", "fire", "piercing", "slashing"],
         "conditionImmunities": ["charmed"],
         "tier": "cr_5",
@@ -11799,6 +13618,7 @@
         "speed": 60,
         "initiativeModifier": 2,
         "abilities": { "str": 18, "dex": 15, "con": 16, "int": 10, "wis": 13, "cha": 15 },
+        "checks": { "might": 4, "agility": 2 },
         "immune": ["fire"],
         "tier": "cr_3",
         "traits": [
@@ -11844,6 +13664,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 11, "dex": 12, "con": 11, "int": 12, "wis": 14, "cha": 16 },
+        "checks": { "might": 0, "agility": 1 },
         "tier": "cr_1_8",
         "actions": [
           {
@@ -11853,6 +13674,14 @@
             "toHit": 3,
             "damage": { "dice": "1d8", "flat": 1, "type": "piercing" },
             "reach": 5
+          },
+          {
+            "id": "parry",
+            "name": "Parry",
+            "budget": "reaction",
+            "self": true,
+            "reaction": { "on": "hit" },
+            "applies": [{ "condition": "parrying_2", "duration": { "rounds": 1 }, "endsAfter": "attacked" }]
           }
         ]
       }
@@ -11873,6 +13702,7 @@
         "speed": 10,
         "initiativeModifier": -2,
         "abilities": { "str": 15, "dex": 6, "con": 14, "int": 2, "wis": 6, "cha": 1 },
+        "checks": { "might": 2, "agility": -2 },
         "resist": ["acid"],
         "immune": ["lightning", "slashing"],
         "conditionImmunities": ["blinded", "charmed", "deafened", "frightened", "prone"],
@@ -11890,6 +13720,10 @@
           {
             "name": "Spider Climb",
             "text": "The jelly can climb difficult surfaces, including upside down on ceilings, without needing to make an ability check."
+          },
+          {
+            "name": "Split",
+            "text": "When a jelly that is Medium or larger is subjected to lightning or slashing damage, it splits into two new jellies if it has at least 10 hit points. Each new jelly has hit points equal to half the original jelly's, rounded down. New jellies are one size smaller than the original jelly."
           }
         ],
         "actions": [
@@ -11915,6 +13749,7 @@
         "speed": 5,
         "initiativeModifier": 2,
         "abilities": { "str": 4, "dex": 15, "con": 11, "int": 3, "wis": 10, "cha": 4 },
+        "checks": { "might": -3, "agility": 2 },
         "tier": "cr_0",
         "traits": [
           {
@@ -11971,6 +13806,7 @@
         "speed": 40,
         "initiativeModifier": -1,
         "abilities": { "str": 19, "dex": 8, "con": 16, "int": 5, "wis": 7, "cha": 7 },
+        "checks": { "might": 4, "agility": -1 },
         "tier": "cr_2",
         "actions": [
           {
@@ -12010,6 +13846,7 @@
         "initiativeModifier": -2,
         "abilities": { "str": 19, "dex": 6, "con": 18, "int": 3, "wis": 6, "cha": 5 },
         "saves": { "wis_save": 0 },
+        "checks": { "might": 4, "agility": -2 },
         "immune": ["poison"],
         "conditionImmunities": ["poisoned"],
         "tier": "cr_2",
@@ -12043,6 +13880,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 19, "dex": 11, "con": 16, "int": 14, "wis": 12, "cha": 15 },
         "saves": { "dex_save": 3, "con_save": 6, "wis_save": 4, "cha_save": 5 },
+        "checks": { "might": 4, "agility": 0 },
         "tier": "cr_7",
         "traits": [
           {
@@ -12113,6 +13951,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 16, "dex": 12, "con": 16, "int": 7, "wis": 11, "cha": 10 },
+        "checks": { "might": 3, "agility": 1 },
         "tier": "cr_1_2",
         "traits": [
           {
@@ -12158,6 +13997,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 16, "dex": 11, "con": 19, "int": 6, "wis": 13, "cha": 6 },
         "saves": { "con_save": 7 },
+        "checks": { "might": 3, "agility": 0 },
         "tier": "cr_5",
         "traits": [
           {
@@ -12221,6 +14061,7 @@
         "speed": 5,
         "initiativeModifier": 1,
         "abilities": { "str": 3, "dex": 13, "con": 8, "int": 2, "wis": 12, "cha": 7 },
+        "checks": { "might": -4, "agility": 1 },
         "tier": "cr_0",
         "traits": [
           { "name": "Speed", "text": "5 ft., fly 60 ft." },
@@ -12261,6 +14102,7 @@
         "speed": 40,
         "initiativeModifier": 1,
         "abilities": { "str": 20, "dex": 12, "con": 17, "int": 3, "wis": 12, "cha": 7 },
+        "checks": { "might": 5, "agility": 1 },
         "tier": "cr_3",
         "traits": [
           {
@@ -12313,6 +14155,7 @@
         "speed": 50,
         "initiativeModifier": 2,
         "abilities": { "str": 14, "dex": 15, "con": 10, "int": 3, "wis": 14, "cha": 7 },
+        "checks": { "might": 2, "agility": 2 },
         "tier": "cr_1_4",
         "traits": [
           { "name": "Speed", "text": "50 ft., climb 40 ft." },
@@ -12362,6 +14205,7 @@
         "initiativeModifier": 2,
         "abilities": { "str": 18, "dex": 15, "con": 16, "int": 10, "wis": 15, "cha": 13 },
         "saves": { "dex_save": 4, "wis_save": 4, "cha_save": 3 },
+        "checks": { "might": 4, "agility": 2 },
         "tier": "cr_2",
         "traits": [{ "name": "Speed", "text": "60 ft., fly 90 ft." }],
         "actions": [
@@ -12405,6 +14249,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 15, "dex": 15, "con": 12, "int": 6, "wis": 10, "cha": 6 },
+        "checks": { "might": 2, "agility": 2 },
         "tier": "cr_3",
         "traits": [
           {
@@ -12446,6 +14291,7 @@
         "initiativeModifier": 2,
         "abilities": { "str": 26, "dex": 14, "con": 24, "int": 22, "wis": 18, "cha": 24 },
         "saves": { "dex_save": 8, "con_save": 13, "wis_save": 10 },
+        "checks": { "might": 8, "agility": 2 },
         "resist": ["bludgeoning", "cold", "piercing", "slashing"],
         "immune": ["fire", "poison"],
         "conditionImmunities": ["poisoned"],
@@ -12541,6 +14387,7 @@
         "initiativeModifier": 5,
         "abilities": { "str": 24, "dex": 20, "con": 24, "int": 19, "wis": 22, "cha": 25 },
         "saves": { "con_save": 12, "wis_save": 11, "cha_save": 12 },
+        "checks": { "might": 7, "agility": 5 },
         "resist": ["bludgeoning", "piercing", "radiant", "slashing"],
         "conditionImmunities": ["charmed", "frightened"],
         "tier": "cr_16",
@@ -12606,6 +14453,7 @@
         "speed": 20,
         "initiativeModifier": 2,
         "abilities": { "str": 18, "dex": 15, "con": 16, "int": 2, "wis": 12, "cha": 5 },
+        "checks": { "might": 4, "agility": 2 },
         "tier": "cr_2",
         "traits": [
           { "name": "Speed", "text": "20 ft., swim 40 ft." },
@@ -12652,6 +14500,7 @@
         "speed": 30,
         "initiativeModifier": 3,
         "abilities": { "str": 2, "dex": 16, "con": 11, "int": 1, "wis": 10, "cha": 3 },
+        "checks": { "might": -4, "agility": 3 },
         "tier": "cr_1_8",
         "traits": [
           {
@@ -12683,6 +14532,7 @@
         "speed": 40,
         "initiativeModifier": 0,
         "abilities": { "str": 20, "dex": 10, "con": 16, "int": 2, "wis": 13, "cha": 7 },
+        "checks": { "might": 5, "agility": 0 },
         "tier": "cr_2",
         "traits": [
           { "name": "Speed", "text": "40 ft., swim 30 ft." },
@@ -12729,6 +14579,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 15, "dex": 10, "con": 13, "int": 2, "wis": 11, "cha": 7 },
         "saves": { "str_save": 0, "dex_save": 0, "con_save": 0, "int_save": 0, "wis_save": 0, "cha_save": 0 },
+        "checks": { "might": 0, "agility": 0 },
         "tier": "cr_1_8",
         "actions": [
           {
@@ -12753,11 +14604,119 @@
         "environment": ["Desert", "Hills", "Temple", "Urban"]
       },
       "creature": {
-        "health": { "dice": "5d8+5" },
-        "defense": 13,
-        "speed": 25,
-        "initiativeModifier": 0,
-        "abilities": { "str": 10, "dex": 10, "con": 12, "int": 13, "wis": 16, "cha": 13 },
+        "sheet": {
+          "abilities": { "str": 10, "dex": 10, "con": 12, "int": 13, "wis": 16, "cha": 13 },
+          "skills": { "medicine": "proficient", "persuasion": "proficient", "religion": "proficient" },
+          "saves": {},
+          "bonuses": { "medicine": 1, "persuasion": -1 },
+          "fields": {
+            "level": 5,
+            "class": "Cleric",
+            "ac": 13,
+            "speed": 25,
+            "hp_max": 27,
+            "spellcasting_ability": "wis",
+            "slots_max_1": 4,
+            "slots_max_2": 3,
+            "slots_max_3": 2,
+            "spell_attack_extra": -1,
+            "spell_dc_extra": -1
+          },
+          "lists": {
+            "spells": [
+              {
+                "name": "Light",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: Touch. Duration: 1 hour. Components: V, M.",
+                "_catalog": "spells/light"
+              },
+              {
+                "name": "Sacred Flame",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 60 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/sacred-flame"
+              },
+              {
+                "name": "Thaumaturgy",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Transmutation. Casting time: action. Range: 30 feet. Duration: 1 minute. Components: V.",
+                "_catalog": "spells/thaumaturgy"
+              },
+              {
+                "name": "Cure Wounds",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: Touch. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/cure-wounds"
+              },
+              {
+                "name": "Guiding Bolt",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 120 feet. Duration: 1 round. Components: V, S.",
+                "_catalog": "spells/guiding-bolt"
+              },
+              {
+                "name": "Sanctuary",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: bonus action. Range: 30 feet. Duration: 1 minute. Components: V, S, M.",
+                "_catalog": "spells/sanctuary"
+              },
+              {
+                "name": "Lesser Restoration",
+                "level": 2,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: action. Range: Touch. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/lesser-restoration"
+              },
+              {
+                "name": "Spiritual Weapon",
+                "level": 2,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: bonus action. Range: 60 feet. Duration: 1 minute. Components: V, S.",
+                "_catalog": "spells/spiritual-weapon"
+              },
+              {
+                "name": "Dispel Magic",
+                "level": 3,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Abjuration. Casting time: action. Range: 120 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/dispel-magic"
+              },
+              {
+                "name": "Spirit Guardians",
+                "level": 3,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Conjuration. Casting time: action. Range: Self. Duration: 10 minutes. Components: V, S, M.",
+                "_catalog": "spells/spirit-guardians"
+              }
+            ]
+          }
+        },
         "tier": "cr_2",
         "traits": [
           {
@@ -12797,6 +14756,7 @@
         "speed": 15,
         "initiativeModifier": 2,
         "abilities": { "str": 6, "dex": 15, "con": 13, "int": 10, "wis": 12, "cha": 10 },
+        "checks": { "might": -2, "agility": 2 },
         "tier": "cr_1_4",
         "traits": [
           { "name": "Speed", "text": "15 ft., fly 60 ft." },
@@ -12856,6 +14816,7 @@
         "initiativeModifier": -2,
         "abilities": { "str": 28, "dex": 7, "con": 22, "int": 1, "wis": 8, "cha": 4 },
         "saves": { "con_save": 11, "wis_save": 4 },
+        "checks": { "might": 9, "agility": -2 },
         "tier": "cr_15",
         "traits": [
           {
@@ -12942,6 +14903,7 @@
         "speed": 40,
         "initiativeModifier": 3,
         "abilities": { "str": 5, "dex": 17, "con": 10, "int": 7, "wis": 10, "cha": 10 },
+        "checks": { "might": -3, "agility": 3 },
         "resist": ["bludgeoning", "cold", "fire", "lightning", "piercing", "slashing"],
         "immune": ["poison"],
         "conditionImmunities": ["poisoned"],
@@ -13019,6 +14981,7 @@
         "speed": 40,
         "initiativeModifier": 3,
         "abilities": { "str": 2, "dex": 16, "con": 9, "int": 1, "wis": 7, "cha": 2 },
+        "checks": { "might": -4, "agility": 3 },
         "tier": "cr_0",
         "traits": [
           { "name": "Speed", "text": "0 ft., swim 40 ft." },
@@ -13056,6 +15019,7 @@
         "speed": 40,
         "initiativeModifier": 3,
         "abilities": { "str": 14, "dex": 17, "con": 18, "int": 13, "wis": 16, "cha": 20 },
+        "checks": { "might": 2, "agility": 3 },
         "vulnerable": ["piercing"],
         "immune": ["bludgeoning", "piercing", "slashing"],
         "tier": "cr_13",
@@ -13107,6 +15071,7 @@
         "speed": 20,
         "initiativeModifier": 0,
         "abilities": { "str": 2, "dex": 11, "con": 9, "int": 2, "wis": 10, "cha": 4 },
+        "checks": { "might": -4, "agility": 0 },
         "tier": "cr_0",
         "traits": [
           { "name": "Keen Smell", "text": "The rat has advantage on Wisdom (Perception) checks that rely on smell." }
@@ -13139,6 +15104,7 @@
         "speed": 10,
         "initiativeModifier": 2,
         "abilities": { "str": 2, "dex": 14, "con": 8, "int": 2, "wis": 12, "cha": 6 },
+        "checks": { "might": -4, "agility": 2 },
         "tier": "cr_0",
         "traits": [
           { "name": "Speed", "text": "10 ft., fly 50 ft." },
@@ -13171,6 +15137,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 19, "dex": 10, "con": 17, "int": 12, "wis": 11, "cha": 15 },
         "saves": { "dex_save": 2, "con_save": 5, "wis_save": 2, "cha_save": 4 },
+        "checks": { "might": 4, "agility": 0 },
         "immune": ["fire"],
         "tier": "cr_4",
         "traits": [{ "name": "Speed", "text": "30 ft., climb 30 ft., fly 60 ft." }],
@@ -13207,6 +15174,7 @@
         "speed": 40,
         "initiativeModifier": 1,
         "abilities": { "str": 14, "dex": 13, "con": 13, "int": 1, "wis": 10, "cha": 4 },
+        "checks": { "might": 2, "agility": 1 },
         "tier": "cr_1_2",
         "traits": [
           { "name": "Speed", "text": "0 ft., swim 40 ft." },
@@ -13239,6 +15207,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 24, "dex": 13, "con": 21, "int": 4, "wis": 10, "cha": 5 },
+        "checks": { "might": 7, "agility": 1 },
         "immune": ["cold", "fire"],
         "tier": "cr_11",
         "traits": [
@@ -13279,6 +15248,7 @@
         "speed": 40,
         "initiativeModifier": -1,
         "abilities": { "str": 21, "dex": 8, "con": 15, "int": 2, "wis": 12, "cha": 6 },
+        "checks": { "might": 5, "agility": -1 },
         "tier": "cr_2",
         "traits": [
           {
@@ -13310,6 +15280,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 16, "dex": 10, "con": 12, "int": 2, "wis": 11, "cha": 7 },
         "saves": { "str_save": 0, "dex_save": 0, "con_save": 0, "int_save": 0, "wis_save": 0, "cha_save": 0 },
+        "checks": { "might": 0, "agility": 0 },
         "tier": "cr_1_4",
         "actions": [
           {
@@ -13340,6 +15311,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 28, "dex": 10, "con": 20, "int": 3, "wis": 10, "cha": 9 },
         "saves": { "dex_save": 4, "con_save": 9, "wis_save": 4, "cha_save": 3 },
+        "checks": { "might": 9, "agility": 0 },
         "tier": "cr_11",
         "traits": [
           { "name": "Speed", "text": "20 ft., fly 120 ft." },
@@ -13385,6 +15357,7 @@
         "speed": 10,
         "initiativeModifier": -1,
         "abilities": { "str": 18, "dex": 8, "con": 17, "int": 7, "wis": 16, "cha": 6 },
+        "checks": { "might": 4, "agility": -1 },
         "tier": "cr_5",
         "traits": [
           {
@@ -13453,6 +15426,7 @@
         "speed": 10,
         "initiativeModifier": 2,
         "abilities": { "str": 17, "dex": 14, "con": 10, "int": 1, "wis": 3, "cha": 1 },
+        "checks": { "might": 3, "agility": 2 },
         "immune": ["poison", "psychic"],
         "conditionImmunities": ["blinded", "charmed", "deafened", "frightened", "paralyzed", "petrified", "poisoned"],
         "tier": "cr_2",
@@ -13493,6 +15467,7 @@
         "speed": 40,
         "initiativeModifier": 1,
         "abilities": { "str": 13, "dex": 12, "con": 13, "int": 2, "wis": 13, "cha": 6 },
+        "checks": { "might": 1, "agility": 1 },
         "tier": "cr_1_2",
         "traits": [
           {
@@ -13531,6 +15506,7 @@
         "speed": 40,
         "initiativeModifier": 2,
         "abilities": { "str": 18, "dex": 14, "con": 15, "int": 3, "wis": 12, "cha": 8 },
+        "checks": { "might": 4, "agility": 2 },
         "tier": "cr_2",
         "traits": [
           { "name": "Keen Smell", "text": "The tiger has advantage on Wisdom (Perception) checks that rely on smell." },
@@ -13575,6 +15551,7 @@
         "speed": 30,
         "initiativeModifier": 0,
         "abilities": { "str": 13, "dex": 11, "con": 12, "int": 12, "wis": 13, "cha": 9 },
+        "checks": { "might": 1, "agility": 0 },
         "tier": "cr_1_2",
         "traits": [
           {
@@ -13653,6 +15630,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 18, "dex": 14, "con": 15, "int": 11, "wis": 10, "cha": 12 },
+        "checks": { "might": 4, "agility": 2 },
         "resist": ["bludgeoning", "piercing", "slashing"],
         "vulnerable": ["cold"],
         "immune": ["fire"],
@@ -13716,6 +15694,7 @@
         "speed": 40,
         "initiativeModifier": 3,
         "abilities": { "str": 12, "dex": 16, "con": 11, "int": 12, "wis": 10, "cha": 14 },
+        "checks": { "might": 1, "agility": 3 },
         "tier": "cr_1_2",
         "traits": [
           {
@@ -13766,6 +15745,7 @@
         "speed": 10,
         "initiativeModifier": 0,
         "abilities": { "str": 2, "dex": 11, "con": 8, "int": 1, "wis": 8, "cha": 2 },
+        "checks": { "might": -4, "agility": 0 },
         "tier": "cr_0",
         "traits": [
           {
@@ -13813,6 +15793,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 11, "dex": 14, "con": 12, "int": 11, "wis": 13, "cha": 11 },
+        "checks": { "might": 0, "agility": 2 },
         "tier": "cr_1_2",
         "traits": [
           { "name": "Multiattack", "text": "The scout makes two melee attacks or two ranged attacks." },
@@ -13869,6 +15850,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 16, "dex": 13, "con": 16, "int": 12, "wis": 12, "cha": 13 },
+        "checks": { "might": 3, "agility": 1 },
         "tier": "cr_2",
         "traits": [
           {
@@ -13926,6 +15908,7 @@
         "speed": 40,
         "initiativeModifier": 2,
         "abilities": { "str": 6, "dex": 14, "con": 13, "int": 6, "wis": 10, "cha": 8 },
+        "checks": { "might": -2, "agility": 2 },
         "resist": ["acid", "bludgeoning", "cold", "fire", "lightning", "piercing", "slashing", "thunder"],
         "vulnerable": ["radiant"],
         "immune": ["necrotic", "poison"],
@@ -13976,6 +15959,7 @@
         "speed": 20,
         "initiativeModifier": -1,
         "abilities": { "str": 18, "dex": 8, "con": 16, "int": 5, "wis": 10, "cha": 5 },
+        "checks": { "might": 4, "agility": -1 },
         "resist": ["cold", "fire"],
         "immune": ["lightning"],
         "conditionImmunities": ["blinded", "deafened"],
@@ -14036,6 +16020,7 @@
         "speed": 30,
         "initiativeModifier": -1,
         "abilities": { "str": 18, "dex": 8, "con": 18, "int": 7, "wis": 10, "cha": 3 },
+        "checks": { "might": 4, "agility": -1 },
         "immune": ["poison"],
         "conditionImmunities": ["charmed", "frightened", "paralyzed", "poisoned"],
         "tier": "cr_7",
@@ -14055,6 +16040,10 @@
           {
             "name": "Spell Storing",
             "text": "A spellcaster who wears the shield guardian's amulet can cause the guardian to store one spell of 4th level or lower. To do so, the wearer must cast the spell on the guardian. The spell has no effect but is stored within the guardian. See the SRD for the full text."
+          },
+          {
+            "name": "Shield",
+            "text": "When a creature makes an attack against the wearer of the guardian's amulet, the guardian grants a +2 bonus to the wearer's AC if the guardian is within 5 feet of the wearer."
           }
         ],
         "actions": [
@@ -14087,6 +16076,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 19, "dex": 10, "con": 17, "int": 12, "wis": 11, "cha": 15 },
         "saves": { "dex_save": 2, "con_save": 5, "wis_save": 2, "cha_save": 4 },
+        "checks": { "might": 4, "agility": 0 },
         "immune": ["cold"],
         "tier": "cr_2",
         "traits": [
@@ -14134,6 +16124,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 10, "dex": 14, "con": 15, "int": 6, "wis": 8, "cha": 5 },
+        "checks": { "might": 0, "agility": 2 },
         "vulnerable": ["bludgeoning"],
         "immune": ["poison"],
         "conditionImmunities": ["poisoned"],
@@ -14176,6 +16167,7 @@
         "initiativeModifier": 6,
         "abilities": { "str": 26, "dex": 22, "con": 26, "int": 25, "wis": 25, "cha": 30 },
         "saves": { "int_save": 14, "wis_save": 14, "cha_save": 17 },
+        "checks": { "might": 8, "agility": 6 },
         "resist": ["bludgeoning", "piercing", "radiant", "slashing"],
         "immune": ["necrotic", "poison"],
         "conditionImmunities": ["charmed", "frightened", "poisoned"],
@@ -14273,6 +16265,7 @@
         "speed": 50,
         "initiativeModifier": 2,
         "abilities": { "str": 1, "dex": 14, "con": 11, "int": 10, "wis": 10, "cha": 11 },
+        "checks": { "might": -5, "agility": 2 },
         "resist": ["acid", "bludgeoning", "cold", "fire", "lightning", "piercing", "slashing", "thunder"],
         "immune": ["necrotic", "poison"],
         "conditionImmunities": [
@@ -14332,6 +16325,7 @@
         "speed": 20,
         "initiativeModifier": 2,
         "abilities": { "str": 2, "dex": 14, "con": 8, "int": 1, "wis": 10, "cha": 2 },
+        "checks": { "might": -4, "agility": 2 },
         "tier": "cr_0",
         "traits": [
           {
@@ -14372,12 +16366,153 @@
         "environment": ["Astral Plane", "Caves", "Desert", "Forest", "Mountain", "Ruins", "Temple", "Underworld"]
       },
       "creature": {
-        "health": { "dice": "10d10+20" },
-        "defense": 15,
-        "speed": 40,
-        "initiativeModifier": 3,
-        "abilities": { "str": 18, "dex": 17, "con": 14, "int": 16, "wis": 15, "cha": 16 },
-        "saves": { "dex_save": 6, "con_save": 5, "wis_save": 5, "cha_save": 6 },
+        "sheet": {
+          "abilities": { "str": 18, "dex": 17, "con": 14, "int": 16, "wis": 15, "cha": 16 },
+          "skills": {},
+          "saves": {
+            "dex_save": "proficient",
+            "con_save": "proficient",
+            "wis_save": "proficient",
+            "cha_save": "proficient"
+          },
+          "bonuses": { "dex_save": -1, "con_save": -1, "wis_save": -1, "cha_save": -1 },
+          "fields": {
+            "level": 10,
+            "class": "Wizard",
+            "ac": 15,
+            "speed": 40,
+            "hp_max": 75,
+            "spellcasting_ability": "int",
+            "slots_max_1": 4,
+            "slots_max_2": 3,
+            "slots_max_3": 3,
+            "slots_max_4": 3,
+            "slots_max_5": 2,
+            "spell_attack_extra": -1,
+            "spell_dc_extra": -1
+          },
+          "lists": {
+            "spells": [
+              {
+                "name": "Mage Hand",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Conjuration. Casting time: action. Range: 30 feet. Duration: 1 minute. Components: V, S.",
+                "_catalog": "spells/mage-hand"
+              },
+              {
+                "name": "Minor Illusion",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Illusion. Casting time: action. Range: 30 feet. Duration: 1 minute. Components: S, M.",
+                "_catalog": "spells/minor-illusion"
+              },
+              {
+                "name": "Ray of Frost",
+                "level": 0,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: 60 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/ray-of-frost"
+              },
+              {
+                "name": "Charm Person",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Enchantment. Casting time: action. Range: 30 feet. Duration: 1 hour. Components: V, S.",
+                "_catalog": "spells/charm-person"
+              },
+              {
+                "name": "Detect Magic",
+                "level": 1,
+                "ritual": true,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Divination. Casting time: action. Range: Self. Duration: 10 minutes. Components: V, S.",
+                "_catalog": "spells/detect-magic"
+              },
+              {
+                "name": "Sleep",
+                "level": 1,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Enchantment. Casting time: action. Range: 90 feet. Duration: 1 minute. Components: V, S, M.",
+                "_catalog": "spells/sleep"
+              },
+              {
+                "name": "Detect Thoughts",
+                "level": 2,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Divination. Casting time: action. Range: Self. Duration: 1 minute. Components: V, S, M.",
+                "_catalog": "spells/detect-thoughts"
+              },
+              {
+                "name": "Hold Person",
+                "level": 2,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Enchantment. Casting time: action. Range: 60 feet. Duration: 1 minute. Components: V, S, M.",
+                "_catalog": "spells/hold-person"
+              },
+              {
+                "name": "Lightning Bolt",
+                "level": 3,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Evocation. Casting time: action. Range: Self. Duration: instantaneous. Components: V, S, M.",
+                "_catalog": "spells/lightning-bolt"
+              },
+              {
+                "name": "Water Breathing",
+                "level": 3,
+                "ritual": true,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Transmutation. Casting time: action. Range: 30 feet. Duration: 24 hours. Components: V, S, M.",
+                "_catalog": "spells/water-breathing"
+              },
+              {
+                "name": "Blight",
+                "level": 4,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Necromancy. Casting time: action. Range: 30 feet. Duration: instantaneous. Components: V, S.",
+                "_catalog": "spells/blight"
+              },
+              {
+                "name": "Dimension Door",
+                "level": 4,
+                "ritual": false,
+                "concentration": false,
+                "prepared": true,
+                "notes": "Conjuration. Casting time: action. Range: 500 feet. Duration: instantaneous. Components: V.",
+                "_catalog": "spells/dimension-door"
+              },
+              {
+                "name": "Dominate Person",
+                "level": 5,
+                "ritual": false,
+                "concentration": true,
+                "prepared": true,
+                "notes": "Enchantment. Casting time: action. Range: 60 feet. Duration: 1 minute. Components: V, S.",
+                "_catalog": "spells/dominate-person"
+              }
+            ]
+          }
+        },
         "immune": ["poison"],
         "conditionImmunities": ["charmed", "poisoned"],
         "tier": "cr_8",
@@ -14418,6 +16553,7 @@
         "speed": 10,
         "initiativeModifier": 4,
         "abilities": { "str": 3, "dex": 18, "con": 10, "int": 14, "wis": 13, "cha": 11 },
+        "checks": { "might": -4, "agility": 4 },
         "tier": "cr_1_4",
         "traits": [
           {
@@ -14463,6 +16599,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 10, "dex": 15, "con": 10, "int": 12, "wis": 14, "cha": 16 },
+        "checks": { "might": 0, "agility": 2 },
         "tier": "cr_1",
         "traits": [
           {
@@ -14516,6 +16653,7 @@
         "speed": 30,
         "initiativeModifier": 0,
         "abilities": { "str": 5, "dex": 11, "con": 10, "int": 11, "wis": 10, "cha": 12 },
+        "checks": { "might": -3, "agility": 0 },
         "immune": ["fire", "poison"],
         "conditionImmunities": ["poisoned"],
         "tier": "cr_1_4",
@@ -14582,6 +16720,7 @@
         "speed": 10,
         "initiativeModifier": 3,
         "abilities": { "str": 4, "dex": 16, "con": 11, "int": 2, "wis": 8, "cha": 6 },
+        "checks": { "might": -3, "agility": 3 },
         "tier": "cr_1_8",
         "traits": [{ "name": "Speed", "text": "10 ft., fly 40 ft." }],
         "actions": [
@@ -14613,11 +16752,16 @@
         "initiativeModifier": 2,
         "abilities": { "str": 23, "dex": 15, "con": 20, "int": 10, "wis": 12, "cha": 9 },
         "saves": { "dex_save": 5, "con_save": 8, "wis_save": 4 },
+        "checks": { "might": 12, "agility": 2 },
         "tier": "cr_7",
         "traits": [
           {
             "name": "Stone Camouflage",
             "text": "The giant has advantage on Dexterity (Stealth) checks made to hide in rocky terrain."
+          },
+          {
+            "name": "Rock Catching",
+            "text": "If a rock or similar object is hurled at the giant, the giant can, with a successful DC 10 Dexterity saving throw, catch the missile and take no bludgeoning damage from it."
           }
         ],
         "actions": [
@@ -14689,6 +16833,7 @@
         "speed": 30,
         "initiativeModifier": -1,
         "abilities": { "str": 22, "dex": 9, "con": 20, "int": 3, "wis": 11, "cha": 1 },
+        "checks": { "might": 6, "agility": -1 },
         "immune": ["bludgeoning", "piercing", "poison", "psychic", "slashing"],
         "conditionImmunities": ["charmed", "frightened", "paralyzed", "petrified", "poisoned"],
         "tier": "cr_10",
@@ -14747,6 +16892,7 @@
         "initiativeModifier": 2,
         "abilities": { "str": 29, "dex": 14, "con": 20, "int": 16, "wis": 18, "cha": 18 },
         "saves": { "str_save": 14, "con_save": 10, "wis_save": 9, "cha_save": 9 },
+        "checks": { "might": 14, "agility": 2 },
         "resist": ["cold"],
         "immune": ["lightning", "thunder"],
         "tier": "cr_13",
@@ -14834,6 +16980,7 @@
         "speed": 30,
         "initiativeModifier": 3,
         "abilities": { "str": 8, "dex": 17, "con": 13, "int": 15, "wis": 12, "cha": 20 },
+        "checks": { "might": -1, "agility": 3 },
         "resist": ["bludgeoning", "cold", "fire", "lightning", "piercing", "poison", "slashing"],
         "tier": "cr_4",
         "traits": [
@@ -14898,6 +17045,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 5, "dex": 15, "con": 10, "int": 2, "wis": 12, "cha": 4 },
+        "checks": { "might": -3, "agility": 2 },
         "resist": ["bludgeoning", "piercing", "slashing"],
         "conditionImmunities": [
           "charmed",
@@ -14954,6 +17102,7 @@
         "speed": 20,
         "initiativeModifier": 1,
         "abilities": { "str": 3, "dex": 13, "con": 10, "int": 1, "wis": 7, "cha": 1 },
+        "checks": { "might": -4, "agility": 1 },
         "resist": ["bludgeoning", "piercing", "slashing"],
         "conditionImmunities": [
           "charmed",
@@ -15030,6 +17179,7 @@
         "speed": 20,
         "initiativeModifier": 1,
         "abilities": { "str": 3, "dex": 13, "con": 10, "int": 1, "wis": 7, "cha": 1 },
+        "checks": { "might": -4, "agility": 1 },
         "resist": ["bludgeoning", "piercing", "slashing"],
         "conditionImmunities": [
           "charmed",
@@ -15081,6 +17231,7 @@
         "speed": 20,
         "initiativeModifier": 1,
         "abilities": { "str": 3, "dex": 13, "con": 10, "int": 1, "wis": 7, "cha": 1 },
+        "checks": { "might": -4, "agility": 1 },
         "resist": ["bludgeoning", "piercing", "slashing"],
         "conditionImmunities": [
           "charmed",
@@ -15144,6 +17295,7 @@
         "speed": 30,
         "initiativeModifier": 4,
         "abilities": { "str": 8, "dex": 18, "con": 11, "int": 1, "wis": 10, "cha": 3 },
+        "checks": { "might": -1, "agility": 4 },
         "resist": ["bludgeoning", "piercing", "slashing"],
         "conditionImmunities": [
           "charmed",
@@ -15190,6 +17342,7 @@
         "speed": 40,
         "initiativeModifier": 3,
         "abilities": { "str": 13, "dex": 16, "con": 9, "int": 1, "wis": 7, "cha": 2 },
+        "checks": { "might": 1, "agility": 3 },
         "resist": ["bludgeoning", "piercing", "slashing"],
         "conditionImmunities": [
           "charmed",
@@ -15246,6 +17399,7 @@
         "speed": 30,
         "initiativeModifier": 0,
         "abilities": { "str": 9, "dex": 11, "con": 9, "int": 2, "wis": 10, "cha": 3 },
+        "checks": { "might": -1, "agility": 0 },
         "resist": ["bludgeoning", "piercing", "slashing"],
         "conditionImmunities": [
           "charmed",
@@ -15297,6 +17451,7 @@
         "speed": 10,
         "initiativeModifier": 2,
         "abilities": { "str": 6, "dex": 14, "con": 8, "int": 3, "wis": 12, "cha": 6 },
+        "checks": { "might": -2, "agility": 2 },
         "resist": ["bludgeoning", "piercing", "slashing"],
         "conditionImmunities": [
           "charmed",
@@ -15373,6 +17528,7 @@
         "speed": 20,
         "initiativeModifier": 1,
         "abilities": { "str": 3, "dex": 13, "con": 10, "int": 1, "wis": 7, "cha": 1 },
+        "checks": { "might": -4, "agility": 1 },
         "resist": ["bludgeoning", "piercing", "slashing"],
         "conditionImmunities": ["charmed", "frightened", "paralyzed", "petrified", "prone", "restrained", "stunned"],
         "tier": "cr_1_2",
@@ -15449,6 +17605,7 @@
         "speed": 5,
         "initiativeModifier": 1,
         "abilities": { "str": 3, "dex": 13, "con": 10, "int": 1, "wis": 7, "cha": 1 },
+        "checks": { "might": -4, "agility": 1 },
         "resist": ["bludgeoning", "piercing", "slashing"],
         "conditionImmunities": [
           "charmed",
@@ -15496,6 +17653,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 30, "dex": 11, "con": 30, "int": 3, "wis": 11, "cha": 11 },
         "saves": { "int_save": 5, "wis_save": 9, "cha_save": 9 },
+        "checks": { "might": 10, "agility": 0 },
         "immune": ["bludgeoning", "fire", "piercing", "poison", "slashing"],
         "conditionImmunities": ["charmed", "frightened", "paralyzed", "poisoned"],
         "tier": "cr_30",
@@ -15625,6 +17783,7 @@
         "speed": 30,
         "initiativeModifier": 0,
         "abilities": { "str": 15, "dex": 11, "con": 14, "int": 10, "wis": 10, "cha": 11 },
+        "checks": { "might": 2, "agility": 0 },
         "tier": "cr_1_2",
         "traits": [
           {
@@ -15669,6 +17828,7 @@
         "speed": 40,
         "initiativeModifier": 2,
         "abilities": { "str": 17, "dex": 15, "con": 14, "int": 3, "wis": 12, "cha": 8 },
+        "checks": { "might": 3, "agility": 2 },
         "tier": "cr_1",
         "traits": [
           { "name": "Keen Smell", "text": "The tiger has advantage on Wisdom (Perception) checks that rely on smell." },
@@ -15708,6 +17868,7 @@
         "speed": 30,
         "initiativeModifier": -1,
         "abilities": { "str": 23, "dex": 8, "con": 21, "int": 12, "wis": 16, "cha": 12 },
+        "checks": { "might": 6, "agility": -1 },
         "resist": ["bludgeoning", "piercing"],
         "vulnerable": ["fire"],
         "tier": "cr_9",
@@ -15764,6 +17925,7 @@
         "speed": 30,
         "initiativeModifier": 0,
         "abilities": { "str": 13, "dex": 11, "con": 12, "int": 8, "wis": 11, "cha": 8 },
+        "checks": { "might": 1, "agility": 0 },
         "tier": "cr_1_8",
         "traits": [
           {
@@ -15804,6 +17966,7 @@
         "speed": 50,
         "initiativeModifier": -1,
         "abilities": { "str": 22, "dex": 9, "con": 17, "int": 2, "wis": 11, "cha": 5 },
+        "checks": { "might": 6, "agility": -1 },
         "tier": "cr_5",
         "traits": [
           {
@@ -15858,6 +18021,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 18, "dex": 13, "con": 20, "int": 7, "wis": 9, "cha": 7 },
+        "checks": { "might": 4, "agility": 1 },
         "tier": "cr_5",
         "traits": [
           { "name": "Keen Smell", "text": "The troll has advantage on Wisdom (Perception) checks that rely on smell." },
@@ -15915,6 +18079,7 @@
         "speed": 50,
         "initiativeModifier": 0,
         "abilities": { "str": 25, "dex": 10, "con": 19, "int": 2, "wis": 12, "cha": 9 },
+        "checks": { "might": 7, "agility": 0 },
         "tier": "cr_8",
         "traits": [
           {
@@ -15962,6 +18127,7 @@
         "speed": 50,
         "initiativeModifier": 2,
         "abilities": { "str": 18, "dex": 14, "con": 15, "int": 11, "wis": 17, "cha": 16 },
+        "checks": { "might": 4, "agility": 2 },
         "immune": ["poison"],
         "conditionImmunities": ["charmed", "paralyzed", "poisoned"],
         "tier": "cr_5",
@@ -16039,6 +18205,7 @@
         "initiativeModifier": 4,
         "abilities": { "str": 18, "dex": 18, "con": 18, "int": 17, "wis": 15, "cha": 18 },
         "saves": { "dex_save": 9, "wis_save": 7, "cha_save": 9 },
+        "checks": { "might": 4, "agility": 4 },
         "resist": ["bludgeoning", "necrotic", "piercing", "slashing"],
         "tier": "cr_13",
         "traits": [
@@ -16130,6 +18297,7 @@
         "initiativeModifier": 3,
         "abilities": { "str": 16, "dex": 16, "con": 16, "int": 11, "wis": 10, "cha": 12 },
         "saves": { "dex_save": 6, "wis_save": 3 },
+        "checks": { "might": 3, "agility": 3 },
         "resist": ["bludgeoning", "necrotic", "piercing", "slashing"],
         "tier": "cr_5",
         "traits": [
@@ -16196,6 +18364,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 16, "dex": 13, "con": 14, "int": 10, "wis": 11, "cha": 10 },
+        "checks": { "might": 5, "agility": 1 },
         "tier": "cr_3",
         "traits": [
           {
@@ -16257,6 +18426,7 @@
         "speed": 5,
         "initiativeModifier": -5,
         "abilities": { "str": 3, "dex": 1, "con": 10, "int": 1, "wis": 3, "cha": 1 },
+        "checks": { "might": -4, "agility": -5 },
         "conditionImmunities": ["blinded", "deafened", "frightened"],
         "tier": "cr_1_4",
         "traits": [
@@ -16290,6 +18460,7 @@
         "initiativeModifier": 2,
         "abilities": { "str": 17, "dex": 15, "con": 18, "int": 8, "wis": 13, "cha": 8 },
         "saves": { "dex_save": 5, "wis_save": 4, "cha_save": 2 },
+        "checks": { "might": 3, "agility": 2 },
         "resist": ["bludgeoning", "cold", "fire", "lightning", "piercing", "slashing"],
         "immune": ["poison"],
         "conditionImmunities": ["poisoned"],
@@ -16375,6 +18546,7 @@
         "speed": 10,
         "initiativeModifier": 0,
         "abilities": { "str": 7, "dex": 10, "con": 13, "int": 2, "wis": 12, "cha": 4 },
+        "checks": { "might": -2, "agility": 0 },
         "tier": "cr_0",
         "traits": [
           { "name": "Speed", "text": "10 ft., fly 50 ft." },
@@ -16411,6 +18583,7 @@
         "initiativeModifier": 1,
         "abilities": { "str": 18, "dex": 12, "con": 13, "int": 2, "wis": 12, "cha": 7 },
         "saves": { "str_save": 0, "dex_save": 0, "con_save": 0, "int_save": 0, "wis_save": 0, "cha_save": 0 },
+        "checks": { "might": 0, "agility": 0 },
         "tier": "cr_1_2",
         "traits": [
           {
@@ -16471,6 +18644,7 @@
         "speed": 60,
         "initiativeModifier": 1,
         "abilities": { "str": 18, "dex": 12, "con": 15, "int": 2, "wis": 8, "cha": 5 },
+        "checks": { "might": 4, "agility": 1 },
         "vulnerable": ["bludgeoning"],
         "immune": ["poison"],
         "conditionImmunities": ["poisoned"],
@@ -16509,6 +18683,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 18, "dex": 14, "con": 18, "int": 5, "wis": 10, "cha": 8 },
+        "checks": { "might": 4, "agility": 2 },
         "resist": ["acid", "bludgeoning", "piercing", "slashing"],
         "immune": ["poison"],
         "conditionImmunities": ["grappled", "paralyzed", "petrified", "poisoned", "prone", "restrained", "unconscious"],
@@ -16574,6 +18749,7 @@
         "speed": 30,
         "initiativeModifier": 3,
         "abilities": { "str": 3, "dex": 16, "con": 8, "int": 2, "wis": 12, "cha": 3 },
+        "checks": { "might": -4, "agility": 3 },
         "tier": "cr_0",
         "traits": [
           {
@@ -16609,6 +18785,7 @@
         "speed": 30,
         "initiativeModifier": 0,
         "abilities": { "str": 19, "dex": 10, "con": 17, "int": 11, "wis": 12, "cha": 12 },
+        "checks": { "might": 4, "agility": 0 },
         "immune": ["bludgeoning", "piercing", "slashing"],
         "tier": "cr_5",
         "traits": [
@@ -16683,6 +18860,7 @@
         "speed": 30,
         "initiativeModifier": 0,
         "abilities": { "str": 17, "dex": 10, "con": 15, "int": 10, "wis": 11, "cha": 8 },
+        "checks": { "might": 3, "agility": 0 },
         "immune": ["bludgeoning", "piercing", "slashing"],
         "tier": "cr_4",
         "traits": [
@@ -16753,6 +18931,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 10, "dex": 15, "con": 12, "int": 11, "wis": 10, "cha": 8 },
+        "checks": { "might": 0, "agility": 2 },
         "immune": ["bludgeoning", "piercing", "slashing"],
         "tier": "cr_2",
         "traits": [
@@ -16822,6 +19001,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 17, "dex": 15, "con": 16, "int": 10, "wis": 13, "cha": 11 },
+        "checks": { "might": 3, "agility": 2 },
         "immune": ["bludgeoning", "piercing", "slashing"],
         "tier": "cr_4",
         "traits": [
@@ -16909,6 +19089,7 @@
         "speed": 30,
         "initiativeModifier": 1,
         "abilities": { "str": 15, "dex": 13, "con": 14, "int": 10, "wis": 11, "cha": 10 },
+        "checks": { "might": 2, "agility": 1 },
         "immune": ["bludgeoning", "piercing", "slashing"],
         "tier": "cr_3",
         "traits": [
@@ -16993,6 +19174,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 14, "dex": 10, "con": 14, "int": 5, "wis": 10, "cha": 11 },
         "saves": { "dex_save": 2, "con_save": 4, "wis_save": 2, "cha_save": 2 },
+        "checks": { "might": 2, "agility": 0 },
         "immune": ["cold"],
         "tier": "cr_2",
         "traits": [{ "name": "Speed", "text": "30 ft., burrow 15 ft., fly 60 ft., swim 30 ft." }],
@@ -17034,6 +19216,7 @@
         "speed": 30,
         "initiativeModifier": 2,
         "abilities": { "str": 15, "dex": 14, "con": 16, "int": 10, "wis": 13, "cha": 15 },
+        "checks": { "might": 2, "agility": 2 },
         "immune": ["bludgeoning", "necrotic", "piercing", "slashing"],
         "conditionImmunities": ["poisoned"],
         "tier": "cr_3",
@@ -17110,6 +19293,7 @@
         "speed": 50,
         "initiativeModifier": 9,
         "abilities": { "str": 1, "dex": 28, "con": 10, "int": 13, "wis": 14, "cha": 11 },
+        "checks": { "might": -5, "agility": 9 },
         "resist": ["acid", "bludgeoning", "cold", "fire", "necrotic", "piercing", "slashing", "thunder"],
         "immune": ["lightning", "poison"],
         "conditionImmunities": ["grappled", "paralyzed", "poisoned", "prone", "restrained", "unconscious"],
@@ -17165,6 +19349,7 @@
         "speed": 50,
         "initiativeModifier": 1,
         "abilities": { "str": 18, "dex": 13, "con": 14, "int": 7, "wis": 12, "cha": 8 },
+        "checks": { "might": 4, "agility": 1 },
         "immune": ["cold"],
         "tier": "cr_3",
         "traits": [
@@ -17221,6 +19406,7 @@
         "speed": 40,
         "initiativeModifier": 2,
         "abilities": { "str": 12, "dex": 15, "con": 12, "int": 3, "wis": 12, "cha": 6 },
+        "checks": { "might": 1, "agility": 2 },
         "tier": "cr_1_4",
         "traits": [
           {
@@ -17262,6 +19448,7 @@
         "speed": 50,
         "initiativeModifier": 1,
         "abilities": { "str": 16, "dex": 13, "con": 13, "int": 7, "wis": 11, "cha": 8 },
+        "checks": { "might": 3, "agility": 1 },
         "tier": "cr_1_2",
         "traits": [
           {
@@ -17294,6 +19481,7 @@
         "speed": 60,
         "initiativeModifier": 3,
         "abilities": { "str": 6, "dex": 16, "con": 16, "int": 12, "wis": 14, "cha": 15 },
+        "checks": { "might": -2, "agility": 3 },
         "resist": ["acid", "bludgeoning", "cold", "fire", "lightning", "piercing", "slashing", "thunder"],
         "immune": ["necrotic", "poison"],
         "conditionImmunities": ["charmed", "grappled", "paralyzed", "petrified", "poisoned", "prone", "restrained"],
@@ -17348,6 +19536,7 @@
         "speed": 20,
         "initiativeModifier": 0,
         "abilities": { "str": 19, "dex": 10, "con": 16, "int": 5, "wis": 12, "cha": 6 },
+        "checks": { "might": 4, "agility": 0 },
         "tier": "cr_6",
         "traits": [
           {
@@ -17408,6 +19597,7 @@
         "speed": 20,
         "initiativeModifier": 0,
         "abilities": { "str": 17, "dex": 10, "con": 22, "int": 11, "wis": 10, "cha": 11 },
+        "checks": { "might": 3, "agility": 0 },
         "resist": ["bludgeoning", "piercing", "slashing"],
         "tier": "cr_5",
         "traits": [
@@ -17467,6 +19657,7 @@
         "initiativeModifier": 2,
         "abilities": { "str": 19, "dex": 14, "con": 17, "int": 12, "wis": 11, "cha": 15 },
         "saves": { "dex_save": 5, "con_save": 6, "wis_save": 3, "cha_save": 5 },
+        "checks": { "might": 4, "agility": 2 },
         "immune": ["acid"],
         "tier": "cr_7",
         "traits": [
@@ -17524,6 +19715,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 21, "dex": 10, "con": 19, "int": 14, "wis": 13, "cha": 17 },
         "saves": { "dex_save": 4, "con_save": 8, "wis_save": 5, "cha_save": 7 },
+        "checks": { "might": 5, "agility": 0 },
         "immune": ["lightning"],
         "tier": "cr_9",
         "traits": [{ "name": "Speed", "text": "40 ft., burrow 40 ft., fly 80 ft." }],
@@ -17613,6 +19805,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 19, "dex": 10, "con": 17, "int": 12, "wis": 11, "cha": 15 },
         "saves": { "dex_save": 3, "con_save": 6, "wis_save": 3, "cha_save": 5 },
+        "checks": { "might": 4, "agility": 0 },
         "immune": ["fire"],
         "tier": "cr_6",
         "traits": [
@@ -17673,6 +19866,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 21, "dex": 10, "con": 19, "int": 14, "wis": 13, "cha": 17 },
         "saves": { "dex_save": 3, "con_save": 7, "wis_save": 4, "cha_save": 6 },
+        "checks": { "might": 5, "agility": 0 },
         "immune": ["lightning"],
         "tier": "cr_8",
         "traits": [
@@ -17734,6 +19928,7 @@
         "initiativeModifier": 1,
         "abilities": { "str": 19, "dex": 12, "con": 17, "int": 16, "wis": 13, "cha": 15 },
         "saves": { "dex_save": 4, "con_save": 6, "wis_save": 4, "cha_save": 5 },
+        "checks": { "might": 4, "agility": 1 },
         "immune": ["acid"],
         "tier": "cr_7",
         "traits": [
@@ -17794,6 +19989,7 @@
         "initiativeModifier": 2,
         "abilities": { "str": 23, "dex": 14, "con": 21, "int": 16, "wis": 13, "cha": 20 },
         "saves": { "dex_save": 6, "con_save": 9, "wis_save": 5, "cha_save": 9 },
+        "checks": { "might": 6, "agility": 2 },
         "immune": ["fire"],
         "tier": "cr_10",
         "traits": [
@@ -17855,6 +20051,7 @@
         "initiativeModifier": 1,
         "abilities": { "str": 19, "dex": 12, "con": 17, "int": 16, "wis": 13, "cha": 15 },
         "saves": { "dex_save": 4, "con_save": 6, "wis_save": 4, "cha_save": 5 },
+        "checks": { "might": 4, "agility": 1 },
         "immune": ["poison"],
         "conditionImmunities": ["poisoned"],
         "tier": "cr_8",
@@ -17913,6 +20110,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 23, "dex": 10, "con": 21, "int": 14, "wis": 11, "cha": 19 },
         "saves": { "dex_save": 4, "con_save": 9, "wis_save": 4, "cha_save": 8 },
+        "checks": { "might": 6, "agility": 0 },
         "immune": ["fire"],
         "tier": "cr_10",
         "traits": [{ "name": "Speed", "text": "40 ft., climb 40 ft., fly 80 ft." }],
@@ -17967,6 +20165,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 23, "dex": 10, "con": 21, "int": 14, "wis": 11, "cha": 19 },
         "saves": { "dex_save": 4, "con_save": 9, "wis_save": 4, "cha_save": 8 },
+        "checks": { "might": 6, "agility": 0 },
         "immune": ["cold"],
         "tier": "cr_9",
         "traits": [
@@ -18027,6 +20226,7 @@
         "initiativeModifier": 0,
         "abilities": { "str": 18, "dex": 10, "con": 18, "int": 6, "wis": 11, "cha": 12 },
         "saves": { "dex_save": 3, "con_save": 7, "wis_save": 3, "cha_save": 4 },
+        "checks": { "might": 4, "agility": 0 },
         "immune": ["cold"],
         "tier": "cr_6",
         "traits": [
@@ -18087,6 +20287,7 @@
         "initiativeModifier": -2,
         "abilities": { "str": 13, "dex": 6, "con": 16, "int": 3, "wis": 6, "cha": 5 },
         "saves": { "wis_save": 0 },
+        "checks": { "might": 1, "agility": -2 },
         "conditionImmunities": ["poisoned"],
         "tier": "cr_1_4",
         "traits": [

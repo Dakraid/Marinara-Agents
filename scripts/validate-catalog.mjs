@@ -34,12 +34,14 @@ import {
 } from "./catalog-path-safety.mjs";
 import {
   RULESET_ASSET_PATH,
+  assertRulesetApplies,
   assertRulesetAssetDocument,
   assertRulesetBattle,
   assertRulesetCatalogs,
   assertRulesetCombat,
   assertRulesetCreatures,
   assertRulesetPackageContract,
+  assertRulesetReactions,
   assertRulesetScaled,
   isRulesetPackage,
   rulesetCatalogAssetPaths,
@@ -714,6 +716,8 @@ for (const entry of catalog.packages) {
     // So does the combat block, and the bestiary whose creatures are written in its own names.
     assertRulesetCombat(manifest, document);
     assertRulesetCreatures(manifest, document, catalogSources);
+    assertRulesetReactions(manifest, document, catalogSources);
+    assertRulesetApplies(manifest, document, catalogSources);
   } else {
     if (!manifest.entrypoints.agents) throw new Error(`Missing agent definition entrypoint for ${manifest.id}`);
     const agentDefinitions = JSON.parse(

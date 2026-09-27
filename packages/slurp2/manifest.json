@@ -18,7 +18,7 @@
       "description": "Die Neufassung von Slurp. Sie wird neben Slurp Legacy installiert und behaelt eigene, getrennte Daten: Erstelle ein lokales Creator-Profil aus einem Engine-Charakter oder einer Engine-Persona, veroeffentliche oeffentliche oder gesperrte Beitraege und simuliere Abonnements und Publikumsaktivitaet.",
       "homeBrowserTab": {
         "label": "Slurp.",
-        "ariaLabel": "Slurp. oeffnen"
+        "ariaLabel": "Slurp oeffnen"
       }
     },
     "ko": {
@@ -26,7 +26,7 @@
       "description": "Slurp의 리메이스터입니다. Slurp Legacy와 함께 설치되며 데이터를 따로 보관합니다. Engine 캐릭터나 Engine 페르소나로 로컬 크리에이터 프로필을 만들고, 공개 또는 잠긴 게시물을 게시하며, 구독 및 청중 활동을 시뮬레이션합니다.",
       "homeBrowserTab": {
         "label": "Slurp.",
-        "ariaLabel": "Slurp. 열기"
+        "ariaLabel": "Slurp 열기"
       }
     },
     "pl": {
@@ -34,7 +34,7 @@
       "description": "Odnowiona wersja Slurp. Instaluje sie obok Slurp Legacy i przechowuje wlasne, oddzielne dane: utworz lokalny profil tworcy z postaci silnika lub persony silnika, publikuj publiczne lub zablokowane posty i symuluj subskrypcje oraz aktywnosc publicznosci.",
       "homeBrowserTab": {
         "label": "Slurp.",
-        "ariaLabel": "Otworz Slurp."
+        "ariaLabel": "Otworz Slurp"
       }
     }
   },
@@ -56,7 +56,7 @@
     ],
     "homeBrowserTab": {
       "label": "Slurp.",
-      "ariaLabel": "Open Slurp.",
+      "ariaLabel": "Open Slurp",
       "iconPaths": [
         "slurp2-logo.png"
       ]
@@ -70,13 +70,13 @@
     },
     {
       "path": "server.mjs",
-      "sha256": "12c6ceec62b5a6d73bcfd51a69327706016cea401c0c7906b0b628a77ff846a7",
-      "bytes": 3009007
+      "sha256": "c9d460005a06909c0b938049cb0fc1397c971dd59f0d14e8a44004779db4ae66",
+      "bytes": 3010599
     },
     {
       "path": "client.js",
-      "sha256": "3b2700e3c63bd304703a740cf407683e3b75eb019878c284d28a93ba2b3aab99",
-      "bytes": 4020879
+      "sha256": "4965dfc50ab50a2d7969fdfe329641743a2b0cdd41e4f56a9a6623bb0087b38a",
+      "bytes": 4076923
     },
     {
       "path": "slurp2-logo.png",
