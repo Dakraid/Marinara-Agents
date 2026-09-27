@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { splitSlurpReplyBurst } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-messaging";
+import {
+  slurpDayVibe,
+  slurpDayVibeFacts,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/slp-day-vibe";
 
 // Plane sweep (4c): one section per Plane issue fixed on this branch. Source pins where the module
 // imports the Engine logger or database, behaviour checks where the module is pure.
@@ -56,3 +60,28 @@ assert.match(en["ui.slurp.settings.audience.enabledDetail"] ?? "", /Refresh now 
 const overview = pkg("client/src/slp/features/creators/settings/SlpCreatorOverviewSection.tsx");
 assert.match(overview, /const runningProjects = projects\.filter\(\(project\) => project\.status === "active"\);/u);
 assert.match(overview, /runningProjects\.map\(\(project\) => \(\s*<p key=\{project\.id\}[^>]*>\s*\{project\.title\}/u);
+
+// ── Plane 300: a creator's day is not "quiet" just because the UTC day has only begun ──
+// The vibe is cached from the first reply after UTC midnight; a calendar window scored that moment
+// as "nothing came in" and the creator kept that mood all day.
+{
+  const ledger = [
+    { kind: "tip", amount: 40, at: "2026-09-26T20:00:00.000Z" },
+    { kind: "tip", amount: 40, at: "2026-09-25T20:00:00.000Z" },
+    { kind: "tip", amount: 40, at: "2026-09-24T20:00:00.000Z" },
+  ];
+  const earnings = { coins: 0, lifetime: 120, ledger, payoutOn: null } as unknown as Parameters<
+    typeof slurpDayVibeFacts
+  >[0];
+  const justAfterMidnight = slurpDayVibeFacts(
+    earnings,
+    "2026-09-26T19:00:00.000Z",
+    new Date("2026-09-27T00:30:00.000Z"),
+  );
+  assert.equal(justAfterMidnight.earnedToday, 40, "last night's tip still counts at 00:30");
+  assert.equal(justAfterMidnight.averageDaily, 40);
+  assert.equal(slurpDayVibe(justAfterMidnight), "ordinary", "a normal day reads as ordinary, not quiet");
+  const quiet = slurpDayVibeFacts(earnings, "2026-09-26T19:00:00.000Z", new Date("2026-09-27T21:00:00.000Z"));
+  assert.equal(quiet.earnedToday, 0);
+  assert.equal(slurpDayVibe(quiet), "quiet", "a real 24 hours with nothing is still quiet");
+}
