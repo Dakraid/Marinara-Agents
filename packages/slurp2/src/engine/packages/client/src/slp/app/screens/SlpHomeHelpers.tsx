@@ -670,7 +670,14 @@ function SlurpPostDialogThumb({
       )}
     >
       {source && (
-        <img key={source} src={source} alt="" decoding="async" {...slpImgFade} className="h-full w-full object-cover" />
+        <img
+          key={source}
+          src={source}
+          alt=""
+          decoding="async"
+          {...slpImgFade}
+          className="slp-crop-top h-full w-full object-cover"
+        />
       )}
     </button>
   );

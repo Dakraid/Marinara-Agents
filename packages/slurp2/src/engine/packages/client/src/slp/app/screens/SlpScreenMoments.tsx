@@ -265,7 +265,7 @@ export function SlurpMomentViewer({
                 }
                 className={cn(
                   "relative h-full w-full",
-                  fitImage ? "object-contain" : "object-cover",
+                  fitImage ? "object-contain" : "slp-crop-top object-cover",
                   moment.post.locked && "saturate-[0.88]",
                 )}
               />

@@ -398,7 +398,7 @@ export function LockedSlurpPostCard({
                     : localizeUi("ui.noodle.lockednoodlerpostcard.lockedImageFrom", { name: profile.displayName })
                 }
                 className={cn(
-                  "h-full w-full object-cover",
+                  "slp-crop-top h-full w-full object-cover",
                   // The server sends a reduced, lightly blurred teaser; the veil blurs it more so the
                   // colours and the shape read, the details do not (design step 2).
                   revealed ? "scale-100" : "saturate-[0.95]",
@@ -566,7 +566,7 @@ export function LockedSlurpPostCard({
                   loading="lazy"
                   decoding="async"
                   {...slpImgFade}
-                  className="h-full w-full scale-110 object-cover blur-[4px]"
+                  className="slp-crop-top h-full w-full scale-110 object-cover blur-[4px]"
                 />
                 <span className="absolute inset-0 flex items-center justify-center bg-black/30 text-white [&_svg]:!text-white">
                   <SlpLockGlyph size={16} strokeWidth={2.25} aria-hidden="true" />

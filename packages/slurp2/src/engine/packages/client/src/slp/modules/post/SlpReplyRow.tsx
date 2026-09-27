@@ -214,7 +214,7 @@ export function SlpReplyRow({
             <button
               type="button"
               onClick={() => setImageLightbox(createSlpLightboxImage(reply.id, reply.imageUrl!, reply.content ?? ""))}
-              className="mt-2 block w-full overflow-hidden rounded-xl text-left ring-offset-[var(--background)] transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] focus-visible:ring-offset-2"
+              className="relative mt-2 block w-full overflow-hidden rounded-xl text-left ring-offset-[var(--background)] transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] focus-visible:ring-offset-2"
               title={localizeUi("ui.noodle.noodlepostcard.openImage")}
               aria-label={localizeUi("ui.noodle.noodlepostcard.openCommentImage")}
             >
@@ -223,7 +223,7 @@ export function SlpReplyRow({
                 alt={localizeUi("ui.noodle.noodlepostcard.commentImageAlt", {
                   name: actor?.displayName ?? localizeUi("ui.slurp.profile.fallbackUser"),
                 })}
-                className="max-h-72 w-full object-cover"
+                className="slp-crop max-h-72 w-full object-cover"
               />
             </button>
           )}

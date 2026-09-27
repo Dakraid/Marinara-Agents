@@ -388,7 +388,12 @@ export function SlpAdsPanel(page: SlpBackstagePageProps) {
                 className="flex flex-col overflow-hidden rounded-xl bg-[var(--slurp-surface-raised)] ring-1 ring-inset ring-[var(--slurp-outline)]"
               >
                 {ad.imageUrl ? (
-                  <SlurpMediaImg src={ad.imageUrl} alt="" loading="lazy" className="aspect-video w-full object-cover" />
+                  <SlurpMediaImg
+                    src={ad.imageUrl}
+                    alt=""
+                    loading="lazy"
+                    className="slp-crop-top aspect-video w-full object-cover"
+                  />
                 ) : (
                   <span
                     aria-hidden="true"

@@ -150,7 +150,11 @@ export function SlpScenePreview({
       <div className="overflow-hidden rounded-2xl bg-[var(--slurp-surface-raised)] shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
         <div className={cn(SLP_IMG_FRAME_CLASS, "relative h-20 bg-[image:var(--slurp-nav-active)]")}>
           {bannerUrl && (
-            <SlurpMediaImg src={bannerUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <SlurpMediaImg
+              src={bannerUrl}
+              alt=""
+              className="slp-crop-top absolute inset-0 h-full w-full object-cover"
+            />
           )}
         </div>
         <div className="-mt-8 flex items-start gap-3 px-4 pb-3">

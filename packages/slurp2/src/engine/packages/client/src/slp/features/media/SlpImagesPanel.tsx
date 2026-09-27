@@ -249,6 +249,23 @@ export function SlpImagesPanel(page: SlpBackstagePageProps) {
           </SettingAnchor>
         </SettingAnchor>
       </SettingsGroup>
+      {/* How pictures look in the app, not how they are made: display only, no AI. */}
+      <SettingsGroup title={t("ui.slurp.settings.images.previewsGroup")}>
+        <Toggle
+          settingKey="previewWholePictures"
+          label={t("ui.slurp.settings.images.previewWholePictures")}
+          detail={t("ui.slurp.settings.images.previewWholePicturesDetail")}
+          value={settings.previewWholePictures}
+          onChange={(value) => update("previewWholePictures", value)}
+        />
+        <Toggle
+          settingKey="previewOpensPost"
+          label={t("ui.slurp.settings.images.previewOpensPost")}
+          detail={t("ui.slurp.settings.images.previewOpensPostDetail")}
+          value={settings.previewOpensPost}
+          onChange={(value) => update("previewOpensPost", value)}
+        />
+      </SettingsGroup>
       <SettingsGroup title={t("ui.slurp.settings.images.readingGroup")}>
         <ChoiceSetting
           settingKey="imageContextMode"

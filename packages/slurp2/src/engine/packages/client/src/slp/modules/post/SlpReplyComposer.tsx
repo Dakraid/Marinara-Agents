@@ -145,7 +145,7 @@ export function SlpReplyComposer({
             <img
               src={replyImageUrl}
               alt={localizeUi("ui.noodle.noodlepostcard.attachedReplyPreview")}
-              className="max-h-52 w-full object-cover"
+              className="slp-crop-top max-h-52 w-full object-cover"
             />
           </button>
           <button

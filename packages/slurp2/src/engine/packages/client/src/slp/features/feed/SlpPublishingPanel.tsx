@@ -216,6 +216,21 @@ export function SlpPublishingPanel(page: SlpBackstagePageProps) {
           disabled={updateSettings.isPending}
           onChange={(value: SlurpSettings["postPlanner"]) => void update("postPlanner", value)}
         />
+        {/* Life moments are a beat source: the model's-choice planner never picks one. */}
+        <ChoiceSetting
+          settingKey="lifeMomentRate"
+          label={t("ui.slurp.settings.lifeMomentRate")}
+          detail={t("ui.slurp.settings.lifeMomentRateDetail")}
+          disabledReason={settings.postPlanner === "classic" ? t("ui.slurp.settings.hints.needsLifeIdeas") : null}
+          options={[
+            { value: "rarely", label: t("ui.slurp.settings.lifeMomentRateRarely") },
+            { value: "sometimes", label: t("ui.slurp.settings.lifeMomentRateSometimes") },
+            { value: "often", label: t("ui.slurp.settings.lifeMomentRateOften") },
+          ]}
+          value={settings.lifeMomentRate}
+          disabled={updateSettings.isPending || settings.postPlanner === "classic"}
+          onChange={(value: SlurpSettings["lifeMomentRate"]) => void update("lifeMomentRate", value)}
+        />
         <ChoiceSetting
           settingKey="teaserRate"
           label={t("ui.slurp.settings.wallet.teaserRate", { defaultValue: "Free teaser posts" })}

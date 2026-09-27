@@ -63,7 +63,7 @@ export function SlpLockedMediaTile({
           loading="lazy"
           decoding="async"
           {...slpImgFade}
-          className="h-full w-full scale-110 object-cover blur-[8px]"
+          className="slp-crop-top h-full w-full scale-110 object-cover blur-[8px]"
         />
       )}
       <span

@@ -62,7 +62,7 @@ export function SlpStoryTile({ creator, post, mediaSrc, fallback, isNew, onOpen 
         {post.imageUrl ? (
           // The picture's frame shimmers while it is fetched, then the picture fades in (no text or
           // avatar flashing first).
-          <span className={cn("block h-full w-full", SLP_IMG_FRAME_CLASS)}>
+          <span className={cn("relative block h-full w-full", SLP_IMG_FRAME_CLASS)}>
             {mediaSrc && (
               <img
                 key={mediaSrc}
@@ -70,7 +70,7 @@ export function SlpStoryTile({ creator, post, mediaSrc, fallback, isNew, onOpen 
                 alt=""
                 decoding="async"
                 {...slpImgFade}
-                className="h-full w-full object-cover transition-[transform,opacity,filter] duration-[360ms] group-hover:scale-[1.03] motion-reduce:transition-opacity motion-reduce:group-hover:scale-100"
+                className="slp-crop h-full w-full object-cover transition-[transform,opacity,filter] duration-[360ms] group-hover:scale-[1.03] motion-reduce:transition-opacity motion-reduce:group-hover:scale-100"
               />
             )}
           </span>

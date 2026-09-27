@@ -83,7 +83,9 @@ export function SlpCreatorOverviewSection({ creator, active }: SlpCreatorSetting
         aria-label={creator.displayName}
       >
         <div className="relative h-36 overflow-hidden bg-[linear-gradient(115deg,var(--slurp-coral),var(--slurp-violet))]">
-          {creator.bannerUrl && <SlurpMediaImg src={creator.bannerUrl} alt="" className="h-full w-full object-cover" />}
+          {creator.bannerUrl && (
+            <SlurpMediaImg src={creator.bannerUrl} alt="" className="slp-crop-top h-full w-full object-cover" />
+          )}
           <span className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" aria-hidden="true" />
         </div>
         <div className="relative flex flex-wrap items-end gap-3 px-4 pb-4">

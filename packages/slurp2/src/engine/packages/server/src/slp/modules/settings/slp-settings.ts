@@ -255,6 +255,8 @@ export const slurpSettingsSchema = z.object({
    * concrete beat from the Creator's card first. See `modules/feed/slp-post-beat.ts`.
    */
   postPlanner: z.enum(["classic", "beats"]),
+  /** "Daily life": how often an ordinary post is a day-to-day life moment. See `slp-life-moments.ts`. */
+  lifeMomentRate: z.enum(["rarely", "sometimes", "often"]),
   /**
    * Beats only: a daily world tick and weekly niche patterns per topical tag add shared beat ideas.
    * See `modules/feed/slp-shared-preseed.ts`.
@@ -268,6 +270,10 @@ export const slurpSettingsSchema = z.object({
   maxLikesPerRefresh: z.number().int().min(0).max(24),
   maxRepliesPerRefresh: z.number().int().min(0).max(24),
   allowGalleryImageAttachments: z.boolean(),
+  /** Tap a cropped picture preview to open the full post (locked posts still open their unlock options). */
+  previewOpensPost: z.boolean(),
+  /** Previews show the whole picture fitted instead of cropping it (top centre). Display only. */
+  previewWholePictures: z.boolean(),
   /**
    * Posts a day across the whole Creator cast, and now actually that number: the reserve used to
    * lay down twice as many slots as this asked for. The ceiling is well above the old 24 so a
@@ -517,6 +523,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   flavourFromAgents: true,
   // Beats by default since 0.2.55: the fixes for same-y, canon-less, tame posts live there.
   postPlanner: "beats",
+  lifeMomentRate: "sometimes",
   sharedPreseed: false,
   sharedWorldEvents: false,
   enableImagePrompts: false,
@@ -525,6 +532,8 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   maxLikesPerRefresh: 4,
   maxRepliesPerRefresh: 4,
   allowGalleryImageAttachments: false,
+  previewOpensPost: true,
+  previewWholePictures: false,
   postsPerDay: 4,
   autoPostingScheduleEnabled: false,
   autoPostGenerationMode: "on_demand",

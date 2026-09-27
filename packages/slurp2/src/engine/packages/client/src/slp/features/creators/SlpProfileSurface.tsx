@@ -435,7 +435,7 @@ function ProfileBanner({
         aria-label={banner.canEdit ? localizeUi("ui.noodle.noodleprofilesurface.uploadBanner") : undefined}
       >
         {banner.url ? (
-          <SlurpMediaImg src={banner.url} alt="" className="h-full w-full object-cover" />
+          <SlurpMediaImg src={banner.url} alt="" className="slp-crop-top h-full w-full object-cover" />
         ) : (
           <span
             className="absolute inset-0 isolate block"
@@ -448,7 +448,7 @@ function ProfileBanner({
               <SlurpMediaImg
                 src={account.avatarUrl}
                 alt=""
-                className="h-full w-full scale-125 object-cover opacity-60 blur-2xl saturate-150"
+                className="slp-crop-top h-full w-full scale-125 object-cover opacity-60 blur-2xl saturate-150"
               />
             )}
             <SlpTwinkle

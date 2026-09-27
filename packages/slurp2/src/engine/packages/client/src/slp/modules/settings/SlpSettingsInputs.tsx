@@ -91,7 +91,7 @@ export function ChoiceSetting<T extends string>({
             className={
               variant === "cards"
                 ? `grid gap-2 ${options.length === 3 ? "@lg:grid-cols-3" : "@lg:grid-cols-2 @3xl:grid-cols-3"}`
-                : `gap-1 rounded-lg bg-[var(--slurp-canvas,var(--background))] p-1 ring-1 ring-inset ring-[var(--slurp-outline,var(--border))] ${oneRow ? "grid auto-cols-fr grid-flow-col @xl:min-w-80" : "flex flex-wrap"} ${off ? "opacity-50" : ""}`
+                : `gap-1 rounded-lg bg-[var(--slurp-canvas,var(--background))] p-1 ring-1 ring-inset ring-[var(--slurp-outline,var(--border))] ${oneRow ? "flex @xl:min-w-80" : "flex flex-wrap"} ${off ? "opacity-50" : ""}`
             }
           >
             {options.map((option) => {
@@ -132,7 +132,7 @@ export function ChoiceSetting<T extends string>({
               ) : (
                 <label
                   key={option.value}
-                  className={`flex min-h-10 min-w-0 items-center justify-center rounded-md px-3 text-center text-sm font-semibold transition-colors focus-within:ring-2 focus-within:ring-[var(--slurp-focus,var(--noodle-accent))] motion-reduce:transition-none ${oneRow ? "" : "flex-auto"} ${off ? "cursor-not-allowed" : "cursor-pointer"} ${checked ? "bg-[image:var(--slurp-nav-active)] text-[var(--slurp-text,var(--foreground))] shadow-sm ring-1 ring-inset ring-[var(--noodle-accent)]/45" : "text-[var(--slurp-muted,var(--muted-foreground))] hover:text-[var(--slurp-text,var(--foreground))]"}`}
+                  className={`flex min-h-10 min-w-0 items-center justify-center rounded-md px-2 text-center text-sm font-semibold transition-colors focus-within:ring-2 focus-within:ring-[var(--slurp-focus,var(--noodle-accent))] motion-reduce:transition-none flex-auto ${off ? "cursor-not-allowed" : "cursor-pointer"} ${checked ? "bg-[image:var(--slurp-nav-active)] text-[var(--slurp-text,var(--foreground))] shadow-sm ring-1 ring-inset ring-[var(--noodle-accent)]/45" : "text-[var(--slurp-muted,var(--muted-foreground))] hover:text-[var(--slurp-text,var(--foreground))]"}`}
                 >
                   {input}
                   <span className="truncate">{option.label}</span>

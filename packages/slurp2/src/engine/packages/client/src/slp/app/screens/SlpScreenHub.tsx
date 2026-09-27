@@ -47,6 +47,7 @@ import { holdNewSlpFeedPosts, newestSlpFeedTime } from "../../features/feed/slp-
 import { useSlurpHubDiscoveryFilters } from "./slp-hub-discovery-filters";
 import { SlurpInlineSuggestedCreators } from "./SlpScreenSuggestedCreators";
 import { SlpHubDiscover } from "./SlpHubDiscover";
+import { useSlurpSettings } from "../../features/settings/slp-settings-hooks";
 
 // ---------------------------------------------------------------------------
 // Local types
@@ -251,6 +252,8 @@ export function ViewerHub({
   });
   // The paid period of each subscription, so a Discover card can say "ends Thu" after a cancel.
   const walletSubscriptions = useSlurpWallet(scope?.viewer.entityId ?? null).data?.subscriptions;
+  // "Tap a preview to open the full post" (on by default); off, a tap shows the picture alone.
+  const previewOpensPost = useSlurpSettings().data?.previewOpensPost !== false;
   // "Create a persona" is a claim about the user's data, so it waits for the personas query to
   // actually succeed instead of speaking for a cold or failed load.
   if (personas.length === 0) {
@@ -276,13 +279,22 @@ export function ViewerHub({
   const activeMomentIndex = activeMomentId ? moments.findIndex((moment) => moment.post.id === activeMomentId) : -1;
   const activeMoment = activeMomentIndex >= 0 ? moments[activeMomentIndex] : null;
   const visibleFeed = feed.slice(0, visibleFeedCount);
-  const openPostItem = openPostId ? (feed.find((item) => item.post.id === openPostId) ?? null) : null;
+  // Search results are a list of their own: a picture tapped there opened nothing while it looked only in the feed.
+  const openPostItem = openPostId
+    ? (feed.find((item) => item.post.id === openPostId) ??
+      searchResults.find((item) => item.post.id === openPostId) ??
+      null)
+    : null;
   // One place decides what clicking a post image does, so the wall, the feed, and the profile
   // all open the same dialog.
   // Every Creator on the feed is one of the player's own, so the feed offers the same edit and
   // delete as the Creator profile. The image dialog keeps management off: it draws the card
   // without its picture, and an edit started there would save the post without it.
-  const feedCardCtx = { ...postCardCtx, postManagement: true, openPost: setOpenPostId };
+  const feedCardCtx = {
+    ...postCardCtx,
+    postManagement: true,
+    openPost: previewOpensPost ? setOpenPostId : undefined,
+  };
   const visibleSearchResults = searchResults.slice(0, visibleFeedCount);
   // The feed is newest-first, so the divider goes after the *last* new post — the viewer's own
   // posts sitting in that run are not news themselves but must not cut it short. Shown only

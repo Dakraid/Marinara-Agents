@@ -45,7 +45,7 @@ export function PersonaIdentityCard({
           strip washed out by a full-height fade. */}
       <div className="relative aspect-[3/1] min-h-16 overflow-hidden">
         {bannerSrc ? (
-          <img src={bannerSrc} alt="" decoding="async" className="h-full w-full object-cover" />
+          <img src={bannerSrc} alt="" decoding="async" className="slp-crop-top h-full w-full object-cover" />
         ) : (
           <span className="block h-full w-full bg-[image:var(--slurp-hero)] opacity-80" aria-hidden="true" />
         )}

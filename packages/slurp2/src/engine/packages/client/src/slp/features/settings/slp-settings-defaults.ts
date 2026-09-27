@@ -32,6 +32,7 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
     "autoPostGenerationMode",
     "nightQuiet",
     "postPlanner",
+    "lifeMomentRate",
     "teaserRate",
   ],
   // Carryover is about Engine chats, so it resets with the Connections page it lives on.
@@ -48,6 +49,8 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
     "appearanceProfileMode",
     "autoPostingImagesEnabled",
     "allowGalleryImageAttachments",
+    "previewOpensPost",
+    "previewWholePictures",
   ],
   prompts: [
     "generationGuidance",

@@ -67,7 +67,7 @@ export function SlurpProfileMediaTile({
         onClick={() => source && onOpenImage(source, post.id)}
         disabled={!source}
         className={cn(
-          "block h-full w-full text-left focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)] disabled:cursor-wait",
+          "relative block h-full w-full text-left focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)] disabled:cursor-wait",
           SLP_IMG_FRAME_CLASS,
         )}
         aria-label={post.title || localizeUi("ui.slurp.post.openImage")}
@@ -80,7 +80,7 @@ export function SlurpProfileMediaTile({
             loading="lazy"
             decoding="async"
             {...slpImgFade}
-            className="h-full w-full object-cover transition-[transform,opacity,filter] duration-[360ms] hover:scale-[1.03] motion-reduce:transition-opacity motion-reduce:hover:scale-100"
+            className="slp-crop h-full w-full object-cover transition-[transform,opacity,filter] duration-[360ms] hover:scale-[1.03] motion-reduce:transition-opacity motion-reduce:hover:scale-100"
           />
         )}
       </button>

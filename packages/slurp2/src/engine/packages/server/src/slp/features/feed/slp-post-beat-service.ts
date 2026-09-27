@@ -21,7 +21,7 @@ import {
   type SlurpDayMoment,
 } from "../../modules/feed/slp-post-beat.js";
 import { slurpUsableSharedIdeas, type SlurpSharedIdea } from "../../modules/feed/slp-shared-preseed.js";
-import { slurpLifeBeat } from "../../modules/feed/slp-life-moments.js";
+import { slurpLifeBeat, type SlurpLifeMomentRate } from "../../modules/feed/slp-life-moments.js";
 import { readSlurpLifeSignals } from "../../data/feed/slp-life-signals.js";
 import { selectSlurpReference, slurpReferenceCandidates } from "../../modules/feed/slp-post-reference.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
@@ -64,7 +64,12 @@ export type SlurpBeatContext = {
   /** The player's next idea for this Creator. It is this post's beat, ahead of the arc. */
   nudge?: SlpCreatorNudge | null;
   /** Day-to-day life moments: the account (for what really happened) and its tags (for what fits). */
-  life?: { account: Pick<SlpAccount, "id" | "createdAt">; tags: readonly string[] } | null;
+  life?: {
+    account: Pick<SlpAccount, "id" | "createdAt">;
+    tags: readonly string[];
+    /** The player's "Daily life" setting. */
+    rate?: SlurpLifeMomentRate;
+  } | null;
 };
 
 /** Beat facts kept active at once; older ones expire so real notes are not crowded out. */
@@ -233,6 +238,9 @@ export async function planSlurpBeat(
         history,
         usedLife,
         input.intents,
+        // The schedule (or the card's routine) gives the main beat; a life moment fills around it.
+        input.context.day?.current ?? null,
+        input.context.life.rate,
       );
       if (life) return life;
     }

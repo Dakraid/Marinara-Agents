@@ -101,6 +101,7 @@ export type SlurpSettings = {
   enableLorebookContext: boolean;
   flavourFromAgents: boolean;
   postPlanner: "classic" | "beats";
+  lifeMomentRate: "rarely" | "sometimes" | "often";
   sharedPreseed: boolean;
   sharedWorldEvents: boolean;
   enableImagePrompts: boolean;
@@ -109,6 +110,8 @@ export type SlurpSettings = {
   maxLikesPerRefresh: number;
   maxRepliesPerRefresh: number;
   allowGalleryImageAttachments: boolean;
+  previewOpensPost: boolean;
+  previewWholePictures: boolean;
   fanActivityRunsPerDay: number;
   audienceReactionBank: { shared: string[]; byType: Record<string, string[]> };
   fanLikesPerRefresh: number;

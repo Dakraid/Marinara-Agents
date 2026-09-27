@@ -298,8 +298,32 @@ export const SLP_PAGE_SCROLL_CLASS = "slp-page-scroll";
  * in the same frame fades in too.
  */
 export const SLP_IMG_FRAME_CLASS = "slp-img-frame";
-const markSlpImgLoaded = (event: SyntheticEvent<HTMLImageElement>) =>
-  event.currentTarget.setAttribute("data-slp-loaded", "");
+
+/**
+ * Cropped previews (CSS in slp-client-entry.tsx). A picture preview that fills its frame keeps the
+ * top centre of the picture, where faces usually are. `SLP_CROP_CLASS` is a post picture preview: it
+ * also gets the quiet "cropped" mark on its frame when the picture is really cut, and shows whole
+ * with "Show whole pictures" on. `SLP_CROP_TOP_CLASS` only anchors (banners, covers, blurred teasers).
+ * The frame holding an `SLP_CROP_CLASS` picture must be positioned (`relative`), for the mark.
+ */
+export const SLP_CROP_CLASS = "slp-crop";
+export const SLP_CROP_TOP_CLASS = "slp-crop-top";
+/** Whether a picture of this size loses more than a sliver when it fills a box of this size. */
+export function slpPreviewIsCut(naturalWidth: number, naturalHeight: number, boxWidth: number, boxHeight: number) {
+  if (!naturalWidth || !naturalHeight || !boxWidth || !boxHeight) return false;
+  return Math.abs(Math.log(naturalWidth / naturalHeight / (boxWidth / boxHeight))) > 0.04;
+}
+const markSlpImgLoaded = (event: SyntheticEvent<HTMLImageElement>) => {
+  const image = event.currentTarget;
+  image.setAttribute("data-slp-loaded", "");
+  // ponytail: measured once on load; a frame that later changes shape keeps its first answer. Add a
+  // ResizeObserver if a preview frame ever resizes with the window.
+  if (image.classList.contains(SLP_CROP_CLASS))
+    image.toggleAttribute(
+      "data-slp-cut",
+      slpPreviewIsCut(image.naturalWidth, image.naturalHeight, image.clientWidth, image.clientHeight),
+    );
+};
 // A failed picture also ends the shimmer; its caller shows its own fallback.
 export const slpImgFade = { "data-slp-fade": "", onLoad: markSlpImgLoaded, onError: markSlpImgLoaded };
 

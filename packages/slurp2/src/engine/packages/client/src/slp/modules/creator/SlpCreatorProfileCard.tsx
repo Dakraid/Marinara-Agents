@@ -179,7 +179,7 @@ function SlpCreatorCover({ creator, className }: { creator: SlurpCreatorProfileC
           decoding="async"
           {...slpImgFade}
           className={cn(
-            "h-full w-full object-cover transition-[transform,opacity,filter] duration-[360ms] group-hover:scale-[1.015] motion-reduce:transition-opacity motion-reduce:group-hover:scale-100",
+            "slp-crop-top h-full w-full object-cover transition-[transform,opacity,filter] duration-[360ms] group-hover:scale-[1.015] motion-reduce:transition-opacity motion-reduce:group-hover:scale-100",
             !coverUrl && "scale-150 opacity-60 blur-2xl group-hover:scale-150",
           )}
         />

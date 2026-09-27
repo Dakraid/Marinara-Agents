@@ -89,7 +89,7 @@ export function SlpSceneChat({
                   item.photo === "avatar" ? "aspect-square w-40" : "aspect-[3/1] w-full max-w-sm",
                 )}
               >
-                <SlurpMediaImg src={item.imageUrl} alt="" className="h-full w-full object-cover" />
+                <SlurpMediaImg src={item.imageUrl} alt="" className="slp-crop-top h-full w-full object-cover" />
                 <figcaption
                   className={cn(
                     SLP_TYPE.caption,

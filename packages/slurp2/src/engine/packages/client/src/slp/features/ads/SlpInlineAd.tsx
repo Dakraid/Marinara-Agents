@@ -37,7 +37,7 @@ export function SlurpInlineAdTile({
             src={promotion.imageUrl}
             alt=""
             loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+            className="slp-crop-top h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
           />
         ) : (
           <span className="flex h-full items-center justify-center bg-[linear-gradient(145deg,color-mix(in_srgb,var(--noodle-accent)_18%,var(--slurp-surface)),var(--slurp-surface))] p-4 text-center text-sm font-bold">
@@ -135,7 +135,7 @@ export function SlurpInlineAd({
             alt=""
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-cover"
+            className="slp-crop-top h-full w-full object-cover"
             onError={() => setImageFailed(true)}
           />
         </div>

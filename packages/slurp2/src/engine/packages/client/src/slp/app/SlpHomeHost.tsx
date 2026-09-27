@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../modules/chrome/SlpStateKit";
 import { toast } from "sonner";
 import { ViewerHub } from "./screens/SlpScreenHub";
@@ -101,6 +102,12 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
     mainAuthorProfile,
     openStoryComposer,
   } = model;
+  // "Show whole pictures": on <html>, so previews in sheets and dialogs portalled out of Slurp follow it.
+  const wholePictures = slurpSettingsQuery.data?.previewWholePictures === true;
+  useEffect(() => {
+    document.documentElement.toggleAttribute("data-slp-whole", wholePictures);
+    return () => document.documentElement.removeAttribute("data-slp-whole");
+  }, [wholePictures]);
   const personaSourceIds = new Set(personas.map((persona) => persona.id));
 
   const shellProps = {

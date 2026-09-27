@@ -67,7 +67,35 @@ export type SlurpCanonAnchors = {
 /** Where the Creator's day stands when the post goes out. `queued`: written just before sleep or a drive. */
 export type SlurpDayMoment = { current: string; previous: string | null; queued?: boolean };
 
-const STOP_WORDS = new Set(["the", "and", "her", "his", "their", "with", "for", "you", "your", "from", "into", "at"]);
+// German small words too: cards and schedules are often German, and "der" alone made "der Elbstrand"
+// read as the schedule's "in der Backstube".
+const STOP_WORDS = new Set([
+  ...["the", "and", "her", "his", "their", "with", "for", "you", "your", "from", "into", "at"],
+  ...[
+    "der",
+    "die",
+    "das",
+    "den",
+    "dem",
+    "des",
+    "und",
+    "mit",
+    "von",
+    "vom",
+    "zum",
+    "zur",
+    "ein",
+    "eine",
+    "einen",
+    "auf",
+    "aus",
+    "bei",
+    "ihr",
+    "ihre",
+    "sein",
+    "seine",
+  ],
+]);
 const activityWords = (value: string) =>
   value
     .toLocaleLowerCase()

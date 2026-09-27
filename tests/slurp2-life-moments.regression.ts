@@ -430,4 +430,94 @@ assert.match(
 );
 assert.doesNotMatch(rewrite, /generateCreatorPost|completeSlurp/u, "no AI call from the route itself");
 
+// --- 7b-q: "Daily life" rate; the schedule and the card give the main beat -----------------------
+const lifeAt = (
+  creator: SlurpLifeCreator,
+  id: string,
+  sequence: number,
+  activity: string | null,
+  rate?: "rarely" | "sometimes" | "often",
+) =>
+  slurpLifeBeat(id, sequence, creator, SLURP_NO_LIFE_SIGNALS, { recentAnchors: [] }, [], [...CASUAL], activity, rate);
+const shareOf = (rate?: "rarely" | "sometimes" | "often") =>
+  Array.from({ length: 600 }, (_, sequence) => lifeAt(mira, "fixture-mira", sequence, null, rate)).filter(Boolean)
+    .length / 600;
+const [rarely, sometimes, often] = [shareOf("rarely"), shareOf("sometimes"), shareOf("often")];
+assert.equal(shareOf(), sometimes, "Sometimes is the default");
+assert.ok(rarely > 0.07 && rarely < 0.2, `Rarely is about 1 in 7: ${rarely}`);
+assert.ok(sometimes > 0.22 && sometimes < 0.45, `Sometimes is about 1 in 3: ${sometimes}`);
+assert.ok(often > 0.4 && often < 0.62, `Often is about 1 in 2: ${often}`);
+// A moment that says what they are doing now never replaces what the schedule (or the card's
+// routine) has them doing: it only comes when it is about the same thing.
+const DOING = [
+  "work-long-day",
+  "work-bad-day",
+  "place-stuck",
+  "workout",
+  "cold",
+  "errands",
+  "self-care",
+  "cooking",
+  "home-reset",
+];
+const scheduleCases: { creator: SlurpLifeCreator; id: string; activity: string; allowed: string[] }[] = [
+  // Kai is tattooing at the studio: no gym, no kitchen, no errands, no day at home.
+  {
+    creator: kai,
+    id: "fixture-kai",
+    activity: "Tattooing a cover-up at Needle & Thread",
+    allowed: ["work-long-day", "work-bad-day", "place-stuck"],
+  },
+  // Mira is asleep: nothing she does can be the post, only how she feels or what happened.
+  { creator: mira, id: "fixture-mira", activity: "Sleeping", allowed: [] },
+  // Mira coaches at the bouldering hall: a workout or a long coaching day fits, cooking does not.
+  {
+    creator: mira,
+    id: "fixture-mira",
+    activity: "Coaching beginners at the bouldering hall",
+    allowed: ["work-long-day", "work-bad-day", "place-stuck", "workout"],
+  },
+  // Anna bakes in the Backstube: baking fits; a workout would replace her shift.
+  {
+    creator: anna,
+    id: "fixture-anna",
+    activity: "Backen in der Backstube in Altona",
+    allowed: ["work-long-day", "work-bad-day", "place-stuck", "cooking"],
+  },
+];
+for (const { creator, id, activity, allowed } of scheduleCases) {
+  let filled = 0;
+  for (let sequence = 0; sequence < 600; sequence += 1) {
+    const life = lifeAt(creator, id, sequence, activity);
+    if (!life) continue;
+    filled += 1;
+    const moment = life.sharedId!.split(":")[1]!;
+    assert.ok(
+      !DOING.includes(moment) || allowed.includes(moment),
+      `"${activity}" stays the main beat; ${moment} would replace it`,
+    );
+    if (life.place)
+      assert.ok(
+        activity.toLowerCase().includes(life.place.replace(/^(the|die|der) /u, "").toLowerCase()),
+        `the place is where the schedule says: ${life.place}`,
+      );
+  }
+  assert.ok(filled / 600 > 0.15, `daily life still fills around "${activity}": ${filled}/600`);
+}
+// Without a schedule or routine the card alone decides, as before.
+assert.ok(
+  Array.from({ length: 600 }, (_, sequence) => lifeAt(kai, "fixture-kai", sequence, null)).some(
+    (life) => life?.sharedId === "life:errands" || life?.sharedId === "life:self-care",
+  ),
+);
+const beatService = server("features/feed/slp-post-beat-service.ts");
+assert.match(
+  beatService,
+  /input\.intents,\s*\/\/[^\n]*\n\s*input\.context\.day\?\.current \?\? null,\s*input\.context\.life\.rate,/u,
+  "the life moment sees the schedule's current activity and the rate",
+);
+assert.match(server("features/feed/slp-generation-service.ts"), /rate: settings\.lifeMomentRate/u);
+assert.match(server("modules/settings/slp-settings.ts"), /lifeMomentRate: "sometimes"/u);
+assert.match(client("features/feed/SlpPublishingPanel.tsx"), /settingKey="lifeMomentRate"/u);
+
 console.log("slurp2 life moments regression: pass");

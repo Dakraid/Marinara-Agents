@@ -344,7 +344,7 @@ export function MessageBubble({
                 src={messageImage}
                 alt={localizeUi("ui.slurp.messages.postPreview", { defaultValue: "Post preview" })}
                 {...slpImgFade}
-                className="h-full w-full object-cover"
+                className="slp-crop h-full w-full object-cover"
               />
             </span>
           )}
@@ -533,7 +533,7 @@ export function MessageBubble({
                   src={messageImage}
                   alt={localizeUi("ui.slurp.messages.attachedImage", { defaultValue: "Attached image" })}
                   {...slpImgFade}
-                  className="h-full w-full object-cover"
+                  className="slp-crop h-full w-full object-cover"
                 />
               )}
               {dissolving && <SlurpSparkleVeil className="slp-veil-dissolve z-10" />}
@@ -582,7 +582,7 @@ export function MessageBubble({
             src={messageImage}
             alt={localizeUi("ui.slurp.messages.attachedImage", { defaultValue: "Attached image" })}
             {...slpImgFade}
-            className="block max-h-80 w-full object-cover"
+            className="slp-crop block max-h-80 w-full object-cover"
           />
         </span>
       )}

@@ -13,6 +13,8 @@ import { SlpLockedMediaTile } from "../../modules/post/SlpLockedMedia";
 import { SlpPostCard } from "../../modules/post/SlpPostCard";
 import { playSlpSpendMoment, SlpShimmer } from "../../modules/sparkle/SlpSparkle";
 import type { StageProfileViewModel } from "./slp-profile-view-model";
+import { useSlurpSettings } from "../../features/settings/slp-settings-hooks";
+import { createSlpLightboxImage } from "../../modules/post/SlpPostHelpers";
 
 /** Stories younger than this still wear the ring on the profile's Story row. */
 const STORY_LIVE_MS = 24 * 60 * 60 * 1000;
@@ -58,6 +60,9 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
     visiblePosts,
   } = model;
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
+  // "Tap a preview to open the full post" (on by default); off, a tap shows the picture alone.
+  const previewOpensPost = useSlurpSettings().data?.previewOpensPost !== false;
+  const openPost = previewOpensPost ? showProfilePost : undefined;
   const activeStoryIndex = storyMoments.findIndex((moment) => moment.post.id === activeStoryId);
   const activeStory = storyMoments[activeStoryIndex] ?? null;
   // Media: every picture post in page order, open ones as pictures and locked ones as teasers.
@@ -210,7 +215,11 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
                   key={tile.post.id}
                   post={tile.post}
                   withMenu={false}
-                  onOpenImage={(_url, id) => setOpenImagePostId(id)}
+                  onOpenImage={(url, id) =>
+                    previewOpensPost || !postCardCtx.setImageLightbox
+                      ? setOpenImagePostId(id)
+                      : postCardCtx.setImageLightbox(createSlpLightboxImage(id, url))
+                  }
                 />
               ) : (
                 <SlpLockedMediaTile
@@ -319,7 +328,7 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
                     <SlpPostCard
                       surface="profile"
                       post={item.model}
-                      ctx={{ ...postCardCtx, personaAccount: null, postManagement: managedCreator }}
+                      ctx={{ ...postCardCtx, personaAccount: null, postManagement: managedCreator, openPost }}
                     />
                   </div>
                 ) : (
@@ -330,6 +339,7 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
                       ...postCardCtx,
                       personaAccount: viewerActorAccount,
                       postManagement: managedCreator,
+                      openPost,
                     }}
                   />
                 )}

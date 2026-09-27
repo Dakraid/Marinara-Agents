@@ -256,7 +256,9 @@ function CreatorArtworkControls({
       </div>
       <div className="overflow-hidden rounded-xl bg-[var(--slurp-surface-raised)] ring-1 ring-inset ring-[var(--slurp-outline)]">
         <div className="relative h-36 overflow-hidden bg-[linear-gradient(115deg,var(--slurp-coral),var(--slurp-violet))]">
-          {creator.bannerUrl && <SlurpMediaImg src={creator.bannerUrl} alt="" className="h-full w-full object-cover" />}
+          {creator.bannerUrl && (
+            <SlurpMediaImg src={creator.bannerUrl} alt="" className="slp-crop-top h-full w-full object-cover" />
+          )}
           <span className="absolute inset-x-3 top-3 rounded-md bg-black/55 px-2 py-1 text-xs font-bold text-white backdrop-blur-sm w-fit">
             {t("ui.slurp.settings.creators.bannerHeading")}
           </span>

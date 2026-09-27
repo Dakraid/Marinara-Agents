@@ -513,7 +513,7 @@ export function SlpPostCard({
                   alt={imageAlt}
                   loading="lazy"
                   decoding="async"
-                  className="h-full w-full object-cover"
+                  className="slp-crop h-full w-full object-cover"
                 />
               </div>
             )}

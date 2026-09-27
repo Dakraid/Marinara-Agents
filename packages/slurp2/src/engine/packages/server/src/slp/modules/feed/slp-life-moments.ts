@@ -24,6 +24,7 @@
 
 import type { SlurpContentIntent } from "../../../../../shared/src/slp/slp-content-axes.js";
 import {
+  slurpAnchorFitsActivity,
   slurpBeatIntents,
   type SlurpAnchorKind,
   type SlurpBeat,
@@ -85,6 +86,12 @@ type LifeMoment = {
   /** Only when this really happened. */
   signal?: "quiet" | "milestone" | "viral" | "gift" | "comments";
   weight?: number;
+  /**
+   * Says what the Creator is doing right now (working, stuck somewhere, at the gym, cooking). The
+   * schedule or the card's routine gives the main beat, so with one such a moment is only used when
+   * it is about the same thing; the other moments colour whatever they are doing.
+   */
+  doing?: true;
 };
 
 // ponytail: word lists decide "fits"; a card that only mentions a word in passing ("chalk on her
@@ -108,6 +115,7 @@ const POOL: readonly LifeMoment[] = [
   // Their own work, places, habits and people (the card decides what these are).
   {
     id: "work-long-day",
+    doing: true,
     kind: "work",
     type: "sensory_mood",
     slot: "work",
@@ -116,6 +124,7 @@ const POOL: readonly LifeMoment[] = [
   },
   {
     id: "work-bad-day",
+    doing: true,
     kind: "work",
     type: "mishap",
     slot: "work",
@@ -139,6 +148,7 @@ const POOL: readonly LifeMoment[] = [
   },
   {
     id: "place-stuck",
+    doing: true,
     kind: "day",
     type: "mishap",
     slot: "places",
@@ -161,6 +171,7 @@ const POOL: readonly LifeMoment[] = [
   // The shared pool: things that happen to many people, each only where it fits.
   {
     id: "workout",
+    doing: true,
     kind: "body",
     type: "achievement",
     needs: SPORT,
@@ -185,6 +196,7 @@ const POOL: readonly LifeMoment[] = [
   },
   {
     id: "cold",
+    doing: true,
     kind: "body",
     type: "mishap",
     line: "You caught a cold and you are stuck at home feeling a bit sorry for yourself.",
@@ -206,6 +218,7 @@ const POOL: readonly LifeMoment[] = [
   },
   {
     id: "errands",
+    doing: true,
     kind: "day",
     type: "routine_twist",
     line: "A whole day of boring errands, with one small good thing in the middle of it.",
@@ -214,6 +227,7 @@ const POOL: readonly LifeMoment[] = [
   },
   {
     id: "self-care",
+    doing: true,
     kind: "body",
     type: "sensory_mood",
     line: "You take an evening just for yourself, phone mostly down.",
@@ -237,6 +251,7 @@ const POOL: readonly LifeMoment[] = [
   },
   {
     id: "cooking",
+    doing: true,
     kind: "home",
     type: "showcase",
     needs: COOKING,
@@ -245,6 +260,7 @@ const POOL: readonly LifeMoment[] = [
   },
   {
     id: "home-reset",
+    doing: true,
     kind: "home",
     type: "routine_twist",
     needs: HOME,
@@ -403,9 +419,26 @@ function lifeKey(moment: LifeMoment, signals: SlurpLifeSignals): string {
 /** Own life moments this recent are not repeated; the kind of the last one steps back. */
 const RECENT_LIFE = 6;
 
+/** The player's "Daily life" setting. */
+export type SlurpLifeMomentRate = "rarely" | "sometimes" | "often";
+/** Weight of "no life moment" against 1 for "life moment": about 1 in 7, 1 in 3, 1 in 2. */
+const SKIP_WEIGHT: Record<SlurpLifeMomentRate, number> = { rarely: 6, sometimes: 2, often: 1 };
+
 /**
- * Whether this ordinary slot is a life moment, and which. About one ordinary post in three, more
- * when something real just happened (a milestone, a post that took off); never on a teaser slot.
+ * Whether a moment can sit beside what the schedule (or the card's routine) has the Creator doing
+ * now. That activity is the main beat: a moment that says they are doing something else (at the gym
+ * while the schedule has them at work) would replace it, so it is dropped.
+ */
+function fitsActivity(moment: LifeMoment, anchors: SlurpCanonAnchors, activity: string | null): boolean {
+  if (!activity || !moment.doing) return true;
+  if (moment.slot) return anchorValues(anchors, moment.slot).some((value) => slurpAnchorFitsActivity(value, activity));
+  return Boolean(moment.needs?.test(activity) || moment.topic?.test(activity));
+}
+
+/**
+ * Whether this ordinary slot is a life moment, and which. About one ordinary post in three (the
+ * "Daily life" setting: `rate`), more when something real just happened (a milestone, a post that
+ * took off); never on a teaser slot. The schedule's current activity stays the main beat.
  *
  * `usedLife` is this Creator's used life keys, newest first (up to their last forty plans), so a
  * milestone or viral post is only posted about once. `history.sharedToday` counts every Creator's
@@ -419,6 +452,9 @@ export function slurpLifeBeat(
   history: Pick<SlurpBeatHistory, "recentAnchors" | "sharedToday">,
   usedLife: readonly string[],
   intents: readonly SlurpContentIntent[],
+  /** What the schedule or the card's routine has them doing now (`SlurpDayMoment.current`). */
+  activity: string | null = null,
+  rate: SlurpLifeMomentRate = "sometimes",
 ): SlurpBeat | null {
   if (!intents.includes("casual")) return null;
   // A key is `life:<moment>` or `life:<moment>:<which>` (a milestone, a viral post).
@@ -432,6 +468,7 @@ export function slurpLifeBeat(
       !recent.has(moment.id) &&
       !(moment.signal === "milestone" || moment.signal === "viral" ? ever.has(key) : false) &&
       (history.sharedToday?.[key] ?? 0) < SLURP_SHARED_IDEA_DAILY_CAP &&
+      fitsActivity(moment, creator.anchors, activity) &&
       slurpBeatIntents(moment.type).some((intent) => intents.includes(intent))
     );
   });
@@ -439,7 +476,7 @@ export function slurpLifeBeat(
   const real = candidates.some((moment) => moment.signal === "milestone" || moment.signal === "viral");
   const take = slurpWeightedPick("life", creatorAccountId, sequence, [
     { value: true, weight: real ? 8 : 1 },
-    { value: false, weight: 2 },
+    { value: false, weight: SKIP_WEIGHT[rate] },
   ]);
   if (!take) return null;
   const moment = slurpWeightedPick(
@@ -457,7 +494,10 @@ export function slurpLifeBeat(
         (entry.kind === lastKind ? 0.3 : 1),
     })),
   );
-  const values = moment.slot ? anchorValues(creator.anchors, moment.slot) : [];
+  // A moment about what they are doing now is about the anchor the activity is about.
+  const values = (moment.slot ? anchorValues(creator.anchors, moment.slot) : []).filter(
+    (value) => !activity || !moment.doing || slurpAnchorFitsActivity(value, activity),
+  );
   const anchor = values.length
     ? slurpWeightedPick(
         "lifeAnchor",

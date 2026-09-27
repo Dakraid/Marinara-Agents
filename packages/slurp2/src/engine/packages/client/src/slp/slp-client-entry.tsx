@@ -152,6 +152,19 @@ const SLURP_SHELL_STYLES = `
     :where(img[data-slp-fade]) { filter: none; transition: opacity 120ms linear; }
   }
   @keyframes slp-img-frame-sweep { 0% { background-position: 120% 0; } 70%, 100% { background-position: -20% 0; } }
+  /* Cropped previews (SLP_CROP_CLASS in base/chrome/SlpChrome.tsx): keep the top centre, where faces
+     are. "Show whole pictures" (data-slp-whole on <html>) fits the picture instead. A really cut
+     picture gets a small quiet corner mark on its frame. */
+  .slp-crop, .slp-crop-top { object-position: top center; }
+  [data-slp-whole] .slp-crop { object-fit: contain; }
+  :has(> img.slp-crop[data-slp-cut])::after {
+    content: ""; position: absolute; z-index: 1; top: 8px; inset-inline-end: 8px; width: 22px; height: 22px;
+    border-radius: 999px; pointer-events: none; background-color: rgb(8 4 10 / 0.42);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5'/%3E%3C/svg%3E");
+    background-size: 12px 12px; background-position: center; background-repeat: no-repeat;
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.16); opacity: 0.85;
+  }
+  [data-slp-whole] :has(> img.slp-crop[data-slp-cut])::after { content: none; }
   /* A conversation on a phone is a full-screen task: its layer slides in from the side (push navigation). */
   @media (prefers-reduced-motion: no-preference) {
     .slp-task-in { animation: slp-task-in 320ms var(--slurp-ease, ease-out) both; }
