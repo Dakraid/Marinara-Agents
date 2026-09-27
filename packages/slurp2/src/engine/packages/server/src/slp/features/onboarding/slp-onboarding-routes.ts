@@ -19,6 +19,7 @@ import { logger } from "../../../lib/logger.js";
 import { generateCreatorStageProfileDraft } from "../creators/slp-creators-contract.js";
 import type { FastifyInstance } from "fastify";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
+import { slpSceneRoutes } from "./slp-scene-routes.js";
 
 const slurpBulkCreatorAccountCreateSchema = slpBulkCreatorAccountCreateSchema.extend({
   connectionId: z.string().min(1).nullable().optional(),
@@ -290,4 +291,6 @@ export async function slpOnboardingRoutes(app: FastifyInstance, deps: SlpRouteDe
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
     return firstPostQueue.status(parsed.data.executionId);
   });
+
+  await slpSceneRoutes(app, deps);
 }

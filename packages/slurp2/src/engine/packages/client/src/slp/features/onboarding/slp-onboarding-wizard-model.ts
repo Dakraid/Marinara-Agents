@@ -55,7 +55,7 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
   const accounts = useMemo(() => eligible.data?.pages.flatMap((page) => page.items) ?? [], [eligible.data?.pages]);
   const [step, setStep] = useState<Step>(1);
   const [intro, setIntro] = useState<Intro>(selectionOnly ? null : 0);
-  const [setupLane, setSetupLane] = useState<SetupLane>(selectionOnly ? "easy" : null);
+  const [setupLane, setSetupLane] = useState<SetupLane>(null);
   const [postExplored, setPostExplored] = useState(false);
   const [activityChoice, setActivityChoice] = useState<SlurpActivityPreset | null>(SLURP_DEFAULT_ACTIVITY_PRESET);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -106,7 +106,8 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
     if (!open) return;
     setStep(1);
     setIntro(selectionOnly ? null : 0);
-    setSetupLane(selectionOnly ? "easy" : null);
+    // Adding creators later starts at the lane choice too, so the role-play sign-up is reachable.
+    setSetupLane(null);
     setPostExplored(false);
     setActivityChoice(SLURP_DEFAULT_ACTIVITY_PRESET);
     setSelected(new Set());

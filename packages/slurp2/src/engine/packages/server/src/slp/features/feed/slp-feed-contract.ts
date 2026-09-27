@@ -11,6 +11,7 @@ export {
   slpCreatorIdentityInstruction,
   protectBoundedCreatorGeneratedText,
   resolveNoodlerPublicIdentity,
+  slpCreatorPublicIdentityFor,
 } from "./slp-public-identity.js";
 export type { PublicIdentity } from "./slp-generation-service.js";
 export { describeSlurpPostCondition } from "./slp-post-condition-service.js";

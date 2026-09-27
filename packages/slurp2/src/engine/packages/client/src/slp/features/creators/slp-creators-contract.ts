@@ -47,3 +47,7 @@ export { useCreatorEligibleAccounts } from "./slp-creators-hooks.js";
 
 // Settings previews a prompt block against a real Creator, so it needs the roster to choose from.
 export { useCreatorAccounts } from "./slp-creators-hooks.js";
+
+// The role-play sign-up drafts, creates and registers one Creator, and a Creator can help.
+export { useCreateCreatorStageProfile, useGenerateCreatorStageProfileDraft } from "./slp-creator-profile-hooks.js";
+export { useUpdateCreatorStrategy } from "./slp-creators-hooks.js";

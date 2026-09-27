@@ -7,6 +7,8 @@ import type { Intro, SetupLane, Step } from "./SlpOnboardingPanel";
 export const SLP_TOUR_LABELS = ["welcome", "costs", "identity", "locked", "posting"] as const;
 
 export const SLP_SETUP_STEPS: Record<Exclude<SetupLane, null>, readonly { step: Step; label: string }[]> = {
+  // The role-play sign-up counts its own moments (SlpSceneOnboarding), not wizard steps.
+  scene: [],
   easy: [
     { step: 1, label: "who" },
     { step: 4, label: "review" },

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { ChevronRight, Coins, Cpu, Image as ImageIcon, Loader2, SlidersHorizontal } from "lucide-react";
+import { ChevronRight, Coins, Cpu, Image as ImageIcon, Loader2, MessagesSquare, SlidersHorizontal } from "lucide-react";
 import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import type { SlpCreatorOnboardingCompletion } from "../../../../../shared/src/slp/slp-creator-onboarding.js";
 import type {
@@ -24,11 +24,13 @@ import { Toggle } from "../../modules/settings/SlpSettingsControls";
 import { useSlurpOnboardingWizardModel } from "./slp-onboarding-wizard-model";
 import { SLP_SETUP_STEPS, slpOnboardingProgress } from "./slp-onboarding-progress";
 import { SlpOnboardingSteps } from "./SlpOnboardingSteps";
+import { SlpSceneOnboarding } from "./SlpSceneOnboarding";
 
 export type Step = 1 | 2 | 3 | 4 | 5;
 /** The teaching screens that run ahead of the numbered steps on first run. */
 export type Intro = 0 | 1 | 2 | 3 | 4 | null;
-export type SetupLane = "easy" | "customize" | null;
+/** "scene" is the role-play sign-up; "easy" is Quick setup. */
+export type SetupLane = "scene" | "easy" | "customize" | null;
 export const LAST_INTRO = 4;
 /** "creationFailed" is local to the wizard: the shared resolver reports it as "failed", which
  * reads as a first-post problem even when no creator was ever set up. */
@@ -127,6 +129,7 @@ export function SlurpOnboardingWizard(props: WizardProps) {
     pending,
   } = model;
   const progress = slpOnboardingProgress({ intro, setupLane, step });
+  const scene = intro === null && setupLane === "scene";
   // The Engine Modal focuses its X on open, which rings it after a tap. Move the first focus to the
   // screen heading once the Modal has run its own focus step (two frames).
   const frameRef = useRef<HTMLDivElement | null>(null);
@@ -165,7 +168,7 @@ export function SlurpOnboardingWizard(props: WizardProps) {
               if (step === 5) returnToSetup();
               else returnToPreviousStep();
             }
-          : step === 1 && !selectionOnly
+          : step === 1
             ? () => setSetupLane(null)
             : undefined;
   const introBlocked = intro === 3 && !postExplored;
@@ -241,269 +244,299 @@ export function SlurpOnboardingWizard(props: WizardProps) {
       >
         <div
           ref={frameRef}
-          className="flex max-h-[min(78vh,46rem)] min-h-[26rem] flex-col text-[var(--slurp-text)] max-sm:min-h-0 max-sm:max-h-none max-sm:flex-1 max-sm:self-stretch"
-        >
-          {progress && (
-            <SlpWizardProgress
-              current={progress.current}
-              total={progress.total}
-              stepOf={t("ui.slurp.wizard.stepOf", {
-                current: progress.current,
-                total: progress.total,
-                defaultValue: "Step {{current}} of {{total}}",
-              })}
-              label={t(`ui.slurp.wizard.label.${progress.label}`)}
-            />
+          className={cn(
+            "flex max-h-[min(78vh,46rem)] min-h-[26rem] flex-col text-[var(--slurp-text)] max-sm:min-h-0 max-sm:max-h-none max-sm:flex-1 max-sm:self-stretch",
+            // The scene's chat scrolls inside a fixed frame instead of growing the dialog.
+            scene && "h-[min(78vh,46rem)] max-sm:h-auto",
           )}
-
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto py-4 max-sm:py-2.5">
-            <div className={cn("w-full", centred && "my-auto")}>
-              {intro === 0 && (
-                <div className="mx-auto flex max-w-md flex-col items-center gap-4 text-center">
-                  <img
-                    src="/sprites/mari/Mari_wave.png"
-                    alt=""
-                    className="h-40 w-auto object-contain drop-shadow-[0_12px_28px_color-mix(in_srgb,var(--noodle-accent)_35%,transparent)] max-sm:h-36"
-                  />
-                  <StepHeading
-                    centred
-                    title={t("ui.noodle.noodlerwizard.intro.info.title")}
-                    help={t("ui.noodle.noodlerwizard.intro.info.help")}
-                  />
-                  <p className={cn(SLP_TYPE.body, "text-pretty text-[var(--slurp-muted)]")}>
-                    <span className="font-semibold text-[var(--slurp-text)]">
-                      {t("ui.noodle.noodlerwizard.intro.info.lead")}
-                    </span>{" "}
-                    {t("ui.noodle.noodlerwizard.intro.info.detail")}
-                  </p>
-                </div>
+        >
+          {scene ? (
+            <SlpSceneOnboarding
+              accounts={accounts}
+              connectionId={model.generationConnectionId || undefined}
+              onBack={() => setSetupLane(null)}
+              onQuickSetup={() => {
+                setSetupLane("easy");
+                setStep(1);
+              }}
+              onFinished={() => props.onComplete?.()}
+              onSeeFeed={() => {
+                onSeeFeed?.();
+                if (!onSeeFeed) onClose();
+              }}
+            />
+          ) : (
+            <>
+              {progress && (
+                <SlpWizardProgress
+                  current={progress.current}
+                  total={progress.total}
+                  stepOf={t("ui.slurp.wizard.stepOf", {
+                    current: progress.current,
+                    total: progress.total,
+                    defaultValue: "Step {{current}} of {{total}}",
+                  })}
+                  label={t(`ui.slurp.wizard.label.${progress.label}`)}
+                />
               )}
 
-              {intro === 1 && (
-                <div className="mx-auto max-w-md space-y-4">
-                  <StepHeading
-                    centred
-                    title={t("ui.noodle.noodlerwizard.intro.attention.title")}
-                    help={t("ui.noodle.noodlerwizard.intro.attention.help")}
-                  />
-                  <ul className={SLP_GROUP_CLASS}>
-                    {[
-                      { icon: <Coins size={18} />, key: "cost" },
-                      { icon: <ImageIcon size={18} />, key: "images" },
-                      { icon: <Cpu size={18} />, key: "context" },
-                    ].map((item) => (
-                      <li key={item.key} className={cn(SLP_TYPE.body, "flex items-start gap-3 px-4 py-3")}>
-                        <span aria-hidden="true" className="mt-px shrink-0 text-[var(--noodle-accent-foreground)]">
-                          {item.icon}
-                        </span>
-                        <span className="text-pretty">{t(`ui.noodle.noodlerwizard.intro.attention.${item.key}`)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <p className={cn(SLP_TYPE.meta, "text-center text-pretty text-[var(--slurp-muted)]")}>
-                    {t("ui.noodle.noodlerwizard.intro.attention.footer")}
-                  </p>
-                </div>
-              )}
-
-              {intro === 2 && (
-                <div className="mx-auto max-w-2xl space-y-4">
-                  <StepHeading
-                    centred
-                    title={t("ui.noodle.noodlerwizard.intro.identity.title")}
-                    help={t("ui.noodle.noodlerwizard.intro.identity.help")}
-                  />
-                  <div className="grid items-center gap-4 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-                    <div className="flex flex-col items-center text-center">
-                      <Avatar
-                        account={{
-                          displayName: demoProfile.displayName,
-                          avatarUrl: demoProfile.avatarUrl,
-                          avatarCrop: demoProfile.avatarCrop,
-                        }}
-                        size="lg"
+              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto py-4 max-sm:py-2.5">
+                <div className={cn("w-full", centred && "my-auto")}>
+                  {intro === 0 && (
+                    <div className="mx-auto flex max-w-md flex-col items-center gap-4 text-center">
+                      <img
+                        src="/sprites/mari/Mari_wave.png"
+                        alt=""
+                        className="h-40 w-auto object-contain drop-shadow-[0_12px_28px_color-mix(in_srgb,var(--noodle-accent)_35%,transparent)] max-sm:h-36"
                       />
-                      <p className={cn(SLP_TYPE.title, "mt-2")}>{demoProfile.displayName}</p>
-                      <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>@{demoProfile.handle}</p>
-                      <p className={cn(SLP_TYPE.meta, "mt-1 font-semibold text-[var(--noodle-accent-foreground)]")}>
-                        {t(`ui.noodle.noodlerwizard.identityPreview.${disclosure}.connection`)}
+                      <StepHeading
+                        centred
+                        title={t("ui.noodle.noodlerwizard.intro.info.title")}
+                        help={t("ui.noodle.noodlerwizard.intro.info.help")}
+                      />
+                      <p className={cn(SLP_TYPE.body, "text-pretty text-[var(--slurp-muted)]")}>
+                        <span className="font-semibold text-[var(--slurp-text)]">
+                          {t("ui.noodle.noodlerwizard.intro.info.lead")}
+                        </span>{" "}
+                        {t("ui.noodle.noodlerwizard.intro.info.detail")}
                       </p>
                     </div>
-                    <DisclosureChoice
-                      value={disclosure}
-                      onChange={(value) => {
-                        setDisclosure(value);
-                        setPostExplored(false);
-                      }}
-                      t={t}
-                    />
-                  </div>
-                </div>
-              )}
+                  )}
 
-              {intro === 3 && (
-                <div className="space-y-4">
-                  <StepHeading
-                    centred
-                    title={t("ui.noodle.noodlerwizard.intro.locked.title")}
-                    help={t("ui.noodle.noodlerwizard.intro.locked.help")}
-                  />
-                  {/* Capped width: the wizard modal is 3xl, and a full-bleed card makes the demo post
+                  {intro === 1 && (
+                    <div className="mx-auto max-w-md space-y-4">
+                      <StepHeading
+                        centred
+                        title={t("ui.noodle.noodlerwizard.intro.attention.title")}
+                        help={t("ui.noodle.noodlerwizard.intro.attention.help")}
+                      />
+                      <ul className={SLP_GROUP_CLASS}>
+                        {[
+                          { icon: <Coins size={18} />, key: "cost" },
+                          { icon: <ImageIcon size={18} />, key: "images" },
+                          { icon: <Cpu size={18} />, key: "context" },
+                        ].map((item) => (
+                          <li key={item.key} className={cn(SLP_TYPE.body, "flex items-start gap-3 px-4 py-3")}>
+                            <span aria-hidden="true" className="mt-px shrink-0 text-[var(--noodle-accent-foreground)]">
+                              {item.icon}
+                            </span>
+                            <span className="text-pretty">
+                              {t(`ui.noodle.noodlerwizard.intro.attention.${item.key}`)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                      <p className={cn(SLP_TYPE.meta, "text-center text-pretty text-[var(--slurp-muted)]")}>
+                        {t("ui.noodle.noodlerwizard.intro.attention.footer")}
+                      </p>
+                    </div>
+                  )}
+
+                  {intro === 2 && (
+                    <div className="mx-auto max-w-2xl space-y-4">
+                      <StepHeading
+                        centred
+                        title={t("ui.noodle.noodlerwizard.intro.identity.title")}
+                        help={t("ui.noodle.noodlerwizard.intro.identity.help")}
+                      />
+                      <div className="grid items-center gap-4 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+                        <div className="flex flex-col items-center text-center">
+                          <Avatar
+                            account={{
+                              displayName: demoProfile.displayName,
+                              avatarUrl: demoProfile.avatarUrl,
+                              avatarCrop: demoProfile.avatarCrop,
+                            }}
+                            size="lg"
+                          />
+                          <p className={cn(SLP_TYPE.title, "mt-2")}>{demoProfile.displayName}</p>
+                          <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>@{demoProfile.handle}</p>
+                          <p className={cn(SLP_TYPE.meta, "mt-1 font-semibold text-[var(--noodle-accent-foreground)]")}>
+                            {t(`ui.noodle.noodlerwizard.identityPreview.${disclosure}.connection`)}
+                          </p>
+                        </div>
+                        <DisclosureChoice
+                          value={disclosure}
+                          onChange={(value) => {
+                            setDisclosure(value);
+                            setPostExplored(false);
+                          }}
+                          t={t}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {intro === 3 && (
+                    <div className="space-y-4">
+                      <StepHeading
+                        centred
+                        title={t("ui.noodle.noodlerwizard.intro.locked.title")}
+                        help={t("ui.noodle.noodlerwizard.intro.locked.help")}
+                      />
+                      {/* Capped width: the wizard modal is 3xl, and a full-bleed card makes the demo post
                     read as a page rather than as one item in a feed. */}
-                  <div className="mx-auto max-w-sm overflow-hidden rounded-2xl shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] max-sm:max-w-[20rem]">
-                    <LockedSlurpPostCard
-                      key={disclosure}
-                      post={{
-                        ...DEMO_POST,
-                        title: t("ui.noodle.noodlerwizard.demoPost.walkthrough.title"),
-                        imageUrl: DEMO_POST.imageUrl,
-                      }}
-                      profile={DEMO_PROFILE}
-                      subscribed={false}
-                      unlockPending={false}
-                      subscriptionPending={false}
-                      onUnlock={() => {}}
-                      onToggleSubscription={() => {}}
-                      demo={{
-                        body: t("ui.noodle.noodlerwizard.demoPost.walkthrough.body"),
-                        lockedTitle: t("ui.noodle.noodlerwizard.demoPost.walkthrough.lockedTitle"),
-                        unlockedLabel: t("ui.noodle.postaccess.unlocked"),
-                        unlockedImageUrl: "/sprites/mari/Mari_noodler_teaser_unlocked.webp",
-                        onReveal: () => setPostExplored(true),
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {intro === 4 && (
-                <div className="mx-auto max-w-2xl space-y-4">
-                  <StepHeading
-                    centred
-                    title={t("ui.noodle.noodlerwizard.intro.activity.title")}
-                    help={t("ui.noodle.noodlerwizard.intro.activity.help")}
-                  />
-                  <ChoiceSetting
-                    label={t("ui.noodle.noodlerwizard.intro.activity.title")}
-                    labelHidden
-                    variant="cards"
-                    value={activityChoice}
-                    onChange={chooseActivity}
-                    options={SLURP_ACTIVITY_PRESETS.map((choice) => ({
-                      value: choice,
-                      label: t(`ui.noodle.noodlerwizard.activityChoice.${choice}.title`),
-                      detail: t(`ui.noodle.noodlerwizard.activityChoice.${choice}.detail`),
-                    }))}
-                  />
-                  <div className={SLP_GROUP_CLASS}>
-                    <div className="px-4">
-                      <Toggle
-                        compact
-                        label={t("ui.noodle.noodlerwizard.nightQuiet")}
-                        value={nightQuiet}
-                        onChange={setNightQuiet}
-                      />
+                      <div className="mx-auto max-w-sm overflow-hidden rounded-2xl shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] max-sm:max-w-[20rem]">
+                        <LockedSlurpPostCard
+                          key={disclosure}
+                          post={{
+                            ...DEMO_POST,
+                            title: t("ui.noodle.noodlerwizard.demoPost.walkthrough.title"),
+                            imageUrl: DEMO_POST.imageUrl,
+                          }}
+                          profile={DEMO_PROFILE}
+                          subscribed={false}
+                          unlockPending={false}
+                          subscriptionPending={false}
+                          onUnlock={() => {}}
+                          onToggleSubscription={() => {}}
+                          demo={{
+                            body: t("ui.noodle.noodlerwizard.demoPost.walkthrough.body"),
+                            lockedTitle: t("ui.noodle.noodlerwizard.demoPost.walkthrough.lockedTitle"),
+                            unlockedLabel: t("ui.noodle.postaccess.unlocked"),
+                            unlockedImageUrl: "/sprites/mari/Mari_noodler_teaser_unlocked.webp",
+                            onReveal: () => setPostExplored(true),
+                          }}
+                        />
+                      </div>
                     </div>
-                    <div className="px-4">
-                      <Toggle
-                        compact
-                        label={t("ui.noodle.noodlerwizard.imagesShort")}
-                        value={imagesEnabled}
-                        onChange={setImagesEnabled}
+                  )}
+
+                  {intro === 4 && (
+                    <div className="mx-auto max-w-2xl space-y-4">
+                      <StepHeading
+                        centred
+                        title={t("ui.noodle.noodlerwizard.intro.activity.title")}
+                        help={t("ui.noodle.noodlerwizard.intro.activity.help")}
                       />
+                      <ChoiceSetting
+                        label={t("ui.noodle.noodlerwizard.intro.activity.title")}
+                        labelHidden
+                        variant="cards"
+                        value={activityChoice}
+                        onChange={chooseActivity}
+                        options={SLURP_ACTIVITY_PRESETS.map((choice) => ({
+                          value: choice,
+                          label: t(`ui.noodle.noodlerwizard.activityChoice.${choice}.title`),
+                          detail: t(`ui.noodle.noodlerwizard.activityChoice.${choice}.detail`),
+                        }))}
+                      />
+                      <div className={SLP_GROUP_CLASS}>
+                        <div className="px-4">
+                          <Toggle
+                            compact
+                            label={t("ui.noodle.noodlerwizard.nightQuiet")}
+                            value={nightQuiet}
+                            onChange={setNightQuiet}
+                          />
+                        </div>
+                        <div className="px-4">
+                          <Toggle
+                            compact
+                            label={t("ui.noodle.noodlerwizard.imagesShort")}
+                            value={imagesEnabled}
+                            onChange={setImagesEnabled}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 rounded-2xl bg-[var(--slurp-tint)] px-3 py-2.5">
+                        <img
+                          src="/sprites/mari/Mari_explaining.png"
+                          alt=""
+                          className="h-14 w-auto shrink-0 object-contain max-sm:h-12"
+                        />
+                        <p className={cn(SLP_TYPE.body, "text-pretty")}>
+                          {activityChoice === "manual"
+                            ? t("ui.noodle.noodlerwizard.intro.activity.manualPreview")
+                            : t("ui.noodle.noodlerwizard.intro.activity.preview", {
+                                count: postsPerDay,
+                              })}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3 rounded-2xl bg-[var(--slurp-tint)] px-3 py-2.5">
-                    <img
-                      src="/sprites/mari/Mari_explaining.png"
-                      alt=""
-                      className="h-14 w-auto shrink-0 object-contain max-sm:h-12"
-                    />
-                    <p className={cn(SLP_TYPE.body, "text-pretty")}>
-                      {activityChoice === "manual"
-                        ? t("ui.noodle.noodlerwizard.intro.activity.manualPreview")
-                        : t("ui.noodle.noodlerwizard.intro.activity.preview", {
-                            count: postsPerDay,
-                          })}
-                    </p>
-                  </div>
+                  )}
+
+                  {intro === null && setupLane === null && (
+                    <div className="mx-auto max-w-2xl space-y-5">
+                      <StepHeading
+                        centred
+                        title={t("ui.noodle.noodlerwizard.handoff.title")}
+                        help={t("ui.noodle.noodlerwizard.handoff.help")}
+                      />
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {(
+                          [
+                            { lane: "scene", icon: <MessagesSquare size={18} />, lead: true },
+                            { lane: "easy", icon: <SlpSparkleGlyph size={18} />, lead: false },
+                            { lane: "customize", icon: <SlidersHorizontal size={18} />, lead: false },
+                          ] as const
+                        ).map((card) => (
+                          <button
+                            key={card.lane}
+                            type="button"
+                            onClick={() => {
+                              setSetupLane(card.lane);
+                              setStep(1);
+                            }}
+                            className={cn(
+                              card.lane === "scene" && "sm:col-span-2",
+                              "group flex flex-col rounded-2xl p-5 text-start transition-[transform,background-color] duration-[var(--slurp-motion-fast)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transform-none",
+                              card.lead
+                                ? "bg-[image:var(--slurp-nav-active)] shadow-[var(--slurp-glow),var(--slurp-highlight)] ring-1 ring-inset ring-[var(--noodle-accent)]/45"
+                                : "bg-[var(--slurp-surface-raised)] shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] hover:bg-[var(--accent)]",
+                            )}
+                          >
+                            <span className={cn(SLP_TYPE.title, "flex items-center gap-2")}>
+                              <span aria-hidden="true" className="text-[var(--noodle-accent-foreground)]">
+                                {card.icon}
+                              </span>
+                              {t(`ui.noodle.noodlerwizard.handoff.${card.lane}.title`)}
+                            </span>
+                            <span className={cn(SLP_TYPE.body, "mt-1.5 block text-pretty text-[var(--slurp-muted)]")}>
+                              {t(`ui.noodle.noodlerwizard.handoff.${card.lane}.detail`)}
+                            </span>
+                            <span className="mt-4 flex items-center justify-between gap-2">
+                              <span className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>
+                                {card.lane === "scene"
+                                  ? t("ui.slurp.scene.laneMeta")
+                                  : t("ui.slurp.wizard.stepCount", {
+                                      count: SLP_SETUP_STEPS[card.lane].length,
+                                      defaultValue: "{{count}} steps",
+                                    })}
+                              </span>
+                              <span className="flex items-center gap-1 text-[13px] font-bold text-[var(--noodle-accent-foreground)]">
+                                {t(`ui.noodle.noodlerwizard.handoff.${card.lane}.action`)}
+                                <ChevronRight size={16} aria-hidden="true" className="shrink-0 rtl:rotate-180" />
+                              </span>
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <SlpOnboardingSteps model={model} />
                 </div>
-              )}
+              </div>
 
-              {intro === null && setupLane === null && (
-                <div className="mx-auto max-w-2xl space-y-5">
-                  <StepHeading
-                    centred
-                    title={t("ui.noodle.noodlerwizard.handoff.title")}
-                    help={t("ui.noodle.noodlerwizard.handoff.help")}
-                  />
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {(
-                      [
-                        { lane: "easy", icon: <SlpSparkleGlyph size={18} />, lead: true },
-                        { lane: "customize", icon: <SlidersHorizontal size={18} />, lead: false },
-                      ] as const
-                    ).map((card) => (
-                      <button
-                        key={card.lane}
-                        type="button"
-                        onClick={() => {
-                          setSetupLane(card.lane);
-                          setStep(1);
-                        }}
-                        className={cn(
-                          "group flex flex-col rounded-2xl p-5 text-start transition-[transform,background-color] duration-[var(--slurp-motion-fast)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transform-none",
-                          card.lead
-                            ? "bg-[image:var(--slurp-nav-active)] shadow-[var(--slurp-glow),var(--slurp-highlight)] ring-1 ring-inset ring-[var(--noodle-accent)]/45"
-                            : "bg-[var(--slurp-surface-raised)] shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] hover:bg-[var(--accent)]",
-                        )}
-                      >
-                        <span className={cn(SLP_TYPE.title, "flex items-center gap-2")}>
-                          <span aria-hidden="true" className="text-[var(--noodle-accent-foreground)]">
-                            {card.icon}
-                          </span>
-                          {t(`ui.noodle.noodlerwizard.handoff.${card.lane}.title`)}
-                        </span>
-                        <span className={cn(SLP_TYPE.body, "mt-1.5 block text-pretty text-[var(--slurp-muted)]")}>
-                          {t(`ui.noodle.noodlerwizard.handoff.${card.lane}.detail`)}
-                        </span>
-                        <span className="mt-4 flex items-center justify-between gap-2">
-                          <span className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>
-                            {t("ui.slurp.wizard.stepCount", {
-                              count: SLP_SETUP_STEPS[card.lane].length,
-                              defaultValue: "{{count}} steps",
-                            })}
-                          </span>
-                          <span className="flex items-center gap-1 text-[13px] font-bold text-[var(--noodle-accent-foreground)]">
-                            {t(`ui.noodle.noodlerwizard.handoff.${card.lane}.action`)}
-                            <ChevronRight size={16} aria-hidden="true" className="shrink-0 rtl:rotate-180" />
-                          </span>
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <SlpOnboardingSteps model={model} />
-            </div>
-          </div>
-
-          <SlpWizardFooter
-            back={back && { label: t("ui.noodle.noodlerwizard.back"), onClick: back }}
-            skip={
-              !selectionOnly && step < 5 && (intro !== null || setupLane !== null)
-                ? {
-                    label: intro === null ? t("ui.noodle.noodlerwizard.skip") : t("ui.noodle.noodlerwizard.skipIntro"),
-                    onClick: () => (intro === null ? void skip() : setIntro(null)),
-                    disabled: pending,
-                  }
-                : undefined
-            }
-            primary={primary}
-            // Creating profiles then writing first posts can take a while; say which half we are in.
-            note={running || reason}
-          />
+              <SlpWizardFooter
+                back={back && { label: t("ui.noodle.noodlerwizard.back"), onClick: back }}
+                skip={
+                  !selectionOnly && step < 5 && (intro !== null || setupLane !== null)
+                    ? {
+                        label:
+                          intro === null ? t("ui.noodle.noodlerwizard.skip") : t("ui.noodle.noodlerwizard.skipIntro"),
+                        onClick: () => (intro === null ? void skip() : setIntro(null)),
+                        disabled: pending,
+                      }
+                    : undefined
+                }
+                primary={primary}
+                // Creating profiles then writing first posts can take a while; say which half we are in.
+                note={running || reason}
+              />
+            </>
+          )}
         </div>
       </Modal>
       <Modal
