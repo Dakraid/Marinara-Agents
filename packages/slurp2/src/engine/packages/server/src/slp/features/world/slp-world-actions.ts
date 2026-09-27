@@ -271,9 +271,9 @@ export async function applyPulse(
         sides && hash(`${action.postId}:${actor.id}:side`) % 2 === 0
         ? slurpRivalryComment(`${action.postId}:${actor.id}`, sides.self, sides.rival)
         : slurpAudienceReactionFrom(
-          `${action.postId}:${actor.id}`,
-          slurpReactionBodiesForType(banks, fanTypeId, SLURP_SHIPPED_TYPE_REACTIONS[fanTypeId ?? ""] ?? []),
-        )
+            `${action.postId}:${actor.id}`,
+            slurpReactionBodiesForType(banks, fanTypeId, SLURP_SHIPPED_TYPE_REACTIONS[fanTypeId ?? ""] ?? []),
+          )
       : null,
   });
   if (!result) return false;
