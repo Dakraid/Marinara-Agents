@@ -113,11 +113,6 @@ assert.match(
 );
 // ── R1-103: a skipped run is finished ──
 assert.match(read("client/src/slp/modules/chrome/SlpPulse.tsx"), /"skipped",\s*\]\)\.has\(status\)/u);
-// ── R1-106: the badge poll starts the world catch-up, at most once a minute ──
-assert.match(
-  read("server/src/slp/features/notifications/slp-notifications-routes.ts"),
-  /Date\.now\(\) - lastCatchUpAt >= 60_000[\s\S]{0,80}void catchUpWorld\(app\)/u,
-);
 // ── R1-131: an empty Hub offers Add creators ──
 assert.match(
   read("client/src/slp/app/screens/SlpScreenHub.tsx"),

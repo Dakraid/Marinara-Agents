@@ -253,9 +253,9 @@ export async function slpMessagesMediaRoutes(app: FastifyInstance, messaging: Sl
     if (thread.coolUntil && thread.coolUntil > new Date().toISOString())
       return reply.code(409).send({ error: "This conversation is cooling off." });
     // The wait between two drawn pictures is the player's setting (minutes, 0 = off).
-    const cooldownMinutes = (await slurp.getSettings()).messagesViewerImageCooldownMinutes;
     // The whole thread, not the newest 120 messages: a long chat forgot the last picture (R1-015).
     // ponytail: reads every message of the thread; store the last picture time on the thread if chats get huge.
+    const cooldownMinutes = (await slurp.getSettings()).messagesViewerImageCooldownMinutes;
     const readyAt =
       cooldownMinutes > 0
         ? slurpViewerImageReadyAt(await messages.listMessages(thread.id, 100_000), cooldownMinutes)

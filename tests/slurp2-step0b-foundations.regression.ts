@@ -57,6 +57,7 @@ const unlockAt = locked.indexOf("await onUnlock(post.id)");
 const momentAt = locked.indexOf("if (spent) playSlpSpendMoment(origin)");
 assert.ok(unlockAt > 0 && momentAt > unlockAt, "the spend moment follows the resolved unlock");
 assert.match(locked, /spent = result\.outcome !== "free" && result\.outcome !== "already-unlocked"/u);
-assert.match(src("app/screens/SlpProfileLeadingActions.tsx"), /\.then\(\s*\(\) => playSlpSpendMoment\(origin\),/u);
+// Fix phase 1 (R1-077): a free subscription (SlurpCoins off) gets no coin fly, like a free gamble.
+assert.match(src("app/screens/SlpProfileLeadingActions.tsx"), /\.then\(\s*(?:\/\/[^\n]*\n\s*)?\(\) => \(slurpSubscriptionPriceOf\(viewerCreator\) > 0 \? playSlpSpendMoment\(origin\) : undefined\),/u);
 
 console.log("slurp2 step 0b foundations regression: ok");

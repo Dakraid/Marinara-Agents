@@ -29,7 +29,7 @@ const mediaRoutes = server("features/messages/slp-messages-media-routes.ts");
 assert.match(
   mediaRoutes,
   // Step 7: the helper now returns when the wait ends, so the 429 can say "Draw again at 4:30 PM".
-  /messagesViewerImageCooldownMinutes;\s+const readyAt =\s+cooldownMinutes > 0 \? slurpViewerImageReadyAt\(await messages\.listMessages\(thread\.id\), cooldownMinutes\) : null;[\s\S]*?if \(readyAt\) return reply\.code\(429\)/u,
+  /messagesViewerImageCooldownMinutes;\s+const readyAt =\s+cooldownMinutes > 0\s*\? slurpViewerImageReadyAt\(await messages\.listMessages\(thread\.id(?:, [\d_]+)?\), cooldownMinutes\)\s*: null;[\s\S]*?if \(readyAt\) return reply\.code\(429\)/u,
   "the route reads the setting and answers 429 only through the helper",
 );
 assert.doesNotMatch(mediaRoutes, /3 \* 60 \* 60_000/u, "no hard-coded 3 hours left");

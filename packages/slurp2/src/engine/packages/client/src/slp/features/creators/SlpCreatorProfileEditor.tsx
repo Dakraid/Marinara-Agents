@@ -100,8 +100,9 @@ export function SlurpCreatorProfileEditor({
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(initialDraft) || location !== initialLocation;
   useEffect(() => {
-    onDirtyChange?.(dirty);
-  }, [dirty, onDirtyChange]);
+    onDirtyChange?.(JSON.stringify(draft) !== JSON.stringify(initialDraft));
+    if (location !== initialLocation) onDirtyChange?.(true);
+  }, [draft, initialDraft, location, initialLocation, onDirtyChange]);
 
   saveStateRef.current = {
     isPending: updateProfile.isPending,
