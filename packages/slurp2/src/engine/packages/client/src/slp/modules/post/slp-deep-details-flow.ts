@@ -3,6 +3,8 @@ import type {
   SlpDeepDetailsRecord,
   SlpDeepDetailsResponse,
 } from "../../../../../shared/src/slp/slp-deep-details.js";
+import { formatFullTime } from "../../base/ui/slp-date-time";
+import { formatSlpPercent } from "../../base/ui/slp-number-format";
 import { mapOrigins, originTable } from "./slp-deep-details-origins";
 import type { SlpStepStatus } from "./SlpDeepDetailsParts";
 
@@ -81,7 +83,7 @@ const chat = (messages: { role: string; content: string }[]) =>
 
 const json = (value: unknown) => (value ? JSON.stringify(value, null, 2) : null);
 
-function postNodes(data: SlpDeepDetailsResponse, details: SlpDeepDetailsRecord): SlpFlowNode[] {
+function postNodes(data: SlpDeepDetailsResponse, details: SlpDeepDetailsRecord, locale: string): SlpFlowNode[] {
   const plan = details.plan;
   const weights = Object.entries(details.strategy.intentWeights).sort(([, a], [, b]) => b - a);
   const weightText = weights.map(([intent, weight]) => `${intent}: ${weight}`).join("\n");
@@ -113,8 +115,17 @@ function postNodes(data: SlpDeepDetailsResponse, details: SlpDeepDetailsRecord):
           value: topWeights || null,
           note: "The plan draws the post's intent from these odds.",
         }),
-        fact("Skipped posts", `${details.strategy.skipRate}%`, "Chance that a scheduled slot stays empty."),
-        fact("Posts without pictures", `${details.strategy.textOnlyRate} / 100`, "Chance of a text-only post."),
+        // Both rates are stored as whole percents; one percent format for both (04 §9 c).
+        fact(
+          "Skipped posts",
+          formatSlpPercent(details.strategy.skipRate / 100, locale),
+          "Chance that a scheduled slot stays empty.",
+        ),
+        fact(
+          "Posts without pictures",
+          formatSlpPercent(details.strategy.textOnlyRate / 100, locale),
+          "Chance of a text-only post.",
+        ),
       ],
       what: "The Creator's saved posting habits, read from the profile before every post.",
       why: "They keep one Creator's feed consistent from post to post.",
@@ -131,7 +142,7 @@ function postNodes(data: SlpDeepDetailsResponse, details: SlpDeepDetailsRecord):
       inputs: [],
       outputs: [
         fact("Workflow", data.plan?.workflow ?? null, "What asked for the post: the schedule, run now, or you."),
-        fact("Due", data.plan?.dueAt ?? null),
+        fact("Due", data.plan?.dueAt ? formatFullTime(data.plan.dueAt, locale) : null),
         row("Player direction", details.direction, { note: "Copied into the writing prompt as your direction." }),
         fact("Subscribers asked for", plan.demandTopic, "A topic the post should answer."),
         fact("Campaign", plan.campaignId),
@@ -315,7 +326,7 @@ const APPEARANCE_SOURCE: Record<SlpDeepDetailsImageRun["appearance"]["source"], 
   none: ["None", "The picture has no written look, so the image model invents one."],
 };
 
-function imageNodes(run: SlpDeepDetailsImageRun, brief: string | null, start: number): SlpFlowNode[] {
+function imageNodes(run: SlpDeepDetailsImageRun, brief: string | null, start: number, locale: string): SlpFlowNode[] {
   const style = run.styleProfile;
   const lastAttempt = run.attempts.at(-1);
   const failures = run.attempts.filter((attempt) => !attempt.ok).length;
@@ -533,7 +544,7 @@ function imageNodes(run: SlpDeepDetailsImageRun, brief: string | null, start: nu
       details: run.attempts.map((attempt) => ({
         label: `Attempt ${attempt.attempt} · ${attempt.ok ? "succeeded" : "failed"} · ${(attempt.durationMs / 1000).toFixed(1)} s`,
         text: [
-          `Started ${attempt.startedAt}`,
+          `Started ${formatFullTime(attempt.startedAt, locale) || attempt.startedAt}`,
           `Route: ${attempt.route === "host" ? "Engine image service" : "bundled image service"}`,
           attempt.servedBy ? `Served by fallback: ${modelLabel(attempt.servedBy.model, attempt.servedBy.name)}` : "",
           attempt.error ? `Error: ${attempt.error}` : "",
@@ -703,12 +714,13 @@ function pictureWithoutRun(data: SlpDeepDetailsResponse, details: SlpDeepDetails
 export function buildSlpDeepDetailsFlow(
   data: SlpDeepDetailsResponse,
   run: SlpDeepDetailsImageRun | null,
+  locale = "en",
 ): SlpFlowGraph | null {
   const details = data.details;
   if (!details) return null;
   const nodes = [
-    ...postNodes(data, details),
-    ...(run ? imageNodes(run, details.imageBrief, 5) : pictureWithoutRun(data, details, 5)),
+    ...postNodes(data, details, locale),
+    ...(run ? imageNodes(run, details.imageBrief, 5, locale) : pictureWithoutRun(data, details, 5)),
   ];
   const main = nodes.filter((node) => node.kind === "step" || node.kind === "model");
   const edges: SlpFlowEdge[] = main.slice(1).map((node, index) => ({

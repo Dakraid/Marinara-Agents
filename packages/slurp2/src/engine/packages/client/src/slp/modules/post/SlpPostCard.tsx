@@ -1,5 +1,5 @@
 import { SlpTimestamp } from "../../base/ui/SlpTimestamp";
-import { AtSign, ChevronDown, Flame, TrendingUp, MessageCircle, RefreshCw } from "lucide-react";
+import { AtSign, ChevronDown, ChevronRight, Flame, Info, TrendingUp, MessageCircle, RefreshCw, X } from "lucide-react";
 import { SlpHeartGlyph } from "../../base/chrome/SlpGlyphs";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { slurpPostWentViral, slurpReachWeek } from "../../../../../shared/src/slp/slp-reach.js";
@@ -174,7 +174,13 @@ export function SlpPostCard({
     : slurpReachWeek(post.authorAccountId, post.createdAt) === "featured"
       ? "featured"
       : null;
-  const [imageContextOpen, setImageContextOpen] = useState(false);
+  const [imageContextOpen, setImageContextOpenState] = useState(false);
+  const [imageContextExpanded, setImageContextExpanded] = useState(true);
+  // Opening it from the menu shows the details at once; the header folds them away.
+  const setImageContextOpen: typeof setImageContextOpenState = (next) => {
+    setImageContextExpanded(true);
+    setImageContextOpenState(next);
+  };
   const [promptDraft, setPromptDraft] = useState<string | null>(null);
   const imageDescription =
     typeof post.metadata?.imageDescription === "string" ? post.metadata.imageDescription.trim() : "";
@@ -582,23 +588,54 @@ export function SlpPostCard({
           </div>
         )}
         {imageContextOpen && hasImageContext && (
-          <div className="mt-3 space-y-2 rounded-xl border border-[var(--noodle-accent)]/35 bg-[var(--noodle-accent)]/10 p-3 text-xs leading-5">
-            {contextImagePrompt?.trim() && (
-              <div>
-                <span className="mb-1 flex items-center gap-1.5 font-semibold text-[var(--noodle-accent-foreground)]">
-                  <ImageIcon size={13} aria-hidden="true" />
-                  {localizeUi("ui.noodle.noodlepostcard.imagePrompt")}
+          // Info, not an alert: a neutral surface (the tint belongs to "Picture failed"), its own close.
+          <div className="mt-3 rounded-xl bg-[color-mix(in_srgb,var(--slurp-text)_6%,transparent)] text-xs leading-5">
+            <div className="flex items-center">
+              <button
+                type="button"
+                aria-expanded={imageContextExpanded}
+                onClick={() => setImageContextExpanded((value) => !value)}
+                className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-xl ps-3 text-start font-semibold text-[var(--slurp-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] [&_svg]:!text-current"
+              >
+                <Info size={14} aria-hidden="true" className="shrink-0" />
+                <span className="truncate">
+                  {localizeUi("ui.slurp.post.imageContextTitle", { defaultValue: "How this picture was made" })}
                 </span>
-                <p className="whitespace-pre-wrap break-words">{contextImagePrompt}</p>
-              </div>
-            )}
-            {imageDescription && (
-              <div>
-                <span className="mb-1 block font-semibold text-[var(--noodle-accent-foreground)]">
-                  {localizeUi("ui.slurp.post.imageDescription", { defaultValue: "Vision model description" })}
-                </span>
-                <p className="whitespace-pre-wrap break-words">{imageDescription}</p>
-              </div>
+                <ChevronRight
+                  size={14}
+                  aria-hidden="true"
+                  className={cn(
+                    "shrink-0 transition-transform duration-[var(--slurp-motion-base)] motion-reduce:transition-none",
+                    imageContextExpanded && "rotate-90",
+                  )}
+                />
+              </button>
+              <button
+                type="button"
+                onClick={() => setImageContextOpen(false)}
+                aria-label={localizeUi("ui.slurp.post.imageContextClose", { defaultValue: "Close picture details" })}
+                className="grid size-11 shrink-0 place-items-center rounded-xl text-[var(--slurp-muted)] hover:text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] [&_svg]:!text-current"
+              >
+                <X size={16} aria-hidden="true" />
+              </button>
+            </div>
+            {imageContextExpanded && (
+              <dl className="space-y-2 px-3 pb-3">
+                {contextImagePrompt?.trim() && (
+                  <div>
+                    <dt className="font-semibold">{localizeUi("ui.noodle.noodlepostcard.imagePrompt")}</dt>
+                    <dd className="whitespace-pre-wrap break-words text-[var(--slurp-muted)]">{contextImagePrompt}</dd>
+                  </div>
+                )}
+                {imageDescription && (
+                  <div>
+                    <dt className="font-semibold">
+                      {localizeUi("ui.slurp.post.imageDescription", { defaultValue: "What the picture shows" })}
+                    </dt>
+                    <dd className="whitespace-pre-wrap break-words text-[var(--slurp-muted)]">{imageDescription}</dd>
+                  </div>
+                )}
+              </dl>
             )}
           </div>
         )}

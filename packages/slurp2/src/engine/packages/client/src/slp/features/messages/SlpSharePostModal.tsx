@@ -76,7 +76,11 @@ export function SlpSharePostModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={localizeUi("ui.slurp.post.share", { defaultValue: "Share post" })}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={localizeUi("ui.slurp.post.sendInChat", { defaultValue: "Send in a chat" })}
+    >
       <div className="space-y-3 p-4">
         <label className="flex min-h-10 items-center gap-2 rounded-lg bg-[var(--slurp-surface)] px-3 ring-1 ring-inset ring-[var(--noodle-divider)]">
           <Search size={14} aria-hidden="true" />

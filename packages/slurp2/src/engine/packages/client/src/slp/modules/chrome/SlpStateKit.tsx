@@ -30,15 +30,19 @@ export function SlpSkeleton({
   shape = "rows",
   count = 4,
   label,
+  waitText,
 }: {
   shape?: "rows" | "thread" | "card" | "stories" | "hub" | "posts" | "grid" | "creators";
   count?: number;
   label?: string;
+  /** What the wait line says now ("Retrying…"); shown at once and in place of "Still connecting…". */
+  waitText?: string;
 }) {
   const { t: localizeUi } = useUiTranslation();
-  const [slow, setSlow] = useState(false);
+  const [late, setLate] = useState(false);
+  const slow = late || Boolean(waitText);
   useEffect(() => {
-    const timer = window.setTimeout(() => setSlow(true), STILL_CONNECTING_MS);
+    const timer = window.setTimeout(() => setLate(true), STILL_CONNECTING_MS);
     return () => window.clearTimeout(timer);
   }, []);
   const items = Array.from({ length: count }, (_, index) => index);
@@ -54,7 +58,7 @@ export function SlpSkeleton({
             : "pt-3 text-center",
       )}
     >
-      {localizeUi("ui.slurp.state.stillConnecting", { defaultValue: "Still connecting…" })}
+      {waitText ?? localizeUi("ui.slurp.state.stillConnecting", { defaultValue: "Still connecting…" })}
     </p>
   );
   return (

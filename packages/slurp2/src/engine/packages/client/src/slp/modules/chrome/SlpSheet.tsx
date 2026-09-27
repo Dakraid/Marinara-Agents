@@ -10,6 +10,7 @@
 import {
   useContext,
   useEffect,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -345,6 +346,7 @@ export function SlpSheetItem({
   onSelect,
   tone = "default",
   disabled,
+  hint,
   expanded,
 }: {
   children: ReactNode;
@@ -352,14 +354,18 @@ export function SlpSheetItem({
   /** "muted" for operator (Creator tools) rows, "danger" for destructive ones. */
   tone?: "default" | "muted" | "danger";
   disabled?: boolean;
+  /** Why a disabled row is off. Sits under the row at full contrast, not faded with it. */
+  hint?: string;
   /** For a row that opens a sub-list in place. */
   expanded?: boolean;
 }) {
-  return (
+  const hintId = useId();
+  const row = (
     <button
       type="button"
       role="menuitem"
       disabled={disabled}
+      aria-describedby={hint ? hintId : undefined}
       aria-expanded={expanded}
       onClick={onSelect}
       className={cn(
@@ -372,6 +378,15 @@ export function SlpSheetItem({
     >
       {children}
     </button>
+  );
+  if (!hint) return row;
+  return (
+    <>
+      {row}
+      <p id={hintId} className={cn(SLP_TYPE.meta, "-mt-1.5 pb-2 pe-3 ps-11 text-[var(--slurp-muted)]")}>
+        {hint}
+      </p>
+    </>
   );
 }
 

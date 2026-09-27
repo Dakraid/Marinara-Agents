@@ -1,12 +1,13 @@
 import {
   Download,
   Flag,
-  ImageIcon,
+  ImageDown,
+  Info,
   MoreHorizontal,
   Pencil,
   RefreshCw,
   ScanSearch,
-  Share2,
+  Send,
   Trash2,
   UserRound,
 } from "lucide-react";
@@ -120,18 +121,31 @@ export function SlpPostMenu({
         title={localizeUi("ui.noodle.noodlepostcard.postActions")}
       >
         <SlpSheetGroup>
-          <SlpSheetItem onSelect={run(() => (onShare ? onShare() : downloadShareCard(`slurp-${post.id}.png`)))}>
-            <Share2 size={14} />
-            {localizeUi("ui.slurp.post.share", { defaultValue: "Share post" })}
+          {/* Two rows with one outcome each: sending needs a persona, saving never does (04 §8). */}
+          <SlpSheetItem
+            disabled={!onShare}
+            hint={
+              onShare
+                ? undefined
+                : localizeUi("ui.slurp.post.sendInChatNeedsPersona", {
+                    defaultValue: "Choose a persona first to send posts in chats.",
+                  })
+            }
+            onSelect={run(() => onShare?.())}
+          >
+            <Send size={14} />
+            {localizeUi("ui.slurp.post.sendInChat", { defaultValue: "Send in a chat" })}
           </SlpSheetItem>
-          <SlpSheetItem onSelect={run(downloadImage)}>
-            <Download size={14} />
-            {localizeUi("ui.slurp.post.downloadImage", { defaultValue: "Download image" })}
+          <SlpSheetItem onSelect={run(() => downloadShareCard(`slurp-${post.id}.png`))}>
+            <ImageDown size={14} />
+            {localizeUi("ui.slurp.post.saveImage", { defaultValue: "Save as image" })}
           </SlpSheetItem>
-          <SlpSheetItem onSelect={run(() => downloadShareCard(`slurp-${post.id}-card.png`))}>
-            <Download size={14} />
-            {localizeUi("ui.slurp.post.downloadCard", { defaultValue: "Download post card" })}
-          </SlpSheetItem>
+          {post.imageUrl && (
+            <SlpSheetItem onSelect={run(downloadImage)}>
+              <Download size={14} />
+              {localizeUi("ui.slurp.post.downloadImage", { defaultValue: "Download image" })}
+            </SlpSheetItem>
+          )}
           {openCreator && (
             <SlpSheetItem onSelect={run(openCreator)}>
               <UserRound size={14} />
@@ -171,10 +185,10 @@ export function SlpPostMenu({
             )}
             {hasImageContext && (
               <SlpSheetItem tone="muted" onSelect={run(() => setImageContextOpen((open) => !open))}>
-                <ImageIcon size={14} />
+                <Info size={14} />
                 {imageContextOpen
-                  ? localizeUi("ui.slurp.post.hideImageContext", { defaultValue: "Hide image context" })
-                  : localizeUi("ui.slurp.post.showImageContext", { defaultValue: "Show image context" })}
+                  ? localizeUi("ui.slurp.post.hideImageContext", { defaultValue: "Hide how this picture was made" })
+                  : localizeUi("ui.slurp.post.showImageContext", { defaultValue: "How this picture was made" })}
               </SlpSheetItem>
             )}
             {ctx.postManagement && (
@@ -260,7 +274,7 @@ export function SlpPostSurfaceMenu({
               }}
               className="flex min-h-10 w-full items-center gap-2 px-3 text-start hover:bg-white/10"
             >
-              <Share2 size={14} /> {localizeUi("ui.slurp.post.share", { defaultValue: "Share post" })}
+              <ImageDown size={14} /> {localizeUi("ui.slurp.post.saveImage", { defaultValue: "Save as image" })}
             </button>
           )}
           {deepDetailsPostId && (
