@@ -4668,7 +4668,7 @@
   "ui.slurp.post.collabWith": "with",
   "ui.slurp.earnings.entry.sponsor": "Paid partnership",
   "ui.slurp.ties.title": "Collabs & rivalries",
-  "ui.slurp.ties.detail": "Who works with whom, and who does not get along",
+  "ui.slurp.ties.detail": "Who works together, and who does not",
   "ui.slurp.ties.loadFailed": "Could not load what is going on between your Creators.",
   "ui.slurp.ties.someone": "Someone",
   "ui.slurp.ties.empty": "Nothing going on between your Creators yet. Collab requests, brand deals and rivalries show up here as the world moves.",
@@ -4691,11 +4691,11 @@
   "ui.slurp.ties.accept": "Say yes",
   "ui.slurp.ties.decline": "No thanks",
   "ui.slurp.ties.push": "Make it happen",
-  "ui.slurp.ties.block": "Never pair them",
+  "ui.slurp.ties.block": "Block",
   "ui.slurp.ties.suggestTitle": "Suggest a pairing",
   "ui.slurp.ties.suggestDetail": "Pick two Creators. The one who is asked still answers in their own way.",
   "ui.slurp.ties.suggestPick": "Pick two Creators",
-  "ui.slurp.ties.suggestPair": "Suggest {{a}} × {{b}}",
+  "ui.slurp.ties.suggestPair": "Suggest this pairing",
   "ui.slurp.ties.suggested": "Suggested. They will talk it over.",
   "ui.slurp.ties.rivalries": "Rivalries",
   "ui.slurp.ties.rivalry.shade": "{{a}} is throwing shade at {{b}}",
@@ -4724,5 +4724,7 @@
   "ui.slurp.ties.offerTitle": "{{brand}} wants a post about {{product}}",
   "ui.slurp.ties.fee": "{{count}} <coin/>",
   "ui.slurp.ties.offerYes": "Take the deal",
-  "ui.slurp.ties.offerNo": "Pass"
+  "ui.slurp.ties.offerNo": "Pass",
+  "ui.slurp.ties.blockLabel": "Never pair {{a}} and {{b}}",
+  "ui.slurp.ties.deal.took": "{{name}} took the deal, paid {{count}} <coin/>"
 }

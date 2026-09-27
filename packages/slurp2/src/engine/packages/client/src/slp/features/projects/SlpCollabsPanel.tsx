@@ -17,7 +17,9 @@ import {
   type SlurpTiesRivalry,
 } from "./slp-ties-hooks";
 
-const rowClass = "flex flex-col gap-2 px-4 py-3";
+const rowClass = "flex flex-col gap-2 py-3";
+// Inside Studio's group surface: rows and hairlines, no second box.
+const listClass = "divide-y divide-[var(--noodle-divider)]";
 
 /** Two overlapping avatars: who is in it. */
 function Pair({ a, b }: { a?: SlurpTiesCreator; b?: SlurpTiesCreator }) {
@@ -127,7 +129,8 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
       });
     if (deal.status === "declined")
       return t(`ui.slurp.ties.deal.declined.${deal.decline ?? "offBrand"}`, { brand: deal.brand, name: who });
-    return t(deal.status === "done" ? "ui.slurp.ties.deal.done" : "ui.slurp.ties.deal.accepted", {
+    const done = deal.postId ? "ui.slurp.ties.deal.done" : "ui.slurp.ties.deal.took";
+    return t(deal.status === "done" ? done : "ui.slurp.ties.deal.accepted", {
       brand: deal.brand,
       name: who,
       count: deal.fee,
@@ -159,7 +162,7 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
       {openCollabs.length > 0 && (
         <section className="space-y-2" aria-label={t("ui.slurp.ties.requests")}>
           <h4 className={cn(SLP_EYEBROW_CLASS, "px-1")}>{t("ui.slurp.ties.requests")}</h4>
-          <ul className={SLP_GROUP_CLASS}>
+          <ul className={listClass}>
             {openCollabs.map((collab) => {
               const toMe = collab.status === "asked" && byId.get(collab.partnerId)?.own;
               return (
@@ -207,6 +210,7 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
                       variant="tertiary"
                       disabled={busy}
                       onClick={() => actions.block.mutate(collab.id, { onError })}
+                      aria-label={t("ui.slurp.ties.blockLabel", { a: name(collab.hostId), b: name(collab.partnerId) })}
                       className="min-h-11 text-sm"
                     >
                       <Ban size={15} aria-hidden="true" />
@@ -222,7 +226,7 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
 
       <section className="space-y-2" aria-label={t("ui.slurp.ties.suggestTitle")}>
         <h4 className={cn(SLP_EYEBROW_CLASS, "px-1")}>{t("ui.slurp.ties.suggestTitle")}</h4>
-        <div className="space-y-3 rounded-2xl bg-[var(--slurp-surface-raised)] p-4 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
+        <div className="space-y-3">
           <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>{t("ui.slurp.ties.suggestDetail")}</p>
           <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("ui.slurp.ties.suggestTitle")}>
             {suggestable.map((creator) => {
@@ -252,9 +256,7 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
             className="min-h-11 w-full px-4 text-sm sm:w-auto"
           >
             <Sparkles size={16} aria-hidden="true" />
-            {picked.length === 2
-              ? t("ui.slurp.ties.suggestPair", { a: name(picked[0]!), b: name(picked[1]!) })
-              : t("ui.slurp.ties.suggestPick")}
+            {picked.length === 2 ? t("ui.slurp.ties.suggestPair") : t("ui.slurp.ties.suggestPick")}
           </SlpPrimaryButton>
         </div>
       </section>
@@ -262,7 +264,7 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
       {view.rivalries.length > 0 && (
         <section className="space-y-2" aria-label={t("ui.slurp.ties.rivalries")}>
           <h4 className={cn(SLP_EYEBROW_CLASS, "px-1")}>{t("ui.slurp.ties.rivalries")}</h4>
-          <ul className={SLP_GROUP_CLASS}>
+          <ul className={listClass}>
             {view.rivalries.map((rivalry) => (
               <li key={rivalry.id} className={rowClass} data-slurp-tie-rivalry={rivalry.stage}>
                 <Row
@@ -276,7 +278,7 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
                           b: name(rivalry.toId),
                           // The cause is told to the one who started it ("…after you did").
                           cause: rivalry.cause
-                            .replace(/\byour\b/gu, `${name(rivalry.fromId)}'s`)
+                            .replace(/\byours?\b/gu, `${name(rivalry.fromId)}'s`)
                             .replace(/\byou\b/gu, name(rivalry.fromId)),
                         })
                   }
@@ -301,7 +303,7 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
       {(pastCollabs.length > 0 || view.deals.length > 0) && (
         <section className="space-y-2" aria-label={t("ui.slurp.ties.lately")}>
           <h4 className={cn(SLP_EYEBROW_CLASS, "px-1")}>{t("ui.slurp.ties.lately")}</h4>
-          <ul className={SLP_GROUP_CLASS}>
+          <ul className={listClass}>
             {view.deals.map((deal) => (
               <li key={deal.id} className={rowClass} data-slurp-tie-deal={deal.status}>
                 <Row
@@ -333,11 +335,11 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
       {view.blocked.length > 0 && (
         <section className="space-y-2" aria-label={t("ui.slurp.ties.blockedTitle")}>
           <h4 className={cn(SLP_EYEBROW_CLASS, "px-1")}>{t("ui.slurp.ties.blockedTitle")}</h4>
-          <ul className={SLP_GROUP_CLASS}>
+          <ul className={listClass}>
             {view.blocked.map((pair) => {
               const [a, b] = pair.split("|");
               return (
-                <li key={pair} className="flex items-center gap-3 px-4 py-2">
+                <li key={pair} className="flex items-center gap-3 py-2">
                   <span className="min-w-0 flex-1">
                     <Row
                       a={byId.get(a ?? "")}

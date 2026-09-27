@@ -46,6 +46,8 @@ export type SlurpTiesDeal = {
   decline: "offBrand" | "noAds" | "notNow" | "noAnswer" | "player" | null;
   offeredAt: string;
   answeredAt: string | null;
+  /** The sponsored post; none when the player took the deal for their own page. */
+  postId: string | null;
 };
 export type SlurpTiesView = {
   creators: SlurpTiesCreator[];
