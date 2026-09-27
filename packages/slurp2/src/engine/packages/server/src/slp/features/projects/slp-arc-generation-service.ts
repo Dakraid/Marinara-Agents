@@ -26,7 +26,11 @@ import {
 import { SLURP_MODIFIER_KINDS } from "../../modules/creators/slp-creator-state.js";
 import { modelAnswerForCorrection, requireModelAnswer } from "../../base/model/slp-model-answer.js";
 import { slpSamplingOptions } from "../../base/prompting/slp-sampling-options.js";
-import { claimSlurpModelBudget, slurpModelWorkerAllows } from "../../base/model/slp-model-worker.js";
+import {
+  claimSlurpModelBudget,
+  slurpModelBudgetPaceOpen,
+  slurpModelWorkerAllows,
+} from "../../base/model/slp-model-worker.js";
 import { composeSlurpPromptBlocks, type SlurpPromptBlockOverrides } from "../../base/prompting/slp-prompt-blocks.js";
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
 
@@ -180,6 +184,9 @@ export async function generateSlurpArc(
     }
     const workerContext = admissionMode.kind === "background" ? "background" : "present";
     if (!slurpModelWorkerAllows(settings.modelBudget, workerContext)) return null;
+    // A storyline the world starts on its own is upkeep and follows the day's pace; one the player asks for is not.
+    if (workerContext === "background" && !(await slurpModelBudgetPaceOpen(db, settings.modelBudget, "arc")))
+      return null;
     if (!(await claimSlurpModelBudget(db, settings.modelBudget, "arc"))) return null;
     const connections = createConnectionsStorage(db);
     const connection = await resolveSlurpTextConnection(

@@ -99,18 +99,46 @@ export function slurpModelBudgetCap(cap: number, kind: SlurpModelJobKind): numbe
   return kind === "dm_reply" ? cap : cap - Math.floor(cap / 4);
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Pure world upkeep: always paced over the day (nothing the player pressed waits on these). */
+export const SLURP_UPKEEP_JOB_KINDS: ReadonlySet<SlurpModelJobKind> = new Set([
+  "rewrite",
+  "brief",
+  "bank_grow",
+  "continuity",
+]);
+
+/**
+ * How much of a daily cap world upkeep may have used by `at` (user, fix phase 1b): the day's calls are
+ * spread evenly over the whole (UTC ledger) day, so the budget is reached by the evening instead of
+ * being spent in the first hour and then leaving the world quiet until midnight. One hour of headroom
+ * lets the first call of the day through; allowance a quiet morning did not use carries over.
+ */
+export function slurpModelBudgetPacedCap(cap: number, at: Date): number {
+  const dayStart = Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate());
+  const elapsed = Math.min(1, (at.getTime() - dayStart) / DAY_MS);
+  return Math.min(cap, Math.ceil(cap * elapsed + cap / 24));
+}
+
 export function spendSlurpModelBudget(
   budget: SlurpModelBudget,
   ledger: SlurpModelBudgetLedger,
   kind: SlurpModelJobKind,
+  /** Set for world upkeep (see `SLURP_UPKEEP_JOB_KINDS`, written audience replies, background storylines). */
+  pacedAt?: Date,
 ): SlurpModelBudgetLedger | null {
   const policy = budget.jobs[kind];
   const kindCalls = ledger.byKindToday[kind] ?? 0;
+  const dayCap = slurpModelBudgetCap(budget.callsPerDay, kind);
   if (
     !policy.enabled ||
     slurpModelBudgetCap(budget.callsPerHour, kind) <= ledger.callsThisHour ||
-    slurpModelBudgetCap(budget.callsPerDay, kind) <= ledger.callsToday ||
-    policy.maxPerDay <= kindCalls
+    dayCap <= ledger.callsToday ||
+    policy.maxPerDay <= kindCalls ||
+    (pacedAt &&
+      (slurpModelBudgetPacedCap(dayCap, pacedAt) <= ledger.callsToday ||
+        slurpModelBudgetPacedCap(policy.maxPerDay, pacedAt) <= kindCalls))
   )
     return null;
   return {

@@ -16,7 +16,11 @@
  * decided by the same rapport the rest of the system runs on, so a regular who asked a real
  * question gets a real answer and a passer-by does not.
  */
-import { claimSlurpModelBudget, slurpModelWorkerAllows } from "../../base/model/slp-model-worker.js";
+import {
+  claimSlurpModelBudget,
+  slurpModelBudgetPaceOpen,
+  slurpModelWorkerAllows,
+} from "../../base/model/slp-model-worker.js";
 import type { DB } from "../../../db/connection.js";
 import { logger } from "../../../lib/logger.js";
 import { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
@@ -54,6 +58,8 @@ export async function drainSlurpAudienceReplies(db: DB, limit = MAX_PER_DRAIN): 
   // A written answer is a model call like any other: it follows the AI budget's mode, its
   // connection and its daily caps (R1-105). It only runs with the player present.
   if (!slurpModelWorkerAllows(settings.modelBudget, "present")) return 0;
+  // Upkeep, not a request: the day's written replies are spread over the day (R1-106).
+  if (!(await slurpModelBudgetPaceOpen(db, settings.modelBudget, "thread"))) return 0;
   const connection = await resolveSlurpTextConnection(
     createConnectionsStorage(db),
     settings.modelBudget.connectionId ?? settings.generationConnectionId,

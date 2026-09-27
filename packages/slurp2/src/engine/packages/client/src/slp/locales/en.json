@@ -3231,7 +3231,7 @@
   "ui.slurp.settings.simulation.fields.funnel.rollCadence": "Roll cadence",
   "ui.slurp.settings.simulation.fields.funnel.rollCadence.detail": "How often somebody may decide to subscribe.",
   "ui.slurp.settings.simulation.fields.clock.tickMinutes": "Background tick every",
-  "ui.slurp.settings.simulation.fields.clock.tickMinutes.detail": "Real minutes between world ticks while Run in the background is on.",
+  "ui.slurp.settings.simulation.fields.clock.tickMinutes.detail": "Real minutes between world ticks while you are in Slurp, and while Run in the background is on.",
   "ui.slurp.settings.simulation.fields.clock.catchUpHours": "Catch-up limit",
   "ui.slurp.settings.simulation.fields.clock.catchUpHours.detail": "Longest absence one tick catches up on.",
   "ui.slurp.settings.simulation.fields.clock.maxEventsPerTick": "Events per tick",
@@ -3303,7 +3303,7 @@
   "ui.slurp.settings.simulation.fields.economy.audienceCommissionPrice": "Commission price",
   "ui.slurp.settings.simulation.fields.economy.audienceCommissionPrice.detail": "Coins an audience commission pays.",
   "ui.slurp.settings.simulation.fields.clock.backgroundTimer": "Run in the background",
-  "ui.slurp.settings.simulation.fields.clock.backgroundTimer.detail": "Tick the world on the background timer, even while Slurp is closed. Off, it still catches up when you open Slurp and about four times a day.",
+  "ui.slurp.settings.simulation.fields.clock.backgroundTimer.detail": "Tick the world on the background timer, even while Slurp is closed. Off, it still ticks every few minutes while you are in Slurp and about four times a day while you are away.",
   "ui.slurp.settings.simulation.fields.world.questionNeedsRecentPost": "Questions need a recent post",
   "ui.slurp.settings.simulation.fields.world.questionNeedsRecentPost.detail": "Off lets somebody ask under an older post.",
   "ui.slurp.settings.simulation.fields.funnel.ambientCanPay": "Ambient profiles can pay",
@@ -4550,5 +4550,6 @@
   "ui.slurp.site.signUp": "Sign someone up",
   "ui.slurp.site.feed": "Go to the feed",
   "ui.slurp.site.tour": "Show me around",
-  "ui.slurp.unlocksheet.gambleNeedsCoins": "You need {{amount}} <coin/> to take the bet."
+  "ui.slurp.unlocksheet.gambleNeedsCoins": "You need {{amount}} <coin/> to take the bet.",
+  "ui.slurp.settings.aiBudget.paced": "World work spreads its calls evenly over the day; replies to your own messages are never held back."
 }

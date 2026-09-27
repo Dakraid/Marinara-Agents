@@ -182,7 +182,11 @@ export function SlurpAudienceConfigSettings({
                   hour: usage.callsThisHour,
                   day: usage.callsToday,
                 })
-              : t("ui.slurp.settings.aiBudget.usageUnavailable", { defaultValue: "Usage is unavailable." })}
+              : t("ui.slurp.settings.aiBudget.usageUnavailable", { defaultValue: "Usage is unavailable." })}{" "}
+            {t("ui.slurp.settings.aiBudget.paced", {
+              defaultValue:
+                "World work spreads its calls evenly over the day; replies to your own messages are never held back.",
+            })}
             <button type="button" className="ms-2 underline" onClick={() => void refreshUsage()}>
               <RefreshCw className="me-1 inline" size={14} aria-hidden="true" />
               {t("ui.slurp.settings.aiBudget.refresh", { defaultValue: "Refresh" })}

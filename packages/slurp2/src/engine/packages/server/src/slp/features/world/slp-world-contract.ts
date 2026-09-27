@@ -3,3 +3,4 @@ export { drainSlurpPendingText, enqueueSlurpPendingText } from "./slp-pending-te
 export { topUpSlurpReactionBank } from "./slp-reaction-bank-operation.js";
 export { advanceSlurpWorld } from "./slp-world-operation.js";
 export { resolveSlurpEventInstruction } from "./slp-story-context.js";
+export { markSlurpPlayerPresent } from "./slp-world-tick-state.js";

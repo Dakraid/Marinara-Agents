@@ -4,6 +4,12 @@ import {
   slpCanAffordGamble,
   slpGambleUnlockPrice,
 } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-post-offers.ts";
+import {
+  readSlurpModelBudgetLedger,
+  slurpModelBudgetPacedCap,
+  slurpModelBudgetSchema,
+  spendSlurpModelBudget,
+} from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-model-budget.ts";
 import { slurp2Source } from "./slurp2-source.ts";
 
 const root = "packages/slurp2/src/engine/packages";
@@ -24,5 +30,42 @@ assert.ok(
 const card = readSlurp2Source("client", "modules/post/SlpLockedPostCard.tsx");
 assert.match(card, /disabled=\{unlockPending \|\| transaction !== null \|\| gambleBlocked\}/u);
 assert.match(card, /ui\.slurp\.unlocksheet\.gambleNeedsCoins/u, "the reason is on the button");
+
+// R1-106: world model work is spread evenly over the (UTC ledger) day; a player's own reply never is.
+const at = (hour: number) => new Date(Date.UTC(2026, 8, 27, hour, 0, 0));
+assert.equal(slurpModelBudgetPacedCap(20, at(0)), 1, "the first call of the day gets through");
+assert.equal(slurpModelBudgetPacedCap(20, at(12)), 11, "half the day, about half the calls");
+assert.equal(slurpModelBudgetPacedCap(20, new Date(Date.UTC(2026, 8, 27, 23, 59))), 20, "all of it by the evening");
+assert.equal(slurpModelBudgetPacedCap(2, at(1)), 1);
+const budget = slurpModelBudgetSchema.parse({ callsPerHour: 100, callsPerDay: 20 });
+const early = { ...readSlurpModelBudgetLedger(null, at(1)), callsToday: 2 };
+assert.equal(spendSlurpModelBudget(budget, early, "rewrite", at(1)), null, "paced upkeep waits for the clock");
+assert.ok(spendSlurpModelBudget(budget, early, "rewrite"), "unpaced (a player's request) goes through");
+assert.ok(spendSlurpModelBudget(budget, early, "dm_reply"), "replies are never paced");
+const evening = { ...readSlurpModelBudgetLedger(null, at(20)), callsToday: 2 };
+assert.ok(spendSlurpModelBudget(budget, evening, "rewrite", at(20)), "a quiet morning's allowance carries over");
+// Presence from the cheap badge poll; the world clock runs every wake while the player is here.
+const badge = readSlurp2Source("server", "features/notifications/slp-notifications-routes.ts");
+assert.match(badge, /markSlurpPlayerPresent\(\);\s*return \{ unseenCount/u);
+const worldScheduler = readSlurp2Source("server", "features/world/slp-world-scheduler-service.ts");
+assert.match(worldScheduler, /if \(!present && !slurpWorldTimerDue\(clock, lastRunMs, Date\.now\(\)\)\) return;/u);
+assert.match(worldScheduler, /const context = present \? "present" : "background";/u);
+assert.match(worldScheduler, /await drainSlurpPendingText\(app\.db, undefined, context\)/u);
+assert.match(worldScheduler, /await drainSlurpContinuityExtraction\(app\.db, context\)/u);
+assert.match(
+  worldScheduler,
+  /if \(present\)\s*await drainSlurpAudienceReplies\(app\.db\)/u,
+  "written replies stay present-only",
+);
+const worker = readSlurp2Source("server", "base/model/slp-model-worker.ts");
+assert.match(worker, /SLURP_UPKEEP_JOB_KINDS\.has\(kind\) \? at : undefined/u);
+assert.match(
+  readSlurp2Source("server", "features/audience/slp-audience-reply-operation.ts"),
+  /slurpModelBudgetPaceOpen\(db, settings\.modelBudget, "thread"\)/u,
+);
+assert.match(
+  readSlurp2Source("server", "features/projects/slp-arc-generation-service.ts"),
+  /workerContext === "background" && !\(await slurpModelBudgetPaceOpen\(db, settings\.modelBudget, "arc"\)\)/u,
+);
 
 console.log("slurp2 fix phase 1b: ok");
