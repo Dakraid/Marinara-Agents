@@ -62,7 +62,8 @@ export function SlpThreadDrawer({ model }: { model: SlurpThreadViewModel }) {
           scheduledFollowUps={relationship?.scheduledFollowUps}
           threadId={threadId}
           personaId={personaId}
-          onOpenPrompt={threadId ? () => setDrawerMode("prompt") : null}
+          // The prompt route answers only on your own Creator's side of a conversation (R1-011).
+          onOpenPrompt={threadId && ownsCreator ? () => setDrawerMode("prompt") : null}
         />
         {/* What the fan asked for and what was done about it. The fan's own side of the
             drawer never shows this. */}

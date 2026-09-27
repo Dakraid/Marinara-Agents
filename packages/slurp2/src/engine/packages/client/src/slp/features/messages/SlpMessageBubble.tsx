@@ -15,6 +15,7 @@ import { playSlpPop, playSlpSpendMoment } from "../../modules/sparkle/SlpSparkle
 import type { SlurpMessage, SlurpThreadRelationship } from "../../features/messages/slp-messages-contract";
 import { slurpBubbleRadius, type SlurpBubbleGroup } from "./slp-bubble-group";
 import type { SlurpAwayKind } from "./slp-away-kind";
+import { slpErrorText } from "../../base/ui/slp-error-text";
 import { useReactToSlurpMessage, useUnlockSlurpMessage } from "../../features/messages/slp-message-action-hooks";
 
 // One message in a thread, the away animation and the platform action card.
@@ -583,9 +584,12 @@ export function MessageBubble({
       )}
       {unlock.isError && (
         <p role="alert" className="px-2 text-xs text-[var(--slurp-danger)]">
-          {unlock.error instanceof Error
-            ? unlock.error.message
-            : localizeUi("ui.slurp.messages.unlockFailed", { defaultValue: "Unlock failed." })}
+          {/* A 402 says "Not enough coins" (R1-017), like every other spend. */}
+          {slpErrorText(
+            unlock.error,
+            localizeUi("ui.slurp.messages.unlockFailed", { defaultValue: "Unlock failed." }),
+            localizeUi("ui.slurp.wallet.notEnoughCoins", { defaultValue: "Not enough coins. Top up in your Wallet." }),
+          )}
         </p>
       )}
       {closesGroup && (

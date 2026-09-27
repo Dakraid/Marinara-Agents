@@ -326,7 +326,13 @@ export function createMessagesStorageActions(context: SlurpMessagesContext) {
     /** Coins this fan has put into this Creator: tips, unlocks and commissions together. */
     async spentWithCreator(viewerAccountId: string, creatorAccountId: string): Promise<number> {
       const facts = await context.storage.rapportFactsFor(viewerAccountId, creatorAccountId);
-      return Math.max(0, Math.round(facts.tippedCoins + facts.unlockedCoins));
+      // Paid commissions too; the line said "tips, unlocks and commissions" and counted two (R1-018).
+      const thread = await context.storage.getThread(viewerAccountId, creatorAccountId);
+      const commissions = thread ? await context.storage.listCommissionsForThread(thread.id) : [];
+      const commissionCoins = commissions
+        .filter((entry) => ["accepted", "cancellation_pending", "delivered"].includes(entry.state))
+        .reduce((sum, entry) => sum + entry.price, 0);
+      return Math.max(0, Math.round(facts.tippedCoins + facts.unlockedCoins + commissionCoins));
     },
     /**
      * The thread as the fan is allowed to see it.

@@ -81,6 +81,9 @@ const requestDecisionSchema = z.object({
   personaId: z.string().trim().min(1),
   decision: z.enum(["accept", "decline"]),
 });
+
+/** Threads whose player photo is being drawn right now (one draw per thread at a time). */
+const drawingViewerPhotos = new Set<string>();
 export async function slpMessagesMediaRoutes(app: FastifyInstance, messaging: SlpMessagesContext) {
   const { freshView, messages, ownsCreator, requireViewer, slurp } = messaging;
   /**
@@ -251,15 +254,23 @@ export async function slpMessagesMediaRoutes(app: FastifyInstance, messaging: Sl
       return reply.code(409).send({ error: "This conversation is cooling off." });
     // The wait between two drawn pictures is the player's setting (minutes, 0 = off).
     const cooldownMinutes = (await slurp.getSettings()).messagesViewerImageCooldownMinutes;
+    // The whole thread, not the newest 120 messages: a long chat forgot the last picture (R1-015).
+    // ponytail: reads every message of the thread; store the last picture time on the thread if chats get huge.
     const readyAt =
-      cooldownMinutes > 0 ? slurpViewerImageReadyAt(await messages.listMessages(thread.id), cooldownMinutes) : null;
+      cooldownMinutes > 0
+        ? slurpViewerImageReadyAt(await messages.listMessages(thread.id, 100_000), cooldownMinutes)
+        : null;
     // `retryAt` lets the chat say when ("Draw again at 4:30 PM") in the reader's own clock.
     if (readyAt) return reply.code(429).send({ error: "You can generate another picture later.", retryAt: readyAt });
+    // Held while it draws, so two taps cannot both pass the wait before either picture is stored.
+    if (drawingViewerPhotos.has(thread.id))
+      return reply.code(409).send({ error: "Your picture is still being drawn." });
+    drawingViewerPhotos.add(thread.id);
     const drawn = await generateSlurpViewerPhoto(app.db, {
       creatorAccountId: thread.creatorAccountId,
       personaId: parsed.data.personaId,
       brief: parsed.data.prompt,
-    });
+    }).finally(() => drawingViewerPhotos.delete(thread.id));
     if (drawn === "unavailable") return reply.code(503).send({ error: "Image generation is not available." });
     try {
       const message = await messages.appendMessage(thread.id, {

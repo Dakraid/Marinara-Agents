@@ -38,6 +38,8 @@ export const SLURP_REPLY_STATUS_FALLBACKS: Record<string, string> = {
   cooling: "They stepped away from this conversation. Give them some time.",
   busy: "{{name}} is already writing back. Give it a moment.",
   ineligible: "{{name}} is not answering this conversation right now.",
+  ai_off:
+    "Your message is delivered. Replies are paused while Slurp's AI budget is off; turn it on under Audience → AI budget.",
   connection_not_found: "No text connection is configured, so nobody can answer yet.",
   failed: "The reply could not be written. Your message was still delivered.",
 };
@@ -193,7 +195,8 @@ export function SlurpMessagesView({
   const active = threads.filter((thread) => thread.state === "active" && matches(thread));
   const visibleInbound =
     filter === "requests"
-      ? inbound
+      ? // Only message requests to your Creators, not every conversation they have (R1-010).
+        inbound.filter((thread) => thread.state === "request")
       : filter === "unread"
         ? inbound.filter((thread) => thread.creatorUnread > 0)
         : inbound;

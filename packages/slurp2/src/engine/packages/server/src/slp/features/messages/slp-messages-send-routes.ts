@@ -372,7 +372,7 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
       const thread = target ? await messages.getThreadById(target.threadId) : null;
       if (!target || target.kind !== "ppv" || thread?.viewerAccountId !== viewer.id)
         return reply.code(404).send({ error: "Message not found" });
-      return reply.code(402).send({ error: "PPV message cannot be unlocked." });
+      return reply.code(402).send({ error: "Not enough coins.", required: target.price });
     }
     // Two concurrent clicks both read "not unlocked yet"; only the first may react.
     const firstUnlock = !alreadyUnlocked && !ppvReacting.has(message.id);

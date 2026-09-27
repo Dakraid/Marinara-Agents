@@ -1543,6 +1543,7 @@
   "ui.slurp.messages.replyStatus.cooling": "They stepped away from this conversation. Give them some time.",
   "ui.slurp.messages.replyStatus.busy": "{{name}} is already writing back. Give it a moment.",
   "ui.slurp.messages.replyStatus.ineligible": "{{name}} is not answering this conversation right now.",
+  "ui.slurp.messages.replyStatus.ai_off": "Your message is delivered. Replies are paused while Slurp's AI budget is off; turn it on under Audience → AI budget.",
   "ui.slurp.messages.replyStatus.connection_not_found": "No text connection is configured, so nobody can answer yet.",
   "ui.slurp.messages.replyStatus.failed": "The reply could not be written. Your message was still delivered.",
   "ui.slurp.messages.forceReply": "Get reply now",
@@ -4287,5 +4288,10 @@
   "ui.slurp.creators.generateOutcome": "{{made}} new, {{skipped}} skipped, {{failed}} could not post.",
   "ui.slurp.settings.searchLabel.autoPostingScheduleEnabled": "Automatic posting",
   "ui.slurp.settings.searchLabel.simulationTuning": "Audience tuning",
-  "ui.slurp.wallet.notEnoughCoins": "Not enough coins. Top up in your Wallet."
+  "ui.slurp.wallet.notEnoughCoins": "Not enough coins. Top up in your Wallet.",
+  "ui.slurp.messages.photoUpload": "Upload",
+  "ui.slurp.messages.photoGenerate": "Draw it",
+  "ui.slurp.messages.photoDescribe": "Describe the photo you took",
+  "ui.slurp.messages.photoSending": "Sending…",
+  "ui.slurp.messages.photoSend": "Send photo"
 }

@@ -350,7 +350,8 @@ export function FanImageTool({
   const [reviewing, setReviewing] = useState(false);
   const [selectedMode, setSelectedMode] = useState<"upload" | "generate">("upload");
   const activeMode = mode === "choose" ? selectedMode : mode;
-  const viewerPrompt = prompt.trim() ? `A photo taken by the viewer persona: ${prompt.trim()}` : "";
+  // The server frames it as the player's own photo (R1-054); the review shows the player's words (R1-019).
+  const viewerPrompt = prompt.trim();
   return (
     <div className="overflow-hidden rounded-xl bg-[var(--slurp-surface)] ring-1 ring-inset ring-[var(--noodle-divider)]">
       <div className="flex flex-col gap-2 p-3">
@@ -372,7 +373,9 @@ export function FanImageTool({
                   activeMode === option && "bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)]",
                 )}
               >
-                {option === "upload" ? "Upload" : "Generate"}
+                {option === "upload"
+                  ? localizeUi("ui.slurp.messages.photoUpload", { defaultValue: "Upload" })
+                  : localizeUi("ui.slurp.messages.photoGenerate", { defaultValue: "Draw it" })}
               </button>
             ))}
           </div>
@@ -385,7 +388,9 @@ export function FanImageTool({
                 rows={2}
                 maxLength={1000}
                 onChange={(event) => setPrompt(event.target.value)}
-                placeholder="Describe the photo the viewer persona took"
+                placeholder={localizeUi("ui.slurp.messages.photoDescribe", {
+                  defaultValue: "Describe the photo you took",
+                })}
                 className="w-full resize-y rounded-lg bg-[var(--slurp-canvas,var(--background))] px-3 py-2 text-sm ring-1 ring-inset ring-[var(--noodle-divider)]"
               />
             )}
@@ -466,7 +471,9 @@ export function FanImageTool({
                 }}
                 className="min-h-10 rounded-lg bg-[var(--noodle-accent)] px-3 text-xs font-bold text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] disabled:opacity-50"
               >
-                {send.isPending || generate.isPending ? "Sending…" : "Send photo"}
+                {send.isPending || generate.isPending
+                  ? localizeUi("ui.slurp.messages.photoSending", { defaultValue: "Sending…" })
+                  : localizeUi("ui.slurp.messages.photoSend", { defaultValue: "Send photo" })}
               </button>
             </div>
           </div>

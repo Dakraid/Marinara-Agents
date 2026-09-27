@@ -52,6 +52,10 @@ export type SlurpReplyOutcome =
   | { status: "cooling"; until: string }
   | { status: "busy" }
   | { status: "ineligible" }
+  /** Not answered now, and no away reply will come: the player asks for one. */
+  | { status: "owed" }
+  /** The AI budget is off (or its DM switch is): nobody answers until it is on again. */
+  | { status: "ai_off" }
   | { status: "connection_not_found" }
   | { status: "failed"; error: string };
 
@@ -224,6 +228,9 @@ export async function replyToSlurpMessage(
       },
       Math.round(5000 + Math.random() * 25000),
     ); // 5-30 seconds
+    // With "Answer while you are away" off nothing answers a queued message later, so it must not
+    // promise that; "owed" keeps "Get reply now" on screen (R1-014).
+    if (!input.background && !settingsForDelays.messagesAwayRepliesEnabled) return { status: "owed" };
     return { status: "queued", pacing };
   }
 
@@ -388,19 +395,12 @@ export async function replyToSlurpMessage(
         // `enableImagePrompts`, an internal flag with no control that is off on every install, so
         // no Creator ever sent a picture in a chat (R1-122). No image connection → "unavailable".
         const imageAllowedBySettings = creator.settings.scheduler.autoPosting?.imagesEnabled === true;
-        const recentGeneratedImage = history.some(
-          (message) =>
-            message.imageUrl &&
-            typeof message.metadata.generatedContext === "string" &&
-            Date.now() - Date.parse(message.createdAt) < 3 * 60 * 60_000,
-        );
-        const drawn =
-          imageAllowedBySettings && !recentGeneratedImage
-            ? await generateSlurpCommissionImage(db, {
-                creatorAccountId: thread.creatorAccountId,
-                brief: `${reply.image.prompt}\nImage mode: ${reply.imageMode}`,
-              })
-            : "unavailable";
+        const drawn = imageAllowedBySettings
+          ? await generateSlurpCommissionImage(db, {
+              creatorAccountId: thread.creatorAccountId,
+              brief: `${reply.image.prompt}\nImage mode: ${reply.imageMode}`,
+            })
+          : "unavailable";
         if (drawn !== "unavailable") {
           const offer = resolveSlurpMediaOffer({
             intent: reply.imageMode === "hostile" ? "hostile" : "friendly",
@@ -559,7 +559,8 @@ export async function replyToSlurpMessage(
         // Said plainly to the player: "away" hid that the AI budget, not the Creator, was the reason.
         return input.background ? { status: "queued", pacing } : { status: "budget", retryAt, pacing };
       }
-      return { status: "ineligible" };
+      // Its own status: "X is not answering this conversation" blamed the Creator (R1-013).
+      return { status: "ai_off" };
     }
     logger.error(error, "[slurp-message] Reply generation failed for thread %s", thread.id);
     return { status: "failed", error: error instanceof Error ? error.message : "Reply generation failed." };
