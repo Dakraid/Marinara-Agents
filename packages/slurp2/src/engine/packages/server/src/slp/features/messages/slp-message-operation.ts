@@ -5,6 +5,7 @@
  * release after the visible bubble plus delayed batch are durable. The claim is what stops the live
  * send path and the offline scheduler from both answering the same message.
  */
+import { agreeSlurpCollabInDm } from "../projects/slp-projects-contract.js";
 import type { DB } from "../../../db/connection.js";
 import { slurpInfluenceMultiplier } from "../../../../../shared/src/slp/slp-platform-events.js";
 import { logger } from "../../../lib/logger.js";
@@ -490,6 +491,11 @@ export async function replyToSlurpMessage(
           supportName: viewer.displayName,
         }).catch((error: unknown) => logger.warn(error, "[slurp-message] Could not apply the talk with Slurp Support"));
       }
+      // Two pages agreed on a joint post in this chat: the replying Creator hosts it (7b-c).
+      if (stored && reply.agreedCollab)
+        await agreeSlurpCollabInDm(db, { hostId: thread.creatorAccountId, ...reply.agreedCollab }).catch(
+          (error: unknown) => logger.warn(error, "[slurp-message] Could not record the collab agreed in this chat"),
+        );
       if (stored) {
         // Whoever just answered is, for the next few minutes, obviously around: every reply keeps
         // her online briefly, and a hot conversation keeps her longer.

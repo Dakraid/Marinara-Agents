@@ -325,6 +325,26 @@ const slpCreatorStaffDmSchema = {
   required: [...slpCreatorDmSchema.required, "staff"],
 } as const;
 
+/** Creator to Creator: the two may agree on a joint post (7b-c). */
+const slpCreatorCollabDmSchema = {
+  ...slpCreatorDmSchema,
+  properties: {
+    ...slpCreatorDmSchema.properties,
+    collab: {
+      anyOf: [
+        {
+          type: "object",
+          properties: { idea: nullableString, yourShare: { type: ["number", "null"] } },
+          required: ["idea", "yourShare"],
+          additionalProperties: false,
+        },
+        { type: "null" },
+      ],
+    },
+  },
+  required: [...slpCreatorDmSchema.required, "collab"],
+} as const;
+
 const slpCreatorFanActivitySchema = {
   type: "object",
   properties: {
@@ -357,6 +377,8 @@ export function slpResponseFormat(
     claims?: boolean;
     /** A reply in Slurp Support's thread may say what the talk changed ("staff", `slp-support.ts`). */
     staff?: boolean;
+    /** A reply from one Creator to another may agree on a joint post ("collab", `slp-creator-ties.ts`). */
+    collab?: boolean;
   } = {},
 ): { type: string; [key: string]: unknown } {
   if (!isOpenAIGpt56Model(model)) return { type: "json_object" };
@@ -372,7 +394,9 @@ export function slpResponseFormat(
             : kind === "noodler_dm"
               ? options.staff
                 ? slpCreatorStaffDmSchema
-                : slpCreatorDmSchema
+                : options.collab
+                  ? slpCreatorCollabDmSchema
+                  : slpCreatorDmSchema
               : kind === "noodler_fan_activity"
                 ? {
                     type: "object",

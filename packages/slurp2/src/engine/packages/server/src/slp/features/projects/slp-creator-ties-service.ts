@@ -15,6 +15,7 @@ import { slurpCreatorReach } from "../../../../../shared/src/slp/slp-reach.js";
 import { slurpPlatformScaleMultiplier, slurpWorldActivityMultiplier } from "../../modules/audience/slp-scale.js";
 import {
   slurpAdvanceCreatorTies,
+  slurpAgreeCollabInDm,
   slurpCollabPostIdsFor,
   slurpPlanCollab,
   slurpSettleCollab,
@@ -200,4 +201,27 @@ export async function planSlurpTieBeat(
 /** Joint posts that show on this Creator's page although the partner wrote them. */
 export async function slurpCollabPostIdsForCreator(db: DB, creatorId: string): Promise<string[]> {
   return slurpCollabPostIdsFor((await readSlurpCreatorTiesDocument(db)).ties, creatorId);
+}
+
+/** Two pages agreed on a joint post in their own DM; the replying Creator hosts and writes it. */
+export async function agreeSlurpCollabInDm(
+  db: DB,
+  input: { hostId: string; partnerId: string; idea: string; hostShare: number | null },
+): Promise<void> {
+  const creators = await loadSlurpTieCreators(db);
+  const host = creators.find((creator) => creator.id === input.hostId);
+  const partner = creators.find((creator) => creator.id === input.partnerId);
+  if (!host?.automatic || !partner || host.id === partner.id) return;
+  await mutateSlurpCreatorTies(db, (document) => ({
+    document: {
+      ...document,
+      ties: slurpAgreeCollabInDm(document.ties, host, partner, {
+        at: new Date(),
+        id: newId(),
+        idea: input.idea,
+        hostShare: input.hostShare,
+      }),
+    },
+    result: null,
+  }));
 }

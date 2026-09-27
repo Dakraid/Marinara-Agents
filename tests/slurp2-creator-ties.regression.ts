@@ -54,6 +54,8 @@ import {
 import { slurpTieBeat } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-tie-beats.ts";
 import { parseSlurpBeat } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-post-beat.ts";
 import { slurpPlanRewritable } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-prepared-rewrite.ts";
+import { slurpDmRoleHeader } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-dm-roles.ts";
+import { readSlurpDmCollab } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-dm-response.ts";
 import { slurpRivalryComment } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/slp-world-copy.ts";
 
 const creator = (id: string, text: string, tags: string[], followers: number, automatic = true): SlurpTieCreator => ({
@@ -822,6 +824,55 @@ async function main() {
     const service = read("server/src/slp/features/projects/slp-creator-ties-service.ts");
     assert.doesNotMatch(service, /completeSlurp|createSlurpPostProvider|generateSlurp/u, "no model call");
     assert.match(read("server/src/slp/modules/economy/slp-earnings.ts"), /\| "sponsor"/u);
+  }
+
+  // 9. Planned in their DMs: one page writing to another may agree on a joint post and the split.
+  {
+    const base = {
+      writer: "creator" as const,
+      creator: { name: "Rue", handle: "rue" },
+      viewer: { name: "Ana", handle: "ana" },
+      history: [],
+    };
+    assert.match(
+      slurpDmRoleHeader({ ...base, viewerPage: { name: "Ana Lifts", handle: "analifts" } }),
+      /add "collab"/u,
+    );
+    assert.doesNotMatch(slurpDmRoleHeader(base), /collab/u, "a fan's chat never offers it");
+    assert.deepEqual(
+      readSlurpDmCollab({ idea: "leg day vlog", yourShare: 60 }, "ana-page", (value) => value),
+      {
+        partnerId: "ana-page",
+        idea: "leg day vlog",
+        hostShare: 60,
+      },
+    );
+    assert.equal(
+      readSlurpDmCollab(null, "p", (value) => value),
+      undefined,
+    );
+    assert.equal(
+      readSlurpDmCollab({ agreed: false, idea: "x" }, "p", (value) => value),
+      undefined,
+    );
+    assert.equal(
+      readSlurpDmCollab({ idea: "", yourShare: "a lot" }, "p", (value) => value),
+      undefined,
+    );
+    const generation = read("server/src/slp/features/messages/slp-message-generation-service.ts");
+    assert.match(generation, /slpResponseFormat\(input\.connection\.model, "noodler_dm", \{ collab: true \}\)/u);
+    assert.match(
+      generation,
+      /agreedCollab: pageId \? readSlurpDmCollab\(generated\.collab, pageId, \(value\) => protect\(value, 200\)\)/u,
+    );
+    assert.match(
+      read("server/src/slp/features/messages/slp-message-operation.ts"),
+      /if \(stored && reply\.agreedCollab\)\s+await agreeSlurpCollabInDm\(db, \{ hostId: thread\.creatorAccountId, \.\.\.reply\.agreedCollab \}\)/u,
+    );
+    assert.match(
+      read("server/src/slp/features/projects/slp-creator-ties-service.ts"),
+      /if \(!host\?\.automatic \|\| !partner/u,
+    );
   }
 
   console.log("slurp2 creator ties regression passed");

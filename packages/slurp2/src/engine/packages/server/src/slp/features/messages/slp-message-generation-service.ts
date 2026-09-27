@@ -53,6 +53,8 @@ import { resolveSlurpStance, type SlurpStance } from "../../modules/world/slp-st
 import { readSlurpAudienceTone } from "../../../../../shared/src/slp/slp-tone.js";
 import {
   readSlurpDmReply,
+  readSlurpDmCollab,
+  protectNoteOperation,
   SLURP_NOTE_MAX_LENGTH,
   SLURP_NOTES_PER_REPLY,
   type SlurpGeneratedDmReply,
@@ -473,6 +475,7 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
   stance: SlurpStance;
   disclosureMode: Parameters<typeof slpCreatorIdentityInstruction>[0];
   publicIdentity: Parameters<typeof slpCreatorIdentityInstruction>[1];
+  viewerPageId?: string;
 }> {
   const slurp = createSlurpStorage(input.db);
   const disclosureMode = input.creator.settings.privacy.identityDisclosure ?? "open";
@@ -686,29 +689,20 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
   });
   // The redaction rules travel with the prompt. The answer has to be protected with the same two
   // values the question was built from, or a concealed creator can be unmasked by their own reply.
-  return { messages, stance, disclosureMode, publicIdentity, recentPosts };
-}
-
-function protectNoteOperation(
-  operation: SlurpNoteOperation,
-  disclosureMode: Parameters<typeof slpCreatorIdentityInstruction>[0],
-  publicIdentity: Parameters<typeof slpCreatorIdentityInstruction>[1],
-): SlurpNoteOperation | null {
-  if (operation.op === "forget" || operation.op === "keep") return operation;
-  const text = protectBoundedCreatorGeneratedText(
-    operation.text,
-    disclosureMode,
-    publicIdentity,
-    SLURP_NOTE_MAX_LENGTH,
-  );
-  // "Never record anything about payment" is only a prompt line, and stored notes were all payment
-  // notes that later fed "you'd need to subscribe" upsells. Enforced here.
-  if (!text || /\b(?:coins?|unlock\w*|subscri\w*|tips?|tipped|paid|pays?|payment|ppv)\b/iu.test(text)) return null;
-  return operation.op === "add" ? { op: "add", text } : { op: "replace", id: operation.id, text };
+  // The page named in the role header, which also offers the "collab" field (7b-c).
+  const viewerPageId = viewerPage ? viewerPageAccount?.id : undefined;
+  return { messages, stance, disclosureMode, publicIdentity, recentPosts, viewerPageId };
 }
 
 export async function generateSlurpMessageReply(input: SlurpMessagePromptInput): Promise<SlurpGeneratedDmReply> {
-  const { messages, stance, disclosureMode, publicIdentity, recentPosts } = await buildSlurpMessagePrompt(input);
+  const {
+    messages,
+    stance,
+    disclosureMode,
+    publicIdentity,
+    recentPosts,
+    viewerPageId: pageId,
+  } = await buildSlurpMessagePrompt(input);
   const support = input.viewer.id === SLURP_SUPPORT_ACCOUNT_ID;
   const budget = (await createSlurpStorage(input.db).getSettings()).modelBudget;
   const context = input.workerContext ?? "present";
@@ -758,7 +752,9 @@ export async function generateSlurpMessageReply(input: SlurpMessagePromptInput):
     debugMode,
     responseFormat: support
       ? slpResponseFormat(input.connection.model, "noodler_dm", { staff: true })
-      : slpResponseFormat(input.connection.model, "noodler_dm"),
+      : pageId
+        ? slpResponseFormat(input.connection.model, "noodler_dm", { collab: true })
+        : slpResponseFormat(input.connection.model, "noodler_dm"),
   });
   const content = response.content ?? "";
   logDebugOverride(
@@ -775,6 +771,8 @@ export async function generateSlurpMessageReply(input: SlurpMessagePromptInput):
     SLURP_MESSAGE_CONTENT_MAX_LENGTH,
   );
   if (!protectedContent) throw new Error("Slurp direct-message generation returned no usable content.");
+  const protect = (value: string, max: number) =>
+    protectBoundedCreatorGeneratedText(value, disclosureMode, publicIdentity, max);
   return {
     content: protectedContent,
     latitude: stance.latitude,
@@ -785,7 +783,7 @@ export async function generateSlurpMessageReply(input: SlurpMessagePromptInput):
     // A note is model output about the player, stored and fed back into a later prompt. That is a
     // loop, so it is redacted and bounded on the way in as well as on the way out.
     remember: generated.remember
-      .map((operation) => protectNoteOperation(operation, disclosureMode, publicIdentity))
+      .map((operation) => protectNoteOperation(operation, (text) => protect(text, SLURP_NOTE_MAX_LENGTH)))
       .filter((operation): operation is SlurpNoteOperation => Boolean(operation)),
     sharePost: generated.sharePost !== undefined && recentPosts[generated.sharePost] ? generated.sharePost : undefined,
     sharedPost:
@@ -793,8 +791,8 @@ export async function generateSlurpMessageReply(input: SlurpMessagePromptInput):
     image: generated.image,
     followUp: generated.followUp,
     // Support's thread only; stored and fed back into later prompts, so redacted like a note.
-    staff: protectSlurpSupportStaff(support ? generated.staff : undefined, (value) =>
-      protectBoundedCreatorGeneratedText(value, disclosureMode, publicIdentity, 400),
-    ),
+    staff: protectSlurpSupportStaff(support ? generated.staff : undefined, (value) => protect(value, 400)),
+    // Creator to Creator only: the two agreed on a joint post (7b-c).
+    agreedCollab: pageId ? readSlurpDmCollab(generated.collab, pageId, (value) => protect(value, 200)) : undefined,
   };
 }

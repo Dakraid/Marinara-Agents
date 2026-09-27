@@ -118,6 +118,11 @@ export function slurpDmRoleHeader(input: SlurpDmRoleInput & { history: readonly 
         ? `${viewer} runs a Creator page on Slurp too (${at(input.viewerPage)}). This is one Creator writing to another: talk to ${viewer} as a fellow Creator, not as a customer, though they can still subscribe or buy like anyone.`
         : `${viewer} is a fan writing to you.`,
     );
+    // Two pages can plan a joint post here; the split is theirs to agree (7b-c).
+    if (input.viewerPage)
+      lines.push(
+        `If you two really agree in this chat to make a post together, add "collab" to your JSON: {"idea": what you make together, "yourShare": the percent of what it earns that is yours, 50 unless you two agreed otherwise}. Otherwise "collab" is null. Only agree if it fits you; you can say no.`,
+      );
   } else {
     lines.push(
       `You are ${at(input.viewer)}, a fan on Slurp. This is your private chat with ${at(input.creator)}, a Creator on Slurp.`,

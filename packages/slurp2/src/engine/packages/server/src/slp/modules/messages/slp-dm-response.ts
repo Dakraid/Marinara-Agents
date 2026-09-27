@@ -61,6 +61,8 @@ export const slurpDmReplySchema = z.object({
     .catch(undefined),
   /** Only in Slurp Support's thread: what the talk changed for the Creator. Read by `slp-support.ts`. */
   staff: z.record(z.string(), z.unknown()).nullable().optional().catch(undefined),
+  /** Only Creator to Creator: the two agreed on a joint post. Read by `readSlurpDmCollab`. */
+  collab: z.record(z.string(), z.unknown()).nullable().optional().catch(undefined),
 });
 
 export type SlurpDmReply = {
@@ -85,6 +87,7 @@ export type SlurpDmReply = {
     context?: string;
   };
   staff?: Record<string, unknown>;
+  collab?: Record<string, unknown>;
 };
 
 /** The reply plus what the resolved stance allows the creator to do about the conversation. */
@@ -93,7 +96,25 @@ export type SlurpGeneratedDmReply = SlurpDmReply & {
   canSendImage: boolean;
   imageMode: "friendly" | "hostile" | "none";
   sharedPost: { id: string; title: string | null; content: string; access: string; imageUrl: string | null } | null;
+  /** Creator to Creator: a joint post the two agreed on, with the replying Creator's share. */
+  agreedCollab?: SlurpDmCollab;
 };
+
+export type SlurpDmCollab = { partnerId: string; idea: string; hostShare: number | null };
+
+/** The "collab" field of a Creator-to-Creator reply, or undefined when they did not agree on one. */
+export function readSlurpDmCollab(
+  raw: unknown,
+  partnerId: string,
+  protect: (value: string) => string | null | undefined,
+): SlurpDmCollab | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const value = raw as Record<string, unknown>;
+  if (value.agreed === false) return undefined;
+  const idea = typeof value.idea === "string" ? (protect(value.idea.trim()) ?? "") : "";
+  const share = typeof value.yourShare === "number" && Number.isFinite(value.yourShare) ? value.yourShare : null;
+  return idea || share !== null ? { partnerId, idea, hostShare: share } : undefined;
+}
 
 /**
  * Read a model answer back, tolerating everything except a missing reply.
@@ -140,5 +161,22 @@ export function readSlurpDmReply(value: unknown): SlurpDmReply {
         }
       : {}),
     ...(parsed.data.staff ? { staff: parsed.data.staff } : {}),
+    ...(parsed.data.collab ? { collab: parsed.data.collab } : {}),
   };
+}
+
+/**
+ * A note is model output about the player, stored and fed back into a later prompt: redacted and
+ * bounded by `protect`, and never about payment.
+ */
+export function protectNoteOperation(
+  operation: SlurpNoteOperation,
+  protect: (text: string) => string | null | undefined,
+): SlurpNoteOperation | null {
+  if (operation.op === "forget" || operation.op === "keep") return operation;
+  const text = protect(operation.text);
+  // "Never record anything about payment" is only a prompt line, and stored notes were all payment
+  // notes that later fed "you'd need to subscribe" upsells. Enforced here.
+  if (!text || /\b(?:coins?|unlock\w*|subscri\w*|tips?|tipped|paid|pays?|payment|ppv)\b/iu.test(text)) return null;
+  return operation.op === "add" ? { op: "add", text } : { op: "replace", id: operation.id, text };
 }
