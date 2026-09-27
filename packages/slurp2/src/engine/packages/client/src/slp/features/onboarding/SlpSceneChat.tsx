@@ -54,6 +54,15 @@ export function SlpSceneChat({
                 {item.text}
               </p>
             );
+          if (item.kind === "whisper")
+            return (
+              <p
+                key={item.id}
+                className={cn(SLP_TYPE.meta, "max-w-[86%] self-end px-2 text-end italic text-[var(--slurp-muted)]")}
+              >
+                {t("ui.slurp.scene.whispered", { name: host.name, text: item.text })}
+              </p>
+            );
           if (item.kind === "photo")
             return (
               <figure

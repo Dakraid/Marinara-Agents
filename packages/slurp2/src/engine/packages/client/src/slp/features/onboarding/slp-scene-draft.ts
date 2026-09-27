@@ -192,6 +192,8 @@ export type SlpSceneItem =
   | { id: string; kind: "line"; speaker: SlpSceneLine["speaker"]; text: string }
   | { id: string; kind: "patch"; chipId: string; fields: SlpSceneField[]; redraft: boolean }
   | { id: string; kind: "note"; text: string }
+  /** The player's steer in the creator seat: shown to the player, never sent back as a line. */
+  | { id: string; kind: "whisper"; text: string }
   | { id: string; kind: "photo"; photo: "avatar" | "banner"; imageUrl: string };
 
 /** What the transcript sends back: the lines only, newest last, capped. */

@@ -4507,5 +4507,11 @@
   "ui.slurp.scene.shoot.shooting.avatar": "Shooting the profile photo",
   "ui.slurp.scene.shoot.shooting.banner": "Shooting the cover",
   "ui.slurp.scene.photo.avatar": "Profile photo",
-  "ui.slurp.scene.photo.banner": "Cover"
+  "ui.slurp.scene.photo.banner": "Cover",
+  "ui.slurp.scene.preset.seat.title": "A Creator friend",
+  "ui.slurp.scene.preset.seat.detail": "One of your Creators helps them set up. You watch, or whisper a steer.",
+  "ui.slurp.scene.setup.helper": "Who helps",
+  "ui.slurp.scene.setup.pickHelper": "Pick the Creator who helps.",
+  "ui.slurp.scene.composer.seat": "Whisper to {{name}}",
+  "ui.slurp.scene.whispered": "You whisper to {{name}}: {{text}}"
 }

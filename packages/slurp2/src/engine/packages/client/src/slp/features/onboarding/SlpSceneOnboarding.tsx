@@ -13,6 +13,7 @@ import { SlpChip, SlpPrimaryButton, SlpSegment } from "../../modules/chrome/SlpB
 import { SlpRadioRow, SlpSheet } from "../../modules/chrome/SlpSheet";
 import { SlpWizardFooter, SlpWizardProgress } from "../../modules/chrome/SlpWizardChrome";
 import { ChoiceSetting } from "../../modules/settings/SlpSettingsInputs";
+import { useCreatorAccounts } from "../creators/slp-creators-contract";
 import { useSlurpSettings } from "../settings/slp-settings-contract";
 import { SlpSceneActions } from "./SlpSceneActions";
 import { SlpSceneChat } from "./SlpSceneChat";
@@ -21,7 +22,9 @@ import { SlpScenePreview } from "./SlpScenePreview";
 import { SlpSceneShoot } from "./SlpSceneShoot";
 
 /** The presets a player can pick today. */
-export const SLP_SCENE_OFFERED: readonly SlpScenePreset[] = ["friend", "support"];
+export const SLP_SCENE_OFFERED: readonly SlpScenePreset[] = ["friend", "support", "seat"];
+
+type SlpScenePerson = Pick<SlpAccount, "id" | "displayName" | "handle" | "avatarUrl">;
 
 export function SlpSceneOnboarding({
   accounts,
@@ -81,7 +84,17 @@ function SceneSetup({
   const [sourceId, setSourceId] = useState<string | null>(null);
   const [preset, setPreset] = useState<SlpScenePreset>(SLP_SCENE_OFFERED[0]);
   const [disclosure, setDisclosure] = useState<SlpIdentityDisclosure>("hinted");
+  const [helperId, setHelperId] = useState<string | null>(null);
+  // The creator seat needs somebody already on Slurp to do the helping.
+  const creators = useCreatorAccounts().data ?? [];
+  const offered = SLP_SCENE_OFFERED.filter((option) => option !== "seat" || creators.length > 0);
   const source = accounts.find((account) => account.id === sourceId) ?? null;
+  const helper = preset === "seat" ? (creators.find((creator) => creator.id === helperId) ?? null) : null;
+  const reason = !source
+    ? t("ui.slurp.scene.setup.pickOne")
+    : preset === "seat" && !helper
+      ? t("ui.slurp.scene.setup.pickHelper")
+      : "";
   return (
     <>
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto py-4 max-sm:py-2.5">
@@ -93,46 +106,35 @@ function SceneSetup({
             {t("ui.slurp.scene.setup.help")}
           </p>
         </div>
-        <div
-          role="radiogroup"
-          aria-label={t("ui.slurp.scene.setup.who")}
-          className={cn(SLP_GROUP_CLASS, "divide-y-0 p-1")}
-        >
-          {accounts.length === 0 && (
-            <p className={cn(SLP_TYPE.body, "px-3 py-3 text-[var(--slurp-muted)]")}>
-              {t("ui.slurp.scene.setup.nobody")}
-            </p>
-          )}
-          {accounts.map((account) => (
-            <SlpRadioRow
-              key={account.id}
-              name="slp-scene-source"
-              checked={account.id === sourceId}
-              onChange={() => setSourceId(account.id)}
-            >
-              <span className="flex min-w-0 items-center gap-2.5 py-1">
-                <Avatar account={account} size="sm" />
-                <span className="min-w-0">
-                  <span className="block truncate font-semibold">{account.displayName}</span>
-                  <span className={cn(SLP_TYPE.meta, "block truncate text-[var(--slurp-muted)]")}>
-                    @{account.handle}
-                  </span>
-                </span>
-              </span>
-            </SlpRadioRow>
-          ))}
-        </div>
-        {SLP_SCENE_OFFERED.length > 1 && (
+        <PickList
+          label={t("ui.slurp.scene.setup.who")}
+          name="slp-scene-source"
+          people={accounts}
+          value={sourceId}
+          onChange={setSourceId}
+          empty={t("ui.slurp.scene.setup.nobody")}
+        />
+        {offered.length > 1 && (
           <ChoiceSetting
             label={t("ui.slurp.scene.setup.how")}
             variant="cards"
             value={preset}
             onChange={setPreset}
-            options={SLP_SCENE_OFFERED.map((option) => ({
+            options={offered.map((option) => ({
               value: option,
               label: t(`ui.slurp.scene.preset.${option}.title`),
               detail: t(`ui.slurp.scene.preset.${option}.detail`),
             }))}
+          />
+        )}
+        {preset === "seat" && (
+          <PickList
+            label={t("ui.slurp.scene.setup.helper")}
+            name="slp-scene-helper"
+            people={creators}
+            value={helperId}
+            onChange={setHelperId}
+            heading
           />
         )}
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -158,20 +160,61 @@ function SceneSetup({
         skip={{ label: t("ui.slurp.scene.quick"), onClick: onQuickSetup }}
         primary={
           <SlpPrimaryButton
-            disabled={!source}
+            disabled={Boolean(reason)}
             onClick={() => {
-              if (!source) return;
+              if (!source || reason) return;
               noteSlpAiUseOnce(t);
-              onStart({ preset, source, disclosureMode: disclosure });
+              onStart({ preset, source, helper, disclosureMode: disclosure });
             }}
           >
             {t("ui.slurp.scene.setup.start")}
             <ChevronRight size={16} aria-hidden="true" className="shrink-0 rtl:rotate-180" />
           </SlpPrimaryButton>
         }
-        note={source ? "" : t("ui.slurp.scene.setup.pickOne")}
+        note={reason}
       />
     </>
+  );
+}
+
+/** One pick out of a list of people (who signs up, who helps), as radio rows with avatars. */
+function PickList({
+  label,
+  name,
+  people,
+  value,
+  onChange,
+  empty,
+  heading = false,
+}: {
+  label: string;
+  name: string;
+  people: readonly SlpScenePerson[];
+  value: string | null;
+  onChange: (id: string) => void;
+  empty?: string;
+  heading?: boolean;
+}) {
+  return (
+    <div>
+      {heading && <p className={cn(SLP_TYPE.body, "mb-1.5 font-semibold")}>{label}</p>}
+      <div role="radiogroup" aria-label={label} className={cn(SLP_GROUP_CLASS, "divide-y-0 p-1")}>
+        {people.length === 0 && empty && (
+          <p className={cn(SLP_TYPE.body, "px-3 py-3 text-[var(--slurp-muted)]")}>{empty}</p>
+        )}
+        {people.map((person) => (
+          <SlpRadioRow key={person.id} name={name} checked={person.id === value} onChange={() => onChange(person.id)}>
+            <span className="flex min-w-0 items-center gap-2.5 py-1">
+              <Avatar account={person} size="sm" />
+              <span className="min-w-0">
+                <span className="block truncate font-semibold">{person.displayName}</span>
+                <span className={cn(SLP_TYPE.meta, "block truncate text-[var(--slurp-muted)]")}>@{person.handle}</span>
+              </span>
+            </span>
+          </SlpRadioRow>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -196,7 +239,7 @@ function SceneStage({
     () => settings.data?.discoveryTags.map((entry) => entry.tag) ?? [],
     [settings.data?.discoveryTags],
   );
-  const hostName = t(`ui.slurp.scene.host.${setup.preset}`);
+  const hostName = setup.helper?.displayName ?? t(`ui.slurp.scene.host.${setup.preset}`);
   const model = useSlpSceneModel(setup, hostName);
   const [pageOpen, setPageOpen] = useState(false);
   const phone = useSlpMediaQuery("(max-width: 639px)");
@@ -219,7 +262,8 @@ function SceneStage({
     );
     if (phone) setPageOpen(true);
   };
-  const host = { name: hostName, avatarUrl: null, mine: setup.preset !== "seat" };
+  // In the seat the helper talks; the player only whispers, so both speakers sit on the left.
+  const host = { name: hostName, avatarUrl: setup.helper?.avatarUrl ?? null, mine: setup.preset !== "seat" };
   const lastPatch = [...model.items].reverse().find((item) => item.kind === "patch");
   const recent =
     lastPatch?.kind === "patch" && !model.chips.find((chip) => chip.id === lastPatch.chipId)?.undone

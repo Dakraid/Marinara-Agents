@@ -267,4 +267,44 @@ assert.ok(
   "fits the artwork guidance limit",
 );
 
+// 12. Slice 4: in the creator seat the player's words are a whisper to the helper: never a line, never quoted.
+const seatItems = [
+  { id: "a", kind: "line" as const, speaker: "host" as const, text: "Welcome, babe." },
+  { id: "w", kind: "whisper" as const, text: "make her go bolder" },
+  { id: "b", kind: "line" as const, speaker: "newcomer" as const, text: "hi" },
+];
+assert.deepEqual(
+  slpSceneTranscript(seatItems).map((line) => line.text),
+  ["Welcome, babe.", "hi"],
+  "a whisper never goes back as a line",
+);
+const [seatSystem, seatUser] = buildSlpSceneTurnMessages({
+  request: {
+    preset: "seat",
+    moment: "name",
+    action: { kind: "say", text: "make her go bolder" },
+    transcript: slpSceneTranscript(seatItems),
+    draft: {},
+    locked: [],
+    direction: "",
+    disclosureMode: "hinted",
+  },
+  newcomerCanon: "",
+  helper: {
+    displayName: "Mia Rose",
+    handle: "miarose",
+    bio: "Pole dance and pink hair.",
+    stagePersonality: "Loud and kind.",
+  },
+  allowedTags: [],
+});
+assert.match(seatSystem.content, /Mia Rose is an established Slurp Creator/u);
+assert.match(
+  seatSystem.content,
+  /The player whispers a steer to Mia Rose: "make her go bolder"\. Mia Rose acts on it in their own words; never quote the whisper\./u,
+);
+assert.match(seatSystem.content, /Write one short line for the host \(Mia Rose\)/u);
+assert.match(seatUser.content, /# Mia Rose \(@miarose\)\nPole dance and pink hair\./u);
+assert.match(seatUser.content, /Mia Rose: Welcome, babe\./u);
+
 console.log("slurp2-scene-onboarding: ok");

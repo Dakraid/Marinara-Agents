@@ -39,6 +39,8 @@ import { useSlpSceneTurn } from "./slp-scene-hooks";
 export type SlpSceneSetup = {
   preset: SlpScenePreset;
   source: Pick<SlpAccount, "id" | "displayName" | "handle" | "avatarUrl">;
+  /** The creator seat: the existing Creator who helps. */
+  helper?: Pick<SlpAccount, "id" | "displayName" | "handle" | "avatarUrl"> | null;
   disclosureMode: SlpIdentityDisclosure;
   connectionId?: string;
 };
@@ -109,8 +111,12 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
       // The player's own words are a host line, except in the seat, where they are a whisper. A
       // retry sends the same words again without writing them twice.
       const own: SlpSceneItem[] =
-        !retry && action.kind === "say" && setup.preset !== "seat"
-          ? [{ id: generateClientId(), kind: "line", speaker: "host", text: action.text }]
+        !retry && action.kind === "say"
+          ? [
+              setup.preset === "seat"
+                ? { id: generateClientId(), kind: "whisper", text: action.text }
+                : { id: generateClientId(), kind: "line", speaker: "host", text: action.text },
+            ]
           : [];
       if (own.length) append(own);
       const before = itemsRef.current;
@@ -119,6 +125,7 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
         const result = await turn.mutateAsync({
           preset: setup.preset,
           sourceAccountId: setup.source.id,
+          ...(setup.helper ? { helperCreatorId: setup.helper.id } : {}),
           disclosureMode: setup.disclosureMode,
           moment,
           action,
