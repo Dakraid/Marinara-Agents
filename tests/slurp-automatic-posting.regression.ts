@@ -77,7 +77,7 @@ assert.match(
   /Date\.parse\(item\.publishAt\) < at\.getTime\(\) - elapsedPreparedSlotMs\(settings\.postsPerDay\)/u,
 );
 assert.match(storage, /slurpCreatorPostingIntervalMs\(settings\.postsPerDay\)/u);
-assert.match(storage, /hasSlurpCreatorPostingIntervalConflict\(activityTimes, publishMs, settings\.postsPerDay\)/u);
+assert.match(storage, /hasSlurpCreatorPostingIntervalConflict\(activityTimes, publishMs, perCreator\)/u);
 assert.doesNotMatch(
   reserveStorage.slice(reserveStorage.indexOf("const invalidIds"), reserveStorage.indexOf("const invalidIdSet")),
   /preserveFutureRows/u,
@@ -108,7 +108,7 @@ assert.match(
 );
 assert.match(
   storage,
-  /latestCreatorPost\.createdAt\) \+ slurpCreatorPostingIntervalMs\(settings\.postsPerDay\) > at\.getTime\(\)/u,
+  /latestCreatorPost\.createdAt\) \+\s*slurpCreatorPostingIntervalMs\(\s*slurpPacedPostsPerDay\(settings\.postsPerDay, await readSlurpCreatorPaceFactor\(db, account\.id\)\),?\s*\) >\s*at\.getTime\(\)/u,
 );
 const postingInterval = (24 * 60 * 60 * 1000) / 8;
 const candidateAt = Date.parse("2026-08-27T12:00:00.000Z");
@@ -201,7 +201,7 @@ assert.match(reserve, /Date\.parse\(item\.publishAt\) > at\.getTime\(\) - DAY_MS
 // has to stay for the widened grace to be safe.
 assert.match(
   storage,
-  /latestCreatorPost\.createdAt\) \+ slurpCreatorPostingIntervalMs\(settings\.postsPerDay\) > at\.getTime\(\)/u,
+  /latestCreatorPost\.createdAt\) \+\s*slurpCreatorPostingIntervalMs\(\s*slurpPacedPostsPerDay\(settings\.postsPerDay, await readSlurpCreatorPaceFactor\(db, account\.id\)\),?\s*\) >\s*at\.getTime\(\)/u,
 );
 // A slot is publishable right up to its interval and retired past it, at every pace.
 for (const postsPerDay of [4, 24, 96]) {
@@ -212,7 +212,7 @@ for (const postsPerDay of [4, 24, 96]) {
 assert.match(settingsUi, /value=\{settings\.postsPerDay\}\s*\n\s*min=\{1\}\s*\n\s*max=\{96\}/u);
 assert.match(routes, /app\.patch\("\/slurp\/auto-post\/schedule\/:slotId"/u);
 assert.match(storage, /item\.id !== current\.id && \(item\.state === "scheduled" \|\| item\.state === "prepared"\)/u);
-assert.match(storage, /hasSlurpCreatorPostingIntervalConflict\(activityTimes, publishMs, settings\.postsPerDay\)/u);
+assert.match(storage, /hasSlurpCreatorPostingIntervalConflict\(activityTimes, publishMs, perCreator\)/u);
 assert.match(routes, /result === "conflict"/u);
 assert.match(hooks, /slots: SlurpScheduleSlot\[\]/u);
 assert.match(settingsUi, /useUpdateCreatorScheduleSlot/u);

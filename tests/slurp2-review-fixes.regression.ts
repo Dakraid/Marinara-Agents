@@ -10,7 +10,7 @@ const plan = read("features/feed/slp-post-plan-service.ts");
 assert.match(plan, /\(slotPlan\?\.sourceEventId \? slotPlan : null\) \?\?/u);
 assert.match(plan, /entry\.status === "claimed" && entry\.opportunityId === slotPlan\.id/u);
 // An arc post in a teaser slot gets no card beat beside the project block.
-assert.match(plan, /!\(isTeaser && ctx\.beats\.arc\)/u);
+assert.match(plan, /!\(isTeaser && ctx\.beats\.arc && !nudged\)/u);
 
 // Beat facts never crowd out the Creator's limits and notes: only the newest few stay active.
 const beats = read("features/feed/slp-post-beat-service.ts");

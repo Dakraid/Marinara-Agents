@@ -11,7 +11,9 @@ import { newId, now } from "../../../../utils/id-generator.js";
 import {
   hasSlurpCreatorPostingIntervalConflict,
   slurpCreatorPostingIntervalMs,
+  slurpPacedPostsPerDay,
 } from "../../../modules/feed/slp-posting-interval.js";
+import { readSlurpCreatorPaceFactor } from "../../creators/slp-steering-storage.js";
 import { SLP_CREATOR_RESERVE_STATE_ID, ROLLING_DAY_MS } from "../../host/slp-storage-constants.js";
 import { parseRecord } from "../../../modules/records/slp-storage-model.js";
 import { slpCreatorReserveFingerprintFor } from "../../creators/slp-source-resolve.js";
@@ -211,7 +213,12 @@ export function createReserveStorage1(context: SlurpStorageContext) {
             .filter((item) => item.state === "scheduled" || item.state === "prepared")
             .map((item) => Date.parse(item.publishAt)),
         ];
-        if (hasSlurpCreatorPostingIntervalConflict(activityTimes, publishMs, settings.postsPerDay)) return null;
+        // The Creator's own spacing follows the pace the player set for them.
+        const perCreator = slurpPacedPostsPerDay(
+          settings.postsPerDay,
+          await readSlurpCreatorPaceFactor(db, input.creatorAccountId),
+        );
+        if (hasSlurpCreatorPostingIntervalConflict(activityTimes, publishMs, perCreator)) return null;
         await tx.insert(slpCreatorPreparedPosts).values({
           id,
           creatorAccountId: input.creatorAccountId,
@@ -302,7 +309,11 @@ export function createReserveStorage1(context: SlurpStorageContext) {
             .filter((item) => item.id !== current.id && (item.state === "scheduled" || item.state === "prepared"))
             .map((item) => Date.parse(item.publishAt)),
         ];
-        if (hasSlurpCreatorPostingIntervalConflict(activityTimes, publishMs, settings.postsPerDay)) {
+        const perCreator = slurpPacedPostsPerDay(
+          settings.postsPerDay,
+          await readSlurpCreatorPaceFactor(db, current.creatorAccountId),
+        );
+        if (hasSlurpCreatorPostingIntervalConflict(activityTimes, publishMs, perCreator)) {
           return "conflict" as const;
         }
         if (current.state === "prepared") {

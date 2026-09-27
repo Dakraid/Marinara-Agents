@@ -82,6 +82,7 @@ import { createSlurpMessagesStorage, type SlurpMessage } from "../../data/slp-st
 import type { SlurpDmPolicy } from "../../modules/messages/slp-messaging.js";
 import { isSlurpCharacterFanAccount } from "../../../../../shared/src/slp/slp-audience-characters.js";
 import { resolveCreatorCharacterCanon, resolveSlurpCharacterFanVoice } from "../../data/creators/slp-source-resolve.js";
+import { resolveSlurpCreatorFlavour } from "../../data/creators/slp-flavour-source.js";
 import {
   claimSlurpModelBudget,
   getSlurpModelBudgetLedger,
@@ -133,6 +134,8 @@ export function buildSlurpMessageChat(input: {
   threadState?: SlurpThreadState;
   creatorState?: SlurpCreatorState;
   characterCanon?: string;
+  /** The flavour brief (see `slp-creator-flavour.ts`); replaces the card dump when present. */
+  flavourBrief?: string;
   generationGuidance: string;
   scheduleContext?: string;
   disclosureMode: Parameters<typeof slpCreatorIdentityInstruction>[0];
@@ -202,9 +205,11 @@ export function buildSlurpMessageChat(input: {
         id: "canon",
         kind: "context" as const,
         optional: true,
-        text: input.characterCanon
-          ? "Character canon is permanent identity and relationship context. Stay consistent with it unless the conversation explicitly establishes a change."
-          : "",
+        text: input.flavourBrief?.trim()
+          ? '"Who you are", after the data, is you: your identity, how you talk, and what is going on in your life lately. Stay consistent with it unless the conversation explicitly establishes a change, and let it colour how you write. Never quote it.'
+          : input.characterCanon
+            ? "Character canon is permanent identity and relationship context. Stay consistent with it unless the conversation explicitly establishes a change."
+            : "",
       },
       // One resolved position, not one line per signal. Rapport, mood, the day, the arc,
       // availability and the tone dial all argue in `slurp-stance.ts` and arrive here agreed. Nine
@@ -315,7 +320,7 @@ export function buildSlurpMessageChat(input: {
           },
         }
       : {}),
-    ...(input.characterCanon ? { characterCanon: protect(input.characterCanon) } : {}),
+    ...(input.characterCanon && !input.flavourBrief?.trim() ? { characterCanon: protect(input.characterCanon) } : {}),
     ...(input.viewerGenerationGuidance?.trim()
       ? { viewerRequest: protect(input.viewerGenerationGuidance.trim()) }
       : {}),
@@ -399,7 +404,12 @@ export function buildSlurpMessageChat(input: {
 
   return [
     { role: "system", content: system },
-    { role: "user", content: `# Untrusted Slurp data\n${JSON.stringify(data, null, 2)}` },
+    {
+      role: "user",
+      content: `# Untrusted Slurp data\n${JSON.stringify(data, null, 2)}${
+        input.flavourBrief?.trim() ? `\n\n# Who you are\n${protect(input.flavourBrief)}` : ""
+      }`,
+    },
   ];
 }
 
@@ -629,6 +639,21 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
     promptInstructions: prompts.instructions,
     scheduleContext,
     characterCanon,
+    // Their own chat lines first: a thread shows how they text, and where they repeat themselves.
+    flavourBrief: await resolveSlurpCreatorFlavour(input.db, {
+      account: input.creator,
+      source,
+      disclosureMode,
+      use: "dm",
+      sequence: input.history.length,
+      ownLines: [
+        ...input.history
+          .filter((message) => message.role === "creator" && message.kind === "text")
+          .map((message) => message.content)
+          .reverse(),
+        ...recentPosts.filter((post) => post.access !== "locked").map((post) => post.content),
+      ],
+    }),
   });
   // The redaction rules travel with the prompt. The answer has to be protected with the same two
   // values the question was built from, or a concealed creator can be unmasked by their own reply.

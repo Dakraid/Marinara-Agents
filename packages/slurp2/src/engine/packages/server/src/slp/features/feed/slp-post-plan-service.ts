@@ -91,8 +91,11 @@ export async function planSlurpPost(
   // A retried or rewritten slot keeps its commitment. A claimed promise has this slot on its row and
   // a claimed campaign stage names its plan, so neither is "due" any more; the slot's own plan is.
   const slotPlan = slotId && !previewOnly ? await findSlurpOpportunityBySlot(db, slotId).catch(() => null) : null;
+  // The player's own idea for this post outranks every automatic reason to post, like their
+  // direction does, but keeps the beat, so the Creator still writes it their own way.
+  const nudged = Boolean(ctx.beats?.nudge) && !directed && !chosen;
   const promise =
-    !directed && !chosen && !previewOnly
+    !directed && !chosen && !nudged && !previewOnly
       ? ((slotPlan?.sourceEventId ? slotPlan : null) ??
         (await findDueSlurpPromise(db, account.id, { at, access: request.access ?? "public" }).catch(
           (error: unknown) => {
@@ -104,7 +107,7 @@ export async function planSlurpPost(
   // A due campaign stage takes an undirected slot the same way a chosen purpose would. It never
   // outranks the player: a directed or purpose-picked post leaves the campaign waiting.
   const stages =
-    !directed && !chosen && !promise && !previewOnly
+    !directed && !chosen && !promise && !nudged && !previewOnly
       ? await listOpenSlurpCampaignStages(db, account.id, at).catch((error: unknown) => {
           logger.warn(error, "[slurp] Could not read campaigns; this post is planned on its own");
           return [];
@@ -122,9 +125,9 @@ export async function planSlurpPost(
   // stay intent-first. A retry repeats the beat its slot already stored. No beat means classic.
   // An arc post in a teaser slot gets no beat: a card beat beside the project block contradicted it.
   const beat =
-    ctx.beats && !directed && !forced && !promise && !stage && !(isTeaser && ctx.beats.arc)
+    ctx.beats && !directed && !forced && !promise && !stage && !(isTeaser && ctx.beats.arc && !nudged)
       ? (slotPlan?.beat ??
-        ctx.beats.arc ??
+        (nudged ? null : ctx.beats.arc) ??
         (await planSlurpBeat(db, {
           accountId: account.id,
           sequence,

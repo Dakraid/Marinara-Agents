@@ -42,6 +42,8 @@ import {
 import { resolveSlurpCharacterFanVoice } from "../../data/creators/slp-source-resolve.js";
 import { NOODLER_UNTRUSTED_CONTENT_INSTRUCTION } from "../feed/slp-feed-contract.js";
 import type { APIProvider } from "@marinara-engine/shared";
+import { resolveSlurpCreatorFlavour } from "../../data/creators/slp-flavour-source.js";
+import { slurpRotationHash } from "../../modules/feed/slp-post-variation.js";
 import {
   claimSlurpModelBudget,
   slurpModelWorkerAllows,
@@ -106,6 +108,8 @@ function buildMessages(input: {
   speakerMemory?: string;
   placeholder: string;
   post?: { title: string | null; content: string | null } | null;
+  /** A delivery note's flavour brief: how this Creator sounds. See `slp-creator-flavour.ts`. */
+  flavourBrief?: string;
   promptBlocks?: SlurpPromptBlockOverrides;
 }) {
   // A delivery note is the only kind the creator speaks, so it gets the opposite framing. Handing
@@ -160,7 +164,12 @@ function buildMessages(input: {
         input.promptBlocks,
       ),
     },
-    { role: "user" as const, content: `# Untrusted Slurp data\n${JSON.stringify(data, null, 2)}` },
+    {
+      role: "user" as const,
+      content: `# Untrusted Slurp data\n${JSON.stringify(data, null, 2)}${
+        input.flavourBrief?.trim() ? `\n\n# How the creator sounds\n${input.flavourBrief}` : ""
+      }`,
+    },
   ];
 }
 
@@ -323,6 +332,18 @@ export async function drainSlurpPendingText(
             kind === "delivery" || !(member || characterFanVoice) ? undefined : slurpFanMemoryForPrompt(tie),
           placeholder,
           post: post ? { title: post.title, content: post.content } : null,
+          // Only the Creator speaks in a delivery note. A concealed Creator's card stays out of this
+          // prompt, which has no identity protection of its own.
+          flavourBrief:
+            kind === "delivery" && (creator.settings.privacy.identityDisclosure ?? "open") === "open"
+              ? await resolveSlurpCreatorFlavour(db, {
+                  account: creator,
+                  source: await noodle.resolveAccountSource(creator),
+                  disclosureMode: "open",
+                  use: "delivery",
+                  sequence: slurpRotationHash(String(row.subjectId)),
+                })
+              : undefined,
           promptBlocks: slurpPromptContext(settings).blocks,
         }),
         {

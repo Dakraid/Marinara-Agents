@@ -32,6 +32,7 @@ import { api } from "../../../lib/api-client";
 import { SlpPostSurfaceMenu } from "../../modules/post/SlpPostMenu";
 import { downloadSlpShareCard, toSlpShareCardInput } from "../../modules/post/slp-share-card";
 import { errorMessage, toSlpPostCardModel, LoadMoreFeedButton, SlurpPostDialog } from "./SlpHomeHelpers";
+import { SlpCreatorSteeringCard } from "../../features/creators/SlpCreatorSteeringCard";
 
 // ---------------------------------------------------------------------------
 // Local types
@@ -608,6 +609,15 @@ function SlpCreatorToolsCard({ model }: { model: ReturnType<typeof useStageProfi
               </>
             )}
           </div>
+        )}
+        {/* Steering: what happens in their life. Only for Creators Slurp writes for. */}
+        {!viewingOwnCreator && !personaBackedCreator && (
+          <SlpCreatorSteeringCard
+            creatorId={profile.id}
+            name={profile.displayName}
+            onPostNow={() => onRunNow(profile.id)}
+            postNowPending={runNowPending}
+          />
         )}
         <div>
           <p className="text-xs font-semibold text-[var(--slurp-muted)]">

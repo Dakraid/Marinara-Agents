@@ -8,7 +8,12 @@ import { resolveSlurpTextConnection } from "../../../base/identity/slp-connectio
 import { resolveCreatorImageConnectionId } from "../../../base/media/slp-image-connections.js";
 import { createSlurpStorage } from "../../../data/slp-storage.js";
 import { slpCreatorReserveFingerprintFor } from "../../../data/creators/slp-source-resolve.js";
-import { hasSlurpCreatorPostingIntervalConflict } from "../../../modules/feed/slp-posting-interval.js";
+import {
+  hasSlurpCreatorPostingIntervalConflict,
+  slurpPacedPostsPerDay,
+  slurpPickCreatorForSlot,
+} from "../../../modules/feed/slp-posting-interval.js";
+import { readSlurpCreatorPaceFactor } from "../../../data/creators/slp-steering-storage.js";
 import { generateCreatorPost } from "../slp-generation-service.js";
 import { resolveSlurpAutomaticPostAccess } from "../slp-automatic-post-access.js";
 import { slurpDeepDetailsImageRunRecorder } from "../../../data/feed/slp-post-deep-details-storage.js";
@@ -123,20 +128,33 @@ export async function prepareNextCreatorReservePost(db: DB, at = new Date()): Pr
         }),
       ),
     );
+    // Each Creator's pace (player steering): a break takes no slot, a busier Creator may post again
+    // sooner and is picked more often, a quieter one waits longer.
+    const paces = new Map(
+      await Promise.all(
+        eligibleAccounts.map(async (candidate): Promise<[string, number]> => [
+          candidate.id,
+          await readSlurpCreatorPaceFactor(db, candidate.id),
+        ]),
+      ),
+    );
     eligibleAccounts = eligibleAccounts.filter(
       (candidate) =>
+        (paces.get(candidate.id) ?? 1) > 0 &&
         !hasSlurpCreatorPostingIntervalConflict(
           activityTimes.get(candidate.id) ?? [],
           Date.parse(publishAt),
-          settings.postsPerDay,
+          slurpPacedPostsPerDay(settings.postsPerDay, paces.get(candidate.id) ?? 1),
         ),
     );
-    if (eligibleAccounts.length === 0) return "holding";
-    account = [...eligibleAccounts].sort(
-      (left, right) =>
-        Math.max(...(activityTimes.get(left.id) ?? []), 0) - Math.max(...(activityTimes.get(right.id) ?? []), 0) ||
-        left.id.localeCompare(right.id),
-    )[0]!;
+    const picked = slurpPickCreatorForSlot(
+      eligibleAccounts,
+      (candidate) => Math.max(...(activityTimes.get(candidate.id) ?? []), 0),
+      (candidate) => paces.get(candidate.id) ?? 1,
+      at.getTime(),
+    );
+    if (!picked) return "holding";
+    account = picked;
     const source = await noodle.resolveAccountSource(account);
     slotId = await noodle.createNoodlerScheduledPost({
       creatorAccountId: account.id,

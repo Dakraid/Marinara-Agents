@@ -13,6 +13,7 @@ import {
   type SlurpReusablePromptInstruction,
 } from "../../base/prompting/slp-prompt-blocks.js";
 import { resolveCreatorCharacterCanon } from "../../data/creators/slp-source-resolve.js";
+import { resolveSlurpCreatorFlavour } from "../../data/creators/slp-flavour-source.js";
 import { slpCreatorPublicIdentityFor } from "./slp-public-identity.js";
 import { slurpPostVariation, slurpPostVariationInstruction } from "../../modules/feed/slp-post-variation.js";
 import { slurpCameraSourceInstruction, slurpPostCameraSource } from "../../modules/feed/slp-camera-source.js";
@@ -86,6 +87,14 @@ export async function previewSlurpPromptBlocks(
     account,
     stagePersonality: account.settings.privacy.stagePersonality ?? "",
     sourceCharacterContext,
+    // The character block reads differently when the brief is there; the preview shows the real one.
+    flavourBrief: await resolveSlurpCreatorFlavour(db, {
+      account,
+      source: linkedPublicAccount,
+      disclosureMode,
+      use: "post",
+      sequence,
+    }),
     disclosureMode,
     publicIdentity,
     recentPosts: [],

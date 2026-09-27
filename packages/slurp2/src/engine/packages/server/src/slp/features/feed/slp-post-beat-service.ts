@@ -13,6 +13,9 @@ import { listSlurpOpportunities, readSlurpBeatHistory } from "../../data/feed/sl
 import type { SlurpContentIntent } from "../../../../../shared/src/slp/slp-content-axes.js";
 import {
   selectSlurpBeat,
+  slurpAnchorsWithout,
+  slurpNudgeBeat,
+  slurpSteeredBeat,
   type SlurpBeat,
   type SlurpCanonAnchors,
   type SlurpDayMoment,
@@ -20,6 +23,7 @@ import {
 import { slurpUsableSharedIdeas, type SlurpSharedIdea } from "../../modules/feed/slp-shared-preseed.js";
 import { selectSlurpReference, slurpReferenceCandidates } from "../../modules/feed/slp-post-reference.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
+import { SLURP_CANON_ANCHORS_KEY as ANCHORS_KEY } from "../../data/creators/slp-flavour-source.js";
 import {
   normalizeSlurpCanonAnchors,
   slurpBeatFactFromPost,
@@ -38,6 +42,7 @@ import {
   slurpTimelineMoment,
 } from "../../modules/creators/slp-creator-schedule-context.js";
 import type { SlpCreatorManagedPost } from "../../../../../shared/src/slp/slp-social.types.js";
+import type { SlpCreatorNudge, SlpCreatorSteering } from "../../../../../shared/src/slp/slp-creator-steering.js";
 
 type SlurpBeatConnection = Parameters<typeof createSlurpPostProvider>[0]["connection"] & { model: string };
 
@@ -52,9 +57,12 @@ export type SlurpBeatContext = {
   arc?: SlurpBeat | null;
   /** Where the day stands at publication; its block weighs the beat's place and work. */
   day?: SlurpDayMoment | null;
+  /** The player's steering: focus and pushed topics take some posts, avoided topics none. */
+  steering?: SlpCreatorSteering | null;
+  /** The player's next idea for this Creator. It is this post's beat, ahead of the arc. */
+  nudge?: SlpCreatorNudge | null;
 };
 
-const ANCHORS_KEY = "slurp2.canon-anchors";
 /** Beat facts kept active at once; older ones expire so real notes are not crowded out. */
 const SLURP_ACTIVE_BEAT_FACTS = 3;
 // Bumped when the extraction asks for more (v2 added the routine), so every cache refreshes once.
@@ -199,8 +207,12 @@ export async function planSlurpBeat(
   },
 ): Promise<SlurpBeat | null> {
   try {
-    const anchors = await slurpBeatAnchorsFor(db, input.accountId, input.context, input.at);
-    if (!anchors) return null;
+    const read = await slurpBeatAnchorsFor(db, input.accountId, input.context, input.at);
+    if (input.context.nudge) return slurpNudgeBeat(input.context.nudge, read, input.intents);
+    const steered = slurpSteeredBeat(input.accountId, input.sequence, input.context.steering, read, input.intents);
+    if (steered) return steered;
+    if (!read) return null;
+    const anchors = slurpAnchorsWithout(read, input.context.steering?.avoid ?? []);
     const history = await readSlurpBeatHistory(db, input.accountId, input.at);
     const shared = input.shared
       ? slurpUsableSharedIdeas({ ...input.shared, usedToday: history.sharedToday ?? {} })

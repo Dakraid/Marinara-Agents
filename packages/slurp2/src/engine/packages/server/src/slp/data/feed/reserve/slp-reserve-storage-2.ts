@@ -13,7 +13,8 @@ import {
 } from "../../../../db/schema/slurp.js";
 import { newId } from "../../../../utils/id-generator.js";
 import { resolveCreatorSourceSnapshot, slpCreatorReserveFingerprintFor } from "../../creators/slp-source-resolve.js";
-import { slurpCreatorPostingIntervalMs } from "../../../modules/feed/slp-posting-interval.js";
+import { slurpCreatorPostingIntervalMs, slurpPacedPostsPerDay } from "../../../modules/feed/slp-posting-interval.js";
+import { readSlurpCreatorPaceFactor } from "../../creators/slp-steering-storage.js";
 import {
   ROLLING_DAY_MS,
   elapsedPreparedSlotMs,
@@ -153,7 +154,11 @@ export function createReserveStorage2(context: SlurpStorageContext) {
           )[0];
           if (
             latestCreatorPost &&
-            Date.parse(latestCreatorPost.createdAt) + slurpCreatorPostingIntervalMs(settings.postsPerDay) > at.getTime()
+            Date.parse(latestCreatorPost.createdAt) +
+              slurpCreatorPostingIntervalMs(
+                slurpPacedPostsPerDay(settings.postsPerDay, await readSlurpCreatorPaceFactor(db, account.id)),
+              ) >
+              at.getTime()
           ) {
             discardedMediaPaths.push(
               String(parseRecord(parseRecord(current.payload).metadata).noodlerMediaPath ?? "") || null,

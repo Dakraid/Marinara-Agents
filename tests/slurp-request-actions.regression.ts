@@ -80,7 +80,7 @@ const plan = slurp2Source("packages/slurp2/src/engine/packages/server/src/slp/fe
 assert.match(plan, /await findDueSlurpPromise\(db, account\.id, \{ at, access: request\.access \?\? "public" \}\)/u);
 assert.match(
   plan,
-  /!directed && !chosen && !promise && !previewOnly/u,
+  /!directed && !chosen && !promise && !nudged && !previewOnly/u,
   "a promise takes the slot before a campaign stage",
 );
 assert.match(plan, /await claimSlurpPromise\(db, promise\.id, \{/u);

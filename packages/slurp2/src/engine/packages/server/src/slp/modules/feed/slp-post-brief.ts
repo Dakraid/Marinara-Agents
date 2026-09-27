@@ -106,6 +106,7 @@ function slurpDayLine(beat: SlurpBeat, day: SlurpDayMoment, protect: (value: str
   const now = protect(day.current);
   if (beat.anchorKind === "arc")
     return `Your usual plan for now: ${now}. Today the arc changes that: the chapter decides what you do.`;
+  if (beat.nudgeId) return `Your usual plan for now: ${now}. Today this idea decides what you do.`;
   if (day.queued)
     return `Right now in your day: ${now}. You wrote this post just before; do not mention sleeping, being awake, or being on the road.`;
   return `Right now in your day: ${now}. The beat happens within it.`;
@@ -159,8 +160,10 @@ export function slurpPostBriefSection(
       : []),
     ...(day ? [slurpDayLine(beat, day, protect)] : []),
     `Just before: ${day?.previous ? protect(day.previous) : "nothing relevant"}.`,
-    beat.anchorKind === "arc"
-      ? "Free zone: you may invent reactions, feelings, sensory detail, jokes, and wording. This chapter may change your life as the arc says; do not add people, other earlier events, or times."
+    beat.anchorKind === "arc" || beat.anchorKind === "steer"
+      ? beat.anchorKind === "arc"
+        ? "Free zone: you may invent reactions, feelings, sensory detail, jokes, and wording. This chapter may change your life as the arc says; do not add people, other earlier events, or times."
+        : "Free zone: you may invent reactions, feelings, sensory detail, jokes, and wording. This idea may change your life as it says; do not add people, other earlier events, or times."
       : "Free zone: you may invent reactions, feelings, sensory detail, jokes, and wording. Do not add people, earlier events, times, or lasting changes to your life.",
     'Claims: beside title and content, return claims: {"people": [], "earlierEvents": [], "stateChanges": []}. List everyone present or mentioned by name or role, every earlier event you refer to, and every lasting change to your life. Use empty lists when there are none.',
     "# End this post",
@@ -227,9 +230,12 @@ export function checkSlurpBeatClaims(
   if (!claims) return { ok: true, problems: [], claims: null };
   // Anyone the brief itself names: the cast, the Creator, an arc chapter, and a callback.
   const known = new Set(
-    [...beat.cast, ...selfNames, beat.anchorKind === "arc" ? beat.line : "", beat.reference?.text ?? ""].flatMap(
-      nameWords,
-    ),
+    [
+      ...beat.cast,
+      ...selfNames,
+      beat.anchorKind === "arc" || beat.anchorKind === "steer" ? beat.line : "",
+      beat.reference?.text ?? "",
+    ].flatMap(nameWords),
   );
   const supported = new Set([
     ...words(beat.line),
@@ -248,7 +254,9 @@ export function checkSlurpBeatClaims(
     ...people.map((person) => `person not in the cast: ${person}`),
     ...events.map((event) => `earlier event not in the brief: ${event}`),
     // An arc chapter is a change by design (moving day); only a free-standing beat may not add one.
-    ...(beat.anchorKind === "arc" ? [] : claims.stateChanges.map((change) => `lasting change: ${change}`)),
+    ...(beat.anchorKind === "arc" || beat.anchorKind === "steer"
+      ? []
+      : claims.stateChanges.map((change) => `lasting change: ${change}`)),
   ];
   return { ok: problems.length === 0, problems, claims };
 }

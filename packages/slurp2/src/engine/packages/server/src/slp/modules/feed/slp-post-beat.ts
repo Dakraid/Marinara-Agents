@@ -24,6 +24,7 @@ import { slurpWeightedPick } from "./slp-weighted.js";
 import { SLURP_VISUAL_SEXUAL_LEVELS, type SlurpVisualSexualLevel } from "../../base/media/slp-visual-brief.js";
 import type { SlurpSharedIdea } from "./slp-shared-preseed.js";
 import { SLURP_REFERENCE_KINDS, type SlurpBeatReference } from "./slp-post-reference.js";
+import type { SlpCreatorSteering } from "../../../../../shared/src/slp/slp-creator-steering.js";
 
 /** Shared ideas weigh more than a deck line of the same kind, so level 1 is actually used. */
 const SHARED_IDEA_BOOST = 1.5;
@@ -82,8 +83,11 @@ export function slurpAnchorFitsActivity(anchor: string, activity: string): boole
 /** One chosen beat. Stored on the content opportunity, so a retry repeats it. */
 export type SlurpBeat = {
   type: SlurpBeatType;
-  /** `arc`: the beat is the Creator's active arc chapter, not a card anchor. */
-  anchorKind: SlurpAnchorKind | "arc";
+  /**
+   * `arc`: the beat is the Creator's active arc chapter, not a card anchor. `steer`: the player's
+   * idea, focus, or pushed topic. Both may change the Creator's life, as their text says.
+   */
+  anchorKind: SlurpAnchorKind | "arc" | "steer";
   anchor: string;
   line: string;
   /** Named people in the beat. Empty means alone. */
@@ -97,6 +101,8 @@ export type SlurpBeat = {
   heatFloor?: number;
   /** Something real this post may refer back to. See `slp-post-reference.ts`. */
   reference?: SlurpBeatReference;
+  /** The player's one-off idea this beat carries out; used once, then removed. */
+  nudgeId?: string;
 };
 
 type SlurpBeatDeck = {
@@ -422,7 +428,11 @@ export function parseSlurpBeat(raw: unknown): SlurpBeat | null {
     const beat = value as Record<string, unknown>;
     if (
       !SLURP_BEAT_TYPES.includes(beat.type as SlurpBeatType) ||
-      !(beat.anchorKind === "arc" || SLURP_ANCHOR_KINDS.includes(beat.anchorKind as SlurpAnchorKind)) ||
+      !(
+        beat.anchorKind === "arc" ||
+        beat.anchorKind === "steer" ||
+        SLURP_ANCHOR_KINDS.includes(beat.anchorKind as SlurpAnchorKind)
+      ) ||
       typeof beat.anchor !== "string" ||
       typeof beat.line !== "string"
     ) {
@@ -430,7 +440,7 @@ export function parseSlurpBeat(raw: unknown): SlurpBeat | null {
     }
     return {
       type: beat.type as SlurpBeatType,
-      anchorKind: beat.anchorKind as SlurpAnchorKind | "arc",
+      anchorKind: beat.anchorKind as SlurpBeat["anchorKind"],
       anchor: beat.anchor,
       line: beat.line,
       cast: Array.isArray(beat.cast) ? beat.cast.filter((entry): entry is string => typeof entry === "string") : [],
@@ -439,6 +449,7 @@ export function parseSlurpBeat(raw: unknown): SlurpBeat | null {
       ...(beat.elsewhere === true ? { elsewhere: true } : {}),
       ...(typeof beat.heatFloor === "number" ? { heatFloor: beat.heatFloor } : {}),
       ...(parseReference(beat.reference) ?? {}),
+      ...(typeof beat.nudgeId === "string" ? { nudgeId: beat.nudgeId } : {}),
     };
   } catch {
     return null;
@@ -495,4 +506,100 @@ export function slurpPlannedExplicitLevel(
     sequence,
     SLURP_VISUAL_SEXUAL_LEVELS.slice(bottom, top + 1).map((value, index) => ({ value, weight: (index + 1) ** 2 })),
   );
+}
+
+const mentions = (text: string, value: string) => text.toLocaleLowerCase().includes(value.toLocaleLowerCase());
+
+/** The anchors without anything the player wants left alone for now. */
+export function slurpAnchorsWithout(anchors: SlurpCanonAnchors, avoid: readonly string[]): SlurpCanonAnchors {
+  if (!avoid.length) return anchors;
+  const keep = (value: string) => !avoid.some((topic) => mentions(value, topic));
+  return {
+    ...anchors,
+    people: anchors.people.filter((person) => keep(`${person.name} ${person.relation}`)),
+    places: anchors.places.filter(keep),
+    work: anchors.work.filter(keep),
+    objects: anchors.objects.filter(keep),
+    habits: anchors.habits.filter(keep),
+    runningJokes: anchors.runningJokes.filter(keep),
+  };
+}
+
+/** Card people the text names, so the claim check does not call them invented. */
+function castIn(text: string, anchors: SlurpCanonAnchors | null | undefined): string[] {
+  return (anchors?.people ?? [])
+    .filter((person) => mentions(text, person.name))
+    .map((person) => (person.relation ? `${person.name} (${person.relation})` : person.name));
+}
+
+/**
+ * The player's one-off idea as this post's beat ("gym post tonight"). The idea says what happens;
+ * the Creator's card, voice, and day still say how. A teaser slot keeps a teaser-capable type.
+ */
+export function slurpNudgeBeat(
+  nudge: { id: string; text: string },
+  anchors: SlurpCanonAnchors | null | undefined,
+  intents: readonly SlurpContentIntent[],
+): SlurpBeat {
+  const text = nudge.text.trim().replace(/[.!?]+$/u, "");
+  return {
+    type: intents.includes("casual") ? "routine_twist" : "anticipation",
+    anchorKind: "steer",
+    anchor: text,
+    line: `The idea for this one: ${text}. Make it yours.`,
+    cast: castIn(text, anchors),
+    place: null,
+    nudgeId: nudge.id,
+    ...(anchors ? { heatFloor: anchors.heat.min } : {}),
+  };
+}
+
+const STEERED_LINES: readonly (readonly [SlurpBeatType, string])[] = [
+  ["achievement", "You make real progress with {a}."],
+  ["routine_twist", "{a} takes up part of your day today."],
+  ["mishap", "{a} does not quite go to plan today."],
+  ["anticipation", "Something about {a} is coming up soon."],
+  ["opinion", "You have a strong feeling about {a} and say it."],
+  ["sensory_mood", "A quiet moment with {a} puts you in a certain mood."],
+];
+
+/**
+ * Whether this ordinary slot is about what the player steered: the current focus or one pushed
+ * topic takes about two posts in five, never every post, so the rest of the life keeps going.
+ */
+export function slurpSteeredBeat(
+  creatorAccountId: string,
+  sequence: number,
+  steering: SlpCreatorSteering | null | undefined,
+  anchors: SlurpCanonAnchors | null | undefined,
+  intents: readonly SlurpContentIntent[],
+): SlurpBeat | null {
+  const topics = [...(steering?.focus ? [steering.focus] : []), ...(steering?.push ?? [])];
+  if (!topics.length || !intents.includes("casual")) return null;
+  const steered = slurpWeightedPick("steer", creatorAccountId, sequence, [
+    { value: true, weight: 2 },
+    { value: false, weight: 3 },
+  ]);
+  if (!steered) return null;
+  const topic = slurpWeightedPick(
+    "steerTopic",
+    creatorAccountId,
+    sequence,
+    topics.map((value, index) => ({ value, weight: index === 0 && steering?.focus ? 2 : 1 })),
+  );
+  const [type, template] = slurpWeightedPick(
+    "steerLine",
+    creatorAccountId,
+    sequence,
+    STEERED_LINES.map((line) => ({ value: line, weight: line[0] === "mishap" ? 0.5 : 1 })),
+  );
+  return {
+    type,
+    anchorKind: "steer",
+    anchor: topic,
+    line: template.replace("{a}", topic).replace(/^\p{Ll}/u, (first) => first.toLocaleUpperCase()),
+    cast: castIn(topic, anchors),
+    place: null,
+    ...(anchors ? { heatFloor: anchors.heat.min } : {}),
+  };
 }

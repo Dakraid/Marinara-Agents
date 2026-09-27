@@ -64,6 +64,11 @@ export type SlurpPostPromptInput = {
   /** The Creator's private content menu. See `slurp-post-guidance.ts`. */
   contentMenu?: string;
   sourceCharacterContext: string;
+  /**
+   * The flavour brief: who they are and how they sound, a varied handful of true details, and the
+   * player's steering, in plain words. See `slp-creator-flavour.ts`. Replaces the card dump.
+   */
+  flavourBrief?: string;
   /** This Creator's own look and life. See `SlpCreatorStageFacts`. */
   stageFacts?: SlpCreatorStageFacts;
   disclosureMode: SlpIdentityDisclosure;
@@ -144,7 +149,9 @@ export function buildSlurpPostBlocks(input: SlurpPostPromptInput): SlurpPromptBl
     {
       id: "character",
       kind: "context" as const,
-      text: "The source character is who this Creator actually is: take their temperament, register, humour, and interests from it. The stage voice describes how they perform on Slurp and how they treat the people reading, layered over that person, not a replacement for them.",
+      text: input.flavourBrief?.trim()
+        ? '"Who you are" is this Creator as a person: their temperament, voice, life, and what is going on lately. Take how they talk and what they care about from it. The stage voice describes how they perform on Slurp and how they treat the people reading, layered over that person, not a replacement for them.'
+        : "The source character is who this Creator actually is: take their temperament, register, humour, and interests from it. The stage voice describes how they perform on Slurp and how they treat the people reading, layered over that person, not a replacement for them.",
     },
     // Up to 20,000 characters of free-text user guidance spliced in bare, between two hard rules,
     // with nothing marking where it ends. Long guidance blurred into the disclosure instruction
@@ -287,8 +294,12 @@ export function buildNoodlerPostMessages(input: SlurpPostPromptInput): ChatMessa
         ]
       : []),
     "",
-    "# Source character",
-    protect(input.sourceCharacterContext) || "No source character is linked to this Creator.",
+    ...(input.flavourBrief?.trim()
+      ? ["# Who you are", protect(input.flavourBrief)]
+      : [
+          "# Source character",
+          protect(input.sourceCharacterContext) || "No source character is linked to this Creator.",
+        ]),
     "",
     ...(input.loreContext && protect(input.loreContext) ? ["# World lore", protect(input.loreContext), ""] : []),
     // The schedule used to sit unlabelled inside the source card, with the one instruction that

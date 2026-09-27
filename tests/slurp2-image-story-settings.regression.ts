@@ -18,7 +18,7 @@ assert.match(generation, /input\.allowStory !== false && variation\?\.story === 
 assert.match(generation, /settings\.storyImagesEnabled \? settings\.storyRate : "off"/u);
 assert.match(
   generation,
-  /input\.request\.postType === "story"\) &&\s*imagesEnabled/u,
+  /input\.request\.postType === "story" \|\|\s*nudge\?\.story === true\) &&\s*imagesEnabled/u,
   "manual Story posts must still use the image path",
 );
 assert.match(automation, /settingKey="storyImagesEnabled"/u);

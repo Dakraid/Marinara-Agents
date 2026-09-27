@@ -56,6 +56,8 @@ import { createGalleryStorage } from "../../../services/storage/gallery.storage.
 import { pickGalleryAttachmentForAccount } from "./slp-generated-activity-service.js";
 import { protectCreatorGeneratedIdentity, type PublicIdentity } from "../../base/identity/slp-identity-protection.js";
 import { resolveCreatorCharacterCanon } from "../../data/creators/slp-source-resolve.js";
+import { readSlurpCreatorSteering, removeSlurpCreatorNudge } from "../../data/creators/slp-steering-storage.js";
+import { resolveSlurpCreatorFlavour } from "../../data/creators/slp-flavour-source.js";
 import { resolveSlurpEventInstruction } from "../world/slp-world-contract.js";
 import { slpCreatorPublicIdentityFor, protectBoundedCreatorGeneratedText } from "./slp-public-identity.js";
 import {
@@ -182,20 +184,26 @@ export async function generateCreatorPost(
     promptBlocks: input.promptBlocks ?? settings.promptBlocks,
     promptInstructions: input.promptInstructions ?? settings.promptInstructions,
   });
-  const directed = Boolean(input.request.noodlerPostGuide?.trim());
+  // The player's steering. The oldest idea is this post's beat; the classic planner has no beats,
+  // so there it becomes the post direction instead.
+  const steering = await readSlurpCreatorSteering(db, account.id).catch(() => null);
+  const nudge = !input.request.noodlerPostGuide?.trim() && !input.previewOnly ? (steering?.nudges[0] ?? null) : null;
+  const classicIdea = nudge && settings.postPlanner !== "beats" ? nudge.text : "";
+  const directed = Boolean(input.request.noodlerPostGuide?.trim() || classicIdea);
   const variation = directed
     ? null
     : slurpPostVariation(account.id, sequence, settings.storyImagesEnabled ? settings.storyRate : "off");
   // A project claims this post only if the rotation gives it one. Player direction stands both
   // rotations down for the same reason: their direction is the subject, and a second one fights it.
-  const project = directed
-    ? null
-    : slurpPostProject(
-        account.id,
-        sequence,
-        slurpArcRotation(await noodle.listActiveProjects(account.id)),
-        settings.projectRate,
-      );
+  const project =
+    directed || nudge
+      ? null
+      : slurpPostProject(
+          account.id,
+          sequence,
+          slurpArcRotation(await noodle.listActiveProjects(account.id)),
+          settings.projectRate,
+        );
   // The project's own posts, not the page's. The page history is already supplied above and says
   // nothing about where this thread had got to.
   const projectPosts = project ? await noodle.listPostsByProject(project.id, 4) : [];
@@ -207,7 +215,8 @@ export async function generateCreatorPost(
   // A Story needs a picture; a player-requested Story outranks the rotation. Computed once, here.
   const storyVariation =
     ((input.allowStory !== false && variation?.story === true && settings.storyImagesEnabled) ||
-      input.request.postType === "story") &&
+      input.request.postType === "story" ||
+      nudge?.story === true) &&
     imagesEnabled;
   // Same slot the scheduler used to choose free access, so only its teasers read as one.
   const isTeaser =
@@ -251,6 +260,8 @@ export async function generateCreatorPost(
               fallbackConnection,
               arc: project ? slurpArcBeat(project) : null,
               day: beatDay,
+              steering,
+              nudge,
               shared: settings.sharedPreseed
                 ? { tags: account.settings.profile.tags ?? [], worldEvents: settings.sharedWorldEvents }
                 : null,
@@ -317,9 +328,19 @@ export async function generateCreatorPost(
   const explicitLevel = beat
     ? slurpPlannedExplicitLevel(dialLevel, beat.heatFloor ?? 0, account.id, sequence)
     : dialLevel;
+  const flavourBrief = await resolveSlurpCreatorFlavour(db, {
+    account,
+    source: linkedPublicAccount,
+    disclosureMode,
+    use: storyVariation ? "story" : "post",
+    sequence,
+    steering,
+    ownLines: recentPosts.filter((post) => post.access !== "locked").map((post) => post.content),
+  });
   const messages = buildNoodlerPostMessages({
     account,
     sourceCharacterContext,
+    flavourBrief,
     stagePersonality: account.settings.privacy.stagePersonality ?? "",
     stageFacts: account.settings.stage,
     contentMenu,
@@ -328,7 +349,7 @@ export async function generateCreatorPost(
     recentPosts,
     otherCreatorSubjects,
     // A variation carries its own format, so an automatic post stops always being a caption.
-    request: { ...input.request, format },
+    request: { ...input.request, format, ...(classicIdea ? { noodlerPostGuide: classicIdea } : {}) },
     variationInstruction: variation
       ? slurpPostVariationInstruction(variation, cameraInstruction, { shoot: !!shoot, beat: !!beat })
       : undefined,
@@ -420,6 +441,9 @@ export async function generateCreatorPost(
     },
   );
   compiledPrompt = sentMessages.map((message) => `# ${message.role}\n${message.content}`).join("\n\n");
+  // An idea is used once. Removed only after the model answered, so a failed call keeps it.
+  const usedIdea = beat?.nudgeId ?? (classicIdea ? nudge?.id : undefined);
+  if (usedIdea) await removeSlurpCreatorNudge(db, account.id, usedIdea).catch(() => undefined);
 
   const protectedContent = protectBoundedCreatorGeneratedText(
     generated.content,
