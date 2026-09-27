@@ -1,4 +1,4 @@
-import { Check, CheckCheck, Copy, Moon } from "lucide-react";
+import { Camera, Check, CheckCheck, Cloud, Copy, Dumbbell, Moon, Plane, WifiOff } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { SlpHeartGlyph } from "../../base/chrome/SlpGlyphs";
 import { useTranslation as useUiTranslation } from "react-i18next";
@@ -14,6 +14,7 @@ import { SlpLockedMediaTile } from "../../modules/post/SlpLockedMedia";
 import { playSlpPop, playSlpSpendMoment } from "../../modules/sparkle/SlpSparkle";
 import type { SlurpMessage, SlurpThreadRelationship } from "../../features/messages/slp-messages-contract";
 import { slurpBubbleRadius, type SlurpBubbleGroup } from "./slp-bubble-group";
+import type { SlurpAwayKind } from "./slp-away-kind";
 import { useReactToSlurpMessage, useUnlockSlurpMessage } from "../../features/messages/slp-message-action-hooks";
 
 // One message in a thread, the away animation and the platform action card.
@@ -65,13 +66,48 @@ export function slurpBubbleSurface(mine: boolean): string {
     : "bg-[color-mix(in_srgb,var(--slurp-surface-raised)_86%,transparent)] text-[var(--slurp-text)] shadow-[var(--slurp-highlight),var(--slurp-shadow-raised)] backdrop-blur-md";
 }
 
-export function SlurpAwayAnimation({ account }: { account: Parameters<typeof Avatar>[0]["account"] | null }) {
+/** Per kind: the badge glyph, its motion, and what drifts off it. "away" is the original card. */
+const SLURP_AWAY_ART: Record<
+  SlurpAwayKind,
+  { Icon: typeof Moon; motion: string; mote: "dot" | "z" | "spark" | "drop" | "trail" | null }
+> = {
+  away: { Icon: Moon, motion: "bob", mote: "dot" },
+  asleep: { Icon: Moon, motion: "sway", mote: "z" },
+  busy: { Icon: Camera, motion: "snap", mote: "spark" },
+  gym: { Icon: Dumbbell, motion: "lift", mote: "drop" },
+  trip: { Icon: Plane, motion: "glide", mote: "trail" },
+  cooling: { Icon: Cloud, motion: "drift", mote: "drop" },
+  quiet: { Icon: WifiOff, motion: "fade", mote: null },
+};
+
+export function SlurpAwayAnimation({
+  account,
+  kind = "away",
+}: {
+  account: Parameters<typeof Avatar>[0]["account"] | null;
+  kind?: SlurpAwayKind;
+}) {
+  const art = SLURP_AWAY_ART[kind];
   return (
-    <div className="slurp-away relative flex h-28 w-28 items-center justify-center sm:h-32 sm:w-32" aria-hidden="true">
+    <div
+      className="slurp-away relative flex h-28 w-28 items-center justify-center sm:h-32 sm:w-32"
+      data-away-kind={kind}
+      aria-hidden="true"
+    >
       <style>{`
         .slurp-away-glow { animation: slurp-away-breathe 3.2s ease-in-out infinite; }
         .slurp-away-mote { animation: slurp-away-rise 3.6s ease-in infinite; opacity: 0; }
         .slurp-away-moon { animation: slurp-away-bob 3.2s ease-in-out infinite; }
+        .slurp-away-moon[data-motion="sway"] { animation: slurp-away-sway 4.4s ease-in-out infinite; }
+        .slurp-away-moon[data-motion="snap"] { animation: slurp-away-snap 3.6s ease-in-out infinite; }
+        .slurp-away-moon[data-motion="lift"] { animation: slurp-away-lift 1.8s ease-in-out infinite; }
+        .slurp-away-moon[data-motion="glide"] { animation: slurp-away-glide 3.8s ease-in-out infinite; }
+        .slurp-away-moon[data-motion="drift"] { animation: slurp-away-drift 5s ease-in-out infinite; }
+        .slurp-away-moon[data-motion="fade"] { animation: slurp-away-fade 3.4s ease-in-out infinite; }
+        .slurp-away-mote[data-mote="z"] { animation: slurp-away-z 4.2s ease-out infinite; }
+        .slurp-away-mote[data-mote="spark"] { animation: slurp-away-spark 3.6s ease-out infinite; }
+        .slurp-away-mote[data-mote="drop"] { animation: slurp-away-drop 2.6s ease-in infinite; }
+        .slurp-away-mote[data-mote="trail"] { animation: slurp-away-trail 3.8s linear infinite; }
         @keyframes slurp-away-breathe {
           0%, 100% { transform: scale(0.86); opacity: 0.35; }
           50% { transform: scale(1.08); opacity: 0.7; }
@@ -85,29 +121,125 @@ export function SlurpAwayAnimation({ account }: { account: Parameters<typeof Ava
           0%, 100% { transform: translate3d(0, 0, 0) rotate(-8deg); }
           50% { transform: translate3d(0, -3px, 0) rotate(6deg); }
         }
+        @keyframes slurp-away-sway {
+          0%, 100% { transform: rotate(-14deg); }
+          50% { transform: translate3d(0, 2px, 0) rotate(4deg); }
+        }
+        @keyframes slurp-away-snap {
+          0%, 70%, 100% { transform: rotate(-6deg) scale(1); box-shadow: var(--slurp-shadow-raised); }
+          76% { transform: rotate(-2deg) scale(1.1); box-shadow: 0 0 0 6px color-mix(in srgb, var(--noodle-accent) 30%, transparent); }
+          84% { transform: rotate(-6deg) scale(1); }
+        }
+        @keyframes slurp-away-lift {
+          0%, 100% { transform: translate3d(0, 1px, 0) rotate(-10deg); }
+          50% { transform: translate3d(0, -4px, 0) rotate(-10deg); }
+        }
+        @keyframes slurp-away-glide {
+          0%, 100% { transform: translate3d(-2px, 1px, 0) rotate(-12deg); }
+          50% { transform: translate3d(3px, -3px, 0) rotate(-4deg); }
+        }
+        @keyframes slurp-away-drift {
+          0%, 100% { transform: translate3d(-2px, 0, 0); }
+          50% { transform: translate3d(2px, -1px, 0); }
+        }
+        @keyframes slurp-away-fade {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.45; }
+        }
+        @keyframes slurp-away-z {
+          0% { transform: translate3d(0, 0, 0) scale(0.6) rotate(-10deg); opacity: 0; }
+          25% { opacity: 0.95; }
+          100% { transform: translate3d(16px, -34px, 0) scale(1.15) rotate(8deg); opacity: 0; }
+        }
+        @keyframes slurp-away-spark {
+          0%, 60%, 100% { transform: scale(0); opacity: 0; }
+          72% { transform: scale(1.2); opacity: 1; }
+          86% { transform: scale(0.6); opacity: 0; }
+        }
+        @keyframes slurp-away-drop {
+          0% { transform: translate3d(0, 0, 0) scale(0.7); opacity: 0; }
+          25% { opacity: 0.85; }
+          100% { transform: translate3d(-4px, 26px, 0) scale(1); opacity: 0; }
+        }
+        @keyframes slurp-away-trail {
+          0% { transform: translate3d(0, 0, 0); opacity: 0; }
+          20% { opacity: 0.8; }
+          100% { transform: translate3d(-30px, 14px, 0); opacity: 0; }
+        }
         @media (prefers-reduced-motion: reduce) {
-          .slurp-away-glow, .slurp-away-moon { animation: none; }
-          .slurp-away-mote { animation: none; opacity: 0.5; }
+          .slurp-away-glow, .slurp-away-moon, .slurp-away-moon[data-motion] { animation: none; }
+          .slurp-away-mote, .slurp-away-mote[data-mote] { animation: none; opacity: 0.5; }
         }
       `}</style>
       <span className="slurp-away-glow absolute inset-2 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--noodle-accent)_45%,transparent),transparent_70%)]" />
-      <span className="relative rounded-full opacity-90 grayscale-[20%] ring-4 ring-[var(--slurp-surface-raised)]">
+      <span
+        className={cn(
+          "relative rounded-full opacity-90 ring-4 ring-[var(--slurp-surface-raised)]",
+          kind === "quiet" ? "grayscale-[60%]" : "grayscale-[20%]",
+        )}
+      >
         {account ? (
           <Avatar account={account} size="lg" />
         ) : (
           <span className="flex h-24 w-24 items-center justify-center rounded-full bg-[var(--slurp-surface-raised)]" />
         )}
       </span>
-      <span className="slurp-away-moon absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--slurp-surface-raised)] text-[var(--noodle-accent-foreground)] shadow-[var(--slurp-shadow-raised)] ring-1 ring-[var(--noodle-divider)] sm:right-3 sm:top-3">
-        <Moon size={14} fill="currentColor" />
+      <span
+        className="slurp-away-moon absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--slurp-surface-raised)] text-[var(--noodle-accent)] shadow-[var(--slurp-shadow-raised)] ring-1 ring-[var(--noodle-divider)] sm:right-3 sm:top-3"
+        data-motion={art.motion === "bob" ? undefined : art.motion}
+      >
+        <art.Icon size={14} fill={kind === "away" || kind === "asleep" ? "currentColor" : "none"} />
       </span>
-      {[0, 1.2, 2.4].map((delay, index) => (
-        <span
-          key={delay}
-          className="slurp-away-mote absolute right-5 top-6 rounded-full bg-[var(--noodle-accent)]"
-          style={{ animationDelay: `${delay}s`, height: 4 + index * 2, width: 4 + index * 2 }}
-        />
-      ))}
+      {art.mote === "dot" &&
+        [0, 1.2, 2.4].map((delay, index) => (
+          <span
+            key={delay}
+            className="slurp-away-mote absolute right-5 top-6 rounded-full bg-[var(--noodle-accent)]"
+            style={{ animationDelay: `${delay}s`, height: 4 + index * 2, width: 4 + index * 2 }}
+          />
+        ))}
+      {art.mote === "z" &&
+        [0, 1.4, 2.8].map((delay, index) => (
+          <span
+            key={delay}
+            data-mote="z"
+            className="slurp-away-mote absolute right-4 top-4 font-bold leading-none text-[var(--noodle-accent)]"
+            style={{ animationDelay: `${delay}s`, fontSize: 9 + index * 3 }}
+          >
+            z
+          </span>
+        ))}
+      {art.mote === "spark" &&
+        [
+          { delay: 0, right: 1, top: 1 },
+          { delay: 0.12, right: 11, top: -1 },
+          { delay: 0.24, right: -1, top: 11 },
+        ].map((spark) => (
+          <span
+            key={spark.delay}
+            data-mote="spark"
+            className="slurp-away-mote absolute h-1.5 w-1.5 rotate-45 bg-[var(--noodle-accent)]"
+            style={{ animationDelay: `${spark.delay}s`, right: spark.right, top: spark.top }}
+          />
+        ))}
+      {art.mote === "drop" &&
+        [0, 0.9, 1.8].map((delay, index) => (
+          <span
+            key={delay}
+            data-mote="drop"
+            className="slurp-away-mote absolute top-10 w-1 rounded-full bg-[color-mix(in_srgb,var(--noodle-accent)_70%,white)] sm:top-11"
+            style={{ animationDelay: `${delay}s`, height: 5 + index, right: 12 + index * 6 }}
+          />
+        ))}
+      {art.mote === "trail" &&
+        [0, 1.3, 2.6].map((delay) => (
+          <span
+            key={delay}
+            data-mote="trail"
+            className="slurp-away-mote absolute right-6 top-5 h-1 w-2.5 rounded-full bg-[var(--noodle-accent)]"
+            style={{ animationDelay: `${delay}s` }}
+          />
+        ))}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { SlpCoinText } from "../../modules/coin/SlpCoin";
 import {
+  SLURP_AWAY_KIND_FALLBACKS,
   SLURP_AWAY_STATUSES,
   SLURP_AWAY_TITLE_FALLBACKS,
   SLURP_MESSAGE_PAGE,
@@ -36,6 +37,8 @@ import {
   SlurpPlatformActionCard,
 } from "./SlpMessageBubble";
 import { slurpBubbleGroup } from "./slp-bubble-group";
+import { slurpAwayKind } from "./slp-away-kind";
+import { formatClockTime } from "../../base/ui/slp-date-time";
 
 /**
  * A conversation is a full-screen task on phones (design language §8): it leaves the page for a
@@ -106,12 +109,27 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
     showOlder,
     waitingNote,
     canForceReply,
+    availability,
     holdTyping,
     threadQuery,
   } = model;
   // Until the conversation has loaded there is nothing to read and no policy to send under, so the
   // composer stays away instead of offering a live input on a blank screen.
   const notLoaded = !threadQuery.data;
+  // "Not now" gets the away card: a reply status that means it, or (after a reload, when only the
+  // owed reply is left) a Creator who is not online or is cooling off.
+  const away = slurpAwayKind({ status: waitingNote, availability, coolUntil: relationship?.coolUntil });
+  const awayCard =
+    (waitingNote ? SLURP_AWAY_STATUSES.has(waitingNote) : Boolean(availability && !availability.online)) ||
+    (!waitingNote && away.kind === "cooling")
+      ? { ...away, status: waitingNote ?? "owed" }
+      : null;
+  const awayTag =
+    away.kind === "away"
+      ? localizeUi("ui.slurp.messages.away", { defaultValue: "Away" })
+      : localizeUi(`ui.slurp.messages.awayKind.${away.kind}.tag`, {
+          defaultValue: SLURP_AWAY_KIND_FALLBACKS[away.kind]?.tag ?? "Away",
+        });
   // Bubbles that arrive while the chat is open land with the entrance motion; the ones it opened with do not.
   const openedWith = useRef<Set<string> | null>(null);
   if (openedWith.current === null && threadQuery.data) openedWith.current = new Set(messages.map((m) => m.id));
@@ -266,30 +284,39 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
               {!typing && (waitingNote || canForceReply) && (
                 <section
                   aria-live="polite"
-                  aria-labelledby={waitingNote && SLURP_AWAY_STATUSES.has(waitingNote) ? "slurp-away-title" : undefined}
+                  aria-labelledby={awayCard ? "slurp-away-title" : undefined}
                   aria-describedby="slurp-away-detail"
-                  className="relative mx-auto flex w-full max-w-md flex-col items-center overflow-hidden rounded-2xl bg-[var(--slurp-surface-raised)] px-5 pb-5 pt-4 text-center shadow-[var(--slurp-highlight),var(--slurp-shadow-raised)]"
+                  className="relative mx-auto flex w-full max-w-md flex-col items-center overflow-hidden rounded-lg bg-[radial-gradient(circle_at_50%_0%,color-mix(in_srgb,var(--noodle-accent)_12%,transparent),transparent_48%),linear-gradient(160deg,var(--slurp-surface-raised),var(--slurp-surface))] px-5 pb-5 pt-4 text-center shadow-[var(--slurp-shadow-raised)] ring-1 ring-inset ring-[var(--noodle-divider)] sm:px-8 sm:pb-6 sm:pt-5"
                 >
                   {/* A status card, like a platform's own notice: the sleeping avatar for "not now",
-                      a plain icon for problems the fan has to act on (busy, no connection, failed). */}
-                  {waitingNote && SLURP_AWAY_STATUSES.has(waitingNote) ? (
+                      a plain icon for problems the fan has to act on (busy, no connection, failed).
+                      The card of 649a7024 (user correction, fix phase 1), with one picture per away kind. */}
+                  {awayCard ? (
                     <>
-                      <SlurpAwayAnimation account={headerAccount ?? null} />
-                      <p className="-mt-1 inline-flex h-6 items-center gap-1.5 rounded-full bg-[var(--slurp-tint)] px-2.5 text-[11px] font-semibold text-[var(--slurp-ink)]">
+                      <SlurpAwayAnimation account={headerAccount ?? null} kind={awayCard.kind} />
+                      <p className="-mt-1 inline-flex items-center gap-1.5 rounded-full bg-[var(--noodle-accent)]/12 px-3 py-1 text-[0.62rem] font-bold uppercase text-[var(--noodle-accent)]">
                         <span className="h-1.5 w-1.5 rounded-full bg-[var(--noodle-accent)]" aria-hidden="true" />
-                        {localizeUi("ui.slurp.messages.away", { defaultValue: "Away" })}
+                        {awayTag}
                       </p>
-                      <h3 id="slurp-away-title" className="mt-1 text-[15px] font-bold">
-                        {localizeUi(`ui.slurp.messages.awayTitle.${waitingNote ?? "owed"}`, {
-                          defaultValue: SLURP_AWAY_TITLE_FALLBACKS[waitingNote ?? "owed"] ?? "{{name}} is away",
-                          name: creator?.displayName ?? "",
-                        })}
+                      <h3 id="slurp-away-title" className="mt-1 text-base font-bold">
+                        {!SLURP_AWAY_KIND_FALLBACKS[awayCard.kind]?.title
+                          ? localizeUi(`ui.slurp.messages.awayTitle.${awayCard.status}`, {
+                              defaultValue: SLURP_AWAY_TITLE_FALLBACKS[awayCard.status] ?? "{{name}} is away",
+                              name: creator?.displayName ?? "",
+                            })
+                          : localizeUi(`ui.slurp.messages.awayKind.${awayCard.kind}.title`, {
+                              defaultValue: SLURP_AWAY_KIND_FALLBACKS[awayCard.kind]?.title,
+                              name: creator?.displayName ?? "",
+                            })}
                       </h3>
                     </>
                   ) : (
-                    <Info size={20} className="mt-1 text-[var(--slurp-ink)]" aria-hidden="true" />
+                    <Info size={17} className="mt-2 text-[var(--noodle-accent)]" aria-hidden="true" />
                   )}
-                  <p id="slurp-away-detail" className="mt-1 max-w-sm text-xs leading-4 text-[var(--slurp-muted)]">
+                  <p
+                    id="slurp-away-detail"
+                    className="mt-1 max-w-sm text-xs leading-relaxed text-[var(--muted-foreground)]"
+                  >
                     {waitingNote
                       ? localizeUi(`ui.slurp.messages.replyStatus.${waitingNote}`, {
                           defaultValue: SLURP_REPLY_STATUS_FALLBACKS[waitingNote] ?? "No answer yet.",
@@ -299,6 +326,20 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
                           defaultValue: "Your message is delivered. They have not answered yet.",
                           name: creator?.displayName ?? "",
                         })}
+                    {awayCard?.backAt ? (
+                      <span className="block font-semibold text-[var(--slurp-text)]">
+                        {localizeUi(
+                          awayCard.kind === "cooling"
+                            ? "ui.slurp.messages.awayBackToChat"
+                            : "ui.slurp.messages.awayBackAround",
+                          {
+                            defaultValue:
+                              awayCard.kind === "cooling" ? "Back to chatting around {{time}}" : "Back around {{time}}",
+                            time: formatClockTime(new Date(awayCard.backAt).toISOString(), i18n.language),
+                          },
+                        )}
+                      </span>
+                    ) : null}
                   </p>
                   {canForceReply && thread && personaId && (
                     <SlpButton

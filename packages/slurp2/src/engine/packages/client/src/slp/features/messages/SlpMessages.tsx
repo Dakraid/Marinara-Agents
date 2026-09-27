@@ -51,6 +51,16 @@ export const SLURP_AWAY_TITLE_FALLBACKS: Record<string, string> = {
   cooling: "{{name}} needs a break",
   ineligible: "{{name}} is not answering",
 };
+/** Per away kind (`slp-away-kind.ts`): the small tag and a headline that replaces the status one. "away" keeps the status headline. */
+export const SLURP_AWAY_KIND_FALLBACKS: Record<string, { tag: string; title?: string }> = {
+  away: { tag: "Away" },
+  asleep: { tag: "Asleep", title: "{{name}} is asleep" },
+  busy: { tag: "Busy", title: "{{name}} is busy right now" },
+  gym: { tag: "Working out", title: "{{name}} is working out" },
+  trip: { tag: "On the move", title: "{{name}} is on the move" },
+  cooling: { tag: "Cooling off", title: "{{name}} needs a break" },
+  quiet: { tag: "Offline", title: "{{name}} has gone quiet" },
+};
 
 export const TIP_PRESETS = [5, 15, 50] as const;
 
