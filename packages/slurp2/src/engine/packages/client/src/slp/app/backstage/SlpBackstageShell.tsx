@@ -198,9 +198,9 @@ export function SlpBackstageShell({
                       ? t("ui.slurp.settings.saveState.error")
                       : saveState === "saved"
                         ? t("ui.slurp.settings.saveState.saved")
-                        : // Only Overview saves each switch at once; every other page stages edits
-                          // until "Apply changes" (R1-129).
-                          section === "overview"
+                        : // Overview and Spice save each change at once; every other page stages
+                          // edits until "Apply changes" (R1-129).
+                          section === "overview" || section === "spice"
                           ? t("ui.slurp.settings.autoSave")
                           : t("ui.slurp.settings.stagedSave", {
                               defaultValue: "Changes wait for Apply changes.",
