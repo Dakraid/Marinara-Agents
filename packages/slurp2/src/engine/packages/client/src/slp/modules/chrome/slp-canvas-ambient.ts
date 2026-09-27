@@ -27,3 +27,14 @@ export function slpLeadingPhotoSrc(
   }
   return best;
 }
+
+/**
+ * How long the room waits after the last scroll before it looks for a new leading photo. Swapping the
+ * colour layer mounts a new animated layer under the scroller; on iOS that rebuilds the layer tree and
+ * stops a momentum fling dead, so the room only changes once the reader has stopped.
+ */
+export const SLP_AMBIENT_SCROLL_QUIET_MS = 800;
+
+/** Whether the room may look again: never while (or just after) anything inside it scrolls. */
+export const slpAmbientMayLook = (now: number, lastScrollAt: number) =>
+  now - lastScrollAt >= SLP_AMBIENT_SCROLL_QUIET_MS;

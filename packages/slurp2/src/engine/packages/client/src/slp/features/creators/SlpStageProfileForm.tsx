@@ -4,6 +4,7 @@ import { ModalPortalContext } from "../../../components/ui/Modal";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { ArrowLeft, ArrowRight, Check, ChevronDown, Link, Loader2, Trash2, Upload, UserRound } from "lucide-react";
 import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
+import { SLP_MOTION } from "../../base/chrome/slp-motion";
 import type { SlpCreatorStageProfile, SlpIdentityDisclosure } from "../../../../../shared/src/slp/slp-social.types.js";
 import type { SlurpStageProfileInput } from "../../base/state/slp-state-types";
 import { getSlpAccentStyle, SLP_PINK, ProfileInitial } from "../../base/chrome/SlpChrome";
@@ -127,7 +128,11 @@ export function WizardFooter({
   const { t: localizeUi } = useUiTranslation();
   const labels = ["Source", "Disclosure", "Profile"];
   return (
-    <div className="sticky bottom-[var(--slp-nav-live,0px)] z-[60] shrink-0 border-t border-[var(--noodle-divider)] bg-[var(--background)] px-4 pb-3 pt-3 sm:px-6">
+    <div
+      className="sticky bottom-[var(--slp-nav-live,0px)] z-[60] shrink-0 border-t border-[var(--noodle-divider)] bg-[var(--background)] px-4 pb-3 pt-3 sm:px-6"
+      // Glides with the floating nav instead of jumping when it slides away.
+      style={{ transition: `bottom ${SLP_MOTION.bar}ms ${SLP_MOTION.ease}` }}
+    >
       {showProgress && (
         <div
           className="mb-3 flex items-center justify-center gap-1.5"

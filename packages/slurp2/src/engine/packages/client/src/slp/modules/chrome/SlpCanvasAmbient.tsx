@@ -1,12 +1,12 @@
 // ──────────────────────────────────────────────
 // Ambient canvas (de-vibe pass): the room behind the app takes a soft wash of
 // colour from the biggest photo in view, like a TV's ambient light. It replaces the three radial
-// orbs. On phones it shows behind the see-through nav and between cards, a little quieter. Calm on purpose: it looks again at most once a second, only changes when another photo
-// leads, and cross-fades slowly; no fade under reduced motion.
+// orbs. On phones it shows behind the see-through nav and between cards, a little quieter. Calm on purpose: it looks again at most once a second, never while the reader scrolls, only
+// changes when another photo leads, and cross-fades slowly; no fade under reduced motion.
 // ──────────────────────────────────────────────
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { slpPrefersReducedMotion } from "../../base/chrome/slp-motion";
-import { slpLeadingPhotoSrc } from "./slp-canvas-ambient";
+import { slpAmbientMayLook, slpLeadingPhotoSrc } from "./slp-canvas-ambient";
 
 // A tiny, blurred copy of the photo scaled up to fill the room: the blur is paid on 4 % of the
 // area, so it stays cheap on a 1680 px frame.
@@ -33,14 +33,23 @@ export function SlpCanvasAmbient() {
   useEffect(() => {
     const frame = ref.current?.parentElement;
     if (!frame) return;
+    let lastScrollAt = Number.NEGATIVE_INFINITY;
+    const onScroll = () => {
+      lastScrollAt = performance.now();
+    };
     const look = () => {
-      if (document.visibilityState !== "visible") return;
+      if (document.visibilityState !== "visible" || !slpAmbientMayLook(performance.now(), lastScrollAt)) return;
       const src = slpLeadingPhotoSrc(frame);
       if (src) setLayers((now) => (now.current === src ? now : { current: src, previous: now.current }));
     };
     look();
     const timer = window.setInterval(look, 1000);
-    return () => window.clearInterval(timer);
+    // Capture: the scrollers are the screens inside the frame, and scroll events do not bubble.
+    frame.addEventListener("scroll", onScroll, { capture: true, passive: true });
+    return () => {
+      window.clearInterval(timer);
+      frame.removeEventListener("scroll", onScroll, { capture: true });
+    };
   }, []);
 
   const still = slpPrefersReducedMotion();
@@ -50,6 +59,8 @@ export function SlpCanvasAmbient() {
       aria-hidden="true"
       data-slp-canvas-ambient=""
       className="pointer-events-none absolute inset-0 -z-10 overflow-hidden opacity-[0.16] @min-[1024px]:opacity-[0.22]"
+      // Its own layer for good, so a cross-fade starting or ending never re-layers the screen above it.
+      style={{ transform: "translateZ(0)" }}
     >
       {layers.previous && !still && (
         <div key={layers.previous} style={{ ...LAYER, backgroundImage: `url("${layers.previous}")` }} />

@@ -15,7 +15,15 @@ import {
   SlpProfileGlyph,
 } from "../../base/chrome/SlpGlyphs";
 import { motion, useReducedMotion } from "framer-motion";
-import { type ComponentProps, createContext, type CSSProperties, type ReactNode, useContext, useState } from "react";
+import {
+  type ComponentProps,
+  createContext,
+  type CSSProperties,
+  type ReactNode,
+  useContext,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "../../../lib/utils";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { SlurpCoinAmount, slpCoinPlainText } from "../coin/SlpCoin";
@@ -39,6 +47,7 @@ import {
   SLP_TYPE,
   useHideOnScroll,
 } from "../../base/chrome/SlpChrome";
+import { SLP_MOTION } from "../../base/chrome/slp-motion";
 import { SlpCanvasAmbient } from "./SlpCanvasAmbient";
 import { SlpSheet } from "./SlpSheet";
 import { PersonaIdentityCard, PersonaList } from "./SlpPersonaSwitcher";
@@ -141,6 +150,20 @@ function SlpNavTab({
   );
 }
 
+/**
+ * The frosted fade under the phone nav (fix phase 1b): a light blur, strongest at the screen edge,
+ * that melts away a little above the pill, so posts never pass sharply under or below it. Tall enough
+ * for the pill, its 10 px gap and the home indicator, plus 1rem to fade out in.
+ */
+const SLP_NAV_FADE_STYLE: CSSProperties = {
+  height: "calc(3.5rem + 10px + 1rem + var(--slurp-bottom-safe-inset))",
+  backdropFilter: "blur(10px)",
+  WebkitBackdropFilter: "blur(10px)",
+  background: "linear-gradient(to top, color-mix(in srgb, var(--slurp-canvas) 45%, transparent), transparent)",
+  maskImage: "linear-gradient(to top, #000 45%, transparent)",
+  WebkitMaskImage: "linear-gradient(to top, #000 45%, transparent)",
+};
+
 export function SlpShell({
   activeView,
   appMode,
@@ -188,12 +211,19 @@ export function SlpShell({
 }: SlpShellProps) {
   const { t: localizeUi } = useUiTranslation();
   const [scrollRoot, setScrollRoot] = useState<HTMLElement | null>(null);
+  const navFadeRef = useRef<HTMLDivElement>(null);
   // The floating phone nav slides away while the reader scrolls down and comes back on the way up.
   const setMobileNav = useHideOnScroll(scrollRoot, {
     hiddenTransform: "translate3d(0, calc(100% + 1.5rem + var(--slurp-bottom-safe-inset)), 0)",
     resetKey: activeView,
-    // While the pill is away, bars pinned to the bottom (the thread composer) drop to the edge (`--slp-nav-live`).
-    onHiddenChange: (hidden) => scrollRoot?.toggleAttribute("data-slp-nav-hidden", hidden),
+    onHiddenChange: (hidden) => {
+      // While the pill is away, bars pinned to the bottom (the thread composer) drop to the edge (`--slp-nav-live`).
+      scrollRoot?.toggleAttribute("data-slp-nav-hidden", hidden);
+      const fade = navFadeRef.current;
+      if (!fade) return;
+      fade.style.transition = `transform ${SLP_MOTION.bar}ms ${SLP_MOTION.ease}`;
+      fade.style.transform = hidden ? "translate3d(0, 100%, 0)" : "";
+    },
   });
   const [pulseOpen, setPulseOpen] = useState(false);
   const prefersReducedMotion = Boolean(useReducedMotion());
@@ -643,6 +673,15 @@ export function SlpShell({
           accounts={sortedPersonaAccounts}
         />
 
+        {/* The frosted fade under the phone nav, down to the bottom edge. A sibling, not a backdrop on
+            a wrapper: a backdrop or mask around the pill would become its backdrop root and the pill
+            would stop seeing the feed through its glass. It slides with the pill (`onHiddenChange`). */}
+        <div
+          ref={navFadeRef}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-40 @min-[1024px]:hidden"
+          style={SLP_NAV_FADE_STYLE}
+        />
         {/* Phone nav: a floating frosted pink-glass pill. It slides away on scroll down, comes back
             on the way up, and sits above the home indicator on iOS. */}
         <nav

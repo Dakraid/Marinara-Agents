@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { slpLeadingPhotoSrc } from "../packages/slurp2/src/engine/packages/client/src/slp/modules/chrome/slp-canvas-ambient";
+import {
+  SLP_AMBIENT_SCROLL_QUIET_MS,
+  slpAmbientMayLook,
+  slpLeadingPhotoSrc,
+} from "../packages/slurp2/src/engine/packages/client/src/slp/modules/chrome/slp-canvas-ambient";
 
 // Redesign step 3.3: 3.2 follow-ups (ending chip, resume toast, fading pill stars), the de-vibe
 // pass (own glyphs, no coloured stripes, new canvas art, no em dashes, a display face) and
@@ -122,3 +126,12 @@ for (const { path, text } of sources) {
 }
 
 console.log("slurp2 step 3.3 de-vibe regression passed");
+
+// Fix phase 1b: the room never swaps its colour layer while the reader scrolls (a new layer under the
+// scroller stopped iOS momentum flings after a short distance).
+assert.equal(slpAmbientMayLook(10_000, Number.NEGATIVE_INFINITY), true, "no scroll yet");
+assert.equal(slpAmbientMayLook(10_000, 10_000 - 100), false, "mid-fling");
+assert.equal(slpAmbientMayLook(10_000, 10_000 - SLP_AMBIENT_SCROLL_QUIET_MS), true, "settled");
+const ambient = client("modules/chrome/SlpCanvasAmbient.tsx");
+assert.match(ambient, /frame\.addEventListener\("scroll", onScroll, \{ capture: true, passive: true \}\)/u);
+assert.match(ambient, /!slpAmbientMayLook\(performance\.now\(\), lastScrollAt\)/u);

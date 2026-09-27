@@ -158,9 +158,10 @@ for (const [file, count] of [
 assert.match(src("features/messages/SlpThreadComposer.tsx"), /mb-\[var\(--slp-nav-live,0px\)\]/u);
 assert.match(src("features/creators/SlpStageProfileForm.tsx"), /sticky bottom-\[var\(--slp-nav-live,0px\)\]/u);
 
-// Point 4: slower, softer bars (320–400 ms, design easing); reduced motion keeps them still.
+// Point 4: slower, softer bars (design easing); reduced motion keeps them still. Fix phase 1b (user on a
+// phone): 360 ms still felt abrupt, the glide is now 450–550 ms.
 const bar = Number(motion.match(/bar: (\d+),/u)?.[1]);
-assert.ok(bar >= 320 && bar <= 400, `bar motion ${bar} ms`);
+assert.ok(bar >= 450 && bar <= 550, `bar motion ${bar} ms`);
 assert.match(chrome, /bar\.style\.transition = `transform \$\{SLP_MOTION\.bar\}ms \$\{SLP_MOTION\.ease\}`/u);
 assert.match(chrome, /if \(!scroller \|\| !bar \|\| reduceMotion\) return;/u);
 

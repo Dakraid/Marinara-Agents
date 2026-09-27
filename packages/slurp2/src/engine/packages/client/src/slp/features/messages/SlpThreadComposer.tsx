@@ -4,6 +4,7 @@ import { CommissionRequest } from "./commissions/SlpCommissions";
 import { CreatorMessageTools, FanImageTool, SlurpTipPanel } from "./SlpMessageTools";
 import { cn } from "../../../lib/utils";
 import { SlurpCoinAmount } from "../../modules/coin/SlpCoin";
+import { SLP_MOTION } from "../../base/chrome/slp-motion";
 import { SlpButton, SlpChip, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
 import { SlpSheet, SlpSheetGroup } from "../../modules/chrome/SlpSheet";
 import { SlurpConnectionSwitcher } from "./SlpThreadChrome";
@@ -105,8 +106,11 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
 
   return (
     <>
-      {/* Pinned above the floating nav; drops to the edge while the nav is away. */}
-      <div className="relative mb-[var(--slp-nav-live,0px)] shrink-0 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5">
+      {/* Pinned above the floating nav; glides to the edge with the nav while it is away. */}
+      <div
+        className="relative mb-[var(--slp-nav-live,0px)] shrink-0 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5"
+        style={{ transition: `margin-bottom ${SLP_MOTION.bar}ms ${SLP_MOTION.ease}` }}
+      >
         {awayFromBottom && (
           // Its own row just above the composer, at the end edge: the chat ends above it, so the
           // button never sits on a bubble or a tip line (B32).
