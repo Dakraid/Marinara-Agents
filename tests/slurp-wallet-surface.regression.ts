@@ -18,7 +18,8 @@ assert.match(
 assert.match(hooks, /nextRefillAt\?: string/u, "the client models the server-owned refill boundary");
 assert.match(
   routes,
-  /nextRefillAt: nextRefillAt\.toISOString\(\)/u,
+  // Fix phase 1 (R1-092): null while the Wallet or the refill is off, the boundary otherwise.
+  /nextRefillAt:[^\n]*\? nextRefillAt\.toISOString\(\) : null/u,
   "the API returns the actual next Slurp-day boundary",
 );
 
