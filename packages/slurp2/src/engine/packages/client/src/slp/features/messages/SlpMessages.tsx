@@ -139,6 +139,12 @@ export function SlurpMessagesView({
 }) {
   const { t: localizeUi } = useUiTranslation();
   const [openThreadId, setOpenThreadId] = useState<string | null>(initialThreadId);
+  // Another persona has other chats: the open one belongs to the persona before (R1-140).
+  const [threadPersonaId, setThreadPersonaId] = useState(personaId);
+  if (threadPersonaId !== personaId) {
+    setThreadPersonaId(personaId);
+    setOpenThreadId(null);
+  }
   // Opening a chat from a profile lands in it directly, and backing out returns to the inbox
   // rather than to the profile, so Messages behaves the same however you arrived.
   const [composeWith, setComposeWith] = useState<string | null>(composeWithCreatorAccountId);

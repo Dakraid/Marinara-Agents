@@ -445,7 +445,11 @@ export function SlurpBackstagePreview({
                 )}
               </span>
               <div className="min-w-0">
-                <h3 className="truncate text-sm font-bold">{SLP_BACKSTAGE_TARGET_LABELS[target]}</h3>
+                <h3 className="truncate text-sm font-bold">
+                  {t(`ui.slurp.settings.backstage.targets.${target}`, {
+                    defaultValue: SLP_BACKSTAGE_TARGET_LABELS[target],
+                  })}
+                </h3>
                 <p className="mt-0.5 text-xs leading-5 text-[var(--slurp-muted)] text-pretty" aria-live="polite">
                   <SlpCoinText>{outcomeSummary(t, target, proposed, creatorCount)}</SlpCoinText>
                 </p>

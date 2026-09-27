@@ -35,6 +35,7 @@ export function SlurpBackstageSubnav({
   onSelect: (target: SlpBackstageTarget) => void;
   className?: string;
 }) {
+  const { t } = useTranslation();
   const targets = SLP_BACKSTAGE_TARGETS_BY_SECTION[section];
   if (targets.length < 2) return null;
   return (
@@ -59,7 +60,7 @@ export function SlurpBackstageSubnav({
               : "bg-[var(--slurp-surface-raised)] text-[var(--slurp-muted)] ring-1 ring-inset ring-[var(--slurp-outline)] hover:text-[var(--slurp-text)]",
           )}
         >
-          {SLP_BACKSTAGE_TARGET_LABELS[item]}
+          {t(`ui.slurp.settings.backstage.targets.${item}`, { defaultValue: SLP_BACKSTAGE_TARGET_LABELS[item] })}
         </button>
       ))}
     </nav>
@@ -106,7 +107,15 @@ export function SlurpBackstageSearch({
       .filter(
         ([key, placement]) =>
           !placement.internal &&
-          [key, humanize(key), labelFor(key), SLP_BACKSTAGE_TARGET_LABELS[placement.target], ...placement.searchTerms]
+          [
+            key,
+            humanize(key),
+            labelFor(key),
+            t(`ui.slurp.settings.backstage.targets.${placement.target}`, {
+              defaultValue: SLP_BACKSTAGE_TARGET_LABELS[placement.target],
+            }),
+            ...placement.searchTerms,
+          ]
             .join(" ")
             .toLocaleLowerCase()
             .includes(needle),
@@ -194,7 +203,10 @@ export function SlurpBackstageSearch({
                       {t(`ui.slurp.settings.backstage.sections.${placement.section}`, {
                         defaultValue: SLP_BACKSTAGE_SECTION_LABELS[placement.section],
                       })}{" "}
-                      · {SLP_BACKSTAGE_TARGET_LABELS[placement.target]}
+                      ·{" "}
+                      {t(`ui.slurp.settings.backstage.targets.${placement.target}`, {
+                        defaultValue: SLP_BACKSTAGE_TARGET_LABELS[placement.target],
+                      })}
                     </span>
                   </span>
                   <SlpSettingScopeBadge scope={placement.scope} />

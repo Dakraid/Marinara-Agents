@@ -39,7 +39,11 @@ assert.deepEqual(slurpSettingsResetPatch(changed, defaults, "general"), { storyR
 assert.deepEqual(changedSlurpSettingKeys(changed, defaults, "audience"), [], "equal arrays are not a change");
 
 const settingsView = slurp2BackstageSource();
-assert.match(settingsView, /save\(slurpSettingsResetPatch\(settings, defaults, target\)\)/u);
+// Fix phase 1 (R1-133): the reset patch is saved, and staged edits of the same keys are dropped first.
+assert.match(
+  settingsView,
+  /const reset = slurpSettingsResetPatch\(settings, defaults, target\);[\s\S]{0,300}!\(key in reset\)[\s\S]{0,120}void save\(reset\);/u,
+);
 const routes = slurp2Source("packages/slurp2/src/engine/packages/server/src/routes/slurp.routes.ts");
 // R1-125: the defaults are normalized like stored settings, so a fresh install differs in nothing.
 assert.match(routes, /app\.get\("\/settings\/defaults", async \(\) => normalizeSlurpSettings\(null\)\)/u);

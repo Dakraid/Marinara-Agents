@@ -172,7 +172,11 @@ export function SlpBackstageShell({
               <div className="min-w-0">
                 {multiPage && <p className="text-xs font-semibold text-[var(--slurp-muted)]">{sectionLabel}</p>}
                 <h1 className="truncate text-2xl font-black tracking-tight sm:text-3xl">
-                  {multiPage ? SLP_BACKSTAGE_TARGET_LABELS[target] : sectionLabel}
+                  {multiPage
+                    ? t(`ui.slurp.settings.backstage.targets.${target}`, {
+                        defaultValue: SLP_BACKSTAGE_TARGET_LABELS[target],
+                      })
+                    : sectionLabel}
                 </h1>
               </div>
               <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
@@ -243,7 +247,13 @@ export function SlpBackstageShell({
                                 confirmLabel: t("ui.slurp.settings.reset.button"),
                               })
                                 .then((confirmed) => {
-                                  if (confirmed) void save(slurpSettingsResetPatch(settings, defaults, target));
+                                  if (!confirmed) return;
+                                  const reset = slurpSettingsResetPatch(settings, defaults, target);
+                                  // Staged edits of the same keys go too, or Apply put them back (R1-133).
+                                  setDraftPatch((current) =>
+                                    Object.fromEntries(Object.entries(current).filter(([key]) => !(key in reset))),
+                                  );
+                                  void save(reset);
                                 })
                                 .catch((error) => toast.error(errorMessage(error)))
                             }

@@ -1,3 +1,5 @@
+import { errorMessage } from "../../modules/settings/slp-backstage-format";
+import { toast } from "sonner";
 import { Copy, Plus, RotateCcw, Trash2, UsersRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -127,6 +129,14 @@ export function SlurpFanTypesSettings({
     setRebalanceBusy(true);
     try {
       setPreview(await api.get<RebalancePreview>("/slurp2/fan-types/rebalance/preview"));
+    } catch (error) {
+      // Failures used to vanish without a word (R1-141).
+      toast.error(
+        errorMessage(
+          error,
+          t("ui.slurp.settings.fanTypes.rebalanceFailed", { defaultValue: "Could not rebalance the audience." }),
+        ),
+      );
     } finally {
       setRebalanceBusy(false);
     }
@@ -141,6 +151,13 @@ export function SlurpFanTypesSettings({
           defaultValue: "Reassigned {{count}} audience members.",
           count: result.changed,
         }),
+      );
+    } catch (error) {
+      toast.error(
+        errorMessage(
+          error,
+          t("ui.slurp.settings.fanTypes.rebalanceFailed", { defaultValue: "Could not rebalance the audience." }),
+        ),
       );
     } finally {
       setRebalanceBusy(false);

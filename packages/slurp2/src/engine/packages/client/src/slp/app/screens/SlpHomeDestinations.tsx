@@ -34,6 +34,20 @@ export function renderSlurpHomeDestinations({
     sourcePickerLoading,
     viewerPersonaId,
   } = model;
+  // These pages all read one persona's data; with none there is nothing to load, so they said
+  // "Still connecting…" forever or offered a Try again that could not work (R1-139).
+  if (
+    navigation.mode === "creator" &&
+    !viewerPersonaId &&
+    (navigation.view === "wallet" || navigation.view === "messages" || navigation.view === "notifications")
+  ) {
+    return (
+      <SlpShell {...shellProps}>
+        <SlpEmptyState title={localizeUi("ui.noodle.viewerhub.createAPersonaToBrowseNoodler")} />
+      </SlpShell>
+    );
+  }
+
   if (navigation.mode === "creator" && navigation.view === "wallet") {
     return (
       <SlpShell {...shellProps}>

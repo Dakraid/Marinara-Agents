@@ -58,6 +58,10 @@ function isSlurpNavigation(value: unknown): value is SlurpNavigationState {
     // hub from either one. `creatorAccountId` reopens the chat you were reading.
     case "wallet":
       return true;
+    // Studio and Activity are pages too; a reload there landed on the Hub (R1-134).
+    case "studio":
+    case "notifications":
+      return true;
     case "messages":
       return value.creatorAccountId === undefined || typeof value.creatorAccountId === "string";
     case "profile":
@@ -88,7 +92,10 @@ function normalizeSettingsNavigation(value: Record<string, unknown>): Record<str
     typeof value.section === "string"
       ? SLP_LEGACY_SETTINGS_DESTINATION[value.section as keyof typeof SLP_LEGACY_SETTINGS_DESTINATION]
       : undefined;
-  if (legacy) return { ...value, ...legacy };
+  // "overview" and "creators" are both old names and current sections: a valid current place (such
+  // as Creators → Improve) is kept, not sent back to the section's first page (R1-134).
+  if (legacy && !(isSlpBackstageSection(value.section) && isSlpBackstageTarget(value.target)))
+    return { ...value, ...legacy };
   if (!isSlpBackstageSection(value.section)) return value;
   const target = isSlpBackstageTarget(value.target) ? value.target : SLP_BACKSTAGE_DEFAULT_TARGET[value.section];
   return { ...value, section: slpBackstageSectionFor(value.section, target), target };
