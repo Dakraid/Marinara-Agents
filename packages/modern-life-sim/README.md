@@ -20,6 +20,8 @@ This is an **alpha** and the package is **staging only**: Engine `staging` teste
 - **Pictures**: key moments get their own picture in the GALLERY, outfits by season, and every kind of picture is manual or automatic per life.
 - **Modules**: optional extras, off unless you switch them on for a life. The first one, **Adult**, is for mature content and asks the player to confirm they are an adult.
 
+0.2.1 gives models that think before they answer (GLM, DeepSeek) room to do it, retries once with more room when an answer is still cut off, adds a Reasoning option of none, stops pictures flickering while others are being painted, and makes text sharp again in lists that scroll (the phone, the Guide).
+
 All generation — cast readings, scene lines, backgrounds and outfit pictures — runs through the Engine profile's own configured model and image connections. The package adds no external services and sends nothing anywhere else. The numbers (bonds, money, time, outcomes) are always decided by the package's code; the model only writes the words.
 
 ## Requirements
