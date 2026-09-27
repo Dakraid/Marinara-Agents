@@ -36,7 +36,7 @@ assert.equal(slurpViewerImageOnCooldown([drawn(10)], 180, now), true, "the old y
 const mediaRoutes = server("features/messages/slp-messages-media-routes.ts");
 assert.match(
   mediaRoutes,
-  /slurpViewerImageReadyAt\(await messages\.listMessages\(thread\.id\), cooldownMinutes\)[\s\S]*?code\(429\)\.send\(\{ error: "You can generate another picture later\.", retryAt: readyAt \}\)/u,
+  /slurpViewerImageReadyAt\(await messages\.listMessages\(thread\.id(?:, [\d_]+)?\), cooldownMinutes\)[\s\S]*?code\(429\)\.send\(\{ error: "You can generate another picture later\.", retryAt: readyAt \}\)/u,
   "the 429 carries the time the wait ends",
 );
 const tools = client("features/messages/SlpMessageTools.tsx");

@@ -713,7 +713,7 @@ export function SlpPostCard({
             aria-label={localizeUi("ui.noodle.noodlepostcard.reply")}
           >
             <MessageCircle size={18} />
-            {replies.length}
+            {Math.max((post as { replyCount?: number }).replyCount ?? 0, replies.length)}
           </button>
         </div>
         <SlurpLikedBy

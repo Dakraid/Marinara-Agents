@@ -1,3 +1,4 @@
+import { SlpCoinText } from "../../modules/coin/SlpCoin";
 import { slpIsOwnActor } from "../../../../../shared/src/slp/slp-interactions.js";
 import { ChevronLeft, ChevronRight, Clock3, Eye, Link, Maximize2, Minimize2, Plus, X } from "lucide-react";
 import { SlpHeartGlyph, SlpLockGlyph } from "../../base/chrome/SlpGlyphs";
@@ -475,7 +476,13 @@ export function SlurpMomentViewer({
                   ).catch(() => undefined)
                 }
               >
-                {localizeUi("ui.slurp.profile.subscribe")}
+                {/* Every spend shows its price on the button (R1-045). */}
+                <SlpCoinText>
+                  {localizeUi("ui.slurp.moments.subscribePrice", {
+                    price: (moment.creator as { subscriptionPrice?: number }).subscriptionPrice ?? 0,
+                    defaultValue: "Subscribe · {{price}} <coin/> / week",
+                  })}
+                </SlpCoinText>
               </SlpButton>
             </div>
           )}

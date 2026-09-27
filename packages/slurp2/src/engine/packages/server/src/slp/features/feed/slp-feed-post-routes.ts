@@ -1,3 +1,4 @@
+import { slurpArcVoteClosed } from "../../modules/projects/slp-arc-progress.js";
 import { createSlpPoll, readSlpPollFromMetadata } from "../../../../../shared/src/slp/slp-polls.js";
 import { slpIsAdmissionFailure } from "../../base/host/slp-admission.js";
 import {
@@ -333,6 +334,8 @@ export async function slpFeedPostRoutes(app: FastifyInstance, deps: SlpRouteDeps
       if (!poll?.options.some((option) => option.id === optionId)) {
         return reply.code(400).send({ error: "Choose a valid poll option." });
       }
+      const projects = await noodle.listProjects(gated.post.authorAccountId).catch(() => []);
+      if (slurpArcVoteClosed(projects, id)) return reply.code(409).send({ error: "This vote has closed." });
     }
     const interaction = await noodle.createNoodlerInteraction(id, {
       actorAccountId: actor.id,

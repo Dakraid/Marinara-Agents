@@ -64,11 +64,10 @@ export function SlpPostMenu({
   const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   const downloadShareCard = (filename: string) => {
-    void downloadSlpShareCard(toSlpShareCardInput(post), filename).catch((error: unknown) =>
+    // Its own words, not the share sheet's (R1-044), and never a raw canvas error.
+    void downloadSlpShareCard(toSlpShareCardInput(post), filename).catch(() =>
       toast.error(
-        error instanceof Error
-          ? error.message
-          : localizeUi("ui.slurp.post.shareFailed", { defaultValue: "Could not build the post image." }),
+        localizeUi("ui.slurp.post.saveImageFailed", { defaultValue: "Could not save the post as an image." }),
       ),
     );
   };

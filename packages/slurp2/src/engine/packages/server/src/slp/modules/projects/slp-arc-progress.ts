@@ -411,3 +411,13 @@ export function slurpProjectChoose(
   };
   return slurpProjectRecord(settled, nextChapter(settled, at), at);
 }
+
+/** A storyline's vote on this post has closed, so later votes do not land (R1-035). */
+export function slurpArcVoteClosed(
+  projects: readonly Pick<SlurpProject, "pollPostId" | "pollClosesAt">[],
+  postId: string,
+  now = Date.now(),
+): boolean {
+  const arc = projects.find((project) => project.pollPostId === postId);
+  return Boolean(arc?.pollClosesAt && Date.parse(arc.pollClosesAt) <= now);
+}

@@ -83,7 +83,10 @@ export async function slpStudioRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
             hasImage: post.imageUrl !== null,
             reach: slurpPostImpressions(input, at),
             likeCount: slurpPostLikeCount(
-              { ...input, realLikes: postInteractions.filter((item) => item.type === "like").length },
+              {
+                ...input,
+                realLikes: postInteractions.filter((item) => item.type === "like" && !item.parentInteractionId).length,
+              },
               at,
             ),
             replyCount: slurpPostReplyCount(
@@ -198,7 +201,7 @@ export async function slpStudioRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
     const realCounts = new Map<string, { likes: number; replies: number }>();
     for (const interaction of interactions) {
       const entry = realCounts.get(interaction.postId) ?? { likes: 0, replies: 0 };
-      if (interaction.type === "like") entry.likes += 1;
+      if (interaction.type === "like" && !interaction.parentInteractionId) entry.likes += 1;
       if (interaction.type === "reply") entry.replies += 1;
       realCounts.set(interaction.postId, entry);
     }

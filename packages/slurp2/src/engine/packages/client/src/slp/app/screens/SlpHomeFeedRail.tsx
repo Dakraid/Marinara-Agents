@@ -1,5 +1,5 @@
+import { useSlpMinuteClock } from "../../base/ui/slp-minute-clock";
 import { Crown, Search, X } from "lucide-react";
-import { useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { SlpHeartGlyph } from "../../base/chrome/SlpGlyphs";
 import { SubscriptionSections } from "./SlpScreenSubscriptions";
@@ -27,7 +27,7 @@ export function SlpHomeFeedRail({ model, showDiscovery }: Pick<SlurpHomeHostView
   } = model;
   const { i18n } = useUiTranslation();
   const creators = viewerQuery.data?.creators ?? [];
-  const [now] = useState(() => Date.now());
+  const now = useSlpMinuteClock();
   const storyCreatorIds = slurpLiveStoryCreatorIds(
     creators,
     now - (slurpSettingsQuery.data?.storyLifetimeHours ?? 72) * 60 * 60 * 1000,

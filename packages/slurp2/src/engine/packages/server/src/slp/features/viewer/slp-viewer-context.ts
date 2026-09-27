@@ -260,7 +260,8 @@ export function createSlpViewerContext(
                 createdAt: post.createdAt,
                 creatorReach: reachByAccountId.get(post.authorAccountId) ?? 0,
                 accountId: post.authorAccountId,
-                realLikes: allInteractions.filter((item) => item.type === "like").length,
+                // Post likes only; a heart on a comment is not a like of the post (R1-030).
+                realLikes: allInteractions.filter((item) => item.type === "like" && !item.parentInteractionId).length,
               },
               projectedAt,
             ),

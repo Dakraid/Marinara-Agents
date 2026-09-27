@@ -929,7 +929,7 @@
   "ui.noodle.noodlerwizard.loadingCharacters": "Loading characters",
   "ui.noodle.noodlerwizard.manualOnly": "You control every post",
   "ui.noodle.noodlerwizard.nightQuiet": "Keep nights quiet",
-  "ui.noodle.noodlerwizard.nightQuietHelp": "Avoid overnight automatic posts for characters without a schedule.",
+  "ui.noodle.noodlerwizard.nightQuietHelp": "No automatic character posts from 23:00 to 07:00, host time.",
   "ui.noodle.noodlerwizard.off": "Off",
   "ui.noodle.noodlerwizard.on": "On",
   "ui.noodle.noodlerwizard.openAllCreators": "See the feed",
@@ -2206,7 +2206,7 @@
   "ui.slurp.settings.postMaxLength": "Longest post (characters)",
   "ui.slurp.settings.postMaxLengthDetail": "Formats only aim for a length. A generated post is cut only past this limit.",
   "ui.slurp.settings.postShowMoreLength": "Show more after (characters)",
-  "ui.slurp.settings.postShowMoreLengthDetail": "Longer posts show this much first, with a Show more button.",
+  "ui.slurp.settings.postShowMoreLengthDetail": "Posts longer than this fold to their first six lines, with a Show more button.",
   "ui.slurp.settings.presets.custom": "Custom",
   "ui.slurp.settings.presets.customDetail": "Choose an exact daily limit.",
   "ui.slurp.settings.presets.lively": "Lively",
@@ -4293,5 +4293,8 @@
   "ui.slurp.messages.photoGenerate": "Draw it",
   "ui.slurp.messages.photoDescribe": "Describe the photo you took",
   "ui.slurp.messages.photoSending": "Sending…",
-  "ui.slurp.messages.photoSend": "Send photo"
+  "ui.slurp.messages.photoSend": "Send photo",
+  "ui.slurp.composer.purposeGuideOnly": "Purpose and delivery shape Guide drafts.",
+  "ui.slurp.post.saveImageFailed": "Could not save the post as an image.",
+  "ui.slurp.moments.subscribePrice": "Subscribe · {{price}} <coin/> / week"
 }

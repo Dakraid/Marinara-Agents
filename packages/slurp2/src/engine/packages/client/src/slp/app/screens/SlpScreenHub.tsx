@@ -1,3 +1,4 @@
+import { useSlpMinuteClock } from "../../base/ui/slp-minute-clock";
 import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SlpBalanceChip, SlpWordmark } from "../../modules/chrome/SlpShell";
 import { SlpSegment } from "../../modules/chrome/SlpButton";
@@ -138,7 +139,7 @@ export function ViewerHub({
   const [activeMomentId, setActiveMomentId] = useState<string | null>(null);
   const [feedLayout, setFeedLayout] = useState<"list" | "wall">("list");
   const [openPostId, setOpenPostId] = useState<string | null>(null);
-  const [momentNow] = useState(() => Date.now());
+  const momentNow = useSlpMinuteClock();
   const momentCutoff = momentNow - storyLifetimeHours * 60 * 60 * 1000;
   const inlineAdsQuery = useSlurpInlineAds(scope?.viewer.entityId ?? null, null, [
     tab === "all" ? "discover" : "following",

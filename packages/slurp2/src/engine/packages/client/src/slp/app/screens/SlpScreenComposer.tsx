@@ -252,7 +252,8 @@ export function NoodlerPostComposer({
   const submission = (): SlpCreatorPostSubmission => ({
     profileId: profile.id,
     title,
-    body: body.trim() || (image && !poll ? "Shared an image." : ""),
+    // A post needs text; an image-only post carries a camera, not an English sentence (R1-043).
+    body: body.trim() || (image && !poll ? "📸" : ""),
     access,
     image,
     poll: poll ? { question: poll.question.trim(), options: poll.options.map((option) => option.trim()) } : null,
