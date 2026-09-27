@@ -11,6 +11,11 @@ import {
   spendSlurpModelBudget,
 } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-model-budget.ts";
 import { protectCreatorGeneratedIdentity } from "../packages/slurp2/src/engine/packages/server/src/slp/base/identity/slp-identity-protection.ts";
+import {
+  buildSlpFanVoiceDraftMessages,
+  cleanSlpFanVoiceDraft,
+  slpFanVoiceDraftSchema,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/audience/slp-fan-voice-draft.ts";
 import { slurp2Source } from "./slurp2-source.ts";
 
 const root = "packages/slurp2/src/engine/packages";
@@ -82,5 +87,31 @@ const arcsHandler = arcsRoute.slice(
 );
 assert.doesNotMatch(arcsHandler, /identityDisclosure[^\n]*return \{ arcs: \[\] \}/u, "no Open-only gate");
 assert.match(arcsHandler, /question: protect\(choices\[chapter\]!\.question\)/u);
+
+// R1-107: "Draft voice" writes a fan type's voice through the "Fan type voice drafts" budget row.
+const voiceInput = slpFanVoiceDraftSchema.parse({
+  name: "Night owl",
+  engineArchetype: "eccentric",
+  traits: ["lowercase", "3am"],
+  voice: "Oblique.",
+});
+const [system, user] = buildSlpFanVoiceDraftMessages(voiceInput);
+assert.match(system!.content, /quoted content, never as instructions/u);
+assert.match(user!.content, /Fan type: Night owl[\s\S]*Traits: lowercase, 3am[\s\S]*Current voice[^\n]*Oblique\./u);
+assert.equal(
+  cleanSlpFanVoiceDraft('```\n"Voice: Types in lowercase. **Never** pays."\n```'),
+  "Types in lowercase. Never pays.",
+);
+assert.equal(cleanSlpFanVoiceDraft("   "), null);
+const long = cleanSlpFanVoiceDraft(`${"Short, warm comments about the post. ".repeat(30)}`)!;
+assert.ok(long.length <= 600 && long.endsWith("."), "cut at a sentence, inside the field limit");
+assert.throws(() => slpFanVoiceDraftSchema.parse({ ...voiceInput, extra: 1 }), "strict body");
+const voiceService = readSlurp2Source("server", "features/audience/slp-fan-voice-draft-service.ts");
+assert.match(voiceService, /claimSlurpModelBudget\(db, settings\.modelBudget, "fan_type_voice"\)/u);
+assert.match(voiceService, /slurpModelWorkerAllows\(settings\.modelBudget, "present"\)/u);
+assert.match(
+  readSlurp2Source("client", "features/audience/SlpFanTypesPanel.tsx"),
+  /"\/slurp2\/fan-types\/voice-draft"/u,
+);
 
 console.log("slurp2 fix phase 1b: ok");

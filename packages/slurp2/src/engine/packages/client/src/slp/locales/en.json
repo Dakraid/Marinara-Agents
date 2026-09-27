@@ -4551,5 +4551,8 @@
   "ui.slurp.site.feed": "Go to the feed",
   "ui.slurp.site.tour": "Show me around",
   "ui.slurp.unlocksheet.gambleNeedsCoins": "You need {{amount}} <coin/> to take the bet.",
-  "ui.slurp.settings.aiBudget.paced": "World work spreads its calls evenly over the day; replies to your own messages are never held back."
+  "ui.slurp.settings.aiBudget.paced": "World work spreads its calls evenly over the day; replies to your own messages are never held back.",
+  "ui.slurp.settings.fanTypes.voiceDraft": "Draft voice",
+  "ui.slurp.settings.fanTypes.voiceDrafting": "Writing…",
+  "ui.slurp.settings.fanTypes.voiceDraftFailed": "Could not draft a voice."
 }

@@ -33,6 +33,8 @@ import { logger } from "../../../lib/logger.js";
 import type { FastifyInstance } from "fastify";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
+import { slpFanVoiceDraftSchema } from "../../modules/audience/slp-fan-voice-draft.js";
+import { draftSlpFanTypeVoice } from "./slp-fan-voice-draft-service.js";
 
 /** The `identity` lock is shared by refresh, reroll, and profile edits, so the 409 stays operation-neutral. */
 const SLP_IDENTITY_LOCK_BUSY = "Another Slurp identity operation is already running. Wait for it to finish.";
@@ -108,6 +110,18 @@ export async function slpAudienceRoutes(app: FastifyInstance, deps: SlpRouteDeps
   app.get("/fan-types/rebalance/preview", async () => {
     const plan = await planFanTypeRebalance();
     return { changed: plan.changes.length, counts: plan.counts };
+  });
+  // "Draft voice" in the fan type editor: one model call, the "Fan type voice drafts" budget row (R1-107).
+  app.post("/fan-types/voice-draft", async (req, reply) => {
+    const parsed = slpFanVoiceDraftSchema.safeParse(req.body ?? {});
+    if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
+    try {
+      const result = await draftSlpFanTypeVoice(app.db, parsed.data);
+      return result.ok ? { voice: result.voice } : reply.code(result.status).send({ error: result.error });
+    } catch (error) {
+      req.log.warn({ err: error }, "Fan type voice draft failed");
+      return reply.code(502).send({ error: getErrorMessage(error) });
+    }
   });
   app.post("/fan-types/rebalance", async () => {
     const plan = await planFanTypeRebalance();
