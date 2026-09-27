@@ -78,11 +78,11 @@
         },
         "builtAgainst": {
           "engineVersion": "2.4.6",
-          "engineCommit": "06bf1a6d68dab6ee08ae01e75327ec2043148501"
+          "engineCommit": "3ec25a04e39f5eda3eea138c1c1941a169bb88be"
         },
         "id": "modern-life-sim",
         "name": "Modern Life Sim",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "description": "A modern life sim in its own Home tab: a town on a clock, a job, rent and needs, and a cast drawn from your character cards whose relationships grow scene by scene, with a visual-novel narrator for the scenes that matter. Install it, restart Marinara Engine when prompted, then open Home → Life Sim.",
         "engine": {
           "min": "2.4.4",
@@ -116,13 +116,13 @@
           },
           {
             "path": "client.js",
-            "sha256": "5182e14356c989c5cf5cf07b8acf2f4c31d6cb1b1dd44ac6aa5d19932bccce53",
-            "bytes": 458692
+            "sha256": "95d623e6164eb03d755c35134581a7f709be7a42a69dd5bf5e99dbb93f676e50",
+            "bytes": 840082
           },
           {
             "path": "server.mjs",
-            "sha256": "5a24f89562d3a813a76a1ff2304396135fd410ff9ee51d6ae9f900d536583f29",
-            "bytes": 231656
+            "sha256": "fd95f80584ce8179a31fb036d665fda06a35146d01952e03a98d09576d2de3bb",
+            "bytes": 872288
           },
           {
             "path": "life-sim-icon.png",
@@ -141,9 +141,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/modern-life-sim.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/modern-life-sim-0.1.0.zip",
-        "sha256": "7d7f71a63a8bb34bac4f28a53b2ca5b35d91b4e2e0da5c45b7cba68e56d4bd3a",
-        "bytes": 700398
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/modern-life-sim-0.2.0.zip",
+        "sha256": "6e6ae6e1a92edfc2683ae82b129970666045da19626b0c29eb335e99e284ebd1",
+        "bytes": 1722420
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/staging/packages/modern-life-sim/README.md"
     },

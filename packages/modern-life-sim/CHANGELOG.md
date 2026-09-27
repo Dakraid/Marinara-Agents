@@ -1,3 +1,14 @@
+## 0.2.0 — 2026-09-27
+- It looks more like a game: a new title screen, a welcome, a first-day card, the GUIDE (a searchable how-it-works app on your phone), a relationship chart in Contacts, and a redone profile.
+- Everyone gets their own personality, read from their card, instead of twelve fixed types.
+- Relationships go all the way: dating, moving in, engagement and weddings (with more than one partner if all agree), jealousy, open relationships and breakups, each in a scene.
+- The town talks: people notice what you do, NEWS every Monday, and friends have opinions.
+- Outings are one long scene; plans go on a calendar; birthdays.
+- You start without a job: find one in JOBS, interview, get promoted.
+- Money: BILLS, debt and eviction; HOMES to move. Five districts, and a motorbike or a car.
+- Pictures of key moments, outfits by season, and manual or automatic pictures per life.
+- Modules: optional extras you switch on for each life.
+
 ## 0.1.0 — 2026-09-23
 - First release, staging only: a modern life sim in its own Home tab.
 - A town on a clock with places, opening hours, day and night, and four seasons of thirty days.

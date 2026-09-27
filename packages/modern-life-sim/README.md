@@ -1,6 +1,6 @@
 # Modern Life Sim
 
-Modern Life Sim is a life simulation in its own Home tab. You live in a small town on a clock — a job with shifts and reviews, rent that falls due each season, energy and hunger to look after — and the people around you are a cast drawn from your own character cards. Each of them keeps a week of their own, remembers what you did together, and grows closer (or drifts away) scene by scene.
+Modern Life Sim is a life simulation in its own Home tab. You live in a small town on a clock — a job to find and keep, bills to pay, energy and hunger to look after — and the people around you are a cast drawn from your own character cards. Each of them has a personality of their own, keeps a week of their own, remembers what you did together, and grows closer (or drifts away) scene by scene.
 
 Find the package in **Agents → Download Agents**. Installation requires a restart: once installed and Marinara Engine restarts, **Life Sim** appears as a tab in Home's browser shell. Uninstalling the package removes that tab and stops its routes after restart.
 
@@ -8,14 +8,17 @@ This is an **alpha** and the package is **staging only**: Engine `staging` teste
 
 ## What this release contains
 
-0.1.0 is the first release, and it is a whole life rather than a slice:
+0.1.0 was the first release, and a whole life rather than a slice: creating a life from your persona and character cards, a town with opening hours, day and night and four seasons, a job, a home, shops, three bonds per person, scenes told by a visual-novel narrator, sleep and visits, and the phone.
 
-- **Creating a life** in three steps: a persona, a cast picked from your character cards (the model reads each card for an archetype, gift tastes and the week that person lives, and you can change any of it), and the town — which places exist, what they are called, where everyone lives.
-- **The town**: a map of places with opening hours, travel time between them, day and night, four seasons of thirty days, and generated backgrounds for every place.
-- **Your days**: a job with shifts, performance and reviews; rent; energy and hunger; skills (Fitness, Charm, Knowledge); a home with furniture, a fridge, cooking and a closet; shops, a mall with its own stores, and online orders.
-- **People**: quick moments (chat, flirt, gifts), longer scenes told by a visual-novel narrator, three bonds per person (friendship, romance, trust) with tier events, relationship steps from dating to marriage, and memories you can read, pin and edit.
-- **Sleep and visits**: everyone's week marks when they sleep; you can wake them (it lands as their archetype and the hour decide), knock on a friend's door, be asked in, and do things together at their home or yours.
-- **The phone**: contacts and their sheets, a calendar, your own sheet, and the settings of the life (its cast, its rules, which model writes it).
+0.2.0 is everything since:
+
+- **It plays more like a game**: a title screen with your saved lives dealt out as cards, a welcome the first time, a first-day card, the **GUIDE** (a searchable app on your phone that explains how everything works), a relationship chart in Contacts, and a redone profile and character sheet.
+- **Personalities**: each character gets their own mix of traits, read from their card (how jealous, faithful, shy or quick-tempered they are…), instead of twelve fixed archetypes. You discover them as you spend time together, and can change them in Settings.
+- **Relationships all the way**: dating, moving in, engagement and weddings (with more than one partner if every one agrees), jealousy, open relationships, secrets, and breakups — always in a scene, never on a pop-up.
+- **A town that talks**: people notice what you do and pass it on, NEWS every Monday, and friends with opinions. Outings are one long scene, plans go on a calendar, and birthdays happen.
+- **Work and money**: you start without a job and find one in JOBS; BILLS, debt and eviction; HOMES to move; five districts, and a motorbike or a car.
+- **Pictures**: key moments get their own picture in the GALLERY, outfits by season, and every kind of picture is manual or automatic per life.
+- **Modules**: optional extras, off unless you switch them on for a life. The first one, **Adult**, is for mature content and asks the player to confirm they are an adult.
 
 All generation — cast readings, scene lines, backgrounds and outfit pictures — runs through the Engine profile's own configured model and image connections. The package adds no external services and sends nothing anywhere else. The numbers (bonds, money, time, outcomes) are always decided by the package's code; the model only writes the words.
 
