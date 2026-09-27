@@ -25,6 +25,8 @@ const EXPECTED = [
   "PATCH /slurp/accounts/:id/steering",
   "POST /slurp/accounts/:id/steering/ideas",
   "DELETE /slurp/accounts/:id/steering/ideas/:ideaId",
+  // 7b-1: the player's "Rewrite" answer after a steering change (prepared posts are written again).
+  "POST /slurp/accounts/:id/steering/rewrite-prepared",
   "POST /continuity/:target/:id/retract",
   "POST /continuity/facts/:id/promote",
   "POST /continuity/proposals/:id/:decision",
@@ -272,6 +274,8 @@ const ADDED_ROUTES = new Set([
   "PATCH /slurp/accounts/:id/steering",
   "POST /slurp/accounts/:id/steering/ideas",
   "DELETE /slurp/accounts/:id/steering/ideas/:ideaId",
+  // 7b-1: the player's "Rewrite" answer after a steering change (prepared posts are written again).
+  "POST /slurp/accounts/:id/steering/rewrite-prepared",
   "GET /messages/unread-count",
   "GET /slurp/notifications/unseen-count",
   "GET /slurp/posts/:id/deep-details",
@@ -340,7 +344,7 @@ assert.deepEqual([...EXPECTED].sort(), mappedStagingRoutes, "the route mapping m
 const EXPECTED_HANDLER_COUNTS = {
   "features/ads": 18,
   "features/audience": 13,
-  "features/creators": 41,
+  "features/creators": 42,
   "features/discovery": 4,
   "features/economy": 14,
   "features/feed": 39,
@@ -353,7 +357,7 @@ const EXPECTED_HANDLER_COUNTS = {
   "features/settings": 7,
   "features/world": 11,
 } as const;
-const EXPECTED_METHOD_COUNTS = { DELETE: 16, GET: 75, PATCH: 18, POST: 118, PUT: 6 } as const;
+const EXPECTED_METHOD_COUNTS = { DELETE: 16, GET: 75, PATCH: 18, POST: 119, PUT: 6 } as const;
 
 const root = join(import.meta.dirname, "../packages/slurp2/src/engine/packages/server/src/slp");
 const registration = /\bapp\.(get|post|put|patch|delete|addContentTypeParser)(?:<[^()]*?>)?\(\s*["'`]([^"'`]+)["'`]/gu;
@@ -408,7 +412,7 @@ const methodCounts = Object.fromEntries(
     }, new Map<string, number>()),
 );
 assert.deepEqual(methodCounts, EXPECTED_METHOD_COUNTS, "HTTP method multiset changed from staging");
-assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 233);
+assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 234);
 assert.deepEqual(handlerCounts, EXPECTED_HANDLER_COUNTS, "handler count changed in a feature");
 assert.ok(foundRoutes.includes("POST /slurp/posts/:id/media"), "the renamed POST media route must remain registered");
 assert.ok(

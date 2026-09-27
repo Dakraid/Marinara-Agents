@@ -14,7 +14,7 @@ import {
 import { ChipListInput } from "../../modules/settings/SlpSettingsInputs";
 import { Toggle } from "../../modules/settings/SlpSettingsControls";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
-import { SlpButton } from "../../modules/chrome/SlpButton";
+import { SlpButton, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
 import { SlpUsesAiMark } from "../../modules/chrome/SlpAiMark";
 import { noteClass, selectClass } from "./slp-creator-classes";
 import { useSlurpCreatorSteering, useSlurpCreatorSteeringMutations } from "./slp-steering-hooks";
@@ -93,12 +93,14 @@ export function SlpCreatorSteeringCard({
 }) {
   const { t } = useTranslation();
   const query = useSlurpCreatorSteering(creatorId);
-  const { patch, addIdea, removeIdea } = useSlurpCreatorSteeringMutations(creatorId);
+  const { patch, addIdea, removeIdea, rewritePrepared } = useSlurpCreatorSteeringMutations(creatorId);
   const steering = query.data?.steering;
   const [lifePhase, setLifePhase] = useState("");
   const [focus, setFocus] = useState("");
   const [idea, setIdea] = useState("");
   const [story, setStory] = useState(false);
+  // Posts already prepared under the old steering. Asked once per change; nothing runs unanswered.
+  const [prepared, setPrepared] = useState<{ posts: number; calls: number } | null>(null);
   const ideaId = useId();
   const lifeId = useId();
   const focusId = useId();
@@ -109,7 +111,16 @@ export function SlpCreatorSteeringCard({
   }, [steering]);
 
   const onError = (error: unknown) => toast.error(errorMessage(error));
-  const save = (next: Parameters<typeof patch.mutate>[0]) => patch.mutate(next, { onError });
+  const save = (next: Parameters<typeof patch.mutate>[0]) =>
+    patch.mutate(next, { onError, onSuccess: (answer) => answer.prepared && setPrepared(answer.prepared) });
+  const rewrite = () =>
+    rewritePrepared.mutate(undefined, {
+      onSuccess: ({ rewritten }) => {
+        setPrepared(null);
+        toast.success(t("ui.slurp.steering.rewriting", { count: rewritten }));
+      },
+      onError,
+    });
 
   if (query.isError) return <p className={noteClass}>{t("ui.slurp.steering.loadFailed")}</p>;
   if (!steering) return <p className={noteClass}>{t("ui.slurp.settings.loading", { defaultValue: "Loading…" })}</p>;
@@ -192,6 +203,39 @@ export function SlpCreatorSteeringCard({
         placeholder={t("ui.slurp.steering.avoidPlaceholder")}
         onChange={(avoid) => save({ avoid })}
       />
+
+      <div aria-live="polite">
+        {prepared && (
+          <div
+            data-slurp-steering-rewrite
+            className="space-y-3 rounded-xl bg-[var(--slurp-tint)] p-3 ring-1 ring-inset ring-[var(--noodle-accent)]/30"
+          >
+            <p className="text-sm leading-5 text-[var(--slurp-text)]">
+              {t("ui.slurp.steering.preparedQuestion", {
+                count: prepared.posts,
+                calls: t("ui.slurp.steering.preparedCalls", { count: prepared.calls }),
+              })}
+            </p>
+            <div className="flex gap-2">
+              <SlpPrimaryButton
+                disabled={rewritePrepared.isPending}
+                onClick={rewrite}
+                className="min-h-11 flex-1 px-3.5 text-sm"
+              >
+                {t("ui.slurp.steering.rewrite")}
+              </SlpPrimaryButton>
+              <SlpButton
+                variant="quiet"
+                disabled={rewritePrepared.isPending}
+                onClick={() => setPrepared(null)}
+                className="min-h-11 flex-1 px-3.5 text-sm"
+              >
+                {t("ui.slurp.steering.keep")}
+              </SlpButton>
+            </div>
+          </div>
+        )}
+      </div>
 
       <PillChoice<SlpSteeringPace>
         layout="row"

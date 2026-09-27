@@ -15,6 +15,8 @@ import {
   removeSlurpCreatorNudge,
 } from "../../data/creators/slp-steering-storage.js";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
+import { slurpSteeringContentChanged } from "../../modules/feed/slp-prepared-rewrite.js";
+import { countSlurpPreparedRewrite, rewriteSlurpPreparedPosts } from "../../data/feed/reserve/slp-reserve-rewrite.js";
 
 const topics = z.array(z.string().trim().min(1).max(SLP_STEERING_TOPIC_MAX)).max(SLP_STEERING_TOPICS_MAX);
 
@@ -50,7 +52,19 @@ export async function slpSteeringRoutes(app: FastifyInstance, deps: SlpRouteDeps
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
     const id = await creatorId(req);
     if (!id) return reply.code(404).send({ error: "Creator account not found" });
-    return { steering: await patchSlurpCreatorSteering(app.db, id, parsed.data) };
+    const before = await readSlurpCreatorSteering(app.db, id);
+    const steering = await patchSlurpCreatorSteering(app.db, id, parsed.data);
+    // Posts already written keep the old steering. The app asks whether to rewrite them; the
+    // count is only sent when what the posts say changed.
+    const prepared = slurpSteeringContentChanged(before, steering) ? await countSlurpPreparedRewrite(app.db, id) : null;
+    return { steering, prepared: prepared?.posts ? prepared : null };
+  });
+
+  /** The player's answer "Rewrite" to the question above. "Keep" sends nothing. */
+  app.post("/slurp/accounts/:id/steering/rewrite-prepared", async (req, reply) => {
+    const id = await creatorId(req);
+    if (!id) return reply.code(404).send({ error: "Creator account not found" });
+    return { rewritten: await rewriteSlurpPreparedPosts(app.db, id) };
   });
 
   app.post("/slurp/accounts/:id/steering/ideas", async (req, reply) => {
