@@ -102,8 +102,9 @@ assert.match(threadActions, /if \(sendOrigin\) playSlpSpendMoment\(sendOrigin\);
 assert.match(threadActions, /setToolsOpen\(false\);\s*if \(origin\) playSlpSpendMoment\(origin\);/u);
 assert.equal(en["ui.slurp.messages.tipSendNow"], "Send {{amount}} <coin/>", "price on the chat tip button");
 
-// ── Step 5 follow-ups: Discover ad 16:9, search placeholder ──
-assert.match(client("features/ads/SlpInlineAd.tsx"), /wide \? "aspect-\[16\/9\]" : "aspect-\[4\/5\] max-h-\[32rem\]"/u);
+// ── Step 5 follow-ups: Discover ad wide (Q, 2026-09-28: 1.91:1 banner, was 16:9), search placeholder ──
+assert.match(client("features/ads/SlpInlineAd.tsx"), /wide \? "" : "aspect-\[4\/5\] max-h-\[32rem\]"/u);
+assert.match(client("features/ads/SlpInlineAd.tsx"), /style=\{wide \? \{ aspectRatio: "1\.91 \/ 1" \} : undefined\}/u);
 assert.match(client("app/screens/SlpScreenHub.tsx"), /renderInlineAd\(inlineAdsQuery\.data\.items\[0\], true\)/u);
 assert.equal(en["ui.noodle.noodlerhome.searchPostsOrCreators"], "Search Slurp");
 
