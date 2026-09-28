@@ -48,6 +48,7 @@ export const SLP_BACKSTAGE_LABEL_KEYS: Partial<Record<keyof SlurpSettings, strin
   arcStatEffects: "ui.slurp.settings.arcStatEffects",
   arcCrossovers: "ui.slurp.settings.arcCrossovers",
   arcLibrary: "ui.slurp.settings.arcLibrary",
+  contentPacks: "ui.slurp.packs.content.title",
   discoveryTags: "ui.slurp.settings.backstage.landing.discovery",
   storyImageWidth: "ui.slurp.settings.images.storyShape",
   storyImageHeight: "ui.slurp.settings.images.storyShape",

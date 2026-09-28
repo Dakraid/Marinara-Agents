@@ -111,10 +111,10 @@ export function SlpStoryPacksPanel({ arcs, events }: { arcs: SlurpArcType[]; eve
       <section aria-labelledby="slurp-story-packs-heading" className="space-y-4">
         <div>
           <h2 id="slurp-story-packs-heading" className="text-base font-black">
-            Story packs
+            More story packs
           </h2>
           <p className="mt-1 text-sm text-[var(--slurp-muted)]">
-            Review reusable arcs and events before adding them. Imports start disabled.
+            Review these before you add them, or import a pack file. Imported items start switched off.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
