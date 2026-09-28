@@ -134,7 +134,7 @@ function buildMessages(input: {
       : input.kind === "question"
         ? "Rewrite this question so it is about the actual post below, in the fan's own voice. One sentence, lowercase is fine, no greeting."
         : input.kind === "delivery"
-          ? "Rewrite this hand-over note so it sounds like this particular creator giving a fan the piece they paid for. One or two sentences, warm, no greeting, and never describe the picture."
+          ? "Rewrite this hand-over note so it sounds like this particular creator giving a fan the piece they paid for. One or two sentences, warm, no greeting, never describe the picture, and keep the note's language."
           : "Rewrite this first message so it sounds like this particular person writing to this particular creator for the first time. Keep it short and a little awkward. Do not ask for anything.";
 
   const data = {

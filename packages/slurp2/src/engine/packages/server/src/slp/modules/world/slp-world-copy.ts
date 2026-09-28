@@ -130,8 +130,67 @@ const COMMISSION_DELIVERIES = [
   "took me a while but here it is",
 ] as const;
 
-export function slurpCommissionDeliveryNote(seed: string): string {
-  return COMMISSION_DELIVERIES[pickIndex(seed, "delivery", COMMISSION_DELIVERIES.length)]!;
+/** The same notes in the other languages Slurp speaks, for a chat held in one of them (7c M-008). */
+const COMMISSION_DELIVERIES_BY_LANGUAGE: Record<SlurpChatLanguage, readonly string[]> = {
+  en: COMMISSION_DELIVERIES,
+  de: [
+    "hier ist es. ich hoffe, es ist so, wie du es dir vorgestellt hast",
+    "gestern abend fertig geworden. hat mir richtig spaß gemacht",
+    "fertig! hat ein paar anläufe gebraucht, aber jetzt mag ich es",
+    "gehört ganz dir. danke, dass du mich sowas fragst",
+    "bitte schön. sag mir ehrlich, wie du es findest",
+    "hat eine weile gedauert, aber hier ist es",
+  ],
+  ko: [
+    "여기 있어요. 생각했던 거랑 비슷했으면 좋겠어요",
+    "어젯밤에 끝냈어요. 만드는 동안 정말 즐거웠어요",
+    "완성! 몇 번 다시 했는데 이제 마음에 들어요",
+    "이제 당신 거예요. 이런 부탁 해줘서 고마워요",
+    "여기요. 솔직하게 어떤지 말해줘요",
+    "시간이 좀 걸렸지만 드디어 완성했어요",
+  ],
+  pl: [
+    "proszę, gotowe. mam nadzieję, że o to ci chodziło",
+    "gotowe od wczoraj wieczorem. robienie tego to była czysta przyjemność",
+    "gotowe! trzeba było kilku podejść, ale efekt mi się podoba",
+    "to już twoje. dzięki za takie zamówienie",
+    "proszę bardzo. powiedz szczerze, co o tym myślisz",
+    "trochę to trwało, ale oto jest",
+  ],
+};
+
+export function slurpCommissionDeliveryNote(seed: string, language: SlurpChatLanguage = "en"): string {
+  const bank = COMMISSION_DELIVERIES_BY_LANGUAGE[language];
+  return bank[pickIndex(seed, "delivery", bank.length)]!;
+}
+
+/** The languages Slurp ships copy in. */
+export type SlurpChatLanguage = "en" | "de" | "ko" | "pl";
+
+const WORDS: Record<Exclude<SlurpChatLanguage, "ko">, ReadonlySet<string>> = {
+  en: new Set("the and you is to it i that this for what with my your me so just are was".split(" ")),
+  de: new Set(
+    "ich du und nicht das ist ein eine mit auf für dich mir sehr danke hallo aber auch wie was der die".split(" "),
+  ),
+  pl: new Set("jest nie się że to jak ale mnie ciebie dzięki bardzo cześć tak co czy mi już".split(" ")),
+};
+
+/**
+ * Which of Slurp's languages a chat is held in, from its newest lines (7c M-008): Hangul is Korean;
+ * otherwise common words and letters decide, and English wins a tie.
+ * ponytail: word and letter counts, not a language detector; other languages read as English.
+ */
+export function slurpChatLanguage(texts: readonly string[]): SlurpChatLanguage {
+  const text = texts.join(" ").toLowerCase();
+  if (/[\uac00-\ud7a3]/u.test(text)) return "ko";
+  const words = text.match(/\p{L}+/gu) ?? [];
+  const score = (language: Exclude<SlurpChatLanguage, "ko">) =>
+    words.filter((word) => WORDS[language].has(word)).length +
+    2 * (text.match(language === "de" ? /[äöüß]/gu : language === "pl" ? /[ąćęłńśźż]/gu : /(?!)/u)?.length ?? 0);
+  const [best] = (["en", "de", "pl"] as const)
+    .map((language) => [language, score(language)] as const)
+    .sort((left, right) => right[1] - left[1]);
+  return best && best[1] > score("en") ? best[0] : "en";
 }
 
 /**

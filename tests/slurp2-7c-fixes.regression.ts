@@ -23,6 +23,10 @@ import {
   isFollowUpOverdue,
   SLURP_FOLLOW_UP_OVERDUE_MS,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-follow-up.ts";
+import {
+  slurpChatLanguage,
+  slurpCommissionDeliveryNote,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/slp-world-copy.ts";
 import { slurp2Source } from "./slurp2-source.ts";
 
 const root = new URL("../packages/slurp2/src/engine/packages/", import.meta.url);
@@ -317,6 +321,41 @@ const at = (days: number) => new Date(T0 + days * 86_400_000);
     "declined and read, no model call",
   );
   assert.doesNotMatch(upkeep, /generate|replyToSlurpMessage/u);
+}
+
+// M-008. The delivery note speaks the chat's language (the prod thread F1nLxs is German).
+{
+  const german = [
+    "Hey, dein letzter Post war der Wahnsinn",
+    "Danke dir!! Freut mich total",
+    "Kannst du mir was Exklusives schicken?",
+  ];
+  assert.equal(slurpChatLanguage(german), "de");
+  assert.equal(slurpChatLanguage(["hey! loved the rooftop set", "thank you, that means a lot"]), "en");
+  assert.equal(slurpChatLanguage(["안녕하세요! 사진 너무 좋아요"]), "ko");
+  assert.equal(slurpChatLanguage(["cześć, to jest super", "dzięki bardzo, cieszę się"]), "pl");
+  assert.equal(slurpChatLanguage([]), "en", "nothing said: English");
+  assert.equal(slurpChatLanguage(["ok 👍", "lol"]), "en", "too little to tell: English");
+  const note = slurpCommissionDeliveryNote("GVO--g", "de");
+  assert.ok(
+    ["ich", "dir", "es", "danke", "bitte", "hier", "fertig", "gehört"].some((word) =>
+      note.split(/\W+/u).includes(word),
+    ),
+    `a German note: ${note}`,
+  );
+  assert.equal(slurpCommissionDeliveryNote("GVO--g", "de"), note, "the same piece, the same note");
+  assert.equal(
+    slurpCommissionDeliveryNote("GVO--g"),
+    slurpCommissionDeliveryNote("GVO--g", "en"),
+    "English by default",
+  );
+  for (const language of ["en", "de", "ko", "pl"] as const)
+    for (let i = 0; i < 20; i++) assert.ok(slurpCommissionDeliveryNote(`seed-${i}`, language).length > 10);
+  assert.match(
+    server("features/messages/commissions/slp-commission-delivery-service.ts"),
+    /slurpCommissionDeliveryNote\(commission\.id, language\)/u,
+  );
+  assert.match(server("features/world/slp-pending-text-service.ts"), /keep the note's language/u);
 }
 
 console.log("slurp2 7c fixes regression passed");
