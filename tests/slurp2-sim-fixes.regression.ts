@@ -19,6 +19,12 @@ import {
   slurpSetUpCouple,
   type SlurpCouple,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples.ts";
+import { slurpCreatorCheckIn } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-world.ts";
+import { formatFollowUpContext } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-follow-up.ts";
+import {
+  SLURP_CAMERA_SOURCES,
+  slurpPostCameraSource,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-camera-source.ts";
 import {
   LEGACY_SLURP_DISCOVERY_TAG_SEED,
   SLURP_DISCOVERY_TAG_SEED,
@@ -218,6 +224,57 @@ const read = (path: string) => readFileSync(new URL(path, root), "utf8");
   }) as SlurpCouple[];
   assert.equal(strangers[0]!.stage, "sparks");
   assert.ok(!slurpCouplePageOpenable(strangers[0]!));
+}
+
+// --- F3 the OnlyFans feel in DMs: Creators write first in quiet chats, and delayed replies may draw.
+{
+  const base = { stage: "subscriber", hoursQuiet: 26, needsReply: false, pending: false, roll: 0.1, pick: 0.3 };
+  assert.ok(slurpCreatorCheckIn(base), "a quiet subscriber chat gets a Creator-first message on a lucky day");
+  assert.equal(slurpCreatorCheckIn({ ...base, roll: 0.9 }), null, "not every day");
+  assert.equal(slurpCreatorCheckIn({ ...base, needsReply: true }), null, "the fan's answer comes first");
+  assert.equal(slurpCreatorCheckIn({ ...base, pending: true }), null, "one planned message at a time");
+  assert.equal(slurpCreatorCheckIn({ ...base, hoursQuiet: 3 }), null, "only a quiet chat");
+  assert.equal(slurpCreatorCheckIn({ ...base, stage: "stranger" }), null);
+  assert.ok(slurpCreatorCheckIn({ ...base, stage: "follower", hoursQuiet: 40, roll: 0.05 }), "followers now and then");
+  // About a third of quiet days for a subscriber, over a year of day rolls.
+  let days = 0;
+  for (let day = 0; day < 365; day += 1)
+    if (slurpCreatorCheckIn({ ...base, roll: ((day * 7919) % 365) / 365 })) days += 1;
+  assert.ok(days > 100 && days < 150, `about one quiet day in three (${days}/365)`);
+  const opener = formatFollowUpContext(
+    { id: "f", scheduledAt: "", type: "opener", reason: "Ask what they want to see next.", context: "" },
+    undefined,
+  );
+  assert.doesNotMatch(opener, /promised a/u, "an opener claims no promise");
+  assert.match(opener, /writing first/u);
+  const world = read("server/src/slp/features/world/slp-world-operation.ts");
+  assert.match(world, /slurpCreatorCheckIn\(/u);
+  assert.match(world, /type: "opener",/u, "the check-in goes through the follow-up writer");
+  assert.match(world, /await noodle\.getViewer\(tie\.memberId\)/u, "only the player's personas get one");
+  assert.match(
+    read("server/src/slp/data/messages/slp-messages-storage-conversation.ts"),
+    /inArray\(slurpFollowUps\.type, \["check_in", "opener"\]\)/u,
+    "the player writing first cancels a planned opener",
+  );
+  const operation = read("server/src/slp/features/messages/slp-message-operation.ts");
+  const gate = operation.slice(operation.indexOf("reply.image &&"), operation.indexOf("const imageAllowedBySettings"));
+  assert.doesNotMatch(gate, /input\.background/u, "a delayed reply to the player may draw a picture or a PPV");
+
+  // F12 timer shots: no camera takes more than about a quarter of the feed.
+  const intents = ["set", "teaser", "callback", "behind_the_scenes", "business", "casual", "appreciation", "casual"];
+  const efforts = ["low", "medium", "medium", "high"];
+  const counts = new Map<string, number>();
+  for (let creator = 0; creator < 8; creator += 1)
+    for (let post = 0; post < 300; post += 1) {
+      const source = slurpPostCameraSource(`creator-${creator}`, post, {
+        companyCanHoldCamera: post % 4 === 0,
+        intent: intents[(post * 7 + creator) % intents.length],
+        effort: efforts[(post * 3 + creator) % efforts.length],
+      });
+      counts.set(source, (counts.get(source) ?? 0) + 1);
+    }
+  for (const source of SLURP_CAMERA_SOURCES)
+    assert.ok((counts.get(source) ?? 0) / 2400 <= 0.27, `${source} at most ~25 %: ${JSON.stringify([...counts])}`);
 }
 
 console.log("slurp2-sim-fixes regression passed");

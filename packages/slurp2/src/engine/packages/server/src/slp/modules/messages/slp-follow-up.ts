@@ -13,7 +13,8 @@ import { randomUUID } from "node:crypto";
  * The AI signals intent to follow up, and this system schedules and generates messages.
  */
 
-export type FollowUpType = "reminder" | "promise_delivery" | "task_update" | "check_in" | "recurring";
+/** `opener`: the Creator writes first in a quiet chat on their own (the world tick plans it), nothing promised. */
+export type FollowUpType = "reminder" | "promise_delivery" | "task_update" | "check_in" | "recurring" | "opener";
 
 export type ScheduledFollowUp = {
   id: string;
@@ -231,6 +232,9 @@ export function isFollowUpOverdue(followUp: { createdAt?: string }, now: Date = 
 export function formatFollowUpContext(followUp: ScheduledFollowUp, promiseText?: string): string {
   // `scheduledAt` is when it came due, not when it was promised, so no "minutes ago" is stated:
   // the old count told the model a false fact.
+  // Nobody asked for an opener, so it must not claim a promise.
+  if (followUp.type === "opener")
+    return `Nobody asked and you promised nothing: you are writing first in this quiet chat. ${followUp.reason}`;
   let context = `You promised a ${followUp.type} earlier and it is due now. Reason: ${followUp.reason}.`;
 
   if (followUp.sequenceNumber && followUp.totalInSequence) {

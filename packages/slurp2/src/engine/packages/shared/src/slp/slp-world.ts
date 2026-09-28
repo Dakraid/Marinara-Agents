@@ -474,5 +474,44 @@ export function slurpCreatorOpenerKind(input: {
   return null;
 }
 
+/**
+ * Why a Creator writes first in a chat that already exists, as guidance for the reply writer.
+ * On a creator site this is the business: the page pings the people who pay, tells them about a
+ * new set first, and asks what they want next.
+ */
+export const SLURP_CREATOR_CHECK_IN_REASONS = [
+  "You have been thinking about them. Say hi, short and personal, like you would to a regular.",
+  "You just finished a new set. Tell them first, tease it, and offer to send it to them.",
+  "Something in your day made you think of them. Tell them about it.",
+  "Ask them what they would like to see from you next.",
+  "You are bored and a little flirty. Start something.",
+] as const;
+
+/**
+ * Whether a Creator writes first in an existing, quiet chat, and why (`null`: not today).
+ *
+ * `slurpCreatorOpenerKind` only opens chats that do not exist yet, so a fan who had ever written
+ * never heard first from anyone: in a 7-day simulation no Creator wrote first once. A subscriber
+ * gets a message about every third quiet day; a follower now and then. The rolls are stable per
+ * pair and day; after it is sent the chat is no longer quiet, so it does not repeat.
+ */
+export function slurpCreatorCheckIn(input: {
+  stage: string;
+  hoursQuiet: number;
+  /** The fan is waiting for an answer; the answer comes first. */
+  needsReply: boolean;
+  /** Something is already planned for this chat. */
+  pending: boolean;
+  roll: number;
+  /** Second stable number in [0, 1), picks the reason. */
+  pick: number;
+}): string | null {
+  if (input.needsReply || input.pending) return null;
+  const paying = input.stage === "subscriber" || input.stage === "regular" || input.stage === "whale";
+  const chance = paying ? 0.35 : input.stage === "follower" || input.stage === "liker" ? 0.12 : 0;
+  if (input.hoursQuiet < (paying ? 20 : 36) || input.roll >= chance) return null;
+  return SLURP_CREATOR_CHECK_IN_REASONS[Math.floor(input.pick * SLURP_CREATOR_CHECK_IN_REASONS.length)] ?? null;
+}
+
 /** Unprompted creator messages per tick. Being messaged stops meaning anything in bulk. */
 export const SLURP_MAX_CREATOR_OPENERS_PER_TICK = 1;

@@ -5,7 +5,7 @@
 // Its own module rather than more of `slurp.storage.ts`, which is already past five thousand
 // lines. It composes that storage for accounts, subscriptions, and the wallet instead of
 // reimplementing them, so a DM tip and a profile tip move coins through exactly one code path.
-import { and, desc, eq, gt } from "../../../db/file-query.js";
+import { and, desc, eq, gt, inArray } from "../../../db/file-query.js";
 import { newId } from "../../../utils/id-generator.js";
 import type { DB } from "../../../db/connection.js";
 import {
@@ -176,7 +176,7 @@ export function createMessagesStorageConversation(context: SlurpMessagesContext)
             })
             .where(eq(slurpThreads.id, threadId));
           if (input.role === "viewer") {
-            // The fan came back on their own, so "checking in on you" has nothing left to do.
+            // The fan came back on their own, so "checking in on you" (or writing first) has nothing left to do.
             // Promises, reminders and updates still owe the fan something and stay.
             await tx
               .update(slurpFollowUps)
@@ -184,7 +184,7 @@ export function createMessagesStorageConversation(context: SlurpMessagesContext)
               .where(
                 and(
                   eq(slurpFollowUps.threadId, threadId),
-                  eq(slurpFollowUps.type, "check_in"),
+                  inArray(slurpFollowUps.type, ["check_in", "opener"]),
                   eq(slurpFollowUps.status, "pending"),
                 ),
               );

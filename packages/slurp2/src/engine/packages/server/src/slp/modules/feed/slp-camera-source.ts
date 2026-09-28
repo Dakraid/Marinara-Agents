@@ -189,13 +189,16 @@ export function slurpPermittedCameraSources(options: { companyCanHoldCamera: boo
 // 0.2.75: on prod, 27 of 40 pictures were selfie or mirror (68 %) once "homemade" preferences,
 // casual intent and low effort stacked on 28 + 17. Mirror shots also drew the Creator twice
 // (image models paint the reflection as a second person), so mirror is now occasional.
+// 0.2.79: the 7-day simulation drew a timer shot for 45 % of posts once the intent and effort
+// biases stacked on 25 (the new sameness after the selfies). Timer and hand-held now start even,
+// and the biases below bend less, so no camera takes more than about a quarter of a Creator's feed.
 const WEIGHTS: Record<SlurpCameraSource, number> = {
   selfie: 22,
   mirror: 7,
-  tripod: 25,
+  tripod: 16,
   screenshot: 16,
   archive: 10,
-  partner: 12,
+  partner: 14,
 };
 
 /**
@@ -214,10 +217,10 @@ const PREFERENCE_MULTIPLIER = 1.4;
  * picture says she held the phone. Effort says the same thing from the production side.
  */
 const INTENT_BIAS: Record<string, Partial<Record<SlurpCameraSource, number>>> = {
-  set: { selfie: 0.4, mirror: 0.8, tripod: 2.2, partner: 2, screenshot: 0.6 },
-  teaser: { tripod: 1.4, mirror: 1.2, selfie: 0.8 },
+  set: { selfie: 0.5, mirror: 0.9, tripod: 1.6, partner: 2, screenshot: 0.7 },
+  teaser: { tripod: 1.2, mirror: 1.2, selfie: 0.9 },
   callback: { tripod: 1.3, selfie: 0.9 },
-  behind_the_scenes: { tripod: 1.5, screenshot: 1.6, selfie: 0.9 },
+  behind_the_scenes: { tripod: 1.2, screenshot: 1.6, selfie: 0.9 },
   business: { selfie: 1.3, tripod: 0.6, partner: 0.5 },
   casual: { screenshot: 1.2, tripod: 0.9 },
   appreciation: { selfie: 1.1, tripod: 0.9 },
@@ -226,7 +229,7 @@ const INTENT_BIAS: Record<string, Partial<Record<SlurpCameraSource, number>>> = 
 const EFFORT_BIAS: Record<string, Partial<Record<SlurpCameraSource, number>>> = {
   low: { screenshot: 1.5, tripod: 0.7, partner: 0.8 },
   medium: {},
-  high: { selfie: 0.5, tripod: 2, partner: 1.6, screenshot: 0.7 },
+  high: { selfie: 0.6, tripod: 1.5, partner: 1.6, screenshot: 0.8 },
 };
 
 /**

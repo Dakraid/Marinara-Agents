@@ -421,11 +421,11 @@ export async function replyToSlurpMessage(
         reply.image &&
         reply.canSendImage &&
         !support &&
-        slurpCreatorStateCanUseMedia(creatorState, thread.threadState) &&
-        // Unattended replies never draw: the picture costs money the player did not ask to spend.
-        // A forced reply is a person pressing a button, so it may, like an ordinary send.
-        input.background !== true
+        slurpCreatorStateCanUseMedia(creatorState, thread.threadState)
       ) {
+        // A delayed ("away") reply draws too. The scheduler only ever answers the player's own
+        // message, so the player asked; blocking it meant most chats never got a picture or a PPV
+        // (0 in a 7-day simulation). The reply itself already passed the AI budget.
         // The Creator's own Images switch, the one its posts use. The old gate read
         // `enableImagePrompts`, an internal flag with no control that is off on every install, so
         // no Creator ever sent a picture in a chat (R1-122). No image connection → "unavailable".
