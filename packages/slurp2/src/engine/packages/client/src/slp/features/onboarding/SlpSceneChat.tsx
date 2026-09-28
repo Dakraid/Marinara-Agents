@@ -7,8 +7,9 @@ import { cn } from "../../../lib/utils";
 import { Avatar, SLP_IMG_FRAME_CLASS, SLP_TYPE, SlurpMediaImg } from "../../base/chrome/SlpChrome";
 import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { SlpButton } from "../../modules/chrome/SlpButton";
+import { playSlpBurst } from "../../modules/sparkle/SlpSparkle";
 import { slurpBubbleSurface } from "../messages/slp-messages-contract";
-import { slpScenePatchHeadline, type SlpSceneChip } from "./slp-scene-draft";
+import { slpScenePatchHeadline, type SlpSceneChip, type SlpSceneItem } from "./slp-scene-draft";
 import type { SlpSceneModel } from "./slp-scene-model";
 
 /** What one page change says, in the chat and on the phone's page peek: "Name set: Velvet Moth". */
@@ -24,6 +25,40 @@ export function slpScenePatchNote(
   return t("ui.slurp.scene.patch", {
     fields: item.fields.map((field) => t(`ui.slurp.scene.field.${field}`)).join(", "),
   });
+}
+
+/** Chapter notes that already had their sparkle: a re-render or remount never plays it again. */
+const celebratedNotes = new Set<string>();
+
+/** A chapter got done: "Name done! Next: Photo", with a small Burst the first time it shows. */
+function ChapterNote({ item }: { item: Extract<SlpSceneItem, { kind: "chapter" }> }) {
+  const { t } = useUiTranslation();
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!ref.current || celebratedNotes.has(item.id)) return;
+    celebratedNotes.add(item.id);
+    playSlpBurst(ref.current, 8);
+  }, [item.id]);
+  const done = t("ui.slurp.scene.chapter.done", {
+    chapters: item.chapters.map((chapter) => t(`ui.slurp.scene.chapter.${chapter}`)).join(", "),
+  });
+  const next =
+    !item.next || item.next === "live"
+      ? t("ui.slurp.scene.chapter.ready")
+      : t("ui.slurp.scene.chapter.next", { chapter: t(`ui.slurp.scene.chapter.${item.next}`) });
+  return (
+    <div
+      ref={ref}
+      data-slp-scene-chapter=""
+      className="slp-chapter-in my-2 flex max-w-full shrink-0 items-center gap-2 self-center rounded-full bg-[image:var(--slurp-nav-active)] py-1.5 ps-2 pe-3.5 shadow-[var(--slurp-glow),var(--slurp-highlight)] ring-1 ring-inset ring-[var(--noodle-accent)]/45"
+    >
+      <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)]">
+        <SlpSparkleGlyph size={13} filled aria-hidden="true" className="!text-current" />
+      </span>
+      <span className="min-w-0 truncate text-xs font-bold text-[var(--slurp-text)]">{done}</span>
+      <span className="shrink-0 text-xs text-[var(--slurp-muted)]">{next}</span>
+    </div>
+  );
 }
 
 export type SlpSceneSpeakerView = { name: string; avatarUrl: string | null; mine: boolean };
@@ -61,6 +96,7 @@ export function SlpSceneChat({
         className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-1 py-2"
       >
         {model.items.map((item, index) => {
+          if (item.kind === "chapter") return <ChapterNote key={item.id} item={item} />;
           if (item.kind === "note")
             return (
               <p

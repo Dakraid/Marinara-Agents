@@ -55,3 +55,5 @@ export type SlpAmbientProfileRerollResult = {
 
 // The Creator settings modal sets one Creator's fan activity and archetype weights.
 export { useUpdateCreatorFanActivity } from "./slp-fan-activity-hooks.js";
+/** The follower total a new page starts with (the sign-up finale counts up to it). */
+export { useCreatorFollowers } from "./slp-audience-hooks.js";

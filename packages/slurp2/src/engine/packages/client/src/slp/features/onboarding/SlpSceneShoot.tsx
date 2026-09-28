@@ -17,8 +17,12 @@ const firstLine = (value: string) =>
 
 export function SlpSceneShoot({ model, onMissing }: { model: SlpSceneModel; onMissing: (missing: string[]) => void }) {
   const { t } = useUiTranslation();
-  const [outfit, setOutfit] = useState(() => firstLine(model.draft.wardrobe));
-  const [place, setPlace] = useState(() => firstLine(model.draft.locations));
+  // The fields follow what the chat picks (the outfit talk fills wardrobe and places) until the
+  // player types in them.
+  const [typedOutfit, setOutfit] = useState<string | null>(null);
+  const [typedPlace, setPlace] = useState<string | null>(null);
+  const outfit = typedOutfit ?? firstLine(model.draft.wardrobe);
+  const place = typedPlace ?? firstLine(model.draft.locations);
   const done = Boolean(model.photos.avatarUrl);
   const input =
     "h-11 w-full min-w-0 rounded-xl bg-[var(--slurp-canvas)] sm:flex-1 px-3 text-base text-[var(--slurp-text)] outline-none ring-1 ring-inset ring-[var(--noodle-divider)] placeholder:text-[var(--slurp-muted)] focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] sm:text-[13px]";

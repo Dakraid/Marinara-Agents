@@ -114,6 +114,12 @@ export const SLP_SPARKLE_STYLES = `
     .slp-veil-dissolve { animation: slp-veil-dissolve 1000ms cubic-bezier(0.45, 0, 0.3, 1) 120ms both; }
     .slp-image-shimmer::after { animation: slp-image-sweep 4s ease-in-out infinite; }
     .slp-field-glow { animation: slp-field-glow 1800ms ${EASE} both; }
+    /* The role-play sign-up (onboarding pass 3): a chapter note pops in, the phone goes live, the
+       finale's lines land one after another, and the chosen casting card flies into the scene. */
+    .slp-chapter-in { animation: slp-chapter-in 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+    .slp-live-in { animation: slp-live-in 700ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+    .slp-notice-in { animation: slp-notice-in 420ms ${EASE} var(--slp-notice-delay, 0ms) both; }
+    ::view-transition-group(slp-cast) { animation-duration: 560ms; animation-timing-function: ${EASE}; }
     [data-slp-paused], [data-slp-paused]::before, [data-slp-paused]::after { animation-play-state: paused !important; }
   }
   @keyframes slp-glint { 0% { opacity: 1; background-position: 130% 0; } 100% { opacity: 1; background-position: -30% 0; } }
@@ -147,5 +153,12 @@ export const SLP_SPARKLE_STYLES = `
     0% { box-shadow: inset 0 0 0 1.5px var(--noodle-accent), 0 0 18px color-mix(in srgb, var(--noodle-accent) 40%, transparent); }
     100% { box-shadow: inset 0 0 0 0 transparent, 0 0 0 transparent; }
   }
+  @keyframes slp-chapter-in {
+    0% { opacity: 0; transform: translateY(6px) scale(0.86); } 100% { opacity: 1; transform: none; }
+  }
+  @keyframes slp-live-in {
+    0% { opacity: 0; transform: translateY(18px) scale(0.9); } 100% { opacity: 1; transform: none; }
+  }
+  @keyframes slp-notice-in { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: none; } }
   @keyframes slp-image-sweep { 0% { background-position: 120% 0; } 45%, 100% { background-position: -20% 0; } }
 `;

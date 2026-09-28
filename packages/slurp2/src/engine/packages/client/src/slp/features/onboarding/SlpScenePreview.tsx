@@ -1,8 +1,9 @@
-// The live page of the role-play sign-up: what the chat has filled in so far, how far it is, and
-// the field the chat just changed, lit up for a moment. Every field can be edited by hand (which
-// locks it, so the chat keeps it); a locked field shows its lock and can be unlocked.
+// The live page of the role-play sign-up: a phone that shows the Creator page building up while the
+// chat fills it (name, photo, bio, tags, limits, first post), the chapter rail that counts the way
+// to a live page, and the page fields to edit by hand. A hand edit locks the field, so the chat
+// keeps it; a locked field shows its lock and can be unlocked.
 import { useEffect, useRef, useState } from "react";
-import { Check, Lock, Pencil } from "lucide-react";
+import { Check, ChevronDown, Heart, Lock, Pencil } from "lucide-react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import {
   SLP_SCENE_FIELD_LIMITS,
@@ -11,11 +12,12 @@ import {
   type SlpSceneField,
 } from "../../../../../shared/src/slp/slp-scene.js";
 import { cn } from "../../../lib/utils";
-import { Avatar, SLP_GROUP_CLASS, SLP_IMG_FRAME_CLASS, SLP_TYPE, SlurpMediaImg } from "../../base/chrome/SlpChrome";
+import { Avatar, SLP_GROUP_CLASS, SLP_TYPE, SlurpMediaImg } from "../../base/chrome/SlpChrome";
 import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { slpPrefersReducedMotion } from "../../base/chrome/slp-motion";
 import { SlpButton, SlpChip, SlpSegment } from "../../modules/chrome/SlpButton";
-import { slpSceneProgress, type SlpSceneProgressPart } from "./slp-scene-draft";
+import { playSlpPop, SlpRingGlint } from "../../modules/sparkle/SlpSparkle";
+import type { SlpSceneChapter, slpSceneChapters } from "./slp-scene-draft";
 
 const ROWS: SlpSceneField[] = [
   "displayName",
@@ -32,89 +34,266 @@ const ROWS: SlpSceneField[] = [
   "hardNoes",
 ];
 const LONG: SlpSceneField[] = ["bio", "stagePersonality", "appearance", "wardrobe", "locations"];
-/** The label of each progress part, borrowed from the field or moment it stands for. */
-export const SLP_SCENE_PART_LABEL: Record<SlpSceneProgressPart, string> = {
-  name: "ui.slurp.scene.field.displayName",
-  look: "ui.slurp.scene.field.appearance",
-  bio: "ui.slurp.scene.field.bio",
-  voice: "ui.slurp.scene.field.stagePersonality",
-  tags: "ui.slurp.scene.field.tags",
-  limits: "ui.slurp.scene.moment.limits",
-};
 
-/** "3 of 6 done" with a thin bar; `parts` adds the checklist chips under it. */
-export function SlpSceneProgressBar({
-  progress,
-  parts = false,
+/**
+ * The way to a live page: Name, Photo, Bio, Limits, Live. Done chapters are filled pink with a
+ * check and pop when they get done; the one the chat is on now wears a ring.
+ */
+export function SlpSceneChapterRail({
+  chapters,
+  current,
 }: {
-  progress: ReturnType<typeof slpSceneProgress>;
-  parts?: boolean;
+  chapters: ReturnType<typeof slpSceneChapters>;
+  current: SlpSceneChapter;
 }) {
   const { t } = useUiTranslation();
-  const label = t("ui.slurp.scene.progress.count", { done: progress.done, total: progress.total });
+  const dots = useRef(new Map<SlpSceneChapter, HTMLSpanElement>());
+  const before = useRef(new Set(chapters.chapters.filter((chapter) => chapter.done).map((chapter) => chapter.id)));
+  const doneKey = chapters.chapters.map((chapter) => (chapter.done ? chapter.id : "")).join(",");
+  useEffect(() => {
+    for (const chapter of chapters.chapters) {
+      if (!chapter.done || before.current.has(chapter.id)) continue;
+      before.current.add(chapter.id);
+      const dot = dots.current.get(chapter.id);
+      if (dot) playSlpPop(dot);
+    }
+    for (const id of [...before.current])
+      if (!chapters.chapters.find((chapter) => chapter.id === id)?.done) before.current.delete(id);
+    // Only a change in which chapters are done pops.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doneKey]);
   return (
-    <div>
-      <div className="flex items-center gap-2.5">
-        <span className={cn(SLP_TYPE.meta, "shrink-0 whitespace-nowrap font-semibold text-[var(--slurp-text)]")}>
-          {label}
-        </span>
-        <div
-          role="progressbar"
-          aria-label={label}
-          aria-valuemin={0}
-          aria-valuemax={progress.total}
-          aria-valuenow={progress.done}
-          className="h-1 min-w-10 flex-1 overflow-hidden rounded-full bg-[var(--noodle-divider)]"
-        >
-          <span
-            className="block h-full rounded-full bg-[var(--noodle-accent)] transition-[width] duration-[var(--slurp-motion-slow)] ease-[var(--slurp-ease)] motion-reduce:transition-none"
-            style={{ width: `${Math.round((progress.done / progress.total) * 100)}%` }}
-          />
-        </div>
-      </div>
-      {parts && (
-        <ul className="mt-2 flex flex-wrap gap-1">
-          {progress.parts.map((part) => (
-            <li
-              key={part.id}
+    <ol
+      aria-label={t("ui.slurp.scene.chapter.label", { done: chapters.done, total: chapters.total })}
+      className="flex items-start"
+    >
+      {chapters.chapters.map((chapter, index) => {
+        const now = chapter.id === current && !chapter.done;
+        return (
+          <li key={chapter.id} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+            <span className="flex w-full items-center">
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "h-0.5 flex-1 rounded-full",
+                  index === 0 ? "invisible" : chapter.done ? "bg-[var(--noodle-accent)]" : "bg-[var(--noodle-divider)]",
+                )}
+              />
+              <span
+                ref={(node) => {
+                  if (node) dots.current.set(chapter.id, node);
+                }}
+                className={cn(
+                  "grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold transition-colors duration-[var(--slurp-motion-base)] motion-reduce:transition-none",
+                  chapter.done
+                    ? "bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] shadow-[var(--slurp-glow)]"
+                    : now
+                      ? "bg-[var(--slurp-tint)] text-[var(--slurp-ink)] ring-2 ring-[var(--noodle-accent)]"
+                      : "text-[var(--slurp-muted)] ring-1 ring-inset ring-[var(--noodle-divider)]",
+                )}
+              >
+                {chapter.done ? (
+                  <Check size={14} strokeWidth={2.5} aria-hidden="true" className="!text-current" />
+                ) : chapter.id === "live" ? (
+                  <SlpSparkleGlyph size={13} aria-hidden="true" className="!text-current" />
+                ) : (
+                  index + 1
+                )}
+              </span>
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "h-0.5 flex-1 rounded-full",
+                  index === chapters.chapters.length - 1
+                    ? "invisible"
+                    : chapters.chapters[index + 1]?.done
+                      ? "bg-[var(--noodle-accent)]"
+                      : "bg-[var(--noodle-divider)]",
+                )}
+              />
+            </span>
+            <span
+              aria-current={now ? "step" : undefined}
               className={cn(
-                "inline-flex min-h-7 items-center gap-1 rounded-full px-2.5 text-xs font-semibold",
-                part.done
-                  ? "bg-[var(--slurp-tint)] text-[var(--slurp-text)]"
-                  : "text-[var(--slurp-muted)] ring-1 ring-inset ring-[var(--noodle-divider)]",
+                "max-w-full truncate text-xs",
+                chapter.done || now ? "font-semibold text-[var(--slurp-text)]" : "text-[var(--slurp-muted)]",
               )}
             >
-              {part.done && <Check size={12} aria-hidden="true" className="shrink-0 text-[var(--slurp-ink)]" />}
-              {t(SLP_SCENE_PART_LABEL[part.id])}
+              {t(`ui.slurp.scene.chapter.${chapter.id}`)}
               <span className="sr-only">
-                {part.done ? t("ui.slurp.scene.progress.done") : t("ui.slurp.scene.page.empty")}
+                {chapter.done ? ` ${t("ui.slurp.scene.progress.done")}` : ""}
               </span>
-            </li>
-          ))}
-        </ul>
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+/** Where the first post is: not yet (before live), being written, up, or coming later. */
+export type SlpSceneFirstPost = "none" | "writing" | "posted" | "later";
+
+/** A placeholder bar for a part of the page the chat has not filled yet. */
+function Blank({ className }: { className: string }) {
+  return <span aria-hidden="true" className={cn("block h-2 rounded-full bg-[var(--noodle-divider)]", className)} />;
+}
+
+/**
+ * The new Creator's page on a phone: every part shows a soft placeholder until the chat fills it,
+ * then lights up. `live` puts the LIVE mark and the story ring on it for the finale.
+ */
+export function SlpScenePhone({
+  draft,
+  recent,
+  recentKey,
+  avatarUrl,
+  bannerUrl,
+  live = false,
+  firstPost = "none",
+  large = false,
+  phoneRef,
+}: {
+  draft: SlpSceneDraft;
+  recent: readonly SlpSceneField[];
+  recentKey?: string;
+  avatarUrl?: string | null;
+  bannerUrl?: string | null;
+  live?: boolean;
+  firstPost?: SlpSceneFirstPost;
+  large?: boolean;
+  phoneRef?: React.Ref<HTMLDivElement>;
+}) {
+  const { t } = useUiTranslation();
+  const glow = (...fields: SlpSceneField[]) => fields.some((field) => recent.includes(field));
+  // A part the newest patch changed remounts (new key), so its glow plays again for the next one.
+  const partKey = (...fields: SlpSceneField[]) => (glow(...fields) ? `${fields[0]}-${recentKey}` : fields[0]);
+  const partGlow = (...fields: SlpSceneField[]) => cn("rounded-lg", glow(...fields) && "slp-field-glow");
+  const name = draft.displayName.trim();
+  const limits = [draft.spice ? t(`ui.slurp.scene.spice.${draft.spice}`) : "", draft.turnOns.trim()]
+    .filter(Boolean)
+    .join(" · ");
+  const postRef = useRef<HTMLSpanElement | null>(null);
+  useEffect(() => {
+    if (firstPost === "posted" && postRef.current) playSlpPop(postRef.current);
+  }, [firstPost]);
+  return (
+    <div
+      ref={phoneRef}
+      aria-hidden="true"
+      className={cn(
+        "relative mx-auto w-full shrink-0 rounded-[2.25rem] bg-[var(--slurp-canvas)] p-2 shadow-[var(--slurp-shadow-floating),var(--slurp-highlight)] ring-1 ring-inset ring-[var(--noodle-divider)]",
+        large ? "max-w-[18rem]" : "max-w-[16.5rem]",
+        live && "shadow-[var(--slurp-glow),var(--slurp-shadow-floating)]",
       )}
+    >
+      <div className="relative overflow-hidden rounded-[1.75rem] bg-[var(--slurp-surface)] pb-3">
+        <span className="absolute left-1/2 top-1.5 z-10 h-4 w-16 -translate-x-1/2 rounded-full bg-[var(--slurp-canvas)]" />
+        <div key={partKey("locations", "wardrobe")} className={cn(partGlow("locations", "wardrobe"), "relative h-24 rounded-none bg-[image:var(--slurp-nav-active)]")}>
+          {bannerUrl && (
+            <SlurpMediaImg src={bannerUrl} alt="" className="slp-crop-top absolute inset-0 h-full w-full object-cover" />
+          )}
+          {live && (
+            <span className="slp-live-in absolute end-2.5 top-2.5 z-10 flex items-center gap-1 rounded-full bg-[var(--noodle-accent)] px-2 py-0.5 text-[11px] font-bold text-[var(--slurp-on-accent)] shadow-[var(--slurp-glow)]">
+              <span className="size-1.5 rounded-full bg-[var(--slurp-on-accent)]" />
+              {t("ui.slurp.scene.phone.live")}
+            </span>
+          )}
+        </div>
+        <div className="-mt-9 flex flex-col items-center px-4 text-center">
+          <span className={cn("relative rounded-full", glow("appearance") && "slp-field-glow")} key={glow("appearance") ? `look-${recentKey}` : "look"}>
+            <Avatar
+              account={{ displayName: name || "?", avatarUrl: avatarUrl ?? null }}
+              className="h-[4.5rem] w-[4.5rem] ring-4 ring-[var(--slurp-surface)]"
+            />
+            {live && <SlpRingGlint />}
+          </span>
+          <div key={partKey("displayName", "handle")} className={cn(partGlow("displayName", "handle"), "mt-2 w-full px-1")}>
+            {name ? (
+              <p className={cn(SLP_TYPE.title, "truncate")}>{name}</p>
+            ) : (
+              <Blank className="mx-auto mt-1 h-3 w-28" />
+            )}
+            {draft.handle.trim() ? (
+              <p className={cn(SLP_TYPE.meta, "truncate text-[var(--slurp-muted)]")}>@{draft.handle.trim()}</p>
+            ) : (
+              <Blank className="mx-auto mt-2 w-16" />
+            )}
+          </div>
+          <div key={partKey("bio")} className={cn(partGlow("bio"), "mt-2 w-full px-1")}>
+            {draft.bio.trim() ? (
+              <p className={cn(SLP_TYPE.meta, "line-clamp-3 text-pretty text-[var(--slurp-text)]")}>{draft.bio.trim()}</p>
+            ) : (
+              <span className="flex flex-col items-center gap-1.5 py-1">
+                <Blank className="w-44" />
+                <Blank className="w-32" />
+              </span>
+            )}
+          </div>
+          <div key={partKey("tags", "gender")} className={cn(partGlow("tags", "gender"), "mt-2 flex w-full flex-wrap justify-center gap-1")}>
+            {draft.tags.length ? (
+              draft.tags.slice(0, 4).map((tag) => (
+                <span key={tag} className="rounded-full bg-[var(--slurp-tint)] px-2 py-0.5 text-[11px] font-semibold text-[var(--slurp-text)]">
+                  {tag}
+                </span>
+              ))
+            ) : (
+              <>
+                <Blank className="h-4 w-12" />
+                <Blank className="h-4 w-10" />
+                <Blank className="h-4 w-14" />
+              </>
+            )}
+          </div>
+          <div key={partKey("spice", "turnOns", "hardNoes")} className={cn(partGlow("spice", "turnOns", "hardNoes"), "mt-2 w-full px-1")}>
+            {limits ? (
+              <p className="truncate text-[11px] font-semibold text-[var(--slurp-ink)]">{limits}</p>
+            ) : (
+              <Blank className="mx-auto w-24" />
+            )}
+          </div>
+        </div>
+        <div className="mt-3 grid grid-cols-3 gap-1 px-2">
+          <span
+            ref={postRef}
+            className={cn(
+              "relative grid aspect-square place-items-center overflow-hidden rounded-lg text-center text-[11px] font-semibold",
+              firstPost === "posted"
+                ? "bg-[image:var(--slurp-nav-active)] text-[var(--slurp-text)]"
+                : firstPost === "writing"
+                  ? "bg-[var(--slurp-surface-raised)] text-[var(--slurp-muted)]"
+                  : "border border-dashed border-[var(--noodle-divider)] text-[var(--slurp-muted)]",
+            )}
+          >
+            {firstPost === "writing" && <span className="slp-image-shimmer" />}
+            <span className="relative flex flex-col items-center gap-0.5 px-1">
+              {firstPost === "posted" && (
+                <Heart size={14} aria-hidden="true" className="fill-current text-[var(--noodle-accent)]" />
+              )}
+              {t(`ui.slurp.scene.phone.post.${firstPost}`)}
+            </span>
+          </span>
+          <span className="aspect-square rounded-lg bg-[var(--slurp-surface-raised)] opacity-60" />
+          <span className="aspect-square rounded-lg bg-[var(--slurp-surface-raised)] opacity-40" />
+        </div>
+      </div>
     </div>
   );
 }
 
 export function SlpScenePreview({
-  title,
-  heading = true,
   draft,
   locked,
   fixed,
   recent,
   recentKey,
-  progress,
   allowedTags,
   avatarUrl,
   bannerUrl,
+  editOpen = false,
   onEdit,
   onToggleLock,
 }: {
-  title: string;
-  /** Off inside a sheet that already shows the title. */
-  heading?: boolean;
   draft: SlpSceneDraft;
   locked: readonly SlpSceneField[];
   /** Fields the page cannot change at all (an open page's public name and handle). */
@@ -123,86 +302,65 @@ export function SlpScenePreview({
   recent: readonly SlpSceneField[];
   /** Changes with every new patch, so the glow plays again for the next one. */
   recentKey?: string;
-  progress: ReturnType<typeof slpSceneProgress>;
   allowedTags: readonly string[];
   avatarUrl?: string | null;
   bannerUrl?: string | null;
+  /** The field list starts open (the phone's page sheet, opened on purpose). */
+  editOpen?: boolean;
   onEdit: <F extends SlpSceneField>(field: F, value: SlpSceneDraft[F]) => void;
   onToggleLock: (field: SlpSceneField) => void;
 }) {
   const { t } = useUiTranslation();
   const [editing, setEditing] = useState<SlpSceneField | null>(null);
-  const name = draft.displayName || t("ui.slurp.scene.page.noName");
+  const [open, setOpen] = useState(editOpen);
   const glow = (field: SlpSceneField) => recent.includes(field);
-  // A new name shows on the page card at the top: bring the top back instead of the row.
   const firstRecent = ROWS.find(glow);
-  const topRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (recentKey && (firstRecent === "displayName" || firstRecent === "handle"))
-      topRef.current?.scrollIntoView({ block: "nearest", behavior: slpPrefersReducedMotion() ? "auto" : "smooth" });
-  }, [recentKey, firstRecent]);
   return (
-    <section aria-label={title} className="flex min-h-0 flex-col gap-3">
-      {heading && <h4 className={cn(SLP_TYPE.title, "flex min-h-11 min-w-0 items-center truncate")}>{title}</h4>}
-      <div ref={topRef}>
-        <SlpSceneProgressBar progress={progress} parts />
-      </div>
-      <div className="overflow-hidden rounded-2xl bg-[var(--slurp-surface-raised)] shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
-        <div className={cn(SLP_IMG_FRAME_CLASS, "relative h-20 bg-[image:var(--slurp-nav-active)]")}>
-          {bannerUrl && (
-            <SlurpMediaImg
-              src={bannerUrl}
-              alt=""
-              className="slp-crop-top absolute inset-0 h-full w-full object-cover"
-            />
-          )}
-        </div>
-        <div className="-mt-8 flex items-start gap-3 px-4 pb-3">
-          <Avatar
-            account={{ displayName: name, avatarUrl: avatarUrl ?? null }}
-            className="h-16 w-16 ring-2 ring-[var(--slurp-surface-raised)]"
+    <section aria-label={t("ui.slurp.scene.page.title.page")} className="flex min-h-0 flex-col gap-3">
+      <SlpScenePhone draft={draft} recent={recent} recentKey={recentKey} avatarUrl={avatarUrl} bannerUrl={bannerUrl} />
+      <div className="rounded-2xl bg-[var(--slurp-surface-raised)] shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((value) => !value)}
+          className="flex min-h-11 w-full items-center gap-2 rounded-2xl px-4 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+        >
+          <Pencil size={14} aria-hidden="true" className="shrink-0 text-[var(--slurp-ink)]" />
+          <span className={cn(SLP_TYPE.body, "flex-1 font-semibold")}>{t("ui.slurp.scene.page.editByHand")}</span>
+          <ChevronDown
+            size={16}
+            aria-hidden="true"
+            className={cn("shrink-0 transition-transform motion-reduce:transition-none", open && "rotate-180")}
           />
-          <div className="min-w-0 pt-9">
-            <p
-              key={glow("displayName") ? recentKey : undefined}
-              className={cn(
-                SLP_TYPE.title,
-                "truncate rounded-md",
-                !draft.displayName && "text-[var(--slurp-muted)]",
-                glow("displayName") && "slp-field-glow",
-              )}
-            >
-              {name}
+        </button>
+        {open && (
+          <div className="pb-1">
+            <p className={cn(SLP_TYPE.meta, "px-4 pb-2 text-pretty text-[var(--slurp-muted)]")}>
+              {t("ui.slurp.scene.page.lockHint")}
             </p>
-            <p className={cn(SLP_TYPE.meta, "truncate text-[var(--slurp-muted)]")}>
-              @{draft.handle || t("ui.slurp.scene.page.noHandle")}
-            </p>
+            <ul className={cn(SLP_GROUP_CLASS, "rounded-t-none shadow-none")}>
+              {ROWS.map((field) => (
+                <FieldRow
+                  // A new patch remounts the row it changed, so its glow plays again.
+                  key={glow(field) ? `${field}-${recentKey}` : field}
+                  field={field}
+                  draft={draft}
+                  locked={locked.includes(field)}
+                  fixed={fixed.includes(field)}
+                  recent={recent.includes(field)}
+                  scrollTo={field === firstRecent}
+                  editing={editing === field}
+                  allowedTags={allowedTags}
+                  onEditStart={() => setEditing(field)}
+                  onEditEnd={() => setEditing(null)}
+                  onEdit={onEdit}
+                  onToggleLock={() => onToggleLock(field)}
+                />
+              ))}
+            </ul>
           </div>
-        </div>
+        )}
       </div>
-      <p className={cn(SLP_TYPE.meta, "-mb-1 px-1 text-pretty text-[var(--slurp-muted)]")}>
-        {t("ui.slurp.scene.page.lockHint")}
-      </p>
-      <ul className={SLP_GROUP_CLASS}>
-        {ROWS.map((field) => (
-          <FieldRow
-            // A new patch remounts the row it changed, so its glow plays again.
-            key={glow(field) ? `${field}-${recentKey}` : field}
-            field={field}
-            draft={draft}
-            locked={locked.includes(field)}
-            fixed={fixed.includes(field)}
-            recent={recent.includes(field)}
-            scrollTo={field === firstRecent && field !== "displayName" && field !== "handle"}
-            editing={editing === field}
-            allowedTags={allowedTags}
-            onEditStart={() => setEditing(field)}
-            onEditEnd={() => setEditing(null)}
-            onEdit={onEdit}
-            onToggleLock={() => onToggleLock(field)}
-          />
-        ))}
-      </ul>
     </section>
   );
 }

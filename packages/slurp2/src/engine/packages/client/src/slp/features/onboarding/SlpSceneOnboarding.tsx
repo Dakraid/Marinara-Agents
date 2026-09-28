@@ -1,33 +1,40 @@
-// The role-play Creator sign-up (overnight plan item 7): pick who signs up and how, then play the
-// scene while the page fills in beside the chat. "Finish registration" is always there; the old
+// The role-play Creator sign-up (overnight plan item 7, staged in onboarding pass 3): the player
+// casts themselves in a part, then plays the scene while a phone beside the chat shows the page
+// building up chapter by chapter, until the page goes live. "Go live" is always there; the old
 // wizard stays one tap away as "Quick setup".
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { flushSync } from "react-dom";
+import { ChevronRight, Headphones, Heart, Loader2, MessageCircle, Users, Zap } from "lucide-react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import type { SlpScenePreset } from "../../../../../shared/src/slp/slp-scene.js";
 import type { SlpAccount, SlpIdentityDisclosure } from "../../../../../shared/src/slp/slp-social.types.js";
 import { cn } from "../../../lib/utils";
-import { Avatar, SLP_GROUP_CLASS, SLP_TYPE, useSlpMediaQuery } from "../../base/chrome/SlpChrome";
+import { Avatar, SLP_TYPE, useSlpMediaQuery } from "../../base/chrome/SlpChrome";
+import { slpPrefersReducedMotion } from "../../base/chrome/slp-motion";
 import { noteSlpAiUseOnce } from "../../modules/chrome/SlpAiMark";
-import { playSlpBurst } from "../../modules/sparkle/SlpSparkle";
-import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
+import { playSlpBurst, playSlpPop, SlpTwinkle } from "../../modules/sparkle/SlpSparkle";
 import { SlpButton, SlpPrimaryButton, SlpSegment } from "../../modules/chrome/SlpButton";
-import { SlpRadioRow, SlpSheet } from "../../modules/chrome/SlpSheet";
+import { SlpSheet } from "../../modules/chrome/SlpSheet";
 import { SlpWizardFooter } from "../../modules/chrome/SlpWizardChrome";
-import { ChoiceSetting } from "../../modules/settings/SlpSettingsInputs";
+import { useCreatorFollowers } from "../audience/slp-audience-contract";
 import { useCreatorAccounts } from "../creators/slp-creators-contract";
 import { useSlurpSettings } from "../settings/slp-settings-contract";
+import { useCreatorFirstPostStatus } from "./slp-first-post-hooks";
 import { SlpSceneActions } from "./SlpSceneActions";
-import { SlpSceneChat, slpScenePatchNote } from "./SlpSceneChat";
-import { slpSceneMissing, slpSceneProgress } from "./slp-scene-draft";
-import { useSlpSceneModel, type SlpSceneSetup } from "./slp-scene-model";
-import { SlpScenePreview, SlpSceneProgressBar } from "./SlpScenePreview";
+import { SlpSceneChat } from "./SlpSceneChat";
+import { SLP_SCENE_MOMENT_CHAPTER, slpSceneMissing, slpSceneProgress } from "./slp-scene-draft";
+import { useSlpSceneModel, type SlpSceneModel, type SlpSceneSetup } from "./slp-scene-model";
+import { SlpSceneChapterRail, SlpScenePhone, SlpScenePreview, type SlpSceneFirstPost } from "./SlpScenePreview";
 import { SlpSceneShoot } from "./SlpSceneShoot";
 
 /** The presets a player can pick today. */
 export const SLP_SCENE_OFFERED: readonly SlpScenePreset[] = ["friend", "support", "seat"];
 
 type SlpScenePerson = Pick<SlpAccount, "id" | "displayName" | "handle" | "avatarUrl">;
+/** A part in the casting: one of the scenes, or no scene at all. */
+type SlpSceneCast = SlpScenePreset | "quick";
+/** The chosen card's picture carries this name into the scene (a native view transition). */
+const CAST_TRANSITION = "slp-cast";
 
 export function SlpSceneOnboarding({
   accounts,
@@ -76,6 +83,59 @@ export function SlpSceneOnboarding({
   );
 }
 
+/**
+ * The picture on a casting card and on the scene's goal bar: the newcomer with the part the player
+ * plays pinned to them (a heart for the friend, the headset for Support, the helping Creator, a
+ * bolt for Quick setup), with a few sparkles round it.
+ */
+function CastArt({
+  cast,
+  newcomer,
+  helper,
+  small = false,
+  transition = false,
+}: {
+  cast: SlpSceneCast;
+  newcomer: SlpScenePerson | null;
+  helper: SlpScenePerson | null;
+  small?: boolean;
+  transition?: boolean;
+}) {
+  const badge = small ? "size-6" : "size-9";
+  const icon = small ? 12 : 17;
+  return (
+    <span
+      aria-hidden="true"
+      style={transition ? ({ viewTransitionName: CAST_TRANSITION } as CSSProperties) : undefined}
+      className={cn("relative grid shrink-0 place-items-center", small ? "size-12" : "size-20")}
+    >
+      {!small && <SlpTwinkle />}
+      <Avatar
+        account={newcomer ?? { displayName: "?", avatarUrl: null }}
+        className={cn(small ? "h-10 w-10" : "h-14 w-14", "ring-2 ring-[var(--slurp-surface-raised)]")}
+      />
+      <span
+        className={cn(
+          badge,
+          "absolute -bottom-0.5 -end-0.5 grid place-items-center overflow-hidden rounded-full bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] shadow-[var(--slurp-glow)] ring-2 ring-[var(--slurp-surface-raised)]",
+        )}
+      >
+        {cast === "seat" && helper ? (
+          <Avatar account={helper} className="h-full w-full" />
+        ) : cast === "friend" ? (
+          <Heart size={icon} aria-hidden="true" className="fill-current !text-current" />
+        ) : cast === "support" ? (
+          <Headphones size={icon} aria-hidden="true" className="!text-current" />
+        ) : cast === "quick" ? (
+          <Zap size={icon} aria-hidden="true" className="fill-current !text-current" />
+        ) : (
+          <Users size={icon} aria-hidden="true" className="!text-current" />
+        )}
+      </span>
+    </span>
+  );
+}
+
 function SceneSetup({
   accounts,
   defaultDisclosure,
@@ -90,20 +150,40 @@ function SceneSetup({
   onStart: (setup: Omit<SlpSceneSetup, "connectionId">) => void;
 }) {
   const { t } = useUiTranslation();
-  const [sourceId, setSourceId] = useState<string | null>(null);
+  // The first character is cast already, so every card can name who it is about.
+  const [sourceId, setSourceId] = useState<string | null>(accounts[0]?.id ?? null);
   const [preset, setPreset] = useState<SlpScenePreset>(SLP_SCENE_OFFERED[0]);
   const [disclosure, setDisclosure] = useState<SlpIdentityDisclosure>(defaultDisclosure);
   const [helperId, setHelperId] = useState<string | null>(null);
   // The creator seat needs somebody already on Slurp to do the helping.
   const creators = useCreatorAccounts().data ?? [];
   const offered = SLP_SCENE_OFFERED.filter((option) => option !== "seat" || creators.length > 0);
+  const casts: SlpSceneCast[] = [...offered, "quick"];
   const source = accounts.find((account) => account.id === sourceId) ?? null;
-  const helper = preset === "seat" ? (creators.find((creator) => creator.id === helperId) ?? null) : null;
+  // The first Creator helps unless the player picks another.
+  const helperPick = helperId ?? creators[0]?.id ?? null;
+  const helper = preset === "seat" ? (creators.find((creator) => creator.id === helperPick) ?? null) : null;
+  const name = source?.displayName ?? t("ui.slurp.scene.cast.anyone");
   const reason = !source
     ? t("ui.slurp.scene.setup.pickOne")
     : preset === "seat" && !helper
       ? t("ui.slurp.scene.setup.pickHelper")
       : "";
+  const pick = (cast: SlpSceneCast, card: HTMLElement) => {
+    if (cast === "quick") return onQuickSetup();
+    playSlpPop(card);
+    // The AI note shows here, on the casting screen, not over the scene's first lines.
+    noteSlpAiUseOnce(t);
+    setPreset(cast);
+  };
+  const start = () => {
+    if (!source || reason) return;
+    const go = () => onStart({ preset, source, helper, disclosureMode: disclosure });
+    const doc = document as Document & { startViewTransition?: (update: () => void) => unknown };
+    // The chosen card's picture flies into the scene's goal bar; without view transitions it just opens.
+    if (doc.startViewTransition && !slpPrefersReducedMotion()) doc.startViewTransition(() => flushSync(go));
+    else go();
+  };
   return (
     <>
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto py-4 max-sm:py-2.5">
@@ -115,33 +195,72 @@ function SceneSetup({
             {t("ui.slurp.scene.setup.help")}
           </p>
         </div>
-        <PickList
+        <PeopleStrip
           label={t("ui.slurp.scene.setup.who")}
-          name="slp-scene-source"
           people={accounts}
           value={sourceId}
           onChange={setSourceId}
           empty={t("ui.slurp.scene.setup.nobody")}
         />
-        {offered.length > 1 && (
-          <ChoiceSetting
-            label={t("ui.slurp.scene.setup.how")}
-            variant="cards"
-            value={preset}
-            onChange={setPreset}
-            options={offered.map((option) => ({
-              value: option,
-              label: t(`ui.slurp.scene.preset.${option}.title`),
-              detail: t(`ui.slurp.scene.preset.${option}.detail`),
-            }))}
-          />
-        )}
+        <div>
+          <p className={cn(SLP_TYPE.title, "mb-2")}>{t("ui.slurp.scene.cast.title", { name })}</p>
+          <div
+            role="radiogroup"
+            aria-label={t("ui.slurp.scene.cast.title", { name })}
+            className="grid gap-2.5 sm:grid-cols-2"
+          >
+            {casts.map((cast) => {
+              const selected = cast === preset;
+              const card = cast === "quick" ? "quick" : cast;
+              return (
+                <button
+                  key={cast}
+                  type="button"
+                  role={cast === "quick" ? undefined : "radio"}
+                  aria-checked={cast === "quick" ? undefined : selected}
+                  onClick={(event) => pick(cast, event.currentTarget)}
+                  className={cn(
+                    "flex items-center gap-3.5 rounded-2xl p-3.5 text-start transition-[transform,background-color,box-shadow] duration-[var(--slurp-motion-fast)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transform-none sm:flex-col sm:items-start sm:p-4",
+                    selected
+                      ? "bg-[image:var(--slurp-nav-active)] shadow-[var(--slurp-glow),var(--slurp-highlight)] ring-2 ring-inset ring-[var(--noodle-accent)]"
+                      : "bg-[var(--slurp-surface-raised)] shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] hover:bg-[var(--accent)]",
+                  )}
+                >
+                  <CastArt
+                    cast={cast}
+                    newcomer={source}
+                    helper={cast === "seat" ? (creators.find((creator) => creator.id === helperPick) ?? null) : null}
+                    transition={selected && cast !== "quick"}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className={cn(SLP_TYPE.title, "block text-balance")}>
+                      {t(`ui.slurp.scene.cast.${card}.title`, { name })}
+                    </span>
+                    <span className={cn(SLP_TYPE.body, "mt-1 block text-pretty")}>
+                      {t(`ui.slurp.scene.cast.${card}.you`, { name })}
+                    </span>
+                    <span
+                      className={cn(SLP_TYPE.meta, "mt-1.5 flex items-start gap-1 text-pretty text-[var(--slurp-muted)]")}
+                    >
+                      <span aria-hidden="true" className="mt-px shrink-0 text-[var(--slurp-ink)]">
+                        ✦
+                      </span>
+                      {t(`ui.slurp.scene.cast.${card}.get`, { name })}
+                    </span>
+                  </span>
+                  {cast === "quick" && (
+                    <ChevronRight size={16} aria-hidden="true" className="shrink-0 sm:hidden rtl:rotate-180" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         {preset === "seat" && (
-          <PickList
+          <PeopleStrip
             label={t("ui.slurp.scene.setup.helper")}
-            name="slp-scene-helper"
             people={creators}
-            value={helperId}
+            value={helperPick}
             onChange={setHelperId}
             heading
           />
@@ -166,16 +285,8 @@ function SceneSetup({
       </div>
       <SlpWizardFooter
         back={{ label: t("ui.noodle.noodlerwizard.back"), onClick: onBack }}
-        skip={{ label: t("ui.slurp.scene.quick"), onClick: onQuickSetup }}
         primary={
-          <SlpPrimaryButton
-            disabled={Boolean(reason)}
-            onClick={() => {
-              if (!source || reason) return;
-              noteSlpAiUseOnce(t);
-              onStart({ preset, source, helper, disclosureMode: disclosure });
-            }}
-          >
+          <SlpPrimaryButton disabled={Boolean(reason)} onClick={start}>
             {t("ui.slurp.scene.setup.start")}
             <ChevronRight size={16} aria-hidden="true" className="shrink-0 rtl:rotate-180" />
           </SlpPrimaryButton>
@@ -186,10 +297,9 @@ function SceneSetup({
   );
 }
 
-/** One pick out of a list of people (who signs up, who helps), as radio rows with avatars. */
-function PickList({
+/** One pick out of a row of people (who signs up, who helps): head shots, like a casting sheet. */
+function PeopleStrip({
   label,
-  name,
   people,
   value,
   onChange,
@@ -197,7 +307,6 @@ function PickList({
   heading = false,
 }: {
   label: string;
-  name: string;
   people: readonly SlpScenePerson[];
   value: string | null;
   onChange: (id: string) => void;
@@ -207,21 +316,43 @@ function PickList({
   return (
     <div>
       {heading && <p className={cn(SLP_TYPE.body, "mb-1.5 font-semibold")}>{label}</p>}
-      <div role="radiogroup" aria-label={label} className={cn(SLP_GROUP_CLASS, "divide-y-0 p-1")}>
-        {people.length === 0 && empty && (
-          <p className={cn(SLP_TYPE.body, "px-3 py-3 text-[var(--slurp-muted)]")}>{empty}</p>
-        )}
-        {people.map((person) => (
-          <SlpRadioRow key={person.id} name={name} checked={person.id === value} onChange={() => onChange(person.id)}>
-            <span className="flex min-w-0 items-center gap-2.5 py-1">
-              <Avatar account={person} size="sm" />
-              <span className="min-w-0">
-                <span className="block truncate font-semibold">{person.displayName}</span>
-                <span className={cn(SLP_TYPE.meta, "block truncate text-[var(--slurp-muted)]")}>@{person.handle}</span>
+      {people.length === 0 && empty && <p className={cn(SLP_TYPE.body, "text-[var(--slurp-muted)]")}>{empty}</p>}
+      <div
+        role="radiogroup"
+        aria-label={label}
+        className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 pt-1 [scrollbar-width:none]"
+      >
+        {people.map((person) => {
+          const checked = person.id === value;
+          return (
+            <button
+              key={person.id}
+              type="button"
+              role="radio"
+              aria-checked={checked}
+              onClick={() => onChange(person.id)}
+              className="flex w-[4.75rem] shrink-0 flex-col items-center gap-1 rounded-2xl px-1 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+            >
+              <span
+                className={cn(
+                  "rounded-full p-0.5 transition-shadow duration-[var(--slurp-motion-fast)] motion-reduce:transition-none",
+                  checked ? "shadow-[var(--slurp-glow)] ring-2 ring-[var(--noodle-accent)]" : "ring-1 ring-[var(--noodle-divider)]",
+                )}
+              >
+                <Avatar account={person} className="h-14 w-14" />
               </span>
-            </span>
-          </SlpRadioRow>
-        ))}
+              <span
+                className={cn(
+                  SLP_TYPE.meta,
+                  "w-full truncate text-center",
+                  checked ? "font-semibold text-[var(--slurp-text)]" : "text-[var(--slurp-muted)]",
+                )}
+              >
+                {person.displayName}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -268,8 +399,8 @@ function SceneStage({
   );
   useEffect(() => {
     if (!model.created) return;
-    // A page going live is a reward moment: a Burst off the new photo.
-    if (liveRef.current) playSlpBurst(liveRef.current, 12);
+    // The page going live is the peak of the scene: a big Burst off the phone.
+    if (liveRef.current) playSlpBurst(liveRef.current, 14);
     onFinished();
     // Once per page: onFinished marks the first run as done.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -294,24 +425,20 @@ function SceneStage({
     lastPatch?.kind === "patch" && !model.chips.find((chip) => chip.id === lastPatch.chipId)?.undone
       ? lastPatch.fields
       : [];
-  const lastChip = lastPatch?.kind === "patch" ? model.chips.find((chip) => chip.id === lastPatch.chipId) : undefined;
-  const change = lastPatch?.kind === "patch" && recent.length ? slpScenePatchNote(t, lastPatch, lastChip) : "";
   const progress = slpSceneProgress(model.draft, Boolean(model.photos.avatarUrl));
   const fixed = setup.disclosureMode === "open" ? (["displayName", "handle"] as const) : [];
   const pageTitle = t(`ui.slurp.scene.page.title.${setup.preset === "support" ? "support" : "page"}`);
-  const preview = (heading: boolean) => (
+  const preview = (editOpen: boolean) => (
     <SlpScenePreview
-      title={pageTitle}
-      heading={heading}
       draft={model.draft}
       locked={model.locked}
       fixed={fixed}
       recent={recent}
       recentKey={lastPatch?.id}
-      progress={progress}
       allowedTags={allowedTags}
       avatarUrl={newcomerAvatar}
       bannerUrl={model.photos.bannerUrl}
+      editOpen={editOpen}
       onEdit={model.edit}
       onToggleLock={model.toggleLock}
     />
@@ -319,28 +446,14 @@ function SceneStage({
 
   if (model.created) {
     return (
-      <>
-        <div className="my-auto flex flex-col items-center gap-3 py-6 text-center">
-          <div ref={liveRef}>
-            <Avatar account={{ displayName: model.created.displayName, avatarUrl: newcomerAvatar }} size="lg" />
-          </div>
-          <h3 tabIndex={-1} data-autofocus className={cn(SLP_TYPE.screen, "text-balance outline-none")}>
-            {t("ui.slurp.scene.done.title", { name: model.created.displayName })}
-          </h3>
-          <p className={cn(SLP_TYPE.body, "max-w-sm text-pretty text-[var(--slurp-muted)]")}>
-            {t("ui.slurp.scene.done.help", { handle: model.created.handle })}
-          </p>
-          {model.created.kept && (
-            <p className={cn(SLP_TYPE.meta, "max-w-sm text-pretty text-[var(--slurp-muted)]")}>
-              {t("ui.slurp.scene.done.kept", { name: model.created.displayName })}
-            </p>
-          )}
-        </div>
-        <SlpWizardFooter
-          skip={{ label: t("ui.slurp.scene.done.another"), onClick: onAnother }}
-          primary={<SlpPrimaryButton onClick={onSeeFeed}>{t("ui.slurp.scene.done.feed")}</SlpPrimaryButton>}
-        />
-      </>
+      <SceneLive
+        model={model}
+        name={model.created.displayName}
+        avatarUrl={newcomerAvatar}
+        phoneRef={liveRef}
+        onSeeFeed={onSeeFeed}
+        onAnother={onAnother}
+      />
     );
   }
 
@@ -369,56 +482,40 @@ function SceneStage({
   };
   return (
     <>
-      {/* Who the player is in this scene, and where the scene is now. */}
-      <p className={cn(SLP_TYPE.body, "pb-2 text-pretty")}>
-        <span className="font-semibold">
-          {t(`ui.slurp.scene.role.${setup.preset}`, { name: setup.source.displayName, helper: hostName })}
-        </span>
-        <span className="text-[var(--slurp-muted)]">
-          {" · "}
-          {t("ui.slurp.scene.now", { moment: t(`ui.slurp.scene.moment.${model.moment}`) })}
-        </span>
-      </p>
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-        <div className="flex min-h-0 min-w-0 flex-col">
-          {/* Phones: the page as a peek on top (what just changed, how far it is), one tap to the sheet. */}
+      {/* The goal from the first second: whose page, the player's part, and the way to live. */}
+      <div className="mb-2 rounded-2xl bg-[var(--slurp-surface-raised)] px-3 pb-2.5 pt-2 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] sm:px-4">
+        <div className="flex min-h-12 items-center gap-3">
+          <CastArt
+            cast={setup.preset}
+            newcomer={{ ...setup.source, displayName: newcomerName, avatarUrl: newcomerAvatar }}
+            helper={setup.helper ?? null}
+            small
+            transition
+          />
+          <div className="min-w-0 flex-1">
+            <h3 tabIndex={-1} data-autofocus className={cn(SLP_TYPE.title, "truncate outline-none")}>
+              {t("ui.slurp.scene.goal", { name: newcomerName })}
+            </h3>
+            <p className={cn(SLP_TYPE.meta, "truncate text-[var(--slurp-muted)]")}>
+              {t(`ui.slurp.scene.role.${setup.preset}`, { name: setup.source.displayName, helper: hostName })}
+            </p>
+          </div>
+          {/* Phones: the page lives in a sheet, one tap away. */}
           <button
-            key={lastPatch?.id}
             type="button"
             onClick={() => setPageOpen(true)}
-            className={cn(
-              "mb-1 rounded-2xl bg-[var(--slurp-surface-raised)] px-3 pb-2.5 pt-1.5 text-start shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] sm:hidden",
-              change && "slp-field-glow",
-            )}
+            className="flex min-h-11 shrink-0 items-center gap-0.5 rounded-full px-2 text-xs font-bold text-[var(--slurp-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] sm:hidden"
           >
-            <span className="flex min-h-11 items-center gap-2.5">
-              <Avatar account={{ displayName: newcomerName, avatarUrl: newcomerAvatar }} size="sm" />
-              <span className="min-w-0 flex-1">
-                <span className={cn(SLP_TYPE.body, "block truncate font-semibold")}>
-                  {model.draft.displayName || t("ui.slurp.scene.page.noName")}
-                </span>
-                <span
-                  className={cn(
-                    SLP_TYPE.meta,
-                    "flex items-center gap-1 truncate",
-                    change ? "text-[var(--slurp-text)]" : "text-[var(--slurp-muted)]",
-                  )}
-                >
-                  {change && (
-                    <SlpSparkleGlyph size={12} aria-hidden="true" className="shrink-0 text-[var(--slurp-ink)]" />
-                  )}
-                  <span className="truncate">
-                    {change || `@${model.draft.handle || t("ui.slurp.scene.page.noHandle")}`}
-                  </span>
-                </span>
-              </span>
-              <span className="flex shrink-0 items-center gap-0.5 text-xs font-bold text-[var(--slurp-ink)]">
-                {pageTitle}
-                <ChevronRight size={14} aria-hidden="true" className="rtl:rotate-180" />
-              </span>
-            </span>
-            <SlpSceneProgressBar progress={progress} />
+            {pageTitle}
+            <ChevronRight size={14} aria-hidden="true" className="rtl:rotate-180" />
           </button>
+        </div>
+        <div className="mt-1.5">
+          <SlpSceneChapterRail chapters={model.chapters} current={SLP_SCENE_MOMENT_CHAPTER[model.moment]} />
+        </div>
+      </div>
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        <div className="flex min-h-0 min-w-0 flex-col">
           <SlpSceneChat
             model={model}
             host={host}
@@ -429,14 +526,14 @@ function SceneStage({
             <SlpSceneActions model={model} />
           </SlpSceneChat>
         </div>
-        <div className="min-h-0 overflow-y-auto pe-1 max-sm:hidden">{preview(true)}</div>
+        <div className="min-h-0 overflow-y-auto pe-1 pt-1 max-sm:hidden">{preview(false)}</div>
       </div>
       <SlpSheet open={phone && pageOpen} onClose={() => setPageOpen(false)} title={pageTitle}>
-        <div className="px-1 pb-4">{preview(false)}</div>
+        <div className="px-1 pb-4">{preview(true)}</div>
       </SlpSheet>
       <SlpWizardFooter
         // Once the page is saved (the photo shoot does that), leaving would strand a half-registered
-        // Creator with no limits, first post or kept chat: from here the way out is Finish.
+        // Creator with no limits, first post or kept chat: from here the way out is Go live.
         back={
           model.accountId
             ? undefined
@@ -447,8 +544,8 @@ function SceneStage({
             ? undefined
             : { label: t("ui.slurp.scene.quick"), onClick: onQuickSetup, disabled: model.registering }
         }
-        // Finish always works (it fills what is missing first); once the page has what it needs to
-        // go live it becomes the lit-up main button.
+        // Go live always works (it fills what is missing first); once the page has what it needs
+        // it becomes the lit-up main button.
         primary={
           progress.ready ? (
             <SlpPrimaryButton disabled={model.busy} onClick={() => void finish()}>
@@ -461,6 +558,144 @@ function SceneStage({
           )
         }
         note={status}
+      />
+    </>
+  );
+}
+
+/** A number that counts up from 0 once (the first fans arriving); reduced motion shows it at once. */
+function useCountUp(target: number | null, duration = 1100) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    if (target === null) return;
+    if (slpPrefersReducedMotion()) return setValue(target);
+    let frame = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const share = Math.min(1, (now - start) / duration);
+      setValue(Math.round(target * (1 - Math.pow(1 - share, 3))));
+      if (share < 1) frame = window.requestAnimationFrame(tick);
+    };
+    frame = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frame);
+  }, [target, duration]);
+  return value;
+}
+
+/**
+ * The finale: the page goes live on the phone (LIVE mark, story ring, a Burst), then what that
+ * means lands one line at a time, all of it real: the fans the page starts with (the follower
+ * count its profile shows), the first post as it is written, and where the kept chat went.
+ */
+function SceneLive({
+  model,
+  name,
+  avatarUrl,
+  phoneRef,
+  onSeeFeed,
+  onAnother,
+}: {
+  model: SlpSceneModel;
+  name: string;
+  avatarUrl: string | null;
+  phoneRef: React.Ref<HTMLDivElement>;
+  onSeeFeed: () => void;
+  onAnother: () => void;
+}) {
+  const { t } = useUiTranslation();
+  const created = model.created!;
+  const followers = useCreatorFollowers(created.id).data?.total ?? null;
+  const fans = useCountUp(followers);
+  // The first post is followed until its run is complete; then the poll stops.
+  const [settled, setSettled] = useState(false);
+  const run = useCreatorFirstPostStatus(model.firstPostRun, !settled);
+  useEffect(() => {
+    if (run.data?.complete) setSettled(true);
+  }, [run.data?.complete]);
+  const job = run.data?.jobs[0];
+  const firstPost: SlpSceneFirstPost =
+    job?.status === "generated" ? "posted" : job?.status === "failed" || job?.status === "skipped" ? "later" : "writing";
+  const support = model.setup.preset === "support";
+  const notices = [
+    {
+      id: "fans",
+      icon: <Users size={16} aria-hidden="true" />,
+      title:
+        followers === null ? t("ui.slurp.scene.live.fansWaiting") : t("ui.slurp.scene.live.fans", { count: fans }),
+      detail: t("ui.slurp.scene.live.fansHelp"),
+    },
+    {
+      id: "post",
+      icon:
+        firstPost === "writing" ? (
+          <Loader2 size={16} aria-hidden="true" className="animate-spin motion-reduce:animate-none" />
+        ) : (
+          <Heart size={16} aria-hidden="true" className={cn(firstPost === "posted" && "fill-current")} />
+        ),
+      title: t(`ui.slurp.scene.live.post.${firstPost}`),
+      detail: t(`ui.slurp.scene.live.post.${firstPost}Help`, { name }),
+    },
+    ...(created.kept
+      ? [
+          {
+            id: "chat",
+            icon: <MessageCircle size={16} aria-hidden="true" />,
+            title: t("ui.slurp.scene.live.chat"),
+            detail: support ? t("ui.slurp.scene.done.keptSupport") : t("ui.slurp.scene.done.kept", { name }),
+          },
+        ]
+      : []),
+  ];
+  return (
+    <>
+      <div className="flex min-h-0 flex-1 flex-col items-center gap-5 overflow-y-auto py-4 sm:flex-row sm:items-center sm:justify-center sm:gap-10">
+        <div className="slp-live-in w-full max-w-[14rem] shrink-0 sm:max-w-[18rem]">
+          <SlpScenePhone
+            draft={model.draft}
+            recent={[]}
+            avatarUrl={avatarUrl}
+            bannerUrl={model.photos.bannerUrl}
+            live
+            large
+            firstPost={firstPost}
+            phoneRef={phoneRef}
+          />
+        </div>
+        <div className="w-full max-w-sm">
+          <h3
+            tabIndex={-1}
+            data-autofocus
+            className={cn(SLP_TYPE.screen, "text-balance text-center outline-none sm:text-start")}
+          >
+            {t("ui.slurp.scene.done.title", { name })}
+          </h3>
+          <p className={cn(SLP_TYPE.body, "mt-1 text-pretty text-center text-[var(--slurp-muted)] sm:text-start")}>
+            {t("ui.slurp.scene.done.help", { handle: created.handle })}
+          </p>
+          <ul aria-live="polite" className="mt-4 space-y-2">
+            {notices.map((notice, index) => (
+              <li
+                key={notice.id}
+                className="slp-notice-in flex items-start gap-3 rounded-2xl bg-[var(--slurp-surface-raised)] px-3.5 py-3 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]"
+                style={{ "--slp-notice-delay": `${500 + index * 450}ms` } as CSSProperties}
+              >
+                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[var(--slurp-tint)] text-[var(--slurp-ink)] [&_svg]:!text-current">
+                  {notice.icon}
+                </span>
+                <span className="min-w-0 pt-0.5">
+                  <span className={cn(SLP_TYPE.body, "block font-semibold tabular-nums")}>{notice.title}</span>
+                  <span className={cn(SLP_TYPE.meta, "block text-pretty text-[var(--slurp-muted)]")}>
+                    {notice.detail}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      <SlpWizardFooter
+        skip={{ label: t("ui.slurp.scene.done.another"), onClick: onAnother }}
+        primary={<SlpPrimaryButton onClick={onSeeFeed}>{t("ui.slurp.scene.done.feed")}</SlpPrimaryButton>}
       />
     </>
   );

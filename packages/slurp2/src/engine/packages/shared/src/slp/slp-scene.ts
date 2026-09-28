@@ -25,9 +25,9 @@ export const SLP_SCENE_ALL_MOMENTS = [...new Set(Object.values(SLP_SCENE_MOMENTS
 
 /** Suggested actions per preset. The server holds what each one means; the client holds the label. */
 export const SLP_SCENE_ACTIONS = {
-  support: ["askName", "askAbout", "askLook", "joke", "stamp"],
-  friend: ["suggestName", "hypeUp", "lookTogether", "tease"],
-  seat: ["bolder", "hypeUp", "lookTogether", "tease"],
+  support: ["askName", "askAbout", "askLook", "askVoice", "askLimits", "joke", "stamp"],
+  friend: ["suggestName", "askOutfit", "helpBio", "askLimits", "pickFirstPost", "hypeUp", "lookTogether", "tease"],
+  seat: ["bolder", "askOutfit", "helpBio", "askLimits", "pickFirstPost", "hypeUp", "lookTogether", "tease"],
 } as const satisfies Record<SlpScenePreset, readonly string[]>;
 export type SlpSceneActionId = (typeof SLP_SCENE_ACTIONS)[SlpScenePreset][number];
 export const SLP_SCENE_ALL_ACTIONS = [

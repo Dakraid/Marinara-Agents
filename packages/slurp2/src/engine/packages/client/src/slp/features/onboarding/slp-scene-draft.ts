@@ -11,6 +11,7 @@ import { slpSpiceChips } from "../../../../../shared/src/slp/slp-spice.js";
 import {
   SLP_SCENE_ACTIONS,
   SLP_SCENE_FIELDS,
+  SLP_SCENE_MOMENTS,
   SLP_SCENE_TRANSCRIPT_MAX,
   type SlpSceneActionId,
   type SlpSceneMoment,
@@ -180,25 +181,116 @@ export function slpScenePatchHeadline(
   return value && value.length <= 40 ? { field, value } : null;
 }
 
-/** The suggestion that fits each moment best; it goes first and is the highlighted one. */
-const SLP_SCENE_MOMENT_LEAD: Partial<Record<SlpSceneMoment, readonly SlpSceneActionId[]>> = {
+/**
+ * The chapters the player sees on the way to a live page. Each moment works on one of them; the
+ * last one ("live") is the finale: the page goes up and the first post follows.
+ */
+export const SLP_SCENE_CHAPTERS = ["name", "photo", "bio", "limits", "live"] as const;
+export type SlpSceneChapter = (typeof SLP_SCENE_CHAPTERS)[number];
+
+/** Which chapter each moment works on. */
+export const SLP_SCENE_MOMENT_CHAPTER: Record<SlpSceneMoment, SlpSceneChapter> = {
+  arrival: "name",
+  name: "name",
+  about: "bio",
+  look: "photo",
+  voice: "bio",
+  shoot: "photo",
+  bio: "bio",
+  limits: "limits",
+  review: "live",
+  firstPost: "live",
+};
+
+/**
+ * The chapters and which are done. The friend and the seat shoot a real photo; Support takes the
+ * look for the profile photo instead. "live" is done once the page is registered.
+ */
+export function slpSceneChapters(
+  preset: SlpScenePreset,
+  draft: SlpSceneDraft,
+  { photo = false, live = false }: { photo?: boolean; live?: boolean } = {},
+) {
+  const done: Record<SlpSceneChapter, boolean> = {
+    name: Boolean(draft.displayName.trim() && draft.handle.trim()),
+    photo: preset === "support" ? photo || Boolean(draft.appearance.trim()) : photo,
+    bio: Boolean(draft.bio.trim()),
+    limits: Boolean(draft.spice || draft.turnOns.trim() || draft.hardNoes.trim()),
+    live,
+  };
+  const chapters = SLP_SCENE_CHAPTERS.map((id) => ({ id, done: done[id] }));
+  return { chapters, done: chapters.filter((chapter) => chapter.done).length, total: chapters.length };
+}
+
+/**
+ * Whether a moment already has what it needs from the page itself, whatever the model said. The
+ * two closing moments only end when the model says so (they fill nothing of their own).
+ */
+export function slpSceneMomentFilled(moment: SlpSceneMoment, draft: SlpSceneDraft, photo = false): boolean {
+  switch (moment) {
+    case "arrival":
+      return Boolean(draft.gender) && draft.tags.length >= SLP_SCENE_MIN_TAGS;
+    case "name":
+      return Boolean(draft.displayName.trim() && draft.handle.trim());
+    case "about":
+    case "bio":
+      return Boolean(draft.bio.trim());
+    case "look":
+      return Boolean(draft.appearance.trim());
+    case "voice":
+      return Boolean(draft.stagePersonality.trim());
+    case "shoot":
+      return photo;
+    case "limits":
+      return Boolean(draft.spice || draft.turnOns.trim() || draft.hardNoes.trim());
+    default:
+      return false;
+  }
+}
+
+/**
+ * Where the scene goes after an exchange: the next moment that still needs something, once this
+ * one is done (the model said so, or the page already has it). The photo shoot waits for the
+ * photos, whatever the chat says. Null = stay.
+ */
+export function slpSceneNextMoment(
+  preset: SlpScenePreset,
+  moment: SlpSceneMoment,
+  { modelDone, draft, photo = false }: { modelDone: boolean; draft: SlpSceneDraft; photo?: boolean },
+): SlpSceneMoment | null {
+  const moments = SLP_SCENE_MOMENTS[preset] as readonly SlpSceneMoment[];
+  const done = moment === "shoot" ? photo : modelDone || slpSceneMomentFilled(moment, draft, photo);
+  if (!done) return null;
+  const rest = moments.slice(moments.indexOf(moment) + 1);
+  return rest.find((entry) => !slpSceneMomentFilled(entry, draft, photo)) ?? null;
+}
+
+/** The suggestion that moves each moment on; it goes first and is the highlighted one. */
+const SLP_SCENE_MOMENT_LEAD: Record<SlpSceneMoment, readonly SlpSceneActionId[]> = {
+  arrival: ["hypeUp"],
   name: ["askName", "suggestName", "bolder"],
   about: ["askAbout"],
   look: ["askLook"],
-  voice: ["joke"],
-  limits: ["tease", "joke"],
+  voice: ["askVoice"],
+  shoot: ["askOutfit"],
+  bio: ["helpBio"],
+  limits: ["askLimits"],
   review: ["stamp"],
-  arrival: ["hypeUp"],
-  shoot: ["lookTogether"],
-  bio: ["hypeUp"],
-  firstPost: ["hypeUp"],
+  firstPost: ["pickFirstPost"],
 };
+/** Replies that fit any moment: they follow the lead, before the other moments' questions. */
+const SLP_SCENE_ANY_MOMENT: readonly SlpSceneActionId[] = ["joke", "hypeUp", "tease", "lookTogether", "bolder"];
 
-/** The preset's suggestions for this moment, the best fit first; the row shows the first few. */
+/** The preset's suggestions for this moment: the lead, then the any-moment ones, then the rest. */
 export function slpSceneSuggestions(preset: SlpScenePreset, moment: SlpSceneMoment): SlpSceneActionId[] {
   const all = SLP_SCENE_ACTIONS[preset] as readonly SlpSceneActionId[];
-  const lead = all.find((id) => SLP_SCENE_MOMENT_LEAD[moment]?.includes(id));
-  return lead ? [lead, ...all.filter((id) => id !== lead)] : [...all];
+  const lead = all.find((id) => SLP_SCENE_MOMENT_LEAD[moment].includes(id));
+  const rest = all.filter((id) => id !== lead);
+  return [
+    ...(lead ? [lead] : []),
+    ...rest.filter((id) => SLP_SCENE_ANY_MOMENT.includes(id)),
+    ...rest.filter((id) => !SLP_SCENE_ANY_MOMENT.includes(id)),
+  ];
 }
 
 /** The stage profile the create route takes. The limits go to the strategy, not the page. */
@@ -280,7 +372,9 @@ export type SlpSceneItem =
   | { id: string; kind: "note"; text: string }
   /** The player's steer in the creator seat: shown to the player, never sent back as a line. */
   | { id: string; kind: "whisper"; text: string }
-  | { id: string; kind: "photo"; photo: "avatar" | "banner"; imageUrl: string };
+  | { id: string; kind: "photo"; photo: "avatar" | "banner"; imageUrl: string }
+  /** A chapter just got done: a small celebration in the chat, and what comes next. */
+  | { id: string; kind: "chapter"; chapters: SlpSceneChapter[]; next: SlpSceneChapter | null };
 
 /** What the transcript sends back: the lines only, newest last, capped. */
 export function slpSceneTranscript(items: readonly SlpSceneItem[], max = SLP_SCENE_TRANSCRIPT_MAX): SlpSceneLine[] {

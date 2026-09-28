@@ -18,6 +18,10 @@ import {
   slpScenePatchHeadline,
   slpSceneSuggestions,
   slpSceneTranscript,
+  SLP_SCENE_MOMENT_CHAPTER,
+  slpSceneChapters,
+  slpSceneMomentFilled,
+  slpSceneNextMoment,
 } from "../packages/slurp2/src/engine/packages/client/src/slp/features/onboarding/slp-scene-draft.ts";
 import {
   buildSlpSceneTurnMessages,
@@ -484,7 +488,8 @@ for (const [question, options] of Object.entries(SLP_SITE_WELCOME_OPTIONS)) {
   assert.equal(slpSceneSuggestions("support", "review")[0], "stamp");
   assert.equal(slpSceneSuggestions("friend", "name")[0], "suggestName");
   assert.equal(slpSceneSuggestions("seat", "name")[0], "bolder");
-  assert.equal(slpSceneSuggestions("friend", "shoot")[0], "lookTogether");
+  // Onboarding pass 3 (on purpose): the shoot's lead is the move that fills it, not a look at the page.
+  assert.equal(slpSceneSuggestions("friend", "shoot")[0], "askOutfit");
   for (const preset of ["support", "friend", "seat"] as const)
     for (const moment of SLP_SCENE_MOMENTS[preset]) {
       const list = slpSceneSuggestions(preset, moment);
@@ -494,6 +499,142 @@ for (const [question, options] of Object.entries(SLP_SITE_WELCOME_OPTIONS)) {
         `${preset}/${moment}: same set, reordered`,
       );
     }
+}
+
+// Onboarding pass 3: chapters on the way to a live page, the scene moving on by itself, a good next
+// move in every moment, and prompts that give the character a goal and the player their part.
+{
+  const empty = slpSceneInitialState().draft;
+  const named = { ...empty, displayName: "Velvet Moth", handle: "velvetmoth" };
+  const chapters = (preset: "support" | "friend", draft = empty, flags = {}) =>
+    slpSceneChapters(preset, draft, flags).chapters.filter((chapter) => chapter.done).map((chapter) => chapter.id);
+  assert.deepEqual(slpSceneChapters("friend", empty).chapters.map((chapter) => chapter.id), [
+    "name",
+    "photo",
+    "bio",
+    "limits",
+    "live",
+  ]);
+  assert.deepEqual(chapters("friend", named), ["name"]);
+  assert.deepEqual(chapters("friend", { ...named, appearance: "tall" }), ["name"], "the friend's photo is the shoot");
+  assert.deepEqual(chapters("support", { ...named, appearance: "tall" }), ["name", "photo"], "Support takes the look");
+  assert.deepEqual(chapters("friend", named, { photo: true, live: true }), ["name", "photo", "live"]);
+  assert.deepEqual(chapters("friend", { ...empty, hardNoes: "face" }), ["limits"]);
+  for (const preset of ["support", "friend", "seat"] as const)
+    for (const moment of SLP_SCENE_MOMENTS[preset])
+      assert.ok(SLP_SCENE_MOMENT_CHAPTER[moment], `${preset}/${moment} belongs to a chapter`);
+
+  // The scene moves on once a moment is done, to the next moment that still needs something.
+  assert.equal(slpSceneNextMoment("friend", "name", { modelDone: false, draft: empty }), null, "not done: stay");
+  assert.equal(slpSceneNextMoment("friend", "name", { modelDone: false, draft: named }), "shoot", "the page has it");
+  assert.equal(slpSceneNextMoment("friend", "name", { modelDone: true, draft: empty }), "shoot", "the model says so");
+  assert.equal(
+    slpSceneNextMoment("friend", "arrival", { modelDone: true, draft: named }),
+    "shoot",
+    "a name settled early skips the name moment",
+  );
+  assert.equal(
+    slpSceneNextMoment("friend", "shoot", { modelDone: true, draft: named }),
+    null,
+    "the shoot waits for its photos",
+  );
+  assert.equal(slpSceneNextMoment("friend", "shoot", { modelDone: false, draft: named, photo: true }), "bio");
+  assert.equal(
+    slpSceneNextMoment("support", "limits", { modelDone: true, draft: { ...named, bio: "x" } }),
+    "review",
+    "closing moments are never skipped as filled",
+  );
+  assert.equal(slpSceneNextMoment("support", "review", { modelDone: true, draft: named }), null, "last moment");
+  assert.equal(slpSceneMomentFilled("review", { ...named, bio: "x", spice: "flirty" }), false);
+
+  // Every moment leads with a reply that moves it on, and it belongs to the preset.
+  const leads: Record<string, string> = {
+    "support/voice": "askVoice",
+    "support/limits": "askLimits",
+    "friend/bio": "helpBio",
+    "friend/limits": "askLimits",
+    "friend/firstPost": "pickFirstPost",
+    "seat/shoot": "askOutfit",
+    "seat/firstPost": "pickFirstPost",
+  };
+  for (const [key, lead] of Object.entries(leads)) {
+    const [preset, moment] = key.split("/") as ["support" | "friend" | "seat", never];
+    assert.equal(slpSceneSuggestions(preset, moment)[0], lead, key);
+  }
+  assert.deepEqual(
+    slpSceneSuggestions("friend", "bio").slice(0, 3),
+    ["helpBio", "hypeUp", "lookTogether"],
+    "after the lead come the replies that fit any moment",
+  );
+
+  // The prompts: a goal, who leads, what this step fills, what comes next, pacing, no technical asks.
+  const prompt = (
+    preset: "support" | "friend" | "seat",
+    moment: string,
+    action: Parameters<typeof buildSlpSceneTurnMessages>[0]["request"]["action"] = { kind: "continue" },
+  ) =>
+    buildSlpSceneTurnMessages({
+      request: {
+        preset,
+        moment: moment as never,
+        action,
+        transcript: [],
+        draft: {},
+        locked: [],
+        direction: "",
+        disclosureMode: "hinted",
+      },
+      newcomerCanon: "",
+      helper: preset === "seat" ? { displayName: "Mia", handle: "mia", bio: "", stagePersonality: "" } : null,
+      allowedTags: [],
+    })[0]!.content;
+  for (const preset of ["support", "friend", "seat"] as const) {
+    const moments = SLP_SCENE_MOMENTS[preset];
+    moments.forEach((moment, index) => {
+      const system = prompt(preset, moment);
+      const tag = `${preset}/${moment}`;
+      assert.match(system, /The goal of the scene: get the newcomer's Creator page live tonight\./u, tag);
+      assert.match(system, /Pacing: one step at a time/u, tag);
+      assert.match(system, /Never ask the player for technical input/u, tag);
+      assert.match(system, /Stay in character\./u, tag);
+      if (index < moments.length - 1) assert.match(system, /Up next: .+ set momentDone/u, tag);
+      else assert.match(system, /This is the last step before the page goes live\./u, tag);
+      if (moment !== "review") assert.match(system, /This step fills: \w/u, tag);
+    });
+    const lead = prompt(preset, moments[0]!);
+    if (preset === "seat") assert.match(lead, /Mia leads the evening\. Every turn ends with Mia asking/u);
+    else assert.match(lead, /The newcomer leads .*ends with one easy question/u, preset);
+  }
+  assert.match(prompt("friend", "name"), /This step fills: displayName, handle\./u);
+  assert.match(prompt("support", "limits"), /This step fills: turnOns, hardNoes, spice\./u);
+  // The opening tells the player their part without saying "you play".
+  assert.match(prompt("support", "name", { kind: "open" }), /ask Support what Support needs first/u);
+  assert.match(prompt("friend", "arrival", { kind: "open" }), /what should I call myself\?/u);
+  assert.match(prompt("seat", "arrival", { kind: "open" }), /Mia says tonight the page goes live/u);
+  // Locked fields are never asked for as this step's work.
+  const lockedPrompt = buildSlpSceneTurnMessages({
+    request: {
+      preset: "friend",
+      moment: "name",
+      action: { kind: "continue" },
+      transcript: [],
+      draft: {},
+      locked: ["displayName"],
+      direction: "",
+      disclosureMode: "hinted",
+    },
+    newcomerCanon: "",
+    allowedTags: [],
+  })[0]!.content;
+  assert.match(lockedPrompt, /This step fills: handle\./u);
+  // Every suggested reply of every preset has a brief the model can act on.
+  for (const [preset, ids] of Object.entries(SLP_SCENE_ACTIONS))
+    for (const id of ids)
+      assert.match(
+        prompt(preset as "support", SLP_SCENE_MOMENTS[preset as "support"][0]!, { kind: "suggest", id: id as never }),
+        /Next, write the host doing this: \S/u,
+        `${preset}/${id}`,
+      );
 }
 
 console.log("slurp2-scene-onboarding: ok");

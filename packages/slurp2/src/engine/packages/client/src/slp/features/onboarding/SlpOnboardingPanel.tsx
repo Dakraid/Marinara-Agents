@@ -237,7 +237,8 @@ export function SlurpOnboardingWizard(props: WizardProps) {
         onClose={onClose}
         closeDisabled={pending}
         title={selectionOnly ? t("ui.noodle.noodlerwizard.addCreators") : t("ui.noodle.noodlerwizard.title")}
-        width="max-w-3xl"
+        // The sign-up scene gets a wider stage on desktop: the chat plus the phone that builds up.
+        width={scene ? "max-w-4xl" : "max-w-3xl"}
         mobileFullscreen
         contentClassName="max-sm:flex max-sm:flex-col max-sm:overflow-hidden max-sm:px-4 max-sm:py-2"
         panelStyle={getSlpAccentStyle(SLP_PINK, {

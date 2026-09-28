@@ -21,7 +21,10 @@ import {
 import {
   applySlpScenePatch,
   editSlpSceneField,
+  slpSceneChapters,
   slpSceneInitialState,
+  slpSceneMomentFilled,
+  slpSceneNextMoment,
   slpSceneSpicePatch,
   slpSceneMissing,
   slpSceneRedraftPatch,
@@ -31,6 +34,7 @@ import {
   undoSlpSceneChip,
   slpSceneGuidance,
   slpSceneTranscript,
+  type SlpSceneChapter,
   type SlpSceneDraftState,
   type SlpSceneItem,
 } from "./slp-scene-draft";
@@ -64,6 +68,8 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
   const draftRef = useRef(draftState);
   const [moment, setMoment] = useState<SlpSceneMoment>(moments[0]);
   const [doneMoments, setDoneMoments] = useState<SlpSceneMoment[]>([]);
+  /** Exchanges spent in the current moment; after two, "Next" is offered even if it is not done. */
+  const [momentTurns, setMomentTurns] = useState(0);
   const [direction, setDirection] = useState("");
   /** The player has done something themselves (the "your turn" hint goes away). */
   const [acted, setActed] = useState(false);
@@ -95,6 +101,14 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
   const directionRef = useRef(direction);
   directionRef.current = direction;
   const [autoLeft, setAutoLeft] = useState(0);
+  // The shoot's profile photo, read by the turn that decides whether the scene moves on.
+  const photoRef = useRef(false);
+  /** Move to another moment: skip ahead, go back, or linger by not moving at all. */
+  const goTo = useCallback((next: SlpSceneMoment) => {
+    if (momentRef.current !== next) setMomentTurns(0);
+    momentRef.current = next;
+    setMoment(next);
+  }, []);
   const autoStop = useRef(false);
 
   const commit = useCallback((next: SlpSceneDraftState) => {
@@ -154,22 +168,23 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
         }));
         const chip = applyPatch(result.patch, false);
         append([...lines, ...(chip ? [chip] : [])]);
-        if (result.momentDone) {
-          setDoneMoments((current) => (current.includes(moment) ? current : [...current, moment]));
-          // Support asks one question after another; the other roles linger until the player moves on.
-          const next = moments[moments.indexOf(moment) + 1];
-          if (setup.preset === "support" && next) {
-            momentRef.current = next;
-            setMoment(next);
-          }
-        }
+        if (action.kind !== "open") setMomentTurns((count) => count + 1);
+        // The character leads: once a moment has what it needs (the model says so, or the page
+        // already has it), the scene moves to the next moment that still needs something. The
+        // photo shoot waits for its photos.
+        const draft = draftRef.current.draft;
+        const photo = photoRef.current;
+        const finished = moment === "shoot" ? photo : result.momentDone || slpSceneMomentFilled(moment, draft, photo);
+        if (finished) setDoneMoments((current) => (current.includes(moment) ? current : [...current, moment]));
+        const next = slpSceneNextMoment(setup.preset, moment, { modelDone: result.momentDone, draft, photo });
+        if (next && momentRef.current === moment) goTo(next);
         return true;
       } catch (reason) {
         setError(reason instanceof Error ? reason.message : String(reason));
         return false;
       }
     },
-    [append, applyPatch, moments, setup, turn],
+    [append, applyPatch, goTo, setup, turn],
   );
 
   /** Let the scene run by itself for a few exchanges; stops on the first failure or on Stop. */
@@ -219,6 +234,7 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
   }, [append, applyPatch, direction, hostLabel, redraft, setup]);
 
   const [accountId, setAccountId] = useState<string | null>(null);
+  const [firstPostRun, setFirstPostRun] = useState<string | null>(null);
   const accountRef = useRef<string | null>(null);
   /**
    * Save the page as it is now: create it the first time, update it after that (the photo shoot
@@ -254,8 +270,11 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
       // the sign-up over.
       if (spice)
         await api.patch(`/slurp2/slurp/accounts/${encodeURIComponent(id)}/steering`, spice).catch(() => undefined);
-      // The first post is written in the background, like "first posts now" in Quick setup.
-      firstPost.mutate({ executionId: generateClientId(), accountIds: [id] });
+      // The first post is written in the background, like "first posts now" in Quick setup. The
+      // finale follows it by its run id.
+      const executionId = generateClientId();
+      firstPost.mutate({ executionId, accountIds: [id] });
+      setFirstPostRun(executionId);
       // The chat stays as their first DM thread with the player's persona (never with the page
       // itself). Nothing to keep, or no persona: the page is still live.
       const lines = slpSceneTranscript(itemsRef.current, 120);
@@ -305,6 +324,7 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
     async (outfit: string, place: string) => {
       const saved = await savePage();
       if (!saved || "missing" in saved) return saved ? saved.missing : null;
+      let tookPhoto = false;
       for (const kind of ["avatar", "banner"] as const) {
         setShooting(kind);
         try {
@@ -316,22 +336,60 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
           const imageUrl = kind === "avatar" ? profile.avatarUrl : (profile.bannerUrl ?? null);
           setPhotos((current) => ({ ...current, [kind === "avatar" ? "avatarUrl" : "bannerUrl"]: imageUrl }));
           if (imageUrl) append([{ id: generateClientId(), kind: "photo", photo: kind, imageUrl }]);
+          if (imageUrl && kind === "avatar") tookPhoto = true;
         } catch (reason) {
           setError(reason instanceof Error ? reason.message : String(reason));
           break;
         }
       }
       setShooting(null);
+      if (tookPhoto) {
+        photoRef.current = true;
+        setDoneMoments((current) => (current.includes("shoot") ? current : [...current, "shoot"]));
+        // The photo chapter is done: the scene moves on by itself.
+        const next = slpSceneNextMoment(setup.preset, "shoot", {
+          modelDone: false,
+          draft: draftRef.current.draft,
+          photo: true,
+        });
+        if (next && momentRef.current === "shoot") goTo(next);
+      }
       return [];
     },
-    [append, artwork, savePage],
+    [append, artwork, goTo, savePage, setup.preset],
   );
+
+  // Every chapter that gets done is celebrated once in the chat (a sparkle and what comes next).
+  // "live" has the finale for that; chapters done from the start (an open page's name) are not news.
+  const chapters = slpSceneChapters(setup.preset, draftState.draft, {
+    photo: Boolean(photos.avatarUrl),
+    live: Boolean(created),
+  });
+  const celebrated = useRef<Set<SlpSceneChapter> | null>(null);
+  celebrated.current ??= new Set(chapters.chapters.filter((chapter) => chapter.done).map((chapter) => chapter.id));
+  const doneKey = chapters.chapters.map((chapter) => (chapter.done ? chapter.id : "")).join(",");
+  useEffect(() => {
+    const seen = celebrated.current!;
+    const fresh = chapters.chapters
+      .filter((chapter) => chapter.done && !seen.has(chapter.id) && chapter.id !== "live")
+      .map((chapter) => chapter.id);
+    if (!fresh.length) return;
+    for (const id of fresh) seen.add(id);
+    const next = chapters.chapters.find((chapter) => !chapter.done)?.id ?? null;
+    append([{ id: generateClientId(), kind: "chapter", chapters: fresh, next }]);
+    // Only a change in which chapters are done is news.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doneKey]);
 
   return {
     setup,
     moments,
     moment,
     doneMoments,
+    /** Two exchanges in this moment and still not done: "Next" is offered anyway, so no dead end. */
+    lingering: momentTurns >= 2,
+    chapters,
+    firstPostRun,
     items,
     draft: draftState.draft,
     locked: draftState.locked,
@@ -362,11 +420,7 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
     stopAutopilot: () => {
       autoStop.current = true;
     },
-    /** Move to another moment: skip ahead, go back, or linger by not moving at all. */
-    goTo: (next: SlpSceneMoment) => {
-      momentRef.current = next;
-      setMoment(next);
-    },
+    goTo,
     retry: () => (lastAction.current ? send(lastAction.current, true) : Promise.resolve(false)),
     updatePage,
     finish,

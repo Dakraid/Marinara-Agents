@@ -28,7 +28,9 @@ export function SlpSceneActions({ model }: { model: SlpSceneModel }) {
   const running = model.autoLeft > 0;
   const preset = model.setup.preset;
   const next = model.moments[model.moments.indexOf(model.moment) + 1];
-  const showNext = Boolean(next) && model.doneMoments.includes(model.moment) && preset !== "support";
+  // The scene moves on by itself once a moment is done; "Next" is there when it waits (the photo
+  // shoot before the photos) or has gone two exchanges without settling, so there is no dead end.
+  const showNext = Boolean(next) && (model.doneMoments.includes(model.moment) || model.lingering);
   const suggestions = slpSceneSuggestions(preset, model.moment);
   const inRow = suggestions.slice(0, SLP_SCENE_ROW_SUGGESTIONS - (showNext ? 1 : 0));
   const inMore = suggestions.filter((id) => !inRow.includes(id));

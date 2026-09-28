@@ -11,6 +11,7 @@
 import {
   SLP_SCENE_FIELD_LIMITS,
   SLP_SCENE_FIELDS,
+  SLP_SCENE_MOMENTS,
   SLP_SCENE_LINE_MAX,
   SLP_SCENE_SPICE,
   SLP_SCENE_TEXT_FIELDS,
@@ -34,11 +35,31 @@ export const SLP_SCENE_LINES_PER_TURN = 6;
 
 const PRESET_FRAME: Record<SlpScenePreset, (host: string) => string> = {
   support: () =>
-    "The player plays Slurp Support, the sign-up desk. The newcomer is chatting with Support to open a Creator page. Support is funny but a little formal, asks one question after another and calls the page 'your application'.",
+    "The player plays Slurp Support, the sign-up desk. The newcomer opens the Support chat to get a Creator page. Support is funny but a little formal and calls the page 'your application'. The newcomer knows what they want and keeps the sign-up moving; Support steers, jokes and stamps.",
   friend: () =>
-    "The player plays the newcomer's close friend. They are at the newcomer's place, late, setting up the page together. Warm, private, teasing, a little giddy. The newcomer trusts the friend and gets embarrassed easily.",
+    "The player plays the newcomer's close friend. They are at the newcomer's place, late, getting the page live together. Warm, private, teasing, a little giddy. The newcomer trusts the friend, asks for their opinion at every step and gets embarrassed easily.",
   seat: (host) =>
-    `${host} is an established Slurp Creator and the newcomer's friend, helping them set up their first page. The player watches and sometimes whispers a steer to ${host}. ${host} knows the business and talks like a creator who has done this a hundred times.`,
+    `${host} is an established Slurp Creator and the newcomer's friend, getting the newcomer's first page live tonight. ${host} leads: knows the business, talks like a creator who has done this a hundred times, asks the newcomer one thing at a time. The player watches and sometimes whispers a steer to ${host}.`,
+};
+
+/** Who drives each turn toward the goal, and how the turn ends so the player always has a next move. */
+const PRESET_LEAD: Record<SlpScenePreset, (host: string) => string> = {
+  support: () =>
+    "The newcomer leads the sign-up. In every turn the newcomer answers in character, gives or settles something for the current step, and ends with one easy question or offer that tells Support what to do next (\"what else do you need from me?\", \"want my handle too?\").",
+  friend: () =>
+    "The newcomer leads the evening. In every turn the newcomer answers in character, gives or settles something for the current step, and ends with one easy question for the friend that tells them what to do next (\"okay, what should I call myself?\").",
+  seat: (host) =>
+    `${host} leads the evening. Every turn ends with ${host} asking the newcomer one easy question or making one offer that moves the page forward; the newcomer answers in character.`,
+};
+
+/** The first lines of the scene: they tell the player their part without saying "you play". */
+const PRESET_OPEN: Record<SlpScenePreset, (host: string) => string> = {
+  support: () =>
+    "Open the scene: the newcomer has just opened the Support chat. They say hi, say they want to open a Creator page, and ask Support what Support needs first.",
+  friend: () =>
+    "Open the scene: the newcomer has just made the account and shows the friend. They say they want the page live tonight, say in one line why, and ask the friend the first thing they need help with, usually the name (for example \"okay bestie, I made the account... what should I call myself?\").",
+  seat: (host) =>
+    `Open the scene: ${host} arrives to help. ${host} says tonight the page goes live, then asks the newcomer why they want it and what they should be called; the newcomer answers.`,
 };
 
 const HOST_LABEL: Record<SlpScenePreset, (host: string) => string> = {
@@ -47,30 +68,65 @@ const HOST_LABEL: Record<SlpScenePreset, (host: string) => string> = {
   seat: (host) => host,
 };
 
+/** What each step is about, in scene terms. */
 const MOMENT_BRIEF: Record<SlpSceneMoment, string> = {
-  arrival:
-    "Why the newcomer wants a page and how they feel about it right now. Fill gender and tags when they become clear.",
-  name: "Settle the stage name and the handle. Bad ideas and laughs are welcome before the right one lands.",
-  about: "What the newcomer will post and why people would subscribe. Fills bio and tags.",
-  look: "Their look and what they wear on the page. Fills appearance and wardrobe.",
-  voice: "How they talk to fans: register, habits, running bits. Fills stagePersonality.",
+  arrival: "Why the newcomer wants a page and how they feel about it right now; what the page will be about comes out naturally.",
+  name: "Find the stage name and the @ handle. A bad idea or two and a laugh are welcome before the right one lands.",
+  about: "What the newcomer will post and why people would subscribe.",
+  look: "Their look for the profile photo and what they wear on the page.",
+  voice: "How they will talk to fans: tone, habits, running jokes.",
   shoot:
-    "The first photo shoot: which outfit and which place. Fills wardrobe and locations. The app takes the pictures itself, so never describe finished photos.",
-  bio: "The newcomer writes the page bio, first person, and is a little embarrassed reading it out. Fills bio.",
+    "The first photo shoot: pick one outfit and one place. The player takes the photos with the camera button, so never describe finished photos; once outfit and place are picked, the newcomer asks the player to take the photos.",
+  bio: "The page bio: the newcomer writes it in first person and is a little embarrassed reading it out.",
   limits:
-    "What they are happy to show, their hard noes, and how far the page goes: flirty, suggestive or explicit. Fills turnOns, hardNoes and spice.",
-  review: "Support reads the application back and asks for last changes. Fill whatever is still empty.",
+    "What they are happy to show, their hard noes, and how far the page goes: flirty, suggestive or explicit. Asked lightly and in character, never like a form.",
+  review:
+    "Support reads the application back; the newcomer asks for last changes and fills what is still empty, then says they are ready to go live.",
   firstPost:
-    "What the very first post will be, and the nerves of pressing post. Fill stagePersonality if it is still empty.",
+    "What the very first post will be, and the nerves of pressing post. Then the newcomer says they are ready to go live.",
+};
+
+/** What each step fills on the page. */
+const MOMENT_FIELDS: Record<SlpSceneMoment, readonly SlpSceneField[]> = {
+  arrival: ["gender", "tags"],
+  name: ["displayName", "handle"],
+  about: ["bio", "tags", "gender"],
+  look: ["appearance", "wardrobe"],
+  voice: ["stagePersonality"],
+  shoot: ["wardrobe", "locations"],
+  bio: ["bio"],
+  limits: ["turnOns", "hardNoes", "spice"],
+  review: [],
+  firstPost: ["stagePersonality"],
+};
+
+/** The step names the prompt uses for "up next". */
+const MOMENT_LABEL: Record<SlpSceneMoment, string> = {
+  arrival: "why they are here",
+  name: "the stage name and handle",
+  about: "what they will post",
+  look: "their look",
+  voice: "how they talk to fans",
+  shoot: "the first photo shoot (outfit and place)",
+  bio: "the bio",
+  limits: "their limits",
+  review: "reading the application back",
+  firstPost: "the first post",
 };
 
 const ACTION_BRIEF: Record<SlpSceneActionId, string> = {
   askName: "Support asks for the stage name and handle.",
   askAbout: "Support asks what the newcomer will post.",
-  askLook: "Support asks the newcomer to describe their look for the ID photo.",
+  askLook: "Support asks the newcomer to describe their look for the profile photo.",
+  askVoice: "Support asks how the newcomer will talk to their fans.",
+  askLimits:
+    "The host asks, lightly and in character, what the page shows, what it never shows, and how far it goes.",
   joke: "Support makes one dry joke about the paperwork, then gets back to the questions.",
   stamp: "Support reads the application back and stamps it approved.",
   suggestName: "The friend pitches a stage name, maybe a terrible one first.",
+  askOutfit: "The host asks which outfit and which place for the first photo shoot.",
+  helpBio: "The host offers to help write the bio and asks for the first line.",
+  pickFirstPost: "The host asks what the very first post should be.",
   hypeUp: "The host hypes the newcomer up, specific and sincere.",
   lookTogether: "They look at the page so far together and react to what is on it.",
   tease: "The host teases the newcomer a little.",
@@ -128,13 +184,22 @@ export function buildSlpSceneTurnMessages(input: {
         ? `Next, write the host doing this: ${ACTION_BRIEF[request.action.id]}`
         : request.action.kind === "continue"
           ? "Let the scene move on by itself for one exchange: one host line, then the newcomer."
-          : request.preset === "support"
-            ? "Open the scene: the newcomer has just opened the Support chat to sign up."
-            : "Open the scene: the newcomer starts talking.";
+          : PRESET_OPEN[request.preset](host);
+  const moments = SLP_SCENE_MOMENTS[request.preset] as readonly SlpSceneMoment[];
+  const next = moments[moments.indexOf(request.moment) + 1];
+  const collect = MOMENT_FIELDS[request.moment].filter((field) => !locked.has(field));
   const system = [
     "You write the next lines of a chat scene inside Slurp, a creator subscription app. Everyone is an adult. Stay in the scene: Slurp is a real app to everyone in it, and nobody mentions AI, prompts, models, JSON or forms.",
     PRESET_FRAME[request.preset](host),
-    `Current moment: ${request.moment}. ${MOMENT_BRIEF[request.moment]}`,
+    "The goal of the scene: get the newcomer's Creator page live tonight. The page fills in by itself from what is said: the stage name and handle, a photo, the bio, the limits, then the first post.",
+    PRESET_LEAD[request.preset](host),
+    `Now: ${MOMENT_LABEL[request.moment]}. ${MOMENT_BRIEF[request.moment]}`,
+    collect.length ? `This step fills: ${collect.join(", ")}.` : "",
+    next
+      ? `Up next: ${MOMENT_LABEL[next]}. Once this step has what it needs, set momentDone and let the last line turn toward it.`
+      : "This is the last step before the page goes live.",
+    "Pacing: one step at a time, two or three short lines a turn. Never linger: after two turns on one step, settle it with a choice in the newcomer's own taste.",
+    "Stay in character. Never ask the player for technical input: no forms, field names, tags, settings or formats. People talk like people; a handle comes up as 'my @', tags as what the page is about.",
     actionLine,
     writesHost
       ? `Write one short line for the host (${HOST_LABEL[request.preset](host)}), then one to three short lines for the newcomer.`
