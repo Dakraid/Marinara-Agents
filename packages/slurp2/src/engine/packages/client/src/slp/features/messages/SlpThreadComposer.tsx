@@ -4,6 +4,7 @@ import { slurpAssistChatContext } from "./slp-assist-chat-context";
 import { ArrowDown, ChevronLeft, Headset, Plus, Send, X } from "lucide-react";
 import { CommissionRequest } from "./commissions/SlpCommissions";
 import { CreatorMessageTools, FanImageTool, SlurpTipPanel } from "./SlpMessageTools";
+import type { SlurpPhotoSendResult } from "./slp-message-action-hooks";
 import { cn } from "../../../lib/utils";
 import { SlurpCoinAmount } from "../../modules/coin/SlpCoin";
 import { SLP_MOTION } from "../../base/chrome/slp-motion";
@@ -80,6 +81,12 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
   const closeTools = () => {
     setToolsOpen(false);
     setToolTab(null);
+  };
+  // A photo is answered like a text: typing first, then the reply, and the sheet closes (R1-019).
+  const answerPhoto = (result: SlurpPhotoSendResult) => {
+    setReplyStatus(result.replyStatus);
+    holdTyping(result.reply ? (result.typingMs ?? 0) : 0, result.reply?.id);
+    closeTools();
   };
   const toolRow = (tab: (typeof availableTabs)[number]) => (
     <button
@@ -387,6 +394,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
             creatorAccountId={targetCreatorAccountId}
             personaId={personaId}
             mode="choose"
+            onSent={answerPhoto}
           />
         )}
 
@@ -483,6 +491,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
             creatorAccountId={targetCreatorAccountId}
             personaId={personaId}
             mode="generate"
+            onSent={answerPhoto}
           />
         )}
 

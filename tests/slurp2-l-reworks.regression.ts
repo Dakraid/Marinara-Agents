@@ -238,4 +238,26 @@ const read = (path: string) => slurp2Source(join(pkg, path));
     assert.ok(!events.includes(literal), `events still say ${literal}`);
 }
 
+// ── R1-019 (part): typing after a photo ──
+{
+  const media = read("server/src/slp/features/messages/slp-messages-media-routes.ts");
+  assert.equal(
+    media.match(/\.\.\.\(await replyToPhoto\(threadId, /gu)?.length,
+    2,
+    "both photo routes answer like a text",
+  );
+  const helper = media.slice(media.indexOf("const replyToPhoto"), media.indexOf("app.post("));
+  assert.match(helper, /typingMs: "pacing" in outcome \? outcome\.pacing\.typingMs : 0/u);
+  assert.match(helper, /reply: outcome\.status === "replied" \? maskForViewer\(outcome\.message\) : null/u);
+  assert.match(helper, /catch \(error\) \{[\s\S]*status: "failed"/u, "a failed reply is a status, not a thrown error");
+  const tools = read("client/src/slp/features/messages/SlpMessageTools.tsx");
+  assert.match(tools, /onSent\?\.\(result\);/u);
+  const composer = read("client/src/slp/features/messages/SlpThreadComposer.tsx");
+  assert.equal(composer.match(/onSent=\{answerPhoto\}/gu)?.length, 2, "upload and draw both answer");
+  const answer = composer.slice(composer.indexOf("const answerPhoto"), composer.indexOf("const toolRow"));
+  assert.match(answer, /holdTyping\(result\.reply \? \(result\.typingMs \?\? 0\) : 0, result\.reply\?\.id\)/u);
+  assert.match(answer, /setReplyStatus\(result\.replyStatus\)/u);
+  assert.match(answer, /closeTools\(\)/u);
+}
+
 console.log("slurp2-l-reworks: ok");
