@@ -305,11 +305,12 @@ export async function readSlurpRelationshipLine(
     const { couples } = await readSlurpCreatorTiesDocument(db);
     // Every partner they had (the line picks the current one, a crush, or a recent ex).
     const storage = createSlurpStorage(db);
-    const names = new Map<string, string>();
-    for (const partnerId of new Set(couples.map((couple) => slurpCoupleOther(couple, creatorId)))) {
-      const partner = partnerId ? await storage.getNoodlerAccountById(partnerId) : null;
-      if (partner) names.set(partner.id, partner.displayName);
-    }
+    const partners = await Promise.all(
+      [...new Set(couples.map((couple) => slurpCoupleOther(couple, creatorId)))].map((partnerId) =>
+        partnerId ? storage.getNoodlerAccountById(partnerId) : null,
+      ),
+    );
+    const names = new Map(partners.flatMap((partner) => (partner ? [[partner.id, partner.displayName] as const] : [])));
     return slurpRelationshipLine(couples, creatorId, names, options);
   } catch (error) {
     logger.warn(error, "[slurp] Could not read a Creator's relationship");
