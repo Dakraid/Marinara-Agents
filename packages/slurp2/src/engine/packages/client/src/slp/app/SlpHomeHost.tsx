@@ -105,6 +105,7 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
     toggleCreatorSubscription,
     mainAuthorProfile,
     openStoryComposer,
+    updateSlurpSettings,
   } = model;
   // "Show whole pictures": on <html>, so previews in sheets and dialogs portalled out of Slurp follow it.
   const wholePictures = slurpSettingsQuery.data?.previewWholePictures === true;
@@ -114,6 +115,13 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
   }, [wholePictures]);
   const personaSourceIds = new Set(personas.map((persona) => persona.id));
   const storyRings = useSlurpStoryRings(model);
+  // Task F: an older budget moved to the sized defaults; Pulse says so once, then this clears it.
+  const budgetNoteBudget = slurpSettingsQuery.data?.modelBudget.raisedNotice
+    ? slurpSettingsQuery.data.modelBudget
+    : null;
+  const dismissBudgetNote = () => {
+    if (budgetNoteBudget) updateSlurpSettings.mutate({ modelBudget: { ...budgetNoteBudget, raisedNotice: false } });
+  };
 
   const shellProps = {
     appMode: "slurp" as const,
@@ -197,6 +205,15 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
       });
     },
     audiencePending: refreshAudienceNow.isPending,
+    budgetNote: budgetNoteBudget
+      ? {
+          onOpenBudget: () => {
+            dismissBudgetNote();
+            onNavigate({ mode: "creator-settings", section: "world", target: "audience", settingKey: "modelBudget" });
+          },
+          onDismiss: dismissBudgetNote,
+        }
+      : undefined,
     notificationCount:
       (notificationUnseenCountQuery.data?.unseenCount ?? 0) +
       (unreadCountQuery.data?.unread ?? 0) +

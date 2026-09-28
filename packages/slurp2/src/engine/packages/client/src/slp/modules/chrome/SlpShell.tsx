@@ -197,6 +197,7 @@ export function SlpShell({
   onGeneratePosts,
   onRunAudience,
   audiencePending,
+  budgetNote,
   notificationCount = 0,
   hasOperatedCreator = false,
   walletBalanceLabel,
@@ -351,7 +352,7 @@ export function SlpShell({
                 {localizeUi("navigation.topbar.settings")}
               </button>
             </nav>
-            {slurpActive && <SlpPulseCard open={pulseOpen} onOpen={openPulse} />}
+            {slurpActive && <SlpPulseCard open={pulseOpen} onOpen={openPulse} note={Boolean(budgetNote)} />}
             {/*
               The drawer used to render the whole persona list open, so the identity card
               was pushed off-screen on any install with more than a couple of personas.
@@ -565,7 +566,7 @@ export function SlpShell({
                   )}
                   {slurpActive && (
                     <div className="mb-3">
-                      <SlpPulseCard open={pulseOpen} onOpen={openPulse} />
+                      <SlpPulseCard open={pulseOpen} onOpen={openPulse} note={Boolean(budgetNote)} />
                     </div>
                   )}
                   <button
@@ -675,6 +676,7 @@ export function SlpShell({
           onGeneratePosts={onGeneratePosts}
           onRunAudience={onRunAudience}
           audiencePending={audiencePending}
+          budgetNote={budgetNote}
           accounts={sortedPersonaAccounts}
         />
 

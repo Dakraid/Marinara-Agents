@@ -1,3 +1,4 @@
+import type { SlpPulseBudgetNote } from "./SlpPulse";
 // Shell contract, split out of components/slurp/SlurpShell.tsx in Slice 10.
 import type { ReactNode, RefObject } from "react";
 import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
@@ -65,6 +66,8 @@ export interface SlpShellProps {
   /** Runs the audience activity pass. */
   onRunAudience?: () => void;
   audiencePending?: boolean;
+  /** One-time Pulse note after the AI budget defaults went up (task F); absent once seen. */
+  budgetNote?: SlpPulseBudgetNote;
   /** Unseen activity, shown on the unified Inbox entry. */
   notificationCount?: number;
   /** The studio only exists for a persona that operates a Creator. */

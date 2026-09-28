@@ -4,7 +4,7 @@ import { BackstagePageHeader, BackstageWizard } from "../../modules/settings/Slp
 import { Field, NumberSetting, SettingsGroup, Toggle } from "../../modules/settings/SlpSettingsControls";
 import { SlurpSimulationSettings } from "./SlpSimulationPanel";
 import { SlurpFanTypesSettings } from "./SlpFanTypesPanel";
-import { SlurpAudienceConfigSettings } from "./SlpAudienceConfigPanel";
+import { SlurpAudienceConfigSettings, useSlurpEffectiveModelBudget } from "./SlpAudienceConfigPanel";
 
 import { SettingAnchor } from "../../modules/settings/SlpSettingsKit";
 
@@ -40,6 +40,7 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
     audienceCharactersQuery,
     audienceCharacterGroupsQuery,
   } = page;
+  const effectiveBudget = useSlurpEffectiveModelBudget(settings.modelBudget);
 
   const onOff = (value: boolean) => t(value ? "ui.slurp.settings.overview.on" : "ui.slurp.settings.overview.off");
   return (
@@ -468,6 +469,7 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
               tuning={settings.simulationTuning}
               fanTypes={settings.fanTypes}
               budget={settings.modelBudget}
+              postsPerDay={settings.postsPerDay}
               connections={connectionsQuery.data ?? []}
               onSave={(patch) => updatePatch(patch)}
             />
@@ -503,9 +505,9 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
               label={t("ui.slurp.settings.audience.runsPerDay")}
               detail={
                 // The "Comment threads" AI budget caps the runs; say so instead of capping silently (R1-104).
-                settings.fanActivityRunsPerDay > settings.modelBudget.jobs.thread.maxPerDay
+                settings.fanActivityRunsPerDay > effectiveBudget.jobs.thread.maxPerDay
                   ? t("ui.slurp.settings.audience.runsPerDayCapped", {
-                      count: settings.modelBudget.jobs.thread.maxPerDay,
+                      count: effectiveBudget.jobs.thread.maxPerDay,
                       defaultValue:
                         "Your AI budget allows {{count}} a day. Raise Comment threads under AI budget for more.",
                     })
