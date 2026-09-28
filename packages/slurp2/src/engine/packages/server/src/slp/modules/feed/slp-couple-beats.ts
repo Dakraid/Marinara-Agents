@@ -22,7 +22,16 @@ import type { SlurpTieStamp } from "../projects/slp-tie-stamp.js";
 import type { SlurpBeat } from "./slp-post-beat.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const BIG: readonly SlurpCoupleMomentKind[] = ["launch", "anniversary", "breakup", "reunion", "pageOpen", "pageClose"];
+// Moving on (U: exes) is posted once by each, so it always takes the slot like the other news.
+const BIG: readonly SlurpCoupleMomentKind[] = [
+  "launch",
+  "anniversary",
+  "breakup",
+  "reunion",
+  "pageOpen",
+  "pageClose",
+  "movingOn",
+];
 /** Made together: on their shared page when it is open; otherwise each posts their own. */
 const JOINT: readonly SlurpCoupleMomentKind[] = ["launch", "anniversary", "reunion"];
 /** The partner in an everyday post, like real couples show up in each other's lives (U). */
