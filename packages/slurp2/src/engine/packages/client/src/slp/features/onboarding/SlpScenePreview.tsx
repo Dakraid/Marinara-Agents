@@ -120,9 +120,7 @@ export function SlpSceneChapterRail({
               )}
             >
               {t(`ui.slurp.scene.chapter.${chapter.id}`)}
-              <span className="sr-only">
-                {chapter.done ? ` ${t("ui.slurp.scene.progress.done")}` : ""}
-              </span>
+              <span className="sr-only">{chapter.done ? ` ${t("ui.slurp.scene.progress.done")}` : ""}</span>
             </span>
           </li>
         );
@@ -191,9 +189,19 @@ export function SlpScenePhone({
     >
       <div className="relative overflow-hidden rounded-[1.75rem] bg-[var(--slurp-surface)] pb-3">
         <span className="absolute left-1/2 top-1.5 z-10 h-4 w-16 -translate-x-1/2 rounded-full bg-[var(--slurp-canvas)]" />
-        <div key={partKey("locations", "wardrobe")} className={cn(partGlow("locations", "wardrobe"), "relative h-24 rounded-none bg-[image:var(--slurp-nav-active)]")}>
+        <div
+          key={partKey("locations", "wardrobe")}
+          className={cn(
+            partGlow("locations", "wardrobe"),
+            "relative h-24 rounded-none bg-[image:var(--slurp-nav-active)]",
+          )}
+        >
           {bannerUrl && (
-            <SlurpMediaImg src={bannerUrl} alt="" className="slp-crop-top absolute inset-0 h-full w-full object-cover" />
+            <SlurpMediaImg
+              src={bannerUrl}
+              alt=""
+              className="slp-crop-top absolute inset-0 h-full w-full object-cover"
+            />
           )}
           {live && (
             <span className="slp-live-in absolute end-2.5 top-2.5 z-10 flex items-center gap-1 rounded-full bg-[var(--noodle-accent)] px-2 py-0.5 text-[11px] font-bold text-[var(--slurp-on-accent)] shadow-[var(--slurp-glow)]">
@@ -203,14 +211,20 @@ export function SlpScenePhone({
           )}
         </div>
         <div className="-mt-9 flex flex-col items-center px-4 text-center">
-          <span className={cn("relative rounded-full", glow("appearance") && "slp-field-glow")} key={glow("appearance") ? `look-${recentKey}` : "look"}>
+          <span
+            className={cn("relative rounded-full", glow("appearance") && "slp-field-glow")}
+            key={glow("appearance") ? `look-${recentKey}` : "look"}
+          >
             <Avatar
               account={{ displayName: name || "?", avatarUrl: avatarUrl ?? null }}
               className="h-[4.5rem] w-[4.5rem] ring-4 ring-[var(--slurp-surface)]"
             />
             {live && <SlpRingGlint />}
           </span>
-          <div key={partKey("displayName", "handle")} className={cn(partGlow("displayName", "handle"), "mt-2 w-full px-1")}>
+          <div
+            key={partKey("displayName", "handle")}
+            className={cn(partGlow("displayName", "handle"), "mt-2 w-full px-1")}
+          >
             {name ? (
               <p className={cn(SLP_TYPE.title, "truncate")}>{name}</p>
             ) : (
@@ -224,7 +238,9 @@ export function SlpScenePhone({
           </div>
           <div key={partKey("bio")} className={cn(partGlow("bio"), "mt-2 w-full px-1")}>
             {draft.bio.trim() ? (
-              <p className={cn(SLP_TYPE.meta, "line-clamp-3 text-pretty text-[var(--slurp-text)]")}>{draft.bio.trim()}</p>
+              <p className={cn(SLP_TYPE.meta, "line-clamp-3 text-pretty text-[var(--slurp-text)]")}>
+                {draft.bio.trim()}
+              </p>
             ) : (
               <span className="flex flex-col items-center gap-1.5 py-1">
                 <Blank className="w-44" />
@@ -232,10 +248,16 @@ export function SlpScenePhone({
               </span>
             )}
           </div>
-          <div key={partKey("tags", "gender")} className={cn(partGlow("tags", "gender"), "mt-2 flex w-full flex-wrap justify-center gap-1")}>
+          <div
+            key={partKey("tags", "gender")}
+            className={cn(partGlow("tags", "gender"), "mt-2 flex w-full flex-wrap justify-center gap-1")}
+          >
             {draft.tags.length ? (
               draft.tags.slice(0, 4).map((tag) => (
-                <span key={tag} className="rounded-full bg-[var(--slurp-tint)] px-2 py-0.5 text-[11px] font-semibold text-[var(--slurp-text)]">
+                <span
+                  key={tag}
+                  className="rounded-full bg-[var(--slurp-tint)] px-2 py-0.5 text-[11px] font-semibold text-[var(--slurp-text)]"
+                >
                   {tag}
                 </span>
               ))
@@ -247,7 +269,10 @@ export function SlpScenePhone({
               </>
             )}
           </div>
-          <div key={partKey("spice", "turnOns", "hardNoes")} className={cn(partGlow("spice", "turnOns", "hardNoes"), "mt-2 w-full px-1")}>
+          <div
+            key={partKey("spice", "turnOns", "hardNoes")}
+            className={cn(partGlow("spice", "turnOns", "hardNoes"), "mt-2 w-full px-1")}
+          >
             {limits ? (
               <p className="truncate text-[11px] font-semibold text-[var(--slurp-ink)]">{limits}</p>
             ) : (

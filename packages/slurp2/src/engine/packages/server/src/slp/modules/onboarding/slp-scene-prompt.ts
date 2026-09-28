@@ -45,9 +45,9 @@ const PRESET_FRAME: Record<SlpScenePreset, (host: string) => string> = {
 /** Who drives each turn toward the goal, and how the turn ends so the player always has a next move. */
 const PRESET_LEAD: Record<SlpScenePreset, (host: string) => string> = {
   support: () =>
-    "The newcomer leads the sign-up. In every turn the newcomer answers in character, gives or settles something for the current step, and ends with one easy question or offer that tells Support what to do next (\"what else do you need from me?\", \"want my handle too?\").",
+    'The newcomer leads the sign-up. In every turn the newcomer answers in character, gives or settles something for the current step, and ends with one easy question or offer that tells Support what to do next ("what else do you need from me?", "want my handle too?").',
   friend: () =>
-    "The newcomer leads the evening. In every turn the newcomer answers in character, gives or settles something for the current step, and ends with one easy question for the friend that tells them what to do next (\"okay, what should I call myself?\").",
+    'The newcomer leads the evening. In every turn the newcomer answers in character, gives or settles something for the current step, and ends with one easy question for the friend that tells them what to do next ("okay, what should I call myself?").',
   seat: (host) =>
     `${host} leads the evening. In every turn ${host}'s line asks the newcomer one easy question or makes one offer that moves the page forward, and the newcomer answers in character, settling something for the current step.`,
 };
@@ -57,7 +57,7 @@ const PRESET_OPEN: Record<SlpScenePreset, (host: string) => string> = {
   support: () =>
     "Open the scene: the newcomer has just opened the Support chat. They say hi, say they want to open a Creator page, and ask Support what Support needs first.",
   friend: () =>
-    "Open the scene: the newcomer has just made the account and shows the friend. They say they want the page live tonight, say in one line why, and ask the friend the first thing they need help with, usually the name (for example \"okay bestie, I made the account... what should I call myself?\").",
+    'Open the scene: the newcomer has just made the account and shows the friend. They say they want the page live tonight, say in one line why, and ask the friend the first thing they need help with, usually the name (for example "okay bestie, I made the account... what should I call myself?").',
   seat: (host) =>
     `Open the scene: ${host} arrives to help. ${host} says tonight the page goes live, then asks the newcomer why they want it and what they should be called; the newcomer answers.`,
 };
@@ -78,7 +78,8 @@ const HOST_LABEL: Record<SlpScenePreset, (host: string) => string> = {
 
 /** What each step is about, in scene terms. */
 const MOMENT_BRIEF: Record<SlpSceneMoment, string> = {
-  arrival: "Why the newcomer wants a page and how they feel about it right now; what the page will be about comes out naturally.",
+  arrival:
+    "Why the newcomer wants a page and how they feel about it right now; what the page will be about comes out naturally.",
   name: "Find the stage name and the @ handle. A bad idea or two and a laugh are welcome before the right one lands.",
   about: "What the newcomer will post and why people would subscribe.",
   look: "Their look for the profile photo and what they wear on the page.",
@@ -127,8 +128,7 @@ const ACTION_BRIEF: Record<SlpSceneActionId, string> = {
   askAbout: "Support asks what the newcomer will post.",
   askLook: "Support asks the newcomer to describe their look for the profile photo.",
   askVoice: "Support asks how the newcomer will talk to their fans.",
-  askLimits:
-    "The host asks, lightly and in character, what the page shows, what it never shows, and how far it goes.",
+  askLimits: "The host asks, lightly and in character, what the page shows, what it never shows, and how far it goes.",
   joke: "Support makes one dry joke about the paperwork, then gets back to the questions.",
   stamp: "Support reads the application back and stamps it approved.",
   suggestName: "The friend pitches a stage name, maybe a terrible one first.",

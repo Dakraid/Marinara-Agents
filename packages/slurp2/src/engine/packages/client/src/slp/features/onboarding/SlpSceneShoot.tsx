@@ -60,19 +60,15 @@ export function SlpSceneShoot({ model, onMissing }: { model: SlpSceneModel; onMi
           {model.shooting ? t(`ui.slurp.scene.shoot.shooting.${model.shooting}`) : t("ui.slurp.scene.shoot.help")}
         </p>
         <TakeButton
-              className="min-h-9 shrink-0 px-3.5 text-xs"
-              disabled={model.busy || (!outfit.trim() && !place.trim())}
-              onClick={async () => {
-                const missing = await model.shoot(outfit, place);
-                if (missing?.length) onMissing(missing);
-              }}
-            >
-              {model.shooting ? (
-                <Loader2 size={14} aria-hidden="true" className="animate-spin" />
-              ) : (
-                <SlpUsesAiMark />
-              )}
-              {done ? t("ui.slurp.scene.shoot.again") : t("ui.slurp.scene.shoot.take")}
+          className="min-h-9 shrink-0 px-3.5 text-xs"
+          disabled={model.busy || (!outfit.trim() && !place.trim())}
+          onClick={async () => {
+            const missing = await model.shoot(outfit, place);
+            if (missing?.length) onMissing(missing);
+          }}
+        >
+          {model.shooting ? <Loader2 size={14} aria-hidden="true" className="animate-spin" /> : <SlpUsesAiMark />}
+          {done ? t("ui.slurp.scene.shoot.again") : t("ui.slurp.scene.shoot.take")}
         </TakeButton>
       </div>
     </section>

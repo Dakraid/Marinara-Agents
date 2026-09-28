@@ -507,14 +507,13 @@ for (const [question, options] of Object.entries(SLP_SITE_WELCOME_OPTIONS)) {
   const empty = slpSceneInitialState().draft;
   const named = { ...empty, displayName: "Velvet Moth", handle: "velvetmoth" };
   const chapters = (preset: "support" | "friend", draft = empty, flags = {}) =>
-    slpSceneChapters(preset, draft, flags).chapters.filter((chapter) => chapter.done).map((chapter) => chapter.id);
-  assert.deepEqual(slpSceneChapters("friend", empty).chapters.map((chapter) => chapter.id), [
-    "name",
-    "photo",
-    "bio",
-    "limits",
-    "live",
-  ]);
+    slpSceneChapters(preset, draft, flags)
+      .chapters.filter((chapter) => chapter.done)
+      .map((chapter) => chapter.id);
+  assert.deepEqual(
+    slpSceneChapters("friend", empty).chapters.map((chapter) => chapter.id),
+    ["name", "photo", "bio", "limits", "live"],
+  );
   assert.deepEqual(chapters("friend", named), ["name"]);
   assert.deepEqual(chapters("friend", { ...named, appearance: "tall" }), ["name"], "the friend's photo is the shoot");
   assert.deepEqual(chapters("support", { ...named, appearance: "tall" }), ["name", "photo"], "Support takes the look");
@@ -607,7 +606,10 @@ for (const [question, options] of Object.entries(SLP_SITE_WELCOME_OPTIONS)) {
   }
   assert.match(prompt("friend", "name"), /This step fills: displayName, handle\./u);
   assert.match(prompt("support", "limits"), /This step fills: turnOns, hardNoes, spice\./u);
-  assert.match(prompt("friend", "bio", { kind: "say", text: "go on" }), /The player, as the friend, just said the last host line\./u);
+  assert.match(
+    prompt("friend", "bio", { kind: "say", text: "go on" }),
+    /The player, as the friend, just said the last host line\./u,
+  );
   assert.doesNotMatch(prompt("friend", "bio"), /\(the friend \(the player\)\)/u, "no doubled label");
   // The opening tells the player their part without saying "you play".
   assert.match(prompt("support", "name", { kind: "open" }), /ask Support what Support needs first/u);

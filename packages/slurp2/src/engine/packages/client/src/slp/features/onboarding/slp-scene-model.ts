@@ -378,12 +378,12 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
     for (const id of fresh) seen.add(id);
     // Next is the chapter the scene is on now (Support asks the bio before the photo), else the first open one.
     const now = SLP_SCENE_MOMENT_CHAPTER[momentRef.current];
-    const next = chapters.chapters.find((chapter) => chapter.id === now && !chapter.done)?.id ??
+    const next =
+      chapters.chapters.find((chapter) => chapter.id === now && !chapter.done)?.id ??
       chapters.chapters.find((chapter) => !chapter.done)?.id ??
       null;
     append([{ id: generateClientId(), kind: "chapter", chapters: fresh, next }]);
-    // Only a change in which chapters are done is news.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Only a change in which chapters are done is news (doneKey stands for `chapters`).
   }, [doneKey]);
 
   return {

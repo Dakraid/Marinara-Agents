@@ -241,9 +241,16 @@ function SceneSetup({
                       {t(`ui.slurp.scene.cast.${card}.you`, { name })}
                     </span>
                     <span
-                      className={cn(SLP_TYPE.meta, "mt-1.5 flex items-start gap-1 text-pretty text-[var(--slurp-muted)]")}
+                      className={cn(
+                        SLP_TYPE.meta,
+                        "mt-1.5 flex items-start gap-1 text-pretty text-[var(--slurp-muted)]",
+                      )}
                     >
-                      <SlpSparkleGlyph size={13} aria-hidden="true" className="mt-0.5 shrink-0 text-[var(--slurp-ink)]" />
+                      <SlpSparkleGlyph
+                        size={13}
+                        aria-hidden="true"
+                        className="mt-0.5 shrink-0 text-[var(--slurp-ink)]"
+                      />
                       {t(`ui.slurp.scene.cast.${card}.get`, { name })}
                     </span>
                   </span>
@@ -335,7 +342,9 @@ function PeopleStrip({
               <span
                 className={cn(
                   "rounded-full p-0.5 transition-shadow duration-[var(--slurp-motion-fast)] motion-reduce:transition-none",
-                  checked ? "shadow-[var(--slurp-glow)] ring-2 ring-[var(--noodle-accent)]" : "ring-1 ring-[var(--noodle-divider)]",
+                  checked
+                    ? "shadow-[var(--slurp-glow)] ring-2 ring-[var(--noodle-accent)]"
+                    : "ring-1 ring-[var(--noodle-divider)]",
                 )}
               >
                 <Avatar account={person} className="h-14 w-14" />
@@ -616,14 +625,17 @@ function SceneLive({
   }, [run.data?.complete]);
   const job = run.data?.jobs[0];
   const firstPost: SlpSceneFirstPost =
-    job?.status === "generated" ? "posted" : job?.status === "failed" || job?.status === "skipped" ? "later" : "writing";
+    job?.status === "generated"
+      ? "posted"
+      : job?.status === "failed" || job?.status === "skipped"
+        ? "later"
+        : "writing";
   const support = model.setup.preset === "support";
   const notices = [
     {
       id: "fans",
       icon: <Users size={16} aria-hidden="true" />,
-      title:
-        followers === null ? t("ui.slurp.scene.live.fansWaiting") : t("ui.slurp.scene.live.fans", { count: fans }),
+      title: followers === null ? t("ui.slurp.scene.live.fansWaiting") : t("ui.slurp.scene.live.fans", { count: fans }),
       detail: t("ui.slurp.scene.live.fansHelp"),
     },
     {
