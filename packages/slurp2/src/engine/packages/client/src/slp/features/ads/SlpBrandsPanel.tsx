@@ -95,7 +95,7 @@ export function SlpBrandsPanel({ actions }: { actions?: ReactNode }) {
 
 function BrandLogo({ brand, size = "size-11" }: { brand: Pick<SlurpBrand, "name" | "logoUrl">; size?: string }) {
   return brand.logoUrl ? (
-    <SlurpMediaImg src={brand.logoUrl} alt="" className={cn(size, "shrink-0 rounded-xl object-cover")} />
+    <SlurpMediaImg src={brand.logoUrl} alt="" className={cn(size, "slp-crop-top shrink-0 rounded-xl object-cover")} />
   ) : (
     <span
       aria-hidden="true"
@@ -304,7 +304,7 @@ function ProductRow({ brandId, product }: { brandId: string; product: SlurpPromo
             src={product.imageUrl}
             alt=""
             loading="lazy"
-            className="h-20 w-16 shrink-0 rounded-lg object-cover"
+            className="slp-crop-top h-20 w-16 shrink-0 rounded-lg object-cover"
           />
         ) : (
           <span
