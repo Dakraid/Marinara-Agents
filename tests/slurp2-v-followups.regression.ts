@@ -19,6 +19,12 @@ import {
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-collab-work.ts";
 import { slurpTieBeat } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-tie-beats.ts";
 import { slurpImageLook } from "../packages/slurp2/src/engine/packages/server/src/slp/base/media/slp-image-prompt.ts";
+import {
+  GARNISH_BANNER_REDRAWS_PER_DAY,
+  nextGarnishBannerRedraw,
+  readGarnishBannerRedrawState,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/features/ads/slp-garnish-banner-redraw.ts";
+import type { GarnishAd } from "../packages/slurp2/src/engine/packages/server/src/services/garnish-ads/garnish-ads.types.ts";
 import { slurpDropClock } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-post-purpose.ts";
 
 const server = (path: string) => slurp2Source(`packages/slurp2/src/engine/packages/server/src/slp/${path}`);
@@ -179,6 +185,64 @@ const names = new Map([
   // A card that is nothing but clothes keeps its text (the old fallback), never an empty look.
   assert.equal(look("She wears a red dress."), "She wears a red dress.");
   assert.doesNotMatch(look("Soft brown eyes, and she is always in a school uniform."), /uniform/u);
+}
+
+// --- 3. Old ads get their wide banner once --------------------------------------------------------
+{
+  const drawn = (id: string) => `/api/slurp2/noodler/ads/${id}/image/feed-${id}.png`;
+  const ad = (id: string, over: Partial<GarnishAd> = {}) => ({ id, imageUrl: drawn(id), ...over }) as GarnishAd;
+  // The service's own test: a file in the ad's folder (`readGarnishAdMediaPath`); pinned below.
+  const bySlurp = (entry: GarnishAd) =>
+    Boolean(entry.imageUrl?.startsWith(`/api/slurp2/noodler/ads/${entry.id}/image/`));
+  const at = new Date("2026-10-01T12:00:00Z");
+  const fresh = readGarnishBannerRedrawState(null, at);
+  assert.deepEqual(fresh, { tried: [], day: "2026-10-01", count: 0 });
+  const ads = [
+    ad("has-banner", { wideImageUrl: drawn("has-banner").replace("feed", "wide") }),
+    ad("uploaded", { imageUrl: "https://example.com/my-picture.png" }),
+    ad("no-picture", { imageUrl: null }),
+    ad("old-1"),
+    ad("old-2"),
+  ];
+  // Only an ad whose feed picture Slurp drew, with no banner yet: never a player's own picture link.
+  assert.equal((nextGarnishBannerRedraw(ads, fresh, bySlurp) as GarnishAd).id, "old-1");
+  // Once tried (drawn or failed), never again: the next one comes, then none is left.
+  const afterOne = { ...fresh, tried: ["old-1"], count: 1 };
+  assert.equal((nextGarnishBannerRedraw(ads, afterOne, bySlurp) as GarnishAd).id, "old-2");
+  assert.equal(nextGarnishBannerRedraw(ads, { ...afterOne, tried: ["old-1", "old-2"] }, bySlurp), null);
+  // An ad that got its banner (redrawn, or a new ad) is done without being on the list.
+  assert.equal(nextGarnishBannerRedraw([ad("new", { wideImageUrl: drawn("new") })], fresh, bySlurp), null);
+  // Paced over the day inside the ad pictures budget; a new day opens it again, the tried list stays.
+  const full = { tried: ["old-1"], day: "2026-10-01", count: GARNISH_BANNER_REDRAWS_PER_DAY };
+  assert.equal(nextGarnishBannerRedraw(ads, full, bySlurp), "paced");
+  const tomorrow = readGarnishBannerRedrawState(JSON.stringify(full), new Date("2026-10-02T00:30:00Z"));
+  assert.deepEqual(tomorrow, { tried: ["old-1"], day: "2026-10-02", count: 0 });
+  assert.equal((nextGarnishBannerRedraw(ads, tomorrow, bySlurp) as GarnishAd).id, "old-2");
+  assert.deepEqual(readGarnishBannerRedrawState("{broken", at), fresh, "a corrupt record reads as fresh");
+  assert.deepEqual(readGarnishBannerRedrawState('{"tried":[1,"a"],"day":"2026-10-01","count":"9"}', at), {
+    tried: ["a"],
+    day: "2026-10-01",
+    count: 0,
+  });
+
+  // Wiring: only the banner is drawn (the feed picture stays), its failure counts as tried, the
+  // scheduler runs one step per poll only with ads and ad pictures on.
+  const images = server("features/ads/slp-garnish-image-service.ts");
+  assert.match(images, /GARNISH_AD_IMAGE_FORMATS\.filter\(\(entry\) => !only \|\| entry\.field === only\)/u);
+  assert.match(images, /if \(format\.field === "imageUrl" \|\| only\) throw error;/u);
+  assert.match(images, /\[settings\.inlineAdsImageConnectionId\],\s*"wideImageUrl",?\s*\)/u);
+  assert.match(images, /\(ad\) =>\s*Boolean\(readGarnishAdMediaPath\(ad\.id, ad\.imageUrl\)\)/u);
+  assert.match(
+    server("features/ads/slp-garnish-image.ts"),
+    /const NOODLER_AD_IMAGE_URL_PREFIX = "\/api\/slurp2\/noodler\/ads\/";/u,
+  );
+  assert.match(images, /if \(outcome !== "unavailable"\)\s*await store\.set\(/u);
+  assert.match(images, /if \(!settings\.inlineAdsEnabled \|\| !settings\.inlineAdsImagesEnabled\) return "off";/u);
+  const scheduler = server("features/feed/slp-refresh-scheduler-service.ts");
+  assert.match(
+    scheduler,
+    /if \(settings\.inlineAdsEnabled && settings\.inlineAdsImagesEnabled\) \{\s*await redrawOldGarnishAdBanner\(app\.db, createGarnishAds\(app\.db\)\.pool, now\)/u,
+  );
 }
 
 console.log("slurp2 V follow-ups regression passed");

@@ -10,6 +10,7 @@ import { logger } from "../../../lib/logger.js";
 import { resolveConnectionImageDefaults } from "../../../services/image/image-generation-defaults.js";
 import { generateImage, stageImageToDisk } from "../../../services/image/image-generation.js";
 import { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
+import { createAppSettingsStorage } from "../../../services/storage/app-settings.storage.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import {
   GARNISH_AD_IMAGE_FORMATS,
@@ -21,7 +22,18 @@ import { getCreatorImageConnections } from "../../base/media/slp-image-connectio
 import { generateSlpImageWithRetry } from "../../base/media/slp-image-retry.js";
 import { rewriteSlpImagePrompt } from "../../base/media/slp-image-prompt-rewrite.js";
 import { selectSlpImageProviderPrompt } from "../../base/media/slp-image-prompt.js";
-import { garnishAdImageUrl, garnishAdMediaNamespace, unlinkGarnishAdImage } from "./slp-garnish-image.js";
+import {
+  garnishAdImageUrl,
+  garnishAdMediaNamespace,
+  readGarnishAdMediaPath,
+  unlinkGarnishAdImage,
+} from "./slp-garnish-image.js";
+import { SLURP_GARNISH_PLATFORM } from "./slp-garnish-context.js";
+import {
+  GARNISH_BANNER_REDRAW_KEY,
+  nextGarnishBannerRedraw,
+  readGarnishBannerRedrawState,
+} from "./slp-garnish-banner-redraw.js";
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
 
 /** Ads read as feed content, so the artwork is product photography rather than a poster. */
@@ -52,6 +64,8 @@ export async function generateGarnishAdImage(
   ad: GarnishAd,
   /** Preferred connections in order (the ad connection); the Creator picture default follows. */
   connectionIds: ReadonlyArray<string | null | undefined> = [],
+  /** Draw only this format (the one-time banner for an older ad, V); the other picture stays. */
+  only?: GarnishAdImageField,
 ): Promise<GarnishAdImageOutcome> {
   const connections = createConnectionsStorage(db);
   // A stored id can be blank, deleted, or point at a text connection. Skip those and fall through to
@@ -138,12 +152,12 @@ export async function generateGarnishAdImage(
   };
   const files: { field: GarnishAdImageField; file: ReturnType<typeof stageImageToDisk> }[] = [];
   try {
-    for (const format of GARNISH_AD_IMAGE_FORMATS) {
+    for (const format of GARNISH_AD_IMAGE_FORMATS.filter((entry) => !only || entry.field === only)) {
       try {
         files.push({ field: format.field, file: await draw(format) });
       } catch (error) {
         // The feed picture is the ad's picture; a missing banner only means the wide slot crops it.
-        if (format.field === "imageUrl") throw error;
+        if (format.field === "imageUrl" || only) throw error;
         logger.warn(error, "[garnish-ads] Could not draw the wide banner for %s; the feed picture stands in", ad.brand);
       }
     }
@@ -166,4 +180,33 @@ export async function generateGarnishAdImage(
     logger.warn(error, "[garnish-ads] Could not generate an image for %s", ad.brand);
     return "failed";
   }
+}
+
+/**
+ * One step of the one-time banner redraw, run by the scheduler: at most one picture per call, inside
+ * the ad pictures switch (Ads › pictures on) and the daily pace. An ad counts as tried once its
+ * picture was attempted (drawn or failed), so it is never redrawn again; no image connection means
+ * nothing was tried.
+ */
+export async function redrawOldGarnishAdBanner(
+  db: DB,
+  pool: GarnishAdsStorage,
+  at = new Date(),
+): Promise<GarnishAdImageOutcome | "off" | "paced" | "done"> {
+  const settings = await createSlurpStorage(db).getSettings();
+  if (!settings.inlineAdsEnabled || !settings.inlineAdsImagesEnabled) return "off";
+  const store = createAppSettingsStorage(db);
+  const state = readGarnishBannerRedrawState(await store.get(GARNISH_BANNER_REDRAW_KEY), at);
+  const next = nextGarnishBannerRedraw(await pool.listActive(SLURP_GARNISH_PLATFORM), state, (ad) =>
+    Boolean(readGarnishAdMediaPath(ad.id, ad.imageUrl)),
+  );
+  if (!next) return "done";
+  if (next === "paced") return "paced";
+  const outcome = await generateGarnishAdImage(db, pool, next, [settings.inlineAdsImageConnectionId], "wideImageUrl");
+  if (outcome !== "unavailable")
+    await store.set(
+      GARNISH_BANNER_REDRAW_KEY,
+      JSON.stringify({ tried: [...state.tried, next.id], day: state.day, count: state.count + 1 }),
+    );
+  return outcome;
 }
