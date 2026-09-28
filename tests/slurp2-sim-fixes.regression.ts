@@ -351,6 +351,13 @@ async function g8() {
   assert.equal(await wrapped.chatComplete("hi"), "ok:hi", "a 429 and a DNS hiccup are waited out");
   assert.equal(real.calls(), 3);
   assert.equal(wrapped.label, "real", "other fields still come from the provider");
+  // The host hands out providers whose chatComplete is read-only (the 7-day sim lost every post to it).
+  const frozen = Object.freeze({ chatComplete: async () => "host" });
+  assert.equal(
+    await slpWithProviderRetry(frozen, quick).chatComplete(),
+    "host",
+    "a read-only host provider is wrapped too",
+  );
   await assert.rejects(
     slpWithProviderRetry({ chatComplete: async () => Promise.reject(new Error("API error 401: bad key")) }, quick)
       .chatComplete,

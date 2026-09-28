@@ -137,9 +137,14 @@ export function slpWithProviderRetry<P extends { chatComplete: (...args: never[]
   provider: P,
   options?: Parameters<typeof slpRetryProviderCall>[1],
 ): P {
-  return Object.assign(Object.create(provider) as P, {
-    chatComplete: (...args: Parameters<P["chatComplete"]>) =>
+  // defineProperty, not assignment: the host's providers carry a read-only `chatComplete`, and a
+  // read-only property on the prototype makes plain assignment on the wrapper throw.
+  return Object.defineProperty(Object.create(provider) as P, "chatComplete", {
+    value: (...args: Parameters<P["chatComplete"]>) =>
       slpRetryProviderCall(() => provider.chatComplete(...args), options),
+    writable: true,
+    configurable: true,
+    enumerable: true,
   });
 }
 
