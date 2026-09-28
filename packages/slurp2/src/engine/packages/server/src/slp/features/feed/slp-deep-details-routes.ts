@@ -17,10 +17,12 @@ import { readSlurpTieStamp } from "../../modules/projects/slp-tie-stamp.js";
  */
 export async function slpDeepDetailsRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
   const { noodle } = deps;
+  const getPost = (postId: string) => noodle.getNoodlerPostById(postId);
+  const getAccount = (accountId: string) => noodle.getNoodlerAccountById(accountId);
   app.get("/slurp/posts/:id/deep-details", async (req, reply) => {
     const { id } = req.params as { id: string };
-    const post = await noodle.getNoodlerPostById(id);
-    const creator = post ? await noodle.getNoodlerAccountById(post.authorAccountId) : null;
+    const post = await getPost(id);
+    const creator = post ? await getAccount(post.authorAccountId) : null;
     if (!post || !creator) return reply.code(404).send({ error: "Not Found" });
     const detailsId = typeof post.metadata.deepDetailsId === "string" ? post.metadata.deepDetailsId : null;
     const [details, plans, links, interactions, unlocks] = await Promise.all([
@@ -39,8 +41,8 @@ export async function slpDeepDetailsRoutes(app: FastifyInstance, deps: SlpRouteD
       (value): value is string => !!value && value !== id,
     );
     const [partners, relatedPosts] = await Promise.all([
-      Promise.all([...new Set(partnerIds)].map((accountId) => noodle.getNoodlerAccountById(accountId))),
-      Promise.all([...new Set(postIds)].map((postId) => noodle.getNoodlerPostById(postId))),
+      Promise.all([...new Set(partnerIds)].map(getAccount)),
+      Promise.all([...new Set(postIds)].map(getPost)),
     ]);
     const text = (value: unknown) => (typeof value === "string" && value ? value : null);
     const response: SlpDeepDetailsResponse = {
@@ -82,24 +84,27 @@ export async function slpDeepDetailsRoutes(app: FastifyInstance, deps: SlpRouteD
         )
         .map(({ fromType, fromId, toType, toId, relation }) => ({ fromType, fromId, toType, toId, relation })),
       people: Object.fromEntries(
-        partners.flatMap((account) =>
+        partners.flatMap((account: { id: string; displayName: string; handle: string } | null) =>
           account ? [[account.id, { displayName: account.displayName, handle: account.handle }]] : [],
         ),
       ),
       related: Object.fromEntries(
-        relatedPosts.flatMap((related) =>
-          related
-            ? [
-                [
-                  related.id,
-                  {
-                    text: (related.title || related.content).slice(0, 140),
-                    createdAt: related.createdAt,
-                    access: related.access,
-                  },
-                ],
-              ]
-            : [],
+        relatedPosts.flatMap(
+          (
+            related: { id: string; title?: string | null; content: string; createdAt: string; access: string } | null,
+          ) =>
+            related
+              ? [
+                  [
+                    related.id,
+                    {
+                      text: (related.title || related.content).slice(0, 140),
+                      createdAt: related.createdAt,
+                      access: related.access,
+                    },
+                  ],
+                ]
+              : [],
         ),
       ),
       stats: {

@@ -6,6 +6,13 @@ import type {
 import { formatFullTime } from "../../base/ui/slp-date-time";
 import { formatSlpPercent } from "../../base/ui/slp-number-format";
 import { mapOrigins, originTable } from "./slp-deep-details-origins";
+import {
+  buildSlpDeepDetailsStory,
+  slpEnhanceChanges,
+  SLP_STORY_NODES,
+  slpStoryNode,
+  type SlpDeepRowId,
+} from "./slp-deep-details-story";
 import type { SlpStepStatus } from "./SlpDeepDetailsParts";
 
 /**
@@ -305,6 +312,12 @@ function postNodes(data: SlpDeepDetailsResponse, details: SlpDeepDetailsRecord, 
   ];
 }
 
+const VIEWPOINT_FAMILY: Record<string, string> = {
+  tags: "in tag words for a tag model",
+  e621: "in e621 tags for a drawn furry",
+  natural: "in plain words",
+};
+
 const REWRITE_OUTCOME: Record<SlpDeepDetailsImageRun["rewrite"]["status"], string> = {
   skipped: "Not run",
   accepted: "Used, then styled again",
@@ -336,6 +349,7 @@ function imageNodes(run: SlpDeepDetailsImageRun, brief: string | null, start: nu
   const [appearanceLabel, appearanceNote] = APPEARANCE_SOURCE[run.appearance.source];
   const styleText = [style.styleText, style.positiveTags].filter(Boolean).join("\n");
   const chosen = run.rewrite.status === "accepted" ? run.rewrite.output : run.styledPrompt;
+  const changes = slpEnhanceChanges(run, 12);
   return [
     {
       id: "appearance",
@@ -453,6 +467,8 @@ function imageNodes(run: SlpDeepDetailsImageRun, brief: string | null, start: nu
       outputs: [
         fact("Outcome", REWRITE_OUTCOME[run.rewrite.status]),
         fact("Reason", run.rewrite.reason),
+        fact("Added", changes?.added.join(", ") || null, "Prompt parts the enhance step put in."),
+        fact("Left out", changes?.dropped.join(", ") || null, "Prompt parts the enhance step dropped."),
         row("Answer", run.rewrite.output, { value: chars(run.rewrite.output) }),
       ],
       what:
@@ -488,6 +504,13 @@ function imageNodes(run: SlpDeepDetailsImageRun, brief: string | null, start: nu
           note: "Handed to the image connection.",
         }),
         row("Negative prompt", run.negativePrompt, { note: "Style negatives and content-level negatives, merged." }),
+        fact(
+          "Viewpoint",
+          run.viewpoint?.phrase ?? null,
+          run.viewpoint
+            ? `Kept word for word, ${VIEWPOINT_FAMILY[run.viewpoint.family] ?? "for this model"}.`
+            : undefined,
+        ),
         fact("Size", run.size.width && run.size.height ? `${run.size.width} × ${run.size.height}` : null),
       ],
       what: "Slurp takes the winning text, makes sure the look is in it, and merges the negative prompts.",
@@ -718,7 +741,11 @@ export function buildSlpDeepDetailsFlow(
 ): SlpFlowGraph | null {
   const details = data.details;
   if (!details) return null;
+  const story = buildSlpDeepDetailsStory(data, locale)
+    .map(slpStoryNode)
+    .filter((node): node is SlpFlowNode => Boolean(node));
   const nodes = [
+    ...story,
     ...postNodes(data, details, locale),
     ...(run ? imageNodes(run, details.imageBrief, 5, locale) : pictureWithoutRun(data, details, 5)),
   ];
@@ -736,6 +763,11 @@ export function buildSlpDeepDetailsFlow(
     ["appearance", "rewrite", "character context"],
     ["style-profile", "rewrite", "style guidance"],
   ];
+  for (const node of story) {
+    for (const [to, label] of SLP_STORY_NODES[node.id.slice("story-".length) as SlpDeepRowId]?.feeds ?? []) {
+      feeds.push([node.id, to, label]);
+    }
+  }
   for (const [from, to, label] of feeds) {
     if (nodes.some((node) => node.id === from) && nodes.some((node) => node.id === to)) {
       edges.push({ from, to, label });

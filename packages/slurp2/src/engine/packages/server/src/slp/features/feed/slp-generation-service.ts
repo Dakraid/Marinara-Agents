@@ -1,4 +1,5 @@
-import { saveSlurpDeepDetailsRecord } from "./slp-deep-details-record.js";
+import { buildSlurpDeepDetailsRecord } from "./slp-deep-details-record.js";
+import { saveSlurpNewPostDeepDetails } from "../../data/feed/slp-post-deep-details-storage.js";
 import type { SlpDeepDetailsFlavour } from "../../../../../shared/src/slp/slp-deep-details.js";
 import { prepareSlurpCreatorPost } from "./slp-prepared-post.js";
 import { type APIProvider } from "@marinara-engine/shared";
@@ -574,36 +575,40 @@ export async function generateCreatorPost(
   // Deep details, best effort.
   const deepDetailsId = input.previewOnly
     ? null
-    : await saveSlurpDeepDetailsRecord(db, account.id, {
-        input,
-        sequence,
-        completionOptions,
-        attempts,
-        opportunity,
-        axes,
-        isTeaser,
-        storyVariation,
-        format,
-        variation,
-        campaignId,
-        shootId,
-        reusedSource: reusedMedia ? reusedSource : null,
-        demandTopic,
-        project,
-        projectChapter,
-        camera,
-        effort,
-        visualBrief,
-        strategy,
-        sentMessages,
-        content,
-        generated,
-        draftImagePrompt,
-        askModelForImagePrompt,
-        wardrobeSelection,
-        planner: { mode: settings.postPlanner, beat, claimCheck, heat: { dial: dialLevel, planned: explicitLevel } },
-        flavour: flavourShaped,
-      });
+    : await saveSlurpNewPostDeepDetails(
+        db,
+        account.id,
+        buildSlurpDeepDetailsRecord({
+          input,
+          sequence,
+          completionOptions,
+          attempts,
+          opportunity,
+          axes,
+          isTeaser,
+          storyVariation,
+          format,
+          variation,
+          campaignId,
+          shootId,
+          reusedSource: reusedMedia ? reusedSource : null,
+          demandTopic,
+          project,
+          projectChapter,
+          camera,
+          effort,
+          visualBrief,
+          strategy,
+          sentMessages,
+          content,
+          generated,
+          draftImagePrompt,
+          askModelForImagePrompt,
+          wardrobeSelection,
+          planner: { mode: settings.postPlanner, beat, claimCheck, heat: { dial: dialLevel, planned: explicitLevel } },
+          flavour: flavourShaped,
+        }),
+      );
 
   const baseInput = {
     authorAccountId: beat?.tie?.pageId ?? account.id,

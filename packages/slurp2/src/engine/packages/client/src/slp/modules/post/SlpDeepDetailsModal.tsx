@@ -15,6 +15,7 @@ import { SlpDeepDetailsFlow } from "./SlpDeepDetailsFlow";
 import { SlpDeepDetailsImageRuns } from "./SlpDeepDetailsImageRuns";
 import { Block, CopyButton, formatRate, formatTime, Rows, Section, str } from "./SlpDeepDetailsParts";
 import { SlpDeepDetailsSummary } from "./SlpDeepDetailsSummary";
+import { slpDeepDetailsCost } from "./slp-deep-details-story";
 
 type DeepView = "summary" | "flow" | "canvas" | "data";
 
@@ -50,6 +51,7 @@ export function SlpDeepDetailsModal({ postId, open, onClose }: { postId: string;
   const views: DeepView[] = wide && graph ? ["summary", "flow", "canvas", "data"] : ["summary", "data"];
   const shownView: DeepView = view && views.includes(view) ? view : wide && graph ? "flow" : "summary";
   const retrying = query.isPending && query.failureCount > 0;
+  const cost = slpDeepDetailsCost(details);
 
   return (
     <Modal
@@ -95,7 +97,7 @@ export function SlpDeepDetailsModal({ postId, open, onClose }: { postId: string;
                 {[
                   details.model.model,
                   details.attempts === 1 ? "1 attempt" : `${details.attempts} attempts`,
-                  details.planner ? `${details.planner.mode} planner` : null,
+                  cost && (cost.total === 1 ? "1 AI call" : `${cost.total} AI calls`),
                 ]
                   .filter(Boolean)
                   .join(" · ")}

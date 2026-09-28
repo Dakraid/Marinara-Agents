@@ -519,7 +519,8 @@ assert.match(
   /slpShowPostInPlace\(postId\) \|\| postCardCtx\.openAuthorProfile/u,
 );
 assert.match(client("modules/post/SlpPostCard.tsx"), /<SlpPostPurposeNote/u, "the post card shows where a post leads");
-assert.match(client("modules/post/SlpDeepDetailsSummary.tsx"), /\["Purpose", purpose\]/u);
+// M: the purpose is the first summary row's line ("Why it went up"), in the story model.
+assert.match(client("modules/post/slp-deep-details-story.ts"), /slpPurposeSentence\(purpose, locale\) \?\?/u);
 const en = JSON.parse(client("locales/en.json")) as Record<string, string>;
 assert.equal(en["ui.slurp.moments.viewLinkedPost"], "See post");
 for (const key of ["fromPoll", "dropIn", "dropUp", "seeDrop", "seeIt", "pollVotes", "commentFrom"])
