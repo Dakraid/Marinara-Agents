@@ -24,21 +24,31 @@ export function slurpPacedPostsPerDay(postsPerDay: number, factor: number): numb
 }
 
 /**
- * Who gets the next open slot: the Creator who has waited longest, with the wait scaled by their
- * pace, so a busier Creator is picked more often and a quieter one less. Never-posted Creators go
- * first. Ties go by id, so the choice is stable.
+ * Who gets the next open slot: the Creator whose last post or slot lies furthest back, with the gap
+ * scaled by their pace, so a busier Creator is picked more often and a quieter one less. A slot
+ * already held in the future counts as activity at its time, so whoever was given a slot last goes
+ * to the back of the line (every Creator holds a slot ahead most of the time; clamping those to
+ * "no wait" made every Creator tie, and the old id tie-break then gave one Creator every spare
+ * slot). Never-posted Creators go first. Real ties are broken at random, never by id.
  */
 export function slurpPickCreatorForSlot<T extends { id: string }>(
   candidates: readonly T[],
   lastActivity: (candidate: T) => number,
   pace: (candidate: T) => number,
   at: number,
+  random: () => number = Math.random,
 ): T | undefined {
   const score = (candidate: T) => {
     const last = lastActivity(candidate);
-    return (last > 0 ? Math.max(0, at - last) : Number.MAX_SAFE_INTEGER / 4) * pace(candidate);
+    if (last <= 0) return Number.MAX_SAFE_INTEGER / 4;
+    const gap = at - last;
+    // A higher pace always raises the score: a past gap grows, a future one (a held slot) shrinks.
+    return gap >= 0 ? gap * pace(candidate) : gap / pace(candidate);
   };
-  return [...candidates]
+  const scored = candidates
     .filter((candidate) => pace(candidate) > 0)
-    .sort((left, right) => score(right) - score(left) || left.id.localeCompare(right.id))[0];
+    .map((candidate) => ({ candidate, score: score(candidate) }));
+  const best = Math.max(...scored.map((entry) => entry.score));
+  const tied = scored.filter((entry) => entry.score === best);
+  return tied[Math.floor(random() * tied.length)]?.candidate;
 }
