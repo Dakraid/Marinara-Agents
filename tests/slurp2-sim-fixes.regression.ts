@@ -221,6 +221,24 @@ const read = (path: string) => readFileSync(new URL(path, root), "utf8");
   assert.equal(couples[0]!.stage, "together", "partners on the cards are together, not sparks");
   assert.equal(couples[0]!.togetherAt, at.toISOString());
   assert.ok(slurpCouplePageOpenable(couples[0]!), "their shared page can open (no 409)");
+  // Right after sign-up there are no anchors yet: the card's own words count (the 7-day sim's case).
+  const wolfText = tie(
+    "kodiak",
+    "Kodiak Frost",
+    "Ice-hockey goalie in Winnipeg. Dating Juniper Vale (the fox) for two years; they film couple content together.",
+  );
+  const fresh = slurpSetUpCouple([], tie("juniper", "Juniper Vale", "An anthro red fox who DJs."), wolfText, {
+    at,
+    id: "c3",
+  }) as SlurpCouple[];
+  assert.equal(fresh[0]!.stage, "together", "a card that says they are dating starts them together");
+  const colleague = slurpSetUpCouple(
+    [],
+    tie("a", "Ada", "Painter."),
+    tie("kodiak", "Bo", "Works together with Ada at the studio, her business partner."),
+    { at, id: "c4" },
+  ) as SlurpCouple[];
+  assert.equal(colleague[0]!.stage, "sparks", "working together is not a relationship");
   // Strangers the player sets up still start with sparks.
   const strangers = slurpSetUpCouple([], tie("a", "Ada", "Painter."), tie("kodiak", "Bo", "Baker."), {
     at,

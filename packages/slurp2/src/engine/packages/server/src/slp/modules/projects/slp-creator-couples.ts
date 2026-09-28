@@ -153,6 +153,22 @@ const firstName = (name: string) => name.trim().split(/\s+/u)[0]!.toLocaleLowerC
 const cardNames = (a: SlurpTieCreator, b: SlurpTieCreator) =>
   (a.cardPartners ?? []).some((partner) => firstName(partner) === firstName(b.name));
 
+// Not "partner" or "together": "business partner", "works together with" are about work.
+const PARTNER_WORDS =
+  /\b(?:boyfriend|girlfriend|wife|husband|fianc[eé]e?|spouse|married|dating|in a relationship|lovers?|mated?)\b/iu;
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+/**
+ * Whether a card's own words say the other one is their partner ("Dating Juniper Vale for two
+ * years"). The anchors only exist after the first post, so a couple set up right after sign-up used
+ * to start at "sparks" although both cards said they were together.
+ */
+const textNames = (a: SlurpTieCreator, b: SlurpTieCreator) => {
+  const first = b.name.trim().split(/\s+/u)[0];
+  if (!first || first.length < 3) return false;
+  const name = new RegExp(`(?<![\\p{L}])${escapeRegExp(first)}(?![\\p{L}])`, "iu");
+  return a.text.split(/(?<=[.!?])\s+|\n+/u).some((sentence) => name.test(sentence) && PARTNER_WORDS.test(sentence));
+};
+
 const neverDates = (creator: SlurpTieCreator) =>
   creator.text
     .split(/(?<=[.!?])\s+|\n+/u)
@@ -170,7 +186,7 @@ export type SlurpCoupleFit = { fits: boolean; misfit: SlurpCoupleMisfit | null; 
 export function slurpCoupleFit(a: SlurpTieCreator, b: SlurpTieCreator): SlurpCoupleFit {
   const no = (misfit: SlurpCoupleMisfit) => ({ fits: false, misfit, chemistry: 0, cards: false });
   if (a.id === b.id) return no("same");
-  const cards = cardNames(a, b) || cardNames(b, a);
+  const cards = cardNames(a, b) || cardNames(b, a) || textNames(a, b) || textNames(b, a);
   if (!cards && [a, b].some((creator) => (creator.cardPartners ?? []).length > 0)) return no("taken");
   if ([a, b].some((creator) => NOT_INTO_ANYONE.test(creator.text))) return no("notInto");
   if ([a, b].some(neverDates)) return no("noDating");
