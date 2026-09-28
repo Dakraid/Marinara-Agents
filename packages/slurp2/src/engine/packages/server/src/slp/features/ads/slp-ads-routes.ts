@@ -32,6 +32,7 @@ export async function slpAdsRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
     categories: z.array(z.string().trim().min(1).max(32)).max(12).default([]),
     contextTags: z.array(z.string().trim().min(1).max(32)).max(12).default([]),
     imageUrl: z.string().trim().max(2048).nullable().optional(),
+    wideImageUrl: z.string().trim().max(2048).nullable().optional(),
     actionLabel: z.string().trim().min(1).max(40).optional(),
     contentRating: z.enum(["tame", "suggestive", "explicit"]).default("tame"),
   });
@@ -169,6 +170,8 @@ export async function slpAdsRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
     await ads.pool.remove(id);
     if (existing.origin !== "builtin") unlinkGarnishAdImage(id, existing.imageUrl);
     else if (generatedImageUrl) unlinkGarnishAdImage(id, generatedImageUrl);
+    // A builtin ships no banner, so a wide picture is always one Slurp drew.
+    unlinkGarnishAdImage(id, existing.wideImageUrl);
     return { ok: true };
   });
 
@@ -182,10 +185,15 @@ export async function slpAdsRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
     const parsed = garnishAdPatchSchema.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
     // Scoped like the other pool routes: an id from another Garnish platform is not editable here.
-    if (!(await ads.pool.listAll(SLURP_GARNISH_PLATFORM)).some((ad) => ad.id === id)) {
-      return reply.code(404).send({ error: "Not Found" });
-    }
-    const updated = await ads.pool.update(id, parsed.data);
+    const existing = (await ads.pool.listAll(SLURP_GARNISH_PLATFORM)).find((ad) => ad.id === id);
+    if (!existing) return reply.code(404).send({ error: "Not Found" });
+    // A new feed picture makes the old banner a picture of something else: wide slots crop the new one.
+    const replacesPicture =
+      parsed.data.imageUrl !== undefined &&
+      parsed.data.imageUrl !== existing.imageUrl &&
+      parsed.data.wideImageUrl === undefined;
+    const updated = await ads.pool.update(id, replacesPicture ? { ...parsed.data, wideImageUrl: null } : parsed.data);
+    if (updated && replacesPicture) unlinkGarnishAdImage(id, existing.wideImageUrl);
     if (!updated) return reply.code(404).send({ error: "Not Found" });
     return updated;
   });
@@ -207,8 +215,11 @@ export async function slpAdsRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
   app.get("/noodler/ads/:id/image/:fileName", async (req, reply) => {
     const { id, fileName } = req.params as { id: string; fileName: string };
     const ad = (await ads.pool.listAll()).find((row) => row.id === id);
-    const absolute = resolveGarnishAdImageAbsolutePath(id, ad?.imageUrl);
-    if (!absolute || basename(absolute) !== fileName || !existsSync(absolute)) {
+    // The feed picture or the wide banner, whichever this file name is.
+    const absolute = [ad?.imageUrl, ad?.wideImageUrl]
+      .map((url) => resolveGarnishAdImageAbsolutePath(id, url))
+      .find((path) => path && basename(path) === fileName);
+    if (!absolute || !existsSync(absolute)) {
       return reply.code(404).send({ error: "Not Found" });
     }
     const width = z.coerce

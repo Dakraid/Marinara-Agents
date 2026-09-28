@@ -53,7 +53,10 @@ export type GarnishAd = {
   contextTags: string[];
   creatorAccountId?: string;
   creatorHandle?: string;
+  /** The feed picture, 4:5 like a post. */
   imageUrl?: string | null;
+  /** A 1.91:1 banner for wide slots. Absent on older ads: those slots crop `imageUrl` from the top. */
+  wideImageUrl?: string | null;
   actionLabel?: string;
   contentRating: GarnishContentRating;
   origin: GarnishAdOrigin;
@@ -81,3 +84,26 @@ export type GarnishAdContext = {
 
 /** A creator, reduced to the fields garnish-ads may know about. */
 export type GarnishCreatorProfile = { id: string; handle: string; bio?: string | null };
+
+/**
+ * The two shapes an ad is shown in. The feed card is 4:5 like a post (the old 1024×640 picture lost
+ * both sides in that frame); Discover and other wide slots show a 1.91:1 banner, the usual social
+ * ad banner ratio. Each is drawn for its own frame, so nothing important is cut. Sizes are multiples
+ * of 64, which every provider accepts.
+ */
+export const GARNISH_AD_IMAGE_FORMATS = [
+  {
+    field: "imageUrl",
+    width: 1024,
+    height: 1280,
+    framing: "Vertical 4:5 picture: the product or person fills the frame, centred, with a little room at the top.",
+  },
+  {
+    field: "wideImageUrl",
+    width: 1216,
+    height: 640,
+    framing:
+      "Wide banner picture, about twice as wide as tall: the product or person sits in the left or right third, the rest is calm open background, nothing important near the top or bottom edge.",
+  },
+] as const;
+export type GarnishAdImageField = (typeof GARNISH_AD_IMAGE_FORMATS)[number]["field"];

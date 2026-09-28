@@ -78,7 +78,7 @@ export function SlurpInlineAd({
   wide = false,
 }: {
   promotion: SlurpPromotion;
-  /** Discover: a 16:9 picture, so the ad sits between grid rows instead of filling the phone. */
+  /** Discover: the 1.91:1 banner, so the ad sits between grid rows instead of filling the phone. */
   wide?: boolean;
   onHide: () => void;
   onHideBrand?: () => void;
@@ -90,6 +90,8 @@ export function SlurpInlineAd({
   const [imageFailed, setImageFailed] = useState(false);
   const menuRef = useRef<HTMLButtonElement | null>(null);
   const menuLabel = localizeUi("ui.slurp.home.moreActions", { defaultValue: "More actions" });
+  // Each slot shows the picture drawn for its shape; an older ad without a banner is cropped from the top.
+  const imageUrl = (wide && promotion.wideImageUrl) || promotion.imageUrl;
   return (
     <article
       aria-label={`${labels.sponsored}: ${promotion.brand}`}
@@ -122,16 +124,17 @@ export function SlurpInlineAd({
         </button>
       </div>
       {promotion.copy && <p className={cn(SLP_TYPE.body, "mt-3 whitespace-pre-line break-words")}>{promotion.copy}</p>}
-      {promotion.imageUrl && !imageFailed && (
+      {imageUrl && !imageFailed && (
         <div
           className={cn(
             "relative -mx-4 mt-3 w-[calc(100%+2rem)] overflow-hidden bg-[var(--slurp-media-stage,#17131a)]",
-            wide ? "aspect-[16/9]" : "aspect-[4/5] max-h-[32rem]",
+            wide ? "" : "aspect-[4/5] max-h-[32rem]",
             SLP_IMG_FRAME_CLASS,
           )}
+          style={wide ? { aspectRatio: "1.91 / 1" } : undefined}
         >
           <SlurpMediaImg
-            src={promotion.imageUrl}
+            src={imageUrl}
             alt=""
             loading="lazy"
             decoding="async"
