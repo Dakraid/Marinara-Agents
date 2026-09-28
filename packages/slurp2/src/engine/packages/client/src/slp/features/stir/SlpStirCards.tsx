@@ -11,7 +11,9 @@ import { SlpSheet } from "../../modules/chrome/SlpSheet";
 import { playSlpBurst } from "../../modules/sparkle/SlpSparkle";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
 import type { SlpActionPreview, SlpStirOrigin } from "../../../../../shared/src/slp/slp-stir.js";
+import { SlpCoinText } from "../../modules/coin/SlpCoin";
 import { useSlurpStirPlay } from "./slp-stir-hooks";
+import { SlpStirBrandLogo } from "./SlpStirBrandPick";
 
 type T = (key: string, options?: Record<string, unknown>) => string;
 
@@ -73,6 +75,11 @@ export function slpStirWhat(t: T, card: SlpActionPreview): string {
       return t("ui.slurp.stir.what.start-event", { name: d.name, count: Number(d.days) || 1 });
     case "start-rivalry":
       return t("ui.slurp.stir.what.start-rivalry", { ...names, cause: d.cause ?? "" });
+    case "offer-brand-deal":
+      return t(
+        card.input.happen ? "ui.slurp.stir.what.offer-brand-deal.happen" : "ui.slurp.stir.what.offer-brand-deal",
+        { ...names, brand: d.brand ?? "", product: d.product ?? "", count: Number(d.fee) || 0 },
+      );
     default:
       return t(`ui.slurp.stir.what.${card.action}`, names);
   }
@@ -126,8 +133,24 @@ export function useSlpStirDoIt() {
   return { run, pending: play.isPending };
 }
 
-/** Two small avatars (who), or one. */
+/** Two small avatars (who), or one; a brand deal shows the Creator and the brand's logo (R). */
 function Who({ card }: { card: SlpActionPreview }) {
+  if (card.action === "offer-brand-deal" && card.detail.brand)
+    return (
+      <span className="flex shrink-0 -space-x-2" aria-hidden="true">
+        {card.who.slice(0, 1).map((person) => (
+          <Avatar
+            key={person.id}
+            account={{ displayName: person.name, avatarUrl: person.avatarUrl }}
+            size="sm"
+            className="ring-2 ring-[var(--slurp-surface-raised)]"
+          />
+        ))}
+        <span className="rounded-full ring-2 ring-[var(--slurp-surface-raised)]" data-slp-stir-brand-logo>
+          <SlpStirBrandLogo name={String(card.detail.brand)} logoUrl={(card.detail.logoUrl as string | null) ?? null} />
+        </span>
+      </span>
+    );
   if (!card.who.length)
     return <SlpSparkleGlyph size={22} aria-hidden="true" className="shrink-0 text-[var(--slurp-ink)]" />;
   return (
@@ -165,7 +188,8 @@ export function SlpStirCard({ card, onRemove }: { card: SlpActionPreview; onRemo
         <Who card={card} />
         {/* The "what" line names them already; the avatars carry the names for screen readers. */}
         <p className={cn(SLP_TYPE.body, "min-w-0 flex-1 font-semibold [overflow-wrap:anywhere]")}>
-          {slpStirWhat(t, card)}
+          {/* A brand deal's fee is "25 <coin/>" (the one coin rule). */}
+          <SlpCoinText>{slpStirWhat(t, card)}</SlpCoinText>
         </p>
       </div>
       {onRemove && (

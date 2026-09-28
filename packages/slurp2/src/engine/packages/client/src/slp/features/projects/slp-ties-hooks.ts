@@ -63,6 +63,8 @@ export type SlurpTiesDeal = {
   markedAt?: string | null;
   /** An open offer: the brand's ad banner (Q), or its feed picture for an older ad. */
   bannerUrl?: string | null;
+  /** The brand's logo (R). */
+  logoUrl?: string | null;
 };
 export type SlurpTiesCoupleStage = "sparks" | "dating" | "together" | "rocky" | "split";
 export type SlurpTiesCouple = {

@@ -6,7 +6,6 @@ import {
   SLP_ACTION_META,
   SLP_ACTION_NAMES,
   SLP_ACTIONS,
-  SLP_STIR_SOON,
   type SlpStirWorld,
 } from "../../../../../shared/src/slp/slp-actions.js";
 import { SLP_STIR_STEPS_MAX, type SlpStirStep } from "../../../../../shared/src/slp/slp-stir.js";
@@ -15,6 +14,8 @@ export type SlpStirPlanContext = {
   text: string;
   creators: { id: string; name: string; handle: string; automatic: boolean }[];
   world: SlpStirWorld;
+  /** Switched-on brands and their live products, for offer-brand-deal (R). */
+  brands?: { id: string; name: string; products: { id: string; name: string }[] }[];
   /** The ✦ sheet's Creator: "she", "her" and a plan with no name mean them. */
   about?: { id: string; name: string } | null;
   /** The post the sheet came from, in its own words. */
@@ -44,7 +45,7 @@ export function buildSlpStirPlanMessages(context: SlpStirPlanContext) {
     "- Do only what the player asked. Do not add extra steps.",
     `- At most ${SLP_STIR_STEPS_MAX} steps.`,
     "- If it is unclear who is meant (two Creators could fit, or no one is named and nobody is in focus), ask one short question instead and give no steps.",
-    `- These are not possible yet: ${SLP_STIR_SOON.join(", ")} (brands arrive soon). For a brand deal, give that Creator an idea (add-idea) about the brand instead, and say in "cant" that brand deals arrive soon.`,
+    "- A brand deal (offer-brand-deal) names a brand or product from the Brands list; with none named, leave both out and the best fit is picked.",
     '- Something no action can do: say so in one short in-world line in "cant", and where it fits add the nearest action (often an idea for one Creator).',
     "- Ideas and chapters stay in the player's words and language, short.",
     '- A time ("this week", "tonight") does not change the action; plays start now and the Creators pace them.',
@@ -72,6 +73,9 @@ export function buildSlpStirPlanMessages(context: SlpStirPlanContext) {
       : "",
     world.storylines.length
       ? `# Running storylines\n${world.storylines.map((story) => `- ${story.projectId} (${who(story.accountId)}, accountId ${story.accountId}): "${line(story.title)}", now: ${line(story.chapter)}${story.held ? " (held)" : ""}`).join("\n")}`
+      : "",
+    context.brands?.length
+      ? `# Brands\n${context.brands.map((brand) => `- ${brand.id}: ${line(brand.name)} (products: ${brand.products.map((product) => `${product.id} ${line(product.name)}`).join(", ")})`).join("\n")}`
       : "",
   ].filter(Boolean);
   const user = [

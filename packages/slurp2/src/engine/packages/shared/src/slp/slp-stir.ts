@@ -26,7 +26,11 @@ export type SlpStirNote = {
     | "ideasFull"
     | "capped"
     | "alreadyRunning"
-    | "notAutomatic";
+    | "notAutomatic"
+    // Brand deals (R): the product is spicier than the page, the Creator dislikes ads, not their thing.
+    | "spice"
+    | "noAds"
+    | "offBrand";
   name?: string;
 };
 

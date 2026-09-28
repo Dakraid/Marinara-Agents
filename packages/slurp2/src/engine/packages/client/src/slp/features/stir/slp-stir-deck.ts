@@ -7,6 +7,7 @@ import {
   Megaphone,
   PartyPopper,
   PenLine,
+  ShoppingBag,
   Snowflake,
   Store,
   SunMoon,
@@ -32,6 +33,7 @@ const ICONS: Partial<Record<SlpActionName, LucideIcon>> = {
   "couple-page": Store,
   "suggest-collab": Handshake,
   "push-collab": Zap,
+  "offer-brand-deal": ShoppingBag,
   "start-rivalry": Flame,
   "cool-rivalry": Snowflake,
   "add-idea": Lightbulb,
@@ -71,6 +73,7 @@ export const SLP_STIR_DECK_ORDER: SlpActionName[] = [
   "couple-page",
   "suggest-collab",
   "push-collab",
+  "offer-brand-deal",
   "start-rivalry",
   "cool-rivalry",
   "add-idea",
@@ -80,9 +83,4 @@ export const SLP_STIR_DECK_ORDER: SlpActionName[] = [
   "start-event",
   "steer-storyline",
   "run-audience",
-];
-
-/** A card that waits for another slice (brands and products, R): shown as "soon", not playable. */
-export const SLP_STIR_SOON_CARDS: { id: string; category: SlpStirCategory; icon: LucideIcon }[] = [
-  { id: "brand-deal", category: "work", icon: Store },
 ];

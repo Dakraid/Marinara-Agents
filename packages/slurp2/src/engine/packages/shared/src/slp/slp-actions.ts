@@ -276,9 +276,9 @@ export const SLP_ACTIONS = {
   // ─── Brands (R). `offer-brand-deal` is the Stir lever "give <Creator> a deal with <brand / product>". ──
   "list-brands": {
     summary:
-      "List the brands that can sponsor Creators and their products (ids, name, one-line pitch, spice fit). Changes nothing.",
-    inputs: {},
-    schema: z.object({}).strict(),
+      "List the brands that can sponsor Creators and their products (ids, name, one-line pitch, spice fit). With accountId, each product also says whether it fits that Creator. Changes nothing.",
+    inputs: { accountId: "A Creator, to mark which products fit them (optional)." },
+    schema: z.object({ accountId: accountId.optional() }).strict(),
   },
   "offer-brand-deal": {
     summary:
@@ -353,17 +353,22 @@ export type SlpActionResult = {
       id: string;
       name: string;
       category: string;
-      products: { id: string; name: string; pitch: string; spice: string }[];
+      logoUrl: string | null;
+      /** `fit` only with an accountId: fits, spice (spicier than their page), offBrand (not their thing). */
+      products: { id: string; name: string; pitch: string; spice: string; fit?: SlpBrandFit }[];
     }[];
   };
   "offer-brand-deal": { dealId: string | null; preview: SlpBrandDealPreview };
   "draw-brand-picture": { image: string; prompt: string };
 };
 
+/** Whether a product fits a Creator (the Stir brand picker): both spice and brand words, R's two fit rules. */
+export type SlpBrandFit = "fits" | "spice" | "offBrand";
+
 /**
  * What `offer-brand-deal` would do (R). Shaped like a Stir preview card (who, detail, notes, error,
  * when, refusable, summary), so Stir can show it as one. `notes[].kind`: notAutomatic (the player's
- * own page answers in Studio), spice (the product is spicier than the page), noAds / offBrand (the
+ * own page answers in the Dashboard), spice (the product is spicier than the page), noAds / offBrand (the
  * card will likely say no), mayDecline. `error`: notFound, noProduct, busy (an offer is open), adsOff.
  */
 export type SlpBrandDealPreview = {
@@ -375,6 +380,7 @@ export type SlpBrandDealPreview = {
     brandId: string | null;
     fee: number | null;
     pitch: string | null;
+    logoUrl: string | null;
   };
   notes: { kind: string; name: string }[];
   error: "notFound" | "noProduct" | "busy" | "adsOff" | null;
@@ -443,15 +449,23 @@ export const SLP_ACTION_META: Record<
   },
   "run-audience": { category: "world", targets: "none", reversible: false, ai: true, refusable: false, deck: true },
   "list-brands": { category: "help", targets: "none", reversible: false, ai: false, refusable: false, deck: false },
-  "draw-brand-picture": { category: "help", targets: "none", reversible: false, ai: true, refusable: false, deck: false },
-  "offer-brand-deal": { category: "work", targets: "creator", reversible: false, ai: false, refusable: true, deck: true },
+  "draw-brand-picture": {
+    category: "help",
+    targets: "none",
+    reversible: false,
+    ai: true,
+    refusable: false,
+    deck: false,
+  },
+  "offer-brand-deal": {
+    category: "work",
+    targets: "creator",
+    reversible: false,
+    ai: false,
+    refusable: true,
+    deck: true,
+  },
 };
-
-/**
- * Levers the concept names that wait for another slice. The planner is told they are not there yet,
- * and the deck shows them as "soon" cards. `offer-brand-deal` needs brands and products (slice R).
- */
-export const SLP_STIR_SOON = ["offer-brand-deal"] as const;
 
 /** The catalog without the schemas: what a helper reads to know what it can ask Slurp to do. */
 export function slpActionCatalog() {

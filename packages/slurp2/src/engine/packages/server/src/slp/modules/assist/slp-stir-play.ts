@@ -1,12 +1,7 @@
 // Stir's plays, the pure half (W): which steps are plays at all, and "Do it" as a loop over exactly the
 // steps the player saw. The runner is passed in, so the rule runs in tests; the service passes the
 // action layer's one runner.
-import {
-  isSlpActionName,
-  SLP_ACTION_META,
-  SLP_STIR_SOON,
-  type SlpActionName,
-} from "../../../../../shared/src/slp/slp-actions.js";
+import { isSlpActionName, SLP_ACTION_META, type SlpActionName } from "../../../../../shared/src/slp/slp-actions.js";
 import type { SlpStirPlay, SlpStirStep } from "../../../../../shared/src/slp/slp-stir.js";
 
 /** A step Stir may run: a deck lever. Writing help and pictures stay in their own fields. */
@@ -14,8 +9,8 @@ export const isSlpStirPlayAction = (name: string): name is SlpActionName =>
   isSlpActionName(name) && SLP_ACTION_META[name].deck;
 
 /**
- * Split steps into plays and the plain-words reasons the rest cannot happen. A brand deal waits for
- * brands (slice R); an unknown name is said, never dropped in silence.
+ * Split steps into plays and the plain-words reasons the rest cannot happen. An unknown name is said,
+ * never dropped in silence.
  */
 export function slpSortStirSteps(steps: readonly SlpStirStep[]): {
   plays: { action: SlpActionName; input: Record<string, unknown> }[];
@@ -24,8 +19,7 @@ export function slpSortStirSteps(steps: readonly SlpStirStep[]): {
   const plays: { action: SlpActionName; input: Record<string, unknown> }[] = [];
   const cant: string[] = [];
   for (const step of steps) {
-    if ((SLP_STIR_SOON as readonly string[]).includes(step.action)) cant.push("Brand deals arrive soon.");
-    else if (isSlpStirPlayAction(step.action)) plays.push({ action: step.action, input: step.input });
+    if (isSlpStirPlayAction(step.action)) plays.push({ action: step.action, input: step.input });
     else cant.push(`Slurp cannot do "${step.action}" yet.`);
   }
   return { plays, cant };

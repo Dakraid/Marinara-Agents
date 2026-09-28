@@ -23,7 +23,7 @@ import {
   slurpDealReceipt,
 } from "../../modules/economy/slp-brand-deals.js";
 import { loadSlurpTieCreators, slurpRunsItself } from "./slp-creator-ties-service.js";
-import { createGarnishAds, type GarnishAd } from "../ads/slp-ads-contract.js";
+import { createGarnishAds, garnishAdBrandId, type GarnishAd, type GarnishBrand } from "../ads/slp-ads-contract.js";
 import {
   slurpCoupleActive,
   slurpIsCouplePage,
@@ -66,13 +66,18 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
   const personaSchema = z.object({ personaId: z.string().trim().min(1) });
 
   async function view(viewer: NonNullable<Awaited<ReturnType<typeof resolveViewerPersona>>>) {
-    const [{ ties, deals, couples }, accounts, ads] = await Promise.all([
+    const { pool } = createGarnishAds(app.db);
+    const [{ ties, deals, couples }, accounts, ads, brands] = await Promise.all([
       readSlurpCreatorTiesDocument(app.db),
       noodle.listNoodlerAccounts(),
-      createGarnishAds(app.db).pool.listAll("slurp"),
+      pool.listAll("slurp"),
+      pool.listBrands("slurp"),
     ]);
     // Q: an open offer shows the brand's 1.91:1 banner (the feed picture for an older ad).
     const bannerOf = new Map(ads.map((ad: GarnishAd) => [ad.id, ad.wideImageUrl || ad.imageUrl || null]));
+    // R: every offer card wears its brand's logo.
+    const logos = new Map(brands.map((brand: GarnishBrand) => [brand.id, brand.logoUrl ?? null]));
+    const logoOf = new Map(ads.map((ad: GarnishAd) => [ad.id, logos.get(garnishAdBrandId(ad)) ?? null]));
     const newest = <T>(list: T[], at: (entry: T) => string) =>
       [...list].sort((left, right) => at(right).localeCompare(at(left))).slice(0, RECENT);
     return {
@@ -118,6 +123,7 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
         ...deal,
         owesPost: slurpDealOwesPost(deal, new Date()),
         bannerUrl: deal.status === "offered" ? (bannerOf.get(deal.adId) ?? null) : null,
+        logoUrl: logoOf.get(deal.adId) ?? null,
       })),
       blocked: ties.blocked,
     };

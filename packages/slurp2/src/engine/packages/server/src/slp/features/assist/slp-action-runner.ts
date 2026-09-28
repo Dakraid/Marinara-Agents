@@ -148,7 +148,7 @@ async function dispatch(
         : { ok: false, status: 409, error: "That is plenty of ideas for now. Let one go out first." };
     }
     case "list-brands":
-      return { ok: true, value: await listSlurpBrandCatalog(db) };
+      return { ok: true, value: await listSlurpBrandCatalog(db, (input as SlpActionParsed<"list-brands">).accountId) };
     case "offer-brand-deal": {
       const { preview: dryRun, ...lever } = input as SlpActionParsed<"offer-brand-deal">;
       const outcome = await slurpBrandDealLever(db, lever, !dryRun);

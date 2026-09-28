@@ -45,6 +45,8 @@ export type SlurpDealAd = {
   tone?: string;
   look?: string;
   rating?: SlurpDealRating;
+  /** The brand's logo (served URL), for the Stir card. */
+  logoUrl?: string;
 };
 
 export type SlurpDealRating = "tame" | "suggestive" | "explicit";

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../../lib/api-client";
 import { slpKeys } from "../../base/state/slp-query-keys";
+import type { SlpActionResult } from "../../../../../shared/src/slp/slp-actions.js";
 import type {
   SlpActionPreview,
   SlpStirOrigin,
@@ -56,4 +57,14 @@ export function useSlurpStirPlay() {
       onSuccess: refresh,
     }),
   };
+}
+
+/** Brands and products for the brand deal card (R), each product marked with its fit for this Creator. */
+export function useSlurpStirBrands(accountId: string | null) {
+  return useQuery({
+    queryKey: [...slpKeys.noodlerRoot(), "stir", "brands", accountId ?? "none"] as const,
+    enabled: Boolean(accountId),
+    queryFn: () =>
+      api.post<SlpActionResult["list-brands"]>("/slurp2/slurp/actions/list-brands", { accountId: accountId! }),
+  });
 }

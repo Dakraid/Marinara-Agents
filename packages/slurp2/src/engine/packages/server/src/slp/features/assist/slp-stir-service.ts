@@ -23,7 +23,7 @@ import { slurpDealOwesPost } from "../../modules/economy/slp-brand-deals.js";
 import { buildSlpStirPlanMessages, readSlpStirPlanAnswer } from "../../modules/assist/slp-stir-plan.js";
 import { slpStirLive, slpStirSuggestions } from "../../modules/assist/slp-stir-live.js";
 import { slpRunStirSteps, slpSortStirSteps } from "../../modules/assist/slp-stir-play.js";
-import { slurpIsCouplePage, slurpRunsItself } from "../projects/slp-projects-contract.js";
+import { listSlurpBrandCatalog, slurpIsCouplePage, slurpRunsItself } from "../projects/slp-projects-contract.js";
 import { previewSlpAction } from "./slp-action-preview.js";
 import { runSlpActionWithUndo } from "./slp-action-runner.js";
 import { readSlpStirWorld, undoSlpAction, type SlpActionUndo } from "./slp-stir-levers.js";
@@ -82,7 +82,7 @@ export async function planSlpStir(
   const accounts = (await storage.listNoodlerAccounts()) as Account[];
   const about = request.creatorId ? accounts.find((account) => account.id === request.creatorId) : null;
   const post = request.postId ? await storage.getPostById(request.postId) : null;
-  const world = await readSlpStirWorld(db);
+  const [world, catalog] = await Promise.all([readSlpStirWorld(db), listSlurpBrandCatalog(db)]);
   if (!(await claimSlurpModelBudget(db, settings.modelBudget, "plan")))
     return { ok: false, status: 429, error: "Today's AI budget for plans is used up. The cards still work." };
   const provider = slpWithProviderRetry(
@@ -108,6 +108,7 @@ export async function planSlpStir(
         automatic: slurpRunsItself(account),
       })),
       world,
+      brands: catalog.brands,
       about: about ? { id: about.id, name: about.displayName } : null,
       post: post ? { id: post.id, caption: String((post as { content?: unknown }).content ?? "") } : null,
     }),

@@ -25,7 +25,7 @@ import { useSlurpStir, useSlurpStirPreview } from "./slp-stir-hooks";
 import { SlpStirBox } from "./SlpStirBox";
 import { SlpStirPlanSheet } from "./SlpStirCards";
 import { SlpStirPlaySheet } from "./SlpStirPlaySheet";
-import { SLP_STIR_DECK, SLP_STIR_DECK_ORDER, SLP_STIR_SOON_CARDS } from "./slp-stir-deck";
+import { SLP_STIR_DECK, SLP_STIR_DECK_ORDER } from "./slp-stir-deck";
 
 const HINT_KEY = "slurp2:stir-hint-seen";
 
@@ -194,7 +194,6 @@ function Deck({ onPick }: { onPick: (action: SlpActionName) => void }) {
   const { t } = useTranslation();
   const [category, setCategory] = useState<SlpStirCategory>("love");
   const cards = SLP_STIR_DECK_ORDER.filter((action) => SLP_STIR_DECK[action].category === category);
-  const soon = SLP_STIR_SOON_CARDS.filter((card) => card.category === category);
   return (
     <section aria-labelledby="slp-stir-deck" className="space-y-3">
       <h2 id="slp-stir-deck" className={cn(SLP_TYPE.title, "px-1")}>
@@ -239,32 +238,6 @@ function Deck({ onPick }: { onPick: (action: SlpActionName) => void }) {
                   {t(`ui.slurp.stir.card.${action}.line`)}
                 </span>
               </button>
-            </li>
-          );
-        })}
-        {soon.map((card) => {
-          const Icon = card.icon;
-          return (
-            <li key={card.id}>
-              <div
-                aria-disabled="true"
-                className="flex h-full min-h-32 flex-col items-start gap-2 rounded-2xl p-3.5 ring-1 ring-inset ring-dashed ring-[var(--noodle-divider)]"
-              >
-                <span className="flex w-full items-start justify-between gap-2">
-                  <span className="flex size-10 items-center justify-center rounded-2xl text-[var(--slurp-muted)] ring-1 ring-inset ring-[var(--noodle-divider)] [&_svg]:!text-current">
-                    <Icon size={20} aria-hidden="true" />
-                  </span>
-                  <span className="rounded-full bg-[var(--accent)] px-2 py-0.5 text-[11px] font-semibold text-[var(--slurp-muted)]">
-                    {t("ui.slurp.stir.soon")}
-                  </span>
-                </span>
-                <span className={cn(SLP_TYPE.body, "font-bold text-[var(--slurp-muted)]")}>
-                  {t(`ui.slurp.stir.soonCard.${card.id}.title`)}
-                </span>
-                <span className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>
-                  {t(`ui.slurp.stir.soonCard.${card.id}.line`)}
-                </span>
-              </div>
             </li>
           );
         })}

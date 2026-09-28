@@ -116,6 +116,8 @@ async function main() {
       "add-idea",
       "cool-rivalry",
       "couple-page",
+      // Merge R × W (on purpose): R's brand deal lever is a work card now, no longer "soon".
+      "offer-brand-deal",
       "push-collab",
       "run-audience",
       "set-spice",
@@ -267,7 +269,9 @@ async function main() {
     const user = messages[1]!.content;
     assert.match(system, /Answer with JSON only/u);
     assert.match(system, /never invent one/u);
-    assert.match(system, /offer-brand-deal/u, "brand deals are named as not possible yet (slice R hook)");
+    // Merge R × W (on purpose): brand deals are a real lever now; the planner is told how to name one.
+    assert.match(system, /offer-brand-deal/u, "the planner knows how a brand deal names its brand");
+    assert.match(user, /- offer-brand-deal: /u, "brand deals are offered like every deck lever");
     assert.match(user, /- set-up-couple: /u, "deck levers are offered");
     assert.doesNotMatch(user, /- write-text: |- draw-picture: /u, "writing help and pictures are not plays");
     assert.match(user, /- mira: Mira \(@mira\)/u);
@@ -284,12 +288,12 @@ async function main() {
     assert.equal(answer.steps.length, 4);
     assert.deepEqual(answer.cant, ["Frogs cannot rain yet."]);
     const sorted = slpSortStirSteps(answer.steps);
-    assert.deepEqual(sorted.plays, [{ action: "set-up-couple", input: { aId: "mira", bId: "kai" } }]);
-    assert.deepEqual(sorted.cant, [
-      "Brand deals arrive soon.",
-      'Slurp cannot do "write-text" yet.',
-      'Slurp cannot do "make-it-rain" yet.',
+    // Merge R × W (on purpose): the brand deal step is a play now, not a "soon" line.
+    assert.deepEqual(sorted.plays, [
+      { action: "set-up-couple", input: { aId: "mira", bId: "kai" } },
+      { action: "offer-brand-deal", input: { accountId: "mira" } },
     ]);
+    assert.deepEqual(sorted.cant, ['Slurp cannot do "write-text" yet.', 'Slurp cannot do "make-it-rain" yet.']);
     // The plan's one card is the preview of that step.
     const card = slurpPreviewTieLever(world(), "set-up-couple", sorted.plays[0]!.input, AT);
     assert.equal(card.error, null);
@@ -566,7 +570,8 @@ async function main() {
   ])
     assert.ok(routes.includes(route), route);
   assert.match(server("slp-server-entry.ts"), /await slpStirRoutes\(app, deps\);/u);
-  assert.match(shared("slp-actions.ts"), /export const SLP_STIR_SOON = \["offer-brand-deal"\] as const;/u);
+  // Merge R × W (on purpose): the "soon" hook is gone; the brand deal is a deck card with a preview.
+  assert.doesNotMatch(shared("slp-actions.ts"), /SLP_STIR_SOON/u);
 }
 
 void main().then(

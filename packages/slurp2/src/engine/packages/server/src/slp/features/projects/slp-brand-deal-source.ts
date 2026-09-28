@@ -1,7 +1,6 @@
 /**
  * Brands and their products as brand deals and the Stir lever see them (R): live products of
- * switched-on brands with their brand's category and voice, each Creator's spice level, and the
- * catalog a helper picks from.
+ * switched-on brands with their brand's category and voice, and each Creator's spice level.
  */
 import type { DB } from "../../../db/connection.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
@@ -33,6 +32,7 @@ export async function loadSlurpDealAds(db: DB, settings: Settings): Promise<Slur
         ...(brand?.category ? { brandCategory: brand.category } : {}),
         ...(brand?.tone ? { tone: brand.tone } : {}),
         ...(ad.look ? { look: ad.look } : {}),
+        ...(brand?.logoUrl ? { logoUrl: brand.logoUrl } : {}),
       };
     });
 }
@@ -49,25 +49,4 @@ export async function loadSlurpDealSpice(db: DB): Promise<Map<string, SlurpDealS
     }),
   );
   return new Map(levels.filter((entry): entry is readonly [string, SlurpDealSpice] => Boolean(entry[1])));
-}
-
-/** The brands a helper can name (the `list-brands` action): switched-on brands and their live products. */
-export async function listSlurpBrandCatalog(db: DB) {
-  const settings = await createSlurpStorage(db).getSettings();
-  const { pool } = createGarnishAds(db);
-  const [brands, ads] = await Promise.all([pool.listBrands("slurp"), loadSlurpDealAds(db, settings)]);
-  return {
-    adsOn: settings.inlineAdsEnabled,
-    brands: brands
-      .filter((brand) => !brand.disabledAt)
-      .map((brand) => ({
-        id: brand.id,
-        name: brand.name,
-        category: brand.category,
-        products: ads
-          .filter((ad) => ad.brandId === brand.id)
-          .map((ad) => ({ id: ad.id, name: ad.product, pitch: ad.copy, spice: ad.rating ?? "tame" })),
-      }))
-      .filter((brand) => brand.products.length > 0),
-  };
 }

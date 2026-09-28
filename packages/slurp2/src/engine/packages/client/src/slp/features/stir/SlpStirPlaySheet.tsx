@@ -20,6 +20,7 @@ import { SlpTextAssist } from "../assist/slp-assist-contract";
 import { useSlurpStirPreview } from "./slp-stir-hooks";
 import { SlpStirCard, useSlpStirDoIt } from "./SlpStirCards";
 import { SLP_STIR_DECK } from "./slp-stir-deck";
+import { SlpStirBrandPick } from "./SlpStirBrandPick";
 
 const inputClass = `min-h-11 w-full rounded-xl bg-[var(--slurp-canvas)] px-3 text-base ring-1 ring-inset ring-[var(--slurp-outline)] sm:text-sm ${focusRing}`;
 
@@ -188,6 +189,8 @@ function stepOf(action: SlpActionName, form: Form): Record<string, unknown> | nu
       return two?.length === 2 ? { aId: two[0], bId: two[1] } : null;
     case "suggest-collab":
       return two?.length === 2 ? { aId: two[0], bId: two[1], happen: form.happen === true } : null;
+    case "offer-brand-deal":
+      return one && form.pick ? { accountId: one, productId: form.pick, happen: form.happen === true } : null;
     case "start-rivalry":
       return two?.length === 2 ? { fromId: two[0], toId: two[1], ...(text ? { cause: text } : {}) } : null;
     case "steer-couple":
@@ -291,7 +294,7 @@ export function SlpStirPlaySheet({
         label={t("ui.slurp.stir.form.who")}
         creators={needsAutomatic.has(action) ? creators.filter((creator) => creator.automatic) : creators}
         picked={picked}
-        onPick={(ids) => set({ who: ids })}
+        onPick={(ids) => set(action === "offer-brand-deal" ? { who: ids, pick: null } : { who: ids })}
       />,
     );
   if (deck.targets === "pair")
@@ -365,6 +368,17 @@ export function SlpStirPlaySheet({
         />,
       );
       break;
+    case "offer-brand-deal":
+      if (picked[0])
+        body.push(
+          <SlpStirBrandPick
+            key="pick"
+            accountId={picked[0]}
+            value={(form.pick as string) ?? null}
+            onChange={(pick) => set({ pick })}
+          />,
+        );
+    // falls through: a deal can be pushed like a collab ("Make it happen").
     case "suggest-collab":
       body.push(
         <div key="happen" className="space-y-1">

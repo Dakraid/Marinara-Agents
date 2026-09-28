@@ -580,9 +580,19 @@ export function SlpBrandOffers({ personaId, creatorId }: { personaId: string; cr
                     />
                   </div>
                 )}
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className={cn(SLP_TYPE.body, "min-w-0 font-semibold [overflow-wrap:anywhere]")}>
-                    {t("ui.slurp.ties.offerTitle", { brand: deal.brand, product: deal.product })}
+                <div className="flex items-center justify-between gap-3">
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    {/* R: the brand's logo, or its initials (the feed ad's avatar). */}
+                    <Avatar
+                      account={{
+                        displayName: deal.brand.split(/\s+/u).slice(0, 2).join(" "),
+                        avatarUrl: deal.logoUrl ?? null,
+                      }}
+                      size="sm"
+                    />
+                    <span className={cn(SLP_TYPE.body, "min-w-0 font-semibold [overflow-wrap:anywhere]")}>
+                      {t("ui.slurp.ties.offerTitle", { brand: deal.brand, product: deal.product })}
+                    </span>
                   </span>
                   <span className={cn(SLP_TYPE.body, "shrink-0 font-bold tabular-nums")}>
                     <SlpCoinText>{t("ui.slurp.ties.fee", { count: deal.fee })}</SlpCoinText>
