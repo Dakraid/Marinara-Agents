@@ -1,6 +1,8 @@
 import { SlpBootstrap } from "../../../../../shared/src/slp/slp-social.types.js";
 import { z } from "zod";
-import { slpArcBlueprintSchema } from "../../../../../shared/src/slp/slp-story-engine.js";
+import { slpArcBlueprintSchema, type SlpArcBlueprint } from "../../../../../shared/src/slp/slp-story-engine.js";
+
+const SLURP_ARC_LIBRARY_MAX = 200;
 import {
   LEGACY_SLURP_DISCOVERY_TAG_SEED,
   SLURP_DISCOVERY_TAG_MAX_LENGTH,
@@ -44,7 +46,10 @@ import {
   slurpNormalizePlatformEvents,
   slurpPlatformEventsDefault,
   slurpPlatformEventsSchema,
+  SLURP_PLATFORM_EVENTS_MAX,
+  type SlurpPlatformEvent,
 } from "../../../../../shared/src/slp/slp-platform-events.js";
+import { readSlurpContentPackToggles, slurpApplyContentPacks } from "../world/events/slp-content-packs.js";
 import { slurpNormalizeReactionBanks, SlurpReactionBanks } from "../world/slp-reaction-bank.js";
 import { slurpModelBudgetSchema } from "../../../../../shared/src/slp/slp-model-budget.js";
 import { DEFAULT_SLP_CREATOR_REPLIES_PER_24_HOURS } from "../../../../../shared/src/slp/slp-social.schema.js";
@@ -140,7 +145,9 @@ export const slurpSettingsSchema = z.object({
   /** Default event behavior. Imported blueprints inherit this safe suggestion policy. */
   storyAutomation: z.enum(["manual", "suggest", "auto"]),
   /** Arc types Slurp and the player start arcs from. Replaces the v1 `arcAllowedKinds`. */
-  arcLibrary: z.array(slpArcBlueprintSchema).max(200),
+  arcLibrary: z.array(slpArcBlueprintSchema).max(SLURP_ARC_LIBRARY_MAX),
+  /** Content packs switched on or off (Backstage › Packs). A pack missing here uses its default. */
+  contentPacks: z.record(z.string(), z.boolean()),
   /** The curated Discover tags and the group each is shown under. Creators may still carry custom tags. */
   discoveryTags: z
     .array(
@@ -481,6 +488,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   arcCrossovers: true,
   storyAutomation: "suggest",
   arcLibrary: slurpArcLibraryFromLegacy(undefined),
+  contentPacks: {},
   // 4:5. The composer crops an uploaded Story to whatever ratio is configured here, so the two
   // halves of the feature stay one shape.
   storyImageWidth: 1024,
@@ -706,6 +714,15 @@ function normalizeSlurpSettingsUncached(raw: unknown): SlurpSettings {
       ? DEFAULT_SLURP_SETTINGS.discoveryTags
       : (rawRecord.discoveryTags ?? DEFAULT_SLURP_SETTINGS.discoveryTags);
   candidate.arcLibrary = slurpNormalizeArcLibrary(rawRecord.arcLibrary, rawRecord.arcAllowedKinds);
+  // Packs that are on join both libraries, packs that are off leave them (Backstage › Packs).
+  candidate.contentPacks = readSlurpContentPackToggles(rawRecord.contentPacks);
+  ({ arcs: candidate.arcLibrary, events: candidate.platformEvents } = slurpApplyContentPacks({
+    arcs: candidate.arcLibrary as SlpArcBlueprint[],
+    events: candidate.platformEvents as SlurpPlatformEvent[],
+    toggles: candidate.contentPacks as Record<string, boolean>,
+    maxArcs: SLURP_ARC_LIBRARY_MAX,
+    maxEvents: SLURP_PLATFORM_EVENTS_MAX,
+  }));
   candidate.onboarding = rawRecord.onboarding ?? DEFAULT_SLURP_SETTINGS.onboarding;
   candidate.fanArchetypeWeights = {
     ...DEFAULT_SLURP_SETTINGS.fanArchetypeWeights,

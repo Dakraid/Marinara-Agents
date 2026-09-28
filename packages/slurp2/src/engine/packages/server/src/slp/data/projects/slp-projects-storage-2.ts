@@ -23,6 +23,7 @@ import {
 } from "../../modules/projects/slp-arc-library.js";
 import { isSlurpCrossover } from "../../modules/projects/slp-project.js";
 import { readSlurpCreatorFitText } from "../creators/slp-flavour-source.js";
+import { resolveSlurpCreatorSpice } from "../creators/slp-spice-storage.js";
 import {
   slurpCrossoverPartner,
   slurpCrossoverStart,
@@ -127,6 +128,8 @@ export function createProjectsStorage2(context: SlurpStorageContext) {
       const creatorText = creator
         ? await readSlurpCreatorFitText(db, { account: creator, source: await this.resolveAccountSource(creator) })
         : "";
+      // Content-pack storylines also go by the Creator's spice level and hard noes.
+      const creatorSpice = creator ? await resolveSlurpCreatorSpice(db, creator).catch(() => undefined) : undefined;
       const roll = async (source = config.source) => {
         const projects = await this.listProjects(creatorAccountId);
         // ponytail: reads every Creator's projects per roll (O(n²) per maintenance tick); pass the count in from the world tick if Creator counts grow large.
@@ -148,6 +151,7 @@ export function createProjectsStorage2(context: SlurpStorageContext) {
           maxConcurrentAuto: settings.arcMaxConcurrentAuto,
           source,
           creatorText,
+          creatorSpice,
         });
         return { pick, projects };
       };

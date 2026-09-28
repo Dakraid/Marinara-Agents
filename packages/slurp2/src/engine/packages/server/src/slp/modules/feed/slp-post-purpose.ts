@@ -67,7 +67,7 @@ export type SlurpPostPurposeFacts = {
   storyline?: boolean;
 };
 
-const THANKS_LIFE = /^life:(milestone|viral|fan-gift)/u;
+const THANKS_LIFE = /^(life:(milestone|viral|fan-gift)|occasion:first-1k-subs)/u;
 
 /** Every feed post gets one reason. Follow-through first, then the reason the beat carries, then daily life. */
 export function slurpPostPurpose(facts: SlurpPostPurposeFacts): SlpPurpose {
