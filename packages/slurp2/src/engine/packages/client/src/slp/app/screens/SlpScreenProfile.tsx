@@ -243,7 +243,6 @@ export function StageProfileView({
     profileBannerFileRef,
     setArtworkKind,
     setOpenImagePostId,
-    setArtworkGuidance,
     activeTab,
     setActiveTab,
     subscribersQuery,
@@ -309,10 +308,7 @@ export function StageProfileView({
               },
             );
           },
-          onGenerate: () => {
-            setArtworkGuidance("");
-            setArtworkKind("banner");
-          },
+          onGenerate: () => setArtworkKind("banner"),
         }}
         avatarUpload={{
           canEdit: editing,
@@ -329,10 +325,7 @@ export function StageProfileView({
               },
             );
           },
-          onGenerate: () => {
-            setArtworkGuidance("");
-            setArtworkKind("avatar");
-          },
+          onGenerate: () => setArtworkKind("avatar"),
         }}
         editor={{
           isEditing: editing,
@@ -498,9 +491,7 @@ export function StageProfileView({
           onClearDraft={model.onClearDraft}
           onDiscardDraft={model.onDiscardDraft}
           onManualPost={model.onManualPost}
-          onGuidedPost={model.onGuidedPost}
           manualPending={model.manualPending}
-          guidePending={model.guidePending}
         />
       )}
     </>

@@ -11,7 +11,7 @@ import {
 } from "../../../../../shared/src/slp/slp-fan-types.js";
 import { api } from "../../../lib/api-client";
 import { Field, NumberSetting, SectionTitle, SettingsGroup, Toggle } from "../../modules/settings/SlpSettingsControls";
-import { noteSlpAiUseOnce, SlpUsesAiMark } from "../../modules/chrome/SlpAiMark";
+import { SlpTextAssist, type SlpTextAssistRun } from "../assist/slp-assist-contract";
 
 type RebalancePreview = { changed: number; counts: Record<string, { before: number; after: number }> };
 
@@ -126,33 +126,20 @@ export function SlurpFanTypesSettings({
     const original = slurpFanTypesDefault().find((type) => type.id === selected.id);
     if (original && (await onSave(replace(original)))) setDraft(clone(original));
   };
-  const [voiceBusy, setVoiceBusy] = useState(false);
-  // "Draft voice": the model writes the voice from the name, archetype, traits and tone (R1-107).
-  const draftVoice = async () => {
-    if (!draft) return;
-    noteSlpAiUseOnce(t);
-    setVoiceBusy(true);
-    try {
-      const { name, engineArchetype, traits, tone, voice } = draft;
-      const result = await api.post<{ voice: string }>("/slurp2/fan-types/voice-draft", {
-        name,
-        engineArchetype,
-        traits,
-        tone,
-        voice,
-      });
-      // Onto the latest draft: an edit to another field during the call is kept.
-      setDraft((current) => (current ? { ...current, voice: result.voice } : current));
-    } catch (error) {
-      toast.error(
-        errorMessage(
-          error,
-          t("ui.slurp.settings.fanTypes.voiceDraftFailed", { defaultValue: "Could not draft a voice." }),
-        ),
-      );
-    } finally {
-      setVoiceBusy(false);
-    }
+  // The fan type's own writer (R1-107), behind the shared assist: Write from the name, archetype,
+  // traits and tone, or Improve the voice as it stands, with the player's note.
+  const draftVoice: SlpTextAssistRun = async ({ mode, note }) => {
+    if (!draft) return "";
+    const { name, engineArchetype, traits, tone, voice } = draft;
+    const result = await api.post<{ voice: string }>("/slurp2/fan-types/voice-draft", {
+      name,
+      engineArchetype,
+      traits,
+      tone,
+      voice: mode === "improve" ? voice : "",
+      ...(note ? { note } : {}),
+    });
+    return result.voice;
   };
   const previewRebalance = async () => {
     setRebalanceBusy(true);
@@ -361,17 +348,15 @@ export function SlurpFanTypesSettings({
                 maxLength={600}
                 onChange={(event) => set("voice", event.target.value)}
               />
-              <button
-                type="button"
-                className={`${button} mt-2`}
-                disabled={voiceBusy || !draft.name.trim()}
-                onClick={() => void draftVoice()}
-              >
-                {voiceBusy
-                  ? t("ui.slurp.settings.fanTypes.voiceDrafting", { defaultValue: "Writing…" })
-                  : t("ui.slurp.settings.fanTypes.voiceDraft", { defaultValue: "Draft voice" })}
-                <SlpUsesAiMark className="ms-1.5" />
-              </button>
+              <div className="mt-1 flex flex-wrap items-center">
+                <SlpTextAssist
+                  field="voice"
+                  value={draft.voice}
+                  disabled={!draft.name.trim()}
+                  run={draftVoice}
+                  onApply={(text) => set("voice", text)}
+                />
+              </div>
             </Field>
             <Field
               label={t("ui.slurp.settings.fanTypes.traits", { defaultValue: "Traits" })}

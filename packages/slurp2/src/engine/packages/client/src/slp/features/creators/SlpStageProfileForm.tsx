@@ -8,7 +8,7 @@ import { SLP_MOTION } from "../../base/chrome/slp-motion";
 import type { SlpCreatorStageProfile, SlpIdentityDisclosure } from "../../../../../shared/src/slp/slp-social.types.js";
 import type { SlurpStageProfileInput } from "../../base/state/slp-state-types";
 import { getSlpAccentStyle, SLP_PINK, ProfileInitial } from "../../base/chrome/SlpChrome";
-import { SlurpStageFactsFields } from "./SlpStageFactsFields";
+import { SlpAssistedField, SlurpStageFactsFields } from "./SlpStageFactsFields";
 import { isSlurpDiscoveryProfileIncomplete, SlurpDiscoveryProfileEditor } from "../discovery/slp-discovery-contract";
 import { fieldClass, textareaClass } from "../../modules/post/SlpPostHelpers";
 import { cn } from "../../../lib/utils";
@@ -543,9 +543,16 @@ export function StageProfileForm({
                 />
               </span>
             </label>
-            <label className="block space-y-1">
-              <span className="text-xs font-semibold">{localizeUi("ui.noodle.noodleprofilesurface.bio")}</span>
+            <SlpAssistedField
+              label={localizeUi("ui.noodle.noodleprofilesurface.bio")}
+              field="bio"
+              value={draft.bio}
+              accountId={isEditing ? accentId : undefined}
+              context={draft.displayName}
+              onApply={(bio) => onChange({ bio })}
+            >
               <textarea
+                aria-label={localizeUi("ui.noodle.noodleprofilesurface.bio")}
                 rows={2}
                 disabled={isGenerating || isPending}
                 value={draft.bio}
@@ -559,10 +566,17 @@ export function StageProfileForm({
                   onChange({ stagePersonality: appendAudienceStance(draft.stagePersonality, sentence) })
                 }
               />
-            </label>
-            <label className="block space-y-1">
-              <span className="text-xs font-semibold">{localizeUi("ui.noodle.stageprofileform.stageVoice")}</span>
+            </SlpAssistedField>
+            <SlpAssistedField
+              label={localizeUi("ui.noodle.stageprofileform.stageVoice")}
+              field="voice"
+              value={draft.stagePersonality}
+              accountId={isEditing ? accentId : undefined}
+              context={draft.displayName}
+              onApply={(stagePersonality) => onChange({ stagePersonality })}
+            >
               <textarea
+                aria-label={localizeUi("ui.noodle.stageprofileform.stageVoice")}
                 rows={2}
                 disabled={isGenerating || isPending}
                 value={draft.stagePersonality}
@@ -571,9 +585,14 @@ export function StageProfileForm({
                 placeholder={localizeUi("ui.noodle.stageprofileform.voiceAttitudeBoundariesAndCreatorPersona")}
                 className={`${textareaClass} !min-h-0`}
               />
-            </label>
+            </SlpAssistedField>
           </div>
-          <SlurpStageFactsFields draft={draft} disabled={isGenerating || isPending} onChange={onChange} />
+          <SlurpStageFactsFields
+            draft={draft}
+            disabled={isGenerating || isPending}
+            onChange={onChange}
+            accountId={isEditing ? accentId : undefined}
+          />
           <SlurpDiscoveryProfileEditor
             gender={draft.gender}
             tags={draft.tags}

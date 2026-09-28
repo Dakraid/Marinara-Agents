@@ -3,11 +3,7 @@ import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.
 import type { SlurpManagedStageProfile, SlurpStageProfileInput } from "../../base/state/slp-state-types";
 import { useCreatorFollowers, useCreatorSubscribers } from "../../features/audience/slp-audience-hooks";
 import { useUpdateCreatorFanActivity } from "../../features/audience/slp-fan-activity-hooks";
-import {
-  useGenerateCreatorArtwork,
-  useUploadCreatorAvatar,
-  useUploadCreatorBanner,
-} from "../../features/creators/slp-creator-profile-hooks";
+import { useUploadCreatorAvatar, useUploadCreatorBanner } from "../../features/creators/slp-creator-profile-hooks";
 import { slpProfileSubscriptionState } from "../../features/economy/slp-economy-subscription-state";
 import { useSlurpWallet, useTipSlurpCreator } from "../../features/economy/slp-economy-hooks";
 import type { SlurpProfilePost } from "../../features/feed/slp-feed-contract";
@@ -62,9 +58,7 @@ export interface StageProfileViewProps {
   onEdit: () => void;
   onBack: () => void;
   onManualPost: (input: SlpCreatorPostSubmission) => Promise<void>;
-  onGuidedPost: (input: SlpCreatorPostSubmission) => Promise<void>;
   manualPending: boolean;
-  guidePending: boolean;
   onRunNow: (accountId: string) => void;
   runNowPending: boolean;
   onUnlock: (postId: string) => void;
@@ -144,12 +138,10 @@ export function useStageProfileViewModel(props: StageProfileViewProps) {
   }, [profile.id, profile]);
   const uploadProfileAvatar = useUploadCreatorAvatar();
   const uploadProfileBanner = useUploadCreatorBanner();
-  const generateProfileArtwork = useGenerateCreatorArtwork();
   const profileAvatarFileRef = useRef<HTMLInputElement | null>(null);
   const profileBannerFileRef = useRef<HTMLInputElement | null>(null);
   const [artworkKind, setArtworkKind] = useState<"avatar" | "banner" | null>(null);
   const [openImagePostId, setOpenImagePostId] = useState<string | null>(null);
-  const [artworkGuidance, setArtworkGuidance] = useState("");
   // Global fan controls require a Creator settings route. Keep per-Creator controls available.
   const globalSettings = slurpSettings
     ? {
@@ -327,15 +319,12 @@ export function useStageProfileViewModel(props: StageProfileViewProps) {
     locationProfileId,
     uploadProfileAvatar,
     uploadProfileBanner,
-    generateProfileArtwork,
     profileAvatarFileRef,
     profileBannerFileRef,
     artworkKind,
     setArtworkKind,
     openImagePostId,
     setOpenImagePostId,
-    artworkGuidance,
-    setArtworkGuidance,
     globalSettings,
     autoPosting,
     activeTab,

@@ -1,4 +1,5 @@
 import { requestHintGuidance } from "./SlpMessages";
+import { SlpTextAssist } from "../assist/slp-assist-contract";
 import { ArrowDown, ChevronLeft, Headset, Plus, Send, X } from "lucide-react";
 import { CommissionRequest } from "./commissions/SlpCommissions";
 import { CreatorMessageTools, FanImageTool, SlurpTipPanel } from "./SlpMessageTools";
@@ -291,8 +292,43 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
           </>
         )}
 
+        {toolTab === "write" && (
+          // The message box stays as it is; the writing help lives here and writes into it.
+          <div className="flex flex-col gap-2 px-1">
+            <div className="flex flex-wrap items-center gap-x-2">
+              <p className="text-[13px] font-bold">
+                {localizeUi("ui.slurp.messages.helpWriteYours", { defaultValue: "Your message" })}
+              </p>
+              <SlpTextAssist
+                field={ownsCreator ? "reply" : "dm"}
+                value={draft}
+                accountId={targetCreatorAccountId ?? undefined}
+                disabled={busy}
+                onApply={setDraft}
+              />
+            </div>
+            <p className="min-h-10 whitespace-pre-wrap rounded-xl bg-[var(--slurp-surface)] px-3 py-2.5 text-sm ring-1 ring-inset ring-[var(--noodle-divider)] [overflow-wrap:anywhere]">
+              {draft.trim() ||
+                localizeUi("ui.slurp.messages.helpWriteEmpty", {
+                  defaultValue: "Nothing yet. Tap Write and say what it should be about.",
+                })}
+            </p>
+            <SlpButton
+              disabled={!draft.trim()}
+              onClick={() => {
+                closeTools();
+                composerRef.current?.focus();
+              }}
+              className="self-end"
+            >
+              {localizeUi("ui.slurp.messages.helpWriteUse", { defaultValue: "Back to the chat" })}
+            </SlpButton>
+          </div>
+        )}
+
         {toolTab === "commission" && (
           <CommissionRequest
+            creatorId={targetCreatorAccountId ?? undefined}
             disabled={busy || !personaId || !targetCreatorAccountId}
             pending={createCommission.isPending}
             initialBrief={commissionPrefill}

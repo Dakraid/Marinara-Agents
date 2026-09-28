@@ -53,7 +53,6 @@ export function renderSlurpHomeCreatorFlow({
     eligibleAccountsQuery,
     eligibleNoodleAccounts,
     generateDraft,
-    generatePost,
     generateProfileDraft,
     goToStudio,
     handleSourceKind,
@@ -90,7 +89,6 @@ export function renderSlurpHomeCreatorFlow({
     slurpSettingsQuery,
     sourceKind,
     sourceSearch,
-    submitGuidedPost,
     submitManualPost,
     submitRunNow,
     toggleCreatorFollow,
@@ -435,9 +433,7 @@ export function renderSlurpHomeCreatorFlow({
                 : onNavigate({ mode: "creator", view: profileReturnView.current })
             }
             onManualPost={submitManualPost}
-            onGuidedPost={submitGuidedPost}
             manualPending={createPost.isPending}
-            guidePending={generatePost.isPending}
             onRunNow={submitRunNow}
             runNowPending={runAutoPostNow.isPending}
             onUnlock={(postId) => {

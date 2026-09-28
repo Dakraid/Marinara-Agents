@@ -309,6 +309,7 @@ export function SlurpProjectsPanel({
                 )}
                 <SlpArcChapterControls
                   project={project}
+                  accountId={creatorAccountId}
                   busy={busy}
                   onAct={(action, value) => act(project, action, value)}
                 />

@@ -24,6 +24,9 @@ import { slpMessagesRoutes } from "./features/messages/slp-messages-routes.js";
 import { slpNotificationsRoutes } from "./features/notifications/slp-notifications-routes.js";
 import { slpOnboardingRoutes } from "./features/onboarding/slp-onboarding-routes.js";
 import { slpProjectsRoutes } from "./features/projects/slp-projects-routes.js";
+import { slpAssistRoutes } from "./features/assist/slp-assist-routes.js";
+import { runSlpAction } from "./features/assist/slp-action-runner.js";
+import { slpActionCatalog } from "../../../shared/src/slp/slp-actions.js";
 import { slpCatchUpWorldOnOpen } from "./workflows/slp-world-tick-workflow.js";
 import { startSlpAutoPostScheduler } from "./features/feed/slp-autopost-scheduler-service.js";
 import { startCreatorFanActivityScheduler } from "./features/audience/slp-fan-activity-scheduler-service.js";
@@ -83,6 +86,7 @@ export async function mountSlpRoutes(app: FastifyInstance) {
   await slpCanonAnchorRoutes(app, deps);
   await slpOnboardingRoutes(app, deps);
   await slpFeedPublishingRoutes(app, deps);
+  await slpAssistRoutes(app);
   await slpMessagesRoutes(app, noodle, messages);
 }
 
@@ -148,6 +152,14 @@ export async function activate({
     addTeardown(
       api.registerService("slurp2:backup", {
         pause: async <T>(run: () => Promise<T>) => run(),
+      }),
+    );
+    // The action layer as an in-process service, for a helper the Engine lets call packages
+    // (Professor Mari has no such bridge yet; see docs/architecture/README.md "Action layer").
+    addTeardown(
+      api.registerService("slurp2:actions", {
+        list: slpActionCatalog,
+        run: (name: string, input: unknown) => runSlpAction(app.db, name, input),
       }),
     );
     // Slurp activity in ordinary chats. Each chat opts in, so registering costs nothing until then.

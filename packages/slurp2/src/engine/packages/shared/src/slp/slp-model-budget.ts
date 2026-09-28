@@ -10,6 +10,7 @@ export const SLURP_MODEL_JOB_KINDS = [
   "schedule",
   "fan_type_voice",
   "continuity",
+  "assist",
 ] as const;
 export type SlurpModelJobKind = (typeof SLURP_MODEL_JOB_KINDS)[number];
 export type SlurpModelWorkerContext = "present" | "background";
@@ -42,6 +43,8 @@ export const slurpModelBudgetSchema = z
         fan_type_voice: jobPolicy(7, 10),
         // Reads new message batches for Creator statements. Lowest priority: nothing waits on it.
         continuity: jobPolicy(8, 12),
+        // The player's own Write / Improve taps (AI assist). Present work, never paced.
+        assist: jobPolicy(2, 40),
       })
       .default({}),
   })

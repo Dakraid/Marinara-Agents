@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { SlpButton } from "../../modules/chrome/SlpButton";
 import { focusRing } from "../../base/chrome/slp-focus";
 import type { SlurpProject } from "./slp-projects-contract";
+import { SlpTextAssist } from "../assist/slp-assist-contract";
 
 const inputClass = `min-h-11 w-full rounded-lg bg-[var(--slurp-canvas)] px-3 text-base ring-1 ring-inset ring-[var(--slurp-outline)] disabled:opacity-50 sm:text-sm ${focusRing}`;
 
@@ -15,10 +16,13 @@ type ChapterAction = "skip" | "back" | "label" | "hold" | "release" | "insert";
  */
 export function SlpArcChapterControls({
   project,
+  accountId,
   busy,
   onAct,
 }: {
   project: SlurpProject;
+  /** The Creator whose storyline it is, for the writing help. */
+  accountId?: string;
   busy: boolean;
   onAct: (action: ChapterAction, value?: string) => void;
 }) {
@@ -82,9 +86,18 @@ export function SlpArcChapterControls({
             setEditing(null);
           }}
         >
-          <label htmlFor={inputId} className="block text-xs font-semibold">
-            {editing.action === "insert" ? t("ui.slurp.projects.addNextLabel") : t("ui.slurp.projects.renameLabel")}
-          </label>
+          <div className="flex flex-wrap items-center gap-x-2">
+            <label htmlFor={inputId} className="block text-xs font-semibold">
+              {editing.action === "insert" ? t("ui.slurp.projects.addNextLabel") : t("ui.slurp.projects.renameLabel")}
+            </label>
+            <SlpTextAssist
+              field="chapter"
+              value={editing.value}
+              accountId={accountId}
+              context={`Storyline “${project.title}”. Chapters so far: ${project.chapters.join(" → ")}. Now: ${project.chapters[project.chapter] ?? ""}.`}
+              onApply={(value) => setEditing((current) => (current ? { ...current, value } : current))}
+            />
+          </div>
           <input
             id={inputId}
             autoFocus

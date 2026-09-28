@@ -2,7 +2,6 @@ import { useSlurpCreatorMessagingSettings } from "../../features/messages/slp-me
 import { useSlpViewerPersonaId } from "../../features/creators/slp-creators-hooks";
 import {
   SLP_CREATOR_POST_CONTENT_MAX_LENGTH,
-  SLP_CREATOR_POST_GUIDE_MAX_LENGTH,
   SLP_CREATOR_POST_TITLE_MAX_LENGTH,
   slpPollInputSchema,
 } from "../../../../../shared/src/slp/slp-social.schema.js";
@@ -33,16 +32,15 @@ import { Avatar, SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { SlpAutoGrowTextarea } from "../../base/ui/SlpAutoGrowTextarea";
 import { SlpSheet } from "../../modules/chrome/SlpSheet";
 import { SlpButton, SlpChip, SlpPrimaryButton, SlpSegment } from "../../modules/chrome/SlpButton";
-import { noteSlpAiUseOnce, SlpUsesAiMark } from "../../modules/chrome/SlpAiMark";
 import { useRef, useState } from "react";
 import { ChevronDown, Crop, ImagePlus, Link2, ListChecks, Loader2, Pencil, Send, Smile, Trash2 } from "lucide-react";
 import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
+import { SlpPictureAssist, SlpTextAssist } from "../../features/assist/slp-assist-contract";
 import { cn } from "../../../lib/utils";
 import {
   errorMessage,
   isEmptyCreatorPostDraft,
   isSlurpStory,
-  serializeCreatorPostGuide,
   type SlpCreatorPostDraft,
   type SlpCreatorPostSubmission,
   type PendingCreatorImage,
@@ -50,7 +48,7 @@ import {
 } from "./SlpHomeHelpers";
 export type { PendingCreatorImage } from "./SlpHomeHelpers";
 
-export type SlpCreatorComposerTool = "image" | "poll" | "media";
+export type SlpCreatorComposerTool = "image" | "poll" | "media" | "draw";
 
 /**
  * The one composer (design step 7): a full-screen glass sheet on phones, a centred modal on wide
@@ -68,9 +66,7 @@ export function NoodlerPostComposer({
   onClearDraft,
   onDiscardDraft,
   onManualPost,
-  onGuidedPost,
   manualPending,
-  guidePending,
 }: {
   open: boolean;
   onClose: () => void;
@@ -81,9 +77,7 @@ export function NoodlerPostComposer({
   onClearDraft: () => void;
   onDiscardDraft: () => void;
   onManualPost: (input: SlpCreatorPostSubmission) => Promise<void>;
-  onGuidedPost: (input: SlpCreatorPostSubmission) => Promise<void>;
   manualPending: boolean;
-  guidePending: boolean;
 }) {
   const { t: localizeUi } = useUiTranslation();
   // The configured Story size, as a ratio, so an uploaded Story is cropped to the same shape an
@@ -98,7 +92,6 @@ export function NoodlerPostComposer({
   const creatorPrices = useSlurpCreatorMessagingSettings(profile.id, useSlpViewerPersonaId()).data;
   const usualUnlockPrice = creatorPrices?.messaging.unlockPrice ?? composerSettings?.walletUnlockCost ?? 25;
   const [postError, setPostError] = useState<string | null>(null);
-  const [guideError, setGuideError] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<SlpCreatorComposerTool | null>(null);
   const [pollEditorValue, setPollEditorValue] = useState<SlpPollInput | null>(null);
   const [mediaPickerTab, setMediaPickerTab] = useState<ConversationMediaPickerTabId>("emoji");
@@ -139,9 +132,8 @@ export function NoodlerPostComposer({
         ? "long_form"
         : "caption";
   const hasDraft = pendingImage !== null || !isEmptyCreatorPostDraft(draft);
-  const composerBusy = submitting || manualPending || guidePending;
+  const composerBusy = submitting || manualPending;
   composerBusyRef.current = composerBusy;
-  const guide = serializeCreatorPostGuide(title, body);
   const pollIsValid = poll ? slpPollInputSchema.safeParse(poll).success : false;
   const canPost =
     !composerBusy && !pendingImage && (story ? Boolean(image) : Boolean(body.trim() || image || pollIsValid));
@@ -153,7 +145,6 @@ export function NoodlerPostComposer({
   };
   const resetLocal = () => {
     setPostError(null);
-    setGuideError(null);
     setAttachmentError(null);
     setPendingImage(null);
     setImageUrlDraft("");
@@ -212,6 +203,31 @@ export function NoodlerPostComposer({
     } catch (error) {
       setAttachmentError(errorMessage(error, "Enter a valid image URL."));
     }
+  };
+  // What Write / Improve should know besides the text: the title, and the Purpose & Delivery picked
+  // under Advanced (a one-shot choice; it never changes the saved strategy).
+  const assistContext =
+    [
+      title.trim() && `Title: ${title.trim()}`,
+      contentIntent && `What this post is for: ${contentIntent.replaceAll("_", " ")}`,
+      contentDelivery && `How it is delivered: ${contentDelivery.replaceAll("_", " ")}`,
+    ]
+      .filter(Boolean)
+      .join(". ") || undefined;
+  // A drawn picture goes in like an upload, so Crop, Replace and Remove work on it as on any photo.
+  // The picture it replaced is kept for the assist's Undo.
+  const drawnOver = useRef<SlpCreatorPostDraft["image"]>(null);
+  // Decoded here: the Engine's content policy does not let fetch() read a data: URL.
+  const takeDrawnPicture = (picture: string) => {
+    const [head = "", base64 = ""] = picture.split(",", 2);
+    const type = /^data:([^;]+)/u.exec(head)?.[1] ?? "image/png";
+    const bytes = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
+    drawnOver.current = image;
+    setPendingImage(null);
+    onDraftChange({
+      image: { source: new File([bytes], `slurp-${Date.now()}.${type.split("/")[1] ?? "png"}`, { type }), crop: null },
+      generateImage: false,
+    });
   };
   const applyImageCrop = async (crop: SlpPostImageCrop) => {
     if (composerBusyRef.current) return;
@@ -300,44 +316,8 @@ export function NoodlerPostComposer({
     }
   };
 
-  const guidePost = async () => {
-    if (composerBusyRef.current) return;
-    setGuideError(null);
-    if (pendingImage) {
-      setGuideError(localizeUi("ui.noodle.noodlerpostcomposer.finishImageCrop"));
-      return;
-    }
-    if (!body.trim() && !image && !poll) {
-      setGuideError(localizeUi("ui.noodle.noodlerpostcomposer.guidedPostNeedsContent"));
-      return;
-    }
-    if (poll && !pollIsValid) {
-      setGuideError(localizeUi("ui.noodle.noodlerpostcomposer.pollNeedsQuestionAndOptions"));
-      return;
-    }
-    if (guide.length > SLP_CREATOR_POST_GUIDE_MAX_LENGTH) {
-      setGuideError(localizeUi("ui.slurp.composer.guideTooLong", { count: SLP_CREATOR_POST_GUIDE_MAX_LENGTH }));
-      return;
-    }
-    noteSlpAiUseOnce(localizeUi);
-    try {
-      composerBusyRef.current = true;
-      setSubmitting(true);
-      setActiveTool(null);
-      await onGuidedPost(submission());
-      onClearDraft();
-      resetLocal();
-      onClose();
-    } catch (error) {
-      setGuideError(errorMessage(error, localizeUi("ui.noodle.noodlerpostcomposer.couldNotGenerateThisPost")));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const errors = [
     postError && `${localizeUi("ui.noodle.noodlerpostcomposer.post")} ${postError}`,
-    guideError && `${localizeUi("ui.noodle.noodlerpostcomposer.guide")} ${guideError}`,
     attachmentError && `${localizeUi("ui.noodle.noodlerpostcomposer.image")} ${attachmentError}`,
   ].filter(Boolean);
   const fieldClass =
@@ -427,20 +407,19 @@ export function NoodlerPostComposer({
             {localizeUi("ui.slurp.composer.pasteLink", { defaultValue: "Paste a link" })}
           </SlpChip>
         )}
-        {!story && (
-          <SlpChip
-            selected={generateImage}
-            disabled={composerBusy}
-            onClick={() => updateDraft({ generateImage: !generateImage })}
-            title={localizeUi("ui.slurp.composer.aiImageHint", {
-              defaultValue: "Let the AI create an image for this post from your text.",
-            })}
-            className="min-h-9"
-          >
-            <SlpSparkleGlyph size={14} aria-hidden="true" />
-            {localizeUi("ui.slurp.composer.aiImage", { defaultValue: "AI image" })}
-          </SlpChip>
-        )}
+        <SlpChip
+          selected={activeTool === "draw"}
+          disabled={composerBusy}
+          onClick={() => {
+            // The old "draw it when I post" switch folds into drawing it now, with a look first.
+            if (generateImage) updateDraft({ generateImage: false });
+            toggleTool("draw");
+          }}
+          className="min-h-9"
+        >
+          <SlpSparkleGlyph size={14} aria-hidden="true" />
+          {localizeUi("ui.slurp.assist.drawPicture", { defaultValue: "Draw a picture" })}
+        </SlpChip>
       </div>
       {activeTool === "image" && (
         <div className="w-full max-w-sm text-start">
@@ -501,26 +480,6 @@ export function NoodlerPostComposer({
             </div>
           )}
           <div className="flex items-center gap-2">
-            {!story && (
-              <SlpButton
-                variant="quiet"
-                onClick={() => void guidePost()}
-                disabled={composerBusy || Boolean(pendingImage)}
-                className="min-w-0 px-4"
-              >
-                {guidePending ? (
-                  <Loader2 size={16} className="animate-spin" aria-hidden="true" />
-                ) : (
-                  <SlpSparkleGlyph size={16} aria-hidden="true" />
-                )}
-                <span className="truncate">
-                  {guidePending
-                    ? localizeUi("ui.noodle.noodlerpostcomposer.guiding")
-                    : localizeUi("ui.slurp.composer.guideWithAi", { defaultValue: "Guide" })}
-                </span>
-                <SlpUsesAiMark />
-              </SlpButton>
-            )}
             <SlpPrimaryButton onClick={() => void publish()} disabled={!canPost} className="ms-auto px-6">
               {manualPending ? (
                 <Loader2 size={16} className="animate-spin" aria-hidden="true" />
@@ -550,6 +509,19 @@ export function NoodlerPostComposer({
         </p>
 
         {media}
+        {activeTool === "draw" && (
+          <SlpPictureAssist
+            accountId={profile.id}
+            target={story ? "story" : "post"}
+            context={body.trim() || title.trim() || undefined}
+            onUse={takeDrawnPicture}
+            onUndo={() => {
+              onDraftChange({ image: drawnOver.current });
+              setPendingImage(null);
+            }}
+            onDone={() => setActiveTool(null)}
+          />
+        )}
 
         <div className="space-y-1">
           {!story && (
@@ -598,6 +570,14 @@ export function NoodlerPostComposer({
               <Smile size={15} aria-hidden="true" />
               {localizeUi("ui.slurp.composer.emoji", { defaultValue: "Emoji" })}
             </SlpChip>
+            <SlpTextAssist
+              field={story ? "story" : "caption"}
+              value={body}
+              accountId={profile.id}
+              context={assistContext}
+              disabled={composerBusy}
+              onApply={(text) => updateDraft({ body: text })}
+            />
           </div>
         </div>
 

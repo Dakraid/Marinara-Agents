@@ -19,6 +19,7 @@ import { errorMessage } from "../../modules/settings/slp-backstage-format";
 import { SlpButton, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
 import { SlpUsesAiMark } from "../../modules/chrome/SlpAiMark";
 import { noteClass, selectClass } from "./slp-creator-classes";
+import { SlpTextAssist } from "../assist/slp-assist-contract";
 import { useSlurpCreatorSteering, useSlurpCreatorSteeringMutations, type SlpCreatorSpice } from "./slp-steering-hooks";
 
 const labelClass = "block text-xs font-semibold";
@@ -288,9 +289,20 @@ export function SlpCreatorSteeringCard({
       />
 
       <div className="space-y-2">
-        <label htmlFor={lifeId} className={labelClass}>
-          {t("ui.slurp.steering.lifePhase")}
-        </label>
+        <div className="flex flex-wrap items-center gap-x-2">
+          <label htmlFor={lifeId} className={labelClass}>
+            {t("ui.slurp.steering.lifePhase")}
+          </label>
+          <SlpTextAssist
+            field="life"
+            value={lifePhase}
+            accountId={creatorId}
+            onApply={(text) => {
+              setLifePhase(text);
+              if (text.trim() !== steering.lifePhase) save({ lifePhase: text.trim() });
+            }}
+          />
+        </div>
         <input
           id={lifeId}
           value={lifePhase}
@@ -303,9 +315,20 @@ export function SlpCreatorSteeringCard({
       </div>
 
       <div className="space-y-2">
-        <label htmlFor={focusId} className={labelClass}>
-          {t("ui.slurp.steering.focus")}
-        </label>
+        <div className="flex flex-wrap items-center gap-x-2">
+          <label htmlFor={focusId} className={labelClass}>
+            {t("ui.slurp.steering.focus")}
+          </label>
+          <SlpTextAssist
+            field="focus"
+            value={focus}
+            accountId={creatorId}
+            onApply={(text) => {
+              setFocus(text);
+              if (text.trim() !== steering.focus) save({ focus: text.trim() });
+            }}
+          />
+        </div>
         <input
           id={focusId}
           value={focus}
@@ -375,7 +398,18 @@ export function SlpCreatorSteeringCard({
       />
 
       <div className="space-y-2">
-        <p className={labelClass}>{t("ui.slurp.steering.ideas")}</p>
+        <div className="flex flex-wrap items-center gap-x-2">
+          <p className={labelClass}>{t("ui.slurp.steering.ideas")}</p>
+          {!full && (
+            <SlpTextAssist
+              field="idea"
+              value={idea}
+              accountId={creatorId}
+              context={story ? "It is for a Story." : undefined}
+              onApply={setIdea}
+            />
+          )}
+        </div>
         <p className="text-xs leading-5 text-[var(--slurp-muted)]">{t("ui.slurp.steering.ideasDetail", { name })}</p>
         {steering.nudges.length > 0 ? (
           <ol className="space-y-1.5">

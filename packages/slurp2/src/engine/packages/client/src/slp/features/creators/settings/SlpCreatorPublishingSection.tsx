@@ -168,7 +168,6 @@ export function SlpCreatorPublishingSection({ creator, active, mode = "automatio
               }
               label={t(`ui.slurp.settings.prompts.${access}Guidance`)}
               detail={t("ui.slurp.settings.creators.guidanceInherits")}
-              generateLabel={t("ui.slurp.settings.prompts.guidanceGenerate")}
               clearLabel={t("ui.slurp.settings.creators.guidanceInherit")}
               savedMessage={t("ui.slurp.settings.prompts.guidanceSavedAccess")}
               disabled={postGuidanceQuery.isLoading || postGuidanceQuery.isError}
@@ -189,7 +188,6 @@ export function SlpCreatorPublishingSection({ creator, active, mode = "automatio
               defaultValue:
                 "Private. List what this Creator offers and what they will not do. Posts, comment replies, and messages follow it. Fans never see it.",
             })}
-            generateLabel=""
             clearLabel={t("ui.slurp.settings.creators.contentMenuClear", { defaultValue: "Clear menu" })}
             savedMessage={t("ui.slurp.settings.creators.contentMenuSaved", { defaultValue: "Content menu saved." })}
             disabled={postGuidanceQuery.isLoading || postGuidanceQuery.isError}

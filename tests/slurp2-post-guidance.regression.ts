@@ -71,7 +71,8 @@ assert.match(guidanceField, /<PromptEditor/u);
 assert.doesNotMatch(guidanceField, /onBlur=/u, "post directions must not save implicitly on blur");
 assert.match(
   guidanceField,
-  /onSuccess: \(result\) => \{\s*setDraft\(result\.guidance\);\s*setOpen\(true\);/u,
+  // 3c: Write with AI folds into the shared text assist; its answer still opens in the editor.
+  /onApply=\{\(text\) => \{\s*setDraft\(text\);\s*setOpen\(true\);/u,
   "AI output must open as a reviewable draft instead of saving immediately",
 );
 

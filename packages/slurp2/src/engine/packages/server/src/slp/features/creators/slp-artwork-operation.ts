@@ -45,13 +45,13 @@ function artworkPrompt(
     .join(" ");
 }
 
-function artworkNegativePrompt(kind: "avatar" | "banner") {
+export function artworkNegativePrompt(kind: "avatar" | "banner") {
   return kind === "banner"
     ? "profile picture, avatar, avatar bubble, headshot, dominant face, circular portrait, round portrait, badge, medallion, sticker portrait, framed portrait, inset photo, picture-in-picture, profile card, social media interface, UI mockup, collage, text, logo, border"
     : "banner, cover image, profile page, interface, UI mockup, card, collage, inset image, text, logo, border, circular frame";
 }
 
-function artworkCompositionGuard(kind: "avatar" | "banner") {
+export function artworkCompositionGuard(kind: "avatar" | "banner") {
   return kind === "avatar"
     ? "COMPOSITION REQUIREMENT: output one standalone square avatar portrait only. Do not create a banner, profile page, card, UI mockup, inset image, collage, text, logo, border, or circular frame."
     : "COMPOSITION REQUIREMENT: output one continuous ultra-wide background scene only. The profile page draws its own avatar on top of this image, so a second one ruins it. Do not include a profile picture, avatar, avatar bubble, headshot, dominant face, circular or rounded crop, badge, medallion, sticker portrait, framed portrait, inset image, picture-in-picture, card, collage, social-media UI, text, logo, border, or empty placeholder intended to contain a portrait.";

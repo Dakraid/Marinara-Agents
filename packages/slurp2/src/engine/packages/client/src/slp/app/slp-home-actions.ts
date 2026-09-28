@@ -1,7 +1,7 @@
 import type { SlpIdentityDisclosure } from "../../../../shared/src/slp/slp-social.types.js";
 import type { SlurpManagedStageProfile, SlurpStageProfileInput } from "../base/state/slp-state-types";
 import { showConfirmDialog } from "../../lib/app-dialogs";
-import { type SlpCreatorPostSubmission, errorMessage, serializeCreatorPostGuide } from "./screens/SlpHomeHelpers";
+import { type SlpCreatorPostSubmission, errorMessage } from "./screens/SlpHomeHelpers";
 import type { ImagePromptOverride } from "../../components/ui/ImagePromptReviewModal";
 import { confirmSlurpAvatarReview } from "../features/creators/SlpStageProfileForm";
 import { ApiError } from "../../lib/api-client";
@@ -38,7 +38,6 @@ function useSlurpHomeActions(state: SlurpHomeBaseState) {
     draftSourceRevisionToken,
     draftSourceSnapshot,
     editingProfileId,
-    generatePost,
     generatePostImage,
     generateProfileDraft,
     imagePromptReview,
@@ -365,44 +364,6 @@ function useSlurpHomeActions(state: SlurpHomeBaseState) {
     }
   };
 
-  const submitGuidedPost = async ({
-    profileId,
-    title,
-    body,
-    access,
-    image,
-    poll,
-    format,
-    postType,
-    generateImage,
-    contentIntent,
-    contentDelivery,
-    unlockPrice,
-  }: SlpCreatorPostSubmission) => {
-    if (!(await confirmProviderDisclosure())) return;
-    const guide = serializeCreatorPostGuide(title, body);
-    const result = await generatePost.mutateAsync({
-      mode: "noodler",
-      targetAccountId: profileId,
-      ...(guide ? { noodlerPostGuide: guide } : {}),
-      ...(generateImage ? { generateImage: true } : {}),
-      ...(contentIntent ? { contentIntent } : {}),
-      ...(contentDelivery ? { contentDelivery } : {}),
-      ...(access === "locked" && unlockPrice ? { unlockPrice } : {}),
-      access,
-      image,
-      poll,
-      format,
-      postType,
-    });
-    if (result.imagePromptReview) {
-      setImagePromptReview({ accountId: profileId, items: [result.imagePromptReview] });
-      toast.success(localizeUi("ui.noodle.noodlerhome.noodlerPostGeneratedReviewTheImagePromptToRender"));
-      return;
-    }
-    toast.success(localizeUi("ui.noodle.noodlerhome.noodlerPostGenerated"));
-  };
-
   const submitRunNow = async (accountId: string) => {
     if (!(await confirmProviderDisclosure())) return;
     runAutoPostNow.mutate(accountId, {
@@ -495,7 +456,6 @@ function useSlurpHomeActions(state: SlurpHomeBaseState) {
     redraftFromSource,
     saveProfile,
     submitManualPost,
-    submitGuidedPost,
     submitRunNow,
     confirmReviewedImagePrompts,
     cancelReviewedImagePrompts,

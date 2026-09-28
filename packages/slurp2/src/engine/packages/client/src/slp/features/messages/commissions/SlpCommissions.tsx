@@ -1,4 +1,5 @@
 import { BriefcaseBusiness, Check, Loader2 } from "lucide-react";
+import { SlpTextAssist } from "../../assist/slp-assist-contract";
 import { SlpSparkleGlyph } from "../../../base/chrome/SlpGlyphs";
 import { useEffect, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
@@ -35,10 +36,13 @@ export function CommissionRequest({
   initialBrief,
   onSendAsMessage,
   onSubmit,
+  creatorId,
 }: {
   disabled: boolean;
   pending: boolean;
   initialBrief: string;
+  /** The Creator the brief goes to, so the writing help knows who it asks. */
+  creatorId?: string;
   onSendAsMessage: (() => void) | null;
   onSubmit: (brief: string) => void;
 }) {
@@ -51,9 +55,12 @@ export function CommissionRequest({
 
   return (
     <div className="flex flex-col gap-2 px-1">
-      <label className="text-[13px] font-bold" htmlFor="slurp-commission-brief">
-        {localizeUi("ui.slurp.messages.commissionLabel", { defaultValue: "Commission brief" })}
-      </label>
+      <div className="flex flex-wrap items-center gap-x-2">
+        <label className="text-[13px] font-bold" htmlFor="slurp-commission-brief">
+          {localizeUi("ui.slurp.messages.commissionLabel", { defaultValue: "Commission brief" })}
+        </label>
+        <SlpTextAssist field="brief" value={brief} accountId={creatorId} disabled={disabled} onApply={setBrief} />
+      </div>
       <p className="text-xs leading-4 text-[var(--slurp-muted)]">
         {localizeUi("ui.slurp.messages.commissionRequestDetail", {
           defaultValue: "Describe the finished piece. The Creator will quote a price before you pay.",

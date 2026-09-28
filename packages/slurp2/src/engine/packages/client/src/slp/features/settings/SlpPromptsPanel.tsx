@@ -104,7 +104,6 @@ export function SlpPromptsPanel(page: SlpBackstagePageProps) {
               onStage={(value) => stagePostGuidance(access, value)}
               label={t(`ui.slurp.settings.prompts.${access}Guidance`)}
               detail={t(`ui.slurp.settings.prompts.${access}GuidanceDetail`)}
-              generateLabel={t("ui.slurp.settings.prompts.guidanceGenerate")}
               clearLabel={t("ui.slurp.settings.prompts.guidanceUseBuiltIn")}
               savedMessage={t("ui.slurp.settings.prompts.guidanceSavedAccess")}
               disabled={postGuidanceQuery.isLoading || postGuidanceQuery.isError}

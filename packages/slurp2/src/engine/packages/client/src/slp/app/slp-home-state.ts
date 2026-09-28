@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { createElement, useEffect, useRef, useState } from "react";
 import { useSlurpHomePostActions } from "./slp-home-post-actions";
 import { SLP_CREATOR_POST_TITLE_MAX_LENGTH } from "../../../../shared/src/slp/slp-social.schema.js";
 import type {
@@ -28,7 +28,6 @@ import {
   useConfirmCreatorImagePrompts,
   useCreateCreatorPost,
   useDeleteCreatorPost,
-  useGenerateCreatorSlpPost,
   useGenerateCreatorPostImage,
   useLoadCreatorPostImage,
   useCreatorPosts,
@@ -66,6 +65,7 @@ import {
   errorMessage,
 } from "./screens/SlpHomeHelpers";
 import { useSlpPostCardController } from "../modules/post/SlpPostHooks";
+import { SlpTextAssist } from "../features/assist/slp-assist-contract";
 import type { ImagePromptReviewItem } from "../../components/ui/ImagePromptReviewModal";
 import type { SlurpNavigationState } from "../base/navigation/slp-navigation.types";
 import { useTranslation as useUiTranslation } from "react-i18next";
@@ -290,7 +290,6 @@ export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onL
   const uploadAvatar = useUploadCreatorAvatar();
   const useSourceAvatar = useUseCreatorSourceAvatar();
   const removeAvatar = useRemoveCreatorAvatar();
-  const generatePost = useGenerateCreatorSlpPost();
   const confirmImagePrompts = useConfirmCreatorImagePrompts();
   const runAutoPostNow = useRunCreatorAutoPostNow();
   const setupAutoPosting = useUpdateCreatorAutoPosting();
@@ -483,6 +482,7 @@ export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onL
     deletePost,
   });
   const postCardController = useSlpPostCardController({
+    textAssist: ({ story, ...input }) => createElement(SlpTextAssist, { ...input, field: story ? "story" : "caption" }),
     postShowMoreLength: slurpSettingsQuery.data?.postShowMoreLength,
     postManagement: false,
     personaAccount: viewerActorAccount,
@@ -712,7 +712,6 @@ export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onL
     uploadAvatar,
     useSourceAvatar,
     removeAvatar,
-    generatePost,
     confirmImagePrompts,
     runAutoPostNow,
     setupAutoPosting,

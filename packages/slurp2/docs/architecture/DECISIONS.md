@@ -345,3 +345,56 @@ modules, rejected alternative, and migration consequence.
   Memory's in-process `long-term-memory:storage` service through the Engine service registry. None of these
   Agents offers a documented read contract; any failure yields no lines. Rejected: a new Engine snapshot file
   (`game-state.storage.ts`), which would change the captured Engine sources.
+
+## Action layer and Professor Mari (2026-09-28)
+
+- **Problem:** AI help was scattered: a composer "Guide" that wrote and published a whole post, an
+  "AI image" switch that drew after posting, "Draft voice" on fan types, "Write with AI" on post
+  guidance, a separate artwork tool on the profile and in Creator settings. Each had its own look,
+  its own budget handling (or none) and no Undo. Nothing outside the app could ask Slurp to do
+  anything for the player.
+- **Decision:** one named action layer (`shared/src/slp/slp-actions.ts`, runner in
+  `features/assist/slp-action-runner.ts`) with a strict schema per action, served over
+  `/slurp/actions` and as the in-process service `slurp2:actions`. The client's AI assist is two
+  shared components (`SlpTextAssist`, `SlpPictureAssist`) that call it. The old buttons fold into
+  them: Guide → Write / Improve on the caption (the text lands in the field; the player posts),
+  AI image → Draw a picture (seen before posting), Draft voice and Write with AI → the text assist
+  with their own writers (`run`), both artwork tools → the picture assist (Creator settings keep the
+  context switches under Advanced). The whole-profile draft (Generate / Rewrite draft from the
+  source card), Build with AI for storylines, wardrobe import, "Let them answer" in Creator DMs and
+  the prompt-as-written redraw box stay: each does something no single field assist does.
+- **Affected modules:** new `features/assist/` (client + server), `modules/assist/`, shared
+  `slp-actions.ts`; the model budget gains the `assist` job ("Writing help", present work).
+  `resolveSlurpAutomaticPostAccess` joins the feed contract (the runner's `write-post` needs it).
+  `SlpPostCardCtx` gains a `textAssist` render slot so the post edit sheet (a module) can show it.
+- **Rejected alternatives:** running the actions by injecting into the existing routes (it would
+  need the Engine's internal route token for every call and duplicate each route's error
+  mapping); one assist component per field (the duplicates this step removes); keeping drawn
+  pictures as draft files on disk (a data URL answer needs no storage, no serving route and no
+  cleanup; "Use" goes through the existing upload paths).
+- **Professor Mari (Engine @079c0ab00, read-only):** there is no Engine API through which a
+  capability package can give Mari an action. What exists and what is missing:
+  - Mari's tools are a fixed list: `WORKSPACE_TOOLS` and `WORKSPACE_TOOL_DEFINITIONS` in
+    `packages/server/src/services/professor-mari/workspace-agent.service.ts` (l.168, l.302), the
+    `MariWorkspaceToolName` union in `packages/shared/src/types/professor-mari-workspace.ts`, and the
+    dispatch `switch` (≈l.3530) that answers "Unknown workspace command" for anything else.
+  - Her `mari` CLI (`packages/server/src/bin/mari.ts`) only reaches
+    `/api/professor-mari/workspace/db/command` (the Mari DB service: tables, rows, characters,
+    lorebooks, presets), never a package route. Raw `bash` runs with network denied
+    (`workspace-shell-sandbox.ts`, `(deny network*)`). Skills are the user's own SKILL.md files in
+    the workspace; no API lets a package add one.
+  - The capability activation API (`capability-module-runtime.service.ts`, `CapabilityActivationContext`)
+    offers `registerService`, `registerConversationCommand` (Conversation chats, not Mari),
+    `registerPromptContext` (chat system prompt), `registerPrivilegedRoutes`, `runInternalRoute`.
+    No tool or action registration, and no manifest field for one.
+  - `getCapabilityService(key)` (`capability-service-registry.service.ts`) already lets Engine code
+    look a package service up. So the smallest Engine change is: one new Mari workspace tool (e.g.
+    `package_action`) that lists `getCapabilityService("<pkg>:actions")?.list()` in its tool
+    description and calls `.run(name, input)`; its name added to the union, the two lists and the
+    switch; plus the same approval gate Mari uses for writes (`apply: true` and a reason) and, if
+    wanted, a manifest permission such as `mari-actions` so the user sees which packages Mari can act
+    through. Slurp already registers `slurp2:actions` with exactly `{ list, run }`; nothing on the
+    package side would change.
+- **Migration consequence:** none stored. A saved AI budget without the `assist` row reads it with
+  its default (40 a day). The drawn picture Undo lives in memory: a restart between Use and Undo
+  loses that Undo and leaves one old file behind (`ponytail:` note in `slp-picture-undo.ts`).

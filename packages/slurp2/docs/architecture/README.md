@@ -89,7 +89,7 @@ media helpers stay in `base/media/`.
 
 Client and server share one feature vocabulary: `creators`, `feed`, `messages`, `discovery`,
 `audience`, `projects`, `economy`, `notifications`, `world`, `ads`, `onboarding`, `maintenance`,
-plus client-only `backstage` and server-only `viewer`, `media`, and `settings`. Submodules that are deliberate expansion seams get a folder:
+`assist`, plus client-only `backstage` and server-only `viewer`, `media`, and `settings`. Submodules that are deliberate expansion seams get a folder:
 `creators/improvement`, `feed/reserve`, `messages/commissions`, `world/events`.
 
 These are not features: Stories (a `modules/story/` presentation composed by Feed), tags
@@ -103,6 +103,44 @@ only for a cross-feature call that already exists.
 
 Move logic into a workflow only when it already coordinates several features. Do not wrap a
 single-feature operation in a workflow.
+
+## Action layer
+
+Everything a helper may do for the player goes through one named, typed layer:
+`shared/src/slp/slp-actions.ts` defines each action (`write-text`, `improve-text`, `draw-picture`,
+`use-picture`, `undo-picture`, `keep-picture`, `steer-creator`, `add-idea`, `write-post`) with a
+plain summary, a description of every input, a strict zod schema, and its result type.
+`server/.../features/assist/slp-action-runner.ts` is the only dispatcher: it rejects an unknown
+name (404) or invalid input (400) before anything runs, then calls the owning code (the assist
+service, the steering storage, or `generateAndApplyCreatorPost` through the feed contract).
+
+The layer has three doors, all into the same runner:
+
+- `GET /api/slurp2/slurp/actions` (the catalog) and `POST /api/slurp2/slurp/actions/:name`, which
+  the app's AI assist uses (`client/.../features/assist/slp-assist-hooks.ts`, typed by the shared
+  contract).
+- The in-process service `slurp2:actions` (`{ list(), run(name, input) }`), registered in
+  `slp-server-entry.ts` through the capability API's `registerService`.
+- Nothing else. A new action is added to the shared contract and the runner's switch, never as a
+  side route.
+
+The AI assist on the client is two components in `features/assist/`: `SlpTextAssist` (Write when
+the field is empty, Improve when it has text, an optional note, Undo until the player types again)
+and `SlpPictureAssist` (type what the picture should show, Draw it, Retry / Use, Undo). Other
+features import them from `slp-assist-contract.ts`. A field with its own writer (fan type voice,
+post guidance) passes `run`; everything else uses `write-text` / `improve-text`. A module that
+cannot import a feature gets the assist as a render slot (`SlpPostCardCtx.textAssist`).
+
+Text actions count on the AI budget's "Writing help" row (`assist`, present work, never paced).
+A drawn picture runs the Creator's own image pipeline (look, style profile, the 7b0 brief as
+context, the spice level's picture phrase and negative terms) and comes back as a data URL; it is
+never kept on disk. A profile picture or cover is public, so it takes the level a non-subscriber
+sees. `use-picture` keeps the replaced picture for one Undo (`modules/assist/slp-picture-undo.ts`,
+in memory) until `keep-picture` or `undo-picture`.
+
+**Professor Mari.** The Engine gives Mari a fixed tool list and no bridge to package services or
+package routes (see DECISIONS, "Action layer and Professor Mari"). The `slurp2:actions` service is
+the package half of that bridge; the Engine half is missing and is listed there.
 
 ## Cross-feature modifiers
 

@@ -50,7 +50,8 @@ assert.match(editor, /showFooter=\{false\}/u, "nested profile footer is hidden i
 assert.match(editor, /showAvatarControls=\{false\}/u, "the artwork editor replaces the old avatar-only controls");
 assert.match(editor, /useUploadCreatorAvatar\(\)/u);
 assert.match(editor, /useUploadCreatorBanner\(\)/u);
-assert.match(editor, /useGenerateCreatorArtwork\(\)/u);
+// 3c: drawing the avatar or banner folds into the shared picture assist.
+assert.match(editor, /<SlpPictureAssist/u);
 assert.match(editor, /onSaveStateChange\?\.\(/u, "profile editor reports save state to the modal");
 assert.match(editor, /onDirtyChange\?\.\(JSON\.stringify\(draft\) !== JSON\.stringify\(initialDraft\)\)/u);
 assert.match(editor, /onDirtyChange\?\.\(false\)/u, "save and discard clear the dirty state");

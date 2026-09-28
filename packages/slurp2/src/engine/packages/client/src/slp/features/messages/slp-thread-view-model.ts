@@ -1,4 +1,4 @@
-import { BriefcaseBusiness, Image as ImageIcon, MessageCircle, Palette } from "lucide-react";
+import { BriefcaseBusiness, Image as ImageIcon, MessageCircle, Palette, PenLine } from "lucide-react";
 import { SlpLockGlyph } from "../../base/chrome/SlpGlyphs";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
@@ -104,7 +104,7 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [connectionPickerOpen, setConnectionPickerOpen] = useState(false);
   const [toolTab, setToolTab] = useState<
-    "tip" | "commission" | "photo" | "generated-photo" | "creator" | "request" | null
+    "tip" | "commission" | "photo" | "generated-photo" | "creator" | "request" | "write" | null
   >(null);
   const [commissionPrefill, setCommissionPrefill] = useState("");
   const settingsQuery = useSlurpSettings();
@@ -271,6 +271,15 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
       (ownsCreator
         ? ([
             {
+              id: "write",
+              icon: PenLine,
+              label: localizeUi("ui.slurp.messages.helpWrite", { defaultValue: "Help me write" }),
+              detail: localizeUi("ui.slurp.messages.helpWriteDetail", {
+                defaultValue: "Slurp writes or polishes your message",
+              }),
+              group: "conversation" as const,
+            },
+            {
               id: "request",
               icon: MessageCircle,
               label: localizeUi("ui.slurp.messages.requestFanReply", { defaultValue: "Request a reply" }),
@@ -310,6 +319,15 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
               label: localizeUi("ui.slurp.messages.requestReply", { defaultValue: "Request a reply" }),
               detail: localizeUi("ui.slurp.messages.requestReplyDetail", {
                 defaultValue: "Ask gently without forcing a reply",
+              }),
+              group: "conversation" as const,
+            },
+            {
+              id: "write",
+              icon: PenLine,
+              label: localizeUi("ui.slurp.messages.helpWrite", { defaultValue: "Help me write" }),
+              detail: localizeUi("ui.slurp.messages.helpWriteDetail", {
+                defaultValue: "Slurp writes or polishes your message",
               }),
               group: "conversation" as const,
             },

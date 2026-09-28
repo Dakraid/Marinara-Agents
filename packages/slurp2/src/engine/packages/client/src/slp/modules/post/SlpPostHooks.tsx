@@ -235,6 +235,7 @@ export function useSlpPostCardController(options: SlpPostCardControllerOptions) 
     personaAccount: options.personaAccount,
     postManagement: options.postManagement,
     postShowMoreLength: options.postShowMoreLength,
+    textAssist: options.textAssist,
     postMenuId,
     setPostMenuId,
     editingPostId,

@@ -87,6 +87,16 @@ export function SlpPostEditSheet({
             placeholder={localizeUi("ui.noodle.noodlepostcard.editPost")}
             className="min-h-24 w-full resize-none border-0 bg-transparent py-1 text-base leading-6 text-[var(--slurp-text)] outline-none placeholder:text-[var(--slurp-muted)] sm:text-[15px]"
           />
+          {ctx.textAssist && (
+            <div className="flex flex-wrap items-center">
+              {ctx.textAssist({
+                value: editingPostContent,
+                onApply: setEditingPostContent,
+                accountId: post.authorAccountId,
+                story: post.metadata?.noodlerPostType === "story",
+              })}
+            </div>
+          )}
         </div>
         {editingExistingPoll && pollEditing && (
           <SlpPollComposer

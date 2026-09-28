@@ -212,7 +212,9 @@ assert.match(
   thread,
   /noteSlpAiUseOnce\(localizeUi\);[\s\S]*?forceReply\.mutateAsync[\s\S]*?ui\.slurp\.messages\.forceReply[\s\S]*?<SlpUsesAiMark \/>/u,
 );
-assert.match(composer, /noteSlpAiUseOnce\(localizeUi\);[\s\S]*?await onGuidedPost/u);
+// 3c: the composer's Guide folded into the shared text assist, which notes the cost before it runs.
+assert.match(composer, /<SlpTextAssist/u);
+assert.match(client("features/assist/SlpTextAssist.tsx"), /noteSlpAiUseOnce\(t\);[\s\S]*?runSlpAction/u);
 assert.match(aiMark, /if \(window\.localStorage\.getItem\(AI_NOTE_SEEN_KEY\)\) return;/u, "the note shows once");
 assert.doesNotMatch(
   `${en["ui.slurp.ai.costNote"]} ${en["ui.slurp.ai.costNoteTitle"]}`,

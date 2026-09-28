@@ -1,4 +1,4 @@
-import type { ChangeEvent, RefObject } from "react";
+import type { ChangeEvent, ReactNode, RefObject } from "react";
 import type { SlpTextMention } from "../../../../../shared/src/slp/slp-mentions.js";
 import type { SlpPollInput } from "../../../../../shared/src/slp/slp-social-generation.schema.js";
 import type {
@@ -115,6 +115,16 @@ export interface SlpPostCardImageEditingCap {
 }
 
 export interface SlpPostCardCtx {
+  /**
+   * The AI assist for a post's text, handed in by the app (a module cannot reach a feature). Absent,
+   * the edit sheet shows no assist.
+   */
+  textAssist?: (input: {
+    value: string;
+    onApply: (text: string) => void;
+    accountId: string;
+    story: boolean;
+  }) => ReactNode;
   accountById?: Map<string, SlpAccount>;
   accountByHandle?: Map<string, SlpAccount>;
   personaAccount: SlpAccount | null;
@@ -218,6 +228,16 @@ export interface SlpPostCardCtx {
 }
 
 export interface SlpPostCardControllerOptions {
+  /**
+   * The AI assist for a post's text, handed in by the app (a module cannot reach a feature). Absent,
+   * the edit sheet shows no assist.
+   */
+  textAssist?: (input: {
+    value: string;
+    onApply: (text: string) => void;
+    accountId: string;
+    story: boolean;
+  }) => ReactNode;
   postManagement: boolean;
   /** The Show more threshold from settings; the card cannot read settings itself. */
   postShowMoreLength?: number;

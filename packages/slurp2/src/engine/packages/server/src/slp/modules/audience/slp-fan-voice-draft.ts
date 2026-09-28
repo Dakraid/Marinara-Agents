@@ -11,6 +11,8 @@ export const slpFanVoiceDraftSchema = z
     tone: slurpFanTypeSchema.shape.tone,
     /** The voice as it stands, so the draft improves it instead of starting over. */
     voice: z.string().max(SLURP_FAN_VOICE_MAX).default(""),
+    /** The player's note from the AI assist ("more lurker energy"). */
+    note: z.string().trim().max(400).optional(),
   })
   .strict();
 export type SlpFanVoiceDraftInput = z.infer<typeof slpFanVoiceDraftSchema>;
@@ -32,6 +34,7 @@ export function buildSlpFanVoiceDraftMessages(input: SlpFanVoiceDraftInput) {
     input.traits.length ? `Traits: ${input.traits.join(", ")}` : null,
     input.tone ? `Tone: ${input.tone}` : null,
     input.voice.trim() ? `Current voice (keep what works, sharpen the rest): ${input.voice.trim()}` : null,
+    input.note ? `What the player wants: ${input.note}` : null,
   ].filter(Boolean);
   return [
     {
