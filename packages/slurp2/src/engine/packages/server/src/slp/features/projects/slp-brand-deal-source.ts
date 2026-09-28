@@ -7,8 +7,7 @@ import type { DB } from "../../../db/connection.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { resolveSlurpCreatorSpice } from "../../data/creators/slp-spice-storage.js";
 import type { SlurpDealAd, SlurpDealSpice } from "../../modules/economy/slp-brand-deals.js";
-import { garnishAdBrandId } from "../../../services/garnish-ads/garnish-ads.types.js";
-import { createGarnishAds, garnishRatingAllowed } from "../ads/slp-ads-contract.js";
+import { createGarnishAds, garnishAdBrandId, garnishRatingAllowed } from "../ads/slp-ads-contract.js";
 
 type Settings = Awaited<ReturnType<ReturnType<typeof createSlurpStorage>["getSettings"]>>;
 

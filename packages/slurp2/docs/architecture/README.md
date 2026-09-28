@@ -127,6 +127,12 @@ The layer has three doors, all into the same runner:
 - Nothing else. A new action is added to the shared contract and the runner's switch, never as a
   side route.
 
+Brand actions (R): `list-brands` (the brands and products a helper can name), `offer-brand-deal`
+(the Stir lever "give <Creator> a deal with <brand / product>"; `preview: true` answers who, which
+product, the fee, fit notes or why not, and writes nothing; a run stores exactly that offer) and
+`draw-brand-picture` (a logo or product picture, returned unsaved for the picture assist). Stir can
+show the lever's preview as its card: it already has the card's fields (`SlpBrandDealPreview`).
+
 The AI assist on the client is two components in `features/assist/`: `SlpTextAssist` (Write when
 the field is empty, Improve when it has text, an optional note, Undo until the player types again)
 and `SlpPictureAssist` (type what the picture should show, Draw it, Retry / Use, Undo). Other

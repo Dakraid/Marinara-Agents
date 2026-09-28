@@ -221,6 +221,12 @@ const EXPECTED = [
   "POST /slurp/ads/import",
   "POST /slurp/ads/lorebook/sync",
   "POST /slurp/ads/pool",
+  "GET /slurp/ads/brands",
+  "POST /slurp/ads/brands",
+  "PATCH /slurp/ads/brands/:id",
+  "DELETE /slurp/ads/brands/:id",
+  "POST /slurp/ads/brands/:id/products",
+  "POST /slurp/ads/pool/:id/picture",
   "POST /slurp/auto-post/refresh-now",
   "POST /slurp/auto-post/refresh-targeted",
   "POST /slurp/fan-activity/refresh-now",
@@ -366,6 +372,13 @@ const ADDED_ROUTES = new Set([
   "POST /story-packs/previews/:id/apply",
   "POST /story/events/:id/start",
   "POST /story/occurrences/:id/status",
+  // R: brands and their products in Backstage (a product picture by upload or the picture assist).
+  "GET /slurp/ads/brands",
+  "POST /slurp/ads/brands",
+  "PATCH /slurp/ads/brands/:id",
+  "DELETE /slurp/ads/brands/:id",
+  "POST /slurp/ads/brands/:id/products",
+  "POST /slurp/ads/pool/:id/picture",
 ]);
 
 // Routes staging had that Slurp2 no longer serves. The share card is now drawn on a canvas in
@@ -392,7 +405,7 @@ const mappedStagingRoutes = [
 assert.deepEqual([...EXPECTED].sort(), mappedStagingRoutes, "the route mapping must match the staging fixture");
 
 const EXPECTED_HANDLER_COUNTS = {
-  "features/ads": 18,
+  "features/ads": 24,
   "features/assist": 2,
   "features/audience": 13,
   "features/creators": 47,
@@ -408,7 +421,7 @@ const EXPECTED_HANDLER_COUNTS = {
   "features/settings": 7,
   "features/world": 11,
 } as const;
-const EXPECTED_METHOD_COUNTS = { DELETE: 17, GET: 78, PATCH: 19, POST: 133, PUT: 6 } as const;
+const EXPECTED_METHOD_COUNTS = { DELETE: 18, GET: 79, PATCH: 20, POST: 136, PUT: 6 } as const;
 
 const root = join(import.meta.dirname, "../packages/slurp2/src/engine/packages/server/src/slp");
 const registration = /\bapp\.(get|post|put|patch|delete|addContentTypeParser)(?:<[^()]*?>)?\(\s*["'`]([^"'`]+)["'`]/gu;
@@ -463,7 +476,7 @@ const methodCounts = Object.fromEntries(
     }, new Map<string, number>()),
 );
 assert.deepEqual(methodCounts, EXPECTED_METHOD_COUNTS, "HTTP method multiset changed from staging");
-assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 253);
+assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 259);
 assert.deepEqual(handlerCounts, EXPECTED_HANDLER_COUNTS, "handler count changed in a feature");
 assert.ok(foundRoutes.includes("POST /slurp/posts/:id/media"), "the renamed POST media route must remain registered");
 assert.ok(

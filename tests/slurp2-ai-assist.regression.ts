@@ -35,11 +35,15 @@ assert.deepEqual(
   [...SLP_ACTION_NAMES].sort(),
   [
     "add-idea",
+    // R: brand logos and product pictures, the brands a helper can name, and the Stir brand deal lever.
+    "draw-brand-picture",
     "draw-picture",
     "improve-text",
     "keep-picture",
     // J2: Professor Mari needs the Creator ids every other action takes (read-only).
+    "list-brands",
     "list-creators",
+    "offer-brand-deal",
     "steer-creator",
     "undo-picture",
     "use-picture",
