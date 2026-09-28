@@ -27,6 +27,13 @@ export type SlurpTiesCollab = {
   answeredAt: string | null;
   postId: string | null;
   decline: "busy" | "offBrand" | "noCollabs" | "noAnswer" | "player" | null;
+  /** Announced (U): the joint post drops at `dropAt`. */
+  announcedAt?: string | null;
+  dropAt?: string | null;
+  /** Planned in their DMs as a spicy shoot together. */
+  shoot?: boolean;
+  /** Fans who came across once it was up. */
+  crossover?: { host: number; partner: number };
 };
 export type SlurpTiesRivalry = {
   id: string;
@@ -52,6 +59,8 @@ export type SlurpTiesDeal = {
   postId: string | null;
   /** The player's own page took it and has not posted it yet (Studio reminds them). */
   owesPost?: boolean;
+  /** The player marked the owed post as posted. */
+  markedAt?: string | null;
 };
 export type SlurpTiesCoupleStage = "sparks" | "dating" | "together" | "rocky" | "split";
 export type SlurpTiesCouple = {
@@ -137,6 +146,10 @@ export function useSlurpTiesMutations(personaId: string) {
         // A new page is a new Creator everywhere: Discover, the feed, profiles.
         void qc.invalidateQueries({ queryKey: slpKeys.noodlerRoot() });
       },
+    }),
+    markPosted: useMutation({
+      mutationFn: (id: string) => post(`/deals/${encodeURIComponent(id)}/posted`),
+      onSuccess: store,
     }),
     answerDeal: useMutation({
       mutationFn: (answer: { id: string; accept: boolean }) =>

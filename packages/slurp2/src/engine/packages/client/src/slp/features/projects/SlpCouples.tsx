@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { CalendarHeart, DoorClosed, DoorOpen, HeartCrack, HeartHandshake, Zap } from "lucide-react";
+import { BriefcaseBusiness, CalendarHeart, DoorClosed, DoorOpen, HeartCrack, HeartHandshake, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
@@ -34,17 +34,19 @@ function useMomentLine() {
 }
 
 /**
- * Couples in Studio, right after "Suggest a pairing" (7b-couples): who is together, what happened
- * last, and the player's steering: plan a date, stir some drama, patch it up, break them up, get
- * them back together, and the opt-in shared page.
+ * One list of Studio's Relationships (U: couples, crushes or exes; 7b-couples): who is together, what
+ * happened last, and the player's steering: plan a date, stir some drama, patch it up, break them
+ * up, get them back together, the opt-in shared page, and a real collab for a couple (work, not life).
  */
 export function SlpCouplesSection({
   personaId,
+  title: heading,
   couples,
   byId,
   Row,
 }: {
   personaId: string;
+  title: string;
   couples: SlurpTiesCouple[];
   byId: Map<string, SlurpTiesCreator>;
   Row: (props: { a?: SlurpTiesCreator; b?: SlurpTiesCreator; title: string; detail?: ReactNode }) => ReactNode;
@@ -54,7 +56,7 @@ export function SlpCouplesSection({
   const momentLine = useMomentLine();
   if (!couples.length) return null;
   const name = (id: string) => byId.get(id)?.name ?? t("ui.slurp.ties.someone");
-  const busy = actions.steerCouple.isPending || actions.couplePage.isPending;
+  const busy = actions.steerCouple.isPending || actions.couplePage.isPending || actions.suggest.isPending;
   const onError = (error: unknown) => toast.error(errorMessage(error));
   const steer = (couple: SlurpTiesCouple, value: SlurpCoupleSteer) =>
     actions.steerCouple.mutate(
@@ -69,6 +71,12 @@ export function SlpCouplesSection({
         onError,
       },
     );
+  // A couple can make a real collab too (U): it goes to Business as a request, and it is work.
+  const workTogether = (couple: SlurpTiesCouple) =>
+    actions.suggest.mutate(
+      { aId: couple.aId, bId: couple.bId },
+      { onSuccess: () => toast.success(t("ui.slurp.ties.couple.workDone")), onError },
+    );
   const title = (couple: SlurpTiesCouple) =>
     t(`ui.slurp.ties.couple.${couple.stage === "split" && couple.ending === "fizzled" ? "fizzled" : couple.stage}`, {
       a: name(couple.aId),
@@ -76,8 +84,8 @@ export function SlpCouplesSection({
     });
 
   return (
-    <section className="space-y-2" aria-label={t("ui.slurp.ties.couples")} data-slurp-couples>
-      <h4 className={cn(SLP_EYEBROW_CLASS, "px-1")}>{t("ui.slurp.ties.couples")}</h4>
+    <section className="space-y-2" aria-label={heading} data-slurp-couples>
+      <h4 className={cn(SLP_EYEBROW_CLASS, "px-1")}>{heading}</h4>
       <ul className={listClass}>
         {couples.map((couple) => {
           const live = couple.stage !== "split";
@@ -146,12 +154,23 @@ export function SlpCouplesSection({
                     className="min-h-11 px-4 text-sm"
                   >
                     <SlpHeartGlyph size={15} aria-hidden="true" />
-                    {t("ui.slurp.ties.couple.reunite")}
+                    {t(couple.ending === "fizzled" ? "ui.slurp.ties.couple.retry" : "ui.slurp.ties.couple.reunite")}
                   </SlpButton>
                 )}
               </div>
               {live ? (
                 <div className="flex flex-wrap gap-x-2">
+                  {(couple.stage === "dating" || couple.stage === "together") && (
+                    <SlpButton
+                      variant="tertiary"
+                      disabled={busy}
+                      onClick={() => workTogether(couple)}
+                      className="min-h-11 text-sm"
+                    >
+                      <BriefcaseBusiness size={15} aria-hidden="true" />
+                      {t("ui.slurp.ties.couple.work")}
+                    </SlpButton>
+                  )}
                   {(couple.stage === "dating" || couple.stage === "together") && (
                     <SlpButton
                       variant="tertiary"

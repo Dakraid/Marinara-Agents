@@ -5,9 +5,10 @@ import { slpTagClass } from "../chrome/SlpButton";
 import { SlpHeartGlyph } from "../../base/chrome/SlpGlyphs";
 
 /**
- * The line under a post's name: "with @mira" on a joint collab post (it shows on both pages), a heart
- * and "with @kai" on a couple's joint post, "by @mira" on a couple's shared page, or "Paid partnership
- * · PeakFuel" on a sponsored one. Nothing on any other post.
+ * The line under a post's name: "with @mira" on a joint collab post (it shows on both pages), "Collab
+ * soon with @mira" on its announcement (U), a heart and "with @kai" on an old joint couple post, "by
+ * @mira" on a couple's shared page, or "Paid partnership · PeakFuel" on a sponsored one. Nothing on
+ * any other post: a couple's everyday post has no tag (U: couple = life).
  */
 export function SlpPostPartnership({
   partnership,
@@ -43,7 +44,15 @@ export function SlpPostPartnership({
       ) : (
         <Users size={12} aria-hidden="true" className="shrink-0" />
       )}
-      <span className="shrink-0">{t(byId ? "ui.slurp.post.coupleBy" : "ui.slurp.post.collabWith")}</span>
+      <span className="shrink-0">
+        {t(
+          byId
+            ? "ui.slurp.post.coupleBy"
+            : partnership.announce
+              ? "ui.slurp.post.collabSoon"
+              : "ui.slurp.post.collabWith",
+        )}
+      </span>
       <button
         type="button"
         disabled={!onOpenProfile}

@@ -1,11 +1,11 @@
 import { useState, type ReactNode } from "react";
-import { Ban, Handshake, HeartHandshake, Zap } from "lucide-react";
+import { Ban, Check, Handshake, HeartHandshake, Zap } from "lucide-react";
 import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { Avatar, SLP_EYEBROW_CLASS, SLP_GROUP_CLASS, SLP_TYPE } from "../../base/chrome/SlpChrome";
-import { SlpButton, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
+import { SlpButton, SlpPrimaryButton, slpTagClass } from "../../modules/chrome/SlpButton";
 import { SlpCoinText } from "../../modules/coin/SlpCoin";
 import { formatRelativeTime } from "../../base/ui/slp-date-time";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
@@ -67,11 +67,59 @@ function Row({
   );
 }
 
+/** Pick two Creators as chips (a couple's shared page is not a Creator to pair with). */
+function SlpPairPicker({
+  creators,
+  picked,
+  onPick,
+  label,
+}: {
+  creators: SlurpTiesCreator[];
+  picked: string[];
+  onPick: (ids: string[]) => void;
+  label: string;
+}) {
+  const toggle = (id: string) =>
+    onPick(picked.includes(id) ? picked.filter((entry) => entry !== id) : [...picked, id].slice(-2));
+  return (
+    <div className="flex flex-wrap gap-1.5" role="group" aria-label={label}>
+      {creators
+        .filter((creator) => !creator.couplePage)
+        .map((creator) => {
+          const on = picked.includes(creator.id);
+          return (
+            <button
+              key={creator.id}
+              type="button"
+              aria-pressed={on}
+              onClick={() => toggle(creator.id)}
+              className={cn(
+                "flex min-h-11 items-center gap-2 rounded-full py-1 pe-3.5 ps-1 text-sm font-semibold ring-1 ring-inset transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none",
+                on
+                  ? "bg-[image:var(--slurp-nav-active)] text-[var(--slurp-text)] ring-[var(--noodle-accent)]/45"
+                  : "bg-[var(--slurp-canvas)] text-[var(--slurp-muted)] ring-[var(--slurp-outline)] hover:text-[var(--slurp-text)]",
+              )}
+            >
+              <Avatar account={{ displayName: creator.name, avatarUrl: creator.avatarUrl }} size="xs" />
+              <span className="max-w-[9rem] truncate">{creator.name}</span>
+            </button>
+          );
+        })}
+    </div>
+  );
+}
+
+/** One plain line under a Studio area's header: what the area is, in the world's words. */
+function Intro({ children }: { children: ReactNode }) {
+  return <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>{children}</p>;
+}
+
 /**
- * Who works with whom, and who does not get along: collab requests between Creators (push one
- * through, block a pair, suggest a pairing), couples (set two up, steer their story, their shared
- * page), rivalries (cool one down) and brand deals. Studio,
- * after the Creators. Everything here happens in-world on its own; this is where the player steers.
+ * Business (U: collab = work): collab requests between Creators (push one through, block a pair,
+ * suggest a collab), where an agreed collab stands (announced, drops on a day, up on both pages, the
+ * fans it brought across), rivalries (cool one down) and brand deals. Studio, after the Creators.
+ * Everything here happens in-world on its own; this is where the player steers. Couples, crushes and
+ * exes are life, not work: `SlpRelationshipsPanel` below.
  */
 export function SlpCollabsPanel({ personaId }: { personaId: string }) {
   const { t, i18n } = useTranslation();
@@ -90,7 +138,7 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
   const when = (at: string | null) => (at ? formatRelativeTime(at, i18n.language) : "");
   const openCollabs = view.collabs.filter((collab) => ["asked", "agreed", "planned"].includes(collab.status));
   const pastCollabs = view.collabs.filter((collab) => !openCollabs.includes(collab));
-  const empty = !view.collabs.length && !view.rivalries.length && !view.deals.length && !view.couples.length;
+  const empty = !view.collabs.length && !view.rivalries.length && !view.deals.length;
 
   const collabTitle = (collab: SlurpTiesCollab) =>
     collab.status === "asked"
@@ -109,10 +157,22 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
       return byId.get(collab.partnerId)?.own
         ? t("ui.slurp.ties.collab.waitingForYou")
         : t("ui.slurp.ties.collab.waiting", { partner: name(collab.partnerId) });
+    // U: agreed → announced ("drops Friday, 7 pm") → posted, with the fans it brought across.
+    if (collab.status === "agreed" && collab.dropAt)
+      return `${t("ui.slurp.ties.collab.announced", { when: dropWhen(collab.dropAt) })} · ${split}`;
     if (collab.status === "agreed")
       return `${t("ui.slurp.ties.collab.agreed", { host: name(collab.hostId) })} · ${split}`;
     if (collab.status === "planned") return `${t("ui.slurp.ties.collab.planned")} · ${split}`;
-    if (collab.status === "posted") return `${t("ui.slurp.ties.collab.posted")} · ${split}`;
+    if (collab.status === "posted") {
+      const across = (collab.crossover?.host ?? 0) + (collab.crossover?.partner ?? 0);
+      return [
+        t("ui.slurp.ties.collab.posted"),
+        split,
+        across ? t("ui.slurp.ties.collab.across", { count: across }) : "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
+    }
     if (collab.status === "blocked") return t("ui.slurp.ties.collab.blocked");
     return t(`ui.slurp.ties.decline.${collab.decline ?? "offBrand"}`, { partner: name(collab.partnerId) });
   };
@@ -140,12 +200,9 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
     });
   };
 
-  // A couple's shared page is not a Creator to pair with.
-  const suggestable = view.creators.filter((creator) => !creator.couplePage);
-  const toggle = (id: string) =>
-    setPicked((current) =>
-      current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id].slice(-2),
-    );
+  // "Tuesday 7:00 PM": a day this week and the hour the fans were told.
+  const dropWhen = (at: string) =>
+    new Date(at).toLocaleString(i18n.language, { weekday: "long", hour: "numeric", minute: "2-digit" });
   const suggest = () =>
     picked.length === 2 &&
     actions.suggest.mutate(
@@ -158,21 +215,9 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
         onError,
       },
     );
-  const setUp = () =>
-    picked.length === 2 &&
-    actions.setUp.mutate(
-      { aId: picked[0]!, bId: picked[1]! },
-      {
-        onSuccess: () => {
-          setPicked([]);
-          toast.success(t("ui.slurp.ties.setUpDone"));
-        },
-        onError,
-      },
-    );
-
   return (
     <div data-slurp-ties className="flex flex-col gap-5">
+      <Intro>{t("ui.slurp.ties.business.intro")}</Intro>
       {empty && <p className={cn(SLP_TYPE.body, "text-[var(--slurp-muted)]")}>{t("ui.slurp.ties.empty")}</p>}
 
       {openCollabs.length > 0 && (
@@ -189,7 +234,13 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
                     title={collabTitle(collab)}
                     detail={collab.idea ? `“${collab.idea}”` : undefined}
                   />
-                  <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>{collabStatus(collab)}</p>
+                  <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>
+                    {/* Planned in their DMs as a spicy shoot together (U). */}
+                    {collab.shoot && (
+                      <span className={cn(slpTagClass(), "mr-1.5")}>{t("ui.slurp.ties.collab.shoot")}</span>
+                    )}
+                    {collabStatus(collab)}
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {collab.status === "asked" &&
                       (toMe ? (
@@ -244,54 +295,22 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
         <h4 className={cn(SLP_EYEBROW_CLASS, "px-1")}>{t("ui.slurp.ties.suggestTitle")}</h4>
         <div className="space-y-3">
           <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>{t("ui.slurp.ties.suggestDetail")}</p>
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("ui.slurp.ties.suggestTitle")}>
-            {suggestable.map((creator) => {
-              const on = picked.includes(creator.id);
-              return (
-                <button
-                  key={creator.id}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => toggle(creator.id)}
-                  className={cn(
-                    "flex min-h-11 items-center gap-2 rounded-full py-1 pe-3.5 ps-1 text-sm font-semibold ring-1 ring-inset transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none",
-                    on
-                      ? "bg-[image:var(--slurp-nav-active)] text-[var(--slurp-text)] ring-[var(--noodle-accent)]/45"
-                      : "bg-[var(--slurp-canvas)] text-[var(--slurp-muted)] ring-[var(--slurp-outline)] hover:text-[var(--slurp-text)]",
-                  )}
-                >
-                  <Avatar account={{ displayName: creator.name, avatarUrl: creator.avatarUrl }} size="xs" />
-                  <span className="max-w-[9rem] truncate">{creator.name}</span>
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <SlpPrimaryButton
-              disabled={picked.length !== 2 || busy}
-              onClick={suggest}
-              className="min-h-11 w-full px-4 text-sm sm:w-auto"
-            >
-              <SlpSparkleGlyph size={16} aria-hidden="true" />
-              {picked.length === 2 ? t("ui.slurp.ties.suggestPair") : t("ui.slurp.ties.suggestPick")}
-            </SlpPrimaryButton>
-            {/* The same two can also be set up as a couple (7b-couples). */}
-            {picked.length === 2 && (
-              <SlpButton
-                variant="secondary"
-                disabled={busy}
-                onClick={setUp}
-                className="min-h-11 w-full px-4 text-sm sm:w-auto"
-              >
-                <HeartHandshake size={16} aria-hidden="true" />
-                {t("ui.slurp.ties.setUp")}
-              </SlpButton>
-            )}
-          </div>
+          <SlpPairPicker
+            creators={view.creators}
+            picked={picked}
+            onPick={setPicked}
+            label={t("ui.slurp.ties.suggestTitle")}
+          />
+          <SlpPrimaryButton
+            disabled={picked.length !== 2 || busy}
+            onClick={suggest}
+            className="min-h-11 w-full px-4 text-sm sm:w-auto"
+          >
+            <SlpSparkleGlyph size={16} aria-hidden="true" />
+            {picked.length === 2 ? t("ui.slurp.ties.suggestPair") : t("ui.slurp.ties.suggestPick")}
+          </SlpPrimaryButton>
         </div>
       </section>
-
-      <SlpCouplesSection personaId={personaId} couples={view.couples} byId={byId} Row={Row} />
 
       {view.rivalries.length > 0 && (
         <section className="space-y-2" aria-label={t("ui.slurp.ties.rivalries")}>
@@ -398,13 +417,80 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
 }
 
 /**
+ * Relationships (U: couple = life): set two Creators up, then their crushes, couples and exes with the
+ * player's steering (dates, drama, a shared page, getting back together) and a way for a couple to
+ * make a real collab too. Studio, right after Business.
+ */
+export function SlpRelationshipsPanel({ personaId }: { personaId: string }) {
+  const { t } = useTranslation();
+  const query = useSlurpTies(personaId);
+  const actions = useSlurpTiesMutations(personaId);
+  const [picked, setPicked] = useState<string[]>([]);
+  const view = query.data;
+  if (query.isError)
+    return <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>{t("ui.slurp.ties.loadFailed")}</p>;
+  if (!view) return <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>{t("ui.slurp.settings.loading")}</p>;
+  const byId = new Map(view.creators.map((creator) => [creator.id, creator]));
+  // A crush that went nowhere stays a crush; exes are the ones who broke up.
+  const crushes = view.couples.filter(
+    (couple) => couple.stage === "sparks" || (couple.stage === "split" && couple.ending === "fizzled"),
+  );
+  const couples = view.couples.filter((couple) => ["dating", "together", "rocky"].includes(couple.stage));
+  const exes = view.couples.filter((couple) => couple.stage === "split" && couple.ending !== "fizzled");
+  const setUp = () =>
+    picked.length === 2 &&
+    actions.setUp.mutate(
+      { aId: picked[0]!, bId: picked[1]! },
+      {
+        onSuccess: () => {
+          setPicked([]);
+          toast.success(t("ui.slurp.ties.setUpDone"));
+        },
+        onError: (error: unknown) => toast.error(errorMessage(error)),
+      },
+    );
+  const lists = { personaId, byId, Row };
+  return (
+    <div data-slurp-relationships className="flex flex-col gap-5">
+      <Intro>{t("ui.slurp.ties.life.intro")}</Intro>
+      {!view.couples.length && (
+        <p className={cn(SLP_TYPE.body, "text-[var(--slurp-muted)]")}>{t("ui.slurp.ties.life.empty")}</p>
+      )}
+      <SlpCouplesSection {...lists} title={t("ui.slurp.ties.couples")} couples={couples} />
+      <SlpCouplesSection {...lists} title={t("ui.slurp.ties.crushes")} couples={crushes} />
+      <SlpCouplesSection {...lists} title={t("ui.slurp.ties.exes")} couples={exes} />
+      <section className="space-y-2" aria-label={t("ui.slurp.ties.setUpTitle")}>
+        <h4 className={cn(SLP_EYEBROW_CLASS, "px-1")}>{t("ui.slurp.ties.setUpTitle")}</h4>
+        <div className="space-y-3">
+          <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>{t("ui.slurp.ties.setUpDetail")}</p>
+          <SlpPairPicker
+            creators={view.creators}
+            picked={picked}
+            onPick={setPicked}
+            label={t("ui.slurp.ties.setUpTitle")}
+          />
+          <SlpPrimaryButton
+            disabled={picked.length !== 2 || actions.setUp.isPending}
+            onClick={setUp}
+            className="min-h-11 w-full px-4 text-sm sm:w-auto"
+          >
+            <HeartHandshake size={16} aria-hidden="true" />
+            {picked.length === 2 ? t("ui.slurp.ties.setUp") : t("ui.slurp.ties.suggestPick")}
+          </SlpPrimaryButton>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/**
  * Brand offers to a page the player runs, in that Creator's Studio right after the money: yes pays
  * the fee into their earnings now, no ends it.
  */
 export function SlpBrandOffers({ personaId, creatorId }: { personaId: string; creatorId: string }) {
   const { t } = useTranslation();
   const { data } = useSlurpTies(personaId);
-  const { answerDeal } = useSlurpTiesMutations(personaId);
+  const { answerDeal, markPosted } = useSlurpTiesMutations(personaId);
   const offers = (data?.deals ?? []).filter((deal) => deal.creatorId === creatorId && deal.status === "offered");
   const owed = (data?.deals ?? []).filter((deal) => deal.creatorId === creatorId && deal.owesPost);
   if (!offers.length && !owed.length) return null;
@@ -434,6 +520,22 @@ export function SlpBrandOffers({ personaId, creatorId }: { personaId: string; cr
                 <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)] [overflow-wrap:anywhere]")}>
                   {t("ui.slurp.ties.owed.detail", { product: deal.product })}
                 </p>
+                {/* U: no dead end when the post went up without #ad or the brand's name. */}
+                <SlpButton
+                  variant="secondary"
+                  disabled={markPosted.isPending}
+                  onClick={() =>
+                    markPosted.mutate(deal.id, {
+                      onSuccess: () => toast.success(t("ui.slurp.ties.owed.marked", { brand: deal.brand })),
+                      onError: (error) => toast.error(errorMessage(error)),
+                    })
+                  }
+                  className="mt-2 min-h-11 px-4 text-sm"
+                  data-slurp-owed-mark
+                >
+                  <Check size={15} aria-hidden="true" />
+                  {t("ui.slurp.ties.owed.mark")}
+                </SlpButton>
               </div>
             </li>
           ))}

@@ -1,5 +1,5 @@
 import { useId, useState, type ReactNode } from "react";
-import { BookOpen, ChevronDown, Handshake, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react";
+import { BookOpen, ChevronDown, Handshake, Heart, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import type { SlurpStudioCreator } from "../../features/economy/slp-economy-contract";
@@ -14,7 +14,7 @@ import { SlpCreatorFrame } from "./SlpHomeHelpers";
 import { formatRelativeTime, formatTime } from "../../base/ui/slp-date-time";
 import { BroadcastPanel } from "../../features/messages/SlpMessages";
 import { SlurpProjectsPanel } from "../../features/projects/SlpProjectsBoard";
-import { SlpBrandOffers, SlpCollabsPanel } from "../../features/projects/SlpCollabsPanel";
+import { SlpBrandOffers, SlpCollabsPanel, SlpRelationshipsPanel } from "../../features/projects/SlpCollabsPanel";
 import { SlpCoinText } from "../../modules/coin/SlpCoin";
 import { errorMessage } from "./SlpHomeHelpers";
 import { SlpCollectCard } from "./SlpCollectCard";
@@ -308,15 +308,25 @@ function SlurpStudioView({
           ))
         )}
 
-        {/* Between all Creators, not one: collabs, rivalries and brand deals (7b-c). */}
+        {/* Between all Creators, not one (U: collab = work, couple = life): Business (collabs, brand
+            deals, rivalries, 7b-c) and Relationships (couples, crushes, exes, 7b-couples). */}
         {personaId && studioQuery.data && (
-          <SlpStudioGroup
-            icon={Handshake}
-            title={localizeUi("ui.slurp.ties.title")}
-            detail={localizeUi("ui.slurp.ties.detail")}
-          >
-            <SlpCollabsPanel personaId={personaId} />
-          </SlpStudioGroup>
+          <>
+            <SlpStudioGroup
+              icon={Handshake}
+              title={localizeUi("ui.slurp.ties.title")}
+              detail={localizeUi("ui.slurp.ties.detail")}
+            >
+              <SlpCollabsPanel personaId={personaId} />
+            </SlpStudioGroup>
+            <SlpStudioGroup
+              icon={Heart}
+              title={localizeUi("ui.slurp.ties.life.title")}
+              detail={localizeUi("ui.slurp.ties.life.detail")}
+            >
+              <SlpRelationshipsPanel personaId={personaId} />
+            </SlpStudioGroup>
+          </>
         )}
       </div>
     </SlpCreatorFrame>
