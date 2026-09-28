@@ -210,6 +210,11 @@ export function createMessagesStorageCommissions(context: SlurpMessagesContext) 
       return rows[0] ? mapCommission(rows[0]) : null;
     },
     /** Every commission waiting on the fan's answer, for the world tick to settle. */
+    /** Paid and not yet delivered, for the world tick's delivery repair. */
+    async listAcceptedCommissions(): Promise<SlurpCommission[]> {
+      const rows = await db.select().from(slurpCommissions).where(eq(slurpCommissions.state, "accepted"));
+      return rows.map(mapCommission);
+    },
     async listQuotedCommissions(): Promise<SlurpCommission[]> {
       // Filtered in the query rather than after it: these run every world tick, and the table
       // only ever grows.
@@ -609,7 +614,8 @@ export function createMessagesStorageCommissions(context: SlurpMessagesContext) 
      */
     async scheduleCommissionDelivery(
       id: string,
-      input: { deliverAt: string; mediaPath: string },
+      /** No picture: the delivery is the Creator's note alone (the world tick's repair). */
+      input: { deliverAt: string; mediaPath: string | null },
     ): Promise<SlurpCommission | null> {
       const commission = await context.storage.getCommission(id);
       if (!commission || commission.state !== "accepted") return null;

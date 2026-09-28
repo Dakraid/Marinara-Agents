@@ -594,6 +594,43 @@ export function slurpCommissionDeliveryDelayMs(input: { price: number; briefLeng
   return Math.round(5 * MINUTE + effort * (45 * MINUTE - 5 * MINUTE));
 }
 
+/**
+ * Paid commissions of automatic Creators that nothing is going to deliver (7c M-005).
+ *
+ * The player's accept route draws and schedules its own delivery; a quote an AI fan accepted on the
+ * world tick, or an accept whose scheduling failed, was left `accepted` with no delivery time and
+ * sat paid and silent forever. These get a delivery time from the same pacing, counted from the
+ * accept, so an old one is due at once. A fresh accept is left alone for ten minutes, because the
+ * accept route may still be drawing it. Hand-run Creators deliver by hand and are never listed.
+ */
+export function slurpUnscheduledCommissionDeliveries(
+  commissions: readonly Pick<
+    SlurpCommissionLike,
+    "id" | "creatorAccountId" | "state" | "deliverAt" | "price" | "brief" | "updatedAt"
+  >[],
+  automaticCreatorIds: ReadonlySet<string>,
+  now: Date,
+): { id: string; deliverAt: string }[] {
+  return commissions.flatMap((commission) => {
+    if (commission.state !== "accepted" || commission.deliverAt) return [];
+    if (!automaticCreatorIds.has(commission.creatorAccountId)) return [];
+    const acceptedAt = Date.parse(commission.updatedAt);
+    if (!Number.isFinite(acceptedAt) || now.getTime() - acceptedAt < 10 * MINUTE) return [];
+    const due =
+      acceptedAt + slurpCommissionDeliveryDelayMs({ price: commission.price, briefLength: commission.brief.length });
+    return [{ id: commission.id, deliverAt: new Date(Math.max(due, now.getTime())).toISOString() }];
+  });
+}
+type SlurpCommissionLike = {
+  id: string;
+  creatorAccountId: string;
+  state: string;
+  deliverAt: string | null;
+  price: number;
+  brief: string;
+  updatedAt: string;
+};
+
 /** One line of thread summary for the inbox. Kept short: the list shows it on one row. */
 export function slurpMessagePreview(kind: SlurpMessageKind, content: string, price: number): string {
   const trimmed = content.replace(/\s+/g, " ").trim();

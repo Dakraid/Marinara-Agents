@@ -11,6 +11,10 @@ import {
   slurpOpenCouplePage,
   SLURP_COUPLE_PAGE_SOURCE,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples.ts";
+import {
+  slurpCommissionDeliveryDelayMs,
+  slurpUnscheduledCommissionDeliveries,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-messaging.ts";
 import { slurp2Source } from "./slurp2-source.ts";
 
 const root = new URL("../packages/slurp2/src/engine/packages/", import.meta.url);
@@ -62,6 +66,69 @@ const at = (days: number) => new Date(T0 + days * 86_400_000);
     /couplePage \? \{ \.\.\.model, onOpenMessages: \(\) => setCoupleWriteOpen\(true\) \}/u,
   );
   assert.match(client("features/projects/SlpCouples.tsx"), /export function SlpCouplePageWriteSheet/u);
+}
+
+// M-005. Paid commissions of automatic Creators always get a delivery time; the two stuck prod rows
+// (accepted by an AI fan days ago, no delivery time) are due at once on the next tick.
+{
+  const now = new Date("2026-09-28T04:00:00.000Z");
+  const row = (id: string, over: Partial<Parameters<typeof slurpUnscheduledCommissionDeliveries>[0][number]> = {}) => ({
+    id,
+    creatorAccountId: "sadie",
+    state: "accepted",
+    deliverAt: null,
+    price: 34,
+    brief: "a cozy sketch of you reading",
+    updatedAt: "2026-09-26T11:20:00.000Z",
+    ...over,
+  });
+  const automatic = new Set(["sadie", "jennifer"]);
+  const rows = [
+    row("B-hoIi"),
+    row("GVO--g", { creatorAccountId: "jennifer", price: 65, updatedAt: "2026-09-27T18:05:00.000Z" }),
+    row("hand-run", { creatorAccountId: "persona-page" }),
+    row("scheduled", { deliverAt: "2026-09-28T04:20:00.000Z" }),
+    row("delivered", { state: "delivered" }),
+    row("quoted", { state: "quoted" }),
+    // Just accepted by the player: the accept route may still be drawing it.
+    row("fresh", { updatedAt: "2026-09-28T03:55:00.000Z" }),
+    // Accepted 20 minutes ago by an AI fan: due at the accept + the usual pacing, not at once.
+    row("recent", { updatedAt: "2026-09-28T03:40:00.000Z", price: 200, brief: "x".repeat(600) }),
+  ];
+  const repairs = slurpUnscheduledCommissionDeliveries(rows, automatic, now);
+  assert.deepEqual(
+    repairs.map((entry) => entry.id),
+    ["B-hoIi", "GVO--g", "recent"],
+  );
+  assert.equal(repairs[0]!.deliverAt, now.toISOString(), "an old paid commission is due at once");
+  assert.equal(repairs[1]!.deliverAt, now.toISOString());
+  const recentDue =
+    Date.parse("2026-09-28T03:40:00.000Z") + slurpCommissionDeliveryDelayMs({ price: 200, briefLength: 600 });
+  assert.equal(repairs[2]!.deliverAt, new Date(recentDue).toISOString(), "the usual pacing, counted from the accept");
+  assert.ok(recentDue > now.getTime());
+  // Once scheduled it is never listed again.
+  assert.deepEqual(
+    slurpUnscheduledCommissionDeliveries(
+      rows.map((entry) => ({
+        ...entry,
+        deliverAt: repairs.find((r) => r.id === entry.id)?.deliverAt ?? entry.deliverAt,
+      })),
+      automatic,
+      now,
+    ),
+    [],
+  );
+  const world = server("features/world/slp-world-operation.ts");
+  assert.match(
+    world,
+    /slurpUnscheduledCommissionDeliveries\(\s*await messages\.listAcceptedCommissions\(\),\s*automatedCreatorIds,/u,
+  );
+  assert.match(world, /scheduleCommissionDelivery\(repair\.id, \{ deliverAt: repair\.deliverAt, mediaPath: null \}\)/u);
+  assert.match(
+    server("features/messages/commissions/slp-commission-delivery-service.ts"),
+    /if \(mediaPath\) \{/u,
+    "a text-only delivery skips the picture",
+  );
 }
 
 console.log("slurp2 7c fixes regression passed");

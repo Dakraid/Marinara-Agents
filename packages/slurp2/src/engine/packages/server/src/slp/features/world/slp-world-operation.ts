@@ -10,6 +10,7 @@
  * Auto-posting is the one exception to that rule and it lives in its own scheduler.
  */
 import { slurpCoupleBuzz } from "../../modules/projects/slp-creator-couples.js";
+import { slurpUnscheduledCommissionDeliveries } from "../../modules/messages/slp-messaging.js";
 import { advanceSlurpCreatorTies } from "../projects/slp-projects-contract.js";
 import {
   slurpCommissionQuote,
@@ -549,6 +550,18 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
           .settleAudienceCommission(commission.id, answer.kind === "accept" ? "accept" : "decline")
           .catch(() => null);
       }
+      // A paid commission of an automatic Creator always ends in a delivery (7c M-005): the
+      // message scheduler hands over what gets a time here.
+      // ponytail: text-only delivery (the Creator's note, no picture); drawing it needs an image
+      // budget row for audience commissions.
+      for (const repair of slurpUnscheduledCommissionDeliveries(
+        await messages.listAcceptedCommissions(),
+        automatedCreatorIds,
+        until,
+      ))
+        await messages
+          .scheduleCommissionDelivery(repair.id, { deliverAt: repair.deliverAt, mediaPath: null })
+          .catch(() => null);
 
       // Counted after churn, so reach reflects the audience that is left rather than the one that
       // just drifted out.
