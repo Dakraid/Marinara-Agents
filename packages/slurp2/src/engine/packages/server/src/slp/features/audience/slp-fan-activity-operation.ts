@@ -58,6 +58,7 @@ import {
   claimSlurpModelBudget,
   getSlurpModelBudgetLedger,
   slurpModelWorkerAllows,
+  slurpEffectiveModelBudget,
   spendSlurpModelBudget,
 } from "../../base/model/slp-model-worker.js";
 
@@ -341,6 +342,7 @@ export async function runCreatorFanActivity(input: {
     const at = input.at ?? new Date();
     const noodle = createSlurpStorage(input.db);
     const settings = fanActivitySettingsFor(await noodle.getSettings(), input.mode === "manual");
+    settings.modelBudget = await slurpEffectiveModelBudget(input.db, settings.modelBudget);
     const recoverable = await findRecoverablePlan(input.db);
     if (recoverable?.interrupted) {
       const abandoned = finishSlpFanActivityRun(recoverable.plan, recoverable.run.id, "abandoned", at);
@@ -498,6 +500,7 @@ export async function getCreatorFanActivityStatus(db: DB, at = new Date()) {
   const plan = await readCurrentPlan(db, at);
   const noodle = createSlurpStorage(db);
   const settings = await noodle.getSettings();
+  settings.modelBudget = await slurpEffectiveModelBudget(db, settings.modelBudget);
   const automaticRuns = plan?.runs.filter((run) => !run.manual) ?? [];
   const lastRun = plan
     ? ([...plan.runs]

@@ -87,8 +87,7 @@ import { resolveCreatorCharacterCanon, resolveSlurpCharacterFanVoice } from "../
 import { resolveSlurpCreatorFlavour } from "../../data/creators/slp-flavour-source.js";
 import {
   claimSlurpModelBudget,
-  getSlurpModelBudgetLedger,
-  slurpModelBudgetRetryAt,
+  slurpModelBudgetRetryAtNow,
   slurpModelWorkerAllows,
   type SlurpModelWorkerContext,
 } from "../../base/model/slp-model-worker.js";
@@ -712,9 +711,7 @@ export async function generateSlurpMessageReply(input: SlurpMessagePromptInput):
   if (!input.skipBudgetCap && input.playerSend && !budget.jobs.dm_reply.enabled)
     throw new SlurpMessageBudgetUnavailableError(null);
   if (!input.skipBudgetCap && !input.playerSend && !(await claimSlurpModelBudget(input.db, budget, "dm_reply")))
-    throw new SlurpMessageBudgetUnavailableError(
-      slurpModelBudgetRetryAt(budget, await getSlurpModelBudgetLedger(input.db), "dm_reply"),
-    );
+    throw new SlurpMessageBudgetUnavailableError(await slurpModelBudgetRetryAtNow(input.db, budget, "dm_reply"));
   const connections = createConnectionsStorage(input.db);
   const fallbackConnection = await connections.getFallbackForMain();
   const provider = slpWithProviderRetry(

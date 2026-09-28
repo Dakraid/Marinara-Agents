@@ -6,7 +6,7 @@ import {
 } from "../../base/prompting/slp-prompt-blocks.js";
 import { slpIsAdmissionFailure } from "../../base/host/slp-admission.js";
 import { normalizeSlurpSettings, slurpSettingsSchema } from "../../modules/settings/slp-settings.js";
-import { getSlurpModelBudgetLedger } from "../../base/model/slp-model-worker.js";
+import { countSlurpActiveCreators, getSlurpModelBudgetLedger } from "../../base/model/slp-model-worker.js";
 import { resolveSlurpTextConnection } from "../../base/identity/slp-connection.js";
 import { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
 import type { FastifyInstance } from "fastify";
@@ -129,5 +129,9 @@ export async function slpSettingsRoutes(app: FastifyInstance, deps: SlpRouteDeps
     if (!body.success) return reply.code(400).send({ error: body.error.flatten() });
     return noodle.updateSlurpSettings(body.data);
   });
-  app.get("/model-budget/usage", async () => getSlurpModelBudgetLedger(app.db));
+  // The Creator count sizes every limit the player did not set; Settings shows the sized numbers.
+  app.get("/model-budget/usage", async () => ({
+    ...(await getSlurpModelBudgetLedger(app.db)),
+    activeCreators: await countSlurpActiveCreators(app.db),
+  }));
 }
