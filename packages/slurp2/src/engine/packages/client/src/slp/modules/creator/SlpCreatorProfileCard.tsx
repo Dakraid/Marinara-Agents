@@ -11,7 +11,8 @@ import { toast } from "sonner";
 import { formatUpcomingDay } from "../../base/ui/slp-date-time";
 import { SlpButton, SlpPrimaryButton } from "../chrome/SlpButton";
 import { showSlpSubscriptionCancelledToast } from "../chrome/slp-subscription-toast";
-import { playSlpSpendMoment, SlpGlint, SlpRingGlint } from "../sparkle/SlpSparkle";
+import { playSlpSpendMoment, SlpGlint } from "../sparkle/SlpSparkle";
+import { SlpStoryRingAvatar } from "../story/SlpStoryRing";
 import { slurpCreatorCoverUrl } from "./slp-creator-cover";
 
 export type SlurpCreatorProfileCardCreator = {
@@ -41,25 +42,27 @@ type SubscriptionProps = {
   onToggleSubscription?: (accountId: string, subscribed: boolean) => unknown;
 };
 
-/** A Creator avatar with the canvas gap and, while they have a live Story, the glint ring. */
+/**
+ * A Creator avatar with the canvas gap. While they have a live Story it wears the Story ring in the
+ * gap (glint = not watched yet, muted = watched) and a tap opens their Stories (T).
+ */
 export function SlpCreatorAvatar({
   profile,
-  ring = false,
   className,
   gapClassName = "bg-[var(--slurp-surface-raised)]",
 }: {
   profile: SlurpCreatorProfileCardCreator["profile"];
-  ring?: boolean;
   /** Avatar size (defaults to 40 px). */
   className?: string;
   /** The gap colour: the surface the avatar sits on. */
   gapClassName?: string;
 }) {
   return (
-    <span className={cn("relative isolate block w-fit shrink-0 rounded-full p-[3px]", gapClassName)}>
-      <Avatar account={profile} className={cn("h-10 w-10 border-0", className)} />
-      {ring && <SlpRingGlint />}
-    </span>
+    <SlpStoryRingAvatar creatorId={profile.id} name={profile.displayName} outset={0}>
+      <span className={cn("relative isolate block w-fit shrink-0 rounded-full p-[3px]", gapClassName)}>
+        <Avatar account={profile} className={cn("h-10 w-10 border-0", className)} />
+      </span>
+    </SlpStoryRingAvatar>
   );
 }
 
@@ -202,15 +205,12 @@ export function SlurpCreatorProfileCard({
   showDiscoveryActions = false,
   subscriptionPending = false,
   onToggleSubscription,
-  storyRing = false,
   className,
 }: SubscriptionProps & {
   creator: SlurpCreatorProfileCardCreator;
   onOpenProfile?: (accountId: string) => void;
   layout?: "grid" | "row" | "featured";
   showDiscoveryActions?: boolean;
-  /** The Creator has a live Story. */
-  storyRing?: boolean;
   className?: string;
 }) {
   const { t: localizeUi } = useUiTranslation();
@@ -246,7 +246,7 @@ export function SlurpCreatorProfileCard({
           className,
         )}
       >
-        <SlpCreatorAvatar profile={creator.profile} ring={storyRing} />
+        <SlpCreatorAvatar profile={creator.profile} />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[13px] font-bold leading-5">{creator.profile.displayName}</span>
           <span className="block truncate text-xs leading-4 text-[var(--slurp-muted)]">{line}</span>
@@ -281,7 +281,7 @@ export function SlurpCreatorProfileCard({
         <div className="pointer-events-none relative flex items-end gap-3 p-4 text-white">
           <SlpCreatorAvatar
             profile={creator.profile}
-            ring={storyRing}
+
             className="h-14 w-14"
             gapClassName="bg-black/30 backdrop-blur-sm"
           />
@@ -309,7 +309,7 @@ export function SlurpCreatorProfileCard({
       <div className="pointer-events-none relative flex flex-1 flex-col px-3 pb-3">
         {/* The avatar sits half over the cover. */}
         <div className="-mt-7">
-          <SlpCreatorAvatar profile={creator.profile} ring={storyRing} className="h-12 w-12" />
+          <SlpCreatorAvatar profile={creator.profile} className="h-12 w-12" />
         </div>
         <div className="min-w-0 pt-1.5">
           <h3 className="truncate text-[15px] font-bold leading-5">{creator.profile.displayName}</h3>

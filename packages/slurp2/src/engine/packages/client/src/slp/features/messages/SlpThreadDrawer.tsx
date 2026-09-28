@@ -1,4 +1,5 @@
 import { ArrowLeft, X } from "lucide-react";
+import { SlpStoryRingAvatar } from "../../modules/story/SlpStoryRing";
 import { SlurpPromptDebugPanel, SlurpRelationshipPanel } from "./SlpMessageInsights";
 import { SlurpMemoriesPanel } from "./SlpMemoriesPanel";
 import { SlurpThreadRequestsPanel } from "./SlpThreadRequestsPanel";
@@ -95,7 +96,9 @@ export function SlpThreadDrawer({ model }: { model: SlurpThreadViewModel }) {
       <>
         {headerAccount && (
           <section className="flex items-center gap-3 px-3 py-3">
-            <Avatar account={headerAccount} size="md" />
+            <SlpStoryRingAvatar creatorId={headerProfileId} name={headerAccount.displayName} standalone>
+              <Avatar account={headerAccount} size="md" />
+            </SlpStoryRingAvatar>
             <div className="min-w-0 flex-1">
               <p className="truncate text-[15px] font-bold">{headerAccount.displayName}</p>
               <p className="truncate text-xs text-[var(--slurp-muted)]">@{headerAccount.handle}</p>

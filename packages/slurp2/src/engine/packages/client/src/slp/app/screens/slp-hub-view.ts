@@ -1,5 +1,6 @@
 import type { SlpCreatorPostView } from "../../../../../shared/src/slp/slp-social.types.js";
 import { isSlurpStory, type SlurpViewerCreator } from "./SlpHomeHelpers";
+import type { SlpLiveStory } from "../../modules/story/slp-story-rings";
 
 export type SlurpMoment = {
   creator: SlurpViewerCreator;
@@ -8,7 +9,7 @@ export type SlurpMoment = {
 
 /**
  * What the Hub shows, derived from one viewer scope: the moment reel, the feed, the search hits,
- * everyone discoverable, the three creators it suggests and who has a live Story.
+ * everyone discoverable and the three creators it suggests. Story rings come from `slurpLiveStories`.
  *
  * It is pure so the Hub can memoise it on the five inputs below and so a test can run it without
  * a render.
@@ -66,21 +67,22 @@ export function deriveSlurpHubView({
     suggestedCreators: creators
       .filter((creator) => creator.profile.id !== authorProfileId && !creator.followed)
       .slice(0, 3),
-    // Every Creator with a live Story, on either tab: their avatar gets the Story ring everywhere.
-    storyCreatorIds: slurpLiveStoryCreatorIds(creators, momentCutoff),
   };
 }
 
-/** The Creators with at least one Story newer than `cutoff` (ms): their avatars wear the Story ring. */
-export function slurpLiveStoryCreatorIds(
+/** Every Story newer than `cutoff` (ms), with whether this persona watched it (the shelf's signal, R1-024). */
+export function slurpLiveStories(
   creators: readonly Pick<SlurpViewerCreator, "profile" | "posts">[],
   cutoff: number,
-): Set<string> {
-  return new Set(
-    creators
-      .filter((creator) =>
-        creator.posts.some((post) => isSlurpStory(post) && new Date(post.createdAt).getTime() >= cutoff),
-      )
-      .map((creator) => creator.profile.id),
+): SlpLiveStory[] {
+  return creators.flatMap((creator) =>
+    creator.posts
+      .filter((post) => isSlurpStory(post) && new Date(post.createdAt).getTime() >= cutoff)
+      .map((post) => ({
+        creatorId: creator.profile.id,
+        postId: post.id,
+        createdAt: post.createdAt,
+        watched: (post as { watched?: boolean }).watched === true,
+      })),
   );
 }

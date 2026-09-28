@@ -1,6 +1,7 @@
 // Shell contract, split out of components/slurp/SlurpShell.tsx in Slice 10.
 import type { ReactNode, RefObject } from "react";
 import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
+import type { SlpStoryRings } from "../story/SlpStoryRing";
 
 export type SlpShellView =
   "home" | "noodler" | "search" | "profile" | "messages" | "notifications" | "studio" | "wallet" | "settings" | null;
@@ -86,5 +87,7 @@ export interface SlpShellProps {
   overlays?: ReactNode;
   /** Accent hex driving `--noodle-accent` for every reused surface. NoodleR passes SLP_PINK; defaults to Noodle blue. */
   accent?: string;
+  /** Who has a live Story and how to open it: every avatar under the shell wears the ring (T). */
+  storyRings?: SlpStoryRings;
   children: ReactNode;
 }

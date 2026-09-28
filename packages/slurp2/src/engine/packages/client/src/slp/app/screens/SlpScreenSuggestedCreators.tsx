@@ -9,20 +9,14 @@ import type { SlurpViewerCreator } from "./SlpHomeHelpers";
 export function SlurpInlineSuggestedCreators({
   creators,
   onOpenProfile,
-  storyCreatorIds,
 }: {
   creators: SlurpViewerCreator[];
   onOpenProfile?: (accountId: string) => void;
-  storyCreatorIds?: ReadonlySet<string>;
 }) {
   const { t: localizeUi } = useUiTranslation();
   if (creators.length === 0) return null;
   return (
-    <aside
-      data-component="SlurpHome.InlineSuggestedCreators"
-      aria-labelledby="slurp-inline-suggested-creators"
-      className="py-1"
-    >
+    <aside data-component="SlurpHome.InlineSuggestedCreators" aria-labelledby="slurp-inline-suggested-creators">
       <div className="flex items-center gap-1.5 px-1 pb-2.5">
         <SlpSparkleGlyph size={16} className="shrink-0 text-[var(--slurp-ink)]" aria-hidden="true" />
         <h2 id="slurp-inline-suggested-creators" className={cn(SLP_TYPE.title)}>
@@ -35,7 +29,6 @@ export function SlurpInlineSuggestedCreators({
             key={creator.profile.id}
             creator={creator}
             onOpenProfile={onOpenProfile}
-            storyRing={storyCreatorIds?.has(creator.profile.id)}
             className="w-44 shrink-0 snap-start"
           />
         ))}

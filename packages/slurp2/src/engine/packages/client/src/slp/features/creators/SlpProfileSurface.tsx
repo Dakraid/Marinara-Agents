@@ -5,6 +5,7 @@ import { cn } from "../../../lib/utils";
 import { Avatar, SLP_IMG_FRAME_CLASS, SLP_TYPE, SlurpMediaImg } from "../../base/chrome/SlpChrome";
 import { formatSlpNumber } from "../../base/ui/slp-number-format";
 import { SlpRingGlint, SlpTwinkle } from "../../modules/sparkle/SlpSparkle";
+import { useSlpStoryRings } from "../../modules/story/SlpStoryRing";
 import { useTranslation as useUiTranslation } from "react-i18next";
 
 type SlurpProfileTab = "posts" | "likes" | "media";
@@ -27,6 +28,8 @@ const STATUS_DOT = {
 interface SlurpProfileSurfaceProps<TTab extends string = SlurpProfileTab> {
   mobileHeader: ReactNode;
   account: Parameters<typeof Avatar>[0]["account"];
+  /** The Creator whose Story ring the hero avatar wears (none without a live Story). */
+  storyCreatorId?: string;
   displayHandle: string;
   banner?: {
     url: string | null;
@@ -83,6 +86,7 @@ interface SlurpProfileSurfaceProps<TTab extends string = SlurpProfileTab> {
 export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
   mobileHeader,
   account,
+  storyCreatorId,
   displayHandle,
   banner,
   avatarUpload,
@@ -121,8 +125,10 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
   };
   const statusLabel = localizeUi(`ui.slurp.profile.status.${status}`, { defaultValue: status });
 
+  const storyRings = useSlpStoryRings();
+  const heroRing = storyCreatorId ? storyRings.ringOf(storyCreatorId) : null;
   const avatar = (
-    <div className="relative w-fit shrink-0">
+    <div className="relative w-fit shrink-0" data-slp-story-ring={heroRing ?? undefined}>
       {/* The glint ring: a canvas-coloured gap, then the hero ring with one travelling glint. */}
       <span className="relative isolate block rounded-full bg-[var(--slurp-canvas)] p-[5px] shadow-[var(--slurp-shadow-floating)]">
         {avatarUpload?.canEdit ? (
@@ -151,10 +157,21 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
               </span>
             )}
           </button>
+        ) : heroRing && storyRings.open ? (
+          // A live Story: the avatar plays it, like everywhere else the ring shows.
+          <button
+            type="button"
+            onClick={() => storyRings.open?.(storyCreatorId!)}
+            className="relative block rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+            aria-label={localizeUi("ui.slurp.moments.open", { name: account.displayName })}
+          >
+            <ProfileAvatar account={account} />
+          </button>
         ) : (
           <ProfileAvatar account={account} />
         )}
-        {!editing && <SlpRingGlint />}
+        {/* The ring means "has a live Story" only: glint while unwatched, muted once watched (T). */}
+        {!editing && heroRing && <SlpRingGlint seen={heroRing === "seen"} />}
       </span>
       {/* Status sits on the avatar (B36): a dot, with the word for screen readers and on hover. */}
       {!editing && (

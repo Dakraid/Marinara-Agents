@@ -14,6 +14,7 @@ import {
 import { SlpCreatorAvatar, SlurpCreatorProfileCard } from "../../modules/creator/SlpCreatorProfileCard";
 import { SlurpDiscoverToolbar } from "../../features/discovery/SlpDiscoverToolbar";
 import { cn } from "../../../lib/utils";
+import { SLP_CARD_STACK_CLASS } from "../../modules/post/SlpPostHelpers";
 import type { useTranslation } from "react-i18next";
 import type { SlurpWallet } from "../../features/economy/slp-economy-contract";
 import type { useHideOnScroll } from "../../base/chrome/SlpChrome";
@@ -148,7 +149,6 @@ export function SlpHubDiscover({
   setVisibleFeedCount,
   togglePending,
   visibleSearchResults,
-  storyCreatorIds,
   isLoading,
   isError,
   onRetry,
@@ -172,7 +172,6 @@ export function SlpHubDiscover({
   setVisibleFeedCount: Dispatch<SetStateAction<number>>;
   togglePending: boolean;
   visibleSearchResults: HubResults;
-  storyCreatorIds: ReadonlySet<string>;
   isLoading: boolean;
   isError: boolean;
   onRetry: () => void;
@@ -197,7 +196,6 @@ export function SlpHubDiscover({
       showDiscoveryActions
       subscriptionPending={togglePending}
       onToggleSubscription={onToggleSubscription}
-      storyRing={storyCreatorIds.has(creator.profile.id)}
     />
   );
 
@@ -249,7 +247,6 @@ export function SlpHubDiscover({
                     >
                       <SlpCreatorAvatar
                         profile={creator.profile}
-                        ring={storyCreatorIds.has(creator.profile.id)}
                         className="h-16 w-16"
                         gapClassName="bg-[var(--slurp-canvas)]"
                       />
@@ -277,7 +274,7 @@ export function SlpHubDiscover({
                 title={localizeUi("ui.slurp.discover.posts", { defaultValue: "Posts" })}
                 count={searchResults.length}
               />
-              <div className="space-y-4">
+              <div className={SLP_CARD_STACK_CLASS}>
                 {visibleSearchResults.map(renderFeedPost)}
                 {visibleSearchResults.length < searchResults.length && (
                   <LoadMoreFeedButton

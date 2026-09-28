@@ -1,4 +1,5 @@
 import { slpIsOwnActor } from "../../../../../shared/src/slp/slp-interactions.js";
+import { SlpStoryRingAvatar } from "../story/SlpStoryRing";
 import { SlpTimestamp } from "../../base/ui/SlpTimestamp";
 import { AtSign, ChevronDown, ChevronRight, Info, MessageCircle, RefreshCw, X } from "lucide-react";
 import { SlpHeartGlyph } from "../../base/chrome/SlpGlyphs";
@@ -50,7 +51,7 @@ export function SlpPostCard({
 }: {
   post: SlpPostCardModel;
   ctx: SlpPostCardCtx;
-  surface?: "feed" | "profile";
+  surface?: "feed" | "profile" | "dialog"; // dialog: the post dialog's side panel, flat (the dialog is the card)
   /**
    * Draw the card without its picture, for a surface that already shows the picture itself.
    *
@@ -275,7 +276,7 @@ export function SlpPostCard({
   const postLikePending = reactionPendingFor(post.id, "like");
   const likeCount = slpPostLikeCount(post, rootPostInteractions);
   const mediaFrame = cn(
-    surface === "profile" ? "w-full rounded-xl aspect-[4/3] sm:aspect-[16/10]" : SLP_FEED_MEDIA_FRAME_CLASS,
+    surface !== "feed" ? "w-full rounded-xl aspect-[4/3] sm:aspect-[16/10]" : SLP_FEED_MEDIA_FRAME_CLASS,
     SLP_IMG_FRAME_CLASS, // shimmers until its picture has loaded
   );
   const imageAlt = localizeUi("ui.noodle.post.imageBy", {
@@ -376,11 +377,11 @@ export function SlpPostCard({
       data-slurp-post-kind={postKind}
       tabIndex={-1}
       className={cn(
-        surface === "profile"
-          ? "border-b border-[var(--noodle-divider)] px-4 py-5 transition-colors last:border-b-0 hover:bg-[var(--accent)]/20"
-          : // Glossy raised card: no border, soft shadow, 1 px top highlight; pictures run edge to edge.
+        surface === "dialog"
+          ? "px-4 py-5"
+          : // Glossy raised card (feed and profile list, T): no border, soft shadow, 1 px top highlight.
             "rounded-2xl bg-[var(--slurp-surface-raised)] px-4 py-4 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] transition-shadow duration-[var(--slurp-motion-base)] hover:shadow-[var(--slurp-shadow-floating),var(--slurp-highlight)] motion-reduce:transition-none",
-        surface !== "profile" &&
+        surface !== "dialog" &&
           postKind === "poll" &&
           "bg-[linear-gradient(145deg,var(--slurp-surface-raised),color-mix(in_srgb,var(--noodle-accent)_6%,var(--slurp-surface-raised)))]",
         postMenuOpen && "relative z-40",
@@ -401,7 +402,9 @@ export function SlpPostCard({
                 : undefined
             }
           >
-            <Avatar account={author} />
+            <SlpStoryRingAvatar creatorId={post.authorAccountId} name={author.displayName}>
+              <Avatar account={author} />
+            </SlpStoryRingAvatar>
           </button>
         ) : (
           <AtSign size={28} className="text-[var(--noodle-accent-foreground)]" />
@@ -468,7 +471,7 @@ export function SlpPostCard({
             ref={observePostImage}
             className={cn(
               "relative mt-3 flex max-h-[32rem] justify-center overflow-hidden bg-black/20 text-left",
-              surface === "profile" ? "w-full rounded-xl ring-1 ring-inset ring-white/10" : "-mx-4 w-[calc(100%+2rem)]",
+              surface !== "feed" ? "w-full rounded-xl ring-1 ring-inset ring-white/10" : "-mx-4 w-[calc(100%+2rem)]",
             )}
           >
             {displayedImageUrl && (
@@ -528,7 +531,7 @@ export function SlpPostCard({
                 : undefined
             }
             onEditPrompt={ctx.generatePostImage ? () => setPromptDraft(shownImagePrompt ?? "") : undefined}
-            className={surface === "profile" ? "mt-3 rounded-xl" : "-mx-4 mt-3 w-[calc(100%+2rem)]"}
+            className={surface !== "feed" ? "mt-3 rounded-xl" : "-mx-4 mt-3 w-[calc(100%+2rem)]"}
           />
         ) : post.imagePrompt && ctx.postManagement && promptDraft === null ? (
           // Managers only. The draft is working material, and viewers were shown a block of prompt

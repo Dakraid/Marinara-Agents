@@ -1,4 +1,5 @@
 import { cn } from "../../../lib/utils";
+import { SlpStoryRingAvatar } from "../../modules/story/SlpStoryRing";
 import {
   ArrowLeft,
   BookHeart,
@@ -150,7 +151,11 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
           onClick={() => headerProfileId && onOpenProfile(headerProfileId)}
           className="flex min-h-11 min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-full py-1 pe-1 ps-0.5 text-start transition-colors hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none"
         >
-          {headerAccount && <Avatar account={headerAccount} size="sm" />}
+          {headerAccount && (
+            <SlpStoryRingAvatar creatorId={headerProfileId} name={headerAccount.displayName} outset={3}>
+              <Avatar account={headerAccount} size="sm" />
+            </SlpStoryRingAvatar>
+          )}
           <span className="min-w-0 overflow-hidden">
             <span className="block truncate text-[15px] font-bold leading-5">{headerAccount?.displayName ?? ""}</span>
             {relationship && (

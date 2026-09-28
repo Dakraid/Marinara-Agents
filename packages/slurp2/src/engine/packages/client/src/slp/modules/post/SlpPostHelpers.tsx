@@ -174,6 +174,12 @@ export function slpPostImageSlotState(
 export const SLP_FEED_MEDIA_FRAME_CLASS = "aspect-[4/5] max-h-[32rem] w-full";
 
 /**
+ * The one space between stacked cards: feed posts, ads, the suggested-creators row, profile posts and
+ * search results. Cards in a list used to touch where an ad or a row sat inside a post's slot.
+ */
+export const SLP_CARD_STACK_CLASS = "flex flex-col gap-4";
+
+/**
  * The reserved image slot (design 04 §12): a picture that is still being drawn, or one that
  * failed. Pending shows the same frame to everyone; failure is for the operator (Try again / Edit
  * prompt, the provider error behind Details).

@@ -1,4 +1,5 @@
 import { SlpTimestamp } from "../../base/ui/SlpTimestamp";
+import { SlpStoryRingAvatar } from "../../modules/story/SlpStoryRing";
 import { ArrowLeft, Headset, MessageCircle, Plus, Search } from "lucide-react";
 import type { SlurpComposeTarget } from "../../features/messages/slp-messages-contract";
 import { useOpenSlurpCreatorThread, useSlurpComposeTargets } from "../../features/messages/slp-messages-hooks";
@@ -11,6 +12,7 @@ import {
   SLP_GROUP_CLASS,
   SLP_PAGE_SCROLL_CLASS,
   SLP_SEARCH_FIELD_CLASS,
+  SLP_TOP_BAR_CLASS,
 } from "../../base/chrome/SlpChrome";
 import { SlpButton, SlpChip, slpTagClass } from "../../modules/chrome/SlpButton";
 import { SlpSheet } from "../../modules/chrome/SlpSheet";
@@ -280,7 +282,7 @@ export function SlurpMessagesView({
   const inbox = (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {onExit && (
-        <header className="flex min-h-14 shrink-0 items-center gap-2 border-b border-[var(--noodle-divider)] px-2">
+        <header className={cn("flex min-h-14 shrink-0 items-center gap-2 px-2", SLP_TOP_BAR_CLASS)}>
           <button
             type="button"
             onClick={onExit}
@@ -622,7 +624,10 @@ export function ThreadRow({
         selected && "bg-[image:var(--slurp-nav-active)] hover:bg-[image:var(--slurp-nav-active)]",
       )}
     >
-      <Avatar account={{ displayName: thread.creatorDisplayName, avatarUrl: thread.creatorAvatarUrl }} size="md" />
+      {/* A fan writing to your Creator shows the fan; only a Creator's own row can wear their Story ring. */}
+      <SlpStoryRingAvatar creatorId={toCreator ? null : thread.creatorAccountId} name={thread.creatorDisplayName}>
+        <Avatar account={{ displayName: thread.creatorDisplayName, avatarUrl: thread.creatorAvatarUrl }} size="md" />
+      </SlpStoryRingAvatar>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="flex min-w-0 items-center gap-1.5">
           <span className={cn("truncate text-[15px] leading-5", unread ? "font-extrabold" : "font-semibold")}>
