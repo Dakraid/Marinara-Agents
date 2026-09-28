@@ -389,7 +389,8 @@ export function LockedSlurpPostCard({
                 "relative overflow-hidden bg-[var(--slurp-media-stage,#17131a)]",
                 SLP_FEED_MEDIA_FRAME_CLASS,
               )}
-              style={slpPostFrameStyle(slpPostMediaRatio(postImages[0]))}
+              // The veil's lock, price and chips need room: a wide teaser (it is blurred) grows to fit them.
+              style={{ ...slpPostFrameStyle(slpPostMediaRatio(postImages[0])), minHeight: "20rem" }}
             >
               {shownMediaSrc ? (
                 <img

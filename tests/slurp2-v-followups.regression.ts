@@ -371,7 +371,7 @@ const names = new Map([
   );
   assert.match(
     client("modules/post/SlpLockedPostCard.tsx"),
-    /style=\{slpPostFrameStyle\(slpPostMediaRatio\(postImages\[0\]\)\)\}/u,
+    /style=\{\{ \.\.\.slpPostFrameStyle\(slpPostMediaRatio\(postImages\[0\]\)\), minHeight: "20rem" \}\}/u,
   );
   const shared = client("features/messages/SlpSharedPostCard.tsx");
   assert.match(shared, /typeof meta\.imageWidth === "number"/u);
