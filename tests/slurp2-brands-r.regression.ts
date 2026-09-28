@@ -105,10 +105,15 @@ async function main() {
     const old = brands.find((brand: { id: string }) => brand.id === garnishBrandId("Old Corner Shop"));
     assert.ok(old, "an old ad shows up under a brand named like it");
     assert.equal(old.category, "snack");
-    assert.equal((await pool.listActive("slurp")).some((ad: { id: string }) => ad.id === "user-old"), true);
+    assert.equal(
+      (await pool.listActive("slurp")).some((ad: { id: string }) => ad.id === "user-old"),
+      true,
+    );
     // An edited shipped ad (stored without brandId, as before R) still sits under its shipped brand.
     await pool.update("nightjar-midnight-blend", { copy: "Edited before R." });
-    const overrides = (await pool.listBrands("slurp")).filter((brand: { name: string }) => brand.name === "Nightjar Coffee");
+    const overrides = (await pool.listBrands("slurp")).filter(
+      (brand: { name: string }) => brand.name === "Nightjar Coffee",
+    );
     assert.equal(overrides.length, 1, "no second Nightjar brand");
 
     // Switching a brand off hides every product of it; on brings them back.
@@ -138,7 +143,10 @@ async function main() {
       removed.map((ad: { id: string }) => ad.id),
       ["user-old"],
     );
-    assert.equal((await pool.listAll("slurp")).some((ad: { id: string }) => ad.id === "user-old"), false);
+    assert.equal(
+      (await pool.listAll("slurp")).some((ad: { id: string }) => ad.id === "user-old"),
+      false,
+    );
 
     // Export carries brands; an old export without brands still imports.
     const exported = await exportGarnishAds(pool, "slurp");
@@ -217,9 +225,16 @@ async function main() {
   assert.ok(paced(SLURP_DEAL_PACE.often) > paced(SLURP_DEAL_PACE.normal), "Often > Sometimes");
   for (const deal of normal.deals.filter((entry) => entry.adId === "wand"))
     assert.equal(deal.creatorId, "vex", "the explicit product only goes to the explicit page");
-  assert.ok(normal.deals.some((deal) => deal.adId === "wand" && deal.status !== "declined"), "and she takes it");
+  assert.ok(
+    normal.deals.some((deal) => deal.adId === "wand" && deal.status !== "declined"),
+    "and she takes it",
+  );
   const noSpice = run(SLURP_DEAL_PACE.normal, pool2);
-  assert.equal(noSpice.deals.some((deal) => deal.adId === "wand"), false, "no level known: no explicit offer");
+  assert.equal(
+    noSpice.deals.some((deal) => deal.adId === "wand"),
+    false,
+    "no level known: no explicit offer",
+  );
 
   // ─── 4. The sponsored post shows the product in the Creator's own voice ───
   const at = new Date("2026-09-10T12:00:00.000Z");
@@ -285,7 +300,10 @@ async function main() {
 
   // ─── 6. The action layer ───
   for (const name of ["list-brands", "offer-brand-deal", "draw-brand-picture"] as const)
-    assert.ok(slpActionCatalog().some((entry) => entry.name === name), `${name} is in the catalog`);
+    assert.ok(
+      slpActionCatalog().some((entry) => entry.name === name),
+      `${name} is in the catalog`,
+    );
   assert.equal(SLP_ACTIONS["offer-brand-deal"].schema.safeParse({ accountId: "kai", extra: 1 }).success, false);
   assert.deepEqual(SLP_ACTIONS["offer-brand-deal"].schema.parse({ accountId: "kai" }), {
     accountId: "kai",

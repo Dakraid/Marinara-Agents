@@ -102,11 +102,11 @@ export function SlpPictureAssist({
           drawWith
             ? await drawWith(request.trim())
             : await runSlpAction("draw-picture", {
-            accountId,
-            target,
-            request: request.trim(),
-            context,
-            ...(advanced ? { options } : {}),
+                accountId,
+                target,
+                request: request.trim(),
+                context,
+                ...(advanced ? { options } : {}),
               }),
         );
       },

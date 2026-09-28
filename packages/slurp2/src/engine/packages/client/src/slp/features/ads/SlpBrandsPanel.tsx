@@ -125,7 +125,9 @@ function BrandCard({ brand }: { brand: SlurpBrand }) {
       { id: brand.id, enabled: next },
       {
         onSuccess: () =>
-          toast.success(t(next ? "ui.slurp.settings.brands.turnedOn" : "ui.slurp.settings.brands.turnedOff", { brand: brand.name })),
+          toast.success(
+            t(next ? "ui.slurp.settings.brands.turnedOn" : "ui.slurp.settings.brands.turnedOff", { brand: brand.name }),
+          ),
         onError: (error) => toast.error(errorMessage(error)),
       },
     );
@@ -174,7 +176,9 @@ function BrandCard({ brand }: { brand: SlurpBrand }) {
       </div>
       {open && (
         <div className="space-y-3 border-t border-[var(--slurp-outline)] p-3">
-          {!enabled && <p className="text-xs leading-5 text-[var(--slurp-muted)]">{t("ui.slurp.settings.brands.offNote")}</p>}
+          {!enabled && (
+            <p className="text-xs leading-5 text-[var(--slurp-muted)]">{t("ui.slurp.settings.brands.offNote")}</p>
+          )}
           {brand.tone && !editing && (
             <p className="text-xs italic leading-5 text-[var(--slurp-muted)]">
               {t("ui.slurp.settings.brands.toneLine", { tone: brand.tone })}
@@ -296,7 +300,12 @@ function ProductRow({ brandId, product }: { brandId: string; product: SlurpPromo
     <li className="rounded-lg bg-[var(--slurp-canvas)] ring-1 ring-inset ring-[var(--noodle-divider)]">
       <div className="flex gap-3 p-2.5">
         {product.imageUrl ? (
-          <SlurpMediaImg src={product.imageUrl} alt="" loading="lazy" className="h-20 w-16 shrink-0 rounded-lg object-cover" />
+          <SlurpMediaImg
+            src={product.imageUrl}
+            alt=""
+            loading="lazy"
+            className="h-20 w-16 shrink-0 rounded-lg object-cover"
+          />
         ) : (
           <span
             aria-hidden="true"
@@ -309,7 +318,9 @@ function ProductRow({ brandId, product }: { brandId: string; product: SlurpPromo
           <p className="truncate text-sm font-bold">{product.product}</p>
           <p className="mt-0.5 line-clamp-2 text-xs leading-5 text-[var(--slurp-muted)]">{product.copy}</p>
           <p className="mt-1.5 flex flex-wrap gap-1.5">
-            <span className={slpTagClass()}>{t(`ui.slurp.settings.brands.price.${product.priceFeel ?? "everyday"}`)}</span>
+            <span className={slpTagClass()}>
+              {t(`ui.slurp.settings.brands.price.${product.priceFeel ?? "everyday"}`)}
+            </span>
             <span className={slpTagClass(rating !== "tame")}>{t(`ui.slurp.settings.brands.spice.${rating}`)}</span>
             {product.retiredAt && <span className={slpTagClass()}>{t("ui.slurp.settings.ads.retired")}</span>}
           </p>
@@ -407,7 +418,9 @@ function RemoveProduct({ product }: { product: SlurpPromotion }) {
       onClick={() =>
         remove.mutate(product.id, {
           onSuccess: () =>
-            toast.success(t(`ui.slurp.settings.ads.${builtin ? "hiddenBuiltin" : "deleted"}`, { brand: product.product })),
+            toast.success(
+              t(`ui.slurp.settings.ads.${builtin ? "hiddenBuiltin" : "deleted"}`, { brand: product.product }),
+            ),
           onError: (error) => toast.error(errorMessage(error)),
         })
       }
@@ -463,7 +476,15 @@ function TextField({
   );
 }
 
-function FormButtons({ pending, submitLabel, onCancel }: { pending: boolean; submitLabel: string; onCancel: () => void }) {
+function FormButtons({
+  pending,
+  submitLabel,
+  onCancel,
+}: {
+  pending: boolean;
+  submitLabel: string;
+  onCancel: () => void;
+}) {
   const { t } = useTranslation();
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
@@ -507,7 +528,13 @@ function BrandForm({
       }}
     >
       <div className="grid gap-3 sm:grid-cols-2">
-        <TextField label={t("ui.slurp.settings.brands.name")} value={draft.name} onChange={set("name")} max={80} required />
+        <TextField
+          label={t("ui.slurp.settings.brands.name")}
+          value={draft.name}
+          onChange={set("name")}
+          max={80}
+          required
+        />
         <TextField
           label={t("ui.slurp.settings.brands.category")}
           hint={t("ui.slurp.settings.brands.categoryHint")}
@@ -561,7 +588,13 @@ function ProductForm({
         onSubmit(draft);
       }}
     >
-      <TextField label={t("ui.slurp.settings.brands.productName")} value={draft.product} onChange={set("product")} max={120} required />
+      <TextField
+        label={t("ui.slurp.settings.brands.productName")}
+        value={draft.product}
+        onChange={set("product")}
+        max={120}
+        required
+      />
       <TextField
         label={t("ui.slurp.settings.brands.pitch")}
         hint={t("ui.slurp.settings.brands.pitchHint")}
@@ -588,7 +621,9 @@ function ProductForm({
           value={draft.contentRating}
           onChange={(contentRating) => setDraft((current) => ({ ...current, contentRating }))}
         />
-        <span className="block text-xs leading-5 text-[var(--slurp-muted)]">{t("ui.slurp.settings.brands.spiceFitHint")}</span>
+        <span className="block text-xs leading-5 text-[var(--slurp-muted)]">
+          {t("ui.slurp.settings.brands.spiceFitHint")}
+        </span>
       </div>
       <TextField
         label={t("ui.slurp.settings.brands.look")}
@@ -641,7 +676,10 @@ function PicturePanel({
     try {
       await save(await readSlurpPictureFile(file));
       toast.success(t("ui.slurp.settings.brands.pictureSaved"), {
-        action: { label: t("ui.slurp.assist.undo"), onClick: () => void undo().catch((error) => toast.error(errorMessage(error))) },
+        action: {
+          label: t("ui.slurp.assist.undo"),
+          onClick: () => void undo().catch((error) => toast.error(errorMessage(error))),
+        },
       });
     } catch (error) {
       toast.error(errorMessage(error));

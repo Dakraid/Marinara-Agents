@@ -58,7 +58,8 @@ export async function slurpBrandDealLever(
     refusable: !input.happen,
     summary: "",
   };
-  if (!found) return { preview: { ...empty, error: "notFound", summary: "That Creator does not exist." }, dealId: null };
+  if (!found)
+    return { preview: { ...empty, error: "notFound", summary: "That Creator does not exist." }, dealId: null };
   if (!settings.inlineAdsEnabled)
     return { preview: { ...empty, error: "adsOff", summary: "Ads are switched off in Backstage." }, dealId: null };
   const creator = { ...found, spice: spice.get(found.id) };

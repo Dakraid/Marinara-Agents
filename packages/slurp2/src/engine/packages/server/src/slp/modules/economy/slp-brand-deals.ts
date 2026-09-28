@@ -111,9 +111,7 @@ export function slurpDealFit(
   creator: Pick<SlurpTieCreator, "text" | "tags"> & { spice?: SlurpDealSpice },
 ): number {
   if (!slurpDealSpiceFits(ad.rating, creator.spice)) return 0;
-  const wanted = [
-    ...new Set([...ad.categories, ...ad.contextTags, ...(ad.brandCategory ?? "").split(/[\s,/]+/u)]),
-  ]
+  const wanted = [...new Set([...ad.categories, ...ad.contextTags, ...(ad.brandCategory ?? "").split(/[\s,/]+/u)])]
     .filter(Boolean)
     .map((word) => word.toLocaleLowerCase());
   const have = new Set([...creator.tags.map((tag) => tag.toLocaleLowerCase()), ...slurpCreatorInterests(creator)]);
@@ -278,8 +276,7 @@ export function slurpAdvanceBrandDeals(deals: SlurpBrandDeal[], input: SlurpDeal
           hash(`${window}:${left.creator.id}:${left.ad.id}`) - hash(`${window}:${right.creator.id}:${right.ad.id}`),
       );
     const pick = options[0];
-    if (pick)
-      next = [...next, slurpNewDeal(input.newId(), pick.ad, pick.creator, stamp)];
+    if (pick) next = [...next, slurpNewDeal(input.newId(), pick.ad, pick.creator, stamp)];
   }
   return trim(next);
 }

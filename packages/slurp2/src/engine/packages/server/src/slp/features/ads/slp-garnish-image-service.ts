@@ -265,7 +265,9 @@ export async function generateGarnishAdImage(
 export async function drawSlurpBrandPicture(
   db: DB,
   input: { brandId: string; productId?: string; request: string },
-): Promise<{ ok: true; value: { image: string; prompt: string } } | { ok: false; status: 404 | 409 | 502; error: string }> {
+): Promise<
+  { ok: true; value: { image: string; prompt: string } } | { ok: false; status: 404 | 409 | 502; error: string }
+> {
   const { pool } = createGarnishAds(db);
   const brand = (await pool.listBrands("slurp")).find((entry) => entry.id === input.brandId);
   if (!brand) return { ok: false, status: 404, error: "That brand does not exist." };
