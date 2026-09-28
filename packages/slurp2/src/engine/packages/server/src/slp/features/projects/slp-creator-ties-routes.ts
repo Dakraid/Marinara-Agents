@@ -19,17 +19,13 @@ import { slurpAnswerDeal, slurpDealOpen, slurpDealReceipt } from "../../modules/
 import { loadSlurpTieCreators, slurpRunsItself } from "./slp-creator-ties-service.js";
 import {
   slurpCoupleActive,
+  slurpIsCouplePage,
   slurpSetUpCouple,
   slurpSteerCouple,
   type SlurpCouple,
   type SlurpCoupleError,
 } from "../../modules/projects/slp-creator-couples.js";
-import {
-  closeSlurpCouplePage,
-  closeSlurpCouplePages,
-  openSlurpCouplePage,
-  slurpIsCouplePage,
-} from "./slp-creator-couples-service.js";
+import { closeSlurpCouplePage, closeSlurpCouplePages, openSlurpCouplePage } from "./slp-creator-couples-service.js";
 
 const RECENT = 8;
 const ERRORS: Record<SlurpTieError | "notFound" | "notOpen", [number, string]> = {
