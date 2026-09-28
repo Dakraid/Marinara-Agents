@@ -59,8 +59,9 @@ export async function rewriteSlpImagePrompt(input: {
    */
   viewpoint?: string | null;
   /**
-   * Slurp's AI budget: the rewrite is one call under "Image prompt enhancing". Over its daily limit
-   * the picture goes out with the unenhanced draft. Absent (tests), nothing is counted.
+   * Slurp's AI budget: the rewrite is one call under "Image prompt enhancing". Over its daily limit,
+   * or with the budget mode "Off", the picture goes out with the unenhanced draft. Absent (tests),
+   * nothing is counted.
    */
   budget?: SlurpModelBudget;
   /** Receives the connection, model, and chat actually sent, for the Creator-private Deep details. */
@@ -91,7 +92,7 @@ export async function rewriteSlpImagePrompt(input: {
     const textConnection = await resolveSlurpTextConnection(connections, input.connectionId);
     if (!textConnection) return null;
     if (input.budget && !(await claimSlurpModelBudget(input.db, input.budget, "image_prompt"))) {
-      logger.info("[slurp] Image prompt enhancing is over its daily limit; sending the unenhanced draft");
+      logger.info("[slurp] Image prompt enhancing is off or over its daily limit; sending the unenhanced draft");
       return null;
     }
 

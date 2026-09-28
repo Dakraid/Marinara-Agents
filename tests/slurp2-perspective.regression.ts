@@ -191,6 +191,16 @@ assert.equal(
   null,
   "switched off in the budget, no rewrite",
 );
+// V: the budget mode "Off" stops it too (it keeps its own limit, but it is still Slurp's AI).
+assert.equal(
+  spendSlurpModelBudget({ ...budget, mode: "off" }, readSlurpModelBudgetLedger(null), "image_prompt"),
+  null,
+  "AI budget Off, no rewrite",
+);
+assert.ok(
+  spendSlurpModelBudget({ ...budget, mode: "background" }, readSlurpModelBudgetLedger(null), "image_prompt"),
+  "Background still enhances",
+);
 
 // 10. Ads: a 4:5 feed picture like a post and a 1.91:1 banner, both drawn for their frame.
 const [feed, wide] = GARNISH_AD_IMAGE_FORMATS;
