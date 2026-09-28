@@ -251,10 +251,11 @@ const read = (path: string) => readFileSync(new URL(path, root), "utf8");
   );
   assert.doesNotMatch(opener, /promised a/u, "an opener claims no promise");
   assert.match(opener, /writing first/u);
-  const world = read("server/src/slp/features/world/slp-world-operation.ts");
-  assert.match(world, /slurpCreatorCheckIn\(/u);
-  assert.match(world, /type: "opener",/u, "the check-in goes through the follow-up writer");
-  assert.match(world, /await noodle\.getViewer\(tie\.memberId\)/u, "only the player's personas get one");
+  assert.match(read("server/src/slp/features/world/slp-world-operation.ts"), /planSlurpCreatorCheckIn\(input\)/u);
+  const checkIn = read("server/src/slp/features/world/slp-creator-check-in.ts");
+  assert.match(checkIn, /slurpCreatorCheckIn\(/u);
+  assert.match(checkIn, /type: "opener",/u, "the check-in goes through the follow-up writer");
+  assert.match(checkIn, /await input\.isPlayer\(tie\.memberId\)/u, "only the player's personas get one");
   assert.match(
     read("server/src/slp/data/messages/slp-messages-storage-conversation.ts"),
     /inArray\(slurpFollowUps\.type, \["check_in", "opener"\]\)/u,

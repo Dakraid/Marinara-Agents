@@ -9,7 +9,6 @@
  * model, so briefs and questions come from the combinatorial bank in `slurp-world-copy.ts`.
  * Auto-posting is the one exception to that rule and it lives in its own scheduler.
  */
-import { randomUUID } from "node:crypto";
 import { slurpCoupleBuzz } from "../../modules/projects/slp-creator-couples.js";
 import { settleSlurpStuckMessages } from "../messages/slp-messages-contract.js";
 import { advanceSlurpCreatorTies, readSlurpClosedCouplePageIds } from "../projects/slp-projects-contract.js";
@@ -58,7 +57,6 @@ import {
   planSlurpWorldTick,
   slurpAudienceTipAmount,
   slurpCreatorOpenerKind,
-  slurpCreatorCheckIn,
   slurpQuestionPostIds,
   slurpCreatorReplyChance,
   SLURP_MAX_CREATOR_OPENERS_PER_TICK,
@@ -69,6 +67,7 @@ import { SLURP_POST_LANDED_REACTIONS } from "../../modules/creators/slp-creator-
 import { planSlurpWorldPulse } from "../../../../../shared/src/slp/slp-world-pulse.js";
 import { slpCreatorUnlockPriceFromMetadata } from "../../modules/economy/slp-prices.js";
 import { localDayKey, applyAction, applyPulse } from "./slp-world-actions.js";
+import { planSlurpCreatorCheckIn } from "./slp-creator-check-in.js";
 import {
   PULSE_KEY,
   readLastTick,
@@ -732,37 +731,12 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
           const daysSinceSeen = (until.getTime() - Date.parse(tie.lastSeenAt)) / 86_400_000;
           if (!Number.isFinite(daysSinceSeen)) continue;
           const existingThread = await messages.getThread(tie.memberId, account.id);
-          // A chat that exists and went quiet: now and then the Creator writes first in it, through
-          // the follow-up writer (the full DM path, inside the AI budget). Only the player's own
-          // personas read chats, so nobody else gets one.
+          // A quiet chat that exists: now and then the Creator writes first in it (G5).
           if (existingThread) {
-            const reason =
-              existingThread.state === "active" &&
-              !(existingThread.coolUntil && existingThread.coolUntil > until.toISOString())
-                ? slurpCreatorCheckIn({
-                    stage: tie.stage,
-                    hoursQuiet: (until.getTime() - Date.parse(existingThread.lastMessageAt)) / 3_600_000,
-                    needsReply: existingThread.needsReply,
-                    pending: existingThread.scheduledFollowUps.length > 0,
-                    roll: slurpDeterministicUnit(`check-in:${account.id}:${tie.memberId}:${localDayKey(until)}`),
-                    pick: slurpDeterministicUnit(`check-in-why:${account.id}:${tie.memberId}:${localDayKey(until)}`),
-                  })
-                : null;
-            if (reason && (await noodle.getViewer(tie.memberId))) {
-              const inMinutes = 5 + Math.floor(slurpDeterministicUnit(`check-in-at:${existingThread.id}`) * 55);
-              await messages
-                .addScheduledFollowUps(existingThread.id, [
-                  {
-                    id: `followup-${randomUUID()}`,
-                    scheduledAt: new Date(until.getTime() + inMinutes * 60_000).toISOString(),
-                    type: "opener",
-                    reason,
-                    context: "",
-                  },
-                ])
-                .then(() => (opened += 1))
-                .catch((error: unknown) => logger.warn(error, "[slurp-world] Could not plan a Creator check-in"));
-            }
+            const isPlayer = async (memberId: string) => Boolean(await noodle.getViewer(memberId));
+            const at = { creatorAccountId: account.id, tie, thread: existingThread, until };
+            const input = { ...at, messages, isPlayer, unit: slurpDeterministicUnit };
+            if (await planSlurpCreatorCheckIn(input).catch(() => false)) opened += 1;
             continue;
           }
           const kind = slurpCreatorOpenerKind({
