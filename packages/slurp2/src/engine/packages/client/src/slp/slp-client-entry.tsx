@@ -165,6 +165,8 @@ const SLURP_SHELL_STYLES = `
     box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.16); opacity: 0.85;
   }
   [data-slp-whole] :has(> img.slp-crop[data-slp-cut])::after { content: none; }
+  /* Story tiles are small: the mark sat beside the Creator's avatar and read as clutter (G7). */
+  [data-slp-no-crop-mark] :has(> img.slp-crop[data-slp-cut])::after { content: none; }
   /* A conversation on a phone is a full-screen task: its layer slides in from the side (push navigation). */
   @media (prefers-reduced-motion: no-preference) {
     .slp-task-in { animation: slp-task-in 320ms var(--slurp-ease, ease-out) both; }

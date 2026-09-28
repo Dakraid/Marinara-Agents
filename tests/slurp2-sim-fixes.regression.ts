@@ -282,6 +282,14 @@ const read = (path: string) => readFileSync(new URL(path, root), "utf8");
     assert.ok((counts.get(source) ?? 0) / 2400 <= 0.27, `${source} at most ~25 %: ${JSON.stringify([...counts])}`);
 }
 
+// --- G7 no cropped mark beside the Creator's avatar on Story tiles (the feed keeps it).
+{
+  const entry = read("client/src/slp/slp-client-entry.tsx");
+  assert.match(entry, /\[data-slp-no-crop-mark\] :has\(> img\.slp-crop\[data-slp-cut\]\)::after \{ content: none; \}/u);
+  assert.match(read("client/src/slp/modules/story/SlpStoryTile.tsx"), /data-slp-no-crop-mark=""/u);
+  assert.match(entry, /^\s*:has\(> img\.slp-crop\[data-slp-cut\]\)::after \{/mu, "other previews keep the mark");
+}
+
 // --- G8 (from A): every Slurp model call waits out 429 / EAI_AGAIN / ENOTFOUND; bulk sign-up adapts.
 async function g8() {
   const quick = { delaysMs: [1, 1, 1], sleep: () => Promise.resolve() };

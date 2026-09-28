@@ -40,6 +40,7 @@ export function SlpStoryTile({ creator, post, mediaSrc, fallback, isNew, onOpen 
     <button
       type="button"
       onClick={onOpen}
+      data-slp-no-crop-mark=""
       className={cn(
         SLP_STORY_TILE_SIZE_CLASS,
         "group relative shrink-0 snap-start overflow-hidden rounded-2xl bg-[var(--slurp-surface-raised)] text-start transition-transform active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] motion-reduce:transition-none motion-reduce:active:scale-100",
