@@ -1,4 +1,5 @@
 import { slurpArcVoteClosed } from "../../modules/projects/slp-arc-progress.js";
+import { recordSlurpTasteSignal } from "../../data/creators/slp-spice-storage.js";
 import { createSlpPoll, readSlpPollFromMetadata } from "../../../../../shared/src/slp/slp-polls.js";
 import { slpIsAdmissionFailure } from "../../base/host/slp-admission.js";
 import {
@@ -345,6 +346,7 @@ export async function slpFeedPostRoutes(app: FastifyInstance, deps: SlpRouteDeps
       parentInteractionId: parsed.data.parentInteractionId ?? null,
     });
     if (!interaction) return reply.code(400).send({ error: "Could not add that Slurp interaction." });
+    recordSlurpTasteSignal(app.db, { metadata: gated.post.metadata }, parsed.data.type);
     // Taking part pays, capped per day. A like is one tap, so only the interactions that cost the
     // player something to write are rewarded — otherwise the cap is reached by tapping hearts.
     if (actor.id !== gated.creator.id && (parsed.data.type === "reply" || parsed.data.type === "vote")) {

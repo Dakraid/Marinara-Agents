@@ -9,7 +9,7 @@ import type { SlpCreatorSteering } from "../../../../../shared/src/slp/slp-creat
 import type { SlurpBeat } from "./slp-post-beat.js";
 
 /** Steering that changes what a post says. Pace changes when they post; ideas wait for the next post. */
-const CONTENT_FIELDS = ["mood", "lifePhase", "focus", "push", "avoid"] as const;
+const CONTENT_FIELDS = ["mood", "lifePhase", "focus", "push", "avoid", "turnOns", "hardNoes"] as const;
 
 export function slurpSteeringContentChanged(before: SlpCreatorSteering, after: SlpCreatorSteering): boolean {
   return CONTENT_FIELDS.some((field) => JSON.stringify(before[field]) !== JSON.stringify(after[field]));

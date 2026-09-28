@@ -29,6 +29,11 @@ const LEVEL_PHOTO: Record<SlurpExplicitLevel, string> = {
   explicit: "explicit adult content, one person only",
 };
 
+/** The level as a picture phrase, for a picture drawn outside a post (a chat picture, a commission). */
+export function slurpLevelPhoto(level: SlurpExplicitLevel): string {
+  return `${LEVEL_PHOTO[level].charAt(0).toLocaleUpperCase()}${LEVEL_PHOTO[level].slice(1)}.`;
+}
+
 /** Negative-prompt terms per level. The image provider honours these far better than prose rules. */
 const LEVEL_NEGATIVE: Record<SlurpExplicitLevel, string> = {
   none: "nudity, lingerie, cleavage, sexual content",
@@ -43,9 +48,14 @@ const LEVEL_NEGATIVE: Record<SlurpExplicitLevel, string> = {
 const SHARED_NEGATIVE =
   "second person, extra people, duplicate person, twins, extra limbs, disembodied hands, smartphone, holding phone, selfie stick, text, watermark";
 
+/** A partner scene has two people on purpose; only the stray and doubled bodies stay out. */
+const PARTNER_NEGATIVE = SHARED_NEGATIVE.replace("second person, extra people, ", "");
+
 /** Without a level (a redraw or a scheduled picture that kept none), only the shared terms apply. */
-export function slurpImageNegativePrompt(level?: SlurpExplicitLevel): string {
-  return [level ? LEVEL_NEGATIVE[level] : "", SHARED_NEGATIVE].filter(Boolean).join(", ");
+export function slurpImageNegativePrompt(level?: SlurpExplicitLevel, partnered = false): string {
+  return [level ? LEVEL_NEGATIVE[level] : "", partnered ? PARTNER_NEGATIVE : SHARED_NEGATIVE]
+    .filter(Boolean)
+    .join(", ");
 }
 
 /** Negative-prompt parts as one list, deduplicated: the style profile and the level both add "text, watermark". */
@@ -105,6 +115,8 @@ export function slurpImageBrief(input: {
   stageFacts?: { wardrobe?: string; locations?: string };
   scene?: SlpWardrobeScene | null;
   selectedWardrobe?: { name: string; description: string } | null;
+  /** Who is in a partner scene with them ("Jonas, their boyfriend"). Absent: they are alone. */
+  partner?: string | null;
 }): string {
   const shootBrief =
     input.shoot?.brief &&
@@ -130,8 +142,12 @@ export function slurpImageBrief(input: {
     sentence(
       [input.cameraPhoto, input.story ? "vertical story photo" : "", input.effortPhoto].filter(Boolean).join(", "),
     ),
-    sentence(LEVEL_PHOTO[input.sexualLevel]),
-    "The only person in the photo.",
+    sentence(
+      input.partner && input.sexualLevel === "explicit"
+        ? "explicit adult content with their partner"
+        : LEVEL_PHOTO[input.sexualLevel],
+    ),
+    input.partner ? `Two people: the Creator and ${input.partner}.` : "The only person in the photo.",
   ]
     .filter(Boolean)
     .join("\n");

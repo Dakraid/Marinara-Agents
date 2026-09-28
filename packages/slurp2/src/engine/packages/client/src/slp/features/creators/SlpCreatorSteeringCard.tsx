@@ -12,13 +12,14 @@ import {
   type SlpSteeringPace,
   type SlpSteeringSupportNote,
 } from "../../../../../shared/src/slp/slp-creator-steering.js";
+import { SLP_SPICE_LEVELS, type SlpSpiceLevel } from "../../../../../shared/src/slp/slp-spice.js";
 import { ChipListInput } from "../../modules/settings/SlpSettingsInputs";
 import { Toggle } from "../../modules/settings/SlpSettingsControls";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
 import { SlpButton, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
 import { SlpUsesAiMark } from "../../modules/chrome/SlpAiMark";
 import { noteClass, selectClass } from "./slp-creator-classes";
-import { useSlurpCreatorSteering, useSlurpCreatorSteeringMutations } from "./slp-steering-hooks";
+import { useSlurpCreatorSteering, useSlurpCreatorSteeringMutations, type SlpCreatorSpice } from "./slp-steering-hooks";
 
 const labelClass = "block text-xs font-semibold";
 
@@ -116,6 +117,73 @@ function SupportNote({
   );
 }
 
+const above = (level: SlpSpiceLevel, max: SlpSpiceLevel) =>
+  SLP_SPICE_LEVELS.indexOf(level) > SLP_SPICE_LEVELS.indexOf(max);
+
+/**
+ * How spicy this Creator gets, what turns them on and their hard noes. Their level sits under the
+ * Slurp-wide limit (Backstage › Spice); their own words decide how they do it.
+ */
+function SpiceBlock({
+  name,
+  spice,
+  steering,
+  save,
+}: {
+  name: string;
+  spice: SlpCreatorSpice;
+  steering: { turnOns: string[]; hardNoes: string[] };
+  save: (patch: { spiceLevel?: SlpSpiceLevel | null; turnOns?: string[]; hardNoes?: string[] }) => void;
+}) {
+  const { t } = useTranslation();
+  const level = spice.level ?? "flirty";
+  const capped = above(level, spice.max);
+  return (
+    <div data-slurp-spice className="space-y-4 border-t border-[var(--slurp-outline)] pt-4">
+      <PillChoice<SlpSpiceLevel>
+        layout="row"
+        label={t("ui.slurp.spice.level", { name })}
+        detail={
+          capped
+            ? t("ui.slurp.spice.levelCapped", { name, max: t(`ui.slurp.spice.levels.${spice.max}`) })
+            : t(`ui.slurp.spice.levelDetail.${level}`, { name })
+        }
+        options={SLP_SPICE_LEVELS.map((value) => ({ value, label: t(`ui.slurp.spice.levels.${value}`) }))}
+        value={level}
+        onChange={(spiceLevel) => save({ spiceLevel })}
+      />
+      {spice.own ? (
+        <button
+          type="button"
+          onClick={() => save({ spiceLevel: null })}
+          className="-mt-2 min-h-11 text-xs font-semibold text-[var(--slurp-muted)] underline-offset-2 hover:text-[var(--slurp-text)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+        >
+          {t("ui.slurp.spice.useDefault")}
+        </button>
+      ) : (
+        <p className="-mt-2 text-xs leading-5 text-[var(--slurp-muted)]">{t("ui.slurp.spice.followsDefault")}</p>
+      )}
+      <ChipListInput
+        label={t("ui.slurp.spice.turnOns")}
+        values={steering.turnOns}
+        placeholder={t("ui.slurp.spice.turnOnsPlaceholder")}
+        onChange={(turnOns) => save({ turnOns })}
+      />
+      <ChipListInput
+        label={t("ui.slurp.spice.hardNoes")}
+        values={steering.hardNoes}
+        placeholder={t("ui.slurp.spice.hardNoesPlaceholder")}
+        onChange={(hardNoes) => save({ hardNoes })}
+      />
+      {spice.leans.length > 0 && (
+        <p className="text-xs leading-5 text-[var(--slurp-muted)]">
+          {t("ui.slurp.spice.leans", { name, tastes: spice.leans.join(", ") })}
+        </p>
+      )}
+    </div>
+  );
+}
+
 /**
  * What the player steers about one Creator, in their own words: mood, what is going on in their
  * life, what they are into, topics to bring up or leave out, how often they post, and one-off ideas
@@ -138,6 +206,7 @@ export function SlpCreatorSteeringCard({
   const { patch, addIdea, removeIdea, rewritePrepared, undoSupport, keepSupport } =
     useSlurpCreatorSteeringMutations(creatorId);
   const steering = query.data?.steering;
+  const spice = query.data?.spice ?? null;
   const [lifePhase, setLifePhase] = useState("");
   const [focus, setFocus] = useState("");
   const [idea, setIdea] = useState("");
@@ -260,6 +329,8 @@ export function SlpCreatorSteeringCard({
         placeholder={t("ui.slurp.steering.avoidPlaceholder")}
         onChange={(avoid) => save({ avoid })}
       />
+
+      {spice && <SpiceBlock name={name} spice={spice} steering={steering} save={save} />}
 
       <div aria-live="polite">
         {prepared && (

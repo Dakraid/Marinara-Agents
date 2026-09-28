@@ -7,6 +7,7 @@
  *
  * Pure, so the rules run in tests.
  */
+import { slpSpiceChips } from "../../../../../shared/src/slp/slp-spice.js";
 import {
   SLP_SCENE_ACTIONS,
   SLP_SCENE_FIELDS,
@@ -217,10 +218,9 @@ export function slpSceneStageProfile(draft: SlpSceneDraft, disclosureMode: SlpId
 }
 
 /**
- * The limits moment as one strategy line, or "" when nothing was said.
- *
- * ponytail: the spice level rides in the free strategy text until Creators get a real per-Creator
- * level (overnight plan 7b); then write the level there and keep this line for the likes and noes.
+ * The limits moment as the strategy lines sign-ups wrote before 7b, or "" when nothing was said.
+ * Kept as the one statement of that old format: the server moves such lines into the Creator's
+ * spice (`slpSpiceFromStrategyText`). New sign-ups write `slpSceneSpicePatch` instead.
  */
 export function slpSceneLimitsText(draft: SlpSceneDraft): string {
   return [
@@ -230,6 +230,18 @@ export function slpSceneLimitsText(draft: SlpSceneDraft): string {
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+/** The limits moment as the Creator's spice (level, turn-ons, hard noes), or null when nothing was said. */
+export function slpSceneSpicePatch(
+  draft: SlpSceneDraft,
+): { spiceLevel?: NonNullable<SlpSceneDraft["spice"]>; turnOns?: string[]; hardNoes?: string[] } | null {
+  const patch = {
+    ...(draft.spice ? { spiceLevel: draft.spice } : {}),
+    ...(draft.turnOns.trim() ? { turnOns: slpSpiceChips(draft.turnOns) } : {}),
+    ...(draft.hardNoes.trim() ? { hardNoes: slpSpiceChips(draft.hardNoes) } : {}),
+  };
+  return Object.keys(patch).length ? patch : null;
 }
 
 /** A full redraft (the "Update page" button) as a patch: only the fields a stage draft carries. */

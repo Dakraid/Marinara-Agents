@@ -609,3 +609,20 @@ export function slurpMessagePreview(kind: SlurpMessageKind, content: string, pri
 }
 
 const clamp = (value: string, limit: number) => (value.length <= limit ? value : `${value.slice(0, limit - 1)}…`);
+
+/** The Creator's latest posts for a DM prompt (drafts left out), each marked when this fan owns it. */
+export function slurpDmRecentPosts<
+  T extends { id: string; title: string | null; content: string; access: string; imageUrl: string | null },
+>(rows: readonly T[], unlocked: { has(id: string): boolean }, max: number) {
+  return rows
+    .filter((post) => post.access !== "draft")
+    .slice(0, max)
+    .map((post) => ({
+      id: post.id,
+      title: post.title,
+      content: post.content,
+      access: post.access,
+      imageUrl: post.imageUrl,
+      unlockedByFan: unlocked.has(post.id),
+    }));
+}

@@ -347,6 +347,25 @@ const OPEN: readonly SlurpCollabStatus[] = ["asked", "agreed", "planned"];
 export const slurpCollabOpen = (collab: SlurpCollab) => OPEN.includes(collab.status);
 export const slurpRivalryActive = (rivalry: SlurpRivalry) => rivalry.stage !== "over";
 
+/**
+ * Creators this one works with, for a partner scene (spice): the pages paired in Creator settings plus
+ * every collab they agreed or made together. A blocked pair or an open rivalry is nobody's partner.
+ */
+export function slurpWorkingPartnerIds(ties: SlurpCreatorTies, creatorId: string, paired: readonly string[]): string[] {
+  const other = (a: string, b: string) => (a === creatorId ? b : b === creatorId ? a : null);
+  const made = ties.collabs
+    .filter((collab) => ["agreed", "planned", "posted"].includes(collab.status))
+    .map((collab) => other(collab.hostId, collab.partnerId));
+  const rivals = new Set(
+    ties.rivalries.filter(slurpRivalryActive).map((rivalry) => other(rivalry.fromId, rivalry.toId)),
+  );
+  const blocked = new Set(ties.blocked);
+  return [...new Set([...paired, ...made])].filter(
+    (id): id is string =>
+      Boolean(id) && id !== creatorId && !rivals.has(id) && !blocked.has(slurpPairKey(creatorId, id!)),
+  );
+}
+
 /** Open and active first, then the newest finished ones, capped. */
 function trim(ties: SlurpCreatorTies): SlurpCreatorTies {
   const finishedCollabs = ties.collabs

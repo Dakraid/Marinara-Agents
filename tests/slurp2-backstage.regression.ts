@@ -28,6 +28,8 @@ assert.deepEqual(SLP_BACKSTAGE_SECTIONS, [
   "content",
   "world",
   "fans",
+  // 7b-spice: Backstage › Spice (user plan: "Backstage › Spice › Your taste").
+  "spice",
   "prompts",
   "maintenance",
 ]);

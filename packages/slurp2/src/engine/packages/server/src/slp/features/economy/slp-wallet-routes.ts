@@ -2,6 +2,7 @@ import {
   slpCreatorSubscriptionSchema,
   slpCreatorUnlockSchema,
 } from "../../../../../shared/src/slp/slp-social.schema.js";
+import { recordSlurpTasteSignal } from "../../data/creators/slp-spice-storage.js";
 import { type SlpCreatorSubscriber } from "../../../../../shared/src/slp/slp-social.types.js";
 import { randomInt } from "node:crypto";
 import {
@@ -170,6 +171,7 @@ export async function slpWalletRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
       kind: "tip",
       amount: parsed.data.amount,
     });
+    recordSlurpTasteSignal(app.db, { creatorId: creatorAccountId }, "tip");
     return wallet;
   });
 
@@ -351,6 +353,8 @@ export async function slpWalletRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
       if (wallet.coins < price) return reply.code(402).send({ error: "Not enough coins", price, coins: wallet.coins });
       return reply.code(400).send({ error: "Could not unlock this post" });
     }
+    // Slurp learns the player's taste slowly from what they pay to see.
+    if (result.created) recordSlurpTasteSignal(app.db, { metadata: post.metadata }, "unlock");
     // Fire and forget: the reply is a chat message, and the unlock must not wait on the model.
     if (result.created && result.chargedAmount > 0)
       void reactToSlurpPayment(app.db, {

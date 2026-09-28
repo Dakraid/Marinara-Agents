@@ -81,7 +81,7 @@ import {
 } from "../../../../../shared/src/slp/slp-fan-types.js";
 import { prepareSlurpPostImageContexts, slurpImageCaptioning } from "../../base/media/slp-post-image-context.js";
 import { createSlurpMessagesStorage, type SlurpMessage } from "../../data/slp-storage.js";
-import type { SlurpDmPolicy } from "../../modules/messages/slp-messaging.js";
+import { slurpDmRecentPosts, type SlurpDmPolicy } from "../../modules/messages/slp-messaging.js";
 import { isSlurpCharacterFanAccount } from "../../../../../shared/src/slp/slp-audience-characters.js";
 import { resolveCreatorCharacterCanon, resolveSlurpCharacterFanVoice } from "../../data/creators/slp-source-resolve.js";
 import { resolveSlurpCreatorFlavour } from "../../data/creators/slp-flavour-source.js";
@@ -94,7 +94,12 @@ import {
 } from "../../base/model/slp-model-worker.js";
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
 import { SLURP_PERFORMED_INTIMACY } from "../../modules/creators/slp-performance.js";
-import { slurpDmRoleHeader, slurpDmTranscript, type SlurpDmParty } from "../../modules/messages/slp-dm-roles.js";
+import {
+  slurpDmRoleHeader,
+  slurpDmTranscript,
+  slurpDmViewerPage,
+  type SlurpDmParty,
+} from "../../modules/messages/slp-dm-roles.js";
 import { protectSlurpSupportStaff } from "../../modules/messages/slp-support.js";
 import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
 
@@ -492,14 +497,7 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
     input.viewer.kind === "random_user"
       ? null
       : await slurp.getSlurpAccountForEntity(input.viewer.kind, input.viewer.entityId, "creator").catch(() => null);
-  const viewerPage =
-    viewerPageAccount &&
-    !viewerPageAccount.invited &&
-    viewerPageAccount.id !== input.creator.id &&
-    viewerPageAccount.id !== input.viewer.id &&
-    (viewerPageAccount.settings.privacy.identityDisclosure ?? "open") === "open"
-      ? { name: viewerPageAccount.displayName, handle: viewerPageAccount.handle }
-      : null;
+  const viewerPage = slurpDmViewerPage(viewerPageAccount, input.creator.id, input.viewer.id);
   const settings = await slurp.getSettings();
   const prompts = slurpPromptContext(settings);
   const source = await slurp.resolveAccountSource(input.creator);
@@ -553,17 +551,7 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
   const unlockedPostIds = new Set(
     (await slurp.listPostUnlocksForViewer(input.viewer.id).catch(() => [])).map((unlock) => unlock.postId),
   );
-  const recentPosts = recentPostRows
-    .filter((post) => post.access !== "draft")
-    .slice(0, RECENT_POSTS)
-    .map((post) => ({
-      id: post.id,
-      title: post.title,
-      content: post.content,
-      access: post.access,
-      imageUrl: post.imageUrl,
-      unlockedByFan: unlockedPostIds.has(post.id),
-    }));
+  const recentPosts = slurpDmRecentPosts(recentPostRows, unlockedPostIds, RECENT_POSTS);
   // The arc the feed is posting about, so a DM and the feed come from the same life. Protected like
   // every other supplied value: a Secret Creator's arc title can name a real place.
   const creatorArc = settings.arcAffectsMood
@@ -678,6 +666,14 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
       disclosureMode,
       use: "dm",
       sequence: input.history.length,
+      // How far the chat goes: subscribers get the Creator's level, others the tease. The player's
+      // own taste only reaches a chat with the player.
+      chat: {
+        subscribed: input.subscribed,
+        player: input.viewer.kind === "persona" && !fanVoice,
+        seed: `${input.creator.id}:${input.viewer.id}`,
+        with: input.viewer.id === SLURP_SUPPORT_ACCOUNT_ID ? "staff" : viewerPage ? "peer" : "fan",
+      },
       ownLines: [
         ...input.history
           .filter((message) => message.role === "creator" && message.kind === "text")

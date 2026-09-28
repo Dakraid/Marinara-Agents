@@ -14,6 +14,7 @@ import { SlpMessagingPanel } from "../../features/messages/SlpMessagingPanel";
 import { SlpProjectsPanel } from "../../features/projects/SlpProjectsPanel";
 import { SlpStorylinesPanel } from "../../features/projects/SlpStorylinesPanel";
 import { SlpPromptsPanel } from "../../features/settings/SlpPromptsPanel";
+import { SlpSpicePanel } from "../../features/creators/SlpSpicePanel";
 import { SlpWorldEventsPanel } from "../../features/world/SlpWorldEventsPanel";
 import { SlpPacksPanel } from "../../features/world/SlpPacksPanel";
 import { SlpCalendarPanel } from "../../features/world/SlpCalendarPanel";
@@ -44,6 +45,7 @@ export const SLP_BACKSTAGE_PANELS: readonly SlpBackstagePanelEntry[] = [
   { target: "general", Component: SlpPublishingPanel },
   { target: "images", Component: SlpImagesPanel },
   { target: "connections", Component: SlpConnectionsPanel },
+  { target: "spice", Component: SlpSpicePanel },
   { target: "prompts", Component: SlpPromptsPanel },
   { target: "autopurge", Component: SlpAutopurgePanel },
 ];

@@ -55,6 +55,30 @@ export type SlurpDmRoleInput = {
 
 const at = (party: SlurpDmParty) => (party.handle ? `${party.name} (@${party.handle})` : party.name);
 
+/**
+ * The Creator page the one writing runs, for the role header: never the page being written to or a
+ * page that is the writer itself, and only an open one, so a concealed page is never linked to its owner.
+ */
+export function slurpDmViewerPage(
+  page: {
+    id: string;
+    invited?: boolean;
+    displayName: string;
+    handle: string;
+    settings: { privacy: { identityDisclosure?: string } };
+  } | null,
+  creatorId: string,
+  viewerId: string,
+): SlurpDmParty | null {
+  return page &&
+    !page.invited &&
+    page.id !== creatorId &&
+    page.id !== viewerId &&
+    (page.settings.privacy.identityDisclosure ?? "open") === "open"
+    ? { name: page.displayName, handle: page.handle }
+    : null;
+}
+
 /** The writer's own label on a line. */
 export function slurpDmSelfLabel(name: string): string {
   return `you (${name})`;

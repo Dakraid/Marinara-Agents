@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { recordSlurpTasteSignal } from "../../data/creators/slp-spice-storage.js";
 import { replyToSlurpMessage } from "./slp-message-operation.js";
 import { logger } from "../../../lib/logger.js";
 import { parseSlurpCheatDirective } from "../../modules/messages/slp-cheat-directive.js";
@@ -344,6 +345,7 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
     if (sent.status === "closed") return reply.code(403).send({ error: "This Creator is not accepting messages." });
     if (sent.status === "insufficient_funds")
       return reply.code(402).send({ error: "Not enough coins.", required: sent.required });
+    recordSlurpTasteSignal(app.db, { creatorId: parsed.data.creatorAccountId }, "tip");
     // A tip is worth answering, and a thanks that arrives an hour later is not a thanks.
     const outcome = await replyToSlurpMessage(app.db, {
       threadId: sent.thread.id,
@@ -386,6 +388,10 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
       setTimeout(() => ppvReacting.delete(message.id), 60_000).unref?.();
     }
     const unlockedThread = firstUnlock ? await messages.getThreadById(message.threadId) : null;
+    if (firstUnlock) {
+      const prompt = typeof message.metadata?.imagePrompt === "string" ? message.metadata.imagePrompt : "";
+      recordSlurpTasteSignal(app.db, { text: `${prompt} ${message.content ?? ""}` }, "unlock");
+    }
     if (unlockedThread)
       // Fire and forget: the reply is a chat message, and the unlock must not wait on the model.
       void reactToSlurpPayment(app.db, {

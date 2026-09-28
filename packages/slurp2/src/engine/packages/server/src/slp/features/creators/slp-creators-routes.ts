@@ -18,6 +18,7 @@ import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-s
 import { slurpCreatorReach } from "../../../../../shared/src/slp/slp-reach.js";
 import { generateCreatorStageProfileDraft } from "./slp-stage-profile-draft-service.js";
 import { logger } from "../../../lib/logger.js";
+import { moveSlurpStrategyLimits } from "../../data/creators/slp-spice-storage.js";
 import { getErrorMessage } from "../../modules/creators/slp-public-support.js";
 import { tryCreatorAccountOperation } from "../../base/locking/slp-account-operation-lock.js";
 import { resolveCreatorSourceSnapshot } from "../../data/creators/slp-source-resolve.js";
@@ -82,6 +83,8 @@ export async function slpCreatorsRoutes(app: FastifyInstance, deps: SlpRouteDeps
     ) {
       return reply.code(400).send({ error: "Persona-owned Slurp profiles cannot post automatically." });
     }
+    // The editor no longer shows the sign-up chat's spice lines; move them before a save drops them.
+    if (parsed.data.subtree === "strategy") await moveSlurpStrategyLimits(app.db, account).catch(() => undefined);
     const updated = await noodle.patchAccountSettings(id, parsed.data);
     if (!updated) return reply.code(404).send({ error: "Creator account not found" });
     return updated;
