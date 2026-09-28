@@ -24,6 +24,8 @@ This is an **alpha** and the package is **staging only**: Engine `staging` teste
 
 0.2.3 makes people look like themselves in their pictures, lets you choose how big pictures of one person are drawn, picks each season's new clothes for who you play, makes three screens easier to use (the shops, the backpack, the clothes store), and finds Marinara however you run it, even from another device or on a secure connection.
 
+0.2.4 lets you use your own pictures for people's season and work outfits and for you in your outfits, lets you rename someone (by hand, or from their card), keeps scene turns when a model's reply has small mistakes, makes the clothes store's rack sharp again, keeps the phone's shop apart from a store's, and fixes something in the optional Adult Module.
+
 All generation — cast readings, scene lines, backgrounds and outfit pictures — runs through the Engine profile's own configured model and image connections. The package adds no external services and sends nothing anywhere else. The numbers (bonds, money, time, outcomes) are always decided by the package's code; the model only writes the words.
 
 ## Requirements
