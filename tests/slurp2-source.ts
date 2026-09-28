@@ -237,6 +237,11 @@ export const SLURP2_SOURCE_MODULES: Record<string, readonly string[]> = {
     "packages/server/src/slp/features/messages/slp-message-generation-service.ts",
     "packages/server/src/slp/features/messages/slp-thread-stance.ts",
   ],
+  // L (R1-034): the kept-promise record moved to the opportunity storage both post paths reach.
+  "packages/server/src/slp/features/feed/slp-post-plan-service.ts": [
+    "packages/server/src/slp/features/feed/slp-post-plan-service.ts",
+    "packages/server/src/slp/data/feed/slp-opportunity-storage.ts",
+  ],
   "packages/server/src/routes/slurp.routes.ts": [
     "packages/server/src/slp/modules/requests/slp-request-schemas.ts",
     "packages/server/src/slp/base/host/slp-multipart.ts",

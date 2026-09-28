@@ -1,6 +1,7 @@
 import type { DB } from "../../../db/connection.js";
 import { desc, eq } from "../../../db/file-query.js";
-import { slurpContentOpportunities } from "../../../db/schema/slurp.js";
+import { slurpContentOpportunities, slurpContinuityEvents } from "../../../db/schema/slurp.js";
+import { recordSlurpContinuityEvent } from "../continuity/slp-continuity-storage.js";
 import { newId } from "../../../utils/id-generator.js";
 import type {
   SlurpContentDelivery,
@@ -235,4 +236,37 @@ async function pruneSlurpOpportunities(db: DB, creatorAccountId: string): Promis
     .filter((entry) => !(entry.workflow === "planned" && entry.sourceEventId))) {
     await db.delete(slurpContentOpportunities).where(eq(slurpContentOpportunities.id, row.id));
   }
+}
+
+/**
+ * A promise was kept: record it in the thread it was made in, once. Called where a post goes up:
+ * a direct post when it lands, a scheduled one when the reserve publishes it. Recording it when the
+ * slot was only prepared kept promises a discarded slot never delivered (R1-034).
+ */
+export async function recordSlurpPromiseKept(
+  db: DB,
+  opportunity: Pick<SlurpContentOpportunity, "id" | "sourceEventId">,
+  input: { postId?: string | null; at: Date },
+): Promise<void> {
+  if (!opportunity.sourceEventId) return;
+  const [source] = await db
+    .select()
+    .from(slurpContinuityEvents)
+    .where(eq(slurpContinuityEvents.id, opportunity.sourceEventId));
+  if (!source?.threadId) return;
+  await recordSlurpContinuityEvent(db, {
+    sourceKind: String(source.sourceKind),
+    sourceEntityId: String(source.sourceEntityId),
+    creatorAccountId: String(source.creatorAccountId),
+    eventType: "promise_kept",
+    source: "slurp_post",
+    realityScope: "slurp",
+    audienceScope: "thread_private",
+    threadId: String(source.threadId),
+    payload: { requestId: opportunity.sourceEventId, ...(input.postId ? { postId: input.postId } : {}) },
+    relatedIds: [opportunity.sourceEventId, opportunity.id, ...(input.postId ? [input.postId] : [])],
+    fingerprint: `kept:${opportunity.id}`,
+    contribution: "system",
+    occurredAt: input.at,
+  });
 }

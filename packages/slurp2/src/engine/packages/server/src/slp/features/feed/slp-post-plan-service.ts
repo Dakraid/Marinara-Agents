@@ -8,7 +8,7 @@ import { slurpContinuityInstruction } from "../../modules/continuity/slp-continu
 import { slurpContinuityIdentityOf } from "../../modules/continuity/slp-continuity-rules.js";
 import type { SlpCreatorManagedPost } from "../../../../../shared/src/slp/slp-social.types.js";
 import type { SlurpPostAxes } from "../../modules/feed/slp-content-axes.js";
-import type { SlurpContentOpportunity } from "../../data/feed/slp-opportunity-storage.js";
+import { recordSlurpPromiseKept, type SlurpContentOpportunity } from "../../data/feed/slp-opportunity-storage.js";
 import { logger } from "../../../lib/logger.js";
 import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
 import type { SlpCreatorGenerationRequest } from "../../../../../shared/src/slp/slp-social-generation.schema.js";
@@ -26,8 +26,6 @@ import { planSlurpBeat, readSlurpCanonAnchorState, type SlurpBeatContext } from 
 import { slurpSharedIdeasFor } from "./slp-shared-preseed-service.js";
 import { slurpBeatIntents } from "../../modules/feed/slp-post-beat.js";
 import { topSlurpDemandTrend } from "../../data/feed/slp-demand-storage.js";
-import { eq } from "../../../db/file-query.js";
-import { slurpContinuityEvents } from "../../../db/schema/slurp.js";
 import { findSlurpReuse, loadSlurpReuse } from "../media/slp-media-contract.js";
 import {
   slurpCampaignStageIntent,
@@ -389,38 +387,6 @@ export async function planSlurpPost(
     campaignId,
     beat,
   };
-}
-
-/**
- * A promise was kept: record it in the thread it was made in, once. Called wherever a plan
- * completes, so a promise kept by a scheduled post is recorded as surely as a direct one.
- */
-export async function recordSlurpPromiseKept(
-  db: DB,
-  opportunity: Pick<SlurpContentOpportunity, "id" | "sourceEventId">,
-  input: { postId?: string | null; at: Date },
-): Promise<void> {
-  if (!opportunity.sourceEventId) return;
-  const [source] = await db
-    .select()
-    .from(slurpContinuityEvents)
-    .where(eq(slurpContinuityEvents.id, opportunity.sourceEventId));
-  if (!source?.threadId) return;
-  await recordSlurpContinuityEvent(db, {
-    sourceKind: String(source.sourceKind),
-    sourceEntityId: String(source.sourceEntityId),
-    creatorAccountId: String(source.creatorAccountId),
-    eventType: "promise_kept",
-    source: "slurp_post",
-    realityScope: "slurp",
-    audienceScope: "thread_private",
-    threadId: String(source.threadId),
-    payload: { requestId: opportunity.sourceEventId, ...(input.postId ? { postId: input.postId } : {}) },
-    relatedIds: [opportunity.sourceEventId, opportunity.id, ...(input.postId ? [input.postId] : [])],
-    fingerprint: `kept:${opportunity.id}`,
-    contribution: "system",
-    occurredAt: input.at,
-  });
 }
 
 /**

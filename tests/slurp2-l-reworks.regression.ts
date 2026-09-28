@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   SLURP_ADULT_LEVELS,
@@ -116,6 +117,30 @@ const read = (path: string) => slurp2Source(join(pkg, path));
   assert.match(promptRoute, /strikes: activeSlurpStrikes\(thread\.strikes, thread\.lastStrikeAt\)/u);
   assert.match(promptRoute, /details\.dayVibe !== undefined \? details\.dayVibe/u);
   assert.doesNotMatch(promptRoute, /const fan = await slurp\.getViewer/u);
+}
+
+// ── R1-034: a kept promise is recorded at publish, not when the slot is prepared ──
+{
+  const reserveOperation = read("server/src/slp/features/feed/reserve/slp-reserve-operation.ts");
+  assert.doesNotMatch(reserveOperation, /recordSlurpPromiseKept/u);
+  const reserveStorage = read("server/src/slp/data/feed/reserve/slp-reserve-storage-2.ts");
+  const publish = reserveStorage.slice(
+    reserveStorage.indexOf("async publishDueNoodlerPreparedPosts"),
+    reserveStorage.indexOf("async reconcileNoodlerPreparedPosts"),
+  );
+  const kept = publish.indexOf("recordSlurpPromiseKept(db, opportunity, { postId: didPublish, at })");
+  assert.ok(kept > 0, "the publish loop records the kept promise with the published post");
+  assert.ok(kept > publish.indexOf("if (!didPublish) continue;"), "only after the post went up");
+  assert.match(publish, /findSlurpOpportunityBySlot\(db, item\.id\)/u);
+  // One home for the record, in the data layer both paths can reach.
+  assert.match(
+    read("server/src/slp/data/feed/slp-opportunity-storage.ts"),
+    /export async function recordSlurpPromiseKept\(/u,
+  );
+  assert.doesNotMatch(
+    readFileSync(join(pkg, "server/src/slp/features/feed/slp-post-plan-service.ts"), "utf8"),
+    /export async function recordSlurpPromiseKept/u,
+  );
 }
 
 console.log("slurp2-l-reworks: ok");
