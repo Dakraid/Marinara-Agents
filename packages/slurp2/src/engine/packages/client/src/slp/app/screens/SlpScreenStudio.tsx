@@ -15,6 +15,7 @@ import { formatRelativeTime, formatTime } from "../../base/ui/slp-date-time";
 import { BroadcastPanel } from "../../features/messages/SlpMessages";
 import { SlurpProjectsPanel } from "../../features/projects/SlpProjectsBoard";
 import { SlpBrandOffers, SlpCollabsPanel, SlpRelationshipsPanel } from "../../features/projects/SlpCollabsPanel";
+import { SLP_CARD_STACK_CLASS } from "../../modules/post/SlpPostHelpers";
 import { SlpCoinText } from "../../modules/coin/SlpCoin";
 import { errorMessage } from "./SlpHomeHelpers";
 import { SlpCollectCard } from "./SlpCollectCard";
@@ -311,7 +312,7 @@ function SlurpStudioView({
         {/* Between all Creators, not one (U: collab = work, couple = life): Business (collabs, brand
             deals, rivalries, 7b-c) and Relationships (couples, crushes, exes, 7b-couples). */}
         {personaId && studioQuery.data && (
-          <>
+          <div className={SLP_CARD_STACK_CLASS}>
             <SlpStudioGroup
               icon={Handshake}
               title={localizeUi("ui.slurp.ties.title")}
@@ -326,7 +327,7 @@ function SlurpStudioView({
             >
               <SlpRelationshipsPanel personaId={personaId} />
             </SlpStudioGroup>
-          </>
+          </div>
         )}
       </div>
     </SlpCreatorFrame>

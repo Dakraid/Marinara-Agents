@@ -174,4 +174,17 @@ assert.match(
 );
 assert.match(hub, /@min-\[1024px\]:hidden",\s*SLP_BAR_GLASS_CLASS/u, "the hub header keeps the same glass");
 
+// Merge T × U: the Studio's Business and Relationships cards stack with the shared gap, the owed-#ad
+// note and the brand offers are two cards with that gap, and a pair's avatars wear the Story ring.
+{
+  const studio = client("app/screens/SlpScreenStudio.tsx");
+  assert.match(
+    studio,
+    /<div className=\{SLP_CARD_STACK_CLASS\}>\s*<SlpStudioGroup[\s\S]*?<SlpRelationshipsPanel[\s\S]*?<\/SlpStudioGroup>\s*<\/div>/u,
+  );
+  const ties = client("features/projects/SlpCollabsPanel.tsx");
+  assert.match(ties, /<div className=\{SLP_CARD_STACK_CLASS\}>\s*\{owed\.length > 0/u);
+  assert.match(ties, /function Pair[\s\S]*?<SlpStoryRingAvatar[\s\S]*?creatorId=\{creator\.id\}[\s\S]*?<Avatar/u);
+}
+
 console.log("slurp2 T polish: ok");

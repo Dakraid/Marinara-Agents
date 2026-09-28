@@ -25,23 +25,32 @@ import {
   type SlurpTiesRivalry,
 } from "./slp-ties-hooks";
 import { SlpCouplesSection } from "./SlpCouples";
+import { SlpStoryRingAvatar } from "../../modules/story/SlpStoryRing";
+import { SLP_CARD_STACK_CLASS } from "../../modules/post/SlpPostHelpers";
 
 const rowClass = "flex flex-col gap-2 py-3";
 // Inside Studio's group surface: rows and hairlines, no second box.
 const listClass = "divide-y divide-[var(--noodle-divider)]";
 
-/** Two overlapping avatars: who is in it. */
+/** Two overlapping avatars: who is in it. A Creator with a live Story wears the Story ring (T). */
 function Pair({ a, b }: { a?: SlurpTiesCreator; b?: SlurpTiesCreator }) {
   return (
     <span className="flex shrink-0 -space-x-2" aria-hidden="true">
       {[a, b].map((creator, index) =>
         creator ? (
-          <Avatar
+          <SlpStoryRingAvatar
             key={creator.id}
-            account={{ displayName: creator.name, avatarUrl: creator.avatarUrl }}
-            size="sm"
-            className={cn("ring-2 ring-[var(--slurp-surface-raised)]", index === 1 && "relative")}
-          />
+            creatorId={creator.id}
+            name={creator.name}
+            outset={2}
+            className={cn(index === 1 && "relative")}
+          >
+            <Avatar
+              account={{ displayName: creator.name, avatarUrl: creator.avatarUrl }}
+              size="sm"
+              className="ring-2 ring-[var(--slurp-surface-raised)]"
+            />
+          </SlpStoryRingAvatar>
         ) : null,
       )}
     </span>
@@ -513,92 +522,95 @@ export function SlpBrandOffers({ personaId, creatorId }: { personaId: string; cr
   return (
     <section className="space-y-2" aria-label={t(heading)} data-slurp-brand-offers>
       <h3 className={cn(SLP_EYEBROW_CLASS, "px-1")}>{t(heading)}</h3>
-      {owed.length > 0 && (
-        <ul className={SLP_GROUP_CLASS} data-slurp-owed-posts>
-          {owed.map((deal) => (
-            <li key={deal.id} className="flex items-start gap-3 px-4 py-3" data-slurp-owed-post>
-              <span className="mt-0.5 shrink-0 text-[var(--slurp-accent)]">
-                <SlpSparkleGlyph size={16} aria-hidden="true" />
-              </span>
-              <div className="min-w-0">
-                <p className={cn(SLP_TYPE.body, "font-semibold [overflow-wrap:anywhere]")}>
-                  {t("ui.slurp.ties.owed.title", { brand: deal.brand })}
-                </p>
-                <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)] [overflow-wrap:anywhere]")}>
-                  {t("ui.slurp.ties.owed.detail", { product: deal.product })}
-                </p>
-                {/* U: no dead end when the post went up without #ad or the brand's name. */}
-                <SlpButton
-                  variant="secondary"
-                  disabled={markPosted.isPending}
-                  onClick={() =>
-                    markPosted.mutate(deal.id, {
-                      onSuccess: () => toast.success(t("ui.slurp.ties.owed.marked", { brand: deal.brand })),
-                      onError: (error) => toast.error(errorMessage(error)),
-                    })
-                  }
-                  className="mt-2 min-h-11 px-4 text-sm"
-                  data-slurp-owed-mark
-                >
-                  <Check size={15} aria-hidden="true" />
-                  {t("ui.slurp.ties.owed.mark")}
-                </SlpButton>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-      {offers.length > 0 && (
-        <ul className={SLP_GROUP_CLASS}>
-          {offers.map((deal) => (
-            <li key={deal.id} className="flex flex-col gap-2 px-4 py-3" data-slurp-brand-offer>
-              {deal.bannerUrl && (
-                <div
-                  className={cn(
-                    "overflow-hidden rounded-xl bg-[var(--slurp-media-stage,#17131a)]",
-                    SLP_IMG_FRAME_CLASS,
-                  )}
-                  style={{ aspectRatio: "1.91 / 1" }}
-                >
-                  <SlurpMediaImg
-                    src={deal.bannerUrl}
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
-                    className="slp-crop-top h-full w-full object-cover"
-                  />
+      {/* The owed note and the offers are two cards: the shared card gap between them (T). */}
+      <div className={SLP_CARD_STACK_CLASS}>
+        {owed.length > 0 && (
+          <ul className={SLP_GROUP_CLASS} data-slurp-owed-posts>
+            {owed.map((deal) => (
+              <li key={deal.id} className="flex items-start gap-3 px-4 py-3" data-slurp-owed-post>
+                <span className="mt-0.5 shrink-0 text-[var(--slurp-accent)]">
+                  <SlpSparkleGlyph size={16} aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <p className={cn(SLP_TYPE.body, "font-semibold [overflow-wrap:anywhere]")}>
+                    {t("ui.slurp.ties.owed.title", { brand: deal.brand })}
+                  </p>
+                  <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)] [overflow-wrap:anywhere]")}>
+                    {t("ui.slurp.ties.owed.detail", { product: deal.product })}
+                  </p>
+                  {/* U: no dead end when the post went up without #ad or the brand's name. */}
+                  <SlpButton
+                    variant="secondary"
+                    disabled={markPosted.isPending}
+                    onClick={() =>
+                      markPosted.mutate(deal.id, {
+                        onSuccess: () => toast.success(t("ui.slurp.ties.owed.marked", { brand: deal.brand })),
+                        onError: (error) => toast.error(errorMessage(error)),
+                      })
+                    }
+                    className="mt-2 min-h-11 px-4 text-sm"
+                    data-slurp-owed-mark
+                  >
+                    <Check size={15} aria-hidden="true" />
+                    {t("ui.slurp.ties.owed.mark")}
+                  </SlpButton>
                 </div>
-              )}
-              <div className="flex items-baseline justify-between gap-3">
-                <span className={cn(SLP_TYPE.body, "min-w-0 font-semibold [overflow-wrap:anywhere]")}>
-                  {t("ui.slurp.ties.offerTitle", { brand: deal.brand, product: deal.product })}
-                </span>
-                <span className={cn(SLP_TYPE.body, "shrink-0 font-bold tabular-nums")}>
-                  <SlpCoinText>{t("ui.slurp.ties.fee", { count: deal.fee })}</SlpCoinText>
-                </span>
-              </div>
-              {deal.copy && <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>“{deal.copy}”</p>}
-              <div className="flex gap-2">
-                <SlpPrimaryButton
-                  disabled={answerDeal.isPending}
-                  onClick={() => answer(deal, true)}
-                  className="min-h-11 flex-1 px-4 text-sm"
-                >
-                  {t("ui.slurp.ties.offerYes")}
-                </SlpPrimaryButton>
-                <SlpButton
-                  variant="quiet"
-                  disabled={answerDeal.isPending}
-                  onClick={() => answer(deal, false)}
-                  className="min-h-11 flex-1 px-4 text-sm"
-                >
-                  {t("ui.slurp.ties.offerNo")}
-                </SlpButton>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+              </li>
+            ))}
+          </ul>
+        )}
+        {offers.length > 0 && (
+          <ul className={SLP_GROUP_CLASS}>
+            {offers.map((deal) => (
+              <li key={deal.id} className="flex flex-col gap-2 px-4 py-3" data-slurp-brand-offer>
+                {deal.bannerUrl && (
+                  <div
+                    className={cn(
+                      "overflow-hidden rounded-xl bg-[var(--slurp-media-stage,#17131a)]",
+                      SLP_IMG_FRAME_CLASS,
+                    )}
+                    style={{ aspectRatio: "1.91 / 1" }}
+                  >
+                    <SlurpMediaImg
+                      src={deal.bannerUrl}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className="slp-crop-top h-full w-full object-cover"
+                    />
+                  </div>
+                )}
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className={cn(SLP_TYPE.body, "min-w-0 font-semibold [overflow-wrap:anywhere]")}>
+                    {t("ui.slurp.ties.offerTitle", { brand: deal.brand, product: deal.product })}
+                  </span>
+                  <span className={cn(SLP_TYPE.body, "shrink-0 font-bold tabular-nums")}>
+                    <SlpCoinText>{t("ui.slurp.ties.fee", { count: deal.fee })}</SlpCoinText>
+                  </span>
+                </div>
+                {deal.copy && <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>“{deal.copy}”</p>}
+                <div className="flex gap-2">
+                  <SlpPrimaryButton
+                    disabled={answerDeal.isPending}
+                    onClick={() => answer(deal, true)}
+                    className="min-h-11 flex-1 px-4 text-sm"
+                  >
+                    {t("ui.slurp.ties.offerYes")}
+                  </SlpPrimaryButton>
+                  <SlpButton
+                    variant="quiet"
+                    disabled={answerDeal.isPending}
+                    onClick={() => answer(deal, false)}
+                    className="min-h-11 flex-1 px-4 text-sm"
+                  >
+                    {t("ui.slurp.ties.offerNo")}
+                  </SlpButton>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </section>
   );
 }
