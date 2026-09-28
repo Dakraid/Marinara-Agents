@@ -11,7 +11,7 @@ import { createLorebooksStorage } from "../../../services/storage/lorebooks.stor
 import { readGarnishLorebookContext } from "./slp-garnish-lorebook.js";
 import { generateGarnishAds, retireWeakGarnishAds } from "./slp-garnish-generation-service.js";
 import { qualityScores } from "../../../services/garnish-ads/garnish-ads.rating.js";
-import type { GarnishAd } from "../../../services/garnish-ads/garnish-ads.types.js";
+import { garnishAdBrandId, type GarnishAd } from "../../../services/garnish-ads/garnish-ads.types.js";
 import {
   exportGarnishAds,
   importGarnishAds,
@@ -72,7 +72,11 @@ export async function slpAdsRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
       items.map((item) => item.id),
     );
     for (const item of items) await ads.record(parsed.data.personaId, item.id, "impression");
-    return { items };
+    // The brand's logo is the ad's avatar (R); a brand without one shows its initials.
+    const logos = new Map(
+      (await ads.pool.listBrands(SLURP_GARNISH_PLATFORM)).map((brand) => [brand.id, brand.logoUrl ?? null]),
+    );
+    return { items: items.map((item) => ({ ...item, brandLogoUrl: logos.get(garnishAdBrandId(item)) ?? null })) };
   });
 
   app.post("/slurp/viewer/ads/:id/hide", async (req, reply) => {

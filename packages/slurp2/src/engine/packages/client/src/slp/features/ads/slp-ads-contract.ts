@@ -20,6 +20,11 @@ export type SlurpPromotion = {
   /** A 1.91:1 banner for wide slots; older ads have none and wide slots crop `imageUrl` from the top. */
   wideImageUrl?: string | null;
   actionLabel?: string;
+  /** R: the brand it belongs to, its logo (the ad's avatar), and the product's price feel and look. */
+  brandId?: string;
+  brandLogoUrl?: string | null;
+  priceFeel?: "budget" | "everyday" | "premium";
+  look?: string;
 };
 
 // The Backstage ads preview renders a real inline ad, so the tile is part of the Ads contract.

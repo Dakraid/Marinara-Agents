@@ -36,6 +36,7 @@ import {
   slurpSettleOwedDeal,
   slurpToldFansAboutDeal,
   SLURP_DEAL_PACE,
+  type SlurpDealPace,
   type SlurpBrandDeal,
 } from "../../modules/economy/slp-brand-deals.js";
 import { loadSlurpDealAds, loadSlurpDealSpice } from "./slp-brand-deal-source.js";
@@ -96,7 +97,7 @@ export async function advanceSlurpCreatorTies(db: DB, at = new Date()): Promise<
   const storage = createSlurpStorage(db);
   const settings = await storage.getSettings();
   const creators = await loadSlurpTieCreators(db, at);
-  const pace = SLURP_DEAL_PACE[settings.brandDealsPace] ?? 1;
+  const pace = SLURP_DEAL_PACE[settings.brandDealsPace as SlurpDealPace] ?? 1;
   // Loaded even when paced off: open offers still get answered against their product.
   const ads = await loadSlurpDealAds(db, settings);
   const spice = ads.some((ad) => ad.rating && ad.rating !== "tame") ? await loadSlurpDealSpice(db) : undefined;

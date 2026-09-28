@@ -132,14 +132,17 @@ export async function slpBrandsRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
     return pool.add(ad);
   });
 
-  /** A product picture from an upload or the assist. The old banner goes: wide slots crop the new one. */
+  /**
+   * A product picture from an upload or the assist (null takes it away: Undo of a first picture). The
+   * old banner goes: wide slots crop the new one.
+   */
   app.post("/slurp/ads/pool/:id/picture", async (req, reply) => {
-    const parsed = z.object({ image: picture }).safeParse(req.body);
+    const parsed = z.object({ image: picture.nullable() }).safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
     const { id } = req.params as { id: string };
     const ad = (await pool.listAll(SLURP_GARNISH_PLATFORM)).find((row) => row.id === id);
     if (!ad) return reply.code(404).send({ error: "Not Found" });
-    const url = storeGarnishPicture(id, parsed.data.image);
+    const url = parsed.data.image ? storeGarnishPicture(id, parsed.data.image) : null;
     const updated = await pool.update(id, { imageUrl: url, wideImageUrl: null });
     // Only files Slurp stored resolve here (shipped ads carry no picture), so this never deletes a link.
     unlinkGarnishAdImage(id, ad.imageUrl);
