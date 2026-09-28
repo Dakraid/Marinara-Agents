@@ -14,11 +14,11 @@ import { resolveCreatorArtwork } from "../creators/slp-creators-contract.js";
 import { minimizeCreatorSourceSnapshot } from "../../base/identity/slp-source.js";
 import { isSlurpFileUniqueConstraintError } from "../../base/host/slp-file-errors.js";
 import { resolveSlurpTextConnection } from "../../base/identity/slp-connection.js";
-import { settleAgentJobsWithConcurrencyLimit } from "../../../services/agents/agent-concurrency.js";
 import { logger } from "../../../lib/logger.js";
 import {
   slpCheckProviderHost,
   slpIsRateLimitError,
+  slpSettleAdaptive,
   slpTransientNetworkCode,
 } from "../../base/model/slp-provider-retry.js";
 import { resolveBaseUrl } from "../../../services/generation/connection-base-url.js";
@@ -32,12 +32,13 @@ const slurpBulkCreatorAccountCreateSchema = slpBulkCreatorAccountCreateSchema.ex
 });
 
 /**
- * Stage profiles of a bulk add are drafted one at a time. Four at once was a burst on the player's
- * writing connection that Slurp's bundled provider neither paces nor retries the way the Engine does
- * for chat, so a connection that serves one request at a time (a free tier, a proxy cap, a
- * phone-local model) refused all but the first Creator.
+ * Stage profiles of a bulk add are drafted two at a time, and one at a time after the first "too
+ * many requests". Four at once was a burst on the player's writing connection that Slurp's bundled
+ * provider neither paced nor retried the way the Engine does for chat, so a connection that serves
+ * one request at a time (a free tier, a proxy cap, a phone-local model) refused all but the first
+ * Creator. Two keeps a fast connection fast; the retry waits out the one refusal.
  */
-const SLP_BULK_DRAFT_CONCURRENCY = 1;
+const SLP_BULK_DRAFT_CONCURRENCY = 2;
 
 /** What the wizard tells the player about a Creator whose sign-up did not go through. */
 function bulkFailureReason(error: unknown): string {
@@ -165,10 +166,9 @@ export async function slpOnboardingRoutes(app: FastifyInstance, deps: SlpRouteDe
         subtree: "scheduler",
         patch: { autoPosting },
       });
-    const settledCreations = await settleAgentJobsWithConcurrencyLimit(
+    const settledCreations = await slpSettleAdaptive(
       noodleAccountIds,
-      SLP_BULK_DRAFT_CONCURRENCY,
-      async (noodleAccountId) => {
+      async (noodleAccountId, slowDown) => {
         const publicAccount = await noodle.resolveSourceByEntityId(noodleAccountId);
         const existing = publicAccount
           ? await noodle.getNoodlerAccountForSource(
@@ -208,6 +208,8 @@ export async function slpOnboardingRoutes(app: FastifyInstance, deps: SlpRouteDe
               guidance: "",
             },
             connection,
+            // The first "too many requests" drops the batch to one Creator at a time.
+            onRateLimit: slowDown,
           });
           // The draft carries form-only keys (notes, source snapshot, revision token) that the strict
           // create schema refuses. Validating them made every open-mode Creator skip with a wrong reason.
@@ -299,6 +301,7 @@ export async function slpOnboardingRoutes(app: FastifyInstance, deps: SlpRouteDe
           return;
         }
       },
+      SLP_BULK_DRAFT_CONCURRENCY,
     );
     settledCreations.forEach((result, index) => {
       if (result.status === "fulfilled") return;

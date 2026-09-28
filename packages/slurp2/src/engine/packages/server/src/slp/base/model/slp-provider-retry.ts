@@ -46,13 +46,21 @@ export function slpTransientNetworkCode(error: unknown): SlpTransientDnsCode | n
  * such wrapper, so a busy free tier, a proxy or a flaky resolver failed Slurp's calls while every
  * other mode worked.
  *
+ * Every Slurp call site builds its provider through `slpWithProviderRetry` (G8), so this covers
+ * all of Slurp's model calls, not only the bulk draft.
+ *
  * ponytail: fixed backoff, no Retry-After and no per-connection pacing. Upgrade path: once the
  * pinned `sources/engine` snapshot carries `withRateLimitAwareProvider`, pass the connection id to
  * `createLLMProvider` in every Slurp call site and keep only the DNS part here.
  */
 export async function slpRetryProviderCall<T>(
   run: () => Promise<T>,
-  options: { delaysMs?: readonly number[]; sleep?: (ms: number) => Promise<void> } = {},
+  options: {
+    delaysMs?: readonly number[];
+    sleep?: (ms: number) => Promise<void>;
+    /** Told about each rate limit, and awaited before the wait, so a batch can slow down (`slpSettleAdaptive`). */
+    onRateLimit?: () => void | Promise<void>;
+  } = {},
 ): Promise<T> {
   const delaysMs = options.delaysMs ?? [5_000, 15_000, 30_000];
   const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
@@ -61,10 +69,78 @@ export async function slpRetryProviderCall<T>(
       return await run();
     } catch (error) {
       const delay = delaysMs[attempt];
-      if (delay === undefined || !(slpIsRateLimitError(error) || slpTransientNetworkCode(error))) throw error;
+      const rateLimited = slpIsRateLimitError(error);
+      if (delay === undefined || !(rateLimited || slpTransientNetworkCode(error))) throw error;
+      if (rateLimited) await options.onRateLimit?.();
       await sleep(delay);
     }
   }
+}
+
+/**
+ * A worker pool that starts `start` wide and drops to one at a time after the first rate limit.
+ * A connection without limits keeps a bulk add fast; one that serves a single request at a time
+ * refuses once, the refused call waits until it is the only one running, and the rest go one by
+ * one. Settles per item, like the Engine's pool.
+ */
+export async function slpSettleAdaptive<T, R>(
+  items: readonly T[],
+  worker: (item: T, slowDown: () => Promise<void>) => Promise<R>,
+  start = 2,
+): Promise<PromiseSettledResult<R>[]> {
+  const results = new Array<PromiseSettledResult<R>>(items.length);
+  let limit = Math.max(1, Math.trunc(start));
+  let next = 0;
+  let active = 0;
+  let wake = () => {};
+  let changed = new Promise<void>((resolve) => (wake = resolve));
+  const notify = () => {
+    const resolve = wake;
+    changed = new Promise<void>((next) => (wake = next));
+    resolve();
+  };
+  // The caller is one of the running items: it goes on once nothing else is running.
+  const slowDown = async () => {
+    limit = 1;
+    while (active > 1) await changed;
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (next < items.length) {
+        if (active >= limit) {
+          await changed;
+          continue;
+        }
+        const index = next++;
+        active += 1;
+        try {
+          results[index] = { status: "fulfilled", value: await worker(items[index]!, slowDown) };
+        } catch (reason) {
+          results[index] = { status: "rejected", reason };
+        } finally {
+          active -= 1;
+          notify();
+        }
+      }
+    }),
+  );
+  return results;
+}
+
+/**
+ * The same provider, with every `chatComplete` run through `slpRetryProviderCall`. Every Slurp
+ * model call is a `chatComplete`, so wrapping the provider where it is built covers them all.
+ * Other methods and fields still come from the provider (prototype chain), so a caller that reads
+ * one sees the real thing.
+ */
+export function slpWithProviderRetry<P extends { chatComplete: (...args: never[]) => Promise<unknown> }>(
+  provider: P,
+  options?: Parameters<typeof slpRetryProviderCall>[1],
+): P {
+  return Object.assign(Object.create(provider) as P, {
+    chatComplete: (...args: Parameters<P["chatComplete"]>) =>
+      slpRetryProviderCall(() => provider.chatComplete(...args), options),
+  });
 }
 
 /**

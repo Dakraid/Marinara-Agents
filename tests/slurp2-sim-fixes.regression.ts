@@ -3,7 +3,7 @@
  * One block per fix; each reproduces the simulated failure with the real module.
  */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { slurpPickCreatorForSlot } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-posting-interval.ts";
 import {
   slurpArtStyle,
@@ -25,6 +25,10 @@ import {
   SLURP_CAMERA_SOURCES,
   slurpPostCameraSource,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-camera-source.ts";
+import {
+  slpSettleAdaptive,
+  slpWithProviderRetry,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/base/model/slp-provider-retry.ts";
 import {
   LEGACY_SLURP_DISCOVERY_TAG_SEED,
   SLURP_DISCOVERY_TAG_SEED,
@@ -277,4 +281,107 @@ const read = (path: string) => readFileSync(new URL(path, root), "utf8");
     assert.ok((counts.get(source) ?? 0) / 2400 <= 0.27, `${source} at most ~25 %: ${JSON.stringify([...counts])}`);
 }
 
-console.log("slurp2-sim-fixes regression passed");
+// --- G8 (from A): every Slurp model call waits out 429 / EAI_AGAIN / ENOTFOUND; bulk sign-up adapts.
+async function g8() {
+  const quick = { delaysMs: [1, 1, 1], sleep: () => Promise.resolve() };
+  class Provider {
+    #calls = 0;
+    readonly label = "real";
+    async chatComplete(prompt: string) {
+      this.#calls += 1;
+      if (this.#calls === 1) throw new Error("OpenAI-compatible API error 429: slow down");
+      if (this.#calls === 2) throw Object.assign(new Error("fetch failed"), { cause: { code: "EAI_AGAIN" } });
+      return `ok:${prompt}`;
+    }
+    calls() {
+      return this.#calls;
+    }
+  }
+  const real = new Provider();
+  const wrapped = slpWithProviderRetry(real, quick);
+  assert.equal(await wrapped.chatComplete("hi"), "ok:hi", "a 429 and a DNS hiccup are waited out");
+  assert.equal(real.calls(), 3);
+  assert.equal(wrapped.label, "real", "other fields still come from the provider");
+  await assert.rejects(
+    slpWithProviderRetry({ chatComplete: async () => Promise.reject(new Error("API error 401: bad key")) }, quick)
+      .chatComplete,
+    /401/u,
+    "other errors are not retried",
+  );
+
+  // Every place Slurp builds a provider wraps it (the bulk draft keeps its own wrapper with the same retry).
+  const slp = new URL("server/src/slp/", root);
+  const files: string[] = [];
+  const walk = (dir: URL) => {
+    for (const name of readdirSync(dir)) {
+      const url = new URL(name, dir);
+      if (statSync(url).isDirectory()) walk(new URL(`${name}/`, dir));
+      else if (name.endsWith(".ts")) files.push(url.pathname);
+    }
+  };
+  walk(slp);
+  let wrappedSites = 0;
+  for (const file of files) {
+    const text = readFileSync(file, "utf8");
+    if (!/createLLMProvider\(|withConnectionFallbackProvider\(\{/u.test(text) || file.endsWith("slp-provider-retry.ts"))
+      continue;
+    const bare = [...text.matchAll(/=\s*(?:withConnectionFallbackProvider\(\{|createLLMProvider\()/gu)].length;
+    const manual = /slpRetryProviderCall\(\(\) => fallbackProvider\.chatComplete/u.test(text) ? 1 : 0;
+    assert.equal(bare, manual, `${file.split("/slp/")[1]} builds a provider without the retry`);
+    assert.ok(/slpWithProviderRetry\(|slpRetryProviderCall\(/u.test(text), `${file.split("/slp/")[1]} retries`);
+    wrappedSites += (text.match(/slpWithProviderRetry\(/gu) ?? []).length + manual;
+  }
+  assert.ok(wrappedSites >= 20, `all Slurp model-call places retry (${wrappedSites})`);
+
+  // Adaptive bulk: two at a time on a fast connection, one at a time after the first refusal.
+  const lanes = (limitOneAtATime: boolean) => {
+    let inFlight = 0;
+    let peak = 0;
+    let peakAfterRefusal = 0;
+    let refused = false;
+    return {
+      stats: () => ({ peak, peakAfterRefusal, refused }),
+      async call() {
+        if (limitOneAtATime && inFlight > 0) {
+          refused = true;
+          throw new Error("API error 429: Too many concurrent requests");
+        }
+        inFlight += 1;
+        peak = Math.max(peak, inFlight);
+        if (refused) peakAfterRefusal = Math.max(peakAfterRefusal, inFlight);
+        await new Promise((resolve) => setTimeout(resolve, 3));
+        inFlight -= 1;
+        return "ok";
+      },
+    };
+  };
+  const creators = ["a", "b", "c", "d", "e", "f"];
+  const run = (connection: ReturnType<typeof lanes>) =>
+    slpSettleAdaptive(creators, (_, slowDown) =>
+      slpWithProviderRetry(
+        { chatComplete: () => connection.call() },
+        {
+          delaysMs: [1, 1, 1],
+          sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+          onRateLimit: slowDown,
+        },
+      ).chatComplete(),
+    );
+  const fast = lanes(false);
+  assert.ok((await run(fast)).every((entry) => entry.status === "fulfilled"));
+  assert.equal(fast.stats().peak, 2, "a fast connection gets two at a time");
+  const single = lanes(true);
+  assert.ok(
+    (await run(single)).every((entry) => entry.status === "fulfilled"),
+    "a one-slot connection loses nobody",
+  );
+  assert.equal(single.stats().refused, true);
+  assert.equal(single.stats().peakAfterRefusal, 1, "after the first refusal it goes one at a time");
+}
+g8().then(
+  () => console.log("slurp2-sim-fixes regression passed"),
+  (error: unknown) => {
+    console.error(error);
+    process.exit(1);
+  },
+);

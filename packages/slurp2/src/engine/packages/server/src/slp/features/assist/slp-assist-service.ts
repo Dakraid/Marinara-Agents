@@ -38,6 +38,7 @@ import {
   type SlpActionParsed,
   type SlpActionResult,
 } from "../../../../../shared/src/slp/slp-actions.js";
+import { slpWithProviderRetry } from "../../base/model/slp-provider-retry.js";
 
 export type SlpAssistFailure = { ok: false; status: 400 | 404 | 409 | 429 | 502; error: string };
 export type SlpAssistOutcome<T> = { ok: true; value: T } | SlpAssistFailure;
@@ -91,16 +92,18 @@ export async function runSlpAssistText(
       : "";
   if (!(await claimSlurpModelBudget(db, settings.modelBudget, "assist")))
     return fail(429, "Today's AI budget for writing help is used up.");
-  const provider = createLLMProvider(
-    connection.provider,
-    resolveBaseUrl(connection),
-    connection.apiKey,
-    connection.maxContext,
-    connection.openrouterProvider,
-    connection.maxTokensOverride,
-    connection.claudeFastMode === "true",
-    connection.treatAsLocalEndpoint === "true",
-    connection.defaultParameters,
+  const provider = slpWithProviderRetry(
+    createLLMProvider(
+      connection.provider,
+      resolveBaseUrl(connection),
+      connection.apiKey,
+      connection.maxContext,
+      connection.openrouterProvider,
+      connection.maxTokensOverride,
+      connection.claudeFastMode === "true",
+      connection.treatAsLocalEndpoint === "true",
+      connection.defaultParameters,
+    ),
   );
   const result = await provider.chatComplete(
     buildSlpAssistTextMessages({ ...input, name: creator?.account.displayName, brief }),

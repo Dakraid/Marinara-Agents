@@ -52,6 +52,7 @@ import {
 } from "../../base/model/slp-model-worker.js";
 import { composeSlurpPromptBlocks, type SlurpPromptBlockOverrides } from "../../base/prompting/slp-prompt-blocks.js";
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
+import { slpWithProviderRetry } from "../../base/model/slp-provider-retry.js";
 
 export type SlurpPendingKind = "commission" | "question" | "opener" | "delivery";
 
@@ -245,23 +246,25 @@ export async function drainSlurpPendingText(
   // bare, so a primary outage left placeholders unrewritten while the rest of Slurp carried on.
   const connections = createConnectionsStorage(db);
   const fallbackConnection = await connections.getFallbackForMain();
-  const provider = withConnectionFallbackProvider({
-    primary: createLLMProvider(
-      connection.provider,
-      resolveBaseUrl(connection),
-      connection.apiKey,
-      connection.maxContext,
-      connection.openrouterProvider,
-      connection.maxTokensOverride,
-      connection.claudeFastMode === "true",
-      connection.treatAsLocalEndpoint === "true",
-      connection.defaultParameters,
-    ),
-    primaryConnectionId: connection.id,
-    fallbackConnection,
-    fallbackBaseUrl: fallbackConnection ? resolveBaseUrl(fallbackConnection) : "",
-    category: "main",
-  });
+  const provider = slpWithProviderRetry(
+    withConnectionFallbackProvider({
+      primary: createLLMProvider(
+        connection.provider,
+        resolveBaseUrl(connection),
+        connection.apiKey,
+        connection.maxContext,
+        connection.openrouterProvider,
+        connection.maxTokensOverride,
+        connection.claudeFastMode === "true",
+        connection.treatAsLocalEndpoint === "true",
+        connection.defaultParameters,
+      ),
+      primaryConnectionId: connection.id,
+      fallbackConnection,
+      fallbackBaseUrl: fallbackConnection ? resolveBaseUrl(fallbackConnection) : "",
+      category: "main",
+    }),
+  );
   const messages = createSlurpMessagesStorage(db);
   const population = createSlurpPopulationStorage(db);
   let rewritten = 0;

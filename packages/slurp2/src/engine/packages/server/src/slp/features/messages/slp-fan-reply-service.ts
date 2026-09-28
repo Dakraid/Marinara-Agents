@@ -33,6 +33,7 @@ import {
 import { NOODLER_UNTRUSTED_CONTENT_INSTRUCTION } from "../feed/slp-feed-contract.js";
 import type { SlurpMessage } from "../../data/messages/slp-messages-storage-types.js";
 import { slurpDmRoleHeader, slurpDmTranscript } from "../../modules/messages/slp-dm-roles.js";
+import { slpWithProviderRetry } from "../../base/model/slp-provider-retry.js";
 
 export type SlurpFanReplyOutcome =
   | { status: "replied"; message: SlurpMessage }
@@ -84,23 +85,25 @@ export async function replyAsSlurpFan(
 
   const connections = createConnectionsStorage(db);
   const fallbackConnection = await connections.getFallbackForMain();
-  const provider = withConnectionFallbackProvider({
-    primary: createLLMProvider(
-      connection.provider,
-      resolveBaseUrl(connection),
-      connection.apiKey,
-      connection.maxContext,
-      connection.openrouterProvider,
-      connection.maxTokensOverride,
-      connection.claudeFastMode === "true",
-      connection.treatAsLocalEndpoint === "true",
-      connection.defaultParameters,
-    ),
-    primaryConnectionId: connection.id,
-    fallbackConnection,
-    fallbackBaseUrl: fallbackConnection ? resolveBaseUrl(fallbackConnection) : "",
-    category: "main",
-  });
+  const provider = slpWithProviderRetry(
+    withConnectionFallbackProvider({
+      primary: createLLMProvider(
+        connection.provider,
+        resolveBaseUrl(connection),
+        connection.apiKey,
+        connection.maxContext,
+        connection.openrouterProvider,
+        connection.maxTokensOverride,
+        connection.claudeFastMode === "true",
+        connection.treatAsLocalEndpoint === "true",
+        connection.defaultParameters,
+      ),
+      primaryConnectionId: connection.id,
+      fallbackConnection,
+      fallbackBaseUrl: fallbackConnection ? resolveBaseUrl(fallbackConnection) : "",
+      category: "main",
+    }),
+  );
 
   // The same roles and transcript as the Creator's side, told from the fan's seat.
   const parties = {

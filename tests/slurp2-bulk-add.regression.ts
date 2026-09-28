@@ -19,6 +19,7 @@ import {
   slpCheckProviderHost,
   slpIsRateLimitError,
   slpRetryProviderCall,
+  slpSettleAdaptive,
   slpTransientNetworkCode,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/base/model/slp-provider-retry.ts";
 import {
@@ -67,22 +68,42 @@ function oneAtATimeConnection() {
 }
 
 async function main() {
-  // --- Reproduction: the concurrency the route really uses, on a one-at-a-time connection. ---
-  const concurrencyMatch = /settleAgentJobsWithConcurrencyLimit\(\s*noodleAccountIds,\s*([A-Z_]+|\d+)/u.exec(routes);
-  assert.ok(concurrencyMatch, "The bulk route drafts its Creators through the Engine worker pool");
+  // --- Reproduction: the pool the route really uses, on a one-at-a-time connection. ---
+  // G8 (orchestrator decision on A): two at a time, one at a time after the first "too many
+  // requests". The one refusal is waited out by the retry every Slurp provider carries now.
+  const concurrencyMatch = /slpSettleAdaptive\(\s*noodleAccountIds,[\s\S]*?\n\s*([A-Z_]+|\d+),\n\s*\);/u.exec(routes);
+  assert.ok(concurrencyMatch, "The bulk route drafts its Creators through the adaptive pool");
   const concurrencyToken = concurrencyMatch[1]!;
   const concurrency = /^\d+$/u.test(concurrencyToken)
     ? Number(concurrencyToken)
     : Number(new RegExp(`const ${concurrencyToken} = (\\d+);`, "u").exec(routes)?.[1]);
+  assert.equal(concurrency, 2, "A bulk add starts two at a time");
+  assert.match(routes, /onRateLimit: slowDown/u, "the draft tells the pool about a rate limit");
   const connection = oneAtATimeConnection();
   const creators = ["a", "b", "c", "d", "e"];
-  const settled = await settleAgentJobsWithConcurrencyLimit(creators, concurrency, (id) => connection.chatComplete(id));
+  const settled = await slpSettleAdaptive(
+    creators,
+    (id, slowDown) =>
+      slpRetryProviderCall(() => connection.chatComplete(id), {
+        delaysMs: [1, 1, 1],
+        sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+        onRateLimit: slowDown,
+      }),
+    concurrency,
+  );
   assert.deepEqual(
     settled.map((entry) => entry.status),
     creators.map(() => "fulfilled"),
     "Every Creator of a bulk add gets its stage profile on a connection that takes one request at a time",
   );
-  assert.equal(connection.calls, creators.length, "No Creator's draft is refused and re-sent");
+  assert.ok(connection.calls <= creators.length + 1, `At most the first burst is refused once (${connection.calls})`);
+  // Without the adaptive pool, the old four-wide burst loses Creators on the same connection.
+  const burst = oneAtATimeConnection();
+  const old = await settleAgentJobsWithConcurrencyLimit(creators, 4, (id) => burst.chatComplete(id));
+  assert.ok(
+    old.some((entry) => entry.status === "rejected"),
+    "the old burst is refused",
+  );
 
   // --- A refused request is paused and sent again, as the Engine does for chat. ---
   assert.equal(slpIsRateLimitError(new Error("OpenAI-compatible API error 429: slow down")), true);
@@ -194,7 +215,7 @@ async function main() {
   }
   {
     const checkAt = routes.indexOf("await slpCheckProviderHost(resolveBaseUrl(connection))");
-    const poolAt = routes.indexOf("settleAgentJobsWithConcurrencyLimit(");
+    const poolAt = routes.indexOf("slpSettleAdaptive(");
     assert.ok(checkAt > 0 && checkAt < poolAt, "The route checks the host once, before the Creators run");
     assert.match(routes, /slpTransientNetworkCode\(error\)/u, "A Creator lost to DNS gets its own reason");
   }

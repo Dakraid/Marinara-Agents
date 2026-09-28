@@ -103,6 +103,7 @@ import {
 import { slurpCoupleDmPage } from "../projects/slp-projects-contract.js";
 import { protectSlurpSupportStaff } from "../../modules/messages/slp-support.js";
 import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
+import { slpWithProviderRetry } from "../../base/model/slp-provider-retry.js";
 
 type GenerationConnection = NonNullable<Awaited<ReturnType<ReturnType<typeof createConnectionsStorage>["getWithKey"]>>>;
 
@@ -716,23 +717,25 @@ export async function generateSlurpMessageReply(input: SlurpMessagePromptInput):
     );
   const connections = createConnectionsStorage(input.db);
   const fallbackConnection = await connections.getFallbackForMain();
-  const provider = withConnectionFallbackProvider({
-    primary: createLLMProvider(
-      input.connection.provider,
-      resolveBaseUrl(input.connection),
-      input.connection.apiKey,
-      input.connection.maxContext,
-      input.connection.openrouterProvider,
-      input.connection.maxTokensOverride,
-      input.connection.claudeFastMode === "true",
-      input.connection.treatAsLocalEndpoint === "true",
-      input.connection.defaultParameters,
-    ),
-    primaryConnectionId: input.connection.id,
-    fallbackConnection,
-    fallbackBaseUrl: fallbackConnection ? resolveBaseUrl(fallbackConnection) : "",
-    category: "main",
-  });
+  const provider = slpWithProviderRetry(
+    withConnectionFallbackProvider({
+      primary: createLLMProvider(
+        input.connection.provider,
+        resolveBaseUrl(input.connection),
+        input.connection.apiKey,
+        input.connection.maxContext,
+        input.connection.openrouterProvider,
+        input.connection.maxTokensOverride,
+        input.connection.claudeFastMode === "true",
+        input.connection.treatAsLocalEndpoint === "true",
+        input.connection.defaultParameters,
+      ),
+      primaryConnectionId: input.connection.id,
+      fallbackConnection,
+      fallbackBaseUrl: fallbackConnection ? resolveBaseUrl(fallbackConnection) : "",
+      category: "main",
+    }),
+  );
   const debugMode = input.debugMode === true || isDebugAgentsEnabled();
   const response = await provider.chatComplete(messages, {
     model: input.connection.model,

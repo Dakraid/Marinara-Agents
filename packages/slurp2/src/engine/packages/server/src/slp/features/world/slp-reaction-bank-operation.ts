@@ -26,6 +26,7 @@ import {
 import { SLURP_SHIPPED_REACTIONS, SLURP_SHIPPED_TYPE_REACTIONS } from "../../modules/world/slp-world-copy.js";
 import { composeSlurpPromptBlocks } from "../../base/prompting/slp-prompt-blocks.js";
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
+import { slpWithProviderRetry } from "../../base/model/slp-provider-retry.js";
 
 /**
  * Growing the free comment bank.
@@ -88,16 +89,18 @@ export async function topUpSlurpReactionBank(
 
   try {
     if (!(await claimSlurpModelBudget(db, settings.modelBudget, "bank_grow"))) return "busy";
-    const provider = createLLMProvider(
-      connection.provider,
-      resolveBaseUrl(connection),
-      connection.apiKey,
-      connection.maxContext,
-      connection.openrouterProvider,
-      connection.maxTokensOverride,
-      connection.claudeFastMode === "true",
-      connection.treatAsLocalEndpoint === "true",
-      connection.defaultParameters,
+    const provider = slpWithProviderRetry(
+      createLLMProvider(
+        connection.provider,
+        resolveBaseUrl(connection),
+        connection.apiKey,
+        connection.maxContext,
+        connection.openrouterProvider,
+        connection.maxTokensOverride,
+        connection.claudeFastMode === "true",
+        connection.treatAsLocalEndpoint === "true",
+        connection.defaultParameters,
+      ),
     );
     const briefs = [
       ...(targets.shared === undefined

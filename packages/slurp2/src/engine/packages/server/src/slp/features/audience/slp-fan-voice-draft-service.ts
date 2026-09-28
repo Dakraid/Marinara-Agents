@@ -10,6 +10,7 @@ import {
   cleanSlpFanVoiceDraft,
   type SlpFanVoiceDraftInput,
 } from "../../modules/audience/slp-fan-voice-draft.js";
+import { slpWithProviderRetry } from "../../base/model/slp-provider-retry.js";
 
 export type SlpFanVoiceDraftResult =
   { ok: true; voice: string } | { ok: false; status: 409 | 429 | 502; error: string };
@@ -30,16 +31,18 @@ export async function draftSlpFanTypeVoice(db: DB, input: SlpFanVoiceDraftInput)
   if (!connection) return { ok: false, status: 409, error: "Select a text generation connection first." };
   if (!(await claimSlurpModelBudget(db, settings.modelBudget, "fan_type_voice")))
     return { ok: false, status: 429, error: "Today's AI budget for fan type voice drafts is used up." };
-  const provider = createLLMProvider(
-    connection.provider,
-    resolveBaseUrl(connection),
-    connection.apiKey,
-    connection.maxContext,
-    connection.openrouterProvider,
-    connection.maxTokensOverride,
-    connection.claudeFastMode === "true",
-    connection.treatAsLocalEndpoint === "true",
-    connection.defaultParameters,
+  const provider = slpWithProviderRetry(
+    createLLMProvider(
+      connection.provider,
+      resolveBaseUrl(connection),
+      connection.apiKey,
+      connection.maxContext,
+      connection.openrouterProvider,
+      connection.maxTokensOverride,
+      connection.claudeFastMode === "true",
+      connection.treatAsLocalEndpoint === "true",
+      connection.defaultParameters,
+    ),
   );
   const result = await provider.chatComplete(buildSlpFanVoiceDraftMessages(input), {
     model: connection.model,

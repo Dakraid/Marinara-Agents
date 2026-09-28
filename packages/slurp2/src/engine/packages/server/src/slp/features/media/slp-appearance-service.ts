@@ -20,6 +20,7 @@ import {
   shouldAutoAcceptSlpAppearance,
 } from "../../modules/creators/slp-appearance-profile.js";
 import type { SlpAppearanceProfileMode } from "../../../../../shared/src/slp/slp-social.types.js";
+import { slpWithProviderRetry } from "../../base/model/slp-provider-retry.js";
 
 const MISSING_APPEARANCE = "Add an appearance to this Creator or its linked character before generating pictures.";
 const appearanceFlights = new Map<string, Promise<string>>();
@@ -108,16 +109,18 @@ async function resolveImageAppearanceOnce(input: Parameters<typeof resolveImageA
     if (fallback) return fallback;
     throw new Error("Set up a Slurp text connection or add a written appearance before generating pictures.");
   }
-  const provider = createLLMProvider(
-    connection.provider,
-    resolveBaseUrl(connection),
-    connection.apiKey,
-    connection.maxContext,
-    connection.openrouterProvider,
-    connection.maxTokensOverride,
-    connection.claudeFastMode === "true",
-    connection.treatAsLocalEndpoint === "true",
-    connection.defaultParameters,
+  const provider = slpWithProviderRetry(
+    createLLMProvider(
+      connection.provider,
+      resolveBaseUrl(connection),
+      connection.apiKey,
+      connection.maxContext,
+      connection.openrouterProvider,
+      connection.maxTokensOverride,
+      connection.claudeFastMode === "true",
+      connection.treatAsLocalEndpoint === "true",
+      connection.defaultParameters,
+    ),
   );
   const messages = [
     {

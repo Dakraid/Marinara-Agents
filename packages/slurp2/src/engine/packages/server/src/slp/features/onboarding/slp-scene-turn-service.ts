@@ -31,6 +31,7 @@ import {
   slpSceneWritesHost,
 } from "../../modules/onboarding/slp-scene-prompt.js";
 import { slpCreatorPublicIdentityFor } from "../feed/slp-feed-contract.js";
+import { slpWithProviderRetry } from "../../base/model/slp-provider-retry.js";
 
 type GenerationConnection = NonNullable<Awaited<ReturnType<ReturnType<typeof createConnectionsStorage>["getWithKey"]>>>;
 
@@ -78,23 +79,25 @@ export async function generateSlpSceneTurn(
   logDebugOverride(debugMode, "[debug/slurp] Sign-up scene turn prepared (%s, %s).", request.preset, request.moment);
   const connections = createConnectionsStorage(db);
   const fallbackConnection = await connections.getFallbackForMain();
-  const provider = withConnectionFallbackProvider({
-    primary: createLLMProvider(
-      input.connection.provider,
-      resolveBaseUrl(input.connection),
-      input.connection.apiKey,
-      input.connection.maxContext,
-      input.connection.openrouterProvider,
-      input.connection.maxTokensOverride,
-      input.connection.claudeFastMode === "true",
-      input.connection.treatAsLocalEndpoint === "true",
-      input.connection.defaultParameters,
-    ),
-    primaryConnectionId: input.connection.id,
-    fallbackConnection,
-    fallbackBaseUrl: fallbackConnection ? resolveBaseUrl(fallbackConnection) : "",
-    category: "main",
-  });
+  const provider = slpWithProviderRetry(
+    withConnectionFallbackProvider({
+      primary: createLLMProvider(
+        input.connection.provider,
+        resolveBaseUrl(input.connection),
+        input.connection.apiKey,
+        input.connection.maxContext,
+        input.connection.openrouterProvider,
+        input.connection.maxTokensOverride,
+        input.connection.claudeFastMode === "true",
+        input.connection.treatAsLocalEndpoint === "true",
+        input.connection.defaultParameters,
+      ),
+      primaryConnectionId: input.connection.id,
+      fallbackConnection,
+      fallbackBaseUrl: fallbackConnection ? resolveBaseUrl(fallbackConnection) : "",
+      category: "main",
+    }),
+  );
   const response = await provider.chatComplete(messages, {
     model: input.connection.model,
     maxTokens: clampGenerationMaxOutputTokens({

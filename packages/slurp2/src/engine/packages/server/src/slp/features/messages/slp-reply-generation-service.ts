@@ -51,6 +51,7 @@ import { resolveSlurpCreatorFlavour } from "../../data/creators/slp-flavour-sour
 import { slurpRotationHash } from "../../modules/feed/slp-post-variation.js";
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
 import { SLURP_PERFORMED_INTIMACY } from "../../modules/creators/slp-performance.js";
+import { slpWithProviderRetry } from "../../base/model/slp-provider-retry.js";
 
 type GenerationConnection = NonNullable<Awaited<ReturnType<ReturnType<typeof createConnectionsStorage>["getWithKey"]>>>;
 
@@ -210,23 +211,25 @@ export async function generateCreatorReply(input: {
 }): Promise<{ content: string; moodShift: SlurpMoodShift }> {
   const connections = createConnectionsStorage(input.db);
   const fallbackConnection = await connections.getFallbackForMain();
-  const provider = withConnectionFallbackProvider({
-    primary: createLLMProvider(
-      input.connection.provider,
-      resolveBaseUrl(input.connection),
-      input.connection.apiKey,
-      input.connection.maxContext,
-      input.connection.openrouterProvider,
-      input.connection.maxTokensOverride,
-      input.connection.claudeFastMode === "true",
-      input.connection.treatAsLocalEndpoint === "true",
-      input.connection.defaultParameters,
-    ),
-    primaryConnectionId: input.connection.id,
-    fallbackConnection,
-    fallbackBaseUrl: fallbackConnection ? resolveBaseUrl(fallbackConnection) : "",
-    category: "main",
-  });
+  const provider = slpWithProviderRetry(
+    withConnectionFallbackProvider({
+      primary: createLLMProvider(
+        input.connection.provider,
+        resolveBaseUrl(input.connection),
+        input.connection.apiKey,
+        input.connection.maxContext,
+        input.connection.openrouterProvider,
+        input.connection.maxTokensOverride,
+        input.connection.claudeFastMode === "true",
+        input.connection.treatAsLocalEndpoint === "true",
+        input.connection.defaultParameters,
+      ),
+      primaryConnectionId: input.connection.id,
+      fallbackConnection,
+      fallbackBaseUrl: fallbackConnection ? resolveBaseUrl(fallbackConnection) : "",
+      category: "main",
+    }),
+  );
   const disclosureMode = input.creator.settings.privacy.identityDisclosure ?? "open";
   const publicIdentity = await resolveNoodlerPublicIdentity(input.db, input.creator);
   const settings = await createSlurpStorage(input.db).getSettings();

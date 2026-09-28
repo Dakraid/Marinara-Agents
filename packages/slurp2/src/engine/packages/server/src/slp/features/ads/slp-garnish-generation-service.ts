@@ -30,6 +30,7 @@ import { slpSamplingOptions } from "../../base/prompting/slp-sampling-options.js
 import { SLURP_GARNISH_PLATFORM } from "./slp-garnish-context.js";
 import { NOODLER_UNTRUSTED_CONTENT_INSTRUCTION } from "../feed/slp-feed-contract.js";
 import { composeSlurpPromptBlocks, type SlurpPromptBlockOverrides } from "../../base/prompting/slp-prompt-blocks.js";
+import { slpWithProviderRetry } from "../../base/model/slp-provider-retry.js";
 
 export type GarnishTone = "corporate" | "scammy" | "local" | "luxury" | "unhinged";
 export type GarnishEra = "present" | "nineties" | "cyberpunk" | "retrofuture";
@@ -99,23 +100,25 @@ export async function generateGarnishAds(
   const existingBrands = [...new Set(existing.map((ad) => ad.brand))].slice(0, 40);
 
   const fallback = await connections.getFallbackForMain();
-  const provider = withConnectionFallbackProvider({
-    primary: createLLMProvider(
-      connection.provider,
-      resolveBaseUrl(connection),
-      connection.apiKey,
-      connection.maxContext,
-      connection.openrouterProvider,
-      connection.maxTokensOverride,
-      connection.claudeFastMode === "true",
-      connection.treatAsLocalEndpoint === "true",
-      connection.defaultParameters,
-    ),
-    primaryConnectionId: connection.id,
-    fallbackConnection: fallback,
-    fallbackBaseUrl: fallback ? resolveBaseUrl(fallback) : "",
-    category: "main",
-  });
+  const provider = slpWithProviderRetry(
+    withConnectionFallbackProvider({
+      primary: createLLMProvider(
+        connection.provider,
+        resolveBaseUrl(connection),
+        connection.apiKey,
+        connection.maxContext,
+        connection.openrouterProvider,
+        connection.maxTokensOverride,
+        connection.claudeFastMode === "true",
+        connection.treatAsLocalEndpoint === "true",
+        connection.defaultParameters,
+      ),
+      primaryConnectionId: connection.id,
+      fallbackConnection: fallback,
+      fallbackBaseUrl: fallback ? resolveBaseUrl(fallback) : "",
+      category: "main",
+    }),
+  );
 
   const messages: ChatMessage[] = [
     {

@@ -33,6 +33,7 @@ import {
 } from "../../base/model/slp-model-worker.js";
 import { composeSlurpPromptBlocks, type SlurpPromptBlockOverrides } from "../../base/prompting/slp-prompt-blocks.js";
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
+import { slpWithProviderRetry } from "../../base/model/slp-provider-retry.js";
 
 export class SlurpArcGenerationFailure extends Error {
   constructor(
@@ -220,23 +221,25 @@ export async function generateSlurpArc(
       promptBlocks: slurpPromptContext(settings).blocks,
     });
     const fallbackConnection = await connections.getFallbackForMain();
-    const fallbackProvider = withConnectionFallbackProvider({
-      primary: createLLMProvider(
-        connection.provider,
-        resolveBaseUrl(connection),
-        connection.apiKey,
-        connection.maxContext,
-        connection.openrouterProvider,
-        connection.maxTokensOverride,
-        connection.claudeFastMode === "true",
-        connection.treatAsLocalEndpoint === "true",
-        connection.defaultParameters,
-      ),
-      primaryConnectionId: connection.id,
-      fallbackConnection,
-      fallbackBaseUrl: fallbackConnection ? resolveBaseUrl(fallbackConnection) : "",
-      category: "main",
-    });
+    const fallbackProvider = slpWithProviderRetry(
+      withConnectionFallbackProvider({
+        primary: createLLMProvider(
+          connection.provider,
+          resolveBaseUrl(connection),
+          connection.apiKey,
+          connection.maxContext,
+          connection.openrouterProvider,
+          connection.maxTokensOverride,
+          connection.claudeFastMode === "true",
+          connection.treatAsLocalEndpoint === "true",
+          connection.defaultParameters,
+        ),
+        primaryConnectionId: connection.id,
+        fallbackConnection,
+        fallbackBaseUrl: fallbackConnection ? resolveBaseUrl(fallbackConnection) : "",
+        category: "main",
+      }),
+    );
     const provider = withConnectionAdmissionProvider(fallbackProvider, connection.id, admissionMode);
     const options = {
       model: connection.model,

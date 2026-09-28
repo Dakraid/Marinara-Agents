@@ -14,7 +14,6 @@ import { clampGenerationMaxOutputTokens } from "../../../services/generation/out
 import { slpSamplingOptions } from "../../base/prompting/slp-sampling-options.js";
 import { parseGameJsonish } from "../../../services/game/jsonish.js";
 import { modelAnswerForCorrection, requireModelAnswer } from "../../base/model/slp-model-answer.js";
-import { slpRetryProviderCall } from "../../base/model/slp-provider-retry.js";
 import { withConnectionFallbackProvider } from "../../../services/llm/connection-fallback-provider.js";
 import type { ChatMessage } from "../../../services/llm/base-provider.js";
 import { createLLMProvider } from "../../../services/llm/provider-registry.js";
@@ -38,6 +37,7 @@ import { createCreatorSourceRevisionToken } from "../../base/identity/slp-source
 import type { SlurpStageProfileInput } from "../../modules/discovery/slp-discovery-profile.js";
 import { composeSlurpPromptBlocks, type SlurpPromptBlockOverrides } from "../../base/prompting/slp-prompt-blocks.js";
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
+import { slpRetryProviderCall } from "../../base/model/slp-provider-retry.js";
 
 /** Used only when a source card carries no usable prose, so the model still gets a starting point. */
 const CONCEALED_SOURCE_FALLBACK_BRIEF = "General temperament and creative interests from the source profile.";
@@ -185,6 +185,8 @@ export async function generateCreatorStageProfileDraft(
   input: {
     request: SlpStageProfileDraftRequest;
     connection: GenerationConnection;
+    /** Told when the connection answers "too many requests" (a bulk add slows down). */
+    onRateLimit?: () => void;
   },
 ): Promise<
   SlurpStageProfileInput & {
@@ -257,10 +259,11 @@ export async function generateCreatorStageProfileDraft(
     fallbackBaseUrl: fallbackConnection ? resolveBaseUrl(fallbackConnection) : "",
     category: "main",
   });
-  // A bulk add drafts several Creators on one connection; a busy provider is waited out, not failed.
+  // A bulk add drafts several Creators on one connection; a busy provider is waited out, not failed,
+  // and the batch hears about it so it can go one at a time.
   const provider = {
     chatComplete: (...args: Parameters<typeof fallbackProvider.chatComplete>) =>
-      slpRetryProviderCall(() => fallbackProvider.chatComplete(...args)),
+      slpRetryProviderCall(() => fallbackProvider.chatComplete(...args), { onRateLimit: input.onRateLimit }),
   };
   const completionOptions = {
     model: input.connection.model,
