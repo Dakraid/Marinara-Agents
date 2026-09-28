@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 1.3.29 — 2026-09-27
+
+- Align the bulk Change Availability workbench with the single-memory Memory Availability editor: same Available in heading and pills, collapsible place picker, and clearer chat-mode eligibility versus place-scope copy. Add/Remove still drives incremental `enableModes` / `disableModes` and `addScope` / `removeScope`.
+
 ## 1.3.28 — 2026-09-27
 
 - Keep the Sources navigation tab labeled Sources while a source task runs or reports its result; show import, refresh, re-extract, cancelled, failed, and completed state as a separate status indicator instead of replacing the destination name.
