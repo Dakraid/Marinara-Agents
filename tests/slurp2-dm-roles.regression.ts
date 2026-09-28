@@ -419,4 +419,43 @@ const keptSupport = slpSceneThreadMessages({
   assert.match(read("client/src/slp/features/messages/SlpThreadHeader.tsx"), /setSupportChoice\(!asSupport\)/u);
 }
 
+// 7c M-001. Payment markers (the exact strings `reactToSlurpPayment` stores as the payer's text line)
+// are events, never the fan's words, from both seats.
+{
+  const marker = (kind: string, content: string) => line("viewer", content, { metadata: { paymentReaction: kind } });
+  const history = [
+    line("viewer", "love the new set"),
+    marker("unlock", "[unlocked one of your posts for 12 coins]"),
+    marker("tip", "[tipped 40 coins on your profile]"),
+    marker("ppv", "[unlocked your locked photo for 18 coins]"),
+    marker("commission", "[paid 30 coins for a commission]"),
+    marker("unlock", "[unlocked one of your posts]"),
+  ];
+  const built = build(history, { openedBy: "viewer" });
+  assertNamed(built);
+  assert.ok(!/"\[/u.test(built.json), "no bracketed marker reaches the model");
+  assert.deepEqual(
+    built.lines.slice(1).map(({ from, event, text }) => ({ from, event, text })),
+    [
+      { from: "Lena Hart", event: "unlocked one of your posts for 12 coins", text: undefined },
+      { from: "Lena Hart", event: "tipped you 40 coins on your profile", text: undefined },
+      { from: "Lena Hart", event: "unlocked your locked photo for 18 coins", text: undefined },
+      { from: "Lena Hart", event: "paid 30 coins for the commission", text: undefined },
+      { from: "Lena Hart", event: "unlocked one of your posts", text: undefined },
+    ],
+  );
+  const fan = slurpDmTranscript(history, { writer: "viewer", creator: mira, viewer: lena });
+  assert.deepEqual(
+    fan.slice(1, 5).map(({ from, event, text }) => ({ from, event, text })),
+    [
+      { from: "you (Lena Hart)", event: "unlocked one of Mira Vale's posts for 12 coins", text: undefined },
+      { from: "you (Lena Hart)", event: "tipped Mira Vale 40 coins on Mira Vale's profile", text: undefined },
+      { from: "you (Lena Hart)", event: "unlocked Mira Vale's locked photo for 18 coins", text: undefined },
+      { from: "you (Lena Hart)", event: "paid 30 coins for the commission", text: undefined },
+    ],
+  );
+  // A plain text line that happens to start with a bracket stays speech.
+  assert.equal(build([line("viewer", "[waves]")]).lines[0]!.text, "[waves]");
+}
+
 console.log("slurp2 dm roles regression passed");

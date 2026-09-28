@@ -224,6 +224,16 @@ export function slurpDmRoleHeader(input: SlurpDmRoleInput & { history: readonly 
   return lines.join("\n");
 }
 
+const coins = (amount: number) => (amount > 0 ? ` for ${amount} coins` : "");
+const PAYMENT_EVENT = {
+  tip: (to: string, whose: string, amount: number) =>
+    amount > 0 ? `tipped ${to} ${amount} coins on ${whose} profile` : `tipped ${to} on ${whose} profile`,
+  unlock: (_to: string, whose: string, amount: number) => `unlocked one of ${whose} posts${coins(amount)}`,
+  ppv: (_to: string, whose: string, amount: number) => `unlocked ${whose} locked photo${coins(amount)}`,
+  commission: (_to: string, _whose: string, amount: number) =>
+    amount > 0 ? `paid ${amount} coins for the commission` : "paid for the commission",
+};
+
 const lowerFirst = (value: string) => value.charAt(0).toLowerCase() + value.slice(1);
 
 /**
@@ -260,6 +270,14 @@ export function slurpDmTranscript(
       ...(image ? { image } : {}),
       at: line.createdAt,
     });
+    // A payment marker ("[unlocked one of your posts for 12 coins]") is stored as a text line from
+    // the payer; it is an event, never the fan's words.
+    const payment = line.metadata?.paymentReaction;
+    if (typeof payment === "string" && payment in PAYMENT_EVENT) {
+      const amount = Number(/(\d+)\s*coins/iu.exec(line.content)?.[1] ?? line.price) || 0;
+      const whose = creatorSide ? "your" : `${input.creator.name}'s`;
+      return out(PAYMENT_EVENT[payment as keyof typeof PAYMENT_EVENT](toObject, whose, amount), undefined);
+    }
     switch (line.kind) {
       case "tip":
         return out(`tipped ${toObject} ${line.price} coins`, words);
