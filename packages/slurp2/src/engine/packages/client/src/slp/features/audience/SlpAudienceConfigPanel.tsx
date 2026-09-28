@@ -114,7 +114,6 @@ export function SlurpAudienceConfigSettings({
   const recommended = resolveSlurpModelBudget({ ...budget, customLimits: [] }, creators);
   const outlook = slurpModelBudgetOutlook(shown, postsPerDay);
   const compact = new Intl.NumberFormat(i18n.language, { notation: "compact", maximumFractionDigits: 1 });
-  const dollars = new Intl.NumberFormat(i18n.language, { style: "currency", currency: "USD" });
 
   const saveBudget = (next: SlurpModelBudget) => onSave({ modelBudget: slurpModelBudgetSchema.parse(next) });
   const saveLimit = (limit: SlurpModelBudgetLimit, value: number) =>
@@ -206,11 +205,10 @@ export function SlurpAudienceConfigSettings({
         <p className="text-sm leading-6">
           {t("ui.slurp.settings.aiBudget.outlook.cost", {
             defaultValue:
-              "At most about {{calls}} text calls and {{pictures}} pictures a day, roughly {{tokens}} tokens. At $1 per million tokens that is about {{cost}} a day.",
+              "At most about {{calls}} text calls and {{pictures}} pictures a day, roughly {{tokens}} tokens.",
             calls: outlook.textCalls.toLocaleString(i18n.language),
             pictures: outlook.pictures.toLocaleString(i18n.language),
             tokens: compact.format(outlook.tokens),
-            cost: dollars.format(outlook.tokens / 1_000_000),
           })}
         </p>
         <p className="text-sm leading-6 text-[var(--muted-foreground)]">

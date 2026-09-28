@@ -6,7 +6,11 @@ import {
 } from "../../base/prompting/slp-prompt-blocks.js";
 import { slpIsAdmissionFailure } from "../../base/host/slp-admission.js";
 import { normalizeSlurpSettings, slurpSettingsSchema } from "../../modules/settings/slp-settings.js";
-import { countSlurpActiveCreators, getSlurpModelBudgetLedger } from "../../base/model/slp-model-worker.js";
+import {
+  countSlurpActiveCreators,
+  getSlurpModelBudgetLedger,
+  slurpSizedPostsPerDay,
+} from "../../base/model/slp-model-worker.js";
 import { resolveSlurpTextConnection } from "../../base/identity/slp-connection.js";
 import { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
 import type { FastifyInstance } from "fastify";
@@ -123,7 +127,11 @@ export async function slpSettingsRoutes(app: FastifyInstance, deps: SlpRouteDeps
   // The shipped values, so Settings can show what differs and reset one section.
   // Normalized, like every stored value: the raw constant lacks the built-in instructions the
   // normalizer adds, so a fresh install read "1 setting differs" (R1-125).
-  app.get("/settings/defaults", async () => normalizeSlurpSettings(null));
+  // "Posts per day" is shown sized for today's Creators, like the stored value an untouched one reads as.
+  app.get("/settings/defaults", async () => ({
+    ...normalizeSlurpSettings(null),
+    postsPerDay: slurpSizedPostsPerDay(await countSlurpActiveCreators(app.db)),
+  }));
   app.patch("/settings", async (req, reply) => {
     const body = slurpSettingsSchema.partial().safeParse(req.body ?? {});
     if (!body.success) return reply.code(400).send({ error: body.error.flatten() });

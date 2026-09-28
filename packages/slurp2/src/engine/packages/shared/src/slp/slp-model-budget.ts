@@ -302,6 +302,23 @@ export function slurpModelBudgetRetryAt(
 export const SLURP_TOKENS_PER_CALL_ESTIMATE = 3000;
 
 /**
+ * "Posts per day" grows with the Creators too (user decision on F): 2 + 1.9 per active Creator, the
+ * sim's sizing (17 at 8 Creators), inside the setting's 1–96. A number the player set stays theirs.
+ */
+export function slurpSizedPostsPerDay(activeCreators: number): number {
+  return Math.min(96, Math.max(1, Math.round(2 + 1.9 * Math.max(0, activeCreators))));
+}
+
+/**
+ * Whether a stored "Posts per day" is the player's. Settings saved before it grew with the Creators
+ * carry no flag: a number other than the shipped 4 was set by hand, the shipped 4 grows.
+ */
+export function slurpPostsPerDayIsCustom(stored: { postsPerDay?: unknown; postsPerDayCustom?: unknown }): boolean {
+  if (typeof stored.postsPerDayCustom === "boolean") return stored.postsPerDayCustom;
+  return stored.postsPerDay !== undefined && stored.postsPerDay !== 4;
+}
+
+/**
  * What a sized budget means in a day, for the plain-words summary in Settings: the most the world may
  * write on its own, plus the posts (1 text call + 1 picture prompt rewrite + 1 picture each, outside
  * the shared caps). Replies to the player's own messages are never counted: they are never capped.

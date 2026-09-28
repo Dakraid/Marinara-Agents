@@ -46,6 +46,11 @@ assert.match(
 );
 const routes = slurp2Source("packages/slurp2/src/engine/packages/server/src/routes/slurp.routes.ts");
 // R1-125: the defaults are normalized like stored settings, so a fresh install differs in nothing.
-assert.match(routes, /app\.get\("\/settings\/defaults", async \(\) => normalizeSlurpSettings\(null\)\)/u);
+// Merge F follow-up (on purpose): an untouched "Posts per day" reads sized for today's Creators, so the
+// defaults carry the same sizing; otherwise a fresh install differs in it and a reset fixes it at 4.
+assert.match(
+  routes,
+  /app\.get\("\/settings\/defaults", async \(\) => \(\{\s+\.\.\.normalizeSlurpSettings\(null\),\s+postsPerDay: slurpSizedPostsPerDay\(await countSlurpActiveCreators\(app\.db\)\),\s+\}\)\);/u,
+);
 
 console.log("slurp2 settings reset regression passed");

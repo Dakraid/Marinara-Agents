@@ -67,6 +67,8 @@ export type SlurpSettings = {
   worldActivity: "off" | "quiet" | "normal" | "busy";
   platformScale: "intimate" | "normal" | "large";
   postsPerDay: number;
+  /** The player set "Posts per day" by hand; otherwise it grows with the active Creators (F). */
+  postsPerDayCustom: boolean;
   autoPostingScheduleEnabled: boolean;
   autoPostGenerationMode: "pre_generate" | "on_demand";
   fanActivityEnabled: boolean;

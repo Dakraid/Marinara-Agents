@@ -57,6 +57,7 @@ import { isSlurpViewerActorAccount, normalizeSlurpSettings } from "../../modules
 import type { SlurpSettings, SlurpSettingsUpdateInput } from "../../modules/settings/slp-settings.js";
 import { mapViewer, sourceAccountFromEntity } from "../host/slp-storage-mappers.js";
 import type { SlurpStorageContext } from "../host/slp-storage-context.js";
+import { countSlurpActiveCreators, slurpSizedPostsPerDay } from "../../base/model/slp-model-worker.js";
 
 export function createCreatorsStorage1(context: SlurpStorageContext) {
   const {
@@ -169,7 +170,10 @@ export function createCreatorsStorage1(context: SlurpStorageContext) {
     },
     async getSettings(): Promise<SlurpSettings> {
       const raw = await settingsStore.get(SLURP_SETTINGS_KEY);
-      return normalizeSlurpSettings(raw);
+      const settings = normalizeSlurpSettings(raw);
+      // F: an untouched "Posts per day" grows with the active Creators; every reader sees the sized number.
+      if (!settings.postsPerDayCustom) settings.postsPerDay = slurpSizedPostsPerDay(await countSlurpActiveCreators(db));
+      return settings;
     },
     async getCreatorState(creatorAccountId: string): Promise<SlurpCreatorState> {
       const raw = await settingsStore.get(`${SLURP_CREATOR_STATE_KEY}.${creatorAccountId}`);

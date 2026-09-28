@@ -575,7 +575,7 @@
   "ui.slurp.settings.aiBudget.outlook.messages": "Nachrichten von Creators aus eigenem Antrieb",
   "ui.slurp.settings.aiBudget.outlook.threads": "Kommentar-Threads",
   "ui.slurp.settings.aiBudget.outlook.fans": "Fan-DMs und Anfragen",
-  "ui.slurp.settings.aiBudget.outlook.cost": "Höchstens etwa {{calls}} Textaufrufe und {{pictures}} Bilder pro Tag, grob {{tokens}} Tokens. Bei 1 $ pro Million Tokens sind das etwa {{cost}} pro Tag.",
+  "ui.slurp.settings.aiBudget.outlook.cost": "Höchstens etwa {{calls}} Textaufrufe und {{pictures}} Bilder pro Tag, grob {{tokens}} Tokens.",
   "ui.slurp.settings.aiBudget.custom_one": "Du hast {{count}} Limit selbst gesetzt. Es bleibt, wie es ist.",
   "ui.slurp.settings.aiBudget.custom_other": "Du hast {{count}} Limits selbst gesetzt. Sie bleiben, wie sie sind.",
   "ui.slurp.settings.aiBudget.useRecommended": "Empfohlene Limits verwenden",

@@ -51,7 +51,7 @@ import {
 } from "../../../../../shared/src/slp/slp-platform-events.js";
 import { readSlurpContentPackToggles, slurpApplyContentPacks } from "../world/events/slp-content-packs.js";
 import { slurpNormalizeReactionBanks, SlurpReactionBanks } from "../world/slp-reaction-bank.js";
-import { slurpModelBudgetSchema } from "../../../../../shared/src/slp/slp-model-budget.js";
+import { slurpModelBudgetSchema, slurpPostsPerDayIsCustom } from "../../../../../shared/src/slp/slp-model-budget.js";
 import { SLURP_STORY_JOB_DEFAULTS, type SlurpStoryJobWeights } from "../../../../../shared/src/slp/slp-post-purpose.js";
 import { DEFAULT_SLP_CREATOR_REPLIES_PER_24_HOURS } from "../../../../../shared/src/slp/slp-social.schema.js";
 import { SLURP_COOL_OFF_HOURS } from "../world/slp-stance.js";
@@ -304,6 +304,8 @@ export const slurpSettingsSchema = z.object({
    * player who liked the accidental rate can ask for it outright.
    */
   postsPerDay: z.number().int().min(1).max(96),
+  /** The player set "Posts per day" by hand. Otherwise it grows with the active Creators (F). */
+  postsPerDayCustom: z.boolean(),
   autoPostingScheduleEnabled: z.boolean(),
   autoPostGenerationMode: z.enum(["pre_generate", "on_demand"]),
   fanActivityEnabled: z.boolean(),
@@ -563,6 +565,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   previewOpensPost: true,
   previewWholePictures: false,
   postsPerDay: 4,
+  postsPerDayCustom: false,
   autoPostingScheduleEnabled: false,
   autoPostGenerationMode: "on_demand",
   // On by default, and at a volume that reads as a comment section rather than a rumour of one.
@@ -740,6 +743,7 @@ function normalizeSlurpSettingsUncached(raw: unknown): SlurpSettings {
     maxEvents: SLURP_PLATFORM_EVENTS_MAX,
   }));
   candidate.onboarding = rawRecord.onboarding ?? DEFAULT_SLURP_SETTINGS.onboarding;
+  candidate.postsPerDayCustom = slurpPostsPerDayIsCustom(rawRecord);
   // A partial or older value keeps the balanced weight for every job it does not name.
   candidate.storyJobs = { ...DEFAULT_SLURP_SETTINGS.storyJobs, ...parseRecord(rawRecord.storyJobs) };
   candidate.fanArchetypeWeights = {

@@ -1414,7 +1414,7 @@
   "ui.slurp.settings.aiBudget.outlook.messages": "크리에이터가 스스로 보내는 메시지",
   "ui.slurp.settings.aiBudget.outlook.threads": "댓글 스레드",
   "ui.slurp.settings.aiBudget.outlook.fans": "팬 DM과 요청",
-  "ui.slurp.settings.aiBudget.outlook.cost": "하루 최대 약 {{calls}}번의 텍스트 호출과 이미지 {{pictures}}장, 대략 {{tokens}} 토큰입니다. 100만 토큰당 1달러라면 하루 약 {{cost}}입니다.",
+  "ui.slurp.settings.aiBudget.outlook.cost": "하루 최대 약 {{calls}}번의 텍스트 호출과 이미지 {{pictures}}장, 대략 {{tokens}} 토큰입니다.",
   "ui.slurp.settings.aiBudget.custom_other": "한도 {{count}}개를 직접 설정했습니다. 그대로 유지됩니다.",
   "ui.slurp.settings.aiBudget.useRecommended": "권장 한도 사용",
   "ui.slurp.pulse.budgetNote.title": "AI 예산이 늘었습니다",

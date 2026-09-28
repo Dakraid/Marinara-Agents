@@ -177,5 +177,6 @@ export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBac
   nightQuiet: automation("general", "quiet hours", "night"),
   simulationTuning: world("audience", "simulation tuning", "fine tune audience"),
   modelBudget: world("audience", "AI budget", "model calls"),
+  postsPerDayCustom: internal(automation("general", "posts per day", "grows with creators")),
   onboarding: internal(place("creators", "creators", "new-creators", "setup", "onboarding")),
 };

@@ -255,6 +255,9 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
     try {
       await updateSlurpSettings.mutateAsync({
         postsPerDay,
+        // F: the number shown is the sized one; only a change the player made fixes it.
+        postsPerDayCustom:
+          settingsQuery.data?.postsPerDayCustom === true || postsPerDay !== settingsQuery.data?.postsPerDay,
         generationConnectionId: generationConnectionId || null,
         autoPostingScheduleEnabled: autoPostingEnabled,
         autoPostingImagesEnabled: imagesEnabled,

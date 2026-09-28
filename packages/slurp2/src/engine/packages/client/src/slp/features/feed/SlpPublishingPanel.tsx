@@ -23,6 +23,7 @@ import {
 } from "../../modules/creator/slp-activity-presets";
 import type { SlpBackstagePageProps } from "../backstage/slp-backstage-contract";
 import { SLURP_STORY_JOB_DEFAULTS, type SlurpStoryJobWeights } from "../../../../../shared/src/slp/slp-post-purpose.js";
+import { slurpSizedPostsPerDay } from "../../../../../shared/src/slp/slp-model-budget.js";
 
 /** Publishing: how often posts go out, the schedule, carryover and post length. */
 export function SlpPublishingPanel(page: SlpBackstagePageProps) {
@@ -42,6 +43,10 @@ export function SlpPublishingPanel(page: SlpBackstagePageProps) {
     activityPreset,
     openRefresh,
   } = page;
+  // F: an untouched "Posts per day" grows with the Creators that post on their own (the server sizes it).
+  const recommendedPosts = slurpSizedPostsPerDay(
+    (creatorList ?? []).filter((creator) => creator.autoPosting.enabled).length,
+  );
   // The Story job sliders only matter when automatic Stories can go out at all.
   const storiesRun = settings.storyRate !== "off" && settings.autoPostingScheduleEnabled && creatorsDrawPictures;
   // A Story job's weight in words: how often it comes up when it fits.
@@ -142,6 +147,28 @@ export function SlpPublishingPanel(page: SlpBackstagePageProps) {
               </span>
             </button>
           </div>
+          {settings.autoPostingScheduleEnabled && (
+            <p
+              className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-5 text-[var(--slurp-muted)]"
+              data-slurp-posts-sizing
+            >
+              {settings.postsPerDayCustom ? (
+                <>
+                  {t("ui.slurp.settings.aiBudget.setByYou", { value: recommendedPosts })}
+                  <button
+                    type="button"
+                    disabled={updateSettings.isPending}
+                    onClick={() => void updatePatch({ postsPerDayCustom: false })}
+                    className="min-h-11 rounded-lg px-2 font-semibold text-[var(--slurp-ink)] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50"
+                  >
+                    {t("ui.slurp.settings.publishing.useRecommended")}
+                  </button>
+                </>
+              ) : (
+                t("ui.slurp.settings.publishing.postsGrow", { count: settings.postsPerDay })
+              )}
+            </p>
+          )}
         </SettingAnchor>
         {(customPaceOpen || activityPreset === null) && (
           <Field
