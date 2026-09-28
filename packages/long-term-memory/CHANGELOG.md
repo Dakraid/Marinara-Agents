@@ -1,5 +1,10 @@
 # Long-Term Memory changelog
 
+## 1.3.31 — 2026-09-28
+
+- Keep character facts whose wording looks event-shaped for review instead of deleting them, so durable abilities, roles, and possessions phrased in past-tense narrative are not lost before a human decides.
+- Block low-risk auto-apply when that review warning is present, including when the warning falls outside the retained diagnostic list.
+
 ## 1.3.30 — 2026-09-28
 
 - Add a second optional place selector to the Memory Vault. When two places are selected they combine with AND, so the list and bulk selection show only memories available in both; clearing the second place restores the normal single-place view.
