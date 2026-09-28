@@ -520,12 +520,12 @@ assert.match(
 assert.match(server("data/projects/slp-projects-storage-2.ts"), /creatorSpice,/u);
 assert.match(server("features/world/slp-story-routes.ts"), /contentPacks: slurpContentPackSummaries\(\)/u);
 const panel = client("features/world/SlpPacksPanel.tsx");
-assert.match(panel, /<SlpContentPacksSection/u);
+assert.match(panel, /<SettingAnchor settingKey="contentPacks">\s+<SlpContentPacksSection/u);
 assert.match(panel, /update\("contentPacks", next\)/u);
 const section = client("features/world/SlpContentPacksSection.tsx");
 assert.match(
   section,
-  /<Toggle label=\{pack\.name\} detail=\{pack\.adds\}/u,
+  /<Toggle\s+label=\{pack\.name\}\s+detail=\{pack\.adds\}/u,
   "each pack: a switch, its name and what it adds",
 );
 const en = JSON.parse(client("locales/en.json")) as Record<string, string>;

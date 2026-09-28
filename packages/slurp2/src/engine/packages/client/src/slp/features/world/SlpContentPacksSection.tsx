@@ -1,8 +1,7 @@
-import { CalendarHeart, Flame, Leaf, PartyPopper, Sparkles, Trophy, type LucideIcon } from "lucide-react";
+import { CalendarHeart, Flame, Leaf, PackageOpen, PartyPopper, Trophy, type LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Toggle } from "../../modules/settings/SlpSettingsControls";
-import { SettingAnchor } from "../../modules/settings/SlpSettingsKit";
 import { useSlpBundledStoryPacks, type SlpContentPackSummary } from "./slp-story-hooks.js";
 
 const ICONS: Record<string, LucideIcon> = {
@@ -45,15 +44,15 @@ export function SlpContentPacksSection({
   if (!packs.length) return null;
   return (
     <section aria-labelledby="slurp-content-packs-heading" className="space-y-4">
-      <SettingAnchor settingKey="contentPacks">
+      <div>
         <h2 id="slurp-content-packs-heading" className="text-base font-black">
           {t("ui.slurp.packs.content.title")}
         </h2>
         <p className="mt-1 text-sm text-[var(--slurp-muted)]">{t("ui.slurp.packs.content.lead")}</p>
-      </SettingAnchor>
+      </div>
       <ul className="grid gap-3 sm:grid-cols-2">
         {packs.map((pack) => {
-          const Icon = ICONS[pack.id] ?? Sparkles;
+          const Icon = ICONS[pack.id] ?? PackageOpen;
           const on = toggles[pack.id] ?? pack.defaultOn;
           return (
             <li
