@@ -39,7 +39,8 @@ import {
   slurpCouplePostIdsFor,
   slurpSettleCouplePost,
 } from "../../modules/projects/slp-creator-couples.js";
-import { closeSlurpCouplePages, slurpIsCouplePage, slurpCouplesWorldInput } from "./slp-creator-couples-service.js";
+import { closeSlurpCouplePages, slurpCouplesWorldInput } from "./slp-creator-couples-service.js";
+import { slurpIsCouplePage } from "../../modules/projects/slp-creator-couples.js";
 import type { SlurpBeat } from "../../modules/feed/slp-post-beat.js";
 import type { SlurpContentIntent } from "../../../../../shared/src/slp/slp-content-axes.js";
 import { createGarnishAds, garnishRatingAllowed } from "../ads/slp-ads-contract.js";

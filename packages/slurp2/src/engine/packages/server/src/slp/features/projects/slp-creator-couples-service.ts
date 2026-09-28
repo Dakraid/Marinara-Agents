@@ -20,17 +20,13 @@ import {
   slurpCouplePageOpenable,
   slurpCloseCouplePage,
   slurpOpenCouplePage,
+  SLURP_COUPLE_PAGE_SOURCE,
+  slurpClosedCouplePageIds,
   type SlurpCouple,
 } from "../../modules/projects/slp-creator-couples.js";
 import type { SlurpTieCreator } from "../../modules/projects/slp-creator-ties.js";
 import { slurpDmViewerPage, type SlurpDmParty } from "../../modules/messages/slp-dm-roles.js";
 import { readSlurpRelationshipLine } from "../../data/creators/slp-flavour-source.js";
-
-/** A shared couple page's source id: no card behind it, so nothing writes for it on its own. */
-export const SLURP_COUPLE_PAGE_SOURCE = "slurp-couple:";
-
-export const slurpIsCouplePage = (account: { sourceEntityId?: string | null }) =>
-  Boolean(account.sourceEntityId?.startsWith(SLURP_COUPLE_PAGE_SOURCE));
 
 /** A storyline about two Creators getting together: a live crossover whose words are romance. */
 const ROMANCE =
@@ -146,6 +142,11 @@ async function createCouplePage(
     updatedAt: timestamp,
   });
   return id;
+}
+
+/** Shared pages that closed: they take no new subscribers, tips or unlocks (a reopened page is open again). */
+export async function readSlurpClosedCouplePageIds(db: DB): Promise<Set<string>> {
+  return slurpClosedCouplePageIds((await readSlurpCreatorTiesDocument(db)).couples);
 }
 
 /** Close the couple's shared page now (the player asked): a goodbye post, and no more renewals. */

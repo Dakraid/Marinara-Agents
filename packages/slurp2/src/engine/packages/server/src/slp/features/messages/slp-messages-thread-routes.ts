@@ -14,6 +14,7 @@ import type { FastifyInstance } from "fastify";
 import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
 import { SLURP_SUPPORT_NAME } from "../../modules/messages/slp-dm-roles.js";
 import { personaQuerySchema } from "../../modules/messages/slp-messages-schemas.js";
+import { slurpIsCouplePage } from "../../modules/projects/slp-creator-couples.js";
 import type { SlpMessagesContext } from "./slp-messages-context.js";
 
 const messagePageSchema = personaQuerySchema.extend({
@@ -207,8 +208,11 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     const viewer = await requireViewer(parsed.data.personaId);
     if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
     await slurp.ensureAudienceCharacterAccounts().catch(() => undefined);
-    const profiles = await slurp.listNoodlerStageProfiles();
-    const operatedAccounts = (await slurp.listNoodlerAccounts()).filter(
+    const accounts = await slurp.listNoodlerAccounts();
+    // A shared couple page is not someone to write to: the two partners are listed on their own.
+    const couplePages = new Set(accounts.filter(slurpIsCouplePage).map((account) => account.id));
+    const profiles = (await slurp.listNoodlerStageProfiles()).filter((profile) => !couplePages.has(profile.id));
+    const operatedAccounts = accounts.filter(
       (account) => account.sourceKind === "persona" && account.sourceEntityId === viewer.id,
     );
     const creatorAccount = operatedAccounts.find((account) => !isSlurpViewerActorAccount(account));

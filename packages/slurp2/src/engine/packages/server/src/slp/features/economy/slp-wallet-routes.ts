@@ -20,6 +20,7 @@ import {
   settleSlurpPaymentIntentForDatabase,
 } from "../../data/messages/slp-messages-storage-context.js";
 import { reactToSlurpPayment } from "./slp-payment-reaction.js";
+import { readSlurpClosedCouplePageIds } from "../projects/slp-projects-contract.js";
 import { slurpPayoutAllowance } from "../../modules/economy/slp-earnings.js";
 import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
 import { SLURP_NAMED_CAST_LIMIT } from "../../../../../shared/src/slp/slp-population.js";
@@ -98,6 +99,10 @@ export async function slpWalletRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
     return noodle.setWalletCoinsForDevelopment(viewer.id, parsed.data.coins);
   });
 
+  /** A closed shared couple page keeps its posts and what fans already paid for, and takes nothing new. */
+  const CLOSED_PAGE = "This page is closed. Both Creators still post on their own pages.";
+  const closedPage = async (accountId: string) => (await readSlurpClosedCouplePageIds(app.db)).has(accountId);
+
   app.post("/slurp/accounts/:id/tip", async (req, reply) => {
     const parsed = z
       .object({
@@ -111,6 +116,7 @@ export async function slpWalletRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
     if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
     const tipOperationId = `profile-tip:${parsed.data.requestId ?? req.id}`;
     const creatorAccountId = (req.params as { id: string }).id;
+    if (await closedPage(creatorAccountId)) return reply.code(409).send({ error: CLOSED_PAGE });
     const settings = await noodle.getSettings();
     if (settings.walletEnabled) {
       const paymentIntent = await claimSlurpPaymentIntentForDatabase(
@@ -239,6 +245,7 @@ export async function slpWalletRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
     if (!viewer || !creator || creatorBelongsToViewer(creator, viewer)) {
       return reply.code(404).send({ error: "Slurp stage profile not found" });
     }
+    if (await closedPage(creator.id)) return reply.code(409).send({ error: CLOSED_PAGE });
     const subscription = await noodle.subscribe(viewer.id, creator.id);
     if (!subscription) {
       const [wallet, price] = await Promise.all([
@@ -344,6 +351,7 @@ export async function slpWalletRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
     if (!viewer || !post || !creator || post.access !== "locked" || creatorBelongsToViewer(creator, viewer)) {
       return reply.code(404).send({ error: "Slurp post not found" });
     }
+    if (await closedPage(creator.id)) return reply.code(409).send({ error: CLOSED_PAGE });
     const result = await noodle.unlockPost(viewer.id, post.id);
     // An affordable post that still fails is a different problem from an unaffordable one, so
     // the client can tell "top up" apart from "this post is gone".
@@ -384,6 +392,7 @@ export async function slpWalletRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
     ) {
       return reply.code(404).send({ error: "Slurp post not found" });
     }
+    if (await closedPage(creator.id)) return reply.code(409).send({ error: CLOSED_PAGE });
     const basePrice = slpCreatorUnlockPriceFromMetadata(post.metadata);
     const settings = await noodle.getSettings();
     if (settings.walletEnabled) {

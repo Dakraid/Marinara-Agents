@@ -5,4 +5,9 @@ export {
   planSlurpTieBeat,
   slurpCollabPostIdsForCreator,
 } from "./slp-creator-ties-service.js";
-export { readSlurpCouplePartner, slurpCoupleDmPage, slurpIsCouplePage } from "./slp-creator-couples-service.js";
+export {
+  readSlurpClosedCouplePageIds,
+  readSlurpCouplePartner,
+  slurpCoupleDmPage,
+} from "./slp-creator-couples-service.js";
+export { slurpIsCouplePage } from "../../modules/projects/slp-creator-couples.js";

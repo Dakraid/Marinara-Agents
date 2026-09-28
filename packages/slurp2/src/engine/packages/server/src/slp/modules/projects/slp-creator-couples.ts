@@ -64,6 +64,17 @@ export type SlurpCoupleMoment = {
   fromId?: string;
 };
 
+/** A shared couple page's source id: no card behind it, so nothing writes for it on its own. */
+export const SLURP_COUPLE_PAGE_SOURCE = "slurp-couple:";
+
+/** A shared couple page is not a person: nobody writes to it, tips it in a chat or takes a commission from it. */
+export const slurpIsCouplePage = (account: { sourceEntityId?: string | null }) =>
+  Boolean(account.sourceEntityId?.startsWith(SLURP_COUPLE_PAGE_SOURCE));
+
+/** Shared pages that are closed now (a reopened page is open again). */
+export const slurpClosedCouplePageIds = (couples: readonly SlurpCouple[]): Set<string> =>
+  new Set(couples.flatMap((couple) => (couple.page?.closedAt ? [couple.page.accountId] : [])));
+
 export type SlurpCouplePage = { accountId: string; openedAt: string; closedAt: string | null };
 
 export type SlurpCouple = {

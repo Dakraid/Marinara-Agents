@@ -4,13 +4,13 @@ import { SlpProfileModals } from "./SlpProfileModals";
 import { SlpProfilePostCards } from "./SlpProfilePostCards";
 import { SlpProfileLeadingActions } from "./SlpProfileLeadingActions";
 import { ChevronDown, ChevronLeft, Pencil, Plus, Wrench } from "lucide-react";
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import type { SlpCreatorPostView, SlpCreatorStageProfile } from "../../../../../shared/src/slp/slp-social.types.js";
 import type { SlurpPromotion } from "../../features/ads/slp-ads-contract";
 import { toast } from "sonner";
 import { type SlpPostCardModel } from "../../modules/post/SlpPostTypes";
 import { SlurpArcEffectsList, SlurpArcTimelineCard } from "../../features/projects/SlpArcTimelineCard";
-import { SlpProfileCoupleLine } from "../../features/projects/SlpCouples";
+import { SlpCouplePageWriteSheet, SlpProfileCoupleLine } from "../../features/projects/SlpCouples";
 import { useSlurpCouplePageClosed } from "../../features/projects/slp-ties-hooks";
 import { useNearViewportSlurpMediaSrc } from "../../base/media/slp-media-src";
 import { SlurpProfileSurface } from "../../features/creators/SlpProfileSurface";
@@ -267,6 +267,9 @@ export function StageProfileView({
   const cards = <SlpProfilePostCards model={model} />;
   // A closed couple page (7b-couples): no Subscribe, Follow or Tip; its note says why.
   const closedCouplePage = useSlurpCouplePageClosed(viewerAccount?.entityId ?? null, profile.id);
+  // An open shared page: Message asks which of the two to write to (7c M-002).
+  const couplePage = Boolean(profile.sourceAccountId?.startsWith("slurp-couple:"));
+  const [coupleWriteOpen, setCoupleWriteOpen] = useState(false);
   // No "(0)" while the posts load: a loading page does not claim to be empty.
   const tabCount = (count: number) => (isLoading ? null : count);
   return (
@@ -372,7 +375,13 @@ export function StageProfileView({
             </div>
           ),
         }}
-        leadingActions={closedCouplePage ? null : <SlpProfileLeadingActions model={model} />}
+        leadingActions={
+          closedCouplePage ? null : (
+            <SlpProfileLeadingActions
+              model={couplePage ? { ...model, onOpenMessages: () => setCoupleWriteOpen(true) } : model}
+            />
+          )
+        }
         status={creatorStatus}
         stats={{
           followers: followerTotal,
@@ -479,6 +488,15 @@ export function StageProfileView({
         />
       )}
       <SlpProfileModals model={model} />
+      {couplePage && (
+        <SlpCouplePageWriteSheet
+          personaId={viewerAccount?.entityId ?? null}
+          accountId={profile.id}
+          open={coupleWriteOpen}
+          onClose={() => setCoupleWriteOpen(false)}
+          onWrite={(creatorId) => model.onOpenMessages(creatorId)}
+        />
+      )}
       {managedCreator && (
         <NoodlerPostComposer
           key={profile.id}

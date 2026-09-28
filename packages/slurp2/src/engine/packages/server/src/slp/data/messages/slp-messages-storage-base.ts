@@ -22,6 +22,7 @@ import {
 } from "../../../db/schema/slurp.js";
 import { isSlurpFileUniqueConstraintError } from "../../base/host/slp-file-errors.js";
 import { applySlurpMood, type SlurpMoodShift } from "../../modules/world/slp-mood.js";
+import { slurpIsCouplePage } from "../../modules/projects/slp-creator-couples.js";
 import {
   applySlurpThreadNotes,
   readStoredNotes,
@@ -502,7 +503,7 @@ export function createMessagesStorageBase(context: SlurpMessagesContext) {
       requestFee: "charge" | "waive" | "refuse" = "charge",
     ): Promise<
       | { status: "ok"; thread: SlurpThread }
-      | { status: "closed" }
+      | { status: "closed"; reason?: "couple_page" }
       | { status: "insufficient_funds"; required: number }
       | { status: "fee_required"; required: number }
       | { status: "not_found" }
@@ -513,6 +514,8 @@ export function createMessagesStorageBase(context: SlurpMessagesContext) {
       // account's source persona is what keeps a persona from messaging or tipping its own Creator.
       if (creator.sourceKind === "persona" && creator.sourceEntityId === viewerAccountId)
         return { status: "not_found" };
+      // A shared couple page has no one behind it to answer: fans write to either partner (7c M-002).
+      if (slurpIsCouplePage(creator)) return { status: "closed", reason: "couple_page" };
       const existing = await context.storage.getThread(viewerAccountId, creatorAccountId);
       // A creator writing first always gets through: it is their own inbox, and a welcome message
       // that the creator's own policy blocked would be an absurdity.

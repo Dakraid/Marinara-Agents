@@ -35,6 +35,12 @@ const tipSchema = z.object({
   note: z.string().trim().max(280).default(""),
   requestId: z.string().trim().min(8).max(100).optional(),
 });
+/** Why a chat cannot start, in Slurp's words. A shared couple page points to the two people behind it. */
+const slurpClosedThreadText = (result: { reason?: "couple_page" }) =>
+  result.reason === "couple_page"
+    ? "This page belongs to two Creators. Write to one of them on their own page."
+    : "This Creator is not accepting messages.";
+
 export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: SlpMessagesContext) {
   const { freshView, maskForViewer, messages, ownsCreator, requireViewer, seatIn, slurp } = messaging;
 
@@ -67,7 +73,7 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
     const author =
       post.authorAccountId === creator.id ? creator : await slurp.getNoodlerAccountById(post.authorAccountId);
     const opened = await messages.openThread(viewer.id, creator.id, "viewer", "refuse");
-    if (opened.status === "closed") return reply.code(403).send({ error: "This Creator is not accepting messages." });
+    if (opened.status === "closed") return reply.code(403).send({ error: slurpClosedThreadText(opened) });
     if (opened.status === "fee_required")
       return reply
         .code(409)
@@ -116,7 +122,7 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
       { asSupport: parsed.data.asSupport === true },
     );
     if (sent.status === "not_found") return reply.code(404).send({ error: "Creator not found" });
-    if (sent.status === "closed") return reply.code(403).send({ error: "This Creator is not accepting messages." });
+    if (sent.status === "closed") return reply.code(403).send({ error: slurpClosedThreadText(sent) });
     if (sent.status === "insufficient_funds")
       return reply.code(402).send({ error: "Not enough coins.", required: sent.required });
 
@@ -342,7 +348,7 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
       parsed.data.requestId,
     );
     if (sent.status === "not_found") return reply.code(404).send({ error: "Creator not found" });
-    if (sent.status === "closed") return reply.code(403).send({ error: "This Creator is not accepting messages." });
+    if (sent.status === "closed") return reply.code(403).send({ error: slurpClosedThreadText(sent) });
     if (sent.status === "insufficient_funds")
       return reply.code(402).send({ error: "Not enough coins.", required: sent.required });
     recordSlurpTasteSignal(app.db, { creatorId: parsed.data.creatorAccountId }, "tip");

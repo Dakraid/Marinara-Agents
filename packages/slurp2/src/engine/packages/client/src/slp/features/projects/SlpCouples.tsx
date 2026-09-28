@@ -6,6 +6,7 @@ import { cn } from "../../../lib/utils";
 import { SLP_EYEBROW_CLASS, SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { SlpHeartGlyph } from "../../base/chrome/SlpGlyphs";
 import { SlpButton } from "../../modules/chrome/SlpButton";
+import { SlpSheet } from "../../modules/chrome/SlpSheet";
 import { formatRelativeTime } from "../../base/ui/slp-date-time";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
 import {
@@ -248,5 +249,50 @@ export function SlpProfileCoupleLine({
       <span className="shrink-0">{t("ui.slurp.profile.couple.with")}</span>
       {link(couple.aId === accountId ? couple.bId : couple.aId)}
     </p>
+  );
+}
+
+/**
+ * A shared couple page is not a person (7c M-002): its Message button opens this sheet, and the
+ * player writes to one of the two partners on their own chat.
+ */
+export function SlpCouplePageWriteSheet({
+  personaId,
+  accountId,
+  open,
+  onClose,
+  onWrite,
+}: {
+  personaId: string | null;
+  accountId: string;
+  open: boolean;
+  onClose: () => void;
+  onWrite: (creatorId: string) => void;
+}) {
+  const { t } = useTranslation();
+  const { data } = useSlurpTies(personaId);
+  const couple = data?.couples.find((entry) => entry.page?.accountId === accountId);
+  const partners = couple
+    ? [couple.aId, couple.bId].flatMap((id) => data?.creators.filter((creator) => creator.id === id) ?? [])
+    : [];
+  return (
+    <SlpSheet open={open} onClose={onClose} title={t("ui.slurp.profile.couple.writeTitle")}>
+      <div className="flex flex-col gap-2 px-3 pb-3 pt-1" data-slurp-couple-write>
+        <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>{t("ui.slurp.profile.couple.writeHint")}</p>
+        {partners.map((creator) => (
+          <SlpButton
+            key={creator.id}
+            variant="quiet"
+            onClick={() => {
+              onClose();
+              onWrite(creator.id);
+            }}
+            className="justify-start px-3"
+          >
+            {t("ui.slurp.profile.couple.writeTo", { name: creator.name })}
+          </SlpButton>
+        ))}
+      </div>
+    </SlpSheet>
   );
 }
