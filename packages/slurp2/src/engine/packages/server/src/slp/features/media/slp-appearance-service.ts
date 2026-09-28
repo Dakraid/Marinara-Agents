@@ -8,6 +8,7 @@ import { readAvatarBase64 } from "../../../services/game/game-asset-generation.j
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { resolveCreatorSourceSnapshot } from "../../data/creators/slp-source-resolve.js";
 import { resolveSlurpTextConnection } from "../../base/identity/slp-connection.js";
+import { slpResolveCardMacros } from "../../base/prompting/slp-prompt-safety.js";
 import {
   appearanceEvidenceFromSource,
   appearanceSourceAccount,
@@ -57,10 +58,13 @@ async function resolveImageAppearanceOnce(input: Parameters<typeof resolveImageA
     if (existing.text) return existing.text;
     throw new Error(MISSING_APPEARANCE);
   }
-  const sourceText = [source.description, source.scenario, source.backstory]
-    .filter(Boolean)
-    .join("\n")
-    .slice(0, 12_000);
+  // Macros resolved before the call and before the evidence check: the model quotes the card with the
+  // name in place, so a raw `{{char}}` made every true quote "not in the card" and the picture had
+  // no appearance.
+  const sourceText = slpResolveCardMacros(
+    [source.description, source.scenario, source.backstory].filter(Boolean).join("\n"),
+    source.name,
+  ).slice(0, 12_000);
   const characters = createCharactersStorage(input.db);
   const sourceRow =
     sourceAccount.kind === "character"

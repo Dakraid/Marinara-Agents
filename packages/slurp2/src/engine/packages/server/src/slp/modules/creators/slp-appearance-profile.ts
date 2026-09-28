@@ -5,6 +5,7 @@ import type {
   SlpAppearanceProfileMode,
   SlpCreatorSourceSnapshot,
 } from "../../../../../shared/src/slp/slp-social.types.js";
+import { slpResolveCardMacros } from "../../base/prompting/slp-prompt-safety.js";
 
 /** A Creator still points at its card when its public account has been removed or hidden. */
 export function appearanceSourceAccount(account: SlpAccount, linkedAccount?: SlpAccount | null): SlpAccount {
@@ -37,7 +38,8 @@ export function appearanceEvidenceFromSource(
   return {
     sourceEntityId,
     sourceRevisionToken: appearanceSourceFingerprint(sourceEntityId, source),
-    sourceAppearance: source.appearance,
+    // The card's own appearance goes straight into picture prompts, so its macros are resolved here.
+    sourceAppearance: slpResolveCardMacros(source.appearance, source.name),
     description: source.description,
   };
 }

@@ -19,7 +19,7 @@ import { slurpMessagePreview } from "../../modules/messages/slp-messaging.js";
 import { migrateSlurpSupportLines, type SlurpSupportMigrationStore } from "../../modules/messages/slp-support.js";
 import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
 import { int, mapMessage } from "./slp-messages-storage-helpers.js";
-import { createSlurpMessagesStorage } from "./slp-messages-storage.js";
+import { createSlurpMessagesStorage } from "../slp-storage.js";
 
 type Row = Record<string, unknown>;
 const byTime = (left: Row, right: Row) =>

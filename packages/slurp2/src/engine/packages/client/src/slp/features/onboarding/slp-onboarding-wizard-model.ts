@@ -76,6 +76,8 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
   const [creationFailed, setCreationFailed] = useState(false);
   const [creationError, setCreationError] = useState<string | null>(null);
   const [creationReasons, setCreationReasons] = useState<{ accountId: string; reason: string }[]>([]);
+  // Creators whose sign-up failed on the way (provider busy, lost answer): sent again on their own.
+  const [creationRetryIds, setCreationRetryIds] = useState<string[]>([]);
   const [generationConnectionId, setGenerationConnectionId] = useState("");
   const [settingsSeeded, setSettingsSeeded] = useState(false);
   const [outcomes, setOutcomes] = useState<SlpCreatorRefreshNowOutcome[]>([]);
@@ -84,6 +86,8 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
   const [firstPostsQueued, setFirstPostsQueued] = useState(false);
   const [providerConfirmationOpen, setProviderConfirmationOpen] = useState(false);
   const completionHeadingRef = useRef<HTMLHeadingElement>(null);
+  // A retry polls the same run again; status data older than its enqueue must not end the wait.
+  const firstPostsQueuedAtRef = useRef(0);
   const demoProfile: SlpCreatorStageProfile = {
     ...DEMO_PROFILE,
     displayName:
@@ -122,6 +126,7 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
     setCreationFailed(false);
     setCreationError(null);
     setCreationReasons([]);
+    setCreationRetryIds([]);
     setGenerationConnectionId("");
     setOutcomes([]);
     setCompletion(null);
@@ -185,7 +190,10 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
     .filter((outcome) => outcome.status !== "generated" && outcome.status !== "skipped")
     .map((outcome) => outcome.accountId);
   const failedCount = creationFailures + failedIds.length;
-  const generatedCount = outcomes.filter((outcome) => outcome.status === "generated").length;
+  // While the first posts are written the count comes from the live jobs, so it climbs as they land.
+  const generatedCount = firstPostsQueued
+    ? (firstPostStatus.data?.jobs.filter((job) => job.status === "generated").length ?? 0)
+    : outcomes.filter((outcome) => outcome.status === "generated").length;
   // Nothing was created, so the run failed before first posts: say that instead of blaming
   // generation.
   const resolveCompletion = (input: {
@@ -216,6 +224,7 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
   };
   useEffect(() => {
     if (!firstPostsQueued || !firstPostStatus.data?.complete) return;
+    if (firstPostStatus.dataUpdatedAt < firstPostsQueuedAtRef.current) return;
     const next = firstPostStatus.data.jobs.map((job) => ({
       accountId: job.accountId,
       status:
@@ -227,7 +236,7 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
     }));
     setFirstPostsQueued(false);
     finalizeOutcomes(next, creationFailures, createdIds.length);
-  }, [createdIds.length, creationFailures, firstPostStatus.data, firstPostsQueued]);
+  }, [createdIds.length, creationFailures, firstPostStatus.data, firstPostStatus.dataUpdatedAt, firstPostsQueued]);
   const runGeneration = async (ids: string[], createFailures = creationFailures) => {
     const retriedIds = new Set(ids);
     const kept = outcomes.filter((outcome) => !retriedIds.has(outcome.accountId));
@@ -276,13 +285,18 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
     setStep(4);
   };
   const returnToPreviousStep = () => setStep(setupLane === "easy" ? 1 : ((step - 1) as Step));
-  const performFinish = async () => {
+  /**
+   * Create the selected Creators, or with `retryIds` only the ones whose sign-up failed on the way.
+   * A retry keeps what the first pass created and replaces only the retried Creators' reasons.
+   */
+  const performFinish = async (retryIds?: string[]) => {
     let newIds: string[] = [];
+    let allCreatedIds: string[] = [];
     let createFailureCount = 0;
     try {
       {
         const result = await bulkCreate.mutateAsync({
-          noodleAccountIds: [...selected],
+          noodleAccountIds: retryIds ?? [...selected],
           executionId,
           disclosureMode: disclosure,
           disclosureExceptions: exceptions,
@@ -290,10 +304,21 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
           connectionId: generationConnectionId || null,
         });
         newIds = result.created.map((profile) => profile.id);
-        setCreatedIds(newIds);
-        createFailureCount = result.skipped.length + (result.failed?.length ?? 0);
+        allCreatedIds = retryIds ? [...new Set([...createdIds, ...newIds])] : newIds;
+        setCreatedIds(allCreatedIds);
+        createFailureCount =
+          (retryIds ? creationFailures - retryIds.length : 0) + result.skipped.length + (result.failed?.length ?? 0);
         setCreationFailures(createFailureCount);
-        setCreationReasons(result.reasons ?? []);
+        if (retryIds) {
+          setCreationReasons([
+            ...creationReasons.filter((entry) => !retryIds.includes(entry.accountId)),
+            ...(result.reasons ?? []),
+          ]);
+        } else {
+          setCreationReasons(result.reasons ?? []);
+        }
+        // An older server sends no `retryable`; every operational failure is then worth one more try.
+        setCreationRetryIds(result.retryable ?? result.failed ?? []);
       }
     } catch (error) {
       // The request may still have created profiles before the response was lost. The server
@@ -311,16 +336,23 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
     // still write their first posts so the run is not stranded halfway.
     // Nothing was created, so onboarding is not complete: writing "completed" here would
     // close the wizard for good on a run that produced no creator at all.
-    const settingsSaved = await saveSettings(selected.size === 0 || newIds.length === 0 ? "zero" : "completed");
+    // A retry keeps the settings the first pass saved; saving "zero" again would undo a finished onboarding.
+    const settingsSaved =
+      retryIds && !settingsFailed
+        ? true
+        : await saveSettings(selected.size === 0 || newIds.length === 0 ? "zero" : "completed");
     setSettingsFailed(!settingsSaved);
+    // A retry that created nobody new while the first posts are still being written keeps that wait.
+    if (retryIds && newIds.length === 0 && firstPostsQueued) return;
     if (newIds.length === 0 || !generateNow) {
       setCompletion(
         settingsSaved
           ? resolveCompletion({
               selectedCount: selected.size,
-              createdCount: newIds.length,
+              createdCount: allCreatedIds.length,
               createFailures: createFailureCount,
-              outcomes: null,
+              // A retry that created nobody new keeps the first posts the first pass already wrote.
+              outcomes: retryIds && generateNow && outcomes.length > 0 ? outcomes : null,
             })
           : "settingsFailed",
       );
@@ -339,9 +371,12 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
     }
     try {
       await enqueueFirstPosts.mutateAsync({ accountIds: newIds, executionId });
+      firstPostsQueuedAtRef.current = Date.now();
       setFirstPostsQueued(true);
       setOutcomes([]);
-      setCompletion(settingsSaved ? "partial" : "settingsFailed");
+      // The posts are written one by one after this; "partial" said "0 first posts, N need help"
+      // for that whole wait, so every multi-add looked like it had failed.
+      setCompletion(settingsSaved ? "writing" : "settingsFailed");
       setStep(5);
       if (settingsSaved) onComplete?.();
     } catch {
@@ -349,12 +384,13 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
       finalizeOutcomes(
         newIds.map((accountId) => ({ accountId, status: "error" as const })),
         createFailureCount,
-        newIds.length,
+        allCreatedIds.length,
         settingsSaved,
       );
       if (settingsSaved) onComplete?.();
     }
   };
+  const retryFailedCreations = () => void performFinish(creationRetryIds);
   const finish = () => {
     if (selected.size > 0) {
       setProviderConfirmationOpen(true);
@@ -424,6 +460,8 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
     setCreationError,
     creationReasons,
     setCreationReasons,
+    creationRetryIds,
+    retryFailedCreations,
     generationConnectionId,
     setGenerationConnectionId,
     settingsSeeded,

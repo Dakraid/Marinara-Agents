@@ -6,6 +6,7 @@ import { type SlpAccount, type SlpBootstrap } from "../../../../../shared/src/sl
 import type { DB } from "../../../db/connection.js";
 import type { SlurpSettings } from "../../modules/settings/slp-settings.js";
 import { logger, logDebugOverride } from "../../../lib/logger.js";
+import { slpResolveCardMacros } from "../../base/prompting/slp-prompt-safety.js";
 import { newId } from "../../../utils/id-generator.js";
 import { resolveImageConnectionFallback } from "../../../services/generation/media-connection-fallback.js";
 import { loadImageGenerationUserSettings } from "../../../services/image/image-generation-settings.js";
@@ -110,7 +111,9 @@ function readProfessorMariReferenceImages(): string[] {
  * was appended to every image prompt. A Creator's Stage appearance is the place to set a look.
  */
 export function characterAppearanceFromRow(row: { data: unknown }) {
-  return readIllustratorAppearance(parseRecord(row.data)) ?? "";
+  const data = parseRecord(row.data);
+  // Picture prompts get the card's appearance as written; `{{char}}` there reached the image model.
+  return slpResolveCardMacros(readIllustratorAppearance(data) ?? "", typeof data.name === "string" ? data.name : "");
 }
 
 /**

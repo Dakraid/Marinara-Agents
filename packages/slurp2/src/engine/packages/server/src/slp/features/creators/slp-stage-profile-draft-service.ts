@@ -14,6 +14,7 @@ import { clampGenerationMaxOutputTokens } from "../../../services/generation/out
 import { slpSamplingOptions } from "../../base/prompting/slp-sampling-options.js";
 import { parseGameJsonish } from "../../../services/game/jsonish.js";
 import { modelAnswerForCorrection, requireModelAnswer } from "../../base/model/slp-model-answer.js";
+import { slpRetryProviderCall } from "../../base/model/slp-provider-retry.js";
 import { withConnectionFallbackProvider } from "../../../services/llm/connection-fallback-provider.js";
 import type { ChatMessage } from "../../../services/llm/base-provider.js";
 import { createLLMProvider } from "../../../services/llm/provider-registry.js";
@@ -239,7 +240,7 @@ export async function generateCreatorStageProfileDraft(
   );
   const connections = createConnectionsStorage(db);
   const fallbackConnection = await connections.getFallbackForMain();
-  const provider = withConnectionFallbackProvider({
+  const fallbackProvider = withConnectionFallbackProvider({
     primary: createLLMProvider(
       input.connection.provider,
       resolveBaseUrl(input.connection),
@@ -256,6 +257,11 @@ export async function generateCreatorStageProfileDraft(
     fallbackBaseUrl: fallbackConnection ? resolveBaseUrl(fallbackConnection) : "",
     category: "main",
   });
+  // A bulk add drafts several Creators on one connection; a busy provider is waited out, not failed.
+  const provider = {
+    chatComplete: (...args: Parameters<typeof fallbackProvider.chatComplete>) =>
+      slpRetryProviderCall(() => fallbackProvider.chatComplete(...args)),
+  };
   const completionOptions = {
     model: input.connection.model,
     maxTokens: clampGenerationMaxOutputTokens({

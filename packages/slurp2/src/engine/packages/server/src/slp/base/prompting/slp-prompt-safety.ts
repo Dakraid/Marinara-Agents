@@ -51,13 +51,25 @@ function promptField(primary: unknown, fallback?: unknown): string {
   return typeof fallback === "string" && fallback.trim() ? fallback : "";
 }
 
+/**
+ * Card macros for a Slurp prompt. Cards are written for roleplay chats, so `{{char}}` is the Creator
+ * and `{{user}}` the player; unresolved, the model saw template syntax where the person should be.
+ * An empty name (the concealed brief) keeps the source name out of the prompt.
+ */
+export function slpResolveCardMacros(text: string, name: string): string {
+  return text
+    .replace(/\{\{\s*char\s*\}\}/giu, name.trim() || "the Creator")
+    .replace(/\{\{\s*user\s*\}\}/giu, "the player");
+}
+
 export function noodlerConcealedSourceText(data: unknown): string {
   const source = promptRecord(data);
   const extensions = promptRecord(source.extensions);
+  const field = (value: string) => slpResolveCardMacros(value, "");
   return [
-    `Description: ${promptField(source.description)}`,
-    `Personality: ${promptField(source.personality)}`,
-    `Appearance: ${promptField(source.appearance, extensions.appearance)}`,
+    `Description: ${field(promptField(source.description))}`,
+    `Personality: ${field(promptField(source.personality))}`,
+    `Appearance: ${field(promptField(source.appearance, extensions.appearance))}`,
   ]
     .filter((line) => line.split(": ").slice(1).join(": ").trim())
     .join("\n");
@@ -74,11 +86,7 @@ export function noodlerConcealedSourceText(data: unknown): string {
  * the prompt.
  */
 function canonField(value: string, name: string, max: number): string {
-  const text = value
-    .replace(/\{\{\s*char\s*\}\}/giu, name || "the Creator")
-    .replace(/\{\{\s*user\s*\}\}/giu, "the player")
-    .replace(/\s+\n/gu, "\n")
-    .trim();
+  const text = slpResolveCardMacros(value, name).replace(/\s+\n/gu, "\n").trim();
   if (text.length <= max) return text;
   const cut = text.slice(0, max);
   const end = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("\n"));
@@ -106,13 +114,15 @@ export function slpCreatorCharacterCanonText(data: unknown, includeName: boolean
 export function slpCreatorSourceText(data: unknown): string {
   const source = promptRecord(data);
   const extensions = promptRecord(source.extensions);
+  const name = promptField(source.name);
+  const field = (value: string) => slpResolveCardMacros(value, name);
   return [
-    `Name: ${promptField(source.name)}`,
-    `Description: ${promptField(source.description)}`,
-    `Personality: ${promptField(source.personality)}`,
-    `Scenario: ${promptField(source.scenario)}`,
-    `Appearance: ${promptField(source.appearance, extensions.appearance)}`,
-    `Backstory: ${promptField(source.backstory, extensions.backstory)}`,
+    `Name: ${name}`,
+    `Description: ${field(promptField(source.description))}`,
+    `Personality: ${field(promptField(source.personality))}`,
+    `Scenario: ${field(promptField(source.scenario))}`,
+    `Appearance: ${field(promptField(source.appearance, extensions.appearance))}`,
+    `Backstory: ${field(promptField(source.backstory, extensions.backstory))}`,
   ]
     .filter((line) => line.trim().split(": ").slice(1).join(": ").trim())
     .join("\n");

@@ -34,8 +34,9 @@ export type Intro = 0 | 1 | 2 | 3 | 4 | null;
 export type SetupLane = "scene" | "easy" | "customize" | null;
 export const LAST_INTRO = 4;
 /** "creationFailed" is local to the wizard: the shared resolver reports it as "failed", which
- * reads as a first-post problem even when no creator was ever set up. */
-export type CompletionKind = SlpCreatorOnboardingCompletion | "creationFailed";
+ * reads as a first-post problem even when no creator was ever set up. "writing" is the wait while
+ * the first posts are written one by one; it used to show as "partial", which read as a failure. */
+export type CompletionKind = SlpCreatorOnboardingCompletion | "creationFailed" | "writing";
 
 export const DISCLOSURES: SlpIdentityDisclosure[] = ["open", "hinted"];
 export const DEFAULT_ACTIVITY_PATCH = slurpActivityPresetPatch(SLURP_DEFAULT_ACTIVITY_PRESET);

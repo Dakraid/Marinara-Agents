@@ -25,6 +25,8 @@ export function SlpOnboardingSteps({ model }: { model: SlurpOnboardingWizardMode
     creationFailed,
     creationFailures,
     creationReasons,
+    creationRetryIds,
+    retryFailedCreations,
     disclosure,
     eligible,
     exceptions,
@@ -434,6 +436,8 @@ export function SlpOnboardingSteps({ model }: { model: SlurpOnboardingWizardMode
           >
             {completion === "generated" ? (
               <Check size={26} aria-hidden="true" />
+            ) : completion === "writing" ? (
+              <RefreshCw size={24} aria-hidden="true" className="animate-spin motion-reduce:animate-none" />
             ) : completion === "partial" ||
               completion === "failed" ||
               completion === "creationFailed" ||
@@ -544,6 +548,12 @@ export function SlpOnboardingSteps({ model }: { model: SlurpOnboardingWizardMode
                 {t("capabilities.actions.tryAgain")}
               </SlpButton>
             </>
+          )}
+          {creationRetryIds.length > 0 && completion !== "creationFailed" && (
+            <SlpButton className="mt-5" disabled={pending} onClick={retryFailedCreations}>
+              <RefreshCw size={16} aria-hidden="true" className={pending ? "animate-spin" : ""} />
+              {t("ui.noodle.noodlerwizard.retryFailedCreations", { count: creationRetryIds.length })}
+            </SlpButton>
           )}
           {failedIds.length > 0 && (
             <SlpButton
