@@ -36,13 +36,24 @@ const HOUR = 60 * 60_000;
 /** The stages a set opens, relative to the set. The set itself is due immediately. */
 export const SLURP_CAMPAIGN_TEMPLATE: readonly {
   kind: SlurpCampaignStageKind;
-  access: "" | "public";
+  access: "" | "public" | "locked";
   delayMs: number;
 }[] = [
   { kind: "set", access: "", delayMs: 0 },
   // A teaser needs a public slot, or it sells nothing to anyone who has not already paid.
   { kind: "teaser", access: "public", delayMs: 2 * HOUR },
   { kind: "callback", access: "", delayMs: 24 * HOUR },
+];
+
+/**
+ * A free tease's campaign (3b): the tease comes first and promises the drop, which is the next
+ * locked post a few hours later, then the usual callback. A drop needs a locked slot, or the
+ * people who read the tease for free would get it for free too.
+ */
+export const SLURP_TEASE_CAMPAIGN_TEMPLATE: typeof SLURP_CAMPAIGN_TEMPLATE = [
+  { kind: "teaser", access: "public", delayMs: 0 },
+  { kind: "set", access: "locked", delayMs: 3 * HOUR },
+  { kind: "callback", access: "", delayMs: 27 * HOUR },
 ];
 
 export type SlurpCampaignStageView = {
@@ -63,12 +74,14 @@ export type SlurpCampaignStageView = {
  * the callback; a planned or claimed earlier stage does not, so the teaser never runs before the
  * set it previews exists.
  */
-export function slurpNextCampaignStage(
-  stages: readonly SlurpCampaignStageView[],
-  input: { at: Date; access: string },
-): SlurpCampaignStageView | null {
+export function slurpNextCampaignStage<T extends SlurpCampaignStageView>(
+  stages: readonly T[],
+  input: { at: Date; access: string; story?: boolean },
+): T | null {
   const due = stages
     .filter((stage) => stage.status === "planned")
+    // A drop is a feed post; a Story that disappears in a day is not what the tease promised.
+    .filter((stage) => !(input.story && stage.kind === "set"))
     .filter((stage) => Date.parse(stage.dueAt) <= input.at.getTime())
     .filter((stage) => !stage.access || stage.access === input.access)
     .filter((stage) =>

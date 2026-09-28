@@ -1,3 +1,5 @@
+import { createSlpPoll } from "../../../../../shared/src/slp/slp-polls.js";
+import type { SlpPoll } from "../../../../../shared/src/slp/slp-social.types.js";
 import { type SlurpModifierKind } from "../creators/slp-creator-state.js";
 import {
   SLURP_PROJECT_CHAPTER_MAX_LENGTH,
@@ -461,4 +463,21 @@ export function slurpArcVoteClosed(
 ): boolean {
   const arc = projects.find((project) => project.pollPostId === postId);
   return Boolean(arc?.pollClosesAt && Date.parse(arc.pollClosesAt) <= now);
+}
+
+/**
+ * An open arc choice, posted as a real poll on the arc's next post (attached, never parsed from the
+ * text). `protect` keeps the Creator's source identity out of the question and the options.
+ */
+export function slurpArcPoll(
+  project: SlurpProject | null,
+  protect: (value: string, maxLength: number) => string | null,
+): SlpPoll | null {
+  const choice = project && !project.pollPostId ? (project.choices[project.chapter] ?? null) : null;
+  return choice
+    ? createSlpPoll({
+        question: protect(choice.question, 240),
+        options: choice.options.map((option) => protect(option.label, 120)),
+      })
+    : null;
 }

@@ -99,6 +99,8 @@ export async function planSlurpPostSpice(
     sequence: number;
     variation: SlurpPostVariation | null;
     beat: SlurpBeat | null;
+    /** A drop delivers the kind its tease hinted at (3b). */
+    teasedKind?: string | null;
   },
 ) {
   const spiceRead = await resolveSlurpSpiceCreator(db, input).catch((error: unknown) => {
@@ -129,6 +131,7 @@ export async function planSlurpPostSpice(
           ...partners,
           recent: recentSpice(input.recentPosts),
           sequence: input.sequence,
+          teasedKind: input.teasedKind,
         })
       : null;
   // A locked spicy post's picture shows its own moment, and a partner scene its partner.

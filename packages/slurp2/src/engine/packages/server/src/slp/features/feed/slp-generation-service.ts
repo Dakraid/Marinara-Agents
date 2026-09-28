@@ -38,7 +38,8 @@ import {
   slurpPostVariationInstruction,
   slurpTeaserPost,
 } from "../../modules/feed/slp-post-variation.js";
-import { slurpArcRotation, slurpProjectChapter } from "../../modules/projects/slp-arc-progress.js";
+import { slurpArcPoll, slurpArcRotation, slurpProjectChapter } from "../../modules/projects/slp-arc-progress.js";
+import { slurpPurposeMetadata } from "../../modules/feed/slp-post-purpose.js";
 import { resolveSlurpCreatorScheduleContext } from "../creators/slp-creators-contract.js";
 import { createSlurpMessagesStorage } from "../../data/slp-storage.js";
 import { createChatsStorage } from "../../../services/storage/chats.storage.js";
@@ -240,6 +241,7 @@ export async function generateCreatorPost(
     continuityInstruction,
     campaignId,
     beat: plannedBeat,
+    purpose,
   } = await planSlurpPost(db, {
     account,
     request: input.request,
@@ -298,6 +300,8 @@ export async function generateCreatorPost(
         // phone snap gets a caption about a set that took all afternoon.
         postImages && variation ? slurpEffortInstruction(effort) : "",
         shoot ? slurpShootInstruction(shoot) : "",
+        // Why this post goes up and what it leads to: a tease's drop, a drop's tease, a Story's job (3b).
+        purpose.line,
         // A count under a label the Creator typed. Never a fan, never their words.
         demandTopic ? `Several subscribers have asked for: ${demandTopic}. Do not name or quote anyone.` : "",
         // A kept promise says what was promised, in the Creator's own label from the request panel.
@@ -349,6 +353,7 @@ export async function generateCreatorPost(
     sequence,
     variation,
     beat: plannedBeat,
+    teasedKind: purpose.spiceKind,
   });
   const { postLevel, angle: spiceAngle, beat } = spiced;
   variation = spiced.variation;
@@ -559,16 +564,9 @@ export async function generateCreatorPost(
   const shootId = openedShootId ?? shoot?.id ?? null;
 
   const projectChapter = project ? slurpProjectChapter(project) : null;
-  // An open arc choice is posted as a real poll, attached here rather than parsed from the text.
-  const arcChoice = project && !project.pollPostId ? (project.choices[project.chapter] ?? null) : null;
-  const arcPoll = arcChoice
-    ? createSlpPoll({
-        question: protectBoundedCreatorGeneratedText(arcChoice.question, disclosureMode, publicIdentity, 240),
-        options: arcChoice.options.map((option) =>
-          protectBoundedCreatorGeneratedText(option.label, disclosureMode, publicIdentity, 120),
-        ),
-      })
-    : null;
+  const arcPoll = slurpArcPoll(project, (value, max) =>
+    protectBoundedCreatorGeneratedText(value, disclosureMode, publicIdentity, max),
+  );
 
   // Deep details, best effort. ponytail: an unpublished scheduled post leaves its record until the
   // Creator is deleted; sweep records with no post if they add up.
@@ -655,6 +653,7 @@ export async function generateCreatorPost(
       ...(input.request.executionId ? { noodlerWizardExecutionId: input.request.executionId } : {}),
       ...(input.request.poll ? { poll: createSlpPoll(input.request.poll) } : arcPoll ? { poll: arcPoll } : {}),
       ...(input.request.imageCrop ? { imageCrop: input.request.imageCrop } : {}),
+      ...slurpPurposeMetadata(purpose, protectedGenerated.content, { storyline: Boolean(project) }),
     },
   };
 

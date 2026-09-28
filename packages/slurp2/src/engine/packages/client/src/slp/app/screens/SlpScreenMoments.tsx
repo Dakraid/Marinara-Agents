@@ -20,6 +20,9 @@ import { SlpPostSurfaceMenu } from "../../modules/post/SlpPostMenu";
 import { api } from "../../../lib/api-client";
 import { downloadSlpShareCard, toSlpShareCardInput } from "../../modules/post/slp-share-card";
 import { toSlpPostCardModel, linkedPostIdForStory, type SlurpViewerCreator, SlurpMediaDialog } from "./SlpHomeHelpers";
+import { readSlpPurpose, slpStoryPollTally } from "../../../../../shared/src/slp/slp-post-purpose.js";
+import { readSlpPollFromMetadata } from "../../../../../shared/src/slp/slp-polls.js";
+import { SlpCommentSticker, SlpCountdownSticker, SlpPollSticker } from "../../modules/story/SlpStoryStickers";
 
 // ---------------------------------------------------------------------------
 // Local types
@@ -175,6 +178,7 @@ export function SlurpMomentViewer({
   onUnlock,
   onToggleSubscription,
   onOpenProfile,
+  onOpenPost,
   ctx,
 }: {
   moment: SlurpMoment;
@@ -190,6 +194,8 @@ export function SlurpMomentViewer({
   onUnlock: (postId: string) => void;
   onToggleSubscription: (creatorAccountId: string, subscribed: boolean) => void;
   onOpenProfile?: (accountId: string) => void;
+  /** Close the Story and show this post (the one it announces, its drop, the post a comment was on). */
+  onOpenPost?: (postId: string) => void;
   ctx: SlpPostCardCtx;
 }) {
   const { t: localizeUi } = useUiTranslation();
@@ -212,6 +218,59 @@ export function SlurpMomentViewer({
     onClose();
     onOpenProfile?.(moment.creator.profile.id);
   };
+  const seePost = (postId: string) => (onOpenPost ? onOpenPost(postId) : openProfile());
+  // What this Story is for (3b): a countdown, a poll with its results, or the comment it answers.
+  const purpose = moment.post.locked ? null : readSlpPurpose(moment.post.metadata);
+  const poll = purpose?.kind === "poll" ? readSlpPollFromMetadata(moment.post.metadata) : null;
+  const pollVotes = poll
+    ? moment.post.interactions.filter(
+        (interaction) =>
+          interaction.type === "vote" &&
+          !interaction.parentInteractionId &&
+          poll.options.some((option) => option.id === interaction.content),
+      )
+    : [];
+  // The tap shows the result at once; the stored vote takes over when the feed comes back with it.
+  const [tapped, setTapped] = useState<string | null>(null);
+  const storedVote =
+    pollVotes.find((interaction) => slpIsOwnActor(ctx.personaAccount, interaction.actorAccountId))?.content ?? null;
+  const pollSelected = storedVote ?? tapped;
+  const pollTally = poll
+    ? slpStoryPollTally(
+        { postId: moment.post.id, createdAt: moment.post.createdAt, optionCount: poll.options.length },
+        poll.options.map(
+          (option) =>
+            pollVotes.filter((interaction) => interaction.content === option.id).length +
+            (!storedVote && tapped === option.id ? 1 : 0),
+        ),
+        Date.now(),
+      )
+    : [];
+  const sticker =
+    purpose?.kind === "countdown" ? (
+      <SlpCountdownSticker
+        dropAt={purpose.dropAt}
+        linked={Boolean(purpose.postId)}
+        onSeePost={purpose.postId ? () => seePost(purpose.postId!) : undefined}
+      />
+    ) : poll ? (
+      <SlpPollSticker
+        options={poll.options.map((option, index) => ({ ...option, count: pollTally[index] ?? 0 }))}
+        selected={pollSelected}
+        showResults={isOwner}
+        disabled={!ctx.personaAccount || ctx.createInteractionPendingFor(moment.post.id, "vote")}
+        onVote={
+          ctx.voteInPoll
+            ? (optionId) => {
+                setTapped(optionId);
+                ctx.voteInPoll?.(toSlpPostCardModel(moment.post, moment.creator.profile), optionId, pollSelected);
+              }
+            : undefined
+        }
+      />
+    ) : purpose?.kind === "comment_reaction" && purpose.comment ? (
+      <SlpCommentSticker handle={purpose.comment.handle} text={purpose.comment.text} />
+    ) : null;
   useEffect(() => {
     // View recording is best effort. Opening a Story must remain usable when the write is slow.
     const viewKey = `${personaId ?? ""}:${moment.post.id}`;
@@ -296,6 +355,14 @@ export function SlurpMomentViewer({
             ) : null /* while the picture is fetched, the dialog's frame itself shimmers */
           }
           {moment.post.locked && mediaSrc && <SlurpSparkleVeil />}
+          {sticker && (
+            <div
+              className="pointer-events-none absolute inset-x-0 z-10 flex justify-center px-6"
+              style={{ top: "28%" }}
+            >
+              <div className="pointer-events-auto">{sticker}</div>
+            </div>
+          )}
           <div
             className="absolute inset-x-3 top-3 z-10 flex gap-1"
             role="progressbar"
@@ -444,10 +511,10 @@ export function SlurpMomentViewer({
               )}
             </details>
           )}
-          {linkedPostIdForStory(moment.post) && onOpenProfile && (
+          {linkedPostIdForStory(moment.post) && (onOpenPost || onOpenProfile) && (
             <button
               type="button"
-              onClick={openProfile}
+              onClick={() => seePost(linkedPostIdForStory(moment.post)!)}
               className="inline-flex min-h-10 w-fit items-center gap-2 rounded-lg bg-[var(--accent)] px-3 text-xs font-bold ring-1 ring-inset ring-[var(--noodle-divider)] hover:bg-[var(--noodle-accent)]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)]"
             >
               <Link size={14} aria-hidden="true" /> {localizeUi("ui.slurp.moments.viewLinkedPost")}

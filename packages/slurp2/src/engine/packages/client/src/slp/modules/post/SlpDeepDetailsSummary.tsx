@@ -1,10 +1,54 @@
 import { ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 import type { SlpDeepDetailsImageRun, SlpDeepDetailsResponse } from "../../../../../shared/src/slp/slp-deep-details.js";
+import { readSlpPurpose, type SlpPurpose } from "../../../../../shared/src/slp/slp-post-purpose.js";
 import { SLP_GROUP_CLASS, SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { Block, formatRate, formatTime, Rows, StepStatus, str, type SlpStepStatus } from "./SlpDeepDetailsParts";
 
 const join = (parts: (string | null | undefined | false)[]) => parts.filter(Boolean).join(" · ");
+
+/** What the post or Story was for, in plain words (3b). Null on posts made before purposes existed. */
+export function slpPurposeSentence(purpose: SlpPurpose | null): string | null {
+  if (!purpose) return null;
+  switch (purpose.kind) {
+    case "tease":
+      return purpose.postId
+        ? "Teased a locked drop, which is up now"
+        : purpose.dropAt
+          ? `Teases a locked drop due ${formatTime(purpose.dropAt)}`
+          : "Teases what is behind the lock";
+    case "drop":
+      return purpose.teasePostId ? "The drop an earlier tease promised" : "A new locked drop";
+    case "behind_the_scenes":
+      return "Behind the scenes of a shoot";
+    case "promote":
+      return purpose.subject === "brand"
+        ? "A paid partnership"
+        : purpose.subject === "couple"
+          ? "A moment of their couple story"
+          : "Promotes a collab";
+    case "storyline":
+      return "A beat of their storyline";
+    case "answer_fans":
+      return "Gives fans what they asked for";
+    case "thanks":
+      return "Thanks fans";
+    case "daily_life":
+      return "A moment from their day";
+    case "poll_answer":
+      return `What fans picked in a Story poll: ${purpose.answer ?? "?"}`;
+    case "new_post":
+      return "Story that points to a new post";
+    case "countdown":
+      return purpose.postId ? "Story that counted down to a drop, which is up now" : "Story that counts down to a drop";
+    case "poll":
+      return purpose.answeredAt ? "Story poll, answered in a later post" : "Story poll: fans pick the next post";
+    case "day_in_life":
+      return `Story ${purpose.part ?? 2} of their day`;
+    case "comment_reaction":
+      return `Story that answers a comment${purpose.comment?.handle ? ` by @${purpose.comment.handle}` : ""}`;
+  }
+}
 
 const RESULT_WORD: Record<SlpDeepDetailsImageRun["result"]["status"], string> = {
   saved: "saved",
@@ -40,11 +84,13 @@ export function SlpDeepDetailsSummary({ data }: { data: SlpDeepDetailsResponse }
   const imageModel = run?.connection.model ?? str(meta.imageModel);
   const imageFailed = run ? run.result.status === "failed" : meta.imageGenerationFailed === true;
   const { likes, replies, unlocks } = data.stats;
+  const purpose = slpPurposeSentence(readSlpPurpose(meta));
   return (
     <div className={SLP_GROUP_CLASS}>
-      <SummaryRow title="Why this post" line={join([intent, delivery, data.post.access])}>
+      <SummaryRow title="Why this post" line={purpose ?? join([intent, delivery, data.post.access])}>
         <Rows
           rows={[
+            ["Purpose", purpose],
             ["Intent", intent],
             ["Delivery", delivery],
             [

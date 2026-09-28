@@ -15,6 +15,7 @@ import { Avatar, SLP_IMG_FRAME_CLASS, slpImgFade } from "../../base/chrome/SlpCh
 import { playSlpPop } from "../sparkle/SlpSparkle";
 import { slpTagClass } from "../chrome/SlpButton";
 import { SlpPostPartnership, SlpReachBadge } from "./SlpPostPartnership";
+import { SlpPostPurposeNote, slpShowPostInPlace } from "./SlpPostPurposeNote";
 import { SlpPostEditSheet } from "./SlpPostEditSheet";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { Image as ImageIcon } from "lucide-react";
@@ -438,6 +439,10 @@ export function SlpPostCard({
               {reachBadge && <SlpReachBadge badge={reachBadge} />}
             </p>
             <SlpPostPartnership partnership={post.partnership} onOpenProfile={ctx.openAuthorProfile} />
+            <SlpPostPurposeNote
+              metadata={post.metadata}
+              onShowPost={(id) => slpShowPostInPlace(id) || ctx.openAuthorProfile?.(post.authorAccountId)}
+            />
           </div>
           <SlpPostMenu
             post={post}

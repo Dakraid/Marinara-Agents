@@ -251,6 +251,8 @@ export function slurpSpiceAngle(input: {
   /** Earlier spicy posts of this Creator, newest first. */
   recent: readonly { kind: string; taste?: string | null }[];
   sequence: number;
+  /** A drop delivers the kind its tease hinted at, when it is still allowed (3b). */
+  teasedKind?: string | null;
 }): SlurpSpiceAngle | null {
   if (input.level === "none") return null;
   const locked = input.access === "locked";
@@ -266,19 +268,22 @@ export function slurpSpiceAngle(input: {
   if (!kinds.length) return null;
   const seed = input.creator.accountId;
   const lastKinds = input.recent.slice(0, 3).map((entry) => entry.kind);
-  const kind = slurpWeightedPick(
-    "spiceKind",
-    seed,
-    input.sequence,
-    kinds.map((candidate) => ({
-      value: candidate,
-      weight:
-        // The top of the range carries the most weight: an explicit page is mostly explicit.
-        (1 + 2 * (LEVEL_INDEX(candidate.min) / Math.max(1, top))) *
-        (input.creator.turnOns.some((on) => candidate.words.some((word) => shareWord(on, word))) ? 3 : 1) *
-        (lastKinds[0] === candidate.id ? 0.1 : lastKinds.includes(candidate.id) ? 0.4 : 1),
-    })),
-  );
+  const teased = locked ? kinds.find((candidate) => candidate.id === input.teasedKind) : undefined;
+  const kind =
+    teased ??
+    slurpWeightedPick(
+      "spiceKind",
+      seed,
+      input.sequence,
+      kinds.map((candidate) => ({
+        value: candidate,
+        weight:
+          // The top of the range carries the most weight: an explicit page is mostly explicit.
+          (1 + 2 * (LEVEL_INDEX(candidate.min) / Math.max(1, top))) *
+          (input.creator.turnOns.some((on) => candidate.words.some((word) => shareWord(on, word))) ? 3 : 1) *
+          (lastKinds[0] === candidate.id ? 0.1 : lastKinds.includes(candidate.id) ? 0.4 : 1),
+      })),
+    );
   const partner: SlurpSpicePartner | null = !kind.partnered
     ? null
     : input.madeWith

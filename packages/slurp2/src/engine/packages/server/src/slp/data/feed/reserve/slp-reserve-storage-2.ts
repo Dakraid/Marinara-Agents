@@ -25,6 +25,7 @@ import type { SlpCreatorPreparedPostPayload, SlurpReserveStatus } from "../../..
 import { mapAccount, snapshotForAccount } from "../../host/slp-storage-mappers.js";
 import { readSlurpTieStamp } from "../../../modules/projects/slp-tie-stamp.js";
 import type { SlurpStorageContext } from "../../host/slp-storage-context.js";
+import { linkSlurpPurposePost } from "../slp-purpose-storage.js";
 
 export function createReserveStorage2(context: SlurpStorageContext) {
   const {
@@ -234,6 +235,12 @@ export function createReserveStorage2(context: SlurpStorageContext) {
         if (typeof item.payload.projectId === "string" && item.payload.projectId) {
           await this.advanceProject(item.creatorAccountId, item.payload.projectId, didPublish);
         }
+        // A drop links its tease and countdowns to itself; a tease links to a drop already up (3b).
+        await linkSlurpPurposePost(db, {
+          id: didPublish,
+          authorAccountId: item.creatorAccountId,
+          metadata: parseRecord(item.payload.metadata),
+        }).catch(() => undefined);
       }
       for (const path of discardedMediaPaths) unlinkCreatorMedia(path);
       return published;

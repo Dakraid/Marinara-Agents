@@ -4,6 +4,7 @@ import { SlpBalanceChip, SlpWordmark } from "../../modules/chrome/SlpShell";
 import { SlpSegment } from "../../modules/chrome/SlpButton";
 import { isSlurpStory, SLP_CREATOR_FEED_WINDOW_SIZE, type SlurpViewerCreator } from "./SlpHomeHelpers";
 import { SlurpMomentsShelf, SlurpMomentViewer } from "./SlpScreenMoments";
+import { slpShowPostInPlace } from "../../modules/post/SlpPostPurposeNote";
 import { ArrowUp, LayoutGrid, List, Search, UserRound } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -755,6 +756,12 @@ export function ViewerHub({
           onUnlock={onUnlock}
           onToggleSubscription={onToggleSubscription}
           onOpenProfile={postCardCtx.openAuthorProfile}
+          onOpenPost={(postId) => {
+            const creatorId = activeMoment.creator.profile.id;
+            setActiveMomentId(null);
+            // After the Story closes: the post in the feed if it is there, else the Creator's page.
+            window.setTimeout(() => slpShowPostInPlace(postId) || postCardCtx.openAuthorProfile?.(creatorId), 80);
+          }}
           ctx={postCardCtx}
         />
       )}

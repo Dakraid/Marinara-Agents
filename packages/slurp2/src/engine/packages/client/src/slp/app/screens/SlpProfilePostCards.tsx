@@ -4,6 +4,7 @@ import { Images, Loader2, PenLine, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { isSlurpStory, SlurpAccessTransition, slurpSubscriptionPriceOf } from "./SlpHomeHelpers";
 import { SlurpMomentShelfTile, SlurpMomentViewer } from "./SlpScreenMoments";
+import { slpShowPostInPlace } from "../../modules/post/SlpPostPurposeNote";
 import { Avatar } from "../../base/chrome/SlpChrome";
 import { SlurpFanCard } from "../../modules/audience/SlpFanCard";
 import { SlpButton } from "../../modules/chrome/SlpButton";
@@ -408,6 +409,10 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
           onUnlock={onUnlock}
           onToggleSubscription={onToggleSubscription}
           onOpenProfile={postCardCtx.openAuthorProfile}
+          onOpenPost={(postId) => {
+            setActiveStoryId(null);
+            window.setTimeout(() => slpShowPostInPlace(postId), 80);
+          }}
           ctx={postCardCtx}
         />
       )}
