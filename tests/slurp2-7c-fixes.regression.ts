@@ -27,6 +27,10 @@ import {
   slurpChatLanguage,
   slurpCommissionDeliveryNote,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/slp-world-copy.ts";
+import {
+  SLURP_DM_UNNAMED_FAN,
+  slurpDmRoleHeader,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-dm-roles.ts";
 import { slurp2Source } from "./slurp2-source.ts";
 
 const root = new URL("../packages/slurp2/src/engine/packages/", import.meta.url);
@@ -356,6 +360,42 @@ const at = (days: number) => new Date(T0 + days * 86_400_000);
     /slurpCommissionDeliveryNote\(commission\.id, language\)/u,
   );
   assert.match(server("features/world/slp-pending-text-service.ts"), /keep the note's language/u);
+}
+
+// M-010. A fan with no name: every sentence of the header still reads right.
+{
+  const line = (role: "viewer" | "creator", content: string) => ({
+    id: `${role}-${content.length}`,
+    role,
+    kind: "text",
+    content,
+    price: 0,
+    unlockedAt: null,
+    metadata: {},
+    createdAt: "2026-09-28T04:00:00.000Z",
+  });
+  const header = slurpDmRoleHeader({
+    writer: "creator",
+    creator: { name: "Mira Vale", handle: "miravale" },
+    viewer: { name: SLURP_DM_UNNAMED_FAN, handle: "" },
+    openedBy: "viewer",
+    requestFee: 10,
+    history: [line("viewer", "hi!")],
+  });
+  assert.match(header, /The person writing to you is a fan\./u);
+  assert.match(header, /This fan wrote to you first and paid 10 coins/u);
+  assert.doesNotMatch(header, /(^|[.!?]\s+|\n)this fan/u, "no sentence starts lower-case");
+  assert.doesNotMatch(header, /this fan is a fan/iu);
+  // A named fan is unchanged.
+  const named = slurpDmRoleHeader({
+    writer: "creator",
+    creator: { name: "Mira Vale", handle: "miravale" },
+    viewer: { name: "Lena Hart", handle: "lenahart" },
+    openedBy: "viewer",
+    history: [line("viewer", "hi!")],
+  });
+  assert.match(named, /Lena Hart is a fan writing to you\.[\s\S]*Lena Hart wrote to you first\./u);
+  assert.match(server("features/messages/slp-message-generation-service.ts"), /\|\| SLURP_DM_UNNAMED_FAN/u);
 }
 
 console.log("slurp2 7c fixes regression passed");

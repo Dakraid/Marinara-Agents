@@ -127,6 +127,9 @@ function sideLabel(speaker: { name: string; live: boolean }): string {
   return speaker.live ? `${speaker.name} (Slurp staff)` : `${speaker.name} (during the sign-up)`;
 }
 
+/** The name a fan with no name on their account goes by in a DM prompt. */
+export const SLURP_DM_UNNAMED_FAN = "this fan";
+
 /**
  * The role header: who you are, who you are writing to, who they are to you, who wrote first,
  * and whose turn this is. Plain in-world sentences, no labels, like the flavour brief.
@@ -134,6 +137,9 @@ function sideLabel(speaker: { name: string; live: boolean }): string {
 export function slurpDmRoleHeader(input: SlurpDmRoleInput & { history: readonly SlurpDmLine[] }): string {
   const creator = input.creator.name;
   const viewer = input.viewer.name;
+  // A fan with no name: "this fan" inside a sentence, "This fan" at its start (7c M-010).
+  const unnamed = viewer === SLURP_DM_UNNAMED_FAN;
+  const Viewer = unnamed ? "This fan" : viewer;
   const me = input.writer === "creator" ? creator : viewer;
   const them = input.writer === "creator" ? viewer : creator;
   const lines: string[] = [];
@@ -147,7 +153,9 @@ export function slurpDmRoleHeader(input: SlurpDmRoleInput & { history: readonly 
       `You are ${at(input.creator)}, a Creator on Slurp. This is your private chat with ${at(input.viewer)}.`,
       input.viewerPage
         ? `${viewer} runs a Creator page on Slurp too (${at(input.viewerPage)}). This is one Creator writing to another: talk to ${viewer} as a fellow Creator, not as a customer, though they can still subscribe or buy like anyone.`
-        : `${viewer} is a fan writing to you.`,
+        : unnamed
+          ? "The person writing to you is a fan."
+          : `${viewer} is a fan writing to you.`,
     );
     if (input.viewerPage?.relationship) lines.push(input.viewerPage.relationship);
     // Two pages can plan a joint post here; the split is theirs to agree (7b-c).
@@ -191,7 +199,7 @@ export function slurpDmRoleHeader(input: SlurpDmRoleInput & { history: readonly 
     const fee = Math.max(0, Math.round(input.requestFee ?? 0));
     lines.push(
       input.writer === "creator"
-        ? `${viewer} wrote to you first${fee > 0 ? ` and paid ${fee} coins to send that first message` : ""}.`
+        ? `${Viewer} wrote to you first${fee > 0 ? ` and paid ${fee} coins to send that first message` : ""}.`
         : `You wrote to ${creator} first${fee > 0 ? ` and paid ${fee} coins to send that first message` : ""}.`,
     );
   }

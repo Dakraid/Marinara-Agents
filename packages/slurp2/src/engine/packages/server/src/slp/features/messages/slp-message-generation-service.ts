@@ -94,7 +94,12 @@ import {
 } from "../../base/model/slp-model-worker.js";
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
 import { SLURP_PERFORMED_INTIMACY } from "../../modules/creators/slp-performance.js";
-import { slurpDmRoleHeader, slurpDmTranscript, type SlurpDmParty } from "../../modules/messages/slp-dm-roles.js";
+import {
+  SLURP_DM_UNNAMED_FAN,
+  slurpDmRoleHeader,
+  slurpDmTranscript,
+  type SlurpDmParty,
+} from "../../modules/messages/slp-dm-roles.js";
 import { slurpCoupleDmPage } from "../projects/slp-projects-contract.js";
 import { protectSlurpSupportStaff } from "../../modules/messages/slp-support.js";
 import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
@@ -176,7 +181,7 @@ export function buildSlurpMessageChat(input: {
   const known = input.notes && input.notes.length > 0 ? notesForPrompt(input.notes) : null;
   const parties = {
     creator: { name: protect(input.creator.displayName), handle: protect(input.creator.handle) },
-    viewer: { name: protect(input.viewer.displayName) || "this fan", handle: protect(input.viewer.handle) },
+    viewer: { name: protect(input.viewer.displayName) || SLURP_DM_UNNAMED_FAN, handle: protect(input.viewer.handle) },
   };
   // Slurp Support's own thread: the one writing is Slurp's staff, never a fan.
   const support = input.viewer.id === SLURP_SUPPORT_ACCOUNT_ID;
