@@ -306,7 +306,7 @@ function voiceRow(data: SlpDeepDetailsResponse, name: string): SlpDeepRow | null
         : `${name} had opened with “${flavour.opener.phrase}” a lot, so this one had to open differently.`
       : null,
     flavour.day ? DAY_WORDS[flavour.day] : null,
-    flavour.relationship,
+    flavour.relationship ? `About their love life, Slurp told ${name}: “${flavour.relationship}”` : null,
   ].filter((value): value is string => Boolean(value));
   const firstDetail = flavour.details[0]?.text;
   return {
@@ -338,7 +338,9 @@ function steeringRow(data: SlpDeepDetailsResponse): SlpDeepRow | null {
   const steering = details?.flavour?.steering;
   const beat = details?.planner?.beat;
   const idea = beat?.nudgeId ? beat.anchor : null;
-  const steered = beat?.anchorKind === "steer" && !beat.nudgeId ? beat.anchor : null;
+  // A Story poll's answer rides the same beat kind, but fans picked it, not the player.
+  const steered =
+    beat?.anchorKind === "steer" && !beat.nudgeId && !beat.sharedId?.startsWith("poll:") ? beat.anchor : null;
   if (!steering && !idea && !steered) return null;
   const facts: [string, string | null][] = [
     ["Your idea", idea],

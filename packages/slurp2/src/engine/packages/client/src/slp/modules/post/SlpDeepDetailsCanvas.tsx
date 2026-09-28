@@ -90,6 +90,12 @@ export function SlpDeepDetailsCanvas({ graph }: { graph: SlpFlowGraph }) {
     setZoom(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(scale * factor * 100) / 100)));
   const byId = new Map(graph.nodes.map((node) => [node.id, node]));
   const routes = routeSlpFlowGraph(graph, boxes);
+  const labelledInto = new Map<string, number>();
+  for (const edge of graph.edges) {
+    if (edge.label && byId.get(edge.from)?.kind !== "source") {
+      labelledInto.set(edge.to, (labelledInto.get(edge.to) ?? 0) + 1);
+    }
+  }
   const stepOf = new Map(graph.nodes.filter(isMain).map((node, index) => [node.id, index + 1] as const));
   const selectedNode = selected ? byId.get(selected) : null;
 
@@ -188,10 +194,14 @@ export function SlpDeepDetailsCanvas({ graph }: { graph: SlpFlowGraph }) {
                       strokeLinejoin="round"
                       markerEnd="url(#slp-flow-arrow)"
                     />
-                    {/* Source arrows are many; their labels show only for the chosen card. */}
-                    {edge.label && (fromNode.kind !== "source" || active) && (
-                      <EdgeLabel x={path.label.x} y={path.label.y} text={edge.label} />
-                    )}
+                    {/* Source arrows are many; their labels show only for the chosen card. A step fed by
+                        more than two values would stack their labels, so there each shows when its value is chosen. */}
+                    {edge.label &&
+                      (fromNode.kind === "source"
+                        ? active
+                        : (labelledInto.get(edge.to) ?? 0) <= 2 || selected === edge.from) && (
+                        <EdgeLabel x={path.label.x} y={path.label.y} text={edge.label} />
+                      )}
                   </g>
                 );
               })}

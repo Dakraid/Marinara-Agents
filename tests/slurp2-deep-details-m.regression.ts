@@ -267,6 +267,21 @@ const words = (row: SlpDeepRow | undefined) =>
   );
   assert.equal(why.chain?.[1]?.text, "Ridge loop at sunrise");
 }
+// A poll's answer is the fans' pick, not the player's steering (screenshot finding).
+assert.equal(
+  rowOf(
+    buildSlpDeepDetailsStory(
+      response({
+        details: {
+          flavour: undefined,
+          planner: { mode: "beats", beat: beat({ anchorKind: "steer", sharedId: "poll:s1" }), claimCheck: null },
+        },
+      }),
+    ),
+    "steering",
+  ),
+  undefined,
+);
 // A pack's moment (S) leads the chain and names the occasion.
 {
   const rows = buildSlpDeepDetailsStory(
