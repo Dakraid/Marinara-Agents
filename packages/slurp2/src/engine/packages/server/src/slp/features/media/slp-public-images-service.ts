@@ -332,7 +332,8 @@ export async function generateSlpPostImage(input: {
         characterContext,
         styleGuidance,
         promptBlocks: slurpPromptContext(input.settings).blocks,
-        connectionId: input.settings.generationConnectionId,
+        connectionId: input.settings.imagePromptConnectionId || input.settings.generationConnectionId,
+        budget: input.settings.modelBudget,
       })
     : null;
   // The style profile is an Engine setting, not something the interpretation model owns. The

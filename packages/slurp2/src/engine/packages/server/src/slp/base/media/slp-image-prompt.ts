@@ -131,6 +131,7 @@ const PHOTO_ONLY_WORDS: readonly [RegExp, string][] = [
   [/\bself-timer photo\b/giu, "shot"],
   [/\bstill frame from a video, slight motion blur, soft focus\b/giu, "caught mid-motion"],
   [/\bolder snapshot from their own archive, slightly dated look\b/giu, "an older picture of theirs"],
+  [/\bfaded older snapshot, slightly dated colours\b/giu, "an older picture of theirs"],
   [/\bcasual and unedited\b/giu, "casual"],
   [/\bphoto(?:graph)?s?\b/giu, "picture"],
 ];
@@ -148,44 +149,126 @@ export function slurpStyledImagePrompt(prompt: string, look: string): string {
   return styled.toLocaleLowerCase().startsWith(style.tag.toLocaleLowerCase()) ? styled : `${style.tag}\n${styled}`;
 }
 
-/** Keep identity in the provider request even when review or rewrite replaces the draft. */
+/**
+ * The words of a trait that carry its meaning: lower case, 3+ letters or any number, without the
+ * glue words every sentence shares. "Stands about 165 cm" → stands, 165.
+ */
+const TRAIT_STOP_WORDS = new Set(
+  "the and with has have her his their its she he they them who that this from into are was were been about very also often usually slightly".split(
+    " ",
+  ),
+);
+function traitWords(value: string): string[] {
+  return (value.toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).filter(
+    (word) => (word.length >= 3 || /\d/u.test(word)) && !TRAIT_STOP_WORDS.has(word),
+  );
+}
+// A trait whose words are mostly in the prompt already is there, reworded. 0.6: the rewrite keeps
+// the nouns and drops the filler ("on the chubbier side with soft curves she's learned to love").
+const TRAIT_PRESENT_SHARE = 0.6;
+
+/**
+ * Keep identity in the provider request even when review or rewrite replaces the draft.
+ *
+ * Only the traits the prompt does not already carry are added, each once. The whole look used to
+ * go in front whenever the prompt did not contain it word for word — and a rewrite rewords it, the
+ * fallback template holds the unfiltered Stage text — so 88 of 102 prod pictures (2026-09-28) sent
+ * the appearance twice.
+ */
 export function ensureSlpImageAppearance(prompt: string, appearance: string): string {
   const look = slurpImageLook(appearance);
   if (!look) return prompt;
-  const normalized = (value: string) => value.toLocaleLowerCase().replace(/\s+/gu, " ").trim();
-  return normalized(prompt).includes(normalized(look)) ? prompt : `${look}\n${prompt}`;
+  const promptWords = new Set(traitWords(prompt));
+  // Stems, so "curves"/"curvy" or "freckles"/"freckled" count as the same trait word.
+  const stem = (word: string) => word.slice(0, 4);
+  const stems = new Set([...promptWords].map(stem));
+  const missing = look.split(/(?<=[.!?])\s+/u).filter((sentence) => {
+    const words = traitWords(sentence);
+    if (words.length === 0) return false;
+    const present = words.filter((word) => promptWords.has(word) || stems.has(stem(word))).length;
+    return present / words.length < TRAIT_PRESENT_SHARE;
+  });
+  return missing.length ? `${missing.join(" ")}\n${prompt}` : prompt;
 }
 
-/** Old post drafts were rule prose for a language model. They describe no picture and must not be reused. */
 /**
- * The device and the arm that holds it, as words. The post writer kept putting "phone held at
- * arm's length" into the scene even when the camera was a tripod, and the image model drew a phone
- * in 37 of 46 pictures on prod (0.2.74). The camera choice already decides how the picture was
- * taken; the picture itself must not show the device. `headphones` and `microphone` do not match.
+ * The device, as words. The post writer kept putting "phone held at arm's length" into the scene
+ * even when the camera was a tripod, and the image model drew a phone in 37 of 46 pictures on prod
+ * (0.2.74). The camera choice already decides how the picture was taken; the picture itself must
+ * not show the device. `headphones`, `microphone` and `camera-shy` do not match.
+ *
+ * The arm is no longer stripped (PERSPECTIVE-RESEARCH.md): "selfie" and "arm extended toward the
+ * viewer" are the only cues that make a weak model draw a selfie without a phone in the hand.
  */
 const CAMERA_DEVICE_WORDS =
-  /\b(?:smart|cell ?|i)?phones?\b|\bselfies?\b|\bselfie[- ]stick\b|\barm'?s[- ]length\b|\b(?:outstretched|extended|raised) arm\b|\barm (?:outstretched|extended|held out)\b/iu;
+  /\b(?:smart|cell ?|i)?phones?\b|\bselfie[- ]sticks?\b|\bcameras?\b(?!-shy)|\btripods?\b|\bwebcams?\b|\bphotographers?\b|\bself-timer\b|\b(?:shot on|taken with)\b/iu;
+/** How the picture was taken, for text that should say only what it showed (post history). */
+const HOW_TAKEN_WORDS = new RegExp(
+  `${CAMERA_DEVICE_WORDS.source}|\\bselfies?\\b|\\barm'?s[- ]length\\b|\\b(?:outstretched|extended|raised) arm\\b|\\barm (?:outstretched|extended|held out)\\b`,
+  "iu",
+);
+// "Looking at the camera" is a gaze, not a device: say the viewer, or the whole clause would go.
+const GAZE_AT_CAMERA = /\b(into|at|to|toward|towards|facing|teasing|for) the (?:camera|lens)\b/giu;
 
-/**
- * A picture prompt without the camera device: every comma, semicolon, or sentence part that names
- * a phone or a selfie is removed, and the rest is kept as it was. A line that was only about the
- * device disappears.
- */
-export function slurpWithoutCameraDevice(prompt: string): string {
-  return prompt
+function withoutParts(prompt: string, pattern: RegExp, keep: readonly string[]): string {
+  const kept = keep.filter(Boolean);
+  const hide = (text: string) =>
+    kept.reduce((value, phrase, index) => value.split(phrase).join(`\u0000${index}\u0000`), text);
+  const show = (text: string) => text.replace(/\u0000(\d+)\u0000/gu, (_, index: string) => kept[Number(index)]!);
+  return hide(prompt.replace(GAZE_AT_CAMERA, "$1 the viewer"))
     .split("\n")
     .map((line) =>
       line
         .split(/(?<=[,;.])\s+/u)
-        .filter((part) => !CAMERA_DEVICE_WORDS.test(part))
+        .filter((part) => !pattern.test(part))
         .join(" ")
         .replace(/[,;]\s*$/u, ".")
         .trim(),
     )
     .filter(Boolean)
+    .map(show)
     .join("\n");
 }
 
+/**
+ * A picture prompt without the camera device: every comma, semicolon, or sentence part that names
+ * a phone, a camera, a tripod or a photographer is removed, and the rest is kept as it was. A line
+ * that was only about the device disappears. `keep` holds Slurp's own viewpoint phrase, which is
+ * never cut (a mirror selfie holds the phone on purpose).
+ */
+export function slurpWithoutCameraDevice(prompt: string, keep: readonly string[] = []): string {
+  return withoutParts(prompt, CAMERA_DEVICE_WORDS, keep);
+}
+
+/** What a picture showed, without how it was taken, so a history does not teach the same shot again. */
+export function slurpPictureSubject(prompt: string): string {
+  return withoutParts(prompt, HOW_TAKEN_WORDS, []);
+}
+
+/**
+ * Which viewpoint words the image model understands (PERSPECTIVE-RESEARCH.md §6). The Engine style
+ * profile's prompt mode decides; a hybrid profile falls back to the service and model name.
+ * ComfyUI hides its checkpoint in the workflow, so there the style profile is the player's knob.
+ */
+export type SlurpPromptFamily = "tags" | "e621" | "natural";
+
+const TAG_MODEL = /pony|illustrious|noob|animagine|novelai|\bnai\b|autismmix|anything|counterfeit/iu;
+
+export function slurpPromptFamily(input: {
+  promptMode?: string | null;
+  service?: string | null;
+  model?: string | null;
+  /** The Creator is drawn as anthro/furry: tag models get e621 spellings. */
+  furry?: boolean;
+}): SlurpPromptFamily {
+  const tags =
+    input.promptMode === "tagged" ||
+    input.promptMode === "danbooru" ||
+    (input.promptMode !== "natural" && (input.service === "novelai" || TAG_MODEL.test(input.model ?? "")));
+  return tags ? (input.furry ? "e621" : "tags") : "natural";
+}
+
+/** Old post drafts were rule prose for a language model. They describe no picture and must not be reused. */
 export function slurpIsLegacyImageBrief(value: string | null | undefined): boolean {
   return /^One photograph this person took/u.test(value?.trim() ?? "");
 }

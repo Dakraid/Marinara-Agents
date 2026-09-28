@@ -172,6 +172,8 @@ export const slurpSettingsSchema = z.object({
   imageContextMode: z.enum(["auto", "imagePrompt", "vision"]),
   /** Describes pictures for image context. Null uses the Creator text connection. */
   imageContextConnectionId: z.string().nullable(),
+  /** The LLM connection that enhances picture prompts; null = Slurp's text connection. */
+  imagePromptConnectionId: z.string().nullable(),
   /**
    * Engine image style profile for Slurp pictures. Null uses the connection's profile, then the
    * Engine default. When set, the connection's own prompt prefixes are left out: a chosen style
@@ -494,6 +496,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   generationConnectionId: null,
   imageContextMode: "auto",
   imageContextConnectionId: null,
+  imagePromptConnectionId: null,
   imageStyleProfileId: null,
   imageGenerationPrompt: SLP_CREATOR_DEFAULT_IMAGE_GENERATION_PROMPT,
   imagePromptInterpretation: SLP_CREATOR_DEFAULT_IMAGE_PROMPT_INTERPRETATION,
