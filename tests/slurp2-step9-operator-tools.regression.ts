@@ -118,8 +118,11 @@ assert.match(canvas, /slpFlowCanvasColumns\(available/u, "the canvas fits the wi
 // 2. Deep details on phones: summary first, one group of five rows, opaque panel, honest states.
 const modal = src("modules/post/SlpDeepDetailsModal.tsx");
 const summary = src("modules/post/SlpDeepDetailsSummary.tsx");
-for (const title of ["Why this post", "The angle", "The writing", "The picture", "Since it went up"]) {
-  assert.ok(summary.includes(`title="${title}"`), `summary row "${title}"`);
+// M (user, 2026-09-28): the rows became the post's story and moved into one pure model
+// (slp-deep-details-story.ts, own regression); the phone still opens on a short list of rows.
+const story = src("modules/post/slp-deep-details-story.ts");
+for (const title of ["Why it went up", "What happens", "The writing", "The picture", "Since it went up"]) {
+  assert.ok(story.includes(`title: "${title}"`), `summary row "${title}"`);
 }
 assert.match(summary, /<details className="group">/u, "summary rows expand");
 assert.match(modal, /wide && graph \? \["summary", "flow", "canvas", "data"\] : \["summary", "data"\]/u);

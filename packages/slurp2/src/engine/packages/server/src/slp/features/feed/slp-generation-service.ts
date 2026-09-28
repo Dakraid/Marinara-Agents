@@ -1,5 +1,6 @@
-import { saveSlurpPostDeepDetails } from "../../data/feed/slp-post-deep-details-storage.js";
 import { buildSlurpDeepDetailsRecord } from "./slp-deep-details-record.js";
+import { saveSlurpNewPostDeepDetails } from "../../data/feed/slp-post-deep-details-storage.js";
+import type { SlpDeepDetailsFlavour } from "../../../../../shared/src/slp/slp-deep-details.js";
 import { prepareSlurpCreatorPost } from "./slp-prepared-post.js";
 import { type APIProvider } from "@marinara-engine/shared";
 import { createSlpPoll } from "../../../../../shared/src/slp/slp-polls.js";
@@ -357,6 +358,7 @@ export async function generateCreatorPost(
   });
   const { postLevel, angle: spiceAngle, beat } = spiced;
   variation = spiced.variation;
+  let flavourShaped: SlpDeepDetailsFlavour | null = null;
   const flavourBrief = await resolveSlurpCreatorFlavour(db, {
     account,
     source: linkedPublicAccount,
@@ -366,6 +368,7 @@ export async function generateCreatorPost(
     steering,
     ownLines: recentPosts.filter((post) => post.access !== "locked").map((post) => post.content),
     spice: spiced.spice,
+    shaped: (value) => (flavourShaped = value),
   });
   const messages = buildNoodlerPostMessages({
     account,
@@ -569,47 +572,43 @@ export async function generateCreatorPost(
     protectBoundedCreatorGeneratedText(value, disclosureMode, publicIdentity, max),
   );
 
-  // Deep details, best effort. ponytail: an unpublished scheduled post leaves its record until the
-  // Creator is deleted; sweep records with no post if they add up.
-  let deepDetailsId: string | null = input.previewOnly ? null : newId();
-  if (deepDetailsId) {
-    await saveSlurpPostDeepDetails(db, {
-      id: deepDetailsId,
-      creatorAccountId: account.id,
-      record: buildSlurpDeepDetailsRecord({
-        input,
-        sequence,
-        completionOptions,
-        attempts,
-        opportunity,
-        axes,
-        isTeaser,
-        storyVariation,
-        format,
-        variation,
-        campaignId,
-        shootId,
-        reusedSource: reusedMedia ? reusedSource : null,
-        demandTopic,
-        project,
-        projectChapter,
-        camera,
-        effort,
-        visualBrief,
-        strategy,
-        sentMessages,
-        content,
-        generated,
-        draftImagePrompt,
-        askModelForImagePrompt,
-        wardrobeSelection,
-        planner: { mode: settings.postPlanner, beat, claimCheck, heat: { dial: dialLevel, planned: explicitLevel } },
-      }),
-    }).catch((error: unknown) => {
-      logger.warn(error, "[slurp] Could not record deep details for a post");
-      deepDetailsId = null;
-    });
-  }
+  // Deep details, best effort.
+  const deepDetailsId = input.previewOnly
+    ? null
+    : await saveSlurpNewPostDeepDetails(
+        db,
+        account.id,
+        buildSlurpDeepDetailsRecord({
+          input,
+          sequence,
+          completionOptions,
+          attempts,
+          opportunity,
+          axes,
+          isTeaser,
+          storyVariation,
+          format,
+          variation,
+          campaignId,
+          shootId,
+          reusedSource: reusedMedia ? reusedSource : null,
+          demandTopic,
+          project,
+          projectChapter,
+          camera,
+          effort,
+          visualBrief,
+          strategy,
+          sentMessages,
+          content,
+          generated,
+          draftImagePrompt,
+          askModelForImagePrompt,
+          wardrobeSelection,
+          planner: { mode: settings.postPlanner, beat, claimCheck, heat: { dial: dialLevel, planned: explicitLevel } },
+          flavour: flavourShaped,
+        }),
+      );
 
   const baseInput = {
     authorAccountId: beat?.tie?.pageId ?? account.id,

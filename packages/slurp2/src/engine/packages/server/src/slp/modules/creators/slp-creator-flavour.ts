@@ -22,6 +22,7 @@
  */
 
 import type { SlpCreatorSteering, SlpSteeringMood } from "../../../../../shared/src/slp/slp-creator-steering.js";
+import type { SlpDeepDetailsFlavour } from "../../../../../shared/src/slp/slp-deep-details.js";
 import type { SlurpCanonAnchors } from "../feed/slp-post-beat.js";
 import { slurpWeightedPick } from "../feed/slp-weighted.js";
 import { SLURP_NEVER_PATTERN } from "../feed/slp-life-moments.js";
@@ -63,9 +64,12 @@ export type SlurpFlavourBrief = {
   /** Keys of the details used, for tests and deep details. */
   bits: string[];
   sample: string | null;
+  /** The same brief as parts, for Deep details. */
+  shaped: SlpDeepDetailsFlavour;
 };
 
-type Bit = { key: string; kind: string; text: string };
+/** `value` is the bare anchor ("Jonas (brother)") where `text` wraps it in a lead-in for the prompt. */
+type Bit = { key: string; kind: string; text: string; value?: string };
 
 /** Details per request, by use. A hand-over note is two sentences; a post can carry more colour. */
 const BITS_PER_USE: Record<SlurpFlavourUse, number> = { post: 4, story: 3, dm: 3, comment: 2, delivery: 2 };
@@ -154,6 +158,7 @@ function anchorBits(anchors: SlurpCanonAnchors | null | undefined): Bit[] {
     key: `${kind}:${value}`,
     kind,
     text: `${lead} ${value}.`,
+    value,
   });
   return [
     ...anchors.people.map((person) =>
@@ -262,9 +267,12 @@ function draw(accountId: string, sequence: number, bits: Bit[], count: number): 
   return chosen;
 }
 
+const pushedTopic = (steering: SlpCreatorSteering, sequence: number) =>
+  steering.push.length ? steering.push[sequence % steering.push.length]! : null;
+
 function steeringLines(steering: SlpCreatorSteering | null | undefined, sequence: number): string[] {
   if (!steering) return [];
-  const push = steering.push.length ? steering.push[sequence % steering.push.length] : null;
+  const push = pushedTopic(steering, sequence);
   return [
     steering.lifePhase ? `These days your life is about this: ${steering.lifePhase}.` : "",
     steering.focus ? `Lately you are focused on ${steering.focus}.` : "",
@@ -277,12 +285,18 @@ function steeringLines(steering: SlpCreatorSteering | null | undefined, sequence
 }
 
 /** Real people have flat days and good days. Only for posts, and only when the player set no mood. */
-function dayTexture(accountId: string, sequence: number): string {
-  return slurpWeightedPick("flavourDay", accountId, sequence, [
-    { value: "", weight: 70 },
-    { value: "It is one of those flat days: shorter and plainer than usual is fine.", weight: 12 },
-    { value: "Today is a good day, and it shows a little.", weight: 8 },
-    { value: "Something small and real from your own day can slip in.", weight: 10 },
+const DAY_TEXTURE = {
+  flat: "It is one of those flat days: shorter and plainer than usual is fine.",
+  good: "Today is a good day, and it shows a little.",
+  small: "Something small and real from your own day can slip in.",
+} as const;
+
+function dayTexture(accountId: string, sequence: number): keyof typeof DAY_TEXTURE | null {
+  return slurpWeightedPick<keyof typeof DAY_TEXTURE | null>("flavourDay", accountId, sequence, [
+    { value: null, weight: 70 },
+    { value: "flat", weight: 12 },
+    { value: "good", weight: 8 },
+    { value: "small", weight: 10 },
   ]);
 }
 
@@ -330,16 +344,22 @@ export function compileSlurpFlavourBrief(
         )
       : null;
 
-  const signatureLine = signature
+  const signatureAllowed = signature
     ? slurpWeightedPick("flavourSignature", source.accountId, sequence, [
-        { value: `“${signature}” is a thing you say, and it fits once in a while, just not every time.`, weight: 1 },
-        { value: `You opened with “${signature}” a lot lately, so open differently this time.`, weight: 3 },
+        { value: true, weight: 1 },
+        { value: false, weight: 3 },
       ])
-    : "";
+    : false;
+  const signatureLine = !signature
+    ? ""
+    : signatureAllowed
+      ? `“${signature}” is a thing you say, and it fits once in a while, just not every time.`
+      : `You opened with “${signature}” a lot lately, so open differently this time.`;
 
   const writing = options.use === "post" || options.use === "story";
   const life = steeringLines(source.steering, sequence);
-  const texture = writing && !source.steering?.mood ? dayTexture(source.accountId, sequence) : "";
+  const day = writing && !source.steering?.mood ? dayTexture(source.accountId, sequence) : null;
+  const texture = day ? DAY_TEXTURE[day] : "";
 
   const paragraphs = [
     core,
@@ -351,5 +371,23 @@ export function compileSlurpFlavourBrief(
       ? "Use one or two of these where they fit, never as a list. What happens is decided in the post brief; this is how you would do it."
       : "Let this colour how you write. Never quote it or list it back.",
   ].filter(Boolean);
-  return { text: paragraphs.join("\n\n"), bits: bits.map((bit) => bit.key), sample };
+  const steering = source.steering;
+  const shaped: SlpDeepDetailsFlavour = {
+    details: bits.map((bit) => ({ kind: bit.kind, text: bit.value ?? bit.text })),
+    voice: sample,
+    opener: signature ? { phrase: signature, allowed: signatureAllowed } : null,
+    day,
+    relationship: source.relationship || null,
+    steering:
+      steering && life.length
+        ? {
+            mood: steering.mood ?? null,
+            life: steering.lifePhase || null,
+            focus: steering.focus || null,
+            topic: pushedTopic(steering, sequence),
+            leftOut: [...steering.avoid],
+          }
+        : null,
+  };
+  return { text: paragraphs.join("\n\n"), bits: bits.map((bit) => bit.key), sample, shaped };
 }

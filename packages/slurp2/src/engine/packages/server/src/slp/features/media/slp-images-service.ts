@@ -559,6 +559,11 @@ async function generateCreatorPostImageRun(
   run.finalPrompt = finalPrompt;
   run.negativePrompt = finalNegativePrompt ?? null;
   run.size = { width: outputWidth ?? null, height: outputHeight ?? null };
+  // For Deep details: the viewpoint as the image model got it. A human-approved prompt kept its own words.
+  run.viewpoint =
+    viewpoint && !skipInterpretation
+      ? { ...viewpoint, family: promptFamily, phrase: slurpViewpointForFamily(viewpoint.phrase, promptFamily) }
+      : null;
   logDebugOverride(
     input.debugMode,
     "[debug/slurp/image] final image prompt for %s:\n%s",
