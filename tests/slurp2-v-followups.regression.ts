@@ -241,8 +241,11 @@ const names = new Map([
   // Wiring: only the banner is drawn (the feed picture stays), its failure counts as tried, the
   // scheduler runs one step per poll only with ads and ad pictures on.
   const images = server("features/ads/slp-garnish-image-service.ts");
-  assert.match(images, /GARNISH_AD_IMAGE_FORMATS\.filter\(\(entry\) => !only \|\| entry\.field === only\)/u);
-  assert.match(images, /if \(format\.field === "imageUrl" \|\| only\) throw error;/u);
+  assert.match(
+    images,
+    /for \(const format of GARNISH_AD_IMAGE_FORMATS\) \{\s*if \(only && format\.field !== only\) continue;/u,
+  );
+  assert.match(images, /if \(only\) throw error;/u);
   assert.match(images, /\[settings\.inlineAdsImageConnectionId\],\s*"wideImageUrl",?\s*\)/u);
   assert.match(images, /\(ad\) =>\s*Boolean\(readGarnishAdMediaPath\(ad\.id, ad\.imageUrl\)\)/u);
   assert.match(

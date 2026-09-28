@@ -152,12 +152,15 @@ export async function generateGarnishAdImage(
   };
   const files: { field: GarnishAdImageField; file: ReturnType<typeof stageImageToDisk> }[] = [];
   try {
-    for (const format of GARNISH_AD_IMAGE_FORMATS.filter((entry) => !only || entry.field === only)) {
+    for (const format of GARNISH_AD_IMAGE_FORMATS) {
+      if (only && format.field !== only) continue;
       try {
         files.push({ field: format.field, file: await draw(format) });
       } catch (error) {
         // The feed picture is the ad's picture; a missing banner only means the wide slot crops it.
-        if (format.field === "imageUrl" || only) throw error;
+        if (format.field === "imageUrl") throw error;
+        // Drawing only the banner (V), its failure is the outcome.
+        if (only) throw error;
         logger.warn(error, "[garnish-ads] Could not draw the wide banner for %s; the feed picture stands in", ad.brand);
       }
     }
