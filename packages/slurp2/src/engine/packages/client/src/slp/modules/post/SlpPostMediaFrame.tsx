@@ -41,7 +41,13 @@ export function SlpPostMediaFrame({
           const image = event.currentTarget;
           if (loaded !== null || (size?.width && size?.height)) return;
           const next = slpPostLoadedRatio(ratio, { width: image.naturalWidth, height: image.naturalHeight });
-          if (next) setLoaded(next);
+          if (!next) return;
+          setLoaded(next);
+          // The cut mark was measured in the reserved frame; the new one fits unless the ratio was clamped.
+          image.toggleAttribute(
+            "data-slp-cut",
+            Math.abs(Math.log(next / (image.naturalWidth / image.naturalHeight))) > 0.04,
+          );
         }}
         onError={onError}
         alt={alt}

@@ -363,6 +363,7 @@ const names = new Map([
   assert.doesNotMatch(card, /flex max-h-\[32rem\] justify-center/u, "the container no longer cuts a tall frame");
   const frame = client("modules/post/SlpPostMediaFrame.tsx");
   assert.match(frame, /slpImgFade\.onLoad\(event\);/u, "the fade still runs");
+  assert.match(frame, /toggleAttribute\(\s*"data-slp-cut",/u, "an adapted frame drops a cut mark it no longer has");
   assert.match(frame, /SLP_IMG_FRAME_CLASS/u, "the shimmer still runs");
   assert.match(frame, /if \(!src\) return <span/u, "the frame is there before the picture");
   assert.match(
