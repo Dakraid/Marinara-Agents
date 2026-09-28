@@ -212,6 +212,20 @@ export function isFollowUpDue(followUp: ScheduledFollowUp, now: Date = new Date(
 }
 
 /**
+ * A follow-up still blocked two days after it was promised is dropped instead of postponed again
+ * (7c M-007): a promise moved forward for days reads as forgotten, and the queue must end. The
+ * promise itself stays in the thread notes, so the Creator still knows it in the next reply.
+ * ponytail: counted from the promise, not the first due time (not stored), so a promise made for more
+ * than two days out is dropped at its first soft wait; store a postpone count if that matters.
+ */
+export const SLURP_FOLLOW_UP_OVERDUE_MS = 2 * 24 * 60 * 60_000;
+/** `createdAt`: when it was promised (the follow-up row's creation). */
+export function isFollowUpOverdue(followUp: { createdAt?: string }, now: Date = new Date()): boolean {
+  const promised = Date.parse(followUp.createdAt ?? "");
+  return Number.isFinite(promised) && now.getTime() - promised > SLURP_FOLLOW_UP_OVERDUE_MS;
+}
+
+/**
  * Generate a follow-up message prompt context.
  */
 export function formatFollowUpContext(followUp: ScheduledFollowUp, promiseText?: string): string {

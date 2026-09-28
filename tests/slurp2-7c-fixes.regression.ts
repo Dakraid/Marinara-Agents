@@ -18,6 +18,10 @@ import {
 import { slurpAssistChatContext } from "../packages/slurp2/src/engine/packages/client/src/slp/features/messages/slp-assist-chat-context.ts";
 import { buildSlpAssistTextMessages } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/assist/slp-assist-prompt.ts";
 import { slurpAudienceSubscriptionDecision } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-audience-subscription.ts";
+import {
+  isFollowUpOverdue,
+  SLURP_FOLLOW_UP_OVERDUE_MS,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-follow-up.ts";
 import { slurp2Source } from "./slurp2-source.ts";
 
 const root = new URL("../packages/slurp2/src/engine/packages/", import.meta.url);
@@ -260,6 +264,23 @@ const at = (days: number) => new Date(T0 + days * 86_400_000);
   const stillPaid = { ...paidOut, paidThroughAt: "2026-09-30T12:00:00.000Z", closed: true };
   assert.equal(slurpAudienceSubscriptionDecision(stillPaid, day), "none", "what was paid runs out as usual");
   assert.match(server("features/world/slp-world-operation.ts"), /closed: closedPages\.has\(account\.id\)/u);
+}
+
+// M-007. The prod row: promised 2026-09-25 22:35, still moved forward on 09-28 03:47. Two days after
+// the promise, the next postpone drops it instead.
+{
+  const promise = { createdAt: "2026-09-25T22:35:00.000Z" };
+  assert.equal(isFollowUpOverdue(promise, new Date("2026-09-26T09:00:00.000Z")), false, "a normal wait");
+  assert.equal(isFollowUpOverdue(promise, new Date("2026-09-27T22:34:00.000Z")), false);
+  assert.equal(isFollowUpOverdue(promise, new Date("2026-09-28T03:47:00.000Z")), true, "the prod case ends");
+  assert.equal(SLURP_FOLLOW_UP_OVERDUE_MS, 2 * 86_400_000);
+  assert.equal(isFollowUpOverdue({}, new Date()), false, "no date, no guess");
+  const storage = server("data/messages/slp-messages-storage-follow-ups.ts");
+  assert.match(
+    storage,
+    /async postponeScheduledFollowUp\([^)]*\): Promise<void> \{\s+const row = [^\n]+\n\s+if \(row && isFollowUpOverdue\(\{ createdAt: String\(row\.createdAt\) \}\)\)\s+return context\.storage\.cancelScheduledFollowUp\(threadId, followUpId\);/u,
+    "every postpone path goes through the cap",
+  );
 }
 
 console.log("slurp2 7c fixes regression passed");

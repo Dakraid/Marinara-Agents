@@ -21,6 +21,7 @@ import {
 } from "../../../db/schema/slurp.js";
 import { isSlurpFileUniqueConstraintError } from "../../base/host/slp-file-errors.js";
 import { applySlurpMood, type SlurpMoodShift } from "../../modules/world/slp-mood.js";
+import { isFollowUpOverdue } from "../../modules/messages/slp-follow-up.js";
 import {
   applySlurpThreadNotes,
   readStoredNotes,
@@ -225,8 +226,14 @@ export function createMessagesStorageFollowUps(context: SlurpMessagesContext) {
           ),
         );
     },
-    /** Put a claimed follow-up back in the queue at a later time: cool-off, night quiet, offline. */
+    /**
+     * Put a claimed follow-up back in the queue at a later time: cool-off, night quiet, offline.
+     * Two days after the promise it is dropped instead (7c M-007), whichever wait held it.
+     */
     async postponeScheduledFollowUp(threadId: string, followUpId: string, scheduledAt: string): Promise<void> {
+      const row = (await db.select().from(slurpFollowUps).where(eq(slurpFollowUps.id, followUpId)))[0];
+      if (row && isFollowUpOverdue({ createdAt: String(row.createdAt) }))
+        return context.storage.cancelScheduledFollowUp(threadId, followUpId);
       const timestamp = now();
       await db
         .update(slurpFollowUps)
