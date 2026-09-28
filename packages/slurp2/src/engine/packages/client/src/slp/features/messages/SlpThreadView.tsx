@@ -162,9 +162,10 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
     ));
   return (
     <SlpThreadTaskLayer>
-      <div data-slp-task="" className="flex min-h-0 min-w-0 max-w-full flex-1 overflow-hidden">
+      {/* `overflow: clip` (not hidden) on both boxes: focus must never scroll them (7c M-006). */}
+      <div data-slp-task="" className="flex min-h-0 min-w-0 max-w-full flex-1" style={{ overflow: "clip" }}>
         <SlurpBubbleStyles />
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col" style={{ overflow: "clip" }}>
           <SlpThreadHeader model={model} />
 
           <div

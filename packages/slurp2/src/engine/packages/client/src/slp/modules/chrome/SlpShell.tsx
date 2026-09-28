@@ -388,7 +388,10 @@ export function SlpShell({
             </details>
           </aside>
         </SlpSheet>
-        <div className="flex min-h-0 flex-1 justify-center overflow-hidden">
+        {/* `clip`, not `overflow-hidden`: a hidden box is still a scroll container, and when the
+            phone keyboard shrinks the screen, revealing a focused field scrolled this box and
+            lifted the whole page (7c M-006). Inline because `overflow-clip` is not in the Engine CSS. */}
+        <div className="flex min-h-0 flex-1 justify-center" style={{ overflow: "clip" }}>
           <div
             className={cn(
               "relative isolate flex min-h-0 w-full justify-center",
