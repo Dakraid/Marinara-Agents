@@ -122,6 +122,23 @@ assert.match(navigation, /sourceTaskCancelled/u);
 assert.match(navigation, /selectLtmPluralForm\(locale, failureCount\)/u);
 assert.match(navigation, /sourceTaskFailedCountOne[\s\S]*sourceTaskFailedCountOther/u);
 assert.match(navigation, /className=\{item\.id === "sources" && activeSourceTask \? "animate-spin"/u);
+assert.match(navigation, /const label = localizeUi\(mobile \? item\.shortLabelKey : item\.labelKey\)/u);
+assert.doesNotMatch(navigation, /const label =\s*item\.id === "sources" && sourceTaskLabel\s*\?\s*sourceTaskLabel/u);
+// Accessible name stays Sources; live status is outside the button.
+assert.match(navigation, /aria-label=\{item\.id === "sources" \? label : undefined\}/u);
+assert.match(
+  navigation,
+  /sourceTaskLabel \? \([\s\S]*data-ltm-source-task-status[\s\S]*role="status"[\s\S]*aria-live="polite"[\s\S]*className="sr-only"[\s\S]*\{sourceTaskLabel\}/u,
+);
+assert.match(navigation, /<\/nav>[\s\S]*data-ltm-source-task-status[\s>]/u);
+assert.doesNotMatch(navigation, /<button[\s\S]*data-ltm-source-task-status[\s>][\s\S]*<\/button>/u);
+// Desktop may keep a decorative visible indicator inside the button (aria-hidden).
+assert.match(
+  navigation,
+  /item\.id === "sources" && sourceTaskLabel && !mobile \? \([\s\S]*data-ltm-source-task-status-visual[\s\S]*aria-hidden="true"/u,
+);
+assert.doesNotMatch(navigation, /mobile \? "max-w-full truncate text-\[0\.5625rem\] leading-tight"/u);
+assert.doesNotMatch(navigation, /mobile \? "sr-only" : "min-w-0 max-w-\[9rem\]/u);
 assert.match(navigation, /sourceTaskImporting[\s\S]*sourceTaskRefreshing[\s\S]*sourceTaskReExtracting/u);
 assert.doesNotMatch(navigation, /sourcesworkspace\.importingSources|sourcesworkspace\.refreshingSources/u);
 assert.equal((workspace.match(/importingSourceIds/gu) ?? []).length, 0, "row spinners defer to the task surface");

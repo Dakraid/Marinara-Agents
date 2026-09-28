@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 1.3.28 — 2026-09-27
+
+- Keep the Sources navigation tab labeled Sources while a source task runs or reports its result; show import, refresh, re-extract, cancelled, failed, and completed state as a separate status indicator instead of replacing the destination name.
+
 ## 1.3.27 — 2026-09-27
 
 - Use All / Chats / Branches / Characters / Personas tabs in the Sources "Find sources in" picker so it matches Memory Vault and availability scope pickers.
