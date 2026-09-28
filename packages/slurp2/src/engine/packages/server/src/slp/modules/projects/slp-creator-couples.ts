@@ -569,7 +569,8 @@ export type SlurpCoupleError = SlurpCoupleMisfit | "notFound" | "notOpen" | "noH
 
 /**
  * The player sets two Creators up: they start flirting now when both cards allow it. Chemistry then
- * decides whether it becomes more. A page the player runs said yes by picking it.
+ * decides whether it becomes more. When a card already names the other as their partner, they
+ * start together (their shared page can open at once). A page the player runs said yes by picking it.
  */
 export function slurpSetUpCouple(
   couples: readonly SlurpCouple[],
@@ -581,7 +582,12 @@ export function slurpSetUpCouple(
   const fit = slurpCoupleFit(a, b);
   if (!fit.fits) return fit.misfit ?? "notInto";
   if (slurpCoupleFor(couples, a.id) || slurpCoupleFor(couples, b.id)) return "busy";
-  return [...couples, newSlurpCouple(input.id, a.id, b.id, "player", input.at.toISOString())];
+  // Partners on their cards are together already, like the couples the cards make on their own:
+  // starting them at "sparks" told both "nothing is official" and kept their shared page shut.
+  return [
+    ...couples,
+    newSlurpCouple(input.id, a.id, b.id, "player", input.at.toISOString(), fit.cards ? "together" : "sparks"),
+  ];
 }
 
 export type SlurpCoupleSteer = "date" | "drama" | "patchUp" | "breakUp" | "reunite";

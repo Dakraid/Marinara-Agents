@@ -15,6 +15,11 @@ import {
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/creators/slp-appearance-profile.ts";
 import { compileSlurpFlavourBrief } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/creators/slp-creator-flavour.ts";
 import {
+  slurpCouplePageOpenable,
+  slurpSetUpCouple,
+  type SlurpCouple,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples.ts";
+import {
   LEGACY_SLURP_DISCOVERY_TAG_SEED,
   SLURP_DISCOVERY_TAG_SEED,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/discovery/slp-discovery-profile.ts";
@@ -184,6 +189,35 @@ const read = (path: string) => readFileSync(new URL(path, root), "utf8");
   );
   for (const part of ["wings", "tail", "claws", "gold eyes"])
     assert.match(brief.text, new RegExp(part, "u"), `the brief keeps ${part}`);
+}
+
+// --- F8 couples on the cards: the player's set-up starts together, and their shared page can open.
+{
+  const tie = (id: string, name: string, text: string, cardPartners: string[] = []) => ({
+    id,
+    name,
+    text,
+    tags: ["furry", "anthro"],
+    automatic: true,
+    followers: 100,
+    gender: id === "kodiak" ? ("male" as const) : ("female" as const),
+    cardPartners,
+  });
+  const juniper = tie("juniper", "Juniper Vale", "An anthro red fox who DJs.", ["Kodiak Frost"]);
+  const kodiak = tie("kodiak", "Kodiak Frost", "An anthro grey wolf, two years with Juniper.", ["Juniper Vale"]);
+  const at = new Date("2026-09-29T08:00:00Z");
+  const couples = slurpSetUpCouple([], juniper, kodiak, { at, id: "c1" }) as SlurpCouple[];
+  assert.ok(Array.isArray(couples));
+  assert.equal(couples[0]!.stage, "together", "partners on the cards are together, not sparks");
+  assert.equal(couples[0]!.togetherAt, at.toISOString());
+  assert.ok(slurpCouplePageOpenable(couples[0]!), "their shared page can open (no 409)");
+  // Strangers the player sets up still start with sparks.
+  const strangers = slurpSetUpCouple([], tie("a", "Ada", "Painter."), tie("kodiak", "Bo", "Baker."), {
+    at,
+    id: "c2",
+  }) as SlurpCouple[];
+  assert.equal(strangers[0]!.stage, "sparks");
+  assert.ok(!slurpCouplePageOpenable(strangers[0]!));
 }
 
 console.log("slurp2-sim-fixes regression passed");
