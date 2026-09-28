@@ -74,7 +74,7 @@ const at = (days: number) => new Date(T0 + days * 86_400_000);
     server("features/messages/slp-messages-thread-routes.ts"),
     /filter\(\(profile\) => !couplePages\.has\(profile\.id\)\)/u,
   );
-  assert.match(server("features/economy/slp-payment-reaction.ts"), /slurpIsCouplePage\(creator\)\) return;/u);
+  assert.match(server("features/economy/slp-payment-reaction.ts"), /if \(slurpIsCouplePage\(creator\)\) return;/u);
   const wallet = server("features/economy/slp-wallet-routes.ts");
   assert.equal(wallet.match(/if \(await closedPage\([^)]*\)\) return reply\.code\(409\)/gu)?.length, 4);
   assert.match(

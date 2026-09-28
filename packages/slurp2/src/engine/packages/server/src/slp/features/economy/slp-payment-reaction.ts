@@ -44,8 +44,9 @@ export async function reactToSlurpPayment(
   try {
     const slurp = createSlurpStorage(db);
     const creator = await slurp.getNoodlerAccountById(input.creatorAccountId);
+    if (!creator || creator.sourceKind !== "character") return;
     // A shared couple page has no card and no voice of its own: nobody thanks from it (7c M-002).
-    if (!creator || creator.sourceKind !== "character" || slurpIsCouplePage(creator)) return;
+    if (slurpIsCouplePage(creator)) return;
     const messages = createSlurpMessagesStorage(db);
     const thread = await messages.getThread(input.viewerAccountId, input.creatorAccountId);
     // No thread means no conversation to react in. Opening one uninvited is a different feature.
