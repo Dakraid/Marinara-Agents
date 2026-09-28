@@ -203,4 +203,39 @@ const read = (path: string) => slurp2Source(join(pkg, path));
   );
 }
 
+// ── R1-120 (part): the Calendar panel and the event activation options go through locales ──
+{
+  const en = JSON.parse(read("client/src/slp/locales/en.json")) as Record<string, string>;
+  const calendar = read("client/src/slp/features/world/SlpCalendarPanel.tsx");
+  const events = read("client/src/slp/features/world/SlpPlatformEventsPanel.tsx");
+  for (const source of [calendar, events])
+    for (const [, key] of source.matchAll(/\bt\(\s*"([^"]+)"/gu)) assert.ok(key in en, `missing English key ${key}`);
+  // The dynamic ones: every kind and status the calendar can show.
+  for (const kind of ["occasion", "plan", "occurrence"]) assert.ok(`ui.slurp.calendar.kind.${kind}` in en, kind);
+  for (const status of ["scheduled", "suggested", "active", "paused", "completed", "dismissed", "cancelled"])
+    assert.ok(`ui.slurp.calendar.status.${status}` in en, status);
+  // Plurals for the day counts.
+  for (const key of ["whenAnnual", "whenManual"]) assert.ok(`ui.slurp.settings.events.${key}_one` in en, key);
+  // No English left in the markup of either panel.
+  for (const literal of [
+    ">Today<",
+    "Your Slurp calendar",
+    "Loading calendar",
+    '"Running event"',
+    "Create storyline from event",
+    "Open Packs</span>",
+  ])
+    assert.ok(!calendar.includes(literal), `calendar still says ${literal}`);
+  for (const literal of [
+    ">Annual date<",
+    ">Manual campaign<",
+    ">Existing advanced trigger<",
+    ">Manual only<",
+    ">All current Creators<",
+    "`Manual · ",
+    "reaches ${",
+  ])
+    assert.ok(!events.includes(literal), `events still say ${literal}`);
+}
+
 console.log("slurp2-l-reworks: ok");

@@ -27,17 +27,30 @@ const dateValue = (item: SlurpPlatformEvent) =>
 const eventOrder = (item: SlurpPlatformEvent) =>
   item.activation.kind === "annual" ? item.activation.month * 100 + item.activation.day : 20_000;
 /** "Jan 1 · 1 day" in the reader's language. The year is a placeholder: annual events recur. */
-const days = (count: number) => `${count} ${count === 1 ? "day" : "days"}`;
-const eventWhen = (item: SlurpPlatformEvent, language?: string) => {
+const eventWhen = (item: SlurpPlatformEvent, t: ReturnType<typeof useTranslation>["t"], language?: string) => {
   const rule = item.activation;
   if (rule.kind === "annual")
-    return `${new Intl.DateTimeFormat(language, { month: "short", day: "numeric", timeZone: "UTC" }).format(Date.UTC(2000, rule.month - 1, rule.day))} · ${days(rule.durationDays)}`;
-  if (rule.kind === "window") return `${rule.startsAt.slice(0, 10)} – ${rule.endsAt.slice(0, 10)}`;
-  if (rule.kind === "manual") return `Manual · ${days(rule.durationDays)}`;
-  if (rule.kind === "creator-milestone") return `${rule.metric} reaches ${rule.threshold.toLocaleString()}`;
-  if (rule.kind === "notable-post") return `A post reaches ${rule.reach.toLocaleString()}`;
-  if (rule.kind === "arc-lifecycle") return `Tagged arc ${rule.phase}`;
-  return `${rule.chancePercent}% ${rule.period} chance`;
+    return t("ui.slurp.settings.events.whenAnnual", {
+      date: new Intl.DateTimeFormat(language, { month: "short", day: "numeric", timeZone: "UTC" }).format(
+        Date.UTC(2000, rule.month - 1, rule.day),
+      ),
+      count: rule.durationDays,
+    });
+  if (rule.kind === "window")
+    return t("ui.slurp.settings.events.whenWindow", {
+      start: rule.startsAt.slice(0, 10),
+      end: rule.endsAt.slice(0, 10),
+    });
+  if (rule.kind === "manual") return t("ui.slurp.settings.events.whenManual", { count: rule.durationDays });
+  if (rule.kind === "creator-milestone")
+    return t("ui.slurp.settings.events.whenMilestone", {
+      metric: rule.metric,
+      threshold: rule.threshold.toLocaleString(language),
+    });
+  if (rule.kind === "notable-post")
+    return t("ui.slurp.settings.events.whenNotablePost", { reach: rule.reach.toLocaleString(language) });
+  if (rule.kind === "arc-lifecycle") return t("ui.slurp.settings.events.whenArc", { phase: rule.phase });
+  return t("ui.slurp.settings.events.whenChance", { percent: rule.chancePercent, period: rule.period });
 };
 
 /** Holidays and site-wide events. Click a row to edit it in place. */
@@ -142,10 +155,10 @@ export function SlurpPlatformEventsSettings({
             }
             className={fieldClass}
           >
-            <option value="inherit">Use World setting</option>
-            <option value="manual">Manual only</option>
-            <option value="suggest">Suggest</option>
-            <option value="auto">Start automatically</option>
+            <option value="inherit">{t("ui.slurp.settings.events.automationInherit")}</option>
+            <option value="manual">{t("ui.slurp.settings.events.automationManual")}</option>
+            <option value="suggest">{t("ui.slurp.settings.events.automationSuggest")}</option>
+            <option value="auto">{t("ui.slurp.settings.events.automationAuto")}</option>
           </select>
         </label>
       </div>
@@ -169,10 +182,10 @@ export function SlurpPlatformEventsSettings({
             }}
             className={fieldClass}
           >
-            <option value="annual">Annual date</option>
-            <option value="manual">Manual campaign</option>
+            <option value="annual">{t("ui.slurp.settings.events.activation.annual")}</option>
+            <option value="manual">{t("ui.slurp.settings.events.activation.manual")}</option>
             {!(["annual", "manual"] as string[]).includes(draft.activation.kind) && (
-              <option value={draft.activation.kind}>Existing advanced trigger</option>
+              <option value={draft.activation.kind}>{t("ui.slurp.settings.events.activation.advanced")}</option>
             )}
           </select>
         </label>
@@ -242,17 +255,16 @@ export function SlurpPlatformEventsSettings({
             }
             className={fieldClass}
           >
-            <option value="all">All current Creators</option>
-            <option value="random">A deterministic random subset</option>
+            <option value="all">{t("ui.slurp.settings.events.targetAll")}</option>
+            <option value="random">{t("ui.slurp.settings.events.targetRandom")}</option>
             {!(["all", "random"] as string[]).includes(draft.target.kind) && (
-              <option value={draft.target.kind}>Existing filtered target</option>
+              <option value={draft.target.kind}>{t("ui.slurp.settings.events.targetAdvanced")}</option>
             )}
           </select>
         </label>
         {draft.target.kind === "random" && (
           <p className="text-xs text-[var(--slurp-muted)]">
-            This event will choose {draft.target.min}–{draft.target.max} matching Creators once, then keep that
-            participant list.
+            {t("ui.slurp.settings.events.targetRandomDetail", { min: draft.target.min, max: draft.target.max })}
           </p>
         )}
       </fieldset>
@@ -358,7 +370,7 @@ export function SlurpPlatformEventsSettings({
                       </span>
                     )}
                     <span className="shrink-0 text-xs tabular-nums text-[var(--slurp-muted)]">
-                      {eventWhen(item, i18n.language)}
+                      {eventWhen(item, t, i18n.language)}
                     </span>
                   </button>
                   {item.activation.kind === "manual" && item.enabled && (
