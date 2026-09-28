@@ -5,6 +5,7 @@
  * Read-only. Nothing is written back to the card or stored as a flavour sheet: the brief is
  * compiled fresh each time, so a card edit shows up in the next post.
  */
+import type { SlpDeepDetailsFlavour } from "../../../../../shared/src/slp/slp-deep-details.js";
 import type { DB } from "../../../db/connection.js";
 import { createAppSettingsStorage } from "../../../services/storage/app-settings.storage.js";
 import { createCharactersStorage } from "../../../services/storage/characters.storage.js";
@@ -122,6 +123,8 @@ export async function resolveSlurpCreatorFlavour(
       /** A peer who is their partner now (7b-couples): the chat goes as far as both their levels. */
       partnerId?: string;
     };
+    /** Receives the brief as parts, for the post's Deep details record. */
+    shaped?: (value: SlpDeepDetailsFlavour) => void;
   },
 ): Promise<string> {
   try {
@@ -145,7 +148,7 @@ export async function resolveSlurpCreatorFlavour(
       logger.warn(error, "[slurp] Could not read the Creator's spice; the brief goes without it");
       return [];
     });
-    return compileSlurpFlavourBrief(
+    const brief = compileSlurpFlavourBrief(
       {
         accountId: input.account.id,
         name: card?.name || input.account.displayName,
@@ -159,7 +162,9 @@ export async function resolveSlurpCreatorFlavour(
         relationship: input.chat?.with === "staff" ? "" : await readSlurpRelationshipLine(db, input.account.id),
       },
       { use: input.use, sequence: input.sequence },
-    ).text;
+    );
+    input.shaped?.(brief.shaped);
+    return brief.text;
   } catch (error) {
     logger.warn(error, "[slurp] Could not compile the flavour brief; the prompt goes without it");
     return "";

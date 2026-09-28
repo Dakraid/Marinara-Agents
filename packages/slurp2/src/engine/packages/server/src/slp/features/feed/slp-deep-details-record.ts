@@ -1,4 +1,8 @@
 import type { SlpDeepDetailsRecord } from "../../../../../shared/src/slp/slp-deep-details.js";
+import type { DB } from "../../../db/connection.js";
+import { logger } from "../../../lib/logger.js";
+import { newId } from "../../../utils/id-generator.js";
+import { saveSlurpPostDeepDetails } from "../../data/feed/slp-post-deep-details-storage.js";
 import type { ChatMessage } from "../../../services/llm/base-provider.js";
 import type { SlurpCreatorStrategy } from "../../modules/creators/slp-creator-strategy.js";
 import type { SlurpPostVariation } from "../../modules/feed/slp-post-variation.js";
@@ -42,6 +46,7 @@ export function buildSlurpDeepDetailsRecord(ctx: {
   askModelForImagePrompt: boolean;
   wardrobeSelection?: SlurpWardrobeSelection;
   planner?: SlpDeepDetailsRecord["planner"];
+  flavour?: SlpDeepDetailsRecord["flavour"];
 }): SlpDeepDetailsRecord {
   return {
     version: 1,
@@ -109,5 +114,28 @@ export function buildSlurpDeepDetailsRecord(ctx: {
     visualBrief: ctx.visualBrief ?? null,
     askedModelForImagePrompt: ctx.askModelForImagePrompt,
     ...(ctx.planner ? { planner: ctx.planner } : {}),
+    ...(ctx.flavour ? { flavour: ctx.flavour } : {}),
   };
+}
+
+/**
+ * Saves the record, best effort: a failed write costs the post its Deep details, never the post.
+ * Returns the record id to stamp on the post, or null.
+ *
+ * ponytail: an unpublished scheduled post leaves its record until the Creator is deleted; sweep
+ * records with no post if they add up.
+ */
+export async function saveSlurpDeepDetailsRecord(
+  db: DB,
+  creatorAccountId: string,
+  ctx: Parameters<typeof buildSlurpDeepDetailsRecord>[0],
+): Promise<string | null> {
+  const id = newId();
+  try {
+    await saveSlurpPostDeepDetails(db, { id, creatorAccountId, record: buildSlurpDeepDetailsRecord(ctx) });
+    return id;
+  } catch (error) {
+    logger.warn(error, "[slurp] Could not record deep details for a post");
+    return null;
+  }
 }

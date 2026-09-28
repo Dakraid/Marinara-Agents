@@ -5,6 +5,8 @@ import type { SlpDeepDetailsResponse } from "../../../../../shared/src/slp/slp-d
 import { getSlurpPostDeepDetails } from "../../data/feed/slp-post-deep-details-storage.js";
 import { listSlurpContinuityLinks } from "../../data/continuity/slp-continuity-storage.js";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
+import { readSlpPurpose } from "../../../../../shared/src/slp/slp-post-purpose.js";
+import { readSlurpTieStamp } from "../../modules/projects/slp-tie-stamp.js";
 
 /**
  * Everything behind one post, for its Creator's Deep details view: the recorded prompt and draws,
@@ -29,6 +31,17 @@ export async function slpDeepDetailsRoutes(app: FastifyInstance, deps: SlpRouteD
       app.db.select().from(slpPostUnlocks).where(eq(slpPostUnlocks.postId, id)),
     ]);
     const plan = plans[0];
+    // Who the post was made with and the posts its purpose chain points at, by name, not by id.
+    const tie = readSlurpTieStamp(post.metadata);
+    const purpose = readSlpPurpose(post.metadata);
+    const partnerIds = [tie?.partnerId, tie?.pageId, tie?.hostId].filter((value): value is string => !!value);
+    const postIds = [purpose?.postId, purpose?.teasePostId, purpose?.pollPostId].filter(
+      (value): value is string => !!value && value !== id,
+    );
+    const [partners, relatedPosts] = await Promise.all([
+      Promise.all([...new Set(partnerIds)].map((accountId) => noodle.getNoodlerAccountById(accountId))),
+      Promise.all([...new Set(postIds)].map((postId) => noodle.getNoodlerPostById(postId))),
+    ]);
     const text = (value: unknown) => (typeof value === "string" && value ? value : null);
     const response: SlpDeepDetailsResponse = {
       post: {
@@ -68,6 +81,27 @@ export async function slpDeepDetailsRoutes(app: FastifyInstance, deps: SlpRouteD
             link.fromId === id || link.toId === id || (plan && [link.fromId, link.toId].includes(String(plan.id))),
         )
         .map(({ fromType, fromId, toType, toId, relation }) => ({ fromType, fromId, toType, toId, relation })),
+      people: Object.fromEntries(
+        partners.flatMap((account) =>
+          account ? [[account.id, { displayName: account.displayName, handle: account.handle }]] : [],
+        ),
+      ),
+      related: Object.fromEntries(
+        relatedPosts.flatMap((related) =>
+          related
+            ? [
+                [
+                  related.id,
+                  {
+                    text: (related.title || related.content).slice(0, 140),
+                    createdAt: related.createdAt,
+                    access: related.access,
+                  },
+                ],
+              ]
+            : [],
+        ),
+      ),
       stats: {
         likes: interactions.filter((row) => row.type === "like").length,
         replies: interactions.filter((row) => row.type === "reply").length,
