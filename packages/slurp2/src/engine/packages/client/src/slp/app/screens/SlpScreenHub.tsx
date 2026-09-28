@@ -31,7 +31,7 @@ import {
   Avatar,
   NewSinceLastVisitDivider,
   HIDE_ON_SCROLL_CLASS,
-  SLP_TOP_BAR_CLASS,
+  SLP_BAR_GLASS_CLASS,
   SLP_PAGE_SCROLL_CLASS,
   useHideOnScroll,
 } from "../../base/chrome/SlpChrome";
@@ -441,8 +441,8 @@ export function ViewerHub({
         ref={setStickyHeader}
         className={cn(
           // Glass: the feed scrolls under the bar and shows through the blur.
-          SLP_TOP_BAR_CLASS,
-          "sticky top-0 @min-[1024px]:hidden",
+          "sticky top-0 z-30 border-b border-[var(--noodle-divider)] shadow-[var(--slurp-shadow-floating),var(--slurp-highlight)] @min-[1024px]:hidden",
+          SLP_BAR_GLASS_CLASS,
           HIDE_ON_SCROLL_CLASS,
         )}
         data-component="SlurpHome.StickyHeader"

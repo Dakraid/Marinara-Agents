@@ -120,7 +120,7 @@ const host = client("app/SlpHomeHost.tsx");
 assert.match(host, /slpStoryRings\(live\)/u);
 assert.match(host, /storyLifetimeHours \?\? 72/u);
 assert.match(host, /onNavigate\(\{ mode: "creator", view: "profile", accountId: creatorId \}\)/u);
-assert.match(client("modules/chrome/SlpShell.tsx"), /<SlpStoryRingProvider value=\{storyRings\}>/u);
+assert.match(client("modules/chrome/SlpShell.tsx"), /<SlpStoryRingProvider value=\{storyRings\}>\{children\}/u);
 assert.match(
   client("app/screens/slp-hub-view.ts"),
   /isSlurpStory\(post\) && new Date\(post\.createdAt\)\.getTime\(\) >= cutoff/u,
@@ -172,6 +172,6 @@ assert.match(
   client("features/messages/SlpMessages.tsx"),
   /<header className=\{cn\("flex min-h-14[^"]*", SLP_TOP_BAR_CLASS\)\}>/u,
 );
-assert.match(hub, /SLP_TOP_BAR_CLASS,\s+"sticky top-0 @min-\[1024px\]:hidden"/u);
+assert.match(hub, /@min-\[1024px\]:hidden",\s*SLP_BAR_GLASS_CLASS/u, "the hub header keeps the same glass");
 
 console.log("slurp2 T polish: ok");

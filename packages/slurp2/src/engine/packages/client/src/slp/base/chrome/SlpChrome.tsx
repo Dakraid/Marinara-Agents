@@ -283,8 +283,8 @@ export const SLP_BAR_GLASS_CLASS =
   "bg-[color-mix(in_srgb,var(--noodle-accent)_6%,var(--slurp-glass))] backdrop-blur-xl";
 
 /**
- * A screen's top bar: the bar glass with its hairline, lift and highlight. The hub header, the framed
- * pages (Inbox, Wallet, Studio…) and the message list all wear it, so no top bar is bare canvas.
+ * A screen's top bar: the bar glass with the hub header's hairline, lift and highlight. The framed
+ * pages (Inbox, Wallet, Studio…) and the message list wear it, so no top bar is bare canvas.
  */
 export const SLP_TOP_BAR_CLASS = cn(
   "relative z-30 border-b border-[var(--noodle-divider)] shadow-[var(--slurp-shadow-floating),var(--slurp-highlight)]",
