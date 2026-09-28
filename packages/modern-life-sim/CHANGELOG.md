@@ -1,3 +1,10 @@
+## 0.2.4 — 2026-09-28
+- You can use your own pictures for what people wear each season or at work, and for you in any of your outfits: pick one and frame it yourself. Yours stays until you ask for a drawn one again.
+- You can rename someone in Settings, and updating from their card brings a new name from the card too.
+- When a model puts quotes in the wrong place or leaves part of a line out, the game still reads its reply, so turns in scenes aren't lost.
+- The names on the clothes store's rack are sharp again. The phone's shop opens on its own inside a store, and going back returns you to the store with your cart.
+- A fix in the optional Adult Module.
+
 ## 0.2.3 — 2026-09-27
 - People look like themselves in their pictures: their name, and whether they're a woman or a man, now go with every picture of them, so a character from a series looks like the one you know.
 - You can choose how big pictures of one person are drawn, in Settings, right below the size of the other pictures.
