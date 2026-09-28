@@ -34,12 +34,13 @@ const mobileNavigation = shell.slice(
   shell.indexOf('data-component="NoodleView.MobileBottomNav"'),
   shell.indexOf("</nav>", shell.indexOf('data-component="NoodleView.MobileBottomNav"')),
 );
+// W: Hub · Discover · ✦ Stir · Inbox · Me ("More" became "Me", the own profile).
 for (const label of [
   "homeLabel",
-  "ui.slurp.navigation.profile",
-  "ui.slurp.navigation.messages",
   "ui.slurp.navigation.search",
-  "ui.slurp.navigation.more",
+  "ui.slurp.navigation.stir",
+  "ui.slurp.navigation.messages",
+  "ui.slurp.navigation.me",
 ]) {
   assert.match(mobileNavigation, new RegExp(`label=\\{[\\s\\S]*${label.replaceAll(".", "\\.")}`, "u"));
 }

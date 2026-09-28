@@ -108,7 +108,8 @@ assert.match(
 assert.match(routes, /earningsDelta: previous \? earnings\.lifetime - previous\.lifetimeEarnings : null/u);
 
 const home = read("client/src/components/slurp/SlurpHome.tsx");
-assert.match(home, /function SlurpStudioView/u);
+// W: the Studio page is the own profile's Dashboard sheet now.
+assert.match(home, /function SlpDashboardBody/u);
 assert.match(home, /useSlurpStudio/u);
 
 // Reading the studio rewrites the snapshot, so a refetch would silently zero the deltas the
@@ -122,7 +123,13 @@ assert.match(routes, /app\.put\("\/slurp\/accounts\/:id\/goal"/u);
 assert.match(home, /function SlurpGoalEditor/u);
 
 const shell = read("client/src/components/slurp/SlurpShell.tsx");
-assert.match(shell, /onOpenStudio && hasOperatedCreator/u, "the studio entry needs an operated Creator");
+// W: the Dashboard opens from the own page only, so it always has an operated Creator.
+assert.match(
+  read("client/src/components/slurp/SlurpHome.tsx"),
+  /onOpenDashboard=\{viewingOwnCreator \? \(\) => setDashboardOpen\(true\) : undefined\}/u,
+  "the dashboard entry needs an operated Creator",
+);
+void shell;
 
 // Milestones were computed here, rendered here, and reported nowhere.
 assert.match(routes, /recordCreatorEvent\(creator\.id, "milestone", \{ amount: target \}\)/u);

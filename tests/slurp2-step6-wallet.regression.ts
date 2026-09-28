@@ -65,7 +65,8 @@ assert.match(client("modules/sparkle/SlpSparkle.tsx"), /export function playSlpC
 
 // ── One Collect card in Wallet and Studio; the old names are gone from en ──
 assert.match(walletView, /<SlpCollectCard creator=\{creator\} personaId=\{personaId\} \/>/u);
-const studio = client("app/screens/SlpScreenStudio.tsx");
+// W: Studio's own-page half (with Collect) is the own profile's Dashboard sheet.
+const studio = client("app/screens/SlpDashboard.tsx");
 assert.match(studio, /<SlpCollectCard creator=\{creator\} personaId=\{personaId\} burst \/>/u);
 assert.doesNotMatch(studio, /function SlurpPayoutRow|useSlurpPayout/u, "no second payout UI");
 const collect = client("app/screens/SlpCollectCard.tsx");

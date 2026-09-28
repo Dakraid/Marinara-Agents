@@ -8,13 +8,13 @@ import {
   PartyPopper,
   PenLine,
   Snowflake,
-  Sparkles,
   Store,
   SunMoon,
   Zap,
   BookOpen,
   type LucideIcon,
 } from "lucide-react";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import {
   SLP_ACTION_META,
   SLP_ACTION_NAMES,
@@ -37,7 +37,7 @@ const ICONS: Partial<Record<SlpActionName, LucideIcon>> = {
   "add-idea": Lightbulb,
   "write-post": PenLine,
   "steer-creator": SunMoon,
-  "set-spice": Sparkles,
+  "set-spice": SlpSparkleGlyph as LucideIcon,
   "start-event": PartyPopper,
   "steer-storyline": BookOpen,
   "run-audience": Megaphone,
@@ -58,7 +58,7 @@ export const SLP_STIR_DECK = Object.fromEntries(
       action: name,
       category: SLP_ACTION_META[name].category as SlpStirCategory,
       targets: SLP_ACTION_META[name].targets,
-      icon: ICONS[name] ?? Sparkles,
+      icon: ICONS[name] ?? (SlpSparkleGlyph as LucideIcon),
       ai: SLP_ACTION_META[name].ai,
     },
   ]),

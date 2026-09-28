@@ -53,7 +53,8 @@ assert.match(appState, /<SlpErrorState/u);
 assert.doesNotMatch(appState.slice(0, appState.indexOf("renderSlurpHomeCreatorFlow")), /SlpCreatorFrame/u);
 
 // Desktop sidebar: a Studio row (B19) and the shared balance chip.
-assert.equal((shell.match(/onClick=\{onOpenStudio\}/gu) ?? []).length, 2, "Studio in the More sheet and the sidebar");
+// W: Studio is gone (its own-page half is the profile's Dashboard); Stir is in the phone nav and the sidebar.
+assert.equal((shell.match(/onClick=\{onOpenStir\}/gu) ?? []).length, 2, "Stir in the phone nav and the sidebar");
 assert.match(shell, /walletChip\("h-7 px-2\.5 text-xs"\)/u);
 // Step 2: the hub uses the one shared chip (the user asked for a shared component, not copies).
 assert.match(hub, /<SlpBalanceChip \/>/u);

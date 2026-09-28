@@ -484,7 +484,6 @@ export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onL
   });
   const postCardController = useSlpPostCardController({
     textAssist: ({ story, ...input }) => createElement(SlpTextAssist, { ...input, field: story ? "story" : "caption" }),
-    // W: the ✦ sheet from a post's ⋯, about its Creator, with the post as context.
     stir: (post) => openSlpStir({ creatorId: post.authorAccountId, postId: post.id }),
     postShowMoreLength: slurpSettingsQuery.data?.postShowMoreLength,
     postManagement: false,

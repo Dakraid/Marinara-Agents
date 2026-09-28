@@ -102,7 +102,15 @@ const noWork = fan.indexOf('status: "no_eligible_posts"');
 const claim = fan.indexOf("await claimSlurpModelBudget(input.db, settings.modelBudget,");
 assert.ok(noWork > 0 && claim > noWork, "the budget claim comes after the no-eligible-posts exit");
 assert.match(read("server/src/slp/features/audience/slp-audience-routes.ts"), /result\.status === "ai_off"/u);
-assert.match(read("client/src/slp/app/SlpHomeHost.tsx"), /refreshAudienceNow\.mutate\(undefined, \{\s*onError:/u);
+// W: "Run audience" is the Stir card "Wake the fans"; AI Off is its preview's reason and its run's error.
+assert.match(
+  read("server/src/slp/features/assist/slp-action-preview.ts"),
+  /error: slurpModelWorkerAllows\(settings\.modelBudget, "present"\) \? null : "aiOff"/u,
+);
+assert.match(
+  read("server/src/slp/features/assist/slp-stir-levers.ts"),
+  /The AI budget is off\. Turn it on under Audience → AI budget\./u,
+);
 
 // ── R1-114: load error state; every continuity view refreshes after an action ──
 assert.match(

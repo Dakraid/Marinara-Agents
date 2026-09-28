@@ -180,7 +180,8 @@ assert.match(hub, /@min-\[1024px\]:hidden",\s*SLP_BAR_GLASS_CLASS/u, "the hub he
   const studio = client("app/screens/SlpScreenStudio.tsx");
   assert.match(
     studio,
-    /<div className=\{SLP_CARD_STACK_CLASS\}>\s*<SlpStudioGroup[\s\S]*?<SlpRelationshipsPanel[\s\S]*?<\/SlpStudioGroup>\s*<\/div>/u,
+    // W: the two cards moved into the Stir tab (its own `Group`), still in one card stack.
+    /<div className=\{SLP_CARD_STACK_CLASS\}>\s*<Group[\s\S]*?<SlpRelationshipsPanel[\s\S]*?<\/Group>\s*<\/div>/u,
   );
   const ties = client("features/projects/SlpCollabsPanel.tsx");
   assert.match(ties, /<div className=\{SLP_CARD_STACK_CLASS\}>\s*\{owed\.length > 0/u);

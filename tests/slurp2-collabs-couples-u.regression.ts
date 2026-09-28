@@ -571,7 +571,8 @@ const beatFor = (creatorId: string, ties: SlurpCreatorTies, at: Date, couples: S
     studio.indexOf("<SlpCollabsPanel") < studio.indexOf("<SlpRelationshipsPanel"),
     "Business, then Relationships",
   );
-  assert.match(studio, /title=\{localizeUi\("ui\.slurp\.ties\.life\.title"\)\}/u);
+  // W: the two areas moved into the Stir tab, which words them with `t`.
+  assert.match(studio, /title=\{(?:localizeUi|t)\("ui\.slurp\.ties\.life\.title"\)\}/u);
   const panel = client("features/projects/SlpCollabsPanel.tsx");
   assert.doesNotMatch(
     panel.slice(0, panel.indexOf("export function SlpRelationshipsPanel")),

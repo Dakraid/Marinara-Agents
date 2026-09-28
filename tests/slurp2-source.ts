@@ -41,7 +41,8 @@ export const SLURP2_SOURCE_MODULES: Record<string, readonly string[]> = {
     "packages/client/src/slp/app/screens/SlpScreenProfile.tsx",
     // The follow toggle sits in the leading actions the profile screen passes to its surface.
     "packages/client/src/slp/app/screens/SlpProfileLeadingActions.tsx",
-    "packages/client/src/slp/app/screens/SlpScreenStudio.tsx",
+    // W: Studio's own-page half is the profile's Dashboard sheet; its world half moved to Stir.
+    "packages/client/src/slp/app/screens/SlpDashboard.tsx",
     "packages/client/src/slp/app/screens/SlpScreenWallet.tsx",
     // Step 6: the one Collect card (earnings → Wallet) that Studio and Wallet share.
     "packages/client/src/slp/app/screens/SlpCollectCard.tsx",
@@ -868,6 +869,12 @@ export const SLURP2_SOURCE_MODULES: Record<string, readonly string[]> = {
     "packages/client/src/slp/features/projects/SlpArcTimelineCard.tsx",
     "packages/client/src/slp/features/projects/SlpArcConfigSection.tsx",
     "packages/client/src/slp/features/projects/SlpProjectEditor.tsx",
+  ],
+  // W: the Studio screen was split. Its own-page half (money, fans, tip goal, owed #ad) is the own
+  // profile's Dashboard sheet; Business and Relationships moved into the Stir tab.
+  "packages/client/src/slp/app/screens/SlpScreenStudio.tsx": [
+    "packages/client/src/slp/app/screens/SlpDashboard.tsx",
+    "packages/client/src/slp/features/stir/SlpStirScreen.tsx",
   ],
   "packages/server/src/services/slurp/slurp-post-guidance.storage.ts": [
     "packages/server/src/slp/data/settings/slp-post-guidance-storage.ts",

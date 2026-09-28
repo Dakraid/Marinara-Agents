@@ -41,7 +41,8 @@ for (const [key, value] of Object.entries(english)) {
   );
 }
 assert.match(src("modules/coin/SlpCoin.tsx"), /const COIN_MARK = \/\(\\S\*\?\)\\s\*<coin\\\/>\/gu/u);
-assert.doesNotMatch(src("app/screens/SlpScreenStudio.tsx"), /<SlurpCoin size/u, "no stray glyph after a sentence");
+// W: Studio's own-page half is the Dashboard sheet now.
+assert.doesNotMatch(src("app/screens/SlpDashboard.tsx"), /<SlurpCoin size/u, "no stray glyph after a sentence");
 
 // Sheet: one primitive for menus and dialogs; Escape and scrim close it; one at a time.
 const sheet = src("modules/chrome/SlpSheet.tsx");

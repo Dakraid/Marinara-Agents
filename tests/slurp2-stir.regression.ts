@@ -491,6 +491,66 @@ async function main() {
   assert.equal(oldSaved.jobs.plan.maxPerDay, 20, "a budget saved before W gets the row");
   assert.match(client("locales/en.json"), /"ui\.slurp\.settings\.aiBudget\.job\.plan": "Plans"/u);
 
+  // --- 9. The client: three ways in, one preview, one "Do it" ------------------------------------
+  {
+    const shell = client("modules/chrome/SlpShell.tsx");
+    const tabs = shell.slice(shell.indexOf("W: Hub · Discover · ✦ Stir"));
+    const order = ["onMobileHomeTap", "onOpenSearch", "onOpenStir", "onOpenMessages", "onOpenProfile"].map((name) =>
+      tabs.indexOf(`onClick={${name}`),
+    );
+    assert.ok(
+      order.every((at, index) => at > 0 && (index === 0 || at > order[index - 1]!)),
+      "Hub · Discover · Stir · Inbox · Me",
+    );
+    assert.match(shell, /label=\{\s*slurpActive\s*\? localizeUi\("ui\.slurp\.navigation\.me"\)/u, "More became Me");
+    assert.doesNotMatch(shell, /onOpenStudio|ChartNoAxesColumn/u, "no Studio row left");
+    // The deck is fed from the catalog, never hand-built.
+    const deck = client("features/stir/slp-stir-deck.ts");
+    assert.match(deck, /SLP_ACTION_NAMES\.filter\(\(name\) => SLP_ACTION_META\[name\]\.deck\)/u);
+    // Nothing runs before "Do it": the box plans, a card previews, only the Do it button plays.
+    const cards = client("features/stir/SlpStirCards.tsx");
+    assert.match(cards, /play\.mutate\(\s*\{ steps, origin, supportMessageId: options\.supportMessageId \}/u);
+    assert.match(
+      cards,
+      /const steps = cards\.filter\(\(card\) => !card\.error\)\.map\(\(card\) => \(\{ action: card\.action, input: card\.input \}\)\);/u,
+      "exactly the previewed input",
+    );
+    const box = client("features/stir/SlpStirBox.tsx");
+    assert.doesNotMatch(box, /\/stir\/play/u, "the box never plays by itself");
+    assert.match(client("features/stir/slp-stir-hooks.ts"), /`\$\{base\}\/plan`/u);
+    // Slurp Support: the cards sit under the Creator's reply, and Do it marks the plan played.
+    assert.match(
+      client("features/messages/SlpThreadView.tsx"),
+      /readSlpStirProposal\(entry\.message\.metadata\) && \(\s*<SlpStirSupportCards/u,
+    );
+    assert.match(
+      client("features/stir/SlpStirSupportCards.tsx"),
+      /doIt\.run\(cards, "support", \{[\s\S]*?supportMessageId: messageId/u,
+    );
+    // The ✦ sheet: from a profile, a post's ⋯ and Creator tools; the steering card moved in.
+    assert.match(
+      client("features/stir/SlpStirCreatorSheet.tsx"),
+      /<SlpCreatorSteeringCard creatorId=\{creator\.id\} name=\{creator\.name\} \/>/u,
+    );
+    const profile = client("app/screens/SlpScreenProfile.tsx");
+    assert.match(profile, /openSlpStir\(\{ creatorId: profile\.id \}\)/u);
+    assert.doesNotMatch(profile, /<SlpCreatorSteeringCard/u, "Creator tools keeps a row that opens the sheet");
+    assert.match(
+      client("modules/post/SlpPostMenu.tsx"),
+      /ctx\.stir\?\.\(\{ id: post\.id, authorAccountId: post\.authorAccountId \}\)/u,
+    );
+    // Studio went: its own-page half is the Dashboard sheet from the own profile's action row.
+    assert.match(client("app/screens/SlpProfileLeadingActions.tsx"), /data-slp-dashboard-open/u);
+    assert.match(client("app/screens/SlpDashboard.tsx"), /function SlpDashboardSheet\(/u);
+    // Start now and chapter moves left Settings; Generate posts left Pulse.
+    assert.doesNotMatch(client("features/world/SlpPlatformEventsPanel.tsx"), /startEvent\.mutate/u);
+    assert.doesNotMatch(client("features/projects/SlpProjectsBoard.tsx"), /<SlpArcChapterControls/u);
+    assert.doesNotMatch(client("modules/chrome/SlpPulse.tsx"), /onGeneratePosts|onRunAudience|runAudience"/u);
+    // First visit: one short hint; the box has examples.
+    assert.match(client("features/stir/SlpStirScreen.tsx"), /slurp2:stir-hint-seen/u);
+    assert.match(client("locales/en.json"), /"ui\.slurp\.stir\.box": "What should we stir up\?"/u);
+  }
+
   // --- 9. Wiring: routes, entry, Mari ------------------------------------------------------------
   const routes = server("features/assist/slp-stir-routes.ts");
   for (const route of [

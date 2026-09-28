@@ -45,7 +45,8 @@ for (const { path, text } of sources) {
   assert.doesNotMatch(lucide, /\bSparkles\b/u, `${path} imports Lucide Sparkles`);
 }
 const shell = client("modules/chrome/SlpShell.tsx");
-for (const glyph of ["SlpHubGlyph", "SlpProfileGlyph", "SlpInboxGlyph", "SlpDiscoverGlyph", "SlpMoreGlyph"])
+// W: "More" became "Me" (the persona's avatar, else the Profile glyph), so the More glyph left the bar.
+for (const glyph of ["SlpHubGlyph", "SlpProfileGlyph", "SlpInboxGlyph", "SlpDiscoverGlyph"])
   assert.match(shell, new RegExp(`<${glyph} size=\\{20\\} filled=`, "u"), `${glyph} fills when active`);
 assert.match(client("modules/post/SlpPostCard.tsx"), /<SlpHeartGlyph\s+size=\{18\}\s+filled=\{likedByPersona\}/u);
 assert.match(client("modules/post/SlpLockedMedia.tsx"), /<SlpLockGlyph /u);

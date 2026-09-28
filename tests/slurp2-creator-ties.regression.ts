@@ -917,15 +917,17 @@ async function main() {
     assert.match(card, /<SlpPostPartnership partnership=\{post\.partnership\}/u);
     const helpers = read("client/src/slp/app/screens/SlpHomeHelpers.tsx");
     assert.match(helpers, /const host = view\.authorAccountId !== profile\.id \? view\.partnership\?\.host : null;/u);
-    const studio = read("client/src/slp/app/screens/SlpScreenStudio.tsx");
+    // W: Studio's own-page half is the Dashboard sheet; Business moved into the Stir tab.
+    const studio = read("client/src/slp/app/screens/SlpDashboard.tsx");
     assert.ok(
       studio.indexOf("<SlpCollectCard") < studio.indexOf("<SlpBrandOffers") &&
         studio.indexOf("<SlpBrandOffers") < studio.indexOf("<SlpStudioStat"),
       "brand offers right after the money",
     );
-    assert.ok(
-      studio.lastIndexOf("<SlpStudioStorylineGroup>") < studio.indexOf("<SlpCollabsPanel"),
-      "collabs after the Creators",
+    // W: collabs are world levers now: the Stir tab lists them (Business), not the own page.
+    assert.match(
+      read("client/src/slp/features/stir/SlpStirScreen.tsx"),
+      /<SlpCollabsPanel personaId=\{personaId\} \/>/u,
     );
     const panel = read("client/src/slp/features/projects/SlpCollabsPanel.tsx");
     for (const action of [

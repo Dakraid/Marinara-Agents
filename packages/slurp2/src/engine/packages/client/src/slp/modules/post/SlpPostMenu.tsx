@@ -9,7 +9,6 @@ import {
   RefreshCw,
   ScanSearch,
   Send,
-  Sparkles,
   Trash2,
   UserRound,
 } from "lucide-react";
@@ -17,6 +16,7 @@ import { useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { SlpSheet, SlpSheetGroup, SlpSheetItem } from "../chrome/SlpSheet";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import type { SlpPostCardCtx, SlpPostCardModel } from "./SlpPostTypes";
 import { slpPostImagePrompt } from "./SlpPostHelpers";
 import { api } from "../../../lib/api-client";
@@ -170,7 +170,7 @@ export function SlpPostMenu({
             {ctx.stir && !slpIsOwnActor(ctx.personaAccount, post.authorAccountId) && (
               // W: make something happen from this post (a follow-up, a reply from someone, drama).
               <SlpSheetItem onSelect={run(() => ctx.stir?.({ id: post.id, authorAccountId: post.authorAccountId }))}>
-                <Sparkles size={14} />
+                <SlpSparkleGlyph size={14} />
                 {localizeUi("ui.slurp.stir.fromPost")}
               </SlpSheetItem>
             )}

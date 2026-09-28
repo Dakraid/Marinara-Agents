@@ -149,25 +149,22 @@ assert.match(
 );
 
 // ── 3. Studio: money, then fans, then goal, posts, and the storyline closed at the end ──
-const studio = client("app/screens/SlpScreenStudio.tsx");
+// W: Studio's own-page half is the Dashboard sheet; the storyline moved to Stir (chapter moves) and
+// Creator settings (the rules), so the Dashboard ends on the recent posts.
+const studio = client("app/screens/SlpDashboard.tsx");
 const order = [
   "<SlpCollectCard",
   "<SlpStudioStat",
   "<SlurpGoalEditor",
   "ui.slurp.studio.topFans",
   "ui.slurp.studio.recentPosts",
-  "<SlpStudioStorylineGroup>",
 ];
 for (let i = 1; i < order.length; i++) {
   assert.ok(studio.indexOf(order[i - 1]) < studio.indexOf(order[i]), `${order[i - 1]} before ${order[i]}`);
 }
 assert.doesNotMatch(studio, /uppercase tracking-\[0\.12em\]|text-\[0\.65rem\]/u, "no shouty stat labels (B18)");
 assert.match(studio, /\[overflow-wrap:anywhere\]/u, "a long label wraps instead of spilling out of its tile");
-assert.match(
-  studio,
-  /const \[open, setOpen\] = useState\(false\);[\s\S]*?ui\.slurp\.studio\.storyline/u,
-  "storyline starts closed",
-);
+assert.doesNotMatch(studio, /ui\.slurp\.studio\.storyline"/u, "W: no storyline group on the Dashboard");
 assert.deepEqual(
   slurpLikesByWeek(
     [
@@ -200,8 +197,13 @@ assert.match(
   /<SlpSheet open=\{open\} onClose=\{onClose\}/u,
   "Pulse is a SlpSheet, so it closes the More sheet (B8)",
 );
-assert.match(pulse, /noteSlpAiUseOnce\(t\);\s*onRunAudience\?\.\(\);/u);
-assert.match(pulse, /trailing=\{<SlpUsesAiMark \/>\}/u);
+// W: "Run audience" left Pulse for the Stir card "Wake the fans", which keeps the ✦ AI mark and the
+// once-only cost note (the deck marks every card that calls the AI; Do it notes it once).
+assert.match(client("features/stir/SlpStirScreen.tsx"), /\{card\.ai && <SlpUsesAiMark \/>\}/u);
+assert.match(
+  client("features/stir/SlpStirCards.tsx"),
+  /if \(cards\.some\(\(card\) => card\.cost === "ai"\)\) noteSlpAiUseOnce\(t\);/u,
+);
 assert.doesNotMatch(pulse, /repeat: Infinity|animate-ping/u, "no looping ping on the Pulse card");
 assert.doesNotMatch(
   `${shell}\n${client("modules/chrome/slp-shell.types.ts")}\n${client("app/SlpHomeHost.tsx")}`,

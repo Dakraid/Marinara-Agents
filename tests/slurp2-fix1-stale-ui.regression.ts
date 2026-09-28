@@ -76,7 +76,8 @@ assert.match(
 );
 const economyHooks = read("client/src/slp/features/economy/slp-economy-hooks.ts");
 assert.match(economyHooks, /const mark = markVisit && !marked\.current;/u);
-assert.match(read("client/src/slp/app/screens/SlpScreenStudio.tsx"), /useSlurpStudio\(personaId, true, true\)/u);
+// W: the Studio page became the own profile's Dashboard sheet (same read, one visit per opening).
+assert.match(read("client/src/slp/app/screens/SlpDashboard.tsx"), /useSlurpStudio\(personaId, true, true\)/u);
 assert.match(read("client/src/slp/app/screens/SlpScreenWallet.tsx"), /useSlurpStudio\(personaId\)/u);
 
 // ── R1-072: following moves the profile's follower count and list ──
