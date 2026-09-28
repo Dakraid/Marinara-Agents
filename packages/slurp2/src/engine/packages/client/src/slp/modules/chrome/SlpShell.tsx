@@ -729,8 +729,9 @@ export function SlpShell({
                 aria-current={activeView === "stir" ? "page" : undefined}
                 label={localizeUi("ui.slurp.navigation.stir")}
                 icon={
-                  // The centre sparkle: the one pink disc in the bar, so the lever is always one tap away.
-                  <span className="flex size-7 items-center justify-center rounded-full bg-[var(--noodle-accent)] shadow-[var(--slurp-glow)] [&_svg]:!text-[var(--slurp-on-accent)]">
+                  // The centre spoon: the one pink disc in the bar, so the lever is always one tap away. The
+                  // disc sets the ink: the tab paints its icons `currentColor`, which is this colour here.
+                  <span className="flex size-7 items-center justify-center rounded-full bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] shadow-[var(--slurp-glow)]">
                     <SlpStirGlyph size={18} filled />
                   </span>
                 }
