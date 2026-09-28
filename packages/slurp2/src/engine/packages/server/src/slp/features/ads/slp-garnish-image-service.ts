@@ -28,6 +28,7 @@ import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
 function adImagePrompt(ad: GarnishAd): string {
   return [
     `Advertising photograph for a fictional brand called "${ad.brand}", advertising "${ad.product}".`,
+    ad.look ?? "",
     ad.copy,
     ad.categories.length ? `Themes: ${ad.categories.join(", ")}.` : "",
     "Product or lifestyle photography for a social feed. Clean, well lit, intentional composition.",
@@ -46,6 +47,109 @@ export type GarnishAdImageOutcome = "generated" | "unavailable" | "failed";
  * Generate and store one ad's image, replacing any previous file. Returns the outcome rather
  * than throwing, so a batch of ads is never abandoned halfway because one image failed.
  */
+/** The image connection for ad pictures: the preferred ones in order, then the Creator default, then the Engine's. */
+async function resolveGarnishImageConnection(db: DB, connectionIds: ReadonlyArray<string | null | undefined>) {
+  const connections = createConnectionsStorage(db);
+  // A stored id can be blank, deleted, or point at a text connection. Skip those and fall through to
+  // the next choice, not straight to the Engine default. "Same as post images" means the connection
+  // Creator pictures use, so that one is the last choice before the Engine default.
+  const creatorDefault = (await getCreatorImageConnections(db)).defaultConnectionId;
+  for (const id of [...connectionIds, creatorDefault]) {
+    const candidate = id?.trim() ? await connections.getWithKey(id.trim()) : null;
+    if (candidate?.provider === "image_generation") return candidate;
+  }
+  return connections.getDefaultForImageGeneration();
+}
+
+/** What a brand's logo or a product picture is drawn from (R): the brand's own words and the player's request. */
+export function garnishBrandPicturePrompt(input: {
+  kind: "logo" | "product";
+  brand: { name: string; category: string; tone: string; logoPrompt: string };
+  product?: { product: string; copy: string; look?: string } | null;
+  request?: string;
+}): string {
+  const { brand, product } = input;
+  const lines =
+    input.kind === "logo"
+      ? [
+          `Logo mark for a fictional ${brand.category || "consumer"} brand called "${brand.name}".`,
+          brand.logoPrompt,
+          brand.tone ? `The brand's attitude: ${brand.tone}` : "",
+          "Flat vector logo mark, centred on a plain background, simple bold shapes, works small.",
+        ]
+      : [
+          `Advertising photograph of "${product?.product ?? brand.name}" by the fictional brand "${brand.name}".`,
+          product?.look ?? "",
+          product?.copy ?? "",
+          "Product or lifestyle photography for a social feed. Clean, well lit, intentional composition.",
+        ];
+  return [
+    ...lines,
+    input.request?.trim() ? `The player asks for: ${input.request.trim()}` : "",
+    "No text, no words, no lettering, no watermark, no user interface.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+/**
+ * Draw one brand picture and hand it back as a data URL without keeping it (the 3c picture assist:
+ * the player sees it, then Use stores it). Square for a logo, the 4:5 feed shape for a product.
+ */
+export async function drawGarnishPicture(
+  db: DB,
+  prompt: string,
+  kind: "logo" | "product",
+): Promise<{ image: string; prompt: string } | "unavailable" | "failed"> {
+  const settings = await createSlurpStorage(db).getSettings();
+  const connection = await resolveGarnishImageConnection(db, [settings.inlineAdsImageConnectionId]);
+  if (!connection) return "unavailable";
+  const format = GARNISH_AD_IMAGE_FORMATS[0];
+  const source = connection.imageGenerationSource || connection.model || "";
+  try {
+    const image = await generateSlpImageWithRetry(
+      () =>
+        generateImage(
+          source,
+          connection.baseUrl || "https://image.pollinations.ai",
+          connection.apiKey || "",
+          connection.imageService || source,
+          {
+            prompt: kind === "logo" ? prompt : `${prompt}\n${format.framing}`,
+            negativePrompt: kind === "logo" ? AD_IMAGE_NEGATIVE_PROMPT.replace("logo, ", "") : AD_IMAGE_NEGATIVE_PROMPT,
+            model: connection.model || "",
+            width: kind === "logo" ? 1024 : format.width,
+            height: kind === "logo" ? 1024 : format.height,
+            imageEndpointId: connection.imageEndpointId || undefined,
+            comfyWorkflow: connection.comfyuiWorkflow || undefined,
+            imageDefaults: resolveConnectionImageDefaults(connection),
+            debugMode: false,
+            admissionMode: { kind: "background" },
+          },
+        ),
+      (error, attempt, maxAttempts) =>
+        logger.warn(error, "[garnish-ads] Brand picture attempt %d/%d failed", attempt, maxAttempts),
+    );
+    const mime = image.ext === "jpg" || image.ext === "jpeg" ? "jpeg" : image.ext === "webp" ? "webp" : "png";
+    return { image: `data:image/${mime};base64,${image.base64}`, prompt };
+  } catch (error) {
+    logger.warn(error, "[garnish-ads] Could not draw a brand picture");
+    return "failed";
+  }
+}
+
+/**
+ * Store a picture the player uploaded or kept from the assist (a data URL) for a brand logo or a
+ * product. Returns the served URL; the caller writes it and removes the old file.
+ */
+export function storeGarnishPicture(ownerId: string, dataUrl: string): string | null {
+  const match = /^data:image\/(png|jpeg|webp);base64,(.+)$/u.exec(dataUrl);
+  if (!match) return null;
+  const file = stageImageToDisk(garnishAdMediaNamespace(ownerId), match[2]!, match[1] === "jpeg" ? "jpg" : match[1]!);
+  file.promote();
+  return garnishAdImageUrl(ownerId, file.filePath);
+}
+
 export async function generateGarnishAdImage(
   db: DB,
   pool: GarnishAdsStorage,
@@ -53,20 +157,7 @@ export async function generateGarnishAdImage(
   /** Preferred connections in order (the ad connection); the Creator picture default follows. */
   connectionIds: ReadonlyArray<string | null | undefined> = [],
 ): Promise<GarnishAdImageOutcome> {
-  const connections = createConnectionsStorage(db);
-  // A stored id can be blank, deleted, or point at a text connection. Skip those and fall through to
-  // the next choice, not straight to the Engine default. "Same as post images" means the connection
-  // Creator pictures use, so that one is the last choice before the Engine default.
-  const creatorDefault = (await getCreatorImageConnections(db)).defaultConnectionId;
-  let connection: Awaited<ReturnType<typeof connections.getWithKey>> = null;
-  for (const id of [...connectionIds, creatorDefault]) {
-    const candidate = id?.trim() ? await connections.getWithKey(id.trim()) : null;
-    if (candidate?.provider === "image_generation") {
-      connection = candidate;
-      break;
-    }
-  }
-  connection ??= await connections.getDefaultForImageGeneration();
+  const connection = await resolveGarnishImageConnection(db, connectionIds);
   if (!connection) return "unavailable";
 
   const model = connection.model || "";
