@@ -8,7 +8,10 @@ import { NOODLER_MEDIA_PREFIX } from "../../base/media/slp-media.js";
 import { resolveImageConnectionFallback } from "../../../services/generation/media-connection-fallback.js";
 import { generateImage, stageImageToDisk, type StagedGalleryImage } from "../../../services/image/image-generation.js";
 import { generateSlurpImageWithHost, stageSlurpImageWithHost } from "../../base/host/slp-generation-integrations.js";
-import { resolveConnectionImageDefaults } from "../../../services/image/image-generation-defaults.js";
+import {
+  resolveConnectionImageDefaults,
+  resolveImageGenerationService,
+} from "../../../services/image/image-generation-defaults.js";
 import { compileImagePrompt, resolveImageStyleGuidanceText } from "../../../services/image/image-prompt-compiler.js";
 import { resolveImagePromptReviewSize } from "../../../services/image/image-prompt-review.js";
 import type { SlurpVisualBrief } from "../../base/media/slp-visual-brief.js";
@@ -39,9 +42,11 @@ import {
   slurpArtStyle,
   slurpStyledImagePrompt,
   slurpImageLook,
+  slurpPromptFamily,
   slurpWithoutCameraDevice,
   stripAppearanceLabel,
 } from "../../base/media/slp-image-prompt.js";
+import { slurpViewpointForFamily, slurpViewpointIn } from "../../modules/feed/slp-camera-source.js";
 import { slurpImageNegativePrompt, slurpImageNegativeTerms } from "../../modules/feed/slp-image-brief.js";
 import { slurpImageExtension } from "../../base/media/slp-image-format.js";
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
@@ -108,6 +113,8 @@ type CreatorPostImageInput = {
     | "characterImageInstructions"
     | "promptBlocks"
     | "generationConnectionId"
+    | "imagePromptConnectionId"
+    | "modelBudget"
     | "imageStyleProfileId"
   >;
   characters: ReturnType<typeof createCharactersStorage>;
@@ -433,6 +440,9 @@ async function generateCreatorPostImageRun(
     input.settings.enableImageInterpretation !== false &&
     !skipInterpretation,
   );
+  // Slurp's own viewpoint phrase for this picture (PERSPECTIVE-RESEARCH.md): the rewrite keeps it, the
+  // device filter never cuts it, and the image model gets it in its own words below.
+  const viewpoint = slurpViewpointIn(input.visualBrief?.camera ?? "") ?? slurpViewpointIn(input.draftPrompt);
   const rewrittenPrompt = rewriteAttempted
     ? await rewriteSlpImagePrompt({
         db: input.db,
@@ -443,7 +453,9 @@ async function generateCreatorPostImageRun(
         characterContext,
         styleGuidance,
         promptBlocks: slurpPromptContext(input.settings).blocks,
-        connectionId: input.settings.generationConnectionId,
+        connectionId: input.settings.imagePromptConnectionId || input.settings.generationConnectionId,
+        viewpoint: viewpoint?.phrase,
+        budget: input.settings.modelBudget,
         onRequest: ({ messages, ...model }) => {
           run.rewrite.model = model;
           run.rewrite.messages = messages;
@@ -499,14 +511,29 @@ async function generateCreatorPostImageRun(
   );
   // Every path lands here, so the device is removed here: the caption or a stored draft may still
   // say "I held my phone up" (R1-050). A prompt a human approved is sent as written.
+  const keep = viewpoint ? [viewpoint.phrase] : [];
+  const withoutDevice = slurpWithoutCameraDevice(finalPromptBase, keep) || finalPromptBase;
+  // A rewrite that dropped the viewpoint gets it back, so a selfie still reads as one.
   const finalPromptScene = skipInterpretation
     ? finalPromptBase
-    : slurpWithoutCameraDevice(finalPromptBase) || finalPromptBase;
+    : viewpoint && !withoutDevice.includes(viewpoint.phrase)
+      ? `${withoutDevice}\n${viewpoint.phrase}`
+      : withoutDevice;
   // The Creator's medium: an anime, furry or dragon Creator is drawn, so the brief's photo words go
   // and their style leads. A photo-style Creator, and a prompt a human approved, stay as they are.
   const styleSource = `${characterDescription}\n${characterImageInstructions}`;
   const artStyle = skipInterpretation ? null : slurpArtStyle(styleSource);
-  const finalPromptLook = ensureSlpImageAppearance(finalPromptScene, redactIdentity(stageAppearance));
+  // The viewpoint in the image model's words: tags for a tag model, e621 tags for a drawn furry.
+  const promptFamily = slurpPromptFamily({
+    promptMode: compiledPrompt.profile.promptMode,
+    service: resolveImageGenerationService(input.imageConnection),
+    model: imageModel,
+    furry: Boolean(artStyle?.tag.includes("furry")),
+  });
+  const finalPromptLook = ensureSlpImageAppearance(
+    skipInterpretation ? finalPromptScene : slurpViewpointForFamily(finalPromptScene, promptFamily),
+    redactIdentity(stageAppearance),
+  );
   const finalPrompt = [
     artStyle ? slurpStyledImagePrompt(finalPromptLook, styleSource) : finalPromptLook,
     input.compositionGuard,
@@ -523,7 +550,7 @@ async function generateCreatorPostImageRun(
       : compiledPrompt.negativePrompt || undefined;
   const finalNegativePrompt = slurpImageNegativeTerms(
     baseNegativePrompt,
-    input.negativePromptAdditions ?? slurpImageNegativePrompt(input.visualBrief?.sexualLevel),
+    input.negativePromptAdditions ?? slurpImageNegativePrompt(input.visualBrief?.sexualLevel, false, viewpoint?.source),
     artStyle?.negative,
   );
   // Chosen here rather than by each caller, so a scheduled or redrawn Story is a Story too (R1-052).

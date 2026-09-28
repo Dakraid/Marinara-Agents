@@ -19,6 +19,7 @@
 import type { SlurpPostVariation } from "./slp-post-variation.js";
 import type { SlurpExplicitLevel } from "./slp-post-guidance.js";
 import { slurpIsLegacyImageBrief } from "../../base/media/slp-image-prompt.js";
+import { slurpCameraSourceNegative, type SlurpCameraSource } from "./slp-camera-source.js";
 import type { SlpWardrobeScene } from "../../../../../shared/src/slp/slp-wardrobe.js";
 
 /** What the picture may show, as a positive phrase. What it may not show goes to the negative prompt. */
@@ -45,15 +46,29 @@ const LEVEL_NEGATIVE: Record<SlurpExplicitLevel, string> = {
 /** Always true for a Creator's own photo: one person, no stray body parts. */
 // The phone and a doubled Creator are what the prompt side kept producing (0.2.74 on prod: a phone
 // in 37 of 46 pictures, a second copy of the Creator beside every few mirrors).
-const SHARED_NEGATIVE =
-  "second person, extra people, duplicate person, twins, extra limbs, disembodied hands, smartphone, holding phone, selfie stick, text, watermark";
+const SHARED_NEGATIVE = "second person, extra people, duplicate person, twins, extra limbs, disembodied hands";
+/** A picture without a known camera keeps the device out; a known camera names its own terms. */
+const DEVICE_NEGATIVE = "smartphone, holding phone, selfie stick";
+const TEXT_NEGATIVE = "text, watermark";
 
 /** A partner scene has two people on purpose; only the stray and doubled bodies stay out. */
 const PARTNER_NEGATIVE = SHARED_NEGATIVE.replace("second person, extra people, ", "");
 
-/** Without a level (a redraw or a scheduled picture that kept none), only the shared terms apply. */
-export function slurpImageNegativePrompt(level?: SlurpExplicitLevel, partnered = false): string {
-  return [level ? LEVEL_NEGATIVE[level] : "", partnered ? PARTNER_NEGATIVE : SHARED_NEGATIVE]
+/**
+ * Without a level (a redraw or a scheduled picture that kept none), only the shared terms apply.
+ * A mirror shot holds the phone on purpose, so the camera's own terms replace the device terms.
+ */
+export function slurpImageNegativePrompt(
+  level?: SlurpExplicitLevel,
+  partnered = false,
+  camera?: SlurpCameraSource | null,
+): string {
+  return [
+    level ? LEVEL_NEGATIVE[level] : "",
+    partnered ? PARTNER_NEGATIVE : SHARED_NEGATIVE,
+    camera ? slurpCameraSourceNegative(camera) : DEVICE_NEGATIVE,
+    TEXT_NEGATIVE,
+  ]
     .filter(Boolean)
     .join(", ");
 }

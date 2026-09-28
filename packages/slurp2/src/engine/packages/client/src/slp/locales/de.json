@@ -558,5 +558,11 @@
   "ui.slurp.wallet.personaWallet": "Wallet von {{name}}",
   "ui.slurp.messages.editDetails": "Werte und Optionen bearbeiten",
   "ui.slurp.messages.detailsSaveError": "Die Änderung konnte nicht gespeichert werden. Versuche es erneut.",
-  "ui.slurp.messages.editDetailsNeedsThread": "Starte ein Gespräch, um seine Details zu bearbeiten."
+  "ui.slurp.messages.editDetailsNeedsThread": "Starte ein Gespräch, um seine Details zu bearbeiten.",
+  "ui.slurp.settings.images.enhancePrompts": "Bild-Prompts verbessern",
+  "ui.slurp.settings.images.enhancePromptsDetail": "Bevor ein Bild entsteht, schreibt das Prompt-Modell den Prompt für dein Bildmodell um. Blickwinkel, Aussehen des Creators, Kunststil und Schärfegrad bleiben erhalten. Jedes Bild ist ein KI-Aufruf und zählt im KI-Budget unter Bild-Prompts verbessern.",
+  "ui.slurp.settings.images.promptModel": "Prompt-Modell",
+  "ui.slurp.settings.images.promptModelDetail": "Die LLM-Verbindung, die Bild-Prompts verbessert. Ein kleines, schnelles Modell reicht.",
+  "ui.slurp.settings.images.promptModelDefault": "Slurp-Textverbindung",
+  "ui.slurp.settings.aiBudget.job.image_prompt": "Bild-Prompts verbessern"
 }

@@ -44,10 +44,12 @@ assert.equal(slurpImageNegativeTerms(undefined, ""), undefined);
 assert.match(slurpImageNegativePrompt(), /smartphone, holding phone/u, "no level still names the phone");
 assert.doesNotMatch(slurpImageNegativePrompt(), /nudity/u, "no level adds no level terms");
 assert.match(slurpImageNegativePrompt("none"), /^nudity/u);
-assert.match(images, /slurpWithoutCameraDevice\(finalPromptBase\) \|\| finalPromptBase/u);
+// P: the final filter also keeps Slurp's own viewpoint phrase (`keep`), see slurp2-perspective.
+assert.match(images, /slurpWithoutCameraDevice\(finalPromptBase, keep\) \|\| finalPromptBase/u);
 assert.match(
   images,
-  /input\.negativePromptAdditions \?\? slurpImageNegativePrompt\(input\.visualBrief\?\.sexualLevel\)/u,
+  // P: the camera source is passed too, so a mirror shot does not fight its own phone.
+  /input\.negativePromptAdditions \?\? slurpImageNegativePrompt\(input\.visualBrief\?\.sexualLevel(?:, false, viewpoint\?\.source)?\)/u,
 );
 
 // --- R1-051: removing a set's picture removes the set --------------------------------------------

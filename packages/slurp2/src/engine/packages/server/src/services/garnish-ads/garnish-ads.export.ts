@@ -16,6 +16,7 @@ const adSchema = z.object({
   creatorAccountId: z.string().trim().min(1).max(120).optional(),
   creatorHandle: z.string().trim().min(1).max(120).optional(),
   imageUrl: z.string().trim().max(2048).nullable().optional(),
+  wideImageUrl: z.string().trim().max(2048).nullable().optional(),
   actionLabel: z.string().trim().min(1).max(40).optional(),
   contentRating: z.enum(["tame", "suggestive", "explicit"]),
   origin: z.enum(["builtin", "user", "generated"]),

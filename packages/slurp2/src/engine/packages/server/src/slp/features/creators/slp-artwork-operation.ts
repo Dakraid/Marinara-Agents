@@ -37,7 +37,7 @@ function artworkPrompt(
     options.creatorDetails ? `For ${profile.displayName}. ${voice}` : "",
     options.composition
       ? kind === "avatar"
-        ? "One head-and-shoulders subject, looking at the camera, soft flattering light, shallow depth of field, centered composition, no interface or decorative frame."
+        ? "One head-and-shoulders subject, looking at the viewer, soft flattering light, shallow depth of field, centered composition, no interface or decorative frame."
         : "One continuous ultra-wide environmental scene, edge to edge, no text, logo, avatar bubble, framed portrait, or interface. If a person appears, keep them small and part of the environment."
       : "",
   ]

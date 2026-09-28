@@ -570,5 +570,11 @@
   "ui.slurp.wallet.personaWallet": "Portfel: {{name}}",
   "ui.slurp.messages.editDetails": "Edytuj wartości i opcje",
   "ui.slurp.messages.detailsSaveError": "Nie udało się zapisać zmiany. Spróbuj ponownie.",
-  "ui.slurp.messages.editDetailsNeedsThread": "Rozpocznij rozmowę, aby edytować jej szczegóły."
+  "ui.slurp.messages.editDetailsNeedsThread": "Rozpocznij rozmowę, aby edytować jej szczegóły.",
+  "ui.slurp.settings.images.enhancePrompts": "Ulepszaj prompty obrazów",
+  "ui.slurp.settings.images.enhancePromptsDetail": "Zanim powstanie obraz, model promptów przepisuje prompt dla twojego modelu obrazów. Zachowuje punkt widzenia, wygląd Twórcy, styl i poziom pikanterii. Każdy obraz to jedno wywołanie AI, liczone w budżecie AI jako Ulepszanie promptów obrazów.",
+  "ui.slurp.settings.images.promptModel": "Model promptów",
+  "ui.slurp.settings.images.promptModelDetail": "Połączenie LLM, które ulepsza prompty obrazów. Wystarczy mały, szybki model.",
+  "ui.slurp.settings.images.promptModelDefault": "Połączenie tekstowe Slurp",
+  "ui.slurp.settings.aiBudget.job.image_prompt": "Ulepszanie promptów obrazów"
 }

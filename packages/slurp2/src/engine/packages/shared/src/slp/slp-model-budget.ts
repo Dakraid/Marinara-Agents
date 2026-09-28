@@ -11,6 +11,7 @@ export const SLURP_MODEL_JOB_KINDS = [
   "fan_type_voice",
   "continuity",
   "assist",
+  "image_prompt",
 ] as const;
 export type SlurpModelJobKind = (typeof SLURP_MODEL_JOB_KINDS)[number];
 export type SlurpModelWorkerContext = "present" | "background";
@@ -45,6 +46,8 @@ export const slurpModelBudgetSchema = z
         continuity: jobPolicy(8, 12),
         // The player's own Write / Improve taps (AI assist). Present work, never paced.
         assist: jobPolicy(2, 40),
+        // "Enhance image prompts": one rewrite per picture. Its own daily limit only (see below).
+        image_prompt: jobPolicy(3, 60),
       })
       .default({}),
   })
@@ -124,6 +127,13 @@ export function slurpModelBudgetPacedCap(cap: number, at: Date): number {
   return Math.min(cap, Math.ceil(cap * elapsed + cap / 24));
 }
 
+/**
+ * Kinds that count only against their own daily limit. A picture's prompt rewrite runs once per
+ * picture and never ran under the text budget; on the shared 20 calls a day it would take the
+ * replies' share, so it gets a row of its own that counts and caps it without touching the rest.
+ */
+export const SLURP_OWN_CAP_JOB_KINDS: ReadonlySet<SlurpModelJobKind> = new Set(["image_prompt"]);
+
 export function spendSlurpModelBudget(
   budget: SlurpModelBudget,
   ledger: SlurpModelBudgetLedger,
@@ -133,6 +143,10 @@ export function spendSlurpModelBudget(
 ): SlurpModelBudgetLedger | null {
   const policy = budget.jobs[kind];
   const kindCalls = ledger.byKindToday[kind] ?? 0;
+  if (SLURP_OWN_CAP_JOB_KINDS.has(kind)) {
+    if (!policy.enabled || policy.maxPerDay <= kindCalls) return null;
+    return { ...ledger, byKindToday: { ...ledger.byKindToday, [kind]: kindCalls + 1 } };
+  }
   const dayCap = slurpModelBudgetCap(budget.callsPerDay, kind);
   if (
     !policy.enabled ||

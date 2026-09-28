@@ -94,7 +94,8 @@ export function slurpPostPictureBriefs(input: {
       : null);
   // How the picture was taken is the camera's job; the scene the writer planned must not show the
   // phone or the arm that holds it, or every picture becomes a selfie.
-  const imageDraft = rawImageDraft ? slurpWithoutCameraDevice(rawImageDraft) || rawImageDraft : null;
+  // The viewpoint phrase is Slurp's own and stays whole: a mirror shot holds the phone on purpose.
+  const imageDraft = rawImageDraft ? slurpWithoutCameraDevice(rawImageDraft, [cameraShot]) || rawImageDraft : null;
   return {
     draftImagePrompt: input.postImages
       ? protectCreatorGeneratedIdentity(
@@ -120,7 +121,7 @@ export function slurpPostPictureBriefs(input: {
         : undefined,
     negativePrompt:
       input.postImages && camera && variation
-        ? slurpImageNegativePrompt(sexualLevel, Boolean(input.partner))
+        ? slurpImageNegativePrompt(sexualLevel, Boolean(input.partner), camera)
         : undefined,
     // Each extra picture is briefed exactly like the first, so it reaches the image model as a
     // complete picture. A shot that names its own outfit wears it; otherwise it keeps the chosen look.

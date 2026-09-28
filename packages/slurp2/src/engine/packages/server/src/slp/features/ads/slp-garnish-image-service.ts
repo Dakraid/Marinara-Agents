@@ -11,7 +11,11 @@ import { resolveConnectionImageDefaults } from "../../../services/image/image-ge
 import { generateImage, stageImageToDisk } from "../../../services/image/image-generation.js";
 import { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
-import type { GarnishAd } from "../../../services/garnish-ads/garnish-ads.types.js";
+import {
+  GARNISH_AD_IMAGE_FORMATS,
+  type GarnishAd,
+  type GarnishAdImageField,
+} from "../../../services/garnish-ads/garnish-ads.types.js";
 import type { GarnishAdsStorage } from "../../../services/garnish-ads/garnish-ads.storage.js";
 import { getCreatorImageConnections } from "../../base/media/slp-image-connections.js";
 import { generateSlpImageWithRetry } from "../../base/media/slp-image-retry.js";
@@ -85,7 +89,8 @@ export async function generateGarnishAdImage(
           interpretationInstruction: settings.imagePromptInterpretation,
           instructions: imagePromptInstructions,
           promptBlocks: slurpPromptContext(settings).blocks,
-          connectionId: settings.generationConnectionId,
+          connectionId: settings.imagePromptConnectionId || settings.generationConnectionId,
+          budget: settings.modelBudget,
         })
       : null,
     rawPrompt,
@@ -97,7 +102,7 @@ export async function generateGarnishAdImage(
         reason,
       ),
   });
-  try {
+  const draw = async (format: (typeof GARNISH_AD_IMAGE_FORMATS)[number]) => {
     const image = await generateSlpImageWithRetry(
       () =>
         generateImage(
@@ -106,11 +111,12 @@ export async function generateGarnishAdImage(
           connection.apiKey || "",
           connection.imageService || source,
           {
-            prompt,
+            // The shape line is added after the rewrite, so one rewrite serves both pictures.
+            prompt: `${prompt}\n${format.framing}`,
             negativePrompt: AD_IMAGE_NEGATIVE_PROMPT,
             model,
-            width: 1024,
-            height: 640,
+            width: format.width,
+            height: format.height,
             imageEndpointId: connection.imageEndpointId || undefined,
             comfyWorkflow: connection.comfyuiWorkflow || undefined,
             imageDefaults: resolveConnectionImageDefaults(connection),
@@ -119,24 +125,42 @@ export async function generateGarnishAdImage(
           },
         ),
       (error, attempt, maxAttempts) =>
-        logger.warn(error, "[garnish-ads] Image attempt %d/%d failed for %s", attempt, maxAttempts, ad.brand),
+        logger.warn(
+          error,
+          "[garnish-ads] Image attempt %d/%d failed for %s (%s)",
+          attempt,
+          maxAttempts,
+          ad.brand,
+          format.field,
+        ),
     );
-    const file = stageImageToDisk(garnishAdMediaNamespace(ad.id), image.base64, image.ext);
-    const previousUrl = ad.imageUrl;
-    file.promote();
+    return stageImageToDisk(garnishAdMediaNamespace(ad.id), image.base64, image.ext);
+  };
+  const files: { field: GarnishAdImageField; file: ReturnType<typeof stageImageToDisk> }[] = [];
+  try {
+    for (const format of GARNISH_AD_IMAGE_FORMATS) {
+      try {
+        files.push({ field: format.field, file: await draw(format) });
+      } catch (error) {
+        // The feed picture is the ad's picture; a missing banner only means the wide slot crops it.
+        if (format.field === "imageUrl") throw error;
+        logger.warn(error, "[garnish-ads] Could not draw the wide banner for %s; the feed picture stands in", ad.brand);
+      }
+    }
+    const previous = { imageUrl: ad.imageUrl, wideImageUrl: ad.wideImageUrl };
+    for (const { file } of files) file.promote();
+    const urls = Object.fromEntries(files.map(({ field, file }) => [field, garnishAdImageUrl(ad.id, file.filePath)]));
     try {
       // Replace in place rather than via add(), which moves the ad to the end of the pool and
       // would reshuffle which ad lands in which feed slot every time an image is generated.
       const stored = await pool.listAll();
-      await pool.replaceAll(
-        stored.map((row) => (row.id === ad.id ? { ...row, imageUrl: garnishAdImageUrl(ad.id, file.filePath) } : row)),
-      );
+      await pool.replaceAll(stored.map((row) => (row.id === ad.id ? { ...row, ...urls } : row)));
     } catch (error) {
-      file.compensate();
+      for (const { file } of files) file.compensate();
       throw error;
     }
     // Only once the replacement is committed, so a failed write never leaves the ad imageless.
-    unlinkGarnishAdImage(ad.id, previousUrl);
+    for (const { field } of files) unlinkGarnishAdImage(ad.id, previous[field]);
     return "generated";
   } catch (error) {
     logger.warn(error, "[garnish-ads] Could not generate an image for %s", ad.brand);

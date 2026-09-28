@@ -134,8 +134,8 @@ export function SlpPromptsPanel(page: SlpBackstagePageProps) {
           <PromptOptions label={t("ui.slurp.settings.prompts.moreSettings", { defaultValue: "More settings" })}>
             <Toggle
               settingKey="enableImageInterpretation"
-              label={t("ui.slurp.settings.images.interpretPrompts")}
-              detail={t("ui.slurp.settings.images.interpretPromptsDetail")}
+              label={t("ui.slurp.settings.images.enhancePrompts")}
+              detail={t("ui.slurp.settings.images.enhancePromptsDetail")}
               value={settings.enableImageInterpretation}
               onChange={(value) => update("enableImageInterpretation", value)}
             />
