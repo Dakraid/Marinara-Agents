@@ -105,10 +105,10 @@ function SupportNote({
         <span className="font-semibold">{t("ui.slurp.steering.support.title")}</span> {parts.join(" · ")}
       </p>
       <div className="flex gap-2">
-        <SlpButton variant="secondary" disabled={pending} onClick={onUndo} className="min-h-11 flex-1 px-3.5 text-sm">
+        <SlpButton variant="quiet" disabled={pending} onClick={onUndo} className="min-h-11 flex-1 px-3.5 text-sm">
           {t("ui.slurp.steering.support.undo")}
         </SlpButton>
-        <SlpButton variant="quiet" disabled={pending} onClick={onKeep} className="min-h-11 flex-1 px-3.5 text-sm">
+        <SlpButton variant="tertiary" disabled={pending} onClick={onKeep} className="min-h-11 flex-1 px-3.5 text-sm">
           {t("ui.slurp.steering.support.keep")}
         </SlpButton>
       </div>
