@@ -486,3 +486,23 @@ modules, rejected alternative, and migration consequence.
   them; old deals read back without `look` / `tone`; a settings blob without `brandDealsPace` reads
   "normal"; an export without `brands` still imports. Garnish stays extractable: nothing in
   `garnish-ads/` imports Slurp (the boundary test still passes).
+
+## Merge V, M, R, F: brand deals in Stir, Posts per day sized (2026-09-29)
+
+- **Problem:** R left `offer-brand-deal` as a "soon" hook for Stir; the user decided on F that
+  "Posts per day" grows with the Creators like the AI budget, but it has ~20 readers.
+- **Decision:** `offer-brand-deal` is a work card in the deck and a planner action (the planner gets
+  the switched-on brands); `list-brands` takes an optional `accountId` and marks each product
+  `fits` / `spice` / `offBrand` (R's two fit rules); the Stir picker lists fitting products and "Show
+  all" reveals the rest with why. "Posts per day" is sized once, at the settings read
+  (`getSettings`: `2 + 1.9 × active Creators` unless `postsPerDayCustom`), so every reader sees the
+  same number; a PATCH that sends a number marks it the player's; the defaults route carries the
+  same sizing so a section reset lets it grow again.
+- **Affected modules:** shared `slp-actions.ts`, `slp-stir.ts`, `slp-model-budget.ts`; server
+  `features/projects/slp-brand-deal-lever.ts`, `features/assist/`, `modules/assist/slp-stir-*`,
+  `features/ads/slp-garnish-generation-service.ts`, `data/creators/slp-creators-storage-{1,2}.ts`,
+  `modules/settings/slp-settings.ts`, settings routes; client `features/stir/`, Publishing panel.
+- **Rejected alternatives:** sizing at each of the ~20 readers (one would be missed); storing the
+  sized number on every Creator change (a write per Creator toggle, and stale on import).
+- **Migration consequence:** a save without `postsPerDayCustom` keeps any number other than the
+  shipped 4 as the player's; the shipped 4 grows.
