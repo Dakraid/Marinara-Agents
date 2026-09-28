@@ -504,6 +504,9 @@ async function main() {
     );
     assert.match(shell, /label=\{\s*slurpActive\s*\? localizeUi\("ui\.slurp\.navigation\.me"\)/u, "More became Me");
     assert.doesNotMatch(shell, /onOpenStudio|ChartNoAxesColumn/u, "no Studio row left");
+    // The user's call: Stir has its own spoon glyph (Slurp's glyph set, not a library icon).
+    assert.match(client("base/chrome/SlpGlyphs.tsx"), /export const SlpStirGlyph = slpGlyph\("Stir"/u);
+    assert.match(shell, /<SlpStirGlyph size=\{18\} filled \/>/u, "the centre tab wears the spoon");
     // The deck is fed from the catalog, never hand-built.
     const deck = client("features/stir/slp-stir-deck.ts");
     assert.match(deck, /SLP_ACTION_NAMES\.filter\(\(name\) => SLP_ACTION_META\[name\]\.deck\)/u);

@@ -3,7 +3,7 @@ import { ChevronDown, Handshake, Heart, X, type LucideIcon } from "lucide-react"
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { Avatar, SLP_PAGE_SCROLL_CLASS, SLP_TOP_BAR_CLASS, SLP_TYPE } from "../../base/chrome/SlpChrome";
-import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
+import { SlpSparkleGlyph, SlpStirGlyph } from "../../base/chrome/SlpGlyphs";
 import { formatUpcomingDay } from "../../base/ui/slp-date-time";
 import { SlpButton, SlpChip } from "../../modules/chrome/SlpButton";
 import { SlpUsesAiMark } from "../../modules/chrome/SlpAiMark";
@@ -54,7 +54,7 @@ function StirHint() {
       className="relative rounded-3xl bg-[image:var(--slurp-nav-active)] p-4 pe-12 ring-1 ring-inset ring-[var(--noodle-accent)]/35"
     >
       <p className={cn(SLP_TYPE.title, "flex items-center gap-2")}>
-        <SlpSparkleGlyph size={16} aria-hidden="true" className="text-[var(--slurp-ink)]" />
+        <SlpStirGlyph size={16} aria-hidden="true" className="text-[var(--slurp-ink)]" />
         {t("ui.slurp.stir.hint.title")}
       </p>
       <p className={cn(SLP_TYPE.body, "mt-1 text-[var(--slurp-text)]")}>{t("ui.slurp.stir.hint.body")}</p>
@@ -349,7 +349,7 @@ export function SlpStirScreen({
   return (
     <div className="flex h-full min-h-0 flex-col" data-slp-stir>
       <header className={cn("flex h-14 shrink-0 items-center gap-2 px-4", SLP_TOP_BAR_CLASS)}>
-        <SlpSparkleGlyph size={20} aria-hidden="true" className="text-[var(--slurp-ink)]" />
+        <SlpStirGlyph size={22} aria-hidden="true" className="text-[var(--slurp-ink)]" />
         <h1 className="slp-display min-w-0 flex-1 truncate text-xl leading-none">{t("ui.slurp.stir.title")}</h1>
       </header>
       <main className={cn("min-h-0 flex-1 overflow-y-auto", SLP_PAGE_SCROLL_CLASS)}>

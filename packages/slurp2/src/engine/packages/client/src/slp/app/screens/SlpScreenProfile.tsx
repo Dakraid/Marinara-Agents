@@ -15,7 +15,7 @@ import { useSlurpCouplePageClosed } from "../../features/projects/slp-ties-hooks
 import { useNearViewportSlurpMediaSrc } from "../../base/media/slp-media-src";
 import { SlurpProfileSurface } from "../../features/creators/SlpProfileSurface";
 import { SlpBalanceChip, useSlpShellActions } from "../../modules/chrome/SlpShell";
-import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
+import { SlpStirGlyph } from "../../base/chrome/SlpGlyphs";
 import { openSlpStir } from "../../features/stir/slp-stir-contract";
 import { SlpDashboardSheet } from "./SlpDashboard";
 import { SlpButton, slpTagClass } from "../../modules/chrome/SlpButton";
@@ -312,7 +312,7 @@ export function StageProfileView({
                     className="flex h-11 items-center gap-1.5 rounded-full bg-black/40 px-3.5 text-sm font-bold text-white shadow-[var(--slurp-shadow-raised)] ring-1 ring-inset ring-white/15 backdrop-blur-md hover:bg-black/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white [&_svg]:!text-white"
                     aria-label={localizeUi("ui.slurp.stir.stirName", { name: profile.displayName })}
                   >
-                    <SlpSparkleGlyph size={16} filled aria-hidden="true" />
+                    <SlpStirGlyph size={16} filled aria-hidden="true" />
                     {localizeUi("ui.slurp.stir.stirShort")}
                   </button>
                 )}
@@ -689,7 +689,7 @@ function SlpCreatorToolsCard({ model }: { model: ReturnType<typeof useStageProfi
             onClick={() => openSlpStir({ creatorId: profile.id })}
             className="flex min-h-12 w-full items-center gap-3 rounded-xl bg-[var(--slurp-tint)] px-3 text-start transition-colors hover:bg-[color-mix(in_srgb,var(--noodle-accent)_22%,var(--slurp-surface-raised))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] [&_svg]:!text-[var(--slurp-ink)]"
           >
-            <SlpSparkleGlyph size={18} filled aria-hidden="true" className="shrink-0" />
+            <SlpStirGlyph size={18} filled aria-hidden="true" className="shrink-0" />
             <span className="min-w-0 flex-1">
               <span className="block text-[13px] font-semibold text-[var(--slurp-text)]">
                 {localizeUi("ui.slurp.stir.stirName", { name: profile.displayName })}

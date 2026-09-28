@@ -12,7 +12,7 @@ import {
   SlpHubGlyph,
   SlpInboxGlyph,
   SlpProfileGlyph,
-  SlpSparkleGlyph,
+  SlpStirGlyph,
 } from "../../base/chrome/SlpGlyphs";
 import { motion, useReducedMotion } from "framer-motion";
 import {
@@ -445,7 +445,7 @@ export function SlpShell({
                         aria-current={activeView === "stir" ? "page" : undefined}
                         className={cn(SLURP_ROW_CLASS, activeView === "stir" && SLURP_ROW_ACTIVE_CLASS)}
                       >
-                        <SlpSparkleGlyph
+                        <SlpStirGlyph
                           size={22}
                           filled={activeView === "stir"}
                           className="!text-[var(--noodle-accent-foreground)]"
@@ -731,7 +731,7 @@ export function SlpShell({
                 icon={
                   // The centre sparkle: the one pink disc in the bar, so the lever is always one tap away.
                   <span className="flex size-7 items-center justify-center rounded-full bg-[var(--noodle-accent)] shadow-[var(--slurp-glow)] [&_svg]:!text-[var(--slurp-on-accent)]">
-                    <SlpSparkleGlyph size={16} filled />
+                    <SlpStirGlyph size={18} filled />
                   </span>
                 }
               />

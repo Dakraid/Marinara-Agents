@@ -2,7 +2,7 @@ import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { SLP_TYPE } from "../../base/chrome/SlpChrome";
-import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
+import { SlpStirGlyph } from "../../base/chrome/SlpGlyphs";
 import { SlpChip, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
 import { SlpUsesAiMark, noteSlpAiUseOnce } from "../../modules/chrome/SlpAiMark";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
@@ -11,8 +11,12 @@ import { useSlurpStirPlan } from "./slp-stir-hooks";
 import { SlpStirPlanSheet } from "./SlpStirCards";
 
 /** Real examples from this world: the placeholder rotates through them, the chips fill the box. */
-function useExamples(names: string[], about?: string) {
+function useExamples(fullNames: string[], aboutName?: string) {
   const { t } = useTranslation();
+  // First names read like something you would say ("make Mira and Kai flirt").
+  const first = (name: string) => name.trim().split(/\s+/u)[0] ?? name;
+  const names = fullNames.map(first);
+  const about = aboutName ? first(aboutName) : undefined;
   const [a = "Mira", b = "Kai"] = names;
   if (about)
     return [
@@ -93,7 +97,7 @@ export function SlpStirBox({
         className="space-y-3"
       >
         <label id={`${inputId}-label`} htmlFor={inputId} className="flex items-center gap-2">
-          <SlpSparkleGlyph size={18} aria-hidden="true" className="shrink-0 text-[var(--slurp-ink)]" />
+          <SlpStirGlyph size={18} aria-hidden="true" className="shrink-0 text-[var(--slurp-ink)]" />
           <span className={cn(SLP_TYPE.title)}>
             {about ? t("ui.slurp.stir.boxAbout", { name: about.name }) : t("ui.slurp.stir.box")}
           </span>
@@ -117,11 +121,15 @@ export function SlpStirBox({
           className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none]"
           aria-label={t("ui.slurp.stir.examples")}
         >
-          {examples.slice(0, 3).map((example) => (
-            <SlpChip key={example} onClick={() => setText(example)} className="shrink-0 whitespace-nowrap">
-              {example}
-            </SlpChip>
-          ))}
+          {/* The chips are the examples the placeholder is not showing right now. */}
+          {examples
+            .filter((_, index) => index !== tick % examples.length)
+            .slice(0, 3)
+            .map((example) => (
+              <SlpChip key={example} onClick={() => setText(example)} className="shrink-0 whitespace-nowrap">
+                {example}
+              </SlpChip>
+            ))}
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className={cn(SLP_TYPE.meta, "flex items-center gap-1.5 text-[var(--slurp-muted)]")}>

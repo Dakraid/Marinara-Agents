@@ -150,8 +150,9 @@ function Who({ card }: { card: SlpActionPreview }) {
  */
 export function SlpStirCard({ card, onRemove }: { card: SlpActionPreview; onRemove?: () => void }) {
   const { t } = useTranslation();
-  const [a, b] = card.who;
-  const names = card.who.length > 1 ? t("ui.slurp.stir.pair", { a: a!.name, b: b!.name }) : (a?.name ?? null);
+  const [a] = card.who;
+  // A fit note that already says they may say no makes the chip a repeat.
+  const refusalNoted = card.notes.some((note) => note.kind === "mayDecline" || note.kind === "noCollabs");
   return (
     <li
       data-slp-stir-card={card.action}
@@ -162,10 +163,10 @@ export function SlpStirCard({ card, onRemove }: { card: SlpActionPreview; onRemo
     >
       <div className="flex min-w-0 items-center gap-3 pe-9">
         <Who card={card} />
-        <div className="min-w-0 flex-1">
-          {names && <p className={cn(SLP_TYPE.meta, "truncate text-[var(--slurp-muted)]")}>{names}</p>}
-          <p className={cn(SLP_TYPE.body, "font-semibold [overflow-wrap:anywhere]")}>{slpStirWhat(t, card)}</p>
-        </div>
+        {/* The "what" line names them already; the avatars carry the names for screen readers. */}
+        <p className={cn(SLP_TYPE.body, "min-w-0 flex-1 font-semibold [overflow-wrap:anywhere]")}>
+          {slpStirWhat(t, card)}
+        </p>
       </div>
       {onRemove && (
         <button
@@ -196,7 +197,9 @@ export function SlpStirCard({ card, onRemove }: { card: SlpActionPreview; onRemo
           ) : (
             <span className={slpTagClass(true)}>{t("ui.slurp.stir.free")}</span>
           )}
-          {card.refusable && <span className={slpTagClass(false)}>{t("ui.slurp.stir.mayRefuse")}</span>}
+          {card.refusable && !refusalNoted && (
+            <span className={slpTagClass(false)}>{t("ui.slurp.stir.mayRefuse")}</span>
+          )}
         </div>
       )}
       {!card.error &&

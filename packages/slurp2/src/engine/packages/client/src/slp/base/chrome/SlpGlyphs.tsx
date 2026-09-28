@@ -154,3 +154,17 @@ export const SlpSparkleGlyph = slpGlyph("Sparkle", (filled) => (
     <path d={slpStarPath(18.75, 5.25, 3.5, true)} fill="currentColor" stroke="none" />
   </>
 ));
+
+/**
+ * Stir (W): a wooden-spoon silhouette, tipped as if it stirs the pot: an egg-shaped bowl, a narrow
+ * neck and a handle with a rounded end, drawn upright and turned 45°. The whole spoon fills when
+ * active; the small ✦ keeps it in the family.
+ */
+const SPOON =
+  "M12 1.75C13 1.75 13.6 2.4 13.5 3.4L12.8 12.3C14.6 12.8 15.6 14.8 15.6 17.2C15.6 20 14 22.25 12 22.25C10 22.25 8.4 20 8.4 17.2C8.4 14.8 9.4 12.8 11.2 12.3L10.5 3.4C10.4 2.4 11 1.75 12 1.75Z";
+export const SlpStirGlyph = slpGlyph("Stir", (filled) => (
+  <>
+    <g transform="rotate(45 12 12)">{shape(SPOON, filled)}</g>
+    <path d={slpStarPath(6.25, 4.75, 2.6, true)} fill="currentColor" stroke="none" />
+  </>
+));
