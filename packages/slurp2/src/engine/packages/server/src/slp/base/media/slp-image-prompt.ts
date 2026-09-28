@@ -113,8 +113,10 @@ const PHOTO_STYLE =
 
 export function slurpArtStyle(look: string): { tag: string; negative: string } | null {
   if (!look.trim() || PHOTO_STYLE.test(look)) return null;
-  const matched = ART_STYLES.filter((style) => style.pattern.test(look));
-  if (matched.length === 0) return null;
+  const found = ART_STYLES.filter((style) => style.pattern.test(look));
+  if (found.length === 0) return null;
+  // "Drawn in anime style" matches the generic illustration too; the specific medium says it already.
+  const matched = found.length > 1 ? found.filter((style) => style !== ART_STYLES.at(-1)) : found;
   return {
     tag: matched.map((style) => style.tag).join(", "),
     negative: [...new Set(matched.flatMap((style) => style.negative.split(", ")))].join(", "),
@@ -124,7 +126,7 @@ export function slurpArtStyle(look: string): { tag: string; negative: string } |
 // The photo words Slurp itself writes into a brief (`slp-camera-source.ts`, `slp-production-profile.ts`,
 // `slp-image-brief.ts`), each with the neutral words a drawn picture keeps.
 const PHOTO_ONLY_WORDS: readonly [RegExp, string][] = [
-  [/\b(?:observational|carefully composed|deliberately staged)?\s*personal (?:photograph|snapshot)\b/giu, "picture"],
+  [/\b(?:(?:observational|carefully composed|deliberately staged)\s+)?personal (?:photograph|snapshot)\b,?\s*/giu, ""],
   [/\b(?:ordinary )?available light\b/giu, "natural light"],
   [/\bself-timer photo\b/giu, "shot"],
   [/\bstill frame from a video, slight motion blur, soft focus\b/giu, "caught mid-motion"],
@@ -139,7 +141,10 @@ export function slurpStyledImagePrompt(prompt: string, look: string): string {
   if (!style) return prompt;
   let styled = prompt;
   for (const [pattern, replacement] of PHOTO_ONLY_WORDS) styled = styled.replace(pattern, replacement);
-  styled = styled.replace(/\bunedited\b,?\s*/giu, "").replace(/[ \t]{2,}/gu, " ");
+  styled = styled
+    .replace(/\bunedited\b,?\s*/giu, "")
+    .replace(/,\s*(?=[,;.]|$)/gmu, "")
+    .replace(/[ \t]{2,}/gu, " ");
   return styled.toLocaleLowerCase().startsWith(style.tag.toLocaleLowerCase()) ? styled : `${style.tag}\n${styled}`;
 }
 

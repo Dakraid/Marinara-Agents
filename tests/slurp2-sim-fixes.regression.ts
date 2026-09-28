@@ -123,7 +123,13 @@ const read = (path: string) => readFileSync(new URL(path, root), "utf8");
     );
     assert.match(styled, /full body, from front/u, "the framing survives");
     assert.match(styled, /The only person in the picture\./u);
+    assert.doesNotMatch(styled, /,\s*[,;.]|,\s*$/mu, `no empty list parts left behind: ${styled}`);
   }
+  assert.equal(
+    slurpArtStyle(anime)?.tag,
+    "anime illustration, cel-shaded, 2D",
+    "no generic tag beside the specific one",
+  );
   assert.equal(slurpStyledImagePrompt(`${goth}\n${brief}`, goth), `${goth}\n${brief}`, "photo Creators unchanged");
   const service = read("server/src/slp/features/media/slp-images-service.ts");
   assert.match(service, /slurpStyledImagePrompt\(finalPromptLook, styleSource\)/u, "every picture path is styled");
