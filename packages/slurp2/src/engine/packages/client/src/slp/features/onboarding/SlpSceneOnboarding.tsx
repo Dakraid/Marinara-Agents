@@ -4,12 +4,13 @@
 // wizard stays one tap away as "Quick setup".
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { flushSync } from "react-dom";
-import { ChevronRight, Headphones, Heart, Loader2, MessageCircle, Users, Zap } from "lucide-react";
+import { ChevronRight, Headphones, Heart, Loader2, MessageCircle, Smartphone, Users, Zap } from "lucide-react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import type { SlpScenePreset } from "../../../../../shared/src/slp/slp-scene.js";
 import type { SlpAccount, SlpIdentityDisclosure } from "../../../../../shared/src/slp/slp-social.types.js";
 import { cn } from "../../../lib/utils";
 import { Avatar, SLP_TYPE, useSlpMediaQuery } from "../../base/chrome/SlpChrome";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { slpPrefersReducedMotion } from "../../base/chrome/slp-motion";
 import { noteSlpAiUseOnce } from "../../modules/chrome/SlpAiMark";
 import { playSlpBurst, playSlpPop, SlpTwinkle } from "../../modules/sparkle/SlpSparkle";
@@ -242,9 +243,7 @@ function SceneSetup({
                     <span
                       className={cn(SLP_TYPE.meta, "mt-1.5 flex items-start gap-1 text-pretty text-[var(--slurp-muted)]")}
                     >
-                      <span aria-hidden="true" className="mt-px shrink-0 text-[var(--slurp-ink)]">
-                        ✦
-                      </span>
+                      <SlpSparkleGlyph size={13} aria-hidden="true" className="mt-0.5 shrink-0 text-[var(--slurp-ink)]" />
                       {t(`ui.slurp.scene.cast.${card}.get`, { name })}
                     </span>
                   </span>
@@ -493,21 +492,22 @@ function SceneStage({
             transition
           />
           <div className="min-w-0 flex-1">
-            <h3 tabIndex={-1} data-autofocus className={cn(SLP_TYPE.title, "truncate outline-none")}>
+            <h3 tabIndex={-1} data-autofocus className={cn(SLP_TYPE.title, "text-balance outline-none")}>
               {t("ui.slurp.scene.goal", { name: newcomerName })}
             </h3>
-            <p className={cn(SLP_TYPE.meta, "truncate text-[var(--slurp-muted)]")}>
+            <p className={cn(SLP_TYPE.meta, "line-clamp-2 text-pretty text-[var(--slurp-muted)]")}>
               {t(`ui.slurp.scene.role.${setup.preset}`, { name: setup.source.displayName, helper: hostName })}
             </p>
           </div>
           {/* Phones: the page lives in a sheet, one tap away. */}
           <button
             type="button"
+            aria-label={pageTitle}
+            title={pageTitle}
             onClick={() => setPageOpen(true)}
-            className="flex min-h-11 shrink-0 items-center gap-0.5 rounded-full px-2 text-xs font-bold text-[var(--slurp-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] sm:hidden"
+            className="grid size-11 shrink-0 place-items-center rounded-full bg-[var(--slurp-tint)] text-[var(--slurp-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] sm:hidden [&_svg]:!text-current"
           >
-            {pageTitle}
-            <ChevronRight size={14} aria-hidden="true" className="rtl:rotate-180" />
+            <Smartphone size={18} aria-hidden="true" />
           </button>
         </div>
         <div className="mt-1.5">
@@ -570,9 +570,11 @@ function useCountUp(target: number | null, duration = 1100) {
     if (target === null) return;
     if (slpPrefersReducedMotion()) return setValue(target);
     let frame = 0;
-    const start = performance.now();
+    let start: number | null = null;
     const tick = (now: number) => {
-      const share = Math.min(1, (now - start) / duration);
+      // The first frame's own time is the start: a frame time can be older than "now" at mount.
+      start ??= now;
+      const share = Math.min(1, Math.max(0, (now - start) / duration));
       setValue(Math.round(target * (1 - Math.pow(1 - share, 3))));
       if (share < 1) frame = window.requestAnimationFrame(tick);
     };
@@ -648,8 +650,8 @@ function SceneLive({
   ];
   return (
     <>
-      <div className="flex min-h-0 flex-1 flex-col items-center gap-5 overflow-y-auto py-4 sm:flex-row sm:items-center sm:justify-center sm:gap-10">
-        <div className="slp-live-in w-full max-w-[14rem] shrink-0 sm:max-w-[18rem]">
+      <div className="flex min-h-0 flex-1 flex-col items-center gap-4 overflow-y-auto py-3 sm:flex-row sm:items-center sm:justify-center sm:gap-10">
+        <div className="slp-live-in w-full max-w-[15rem] shrink-0 max-sm:[zoom:0.74] sm:max-w-[18rem]">
           <SlpScenePhone
             draft={model.draft}
             recent={[]}

@@ -21,6 +21,7 @@ import {
 import {
   applySlpScenePatch,
   editSlpSceneField,
+  SLP_SCENE_MOMENT_CHAPTER,
   slpSceneChapters,
   slpSceneInitialState,
   slpSceneMomentFilled,
@@ -375,7 +376,11 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
       .map((chapter) => chapter.id);
     if (!fresh.length) return;
     for (const id of fresh) seen.add(id);
-    const next = chapters.chapters.find((chapter) => !chapter.done)?.id ?? null;
+    // Next is the chapter the scene is on now (Support asks the bio before the photo), else the first open one.
+    const now = SLP_SCENE_MOMENT_CHAPTER[momentRef.current];
+    const next = chapters.chapters.find((chapter) => chapter.id === now && !chapter.done)?.id ??
+      chapters.chapters.find((chapter) => !chapter.done)?.id ??
+      null;
     append([{ id: generateClientId(), kind: "chapter", chapters: fresh, next }]);
     // Only a change in which chapters are done is news.
     // eslint-disable-next-line react-hooks/exhaustive-deps

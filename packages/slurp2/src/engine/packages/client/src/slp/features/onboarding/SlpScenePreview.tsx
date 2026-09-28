@@ -135,7 +135,7 @@ export function SlpSceneChapterRail({
 export type SlpSceneFirstPost = "none" | "writing" | "posted" | "later";
 
 /** A placeholder bar for a part of the page the chat has not filled yet. */
-function Blank({ className }: { className: string }) {
+function BlankBar({ className }: { className: string }) {
   return <span aria-hidden="true" className={cn("block h-2 rounded-full bg-[var(--noodle-divider)]", className)} />;
 }
 
@@ -169,6 +169,8 @@ export function SlpScenePhone({
   // A part the newest patch changed remounts (new key), so its glow plays again for the next one.
   const partKey = (...fields: SlpSceneField[]) => (glow(...fields) ? `${fields[0]}-${recentKey}` : fields[0]);
   const partGlow = (...fields: SlpSceneField[]) => cn("rounded-lg", glow(...fields) && "slp-field-glow");
+  // A live page has no placeholders: what the chat never filled is simply not there.
+  const Blank = ({ className }: { className: string }) => (live ? null : <BlankBar className={className} />);
   const name = draft.displayName.trim();
   const limits = [draft.spice ? t(`ui.slurp.scene.spice.${draft.spice}`) : "", draft.turnOns.trim()]
     .filter(Boolean)

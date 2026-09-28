@@ -32,6 +32,11 @@ export function SlpSceneActions({ model }: { model: SlpSceneModel }) {
   // shoot before the photos) or has gone two exchanges without settling, so there is no dead end.
   const showNext = Boolean(next) && (model.doneMoments.includes(model.moment) || model.lingering);
   const suggestions = slpSceneSuggestions(preset, model.moment);
+  // Outfit and place are picked: the shoot card's "Take the photos" is the move now, not a reply.
+  const shootReady =
+    model.moment === "shoot" &&
+    !model.photos.avatarUrl &&
+    Boolean(model.draft.wardrobe.trim() || model.draft.locations.trim());
   const inRow = suggestions.slice(0, SLP_SCENE_ROW_SUGGESTIONS - (showNext ? 1 : 0));
   const inMore = suggestions.filter((id) => !inRow.includes(id));
   const chip = "min-h-11 shrink-0 whitespace-nowrap px-3.5";
@@ -71,7 +76,7 @@ export function SlpSceneActions({ model }: { model: SlpSceneModel }) {
               )}
               {inRow.map((id, index) => {
                 // The best fit for this moment leads, lit up, unless "Next" already is the obvious tap.
-                const lead = index === 0 && !showNext;
+                const lead = index === 0 && !showNext && !shootReady;
                 return (
                   <SlpChip
                     key={id}
