@@ -36,6 +36,8 @@ import { characterNameFromRow } from "../../modules/creators/slp-public-support.
 import {
   selectSlpImageProviderPrompt,
   ensureSlpImageAppearance,
+  slurpArtStyle,
+  slurpStyledImagePrompt,
   slurpImageLook,
   slurpWithoutCameraDevice,
   stripAppearanceLabel,
@@ -500,8 +502,13 @@ async function generateCreatorPostImageRun(
   const finalPromptScene = skipInterpretation
     ? finalPromptBase
     : slurpWithoutCameraDevice(finalPromptBase) || finalPromptBase;
+  // The Creator's medium: an anime, furry or dragon Creator is drawn, so the brief's photo words go
+  // and their style leads. A photo-style Creator, and a prompt a human approved, stay as they are.
+  const styleSource = `${characterDescription}\n${characterImageInstructions}`;
+  const artStyle = skipInterpretation ? null : slurpArtStyle(styleSource);
+  const finalPromptLook = ensureSlpImageAppearance(finalPromptScene, redactIdentity(stageAppearance));
   const finalPrompt = [
-    ensureSlpImageAppearance(finalPromptScene, redactIdentity(stageAppearance)),
+    artStyle ? slurpStyledImagePrompt(finalPromptLook, styleSource) : finalPromptLook,
     input.compositionGuard,
   ]
     .filter(Boolean)
@@ -517,6 +524,7 @@ async function generateCreatorPostImageRun(
   const finalNegativePrompt = slurpImageNegativeTerms(
     baseNegativePrompt,
     input.negativePromptAdditions ?? slurpImageNegativePrompt(input.visualBrief?.sexualLevel),
+    artStyle?.negative,
   );
   // Chosen here rather than by each caller, so a scheduled or redrawn Story is a Story too (R1-052).
   const outputWidth = input.width ?? (input.story ? input.settings.storyImageWidth : input.settings.imageWidth);

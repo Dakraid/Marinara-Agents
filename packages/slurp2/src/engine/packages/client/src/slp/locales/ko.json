@@ -1157,6 +1157,7 @@
   "ui.slurp.discover.tagsLabel": "태그",
   "ui.slurp.discover.tagGroup.themes": "테마",
   "ui.slurp.discover.tagGroup.vibe": "분위기",
+  "ui.slurp.discover.tagGroup.look": "외형",
   "ui.slurp.discover.tagGroup.adult": "성인",
   "ui.slurp.discover.tagGroup.custom": "사용자 지정",
   "ui.slurp.discover.sortBy": "정렬",

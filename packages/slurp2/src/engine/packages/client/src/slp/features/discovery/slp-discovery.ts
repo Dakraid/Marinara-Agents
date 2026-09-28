@@ -8,6 +8,7 @@ export const SLURP_DISCOVERY_TAG_GROUPS = [
     id: "vibe",
     tags: ["dominant", "flirty", "mysterious", "playful", "romantic", "submissive", "wholesome"],
   },
+  { id: "look", tags: ["anime", "anthro", "furry", "scalie", "dragon", "monster"] },
   { id: "adult", tags: ["bdsm", "exhibitionism", "feet", "lingerie", "roleplay", "toys"] },
 ] as const;
 

@@ -1,7 +1,11 @@
 import { SlpBootstrap } from "../../../../../shared/src/slp/slp-social.types.js";
 import { z } from "zod";
 import { slpArcBlueprintSchema } from "../../../../../shared/src/slp/slp-story-engine.js";
-import { SLURP_DISCOVERY_TAG_MAX_LENGTH, SLURP_DISCOVERY_TAG_SEED } from "../discovery/slp-discovery-profile.js";
+import {
+  LEGACY_SLURP_DISCOVERY_TAG_SEED,
+  SLURP_DISCOVERY_TAG_MAX_LENGTH,
+  SLURP_DISCOVERY_TAG_SEED,
+} from "../discovery/slp-discovery-profile.js";
 import {
   normalizeSlurpPromptBlockOverrides,
   slurpLegacyClassicPromptBlocks,
@@ -696,6 +700,11 @@ function normalizeSlurpSettingsUncached(raw: unknown): SlurpSettings {
   candidate.fanTypes = slurpNormalizeFanTypes(rawRecord.fanTypes ?? DEFAULT_SLURP_SETTINGS.fanTypes);
   // An empty list is a real choice; only a missing or non-array value falls back to the defaults.
   candidate.platformEvents = slurpNormalizePlatformEvents(rawRecord.platformEvents);
+  // An untouched tag list gains the "look" group; an edited one is the player's and stays as it is.
+  candidate.discoveryTags =
+    JSON.stringify(rawRecord.discoveryTags) === JSON.stringify(LEGACY_SLURP_DISCOVERY_TAG_SEED)
+      ? DEFAULT_SLURP_SETTINGS.discoveryTags
+      : (rawRecord.discoveryTags ?? DEFAULT_SLURP_SETTINGS.discoveryTags);
   candidate.arcLibrary = slurpNormalizeArcLibrary(rawRecord.arcLibrary, rawRecord.arcAllowedKinds);
   candidate.onboarding = rawRecord.onboarding ?? DEFAULT_SLURP_SETTINGS.onboarding;
   candidate.fanArchetypeWeights = {

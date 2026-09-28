@@ -79,6 +79,70 @@ export function slurpImageLook(appearance: string): string {
   return look.length <= MAX_LOOK_LENGTH ? look : `${look.slice(0, look.lastIndexOf(" ", MAX_LOOK_LENGTH))}`;
 }
 
+/**
+ * The art style a Creator is drawn in, read from their look and image habits. `null` means a photo.
+ *
+ * The picture brief is written as a photograph (camera source, "personal photograph", "available
+ * light", "unedited"), which is right for a Creator who is a real-looking person. For an anime,
+ * furry or dragon Creator the simulation counted three to five photo terms per prompt against one
+ * style phrase, and image models drew a cosplayer or a fursuit. A stylised Creator now leads with
+ * their medium and loses the photo-only words; a photo-style Creator is unchanged.
+ * ponytail: keyword match on the look. Upgrade to an "Art style" stage field if cards need more.
+ */
+const ART_STYLES: readonly { tag: string; negative: string; pattern: RegExp }[] = [
+  {
+    tag: "anime illustration, cel-shaded, 2D",
+    negative: "photograph, photorealistic, cosplay",
+    pattern: /\b(?:anime|manga|shoujo|shojo|shonen|shounen|cel[- ]shaded|chibi|visual novel)\b/iu,
+  },
+  {
+    tag: "anthro furry art, digital illustration",
+    negative: "photograph, photorealistic, fursuit, costume, mask",
+    pattern:
+      /\b(?:anthro(?:pomorphic)?|furry|fursona|scalie|kemono|digitigrade|dragon(?:ess|kin|born)?|wyvern|kobold|werewolf|werewolves|lizardfolk)\b(?![- ](?:tattoo|print|pattern|motif|earrings?|necklace|pendant|shirt|hoodie|plush))/iu,
+  },
+  {
+    tag: "digital illustration",
+    negative: "photograph, photorealistic",
+    pattern:
+      /\b(?:illustrat(?:ed|ion)|drawn (?:in|as|like)|cartoon(?:ish|y)?|comic(?:[- ]book)? style|painterly|pixel art|3d render(?:ed)?|cgi)\b/iu,
+  },
+];
+const PHOTO_STYLE =
+  /\b(?:photo[- ]?real(?:istic)?|photograph(?:ic|ed)?|realistic (?:style|render|photo)|real[- ]life|live[- ]action)\b/iu;
+
+export function slurpArtStyle(look: string): { tag: string; negative: string } | null {
+  if (!look.trim() || PHOTO_STYLE.test(look)) return null;
+  const matched = ART_STYLES.filter((style) => style.pattern.test(look));
+  if (matched.length === 0) return null;
+  return {
+    tag: matched.map((style) => style.tag).join(", "),
+    negative: [...new Set(matched.flatMap((style) => style.negative.split(", ")))].join(", "),
+  };
+}
+
+// The photo words Slurp itself writes into a brief (`slp-camera-source.ts`, `slp-production-profile.ts`,
+// `slp-image-brief.ts`), each with the neutral words a drawn picture keeps.
+const PHOTO_ONLY_WORDS: readonly [RegExp, string][] = [
+  [/\b(?:observational|carefully composed|deliberately staged)?\s*personal (?:photograph|snapshot)\b/giu, "picture"],
+  [/\b(?:ordinary )?available light\b/giu, "natural light"],
+  [/\bself-timer photo\b/giu, "shot"],
+  [/\bstill frame from a video, slight motion blur, soft focus\b/giu, "caught mid-motion"],
+  [/\bolder snapshot from their own archive, slightly dated look\b/giu, "an older picture of theirs"],
+  [/\bcasual and unedited\b/giu, "casual"],
+  [/\bphoto(?:graph)?s?\b/giu, "picture"],
+];
+
+/** The prompt in the Creator's medium: their style leads, Slurp's photo words go (see `slurpArtStyle`). */
+export function slurpStyledImagePrompt(prompt: string, look: string): string {
+  const style = slurpArtStyle(look);
+  if (!style) return prompt;
+  let styled = prompt;
+  for (const [pattern, replacement] of PHOTO_ONLY_WORDS) styled = styled.replace(pattern, replacement);
+  styled = styled.replace(/\bunedited\b,?\s*/giu, "").replace(/[ \t]{2,}/gu, " ");
+  return styled.toLocaleLowerCase().startsWith(style.tag.toLocaleLowerCase()) ? styled : `${style.tag}\n${styled}`;
+}
+
 /** Keep identity in the provider request even when review or rewrite replaces the draft. */
 export function ensureSlpImageAppearance(prompt: string, appearance: string): string {
   const look = slurpImageLook(appearance);
