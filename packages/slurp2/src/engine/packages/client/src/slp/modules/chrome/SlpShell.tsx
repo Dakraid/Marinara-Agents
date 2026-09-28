@@ -53,6 +53,7 @@ import { SlpSheet } from "./SlpSheet";
 import { PersonaIdentityCard, PersonaList } from "./SlpPersonaSwitcher";
 import { SlpPulseCard, SlpPulsePanel } from "./SlpPulse";
 import type { SlpShellProps } from "./slp-shell.types";
+import { SLP_NO_STORY_RINGS, SlpStoryRingProvider } from "../story/SlpStoryRing";
 
 /** The phone header brand: ramen bowl + "Slurp" with a slow ambient sparkle shimmer behind it. */
 export function SlpWordmark() {
@@ -207,6 +208,7 @@ export function SlpShell({
   contextualRail,
   overlays,
   accent = SLP_BLUE,
+  storyRings = SLP_NO_STORY_RINGS,
   children,
 }: SlpShellProps) {
   const { t: localizeUi } = useUiTranslation();
@@ -257,7 +259,7 @@ export function SlpShell({
     );
 
   return (
-    <SlpAccentContext.Provider value={accent}>
+    <SlpShellProviders accent={accent} storyRings={storyRings}>
       <div
         className={cn(
           // `overflow-x-clip`, not `overflow-x-hidden`: the drawer starts at x:100%, so while it
@@ -768,6 +770,23 @@ export function SlpShell({
           </div>
         </nav>
       </div>
+    </SlpShellProviders>
+  );
+}
+
+/** What every screen under the shell reads: the accent and the Story rings (T). */
+function SlpShellProviders({
+  accent,
+  storyRings,
+  children,
+}: {
+  accent: string;
+  storyRings: NonNullable<SlpShellProps["storyRings"]>;
+  children: ReactNode;
+}) {
+  return (
+    <SlpAccentContext.Provider value={accent}>
+      <SlpStoryRingProvider value={storyRings}>{children}</SlpStoryRingProvider>
     </SlpAccentContext.Provider>
   );
 }

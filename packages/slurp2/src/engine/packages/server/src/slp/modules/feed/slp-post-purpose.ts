@@ -472,3 +472,34 @@ export function slurpPurposeLinks(
     { postId: self.id, purpose: { ...purpose, postId: drop.id }, ...(self.story ? { linkedPostId: drop.id } : {}) },
   ];
 }
+
+/** The backfilled teaser stays one glance long. */
+const LOCKED_TEASER_BACKFILL_MAX = 90;
+
+/**
+ * The line a non-subscriber reads under a locked post. The post's own generated `lockedTeaser`
+ * wins; an older locked post without one gets the opening of its own caption, cut short so it
+ * trails off rather than giving the post away. Null (the fixed line) only when the post has no
+ * caption of its own or the opening only repeats the title the card already shows.
+ */
+export function slurpLockedPostTeaser(post: {
+  title: string | null;
+  content: string | null;
+  metadata: Record<string, unknown> | null;
+}): string | null {
+  const own = post.metadata?.lockedTeaser;
+  if (typeof own === "string" && own.trim()) return own.trim();
+  const text = post.content?.replace(/\s+/g, " ").trim();
+  if (!text) return null;
+  const sentence = (text.split(/(?<=[.!?…])\s/u)[0] ?? text).replace(/[.!?,;:…\s]+$/u, "");
+  const same = (value: string) =>
+    value
+      .toLocaleLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
+      .trim();
+  if (!sentence || (post.title && same(sentence) === same(post.title))) return null;
+  if (sentence.length < LOCKED_TEASER_BACKFILL_MAX) return `${sentence}…`;
+  const clipped = sentence.slice(0, LOCKED_TEASER_BACKFILL_MAX - 1);
+  const lastSpace = clipped.lastIndexOf(" ");
+  return `${(lastSpace > 30 ? clipped.slice(0, lastSpace) : clipped).replace(/[.!?,;:\s]+$/u, "")}…`;
+}

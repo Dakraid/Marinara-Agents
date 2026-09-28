@@ -1,7 +1,9 @@
 import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SlurpProfileMediaTile } from "./SlpScreenProfile";
 import { Images, Loader2, PenLine, UserPlus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSlpStoryRings } from "../../modules/story/SlpStoryRing";
+import { cn } from "../../../lib/utils";
 import { isSlurpStory, SlurpAccessTransition, slurpSubscriptionPriceOf } from "./SlpHomeHelpers";
 import { SlurpMomentShelfTile, SlurpMomentViewer } from "./SlpScreenMoments";
 import { slpShowPostInPlace } from "../../modules/post/SlpPostPurposeNote";
@@ -15,7 +17,7 @@ import { SlpPostCard } from "../../modules/post/SlpPostCard";
 import { playSlpSpendMoment, SlpShimmer } from "../../modules/sparkle/SlpSparkle";
 import type { StageProfileViewModel } from "./slp-profile-view-model";
 import { useSlurpSettings } from "../../features/settings/slp-settings-hooks";
-import { createSlpLightboxImage } from "../../modules/post/SlpPostHelpers";
+import { createSlpLightboxImage, SLP_CARD_STACK_CLASS } from "../../modules/post/SlpPostHelpers";
 
 /** Stories younger than this still wear the ring on the profile's Story row. */
 const STORY_LIVE_MS = 24 * 60 * 60 * 1000;
@@ -61,6 +63,15 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
     visiblePosts,
   } = model;
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
+  // A ringed avatar asked for this Creator's Stories (the hero, or a tap elsewhere that led here).
+  const { pending: pendingStories, taken: storiesTaken, startOf: storyStartOf } = useSlpStoryRings();
+  useEffect(() => {
+    if (!pendingStories || pendingStories !== profile.id) return;
+    const start = storyStartOf?.(pendingStories);
+    if (start && storyMoments.some((moment) => moment.post.id === start)) setActiveStoryId(start);
+    // Taken either way: a Story that is not on this page any more must not open later by surprise.
+    if (start ? storyMoments.length > 0 : true) storiesTaken?.();
+  }, [pendingStories, profile.id, storyMoments, storyStartOf, storiesTaken]);
   // "Tap a preview to open the full post" (on by default); off, a tap shows the picture alone.
   const previewOpensPost = useSlurpSettings().data?.previewOpensPost !== false;
   const openPost = previewOpensPost ? showProfilePost : undefined;
@@ -257,7 +268,8 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
           />
         )
       ) : visiblePosts.length > 0 ? (
-        <>
+        // Raised cards with the shared gap, like the feed (locked posts were already cards here).
+        <div className={cn(SLP_CARD_STACK_CLASS, "px-3 pt-4 @min-[680px]:px-0")}>
           {showPaywall && <SlpPaywallCard model={model} />}
           {visiblePosts.map((item) => {
             const itemId = item.kind === "locked" || item.kind === "controller-locked" ? item.post.id : item.model.id;
@@ -270,7 +282,7 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
                 menuOpen={postCardCtx.postMenuId === itemId}
               >
                 {item.kind === "locked" || item.kind === "controller-locked" ? (
-                  <div className="p-3 @min-[680px]:px-0">
+                  <div>
                     <LockedSlurpPostCard
                       post={item.post}
                       profile={profile}
@@ -347,7 +359,7 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
               </SlurpAccessTransition>
             );
           })}
-        </>
+        </div>
       ) : activeTab === "posts" && posts.length === 0 ? (
         // Nobody has posted here yet: say who, and offer the one useful next step.
         viewingOwnCreator ? (
@@ -432,7 +444,7 @@ function SlpPaywallCard({ model }: { model: StageProfileViewModel }) {
   return (
     <section
       data-slurp-paywall
-      className="mx-3 mt-3 rounded-2xl bg-[image:var(--slurp-hero)] p-[1.5px] shadow-[0_18px_40px_-26px_var(--noodle-accent)] @min-[680px]:mx-0"
+      className="rounded-2xl bg-[image:var(--slurp-hero)] p-[1.5px] shadow-[0_18px_40px_-26px_var(--noodle-accent)]"
     >
       <div className="overflow-hidden rounded-[14.5px] bg-[var(--slurp-surface-raised)] p-3">
         <div className="relative grid grid-cols-3 gap-1.5">

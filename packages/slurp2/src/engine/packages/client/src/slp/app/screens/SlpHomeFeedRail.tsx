@@ -1,4 +1,3 @@
-import { useSlpMinuteClock } from "../../base/ui/slp-minute-clock";
 import { Crown, Search, X } from "lucide-react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { SlpHeartGlyph } from "../../base/chrome/SlpGlyphs";
@@ -8,7 +7,6 @@ import { SLP_EYEBROW_CLASS, SLP_RAIL_GROUP_CLASS, SLP_SEARCH_FIELD_CLASS } from 
 import { SlpSegment } from "../../modules/chrome/SlpButton";
 import { SlpCreatorAvatar } from "../../modules/creator/SlpCreatorProfileCard";
 import { formatSlpNumber } from "../../base/ui/slp-number-format";
-import { slurpLiveStoryCreatorIds } from "./slp-hub-view";
 import type { SlurpHomeHostView } from "./SlpHomeCreatorFlow";
 
 /** The wide-screen discovery rail beside the feed. Narrow layouts omit it. */
@@ -22,16 +20,10 @@ export function SlpHomeFeedRail({ model, showDiscovery }: Pick<SlurpHomeHostView
     onNavigate,
     setDiscoverRank,
     setFeedSearch,
-    slurpSettingsQuery,
     viewerQuery,
   } = model;
   const { i18n } = useUiTranslation();
   const creators = viewerQuery.data?.creators ?? [];
-  const now = useSlpMinuteClock();
-  const storyCreatorIds = slurpLiveStoryCreatorIds(
-    creators,
-    now - (slurpSettingsQuery.data?.storyLifetimeHours ?? 72) * 60 * 60 * 1000,
-  );
   const openProfile = (accountId: string) => onNavigate({ mode: "creator", view: "profile", accountId });
   const scoreOf = (creator: (typeof creators)[number]) =>
     discoverRank === "subscribers"
@@ -76,7 +68,6 @@ export function SlpHomeFeedRail({ model, showDiscovery }: Pick<SlurpHomeHostView
                 (creator) => creator.profile.id !== mainAuthorProfile?.id && !creator.subscribed,
               )}
               onOpenProfile={openProfile}
-              storyCreatorIds={storyCreatorIds}
               embedded
             />
           </div>
@@ -125,7 +116,7 @@ export function SlpHomeFeedRail({ model, showDiscovery }: Pick<SlurpHomeHostView
                       >
                         {index + 1}
                       </span>
-                      <SlpCreatorAvatar profile={creator.profile} ring={storyCreatorIds.has(creator.profile.id)} />
+                      <SlpCreatorAvatar profile={creator.profile} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[13px] font-bold leading-5">
                           {creator.profile.displayName}

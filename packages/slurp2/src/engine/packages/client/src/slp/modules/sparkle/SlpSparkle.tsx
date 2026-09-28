@@ -59,9 +59,19 @@ export function SlpShimmer() {
  * every 7 s. Sits above the parent's content (it is only a 2 px ring), so the parent needs
  * `relative` and a border radius.
  */
-export function SlpRingGlint() {
+export function SlpRingGlint({ seen = false, outset = 0 }: { seen?: boolean; outset?: number } = {}) {
   const ref = useSlpAmbientPause<HTMLSpanElement>();
-  return <span ref={ref} className="slp-ring" aria-hidden="true" data-slp-sparkle="ring" />;
+  return (
+    <span
+      ref={ref}
+      // Seen: a still, muted ring (the Story is still there to watch) with no glint.
+      className={seen ? "slp-ring slp-ring-seen" : "slp-ring"}
+      // `outset` draws the ring outside the parent, so an avatar keeps its size and layout.
+      style={outset ? { inset: -outset } : undefined}
+      aria-hidden="true"
+      data-slp-sparkle="ring"
+    />
+  );
 }
 
 const DEFAULT_TWINKLES = [

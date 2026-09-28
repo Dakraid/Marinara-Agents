@@ -29,6 +29,7 @@ import {
   profileAccent,
 } from "../../features/creators/SlpStageProfileForm";
 import { cn } from "../../../lib/utils";
+import { SLP_CARD_STACK_CLASS } from "../../modules/post/SlpPostHelpers";
 import { SLP_IMG_FRAME_CLASS, slpImgFade } from "../../base/chrome/SlpChrome";
 import { api } from "../../../lib/api-client";
 import { SlpPostSurfaceMenu } from "../../modules/post/SlpPostMenu";
@@ -275,6 +276,7 @@ export function StageProfileView({
   return (
     <>
       <SlurpProfileSurface
+        storyCreatorId={profile.id}
         mobileHeader={
           <>
             <button
@@ -425,7 +427,7 @@ export function StageProfileView({
             <>
               {/* Fan cards open the Posts tab (step 3.2), so the header ends on its actions. */}
               {activeTab === "posts" && (goalForViewer || arcsQuery.data?.arcs.length) ? (
-                <div className="mx-3 mt-3 space-y-3 @min-[680px]:mx-0">
+                <div className={cn(SLP_CARD_STACK_CLASS, "mx-3 mt-4 @min-[680px]:mx-0")}>
                   {goalForViewer && (
                     <section className="rounded-2xl bg-[var(--slurp-surface-raised)] px-4 py-3.5 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
                       <div className="flex items-center gap-3">

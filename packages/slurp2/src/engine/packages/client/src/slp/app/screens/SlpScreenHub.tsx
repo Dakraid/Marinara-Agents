@@ -6,7 +6,8 @@ import { isSlurpStory, SLP_CREATOR_FEED_WINDOW_SIZE, type SlurpViewerCreator } f
 import { SlurpMomentsShelf, SlurpMomentViewer } from "./SlpScreenMoments";
 import { slpShowPostInPlace } from "../../modules/post/SlpPostPurposeNote";
 import { ArrowUp, LayoutGrid, List, Search, UserRound } from "lucide-react";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSlpStoryRings } from "../../modules/story/SlpStoryRing";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
 import type { Persona } from "@marinara-engine/shared";
@@ -21,6 +22,7 @@ import { useCreatorViewer, useSlurpViewerFeedSlice } from "../../features/feed/s
 import { useSlurpWallet } from "../../features/economy/slp-economy-hooks";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
+import { SLP_CARD_STACK_CLASS } from "../../modules/post/SlpPostHelpers";
 import { SlpPostCardCtx } from "../../modules/post/SlpPostTypes";
 import { LockedSlurpPostCard } from "../../modules/post/SlpLockedPostCard";
 import { SlpPostCard } from "../../modules/post/SlpPostCard";
@@ -198,7 +200,6 @@ export function ViewerHub({
     searchResults: derivedSearchResults,
     discoveredCreators,
     suggestedCreators,
-    storyCreatorIds,
   } = useMemo(
     () =>
       deriveSlurpHubView({
@@ -210,6 +211,17 @@ export function ViewerHub({
       }),
     [authorProfile?.id, momentCutoff, scope, searchTerm, tab],
   );
+  // A ringed avatar asked for a Creator's Stories: play them here, or on their page when this tab's
+  // shelf does not carry them (Following, not followed).
+  const { pending: pendingStories, taken: storiesTaken, startOf: storyStartOf } = useSlpStoryRings();
+  useEffect(() => {
+    if (!pendingStories) return;
+    const start = storyStartOf?.(pendingStories);
+    if (start && moments.some((moment) => moment.post.id === start)) {
+      setActiveMomentId(start);
+      storiesTaken?.();
+    } else postCardCtx.openAuthorProfile?.(pendingStories);
+  }, [moments, pendingStories, storiesTaken, storyStartOf, postCardCtx]);
   const fullFeed = !searchTerm && sliceItems ? sliceItems : derivedFeed;
   const searchResults = searchTerm && sliceItems ? sliceItems : derivedSearchResults;
   // "Load more" pages whichever list is on screen; the total is the server's count, not a guess (R1-042).
@@ -399,7 +411,6 @@ export function ViewerHub({
             ? renderInlineAd(inlineAdsQuery.data.items[0], true)
             : null
         }
-        storyCreatorIds={storyCreatorIds}
         isLoading={isLoading && !scope}
         isError={isError && !scope}
         onRetry={onRetry}
@@ -635,7 +646,7 @@ export function ViewerHub({
               total={Math.max(feed.length, serverTotal ?? 0)}
             />
           ) : (
-            <div className="space-y-4 px-3 pb-6 sm:px-4 @min-[1024px]:bg-[var(--slurp-canvas)]">
+            <div className={cn(SLP_CARD_STACK_CLASS, "px-3 pb-6 sm:px-4 @min-[1024px]:bg-[var(--slurp-canvas)]")}>
               <AnimatePresence initial={false} mode="popLayout">
                 {visibleFeed.map((item, index) => (
                   <motion.div
@@ -648,7 +659,7 @@ export function ViewerHub({
                       postCardCtx.postMenuId === item.post.id ? "relative z-40 overflow-visible" : "overflow-hidden"
                     }
                   >
-                    <Fragment>
+                    <div className={SLP_CARD_STACK_CLASS}>
                       {index === dividerIndex && <NewSinceLastVisitDivider />}
                       {renderFeedPost(item)}
                       {(() => {
@@ -667,10 +678,9 @@ export function ViewerHub({
                         <SlurpInlineSuggestedCreators
                           creators={suggestedCreators}
                           onOpenProfile={postCardCtx.openAuthorProfile}
-                          storyCreatorIds={storyCreatorIds}
                         />
                       )}
-                    </Fragment>
+                    </div>
                   </motion.div>
                 ))}
               </AnimatePresence>

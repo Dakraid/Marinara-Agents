@@ -58,6 +58,7 @@ import {
   buildNoodlerPostMessages,
   slpCreatorTitleFromContent,
   completeSlurpCreatorPost,
+  slurpLockedTeaserMetadata,
 } from "./slp-post-prompt.js";
 export type { SlpCreatorContentFormat } from "../../base/prompting/slp-content-format.js";
 
@@ -160,8 +161,7 @@ export async function generateCreatorPost(
   const publicIdentity = await slpCreatorPublicIdentityFor(db, linkedPublicAccount);
   // Read the card at post time rather than relying on the bio and stage voice frozen at setup, so
   // sharpening a character sharpens its Creator and existing Creators improve without a migration.
-  // Concealed modes get the same seed the stage profile draft uses; disclosure limits what may be
-  // said, not who this is.
+  // Concealed modes get the stage profile draft's seed; disclosure limits what may be said, not who.
   const sourceCharacterContext = await resolveCreatorCharacterCanon(db, linkedPublicAccount, disclosureMode);
   const loreContext = await resolveSlurpPostLore(db, {
     settings,
@@ -316,10 +316,8 @@ export async function generateCreatorPost(
         .join("\n")
     : undefined;
 
-  // The post call writes text only. Asking one call for the caption and the
-  // picture together is what made every image an illustration of its own caption, so the brief is
-  // assembled from the situation instead and the caption never reaches it. A directed post has no
-  // variation and therefore no brief, so it keeps the old single-call behaviour.
+  // The post call writes text only. One call for caption and picture made every image an illustration
+  // of its caption, so the brief comes from the situation. A directed post has no brief (one call).
   const briefedImage = Boolean(postImages && cameraInstruction && variation);
   const askModelForImagePrompt = postImages && !briefedImage;
   const askModelForScene = briefedImage;
@@ -397,6 +395,7 @@ export async function generateCreatorPost(
     ]
       .filter(Boolean)
       .join("\n\n"),
+    askTeaser: input.request.access === "locked",
     project: project ? { project, posts: projectPosts } : undefined,
     allowImagePrompt: askModelForImagePrompt,
     allowScenePlan: askModelForScene,
@@ -656,6 +655,7 @@ export async function generateCreatorPost(
       ...(input.request.poll ? { poll: createSlpPoll(input.request.poll) } : arcPoll ? { poll: arcPoll } : {}),
       ...(input.request.imageCrop ? { imageCrop: input.request.imageCrop } : {}),
       ...slurpPurposeMetadata(purpose, protectedGenerated.content, { storyline: Boolean(project) }),
+      ...slurpLockedTeaserMetadata(input.request.access, generated.teaser, disclosureMode, publicIdentity),
     },
   };
 

@@ -27,14 +27,18 @@ const future = new Date(Date.now() + 60_000).toISOString();
 assert.equal(slurpArcVoteClosed([{ pollPostId: "p1", pollClosesAt: past }], "p1"), true);
 assert.equal(slurpArcVoteClosed([{ pollPostId: "p1", pollClosesAt: future }], "p1"), false);
 assert.equal(slurpArcVoteClosed([{ pollPostId: "p1", pollClosesAt: past }], "p2"), false);
-assert.match(read("server/src/slp/features/feed/slp-feed-post-routes.ts"), /if \(slurpArcVoteClosed\(projects, id\)\)/u);
+assert.match(
+  read("server/src/slp/features/feed/slp-feed-post-routes.ts"),
+  /if \(slurpArcVoteClosed\(projects, id\)\)/u,
+);
 // R1-036 / R1-038: the copy says what the code does.
 assert.match(en["ui.noodle.noodlerwizard.nightQuietHelp"] ?? "", /23:00 to 07:00/u);
 assert.match(en["ui.slurp.settings.postShowMoreLengthDetail"] ?? "", /six lines/u);
 // R1-037: Purpose and Delivery say they shape Guide drafts.
 assert.match(read("client/src/slp/modules/post/SlpComposerPurpose.tsx"), /ui\.slurp\.composer\.purposeGuideOnly/u);
 // R1-040: the Story cutoff moves with a minute clock.
-for (const file of ["client/src/slp/app/screens/SlpScreenHub.tsx", "client/src/slp/app/screens/SlpHomeFeedRail.tsx"])
+// T: the rail's rings now come from the shared Story-ring state the host computes (SlpHomeHost).
+for (const file of ["client/src/slp/app/screens/SlpScreenHub.tsx", "client/src/slp/app/SlpHomeHost.tsx"])
   assert.match(read(file), /useSlpMinuteClock\(\)/u, file);
 // R1-043 / R1-044 / R1-045
 assert.doesNotMatch(read("client/src/slp/app/screens/SlpScreenComposer.tsx"), /Shared an image\./u);

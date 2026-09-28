@@ -12,7 +12,6 @@ export function SubscriptionSections({
   embedded = false,
   collapsed = false,
   onToggleCollapsed,
-  storyCreatorIds,
 }: {
   creators: NonNullable<ReturnType<typeof useCreatorViewer>["data"]>["creators"];
   onOpenProfile?: (accountId: string) => void;
@@ -21,7 +20,6 @@ export function SubscriptionSections({
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
   /** Creators with a live Story (their avatar gets the ring). */
-  storyCreatorIds?: ReadonlySet<string>;
 }) {
   const { t: localizeUi } = useUiTranslation();
   if (compact) {
@@ -86,7 +84,6 @@ export function SubscriptionSections({
               creator={creator}
               layout="row"
               onOpenProfile={onOpenProfile}
-              storyRing={storyCreatorIds?.has(creator.profile.id)}
             />
           ))}
         </div>

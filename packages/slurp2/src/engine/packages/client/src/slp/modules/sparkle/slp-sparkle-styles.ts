@@ -71,6 +71,8 @@ export const SLP_SPARKLE_STYLES = `
     -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
     overflow: hidden;
   }
+  .slp-ring-seen { background: color-mix(in srgb, var(--slurp-muted, currentColor) 55%, transparent); }
+  .slp-ring-seen::before { display: none; }
   .slp-ring::before {
     content: ""; position: absolute; inset: -50%; opacity: 0;
     background: conic-gradient(from 0deg, transparent 0 70%, rgb(255 255 255 / 0.95) 86%, transparent 98%);

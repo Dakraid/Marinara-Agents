@@ -1,5 +1,6 @@
 import {
   slpGeneratedCreatorPostSchema,
+  SLP_LOCKED_TEASER_MAX_LENGTH,
   type SlpCreatorGenerationRequest,
 } from "../../../../../shared/src/slp/slp-social-generation.schema.js";
 import {
@@ -37,7 +38,11 @@ import {
 } from "../../base/prompting/slp-content-format.js";
 import { SLURP_PLATFORM_CONTEXT } from "../../modules/prompting/slp-prompt.js";
 import { protectCreatorGeneratedIdentity, type PublicIdentity } from "../../base/identity/slp-identity-protection.js";
-import { NOODLER_UNTRUSTED_CONTENT_INSTRUCTION, slpCreatorIdentityInstruction } from "./slp-public-identity.js";
+import {
+  NOODLER_UNTRUSTED_CONTENT_INSTRUCTION,
+  protectBoundedCreatorGeneratedText,
+  slpCreatorIdentityInstruction,
+} from "./slp-public-identity.js";
 
 export type FormattedCreatorGenerationRequest = SlpCreatorGenerationRequest & {
   /** The composer asked for an image on this post, whatever the scheduler's image setting is. */
@@ -100,6 +105,8 @@ export type SlurpPostPromptInput = {
    * `slurp-post-guidance.ts`. Absent only for a caller that does not know the access yet.
    */
   accessInstruction?: string;
+  /** A locked post: the model also writes the teaser line non-subscribers read under the lock. */
+  askTeaser?: boolean;
   /** The project this post continues, with that project's own recent posts. Absent for a loose post. */
   project?: { project: SlurpProject; posts: SlpCreatorManagedPost[] };
   generatedAt?: Date;
@@ -260,10 +267,27 @@ export function buildSlurpPostBlocks(input: SlurpPostPromptInput): SlurpPromptBl
               // it, and the result reads as a shoot rather than as something a person posted.
               "Return one JSON object with title, content, and imagePrompt. imagePrompt is required. Never return null or an empty imagePrompt. Do not create a poll."
             : "Return one JSON object with title and content only. Do not create a poll or image prompt."
-      }${input.beat ? "\nAlso return claims as described in # This post." : ""}\nReturn JSON only. No prose outside the JSON object.`,
+      }${input.beat ? "\nAlso return claims as described in # This post." : ""}${input.askTeaser ? `\n${SLURP_LOCKED_TEASER_INSTRUCTION}` : ""}\nReturn JSON only. No prose outside the JSON object.`,
     },
   ];
   return systemBlocks;
+}
+
+/**
+ * Every locked post used to show the same "A little something from tonight…" under the lock. The
+ * post now writes its own line, so a tease's drop, a custom and a toy review each sell themselves.
+ */
+export const SLURP_LOCKED_TEASER_INSTRUCTION = `Also return teaser: one short line of at most ${SLP_LOCKED_TEASER_MAX_LENGTH} characters, in your own voice, that people who have not unlocked this post read under the lock. It makes them want what is inside and fits what this post is for (a drop you teased, a promised request, a set, a moment), but it reveals nothing the lock hides: no explicit detail, no quote from the content, not the title again.`;
+
+/** The locked post's own line under the lock, identity-protected like its caption (`slurpLockedPostTeaser`). */
+export function slurpLockedTeaserMetadata(
+  access: string,
+  teaser: string | null,
+  ...protect: [SlurpPostPromptInput["disclosureMode"], SlurpPostPromptInput["publicIdentity"]]
+): { lockedTeaser?: string } {
+  if (access !== "locked" || !teaser) return {};
+  const text = protectBoundedCreatorGeneratedText(teaser, ...protect, SLP_LOCKED_TEASER_MAX_LENGTH);
+  return text ? { lockedTeaser: text } : {};
 }
 
 export function buildNoodlerPostMessages(input: SlurpPostPromptInput): ChatMessage[] {

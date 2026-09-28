@@ -137,15 +137,13 @@ assert.match(discover, /grid grid-cols-2/u);
 assert.match(card, /layout === "featured"/u);
 assert.match(card, /<SlpGlint \/>/u);
 // Story ring on card avatars: every Creator with a Story inside the lifetime, on either feed tab.
-assert.match(card, /ring && <SlpRingGlint \/>/u);
+// T: the ring comes from the shared Story-ring context (new / seen / none), see slurp2-t-polish.
+assert.match(card, /<SlpStoryRingAvatar creatorId=\{profile\.id\}/u);
 assert.match(
   client("app/screens/slp-hub-view.ts"),
   /isSlurpStory\(post\) && new Date\(post\.createdAt\)\.getTime\(\) >= cutoff/u,
 );
-assert.match(
-  client("app/screens/slp-hub-view.ts"),
-  /storyCreatorIds: slurpLiveStoryCreatorIds\(creators, momentCutoff\)/u,
-);
+assert.match(client("app/screens/slp-hub-view.ts"), /export function slurpLiveStories\(/u);
 // One-tap Subscribe with the spend moment; step 6.5: cancel is one tap + an Undo toast.
 assert.match(card, /playSlpSpendMoment\(origin\)/u);
 assert.match(card, /showSlpSubscriptionCancelledToast/u);
@@ -173,6 +171,6 @@ assert.match(ad, /kind="menu"/u);
 // Rails and the suggested row use the same card.
 assert.match(client("app/screens/SlpScreenSubscriptions.tsx"), /layout="row"/u);
 assert.match(client("app/screens/SlpHomeFeedRail.tsx"), /SLP_RAIL_GROUP_CLASS/u);
-assert.match(client("app/screens/SlpScreenSuggestedCreators.tsx"), /<SlurpCreatorProfileCard[\s\S]*storyRing=/u);
+assert.match(client("app/screens/SlpScreenSuggestedCreators.tsx"), /<SlurpCreatorProfileCard/u);
 
 console.log("slurp2 step 5 discover: ok");

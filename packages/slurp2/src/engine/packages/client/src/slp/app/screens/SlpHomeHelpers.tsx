@@ -242,6 +242,7 @@ import {
   ProfileInitial,
   SLP_IMG_FRAME_CLASS,
   SLP_PAGE_SCROLL_CLASS,
+  SLP_TOP_BAR_CLASS,
   slpImgFade,
 } from "../../base/chrome/SlpChrome";
 import { useTranslation as useUiTranslation } from "react-i18next";
@@ -371,7 +372,8 @@ export function SlpCreatorFrame({
     <div className="flex h-full min-h-0 flex-col">
       <header
         className={cn(
-          "flex h-14 shrink-0 items-center gap-2 border-b border-[var(--noodle-divider)] px-2",
+          "flex h-14 shrink-0 items-center gap-2 px-2",
+          SLP_TOP_BAR_CLASS,
           hideHeaderOnMobile && "hidden md:flex",
           hideHeader && "hidden md:hidden",
         )}
@@ -645,7 +647,7 @@ export function SlurpPostDialog({
       // The dialog owns the picture, so the card must not draw it. The card is told to skip the
       // picture rather than handed a post with its image fields blanked: everything else that
       // reads those fields — "Download post card" in the card's own menu — needs them intact.
-      side={<SlpPostCard post={post} ctx={ctx} surface="profile" hideImage />}
+      side={<SlpPostCard post={post} ctx={ctx} surface="dialog" hideImage />}
     />
   );
 }

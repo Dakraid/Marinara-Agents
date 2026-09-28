@@ -1,4 +1,5 @@
 import { SlpTimestamp } from "../../base/ui/SlpTimestamp";
+import { SlpStoryRingAvatar } from "../story/SlpStoryRing";
 import {
   Bell,
   ChevronLeft,
@@ -110,6 +111,9 @@ export function LockedSlurpPostCard({
   // The demo's real title is a punchline; showing it while locked spoils the reveal, on the card
   // and in the unlock sheet alike.
   const shownTitle = demo && !revealed ? (demo.lockedTitle ?? post.title) : post.title;
+  // The post's own line under the lock; the fixed line is only for a post that has none.
+  const ownTeaser = (post as { teaser?: unknown }).teaser;
+  const lockedTeaser = typeof ownTeaser === "string" && ownTeaser.trim() ? ownTeaser : null;
   // A locked post's URL resolves to a server-blurred teaser, not the original bytes. Where no
   // teaser can be built the server sends nothing and only the frame renders.
   const postImages = post.images ?? [];
@@ -265,10 +269,12 @@ export function LockedSlurpPostCard({
               : undefined
           }
         >
-          <span className="relative">
-            <ProfileInitial profile={profile} />
-            <SlurpCelebrationRing active={transaction !== null} />
-          </span>
+          <SlpStoryRingAvatar creatorId={profile.id} name={profile.displayName}>
+            <span className="relative">
+              <ProfileInitial profile={profile} />
+              <SlurpCelebrationRing active={transaction !== null} />
+            </span>
+          </SlpStoryRingAvatar>
         </button>
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-2">
@@ -506,7 +512,8 @@ export function LockedSlurpPostCard({
         ) : (
           !controllerOnly && (
             <p className="mt-1.5 text-[13px] leading-[19px] text-[var(--slurp-muted)]">
-              {localizeUi("ui.slurp.locked.teaser", { defaultValue: "A little something from tonight…" })}
+              {lockedTeaser ??
+                localizeUi("ui.slurp.locked.teaser", { defaultValue: "A little something from tonight…" })}
             </p>
           )
         )}

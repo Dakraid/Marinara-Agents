@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../modules/chrome/SlpStateKit";
 import { toast } from "sonner";
 import { ViewerHub } from "./screens/SlpScreenHub";
@@ -27,6 +27,10 @@ import { renderSlurpHomeCreatorFlow } from "./screens/SlpHomeCreatorFlow";
 import { renderSlurpHomeDestinations } from "./screens/SlpHomeDestinations";
 import { SlpHomeFeedRail } from "./screens/SlpHomeFeedRail";
 import { useRefreshCreatorFanActivityNow } from "../features/audience/slp-fan-activity-hooks";
+import { useSlpMinuteClock } from "../base/ui/slp-minute-clock";
+import type { SlpStoryRings } from "../modules/story/SlpStoryRing";
+import { slpStoryRings, slpStoryStartId } from "../modules/story/slp-story-rings";
+import { slurpLiveStories } from "./screens/slp-hub-view";
 
 export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
   const model = useSlurpHomeState({ navigation, onNavigate, onLeave });
@@ -109,6 +113,7 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
     return () => document.documentElement.removeAttribute("data-slp-whole");
   }, [wholePictures]);
   const personaSourceIds = new Set(personas.map((persona) => persona.id));
+  const storyRings = useSlurpStoryRings(model);
 
   const shellProps = {
     appMode: "slurp" as const,
@@ -138,6 +143,7 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
     homeActive: navigation.mode === "creator" && navigation.view === "hub",
     noodlerUnseenCount,
     accent: SLP_PINK,
+    storyRings,
     personaAccount: shellPersonaAccount,
     // The Slurp identity to show for the active persona, when it runs a Creator profile. Kept
     // separate from `personaAccount` on purpose: that one carries the persona's own account id,
@@ -444,5 +450,40 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
         onSkipped={() => setOnboardingState("completed")}
       />
     </SlpShell>
+  );
+}
+
+/**
+ * The Story ring for every avatar under the shell (T): who has a live Story, seen or not, and a tap
+ * that opens them. The hub opens its own Story viewer; anywhere else the Creator's profile opens and
+ * plays them there, so a closed Story leaves the player on that page.
+ */
+function useSlurpStoryRings({
+  viewerQuery,
+  slurpSettingsQuery,
+  navigation,
+  onNavigate,
+}: Pick<ReturnType<typeof useSlurpHomeState>, "viewerQuery" | "slurpSettingsQuery"> &
+  Pick<SlurpHomeProps, "navigation" | "onNavigate">): SlpStoryRings {
+  const [pending, setPending] = useState<string | null>(null);
+  const now = useSlpMinuteClock();
+  const cutoff = now - (slurpSettingsQuery.data?.storyLifetimeHours ?? 72) * 60 * 60 * 1000;
+  const creators = viewerQuery.data?.creators;
+  const live = useMemo(() => slurpLiveStories(creators ?? [], cutoff), [creators, cutoff]);
+  const rings = useMemo(() => slpStoryRings(live), [live]);
+  const onHub = navigation.mode === "creator" && (navigation.view === "hub" || navigation.view === "search");
+  const onProfileOf = navigation.mode === "creator" && navigation.view === "profile" ? navigation.accountId : null;
+  return useMemo(
+    () => ({
+      ringOf: (creatorId: string) => rings.get(creatorId) ?? null,
+      open: (creatorId: string) => {
+        setPending(creatorId);
+        if (!onHub && onProfileOf !== creatorId) onNavigate({ mode: "creator", view: "profile", accountId: creatorId });
+      },
+      pending,
+      taken: () => setPending(null),
+      startOf: (creatorId: string) => slpStoryStartId(live, creatorId),
+    }),
+    [live, rings, pending, onHub, onProfileOf, onNavigate],
   );
 }
