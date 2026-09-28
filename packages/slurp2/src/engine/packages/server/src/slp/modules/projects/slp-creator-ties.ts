@@ -89,6 +89,8 @@ export type SlurpRivalry = {
   stageAt: string;
   /** How it ended: they made up (and maybe collab next), it fizzled out, or the player calmed it. */
   ending: "made_up" | "fizzled" | "calmed" | null;
+  /** `<creatorId>:<stage>` once that Creator posted about this stage: one post per stage each. */
+  told: string[];
 };
 
 export type SlurpCreatorTies = {
@@ -106,18 +108,26 @@ export const slurpPairKey = (a: string, b: string) => [a, b].sort().join("|");
 // ─── Fit ────────────────────────────────────────────────────────────────────────────────────────
 
 /** Interests read from a card, so "a baker" and "loves sourdough" land in the same niche. */
-const INTERESTS: readonly { id: string; words: RegExp; idea: string }[] = [
+const INTERESTS: readonly { id: string; words: RegExp; ideas: readonly string[] }[] = [
   {
     id: "fitness",
     words:
       /\b(gym|work ?outs?|training|fitness|lift(s|ing)?|runn(ing|er)|yoga|pilates|climb\w*|boxing|sports?|athlet\w*|cardio|bouldering|Sport)\b/iu,
-    idea: "a workout together, one of you pushing the other",
+    ideas: [
+      "a workout together, one of you pushing the other",
+      "a joint training day with a challenge at the end",
+      "teaching each other one move you are best at",
+    ],
   },
   {
     id: "style",
     words:
       /\b(fashion\w*|style|stylish|outfits?|wardrobe|model(ing|s)?|lingerie|shopping|thrift\w*|streetwear|vintage|Mode)\b/iu,
-    idea: "a styling swap: each of you dresses the other",
+    ideas: [
+      "a styling swap: each of you dresses the other",
+      "a thrift run with a budget and a winner",
+      "matching looks for one shared shoot",
+    ],
   },
   {
     id: "food",
@@ -125,42 +135,70 @@ const INTERESTS: readonly { id: string; words: RegExp; idea: string }[] = [
     // made a climbing coach a flour brand's pick in the 7b-c measure.
     words:
       /\b(cook\w*|bak(e|es|er|ing)|chef|kitchen|recipes?|food\w*|Küche|kochen|backen|Backstube|Bäcker\w*|Brot)\b/iu,
-    idea: "a cooking night, one dish each",
+    ideas: [
+      "a cooking night, one dish each",
+      "one recipe, made both your ways",
+      "a market run and whatever you cook from it",
+    ],
   },
   {
     id: "art",
     words: /\b(art|artist|paint\w*|draw\w*|sketch\w*|illustrat\w*|tattoo\w*|ink|design\w*|craft\w*)\b/iu,
-    idea: "one piece made together, half each",
+    ideas: [
+      "one piece made together, half each",
+      "drawing each other, no peeking",
+      "a small art swap: one piece each, traded",
+    ],
   },
   {
     id: "music",
-    words: /\b(music\w*|sing\w*|song\w*|band|guitar|piano|dj|producer|rapper|concerts?|vinyl)\b/iu,
-    idea: "a little jam session, recorded",
+    words: /\b(music\w*|sing(s|er|ers|ing)?|songs?|band|guitar|piano|dj|producer|rapper|concerts?|vinyl)\b/iu,
+    ideas: [
+      "a little jam session, recorded",
+      "a cover of one song you both love",
+      "swapping playlists and reacting to each other's",
+    ],
   },
   {
     id: "games",
     words: /\b(gam(e|es|er|ing)|stream\w*|twitch|console|esports?|cosplay\w*|anime|manga)\b/iu,
-    idea: "a game night on stream, with some trash talk",
+    ideas: [
+      "a game night on stream, with some trash talk",
+      "a co-op run with one rule each",
+      "a costume or cosplay swap for one evening",
+    ],
   },
   {
     id: "beauty",
     words: /\b(make-?up|beauty|skin ?care|nails|hair\w*|salon|glam)\b/iu,
-    idea: "a get-ready-together session",
+    ideas: ["a get-ready-together session", "doing each other's look", "a skincare swap and honest reviews"],
   },
   {
     id: "outdoors",
-    words: /\b(hik(e|es|ing)|travel\w*|trips?|beach|surf\w*|camping|nature|mountains?|road ?trip|sail\w*)\b/iu,
-    idea: "a day out together somewhere new",
+    words: /\b(hik(e|es|ing)|travel\w*|trips?|beach|surf\w*|camping|nature|mountains?|road ?trip|sailing)\b/iu,
+    ideas: [
+      "a day out together somewhere new",
+      "a sunrise trip neither of you wants to get up for",
+      "a picnic spot one of you swears by",
+    ],
   },
   {
     id: "night",
     words: /\b(party\w*|clubs?|clubbing|bars?|cocktails?|nightlife|rave\w*|bartend\w*)\b/iu,
-    idea: "a night out together, the before and the after",
+    ideas: [
+      "a night out together, the before and the after",
+      "one bar each, the other judges",
+      "a pre-party at one place, the party at the other",
+    ],
   },
   {
     id: "books",
     words: /\b(books?|read(s|ing|er)?|writ(e|er|ing)|poet\w*|librar\w*|novels?)\b/iu,
-    idea: "a swap of favourite books, and a reading date",
+    ideas: [
+      "a swap of favourite books, and a reading date",
+      "a tiny book club of two",
+      "reading each other's comfort book",
+    ],
   },
 ];
 
@@ -188,7 +226,14 @@ export function slurpSharedNiche(a: SlurpTieCreator, b: SlurpTieCreator): { tags
   };
 }
 
-export type SlurpCollabFit = { fits: boolean; score: number; decline: SlurpCollabDecline | null; idea: string };
+export type SlurpCollabFit = {
+  fits: boolean;
+  score: number;
+  decline: SlurpCollabDecline | null;
+  idea: string;
+  /** What they could make together; a pair that collabs again picks one they have not done. */
+  ideas: readonly string[];
+};
 
 /**
  * Whether these two would plausibly make something together, judged from both cards. `paired`: the
@@ -201,11 +246,13 @@ export function slurpCollabFit(
 ): SlurpCollabFit {
   const niche = slurpSharedNiche(a, b);
   const shared = INTERESTS.find((interest) => niche.interests.includes(interest.id));
-  const idea = shared?.idea ?? "one shoot that mixes both your styles";
+  const ideas = shared?.ideas ?? ["one shoot that mixes both your styles", "a day swapping your usual routines"];
+  const idea = ideas[0]!;
   if ([a, b].some((creator) => never(creator.text).some((sentence) => COLLAB_TOPIC.test(sentence))))
-    return { fits: false, score: 0, decline: "noCollabs", idea };
+    return { fits: false, score: 0, decline: "noCollabs", idea, ideas };
   const score = niche.tags.length * 2 + niche.interests.length + (options.paired ? 4 : 0) + (options.boost ?? 0);
-  return { fits: score >= 2, score, decline: score >= 2 ? null : "offBrand", idea };
+  // One shared niche is enough: two bakers, two climbers. A shared tag counts double in the ranking.
+  return { fits: score >= 1, score, decline: score >= 1 ? null : "offBrand", idea, ideas };
 }
 
 /** Whether a rivalry between these two fits: a shared niche, and fire in the one who starts it. */
@@ -282,6 +329,9 @@ export function readSlurpCreatorTies(raw: unknown): SlurpCreatorTies {
         startedAt,
         stageAt: date(item.stageAt) ?? startedAt,
         ending: (["made_up", "fizzled", "calmed"] as const).find((ending) => ending === item.ending) ?? null,
+        told: (Array.isArray(item.told) ? item.told : [])
+          .filter((key): key is string => typeof key === "string")
+          .slice(-12),
       },
     ];
   });
@@ -382,8 +432,9 @@ export function slurpAdvanceCreatorTies(ties: SlurpCreatorTies, input: SlurpTies
     if (hoursSince(collab.askedAt, at) < ANSWER_AFTER_MS / HOUR_MS) return collab;
     const fit = slurpCollabFit(host, partner, {
       paired: paired.has(slurpPairKey(host.id, partner.id)),
-      // A suggestion helps (one shared interest is enough); two who made up already know each other.
-      boost: collab.origin === "player" ? 1 : collab.origin === "rivalry" ? 2 : 0,
+      // A suggestion is asked like any request: the Creator still needs something in common. Two who
+      // made up after a spat already know each other.
+      boost: collab.origin === "rivalry" ? 1 : 0,
     });
     // Even a good fit is sometimes a "not right now": real people are busy.
     const busy = fit.fits && hash(`${collab.id}:busy`) % 5 === 0 && collab.origin === "world";
@@ -408,7 +459,7 @@ export function slurpAdvanceCreatorTies(ties: SlurpCreatorTies, input: SlurpTies
     if (madeUp) {
       const host = from.automatic ? from : to;
       const partner = host === from ? to : from;
-      collabs = [...collabs, newCollab(input.newId(), host, partner, "rivalry", stamp)];
+      collabs = [...collabs, newCollab(input.newId(), host, partner, "rivalry", stamp, undefined, collabs)];
     }
     return { ...rivalry, stage: "over", stageAt: stamp, ending: madeUp ? "made_up" : "fizzled" };
   });
@@ -447,7 +498,7 @@ export function slurpAdvanceCreatorTies(ties: SlurpCreatorTies, input: SlurpTies
     const pick = options[0];
     if (pick) {
       const [host, partner] = slurpCollabRoles(pick.a, pick.b);
-      collabs = [...collabs, newCollab(input.newId(), host, partner, "world", stamp)];
+      collabs = [...collabs, newCollab(input.newId(), host, partner, "world", stamp, undefined, collabs)];
     }
   }
 
@@ -477,6 +528,7 @@ export function slurpAdvanceCreatorTies(ties: SlurpCreatorTies, input: SlurpTies
           startedAt: stamp,
           stageAt: stamp,
           ending: null,
+          told: [],
         },
       ];
     }
@@ -502,12 +554,21 @@ function newCollab(
   origin: SlurpCollab["origin"],
   stamp: string,
   hostShare = SLURP_COLLAB_DEFAULT_SHARE,
+  earlier: readonly SlurpCollab[] = [],
 ): SlurpCollab {
+  const { ideas } = slurpCollabFit(host, partner);
+  const done = new Set(
+    earlier
+      .filter((collab) => slurpPairKey(collab.hostId, collab.partnerId) === slurpPairKey(host.id, partner.id))
+      .map((collab) => collab.idea),
+  );
+  const start = hash(`${id}:idea`) % ideas.length;
+  const rotated = [...ideas.slice(start), ...ideas.slice(0, start)];
   return {
     id,
     hostId: host.id,
     partnerId: partner.id,
-    idea: slurpCollabFit(host, partner).idea,
+    idea: rotated.find((idea) => !done.has(idea)) ?? rotated[0]!,
     hostShare,
     status: "asked",
     origin,
@@ -571,7 +632,7 @@ export function slurpSuggestCollab(
   )
     return "busy";
   const [host, partner] = slurpCollabRoles(a, b);
-  const collab = newCollab(input.id, host, partner, "player", input.at.toISOString());
+  const collab = newCollab(input.id, host, partner, "player", input.at.toISOString(), undefined, ties.collabs);
   return {
     ...ties,
     blocked: ties.blocked.filter((key) => key !== slurpPairKey(a.id, b.id)),
@@ -603,7 +664,7 @@ export function slurpAgreeCollabInDm(
     return open.status === "planned"
       ? ties
       : update(ties, open.id, { status: "agreed", answeredAt: stamp, hostShare: share, ...(idea ? { idea } : {}) });
-  const collab = newCollab(input.id, host, partner, "dm", stamp, share);
+  const collab = newCollab(input.id, host, partner, "dm", stamp, share, ties.collabs);
   return {
     ...ties,
     blocked: ties.blocked.filter((entry) => entry !== key),
@@ -620,6 +681,16 @@ export function slurpCoolRivalry(ties: SlurpCreatorTies, id: string, at: Date): 
     ...ties,
     rivalries: ties.rivalries.map((entry) =>
       entry.id === id ? { ...entry, stage: "cooling", stageAt: at.toISOString(), ending: "calmed" } : entry,
+    ),
+  };
+}
+
+/** This Creator posted about the rivalry's current stage; the next post about it waits for a new stage. */
+export function slurpTellRivalry(ties: SlurpCreatorTies, id: string, creatorId: string): SlurpCreatorTies {
+  return {
+    ...ties,
+    rivalries: ties.rivalries.map((entry) =>
+      entry.id === id ? { ...entry, told: [...entry.told, `${creatorId}:${entry.stage}`].slice(-12) } : entry,
     ),
   };
 }

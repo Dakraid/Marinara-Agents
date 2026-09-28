@@ -96,8 +96,12 @@ export function slurpTieBeat(input: {
   }
 
   // Occasional: about one ordinary slot in three while a rivalry is on.
+  // One post per stage each: a spat is news, not a series.
   const rivalry = input.ties.rivalries.find(
-    (entry) => slurpRivalryActive(entry) && (entry.fromId === creatorId || entry.toId === creatorId),
+    (entry) =>
+      slurpRivalryActive(entry) &&
+      (entry.fromId === creatorId || entry.toId === creatorId) &&
+      !entry.told.includes(`${creatorId}:${entry.stage}`),
   );
   const rivalId = rivalry ? (rivalry.fromId === creatorId ? rivalry.toId : rivalry.fromId) : null;
   const rival = rivalId ? names.get(rivalId) : undefined;

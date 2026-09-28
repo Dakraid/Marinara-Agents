@@ -34,6 +34,7 @@ import {
   slurpRivalryFits,
   slurpSettleCollab,
   slurpSuggestCollab,
+  slurpTellRivalry,
   slurpUnblockPair,
   SLURP_NO_TIES,
   type SlurpCreatorTies,
@@ -351,6 +352,7 @@ async function main() {
         startedAt: start,
         stageAt: start,
         ending: null,
+        told: [],
       },
     ];
     const seen: string[] = ["shade"];
@@ -385,6 +387,7 @@ async function main() {
             startedAt: start,
             stageAt: start,
             ending: null,
+            told: [],
           },
         ],
       };
@@ -425,6 +428,7 @@ async function main() {
             startedAt: start,
             stageAt: start,
             ending: null,
+            told: [],
           },
         ],
       },
@@ -481,6 +485,17 @@ async function main() {
     assert.equal(agreed.hostShare, 60);
     assert.equal(agreed.idea, "leg day vlog");
     assert.equal(agreed.status, "agreed");
+    // A pair that collabs again does something new.
+    const again = slurpAgreeCollabInDm(
+      slurpSettleCollab(dm, "d1", { id: "p0", createdAt: at.toISOString() }),
+      rue,
+      me,
+      { at, id: "d2", idea: "", hostShare: null },
+    );
+    const ideas = again.collabs
+      .filter((collab) => collab.hostId === "rue" && collab.partnerId === "me")
+      .map((c) => c.idea);
+    assert.equal(new Set(ideas).size, ideas.length, `no repeated idea: ${ideas.join(" / ")}`);
     // The joint post shows on the partner's page once it is up.
     const posted = slurpSettleCollab(slurpPlanCollab(dm, "d1", at), "d1", { id: "p1", createdAt: at.toISOString() });
     assert.deepEqual(slurpCollabPostIdsFor(posted, "me"), ["p1"]);
@@ -731,6 +746,7 @@ async function main() {
           startedAt: start,
           stageAt: start,
           ending: null,
+          told: [],
         },
       ],
     };
@@ -748,6 +764,22 @@ async function main() {
     ).filter(Boolean);
     assert.ok(rival.length >= 12 && rival.length <= 30, `rivalry posts now and then (${rival.length}/60)`);
     assert.match(rival[0]!.beat.line, /do not name Mira/u);
+    // One post per stage each: once told, the same stage gives no second rivalry post.
+    const told = slurpTellRivalry(rivalTies, "r1", "rue");
+    assert.ok(
+      Array.from({ length: 30 }, (_, sequence) =>
+        slurpTieBeat({
+          creatorId: "rue",
+          creatorText: rue.text,
+          sequence,
+          ties: told,
+          deals: [],
+          names,
+          intents: [...intents],
+          at,
+        }),
+      ).every((beat) => beat?.beat.anchorKind !== "rival"),
+    );
     assert.deepEqual(rival[0]!.beat.cast, ["Mira"]);
     const feud = slurpTieBeat({
       creatorId: "rue",

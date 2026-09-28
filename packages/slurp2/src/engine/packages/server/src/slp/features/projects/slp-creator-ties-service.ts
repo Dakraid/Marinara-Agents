@@ -19,6 +19,7 @@ import {
   slurpCollabPostIdsFor,
   slurpPlanCollab,
   slurpSettleCollab,
+  slurpTellRivalry,
   type SlurpTieCreator,
 } from "../../modules/projects/slp-creator-ties.js";
 import { readSlurpTieStamp } from "../../modules/projects/slp-tie-stamp.js";
@@ -181,7 +182,12 @@ export async function planSlurpTieBeat(
     const { tie } = planned.beat;
     await mutateSlurpCreatorTies(db, (document) => ({
       document: {
-        ties: tie.kind === "collab" ? slurpPlanCollab(document.ties, tie.id, input.at) : document.ties,
+        ties:
+          tie.kind === "collab"
+            ? slurpPlanCollab(document.ties, tie.id, input.at)
+            : tie.kind === "rival"
+              ? slurpTellRivalry(document.ties, tie.id, input.creatorId)
+              : document.ties,
         deals:
           tie.kind !== "sponsor"
             ? document.deals
