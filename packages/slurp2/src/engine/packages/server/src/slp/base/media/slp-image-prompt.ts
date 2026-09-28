@@ -60,20 +60,50 @@ export function stripAppearanceLabel(value: string): string {
  * Card appearance paragraphs describe a wardrobe too — "favours pastel dresses … for cosplay she
  * wears a costume and carries a prop". Sent with every picture, the image model drew all of it,
  * often as a second person in the costume. Clothing now comes from the post's own scene, so the
- * sentences about clothes are dropped here. A Creator's own Stage appearance is trusted as written.
- * ponytail: a keyword filter over sentences. If cards need finer handling, generate a look once
- * per Creator with a language model and store it as Stage appearance.
+ * clothes are dropped here: only the clothing part of a sentence (V, user), so "Her curvy figure looks
+ * great in tight clothing" keeps "Her curvy figure looks great" and "red hair, green eyes and a black
+ * hoodie" keeps the hair and eyes. A Creator's own Stage appearance is trusted as written.
+ * ponytail: a keyword filter over sentences and clauses. If cards need finer handling, generate a look
+ * once per Creator with a language model and store it as Stage appearance.
  */
 const CLOTHING_SENTENCE =
-  /\b(?:wear|wears|wearing|worn|dress|dresses|dressed|outfits?|cloth(?:es|ing)|fashion|favou?rs|cosplay|costumes?|accessor(?:y|ies)|carries|carrying|shoes|boots|jewel(?:ry|lery))\b/iu;
+  /\b(?:wear|wears|wearing|worn|dress|dresses|dressed|outfits?|cloth(?:es|ing)|fashion|favou?rs|cosplay|costumes?|accessor(?:y|ies)|carries|carrying|shoes|boots|jewel(?:ry|lery)|hoodies?|shirts?|skirts?|jeans|jackets?|gowns?|couture|heels|lingerie|bikinis?|sweaters?|uniforms?)\b/iu;
 const MAX_LOOK_LENGTH = 600;
+/** Where a sentence splits into clauses; the separator stays with the clause after it. */
+const CLAUSE_BREAK = /(,\s*|;\s*|\s+(?:and|but|while)\s+|\s+[—–]\s+)/u;
+/** What a kept clause of a clothing sentence must be about: the body, not a mood or a habit. */
+const BODY_TRAIT =
+  /\b(?:hair|eyes?|skin|face|figure|body|build|frame|legs?|arms?|hips?|waist|chest|breasts?|curves?|curvy|shoulders?|lips?|smile|teeth|nose|jaw|cheeks?|freckle[sd]?|scars?|tattoo(?:s|ed)?|piercings?|muscles?|muscular|abs|tall|short|petite|slim|slender|lean|thick|chubby|stocky|athletic|height|cm|feet|ft|ears?|tail|fur|horns?|wings?|scales?|complexion|tan(?:ned)?|pale)\b/iu;
+/** "… looks great in tight clothing": the clothes come in a phrase at the end. */
+const CLOTHES_PHRASE = /\s+(?:in|under|beneath)\s+(?:[\p{L}'-]+\s+){0,3}$/u;
+
+/** A sentence without its clothing clauses: only its body traits, or "" when it has none. */
+function withoutClothes(sentence: string): string {
+  if (!CLOTHING_SENTENCE.test(sentence)) return sentence;
+  const end = /[.!?]$/u.test(sentence) ? sentence.slice(-1) : ".";
+  const parts = sentence.replace(/[.!?]$/u, "").split(CLAUSE_BREAK);
+  let kept = "";
+  for (let index = 0; index < parts.length; index += 2) {
+    let clause = parts[index]!.trim();
+    const hit = CLOTHING_SENTENCE.exec(clause);
+    if (hit) {
+      const phrase = CLOTHES_PHRASE.exec(clause.slice(0, hit.index));
+      const before = phrase ? clause.slice(0, phrase.index).trim() : "";
+      clause = before.split(/\s+/u).length >= 2 && !CLOTHING_SENTENCE.test(before) ? before : "";
+    }
+    if (!BODY_TRAIT.test(clause)) clause = "";
+    if (clause) kept += kept ? `${parts[index - 1] ?? " "}${clause}` : clause;
+  }
+  return kept ? `${kept[0]!.toUpperCase()}${kept.slice(1)}${end}` : "";
+}
 
 export function slurpImageLook(appearance: string): string {
   const text = stripAppearanceLabel(appearance).replace(/\s+/gu, " ").trim();
   if (!text) return "";
   const kept = text
     .split(/(?<=[.!?])\s+/u)
-    .filter((sentence) => !CLOTHING_SENTENCE.test(sentence))
+    .map(withoutClothes)
+    .filter(Boolean)
     .join(" ");
   const look = kept || text;
   return look.length <= MAX_LOOK_LENGTH ? look : `${look.slice(0, look.lastIndexOf(" ", MAX_LOOK_LENGTH))}`;

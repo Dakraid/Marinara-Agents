@@ -18,6 +18,7 @@ import {
   slurpHoldsCollabDrop,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-collab-work.ts";
 import { slurpTieBeat } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-tie-beats.ts";
+import { slurpImageLook } from "../packages/slurp2/src/engine/packages/server/src/slp/base/media/slp-image-prompt.ts";
 import { slurpDropClock } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-post-purpose.ts";
 
 const server = (path: string) => slurp2Source(`packages/slurp2/src/engine/packages/server/src/slp/${path}`);
@@ -144,6 +145,40 @@ const names = new Map([
     purpose,
     /const times = await readSlurpSlotTimes\(db, creatorAccountId, at, \[teaseAt\.getTime\(\)\]\)/u,
   );
+}
+
+// --- 4. The card look keeps body traits from a sentence that also mentions clothes ------------------
+{
+  const look = (text: string) => slurpImageLook(text);
+  assert.equal(look("Her curvy figure looks great in tight clothing."), "Her curvy figure looks great.");
+  assert.equal(look("She has red hair, green eyes and a black hoodie."), "She has red hair, green eyes.");
+  assert.equal(
+    look("Wearing a hoodie, she has freckles and a gap-toothed smile."),
+    "She has freckles and a gap-toothed smile.",
+  );
+  assert.equal(look("Tall and lean — usually in ripped jeans."), "Tall and lean.");
+  assert.equal(look("She has long legs and loves wearing short skirts!"), "She has long legs!");
+  // A kept clause must be a body trait: a habit or a mood from a clothing sentence goes with the clothes.
+  assert.equal(
+    look("Dresses in flannel and thinks his roommate's neon phase is funny."),
+    "Dresses in flannel and thinks his roommate's neon phase is funny.",
+    "nothing but clothes and a mood: the old fallback",
+  );
+  assert.equal(
+    look("Freckled nose. Dresses in flannel and thinks his roommate's neon phase is funny."),
+    "Freckled nose.",
+  );
+  // Only clothes in the sentence: it drops whole, like before; body-only sentences stay as written.
+  assert.equal(
+    look(
+      "Mara is petite with blonde hair. She favors pastel dresses. For cosplay, she wears a corset and carries a sword. Her face is round and cute.",
+    ),
+    "Mara is petite with blonde hair. Her face is round and cute.",
+  );
+  assert.equal(look("Tall, broad shoulders, a scar over one eye."), "Tall, broad shoulders, a scar over one eye.");
+  // A card that is nothing but clothes keeps its text (the old fallback), never an empty look.
+  assert.equal(look("She wears a red dress."), "She wears a red dress.");
+  assert.doesNotMatch(look("Soft brown eyes, and she is always in a school uniform."), /uniform/u);
 }
 
 console.log("slurp2 V follow-ups regression passed");
