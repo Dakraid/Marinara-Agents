@@ -423,3 +423,35 @@ modules, rejected alternative, and migration consequence.
 - **Migration consequence:** none. Manifest, catalog lanes and minimum Engine stay as they were
   (`capabilityApi` 1.31); `run` ignores Mari's abort signal (an action is one bounded model call or
   one write, and the Engine stops waiting on its own deadline).
+
+## Stir: one lever system over the action layer (W, 2026-09-28)
+
+- **Problem:** the things that make something happen in the world lived in five places (Studio's
+  Business and Relationships, the steering card in Creator tools, Backstage "Start now", the chapter
+  controls, Pulse "Run audience"), each calling its own route, and a player who runs no page could not
+  reach Studio's world controls at all.
+- **Decision:** every lever is an action in the one layer (`shared/src/slp/slp-actions.ts`): the tie
+  levers (suggest / push a collab, start / cool a rivalry, set up / steer a couple, open / close a
+  couple page), start an event, move a storyline chapter, wake the fans, a Creator's spice level, and
+  the read-only `list-world`. Each action carries Stir metadata (`SLP_ACTION_META`: deck category,
+  target, reversible, AI now, may be refused, deck card) and has a `preview` that writes nothing
+  (`features/assist/slp-action-preview.ts`; the tie previews are pure,
+  `modules/projects/slp-stir-tie-preview.ts`). The Stir tab, the ✦ sheet, the plain-words planner,
+  Slurp Support and Professor Mari all go through `preview` → "Do it" → the same runner. A play is kept
+  in a short ledger (`data/assist/slp-stir-plays-storage.ts`) with what one Undo needs. The planner is
+  one model call on a new AI budget row "Plans" (`plan`, 20 a day, present work). Slurp Support's
+  "staff" answer now proposes Stir cards on the reply instead of changing the steering at once (the
+  memory of the talk is still kept at once).
+- **Affected modules:** shared `slp-actions.ts`, `slp-stir.ts`, `slp-model-budget.ts`; server
+  `features/assist/` (runner, preview, levers, Stir service and routes, a new contract for the
+  planner), `features/projects/slp-stir-ties.ts` (through the projects contract),
+  `modules/assist/slp-stir-{plan,play,live}.ts`, `modules/projects/slp-stir-tie-preview.ts`,
+  `modules/messages/slp-support.ts`, the message operation, the DM prompt and response format; client
+  `features/stir/`.
+- **Rejected alternatives:** a Stir screen calling the Studio routes directly (the planner, Support and
+  Mari would each need their own copy); keeping Support's direct steering writes next to the cards (two
+  writers again, the concept's overlap 7); a "Control room" that merges Pulse and levers (an admin
+  panel, not a game).
+- **Migration consequence:** none stored. Old Support notes keep their Undo; a saved AI budget without
+  the `plan` row reads its default. Old Studio deep links open the Stir tab. The Studio routes stay for
+  the Business and Relationships lists, which moved into Stir unchanged.

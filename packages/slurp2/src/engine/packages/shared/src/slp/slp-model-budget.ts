@@ -12,6 +12,7 @@ export const SLURP_MODEL_JOB_KINDS = [
   "continuity",
   "assist",
   "image_prompt",
+  "plan",
 ] as const;
 export type SlurpModelJobKind = (typeof SLURP_MODEL_JOB_KINDS)[number];
 export type SlurpModelWorkerContext = "present" | "background";
@@ -48,6 +49,8 @@ export const slurpModelBudgetSchema = z
         assist: jobPolicy(2, 40),
         // "Enhance image prompts": one rewrite per picture. Its own daily limit only (see below).
         image_prompt: jobPolicy(3, 60),
+        // Stir (W): "What should we stir up?" turns the player's words into a plan. Present work, never paced.
+        plan: jobPolicy(2, 20),
       })
       .default({}),
   })

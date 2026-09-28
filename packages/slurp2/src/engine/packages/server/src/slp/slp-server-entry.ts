@@ -25,6 +25,7 @@ import { slpNotificationsRoutes } from "./features/notifications/slp-notificatio
 import { slpOnboardingRoutes } from "./features/onboarding/slp-onboarding-routes.js";
 import { slpProjectsRoutes } from "./features/projects/slp-projects-routes.js";
 import { slpAssistRoutes } from "./features/assist/slp-assist-routes.js";
+import { slpStirRoutes } from "./features/assist/slp-stir-routes.js";
 import { slpActionService } from "./features/assist/slp-action-runner.js";
 import { slpActionServiceKeys } from "../../../shared/src/slp/slp-actions.js";
 import { logger } from "../lib/logger.js";
@@ -88,6 +89,7 @@ export async function mountSlpRoutes(app: FastifyInstance) {
   await slpOnboardingRoutes(app, deps);
   await slpFeedPublishingRoutes(app, deps);
   await slpAssistRoutes(app);
+  await slpStirRoutes(app, deps);
   await slpMessagesRoutes(app, noodle, messages);
 }
 

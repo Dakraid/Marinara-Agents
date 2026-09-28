@@ -45,8 +45,21 @@ assert.deepEqual(
     "use-picture",
     "write-post",
     "write-text",
-  ],
-  "one named layer: text, pictures, steering, ideas, posting",
+    // W (Stir): the world levers joined the same layer (ties, events, storylines, audience, spice).
+    "cool-rivalry",
+    "couple-page",
+    "list-world",
+    "push-collab",
+    "run-audience",
+    "set-spice",
+    "set-up-couple",
+    "start-event",
+    "start-rivalry",
+    "steer-couple",
+    "steer-storyline",
+    "suggest-collab",
+  ].sort(),
+  "one named layer: text, pictures, steering, ideas, posting, and (W) every Stir lever",
 );
 for (const entry of slpActionCatalog()) {
   const action = SLP_ACTIONS[entry.name];
@@ -100,7 +113,11 @@ const runner = server("features/assist/slp-action-runner.ts");
 assert.match(runner, /if \(!isSlpActionName\(name\)\) return \{ ok: false, status: 404/u);
 assert.match(runner, /SLP_ACTIONS\[name\]\.schema\.safeParse\(raw \?\? \{\}\)/u);
 assert.match(runner, /if \(!parsed\.success\) return \{ ok: false, status: 400/u);
-for (const name of SLP_ACTION_NAMES) assert.match(runner, new RegExp(`case "${name}":`, "u"), `${name} is dispatched`);
+// W: the tie levers dispatch through the projects contract (`runSlurpTieLever`); their cases live there.
+const tieLevers = server("features/projects/slp-stir-ties.ts");
+assert.match(runner, /if \(isSlurpTieLever\(name\)\) \{\s+const ran = await runSlurpTieLever\(db, name, input\);/u);
+for (const name of SLP_ACTION_NAMES)
+  assert.match(runner + tieLevers, new RegExp(`case "${name}":`, "u"), `${name} is dispatched`);
 assert.match(runner, /generateAndApplyCreatorPost[\s\S]*resolveSlurpAutomaticPostAccess/u, "write-post = Run now");
 assert.match(runner, /from "\.\.\/feed\/slp-feed-contract\.js"/u, "another feature only through its contract");
 

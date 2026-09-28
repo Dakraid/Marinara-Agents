@@ -54,12 +54,8 @@ import {
 import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
 import { emptySlpAccountSettings } from "../../modules/records/slp-storage-model.js";
 import { slpCreatorUnlockPriceFromMetadata } from "../../modules/economy/slp-prices.js";
-import {
-  addSlurpCreatorNudge,
-  noteSlurpSupportChange,
-  patchSlurpCreatorSteering,
-  readSlurpCreatorSteering,
-} from "../../data/creators/slp-steering-storage.js";
+import { readSlurpCreatorSteering } from "../../data/creators/slp-steering-storage.js";
+import { planSlpStir } from "../assist/slp-assist-contract.js";
 import {
   createSlurpContinuityFact,
   findSlurpContinuityFactBySourceHash,
@@ -505,6 +501,7 @@ export async function replyToSlurpMessage(
         await applySlurpSupportTalk(slurpSupportTalkStore(db, creator), {
           thread,
           trigger,
+          reply: stored,
           outcome: { moodShift: reply.moodShift, remember: reply.remember, stateSignals: reply.stateSignals },
           staff: reply.staff,
           supportName: viewer.displayName,
@@ -651,14 +648,20 @@ function slurpSupportTalkStore(
   return {
     recordThreadOutcome: (threadId, outcome) => createSlurpMessagesStorage(db).recordReplyOutcome(threadId, outcome),
     readSteering: (creatorAccountId) => readSlurpCreatorSteering(db, creatorAccountId),
-    patchSteering: async (creatorAccountId, patch) => {
-      await patchSlurpCreatorSteering(db, creatorAccountId, patch, { keepSupportNote: true });
-    },
-    // A full ideas list refuses rather than dropping one of the player's own.
-    addIdea: async (creatorAccountId, text) =>
-      (await addSlurpCreatorNudge(db, creatorAccountId, { text, story: false }))?.nudges.at(-1)?.id ?? null,
-    noteChange: async (creatorAccountId, note) => {
-      await noteSlurpSupportChange(db, creatorAccountId, note);
+    // W: the reply carries the plan; the thread shows it as Stir cards to confirm. A world wish is
+    // planned once here (the "Plans" row), so the cards never cost a call when the thread is read.
+    propose: async (replyMessageId, proposal) => {
+      const planned = proposal.stir
+        ? await planSlpStir(db, { text: proposal.stir, creatorId: creator.id }).catch(() => null)
+        : null;
+      const extra = planned?.ok ? planned.value.cards.map((card) => ({ action: card.action, input: card.input })) : [];
+      await createSlurpMessagesStorage(db).mergeMessageMetadata(replyMessageId, {
+        stirProposal: {
+          steps: [...proposal.steps, ...extra],
+          cant: planned?.ok ? planned.value.cant : [],
+          playId: null,
+        },
+      });
     },
     hasMemory: async (creatorAccountId, sourceHash) =>
       Boolean(await findSlurpContinuityFactBySourceHash(db, creatorAccountId, sourceHash)),

@@ -470,6 +470,15 @@ export function createMessagesStorageActions(context: SlurpMessagesContext) {
         .set({ metadata: JSON.stringify(metadata) })
         .where(eq(slurpMessages.id, messageId));
     },
+    /** Merge a few keys into one message's metadata (a Support plan and whether it was played, W). */
+    async mergeMessageMetadata(messageId: string, patch: Record<string, unknown>): Promise<void> {
+      const row = (await db.select().from(slurpMessages).where(eq(slurpMessages.id, messageId)))[0];
+      if (!row) return;
+      await db
+        .update(slurpMessages)
+        .set({ metadata: JSON.stringify({ ...(json(row.metadata as string) ?? {}), ...patch }) })
+        .where(eq(slurpMessages.id, messageId));
+    },
     async setMessageReaction(
       messageId: string,
       viewerAccountId: string,

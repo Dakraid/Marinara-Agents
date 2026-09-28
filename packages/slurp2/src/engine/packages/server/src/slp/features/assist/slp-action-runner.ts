@@ -1,5 +1,9 @@
 import type { DB } from "../../../db/connection.js";
-import { addSlurpCreatorNudge, patchSlurpCreatorSteering } from "../../data/creators/slp-steering-storage.js";
+import {
+  addSlurpCreatorNudge,
+  patchSlurpCreatorSteering,
+  readSlurpCreatorSteering,
+} from "../../data/creators/slp-steering-storage.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { generateAndApplyCreatorPost, resolveSlurpAutomaticPostAccess } from "../feed/slp-feed-contract.js";
 import {
@@ -17,6 +21,16 @@ import {
   useSlpAssistPicture,
   type SlpAssistOutcome,
 } from "./slp-assist-service.js";
+import { isSlurpTieLever, runSlurpTieLever } from "../projects/slp-projects-contract.js";
+import {
+  readSlpStirWorld,
+  runSlpRunAudience,
+  runSlpSetSpice,
+  runSlpStartEvent,
+  runSlpSteerStoryline,
+  type SlpActionUndo,
+} from "./slp-stir-levers.js";
+import { previewSlpAction } from "./slp-action-preview.js";
 
 const POST_FAILURE: Record<string, string> = {
   busy: "A post for this Creator is already being written.",
@@ -30,10 +44,19 @@ async function creatorExists(db: DB, accountId: string) {
   return Boolean(await createSlurpStorage(db).getNoodlerAccountById(accountId));
 }
 
-/** The action layer as an in-process service: the catalog, and one validated run. */
+/**
+ * The action layer as an in-process service: the catalog, one validated run, and (W) one preview
+ * that writes nothing, so a helper can show the player what would happen first.
+ */
 export function slpActionService(db: DB) {
-  return { list: slpActionCatalog, run: (name: string, input: unknown) => runSlpAction(db, name, input) };
+  return {
+    list: slpActionCatalog,
+    run: (name: string, input: unknown) => runSlpAction(db, name, input),
+    preview: (name: string, input: unknown) => previewSlpAction(db, name, input),
+  };
 }
+
+type Ran = { ok: true; value: unknown; undo: SlpActionUndo | null } | Exclude<SlpAssistOutcome<unknown>, { ok: true }>;
 
 /**
  * The action layer: one named, validated entry point for everything a helper may do for the player.
@@ -42,14 +65,39 @@ export function slpActionService(db: DB) {
  * before anything runs.
  */
 export async function runSlpAction(db: DB, name: string, raw: unknown): Promise<SlpAssistOutcome<unknown>> {
+  const ran = await runSlpActionWithUndo(db, name, raw);
+  return ran.ok ? { ok: true, value: ran.value } : ran;
+}
+
+/** The same run, plus what one Undo needs to take it back (Stir plays keep it in their ledger). */
+export async function runSlpActionWithUndo(db: DB, name: string, raw: unknown): Promise<Ran> {
   if (!isSlpActionName(name)) return { ok: false, status: 404, error: `Slurp has no action called "${name}".` };
   const parsed = SLP_ACTIONS[name].schema.safeParse(raw ?? {});
   if (!parsed.success) return { ok: false, status: 400, error: parsed.error.issues[0]?.message ?? "Invalid input." };
-  return dispatch(db, name, parsed.data);
+  const ran = await dispatch(db, name, parsed.data);
+  return ran.ok ? { ok: true, value: ran.value, undo: "undo" in ran ? (ran.undo ?? null) : null } : ran;
 }
 
-async function dispatch(db: DB, name: SlpActionName, input: unknown): Promise<SlpAssistOutcome<unknown>> {
+async function dispatch(
+  db: DB,
+  name: SlpActionName,
+  input: unknown,
+): Promise<SlpAssistOutcome<unknown> | { ok: true; value: unknown; undo: SlpActionUndo | null }> {
+  if (isSlurpTieLever(name)) {
+    const ran = await runSlurpTieLever(db, name, input);
+    return ran.ok ? { ok: true, value: ran.value, undo: ran.undo ? { kind: "tie", undo: ran.undo } : null } : ran;
+  }
   switch (name) {
+    case "list-world":
+      return { ok: true, value: await readSlpStirWorld(db) };
+    case "start-event":
+      return runSlpStartEvent(db, input as SlpActionParsed<"start-event">);
+    case "steer-storyline":
+      return runSlpSteerStoryline(db, input as SlpActionParsed<"steer-storyline">);
+    case "run-audience":
+      return runSlpRunAudience(db);
+    case "set-spice":
+      return runSlpSetSpice(db, input as SlpActionParsed<"set-spice">);
     case "write-text":
       return runSlpAssistText(db, { ...(input as SlpActionParsed<"write-text">), mode: "write" });
     case "improve-text":
@@ -65,7 +113,15 @@ async function dispatch(db: DB, name: SlpActionName, input: unknown): Promise<Sl
     case "steer-creator": {
       const { accountId, ...patch } = input as SlpActionParsed<"steer-creator">;
       if (!(await creatorExists(db, accountId))) return { ok: false, status: 404, error: "Creator not found." };
-      return { ok: true, value: { steering: await patchSlurpCreatorSteering(db, accountId, patch) } };
+      const before = await readSlurpCreatorSteering(db, accountId);
+      const undo = Object.fromEntries(
+        Object.keys(patch).map((key) => [key, before[key as keyof typeof patch]]),
+      ) as typeof patch;
+      return {
+        ok: true,
+        value: { steering: await patchSlurpCreatorSteering(db, accountId, patch) },
+        undo: { kind: "steering", accountId, patch: undo },
+      };
     }
     case "list-creators":
       return {
@@ -84,8 +140,9 @@ async function dispatch(db: DB, name: SlpActionName, input: unknown): Promise<Sl
       const { accountId, ...idea } = input as SlpActionParsed<"add-idea">;
       if (!(await creatorExists(db, accountId))) return { ok: false, status: 404, error: "Creator not found." };
       const steering = await addSlurpCreatorNudge(db, accountId, idea);
-      return steering
-        ? { ok: true, value: { steering } }
+      const added = steering?.nudges.at(-1);
+      return steering && added
+        ? { ok: true, value: { steering }, undo: { kind: "idea", accountId, ideaId: added.id } }
         : { ok: false, status: 409, error: "That is plenty of ideas for now. Let one go out first." };
     }
     case "write-post": {

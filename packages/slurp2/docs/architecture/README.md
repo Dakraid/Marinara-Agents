@@ -109,8 +109,12 @@ single-feature operation in a workflow.
 Everything a helper may do for the player goes through one named, typed layer:
 `shared/src/slp/slp-actions.ts` defines each action (`write-text`, `improve-text`, `draw-picture`,
 `use-picture`, `undo-picture`, `keep-picture`, `steer-creator`, `add-idea`, `list-creators`,
-`write-post`) with a
-plain summary, a description of every input, a strict zod schema, and its result type.
+`write-post`, and the Stir levers: `list-world`, `suggest-collab`, `push-collab`, `start-rivalry`,
+`cool-rivalry`, `set-up-couple`, `steer-couple`, `couple-page`, `start-event`, `steer-storyline`,
+`run-audience`, `set-spice`) with a
+plain summary, a description of every input, a strict zod schema, its result type, and its Stir
+metadata (`SLP_ACTION_META`). Every action also has a `preview` (`features/assist/slp-action-preview.ts`)
+that answers who, what, when, cost, fit notes and why it cannot happen, without writing anything.
 `server/.../features/assist/slp-action-runner.ts` is the only dispatcher: it rejects an unknown
 name (404) or invalid input (400) before anything runs, then calls the owning code (the assist
 service, the steering storage, or `generateAndApplyCreatorPost` through the feed contract).
@@ -147,6 +151,18 @@ lists and runs the actions a package registers as `mari-actions:<package-id>`, g
 Capability API 1.50 (`optionalPermissions` in `scripts/build-feature-packages.mjs`), because an older
 Engine refuses a manifest that names it; the server registers the Mari key only when its own manifest
 holds the permission. See DECISIONS, "Professor Mari actions (J2)".
+
+## Stir
+
+Stir is the one lever system on top of the action layer (W). Three ways in, one preview, one "Do it":
+the Stir tab (deck of cards from the catalog, "In play", suggestions, the plain-words box), the ✦ sheet
+on a Creator or a post, and a Slurp Support thread (the Creator's reply carries a proposal as cards).
+The planner (`features/assist/slp-stir-service.ts`, pure half `modules/assist/slp-stir-plan.ts`) turns
+words into steps with one model call on the AI budget's "Plans" row; every step is validated and
+previewed. `POST /slurp/stir/play` runs exactly the steps the player saw (`modules/assist/slp-stir-play.ts`)
+and keeps the play in a short ledger with what one Undo needs. Rule for new controls: a change with a
+"who" in the story that a character could say is a Stir lever (an action); machine settings stay in
+Backstage; Pulse shows what runs or ran.
 
 ## Cross-feature modifiers
 

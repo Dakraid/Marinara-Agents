@@ -266,6 +266,8 @@ async function main() {
       more: "streams",
       less: "",
       takeaway: "Desk Dana told me: my Friday streams do well",
+      // W: a wish for the wider world (Stir plans it); empty when there is none.
+      stir: "",
     });
     assert.equal(
       readSlurpSupportTakeaway({ takeaway: "Slurp Support told me to rest more." })!.takeaway,
@@ -288,26 +290,19 @@ async function main() {
     );
   }
 
-  // 4. The talk changes the Creator (steering, one idea, one memory) and Support's thread only.
+  // 4. The talk changes the Creator (one memory now; steering and one idea as a Stir proposal the
+  //    player confirms, W) and Support's thread only.
   {
     type Write = { what: string; id: string; value?: unknown };
     const writes: Write[] = [];
     const memories = new Set<string>();
-    let steering: SlpCreatorSteering = { ...SLP_DEFAULT_STEERING, push: ["gym"] };
+    const steering: SlpCreatorSteering = { ...SLP_DEFAULT_STEERING, push: ["gym"] };
     const store: SlurpSupportTalkStore<{ moodShift: string }> = {
       recordThreadOutcome: async (threadId, outcome) =>
         void writes.push({ what: "thread", id: threadId, value: outcome }),
       readSteering: async () => steering,
-      patchSteering: async (creatorAccountId, patch) => {
-        steering = { ...steering, ...patch };
-        writes.push({ what: "steering", id: creatorAccountId, value: patch });
-      },
-      addIdea: async (creatorAccountId, text) => {
-        writes.push({ what: "idea", id: creatorAccountId, value: text });
-        return null;
-      },
-      // 7b-c: the note for Creator tools; covered by tests/slurp2-creator-ties.regression.ts.
-      noteChange: async () => undefined,
+      // W: steering and the idea wait on the reply as Stir cards (tests/slurp2-stir.regression.ts).
+      propose: async (replyId, proposal) => void writes.push({ what: "proposal", id: replyId, value: proposal }),
       hasMemory: async (_creatorAccountId, sourceHash) => memories.has(sourceHash),
       addMemory: async (creatorAccountId, memory) => {
         memories.add(memory.sourceHash);
@@ -325,20 +320,36 @@ async function main() {
     const talk = {
       thread: { id: "support-mira", viewerAccountId: SLURP_SUPPORT_ACCOUNT_ID, creatorAccountId: "mira" },
       trigger: { id: "s1", content: "Your Friday streams do well." },
+      reply: { id: "r1" },
       outcome: { moodShift: "up" },
       staff,
       supportName: "Slurp Support",
     };
     await applySlurpSupportTalk(store, talk);
-    assert.equal(steering.mood, "restless");
-    assert.equal(steering.focus, "a Friday stream series");
-    assert.deepEqual(steering.push, ["gym", "streams"]);
+    assert.equal(steering.mood, null, "W: nothing changes before the player says Do it");
+    const proposal = writes.find((write) => write.what === "proposal")!.value as {
+      steps: { action: string; input: Record<string, unknown> }[];
+    };
+    assert.deepEqual(proposal.steps[0], {
+      action: "steer-creator",
+      input: {
+        accountId: "mira",
+        mood: "restless",
+        focus: "a Friday stream series",
+        push: ["gym", "streams"],
+        avoid: [],
+      },
+    });
+    assert.deepEqual(proposal.steps[1], {
+      action: "add-idea",
+      input: { accountId: "mira", text: "Friday stream announcement" },
+    });
     assert.deepEqual(
       writes.map((write) => `${write.what}:${write.id}`),
-      ["thread:support-mira", "steering:mira", "idea:mira", "memory:mira"],
-      "only Support's own thread and the Creator are written",
+      ["thread:support-mira", "memory:mira", "proposal:r1"],
+      "only Support's own thread, the Creator's memory and the reply are written",
     );
-    assert.equal((writes.at(-1)!.value as { threadId: string }).threadId, "support-mira");
+    assert.equal((writes[1]!.value as { threadId: string }).threadId, "support-mira");
     // A retried reply to the same Support line stores the memory once.
     writes.length = 0;
     await applySlurpSupportTalk(store, talk);

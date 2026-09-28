@@ -11,6 +11,7 @@
  */
 import { z } from "zod";
 import { SLP_STEERING_MOODS, SLP_STEERING_PACES, SLP_STEERING_TEXT_MAX } from "./slp-creator-steering.js";
+import { SLP_SPICE_LEVELS } from "./slp-spice.js";
 
 /**
  * The text fields the assist can write or improve, with what the model is told the field is, who
@@ -54,6 +55,10 @@ export const SLP_PICTURE_TARGETS = ["avatar", "cover", "post", "story"] as const
 export type SlpPictureTarget = (typeof SLP_PICTURE_TARGETS)[number];
 
 const accountId = z.string().trim().min(1).max(200);
+/** What a player can do to a couple (7b-couples); the Stir sheet and the couples panel share it. */
+export const SLP_COUPLE_STEERS = ["date", "drama", "patchUp", "breakUp", "reunite"] as const;
+/** The chapter moves open without Director mode. */
+export const SLP_STORYLINE_MOVES = ["hold", "release", "skip", "back", "insert", "label"] as const;
 const note = z.string().trim().max(SLP_ASSIST_NOTE_MAX).optional();
 /** Nearby text that helps (the post a Story links to, the fan type's name); never written back. */
 const context = z.string().trim().max(2000).optional();
@@ -181,6 +186,93 @@ export const SLP_ACTIONS = {
       .object({ accountId, idea: z.string().trim().min(1).max(160).optional(), story: z.boolean().default(false) })
       .strict(),
   },
+  // ─── Stir (W): the world levers. Each wraps the code its old button already ran. ─────────────────
+  "list-world": {
+    summary:
+      "List what is going on between Creators: couples, collabs, rivalries, events you can start, running storylines, with the ids the other actions take. Changes nothing.",
+    inputs: {},
+    schema: z.object({}).strict(),
+  },
+  "suggest-collab": {
+    summary:
+      "Suggest a collab between two Creators. The one who is asked answers in their own way and may say no, unless happen is true (then they agree now).",
+    inputs: { aId: "One Creator.", bId: "The other Creator.", happen: "True to make them agree now (optional)." },
+    schema: z.object({ aId: accountId, bId: accountId, happen: z.boolean().default(false) }).strict(),
+  },
+  "push-collab": {
+    summary: "Make a collab request happen: the two agree now.",
+    inputs: { collabId: "The collab request (from list-world)." },
+    schema: z.object({ collabId: accountId }).strict(),
+  },
+  "start-rivalry": {
+    summary: "Start a rivalry: one Creator throws shade at another. It always happens; their cards colour how.",
+    inputs: {
+      fromId: "The Creator who starts it (Slurp must post for them).",
+      toId: "The Creator it is aimed at.",
+      cause: "What set it off, one short line (optional).",
+    },
+    schema: z
+      .object({ fromId: accountId, toId: accountId, cause: z.string().trim().min(1).max(160).optional() })
+      .strict(),
+  },
+  "cool-rivalry": {
+    summary: "Cool a rivalry down: the two calm it down in their own way.",
+    inputs: { rivalryId: "The rivalry (from list-world)." },
+    schema: z.object({ rivalryId: accountId }).strict(),
+  },
+  "set-up-couple": {
+    summary:
+      "Set two Creators up: they start to flirt. It always happens; if a card says otherwise it colours how (awkward, reluctant).",
+    inputs: { aId: "One Creator.", bId: "The other Creator." },
+    schema: z.object({ aId: accountId, bId: accountId }).strict(),
+  },
+  "steer-couple": {
+    summary: "Nudge a couple: plan a date, stir some drama, patch it up, break up, or get back together.",
+    inputs: {
+      coupleId: "The couple (from list-world).",
+      steer: `One of: ${SLP_COUPLE_STEERS.join(", ")}.`,
+    },
+    schema: z.object({ coupleId: accountId, steer: z.enum(SLP_COUPLE_STEERS) }).strict(),
+  },
+  "couple-page": {
+    summary: "Open a couple's shared page, or close it with a goodbye post.",
+    inputs: { coupleId: "The couple (from list-world).", open: "True to open, false to close." },
+    schema: z.object({ coupleId: accountId, open: z.boolean() }).strict(),
+  },
+  "start-event": {
+    summary: "Start a Slurp event now (SlurpCon, a holiday…). Every Creator it fits joins.",
+    inputs: { eventId: "The event (from list-world)." },
+    schema: z.object({ eventId: accountId }).strict(),
+  },
+  "steer-storyline": {
+    summary:
+      "Move a Creator's running storyline: stay on this chapter (hold), let it move on (release), move on now (skip), go back (back), add what happens next (insert) or rename the chapter (label).",
+    inputs: {
+      accountId: "The Creator.",
+      projectId: "The storyline (from list-world).",
+      move: `One of: ${SLP_STORYLINE_MOVES.join(", ")}.`,
+      text: "The new chapter, for insert and label.",
+    },
+    schema: z
+      .object({
+        accountId,
+        projectId: accountId,
+        move: z.enum(SLP_STORYLINE_MOVES),
+        text: z.string().trim().min(1).max(200).optional(),
+      })
+      // insert and label need the text; the runner says so (a refine would hide the shape).
+      .strict(),
+  },
+  "run-audience": {
+    summary: "Wake the fans up now: they like, comment and reply. Uses the AI connection.",
+    inputs: {},
+    schema: z.object({}).strict(),
+  },
+  "set-spice": {
+    summary: "Set how spicy a Creator gets (under the Slurp-wide limit); null goes back to the default.",
+    inputs: { accountId: "The Creator.", level: `One of: ${SLP_SPICE_LEVELS.join(", ")}, or null.` },
+    schema: z.object({ accountId, level: z.enum(SLP_SPICE_LEVELS).nullable() }).strict(),
+  },
 } as const;
 
 export type SlpActionName = keyof typeof SLP_ACTIONS;
@@ -200,7 +292,86 @@ export type SlpActionResult = {
   "add-idea": unknown;
   "list-creators": { creators: { id: string; name: string; handle: string }[] };
   "write-post": unknown;
+  "list-world": SlpStirWorld;
+  "suggest-collab": { collabId: string };
+  "push-collab": { collabId: string };
+  "start-rivalry": { rivalryId: string };
+  "cool-rivalry": { rivalryId: string };
+  "set-up-couple": { coupleId: string };
+  "steer-couple": { coupleId: string };
+  "couple-page": { coupleId: string; accountId: string | null };
+  "start-event": { occurrenceId: string };
+  "steer-storyline": { projectId: string };
+  "run-audience": unknown;
+  "set-spice": { level: string | null };
 };
+
+/** What `list-world` answers: the ids and names the world levers take. */
+export type SlpStirWorld = {
+  couples: { id: string; aId: string; bId: string; stage: string; page: "open" | "closed" | null }[];
+  collabs: { id: string; hostId: string; partnerId: string; status: string }[];
+  rivalries: { id: string; fromId: string; toId: string; stage: string }[];
+  events: { id: string; name: string; running: boolean }[];
+  storylines: { accountId: string; projectId: string; title: string; chapter: string; held: boolean }[];
+};
+
+/** Where a lever sits in the Stir deck. `help` (writing and picture help) is not a card. */
+export const SLP_STIR_CATEGORIES = ["love", "work", "drama", "life", "world"] as const;
+export type SlpStirCategory = (typeof SLP_STIR_CATEGORIES)[number];
+
+/**
+ * How each action shows in Stir: its deck category, what it acts on, whether one Undo can take it
+ * back, whether it calls the AI now, and whether the Creator may say no (work plays; W decision:
+ * love and drama always happen, a card only colours how). Every action has an entry (typed).
+ */
+export const SLP_ACTION_META: Record<
+  SlpActionName,
+  {
+    category: SlpStirCategory | "help";
+    targets: "creator" | "pair" | "couple" | "collab" | "rivalry" | "event" | "storyline" | "none";
+    reversible: boolean;
+    ai: boolean;
+    refusable: boolean;
+    /** A card in the Stir deck (the rest are reached from a Creator, a list row, or plain words). */
+    deck: boolean;
+  }
+> = {
+  "write-text": { category: "help", targets: "creator", reversible: false, ai: true, refusable: false, deck: false },
+  "improve-text": { category: "help", targets: "creator", reversible: false, ai: true, refusable: false, deck: false },
+  "draw-picture": { category: "help", targets: "creator", reversible: false, ai: true, refusable: false, deck: false },
+  "use-picture": { category: "help", targets: "creator", reversible: true, ai: false, refusable: false, deck: false },
+  "undo-picture": { category: "help", targets: "creator", reversible: false, ai: false, refusable: false, deck: false },
+  "keep-picture": { category: "help", targets: "creator", reversible: false, ai: false, refusable: false, deck: false },
+  "list-creators": { category: "help", targets: "none", reversible: false, ai: false, refusable: false, deck: false },
+  "list-world": { category: "help", targets: "none", reversible: false, ai: false, refusable: false, deck: false },
+  "add-idea": { category: "life", targets: "creator", reversible: true, ai: false, refusable: false, deck: true },
+  "write-post": { category: "life", targets: "creator", reversible: false, ai: true, refusable: false, deck: true },
+  "steer-creator": { category: "life", targets: "creator", reversible: true, ai: false, refusable: false, deck: true },
+  "set-spice": { category: "life", targets: "creator", reversible: true, ai: false, refusable: false, deck: true },
+  "set-up-couple": { category: "love", targets: "pair", reversible: true, ai: false, refusable: false, deck: true },
+  "steer-couple": { category: "love", targets: "couple", reversible: true, ai: false, refusable: false, deck: true },
+  "couple-page": { category: "love", targets: "couple", reversible: false, ai: false, refusable: false, deck: true },
+  "suggest-collab": { category: "work", targets: "pair", reversible: true, ai: false, refusable: true, deck: true },
+  "push-collab": { category: "work", targets: "collab", reversible: false, ai: false, refusable: false, deck: true },
+  "start-rivalry": { category: "drama", targets: "pair", reversible: true, ai: false, refusable: false, deck: true },
+  "cool-rivalry": { category: "drama", targets: "rivalry", reversible: false, ai: false, refusable: false, deck: true },
+  "start-event": { category: "world", targets: "event", reversible: true, ai: false, refusable: false, deck: true },
+  "steer-storyline": {
+    category: "world",
+    targets: "storyline",
+    reversible: false,
+    ai: false,
+    refusable: false,
+    deck: true,
+  },
+  "run-audience": { category: "world", targets: "none", reversible: false, ai: true, refusable: false, deck: true },
+};
+
+/**
+ * Levers the concept names that wait for another slice. The planner is told they are not there yet,
+ * and the deck shows them as "soon" cards. `offer-brand-deal` needs brands and products (slice R).
+ */
+export const SLP_STIR_SOON = ["offer-brand-deal"] as const;
 
 /** The catalog without the schemas: what a helper reads to know what it can ask Slurp to do. */
 export function slpActionCatalog() {
@@ -208,6 +379,7 @@ export function slpActionCatalog() {
     name,
     summary: SLP_ACTIONS[name].summary,
     inputs: SLP_ACTIONS[name].inputs,
+    ...SLP_ACTION_META[name],
   }));
 }
 

@@ -3377,6 +3377,7 @@
   "ui.slurp.settings.aiBudget.job.fan_type_voice": "Fan type voice drafts",
   "ui.slurp.settings.aiBudget.job.assist": "Writing help",
   "ui.slurp.settings.aiBudget.job.image_prompt": "Image prompt enhancing",
+  "ui.slurp.settings.aiBudget.job.plan": "Plans",
   "ui.slurp.settings.prompts.audienceTitle": "Audience prompts",
   "ui.slurp.settings.prompts.fanActivityExtra": "Fan activity instructions",
   "ui.slurp.settings.prompts.fanActivityExtraDetail": "Added to generated comment threads.",

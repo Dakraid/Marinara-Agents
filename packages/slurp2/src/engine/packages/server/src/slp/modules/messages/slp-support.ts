@@ -7,8 +7,10 @@
  * them out so the migration can move them.
  *
  * A Creator's answer to Support may carry a "staff" object: what the talk changed for them. It is
- * read here into a steering patch, one post idea and one memory, all about the Creator. Nothing in
- * it can name or touch a fan.
+ * read here into one memory (kept at once: it is what they remember of the talk) and a proposal of
+ * Stir steps (steering, one post idea, and a wish for the wider world in plain words) that the player
+ * confirms with "Do it" in the thread (W: Support proposes, you confirm). Nothing in it can name or
+ * touch a fan.
  *
  * Pure, so the rules run in tests.
  */
@@ -23,6 +25,7 @@ import {
   type SlpSteeringMood,
   type SlpSteeringSupportNote,
 } from "../../../../../shared/src/slp/slp-creator-steering.js";
+import type { SlpStirStep } from "../../../../../shared/src/slp/slp-stir.js";
 import { SLURP_SUPPORT_NAME, type SlurpDmLine } from "./slp-dm-roles.js";
 
 export const isSlurpSupportThread = (thread: { viewerAccountId: string }) =>
@@ -72,6 +75,8 @@ export type SlurpSupportTakeaway = {
   more: string;
   less: string;
   takeaway: string;
+  /** A change in the wider world the player asked Support for, in plain words (Stir plans it). */
+  stir: string;
 };
 
 const text = (value: unknown, max: number) =>
@@ -97,8 +102,9 @@ export function readSlurpSupportTakeaway(
     more: text(value.more, SLP_STEERING_TOPIC_MAX),
     less: text(value.less, SLP_STEERING_TOPIC_MAX),
     takeaway,
+    stir: text(value.stir, 400),
   };
-  return out.mood || out.focus || out.idea || out.more || out.less || out.takeaway ? out : null;
+  return out.mood || out.focus || out.idea || out.more || out.less || out.takeaway || out.stir ? out : null;
 }
 
 /** The "staff" answer with every text redacted (`protect`), as it is stored and read back later. */
@@ -185,18 +191,15 @@ export async function migrateSlurpSupportLines(
   return { threads, messages };
 }
 
-/** Where a talk with Support may write: Support's own thread and the Creator. Nothing about a fan. */
+/** What a talk with Support proposes: the steps to confirm, and a wish for the wider world to plan. */
+export type SlurpSupportProposal = { steps: SlpStirStep[]; stir: string };
+
+/** Where a talk with Support may write: Support's own thread, the Creator's memory, and the proposal. */
 export type SlurpSupportTalkStore<Outcome> = {
   recordThreadOutcome(threadId: string, outcome: Outcome): Promise<void>;
   readSteering(creatorAccountId: string): Promise<SlpCreatorSteering>;
-  patchSteering(
-    creatorAccountId: string,
-    patch: Partial<Pick<SlpCreatorSteering, "mood" | "focus" | "push" | "avoid">>,
-  ): Promise<void>;
-  /** The new idea's id, or null when the list was full. */
-  addIdea(creatorAccountId: string, text: string): Promise<string | null>;
-  /** Shown in Creator tools with Undo ("After talking with Support: …"). */
-  noteChange(creatorAccountId: string, note: SlpSteeringSupportNote): Promise<void>;
+  /** Keep the proposal on the Creator's reply; the thread shows it as Stir cards with "Do it". */
+  propose(replyMessageId: string, proposal: SlurpSupportProposal): Promise<void>;
   /** One memory per Support line, so a retried reply never stores it twice. */
   hasMemory(creatorAccountId: string, sourceHash: string): Promise<boolean>;
   addMemory(
@@ -208,15 +211,18 @@ export type SlurpSupportTalkStore<Outcome> = {
 /**
  * What a talk with Slurp Support changed for the Creator, in-world ("platform staff talked to me").
  *
- * Support's thread keeps its own mood and memories, like any chat. What the Creator took from it
- * goes where the rest of their life is read from: the steering (mood lately, focus, topics, one post
- * idea) and one memory of their own. Only ever for Support's thread; a fan's thread is refused.
+ * Support's thread keeps its own mood and memories, like any chat, and the Creator keeps one memory of
+ * the talk. What the talk would change (mood lately, focus, topics, one post idea, a wish for the
+ * wider world) becomes a proposal on the reply: nothing changes until the player says "Do it" (W).
+ * Only ever for Support's thread; a fan's thread is refused.
  */
 export async function applySlurpSupportTalk<Outcome>(
   store: SlurpSupportTalkStore<Outcome>,
   input: {
     thread: { id: string; viewerAccountId: string; creatorAccountId: string };
     trigger: { id: string; content: string };
+    /** The Creator's stored reply, which carries the proposal. */
+    reply: { id: string };
     outcome: Outcome;
     staff: unknown;
     supportName: string;
@@ -228,12 +234,7 @@ export async function applySlurpSupportTalk<Outcome>(
   await store.recordThreadOutcome(input.thread.id, input.outcome);
   const takeaway = readSlurpSupportTakeaway(input.staff, input.supportName);
   if (!takeaway) return;
-  const before = await store.readSteering(creatorAccountId);
-  const patch = slurpSupportSteeringPatch(before, takeaway);
-  if (patch) await store.patchSteering(creatorAccountId, patch);
-  const ideaId = takeaway.idea ? await store.addIdea(creatorAccountId, takeaway.idea) : null;
   const sourceHash = `support:${input.trigger.id}`;
-  let memory: string | null = null;
   if (takeaway.takeaway && !(await store.hasMemory(creatorAccountId, sourceHash))) {
     await store.addMemory(creatorAccountId, {
       text: takeaway.takeaway,
@@ -241,20 +242,26 @@ export async function applySlurpSupportTalk<Outcome>(
       evidence: input.trigger.content,
       sourceHash,
     });
-    memory = sourceHash;
   }
-  if (patch || ideaId || memory)
-    await store.noteChange(creatorAccountId, {
-      at: (input.at ?? new Date()).toISOString(),
-      mood: patch?.mood ?? null,
-      focus: patch?.focus ?? "",
-      more: takeaway.more,
-      less: takeaway.less,
-      idea: ideaId ? takeaway.idea : "",
-      ideaId,
-      memory,
-      before: { mood: before.mood, focus: before.focus, push: before.push, avoid: before.avoid },
-    });
+  const proposal = slurpSupportProposal(creatorAccountId, await store.readSteering(creatorAccountId), takeaway);
+  if (proposal) await store.propose(input.reply.id, proposal);
+}
+
+/**
+ * The Stir steps a talk proposes: one steering change (mood, focus, topics) and one post idea for the
+ * Creator, plus the world wish. Null when it proposes nothing.
+ */
+export function slurpSupportProposal(
+  creatorAccountId: string,
+  steering: SlpCreatorSteering,
+  takeaway: SlurpSupportTakeaway,
+): SlurpSupportProposal | null {
+  const patch = slurpSupportSteeringPatch(steering, takeaway);
+  const steps: SlpStirStep[] = [
+    ...(patch ? [{ action: "steer-creator", input: { accountId: creatorAccountId, ...patch } }] : []),
+    ...(takeaway.idea ? [{ action: "add-idea", input: { accountId: creatorAccountId, text: takeaway.idea } }] : []),
+  ];
+  return steps.length || takeaway.stir ? { steps, stir: takeaway.stir } : null;
 }
 
 /**

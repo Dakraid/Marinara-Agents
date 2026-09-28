@@ -646,6 +646,45 @@ export function slurpCoolRivalry(ties: SlurpCreatorTies, id: string, at: Date): 
   };
 }
 
+/**
+ * The player starts a rivalry (Stir, W): drama always happens, the cards only colour it (a Creator
+ * with no fire in them keeps it petty). The one who starts it must be a Creator Slurp posts for, so
+ * someone writes the shade; a pair already at it is refused.
+ */
+export function slurpStartRivalry(
+  ties: SlurpCreatorTies,
+  from: Pick<SlurpTieCreator, "id" | "automatic">,
+  to: Pick<SlurpTieCreator, "id">,
+  input: { at: Date; id: string; cause?: string },
+): SlurpCreatorTies | SlurpTieError {
+  if (from.id === to.id) return "sameCreator";
+  if (!from.automatic) return "noHost";
+  const pair = slurpPairKey(from.id, to.id);
+  if (ties.rivalries.some((entry) => slurpRivalryActive(entry) && slurpPairKey(entry.fromId, entry.toId) === pair))
+    return "busy";
+  const stamp = input.at.toISOString();
+  const cause = input.cause
+    ? clampText(input.cause, 200)
+    : RIVAL_CAUSES[hash(`${input.id}:cause`) % RIVAL_CAUSES.length]!;
+  return {
+    ...ties,
+    rivalries: [
+      ...ties.rivalries,
+      {
+        id: input.id,
+        fromId: from.id,
+        toId: to.id,
+        cause,
+        stage: "shade",
+        startedAt: stamp,
+        stageAt: stamp,
+        ending: null,
+        told: [],
+      },
+    ],
+  };
+}
+
 /** This Creator posted about the rivalry's current stage; the next post about it waits for a new stage. */
 export function slurpTellRivalry(ties: SlurpCreatorTies, id: string, creatorId: string): SlurpCreatorTies {
   return {

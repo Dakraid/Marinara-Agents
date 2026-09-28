@@ -727,10 +727,11 @@ const creator = (id: string, text: string, tags: string[], over: Partial<SlurpTi
   assert.equal(SLP_ACTIONS["list-creators"].schema.safeParse({}).success, true);
   assert.equal(SLP_ACTIONS["list-creators"].schema.safeParse({ extra: 1 }).success, false, "strict");
   // The service is the catalog plus the one validated runner (Engine shape { ok, value } | { ok: false, error }).
+  // W: plus `preview`, which writes nothing (the Engine calls only list and run; an extra key is harmless).
   const runner = server("features/assist/slp-action-runner.ts");
   assert.match(
     runner,
-    /return \{ list: slpActionCatalog, run: \(name: string, input: unknown\) => runSlpAction\(db, name, input\) \};/u,
+    /return \{\s+list: slpActionCatalog,\s+run: \(name: string, input: unknown\) => runSlpAction\(db, name, input\),\s+preview: \(name: string, input: unknown\) => previewSlpAction\(db, name, input\),\s+\};/u,
   );
   assert.match(runner, /case "list-creators":\s*return \{\s*ok: true,/u);
   // The server feature-detects from its own manifest.
