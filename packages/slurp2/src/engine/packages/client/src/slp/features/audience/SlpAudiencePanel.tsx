@@ -589,6 +589,7 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
             <SlurpSimulationSettings
               key={settings.simulationTuning.preset}
               tuning={settings.simulationTuning}
+              world={settings}
               onSave={(next) => void update("simulationTuning", next)}
             />
           </SettingAnchor>

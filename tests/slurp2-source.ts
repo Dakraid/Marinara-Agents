@@ -650,7 +650,7 @@ export const SLURP2_SOURCE_MODULES: Record<string, readonly string[]> = {
     "packages/server/src/slp/features/audience/slp-audience-reply-operation.ts",
   ],
   "packages/server/src/services/slurp/slurp-reach.ts": ["packages/shared/src/slp/slp-reach.ts"],
-  "packages/server/src/services/slurp/slurp-scale.ts": ["packages/server/src/slp/modules/audience/slp-scale.ts"],
+  "packages/server/src/services/slurp/slurp-scale.ts": ["packages/shared/src/slp/slp-scale.ts"],
   "packages/server/src/services/slurp/slurp-ambient-profiles.ts": [
     "packages/server/src/slp/data/audience/slp-ambient-profiles.ts",
   ],

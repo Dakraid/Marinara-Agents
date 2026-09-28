@@ -18,7 +18,11 @@ import {
   slurpSimulationTuningSchema,
   type SlurpSimulationTuning,
 } from "../../../../../shared/src/slp/slp-tuning.js";
-import { estimateSlurpSimulation, SLURP_ESTIMATE_SAMPLE } from "../../modules/audience/slp-simulation-estimate";
+import {
+  estimateSlurpSimulation,
+  SLURP_ESTIMATE_SAMPLE,
+  type SlurpEstimateWorld,
+} from "../../modules/audience/slp-simulation-estimate";
 import { Field, NumberSetting, SectionTitle, SettingsGroup, Toggle } from "../../modules/settings/SlpSettingsControls";
 
 type Path = readonly string[];
@@ -297,9 +301,12 @@ function writePath(tuning: SlurpSimulationTuning, path: Path, value: number | bo
 
 export function SlurpSimulationSettings({
   tuning,
+  world,
   onSave,
 }: {
   tuning: SlurpSimulationTuning;
+  /** The settings outside the tuning the estimate reads (Fan Types, world dial, AI-written runs). */
+  world: SlurpEstimateWorld;
   onSave: (next: SlurpSimulationTuning) => void;
 }) {
   const { t } = useTranslation();
@@ -315,7 +322,10 @@ export function SlurpSimulationSettings({
   // Estimating is a few milliseconds of arithmetic, but it has no business running on every
   // keystroke. The deferred copy keeps typing responsive and the memo keeps it to one run.
   const deferred = useDeferredValue(draft);
-  const estimate = useMemo(() => estimateSlurpSimulation(deferred), [deferred]);
+  const estimate = useMemo(
+    () => estimateSlurpSimulation(deferred, SLURP_ESTIMATE_SAMPLE, undefined, world),
+    [deferred, world],
+  );
 
   const fieldLabel = (path: Path, label: string) =>
     t(`ui.slurp.settings.simulation.fields.${path.join(".")}`, { defaultValue: label });
@@ -336,6 +346,8 @@ export function SlurpSimulationSettings({
             {t("ui.slurp.settings.simulation.estimate.detail", {
               followers: SLURP_ESTIMATE_SAMPLE.realFollowers,
               price: SLURP_ESTIMATE_SAMPLE.price,
+              lockedEvery: SLURP_ESTIMATE_SAMPLE.lockedEvery,
+              unlockPrice: SLURP_ESTIMATE_SAMPLE.unlockPrice,
             })}
           </SlpCoinText>
         </p>
@@ -350,6 +362,8 @@ export function SlurpSimulationSettings({
               ["commissions", estimate.commissions],
               ["messages", estimate.messages],
               ["questions", estimate.questions],
+              ["tips", estimate.tips],
+              ["unlocks", estimate.unlocks],
             ] as const
           ).map(([key, value]) => (
             <div key={key} className="rounded-lg bg-[var(--slurp-surface,var(--background))] px-3 py-2">

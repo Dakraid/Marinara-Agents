@@ -291,9 +291,16 @@ function AdCadence({ current, proposed }: { current: SlurpSettings; proposed: Sl
 
 function AudienceWeek({ current, proposed }: { current: SlurpSettings; proposed: SlurpSettings }) {
   const { t } = useTranslation();
-  const deferredProposed = useDeferredValue(proposed.simulationTuning);
-  const before = useMemo(() => estimateSlurpSimulation(current.simulationTuning), [current.simulationTuning]);
-  const after = useMemo(() => estimateSlurpSimulation(deferredProposed), [deferredProposed]);
+  // The whole settings object, so a staged Fan Type, world dial or AI-run change moves it too (R1-116).
+  const deferredProposed = useDeferredValue(proposed);
+  const before = useMemo(
+    () => estimateSlurpSimulation(current.simulationTuning, undefined, undefined, current),
+    [current],
+  );
+  const after = useMemo(
+    () => estimateSlurpSimulation(deferredProposed.simulationTuning, undefined, undefined, deferredProposed),
+    [deferredProposed],
+  );
   const metrics = ["followers", "likes", "comments", "subscriptions", "messages"] as const;
   return (
     <figure>

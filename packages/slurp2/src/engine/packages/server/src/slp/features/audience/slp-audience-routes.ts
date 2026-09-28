@@ -21,7 +21,7 @@ import {
   isSlurpPopulationMemberId,
 } from "../../../../../shared/src/slp/slp-population.js";
 import { slurpCreatorReach } from "../../../../../shared/src/slp/slp-reach.js";
-import { slurpPlatformScaleMultiplier } from "../../modules/audience/slp-scale.js";
+import { slurpPlatformScaleMultiplier } from "../../../../../shared/src/slp/slp-scale.js";
 import {
   slurpCharacterIdFromFanEntityId,
   slurpAudienceCharacterFanTypeId,

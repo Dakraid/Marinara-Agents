@@ -14,6 +14,13 @@ import {
   type SlurpThreadState,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/creators/slp-creator-state.ts";
 import { slurpDmPictureVerdict } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/slp-stance.ts";
+import {
+  estimateSlurpSimulation,
+  slurpEstimateModelRuns,
+  SLURP_ESTIMATE_SAMPLE,
+} from "../packages/slurp2/src/engine/packages/client/src/slp/modules/audience/slp-simulation-estimate.ts";
+import { slurpTuningForPreset } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-tuning.ts";
+import { SLURP_BUILTIN_FAN_TYPES } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-fan-types.ts";
 import { slurp2Source } from "./slurp2-source.ts";
 
 // L (larger reworks from review 1).
@@ -140,6 +147,59 @@ const read = (path: string) => slurp2Source(join(pkg, path));
   assert.doesNotMatch(
     readFileSync(join(pkg, "server/src/slp/features/feed/slp-post-plan-service.ts"), "utf8"),
     /export async function recordSlurpPromiseKept/u,
+  );
+}
+
+// ── R1-116: the audience estimate models Fan Types, tips, unlocks, AI runs and the world dial ──
+{
+  const tuning = slurpTuningForPreset("realistic");
+  const run = (world: Parameters<typeof estimateSlurpSimulation>[3]) =>
+    estimateSlurpSimulation(tuning, SLURP_ESTIMATE_SAMPLE, undefined, world);
+  const base = run({});
+  // The world dial: off silences the free world, busy is louder than normal.
+  const off = run({ worldActivity: "off" });
+  for (const key of ["likes", "follows", "comments", "commissions", "questions", "tips", "unlocks", "income"] as const)
+    assert.equal(off[key], 0, `off: ${key}`);
+  assert.ok(run({ worldActivity: "busy" }).follows > base.follows, "busy follows more");
+  assert.ok(run({ worldActivity: "quiet" }).follows < base.follows, "quiet follows less");
+  // Tips and unlocks are counted and paid into income; Fan Types decide them.
+  assert.ok(base.tips + base.unlocks > 0, "the sample week tips or unlocks something");
+  const stingy = run({
+    fanTypes: SLURP_BUILTIN_FAN_TYPES.map((type) => ({
+      ...type,
+      spend: { ...type.spend, tipChance: 0 },
+      behavior: { ...type.behavior, unlock: 0 },
+    })),
+  });
+  assert.equal(stingy.tips, 0);
+  assert.equal(stingy.unlocks, 0);
+  assert.ok(stingy.income < base.income, "no tips or unlocks, less income");
+  // Background profiles join only when switched on, and they change the week.
+  assert.notDeepEqual(run({ allowRandomUsers: true }), base);
+  // AI-written runs: the setting capped by the budget row, each at its ceiling.
+  const budget = { jobs: { thread: { maxPerDay: 3 } } };
+  assert.equal(slurpEstimateModelRuns({ fanActivityEnabled: false, fanActivityRunsPerDay: 8, modelBudget: budget }), 0);
+  assert.equal(slurpEstimateModelRuns({ fanActivityEnabled: true, fanActivityRunsPerDay: 8, modelBudget: budget }), 3);
+  assert.equal(slurpEstimateModelRuns({ fanActivityEnabled: true, fanActivityRunsPerDay: 2, modelBudget: budget }), 2);
+  const withRuns = run({
+    fanActivityEnabled: true,
+    fanActivityRunsPerDay: 8,
+    modelBudget: budget,
+    fanLikesPerRefresh: 2,
+    fanRepliesPerRefresh: 6,
+  });
+  assert.equal(Math.round((withRuns.likes - base.likes) * 100) / 100, 6);
+  assert.equal(Math.round((withRuns.comments - base.comments) * 100) / 100, 18);
+  // The server rule the estimate mirrors is still the setting capped by the thread row.
+  assert.match(
+    read("server/src/slp/features/audience/slp-fan-activity-operation.ts"),
+    /return Math\.min\(boosted, settings\.modelBudget\.jobs\.thread\.maxPerDay\);/u,
+  );
+  // Both screens hand the estimate the settings, not the tuning alone.
+  assert.match(read("client/src/slp/features/audience/SlpAudiencePanel.tsx"), /world=\{settings\}/u);
+  assert.match(
+    read("client/src/slp/features/backstage/SlpBackstagePreview.tsx"),
+    /estimateSlurpSimulation\(deferredProposed\.simulationTuning, undefined, undefined, deferredProposed\)/u,
   );
 }
 

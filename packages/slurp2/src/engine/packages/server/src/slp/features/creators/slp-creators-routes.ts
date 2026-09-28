@@ -13,7 +13,7 @@ import { z } from "zod";
 import { claimSlurpModelBudget, slurpModelWorkerAllows } from "../../base/model/slp-model-worker.js";
 import { resolveSlurpTextConnection } from "../../base/identity/slp-connection.js";
 import { generateSlurpConversationSchedule } from "../messages/slp-messages-contract.js";
-import { slurpPlatformScaleMultiplier } from "../../modules/audience/slp-scale.js";
+import { slurpPlatformScaleMultiplier } from "../../../../../shared/src/slp/slp-scale.js";
 import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
 import { slurpCreatorReach } from "../../../../../shared/src/slp/slp-reach.js";
 import { generateCreatorStageProfileDraft } from "./slp-stage-profile-draft-service.js";
