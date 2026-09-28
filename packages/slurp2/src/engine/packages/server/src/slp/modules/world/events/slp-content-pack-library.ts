@@ -36,7 +36,7 @@ export type SlurpPackBeat = {
   withCollab?: string;
   /** Only for a Creator at this spice level or above; the others skip this moment. */
   level?: SlurpPackLevel;
-  /** Due this many days into the event (Halloween night is the last day). Missing: spread evenly. */
+  /** Due this many days into the event (6.75: the evening of the seventh day). Missing: spread evenly. */
   atDay?: number;
 };
 
@@ -262,7 +262,8 @@ export const SLURP_CONTENT_PACK_LIBRARY: readonly SlurpContentPack[] = [
             type: "social_moment",
             line: "Halloween night: out in costume.",
             withPartner: "Halloween night with {partner}, both in costume.",
-            atDay: 6,
+            // The evening of the last day.
+            atDay: 6.75,
           },
         ],
       },
@@ -274,6 +275,7 @@ export const SLURP_CONTENT_PACK_LIBRARY: readonly SlurpContentPack[] = [
             type: "social_moment",
             line: "New Year's Eve: the countdown, the kiss at midnight or the lack of one.",
             withPartner: "New Year's Eve with {partner}: the countdown and the kiss at midnight.",
+            atDay: 0.75,
           },
         ],
       },
@@ -435,7 +437,7 @@ export const SLURP_CONTENT_PACK_LIBRARY: readonly SlurpContentPack[] = [
 
 /** The birthday moments: two days before, the day, and the day after. */
 export const SLURP_BIRTHDAY_BEATS: readonly SlurpPackBeat[] = [
-  { type: "anticipation", line: "Your birthday is in two days and you are planning something for it." },
+  { type: "anticipation", line: "Your birthday is almost here and you are planning something for it." },
   {
     type: "social_moment",
     line: "It is your birthday today.",

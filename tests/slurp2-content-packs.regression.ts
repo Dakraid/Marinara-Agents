@@ -357,6 +357,7 @@ const lateOccasion = slurpPackOccasions({
 }).find((occasion) => occasion.key.startsWith("halloween:"))!;
 assert.equal(lateOccasion.key, "halloween:2026-10-25", "the same moments, however late it started");
 assert.equal(new Date(lateOccasion.dueAt[2]!).toISOString().slice(0, 10), "2026-10-31", "Halloween night on Oct 31");
+assert.equal(new Date(lateOccasion.dueAt[2]!).toISOString().slice(11, 13), "18", "in the evening");
 assert.ok(lateOccasion.dueAt[2]! < lateOccasion.endsAt);
 
 // Exam week only for the student; the tattoo artist sits it out (the platform line still runs).
