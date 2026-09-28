@@ -104,7 +104,7 @@ export type SlurpGeneratedDmReply = SlurpDmReply & {
   agreedCollab?: SlurpDmCollab;
 };
 
-export type SlurpDmCollab = { partnerId: string; idea: string; hostShare: number | null };
+export type SlurpDmCollab = { partnerId: string; idea: string; hostShare: number | null; shoot?: boolean };
 
 /** The "collab" field of a Creator-to-Creator reply, or undefined when they did not agree on one. */
 export function readSlurpDmCollab(
@@ -117,7 +117,9 @@ export function readSlurpDmCollab(
   if (value.agreed === false) return undefined;
   const idea = typeof value.idea === "string" ? (protect(value.idea.trim()) ?? "") : "";
   const share = typeof value.yourShare === "number" && Number.isFinite(value.yourShare) ? value.yourShare : null;
-  return idea || share !== null ? { partnerId, idea, hostShare: share } : undefined;
+  return idea || share !== null
+    ? { partnerId, idea, hostShare: share, ...(value.shoot === true ? { shoot: true } : {}) }
+    : undefined;
 }
 
 /**

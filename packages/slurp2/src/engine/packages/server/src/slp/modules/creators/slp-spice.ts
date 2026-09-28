@@ -220,8 +220,11 @@ export type SlurpSpiceAngle = {
 };
 
 const PARTNER_LINE: Record<SlurpSpicePartner["kind"], (name: string | null) => string> = {
-  couple: (name) => `${name} is in it with you, like a couple is.`,
-  collab: (name) => `You made it together with ${name}, a Creator you collab with.`,
+  // U (user): a couple is private and intimate; a collab partner scene is a planned, negotiated shoot.
+  couple: (name) =>
+    `${name} is in it with you, like a couple is: private and intimate, just the two of you, not a shoot for anyone.`,
+  collab: (name) =>
+    `It is a shoot with ${name}, a Creator you collab with, planned in your DMs beforehand: what you would do, what is off limits, how you split it. Professional, and still hot.`,
   unnamed: () => "The other person stays unnamed and their face stays out of the picture.",
 };
 
@@ -246,6 +249,8 @@ export function slurpSpiceAngle(input: {
    * nobody when they would not do one (null). Absent for the Creator's own posts.
    */
   madeWith?: string | null;
+  /** `madeWith` is their couple partner (a couple post): private and intimate, not a collab shoot (U). */
+  intimate?: boolean;
   /** In a couple with another Creator: see `slurpSpicePartner`. Absent when single. */
   couple?: string | null;
   /** Earlier spicy posts of this Creator, newest first. */
@@ -287,7 +292,9 @@ export function slurpSpiceAngle(input: {
   const partner: SlurpSpicePartner | null = !kind.partnered
     ? null
     : input.madeWith
-      ? { kind: "collab", name: input.madeWith, company: `${input.madeWith}, a fellow Creator` }
+      ? input.intimate
+        ? { kind: "couple", name: input.madeWith, company: `${input.madeWith}, their partner` }
+        : { kind: "collab", name: input.madeWith, company: `${input.madeWith}, a fellow Creator` }
       : slurpSpicePartner(input.creator, input.collabs ?? [], seed, input.sequence, input.couple);
   const who = partner?.name ?? "someone you are seeing";
   const fill = (value: string) => value.replace("{partner}", who);

@@ -18,11 +18,12 @@ import {
   readSlurpCouples,
   slurpAdvanceCouples,
   slurpCoupleMisfitOf,
-  slurpRelationshipLine,
   slurpSetUpCouple,
   slurpSteerCouple,
   type SlurpCouple,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples.ts";
+// U: the relationship line moved out of the couples module (import path only).
+import { slurpRelationshipLine } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-lines.ts";
 import {
   readSlurpCreatorTies,
   slurpAdvanceCreatorTies,
@@ -554,7 +555,8 @@ const creator = (id: string, text: string, tags: string[], over: Partial<SlurpTi
   assert.match(purposeService, /held: Boolean\(heldAt\)/u);
   const reserve = server("features/feed/reserve/slp-reserve-operation.ts");
   assert.match(reserve, /access: heldDrop \? "locked"/u);
-  assert.match(reserve, /\.\.\.\(heldDrop \? \{ allowStory: false \} : \{\}\)/u);
+  // U (orchestrator decision on I + J2): the held slot also keeps the player's idea for the next slot.
+  assert.match(reserve, /\.\.\.\(heldDrop \? \{ allowStory: false, heldDrop: true \} : \{\}\)/u);
   assert.match(server("features/feed/slp-post-plan-service.ts"), /slurpHeldDropStage\(stages, dueAt\) \?\?/u);
 }
 

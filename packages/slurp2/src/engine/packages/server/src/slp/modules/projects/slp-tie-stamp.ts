@@ -30,6 +30,10 @@ export type SlurpTieStamp = {
   hostId?: string;
   /** The collab partner's own post about it: their post alone, no split, not the joint post. */
   echo?: boolean;
+  /** A collab's announcement ("collab with @kai drops Friday"): the host's post alone, no split. */
+  announce?: boolean;
+  /** A collab the two planned as a spicy shoot together in their DMs (U). */
+  shoot?: boolean;
 };
 
 export function readSlurpTieStamp(metadata: Record<string, unknown> | null | undefined): SlurpTieStamp | null {
@@ -51,5 +55,7 @@ export function readSlurpTieStamp(metadata: Record<string, unknown> | null | und
     ...(typeof value.pageId === "string" ? { pageId: value.pageId } : {}),
     ...(typeof value.hostId === "string" ? { hostId: value.hostId } : {}),
     ...(value.echo === true ? { echo: true } : {}),
+    ...(value.announce === true ? { announce: true } : {}),
+    ...(value.shoot === true ? { shoot: true } : {}),
   };
 }

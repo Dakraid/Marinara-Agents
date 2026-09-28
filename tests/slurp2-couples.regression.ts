@@ -24,13 +24,14 @@ import {
   slurpCouplePostIdsFor,
   slurpCoupleTold,
   slurpOpenCouplePage,
-  slurpRelationshipLine,
   slurpSetUpCouple,
   slurpSettleCouplePost,
   slurpSteerCouple,
   type SlurpCouple,
   type SlurpCouplesInput,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples.ts";
+// U: the relationship line moved out of the couples module (import path only).
+import { slurpRelationshipLine } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-lines.ts";
 import {
   slurpPairKey,
   slurpPostIncomeParts,
@@ -282,9 +283,11 @@ function run(days: number, over: Partial<SlurpCouplesInput> = {}, start: SlurpCo
   const beat = slurpCoupleBeat({ creatorId: "mira", sequence: 1, couples: [couple], names, at })!;
   assert.ok(beat, "a launch always takes the next ordinary slot");
   assert.match(beat.line, /official now/u);
-  assert.match(beat.line, /both your pages/u, "a launch is a joint post");
+  // U (user: couple = life, collab = work): each posts their own launch; no joint post, no tag, no split.
+  assert.doesNotMatch(beat.line, /both your pages/u, "a launch is their own post");
+  assert.match(beat.line, /not a collab/u);
   assert.equal(beat.tie.kind, "couple");
-  assert.equal(beat.tie.joint, true);
+  assert.equal(beat.tie.joint, undefined);
   assert.equal(beat.tie.partnerId, "kai");
   assert.deepEqual(beat.cast, ["Kai Vale"]);
   assert.ok(!/[{}[\]]|:\s*"/u.test(beat.line), "plain words, no JSON");
@@ -313,16 +316,22 @@ function run(days: number, over: Partial<SlurpCouplesInput> = {}, start: SlurpCo
     ...couple,
     moments: [{ id: "jealous:1", kind: "jealous", at: new Date(T0).toISOString(), detail: "x", fromId: "kai" }],
   };
+  // U: an everyday cameo of the partner can take other slots; only the jealous moment is counted here.
   let kaiPosts = 0;
   for (let sequence = 0; sequence < 40; sequence += 1) {
-    assert.equal(slurpCoupleBeat({ creatorId: "mira", sequence, couples: [small], names, at }), null);
-    if (slurpCoupleBeat({ creatorId: "kai", sequence, couples: [small], names, at })) kaiPosts += 1;
+    assert.notEqual(
+      slurpCoupleBeat({ creatorId: "mira", sequence, couples: [small], names, at })?.tie.moment,
+      "jealous",
+    );
+    if (slurpCoupleBeat({ creatorId: "kai", sequence, couples: [small], names, at })?.tie.moment === "jealous")
+      kaiPosts += 1;
   }
   assert.ok(kaiPosts > 8 && kaiPosts < 32, `a small moment now and then (${kaiPosts}/40)`);
-  // Old news is let go.
-  assert.equal(
-    slurpCoupleBeat({ creatorId: "mira", sequence: 1, couples: [couple], names, at: new Date(T0 + 6 * DAY) }),
-    null,
+  // Old news is let go (U: a cameo may still take the slot, never the old launch).
+  assert.notEqual(
+    slurpCoupleBeat({ creatorId: "mira", sequence: 1, couples: [couple], names, at: new Date(T0 + 6 * DAY) })?.tie
+      .moment,
+    "launch",
   );
 
   // The shared page: opt-in, its first post, page turns, posts that belong to the page.
@@ -339,7 +348,8 @@ function run(days: number, over: Partial<SlurpCouplesInput> = {}, start: SlurpCo
   let pageTurns = 0;
   for (let sequence = 0; sequence < 200; sequence += 1) {
     const turn = slurpCoupleBeat({ creatorId: "kai", sequence, couples: [quiet], names, at });
-    if (turn) {
+    // U: the other beats here are everyday cameos on their own page.
+    if (turn && turn.tie.moment !== "cameo") {
       assert.equal(turn.tie.pageId, "page-1");
       pageTurns += 1;
     }
@@ -385,12 +395,12 @@ function run(days: number, over: Partial<SlurpCouplesInput> = {}, start: SlurpCo
   assert.equal(slurpCoupleOfPage([split], "page-1")?.id, split.id);
 }
 
-// --- 6. Money: joint posts split like a collab; a shared page pays both --------------------------
+// --- 6. Money: a couple keeps separate incomes (U); a shared page pays both -----------------------
 {
+  // U (user): only the shared couple page splits; an old joint couple post (before U) pays its author.
   const joint = { kind: "couple", id: "b1", partnerId: "kai", moment: "launch", momentId: "m", joint: true };
   assert.deepEqual(slurpPostIncomeParts({ authorAccountId: "mira", metadata: { slurpTie: joint } }, 101), [
-    { creatorId: "mira", amount: 51 },
-    { creatorId: "kai", amount: 50 },
+    { creatorId: "mira", amount: 101 },
   ]);
   const page = { kind: "couple", id: "b1", partnerId: "kai", pageId: "page-1", hostId: "mira" };
   assert.deepEqual(
@@ -484,7 +494,13 @@ function run(days: number, over: Partial<SlurpCouplesInput> = {}, start: SlurpCo
     slurpRelationshipLine([ex], "mira", names, { withId: "kai", at: new Date(T0 + 5 * DAY) }),
     /your ex\. You broke up 2 days ago/u,
   );
-  assert.equal(slurpRelationshipLine([ex], "mira", names), "", "after a breakup it is no longer part of every brief");
+  // U (user: exes show up in posts and DMs): the ex stays in the briefs for a month, then goes.
+  assert.match(slurpRelationshipLine([ex], "mira", names, { at: new Date(T0 + 10 * DAY) }), /Kai Vale is your ex/u);
+  assert.equal(
+    slurpRelationshipLine([ex], "mira", names, { at: new Date(T0 + 40 * DAY) }),
+    "",
+    "a month after a breakup it is no longer part of every brief",
+  );
   assert.equal(slurpRelationshipLine([together], "rue", names), "");
   const header = slurpDmRoleHeader({
     writer: "creator",

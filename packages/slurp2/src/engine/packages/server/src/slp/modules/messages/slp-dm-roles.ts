@@ -161,7 +161,7 @@ export function slurpDmRoleHeader(input: SlurpDmRoleInput & { history: readonly 
     // Two pages can plan a joint post here; the split is theirs to agree (7b-c).
     if (input.viewerPage)
       lines.push(
-        `If you two really agree in this chat to make a post together, add "collab" to your JSON: {"idea": what you make together, "yourShare": the percent of what it earns that is yours, 50 unless you two agreed otherwise}. Otherwise "collab" is null. Only agree if it fits you; you can say no.`,
+        `If you two really agree in this chat to make a post together, add "collab" to your JSON: {"idea": what you make together, "yourShare": the percent of what it earns that is yours, 50 unless you two agreed otherwise, "shoot": true if it is a spicy shoot together you two negotiated here (what you do, your limits, the split), else false}. Otherwise "collab" is null. A collab is work: you announce it, tag each other and split what it earns. Only agree if it fits you; you can say no.`,
       );
   } else {
     lines.push(

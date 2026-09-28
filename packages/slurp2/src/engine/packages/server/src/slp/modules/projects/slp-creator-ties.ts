@@ -17,6 +17,8 @@
  *   post is written in that Creator's voice and shows on both pages.
  * - **Money.** A collab post's income is split 50/50 unless the two agreed otherwise in-story (a DM
  *   between the two pages can set `hostShare`).
+ * - **Work, not life (U).** A collab is announced before it drops, tagged both ways and brings fans
+ *   across (`slp-collab-work.ts`). A couple may also make a real collab; it is still work.
  * - **The player steers.** Push a request through, block a pair for good, suggest a pairing, or cool
  *   a rivalry down. Blocked pairs are never asked again until unblocked.
  *
@@ -25,6 +27,7 @@
 import { SLURP_DRAMATIC, SLURP_NEVER_PATTERN } from "../feed/slp-life-moments.js";
 import { DAY_MS, clampText, hash } from "./slp-project.js";
 import { readSlurpTieStamp, slurpClampShare, SLURP_COLLAB_DEFAULT_SHARE } from "./slp-tie-stamp.js";
+import { SLURP_COLLAB_INTERESTS } from "./slp-collab-work.js";
 
 const HOUR_MS = 60 * 60 * 1000;
 /** The world looks at ties at most this often; everything below is per look. */
@@ -84,6 +87,13 @@ export type SlurpCollab = {
   decline: SlurpCollabDecline | null;
   /** The partner posted their own side of it (slice I: both pages post about a collab, like real people). */
   echoed?: boolean;
+  /** The host announced it (U: a collab is announced, then drops); the joint post waits for `dropAt`. */
+  announcedAt?: string | null;
+  dropAt?: string | null;
+  /** Planned in their DMs as a spicy shoot together (U): the joint post is that shoot. */
+  shoot?: boolean;
+  /** Fans who came across once it was up: to the host, to the partner (U). */
+  crossover?: { host: number; partner: number };
 };
 
 export type SlurpRivalryStage = "shade" | "feud" | "cooling" | "over";
@@ -117,101 +127,6 @@ export const slurpPairKey = (a: string, b: string) => [a, b].sort().join("|");
 
 // ─── Fit ────────────────────────────────────────────────────────────────────────────────────────
 
-/** Interests read from a card, so "a baker" and "loves sourdough" land in the same niche. */
-const INTERESTS: readonly { id: string; words: RegExp; ideas: readonly string[] }[] = [
-  {
-    id: "fitness",
-    words:
-      /\b(gym|work ?outs?|training|fitness|lift(s|ing)?|runn(ing|er)|yoga|pilates|climb\w*|boxing|sports?|athlet\w*|cardio|bouldering|Sport)\b/iu,
-    ideas: [
-      "a workout together, one of you pushing the other",
-      "a joint training day with a challenge at the end",
-      "teaching each other one move you are best at",
-    ],
-  },
-  {
-    id: "style",
-    words:
-      /\b(fashion\w*|style|stylish|outfits?|wardrobe|model(ing|s)?|lingerie|shopping|thrift\w*|streetwear|vintage|Mode)\b/iu,
-    ideas: [
-      "a styling swap: each of you dresses the other",
-      "a thrift run with a budget and a winner",
-      "matching looks for one shared shoot",
-    ],
-  },
-  {
-    id: "food",
-    // Not coffee or "bakery": nearly every card drinks coffee, and "lives above a bakery" is a place. Both
-    // made a climbing coach a flour brand's pick in the 7b-c measure.
-    words:
-      /\b(cook\w*|bak(e|es|er|ing)|chef|kitchen|recipes?|food\w*|Küche|kochen|backen|Backstube|Bäcker\w*|Brot)\b/iu,
-    ideas: [
-      "a cooking night, one dish each",
-      "one recipe, made both your ways",
-      "a market run and whatever you cook from it",
-    ],
-  },
-  {
-    id: "art",
-    words: /\b(art|artist|paint\w*|draw\w*|sketch\w*|illustrat\w*|tattoo\w*|ink|design\w*|craft\w*)\b/iu,
-    ideas: [
-      "one piece made together, half each",
-      "drawing each other, no peeking",
-      "a small art swap: one piece each, traded",
-    ],
-  },
-  {
-    id: "music",
-    words: /\b(music\w*|sing(s|er|ers|ing)?|songs?|band|guitar|piano|dj|producer|rapper|concerts?|vinyl)\b/iu,
-    ideas: [
-      "a little jam session, recorded",
-      "a cover of one song you both love",
-      "swapping playlists and reacting to each other's",
-    ],
-  },
-  {
-    id: "games",
-    words: /\b(gam(e|es|er|ing)|stream\w*|twitch|console|esports?|cosplay\w*|anime|manga)\b/iu,
-    ideas: [
-      "a game night on stream, with some trash talk",
-      "a co-op run with one rule each",
-      "a costume or cosplay swap for one evening",
-    ],
-  },
-  {
-    id: "beauty",
-    words: /\b(make-?up|beauty|skin ?care|nails|hair\w*|salon|glam)\b/iu,
-    ideas: ["a get-ready-together session", "doing each other's look", "a skincare swap and honest reviews"],
-  },
-  {
-    id: "outdoors",
-    words: /\b(hik(e|es|ing)|travel\w*|trips?|beach|surf\w*|camping|nature|mountains?|road ?trip|sailing)\b/iu,
-    ideas: [
-      "a day out together somewhere new",
-      "a sunrise trip neither of you wants to get up for",
-      "a picnic spot one of you swears by",
-    ],
-  },
-  {
-    id: "night",
-    words: /\b(party\w*|clubs?|clubbing|bars?|cocktails?|nightlife|rave\w*|bartend\w*)\b/iu,
-    ideas: [
-      "a night out together, the before and the after",
-      "one bar each, the other judges",
-      "a pre-party at one place, the party at the other",
-    ],
-  },
-  {
-    id: "books",
-    words: /\b(books?|read(s|ing|er)?|writ(e|er|ing)|poet\w*|librar\w*|novels?)\b/iu,
-    ideas: [
-      "a swap of favourite books, and a reading date",
-      "a tiny book club of two",
-      "reading each other's comfort book",
-    ],
-  },
-];
-
 /** A card that rules collabs out: "never shares the spotlight", "does not do collabs". */
 const COLLAB_TOPIC =
   /\b(collab\w*|team(s|ing)? up|work(s|ing)? with (others|other creators)|spotlight|partners?hip)\b/iu;
@@ -223,7 +138,7 @@ const never = (text: string) =>
 
 export function slurpCreatorInterests(creator: Pick<SlurpTieCreator, "text" | "tags">): string[] {
   const text = [creator.text, ...creator.tags].join("\n");
-  return INTERESTS.filter((interest) => interest.words.test(text)).map((interest) => interest.id);
+  return SLURP_COLLAB_INTERESTS.filter((interest) => interest.words.test(text)).map((interest) => interest.id);
 }
 
 /** What two Creators share: tags and interests. */
@@ -255,7 +170,7 @@ export function slurpCollabFit(
   options: { paired?: boolean; boost?: number } = {},
 ): SlurpCollabFit {
   const niche = slurpSharedNiche(a, b);
-  const shared = INTERESTS.find((interest) => niche.interests.includes(interest.id));
+  const shared = SLURP_COLLAB_INTERESTS.find((interest) => niche.interests.includes(interest.id));
   const ideas = shared?.ideas ?? ["one shoot that mixes both your styles", "a day swapping your usual routines"];
   const idea = ideas[0]!;
   if ([a, b].some((creator) => never(creator.text).some((sentence) => COLLAB_TOPIC.test(sentence))))
@@ -320,6 +235,15 @@ export function readSlurpCreatorTies(raw: unknown): SlurpCreatorTies {
         postedAt: date(item.postedAt),
         decline: DECLINES.includes(item.decline as SlurpCollabDecline) ? (item.decline as SlurpCollabDecline) : null,
         ...(item.echoed === true ? { echoed: true } : {}),
+        // U: collabs agreed before announcements existed have neither and announce first.
+        ...(date(item.announcedAt) ? { announcedAt: date(item.announcedAt), dropAt: date(item.dropAt) } : {}),
+        ...(item.shoot === true ? { shoot: true } : {}),
+        ...(() => {
+          const crossover = record(item.crossover);
+          const count = (value: unknown) =>
+            typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+          return crossover ? { crossover: { host: count(crossover.host), partner: count(crossover.partner) } } : {};
+        })(),
       },
     ];
   });
@@ -681,7 +605,7 @@ export function slurpAgreeCollabInDm(
   ties: SlurpCreatorTies,
   host: SlurpTieCreator,
   partner: SlurpTieCreator,
-  input: { at: Date; id: string; idea: string; hostShare: number | null },
+  input: { at: Date; id: string; idea: string; hostShare: number | null; shoot?: boolean },
 ): SlurpCreatorTies {
   const key = slurpPairKey(host.id, partner.id);
   const open = ties.collabs.find(
@@ -690,15 +614,22 @@ export function slurpAgreeCollabInDm(
   const share = input.hostShare === null ? SLURP_COLLAB_DEFAULT_SHARE : slurpClampShare(input.hostShare);
   const idea = clampText(input.idea, 200);
   const stamp = input.at.toISOString();
+  const shoot = input.shoot ? { shoot: true } : {};
   if (open)
     return open.status === "planned"
       ? ties
-      : update(ties, open.id, { status: "agreed", answeredAt: stamp, hostShare: share, ...(idea ? { idea } : {}) });
+      : update(ties, open.id, {
+          status: "agreed",
+          answeredAt: stamp,
+          hostShare: share,
+          ...(idea ? { idea } : {}),
+          ...shoot,
+        });
   const collab = newCollab(input.id, host, partner, "dm", stamp, share, ties.collabs);
   return {
     ...ties,
     blocked: ties.blocked.filter((entry) => entry !== key),
-    collabs: [...ties.collabs, { ...collab, ...(idea ? { idea } : {}), status: "agreed", answeredAt: stamp }],
+    collabs: [...ties.collabs, { ...collab, ...(idea ? { idea } : {}), ...shoot, status: "agreed", answeredAt: stamp }],
   };
 }
 
@@ -762,11 +693,10 @@ export function slurpPostIncomeParts(
   amount: number,
 ): { creatorId: string; amount: number }[] {
   const stamp = readSlurpTieStamp(post.metadata);
-  // A joint couple post splits like a collab; a post on a couple's shared page pays that page, whose
-  // earnings go half to each (`slurpCouplePageSplit`).
-  // The partner's own side of a collab (`echo`) is their post alone.
-  const joint =
-    (stamp?.kind === "collab" && !stamp.echo) || (stamp?.kind === "couple" && stamp.joint === true && !stamp.pageId);
+  // Only the joint collab post splits. A couple keeps separate incomes (U, user: collab = work, couple
+  // = life), old joint couple posts too; their shared page pays that page, whose earnings go half to
+  // each (`slurpCouplePageSplit`). The partner's own side (`echo`) and the announcement are one page's.
+  const joint = stamp?.kind === "collab" && !stamp.echo && !stamp.announce;
   if (!joint || !stamp.partnerId || stamp.partnerId === post.authorAccountId)
     return [{ creatorId: post.authorAccountId, amount }];
   const parts = slurpCollabIncomeParts(amount, stamp.hostShare ?? SLURP_COLLAB_DEFAULT_SHARE);

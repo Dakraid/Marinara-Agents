@@ -19,6 +19,7 @@ import {
   slurpAnswerDeal,
   slurpDealOpen,
   slurpDealOwesPost,
+  slurpMarkDealPosted,
   slurpDealReceipt,
 } from "../../modules/economy/slp-brand-deals.js";
 import { loadSlurpTieCreators, slurpRunsItself } from "./slp-creator-ties-service.js";
@@ -205,6 +206,25 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
     });
     if (outcome && outcome !== "ok") return reply.code(ERRORS[outcome][0]).send({ error: ERRORS[outcome][1] });
     if (parsed.data.accept) await noodle.creditSponsorFee(creator.id, deal.fee, deal.brand, slurpDealReceipt(deal.id));
+    return view(viewer);
+  });
+
+  /** "Mark as posted" (U): the player's own page posted the sponsored post its own way; the reminder goes. */
+  app.post("/slurp/ties/deals/:id/posted", async (req, reply) => {
+    const viewer = await viewerFrom(req.body, reply);
+    if (!viewer) return;
+    const deal = (await readSlurpCreatorTiesDocument(app.db)).deals.find((entry) => entry.id === id(req));
+    const creator = deal ? await noodle.getNoodlerAccountById(deal.creatorId) : null;
+    if (!deal || !creator) return reply.code(404).send({ error: ERRORS.notFound[1] });
+    if (!creatorBelongsToViewer(creator, viewer))
+      return reply.code(403).send({ error: "Only the Creator's own page can mark this post." });
+    const outcome = await mutateSlurpCreatorTies(app.db, (document) => {
+      const next = slurpMarkDealPosted(document.deals, deal.id, new Date());
+      return typeof next === "string"
+        ? { document, result: next }
+        : { document: { ...document, deals: next }, result: "ok" as const };
+    });
+    if (outcome && outcome !== "ok") return reply.code(ERRORS[outcome][0]).send({ error: ERRORS[outcome][1] });
     return view(viewer);
   });
 

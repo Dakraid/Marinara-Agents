@@ -11,7 +11,8 @@ import { hash } from "../projects/slp-project.js";
 import { slurpRivalryActive, type SlurpCreatorTies, type SlurpRivalry } from "../projects/slp-creator-ties.js";
 import type { SlurpTieStamp } from "../projects/slp-tie-stamp.js";
 import { slurpRefusalWorthAPost, type SlurpBrandDeal } from "../economy/slp-brand-deals.js";
-import type { SlurpCouple } from "../projects/slp-creator-couples.js";
+import { slurpCoupleActive, slurpCoupleOf, type SlurpCouple } from "../projects/slp-creator-couples.js";
+import { slurpCollabDropAt, slurpCollabDropDay, slurpCollabStep } from "../projects/slp-collab-work.js";
 import { slurpCoupleBeat } from "./slp-couple-beats.js";
 import type { SlurpBeat } from "./slp-post-beat.js";
 
@@ -41,9 +42,9 @@ function rivalLine(rivalry: SlurpRivalry, selfId: string, rival: string): string
 }
 
 /**
- * The tie beat for this Creator's ordinary slot, or null. Order: a collab they host, a sponsored post
- * they said yes to, a couple moment, then now and then a rivalry post or a word about a brand they
- * turned down.
+ * The tie beat for this Creator's ordinary slot, or null. Order: a collab they host (its announcement,
+ * then the joint post on its drop day), a sponsored post they said yes to, a couple moment, then now
+ * and then a rivalry post or a word about a brand they turned down.
  * Never on a teaser slot.
  */
 export function slurpTieBeat(input: {
@@ -65,23 +66,53 @@ export function slurpTieBeat(input: {
   if (input.intents.every((intent) => intent === "teaser")) return null;
   const heat = input.heatFloor === undefined ? {} : { heatFloor: input.heatFloor };
 
-  const collab = ties.collabs.find((entry) => entry.status === "agreed" && entry.hostId === creatorId);
+  // A collab is work (U): announced first, then the joint post on its drop day. While it waits for
+  // that day, the host's slots are ordinary.
+  const collab = ties.collabs.find(
+    (entry) => entry.hostId === creatorId && slurpCollabStep(entry, input.at) !== "wait" && names.has(entry.partnerId),
+  );
   const partner = collab ? names.get(collab.partnerId) : undefined;
   if (collab && partner) {
+    const what = collab.shoot ? `the spicy shoot you two planned in your DMs (${collab.idea})` : collab.idea;
+    if (slurpCollabStep(collab, input.at) === "announce")
+      return {
+        beat: {
+          type: "social_moment",
+          anchorKind: "collab",
+          anchor: partner,
+          line: `Announce your collab with ${partner}: ${what}. It drops ${slurpCollabDropDay(slurpCollabDropAt(collab.id, input.at), input.at)} on both your pages. Tag ${partner} and build a little hype your way, without showing it yet.`,
+          cast: [partner],
+          place: null,
+          ...heat,
+          tie: { kind: "collab", id: collab.id, partnerId: collab.partnerId, announce: true },
+        },
+      };
     const split =
       collab.hostShare === 50
         ? "You split what it earns fifty-fifty."
         : `You agreed that ${collab.hostShare}% of what it earns is yours and ${100 - collab.hostShare}% goes to ${partner}.`;
+    // A couple can make a real collab too; it is still work, not a couple post.
+    const couple = slurpCoupleOf(input.couples ?? [], creatorId, collab.partnerId);
+    const business =
+      couple && slurpCoupleActive(couple)
+        ? ` You two are together, but this one is business: a real collab with a tag and a split, not a couple post.`
+        : "";
     return {
       beat: {
         type: "social_moment",
         anchorKind: "collab",
         anchor: partner,
-        line: `You and ${partner} make a collab post together today: ${collab.idea}. It goes up on both your pages and you tag each other. ${split}`,
+        line: `Your collab with ${partner} drops today, the one you announced: ${what}. It goes up on both your pages and you tag each other. ${split}${business}`,
         cast: [partner],
         place: null,
         ...heat,
-        tie: { kind: "collab", id: collab.id, partnerId: collab.partnerId, hostShare: collab.hostShare },
+        tie: {
+          kind: "collab",
+          id: collab.id,
+          partnerId: collab.partnerId,
+          hostShare: collab.hostShare,
+          ...(collab.shoot ? { shoot: true } : {}),
+        },
       },
     };
   }

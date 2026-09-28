@@ -51,9 +51,14 @@ async function spicePartners(
   creatorId: string,
   paired: readonly SlurpCreatorCollab[],
   tie: SlurpTieStamp | undefined,
-): Promise<{ collabs: string[]; madeWith?: string | null; couple?: string | null }> {
+): Promise<{ collabs: string[]; madeWith?: string | null; intimate?: boolean; couple?: string | null }> {
+  // A couple post (a cameo, a date, their shared page) is intimate, with the partner or nobody (U).
   if ((tie?.kind === "collab" || tie?.kind === "couple") && tie.partnerId)
-    return { collabs: [], madeWith: (await slurpSpicyCollabNames(db, [tie.partnerId]))[0] ?? null };
+    return {
+      collabs: [],
+      madeWith: (await slurpSpicyCollabNames(db, [tie.partnerId]))[0] ?? null,
+      ...(tie.kind === "couple" ? { intimate: true } : {}),
+    };
   // Taken: the couple partner is the partner, when their level and hard noes allow it (7b-couples).
   const couple = await readSlurpCouplePartner(db, creatorId);
   if (couple.inCouple)

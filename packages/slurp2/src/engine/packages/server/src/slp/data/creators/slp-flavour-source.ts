@@ -22,7 +22,8 @@ import { readSlurpCreatorSteering } from "./slp-steering-storage.js";
 import { readSlurpCreatorTiesDocument } from "../projects/slp-creator-ties-storage.js";
 import { resolveSlurpExplicitLevel } from "../settings/slp-post-guidance-storage.js";
 import { SLP_EXPLICIT_LEVELS } from "../../../../../shared/src/slp/slp-spice.js";
-import { slurpCoupleFor, slurpCoupleOf, slurpRelationshipLine } from "../../modules/projects/slp-creator-couples.js";
+import { slurpCoupleOther } from "../../modules/projects/slp-creator-couples.js";
+import { slurpRelationshipLine } from "../../modules/projects/slp-couple-lines.js";
 import { readSlurpAgentMemoryLines } from "./slp-agent-memory-source.js";
 import { createSlurpStorage } from "../slp-storage.js";
 import { resolveSlurpCreatorSpice, type SlurpCreatorSpice } from "./slp-spice-storage.js";
@@ -292,8 +293,8 @@ export async function readSlurpCardPartners(db: DB, accountId: string): Promise<
 }
 
 /**
- * What a Creator knows about their own love life (7b-couples), one plain sentence or "". With
- * `withId` (a chat with the partner or the ex) it says who they are to each other.
+ * What a Creator knows about their own love life (7b-couples), one plain sentence or "": a crush, the
+ * partner, or a recent ex (U). With `withId` (a chat with the partner or the ex) it says who they are to each other.
  */
 export async function readSlurpRelationshipLine(
   db: DB,
@@ -302,14 +303,14 @@ export async function readSlurpRelationshipLine(
 ): Promise<string> {
   try {
     const { couples } = await readSlurpCreatorTiesDocument(db);
-    const couple =
-      (options.withId ? slurpCoupleOf(couples, creatorId, options.withId) : null) ?? slurpCoupleFor(couples, creatorId);
-    if (!couple) return "";
-    const partnerId = couple.aId === creatorId ? couple.bId : couple.aId;
-    const partner = await createSlurpStorage(db).getNoodlerAccountById(partnerId);
-    return partner
-      ? slurpRelationshipLine(couples, creatorId, new Map([[partnerId, partner.displayName]]), options)
-      : "";
+    // Every partner they had (the line picks the current one, a crush, or a recent ex).
+    const storage = createSlurpStorage(db);
+    const names = new Map<string, string>();
+    for (const partnerId of new Set(couples.map((couple) => slurpCoupleOther(couple, creatorId)))) {
+      const partner = partnerId ? await storage.getNoodlerAccountById(partnerId) : null;
+      if (partner) names.set(partner.id, partner.displayName);
+    }
+    return slurpRelationshipLine(couples, creatorId, names, options);
   } catch (error) {
     logger.warn(error, "[slurp] Could not read a Creator's relationship");
     return "";

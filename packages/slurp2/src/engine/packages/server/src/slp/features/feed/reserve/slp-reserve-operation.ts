@@ -226,7 +226,7 @@ export async function prepareNextCreatorReservePost(db: DB, at = new Date()): Pr
         connection,
         prepareOnly: true,
         slotId: selectedSlotId,
-        ...(heldDrop ? { allowStory: false } : {}),
+        ...(heldDrop ? { allowStory: false, heldDrop: true } : {}),
         admissionMode: {
           kind: "background",
           beforeAttempt: async () => {

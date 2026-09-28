@@ -62,6 +62,8 @@ export type SlurpBrandDeal = {
   paidAt: string | null;
   /** They already posted about turning it down. */
   toldFans: boolean;
+  /** The player said the owed post is up ("Mark as posted", U): the reminder goes, no post needed. */
+  markedAt?: string | null;
 };
 
 /** What a brand pays: a small Creator gets a small deal. Grows on a square root of the followers. */
@@ -141,6 +143,7 @@ export function readSlurpBrandDeals(raw: unknown): SlurpBrandDeal[] {
         postId: clampText(item.postId, 128) || null,
         paidAt: date(item.paidAt),
         toldFans: item.toldFans === true,
+        ...(date(item.markedAt) ? { markedAt: date(item.markedAt) } : {}),
       },
     ];
   });
@@ -299,6 +302,7 @@ export function slurpDealOwesPost(deal: SlurpBrandDeal, at: Date): boolean {
   return (
     deal.status === "done" &&
     !deal.postId &&
+    !deal.markedAt &&
     !!deal.answeredAt &&
     at.getTime() - Date.parse(deal.answeredAt) < SLURP_OWED_POST_DAYS * 24 * 60 * 60 * 1000
   );
@@ -315,6 +319,18 @@ export function slurpPostPaysOwedDeal(
     /(^|[^\p{L}\p{N}_])#ad\b/iu.test(post.content) ||
     (deal.brand.length > 1 && text.includes(deal.brand.toLocaleLowerCase()))
   );
+}
+
+/** The player marks an owed post as posted (U: no dead end when the post has no #ad or brand name). */
+export function slurpMarkDealPosted(
+  deals: SlurpBrandDeal[],
+  id: string,
+  at: Date,
+): SlurpBrandDeal[] | "notFound" | "notOpen" {
+  const deal = deals.find((entry) => entry.id === id);
+  if (!deal) return "notFound";
+  if (!slurpDealOwesPost(deal, at)) return "notOpen";
+  return deals.map((entry) => (entry.id === id ? { ...entry, markedAt: at.toISOString() } : entry));
 }
 
 /** The owed post went up: the reminder goes away. */

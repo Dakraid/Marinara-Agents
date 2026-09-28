@@ -18,8 +18,10 @@
  *   fights, making up, breakups and now and then getting back together. Seeded per couple, so the
  *   same world moves the same way.
  * - **One post per moment each.** A moment is news for a few days; each Creator posts it once, and
- *   the small ones only now and then. Launches, anniversaries and reunions are joint posts that show
- *   on both pages (the collab joint-post path), or on their shared page when they opened one.
+ *   the small ones only now and then. A couple is life, not work (U): each posts their own side, the
+ *   partner shows up as a cameo, nothing is tagged or split; only their shared page is joint.
+ * - **Crushes and exes (U).** Sparks is a crush; after a breakup each ex posts about moving on once,
+ *   and the ex stays in their briefs and chats for a while (`slp-couple-lines.ts`).
  * - **A shared page** (opt-in from Studio) gets its own posts from both, and closes on a breakup
  *   with a goodbye post.
  */
@@ -31,7 +33,6 @@ import {
   SLURP_COUPLE_DATES as DATES,
   SLURP_COUPLE_FIGHTS as FIGHTS,
   SLURP_COUPLE_JEALOUSY as JEALOUSY,
-  slurpForcedCoupleLine,
 } from "./slp-couple-words.js";
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -57,7 +58,9 @@ export type SlurpCoupleMomentKind =
   | "breakup"
   | "reunion"
   | "pageOpen"
-  | "pageClose";
+  | "pageClose"
+  /** An ex posts about moving on, once, a week or so after the breakup (U: exes). */
+  | "movingOn";
 
 export type SlurpCoupleMoment = {
   id: string;
@@ -247,6 +250,7 @@ const KINDS: readonly SlurpCoupleMomentKind[] = [
   "reunion",
   "pageOpen",
   "pageClose",
+  "movingOn",
 ];
 const record = (value: unknown) =>
   value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
@@ -354,11 +358,17 @@ function pickDate(couple: SlurpCouple, byId: ReadonlyMap<string, SlurpTieCreator
   return rotated.find((idea) => !recent.has(idea)) ?? rotated[0]!;
 }
 
+/** A collab with someone else than the partner (a collab of the two of them is no reason to be jealous). */
+const collabOther = (couple: SlurpCouple, id: string, collabbedWith: ReadonlyMap<string, string>) => {
+  const other = collabbedWith.get(id);
+  return other && other !== couple.aId && other !== couple.bId ? other : undefined;
+};
+
 /** Trouble: jealousy over a recent collab with someone else when there is one, else a fight. */
 function trouble(couple: SlurpCouple, stamp: string, collabbedWith: ReadonlyMap<string, string>): SlurpCoupleMoment {
   const roll = hash(`${couple.id}:trouble:${stamp}`);
-  const aWith = collabbedWith.get(couple.aId);
-  const bWith = collabbedWith.get(couple.bId);
+  const aWith = collabOther(couple, couple.aId, collabbedWith);
+  const bWith = collabOther(couple, couple.bId, collabbedWith);
   // The one whose partner made the collab is the jealous one.
   if ((aWith || bWith) && roll % 2 === 0)
     return {
@@ -451,8 +461,27 @@ function advanceCouple(
       : { ...couple, stage: "split", stageAt: stamp, ending: "fizzled" };
   }
 
-  // A date every few days while dating or together (not while it is rocky).
+  // A collab with someone else stings now and then (U): one jealous post, decided once per collab
+  // partner, without making it rocky. A collab of the two of them is work they share.
   let next = couple;
+  for (const [selfId, otherId] of [
+    [couple.aId, couple.bId],
+    [couple.bId, couple.aId],
+  ] as const) {
+    const withId = collabOther(couple, selfId, input.collabbedWith);
+    if (
+      withId &&
+      slurpCoupleTaken(couple) &&
+      hash(`${couple.id}:${selfId}:${withId}:sting`) % 3 === 0 &&
+      !next.moments.some((entry) => entry.kind === "jealous" && entry.withId === withId && entry.fromId === otherId)
+    )
+      next = withMoment(next, {
+        ...moment(next, "jealous", stamp, "a collab with someone else", withId),
+        fromId: otherId,
+      });
+  }
+
+  // A date every few days while dating or together (not while it is rocky).
   const lastDate = [...couple.moments].reverse().find((entry) => entry.kind === "date");
   const dateEvery = couple.stage === "dating" ? 3 : 5 + (hash(`${couple.id}:pace`) % 4);
   if (
@@ -469,6 +498,13 @@ function advanceCouple(
       next = withMoment(next, moment(next, "anniversary", stamp, label));
   }
 
+  // Exes (U): a week or so after a breakup each posts about moving on, once.
+  if (
+    couple.ending === "breakup" &&
+    daysSince(couple.stageAt, at) >= 5 + (hash(`${couple.id}:${couple.stageAt}:on`) % 5) &&
+    !couple.moments.some((entry) => entry.kind === "movingOn" && entry.at >= couple.stageAt)
+  )
+    next = withMoment(next, moment(next, "movingOn", stamp));
   if (!due) return next;
   if (couple.stage === "dating")
     return withMoment(
@@ -728,7 +764,7 @@ export function slurpCoupleBuzz(metadata: Record<string, unknown> | null | undef
   if (stamp?.kind !== "couple") return 1;
   const moment = stamp.moment ?? "";
   if (["launch", "breakup", "reunion", "pageOpen"].includes(moment)) return 1.8;
-  if (["anniversary", "fight", "jealous", "pageClose"].includes(moment)) return 1.4;
+  if (["anniversary", "fight", "jealous", "pageClose", "movingOn"].includes(moment)) return 1.4;
   return 1.15;
 }
 
@@ -737,51 +773,4 @@ export function slurpCouplePageSplit(amount: number): [number, number] {
   const whole = Math.max(0, Math.floor(amount));
   const second = Math.floor(whole / 2);
   return [whole - second, second];
-}
-
-/**
- * What a Creator knows about their own love life, in one plain sentence, or "". In a chat with the
- * partner (or the ex) it says who they are to each other; anywhere else it is part of their life.
- */
-export function slurpRelationshipLine(
-  couples: readonly SlurpCouple[],
-  creatorId: string,
-  names: ReadonlyMap<string, string>,
-  options: { withId?: string | null; at?: Date } = {},
-): string {
-  const at = options.at ?? new Date();
-  const withThem = options.withId ? slurpCoupleOf(couples, creatorId, options.withId) : null;
-  const couple = withThem ?? slurpCoupleFor(couples, creatorId);
-  if (!couple) return "";
-  const partnerId = couple.aId === creatorId ? couple.bId : couple.aId;
-  const partner = names.get(partnerId);
-  if (!partner) return "";
-  const days = Math.max(0, Math.round((at.getTime() - Date.parse(couple.stageAt)) / 86_400_000));
-  const trouble = [...couple.moments].reverse().find((moment) => moment.kind === "fight" || moment.kind === "jealous");
-  // A couple the player forced against a card: the card colors how it feels (slice I).
-  const tone = slurpCoupleActive(couple) ? slurpForcedCoupleLine(couple, creatorId, partner) : "";
-  const colored = (line: string) => (tone ? `${line} ${tone}` : line);
-  if (withThem) {
-    if (couple.stage === "sparks")
-      return colored(`You and ${partner} have been flirting on Slurp lately. Nothing is official.`);
-    if (couple.stage === "dating")
-      return colored(`You and ${partner} are dating. It is new, and not official in public yet.`);
-    if (couple.stage === "together")
-      return colored(`${partner} is your partner: you two are together, and your fans know.`);
-    if (couple.stage === "rocky")
-      return colored(
-        `${partner} is your partner, but things are rocky between you right now${trouble?.detail ? ` (${trouble.detail})` : ""}.`,
-      );
-    return couple.ending === "fizzled"
-      ? `You and ${partner} flirted for a while, and it went nowhere.`
-      : `${partner} is your ex. You broke up ${days <= 1 ? "just now" : `${days} days ago`}.`;
-  }
-  if (couple.stage === "sparks")
-    return colored(`You have a thing for ${partner}, another Creator on Slurp. Nothing is official.`);
-  const what =
-    couple.stage === "dating"
-      ? `You are dating ${partner}, another Creator on Slurp; it is still new.`
-      : `You are with ${partner}, another Creator on Slurp.`;
-  const rocky = couple.stage === "rocky" ? " Things are rocky between you two right now." : "";
-  return colored(`${what}${rocky}`) + " They are part of your life, not the topic of everything you write.";
 }

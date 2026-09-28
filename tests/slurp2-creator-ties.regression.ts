@@ -40,6 +40,7 @@ import {
   type SlurpCreatorTies,
   type SlurpTieCreator,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-ties.ts";
+import { slurpAnnounceCollab } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-collab-work.ts";
 import { slurpClampShare } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-tie-stamp.ts";
 import {
   readSlurpBrandDeals,
@@ -629,12 +630,17 @@ async function main() {
     const at = new Date(T0);
     const names = new Map(cast.map((entry) => [entry.id, entry.name]));
     const intents = ["casual", "set"] as const;
-    const collabTies: SlurpCreatorTies = slurpAgreeCollabInDm(SLURP_NO_TIES, rue, mira, {
-      at,
-      id: "c1",
-      idea: "",
-      hostShare: 60,
-    });
+    // U: a collab is announced first and drops a day or two later; this block reads the drop post.
+    const collabTies: SlurpCreatorTies = slurpAnnounceCollab(
+      slurpAgreeCollabInDm(SLURP_NO_TIES, rue, mira, {
+        at,
+        id: "c1",
+        idea: "",
+        hostShare: 60,
+      }),
+      "c1",
+      new Date(T0 - 3 * 86_400_000),
+    );
     const collab = slurpTieBeat({
       creatorId: "rue",
       creatorText: rue.text,

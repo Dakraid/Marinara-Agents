@@ -375,16 +375,32 @@ const COUPLE_REACTIONS: Record<"flirt" | "sweet" | "rocky" | "over", readonly st
   ],
 };
 
+/**
+ * Some fans take it personally (U, user: parasocial): a launch, a date or the partner showing up in a
+ * post stings them. Mixed in with the sweet ones, so a few comments sound hurt, never all.
+ */
+const PARASOCIAL = [
+  "wait so {self} is taken now?? 😭",
+  "I thought we had something tbh",
+  "unsubscribing. (I'm not)",
+  "why does this hurt me personally",
+  "{partner} better treat you right or else",
+  "happy for you. I guess. 🙂",
+] as const;
+
 export function slurpCoupleReactionBodies(self: string, partner: string, moment: string): string[] {
   const mood =
     moment === "flirt"
       ? "flirt"
       : moment === "fight" || moment === "jealous"
         ? "rocky"
-        : moment === "breakup" || moment === "pageClose"
+        : moment === "breakup" || moment === "pageClose" || moment === "movingOn"
           ? "over"
           : "sweet";
-  return COUPLE_REACTIONS[mood].map((body) => body.replaceAll("{self}", self).replaceAll("{partner}", partner));
+  const hurt = ["launch", "date", "cameo", "anniversary", "reunion"].includes(moment) ? PARASOCIAL : [];
+  return [...COUPLE_REACTIONS[mood], ...hurt].map((body) =>
+    body.replaceAll("{self}", self).replaceAll("{partner}", partner),
+  );
 }
 
 /**

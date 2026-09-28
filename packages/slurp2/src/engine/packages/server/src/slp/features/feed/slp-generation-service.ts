@@ -20,7 +20,7 @@ import { resolveSlurpCreatorMenu, resolveSlurpPostGuidance } from "../../data/se
 import { SLURP_BUILT_IN_EXPLICIT_LEVEL, slurpPostLevelInstruction } from "../../modules/feed/slp-post-guidance.js";
 import { createCharactersStorage } from "../../../services/storage/characters.storage.js";
 import { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
-import { createSlurpStorage } from "../../data/slp-storage.js";
+import { createSlurpMessagesStorage, createSlurpStorage } from "../../data/slp-storage.js";
 import { listSlurpOtherCreatorSubjects } from "../../data/feed/slp-feed-subjects-storage.js";
 import { type SlurpAccount } from "../../modules/records/slp-storage-model.js";
 import { createPromptOverridesStorage } from "../../../services/storage/prompt-overrides.storage.js";
@@ -41,7 +41,6 @@ import {
 import { slurpArcPoll, slurpArcRotation, slurpProjectChapter } from "../../modules/projects/slp-arc-progress.js";
 import { slurpPurposeMetadata } from "../../modules/feed/slp-post-purpose.js";
 import { resolveSlurpCreatorScheduleContext } from "../creators/slp-creators-contract.js";
-import { createSlurpMessagesStorage } from "../../data/slp-storage.js";
 import { createChatsStorage } from "../../../services/storage/chats.storage.js";
 import { type SlpCreatorContentFormat } from "../../base/prompting/slp-content-format.js";
 import { resolveSlurpPostLore } from "./slp-post-lore.js";
@@ -105,6 +104,8 @@ export type SlpCreatorPostGenerationInput = {
   publicationTime?: Date;
   /** False keeps the Story rotation out: "Create posts now" asks for feed posts, not Stories. */
   allowStory?: boolean;
+  /** A slot held for a teased drop: the drop wins over the player's idea, which waits for the next slot (U). */
+  heldDrop?: boolean;
   /** Preview calls use the supplied draft without changing saved settings. */
   promptBlocks?: SlurpPromptBlockOverrides;
   promptInstructions?: SlurpReusablePromptInstruction[];
@@ -178,10 +179,11 @@ export async function generateCreatorPost(
     promptBlocks: input.promptBlocks ?? settings.promptBlocks,
     promptInstructions: input.promptInstructions ?? settings.promptInstructions,
   });
-  // The player's steering. The oldest idea is this post's beat; the classic planner has no beats,
-  // so there it becomes the post direction instead.
+  // The player's steering. The oldest idea is this post's beat (a slot held for a teased drop leaves it for
+  // the next one, U); the classic planner has no beats, so there it becomes the post direction instead.
   const steering = await readSlurpCreatorSteering(db, account.id).catch(() => null);
-  const nudge = !input.request.noodlerPostGuide?.trim() && !input.previewOnly ? (steering?.nudges[0] ?? null) : null;
+  const nudge =
+    input.heldDrop || input.previewOnly || input.request.noodlerPostGuide?.trim() ? null : steering?.nudges[0];
   const classicIdea = nudge && settings.postPlanner !== "beats" ? nudge.text : "";
   const directed = Boolean(input.request.noodlerPostGuide?.trim() || classicIdea);
   let variation = directed

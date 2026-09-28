@@ -5,6 +5,10 @@
  * breakup); the flavour brief makes the Creator tell it their own way in the same post call. Big
  * news (launch, anniversary, breakup, reunion, a shared page opening or closing) takes the next
  * ordinary slot; small moments only now and then, and each Creator posts a moment once.
+ *
+ * A couple is LIFE, a collab is WORK (U, user): a couple post is the Creator's own post with the
+ * partner in it as a cameo (date night, their hoodie), no collab tag, no split, not on the partner's
+ * page. Only their optional shared page is theirs together.
  */
 import { hash } from "../projects/slp-project.js";
 import {
@@ -19,8 +23,28 @@ import type { SlurpBeat } from "./slp-post-beat.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BIG: readonly SlurpCoupleMomentKind[] = ["launch", "anniversary", "breakup", "reunion", "pageOpen", "pageClose"];
-/** Made together: on both pages, or on their shared page when it is open. */
+/** Made together: on their shared page when it is open; otherwise each posts their own. */
 const JOINT: readonly SlurpCoupleMomentKind[] = ["launch", "anniversary", "reunion"];
+/** The partner in an everyday post, like real couples show up in each other's lives (U). */
+const CAMEOS = [
+  "date night: a table for two and their hand across it",
+  "you in their hoodie, way too big for you",
+  "their coffee order next to yours in the morning",
+  "them cooking in the background while you talk",
+  "a slow morning, them still asleep behind you",
+  "their shoes by the door next to yours",
+  "the two of you on the couch, a movie half-watched",
+  "a walk together, their shadow next to yours",
+  "them holding the camera for you today",
+  "a small thing they left for you to find",
+] as const;
+/** While dating it is not official yet: they show up, but only a little. */
+const COY_CAMEOS = [
+  "a second glass on the table and nothing else said",
+  "a hand in the frame, no face",
+  "a laugh off camera that is clearly not yours",
+  "two tickets, and you are not saying who the other one is for",
+] as const;
 const PAGE_ONLY: readonly SlurpCoupleMomentKind[] = ["pageOpen", "pageClose"];
 /** What goes up on a shared page on an ordinary day, like real couple accounts post. */
 const PAGE_IDEAS = [
@@ -67,6 +91,8 @@ function momentLine(moment: SlurpCoupleMoment, partner: string, couple: SlurpCou
       return `You and ${partner} just opened a page together. This is its first post: say hi to everyone as a couple, your way.`;
     case "pageClose":
       return `This is the last post on the page you shared with ${partner}. Say goodbye to the fans who followed you both, kindly and your way.`;
+    case "movingOn":
+      return `It has been a little while since you and ${partner} broke up. Post about moving on, your way: a glow-up, a quiet day for yourself, a kind word, or a small dig. Your ex is not the whole post.`;
   }
 }
 
@@ -108,10 +134,11 @@ export function slurpCoupleBeat(input: {
           hash(`${moment.id}:joint`) % 2 === 0);
       const onPage = page && (PAGE_ONLY.includes(moment.kind) || (joint && pageOpen));
       const other = moment.withId ? (names.get(moment.withId) ?? null) : null;
+      // Not a collab (U): on their own page, each posts their side; the partner is in it, not tagged.
       const where = onPage
         ? ` It goes up on ${names.get(page.accountId) ?? "your shared page"}, the page you two share, not your own.`
         : joint
-          ? " You made it together: it goes up on both your pages and you tag each other."
+          ? ` This is your own post about your life, not a collab: ${partner} can be in it, but no collab tag and no announcement.`
           : "";
       return {
         type: moment.kind === "fight" || moment.kind === "jealous" ? "opinion" : "relationship_moment",
@@ -126,7 +153,7 @@ export function slurpCoupleBeat(input: {
           partnerId,
           moment: moment.kind,
           momentId: moment.id,
-          ...(onPage ? { pageId: page.accountId, hostId: creatorId } : joint ? { joint: true } : {}),
+          ...(onPage ? { pageId: page.accountId, hostId: creatorId } : {}),
         },
       };
     }
@@ -142,6 +169,26 @@ export function slurpCoupleBeat(input: {
         cast: [partner],
         place: null,
         tie: { kind: "couple", id: couple.id, partnerId, pageId: page!.accountId, hostId: creatorId },
+      };
+    }
+    // Now and then the partner is just part of the day: a cameo, never a collab (U).
+    if (
+      (couple.stage === "dating" || couple.stage === "together") &&
+      hash(`${couple.id}:${creatorId}:${input.sequence}:cameo`) % 5 === 0
+    ) {
+      const pool = couple.stage === "dating" ? COY_CAMEOS : CAMEOS;
+      const cameo = pool[hash(`${couple.id}:${creatorId}:${input.sequence}:which`) % pool.length]!;
+      return {
+        type: "relationship_moment",
+        anchorKind: "couple",
+        anchor: partner,
+        line:
+          couple.stage === "dating"
+            ? `${partner} is part of your day, but it is not official yet: ${cameo}. Keep it coy, your way; no tag, no names needed.`
+            : `${partner} makes a cameo in today's post: ${cameo}. It is your everyday life, not a collab: no tag, no announcement, just the two of you being a couple in the background of your day.`,
+        cast: [partner],
+        place: null,
+        tie: { kind: "couple", id: couple.id, partnerId, moment: "cameo" },
       };
     }
   }

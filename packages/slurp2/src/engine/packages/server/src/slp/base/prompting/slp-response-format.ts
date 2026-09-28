@@ -334,8 +334,12 @@ const slpCreatorCollabDmSchema = {
       anyOf: [
         {
           type: "object",
-          properties: { idea: nullableString, yourShare: { type: ["number", "null"] } },
-          required: ["idea", "yourShare"],
+          properties: {
+            idea: nullableString,
+            yourShare: { type: ["number", "null"] },
+            shoot: { type: ["boolean", "null"] },
+          },
+          required: ["idea", "yourShare", "shoot"],
           additionalProperties: false,
         },
         { type: "null" },

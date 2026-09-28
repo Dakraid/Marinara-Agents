@@ -131,7 +131,8 @@ export async function planSlurpPost(
         })
       : [];
   // A slot Slurp held for a teased drop (slice I) runs that drop: the tease named this hour. It is
-  // the next stage even while its tease waits to go up; the player's idea and a promise still come first.
+  // the next stage even while its tease waits to go up; a promise still comes first. The player's idea
+  // waits for the next free slot (U: the reserve passes `heldDrop`, so no idea reaches this slot).
   const stage =
     slurpHeldDropStage(stages, dueAt) ??
     (slotPlan

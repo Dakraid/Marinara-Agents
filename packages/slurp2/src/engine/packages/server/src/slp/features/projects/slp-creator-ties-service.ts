@@ -25,6 +25,7 @@ import {
   type SlurpTieCreator,
 } from "../../modules/projects/slp-creator-ties.js";
 import { readSlurpTieStamp } from "../../modules/projects/slp-tie-stamp.js";
+import { slurpAnnounceCollab, slurpCollabCrossover } from "../../modules/projects/slp-collab-work.js";
 import {
   slurpAdvanceBrandDeals,
   slurpDealOwesPost,
@@ -194,7 +195,7 @@ async function settleSlurpTiePosts(db: DB, at: Date): Promise<void> {
       .filter((collab) => collab.status === "planned")
       .map((collab) => ({ id: collab.id, hostId: collab.hostId })),
     ...deals.filter((deal) => deal.status === "planned").map((deal) => ({ id: deal.id, hostId: deal.creatorId })),
-    // A couple that planned a joint post lately (a told moment in the last few days): look on both pages.
+    // Old joint couple posts (before U, couples post their own now): look on both pages a while longer.
     ...couples
       .filter((couple) =>
         couple.moments.some((moment) => at.getTime() - Date.parse(moment.at) < 5 * 24 * 60 * 60 * 1000),
@@ -213,7 +214,8 @@ async function settleSlurpTiePosts(db: DB, at: Date): Promise<void> {
       const stamp = readSlurpTieStamp(post.metadata);
       if (stamp?.kind === "couple") {
         if (stamp.joint && !stamp.pageId) jointCouplePosts.push({ coupleId: stamp.id, postId: post.id });
-      } else if (stamp && !stamp.declined && !stamp.echo && !found.has(stamp.id)) found.set(stamp.id, post);
+      } else if (stamp && !stamp.declined && !stamp.echo && !stamp.announce && !found.has(stamp.id))
+        found.set(stamp.id, post);
     }
   }
   const settleCouples = jointCouplePosts.filter(
@@ -235,22 +237,65 @@ async function settleSlurpTiePosts(db: DB, at: Date): Promise<void> {
   const paid = await mutateSlurpCreatorTies(db, (document) => {
     let next = document;
     const toPay: { creatorId: string; fee: number; brand: string; id: string }[] = [];
+    const settled: { id: string; hostId: string; partnerId: string }[] = [];
     for (const [tieId, post] of found) {
       const deal = next.deals.find((entry) => entry.id === tieId && entry.status === "planned");
       if (deal) toPay.push({ creatorId: deal.creatorId, fee: deal.fee, brand: deal.brand, id: deal.id });
+      const collab = next.ties.collabs.find((entry) => entry.id === tieId && entry.status === "planned");
+      if (collab) settled.push({ id: collab.id, hostId: collab.hostId, partnerId: collab.partnerId });
       next = {
         ...next,
         ties: slurpSettleCollab(next.ties, tieId, post),
         deals: deal ? slurpSettleDeal(next.deals, tieId, post, at) : next.deals,
       };
     }
-    return { document: next, result: toPay };
+    return { document: next, result: { toPay, settled } };
   });
+  for (const collab of paid?.settled ?? [])
+    await crossSlurpCollabFans(db, collab).catch((error: unknown) =>
+      logger.warn(error, "[slurp-ties] Could not bring fans across after a collab"),
+    );
   // The receipt id makes a repeated settle pay once.
-  for (const fee of paid ?? [])
+  for (const fee of paid?.toPay ?? [])
     await storage
       .creditSponsorFee(fee.creatorId, fee.fee, fee.brand, slurpDealReceipt(fee.id))
       .catch((error: unknown) => logger.warn(error, "[slurp-ties] Could not pay a sponsor fee"));
+}
+
+/**
+ * A collab went up: some of each page's fans come across and follow the other one (U: collabs bring
+ * crossover subscribers; followers become subscribers through the usual funnel). Counted on the collab.
+ */
+async function crossSlurpCollabFans(db: DB, collab: { id: string; hostId: string; partnerId: string }) {
+  const population = createSlurpPopulationStorage(db);
+  const [hostFans, partnerFans] = await Promise.all([
+    population.listTiesForCreator(collab.hostId),
+    population.listTiesForCreator(collab.partnerId),
+  ]);
+  const following = (fans: typeof hostFans) =>
+    new Set(
+      fans.filter((fan) => !["stranger", "viewer", "liker", "lapsed"].includes(fan.stage)).map((fan) => fan.memberId),
+    );
+  const toHost = slurpCollabCrossover(partnerFans, following(hostFans), `${collab.id}:host`);
+  const toPartner = slurpCollabCrossover(hostFans, following(partnerFans), `${collab.id}:partner`);
+  for (const [creatorId, members] of [
+    [collab.hostId, toHost],
+    [collab.partnerId, toPartner],
+  ] as const)
+    for (const memberId of members)
+      await population.advanceTie(memberId, creatorId, { stage: "follower", interactions: 2 }).catch(() => undefined);
+  await mutateSlurpCreatorTies(db, (document) => ({
+    document: {
+      ...document,
+      ties: {
+        ...document.ties,
+        collabs: document.ties.collabs.map((entry) =>
+          entry.id === collab.id ? { ...entry, crossover: { host: toHost.length, partner: toPartner.length } } : entry,
+        ),
+      },
+    },
+    result: null,
+  }));
 }
 
 /**
@@ -292,7 +337,7 @@ export async function planSlurpTieBeat(
     const { tie } = planned.beat;
     await mutateSlurpCreatorTies(db, (document) => ({
       document: {
-        // A couple moment is told once each; a joint one for both of them.
+        // A couple moment is told once each; one on their shared page for both of them.
         couples:
           tie.kind === "couple" && tie.momentId
             ? document.couples.map((couple) =>
@@ -308,7 +353,9 @@ export async function planSlurpTieBeat(
           tie.kind === "collab"
             ? tie.echo
               ? slurpEchoCollab(document.ties, tie.id)
-              : slurpPlanCollab(document.ties, tie.id, input.at)
+              : tie.announce
+                ? slurpAnnounceCollab(document.ties, tie.id, input.at)
+                : slurpPlanCollab(document.ties, tie.id, input.at)
             : tie.kind === "rival"
               ? slurpTellRivalry(document.ties, tie.id, input.creatorId)
               : document.ties,
@@ -337,7 +384,7 @@ export async function slurpCollabPostIdsForCreator(db: DB, creatorId: string): P
 /** Two pages agreed on a joint post in their own DM; the replying Creator hosts and writes it. */
 export async function agreeSlurpCollabInDm(
   db: DB,
-  input: { hostId: string; partnerId: string; idea: string; hostShare: number | null },
+  input: { hostId: string; partnerId: string; idea: string; hostShare: number | null; shoot?: boolean },
 ): Promise<void> {
   const creators = await loadSlurpTieCreators(db);
   const host = creators.find((creator) => creator.id === input.hostId);
@@ -351,6 +398,7 @@ export async function agreeSlurpCollabInDm(
         id: newId(),
         idea: input.idea,
         hostShare: input.hostShare,
+        shoot: input.shoot,
       }),
     },
     result: null,
