@@ -599,14 +599,16 @@ for (const [question, options] of Object.entries(SLP_SITE_WELCOME_OPTIONS)) {
       assert.match(system, /Stay in character\./u, tag);
       if (index < moments.length - 1) assert.match(system, /Up next: .+ set momentDone/u, tag);
       else assert.match(system, /This is the last step before the page goes live\./u, tag);
-      if (moment !== "review") assert.match(system, /This step fills: \w/u, tag);
+      if (moment !== "review" && moment !== "firstPost") assert.match(system, /This step fills: \w/u, tag);
     });
     const lead = prompt(preset, moments[0]!);
-    if (preset === "seat") assert.match(lead, /Mia leads the evening\. Every turn ends with Mia asking/u);
+    if (preset === "seat") assert.match(lead, /Mia leads the evening\. In every turn Mia's line asks the newcomer/u);
     else assert.match(lead, /The newcomer leads .*ends with one easy question/u, preset);
   }
   assert.match(prompt("friend", "name"), /This step fills: displayName, handle\./u);
   assert.match(prompt("support", "limits"), /This step fills: turnOns, hardNoes, spice\./u);
+  assert.match(prompt("friend", "bio", { kind: "say", text: "go on" }), /The player, as the friend, just said the last host line\./u);
+  assert.doesNotMatch(prompt("friend", "bio"), /\(the friend \(the player\)\)/u, "no doubled label");
   // The opening tells the player their part without saying "you play".
   assert.match(prompt("support", "name", { kind: "open" }), /ask Support what Support needs first/u);
   assert.match(prompt("friend", "arrival", { kind: "open" }), /what should I call myself\?/u);

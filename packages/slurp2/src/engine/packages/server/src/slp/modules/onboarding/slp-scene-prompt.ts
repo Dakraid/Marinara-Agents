@@ -35,7 +35,7 @@ export const SLP_SCENE_LINES_PER_TURN = 6;
 
 const PRESET_FRAME: Record<SlpScenePreset, (host: string) => string> = {
   support: () =>
-    "The player plays Slurp Support, the sign-up desk. The newcomer opens the Support chat to get a Creator page. Support is funny but a little formal and calls the page 'your application'. The newcomer knows what they want and keeps the sign-up moving; Support steers, jokes and stamps.",
+    "The player plays Slurp Support, the sign-up desk. The newcomer opens the Support chat to get a Creator page. Support is funny but a little formal and calls the page 'your application'. The newcomer wants the page and keeps the sign-up moving in their own way; Support steers, jokes and stamps.",
   friend: () =>
     "The player plays the newcomer's close friend. They are at the newcomer's place, late, getting the page live together. Warm, private, teasing, a little giddy. The newcomer trusts the friend, asks for their opinion at every step and gets embarrassed easily.",
   seat: (host) =>
@@ -49,7 +49,7 @@ const PRESET_LEAD: Record<SlpScenePreset, (host: string) => string> = {
   friend: () =>
     "The newcomer leads the evening. In every turn the newcomer answers in character, gives or settles something for the current step, and ends with one easy question for the friend that tells them what to do next (\"okay, what should I call myself?\").",
   seat: (host) =>
-    `${host} leads the evening. Every turn ends with ${host} asking the newcomer one easy question or making one offer that moves the page forward; the newcomer answers in character.`,
+    `${host} leads the evening. In every turn ${host}'s line asks the newcomer one easy question or makes one offer that moves the page forward, and the newcomer answers in character, settling something for the current step.`,
 };
 
 /** The first lines of the scene: they tell the player their part without saying "you play". */
@@ -62,6 +62,14 @@ const PRESET_OPEN: Record<SlpScenePreset, (host: string) => string> = {
     `Open the scene: ${host} arrives to help. ${host} says tonight the page goes live, then asks the newcomer why they want it and what they should be called; the newcomer answers.`,
 };
 
+/** Who the host is, in a sentence about them. */
+const HOST_ROLE: Record<SlpScenePreset, (host: string) => string> = {
+  support: () => "Slurp Support",
+  friend: () => "the friend",
+  seat: (host) => host,
+};
+
+/** The host's name on their lines in the transcript. */
 const HOST_LABEL: Record<SlpScenePreset, (host: string) => string> = {
   support: () => "Slurp Support (the player)",
   friend: () => "the friend (the player)",
@@ -83,7 +91,7 @@ const MOMENT_BRIEF: Record<SlpSceneMoment, string> = {
   review:
     "Support reads the application back; the newcomer asks for last changes and fills what is still empty, then says they are ready to go live.",
   firstPost:
-    "What the very first post will be, and the nerves of pressing post. Then the newcomer says they are ready to go live.",
+    "What the very first post will be, and the nerves of pressing post; if how they talk to fans (stagePersonality) is still empty, fill it from this talk. Then the newcomer says they are ready to go live.",
 };
 
 /** What each step fills on the page. */
@@ -97,7 +105,7 @@ const MOMENT_FIELDS: Record<SlpSceneMoment, readonly SlpSceneField[]> = {
   bio: ["bio"],
   limits: ["turnOns", "hardNoes", "spice"],
   review: [],
-  firstPost: ["stagePersonality"],
+  firstPost: [],
 };
 
 /** The step names the prompt uses for "up next". */
@@ -179,7 +187,7 @@ export function buildSlpSceneTurnMessages(input: {
     request.action.kind === "say"
       ? request.preset === "seat"
         ? `The player whispers a steer to ${host}: ${JSON.stringify(request.action.text)}. ${host} acts on it in their own words; never quote the whisper.`
-        : `The player (as ${HOST_LABEL[request.preset](host)}) just said the last host line. Answer it.`
+        : `The player, as ${HOST_ROLE[request.preset](host)}, just said the last host line. Answer it.`
       : request.action.kind === "suggest"
         ? `Next, write the host doing this: ${ACTION_BRIEF[request.action.id]}`
         : request.action.kind === "continue"
@@ -202,7 +210,7 @@ export function buildSlpSceneTurnMessages(input: {
     "Stay in character. Never ask the player for technical input: no forms, field names, tags, settings or formats. People talk like people; a handle comes up as 'my @', tags as what the page is about.",
     actionLine,
     writesHost
-      ? `Write one short line for the host (${HOST_LABEL[request.preset](host)}), then one to three short lines for the newcomer.`
+      ? `Write one short line for the host (${HOST_ROLE[request.preset](host)}), then one to three short lines for the newcomer.`
       : "Write one to three short lines for the newcomer only. Never write the player's lines.",
     "Lines read like chat messages: short, casual, no narration, no quotes around them.",
     request.disclosureMode === "open"
