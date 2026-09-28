@@ -42,6 +42,8 @@ export function SlpPublishingPanel(page: SlpBackstagePageProps) {
     activityPreset,
     openRefresh,
   } = page;
+  // The Story job sliders only matter when automatic Stories can go out at all.
+  const storiesRun = settings.storyRate !== "off" && settings.autoPostingScheduleEnabled && creatorsDrawPictures;
   // A Story job's weight in words: how often it comes up when it fits.
   const storyJobWord = (value: number) =>
     t(
@@ -203,7 +205,7 @@ export function SlpPublishingPanel(page: SlpBackstagePageProps) {
           group
           wide
         >
-          <span className="grid gap-1 @xl:grid-cols-2 @xl:gap-x-6">
+          <span className="grid max-w-2xl gap-1">
             {(Object.keys(SLURP_STORY_JOB_DEFAULTS) as (keyof SlurpStoryJobWeights)[]).map((job) => (
               <span key={job} className="grid gap-0.5" data-slurp-story-job={job}>
                 <span className="text-xs font-semibold text-[var(--slurp-muted,var(--muted-foreground))]">
@@ -215,7 +217,7 @@ export function SlpPublishingPanel(page: SlpBackstagePageProps) {
                   min={0}
                   max={10}
                   format={storyJobWord}
-                  disabled={updateSettings.isPending || settings.storyRate === "off"}
+                  disabled={updateSettings.isPending || !storiesRun}
                   onSave={(value) => update("storyJobs", { ...settings.storyJobs, [job]: value })}
                 />
               </span>
