@@ -122,7 +122,9 @@ assert.match(
   /generatingHere \|\| meta\.imageGenerationDeferred === true \|\| meta\.imagePendingReview === true\) return "pending"/u,
 );
 assert.match(postHelpers, /meta\.imageGenerationFailed === true && operator \? "failed" : null/u);
-assert.match(postHelpers, /export const SLP_FEED_MEDIA_FRAME_CLASS = "aspect-\[4\/5\] max-h-\[32rem\] w-full"/u);
+// V: the frame takes the picture's own ratio from an inline style (slpPostFrameStyle), so the class only
+// sizes and centres it; the pending slot keeps the same frame (and the post's ratio when it is known).
+assert.match(postHelpers, /export const SLP_FEED_MEDIA_FRAME_CLASS = "mx-auto w-full"/u);
 assert.match(postHelpers, /data-slurp-image-slot="pending"[\s\S]{0,200}SLP_FEED_MEDIA_FRAME_CLASS/u);
 assert.match(postHelpers, /<details[\s\S]{0,400}ui\.slurp\.image\.details/u);
 for (const key of [

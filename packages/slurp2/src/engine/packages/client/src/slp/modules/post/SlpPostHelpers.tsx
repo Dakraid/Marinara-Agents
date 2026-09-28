@@ -6,6 +6,7 @@ import {
   type SlpInteractionType,
 } from "../../../../../shared/src/slp/slp-social.types.js";
 import { cn } from "../../../lib/utils";
+import { slpPostFrameStyle, slpPostMediaRatio } from "./slp-post-ratio";
 import { SlpTextContent } from "./SlpMarkdownRenderer";
 import type { ConversationMediaPickerTab } from "../../../components/chat/ConversationMediaPickerPanel";
 import type { ChatImage } from "../../../hooks/use-gallery";
@@ -168,10 +169,11 @@ export function slpPostImageSlotState(
 }
 
 /**
- * Media frame of a feed post: 4:5, capped on wide screens. The picture, its loading state and the
- * reserved image-generation slot all use it, so nothing jumps when the picture lands.
+ * Media frame of a post, with `slpPostFrameStyle` (V): the picture's own ratio between 4:5 and
+ * 1.91:1, capped on wide screens. The picture, its loading state and the reserved image-generation
+ * slot all use it, so nothing jumps when the picture lands.
  */
-export const SLP_FEED_MEDIA_FRAME_CLASS = "aspect-[4/5] max-h-[32rem] w-full";
+export const SLP_FEED_MEDIA_FRAME_CLASS = "mx-auto w-full";
 
 /**
  * The one space between stacked cards: feed posts, ads, the suggested-creators row, profile posts and
@@ -191,8 +193,11 @@ export function SlpPostImageSlot({
   onRetry,
   onEditPrompt,
   className,
+  size,
 }: {
   state: "pending" | "failed";
+  /** The picture's size when known (a redraw): the slot keeps its ratio, else Slurp's default 4:5. */
+  size?: { width?: number | null; height?: number | null } | null;
   /** Only a draw this client started has a known start; a server-deferred one shows no seconds. */
   countFromMount?: boolean;
   error?: string | null;
@@ -210,26 +215,29 @@ export function SlpPostImageSlot({
   }, [countFromMount, state]);
   if (state === "pending") {
     return (
-      <div
-        role="status"
-        data-slurp-image-slot="pending"
-        className={cn(
-          SLP_FEED_MEDIA_FRAME_CLASS,
-          "relative isolate flex flex-col items-center justify-center gap-2 overflow-hidden bg-[var(--slurp-surface)] px-6 text-center",
-          className,
-        )}
-      >
-        <span className="slp-image-shimmer -z-10" aria-hidden="true" />
-        <SlpTwinkle />
-        <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[var(--slurp-text)]">
-          <Sparkle size={14} className="!text-[var(--noodle-accent)]" fill="currentColor" aria-hidden="true" />
-          {localizeUi("ui.slurp.image.drawing", { defaultValue: "Drawing the picture…" })}
-          {countFromMount && seconds > 0 && (
-            <span className="ms-1.5 tabular-nums text-[var(--slurp-muted)]">
-              {localizeUi("ui.slurp.image.elapsed", { defaultValue: "{{seconds}} s", seconds })}
-            </span>
+      // Centred like the picture's own frame: a tall frame on a wide screen is narrower than the card.
+      <div className={cn("flex justify-center overflow-hidden bg-black/20", className)}>
+        <div
+          role="status"
+          data-slurp-image-slot="pending"
+          className={cn(
+            SLP_FEED_MEDIA_FRAME_CLASS,
+            "relative isolate flex flex-col items-center justify-center gap-2 overflow-hidden bg-[var(--slurp-surface)] px-6 text-center",
           )}
-        </span>
+          style={slpPostFrameStyle(slpPostMediaRatio(size))}
+        >
+          <span className="slp-image-shimmer -z-10" aria-hidden="true" />
+          <SlpTwinkle />
+          <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[var(--slurp-text)]">
+            <Sparkle size={14} className="!text-[var(--noodle-accent)]" fill="currentColor" aria-hidden="true" />
+            {localizeUi("ui.slurp.image.drawing", { defaultValue: "Drawing the picture…" })}
+            {countFromMount && seconds > 0 && (
+              <span className="ms-1.5 tabular-nums text-[var(--slurp-muted)]">
+                {localizeUi("ui.slurp.image.elapsed", { defaultValue: "{{seconds}} s", seconds })}
+              </span>
+            )}
+          </span>
+        </div>
       </div>
     );
   }

@@ -147,7 +147,8 @@ export function spendSlurpModelBudget(
   const policy = budget.jobs[kind];
   const kindCalls = ledger.byKindToday[kind] ?? 0;
   if (SLURP_OWN_CAP_JOB_KINDS.has(kind)) {
-    if (!policy.enabled || policy.maxPerDay <= kindCalls) return null;
+    // Its own limit, but still Slurp's AI: the budget mode "Off" stops it too (user, V).
+    if (budget.mode === "off" || !policy.enabled || policy.maxPerDay <= kindCalls) return null;
     return { ...ledger, byKindToday: { ...ledger.byKindToday, [kind]: kindCalls + 1 } };
   }
   const dayCap = slurpModelBudgetCap(budget.callsPerDay, kind);

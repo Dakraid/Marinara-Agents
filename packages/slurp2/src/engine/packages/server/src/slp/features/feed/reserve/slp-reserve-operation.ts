@@ -20,6 +20,7 @@ import { resolveSlurpAutomaticPostAccess } from "../slp-automatic-post-access.js
 import { slurpDeepDetailsImageRunRecorder } from "../../../data/feed/slp-post-deep-details-storage.js";
 import { recordSlurpPromiseKept } from "../slp-post-plan-service.js";
 import { generateCreatorPostImage } from "../../media/slp-media-contract.js";
+import { slurpHeldCollabDrop } from "../../projects/slp-projects-contract.js";
 import { tryCreatorAccountOperation } from "../../../base/locking/slp-account-operation-lock.js";
 import { createCharactersStorage } from "../../../../services/storage/characters.storage.js";
 import { createPromptOverridesStorage } from "../../../../services/storage/prompt-overrides.storage.js";
@@ -221,12 +222,17 @@ export async function prepareNextCreatorReservePost(db: DB, at = new Date()): Pr
         await listOpenSlurpCampaignStages(db, selectedAccount.id, at).catch(() => []),
         new Date(selectedPublishAt),
       );
+      // The slot held at a collab drop's hour (V) keeps ideas and Stories off it too; its access stays.
+      const heldCollab =
+        !heldDrop &&
+        (await slurpHeldCollabDrop(db, selectedAccount.id, new Date(selectedPublishAt)).catch(() => false));
       let payload = await generateCreatorPost(db, {
         account: selectedAccount,
         connection,
         prepareOnly: true,
         slotId: selectedSlotId,
         ...(heldDrop ? { allowStory: false, heldDrop: true } : {}),
+        ...(heldCollab ? { allowStory: false, heldDrop: true } : {}),
         admissionMode: {
           kind: "background",
           beforeAttempt: async () => {

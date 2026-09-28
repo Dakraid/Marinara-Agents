@@ -38,7 +38,7 @@ import {
   type SlurpReplyPacing,
 } from "../../modules/messages/slp-messaging.js";
 import { generateSlurpCommissionImage } from "./commissions/slp-commission-image-operation.js";
-import { slurpMessageMediaUrl } from "../../base/media/slp-media.js";
+import { slpStoredMediaSize, slurpMessageMediaUrl } from "../../base/media/slp-media.js";
 import { resolveSlurpMediaOffer, slurpDmPictureSpicy } from "../../modules/economy/slp-media-offer.js";
 import { slurpDmSpiceLevel } from "../../modules/creators/slp-spice.js";
 import { resolveSlurpExplicitLevel } from "../../data/settings/slp-post-guidance-storage.js";
@@ -397,6 +397,9 @@ export async function replyToSlurpMessage(
         const previewLocked =
           postAccess === "locked" ||
           (reply.sharedPost.access !== "public" && thread.rapport.tier !== "whale" && !subscribed);
+        const sharedMetadata = (await slurp.getNoodlerPostById(reply.sharedPost.id))?.metadata as
+          Record<string, unknown> | undefined;
+        const sharedSize = slpStoredMediaSize(sharedMetadata?.noodlerMediaPath);
         stored =
           (await messagesStore.appendMessage(thread.id, {
             senderAccountId: thread.creatorAccountId,
@@ -416,9 +419,9 @@ export async function replyToSlurpMessage(
               authorName: creator.displayName,
               authorHandle: creator.handle,
               authorAvatarUrl: creator.avatarUrl ?? null,
-              price: slpCreatorUnlockPriceFromMetadata(
-                (await slurp.getNoodlerPostById(reply.sharedPost.id))?.metadata as Record<string, unknown> | undefined,
-              ),
+              price: slpCreatorUnlockPriceFromMetadata(sharedMetadata),
+              // The card reserves the post's own picture ratio (V).
+              ...(sharedSize ? { imageWidth: sharedSize.width, imageHeight: sharedSize.height } : {}),
             },
           })) ?? stored;
       }

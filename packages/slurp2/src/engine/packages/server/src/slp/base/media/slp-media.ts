@@ -16,6 +16,7 @@ import { DATA_DIR } from "../../../utils/data-dir.js";
 import { assertInsideDir, isAllowedImageBuffer } from "../../../utils/security.js";
 import { getSharp } from "../../../utils/sharp.js";
 import { stageImageToDisk } from "../../../services/image/image-generation.js";
+import { slpImageSizeOfFile, type SlpImageSize } from "./slp-image-size.js";
 
 export { isAllowedImageBuffer } from "../../../utils/security.js";
 
@@ -182,6 +183,12 @@ export function readCreatorMediaPath(post: Pick<SlpCreatorManagedPost, "metadata
 }
 
 /** Resolve a stored relative NoodleR-media path to an absolute path inside the gallery dir. */
+/** The pixel size of a stored post picture (V: the client reserves its frame from it). */
+export function slpStoredMediaSize(mediaPath: unknown): SlpImageSize | null {
+  const absolute = typeof mediaPath === "string" ? resolveCreatorMediaAbsolutePath(mediaPath) : null;
+  return absolute ? slpImageSizeOfFile(absolute) : null;
+}
+
 export function resolveCreatorMediaAbsolutePath(relativePath: string): string | null {
   if (!relativePath.startsWith(NOODLER_MEDIA_PREFIX)) return null;
   const segments = relativePath.slice(NOODLER_MEDIA_PREFIX.length).split(/[\\/]/u);

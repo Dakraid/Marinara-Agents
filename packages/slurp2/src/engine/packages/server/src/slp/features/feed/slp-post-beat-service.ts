@@ -213,6 +213,8 @@ export async function planSlurpBeat(
     context: SlurpBeatContext;
     intents: readonly SlurpContentIntent[];
     at: Date;
+    /** The slot's own time (a held collab drop goes to its hour, V). */
+    dueAt?: Date | null;
     /** Level 1 ideas before the daily cap. See `slurpSharedIdeasFor`. */
     shared?: { world: SlurpSharedIdea[]; niche: Record<string, SlurpSharedIdea[]>; topics: string[] } | null;
     /** A prompt preview: plans nothing for real. */
@@ -229,6 +231,7 @@ export async function planSlurpBeat(
       sequence: input.sequence,
       intents: input.intents,
       at: input.at,
+      dueAt: input.dueAt,
       previewOnly: input.previewOnly,
     });
     if (tie) return tie;

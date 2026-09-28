@@ -150,6 +150,9 @@ export function mapPost(row: PostRow): SlpPost {
                 position: media.position,
                 imageUrl: media.imageUrl,
                 imagePrompt: typeof media.imagePrompt === "string" ? media.imagePrompt : null,
+                ...(typeof media.width === "number" && typeof media.height === "number"
+                  ? { width: media.width, height: media.height }
+                  : {}),
               },
             ]
           : [];

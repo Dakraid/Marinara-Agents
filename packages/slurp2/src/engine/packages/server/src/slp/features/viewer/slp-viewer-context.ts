@@ -19,7 +19,11 @@ import {
   slurpPostUnlockCount,
 } from "../../../../../shared/src/slp/slp-reach.js";
 import { NOODLER_FAN_IDENTITY_PREFIX } from "../../modules/audience/slp-fan-identity-provider.js";
-import { NOODLER_MEDIA_URL_PREFIX, slpCreatorPostMediaUrlForPersona } from "../../base/media/slp-media.js";
+import {
+  NOODLER_MEDIA_URL_PREFIX,
+  slpCreatorPostMediaUrlForPersona,
+  slpStoredMediaSize,
+} from "../../base/media/slp-media.js";
 import { slurpLockedPostTeaser } from "../../modules/feed/slp-post-purpose.js";
 import type { FastifyInstance } from "fastify";
 import type { SlpRouteHost } from "./slp-route-host.js";
@@ -208,9 +212,15 @@ export function createSlpViewerContext(
         );
         const images = post.images.flatMap((image) => {
           if (locked && !image.imageUrl.startsWith(NOODLER_MEDIA_URL_PREFIX)) return [];
+          // The primary picture's size from its file (V), so the frame is reserved in its ratio.
+          const size =
+            image.position === 0 && image.width === undefined
+              ? slpStoredMediaSize(post.metadata.noodlerMediaPath)
+              : null;
           return [
             {
               ...image,
+              ...size,
               imageUrl: slpCreatorPostMediaUrlForPersona(
                 image.imageUrl,
                 context.viewer.entityId,

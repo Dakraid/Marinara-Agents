@@ -27,6 +27,7 @@ import { SlurpCelebrationRing, SlurpSparkleVeil } from "../../base/chrome/SlpSpa
 import { SlurpCoinAmount, SlurpCoinBurst, SlpCoinText } from "../coin/SlpCoin";
 import { SlpPrimaryButton, slpTagClass } from "../chrome/SlpButton";
 import { SLP_FEED_MEDIA_FRAME_CLASS } from "./SlpPostHelpers";
+import { slpPostFrameStyle, slpPostMediaRatio } from "./slp-post-ratio";
 import { SlpSheet, SlpSheetGroup, SlpSheetItem } from "../chrome/SlpSheet";
 import { playSlpBurst, playSlpSpendMoment, SlpRingGlint, SlpShimmer, SlpTwinkle } from "../sparkle/SlpSparkle";
 import { SLP_PILL_TWINKLES, SlpLockedContentsChip, SlpSparkleLock } from "./SlpLockedMedia";
@@ -379,127 +380,131 @@ export function LockedSlurpPostCard({
       <div>
         {/* Media frame with Locked badge — only when the post has an image */}
         {hasMediaPreview && (
-          <div
-            ref={observeMedia}
-            data-slurp-locked-preview
-            className={cn(
-              "relative -mx-4 mt-3 overflow-hidden bg-[var(--slurp-media-stage,#17131a)]",
-              SLP_FEED_MEDIA_FRAME_CLASS,
-              "w-[calc(100%+2rem)]",
-            )}
-          >
-            {shownMediaSrc ? (
-              <img
-                src={shownMediaSrc}
-                loading="lazy"
-                decoding="async"
-                // Fades in once; the unlock keeps this element, so the full picture replaces the teaser under the veil.
-                {...slpImgFade}
-                onError={() => setFailedMediaSrc(shownMediaSrc)}
-                alt={
-                  revealed
-                    ? localizeUi("ui.noodle.post.imageBy", {
-                        name: profile.displayName,
-                      })
-                    : localizeUi("ui.noodle.lockednoodlerpostcard.lockedImageFrom", { name: profile.displayName })
-                }
-                className={cn(
-                  "slp-crop-top h-full w-full object-cover",
-                  // The server sends a reduced, lightly blurred teaser; the veil blurs it more so the
-                  // colours and the shape read, the details do not (design step 2).
-                  revealed ? "scale-100" : "saturate-[0.95]",
-                  !revealed && "scale-110 blur-[10px]",
-                )}
-              />
-            ) : requestedMediaUrl ? (
-              <div
-                className="absolute inset-0 animate-pulse bg-[var(--muted)] motion-reduce:animate-none"
-                aria-hidden="true"
-              />
-            ) : (
-              <div className="flex h-full flex-col items-center justify-center gap-3 bg-[radial-gradient(circle_at_50%_35%,var(--noodle-accent)_0%,transparent_65%)] px-6 text-center">
-                {/* While locked, the lock and price stand in the middle instead. */}
-                {!unlockPrompt && (
-                  <>
-                    <span className="rounded-full bg-black/25 p-3 text-[var(--noodle-accent)] ring-1 ring-white/10">
-                      <ImageIcon size={22} aria-hidden="true" />
-                    </span>
-                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">
-                      {localizeUi("ui.slurp.locked.previewUnavailable")}
-                    </span>
-                  </>
-                )}
-                {onGenerateImage && (
-                  <button
-                    type="button"
-                    onClick={onGenerateImage}
-                    disabled={imageGenerationPending}
-                    className="pointer-events-auto absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-black/65 text-white shadow-lg ring-1 ring-white/20 transition-[opacity,transform] hover:bg-black/80 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:opacity-60 motion-reduce:transition-none motion-reduce:active:scale-100"
-                    title={localizeUi("ui.slurp.image.generate")}
-                    aria-label={localizeUi("ui.slurp.image.generate")}
-                    aria-busy={imageGenerationPending}
-                  >
-                    <RefreshCw
-                      size={17}
-                      className={imageGenerationPending ? "animate-spin motion-reduce:animate-none" : ""}
-                    />
-                  </button>
-                )}
-              </div>
-            )}
-            {!revealed && (
-              <div
-                className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_55%,rgba(8,4,10,0.12),rgba(8,4,10,0.55)_80%)]"
-                aria-hidden="true"
-              />
-            )}
-            {!revealed && <SlurpSparkleVeil className={transaction ? "opacity-100" : ""} />}
-            {!revealed && (
-              // Signature surface (design language §2/§3): slow ambient sparkle over the veil and a
-              // hero-gradient frame whose glint travels round the picture.
-              <>
-                <span
-                  className="pointer-events-none absolute inset-0 isolate z-[5] opacity-80 mix-blend-screen"
-                  aria-hidden="true"
-                >
-                  <SlpShimmer />
-                </span>
-                <SlpRingGlint />
-                <span
-                  className="pointer-events-none absolute inset-0 z-[1] shadow-[inset_0_0_48px_-12px_var(--noodle-accent)]"
+          // V: the frame takes the picture's own ratio (the teaser has the original's shape), centred.
+          <div className="-mx-4 mt-3 flex w-[calc(100%+2rem)] justify-center bg-black/20">
+            <div
+              ref={observeMedia}
+              data-slurp-locked-preview
+              className={cn(
+                "relative overflow-hidden bg-[var(--slurp-media-stage,#17131a)]",
+                SLP_FEED_MEDIA_FRAME_CLASS,
+              )}
+              // The veil's lock, price and chips need room: a wide teaser (it is blurred) grows to fit them.
+              style={{ ...slpPostFrameStyle(slpPostMediaRatio(postImages[0])), minHeight: "20rem" }}
+            >
+              {shownMediaSrc ? (
+                <img
+                  src={shownMediaSrc}
+                  loading="lazy"
+                  decoding="async"
+                  // Fades in once; the unlock keeps this element, so the full picture replaces the teaser under the veil.
+                  {...slpImgFade}
+                  onError={() => setFailedMediaSrc(shownMediaSrc)}
+                  alt={
+                    revealed
+                      ? localizeUi("ui.noodle.post.imageBy", {
+                          name: profile.displayName,
+                        })
+                      : localizeUi("ui.noodle.lockednoodlerpostcard.lockedImageFrom", { name: profile.displayName })
+                  }
+                  className={cn(
+                    "slp-crop-top h-full w-full object-cover",
+                    // The server sends a reduced, lightly blurred teaser; the veil blurs it more so the
+                    // colours and the shape read, the details do not (design step 2).
+                    revealed ? "scale-100" : "saturate-[0.95]",
+                    !revealed && "scale-110 blur-[10px]",
+                  )}
+                />
+              ) : requestedMediaUrl ? (
+                <div
+                  className="absolute inset-0 animate-pulse bg-[var(--muted)] motion-reduce:animate-none"
                   aria-hidden="true"
                 />
-              </>
-            )}
-            {!revealed && photoCount > 0 && <SlpLockedContentsChip count={photoCount} />}
-            {revealed && postImages.length > 1 && (
-              <div className="pointer-events-none absolute inset-x-2 top-1/2 z-20 flex -translate-y-1/2 justify-between">
-                <button
-                  type="button"
-                  aria-label={localizeUi("ui.slurp.post.previousImage")}
-                  onClick={() => setActiveImageIndex((activeImageIndex - 1 + postImages.length) % postImages.length)}
-                  className="pointer-events-auto grid size-10 place-items-center rounded-full bg-black/65 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <button
-                  type="button"
-                  aria-label={localizeUi("ui.slurp.post.nextImage")}
-                  onClick={() => setActiveImageIndex((activeImageIndex + 1) % postImages.length)}
-                  className="pointer-events-auto grid size-10 place-items-center rounded-full bg-black/65 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                >
-                  <ChevronRight size={20} />
-                </button>
-              </div>
-            )}
-            {/* The lock is a state cue; the accessible image text already describes the preview. */}
-            {!revealed && (
-              // SlpLockGlyph and price sit together in the middle of the veil.
-              <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 px-4">
-                <SlpSparkleLock />
-                {unlockPrompt}
-              </div>
-            )}
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center gap-3 bg-[radial-gradient(circle_at_50%_35%,var(--noodle-accent)_0%,transparent_65%)] px-6 text-center">
+                  {/* While locked, the lock and price stand in the middle instead. */}
+                  {!unlockPrompt && (
+                    <>
+                      <span className="rounded-full bg-black/25 p-3 text-[var(--noodle-accent)] ring-1 ring-white/10">
+                        <ImageIcon size={22} aria-hidden="true" />
+                      </span>
+                      <span className="text-xs font-semibold text-[var(--muted-foreground)]">
+                        {localizeUi("ui.slurp.locked.previewUnavailable")}
+                      </span>
+                    </>
+                  )}
+                  {onGenerateImage && (
+                    <button
+                      type="button"
+                      onClick={onGenerateImage}
+                      disabled={imageGenerationPending}
+                      className="pointer-events-auto absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-black/65 text-white shadow-lg ring-1 ring-white/20 transition-[opacity,transform] hover:bg-black/80 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] disabled:opacity-60 motion-reduce:transition-none motion-reduce:active:scale-100"
+                      title={localizeUi("ui.slurp.image.generate")}
+                      aria-label={localizeUi("ui.slurp.image.generate")}
+                      aria-busy={imageGenerationPending}
+                    >
+                      <RefreshCw
+                        size={17}
+                        className={imageGenerationPending ? "animate-spin motion-reduce:animate-none" : ""}
+                      />
+                    </button>
+                  )}
+                </div>
+              )}
+              {!revealed && (
+                <div
+                  className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_55%,rgba(8,4,10,0.12),rgba(8,4,10,0.55)_80%)]"
+                  aria-hidden="true"
+                />
+              )}
+              {!revealed && <SlurpSparkleVeil className={transaction ? "opacity-100" : ""} />}
+              {!revealed && (
+                // Signature surface (design language §2/§3): slow ambient sparkle over the veil and a
+                // hero-gradient frame whose glint travels round the picture.
+                <>
+                  <span
+                    className="pointer-events-none absolute inset-0 isolate z-[5] opacity-80 mix-blend-screen"
+                    aria-hidden="true"
+                  >
+                    <SlpShimmer />
+                  </span>
+                  <SlpRingGlint />
+                  <span
+                    className="pointer-events-none absolute inset-0 z-[1] shadow-[inset_0_0_48px_-12px_var(--noodle-accent)]"
+                    aria-hidden="true"
+                  />
+                </>
+              )}
+              {!revealed && photoCount > 0 && <SlpLockedContentsChip count={photoCount} />}
+              {revealed && postImages.length > 1 && (
+                <div className="pointer-events-none absolute inset-x-2 top-1/2 z-20 flex -translate-y-1/2 justify-between">
+                  <button
+                    type="button"
+                    aria-label={localizeUi("ui.slurp.post.previousImage")}
+                    onClick={() => setActiveImageIndex((activeImageIndex - 1 + postImages.length) % postImages.length)}
+                    className="pointer-events-auto grid size-10 place-items-center rounded-full bg-black/65 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={localizeUi("ui.slurp.post.nextImage")}
+                    onClick={() => setActiveImageIndex((activeImageIndex + 1) % postImages.length)}
+                    className="pointer-events-auto grid size-10 place-items-center rounded-full bg-black/65 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
+              )}
+              {/* The lock is a state cue; the accessible image text already describes the preview. */}
+              {!revealed && (
+                // SlpLockGlyph and price sit together in the middle of the veil.
+                <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 px-4">
+                  <SlpSparkleLock />
+                  {unlockPrompt}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

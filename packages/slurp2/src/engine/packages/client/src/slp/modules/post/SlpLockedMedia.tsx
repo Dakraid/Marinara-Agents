@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { Image as ImageIcon, Images } from "lucide-react";
 import { SlpLockGlyph } from "../../base/chrome/SlpGlyphs";
 import { useTranslation as useUiTranslation } from "react-i18next";
@@ -41,12 +42,15 @@ export function SlpLockedMediaTile({
   label,
   onOpen,
   className,
+  style,
 }: {
   imageUrl: string | null;
   unlockPrice?: number | null;
   label: string;
   onOpen?: () => void;
   className?: string;
+  /** A frame in the post's own ratio (V: shared-post cards). */
+  style?: CSSProperties;
 }) {
   const { src, observe } = useNearViewportSlurpMediaSrc(imageUrl, { width: 480 });
   const frame = cn(
@@ -82,11 +86,11 @@ export function SlpLockedMediaTile({
     </>
   );
   return onOpen ? (
-    <button ref={observe} type="button" onClick={onOpen} aria-label={label} className={frame}>
+    <button ref={observe} type="button" onClick={onOpen} aria-label={label} className={frame} style={style}>
       {content}
     </button>
   ) : (
-    <span ref={observe} className={frame}>
+    <span ref={observe} className={frame} style={style}>
       {content}
     </span>
   );

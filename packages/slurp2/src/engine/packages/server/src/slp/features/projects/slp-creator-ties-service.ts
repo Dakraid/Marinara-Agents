@@ -25,7 +25,11 @@ import {
   type SlurpTieCreator,
 } from "../../modules/projects/slp-creator-ties.js";
 import { readSlurpTieStamp } from "../../modules/projects/slp-tie-stamp.js";
-import { slurpAnnounceCollab, slurpCollabCrossover } from "../../modules/projects/slp-collab-work.js";
+import {
+  slurpAnnounceCollab,
+  slurpCollabCrossover,
+  slurpHoldsCollabDrop,
+} from "../../modules/projects/slp-collab-work.js";
 import {
   slurpAdvanceBrandDeals,
   slurpDealOwesPost,
@@ -50,6 +54,7 @@ import { slurpIsCouplePage } from "../../modules/projects/slp-creator-couples.js
 import type { SlurpBeat } from "../../modules/feed/slp-post-beat.js";
 import type { SlurpContentIntent } from "../../../../../shared/src/slp/slp-content-axes.js";
 import { createGarnishAds, garnishRatingAllowed } from "../ads/slp-ads-contract.js";
+import { bookSlurpHeldSlot, readSlurpSlotTimes } from "../feed/slp-held-slots-contract.js";
 
 type Storage = ReturnType<typeof createSlurpStorage>;
 type Account = Awaited<ReturnType<Storage["listNoodlerAccounts"]>>[number];
@@ -310,6 +315,8 @@ export async function planSlurpTieBeat(
     sequence: number;
     intents: readonly SlurpContentIntent[];
     at: Date;
+    /** The slot's own time: a collab drop goes to the slot held at its hour (V). */
+    dueAt?: Date | null;
     previewOnly?: boolean;
   },
 ): Promise<SlurpBeat | null> {
@@ -332,7 +339,15 @@ export async function planSlurpTieBeat(
       const account = await storage.getNoodlerAccountById(id);
       if (account) names.set(id, account.displayName);
     }
-    const planned = slurpTieBeat({ ...input, ties, deals, couples, names });
+    // A collab to announce names its drop hour, and Slurp holds that hour like a teased drop (V).
+    const announcing = ties.collabs.some(
+      (collab) => collab.hostId === input.creatorId && collab.status === "agreed" && !collab.announcedAt,
+    );
+    const slots =
+      announcing && !input.previewOnly
+        ? await readSlurpSlotTimes(db, input.creatorId, input.at).catch(() => null)
+        : null;
+    const planned = slurpTieBeat({ ...input, ties, deals, couples, names, slots });
     if (!planned || input.previewOnly) return planned?.beat ?? null;
     const { tie } = planned.beat;
     await mutateSlurpCreatorTies(db, (document) => ({
@@ -354,7 +369,7 @@ export async function planSlurpTieBeat(
             ? tie.echo
               ? slurpEchoCollab(document.ties, tie.id)
               : tie.announce
-                ? slurpAnnounceCollab(document.ties, tie.id, input.at)
+                ? slurpAnnounceCollab(document.ties, tie.id, input.at, planned.dropAt)
                 : slurpPlanCollab(document.ties, tie.id, input.at)
             : tie.kind === "rival"
               ? slurpTellRivalry(document.ties, tie.id, input.creatorId)
@@ -368,11 +383,22 @@ export async function planSlurpTieBeat(
       },
       result: null,
     }));
+    // Without a held slot (automatic posting off, or the booking failed) the drop takes the host's
+    // first slot from its hour on.
+    if (planned.dropAt && slots)
+      await bookSlurpHeldSlot(db, input.creatorId, new Date(planned.dropAt), input.at).catch((error: unknown) =>
+        logger.warn(error, "[slurp-ties] Could not hold the collab drop's hour; it takes the next slot"),
+      );
     return planned.beat;
   } catch (error) {
     logger.warn(error, "[slurp-ties] Could not plan a collab, deal or rivalry post; this one is ordinary");
     return null;
   }
+}
+
+/** The slot at `slotAt` is held for a collab drop this Creator hosts (V): the reserve keeps ideas off it. */
+export async function slurpHeldCollabDrop(db: DB, creatorId: string, slotAt: Date): Promise<boolean> {
+  return slurpHoldsCollabDrop((await readSlurpCreatorTiesDocument(db)).ties, creatorId, slotAt);
 }
 
 /** Joint posts that show on this Creator's page although the partner wrote them: collabs and couple posts. */
