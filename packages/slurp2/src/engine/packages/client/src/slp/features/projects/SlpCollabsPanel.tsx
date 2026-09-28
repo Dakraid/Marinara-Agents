@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
-import { Ban, Handshake, Sparkles, Zap } from "lucide-react";
+import { Ban, Handshake, Zap } from "lucide-react";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
@@ -255,7 +256,7 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
             onClick={suggest}
             className="min-h-11 w-full px-4 text-sm sm:w-auto"
           >
-            <Sparkles size={16} aria-hidden="true" />
+            <SlpSparkleGlyph size={16} aria-hidden="true" />
             {picked.length === 2 ? t("ui.slurp.ties.suggestPair") : t("ui.slurp.ties.suggestPick")}
           </SlpPrimaryButton>
         </div>

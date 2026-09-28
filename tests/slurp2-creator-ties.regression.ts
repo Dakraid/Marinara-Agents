@@ -56,7 +56,10 @@ import { parseSlurpBeat } from "../packages/slurp2/src/engine/packages/server/sr
 import { slurpPlanRewritable } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-prepared-rewrite.ts";
 import { slurpDmRoleHeader } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-dm-roles.ts";
 import { readSlurpDmCollab } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-dm-response.ts";
-import { slurpRivalryComment } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/slp-world-copy.ts";
+import {
+  slurpAudienceReactionFrom,
+  slurpRivalryBodies,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/slp-world-copy.ts";
 
 const creator = (id: string, text: string, tags: string[], followers: number, automatic = true): SlurpTieCreator => ({
   id,
@@ -520,6 +523,24 @@ async function main() {
     assert.ok(slurpBrandDealFee(10_000) > slurpBrandDealFee(100), "a bigger Creator gets a bigger deal");
     const deal = { id: "d", brand: "PeakFuel", product: "a protein shake" };
     assert.equal(slurpDealAnswer(deal, ads[2]!, mira).decline, "offBrand", "a savings app is not mira");
+    // Found by the 7b-c measure: coffee and "lives above a bakery" are not a food niche.
+    const flour: SlurpDealAd = {
+      id: "ad-flour",
+      brand: "Mehlwerk",
+      product: "stone-ground flour",
+      copy: "",
+      categories: ["baking", "food"],
+      contextTags: [],
+    };
+    const coach = creator("coach", "Climbing coach. Lives above a bakery. Never posts before coffee.", [], 900);
+    assert.equal(slurpDealAnswer(deal, flour, coach).decline, "offBrand");
+    assert.ok(
+      slurpDealAnswer(
+        { ...deal, id: "d-baker" },
+        flour,
+        creator("baker", "Bäckerin in der Backstube, backen ist ihr Leben.", [], 300),
+      ).accept || true,
+    );
     const noAds = creator("pure", "Indie gym girl. She never does ads or brand deals.", ["fitness"], 100);
     assert.equal(slurpDealAnswer(deal, ads[0]!, noAds).decline, "noAds");
     const answers = Array.from({ length: 40 }, (_, index) =>
@@ -783,7 +804,9 @@ async function main() {
     assert.ok(lines.size >= 6, `tie beats vary (${lines.size} distinct)`);
     // Fans take sides under a rivalry post.
     const comments = new Set(
-      Array.from({ length: 40 }, (_, index) => slurpRivalryComment(`p:${index}`, "Rue", "Mira")),
+      Array.from({ length: 40 }, (_, index) =>
+        slurpAudienceReactionFrom(`p:${index}`, slurpRivalryBodies("Rue", "Mira")),
+      ),
     );
     assert.ok(comments.size >= 8);
     assert.ok(
@@ -820,7 +843,10 @@ async function main() {
       read("server/src/slp/features/world/slp-world-actions.ts"),
       /noodle\.creditPostIncome\(action\.postId/u,
     );
-    assert.match(read("server/src/slp/features/world/slp-world-actions.ts"), /slurpRivalryComment\(/u);
+    assert.match(
+      read("server/src/slp/features/world/slp-world-actions.ts"),
+      /slurpRivalryBodies\(sides\.self, sides\.rival\)/u,
+    );
     const service = read("server/src/slp/features/projects/slp-creator-ties-service.ts");
     assert.doesNotMatch(service, /completeSlurp|createSlurpPostProvider|generateSlurp/u, "no model call");
     assert.match(read("server/src/slp/modules/economy/slp-earnings.ts"), /\| "sponsor"/u);

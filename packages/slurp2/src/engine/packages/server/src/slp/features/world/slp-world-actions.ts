@@ -13,7 +13,7 @@ import {
   slurpAudienceOpener,
   slurpAudienceQuestion,
   slurpAudienceReactionFrom,
-  slurpRivalryComment,
+  slurpRivalryBodies,
   SLURP_SHIPPED_TYPE_REACTIONS,
   slurpCommissionBrief,
 } from "../../modules/world/slp-world-copy.js";
@@ -266,14 +266,14 @@ export async function applyPulse(
     actorId: actor.id,
     type: isComment ? "reply" : "like",
     // Tier 1 copy, so this stays free: the pulse runs unattended and must never call the model.
+    // Under a rivalry post about half the crowd picks a side (7b-c).
     content: isComment
-      ? // Under a rivalry post about half the crowd picks a side (7b-c).
-        sides && hash(`${action.postId}:${actor.id}:side`) % 2 === 0
-        ? slurpRivalryComment(`${action.postId}:${actor.id}`, sides.self, sides.rival)
-        : slurpAudienceReactionFrom(
-            `${action.postId}:${actor.id}`,
-            slurpReactionBodiesForType(banks, fanTypeId, SLURP_SHIPPED_TYPE_REACTIONS[fanTypeId ?? ""] ?? []),
-          )
+      ? slurpAudienceReactionFrom(
+          `${action.postId}:${actor.id}`,
+          sides && hash(`${action.postId}:${actor.id}:side`) % 2 === 0
+            ? slurpRivalryBodies(sides.self, sides.rival)
+            : slurpReactionBodiesForType(banks, fanTypeId, SLURP_SHIPPED_TYPE_REACTIONS[fanTypeId ?? ""] ?? []),
+        )
       : null,
   });
   if (!result) return false;

@@ -121,7 +121,10 @@ const INTERESTS: readonly { id: string; words: RegExp; idea: string }[] = [
   },
   {
     id: "food",
-    words: /\b(cook\w*|bak(e|es|er|ing)|chef|kitchen|recipes?|food\w*|coffee|café|cafe|Küche|kochen|backen)\b/iu,
+    // Not coffee or "bakery": nearly every card drinks coffee, and "lives above a bakery" is a place. Both
+    // made a climbing coach a flour brand's pick in the 7b-c measure.
+    words:
+      /\b(cook\w*|bak(e|es|er|ing)|chef|kitchen|recipes?|food\w*|Küche|kochen|backen|Backstube|Bäcker\w*|Brot)\b/iu,
     idea: "a cooking night, one dish each",
   },
   {

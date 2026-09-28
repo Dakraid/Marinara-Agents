@@ -273,11 +273,8 @@ const RIVALRY_SIDES = [
   "the receipts better be coming",
 ] as const;
 
-export function slurpRivalryComment(seed: string, self: string, rival: string): string {
-  return RIVALRY_SIDES[pickIndex(seed, "rivalry-side", RIVALRY_SIDES.length)]!.replaceAll("{self}", self).replaceAll(
-    "{rival}",
-    rival,
-  );
+export function slurpRivalryBodies(self: string, rival: string): string[] {
+  return RIVALRY_SIDES.map((body) => body.replaceAll("{self}", self).replaceAll("{rival}", rival));
 }
 
 /**
