@@ -1,5 +1,6 @@
 import { normalizeAvatarCrop } from "@marinara-engine/shared";
 import { createSlpPoll, readSlpPollFromMetadata } from "../../../../../shared/src/slp/slp-polls.js";
+import { readSlpPostImageCrop } from "../../../../../shared/src/slp/slp-post-images.js";
 import { SlpPollInput } from "../../../../../shared/src/slp/slp-social-generation.schema.js";
 import {
   SlpAccount,
@@ -150,6 +151,7 @@ export function mapPost(row: PostRow): SlpPost {
                 position: media.position,
                 imageUrl: media.imageUrl,
                 imagePrompt: typeof media.imagePrompt === "string" ? media.imagePrompt : null,
+                crop: readSlpPostImageCrop({ imageCrop: media.crop }),
               },
             ]
           : [];
@@ -165,6 +167,7 @@ export function mapPost(row: PostRow): SlpPost {
           imagePrompt:
             (typeof metadata.imageProviderPrompt === "string" && metadata.imageProviderPrompt) ||
             (row.imagePrompt ?? null),
+          crop: readSlpPostImageCrop(metadata),
         },
         ...secondary,
       ]

@@ -21,6 +21,8 @@ import {
 } from "../packages/slurp2/src/engine/packages/client/src/slp/modules/audience/slp-simulation-estimate.ts";
 import { slurpTuningForPreset } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-tuning.ts";
 import { SLURP_BUILTIN_FAN_TYPES } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-fan-types.ts";
+import { slpWithSetPictureChange } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-post-images.ts";
+import { slpCreatorPostUpdateSchema } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-social.schema.ts";
 import { slurp2Source } from "./slurp2-source.ts";
 
 // L (larger reworks from review 1).
@@ -258,6 +260,53 @@ const read = (path: string) => slurp2Source(join(pkg, path));
   assert.match(answer, /holdTyping\(result\.reply \? \(result\.typingMs \?\? 0\) : 0, result\.reply\?\.id\)/u);
   assert.match(answer, /setReplyStatus\(result\.replyStatus\)/u);
   assert.match(answer, /closeTools\(\)/u);
+}
+
+// ── R1-039 (part): Replace and Crop act on the chosen picture of a set ──
+{
+  const crop = { x: 0.1, y: 0.2, width: 0.5, height: 0.5, sourceWidth: 1024, sourceHeight: 1536 };
+  const set = [
+    { id: "a", position: 1, imageUrl: "/m/1", imagePrompt: "one", crop: { x: 0, y: 0, width: 1, height: 1 } },
+    { id: "b", position: 2, imageUrl: "/m/2", imagePrompt: "two" },
+  ];
+  const cropped = slpWithSetPictureChange(set, 2, { replaced: false, crop }) as typeof set;
+  assert.deepEqual(cropped[1], { ...set[1], crop }, "the chosen picture takes the crop");
+  assert.deepEqual(cropped[0], set[0], "the other picture is untouched");
+  const replaced = slpWithSetPictureChange(set, 1, { replaced: true, crop: undefined }) as Record<string, unknown>[];
+  assert.equal(replaced[0]!.imagePrompt, null, "a replacement drops the old prompt");
+  assert.equal("crop" in replaced[0]!, false, "and the old crop");
+  assert.equal(replaced[0]!.imageUrl, "/m/1", "the URL stays the position's");
+  const replacedCropped = slpWithSetPictureChange(set, 1, { replaced: true, crop }) as Record<string, unknown>[];
+  assert.deepEqual(replacedCropped[0]!.crop, crop, "a replacement keeps the crop chosen with it");
+  const cleared = slpWithSetPictureChange(set, 1, { replaced: false, crop: null }) as Record<string, unknown>[];
+  assert.equal("crop" in cleared[0]!, false);
+  assert.equal(slpWithSetPictureChange(set, 3, { replaced: false, crop }), null, "no picture there");
+  assert.equal(slpWithSetPictureChange(undefined, 1, { replaced: false, crop }), null);
+  assert.ok(slpCreatorPostUpdateSchema.safeParse({ imageCrop: crop, imagePosition: 2 }).success);
+  assert.ok(!slpCreatorPostUpdateSchema.safeParse({ imagePosition: -1, imageCrop: crop }).success);
+
+  const storage = read("server/src/slp/data/feed/slp-feed-post-storage-2.ts");
+  assert.match(storage, /const imageChanged = setPosition === null && Boolean\(media \|\| input\.removeImage\)/u);
+  assert.match(storage, /eq\(slpPostMedia\.position, setPosition\)/u);
+  const operation = read("server/src/slp/features/feed/slp-post-operation.ts");
+  assert.match(operation, /const oldPath = position > 0 \? await setFile\(\) : readCreatorMediaPath\(current\)/u);
+  assert.match(
+    read("server/src/slp/data/host/slp-storage-mappers.ts"),
+    /crop: readSlpPostImageCrop\(\{ imageCrop: media\.crop \}\)/u,
+  );
+  const actions = read("client/src/slp/app/slp-home-post-actions.ts");
+  assert.equal(
+    actions.match(/imagePosition: input\.image\.position/gu)?.length,
+    2,
+    "replace and crop send the position",
+  );
+  const hooks = read("client/src/slp/modules/post/SlpPostHooks.tsx");
+  assert.match(hooks, /\{ kind: "replace", file: cropSource\.source, crop, position \}/u);
+  assert.match(hooks, /loadPostImage\(picture \? \{ \.\.\.post, imageUrl: picture\.imageUrl \} : post\)/u);
+  const controls = read("client/src/slp/modules/post/SlpPostImageEditControls.tsx");
+  assert.match(controls, /<SlpPostImageNav/u);
+  assert.match(controls, /editing\.choosePosition\(pictures\[next\]!\.position\)/u);
+  assert.match(read("client/src/slp/modules/post/SlpPostCard.tsx"), /crop=\{activeCrop\}/u);
 }
 
 console.log("slurp2-l-reworks: ok");

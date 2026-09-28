@@ -23,6 +23,7 @@ export function useSlpPostImageEditor(loadPostImage?: (post: SlpPostCardModel) =
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const revisionRef = useRef(0);
   const beforeRemoveRef = useRef<SlpPostImageUpdate | null>(null);
+  const [position, setPosition] = useState(0);
 
   const reset = () => {
     revisionRef.current += 1;
@@ -31,6 +32,7 @@ export function useSlpPostImageEditor(loadPostImage?: (post: SlpPostCardModel) =
     setCropSource(null);
     setLoading(false);
     setError(null);
+    setPosition(0);
   };
   const beginCrop = (post: SlpPostCardModel) => {
     if (!loadPostImage || loading) return;
@@ -44,15 +46,23 @@ export function useSlpPostImageEditor(loadPostImage?: (post: SlpPostCardModel) =
       return;
     }
     if (!post.imageUrl) return;
+    // The chosen picture of a set, with its own crop (R1-039); the post picture otherwise.
+    const picture = position > 0 ? post.images.find((image) => image.position === position) : undefined;
+    if (position > 0 && !picture) return;
     const revision = ++revisionRef.current;
     setLoading(true);
     setError(null);
-    void loadPostImage(post)
+    void loadPostImage(picture ? { ...post, imageUrl: picture.imageUrl } : post)
       .then((source) => {
         if (revisionRef.current === revision) {
           setCropSource({
             source,
-            crop: update?.kind === "crop" ? update.crop : readSlpPostImageCrop(post.metadata),
+            crop:
+              update?.kind === "crop"
+                ? update.crop
+                : picture
+                  ? (picture.crop ?? null)
+                  : readSlpPostImageCrop(post.metadata),
             mode: "existing",
           });
         }
@@ -80,7 +90,9 @@ export function useSlpPostImageEditor(loadPostImage?: (post: SlpPostCardModel) =
   const applyCrop = async (crop: SlpPostImageCrop) => {
     if (!cropSource) return;
     setUpdate(
-      cropSource.mode === "replace" ? { kind: "replace", file: cropSource.source, crop } : { kind: "crop", crop },
+      cropSource.mode === "replace"
+        ? { kind: "replace", file: cropSource.source, crop, position }
+        : { kind: "crop", crop, position },
     );
     setCropSource(null);
     setError(null);
@@ -97,6 +109,15 @@ export function useSlpPostImageEditor(loadPostImage?: (post: SlpPostCardModel) =
           error,
           fileInputRef,
           beginCrop,
+          position,
+          // One picture change per save: another picture can be chosen once the pending one is saved
+          // or undone, so a second crop never silently replaces the first.
+          choosePosition: (next: number) => {
+            if (update && update.kind !== "remove") return;
+            setPosition(next);
+            setCropSource(null);
+            setError(null);
+          },
           selectReplacement,
           applyCrop,
           cancelCrop: () => setCropSource(null),

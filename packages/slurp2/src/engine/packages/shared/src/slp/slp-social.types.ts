@@ -386,6 +386,8 @@ export interface SlpPostMedia {
   position: number;
   imageUrl: string;
   imagePrompt: string | null;
+  /** This picture's own crop. Position zero reads the post's `imageCrop`; a set picture its own. */
+  crop?: SlpPostImageCrop | null;
 }
 
 export interface SlpCreatorManagedPost extends SlpPost {

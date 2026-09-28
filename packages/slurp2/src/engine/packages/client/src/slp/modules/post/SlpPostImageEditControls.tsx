@@ -9,6 +9,7 @@ import { useTranslation as useUiTranslation } from "react-i18next";
 import { PostImageCropEditor, PostImageFrame } from "../../base/media/SlpPostImageCropEditor";
 import { SLP_TYPE } from "../../base/chrome/SlpChrome";
 import type { SlpPostCardModel, SlpPostImageUpdate } from "./SlpPostTypes";
+import { SlpPostImageNav } from "./SlpPostImageNav";
 
 type SlpPostImageCropSource =
   | {
@@ -25,6 +26,8 @@ interface SlpPostCardImageEditingCap {
   error: string | null;
   fileInputRef: RefObject<HTMLInputElement | null>;
   beginCrop: (post: SlpPostCardModel) => void;
+  position: number;
+  choosePosition: (position: number) => void;
   selectReplacement: (event: ChangeEvent<HTMLInputElement>) => void;
   applyCrop: (crop: SlpPostImageCrop) => Promise<void>;
   cancelCrop: () => void;
@@ -50,6 +53,21 @@ export function PostImageEditControls({
   const removed = editing.update?.kind === "remove";
   const hasImage = Boolean(replacement || (!removed && post.imageUrl));
   const busy = disabled || editing.loading;
+  // Crop and Replace act on the picture on screen; a set steps through its pictures (R1-039).
+  const pictures = post.images.length > 1 ? post.images : [];
+  const index = Math.max(
+    0,
+    pictures.findIndex((image) => image.position === editing.position),
+  );
+  const picture = pictures[index];
+  const shownUrl = picture?.imageUrl ?? post.imageUrl;
+  const shownCrop =
+    editing.update?.kind === "crop"
+      ? editing.update.crop
+      : picture && picture.position > 0
+        ? (picture.crop ?? null)
+        : readSlpPostImageCrop(post.metadata);
+  const pending = Boolean(editing.update && editing.update.kind !== "remove");
 
   if (editing.cropSource) {
     return (
@@ -64,8 +82,16 @@ export function PostImageEditControls({
   }
 
   const remove = () => {
+    // Remove takes the whole set (R1-051), so a set says so.
+    const removedNote =
+      pictures.length > 1
+        ? localizeUi("ui.slurp.composer.setRemovedOnSave", {
+            defaultValue: "All {{count}} pictures removed when you save",
+            count: pictures.length,
+          })
+        : localizeUi("ui.slurp.composer.imageRemovedOnSave", { defaultValue: "Picture removed when you save" });
     editing.remove();
-    toast(localizeUi("ui.slurp.composer.imageRemovedOnSave", { defaultValue: "Picture removed when you save" }), {
+    toast(removedNote, {
       action: {
         label: localizeUi("ui.slurp.wallet.undo", { defaultValue: "Undo" }),
         onClick: () => editing.restore(),
@@ -85,13 +111,22 @@ export function PostImageEditControls({
       />
       {replacement ? (
         <FileImagePreview file={replacement.file} crop={replacement.crop} />
-      ) : hasImage && post.imageUrl ? (
-        <PostImageFrame
-          src={post.imageUrl}
-          crop={editing.update?.kind === "crop" ? editing.update.crop : readSlpPostImageCrop(post.metadata)}
-          alt={localizeUi("ui.noodle.postimageeditcontrols.currentPost")}
-          maxHeight={320}
-        />
+      ) : hasImage && shownUrl ? (
+        <div className="relative">
+          <PostImageFrame
+            src={shownUrl}
+            crop={shownCrop}
+            alt={localizeUi("ui.noodle.postimageeditcontrols.currentPost")}
+            maxHeight={320}
+          />
+          {!pending && pictures.length > 1 && (
+            <SlpPostImageNav
+              total={pictures.length}
+              index={index}
+              onSelect={(next) => editing.choosePosition(pictures[next]!.position)}
+            />
+          )}
+        </div>
       ) : (
         <div className="grid min-h-32 place-items-center rounded-2xl bg-[var(--slurp-surface-raised)] p-4 text-center shadow-[var(--slurp-highlight)] ring-1 ring-inset ring-[var(--noodle-divider)]">
           <div className="space-y-3">
@@ -134,6 +169,15 @@ export function PostImageEditControls({
             {localizeUi("ui.slurp.composer.remove", { defaultValue: "Remove" })}
           </SlpButton>
         </div>
+      )}
+      {pending && pictures.length > 1 && (
+        <p className={cn(SLP_TYPE.meta, "text-center text-[var(--slurp-muted)]")}>
+          {localizeUi("ui.slurp.post.editOnePicture", {
+            defaultValue: "Picture {{number}} of {{total}}. Save to change another one.",
+            number: index + 1,
+            total: pictures.length,
+          })}
+        </p>
       )}
       {editing.error && (
         <p role="alert" className="text-xs text-[var(--slurp-danger)]">
