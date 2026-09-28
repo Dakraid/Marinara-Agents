@@ -4,7 +4,14 @@ import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
-import { Avatar, SLP_EYEBROW_CLASS, SLP_GROUP_CLASS, SLP_TYPE } from "../../base/chrome/SlpChrome";
+import {
+  Avatar,
+  SLP_EYEBROW_CLASS,
+  SLP_GROUP_CLASS,
+  SLP_IMG_FRAME_CLASS,
+  SLP_TYPE,
+  SlurpMediaImg,
+} from "../../base/chrome/SlpChrome";
 import { SlpButton, SlpPrimaryButton, slpTagClass } from "../../modules/chrome/SlpButton";
 import { SlpCoinText } from "../../modules/coin/SlpCoin";
 import { formatRelativeTime } from "../../base/ui/slp-date-time";
@@ -544,7 +551,24 @@ export function SlpBrandOffers({ personaId, creatorId }: { personaId: string; cr
       {offers.length > 0 && (
         <ul className={SLP_GROUP_CLASS}>
           {offers.map((deal) => (
-            <li key={deal.id} className="flex flex-col gap-2 px-4 py-3">
+            <li key={deal.id} className="flex flex-col gap-2 px-4 py-3" data-slurp-brand-offer>
+              {deal.bannerUrl && (
+                <div
+                  className={cn(
+                    "overflow-hidden rounded-xl bg-[var(--slurp-media-stage,#17131a)]",
+                    SLP_IMG_FRAME_CLASS,
+                  )}
+                  style={{ aspectRatio: "1.91 / 1" }}
+                >
+                  <SlurpMediaImg
+                    src={deal.bannerUrl}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="slp-crop-top h-full w-full object-cover"
+                  />
+                </div>
+              )}
               <div className="flex items-baseline justify-between gap-3">
                 <span className={cn(SLP_TYPE.body, "min-w-0 font-semibold [overflow-wrap:anywhere]")}>
                   {t("ui.slurp.ties.offerTitle", { brand: deal.brand, product: deal.product })}

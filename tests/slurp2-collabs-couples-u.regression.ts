@@ -612,4 +612,13 @@ const beatFor = (creatorId: string, ties: SlurpCreatorTies, at: Date, couples: S
   assert.equal(en["ui.slurp.ties.life.title"], "Relationships");
 }
 
+// Merge P+Q × U: an open brand offer in Business shows the ad's 1.91:1 banner (feed picture for an old ad).
+{
+  const routes = server("features/projects/slp-creator-ties-routes.ts");
+  assert.match(routes, /ad\.wideImageUrl \|\| ad\.imageUrl/u, "banner first, feed picture as the fallback");
+  assert.match(routes, /bannerUrl: deal\.status === "offered"/u, "only open offers carry the banner");
+  const panel = client("features/projects/SlpCollabsPanel.tsx");
+  assert.match(panel, /deal\.bannerUrl &&[\s\S]*?aspectRatio: "1\.91 \/ 1"/u, "the offer card frames it at 1.91:1");
+}
+
 console.log("slurp2 collabs vs couples (U) regression passed");
