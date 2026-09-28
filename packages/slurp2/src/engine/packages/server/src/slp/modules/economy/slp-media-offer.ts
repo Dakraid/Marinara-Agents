@@ -20,6 +20,9 @@ export function resolveSlurpMediaOffer(input: {
   if (input.intent === "hostile") return { visibility: "free", price: 0, reason: "hostile_free" };
   if (
     input.intent === "premium" ||
+    // A picture to somebody she hardly knows yet is sold, not given: the PPV of a creator site.
+    input.rapportTier === "acquaintance" ||
+    input.rapportTier === "stranger" ||
     (input.requestedVisibility === "locked" && input.rapportTier !== "whale" && !input.subscribed)
   ) {
     return {

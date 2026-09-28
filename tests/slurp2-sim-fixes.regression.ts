@@ -20,6 +20,8 @@ import {
   type SlurpCouple,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples.ts";
 import { slurpCreatorCheckIn } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-world.ts";
+import { resolveSlurpStance } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/slp-stance.ts";
+import { resolveSlurpMediaOffer } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/economy/slp-media-offer.ts";
 import { formatFollowUpContext } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-follow-up.ts";
 import {
   SLURP_CAMERA_SOURCES,
@@ -282,6 +284,30 @@ const read = (path: string) => readFileSync(new URL(path, root), "utf8");
   const operation = read("server/src/slp/features/messages/slp-message-operation.ts");
   const gate = operation.slice(operation.indexOf("reply.image &&"), operation.indexOf("const imageAllowedBySettings"));
   assert.doesNotMatch(gate, /input\.background/u, "a delayed reply to the player may draw a picture or a PPV");
+
+  // The real gate the sim found: pictures only from "warm" on and never priced, so a week of chats
+  // had none. Now an acquaintance may get one, as a PPV; a guarded stranger still gets none.
+  const stance = (rapportTier: "stranger" | "acquaintance" | "regular") =>
+    resolveSlurpStance({
+      rapportTier,
+      rapportScore: 20,
+      moodTone: "neutral",
+      audienceArc: null,
+      dayVibe: null,
+      availability: { online: true, activity: null },
+      subscribed: true,
+      isRequest: false,
+      tone: "warm",
+      coolingOff: false,
+      strikes: 0,
+    } as never);
+  assert.equal(stance("acquaintance").canSendImage, true, "an acquaintance may get a DM picture");
+  assert.equal(stance("stranger").canSendImage, false, "a guarded stranger does not");
+  const offer = (rapportTier: "acquaintance" | "regular" | "whale") =>
+    resolveSlurpMediaOffer({ intent: "friendly", rapportTier, subscribed: true, configuredPrice: 30 });
+  assert.deepEqual(offer("acquaintance"), { visibility: "locked", price: 30, reason: "creator_choice" }, "sold as PPV");
+  assert.equal(offer("regular").price, 0, "a regular still gets it free");
+  assert.equal(offer("whale").price, 0);
 
   // F12 timer shots: no camera takes more than about a quarter of the feed.
   const intents = ["set", "teaser", "callback", "behind_the_scenes", "business", "casual", "appreciation", "casual"];

@@ -242,7 +242,10 @@ export function resolveSlurpStance(input: SlurpStanceInput): SlurpStance {
 
   // Hostile reactions are part of an ordinary relationship. The audience tone changes how often
   // the model chooses them, but it must not make an annoyed Creator unable to show annoyance.
-  const canSendImage = warmth === "warm" || warmth === "close" || warmth === "cold";
+  // A fan she barely knows (neutral) may get one too, as a paid picture (`resolveSlurpMediaOffer`):
+  // with pictures only from "warm" on, a week of chatting never produced a DM picture or a PPV.
+  // Only a guarded stranger gets none.
+  const canSendImage = warmth !== "guarded";
   const imageMode = canSendImage ? (warmth === "cold" ? "hostile" : "friendly") : "none";
   evidence.push({
     layer: "media latitude",
