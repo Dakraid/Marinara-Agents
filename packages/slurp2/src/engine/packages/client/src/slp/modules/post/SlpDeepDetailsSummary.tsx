@@ -16,7 +16,8 @@ import {
 import type { ReactNode } from "react";
 import type { SlpDeepDetailsResponse } from "../../../../../shared/src/slp/slp-deep-details.js";
 import { SLP_GROUP_CLASS, SLP_TYPE } from "../../base/chrome/SlpChrome";
-import { Block, Rows, StepStatus } from "./SlpDeepDetailsParts";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
+import { Block, StepStatus } from "./SlpDeepDetailsParts";
 import {
   buildSlpDeepDetailsStory,
   type SlpDeepChainStep,
@@ -109,9 +110,11 @@ function rowBody(row: SlpDeepRow): ReactNode {
       <ul key="items" className="space-y-1.5">
         {row.items.map((item) => (
           <li key={item.text} className={`${SLP_TYPE.body} flex gap-2 break-words`}>
-            <span className="text-[var(--noodle-accent-foreground)]" aria-hidden="true">
-              ✦
-            </span>
+            <SlpSparkleGlyph
+              size={12}
+              aria-hidden="true"
+              className="mt-1 shrink-0 text-[var(--noodle-accent-foreground)]"
+            />
             <span className="min-w-0">
               {item.text}
               {item.note && <span className="text-[var(--slurp-muted)]"> · {item.note}</span>}
@@ -121,17 +124,34 @@ function rowBody(row: SlpDeepRow): ReactNode {
       </ul>,
     );
   }
-  for (const [index, sentence] of (row.sentences ?? []).entries()) {
+  if (row.sentences?.length) {
     parts.push(
-      <p key={`s${index}`} className={`${SLP_TYPE.body} break-words`}>
-        {sentence}
-      </p>,
+      <div key="sentences" className="space-y-1.5">
+        {row.sentences.map((sentence) => (
+          <p key={sentence} className={`${SLP_TYPE.body} break-words`}>
+            {sentence}
+          </p>
+        ))}
+      </div>,
     );
   }
   if (row.changes && (row.changes.added.length || row.changes.dropped.length)) {
     parts.push(<Changes key="changes" added={row.changes.added} dropped={row.changes.dropped} />);
   }
-  if (row.facts?.some(([, value]) => value)) parts.push(<Rows key="facts" rows={row.facts} />);
+  const facts = (row.facts ?? []).filter((fact): fact is [string, string] => Boolean(fact[1]));
+  if (facts.length) {
+    // Label over value: the phone is too narrow for two columns once the row is indented.
+    parts.push(
+      <dl key="facts" className="grid grid-cols-2 gap-x-4 gap-y-2">
+        {facts.map(([label, value]) => (
+          <div key={label} className={value.length > 24 ? "col-span-2 min-w-0" : "min-w-0"}>
+            <dt className={`${SLP_TYPE.meta} text-[var(--slurp-muted)]`}>{label}</dt>
+            <dd className={`${SLP_TYPE.body} break-words`}>{value}</dd>
+          </div>
+        ))}
+      </dl>,
+    );
+  }
   for (const block of row.blocks ?? []) {
     if (block.text) parts.push(<Block key={block.label} label={block.label} text={block.text} collapsed />);
   }

@@ -252,11 +252,7 @@ function happensRow(data: SlpDeepDetailsResponse): SlpDeepRow {
   const scene = join([angle?.place, angle?.moment, angle?.company]);
   const sentences = [
     beat ? `${beatSource(beat)}.` : null,
-    beat?.cast.length ? `With ${beat.cast.join(", ")}.` : null,
     beat?.reference ? `It can call back to this: ${clip(beat.reference.text, 140)}` : null,
-    angle?.place ? `Where: ${angle.place}.` : null,
-    angle?.moment ? `When: ${angle.moment}.` : null,
-    angle?.company ? `Who is there: ${angle.company}.` : null,
     claim && claim.revised
       ? claim.ok
         ? "The first draft got a fact about their life wrong, so it was fixed once."
@@ -272,7 +268,12 @@ function happensRow(data: SlpDeepDetailsResponse): SlpDeepRow {
     status: claim && !claim.ok ? "rejected" : undefined,
     quote: beat ? { label: "The moment Slurp planned", text: beat.line } : null,
     sentences,
-    facts: claim && !claim.ok ? [["What was off", claim.problems.join("; ") || null]] : [],
+    facts: [
+      ["Where", angle?.place ?? null],
+      ["When", angle?.moment ?? null],
+      ["Who is there", angle?.company ?? (beat?.cast.length ? beat.cast.join(", ") : null)],
+      ["What was off", claim && !claim.ok ? claim.problems.join("; ") || null : null],
+    ],
   };
 }
 
@@ -575,12 +576,11 @@ function pictureRow(data: SlpDeepDetailsResponse, locale: string): SlpDeepRow {
   return {
     id: "picture",
     title: "The picture",
+    // The status chip says "Retried"; the line keeps what fits beside it.
     line: join([
-      run.connection.model,
-      seconds > 0 && `${seconds.toFixed(1)} s`,
       ENHANCE_WORDS[run.rewrite.status],
-      failures > 0 && plural(failures, "retry", "retries"),
       run.result.status === "failed" ? "failed" : run.result.status === "preview" ? "waits for your review" : null,
+      run.connection.model,
     ]),
     status: run.result.status === "failed" ? "failed" : failures || servedBy ? "retried" : undefined,
     sentences,
@@ -589,6 +589,7 @@ function pictureRow(data: SlpDeepDetailsResponse, locale: string): SlpDeepRow {
       ["Image model", run.connection.model],
       ["Connection", run.connection.name ?? run.connection.id],
       ["Size", run.size.width && run.size.height ? `${run.size.width} × ${run.size.height}` : null],
+      ["Drawing took", seconds > 0 ? `${seconds.toFixed(1)} s` : null],
       ["Drawn", formatFullTime(run.startedAt, locale) || null],
     ],
     blocks: [
