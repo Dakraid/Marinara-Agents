@@ -201,6 +201,7 @@ export function SlpShell({
   onOpenMessages,
   onOpenWallet,
   onOpenStir,
+  budgetNote,
   notificationCount = 0,
   walletBalanceLabel,
   walletBalance,
@@ -343,7 +344,7 @@ export function SlpShell({
                 {localizeUi("navigation.topbar.settings")}
               </button>
             </nav>
-            {slurpActive && <SlpPulseCard open={pulseOpen} onOpen={openPulse} />}
+            {slurpActive && <SlpPulseCard open={pulseOpen} onOpen={openPulse} note={Boolean(budgetNote)} />}
             {/*
               The drawer used to render the whole persona list open, so the identity card
               was pushed off-screen on any install with more than a couple of personas.
@@ -561,7 +562,7 @@ export function SlpShell({
                   )}
                   {slurpActive && (
                     <div className="mb-3">
-                      <SlpPulseCard open={pulseOpen} onOpen={openPulse} />
+                      <SlpPulseCard open={pulseOpen} onOpen={openPulse} note={Boolean(budgetNote)} />
                     </div>
                   )}
                   <button
@@ -669,7 +670,12 @@ export function SlpShell({
           </div>
         </div>
 
-        <SlpPulsePanel open={pulseOpen} onClose={() => setPulseOpen(false)} accounts={sortedPersonaAccounts} />
+        <SlpPulsePanel
+          open={pulseOpen}
+          onClose={() => setPulseOpen(false)}
+          budgetNote={budgetNote}
+          accounts={sortedPersonaAccounts}
+        />
 
         {/* The frosted fade under the phone nav, down to the bottom edge. A sibling, not a backdrop on
             a wrapper: a backdrop or mask around the pill would become its backdrop root and the pill

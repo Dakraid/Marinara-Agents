@@ -1,3 +1,4 @@
+import type { SlpPulseBudgetNote } from "./SlpPulse";
 // Shell contract, split out of components/slurp/SlurpShell.tsx in Slice 10.
 import type { ReactNode, RefObject } from "react";
 import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
@@ -61,6 +62,8 @@ export interface SlpShellProps {
   onOpenWallet?: () => void;
   /** The Stir tab (W): the centre of the phone nav, a row in the desktop sidebar. */
   onOpenStir?: () => void;
+  /** One-time Pulse note after the AI budget defaults went up (task F); absent once seen. */
+  budgetNote?: SlpPulseBudgetNote;
   /** Unseen activity, shown on the unified Inbox entry. */
   notificationCount?: number;
   /** Shown on the desktop Wallet row and the identity card, so the balance is not mobile-only. */

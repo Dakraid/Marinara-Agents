@@ -11,8 +11,11 @@ import { api } from "../../../lib/api-client.js";
 import { cn } from "../../../lib/utils";
 import { sortSlpPulseScheduled } from "./slp-pulse-order";
 import { SlpSheet } from "./SlpSheet";
+import { SlpButton, SlpPrimaryButton } from "./SlpButton";
 
-export function SlpPulseCard({ open, onOpen }: { open: boolean; onOpen: () => void }) {
+export type SlpPulseBudgetNote = { onOpenBudget: () => void; onDismiss: () => void };
+
+export function SlpPulseCard({ open, onOpen, note = false }: { open: boolean; onOpen: () => void; note?: boolean }) {
   const { t } = useUiTranslation();
   const serverTasks = useSlpPulseTasks(false);
   const activeCount = serverTasks.data?.tasks.filter((task) => isActiveTask(task.status)).length ?? 0;
@@ -27,7 +30,7 @@ export function SlpPulseCard({ open, onOpen }: { open: boolean; onOpen: () => vo
       <span className="relative flex h-7 w-7 shrink-0 items-center justify-center text-[var(--noodle-accent-foreground)]">
         <Activity size={17} strokeWidth={2.4} aria-hidden="true" />
         {/* A still live dot, not a looping ping (marinara-design §7: no decorative loops). */}
-        {activeCount > 0 && (
+        {(activeCount > 0 || note) && (
           <span className="absolute end-0 top-0.5 size-2 rounded-full bg-[var(--noodle-accent)] ring-2 ring-[var(--slurp-surface-raised)]" />
         )}
       </span>
@@ -52,10 +55,12 @@ export function SlpPulseCard({ open, onOpen }: { open: boolean; onOpen: () => vo
 export function SlpPulsePanel({
   open,
   onClose,
+  budgetNote,
   accounts = [],
 }: {
   open: boolean;
   onClose: () => void;
+  budgetNote?: SlpPulseBudgetNote;
   accounts?: SlpAccount[];
 }) {
   const { t } = useUiTranslation();
@@ -92,6 +97,37 @@ export function SlpPulsePanel({
 
         {/* W: Pulse shows what runs and ran. "Generate posts" (only a link to Settings) is gone and
             "Run audience" is a Stir card ("Wake the fans"): a new plan never starts here. */}
+        {budgetNote && (
+          // One-time note from Slurp after the AI budget defaults went up (task F). Either button clears it.
+          <section
+            aria-labelledby="slurp-pulse-budget-note"
+            className="space-y-2 rounded-xl bg-[color-mix(in_srgb,var(--noodle-accent)_9%,var(--slurp-surface-raised))] p-4 ring-1 ring-inset ring-[var(--noodle-accent)]/18"
+          >
+            <h3 id="slurp-pulse-budget-note" className="text-sm font-bold">
+              {t("ui.slurp.pulse.budgetNote.title", { defaultValue: "Your AI budget grew" })}
+            </h3>
+            <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>
+              {t("ui.slurp.pulse.budgetNote.body", {
+                defaultValue:
+                  "The AI budget now grows with your Creators, so they chat, get comments and hear from fans more often. On a paid AI connection that costs more. Limits you set yourself stay as they are.",
+              })}
+            </p>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <SlpPrimaryButton
+                onClick={() => {
+                  budgetNote.onOpenBudget();
+                  onClose();
+                }}
+              >
+                {t("ui.slurp.pulse.budgetNote.open", { defaultValue: "Open AI budget" })}
+              </SlpPrimaryButton>
+              <SlpButton variant="quiet" onClick={budgetNote.onDismiss}>
+                {t("ui.slurp.pulse.budgetNote.dismiss", { defaultValue: "Got it" })}
+              </SlpButton>
+            </div>
+          </section>
+        )}
+
         {busy && (
           <section aria-labelledby="slurp-pulse-now" className="space-y-2">
             {heading(

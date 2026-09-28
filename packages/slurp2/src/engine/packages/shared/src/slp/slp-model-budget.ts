@@ -26,37 +26,140 @@ const jobPolicy = (priority: number, maxPerDay: number) =>
     })
     .default({ enabled: true, priority, maxPerDay });
 
+/**
+ * What each limit is sized for (task F, SIM-REPORT "Budget sizing": a normal day measured with 8 Creators,
+ * + 25 % headroom): `base + perCreator × active Creators`, rounded up. A limit the player never set follows
+ * this as Creators come and go; a limit they set stays theirs (`customLimits`). A job kind missing here
+ * (for example Stir's "plan" row) keeps its schema default and is never sized.
+ */
+export const SLURP_MODEL_BUDGET_SIZING = {
+  callsPerHour: { base: 6, perCreator: 1 },
+  callsPerDay: { base: 40, perCreator: 6 },
+  jobs: {
+    // Messages a Creator sends on their own (openers, follow-ups, late replies). The player's own sends are never capped.
+    dm_reply: { base: 15, perCreator: 2 },
+    rewrite: { base: 3, perCreator: 1.25 },
+    thread: { base: 8, perCreator: 0.6 },
+    brief: { base: 2, perCreator: 0.25 },
+    bank_grow: { base: 5, perCreator: 0.6 },
+    arc: { base: 2, perCreator: 0.25 },
+    schedule: { base: 2, perCreator: 0.25 },
+    fan_type_voice: { base: 10, perCreator: 0 },
+    continuity: { base: 4, perCreator: 0.6 },
+    assist: { base: 40, perCreator: 0 },
+    // One rewrite per picture: posts, DM pictures and ad pictures. Never below the 60 it shipped with.
+    image_prompt: { base: 60, perCreator: 2 },
+  } as Partial<Record<SlurpModelJobKind, { base: number; perCreator: number }>>,
+} as const;
+
+/** The limits a player can own: the two shared caps and each job's daily limit (by job kind). */
+export type SlurpModelBudgetLimit = "callsPerHour" | "callsPerDay" | SlurpModelJobKind;
+
+/** The fixed defaults before task F. A saved budget from then keeps only the limits that differ from these. */
+const SLURP_MODEL_BUDGET_LEGACY_DEFAULTS: Record<string, number> = {
+  callsPerHour: 4,
+  callsPerDay: 20,
+  dm_reply: 40,
+  rewrite: 12,
+  thread: 8,
+  brief: 6,
+  bank_grow: 2,
+  arc: 2,
+  schedule: 2,
+  fan_type_voice: 10,
+  continuity: 12,
+  assist: 40,
+  image_prompt: 60,
+};
+
+const sized = ({ base, perCreator }: { base: number; perCreator: number }, creators: number) =>
+  Math.ceil(base + perCreator * Math.max(0, Math.floor(creators)));
+
+/**
+ * A budget saved before task F has no `customLimits`. Only the limits the player changed from the old
+ * fixed defaults are theirs; every untouched one moves to the new sizing, and the player gets a one-time
+ * note (`raisedNotice`) that the defaults went up.
+ */
+function migrateSlurpModelBudget(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return raw;
+  const record = raw as Record<string, unknown>;
+  if ("customLimits" in record || Object.keys(record).length === 0) return raw;
+  const jobs = (record.jobs && typeof record.jobs === "object" ? record.jobs : {}) as Record<string, unknown>;
+  const valueOf = (limit: string): unknown =>
+    limit === "callsPerHour" || limit === "callsPerDay"
+      ? record[limit]
+      : (jobs[limit] as { maxPerDay?: unknown } | undefined)?.maxPerDay;
+  const customLimits = Object.entries(SLURP_MODEL_BUDGET_LEGACY_DEFAULTS)
+    .filter(([limit, legacy]) => typeof valueOf(limit) === "number" && valueOf(limit) !== legacy)
+    .map(([limit]) => limit);
+  return { ...record, customLimits, raisedNotice: true };
+}
+
 export const slurpModelBudgetSchema = z
-  .object({
-    mode: z.enum(["off", "present", "background"]).default("present"),
-    connectionId: z.string().trim().min(1).nullable().default(null),
-    callsPerHour: z.number().int().min(0).max(100).default(4),
-    callsPerDay: z.number().int().min(0).max(500).default(20),
-    jobs: z
-      .object({
-        dm_reply: jobPolicy(1, 40),
-        rewrite: jobPolicy(2, 12),
-        // 8 = the default "Runs per day", so the shipped audience is not capped below itself (R1-104).
-        thread: jobPolicy(3, 8),
-        brief: jobPolicy(4, 6),
-        bank_grow: jobPolicy(5, 2),
-        arc: jobPolicy(6, 2),
-        schedule: jobPolicy(6, 2),
-        fan_type_voice: jobPolicy(7, 10),
-        // Reads new message batches for Creator statements. Lowest priority: nothing waits on it.
-        continuity: jobPolicy(8, 12),
-        // The player's own Write / Improve taps (AI assist). Present work, never paced.
-        assist: jobPolicy(2, 40),
-        // "Enhance image prompts": one rewrite per picture. Its own daily limit only (see below).
-        image_prompt: jobPolicy(3, 60),
-        // Stir (W): "What should we stir up?" turns the player's words into a plan. Present work, never paced.
-        plan: jobPolicy(2, 20),
-      })
-      .default({}),
-  })
+  .preprocess(
+    migrateSlurpModelBudget,
+    z.object({
+      mode: z.enum(["off", "present", "background"]).default("present"),
+      connectionId: z.string().trim().min(1).nullable().default(null),
+      // The numbers below are the sizing for no Creators; `resolveSlurpModelBudget` sizes them for the real count.
+      callsPerHour: z.number().int().min(0).max(100).default(6),
+      callsPerDay: z.number().int().min(0).max(500).default(40),
+      jobs: z
+        .object({
+          dm_reply: jobPolicy(1, 15),
+          rewrite: jobPolicy(2, 3),
+          // Sized so the shipped audience is not capped below its "Runs per day" (R1-104).
+          thread: jobPolicy(3, 8),
+          brief: jobPolicy(4, 2),
+          bank_grow: jobPolicy(5, 5),
+          arc: jobPolicy(6, 2),
+          schedule: jobPolicy(6, 2),
+          fan_type_voice: jobPolicy(7, 10),
+          // Reads new message batches for Creator statements. Lowest priority: nothing waits on it.
+          continuity: jobPolicy(8, 4),
+          // The player's own Write / Improve taps (AI assist). Present work, never paced.
+          assist: jobPolicy(2, 40),
+          // "Enhance image prompts": one rewrite per picture. Its own daily limit only (see below).
+          image_prompt: jobPolicy(3, 60),
+          // Stir (W): "What should we stir up?" turns the player's words into a plan. Present work, never
+          // paced. Flat like writing help (the player's own taps, not the world), so no sizing entry.
+          plan: jobPolicy(2, 20),
+        })
+        .default({}),
+      /** Limits the player set by hand. Every other limit follows the number of active Creators. */
+      customLimits: z.array(z.string()).default([]),
+      /** Set once when an older budget moved to the sized defaults; Pulse tells the player, then clears it. */
+      raisedNotice: z.boolean().default(false),
+    }),
+  )
   .default({});
 
 export type SlurpModelBudget = z.infer<typeof slurpModelBudgetSchema>;
+
+/** The budget as it applies with `creators` active Creators: every limit the player did not set is sized. */
+export function resolveSlurpModelBudget(budget: SlurpModelBudget, creators: number): SlurpModelBudget {
+  const custom = new Set(budget.customLimits);
+  const cap = (limit: "callsPerHour" | "callsPerDay", max: number) =>
+    custom.has(limit) ? budget[limit] : Math.min(max, sized(SLURP_MODEL_BUDGET_SIZING[limit], creators));
+  const jobs = { ...budget.jobs };
+  for (const kind of SLURP_MODEL_JOB_KINDS) {
+    const sizing = SLURP_MODEL_BUDGET_SIZING.jobs[kind];
+    if (sizing && !custom.has(kind)) jobs[kind] = { ...jobs[kind], maxPerDay: Math.min(500, sized(sizing, creators)) };
+  }
+  return { ...budget, callsPerHour: cap("callsPerHour", 100), callsPerDay: cap("callsPerDay", 500), jobs };
+}
+
+/** The player sets one limit by hand: it keeps that value from now on, whatever the Creator count. */
+export function setSlurpModelBudgetLimit(
+  budget: SlurpModelBudget,
+  limit: SlurpModelBudgetLimit,
+  value: number,
+): SlurpModelBudget {
+  const customLimits = budget.customLimits.includes(limit) ? budget.customLimits : [...budget.customLimits, limit];
+  return limit === "callsPerHour" || limit === "callsPerDay"
+    ? { ...budget, [limit]: value, customLimits }
+    : { ...budget, jobs: { ...budget.jobs, [limit]: { ...budget.jobs[limit], maxPerDay: value } }, customLimits };
+}
 
 export type SlurpModelBudgetLedger = {
   hour: string;
@@ -193,4 +296,31 @@ export function slurpModelBudgetRetryAt(
   // Another in-process claim may have won between the read and reservation. Retry soon without
   // treating ordinary budget contention as a provider failure.
   return new Date(at.getTime() + 60_000).toISOString();
+}
+
+// ponytail: one flat guess for prompt + answer tokens per call; measure real calls if the hint needs to be exact.
+export const SLURP_TOKENS_PER_CALL_ESTIMATE = 3000;
+
+/**
+ * What a sized budget means in a day, for the plain-words summary in Settings: the most the world may
+ * write on its own, plus the posts (1 text call + 1 picture prompt rewrite + 1 picture each, outside
+ * the shared caps). Replies to the player's own messages are never counted: they are never capped.
+ */
+export function slurpModelBudgetOutlook(budget: SlurpModelBudget, postsPerDay: number) {
+  const on = budget.mode !== "off";
+  const limit = (kind: SlurpModelJobKind) =>
+    on && budget.jobs[kind].enabled ? Math.min(budget.jobs[kind].maxPerDay, budget.callsPerDay) : 0;
+  const pictureRewrites = budget.jobs.image_prompt.enabled
+    ? Math.min(postsPerDay, budget.jobs.image_prompt.maxPerDay)
+    : 0;
+  const textCalls = (on ? budget.callsPerDay : 0) + postsPerDay + pictureRewrites;
+  return {
+    posts: postsPerDay,
+    creatorMessages: limit("dm_reply"),
+    threads: limit("thread"),
+    fanMessages: limit("rewrite"),
+    textCalls,
+    pictures: postsPerDay,
+    tokens: textCalls * SLURP_TOKENS_PER_CALL_ESTIMATE,
+  };
 }
