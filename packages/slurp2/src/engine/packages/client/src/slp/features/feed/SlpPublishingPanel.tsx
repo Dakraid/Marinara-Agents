@@ -22,6 +22,7 @@ import {
   slurpPostsPerDayForPreset,
 } from "../../modules/creator/slp-activity-presets";
 import type { SlpBackstagePageProps } from "../backstage/slp-backstage-contract";
+import { SLURP_STORY_JOB_DEFAULTS, type SlurpStoryJobWeights } from "../../../../../shared/src/slp/slp-post-purpose.js";
 
 /** Publishing: how often posts go out, the schedule, carryover and post length. */
 export function SlpPublishingPanel(page: SlpBackstagePageProps) {
@@ -41,6 +42,19 @@ export function SlpPublishingPanel(page: SlpBackstagePageProps) {
     activityPreset,
     openRefresh,
   } = page;
+  // A Story job's weight in words: how often it comes up when it fits.
+  const storyJobWord = (value: number) =>
+    t(
+      value <= 0
+        ? "ui.slurp.settings.storyJobNever"
+        : value <= 2
+          ? "ui.slurp.settings.lifeMomentRateRarely"
+          : value <= 4
+            ? "ui.slurp.settings.lifeMomentRateSometimes"
+            : value <= 7
+              ? "ui.slurp.settings.lifeMomentRateOften"
+              : "ui.slurp.settings.storyJobMostly",
+    );
   const onOff = (value: boolean) => t(value ? "ui.slurp.settings.overview.on" : "ui.slurp.settings.overview.off");
   const cap = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
   return (
@@ -180,6 +194,34 @@ export function SlpPublishingPanel(page: SlpBackstagePageProps) {
           disabled={updateSettings.isPending || !settings.autoPostingScheduleEnabled || !creatorsDrawPictures}
           onChange={(value: SlurpSettings["storyRate"]) => void update("storyRate", value)}
         />
+        {/* Slice I (user): one slider per Story job, balanced by default. A job only comes up when it fits. */}
+        <Field
+          settingKey="storyJobs"
+          label={t("ui.slurp.settings.storyJobs")}
+          detail={t("ui.slurp.settings.storyJobsDetail")}
+          disabledReason={settings.storyRate === "off" ? t("ui.slurp.settings.hints.storiesOff") : null}
+          group
+          wide
+        >
+          <span className="grid gap-1 @xl:grid-cols-2 @xl:gap-x-6">
+            {(Object.keys(SLURP_STORY_JOB_DEFAULTS) as (keyof SlurpStoryJobWeights)[]).map((job) => (
+              <span key={job} className="grid gap-0.5" data-slurp-story-job={job}>
+                <span className="text-xs font-semibold text-[var(--slurp-muted,var(--muted-foreground))]">
+                  {t(`ui.slurp.settings.storyJob.${job}`)}
+                </span>
+                <RangeSetting
+                  label={t(`ui.slurp.settings.storyJob.${job}`)}
+                  value={settings.storyJobs[job]}
+                  min={0}
+                  max={10}
+                  format={storyJobWord}
+                  disabled={updateSettings.isPending || settings.storyRate === "off"}
+                  onSave={(value) => update("storyJobs", { ...settings.storyJobs, [job]: value })}
+                />
+              </span>
+            ))}
+          </span>
+        </Field>
         <Toggle
           settingKey="storyImagesEnabled"
           label={t("ui.slurp.settings.storyImagesEnabled")}

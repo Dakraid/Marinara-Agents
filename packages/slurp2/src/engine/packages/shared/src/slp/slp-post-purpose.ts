@@ -36,6 +36,8 @@ export type SlpPurpose = {
   campaignId?: string;
   /** When the drop is due (tease, countdown). */
   dropAt?: string;
+  /** tease: Slurp holds a slot at exactly `dropAt` (slice I), so the tease names that time. */
+  held?: boolean;
   /** poll_answer: the Story poll it answers and the option that won. */
   pollPostId?: string;
   answer?: string;
@@ -68,6 +70,7 @@ export function readSlpPurpose(metadata: Record<string, unknown> | null | undefi
     ...(str(value.teasePostId, 80) ? { teasePostId: str(value.teasePostId, 80) } : {}),
     ...(str(value.campaignId, 80) ? { campaignId: str(value.campaignId, 80) } : {}),
     ...(str(value.dropAt, 40) ? { dropAt: str(value.dropAt, 40) } : {}),
+    ...(value.held === true ? { held: true } : {}),
     ...(str(value.pollPostId, 80) ? { pollPostId: str(value.pollPostId, 80) } : {}),
     ...(str(value.answer, 120) ? { answer: str(value.answer, 120) } : {}),
     ...(str(value.answeredAt, 40) ? { answeredAt: str(value.answeredAt, 40) } : {}),
@@ -91,9 +94,25 @@ function hash(value: string): number {
 }
 
 /**
+ * How often each Story job comes up when it is available (`slurpStoryPurpose`). The player sets them
+ * with one slider per job (Settings › Posting, `storyJobs`, 0-10, 0 = never); the balanced default
+ * is 3b's 4 / 3 / 2 / 1.5 / 1.5 / 1.5 doubled.
+ */
+export const SLURP_STORY_JOB_DEFAULTS = {
+  countdown: 8,
+  newPost: 6,
+  comment: 4,
+  poll: 3,
+  earlier: 3,
+  plain: 3,
+} as const;
+export type SlurpStoryJobWeights = Record<keyof typeof SLURP_STORY_JOB_DEFAULTS, number>;
+
+/**
  * Votes per option on a Story poll: the real votes plus a small seeded crowd that grows over the
  * first twelve hours, the same on the server (who won) and in the viewer (the results sticker).
- * Small on purpose, so the player's own vote still counts for something.
+ * The player's vote decides (slice I, user): once they voted, the crowd leans their way, so their
+ * pick leads in the sticker and wins the follow-up post. Only the player's personas vote for real.
  */
 export function slpStoryPollTally(
   poll: { postId: string; createdAt: string; optionCount: number },
@@ -109,5 +128,14 @@ export function slpStoryPollTally(
   const counts = weights.map((weight) => Math.floor((crowd * weight) / total));
   let rest = crowd - counts.reduce((sum, count) => sum + count, 0);
   for (let index = 0; rest > 0; index = (index + 1) % counts.length, rest -= 1) counts[index]! += 1;
-  return counts.map((count, index) => count + (realVotes[index] ?? 0));
+  const real = counts.map((_, index) => realVotes[index] ?? 0);
+  const pick = real.indexOf(Math.max(0, ...real));
+  if (pick >= 0 && real[pick]! > 0) {
+    // The biggest part of the crowd goes with the player's pick, and it leads by at least one.
+    const most = counts.indexOf(Math.max(...counts));
+    [counts[pick], counts[most]] = [counts[most]!, counts[pick]!];
+    const rival = Math.max(...counts.map((count, index) => (index === pick ? -1 : count + real[index]!)));
+    if (counts[pick]! + real[pick]! <= rival) counts[pick] = rival - real[pick]! + 1;
+  }
+  return counts.map((count, index) => count + real[index]!);
 }

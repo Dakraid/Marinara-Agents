@@ -239,8 +239,12 @@ function run(days: number, over: Partial<SlurpCouplesInput> = {}, start: SlurpCo
 // --- 4. The player's steering ---------------------------------------------------------------------
 {
   const at = new Date(T0);
-  assert.equal(slurpSetUpCouple([], tess, kai, { at, id: "x" }), "orientation", "set up never beats a card");
-  assert.equal(slurpSetUpCouple([], mira, jonas, { at, id: "x" }), "taken");
+  // Slice I (user, 2026-09-28): the player can force a couple against a card; the card colors it.
+  const forcedType = slurpSetUpCouple([], tess, kai, { at, id: "x" });
+  assert.ok(Array.isArray(forcedType), "the player can set them up against a card");
+  assert.deepEqual(forcedType[0]!.forced, { misfit: "orientation", byId: "tess" }, "and the card that says no is kept");
+  const forcedTaken = slurpSetUpCouple([], mira, jonas, { at, id: "x" });
+  assert.ok(Array.isArray(forcedTaken) && forcedTaken[0]!.forced?.misfit === "taken");
   assert.equal(slurpSetUpCouple([], me, { ...kai, automatic: false }, { at, id: "x" }), "noHost");
   const setUp = slurpSetUpCouple([], mira, kai, { at, id: "p1" });
   assert.ok(Array.isArray(setUp) && setUp[0]!.stage === "sparks" && setUp[0]!.moments[0]!.kind === "flirt");

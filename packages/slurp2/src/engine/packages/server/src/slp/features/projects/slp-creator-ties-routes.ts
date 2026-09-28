@@ -15,7 +15,12 @@ import {
   type SlurpCreatorTies,
   type SlurpTieError,
 } from "../../modules/projects/slp-creator-ties.js";
-import { slurpAnswerDeal, slurpDealOpen, slurpDealReceipt } from "../../modules/economy/slp-brand-deals.js";
+import {
+  slurpAnswerDeal,
+  slurpDealOpen,
+  slurpDealOwesPost,
+  slurpDealReceipt,
+} from "../../modules/economy/slp-brand-deals.js";
 import { loadSlurpTieCreators, slurpRunsItself } from "./slp-creator-ties-service.js";
 import {
   slurpCoupleActive,
@@ -97,13 +102,14 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
           (rivalry) => rivalry.stageAt,
         ),
       ],
+      // `owesPost`: the player's own page took it and has not posted it yet; Studio reminds them.
       deals: [
         ...deals.filter(slurpDealOpen),
         ...newest(
           deals.filter((deal) => !slurpDealOpen(deal)),
           (deal) => deal.answeredAt ?? deal.offeredAt,
         ),
-      ],
+      ].map((deal) => ({ ...deal, owesPost: slurpDealOwesPost(deal, new Date()) })),
       blocked: ties.blocked,
     };
   }
@@ -221,7 +227,7 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
     return view(viewer);
   };
 
-  /** Set two Creators up: they start flirting when both cards allow it. */
+  /** Set two Creators up: they start flirting; against a card it happens anyway, colored by the card. */
   app.post("/slurp/ties/couples", async (req, reply) => {
     const parsed = z
       .object({ aId: z.string().trim().min(1), bId: z.string().trim().min(1) })

@@ -39,7 +39,7 @@ import {
 } from "../../modules/messages/slp-messaging.js";
 import { generateSlurpCommissionImage } from "./commissions/slp-commission-image-operation.js";
 import { slurpMessageMediaUrl } from "../../base/media/slp-media.js";
-import { resolveSlurpMediaOffer } from "../../modules/economy/slp-media-offer.js";
+import { resolveSlurpMediaOffer, slurpDmPictureSpicy } from "../../modules/economy/slp-media-offer.js";
 import { slurpDmSpiceLevel } from "../../modules/creators/slp-spice.js";
 import { resolveSlurpExplicitLevel } from "../../data/settings/slp-post-guidance-storage.js";
 import { slurpCreatorStateCanUseMedia } from "../../modules/creators/slp-creator-state.js";
@@ -446,6 +446,7 @@ export async function replyToSlurpMessage(
           rapportTier: thread.rapport.tier,
           subscribed,
           configuredPrice: messaging.ppvPrice,
+          spicy: slurpDmPictureSpicy(reply.image),
         });
         const creatorLevel = await resolveSlurpExplicitLevel(db, thread.creatorAccountId).catch(
           () => "suggestive" as const,
@@ -454,7 +455,8 @@ export async function replyToSlurpMessage(
           ? await generateSlurpCommissionImage(db, {
               creatorAccountId: thread.creatorAccountId,
               brief: `${reply.image.prompt}\nImage mode: ${reply.imageMode}`,
-              level: offer.price > 0 ? creatorLevel : slurpDmSpiceLevel(creatorLevel, subscribed),
+              // A free picture stays a tease (a subscriber's casual one too); a paid one goes as far as the Creator does.
+              level: offer.price > 0 ? creatorLevel : slurpDmSpiceLevel(creatorLevel, false),
             })
           : "unavailable";
         if (drawn !== "unavailable") {

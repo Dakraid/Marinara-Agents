@@ -31,7 +31,8 @@ export type SlurpCampaignStageStatus = (typeof SLURP_CAMPAIGN_STAGE_STATUSES)[nu
 /** A campaign that has not finished in four days has lost the moment it was selling. */
 export const SLURP_CAMPAIGN_MAX_AGE_MS = 4 * 24 * 60 * 60_000;
 
-const HOUR = 60 * 60_000;
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
 
 /** The stages a set opens, relative to the set. The set itself is due immediately. */
 export const SLURP_CAMPAIGN_TEMPLATE: readonly {
@@ -55,6 +56,51 @@ export const SLURP_TEASE_CAMPAIGN_TEMPLATE: typeof SLURP_CAMPAIGN_TEMPLATE = [
   { kind: "set", access: "locked", delayMs: 3 * HOUR },
   { kind: "callback", access: "", delayMs: 27 * HOUR },
 ];
+
+const NIGHT = (at: Date) => at.getHours() >= 23 || at.getHours() < 7;
+
+/**
+ * When a tease's drop goes up (slice I, user: the tease names an exact time and Slurp holds that
+ * slot): the first full hour at least `minGapMs` after the tease that is not in the night (23:00 to
+ * 07:00, local) and clear of this Creator's other posts and slots by their own spacing. Looks a day
+ * and a half ahead; past that it takes the first hour out of the night.
+ */
+export function slurpHeldDropTime(input: {
+  teaseAt: Date;
+  minGapMs: number;
+  /** This Creator's other posts and held slots (epoch ms). */
+  busy: readonly number[];
+  /** This Creator's own spacing between posts. */
+  spacingMs: number;
+}): Date {
+  const first = new Date(input.teaseAt.getTime() + Math.max(input.minGapMs, input.spacingMs));
+  if (first.getMinutes() || first.getSeconds() || first.getMilliseconds())
+    first.setHours(first.getHours() + 1, 0, 0, 0);
+  let fallback: Date | null = null;
+  for (let step = 0; step < 36; step += 1) {
+    const candidate = new Date(first.getTime() + step * HOUR);
+    if (NIGHT(candidate)) continue;
+    fallback ??= candidate;
+    if (input.busy.every((time) => Math.abs(time - candidate.getTime()) >= input.spacingMs)) return candidate;
+  }
+  return fallback ?? first;
+}
+
+/** The drop stage a slot was held for: a planned drop due exactly at the slot's time. */
+export function slurpHeldDropStage<T extends SlurpCampaignStageView>(
+  stages: readonly T[],
+  slotAt: Date | null | undefined,
+): T | null {
+  if (!slotAt) return null;
+  return (
+    stages.find(
+      (stage) =>
+        stage.kind === "set" &&
+        stage.status === "planned" &&
+        Math.abs(Date.parse(stage.dueAt) - slotAt.getTime()) < MINUTE,
+    ) ?? null
+  );
+}
 
 export type SlurpCampaignStageView = {
   id: string;

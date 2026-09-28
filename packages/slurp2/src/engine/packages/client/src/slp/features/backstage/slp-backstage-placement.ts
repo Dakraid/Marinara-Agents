@@ -118,6 +118,7 @@ export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBac
   flavourFromAgents: prompts("other agents", "long-term memory", "character tracker", "world state", "persona stats"),
   postPlanner: automation("general", "post ideas", "post planner", "beats", "subjects"),
   lifeMomentRate: automation("general", "daily life", "life moments", "everyday"),
+  storyJobs: automation("general", "story jobs", "what stories do", "countdown", "poll", "story mix"),
   sharedPreseed: content("storylines", "shared ideas", "world tick", "niche"),
   sharedWorldEvents: content("storylines", "slurp-wide events", "platform events"),
   enableImagePrompts: internal(automation("images", "image prompts")),

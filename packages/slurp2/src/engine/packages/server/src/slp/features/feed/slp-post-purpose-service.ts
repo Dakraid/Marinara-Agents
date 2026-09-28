@@ -1,5 +1,6 @@
 import type { DB } from "../../../db/connection.js";
 import { logger } from "../../../lib/logger.js";
+import { createSlurpStorage } from "../../data/slp-storage.js";
 import { slpStoryPollTally } from "../../../../../shared/src/slp/slp-post-purpose.js";
 import { readSlpPollFromMetadata } from "../../../../../shared/src/slp/slp-polls.js";
 import type { SlpCreatorSteering } from "../../../../../shared/src/slp/slp-creator-steering.js";
@@ -11,9 +12,13 @@ import {
   type SlurpPurposeRow,
 } from "../../data/feed/slp-purpose-storage.js";
 import { openSlurpCampaign, type SlurpCampaignStage } from "../../data/feed/slp-campaign-storage.js";
-import { SLURP_TEASE_CAMPAIGN_TEMPLATE } from "../../modules/feed/slp-campaign.js";
+import { SLURP_TEASE_CAMPAIGN_TEMPLATE, slurpHeldDropTime } from "../../modules/feed/slp-campaign.js";
+import { slurpCreatorPostingIntervalMs, slurpPacedPostsPerDay } from "../../modules/feed/slp-posting-interval.js";
+import { readSlurpCreatorPaceFactor } from "../../data/creators/slp-steering-storage.js";
+import { slpCreatorReserveFingerprintFor } from "../../data/creators/slp-source-resolve.js";
 import type { SlurpCanonAnchors } from "../../modules/feed/slp-post-beat.js";
 import {
+  SLURP_TEASE_DROP_DELAY_MS,
   slurpPollAnswerDue,
   slurpPollWinner,
   slurpStoryCandidates,
@@ -95,23 +100,74 @@ export async function openSlurpTease(
     at: Date;
     dueAt?: Date | null;
   },
-): Promise<{ campaignId: string; dropAt: string } | null> {
+): Promise<{ campaignId: string; dropAt: string; held: boolean } | null> {
   const waiting = input.stages.find((stage) => stage.kind === "set" && stage.status === "planned");
-  if (waiting) return { campaignId: waiting.campaignId, dropAt: waiting.dueAt };
+  if (waiting) return { campaignId: waiting.campaignId, dropAt: waiting.dueAt, held: false };
   try {
+    const teaseAt = input.dueAt ?? input.at;
+    // Slice I: the drop gets an exact hour and a slot of its own, so the tease can name the time.
+    // Without a held slot it is the next locked post after the usual delay (3b).
+    const heldAt = await holdSlurpDropSlot(db, input.creatorAccountId, teaseAt, input.at).catch((error: unknown) => {
+      logger.warn(error, "[slurp] Could not hold a slot for a drop; it comes with the next locked post");
+      return null;
+    });
+    const delay = heldAt ? heldAt.getTime() - teaseAt.getTime() : SLURP_TEASE_CAMPAIGN_TEMPLATE[1]!.delayMs;
     const campaignId = await openSlurpCampaign(db, {
       creatorAccountId: input.creatorAccountId,
       opportunityId: input.opportunityId,
       at: input.at,
       dueAt: input.dueAt,
-      template: SLURP_TEASE_CAMPAIGN_TEMPLATE,
+      template: SLURP_TEASE_CAMPAIGN_TEMPLATE.map((stage, index) =>
+        index === 0
+          ? stage
+          : { ...stage, delayMs: delay + (stage.delayMs - SLURP_TEASE_CAMPAIGN_TEMPLATE[1]!.delayMs) },
+      ),
     });
-    const from = (input.dueAt ?? input.at).getTime();
-    return { campaignId, dropAt: new Date(from + SLURP_TEASE_CAMPAIGN_TEMPLATE[1]!.delayMs).toISOString() };
+    return { campaignId, dropAt: new Date(teaseAt.getTime() + delay).toISOString(), held: Boolean(heldAt) };
   } catch (error) {
     logger.warn(error, "[slurp] Could not open a tease campaign; the tease stands on its own");
     return null;
   }
+}
+
+/**
+ * Book the drop's slot for this Creator at an exact hour (slice I). The reserve fills it like any
+ * slot; the planner gives it the drop and the reserve makes it locked (`slurpHeldDropStage`).
+ * Null when automatic posting is off or the slot could not be booked.
+ */
+async function holdSlurpDropSlot(db: DB, creatorAccountId: string, teaseAt: Date, at: Date): Promise<Date | null> {
+  const storage = createSlurpStorage(db);
+  const settings = await storage.getPostingSettings(at);
+  const account = await storage.getNoodlerAccountById(creatorAccountId);
+  if (!account || !settings.autoPostingScheduleEnabled || settings.postsPerDay <= 0) return null;
+  const spacingMs = slurpCreatorPostingIntervalMs(
+    slurpPacedPostsPerDay(settings.postsPerDay, await readSlurpCreatorPaceFactor(db, creatorAccountId)),
+  );
+  const busy = [
+    teaseAt.getTime(),
+    ...(await storage.listNoodlerPreparedPosts())
+      .filter(
+        (item: { creatorAccountId: string; state: string }) =>
+          item.creatorAccountId === creatorAccountId && (item.state === "scheduled" || item.state === "prepared"),
+      )
+      .map((item: { publishAt: string }) => Date.parse(item.publishAt)),
+    ...(await storage.listNoodlerPostsByAccount(creatorAccountId, 8)).map((post: { createdAt: string }) =>
+      Date.parse(post.createdAt),
+    ),
+  ];
+  const dropAt = slurpHeldDropTime({ teaseAt, minGapMs: SLURP_TEASE_DROP_DELAY_MS, busy, spacingMs });
+  const slotId = await storage.createNoodlerScheduledPost({
+    creatorAccountId,
+    publishAt: dropAt.toISOString(),
+    policyFingerprint: await slpCreatorReserveFingerprintFor(
+      db,
+      account,
+      settings,
+      await storage.resolveAccountSource(account),
+    ),
+    createdAt: at.toISOString(),
+  });
+  return slotId ? dropAt : null;
 }
 
 /**
@@ -179,7 +235,8 @@ export async function planSlurpStoryPurpose(
       poll: slurpStoryPoll(input.creatorAccountId, input.sequence, input.anchors, input.steering),
       at: input.at,
     });
-    return slurpStoryPurpose(input.creatorAccountId, input.sequence, candidates, input.at);
+    const { storyJobs } = await createSlurpStorage(db).getSettings();
+    return slurpStoryPurpose(input.creatorAccountId, input.sequence, candidates, input.at, storyJobs);
   } catch (error) {
     logger.warn(error, "[slurp] Could not plan a Story's purpose; it goes up as a moment");
     return null;

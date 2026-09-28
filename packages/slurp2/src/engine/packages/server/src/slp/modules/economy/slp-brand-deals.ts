@@ -23,8 +23,10 @@ const HOUR_MS = 60 * 60 * 1000;
 const ANSWER_AFTER_MS = 2 * HOUR_MS;
 const PLAYER_ANSWER_DAYS = 3;
 const MAX_OPEN_OFFERS = 4;
+/** A brand looks for a Creator in this share of the world's windows (slice I pace: ties ≈ 4 % of posts). */
+export const SLURP_DEAL_CHANCE = 60;
 /** The same brand does not come back to the same Creator for a while. */
-const BRAND_REST_DAYS = 30;
+const BRAND_REST_DAYS = 14;
 /** A refusal is worth a post for a few days, then it is old news. */
 const REFUSAL_NEWS_DAYS = 3;
 const KEEP_FINISHED = 40;
@@ -207,7 +209,10 @@ export function slurpAdvanceBrandDeals(deals: SlurpBrandDeal[], input: SlurpDeal
 
   const window = Math.floor(at.getTime() / SLURP_TIES_ADVANCE_MS);
   const roll = hash(`${window}:deal`) % 100;
-  if (next.filter(slurpDealOpen).length < MAX_OPEN_OFFERS && roll < Math.round(25 * Math.max(0, input.activity))) {
+  if (
+    next.filter(slurpDealOpen).length < MAX_OPEN_OFFERS &&
+    roll < Math.round(SLURP_DEAL_CHANCE * Math.max(0, input.activity))
+  ) {
     const busy = new Set(next.filter(slurpDealOpen).map((deal) => deal.creatorId));
     const offered = (creatorId: string, adId: string) =>
       next.some((deal) => deal.creatorId === creatorId && deal.adId === adId && days(deal.offeredAt) < BRAND_REST_DAYS);
@@ -275,8 +280,8 @@ export function slurpAnswerDeal(
   if (!deal) return "notFound";
   if (deal.status !== "offered") return "notOpen";
   const stamp = at.toISOString();
-  // ponytail: a page the player runs is paid on "yes"; Slurp does not write that page's posts, so
-  // the sponsored post is the player's to make. Track an owed post if players ask for it.
+  // A page the player runs is paid on "yes"; Slurp does not write that page's posts, so the sponsored
+  // post is the player's to make. Studio reminds them until it is up (`slurpDealOwesPost`).
   return deals.map((entry) =>
     entry.id !== id
       ? entry
@@ -284,6 +289,37 @@ export function slurpAnswerDeal(
         ? { ...entry, status: "done" as const, answeredAt: stamp, paidAt: stamp }
         : { ...entry, status: "declined" as const, decline: "player" as const, answeredAt: stamp, toldFans: true },
   );
+}
+
+/** How long Studio reminds the player of a sponsored post their own page owes. */
+export const SLURP_OWED_POST_DAYS = 14;
+
+/** A deal the player's own page took and has not posted yet (a Creator Slurp posts for settles its own). */
+export function slurpDealOwesPost(deal: SlurpBrandDeal, at: Date): boolean {
+  return (
+    deal.status === "done" &&
+    !deal.postId &&
+    !!deal.answeredAt &&
+    at.getTime() - Date.parse(deal.answeredAt) < SLURP_OWED_POST_DAYS * 24 * 60 * 60 * 1000
+  );
+}
+
+/** Whether this post of the page pays what it owes: after the yes, with #ad or the brand in it. */
+export function slurpPostPaysOwedDeal(
+  deal: SlurpBrandDeal,
+  post: { content: string; createdAt: string | Date },
+): boolean {
+  if (!deal.answeredAt || new Date(post.createdAt).getTime() < Date.parse(deal.answeredAt)) return false;
+  const text = post.content.toLocaleLowerCase();
+  return (
+    /(^|[^\p{L}\p{N}_])#ad\b/iu.test(post.content) ||
+    (deal.brand.length > 1 && text.includes(deal.brand.toLocaleLowerCase()))
+  );
+}
+
+/** The owed post went up: the reminder goes away. */
+export function slurpSettleOwedDeal(deals: SlurpBrandDeal[], id: string, postId: string): SlurpBrandDeal[] {
+  return deals.map((deal) => (deal.id === id && !deal.postId ? { ...deal, postId } : deal));
 }
 
 export function slurpPlanDeal(deals: SlurpBrandDeal[], id: string, at: Date): SlurpBrandDeal[] {

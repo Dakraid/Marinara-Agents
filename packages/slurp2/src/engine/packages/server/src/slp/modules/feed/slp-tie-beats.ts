@@ -15,6 +15,9 @@ import type { SlurpCouple } from "../projects/slp-creator-couples.js";
 import { slurpCoupleBeat } from "./slp-couple-beats.js";
 import type { SlurpBeat } from "./slp-post-beat.js";
 
+/** The collab partner's own post about it comes within this many days of the joint post, or not at all. */
+export const SLURP_COLLAB_ECHO_DAYS = 3;
+
 /** A beat from a tie, and what it claims once planned. */
 export type SlurpTieBeat = { beat: SlurpBeat & { tie: SlurpTieStamp } };
 
@@ -83,6 +86,30 @@ export function slurpTieBeat(input: {
     };
   }
 
+  // The partner posts their own side once, within a few days of the joint post (slice I pace).
+  const posted = ties.collabs.find(
+    (entry) =>
+      entry.status === "posted" &&
+      entry.partnerId === creatorId &&
+      !entry.echoed &&
+      entry.postedAt &&
+      input.at.getTime() - Date.parse(entry.postedAt) < SLURP_COLLAB_ECHO_DAYS * 86_400_000,
+  );
+  const host = posted ? names.get(posted.hostId) : undefined;
+  if (posted && host)
+    return {
+      beat: {
+        type: "social_moment",
+        anchorKind: "collab",
+        anchor: host,
+        line: `Your collab with ${host} is up on both your pages (${posted.idea}). Post your own side of it: a moment from behind the scenes, what you took from it, or a thank-you. Your own post, not a copy of the joint one.`,
+        cast: [host],
+        place: null,
+        ...heat,
+        tie: { kind: "collab", id: posted.id, partnerId: posted.hostId, echo: true },
+      },
+    };
+
   const deal = input.deals.find((entry) => entry.status === "accepted" && entry.creatorId === creatorId);
   if (deal) {
     const told = deal.copy ? ` What they told you about it: ${deal.copy.slice(0, 220)}` : "";
@@ -103,7 +130,7 @@ export function slurpTieBeat(input: {
   const couple = slurpCoupleBeat({ ...input, couples: input.couples ?? [] });
   if (couple) return { beat: { ...couple, ...heat } };
 
-  // Occasional: about one ordinary slot in three while a rivalry is on.
+  // Occasional: about one ordinary slot in two while a rivalry is on (slice I pace).
   // One post per stage each: a spat is news, not a series.
   const rivalry = input.ties.rivalries.find(
     (entry) =>
@@ -113,7 +140,7 @@ export function slurpTieBeat(input: {
   );
   const rivalId = rivalry ? (rivalry.fromId === creatorId ? rivalry.toId : rivalry.fromId) : null;
   const rival = rivalId ? names.get(rivalId) : undefined;
-  if (rivalry && rival && hash(`${rivalry.id}:${creatorId}:${input.sequence}`) % 3 === 0) {
+  if (rivalry && rival && hash(`${rivalry.id}:${creatorId}:${input.sequence}`) % 2 === 0) {
     // The one who was shaded only notices it now and then; the one who started it posts it.
     const quietTarget =
       rivalry.stage === "shade" && rivalry.toId === creatorId && hash(`${rivalry.id}:notice`) % 2 === 1;

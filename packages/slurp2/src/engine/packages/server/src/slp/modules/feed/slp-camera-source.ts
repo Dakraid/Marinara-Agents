@@ -32,7 +32,7 @@
 
 import { slurpWeightedPick } from "./slp-weighted.js";
 
-export const SLURP_CAMERA_SOURCES = ["selfie", "mirror", "tripod", "partner", "screenshot", "archive"] as const;
+export const SLURP_CAMERA_SOURCES = ["selfie", "mirror", "tripod", "partner", "screenshot", "archive", "desk"] as const;
 
 export type SlurpCameraSource = (typeof SLURP_CAMERA_SOURCES)[number];
 
@@ -72,6 +72,12 @@ const RULES: Record<SlurpCameraSource, CameraSourceRule> = {
     instruction:
       "Camera: none today. This is an older picture of theirs, so it does not match today's place, light, or clothes, and they know that.",
   },
+  // Slice I (user: more camera variety, fewer timer shots): a second way to shoot alone with the
+  // hands free, from where they already sit, the way a live stream or a video call looks.
+  desk: {
+    instruction:
+      "Camera: fixed at desk height straight in front of them, the look of a live stream or a video call. They sit facing it, lit by the screen or a small lamp, and the framing stays where it was set.",
+  },
 };
 
 /**
@@ -97,6 +103,7 @@ const PHOTO: Record<SlurpCameraSource, string> = {
   partner: "candid photo taken from a few steps away",
   screenshot: "still frame from a video, slight motion blur, soft focus",
   archive: "older snapshot from their own archive, slightly dated look",
+  desk: "seated, facing forward at desk height, soft screen glow on the face, stream-style framing",
 };
 
 export function slurpCameraSourcePhoto(source: SlurpCameraSource): string {
@@ -131,6 +138,8 @@ const FRAMINGS: Record<SlurpCameraSource, readonly string[]> = {
     "sitting, full body",
     "upper body, from front",
     "full body, looking away",
+    "kneeling, full body",
+    "full body, stretching",
   ],
   partner: [
     "upper body, from side",
@@ -143,6 +152,13 @@ const FRAMINGS: Record<SlurpCameraSource, readonly string[]> = {
   ],
   screenshot: ["upper body", "cowboy shot, dutch angle", "close-up, from side", "full body, mid-motion"],
   archive: ["upper body", "full body", "cowboy shot", "portrait", "upper body, from side"],
+  desk: [
+    "upper body",
+    "portrait, upper body",
+    "upper body, leaning in",
+    "upper body, head tilt",
+    "cowboy shot, sitting",
+  ],
 };
 
 /**
@@ -192,13 +208,16 @@ export function slurpPermittedCameraSources(options: { companyCanHoldCamera: boo
 // 0.2.79: the 7-day simulation drew a timer shot for 45 % of posts once the intent and effort
 // biases stacked on 25 (the new sameness after the selfies). Timer and hand-held now start even,
 // and the biases below bend less, so no camera takes more than about a quarter of a Creator's feed.
+// Slice I (user): timer shots at about 15-20 % with more camera variety. A planned shoot is no
+// longer mostly a timer: the desk camera is a second hands-free way to shoot alone.
 const WEIGHTS: Record<SlurpCameraSource, number> = {
   selfie: 22,
   mirror: 7,
-  tripod: 16,
+  tripod: 14,
   screenshot: 16,
   archive: 10,
   partner: 14,
+  desk: 11,
 };
 
 /**
@@ -217,19 +236,19 @@ const PREFERENCE_MULTIPLIER = 1.4;
  * picture says she held the phone. Effort says the same thing from the production side.
  */
 const INTENT_BIAS: Record<string, Partial<Record<SlurpCameraSource, number>>> = {
-  set: { selfie: 0.5, mirror: 0.9, tripod: 1.6, partner: 2, screenshot: 0.7 },
-  teaser: { tripod: 1.2, mirror: 1.2, selfie: 0.9 },
-  callback: { tripod: 1.3, selfie: 0.9 },
-  behind_the_scenes: { tripod: 1.2, screenshot: 1.6, selfie: 0.9 },
-  business: { selfie: 1.3, tripod: 0.6, partner: 0.5 },
-  casual: { screenshot: 1.2, tripod: 0.9 },
+  set: { selfie: 0.5, mirror: 0.9, tripod: 1.2, partner: 2, screenshot: 0.7, desk: 0.9 },
+  teaser: { tripod: 1.05, mirror: 1.2, selfie: 0.9, desk: 1.2 },
+  callback: { tripod: 1.1, selfie: 0.9, desk: 1.1 },
+  behind_the_scenes: { tripod: 1.05, screenshot: 1.6, selfie: 0.9, desk: 1.2 },
+  business: { selfie: 1.3, tripod: 0.6, partner: 0.5, desk: 1.4 },
+  casual: { screenshot: 1.2, tripod: 0.9, desk: 1.1 },
   appreciation: { selfie: 1.1, tripod: 0.9 },
 };
 
 const EFFORT_BIAS: Record<string, Partial<Record<SlurpCameraSource, number>>> = {
   low: { screenshot: 1.5, tripod: 0.7, partner: 0.8 },
   medium: {},
-  high: { selfie: 0.6, tripod: 1.5, partner: 1.6, screenshot: 0.8 },
+  high: { selfie: 0.6, tripod: 1.2, partner: 1.6, screenshot: 0.8 },
 };
 
 /**

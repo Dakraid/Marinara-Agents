@@ -29,7 +29,11 @@ import { topSlurpDemandTrend } from "../../data/feed/slp-demand-storage.js";
 import { eq } from "../../../db/file-query.js";
 import { slurpContinuityEvents } from "../../../db/schema/slurp.js";
 import { findSlurpReuse, loadSlurpReuse } from "../media/slp-media-contract.js";
-import { slurpCampaignStageIntent, slurpNextCampaignStage } from "../../modules/feed/slp-campaign.js";
+import {
+  slurpCampaignStageIntent,
+  slurpHeldDropStage,
+  slurpNextCampaignStage,
+} from "../../modules/feed/slp-campaign.js";
 import {
   completeSlurpCampaignStageFor,
   listOpenSlurpCampaignStages,
@@ -126,10 +130,14 @@ export async function planSlurpPost(
           return [];
         })
       : [];
+  // A slot Slurp held for a teased drop (slice I) runs that drop: the tease named this hour. It is
+  // the next stage even while its tease waits to go up; the player's idea and a promise still come first.
   const stage =
+    slurpHeldDropStage(stages, dueAt) ??
     (slotPlan
       ? stages.find((entry) => entry.status === "claimed" && entry.opportunityId === slotPlan.id)
-      : undefined) ?? slurpNextCampaignStage(stages, { at, access: request.access ?? "public", story: storyVariation });
+      : undefined) ??
+    slurpNextCampaignStage(stages, { at, access: request.access ?? "public", story: storyVariation });
   const forced =
     chosen ??
     (promise?.intent === "request" || promise?.intent === "teaser" ? promise.intent : undefined) ??

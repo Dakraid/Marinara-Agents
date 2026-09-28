@@ -442,7 +442,8 @@ assert.match(
   /chat: \{\n\s*subscribed: input\.subscribed,\n\s*player: input\.viewer\.kind === "persona" && !fanVoice/u,
 );
 const operation = server("features/messages/slp-message-operation.ts");
-assert.match(operation, /level: offer\.price > 0 \? creatorLevel : slurpDmSpiceLevel\(creatorLevel, subscribed\)/u);
+// Slice I (user): a free chat picture is a tease for everybody (a subscriber's casual one too); a paid one goes all the way.
+assert.match(operation, /level: offer\.price > 0 \? creatorLevel : slurpDmSpiceLevel\(creatorLevel, false\)/u);
 assert.match(
   server("data/creators/slp-flavour-source.ts"),
   /if \(input\.use === "comment" \|\| input\.use === "delivery"\) return \[\];/u,

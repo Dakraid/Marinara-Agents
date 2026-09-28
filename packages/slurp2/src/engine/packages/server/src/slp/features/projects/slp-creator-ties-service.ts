@@ -18,6 +18,7 @@ import {
   slurpAdvanceCreatorTies,
   slurpAgreeCollabInDm,
   slurpCollabPostIdsFor,
+  slurpEchoCollab,
   slurpPlanCollab,
   slurpSettleCollab,
   slurpTellRivalry,
@@ -26,10 +27,14 @@ import {
 import { readSlurpTieStamp } from "../../modules/projects/slp-tie-stamp.js";
 import {
   slurpAdvanceBrandDeals,
+  slurpDealOwesPost,
   slurpDealReceipt,
   slurpPlanDeal,
+  slurpPostPaysOwedDeal,
   slurpSettleDeal,
+  slurpSettleOwedDeal,
   slurpToldFansAboutDeal,
+  type SlurpBrandDeal,
   type SlurpDealAd,
 } from "../../modules/economy/slp-brand-deals.js";
 import { slurpTieBeat } from "../../modules/feed/slp-tie-beats.js";
@@ -157,9 +162,33 @@ function fromTies(ties: ReturnType<typeof slurpAdvanceCreatorTies>, at: Date) {
   };
 }
 
+/** A sponsored post the player's own page owed went up (#ad or the brand in it): the Studio reminder goes. */
+async function settleSlurpOwedPosts(db: DB, deals: readonly SlurpBrandDeal[], at: Date): Promise<void> {
+  const owed = deals.filter((deal) => slurpDealOwesPost(deal, at));
+  if (!owed.length) return;
+  const storage = createSlurpStorage(db);
+  const found: { id: string; postId: string }[] = [];
+  for (const deal of owed) {
+    const posts = await storage.listNoodlerPostsByAccount(deal.creatorId, 12);
+    const post = posts.find((entry: { id: string; content: string; createdAt: string }) =>
+      slurpPostPaysOwedDeal(deal, entry),
+    );
+    if (post) found.push({ id: deal.id, postId: post.id });
+  }
+  if (found.length)
+    await mutateSlurpCreatorTies(db, (document) => ({
+      document: {
+        ...document,
+        deals: found.reduce((next, entry) => slurpSettleOwedDeal(next, entry.id, entry.postId), document.deals),
+      },
+      result: null,
+    }));
+}
+
 /** Planned collabs and sponsored posts whose post went up: shown on both pages, fee paid. */
 async function settleSlurpTiePosts(db: DB, at: Date): Promise<void> {
   const { ties, deals, couples } = await readSlurpCreatorTiesDocument(db);
+  await settleSlurpOwedPosts(db, deals, at);
   const planned = [
     ...ties.collabs
       .filter((collab) => collab.status === "planned")
@@ -184,7 +213,7 @@ async function settleSlurpTiePosts(db: DB, at: Date): Promise<void> {
       const stamp = readSlurpTieStamp(post.metadata);
       if (stamp?.kind === "couple") {
         if (stamp.joint && !stamp.pageId) jointCouplePosts.push({ coupleId: stamp.id, postId: post.id });
-      } else if (stamp && !stamp.declined && !found.has(stamp.id)) found.set(stamp.id, post);
+      } else if (stamp && !stamp.declined && !stamp.echo && !found.has(stamp.id)) found.set(stamp.id, post);
     }
   }
   const settleCouples = jointCouplePosts.filter(
@@ -277,7 +306,9 @@ export async function planSlurpTieBeat(
             : document.couples,
         ties:
           tie.kind === "collab"
-            ? slurpPlanCollab(document.ties, tie.id, input.at)
+            ? tie.echo
+              ? slurpEchoCollab(document.ties, tie.id)
+              : slurpPlanCollab(document.ties, tie.id, input.at)
             : tie.kind === "rival"
               ? slurpTellRivalry(document.ties, tie.id, input.creatorId)
               : document.ties,

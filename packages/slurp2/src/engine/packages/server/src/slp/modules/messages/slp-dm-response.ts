@@ -33,7 +33,11 @@ export const slurpDmReplySchema = z.object({
   stateSignals: z.array(z.enum(SLURP_CREATOR_STATE_SIGNALS)).max(3).optional().catch(undefined),
   sharePost: z.number().int().min(0).max(4).optional().catch(undefined),
   image: z
-    .object({ prompt: z.string().trim().min(3).max(1000), caption: z.string().trim().max(500).nullish() })
+    .object({
+      prompt: z.string().trim().min(3).max(1000),
+      caption: z.string().trim().max(500).nullish(),
+      spicy: z.boolean().optional().catch(undefined),
+    })
     .nullable()
     .optional()
     .catch(undefined),
@@ -71,7 +75,7 @@ export type SlurpDmReply = {
   remember: SlurpNoteOperation[];
   stateSignals: SlurpCreatorStateSignal[];
   sharePost?: number;
-  image?: { prompt: string; caption: string };
+  image?: { prompt: string; caption: string; spicy?: boolean };
   media?: {
     kind: "post" | "generated_image";
     postIndex?: number;
@@ -136,7 +140,13 @@ export function readSlurpDmReply(value: unknown): SlurpDmReply {
     stateSignals: parsed.data.stateSignals ?? [],
     ...(parsed.data.sharePost === undefined ? {} : { sharePost: parsed.data.sharePost }),
     ...(parsed.data.image?.prompt
-      ? { image: { prompt: parsed.data.image.prompt, caption: parsed.data.image.caption?.trim() ?? "" } }
+      ? {
+          image: {
+            prompt: parsed.data.image.prompt,
+            caption: parsed.data.image.caption?.trim() ?? "",
+            ...(parsed.data.image.spicy === undefined ? {} : { spicy: parsed.data.image.spicy }),
+          },
+        }
       : {}),
     ...(parsed.data.media?.kind
       ? {

@@ -33,6 +33,7 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
     "nightQuiet",
     "postPlanner",
     "lifeMomentRate",
+    "storyJobs",
     "teaserRate",
   ],
   // Carryover is about Engine chats, so it resets with the Connections page it lives on.

@@ -82,7 +82,10 @@ export function SlpCouplesSection({
         {couples.map((couple) => {
           const live = couple.stage !== "split";
           const pageOpen = Boolean(couple.page && !couple.page.closedAt);
-          const line = momentLine(couple, name);
+          const forced = couple.forced
+            ? t(`ui.slurp.ties.couple.forced.${couple.forced.misfit}`, { name: name(couple.forced.byId) })
+            : "";
+          const line = [momentLine(couple, name), forced].filter(Boolean).join(" · ");
           const when = formatRelativeTime(couple.moments.at(-1)?.at ?? couple.stageAt, i18n.language);
           return (
             <li key={couple.id} className={rowClass} data-slurp-couple={couple.stage}>

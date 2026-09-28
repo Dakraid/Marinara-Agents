@@ -50,6 +50,8 @@ export type SlurpTiesDeal = {
   answeredAt: string | null;
   /** The sponsored post; none when the player took the deal for their own page. */
   postId: string | null;
+  /** The player's own page took it and has not posted it yet (Studio reminds them). */
+  owesPost?: boolean;
 };
 export type SlurpTiesCoupleStage = "sparks" | "dating" | "together" | "rocky" | "split";
 export type SlurpTiesCouple = {
@@ -65,6 +67,8 @@ export type SlurpTiesCouple = {
   reunions: number;
   moments: { id: string; kind: string; at: string; detail: string; withId?: string; fromId?: string }[];
   page: { accountId: string; openedAt: string; closedAt: string | null } | null;
+  /** Set up by the player against a card: whose card, and what it says. */
+  forced?: { misfit: "taken" | "notInto" | "noDating" | "orientation"; byId: string };
 };
 export type SlurpCoupleSteer = "date" | "drama" | "patchUp" | "breakUp" | "reunite";
 

@@ -8,11 +8,12 @@
  *
  * ## The rules
  *
- * - **Only where both cards allow it.** A Creator whose card already has a partner is taken (unless
+ * - **Only where both cards allow it (for the world).** A Creator whose card already has a partner is taken (unless
  *   that partner is the other Creator: then the cards made them a couple). A card that never dates,
  *   is aromantic or asexual, or whose stated orientation does not match the other one's gender is
- *   never paired. The world only starts a couple with some chemistry (a shared niche, a romantic
- *   card); the player can set anyone up who is free, and chemistry decides whether it sticks.
+ *   never paired by the world. The world only starts a couple with some chemistry (a shared niche,
+ *   a romantic card); the player can set anyone up who is free, and chemistry decides whether it
+ *   sticks. Against a card (slice I) it sticks anyway, and the card colors it (`slp-couple-words.ts`).
  * - **Realistic pace.** Sparks (flirting) → dating → together, with dates, anniversaries, jealousy,
  *   fights, making up, breakups and now and then getting back together. Seeded per couple, so the
  *   same world moves the same way.
@@ -26,6 +27,12 @@ import { SLURP_NEVER_PATTERN } from "../feed/slp-life-moments.js";
 import { DAY_MS, clampText, hash } from "./slp-project.js";
 import { slurpCollabFit, slurpPairKey, slurpSharedNiche, type SlurpTieCreator } from "./slp-creator-ties.js";
 import { readSlurpTieStamp } from "./slp-tie-stamp.js";
+import {
+  SLURP_COUPLE_DATES as DATES,
+  SLURP_COUPLE_FIGHTS as FIGHTS,
+  SLURP_COUPLE_JEALOUSY as JEALOUSY,
+  slurpForcedCoupleLine,
+} from "./slp-couple-words.js";
 
 const HOUR_MS = 60 * 60 * 1000;
 /** Couples active at once that the world started on its own; the player's and the cards' do not count. */
@@ -98,7 +105,14 @@ export type SlurpCouple = {
   /** Joint posts that show on both pages (`slp-tie-stamp.ts`, kind `couple`). */
   postIds: string[];
   page: SlurpCouplePage | null;
+  /**
+   * The player put them together against a card (slice I): what the card says, and whose card. The
+   * couple happens, and the card colors how it goes (complicated, reluctant, awkward).
+   */
+  forced?: SlurpCoupleForced;
 };
+
+export type SlurpCoupleForced = { misfit: Exclude<SlurpCoupleMisfit, "same" | "busy">; byId: string };
 
 export const slurpCoupleActive = (couple: SlurpCouple) => couple.stage !== "split";
 export const slurpCoupleOther = (couple: SlurpCouple, id: string) =>
@@ -178,6 +192,28 @@ const neverDates = (creator: SlurpTieCreator) =>
 
 export type SlurpCoupleFit = { fits: boolean; misfit: SlurpCoupleMisfit | null; chemistry: number; cards: boolean };
 
+/** Whose card says no to this pair, and why: the first of the two that does. Null when both cards allow it. */
+export function slurpCoupleMisfitOf(a: SlurpTieCreator, b: SlurpTieCreator): SlurpCoupleForced | null {
+  const cards = cardNames(a, b) || cardNames(b, a) || textNames(a, b) || textNames(b, a);
+  const pairs = [
+    [a, b],
+    [b, a],
+  ] as const;
+  const first = (
+    misfit: SlurpCoupleForced["misfit"],
+    test: (self: SlurpTieCreator, other: SlurpTieCreator) => boolean,
+  ) => {
+    const hit = pairs.find(([self, other]) => test(self, other));
+    return hit ? { misfit, byId: hit[0].id } : null;
+  };
+  return (
+    (cards ? null : first("taken", (self) => (self.cardPartners ?? []).length > 0)) ??
+    first("notInto", (self) => NOT_INTO_ANYONE.test(self.text)) ??
+    first("noDating", neverDates) ??
+    first("orientation", (self, other) => !into(self, other))
+  );
+}
+
 /**
  * Whether these two could be a couple without making either less themselves. `cards` is true when a
  * card names the other one as their partner already. Chemistry: a shared tag counts 2, a shared
@@ -186,11 +222,9 @@ export type SlurpCoupleFit = { fits: boolean; misfit: SlurpCoupleMisfit | null; 
 export function slurpCoupleFit(a: SlurpTieCreator, b: SlurpTieCreator): SlurpCoupleFit {
   const no = (misfit: SlurpCoupleMisfit) => ({ fits: false, misfit, chemistry: 0, cards: false });
   if (a.id === b.id) return no("same");
+  const misfit = slurpCoupleMisfitOf(a, b);
+  if (misfit) return no(misfit.misfit);
   const cards = cardNames(a, b) || cardNames(b, a) || textNames(a, b) || textNames(b, a);
-  if (!cards && [a, b].some((creator) => (creator.cardPartners ?? []).length > 0)) return no("taken");
-  if ([a, b].some((creator) => NOT_INTO_ANYONE.test(creator.text))) return no("notInto");
-  if ([a, b].some(neverDates)) return no("noDating");
-  if (!into(a, b) || !into(b, a)) return no("orientation");
   const niche = slurpSharedNiche(a, b);
   const chemistry =
     niche.tags.length * 2 + niche.interests.length + [a, b].filter((creator) => ROMANTIC.test(creator.text)).length;
@@ -200,6 +234,7 @@ export function slurpCoupleFit(a: SlurpTieCreator, b: SlurpTieCreator): SlurpCou
 // ─── Storage shape ──────────────────────────────────────────────────────────────────────────────
 
 const STAGES: readonly SlurpCoupleStage[] = ["sparks", "dating", "together", "rocky", "split"];
+const FORCED: readonly SlurpCoupleForced["misfit"][] = ["taken", "notInto", "noDating", "orientation"];
 const KINDS: readonly SlurpCoupleMomentKind[] = [
   "flirt",
   "date",
@@ -265,40 +300,18 @@ export function readSlurpCouples(raw: unknown): SlurpCouple[] {
           page && pageAccount && date(page.openedAt)
             ? { accountId: pageAccount, openedAt: date(page.openedAt)!, closedAt: date(page.closedAt) }
             : null,
+        ...(() => {
+          const forced = record(item.forced);
+          const misfit = FORCED.find((entry) => entry === forced?.misfit);
+          const byId = clampText(forced?.byId, 128);
+          return misfit && (byId === aId || byId === bId) ? { forced: { misfit, byId } } : {};
+        })(),
       },
     ];
   });
 }
 
 // ─── The world clock ────────────────────────────────────────────────────────────────────────────
-
-const DATES = [
-  "a late dinner at a place neither of you had tried",
-  "a long walk that ended somewhere you did not plan",
-  "cooking together, badly, and laughing about it",
-  "a movie night that turned into talking until three",
-  "a day trip on a whim",
-  "breakfast in bed and a very slow morning",
-  "an arcade night with a lot of trash talk",
-  "a picnic with too much food",
-  "a rainy afternoon in a tiny café",
-  "a night market and one bite of everything",
-] as const;
-
-const JEALOUSY = [
-  "someone keeps flirting with them in the comments",
-  "an ex of theirs popped up in the comments",
-  "they were very friendly with a fan on a live",
-] as const;
-
-const FIGHTS = [
-  "how little time you two get together lately",
-  "whether to post about the relationship at all",
-  "something one of you said that landed wrong",
-  "who forgot what, again",
-  "money, and who pays for what",
-  "plans one of you cancelled last minute",
-] as const;
 
 /** Days on a stage before it moves on. Seeded per couple and stage visit. */
 function stageDays(couple: SlurpCouple): number {
@@ -428,7 +441,8 @@ function advanceCouple(
     if (!due) return couple;
     // Chemistry decides whether flirting turns into dating: 45 % with nothing shared, up to 90 %.
     const chemistry = slurpCoupleFit(a, b).chemistry;
-    const sticks = roll % 100 < Math.min(90, 45 + 15 * chemistry) || couple.origin === "storyline";
+    const sticks =
+      roll % 100 < Math.min(90, 45 + 15 * chemistry) || couple.origin === "storyline" || Boolean(couple.forced);
     return sticks
       ? withMoment(
           { ...couple, stage: "dating", stageAt: stamp },
@@ -584,8 +598,8 @@ export function slurpGetBackTogether(couple: SlurpCouple, at: Date): SlurpCouple
 export type SlurpCoupleError = SlurpCoupleMisfit | "notFound" | "notOpen" | "noHost" | "pageOpen";
 
 /**
- * The player sets two Creators up: they start flirting now when both cards allow it. Chemistry then
- * decides whether it becomes more. When a card already names the other as their partner, they
+ * The player sets two Creators up: they start flirting now. Chemistry then decides whether it
+ * becomes more; a pair the player forced against a card (`forced`) sticks, awkwardly. When a card already names the other as their partner, they
  * start together (their shared page can open at once). A page the player runs said yes by picking it.
  */
 export function slurpSetUpCouple(
@@ -596,14 +610,21 @@ export function slurpSetUpCouple(
 ): SlurpCouple[] | SlurpCoupleError {
   if (!a.automatic && !b.automatic) return "noHost";
   const fit = slurpCoupleFit(a, b);
-  if (!fit.fits) return fit.misfit ?? "notInto";
+  if (fit.misfit === "same") return "same";
   if (slurpCoupleFor(couples, a.id) || slurpCoupleFor(couples, b.id)) return "busy";
+  // Against a card (slice I, user): it happens anyway, and the card colors how it goes.
+  const forced = fit.fits ? null : slurpCoupleMisfitOf(a, b);
   // Partners on their cards are together already, like the couples the cards make on their own:
   // starting them at "sparks" told both "nothing is official" and kept their shared page shut.
-  return [
-    ...couples,
-    newSlurpCouple(input.id, a.id, b.id, "player", input.at.toISOString(), fit.cards ? "together" : "sparks"),
-  ];
+  const couple = newSlurpCouple(
+    input.id,
+    a.id,
+    b.id,
+    "player",
+    input.at.toISOString(),
+    fit.cards ? "together" : "sparks",
+  );
+  return [...couples, forced ? { ...couple, forced } : couple];
 }
 
 export type SlurpCoupleSteer = "date" | "drama" | "patchUp" | "breakUp" | "reunite";
@@ -643,7 +664,7 @@ export function slurpSteerCouple(
     const b = byId.get(couple.bId);
     if (!a || !b) return "notFound";
     const fit = slurpCoupleFit(a, b);
-    if (!fit.fits) return fit.misfit ?? "notInto";
+    if (!fit.fits && !couple.forced) return fit.misfit ?? "notInto";
     if (
       couples.some(
         (entry) =>
@@ -737,22 +758,30 @@ export function slurpRelationshipLine(
   if (!partner) return "";
   const days = Math.max(0, Math.round((at.getTime() - Date.parse(couple.stageAt)) / 86_400_000));
   const trouble = [...couple.moments].reverse().find((moment) => moment.kind === "fight" || moment.kind === "jealous");
+  // A couple the player forced against a card: the card colors how it feels (slice I).
+  const tone = slurpCoupleActive(couple) ? slurpForcedCoupleLine(couple, creatorId, partner) : "";
+  const colored = (line: string) => (tone ? `${line} ${tone}` : line);
   if (withThem) {
-    if (couple.stage === "sparks") return `You and ${partner} have been flirting on Slurp lately. Nothing is official.`;
-    if (couple.stage === "dating") return `You and ${partner} are dating. It is new, and not official in public yet.`;
-    if (couple.stage === "together") return `${partner} is your partner: you two are together, and your fans know.`;
+    if (couple.stage === "sparks")
+      return colored(`You and ${partner} have been flirting on Slurp lately. Nothing is official.`);
+    if (couple.stage === "dating")
+      return colored(`You and ${partner} are dating. It is new, and not official in public yet.`);
+    if (couple.stage === "together")
+      return colored(`${partner} is your partner: you two are together, and your fans know.`);
     if (couple.stage === "rocky")
-      return `${partner} is your partner, but things are rocky between you right now${trouble?.detail ? ` (${trouble.detail})` : ""}.`;
+      return colored(
+        `${partner} is your partner, but things are rocky between you right now${trouble?.detail ? ` (${trouble.detail})` : ""}.`,
+      );
     return couple.ending === "fizzled"
       ? `You and ${partner} flirted for a while, and it went nowhere.`
       : `${partner} is your ex. You broke up ${days <= 1 ? "just now" : `${days} days ago`}.`;
   }
   if (couple.stage === "sparks")
-    return `You have a thing for ${partner}, another Creator on Slurp. Nothing is official.`;
+    return colored(`You have a thing for ${partner}, another Creator on Slurp. Nothing is official.`);
   const what =
     couple.stage === "dating"
       ? `You are dating ${partner}, another Creator on Slurp; it is still new.`
       : `You are with ${partner}, another Creator on Slurp.`;
   const rocky = couple.stage === "rocky" ? " Things are rocky between you two right now." : "";
-  return `${what}${rocky} They are part of your life, not the topic of everything you write.`;
+  return colored(`${what}${rocky}`) + " They are part of your life, not the topic of everything you write.";
 }

@@ -2,7 +2,8 @@ import type { DB } from "../../../../db/connection.js";
 import { slpIsBackgroundBusy, slpAdmissionRejectionCause } from "../../../base/host/slp-admission.js";
 import { recordSlurpContinuityEvent } from "../../../data/continuity/slp-continuity-storage.js";
 import { slurpContinuityIdentityOf } from "../../../modules/continuity/slp-continuity-rules.js";
-import { completeSlurpCampaignStageFor } from "../../../data/feed/slp-campaign-storage.js";
+import { completeSlurpCampaignStageFor, listOpenSlurpCampaignStages } from "../../../data/feed/slp-campaign-storage.js";
+import { slurpHeldDropStage } from "../../../modules/feed/slp-campaign.js";
 import { createConnectionsStorage } from "../../../../services/storage/connections.storage.js";
 import { resolveSlurpTextConnection } from "../../../base/identity/slp-connection.js";
 import { resolveCreatorImageConnectionId } from "../../../base/media/slp-image-connections.js";
@@ -216,11 +217,16 @@ export async function prepareNextCreatorReservePost(db: DB, at = new Date()): Pr
       return "skipped" as const;
     }
     try {
+      const heldDrop = slurpHeldDropStage(
+        await listOpenSlurpCampaignStages(db, selectedAccount.id, at).catch(() => []),
+        new Date(selectedPublishAt),
+      );
       let payload = await generateCreatorPost(db, {
         account: selectedAccount,
         connection,
         prepareOnly: true,
         slotId: selectedSlotId,
+        ...(heldDrop ? { allowStory: false } : {}),
         admissionMode: {
           kind: "background",
           beforeAttempt: async () => {
@@ -237,7 +243,8 @@ export async function prepareNextCreatorReservePost(db: DB, at = new Date()): Pr
           // always `caption`, and the constant guide read as player direction, which makes the
           // generator stand its rotating variation down. The guide also said nothing the system prompt
           // does not already say.
-          access: await resolveSlurpAutomaticPostAccess(noodle, selectedAccount.id),
+          // A slot held for a teased drop is a locked feed post: the drop is for subscribers (slice I).
+          access: heldDrop ? "locked" : await resolveSlurpAutomaticPostAccess(noodle, selectedAccount.id),
         },
         publicationTime: new Date(selectedPublishAt),
         generatedAt: at,

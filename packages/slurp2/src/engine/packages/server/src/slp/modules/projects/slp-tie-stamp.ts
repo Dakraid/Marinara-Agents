@@ -28,6 +28,8 @@ export type SlurpTieStamp = {
   /** A post on the couple's shared page: that page is its author; `hostId` wrote it. */
   pageId?: string;
   hostId?: string;
+  /** The collab partner's own post about it: their post alone, no split, not the joint post. */
+  echo?: boolean;
 };
 
 export function readSlurpTieStamp(metadata: Record<string, unknown> | null | undefined): SlurpTieStamp | null {
@@ -48,5 +50,6 @@ export function readSlurpTieStamp(metadata: Record<string, unknown> | null | und
     ...(value.joint === true ? { joint: true } : {}),
     ...(typeof value.pageId === "string" ? { pageId: value.pageId } : {}),
     ...(typeof value.hostId === "string" ? { hostId: value.hostId } : {}),
+    ...(value.echo === true ? { echo: true } : {}),
   };
 }

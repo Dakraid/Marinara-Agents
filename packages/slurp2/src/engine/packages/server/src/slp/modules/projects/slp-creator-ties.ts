@@ -39,8 +39,12 @@ const PLAYER_ANSWER_DAYS = 4;
 export const SLURP_TIE_PLAN_STALE_DAYS = 5;
 const MAX_OPEN_COLLABS = 3;
 const MAX_ACTIVE_RIVALRIES = 2;
-const COLLAB_REST_DAYS = 14;
-const RIVAL_REST_DAYS = 21;
+// Pace (slice I, user: ties ≈ 4 % of posts, was 1.5 %): a pair rests a week between collabs, and
+// a rivalry pair ten days; the world looks for a collab / a rivalry in about half / a quarter of its windows.
+const COLLAB_REST_DAYS = 7;
+const RIVAL_REST_DAYS = 10;
+export const SLURP_COLLAB_CHANCE = 80;
+export const SLURP_RIVAL_CHANCE = 35;
 const KEEP_FINISHED = 40;
 
 /** A Creator as far as ties go. `text` is the card + anchors + tags fit text (`readSlurpCreatorFitText`). */
@@ -78,6 +82,8 @@ export type SlurpCollab = {
   postId: string | null;
   postedAt: string | null;
   decline: SlurpCollabDecline | null;
+  /** The partner posted their own side of it (slice I: both pages post about a collab, like real people). */
+  echoed?: boolean;
 };
 
 export type SlurpRivalryStage = "shade" | "feud" | "cooling" | "over";
@@ -313,6 +319,7 @@ export function readSlurpCreatorTies(raw: unknown): SlurpCreatorTies {
         postId: clampText(item.postId, 128) || null,
         postedAt: date(item.postedAt),
         decline: DECLINES.includes(item.decline as SlurpCollabDecline) ? (item.decline as SlurpCollabDecline) : null,
+        ...(item.echoed === true ? { echoed: true } : {}),
       },
     ];
   });
@@ -505,7 +512,7 @@ export function slurpAdvanceCreatorTies(ties: SlurpCreatorTies, input: SlurpTies
 
   // Now and then somebody reaches out. The smaller Creator asks the bigger one, like on a real app.
   // ponytail: every pair is scored (n² over Creators); fine for dozens, index by niche past a few hundred.
-  if (collabs.filter(slurpCollabOpen).length < MAX_OPEN_COLLABS && chance("collab", 30)) {
+  if (collabs.filter(slurpCollabOpen).length < MAX_OPEN_COLLABS && chance("collab", SLURP_COLLAB_CHANCE)) {
     const options = pairs(input.creators)
       .filter(([a, b]) => (a.automatic || b.automatic) && !busyIds.has(a.id) && !busyIds.has(b.id))
       .filter(([a, b]) => !blocked.has(slurpPairKey(a.id, b.id)) && !rivals.has(a.id) && !rivals.has(b.id))
@@ -526,7 +533,7 @@ export function slurpAdvanceCreatorTies(ties: SlurpCreatorTies, input: SlurpTies
   }
 
   // Rarely, somebody throws shade. Only where the cards say it would happen.
-  if (rivalries.filter(slurpRivalryActive).length < MAX_ACTIVE_RIVALRIES && chance("rival", 10)) {
+  if (rivalries.filter(slurpRivalryActive).length < MAX_ACTIVE_RIVALRIES && chance("rival", SLURP_RIVAL_CHANCE)) {
     const options = pairs(input.creators)
       .flatMap(([a, b]) => [
         [a, b],
@@ -729,6 +736,11 @@ export function slurpPlanCollab(ties: SlurpCreatorTies, id: string, at: Date): S
   return update(ties, id, { status: "planned", plannedAt: at.toISOString() });
 }
 
+/** The partner's own post about the collab is planned: once is enough. */
+export function slurpEchoCollab(ties: SlurpCreatorTies, id: string): SlurpCreatorTies {
+  return update(ties, id, { echoed: true });
+}
+
 /** The joint post went up: it now shows on the partner's page too. */
 export function slurpSettleCollab(ties: SlurpCreatorTies, id: string, post: { id: string; createdAt: string }) {
   const collab = ties.collabs.find((entry) => entry.id === id);
@@ -752,7 +764,9 @@ export function slurpPostIncomeParts(
   const stamp = readSlurpTieStamp(post.metadata);
   // A joint couple post splits like a collab; a post on a couple's shared page pays that page, whose
   // earnings go half to each (`slurpCouplePageSplit`).
-  const joint = stamp?.kind === "collab" || (stamp?.kind === "couple" && stamp.joint === true && !stamp.pageId);
+  // The partner's own side of a collab (`echo`) is their post alone.
+  const joint =
+    (stamp?.kind === "collab" && !stamp.echo) || (stamp?.kind === "couple" && stamp.joint === true && !stamp.pageId);
   if (!joint || !stamp.partnerId || stamp.partnerId === post.authorAccountId)
     return [{ creatorId: post.authorAccountId, amount }];
   const parts = slurpCollabIncomeParts(amount, stamp.hostShare ?? SLURP_COLLAB_DEFAULT_SHARE);

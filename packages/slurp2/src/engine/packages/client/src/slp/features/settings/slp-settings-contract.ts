@@ -102,6 +102,8 @@ export type SlurpSettings = {
   flavourFromAgents: boolean;
   postPlanner: "classic" | "beats";
   lifeMomentRate: "rarely" | "sometimes" | "often";
+  /** One weight per Story job (0-10, 0 = never); `SLURP_STORY_JOB_DEFAULTS` is balanced. */
+  storyJobs: { countdown: number; newPost: number; comment: number; poll: number; earlier: number; plain: number };
   sharedPreseed: boolean;
   sharedWorldEvents: boolean;
   enableImagePrompts: boolean;

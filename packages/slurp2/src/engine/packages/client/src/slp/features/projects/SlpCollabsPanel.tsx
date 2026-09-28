@@ -406,7 +406,9 @@ export function SlpBrandOffers({ personaId, creatorId }: { personaId: string; cr
   const { data } = useSlurpTies(personaId);
   const { answerDeal } = useSlurpTiesMutations(personaId);
   const offers = (data?.deals ?? []).filter((deal) => deal.creatorId === creatorId && deal.status === "offered");
-  if (!offers.length) return null;
+  const owed = (data?.deals ?? []).filter((deal) => deal.creatorId === creatorId && deal.owesPost);
+  if (!offers.length && !owed.length) return null;
+  const heading = offers.length ? "ui.slurp.ties.offers" : "ui.slurp.ties.owed.heading";
   const answer = (deal: SlurpTiesDeal, accept: boolean) =>
     answerDeal.mutate(
       { id: deal.id, accept },
@@ -416,40 +418,61 @@ export function SlpBrandOffers({ personaId, creatorId }: { personaId: string; cr
       },
     );
   return (
-    <section className="space-y-2" aria-label={t("ui.slurp.ties.offers")} data-slurp-brand-offers>
-      <h3 className={cn(SLP_EYEBROW_CLASS, "px-1")}>{t("ui.slurp.ties.offers")}</h3>
-      <ul className={SLP_GROUP_CLASS}>
-        {offers.map((deal) => (
-          <li key={deal.id} className="flex flex-col gap-2 px-4 py-3">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className={cn(SLP_TYPE.body, "min-w-0 font-semibold [overflow-wrap:anywhere]")}>
-                {t("ui.slurp.ties.offerTitle", { brand: deal.brand, product: deal.product })}
+    <section className="space-y-2" aria-label={t(heading)} data-slurp-brand-offers>
+      <h3 className={cn(SLP_EYEBROW_CLASS, "px-1")}>{t(heading)}</h3>
+      {owed.length > 0 && (
+        <ul className={SLP_GROUP_CLASS} data-slurp-owed-posts>
+          {owed.map((deal) => (
+            <li key={deal.id} className="flex items-start gap-3 px-4 py-3" data-slurp-owed-post>
+              <span className="mt-0.5 shrink-0 text-[var(--slurp-accent)]">
+                <SlpSparkleGlyph size={16} aria-hidden="true" />
               </span>
-              <span className={cn(SLP_TYPE.body, "shrink-0 font-bold tabular-nums")}>
-                <SlpCoinText>{t("ui.slurp.ties.fee", { count: deal.fee })}</SlpCoinText>
-              </span>
-            </div>
-            {deal.copy && <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>“{deal.copy}”</p>}
-            <div className="flex gap-2">
-              <SlpPrimaryButton
-                disabled={answerDeal.isPending}
-                onClick={() => answer(deal, true)}
-                className="min-h-11 flex-1 px-4 text-sm"
-              >
-                {t("ui.slurp.ties.offerYes")}
-              </SlpPrimaryButton>
-              <SlpButton
-                variant="quiet"
-                disabled={answerDeal.isPending}
-                onClick={() => answer(deal, false)}
-                className="min-h-11 flex-1 px-4 text-sm"
-              >
-                {t("ui.slurp.ties.offerNo")}
-              </SlpButton>
-            </div>
-          </li>
-        ))}
-      </ul>
+              <div className="min-w-0">
+                <p className={cn(SLP_TYPE.body, "font-semibold [overflow-wrap:anywhere]")}>
+                  {t("ui.slurp.ties.owed.title", { brand: deal.brand })}
+                </p>
+                <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)] [overflow-wrap:anywhere]")}>
+                  {t("ui.slurp.ties.owed.detail", { product: deal.product })}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {offers.length > 0 && (
+        <ul className={SLP_GROUP_CLASS}>
+          {offers.map((deal) => (
+            <li key={deal.id} className="flex flex-col gap-2 px-4 py-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className={cn(SLP_TYPE.body, "min-w-0 font-semibold [overflow-wrap:anywhere]")}>
+                  {t("ui.slurp.ties.offerTitle", { brand: deal.brand, product: deal.product })}
+                </span>
+                <span className={cn(SLP_TYPE.body, "shrink-0 font-bold tabular-nums")}>
+                  <SlpCoinText>{t("ui.slurp.ties.fee", { count: deal.fee })}</SlpCoinText>
+                </span>
+              </div>
+              {deal.copy && <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>“{deal.copy}”</p>}
+              <div className="flex gap-2">
+                <SlpPrimaryButton
+                  disabled={answerDeal.isPending}
+                  onClick={() => answer(deal, true)}
+                  className="min-h-11 flex-1 px-4 text-sm"
+                >
+                  {t("ui.slurp.ties.offerYes")}
+                </SlpPrimaryButton>
+                <SlpButton
+                  variant="quiet"
+                  disabled={answerDeal.isPending}
+                  onClick={() => answer(deal, false)}
+                  className="min-h-11 flex-1 px-4 text-sm"
+                >
+                  {t("ui.slurp.ties.offerNo")}
+                </SlpButton>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

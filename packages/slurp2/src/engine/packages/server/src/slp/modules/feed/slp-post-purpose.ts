@@ -16,7 +16,11 @@
  * post's beat. Code decides; the model only writes the words, so nothing here costs an AI call.
  */
 
-import type { SlpPurpose } from "../../../../../shared/src/slp/slp-post-purpose.js";
+import {
+  SLURP_STORY_JOB_DEFAULTS,
+  type SlpPurpose,
+  type SlurpStoryJobWeights,
+} from "../../../../../shared/src/slp/slp-post-purpose.js";
 import type { SlpCreatorSteering } from "../../../../../shared/src/slp/slp-creator-steering.js";
 import type { SlurpContentIntent } from "../../../../../shared/src/slp/slp-content-axes.js";
 import { slurpAnchorsWithout, slurpNudgeBeat, type SlurpBeat, type SlurpCanonAnchors } from "./slp-post-beat.js";
@@ -48,6 +52,31 @@ export function slurpDropIn(dropAt: string, at: Date): string {
   return hours === 1 ? "about an hour" : `about ${hours} hours`;
 }
 
+const clock = (at: Date) => {
+  const hour = at.getHours() % 12 || 12;
+  const minutes = at.getMinutes();
+  return `${hour}${minutes ? `:${String(minutes).padStart(2, "0")}` : ""} ${at.getHours() < 12 ? "am" : "pm"}`;
+};
+
+/**
+ * The drop's exact time in plain words, as a Creator would say it: "tonight at 9 pm", "today at
+ * 3 pm", "tomorrow at 10 am", "on Friday at 8 pm". Local time, the clock the player lives on.
+ */
+export function slurpDropClock(dropAt: string, at: Date): string {
+  const drop = new Date(dropAt);
+  const day = (value: Date) => new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime();
+  const days = Math.round((day(drop) - day(at)) / (24 * HOUR));
+  const when =
+    days <= 0
+      ? drop.getHours() >= 18
+        ? "tonight"
+        : "today"
+      : days === 1
+        ? "tomorrow"
+        : `on ${drop.toLocaleDateString("en-US", { weekday: "long" })}`;
+  return `${when} at ${clock(drop)}`;
+}
+
 // --- Posts ------------------------------------------------------------------------------------------
 
 /** What the planner decided about a feed post, in the terms that give it a reason. */
@@ -57,7 +86,7 @@ export type SlurpPostPurposeFacts = {
   stageKind?: "set" | "teaser" | "callback" | null;
   campaignId?: string | null;
   /** A tease: the drop it leads to (campaign, due time while it is still to come, the drop's post once it is up). */
-  tease?: { campaignId: string; dropAt?: string | null; postId?: string | null } | null;
+  tease?: { campaignId: string; dropAt?: string | null; postId?: string | null; held?: boolean } | null;
   /** A teased drop: the tease it delivers. */
   drop?: { teasePostId: string | null; title?: string | null } | null;
   promise?: boolean;
@@ -78,6 +107,7 @@ export function slurpPostPurpose(facts: SlurpPostPurposeFacts): SlpPurpose {
       campaignId: facts.tease.campaignId,
       ...(facts.tease.dropAt ? { dropAt: facts.tease.dropAt } : {}),
       ...(facts.tease.postId ? { postId: facts.tease.postId } : {}),
+      ...(facts.tease.held && facts.tease.dropAt ? { held: true } : {}),
     };
   }
   if (facts.stageKind === "set" || facts.drop) {
@@ -107,6 +137,9 @@ export function slurpPostPurpose(facts: SlurpPostPurposeFacts): SlpPurpose {
  * prompt does not already carry (the intent, the beat and the campaign stage say the rest).
  */
 export function slurpPostPurposeLine(purpose: SlpPurpose, input: { at: Date; teaseTitle?: string | null }): string {
+  if (purpose.kind === "tease" && purpose.dropAt && !purpose.postId && purpose.held) {
+    return `This free post teases your next locked drop, which goes up ${slurpDropClock(purpose.dropAt, input.at)} (in ${slurpDropIn(purpose.dropAt, input.at)}). Name that time, your way: it is a date with your fans. Hint at what is coming and keep the good part for the drop.`;
+  }
   if (purpose.kind === "tease" && purpose.dropAt && !purpose.postId) {
     return `This free post teases your next locked drop, due in ${slurpDropIn(purpose.dropAt, input.at)}. Hint at what is coming and roughly when, and keep the good part for the drop. Do it your way.`;
   }
@@ -240,8 +273,6 @@ export type SlurpStoryPurposePlan = {
   poll: SlurpPollPlan | null;
 };
 
-const STORY_WEIGHTS = { countdown: 4, newPost: 3, comment: 2, poll: 1.5, earlier: 1.5, plain: 1.5 } as const;
-
 /**
  * A job for an automatic Story, drawn by weight from what is really available, so a Creator's
  * Stories announce, count down, ask, answer and follow their day, and now and then just share a
@@ -252,8 +283,9 @@ export function slurpStoryPurpose(
   sequence: number,
   candidates: SlurpStoryCandidates,
   at: Date,
+  weights: SlurpStoryJobWeights = SLURP_STORY_JOB_DEFAULTS,
 ): SlurpStoryPurposePlan {
-  type Key = keyof typeof STORY_WEIGHTS;
+  type Key = keyof SlurpStoryJobWeights;
   const available: Key[] = [
     ...(candidates.countdown ? (["countdown"] as const) : []),
     ...(candidates.newPost ? (["newPost"] as const) : []),
@@ -266,7 +298,11 @@ export function slurpStoryPurpose(
     "storyPurpose",
     creatorAccountId,
     sequence,
-    available.map((value) => ({ value, weight: STORY_WEIGHTS[value] })),
+    // A plain moment stays possible when the player turned every job down to zero.
+    available.map((value) => ({
+      value,
+      weight: available.every((key) => !(weights[key] > 0)) && value === "plain" ? 1 : Math.max(0, weights[value] ?? 0),
+    })),
   );
   const plain = { purpose: { kind: "daily_life" }, line: "", linkedPostId: null, poll: null } as const;
   if (key === "countdown" && candidates.countdown) {

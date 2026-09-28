@@ -47,6 +47,7 @@ import {
 } from "../../../../../shared/src/slp/slp-platform-events.js";
 import { slurpNormalizeReactionBanks, SlurpReactionBanks } from "../world/slp-reaction-bank.js";
 import { slurpModelBudgetSchema } from "../../../../../shared/src/slp/slp-model-budget.js";
+import { SLURP_STORY_JOB_DEFAULTS, type SlurpStoryJobWeights } from "../../../../../shared/src/slp/slp-post-purpose.js";
 import { DEFAULT_SLP_CREATOR_REPLIES_PER_24_HOURS } from "../../../../../shared/src/slp/slp-social.schema.js";
 import { SLURP_COOL_OFF_HOURS } from "../world/slp-stance.js";
 import {
@@ -261,6 +262,14 @@ export const slurpSettingsSchema = z.object({
   postPlanner: z.enum(["classic", "beats"]),
   /** "Daily life": how often an ordinary post is a day-to-day life moment. See `slp-life-moments.ts`. */
   lifeMomentRate: z.enum(["rarely", "sometimes", "often"]),
+  /** What automatic Stories are for: one weight per job, 0 = never. See `slurpStoryPurpose`. */
+  storyJobs: z
+    .object(
+      Object.fromEntries(
+        Object.keys(SLURP_STORY_JOB_DEFAULTS).map((key) => [key, z.number().int().min(0).max(10)]),
+      ) as Record<keyof SlurpStoryJobWeights, z.ZodNumber>,
+    )
+    .strict(),
   /**
    * Beats only: a daily world tick and weekly niche patterns per topical tag add shared beat ideas.
    * See `modules/feed/slp-shared-preseed.ts`.
@@ -528,6 +537,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   // Beats by default since 0.2.55: the fixes for same-y, canon-less, tame posts live there.
   postPlanner: "beats",
   lifeMomentRate: "sometimes",
+  storyJobs: { ...SLURP_STORY_JOB_DEFAULTS },
   sharedPreseed: false,
   sharedWorldEvents: false,
   enableImagePrompts: false,
@@ -707,6 +717,8 @@ function normalizeSlurpSettingsUncached(raw: unknown): SlurpSettings {
       : (rawRecord.discoveryTags ?? DEFAULT_SLURP_SETTINGS.discoveryTags);
   candidate.arcLibrary = slurpNormalizeArcLibrary(rawRecord.arcLibrary, rawRecord.arcAllowedKinds);
   candidate.onboarding = rawRecord.onboarding ?? DEFAULT_SLURP_SETTINGS.onboarding;
+  // A partial or older value keeps the balanced weight for every job it does not name.
+  candidate.storyJobs = { ...DEFAULT_SLURP_SETTINGS.storyJobs, ...parseRecord(rawRecord.storyJobs) };
   candidate.fanArchetypeWeights = {
     ...DEFAULT_SLURP_SETTINGS.fanArchetypeWeights,
     ...parseRecord(rawRecord.fanArchetypeWeights),

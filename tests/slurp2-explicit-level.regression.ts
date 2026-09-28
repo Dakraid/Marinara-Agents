@@ -30,7 +30,9 @@ assert.equal(sanitizeSlurpPostGuidance({ defaults: { level: "filth" } }).default
 
 // The paywall has to mean something: locked delivers, public sits one step under it.
 assert.equal(slurpPostSexualLevel({ level: "explicit", access: "locked" }), "explicit");
-assert.equal(slurpPostSexualLevel({ level: "explicit", access: "public" }), "nudity");
+// Slice I (user, 2026-09-28): an Explicit Creator's public posts stop at a tease; nudity goes behind the lock.
+assert.equal(slurpPostSexualLevel({ level: "explicit", access: "public" }), "suggestive");
+assert.equal(slurpPostSexualLevel({ level: "nudity", access: "public" }), "suggestive");
 assert.equal(slurpPostSexualLevel({ level: "suggestive", access: "public" }), "none");
 // Stepping down from the bottom stays at the bottom rather than falling off the list.
 assert.equal(slurpPostSexualLevel({ level: "none", access: "public" }), "none");
@@ -49,7 +51,7 @@ const brief = (access: "public" | "locked", explicitLevel: "none" | "suggestive"
     explicitLevel,
   });
 assert.equal(brief("locked", "explicit").sexualLevel, "explicit", "a paid post delivers the Creator's level");
-assert.equal(brief("public", "explicit").sexualLevel, "nudity");
+assert.equal(brief("public", "explicit").sexualLevel, "suggestive"); // slice I: no nudity in public
 
 // The image brief says what the picture may show at every level, rather than one blanket refusal.
 const imageBrief = slurp2Source("packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-image-brief.ts");
