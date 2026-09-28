@@ -144,12 +144,17 @@ export function slurpTieBeat(input: {
   const deal = input.deals.find((entry) => entry.status === "accepted" && entry.creatorId === creatorId);
   if (deal) {
     const told = deal.copy ? ` What they told you about it: ${deal.copy.slice(0, 220)}` : "";
+    // R: the product is in the picture, and the brand's own pitch voice is theirs, not yours.
+    const look = deal.look ? ` Show it in the picture: ${deal.look.slice(0, 200)}.` : "";
+    const tone = deal.tone
+      ? ` The brand talks like this: ${deal.tone.slice(0, 160)} You can wink at that, but the post is in your own voice.`
+      : "";
     return {
       beat: {
         type: "showcase",
         anchorKind: "sponsor",
         anchor: deal.brand,
-        line: `A paid partnership: ${deal.brand} pays you to post about ${deal.product}. Work it into your own day, your way, and say it is an ad (#ad).${told}`,
+        line: `A paid partnership: ${deal.brand} pays you to post about ${deal.product}. Work it into your own day, your way, and say it is an ad (#ad).${told}${look}${tone}`,
         cast: [],
         place: null,
         ...heat,

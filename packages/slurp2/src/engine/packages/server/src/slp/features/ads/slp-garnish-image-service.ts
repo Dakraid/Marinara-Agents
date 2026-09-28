@@ -11,7 +11,9 @@ import { resolveConnectionImageDefaults } from "../../../services/image/image-ge
 import { generateImage, stageImageToDisk } from "../../../services/image/image-generation.js";
 import { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
+import { createGarnishAds } from "../../../services/garnish-ads/garnish-ads.service.js";
 import {
+  garnishAdBrandId,
   GARNISH_AD_IMAGE_FORMATS,
   type GarnishAd,
   type GarnishAdImageField,
@@ -257,4 +259,27 @@ export async function generateGarnishAdImage(
     logger.warn(error, "[garnish-ads] Could not generate an image for %s", ad.brand);
     return "failed";
   }
+}
+
+/** The `draw-brand-picture` action (R): a logo, or a product picture, drawn and handed back unsaved. */
+export async function drawSlurpBrandPicture(
+  db: DB,
+  input: { brandId: string; productId?: string; request: string },
+): Promise<{ ok: true; value: { image: string; prompt: string } } | { ok: false; status: number; error: string }> {
+  const { pool } = createGarnishAds(db);
+  const brand = (await pool.listBrands("slurp")).find((entry) => entry.id === input.brandId);
+  if (!brand) return { ok: false, status: 404, error: "That brand does not exist." };
+  const product = input.productId
+    ? (await pool.listAll("slurp")).find((ad) => ad.id === input.productId && garnishAdBrandId(ad) === brand.id)
+    : null;
+  if (input.productId && !product) return { ok: false, status: 404, error: "That product does not exist." };
+  const kind = product ? "product" : "logo";
+  const drawn = await drawGarnishPicture(
+    db,
+    garnishBrandPicturePrompt({ kind, brand, product, request: input.request }),
+    kind,
+  );
+  if (drawn === "unavailable") return { ok: false, status: 409, error: "No image generation connection is available." };
+  if (drawn === "failed") return { ok: false, status: 502, error: "The picture could not be drawn. Try again." };
+  return { ok: true, value: drawn };
 }

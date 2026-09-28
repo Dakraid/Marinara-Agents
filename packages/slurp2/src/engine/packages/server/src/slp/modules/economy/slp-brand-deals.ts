@@ -31,7 +31,7 @@ const BRAND_REST_DAYS = 14;
 const REFUSAL_NEWS_DAYS = 3;
 const KEEP_FINISHED = 40;
 
-/** One ad from the pool, as far as a deal needs it. */
+/** One ad from the pool (a brand's product, R), as far as a deal needs it. */
 export type SlurpDealAd = {
   id: string;
   brand: string;
@@ -39,7 +39,27 @@ export type SlurpDealAd = {
   copy: string;
   categories: readonly string[];
   contextTags: readonly string[];
+  /** R: the brand it belongs to, its category and how it talks; the product's look and spice fit. */
+  brandId?: string;
+  brandCategory?: string;
+  tone?: string;
+  look?: string;
+  rating?: SlurpDealRating;
 };
+
+export type SlurpDealRating = "tame" | "suggestive" | "explicit";
+/** A Creator's spice level as deals read it (`SLP_SPICE_LEVELS`). */
+export type SlurpDealSpice = "flirty" | "suggestive" | "explicit";
+
+/**
+ * Spice fit (R): a tame product suits anyone, a suggestive one a page at "suggestive" or more, an
+ * explicit one only an explicit page. A Creator with no known level counts as flirty.
+ */
+export function slurpDealSpiceFits(rating: SlurpDealRating | undefined, spice: SlurpDealSpice | undefined): boolean {
+  if (!rating || rating === "tame") return true;
+  if (rating === "suggestive") return spice === "suggestive" || spice === "explicit";
+  return spice === "explicit";
+}
 
 export type SlurpBrandDealStatus = "offered" | "accepted" | "planned" | "done" | "declined";
 export type SlurpDealDecline = "offBrand" | "noAds" | "notNow" | "noAnswer" | "player";
@@ -64,6 +84,11 @@ export type SlurpBrandDeal = {
   toldFans: boolean;
   /** The player said the owed post is up ("Mark as posted", U): the reminder goes, no post needed. */
   markedAt?: string | null;
+  /** R: what the product looks like and how the brand talks, for the sponsored post. */
+  look?: string;
+  tone?: string;
+  /** R: the player made it happen from Stir; the Creator said yes. */
+  pushed?: boolean;
 };
 
 /** What a brand pays: a small Creator gets a small deal. Grows on a square root of the followers. */
@@ -81,8 +106,16 @@ const never = (text: string) =>
   text.split(/(?<=[.!?])\s+|\n+/u).filter((sentence) => SLURP_NEVER_PATTERN.test(sentence));
 
 /** How well an ad fits a Creator: shared words between the ad's categories/tags and their niche. */
-export function slurpDealFit(ad: SlurpDealAd, creator: Pick<SlurpTieCreator, "text" | "tags">): number {
-  const wanted = [...ad.categories, ...ad.contextTags].map((word) => word.toLocaleLowerCase());
+export function slurpDealFit(
+  ad: SlurpDealAd,
+  creator: Pick<SlurpTieCreator, "text" | "tags"> & { spice?: SlurpDealSpice },
+): number {
+  if (!slurpDealSpiceFits(ad.rating, creator.spice)) return 0;
+  const wanted = [
+    ...new Set([...ad.categories, ...ad.contextTags, ...(ad.brandCategory ?? "").split(/[\s,/]+/u)]),
+  ]
+    .filter(Boolean)
+    .map((word) => word.toLocaleLowerCase());
   const have = new Set([...creator.tags.map((tag) => tag.toLocaleLowerCase()), ...slurpCreatorInterests(creator)]);
   const text = creator.text.toLocaleLowerCase();
   return wanted.filter((word) => have.has(word) || (word.length >= 4 && text.includes(word))).length;
@@ -92,7 +125,7 @@ export function slurpDealFit(ad: SlurpDealAd, creator: Pick<SlurpTieCreator, "te
 export function slurpDealAnswer(
   deal: Pick<SlurpBrandDeal, "id" | "brand" | "product">,
   ad: SlurpDealAd,
-  creator: SlurpTieCreator,
+  creator: SlurpTieCreator & { spice?: SlurpDealSpice },
 ): { accept: boolean; decline: SlurpDealDecline | null } {
   const lines = never(creator.text);
   if (lines.some((line) => AD_TOPIC.test(line))) return { accept: false, decline: "noAds" };
@@ -144,6 +177,9 @@ export function readSlurpBrandDeals(raw: unknown): SlurpBrandDeal[] {
         paidAt: date(item.paidAt),
         toldFans: item.toldFans === true,
         ...(date(item.markedAt) ? { markedAt: date(item.markedAt) } : {}),
+        ...(clampText(item.look, 400) ? { look: clampText(item.look, 400) } : {}),
+        ...(clampText(item.tone, 300) ? { tone: clampText(item.tone, 300) } : {}),
+        ...(item.pushed === true ? { pushed: true } : {}),
       },
     ];
   });
@@ -171,7 +207,15 @@ export type SlurpDealsInput = {
   /** When the ties were last looked at; deals move on the same clock. */
   lastLook: string | null;
   newId: () => string;
+  /** The player's "Brand deals" pace (R): 0 = off, 1 = as before. */
+  pace?: number;
+  /** Each Creator's spice level (R), for the spice fit. */
+  spice?: ReadonlyMap<string, SlurpDealSpice>;
 };
+
+/** The "Brand deals" setting (R) as a multiplier on how often a brand looks for a Creator. */
+export const SLURP_DEAL_PACE = { off: 0, rare: 0.4, normal: 1, often: 1.7 } as const;
+export type SlurpDealPace = keyof typeof SLURP_DEAL_PACE;
 
 /**
  * One look at the deals: due answers, stale plans freed, expired offers, and now and then a new
@@ -204,7 +248,7 @@ export function slurpAdvanceBrandDeals(deals: SlurpBrandDeal[], input: SlurpDeal
       categories: [],
       contextTags: [],
     };
-    const answer = slurpDealAnswer(deal, ad, creator);
+    const answer = slurpDealAnswer(deal, ad, { ...creator, spice: input.spice?.get(creator.id) });
     return answer.accept
       ? { ...deal, status: "accepted", answeredAt: stamp }
       : { ...deal, status: "declined", decline: answer.decline, answeredAt: stamp, toldFans: false };
@@ -214,7 +258,7 @@ export function slurpAdvanceBrandDeals(deals: SlurpBrandDeal[], input: SlurpDeal
   const roll = hash(`${window}:deal`) % 100;
   if (
     next.filter(slurpDealOpen).length < MAX_OPEN_OFFERS &&
-    roll < Math.round(SLURP_DEAL_CHANCE * Math.max(0, input.activity))
+    roll < Math.round(SLURP_DEAL_CHANCE * Math.max(0, input.activity) * (input.pace ?? 1))
   ) {
     const busy = new Set(next.filter(slurpDealOpen).map((deal) => deal.creatorId));
     const offered = (creatorId: string, adId: string) =>
@@ -225,7 +269,7 @@ export function slurpAdvanceBrandDeals(deals: SlurpBrandDeal[], input: SlurpDeal
       .flatMap((creator) =>
         input.ads
           .filter((ad) => !offered(creator.id, ad.id))
-          .map((ad) => ({ creator, ad, fit: slurpDealFit(ad, creator) })),
+          .map((ad) => ({ creator, ad, fit: slurpDealFit(ad, { ...creator, spice: input.spice?.get(creator.id) }) })),
       )
       .filter((option) => option.fit > 0)
       .sort(
@@ -235,28 +279,92 @@ export function slurpAdvanceBrandDeals(deals: SlurpBrandDeal[], input: SlurpDeal
       );
     const pick = options[0];
     if (pick)
-      next = [
-        ...next,
-        {
-          id: input.newId(),
-          adId: pick.ad.id,
-          brand: pick.ad.brand,
-          product: pick.ad.product,
-          copy: pick.ad.copy,
-          creatorId: pick.creator.id,
-          fee: slurpBrandDealFee(pick.creator.followers),
-          status: "offered",
-          decline: null,
-          offeredAt: stamp,
-          answeredAt: null,
-          plannedAt: null,
-          postId: null,
-          paidAt: null,
-          toldFans: false,
-        },
-      ];
+      next = [...next, slurpNewDeal(input.newId(), pick.ad, pick.creator, stamp)];
   }
   return trim(next);
+}
+
+/** A fresh offer of this product to this Creator. */
+function slurpNewDeal(
+  id: string,
+  ad: SlurpDealAd,
+  creator: Pick<SlurpTieCreator, "id" | "followers">,
+  stamp: string,
+): SlurpBrandDeal {
+  return {
+    id,
+    adId: ad.id,
+    brand: ad.brand,
+    product: ad.product,
+    copy: ad.copy,
+    creatorId: creator.id,
+    fee: slurpBrandDealFee(creator.followers),
+    status: "offered",
+    decline: null,
+    offeredAt: stamp,
+    answeredAt: null,
+    plannedAt: null,
+    postId: null,
+    paidAt: null,
+    toldFans: false,
+    ...(ad.look ? { look: ad.look } : {}),
+    ...(ad.tone ? { tone: ad.tone } : {}),
+  };
+}
+
+// ─── The Stir lever (R): "give <Creator> a deal with <brand / product>" ────────────────────────
+
+export type SlurpDealLeverInput = {
+  creator: SlurpTieCreator & { spice?: SlurpDealSpice };
+  ads: readonly SlurpDealAd[];
+  brandId?: string;
+  productId?: string;
+  /** Make it happen: a Creator Slurp posts for says yes now. */
+  happen?: boolean;
+  at: Date;
+  id: string;
+};
+
+/**
+ * What a brand deal lever would do, and the deals after it. Pure: the preview and the run use the
+ * same answer. A product named is taken as it is (the player chose it, fit or not); a brand picks its
+ * best-fitting product for this Creator; nothing named picks the best fit in the whole pool.
+ * `notes` are fit notes for the preview card; `error` means nothing happens.
+ */
+export function slurpDealLever(
+  deals: readonly SlurpBrandDeal[],
+  input: SlurpDealLeverInput,
+): {
+  error: "noProduct" | "busy" | null;
+  notes: ("noAds" | "offBrand" | "spice" | "mayDecline" | "notAutomatic")[];
+  ad: SlurpDealAd | null;
+  deal: SlurpBrandDeal | null;
+  deals: SlurpBrandDeal[];
+} {
+  const { creator } = input;
+  const none = (error: "noProduct" | "busy") => ({ error, notes: [], ad: null, deal: null, deals: [...deals] });
+  if (deals.some((deal) => deal.creatorId === creator.id && slurpDealOpen(deal))) return none("busy");
+  const candidates = input.productId
+    ? input.ads.filter((ad) => ad.id === input.productId)
+    : input.ads.filter((ad) => !input.brandId || ad.brandId === input.brandId);
+  const ranked = candidates
+    .map((ad) => ({ ad, fit: slurpDealFit(ad, creator) }))
+    .sort((left, right) => right.fit - left.fit || left.ad.id.localeCompare(right.ad.id));
+  const ad = ranked[0]?.ad;
+  if (!ad) return none("noProduct");
+  const stamp = input.at.toISOString();
+  const offer = slurpNewDeal(input.id, ad, creator, stamp);
+  const notes: ("noAds" | "offBrand" | "spice" | "mayDecline" | "notAutomatic")[] = [];
+  if (!creator.automatic) notes.push("notAutomatic");
+  if (!slurpDealSpiceFits(ad.rating, creator.spice)) notes.push("spice");
+  const answer = slurpDealAnswer(offer, ad, creator);
+  if (creator.automatic && !input.happen && answer.decline && answer.decline !== "notNow")
+    notes.push(answer.decline === "noAds" ? "noAds" : "offBrand");
+  else if (creator.automatic && !input.happen && notes.length === 0) notes.push("mayDecline");
+  // A page the player runs answers in Studio as always; a Creator Slurp posts for says yes now when pushed.
+  const deal: SlurpBrandDeal =
+    creator.automatic && input.happen ? { ...offer, status: "accepted", answeredAt: stamp, pushed: true } : offer;
+  return { error: null, notes, ad, deal, deals: [...deals, deal] };
 }
 
 /** Whether a refusal is fresh enough to talk about, and whether this Creator would. */

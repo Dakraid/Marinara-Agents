@@ -8,6 +8,7 @@ import type { SlurpSettings } from "../settings/slp-settings-contract";
 export const SLP_BACKSTAGE_LABEL_KEYS: Partial<Record<keyof SlurpSettings, string>> = {
   inlineAdsEnabled: "ui.slurp.settings.inlinePromotions",
   inlineAdsFrequency: "ui.slurp.settings.ads.frequency",
+  brandDealsPace: "ui.slurp.settings.ads.dealsPace",
   inlineAdsSteering: "ui.slurp.settings.ads.steering",
   inlineAdsPreferredTags: "ui.slurp.settings.ads.themes",
   inlineAdsContentCeiling: "ui.slurp.settings.ads.ceiling",

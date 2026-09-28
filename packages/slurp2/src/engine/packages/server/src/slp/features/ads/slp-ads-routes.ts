@@ -29,6 +29,8 @@ export async function slpAdsRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
     brand: z.string().trim().min(1).max(80),
     product: z.string().trim().min(1).max(120),
     copy: z.string().trim().min(1).max(600),
+    priceFeel: z.enum(["budget", "everyday", "premium"]).optional(),
+    look: z.string().trim().max(400).optional(),
     categories: z.array(z.string().trim().min(1).max(32)).max(12).default([]),
     contextTags: z.array(z.string().trim().min(1).max(32)).max(12).default([]),
     imageUrl: z.string().trim().max(2048).nullable().optional(),
@@ -215,8 +217,10 @@ export async function slpAdsRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
   app.get("/noodler/ads/:id/image/:fileName", async (req, reply) => {
     const { id, fileName } = req.params as { id: string; fileName: string };
     const ad = (await ads.pool.listAll()).find((row) => row.id === id);
+    // A brand's logo lives under the same route, keyed by the brand id (R).
+    const brand = ad ? null : (await ads.pool.listBrands()).find((row) => row.id === id);
     // The feed picture or the wide banner, whichever this file name is.
-    const absolute = [ad?.imageUrl, ad?.wideImageUrl]
+    const absolute = [ad?.imageUrl, ad?.wideImageUrl, brand?.logoUrl]
       .map((url) => resolveGarnishAdImageAbsolutePath(id, url))
       .find((path) => path && basename(path) === fileName);
     if (!absolute || !existsSync(absolute)) {

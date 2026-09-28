@@ -10,4 +10,6 @@ export {
   readSlurpCouplePartner,
   slurpCoupleDmPage,
 } from "./slp-creator-couples-service.js";
+export { slurpBrandDealLever, type SlurpBrandDealLeverPreview } from "./slp-brand-deal-lever.js";
+export { listSlurpBrandCatalog } from "./slp-brand-deal-source.js";
 export { slurpIsCouplePage } from "../../modules/projects/slp-creator-couples.js";

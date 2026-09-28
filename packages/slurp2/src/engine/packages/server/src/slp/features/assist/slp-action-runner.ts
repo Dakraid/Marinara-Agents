@@ -2,6 +2,8 @@ import type { DB } from "../../../db/connection.js";
 import { addSlurpCreatorNudge, patchSlurpCreatorSteering } from "../../data/creators/slp-steering-storage.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { generateAndApplyCreatorPost, resolveSlurpAutomaticPostAccess } from "../feed/slp-feed-contract.js";
+import { listSlurpBrandCatalog, slurpBrandDealLever } from "../projects/slp-projects-contract.js";
+import { drawSlurpBrandPicture } from "../ads/slp-ads-contract.js";
 import {
   isSlpActionName,
   slpActionCatalog,
@@ -88,6 +90,19 @@ async function dispatch(db: DB, name: SlpActionName, input: unknown): Promise<Sl
         ? { ok: true, value: { steering } }
         : { ok: false, status: 409, error: "That is plenty of ideas for now. Let one go out first." };
     }
+    case "list-brands":
+      return { ok: true, value: await listSlurpBrandCatalog(db) };
+    case "offer-brand-deal": {
+      const { preview: dryRun, ...lever } = input as SlpActionParsed<"offer-brand-deal">;
+      const outcome = await slurpBrandDealLever(db, lever, !dryRun);
+      if (outcome.preview.error === "notFound") return { ok: false, status: 404, error: outcome.preview.summary };
+      // A preview answers with why not; a run that cannot happen is a conflict.
+      if (!dryRun && !outcome.dealId)
+        return { ok: false, status: 409, error: outcome.preview.summary || "The deal could not be offered." };
+      return { ok: true, value: outcome };
+    }
+    case "draw-brand-picture":
+      return drawSlurpBrandPicture(db, input as SlpActionParsed<"draw-brand-picture">);
     case "write-post": {
       const { accountId, idea, story } = input as SlpActionParsed<"write-post">;
       if (!(await creatorExists(db, accountId))) return { ok: false, status: 404, error: "Creator not found." };

@@ -131,6 +131,7 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
   ads: [
     "inlineAdsEnabled",
     "inlineAdsFrequency",
+    "brandDealsPace",
     "inlineAdsSteering",
     "inlineAdsPreferredTags",
     "inlineAdsContentCeiling",
