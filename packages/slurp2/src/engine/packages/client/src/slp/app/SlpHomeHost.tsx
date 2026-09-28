@@ -26,7 +26,7 @@ import type { SlurpHomeProps } from "./slp-home.types";
 import { renderSlurpHomeCreatorFlow } from "./screens/SlpHomeCreatorFlow";
 import { renderSlurpHomeDestinations } from "./screens/SlpHomeDestinations";
 import { SlpHomeFeedRail } from "./screens/SlpHomeFeedRail";
-import { useRefreshCreatorFanActivityNow } from "../features/audience/slp-fan-activity-hooks";
+import { SlpStirCreatorSheet } from "../features/stir/slp-stir-contract";
 import { useSlpMinuteClock } from "../base/ui/slp-minute-clock";
 import type { SlpStoryRings } from "../modules/story/SlpStoryRing";
 import { slpStoryRings, slpStoryStartId } from "../modules/story/slp-story-rings";
@@ -34,7 +34,6 @@ import { slurpLiveStories } from "./screens/slp-hub-view";
 
 export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
   const model = useSlurpHomeState({ navigation, onNavigate, onLeave });
-  const refreshAudienceNow = useRefreshCreatorFanActivityNow({ notifications: false });
   const {
     localizeUi,
     accountsQuery,
@@ -93,7 +92,7 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
     goToNoodlerSearch,
     goToMessages,
     goToWallet,
-    goToStudio,
+    goToStir,
     closeNoodlerSearch,
     postCardController,
     postCardCtx,
@@ -131,8 +130,8 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
               ? ("messages" as const)
               : navigation.mode === "creator" && navigation.view === "wallet"
                 ? ("wallet" as const)
-                : navigation.mode === "creator" && navigation.view === "studio"
-                  ? ("studio" as const)
+                : navigation.mode === "creator" && (navigation.view === "stir" || navigation.view === "studio")
+                  ? ("stir" as const)
                   : navigation.mode === "creator" && navigation.view === "notifications"
                     ? ("messages" as const)
                     : ("noodler" as const),
@@ -180,29 +179,11 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
     onOpenSearch: goToNoodlerSearch,
     onOpenMessages: goToMessages,
     onOpenWallet: goToWallet,
-    onOpenStudio: goToStudio,
-    onGeneratePosts: () => {
-      onNavigate({ mode: "creator-settings", section: "overview", target: "overview", openRefresh: true });
-    },
-    onRunAudience: () => {
-      // The hook's own toasts are off here (Pulse shows progress), but a failure still needs its reason.
-      refreshAudienceNow.mutate(undefined, {
-        onError: (error) =>
-          toast.error(
-            errorMessage(
-              error,
-              localizeUi("ui.slurp.settings.manual.audienceFailed", { defaultValue: "Audience activity failed." }),
-            ),
-          ),
-      });
-    },
-    audiencePending: refreshAudienceNow.isPending,
+    onOpenStir: goToStir,
     notificationCount:
       (notificationUnseenCountQuery.data?.unseenCount ?? 0) +
       (unreadCountQuery.data?.unread ?? 0) +
       (unreadCountQuery.data?.inboundUnread ?? 0),
-    // The studio is only meaningful for a persona that operates a Creator.
-    hasOperatedCreator: Boolean(myCreatorProfile),
     walletBalanceLabel: activeWalletCoins === null ? undefined : `${activeWalletCoins}`,
     walletBalance: viewerWalletsQuery.data?.[viewerPersonaId ?? ""]?.coins,
     personaBannerUrl: myCreatorProfile?.bannerUrl ?? null,
@@ -274,6 +255,13 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
             onClose={() => postCardController.setImageLightbox(null)}
           />
         )}
+        {/* W: the ✦ sheet, opened from a profile, a post's ⋯ or Creator tools. */}
+        <SlpStirCreatorSheet
+          personaId={viewerPersonaId}
+          onOpenSupport={(creatorAccountId) =>
+            onNavigate({ mode: "creator", view: "messages", creatorAccountId, asSupport: true })
+          }
+        />
         <SlpCreatorSettingsModal
           onRedraft={(creator) => {
             redraftFromSource(creator);

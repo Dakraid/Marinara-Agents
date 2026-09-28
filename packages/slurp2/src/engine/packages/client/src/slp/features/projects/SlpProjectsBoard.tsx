@@ -4,7 +4,7 @@
 import { useSlurpSettings } from "../settings/slp-settings-contract";
 import { ArcConfigSection } from "./SlpArcConfigSection";
 import { ProjectEditor, canSave } from "./SlpProjectEditor";
-import { SlpArcChapterControls } from "./SlpArcChapterControls";
+import { openSlpStir } from "../../base/state/slp-stir-sheet-store";
 import { useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import type { SlurpProject } from "./slp-projects-contract";
@@ -307,12 +307,25 @@ export function SlurpProjectsPanel({
                     </span>
                   </span>
                 )}
-                <SlpArcChapterControls
-                  project={project}
-                  accountId={creatorAccountId}
-                  busy={busy}
-                  onAct={(action, value) => act(project, action, value)}
-                />
+                {/* W: moving a chapter is a story lever, so it lives in Stir; the rules stay here. */}
+                {project.chapters.length > 0 && (project.status === "active" || project.status === "paused") && (
+                  <span className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--slurp-muted)]">
+                    {project.held
+                      ? localizeUi("ui.slurp.projects.chapterHeld", {
+                          chapter: project.chapters[project.chapter] ?? "",
+                        })
+                      : localizeUi("ui.slurp.projects.chapterNow", {
+                          chapter: project.chapters[project.chapter] ?? "",
+                        })}
+                    <button
+                      type="button"
+                      onClick={() => openSlpStir({ creatorId: creatorAccountId })}
+                      className="min-h-11 font-semibold text-[var(--slurp-ink)] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+                    >
+                      {localizeUi("ui.slurp.stir.moveInStir")}
+                    </button>
+                  </span>
+                )}
                 {director &&
                   (project.status === "active" || project.status === "paused") &&
                   project.choices[project.chapter] && (

@@ -125,6 +125,8 @@ export interface SlpPostCardCtx {
     accountId: string;
     story: boolean;
   }) => ReactNode;
+  /** W: Stir this post's Creator (the ✦ sheet, with the post as context). Absent, no menu row. */
+  stir?: (post: { id: string; authorAccountId: string }) => void;
   accountById?: Map<string, SlpAccount>;
   accountByHandle?: Map<string, SlpAccount>;
   personaAccount: SlpAccount | null;
@@ -238,6 +240,8 @@ export interface SlpPostCardControllerOptions {
     accountId: string;
     story: boolean;
   }) => ReactNode;
+  /** W: Stir this post's Creator (the ✦ sheet, with the post as context). Absent, no menu row. */
+  stir?: (post: { id: string; authorAccountId: string }) => void;
   postManagement: boolean;
   /** The Show more threshold from settings; the card cannot read settings itself. */
   postShowMoreLength?: number;

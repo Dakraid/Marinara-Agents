@@ -54,7 +54,6 @@ export function renderSlurpHomeCreatorFlow({
     eligibleNoodleAccounts,
     generateDraft,
     generateProfileDraft,
-    goToStudio,
     handleSourceKind,
     handleSourceSearch,
     invalidateProfileDraftGeneration,
@@ -347,9 +346,11 @@ export function renderSlurpHomeCreatorFlow({
                 },
               },
               {
-                label: localizeUi("ui.slurp.profile.openStudio", { defaultValue: "Open studio" }),
+                // W: Studio's own-page half is the Dashboard sheet on the profile now.
+                label: localizeUi("ui.slurp.profile.openDashboard"),
                 icon: LayoutGrid,
-                action: () => void goToStudio(),
+                action: () =>
+                  onNavigate({ mode: "creator", view: "profile", accountId: selectedProfile.id, dashboard: true }),
               },
             ].map(({ label, icon: Icon, action }, index) => (
               <button
@@ -398,6 +399,9 @@ export function renderSlurpHomeCreatorFlow({
           <StageProfileView
             key={`${selectedProfile.id}:${shellPersonaAccount?.id ?? "no-viewer"}`}
             profile={selectedProfile}
+            openDashboard={
+              navigation.mode === "creator" && navigation.view === "profile" && navigation.dashboard === true
+            }
             profileDraft={editingProfileId === selectedProfile.id ? profileDraft : null}
             composerOpenSignal={composerOpenSignal}
             onComposerOpened={() => setComposerOpenSignal(0)}

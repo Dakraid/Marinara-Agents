@@ -89,3 +89,6 @@ export type SlurpArcType = SlpArcBlueprint;
 export { ArcConfigSection } from "./SlpArcConfigSection";
 export { SlurpProjectsPanel } from "./SlpProjectsBoard";
 export { useSlurpProjects } from "./slp-projects-hooks";
+// W: Business and Relationships (U) moved from Studio into the Stir tab; the ✦ sheet moves chapters.
+export { SlpCollabsPanel, SlpRelationshipsPanel } from "./SlpCollabsPanel";
+export { SlpArcChapterControls } from "./SlpArcChapterControls";

@@ -6,13 +6,13 @@
 // Split out of components/slurp/SlurpShell.tsx in Slice 10. It renders a wallet balance through
 // modules/coin, so it is a reusable module rather than base/ chrome.
 // ──────────────────────────────────────────────
-import { AtSign, ChartNoAxesColumn, ChevronDown, Settings2, Wallet } from "lucide-react";
+import { AtSign, ChevronDown, Settings2, Wallet } from "lucide-react";
 import {
   SlpDiscoverGlyph,
   SlpHubGlyph,
   SlpInboxGlyph,
-  SlpMoreGlyph,
   SlpProfileGlyph,
+  SlpSparkleGlyph,
 } from "../../base/chrome/SlpGlyphs";
 import { motion, useReducedMotion } from "framer-motion";
 import {
@@ -71,6 +71,13 @@ export function SlpWordmark() {
 
 /** The balance and the way to the Wallet, provided by the shell so every phone header can show the chip. */
 const SlpBalanceContext = createContext<{ coins: number | null; onOpen?: () => void }>({ coins: null });
+
+/**
+ * What a screen may open that belongs to the shell (W): Pulse (Stir's "See all") and the More sheet
+ * (Settings, Wallet, switching account), which the own profile's ⋯ opens now that the tab is "Me".
+ */
+const SlpShellActionsContext = createContext<{ openPulse?: () => void; openMore?: () => void }>({});
+export const useSlpShellActions = () => useContext(SlpShellActionsContext);
 
 /** The viewer's coin balance inside the shell (null while it loads or outside the shell). */
 export const useSlpBalance = () => useContext(SlpBalanceContext).coins;
@@ -193,12 +200,8 @@ export function SlpShell({
   onOpenSettings,
   onOpenMessages,
   onOpenWallet,
-  onOpenStudio,
-  onGeneratePosts,
-  onRunAudience,
-  audiencePending,
+  onOpenStir,
   notificationCount = 0,
-  hasOperatedCreator = false,
   walletBalanceLabel,
   walletBalance,
   personaBannerUrl,
@@ -316,17 +319,6 @@ export function SlpShell({
                   : localizeUi("ui.noodle.noodleshell.noodleAccountNavigation")
               }
             >
-              {onOpenStudio && hasOperatedCreator && (
-                <button
-                  type="button"
-                  onClick={onOpenStudio}
-                  aria-current={activeView === "studio" ? "page" : undefined}
-                  className={cn(SLURP_ROW_CLASS, activeView === "studio" && SLURP_ROW_ACTIVE_CLASS)}
-                >
-                  <ChartNoAxesColumn size={20} />
-                  {localizeUi("ui.slurp.navigation.studio", { defaultValue: "Studio" })}
-                </button>
-              )}
               {onOpenWallet && (
                 <button
                   type="button"
@@ -446,6 +438,21 @@ export function SlpShell({
                             : localizeUi("ui.noodle.noodlehome.searchNoodle")}
                       </button>
                     )}
+                    {onOpenStir && (
+                      <button
+                        type="button"
+                        onClick={onOpenStir}
+                        aria-current={activeView === "stir" ? "page" : undefined}
+                        className={cn(SLURP_ROW_CLASS, activeView === "stir" && SLURP_ROW_ACTIVE_CLASS)}
+                      >
+                        <SlpSparkleGlyph
+                          size={22}
+                          filled={activeView === "stir"}
+                          className="!text-[var(--noodle-accent-foreground)]"
+                        />
+                        {localizeUi("ui.slurp.navigation.stir")}
+                      </button>
+                    )}
                     {onOpenMessages && (
                       <button
                         type="button"
@@ -483,17 +490,6 @@ export function SlpShell({
                         {slurpActive
                           ? localizeUi("ui.slurp.navigation.profile")
                           : localizeUi("ui.noodle.noodlehome.profile")}
-                      </button>
-                    )}
-                    {onOpenStudio && hasOperatedCreator && (
-                      <button
-                        type="button"
-                        onClick={onOpenStudio}
-                        aria-current={activeView === "studio" ? "page" : undefined}
-                        className={cn(SLURP_ROW_CLASS, activeView === "studio" && SLURP_ROW_ACTIVE_CLASS)}
-                      >
-                        <ChartNoAxesColumn size={22} className="!text-[var(--noodle-accent-foreground)]" />
-                        {localizeUi("ui.slurp.navigation.studio", { defaultValue: "Studio" })}
                       </button>
                     )}
                     {onOpenWallet && (
@@ -653,7 +649,11 @@ export function SlpShell({
                 className="flex min-h-0 w-full flex-1 flex-col"
               >
                 <SlpBalanceContext.Provider value={{ coins: walletBalance ?? null, onOpen: onOpenWallet }}>
-                  {children}
+                  <SlpShellActionsContext.Provider
+                    value={{ openPulse, openMore: () => onMobileDrawerOpenChange(true) }}
+                  >
+                    {children}
+                  </SlpShellActionsContext.Provider>
                 </SlpBalanceContext.Provider>
               </motion.div>
             </main>
@@ -669,14 +669,7 @@ export function SlpShell({
           </div>
         </div>
 
-        <SlpPulsePanel
-          open={pulseOpen}
-          onClose={() => setPulseOpen(false)}
-          onGeneratePosts={onGeneratePosts}
-          onRunAudience={onRunAudience}
-          audiencePending={audiencePending}
-          accounts={sortedPersonaAccounts}
-        />
+        <SlpPulsePanel open={pulseOpen} onClose={() => setPulseOpen(false)} accounts={sortedPersonaAccounts} />
 
         {/* The frosted fade under the phone nav, down to the bottom edge. A sibling, not a backdrop on
             a wrapper: a backdrop or mask around the pill would become its backdrop root and the pill
@@ -702,6 +695,8 @@ export function SlpShell({
           }
           data-component="NoodleView.MobileBottomNav"
         >
+          {/* W: Hub · Discover · ✦ Stir (the centre) · Inbox · Me. "More" became "Me": the own profile,
+              with Wallet on the balance chip and Settings / switching account behind its ⋯. */}
           <div className="grid grid-flow-col auto-cols-fr gap-0.5">
             <SlpNavTab
               onClick={onMobileHomeTap}
@@ -711,27 +706,6 @@ export function SlpShell({
               badge={noodlerUnseenCount}
               icon={<SlpHubGlyph size={20} filled={homeActive} />}
             />
-            {onOpenProfile && (
-              <SlpNavTab
-                onClick={onOpenProfile}
-                active={activeView === "profile"}
-                aria-current={activeView === "profile" ? "page" : undefined}
-                label={
-                  slurpActive ? localizeUi("ui.slurp.navigation.profile") : localizeUi("ui.noodle.noodlehome.profile")
-                }
-                icon={<SlpProfileGlyph size={20} filled={activeView === "profile"} />}
-              />
-            )}
-            {onOpenMessages && (
-              <SlpNavTab
-                onClick={onOpenMessages}
-                active={activeView === "messages"}
-                aria-current={activeView === "messages" ? "page" : undefined}
-                label={localizeUi("ui.slurp.navigation.messages", { defaultValue: "Inbox" })}
-                badge={notificationCount}
-                icon={<SlpInboxGlyph size={20} filled={activeView === "messages"} />}
-              />
-            )}
             {onOpenSearch && (
               <SlpNavTab
                 onClick={onOpenSearch}
@@ -747,23 +721,47 @@ export function SlpShell({
                 icon={<SlpDiscoverGlyph size={20} filled={activeView === "search"} />}
               />
             )}
+            {onOpenStir && (
+              <SlpNavTab
+                data-slp-stir-tab=""
+                onClick={onOpenStir}
+                active={activeView === "stir"}
+                aria-current={activeView === "stir" ? "page" : undefined}
+                label={localizeUi("ui.slurp.navigation.stir")}
+                icon={
+                  // The centre sparkle: the one pink disc in the bar, so the lever is always one tap away.
+                  <span className="flex size-7 items-center justify-center rounded-full bg-[var(--noodle-accent)] shadow-[var(--slurp-glow)] [&_svg]:!text-[var(--slurp-on-accent)]">
+                    <SlpSparkleGlyph size={16} filled />
+                  </span>
+                }
+              />
+            )}
+            {onOpenMessages && (
+              <SlpNavTab
+                onClick={onOpenMessages}
+                active={activeView === "messages"}
+                aria-current={activeView === "messages" ? "page" : undefined}
+                label={localizeUi("ui.slurp.navigation.messages", { defaultValue: "Inbox" })}
+                badge={notificationCount}
+                icon={<SlpInboxGlyph size={20} filled={activeView === "messages"} />}
+              />
+            )}
             <SlpNavTab
               ref={mobileDrawerTriggerRef}
               data-component="NoodleView.MobileAccountSwitcher"
-              onClick={() => onMobileDrawerOpenChange(true)}
-              aria-expanded={mobileDrawerOpen}
-              aria-haspopup="dialog"
-              active={mobileDrawerOpen}
+              onClick={onOpenProfile ?? (() => onMobileDrawerOpenChange(true))}
+              active={activeView === "profile"}
+              aria-current={activeView === "profile" ? "page" : undefined}
               label={
                 slurpActive
-                  ? localizeUi("ui.slurp.navigation.more", { defaultValue: "More" })
+                  ? localizeUi("ui.slurp.navigation.me")
                   : localizeUi("ui.noodle.noodleshell.noodleAccountMenu")
               }
               icon={
                 personaAccount ? (
                   <Avatar account={personaAccount} size="xs" />
                 ) : (
-                  <SlpMoreGlyph size={20} filled={mobileDrawerOpen} />
+                  <SlpProfileGlyph size={20} filled={activeView === "profile"} />
                 )
               }
             />

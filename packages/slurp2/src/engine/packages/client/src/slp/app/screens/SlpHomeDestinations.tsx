@@ -1,16 +1,16 @@
 import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
-import { SlpShell } from "../../modules/chrome/SlpShell";
+import { SlpShell, useSlpShellActions } from "../../modules/chrome/SlpShell";
 import { SlurpWalletView } from "./SlpScreenWallet";
 import { DisclosureBadge } from "./SlpHomeHelpers";
 import { SlurpInboxView } from "./SlpScreenMessages";
-import { SlurpStudioView } from "./SlpScreenStudio";
+import { SlpStirScreen } from "../../features/stir/slp-stir-contract";
 import { ChevronLeft, ChevronRight, Plus, TriangleAlert, UserRound } from "lucide-react";
 import { ProfileInitial, SLP_PAGE_SCROLL_CLASS } from "../../base/chrome/SlpChrome";
 import { cn } from "../../../lib/utils";
 import { isSlurpDiscoveryProfileIncomplete } from "../../features/discovery/slp-discovery";
 import type { SlurpHomeHostView } from "./SlpHomeCreatorFlow";
 
-/** The navigation destinations that are pages of their own: wallet, notifications, studio, messages, profiles. */
+/** The navigation destinations that are pages of their own: wallet, notifications, Stir, messages, profiles. */
 export function renderSlurpHomeDestinations({
   model,
   shellProps,
@@ -78,13 +78,17 @@ export function renderSlurpHomeDestinations({
     );
   }
 
-  if (navigation.mode === "creator" && navigation.view === "studio") {
+  // W: the Stir tab. An old Studio link lands here too (its own-page half is the profile's Dashboard).
+  if (navigation.mode === "creator" && (navigation.view === "stir" || navigation.view === "studio")) {
     return (
       <SlpShell {...shellProps}>
-        <SlurpStudioView
+        <SlpStirTab
           personaId={viewerPersonaId}
-          onBack={exitToCreatorHub}
-          onOpenProfile={(accountId) => onNavigate({ mode: "creator", view: "profile", accountId })}
+          onOpenDashboard={
+            myCreatorProfile
+              ? () => onNavigate({ mode: "creator", view: "profile", accountId: myCreatorProfile.id, dashboard: true })
+              : undefined
+          }
         />
       </SlpShell>
     );
@@ -97,6 +101,7 @@ export function renderSlurpHomeDestinations({
           personaId={viewerPersonaId}
           ownedCreatorAccountIds={myCreatorProfile ? [myCreatorProfile.id] : []}
           composeWithCreatorAccountId={navigation.creatorAccountId ?? null}
+          composeAsSupport={navigation.asSupport === true}
           initialActivity={false}
           onBack={navigation.returnTo ? () => onNavigate(navigation.returnTo!) : exitToCreatorHub}
           leaveOnExit={Boolean(navigation.returnTo)}
@@ -255,4 +260,10 @@ export function renderSlurpHomeDestinations({
     );
   }
   return null;
+}
+
+/** The Stir tab inside the shell: "See all" opens the shell's Pulse sheet. */
+function SlpStirTab({ personaId, onOpenDashboard }: { personaId: string | null; onOpenDashboard?: () => void }) {
+  const { openPulse } = useSlpShellActions();
+  return <SlpStirScreen personaId={personaId} onOpenPulse={openPulse} onOpenDashboard={onOpenDashboard} />;
 }

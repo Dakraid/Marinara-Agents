@@ -130,7 +130,16 @@ export type SlpStirView = {
   live: SlpStirLive[];
   suggestions: SlpStirSuggestion[];
   plays: SlpStirPlay[];
-  creators: { id: string; name: string; handle: string; avatarUrl: string | null; automatic: boolean; own: boolean }[];
+  creators: {
+    id: string;
+    name: string;
+    handle: string;
+    avatarUrl: string | null;
+    automatic: boolean;
+    own: boolean;
+    /** A couple's shared page: not a Creator to set up or pair. */
+    couplePage: boolean;
+  }[];
   events: { id: string; name: string; running: boolean }[];
   couples: { id: string; aId: string; bId: string; stage: string; page: "open" | "closed" | null }[];
   collabs: { id: string; hostId: string; partnerId: string; status: string }[];

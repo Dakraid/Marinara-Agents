@@ -269,6 +269,7 @@ function SlurpInboxView({
   personaId,
   ownedCreatorAccountIds,
   composeWithCreatorAccountId,
+  composeAsSupport = false,
   initialActivity,
   onBack,
   leaveOnExit = false,
@@ -277,6 +278,8 @@ function SlurpInboxView({
   personaId: string | null;
   ownedCreatorAccountIds: string[];
   composeWithCreatorAccountId: string | null;
+  /** Open that Creator's Slurp Support thread (W). */
+  composeAsSupport?: boolean;
   initialActivity: boolean;
   onBack: () => void;
   /** Closing the chat leaves Messages entirely, back to wherever it was opened from. */
@@ -323,6 +326,7 @@ function SlurpInboxView({
           <SlurpMessagesView
             personaId={personaId}
             composeWithCreatorAccountId={composeCreatorId}
+            composeAsSupport={composeAsSupport && composeCreatorId === composeWithCreatorAccountId}
             initialThreadId={selectedThreadId}
             ownedCreatorAccountIds={ownedCreatorAccountIds}
             onOpenProfile={onOpenProfile}

@@ -3,8 +3,8 @@ import { useStageProfileViewModel, type StageProfileViewProps } from "./slp-prof
 import { SlpProfileModals } from "./SlpProfileModals";
 import { SlpProfilePostCards } from "./SlpProfilePostCards";
 import { SlpProfileLeadingActions } from "./SlpProfileLeadingActions";
-import { ChevronDown, ChevronLeft, Pencil, Plus, Wrench } from "lucide-react";
-import { Fragment, useState } from "react";
+import { ChevronDown, ChevronLeft, MoreHorizontal, Pencil, Plus, Wrench } from "lucide-react";
+import { Fragment, useEffect, useState } from "react";
 import type { SlpCreatorPostView, SlpCreatorStageProfile } from "../../../../../shared/src/slp/slp-social.types.js";
 import type { SlurpPromotion } from "../../features/ads/slp-ads-contract";
 import { toast } from "sonner";
@@ -14,7 +14,10 @@ import { SlpCouplePageWriteSheet, SlpProfileCoupleLine } from "../../features/pr
 import { useSlurpCouplePageClosed } from "../../features/projects/slp-ties-hooks";
 import { useNearViewportSlurpMediaSrc } from "../../base/media/slp-media-src";
 import { SlurpProfileSurface } from "../../features/creators/SlpProfileSurface";
-import { SlpBalanceChip } from "../../modules/chrome/SlpShell";
+import { SlpBalanceChip, useSlpShellActions } from "../../modules/chrome/SlpShell";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
+import { openSlpStir } from "../../features/stir/slp-stir-contract";
+import { SlpDashboardSheet } from "./SlpDashboard";
 import { SlpButton, slpTagClass } from "../../modules/chrome/SlpButton";
 import { SlpUsesAiMark } from "../../modules/chrome/SlpAiMark";
 import { SlpCoinText } from "../../modules/coin/SlpCoin";
@@ -35,7 +38,6 @@ import { api } from "../../../lib/api-client";
 import { SlpPostSurfaceMenu } from "../../modules/post/SlpPostMenu";
 import { downloadSlpShareCard, toSlpShareCardInput } from "../../modules/post/slp-share-card";
 import { errorMessage, toSlpPostCardModel, LoadMoreFeedButton, SlurpPostDialog } from "./SlpHomeHelpers";
-import { SlpCreatorSteeringCard } from "../../features/creators/SlpCreatorSteeringCard";
 
 // ---------------------------------------------------------------------------
 // Local types
@@ -222,9 +224,11 @@ export function StageProfileView({
   viewerActorAccount,
   slurpSettings,
   postCardCtx,
+  openDashboard = false,
   ...rest
 }: StageProfileViewProps) {
   const model = useStageProfileViewModel({ viewerAccount, viewerActorAccount, slurpSettings, postCardCtx, ...rest });
+  const shellActions = useSlpShellActions();
   const {
     profile,
     onProfileChange,
@@ -271,6 +275,13 @@ export function StageProfileView({
   // An open shared page: Message asks which of the two to write to (7c M-002).
   const couplePage = Boolean(profile.sourceAccountId?.startsWith("slurp-couple:"));
   const [coupleWriteOpen, setCoupleWriteOpen] = useState(false);
+  // W: the own page's Dashboard (the old Studio's top half), from the action row or an owed #ad in Stir.
+  const [dashboardOpen, setDashboardOpen] = useState(false);
+  useEffect(() => {
+    if (openDashboard && viewingOwnCreator) setDashboardOpen(true);
+  }, [openDashboard, viewingOwnCreator]);
+  // Another Creator Slurp posts for can be stirred from here; a couple's page and your own cannot.
+  const stirrable = !viewingOwnCreator && !model.personaBackedCreator && !couplePage;
   // No "(0)" while the posts load: a loading page does not claim to be empty.
   const tabCount = (count: number) => (isLoading ? null : count);
   return (
@@ -289,8 +300,36 @@ export function StageProfileView({
               <ChevronLeft size={22} className="rtl:-scale-x-100" />
             </button>
             {/* Phones: the balance sits top right over the banner (the coin-fly target), except while
-              the banner's own edit buttons are there. */}
-            {!editing && <SlpBalanceChip className="absolute end-2 top-2 z-30" />}
+              the banner's own edit buttons are there. W: beside it ✦ (Stir this Creator), or on your
+              own page ⋯ (Settings, Wallet, switch account: "More" became "Me"). */}
+            {!editing && (
+              <div className="absolute end-2 top-2 z-30 flex items-center gap-2">
+                {stirrable && (
+                  <button
+                    type="button"
+                    data-slp-stir-open=""
+                    onClick={() => openSlpStir({ creatorId: profile.id })}
+                    className="flex h-11 items-center gap-1.5 rounded-full bg-black/40 px-3.5 text-sm font-bold text-white shadow-[var(--slurp-shadow-raised)] ring-1 ring-inset ring-white/15 backdrop-blur-md hover:bg-black/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white [&_svg]:!text-white"
+                    aria-label={localizeUi("ui.slurp.stir.stirName", { name: profile.displayName })}
+                  >
+                    <SlpSparkleGlyph size={16} filled aria-hidden="true" />
+                    {localizeUi("ui.slurp.stir.stirShort")}
+                  </button>
+                )}
+                {viewingOwnCreator && shellActions.openMore && (
+                  <button
+                    type="button"
+                    onClick={shellActions.openMore}
+                    className="flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white shadow-[var(--slurp-shadow-raised)] ring-1 ring-inset ring-white/15 backdrop-blur-md hover:bg-black/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white @min-[1024px]:hidden [&_svg]:!text-white"
+                    aria-label={localizeUi("ui.slurp.navigation.more", { defaultValue: "More" })}
+                    title={localizeUi("ui.slurp.navigation.more", { defaultValue: "More" })}
+                  >
+                    <MoreHorizontal size={20} aria-hidden="true" />
+                  </button>
+                )}
+                <SlpBalanceChip />
+              </div>
+            )}
           </>
         }
         account={profile}
@@ -381,6 +420,7 @@ export function StageProfileView({
           closedCouplePage ? null : (
             <SlpProfileLeadingActions
               model={couplePage ? { ...model, onOpenMessages: () => setCoupleWriteOpen(true) } : model}
+              onOpenDashboard={viewingOwnCreator ? () => setDashboardOpen(true) : undefined}
             />
           )
         }
@@ -490,6 +530,15 @@ export function StageProfileView({
         />
       )}
       <SlpProfileModals model={model} />
+      {viewingOwnCreator && (
+        <SlpDashboardSheet
+          open={dashboardOpen}
+          onClose={() => setDashboardOpen(false)}
+          personaId={viewerAccount?.entityId ?? null}
+          creatorId={profile.id}
+          onOpenProfile={() => setDashboardOpen(false)}
+        />
+      )}
       {couplePage && (
         <SlpCouplePageWriteSheet
           personaId={viewerAccount?.entityId ?? null}
@@ -632,15 +681,24 @@ function SlpCreatorToolsCard({ model }: { model: ReturnType<typeof useStageProfi
             )}
           </div>
         )}
-        {/* Steering: what happens in their life. Only for Creators Slurp writes for: not a couple's shared
-          page (7b-couples), whose posts come from the two of them. */}
+        {/* W: steering (mood, life, pace, ideas, spice) moved into the Stir ✦ sheet with the rest of the
+          levers. Only for Creators Slurp writes for: not a couple's shared page (7b-couples). */}
         {!viewingOwnCreator && !personaBackedCreator && !profile.sourceAccountId?.startsWith("slurp-couple:") && (
-          <SlpCreatorSteeringCard
-            creatorId={profile.id}
-            name={profile.displayName}
-            onPostNow={() => onRunNow(profile.id)}
-            postNowPending={runNowPending}
-          />
+          <button
+            type="button"
+            onClick={() => openSlpStir({ creatorId: profile.id })}
+            className="flex min-h-12 w-full items-center gap-3 rounded-xl bg-[var(--slurp-tint)] px-3 text-start transition-colors hover:bg-[color-mix(in_srgb,var(--noodle-accent)_22%,var(--slurp-surface-raised))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] [&_svg]:!text-[var(--slurp-ink)]"
+          >
+            <SlpSparkleGlyph size={18} filled aria-hidden="true" className="shrink-0" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13px] font-semibold text-[var(--slurp-text)]">
+                {localizeUi("ui.slurp.stir.stirName", { name: profile.displayName })}
+              </span>
+              <span className="block truncate text-xs text-[var(--slurp-muted)]">
+                {localizeUi("ui.slurp.stir.toolsRow")}
+              </span>
+            </span>
+          </button>
         )}
         <div>
           <p className="text-xs font-semibold text-[var(--slurp-muted)]">

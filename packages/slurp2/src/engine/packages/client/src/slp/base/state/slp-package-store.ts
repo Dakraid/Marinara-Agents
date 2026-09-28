@@ -60,6 +60,7 @@ function isSlurpNavigation(value: unknown): value is SlurpNavigationState {
       return true;
     // Studio and Activity are pages too; a reload there landed on the Hub (R1-134).
     case "studio":
+    case "stir":
     case "notifications":
       return true;
     case "messages":

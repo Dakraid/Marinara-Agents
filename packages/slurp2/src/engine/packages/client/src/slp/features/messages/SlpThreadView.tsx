@@ -37,6 +37,7 @@ import {
   SlurpPlatformActionCard,
 } from "./SlpMessageBubble";
 import { slurpBubbleGroup } from "./slp-bubble-group";
+import { readSlpStirProposal, SlpStirSupportCards } from "../stir/slp-stir-contract";
 import { slurpAwayKind } from "./slp-away-kind";
 import { formatClockTime } from "../../base/ui/slp-date-time";
 
@@ -243,15 +244,24 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
                       standaloneTip?.id === entry.message.id ? (
                         <SlurpPlatformActionCard message={entry.message} relationship={relationship} />
                       ) : (
-                        <MessageBubble
-                          message={entry.message}
-                          locale={i18n.language}
-                          personaId={personaId}
-                          ownsCreator={ownsCreator}
-                          group={slurpBubbleGroup(visibleTimeline, index, firstUnreadMessageId)}
-                          fresh={Boolean(openedWith.current && !openedWith.current.has(entry.message.id))}
-                          onOpenProfile={model.onOpenProfile}
-                        />
+                        <>
+                          <MessageBubble
+                            message={entry.message}
+                            locale={i18n.language}
+                            personaId={personaId}
+                            ownsCreator={ownsCreator}
+                            group={slurpBubbleGroup(visibleTimeline, index, firstUnreadMessageId)}
+                            fresh={Boolean(openedWith.current && !openedWith.current.has(entry.message.id))}
+                            onOpenProfile={model.onOpenProfile}
+                          />
+                          {/* W: a talk with Slurp Support proposes Stir cards under the Creator's reply. */}
+                          {readSlpStirProposal(entry.message.metadata) && (
+                            <SlpStirSupportCards
+                              messageId={entry.message.id}
+                              proposal={readSlpStirProposal(entry.message.metadata)!}
+                            />
+                          )}
+                        </>
                       )
                     ) : personaId ? (
                       <CommissionRow

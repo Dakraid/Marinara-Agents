@@ -9,6 +9,7 @@ import {
   RefreshCw,
   ScanSearch,
   Send,
+  Sparkles,
   Trash2,
   UserRound,
 } from "lucide-react";
@@ -163,9 +164,16 @@ export function SlpPostMenu({
             </SlpSheetItem>
           ) : null}
         </SlpSheetGroup>
-        {(ctx.postManagement || hasImageContext) && (
+        {(ctx.postManagement || hasImageContext || ctx.stir) && (
           // Operator actions stay inline but come last and quieter than fan actions (design language §8).
           <SlpSheetGroup label={localizeUi("ui.slurp.post.creatorTools", { defaultValue: "Creator tools" })}>
+            {ctx.stir && !slpIsOwnActor(ctx.personaAccount, post.authorAccountId) && (
+              // W: make something happen from this post (a follow-up, a reply from someone, drama).
+              <SlpSheetItem onSelect={run(() => ctx.stir?.({ id: post.id, authorAccountId: post.authorAccountId }))}>
+                <Sparkles size={14} />
+                {localizeUi("ui.slurp.stir.fromPost")}
+              </SlpSheetItem>
+            )}
             {ctx.postManagement && (
               <SlpSheetItem tone="muted" onSelect={run(() => startEditingPost(editablePost))}>
                 <Pencil size={14} />

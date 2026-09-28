@@ -23,7 +23,7 @@ import { slurpDealOwesPost } from "../../modules/economy/slp-brand-deals.js";
 import { buildSlpStirPlanMessages, readSlpStirPlanAnswer } from "../../modules/assist/slp-stir-plan.js";
 import { slpStirLive, slpStirSuggestions } from "../../modules/assist/slp-stir-live.js";
 import { slpRunStirSteps, slpSortStirSteps } from "../../modules/assist/slp-stir-play.js";
-import { slurpRunsItself } from "../projects/slp-projects-contract.js";
+import { slurpIsCouplePage, slurpRunsItself } from "../projects/slp-projects-contract.js";
 import { previewSlpAction } from "./slp-action-preview.js";
 import { runSlpActionWithUndo } from "./slp-action-runner.js";
 import { readSlpStirWorld, undoSlpAction, type SlpActionUndo } from "./slp-stir-levers.js";
@@ -44,6 +44,7 @@ type Account = {
   avatarUrl?: string | null;
   kind: string;
   sourceKind?: string | null;
+  sourceEntityId?: string | null;
 };
 
 /**
@@ -188,6 +189,7 @@ export async function readSlpStirView(
         avatarUrl: account.avatarUrl ?? null,
         automatic,
         own: own(account),
+        couplePage: slurpIsCouplePage(account),
         lastPostAt: (latest as { createdAt?: string } | null)?.createdAt ?? null,
         pace: steering.pace,
         ideas: steering.nudges.length,

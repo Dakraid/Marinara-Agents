@@ -1,5 +1,4 @@
-import { useSlpStoryTimeline, useStartStoryEvent } from "./slp-story-hooks";
-import { toast } from "sonner";
+import { useSlpStoryTimeline } from "./slp-story-hooks";
 import { CalendarDays, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -45,12 +44,14 @@ export function SlurpPlatformEventsSettings({
   events,
   saving,
   onSave,
+  onStartInStir,
 }: {
   events: SlurpPlatformEvent[];
   saving: boolean;
   onSave: (events: SlurpPlatformEvent[]) => Promise<boolean>;
+  /** W: "Start now" left Settings; this opens the Stir tab, where the event card starts it. */
+  onStartInStir?: () => void;
 }) {
-  const startEvent = useStartStoryEvent();
   const { t, i18n } = useTranslation();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<SlurpPlatformEvent | null>(null);
@@ -361,25 +362,14 @@ export function SlurpPlatformEventsSettings({
                       {eventWhen(item, i18n.language)}
                     </span>
                   </button>
-                  {item.activation.kind === "manual" && item.enabled && (
+                  {/* W: starting an event is a story lever, so it lives in Stir (World); the rules stay here. */}
+                  {item.activation.kind === "manual" && item.enabled && onStartInStir && (
                     <button
                       type="button"
-                      disabled={startEvent.isPending}
-                      onClick={() =>
-                        startEvent.mutate(item.id, {
-                          onSuccess: () =>
-                            toast.success(
-                              t("ui.slurp.settings.events.started", {
-                                defaultValue: "{{name}} started.",
-                                name: item.name,
-                              }),
-                            ),
-                          onError: (error) => toast.error(error instanceof Error ? error.message : String(error)),
-                        })
-                      }
-                      className="min-h-11 shrink-0 rounded-lg px-3 text-xs font-semibold ring-1 ring-inset ring-[var(--slurp-outline)] hover:bg-[var(--slurp-canvas)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50"
+                      onClick={onStartInStir}
+                      className="min-h-11 shrink-0 rounded-lg px-3 text-xs font-semibold text-[var(--slurp-ink)] ring-1 ring-inset ring-[var(--slurp-outline)] hover:bg-[var(--slurp-canvas)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
                     >
-                      {t("ui.slurp.settings.events.start", { defaultValue: "Start now" })}
+                      {t("ui.slurp.stir.startInStir")}
                     </button>
                   )}
                 </div>

@@ -1,26 +1,16 @@
-import {
-  Activity,
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  CircleAlert,
-  Loader2,
-  Play,
-  SlidersHorizontal,
-} from "lucide-react";
+import { Activity, CheckCircle2, ChevronDown, CircleAlert, Loader2 } from "lucide-react";
 import { useMutationState, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import i18next from "i18next";
 import { formatRelativeTime } from "../../base/ui/slp-date-time";
 import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
-import { Avatar, SLP_EYEBROW_CLASS, SLP_GROUP_CLASS, SLP_TYPE } from "../../base/chrome/SlpChrome";
+import { Avatar, SLP_EYEBROW_CLASS, SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { api } from "../../../lib/api-client.js";
 import { cn } from "../../../lib/utils";
 import { sortSlpPulseScheduled } from "./slp-pulse-order";
 import { SlpSheet } from "./SlpSheet";
-import { noteSlpAiUseOnce, SlpUsesAiMark } from "./SlpAiMark";
 
 export function SlpPulseCard({ open, onOpen }: { open: boolean; onOpen: () => void }) {
   const { t } = useUiTranslation();
@@ -56,22 +46,16 @@ export function SlpPulseCard({ open, onOpen }: { open: boolean; onOpen: () => vo
 }
 
 /**
- * Pulse: what Slurp is doing in the background, and the two things you can start by hand. A
- * SlpSheet, so it never stacks on the More sheet (B8): opening it closes that one.
+ * Pulse: what Slurp is doing in the background and what just happened. A SlpSheet, so it never
+ * stacks on the More sheet (B8): opening it closes that one. New plays start in Stir (W).
  */
 export function SlpPulsePanel({
   open,
   onClose,
-  onGeneratePosts,
-  onRunAudience,
-  audiencePending = false,
   accounts = [],
 }: {
   open: boolean;
   onClose: () => void;
-  onGeneratePosts?: () => void;
-  onRunAudience?: () => void;
-  audiencePending?: boolean;
   accounts?: SlpAccount[];
 }) {
   const { t } = useUiTranslation();
@@ -106,44 +90,8 @@ export function SlpPulsePanel({
             })}`}
         </p>
 
-        <section aria-labelledby="slurp-pulse-actions" className="space-y-2">
-          {heading("slurp-pulse-actions", t("ui.slurp.pulse.runNow", { defaultValue: "Run now" }))}
-          <div className={SLP_GROUP_CLASS}>
-            <PulseAction
-              icon={<SlidersHorizontal size={18} aria-hidden="true" />}
-              label={t("ui.slurp.pulse.generatePosts", { defaultValue: "Generate posts" })}
-              detail={t("ui.slurp.pulse.generatePostsDetail", { defaultValue: "Opens post settings in Backstage" })}
-              trailing={<ChevronRight size={16} aria-hidden="true" />}
-              onClick={() => {
-                onGeneratePosts?.();
-                onClose();
-              }}
-            />
-            {/* One tap runs it; the ✦ AI mark says it uses the AI connection (design step 7). */}
-            <PulseAction
-              icon={
-                audiencePending ? (
-                  <Loader2 size={18} className="animate-spin" aria-hidden="true" />
-                ) : (
-                  <Play size={18} aria-hidden="true" />
-                )
-              }
-              label={
-                audiencePending
-                  ? t("ui.slurp.pulse.runningAudience", { defaultValue: "Running audience" })
-                  : t("ui.slurp.pulse.runAudience", { defaultValue: "Run audience" })
-              }
-              detail={t("ui.slurp.pulse.runAudienceDetail", { defaultValue: "Fans like, comment and reply now" })}
-              trailing={<SlpUsesAiMark />}
-              onClick={() => {
-                noteSlpAiUseOnce(t);
-                onRunAudience?.();
-              }}
-              disabled={audiencePending || !onRunAudience}
-            />
-          </div>
-        </section>
-
+        {/* W: Pulse shows what runs and ran. "Generate posts" (only a link to Settings) is gone and
+            "Run audience" is a Stir card ("Wake the fans"): a new plan never starts here. */}
         {busy && (
           <section aria-labelledby="slurp-pulse-now" className="space-y-2">
             {heading(
@@ -683,36 +631,4 @@ function pulseTaskLabel(key: string, t: (key: string, options?: Record<string, u
   };
   const [keyName, defaultValue] = labels[key] ?? ["ui.slurp.pulse.slurpTask", "Slurp task"];
   return t(keyName, { defaultValue });
-}
-
-function PulseAction({
-  icon,
-  label,
-  detail,
-  trailing,
-  onClick,
-  disabled = false,
-}: {
-  icon: ReactNode;
-  label: string;
-  detail?: string;
-  trailing?: ReactNode;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="flex min-h-14 w-full items-center gap-3 px-4 py-2 text-start transition-colors hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] disabled:cursor-wait disabled:opacity-55 motion-reduce:transition-none"
-    >
-      <span className="shrink-0 text-[var(--slurp-ink)] [&_svg]:!text-current">{icon}</span>
-      <span className="min-w-0 flex-1">
-        <span className={cn(SLP_TYPE.body, "block font-semibold")}>{label}</span>
-        {detail && <span className={cn(SLP_TYPE.meta, "block truncate text-[var(--slurp-muted)]")}>{detail}</span>}
-      </span>
-      {trailing && <span className="shrink-0 text-[var(--slurp-muted)] [&_svg]:!text-current">{trailing}</span>}
-    </button>
-  );
 }

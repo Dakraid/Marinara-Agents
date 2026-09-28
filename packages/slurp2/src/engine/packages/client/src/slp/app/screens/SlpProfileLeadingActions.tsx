@@ -1,4 +1,4 @@
-import { Check, Pencil, Plus } from "lucide-react";
+import { ChartNoAxesColumn, Check, Pencil, Plus } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { cn } from "../../../lib/utils";
@@ -18,9 +18,16 @@ const TIP_AMOUNTS = [5, 10, 25, 50];
 /**
  * The profile's action row (design step 3). Another Creator: full-width Subscribe (or Resume
  * subscription while a cancelled one is still paid), then Follow · Message · Tip; subscribed:
- * ✓ Subscribed · Message · Tip. The own Creator: New post · Edit profile.
+ * ✓ Subscribed · Message · Tip. The own Creator: New post · Edit profile · Dashboard (W: the old
+ * Studio's own-page half).
  */
-export function SlpProfileLeadingActions({ model }: { model: StageProfileViewModel }) {
+export function SlpProfileLeadingActions({
+  model,
+  onOpenDashboard,
+}: {
+  model: StageProfileViewModel;
+  onOpenDashboard?: () => void;
+}) {
   const {
     editing,
     followPending,
@@ -41,15 +48,30 @@ export function SlpProfileLeadingActions({ model }: { model: StageProfileViewMod
   if (editing) return null;
   if (viewingOwnCreator) {
     return (
-      <div className="grid grid-cols-2 gap-2">
-        <SlpButton variant="quiet" onClick={() => openComposer()} className="px-3">
+      <div className={cn("grid gap-2", onOpenDashboard ? "grid-cols-3" : "grid-cols-2")}>
+        <SlpButton
+          variant="quiet"
+          onClick={() => openComposer()}
+          className="min-w-0 gap-1.5 whitespace-nowrap px-2 text-[13px]"
+        >
           <Plus size={16} aria-hidden="true" />
           {localizeUi("ui.slurp.profile.newPost", { defaultValue: "New post" })}
         </SlpButton>
-        <SlpButton variant="quiet" onClick={onEdit} className="px-3">
+        <SlpButton variant="quiet" onClick={onEdit} className="min-w-0 gap-1.5 whitespace-nowrap px-2 text-[13px]">
           <Pencil size={15} aria-hidden="true" />
           {localizeUi("ui.slurp.profile.editProfile", { defaultValue: "Edit profile" })}
         </SlpButton>
+        {onOpenDashboard && (
+          <SlpButton
+            variant="secondary"
+            onClick={onOpenDashboard}
+            data-slp-dashboard-open=""
+            className="min-w-0 gap-1.5 whitespace-nowrap px-2 text-[13px]"
+          >
+            <ChartNoAxesColumn size={15} aria-hidden="true" />
+            {localizeUi("ui.slurp.dashboard.open")}
+          </SlpButton>
+        )}
       </div>
     );
   }

@@ -66,6 +66,7 @@ import {
 } from "./screens/SlpHomeHelpers";
 import { useSlpPostCardController } from "../modules/post/SlpPostHooks";
 import { SlpTextAssist } from "../features/assist/slp-assist-contract";
+import { openSlpStir } from "../base/state/slp-stir-sheet-store";
 import type { ImagePromptReviewItem } from "../../components/ui/ImagePromptReviewModal";
 import type { SlurpNavigationState } from "../base/navigation/slp-navigation.types";
 import { useTranslation as useUiTranslation } from "react-i18next";
@@ -443,9 +444,9 @@ export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onL
     onNavigate({ mode: "creator", view: "wallet" });
     setMobileDrawerOpen(false);
   };
-  const goToStudio = async () => {
+  const goToStir = async () => {
     if (!(await prepareNavigationAwayFromProfileEditor())) return;
-    onNavigate({ mode: "creator", view: "studio" });
+    onNavigate({ mode: "creator", view: "stir" });
     setMobileDrawerOpen(false);
   };
   const closeNoodlerSearch = () => {
@@ -483,6 +484,8 @@ export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onL
   });
   const postCardController = useSlpPostCardController({
     textAssist: ({ story, ...input }) => createElement(SlpTextAssist, { ...input, field: story ? "story" : "caption" }),
+    // W: the ✦ sheet from a post's ⋯, about its Creator, with the post as context.
+    stir: (post) => openSlpStir({ creatorId: post.authorAccountId, postId: post.id }),
     postShowMoreLength: slurpSettingsQuery.data?.postShowMoreLength,
     postManagement: false,
     personaAccount: viewerActorAccount,
@@ -760,7 +763,7 @@ export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onL
     goToNoodlerSearch,
     goToMessages,
     goToWallet,
-    goToStudio,
+    goToStir,
     closeNoodlerSearch,
     reactToPost,
     reactToReply,

@@ -31,6 +31,8 @@ import type { SlpCreatorProfileTab, SlurpProfileImagePost } from "./SlpScreenPro
 
 export interface StageProfileViewProps {
   profile: SlurpManagedStageProfile;
+  /** Open the own page's Dashboard on arrival (W). */
+  openDashboard?: boolean;
   profileDraft: SlurpStageProfileInput | null;
   onProfileChange: (patch: Partial<SlurpStageProfileInput>) => void;
   onCancelEdit: () => void;

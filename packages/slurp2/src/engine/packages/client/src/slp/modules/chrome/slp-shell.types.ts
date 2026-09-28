@@ -4,7 +4,7 @@ import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.
 import type { SlpStoryRings } from "../story/SlpStoryRing";
 
 export type SlpShellView =
-  "home" | "noodler" | "search" | "profile" | "messages" | "notifications" | "studio" | "wallet" | "settings" | null;
+  "home" | "noodler" | "search" | "profile" | "messages" | "notifications" | "stir" | "wallet" | "settings" | null;
 type SlpShellMode = "noodle" | "noodler" | "slurp";
 export type SlpShellContextualRail = "populated" | "blank" | "spanning";
 
@@ -59,16 +59,10 @@ export interface SlpShellProps {
   onOpenMessages?: () => void;
   /** Omit on surfaces with no scoped equivalent. */
   onOpenWallet?: () => void;
-  onOpenStudio?: () => void;
-  /** Generates posts for the active Slurp Creator set. */
-  onGeneratePosts?: () => void;
-  /** Runs the audience activity pass. */
-  onRunAudience?: () => void;
-  audiencePending?: boolean;
+  /** The Stir tab (W): the centre of the phone nav, a row in the desktop sidebar. */
+  onOpenStir?: () => void;
   /** Unseen activity, shown on the unified Inbox entry. */
   notificationCount?: number;
-  /** The studio only exists for a persona that operates a Creator. */
-  hasOperatedCreator?: boolean;
   /** Shown on the desktop Wallet row and the identity card, so the balance is not mobile-only. */
   walletBalanceLabel?: string;
   /** Loaded numeric balance used for spend feedback; omitted while a placeholder is shown. */

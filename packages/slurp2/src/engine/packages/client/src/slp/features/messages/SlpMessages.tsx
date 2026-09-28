@@ -109,6 +109,7 @@ export function SlurpMessagesView({
   personaId,
   ownedCreatorAccountIds,
   composeWithCreatorAccountId = null,
+  composeAsSupport = false,
   initialThreadId = null,
   onOpenProfile,
   onThreadContextChange,
@@ -122,6 +123,8 @@ export function SlurpMessagesView({
   ownedCreatorAccountIds: string[];
   /** Set when Messages was opened from a Creator profile, to land straight in that chat. */
   composeWithCreatorAccountId?: string | null;
+  /** Land in that Creator's Slurp Support thread instead (the Stir ✦ sheet's "Talk as Slurp Support"). */
+  composeAsSupport?: boolean;
   /** Set by an Activity event that points at an existing conversation. */
   initialThreadId?: string | null;
   onOpenProfile: (accountId: string) => void;
@@ -156,7 +159,7 @@ export function SlurpMessagesView({
   const [composePickerOpen, setComposePickerOpen] = useState(false);
   // "Write as Slurp Support": the picker lists Creators, and the chat opens in Support's voice.
   const [supportPick, setSupportPick] = useState(false);
-  const [startAsSupport, setStartAsSupport] = useState(false);
+  const [startAsSupport, setStartAsSupport] = useState(composeAsSupport);
   const closeComposePicker = () => {
     setComposePickerOpen(false);
     setSupportPick(false);
@@ -185,8 +188,9 @@ export function SlurpMessagesView({
     } else {
       setOpenThreadId(null);
       setComposeWith(composeWithCreatorAccountId);
+      setStartAsSupport(Boolean(composeWithCreatorAccountId) && composeAsSupport);
     }
-  }, [composeWithCreatorAccountId, initialThreadId]);
+  }, [composeWithCreatorAccountId, composeAsSupport, initialThreadId]);
 
   useEffect(() => {
     onConversationOpenChange?.(Boolean(openThreadId || composeWith));

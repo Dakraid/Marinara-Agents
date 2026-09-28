@@ -20,6 +20,7 @@ export function SlpWorldEventsPanel(page: SlpBackstagePageProps) {
           events={settings.platformEvents}
           saving={updateSettings.isPending}
           onSave={(events) => update("platformEvents", events)}
+          onStartInStir={() => page.onNavigate({ mode: "creator", view: "stir" })}
         />
       </SettingAnchor>
       <SlpWorldTimeline />
