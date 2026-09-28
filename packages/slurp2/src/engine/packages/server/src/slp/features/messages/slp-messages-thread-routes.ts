@@ -210,8 +210,10 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     await slurp.ensureAudienceCharacterAccounts().catch(() => undefined);
     const accounts = await slurp.listNoodlerAccounts();
     // A shared couple page is not someone to write to: the two partners are listed on their own.
-    const couplePages = new Set(accounts.filter(slurpIsCouplePage).map((account) => account.id));
-    const profiles = (await slurp.listNoodlerStageProfiles()).filter((profile) => !couplePages.has(profile.id));
+    const couplePages = new Set(accounts.filter(slurpIsCouplePage).map((account: { id: string }) => account.id));
+    const profiles = (await slurp.listNoodlerStageProfiles()).filter(
+      (profile: { id: string }) => !couplePages.has(profile.id),
+    );
     const operatedAccounts = accounts.filter(
       (account) => account.sourceKind === "persona" && account.sourceEntityId === viewer.id,
     );

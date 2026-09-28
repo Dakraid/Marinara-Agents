@@ -72,7 +72,7 @@ const at = (days: number) => new Date(T0 + days * 86_400_000);
   assert.equal(send.match(/slurpClosedThreadText\((opened|sent)\)/gu)?.length, 3, "send, tip and share explain it");
   assert.match(
     server("features/messages/slp-messages-thread-routes.ts"),
-    /filter\(\(profile\) => !couplePages\.has\(profile\.id\)\)/u,
+    /filter\(\s*\(profile: \{ id: string \}\) => !couplePages\.has\(profile\.id\),?\s*\)/u,
   );
   assert.match(server("features/economy/slp-payment-reaction.ts"), /if \(slurpIsCouplePage\(creator\)\) return;/u);
   const wallet = server("features/economy/slp-wallet-routes.ts");
@@ -292,7 +292,7 @@ const at = (days: number) => new Date(T0 + days * 86_400_000);
   const storage = server("data/messages/slp-messages-storage-follow-ups.ts");
   assert.match(
     storage,
-    /async postponeScheduledFollowUp\([^)]*\): Promise<void> \{\s+const row = [^\n]+\n\s+if \(row && isFollowUpOverdue\(\{ createdAt: String\(row\.createdAt\) \}\)\)\s+return context\.storage\.cancelScheduledFollowUp\(threadId, followUpId\);/u,
+    /async postponeScheduledFollowUp\([^)]*\): Promise<void> \{\s+const row = [^\n]+\n\s+const overdue = Boolean\(row && isFollowUpOverdue\(\{ createdAt: String\(row\.createdAt\) \}\)\);[\s\S]{0,200}overdue\s+\? \{ status: "cancelled"/u,
     "every postpone path goes through the cap",
   );
 }

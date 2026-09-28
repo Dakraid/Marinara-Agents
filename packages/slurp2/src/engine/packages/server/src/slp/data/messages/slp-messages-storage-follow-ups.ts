@@ -232,12 +232,15 @@ export function createMessagesStorageFollowUps(context: SlurpMessagesContext) {
      */
     async postponeScheduledFollowUp(threadId: string, followUpId: string, scheduledAt: string): Promise<void> {
       const row = (await db.select().from(slurpFollowUps).where(eq(slurpFollowUps.id, followUpId)))[0];
-      if (row && isFollowUpOverdue({ createdAt: String(row.createdAt) }))
-        return context.storage.cancelScheduledFollowUp(threadId, followUpId);
+      const overdue = Boolean(row && isFollowUpOverdue({ createdAt: String(row.createdAt) }));
       const timestamp = now();
       await db
         .update(slurpFollowUps)
-        .set({ status: "pending", claimedAt: null, scheduledAt, updatedAt: timestamp })
+        .set(
+          overdue
+            ? { status: "cancelled", claimedAt: null, cancelledAt: timestamp, updatedAt: timestamp }
+            : { status: "pending", claimedAt: null, scheduledAt, updatedAt: timestamp },
+        )
         .where(
           and(
             eq(slurpFollowUps.id, followUpId),

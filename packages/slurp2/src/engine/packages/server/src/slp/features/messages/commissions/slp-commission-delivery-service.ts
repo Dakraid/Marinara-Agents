@@ -32,7 +32,9 @@ export async function deliverAutomaticSlurpCommission(
   // From the copy bank, seeded on the commission, so the same piece always arrives with the same
   // note and every Creator does not say one identical hardcoded sentence. In the chat's language:
   // an English line in a German chat read as a bot (7c M-008).
-  const recent = await messages.listMessages(commission.threadId, 12).catch(() => []);
+  const recent: { kind: string; content: string; metadata?: Record<string, unknown> | null }[] = await messages
+    .listMessages(commission.threadId, 12)
+    .catch(() => []);
   const language = slurpChatLanguage(
     recent
       .filter((message) => message.kind === "text" && !message.metadata?.paymentReaction)
