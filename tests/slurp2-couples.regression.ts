@@ -395,12 +395,12 @@ function run(days: number, over: Partial<SlurpCouplesInput> = {}, start: SlurpCo
   assert.equal(slurpCoupleOfPage([split], "page-1")?.id, split.id);
 }
 
-// --- 6. Money: a couple keeps separate incomes (U); a shared page pays both -----------------------
+// --- 6. Money: joint posts split like a collab; a shared page pays both --------------------------
 {
-  // U (user): only the shared couple page splits; an old joint couple post (before U) pays its author.
   const joint = { kind: "couple", id: "b1", partnerId: "kai", moment: "launch", momentId: "m", joint: true };
   assert.deepEqual(slurpPostIncomeParts({ authorAccountId: "mira", metadata: { slurpTie: joint } }, 101), [
-    { creatorId: "mira", amount: 101 },
+    { creatorId: "mira", amount: 51 },
+    { creatorId: "kai", amount: 50 },
   ]);
   const page = { kind: "couple", id: "b1", partnerId: "kai", pageId: "page-1", hostId: "mira" };
   assert.deepEqual(

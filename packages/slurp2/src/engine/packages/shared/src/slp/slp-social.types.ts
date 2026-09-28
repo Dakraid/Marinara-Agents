@@ -448,6 +448,8 @@ export interface SlpPostPartnership {
   brand: string | null;
   /** A couple post (7b-couples): a heart instead of the collab mark. On their shared page, `host` wrote it. */
   couple?: boolean;
+  /** A collab's announcement (U): "Collab soon with @kai"; the joint post itself comes on its drop day. */
+  announce?: boolean;
 }
 
 export interface SlpCreatorViewerCreator {

@@ -693,10 +693,13 @@ export function slurpPostIncomeParts(
   amount: number,
 ): { creatorId: string; amount: number }[] {
   const stamp = readSlurpTieStamp(post.metadata);
-  // Only the joint collab post splits. A couple keeps separate incomes (U, user: collab = work, couple
-  // = life), old joint couple posts too; their shared page pays that page, whose earnings go half to
-  // each (`slurpCouplePageSplit`). The partner's own side (`echo`) and the announcement are one page's.
-  const joint = stamp?.kind === "collab" && !stamp.echo && !stamp.announce;
+  // The joint collab post splits. A couple keeps separate incomes (U, user: collab = work, couple =
+  // life): new couple posts are never joint; an old joint couple post (before U) keeps its split, so
+  // nothing changes for posts already up. A shared page pays that page, whose earnings go half to each
+  // (`slurpCouplePageSplit`). The partner's own side (`echo`) and the announcement are one page's.
+  const joint =
+    (stamp?.kind === "collab" && !stamp.echo && !stamp.announce) ||
+    (stamp?.kind === "couple" && stamp.joint === true && !stamp.pageId);
   if (!joint || !stamp.partnerId || stamp.partnerId === post.authorAccountId)
     return [{ creatorId: post.authorAccountId, amount }];
   const parts = slurpCollabIncomeParts(amount, stamp.hostShare ?? SLURP_COLLAB_DEFAULT_SHARE);

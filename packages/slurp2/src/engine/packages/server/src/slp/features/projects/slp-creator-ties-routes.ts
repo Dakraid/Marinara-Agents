@@ -187,17 +187,34 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
     return change(req, reply, (ties, at) => slurpSuggestCollab(ties, a, b, { at, id: newId() }));
   });
 
+  /** A deal of a page this viewer runs, or null once the error is answered (404 / 403). */
+  const ownDeal = async (
+    dealId: string,
+    viewer: NonNullable<Awaited<ReturnType<typeof resolveViewerPersona>>>,
+    reply: Parameters<typeof viewerFrom>[1],
+  ) => {
+    const deal = (await readSlurpCreatorTiesDocument(app.db)).deals.find((entry) => entry.id === dealId);
+    const creator = deal ? await noodle.getNoodlerAccountById(deal.creatorId) : null;
+    if (!deal || !creator) {
+      reply.code(404).send({ error: ERRORS.notFound[1] });
+      return null;
+    }
+    if (!creatorBelongsToViewer(creator, viewer)) {
+      reply.code(403).send({ error: "Only the Creator's own page can answer this offer." });
+      return null;
+    }
+    return { deal, creator };
+  };
+
   /** A brand offer to a page the player runs: yes pays the fee now, no ends it. */
   app.post("/slurp/ties/deals/:id/answer", async (req, reply) => {
     const parsed = personaSchema.extend({ accept: z.boolean() }).safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
     const viewer = await resolveViewerPersona(parsed.data.personaId);
     if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
-    const deal = (await readSlurpCreatorTiesDocument(app.db)).deals.find((entry) => entry.id === id(req));
-    const creator = deal ? await noodle.getNoodlerAccountById(deal.creatorId) : null;
-    if (!deal || !creator) return reply.code(404).send({ error: ERRORS.notFound[1] });
-    if (!creatorBelongsToViewer(creator, viewer))
-      return reply.code(403).send({ error: "Only the Creator's own page can answer this offer." });
+    const own = await ownDeal(id(req), viewer, reply);
+    if (!own) return;
+    const { deal, creator } = own;
     const outcome = await mutateSlurpCreatorTies(app.db, (document) => {
       const next = slurpAnswerDeal(document.deals, deal.id, parsed.data.accept, new Date());
       return typeof next === "string"
@@ -212,14 +229,10 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
   /** "Mark as posted" (U): the player's own page posted the sponsored post its own way; the reminder goes. */
   app.post("/slurp/ties/deals/:id/posted", async (req, reply) => {
     const viewer = await viewerFrom(req.body, reply);
-    if (!viewer) return;
-    const deal = (await readSlurpCreatorTiesDocument(app.db)).deals.find((entry) => entry.id === id(req));
-    const creator = deal ? await noodle.getNoodlerAccountById(deal.creatorId) : null;
-    if (!deal || !creator) return reply.code(404).send({ error: ERRORS.notFound[1] });
-    if (!creatorBelongsToViewer(creator, viewer))
-      return reply.code(403).send({ error: "Only the Creator's own page can mark this post." });
+    const own = viewer ? await ownDeal(id(req), viewer, reply) : null;
+    if (!own) return;
     const outcome = await mutateSlurpCreatorTies(app.db, (document) => {
-      const next = slurpMarkDealPosted(document.deals, deal.id, new Date());
+      const next = slurpMarkDealPosted(document.deals, own.deal.id, new Date());
       return typeof next === "string"
         ? { document, result: next }
         : { document: { ...document, deals: next }, result: "ok" as const };
