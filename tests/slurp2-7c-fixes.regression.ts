@@ -13,6 +13,7 @@ import {
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples.ts";
 import {
   slurpCommissionDeliveryDelayMs,
+  slurpExpiredRequestIds,
   slurpUnscheduledCommissionDeliveries,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-messaging.ts";
 import { slurpAssistChatContext } from "../packages/slurp2/src/engine/packages/client/src/slp/features/messages/slp-assist-chat-context.ts";
@@ -125,12 +126,17 @@ const at = (days: number) => new Date(T0 + days * 86_400_000);
     ),
     [],
   );
-  const world = server("features/world/slp-world-operation.ts");
+  const upkeep = server("features/messages/slp-stuck-messages-service.ts");
+  assert.match(upkeep, /slurpUnscheduledCommissionDeliveries\(\s*await messages\.listAcceptedCommissions\(\),/u);
   assert.match(
-    world,
-    /slurpUnscheduledCommissionDeliveries\(\s*await messages\.listAcceptedCommissions\(\),\s*automatedCreatorIds,/u,
+    upkeep,
+    /scheduleCommissionDelivery\(repair\.id, \{ deliverAt: repair\.deliverAt, mediaPath: null \}\)/u,
   );
-  assert.match(world, /scheduleCommissionDelivery\(repair\.id, \{ deliverAt: repair\.deliverAt, mediaPath: null \}\)/u);
+  assert.match(
+    server("features/world/slp-world-operation.ts"),
+    /await settleSlurpStuckMessages\(db, automatedCreatorIds, until\)/u,
+    "on every world tick",
+  );
   assert.match(
     server("features/messages/commissions/slp-commission-delivery-service.ts"),
     /if \(mediaPath\) \{/u,
@@ -281,6 +287,36 @@ const at = (days: number) => new Date(T0 + days * 86_400_000);
     /async postponeScheduledFollowUp\([^)]*\): Promise<void> \{\s+const row = [^\n]+\n\s+if \(row && isFollowUpOverdue\(\{ createdAt: String\(row\.createdAt\) \}\)\)\s+return context\.storage\.cancelScheduledFollowUp\(threadId, followUpId\);/u,
     "every postpone path goes through the cap",
   );
+}
+
+// M-009. The six prod requests (AI fans to AI Creators, no reply owed, oldest 2026-09-23) expire;
+// a persona's request still owed a reply, a hand-run Creator's request and a fresh one stay.
+{
+  const now = new Date("2026-09-28T04:00:00.000Z");
+  const request = (id: string, over: Record<string, unknown> = {}) => ({
+    id,
+    creatorAccountId: "sadie",
+    state: "request",
+    needsReply: false,
+    lastMessageAt: "2026-09-22T20:00:00.000Z",
+    ...over,
+  });
+  const threads = [
+    request("us73Qf"),
+    request("PnbaxR", { lastMessageAt: "2026-09-22T23:00:00.000Z" }),
+    request("owed", { needsReply: true }),
+    request("hand-run", { creatorAccountId: "persona-page" }),
+    request("fresh", { lastMessageAt: "2026-09-26T10:00:00.000Z" }),
+    request("active", { state: "active" }),
+  ];
+  assert.deepEqual(slurpExpiredRequestIds(threads, new Set(["sadie"]), now), ["us73Qf", "PnbaxR"]);
+  const upkeep = server("features/messages/slp-stuck-messages-service.ts");
+  assert.match(
+    upkeep,
+    /resolveRequest\(id, "decline"\);\s+await messages\.markRead\(id, "creator"\);/u,
+    "declined and read, no model call",
+  );
+  assert.doesNotMatch(upkeep, /generate|replyToSlurpMessage/u);
 }
 
 console.log("slurp2 7c fixes regression passed");

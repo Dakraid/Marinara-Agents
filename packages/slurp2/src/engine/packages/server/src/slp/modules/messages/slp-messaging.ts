@@ -631,6 +631,37 @@ type SlurpCommissionLike = {
   updatedAt: string;
 };
 
+/** Days an unanswerable request waits before it expires (7c M-009). */
+export const SLURP_REQUEST_EXPIRY_DAYS = 5;
+
+/**
+ * Message requests to automatic Creators that nobody is going to answer (7c M-009): the reply path
+ * gave up on them (no reply owed, which is what it does for an AI fan it cannot answer) and they
+ * have been quiet for five days. They expire, so a Creator's open requests do not grow forever.
+ * A request still owed a reply (a persona's) is left for the reply path.
+ */
+export function slurpExpiredRequestIds(
+  threads: readonly {
+    id: string;
+    creatorAccountId: string;
+    state: string;
+    needsReply: boolean;
+    lastMessageAt: string;
+  }[],
+  automaticCreatorIds: ReadonlySet<string>,
+  now: Date,
+): string[] {
+  return threads
+    .filter(
+      (thread) =>
+        thread.state === "request" &&
+        !thread.needsReply &&
+        automaticCreatorIds.has(thread.creatorAccountId) &&
+        now.getTime() - Date.parse(thread.lastMessageAt) > SLURP_REQUEST_EXPIRY_DAYS * 86_400_000,
+    )
+    .map((thread) => thread.id);
+}
+
 /** One line of thread summary for the inbox. Kept short: the list shows it on one row. */
 export function slurpMessagePreview(kind: SlurpMessageKind, content: string, price: number): string {
   const trimmed = content.replace(/\s+/g, " ").trim();
