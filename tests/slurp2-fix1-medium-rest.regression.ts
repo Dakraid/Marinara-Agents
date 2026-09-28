@@ -78,7 +78,10 @@ assert.match(
   read("client/src/slp/features/messages/SlpThreadHeader.tsx"),
   /const threadId = thread\?\.id \?\? threadIdProp;/u,
 );
-assert.match(threadRoutes, /scheduledFollowUps: thread\.scheduledFollowUps,[\s\S]{0,40}\}\s*: undefined,/u);
+// Pin changed on purpose in L (R1-012): both routes build the relationship through one helper that
+// lists the follow-ups; the intent (the compose route carries them) is unchanged.
+assert.match(threadRoutes, /const relationshipFor = [\s\S]*scheduledFollowUps: thread\.scheduledFollowUps,/u);
+assert.match(threadRoutes, /relationship: thread \? await relationshipFor\(thread, creator, "viewer"/u);
 // ── R1-024: the Story ring means "not watched" ──
 assert.match(
   read("server/src/slp/features/viewer/slp-viewer-context.ts"),

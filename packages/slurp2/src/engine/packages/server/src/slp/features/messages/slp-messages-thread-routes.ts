@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { type SlurpCommissionPricing, slurpCommissionQuote } from "../../modules/economy/slp-creator-pricing.js";
 import { selectSlurpAttentionCommissions } from "./slp-inbox-attention.js";
-import { activeSlurpStrikes } from "../../modules/world/slp-stance.js";
+import { activeSlurpStrikes, slurpDmPictureVerdict } from "../../modules/world/slp-stance.js";
+import { slurpAdultRiseBlock, slurpCreatorStateMediaBlock } from "../../modules/creators/slp-creator-state.js";
+import { isSlurpSupportThread } from "../../modules/messages/slp-support.js";
+import { resolveSlurpThreadStance } from "./slp-thread-stance.js";
 import { describeSlurpDayVibe } from "../world/slp-world-contract.js";
 import { readSlurpAudienceTone } from "../../../../../shared/src/slp/slp-tone.js";
 import { isSlurpViewerActorAccount } from "../../modules/settings/slp-settings.js";
@@ -40,6 +43,70 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     slurp,
     visibleMessages,
   } = messaging;
+  type Thread = NonNullable<Awaited<ReturnType<typeof messages.getThreadById>>>;
+  type Creator = NonNullable<Awaited<ReturnType<typeof slurp.getNoodlerAccountById>>>;
+
+  /**
+   * What the Details panel shows, for the thread route and the compose route alike. "Pictures" and
+   * "blocked by" are the server's verdicts, read off the stance the reply itself is written from,
+   * not a second copy of its thresholds on the client (R1-012).
+   */
+  const relationshipFor = async (
+    thread: Thread,
+    creator: Creator,
+    side: "viewer" | "creator",
+    availability: Awaited<ReturnType<typeof creatorPresence>>["creatorAvailability"],
+  ) => {
+    const details = await messages.getDetailsOverrides(thread.id);
+    const settings = await slurp.getSettings();
+    const dayVibe =
+      details.dayVibe !== undefined ? details.dayVibe : await describeSlurpDayVibe(app.db, thread.creatorAccountId);
+    const creatorState = await slurp.getCreatorState(thread.creatorAccountId);
+    const strikes = activeSlurpStrikes(thread.strikes, thread.lastStrikeAt);
+    const stance = await resolveSlurpThreadStance(app.db, {
+      creator,
+      viewerId: thread.viewerAccountId,
+      rapport: thread.rapport,
+      mood: thread.mood,
+      moodUpdatedAt: thread.moodUpdatedAt,
+      dayVibe,
+      availability,
+      subscribed: (await slurp.listSubscriptionsForViewer(thread.viewerAccountId)).some(
+        (entry: { creatorAccountId: string }) => entry.creatorAccountId === thread.creatorAccountId,
+      ),
+      isRequest: thread.state === "request",
+      coolingOff: Boolean(thread.coolUntil && thread.coolUntil > new Date().toISOString()),
+      strikes,
+      details,
+      settings,
+    });
+    return {
+      side,
+      tier: thread.rapport.tier,
+      score: thread.rapport.score,
+      contributions: thread.rapport.contributions,
+      mood: thread.mood,
+      strikes,
+      notes: thread.notes,
+      spentCoins: await messages.spentWithCreator(thread.viewerAccountId, thread.creatorAccountId),
+      coolUntil: thread.coolUntil,
+      dayVibe,
+      availability,
+      audienceTone: details.audienceTone ?? readSlurpAudienceTone(settings.audienceTone),
+      imageMode: stance.imageMode,
+      pictures: slurpDmPictureVerdict({
+        stance,
+        support: isSlurpSupportThread(thread),
+        imagesEnabled: creator.settings.scheduler.autoPosting?.imagesEnabled === true,
+        stateBlock: slurpCreatorStateMediaBlock(creatorState, thread.threadState),
+      }),
+      escalation: { blockedBy: slurpAdultRiseBlock(thread.threadState) },
+      creatorState,
+      threadState: thread.threadState,
+      // The same list on both routes, so a chat opened from a profile lists its follow-ups (R1-008).
+      scheduledFollowUps: thread.scheduledFollowUps,
+    };
+  };
   app.get("/messages/unread-count", async (req, reply) => {
     const parsed = personaQuerySchema.safeParse(req.query);
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
@@ -147,8 +214,6 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     const creator = await slurp.getNoodlerAccountById(thread.creatorAccountId);
     if (!creator) return reply.code(404).send({ error: "Creator not found" });
     const presence = await creatorPresence(creator, thread.id);
-    const details = thread ? await messages.getDetailsOverrides(thread.id) : {};
-    const audienceTone = details.audienceTone ?? readSlurpAudienceTone((await slurp.getSettings()).audienceTone);
     const counterpart =
       side === "creator"
         ? ((await population.get(thread.viewerAccountId)) ??
@@ -178,27 +243,7 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
         await messages.listCommissionsForThread(thread.id),
         await messages.getCreatorMessaging(thread.creatorAccountId),
       ),
-      relationship: {
-        side,
-        tier: thread.rapport.tier,
-        score: thread.rapport.score,
-        contributions: thread.rapport.contributions,
-        mood: thread.mood,
-        strikes: activeSlurpStrikes(thread.strikes, thread.lastStrikeAt),
-        notes: thread.notes,
-        spentCoins: await messages.spentWithCreator(thread.viewerAccountId, thread.creatorAccountId),
-        coolUntil: thread.coolUntil,
-        dayVibe:
-          details.dayVibe !== undefined ? details.dayVibe : await describeSlurpDayVibe(app.db, thread.creatorAccountId),
-        availability: presence.creatorAvailability,
-        audienceTone,
-        imageMode:
-          details.imageMode ??
-          (thread.mood <= -40 && audienceTone === "unfiltered" ? "hostile" : thread.mood >= 20 ? "friendly" : "none"),
-        creatorState: await slurp.getCreatorState(thread.creatorAccountId),
-        threadState: thread.threadState,
-        scheduledFollowUps: thread.scheduledFollowUps,
-      },
+      relationship: await relationshipFor(thread, creator, side, presence.creatorAvailability),
     };
   });
 
@@ -343,9 +388,6 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     if (thread) await messages.markRead(thread.id, "viewer");
     const page = thread ? await messages.listMessagePage(thread.id) : { messages: [], nextCursor: null };
     const presence = await creatorPresence(creator, thread?.id);
-    const details = thread ? await messages.getDetailsOverrides(thread.id) : {};
-    const audienceTone =
-      details.audienceTone ?? (thread ? readSlurpAudienceTone((await slurp.getSettings()).audienceTone) : null);
     return {
       thread: thread ? await freshView(thread.id) : null,
       messages: page.messages.map(maskForViewer),
@@ -353,36 +395,7 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
       commissions: thread ? await messages.listCommissionsForThread(thread.id) : [],
       creator,
       ...presence,
-      relationship: thread
-        ? {
-            side: "viewer" as const,
-            tier: thread.rapport.tier,
-            score: thread.rapport.score,
-            contributions: thread.rapport.contributions,
-            mood: thread.mood,
-            strikes: activeSlurpStrikes(thread.strikes, thread.lastStrikeAt),
-            notes: thread.notes,
-            spentCoins: await messages.spentWithCreator(thread.viewerAccountId, thread.creatorAccountId),
-            coolUntil: thread.coolUntil,
-            dayVibe:
-              details.dayVibe !== undefined
-                ? details.dayVibe
-                : await describeSlurpDayVibe(app.db, thread.creatorAccountId),
-            availability: presence.creatorAvailability,
-            audienceTone,
-            imageMode:
-              details.imageMode ??
-              (thread.mood <= -40 && audienceTone === "unfiltered"
-                ? "hostile"
-                : thread.mood >= 20
-                  ? "friendly"
-                  : "none"),
-            creatorState: await slurp.getCreatorState(thread.creatorAccountId),
-            threadState: thread.threadState,
-            // Same as the thread route, so a chat opened from a profile lists its follow-ups (R1-008).
-            scheduledFollowUps: thread.scheduledFollowUps,
-          }
-        : undefined,
+      relationship: thread ? await relationshipFor(thread, creator, "viewer", presence.creatorAvailability) : undefined,
       // The client shows the gate before the first message is written, so it must know the
       // policy even when no thread exists yet.
       messaging: await messages.getCreatorMessaging(creator.id),

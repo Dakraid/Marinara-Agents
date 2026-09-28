@@ -335,6 +335,29 @@ export function SlurpTierLadder({ tier, className }: { tier: SlurpRapport["tier"
   );
 }
 
+const ESCALATION_BLOCK_TEXT: Record<
+  Exclude<NonNullable<NonNullable<SlurpThreadRelationship["escalation"]>["blockedBy"]>, "top">,
+  string
+> = {
+  falling: "Comfort or desire has dropped below this step, so it is easing back one.",
+  respect: "Not thinking well enough of this fan yet.",
+  resentment: "Holding a grudge against this fan.",
+  posture: "Gone guarded with this fan.",
+  comfort: "Not comfortable enough with this fan yet.",
+  desire: "Not wanting more from this conversation right now.",
+};
+
+const PICTURE_BLOCK_TEXT: Record<NonNullable<NonNullable<SlurpThreadRelationship["pictures"]>["blockedBy"]>, string> = {
+  support: "Slurp Support's chat never gets pictures.",
+  cooling_off: "Taking space from this conversation.",
+  images_off: "This Creator's Images switch is off.",
+  stance: "Not warm enough toward this fan for a picture yet.",
+  energy: "Too tired for a picture right now.",
+  posture: "Guarded with this fan right now.",
+  comfort: "Not comfortable enough with this fan for a spicy picture.",
+  respect: "Not thinking well enough of this fan for a spicy picture.",
+};
+
 export function SlurpRelationshipPanel({
   relationship,
   threadId,
@@ -365,14 +388,10 @@ export function SlurpRelationshipPanel({
   const { creatorState, threadState, availability } = relationship;
   const cooling = Boolean(relationship.coolUntil && relationship.coolUntil > new Date().toISOString());
   const mood = relationship.mood ?? 0;
-  const blockedBy =
-    threadState.posture === "rejecting" || threadState.posture === "defensive"
-      ? "She has gone guarded with this fan."
-      : threadState.sexualComfort < 36
-        ? "She is not comfortable enough with this fan yet."
-        : threadState.respect < 36
-          ? "She does not think well enough of this fan."
-          : null;
+  // The server's verdicts (R1-012). "top" is not a block: there is simply no step left.
+  const riseBlock = relationship.escalation?.blockedBy ?? null;
+  const blockedBy = riseBlock && riseBlock !== "top" ? ESCALATION_BLOCK_TEXT[riseBlock] : null;
+  const pictures = relationship.pictures ?? { mode: relationship.imageMode, blockedBy: null };
   const modifiers = creatorState.modifiers ?? [];
 
   return (
@@ -506,7 +525,12 @@ export function SlurpRelationshipPanel({
                 icon={ShieldCheck}
                 tone={blockedBy ? "serious" : "good"}
                 title={blockedBy ? "Adult escalation blocked" : "Adult escalation allowed"}
-                detail={blockedBy ?? "Comfort, respect and posture all clear the bar she sets."}
+                detail={
+                  blockedBy ??
+                  (riseBlock === "top"
+                    ? "Already at the top step."
+                    : "Comfort, respect and posture all clear the bar she sets.")
+                }
               />
               {cooling && (
                 <StatusRow
@@ -580,7 +604,8 @@ export function SlurpRelationshipPanel({
                 <Field label="Audience tone" value={humanizeValue(relationship.audienceTone)} />
                 <Field
                   label="Pictures"
-                  value={relationship.imageMode === "none" ? "Not now" : humanizeValue(relationship.imageMode)}
+                  value={pictures.mode === "none" ? "Not now" : humanizeValue(pictures.mode)}
+                  hint={pictures.blockedBy ? PICTURE_BLOCK_TEXT[pictures.blockedBy] : undefined}
                 />
               </div>
               <Field label="Day vibe" value={relationship.dayVibe ?? "An ordinary day"} />
@@ -700,7 +725,13 @@ export function SlurpRelationshipPanel({
               <StatusRow
                 icon={blockedBy ? SlpLockGlyph : SlpHeartGlyph}
                 tone={blockedBy ? "warning" : "good"}
-                title={blockedBy ? "This is as far as it goes for now" : "There is room for this to go further"}
+                title={
+                  blockedBy
+                    ? "This is as far as it goes for now"
+                    : riseBlock === "top"
+                      ? "This has gone as far as it goes"
+                      : "There is room for this to go further"
+                }
                 detail={
                   blockedBy
                     ? `${blockedBy} It moves when that does, and it never skips a step.`
@@ -709,14 +740,14 @@ export function SlurpRelationshipPanel({
               />
               <StatusRow
                 icon={Palette}
-                tone={relationship.imageMode === "none" ? "accent" : "good"}
-                title={
-                  relationship.imageMode === "none" ? "Not sending pictures right now" : "Open to sending pictures"
-                }
+                tone={pictures.mode === "none" ? "accent" : "good"}
+                title={pictures.mode === "none" ? "Not sending pictures right now" : "Open to sending pictures"}
                 detail={
-                  relationship.imageMode === "none"
-                    ? "This changes as the conversation warms up."
-                    : "She will send one if the conversation calls for it."
+                  pictures.blockedBy
+                    ? PICTURE_BLOCK_TEXT[pictures.blockedBy]
+                    : pictures.mode === "none"
+                      ? "This changes as the conversation warms up."
+                      : "She will send one if the conversation calls for it."
                 }
               />
             </PanelSection>
