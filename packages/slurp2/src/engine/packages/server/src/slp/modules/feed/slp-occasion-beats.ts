@@ -81,12 +81,22 @@ export function slurpPackFits(
   return slurpLifeFits(fit, { text: creator.text, never: slurpNeverSentences(creator.text) });
 }
 
-/** The moment's words for this Creator: the couple or collab line when they have that person. */
+/**
+ * The moment's words for this Creator: the couple or collab line when they have that person. The
+ * moment is always their own post (U: a collab is announced work with a tag and a split, a couple is
+ * life), so a named person is in it without a collab tag.
+ */
 function lineFor(beat: SlurpPackBeat, creator: SlurpOccasionCreator): { line: string; cast: string[] } {
   if (beat.withPartner && creator.partner)
-    return { line: beat.withPartner.replace("{partner}", creator.partner), cast: [creator.partner] };
+    return {
+      line: `${beat.withPartner.replace("{partner}", creator.partner)} This is your own post about your life, not a collab: ${creator.partner} can be in it, but no collab tag.`,
+      cast: [creator.partner],
+    };
   if (beat.withCollab && creator.collab)
-    return { line: beat.withCollab.replace("{collab}", creator.collab), cast: [creator.collab] };
+    return {
+      line: `${beat.withCollab.replace("{collab}", creator.collab)} This is your own post, not your collab with ${creator.collab}: they can be in it, but no collab tag and no split.`,
+      cast: [creator.collab],
+    };
   return { line: beat.line, cast: [] };
 }
 

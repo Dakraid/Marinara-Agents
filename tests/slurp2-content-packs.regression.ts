@@ -83,8 +83,16 @@ const arcIds = (settings: typeof fresh) => settings.arcLibrary.map((arc) => arc.
 assert.deepEqual(fresh.contentPacks, {}, "no pack choice stored until the player makes one");
 for (const id of ["pack-slurpcon", "pack-slurpies", "pack-pride", "pack-summer-body", "pack-exam-week-winter"])
   assert.ok(eventIds(fresh).includes(id), `default-on pack event ${id} is in the calendar`);
-for (const id of ["pack-fan-meet-greet", "pack-nominated", "pack-first-toy", "pack-toy-reviews", "pack-going-explicit"])
+for (const id of ["pack-fan-meet-greet", "pack-nominated"])
   assert.ok(arcIds(fresh).includes(id), `default-on pack storyline ${id} is in the library`);
+// Decision after S (2026-09-28): "Spicy firsts" starts off; switched on, its storylines join.
+for (const id of ["pack-first-toy", "pack-toy-reviews", "pack-going-explicit"]) {
+  assert.ok(!arcIds(fresh).includes(id), `off-by-default pack storyline ${id} is not in the library`);
+  assert.ok(
+    arcIds(normalizeSlurpSettings(JSON.stringify({ contentPacks: { "slurp-pack-spicy-firsts": true } }))).includes(id),
+    `switched on, ${id} joins the library`,
+  );
+}
 for (const id of ["new-year", "valentines", "halloween", "christmas"])
   assert.ok(eventIds(fresh).includes(id), `core holiday ${id} stays`);
 assert.ok(arcIds(fresh).includes("moving"), "the everyday storylines stay");
@@ -107,7 +115,10 @@ assert.ok(!arcIds(off).includes("pack-fan-meet-greet"));
 assert.ok(!arcIds(off).includes("pack-first-toy"));
 assert.ok(eventIds(off).includes("pack-slurpies") && eventIds(off).includes("valentines"));
 // On again: back.
-const onAgain = normalizeSlurpSettings(JSON.stringify({ ...off, contentPacks: { "slurp-pack-slurpcon": true } }));
+// Spicy firsts is off by default now (decision after S), so "on again" switches it on by hand.
+const onAgain = normalizeSlurpSettings(
+  JSON.stringify({ ...off, contentPacks: { "slurp-pack-slurpcon": true, "slurp-pack-spicy-firsts": true } }),
+);
 assert.ok(eventIds(onAgain).includes("pack-slurpcon") && arcIds(onAgain).includes("pack-first-toy"));
 
 // A pack item the player hid or edited stays as they left it, and is never added twice.
@@ -196,8 +207,10 @@ assert.equal(
 assert.equal(slurpPackFits(arcFit("first-custom"), creator(STUDENT)), true, "a custom request fits any level");
 assert.equal(slurpPackFits(arcFit("fan-meet-greet"), creator(`${TATTOO} Hates crowds.`)), false);
 
-// Storylines: the library pick never starts a pack storyline that does not fit.
-const libraryType = (id: string) => fresh.arcLibrary.find((arc) => arc.id === id)!;
+// Storylines: the library pick never starts a pack storyline that does not fit. Spicy firsts is off by
+// default now (decision after S), so fit is tested with it switched on.
+const spicyOn = normalizeSlurpSettings(JSON.stringify({ contentPacks: { "slurp-pack-spicy-firsts": true } }));
+const libraryType = (id: string) => spicyOn.arcLibrary.find((arc) => arc.id === id)!;
 assert.equal(slurpArcFitsCreator(libraryType("pack-first-toy"), STUDENT), false, "unknown level counts as Flirty");
 assert.equal(slurpArcFitsCreator(libraryType("pack-first-toy"), STUDENT, { level: "explicit", hardNoes: [] }), true);
 const picks = new Set<string>();
@@ -206,7 +219,7 @@ for (let day = 0; day < 400; day += 1) {
     creatorAccountId: `c-${day % 7}`,
     at: new Date(Date.UTC(2026, 0, 1) + day * DAY),
     projects: [],
-    library: fresh.arcLibrary,
+    library: spicyOn.arcLibrary,
     creatorTags: [],
     lastAutoAt: null,
     cooldownWeeks: 1,
@@ -399,10 +412,17 @@ assert.deepEqual(withTess.cast, ["Tess"]);
 const single = pickLine(creator(STUDENT), [valentines], utc("2026-02-14"))!;
 assert.equal(single.cast.length, 0);
 assert.doesNotMatch(single.line, /\{partner\}/u);
+// Merge S × U: a pack moment with the partner or a collab partner is the Creator's own post, never a tagged collab.
+assert.match(withTess.line, /your own post about your life, not a collab: Tess can be in it, but no collab tag/u);
+assert.doesNotMatch(single.line, /collab tag/u);
 const conOpen = occasionsAt(new Date("2026-08-14T01:00:00Z")).find((occasion) => occasion.key.startsWith("slurpcon:"))!;
 assert.match(
   pickLine(creator(STUDENT, { collab: "Rue" }), [conOpen], new Date("2026-08-14T01:00:00Z"))!.line,
   /booth with Rue/u,
+);
+assert.match(
+  pickLine(creator(STUDENT, { collab: "Rue" }), [conOpen], new Date("2026-08-14T01:00:00Z"))!.line,
+  /not your collab with Rue: they can be in it, but no collab tag and no split/u,
 );
 
 // Purposes: on a free teaser slot only a moment that can tease runs (the usual tease → drop follows).
@@ -463,11 +483,12 @@ assert.ok(
   "no birthday week with its pack off",
 );
 
-// The first thousand subscribers: celebrated when it really happens, once, as a thank-you.
+// The first thousand subscribers: celebrated when it really happens, once, as a thank-you. It sits in
+// Spicy firsts, which is off by default now (decision after S): switched on here.
 const subs = (count: number) =>
   slurpPackOccasions({
     windows: [],
-    toggles: {},
+    toggles: { "slurp-pack-spicy-firsts": true },
     creatorAccountId: "m",
     creatorText: "",
     subscribers: count,
@@ -477,6 +498,18 @@ assert.equal(subs(999).length, 0);
 assert.equal(subs(1200).length, 0, "long past it is not news");
 const thousand = subs(1040);
 assert.equal(thousand.length, 1);
+assert.equal(
+  slurpPackOccasions({
+    windows: [],
+    toggles: {},
+    creatorAccountId: "m",
+    creatorText: "",
+    subscribers: 1040,
+    at: utc("2026-05-05"),
+  }).filter((occasion) => occasion.key === "first-1k-subs").length,
+  0,
+  "Spicy firsts off by default: no first-1,000 post until the player switches it on",
+);
 const cheers = pickLine(creator(STUDENT), thousand, utc("2026-05-05"))!;
 assert.equal(cheers.sharedId, "occasion:first-1k-subs:0");
 assert.equal(

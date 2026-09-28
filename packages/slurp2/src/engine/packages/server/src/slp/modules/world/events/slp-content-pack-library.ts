@@ -342,7 +342,8 @@ export const SLURP_CONTENT_PACK_LIBRARY: readonly SlurpContentPack[] = [
     id: "slurp-pack-spicy-firsts",
     name: "Spicy firsts",
     adds: "A Creator's first toy, first custom request, first explicit set, going fully explicit, a toy-review series and the first 1,000 subscribers.",
-    defaultOn: true,
+    // Decision after S (2026-09-28): the adult pack starts off; the player switches it on.
+    defaultOn: false,
     firstThousandSubs: true,
     events: [],
     arcs: [
