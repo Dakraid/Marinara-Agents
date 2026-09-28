@@ -483,12 +483,12 @@ assert.ok(
   "no birthday week with its pack off",
 );
 
-// The first thousand subscribers: celebrated when it really happens, once, as a thank-you. It sits in
-// Spicy firsts, which is off by default now (decision after S): switched on here.
+// The first thousand subscribers: celebrated when it really happens, once, as a thank-you. V moved it from
+// Spicy firsts (off by default) into Seasons of life (on by default), so the default toggles bring it.
 const subs = (count: number) =>
   slurpPackOccasions({
     windows: [],
-    toggles: { "slurp-pack-spicy-firsts": true },
+    toggles: {},
     creatorAccountId: "m",
     creatorText: "",
     subscribers: count,
@@ -501,14 +501,14 @@ assert.equal(thousand.length, 1);
 assert.equal(
   slurpPackOccasions({
     windows: [],
-    toggles: {},
+    toggles: { "slurp-pack-spicy-firsts": true, "slurp-pack-seasons": false },
     creatorAccountId: "m",
     creatorText: "",
     subscribers: 1040,
     at: utc("2026-05-05"),
   }).filter((occasion) => occasion.key === "first-1k-subs").length,
   0,
-  "Spicy firsts off by default: no first-1,000 post until the player switches it on",
+  "the first-1,000 post follows Seasons of life, not Spicy firsts",
 );
 const cheers = pickLine(creator(STUDENT), thousand, utc("2026-05-05"))!;
 assert.equal(cheers.sharedId, "occasion:first-1k-subs:0");

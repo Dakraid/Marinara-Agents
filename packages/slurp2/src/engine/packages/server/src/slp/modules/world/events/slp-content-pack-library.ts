@@ -289,9 +289,11 @@ export const SLURP_CONTENT_PACK_LIBRARY: readonly SlurpContentPack[] = [
   {
     id: "slurp-pack-seasons",
     name: "Seasons of life",
-    adds: "Summer body season, exam weeks and each Creator's birthday week.",
+    adds: "Summer body season, exam weeks, each Creator's birthday week and their first 1,000 subscribers.",
     defaultOn: true,
     birthday: true,
+    // Decision after the merge (2026-09-28): a plain thank-you post, so it lives in a default-on pack.
+    firstThousandSubs: true,
     events: [
       {
         contentId: "summer-body",
@@ -341,10 +343,9 @@ export const SLURP_CONTENT_PACK_LIBRARY: readonly SlurpContentPack[] = [
   {
     id: "slurp-pack-spicy-firsts",
     name: "Spicy firsts",
-    adds: "A Creator's first toy, first custom request, first explicit set, going fully explicit, a toy-review series and the first 1,000 subscribers.",
+    adds: "A Creator's first toy, first custom request, first explicit set, going fully explicit and a toy-review series.",
     // Decision after S (2026-09-28): the adult pack starts off; the player switches it on.
     defaultOn: false,
-    firstThousandSubs: true,
     events: [],
     arcs: [
       {
