@@ -97,6 +97,8 @@ export const slpCreatorFanArchetypeWeightsSchema = z
 export const slurpSettingsSchema = z.object({
   inlineAdsEnabled: z.boolean(),
   inlineAdsFrequency: z.enum(["light", "standard", "frequent"]),
+  /** How often brands offer Creators a paid partnership (R). "normal" is the pace before R. */
+  brandDealsPace: z.enum(["off", "rare", "normal", "often"]),
   inlineAdsSteering: z.enum(["balanced", "personalized", "random"]),
   inlineAdsPreferredTags: z.array(z.string().trim().min(1).max(32)).max(8),
   inlineAdsContentCeiling: z.enum(["tame", "suggestive", "explicit"]),
@@ -454,6 +456,7 @@ export const SLP_CREATOR_DEFAULT_IMAGE_PROMPT_INTERPRETATION =
 export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   inlineAdsEnabled: true,
   inlineAdsFrequency: "standard",
+  brandDealsPace: "normal",
   inlineAdsSteering: "personalized",
   inlineAdsPreferredTags: [],
   inlineAdsContentCeiling: "explicit",

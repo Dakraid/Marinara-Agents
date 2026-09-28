@@ -39,9 +39,11 @@ import {
   slurpSettleDeal,
   slurpSettleOwedDeal,
   slurpToldFansAboutDeal,
+  SLURP_DEAL_PACE,
+  type SlurpDealPace,
   type SlurpBrandDeal,
-  type SlurpDealAd,
 } from "../../modules/economy/slp-brand-deals.js";
+import { loadSlurpDealAds, loadSlurpDealSpice } from "./slp-brand-deal-source.js";
 import { slurpTieBeat } from "../../modules/feed/slp-tie-beats.js";
 import {
   slurpAdvanceCouples,
@@ -53,7 +55,6 @@ import { closeSlurpCouplePages, slurpCouplesWorldInput } from "./slp-creator-cou
 import { slurpIsCouplePage } from "../../modules/projects/slp-creator-couples.js";
 import type { SlurpBeat } from "../../modules/feed/slp-post-beat.js";
 import type { SlurpContentIntent } from "../../../../../shared/src/slp/slp-content-axes.js";
-import { createGarnishAds, garnishRatingAllowed } from "../ads/slp-ads-contract.js";
 import { bookSlurpHeldSlot, readSlurpSlotTimes } from "../feed/slp-held-slots-contract.js";
 
 type Storage = ReturnType<typeof createSlurpStorage>;
@@ -101,20 +102,10 @@ export async function advanceSlurpCreatorTies(db: DB, at = new Date()): Promise<
   const storage = createSlurpStorage(db);
   const settings = await storage.getSettings();
   const creators = await loadSlurpTieCreators(db, at);
-  const ads: SlurpDealAd[] = settings.inlineAdsEnabled
-    ? (await createGarnishAds(db).pool.listActive("slurp"))
-        .filter(
-          (ad) => ad.kind === "inline" && garnishRatingAllowed(ad.contentRating, settings.inlineAdsContentCeiling),
-        )
-        .map((ad) => ({
-          id: ad.id,
-          brand: ad.brand,
-          product: ad.product,
-          copy: ad.copy,
-          categories: ad.categories,
-          contextTags: ad.contextTags,
-        }))
-    : [];
+  const pace = SLURP_DEAL_PACE[settings.brandDealsPace as SlurpDealPace] ?? 1;
+  // Loaded even when paced off: open offers still get answered against their product.
+  const ads = await loadSlurpDealAds(db, settings);
+  const spice = ads.some((ad) => ad.rating && ad.rating !== "tame") ? await loadSlurpDealSpice(db) : undefined;
   const activity = slurpWorldActivityMultiplier(settings.worldActivity);
   const paired = settings.creatorCollabs.map((collab) => collab.creatorIds);
   const storylines = await slurpCouplesWorldInput(db, creators);
@@ -138,6 +129,8 @@ export async function advanceSlurpCreatorTies(db: DB, at = new Date()): Promise<
         activity,
         lastLook: document.ties.advancedAt,
         newId,
+        pace,
+        spice,
       }),
     };
     return { document: next, result: next };

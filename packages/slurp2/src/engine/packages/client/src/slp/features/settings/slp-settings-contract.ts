@@ -13,6 +13,7 @@ import type { SlurpArcType } from "../projects/slp-projects-contract.js";
 export type SlurpSettings = {
   inlineAdsEnabled: boolean;
   inlineAdsFrequency: "light" | "standard" | "frequent";
+  brandDealsPace: "off" | "rare" | "normal" | "often";
   inlineAdsSteering: "balanced" | "personalized" | "random";
   inlineAdsPreferredTags: string[];
   inlineAdsContentCeiling: SlurpContentRating;

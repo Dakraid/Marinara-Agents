@@ -455,3 +455,34 @@ modules, rejected alternative, and migration consequence.
 - **Migration consequence:** none stored. Old Support notes keep their Undo; a saved AI budget without
   the `plan` row reads its default. Old Studio deep links open the Stir tab. The Studio routes stay for
   the Business and Relationships lists, which moved into Stir unchanged.
+
+## Brands and products (R, 2026-09-28)
+
+- **Problem:** ads were flat rows (a brand name and one product each), brand deals picked one of
+  them by word overlap, and the player could only edit single ads. The player wants brands that hold
+  products, Creators sponsored through them, brands and products of their own in Backstage, and a
+  set of shipped parody brands, without losing the ads that exist.
+- **Decision:** Garnish gains a `GarnishBrand` (name, category, tone, logo prompt, logo, on/off) in
+  its own app-settings blob (`garnish.brands`). A product stays an ad: `GarnishAd` gains `brandId`,
+  `priceFeel` and `look`, and its `contentRating` is the product's spice fit. An ad without
+  `brandId` belongs to the brand named like it (`garnishAdBrandId` = `brand-<slug of name>`), and
+  shipped brands use the same id, so old ads, edited shipped ads and imports land under a brand with
+  no data rewritten. A switched-off brand hides all its products (`listActive`); a shipped brand is
+  switched off, never deleted. Brand deals read the brand's category and voice and the product's look
+  and spice fit (a suggestive product only to a suggestive or explicit Creator, explicit only to
+  explicit), and a new setting `brandDealsPace` (off / rare / normal / often; normal = before)
+  scales how often a brand looks. The Stir lever is the action `offer-brand-deal` with a `preview`
+  switch (pure rules in `slurpDealLever`; the preview and the run give the same offer), plus
+  `list-brands` and `draw-brand-picture` (the 3c picture assist draws logos and product pictures).
+- **Affected modules:** `services/garnish-ads/*` (types, base, storage, export), `features/ads`
+  (new `slp-brands-routes.ts`, image service, ads routes), `modules/economy/slp-brand-deals.ts`,
+  `modules/feed/slp-tie-beats.ts`, `features/projects` (new `slp-brand-deal-source.ts`,
+  `slp-brand-deal-lever.ts`), shared `slp-actions.ts`, the action runner; client `features/ads`
+  (new `SlpBrandsPanel.tsx`, `slp-brands-hooks.ts`), `SlpPictureAssist` (`drawWith`).
+- **Rejected alternatives:** a separate product table next to the ads (two lists for one thing, and
+  every reader of the pool would need both); rewriting stored ads with a `brandId` on first read
+  (a write on a read path, and an export from an older build would undo it).
+- **Migration consequence:** none stored. Old ads keep their ids and show under a brand named like
+  them; old deals read back without `look` / `tone`; a settings blob without `brandDealsPace` reads
+  "normal"; an export without `brands` still imports. Garnish stays extractable: nothing in
+  `garnish-ads/` imports Slurp (the boundary test still passes).

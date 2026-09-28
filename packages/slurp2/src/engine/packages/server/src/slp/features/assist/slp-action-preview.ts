@@ -8,7 +8,12 @@ import { createSlurpStorage } from "../../data/slp-storage.js";
 import { readSlurpCreatorSteering } from "../../data/creators/slp-steering-storage.js";
 import { readSlurpSpice } from "../../data/creators/slp-spice-storage.js";
 import { slurpModelWorkerAllows } from "../../base/model/slp-model-worker.js";
-import { isSlurpTieLever, previewSlurpTieLever, slurpRunsItself } from "../projects/slp-projects-contract.js";
+import {
+  isSlurpTieLever,
+  previewSlurpTieLever,
+  slurpBrandDealLever,
+  slurpRunsItself,
+} from "../projects/slp-projects-contract.js";
 import {
   isSlpActionName,
   SLP_ACTION_META,
@@ -88,7 +93,16 @@ async function previewOther(
       return { who, detail: { target: String(input.target) } };
     case "list-creators":
     case "list-world":
+    case "list-brands":
       return { summary: "Changes nothing." };
+    case "draw-brand-picture":
+      return { detail: { brandId: String(input.brandId), productId: (input.productId as string | undefined) ?? null } };
+    case "offer-brand-deal": {
+      // R's lever answers its own preview (the same rules as the run); only the card's avatars come from here.
+      const { preview: _dryRun, ...lever } = input as SlpActionParsed<"offer-brand-deal">;
+      const { preview } = await slurpBrandDealLever(db, lever, false, at);
+      return { ...preview, who, notes: preview.notes as SlpActionPreview["notes"] };
+    }
     case "steer-creator": {
       const patch = input as SlpActionParsed<"steer-creator">;
       return {

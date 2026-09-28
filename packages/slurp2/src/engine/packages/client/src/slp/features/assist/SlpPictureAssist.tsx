@@ -29,7 +29,10 @@ export function SlpPictureAssist({
   onDone,
   onCancel,
   advanced = false,
+  drawWith,
+  placeholder,
 }: {
+  /** The Creator. Unused with `drawWith`. */
   accountId: string;
   target: SlpPictureTarget;
   /** The caption or Story line it goes with; a post drawn with no request is drawn from it. */
@@ -44,6 +47,10 @@ export function SlpPictureAssist({
   onCancel?: () => void;
   /** Creator settings: the optional context switches of the old artwork tool, under Advanced. */
   advanced?: boolean;
+  /** Something that is not a Creator (a brand logo or product, R): how to draw it. Needs `onUse`. */
+  drawWith?: (request: string) => Promise<{ image: string; prompt: string }>;
+  /** The request box's hint, when the target's own hint does not fit. */
+  placeholder?: string;
 }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
@@ -58,7 +65,8 @@ export function SlpPictureAssist({
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ image: string; prompt: string } | null>(null);
   const [used, setUsed] = useState(false);
-  const profileSlot = target === "avatar" || target === "cover" ? target : null;
+  // Whoever takes the picture (`onUse`) owns it; only a Creator's own avatar or cover goes through use-picture.
+  const profileSlot = !onUse && (target === "avatar" || target === "cover") ? target : null;
   // A used profile picture stays kept for Undo until the player is done; then the old one goes.
   const usedRef = useRef(false);
   usedRef.current = used;
@@ -91,13 +99,15 @@ export function SlpPictureAssist({
       "draw",
       async () => {
         setResult(
-          await runSlpAction("draw-picture", {
-            accountId,
-            target,
-            request: request.trim(),
-            context,
-            ...(advanced ? { options } : {}),
-          }),
+          drawWith
+            ? await drawWith(request.trim())
+            : await runSlpAction("draw-picture", {
+                accountId,
+                target,
+                request: request.trim(),
+                context,
+                ...(advanced ? { options } : {}),
+              }),
         );
       },
       t("ui.slurp.assist.drawFailed", { defaultValue: "The picture did not come out. Try again." }),
@@ -143,7 +153,7 @@ export function SlpPictureAssist({
           maxLength={SLP_ASSIST_REQUEST_MAX}
           disabled={pending}
           rows={2}
-          placeholder={t(`ui.slurp.assist.picturePlaceholder.${target}`)}
+          placeholder={placeholder ?? t(`ui.slurp.assist.picturePlaceholder.${target}`)}
           onChange={(event) => setRequest(event.target.value)}
           className="min-h-16 w-full resize-y rounded-xl bg-[var(--slurp-canvas)] p-3 text-base text-[var(--slurp-text)] outline-none ring-1 ring-inset ring-[var(--noodle-divider)] placeholder:text-[var(--slurp-muted)] focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] sm:text-[13px]"
         />

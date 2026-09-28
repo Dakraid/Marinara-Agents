@@ -40,13 +40,13 @@ exceptions.
 base <- modules <- features <- app <- slp-client-entry.tsx
 ```
 
-| Layer | Holds | May import |
-|---|---|---|
-| `base/` | `api/`, `chrome/`, `media/`, `state/`, `ui/`: domain-neutral plumbing | `base`, `locales`, shared |
-| `modules/` | reusable presentation: `creator/`, `post/`, `story/`, `poll/`, `coin/` | `base`, `modules` |
-| `features/<name>/` | one product area, including its hooks and Backstage panels | `base`, `modules`, own feature, other features' contracts |
-| `app/` | router, navigation, `screens/` — composition only, no domain logic | everything below |
-| `locales/` | `en`, `de`, `ko`, `pl`; keys unchanged | — |
+| Layer              | Holds                                                                  | May import                                                |
+| ------------------ | ---------------------------------------------------------------------- | --------------------------------------------------------- |
+| `base/`            | `api/`, `chrome/`, `media/`, `state/`, `ui/`: domain-neutral plumbing  | `base`, `locales`, shared                                 |
+| `modules/`         | reusable presentation: `creator/`, `post/`, `story/`, `poll/`, `coin/` | `base`, `modules`                                         |
+| `features/<name>/` | one product area, including its hooks and Backstage panels             | `base`, `modules`, own feature, other features' contracts |
+| `app/`             | router, navigation, `screens/` — composition only, no domain logic     | everything below                                          |
+| `locales/`         | `en`, `de`, `ko`, `pl`; keys unchanged                                 | —                                                         |
 
 Modules render from props and import no feature hook. `features/backstage/` owns only the shell,
 save contract, search and deep links, and one explicit `{ target, Component }` panel registry.
@@ -67,14 +67,14 @@ inside keep their existing public `useSlurp*` / `useNoodler*` names.
 base <- modules <- data <- features <- workflows <- slp-server-entry.ts
 ```
 
-| Layer | Holds | May import |
-|---|---|---|
-| `base/` | `host/`, `prompting/`, `media/`, `identity/`, `model/`, `locking/`, `modifiers/`: domain-neutral infrastructure | `base` |
-| `modules/<domain>/` | pure domain rules: no database, host storage, Fastify, or model call (`settings/` holds the settings schema, `records/` the stored-record model, `requests/` the shared request schemas) | `base`, `modules` |
-| `data/` | persistence: `host/` storage context, `settings/`, one `<domain>/` facet folder per area, and the `slp-storage.ts` composition | `base`, `modules`, `data` |
-| `features/<name>/` | routes, services, operations, and schedulers for one area | `base`, `modules`, `data`, own feature, other features' contracts |
-| `workflows/` | coordination across features | feature contracts, and everything below `features` |
-| `slp-server-entry.ts` | creates route dependencies and schedulers once and mounts routes in order | everything |
+| Layer                 | Holds                                                                                                                                                                                    | May import                                                        |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `base/`               | `host/`, `prompting/`, `media/`, `identity/`, `model/`, `locking/`, `modifiers/`: domain-neutral infrastructure                                                                          | `base`                                                            |
+| `modules/<domain>/`   | pure domain rules: no database, host storage, Fastify, or model call (`settings/` holds the settings schema, `records/` the stored-record model, `requests/` the shared request schemas) | `base`, `modules`                                                 |
+| `data/`               | persistence: `host/` storage context, `settings/`, one `<domain>/` facet folder per area, and the `slp-storage.ts` composition                                                           | `base`, `modules`, `data`                                         |
+| `features/<name>/`    | routes, services, operations, and schedulers for one area                                                                                                                                | `base`, `modules`, `data`, own feature, other features' contracts |
+| `workflows/`          | coordination across features                                                                                                                                                             | feature contracts, and everything below `features`                |
+| `slp-server-entry.ts` | creates route dependencies and schedulers once and mounts routes in order                                                                                                                | everything                                                        |
 
 `modules/` and `data/` are shared layers: their domain folders organize files, and they may import
 each other's domain folders without contracts. A pure rule never reaches I/O, and persistence never
@@ -130,6 +130,12 @@ The layer has three doors, all into the same runner:
   (`slpActionServiceKeys`).
 - Nothing else. A new action is added to the shared contract and the runner's switch, never as a
   side route.
+
+Brand actions (R): `list-brands` (the brands and products a helper can name), `offer-brand-deal`
+(the Stir lever "give <Creator> a deal with <brand / product>"; `preview: true` answers who, which
+product, the fee, fit notes or why not, and writes nothing; a run stores exactly that offer) and
+`draw-brand-picture` (a logo or product picture, returned unsaved for the picture assist). Stir can
+show the lever's preview as its card: it already has the card's fields (`SlpBrandDealPreview`).
 
 The AI assist on the client is two components in `features/assist/`: `SlpTextAssist` (Write when
 the field is empty, Improve when it has text, an optional note, Undo until the player types again)

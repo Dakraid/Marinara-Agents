@@ -11,7 +11,7 @@ import { createLorebooksStorage } from "../../../services/storage/lorebooks.stor
 import { readGarnishLorebookContext } from "./slp-garnish-lorebook.js";
 import { generateGarnishAds, retireWeakGarnishAds } from "./slp-garnish-generation-service.js";
 import { qualityScores } from "../../../services/garnish-ads/garnish-ads.rating.js";
-import type { GarnishAd } from "../../../services/garnish-ads/garnish-ads.types.js";
+import { garnishAdBrandId, type GarnishAd } from "../../../services/garnish-ads/garnish-ads.types.js";
 import {
   exportGarnishAds,
   importGarnishAds,
@@ -29,6 +29,8 @@ export async function slpAdsRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
     brand: z.string().trim().min(1).max(80),
     product: z.string().trim().min(1).max(120),
     copy: z.string().trim().min(1).max(600),
+    priceFeel: z.enum(["budget", "everyday", "premium"]).optional(),
+    look: z.string().trim().max(400).optional(),
     categories: z.array(z.string().trim().min(1).max(32)).max(12).default([]),
     contextTags: z.array(z.string().trim().min(1).max(32)).max(12).default([]),
     imageUrl: z.string().trim().max(2048).nullable().optional(),
@@ -70,7 +72,11 @@ export async function slpAdsRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
       items.map((item) => item.id),
     );
     for (const item of items) await ads.record(parsed.data.personaId, item.id, "impression");
-    return { items };
+    // The brand's logo is the ad's avatar (R); a brand without one shows its initials.
+    const logos = new Map(
+      (await ads.pool.listBrands(SLURP_GARNISH_PLATFORM)).map((brand) => [brand.id, brand.logoUrl ?? null]),
+    );
+    return { items: items.map((item) => ({ ...item, brandLogoUrl: logos.get(garnishAdBrandId(item)) ?? null })) };
   });
 
   app.post("/slurp/viewer/ads/:id/hide", async (req, reply) => {
@@ -215,8 +221,10 @@ export async function slpAdsRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
   app.get("/noodler/ads/:id/image/:fileName", async (req, reply) => {
     const { id, fileName } = req.params as { id: string; fileName: string };
     const ad = (await ads.pool.listAll()).find((row) => row.id === id);
+    // A brand's logo lives under the same route, keyed by the brand id (R).
+    const brand = ad ? null : (await ads.pool.listBrands()).find((row) => row.id === id);
     // The feed picture or the wide banner, whichever this file name is.
-    const absolute = [ad?.imageUrl, ad?.wideImageUrl]
+    const absolute = [ad?.imageUrl, ad?.wideImageUrl, brand?.logoUrl]
       .map((url) => resolveGarnishAdImageAbsolutePath(id, url))
       .find((path) => path && basename(path) === fileName);
     if (!absolute || !existsSync(absolute)) {

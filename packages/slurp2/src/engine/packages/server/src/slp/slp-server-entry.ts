@@ -6,6 +6,7 @@ import { createSlpViewerContext } from "./features/viewer/slp-viewer-context.js"
 import { slpMediaRoutes } from "./features/media/slp-media-routes.js";
 import { slpSettingsRoutes } from "./features/settings/slp-settings-routes.js";
 import { slpAdsRoutes } from "./features/ads/slp-ads-routes.js";
+import { slpBrandsRoutes } from "./features/ads/slp-brands-routes.js";
 import { slpAudienceRoutes } from "./features/audience/slp-audience-routes.js";
 import { slpImprovementRoutes } from "./features/creators/improvement/slp-improvement-routes.js";
 import { slpCreatorsRoutes } from "./features/creators/slp-creators-routes.js";
@@ -83,6 +84,7 @@ export async function mountSlpRoutes(app: FastifyInstance) {
   await slpCreatorTiesRoutes(app, deps);
   await slpFeedViewerRoutes(app, deps);
   await slpAdsRoutes(app, deps);
+  await slpBrandsRoutes(app, deps);
   await slpFeedPostRoutes(app, deps);
   await slpDeepDetailsRoutes(app, deps);
   await slpCanonAnchorRoutes(app, deps);

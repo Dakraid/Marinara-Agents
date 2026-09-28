@@ -98,8 +98,13 @@ export function SlurpInlineAd({
       className="rounded-2xl bg-[var(--slurp-surface-raised)] px-4 py-4 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]"
     >
       <div className="flex items-center gap-3">
-        {/* Initials of the first two words of the brand. */}
-        <Avatar account={{ displayName: promotion.brand.split(/\s+/u).slice(0, 2).join(" "), avatarUrl: null }} />
+        {/* The brand's logo, or the initials of the first two words of the brand. */}
+        <Avatar
+          account={{
+            displayName: promotion.brand.split(/\s+/u).slice(0, 2).join(" "),
+            avatarUrl: promotion.brandLogoUrl ?? null,
+          }}
+        />
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-2">
             <h2 className={cn(SLP_TYPE.title, "min-w-0 truncate")}>{promotion.brand}</h2>

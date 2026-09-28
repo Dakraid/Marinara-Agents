@@ -273,6 +273,49 @@ export const SLP_ACTIONS = {
     inputs: { accountId: "The Creator.", level: `One of: ${SLP_SPICE_LEVELS.join(", ")}, or null.` },
     schema: z.object({ accountId, level: z.enum(SLP_SPICE_LEVELS).nullable() }).strict(),
   },
+  // ─── Brands (R). `offer-brand-deal` is the Stir lever "give <Creator> a deal with <brand / product>". ──
+  "list-brands": {
+    summary:
+      "List the brands that can sponsor Creators and their products (ids, name, one-line pitch, spice fit). Changes nothing.",
+    inputs: {},
+    schema: z.object({}).strict(),
+  },
+  "offer-brand-deal": {
+    summary:
+      "Give a Creator a paid partnership: a brand (or one of its products) offers them a sponsored post. They answer in their own way and may say no, unless happen is true. With preview true it only says what would happen.",
+    inputs: {
+      accountId: "The Creator.",
+      brandId: "The brand (from list-brands, optional): its best-fitting product is picked.",
+      productId: "One product (from list-brands, optional); wins over brandId.",
+      happen: "True to make them say yes now (optional).",
+      preview: "True to see who, what, the fee and fit notes without changing anything (optional).",
+    },
+    schema: z
+      .object({
+        accountId,
+        brandId: z.string().trim().min(1).max(120).optional(),
+        productId: z.string().trim().min(1).max(120).optional(),
+        happen: z.boolean().default(false),
+        preview: z.boolean().default(false),
+      })
+      .strict(),
+  },
+  "draw-brand-picture": {
+    summary:
+      "Draw a brand's logo, or a picture of one of its products, from the brand's own words and what the player typed. Returns it without saving it.",
+    inputs: {
+      brandId: "The brand (from list-brands or Backstage).",
+      productId: "The product, for a product picture (optional: without it the logo is drawn).",
+      request: "What the picture should show, in the player's words (optional).",
+    },
+    schema: z
+      .object({
+        brandId: z.string().trim().min(1).max(120),
+        productId: z.string().trim().min(1).max(120).optional(),
+        request: z.string().trim().max(SLP_ASSIST_REQUEST_MAX).default(""),
+      })
+      .strict(),
+  },
 } as const;
 
 export type SlpActionName = keyof typeof SLP_ACTIONS;
@@ -304,6 +347,40 @@ export type SlpActionResult = {
   "steer-storyline": { projectId: string };
   "run-audience": unknown;
   "set-spice": { level: string | null };
+  "list-brands": {
+    adsOn: boolean;
+    brands: {
+      id: string;
+      name: string;
+      category: string;
+      products: { id: string; name: string; pitch: string; spice: string }[];
+    }[];
+  };
+  "offer-brand-deal": { dealId: string | null; preview: SlpBrandDealPreview };
+  "draw-brand-picture": { image: string; prompt: string };
+};
+
+/**
+ * What `offer-brand-deal` would do (R). Shaped like a Stir preview card (who, detail, notes, error,
+ * when, refusable, summary), so Stir can show it as one. `notes[].kind`: notAutomatic (the player's
+ * own page answers in Studio), spice (the product is spicier than the page), noAds / offBrand (the
+ * card will likely say no), mayDecline. `error`: notFound, noProduct, busy (an offer is open), adsOff.
+ */
+export type SlpBrandDealPreview = {
+  who: { id: string; name: string }[];
+  detail: {
+    brand: string | null;
+    product: string | null;
+    productId: string | null;
+    brandId: string | null;
+    fee: number | null;
+    pitch: string | null;
+  };
+  notes: { kind: string; name: string }[];
+  error: "notFound" | "noProduct" | "busy" | "adsOff" | null;
+  when: "nextPost" | "now";
+  refusable: boolean;
+  summary: string;
 };
 
 /** What `list-world` answers: the ids and names the world levers take. */
@@ -365,6 +442,9 @@ export const SLP_ACTION_META: Record<
     deck: true,
   },
   "run-audience": { category: "world", targets: "none", reversible: false, ai: true, refusable: false, deck: true },
+  "list-brands": { category: "help", targets: "none", reversible: false, ai: false, refusable: false, deck: false },
+  "draw-brand-picture": { category: "help", targets: "none", reversible: false, ai: true, refusable: false, deck: false },
+  "offer-brand-deal": { category: "work", targets: "creator", reversible: false, ai: false, refusable: true, deck: true },
 };
 
 /**

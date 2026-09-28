@@ -42,13 +42,27 @@ export function garnishRatingAllowed(rating: GarnishContentRating, ceiling: Garn
   return GARNISH_CONTENT_RATINGS.indexOf(rating) <= GARNISH_CONTENT_RATINGS.indexOf(ceiling);
 }
 
+/** How a product's price reads: a treat anyone grabs, an everyday buy, or a splurge. */
+export type GarnishPriceFeel = "budget" | "everyday" | "premium";
+export const GARNISH_PRICE_FEELS: readonly GarnishPriceFeel[] = ["budget", "everyday", "premium"];
+
+/**
+ * An ad is one product of a brand. `brand` is the brand's display name (kept on every row, so an ad
+ * still reads on its own); `brandId` ties it to a `GarnishBrand`. Older rows have no `brandId`: their
+ * brand is the one named like them (`garnishAdBrandId`), so nothing had to be rewritten.
+ */
 export type GarnishAd = {
   id: string;
   platform: GarnishPlatform;
   kind: GarnishAdKind;
   brand: string;
+  brandId?: string;
   product: string;
+  /** The one-line pitch. */
   copy: string;
+  priceFeel?: GarnishPriceFeel;
+  /** What the product looks like, for its pictures and for a Creator showing it. */
+  look?: string;
   categories: string[];
   contextTags: string[];
   creatorAccountId?: string;
@@ -64,6 +78,40 @@ export type GarnishAd = {
   /** Set when the ad is withdrawn from selection. The row stays so ids are never reused. */
   retiredAt?: string | null;
 };
+
+/**
+ * A brand: who is paying. Its products are the ads that carry its id. `contentRating` on each product
+ * is its spice fit; the brand only holds what is true of all of them.
+ */
+export type GarnishBrand = {
+  id: string;
+  platform: GarnishPlatform;
+  name: string;
+  /** One word or two: drinks, gaming, lingerie. */
+  category: string;
+  /** How the brand talks, one line. */
+  tone: string;
+  /** What the logo looks like, for drawing it. */
+  logoPrompt: string;
+  logoUrl?: string | null;
+  origin: GarnishAdOrigin;
+  createdAt?: string;
+  /** Switched off: none of its products show or sponsor anyone. The row stays. */
+  disabledAt?: string | null;
+};
+
+const brandSlug = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/gu, "-")
+    .replace(/^-|-$/gu, "")
+    .slice(0, 60);
+
+/** The id a brand named like this has. Base brands use it too, so an old ad finds its shipped brand. */
+export const garnishBrandId = (name: string) => `brand-${brandSlug(name) || "unnamed"}`;
+
+/** The brand an ad belongs to. */
+export const garnishAdBrandId = (ad: Pick<GarnishAd, "brand" | "brandId">) => ad.brandId || garnishBrandId(ad.brand);
 
 export type GarnishAdState = { hiddenAdIds: string[]; recentAdIds: string[]; hiddenBrands: string[] };
 

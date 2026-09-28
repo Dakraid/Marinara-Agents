@@ -33,6 +33,7 @@ const maintenance = (...terms: string[]) => place("maintenance", "autopurge", "a
 export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBackstagePlacement> = {
   inlineAdsEnabled: world("ads", "ads", "promotions", "feed"),
   inlineAdsFrequency: world("ads", "ad frequency", "promotions"),
+  brandDealsPace: world("ads", "brand deals", "sponsored posts", "paid partnership"),
   inlineAdsSteering: world("ads", "personalized ads", "random ads"),
   inlineAdsPreferredTags: world("ads", "ad tags", "interests"),
   inlineAdsContentCeiling: world("ads", "ad rating", "content ceiling"),
