@@ -94,12 +94,8 @@ import {
 } from "../../base/model/slp-model-worker.js";
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
 import { SLURP_PERFORMED_INTIMACY } from "../../modules/creators/slp-performance.js";
-import {
-  slurpDmRoleHeader,
-  slurpDmTranscript,
-  slurpDmViewerPage,
-  type SlurpDmParty,
-} from "../../modules/messages/slp-dm-roles.js";
+import { slurpDmRoleHeader, slurpDmTranscript, type SlurpDmParty } from "../../modules/messages/slp-dm-roles.js";
+import { slurpCoupleDmPage } from "../projects/slp-projects-contract.js";
 import { protectSlurpSupportStaff } from "../../modules/messages/slp-support.js";
 import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
 
@@ -189,7 +185,7 @@ export function buildSlurpMessageChat(input: {
     ...parties,
     support,
     viewerPage: input.viewerPage
-      ? { name: protect(input.viewerPage.name), handle: protect(input.viewerPage.handle) }
+      ? { ...input.viewerPage, name: protect(input.viewerPage.name), handle: protect(input.viewerPage.handle) }
       : null,
     openedBy: input.openedBy,
     requestFee: input.requestFee,
@@ -497,7 +493,7 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
     input.viewer.kind === "random_user"
       ? null
       : await slurp.getSlurpAccountForEntity(input.viewer.kind, input.viewer.entityId, "creator").catch(() => null);
-  const viewerPage = slurpDmViewerPage(viewerPageAccount, input.creator.id, input.viewer.id);
+  const viewerPage = await slurpCoupleDmPage(input.db, viewerPageAccount, input.creator.id, input.viewer.id);
   const settings = await slurp.getSettings();
   const prompts = slurpPromptContext(settings);
   const source = await slurp.resolveAccountSource(input.creator);
@@ -673,6 +669,7 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
         player: input.viewer.kind === "persona" && !fanVoice,
         seed: `${input.creator.id}:${input.viewer.id}`,
         with: input.viewer.id === SLURP_SUPPORT_ACCOUNT_ID ? "staff" : viewerPage ? "peer" : "fan",
+        partnerId: viewerPage?.partner ? viewerPageAccount?.id : undefined,
       },
       ownLines: [
         ...input.history

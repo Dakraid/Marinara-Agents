@@ -12,7 +12,14 @@
  */
 
 /** A name as it appears in the chat. */
-export type SlurpDmParty = { name: string; handle: string };
+export type SlurpDmParty = {
+  name: string;
+  handle: string;
+  /** A Creator page writing to its partner or ex (7b-couples): who they are to each other, one sentence. */
+  relationship?: string;
+  /** The two are a couple now: the chat is as private and as spicy as both their levels allow. */
+  partner?: boolean;
+};
 
 /** The message fields the transcript reads. A subset of `SlurpMessage`. */
 export type SlurpDmLine = {
@@ -142,6 +149,7 @@ export function slurpDmRoleHeader(input: SlurpDmRoleInput & { history: readonly 
         ? `${viewer} runs a Creator page on Slurp too (${at(input.viewerPage)}). This is one Creator writing to another: talk to ${viewer} as a fellow Creator, not as a customer, though they can still subscribe or buy like anyone.`
         : `${viewer} is a fan writing to you.`,
     );
+    if (input.viewerPage?.relationship) lines.push(input.viewerPage.relationship);
     // Two pages can plan a joint post here; the split is theirs to agree (7b-c).
     if (input.viewerPage)
       lines.push(

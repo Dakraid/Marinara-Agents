@@ -10,6 +10,8 @@ import type { SlurpPromotion } from "../../features/ads/slp-ads-contract";
 import { toast } from "sonner";
 import { type SlpPostCardModel } from "../../modules/post/SlpPostTypes";
 import { SlurpArcEffectsList, SlurpArcTimelineCard } from "../../features/projects/SlpArcTimelineCard";
+import { SlpProfileCoupleLine } from "../../features/projects/SlpCouples";
+import { useSlurpCouplePageClosed } from "../../features/projects/slp-ties-hooks";
 import { useNearViewportSlurpMediaSrc } from "../../base/media/slp-media-src";
 import { SlurpProfileSurface } from "../../features/creators/SlpProfileSurface";
 import { SlpBalanceChip } from "../../modules/chrome/SlpShell";
@@ -264,6 +266,8 @@ export function StageProfileView({
     viewerCreator,
   } = model;
   const cards = <SlpProfilePostCards model={model} />;
+  // A closed couple page (7b-couples): no Subscribe, Follow or Tip; its note says why.
+  const closedCouplePage = useSlurpCouplePageClosed(viewerAccount?.entityId ?? null, profile.id);
   // No "(0)" while the posts load: a loading page does not claim to be empty.
   const tabCount = (count: number) => (isLoading ? null : count);
   return (
@@ -375,7 +379,7 @@ export function StageProfileView({
             </div>
           ),
         }}
-        leadingActions={<SlpProfileLeadingActions model={model} />}
+        leadingActions={closedCouplePage ? null : <SlpProfileLeadingActions model={model} />}
         status={creatorStatus}
         stats={{
           followers: followerTotal,
@@ -383,6 +387,13 @@ export function StageProfileView({
           likes: profileLikeTotal,
         }}
         location={profileLocation}
+        coupleLine={
+          <SlpProfileCoupleLine
+            personaId={viewerAccount?.entityId ?? null}
+            accountId={profile.id}
+            onOpenProfile={postCardCtx.openAuthorProfile}
+          />
+        }
         bioContent={profileBioBody ? <p className="whitespace-pre-wrap">{profileBioBody}</p> : null}
         bioCollapsible={profileBioBody.length > 280 || profileBioBody.split("\n").length > 4}
         tabs={[
@@ -610,8 +621,9 @@ function SlpCreatorToolsCard({ model }: { model: ReturnType<typeof useStageProfi
             )}
           </div>
         )}
-        {/* Steering: what happens in their life. Only for Creators Slurp writes for. */}
-        {!viewingOwnCreator && !personaBackedCreator && (
+        {/* Steering: what happens in their life. Only for Creators Slurp writes for: not a couple's shared
+          page (7b-couples), whose posts come from the two of them. */}
+        {!viewingOwnCreator && !personaBackedCreator && !profile.sourceAccountId?.startsWith("slurp-couple:") && (
           <SlpCreatorSteeringCard
             creatorId={profile.id}
             name={profile.displayName}

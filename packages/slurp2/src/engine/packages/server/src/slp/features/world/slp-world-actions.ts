@@ -14,6 +14,7 @@ import {
   slurpAudienceQuestion,
   slurpAudienceReactionFrom,
   slurpRivalryBodies,
+  slurpCoupleReactionBodies,
   SLURP_SHIPPED_TYPE_REACTIONS,
   slurpCommissionBrief,
 } from "../../modules/world/slp-world-copy.js";
@@ -266,12 +267,14 @@ export async function applyPulse(
     actorId: actor.id,
     type: isComment ? "reply" : "like",
     // Tier 1 copy, so this stays free: the pulse runs unattended and must never call the model.
-    // Under a rivalry post about half the crowd picks a side (7b-c).
+    // Under a rivalry post about half the crowd picks a side (7b-c); under a couple post they ship or mourn.
     content: isComment
       ? slurpAudienceReactionFrom(
           `${action.postId}:${actor.id}`,
           sides && hash(`${action.postId}:${actor.id}:side`) % 2 === 0
-            ? slurpRivalryBodies(sides.self, sides.rival)
+            ? sides.moment !== undefined
+              ? slurpCoupleReactionBodies(sides.self, sides.rival, sides.moment)
+              : slurpRivalryBodies(sides.self, sides.rival)
             : slurpReactionBodiesForType(banks, fanTypeId, SLURP_SHIPPED_TYPE_REACTIONS[fanTypeId ?? ""] ?? []),
         )
       : null,
@@ -290,17 +293,24 @@ export async function applyPulse(
   return true;
 }
 
-/** The two names under a rivalry post, or null for any other post. */
+/** What fans say under a rivalry or a couple post, or null for any other post. */
 async function rivalrySides(
   noodle: ReturnType<typeof createSlurpStorage>,
   postId: string,
-): Promise<{ self: string; rival: string } | null> {
+): Promise<{ self: string; rival: string; moment?: string } | null> {
   const post = await noodle.getNoodlerPostById(postId).catch(() => null);
   const stamp = post ? readSlurpTieStamp(post.metadata) : null;
-  if (!post || stamp?.kind !== "rival" || !stamp.partnerId) return null;
+  if (!post || (stamp?.kind !== "rival" && stamp?.kind !== "couple") || !stamp.partnerId) return null;
+  // On a shared page the post's author is the page; the fans talk about the one who wrote it.
   const [self, rival] = await Promise.all([
-    noodle.getNoodlerAccountById(post.authorAccountId),
+    noodle.getNoodlerAccountById(stamp.hostId ?? post.authorAccountId),
     noodle.getNoodlerAccountById(stamp.partnerId),
   ]);
-  return self && rival ? { self: self.displayName, rival: rival.displayName } : null;
+  if (!self || !rival) return null;
+  // A couple post: `rival` is the partner, and the fans' mood follows the moment.
+  return {
+    self: self.displayName,
+    rival: rival.displayName,
+    ...(stamp.kind === "couple" ? { moment: stamp.moment ?? "" } : {}),
+  };
 }

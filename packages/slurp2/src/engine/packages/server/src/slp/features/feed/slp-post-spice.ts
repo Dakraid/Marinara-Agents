@@ -18,6 +18,7 @@ import type { SlurpPostVariation } from "../../modules/feed/slp-post-variation.j
 import type { SlurpBeat } from "../../modules/feed/slp-post-beat.js";
 import { slurpCollabPartners, type SlurpCreatorCollab } from "../../modules/projects/slp-project.js";
 import { slurpWorkingPartnerIds } from "../../modules/projects/slp-creator-ties.js";
+import { readSlurpCouplePartner } from "../projects/slp-projects-contract.js";
 import type { SlurpTieStamp } from "../../modules/projects/slp-tie-stamp.js";
 import { SLP_EXPLICIT_LEVELS } from "../../../../../shared/src/slp/slp-spice.js";
 
@@ -30,7 +31,8 @@ export async function resolveSlurpPostDial(
   creatorId: string,
   tie: SlurpTieStamp | undefined,
 ): Promise<SlurpExplicitLevel> {
-  const partnerId = tie?.kind === "collab" ? tie.partnerId : undefined;
+  // A couple post too: it shows on the partner's page or their shared page (7b-couples).
+  const partnerId = tie?.kind === "collab" || tie?.kind === "couple" ? tie.partnerId : undefined;
   const [own, partner] = await Promise.all([
     resolveSlurpExplicitLevel(db, creatorId),
     partnerId ? resolveSlurpExplicitLevel(db, partnerId).catch(() => null) : null,
@@ -39,22 +41,33 @@ export async function resolveSlurpPostDial(
 }
 
 /**
- * Who a partner scene may be with. A collab post: the collab partner, or nobody (null) when their
- * level or hard noes rule it out. Otherwise: the Creators this one works with, paired in settings
- * or from a collab they made (minus blocked pairs and open rivalries).
+ * Who a partner scene may be with. A collab or couple post: that partner, or nobody (null) when their
+ * level or hard noes rule it out. A Creator in a couple: the couple partner or someone unnamed.
+ * Otherwise: the Creators this one works with, paired in settings or from a collab they made (minus
+ * blocked pairs and open rivalries).
  */
 async function spicePartners(
   db: DB,
   creatorId: string,
   paired: readonly SlurpCreatorCollab[],
   tie: SlurpTieStamp | undefined,
-): Promise<{ collabs: string[]; madeWith?: string | null }> {
-  if (tie?.kind === "collab" && tie.partnerId)
+): Promise<{ collabs: string[]; madeWith?: string | null; couple?: string | null }> {
+  if ((tie?.kind === "collab" || tie?.kind === "couple") && tie.partnerId)
     return { collabs: [], madeWith: (await slurpSpicyCollabNames(db, [tie.partnerId]))[0] ?? null };
+  // Taken: the couple partner is the partner, when their level and hard noes allow it (7b-couples).
+  const couple = await readSlurpCouplePartner(db, creatorId);
+  if (couple.inCouple)
+    return {
+      collabs: [],
+      couple: couple.partnerId ? ((await slurpSpicyCollabNames(db, [couple.partnerId]))[0] ?? null) : null,
+    };
   const { ties } = await readSlurpCreatorTiesDocument(db);
   const ids = slurpCollabPartners(paired, creatorId).map((entry) => entry.partnerId);
   return { collabs: await slurpSpicyCollabNames(db, slurpWorkingPartnerIds(ties, creatorId, ids)) };
 }
+
+/** Couple moments that are about something else than sex: a fight, jealousy, a breakup, a goodbye. */
+const SLURP_UNSPICY_COUPLE: ReadonlySet<string> = new Set(["fight", "jealous", "breakup", "pageClose"]);
 
 /** What earlier spicy posts of this Creator were, newest first, from what each post stored. */
 function recentSpice(posts: readonly { metadata?: unknown }[]) {
@@ -94,17 +107,18 @@ export async function planSlurpPostSpice(
   });
   const postLevel = slurpPostSexualLevel({ level: input.explicitLevel, access: input.access, intent: input.intent });
   const locked = input.access === "locked";
-  // A sponsored post or a rivalry post is about that; the spice stays for the other posts.
+  // A sponsored post, a rivalry post or a fight / breakup is about that; the spice stays for the other posts.
   const tie = input.beat?.tie;
   const partners =
     postLevel === "explicit" && locked
       ? await spicePartners(db, input.account.id, input.collabs, tie).catch(() => ({
           collabs: [],
-          ...(tie?.kind === "collab" ? { madeWith: null } : {}),
+          ...(tie?.kind === "collab" || tie?.kind === "couple" ? { madeWith: null } : {}),
         }))
       : { collabs: [] };
+  const spicy = tie?.kind !== "sponsor" && tie?.kind !== "rival" && !SLURP_UNSPICY_COUPLE.has(tie?.moment ?? "");
   const angle =
-    spiceRead && !input.directed && tie?.kind !== "sponsor" && tie?.kind !== "rival"
+    spiceRead && !input.directed && spicy
       ? slurpSpiceAngle({
           level: postLevel,
           ceiling: input.dialLevel,

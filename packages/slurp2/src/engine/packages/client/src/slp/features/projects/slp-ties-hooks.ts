@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../../lib/api-client";
 import { slpKeys } from "../../base/state/slp-query-keys";
 
-/** Collabs, rivalries and brand deals, as Studio shows them. Mirrors the server's `/slurp/ties`. */
+/** Collabs, rivalries, brand deals and couples, as Studio shows them. Mirrors the server's `/slurp/ties`. */
 export type SlurpTiesCreator = {
   id: string;
   name: string;
@@ -12,6 +12,8 @@ export type SlurpTiesCreator = {
   own: boolean;
   /** Slurp writes this Creator's posts. */
   automatic: boolean;
+  /** A couple's shared page, not a Creator of its own. */
+  couplePage?: boolean;
 };
 export type SlurpTiesCollab = {
   id: string;
@@ -49,12 +51,30 @@ export type SlurpTiesDeal = {
   /** The sponsored post; none when the player took the deal for their own page. */
   postId: string | null;
 };
+export type SlurpTiesCoupleStage = "sparks" | "dating" | "together" | "rocky" | "split";
+export type SlurpTiesCouple = {
+  id: string;
+  aId: string;
+  bId: string;
+  origin: "card" | "world" | "player" | "storyline";
+  stage: SlurpTiesCoupleStage;
+  ending: "breakup" | "fizzled" | null;
+  startedAt: string;
+  stageAt: string;
+  togetherAt: string | null;
+  reunions: number;
+  moments: { id: string; kind: string; at: string; detail: string; withId?: string; fromId?: string }[];
+  page: { accountId: string; openedAt: string; closedAt: string | null } | null;
+};
+export type SlurpCoupleSteer = "date" | "drama" | "patchUp" | "breakUp" | "reunite";
+
 export type SlurpTiesView = {
   creators: SlurpTiesCreator[];
   collabs: SlurpTiesCollab[];
   rivalries: SlurpTiesRivalry[];
   deals: SlurpTiesDeal[];
   blocked: string[];
+  couples: SlurpTiesCouple[];
 };
 
 const key = (personaId: string) => [...slpKeys.noodlerRoot(), "ties", personaId] as const;
@@ -96,6 +116,24 @@ export function useSlurpTiesMutations(personaId: string) {
       mutationFn: (id: string) => post(`/rivalries/${encodeURIComponent(id)}/cool`),
       onSuccess: store,
     }),
+    setUp: useMutation({
+      mutationFn: (pair: { aId: string; bId: string }) => post("/couples", pair),
+      onSuccess: store,
+    }),
+    steerCouple: useMutation({
+      mutationFn: (input: { id: string; steer: SlurpCoupleSteer }) =>
+        post(`/couples/${encodeURIComponent(input.id)}/steer`, { steer: input.steer }),
+      onSuccess: store,
+    }),
+    couplePage: useMutation({
+      mutationFn: (input: { id: string; open: boolean }) =>
+        post(`/couples/${encodeURIComponent(input.id)}/page`, { open: input.open }),
+      onSuccess: (view) => {
+        store(view);
+        // A new page is a new Creator everywhere: Discover, the feed, profiles.
+        void qc.invalidateQueries({ queryKey: slpKeys.noodlerRoot() });
+      },
+    }),
     answerDeal: useMutation({
       mutationFn: (answer: { id: string; accept: boolean }) =>
         post(`/deals/${encodeURIComponent(answer.id)}/answer`, { accept: answer.accept }),
@@ -106,4 +144,20 @@ export function useSlurpTiesMutations(personaId: string) {
       },
     }),
   };
+}
+
+/** A couple's shared page that closed: nothing new goes up there, so there is nothing to join. */
+export function useSlurpCouplePageClosed(personaId: string | null, accountId: string): boolean {
+  const { data } = useSlurpTies(personaId);
+  return Boolean(slurpCoupleForAccount(data, accountId)?.page?.page?.closedAt);
+}
+
+/** The couple this account is in (or the shared page it is), for the profile's couple line. */
+export function slurpCoupleForAccount(view: SlurpTiesView | undefined, accountId: string) {
+  if (!view) return null;
+  const couple =
+    view.couples.find((entry) => entry.stage !== "split" && (entry.aId === accountId || entry.bId === accountId)) ??
+    null;
+  const page = view.couples.find((entry) => entry.page?.accountId === accountId) ?? null;
+  return couple || page ? { couple, page } : null;
 }

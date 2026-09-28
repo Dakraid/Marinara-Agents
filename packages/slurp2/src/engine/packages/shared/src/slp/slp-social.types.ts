@@ -446,6 +446,8 @@ export interface SlpPostPartnership {
   withName: string | null;
   withHandle: string | null;
   brand: string | null;
+  /** A couple post (7b-couples): a heart instead of the collab mark. On their shared page, `host` wrote it. */
+  couple?: boolean;
 }
 
 export interface SlpCreatorViewerCreator {

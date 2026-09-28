@@ -9,6 +9,7 @@
  * model, so briefs and questions come from the combinatorial bank in `slurp-world-copy.ts`.
  * Auto-posting is the one exception to that rule and it lives in its own scheduler.
  */
+import { slurpCoupleBuzz } from "../../modules/projects/slp-creator-couples.js";
 import { advanceSlurpCreatorTies } from "../projects/slp-projects-contract.js";
 import {
   slurpCommissionQuote,
@@ -617,7 +618,7 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
                 creatorAccountId: creator.id,
                 postId: post.id,
                 ageHours: (until.getTime() - Date.parse(post.createdAt)) / 3_600_000,
-                creatorReach: creator.followers,
+                creatorReach: creator.followers * slurpCoupleBuzz(post.metadata),
               })),
           ),
         },

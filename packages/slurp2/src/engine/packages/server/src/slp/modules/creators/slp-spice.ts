@@ -157,7 +157,8 @@ const LEVEL_INDEX = (level: SlpExplicitLevelName) => SLP_EXPLICIT_LEVELS.indexOf
 /** Someone to be with. A couple partner from the card, a collab partner, or someone unnamed. */
 export type SlurpSpicePartner = { kind: "couple" | "collab" | "unnamed"; name: string | null; company: string };
 
-const PARTNER_RELATION =
+/** A card person who is their partner ("girlfriend", "Ehemann"). Couples read it too: a card partner means taken. */
+export const SLURP_PARTNER_RELATION =
   /\b(boyfriend|girlfriend|partner|husband|wife|fianc[ée]e?|lover|spouse|freund(?:in)?|ehemann|ehefrau)\b/iu;
 
 export function slurpSpicePartner(
@@ -165,8 +166,25 @@ export function slurpSpicePartner(
   collabs: readonly string[],
   seed: string,
   sequence: number,
+  /**
+   * In a couple with another Creator (7b-couples): their name, or null when they would not be in a
+   * partner scene (level, hard noes). Then there is no collab partner either: they are taken.
+   */
+  slurpCouple?: string | null,
 ): SlurpSpicePartner {
-  const couple = (creator.anchors?.people ?? []).find((person) => PARTNER_RELATION.test(person.relation));
+  if (slurpCouple !== undefined)
+    return slurpWeightedPick("spicePartner", seed, sequence, [
+      { value: { kind: "unnamed", name: null, company: "a partner whose face stays out of frame" }, weight: 1 },
+      ...(slurpCouple
+        ? [
+            {
+              value: { kind: "couple" as const, name: slurpCouple, company: `${slurpCouple}, their partner` },
+              weight: 3,
+            },
+          ]
+        : []),
+    ]);
+  const couple = (creator.anchors?.people ?? []).find((person) => SLURP_PARTNER_RELATION.test(person.relation));
   const options: { value: SlurpSpicePartner; weight: number }[] = [
     { value: { kind: "unnamed", name: null, company: "a partner whose face stays out of frame" }, weight: 1 },
     ...(couple
@@ -228,6 +246,8 @@ export function slurpSpiceAngle(input: {
    * nobody when they would not do one (null). Absent for the Creator's own posts.
    */
   madeWith?: string | null;
+  /** In a couple with another Creator: see `slurpSpicePartner`. Absent when single. */
+  couple?: string | null;
   /** Earlier spicy posts of this Creator, newest first. */
   recent: readonly { kind: string; taste?: string | null }[];
   sequence: number;
@@ -263,7 +283,7 @@ export function slurpSpiceAngle(input: {
     ? null
     : input.madeWith
       ? { kind: "collab", name: input.madeWith, company: `${input.madeWith}, a fellow Creator` }
-      : slurpSpicePartner(input.creator, input.collabs ?? [], seed, input.sequence);
+      : slurpSpicePartner(input.creator, input.collabs ?? [], seed, input.sequence, input.couple);
   const who = partner?.name ?? "someone you are seeing";
   const fill = (value: string) => value.replace("{partner}", who);
   const taste = slurpTastePick(input.spice, input.creator, seed, input.sequence, input.recent);

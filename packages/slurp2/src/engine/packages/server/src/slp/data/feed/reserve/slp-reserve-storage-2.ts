@@ -23,6 +23,7 @@ import {
 import { slpReservePolicyStale, parseRecord } from "../../../modules/records/slp-storage-model.js";
 import type { SlpCreatorPreparedPostPayload, SlurpReserveStatus } from "../../../modules/records/slp-storage-model.js";
 import { mapAccount, snapshotForAccount } from "../../host/slp-storage-mappers.js";
+import { readSlurpTieStamp } from "../../../modules/projects/slp-tie-stamp.js";
 import type { SlurpStorageContext } from "../../host/slp-storage-context.js";
 
 export function createReserveStorage2(context: SlurpStorageContext) {
@@ -189,9 +190,13 @@ export function createReserveStorage2(context: SlurpStorageContext) {
           // A Story is a picture with a line under it. The prepared payload carries the story
           // intent, but a run whose image never attached publishes as an ordinary post.
           if (!hasMedia) delete preparedMetadata.noodlerPostType;
+          // A couple's shared-page post goes up on that page (7b-couples); if the page is gone, on the writer's.
+          const pageId = readSlurpTieStamp(preparedMetadata)?.pageId;
+          const pageRow = pageId ? (await tx.select().from(slpAccounts).where(eq(slpAccounts.id, pageId)))[0] : null;
+          const author = pageRow ? mapAccount(pageRow) : account;
           await tx.insert(slpPosts).values({
             id: postId,
-            authorAccountId: account.id,
+            authorAccountId: author.id,
             title: typeof payload.title === "string" ? payload.title : null,
             content: payload.content,
             imageUrl: hasMedia ? slpCreatorPostMediaUrl(postId) : galleryImageUrl,
@@ -203,7 +208,7 @@ export function createReserveStorage2(context: SlurpStorageContext) {
             projectChapter: typeof payload.projectChapter === "string" ? payload.projectChapter : null,
             access: payload.access === "public" ? "public" : "locked",
             metadata: JSON.stringify({ ...preparedMetadata, noodlerPreparedPostId: current.id }),
-            authorSnapshot: JSON.stringify(snapshotForAccount(account)),
+            authorSnapshot: JSON.stringify(snapshotForAccount(author)),
             // A late publish is stamped with the moment it actually happened. Using publishAt
             // would file the post behind whatever the feed received during the delay.
             createdAt: Date.parse(current.publishAt) < at.getTime() ? at.toISOString() : current.publishAt,

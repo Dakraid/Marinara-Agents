@@ -63,6 +63,8 @@ interface SlurpProfileSurfaceProps<TTab extends string = SlurpProfileTab> {
   /** The action row (Subscribe, Follow, Message, Tip, or the owner's own row). */
   leadingActions?: ReactNode;
   location?: string;
+  /** Under the location: who they are with, or whose shared page this is (7b-couples). */
+  coupleLine?: ReactNode;
   bioContent: ReactNode;
   tabs?: Array<{ id: TTab; label: string; count?: number | null; ariaLabel?: string; management?: boolean }>;
   activeTab: TTab;
@@ -87,6 +89,7 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
   editor,
   leadingActions,
   location,
+  coupleLine,
   bioContent,
   tabs,
   activeTab,
@@ -308,6 +311,7 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
           {statsRow}
           {bio}
           {locationLine}
+          {!editing && coupleLine}
           {actions}
           {editing && editor?.privateFields && <div className="mt-4 w-full space-y-3">{editor.privateFields}</div>}
         </div>

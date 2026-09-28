@@ -116,9 +116,10 @@ export type SlurpBeat = {
    * `arc`: the beat is the Creator's active arc chapter, not a card anchor. `steer`: the player's
    * idea, focus, or pushed topic. Both may change the Creator's life, as their text says. `life`:
    * a day-to-day life moment (see `slp-life-moments.ts`); like a card beat, it changes nothing lasting.
-   * `collab`, `sponsor`, `rival`: a collab, a brand deal or a rivalry (see `slp-tie-beats.ts`).
+   * `collab`, `sponsor`, `rival`, `couple`: a collab, a brand deal, a rivalry or a couple's story
+   * (see `slp-tie-beats.ts`, `slp-couple-beats.ts`).
    */
-  anchorKind: SlurpAnchorKind | "arc" | "steer" | "life" | "collab" | "sponsor" | "rival";
+  anchorKind: SlurpAnchorKind | "arc" | "steer" | "life" | "collab" | "sponsor" | "rival" | "couple";
   anchor: string;
   line: string;
   /** Named people in the beat. Empty means alone. */
@@ -134,11 +135,11 @@ export type SlurpBeat = {
   reference?: SlurpBeatReference;
   /** The player's one-off idea this beat carries out; used once, then removed. */
   nudgeId?: string;
-  /** The collab, deal or rivalry this beat carries out, stamped on the post as `slurpTie`. */
+  /** The collab, deal, rivalry or couple moment this beat carries out, stamped on the post as `slurpTie`. */
   tie?: SlurpTieStamp;
 };
 
-const TIE_KINDS: readonly string[] = ["collab", "sponsor", "rival"];
+const TIE_KINDS: readonly string[] = ["collab", "sponsor", "rival", "couple"];
 
 type SlurpBeatDeck = {
   /** Intents this beat can serve. `request` and `callback` stay intent-first: they need a source. */

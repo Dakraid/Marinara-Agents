@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Ban, Handshake, Zap } from "lucide-react";
+import { Ban, Handshake, HeartHandshake, Zap } from "lucide-react";
 import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -17,6 +17,7 @@ import {
   type SlurpTiesDeal,
   type SlurpTiesRivalry,
 } from "./slp-ties-hooks";
+import { SlpCouplesSection } from "./SlpCouples";
 
 const rowClass = "flex flex-col gap-2 py-3";
 // Inside Studio's group surface: rows and hairlines, no second box.
@@ -68,7 +69,8 @@ function Row({
 
 /**
  * Who works with whom, and who does not get along: collab requests between Creators (push one
- * through, block a pair, suggest a pairing), rivalries (cool one down) and brand deals. Studio,
+ * through, block a pair, suggest a pairing), couples (set two up, steer their story, their shared
+ * page), rivalries (cool one down) and brand deals. Studio,
  * after the Creators. Everything here happens in-world on its own; this is where the player steers.
  */
 export function SlpCollabsPanel({ personaId }: { personaId: string }) {
@@ -88,7 +90,7 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
   const when = (at: string | null) => (at ? formatRelativeTime(at, i18n.language) : "");
   const openCollabs = view.collabs.filter((collab) => ["asked", "agreed", "planned"].includes(collab.status));
   const pastCollabs = view.collabs.filter((collab) => !openCollabs.includes(collab));
-  const empty = !view.collabs.length && !view.rivalries.length && !view.deals.length;
+  const empty = !view.collabs.length && !view.rivalries.length && !view.deals.length && !view.couples.length;
 
   const collabTitle = (collab: SlurpTiesCollab) =>
     collab.status === "asked"
@@ -138,7 +140,8 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
     });
   };
 
-  const suggestable = view.creators;
+  // A couple's shared page is not a Creator to pair with.
+  const suggestable = view.creators.filter((creator) => !creator.couplePage);
   const toggle = (id: string) =>
     setPicked((current) =>
       current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id].slice(-2),
@@ -151,6 +154,18 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
         onSuccess: () => {
           setPicked([]);
           toast.success(t("ui.slurp.ties.suggested"));
+        },
+        onError,
+      },
+    );
+  const setUp = () =>
+    picked.length === 2 &&
+    actions.setUp.mutate(
+      { aId: picked[0]!, bId: picked[1]! },
+      {
+        onSuccess: () => {
+          setPicked([]);
+          toast.success(t("ui.slurp.ties.setUpDone"));
         },
         onError,
       },
@@ -251,16 +266,32 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
               );
             })}
           </div>
-          <SlpPrimaryButton
-            disabled={picked.length !== 2 || busy}
-            onClick={suggest}
-            className="min-h-11 w-full px-4 text-sm sm:w-auto"
-          >
-            <SlpSparkleGlyph size={16} aria-hidden="true" />
-            {picked.length === 2 ? t("ui.slurp.ties.suggestPair") : t("ui.slurp.ties.suggestPick")}
-          </SlpPrimaryButton>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <SlpPrimaryButton
+              disabled={picked.length !== 2 || busy}
+              onClick={suggest}
+              className="min-h-11 w-full px-4 text-sm sm:w-auto"
+            >
+              <SlpSparkleGlyph size={16} aria-hidden="true" />
+              {picked.length === 2 ? t("ui.slurp.ties.suggestPair") : t("ui.slurp.ties.suggestPick")}
+            </SlpPrimaryButton>
+            {/* The same two can also be set up as a couple (7b-couples). */}
+            {picked.length === 2 && (
+              <SlpButton
+                variant="secondary"
+                disabled={busy}
+                onClick={setUp}
+                className="min-h-11 w-full px-4 text-sm sm:w-auto"
+              >
+                <HeartHandshake size={16} aria-hidden="true" />
+                {t("ui.slurp.ties.setUp")}
+              </SlpButton>
+            )}
+          </div>
         </div>
       </section>
+
+      <SlpCouplesSection personaId={personaId} couples={view.couples} byId={byId} Row={Row} />
 
       {view.rivalries.length > 0 && (
         <section className="space-y-2" aria-label={t("ui.slurp.ties.rivalries")}>

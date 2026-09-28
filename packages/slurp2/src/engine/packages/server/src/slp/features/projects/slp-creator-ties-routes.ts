@@ -17,6 +17,19 @@ import {
 } from "../../modules/projects/slp-creator-ties.js";
 import { slurpAnswerDeal, slurpDealOpen, slurpDealReceipt } from "../../modules/economy/slp-brand-deals.js";
 import { loadSlurpTieCreators, slurpRunsItself } from "./slp-creator-ties-service.js";
+import {
+  slurpCoupleActive,
+  slurpSetUpCouple,
+  slurpSteerCouple,
+  type SlurpCouple,
+  type SlurpCoupleError,
+} from "../../modules/projects/slp-creator-couples.js";
+import {
+  closeSlurpCouplePage,
+  closeSlurpCouplePages,
+  openSlurpCouplePage,
+  slurpIsCouplePage,
+} from "./slp-creator-couples-service.js";
 
 const RECENT = 8;
 const ERRORS: Record<SlurpTieError | "notFound" | "notOpen", [number, string]> = {
@@ -25,6 +38,19 @@ const ERRORS: Record<SlurpTieError | "notFound" | "notOpen", [number, string]> =
   sameCreator: [400, "Pick two different Creators."],
   noHost: [400, "Pick at least one Creator Slurp posts for, so someone can write the joint post."],
   busy: [409, "Those two are already talking about a collab."],
+};
+/** Why a couple cannot happen, in the world's words (7b-couples). */
+const COUPLE_ERRORS: Record<SlurpCoupleError, [number, string]> = {
+  notFound: [404, "That couple is gone."],
+  notOpen: [409, "That does not fit where those two are right now."],
+  noHost: [400, "Pick at least one Creator Slurp posts for."],
+  same: [400, "Pick two different Creators."],
+  busy: [409, "One of them is already seeing someone on Slurp."],
+  taken: [409, "One of them is already with someone."],
+  notInto: [409, "Neither romance nor dating is something they are looking for."],
+  noDating: [409, "One of them does not date, and would not start for this."],
+  orientation: [409, "They are not each other's type."],
+  pageOpen: [409, "Their shared page is already open."],
 };
 
 /**
@@ -37,7 +63,7 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
   const personaSchema = z.object({ personaId: z.string().trim().min(1) });
 
   async function view(viewer: NonNullable<Awaited<ReturnType<typeof resolveViewerPersona>>>) {
-    const [{ ties, deals }, accounts] = await Promise.all([
+    const [{ ties, deals, couples }, accounts] = await Promise.all([
       readSlurpCreatorTiesDocument(app.db),
       noodle.listNoodlerAccounts(),
     ]);
@@ -51,7 +77,16 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
         avatarUrl: account.avatarUrl ?? null,
         own: creatorBelongsToViewer(account, viewer),
         automatic: slurpRunsItself(account),
+        couplePage: slurpIsCouplePage(account),
       })),
+      // Together now first, then the newest that ended.
+      couples: [
+        ...couples.filter(slurpCoupleActive),
+        ...newest(
+          couples.filter((couple: SlurpCouple) => !slurpCoupleActive(couple)),
+          (couple: SlurpCouple) => couple.stageAt,
+        ),
+      ].map(({ told: _told, postIds: _posts, ...couple }: SlurpCouple) => couple),
       collabs: [
         ...ties.collabs.filter(slurpCollabOpen),
         ...newest(
@@ -168,6 +203,71 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
     });
     if (outcome && outcome !== "ok") return reply.code(ERRORS[outcome][0]).send({ error: ERRORS[outcome][1] });
     if (parsed.data.accept) await noodle.creditSponsorFee(creator.id, deal.fee, deal.brand, slurpDealReceipt(deal.id));
+    return view(viewer);
+  });
+
+  /** One change to the couples, answered with the whole Studio view. */
+  const changeCouples = async (
+    req: { body: unknown },
+    reply: Parameters<typeof viewerFrom>[1],
+    run: (couples: SlurpCouple[], at: Date) => SlurpCouple[] | SlurpCoupleError,
+  ) => {
+    const viewer = await viewerFrom(req.body, reply);
+    if (!viewer) return;
+    const outcome = await mutateSlurpCreatorTies(app.db, (document) => {
+      const next = run(document.couples, new Date());
+      return typeof next === "string"
+        ? { document, result: next }
+        : { document: { ...document, couples: next }, result: "ok" as const };
+    });
+    if (outcome && outcome !== "ok")
+      return reply.code(COUPLE_ERRORS[outcome][0]).send({ error: COUPLE_ERRORS[outcome][1] });
+    return view(viewer);
+  };
+
+  /** Set two Creators up: they start flirting when both cards allow it. */
+  app.post("/slurp/ties/couples", async (req, reply) => {
+    const parsed = z
+      .object({ aId: z.string().trim().min(1), bId: z.string().trim().min(1) })
+      .passthrough()
+      .safeParse(req.body);
+    if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
+    const creators = await loadSlurpTieCreators(app.db);
+    const a = creators.find((creator) => creator.id === parsed.data.aId);
+    const b = creators.find((creator) => creator.id === parsed.data.bId);
+    if (!a || !b) return reply.code(404).send({ error: "Creator account not found" });
+    return changeCouples(req, reply, (couples, at) => slurpSetUpCouple(couples, a, b, { at, id: newId() }));
+  });
+
+  /** Plan a date, stir some drama, patch it up, end it, or get them back together. */
+  app.post("/slurp/ties/couples/:id/steer", async (req, reply) => {
+    const parsed = z
+      .object({ steer: z.enum(["date", "drama", "patchUp", "breakUp", "reunite"]) })
+      .passthrough()
+      .safeParse(req.body);
+    if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
+    const creators = await loadSlurpTieCreators(app.db);
+    const before = (await readSlurpCreatorTiesDocument(app.db)).couples;
+    const answer = await changeCouples(req, reply, (couples, at) =>
+      slurpSteerCouple(couples, id(req), parsed.data.steer, { at, creators }),
+    );
+    // A breakup closes their shared page: stop its renewals too.
+    if (parsed.data.steer === "breakUp")
+      await closeSlurpCouplePages(app.db, before, (await readSlurpCreatorTiesDocument(app.db)).couples);
+    return answer;
+  });
+
+  /** Open their shared page (opt-in), or close it with a goodbye post. */
+  app.post("/slurp/ties/couples/:id/page", async (req, reply) => {
+    const parsed = personaSchema.extend({ open: z.boolean() }).safeParse(req.body);
+    if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
+    const viewer = await resolveViewerPersona(parsed.data.personaId);
+    if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
+    const outcome = parsed.data.open
+      ? await openSlurpCouplePage(app.db, id(req))
+      : await closeSlurpCouplePage(app.db, id(req));
+    if (typeof outcome === "string")
+      return reply.code(COUPLE_ERRORS[outcome][0]).send({ error: COUPLE_ERRORS[outcome][1] });
     return view(viewer);
   });
 }

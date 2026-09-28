@@ -613,7 +613,7 @@ export async function generateCreatorPost(
   }
 
   const baseInput = {
-    authorAccountId: account.id,
+    authorAccountId: beat?.tie?.pageId ?? account.id,
     title: protectedGenerated.title,
     content: protectedGenerated.content,
     source: "generated" as const,

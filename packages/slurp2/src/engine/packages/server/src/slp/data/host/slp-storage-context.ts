@@ -22,6 +22,12 @@ import { SLP_STORY_OCCURRENCES_KEY, readSlpOccurrences } from "../../modules/wor
 import { slurpInfluenceMultiplier } from "../../../../../shared/src/slp/slp-platform-events.js";
 import { isSlurpCrossover } from "../../modules/projects/slp-project.js";
 import {
+  readSlurpCouples,
+  slurpCoupleOfPage,
+  slurpCouplePageSplit,
+} from "../../modules/projects/slp-creator-couples.js";
+import { SLURP_CREATOR_TIES_KEY } from "../projects/slp-creator-ties-storage.js";
+import {
   readSlurpCrossoverRef,
   slurpCrossoverMerge,
   slurpCrossoverView,
@@ -256,13 +262,32 @@ export function createSlurpStorageContext(db: DB) {
     await settingsStore.set(key, JSON.stringify(mutate(state)));
   };
 
+  const couplePageOf = async (accountId: string) => {
+    try {
+      const raw = await settingsStore.get(SLURP_CREATOR_TIES_KEY);
+      const parsed = raw ? (JSON.parse(raw) as { couples?: unknown }) : null;
+      return slurpCoupleOfPage(readSlurpCouples(parsed?.couples), accountId);
+    } catch {
+      return null;
+    }
+  };
+
   const creditEarningsNow = async (
     creatorAccountId: string,
     kind: Exclude<SlurpEarningsEntryKind, "payout" | "reversal">,
     amount: number,
     note?: string,
     id?: string,
-  ) => {
+  ): Promise<void> => {
+    // A couple's shared page earns for the two of them: half each, straight into their own earnings.
+    // ponytail: the page keeps no receipt of its own, so an operation-amount read on the page is empty.
+    const couple = await couplePageOf(creatorAccountId);
+    if (couple) {
+      const [first, second] = slurpCouplePageSplit(amount);
+      await creditEarningsNow(couple.aId, kind, first, note, id && `${id}:a`);
+      await creditEarningsNow(couple.bId, kind, second, note, id && `${id}:b`);
+      return;
+    }
     const settings = normalizeSlurpSettings(await settingsStore.get(SLURP_SETTINGS_KEY));
     // Storyline effects and platform events aimed at this Creator both move earnings (R1-112).
     // ponytail: no tags here, so a date-only event aimed at tags misses; occurrences carry tag targets.

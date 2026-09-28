@@ -320,14 +320,27 @@ function slurpPostPartnership(
 ): SlpPostPartnership | null {
   const stamp = readSlurpTieStamp(post.metadata);
   if (!stamp || stamp.declined || stamp.kind === "rival") return null;
-  const author = account(post.authorAccountId);
+  // A couple's own post is only news on their pages as a joint post or on their shared page (7b-couples).
+  if (stamp.kind === "couple" && !stamp.joint && !stamp.pageId) return null;
+  const author = account(stamp.pageId && stamp.hostId ? stamp.hostId : post.authorAccountId);
   const host = author
     ? { id: author.id, name: author.displayName, handle: author.handle, avatarUrl: author.avatarUrl ?? null }
     : null;
   if (stamp.kind === "sponsor")
     return stamp.brand ? { host, withAccountId: null, withName: null, withHandle: null, brand: stamp.brand } : null;
+  const couple = stamp.kind === "couple" ? { couple: true } : {};
+  // On the shared page the page is the author: the label names who wrote it ("by @mira").
+  if (stamp.pageId)
+    return host ? { host, withAccountId: null, withName: null, withHandle: null, brand: null, ...couple } : null;
   const partner = stamp.partnerId ? account(stamp.partnerId) : undefined;
   return partner
-    ? { host, withAccountId: partner.id, withName: partner.displayName, withHandle: partner.handle, brand: null }
+    ? {
+        host,
+        withAccountId: partner.id,
+        withName: partner.displayName,
+        withHandle: partner.handle,
+        brand: null,
+        ...couple,
+      }
     : null;
 }

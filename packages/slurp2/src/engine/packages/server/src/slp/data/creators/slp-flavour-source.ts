@@ -19,10 +19,15 @@ import {
 } from "../../modules/creators/slp-creator-flavour.js";
 import type { SlurpCanonAnchors } from "../../modules/feed/slp-post-beat.js";
 import { readSlurpCreatorSteering } from "./slp-steering-storage.js";
+import { readSlurpCreatorTiesDocument } from "../projects/slp-creator-ties-storage.js";
+import { resolveSlurpExplicitLevel } from "../settings/slp-post-guidance-storage.js";
+import { SLP_EXPLICIT_LEVELS } from "../../../../../shared/src/slp/slp-spice.js";
+import { slurpCoupleFor, slurpCoupleOf, slurpRelationshipLine } from "../../modules/projects/slp-creator-couples.js";
 import { readSlurpAgentMemoryLines } from "./slp-agent-memory-source.js";
 import { createSlurpStorage } from "../slp-storage.js";
 import { resolveSlurpCreatorSpice, type SlurpCreatorSpice } from "./slp-spice-storage.js";
 import {
+  SLURP_PARTNER_RELATION,
   slurpDmSpiceLevel,
   slurpSpiceBriefLines,
   slurpTastePick,
@@ -108,7 +113,14 @@ export async function resolveSlurpCreatorFlavour(
      * A chat: whether the other side subscribed, whether it is the player (their taste shows), and
      * who they are to the Creator (the DM role): a fan, a fellow Creator's page, or Slurp's staff.
      */
-    chat?: { subscribed: boolean; player: boolean; seed: string; with?: "fan" | "peer" | "staff" };
+    chat?: {
+      subscribed: boolean;
+      player: boolean;
+      seed: string;
+      with?: "fan" | "peer" | "staff";
+      /** A peer who is their partner now (7b-couples): the chat goes as far as both their levels. */
+      partnerId?: string;
+    };
   },
 ): Promise<string> {
   try {
@@ -142,6 +154,8 @@ export async function resolveSlurpCreatorFlavour(
         steering: input.steering ?? (await readSlurpCreatorSteering(db, input.account.id)),
         lately: agents,
         spice: spiceLines,
+        // Slurp Support is staff: their love life is not its business.
+        relationship: input.chat?.with === "staff" ? "" : await readSlurpRelationshipLine(db, input.account.id),
       },
       { use: input.use, sequence: input.sequence },
     ).text;
@@ -203,7 +217,12 @@ async function flavourSpiceLines(
       id: input.account.id,
       settings: { strategy: input.account.settings?.strategy },
     }));
-  const level = input.chat ? slurpDmSpiceLevel(spice.level, input.chat.subscribed) : spice.level;
+  // Their partner gets the lower of the two levels, never the tease; everyone else as before.
+  const level = input.chat?.partnerId
+    ? await partnerLevel(db, spice.level, input.chat.partnerId)
+    : input.chat
+      ? slurpDmSpiceLevel(spice.level, input.chat.subscribed)
+      : spice.level;
   // The player's taste reaches a chat with the player; posts carry it in their spicy angle.
   const taste =
     input.chat?.player && level !== "none"
@@ -218,6 +237,7 @@ async function flavourSpiceLines(
     use: input.use,
     level,
     // A fellow Creator gets the tease too, but is not somebody to sell a subscription to.
+    // A partner's chat is a peer chat (`partnerId` rides on `with: "peer"`), so it is never held back.
     held: Boolean(input.chat && input.chat.with !== "peer" && level !== spice.level),
     turnOns: spice.turnOns,
     hardNoes: spice.hardNoes,
@@ -261,4 +281,47 @@ export async function readSlurpCreatorFitText(
     logger.warn(error, "[slurp] Could not read the card for a storyline fit check");
     return "";
   }
+}
+
+/** The partners a card names (anchor people with a partner relation), for couples. */
+export async function readSlurpCardPartners(db: DB, accountId: string): Promise<string[]> {
+  const anchors = await readAnchors(db, accountId);
+  return (anchors?.people ?? [])
+    .filter((person) => SLURP_PARTNER_RELATION.test(person.relation))
+    .map((person) => person.name);
+}
+
+/**
+ * What a Creator knows about their own love life (7b-couples), one plain sentence or "". With
+ * `withId` (a chat with the partner or the ex) it says who they are to each other.
+ */
+export async function readSlurpRelationshipLine(
+  db: DB,
+  creatorId: string,
+  options: { withId?: string | null } = {},
+): Promise<string> {
+  try {
+    const { couples } = await readSlurpCreatorTiesDocument(db);
+    const couple =
+      (options.withId ? slurpCoupleOf(couples, creatorId, options.withId) : null) ?? slurpCoupleFor(couples, creatorId);
+    if (!couple) return "";
+    const partnerId = couple.aId === creatorId ? couple.bId : couple.aId;
+    const partner = await createSlurpStorage(db).getNoodlerAccountById(partnerId);
+    return partner
+      ? slurpRelationshipLine(couples, creatorId, new Map([[partnerId, partner.displayName]]), options)
+      : "";
+  } catch (error) {
+    logger.warn(error, "[slurp] Could not read a Creator's relationship");
+    return "";
+  }
+}
+
+/** The lower of a Creator's own level and their partner's. */
+async function partnerLevel(
+  db: DB,
+  own: SlurpCreatorSpice["level"],
+  partnerId: string,
+): Promise<SlurpCreatorSpice["level"]> {
+  const theirs = await resolveSlurpExplicitLevel(db, partnerId).catch(() => null);
+  return theirs && SLP_EXPLICIT_LEVELS.indexOf(theirs) < SLP_EXPLICIT_LEVELS.indexOf(own) ? theirs : own;
 }

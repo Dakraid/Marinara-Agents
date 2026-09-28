@@ -11,6 +11,8 @@ import { hash } from "../projects/slp-project.js";
 import { slurpRivalryActive, type SlurpCreatorTies, type SlurpRivalry } from "../projects/slp-creator-ties.js";
 import type { SlurpTieStamp } from "../projects/slp-tie-stamp.js";
 import { slurpRefusalWorthAPost, type SlurpBrandDeal } from "../economy/slp-brand-deals.js";
+import type { SlurpCouple } from "../projects/slp-creator-couples.js";
+import { slurpCoupleBeat } from "./slp-couple-beats.js";
 import type { SlurpBeat } from "./slp-post-beat.js";
 
 /** A beat from a tie, and what it claims once planned. */
@@ -37,7 +39,8 @@ function rivalLine(rivalry: SlurpRivalry, selfId: string, rival: string): string
 
 /**
  * The tie beat for this Creator's ordinary slot, or null. Order: a collab they host, a sponsored post
- * they said yes to, then now and then a rivalry post or a word about a brand they turned down.
+ * they said yes to, a couple moment, then now and then a rivalry post or a word about a brand they
+ * turned down.
  * Never on a teaser slot.
  */
 export function slurpTieBeat(input: {
@@ -46,6 +49,8 @@ export function slurpTieBeat(input: {
   sequence: number;
   ties: SlurpCreatorTies;
   deals: readonly SlurpBrandDeal[];
+  /** Couples (7b-couples): their moments come after a collab and a deal, before a rivalry. */
+  couples?: readonly SlurpCouple[];
   /** Public names by account id. */
   names: ReadonlyMap<string, string>;
   intents: readonly SlurpContentIntent[];
@@ -94,6 +99,9 @@ export function slurpTieBeat(input: {
       },
     };
   }
+
+  const couple = slurpCoupleBeat({ ...input, couples: input.couples ?? [] });
+  if (couple) return { beat: { ...couple, ...heat } };
 
   // Occasional: about one ordinary slot in three while a rivalry is on.
   // One post per stage each: a spat is news, not a series.

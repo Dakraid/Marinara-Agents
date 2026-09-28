@@ -278,6 +278,57 @@ export function slurpRivalryBodies(self: string, rival: string): string[] {
 }
 
 /**
+ * Fans reacting to a couple's story (7b-couples), Tier 1 like the rivalry sides. `{self}` is the
+ * poster, `{partner}` the other one. Shipping while it is sweet, worried when it is rocky, sad at the end.
+ */
+const COUPLE_REACTIONS: Record<"flirt" | "sweet" | "rocky" | "over", readonly string[]> = {
+  flirt: [
+    "wait are {self} and {partner} a thing??",
+    "the comment section between these two 👀",
+    "I ship it. I ship it so hard",
+    "{partner} in the likes again, hmm",
+    "just say it already",
+  ],
+  sweet: [
+    "{self} and {partner} are my favourite couple now",
+    "the launch I needed today 😭",
+    "protect them at all costs",
+    "ok this is actually cute",
+    "couple goals, not even joking",
+    "{partner} is so lucky tbh",
+    "I KNEW IT",
+    "wait since when??",
+  ],
+  rocky: [
+    "uh oh… trouble in paradise?",
+    "this is about {partner}, right?",
+    "sending hugs, whatever it is",
+    "team {self}, always",
+    "they'll be fine. right? RIGHT?",
+  ],
+  over: [
+    "not them breaking up 💔",
+    "I'm actually sad about this",
+    "{self} deserves the world",
+    "the end of an era",
+    "take care of yourself ❤️",
+    "wait what happened??",
+  ],
+};
+
+export function slurpCoupleReactionBodies(self: string, partner: string, moment: string): string[] {
+  const mood =
+    moment === "flirt"
+      ? "flirt"
+      : moment === "fight" || moment === "jealous"
+        ? "rocky"
+        : moment === "breakup" || moment === "pageClose"
+          ? "over"
+          : "sweet";
+  return COUPLE_REACTIONS[mood].map((body) => body.replaceAll("{self}", self).replaceAll("{partner}", partner));
+}
+
+/**
  * What a creator says back to a three-word comment.
  *
  * The other half of the free tier. A creator who never answers reads as a bot, but "obsessed 😍"

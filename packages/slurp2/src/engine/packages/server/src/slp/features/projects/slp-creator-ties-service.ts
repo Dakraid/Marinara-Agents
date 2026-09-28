@@ -9,11 +9,12 @@ import { logger } from "../../../lib/logger.js";
 import { newId } from "../../../utils/id-generator.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
-import { readSlurpCreatorFitText } from "../../data/creators/slp-flavour-source.js";
+import { readSlurpCardPartners, readSlurpCreatorFitText } from "../../data/creators/slp-flavour-source.js";
 import { mutateSlurpCreatorTies, readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ties-storage.js";
 import { slurpCreatorReach } from "../../../../../shared/src/slp/slp-reach.js";
 import { slurpPlatformScaleMultiplier, slurpWorldActivityMultiplier } from "../../modules/audience/slp-scale.js";
 import {
+  slurpPairKey,
   slurpAdvanceCreatorTies,
   slurpAgreeCollabInDm,
   slurpCollabPostIdsFor,
@@ -32,6 +33,13 @@ import {
   type SlurpDealAd,
 } from "../../modules/economy/slp-brand-deals.js";
 import { slurpTieBeat } from "../../modules/feed/slp-tie-beats.js";
+import {
+  slurpAdvanceCouples,
+  slurpCoupleTold,
+  slurpCouplePostIdsFor,
+  slurpSettleCouplePost,
+} from "../../modules/projects/slp-creator-couples.js";
+import { closeSlurpCouplePages, slurpIsCouplePage, slurpCouplesWorldInput } from "./slp-creator-couples-service.js";
 import type { SlurpBeat } from "../../modules/feed/slp-post-beat.js";
 import type { SlurpContentIntent } from "../../../../../shared/src/slp/slp-content-axes.js";
 import { createGarnishAds, garnishRatingAllowed } from "../ads/slp-ads-contract.js";
@@ -43,10 +51,11 @@ type Account = Awaited<ReturnType<Storage["listNoodlerAccounts"]>>[number];
 export const slurpRunsItself = (account: { kind: string; sourceKind?: string | null }) =>
   !(account.kind === "persona" && account.sourceKind === "persona");
 
-/** Every Creator as the tie rules see them: fit text from the card, tags, reach. */
+/** Every Creator as the tie rules see them: fit text from the card, tags, reach. Shared couple pages are not Creators here. */
 export async function loadSlurpTieCreators(db: DB, at = new Date()): Promise<SlurpTieCreator[]> {
   const storage = createSlurpStorage(db);
-  const [accounts, settings] = await Promise.all([storage.listNoodlerAccounts(), storage.getSettings()]);
+  const [all, settings] = await Promise.all([storage.listNoodlerAccounts(), storage.getSettings()]);
+  const accounts = all.filter((account: Account) => !slurpIsCouplePage(account));
   const followers = await createSlurpPopulationStorage(db).countFollowersForCreators(
     accounts.map((account) => account.id),
   );
@@ -58,6 +67,8 @@ export async function loadSlurpTieCreators(db: DB, at = new Date()): Promise<Slu
       text: await readSlurpCreatorFitText(db, { account, source: await storage.resolveAccountSource(account) }),
       tags: account.settings.profile.tags ?? [],
       automatic: slurpRunsItself(account),
+      gender: account.settings.profile.gender ?? null,
+      cardPartners: await readSlurpCardPartners(db, account.id).catch(() => []),
       followers: slurpCreatorReach(
         { accountId: account.id, createdAt: account.createdAt, realFollowers: followers.get(account.id) ?? 0, scale },
         at,
@@ -94,9 +105,20 @@ export async function advanceSlurpCreatorTies(db: DB, at = new Date()): Promise<
     : [];
   const activity = slurpWorldActivityMultiplier(settings.worldActivity);
   const paired = settings.creatorCollabs.map((collab) => collab.creatorIds);
-  await mutateSlurpCreatorTies(db, (document) => ({
-    document: {
-      ties: slurpAdvanceCreatorTies(document.ties, { creators, at, activity, paired, newId }),
+  const storylines = await slurpCouplesWorldInput(db, creators);
+  const before = await readSlurpCreatorTiesDocument(db);
+  const after = await mutateSlurpCreatorTies(db, (document) => {
+    const ties = slurpAdvanceCreatorTies(document.ties, { creators, at, activity, paired, newId });
+    const next = {
+      ties,
+      couples: slurpAdvanceCouples(document.couples, {
+        creators,
+        at,
+        activity,
+        newId,
+        storylines,
+        ...fromTies(ties, at),
+      }),
       deals: slurpAdvanceBrandDeals(document.deals, {
         creators,
         ads,
@@ -105,29 +127,80 @@ export async function advanceSlurpCreatorTies(db: DB, at = new Date()): Promise<
         lastLook: document.ties.advancedAt,
         newId,
       }),
-    },
-    result: null,
-  }));
+    };
+    return { document: next, result: next };
+  });
+  // A breakup closes a shared page: nobody is charged again for a page that stopped.
+  if (after) await closeSlurpCouplePages(db, before.couples, after.couples);
+}
+
+/** What the couple rules need from the ties: open rivalries, and who made a collab with someone lately. */
+function fromTies(ties: ReturnType<typeof slurpAdvanceCreatorTies>, at: Date) {
+  const recent = ties.collabs.filter(
+    (collab) =>
+      (collab.status === "posted" || collab.status === "planned") &&
+      at.getTime() - Date.parse(collab.postedAt ?? collab.plannedAt ?? collab.askedAt) < 14 * 24 * 60 * 60 * 1000,
+  );
+  return {
+    rivals: new Set(
+      ties.rivalries
+        .filter((rivalry) => rivalry.stage !== "over")
+        .map((rivalry) => slurpPairKey(rivalry.fromId, rivalry.toId)),
+    ),
+    collabbedWith: new Map(
+      recent.flatMap((collab) => [
+        [collab.hostId, collab.partnerId],
+        [collab.partnerId, collab.hostId],
+      ]),
+    ),
+  };
 }
 
 /** Planned collabs and sponsored posts whose post went up: shown on both pages, fee paid. */
 async function settleSlurpTiePosts(db: DB, at: Date): Promise<void> {
-  const { ties, deals } = await readSlurpCreatorTiesDocument(db);
+  const { ties, deals, couples } = await readSlurpCreatorTiesDocument(db);
   const planned = [
     ...ties.collabs
       .filter((collab) => collab.status === "planned")
       .map((collab) => ({ id: collab.id, hostId: collab.hostId })),
     ...deals.filter((deal) => deal.status === "planned").map((deal) => ({ id: deal.id, hostId: deal.creatorId })),
+    // A couple that planned a joint post lately (a told moment in the last few days): look on both pages.
+    ...couples
+      .filter((couple) =>
+        couple.moments.some((moment) => at.getTime() - Date.parse(moment.at) < 5 * 24 * 60 * 60 * 1000),
+      )
+      .flatMap((couple) => [
+        { id: couple.id, hostId: couple.aId },
+        { id: couple.id, hostId: couple.bId },
+      ]),
   ];
   if (!planned.length) return;
   const storage = createSlurpStorage(db);
   const found = new Map<string, { id: string; createdAt: string }>();
+  const jointCouplePosts: { coupleId: string; postId: string }[] = [];
   for (const hostId of new Set(planned.map((entry) => entry.hostId))) {
     for (const post of await storage.listNoodlerPostsByAccount(hostId, 12)) {
       const stamp = readSlurpTieStamp(post.metadata);
-      if (stamp && !stamp.declined && !found.has(stamp.id)) found.set(stamp.id, post);
+      if (stamp?.kind === "couple") {
+        if (stamp.joint && !stamp.pageId) jointCouplePosts.push({ coupleId: stamp.id, postId: post.id });
+      } else if (stamp && !stamp.declined && !found.has(stamp.id)) found.set(stamp.id, post);
     }
   }
+  const settleCouples = jointCouplePosts.filter(
+    (entry) => !couples.find((couple) => couple.id === entry.coupleId)?.postIds.includes(entry.postId),
+  );
+  if (settleCouples.length)
+    await mutateSlurpCreatorTies(db, (document) => ({
+      document: {
+        ...document,
+        couples: document.couples.map((couple) =>
+          settleCouples
+            .filter((entry) => entry.coupleId === couple.id)
+            .reduce((next, entry) => slurpSettleCouplePost(next, entry.postId), couple),
+        ),
+      },
+      result: null,
+    }));
   if (!found.size) return;
   const paid = await mutateSlurpCreatorTies(db, (document) => {
     let next = document;
@@ -136,6 +209,7 @@ async function settleSlurpTiePosts(db: DB, at: Date): Promise<void> {
       const deal = next.deals.find((entry) => entry.id === tieId && entry.status === "planned");
       if (deal) toPay.push({ creatorId: deal.creatorId, fee: deal.fee, brand: deal.brand, id: deal.id });
       next = {
+        ...next,
         ties: slurpSettleCollab(next.ties, tieId, post),
         deals: deal ? slurpSettleDeal(next.deals, tieId, post, at) : next.deals,
       };
@@ -165,10 +239,16 @@ export async function planSlurpTieBeat(
   },
 ): Promise<SlurpBeat | null> {
   try {
-    const { ties, deals } = await readSlurpCreatorTiesDocument(db);
+    const { ties, deals, couples } = await readSlurpCreatorTiesDocument(db);
     const ids = new Set([
       ...ties.collabs.flatMap((collab) => [collab.hostId, collab.partnerId]),
       ...ties.rivalries.flatMap((rivalry) => [rivalry.fromId, rivalry.toId]),
+      ...couples.flatMap((couple) => [
+        couple.aId,
+        couple.bId,
+        ...(couple.page ? [couple.page.accountId] : []),
+        ...couple.moments.flatMap((moment) => (moment.withId ? [moment.withId] : [])),
+      ]),
     ]);
     if (!ids.has(input.creatorId) && !deals.some((deal) => deal.creatorId === input.creatorId)) return null;
     const storage = createSlurpStorage(db);
@@ -177,11 +257,23 @@ export async function planSlurpTieBeat(
       const account = await storage.getNoodlerAccountById(id);
       if (account) names.set(id, account.displayName);
     }
-    const planned = slurpTieBeat({ ...input, ties, deals, names });
+    const planned = slurpTieBeat({ ...input, ties, deals, couples, names });
     if (!planned || input.previewOnly) return planned?.beat ?? null;
     const { tie } = planned.beat;
     await mutateSlurpCreatorTies(db, (document) => ({
       document: {
+        // A couple moment is told once each; a joint one for both of them.
+        couples:
+          tie.kind === "couple" && tie.momentId
+            ? document.couples.map((couple) =>
+                couple.id === tie.id
+                  ? slurpCoupleTold(couple, [
+                      `${input.creatorId}:${tie.momentId}`,
+                      ...(tie.joint || tie.pageId ? [`${tie.partnerId}:${tie.momentId}`] : []),
+                    ])
+                  : couple,
+              )
+            : document.couples,
         ties:
           tie.kind === "collab"
             ? slurpPlanCollab(document.ties, tie.id, input.at)
@@ -204,9 +296,10 @@ export async function planSlurpTieBeat(
   }
 }
 
-/** Joint posts that show on this Creator's page although the partner wrote them. */
+/** Joint posts that show on this Creator's page although the partner wrote them: collabs and couple posts. */
 export async function slurpCollabPostIdsForCreator(db: DB, creatorId: string): Promise<string[]> {
-  return slurpCollabPostIdsFor((await readSlurpCreatorTiesDocument(db)).ties, creatorId);
+  const { ties, couples } = await readSlurpCreatorTiesDocument(db);
+  return [...slurpCollabPostIdsFor(ties, creatorId), ...slurpCouplePostIdsFor(couples, creatorId)];
 }
 
 /** Two pages agreed on a joint post in their own DM; the replying Creator hosts and writes it. */

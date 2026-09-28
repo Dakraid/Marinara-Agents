@@ -20,7 +20,7 @@
  * - **The player steers.** Push a request through, block a pair for good, suggest a pairing, or cool
  *   a rivalry down. Blocked pairs are never asked again until unblocked.
  *
- * Couples are a later slice: they get their own list here beside `collabs` and `rivalries`.
+ * Couples have their own rules in `slp-creator-couples.ts` and their own list in the same document.
  */
 import { SLURP_DRAMATIC, SLURP_NEVER_PATTERN } from "../feed/slp-life-moments.js";
 import { DAY_MS, clampText, hash } from "./slp-project.js";
@@ -52,6 +52,10 @@ export type SlurpTieCreator = {
   /** Slurp writes this Creator's posts. False for a page the player runs. */
   automatic: boolean;
   followers: number;
+  /** For couples (`slp-creator-couples.ts`): the stage profile's gender, when set. */
+  gender?: "male" | "female" | "other" | null;
+  /** For couples: partners the card itself names (anchor people with a partner relation). */
+  cardPartners?: readonly string[];
 };
 
 export type SlurpCollabStatus = "asked" | "agreed" | "planned" | "posted" | "declined" | "blocked";
@@ -746,7 +750,10 @@ export function slurpPostIncomeParts(
   amount: number,
 ): { creatorId: string; amount: number }[] {
   const stamp = readSlurpTieStamp(post.metadata);
-  if (stamp?.kind !== "collab" || !stamp.partnerId || stamp.partnerId === post.authorAccountId)
+  // A joint couple post splits like a collab; a post on a couple's shared page pays that page, whose
+  // earnings go half to each (`slurpCouplePageSplit`).
+  const joint = stamp?.kind === "collab" || (stamp?.kind === "couple" && stamp.joint === true && !stamp.pageId);
+  if (!joint || !stamp.partnerId || stamp.partnerId === post.authorAccountId)
     return [{ creatorId: post.authorAccountId, amount }];
   const parts = slurpCollabIncomeParts(amount, stamp.hostShare ?? SLURP_COLLAB_DEFAULT_SHARE);
   return [
