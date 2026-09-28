@@ -12,6 +12,7 @@ import type { FastifyInstance } from "fastify";
 import { personaQuerySchema } from "../../modules/messages/slp-messages-schemas.js";
 import type { SlpMessagesContext } from "./slp-messages-context.js";
 import { slpCreatorUnlockPriceFromMetadata } from "../../modules/economy/slp-prices.js";
+import { slpStoredMediaSize } from "../../base/media/slp-media.js";
 
 const sendSchema = z.object({
   personaId: z.string().trim().min(1),
@@ -82,6 +83,7 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
     if (opened.status === "insufficient_funds")
       return reply.code(402).send({ error: "Not enough coins.", required: opened.required });
     if (opened.status !== "ok") return reply.code(404).send({ error: "Could not open conversation" });
+    const size = slpStoredMediaSize((post.metadata as Record<string, unknown> | undefined)?.noodlerMediaPath);
     const message = await messages.appendMessage(opened.thread.id, {
       senderAccountId: viewer.id,
       role: "viewer",
@@ -100,6 +102,8 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
         authorAvatarUrl: author?.avatarUrl ?? null,
         price: slpCreatorUnlockPriceFromMetadata(post.metadata as Record<string, unknown> | undefined),
         shareReason: "player",
+        // The card reserves the post's own picture ratio (V).
+        ...(size ? { imageWidth: size.width, imageHeight: size.height } : {}),
       },
     });
     if (!message) return reply.code(409).send({ error: "Could not share the post." });

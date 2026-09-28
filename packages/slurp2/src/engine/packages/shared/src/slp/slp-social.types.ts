@@ -386,6 +386,9 @@ export interface SlpPostMedia {
   position: number;
   imageUrl: string;
   imagePrompt: string | null;
+  /** Pixel size of the stored picture, when known (V: the frame is reserved in its ratio). */
+  width?: number;
+  height?: number;
 }
 
 export interface SlpCreatorManagedPost extends SlpPost {
