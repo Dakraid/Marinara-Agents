@@ -214,7 +214,8 @@ export function slurpBirthdayOccasion(
     return {
       key: `birthday:${new Date(day).toISOString().slice(0, 10)}`,
       name: "Birthday",
-      fit: {},
+      // A card that hates birthdays, or a player who wants them left out, skips the week.
+      fit: { topic: /\b(birthdays?|Geburtstag\w*)\b/iu },
       beats,
       dueAt: [startsAt, day, day + DAY_MS].slice(0, beats.length),
       endsAt,
@@ -246,7 +247,8 @@ export function slurpFirstThousandSubsOccasion(
  * each only while its pack is on.
  */
 export function slurpPackOccasions(input: {
-  windows: readonly { contentId: string; name: string; startsAt: number; endsAt: number }[];
+  /** `dateAt`: the event's own day (an annual event started late still has Halloween night on Oct 31). */
+  windows: readonly { contentId: string; name: string; startsAt: number; endsAt: number; dateAt?: number }[];
   toggles: SlurpContentPackToggles;
   creatorAccountId: string;
   creatorText: string;
@@ -262,12 +264,12 @@ export function slurpPackOccasions(input: {
     const spread = slurpSpreadDueAt(window.startsAt, window.endsAt, moments.beats.length);
     return [
       {
-        key: `${window.contentId}:${new Date(window.startsAt).toISOString().slice(0, 10)}`,
+        key: `${window.contentId}:${new Date(window.dateAt ?? window.startsAt).toISOString().slice(0, 10)}`,
         name: window.name,
         fit: moments.fit,
         beats: moments.beats,
         dueAt: moments.beats.map((beat, index) =>
-          beat.atDay === undefined ? spread[index]! : window.startsAt + beat.atDay * DAY_MS,
+          beat.atDay === undefined ? spread[index]! : (window.dateAt ?? window.startsAt) + beat.atDay * DAY_MS,
         ),
         endsAt: window.endsAt,
       },

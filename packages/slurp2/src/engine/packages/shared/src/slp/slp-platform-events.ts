@@ -298,10 +298,16 @@ export function slurpRunningPlatformEventWindows(
   occurrences: readonly (SlurpStoryPromptState["occurrences"][number] & {
     blueprint: { contentId?: string };
   })[],
-): { contentId: string; name: string; startsAt: number; endsAt: number }[] {
+): { contentId: string; name: string; startsAt: number; endsAt: number; dateAt: number }[] {
   const now = at.getTime();
   const current = occurrences.filter((item) => Date.parse(item.startsAt) <= now && now < Date.parse(item.endsAt));
   const decided = new Set(current.map((item) => item.blueprintId));
+  // The day an annual event is on this year (or last year's, still running), however late it was started.
+  const dayOf = (activation: { kind: string; month?: number; day?: number } | undefined, fallback: number) => {
+    if (activation?.kind !== "annual" || !activation.month || !activation.day) return fallback;
+    const thisYear = Date.UTC(at.getUTCFullYear(), activation.month - 1, activation.day);
+    return thisYear <= now ? thisYear : Date.UTC(at.getUTCFullYear() - 1, activation.month - 1, activation.day);
+  };
   const dated = slurpActivePlatformEvents(events, at)
     .filter((item) => !decided.has(item.id) && slurpPlatformEventTargets(item, creator))
     .flatMap((item) => {
@@ -315,7 +321,13 @@ export function slurpRunningPlatformEventWindows(
         .find((start) => today >= start && today < start + durationDays * DAY)!;
       return [{ item, startsAt, endsAt: startsAt + durationDays * DAY }];
     })
-    .map(({ item, startsAt, endsAt }) => ({ contentId: item.contentId ?? item.id, name: item.name, startsAt, endsAt }));
+    .map(({ item, startsAt, endsAt }) => ({
+      contentId: item.contentId ?? item.id,
+      name: item.name,
+      startsAt,
+      endsAt,
+      dateAt: startsAt,
+    }));
   const started = current
     .filter(
       (item) =>
@@ -326,6 +338,10 @@ export function slurpRunningPlatformEventWindows(
       name: item.blueprint.name,
       startsAt: Date.parse(item.startsAt),
       endsAt: Date.parse(item.endsAt),
+      dateAt: dayOf(
+        (item.blueprint as { activation?: { kind: string; month?: number; day?: number } }).activation,
+        Date.parse(item.startsAt),
+      ),
     }));
   return [...dated, ...started];
 }

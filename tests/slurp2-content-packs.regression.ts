@@ -333,6 +333,32 @@ const nightBeat = slurpOccasionBeat({
 });
 assert.equal(nightBeat, null, "Halloween night is not posted before Oct 31");
 
+// Started late by the player (a suggested occasion): its fixed days stay on the calendar (sim finding).
+const halloweenEvent = fresh.platformEvents.find((event) => event.id === "halloween")!;
+const lateStart = [
+  {
+    blueprintId: "halloween",
+    status: "active",
+    startsAt: "2026-10-30T09:00:00.000Z",
+    endsAt: "2026-11-01T00:00:00.000Z",
+    participantIds: [],
+    blueprint: halloweenEvent,
+  },
+];
+const lateWindows = slurpRunningPlatformEventWindows(fresh.platformEvents, utc("2026-10-31"), mira, lateStart);
+assert.equal(new Date(lateWindows[0]!.dateAt).toISOString().slice(0, 10), "2026-10-25");
+const lateOccasion = slurpPackOccasions({
+  windows: lateWindows,
+  toggles: {},
+  creatorAccountId: "mira",
+  creatorText: STUDENT,
+  subscribers: 0,
+  at: utc("2026-10-31"),
+}).find((occasion) => occasion.key.startsWith("halloween:"))!;
+assert.equal(lateOccasion.key, "halloween:2026-10-25", "the same moments, however late it started");
+assert.equal(new Date(lateOccasion.dueAt[2]!).toISOString().slice(0, 10), "2026-10-31", "Halloween night on Oct 31");
+assert.ok(lateOccasion.dueAt[2]! < lateOccasion.endsAt);
+
 // Exam week only for the student; the tattoo artist sits it out (the platform line still runs).
 assert.ok(walk(utc("2026-02-01"), 10 * 24, creator(STUDENT)).used.some((key) => key.includes("exam-week")));
 assert.ok(!walk(utc("2026-02-01"), 10 * 24, creator(TATTOO), TATTOO).used.some((key) => key.includes("exam-week")));
@@ -410,6 +436,14 @@ const beats: SlurpPackBeat[] = [
   { type: "showcase", line: "c" },
 ];
 assert.equal(slurpBirthdayOccasion(bday, beats, utc("2026-02-27")), null);
+const birthdayFit = slurpBirthdayOccasion(bday, beats, utc("2026-03-03"))!.fit;
+assert.equal(slurpPackFits(birthdayFit, creator(STUDENT)), true);
+assert.equal(
+  slurpPackFits(birthdayFit, creator(`${STUDENT} She hates birthdays.`)),
+  false,
+  "a card that hates them skips",
+);
+assert.equal(slurpPackFits(birthdayFit, creator(STUDENT, { avoid: ["birthday"] })), false, "a leave-out topic skips");
 const week = slurpBirthdayOccasion(bday, beats, utc("2026-03-02"))!;
 assert.equal(week.key, "birthday:2026-03-03");
 assert.deepEqual(
