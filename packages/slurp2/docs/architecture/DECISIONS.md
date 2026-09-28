@@ -398,3 +398,28 @@ modules, rejected alternative, and migration consequence.
 - **Migration consequence:** none stored. A saved AI budget without the `assist` row reads it with
   its default (40 a day). The drawn picture Undo lives in memory: a restart between Use and Undo
   loses that Undo and leaves one old file behind (`ponytail:` note in `slp-picture-undo.ts`).
+
+## Professor Mari actions (J2, 2026-09-28)
+
+- **Problem:** Engine PR #6800 (draft, issue #6799) lets Professor Mari list and run package actions
+  through `package_service`, for packages that register `mari-actions:<package-id>` with
+  `{ list, run }` and hold the new `mari-actions` permission. The Engine's manifest schema accepts
+  that permission only with `capabilityApi` 1.50 or newer, and an Engine without #6800 rejects a
+  manifest that names an unknown permission, so shipping the permission today would make Slurp
+  uninstallable on every released Engine.
+- **Decision:** the permission lives in the slurp2 builder definition as an optional permission
+  (`optionalPermissions: [{ permission: "mari-actions", capabilityApi: 1.50 }]`). The builder emits it
+  only when the feature's own `capabilityApi` reaches 1.50, so the day slurp2 declares 1.50 (a
+  deliberate minimum bump, once an Engine with #6800 ships) the manifest gains it with no other
+  change. The server feature-detects from its own manifest: `slpActionServiceKeys` registers
+  `mari-actions:slurp2` (the same `{ list, run }` object as `slurp2:actions`) only when the
+  permission is there, and a failed registration is a warning, never a failed activation. The action
+  layer gains `list-creators` (read-only) so Mari can find the `accountId` every other action takes.
+- **Affected modules:** `scripts/build-feature-packages.mjs` (`featurePermissions`), `slp-server-entry.ts`,
+  `features/assist/slp-action-runner.ts`, shared `slp-actions.ts`.
+- **Rejected alternatives:** emitting the permission now with `capabilityApi` 1.50 (no released Engine
+  would install Slurp); reading the build Engine's supported API to decide (the devbox Engine checkout
+  is older than the manifest's own 1.31, so the answer would not follow what the package declares).
+- **Migration consequence:** none. Manifest, catalog lanes and minimum Engine stay as they were
+  (`capabilityApi` 1.31); `run` ignores Mari's abort signal (an action is one bounded model call or
+  one write, and the Engine stops waiting on its own deadline).

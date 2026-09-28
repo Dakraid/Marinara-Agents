@@ -19,7 +19,7 @@ import { claimSlurpModelBudget, slurpModelWorkerAllows } from "../../base/model/
 import { resolveSlurpCreatorFlavour } from "../../data/creators/slp-flavour-source.js";
 import { resolveSlurpCreatorSpice } from "../../data/creators/slp-spice-storage.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
-import { slurpDmSpiceLevel } from "../../modules/creators/slp-spice.js";
+import { slurpPublicSexualLevel } from "../../modules/feed/slp-post-guidance.js";
 import {
   slurpImageNegativePrompt,
   slurpImageNegativeTerms,
@@ -150,7 +150,7 @@ export async function drawSlpAssistPicture(
   const settings = await createSlurpStorage(db).getSettings();
   const spice = await resolveSlurpCreatorSpice(db, account);
   const level =
-    input.target === "avatar" || input.target === "cover" ? slurpDmSpiceLevel(spice.level, false) : spice.level;
+    input.target === "avatar" || input.target === "cover" ? slurpPublicSexualLevel(spice.level) : spice.level;
   // The same defaults as the artwork tool: a cover shows a place, not the Creator's face.
   const options = {
     creatorDetails: true,

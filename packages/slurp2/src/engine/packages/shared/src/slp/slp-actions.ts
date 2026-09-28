@@ -1,7 +1,8 @@
 /**
  * Slurp's action layer: the named things a helper can do for the player ("improve text", "draw a
  * picture", "steer a Creator", "add an idea", "write a post"). The app's AI assist buttons call these,
- * and so can anything outside the app that the Engine lets reach Slurp (Professor Mari, later).
+ * and so can anything outside the app that the Engine lets reach Slurp (Professor Mari, through the
+ * `mari-actions:slurp2` service on Engines with Capability API 1.50).
  *
  * Every action has a name, a one-line summary in plain words, a description of each input, and a zod
  * schema. The server validates every call against the schema here before it runs; the client uses the
@@ -167,6 +168,12 @@ export const SLP_ACTIONS = {
       .object({ accountId, text: z.string().trim().min(1).max(160), story: z.boolean().default(false) })
       .strict(),
   },
+  "list-creators": {
+    summary:
+      "List the Creators on Slurp: their id (every other action takes it as accountId), name and handle. Changes nothing.",
+    inputs: {},
+    schema: z.object({}).strict(),
+  },
   "write-post": {
     summary: "Have a Creator write and post their next post now (it takes their oldest idea, or the one given).",
     inputs: { accountId: "The Creator.", idea: "An idea for this post (optional).", story: "True for a Story." },
@@ -191,6 +198,7 @@ export type SlpActionResult = {
   "keep-picture": { kept: boolean };
   "steer-creator": unknown;
   "add-idea": unknown;
+  "list-creators": { creators: { id: string; name: string; handle: string }[] };
   "write-post": unknown;
 };
 
@@ -201,6 +209,16 @@ export function slpActionCatalog() {
     summary: SLP_ACTIONS[name].summary,
     inputs: SLP_ACTIONS[name].inputs,
   }));
+}
+
+/**
+ * The service keys the action layer registers under. `slurp2:actions` always; `mari-actions:slurp2`
+ * for Professor Mari only when this package's manifest holds the `mari-actions` permission, which
+ * only an Engine with Capability API 1.50 accepts (the builder adds it once slurp2 declares 1.50).
+ * An older Engine never sees the key, so Slurp loads the same there (J2).
+ */
+export function slpActionServiceKeys(permissions: readonly unknown[] | null | undefined): string[] {
+  return ["slurp2:actions", ...(permissions?.includes("mari-actions") ? ["mari-actions:slurp2"] : [])];
 }
 
 export function isSlpActionName(value: string): value is SlpActionName {

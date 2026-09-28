@@ -25,8 +25,9 @@ import { slpNotificationsRoutes } from "./features/notifications/slp-notificatio
 import { slpOnboardingRoutes } from "./features/onboarding/slp-onboarding-routes.js";
 import { slpProjectsRoutes } from "./features/projects/slp-projects-routes.js";
 import { slpAssistRoutes } from "./features/assist/slp-assist-routes.js";
-import { runSlpAction } from "./features/assist/slp-action-runner.js";
-import { slpActionCatalog } from "../../../shared/src/slp/slp-actions.js";
+import { slpActionService } from "./features/assist/slp-action-runner.js";
+import { slpActionServiceKeys } from "../../../shared/src/slp/slp-actions.js";
+import { logger } from "../lib/logger.js";
 import { slpCatchUpWorldOnOpen } from "./workflows/slp-world-tick-workflow.js";
 import { startSlpAutoPostScheduler } from "./features/feed/slp-autopost-scheduler-service.js";
 import { startCreatorFanActivityScheduler } from "./features/audience/slp-fan-activity-scheduler-service.js";
@@ -93,8 +94,11 @@ export async function mountSlpRoutes(app: FastifyInstance) {
 export async function activate({
   app,
   api,
+  package: installed,
 }: {
   app: FastifyInstance;
+  /** The installed package; its manifest's permissions say whether Professor Mari may act (J2). */
+  package?: { manifest?: { permissions?: readonly string[] } };
   api: {
     registerService<T>(key: string, service: T): () => void | Promise<void>;
     registerPromptContext?(
@@ -154,14 +158,17 @@ export async function activate({
         pause: async <T>(run: () => Promise<T>) => run(),
       }),
     );
-    // The action layer as an in-process service, for a helper the Engine lets call packages
-    // (Professor Mari has no such bridge yet; see docs/architecture/README.md "Action layer").
-    addTeardown(
-      api.registerService("slurp2:actions", {
-        list: slpActionCatalog,
-        run: (name: string, input: unknown) => runSlpAction(app.db, name, input),
-      }),
-    );
+    // The action layer as an in-process service (docs/architecture/README.md "Action layer"). On an
+    // Engine with Capability API 1.50 and the `mari-actions` permission, Professor Mari lists and runs
+    // the same actions through `mari-actions:slurp2`; older Engines only get `slurp2:actions`.
+    const actions = slpActionService(app.db);
+    for (const key of slpActionServiceKeys(installed?.manifest?.permissions)) {
+      try {
+        addTeardown(api.registerService(key, actions));
+      } catch (error) {
+        logger.warn(error, `[slurp2] Could not offer Slurp actions as ${key}; the app works without it`);
+      }
+    }
     // Slurp activity in ordinary chats. Each chat opts in, so registering costs nothing until then.
     if (api.registerPromptContext) {
       addTeardown(api.registerPromptContext((request) => buildSlurpChatContext(app.db, request)));

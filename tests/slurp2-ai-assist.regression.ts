@@ -38,6 +38,8 @@ assert.deepEqual(
     "draw-picture",
     "improve-text",
     "keep-picture",
+    // J2: Professor Mari needs the Creator ids every other action takes (read-only).
+    "list-creators",
     "steer-creator",
     "undo-picture",
     "use-picture",
@@ -173,7 +175,8 @@ assert.match(
 assert.match(service, /negativePromptAdditions: slurpImageNegativePrompt\(level\)/u, "the level's negative terms");
 assert.match(
   service,
-  /input\.target === "avatar" \|\| input\.target === "cover" \? slurpDmSpiceLevel\(spice\.level, false\) : spice\.level/u,
+  // Slice I (user): public pictures stop below nudity; `slurpPublicSexualLevel` is that public level.
+  /input\.target === "avatar" \|\| input\.target === "cover" \? slurpPublicSexualLevel\(spice\.level\) : spice\.level/u,
   "a profile picture or cover is public: the level a non-subscriber sees",
 );
 assert.match(service, /generateCreatorPostImage\(\{/u, "the Creator's own image pipeline");
@@ -281,9 +284,10 @@ assert.match(routes, /app\.get\("\/slurp\/actions"/u);
 assert.match(routes, /app\.post\("\/slurp\/actions\/:name"/u);
 const entry = server("slp-server-entry.ts");
 assert.match(entry, /await slpAssistRoutes\(app\);/u);
+// J2: one service object (`slpActionService`), registered under every key `slpActionServiceKeys` names.
 assert.match(
   entry,
-  /api\.registerService\("slurp2:actions", \{\s*list: slpActionCatalog,\s*run: \(name: string, input: unknown\) => runSlpAction\(app\.db, name, input\),/u,
+  /const actions = slpActionService\(app\.db\);\s*for \(const key of slpActionServiceKeys\(installed\?\.manifest\?\.permissions\)\) \{\s*try \{\s*addTeardown\(api\.registerService\(key, actions\)\);/u,
   "the action layer is registered as an in-process service for a helper like Professor Mari",
 );
 

@@ -178,6 +178,19 @@ const rebuiltFeatureClients = new Set(
     .filter(Boolean),
 );
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+const capabilityApiAtLeast = (api, needed) =>
+  Boolean(api) && (api.major > needed.major || (api.major === needed.major && api.minor >= needed.minor));
+/**
+ * A feature's manifest permissions: its own, plus each optional one whose Capability API the feature
+ * already declares. An Engine refuses a permission it does not know, so an optional permission waits
+ * until the feature asks for an Engine new enough to have it.
+ */
+function featurePermissions(feature) {
+  const optional = (feature.optionalPermissions ?? [])
+    .filter((entry) => capabilityApiAtLeast(feature.capabilityApi, entry.capabilityApi))
+    .map((entry) => entry.permission);
+  return optional.length ? [...new Set([...feature.permissions, ...optional])].sort() : feature.permissions;
+}
 
 async function prepareFeatureBuildRoot(feature) {
   if (feature.id === "noodle" || feature.id === "slurp" || feature.id === "slurp2") {
@@ -454,6 +467,11 @@ const features = [
     kind: ["agent"],
     modes: ["conversation", "roleplay", "game"],
     permissions: ["chat-read", "network", "prompt-context", "routes", "storage", "ui"],
+    // Professor Mari may list and run Slurp's actions (`mari-actions:slurp2`, Engine PR #6800). The
+    // Engine accepts that permission only with capabilityApi 1.50, and an older Engine refuses a
+    // manifest that names it, so it is emitted once `capabilityApi` below reaches 1.50. Until then
+    // Slurp loads everywhere and registers only `slurp2:actions` (the server feature-detects it).
+    optionalPermissions: [{ permission: "mari-actions", capabilityApi: { major: 1, minor: 50 } }],
     serverImport: "packages/server/src/slp/slp-server-entry.ts",
     serverEntry: true,
     clientImport: "packages/client/src/slp/slp-client-entry.tsx",
@@ -1865,7 +1883,7 @@ for (const feature of selectedFeatures) {
         bytes: asset.buffer.byteLength,
       })),
     ],
-    permissions: feature.permissions,
+    permissions: featurePermissions(feature),
     restartRequired: true,
   };
   await writeFile(join(sourceDir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);

@@ -108,7 +108,8 @@ single-feature operation in a workflow.
 
 Everything a helper may do for the player goes through one named, typed layer:
 `shared/src/slp/slp-actions.ts` defines each action (`write-text`, `improve-text`, `draw-picture`,
-`use-picture`, `undo-picture`, `keep-picture`, `steer-creator`, `add-idea`, `write-post`) with a
+`use-picture`, `undo-picture`, `keep-picture`, `steer-creator`, `add-idea`, `list-creators`,
+`write-post`) with a
 plain summary, a description of every input, a strict zod schema, and its result type.
 `server/.../features/assist/slp-action-runner.ts` is the only dispatcher: it rejects an unknown
 name (404) or invalid input (400) before anything runs, then calls the owning code (the assist
@@ -120,7 +121,9 @@ The layer has three doors, all into the same runner:
   the app's AI assist uses (`client/.../features/assist/slp-assist-hooks.ts`, typed by the shared
   contract).
 - The in-process service `slurp2:actions` (`{ list(), run(name, input) }`), registered in
-  `slp-server-entry.ts` through the capability API's `registerService`.
+  `slp-server-entry.ts` through the capability API's `registerService`, and the same object as
+  `mari-actions:slurp2` for Professor Mari when the manifest holds `mari-actions`
+  (`slpActionServiceKeys`).
 - Nothing else. A new action is added to the shared contract and the runner's switch, never as a
   side route.
 
@@ -138,9 +141,12 @@ never kept on disk. A profile picture or cover is public, so it takes the level 
 sees. `use-picture` keeps the replaced picture for one Undo (`modules/assist/slp-picture-undo.ts`,
 in memory) until `keep-picture` or `undo-picture`.
 
-**Professor Mari.** The Engine gives Mari a fixed tool list and no bridge to package services or
-package routes (see DECISIONS, "Action layer and Professor Mari"). The `slurp2:actions` service is
-the package half of that bridge; the Engine half is missing and is listed there.
+**Professor Mari.** Engine PR #6800 (Capability API 1.50) gives Mari a `package_service` tool that
+lists and runs the actions a package registers as `mari-actions:<package-id>`, gated by the
+`mari-actions` manifest permission. The builder emits that permission only once slurp2 declares
+Capability API 1.50 (`optionalPermissions` in `scripts/build-feature-packages.mjs`), because an older
+Engine refuses a manifest that names it; the server registers the Mari key only when its own manifest
+holds the permission. See DECISIONS, "Professor Mari actions (J2)".
 
 ## Cross-feature modifiers
 

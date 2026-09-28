@@ -4,6 +4,7 @@ import { createSlurpStorage } from "../../data/slp-storage.js";
 import { generateAndApplyCreatorPost, resolveSlurpAutomaticPostAccess } from "../feed/slp-feed-contract.js";
 import {
   isSlpActionName,
+  slpActionCatalog,
   SLP_ACTIONS,
   type SlpActionName,
   type SlpActionParsed,
@@ -27,6 +28,11 @@ const POST_FAILURE: Record<string, string> = {
 
 async function creatorExists(db: DB, accountId: string) {
   return Boolean(await createSlurpStorage(db).getNoodlerAccountById(accountId));
+}
+
+/** The action layer as an in-process service: the catalog, and one validated run. */
+export function slpActionService(db: DB) {
+  return { list: slpActionCatalog, run: (name: string, input: unknown) => runSlpAction(db, name, input) };
 }
 
 /**
@@ -61,6 +67,19 @@ async function dispatch(db: DB, name: SlpActionName, input: unknown): Promise<Sl
       if (!(await creatorExists(db, accountId))) return { ok: false, status: 404, error: "Creator not found." };
       return { ok: true, value: { steering: await patchSlurpCreatorSteering(db, accountId, patch) } };
     }
+    case "list-creators":
+      return {
+        ok: true,
+        value: {
+          creators: (await createSlurpStorage(db).listNoodlerAccounts()).map(
+            (account: { id: string; displayName: string; handle: string }) => ({
+              id: account.id,
+              name: account.displayName,
+              handle: account.handle,
+            }),
+          ),
+        },
+      };
     case "add-idea": {
       const { accountId, ...idea } = input as SlpActionParsed<"add-idea">;
       if (!(await creatorExists(db, accountId))) return { ok: false, status: 404, error: "Creator not found." };
