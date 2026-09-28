@@ -136,15 +136,31 @@ export async function openSlurpTease(
  * Null when automatic posting is off or the slot could not be booked.
  */
 async function holdSlurpDropSlot(db: DB, creatorAccountId: string, teaseAt: Date, at: Date): Promise<Date | null> {
+  const times = await readSlurpSlotTimes(db, creatorAccountId, at, [teaseAt.getTime()]);
+  if (!times) return null;
+  const dropAt = slurpHeldDropTime({ teaseAt, minGapMs: SLURP_TEASE_DROP_DELAY_MS, ...times });
+  return (await bookSlurpHeldSlot(db, creatorAccountId, dropAt, at)) ? dropAt : null;
+}
+
+/**
+ * What holding a slot has to stay clear of: this Creator's scheduled, prepared and recent posts
+ * (epoch ms, plus `extra`) and their own spacing. Null when automatic posting is off (no reserve
+ * would fill a held slot).
+ */
+export async function readSlurpSlotTimes(
+  db: DB,
+  creatorAccountId: string,
+  at: Date,
+  extra: readonly number[] = [],
+): Promise<{ busy: number[]; spacingMs: number } | null> {
   const storage = createSlurpStorage(db);
   const settings = await storage.getPostingSettings(at);
-  const account = await storage.getNoodlerAccountById(creatorAccountId);
-  if (!account || !settings.autoPostingScheduleEnabled || settings.postsPerDay <= 0) return null;
+  if (!settings.autoPostingScheduleEnabled || settings.postsPerDay <= 0) return null;
   const spacingMs = slurpCreatorPostingIntervalMs(
     slurpPacedPostsPerDay(settings.postsPerDay, await readSlurpCreatorPaceFactor(db, creatorAccountId)),
   );
   const busy = [
-    teaseAt.getTime(),
+    ...extra,
     ...(await storage.listNoodlerPreparedPosts())
       .filter(
         (item: { creatorAccountId: string; state: string }) =>
@@ -155,7 +171,15 @@ async function holdSlurpDropSlot(db: DB, creatorAccountId: string, teaseAt: Date
       Date.parse(post.createdAt),
     ),
   ];
-  const dropAt = slurpHeldDropTime({ teaseAt, minGapMs: SLURP_TEASE_DROP_DELAY_MS, busy, spacingMs });
+  return { busy, spacingMs };
+}
+
+/** Book one slot for this Creator at exactly `dropAt` (a teased drop, slice I; a collab drop, V). */
+export async function bookSlurpHeldSlot(db: DB, creatorAccountId: string, dropAt: Date, at: Date): Promise<boolean> {
+  const storage = createSlurpStorage(db);
+  const settings = await storage.getPostingSettings(at);
+  const account = await storage.getNoodlerAccountById(creatorAccountId);
+  if (!account || !settings.autoPostingScheduleEnabled || settings.postsPerDay <= 0) return false;
   const slotId = await storage.createNoodlerScheduledPost({
     creatorAccountId,
     publishAt: dropAt.toISOString(),
@@ -167,7 +191,7 @@ async function holdSlurpDropSlot(db: DB, creatorAccountId: string, teaseAt: Date
     ),
     createdAt: at.toISOString(),
   });
-  return slotId ? dropAt : null;
+  return Boolean(slotId);
 }
 
 /**

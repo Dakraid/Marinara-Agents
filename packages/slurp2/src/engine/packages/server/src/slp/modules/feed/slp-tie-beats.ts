@@ -12,15 +12,16 @@ import { slurpRivalryActive, type SlurpCreatorTies, type SlurpRivalry } from "..
 import type { SlurpTieStamp } from "../projects/slp-tie-stamp.js";
 import { slurpRefusalWorthAPost, type SlurpBrandDeal } from "../economy/slp-brand-deals.js";
 import { slurpCoupleActive, slurpCoupleOf, type SlurpCouple } from "../projects/slp-creator-couples.js";
-import { slurpCollabDropAt, slurpCollabDropDay, slurpCollabStep } from "../projects/slp-collab-work.js";
+import { slurpCollabDropAt, slurpCollabStep } from "../projects/slp-collab-work.js";
+import { slurpDropClock } from "./slp-post-purpose.js";
 import { slurpCoupleBeat } from "./slp-couple-beats.js";
 import type { SlurpBeat } from "./slp-post-beat.js";
 
 /** The collab partner's own post about it comes within this many days of the joint post, or not at all. */
 export const SLURP_COLLAB_ECHO_DAYS = 3;
 
-/** A beat from a tie, and what it claims once planned. */
-export type SlurpTieBeat = { beat: SlurpBeat & { tie: SlurpTieStamp } };
+/** A beat from a tie, and what it claims once planned; `dropAt` is the hour an announcement names (V). */
+export type SlurpTieBeat = { beat: SlurpBeat & { tie: SlurpTieStamp }; dropAt?: string };
 
 const REFUSAL_REASON: Record<string, string> = {
   offBrand: "it is just not you",
@@ -59,6 +60,10 @@ export function slurpTieBeat(input: {
   names: ReadonlyMap<string, string>;
   intents: readonly SlurpContentIntent[];
   at: Date;
+  /** The slot's own time (the reserve prepares ahead): a collab drop goes to the slot held at its hour. */
+  dueAt?: Date | null;
+  /** The host's post times and spacing, so an announced drop hour is one Slurp can hold (V). */
+  slots?: { busy: readonly number[]; spacingMs: number } | null;
   /** Hook for the spice slice: the lowest heat a tie post may go (0-3). Unused until then. */
   heatFloor?: number;
 }): SlurpTieBeat | null {
@@ -69,24 +74,30 @@ export function slurpTieBeat(input: {
   // A collab is work (U): announced first, then the joint post on its drop day. While it waits for
   // that day, the host's slots are ordinary.
   const collab = ties.collabs.find(
-    (entry) => entry.hostId === creatorId && slurpCollabStep(entry, input.at) !== "wait" && names.has(entry.partnerId),
+    (entry) =>
+      entry.hostId === creatorId &&
+      slurpCollabStep(entry, input.at, input.dueAt) !== "wait" &&
+      names.has(entry.partnerId),
   );
   const partner = collab ? names.get(collab.partnerId) : undefined;
   if (collab && partner) {
     const what = collab.shoot ? `the spicy shoot you two planned in your DMs (${collab.idea})` : collab.idea;
-    if (slurpCollabStep(collab, input.at) === "announce")
+    if (slurpCollabStep(collab, input.at) === "announce") {
+      const dropAt = slurpCollabDropAt(collab.id, input.at, input.slots);
       return {
         beat: {
           type: "social_moment",
           anchorKind: "collab",
           anchor: partner,
-          line: `Announce your collab with ${partner}: ${what}. It drops ${slurpCollabDropDay(slurpCollabDropAt(collab.id, input.at), input.at)} on both your pages. Tag ${partner} and build a little hype your way, without showing it yet.`,
+          line: `Announce your collab with ${partner}: ${what}. It drops ${slurpDropClock(dropAt, input.at)} on both your pages. Name that time, your way: it is a date with your fans. Tag ${partner} and build a little hype, without showing it yet.`,
           cast: [partner],
           place: null,
           ...heat,
           tie: { kind: "collab", id: collab.id, partnerId: collab.partnerId, announce: true },
         },
+        dropAt,
       };
+    }
     const split =
       collab.hostShare === 50
         ? "You split what it earns fifty-fifty."

@@ -8,6 +8,8 @@
 import { hash } from "./slp-project.js";
 import type { SlurpCollab, SlurpCreatorTies } from "./slp-creator-ties.js";
 
+const MINUTE = 60_000;
+
 /** Interests read from a card, so "a baker" and "loves sourdough" land in the same niche. */
 export const SLURP_COLLAB_INTERESTS: readonly { id: string; words: RegExp; ideas: readonly string[] }[] = [
   {
@@ -107,45 +109,68 @@ export const SLURP_COLLAB_INTERESTS: readonly { id: string; words: RegExp; ideas
 export const SLURP_CROSSOVER_SHARE = 0.08;
 export const SLURP_CROSSOVER_MAX = 30;
 
-/** When an announced collab drops: tomorrow or the day after, in the evening (6, 7 or 8 pm, host time). */
-export function slurpCollabDropAt(id: string, at: Date): string {
+/**
+ * When an announced collab drops: tomorrow or the day after, in the evening (6, 7 or 8 pm, host
+ * time). V (orchestrator decision on U): the drop holds its exact hour like a teased drop, so with the
+ * host's `busy` times (posts and held slots) it takes the first evening hour (5 to 9 pm, the rolled one
+ * first) clear of them by the host's own spacing; with none clear, the rolled hour.
+ */
+export function slurpCollabDropAt(
+  id: string,
+  at: Date,
+  slots: { busy: readonly number[]; spacingMs: number } | null = null,
+): string {
   const roll = hash(`${id}:drop`);
   const drop = new Date(at);
   drop.setDate(drop.getDate() + 1 + (roll % 2));
-  drop.setHours(18 + (roll % 3), 0, 0, 0);
+  const first = 18 + (roll % 3);
+  const hours = [first, ...[17, 18, 19, 20, 21].filter((hour) => hour !== first)];
+  const free = slots
+    ? hours.find((hour) => {
+        const time = new Date(drop).setHours(hour, 0, 0, 0);
+        return slots.busy.every((busy) => Math.abs(busy - time) >= slots.spacingMs);
+      })
+    : undefined;
+  drop.setHours(free ?? first, 0, 0, 0);
   return drop.toISOString();
 }
 
 /**
  * What an agreed collab asks of its host now: announce it, post it (its drop is due), or wait. A
  * collab agreed before announcements existed announces first too; one already planned or up is done.
+ * `dueAt` is the slot's own time (the reserve prepares slots ahead): the slot held at the drop hour
+ * takes the drop, and a later slot takes it when something else had that one.
  */
-export function slurpCollabStep(collab: SlurpCollab, at: Date): "announce" | "post" | "wait" {
+export function slurpCollabStep(collab: SlurpCollab, at: Date, dueAt?: Date | null): "announce" | "post" | "wait" {
   if (collab.status !== "agreed") return "wait";
   if (!collab.announcedAt) return "announce";
-  return !collab.dropAt || Date.parse(collab.dropAt) <= at.getTime() ? "post" : "wait";
+  return !collab.dropAt || Date.parse(collab.dropAt) - MINUTE <= (dueAt ?? at).getTime() ? "post" : "wait";
 }
 
-/** The host's slot took the announcement: the joint post waits for its drop day. */
-export function slurpAnnounceCollab(ties: SlurpCreatorTies, id: string, at: Date): SlurpCreatorTies {
+/** The host's slot took the announcement: the joint post waits for its drop hour. */
+export function slurpAnnounceCollab(
+  ties: SlurpCreatorTies,
+  id: string,
+  at: Date,
+  dropAt = slurpCollabDropAt(id, at),
+): SlurpCreatorTies {
   return {
     ...ties,
     collabs: ties.collabs.map((collab) =>
-      collab.id === id && !collab.announcedAt
-        ? { ...collab, announcedAt: at.toISOString(), dropAt: slurpCollabDropAt(id, at) }
-        : collab,
+      collab.id === id && !collab.announcedAt ? { ...collab, announcedAt: at.toISOString(), dropAt } : collab,
     ),
   };
 }
 
-/** The drop day in plain words, from the announcement's point of view: "tomorrow", "on Friday". */
-export function slurpCollabDropDay(dropAt: string, at: Date): string {
-  const drop = new Date(dropAt);
-  const day = (value: Date) => new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime();
-  const days = Math.round((day(drop) - day(at)) / 86_400_000);
-  if (days <= 0) return "tonight";
-  if (days === 1) return "tomorrow";
-  return `on ${drop.toLocaleDateString("en-US", { weekday: "long" })}`;
+/** The slot at `slotAt` is the one held for a collab this Creator hosts (V): its drop, to the minute. */
+export function slurpHoldsCollabDrop(ties: SlurpCreatorTies, hostId: string, slotAt: Date): boolean {
+  return ties.collabs.some(
+    (collab) =>
+      collab.hostId === hostId &&
+      collab.status === "agreed" &&
+      Boolean(collab.dropAt) &&
+      Math.abs(Date.parse(collab.dropAt!) - slotAt.getTime()) < MINUTE,
+  );
 }
 
 /**

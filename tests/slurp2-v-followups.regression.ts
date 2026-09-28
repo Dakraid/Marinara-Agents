@@ -1,0 +1,149 @@
+/**
+ * V (user + orchestrator decisions, 2026-09-28): the P+Q, S and U follow-ups. Adaptive post frames, the
+ * AI budget "Off" for image prompt enhancing (in `slurp2-perspective`), old ads redrawn once in the wide
+ * banner, the card clothing filter keeping body traits, collab drops holding their exact hour, and the
+ * first 1,000 subscribers moving to Seasons of life (in `slurp2-content-packs`).
+ */
+import assert from "node:assert/strict";
+import { slurp2Source } from "./slurp2-source";
+import {
+  slurpAgreeCollabInDm,
+  SLURP_NO_TIES,
+  type SlurpTieCreator,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-ties.ts";
+import {
+  slurpAnnounceCollab,
+  slurpCollabDropAt,
+  slurpCollabStep,
+  slurpHoldsCollabDrop,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-collab-work.ts";
+import { slurpTieBeat } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-tie-beats.ts";
+import { slurpDropClock } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-post-purpose.ts";
+
+const server = (path: string) => slurp2Source(`packages/slurp2/src/engine/packages/server/src/slp/${path}`);
+const HOUR = 60 * 60 * 1000;
+const T0 = new Date(2026, 9, 1, 11, 0, 0, 0); // local, like the drop hours
+
+const creator = (id: string, text: string): SlurpTieCreator => ({
+  id,
+  name: id[0]!.toUpperCase() + id.slice(1),
+  text,
+  tags: ["fitness"],
+  automatic: true,
+  followers: 1000,
+  gender: null,
+  cardPartners: [],
+});
+const mira = creator("mira", "Climbing coach, lives for bouldering and gym training.");
+const kai = creator("kai", "Personal trainer, runs every morning and lifts at night.");
+const names = new Map([
+  ["mira", "Mira"],
+  ["kai", "Kai"],
+]);
+
+// --- 5. A collab drop holds its exact hour, like a teased drop ---------------------------------------
+{
+  const agreed = slurpAgreeCollabInDm(SLURP_NO_TIES, mira, kai, {
+    at: T0,
+    id: "c1",
+    idea: "a climbing day",
+    hostShare: 60,
+  });
+  const rolled = new Date(slurpCollabDropAt("c1", T0));
+  // The host already posts at the rolled hour: the drop takes another evening hour clear of it.
+  const spacingMs = 2 * HOUR;
+  const moved = new Date(slurpCollabDropAt("c1", T0, { busy: [rolled.getTime()], spacingMs }));
+  assert.notEqual(moved.getTime(), rolled.getTime(), "a busy hour is not held twice");
+  assert.equal(moved.toDateString(), rolled.toDateString(), "same drop day");
+  assert.ok(moved.getHours() >= 17 && moved.getHours() <= 21 && moved.getMinutes() === 0, "an evening hour");
+  assert.ok(Math.abs(moved.getTime() - rolled.getTime()) >= spacingMs, "clear by the host's own spacing");
+  // Every evening hour busy: the rolled hour still (the announcement always names one).
+  const allBusy = [17, 18, 19, 20, 21].map((hour) => new Date(rolled).setHours(hour, 0, 0, 0));
+  assert.equal(slurpCollabDropAt("c1", T0, { busy: allBusy, spacingMs }), rolled.toISOString());
+  assert.equal(slurpCollabDropAt("c1", T0, null), rolled.toISOString(), "no slots known: the rolled hour");
+
+  // The announcement names that exact hour and hands it to the service to store and hold.
+  const planned = slurpTieBeat({
+    creatorId: "mira",
+    creatorText: "",
+    sequence: 1,
+    ties: agreed,
+    deals: [],
+    names,
+    intents: ["casual"],
+    at: T0,
+    slots: { busy: [rolled.getTime()], spacingMs },
+  })!;
+  assert.equal(planned.beat.tie.announce, true);
+  assert.equal(planned.dropAt, moved.toISOString());
+  assert.ok(planned.beat.line.includes(`It drops ${slurpDropClock(moved.toISOString(), T0)} on both`));
+  assert.match(planned.beat.line, / at [5-9] pm on both your pages\. Name that time/u);
+  const announced = slurpAnnounceCollab(agreed, "c1", T0, planned.dropAt);
+  const drop = new Date(announced.collabs[0]!.dropAt!);
+  assert.equal(drop.getTime(), moved.getTime(), "the stored hour is the one the line named");
+
+  // The reserve prepares slots ahead: the slot held at the drop hour takes the drop even when it is
+  // prepared hours before, an earlier slot does not, a later one does when something else had it.
+  const collab = announced.collabs[0]!;
+  const early = new Date(drop.getTime() - 3 * HOUR);
+  assert.equal(slurpCollabStep(collab, early, drop), "post", "the held slot, prepared early");
+  assert.equal(slurpCollabStep(collab, early, new Date(drop.getTime() - HOUR)), "wait", "a slot before the hour");
+  assert.equal(slurpCollabStep(collab, early, new Date(drop.getTime() + 2 * HOUR)), "post", "the next slot after it");
+  assert.equal(slurpCollabStep(collab, early), "wait", "without a slot time the clock decides (old behaviour)");
+  const dropBeat = (dueAt: Date) =>
+    slurpTieBeat({
+      creatorId: "mira",
+      creatorText: "",
+      sequence: 2,
+      ties: announced,
+      deals: [],
+      names,
+      intents: ["casual"],
+      at: early,
+      dueAt,
+    });
+  assert.match(dropBeat(drop)!.beat.line, /drops today, the one you announced/u);
+  assert.equal(dropBeat(new Date(drop.getTime() - HOUR)), null, "an ordinary slot before the drop");
+
+  // Only the host's slot at that minute is the held one; not the partner's, not an hour off, not once posted.
+  assert.ok(slurpHoldsCollabDrop(announced, "mira", drop));
+  assert.ok(slurpHoldsCollabDrop(announced, "mira", new Date(drop.getTime() + 20_000)));
+  assert.ok(!slurpHoldsCollabDrop(announced, "mira", new Date(drop.getTime() + HOUR)));
+  assert.ok(!slurpHoldsCollabDrop(announced, "kai", drop));
+  assert.ok(!slurpHoldsCollabDrop(agreed, "mira", drop), "not announced yet");
+  assert.ok(
+    !slurpHoldsCollabDrop(
+      { ...announced, collabs: announced.collabs.map((entry) => ({ ...entry, status: "posted" as const })) },
+      "mira",
+      drop,
+    ),
+  );
+
+  // Wiring: the service reads the host's slots, stores the named hour and books that slot; the reserve
+  // keeps ideas and Stories off the held slot but not its access; the slot time reaches the tie beat.
+  const service = server("features/projects/slp-creator-ties-service.ts");
+  assert.match(service, /readSlurpSlotTimes\(db, input\.creatorId, input\.at\)/u);
+  assert.match(service, /slurpAnnounceCollab\(document\.ties, tie\.id, input\.at, planned\.dropAt\)/u);
+  assert.match(
+    service,
+    /if \(planned\.dropAt && slots\)\s*await bookSlurpHeldSlot\(db, input\.creatorId, new Date\(planned\.dropAt\)/u,
+  );
+  assert.ok(
+    service.indexOf("bookSlurpHeldSlot(db") >
+      service.indexOf("await mutateSlurpCreatorTies(db, (document) => ({\n      document: {\n        // A couple"),
+    "booked after the announcement is stored",
+  );
+  const reserve = server("features/feed/reserve/slp-reserve-operation.ts");
+  assert.match(reserve, /slurpHeldCollabDrop\(db, selectedAccount\.id, new Date\(selectedPublishAt\)\)/u);
+  assert.match(reserve, /\.\.\.\(heldCollab \? \{ allowStory: false, heldDrop: true \} : \{\}\)/u);
+  assert.match(reserve, /access: heldDrop \? "locked"/u, "only a teased drop is locked");
+  assert.match(server("features/feed/slp-post-plan-service.ts"), /at,\s*dueAt,\s*previewOnly,/u);
+  assert.match(server("features/feed/slp-post-beat-service.ts"), /at: input\.at,\s*dueAt: input\.dueAt,/u);
+  const purpose = server("features/feed/slp-post-purpose-service.ts");
+  assert.match(
+    purpose,
+    /const times = await readSlurpSlotTimes\(db, creatorAccountId, at, \[teaseAt\.getTime\(\)\]\)/u,
+  );
+}
+
+console.log("slurp2 V follow-ups regression passed");

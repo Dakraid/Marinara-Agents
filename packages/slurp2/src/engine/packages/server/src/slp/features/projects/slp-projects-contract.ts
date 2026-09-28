@@ -4,6 +4,7 @@ export {
   agreeSlurpCollabInDm,
   planSlurpTieBeat,
   slurpCollabPostIdsForCreator,
+  slurpHeldCollabDrop,
 } from "./slp-creator-ties-service.js";
 export {
   readSlurpClosedCouplePageIds,

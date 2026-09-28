@@ -22,7 +22,6 @@ import {
   slurpAnnounceCollab,
   slurpCollabCrossover,
   slurpCollabDropAt,
-  slurpCollabDropDay,
   slurpCollabStep,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-collab-work.ts";
 import {
@@ -39,6 +38,7 @@ import {
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-lines.ts";
 import { slurpCoupleBeat } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-couple-beats.ts";
 import { slurpTieBeat } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-tie-beats.ts";
+import { slurpDropClock } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-post-purpose.ts";
 import { readSlurpTieStamp } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-tie-stamp.ts";
 import { readSlurpDmCollab } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-dm-response.ts";
 import { slurpCoupleReactionBodies } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/slp-world-copy.ts";
@@ -104,7 +104,8 @@ const beatFor = (creatorId: string, ties: SlurpCreatorTies, at: Date, couples: S
   assert.equal(announce.beat.tie.announce, true);
   assert.match(
     announce.beat.line,
-    /^Announce your collab with Kai: a climbing day\. It drops (tomorrow|on \w+day) on both/u,
+    // V: the announcement names the exact hour Slurp holds ("tomorrow at 7 pm"), like a teased drop.
+    /^Announce your collab with Kai: a climbing day\. It drops (tomorrow|on \w+day) at [5-9] pm on both/u,
   );
   assert.match(announce.beat.line, /without showing it yet/u);
   assert.equal(beatFor("kai", agreed, at), null, "the partner does not announce it");
@@ -120,7 +121,7 @@ const beatFor = (creatorId: string, ties: SlurpCreatorTies, at: Date, couples: S
   assert.equal(announced.collabs[0]!.dropAt, slurpCollabDropAt("c1", at));
   assert.ok(drop.getTime() - at.getTime() > 12 * HOUR && drop.getTime() - at.getTime() < 3 * DAY);
   assert.ok([18, 19, 20].includes(drop.getHours()) && drop.getMinutes() === 0);
-  assert.ok(announce.beat.line.includes(slurpCollabDropDay(drop.toISOString(), at)));
+  assert.ok(announce.beat.line.includes(slurpDropClock(drop.toISOString(), at)));
   assert.deepEqual(slurpAnnounceCollab(announced, "c1", new Date(T0 + DAY)), announced, "announced once");
   for (let index = 0; index < 40; index += 1) {
     const dropAt = new Date(slurpCollabDropAt(`c${index}`, at));
@@ -279,7 +280,11 @@ const beatFor = (creatorId: string, ties: SlurpCreatorTies, at: Date, couples: S
   );
   assert.match(service, /advanceTie\(memberId, creatorId, \{ stage: "follower", interactions: 2 \}\)/u);
   assert.match(service, /!stamp\.announce && !found\.has\(stamp\.id\)/u, "the announcement is not the joint post");
-  assert.match(service, /: tie\.announce\s*\? slurpAnnounceCollab\(document\.ties, tie\.id, input\.at\)/u);
+  // V: the announcement stores the hour its line named.
+  assert.match(
+    service,
+    /: tie\.announce\s*\? slurpAnnounceCollab\(document\.ties, tie\.id, input\.at, planned\.dropAt\)/u,
+  );
 }
 
 // --- 4. A couple is life: their own posts, the partner as a cameo ----------------------------------
