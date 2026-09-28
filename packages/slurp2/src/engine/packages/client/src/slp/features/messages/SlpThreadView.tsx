@@ -250,6 +250,7 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
                           ownsCreator={ownsCreator}
                           group={slurpBubbleGroup(visibleTimeline, index, firstUnreadMessageId)}
                           fresh={Boolean(openedWith.current && !openedWith.current.has(entry.message.id))}
+                          onOpenProfile={model.onOpenProfile}
                         />
                       )
                     ) : personaId ? (

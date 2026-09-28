@@ -1563,6 +1563,8 @@
   "ui.slurp.messages.lockedPostPreview": "Locked post preview",
   "ui.slurp.messages.moodLevel": "Conversation mood",
   "ui.slurp.messages.postPreview": "Shared post",
+  "ui.slurp.messages.openSharedPost": "Open {{name}}'s post",
+  "ui.slurp.messages.seeSharedPost": "See post",
   "ui.slurp.messages.promptDebug": "Prompt details",
   "ui.slurp.messages.promptDetails": "Prompt details",
   "ui.slurp.messages.promptLoading": "Loading prompt details…",

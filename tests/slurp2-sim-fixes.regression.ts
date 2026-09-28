@@ -282,6 +282,46 @@ const read = (path: string) => readFileSync(new URL(path, root), "utf8");
     assert.ok((counts.get(source) ?? 0) / 2400 <= 0.27, `${source} at most ~25 %: ${JSON.stringify([...counts])}`);
 }
 
+// --- G6 a post sent into a chat (by any sender) is a real mini post card.
+{
+  const card = read("client/src/slp/features/messages/SlpSharedPostCard.tsx");
+  const bubble = read("client/src/slp/features/messages/SlpMessageBubble.tsx");
+  const postBranch = bubble.slice(
+    bubble.indexOf('if (message.kind === "post_preview")'),
+    bubble.indexOf('if (message.kind === "broadcast")'),
+  );
+  assert.match(postBranch, /<SlpSharedPostCard/u, "every post_preview renders the card, whoever sent it");
+  assert.doesNotMatch(postBranch, /role === "creator"|role === "viewer"/u, "no sender kind is left out");
+  assert.match(
+    card,
+    /\/api\/slurp2\/noodler\/posts\/\$\{encodeURIComponent\(postId\)\}\/media/u,
+    "the picture comes from the post",
+  );
+  assert.match(
+    card,
+    /personaId=\$\{encodeURIComponent\(personaId\)\}/u,
+    "a reader's picture is access-checked (teaser when locked)",
+  );
+  assert.match(card, /\{\.\.\.slpImgFade\}/u, "the picture fades in");
+  assert.match(card, /<SlpLockedMediaTile/u, "a locked post shows the locked tile");
+  assert.match(card, /unlock\.mutateAsync\(\{ personaId, postId \}\)/u, "and unlocks in place");
+  assert.match(card, /slpShowPostInPlace\(postId\)[\s\S]*onOpenProfile\(authorId\)/u, "tap opens the post");
+  assert.match(read("client/src/slp/features/messages/SlpThreadView.tsx"), /onOpenProfile=\{model\.onOpenProfile\}/u);
+  assert.match(read("client/src/slp/features/feed/slp-feed-contract.ts"), /export \{ useUnlockCreatorPost \}/u);
+  for (const path of [
+    "server/src/slp/features/messages/slp-message-operation.ts",
+    "server/src/slp/features/messages/slp-messages-send-routes.ts",
+  ]) {
+    const source = read(path);
+    assert.match(source, /authorAccountId:/u, `${path}: the card knows whose post it is`);
+    assert.match(source, /price: slpCreatorUnlockPriceFromMetadata\(/u, `${path}: and what unlocking costs`);
+  }
+  for (const locale of ["en", "de", "ko", "pl"]) {
+    const keys = JSON.parse(read(`client/src/slp/locales/${locale}.json`)) as Record<string, string>;
+    assert.ok(keys["ui.slurp.messages.openSharedPost"] && keys["ui.slurp.messages.seeSharedPost"], locale);
+  }
+}
+
 // --- G7 no cropped mark beside the Creator's avatar on Story tiles (the feed keeps it).
 {
   const entry = read("client/src/slp/slp-client-entry.tsx");

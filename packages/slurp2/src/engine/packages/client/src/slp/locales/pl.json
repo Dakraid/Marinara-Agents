@@ -222,6 +222,8 @@
   "ui.slurp.discover.detail": "Odkrywaj pokoje twórców, obserwuj publiczne posty lub subskrybuj zablokowane treści.",
   "ui.slurp.messages.accept": "Akceptuj",
   "ui.slurp.messages.backToInbox": "Wróć do skrzynki",
+  "ui.slurp.messages.openSharedPost": "Otwórz post: {{name}}",
+  "ui.slurp.messages.seeSharedPost": "Zobacz post",
   "ui.slurp.messages.chatExtras": "Dodatki do czatu",
   "ui.slurp.messages.commissionAccept": "Zaakceptuj i zapłać",
   "ui.slurp.messages.commissionAcceptPending": "Przetwarzanie płatności…",

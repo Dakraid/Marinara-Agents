@@ -222,6 +222,8 @@
   "ui.slurp.discover.detail": "Entdecke Creator-Räume, folge öffentlichen Beiträgen oder abonniere gesperrte Inhalte.",
   "ui.slurp.messages.accept": "Annehmen",
   "ui.slurp.messages.backToInbox": "Zurück zum Posteingang",
+  "ui.slurp.messages.openSharedPost": "Beitrag von {{name}} öffnen",
+  "ui.slurp.messages.seeSharedPost": "Beitrag ansehen",
   "ui.slurp.messages.chatExtras": "Chat-Extras",
   "ui.slurp.messages.commissionAccept": "Annehmen und bezahlen",
   "ui.slurp.messages.commissionAcceptPending": "Zahlung wird verarbeitet…",

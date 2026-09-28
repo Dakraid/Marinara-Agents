@@ -53,6 +53,7 @@ import {
 } from "../../modules/messages/slp-support.js";
 import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
 import { emptySlpAccountSettings } from "../../modules/records/slp-storage-model.js";
+import { slpCreatorUnlockPriceFromMetadata } from "../../modules/economy/slp-prices.js";
 import {
   addSlurpCreatorNudge,
   noteSlurpSupportChange,
@@ -414,6 +415,14 @@ export async function replyToSlurpMessage(
               access: reply.sharedPost.access,
               previewLocked,
               shareReason: reply.sharePost !== undefined ? "relevant" : "tease",
+              // The chat shows it as a real post card: whose it is and what unlocking costs.
+              authorAccountId: creator.id,
+              authorName: creator.displayName,
+              authorHandle: creator.handle,
+              authorAvatarUrl: creator.avatarUrl ?? null,
+              price: slpCreatorUnlockPriceFromMetadata(
+                (await slurp.getNoodlerPostById(reply.sharedPost.id))?.metadata as Record<string, unknown> | undefined,
+              ),
             },
           })) ?? stored;
       }

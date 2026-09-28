@@ -11,6 +11,7 @@ import { reactToSlurpPayment } from "../economy/slp-economy-contract.js";
 import type { FastifyInstance } from "fastify";
 import { personaQuerySchema } from "../../modules/messages/slp-messages-schemas.js";
 import type { SlpMessagesContext } from "./slp-messages-context.js";
+import { slpCreatorUnlockPriceFromMetadata } from "../../modules/economy/slp-prices.js";
 
 const sendSchema = z.object({
   personaId: z.string().trim().min(1),
@@ -93,9 +94,11 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
         content: locked ? "" : post.content,
         access: post.access,
         previewLocked: locked,
+        authorAccountId: author?.id ?? post.authorAccountId,
         authorName: author?.displayName ?? null,
         authorHandle: author?.handle ?? null,
         authorAvatarUrl: author?.avatarUrl ?? null,
+        price: slpCreatorUnlockPriceFromMetadata(post.metadata as Record<string, unknown> | undefined),
         shareReason: "player",
       },
     });

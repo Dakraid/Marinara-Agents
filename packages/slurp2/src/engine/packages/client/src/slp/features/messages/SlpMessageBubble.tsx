@@ -17,6 +17,7 @@ import { slurpBubbleRadius, type SlurpBubbleGroup } from "./slp-bubble-group";
 import type { SlurpAwayKind } from "./slp-away-kind";
 import { slpErrorText } from "../../base/ui/slp-error-text";
 import { useReactToSlurpMessage, useUnlockSlurpMessage } from "../../features/messages/slp-message-action-hooks";
+import { SlpSharedPostCard } from "./SlpSharedPostCard";
 
 // One message in a thread, the away animation and the platform action card.
 
@@ -256,6 +257,7 @@ export function MessageBubble({
   ownsCreator,
   group = "single",
   fresh = false,
+  onOpenProfile,
 }: {
   message: SlurpMessage;
   locale: string;
@@ -264,6 +266,8 @@ export function MessageBubble({
   group?: SlurpBubbleGroup;
   /** Arrived while the conversation was open, so it lands with the entrance motion. */
   fresh?: boolean;
+  /** A shared post opens its author's page. */
+  onOpenProfile?: (accountId: string) => void;
 }) {
   const { t: localizeUi } = useUiTranslation();
   const unlock = useUnlockSlurpMessage();
@@ -323,12 +327,6 @@ export function MessageBubble({
     );
   }
   if (message.kind === "post_preview") {
-    const preview = message.metadata;
-    const previewTitle = typeof preview.title === "string" ? preview.title : message.content;
-    const previewContent = typeof preview.content === "string" ? preview.content : "";
-    // `previewLocked` is decided per viewer on the server; a post the fan already bought is shown
-    // open. Older cards without it fall back to the post's access.
-    const locked = typeof preview.previewLocked === "boolean" ? preview.previewLocked : preview.access === "locked";
     return (
       <div
         className={cn(
@@ -336,51 +334,13 @@ export function MessageBubble({
           mine ? "self-end items-end" : "self-start items-start",
         )}
       >
-        <div className="w-72 max-w-full overflow-hidden rounded-2xl bg-[color-mix(in_srgb,var(--slurp-surface-raised)_86%,transparent)] shadow-[var(--slurp-highlight),var(--slurp-shadow-raised)] backdrop-blur-md">
-          {messageImage && !locked && (
-            <span className={cn(SLP_IMG_FRAME_CLASS, "relative block aspect-[4/3] w-full")}>
-              <img
-                key={messageImage}
-                src={messageImage}
-                alt={localizeUi("ui.slurp.messages.postPreview", { defaultValue: "Post preview" })}
-                {...slpImgFade}
-                className="slp-crop h-full w-full object-cover"
-              />
-            </span>
-          )}
-          <div className="px-3.5 py-3">
-            <p className="text-xs font-semibold text-[var(--slurp-ink)]">
-              {localizeUi("ui.slurp.messages.postPreview", { defaultValue: "Shared post" })}
-            </p>
-            {/* A post can now be shared into any chat, so the card names its author. */}
-            {typeof preview.authorName === "string" && preview.authorName && (
-              <p className="mt-1.5 flex min-w-0 items-center gap-2 text-xs text-[var(--slurp-muted)]">
-                <Avatar
-                  account={{
-                    displayName: preview.authorName,
-                    avatarUrl: typeof preview.authorAvatarUrl === "string" ? preview.authorAvatarUrl : null,
-                  }}
-                  size="xs"
-                />
-                <span className="truncate font-semibold text-[var(--slurp-text)]">{preview.authorName}</span>
-                {typeof preview.authorHandle === "string" && preview.authorHandle && (
-                  <span className="truncate">@{preview.authorHandle}</span>
-                )}
-              </p>
-            )}
-            <p className="mt-1.5 text-[13px] font-bold leading-5">{previewTitle}</p>
-            {!locked && previewContent && (
-              <p className="mt-0.5 line-clamp-3 whitespace-pre-wrap text-[13px] leading-[19px] text-[var(--slurp-muted)]">
-                {previewContent}
-              </p>
-            )}
-            {locked && (
-              <p className="mt-0.5 text-xs text-[var(--slurp-muted)]">
-                {localizeUi("ui.slurp.messages.lockedPostPreview", { defaultValue: "Paid post preview" })}
-              </p>
-            )}
-          </div>
-        </div>
+        <SlpSharedPostCard
+          message={message}
+          personaId={personaId}
+          ownsCreator={ownsCreator}
+          mine={mine}
+          onOpenProfile={onOpenProfile}
+        />
         <time dateTime={message.createdAt} className="px-2 text-xs text-[var(--slurp-muted)]">
           {formatClockTime(message.createdAt, locale)}
         </time>

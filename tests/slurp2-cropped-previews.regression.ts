@@ -40,7 +40,8 @@ const PREVIEWS: Record<string, number> = {
   "modules/post/SlpPostCard.tsx": 1, // feed, profile posts, search
   "app/screens/SlpScreenProfile.tsx": 1, // media grid tiles
   "modules/story/SlpStoryTile.tsx": 1, // Story tiles
-  "features/messages/SlpMessageBubble.tsx": 3, // shared post, bought PPV, picture message
+  "features/messages/SlpMessageBubble.tsx": 2, // bought PPV, picture message
+  "features/messages/SlpSharedPostCard.tsx": 1, // shared post (moved out of the bubble in G6)
   "modules/post/SlpReplyRow.tsx": 1,
   "modules/post/SlpPostReplyRow.tsx": 1,
 };
