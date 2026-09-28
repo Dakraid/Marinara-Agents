@@ -1,5 +1,6 @@
 import { requestHintGuidance } from "./SlpMessages";
 import { SlpTextAssist } from "../assist/slp-assist-contract";
+import { slurpAssistChatContext } from "./slp-assist-chat-context";
 import { ArrowDown, ChevronLeft, Headset, Plus, Send, X } from "lucide-react";
 import { CommissionRequest } from "./commissions/SlpCommissions";
 import { CreatorMessageTools, FanImageTool, SlurpTipPanel } from "./SlpMessageTools";
@@ -20,6 +21,8 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
     busy,
     commissionPrefill,
     composerRef,
+    counterpart,
+    creator,
     composerTipAmount,
     composerTipNote,
     connectionPickerOpen,
@@ -29,6 +32,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
     draftReply,
     holdTyping,
     localizeUi,
+    messages,
     messaging,
     ownsCreator,
     personaId,
@@ -300,9 +304,22 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
                 {localizeUi("ui.slurp.messages.helpWriteYours", { defaultValue: "Your message" })}
               </p>
               <SlpTextAssist
-                field={ownsCreator ? "reply" : "dm"}
+                // The chat and the seat (7c M-004): Support writes as Slurp's staff, never as a fan.
+                field={ownsCreator ? "reply" : asSupport ? "support" : "dm"}
                 value={draft}
                 accountId={targetCreatorAccountId ?? undefined}
+                context={slurpAssistChatContext({
+                  messages,
+                  seat: ownsCreator ? "creator" : asSupport ? "support" : "persona",
+                  creatorName: creator?.displayName ?? "the Creator",
+                  viewerName: ownsCreator
+                    ? (counterpart?.displayName ?? null)
+                    : (messages
+                        .filter((message) => message.role === "viewer" && message.metadata.supportVoice !== true)
+                        .map((message) => message.senderSnapshot.displayName)
+                        .findLast((name): name is string => typeof name === "string") ?? null),
+                  supportName,
+                })}
                 disabled={busy}
                 onApply={setDraft}
               />

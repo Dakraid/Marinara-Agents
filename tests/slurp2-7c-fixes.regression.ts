@@ -15,6 +15,8 @@ import {
   slurpCommissionDeliveryDelayMs,
   slurpUnscheduledCommissionDeliveries,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-messaging.ts";
+import { slurpAssistChatContext } from "../packages/slurp2/src/engine/packages/client/src/slp/features/messages/slp-assist-chat-context.ts";
+import { buildSlpAssistTextMessages } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/assist/slp-assist-prompt.ts";
 import { slurp2Source } from "./slurp2-source.ts";
 
 const root = new URL("../packages/slurp2/src/engine/packages/", import.meta.url);
@@ -129,6 +131,109 @@ const at = (days: number) => new Date(T0 + days * 86_400_000);
     /if \(mediaPath\) \{/u,
     "a text-only delivery skips the picture",
   );
+}
+
+// M-004. "Help me write" in a DM sees the chat, from the right seat, in the chat's language.
+{
+  const msg = (role: "viewer" | "creator", content: string, over: Record<string, unknown> = {}) => ({
+    role,
+    kind: "text" as const,
+    content,
+    price: 0,
+    metadata: {} as Record<string, unknown>,
+    ...over,
+  });
+  const german = [
+    msg("viewer", "Hey Jennifer, dein letzter Post war der Wahnsinn"),
+    msg("creator", "Danke dir!! Freut mich total 🥹"),
+    msg("viewer", "[paid 30 coins for a commission]", { metadata: { paymentReaction: "commission" } }),
+    msg("viewer", "Kannst du mir was Exklusives schicken?"),
+  ];
+  const persona = slurpAssistChatContext({
+    messages: german,
+    seat: "persona",
+    creatorName: "Jennifer Kipsch",
+    viewerName: "Gunter",
+    supportName: "Slurp Support",
+  });
+  assert.equal(
+    persona,
+    [
+      "You write as Gunter to Jennifer Kipsch, a Creator on Slurp.",
+      "The chat so far (newest last). The newest line is your own and has no answer yet: write a follow-up, in the language of the chat.",
+      "Gunter: Hey Jennifer, dein letzter Post war der Wahnsinn",
+      "Jennifer Kipsch: Danke dir!! Freut mich total 🥹",
+      "(Gunter paid 30 coins for a commission)",
+      "Gunter: Kannst du mir was Exklusives schicken?",
+    ].join("\n"),
+  );
+  const creator = slurpAssistChatContext({
+    messages: german,
+    seat: "creator",
+    creatorName: "Jennifer Kipsch",
+    viewerName: "Gunter",
+    supportName: "Slurp Support",
+  });
+  assert.match(
+    creator,
+    /^You write as Jennifer Kipsch, a Creator on Slurp, to Gunter\.\nThe chat so far \(newest last\)\. Answer the newest line/u,
+  );
+  // Support: its own lines carry the Support name; the Creator's newest line is answered as staff.
+  const support = slurpAssistChatContext({
+    messages: [
+      msg("viewer", "Hi Mira, quick check-in from the Slurp team.", {
+        metadata: { sceneSpeaker: "Pia from Slurp", supportVoice: true },
+      }),
+      msg("creator", "oh hi! all good, a bit tired tbh"),
+    ],
+    seat: "support",
+    creatorName: "Mira Vale",
+    viewerName: null,
+    supportName: "Pia from Slurp",
+  });
+  assert.match(support, /^You write as Pia from Slurp, Slurp's own staff, to Mira Vale/u);
+  assert.match(support, /Pia from Slurp: Hi Mira[\s\S]*Mira Vale: oh hi![\s\S]*$/u);
+  assert.match(support, /Answer the newest line/u);
+  // Only the newest 8 lines, and under the assist's context limit however long the chat is.
+  const long = Array.from({ length: 30 }, (_, i) => msg(i % 2 ? "creator" : "viewer", `line ${i} ${"x".repeat(400)}`));
+  const clipped = slurpAssistChatContext({
+    messages: long,
+    seat: "persona",
+    creatorName: "Mira",
+    viewerName: "Lena",
+    supportName: "Slurp Support",
+  });
+  assert.ok(clipped.length <= 2000, `context fits: ${clipped.length}`);
+  assert.match(clipped, /line 29/u);
+  assert.doesNotMatch(clipped, /line 21 /u);
+  assert.match(
+    slurpAssistChatContext({
+      messages: [],
+      seat: "persona",
+      creatorName: "Mira",
+      viewerName: null,
+      supportName: "Slurp Support",
+    }),
+    /^You write to Mira, a Creator on Slurp\.\nNothing has been said yet/u,
+  );
+  // The prompt: the chat reaches the model, and Support is never written as a fan.
+  const [system, user] = buildSlpAssistTextMessages({
+    mode: "write",
+    field: "support",
+    context: support,
+    name: "Mira Vale",
+  });
+  assert.match(system!.content, /Write it as Slurp Support, Slurp's own staff team, to Mira Vale/u);
+  assert.doesNotMatch(system!.content, /as a fan would/u);
+  assert.match(user!.content, /# Nearby\nYou write as Pia from Slurp/u);
+  const [dmSystem, dmUser] = buildSlpAssistTextMessages({
+    mode: "write",
+    field: "dm",
+    context: persona,
+    name: "Jennifer Kipsch",
+  });
+  assert.match(dmSystem!.content, /Use the language of the chat/u);
+  assert.match(dmUser!.content, /Kannst du mir was Exklusives schicken\?/u);
 }
 
 console.log("slurp2 7c fixes regression passed");

@@ -20,7 +20,7 @@ export const SLP_ASSIST_FIELDS = {
   bio: { what: "their profile bio on their Slurp page", voice: "creator", max: 500 },
   caption: { what: "the caption of a feed post", voice: "creator", max: 2000 },
   story: { what: "the one short line on a Story picture", voice: "creator", max: 280 },
-  reply: { what: "their direct message to a fan", voice: "creator", max: 1000 },
+  reply: { what: "their next direct message in a chat", voice: "creator", max: 1000 },
   voice: {
     what: "how they talk on their page (their stage voice), for the people writing as them",
     voice: "about",
@@ -41,7 +41,8 @@ export const SLP_ASSIST_FIELDS = {
   chapter: { what: "what happens next in their storyline, one short line", voice: "about", max: 160 },
   brief: { what: "a commission brief: what the fan asks the Creator to make for them", voice: "player", max: 1000 },
   dm: { what: "the fan's direct message to the Creator", voice: "player", max: 1000 },
-} as const satisfies Record<string, { what: string; voice: "creator" | "player" | "about"; max: number }>;
+  support: { what: "Slurp Support's direct message to a Creator", voice: "staff", max: 1000 },
+} as const satisfies Record<string, { what: string; voice: "creator" | "player" | "about" | "staff"; max: number }>;
 export type SlpAssistField = keyof typeof SLP_ASSIST_FIELDS;
 export const SLP_ASSIST_FIELD_NAMES = Object.keys(SLP_ASSIST_FIELDS) as [SlpAssistField, ...SlpAssistField[]];
 

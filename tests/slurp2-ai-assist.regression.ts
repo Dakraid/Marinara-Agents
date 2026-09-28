@@ -247,7 +247,12 @@ assert.match(guidance, /<SlpTextAssist[\s\S]*?generate\.mutateAsync/u, "Write wi
 assert.doesNotMatch(guidance, /generateLabel/u);
 assert.match(client("features/messages/commissions/SlpCommissions.tsx"), /<SlpTextAssist field="brief"/u);
 const threadComposer = client("features/messages/SlpThreadComposer.tsx");
-assert.match(threadComposer, /toolTab === "write"[\s\S]*?field=\{ownsCreator \? "reply" : "dm"\}/u, "DM drafts");
+// 7c M-004: the DM draft also knows the seat (Support writes as staff) and gets the chat as context.
+assert.match(
+  threadComposer,
+  /toolTab === "write"[\s\S]*?field=\{ownsCreator \? "reply" : asSupport \? "support" : "dm"\}[\s\S]*?context=\{slurpAssistChatContext\(/u,
+  "DM drafts",
+);
 assert.match(client("features/messages/slp-thread-view-model.ts"), /id: "write"/u);
 assert.match(client("features/projects/SlpArcChapterControls.tsx"), /<SlpTextAssist\s+field="chapter"/u);
 assert.match(client("modules/post/SlpPostEditSheet.tsx"), /ctx\.textAssist\(\{/u, "editing a post");
