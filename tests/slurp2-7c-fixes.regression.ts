@@ -17,6 +17,7 @@ import {
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-messaging.ts";
 import { slurpAssistChatContext } from "../packages/slurp2/src/engine/packages/client/src/slp/features/messages/slp-assist-chat-context.ts";
 import { buildSlpAssistTextMessages } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/assist/slp-assist-prompt.ts";
+import { slurpAudienceSubscriptionDecision } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-audience-subscription.ts";
 import { slurp2Source } from "./slurp2-source.ts";
 
 const root = new URL("../packages/slurp2/src/engine/packages/", import.meta.url);
@@ -234,6 +235,31 @@ const at = (days: number) => new Date(T0 + days * 86_400_000);
   });
   assert.match(dmSystem!.content, /Use the language of the chat/u);
   assert.match(dmUser!.content, /Kannst du mir was Exklusives schicken\?/u);
+}
+
+// M-003. The audience pass: a closed shared page takes no new subscriber and renews nobody; a paid
+// week still runs out as usual. The same fan on an open page would subscribe or renew.
+{
+  const day = new Date("2026-09-28T12:00:00.000Z");
+  const fan = {
+    memberId: "fan-1",
+    creatorAccountId: "page-mk",
+    stage: "follower" as const,
+    spendTier: "whale" as const,
+    weeklyBudget: 500,
+    subConversionPerDay: 1,
+    price: 20,
+    paidThroughAt: null,
+    renewChance: 1,
+  };
+  assert.equal(slurpAudienceSubscriptionDecision(fan, day), "subscribe", "control: an eager follower subscribes");
+  assert.equal(slurpAudienceSubscriptionDecision({ ...fan, closed: true }, day), "none");
+  const paidOut = { ...fan, stage: "subscriber" as const, paidThroughAt: "2026-09-27T12:00:00.000Z" };
+  assert.equal(slurpAudienceSubscriptionDecision(paidOut, day), "renew", "control: a paid-out subscriber renews");
+  assert.equal(slurpAudienceSubscriptionDecision({ ...paidOut, closed: true }, day), "lapse");
+  const stillPaid = { ...paidOut, paidThroughAt: "2026-09-30T12:00:00.000Z", closed: true };
+  assert.equal(slurpAudienceSubscriptionDecision(stillPaid, day), "none", "what was paid runs out as usual");
+  assert.match(server("features/world/slp-world-operation.ts"), /closed: closedPages\.has\(account\.id\)/u);
 }
 
 console.log("slurp2 7c fixes regression passed");

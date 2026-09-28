@@ -11,7 +11,7 @@
  */
 import { slurpCoupleBuzz } from "../../modules/projects/slp-creator-couples.js";
 import { slurpUnscheduledCommissionDeliveries } from "../../modules/messages/slp-messaging.js";
-import { advanceSlurpCreatorTies } from "../projects/slp-projects-contract.js";
+import { advanceSlurpCreatorTies, readSlurpClosedCouplePageIds } from "../projects/slp-projects-contract.js";
 import {
   slurpCommissionQuote,
   slurpDynamicPriceTarget,
@@ -424,6 +424,7 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
       };
       /** Resolved once per distinct member per tick: the Fan Type is what decides money now. */
       const fanTypeFor = new Map<string, SlurpFanType | null>();
+      const closedPages = await readSlurpClosedCouplePageIds(db).catch(() => new Set<string>());
       for (const account of accounts) {
         await yieldToEngine();
         const price = await noodle.getCreatorSubscriptionPrice(account.id).catch(() => 0);
@@ -450,6 +451,7 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
               interactions: tie.interactions,
               followedAt: tie.followedAt,
               renewChance: fanType.funnel.renewChance,
+              closed: closedPages.has(account.id),
             },
             until,
             tuning.funnel,
