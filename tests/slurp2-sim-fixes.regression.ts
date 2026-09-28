@@ -10,6 +10,11 @@ import {
   slurpStyledImagePrompt,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/base/media/slp-image-prompt.ts";
 import {
+  parseSlpAppearanceCandidate,
+  slpAppearanceFallback,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/creators/slp-appearance-profile.ts";
+import { compileSlurpFlavourBrief } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/creators/slp-creator-flavour.ts";
+import {
   LEGACY_SLURP_DISCOVERY_TAG_SEED,
   SLURP_DISCOVERY_TAG_SEED,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/discovery/slp-discovery-profile.ts";
@@ -122,6 +127,63 @@ const read = (path: string) => readFileSync(new URL(path, root), "utf8");
     "only an untouched tag list gains the new group",
   );
   assert.match(read("client/src/slp/features/discovery/slp-discovery.ts"), /id: "look"/u);
+}
+
+// --- F4 appearance: a true card quote is enough, and a failed extraction still leaves a look.
+{
+  const raven =
+    "Raven Nyx is a 23-year-old human woman goth e-girl. Pale skin, black lipstick, a dyed black bob and a silver septum ring. She streams horror games at night.";
+  const answer = (appearance: string, evidence: string) => JSON.stringify({ appearance, evidence, confidence: "high" });
+  // The sim's rejected pair: the quote is verbatim, but shares no word of four letters with the look.
+  const look = "Pale skin, black lipstick, dyed black bob, silver septum ring";
+  const parsed = parseSlpAppearanceCandidate(answer(look, "is a 23-year-old human woman goth e-girl"), raven, false);
+  assert.equal(parsed?.text, look, "a verbatim quote is accepted");
+  assert.equal(parsed?.confidence, "medium", "without a shared word it is not high confidence");
+  assert.ok(
+    parseSlpAppearanceCandidate(
+      answer(look, "Raven Nyx is a 23\u2011year\u2011old human woman goth e\u2011girl."),
+      raven,
+      false,
+    ),
+    "a copy with other hyphens and a full stop is still the quote",
+  );
+  assert.equal(
+    parseSlpAppearanceCandidate(answer(look, "has green hair"), raven, false),
+    null,
+    "an invented quote is not",
+  );
+
+  const dragon =
+    "Vaelith is a dragon, 34 in human-equivalent years, who lives as an anthro dragon: tall, broad, covered in obsidian-black scales that shade to molten gold on the underbelly, two swept-back ivory horns, leathery wings with a ten-foot span (folded most of the time because doorways), a long thick tail with a spade tip, slit-pupil gold eyes, claws he files blunt for his phone. Lives in a converted mountain observatory. Hoards vintage fountain pens.";
+  const fallback = slpAppearanceFallback(dragon) ?? "";
+  for (const part of ["scales", "horns", "wings", "tail", "claws"]) assert.match(fallback, new RegExp(part, "u"));
+  assert.doesNotMatch(fallback, /fountain pens/u, "the fallback keeps body sentences only");
+  assert.equal(slpAppearanceFallback("Loves jazz. Runs a bakery. Hates Mondays."), "Loves jazz. Runs a bakery.");
+  assert.equal(slpAppearanceFallback(""), null);
+
+  const service = read("server/src/slp/features/media/slp-appearance-service.ts");
+  assert.match(service, /const fallback = slpAppearanceFallback\(sourceText\)/u);
+  assert.match(service, /if \(!response\) return fallback!;/u, "a failed call still returns a look");
+  assert.match(
+    service,
+    /return save\(\{ text: fallback, source: "description", confidence: "medium" \}\);/u,
+    "an unusable answer is saved once, so the next post does not ask again",
+  );
+
+  // F6 the brief keeps the whole anatomy sentence.
+  const brief = compileSlurpFlavourBrief(
+    {
+      accountId: "dragon",
+      name: "Vaelith",
+      card: { description: dragon },
+      anchors: null,
+      ownLines: [],
+      steering: null,
+    } as never,
+    { use: "post", sequence: 0 },
+  );
+  for (const part of ["wings", "tail", "claws", "gold eyes"])
+    assert.match(brief.text, new RegExp(part, "u"), `the brief keeps ${part}`);
 }
 
 console.log("slurp2-sim-fixes regression passed");

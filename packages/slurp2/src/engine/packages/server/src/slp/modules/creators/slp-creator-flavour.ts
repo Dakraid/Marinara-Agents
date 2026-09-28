@@ -25,6 +25,7 @@ import type { SlpCreatorSteering, SlpSteeringMood } from "../../../../../shared/
 import type { SlurpCanonAnchors } from "../feed/slp-post-beat.js";
 import { slurpWeightedPick } from "../feed/slp-weighted.js";
 import { SLURP_NEVER_PATTERN } from "../feed/slp-life-moments.js";
+import { SLP_BODY_WORDS } from "./slp-appearance-profile.js";
 
 export type SlurpFlavourUse = "post" | "story" | "dm" | "comment" | "delivery";
 
@@ -71,6 +72,8 @@ const BITS_PER_USE: Record<SlurpFlavourUse, number> = { post: 4, story: 3, dm: 3
 const CORE_DESCRIPTION_MAX = 360;
 const CORE_PERSONALITY_MAX = 240;
 const SENTENCE_MAX = 220;
+/** A body sentence is kept whole up to this; past it the card is a wall of text, not a sentence. */
+const BODY_SENTENCE_MAX = 900;
 const SAMPLE_MIN = 12;
 const SAMPLE_MAX = 170;
 /** Own lines this recent are already in the prompt's history; samples come from further back. */
@@ -107,7 +110,12 @@ function cardSentences(value: string | undefined, name: string): string[] {
     .split(/(?<=[.!?])\s+|\n+/u)
     .map(clean)
     .filter((sentence) => sentence.length >= 8 && !/\{\{\s*user\s*\}\}|<\s*start\s*>/iu.test(sentence))
-    .map((sentence) => (sentence.length > SENTENCE_MAX ? `${sentence.slice(0, SENTENCE_MAX - 1).trim()}…` : sentence));
+    .map((sentence) => {
+      // A body sentence stays whole: furry and scalie cards put the whole anatomy in one comma list,
+      // and the cap cut a dragon's wings, tail and claws out of every prompt.
+      const max = SLP_BODY_WORDS.test(sentence) ? BODY_SENTENCE_MAX : SENTENCE_MAX;
+      return sentence.length > max ? `${sentence.slice(0, max - 1).trim()}…` : sentence;
+    });
 }
 
 function takeUpTo(sentences: string[], max: number): { taken: string[]; rest: string[] } {

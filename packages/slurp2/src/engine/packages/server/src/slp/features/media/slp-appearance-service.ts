@@ -9,12 +9,14 @@ import { createSlurpStorage } from "../../data/slp-storage.js";
 import { resolveCreatorSourceSnapshot } from "../../data/creators/slp-source-resolve.js";
 import { resolveSlurpTextConnection } from "../../base/identity/slp-connection.js";
 import { slpResolveCardMacros } from "../../base/prompting/slp-prompt-safety.js";
+import { logger } from "../../../lib/logger.js";
 import {
   appearanceEvidenceFromSource,
   appearanceSourceAccount,
   createSlpAppearanceProfile,
   parseSlpAppearanceCandidate,
   resolveSlpAppearanceProfile,
+  slpAppearanceFallback,
   shouldAutoAcceptSlpAppearance,
 } from "../../modules/creators/slp-appearance-profile.js";
 import type { SlpAppearanceProfileMode } from "../../../../../shared/src/slp/slp-social.types.js";
@@ -77,9 +79,35 @@ async function resolveImageAppearanceOnce(input: Parameters<typeof resolveImageA
     ? `data:image/${avatarBase64.startsWith("/9j/") ? "jpeg" : avatarBase64.startsWith("UklG") ? "webp" : "png"};base64,${avatarBase64}`
     : null;
   if (!sourceText.trim() && !image) throw new Error(MISSING_APPEARANCE);
+  // A failed or unusable extraction never means "no picture": the card's own body sentences stand in.
+  // An unusable answer is saved (for review), so the next post does not call the model again; a
+  // thrown call is not, so a passing network or provider problem gets another try next time.
+  const fallback = slpAppearanceFallback(sourceText);
+  const save = async (candidate: { text: string; source: "description" | "avatar"; confidence: "high" | "medium" }) => {
+    const profile = createSlpAppearanceProfile({
+      text: candidate.text,
+      source: candidate.source,
+      sourceEntityId: sourceAccount.entityId,
+      sourceRevisionToken: evidence.sourceRevisionToken,
+      confidence: candidate.confidence,
+      accepted: shouldAutoAcceptSlpAppearance(input.mode, candidate.confidence),
+      now: new Date().toISOString(),
+    });
+    const saved = await storage.saveNoodlerAppearanceProfile(input.account.id, profile, input.regenerate);
+    if (!saved) throw new Error("The character card changed while preparing its appearance. Try again.");
+    return (
+      resolveSlpAppearanceProfile({
+        stageAppearance: saved.settings.stage?.appearance,
+        profile: saved.settings.appearanceProfile,
+        evidence,
+      }).text ?? candidate.text
+    );
+  };
   const connection = await resolveSlurpTextConnection(createConnectionsStorage(input.db), input.connectionId);
-  if (!connection)
+  if (!connection) {
+    if (fallback) return fallback;
     throw new Error("Set up a Slurp text connection or add a written appearance before generating pictures.");
+  }
   const provider = createLLMProvider(
     connection.provider,
     resolveBaseUrl(connection),
@@ -105,33 +133,25 @@ async function resolveImageAppearanceOnce(input: Parameters<typeof resolveImageA
   ];
   const options = { model: connection.model, maxTokens: 500, stream: false } as const;
   let usedImage = Boolean(image);
-  const response = await provider.chatComplete(messages, options).catch(async (error: unknown) => {
-    if (!image) throw error;
-    if (!sourceText.trim()) throw new Error("A vision-capable text connection or written appearance is required.");
-    usedImage = false;
-    return provider.chatComplete(
-      messages.map((message) => ({ role: message.role, content: message.content })),
-      options,
-    );
-  });
+  const response = await provider
+    .chatComplete(messages, options)
+    .catch(async (error: unknown) => {
+      if (!image) throw error;
+      if (!sourceText.trim()) throw new Error("A vision-capable text connection or written appearance is required.");
+      usedImage = false;
+      return provider.chatComplete(
+        messages.map((message) => ({ role: message.role, content: message.content })),
+        options,
+      );
+    })
+    .catch((error: unknown) => {
+      if (!fallback) throw error;
+      logger.warn(error, "[slurp] Appearance extraction failed; using the card's own description for this picture");
+      return null;
+    });
+  if (!response) return fallback!;
   const candidate = parseSlpAppearanceCandidate(response.content ?? "", sourceText, usedImage);
-  if (!candidate) throw new Error(MISSING_APPEARANCE);
-  const profile = createSlpAppearanceProfile({
-    text: candidate.text,
-    source: candidate.source,
-    sourceEntityId: sourceAccount.entityId,
-    sourceRevisionToken: evidence.sourceRevisionToken,
-    confidence: candidate.confidence,
-    accepted: shouldAutoAcceptSlpAppearance(input.mode, candidate.confidence),
-    now: new Date().toISOString(),
-  });
-  const saved = await storage.saveNoodlerAppearanceProfile(input.account.id, profile, input.regenerate);
-  if (!saved) throw new Error("The character card changed while preparing its appearance. Try again.");
-  return (
-    resolveSlpAppearanceProfile({
-      stageAppearance: saved.settings.stage?.appearance,
-      profile: saved.settings.appearanceProfile,
-      evidence,
-    }).text ?? candidate.text
-  );
+  if (candidate) return save(candidate);
+  if (!fallback) throw new Error(MISSING_APPEARANCE);
+  return save({ text: fallback, source: "description", confidence: "medium" });
 }
