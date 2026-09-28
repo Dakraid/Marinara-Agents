@@ -224,6 +224,37 @@ export function SlpImagesPanel(page: SlpBackstagePageProps) {
             ))}
           </select>
         </Field>
+        {/* Same control as the Engine's "Prompt Model": which LLM rewrites a picture prompt first. */}
+        <Toggle
+          settingKey="enableImageInterpretation"
+          label={t("ui.slurp.settings.images.enhancePrompts")}
+          detail={t("ui.slurp.settings.images.enhancePromptsDetail")}
+          value={settings.enableImageInterpretation}
+          onChange={(value) => update("enableImageInterpretation", value)}
+        />
+        {settings.enableImageInterpretation && (
+          <Field
+            settingKey="imagePromptConnectionId"
+            label={t("ui.slurp.settings.images.promptModel")}
+            detail={t("ui.slurp.settings.images.promptModelDetail")}
+          >
+            <select
+              value={settings.imagePromptConnectionId ?? ""}
+              disabled={connectionsQuery.isLoading || connectionsQuery.isError || updateSettings.isPending}
+              onChange={(event) => void update("imagePromptConnectionId", event.target.value || null)}
+              className="min-h-11 w-full rounded-lg border border-[var(--slurp-outline)] bg-[var(--slurp-canvas)] px-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 sm:text-sm"
+            >
+              <option value="">{t("ui.slurp.settings.images.promptModelDefault")}</option>
+              {(connectionsQuery.data ?? [])
+                .filter((connection) => connection.provider !== "image_generation")
+                .map((connection) => (
+                  <option key={connection.id} value={connection.id}>
+                    {connection.name ?? connection.model ?? connection.id}
+                  </option>
+                ))}
+            </select>
+          </Field>
+        )}
         <SettingAnchor settingKey="imageWidth">
           <SettingAnchor settingKey="imageHeight">
             <ShapeSetting
