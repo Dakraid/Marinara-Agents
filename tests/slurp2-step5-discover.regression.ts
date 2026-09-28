@@ -143,10 +143,7 @@ assert.match(
   client("app/screens/slp-hub-view.ts"),
   /isSlurpStory\(post\) && new Date\(post\.createdAt\)\.getTime\(\) >= cutoff/u,
 );
-assert.match(
-  client("app/screens/slp-hub-view.ts"),
-  /export function slurpLiveStories\(/u,
-);
+assert.match(client("app/screens/slp-hub-view.ts"), /export function slurpLiveStories\(/u);
 // One-tap Subscribe with the spend moment; step 6.5: cancel is one tap + an Undo toast.
 assert.match(card, /playSlpSpendMoment\(origin\)/u);
 assert.match(card, /showSlpSubscriptionCancelledToast/u);

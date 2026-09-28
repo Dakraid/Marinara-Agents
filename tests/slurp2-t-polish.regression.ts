@@ -17,13 +17,19 @@ const client = (path: string) => slurp2Source(`packages/slurp2/src/engine/packag
 const server = (path: string) => slurp2Source(`packages/slurp2/src/engine/packages/server/src/slp/${path}`);
 
 // --- Locked teaser: the post's own line wins -------------------------------------------------------
-const post = (content: string | null, metadata: Record<string, unknown> | null = null, title: string | null = null) => ({
+const post = (
+  content: string | null,
+  metadata: Record<string, unknown> | null = null,
+  title: string | null = null,
+) => ({
   title,
   content,
   metadata,
 });
 assert.equal(
-  slurpLockedPostTeaser(post("Full set inside.", { lockedTeaser: "  You asked, I delivered. Friday's drop is here.  " })),
+  slurpLockedPostTeaser(
+    post("Full set inside.", { lockedTeaser: "  You asked, I delivered. Friday's drop is here.  " }),
+  ),
   "You asked, I delivered. Friday's drop is here.",
   "the generated teaser is used as written (trimmed)",
 );
@@ -37,12 +43,17 @@ const long = slurpLockedPostTeaser(post(`${"so this took all afternoon and three
 assert.ok(long.length <= 90 && long.endsWith("…"), `a long opening is cut at a word: ${long}`);
 assert.doesNotMatch(long, /\s…$/u);
 // Two different old posts no longer share one line.
-assert.notEqual(slurpLockedPostTeaser(post("Beach set, part two.")), slurpLockedPostTeaser(post("Knight cat sketches.")));
+assert.notEqual(
+  slurpLockedPostTeaser(post("Beach set, part two.")),
+  slurpLockedPostTeaser(post("Knight cat sketches.")),
+);
 // The fixed line (null) only when there is nothing of the post's own to use.
 assert.equal(slurpLockedPostTeaser(post(null)), null);
 assert.equal(slurpLockedPostTeaser(post("   ")), null);
 assert.equal(
-  slurpLockedPostTeaser(post("Behind the scenes: the cold water shoot!", null, "Behind the scenes — the cold water shoot")),
+  slurpLockedPostTeaser(
+    post("Behind the scenes: the cold water shoot!", null, "Behind the scenes — the cold water shoot"),
+  ),
   null,
   "an opening that only repeats the title shown above it falls back",
 );
@@ -65,9 +76,18 @@ assert.match(prompt, /reveals nothing the lock hides/u);
 assert.match(prompt, /if \(access !== "locked" \|\| !teaser\) return \{\};/u);
 assert.match(prompt, /protectBoundedCreatorGeneratedText\(teaser, \.\.\.protect, SLP_LOCKED_TEASER_MAX_LENGTH\)/u);
 assert.match(generation, /askTeaser: input\.request\.access === "locked"/u);
-assert.match(generation, /slurpLockedTeaserMetadata\(input\.request\.access, generated\.teaser, disclosureMode, publicIdentity\)/u);
-assert.match(server("features/viewer/slp-viewer-context.ts"), /teaser: locked \? slurpLockedPostTeaser\(post\) : null/u);
-assert.match(client("modules/post/SlpLockedPostCard.tsx"), /\{lockedTeaser \?\?\s+localizeUi\("ui\.slurp\.locked\.teaser"/u);
+assert.match(
+  generation,
+  /slurpLockedTeaserMetadata\(input\.request\.access, generated\.teaser, disclosureMode, publicIdentity\)/u,
+);
+assert.match(
+  server("features/viewer/slp-viewer-context.ts"),
+  /teaser: locked \? slurpLockedPostTeaser\(post\) : null/u,
+);
+assert.match(
+  client("modules/post/SlpLockedPostCard.tsx"),
+  /\{lockedTeaser \?\?\s+localizeUi\("ui\.slurp\.locked\.teaser"/u,
+);
 
 // --- Story ring: live Story only; new until every live one is watched --------------------------------
 const story = (creatorId: string, postId: string, hoursAgo: number, watched: boolean): SlpLiveStory => ({
@@ -101,7 +121,10 @@ assert.match(host, /slpStoryRings\(live\)/u);
 assert.match(host, /storyLifetimeHours \?\? 72/u);
 assert.match(host, /onNavigate\(\{ mode: "creator", view: "profile", accountId: creatorId \}\)/u);
 assert.match(client("modules/chrome/SlpShell.tsx"), /<SlpStoryRingProvider value=\{storyRings\}>/u);
-assert.match(client("app/screens/slp-hub-view.ts"), /isSlurpStory\(post\) && new Date\(post\.createdAt\)\.getTime\(\) >= cutoff/u);
+assert.match(
+  client("app/screens/slp-hub-view.ts"),
+  /isSlurpStory\(post\) && new Date\(post\.createdAt\)\.getTime\(\) >= cutoff/u,
+);
 const ringed = [
   "modules/creator/SlpCreatorProfileCard.tsx", // Discover cards, rails, suggested row, subscriptions
   "modules/post/SlpPostCard.tsx", // post headers
@@ -111,7 +134,10 @@ const ringed = [
   "features/messages/SlpThreadDrawer.tsx",
 ];
 for (const path of ringed) assert.match(client(path), /<SlpStoryRingAvatar creatorId=/u, path);
-assert.match(client("features/messages/SlpMessages.tsx"), /creatorId=\{toCreator \? null : thread\.creatorAccountId\}/u);
+assert.match(
+  client("features/messages/SlpMessages.tsx"),
+  /creatorId=\{toCreator \? null : thread\.creatorAccountId\}/u,
+);
 const surface = client("features/creators/SlpProfileSurface.tsx");
 assert.match(surface, /\{!editing && heroRing && <SlpRingGlint seen=\{heroRing === "seen"\} \/>\}/u);
 assert.doesNotMatch(surface, /\{!editing && <SlpRingGlint \/>\}/u, "the hero no longer rings without a Story");
@@ -128,15 +154,24 @@ const hub = client("app/screens/SlpScreenHub.tsx");
 assert.match(hub, /cn\(SLP_CARD_STACK_CLASS, "px-3 pb-6/u, "the feed list");
 assert.match(hub, /<div className=\{SLP_CARD_STACK_CLASS\}>\s+\{index === dividerIndex/u, "a post, its ad and the row");
 assert.doesNotMatch(client("app/screens/SlpScreenSuggestedCreators.tsx"), /className="py-1"/u);
-assert.match(client("app/screens/SlpHubDiscover.tsx"), /<div className=\{SLP_CARD_STACK_CLASS\}>\s+\{visibleSearchResults/u);
+assert.match(
+  client("app/screens/SlpHubDiscover.tsx"),
+  /<div className=\{SLP_CARD_STACK_CLASS\}>\s+\{visibleSearchResults/u,
+);
 assert.match(client("app/screens/SlpProfilePostCards.tsx"), /cn\(SLP_CARD_STACK_CLASS, "px-3 pt-4/u);
 assert.match(client("app/screens/SlpScreenProfile.tsx"), /cn\(SLP_CARD_STACK_CLASS, "mx-3 mt-4/u);
 assert.doesNotMatch(client("app/screens/SlpProfilePostCards.tsx"), /"p-3 @min-\[680px\]:px-0"/u);
 
 // --- The glass top bar -------------------------------------------------------------------------------
 assert.match(client("base/chrome/SlpChrome.tsx"), /export const SLP_TOP_BAR_CLASS = cn\([\s\S]*?SLP_BAR_GLASS_CLASS,/u);
-assert.match(client("app/screens/SlpHomeHelpers.tsx"), /"flex h-14 shrink-0 items-center gap-2 px-2",\s+SLP_TOP_BAR_CLASS,/u);
-assert.match(client("features/messages/SlpMessages.tsx"), /<header className=\{cn\("flex min-h-14[^"]*", SLP_TOP_BAR_CLASS\)\}>/u);
+assert.match(
+  client("app/screens/SlpHomeHelpers.tsx"),
+  /"flex h-14 shrink-0 items-center gap-2 px-2",\s+SLP_TOP_BAR_CLASS,/u,
+);
+assert.match(
+  client("features/messages/SlpMessages.tsx"),
+  /<header className=\{cn\("flex min-h-14[^"]*", SLP_TOP_BAR_CLASS\)\}>/u,
+);
 assert.match(hub, /SLP_TOP_BAR_CLASS,\s+"sticky top-0 @min-\[1024px\]:hidden"/u);
 
 console.log("slurp2 T polish: ok");
