@@ -12,7 +12,7 @@ import { type SlpAccount, type SlpInteraction } from "../../../../../shared/src/
 import { cn } from "../../../lib/utils";
 import type { ChatImage } from "../../../hooks/use-gallery";
 import { useNearViewportSlurpMediaSrc } from "../../base/media/slp-media-src";
-import { Avatar, SLP_IMG_FRAME_CLASS, slpImgFade } from "../../base/chrome/SlpChrome";
+import { Avatar } from "../../base/chrome/SlpChrome";
 import { playSlpPop } from "../sparkle/SlpSparkle";
 import { slpTagClass } from "../chrome/SlpButton";
 import { SlpPostPartnership, SlpReachBadge } from "./SlpPostPartnership";
@@ -36,6 +36,7 @@ import { SlurpLikedBy } from "../audience/SlpFanCard";
 import { PostImageFrame } from "../../base/media/SlpPostImageCropEditor";
 import { SlpPollCard } from "./SlpPollCard";
 import { SlpPostImageNav } from "./SlpPostImageNav";
+import { SlpPostMediaFrame } from "./SlpPostMediaFrame";
 import { SlpPostMenu } from "./SlpPostMenu";
 import { SlpReplyRow } from "./SlpReplyRow";
 import { SlpReplyComposer } from "./SlpReplyComposer";
@@ -275,10 +276,6 @@ export function SlpPostCard({
     : author;
   const postLikePending = reactionPendingFor(post.id, "like");
   const likeCount = slpPostLikeCount(post, rootPostInteractions);
-  const mediaFrame = cn(
-    surface !== "feed" ? "w-full rounded-xl aspect-[4/3] sm:aspect-[16/10]" : SLP_FEED_MEDIA_FRAME_CLASS,
-    SLP_IMG_FRAME_CLASS, // shimmers until its picture has loaded
-  );
   const imageAlt = localizeUi("ui.noodle.post.imageBy", {
     name: author?.displayName ?? localizeUi("ui.slurp.profile.fallbackUser"),
   });
@@ -470,7 +467,7 @@ export function SlpPostCard({
           <div
             ref={observePostImage}
             className={cn(
-              "relative mt-3 flex max-h-[32rem] justify-center overflow-hidden bg-black/20 text-left",
+              "relative mt-3 flex justify-center overflow-hidden bg-black/20 text-left",
               surface !== "feed" ? "w-full rounded-xl ring-1 ring-inset ring-white/10" : "-mx-4 w-[calc(100%+2rem)]",
             )}
           >
@@ -493,9 +490,7 @@ export function SlpPostCard({
                 aria-label={localizeUi("ui.noodle.noodlepostcard.openPostImage")}
               />
             )}
-            {!displayedImageUrl ? (
-              <span className={cn("block", mediaFrame)} aria-hidden="true" />
-            ) : imageCrop ? (
+            {displayedImageUrl && imageCrop ? (
               <PostImageFrame
                 src={displayedImageUrl}
                 onError={() => setFailedImageUrl(displayedImageUrl)}
@@ -503,18 +498,14 @@ export function SlpPostCard({
                 alt={imageAlt}
               />
             ) : (
-              <div className={cn("relative overflow-hidden bg-[var(--slurp-media-stage,#17131a)]", mediaFrame)}>
-                <img
-                  key={displayedImageUrl}
-                  src={displayedImageUrl}
-                  {...slpImgFade}
-                  onError={() => setFailedImageUrl(displayedImageUrl)}
-                  alt={imageAlt}
-                  loading="lazy"
-                  decoding="async"
-                  className="slp-crop h-full w-full object-cover"
-                />
-              </div>
+              // V: the frame takes the first picture's own ratio (4:5 to 1.91:1), reserved before it loads.
+              <SlpPostMediaFrame
+                src={displayedImageUrl}
+                size={post.images[0]}
+                alt={imageAlt}
+                onError={() => displayedImageUrl && setFailedImageUrl(displayedImageUrl)}
+                className={cn(SLP_FEED_MEDIA_FRAME_CLASS, surface !== "feed" && "rounded-xl")}
+              />
             )}
             {displayedImageUrl && (
               <SlpPostImageNav total={post.images.length} index={activeImageIndex} onSelect={setActiveImageIndex} />
@@ -524,6 +515,7 @@ export function SlpPostCard({
           <SlpPostImageSlot
             state={imageSlot}
             countFromMount={imageGenerationPending}
+            size={post.images[0]}
             error={typeof post.metadata?.imageGenerationError === "string" ? post.metadata.imageGenerationError : null}
             onRetry={
               ctx.generatePostImage && shownImagePrompt?.trim()

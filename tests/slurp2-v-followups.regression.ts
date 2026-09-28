@@ -5,6 +5,10 @@
  * first 1,000 subscribers moving to Seasons of life (in `slurp2-content-packs`).
  */
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { deflateSync } from "node:zlib";
 import { slurp2Source } from "./slurp2-source";
 import {
   slurpAgreeCollabInDm,
@@ -25,6 +29,15 @@ import {
   readGarnishBannerRedrawState,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/features/ads/slp-garnish-banner-redraw.ts";
 import type { GarnishAd } from "../packages/slurp2/src/engine/packages/server/src/services/garnish-ads/garnish-ads.types.ts";
+import {
+  readSlpImageSize,
+  slpImageSizeOfFile,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/base/media/slp-image-size.ts";
+import {
+  slpPostFrameStyle,
+  slpPostLoadedRatio,
+  slpPostMediaRatio,
+} from "../packages/slurp2/src/engine/packages/client/src/slp/modules/post/slp-post-ratio.ts";
 import { slurpDropClock } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-post-purpose.ts";
 
 const server = (path: string) => slurp2Source(`packages/slurp2/src/engine/packages/server/src/slp/${path}`);
@@ -243,6 +256,126 @@ const names = new Map([
     scheduler,
     /if \(settings\.inlineAdsEnabled && settings\.inlineAdsImagesEnabled\) \{\s*await redrawOldGarnishAdBanner\(app\.db, createGarnishAds\(app\.db\)\.pool, now\)/u,
   );
+}
+
+// --- 1. Adaptive post frames ------------------------------------------------------------------------
+{
+  // The server reads the size from real file headers: a whole PNG, a JPEG with a big EXIF block first,
+  // WebP (lossy, lossless, extended) and GIF.
+  const u32 = (value: number) => {
+    const bytes = Buffer.alloc(4);
+    bytes.writeUInt32BE(value);
+    return bytes;
+  };
+  const chunk = (type: string, data: Buffer) =>
+    Buffer.concat([u32(data.length), Buffer.from(type, "ascii"), data, u32(0)]);
+  const png = (width: number, height: number) =>
+    Buffer.concat([
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      chunk("IHDR", Buffer.concat([u32(width), u32(height), Buffer.from([8, 2, 0, 0, 0])])),
+      chunk("IDAT", deflateSync(Buffer.alloc(height * (1 + width * 3)))),
+      chunk("IEND", Buffer.alloc(0)),
+    ]);
+  const segment = (marker: number, body: Buffer) => {
+    const head = Buffer.from([0xff, marker, 0, 0]);
+    head.writeUInt16BE(body.length + 2, 2);
+    return Buffer.concat([head, body]);
+  };
+  const sof = Buffer.alloc(15);
+  sof.writeUInt8(8, 0);
+  sof.writeUInt16BE(1280, 1); // height
+  sof.writeUInt16BE(1024, 3); // width
+  const jpeg = Buffer.concat([
+    Buffer.from([0xff, 0xd8]),
+    segment(0xe0, Buffer.from("JFIF\0\x01\x01\0\0\x01\0\x01\0\0", "binary")),
+    segment(0xe1, Buffer.alloc(60_000, 7)), // EXIF before the frame header
+    segment(0xc4, Buffer.alloc(30, 1)), // a Huffman table is not a frame header
+    segment(0xc2, sof), // progressive frame
+    Buffer.from([0xff, 0xda]),
+  ]);
+  const riff = (body: Buffer) =>
+    Buffer.concat([Buffer.from("RIFF"), Buffer.alloc(4), Buffer.from("WEBP"), body, Buffer.alloc(8)]);
+  const vp8x = Buffer.alloc(18);
+  vp8x.write("VP8X", 0);
+  vp8x.writeUIntLE(1216 - 1, 12, 3);
+  vp8x.writeUIntLE(640 - 1, 15, 3);
+  const vp8l = Buffer.alloc(13);
+  vp8l.write("VP8L", 0);
+  vp8l[8] = 0x2f;
+  vp8l.writeUInt32LE((1080 - 1) | ((1350 - 1) << 14), 9);
+  const vp8 = Buffer.alloc(18);
+  vp8.write("VP8 ", 0);
+  vp8.set([0x9d, 0x01, 0x2a], 11);
+  vp8.writeUInt16LE(1536, 14);
+  vp8.writeUInt16LE(1024, 16);
+  const gif = Buffer.from("GIF89a\x40\x01\xf0\x00", "binary");
+  assert.deepEqual(readSlpImageSize(png(832, 1216)), { width: 832, height: 1216 });
+  assert.deepEqual(readSlpImageSize(jpeg), { width: 1024, height: 1280 });
+  assert.deepEqual(readSlpImageSize(riff(vp8x)), { width: 1216, height: 640 });
+  assert.deepEqual(readSlpImageSize(riff(vp8l)), { width: 1080, height: 1350 });
+  assert.deepEqual(readSlpImageSize(riff(vp8)), { width: 1536, height: 1024 });
+  assert.deepEqual(readSlpImageSize(gif), { width: 320, height: 240 });
+  assert.equal(readSlpImageSize(Buffer.from("not a picture at all, just text")), null);
+  assert.equal(readSlpImageSize(jpeg.subarray(0, 2_000)), null, "a cut-off JPEG is unknown, not a guess");
+  const dir = mkdtempSync(join(tmpdir(), "slp-v-size-"));
+  try {
+    writeFileSync(join(dir, "a.png"), png(1024, 1280));
+    writeFileSync(join(dir, "b.jpg"), jpeg);
+    assert.deepEqual(slpImageSizeOfFile(join(dir, "a.png")), { width: 1024, height: 1280 });
+    assert.deepEqual(slpImageSizeOfFile(join(dir, "b.jpg")), { width: 1024, height: 1280 });
+    assert.equal(slpImageSizeOfFile(join(dir, "missing.png")), null);
+    writeFileSync(join(dir, "missing.png"), png(640, 640));
+    assert.deepEqual(slpImageSizeOfFile(join(dir, "missing.png")), { width: 640, height: 640 }, "read once it lands");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+
+  // The client clamps the ratio between 4:5 and 1.91:1; no size is Slurp's 4:5.
+  assert.equal(slpPostMediaRatio({ width: 1024, height: 1280 }), 0.8);
+  assert.equal(slpPostMediaRatio({ width: 1080, height: 1080 }), 1);
+  assert.equal(slpPostMediaRatio({ width: 1216, height: 832 }), 1216 / 832, "3:2-ish stays as it is");
+  assert.equal(slpPostMediaRatio({ width: 768, height: 1365 }), 0.8, "9:16 fills the 4:5 end");
+  assert.equal(slpPostMediaRatio({ width: 3000, height: 1000 }), 1.91, "a panorama fills the wide end");
+  assert.equal(slpPostMediaRatio(null), 0.8);
+  assert.equal(slpPostMediaRatio({ width: 0, height: 100 }), 0.8);
+  const tall = slpPostFrameStyle(0.8);
+  assert.equal(tall.aspectRatio, 0.8);
+  assert.equal(tall.width, "100%");
+  assert.equal(tall.maxWidth, "calc(min(36rem, 72dvh) * 0.8000)", "never taller than the cap: narrower instead");
+  // Only a real difference moves an unknown frame; the same shape (rounding) does not.
+  assert.equal(slpPostLoadedRatio(0.8, { width: 1024, height: 1279 }), null);
+  assert.equal(slpPostLoadedRatio(0.8, { width: 1600, height: 900 }), 1600 / 900);
+  assert.equal(slpPostLoadedRatio(0.8, { width: 0, height: 0 }), null);
+
+  // Wiring: the viewer projection sends the primary picture's stored size, a carousel's extra
+  // pictures keep theirs from the post media record, shares carry it, and every post frame uses it.
+  const viewer = server("features/viewer/slp-viewer-context.ts");
+  assert.match(viewer, /slpStoredMediaSize\(post\.metadata\.noodlerMediaPath\)/u);
+  assert.match(viewer, /\.\.\.image,\s*\.\.\.size,/u);
+  assert.match(server("data/feed/slp-post-media-storage.ts"), /\.\.\.slpStoredMediaSize\(mediaPath\)/u);
+  assert.match(server("features/messages/slp-message-operation.ts"), /imageWidth: sharedSize\.width/u);
+  assert.match(server("features/messages/slp-messages-send-routes.ts"), /imageWidth: size\.width/u);
+  const client = (path: string) => slurp2Source(`packages/slurp2/src/engine/packages/client/src/slp/${path}`);
+  const card = client("modules/post/SlpPostCard.tsx");
+  assert.match(card, /<SlpPostMediaFrame\s+src=\{displayedImageUrl\}\s+size=\{post\.images\[0\]\}/u);
+  assert.match(card, /countFromMount=\{imageGenerationPending\}\s+size=\{post\.images\[0\]\}/u, "the pending slot too");
+  assert.doesNotMatch(card, /aspect-\[4\/3\] sm:aspect-\[16\/10\]/u, "profile and dialog no longer crop to 4:3");
+  assert.doesNotMatch(card, /flex max-h-\[32rem\] justify-center/u, "the container no longer cuts a tall frame");
+  const frame = client("modules/post/SlpPostMediaFrame.tsx");
+  assert.match(frame, /slpImgFade\.onLoad\(event\);/u, "the fade still runs");
+  assert.match(frame, /SLP_IMG_FRAME_CLASS/u, "the shimmer still runs");
+  assert.match(frame, /if \(!src\) return <span/u, "the frame is there before the picture");
+  assert.match(
+    client("modules/post/SlpPostHelpers.tsx"),
+    /data-slurp-image-slot="pending"[\s\S]{0,300}style=\{slpPostFrameStyle\(slpPostMediaRatio\(size\)\)\}/u,
+  );
+  assert.match(
+    client("modules/post/SlpLockedPostCard.tsx"),
+    /style=\{slpPostFrameStyle\(slpPostMediaRatio\(postImages\[0\]\)\)\}/u,
+  );
+  const shared = client("features/messages/SlpSharedPostCard.tsx");
+  assert.match(shared, /typeof meta\.imageWidth === "number"/u);
+  assert.equal((shared.match(/style=\{\{ aspectRatio: frameRatio \}\}/gu) ?? []).length, 2, "locked and open cards");
 }
 
 console.log("slurp2 V follow-ups regression passed");

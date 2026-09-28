@@ -178,7 +178,8 @@ assert.match(entry, /:where\(img\[data-slp-fade\]\[data-slp-loaded\]\) \{ opacit
 assert.match(entry, /\.slp-img-frame:not\(:has\(> img\[data-slp-loaded\]\)\) \{/u);
 assert.match(entry, /prefers-reduced-motion: reduce\) \{\s*:where\(img\[data-slp-fade\]\) \{ filter: none;/u);
 for (const file of [
-  "modules/post/SlpPostCard.tsx",
+  // V: the post card's picture moved into its adaptive frame component.
+  "modules/post/SlpPostMediaFrame.tsx",
   "app/screens/SlpHomeHelpers.tsx",
   "app/screens/SlpScreenMoments.tsx",
   "modules/story/SlpStoryTile.tsx",

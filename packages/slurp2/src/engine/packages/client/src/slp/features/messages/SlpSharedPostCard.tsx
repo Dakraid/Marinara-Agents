@@ -11,6 +11,7 @@ import { slpShowPostInPlace } from "../../modules/post/SlpPostPurposeNote";
 import { playSlpSpendMoment } from "../../modules/sparkle/SlpSparkle";
 import { useUnlockCreatorPost } from "../feed/slp-feed-contract";
 import type { SlurpMessage } from "./slp-messages-contract";
+import { slpPostMediaRatio } from "../../modules/post/slp-post-ratio";
 
 /** Waits for the author's page to render the post, then brings it into view (up to ~4 s). */
 function showPostWhenRendered(postId: string, tries = 16) {
@@ -51,6 +52,11 @@ export function SlpSharedPostCard({
   const authorName = text(meta.authorName);
   const authorId = text(meta.authorAccountId) || (message.role === "creator" ? message.senderAccountId : "");
   const price = typeof meta.price === "number" ? meta.price : null;
+  // V: the card keeps the post's own picture ratio (4:5 to 1.91:1); older shares use Slurp's 4:5.
+  const frameRatio = slpPostMediaRatio({
+    width: typeof meta.imageWidth === "number" ? meta.imageWidth : null,
+    height: typeof meta.imageHeight === "number" ? meta.imageHeight : null,
+  });
   // `previewLocked` is decided per reader on the server; older cards fall back to the post's access.
   const [unlocked, setUnlocked] = useState(false);
   const locked =
@@ -96,7 +102,8 @@ export function SlpSharedPostCard({
               // The price is on the Unlock button, like a paid message.
               unlockPrice={null}
               label={localizeUi("ui.slurp.messages.lockedPostPreview", { defaultValue: "Locked post preview" })}
-              className="aspect-[4/3] w-full"
+              className="w-full"
+              style={{ aspectRatio: frameRatio }}
             />
             {meta.access === "locked" && personaId && !ownsCreator ? (
               <SlpPrimaryButton
@@ -134,8 +141,9 @@ export function SlpSharedPostCard({
               aria-label={openLabel}
               className={cn(
                 SLP_IMG_FRAME_CLASS,
-                "relative block aspect-[4/3] w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)]",
+                "relative block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)]",
               )}
+              style={{ aspectRatio: frameRatio }}
             >
               {src && (
                 <img

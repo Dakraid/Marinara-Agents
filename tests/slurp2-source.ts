@@ -138,6 +138,8 @@ export const SLURP2_SOURCE_MODULES: Record<string, readonly string[]> = {
   ],
   "packages/client/src/components/slurp/SlurpPostCard.tsx": [
     "packages/client/src/slp/modules/post/SlpPostCard.tsx",
+    // V: the post picture's adaptive frame moved out of the card.
+    "packages/client/src/slp/modules/post/SlpPostMediaFrame.tsx",
     "packages/client/src/slp/modules/post/SlpPostHelpers.tsx",
     "packages/client/src/slp/modules/post/SlpPostTypes.tsx",
     "packages/client/src/slp/modules/post/SlpPostHooks.tsx",
@@ -153,6 +155,8 @@ export const SLURP2_SOURCE_MODULES: Record<string, readonly string[]> = {
   ],
   "packages/client/src/components/slurp/SlurpCreatorPostCard.tsx": [
     "packages/client/src/slp/modules/post/SlpPostCard.tsx",
+    // V: the post picture's adaptive frame moved out of the card.
+    "packages/client/src/slp/modules/post/SlpPostMediaFrame.tsx",
     "packages/client/src/slp/modules/post/SlpPostMenu.tsx",
     "packages/client/src/slp/modules/post/SlpReplyRow.tsx",
     "packages/client/src/slp/modules/post/SlpReplyComposer.tsx",
