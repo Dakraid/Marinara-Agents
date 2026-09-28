@@ -4969,5 +4969,10 @@
   "ui.slurp.scene.action.askLimits": "Ask about limits",
   "ui.slurp.scene.action.askOutfit": "Pick an outfit",
   "ui.slurp.scene.action.helpBio": "Help with the bio",
-  "ui.slurp.scene.action.pickFirstPost": "Plan the first post"
+  "ui.slurp.scene.action.pickFirstPost": "Plan the first post",
+  "ui.slurp.packs.content.title": "Content packs",
+  "ui.slurp.packs.content.lead": "More events, dates and storylines. Their dates go in the Calendar, their storylines in Storylines.",
+  "ui.slurp.packs.content.inside": "Inside",
+  "ui.slurp.packs.content.birthday": "Each Creator's birthday week",
+  "ui.slurp.packs.content.firstSubs": "The first 1,000 subscribers"
 }

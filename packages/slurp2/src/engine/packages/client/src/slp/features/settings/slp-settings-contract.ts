@@ -55,6 +55,8 @@ export type SlurpSettings = {
   arcCrossovers: boolean;
   storyAutomation: "manual" | "suggest" | "auto";
   arcLibrary: SlurpArcType[];
+  /** Content packs switched on or off (Backstage › Packs). A pack missing here uses its default. */
+  contentPacks: Record<string, boolean>;
   discoveryTags: Array<{ tag: string; group: string }>;
   storyImageWidth: number;
   storyImageHeight: number;

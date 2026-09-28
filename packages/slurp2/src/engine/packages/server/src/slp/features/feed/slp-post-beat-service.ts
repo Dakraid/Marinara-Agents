@@ -23,6 +23,7 @@ import {
 import { slurpUsableSharedIdeas, type SlurpSharedIdea } from "../../modules/feed/slp-shared-preseed.js";
 import { slurpLifeBeat, type SlurpLifeMomentRate } from "../../modules/feed/slp-life-moments.js";
 import { readSlurpLifeSignals } from "../../data/feed/slp-life-signals.js";
+import { planSlurpOccasionBeat } from "./slp-occasion-service.js";
 import { selectSlurpReference, slurpReferenceCandidates } from "../../modules/feed/slp-post-reference.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { planSlurpTieBeat } from "../projects/slp-projects-contract.js";
@@ -231,11 +232,22 @@ export async function planSlurpBeat(
       previewOnly: input.previewOnly,
     });
     if (tie) return tie;
+    const history = await readSlurpBeatHistory(db, input.accountId, input.at);
+    // A pack occasion running now (SlurpCon, a holiday, their birthday week): only one that fits them.
+    const occasion = await planSlurpOccasionBeat(db, {
+      accountId: input.accountId,
+      sequence: input.sequence,
+      creatorText: [input.context.canonText, ...(input.context.life?.tags ?? [])].join("\n"),
+      avoid: input.context.steering?.avoid ?? [],
+      history,
+      intents: input.intents,
+      at: input.at,
+    });
+    if (occasion) return occasion;
     const steered = slurpSteeredBeat(input.accountId, input.sequence, input.context.steering, read, input.intents);
     if (steered) return steered;
     if (!read) return null;
     const anchors = slurpAnchorsWithout(read, input.context.steering?.avoid ?? []);
-    const history = await readSlurpBeatHistory(db, input.accountId, input.at);
     // A day-to-day life moment takes some ordinary slots: only one that fits this Creator.
     if (input.context.life) {
       const { signals, usedLife } = await readSlurpLifeSignals(db, input.context.life.account, input.at);

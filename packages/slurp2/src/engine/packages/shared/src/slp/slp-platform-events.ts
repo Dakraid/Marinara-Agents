@@ -11,7 +11,8 @@ import type { SlpModifier, SlpModifierSource } from "./slp-modifier.types.js";
 
 export const SLURP_PLATFORM_EVENT_GUIDANCE_MAX = 600;
 export const slurpPlatformEventSchema = slpEventBlueprintSchema;
-export const slurpPlatformEventsSchema = z.array(slpEventBlueprintSchema).max(100);
+export const SLURP_PLATFORM_EVENTS_MAX = 100;
+export const slurpPlatformEventsSchema = z.array(slpEventBlueprintSchema).max(SLURP_PLATFORM_EVENTS_MAX);
 export type SlurpPlatformEvent = SlpEventBlueprint;
 
 const coreProvenance = (contentId: string) => ({
@@ -284,6 +285,65 @@ export function slurpRunningPlatformEventIds(
       .filter((id) => !decided.has(id)),
     ...current.filter((item) => item.status === "active").map((item) => item.blueprintId),
   ]);
+}
+
+/**
+ * The events running for one Creator at `at`, each with the window it runs in, by the same rule as
+ * the prompt above (content packs time their moments inside the window).
+ */
+export function slurpRunningPlatformEventWindows(
+  events: readonly SlurpPlatformEvent[],
+  at: Date,
+  creator: { id: string; tags?: readonly string[] },
+  occurrences: readonly (SlurpStoryPromptState["occurrences"][number] & {
+    blueprint: { contentId?: string };
+  })[],
+): { contentId: string; name: string; startsAt: number; endsAt: number; dateAt: number }[] {
+  const now = at.getTime();
+  const current = occurrences.filter((item) => Date.parse(item.startsAt) <= now && now < Date.parse(item.endsAt));
+  const decided = new Set(current.map((item) => item.blueprintId));
+  // The day an annual event is on this year (or last year's, still running), however late it was started.
+  const dayOf = (activation: { kind: string; month?: number; day?: number } | undefined, fallback: number) => {
+    if (activation?.kind !== "annual" || !activation.month || !activation.day) return fallback;
+    const thisYear = Date.UTC(at.getUTCFullYear(), activation.month - 1, activation.day);
+    return thisYear <= now ? thisYear : Date.UTC(at.getUTCFullYear() - 1, activation.month - 1, activation.day);
+  };
+  const dated = slurpActivePlatformEvents(events, at)
+    .filter((item) => !decided.has(item.id) && slurpPlatformEventTargets(item, creator))
+    .flatMap((item) => {
+      if (item.activation.kind === "window")
+        return [{ item, startsAt: Date.parse(item.activation.startsAt), endsAt: Date.parse(item.activation.endsAt) }];
+      if (item.activation.kind !== "annual") return [];
+      const { month, day, durationDays } = item.activation;
+      const today = Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate());
+      const startsAt = [0, -1]
+        .map((offset) => Date.UTC(at.getUTCFullYear() + offset, month - 1, day))
+        .find((start) => today >= start && today < start + durationDays * DAY)!;
+      return [{ item, startsAt, endsAt: startsAt + durationDays * DAY }];
+    })
+    .map(({ item, startsAt, endsAt }) => ({
+      contentId: item.contentId ?? item.id,
+      name: item.name,
+      startsAt,
+      endsAt,
+      dateAt: startsAt,
+    }));
+  const started = current
+    .filter(
+      (item) =>
+        item.status === "active" && (item.participantIds.length === 0 || item.participantIds.includes(creator.id)),
+    )
+    .map((item) => ({
+      contentId: item.blueprint.contentId ?? item.blueprintId,
+      name: item.blueprint.name,
+      startsAt: Date.parse(item.startsAt),
+      endsAt: Date.parse(item.endsAt),
+      dateAt: dayOf(
+        (item.blueprint as { activation?: { kind: string; month?: number; day?: number } }).activation,
+        Date.parse(item.startsAt),
+      ),
+    }));
+  return [...dated, ...started];
 }
 
 /**

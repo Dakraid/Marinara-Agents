@@ -22,6 +22,9 @@ import {
 } from "./slp-project.js";
 import { slpArcBlueprintSchema } from "../../../../../shared/src/slp/slp-story-engine.js";
 import { slurpLifeFits, slurpNeverSentences } from "../feed/slp-life-moments.js";
+import { slurpPackFits } from "../feed/slp-occasion-beats.js";
+import { slurpPackArcFit } from "../world/events/slp-content-packs.js";
+import type { SlpExplicitLevelName } from "../../../../../shared/src/slp/slp-spice.js";
 
 export const SLURP_ARC_TYPE_NAME_MAX_LENGTH = 80;
 
@@ -168,8 +171,23 @@ const ARC_FIT: Readonly<Record<string, { needs?: RegExp; topic?: RegExp }>> = {
   saving_up: { topic: /\bsav(e|ing)\b/iu },
 };
 
-/** Whether a library storyline fits this Creator's card (text plus tags). */
-export function slurpArcFitsCreator(type: Pick<SlurpArcType, "id">, creatorText: string): boolean {
+/**
+ * Whether a library storyline fits this Creator's card (text plus tags). A content-pack storyline
+ * also needs their spice level and hard noes (Backstage › Packs); without them it counts as Flirty
+ * with no hard noes, so an explicit one never starts for a Creator whose level is unknown.
+ */
+export function slurpArcFitsCreator(
+  type: Pick<SlurpArcType, "id" | "contentId">,
+  creatorText: string,
+  spice?: { level: SlpExplicitLevelName; hardNoes: readonly string[] },
+): boolean {
+  const pack = slurpPackArcFit(type.contentId);
+  if (pack)
+    return slurpPackFits(pack, {
+      text: creatorText,
+      level: spice?.level ?? "suggestive",
+      hardNoes: spice?.hardNoes ?? [],
+    });
   const rule = ARC_FIT[type.id];
   return !rule || slurpLifeFits(rule, { text: creatorText, never: slurpNeverSentences(creatorText) });
 }
@@ -352,6 +370,8 @@ export function slurpAutoArcPick(input: {
   source?: SlurpArcSource;
   /** The Creator's card text and tags. When given, a type that does not fit them is never picked. */
   creatorText?: string;
+  /** Their spice level and hard noes, for content-pack storylines. */
+  creatorSpice?: { level: SlpExplicitLevelName; hardNoes: readonly string[] };
 }): { type: SlurpArcType } | { generated: true } | null {
   if (input.projects.some((project) => project.status === "active" || project.status === "suggested")) return null;
   if (input.maxConcurrentAuto !== undefined && (input.concurrentAuto ?? 0) >= input.maxConcurrentAuto) return null;
@@ -364,7 +384,7 @@ export function slurpAutoArcPick(input: {
       // Knockout: a once-type this Creator already had, in any state, never comes back on its own.
       !(slurpArcTypeIsOnce(type) && input.projects.some((project) => project.typeId === type.id)) &&
       (type.tags.length === 0 || type.tags.some((tag) => creatorTags.has(tag.toLocaleLowerCase()))) &&
-      (input.creatorText === undefined || slurpArcFitsCreator(type, input.creatorText)),
+      (input.creatorText === undefined || slurpArcFitsCreator(type, input.creatorText, input.creatorSpice)),
   );
   const source = input.source ?? "library";
   if (allowed.length === 0 && source === "library") return null;

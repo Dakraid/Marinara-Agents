@@ -18,6 +18,7 @@ import {
   type SlpStoryPackPreview,
 } from "../../modules/world/events/slp-story-packs.js";
 import { projectSlpStoryCalendar } from "../../modules/world/events/slp-story-runtime.js";
+import { slurpContentPackSummaries } from "../../modules/world/events/slp-content-packs.js";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
 
 const PREVIEW_TTL_MS = 15 * 60_000;
@@ -56,6 +57,8 @@ export async function slpStoryRoutes(app: FastifyInstance, { noodle }: SlpRouteD
       arcCount: arcs.length,
       eventCount: events.length,
     })),
+    // The packs Backstage switches on and off; their on/off is the `contentPacks` setting.
+    contentPacks: slurpContentPackSummaries(),
   }));
 
   app.post("/story-packs/preview", async (req, reply) => {

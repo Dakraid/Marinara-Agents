@@ -171,6 +171,8 @@ export const SLURP_SETTINGS_NOT_RESET: readonly (keyof SlurpSettings)[] = [
   "autopurgeNextRunAt",
   "audienceReactionBank",
   "arcLibrary",
+  // The player's pack choices, like the libraries they fill (Backstage › Packs).
+  "contentPacks",
   "discoveryTags",
   "characterImageInstructions",
   "onboarding",
