@@ -20,6 +20,7 @@ import {
 } from "../../../../../shared/src/slp/slp-reach.js";
 import { NOODLER_FAN_IDENTITY_PREFIX } from "../../modules/audience/slp-fan-identity-provider.js";
 import { NOODLER_MEDIA_URL_PREFIX, slpCreatorPostMediaUrlForPersona } from "../../base/media/slp-media.js";
+import { slurpLockedPostTeaser } from "../../modules/feed/slp-post-purpose.js";
 import type { FastifyInstance } from "fastify";
 import type { SlpRouteHost } from "./slp-route-host.js";
 
@@ -138,6 +139,8 @@ export function createSlpViewerContext(
     /** This persona has watched the Story (the shelf ring means "not watched yet", R1-024). */
     watched: boolean;
     linkedPostId: string | null;
+    /** The line under the lock (see `slurpLockedPostTeaser`). Null for a post the viewer can read. */
+    teaser: string | null;
   };
 
   async function projectViewerPosts(
@@ -243,6 +246,7 @@ export function createSlpViewerContext(
             // A locked post withholds its metadata, so the price travels as its own field. It is
             // The post's own price, which the unlock route charges when the wallet is enabled.
             unlockPrice: locked ? slpCreatorUnlockPriceFromMetadata(post.metadata) : null,
+            teaser: locked ? slurpLockedPostTeaser(post) : null,
             story: post.metadata.noodlerPostType === "story",
             watched: (interactionsByPostId.get(post.id) ?? []).some(
               (interaction) =>
