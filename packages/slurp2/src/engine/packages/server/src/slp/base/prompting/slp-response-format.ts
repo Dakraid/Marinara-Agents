@@ -164,8 +164,9 @@ function slpCreatorPostSchema(
                 expression: { type: "string", maxLength: 300 },
                 visualDirection: { type: "string", maxLength: 500 },
                 outfit: { type: "string", maxLength: 300 },
+                subject: { anyOf: [{ type: "string", maxLength: 120 }, { type: "null" }] },
               },
-              required: ["wardrobeId", "setting", "action", "expression", "visualDirection", "outfit"],
+              required: ["wardrobeId", "setting", "action", "expression", "visualDirection", "outfit", "subject"],
               additionalProperties: false,
             },
           }

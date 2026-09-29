@@ -9,6 +9,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   slurpApplyImageSubject,
+  slurpImageSubjectName,
   slurpImageIdentityContext,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/base/media/slp-image-prompt.ts";
 
@@ -41,6 +42,16 @@ assert.equal(
   "makima \\(chainsaw man\\), 1girl",
 );
 
+// The post writer may tag the name with its series (NovelAI style); only for the same character.
+assert.equal(slurpImageSubjectName("fubuki (one punch man)", ["Fubuki", "Blizzard"]), "fubuki (one punch man)");
+assert.equal(
+  slurpImageSubjectName("tatsumaki (one punch man)", ["Fubuki", "Blizzard"]),
+  "Fubuki",
+  "never somebody else",
+);
+assert.equal(slurpImageSubjectName(null, ["Fubuki"]), "Fubuki");
+assert.equal(slurpImageSubjectName("", ["Fubuki"]), "Fubuki");
+
 // The enhancer's identity context: the name and the start of the card, marked as context.
 const context = slurpImageIdentityContext("Makima", `A devil hunter.  ${"Calm and in control. ".repeat(40)}`);
 assert.match(context, /^Who this is: Makima\nFrom their card \(context, do not copy\): A devil hunter\./u);
@@ -55,6 +66,12 @@ assert.match(
 );
 assert.match(service, /slurpApplyImageSubject\(finalPromptLook, subjectName, promptFamily\)/u);
 assert.match(service, /\[\s+identityContext,/u);
+assert.match(
+  service,
+  /slurpImageSubjectName\(input\.visualBrief\?\.knownAs, \[sourceName, input\.account\.displayName\]\)/u,
+);
+// The writer's name never enters the brief's text (which reaches the enhancer ungated).
+assert.doesNotMatch(read("server/src/slp/base/media/slp-visual-brief.ts"), /knownAs\}/u);
 assert.match(
   read("server/src/slp/modules/settings/slp-settings.ts"),
   /creatorImageNames: z\.record\(z\.string\(\), z\.boolean\(\)\)/u,

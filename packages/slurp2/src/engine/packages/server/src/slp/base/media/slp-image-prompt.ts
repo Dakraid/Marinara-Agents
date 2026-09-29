@@ -242,6 +242,24 @@ export function slurpApplyImageSubject(prompt: string, name: string, family: Slu
 }
 
 /**
+ * The name the picture leads with: the post writer's tagged name ("fubuki (one punch man)", player
+ * report 0.3.5) when it names the same character as the card or the page, else the card name. A
+ * writer's name for somebody else (a partner, another series) is never used.
+ */
+export function slurpImageSubjectName(knownAs: string | null | undefined, names: readonly string[]): string {
+  const written = knownAs?.replace(/\s+/gu, " ").trim() ?? "";
+  const words = (text: string) =>
+    text
+      .toLocaleLowerCase()
+      .split(/[^\p{L}\p{N}]+/u)
+      .filter((word) => word.length >= 3);
+  const own = new Set(names.flatMap(words));
+  return written && written.length <= 120 && words(written).some((word) => own.has(word))
+    ? written
+    : (names[0]?.trim() ?? "");
+}
+
+/**
  * Who the character is, for the enhancer only: the name and the start of their card, as context it
  * must not copy. The image model still gets only visible facts.
  */

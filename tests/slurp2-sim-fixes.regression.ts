@@ -132,7 +132,8 @@ const read = (path: string) => readFileSync(new URL(path, root), "utf8");
   );
   assert.equal(slurpStyledImagePrompt(`${goth}\n${brief}`, goth), `${goth}\n${brief}`, "photo Creators unchanged");
   const service = read("server/src/slp/features/media/slp-images-service.ts");
-  assert.match(service, /slurpStyledImagePrompt\(finalPromptLook, styleSource\)/u, "every picture path is styled");
+  // 0.3.5: the known character's name leads before the style is applied (finalPromptSubject).
+  assert.match(service, /slurpStyledImagePrompt\(finalPromptSubject, styleSource\)/u, "every picture path is styled");
   assert.match(service, /artStyle\?\.negative/u, "the negative prompt keeps photo and fursuit out");
 }
 

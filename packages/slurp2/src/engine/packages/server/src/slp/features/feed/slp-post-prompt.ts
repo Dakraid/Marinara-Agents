@@ -259,7 +259,7 @@ export function buildSlurpPostBlocks(input: SlurpPostPromptInput): SlurpPromptBl
       kind: "required" as const,
       text: `${
         input.allowScenePlan
-          ? "Return one JSON object with title, content, and scene. scene has wardrobeId (from the supplied wardrobe, or null), setting, action, expression, visualDirection, and outfit. The scene is the attractive, believable photograph for this caption and goes to an image model as written: write every scene field in English as concrete visible facts. setting and action make the angle concrete without changing the person, company, camera source, or access level. outfit is exactly what they wear in this photo (or what little). visualDirection is one memorable composition, light, or prop detail, not tags or policy. Do not return imagePrompt or a poll." +
+          ? "Return one JSON object with title, content, and scene. scene has wardrobeId (from the supplied wardrobe, or null), setting, action, expression, visualDirection, outfit, and subject. The scene is the attractive, believable photograph for this caption and goes to an image model as written: write every scene field in English as concrete visible facts. setting and action make the angle concrete without changing the person, company, camera source, or access level. outfit is exactly what they wear in this photo (or what little). visualDirection is one memorable composition, light, or prop detail, not tags or policy. subject is who is in the photo as an image model knows them: for a character from an existing anime, game, show or book, their name and series the way image sites tag it ('fubuki (one punch man)'); null for an original character. Do not return imagePrompt or a poll." +
             (input.sceneShots ? `\n${slurpSceneShotsInstruction(input.sceneShots)}` : "")
           : input.allowImagePrompt
             ? // The old contract asked for "subject, pose, setting, lighting, framing", which is a
@@ -479,7 +479,7 @@ export async function completeSlurpCreatorPost(
       {
         role: "user",
         content: askModelForScene
-          ? `The response was not one valid Slurp-post JSON object. Return exactly one object with title, content, ${sceneShots ? "scene, and shots" : "and scene"}. scene must contain wardrobeId, setting, action, expression, visualDirection, and outfit, written in English.${sceneShots ? ` shots is a list of exactly ${sceneShots} objects with setting, action, expression, visualDirection, and outfit.` : ""} Do not include imagePrompt or a poll. Return JSON only.`
+          ? `The response was not one valid Slurp-post JSON object. Return exactly one object with title, content, ${sceneShots ? "scene, and shots" : "and scene"}. scene must contain wardrobeId, setting, action, expression, visualDirection, outfit, and subject (a known character's name and series, or null), written in English.${sceneShots ? ` shots is a list of exactly ${sceneShots} objects with setting, action, expression, visualDirection, and outfit.` : ""} Do not include imagePrompt or a poll. Return JSON only.`
           : askModelForImagePrompt
             ? "The response was not one valid Slurp-post JSON object. Return exactly one object with title, content, and imagePrompt. title and imagePrompt must both be non-empty. Do not include a poll. Return JSON only."
             : "The response was not one valid Slurp-post JSON object. Return exactly one object with title and content only. Do not include a poll or image prompt. Return JSON only.",

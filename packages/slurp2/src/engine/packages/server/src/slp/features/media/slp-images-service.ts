@@ -42,6 +42,7 @@ import {
   selectSlpImageProviderPrompt,
   slurpApplyImageLook,
   slurpApplyImageSubject,
+  slurpImageSubjectName,
   slurpImageIdentityContext,
   slurpLookForWriter,
   slurpArtStyle,
@@ -352,7 +353,7 @@ async function generateCreatorPostImageRun(
     input.settings.creatorImageNames?.[input.account.id] !== false &&
     sourceName &&
     sourceName !== "Character"
-      ? sourceName
+      ? slurpImageSubjectName(input.visualBrief?.knownAs, [sourceName, input.account.displayName])
       : "";
   const sourceCard = sourceCharacter ? parseRecord(sourceCharacter.data) : null;
   const identityContext = subjectName
