@@ -305,6 +305,11 @@ const creator = (id: string, fields: Partial<SlurpTieCreator> = {}): SlurpTieCre
   assert.equal(slpStirDeckNeed("steer-couple", empty), "couple");
   assert.equal(slpStirDeckNeed("start-event", empty), "event");
   assert.equal(slpStirDeckNeed("set-up-couple", empty), null, "a pair needs nothing but two Creators");
+  assert.equal(
+    slpStirDeckNeed("couple-page", { ...(empty as object), couples: [{ stage: "sparks" }] } as never),
+    "datingCouple",
+    "a crush is not enough for a shared page, and the card says so",
+  );
   assert.equal(slpStirDeckNeed("invent-event", empty), null, "a made-up event needs nothing");
   assert.equal(slpStirDeckNeed("steer-couple", undefined), null, "no view yet: nothing is greyed out");
 

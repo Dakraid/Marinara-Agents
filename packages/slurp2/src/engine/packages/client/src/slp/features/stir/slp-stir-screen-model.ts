@@ -31,7 +31,11 @@ export function slpStirDeckNeed(action: SlpActionName, view: SlpStirView | undef
     case "steer-couple":
       return view.couples.length ? null : "couple";
     case "couple-page":
-      return view.couples.some((couple) => couple.stage === "dating" || couple.stage === "together") ? null : "couple";
+      return view.couples.some((couple) => couple.stage === "dating" || couple.stage === "together")
+        ? null
+        : view.couples.length
+          ? "datingCouple"
+          : "couple";
     case "push-collab":
       return view.collabs.some((collab) => collab.status === "asked") ? null : "collab";
     case "cool-rivalry":

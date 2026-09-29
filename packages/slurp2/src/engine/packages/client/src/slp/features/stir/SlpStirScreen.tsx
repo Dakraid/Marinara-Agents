@@ -283,11 +283,9 @@ function RecentPlays({
           const who = [
             ...new Set(
               play.steps.flatMap((step) =>
-                ["accountId", "aId", "bId", "fromId", "toId"].flatMap((key) =>
-                  typeof step.input[key] === "string" && names.has(step.input[key] as string)
-                    ? [names.get(step.input[key] as string)!]
-                    : [],
-                ),
+                ["accountId", "aId", "bId", "fromId", "toId", "withIds"]
+                  .flatMap((key) => [step.input[key]].flat())
+                  .flatMap((id) => (typeof id === "string" && names.has(id) ? [names.get(id)!] : [])),
               ),
             ),
           ];
