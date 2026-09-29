@@ -123,6 +123,7 @@ test("a model's own spelling, a named pick and a made-up style still make a Page
         pairs: [
           { left: "tea", right: "coffee", pick: "coffee" },
           { left: "Cats", right: "Dogs", pick: " dogs " },
+          { left: "Sun", right: "Rain", pick: " Right " },
         ],
       },
       { kind: "Q&A", items: [{ question: "fav night?", answer: "all of them", mood: "x" }] },
@@ -137,6 +138,7 @@ test("a model's own spelling, a named pick and a made-up style still make a Page
   const pairs = page.blocks[0];
   assert.equal(pairs.kind === "thisOrThat" && pairs.pairs[0].pick, "right", "a pick named by its word finds its side");
   assert.equal(pairs.kind === "thisOrThat" && pairs.pairs[1].pick, "right", "case and spaces do not change the side");
+  assert.equal(pairs.kind === "thisOrThat" && pairs.pairs[2].pick, "right", "a side named in any case is that side");
   const list = page.blocks[2];
   assert.equal(list.kind === "list" && list.style, "bullets");
   const service = slurp2Source(

@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { Avatar, SLP_TYPE } from "../../base/chrome/SlpChrome";
@@ -138,16 +138,22 @@ export function SlpStirPlaySheet({
   const [cant, setCant] = useState<string[]>([]);
   const preview = useSlurpStirPreview();
   const doIt = useSlpStirDoIt();
+  // Each reset starts a new generation; a preview that answers for an older one is dropped.
+  const generation = useRef(0);
   useEffect(() => {
+    generation.current += 1;
     setForm({ who: prefill?.who ?? [], pick: prefill?.pick ?? null });
     setCards(null);
+    setCant([]);
     // The prefill's ids, not its object: a caller may build a new one on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [action, prefill?.who?.join("|"), prefill?.pick]);
   if (!action) return null;
   const set = (patch: Form) => {
+    generation.current += 1;
     setForm((current) => ({ ...current, ...patch }));
     setCards(null);
+    setCant([]);
   };
   const creators = (view?.creators ?? []).filter((creator) => !creator.couplePage);
   const byId = new Map((view?.creators ?? []).map((creator) => [creator.id, creator]));
@@ -598,18 +604,22 @@ export function SlpStirPlaySheet({
       break;
   }
 
-  const onPreview = () =>
-    step &&
+  const onPreview = () => {
+    if (!step) return;
+    const asked = generation.current;
     preview.mutate([{ action, input: step }], {
       onSuccess: (answer) => {
+        if (asked !== generation.current) return;
         setCant(answer.cant);
         setCards(answer.cards);
       },
       onError: () => {
+        if (asked !== generation.current) return;
         setCant([]);
         setCards([]);
       },
     });
+  };
 
   return (
     <SlpSheet

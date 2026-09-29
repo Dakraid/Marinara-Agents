@@ -138,8 +138,14 @@ export function focusSettingAnchor(settingKey: string, retry = true): boolean {
     const fold = document.querySelector<HTMLDetailsElement>(`details[data-setting-keys~="${CSS.escape(settingKey)}"]`);
     if (!fold || fold.open || !retry) return false;
     fold.open = true;
-    // One try after the fold has drawn; a setting that is not shown in this state stays unfocused.
-    window.setTimeout(() => focusSettingAnchor(settingKey, false), 100);
+    // Tried each frame until the fold has drawn, for a second at most: a setting that is not shown in
+    // this state stays unfocused.
+    const deadline = window.performance.now() + 1000;
+    const retryUntilDrawn = () => {
+      if (focusSettingAnchor(settingKey, false)) return;
+      if (window.performance.now() < deadline) window.requestAnimationFrame(retryUntilDrawn);
+    };
+    window.requestAnimationFrame(retryUntilDrawn);
     return true;
   }
   for (let node = anchor.parentElement; node; node = node.parentElement) {
