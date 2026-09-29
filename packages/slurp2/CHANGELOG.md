@@ -1,5 +1,17 @@
 # Slurp Remastered release notes
 
+## 0.3.0 — 2026-09-29
+
+Small changes.
+
+- Stir, a new tab: make crushes, collabs, rivalries and events happen between your Creators, in your own words or with a card. Every play shows a preview first and has Undo.
+- Life and spice: collabs, couples with an optional shared page, rivalries, brand deals, teases that lead to drops, fan polls, steering with flavour and spice levels.
+- A new look for the whole app: floating phone nav, Hub, Stories, profiles, Discover, Wallet, the Dashboard, a role-play onboarding and a What's new sheet.
+- Messages rebuilt: a real inbox, full-screen chats, write as Slurp Support, AI fans sometimes get an answer, and promised messages arrive.
+- Pulse shows what runs, what is queued, what failed and why, and what comes next. Long actions run in the background and never lock the screen.
+- The AI budget grows with your Creators; limits you set yourself stay. Pictures keep their viewpoint and art style better, with an optional prompt enhancer.
+- 215 fixes.
+
 ## 0.2.78 — 2026-09-27
 
 - bugfixing

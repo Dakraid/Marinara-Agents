@@ -5,6 +5,7 @@ import { Avatar, SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { focusRing } from "../../base/chrome/slp-focus";
 import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { SlpButton, SlpChip, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
+import { SlpCreatorChips } from "../../modules/chrome/SlpCreatorChips";
 import { SlpSheet } from "../../modules/chrome/SlpSheet";
 import { Toggle } from "../../modules/settings/SlpSettingsControls";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
@@ -49,28 +50,7 @@ function CreatorPicker({
   return (
     <fieldset className="space-y-2">
       <legend className={cn(SLP_TYPE.meta, "font-semibold")}>{label}</legend>
-      <div className="flex flex-wrap gap-1.5">
-        {creators.map((creator) => {
-          const on = picked.includes(creator.id);
-          return (
-            <button
-              key={creator.id}
-              type="button"
-              aria-pressed={on}
-              onClick={() => toggle(creator.id)}
-              className={cn(
-                "flex min-h-11 items-center gap-2 rounded-full py-1 pe-3.5 ps-1 text-sm font-semibold ring-1 ring-inset transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none",
-                on
-                  ? "bg-[image:var(--slurp-nav-active)] text-[var(--slurp-text)] ring-[var(--noodle-accent)]/45"
-                  : "bg-[var(--slurp-canvas)] text-[var(--slurp-muted)] ring-[var(--slurp-outline)] hover:text-[var(--slurp-text)]",
-              )}
-            >
-              <Avatar account={{ displayName: creator.name, avatarUrl: creator.avatarUrl }} size="xs" />
-              <span className="max-w-[9rem] truncate">{creator.name}</span>
-            </button>
-          );
-        })}
-      </div>
+      <SlpCreatorChips creators={creators} picked={picked} onToggle={toggle} label={label} />
     </fieldset>
   );
 }

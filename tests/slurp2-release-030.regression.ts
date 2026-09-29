@@ -4,6 +4,10 @@
  * a plain nav glyph, the last phone tab is More again, and Pulse has its quick starts back.
  */
 import assert from "node:assert/strict";
+import {
+  SLP_CREATOR_CHIPS_SEARCH_FROM,
+  slpCreatorChipList,
+} from "../packages/slurp2/src/engine/packages/client/src/slp/modules/chrome/slp-creator-chips.ts";
 import { slpTaskAgainScreen } from "../packages/slurp2/src/engine/packages/client/src/slp/base/state/slp-task-list.ts";
 import { registerSlpBackLayer } from "../packages/slurp2/src/engine/packages/client/src/slp/base/navigation/slp-back-layer.ts";
 import { slurp2Source } from "./slurp2-source.ts";
@@ -88,6 +92,27 @@ backLayer();
   assert.ok(quick > 0 && quick < pulse.indexOf("<PulseAiToday"), "the quick starts sit at the top");
   const rows = client("modules/chrome/SlpPulseRows.tsx");
   assert.match(rows, /kind: "run-audience",[\s\S]*?api\.post\("\/slurp2\/slurp\/actions\/run-audience", \{\}\)/u);
+}
+
+// 4. Long Creator lists (user): past 12 Creators the pickers get a search; picked ones stay in front.
+{
+  const creators = Array.from({ length: 30 }, (_, index) => ({
+    id: `c${index}`,
+    name: index === 7 ? "Mira Vale" : index === 21 ? "Kai North" : `Creator ${index}`,
+    avatarUrl: null,
+  }));
+  assert.equal(SLP_CREATOR_CHIPS_SEARCH_FROM, 12);
+  assert.equal(slpCreatorChipList(creators, [], "").length, 30, "no words: everyone");
+  assert.deepEqual(
+    slpCreatorChipList(creators, ["c21"], "mira").map((creator) => creator.name),
+    ["Kai North", "Mira Vale"],
+    "picked first even when the words do not match, then matches in any case",
+  );
+  assert.deepEqual(slpCreatorChipList(creators, [], "  zz ").length, 0);
+  const chips = client("modules/chrome/SlpCreatorChips.tsx");
+  assert.match(chips, /const searchable = creators\.length > SLP_CREATOR_CHIPS_SEARCH_FROM;/u);
+  assert.match(client("features/stir/SlpStirPlaySheet.tsx"), /<SlpCreatorChips creators=\{creators\}/u);
+  assert.match(client("features/projects/SlpCollabsPanel.tsx"), /<SlpCreatorChips\s+creators=\{creators\.filter/u);
 }
 
 console.log("slurp2 release 0.3.0: ok");

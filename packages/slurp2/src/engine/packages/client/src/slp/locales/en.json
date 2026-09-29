@@ -5458,5 +5458,7 @@
   "ui.slurp.pulse.again.stir": "Start it again from Stir",
   "ui.slurp.pulse.again.generate": "Start it again from Generate posts",
   "ui.slurp.pulse.again.creator": "Start it again from their page",
-  "ui.slurp.pulse.again.add": "Start it again from Add creators"
+  "ui.slurp.pulse.again.add": "Start it again from Add creators",
+  "ui.slurp.stir.findCreator": "Find a Creator",
+  "ui.slurp.stir.findCreatorNone": "No Creator by that name."
 }

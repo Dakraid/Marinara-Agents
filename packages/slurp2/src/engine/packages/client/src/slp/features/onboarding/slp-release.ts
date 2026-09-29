@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.2.78";
+export const SLURP2_VERSION = "0.3.0";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -12,6 +12,15 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.0",
+    date: "2026-09-29",
+    notes: [
+      "Small changes. Stir is new: make crushes, collabs, rivalries and events happen between your Creators, and see what happens before you say Do it.",
+      "Slurp got a whole new look, chats feel real (fans sometimes get answers, and promises arrive), and Pulse shows what runs, what failed and what comes next.",
+      "The AI budget now grows with your Creators. Lower it any time under Fans & money › AI budget.",
+    ],
+  },
   {
     version: "0.2.78",
     date: "2026-09-27",

@@ -13,6 +13,7 @@ import {
   SlurpMediaImg,
 } from "../../base/chrome/SlpChrome";
 import { SlpButton, SlpPrimaryButton, slpTagClass } from "../../modules/chrome/SlpButton";
+import { SlpCreatorChips } from "../../modules/chrome/SlpCreatorChips";
 import { SlpCoinText } from "../../modules/coin/SlpCoin";
 import { formatRelativeTime } from "../../base/ui/slp-date-time";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
@@ -98,30 +99,12 @@ function SlpPairPicker({
   const toggle = (id: string) =>
     onPick(picked.includes(id) ? picked.filter((entry) => entry !== id) : [...picked, id].slice(-2));
   return (
-    <div className="flex flex-wrap gap-1.5" role="group" aria-label={label}>
-      {creators
-        .filter((creator) => !creator.couplePage)
-        .map((creator) => {
-          const on = picked.includes(creator.id);
-          return (
-            <button
-              key={creator.id}
-              type="button"
-              aria-pressed={on}
-              onClick={() => toggle(creator.id)}
-              className={cn(
-                "flex min-h-11 items-center gap-2 rounded-full py-1 pe-3.5 ps-1 text-sm font-semibold ring-1 ring-inset transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none",
-                on
-                  ? "bg-[image:var(--slurp-nav-active)] text-[var(--slurp-text)] ring-[var(--noodle-accent)]/45"
-                  : "bg-[var(--slurp-canvas)] text-[var(--slurp-muted)] ring-[var(--slurp-outline)] hover:text-[var(--slurp-text)]",
-              )}
-            >
-              <Avatar account={{ displayName: creator.name, avatarUrl: creator.avatarUrl }} size="xs" />
-              <span className="max-w-[9rem] truncate">{creator.name}</span>
-            </button>
-          );
-        })}
-    </div>
+    <SlpCreatorChips
+      creators={creators.filter((creator) => !creator.couplePage)}
+      picked={picked}
+      onToggle={toggle}
+      label={label}
+    />
   );
 }
 

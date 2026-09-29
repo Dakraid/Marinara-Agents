@@ -2092,5 +2092,7 @@
   "ui.slurp.pulse.again.stir": "Zacznij od nowa w Stir",
   "ui.slurp.pulse.again.generate": "Zacznij od nowa w Generuj posty",
   "ui.slurp.pulse.again.creator": "Zacznij od nowa na stronie twórcy",
-  "ui.slurp.pulse.again.add": "Zacznij od nowa w Dodaj twórców"
+  "ui.slurp.pulse.again.add": "Zacznij od nowa w Dodaj twórców",
+  "ui.slurp.stir.findCreator": "Znajdź twórcę",
+  "ui.slurp.stir.findCreatorNone": "Nie ma twórcy o tej nazwie."
 }

@@ -2076,5 +2076,7 @@
   "ui.slurp.pulse.again.stir": "In Stir neu starten",
   "ui.slurp.pulse.again.generate": "Unter Beiträge generieren neu starten",
   "ui.slurp.pulse.again.creator": "Auf der Seite neu starten",
-  "ui.slurp.pulse.again.add": "Unter Creator hinzufügen neu starten"
+  "ui.slurp.pulse.again.add": "Unter Creator hinzufügen neu starten",
+  "ui.slurp.stir.findCreator": "Creator finden",
+  "ui.slurp.stir.findCreatorNone": "Kein Creator mit diesem Namen."
 }
