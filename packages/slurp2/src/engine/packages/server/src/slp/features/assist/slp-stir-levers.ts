@@ -8,7 +8,12 @@ import type { DB } from "../../../db/connection.js";
 import { logger } from "../../../lib/logger.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { getSlurpPostGuidance, updateSlurpPostGuidance } from "../../data/settings/slp-post-guidance-storage.js";
-import { patchSlurpCreatorSteering, removeSlurpCreatorNudge } from "../../data/creators/slp-steering-storage.js";
+import {
+  patchSlurpCreatorSteering,
+  readSlurpCreatorSteering,
+  removeSlurpCreatorNudge,
+} from "../../data/creators/slp-steering-storage.js";
+import { slpUndoPatch } from "../../modules/assist/slp-stir-play.js";
 import { slurpModelWorkerAllows } from "../../base/model/slp-model-worker.js";
 import { readSlurpStirTies, undoSlurpTieLever, type SlurpTieUndo } from "../projects/slp-projects-contract.js";
 import { runCreatorFanActivity } from "../audience/slp-audience-contract.js";
@@ -19,12 +24,26 @@ import type { SlpCreatorSteering } from "../../../../../shared/src/slp/slp-creat
 import type { SlpAssistOutcome } from "./slp-assist-service.js";
 
 /** What one Undo takes back. Kept in the plays ledger; never sent to the app. */
+type SteeringPatch = Partial<Omit<SlpCreatorSteering, "nudges" | "support">>;
+
+/**
+ * What one Undo takes back. Kept in the plays ledger; never sent to the app. `set` is what the play
+ * wrote, so the Undo leaves a later change alone (entries from before 0.3.1 lack it).
+ */
 export type SlpActionUndo =
   | { kind: "tie"; undo: SlurpTieUndo }
-  | { kind: "steering"; accountId: string; patch: Partial<Omit<SlpCreatorSteering, "nudges" | "support">> }
+  | { kind: "steering"; accountId: string; patch: SteeringPatch; set?: SteeringPatch }
   | { kind: "idea"; accountId: string; ideaId: string }
   | { kind: "occurrence"; id: string }
-  | { kind: "spice"; accountId: string; level: SlurpPostGuidanceEntry["level"] };
+  | { kind: "spice"; accountId: string; level: SlurpPostGuidanceEntry["level"]; set?: SlurpPostGuidanceEntry["level"] }
+  | {
+      kind: "storyline";
+      accountId: string;
+      projectId: string;
+      move: SlpActionParsed<"steer-storyline">["move"];
+      before: { chapters: string[]; chapter: number };
+      after: { chapters: string[]; chapter: number };
+    };
 
 type LeverDone<T> = { ok: true; value: T; undo: SlpActionUndo | null };
 
@@ -77,7 +96,17 @@ export async function runSlpStartEvent(
   db: DB,
   input: SlpActionParsed<"start-event">,
 ): Promise<SlpAssistOutcome<{ occurrenceId: string }> | LeverDone<{ occurrenceId: string }>> {
-  const occurrence = await createSlurpStorage(db).startStoryEvent(input.eventId);
+  const storage = createSlurpStorage(db);
+  const at = new Date();
+  // A second start while it runs would double what it gives (a double tap, two tabs).
+  if (
+    (await storage.listStoryOccurrences()).some(
+      (occurrence: { blueprintId: string; status: string; endsAt: string }) =>
+        occurrence.blueprintId === input.eventId && running(occurrence, at),
+    )
+  )
+    return { ok: false, status: 409, error: "That event is already on." };
+  const occurrence = await storage.startStoryEvent(input.eventId, at);
   if (!occurrence) return { ok: false, status: 404, error: "Event not found." };
   return { ok: true, value: { occurrenceId: occurrence.id }, undo: { kind: "occurrence", id: occurrence.id } };
 }
@@ -90,11 +119,22 @@ export async function runSlpSteerStoryline(
   if ((input.move === "insert" || input.move === "label") && !input.text)
     return { ok: false, status: 400, error: "Say what the chapter is." };
   const storage = createSlurpStorage(db);
-  if (!(await storage.getProject(input.accountId, input.projectId)))
-    return { ok: false, status: 404, error: "Storyline not found." };
+  const before = await storage.getProject(input.accountId, input.projectId);
+  if (!before) return { ok: false, status: 404, error: "Storyline not found." };
   const project = await storage.directProject(input.accountId, input.projectId, input.move, input.text);
   if (!project) return { ok: false, status: 409, error: "That does not apply to this storyline right now." };
-  return { ok: true, value: { projectId: input.projectId }, undo: null };
+  return {
+    ok: true,
+    value: { projectId: input.projectId },
+    undo: {
+      kind: "storyline",
+      accountId: input.accountId,
+      projectId: input.projectId,
+      move: input.move,
+      before: { chapters: [...before.chapters], chapter: before.chapter },
+      after: { chapters: [...project.chapters], chapter: project.chapter },
+    },
+  };
 }
 
 /**
@@ -105,6 +145,8 @@ export async function runSlpRunAudience(db: DB): Promise<SlpAssistOutcome<{ star
   const settings = await createSlurpStorage(db).getSettings();
   if (!slurpModelWorkerAllows(settings.modelBudget, "present"))
     return { ok: false, status: 409, error: "The AI budget is off. Turn it on under Audience → AI budget." };
+  if (!settings.fanActivityEnabled)
+    return { ok: false, status: 409, error: "Fan activity is off. Turn it on under Audience." };
   void runCreatorFanActivity({ db, mode: "manual" }).catch((error: unknown) =>
     logger.warn(error, "[slurp] Audience run from Stir failed"),
   );
@@ -119,11 +161,12 @@ export async function runSlpSetSpice(
   if (!(await createSlurpStorage(db).getNoodlerAccountById(input.accountId)))
     return { ok: false, status: 404, error: "Creator not found." };
   const before = (await getSlurpPostGuidance(db)).creators[input.accountId]?.level ?? "";
-  await setSlpSpiceLevel(db, input.accountId, input.level ? SLP_SPICE_TO_EXPLICIT[input.level] : "");
+  const level = input.level ? SLP_SPICE_TO_EXPLICIT[input.level] : "";
+  await setSlpSpiceLevel(db, input.accountId, level);
   return {
     ok: true,
     value: { level: input.level },
-    undo: { kind: "spice", accountId: input.accountId, level: before },
+    undo: { kind: "spice", accountId: input.accountId, level: before, set: level },
   };
 }
 
@@ -134,22 +177,53 @@ async function setSlpSpiceLevel(db: DB, accountId: string, level: SlurpPostGuida
   });
 }
 
-/** Take one play step back. The world may have moved on; what is gone stays gone. */
-export async function undoSlpAction(db: DB, undo: SlpActionUndo): Promise<void> {
+/**
+ * Take one play step back. The world may have moved on: what is gone stays gone, and a step that
+ * would undo a later change answers false and stays as it is.
+ */
+export async function undoSlpAction(db: DB, undo: SlpActionUndo): Promise<boolean> {
   switch (undo.kind) {
     case "tie":
       return undoSlurpTieLever(db, undo.undo);
-    case "steering":
-      await patchSlurpCreatorSteering(db, undo.accountId, undo.patch);
-      return;
-    case "idea":
+    case "steering": {
+      const current = await readSlurpCreatorSteering(db, undo.accountId);
+      const patch = slpUndoPatch(current, undo.patch, undo.set);
+      if (!Object.keys(patch).length) return false;
+      await patchSlurpCreatorSteering(db, undo.accountId, patch, { keepSupportNote: true });
+      return true;
+    }
+    case "idea": {
+      // An idea that already went out as a post stays posted.
+      const { nudges } = await readSlurpCreatorSteering(db, undo.accountId);
+      if (!nudges.some((nudge) => nudge.id === undo.ideaId)) return false;
       await removeSlurpCreatorNudge(db, undo.accountId, undo.ideaId);
-      return;
+      return true;
+    }
     case "occurrence":
-      await createSlurpStorage(db).setStoryOccurrenceStatus(undo.id, "cancelled");
-      return;
-    case "spice":
+      return createSlurpStorage(db).cancelStartedStoryEvent(undo.id);
+    case "spice": {
+      const current = (await getSlurpPostGuidance(db)).creators[undo.accountId]?.level ?? "";
+      if (undo.set !== undefined && current !== undo.set) return false;
       await setSlpSpiceLevel(db, undo.accountId, undo.level);
-      return;
+      return true;
+    }
+    case "storyline": {
+      const storage = createSlurpStorage(db);
+      const current = await storage.getProject(undo.accountId, undo.projectId);
+      if (!current) return false;
+      if (undo.move === "hold" || undo.move === "release")
+        return Boolean(
+          await storage.directProject(undo.accountId, undo.projectId, undo.move === "hold" ? "release" : "hold"),
+        );
+      // Only while the storyline is where the move left it; a chapter that went out since stays.
+      if (current.chapter !== undo.after.chapter || current.chapters.join("\n") !== undo.after.chapters.join("\n"))
+        return false;
+      return Boolean(
+        await storage.updateProject(undo.accountId, undo.projectId, {
+          chapters: undo.before.chapters,
+          chapter: undo.before.chapter,
+        }),
+      );
+    }
   }
 }

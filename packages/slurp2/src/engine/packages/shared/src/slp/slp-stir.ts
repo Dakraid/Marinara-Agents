@@ -88,8 +88,19 @@ export const slpStirPlanRequestSchema = z
     creatorId: z.string().trim().min(1).max(200).optional(),
     /** The post the ✦ sheet came from. */
     postId: z.string().trim().min(1).max(200).optional(),
+    /** The persona playing: only their pages are "the player's own" (0.3.1). */
+    personaId: z.string().trim().min(1).max(200).optional(),
+    /** The planner asked a question about `text`; this is the player's answer (0.3.1). */
+    followUp: z
+      .object({
+        question: z.string().trim().min(1).max(300),
+        answer: z.string().trim().min(1).max(SLP_STIR_TEXT_MAX),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
+export type SlpStirPlanRequest = z.infer<typeof slpStirPlanRequestSchema>;
 
 /** The planner's answer: cards to preview, a question when the words were unclear, and what it cannot do. */
 export type SlpStirPlan = {
@@ -104,7 +115,14 @@ export type SlpStirPlay = {
   at: string;
   origin: SlpStirOrigin;
   /** The action name as asked (an unknown one stays as it was, with its error). */
-  steps: { action: string; input: Record<string, unknown>; ok: boolean; error: string | null }[];
+  steps: {
+    action: string;
+    input: Record<string, unknown>;
+    ok: boolean;
+    error: string | null;
+    /** What the step made or touched, for a link from the ledger (a post, a couple, an event…). */
+    ref?: Record<string, string>;
+  }[];
   undoable: boolean;
   undone: boolean;
 };
@@ -123,7 +141,7 @@ export type SlpStirLive = {
 /** A play Slurp suggests from what is going on (code only, no AI call). */
 export type SlpStirSuggestion = {
   id: string;
-  kind: "quiet" | "sparks" | "rocky" | "owedAd" | "event" | "cooling" | "firstPlay";
+  kind: "quiet" | "sparks" | "rocky" | "owedAd" | "event" | "cooling" | "firstPlay" | "match";
   who: { id: string; name: string; avatarUrl: string | null }[];
   label: string | null;
   step: SlpStirStep | null;

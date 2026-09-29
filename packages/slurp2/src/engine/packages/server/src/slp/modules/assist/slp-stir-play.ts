@@ -9,6 +9,15 @@ export const isSlpStirPlayAction = (name: string): name is SlpActionName =>
   isSlpActionName(name) && SLP_ACTION_META[name].deck;
 
 /**
+ * The input a play runs with: never a dry run. `preview` belongs to outside helpers (Mari, the brand
+ * picker); a Stir step that carried it would say "done" and change nothing (0.3.1).
+ */
+export const slpStirPlayInput = (input: Record<string, unknown>): Record<string, unknown> => {
+  const { preview: _preview, ...rest } = input;
+  return rest;
+};
+
+/**
  * Split steps into plays and the plain-words reasons the rest cannot happen. An unknown name is said,
  * never dropped in silence.
  */
@@ -19,7 +28,7 @@ export function slpSortStirSteps(steps: readonly SlpStirStep[]): {
   const plays: { action: SlpActionName; input: Record<string, unknown> }[] = [];
   const cant: string[] = [];
   for (const step of steps) {
-    if (isSlpStirPlayAction(step.action)) plays.push({ action: step.action, input: step.input });
+    if (isSlpStirPlayAction(step.action)) plays.push({ action: step.action, input: slpStirPlayInput(step.input) });
     else cant.push(`Slurp cannot do "${step.action}" yet.`);
   }
   return { plays, cant };
@@ -44,7 +53,7 @@ export async function slpRunStirSteps<Undo>(
   const undo: Undo[] = [];
   for (const step of steps) {
     const ran: SlpStirRan<Undo> = isSlpStirPlayAction(step.action)
-      ? await run(step.action, step.input)
+      ? await run(step.action, slpStirPlayInput(step.input))
       : { ok: false, error: `Slurp cannot do "${step.action}" yet.` };
     if (ran.ok && ran.undo) undo.push(ran.undo);
     results.push(ran.ok ? { ok: true, value: ran.value, error: null } : { ok: false, value: null, error: ran.error });
@@ -75,4 +84,21 @@ export function slpSupportPlayOnce() {
       running.delete(messageId);
     }
   };
+}
+
+/**
+ * What an Undo may put back (0.3.1): only the keys that still hold what the play set. A later change
+ * by the player, a Support talk or another play is kept. An entry from before `set` was kept puts
+ * everything back, as it did then.
+ */
+export function slpUndoPatch<T extends Record<string, unknown>>(
+  current: Readonly<Record<string, unknown>>,
+  before: T,
+  set: Partial<T> | undefined,
+): Partial<T> {
+  if (!set) return before;
+  const same = (left: unknown, right: unknown) => JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
+  return Object.fromEntries(
+    Object.entries(before).filter(([key]) => key in set && same(current[key], set[key])),
+  ) as Partial<T>;
 }

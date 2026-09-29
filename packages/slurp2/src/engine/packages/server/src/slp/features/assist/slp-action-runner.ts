@@ -122,7 +122,7 @@ async function dispatch(
       return {
         ok: true,
         value: { steering: await patchSlurpCreatorSteering(db, accountId, patch) },
-        undo: { kind: "steering", accountId, patch: undo },
+        undo: { kind: "steering", accountId, patch: undo, set: patch },
       };
     }
     case "list-creators":

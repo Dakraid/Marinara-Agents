@@ -78,6 +78,8 @@ async function previewOther(
   const missing = typeof input.accountId === "string" && !account;
   const nameOf = account?.displayName ?? "";
   if (missing) return { who, error: "notFound", summary: "That Creator does not exist." };
+  // The player writes their own page's posts, so its ideas, life and spice would change nothing.
+  const ownPage = account && !slurpRunsItself(account) ? "notAutomatic" : null;
   switch (name) {
     case "write-text":
     case "improve-text":
@@ -107,6 +109,7 @@ async function previewOther(
       const patch = input as SlpActionParsed<"steer-creator">;
       return {
         who,
+        error: ownPage,
         when: "nextPost",
         detail: {
           mood: patch.mood === undefined ? null : (patch.mood ?? "none"),
@@ -127,7 +130,7 @@ async function previewOther(
         when: "nextPost",
         detail: { text: idea.text, story: idea.story },
         notes: steering.pace === "break" ? [{ kind: "onBreak", name: nameOf }] : [],
-        error: steering.nudges.length >= SLP_STEERING_NUDGES_MAX ? "ideasFull" : null,
+        error: ownPage ?? (steering.nudges.length >= SLP_STEERING_NUDGES_MAX ? "ideasFull" : null),
         summary: `${nameOf} gets an idea for a ${idea.story ? "Story" : "post"}: ${idea.text}`,
       };
     }
@@ -136,7 +139,7 @@ async function previewOther(
       return {
         who,
         detail: { idea: post.idea ?? null, story: post.story },
-        error: account && !slurpRunsItself(account) ? "notAutomatic" : null,
+        error: ownPage,
         summary: `${nameOf} writes and posts their next ${post.story ? "Story" : "post"} now.`,
       };
     }
@@ -149,6 +152,7 @@ async function previewOther(
         when: "nextPost",
         detail: { level: spice.level, max },
         notes: above ? [{ kind: "capped", name: nameOf }] : [],
+        error: ownPage,
         summary: `${nameOf}'s spice level becomes ${spice.level ?? "the default"}.`,
       };
     }
@@ -165,7 +169,8 @@ async function previewOther(
       return {
         when: "ongoing",
         detail: { name: event.name, days },
-        notes: live ? [{ kind: "alreadyRunning", name: event.name }] : [],
+        // A second start while it runs would double what it gives; the run refuses it too.
+        error: live ? "alreadyRunning" : null,
         summary: `${event.name} starts now for ${days} day(s); every Creator it fits joins.`,
       };
     }
@@ -208,7 +213,11 @@ async function previewOther(
     case "run-audience": {
       const settings = await storage.getSettings();
       return {
-        error: slurpModelWorkerAllows(settings.modelBudget, "present") ? null : "aiOff",
+        error: !slurpModelWorkerAllows(settings.modelBudget, "present")
+          ? "aiOff"
+          : settings.fanActivityEnabled
+            ? null
+            : "audienceOff",
         summary: "The fans like, comment and reply now.",
       };
     }

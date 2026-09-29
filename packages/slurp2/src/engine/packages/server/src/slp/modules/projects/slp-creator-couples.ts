@@ -583,22 +583,37 @@ export function slurpAdvanceCouples(couples: readonly SlurpCouple[], input: Slur
   const worldLive = next.filter((couple) => slurpCoupleActive(couple) && couple.origin === "world").length;
   if (worldLive < MAX_WORLD_COUPLES && hash(`${window}:couple`) % 100 < Math.round(8 * Math.max(0, input.activity))) {
     const taken = busy();
-    const options = input.creators
-      .flatMap((a, index) => input.creators.slice(index + 1).map((b) => [a, b] as const))
-      .filter(([a, b]) => a.automatic && b.automatic && !taken.has(a.id) && !taken.has(b.id))
-      .filter(([a, b]) => !input.rivals.has(slurpPairKey(a.id, b.id)) && rested(a.id, b.id))
-      .map(([a, b]) => ({ a, b, fit: slurpCoupleFit(a, b) }))
-      .filter((option) => option.fit.fits && option.fit.chemistry >= 2)
-      .sort(
-        (left, right) =>
-          right.fit.chemistry - left.fit.chemistry ||
-          hash(`${window}:${slurpPairKey(left.a.id, left.b.id)}`) -
-            hash(`${window}:${slurpPairKey(right.a.id, right.b.id)}`),
-      );
+    const options = slurpCoupleMatches(
+      input.creators,
+      taken,
+      (a, b) => input.rivals.has(slurpPairKey(a, b)) || !rested(a, b),
+    ).sort(
+      (left, right) =>
+        right.fit.chemistry - left.fit.chemistry ||
+        hash(`${window}:${slurpPairKey(left.a.id, left.b.id)}`) -
+          hash(`${window}:${slurpPairKey(right.a.id, right.b.id)}`),
+    );
     const pick = options[0];
     if (pick) next = [...next, newSlurpCouple(input.newId(), pick.a.id, pick.b.id, "world", stamp)];
   }
   return trim(next);
+}
+
+/**
+ * Two free Creators Slurp posts for, with chemistry and cards that allow it: the pairs the world may
+ * start flirting, and Stir's "they would click" suggestion. Unsorted; `skip` rules a pair out.
+ */
+export function slurpCoupleMatches(
+  creators: readonly SlurpTieCreator[],
+  taken: ReadonlySet<string>,
+  skip: (aId: string, bId: string) => boolean = () => false,
+): { a: SlurpTieCreator; b: SlurpTieCreator; fit: SlurpCoupleFit }[] {
+  const free = creators.filter((creator) => creator.automatic && !taken.has(creator.id));
+  return free
+    .flatMap((a, index) => free.slice(index + 1).map((b) => [a, b] as const))
+    .filter(([a, b]) => !skip(a.id, b.id))
+    .map(([a, b]) => ({ a, b, fit: slurpCoupleFit(a, b) }))
+    .filter((option) => option.fit.fits && option.fit.chemistry >= 2);
 }
 
 function trim(couples: SlurpCouple[]): SlurpCouple[] {

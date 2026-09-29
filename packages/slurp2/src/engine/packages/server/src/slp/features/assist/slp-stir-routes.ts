@@ -13,6 +13,7 @@ import {
 } from "../../../../../shared/src/slp/slp-stir.js";
 import { createSlurpMessagesStorage } from "../../data/messages/slp-messages-storage.js";
 import { slpSupportPlayOnce } from "../../modules/assist/slp-stir-play.js";
+import { dismissSlurpStirSuggestion } from "../../data/assist/slp-stir-plays-storage.js";
 
 /**
  * Stir (W) over HTTP: preview one action or a list of steps, turn words into a plan, do a play,
@@ -65,8 +66,15 @@ export async function slpStirRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
   app.post("/slurp/stir/plan", async (req, reply) => {
     const parsed = slpStirPlanRequestSchema.safeParse(req.body ?? {});
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
+    const { personaId, ...request } = parsed.data;
+    const viewer = personaId ? await resolveViewerPersona(personaId) : null;
+    if (personaId && !viewer) return reply.code(404).send({ error: "Slurp persona not found" });
     return guard("plan", reply, async () => {
-      const outcome = await planSlpStir(app.db, parsed.data);
+      const outcome = await planSlpStir(
+        app.db,
+        request,
+        viewer ? (account) => creatorBelongsToViewer(account as never, viewer) : undefined,
+      );
       return outcome.ok ? outcome.value : reply.code(outcome.status).send({ error: outcome.error });
     });
   });
@@ -92,9 +100,18 @@ export async function slpStirRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
   app.post("/slurp/stir/plays/:id/undo", async (req, reply) =>
     guard("undo", reply, async () => {
       const outcome = await undoSlpStirPlay(app.db, (req.params as { id: string }).id);
-      return outcome.ok ? { play: outcome.value } : reply.code(outcome.status).send({ error: outcome.error });
+      return outcome.ok ? outcome.value : reply.code(outcome.status).send({ error: outcome.error });
     }),
   );
+
+  app.post("/slurp/stir/suggestions/:id/dismiss", async (req, reply) => {
+    const parsed = z.object({ id: z.string().trim().min(1).max(300) }).safeParse(req.params ?? {});
+    if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
+    return guard("dismiss", reply, async () => {
+      await dismissSlurpStirSuggestion(app.db, parsed.data.id);
+      return { ok: true };
+    });
+  });
 
   app.get("/slurp/stir", async (req, reply) => {
     const parsed = z.object({ personaId: z.string().trim().min(1) }).safeParse(req.query ?? {});

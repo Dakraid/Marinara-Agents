@@ -357,8 +357,8 @@ async function main() {
     );
     assert.match(
       service,
-      /for \(const entry of \[\.\.\.play\.undo\]\.reverse\(\)\) await undoSlpAction/u,
-      "Undo newest first",
+      /for \(const entry of \[\.\.\.claimed\.undo\]\.reverse\(\)\) \{\s+const done = await undoSlpAction/u,
+      "Undo newest first, after the play is claimed",
     );
   }
 

@@ -161,6 +161,33 @@ export function createStoryEngineStorage({ settingsStore }: SlurpStorageContext)
       await write(SLP_STORY_OCCURRENCES_KEY, occurrences);
       return after;
     },
+    /**
+     * Undo of "Start now" (Stir): cancel a running occurrence and take back the facts and chances it
+     * granted. False once it has ended or changed; what it removed from the world stays removed.
+     */
+    async cancelStartedStoryEvent(id: string, at = new Date()) {
+      const occurrences = await this.listStoryOccurrences();
+      const occurrence = occurrences.find((item) => item.id === id);
+      if (!occurrence || occurrence.status !== "active" || occurrence.endsAt <= at.toISOString()) return false;
+      const own = (item: { sourceKind: string; sourceId: string }) =>
+        item.sourceKind === "event" && item.sourceId === id;
+      const [facts, opportunities] = await Promise.all([this.listStoryFacts(), this.listArcOpportunities()]);
+      await Promise.all([
+        write(
+          SLP_STORY_FACTS_KEY,
+          facts.filter((item) => !own(item)),
+        ),
+        write(
+          SLP_STORY_OPPORTUNITIES_KEY,
+          opportunities.filter((item) => !own(item)),
+        ),
+        write(
+          SLP_STORY_OCCURRENCES_KEY,
+          occurrences.map((item) => (item.id === id ? { ...item, status: "cancelled" as const } : item)),
+        ),
+      ]);
+      return true;
+    },
     async removeStoryFact(id: string) {
       const before = await this.listStoryFacts();
       const after = before.filter((item) => item.id !== id);

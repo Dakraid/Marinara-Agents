@@ -4,16 +4,21 @@
 import {
   slurpCollabFit,
   slurpCoolRivalry,
+  slurpPairKey,
   slurpPushCollab,
   slurpRivalryFits,
   slurpStartRivalry,
   slurpSuggestCollab,
+  type SlurpCollab,
   type SlurpCreatorTies,
+  type SlurpRivalry,
   type SlurpTieCreator,
   type SlurpTieError,
 } from "./slp-creator-ties.js";
 import {
+  slurpCoupleActive,
   slurpCoupleMisfitOf,
+  slurpCoupleOther,
   slurpCouplePageOpenable,
   slurpSetUpCouple,
   slurpSteerCouple,
@@ -52,7 +57,8 @@ const FORCED_NOTE: Record<SlurpCoupleForced["misfit"], SlpStirNote["kind"]> = {
   orientation: "awkward",
 };
 
-export type SlurpTiePreview = Pick<SlpActionPreview, "who" | "detail" | "when" | "notes" | "error" | "summary">;
+export type SlurpTiePreview = Pick<SlpActionPreview, "who" | "detail" | "when" | "notes" | "error" | "summary"> &
+  Partial<Pick<SlpActionPreview, "reversible">>;
 
 const person = (world: SlurpStirTieWorld, id: string) => {
   const creator = world.creators.find((entry) => entry.id === id);
@@ -173,6 +179,8 @@ export function slurpPreviewTieLever(
         detail: { steer },
         when: "nextPost",
         error: typeof next === "string" ? next : null,
+        // A breakup closes an open shared page, and that is not taken back (the run keeps no Undo).
+        ...(steer === "breakUp" && couple?.page && !couple.page.closedAt ? { reversible: false } : {}),
         summary: couple ? `${nameOf(world, couple.aId)} and ${nameOf(world, couple.bId)}: ${steer}.` : "",
       });
     }
@@ -192,6 +200,8 @@ export function slurpPreviewTieLever(
         who: couple ? people(world, [couple.aId, couple.bId]) : [],
         detail: { open },
         error,
+        // Opening can be closed again by Undo; a closed page does not reopen.
+        reversible: open,
         summary: couple
           ? `${nameOf(world, couple.aId)} and ${nameOf(world, couple.bId)} ${open ? "open" : "close"} their shared page.`
           : "",
@@ -216,3 +226,99 @@ export function slurpSuggestCollabPlay(
   const collab = asked.collabs.find((entry) => entry.id === input.id);
   return collab?.status === "asked" ? slurpPushCollab(asked, input.id, input.at) : asked;
 }
+
+/**
+ * What one Undo does for a tie play: remove what it added, or put one entry back as it was. Kept in
+ * the plays ledger; entries written before a field existed simply lack it.
+ */
+export type SlurpTieUndo =
+  /** `blocked`: the pair key the play unblocked, blocked again on Undo. */
+  | { kind: "removeCollab"; id: string; blocked?: string }
+  | { kind: "restoreCollab"; collab: SlurpCollab }
+  | { kind: "removeRivalry"; id: string }
+  | { kind: "restoreRivalry"; rivalry: SlurpRivalry }
+  | { kind: "removeCouple"; id: string }
+  | { kind: "restoreCouple"; couple: SlurpCouple }
+  /** Opening a shared page; the service closes it (a goodbye post and stopped renewals). */
+  | { kind: "closeCouplePage"; coupleId: string };
+
+type TieDocument = { ties: SlurpCreatorTies; couples: SlurpCouple[] };
+
+/**
+ * Take one tie play back on the ties as they are now, or null when the world has moved on and the
+ * Undo would break it: a collab already planned or posted, a rivalry or collab that changed again,
+ * a couple that opened a page since, or a partner who is with someone else now.
+ */
+export function slurpUndoTie(document: TieDocument, undo: SlurpTieUndo): TieDocument | null {
+  const { ties, couples } = document;
+  switch (undo.kind) {
+    case "removeCollab": {
+      const collab = ties.collabs.find((entry) => entry.id === undo.id);
+      if (!collab || collab.status === "planned" || collab.status === "posted") return null;
+      return {
+        couples,
+        ties: {
+          ...ties,
+          collabs: ties.collabs.filter((entry) => entry.id !== undo.id),
+          blocked: undo.blocked ? [...new Set([...ties.blocked, undo.blocked])] : ties.blocked,
+        },
+      };
+    }
+    case "restoreCollab": {
+      const collab = ties.collabs.find((entry) => entry.id === undo.collab.id);
+      if (!collab || collab.status !== "agreed") return null;
+      return {
+        couples,
+        ties: { ...ties, collabs: ties.collabs.map((entry) => (entry.id === undo.collab.id ? undo.collab : entry)) },
+      };
+    }
+    case "removeRivalry":
+      if (!ties.rivalries.some((entry) => entry.id === undo.id)) return null;
+      return { couples, ties: { ...ties, rivalries: ties.rivalries.filter((entry) => entry.id !== undo.id) } };
+    case "restoreRivalry": {
+      const rivalry = ties.rivalries.find((entry) => entry.id === undo.rivalry.id);
+      if (!rivalry || rivalry.stage !== "cooling") return null;
+      return {
+        couples,
+        ties: {
+          ...ties,
+          rivalries: ties.rivalries.map((entry) => (entry.id === undo.rivalry.id ? undo.rivalry : entry)),
+        },
+      };
+    }
+    case "removeCouple": {
+      const couple = couples.find((entry) => entry.id === undo.id);
+      if (!couple || couple.page) return null;
+      return { ties, couples: couples.filter((entry) => entry.id !== undo.id) };
+    }
+    case "restoreCouple": {
+      const previous = undo.couple;
+      const current = couples.find((entry) => entry.id === previous.id);
+      if (!current) return null;
+      const taken = (id: string) =>
+        couples.some((entry) => entry.id !== previous.id && slurpCoupleActive(entry) && slurpCoupleOther(entry, id));
+      if (slurpCoupleActive(previous) && !slurpCoupleActive(current) && (taken(previous.aId) || taken(previous.bId)))
+        return null;
+      // Only the story of the two goes back; the page, joint posts and what was told stay as they are now.
+      const restored: SlurpCouple = {
+        ...current,
+        stage: previous.stage,
+        ending: previous.ending,
+        stageAt: previous.stageAt,
+        togetherAt: previous.togetherAt,
+        troubles: previous.troubles,
+        reunions: previous.reunions,
+        moments: previous.moments,
+      };
+      return { ties, couples: couples.map((entry) => (entry.id === previous.id ? restored : entry)) };
+    }
+    case "closeCouplePage":
+      return null;
+  }
+}
+
+/** The pair key a suggested collab would unblock, or null when the pair was not blocked. */
+export const slurpUnblockedBy = (ties: SlurpCreatorTies, aId: string, bId: string): string | null => {
+  const key = slurpPairKey(aId, bId);
+  return ties.blocked.includes(key) ? key : null;
+};

@@ -12,7 +12,8 @@ import { SLP_STIR_STEPS_MAX, type SlpStirStep } from "../../../../../shared/src/
 
 export type SlpStirPlanContext = {
   text: string;
-  creators: { id: string; name: string; handle: string; automatic: boolean }[];
+  /** `own`: a page this persona runs. `card`: one public line about them (personality, tags). */
+  creators: { id: string; name: string; handle: string; automatic: boolean; own?: boolean; card?: string }[];
   world: SlpStirWorld;
   /** Switched-on brands and their live products, for offer-brand-deal (R). */
   brands?: { id: string; name: string; products: { id: string; name: string }[] }[];
@@ -20,6 +21,10 @@ export type SlpStirPlanContext = {
   about?: { id: string; name: string } | null;
   /** The post the sheet came from, in its own words. */
   post?: { id: string; caption: string } | null;
+  /** The newest plays, newest first, in the words the ledger keeps ("do that again", "undo that"). */
+  recent?: { action: string; who: string[]; undone: boolean }[];
+  /** The planner's own question about these words, and the player's answer. */
+  followUp?: { question: string; answer: string } | null;
 };
 
 /** Only deck levers go to the planner: writing help and pictures are not plays. */
@@ -33,6 +38,8 @@ export function buildSlpStirPlanMessages(context: SlpStirPlanContext) {
   const who = (id: string) => names.get(id) ?? id;
   const catalog = PLAN_ACTIONS.map((name) => {
     const inputs = Object.entries(SLP_ACTIONS[name].inputs)
+      // A play is never a dry run (`slpStirPlayInput`), so the planner is not told about one.
+      .filter(([key]) => key !== "preview")
       .map(([key, text]) => `${key}: ${text}`)
       .join("; ");
     return `- ${name}: ${SLP_ACTIONS[name].summary}${inputs ? ` Inputs: ${inputs}` : ""}`;
@@ -49,13 +56,19 @@ export function buildSlpStirPlanMessages(context: SlpStirPlanContext) {
     '- Something no action can do: say so in one short in-world line in "cant", and where it fits add the nearest action (often an idea for one Creator).',
     "- Ideas and chapters stay in the player's words and language, short.",
     '- A time ("this week", "tonight") does not change the action; plays start now and the Creators pace them.',
+    '- "Again" or "the same" means a play from the last plays. Taking a play back is not an action: say in "cant" that its Undo in Recent plays does that.',
     'Answer with JSON only: {"steps":[{"action":"<name>","input":{…},"why":"<one short line>"}],"question":null,"cant":[]}',
   ].join("\n");
   const creators = context.creators
-    .map(
-      (creator) =>
-        `- ${creator.id}: ${line(creator.name)} (@${creator.handle})${creator.automatic ? "" : " — the player's own page"}`,
-    )
+    .map((creator) => {
+      const whose = creator.automatic
+        ? ""
+        : creator.own === false
+          ? " — another player's page"
+          : " — the player's own page";
+      const card = creator.card ? `: ${line(creator.card).slice(0, 160)}` : "";
+      return `- ${creator.id}: ${line(creator.name)} (@${creator.handle})${whose}${card}`;
+    })
     .join("\n");
   const world = context.world;
   const lists = [
@@ -88,7 +101,13 @@ export function buildSlpStirPlanMessages(context: SlpStirPlanContext) {
     context.post
       ? `# The post the player came from\n${context.post.id}: ${line(context.post.caption).slice(0, 400)}`
       : "",
+    context.recent?.length
+      ? `# The player's last plays, newest first\n${context.recent.map((play) => `- ${play.action}${play.who.length ? ` (${play.who.map(who).join(", ")})` : ""}${play.undone ? ", taken back" : ""}`).join("\n")}`
+      : "",
     `# The player's words (quoted content)\n${line(context.text)}`,
+    context.followUp
+      ? `# You asked (quoted)\n${line(context.followUp.question)}\n# The player's answer (quoted content)\n${line(context.followUp.answer)}\nPlan from the words and the answer together; do not ask again unless it is still unclear.`
+      : "",
   ]
     .filter(Boolean)
     .join("\n\n");
