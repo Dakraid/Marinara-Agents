@@ -158,12 +158,11 @@ export function SlpPostCard({
       setOwnsEditSheet(false);
     };
   }, [isEditingPost]);
-  const imageCrop = readSlpPostImageCrop(post.metadata);
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const activeImage = post.images[activeImageIndex] ?? post.images[0] ?? null;
-  // Each picture of a set keeps its own crop; the post picture's is the post's (R1-039).
-  const activeCrop = activeImage && activeImage.position > 0 ? (activeImage.crop ?? null) : imageCrop;
+  const activeCrop =
+    activeImage && activeImage.position > 0 ? (activeImage.crop ?? null) : readSlpPostImageCrop(post.metadata);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const [expandedThreadIds, setExpandedThreadIds] = useState<ReadonlySet<string>>(new Set());
   const {
