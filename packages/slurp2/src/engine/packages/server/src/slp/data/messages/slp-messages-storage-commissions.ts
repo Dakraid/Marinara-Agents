@@ -5,7 +5,6 @@ import type { DB } from "../../../db/connection.js";
 import { logger } from "../../../lib/logger.js";
 import {
   slurpCommissions,
-  slurpPaymentCompensations,
   slurpMessageClaims,
   slurpMessages,
   slurpReplyBubbles,
@@ -61,6 +60,7 @@ import type {
   SlurpThreadView,
 } from "./slp-messages-storage-types.js";
 import { createSlurpReplyMethods } from "./slp-reply-storage-methods.js";
+import { slurpCommissionWasCharged } from "./slp-messages-storage-refunds.js";
 import type { SlurpMessagesContext } from "./slp-messages-storage-context.js";
 
 const briefCreations = new Map<string, Promise<unknown>>();
@@ -89,18 +89,7 @@ export function createMessagesStorageCommissions(context: SlurpMessagesContext) 
     hasCompletedSlurpPaymentOperation,
     queueCommissionOperation,
   } = context;
-  /**
-   * Did accepting this commission take coins from a player wallet? An audience commission and one
-   * accepted with the wallet off charged nobody. Reading the current wallet setting instead
-   * refunded coins nobody paid, and an audience refund had no credit to reverse and retried forever.
-   */
-  const commissionWasCharged = async (id: string): Promise<boolean> => {
-    const [intent] = await db
-      .select()
-      .from(slurpPaymentCompensations)
-      .where(eq(slurpPaymentCompensations.id, `commission:${id}:accept`));
-    return intent?.status === "charged" || intent?.status === "settled";
-  };
+  const commissionWasCharged = (id: string) => slurpCommissionWasCharged(db, id);
   return {
     async createCommission(
       viewerAccountId: string,
