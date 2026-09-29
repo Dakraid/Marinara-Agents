@@ -1,10 +1,13 @@
-import { BriefcaseBusiness, Image as ImageIcon, Lock, MessageCircle, Palette } from "lucide-react";
+import { BriefcaseBusiness, Image as ImageIcon, MessageCircle, Palette, PenLine } from "lucide-react";
+import { SlpLockGlyph } from "../../base/chrome/SlpGlyphs";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { SlurpCoin } from "../../modules/coin/SlpCoin";
 import { useSlurpConnections } from "../../base/state/slp-host-connections";
 import { useCreateSlurpCommission } from "../../features/messages/commissions/slp-commission-hooks";
 import type { SlurpMessage } from "../../features/messages/slp-messages-contract";
+import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
+
 import {
   useDraftSlurpCreatorReply,
   useForceSlurpReply,
@@ -35,6 +38,9 @@ import { useSlurpSettings, useUpdateSlurpSettings } from "../../features/setting
  */
 import { SLURP_MESSAGE_PAGE, type SlurpConversationDrawerMode } from "./SlpMessages";
 
+/** The one reading column for bubbles and composer on wide screens (~720 px). */
+export const SLP_THREAD_COLUMN_CLASS = "mx-auto w-full max-w-[45rem]";
+
 export interface SlurpThreadViewProps {
   threadId: string | null;
   creatorAccountId: string | null;
@@ -45,6 +51,13 @@ export interface SlurpThreadViewProps {
   onBack: () => void;
   onOpenProfile: (accountId: string) => void;
   desktopSplit?: boolean;
+  /** Opened from "Write as Slurp Support": Slurp Support's one thread with this Creator. */
+  startAsSupport?: boolean;
+  /**
+   * "Switch to Slurp Support" / "Back to your persona": the other voice is a different thread
+   * (Support has one thread per Creator, shared by every persona), so the inbox opens that one.
+   */
+  onSwitchVoice?: (creatorAccountId: string, asSupport: boolean) => void;
 }
 
 /**
@@ -64,11 +77,13 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
     onBack,
     onOpenProfile,
     desktopSplit,
+    startAsSupport,
+    onSwitchVoice,
   } = props;
   const { t: localizeUi, i18n } = useUiTranslation();
   const byThread = useSlurpThread(threadId, personaId);
   const olderMessages = useSlurpOlderMessages();
-  const byCreator = useSlurpCompose(threadId ? null : creatorAccountId, personaId);
+  const byCreator = useSlurpCompose(threadId ? null : creatorAccountId, personaId, Boolean(startAsSupport));
   const threadQuery = threadId ? byThread : byCreator;
   const send = useSendSlurpMessage();
   const cheat = useSlurpCheatDirective();
@@ -89,7 +104,7 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [connectionPickerOpen, setConnectionPickerOpen] = useState(false);
   const [toolTab, setToolTab] = useState<
-    "tip" | "commission" | "photo" | "generated-photo" | "creator" | "request" | null
+    "tip" | "commission" | "photo" | "generated-photo" | "creator" | "request" | "write" | null
   >(null);
   const [commissionPrefill, setCommissionPrefill] = useState("");
   const settingsQuery = useSlurpSettings();
@@ -120,16 +135,12 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
   // Set when older entries are about to mount, so the viewport can be pinned to what it was on.
   const growAnchorRef = useRef<number | null>(null);
   const landedAtBottomRef = useRef(false);
-  const drawerRef = useRef<HTMLDialogElement | null>(null);
-  const drawerTriggerRef = useRef<HTMLButtonElement | null>(null);
   const searchTriggerRef = useRef<HTMLButtonElement | null>(null);
   const headerMenuTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const headerMenuRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [tierOpen, setTierOpen] = useState(false);
   const tierTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const tierPopoverRef = useRef<HTMLDivElement | null>(null);
   const [awayFromBottom, setAwayFromBottom] = useState(false);
   const messageSearchInputRef = useRef<HTMLInputElement | null>(null);
   const thread = threadQuery.data?.thread ?? null;
@@ -164,7 +175,9 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
   const targetCreatorAccountId = thread?.creatorAccountId ?? creator?.id ?? creatorAccountId;
   const ownsCreator = Boolean(targetCreatorAccountId && ownedCreatorAccountIds.includes(targetCreatorAccountId));
   // A Creator answers many fans from one account, so on that side the draft belongs to the thread.
-  const draftStorageKey = `slurp2-message-draft:${personaId ?? "none"}:${targetCreatorAccountId ?? "none"}${ownsCreator && threadId ? `:${threadId}` : ""}`;
+  // Slurp Support's own thread (`slp-support.ts`): the player writes in it as Support, from any persona.
+  const supportThread = thread ? thread.viewerAccountId === SLURP_SUPPORT_ACCOUNT_ID : Boolean(startAsSupport);
+  const draftStorageKey = `slurp2-message-draft:${supportThread ? "support" : (personaId ?? "none")}:${targetCreatorAccountId ?? "none"}${ownsCreator && threadId ? `:${threadId}` : ""}`;
   const messaging = threadQuery.data?.messaging;
   const commissions = useMemo(() => threadQuery.data?.commissions ?? [], [threadQuery.data?.commissions]);
   const relationship = "relationship" in (threadQuery.data ?? {}) ? threadQuery.data?.relationship : undefined;
@@ -222,6 +235,20 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
     .map(({ commission, at }) => `${commission.id}:${commission.state}:${commission.updatedAt}:${at}`)
     .join("|");
   const subscribed = thread?.subscribed ?? threadQuery.data?.subscribed ?? false;
+  // The player can write as Slurp Support (Slurp's staff) to any Creator they do not run. Support
+  // has its own thread; the name is the one the kept sign-up chat gave Support, so it stays one Support.
+  const asSupport = !ownsCreator && supportThread;
+  const setSupportChoice = (next: boolean) => {
+    if (targetCreatorAccountId && next !== asSupport) onSwitchVoice?.(targetCreatorAccountId, next);
+  };
+  const supportName =
+    messages
+      .map((message) => message.metadata.sceneSpeaker)
+      .find(
+        (speaker, index): speaker is string =>
+          typeof speaker === "string" &&
+          (messages[index]!.metadata.supportVoice === true || messages[index]!.metadata.signUpScene === "support"),
+      ) ?? "Slurp Support";
   const headerAccount = ownsCreator ? counterpart : creator;
   const headerProfileId = ownsCreator ? thread?.viewerAccountId : targetCreatorAccountId;
   const busy = send.isPending || tip.isPending || creatorReply.isPending || draftReply.isPending;
@@ -244,6 +271,15 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
       (ownsCreator
         ? ([
             {
+              id: "write",
+              icon: PenLine,
+              label: localizeUi("ui.slurp.messages.helpWrite", { defaultValue: "Help me write" }),
+              detail: localizeUi("ui.slurp.messages.helpWriteDetail", {
+                defaultValue: "Slurp writes or polishes your message",
+              }),
+              group: "conversation" as const,
+            },
+            {
               id: "request",
               icon: MessageCircle,
               label: localizeUi("ui.slurp.messages.requestFanReply", { defaultValue: "Request a reply" }),
@@ -261,7 +297,7 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
             },
             {
               id: "creator",
-              icon: Lock,
+              icon: SlpLockGlyph,
               label: localizeUi("ui.slurp.messages.lockedContent", { defaultValue: "Locked content" }),
               detail: localizeUi("ui.slurp.messages.lockedContentDetail", { defaultValue: "Send a paid message" }),
               group: "creator" as const,
@@ -283,6 +319,15 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
               label: localizeUi("ui.slurp.messages.requestReply", { defaultValue: "Request a reply" }),
               detail: localizeUi("ui.slurp.messages.requestReplyDetail", {
                 defaultValue: "Ask gently without forcing a reply",
+              }),
+              group: "conversation" as const,
+            },
+            {
+              id: "write",
+              icon: PenLine,
+              label: localizeUi("ui.slurp.messages.helpWrite", { defaultValue: "Help me write" }),
+              detail: localizeUi("ui.slurp.messages.helpWriteDetail", {
+                defaultValue: "Slurp writes or polishes your message",
               }),
               group: "conversation" as const,
             },
@@ -396,32 +441,9 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
     // `visibleCount`: a match in an older page only exists after the effect above mounts it.
   }, [currentSearchMatch, messageSearchIndex, searchMessageIds, visibleCount]);
 
-  useEffect(() => {
-    const dialog = drawerRef.current;
-    if (!dialog) return;
-    if (drawerMode && !dialog.open) {
-      // The mobile header menu closes before the drawer opens, so focus is already on <body>.
-      // The menu button is then the control that opened it.
-      const active = document.activeElement;
-      drawerTriggerRef.current =
-        active instanceof HTMLButtonElement && active !== document.body ? active : headerMenuTriggerRef.current;
-      dialog.showModal();
-    } else if (!drawerMode && dialog.open) {
-      dialog.close();
-    }
-    // Every open tab locks the page. The cleanup ran on each tab switch and unlocked it.
-    if (drawerMode) document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [drawerMode]);
-
-  const closeDrawer = () => {
-    const trigger = drawerTriggerRef.current;
-    setDrawerMode(null);
-    document.body.style.overflow = "";
-    window.requestAnimationFrame(() => trigger?.focus());
-  };
+  // Details / Memories / Commissions: an SlpSheet (phones, tablets) or a docked column (desktop);
+  // the sheet traps and returns focus itself.
+  const closeDrawer = () => setDrawerMode(null);
 
   const messageScrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -526,6 +548,9 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
   const canForceReply = Boolean(personaId && thread && !ownsCreator && (thread.needsReply || waitingNote === "queued"));
 
   return {
+    asSupport,
+    setSupportChoice,
+    supportName,
     threadId,
     creatorAccountId,
     personaId,
@@ -608,18 +633,14 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
     bottomRef,
     growAnchorRef,
     landedAtBottomRef,
-    drawerRef,
-    drawerTriggerRef,
     searchTriggerRef,
     headerMenuTriggerRef,
-    headerMenuRef,
     composerRef,
     headerMenuOpen,
     setHeaderMenuOpen,
     tierOpen,
     setTierOpen,
     tierTriggerRef,
-    tierPopoverRef,
     awayFromBottom,
     setAwayFromBottom,
     messageSearchInputRef,

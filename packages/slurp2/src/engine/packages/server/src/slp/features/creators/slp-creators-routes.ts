@@ -10,13 +10,15 @@ import {
   SLURP_DISCOVERY_GENDERS,
 } from "../../modules/discovery/slp-discovery-profile.js";
 import { z } from "zod";
+import { claimSlurpModelBudget, slurpModelWorkerAllows } from "../../base/model/slp-model-worker.js";
 import { resolveSlurpTextConnection } from "../../base/identity/slp-connection.js";
 import { generateSlurpConversationSchedule } from "../messages/slp-messages-contract.js";
-import { slurpPlatformScaleMultiplier } from "../../modules/audience/slp-scale.js";
+import { slurpPlatformScaleMultiplier } from "../../../../../shared/src/slp/slp-scale.js";
 import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
 import { slurpCreatorReach } from "../../../../../shared/src/slp/slp-reach.js";
 import { generateCreatorStageProfileDraft } from "./slp-stage-profile-draft-service.js";
 import { logger } from "../../../lib/logger.js";
+import { moveSlurpStrategyLimits } from "../../data/creators/slp-spice-storage.js";
 import { getErrorMessage } from "../../modules/creators/slp-public-support.js";
 import { tryCreatorAccountOperation } from "../../base/locking/slp-account-operation-lock.js";
 import { resolveCreatorSourceSnapshot } from "../../data/creators/slp-source-resolve.js";
@@ -81,6 +83,8 @@ export async function slpCreatorsRoutes(app: FastifyInstance, deps: SlpRouteDeps
     ) {
       return reply.code(400).send({ error: "Persona-owned Slurp profiles cannot post automatically." });
     }
+    // The editor no longer shows the sign-up chat's spice lines; move them before a save drops them.
+    if (parsed.data.subtree === "strategy") await moveSlurpStrategyLimits(app.db, account).catch(() => undefined);
     const updated = await noodle.patchAccountSettings(id, parsed.data);
     if (!updated) return reply.code(404).send({ error: "Creator account not found" });
     return updated;
@@ -147,8 +151,16 @@ export async function slpCreatorsRoutes(app: FastifyInstance, deps: SlpRouteDeps
     const character = await characters.getById(source.entityId);
     if (!character) return reply.code(404).send({ error: "Linked Engine character not found." });
     const scheduleSettings = await noodle.getSettings();
-    const connection = await resolveSlurpTextConnection(connections, scheduleSettings.generationConnectionId);
+    // The AI budget's "Creator schedules" row: its mode, connection and daily cap apply (R1-107).
+    if (!slurpModelWorkerAllows(scheduleSettings.modelBudget, "present"))
+      return reply.code(409).send({ error: "The AI budget is off. Turn it on under Audience → AI budget." });
+    const connection = await resolveSlurpTextConnection(
+      connections,
+      scheduleSettings.modelBudget.connectionId ?? scheduleSettings.generationConnectionId,
+    );
     if (!connection) return reply.code(409).send({ error: "Select a text generation connection first." });
+    if (!(await claimSlurpModelBudget(app.db, scheduleSettings.modelBudget, "schedule")))
+      return reply.code(429).send({ error: "Today's AI budget for Creator schedules is used up." });
     const data = (typeof character.data === "string" ? JSON.parse(character.data) : character.data) as Record<
       string,
       unknown

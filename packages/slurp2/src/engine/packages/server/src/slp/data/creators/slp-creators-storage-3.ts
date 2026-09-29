@@ -38,6 +38,9 @@ import {
   slurpImprovementProposals,
 } from "../../../db/schema/slurp.js";
 import { readCreatorAccountMediaPath, readCreatorAvatarMediaPath } from "../../base/identity/slp-avatar.js";
+import { NOODLER_MEDIA_PREFIX, unlinkCreatorMedia } from "../../base/media/slp-media.js";
+import { slurpUploadedMessageMediaPaths } from "../../modules/messages/slp-messaging.js";
+import { parseRecord } from "../../modules/records/slp-storage-model.js";
 import { newId, now } from "../../../utils/id-generator.js";
 import {
   compareMinimizedCreatorSourceSnapshot,
@@ -45,6 +48,7 @@ import {
 } from "../../base/identity/slp-source.js";
 import { resolveCreatorSourceSnapshot } from "./slp-source-resolve.js";
 import { withoutHiddenAmbientAccounts } from "../audience/slp-ambient-profiles.js";
+import { isSlurpCharacterFanAccount } from "../../../../../shared/src/slp/slp-audience-characters.js";
 import { slurpViewerSettingsKey } from "../host/slp-storage-constants.js";
 import {
   emptySlpAccountSettings,
@@ -168,6 +172,9 @@ export function createCreatorsStorage3(context: SlurpStorageContext) {
           ? await db.select().from(slpInteractions).where(inArray(slpInteractions.postId, postIds))
           : [];
       const interactionIds = interactionRows.map((interaction) => interaction.id);
+      // The player's chat uploads live in the shared messages folder, not the Creator's, so the
+      // folder removal after this delete does not reach them (R1-061).
+      const uploadedMessageMedia: string[] = [];
       await db.transaction(async (tx) => {
         if (postIds.length > 0) {
           await tx.delete(slpActivityDigests).where(inArray(slpActivityDigests.sourcePostId, postIds));
@@ -207,6 +214,13 @@ export function createCreatorsStorage3(context: SlurpStorageContext) {
           .where(or(eq(slurpThreads.viewerAccountId, id), eq(slurpThreads.creatorAccountId, id)));
         const threadIds = threadRows.map((row) => row.id);
         if (threadIds.length > 0) {
+          const messageRows = await tx.select().from(slurpMessages).where(inArray(slurpMessages.threadId, threadIds));
+          uploadedMessageMedia.push(
+            ...slurpUploadedMessageMediaPaths(
+              messageRows.map((row) => parseRecord(row.metadata)),
+              `${NOODLER_MEDIA_PREFIX}messages/`,
+            ),
+          );
           await tx.delete(slurpMessages).where(inArray(slurpMessages.threadId, threadIds));
           await tx.delete(slurpReplyBubbles).where(inArray(slurpReplyBubbles.threadId, threadIds));
           await tx.delete(slurpMessageClaims).where(inArray(slurpMessageClaims.threadId, threadIds));
@@ -231,11 +245,16 @@ export function createCreatorsStorage3(context: SlurpStorageContext) {
         await tx.delete(slpAccounts).where(and(eq(slpAccounts.id, id), eq(slpAccounts.platform, "slurp")));
         await tx._fileStore.flush();
       });
+      for (const mediaPath of uploadedMessageMedia) unlinkCreatorMedia(mediaPath);
       await this.clearWardrobe(id);
       return existing;
     },
     async listNoodlerStageProfiles(): Promise<SlurpManagedStageProfile[]> {
-      const accounts = (await this.listNoodlerAccounts()).filter((account) => !isSlurpViewerActorAccount(account));
+      // A character in the audience has its own fan row with no source; it is not a Creator (0.3.0
+      // report B: it showed as a second Creator with an appearance nobody could extract).
+      const accounts = (await this.listNoodlerAccounts()).filter(
+        (account) => !isSlurpViewerActorAccount(account) && !isSlurpCharacterFanAccount(account),
+      );
       return Promise.all(
         accounts.map(async (account) => {
           const disclosureMode = account.settings.privacy.identityDisclosure ?? null;
@@ -349,7 +368,13 @@ export function createCreatorsStorage3(context: SlurpStorageContext) {
           gender: stageProfile.gender,
           tags: stageProfile.tags,
         },
-        scheduler: { autoPosting: defaultAutoPostingSettings() },
+        // "Enable images for new creators" applies to every new Creator, not only the wizard's (R1-123).
+        scheduler: {
+          autoPosting: {
+            ...defaultAutoPostingSettings(),
+            imagesEnabled: (await this.getSettings()).autoPostingImagesEnabled === true,
+          },
+        },
         ...(slurpStageFacts(stageProfile) && {
           stage: slurpStageFacts(stageProfile)!,
         }),

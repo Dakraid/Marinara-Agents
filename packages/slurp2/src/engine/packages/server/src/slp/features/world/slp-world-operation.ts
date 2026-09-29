@@ -9,6 +9,9 @@
  * model, so briefs and questions come from the combinatorial bank in `slurp-world-copy.ts`.
  * Auto-posting is the one exception to that rule and it lives in its own scheduler.
  */
+import { slurpCoupleBuzz } from "../../modules/projects/slp-creator-couples.js";
+import { settleSlurpStuckMessages } from "../messages/slp-messages-contract.js";
+import { advanceSlurpCreatorTies, readSlurpClosedCouplePageIds } from "../projects/slp-projects-contract.js";
 import {
   slurpCommissionQuote,
   slurpDynamicPriceTarget,
@@ -27,6 +30,7 @@ import { trySlpOperation } from "../../base/locking/slp-operation-lock.js";
 import { readSlurpAudienceTone } from "../../../../../shared/src/slp/slp-tone.js";
 import { slurpCapTickEvents, slurpRhythmMultiplier } from "../../../../../shared/src/slp/slp-tuning.js";
 import { slurpCreatorReach } from "../../../../../shared/src/slp/slp-reach.js";
+import { isSlurpCharacterFanAccount } from "../../../../../shared/src/slp/slp-audience-characters.js";
 import {
   selectSlurpAudienceCharacterIds,
   slurpAudienceCharacterFanTypeId,
@@ -47,7 +51,7 @@ import {
   slurpAudienceSubscriptionDecision,
   slurpLapseReason,
 } from "../../../../../shared/src/slp/slp-audience-subscription.js";
-import { slurpPlatformScaleMultiplier, slurpWorldActivityMultiplier } from "../../modules/audience/slp-scale.js";
+import { slurpPlatformScaleMultiplier, slurpWorldActivityMultiplier } from "../../../../../shared/src/slp/slp-scale.js";
 import { slurpCreatorOpener, slurpCreatorReaction, slurpLapseNote } from "../../modules/world/slp-world-copy.js";
 import { generateSlurpArc } from "../projects/slp-projects-contract.js";
 import {
@@ -64,6 +68,7 @@ import { SLURP_POST_LANDED_REACTIONS } from "../../modules/creators/slp-creator-
 import { planSlurpWorldPulse } from "../../../../../shared/src/slp/slp-world-pulse.js";
 import { slpCreatorUnlockPriceFromMetadata } from "../../modules/economy/slp-prices.js";
 import { localDayKey, applyAction, applyPulse } from "./slp-world-actions.js";
+import { planSlurpCreatorCheckIn } from "./slp-creator-check-in.js";
 import {
   PULSE_KEY,
   readLastTick,
@@ -121,6 +126,10 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
       const storyStorage = createSlurpStorage(db);
       // Occurrences are a clock/ledger concern, so they advance even when ambient activity is off.
       await storyStorage.reconcileStoryEvents(until);
+      // Collabs, rivalries and brand deals: their own clock, and their posts settle every tick (7b-c).
+      await advanceSlurpCreatorTies(db, until).catch((error: unknown) =>
+        logger.warn(error, "[slurp-world] Collabs and deals could not move on this tick"),
+      );
       const since = await readLastTick(db);
       if (!since) {
         await writeLastTick(db, until);
@@ -141,12 +150,24 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
       /** How many people the world keeps on hand to act. Small: actions per tick are capped anyway. */
       const WORLD_AUDIENCE_POOL = tuning.pulse.poolSize;
       if (activity === 0) {
+        // "Off" silences the world around the Creators, not their own lives: storylines still move
+        // on and start (R1-109). Prices and churn read audience demand, which is frozen with it.
+        for (const account of await noodle.listNoodlerAccounts()) {
+          await yieldToEngine();
+          await noodle.tickProjects(account.id, until).catch(() => []);
+          await noodle
+            .rollAutoArc(account.id, until, (id, partnerIds) =>
+              generateSlurpArc(db, id, partnerIds, "", { kind: "background" }),
+            )
+            .catch(() => null);
+        }
         await writeLastTick(db, until);
         return { status: "idle" as const, actions: 0 };
       }
       const accounts = await noodle.listNoodlerAccounts();
       const automaticCreators = accounts.filter(
-        (account) => !(account.kind === "persona" && account.sourceKind === "persona"),
+        (account) =>
+          !(account.kind === "persona" && account.sourceKind === "persona") && !isSlurpCharacterFanAccount(account),
       );
       const allAccounts = await noodle.listAccounts();
 
@@ -287,6 +308,7 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
         ]);
         const prices = createSlurpStorage(db);
         for (const account of automated) {
+          await yieldToEngine();
           const pricing = await messages.getCreatorMessaging(account.id);
           if (pricing.pricedAt && until.getTime() - Date.parse(pricing.pricedAt) < 7 * 86_400_000) continue;
           const demand = { followers: followers.get(account.id) ?? 0, subscribers: subscribers.get(account.id) ?? 0 };
@@ -405,6 +427,7 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
       };
       /** Resolved once per distinct member per tick: the Fan Type is what decides money now. */
       const fanTypeFor = new Map<string, SlurpFanType | null>();
+      const closedPages = await readSlurpClosedCouplePageIds(db).catch(() => new Set<string>());
       for (const account of accounts) {
         await yieldToEngine();
         const price = await noodle.getCreatorSubscriptionPrice(account.id).catch(() => 0);
@@ -431,6 +454,7 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
               interactions: tie.interactions,
               followedAt: tie.followedAt,
               renewChance: fanType.funnel.renewChance,
+              closed: closedPages.has(account.id),
             },
             until,
             tuning.funnel,
@@ -531,6 +555,8 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
           .settleAudienceCommission(commission.id, answer.kind === "accept" ? "accept" : "decline")
           .catch(() => null);
       }
+      // Paid commissions get delivered and unanswerable requests expire (7c M-005, M-009).
+      await settleSlurpStuckMessages(db, automatedCreatorIds, until).catch(() => undefined);
 
       // Counted after churn, so reach reflects the audience that is left rather than the one that
       // just drifted out.
@@ -552,7 +578,10 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
               },
               until,
               tuning.reach,
-            ) * (await noodle.arcEffectMultiplier(account.id, "growth")),
+            ) *
+              (await noodle.arcEffectMultiplier(account.id, "growth")) *
+              // "feed.reach" events widen or narrow who sees this Creator's posts (R1-112).
+              (await noodle.platformInfluenceMultiplier("feed.reach", account.id, until)),
           ),
           recentPostIds: slurpQuestionPostIds(
             postsByAccount.get(account.id) ?? [],
@@ -597,7 +626,7 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
                 creatorAccountId: creator.id,
                 postId: post.id,
                 ageHours: (until.getTime() - Date.parse(post.createdAt)) / 3_600_000,
-                creatorReach: creator.followers,
+                creatorReach: creator.followers * slurpCoupleBuzz(post.metadata),
               })),
           ),
         },
@@ -704,6 +733,14 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
           const daysSinceSeen = (until.getTime() - Date.parse(tie.lastSeenAt)) / 86_400_000;
           if (!Number.isFinite(daysSinceSeen)) continue;
           const existingThread = await messages.getThread(tie.memberId, account.id);
+          // A quiet chat that exists: now and then the Creator writes first in it (G5).
+          if (existingThread) {
+            const isPlayer = async (memberId: string) => Boolean(await noodle.getViewer(memberId));
+            const at = { creatorAccountId: account.id, tie, thread: existingThread, until };
+            const input = { ...at, messages, isPlayer, unit: slurpDeterministicUnit };
+            if (await planSlurpCreatorCheckIn(input).catch(() => false)) opened += 1;
+            continue;
+          }
           const kind = slurpCreatorOpenerKind({
             tie,
             daysSinceSeen,

@@ -43,7 +43,7 @@ import { slurpWeightedPick } from "./slp-weighted.js";
  */
 const JOBS: Record<SlurpContentIntent, string> = {
   casual:
-    "This one is not selling anything. Talk about your actual day like a person with a life outside this, and let it be dull.",
+    "This one is not selling anything. Share one thing from your actual day that you would tell a friend about, the way only you would tell it.",
   teaser:
     "This one is bait. Show enough that somebody wants the rest, say less than you want to, and do not resolve it.",
   set: "This is a planned shoot you have been working on. You may say it took effort, that there is more of it, or when the rest lands.",
@@ -173,6 +173,13 @@ export function slurpPostAxes(
     textOnlyRate?: number;
     /** Who will be able to read this. A locked post never teases what the reader already owns. */
     access?: "public" | "locked";
+    /** The intents a planned beat can serve. See `slp-post-beat.ts`. Absent means any. */
+    intentsAllowed?: readonly SlurpContentIntent[];
+    /**
+     * Only one picture can be drawn for this post. The reserve prepares a post with one picture, so
+     * a set drawn there announced several pictures and published one (R1-053).
+     */
+    singlePicture?: boolean;
   },
 ): SlurpPostAxes {
   // A Story can be a thank-you or a request as well as a passing moment. It cannot be a set or a
@@ -180,7 +187,8 @@ export function slurpPostAxes(
   const options = intentOptions(decided.intentWeights).filter(
     (option) =>
       (!decided.story || (option.value !== "set" && option.value !== "callback")) &&
-      slurpIntentFitsAccess(option.value, decided.access ?? "public"),
+      slurpIntentFitsAccess(option.value, decided.access ?? "public") &&
+      (!decided.intentsAllowed || decided.intentsAllowed.includes(option.value)),
   );
   const intent: SlurpContentIntent = decided.teaser
     ? "teaser"
@@ -199,7 +207,15 @@ export function slurpPostAxes(
   // be. 50 is the shipped balance, so an unset strategy changes nothing.
   const lean = (decided.textOnlyRate ?? 50) / 50;
   const textOnly = Math.min(90, Math.round(TEXT_ONLY_WEIGHTS[intent] * lean));
-  const multiImageWeight = intent === "set" ? 45 : intent === "callback" ? 25 : intent === "request" ? 20 : 0;
+  const multiImageWeight = decided.singlePicture
+    ? 0
+    : intent === "set"
+      ? 45
+      : intent === "callback"
+        ? 25
+        : intent === "request"
+          ? 20
+          : 0;
   const delivery = slurpWeightedPick("delivery", creatorAccountId, sequence, [
     { value: "text_only" as const, weight: textOnly },
     { value: "new_capture" as const, weight: Math.max(0, 100 - textOnly - multiImageWeight) },

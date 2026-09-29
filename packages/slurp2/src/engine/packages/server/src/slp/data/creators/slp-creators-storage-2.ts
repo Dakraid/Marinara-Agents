@@ -218,7 +218,10 @@ export function createCreatorsStorage2(context: SlurpStorageContext) {
     async updateSettings(input: SlurpSettingsUpdateInput): Promise<SlurpSettings> {
       const run = slurpSettingsUpdateQueue.current.then(async () => {
         const current = await this.getSettings();
-        const next = normalizeSlurpSettings({ ...current, ...input });
+        // A "Posts per day" the player sends is theirs from now on, unless the patch says otherwise
+        // (Use recommended, a section reset).
+        const mark = input.postsPerDay !== undefined && input.postsPerDayCustom === undefined;
+        const next = normalizeSlurpSettings({ ...current, ...input, ...(mark ? { postsPerDayCustom: true } : {}) });
         await settingsStore.set(SLURP_SETTINGS_KEY, JSON.stringify(next));
         if (!current.autoPostingScheduleEnabled && next.autoPostingScheduleEnabled) {
           const timestamp = now();

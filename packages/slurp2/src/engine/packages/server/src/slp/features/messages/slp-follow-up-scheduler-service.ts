@@ -2,14 +2,19 @@ import type { FastifyInstance } from "fastify";
 import { logger } from "../../../lib/logger.js";
 import { createSlurpMessagesStorage } from "../../data/slp-storage.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
-import { isFollowUpDue, formatFollowUpContext, type ScheduledFollowUp } from "../../modules/messages/slp-follow-up.js";
+import {
+  isFollowUpDue,
+  isFollowUpLate,
+  formatFollowUpContext,
+  type ScheduledFollowUp,
+} from "../../modules/messages/slp-follow-up.js";
 import { generateSlurpMessageReply, SlurpMessageBudgetUnavailableError } from "./slp-message-generation-service.js";
 import { resolveSlurpTextConnection } from "../../base/identity/slp-connection.js";
 import { describeSlurpDayVibe } from "../world/slp-world-contract.js";
 import { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
 import { newId, now } from "../../../utils/id-generator.js";
 import { slurpPollBackoffMs } from "../../base/model/slp-poll-backoff.js";
-import { activeSlurpStrikes, SLURP_COOL_OFF_HOURS, type SlurpStanceLatitude } from "../../modules/world/slp-stance.js";
+import { activeSlurpStrikes, type SlurpStanceLatitude } from "../../modules/world/slp-stance.js";
 import { resolveSlurpCreatorAvailability } from "../../modules/creators/slp-creator-schedule-context.js";
 import { createCharactersStorage } from "../../../services/storage/characters.storage.js";
 import { isCreatorNightQuietTime } from "../feed/slp-feed-contract.js";
@@ -101,7 +106,8 @@ export function startSlurpFollowUpScheduler(app: FastifyInstance, registerStop?:
             const coolingOff = Boolean(thread.coolUntil && thread.coolUntil > new Date().toISOString());
             const source = await slurp.resolveAccountSource(creator);
             const latestPost = await slurp.getNoodlerLatestPublishedPost(creator.id);
-            const availability = source
+            const details = await messages.getDetailsOverrides(thread.id);
+            const naturalAvailability = source
               ? await resolveSlurpCreatorAvailability(
                   createCharactersStorage(app.db),
                   source,
@@ -111,6 +117,7 @@ export function startSlurpFollowUpScheduler(app: FastifyInstance, registerStop?:
                   settings,
                 )
               : { online: true, activity: null, minutesUntilOnline: 0 };
+            const availability = { ...naturalAvailability, ...details.availability };
             const quiet = settings.nightQuiet && isCreatorNightQuietTime(new Date());
             if (coolingOff || quiet || (!availability.online && availability.minutesUntilOnline !== null)) {
               const delayMinutes = coolingOff
@@ -132,9 +139,10 @@ export function startSlurpFollowUpScheduler(app: FastifyInstance, registerStop?:
 
             const history = await messages.listMessages(threadRow.id, 60);
             const messaging = await messages.getCreatorMessaging(threadRow.creatorAccountId);
-            // The operator turned this Creator's unprompted messages off, so the queued follow-up
-            // is dropped rather than postponed: it is never going to be allowed to send.
-            if (!messaging.proactiveMessages) {
+            // The operator turned this Creator's unprompted messages off: a queued opener (nobody
+            // asked for it) is dropped, never postponed. A promise was made in a reply and still goes
+            // out (Pulse + E decision: follow-ups are promises; the switch stops new first messages).
+            if (!messaging.proactiveMessages && followUp.type === "opener") {
               await messages.cancelScheduledFollowUp(threadRow.id, followUp.id);
               continue;
             }
@@ -166,7 +174,11 @@ export function startSlurpFollowUpScheduler(app: FastifyInstance, registerStop?:
                 coolingOff,
                 strikes: activeSlurpStrikes(thread.strikes, thread.lastStrikeAt),
                 connection,
-                generationGuidance: formatFollowUpContext(followUp, promise?.text),
+                generationGuidance: formatFollowUpContext(
+                  followUp,
+                  promise?.text,
+                  isFollowUpLate(followUp.firstDueAt ?? followUp.scheduledAt),
+                ),
                 // A follow-up is a promise the Creator already made in a reply, like an away reply that
                 // `slp-message-operation` also sends as "present". As "background" it needed the global
                 // background mode, so with default settings every follow-up postponed itself forever.
@@ -230,7 +242,12 @@ export function startSlurpFollowUpScheduler(app: FastifyInstance, registerStop?:
                 .catch((error: unknown) =>
                   logger.warn(error, "[slurp-follow-up] Could not record creator state signals"),
                 );
-              await applyFollowUpBoundary(messages, threadRow.id, reply.latitude).catch((error: unknown) =>
+              await applyFollowUpBoundary(
+                messages,
+                threadRow.id,
+                reply.latitude,
+                settings.messagesCoolOffMinutes,
+              ).catch((error: unknown) =>
                 logger.warn(error, "[slurp-follow-up] Could not apply the conversation boundary"),
               );
 
@@ -304,9 +321,10 @@ async function applyFollowUpBoundary(
   messages: ReturnType<typeof createSlurpMessagesStorage>,
   threadId: string,
   latitude: SlurpStanceLatitude,
+  coolOffMinutes: number,
 ): Promise<void> {
   if (latitude === "cool_off") {
-    await messages.beginCoolOff(threadId, SLURP_COOL_OFF_HOURS);
+    await messages.beginCoolOff(threadId, coolOffMinutes / 60);
     return;
   }
   if (latitude === "close") await messages.closeThreadByCreator(threadId);

@@ -125,6 +125,15 @@ export type SlurpThreadRelationship = {
   };
   audienceTone: "warm" | "mixed" | "unfiltered";
   imageMode: "friendly" | "hostile" | "none";
+  /** The server's verdicts, from the stance the reply is written from (R1-012). */
+  pictures?: {
+    mode: "friendly" | "hostile" | "none";
+    blockedBy:
+      "support" | "cooling_off" | "images_off" | "stance" | "energy" | "posture" | "comfort" | "respect" | null;
+  };
+  escalation?: {
+    blockedBy: "falling" | "respect" | "resentment" | "posture" | "comfort" | "desire" | "top" | null;
+  };
   creatorState: {
     emotion: string;
     emotionIntensity: number;
@@ -179,3 +188,6 @@ export { CreatorMessagingGroup } from "./SlpCreatorMessagingGroup.js";
 
 // The Creator settings modal edits one Creator's message policy.
 export { useSetSlurpCreatorMessaging } from "./slp-messages-hooks.js";
+
+// The role-play sign-up draws its chat with the same bubbles as a real thread.
+export { slurpBubbleSurface } from "./SlpMessageBubble.js";

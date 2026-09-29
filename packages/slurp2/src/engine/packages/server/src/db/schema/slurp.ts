@@ -392,6 +392,11 @@ export const slurpFollowUps = fileTable(
     sequenceNumber: text("sequence_number"),
     totalInSequence: text("total_in_sequence"),
     recurringPattern: text("recurring_pattern"),
+    /**
+     * When the promise first came due. `scheduledAt` moves with every wait; this does not, so the
+     * Creator knows when she is late (task E). Null on rows from before it: `scheduledAt` stands in.
+     */
+    firstDueAt: text("first_due_at"),
     status: text("status").notNull().default("pending"),
     claimedAt: text("claimed_at"),
     sentAt: text("sent_at"),
@@ -744,6 +749,16 @@ export const slurpContentOpportunities = fileTable("slurp2_content_opportunities
    * A plan with a source event and no slot is a promise: it waits until the planner honours it.
    */
   sourceEventId: text("source_event_id"),
+  /**
+   * What a promise delivers, in the Creator's own words from the request panel. Never the fan's
+   * wording: it reaches a public post.
+   */
+  topic: text("topic"),
+  /**
+   * The beat an ordinary slot was planned around (beats planner only), as JSON. A retry repeats
+   * it, and editorial memory counts beat types from it.
+   */
+  beat: text("beat"),
   plannedAt: text("planned_at").notNull(),
   dueAt: text("due_at"),
   completedAt: text("completed_at"),

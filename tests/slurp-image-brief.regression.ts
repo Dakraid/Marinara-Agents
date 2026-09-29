@@ -4,6 +4,7 @@ import {
   slurpImageNegativePrompt,
   slurpShootContinuity,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-image-brief.ts";
+import { slurpWithoutCameraDevice } from "../packages/slurp2/src/engine/packages/server/src/slp/base/media/slp-image-prompt.ts";
 import { slurpCameraSourcePhoto } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-camera-source.ts";
 import { slurpPostVariation } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-post-variation.ts";
 import {
@@ -34,7 +35,9 @@ assert.ok(brief.indexOf(scene.action) < brief.indexOf(scene.setting), "action le
 // A draft is for an image model: short, positive, and free of rule prose that becomes content.
 assert.ok(brief.length < 700, `draft too long: ${brief.length}`);
 assert.doesNotMatch(brief, /Describe the photograph|Never |no first-person|One photograph this person/u);
-assert.match(brief, /still frame from a phone video/u);
+// P (2026-09-28): the screenshot phrase is now "caught mid-motion …" ("still frame from a video" drew
+// REC and player overlays, PERSPECTIVE-RESEARCH.md F7). What holds is that the camera phrase is in the draft.
+assert.ok(brief.includes(slurpCameraSourcePhoto("screenshot")), "the camera phrase reaches the draft");
 
 // The level is a positive phrase; what it forbids goes to the negative prompt.
 assert.match(slurpImageNegativePrompt("suggestive"), /nipples/u);
@@ -105,5 +108,27 @@ const briefs = slurp2Source(
   "packages/slurp2/src/engine/packages/server/src/slp/features/feed/slp-post-picture-briefs.ts",
 );
 assert.match(briefs, /normalizeSlpImagePrompt\(input\.modelImagePrompt\) \?\?/u);
+
+// The picture never shows the device (0.2.75: a phone was in 37 of 46 prod pictures). Only the
+// parts that name it go; the rest of the scene stays word for word.
+assert.equal(
+  slurpWithoutCameraDevice(
+    "sitting sideways at desk, phone held at arm's length, headphones on.\nHolding her phone up toward the mirror for a selfie.\nwarm light, smartphone in hand; cozy room.",
+  ),
+  "sitting sideways at desk, headphones on.\nwarm light, cozy room.",
+);
+assert.equal(
+  slurpWithoutCameraDevice("a microphone on a stand, iPhone case on the table."),
+  "a microphone on a stand.",
+);
+// P: the call also passes Slurp's own viewpoint phrase, which the filter keeps whole (mirror phone).
+assert.match(briefs, /slurpWithoutCameraDevice\(rawImageDraft, \[cameraShot\]\)/u, "the post draft drops the device");
+assert.match(
+  slurp2Source("packages/slurp2/src/engine/packages/server/src/slp/features/media/slp-public-images-service.ts"),
+  /slurpWithoutCameraDevice\(finalPromptBase\)/u,
+  "the rewritten prompt drops the device too",
+);
+assert.match(slurpImageNegativePrompt("none"), /smartphone/u, "the negative prompt names the phone");
+assert.match(slurpImageNegativePrompt("explicit"), /duplicate person/u, "and a doubled Creator");
 
 console.log("slurp image brief regression checks passed");

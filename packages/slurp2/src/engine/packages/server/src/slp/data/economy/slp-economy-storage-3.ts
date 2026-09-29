@@ -65,7 +65,12 @@ export function createEconomyStorage3(context: SlurpStorageContext) {
                 : reason === "commission"
                   ? "commission_accepted"
                   : "unlock";
-      await this.recordCreatorEvent(creatorAccountId, kind, { amount, actorLabel, subjectId });
+      // A weekly renewal is not a new subscriber; Activity says "renewed" (R1-096).
+      await this.recordCreatorEvent(creatorAccountId, kind, {
+        amount,
+        actorLabel,
+        subjectId: subjectId ?? (reason === "renew" ? "renewed" : subjectId),
+      });
     },
     /**
      * Move somebody along a Creator's funnel.

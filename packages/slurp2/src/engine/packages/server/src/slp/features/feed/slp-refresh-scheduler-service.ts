@@ -3,7 +3,7 @@ import { logger } from "../../../lib/logger.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { AUTOMATIC_GENERATION_HEADER } from "../../../services/generation/connection-admission.js";
 import { createGarnishAds } from "../ads/slp-ads-contract.js";
-import { syncGarnishAdsWithLorebook } from "../ads/slp-ads-contract.js";
+import { redrawOldGarnishAdBanner, syncGarnishAdsWithLorebook } from "../ads/slp-ads-contract.js";
 import {
   dueSlpRefreshTimes,
   markSlpRefreshAttempt,
@@ -138,6 +138,12 @@ export function startSlpRefreshScheduler(
       if (settings.inlineAdsLorebookId) {
         await syncGarnishAdsWithLorebook(app.db, createGarnishAds(app.db).pool).catch((error) =>
           logger.warn(error, "[slurp-scheduler] Lorebook ad sync failed"),
+        );
+      }
+      // Older ads get their wide banner once (V), one picture per poll at most, paced over the day.
+      if (settings.inlineAdsEnabled && settings.inlineAdsImagesEnabled) {
+        await redrawOldGarnishAdBanner(app.db, createGarnishAds(app.db).pool, now).catch((error) =>
+          logger.warn(error, "[slurp-scheduler] Ad banner redraw failed"),
         );
       }
       let schedule = await noodle.ensureRefreshSchedule(now, settings);

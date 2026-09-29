@@ -52,6 +52,8 @@ export function useBulkCreateCreatorStageProfiles() {
         created: SlurpManagedStageProfile[];
         skipped: string[];
         failed?: string[];
+        /** Creators that failed on the way and can be sent again as they are. */
+        retryable?: string[];
         reasons?: { accountId: string; reason: string }[];
       }>("/slurp2/slurp/accounts/bulk", input),
     onSuccess: (result) => {
@@ -89,6 +91,7 @@ export function useUpdateCreatorStageProfile() {
       sourceSnapshot?: SlpCreatorSourceSnapshot;
       sourceRevisionToken?: string;
       confirmAvatarReview?: boolean;
+      location?: string;
     } & SlurpStageProfileInput) =>
       api.put<SlurpManagedStageProfile>(`/slurp2/slurp/accounts/${encodeURIComponent(accountId)}/stage-profile`, {
         ...input,

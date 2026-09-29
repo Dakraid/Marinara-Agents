@@ -1,0 +1,216 @@
+/**
+ * `preview(name, input)` for every action (W): who it touches, what happens, when it shows, what it
+ * costs, the fit notes from the Creator's card, and why it cannot happen, without writing anything.
+ * Stir shows it as a card before "Do it"; Professor Mari can ask for it before she runs something.
+ */
+import type { DB } from "../../../db/connection.js";
+import { createSlurpStorage } from "../../data/slp-storage.js";
+import { readSlurpCreatorSteering } from "../../data/creators/slp-steering-storage.js";
+import { readSlurpSpice } from "../../data/creators/slp-spice-storage.js";
+import { slurpModelWorkerAllows } from "../../base/model/slp-model-worker.js";
+import {
+  isSlurpTieLever,
+  previewSlurpTieLever,
+  slurpBrandDealLever,
+  slurpRunsItself,
+} from "../projects/slp-projects-contract.js";
+import {
+  isSlpActionName,
+  SLP_ACTION_META,
+  SLP_ACTIONS,
+  type SlpActionName,
+  type SlpActionParsed,
+} from "../../../../../shared/src/slp/slp-actions.js";
+import { SLP_STEERING_NUDGES_MAX } from "../../../../../shared/src/slp/slp-creator-steering.js";
+import { SLP_SPICE_LEVELS } from "../../../../../shared/src/slp/slp-spice.js";
+import type { SlpActionPreview } from "../../../../../shared/src/slp/slp-stir.js";
+import type { SlpAssistOutcome } from "./slp-assist-service.js";
+
+type Account = {
+  id: string;
+  displayName: string;
+  avatarUrl?: string | null;
+  kind: string;
+  sourceKind?: string | null;
+};
+
+/** What this action would do. Unknown names and bad input answer like a run would (404 / 400). */
+export async function previewSlpAction(
+  db: DB,
+  name: string,
+  raw: unknown,
+  at = new Date(),
+): Promise<SlpAssistOutcome<SlpActionPreview>> {
+  if (!isSlpActionName(name)) return { ok: false, status: 404, error: `Slurp has no action called "${name}".` };
+  const parsed = SLP_ACTIONS[name].schema.safeParse(raw ?? {});
+  if (!parsed.success) return { ok: false, status: 400, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  const input = parsed.data as Record<string, unknown>;
+  const meta = SLP_ACTION_META[name];
+  const base: SlpActionPreview = {
+    action: name,
+    input,
+    who: [],
+    detail: {},
+    summary: SLP_ACTIONS[name].summary,
+    when: "now",
+    cost: meta.ai ? "ai" : "free",
+    notes: [],
+    error: null,
+    // "Make it happen" takes the no away.
+    refusable: meta.refusable && input.happen !== true,
+    reversible: meta.reversible,
+  };
+  if (isSlurpTieLever(name))
+    return { ok: true, value: { ...base, ...(await previewSlurpTieLever(db, name, input, at)) } };
+  return { ok: true, value: { ...base, ...(await previewOther(db, name, input, at)) } };
+}
+
+async function previewOther(
+  db: DB,
+  name: Exclude<SlpActionName, Parameters<typeof previewSlurpTieLever>[1]>,
+  input: Record<string, unknown>,
+  at: Date,
+): Promise<Partial<SlpActionPreview>> {
+  const storage = createSlurpStorage(db);
+  const creator = typeof input.accountId === "string" ? await storage.getNoodlerAccountById(input.accountId) : null;
+  const account = creator as Account | null;
+  const who = account ? [{ id: account.id, name: account.displayName, avatarUrl: account.avatarUrl ?? null }] : [];
+  const missing = typeof input.accountId === "string" && !account;
+  const nameOf = account?.displayName ?? "";
+  if (missing) return { who, error: "notFound", summary: "That Creator does not exist." };
+  switch (name) {
+    case "write-text":
+    case "improve-text":
+      return {
+        who,
+        detail: { field: String(input.field) },
+        summary: `Writes ${String(input.field)} text for the player to use.`,
+      };
+    case "draw-picture":
+    case "use-picture":
+    case "undo-picture":
+    case "keep-picture":
+      return { who, detail: { target: String(input.target) } };
+    case "list-creators":
+    case "list-world":
+    case "list-brands":
+      return { summary: "Changes nothing." };
+    case "draw-brand-picture":
+      return { detail: { brandId: String(input.brandId), productId: (input.productId as string | undefined) ?? null } };
+    case "offer-brand-deal": {
+      // R's lever answers its own preview (the same rules as the run); only the card's avatars come from here.
+      const { preview: _dryRun, ...lever } = input as SlpActionParsed<"offer-brand-deal">;
+      const { preview } = await slurpBrandDealLever(db, lever, false, at);
+      return { ...preview, who, notes: preview.notes as SlpActionPreview["notes"] };
+    }
+    case "steer-creator": {
+      const patch = input as SlpActionParsed<"steer-creator">;
+      return {
+        who,
+        when: "nextPost",
+        detail: {
+          mood: patch.mood === undefined ? null : (patch.mood ?? "none"),
+          lifePhase: patch.lifePhase ?? null,
+          focus: patch.focus ?? null,
+          pace: patch.pace ?? null,
+          push: patch.push?.join(", ") || null,
+          avoid: patch.avoid?.join(", ") || null,
+        },
+        summary: `${nameOf}'s life changes: ${JSON.stringify(patch)}.`,
+      };
+    }
+    case "add-idea": {
+      const idea = input as SlpActionParsed<"add-idea">;
+      const steering = await readSlurpCreatorSteering(db, idea.accountId);
+      return {
+        who,
+        when: "nextPost",
+        detail: { text: idea.text, story: idea.story },
+        notes: steering.pace === "break" ? [{ kind: "onBreak", name: nameOf }] : [],
+        error: steering.nudges.length >= SLP_STEERING_NUDGES_MAX ? "ideasFull" : null,
+        summary: `${nameOf} gets an idea for a ${idea.story ? "Story" : "post"}: ${idea.text}`,
+      };
+    }
+    case "write-post": {
+      const post = input as SlpActionParsed<"write-post">;
+      return {
+        who,
+        detail: { idea: post.idea ?? null, story: post.story },
+        error: account && !slurpRunsItself(account) ? "notAutomatic" : null,
+        summary: `${nameOf} writes and posts their next ${post.story ? "Story" : "post"} now.`,
+      };
+    }
+    case "set-spice": {
+      const spice = input as SlpActionParsed<"set-spice">;
+      const { max } = await readSlurpSpice(db);
+      const above = spice.level !== null && SLP_SPICE_LEVELS.indexOf(spice.level) > SLP_SPICE_LEVELS.indexOf(max);
+      return {
+        who,
+        when: "nextPost",
+        detail: { level: spice.level, max },
+        notes: above ? [{ kind: "capped", name: nameOf }] : [],
+        summary: `${nameOf}'s spice level becomes ${spice.level ?? "the default"}.`,
+      };
+    }
+    case "start-event": {
+      const { eventId } = input as SlpActionParsed<"start-event">;
+      const [settings, occurrences] = await Promise.all([storage.getSettings(), storage.listStoryOccurrences()]);
+      const event = settings.platformEvents.find((item: { id: string }) => item.id === eventId);
+      if (!event) return { error: "notFound", summary: "That event does not exist." };
+      const live = occurrences.some(
+        (occurrence: { blueprintId: string; status: string; endsAt: string }) =>
+          occurrence.blueprintId === eventId && occurrence.status === "active" && occurrence.endsAt > at.toISOString(),
+      );
+      const days = "durationDays" in event.activation ? Number(event.activation.durationDays) : 1;
+      return {
+        when: "ongoing",
+        detail: { name: event.name, days },
+        notes: live ? [{ kind: "alreadyRunning", name: event.name }] : [],
+        summary: `${event.name} starts now for ${days} day(s); every Creator it fits joins.`,
+      };
+    }
+    case "steer-storyline": {
+      const move = input as SlpActionParsed<"steer-storyline">;
+      const project = (await storage.getProject(move.accountId, move.projectId)) as {
+        title: string;
+        chapters: string[];
+        chapter: number;
+        status: string;
+        held?: boolean;
+      } | null;
+      if (!project) return { who, error: "notFound", summary: "That storyline does not exist." };
+      const live = project.status === "active" || project.status === "paused";
+      const last = project.chapter >= project.chapters.length - 1;
+      const error =
+        !live ||
+        (move.move === "skip" && last) ||
+        (move.move === "back" && project.chapter === 0) ||
+        (move.move === "hold" && project.held) ||
+        (move.move === "release" && !project.held)
+          ? "notOpen"
+          : (move.move === "insert" || move.move === "label") && !move.text
+            ? "noText"
+            : null;
+      return {
+        who,
+        when: "nextPost",
+        detail: {
+          move: move.move,
+          title: project.title,
+          chapter: project.chapters[project.chapter] ?? "",
+          next: project.chapters[project.chapter + 1] ?? null,
+          text: move.text ?? null,
+        },
+        error,
+        summary: `${nameOf}'s storyline "${project.title}": ${move.move}${move.text ? ` (${move.text})` : ""}.`,
+      };
+    }
+    case "run-audience": {
+      const settings = await storage.getSettings();
+      return {
+        error: slurpModelWorkerAllows(settings.modelBudget, "present") ? null : "aiOff",
+        summary: "The fans like, comment and reply now.",
+      };
+    }
+  }
+}

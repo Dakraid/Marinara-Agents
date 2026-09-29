@@ -21,6 +21,8 @@ export type SlurpProject = {
   history: SlurpArcHistoryEntry[];
   completedAt: string | null;
   twist: string;
+  /** Staying on the current chapter until the player moves on. */
+  held?: boolean;
   choices: (SlurpArcChoice | null)[];
   pollPostId: string | null;
   pollClosesAt: string | null;
@@ -66,7 +68,7 @@ export type SlurpArcTimeline = Pick<
   SlurpProject,
   "id" | "title" | "tone" | "chapters" | "chapter" | "status" | "startedAt" | "completedAt" | "history"
 > & {
-  openChoice: { question: string; closesAt: string | null } | null;
+  openChoice: { question: string; closesAt: string | null; pollPostId?: string | null } | null;
   /** The other Creators in a crossover this viewer may see. */
   partners?: { id: string; handle: string; displayName: string; avatarUrl: string | null }[];
 };
@@ -82,3 +84,11 @@ export type SlurpCreatorArcConfig = {
 };
 /** Mirrors `SlurpArcType` on the server: one entry of the `arcLibrary` setting. */
 export type SlurpArcType = SlpArcBlueprint;
+
+/** The per-Creator storyline overrides, also shown as a tab in Creator settings. */
+export { ArcConfigSection } from "./SlpArcConfigSection";
+export { SlurpProjectsPanel } from "./SlpProjectsBoard";
+export { useSlurpProjects } from "./slp-projects-hooks";
+// W: Business and Relationships (U) moved from Studio into the Stir tab; the ✦ sheet moves chapters.
+export { SlpCollabsPanel, SlpRelationshipsPanel } from "./SlpCollabsPanel";
+export { SlpArcChapterControls } from "./SlpArcChapterControls";

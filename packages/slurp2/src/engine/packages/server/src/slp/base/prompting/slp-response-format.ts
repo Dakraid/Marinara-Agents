@@ -126,8 +126,16 @@ function slpCreatorPostSchema(
   allowScenePlan: boolean,
   contentMaxLength: number,
   sceneShots: number,
+  claims: boolean,
 ) {
   const withShots = allowScenePlan && sceneShots > 0;
+  const required = withShots
+    ? ["title", "content", "scene", "shots"]
+    : allowScenePlan
+      ? ["title", "content", "scene"]
+      : allowImagePrompt
+        ? ["title", "content", "imagePrompt"]
+        : ["title", "content"];
   return {
     type: "object",
     properties: {
@@ -165,17 +173,22 @@ function slpCreatorPostSchema(
       ...(withShots
         ? { shots: { type: "array", minItems: sceneShots, maxItems: sceneShots, items: slpSceneShotJsonSchema } }
         : {}),
+      // The beats planner's self-declared claims, compared with the brief in code.
+      ...(claims ? { claims: slpBeatClaimsJsonSchema } : {}),
     },
-    required: withShots
-      ? ["title", "content", "scene", "shots"]
-      : allowScenePlan
-        ? ["title", "content", "scene"]
-        : allowImagePrompt
-          ? ["title", "content", "imagePrompt"]
-          : ["title", "content"],
+    required: claims ? [...required, "claims"] : required,
     additionalProperties: false,
   } as const;
 }
+
+const stringList = { type: "array", items: { type: "string", maxLength: 200 } } as const;
+
+const slpBeatClaimsJsonSchema = {
+  type: "object",
+  properties: { people: stringList, earlierEvents: stringList, stateChanges: stringList },
+  required: ["people", "earlierEvents", "stateChanges"],
+  additionalProperties: false,
+} as const;
 
 const slpCreatorProfileSchema = {
   type: "object",
@@ -286,6 +299,57 @@ const slpCreatorDmSchema = {
   additionalProperties: false,
 } as const;
 
+const slpCreatorStaffDmSchema = {
+  ...slpCreatorDmSchema,
+  properties: {
+    ...slpCreatorDmSchema.properties,
+    staff: {
+      anyOf: [
+        {
+          type: "object",
+          properties: {
+            mood: { type: ["string", "null"], enum: ["bright", "cozy", "restless", "low", "flirty", "stressed", null] },
+            focus: nullableString,
+            idea: nullableString,
+            more: nullableString,
+            less: nullableString,
+            takeaway: nullableString,
+            stir: nullableString,
+          },
+          required: ["mood", "focus", "idea", "more", "less", "takeaway", "stir"],
+          additionalProperties: false,
+        },
+        { type: "null" },
+      ],
+    },
+  },
+  required: [...slpCreatorDmSchema.required, "staff"],
+} as const;
+
+/** Creator to Creator: the two may agree on a joint post (7b-c). */
+const slpCreatorCollabDmSchema = {
+  ...slpCreatorDmSchema,
+  properties: {
+    ...slpCreatorDmSchema.properties,
+    collab: {
+      anyOf: [
+        {
+          type: "object",
+          properties: {
+            idea: nullableString,
+            yourShare: { type: ["number", "null"] },
+            shoot: { type: ["boolean", "null"] },
+          },
+          required: ["idea", "yourShare", "shoot"],
+          additionalProperties: false,
+        },
+        { type: "null" },
+      ],
+    },
+  },
+  required: [...slpCreatorDmSchema.required, "collab"],
+} as const;
+
 const slpCreatorFanActivitySchema = {
   type: "object",
   properties: {
@@ -315,6 +379,11 @@ export function slpResponseFormat(
     allowScenePlan?: boolean;
     contentMaxLength?: number;
     sceneShots?: number;
+    claims?: boolean;
+    /** A reply in Slurp Support's thread may say what the talk changed ("staff", `slp-support.ts`). */
+    staff?: boolean;
+    /** A reply from one Creator to another may agree on a joint post ("collab", `slp-creator-ties.ts`). */
+    collab?: boolean;
   } = {},
 ): { type: string; [key: string]: unknown } {
   if (!isOpenAIGpt56Model(model)) return { type: "json_object" };
@@ -328,7 +397,11 @@ export function slpResponseFormat(
           : kind === "noodler_reply"
             ? noodlerReplySchema
             : kind === "noodler_dm"
-              ? slpCreatorDmSchema
+              ? options.staff
+                ? slpCreatorStaffDmSchema
+                : options.collab
+                  ? slpCreatorCollabDmSchema
+                  : slpCreatorDmSchema
               : kind === "noodler_fan_activity"
                 ? {
                     type: "object",
@@ -346,6 +419,7 @@ export function slpResponseFormat(
                     options.allowScenePlan === true,
                     options.contentMaxLength ?? SLP_POST_HARD_MAX_LENGTH,
                     options.sceneShots ?? 0,
+                    options.claims === true,
                   );
   return {
     type: "json_schema",

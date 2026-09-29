@@ -1,8 +1,9 @@
-import { Image, MessageSquareText, MoreVertical, SlidersHorizontal } from "lucide-react";
+import { Flame, Heart, Image, MessageSquareText, MoreVertical, SlidersHorizontal, Zap } from "lucide-react";
 import type { ReactNode } from "react";
-import { Field, Toggle } from "../../modules/settings/SlpSettingsControls";
+import { Field, SettingsGroup, Toggle } from "../../modules/settings/SlpSettingsControls";
 import { PromptCard } from "../../modules/settings/SlpBackstageKit";
 import { BackstagePageHeader, SettingAnchor } from "../../modules/settings/SlpSettingsKit";
+import { ChoiceSetting, StatusStrip } from "../../modules/settings/SlpSettingsInputs";
 import {
   DEFAULT_SLURP_GENERATION_GUIDANCE,
   SLURP_GUIDANCE_LEVELS,
@@ -55,7 +56,7 @@ export function SlpPromptsPanel(page: SlpBackstagePageProps) {
           summary={t("ui.slurp.settings.prompts.voiceOutcomeDetail", {
             defaultValue: "Tone, language, maturity, and context shared across Creator writing.",
           })}
-          customized={!generationGuidanceIsDefault || settings.enableLorebookContext}
+          customized={!generationGuidanceIsDefault || settings.enableLorebookContext || !settings.flavourFromAgents}
         >
           <PromptCard
             title={t("ui.slurp.settings.prompts.generationGuidance")}
@@ -68,33 +69,19 @@ export function SlpPromptsPanel(page: SlpBackstagePageProps) {
             onRestore={() => void update("generationGuidance", DEFAULT_SLURP_GENERATION_GUIDANCE)}
           />
           <PromptOptions label={t("ui.slurp.settings.prompts.moreSettings", { defaultValue: "More settings" })}>
-            <Field
-              settingKey="generationGuidance"
-              label={t("ui.slurp.settings.prompts.spice")}
-              detail={
-                guidanceLevel ? t("ui.slurp.settings.prompts.spiceDetail") : t("ui.slurp.settings.prompts.spiceCustom")
-              }
-            >
-              <div className="flex flex-wrap gap-2">
-                {SLURP_GUIDANCE_LEVELS.map((level) => (
-                  <button
-                    key={level}
-                    type="button"
-                    aria-pressed={guidanceLevel === level}
-                    onClick={() => void update("generationGuidance", SLURP_GUIDANCE_PRESETS[level])}
-                    className={`min-h-11 rounded-full px-4 text-sm font-semibold ring-1 ring-inset focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] ${guidanceLevel === level ? "bg-[var(--slurp-nav-active)] text-[var(--slurp-text)] ring-[var(--noodle-accent)]/45" : "bg-[var(--slurp-canvas)] text-[var(--slurp-muted)] ring-[var(--slurp-outline)] hover:text-[var(--slurp-text)]"}`}
-                  >
-                    {t(`ui.slurp.settings.prompts.spice.${level}`)}
-                  </button>
-                ))}
-              </div>
-            </Field>
             <Toggle
               settingKey="enableLorebookContext"
               label={t("ui.slurp.settings.prompts.lorebookContext")}
               detail={t("ui.slurp.settings.prompts.lorebookContextDetail")}
               value={settings.enableLorebookContext}
               onChange={(value) => update("enableLorebookContext", value)}
+            />
+            <Toggle
+              settingKey="flavourFromAgents"
+              label={t("ui.slurp.settings.prompts.flavourFromAgents")}
+              detail={t("ui.slurp.settings.prompts.flavourFromAgentsDetail")}
+              value={settings.flavourFromAgents}
+              onChange={(value) => update("flavourFromAgents", value)}
             />
           </PromptOptions>
         </SlpPromptOutcomeSection>
@@ -107,13 +94,6 @@ export function SlpPromptsPanel(page: SlpBackstagePageProps) {
           })}
           customized={postGuidanceCustom}
         >
-          <SlurpExplicitLevelField
-            t={t}
-            value={(postGuidanceDraft.level ?? postGuidanceQuery.data?.defaults.level ?? "") as string}
-            builtIn={postGuidanceQuery.data?.builtInLevel ?? "suggestive"}
-            disabled={postGuidanceQuery.isLoading || postGuidanceQuery.isError}
-            onStage={(value) => stagePostGuidance("level", value)}
-          />
           {(["public", "locked"] as const).map((access) => (
             <SlurpPostGuidanceField
               key={access}
@@ -124,7 +104,6 @@ export function SlpPromptsPanel(page: SlpBackstagePageProps) {
               onStage={(value) => stagePostGuidance(access, value)}
               label={t(`ui.slurp.settings.prompts.${access}Guidance`)}
               detail={t(`ui.slurp.settings.prompts.${access}GuidanceDetail`)}
-              generateLabel={t("ui.slurp.settings.prompts.guidanceGenerate")}
               clearLabel={t("ui.slurp.settings.prompts.guidanceUseBuiltIn")}
               savedMessage={t("ui.slurp.settings.prompts.guidanceSavedAccess")}
               disabled={postGuidanceQuery.isLoading || postGuidanceQuery.isError}
@@ -155,8 +134,8 @@ export function SlpPromptsPanel(page: SlpBackstagePageProps) {
           <PromptOptions label={t("ui.slurp.settings.prompts.moreSettings", { defaultValue: "More settings" })}>
             <Toggle
               settingKey="enableImageInterpretation"
-              label={t("ui.slurp.settings.images.interpretPrompts")}
-              detail={t("ui.slurp.settings.images.interpretPromptsDetail")}
+              label={t("ui.slurp.settings.images.enhancePrompts")}
+              detail={t("ui.slurp.settings.images.enhancePromptsDetail")}
               value={settings.enableImageInterpretation}
               onChange={(value) => update("enableImageInterpretation", value)}
             />
@@ -179,7 +158,7 @@ export function SlpPromptsPanel(page: SlpBackstagePageProps) {
                       onClick={() =>
                         void update("imagePromptInterpretation", SLURP_IMAGE_INTERPRETATION_PRESETS[style])
                       }
-                      className={`min-h-11 rounded-full px-4 text-sm font-semibold ring-1 ring-inset focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] ${interpretationStyle === style ? "bg-[var(--slurp-nav-active)] text-[var(--slurp-text)] ring-[var(--noodle-accent)]/45" : "bg-[var(--slurp-canvas)] text-[var(--slurp-muted)] ring-[var(--slurp-outline)] hover:text-[var(--slurp-text)]"}`}
+                      className={`min-h-11 rounded-full px-4 text-sm font-semibold ring-1 ring-inset focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] ${interpretationStyle === style ? "bg-[image:var(--slurp-nav-active)] text-[var(--slurp-text)] ring-[var(--noodle-accent)]/45" : "bg-[var(--slurp-canvas)] text-[var(--slurp-muted)] ring-[var(--slurp-outline)] hover:text-[var(--slurp-text)]"}`}
                     >
                       {t(`ui.slurp.settings.images.promptStyle.${style}`)}
                     </button>
@@ -196,11 +175,9 @@ export function SlpPromptsPanel(page: SlpBackstagePageProps) {
   return (
     <div className="space-y-6">
       <BackstagePageHeader
-        title={t("ui.slurp.settings.prompts.studioTitle", { defaultValue: "Prompt Studio" })}
         detail={t("ui.slurp.settings.prompts.studioDetail", {
           defaultValue: "Shape how Slurp writes, speaks, and creates. Your prompts stay visible and easy to edit.",
         })}
-        scope="all-slurp"
         actions={
           <SettingAnchor settingKey="promptPresets">
             <PromptPresetToolbar
@@ -212,6 +189,46 @@ export function SlpPromptsPanel(page: SlpBackstagePageProps) {
           </SettingAnchor>
         }
       />
+      <StatusStrip
+        label={t("ui.slurp.settings.strip.label")}
+        items={[
+          {
+            label: t("ui.slurp.settings.prompts.spice"),
+            value: guidanceLevel
+              ? t(`ui.slurp.settings.prompts.spice.${guidanceLevel}`)
+              : t("ui.slurp.settings.presets.custom"),
+            settingKey: "generationGuidance",
+          },
+          { label: t("ui.slurp.settings.strip.contentLevel"), settingKey: "postGuidance" },
+        ]}
+      />
+      {/* The two content-level choices are what people change most here, so they come first,
+          above the prompt texts they would otherwise have to scroll past. */}
+      <SettingsGroup title={t("ui.slurp.settings.prompts.contentLevelGroup")}>
+        <ChoiceSetting
+          variant="cards"
+          settingKey="generationGuidance"
+          label={t("ui.slurp.settings.prompts.spice")}
+          detail={
+            guidanceLevel ? t("ui.slurp.settings.prompts.spiceDetail") : t("ui.slurp.settings.prompts.spiceCustom")
+          }
+          options={SLURP_GUIDANCE_LEVELS.map((level) => ({
+            value: level,
+            label: t(`ui.slurp.settings.prompts.spice.${level}`),
+            detail: t(`ui.slurp.settings.prompts.spiceHint.${level}`),
+            icon: level === "mild" ? Heart : level === "steamy" ? Flame : Zap,
+          }))}
+          value={guidanceLevel ?? null}
+          onChange={(level) => void update("generationGuidance", SLURP_GUIDANCE_PRESETS[level])}
+        />
+        <SlurpExplicitLevelField
+          t={t}
+          value={(postGuidanceDraft.level ?? postGuidanceQuery.data?.defaults.level ?? "") as string}
+          builtIn={postGuidanceQuery.data?.builtInLevel ?? "suggestive"}
+          disabled={postGuidanceQuery.isLoading || postGuidanceQuery.isError}
+          onStage={(value) => stagePostGuidance("level", value)}
+        />
+      </SettingsGroup>
       <SettingAnchor settingKey="promptBlocks">
         <SettingAnchor settingKey="promptInstructions">
           <SlurpPromptBlockBuilder
@@ -253,36 +270,27 @@ function SlurpExplicitLevelField({
   disabled: boolean;
   onStage: (value: string) => void;
 }) {
-  const levels = ["", ...SLURP_EXPLICIT_LEVELS] as const;
   return (
-    <Field
+    <ChoiceSetting
       settingKey="postGuidance"
       label={t("ui.slurp.settings.prompts.explicitLevel", { defaultValue: "How far pictures go" })}
       detail={t("ui.slurp.settings.prompts.explicitLevelDetail", {
         defaultValue:
           "Locked posts go this far. Public posts stay one step below, so the free feed advertises the paid one. Housekeeping posts are never sexual.",
       })}
-    >
-      <div className="flex flex-wrap gap-2">
-        {levels.map((level) => (
-          <button
-            key={level || "inherit"}
-            type="button"
-            disabled={disabled}
-            aria-pressed={value === level}
-            onClick={() => onStage(level)}
-            className={`min-h-11 rounded-full px-4 text-sm font-semibold ring-1 ring-inset focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 ${value === level ? "bg-[var(--slurp-nav-active)] text-[var(--slurp-text)] ring-[var(--noodle-accent)]/45" : "bg-[var(--slurp-canvas)] text-[var(--slurp-muted)] ring-[var(--slurp-outline)] hover:text-[var(--slurp-text)]"}`}
-          >
-            {level
-              ? t(`ui.slurp.settings.prompts.explicitLevel.${level}`)
-              : t("ui.slurp.settings.prompts.explicitLevelShipped", {
-                  level: t(`ui.slurp.settings.prompts.explicitLevel.${builtIn}`),
-                  defaultValue: "Shipped ({{level}})",
-                })}
-          </button>
-        ))}
-      </div>
-    </Field>
+      disabled={disabled}
+      options={(["", ...SLURP_EXPLICIT_LEVELS] as const).map((level) => ({
+        value: level,
+        label: level
+          ? t(`ui.slurp.settings.prompts.explicitLevel.${level}`)
+          : t("ui.slurp.settings.prompts.explicitLevelShipped", {
+              level: t(`ui.slurp.settings.prompts.explicitLevel.${builtIn}`),
+              defaultValue: "Shipped ({{level}})",
+            }),
+      }))}
+      value={value}
+      onChange={onStage}
+    />
   );
 }
 

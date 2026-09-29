@@ -270,7 +270,10 @@ export async function slpFeedPublishingRoutes(app: FastifyInstance, deps: SlpRou
       if (result.status === "disabled") {
         return reply.code(400).send({ error: "Persona-owned Slurp profiles cannot post automatically" });
       }
-      return reply.code(404).send({ error: "Slurp account not found." });
+      // The Creator exists; the Engine character or persona it was made from is gone (R1-078).
+      return reply
+        .code(409)
+        .send({ error: "This Creator's Engine character is gone. Link a new one in its settings to post again." });
     } catch (error) {
       logger.error(error, "[slurp] Manual run-now failed");
       return reply.code(500).send({ error: "Manual post generation failed." });
@@ -310,6 +313,15 @@ export async function slpFeedPublishingRoutes(app: FastifyInstance, deps: SlpRou
     return { finalized: result.finalized };
   });
 
+  app.post("/slurp/refresh/images/cancel", async (req, reply) => {
+    const parsed = z
+      .object({ ids: z.array(z.string().min(1)).min(1).max(20) })
+      .strict()
+      .safeParse(req.body);
+    if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
+    return { cancelled: await slpCreatorImages.cancelReviewedImages(parsed.data.ids) };
+  });
+
   app.post("/refresh", async (req, reply) => {
     let decoded: DecodedCreatorMediaRequest<z.output<typeof slurpCreatorGenerationRequestSchema>>;
     try {
@@ -346,7 +358,10 @@ export async function slpFeedPublishingRoutes(app: FastifyInstance, deps: SlpRou
       if (result.status === "disabled") {
         return reply.code(400).send({ error: "Persona-owned Slurp profiles cannot post automatically" });
       }
-      return reply.code(404).send({ error: "Slurp account not found." });
+      // The Creator exists; the Engine character or persona it was made from is gone (R1-078).
+      return reply
+        .code(409)
+        .send({ error: "This Creator's Engine character is gone. Link a new one in its settings to post again." });
     } catch (error) {
       if (slpIsAdmissionFailure(error)) return reply.code(409).send({ error: getErrorMessage(error) });
       logger.error(error, "[slurp] Slurp post generation failed");

@@ -178,6 +178,19 @@ const rebuiltFeatureClients = new Set(
     .filter(Boolean),
 );
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+const capabilityApiAtLeast = (api, needed) =>
+  Boolean(api) && (api.major > needed.major || (api.major === needed.major && api.minor >= needed.minor));
+/**
+ * A feature's manifest permissions: its own, plus each optional one whose Capability API the feature
+ * already declares. An Engine refuses a permission it does not know, so an optional permission waits
+ * until the feature asks for an Engine new enough to have it.
+ */
+function featurePermissions(feature) {
+  const optional = (feature.optionalPermissions ?? [])
+    .filter((entry) => capabilityApiAtLeast(feature.capabilityApi, entry.capabilityApi))
+    .map((entry) => entry.permission);
+  return optional.length ? [...new Set([...feature.permissions, ...optional])].sort() : feature.permissions;
+}
 
 async function prepareFeatureBuildRoot(feature) {
   if (feature.id === "noodle" || feature.id === "slurp" || feature.id === "slurp2") {
@@ -415,7 +428,7 @@ const features = [
   },
   {
     id: "slurp2",
-    version: "0.2.41",
+    version: "0.3.0",
     minEngineVersion: "2.4.6",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Slurp Remastered",
@@ -428,7 +441,7 @@ const features = [
           "Die Neufassung von Slurp. Sie wird neben Slurp Legacy installiert und behaelt eigene, getrennte Daten: Erstelle ein lokales Creator-Profil aus einem Engine-Charakter oder einer Engine-Persona, veroeffentliche oeffentliche oder gesperrte Beitraege und simuliere Abonnements und Publikumsaktivitaet.",
         homeBrowserTab: {
           label: "Slurp.",
-          ariaLabel: "Slurp. oeffnen",
+          ariaLabel: "Slurp oeffnen",
         },
       },
       ko: {
@@ -437,7 +450,7 @@ const features = [
           "Slurp\uc758 \ub9ac\uba54\uc774\uc2a4\ud130\uc785\ub2c8\ub2e4. Slurp Legacy\uc640 \ud568\uaed8 \uc124\uce58\ub418\uba70 \ub370\uc774\ud130\ub97c \ub530\ub85c \ubcf4\uad00\ud569\ub2c8\ub2e4. Engine \uce90\ub9ad\ud130\ub098 Engine \ud398\ub974\uc18c\ub098\ub85c \ub85c\uceec \ud06c\ub9ac\uc5d0\uc774\ud130 \ud504\ub85c\ud544\uc744 \ub9cc\ub4e4\uace0, \uacf5\uac1c \ub610\ub294 \uc7a0\uae34 \uac8c\uc2dc\ubb3c\uc744 \uac8c\uc2dc\ud558\uba70, \uad6c\ub3c5 \ubc0f \uccad\uc911 \ud65c\ub3d9\uc744 \uc2dc\ubbac\ub808\uc774\uc158\ud569\ub2c8\ub2e4.",
         homeBrowserTab: {
           label: "Slurp.",
-          ariaLabel: "Slurp. \uc5f4\uae30",
+          ariaLabel: "Slurp \uc5f4\uae30",
         },
       },
       pl: {
@@ -446,7 +459,7 @@ const features = [
           "Odnowiona wersja Slurp. Instaluje sie obok Slurp Legacy i przechowuje wlasne, oddzielne dane: utworz lokalny profil tworcy z postaci silnika lub persony silnika, publikuj publiczne lub zablokowane posty i symuluj subskrypcje oraz aktywnosc publicznosci.",
         homeBrowserTab: {
           label: "Slurp.",
-          ariaLabel: "Otworz Slurp.",
+          ariaLabel: "Otworz Slurp",
         },
       },
     },
@@ -454,6 +467,11 @@ const features = [
     kind: ["agent"],
     modes: ["conversation", "roleplay", "game"],
     permissions: ["chat-read", "network", "prompt-context", "routes", "storage", "ui"],
+    // Professor Mari may list and run Slurp's actions (`mari-actions:slurp2`, Engine PR #6800). The
+    // Engine accepts that permission only with capabilityApi 1.50, and an older Engine refuses a
+    // manifest that names it, so it is emitted once `capabilityApi` below reaches 1.50. Until then
+    // Slurp loads everywhere and registers only `slurp2:actions` (the server feature-detects it).
+    optionalPermissions: [{ permission: "mari-actions", capabilityApi: { major: 1, minor: 50 } }],
     serverImport: "packages/server/src/slp/slp-server-entry.ts",
     serverEntry: true,
     clientImport: "packages/client/src/slp/slp-client-entry.tsx",
@@ -473,7 +491,8 @@ const features = [
       slots: ["home-browser-tab"],
       homeBrowserTab: {
         label: "Slurp.",
-        ariaLabel: "Open Slurp.",
+        // The visual wordmark keeps its period; the accessible name does not ("Open Slurp full stop").
+        ariaLabel: "Open Slurp",
         iconPaths: ["slurp2-logo.png"],
       },
     },
@@ -1864,7 +1883,7 @@ for (const feature of selectedFeatures) {
         bytes: asset.buffer.byteLength,
       })),
     ],
-    permissions: feature.permissions,
+    permissions: featurePermissions(feature),
     restartRequired: true,
   };
   await writeFile(join(sourceDir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);

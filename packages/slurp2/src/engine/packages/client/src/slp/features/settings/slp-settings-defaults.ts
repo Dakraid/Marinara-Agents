@@ -8,46 +8,61 @@ import type { SlurpSettings } from "./slp-settings-contract";
  * either here or in `SLURP_SETTINGS_NOT_RESET`, so a new setting cannot silently escape.
  */
 export type SlurpResettableSection =
-  "general" | "images" | "prompts" | "audience" | "arcs" | "messaging" | "wallet" | "ads" | "autopurge";
+  | "general"
+  | "connections"
+  | "images"
+  | "prompts"
+  | "audience"
+  | "storylines"
+  | "messaging"
+  | "wallet"
+  | "ads"
+  | "autopurge";
 
 export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonly (keyof SlurpSettings)[]> = {
   general: [
     "storyRate",
     "professorMariCreatorSource",
-    "carryoverModes",
-    "carryoverHours",
-    "carryoverMaxItems",
+    "storyImagesEnabled",
+    "storyLifetimeHours",
     "postMaxLength",
     "postShowMoreLength",
     "postsPerDay",
+    "postsPerDayCustom",
     "autoPostingScheduleEnabled",
     "autoPostGenerationMode",
     "nightQuiet",
+    "postPlanner",
+    "lifeMomentRate",
+    "storyJobs",
+    "teaserRate",
   ],
+  // Carryover is about Engine chats, so it resets with the Connections page it lives on.
+  connections: ["carryoverModes", "carryoverHours", "carryoverMaxItems"],
   images: [
     "imageWidth",
     "imageHeight",
-    "storyImagesEnabled",
-    "storyLifetimeHours",
     "storyImageWidth",
     "storyImageHeight",
     "imageContextMode",
     "imageStyleProfileId",
+    "enableImageInterpretation",
     "imageGenerationUseAvatarReferences",
     "imageGenerationIncludeDescriptions",
+    "imageAppearanceMode",
     "appearanceProfileMode",
     "autoPostingImagesEnabled",
     "allowGalleryImageAttachments",
+    "previewOpensPost",
+    "previewWholePictures",
   ],
   prompts: [
     "generationGuidance",
     "enableLorebookContext",
+    "flavourFromAgents",
     "imageGenerationPrompt",
-    "enableImageInterpretation",
     "imagePromptInterpretation",
-    "promptPresets",
     "promptBlocks",
-    "promptInstructions",
   ],
   audience: [
     "audienceTone",
@@ -58,12 +73,15 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
     "fanActivityRunsPerDay",
     "fanLikesPerRefresh",
     "fanRepliesPerRefresh",
+    "creatorRepliesPerDay",
     "fanArchetypeWeights",
     "audienceCharacterLimit",
     "simulationTuning",
     "modelBudget",
   ],
-  arcs: [
+  storylines: [
+    "sharedPreseed",
+    "sharedWorldEvents",
     "projectRate",
     "arcPace",
     "arcAffectsMood",
@@ -95,9 +113,10 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
     "messagesRecentPostAwayMaxMinutes",
     "messagesStalePostAwayMinMinutes",
     "messagesStalePostAwayMaxMinutes",
+    "messagesViewerImageCooldownMinutes",
+    "messagesCoolOffMinutes",
   ],
   wallet: [
-    "teaserRate",
     "walletEnabled",
     "walletUnlockCost",
     "walletSubscriptionCost",
@@ -114,6 +133,7 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
   ads: [
     "inlineAdsEnabled",
     "inlineAdsFrequency",
+    "brandDealsPace",
     "inlineAdsSteering",
     "inlineAdsPreferredTags",
     "inlineAdsContentCeiling",
@@ -138,32 +158,31 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
  * no control in Settings.
  */
 export const SLURP_SETTINGS_NOT_RESET: readonly (keyof SlurpSettings)[] = [
+  // Saved presets and reusable instructions are the player's own writing (R1-121).
+  "promptPresets",
+  "promptInstructions",
   "classicPromptBlocks",
   "fanTypes",
   "platformEvents",
   "creatorCollabs",
   "generationConnectionId",
-  "imageGenerationConnectionId",
   "imageContextConnectionId",
+  "imagePromptConnectionId",
   "inlineAdsImageConnectionId",
   "inlineAdsLorebookId",
   "inlineAdsLorebookRevision",
   "autopurgeNextRunAt",
   "audienceReactionBank",
   "arcLibrary",
+  // The player's pack choices, like the libraries they fill (Backstage › Packs).
+  "contentPacks",
   "discoveryTags",
   "characterImageInstructions",
   "onboarding",
-  "invitedCharacterGroupIds",
   "audienceCharacters",
   "audienceCharacterGroupIds",
   "refreshesPerDay",
   "allowProfessorMari",
-  "participantSelectionMode",
-  "participantMin",
-  "participantMax",
-  "enableEnhancedTimelineWriting",
-  "includeCharacterSchedules",
   "enableImagePrompts",
   "maxImagesPerRefresh",
   "maxGeneratedPostsPerRefresh",

@@ -386,6 +386,11 @@ export interface SlpPostMedia {
   position: number;
   imageUrl: string;
   imagePrompt: string | null;
+  /** Pixel size of the stored picture, when known (V: the frame is reserved in its ratio). */
+  width?: number;
+  height?: number;
+  /** This picture's own crop. Position zero reads the post's `imageCrop`; a set picture its own. */
+  crop?: SlpPostImageCrop | null;
 }
 
 export interface SlpCreatorManagedPost extends SlpPost {
@@ -434,6 +439,22 @@ export interface SlpCreatorPostView {
   interactions: SlpInteraction[];
   likeCount: number;
   replyCount: number;
+  /** A joint collab post (the partner) or a paid partnership (the brand). Shown even while locked. */
+  partnership?: SlpPostPartnership | null;
+}
+
+/** Who a post was made with: another Creator's page, or a brand that paid for it. */
+export interface SlpPostPartnership {
+  /** Who wrote it, so a joint post on the partner's page still shows its real author. */
+  host: { id: string; name: string; handle: string; avatarUrl: string | null } | null;
+  withAccountId: string | null;
+  withName: string | null;
+  withHandle: string | null;
+  brand: string | null;
+  /** A couple post (7b-couples): a heart instead of the collab mark. On their shared page, `host` wrote it. */
+  couple?: boolean;
+  /** A collab's announcement (U): "Collab soon with @kai"; the joint post itself comes on its drop day. */
+  announce?: boolean;
 }
 
 export interface SlpCreatorViewerCreator {

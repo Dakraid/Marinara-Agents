@@ -1,7 +1,15 @@
 import { MessageCircle } from "lucide-react";
-import { BackstagePageHeader, BackstageWizard, FineTune } from "../../modules/settings/SlpSettingsKit";
+import { BackstagePageHeader, BackstageWizard } from "../../modules/settings/SlpSettingsKit";
 
-import { Field, NumberSetting, SettingsGroup, Toggle } from "../../modules/settings/SlpSettingsControls";
+import {
+  AdvancedGroup,
+  Field,
+  NumberSetting,
+  RangePairField,
+  SettingsGroup,
+  Toggle,
+} from "../../modules/settings/SlpSettingsControls";
+import { ChoiceSetting, StatusStrip } from "../../modules/settings/SlpSettingsInputs";
 
 import type { SlurpSettings } from "../settings/slp-settings-contract";
 
@@ -21,12 +29,26 @@ export function SlpMessagingPanel(page: SlpBackstagePageProps) {
     setMessagingDraft,
   } = page;
 
+  const onOff = (value: boolean) => t(value ? "ui.slurp.settings.overview.on" : "ui.slurp.settings.overview.off");
+  const cap = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <BackstagePageHeader
-          title={t("ui.slurp.settings.messaging.title")}
-          detail={t("ui.slurp.settings.messaging.detail")}
+        <BackstagePageHeader detail={t("ui.slurp.settings.messaging.detail")} />
+        <StatusStrip
+          label={t("ui.slurp.settings.strip.label")}
+          items={[
+            {
+              label: t("ui.slurp.settings.strip.dms"),
+              value: t(`ui.slurp.settings.messaging.dmPolicy${cap(settings.messagesDefaultDmPolicy)}`),
+              settingKey: "messagesDefaultDmPolicy",
+            },
+            {
+              label: t("ui.slurp.settings.strip.away"),
+              value: onOff(settings.messagesAwayRepliesEnabled),
+              settingKey: "messagesAwayRepliesEnabled",
+            },
+          ]}
         />
         <button
           type="button"
@@ -138,6 +160,7 @@ export function SlpMessagingPanel(page: SlpBackstagePageProps) {
           detail={t("ui.slurp.settings.messaging.bubbleLimitDetail")}
         >
           <NumberSetting
+            stepper
             value={settings.messagesReplyBubbleLimit}
             min={1}
             max={4}
@@ -156,9 +179,9 @@ export function SlpMessagingPanel(page: SlpBackstagePageProps) {
           value={settings.messagesUnscheduledAlwaysReachable}
           onChange={(value) => update("messagesUnscheduledAlwaysReachable", value)}
         />
-        <FineTune
-          summary={t("ui.slurp.settings.backstage.landing.delayFineTune", { defaultValue: "Exact reply delays" })}
-          count={10}
+        <AdvancedGroup
+          title={t("ui.slurp.settings.backstage.landing.delayFineTune", { defaultValue: "Exact reply delays" })}
+          count={6}
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
@@ -185,128 +208,132 @@ export function SlpMessagingPanel(page: SlpBackstagePageProps) {
                 onSave={(value) => update("messagesMaxReplyDelayMinutes", value)}
               />
             </Field>
+          </div>
+          <div className="space-y-5">
+            <RangePairField
+              label={t("ui.slurp.settings.messaging.highRapportDelay")}
+              unit={t("ui.slurp.settings.units.minutes")}
+              bounds={[0, 1440]}
+              min={{
+                settingKey: "messagesHighRapportDelayMinMinutes",
+                label: t("ui.slurp.settings.messaging.highRapportDelayMin"),
+                value: settings.messagesHighRapportDelayMinMinutes,
+                onSave: (value) => update("messagesHighRapportDelayMinMinutes", value),
+              }}
+              max={{
+                settingKey: "messagesHighRapportDelayMaxMinutes",
+                label: t("ui.slurp.settings.messaging.highRapportDelayMax"),
+                value: settings.messagesHighRapportDelayMaxMinutes,
+                onSave: (value) => update("messagesHighRapportDelayMaxMinutes", value),
+              }}
+            />
+            <RangePairField
+              label={t("ui.slurp.settings.messaging.mediumRapportDelay")}
+              unit={t("ui.slurp.settings.units.minutes")}
+              bounds={[0, 1440]}
+              min={{
+                settingKey: "messagesMediumRapportDelayMinMinutes",
+                label: t("ui.slurp.settings.messaging.mediumRapportDelayMin"),
+                value: settings.messagesMediumRapportDelayMinMinutes,
+                onSave: (value) => update("messagesMediumRapportDelayMinMinutes", value),
+              }}
+              max={{
+                settingKey: "messagesMediumRapportDelayMaxMinutes",
+                label: t("ui.slurp.settings.messaging.mediumRapportDelayMax"),
+                value: settings.messagesMediumRapportDelayMaxMinutes,
+                onSave: (value) => update("messagesMediumRapportDelayMaxMinutes", value),
+              }}
+            />
+            <RangePairField
+              label={t("ui.slurp.settings.messaging.recentPostAway")}
+              unit={t("ui.slurp.settings.units.minutes")}
+              bounds={[0, 1440]}
+              min={{
+                settingKey: "messagesRecentPostAwayMinMinutes",
+                label: t("ui.slurp.settings.messaging.recentPostAwayMin"),
+                value: settings.messagesRecentPostAwayMinMinutes,
+                onSave: (value) => update("messagesRecentPostAwayMinMinutes", value),
+              }}
+              max={{
+                settingKey: "messagesRecentPostAwayMaxMinutes",
+                label: t("ui.slurp.settings.messaging.recentPostAwayMax"),
+                value: settings.messagesRecentPostAwayMaxMinutes,
+                onSave: (value) => update("messagesRecentPostAwayMaxMinutes", value),
+              }}
+            />
+            <RangePairField
+              label={t("ui.slurp.settings.messaging.stalePostAway")}
+              unit={t("ui.slurp.settings.units.minutes")}
+              bounds={[0, 1440]}
+              min={{
+                settingKey: "messagesStalePostAwayMinMinutes",
+                label: t("ui.slurp.settings.messaging.stalePostAwayMin"),
+                value: settings.messagesStalePostAwayMinMinutes,
+                onSave: (value) => update("messagesStalePostAwayMinMinutes", value),
+              }}
+              max={{
+                settingKey: "messagesStalePostAwayMaxMinutes",
+                label: t("ui.slurp.settings.messaging.stalePostAwayMax"),
+                value: settings.messagesStalePostAwayMaxMinutes,
+                onSave: (value) => update("messagesStalePostAwayMaxMinutes", value),
+              }}
+            />
+          </div>
+        </AdvancedGroup>
+        <AdvancedGroup title={t("ui.slurp.settings.messaging.cooldownsTitle", { defaultValue: "Cooldowns" })} count={2}>
+          <div className="grid gap-4 sm:grid-cols-2">
             <Field
-              settingKey="messagesHighRapportDelayMinMinutes"
-              label={t("ui.slurp.settings.messaging.highRapportDelayMin")}
-              detail={t("ui.slurp.settings.messaging.highRapportDelayMinDetail")}
+              settingKey="messagesViewerImageCooldownMinutes"
+              label={t("ui.slurp.settings.messaging.viewerImageCooldown", {
+                defaultValue: "Wait between your pictures",
+              })}
+              detail={t("ui.slurp.settings.messaging.viewerImageCooldownDetail", {
+                defaultValue: "Minutes before you can draw another picture into the same chat. 0 means no wait.",
+              })}
             >
               <NumberSetting
-                value={settings.messagesHighRapportDelayMinMinutes}
+                value={settings.messagesViewerImageCooldownMinutes}
                 min={0}
-                max={1440}
-                onSave={(value) => update("messagesHighRapportDelayMinMinutes", value)}
+                max={10080}
+                onSave={(value) => update("messagesViewerImageCooldownMinutes", value)}
               />
             </Field>
             <Field
-              settingKey="messagesHighRapportDelayMaxMinutes"
-              label={t("ui.slurp.settings.messaging.highRapportDelayMax")}
-              detail={t("ui.slurp.settings.messaging.highRapportDelayMaxDetail")}
+              settingKey="messagesCoolOffMinutes"
+              label={t("ui.slurp.settings.messaging.coolOff", { defaultValue: "Time away after a fight" })}
+              detail={t("ui.slurp.settings.messaging.coolOffDetail", {
+                defaultValue:
+                  "Minutes a Creator stays away when they have had enough. 0 means they stay in the chat. Two fights in two weeks still end the chat.",
+              })}
             >
               <NumberSetting
-                value={settings.messagesHighRapportDelayMaxMinutes}
+                value={settings.messagesCoolOffMinutes}
                 min={0}
-                max={1440}
-                onSave={(value) => update("messagesHighRapportDelayMaxMinutes", value)}
-              />
-            </Field>
-            <Field
-              settingKey="messagesMediumRapportDelayMinMinutes"
-              label={t("ui.slurp.settings.messaging.mediumRapportDelayMin")}
-              detail={t("ui.slurp.settings.messaging.mediumRapportDelayMinDetail")}
-            >
-              <NumberSetting
-                value={settings.messagesMediumRapportDelayMinMinutes}
-                min={0}
-                max={1440}
-                onSave={(value) => update("messagesMediumRapportDelayMinMinutes", value)}
-              />
-            </Field>
-            <Field
-              settingKey="messagesMediumRapportDelayMaxMinutes"
-              label={t("ui.slurp.settings.messaging.mediumRapportDelayMax")}
-              detail={t("ui.slurp.settings.messaging.mediumRapportDelayMaxDetail")}
-            >
-              <NumberSetting
-                value={settings.messagesMediumRapportDelayMaxMinutes}
-                min={0}
-                max={1440}
-                onSave={(value) => update("messagesMediumRapportDelayMaxMinutes", value)}
-              />
-            </Field>
-            <Field
-              settingKey="messagesRecentPostAwayMinMinutes"
-              label={t("ui.slurp.settings.messaging.recentPostAwayMin")}
-              detail={t("ui.slurp.settings.messaging.recentPostAwayMinDetail")}
-            >
-              <NumberSetting
-                value={settings.messagesRecentPostAwayMinMinutes}
-                min={0}
-                max={1440}
-                onSave={(value) => update("messagesRecentPostAwayMinMinutes", value)}
-              />
-            </Field>
-            <Field
-              settingKey="messagesRecentPostAwayMaxMinutes"
-              label={t("ui.slurp.settings.messaging.recentPostAwayMax")}
-              detail={t("ui.slurp.settings.messaging.recentPostAwayMaxDetail")}
-            >
-              <NumberSetting
-                value={settings.messagesRecentPostAwayMaxMinutes}
-                min={0}
-                max={1440}
-                onSave={(value) => update("messagesRecentPostAwayMaxMinutes", value)}
-              />
-            </Field>
-            <Field
-              settingKey="messagesStalePostAwayMinMinutes"
-              label={t("ui.slurp.settings.messaging.stalePostAwayMin")}
-              detail={t("ui.slurp.settings.messaging.stalePostAwayMinDetail")}
-            >
-              <NumberSetting
-                value={settings.messagesStalePostAwayMinMinutes}
-                min={0}
-                max={1440}
-                onSave={(value) => update("messagesStalePostAwayMinMinutes", value)}
-              />
-            </Field>
-            <Field
-              settingKey="messagesStalePostAwayMaxMinutes"
-              label={t("ui.slurp.settings.messaging.stalePostAwayMax")}
-              detail={t("ui.slurp.settings.messaging.stalePostAwayMaxDetail")}
-            >
-              <NumberSetting
-                value={settings.messagesStalePostAwayMaxMinutes}
-                min={0}
-                max={1440}
-                onSave={(value) => update("messagesStalePostAwayMaxMinutes", value)}
+                max={10080}
+                onSave={(value) => update("messagesCoolOffMinutes", value)}
               />
             </Field>
           </div>
-        </FineTune>
+        </AdvancedGroup>
       </SettingsGroup>
       <SettingsGroup title={t("ui.slurp.settings.messaging.defaultsTitle")}>
         <p className="text-xs leading-5 text-[var(--muted-foreground)]">
           {t("ui.slurp.settings.messaging.defaultsDetail")}
         </p>
-        <Field
+        <ChoiceSetting
           settingKey="messagesDefaultDmPolicy"
           label={t("ui.slurp.settings.messaging.dmPolicy")}
           detail={t("ui.slurp.settings.messaging.dmPolicyDetail")}
-        >
-          <select
-            value={settings.messagesDefaultDmPolicy}
-            disabled={updateSettings.isPending}
-            onChange={(event) =>
-              void update("messagesDefaultDmPolicy", event.target.value as SlurpSettings["messagesDefaultDmPolicy"])
-            }
-            className="min-h-11 w-full rounded-lg border border-[var(--slurp-outline)] bg-[var(--slurp-canvas)] px-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 sm:text-sm"
-          >
-            <option value="open">{t("ui.slurp.settings.messaging.dmPolicyOpen")}</option>
-            <option value="subscribers">{t("ui.slurp.settings.messaging.dmPolicySubscribers")}</option>
-            <option value="paid">{t("ui.slurp.settings.messaging.dmPolicyPaid")}</option>
-            <option value="closed">{t("ui.slurp.settings.messaging.dmPolicyClosed")}</option>
-          </select>
-        </Field>
+          options={[
+            { value: "open", label: t("ui.slurp.settings.messaging.dmPolicyOpen") },
+            { value: "subscribers", label: t("ui.slurp.settings.messaging.dmPolicySubscribers") },
+            { value: "paid", label: t("ui.slurp.settings.messaging.dmPolicyPaid") },
+            { value: "closed", label: t("ui.slurp.settings.messaging.dmPolicyClosed") },
+          ]}
+          value={settings.messagesDefaultDmPolicy}
+          disabled={updateSettings.isPending}
+          onChange={(value: SlurpSettings["messagesDefaultDmPolicy"]) => void update("messagesDefaultDmPolicy", value)}
+        />
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
             settingKey="messagesDefaultRequestFee"
@@ -314,6 +341,7 @@ export function SlpMessagingPanel(page: SlpBackstagePageProps) {
             detail={t("ui.slurp.settings.messaging.requestFeeDetail")}
           >
             <NumberSetting
+              stepper
               value={settings.messagesDefaultRequestFee}
               min={0}
               max={9999}

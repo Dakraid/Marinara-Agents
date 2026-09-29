@@ -2,18 +2,24 @@ import type { DB } from "../../../../db/connection.js";
 import { slpIsBackgroundBusy, slpAdmissionRejectionCause } from "../../../base/host/slp-admission.js";
 import { recordSlurpContinuityEvent } from "../../../data/continuity/slp-continuity-storage.js";
 import { slurpContinuityIdentityOf } from "../../../modules/continuity/slp-continuity-rules.js";
-import { completeSlurpCampaignStageFor } from "../../../data/feed/slp-campaign-storage.js";
+import { completeSlurpCampaignStageFor, listOpenSlurpCampaignStages } from "../../../data/feed/slp-campaign-storage.js";
+import { slurpHeldDropStage } from "../../../modules/feed/slp-campaign.js";
 import { createConnectionsStorage } from "../../../../services/storage/connections.storage.js";
 import { resolveSlurpTextConnection } from "../../../base/identity/slp-connection.js";
 import { resolveCreatorImageConnectionId } from "../../../base/media/slp-image-connections.js";
 import { createSlurpStorage } from "../../../data/slp-storage.js";
-import { slpCreatorReservePolicyFingerprint } from "../../../modules/records/slp-storage-model.js";
-import { hasSlurpCreatorPostingIntervalConflict } from "../../../modules/feed/slp-posting-interval.js";
+import { slpCreatorReserveFingerprintFor } from "../../../data/creators/slp-source-resolve.js";
+import {
+  hasSlurpCreatorPostingIntervalConflict,
+  slurpPacedPostsPerDay,
+  slurpPickCreatorForSlot,
+} from "../../../modules/feed/slp-posting-interval.js";
+import { readSlurpCreatorPaceFactor } from "../../../data/creators/slp-steering-storage.js";
 import { generateCreatorPost } from "../slp-generation-service.js";
 import { resolveSlurpAutomaticPostAccess } from "../slp-automatic-post-access.js";
 import { slurpDeepDetailsImageRunRecorder } from "../../../data/feed/slp-post-deep-details-storage.js";
-import { recordSlurpPromiseKept } from "../slp-post-plan-service.js";
 import { generateCreatorPostImage } from "../../media/slp-media-contract.js";
+import { slurpHeldCollabDrop } from "../../projects/slp-projects-contract.js";
 import { tryCreatorAccountOperation } from "../../../base/locking/slp-account-operation-lock.js";
 import { createCharactersStorage } from "../../../../services/storage/characters.storage.js";
 import { createPromptOverridesStorage } from "../../../../services/storage/prompt-overrides.storage.js";
@@ -57,7 +63,8 @@ export function isCreatorNightQuietTime(at: Date): boolean {
 
 export async function prepareNextCreatorReservePost(db: DB, at = new Date()): Promise<SlurpReservePollOutcome> {
   const noodle = createSlurpStorage(db);
-  const settings = await noodle.getSettings();
+  // "feed.posting-rate" events scale posts per day; the reserve storage reads the same value (R1-112).
+  const settings = await noodle.getPostingSettings(at);
   if (!settings.autoPostingScheduleEnabled || settings.postsPerDay <= 0) return "disabled";
   const state = await noodle.ensureNoodlerReserveState(at);
   if (at.getTime() < Date.parse(state.preparationNotBefore)) return "holding";
@@ -122,25 +129,38 @@ export async function prepareNextCreatorReservePost(db: DB, at = new Date()): Pr
         }),
       ),
     );
+    // Each Creator's pace (player steering): a break takes no slot, a busier Creator may post again
+    // sooner and is picked more often, a quieter one waits longer.
+    const paces = new Map(
+      await Promise.all(
+        eligibleAccounts.map(async (candidate): Promise<[string, number]> => [
+          candidate.id,
+          await readSlurpCreatorPaceFactor(db, candidate.id),
+        ]),
+      ),
+    );
     eligibleAccounts = eligibleAccounts.filter(
       (candidate) =>
+        (paces.get(candidate.id) ?? 1) > 0 &&
         !hasSlurpCreatorPostingIntervalConflict(
           activityTimes.get(candidate.id) ?? [],
           Date.parse(publishAt),
-          settings.postsPerDay,
+          slurpPacedPostsPerDay(settings.postsPerDay, paces.get(candidate.id) ?? 1),
         ),
     );
-    if (eligibleAccounts.length === 0) return "holding";
-    account = [...eligibleAccounts].sort(
-      (left, right) =>
-        Math.max(...(activityTimes.get(left.id) ?? []), 0) - Math.max(...(activityTimes.get(right.id) ?? []), 0) ||
-        left.id.localeCompare(right.id),
-    )[0]!;
+    const picked = slurpPickCreatorForSlot(
+      eligibleAccounts,
+      (candidate) => Math.max(...(activityTimes.get(candidate.id) ?? []), 0),
+      (candidate) => paces.get(candidate.id) ?? 1,
+      at.getTime(),
+    );
+    if (!picked) return "holding";
+    account = picked;
     const source = await noodle.resolveAccountSource(account);
     slotId = await noodle.createNoodlerScheduledPost({
       creatorAccountId: account.id,
       publishAt,
-      policyFingerprint: slpCreatorReservePolicyFingerprint(account, settings, source?.updatedAt ?? null),
+      policyFingerprint: await slpCreatorReserveFingerprintFor(db, account, settings, source),
       createdAt: at.toISOString(),
     });
     if (!slotId) return "holding";
@@ -197,11 +217,21 @@ export async function prepareNextCreatorReservePost(db: DB, at = new Date()): Pr
       return "skipped" as const;
     }
     try {
+      const heldDrop = slurpHeldDropStage(
+        await listOpenSlurpCampaignStages(db, selectedAccount.id, at).catch(() => []),
+        new Date(selectedPublishAt),
+      );
+      // The slot held at a collab drop's hour (V) keeps ideas and Stories off it too; its access stays.
+      const heldCollab =
+        !heldDrop &&
+        (await slurpHeldCollabDrop(db, selectedAccount.id, new Date(selectedPublishAt)).catch(() => false));
       let payload = await generateCreatorPost(db, {
         account: selectedAccount,
         connection,
         prepareOnly: true,
         slotId: selectedSlotId,
+        ...(heldDrop ? { allowStory: false, heldDrop: true } : {}),
+        ...(heldCollab ? { allowStory: false, heldDrop: true } : {}),
         admissionMode: {
           kind: "background",
           beforeAttempt: async () => {
@@ -218,7 +248,8 @@ export async function prepareNextCreatorReservePost(db: DB, at = new Date()): Pr
           // always `caption`, and the constant guide read as player direction, which makes the
           // generator stand its rotating variation down. The guide also said nothing the system prompt
           // does not already say.
-          access: await resolveSlurpAutomaticPostAccess(noodle, selectedAccount.id),
+          // A slot held for a teased drop is a locked feed post: the drop is for subscribers (slice I).
+          access: heldDrop ? "locked" : await resolveSlurpAutomaticPostAccess(noodle, selectedAccount.id),
         },
         publicationTime: new Date(selectedPublishAt),
         generatedAt: at,
@@ -246,6 +277,7 @@ export async function prepareNextCreatorReservePost(db: DB, at = new Date()): Pr
               postContent: payload.content,
               draftPrompt: payload.imagePrompt,
               visualBrief: payload.visualBrief ?? undefined,
+              story: payload.metadata.noodlerPostType === "story",
               settings,
               characters: createCharactersStorage(db),
               promptOverrides: createPromptOverridesStorage(db),
@@ -334,10 +366,11 @@ export async function prepareNextCreatorReservePost(db: DB, at = new Date()): Pr
           generatedAt: completedAt.toISOString(),
           expectedPublishAt: selectedPublishAt,
           payload,
-          policyFingerprint: slpCreatorReservePolicyFingerprint(
+          policyFingerprint: await slpCreatorReserveFingerprintFor(
+            db,
             selectedAccount,
             settings,
-            (await noodle.resolveAccountSource(selectedAccount))?.updatedAt ?? null,
+            await noodle.resolveAccountSource(selectedAccount),
           ),
         });
         if (!filled) {
@@ -351,7 +384,7 @@ export async function prepareNextCreatorReservePost(db: DB, at = new Date()): Pr
           // The set's post id is not known until it publishes, so a scheduled set's teaser falls
           // back to the newest locked picture, which by then is normally that set.
           await completeSlurpCampaignStageFor(db, opportunity.id, { at: completedAt });
-          await recordSlurpPromiseKept(db, opportunity, { at: completedAt });
+          // The kept promise waits for the publish: a prepared slot can still be discarded (R1-034).
         }
       } catch (persistError) {
         // The row never landed, so the staged image belongs to nothing: drop it before rethrowing.

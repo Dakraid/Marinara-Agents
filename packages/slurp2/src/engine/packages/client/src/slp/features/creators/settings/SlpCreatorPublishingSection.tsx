@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 import { showConfirmDialog } from "../../../../lib/app-dialogs";
-import { ScheduleSlotEditor } from "../../../modules/settings/SlpBackstageKit";
+import { ScheduleAgenda } from "../../../modules/settings/SlpBackstageKit";
 import { errorMessage } from "../../../modules/settings/slp-backstage-format";
 import { SettingsGroup, Toggle } from "../../../modules/settings/SlpSettingsControls";
 import {
@@ -58,49 +58,47 @@ export function SlpCreatorPublishingSection({ creator, active, mode = "automatio
               }
             />
           )}
-        </SettingsGroup>
-      )}
-
-      {mode === "automation" && (
-        <SettingsGroup title={t("ui.slurp.settings.creators.postingSchedule")}>
-          <p className={noteClass}>{t("ui.slurp.settings.creators.scheduleDetail")}</p>
-          {reserveStatusQuery.isLoading ? (
-            <div
-              className="flex items-center justify-center gap-2 py-6 text-sm text-[var(--slurp-muted)]"
-              role="status"
-            >
-              <Loader2 size={18} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
-              {t("ui.noodle.noodlerschedulemanagermodal.loadingStatus")}
-            </div>
-          ) : reserveStatusQuery.isError ? (
-            <div className="rounded-lg p-4 text-sm ring-1 ring-inset ring-[var(--slurp-danger)]/30">
-              <p>{t("ui.noodle.noodlerschedulemanagermodal.couldNotLoadStatus")}</p>
-              <button type="button" onClick={() => void reserveStatusQuery.refetch()} className={`mt-3 ${quietButton}`}>
-                <RefreshCw size={14} aria-hidden="true" />
-                {t("capabilities.actions.tryAgain")}
-              </button>
-            </div>
-          ) : slots.length > 0 ? (
-            <div className="space-y-3">
-              {slots.map((slot) => (
-                <ScheduleSlotEditor
-                  key={`${slot.id}:${slot.publishAt}`}
-                  slot={slot}
-                  pending={updateScheduleSlot.isPending}
-                  onSave={async (publishAt) => {
-                    try {
-                      await updateScheduleSlot.mutateAsync({ slotId: slot.id, publishAt });
-                      toast.success(t("ui.slurp.settings.creators.scheduleSaved"));
-                    } catch (error) {
-                      toast.error(errorMessage(error));
-                    }
-                  }}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className={noteClass}>{t("ui.slurp.settings.creators.scheduleEmpty")}</p>
-          )}
+          {/* The switch and what it will post next, in one card. */}
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold">{t("ui.slurp.settings.creators.postingSchedule")}</h4>
+            <p className={noteClass}>{t("ui.slurp.settings.creators.scheduleDetail")}</p>
+            {reserveStatusQuery.isLoading ? (
+              <div
+                className="flex items-center justify-center gap-2 py-6 text-sm text-[var(--slurp-muted)]"
+                role="status"
+              >
+                <Loader2 size={18} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                {t("ui.noodle.noodlerschedulemanagermodal.loadingStatus")}
+              </div>
+            ) : reserveStatusQuery.isError ? (
+              <div className="rounded-lg p-4 text-sm ring-1 ring-inset ring-[var(--slurp-danger)]/30">
+                <p>{t("ui.noodle.noodlerschedulemanagermodal.couldNotLoadStatus")}</p>
+                <button
+                  type="button"
+                  onClick={() => void reserveStatusQuery.refetch()}
+                  className={`mt-3 ${quietButton}`}
+                >
+                  <RefreshCw size={14} aria-hidden="true" />
+                  {t("capabilities.actions.tryAgain")}
+                </button>
+              </div>
+            ) : slots.length > 0 ? (
+              <ScheduleAgenda
+                slots={slots}
+                pending={updateScheduleSlot.isPending}
+                onMove={async (slot, publishAt) => {
+                  try {
+                    await updateScheduleSlot.mutateAsync({ slotId: slot.id, publishAt });
+                    toast.success(t("ui.slurp.settings.creators.scheduleSaved"));
+                  } catch (error) {
+                    toast.error(errorMessage(error));
+                  }
+                }}
+              />
+            ) : (
+              <p className={noteClass}>{t("ui.slurp.settings.creators.scheduleEmpty")}</p>
+            )}
+          </div>
         </SettingsGroup>
       )}
 
@@ -143,7 +141,7 @@ export function SlpCreatorPublishingSection({ creator, active, mode = "automatio
                           { onError: (error) => toast.error(errorMessage(error)) },
                         )
                       }
-                      className={`min-h-11 rounded-full px-3 text-xs font-semibold ring-1 ring-inset focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 ${selected ? "bg-[var(--slurp-nav-active)] text-[var(--slurp-text)] ring-[var(--noodle-accent)]/45" : "bg-[var(--slurp-canvas)] text-[var(--slurp-muted)] ring-[var(--slurp-outline)] hover:text-[var(--slurp-text)]"}`}
+                      className={`min-h-11 rounded-full px-3 text-xs font-semibold ring-1 ring-inset focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 ${selected ? "bg-[image:var(--slurp-nav-active)] text-[var(--slurp-text)] ring-[var(--noodle-accent)]/45" : "bg-[var(--slurp-canvas)] text-[var(--slurp-muted)] ring-[var(--slurp-outline)] hover:text-[var(--slurp-text)]"}`}
                     >
                       {level
                         ? t(`ui.slurp.settings.prompts.explicitLevel.${level}`)
@@ -170,7 +168,6 @@ export function SlpCreatorPublishingSection({ creator, active, mode = "automatio
               }
               label={t(`ui.slurp.settings.prompts.${access}Guidance`)}
               detail={t("ui.slurp.settings.creators.guidanceInherits")}
-              generateLabel={t("ui.slurp.settings.prompts.guidanceGenerate")}
               clearLabel={t("ui.slurp.settings.creators.guidanceInherit")}
               savedMessage={t("ui.slurp.settings.prompts.guidanceSavedAccess")}
               disabled={postGuidanceQuery.isLoading || postGuidanceQuery.isError}
@@ -191,7 +188,6 @@ export function SlpCreatorPublishingSection({ creator, active, mode = "automatio
               defaultValue:
                 "Private. List what this Creator offers and what they will not do. Posts, comment replies, and messages follow it. Fans never see it.",
             })}
-            generateLabel=""
             clearLabel={t("ui.slurp.settings.creators.contentMenuClear", { defaultValue: "Clear menu" })}
             savedMessage={t("ui.slurp.settings.creators.contentMenuSaved", { defaultValue: "Content menu saved." })}
             disabled={postGuidanceQuery.isLoading || postGuidanceQuery.isError}
@@ -215,6 +211,7 @@ export function SlpCreatorPublishingSection({ creator, active, mode = "automatio
             </span>{" "}
             {t(`ui.slurp.settings.creators.schedule.${creator.scheduleStatus.state}`)}
           </p>
+          <p className="text-xs leading-5">{t("ui.slurp.settings.creators.conversationScheduleDetail")}</p>
           {(creator.scheduleStatus.state === "stale" || creator.scheduleStatus.state === "missing") && (
             <button
               type="button"

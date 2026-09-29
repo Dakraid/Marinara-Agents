@@ -13,7 +13,8 @@ import { randomUUID } from "node:crypto";
  * The AI signals intent to follow up, and this system schedules and generates messages.
  */
 
-export type FollowUpType = "reminder" | "promise_delivery" | "task_update" | "check_in" | "recurring";
+/** `opener`: the Creator writes first in a quiet chat on their own (the world tick plans it), nothing promised. */
+export type FollowUpType = "reminder" | "promise_delivery" | "task_update" | "check_in" | "recurring" | "opener";
 
 export type ScheduledFollowUp = {
   id: string;
@@ -28,6 +29,8 @@ export type ScheduledFollowUp = {
   totalInSequence?: number;
   /** For recurring: pattern like "every 4 hours" */
   recurringPattern?: string;
+  /** When it first came due; `scheduledAt` moves with each wait (task E). */
+  firstDueAt?: string;
 };
 
 /**
@@ -212,11 +215,65 @@ export function isFollowUpDue(followUp: ScheduledFollowUp, now: Date = new Date(
 }
 
 /**
+ * Follow-ups are promises (task E): a blocked one waits and tries again, it is never dropped for
+ * being old. Only an opener (nobody asked for it) ends two days after it was planned; a promise
+ * ends only with its thread (gone, closed, cleared). The Creator's "writes on their own" switch
+ * stops openers only; a promise made in a reply still goes out.
+ */
+export const SLURP_FOLLOW_UP_OVERDUE_MS = 2 * 24 * 60 * 60_000;
+/** `createdAt`: when it was planned (the follow-up row's creation). */
+export function isFollowUpOverdue(followUp: { createdAt?: string }, now: Date = new Date()): boolean {
+  const promised = Date.parse(followUp.createdAt ?? "");
+  return Number.isFinite(promised) && now.getTime() - promised > SLURP_FOLLOW_UP_OVERDUE_MS;
+}
+/** Whether a wait may end this follow-up: an old opener only. */
+export function slurpFollowUpExpires(followUp: { type: string; createdAt?: string }, now: Date = new Date()): boolean {
+  return followUp.type === "opener" && isFollowUpOverdue(followUp, now);
+}
+
+/** More than this past its first due time, the Creator says sorry for the wait. */
+export const SLURP_FOLLOW_UP_LATE_MS = 2 * 60 * 60_000;
+export function isFollowUpLate(firstDueAt: string | undefined, now: Date = new Date()): boolean {
+  const due = Date.parse(firstDueAt ?? "");
+  return Number.isFinite(due) && now.getTime() - due > SLURP_FOLLOW_UP_LATE_MS;
+}
+
+/**
+ * The next try after a failed generation: half the time the promise is already late, between 15
+ * minutes and 12 hours. A failure right after it came due retries soon; a promise failing for days
+ * costs two model calls a day at most. No attempt count is stored: the lateness is the count.
+ */
+export function slurpFollowUpRetryAt(firstDueAt: string | undefined, now: Date = new Date()): string {
+  const due = Date.parse(firstDueAt ?? "");
+  const late = Number.isFinite(due) ? Math.max(0, now.getTime() - due) : 0;
+  const delay = Math.min(12 * 60 * 60_000, Math.max(15 * 60_000, late / 2));
+  return new Date(now.getTime() + delay).toISOString();
+}
+
+/**
+ * The row update after a failed generation. A promise goes back to the queue at the retry time;
+ * an opener fails for good. `firstDueAt` is pinned, because a row from before 0.3.0 has none and
+ * its moving `scheduledAt` would keep the lateness (and so the back-off) at zero forever.
+ */
+export function slurpFailedFollowUpPatch(
+  row: { type?: unknown; scheduledAt?: unknown; firstDueAt?: unknown } | undefined,
+  now: Date = new Date(),
+): { status: "failed" | "pending"; scheduledAt: string; firstDueAt: string } {
+  const firstDueAt = String(row?.firstDueAt ?? row?.scheduledAt ?? now.toISOString());
+  return row?.type === "opener"
+    ? { status: "failed", scheduledAt: String(row.scheduledAt ?? now.toISOString()), firstDueAt }
+    : { status: "pending", scheduledAt: slurpFollowUpRetryAt(firstDueAt, now), firstDueAt };
+}
+
+/**
  * Generate a follow-up message prompt context.
  */
-export function formatFollowUpContext(followUp: ScheduledFollowUp, promiseText?: string): string {
+export function formatFollowUpContext(followUp: ScheduledFollowUp, promiseText?: string, late = false): string {
   // `scheduledAt` is when it came due, not when it was promised, so no "minutes ago" is stated:
   // the old count told the model a false fact.
+  // Nobody asked for an opener, so it must not claim a promise.
+  if (followUp.type === "opener")
+    return `Nobody asked and you promised nothing: you are writing first in this quiet chat. ${followUp.reason}`;
   let context = `You promised a ${followUp.type} earlier and it is due now. Reason: ${followUp.reason}.`;
 
   if (followUp.sequenceNumber && followUp.totalInSequence) {
@@ -230,6 +287,11 @@ export function formatFollowUpContext(followUp: ScheduledFollowUp, promiseText?:
   // The words she remembered, so the follow-up keeps the promise she actually made.
   if (promiseText) {
     context += ` What you promised: "${promiseText}". Keep this promise now.`;
+  }
+
+  // A promise kept late is still kept (task E): she owns the wait in her own words, then delivers.
+  if (late) {
+    context += ` You are late with this. Open with a short, casual sorry for the wait in your own voice (one line, no excuses list), then keep the promise.`;
   }
 
   return context;

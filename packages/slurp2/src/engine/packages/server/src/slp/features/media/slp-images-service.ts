@@ -8,7 +8,10 @@ import { NOODLER_MEDIA_PREFIX } from "../../base/media/slp-media.js";
 import { resolveImageConnectionFallback } from "../../../services/generation/media-connection-fallback.js";
 import { generateImage, stageImageToDisk, type StagedGalleryImage } from "../../../services/image/image-generation.js";
 import { generateSlurpImageWithHost, stageSlurpImageWithHost } from "../../base/host/slp-generation-integrations.js";
-import { resolveConnectionImageDefaults } from "../../../services/image/image-generation-defaults.js";
+import {
+  resolveConnectionImageDefaults,
+  resolveImageGenerationService,
+} from "../../../services/image/image-generation-defaults.js";
 import { compileImagePrompt, resolveImageStyleGuidanceText } from "../../../services/image/image-prompt-compiler.js";
 import { resolveImagePromptReviewSize } from "../../../services/image/image-prompt-review.js";
 import type { SlurpVisualBrief } from "../../base/media/slp-visual-brief.js";
@@ -35,10 +38,17 @@ import type { SlpImagePromptReviewItem } from "./slp-public-images-service.js";
 import { characterNameFromRow } from "../../modules/creators/slp-public-support.js";
 import {
   selectSlpImageProviderPrompt,
-  ensureSlpImageAppearance,
+  slurpApplyImageLook,
+  slurpLookForWriter,
+  slurpArtStyle,
+  slurpStyledImagePrompt,
   slurpImageLook,
+  slurpPromptFamily,
+  slurpWithoutCameraDevice,
   stripAppearanceLabel,
 } from "../../base/media/slp-image-prompt.js";
+import { slurpViewpointForFamily, slurpViewpointIn } from "../../modules/feed/slp-camera-source.js";
+import { slurpImageNegativePrompt, slurpImageNegativeTerms } from "../../modules/feed/slp-image-brief.js";
 import { slurpImageExtension } from "../../base/media/slp-image-format.js";
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
 
@@ -95,13 +105,18 @@ type CreatorPostImageInput = {
     | "imagePromptInterpretation"
     | "imageGenerationUseAvatarReferences"
     | "imageGenerationIncludeDescriptions"
+    | "imageAppearanceMode"
     | "appearanceProfileMode"
     | "enableImageInterpretation"
     | "imageWidth"
     | "imageHeight"
+    | "storyImageWidth"
+    | "storyImageHeight"
     | "characterImageInstructions"
     | "promptBlocks"
     | "generationConnectionId"
+    | "imagePromptConnectionId"
+    | "modelBudget"
     | "imageStyleProfileId"
   >;
   characters: ReturnType<typeof createCharactersStorage>;
@@ -122,8 +137,16 @@ type CreatorPostImageInput = {
   admissionMode?: ConnectionAdmissionMode;
   width?: number;
   height?: number;
+  /** A Story picture: drawn at the Story size unless the caller names its own size. */
+  story?: boolean;
   compositionGuard?: string;
+  /**
+   * This path's own negative terms. Absent, every Creator picture gets the shared ones (no phone,
+   * no second copy of the Creator) plus its visual brief's level; an empty string means none.
+   */
   negativePromptAdditions?: string;
+  /** False when the picture is not the Creator's work, so the Creator spends no energy on it. */
+  chargeEnergy?: boolean;
   suppressCharacterContext?: boolean;
   suppressStageAppearance?: boolean;
   suppressCreatorDetails?: boolean;
@@ -401,9 +424,10 @@ async function generateCreatorPostImageRun(
   // "${name}'s Appearance: ..." from the linked source account, so an unredacted context block sent
   // the source's real name to the interpretation model in the same call whose prompt beside it had
   // that name carefully replaced.
+  const lookMode = input.settings.imageAppearanceMode ?? "writer";
   const characterContext = redactIdentity(
     [
-      characterDescription ? `Appearance:\n${characterDescription}` : "",
+      characterDescription && slurpLookForWriter(lookMode) ? `Appearance:\n${characterDescription}` : "",
       characterPersonality ? `Personality:\n${characterPersonality}` : "",
       characterImageInstructions ? `Character image preferences:\n${characterImageInstructions}` : "",
       input.contentPolicy ? `Creator content policy:\n${input.contentPolicy}` : "",
@@ -419,6 +443,9 @@ async function generateCreatorPostImageRun(
     input.settings.enableImageInterpretation !== false &&
     !skipInterpretation,
   );
+  // Slurp's own viewpoint phrase for this picture (PERSPECTIVE-RESEARCH.md): the rewrite keeps it, the
+  // device filter never cuts it, and the image model gets it in its own words below.
+  const viewpoint = slurpViewpointIn(input.visualBrief?.camera ?? "") ?? slurpViewpointIn(input.draftPrompt);
   const rewrittenPrompt = rewriteAttempted
     ? await rewriteSlpImagePrompt({
         db: input.db,
@@ -429,7 +456,9 @@ async function generateCreatorPostImageRun(
         characterContext,
         styleGuidance,
         promptBlocks: slurpPromptContext(input.settings).blocks,
-        connectionId: input.settings.generationConnectionId,
+        connectionId: input.settings.imagePromptConnectionId || input.settings.generationConnectionId,
+        viewpoint: viewpoint?.phrase,
+        budget: input.settings.modelBudget,
         onRequest: ({ messages, ...model }) => {
           run.rewrite.model = model;
           run.rewrite.messages = messages;
@@ -454,6 +483,7 @@ async function generateCreatorPostImageRun(
     input.visualBrief && rewrittenPrompt && slurpVisualBriefPromptViolatesPolicy(input.visualBrief, rewrittenPrompt),
   );
   const acceptedRewrittenPrompt = rewriteViolatesPolicy ? null : compiledRewrittenPrompt?.prompt || rewrittenPrompt;
+  let usedRewrite = Boolean(acceptedRewrittenPrompt);
   if (rewriteAttempted) {
     run.rewrite = {
       ...run.rewrite,
@@ -472,6 +502,7 @@ async function generateCreatorPostImageRun(
       rawPrompt: rawProviderPrompt,
       rewriteAttempted,
       onFallback: (reason) => {
+        usedRewrite = false;
         if (run.rewrite.status === "accepted") run.rewrite = { ...run.rewrite, status: "rejected", reason };
         else if (run.rewrite.status === "failed") run.rewrite = { ...run.rewrite, reason };
         logger.warn("[slurp] Image prompt rewrite unusable (%s); sending the capped draft", reason);
@@ -483,8 +514,36 @@ async function generateCreatorPostImageRun(
       guidanceContext: [configuredImageInstructions, connectionImageInstructions],
     }),
   );
+  // Every path lands here, so the device is removed here: the caption or a stored draft may still
+  // say "I held my phone up" (R1-050). A prompt a human approved is sent as written.
+  const keep = viewpoint ? [viewpoint.phrase] : [];
+  const withoutDevice = slurpWithoutCameraDevice(finalPromptBase, keep) || finalPromptBase;
+  // A rewrite that dropped the viewpoint gets it back, so a selfie still reads as one.
+  const finalPromptScene = skipInterpretation
+    ? finalPromptBase
+    : viewpoint && !withoutDevice.includes(viewpoint.phrase)
+      ? `${withoutDevice}\n${viewpoint.phrase}`
+      : withoutDevice;
+  // The Creator's medium: an anime, furry or dragon Creator is drawn, so the brief's photo words go
+  // and their style leads. A photo-style Creator, and a prompt a human approved, stay as they are.
+  const styleSource = `${characterDescription}\n${characterImageInstructions}`;
+  const artStyle = skipInterpretation ? null : slurpArtStyle(styleSource);
+  // The viewpoint in the image model's words: tags for a tag model, e621 tags for a drawn furry.
+  const promptFamily = slurpPromptFamily({
+    promptMode: compiledPrompt.profile.promptMode,
+    service: resolveImageGenerationService(input.imageConnection),
+    model: imageModel,
+    furry: Boolean(artStyle?.tag.includes("furry")),
+  });
+  // One copy of the look: the writer's words, Slurp's insert, or the writer's plus the missing traits.
+  const finalPromptLook = slurpApplyImageLook(
+    skipInterpretation ? finalPromptScene : slurpViewpointForFamily(finalPromptScene, promptFamily),
+    redactIdentity(stageAppearance || stripAppearanceLabel(characterDescription)),
+    lookMode,
+    usedRewrite,
+  );
   const finalPrompt = [
-    ensureSlpImageAppearance(finalPromptBase, redactIdentity(stageAppearance)),
+    artStyle ? slurpStyledImagePrompt(finalPromptLook, styleSource) : finalPromptLook,
     input.compositionGuard,
   ]
     .filter(Boolean)
@@ -497,23 +556,22 @@ async function generateCreatorPostImageRun(
         reviewedOverride?.negativePrompt ||
         undefined
       : compiledPrompt.negativePrompt || undefined;
-  // Deduplicated: the style profile and the level both add "text, watermark" and the like.
-  const finalNegativePrompt =
-    [
-      ...new Set(
-        [baseNegativePrompt, input.negativePromptAdditions]
-          .filter(Boolean)
-          .join(",")
-          .split(",")
-          .map((term) => term.trim())
-          .filter(Boolean),
-      ),
-    ].join(", ") || undefined;
-  const outputWidth = input.width ?? input.settings.imageWidth;
-  const outputHeight = input.height ?? input.settings.imageHeight;
+  const finalNegativePrompt = slurpImageNegativeTerms(
+    baseNegativePrompt,
+    input.negativePromptAdditions ?? slurpImageNegativePrompt(input.visualBrief?.sexualLevel, false, viewpoint?.source),
+    artStyle?.negative,
+  );
+  // Chosen here rather than by each caller, so a scheduled or redrawn Story is a Story too (R1-052).
+  const outputWidth = input.width ?? (input.story ? input.settings.storyImageWidth : input.settings.imageWidth);
+  const outputHeight = input.height ?? (input.story ? input.settings.storyImageHeight : input.settings.imageHeight);
   run.finalPrompt = finalPrompt;
   run.negativePrompt = finalNegativePrompt ?? null;
   run.size = { width: outputWidth ?? null, height: outputHeight ?? null };
+  // For Deep details: the viewpoint as the image model got it. A human-approved prompt kept its own words.
+  run.viewpoint =
+    viewpoint && !skipInterpretation
+      ? { ...viewpoint, family: promptFamily, phrase: slurpViewpointForFamily(viewpoint.phrase, promptFamily) }
+      : null;
   logDebugOverride(
     input.debugMode,
     "[debug/slurp/image] final image prompt for %s:\n%s",
@@ -597,10 +655,12 @@ async function generateCreatorPostImageRun(
   const provider = input.imageConnection.provider ?? "image_generation";
   // Only a picture that exists costs anything. The preview path returns above, and a failed
   // attempt threw before here, so a Creator is never charged for work that produced nothing.
-  try {
-    await createSlurpStorage(input.db).adjustCreatorState(input.account.id, { energy: -SLURP_ENERGY_COST.image });
-  } catch (error) {
-    logger.warn(error, "[slurp] Could not charge image energy for %s", input.account.id);
+  if (input.chargeEnergy !== false) {
+    try {
+      await createSlurpStorage(input.db).adjustCreatorState(input.account.id, { energy: -SLURP_ENERGY_COST.image });
+    } catch (error) {
+      logger.warn(error, "[slurp] Could not charge image energy for %s", input.account.id);
+    }
   }
   const file =
     stageSlurpImageWithHost(

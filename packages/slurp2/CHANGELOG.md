@@ -1,8 +1,214 @@
 # Slurp Remastered release notes
 
-## 0.2.41 — 2026-09-26
+## 0.3.0 — 2026-09-29
 
-- The world tick blocks the Engine much less: Slurp settings are validated once per change instead of on every read, and the tick now pauses between Creators, commissions, and actions so other pages and packages can respond.
+Small changes.
+
+- Stir, a new tab: make crushes, collabs, rivalries and events happen between your Creators, in your own words or with a card. Every play shows a preview first and has Undo.
+- Life and spice: collabs, couples with an optional shared page, rivalries, brand deals, teases that lead to drops, fan polls, steering with flavour and spice levels.
+- A new look for the whole app: floating phone nav, Hub, Stories, profiles, Discover, Wallet, the Dashboard, a role-play onboarding and a What's new sheet.
+- Messages rebuilt: a real inbox, full-screen chats, write as Slurp Support, AI fans sometimes get an answer, and promised messages arrive.
+- Pulse shows what runs, what is queued, what failed and why, and what comes next. Long actions run in the background and never lock the screen.
+- The AI budget grows with your Creators; limits you set yourself stay. Pictures keep their viewpoint and art style better, with an optional prompt enhancer.
+- 215 fixes.
+
+## 0.2.78 — 2026-09-27
+
+- bugfixing
+- Restyle the update sheet header with a larger animated G face, accent tint and integrated alpha reminder.
+- Replace the cost warning with a direct reminder that Slurp uses background image and text generation.
+
+## 0.2.77 — 2026-09-27
+
+- Restore G’s animated face, introduction and alpha reminder in the themed update sheet.
+- Remember Details edit mode per conversation and viewer in this browser. Turning it off keeps saved edits.
+- Expose the displayed state timestamps and conversation cooldown for inline editing too.
+
+## 0.2.76 — 2026-09-27
+
+- Added an edit toggle at the bottom of messaging Details → Advanced. Numbers become inline sliders, options become selectors, and context can be edited directly. Calculated values use saved overrides without changing payment records.
+
+## 0.2.75 — 2026-09-26
+
+- Fewer selfies and mirror shots: posts now use a propped-up phone, video stills or a friend with the camera more often. Mirror shots are rare, because the image model drew the Creator twice.
+- Pictures no longer show the phone: phone and selfie words are removed from every picture prompt, and the negative prompt names phones and doubled people.
+- Creators copy each other less: a post sees what the other Creators' pictures showed (clothes, room), and its own history lists subjects instead of camera words.
+- More variety: more places, moments, company and post ideas to draw from.
+- From staging 0.2.41: the world tick blocks the Engine much less. Slurp settings are validated once per change instead of on every read, and the tick now pauses between Creators, commissions, and actions so other pages and packages can respond.
+
+## 0.2.74 — 2026-09-26
+
+- Settings are rows: what a setting does on the left, its control on the right. Each page says its name once; Reset is at the bottom and resets only that page.
+- Overview is the only summary page, with fan and schedule buttons and more tiles. New names: Connections, Storylines (a Story is the short image post) and Writing. Maintenance is one page.
+- On a phone, settings open on a list of sections.
+- Connections has one row per job and the chat carryover. Creator pictures now sets the connection Creator pictures really use.
+- Images uses picture shapes instead of number fields. Story images moved to Publishing. Storyline types, ads and events are compact lists; long explanations fold under How this works.
+- Writing starts with Spice level and How far pictures go.
+
+## 0.2.73 — 2026-09-26
+
+- Your own messages no longer use the AI budget: a Creator answers a message you send or a tip you give at once, even when the hourly or daily limit is reached. Only answers that arrive while you are away count against it. The mode and the DM replies switch still apply.
+
+## 0.2.72 — 2026-09-26
+
+- Storylines, Publishing, Images, Audience, Messaging and Prompts show their current settings as a row of chips under the page title. Tap a chip to jump to that setting, even inside a folded block.
+- Creator settings tabs with several parts start with a "Jump to" row.
+
+## 0.2.71 — 2026-09-25
+
+- Bounded numbers are sliders with a value chip: weeks between storylines, storylines at once, wallet day start, weekly price change and creator revenue share. A slider saves when you let go.
+- Posts per day, storyline check interval and carryover limits have − and + buttons.
+- Messaging reply and away delays are four min–max rows instead of eight separate fields; the lower value can never pass the upper one.
+
+## 0.2.70 — 2026-09-25
+
+- Settings have new sections in order of use: Overview, Models & connections, Creators, Posting, Stories, World, Fans & money, Writing & content level, Maintenance.
+- Models & connections holds Connections and Image generation, right under Overview. World holds Events and Calendar; Fans & money holds Audience, Messaging rules, Coins and access, Ads and Discovery; Stories holds Storylines, Storyline types and Packs.
+- Old links and saved places open the page in its new section.
+
+## 0.2.69 — 2026-09-25
+
+- A Creator's posting schedule is a day list: each upcoming post shows its time, which you change in place and which saves when you leave the field. "Another day" moves a post to a new day at the same time. The 8 Save buttons are gone.
+
+## 0.2.68 — 2026-09-25
+
+- Creator settings open on an Overview status page: what needs review, whether the Creator posts (with a live Auto-post switch), the next post, running storylines, notes waiting in Memory, and a way into each part.
+
+## 0.2.67 — 2026-09-25
+
+- Creator settings have 7 tabs instead of 14: Overview, Profile (identity, appearance, wardrobe), Posting (automation, production, storylines, collaborations), Content rules, Fans & messages, Memory and Tools. Each merged tab shows its parts under their own headings.
+- Links and search results that named an old tab open the new tab and scroll to the right part.
+
+## 0.2.66 — 2026-09-25
+
+- Publishing, Images, Ads and Messaging show fixed choices as button rows instead of dropdowns: story rate, post ideas, free teasers, generation mode, image context, appearance updates, ad frequency, steering, content ceiling, era, tone and the default DM policy.
+- Every folded block in settings looks and works the same, and shows how many settings it holds.
+- The "Set Slurp's pace" wizard is gone from Publishing; the preset cards on the same page do the same job.
+
+## 0.2.65 — 2026-09-25
+
+- Life details sit right after "Waiting for you" in a Creator's Memory tab. People, places, work, things, habits and running jokes are chips: type and press Enter to add, tap the cross to remove.
+- The heat range of a card is picked with button rows, and the note filters fold away behind the search box, with the number of active filters shown.
+
+## 0.2.64 — 2026-09-25
+
+- A Creator's Storylines tab follows the Slurp settings by default and shows their values. Turn on "Own value" on a row to set it for this Creator; turn it off to follow Slurp again.
+- Storyline types for one Creator are picked with tappable chips, and all controls in the tab have full-size touch targets.
+
+## 0.2.63 — 2026-09-25
+
+- Storylines settings show every choice at once: story activity presets are cards with a short description, and the start, pace and source settings are button rows instead of dropdowns.
+- Audience presets, scale, tone and world activity use the same button rows.
+
+## 0.2.62 — 2026-09-25
+
+- The Identity tab in Creator settings uses the full width again; the Save bar sits at the bottom of the tab.
+- Memory shows readable names instead of raw ids such as multi_image_set, in Recent plans, filters, proposals and signals.
+
+## 0.2.61 — 2026-09-25
+
+- The Creator settings window no longer shows "{{name}}'s settings" while it loads.
+
+## 0.2.60 — 2026-09-25
+
+- The Storylines card in Posting and the storyline button in the Calendar now open the new Storylines page, and the Advanced block shows an arrow.
+
+## 0.2.59 — 2026-09-25
+
+- New Story activity preset on the Storylines page: Calm, Lively, or Hands-off sets events, storylines, and shared ideas in one step; your own mix shows as Custom.
+- Creator settings have a Storylines tab for that Creator's storyline overrides. The daily routine now says it sets where the Creator is and when they reply, not post times. Life details show only when post ideas come from the Creator's life, and the old audience mix appears only while it differs from the defaults.
+
+## 0.2.58 — 2026-09-25
+
+- Settings are easier to find: Stories & events has a new Storylines page with one "Start things by themselves" card for events and storylines, the storyline rules, and Shared ideas; Posting has a new "What gets posted" group with post ideas and free teaser posts.
+- Settings that have no effect right now stay visible and say why, for example "Only for automatic posting", instead of disappearing. Rarely needed storyline settings sit under Advanced.
+
+## 0.2.57 — 2026-09-25
+
+- Clearer names in Settings: arcs, plans, and projects are now called storylines, occasions are events, and the post planner is "Post ideas come from". Several help texts were corrected, among them the event automation text, which wrongly said it also starts storylines.
+
+## 0.2.56 — 2026-09-25
+
+- A Creator's limits and saved notes no longer drop out of post and message prompts after a week of Beats posts; only the newest few post notes stay active.
+- Beats no longer rejects correct short names such as Mia or Kai, or people an arc chapter or a callback names, so fewer posts are rewritten.
+- Posts that answer a promise or a campaign step keep it when they are retried or rewritten, and prepared posts are only rewritten when the character card or schedule really changed.
+- Several moments saved from one chat without a message id are all kept, and Canon anchors you edited are not replaced by a background read.
+- Smaller Beats fixes: the heat floor matches the card, a named person is never told to be alone, an arc teaser gets no second subject, and a locked post's moment is never a callback in a public post.
+
+## 0.2.55 — 2026-09-25
+
+- Beats is now the default post planner. Ordinary posts are built from each Creator's own card, day, and history instead of letting the model choose the subject. Classic stays available under Prompts.
+
+## 0.2.54 — 2026-09-25
+
+- Hinted and Secret Creators without an avatar or banner get their artwork drawn again. The automatic backfill failed for them every minute with a "creatorDetails" error in the log.
+
+## 0.2.53 — 2026-09-25
+
+- Each Creator's Continuity tab now lists their recent signals: everything around them in the last two weeks from every source (posts, notes, messages, promises, their schedule, platform events, and other Creators' posts) in one place. Private messages show only what kind of thing happened.
+
+## 0.2.52 — 2026-09-25
+
+- Posts prepared ahead of time are written again when the Creator's character card, Conversation Schedule, disclosure, or stage voice changes before they go out, instead of publishing what was true when they were prepared.
+
+## 0.2.51 — 2026-09-25
+
+- Each Creator's Continuity tab now shows what the Beats planner read from their card: people, places, work, things, habits, running jokes, their typical day, and their heat range. You can correct it, and your version is used until the card changes; Read card again starts over.
+
+## 0.2.50 — 2026-09-25
+
+- With Beats on, about one post in three may refer back to something real: an earlier post, an earlier set, a moment saved from a chat, or a request the Creator delivered. Slurp passes the fact itself, never an old caption, and Deep details show it.
+
+## 0.2.49 — 2026-09-25
+
+- With Beats on, each post plans how far it goes: most posts go as far as the Creator's explicit-level dial allows, some are softer, and none go below what the character's card is like. Caption and picture use the same level, and Deep details show it.
+
+## 0.2.48 — 2026-09-25
+
+- With Beats on, a Creator's schedule decides where they are: moments at the place or work they are at right now come first, and a moment about somewhere else is posted as a plan, a memory, or a wish.
+- A post due while the Creator sleeps or drives is written as if posted just before, and never mentions being awake or on the road. Gym, set, class, and similar blocks stay good post material.
+- On an arc's big day, such as moving day, the arc chapter decides what the Creator does, not the usual weekly schedule.
+
+## 0.2.47 — 2026-09-25
+
+- Slurp can now take a moment saved from an Engine chat and keep it as a private note for that character's Creator pages. The button in chats comes with a later Engine update.
+
+## 0.2.46 — 2026-09-25
+
+- Life-event arcs such as moving house, a new job, or a breakup now happen at most once per Creator when Slurp starts arcs by itself.
+- With Beats on, a post that continues an arc is about the arc's current chapter, instead of an unrelated moment beside it.
+
+## 0.2.45 — 2026-09-25
+
+- New with Beats: Shared ideas (off by default). Once a day Slurp collects a few seasonal and platform moments, and once a week typical moments per topic tag. Beats fill them in with each Creator's own places and work, and each idea is used by at most two Creators a day.
+- New with Shared ideas: Slurp-wide events (off by default). The daily idea call may start one short themed event for all Creators; it shows under Platform events and ends by itself.
+
+## 0.2.44 — 2026-09-25
+
+- With Beats on, each post knows where the Creator's day stands when it goes out and what they did just before, from their Conversation Schedule or, without one, from a typical day read once from their card.
+- Beats reads each card one more time after this update, to add that typical day.
+
+## 0.2.43 — 2026-09-25
+
+- With Beats on, what a published post was about becomes a note Slurp remembers for a week, so the next post can follow on from it without copying its caption.
+- With Beats on, no earlier caption is quoted to the writer any more; recent posts appear only as subjects.
+
+## 0.2.42 — 2026-09-25
+
+- New experimental post planner in Prompts: Beats. It picks what an ordinary post is about from the Creator's own card (a person, a place, their work, a running joke) instead of letting every Creator drift to the same subjects. Classic stays the default.
+- With Beats on, Slurp reads each Creator's card once in the background and reads it again only after the card changes. Until then, and whenever something goes wrong, posts use the classic planner.
+- Beats vary the kind of moment (a win, a showcase, a moment with someone, an opinion, a small mishap, and more) per Creator and across the whole feed, so no single kind takes over.
+- Beats tell the writer who is there, where, and when, and that it must not invent other people, past events, or life changes. If a post does anyway, it gets one rewrite; Deep details show the result.
+- Deep details now show the planner, the beat with its anchor and cast, the claim check, the picture's shot, and the subject a kept promise delivers.
+
+## 0.2.41 — 2026-09-25
+
+- Casual posts are no longer told to be dull; they share one thing from the Creator's day in their own way.
+- Camera choices describe framing instead of equipment, so pictures stop showing a phone unless it is a mirror shot.
+- The label you type on a fulfilled, teased, or delayed request now tells the promised post what to deliver.
+- Posts no longer see their own older captions word for word: only the last post is quoted, older ones appear as subjects, and other Creators' recent subjects are listed so the feed stops repeating one topic.
+- Pictures now vary their angle and crop with composition tags image models know (upper body, cowboy shot, from side, and more), chosen to fit who could have taken the shot.
+- The post prompt's timing, repetition, and scene rules are shorter, and the last texts that put a phone into scenes are gone.
 
 ## 0.2.40 — 2026-09-25
 

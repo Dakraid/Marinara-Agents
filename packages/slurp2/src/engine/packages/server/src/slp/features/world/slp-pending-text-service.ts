@@ -42,6 +42,8 @@ import {
 import { resolveSlurpCharacterFanVoice } from "../../data/creators/slp-source-resolve.js";
 import { NOODLER_UNTRUSTED_CONTENT_INSTRUCTION } from "../feed/slp-feed-contract.js";
 import type { APIProvider } from "@marinara-engine/shared";
+import { resolveSlurpCreatorFlavour } from "../../data/creators/slp-flavour-source.js";
+import { slurpRotationHash } from "../../modules/feed/slp-post-variation.js";
 import {
   claimSlurpModelBudget,
   slurpModelWorkerAllows,
@@ -50,6 +52,7 @@ import {
 } from "../../base/model/slp-model-worker.js";
 import { composeSlurpPromptBlocks, type SlurpPromptBlockOverrides } from "../../base/prompting/slp-prompt-blocks.js";
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
+import { slpWithProviderRetry } from "../../base/model/slp-provider-retry.js";
 
 export type SlurpPendingKind = "commission" | "question" | "opener" | "delivery";
 
@@ -106,6 +109,8 @@ function buildMessages(input: {
   speakerMemory?: string;
   placeholder: string;
   post?: { title: string | null; content: string | null } | null;
+  /** A delivery note's flavour brief: how this Creator sounds. See `slp-creator-flavour.ts`. */
+  flavourBrief?: string;
   promptBlocks?: SlurpPromptBlockOverrides;
 }) {
   // A delivery note is the only kind the creator speaks, so it gets the opposite framing. Handing
@@ -130,7 +135,7 @@ function buildMessages(input: {
       : input.kind === "question"
         ? "Rewrite this question so it is about the actual post below, in the fan's own voice. One sentence, lowercase is fine, no greeting."
         : input.kind === "delivery"
-          ? "Rewrite this hand-over note so it sounds like this particular creator giving a fan the piece they paid for. One or two sentences, warm, no greeting, and never describe the picture."
+          ? "Rewrite this hand-over note so it sounds like this particular creator giving a fan the piece they paid for. One or two sentences, warm, no greeting, never describe the picture, and keep the note's language."
           : "Rewrite this first message so it sounds like this particular person writing to this particular creator for the first time. Keep it short and a little awkward. Do not ask for anything.";
 
   const data = {
@@ -160,8 +165,21 @@ function buildMessages(input: {
         input.promptBlocks,
       ),
     },
-    { role: "user" as const, content: `# Untrusted Slurp data\n${JSON.stringify(data, null, 2)}` },
+    {
+      role: "user" as const,
+      content: `# Untrusted Slurp data\n${JSON.stringify(data, null, 2)}${
+        input.flavourBrief?.trim() ? `\n\n# How the creator sounds\n${input.flavourBrief}` : ""
+      }`,
+    },
   ];
+}
+
+/** The line was answered as it stands (an AI fan's opener, task E), so a later rewrite must not change it. */
+export async function dropSlurpPendingText(db: DB, subjectId: string): Promise<void> {
+  await db
+    .delete(slurpPendingText)
+    .where(eq(slurpPendingText.subjectId, subjectId))
+    .catch(() => undefined);
 }
 
 /**
@@ -236,23 +254,25 @@ export async function drainSlurpPendingText(
   // bare, so a primary outage left placeholders unrewritten while the rest of Slurp carried on.
   const connections = createConnectionsStorage(db);
   const fallbackConnection = await connections.getFallbackForMain();
-  const provider = withConnectionFallbackProvider({
-    primary: createLLMProvider(
-      connection.provider,
-      resolveBaseUrl(connection),
-      connection.apiKey,
-      connection.maxContext,
-      connection.openrouterProvider,
-      connection.maxTokensOverride,
-      connection.claudeFastMode === "true",
-      connection.treatAsLocalEndpoint === "true",
-      connection.defaultParameters,
-    ),
-    primaryConnectionId: connection.id,
-    fallbackConnection,
-    fallbackBaseUrl: fallbackConnection ? resolveBaseUrl(fallbackConnection) : "",
-    category: "main",
-  });
+  const provider = slpWithProviderRetry(
+    withConnectionFallbackProvider({
+      primary: createLLMProvider(
+        connection.provider,
+        resolveBaseUrl(connection),
+        connection.apiKey,
+        connection.maxContext,
+        connection.openrouterProvider,
+        connection.maxTokensOverride,
+        connection.claudeFastMode === "true",
+        connection.treatAsLocalEndpoint === "true",
+        connection.defaultParameters,
+      ),
+      primaryConnectionId: connection.id,
+      fallbackConnection,
+      fallbackBaseUrl: fallbackConnection ? resolveBaseUrl(fallbackConnection) : "",
+      category: "main",
+    }),
+  );
   const messages = createSlurpMessagesStorage(db);
   const population = createSlurpPopulationStorage(db);
   let rewritten = 0;
@@ -323,6 +343,18 @@ export async function drainSlurpPendingText(
             kind === "delivery" || !(member || characterFanVoice) ? undefined : slurpFanMemoryForPrompt(tie),
           placeholder,
           post: post ? { title: post.title, content: post.content } : null,
+          // Only the Creator speaks in a delivery note. A concealed Creator's card stays out of this
+          // prompt, which has no identity protection of its own.
+          flavourBrief:
+            kind === "delivery" && (creator.settings.privacy.identityDisclosure ?? "open") === "open"
+              ? await resolveSlurpCreatorFlavour(db, {
+                  account: creator,
+                  source: await noodle.resolveAccountSource(creator),
+                  disclosureMode: "open",
+                  use: "delivery",
+                  sequence: slurpRotationHash(String(row.subjectId)),
+                })
+              : undefined,
           promptBlocks: slurpPromptContext(settings).blocks,
         }),
         {

@@ -88,6 +88,6 @@ export type SlurpCommission = {
 
 export type SlurpSendResult =
   | { status: "sent"; thread: SlurpThread; message: SlurpMessage }
-  | { status: "closed" }
+  | { status: "closed"; reason?: "couple_page" }
   | { status: "insufficient_funds"; required: number }
   | { status: "not_found" };

@@ -4,7 +4,7 @@ import { BackstagePageHeader, BackstageWizard } from "../../modules/settings/Slp
 import { Field, NumberSetting, SettingsGroup, Toggle } from "../../modules/settings/SlpSettingsControls";
 import { SlurpSimulationSettings } from "./SlpSimulationPanel";
 import { SlurpFanTypesSettings } from "./SlpFanTypesPanel";
-import { SlurpAudienceConfigSettings } from "./SlpAudienceConfigPanel";
+import { SlurpAudienceConfigSettings, useSlurpEffectiveModelBudget } from "./SlpAudienceConfigPanel";
 
 import { SettingAnchor } from "../../modules/settings/SlpSettingsKit";
 
@@ -14,8 +14,9 @@ import type { SlurpSettings } from "../settings/slp-settings-contract";
 
 import { SLURP_AUDIENCE_PRESETS, slurpAudiencePresetPatch } from "../../../../../shared/src/slp/slp-tuning.js";
 import type { SlpBackstagePageProps } from "../backstage/slp-backstage-contract";
-import { ChoiceRow } from "../../modules/settings/SlpBackstageKit";
+import { ChoiceSetting, StatusStrip } from "../../modules/settings/SlpSettingsInputs";
 import { AmbientProfilesPanel } from "./SlpAmbientProfilesPanel";
+import { openSlpCreatorSettings } from "../creators/slp-creators-contract";
 
 /** Audience: crowd scale, tone, fan types, the reaction bank and simulation tuning. */
 export function SlpAudiencePanel(page: SlpBackstagePageProps) {
@@ -40,18 +41,37 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
     audienceCharactersQuery,
     audienceCharacterGroupsQuery,
   } = page;
+  const effectiveBudget = useSlurpEffectiveModelBudget(settings.modelBudget);
 
+  const onOff = (value: boolean) => t(value ? "ui.slurp.settings.overview.on" : "ui.slurp.settings.overview.off");
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <BackstagePageHeader
-          title={t("ui.slurp.settings.audience.title")}
-          detail={t("ui.slurp.settings.audience.detail")}
+        <BackstagePageHeader detail={t("ui.slurp.settings.audience.detail")} />
+        <StatusStrip
+          label={t("ui.slurp.settings.strip.label")}
+          items={[
+            {
+              label: t("ui.slurp.settings.strip.fans"),
+              value: onOff(settings.fanActivityEnabled),
+              settingKey: "fanActivityEnabled",
+            },
+            {
+              label: t("ui.slurp.settings.strip.scale"),
+              value: t(`ui.slurp.settings.audience.scale.${settings.platformScale}`),
+              settingKey: "platformScale",
+            },
+            {
+              label: t("ui.slurp.settings.strip.tone"),
+              value: t(`ui.slurp.settings.audience.tone.${settings.audienceTone}`),
+              settingKey: "audienceTone",
+            },
+          ]}
         />
         <button
           type="button"
           onClick={() => refreshFans.mutate()}
-          disabled={refreshFans.isPending || !settings.fanActivityEnabled}
+          disabled={refreshFans.isPending}
           className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-[var(--border)] px-3 text-xs font-semibold hover:bg-[var(--accent)] disabled:opacity-50"
         >
           <RefreshCw size={14} className={refreshFans.isPending ? "animate-spin" : ""} />
@@ -110,7 +130,7 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
                           type="button"
                           aria-pressed={audienceDraft.preset === preset}
                           onClick={() => setAudienceDraft({ ...audienceDraft, preset })}
-                          className={`min-h-14 rounded-lg p-3 text-start text-sm font-semibold ring-1 ring-inset focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] ${audienceDraft.preset === preset ? "bg-[var(--slurp-nav-active)] ring-[var(--noodle-accent)]/45" : "bg-[var(--slurp-surface-raised)] ring-[var(--slurp-outline)]"}`}
+                          className={`min-h-14 rounded-lg p-3 text-start text-sm font-semibold ring-1 ring-inset focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] ${audienceDraft.preset === preset ? "bg-[image:var(--slurp-nav-active)] ring-[var(--noodle-accent)]/45" : "bg-[var(--slurp-surface-raised)] ring-[var(--slurp-outline)]"}`}
                         >
                           {t(`ui.slurp.settings.simulation.presets.${preset}`)}
                         </button>
@@ -125,8 +145,8 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
                   }),
                   content: (
                     <div className="space-y-3">
-                      <ChoiceRow
-                        title={t("ui.slurp.settings.audience.scaleTitle")}
+                      <ChoiceSetting
+                        label={t("ui.slurp.settings.audience.scaleTitle")}
                         detail={t("ui.slurp.settings.audience.scaleDetail")}
                         options={(["intimate", "normal", "large"] as const).map((value) => ({
                           value,
@@ -135,8 +155,8 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
                         value={audienceDraft.platformScale}
                         onChange={(platformScale) => setAudienceDraft({ ...audienceDraft, platformScale })}
                       />
-                      <ChoiceRow
-                        title={t("ui.slurp.settings.audience.toneTitle")}
+                      <ChoiceSetting
+                        label={t("ui.slurp.settings.audience.toneTitle")}
                         detail={t("ui.slurp.settings.audience.toneDetail")}
                         options={(["warm", "mixed", "unfiltered"] as const).map((value) => ({
                           value,
@@ -162,8 +182,8 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
               })
             : t("ui.slurp.settings.audience.statusLoading")}
       </p>
-      <ChoiceRow
-        title={t("ui.slurp.settings.audience.presetTitle")}
+      <ChoiceSetting
+        label={t("ui.slurp.settings.audience.presetTitle")}
         detail={
           audiencePreset === "custom"
             ? t("ui.slurp.settings.audience.presetCustom")
@@ -173,19 +193,12 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
           value: preset,
           label: t(`ui.slurp.settings.simulation.presets.${preset}`),
         }))}
-        value={audiencePreset}
+        value={audiencePreset === "custom" ? null : audiencePreset}
         onChange={(preset) => void updatePatch(slurpAudiencePresetPatch(preset, settings))}
-        extra={
-          audiencePreset === "custom" ? (
-            <span className="min-h-10 inline-flex items-center rounded-lg border border-[var(--noodle-accent)] bg-[var(--noodle-accent)]/10 px-3 text-xs font-semibold text-[var(--noodle-accent)]">
-              {t("ui.slurp.settings.simulation.presets.custom")}
-            </span>
-          ) : null
-        }
       />
       <SettingAnchor settingKey="platformScale">
-        <ChoiceRow
-          title={t("ui.slurp.settings.audience.scaleTitle")}
+        <ChoiceSetting
+          label={t("ui.slurp.settings.audience.scaleTitle")}
           detail={t("ui.slurp.settings.audience.scaleDetail")}
           options={(["intimate", "normal", "large"] as const).map((level) => ({
             value: level,
@@ -196,8 +209,8 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
         />
       </SettingAnchor>
       <SettingAnchor settingKey="audienceTone">
-        <ChoiceRow
-          title={t("ui.slurp.settings.audience.toneTitle")}
+        <ChoiceSetting
+          label={t("ui.slurp.settings.audience.toneTitle")}
           detail={t("ui.slurp.settings.audience.toneDetail")}
           options={(["warm", "mixed", "unfiltered"] as const).map((tone) => ({
             value: tone,
@@ -216,7 +229,7 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
         <div className="space-y-4">
           <p className="text-xs leading-5 text-[var(--muted-foreground)]">
             {t("ui.slurp.settings.audience.characterFansDetail", {
-              defaultValue: "Invite your Engine characters to read posts and join the audience simulation.",
+              defaultValue: "Invite your Engine characters to read posts and join the audience.",
             })}
           </p>
           <Field
@@ -229,6 +242,7 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
             })}
           >
             <NumberSetting
+              stepper
               value={settings.audienceCharacterLimit}
               min={0}
               max={10}
@@ -247,6 +261,7 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
           ) : (
             <>
               <Field
+                group
                 settingKey="audienceCharacterGroupIds"
                 label={t("ui.slurp.settings.audience.characterGroups", { defaultValue: "Invite character groups" })}
                 detail={t("ui.slurp.settings.audience.characterGroupsDetail", {
@@ -297,6 +312,8 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
                         group.characterIds.includes(character.id),
                     );
                     const enabled = value !== false && (value !== undefined || inGroup);
+                    // Already a Creator: open that page instead of adding a second account as a fan.
+                    const creatorId = character.creatorAccountId ?? null;
                     return (
                       <div
                         key={character.id}
@@ -306,6 +323,7 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
                           type="checkbox"
                           aria-label={character.name}
                           checked={enabled}
+                          disabled={Boolean(creatorId) && !enabled}
                           onChange={() =>
                             void update("audienceCharacters", {
                               ...settings.audienceCharacters,
@@ -314,6 +332,15 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
                           }
                         />
                         <span className="min-w-0 flex-1 truncate text-sm font-semibold">{character.name}</span>
+                        {creatorId && (
+                          <button
+                            type="button"
+                            onClick={() => openSlpCreatorSettings(creatorId)}
+                            className="min-h-9 rounded-lg px-2 text-xs font-semibold text-[var(--slurp-muted)] hover:bg-[var(--accent)] hover:text-[var(--slurp-ink)]"
+                          >
+                            {t("ui.slurp.settings.audience.alreadyCreator")}
+                          </button>
+                        )}
                         <select
                           aria-label={t("ui.slurp.settings.audience.characterFanType", {
                             defaultValue: "Fan Type for {{name}}",
@@ -455,6 +482,7 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
               tuning={settings.simulationTuning}
               fanTypes={settings.fanTypes}
               budget={settings.modelBudget}
+              postsPerDay={settings.postsPerDay}
               connections={connectionsQuery.data ?? []}
               onSave={(patch) => updatePatch(patch)}
             />
@@ -488,7 +516,16 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
             <Field
               settingKey="fanActivityRunsPerDay"
               label={t("ui.slurp.settings.audience.runsPerDay")}
-              detail={t("ui.slurp.settings.audience.runsPerDayDetail")}
+              detail={
+                // The "Comment threads" AI budget caps the runs; say so instead of capping silently (R1-104).
+                settings.fanActivityRunsPerDay > effectiveBudget.jobs.thread.maxPerDay
+                  ? t("ui.slurp.settings.audience.runsPerDayCapped", {
+                      count: effectiveBudget.jobs.thread.maxPerDay,
+                      defaultValue:
+                        "Your AI budget allows {{count}} a day. Raise Comment threads under AI budget for more.",
+                    })
+                  : t("ui.slurp.settings.audience.runsPerDayDetail")
+              }
             >
               <NumberSetting
                 value={settings.fanActivityRunsPerDay}
@@ -514,9 +551,24 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
               />
             </Field>
           </div>
+          <Field
+            settingKey="creatorRepliesPerDay"
+            label={t("ui.slurp.settings.audience.creatorRepliesPerDay", { defaultValue: "Creator replies per day" })}
+            detail={t("ui.slurp.settings.audience.creatorRepliesPerDayDetail", {
+              defaultValue:
+                "How many comments Creators answer in 24 hours, yours and your fans' together. When it runs out, they answer again the next day.",
+            })}
+          >
+            <NumberSetting
+              value={settings.creatorRepliesPerDay}
+              min={1}
+              max={200}
+              onSave={(value) => update("creatorRepliesPerDay", value)}
+            />
+          </Field>
           <SettingAnchor settingKey="worldActivity">
-            <ChoiceRow
-              title={t("ui.slurp.settings.audience.activityTitle")}
+            <ChoiceSetting
+              label={t("ui.slurp.settings.audience.activityTitle")}
               detail={t("ui.slurp.settings.audience.activityDetail")}
               options={(["off", "quiet", "normal", "busy"] as const).map((level) => ({
                 value: level,
@@ -552,6 +604,8 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
             <SlurpSimulationSettings
               key={settings.simulationTuning.preset}
               tuning={settings.simulationTuning}
+              // The estimate caps AI fan runs by the budget row sized for today's Creators (merge L × F).
+              world={{ ...settings, modelBudget: effectiveBudget }}
               onSave={(next) => void update("simulationTuning", next)}
             />
           </SettingAnchor>

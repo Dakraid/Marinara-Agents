@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { recordSlurpTasteSignal } from "../../data/creators/slp-spice-storage.js";
 import { replyToSlurpMessage } from "./slp-message-operation.js";
 import { logger } from "../../../lib/logger.js";
 import { parseSlurpCheatDirective } from "../../modules/messages/slp-cheat-directive.js";
@@ -10,6 +11,8 @@ import { reactToSlurpPayment } from "../economy/slp-economy-contract.js";
 import type { FastifyInstance } from "fastify";
 import { personaQuerySchema } from "../../modules/messages/slp-messages-schemas.js";
 import type { SlpMessagesContext } from "./slp-messages-context.js";
+import { slpCreatorUnlockPriceFromMetadata } from "../../modules/economy/slp-prices.js";
+import { slpStoredMediaSize } from "../../base/media/slp-media.js";
 
 const sendSchema = z.object({
   personaId: z.string().trim().min(1),
@@ -23,6 +26,8 @@ const sendSchema = z.object({
     .object({ amount: z.number().int().min(1).max(9999), note: z.string().trim().max(280).default("") })
     .nullable()
     .optional(),
+  /** The player writes this one as Slurp Support (Slurp's staff), not as their persona. Support never tips. */
+  asSupport: z.boolean().optional(),
 });
 
 const tipSchema = z.object({
@@ -32,8 +37,14 @@ const tipSchema = z.object({
   note: z.string().trim().max(280).default(""),
   requestId: z.string().trim().min(8).max(100).optional(),
 });
+/** Why a chat cannot start, in Slurp's words. A shared couple page points to the two people behind it. */
+const slurpClosedThreadText = (result: { reason?: "couple_page" }) =>
+  result.reason === "couple_page"
+    ? "This page belongs to two Creators. Write to one of them on their own page."
+    : "This Creator is not accepting messages.";
+
 export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: SlpMessagesContext) {
-  const { freshView, maskForViewer, messages, ownsCreator, requireViewer, slurp } = messaging;
+  const { freshView, maskForViewer, messages, ownsCreator, requireViewer, seatIn, slurp } = messaging;
 
   app.post("/messages/share-post", async (req, reply) => {
     const parsed = z
@@ -63,11 +74,16 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
     // post it is. A missing author is not worth refusing the share over.
     const author =
       post.authorAccountId === creator.id ? creator : await slurp.getNoodlerAccountById(post.authorAccountId);
-    const opened = await messages.openThread(viewer.id, creator.id, "viewer");
-    if (opened.status === "closed") return reply.code(403).send({ error: "This Creator is not accepting messages." });
+    const opened = await messages.openThread(viewer.id, creator.id, "viewer", "refuse");
+    if (opened.status === "closed") return reply.code(403).send({ error: slurpClosedThreadText(opened) });
+    if (opened.status === "fee_required")
+      return reply
+        .code(409)
+        .send({ error: "Send them a message first to start this chat.", required: opened.required });
     if (opened.status === "insufficient_funds")
       return reply.code(402).send({ error: "Not enough coins.", required: opened.required });
     if (opened.status !== "ok") return reply.code(404).send({ error: "Could not open conversation" });
+    const size = slpStoredMediaSize((post.metadata as Record<string, unknown> | undefined)?.noodlerMediaPath);
     const message = await messages.appendMessage(opened.thread.id, {
       senderAccountId: viewer.id,
       role: "viewer",
@@ -80,10 +96,14 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
         content: locked ? "" : post.content,
         access: post.access,
         previewLocked: locked,
+        authorAccountId: author?.id ?? post.authorAccountId,
         authorName: author?.displayName ?? null,
         authorHandle: author?.handle ?? null,
         authorAvatarUrl: author?.avatarUrl ?? null,
+        price: slpCreatorUnlockPriceFromMetadata(post.metadata as Record<string, unknown> | undefined),
         shareReason: "player",
+        // The card reserves the post's own picture ratio (V).
+        ...(size ? { imageWidth: size.width, imageHeight: size.height } : {}),
       },
     });
     if (!message) return reply.code(409).send({ error: "Could not share the post." });
@@ -106,16 +126,17 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
       parsed.data.creatorAccountId,
       parsed.data.content,
       parsed.data.requestId,
+      { asSupport: parsed.data.asSupport === true },
     );
     if (sent.status === "not_found") return reply.code(404).send({ error: "Creator not found" });
-    if (sent.status === "closed") return reply.code(403).send({ error: "This Creator is not accepting messages." });
+    if (sent.status === "closed") return reply.code(403).send({ error: slurpClosedThreadText(sent) });
     if (sent.status === "insufficient_funds")
       return reply.code(402).send({ error: "Not enough coins.", required: sent.required });
 
     let outcome;
     let tipError: string | null = null;
     let replyTriggerMessageId = sent.message.id;
-    if (parsed.data.tip) {
+    if (parsed.data.tip && !parsed.data.asSupport) {
       const tipped = await messages.tipInThread(
         viewer.id,
         parsed.data.creatorAccountId,
@@ -275,7 +296,8 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
     const viewer = await requireViewer(parsed.data.personaId);
     if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
     const thread = await messages.getThreadById(threadId);
-    if (!thread || thread.viewerAccountId !== viewer.id) return reply.code(404).send({ error: "Thread not found" });
+    if (!thread || (await seatIn(viewer.id, thread)) !== "viewer")
+      return reply.code(404).send({ error: "Thread not found" });
     const triggerMessageId = await messages.latestViewerMessageId(thread.id);
     if (!triggerMessageId) return reply.code(400).send({ error: "Nothing to reply to yet." });
     // Bubbles from the last answer are still arriving; a second answer would interleave with them.
@@ -299,7 +321,8 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
     const viewer = await requireViewer(parsed.data.personaId);
     if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
     const thread = await messages.getThreadById(threadId);
-    if (!thread || thread.viewerAccountId !== viewer.id) return reply.code(404).send({ error: "Thread not found" });
+    if (!thread || (await seatIn(viewer.id, thread)) !== "viewer")
+      return reply.code(404).send({ error: "Thread not found" });
     const triggerMessageId = await messages.latestViewerMessageId(thread.id);
     if (!triggerMessageId) return reply.code(400).send({ error: "Send a message before requesting a reply." });
     const outcome = await replyToSlurpMessage(app.db, {
@@ -332,9 +355,10 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
       parsed.data.requestId,
     );
     if (sent.status === "not_found") return reply.code(404).send({ error: "Creator not found" });
-    if (sent.status === "closed") return reply.code(403).send({ error: "This Creator is not accepting messages." });
+    if (sent.status === "closed") return reply.code(403).send({ error: slurpClosedThreadText(sent) });
     if (sent.status === "insufficient_funds")
       return reply.code(402).send({ error: "Not enough coins.", required: sent.required });
+    recordSlurpTasteSignal(app.db, { creatorId: parsed.data.creatorAccountId }, "tip");
     // A tip is worth answering, and a thanks that arrives an hour later is not a thanks.
     const outcome = await replyToSlurpMessage(app.db, {
       threadId: sent.thread.id,
@@ -368,7 +392,7 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
       const thread = target ? await messages.getThreadById(target.threadId) : null;
       if (!target || target.kind !== "ppv" || thread?.viewerAccountId !== viewer.id)
         return reply.code(404).send({ error: "Message not found" });
-      return reply.code(402).send({ error: "PPV message cannot be unlocked." });
+      return reply.code(402).send({ error: "Not enough coins.", required: target.price });
     }
     // Two concurrent clicks both read "not unlocked yet"; only the first may react.
     const firstUnlock = !alreadyUnlocked && !ppvReacting.has(message.id);
@@ -377,6 +401,10 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
       setTimeout(() => ppvReacting.delete(message.id), 60_000).unref?.();
     }
     const unlockedThread = firstUnlock ? await messages.getThreadById(message.threadId) : null;
+    if (firstUnlock) {
+      const prompt = typeof message.metadata?.imagePrompt === "string" ? message.metadata.imagePrompt : "";
+      recordSlurpTasteSignal(app.db, { text: `${prompt} ${message.content ?? ""}` }, "unlock");
+    }
     if (unlockedThread)
       // Fire and forget: the reply is a chat message, and the unlock must not wait on the model.
       void reactToSlurpPayment(app.db, {

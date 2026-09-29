@@ -23,10 +23,40 @@ import type {
   SlurpProfilePost,
 } from "./slp-feed-contract.js";
 
+/** Set by a post action: the next profile fetch reads every page once, so older posts refresh too. */
+let slpProfilePostsStale = false;
+export function markSlpProfilePostsStale() {
+  slpProfilePostsStale = true;
+}
+
+const profilePostTime = (item: SlurpProfilePost) =>
+  Date.parse(("managed" in item ? item.managed : item.viewerPost).createdAt);
+
+/**
+ * A background poll reads page one only and keeps the older posts it already has (R1-041: an open
+ * profile re-downloaded the whole history every 30 s). Page one decides everything newer than its
+ * oldest post, so a post that left it is gone; older cached posts stay.
+ */
+export function mergeSlpProfileFirstPage(
+  cached: readonly SlurpProfilePost[],
+  page: readonly SlurpProfilePost[],
+  hasMore: boolean,
+): SlurpProfilePost[] {
+  if (!hasMore || page.length === 0) return [...page];
+  const oldest = Math.min(...page.map(profilePostTime));
+  const ids = new Set(page.map(slpProfilePostId));
+  return [...page, ...cached.filter((item) => !ids.has(slpProfilePostId(item)) && profilePostTime(item) < oldest)];
+}
+
 export function useCreatorPosts(accountId: string | null, personaId: string | null) {
+  const qc = useQueryClient();
+  const queryKey = [...slpKeys.noodlerPosts(accountId ?? "none"), personaId ?? "none"];
   return useQuery({
-    queryKey: [...slpKeys.noodlerPosts(accountId ?? "none"), personaId ?? "none"],
+    queryKey,
     queryFn: async ({ signal }) => {
+      const cached = qc.getQueryData<SlurpProfilePost[]>(queryKey);
+      const firstPageOnly = Boolean(cached) && !slpProfilePostsStale;
+      slpProfilePostsStale = false;
       const items: SlurpProfilePost[] = [];
       let cursor: SlurpPageCursor | null = null;
       do {
@@ -44,6 +74,7 @@ export function useCreatorPosts(accountId: string | null, personaId: string | nu
         });
         items.push(...page.items);
         cursor = page.nextCursor;
+        if (firstPageOnly) return mergeSlpProfileFirstPage(cached!, items, Boolean(cursor));
       } while (cursor);
       return items;
     },
@@ -143,6 +174,20 @@ export function useConfirmCreatorImagePrompts() {
       ]),
   });
 }
+/** Closing the picture review without drawing ends the wait on the server (R1-047). */
+export function useCancelCreatorImagePrompts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationKey: ["slurp", "cancel-post-images"],
+    mutationFn: (input: { targetAccountId: string; ids: string[] }) =>
+      api.post<{ cancelled: number }>("/slurp2/slurp/refresh/images/cancel", { ids: input.ids }),
+    onSettled: (_result, _error, input) =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: slpKeys.noodlerPosts(input.targetAccountId) }),
+        qc.invalidateQueries({ queryKey: slpKeys.slpCreatorViewers() }),
+      ]),
+  });
+}
 export function useCreateCreatorPost() {
   const qc = useQueryClient();
   return useMutation({
@@ -183,6 +228,8 @@ export function useLoadCreatorPostImage() {
     },
   });
 }
+/** A profile card holds the owner copy of a post, the fan copy, or both; either id is the post (R1-022). */
+export const slpProfilePostId = (item: SlurpProfilePost) => ("managed" in item ? item.managed.id : item.viewerPost.id);
 export function useUpdateCreatorPost() {
   const qc = useQueryClient();
   return useMutation({
@@ -190,8 +237,11 @@ export function useUpdateCreatorPost() {
       api.patch<SlpCreatorManagedPost>(`/slurp2/slurp/posts/${encodeURIComponent(id)}`, { ...input, accountId }),
     onSuccess: (post, input) => {
       qc.setQueriesData<SlurpProfilePost[]>({ queryKey: slpKeys.noodlerPosts(input.accountId) }, (current) =>
-        current?.map((item) => (item.managed?.id === post.id ? { ...item, managed: post } : item)),
+        current?.map((item) => ("managed" in item && item.managed.id === post.id ? { ...item, managed: post } : item)),
       );
+      // A card that holds only the fan copy is refetched instead (R1-022).
+      markSlpProfilePostsStale();
+      void qc.invalidateQueries({ queryKey: slpKeys.noodlerPosts(input.accountId) });
       return qc.invalidateQueries({ queryKey: slpKeys.slpCreatorViewers() });
     },
   });
@@ -218,8 +268,11 @@ export function useReplaceCreatorPostImage() {
     },
     onSuccess: (post, input) => {
       qc.setQueriesData<SlurpProfilePost[]>({ queryKey: slpKeys.noodlerPosts(input.accountId) }, (current) =>
-        current?.map((item) => (item.managed?.id === post.id ? { ...item, managed: post } : item)),
+        current?.map((item) => ("managed" in item && item.managed.id === post.id ? { ...item, managed: post } : item)),
       );
+      // A card that holds only the fan copy is refetched instead (R1-022).
+      markSlpProfilePostsStale();
+      void qc.invalidateQueries({ queryKey: slpKeys.noodlerPosts(input.accountId) });
       return qc.invalidateQueries({ queryKey: slpKeys.slpCreatorViewers() });
     },
   });
@@ -228,10 +281,22 @@ export function useGenerateCreatorPostImage() {
   const qc = useQueryClient();
   return useMutation({
     mutationKey: ["slurp", "generate-post-image"],
-    mutationFn: ({ id, accountId, imagePrompt }: { id: string; accountId: string; imagePrompt?: string }) =>
+    mutationFn: ({
+      id,
+      accountId,
+      imagePrompt,
+      asWritten,
+    }: {
+      id: string;
+      accountId: string;
+      imagePrompt?: string;
+      /** The prompt came from the redraw box and goes to the provider as written. */
+      asWritten?: boolean;
+    }) =>
       api.post<SlpCreatorManagedPost>(`/slurp2/slurp/posts/${encodeURIComponent(id)}/image/generate`, {
         accountId,
         ...(imagePrompt ? { imagePrompt } : {}),
+        ...(imagePrompt && asWritten ? { asWritten: true } : {}),
         replace: true,
         debugMode: useSlurpUIStore.getState().debugMode,
       }),
@@ -278,7 +343,7 @@ export function useDeleteCreatorPost() {
       ),
     onSuccess: (_post, input) => {
       qc.setQueriesData<SlurpProfilePost[]>({ queryKey: slpKeys.noodlerPosts(input.accountId) }, (current) =>
-        current?.filter((item) => item.managed?.id !== input.id),
+        current?.filter((item) => slpProfilePostId(item) !== input.id),
       );
       qc.setQueriesData<SlpCreatorViewerScope | undefined>({ queryKey: slpKeys.slpCreatorViewers() }, (current) =>
         current

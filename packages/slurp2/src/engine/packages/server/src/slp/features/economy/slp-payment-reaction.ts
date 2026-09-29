@@ -3,6 +3,7 @@ import { logger } from "../../../lib/logger.js";
 import { createSlurpMessagesStorage } from "../../data/slp-storage.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { replyToSlurpMessage } from "../messages/slp-messages-contract.js";
+import { slurpIsCouplePage } from "../projects/slp-projects-contract.js";
 
 const PAYMENT_REACTION_QUIET_MS = 2 * 60 * 60_000;
 /**
@@ -44,6 +45,8 @@ export async function reactToSlurpPayment(
     const slurp = createSlurpStorage(db);
     const creator = await slurp.getNoodlerAccountById(input.creatorAccountId);
     if (!creator || creator.sourceKind !== "character") return;
+    // A shared couple page has no card and no voice of its own: nobody thanks from it (7c M-002).
+    if (slurpIsCouplePage(creator)) return;
     const messages = createSlurpMessagesStorage(db);
     const thread = await messages.getThread(input.viewerAccountId, input.creatorAccountId);
     // No thread means no conversation to react in. Opening one uninvited is a different feature.

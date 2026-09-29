@@ -1,3 +1,5 @@
+import i18next from "i18next";
+import { slpErrorText } from "../../base/ui/slp-error-text";
 // Pure Backstage formatting, presets and vocabulary, split out of
 // components/slurp/SlurpBackstageWorkflow.tsx in Slice 10. No feature import, so every feature
 // may read it without a contract.
@@ -34,8 +36,12 @@ export const DEFAULT_SLURP_GENERATION_GUIDANCE: string = SLURP_GUIDANCE_PRESETS.
 export const DEFAULT_SLURP_IMAGE_GENERATION_PROMPT =
   "Create a provider-ready image prompt for the supplied adult Creator post. Preserve the post's subject, action, setting, mood, clothing, and established appearance. Use the Creator's personality to shape expression and presentation, not to invent a new event or sexualize an ordinary moment. Add nudity, explicit anatomy, or sexual activity only when the post or an explicit trusted instruction already requires it. Keep the image coherent, believable, and suitable for the post's public or locked access level. Use only the visual details needed for this scene.";
 
-export function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Could not update settings.";
+export function errorMessage(error: unknown, fallback?: string) {
+  return slpErrorText(
+    error,
+    fallback ?? i18next.t("ui.slurp.settings.saveState.error", { defaultValue: "Could not update settings." }),
+    i18next.t("ui.slurp.wallet.notEnoughCoins", { defaultValue: "Not enough coins." }),
+  );
 }
 
 export function formatBytes(value: number): string {

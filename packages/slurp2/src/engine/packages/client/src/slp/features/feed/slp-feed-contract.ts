@@ -35,3 +35,6 @@ export {
   useUpdateCreatorAutoPosting,
   useUpdateCreatorScheduleSlot,
 } from "./slp-feed-schedule-hooks.js";
+
+// A post shared into a chat unlocks in place (messages' shared post card).
+export { useUnlockCreatorPost } from "./slp-feed-viewer-hooks.js";

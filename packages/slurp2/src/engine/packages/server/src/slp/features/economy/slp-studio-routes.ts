@@ -1,6 +1,6 @@
 import { slpCreatorViewerPersonaSchema } from "../../../../../shared/src/slp/slp-social.schema.js";
 import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
-import { slurpPlatformScaleMultiplier } from "../../modules/audience/slp-scale.js";
+import { slurpPlatformScaleMultiplier } from "../../../../../shared/src/slp/slp-scale.js";
 import { readSlurpStudioSnapshot, writeSlurpStudioSnapshot } from "./slp-studio-snapshot.js";
 import {
   slurpCreatorReach,
@@ -12,6 +12,7 @@ import {
 import { slurpFollowerMilestone, slurpMilestonesCrossed } from "../../modules/world/slp-milestones.js";
 import { slurpGoalProgress } from "../../modules/projects/slp-goal.js";
 import { slurpPayoutAllowance } from "../../modules/economy/slp-earnings.js";
+import { slurpLikesByWeek } from "../../modules/economy/slp-studio-stats.js";
 import { isSlurpViewerActorAccount } from "../../modules/settings/slp-settings.js";
 import type { FastifyInstance } from "fastify";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
@@ -19,7 +20,12 @@ import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
 export async function slpStudioRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
   const { creatorBelongsToViewer, noodle, resolveViewerPersona } = deps;
   app.get("/slurp/studio", async (req, reply) => {
-    const parsed = slpCreatorViewerPersonaSchema.safeParse(req.query);
+    const { markVisit, ...query } = (req.query ?? {}) as { markVisit?: string } & Record<string, unknown>;
+    // Only the Studio's first read of a visit moves the "since your last visit" mark. Every other
+    // read (Collect, a goal edit, the Wallet's Collect card) is read-only, or it zeroed the
+    // trends the player was looking at (R1-065).
+    const visit = markVisit === "1";
+    const parsed = slpCreatorViewerPersonaSchema.safeParse(query);
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
     const viewer = await resolveViewerPersona(parsed.data.personaId);
     if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
@@ -31,11 +37,16 @@ export async function slpStudioRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
     const studioScaleSettings = await noodle.getSettings();
     const studioScale = slurpPlatformScaleMultiplier(studioScaleSettings.platformScale);
     const at = new Date();
-    const snapshot = await readSlurpStudioSnapshot(app.db, viewer.id);
+    const stored = await readSlurpStudioSnapshot(app.db, viewer.id);
+    // A visit measures from the last visit's mark; the reads after it measure from the same point.
+    const snapshot = visit ? stored : (stored?.baseline ?? stored);
 
+    // Two weeks of posts for the likes trend; the list shows the newest six.
+    // ponytail: newest 30 posts per Creator; a Creator posting more than 30 times in two weeks
+    // undercounts last week's likes. Add a dated query if that ever matters.
     const postsByAccount = await noodle.listNoodlerPostsByAccounts(
       operated.map((account) => account.id),
-      6,
+      30,
     );
     const allPostIds = [...postsByAccount.values()].flat().map((post) => post.id);
     const interactions = allPostIds.length > 0 ? await noodle.listNoodlerInteractions(allPostIds) : [];
@@ -72,7 +83,10 @@ export async function slpStudioRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
             hasImage: post.imageUrl !== null,
             reach: slurpPostImpressions(input, at),
             likeCount: slurpPostLikeCount(
-              { ...input, realLikes: postInteractions.filter((item) => item.type === "like").length },
+              {
+                ...input,
+                realLikes: postInteractions.filter((item) => item.type === "like" && !item.parentInteractionId).length,
+              },
               at,
             ),
             replyCount: slurpPostReplyCount(
@@ -103,6 +117,9 @@ export async function slpStudioRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
             firstSeenAt: entry.tie.firstSeenAt,
           })),
         );
+        const subscribers =
+          (await noodle.listSubscriptionsForCreator(account.id)).length +
+          ((await population.countSubscribersForCreators([account.id])).get(account.id) ?? 0);
         return {
           id: account.id,
           handle: account.handle,
@@ -110,9 +127,9 @@ export async function slpStudioRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
           avatarUrl: account.avatarUrl,
           topFans: cast.filter((fan) => fan.displayName),
           followers,
-          subscribers:
-            (await noodle.listSubscriptionsForCreator(account.id)).length +
-            ((await population.countSubscribersForCreators([account.id])).get(account.id) ?? 0),
+          subscribers,
+          subscribersDelta: typeof previous?.subscribers === "number" ? subscribers - previous.subscribers : null,
+          likes: slurpLikesByWeek(posts, at),
           earnings,
           milestone: slurpFollowerMilestone(followers),
           goal: goal ? slurpGoalProgress(goal, earnings.lifetime) : null,
@@ -125,7 +142,7 @@ export async function slpStudioRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
               : null,
           earningsDelta: previous ? earnings.lifetime - previous.lifetimeEarnings : null,
           milestonesCrossed: previous ? slurpMilestonesCrossed(previous.followers, followers) : [],
-          posts,
+          posts: posts.slice(0, 6),
         };
       }),
     );
@@ -133,6 +150,7 @@ export async function slpStudioRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
     // Passing a milestone is the most notable thing that can happen to a Creator, and it was
     // computed here, rendered here, and never reported anywhere. Record it so it reaches the
     // notification stream like every other event.
+    if (!visit) return { since: snapshot?.at ?? null, creators };
     for (const creator of creators) {
       for (const target of creator.milestonesCrossed) {
         await noodle.recordCreatorEvent(creator.id, "milestone", { amount: target });
@@ -140,12 +158,17 @@ export async function slpStudioRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
     }
 
     await writeSlurpStudioSnapshot(app.db, viewer.id, {
+      baseline: stored ? { at: stored.at, platformScale: stored.platformScale, creators: stored.creators } : null,
       at: at.toISOString(),
       platformScale: studioScale,
       creators: Object.fromEntries(
         creators.map((creator) => [
           creator.id,
-          { followers: creator.followers, lifetimeEarnings: creator.earnings.lifetime },
+          {
+            followers: creator.followers,
+            lifetimeEarnings: creator.earnings.lifetime,
+            subscribers: creator.subscribers,
+          },
         ]),
       ),
     });
@@ -178,7 +201,7 @@ export async function slpStudioRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
     const realCounts = new Map<string, { likes: number; replies: number }>();
     for (const interaction of interactions) {
       const entry = realCounts.get(interaction.postId) ?? { likes: 0, replies: 0 };
-      if (interaction.type === "like") entry.likes += 1;
+      if (interaction.type === "like" && !interaction.parentInteractionId) entry.likes += 1;
       if (interaction.type === "reply") entry.replies += 1;
       realCounts.set(interaction.postId, entry);
     }

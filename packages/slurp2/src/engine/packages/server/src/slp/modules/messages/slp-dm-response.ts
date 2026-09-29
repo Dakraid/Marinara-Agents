@@ -33,7 +33,11 @@ export const slurpDmReplySchema = z.object({
   stateSignals: z.array(z.enum(SLURP_CREATOR_STATE_SIGNALS)).max(3).optional().catch(undefined),
   sharePost: z.number().int().min(0).max(4).optional().catch(undefined),
   image: z
-    .object({ prompt: z.string().trim().min(3).max(1000), caption: z.string().trim().max(500).nullish() })
+    .object({
+      prompt: z.string().trim().min(3).max(1000),
+      caption: z.string().trim().max(500).nullish(),
+      spicy: z.boolean().optional().catch(undefined),
+    })
     .nullable()
     .optional()
     .catch(undefined),
@@ -59,6 +63,10 @@ export const slurpDmReplySchema = z.object({
     .nullable()
     .optional()
     .catch(undefined),
+  /** Only in Slurp Support's thread: what the talk changed for the Creator. Read by `slp-support.ts`. */
+  staff: z.record(z.string(), z.unknown()).nullable().optional().catch(undefined),
+  /** Only Creator to Creator: the two agreed on a joint post. Read by `readSlurpDmCollab`. */
+  collab: z.record(z.string(), z.unknown()).nullable().optional().catch(undefined),
 });
 
 export type SlurpDmReply = {
@@ -67,7 +75,7 @@ export type SlurpDmReply = {
   remember: SlurpNoteOperation[];
   stateSignals: SlurpCreatorStateSignal[];
   sharePost?: number;
-  image?: { prompt: string; caption: string };
+  image?: { prompt: string; caption: string; spicy?: boolean };
   media?: {
     kind: "post" | "generated_image";
     postIndex?: number;
@@ -82,6 +90,8 @@ export type SlurpDmReply = {
     reason: string;
     context?: string;
   };
+  staff?: Record<string, unknown>;
+  collab?: Record<string, unknown>;
 };
 
 /** The reply plus what the resolved stance allows the creator to do about the conversation. */
@@ -90,7 +100,27 @@ export type SlurpGeneratedDmReply = SlurpDmReply & {
   canSendImage: boolean;
   imageMode: "friendly" | "hostile" | "none";
   sharedPost: { id: string; title: string | null; content: string; access: string; imageUrl: string | null } | null;
+  /** Creator to Creator: a joint post the two agreed on, with the replying Creator's share. */
+  agreedCollab?: SlurpDmCollab;
 };
+
+export type SlurpDmCollab = { partnerId: string; idea: string; hostShare: number | null; shoot?: boolean };
+
+/** The "collab" field of a Creator-to-Creator reply, or undefined when they did not agree on one. */
+export function readSlurpDmCollab(
+  raw: unknown,
+  partnerId: string,
+  protect: (value: string) => string | null | undefined,
+): SlurpDmCollab | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const value = raw as Record<string, unknown>;
+  if (value.agreed === false) return undefined;
+  const idea = typeof value.idea === "string" ? (protect(value.idea.trim()) ?? "") : "";
+  const share = typeof value.yourShare === "number" && Number.isFinite(value.yourShare) ? value.yourShare : null;
+  return idea || share !== null
+    ? { partnerId, idea, hostShare: share, ...(value.shoot === true ? { shoot: true } : {}) }
+    : undefined;
+}
 
 /**
  * Read a model answer back, tolerating everything except a missing reply.
@@ -112,7 +142,13 @@ export function readSlurpDmReply(value: unknown): SlurpDmReply {
     stateSignals: parsed.data.stateSignals ?? [],
     ...(parsed.data.sharePost === undefined ? {} : { sharePost: parsed.data.sharePost }),
     ...(parsed.data.image?.prompt
-      ? { image: { prompt: parsed.data.image.prompt, caption: parsed.data.image.caption?.trim() ?? "" } }
+      ? {
+          image: {
+            prompt: parsed.data.image.prompt,
+            caption: parsed.data.image.caption?.trim() ?? "",
+            ...(parsed.data.image.spicy === undefined ? {} : { spicy: parsed.data.image.spicy }),
+          },
+        }
       : {}),
     ...(parsed.data.media?.kind
       ? {
@@ -136,5 +172,23 @@ export function readSlurpDmReply(value: unknown): SlurpDmReply {
           },
         }
       : {}),
+    ...(parsed.data.staff ? { staff: parsed.data.staff } : {}),
+    ...(parsed.data.collab ? { collab: parsed.data.collab } : {}),
   };
+}
+
+/**
+ * A note is model output about the player, stored and fed back into a later prompt: redacted and
+ * bounded by `protect`, and never about payment.
+ */
+export function protectNoteOperation(
+  operation: SlurpNoteOperation,
+  protect: (text: string) => string | null | undefined,
+): SlurpNoteOperation | null {
+  if (operation.op === "forget" || operation.op === "keep") return operation;
+  const text = protect(operation.text);
+  // "Never record anything about payment" is only a prompt line, and stored notes were all payment
+  // notes that later fed "you'd need to subscribe" upsells. Enforced here.
+  if (!text || /\b(?:coins?|unlock\w*|subscri\w*|tips?|tipped|paid|pays?|payment|ppv)\b/iu.test(text)) return null;
+  return operation.op === "add" ? { op: "add", text } : { op: "replace", id: operation.id, text };
 }

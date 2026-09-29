@@ -19,6 +19,7 @@
 import type { SlurpPostVariation } from "./slp-post-variation.js";
 import type { SlurpExplicitLevel } from "./slp-post-guidance.js";
 import { slurpIsLegacyImageBrief } from "../../base/media/slp-image-prompt.js";
+import { slurpCameraSourceNegative, type SlurpCameraSource } from "./slp-camera-source.js";
 import type { SlpWardrobeScene } from "../../../../../shared/src/slp/slp-wardrobe.js";
 
 /** What the picture may show, as a positive phrase. What it may not show goes to the negative prompt. */
@@ -29,6 +30,11 @@ const LEVEL_PHOTO: Record<SlurpExplicitLevel, string> = {
   explicit: "explicit adult content, one person only",
 };
 
+/** The level as a picture phrase, for a picture drawn outside a post (a chat picture, a commission). */
+export function slurpLevelPhoto(level: SlurpExplicitLevel): string {
+  return `${LEVEL_PHOTO[level].charAt(0).toLocaleUpperCase()}${LEVEL_PHOTO[level].slice(1)}.`;
+}
+
 /** Negative-prompt terms per level. The image provider honours these far better than prose rules. */
 const LEVEL_NEGATIVE: Record<SlurpExplicitLevel, string> = {
   none: "nudity, lingerie, cleavage, sexual content",
@@ -38,10 +44,44 @@ const LEVEL_NEGATIVE: Record<SlurpExplicitLevel, string> = {
 };
 
 /** Always true for a Creator's own photo: one person, no stray body parts. */
-const SHARED_NEGATIVE = "second person, extra people, extra limbs, disembodied hands, text, watermark";
+// The phone and a doubled Creator are what the prompt side kept producing (0.2.74 on prod: a phone
+// in 37 of 46 pictures, a second copy of the Creator beside every few mirrors).
+const SHARED_NEGATIVE = "second person, extra people, duplicate person, twins, extra limbs, disembodied hands";
+/** A picture without a known camera keeps the device out; a known camera names its own terms. */
+const DEVICE_NEGATIVE = "smartphone, holding phone, selfie stick";
+const TEXT_NEGATIVE = "text, watermark";
 
-export function slurpImageNegativePrompt(level: SlurpExplicitLevel): string {
-  return [LEVEL_NEGATIVE[level], SHARED_NEGATIVE].filter(Boolean).join(", ");
+/** A partner scene has two people on purpose; only the stray and doubled bodies stay out. */
+const PARTNER_NEGATIVE = SHARED_NEGATIVE.replace("second person, extra people, ", "");
+
+/**
+ * Without a level (a redraw or a scheduled picture that kept none), only the shared terms apply.
+ * A mirror shot holds the phone on purpose, so the camera's own terms replace the device terms.
+ */
+export function slurpImageNegativePrompt(
+  level?: SlurpExplicitLevel,
+  partnered = false,
+  camera?: SlurpCameraSource | null,
+): string {
+  return [
+    level ? LEVEL_NEGATIVE[level] : "",
+    partnered ? PARTNER_NEGATIVE : SHARED_NEGATIVE,
+    camera ? slurpCameraSourceNegative(camera) : DEVICE_NEGATIVE,
+    TEXT_NEGATIVE,
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
+/** Negative-prompt parts as one list, deduplicated: the style profile and the level both add "text, watermark". */
+export function slurpImageNegativeTerms(...parts: readonly (string | null | undefined)[]): string | undefined {
+  const terms = parts
+    .filter(Boolean)
+    .join(",")
+    .split(",")
+    .map((term) => term.trim())
+    .filter(Boolean);
+  return [...new Set(terms)].join(", ") || undefined;
 }
 
 function sentence(value: string | null | undefined): string {
@@ -72,7 +112,7 @@ export function slurpShootContinuity(input: {
 }
 
 export function slurpImageBrief(input: {
-  /** From `slurpCameraSourcePhoto`: how the photo was taken, as a visual phrase. */
+  /** From `slurpCameraSourceShot`: framing and how the photo was taken, as a visual phrase. */
   cameraPhoto: string;
   variation: SlurpPostVariation;
   /** A Story is a picture with one line under it, so the picture has to carry the post alone. */
@@ -90,6 +130,8 @@ export function slurpImageBrief(input: {
   stageFacts?: { wardrobe?: string; locations?: string };
   scene?: SlpWardrobeScene | null;
   selectedWardrobe?: { name: string; description: string } | null;
+  /** Who is in a partner scene with them ("Jonas, their boyfriend"). Absent: they are alone. */
+  partner?: string | null;
 }): string {
   const shootBrief =
     input.shoot?.brief &&
@@ -113,12 +155,14 @@ export function slurpImageBrief(input: {
     sentence(place),
     input.shoot && shootBrief ? "" : sentence(input.scene?.visualDirection),
     sentence(
-      [input.cameraPhoto, input.story ? "vertical phone story photo" : "", input.effortPhoto]
-        .filter(Boolean)
-        .join(", "),
+      [input.cameraPhoto, input.story ? "vertical story photo" : "", input.effortPhoto].filter(Boolean).join(", "),
     ),
-    sentence(LEVEL_PHOTO[input.sexualLevel]),
-    "The only person in the photo.",
+    sentence(
+      input.partner && input.sexualLevel === "explicit"
+        ? "explicit adult content with their partner"
+        : LEVEL_PHOTO[input.sexualLevel],
+    ),
+    input.partner ? `Two people: the Creator and ${input.partner}.` : "The only person in the photo.",
   ]
     .filter(Boolean)
     .join("\n");
