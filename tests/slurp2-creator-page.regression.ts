@@ -148,7 +148,7 @@ test("a model's own spelling, a named pick and a made-up style still make a Page
   assert.match(service, /maxTokens: 4000/u);
 });
 
-test("a model's other field names still make blocks (0.3.8)", () => {
+test("a model's other field names still make blocks (0.3.6)", () => {
   const page = normalizeSlpCreatorPage({
     theme: "ocean",
     blocks: [

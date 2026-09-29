@@ -30,22 +30,6 @@ export function SlurpBubbleStyles() {
   return (
     <style>{`
       .slurp-bubble-in { animation: slurp-bubble-in 560ms cubic-bezier(0.2, 0.9, 0.25, 1) both; }
-      /* Slurp Support's lines wear a glitter border (0.3.9): a still ring of flecks on the accent,
-         drawn outside the bubble through a mask, so the bubble's own colours and text are untouched. */
-      .slurp-bubble-glitter { position: relative; isolation: isolate; }
-      .slurp-bubble-glitter::before {
-        content: ""; position: absolute; inset: -2px; z-index: -1; padding: 2px; border-radius: inherit;
-        pointer-events: none;
-        background:
-          radial-gradient(circle at 20% 30%, white 0 0.7px, transparent 1.5px) 0 0 / 11px 9px,
-          radial-gradient(circle at 65% 70%, color-mix(in srgb, white 80%, var(--noodle-accent)) 0 0.6px, transparent 1.3px) 0 0 / 7px 13px,
-          linear-gradient(115deg, var(--noodle-accent), color-mix(in srgb, var(--noodle-accent) 45%, gold) 30%,
-            color-mix(in srgb, var(--noodle-accent) 55%, white) 50%, color-mix(in srgb, var(--noodle-accent) 50%, violet) 72%,
-            var(--noodle-accent));
-        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-        -webkit-mask-composite: xor;
-        mask-composite: exclude;
-      }
       .slurp-bubble-in[data-side="end"] { transform-origin: 100% 100%; }
       .slurp-bubble-in[data-side="start"] { transform-origin: 0% 100%; }
       @keyframes slurp-bubble-in {
@@ -541,7 +525,6 @@ export function MessageBubble({
             className={cn(
               "slurp-bubble-shape relative cursor-default whitespace-pre-wrap break-words px-3.5 py-2 text-[0.95rem] leading-snug outline-none [-webkit-touch-callout:none] focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] sm:text-sm sm:leading-relaxed [@media(hover:none)]:select-none",
               slurpBubbleSurface(mine),
-              message.metadata?.supportVoice === true && "slurp-bubble-glitter",
             )}
           >
             {text}

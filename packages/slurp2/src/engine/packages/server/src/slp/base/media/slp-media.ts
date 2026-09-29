@@ -20,7 +20,7 @@ import { slpImageSizeOfFile, type SlpImageSize } from "./slp-image-size.js";
 import { slurpImageExtension } from "./slp-image-format.js";
 
 /**
- * A generated PNG (or BMP) stored as a WebP at quality 90, same size (0.3.9): about a fifth of the
+ * A generated PNG (or BMP) stored as a WebP at quality 90, same size (0.3.6): about a fifth of the
  * bytes on disk and in the full-screen view, with no visible change in a generated picture. Other
  * formats, and hosts without `sharp`, keep the provider's bytes.
  */

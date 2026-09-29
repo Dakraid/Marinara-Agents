@@ -91,7 +91,7 @@ export async function generateSlurpCommissionImage(
  */
 export async function generateSlurpViewerPhoto(
   db: DB,
-  /** `personaId` null: Slurp Support's picture shows only the brief, nobody's appearance (0.3.9). */
+  /** `personaId` null: Slurp Support's picture shows only the brief, nobody's appearance (0.3.6). */
   input: { creatorAccountId: string; personaId: string | null; brief: string },
 ): Promise<{ mediaPath: string; promote: () => void; compensate: () => void } | "unavailable"> {
   const noodle = createSlurpStorage(db);

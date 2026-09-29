@@ -34,7 +34,7 @@ const sendSchema = z.object({
   asSupport: z.boolean().optional(),
   /** Support only: an Offer or a move that rides this line (docs/SUPPORT-DESK.md). */
   desk: slurpDeskSendSchema.optional(),
-  /** Support only: "send me a photo, right now". The Creator answers with a free picture (0.3.9). */
+  /** Support only: "send me a photo, right now". The Creator answers with a free picture (0.3.6). */
   photoDemand: z.boolean().optional(),
 });
 
@@ -60,7 +60,7 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
         personaId: z.string().trim().min(1),
         creatorAccountId: z.string().trim().min(1),
         postId: z.string().trim().min(1),
-        /** Slurp Support puts a post (or Story) in front of the Creator, in Support's thread (0.3.9). */
+        /** Slurp Support puts a post (or Story) in front of the Creator, in Support's thread (0.3.6). */
         asSupport: z.boolean().optional(),
       })
       .strict()

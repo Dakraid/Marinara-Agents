@@ -65,7 +65,7 @@ export function SlpPostPurposeNote({
  */
 export function slpShowPostInPlace(postId: string): boolean {
   const find = () => document.querySelector<HTMLElement>(`[data-noodle-post-id="${CSS.escape(postId)}"]`);
-  // A long list draws its cards a few at a time (0.3.7): draw the rest before giving up on the post.
+  // A long list draws its cards a few at a time (0.3.6): draw the rest before giving up on the post.
   if (!find()) slpDrawAllCards();
   const card = find();
   if (!card) return false;

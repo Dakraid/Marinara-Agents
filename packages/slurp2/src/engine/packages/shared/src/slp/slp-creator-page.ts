@@ -144,7 +144,7 @@ const words = (value: unknown): unknown => {
 };
 
 function clipBlock(input: Record<string, unknown>): Record<string, unknown> {
-  // A model's own names for the same fields (0.3.8): "type" for kind, "content" or "body" for text.
+  // A model's own names for the same fields (0.3.6): "type" for kind, "content" or "body" for text.
   const named = input.kind ?? input.type ?? input.block;
   const kind = typeof named === "string" ? KIND_BY_LETTERS.get(named.toLowerCase().replace(/[^a-z]/gu, "")) : null;
   const raw: Record<string, unknown> = { ...input, ...(kind ? { kind } : {}) };

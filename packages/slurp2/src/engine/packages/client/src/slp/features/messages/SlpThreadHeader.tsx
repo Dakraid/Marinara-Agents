@@ -290,7 +290,7 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
               {localizeUi("ui.slurp.messages.memories", { defaultValue: "Memories" })}
             </SlpSheetItem>
           )}
-          {/* Slurp's staff do not commission pictures: Support has its own photo tools (0.3.9). */}
+          {/* Slurp's staff do not commission pictures: Support has its own photo tools (0.3.6). */}
           {threadId && !asSupport && (
             <SlpSheetItem onSelect={menuAction(() => setDrawerMode("commissions"))}>
               <BriefcaseBusiness aria-hidden="true" />

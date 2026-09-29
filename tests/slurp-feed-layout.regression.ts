@@ -99,7 +99,7 @@ assert.doesNotMatch(
   /contentVisibility: "auto"/u,
   "feed cards never skip painting: a fast phone flick showed half-black pages (0.3.6)",
 );
-// 0.3.9: desktop keeps it (off-screen cards skip restyles); phones do not.
+// 0.3.6: desktop keeps it (off-screen cards skip restyles); phones do not.
 assert.match(
   slurp2Source(join(root, "packages/slurp2/src/engine/packages/client/src/slp/slp-client-entry.tsx")),
   /@media \(min-width: 1024px\) \{\s*\[data-slurp-access-transition\]:not\(\[data-slp-menu-open\]\) \{\s*content-visibility: auto;/u,

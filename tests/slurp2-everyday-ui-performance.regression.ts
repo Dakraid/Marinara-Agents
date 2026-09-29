@@ -123,7 +123,7 @@ assert.match(
   "a fold draws nothing until it is first opened",
 );
 
-// 0.3.7 (measured on a phone-sized, 4x-throttled browser): long lists draw a few cards at a time, no feed
+// 0.3.6 (measured on a phone-sized, 4x-throttled browser): long lists draw a few cards at a time, no feed
 // row carries a framer layout node, the nav hide restyles only its bottom bars, and picture load marks
 // are written once per frame.
 const hub = read("client/src/slp/app/screens/SlpScreenHub.tsx");

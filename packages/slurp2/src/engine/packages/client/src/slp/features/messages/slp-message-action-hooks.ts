@@ -15,7 +15,7 @@ export function useSendSlurpMessage() {
       tip?: { amount: number; note?: string } | null;
       /** Written as Slurp Support (Slurp's staff), not as the persona. */
       asSupport?: boolean;
-      /** Support only: the Creator answers with a photo taken right now (0.3.9). */
+      /** Support only: the Creator answers with a photo taken right now (0.3.6). */
       photoDemand?: boolean;
       /** Support only: an Offer or a move riding this line (docs/SUPPORT-DESK.md). */
       desk?: { mode: "offer" | "now"; step: { action: string; input: Record<string, unknown> } };

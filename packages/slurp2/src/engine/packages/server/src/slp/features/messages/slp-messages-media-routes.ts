@@ -91,7 +91,7 @@ export async function slpMessagesMediaRoutes(app: FastifyInstance, messaging: Sl
   const { freshView, maskForViewer, messages, ownsCreator, requireViewer, slurp } = messaging;
   /**
    * Who sends a picture into this thread: the persona in its own chat, or Slurp Support in Support's
-   * thread with a Creator the persona does not run (0.3.9). Null when neither fits.
+   * thread with a Creator the persona does not run (0.3.6). Null when neither fits.
    */
   const pictureSender = async (
     thread: { viewerAccountId: string; creatorAccountId: string } | null,
@@ -142,7 +142,11 @@ export async function slpMessagesMediaRoutes(app: FastifyInstance, messaging: Sl
     if (!message) return reply.code(404).send({ error: "Not Found" });
     const thread = await messages.getThreadById(message.threadId);
     if (!thread) return reply.code(404).send({ error: "Not Found" });
-    const isViewer = thread.viewerAccountId === parsed.data.personaId;
+    // Slurp Support's thread is the player's from every persona (`slp-support.ts`): its pictures, sent
+    // or answered, load for any persona of theirs. Without this they 404'd and never showed (0.3.6).
+    const isSupport =
+      thread.viewerAccountId === SLURP_SUPPORT_ACCOUNT_ID && Boolean(await requireViewer(parsed.data.personaId));
+    const isViewer = isSupport || thread.viewerAccountId === parsed.data.personaId;
     const isCreator = await ownsCreator(parsed.data.personaId, thread.creatorAccountId);
     if (!isViewer && !isCreator) return reply.code(404).send({ error: "Not Found" });
     if (isViewer && !isCreator && message.kind === "ppv" && !message.unlockedAt) {

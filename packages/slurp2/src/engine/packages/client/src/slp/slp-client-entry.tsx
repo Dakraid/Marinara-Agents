@@ -147,7 +147,7 @@ const SLURP_SHELL_STYLES = `
      --slp-nav-live on the scroll root restyled every post in the feed on each flick (0.3.6). */
   [data-slp-nav-hidden] .slp-nav-live { --slp-nav-live: 0px; }
   /* Desktop only: off-screen feed cards skip restyles and layout (4 s → 1.5 s of restyling per scroll,
-     measured 0.3.9). Not on phones, where a fast flick outran it and showed half-black pages. An open
+     measured 0.3.6). Not on phones, where a fast flick outran it and showed half-black pages. An open
      menu must not be clipped by the containment. */
   @media (min-width: 1024px) {
     [data-slurp-access-transition]:not([data-slp-menu-open]) {

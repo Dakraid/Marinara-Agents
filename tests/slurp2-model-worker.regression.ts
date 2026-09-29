@@ -91,7 +91,7 @@ assert.match(generation, /if \(world && !\(await claimSlurpModelBudget\(input\.d
 
 const read = (path: string) =>
   slurp2Source(join(import.meta.dirname, "..", "packages/slurp2/src/engine/packages", path));
-// 0.3.9: run-now, refresh and "Create posts now" keep their pictures off the budget with `playerAsked`,
+// 0.3.6: run-now, refresh and "Create posts now" keep their pictures off the budget with `playerAsked`,
 // never with a foreground admission: that also opened the persona gate (the AI posting as the player).
 const operation = read("server/src/slp/features/feed/slp-post-operation.ts");
 assert.match(operation, /admissionMode: options\.playerAsked \? \{ kind: "foreground" \} : admissionMode,/u);

@@ -285,7 +285,7 @@ export function SlurpAccessTransition({
       layout={reduceMotion || !mayReveal ? false : "size"}
       transition={{ type: "spring", duration: 0.58, bounce: 0 }}
       // `content-visibility` is desktop-only (slp-client-entry.tsx): on a phone a fast flick outran it
-      // and showed half-black pages; on desktop it spares off-screen cards every restyle (0.3.9).
+      // and showed half-black pages; on desktop it spares off-screen cards every restyle (0.3.6).
       style={menuOpen ? { position: "relative", zIndex: 40 } : undefined}
       data-slurp-access-transition={postId}
       data-slp-menu-open={menuOpen ? "" : undefined}

@@ -279,7 +279,7 @@ export function slurpSupportUndoPatch(
 }
 
 /**
- * Support demands a photo taken right now (0.3.9): not a commission, not a paid picture. The Creator
+ * Support demands a photo taken right now (0.3.6): not a commission, not a paid picture. The Creator
  * answers the line with a free picture whatever their Images switch says, and a model that forgot
  * the picture still sends one drawn from `SLURP_SUPPORT_PHOTO_FALLBACK`.
  */

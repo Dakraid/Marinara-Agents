@@ -365,7 +365,7 @@ async function main() {
     assert.deepEqual(writes, []);
   }
 
-  // 5. Support's pictures (0.3.9): send, create, show a post, and demand one right now.
+  // 5. Support's pictures (0.3.6): send, create, show a post, and demand one right now.
   {
     assert.equal(isSlurpSupportPhotoDemand({ metadata: { supportVoice: true, photoDemand: true } }), true);
     assert.equal(isSlurpSupportPhotoDemand({ metadata: { photoDemand: true } }), false, "only Support demands");
@@ -401,9 +401,10 @@ async function main() {
       header,
       /threadId && !asSupport && \(\s+<SlpSheetItem onSelect=\{menuAction\(\(\) => setDrawerMode\("commissions"\)\)\}/u,
     );
+    // Every persona of the player reads Support's pictures (they 404'd before, so none showed).
     assert.match(
-      read("client/src/slp/features/messages/SlpMessageBubble.tsx"),
-      /message\.metadata\?\.supportVoice === true && "slurp-bubble-glitter"/u,
+      media,
+      /thread\.viewerAccountId === SLURP_SUPPORT_ACCOUNT_ID && Boolean\(await requireViewer\(parsed\.data\.personaId\)\)/u,
     );
   }
 

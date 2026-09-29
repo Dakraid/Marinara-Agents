@@ -163,7 +163,7 @@ export function SlpDeskPlayHost({ model }: { model: SlurpThreadViewModel }) {
   );
 }
 
-/** "Photo, right now" on the next line, above the composer, one tap from removing it (0.3.9). */
+/** "Photo, right now" on the next line, above the composer, one tap from removing it (0.3.6). */
 export function SlpPhotoDemandChip({ model }: { model: SlurpThreadViewModel }) {
   const { t } = useTranslation();
   const { photoDemand, setPhotoDemand } = model;
@@ -172,7 +172,7 @@ export function SlpPhotoDemandChip({ model }: { model: SlurpThreadViewModel }) {
     <div className="slurp-bubble-in flex min-h-9 max-w-full items-center gap-2 self-start rounded-full bg-[var(--slurp-tint)] ps-3 pe-1 text-xs font-semibold text-[var(--slurp-text)]">
       <Aperture size={14} aria-hidden="true" className="shrink-0" />
       <span className="min-w-0 truncate">
-        {t("ui.slurp.desk.demandAttached", { defaultValue: "With this line: a photo, right now" })}
+        {t("ui.slurp.desk.photoCheckAttached", { defaultValue: "With this reply: photo verification" })}
       </span>
       <button
         type="button"
@@ -193,21 +193,26 @@ export function SlpPhotoDemandTool({ model, onDone }: { model: SlurpThreadViewMo
   return (
     <div className="flex flex-col gap-3 px-1">
       <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>
-        {t("ui.slurp.desk.demandHelp", {
+        {t("ui.slurp.desk.photoCheckHelp", {
           defaultValue:
-            "They answer your next line with a photo taken this moment, wherever they are. Not a commission: it is free and it comes at once.",
+            "The Creator must answer your next reply with a photo taken now, from where they are. No fee, no delay.",
         })}
       </p>
       <SlpPrimaryButton
         onClick={() => {
           setPhotoDemand(true);
-          if (!draft.trim()) setDraft(t("ui.slurp.desk.demandWords", { defaultValue: "Send me a photo, right now." }));
+          if (!draft.trim())
+            setDraft(
+              t("ui.slurp.desk.photoCheckWords", {
+                defaultValue: "Verification: please send a photo taken right now.",
+              }),
+            );
           onDone();
           composerRef.current?.focus();
         }}
       >
         <Aperture size={16} aria-hidden="true" />
-        {t("ui.slurp.desk.demandAttach", { defaultValue: "Attach to my next line" })}
+        {t("ui.slurp.desk.photoCheckAttach", { defaultValue: "Add to my reply" })}
       </SlpPrimaryButton>
     </div>
   );
@@ -250,7 +255,7 @@ function SlpSupportPostRow({ post, busy, onPick }: { post: SlpCreatorPostView; b
   );
 }
 
-/** "Show a post" (0.3.9): one of this Creator's posts or Stories goes into Support's thread as a card. */
+/** "Show a post" (0.3.6): one of this Creator's posts or Stories goes into Support's thread as a card. */
 export function SlpSupportPostPicker({ model, onDone }: { model: SlurpThreadViewModel; onDone: () => void }) {
   const { t } = useTranslation();
   const { personaId, targetCreatorAccountId } = model;
@@ -276,7 +281,7 @@ export function SlpSupportPostPicker({ model, onDone }: { model: SlurpThreadView
   return (
     <ul
       className="max-h-80 space-y-0.5 overflow-y-auto"
-      aria-label={t("ui.slurp.desk.tools.showPost", { defaultValue: "Show a post" })}
+      aria-label={t("ui.slurp.desk.tools.pullUp", { defaultValue: "Link a post" })}
     >
       {items.map((post) => (
         <SlpSupportPostRow

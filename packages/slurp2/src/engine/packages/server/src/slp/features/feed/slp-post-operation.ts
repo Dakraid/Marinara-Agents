@@ -85,7 +85,7 @@ export async function generateAndApplyCreatorPost(
   request: SlpCreatorGenerationRequest & { format?: SlpCreatorContentFormat },
   media?: SlpCreatorPostMediaUpload,
   admissionMode?: ConnectionAdmissionMode,
-  /** `playerAsked`: the player's own tap, so the picture's prompt rewrite is off the AI budget (0.3.9). */
+  /** `playerAsked`: the player's own tap, so the picture's prompt rewrite is off the AI budget (0.3.6). */
   options: { allowStory?: boolean; playerAsked?: boolean } = {},
 ): Promise<GenerateAndApplyCreatorPostResult> {
   const noodle = createSlurpStorage(db);
@@ -135,7 +135,7 @@ export async function generateAndApplyCreatorPost(
       connection,
       media,
       // The persona gate above read the caller's own mode. A player's tap then generates in the
-      // foreground (the default queue anyway), which keeps its picture off the AI budget (0.3.9).
+      // foreground (the default queue anyway), which keeps its picture off the AI budget (0.3.6).
       admissionMode: options.playerAsked ? { kind: "foreground" } : admissionMode,
       allowStory: options.allowStory,
     });
