@@ -102,12 +102,20 @@ export async function replyToSlurpMessage(
   const support = isSlurpSupportThread(thread);
   const listedViewer = await resolveSlurpReplyViewer(db, thread, creator, input.operatorDraft === true);
   // An AI fan (no persona, not Support) is answered unattended about one time in four (task E);
-  // the rest expire unanswered.
+  // once answered, the fan keeps the conversation while the thread lives. The rest expire unanswered.
   const aiFanTrigger =
     !listedViewer && !input.operatorDraft && input.background && creator
       ? await messagesStore.getMessageById(input.triggerMessageId)
       : null;
-  const aiFan = Boolean(aiFanTrigger && slurpAnswersAiFan(aiFanTrigger));
+  const aiFan = Boolean(
+    aiFanTrigger &&
+    slurpAnswersAiFan(
+      aiFanTrigger,
+      (await messagesStore.listMessages(thread.id, 120)).some(
+        (message: SlurpMessage) => message.senderAccountId === thread.creatorAccountId,
+      ),
+    ),
+  );
   const viewer = aiFan ? await resolveSlurpReplyViewer(db, thread, creator, true) : listedViewer;
   // A persona-backed Creator is operated by hand: it never auto-posts and it never answers a DM
   // on its own either. The operator writes the answer through the draft-reply route.

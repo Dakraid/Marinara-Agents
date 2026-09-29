@@ -1,14 +1,14 @@
 import { create } from "zustand";
 import { toast } from "sonner";
-import { slpPutTask } from "./slp-task-list";
+import { slpPutTask, slpStoredTasks } from "./slp-task-list";
 
 /**
  * Long actions never lock the player (task B). A long action starts here instead of behind a busy
  * sheet: the caller closes its sheet at once, the task runs on, Pulse lists it (running, done or
  * failed with why and Try again) and a toast says how it went with "See in Pulse" or "Open".
  *
- * ponytail: kept in memory for this tab (a reload forgets finished client tasks; the server's own
- * jobs and Stir plays stay in Pulse from the tasks route). Persist it if players miss them.
+ * Finished tasks survive a reload (the last 50 of the last day, in this browser's storage); the
+ * server's own jobs and Stir plays come from the tasks route as before.
  */
 
 /** What a tap on a task opens: a Creator's page (and one post on it), or that Creator's chat with you. */
@@ -39,7 +39,38 @@ type SlpTaskState = {
   pulseOpen: boolean;
 };
 
-export const useSlpTasks = create<SlpTaskState>(() => ({ tasks: [], pulseOpen: false }));
+const TASKS_KEY = "slurp2:pulse-tasks";
+
+function readStoredTasks(): SlpTask[] {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(TASKS_KEY) ?? "[]") as unknown;
+    const rows = Array.isArray(parsed)
+      ? parsed.filter(
+          (row): row is SlpTask =>
+            !!row &&
+            typeof row === "object" &&
+            typeof (row as SlpTask).id === "string" &&
+            typeof (row as SlpTask).label === "string" &&
+            ((row as SlpTask).status === "done" || (row as SlpTask).status === "failed") &&
+            typeof (row as SlpTask).finishedAt === "number",
+        )
+      : [];
+    return slpStoredTasks(rows, Date.now()).map((row) => ({ ...row, accountIds: row.accountIds ?? [] }));
+  } catch {
+    return [];
+  }
+}
+
+export const useSlpTasks = create<SlpTaskState>(() => ({ tasks: readStoredTasks(), pulseOpen: false }));
+
+useSlpTasks.subscribe((state, previous) => {
+  if (state.tasks === previous.tasks) return;
+  try {
+    window.localStorage.setItem(TASKS_KEY, JSON.stringify(slpStoredTasks(state.tasks, Date.now())));
+  } catch {
+    // Private browsing can refuse storage; Pulse still works for this tab.
+  }
+});
 
 export const openSlpPulse = () => useSlpTasks.setState({ pulseOpen: true });
 export const closeSlpPulse = () => useSlpTasks.setState({ pulseOpen: false });

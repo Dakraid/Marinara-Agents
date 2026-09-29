@@ -551,3 +551,22 @@ modules, rejected alternative, and migration consequence.
 - **Rejected alternatives:** passing the multiplier in from the settings screen (the screen would own
   the rule instead).
 - **Migration consequence:** none stored.
+
+## Merge L + Pulse follow-ups: per-fan answers, promises past the switch, Pulse history kept (2026-09-29)
+
+- **Problem:** after Pulse + E, an AI fan was answered per message (a fan who got an answer could be
+  ignored on the next one), the "writes first" switch cancelled promises the Creator made in a reply,
+  and Pulse forgot finished client tasks on every reload.
+- **Decision:** `slurpAnswersAiFan(message, answeredBefore)`: a fan the Creator already wrote to in
+  this thread keeps the conversation while the thread lives (text only, still the unattended reply
+  path and its budget row). The follow-up scheduler drops only `opener` rows when the switch is off;
+  every other follow-up is a promise and goes out (the world tick already makes no new openers). The
+  client task store keeps finished tasks in `localStorage` (`slurp2:pulse-tasks`, the pure
+  `slpStoredTasks`: done / failed, last 24 h, 50 rows, without the tab's Open / Try again functions).
+- **Affected modules:** server `modules/messages/slp-messaging.ts`,
+  `features/messages/slp-message-operation.ts`, `slp-follow-up-scheduler-service.ts`; client
+  `base/state/slp-task-{list,store}.ts`; the switch's help text.
+- **Rejected alternatives:** a stored "answered" flag on the thread (the thread's own messages
+  already say it); zustand `persist` (the package's other stored state uses plain `localStorage`).
+- **Migration consequence:** none stored server-side; a browser without the key starts with an empty
+  Pulse history.

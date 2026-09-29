@@ -37,7 +37,9 @@ import {
 } from "../packages/slurp2/src/engine/packages/client/src/slp/modules/chrome/slp-pulse-model.ts";
 import {
   SLP_TASKS_MAX,
+  SLP_TASKS_KEEP_MS,
   slpPutTask,
+  slpStoredTasks,
 } from "../packages/slurp2/src/engine/packages/client/src/slp/base/state/slp-task-list.ts";
 import { slurp2Source } from "./slurp2-source.ts";
 
@@ -63,7 +65,19 @@ const client = (path: string) => slurp2Source(new URL(`client/src/slp/${path}`, 
     /const aiFanTrigger =\s+!listedViewer && !input\.operatorDraft && input\.background && creator/u,
     "only the unattended scheduler answers an AI fan",
   );
-  assert.match(operation, /const viewer = aiFan \? await resolveSlurpReplyViewer\(db, thread, creator, true\) : listedViewer;/u);
+  // Decision 1 (Merge L + Pulse follow-ups): a fan the Creator answered keeps the conversation.
+  const unpicked = ids.find((id) => !slurpAnswersAiFan({ id, kind: "text" }))!;
+  assert.equal(slurpAnswersAiFan({ id: unpicked, kind: "text" }, true), true, "an answered fan keeps it");
+  assert.equal(slurpAnswersAiFan({ id: picked, kind: "tip" }, true), false, "still text only");
+  assert.match(
+    operation,
+    /slurpAnswersAiFan\(\s+aiFanTrigger,\s+\(await messagesStore\.listMessages\(thread\.id, 120\)\)\.some\(\s+\(message: SlurpMessage\) => message\.senderAccountId === thread\.creatorAccountId,/u,
+    "answered = the Creator already wrote in this thread",
+  );
+  assert.match(
+    operation,
+    /const viewer = aiFan \? await resolveSlurpReplyViewer\(db, thread, creator, true\) : listedViewer;/u,
+  );
   assert.match(operation, /!support &&\s+\/\/[^\n]+\n\s+!aiFan &&/u, "an AI fan gets words, never a picture");
   assert.match(operation, /if \(stored && aiFan\) await dropSlurpPendingText\(db, input\.triggerMessageId\)/u);
   // Inside the AI budget: an unattended answer is never a player send, so it claims the budget.
@@ -79,6 +93,11 @@ const client = (path: string) => slurp2Source(new URL(`client/src/slp/${path}`, 
 
 // E2. Follow-ups are promises: a wait never ends one; only an old opener nobody asked for ends.
 {
+  // Decision 2 (Merge L + Pulse follow-ups): the "writes first" switch drops openers only.
+  assert.match(
+    server("features/messages/slp-follow-up-scheduler-service.ts"),
+    /if \(!messaging\.proactiveMessages && followUp\.type === "opener"\) \{\s+await messages\.cancelScheduledFollowUp/u,
+  );
   const promised = "2026-09-25T22:35:00.000Z";
   const fiveDaysOn = new Date("2026-09-30T22:35:00.000Z");
   for (const type of ["reminder", "promise_delivery", "task_update", "check_in", "recurring"])
@@ -388,7 +407,9 @@ const client = (path: string) => slurp2Source(new URL(`client/src/slp/${path}`, 
     ["new", "slow"],
     "a day of finished tasks; running ones stay",
   );
-  const many = Array.from({ length: 40 }, (_, index) => row(`t${index}`, "done", now));
+  // Merge L + Pulse follow-ups (changed on purpose): 50 rows, the number Pulse keeps across reloads.
+  assert.equal(SLP_TASKS_MAX, 50);
+  const many = Array.from({ length: 60 }, (_, index) => row(`t${index}`, "done", now));
   assert.equal(
     many.reduce((acc, task) => slpPutTask(acc, task, now), [] as ReturnType<typeof row>[]).length,
     SLP_TASKS_MAX,
@@ -432,3 +453,35 @@ const client = (path: string) => slurp2Source(new URL(`client/src/slp/${path}`, 
 }
 
 console.log("slurp2 pulse + E regression passed");
+
+// Decision 3 (Merge L + Pulse follow-ups): finished tasks survive a reload, the last 50 of the last day.
+{
+  const now = Date.parse("2026-09-29T10:00:00.000Z");
+  const retry = () => undefined;
+  const rows = [
+    { id: "run", status: "running" },
+    { id: "ok", status: "done", finishedAt: now - 1000, open: { label: "Open plan", run: retry } },
+    { id: "bad", status: "failed", finishedAt: now - 2000, error: "No connection", retry },
+    { id: "old", status: "done", finishedAt: now - SLP_TASKS_KEEP_MS - 1 },
+  ];
+  const stored = slpStoredTasks(rows, now);
+  assert.deepEqual(
+    stored.map((task) => task.id),
+    ["ok", "bad"],
+    "running and day-old tasks are not kept",
+  );
+  assert.ok(
+    stored.every((task) => !("open" in task) && !("retry" in task)),
+    "functions of the old tab are dropped",
+  );
+  assert.equal(JSON.parse(JSON.stringify(stored))[1].error, "No connection", "the reason survives");
+  const many = Array.from({ length: 70 }, (_, index) => ({ id: `t${index}`, status: "done", finishedAt: now }));
+  assert.equal(slpStoredTasks(many, now).length, 50);
+  const store = client("base/state/slp-task-store.ts");
+  assert.match(store, /create<SlpTaskState>\(\(\) => \(\{ tasks: readStoredTasks\(\), pulseOpen: false \}\)\)/u);
+  assert.match(
+    store,
+    /localStorage\.setItem\(TASKS_KEY, JSON\.stringify\(slpStoredTasks\(state\.tasks, Date\.now\(\)\)\)\)/u,
+  );
+  console.log("slurp2 merge L + Pulse follow-ups: ok");
+}

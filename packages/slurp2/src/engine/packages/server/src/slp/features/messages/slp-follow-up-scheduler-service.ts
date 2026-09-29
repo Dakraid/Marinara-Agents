@@ -139,9 +139,10 @@ export function startSlurpFollowUpScheduler(app: FastifyInstance, registerStop?:
 
             const history = await messages.listMessages(threadRow.id, 60);
             const messaging = await messages.getCreatorMessaging(threadRow.creatorAccountId);
-            // The operator turned this Creator's unprompted messages off, so the queued follow-up
-            // is dropped rather than postponed: it is never going to be allowed to send.
-            if (!messaging.proactiveMessages) {
+            // The operator turned this Creator's unprompted messages off: a queued opener (nobody
+            // asked for it) is dropped, never postponed. A promise was made in a reply and still goes
+            // out (Pulse + E decision: follow-ups are promises; the switch stops new first messages).
+            if (!messaging.proactiveMessages && followUp.type === "opener") {
               await messages.cancelScheduledFollowUp(threadRow.id, followUp.id);
               continue;
             }

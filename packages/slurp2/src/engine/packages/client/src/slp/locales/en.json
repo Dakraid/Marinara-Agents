@@ -2771,7 +2771,7 @@
   "ui.slurp.settings.creators.subscriptionPrice": "Weekly subscription price",
   "ui.slurp.settings.creators.subscriptionPriceDetail": "Coins per week for this Creator. Set 0 to use the Slurp-wide default.",
   "ui.slurp.settings.creators.suggestedPrices": "Suggested for your audience: {{subscription}}/week · {{unlock}} per locked post · {{commission}} commission base",
-  "ui.slurp.settings.creators.proactiveMessagesDetail": "Off: this Creator only answers. No follow-ups and no unprompted direct messages.",
+  "ui.slurp.settings.creators.proactiveMessagesDetail": "Off: this Creator never writes first. Things they promised in a chat still arrive.",
   "ui.slurp.settings.creators.proactiveMessages": "Writes first",
   "ui.slurp.settings.wallet.dayStartHour": "Slurp day starts at",
   "ui.slurp.settings.wallet.dayStartHourDetail": "Hour of the day, 0 to 23, in the Engine host timezone. The refill and the daily earning caps reset then.",

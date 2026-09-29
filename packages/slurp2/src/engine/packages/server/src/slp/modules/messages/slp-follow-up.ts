@@ -217,7 +217,8 @@ export function isFollowUpDue(followUp: ScheduledFollowUp, now: Date = new Date(
 /**
  * Follow-ups are promises (task E): a blocked one waits and tries again, it is never dropped for
  * being old. Only an opener (nobody asked for it) ends two days after it was planned; a promise
- * ends only with its thread (gone, closed, cleared) or the Creator's "writes on their own" switch.
+ * ends only with its thread (gone, closed, cleared). The Creator's "writes on their own" switch
+ * stops openers only; a promise made in a reply still goes out.
  */
 export const SLURP_FOLLOW_UP_OVERDUE_MS = 2 * 24 * 60 * 60_000;
 /** `createdAt`: when it was planned (the follow-up row's creation). */

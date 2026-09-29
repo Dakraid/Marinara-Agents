@@ -667,11 +667,13 @@ export function slurpExpiredRequestIds(
  * An automatic Creator answers about one in four AI fans who write to her (task E); the rest go
  * unanswered and expire with the requests above. Picked by the fan's message id, so a retry after
  * a busy lock or a spent budget asks the same question and gets the same answer. Only a plain text
- * message fits: a tip, a shared post or a commission brief has its own path.
+ * message fits: a tip, a shared post or a commission brief has its own path. A fan the Creator
+ * already answered in this thread keeps the conversation (per fan, not per message).
  */
 export const SLURP_AI_FAN_ANSWER_ONE_IN = 4;
-export function slurpAnswersAiFan(message: { id: string; kind: string }): boolean {
-  return message.kind === "text" && slurpRotationHash(`ai-fan:${message.id}`) % SLURP_AI_FAN_ANSWER_ONE_IN === 0;
+export function slurpAnswersAiFan(message: { id: string; kind: string }, answeredBefore = false): boolean {
+  if (message.kind !== "text") return false;
+  return answeredBefore || slurpRotationHash(`ai-fan:${message.id}`) % SLURP_AI_FAN_ANSWER_ONE_IN === 0;
 }
 
 /** One line of thread summary for the inbox. Kept short: the list shows it on one row. */
