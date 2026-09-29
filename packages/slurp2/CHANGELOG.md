@@ -2,6 +2,7 @@
 
 ## 0.2.78 — 2026-09-27
 
+- bugfixing
 - Restyle the update sheet header with a larger animated G face, accent tint and integrated alpha reminder.
 - Replace the cost warning with a direct reminder that Slurp uses background image and text generation.
 
