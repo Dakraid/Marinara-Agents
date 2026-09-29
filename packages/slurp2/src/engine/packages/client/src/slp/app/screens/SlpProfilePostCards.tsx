@@ -63,7 +63,7 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
     viewingOwnCreator,
     visiblePosts,
   } = model;
-  const drawnPostCount = useSlpDrawnCount(visiblePosts.length);
+  const drawnPostCount = useSlpDrawnCount(visiblePosts.length, `${profile.id}:${activeTab}`);
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
   // A ringed avatar asked for this Creator's Stories (the hero, or a tap elsewhere that led here).
   const { pending: pendingStories, taken: storiesTaken, startOf: storyStartOf } = useSlpStoryRings();

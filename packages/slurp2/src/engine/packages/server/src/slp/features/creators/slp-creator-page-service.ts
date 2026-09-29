@@ -43,7 +43,8 @@ export function parseSlpCreatorPageAnswer(
   keepPostIds: ReadonlySet<string> = new Set(),
 ): SlpCreatorPage | null {
   // A thinking model's notes and code fences hold braces too; only the answer after them counts.
-  const text = answer.replace(/<think>[\s\S]*?<\/think>/giu, " ").replace(/```[a-z]*|```/giu, " ");
+  // Some providers send the notes with no opening tag, so everything up to the last closing tag goes.
+  const text = answer.replace(/^[\s\S]*<\/think>/iu, " ").replace(/```[a-z]*|```/giu, " ");
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
   if (start < 0 || end <= start) return null;
@@ -71,6 +72,24 @@ export function parseSlpCreatorPageAnswer(
   });
   const page = normalizeSlpCreatorPage({ ...raw, blocks, composedBy: "creator", updatedAt: now });
   return page ? { ...page, composedBy: "creator", updatedAt: now } : null;
+}
+
+/**
+ * An answer's structure without its words, for the logs: every string becomes its length, so a
+ * parser miss is visible without Creator text (often adult) landing in the Engine log.
+ */
+function slpAnswerShape(answer: string): string {
+  const start = answer.lastIndexOf("</think>") + 1;
+  const open = answer.indexOf("{", start);
+  try {
+    const value: unknown = JSON.parse(jsonrepair(answer.slice(open, answer.lastIndexOf("}") + 1)));
+    return JSON.stringify(value, (_key, item: unknown) => (typeof item === "string" ? `<${item.length}>` : item)).slice(
+      0,
+      1500,
+    );
+  } catch {
+    return `unparsable, ${answer.length} characters`;
+  }
 }
 
 /** Keep a hinted Creator's other name and handle out of every word the model wrote. */
@@ -195,13 +214,13 @@ export async function composeSlpCreatorPage(
   // The prompt asks for 4 to 7 blocks: fewer means the reader dropped some, so keep the answer to see why.
   if (page && page.blocks.length < 4)
     logger.warn(
-      { accountId: account.id, kept: page.blocks.map((block) => block.kind), answerStart: answer.slice(0, 1500) },
+      { accountId: account.id, kept: page.blocks.map((block) => block.kind), answer: slpAnswerShape(answer) },
       "[slurp-creator-page] The Page kept fewer blocks than asked",
     );
   if (!page?.blocks.length) {
     // Logged so a failing model can be told apart from a parser that is too strict.
     logger.warn(
-      { accountId: account.id, answerStart: answer.slice(0, 600), answerLength: answer.length },
+      { accountId: account.id, answer: slpAnswerShape(answer) },
       "[slurp-creator-page] The answer held no usable Page",
     );
     return { ok: false, status: 502, error: "The connection returned no usable Page. Try again." };

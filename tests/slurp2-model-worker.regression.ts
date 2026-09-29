@@ -89,4 +89,15 @@ assert.match(generation, /const world = !input\.skipBudgetCap && !input\.playerS
 assert.match(generation, /if \(world && !slurpModelWorkerAllows\(budget, context\)\)/u);
 assert.match(generation, /if \(world && !\(await claimSlurpModelBudget\(input\.db, budget, "dm_reply"\)\)\)/u);
 
+const read = (path: string) =>
+  slurp2Source(join(import.meta.dirname, "..", "packages/slurp2/src/engine/packages", path));
+// 0.3.9: run-now, refresh and "Create posts now" keep their pictures off the budget with `playerAsked`,
+// never with a foreground admission: that also opened the persona gate (the AI posting as the player).
+const operation = read("server/src/slp/features/feed/slp-post-operation.ts");
+assert.match(operation, /admissionMode: options\.playerAsked \? \{ kind: "foreground" \} : admissionMode,/u);
+assert.match(operation, /admissionMode\?\.kind !== "foreground"\) \{\s+return \{ status: "disabled" \}/u);
+for (const source of [operation, read("server/src/slp/features/feed/slp-feed-publishing-routes.ts")])
+  assert.doesNotMatch(source, /undefined,\s+\{ kind: "foreground" \},/u, "no player route passes foreground");
+assert.doesNotMatch(read("server/src/slp/features/assist/slp-action-runner.ts"), /playerAsked|kind: "foreground"/u);
+
 console.log("slurp2 model worker regression passed");

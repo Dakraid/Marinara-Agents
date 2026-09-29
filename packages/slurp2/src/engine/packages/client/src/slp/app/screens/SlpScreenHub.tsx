@@ -248,7 +248,7 @@ export function ViewerHub({
     !searchTerm && feedMark?.key === feedMarkKey ? feedMark.at : null,
     ({ creator }) => (creator as { ownedByViewer?: boolean }).ownedByViewer === true,
   );
-  const drawnFeedCount = useSlpDrawnCount(Math.min(feed.length, visibleFeedCount));
+  const drawnFeedCount = useSlpDrawnCount(Math.min(feed.length, visibleFeedCount), feed[0]?.post.id);
   // Up to three faces of who posted, newest first, one per Creator.
   const heldPosters = [
     ...new Map(heldPosts.map(({ creator }) => [creator.profile.id, creator.profile])).values(),

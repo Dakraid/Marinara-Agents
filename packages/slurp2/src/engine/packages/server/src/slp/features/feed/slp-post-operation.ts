@@ -85,7 +85,8 @@ export async function generateAndApplyCreatorPost(
   request: SlpCreatorGenerationRequest & { format?: SlpCreatorContentFormat },
   media?: SlpCreatorPostMediaUpload,
   admissionMode?: ConnectionAdmissionMode,
-  options: { allowStory?: boolean } = {},
+  /** `playerAsked`: the player's own tap, so the picture's prompt rewrite is off the AI budget (0.3.9). */
+  options: { allowStory?: boolean; playerAsked?: boolean } = {},
 ): Promise<GenerateAndApplyCreatorPostResult> {
   const noodle = createSlurpStorage(db);
 
@@ -133,7 +134,9 @@ export async function generateAndApplyCreatorPost(
       request,
       connection,
       media,
-      admissionMode,
+      // The persona gate above read the caller's own mode. A player's tap then generates in the
+      // foreground (the default queue anyway), which keeps its picture off the AI budget (0.3.9).
+      admissionMode: options.playerAsked ? { kind: "foreground" } : admissionMode,
       allowStory: options.allowStory,
     });
     await invalidateNearFutureReserve(noodle, account.id, generated.post.createdAt);
@@ -173,7 +176,8 @@ export async function refreshAllCreatorsNow(db: DB): Promise<SlpCreatorRefreshNo
     prioritized,
     MAX_CONCURRENT_MANUAL_REFRESH,
     async (account): Promise<SlpCreatorRefreshNowOutcome> => {
-      // "Refresh now" is the player's tap: foreground, so its pictures are off the AI budget (0.3.6).
+      // "Refresh now" is the player's tap: its pictures are off the AI budget. Not foreground: that
+      // would also open the persona gate above.
       const result = await generateAndApplyCreatorPost(
         db,
         {
@@ -183,7 +187,8 @@ export async function refreshAllCreatorsNow(db: DB): Promise<SlpCreatorRefreshNo
           access: await resolveSlurpAutomaticPostAccess(noodle, account.id),
         },
         undefined,
-        { kind: "foreground" },
+        undefined,
+        { playerAsked: true },
       );
       // "disabled"/"busy" are no-op refreshes, not failures; surface them as skipped so the
       // client doesn't lump a busy creator in with a real generation/connection failure.
@@ -226,11 +231,11 @@ export async function refreshTargetedCreatorsNow(
           db,
           { mode: "noodler", targetAccountId: accountId, format: "caption", access, executionId },
           undefined,
-          // "Create posts now" is the player's tap: its pictures are off the AI budget (0.3.6).
-          { kind: "foreground" },
+          undefined,
           // The player pressed "Create posts now" and counts feed posts. A Story never reaches the feed,
-          // so a batch that landed on a Story slot looked like one post had gone missing.
-          { allowStory: false },
+          // so a batch that landed on a Story slot looked like one post had gone missing. The player's
+          // tap, so its pictures are off the AI budget.
+          { allowStory: false, playerAsked: true },
         );
       // A Creator busy with the scheduler or another run used to be skipped at once, and the batch
       // still read as done. An explicit request waits for that run to finish instead.

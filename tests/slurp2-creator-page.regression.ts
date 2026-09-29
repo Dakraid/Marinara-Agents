@@ -120,7 +120,10 @@ test("a model's own spelling, a named pick and a made-up style still make a Page
         kind: "this_or_that",
         title: "pick one",
         emoji: "🔥",
-        pairs: [{ left: "tea", right: "coffee", pick: "coffee" }],
+        pairs: [
+          { left: "tea", right: "coffee", pick: "coffee" },
+          { left: "Cats", right: "Dogs", pick: " dogs " },
+        ],
       },
       { kind: "Q&A", items: [{ question: "fav night?", answer: "all of them", mood: "x" }] },
       { kind: "list", style: "stars", items: ["tarot"] },
@@ -133,12 +136,15 @@ test("a model's own spelling, a named pick and a made-up style still make a Page
   );
   const pairs = page.blocks[0];
   assert.equal(pairs.kind === "thisOrThat" && pairs.pairs[0].pick, "right", "a pick named by its word finds its side");
+  assert.equal(pairs.kind === "thisOrThat" && pairs.pairs[1].pick, "right", "case and spaces do not change the side");
   const list = page.blocks[2];
   assert.equal(list.kind === "list" && list.style, "bullets");
   const service = slurp2Source(
     "packages/slurp2/src/engine/packages/server/src/slp/features/creators/slp-creator-page-service.ts",
   );
-  assert.match(service, /replace\(\/<think>/u, "a thinking model's notes never hide the answer");
+  // Everything up to the last closing tag goes, with or without an opening tag.
+  assert.match(service, /replace\(\/\^\[\\s\\S\]\*<\\\/think>\/iu/u, "a thinking model's notes never hide the answer");
+  assert.doesNotMatch(service, /answerStart/u, "the log never carries the Creator's words");
   assert.match(service, /maxTokens: 4000/u);
 });
 

@@ -172,12 +172,9 @@ function clipBlock(input: Record<string, unknown>): Record<string, unknown> {
         const given = list ?? record(pair) ?? {};
         const p = { ...given, left: given.left ?? given.this ?? given.a, right: given.right ?? given.that ?? given.b };
         // A model often names its pick ("coffee") instead of the side: read which side that is.
-        const pick =
-          p.pick === "left" || p.pick === "right"
-            ? p.pick
-            : p.pick !== undefined && p.pick === p.right
-              ? "right"
-              : "left";
+        const same = (a: unknown, b: unknown) =>
+          typeof a === "string" && typeof b === "string" && a.trim().toLowerCase() === b.trim().toLowerCase();
+        const pick = p.pick === "left" || p.pick === "right" ? p.pick : same(p.pick, p.right) ? "right" : "left";
         return { ...p, left: clip(p.left, L.pairSide), right: clip(p.right, L.pairSide), pick };
       })
       // A half-filled pair is dropped, not the block: the rest of the player's pairs stay.

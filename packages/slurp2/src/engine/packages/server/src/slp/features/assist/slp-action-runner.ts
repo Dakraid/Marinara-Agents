@@ -190,17 +190,11 @@ async function dispatch(
       // The idea joins the queue first, so the post takes it the way a Run-now takes the oldest idea.
       if (idea && !(await addSlurpCreatorNudge(db, accountId, { text: idea, story })))
         return { ok: false, status: 409, error: "That is plenty of ideas for now. Let one go out first." };
-      // A player's (or Mari's, for the player) request: foreground, off the AI budget (0.3.6).
-      const result = await generateAndApplyCreatorPost(
-        db,
-        {
-          mode: "noodler",
-          targetAccountId: accountId,
-          access: await resolveSlurpAutomaticPostAccess(createSlurpStorage(db), accountId),
-        },
-        undefined,
-        { kind: "foreground" },
-      );
+      const result = await generateAndApplyCreatorPost(db, {
+        mode: "noodler",
+        targetAccountId: accountId,
+        access: await resolveSlurpAutomaticPostAccess(createSlurpStorage(db), accountId),
+      });
       return result.status === "generated"
         ? { ok: true, value: { post: result.post } }
         : {
