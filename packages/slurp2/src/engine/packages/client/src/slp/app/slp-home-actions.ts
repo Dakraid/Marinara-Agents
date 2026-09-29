@@ -6,6 +6,7 @@ import type { ImagePromptOverride } from "../../components/ui/ImagePromptReviewM
 import { confirmSlurpAvatarReview } from "../features/creators/SlpStageProfileForm";
 import { ApiError } from "../../lib/api-client";
 import { toast } from "sonner";
+import { startSlpTask } from "../base/state/slp-task-store";
 import { useCancelCreatorImagePrompts } from "../features/feed/slp-feed-post-hooks";
 import { useSlurpHomeBaseState, type SlurpHomeBaseState } from "./slp-home-state";
 import type { SlurpHomeProps } from "./slp-home.types";
@@ -349,27 +350,41 @@ function useSlurpHomeActions(state: SlurpHomeBaseState) {
       postType,
       linkedPostId: linkedPostId ?? null,
     });
-    toast.success(localizeUi("ui.noodle.noodlerhome.noodlerPostPublished"));
-    if (wantsImage && created?.id) {
-      await generatePostImage.mutateAsync({ id: created.id, accountId: profileId }).catch((error: unknown) =>
-        toast.error(
-          errorMessage(
-            error,
-            localizeUi("ui.slurp.composer.aiImageFailed", {
-              defaultValue: "The post was published, but its image could not be created.",
-            }),
-          ),
-        ),
-      );
-    }
+    const postId = created?.id;
+    toast.success(localizeUi("ui.noodle.noodlerhome.noodlerPostPublished"), {
+      description: wantsImage && postId ? localizeUi("ui.slurp.pulse.task.drawingLater") : undefined,
+    });
+    // B: the picture is drawn as a Pulse task, so the composer closes as soon as the post is out.
+    if (wantsImage && postId)
+      void startSlpTask({
+        kind: "generate-post-image",
+        label: localizeUi("ui.slurp.pulse.task.drawPost"),
+        accountIds: [profileId],
+        startedToast: false,
+        run: () => generatePostImage.mutateAsync({ id: postId, accountId: profileId }),
+        done: () => ({
+          result: localizeUi("ui.slurp.pulse.result.drawn"),
+          target: { accountId: profileId, postId },
+        }),
+      });
   };
 
+  // B: a Pulse task; the player keeps going while the Creator writes (and draws) the post.
   const submitRunNow = async (accountId: string) => {
     if (!(await confirmProviderDisclosure())) return;
-    runAutoPostNow.mutate(accountId, {
-      onSuccess: () => toast.success(localizeUi("ui.noodle.noodlerhome.automaticPostGenerated")),
-      onError: (error) =>
-        toast.error(errorMessage(error, localizeUi("ui.noodle.noodlerhome.couldNotRunAnAutomaticPostNow"))),
+    const name = accountsQuery.data?.find((profile) => profile.id === accountId)?.displayName;
+    void startSlpTask({
+      kind: "auto-post",
+      label: localizeUi("ui.slurp.pulse.task.postNow", { name: name ?? "" }),
+      accountIds: [accountId],
+      run: () =>
+        runAutoPostNow.mutateAsync(accountId).catch((error: unknown) => {
+          throw new Error(errorMessage(error, localizeUi("ui.noodle.noodlerhome.couldNotRunAnAutomaticPostNow")));
+        }),
+      done: (post) => ({
+        result: localizeUi("ui.noodle.noodlerhome.automaticPostGenerated"),
+        target: { accountId, postId: post?.id ?? null },
+      }),
     });
   };
 

@@ -2,5 +2,6 @@
 // the cards a Slurp Support thread shows.
 export { SlpStirScreen } from "./SlpStirScreen";
 export { SlpStirCreatorSheet } from "./SlpStirCreatorSheet";
+export { SlpStirReadyPlanHost } from "./SlpStirBox";
 export { openSlpStir } from "../../base/state/slp-stir-sheet-store";
 export { readSlpStirProposal, SlpStirSupportCards } from "./SlpStirSupportCards";

@@ -7,17 +7,11 @@ import { slpErrorText } from "../../base/ui/slp-error-text";
 import { SlurpCoinAmount } from "../../modules/coin/SlpCoin";
 import { SlpPrimaryButton } from "../../modules/chrome/SlpButton";
 import { SlpLockedMediaTile } from "../../modules/post/SlpLockedMedia";
-import { slpShowPostInPlace } from "../../modules/post/SlpPostPurposeNote";
+import { slpShowPostInPlace, slpShowPostWhenRendered } from "../../modules/post/SlpPostPurposeNote";
 import { playSlpSpendMoment } from "../../modules/sparkle/SlpSparkle";
 import { useUnlockCreatorPost } from "../feed/slp-feed-contract";
 import type { SlurpMessage } from "./slp-messages-contract";
 import { slpPostMediaRatio } from "../../modules/post/slp-post-ratio";
-
-/** Waits for the author's page to render the post, then brings it into view (up to ~4 s). */
-function showPostWhenRendered(postId: string, tries = 16) {
-  if (slpShowPostInPlace(postId) || tries <= 0) return;
-  window.setTimeout(() => showPostWhenRendered(postId, tries - 1), 250);
-}
 
 const text = (value: unknown) => (typeof value === "string" ? value : "");
 
@@ -75,7 +69,7 @@ export function SlpSharedPostCard({
     if (slpShowPostInPlace(postId)) return;
     if (!authorId || !onOpenProfile) return;
     onOpenProfile(authorId);
-    window.setTimeout(() => showPostWhenRendered(postId), 250);
+    window.setTimeout(() => slpShowPostWhenRendered(postId), 250);
   };
   const unlockNow = async (button: HTMLElement) => {
     if (!personaId || !postId || unlock.isPending) return;

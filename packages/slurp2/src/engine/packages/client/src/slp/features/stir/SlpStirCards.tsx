@@ -14,6 +14,7 @@ import type { SlpActionPreview, SlpStirOrigin } from "../../../../../shared/src/
 import { SlpCoinText } from "../../modules/coin/SlpCoin";
 import { useSlurpStirPlay } from "./slp-stir-hooks";
 import { SlpStirBrandLogo } from "./SlpStirBrandPick";
+import { openSlpPulse, startSlpTask } from "../../base/state/slp-task-store";
 
 type T = (key: string, options?: Record<string, unknown>) => string;
 
@@ -85,7 +86,11 @@ export function slpStirWhat(t: T, card: SlpActionPreview): string {
   }
 }
 
-/** The Burst, the toast, and one Undo for everything that can be taken back. */
+/**
+ * The Burst, the toast, and one Undo for everything that can be taken back. Task B: the play is a
+ * Pulse task, so the sheet closes at once (`onDone` runs on the tap) and the player keeps going; a
+ * play that calls the AI says it started, every play says how it went, with Undo and "See in Pulse".
+ */
 export function useSlpStirDoIt() {
   const { t } = useTranslation();
   const { play, undo } = useSlurpStirPlay();
@@ -96,39 +101,52 @@ export function useSlpStirDoIt() {
   ) => {
     const steps = cards.filter((card) => !card.error).map((card) => ({ action: card.action, input: card.input }));
     if (!steps.length) return;
+    const playable = cards.filter((card) => !card.error);
+    const ai = cards.some((card) => card.cost === "ai");
     if (cards.some((card) => card.cost === "ai")) noteSlpAiUseOnce(t);
-    play.mutate(
-      { steps, origin, supportMessageId: options.supportMessageId },
-      {
-        onSuccess: ({ play: done, results }) => {
-          const failed = results.filter((result) => !result.ok);
-          if (failed.length === results.length) {
-            toast.error(failed[0]?.error ?? t("ui.slurp.stir.failed"));
-            return;
-          }
-          if (options.from) playSlpBurst(options.from, 14);
-          const undoAction = done.undoable
-            ? {
-                label: t("ui.slurp.wallet.undo", { defaultValue: "Undo" }),
-                onClick: () =>
-                  undo.mutate(done.id, {
-                    onSuccess: () => toast(t("ui.slurp.stir.undone")),
-                    onError: (error) => toast.error(errorMessage(error)),
-                  }),
-              }
-            : undefined;
-          toast.success(t("ui.slurp.stir.done", { count: results.length - failed.length }), {
-            description: failed.length
-              ? t("ui.slurp.stir.someFailed", { count: failed.length, reason: failed[0]?.error ?? "" })
-              : t("ui.slurp.stir.doneDetail"),
-            action: undoAction,
-            duration: undoAction ? 8000 : 4000,
-          });
-          options.onDone?.();
-        },
-        onError: (error) => toast.error(errorMessage(error)),
+    if (options.from) playSlpBurst(options.from, 14);
+    options.onDone?.();
+    const label =
+      playable.length > 1
+        ? t("ui.slurp.stir.taskLabelMore", { what: slpStirWhat(t, playable[0]!), count: playable.length - 1 })
+        : slpStirWhat(t, playable[0]!);
+    void startSlpTask({
+      kind: "stir-play",
+      label,
+      accountIds: [...new Set(playable.flatMap((card) => card.who.map((person) => person.id)))],
+      startedToast: ai ? undefined : false,
+      doneToast: false,
+      run: async () => {
+        const answer = await play.mutateAsync({ steps, origin, supportMessageId: options.supportMessageId });
+        const failed = answer.results.filter((result) => !result.ok);
+        // Nothing ran: a failed task in Pulse, with why and Try again.
+        if (failed.length === answer.results.length) throw new Error(failed[0]?.error ?? t("ui.slurp.stir.failed"));
+        return { ...answer, failed };
       },
-    );
+      done: ({ play: done, results, failed }) => {
+        const undoAction = done.undoable
+          ? {
+              label: t("ui.slurp.wallet.undo", { defaultValue: "Undo" }),
+              onClick: () =>
+                undo.mutate(done.id, {
+                  onSuccess: () => toast(t("ui.slurp.stir.undone")),
+                  onError: (error) => toast.error(errorMessage(error)),
+                }),
+            }
+          : undefined;
+        const detail = failed.length
+          ? t("ui.slurp.stir.someFailed", { count: failed.length, reason: failed[0]?.error ?? "" })
+          : t("ui.slurp.stir.doneDetail");
+        toast.success(t("ui.slurp.stir.done", { count: results.length - failed.length }), {
+          description: detail,
+          action: undoAction,
+          cancel: { label: t("ui.slurp.pulse.seeInPulse", { defaultValue: "See in Pulse" }), onClick: openSlpPulse },
+          duration: undoAction ? 8000 : 4000,
+        });
+        const first = playable[0]?.who[0]?.id;
+        return { result: detail, target: first ? { accountId: first } : undefined };
+      },
+    });
   };
   return { run, pending: play.isPending };
 }
@@ -277,7 +295,7 @@ export function SlpStirPlanSheet({
     <SlpSheet
       open={open}
       onClose={close}
-      closeDisabled={doIt.pending}
+
       title={t("ui.slurp.stir.planTitle")}
       footer={
         <div className="flex gap-2 px-3 py-2">

@@ -235,7 +235,6 @@ export function SlurpOnboardingWizard(props: WizardProps) {
       <Modal
         open={open}
         onClose={onClose}
-        closeDisabled={pending}
         title={selectionOnly ? t("ui.noodle.noodlerwizard.addCreators") : t("ui.noodle.noodlerwizard.title")}
         // The sign-up scene gets a wider stage on desktop: the chat plus the phone that builds up.
         width={scene ? "max-w-4xl" : "max-w-3xl"}
@@ -557,7 +556,7 @@ export function SlurpOnboardingWizard(props: WizardProps) {
                 }
                 primary={primary}
                 // Creating profiles then writing first posts can take a while; say which half we are in.
-                note={running || reason}
+                note={running ? `${running} ${t("ui.slurp.pulse.task.canClose")}` : reason}
               />
             </>
           )}

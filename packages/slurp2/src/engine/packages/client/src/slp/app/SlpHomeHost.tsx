@@ -26,11 +26,13 @@ import type { SlurpHomeProps } from "./slp-home.types";
 import { renderSlurpHomeCreatorFlow } from "./screens/SlpHomeCreatorFlow";
 import { renderSlurpHomeDestinations } from "./screens/SlpHomeDestinations";
 import { SlpHomeFeedRail } from "./screens/SlpHomeFeedRail";
-import { SlpStirCreatorSheet } from "../features/stir/slp-stir-contract";
+import { SlpStirCreatorSheet, SlpStirReadyPlanHost } from "../features/stir/slp-stir-contract";
 import { useSlpMinuteClock } from "../base/ui/slp-minute-clock";
 import type { SlpStoryRings } from "../modules/story/SlpStoryRing";
 import { slpStoryRings, slpStoryStartId } from "../modules/story/slp-story-rings";
 import { slurpLiveStories } from "./screens/slp-hub-view";
+import { slpShowPostWhenRendered } from "../modules/post/SlpPostPurposeNote";
+import type { SlpPulseTarget } from "../base/state/slp-task-store";
 
 export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
   const model = useSlurpHomeState({ navigation, onNavigate, onLeave });
@@ -188,6 +190,18 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
     onOpenMessages: goToMessages,
     onOpenWallet: goToWallet,
     onOpenStir: goToStir,
+    // Pulse's tap-through (task C): the post a task made, your chat it wrote in, or the Creator.
+    onOpenPulseTarget: (target: SlpPulseTarget) => {
+      if ("chatCreatorId" in target) {
+        onNavigate({ mode: "creator", view: "messages", creatorAccountId: target.chatCreatorId });
+        return;
+      }
+      onNavigate({ mode: "creator", view: "profile", accountId: target.accountId });
+      const postId = target.postId;
+      if (postId) window.setTimeout(() => slpShowPostWhenRendered(postId), 250);
+    },
+    onOpenBudget: () =>
+      onNavigate({ mode: "creator-settings", section: "world", target: "audience", settingKey: "modelBudget" }),
     budgetNote: budgetNoteBudget
       ? {
           onOpenBudget: () => {
@@ -272,6 +286,8 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
             onClose={() => postCardController.setImageLightbox(null)}
           />
         )}
+        {/* B: a Stir plan that came back after the player left its box. */}
+        <SlpStirReadyPlanHost />
         {/* W: the ✦ sheet, opened from a profile, a post's ⋯ or Creator tools. */}
         <SlpStirCreatorSheet
           personaId={viewerPersonaId}

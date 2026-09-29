@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { SlpStirOrigin, SlpStirPlan } from "../../../../../shared/src/slp/slp-stir.js";
 
 /**
  * The Stir ✦ sheet (W), openable from anywhere: a profile, a post's ⋯, Creator tools, a storyline in
@@ -16,3 +17,12 @@ export const useSlpStirSheet = create<{
   close: () => set({ target: null }),
 }));
 export const openSlpStir = (target: SlpStirTarget) => useSlpStirSheet.getState().open(target);
+
+/**
+ * A plan that came back after the player left the box (task B: planning never holds them there).
+ * Pulse's "Open" and the toast show it in one sheet the app keeps mounted.
+ */
+export type SlpStirReadyPlan = { plan: SlpStirPlan; origin: SlpStirOrigin; key: number };
+export const useSlpStirReadyPlan = create<{ ready: SlpStirReadyPlan | null }>(() => ({ ready: null }));
+export const openSlpStirReadyPlan = (plan: SlpStirPlan, origin: SlpStirOrigin) =>
+  useSlpStirReadyPlan.setState({ ready: { plan, origin, key: Date.now() } });

@@ -516,7 +516,8 @@ async function main() {
     assert.match(deck, /SLP_ACTION_NAMES\.filter\(\(name\) => SLP_ACTION_META\[name\]\.deck\)/u);
     // Nothing runs before "Do it": the box plans, a card previews, only the Do it button plays.
     const cards = client("features/stir/SlpStirCards.tsx");
-    assert.match(cards, /play\.mutate\(\s*\{ steps, origin, supportMessageId: options\.supportMessageId \}/u);
+    // Pulse + E (task B): Do it runs as a Pulse task, so the play is awaited inside it (mutateAsync).
+    assert.match(cards, /play\.mutateAsync\(\{ steps, origin, supportMessageId: options\.supportMessageId \}\)/u);
     assert.match(
       cards,
       /const steps = cards\.filter\(\(card\) => !card\.error\)\.map\(\(card\) => \(\{ action: card\.action, input: card\.input \}\)\);/u,

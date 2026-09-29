@@ -83,3 +83,9 @@ export function slpShowPostInPlace(postId: string): boolean {
   }, 700);
   return true;
 }
+
+/** Waits for the author's page to render the post, then brings it into view (up to ~4 s). */
+export function slpShowPostWhenRendered(postId: string, tries = 16) {
+  if (slpShowPostInPlace(postId) || tries <= 0) return;
+  window.setTimeout(() => slpShowPostWhenRendered(postId, tries - 1), 250);
+}

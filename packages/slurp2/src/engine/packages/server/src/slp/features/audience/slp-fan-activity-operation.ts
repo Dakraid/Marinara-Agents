@@ -517,5 +517,11 @@ export async function getCreatorFanActivityStatus(db: DB, at = new Date()) {
     usedRuns: automaticRuns.filter((run) => run.status !== "scheduled" && run.status !== "skipped").length,
     runLimit: slpCreatorFanActivityRunLimit(settings, at, await noodle.platformInfluenceStory()),
     lastRun,
+    // The next automatic run today, for Pulse's "Coming up" (task C).
+    nextRunAt:
+      automaticRuns
+        .filter((run) => run.status === "scheduled" && Date.parse(run.scheduledAt) > at.getTime())
+        .map((run) => run.scheduledAt)
+        .sort()[0] ?? null,
   };
 }

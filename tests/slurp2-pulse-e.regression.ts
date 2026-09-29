@@ -22,6 +22,23 @@ import {
   slurpActivityPresetPatch,
 } from "../packages/slurp2/src/engine/packages/client/src/slp/modules/creator/slp-activity-presets.ts";
 import { slurpSizedPostsPerDay } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-model-budget.ts";
+import {
+  slurpPulseNext,
+  slurpPulsePlayTasks,
+  slurpUpcomingAnnualEvents,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/maintenance/slp-pulse.ts";
+import {
+  slpPulseAiToday,
+  slpPulseComingUp,
+  slpPulseNextTarget,
+  slpPulseServerSection,
+  slpPulseServerTarget,
+  slpPulseSummaryCounts,
+} from "../packages/slurp2/src/engine/packages/client/src/slp/modules/chrome/slp-pulse-model.ts";
+import {
+  SLP_TASKS_MAX,
+  slpPutTask,
+} from "../packages/slurp2/src/engine/packages/client/src/slp/base/state/slp-task-list.ts";
 import { slurp2Source } from "./slurp2-source.ts";
 
 const root = new URL("../packages/slurp2/src/engine/packages/", import.meta.url);
@@ -160,6 +177,250 @@ const client = (path: string) => slurp2Source(new URL(`client/src/slp/${path}`, 
   const en = JSON.parse(client("locales/en.json")) as Record<string, string>;
   assert.equal(en["ui.slurp.settings.presets.grows"], "Grows with Creators");
   assert.ok(en["ui.slurp.settings.presets.growsDetail_other"]?.includes("{{count}}"));
+}
+
+// C. Pulse, server side: Stir plays are tasks; "Coming up" is one list by time.
+{
+  const now = new Date("2026-09-29T10:00:00.000Z");
+  const plays = [
+    {
+      id: "p1",
+      at: "2026-09-29T09:00:00.000Z",
+      undone: false,
+      steps: [
+        { action: "write-post", input: { accountId: "mira" }, ok: true, error: null },
+        { action: "set-up-couple", input: { aId: "mira", bId: "kai" }, ok: false, error: "Kai is busy." },
+      ],
+    },
+    {
+      id: "p2",
+      at: "2026-09-29T08:00:00.000Z",
+      undone: true,
+      steps: [{ action: "add-idea", input: { accountId: "kai" }, ok: true, error: null }],
+    },
+    {
+      id: "old",
+      at: "2026-09-27T08:00:00.000Z",
+      undone: false,
+      steps: [{ action: "add-idea", input: {}, ok: true, error: null }],
+    },
+  ];
+  const tasks = slurpPulsePlayTasks(plays, now);
+  assert.deepEqual(
+    tasks.map((task) => task.id),
+    ["play:p1", "play:p2"],
+    "only the last day",
+  );
+  assert.equal(tasks[0]!.status, "failed", "a failed step fails the play");
+  assert.equal(tasks[0]!.detail, "Kai is busy.", "with the step's reason");
+  assert.deepEqual(tasks[0]!.accountIds, ["mira", "kai"]);
+  assert.deepEqual(tasks[0]!.progress, { completed: 1, total: 2 });
+  assert.deepEqual(tasks[0]!.stirActions, ["write-post", "set-up-couple"]);
+  assert.equal(tasks[1]!.status, "undone");
+
+  const next = slurpPulseNext({
+    now,
+    slots: [
+      { id: "s1", accountId: "mira", publishAt: "2026-09-29T12:00:00.000Z" },
+      { id: "s0", accountId: "mira", publishAt: "2026-09-29T09:00:00.000Z" },
+    ],
+    replies: [{ threadId: "t1", creatorAccountId: "kai", viewerAccountId: "me", at: null }],
+    followUps: [
+      {
+        id: "f1",
+        creatorAccountId: "mira",
+        viewerAccountId: "me",
+        type: "promise_delivery",
+        at: "2026-09-29T11:00:00.000Z",
+        reason: "the gym pic",
+      },
+      {
+        id: "f2",
+        creatorAccountId: "kai",
+        viewerAccountId: "me",
+        type: "opener",
+        at: "2026-09-29T15:00:00.000Z",
+        reason: "",
+      },
+    ],
+    fansAt: "2026-09-29T13:00:00.000Z",
+    events: [{ id: "halloween", name: "Halloween", startsAt: "2026-10-31T00:00:00.000Z" }],
+  });
+  assert.deepEqual(
+    next.map((entry) => `${entry.kind}@${entry.at.slice(11, 16)}`),
+    ["reply@10:00", "promise@11:00", "post@12:00", "fans@13:00", "opener@15:00", "event@00:00"],
+    "soonest first; a due reply is now; a past slot is dropped",
+  );
+  assert.equal(next[1]!.label, "the gym pic");
+  assert.equal(slurpPulseNext({ now, slots: [], replies: [], followUps: [], fansAt: null, events: [] }, 3).length, 0);
+
+  const upcoming = slurpUpcomingAnnualEvents(
+    [
+      { id: "halloween", name: "Halloween", enabled: true, activation: { kind: "annual", month: 10, day: 31 } },
+      { id: "xmas", name: "Christmas", enabled: true, activation: { kind: "annual", month: 12, day: 24 } },
+      { id: "off", name: "Off", enabled: false, activation: { kind: "annual", month: 10, day: 2 } },
+      { id: "new-year", name: "New Year", enabled: true, activation: { kind: "annual", month: 1, day: 1 } },
+    ],
+    new Date("2026-10-20T10:00:00.000Z"),
+  );
+  assert.deepEqual(
+    upcoming.map((event) => event.id),
+    ["halloween"],
+    "within two weeks, enabled only",
+  );
+  assert.deepEqual(
+    slurpUpcomingAnnualEvents(
+      [{ id: "new-year", name: "New Year", enabled: true, activation: { kind: "annual", month: 1, day: 1 } }],
+      new Date("2026-12-25T10:00:00.000Z"),
+    ).map((event) => event.startsAt),
+    ["2027-01-01T00:00:00.000Z"],
+    "next year's date across the year end",
+  );
+
+  const routes = server("features/maintenance/slp-maintenance-routes.ts");
+  assert.match(routes, /return \{\s+tasks,\s+next,/u, "the tasks route sends Coming up");
+  assert.match(
+    routes,
+    /path: "\/slurp\/stir\/play", body: \{ steps: failedSteps/u,
+    "a failed play retries its failed steps only",
+  );
+  assert.match(routes, /path: "\/slurp\/auto-post\/refresh-targeted"/u);
+  assert.match(routes, /path: "\/slurp\/first-posts\/enqueue"/u);
+  assert.match(routes, /personaIds\.has\(thread\.viewerAccountId\)/u, "only the player's chats get a reply time");
+  assert.match(server("features/audience/slp-fan-activity-operation.ts"), /nextRunAt:/u);
+  assert.match(server("features/settings/slp-settings-routes.ts"), /callsPerDayLimit: budget\.callsPerDay,/u);
+}
+
+// C. Pulse, client side: sections, tap-through, AI use in tokens, Coming up.
+{
+  assert.equal(slpPulseServerSection("running", false), "running");
+  assert.equal(slpPulseServerSection("queued", false), "queued");
+  assert.equal(slpPulseServerSection("pending", false), "queued", "a follow-up waiting is queued");
+  assert.equal(slpPulseServerSection("failed", true), "failed");
+  assert.equal(slpPulseServerSection("abandoned", true), "failed");
+  assert.equal(slpPulseServerSection("completed", true), "done");
+  assert.equal(slpPulseServerSection("undone", true), "done");
+  assert.equal(slpPulseServerSection("scheduled", false), "scheduled");
+
+  const own = new Set(["me"]);
+  assert.deepEqual(slpPulseServerTarget({ accountIds: ["mira"], postId: "p1" }, own), {
+    accountId: "mira",
+    postId: "p1",
+  });
+  assert.deepEqual(slpPulseServerTarget({ accountIds: ["mira"], viewerAccountId: "me" }, own), {
+    chatCreatorId: "mira",
+  });
+  assert.deepEqual(
+    slpPulseServerTarget({ accountIds: ["mira"], viewerAccountId: "fan-9" }, own),
+    { accountId: "mira" },
+    "an AI fan's chat is not opened",
+  );
+  assert.equal(slpPulseServerTarget({ accountIds: [] }, own), null);
+  assert.deepEqual(
+    slpPulseNextTarget({ id: "x", kind: "reply", at: "", accountIds: ["kai"], viewerAccountId: "me" }, own),
+    { chatCreatorId: "kai" },
+  );
+
+  assert.equal(slpPulseAiToday(undefined), null);
+  const today = slpPulseAiToday({
+    callsToday: 22,
+    callsPerDayLimit: 88,
+    tokensPerCall: 3000,
+    mode: "present",
+    activeCreators: 8,
+  })!;
+  assert.deepEqual([today.usedTokens, today.limitTokens, today.share, today.off], [66_000, 264_000, 0.25, false]);
+  assert.equal(slpPulseAiToday({ callsToday: 120, callsPerDayLimit: 88 })!.share, 1, "capped at full");
+  assert.equal(slpPulseAiToday({ callsToday: 0, callsPerDayLimit: 0 })!.share, 1, "a zero limit reads as full");
+  assert.equal(slpPulseAiToday({ callsToday: 3, mode: "off" })!.off, true);
+
+  const merged = slpPulseComingUp(
+    [{ id: "post:s1", kind: "post", at: "2026-09-29T12:00:00.000Z", accountIds: ["mira"] }],
+    [
+      { id: "prepared:a", publishAt: "2026-09-29T12:00:00.000Z", accountIds: ["mira"] },
+      { id: "prepared:b", publishAt: "2026-09-29T11:00:00.000Z", accountIds: ["kai"] },
+    ],
+  );
+  assert.deepEqual(
+    merged.map((entry) => entry.id),
+    ["prepared:b", "post:s1"],
+    "a scheduled post the list has is not doubled",
+  );
+  assert.deepEqual(slpPulseSummaryCounts({ running: 1, queued: 0, failed: 2, done: 5, next: 3 }), [
+    "running",
+    "failed",
+    "next",
+  ]);
+
+  const pulse = client("modules/chrome/SlpPulse.tsx");
+  for (const section of ["running", "queued", "failed", "next", "done"])
+    assert.match(pulse, new RegExp(`ui\\.slurp\\.pulse\\.sections\\.${section}`, "u"), `section ${section}`);
+  assert.doesNotMatch(pulse, /useMutationState/u, "no nameless copies of every mutation");
+  assert.match(pulse, /<PulseAiToday/u);
+  const shell = client("modules/chrome/SlpShell.tsx");
+  assert.match(shell, /const pulseOpen = useSlpTasks\(\(state\) => state\.pulseOpen\);/u);
+  assert.match(
+    client("app/screens/SlpHomeDestinations.tsx"),
+    /onOpenPulse=\{openSlpPulse\}/u,
+    "Stir's See all opens Pulse",
+  );
+  assert.match(client("app/SlpHomeHost.tsx"), /onOpenPulseTarget: \(target: SlpPulseTarget\) =>/u);
+}
+
+// B. Long actions are Pulse tasks: they start, the caller goes on, Pulse keeps result or reason.
+// (The store itself needs zustand from the Engine; its list rule is pure and runs here.)
+{
+  const now = Date.parse("2026-09-29T10:00:00.000Z");
+  const hour = 3_600_000;
+  const row = (id: string, status: string, finishedAt?: number) => ({ id, status, finishedAt });
+  let list = slpPutTask([], row("a", "running"), now);
+  list = slpPutTask(list, row("b", "failed", now), now);
+  list = slpPutTask(list, row("b", "running"), now);
+  assert.deepEqual(
+    list.map((task) => `${task.id}:${task.status}`),
+    ["b:running", "a:running"],
+    "Try again replaces its row",
+  );
+  list = slpPutTask([row("old", "done", now - 25 * hour), row("slow", "running")], row("new", "done", now), now);
+  assert.deepEqual(
+    list.map((task) => task.id),
+    ["new", "slow"],
+    "a day of finished tasks; running ones stay",
+  );
+  const many = Array.from({ length: 40 }, (_, index) => row(`t${index}`, "done", now));
+  assert.equal(
+    many.reduce((acc, task) => slpPutTask(acc, task, now), [] as ReturnType<typeof row>[]).length,
+    SLP_TASKS_MAX,
+  );
+
+  const store = client("base/state/slp-task-store.ts");
+  assert.match(
+    store,
+    /const retry = \(\) => void startSlpTask\(\{ \.\.\.input, startedToast: false \}, id\);/u,
+    "retry keeps the id",
+  );
+  assert.match(
+    store,
+    /put\(\{ \.\.\.base, status: "failed", finishedAt: Date\.now\(\), error: slpErrorText\(error\), retry \}\);/u,
+  );
+  assert.match(store, /return undefined;/u, "a failure never throws at a caller whose sheet is gone");
+  assert.match(store, /export const openSlpPulse = \(\) => useSlpTasks\.setState\(\{ pulseOpen: true \}\);/u);
+  assert.match(store, /ui\.slurp\.pulse\.seeInPulse/u, "every toast offers See in Pulse");
+  // The locks named by the user are gone: sheets close on Do it, the sign-up modal can close, the
+  // composer is not held by the picture, the plan survives leaving the box.
+  const cards = client("features/stir/SlpStirCards.tsx");
+  assert.doesNotMatch(cards, /closeDisabled=\{doIt\.pending\}/u);
+  assert.doesNotMatch(client("features/stir/SlpStirPlaySheet.tsx"), /closeDisabled=\{doIt\.pending\}/u);
+  assert.match(cards, /options\.onDone\?\.\(\);\s+const label =/u, "the sheet closes on the tap");
+  assert.doesNotMatch(client("features/onboarding/SlpOnboardingPanel.tsx"), /closeDisabled=\{pending\}/u);
+  const actions = client("app/slp-home-actions.ts");
+  assert.doesNotMatch(actions, /await generatePostImage\.mutateAsync/u, "the composer does not wait for the picture");
+  assert.match(actions, /kind: "auto-post",/u);
+  assert.match(client("app/slp-home-post-actions.ts"), /kind: "generate-post-image",/u);
+  const box = client("features/stir/SlpStirBox.tsx");
+  assert.match(box, /kind: "stir-plan",/u);
+  assert.match(box, /openSlpStirReadyPlan\(answer, origin\)/u);
+  assert.match(client("features/onboarding/slp-onboarding-wizard-model.ts"), /kind: "sign-up",/u);
 }
 
 console.log("slurp2 pulse + E regression passed");

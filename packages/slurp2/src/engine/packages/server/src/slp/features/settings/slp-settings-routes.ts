@@ -9,9 +9,12 @@ import { normalizeSlurpSettings, slurpSettingsSchema } from "../../modules/setti
 import {
   countSlurpActiveCreators,
   getSlurpModelBudgetLedger,
+  resolveSlurpModelBudget,
+  SLURP_TOKENS_PER_CALL_ESTIMATE,
   slurpSizedPostsPerDay,
 } from "../../base/model/slp-model-worker.js";
 import { resolveSlurpTextConnection } from "../../base/identity/slp-connection.js";
+import { createSlurpStorage } from "../../data/slp-storage.js";
 import { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
 import type { FastifyInstance } from "fastify";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
@@ -138,8 +141,19 @@ export async function slpSettingsRoutes(app: FastifyInstance, deps: SlpRouteDeps
     return noodle.updateSlurpSettings(body.data);
   });
   // The Creator count sizes every limit the player did not set; Settings shows the sized numbers.
-  app.get("/model-budget/usage", async () => ({
-    ...(await getSlurpModelBudgetLedger(app.db)),
-    activeCreators: await countSlurpActiveCreators(app.db),
-  }));
+  // Pulse (task C) shows today's use against the day's limit, so the sized limit and the mode come too.
+  app.get("/model-budget/usage", async () => {
+    const usage = {
+      ...(await getSlurpModelBudgetLedger(app.db)),
+      activeCreators: await countSlurpActiveCreators(app.db),
+    };
+    const settings = await createSlurpStorage(app.db).getSettings();
+    const budget = resolveSlurpModelBudget(settings.modelBudget, usage.activeCreators);
+    return {
+      ...usage,
+      mode: budget.mode,
+      callsPerDayLimit: budget.callsPerDay,
+      tokensPerCall: SLURP_TOKENS_PER_CALL_ESTIMATE,
+    };
+  });
 }

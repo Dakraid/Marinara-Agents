@@ -24,6 +24,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { closeSlpPulse, openSlpPulse, useSlpTasks } from "../../base/state/slp-task-store";
 import { cn } from "../../../lib/utils";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { SlurpCoinAmount, slpCoinPlainText } from "../coin/SlpCoin";
@@ -72,15 +73,8 @@ export function SlpWordmark() {
 /** The balance and the way to the Wallet, provided by the shell so every phone header can show the chip. */
 const SlpBalanceContext = createContext<{ coins: number | null; onOpen?: () => void }>({ coins: null });
 
-/**
- * What a screen may open that belongs to the shell (W): Pulse (Stir's "See all") and the More sheet
- * (Settings, Wallet, switching account), which the own profile's ⋯ opens now that the tab is "Me".
- */
-const SlpShellActionsContext = createContext<{
-  openPulse?: () => void;
-  openMore?: () => void;
-  openSettings?: () => void;
-}>({});
+/** The More sheet (Settings, Wallet, switching account; the own profile's ⋯) and Settings (the Me tab's row). */
+const SlpShellActionsContext = createContext<{ openMore?: () => void; openSettings?: () => void }>({});
 export const useSlpShellActions = () => useContext(SlpShellActionsContext);
 
 /** The viewer's coin balance inside the shell (null while it loads or outside the shell). */
@@ -206,6 +200,8 @@ export function SlpShell({
   onOpenWallet,
   onOpenStir,
   budgetNote,
+  onOpenPulseTarget,
+  onOpenBudget,
   notificationCount = 0,
   walletBalanceLabel,
   walletBalance,
@@ -235,7 +231,6 @@ export function SlpShell({
       fade.style.transform = hidden ? "translate3d(0, 100%, 0)" : "";
     },
   });
-  const [pulseOpen, setPulseOpen] = useState(false);
   const prefersReducedMotion = Boolean(useReducedMotion());
   const hasMorePersonaAccounts = visiblePersonaAccounts.length < sortedPersonaAccounts.length;
   const resolvedAppMode = appMode ?? (activeView === "noodler" ? "noodler" : "noodle");
@@ -258,7 +253,8 @@ export function SlpShell({
   };
   // Pulse is a SlpSheet: opening it closes the More sheet (one overlay at a time, B8), and the
   // sheet's focus scope hands focus back to whatever opened it.
-  const openPulse = () => setPulseOpen(true);
+  // In the task store, so Stir's "See all" and a toast's "See in Pulse" (task B) open it too.
+  const pulseOpen = useSlpTasks((state) => state.pulseOpen);
   const walletChip = (className: string) =>
     walletBalanceLabel && (
       <span className={cn(SLP_BALANCE_CHIP_CLASS, className)}>
@@ -348,7 +344,7 @@ export function SlpShell({
                 {localizeUi("navigation.topbar.settings")}
               </button>
             </nav>
-            {slurpActive && <SlpPulseCard open={pulseOpen} onOpen={openPulse} note={Boolean(budgetNote)} />}
+            {slurpActive && <SlpPulseCard open={pulseOpen} onOpen={openSlpPulse} note={Boolean(budgetNote)} />}
             {/*
               The drawer used to render the whole persona list open, so the identity card
               was pushed off-screen on any install with more than a couple of personas.
@@ -566,7 +562,7 @@ export function SlpShell({
                   )}
                   {slurpActive && (
                     <div className="mb-3">
-                      <SlpPulseCard open={pulseOpen} onOpen={openPulse} note={Boolean(budgetNote)} />
+                      <SlpPulseCard open={pulseOpen} onOpen={openSlpPulse} note={Boolean(budgetNote)} />
                     </div>
                   )}
                   <button
@@ -655,7 +651,7 @@ export function SlpShell({
               >
                 <SlpBalanceContext.Provider value={{ coins: walletBalance ?? null, onOpen: onOpenWallet }}>
                   <SlpShellActionsContext.Provider
-                    value={{ openPulse, openMore: () => onMobileDrawerOpenChange(true), openSettings: onOpenSettings }}
+                    value={{ openMore: () => onMobileDrawerOpenChange(true), openSettings: onOpenSettings }}
                   >
                     {children}
                   </SlpShellActionsContext.Provider>
@@ -676,9 +672,11 @@ export function SlpShell({
 
         <SlpPulsePanel
           open={pulseOpen}
-          onClose={() => setPulseOpen(false)}
+          onClose={closeSlpPulse}
           budgetNote={budgetNote}
           accounts={sortedPersonaAccounts}
+          onOpenTarget={onOpenPulseTarget}
+          onOpenBudget={onOpenBudget}
         />
 
         {/* The frosted fade under the phone nav, down to the bottom edge. A sibling, not a backdrop on

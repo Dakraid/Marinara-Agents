@@ -1,5 +1,6 @@
 import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
-import { SlpShell, useSlpShellActions } from "../../modules/chrome/SlpShell";
+import { SlpShell } from "../../modules/chrome/SlpShell";
+import { openSlpPulse } from "../../base/state/slp-task-store";
 import { SlurpWalletView } from "./SlpScreenWallet";
 import { DisclosureBadge } from "./SlpHomeHelpers";
 import { SlurpInboxView } from "./SlpScreenMessages";
@@ -264,6 +265,5 @@ export function renderSlurpHomeDestinations({
 
 /** The Stir tab inside the shell: "See all" opens the shell's Pulse sheet. */
 function SlpStirTab({ personaId, onOpenDashboard }: { personaId: string | null; onOpenDashboard?: () => void }) {
-  const { openPulse } = useSlpShellActions();
-  return <SlpStirScreen personaId={personaId} onOpenPulse={openPulse} onOpenDashboard={onOpenDashboard} />;
+  return <SlpStirScreen personaId={personaId} onOpenPulse={openSlpPulse} onOpenDashboard={onOpenDashboard} />;
 }

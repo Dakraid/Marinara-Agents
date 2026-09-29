@@ -565,7 +565,7 @@ export function SlpStirPlaySheet({
     <SlpSheet
       open={Boolean(action)}
       onClose={onClose}
-      closeDisabled={doIt.pending}
+
       title={t(`ui.slurp.stir.card.${action}.title`)}
       footer={
         <div className="flex gap-2 px-3 py-2">

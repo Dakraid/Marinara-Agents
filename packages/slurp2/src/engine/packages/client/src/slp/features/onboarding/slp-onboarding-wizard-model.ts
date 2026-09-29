@@ -8,6 +8,7 @@ import { resolveCreatorOnboardingCompletion } from "../../../../../shared/src/sl
 import { SLP_CREATOR_BULK_ACCOUNT_MAX } from "../../../../../shared/src/slp/slp-social.schema.js";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { startSlpTask } from "../../base/state/slp-task-store";
 import { useSlurpConnections } from "../../base/state/slp-host-connections";
 import {
   useBulkCreateCreatorStageProfiles,
@@ -393,13 +394,31 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
       if (settingsSaved) onComplete?.();
     }
   };
-  const retryFailedCreations = () => void performFinish(creationRetryIds);
+  // B: signing up is a Pulse task. The wizard may close while it runs; the Creators and their
+  // first posts keep coming, Pulse shows the run and the first-post jobs, a toast says when it ends.
+  const openRef = useRef(open);
+  openRef.current = open;
+  const finishAsTask = (retryIds?: string[]) => {
+    const count = retryIds?.length ?? selected.size;
+    return startSlpTask({
+      kind: "sign-up",
+      label: t("ui.slurp.pulse.task.signUp", { count }),
+      startedToast: false,
+      doneToast: false,
+      run: () => performFinish(retryIds),
+      done: () => {
+        if (!openRef.current) toast.success(t("ui.slurp.pulse.task.signUpDone", { count }));
+        return { result: t("ui.slurp.pulse.task.signUpDone", { count }) };
+      },
+    });
+  };
+  const retryFailedCreations = () => void finishAsTask(creationRetryIds);
   const finish = () => {
     if (selected.size > 0) {
       setProviderConfirmationOpen(true);
       return;
     }
-    void performFinish();
+    void finishAsTask();
   };
   const pending =
     bulkCreate.isPending || updateSlurpSettings.isPending || refreshTargeted.isPending || enqueueFirstPosts.isPending;
@@ -498,7 +517,7 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
     skip,
     returnToSetup,
     returnToPreviousStep,
-    performFinish,
+    performFinish: finishAsTask,
     finish,
     pending,
   };

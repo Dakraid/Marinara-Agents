@@ -3,7 +3,6 @@ import { useSlurpHomePostActions } from "./slp-home-post-actions";
 import { SLP_CREATOR_POST_TITLE_MAX_LENGTH } from "../../../../shared/src/slp/slp-social.schema.js";
 import type {
   SlpAccount,
-  SlpCreatorManagedPost,
   SlpCreatorSourceSnapshot,
   SlpIdentityDisclosure,
 } from "../../../../shared/src/slp/slp-social.types.js";
@@ -28,7 +27,6 @@ import {
   useConfirmCreatorImagePrompts,
   useCreateCreatorPost,
   useDeleteCreatorPost,
-  useGenerateCreatorPostImage,
   useLoadCreatorPostImage,
   useCreatorPosts,
   useReplaceCreatorPostImage,
@@ -468,6 +466,9 @@ export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onL
     cancelEditingReply,
     saveEditedReply,
     deleteNoodleReply,
+    generatePostImage,
+    generatingPostImageIds,
+    handleGeneratePostImage,
   } = useSlurpHomePostActions({
     localizeUi,
     viewerPersonaId,
@@ -522,24 +523,8 @@ export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onL
     },
     openAuthorProfile: (accountId) => onNavigate({ mode: "creator", view: "profile", accountId }),
   });
-  const generatePostImage = useGenerateCreatorPostImage();
-  const [generatingPostImageIds, setGeneratingPostImageIds] = useState<readonly string[]>([]);
   /** The post whose share picker is open, or null. */
   const [sharingPost, setSharingPost] = useState<SlpPostCardModel | null>(null);
-  const handleGeneratePostImage = (
-    post: Pick<SlpCreatorManagedPost, "id" | "authorAccountId">,
-    imagePrompt?: string,
-    asWritten?: boolean,
-  ) => {
-    setGeneratingPostImageIds((current) => [...current, post.id]);
-    generatePostImage.mutate(
-      { id: post.id, accountId: post.authorAccountId, imagePrompt, asWritten },
-      {
-        onError: (error) => toast.error(errorMessage(error, localizeUi("ui.slurp.image.generateFailed"))),
-        onSettled: () => setGeneratingPostImageIds((current) => current.filter((id) => id !== post.id)),
-      },
-    );
-  };
   const postCardCtx = {
     ...postCardController.ctx,
     generatePostImage: handleGeneratePostImage,

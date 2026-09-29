@@ -1,5 +1,6 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { cn } from "../../../lib/utils";
 import { SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { SlpStirGlyph } from "../../base/chrome/SlpGlyphs";
@@ -9,6 +10,8 @@ import { errorMessage } from "../../modules/settings/slp-backstage-format";
 import { SLP_STIR_TEXT_MAX, type SlpStirPlan } from "../../../../../shared/src/slp/slp-stir.js";
 import { useSlurpStirPlan } from "./slp-stir-hooks";
 import { SlpStirPlanSheet } from "./SlpStirCards";
+import { startSlpTask } from "../../base/state/slp-task-store";
+import { openSlpStirReadyPlan, useSlpStirReadyPlan } from "../../base/state/slp-stir-sheet-store";
 
 /** Real examples from this world: the placeholder rotates through them, the chips fill the box. */
 function useExamples(fullNames: string[], aboutName?: string) {
@@ -57,6 +60,16 @@ export function SlpStirBox({
   const [tick, setTick] = useState(0);
   const [plan, setPlan] = useState<{ plan: SlpStirPlan; key: number } | null>(null);
   const planner = useSlurpStirPlan();
+  const [planning, setPlanning] = useState(false);
+  // Planning is a Pulse task (B): the player may leave; a plan that comes back to an empty screen
+  // opens from its toast or from Pulse instead of being lost.
+  const mounted = useRef(true);
+  useEffect(
+    () => () => {
+      mounted.current = false;
+    },
+    [],
+  );
   useEffect(() => {
     if (text) return;
     const timer = window.setInterval(() => setTick((value) => value + 1), 4000);
@@ -64,19 +77,40 @@ export function SlpStirBox({
   }, [text]);
   const submit = () => {
     const words = text.trim();
-    if (words.length < 2 || planner.isPending) return;
+    if (words.length < 2 || planning) return;
     noteSlpAiUseOnce(t);
-    planner.mutate(
-      { text: words, ...(about ? { creatorId: about.id } : {}), ...(postId ? { postId } : {}) },
-      {
-        onSuccess: (answer) => {
-          if (onPlan) {
-            setText("");
-            onPlan(answer);
-          } else setPlan({ plan: answer, key: Date.now() });
-        },
+    setPlanning(true);
+    const origin = about ? "sheet" : "words";
+    const openHere = (answer: SlpStirPlan) => {
+      if (onPlan) {
+        setText("");
+        onPlan(answer);
+      } else setPlan({ plan: answer, key: Date.now() });
+    };
+    void startSlpTask({
+      kind: "stir-plan",
+      label: t("ui.slurp.stir.taskPlan", { words: words.length > 48 ? `${words.slice(0, 47)}…` : words }),
+      accountIds: about ? [about.id] : [],
+      // The button says "Planning…" while the box is on screen; the toast only when the player left.
+      startedToast: false,
+      doneToast: false,
+      run: () =>
+        planner.mutateAsync({ text: words, ...(about ? { creatorId: about.id } : {}), ...(postId ? { postId } : {}) }),
+      done: (answer) => {
+        const open = { label: t("ui.slurp.stir.openPlan"), run: () => openSlpStirReadyPlan(answer, origin) };
+        if (mounted.current) {
+          setPlanning(false);
+          openHere(answer);
+        } else
+          toast.success(t("ui.slurp.stir.planReady"), {
+            description: words,
+            action: { label: open.label, onClick: open.run },
+          });
+        return { result: t("ui.slurp.stir.planCards", { count: answer.cards.length }), open };
       },
-    );
+    }).then(() => {
+      if (mounted.current) setPlanning(false);
+    });
   };
   return (
     <section
@@ -136,11 +170,11 @@ export function SlpStirBox({
             <SlpUsesAiMark />
             {t("ui.slurp.stir.boxCost")}
           </p>
-          <SlpPrimaryButton type="submit" disabled={text.trim().length < 2 || planner.isPending}>
-            {planner.isPending ? t("ui.slurp.stir.planning") : t("ui.slurp.stir.plan")}
+          <SlpPrimaryButton type="submit" disabled={text.trim().length < 2 || planning}>
+            {planning ? t("ui.slurp.stir.planning") : t("ui.slurp.stir.plan")}
           </SlpPrimaryButton>
         </div>
-        {planner.error && (
+        {planner.error && !planning && (
           <p role="alert" className={cn(SLP_TYPE.meta, "text-[var(--slurp-danger)]")}>
             {errorMessage(planner.error)}
           </p>
@@ -160,5 +194,21 @@ export function SlpStirBox({
         origin={about ? "sheet" : "words"}
       />
     </section>
+  );
+}
+
+/** A plan that came back after the player left its box (task B), opened from its toast or Pulse. */
+export function SlpStirReadyPlanHost() {
+  const ready = useSlpStirReadyPlan((state) => state.ready);
+  return (
+    <SlpStirPlanSheet
+      key={ready?.key ?? 0}
+      open={Boolean(ready)}
+      onClose={() => useSlpStirReadyPlan.setState({ ready: null })}
+      cards={ready?.plan.cards ?? []}
+      cant={ready?.plan.cant ?? []}
+      question={ready?.plan.question ?? null}
+      origin={ready?.origin ?? "words"}
+    />
   );
 }
