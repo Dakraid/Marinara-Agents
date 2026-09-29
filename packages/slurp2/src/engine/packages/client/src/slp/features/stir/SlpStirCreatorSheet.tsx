@@ -41,13 +41,15 @@ export function SlpStirCreatorSheet({
 }) {
   const { t } = useTranslation();
   const { target, close } = useSlpStirSheet();
-  const query = useSlurpStir(target ? personaId : null);
-  const view = query.data;
   // Kept after the sheet closes, so the plan and card sheets it opens stay about them.
   const [about, setAbout] = useState(target);
   useEffect(() => {
     if (target) setAbout(target);
   }, [target]);
+  // Keyed on `about`, not `target`: a quick card's play sheet closes this sheet (one overlay at a
+  // time), and a "none" key would leave the play sheet with no Creators, couples or storylines.
+  const query = useSlurpStir(about ? personaId : null);
+  const view = query.data;
   const [playing, setPlaying] = useState<SlpActionName | null>(null);
   const [plan, setPlan] = useState<{ plan: SlpStirPlan; key: number } | null>(null);
   const [steerOpen, setSteerOpen] = useState(false);

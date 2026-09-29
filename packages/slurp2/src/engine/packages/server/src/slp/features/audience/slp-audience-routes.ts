@@ -80,7 +80,13 @@ export async function slpAudienceRoutes(app: FastifyInstance, deps: SlpRouteDeps
           }
         })(),
       })),
-      characters: await characters.listSummariesByIds(page.items.map((row) => row.id)),
+      // A character that is already a Creator says so, so it is not imported a second time as a fan.
+      characters: await Promise.all(
+        (await characters.listSummariesByIds(page.items.map((row) => row.id))).map(async (summary: { id: string }) => ({
+          ...summary,
+          creatorAccountId: (await noodle.getNoodlerAccountForSource("character", summary.id))?.id ?? null,
+        })),
+      ),
       limit: parsed.data.limit,
       offset: parsed.data.offset,
       hasMore: page.hasMore,

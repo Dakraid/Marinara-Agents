@@ -21,7 +21,7 @@ import {
 } from "../../../db/schema/slurp.js";
 import { isSlurpFileUniqueConstraintError } from "../../base/host/slp-file-errors.js";
 import { applySlurpMood, type SlurpMoodShift } from "../../modules/world/slp-mood.js";
-import { slurpFollowUpExpires, slurpFollowUpRetryAt } from "../../modules/messages/slp-follow-up.js";
+import { slurpFailedFollowUpPatch, slurpFollowUpExpires } from "../../modules/messages/slp-follow-up.js";
 import {
   applySlurpThreadNotes,
   readStoredNotes,
@@ -243,7 +243,14 @@ export function createMessagesStorageFollowUps(context: SlurpMessagesContext) {
         .set(
           overdue
             ? { status: "cancelled", claimedAt: null, cancelledAt: timestamp, updatedAt: timestamp }
-            : { status: "pending", claimedAt: null, scheduledAt, updatedAt: timestamp },
+            : {
+                status: "pending",
+                claimedAt: null,
+                scheduledAt,
+                // A row from before 0.3.0 has no first due time; keep it before scheduledAt moves.
+                firstDueAt: row?.firstDueAt ?? row?.scheduledAt ?? scheduledAt,
+                updatedAt: timestamp,
+              },
         )
         .where(
           and(
@@ -259,14 +266,10 @@ export function createMessagesStorageFollowUps(context: SlurpMessagesContext) {
       // and later (15 minutes up to 12 hours, by how late it is already), so a dead connection
       // neither drops it nor holds the queue's first slot; an opener nobody asked for fails for good.
       const row = (await db.select().from(slurpFollowUps).where(eq(slurpFollowUps.id, followUpId)))[0];
-      const opener = row?.type === "opener";
       await db
         .update(slurpFollowUps)
         .set({
-          status: opener ? "failed" : "pending",
-          scheduledAt: opener
-            ? String(row?.scheduledAt ?? timestamp)
-            : slurpFollowUpRetryAt(String(row?.firstDueAt ?? row?.scheduledAt ?? timestamp)),
+          ...slurpFailedFollowUpPatch(row, new Date(timestamp)),
           claimedAt: null,
           failedAt: timestamp,
           updatedAt: timestamp,

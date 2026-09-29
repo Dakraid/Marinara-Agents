@@ -30,6 +30,7 @@ import { trySlpOperation } from "../../base/locking/slp-operation-lock.js";
 import { readSlurpAudienceTone } from "../../../../../shared/src/slp/slp-tone.js";
 import { slurpCapTickEvents, slurpRhythmMultiplier } from "../../../../../shared/src/slp/slp-tuning.js";
 import { slurpCreatorReach } from "../../../../../shared/src/slp/slp-reach.js";
+import { isSlurpCharacterFanAccount } from "../../../../../shared/src/slp/slp-audience-characters.js";
 import {
   selectSlurpAudienceCharacterIds,
   slurpAudienceCharacterFanTypeId,
@@ -165,7 +166,8 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
       }
       const accounts = await noodle.listNoodlerAccounts();
       const automaticCreators = accounts.filter(
-        (account) => !(account.kind === "persona" && account.sourceKind === "persona"),
+        (account) =>
+          !(account.kind === "persona" && account.sourceKind === "persona") && !isSlurpCharacterFanAccount(account),
       );
       const allAccounts = await noodle.listAccounts();
 

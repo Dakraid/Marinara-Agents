@@ -38,7 +38,8 @@ import type { SlpImagePromptReviewItem } from "./slp-public-images-service.js";
 import { characterNameFromRow } from "../../modules/creators/slp-public-support.js";
 import {
   selectSlpImageProviderPrompt,
-  ensureSlpImageAppearance,
+  slurpApplyImageLook,
+  slurpLookForWriter,
   slurpArtStyle,
   slurpStyledImagePrompt,
   slurpImageLook,
@@ -104,6 +105,7 @@ type CreatorPostImageInput = {
     | "imagePromptInterpretation"
     | "imageGenerationUseAvatarReferences"
     | "imageGenerationIncludeDescriptions"
+    | "imageAppearanceMode"
     | "appearanceProfileMode"
     | "enableImageInterpretation"
     | "imageWidth"
@@ -422,9 +424,10 @@ async function generateCreatorPostImageRun(
   // "${name}'s Appearance: ..." from the linked source account, so an unredacted context block sent
   // the source's real name to the interpretation model in the same call whose prompt beside it had
   // that name carefully replaced.
+  const lookMode = input.settings.imageAppearanceMode ?? "writer";
   const characterContext = redactIdentity(
     [
-      characterDescription ? `Appearance:\n${characterDescription}` : "",
+      characterDescription && slurpLookForWriter(lookMode) ? `Appearance:\n${characterDescription}` : "",
       characterPersonality ? `Personality:\n${characterPersonality}` : "",
       characterImageInstructions ? `Character image preferences:\n${characterImageInstructions}` : "",
       input.contentPolicy ? `Creator content policy:\n${input.contentPolicy}` : "",
@@ -480,6 +483,7 @@ async function generateCreatorPostImageRun(
     input.visualBrief && rewrittenPrompt && slurpVisualBriefPromptViolatesPolicy(input.visualBrief, rewrittenPrompt),
   );
   const acceptedRewrittenPrompt = rewriteViolatesPolicy ? null : compiledRewrittenPrompt?.prompt || rewrittenPrompt;
+  let usedRewrite = Boolean(acceptedRewrittenPrompt);
   if (rewriteAttempted) {
     run.rewrite = {
       ...run.rewrite,
@@ -498,6 +502,7 @@ async function generateCreatorPostImageRun(
       rawPrompt: rawProviderPrompt,
       rewriteAttempted,
       onFallback: (reason) => {
+        usedRewrite = false;
         if (run.rewrite.status === "accepted") run.rewrite = { ...run.rewrite, status: "rejected", reason };
         else if (run.rewrite.status === "failed") run.rewrite = { ...run.rewrite, reason };
         logger.warn("[slurp] Image prompt rewrite unusable (%s); sending the capped draft", reason);
@@ -530,9 +535,12 @@ async function generateCreatorPostImageRun(
     model: imageModel,
     furry: Boolean(artStyle?.tag.includes("furry")),
   });
-  const finalPromptLook = ensureSlpImageAppearance(
+  // One copy of the look: the writer's words, Slurp's insert, or the writer's plus the missing traits.
+  const finalPromptLook = slurpApplyImageLook(
     skipInterpretation ? finalPromptScene : slurpViewpointForFamily(finalPromptScene, promptFamily),
-    redactIdentity(stageAppearance),
+    redactIdentity(stageAppearance || stripAppearanceLabel(characterDescription)),
+    lookMode,
+    usedRewrite,
   );
   const finalPrompt = [
     artStyle ? slurpStyledImagePrompt(finalPromptLook, styleSource) : finalPromptLook,

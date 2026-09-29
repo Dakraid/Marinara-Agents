@@ -251,6 +251,21 @@ export function slurpFollowUpRetryAt(firstDueAt: string | undefined, now: Date =
 }
 
 /**
+ * The row update after a failed generation. A promise goes back to the queue at the retry time;
+ * an opener fails for good. `firstDueAt` is pinned, because a row from before 0.3.0 has none and
+ * its moving `scheduledAt` would keep the lateness (and so the back-off) at zero forever.
+ */
+export function slurpFailedFollowUpPatch(
+  row: { type?: unknown; scheduledAt?: unknown; firstDueAt?: unknown } | undefined,
+  now: Date = new Date(),
+): { status: "failed" | "pending"; scheduledAt: string; firstDueAt: string } {
+  const firstDueAt = String(row?.firstDueAt ?? row?.scheduledAt ?? now.toISOString());
+  return row?.type === "opener"
+    ? { status: "failed", scheduledAt: String(row.scheduledAt ?? now.toISOString()), firstDueAt }
+    : { status: "pending", scheduledAt: slurpFollowUpRetryAt(firstDueAt, now), firstDueAt };
+}
+
+/**
  * Generate a follow-up message prompt context.
  */
 export function formatFollowUpContext(followUp: ScheduledFollowUp, promiseText?: string, late = false): string {

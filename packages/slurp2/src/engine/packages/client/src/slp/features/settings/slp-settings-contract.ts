@@ -82,6 +82,8 @@ export type SlurpSettings = {
   enableImageInterpretation: boolean;
   imageGenerationUseAvatarReferences: boolean;
   imageGenerationIncludeDescriptions: boolean;
+  /** How the look reaches the picture prompt: the prompt writer words it, Slurp inserts it, or both. */
+  imageAppearanceMode: "writer" | "insert" | "both";
   appearanceProfileMode: "ask" | "high_confidence" | "always";
   autoPostingImagesEnabled: boolean;
   allowRandomUsers: boolean;

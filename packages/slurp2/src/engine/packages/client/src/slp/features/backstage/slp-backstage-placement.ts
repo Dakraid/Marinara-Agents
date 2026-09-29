@@ -108,6 +108,7 @@ export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBac
   imageGenerationUseAvatarReferences: automation("images", "avatar references"),
   appearanceProfileMode: automation("images", "appearance profiles", "auto accept appearance"),
   imageGenerationIncludeDescriptions: automation("images", "image descriptions"),
+  imageAppearanceMode: automation("images", "look in prompts", "appearance twice", "insert appearance"),
   autoPostingImagesEnabled: automation("images", "automatic post images"),
   allowRandomUsers: world("audience", "random users", "ambient fans"),
   allowProfessorMari: internal(automation("general", "Professor Mari", "participants")),

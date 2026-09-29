@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { slurpAccountRowIsCreator } from "../../../../../shared/src/slp/slp-audience-characters.js";
+import {
+  isSlurpCharacterFanAccount,
+  slurpAccountRowIsCreator,
+  slurpCharacterIdFromFanEntityId,
+} from "../../../../../shared/src/slp/slp-audience-characters.js";
 import { previewSlurpAutopurge, runSlurpAutopurge } from "./slp-autopurge.js";
 import {
   slpAccounts,
@@ -362,6 +366,12 @@ export async function slpMaintenanceRoutes(app: FastifyInstance, deps: SlpRouteD
         // A deleted ambient account stays deleted; the seeder skips dismissed ids. Record the
         // dismissal only after the delete succeeded, or a failed delete would hide a live account.
         if (deleted && target && isAmbientSlpAccount(target)) await dismissAmbientSlpAccount(noodle, target.entityId);
+        // A character's fan row leaves the audience too, or the next world tick makes it again.
+        const fanOf =
+          deleted && target && isSlurpCharacterFanAccount(target)
+            ? slurpCharacterIdFromFanEntityId(target.entityId)
+            : null;
+        if (fanOf) await noodle.setAudienceCharacter(fanOf, false);
         if (deleted) removeCreatorAccountMedia(id);
         return deleted;
       } catch (error) {

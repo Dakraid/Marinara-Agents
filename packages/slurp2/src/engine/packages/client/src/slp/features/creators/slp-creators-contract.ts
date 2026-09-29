@@ -58,3 +58,4 @@ export {
 export { useSlpViewerPersonaId, useUpdateCreatorStrategy } from "./slp-creators-hooks.js";
 // W: the steering card lives in the Stir ✦ sheet now.
 export { SlpCreatorSteeringCard } from "./SlpCreatorSteeringCard";
+export { openSlpCreatorSettings } from "./settings/slp-creator-settings-store";

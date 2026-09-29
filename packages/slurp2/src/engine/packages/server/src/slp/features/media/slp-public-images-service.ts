@@ -31,7 +31,8 @@ import { rewriteSlpImagePrompt } from "../../base/media/slp-image-prompt-rewrite
 import { slpImageReferencesSupported } from "../../base/media/slp-image-references.js";
 import { resolveImageAppearance } from "./slp-appearance-service.js";
 import {
-  ensureSlpImageAppearance,
+  slurpApplyImageLook,
+  slurpLookForWriter,
   selectSlpImageProviderPrompt,
   slurpWithoutCameraDevice,
   stripAppearanceLabel,
@@ -189,6 +190,8 @@ export async function generateSlpPostImage(input: {
       })
     : "";
   let characterDescription = stageAppearance;
+  // This Creator's look only: the reference block below may describe the other people in the post too.
+  let ownLook = stageAppearance;
   let characterImageInstructions = "";
   let characterPersonality = "";
   let referenceImages: string[] | undefined;
@@ -201,7 +204,7 @@ export async function generateSlpPostImage(input: {
         input.settings.characterImageInstructions[character.id],
       );
       if (input.settings.imageGenerationIncludeDescriptions && !stageAppearance)
-        characterDescription = characterAppearanceFromRow(character);
+        characterDescription = ownLook = characterAppearanceFromRow(character);
       characterPersonality = imageContext.personality;
       characterImageInstructions = imageContext.imageInstructions;
 
@@ -309,8 +312,9 @@ export async function generateSlpPostImage(input: {
   ]
     .filter(Boolean)
     .join("\n");
+  const lookMode = input.settings.imageAppearanceMode ?? "writer";
   const characterContext = [
-    characterDescription ? `Appearance:\n${characterDescription}` : "",
+    characterDescription && slurpLookForWriter(lookMode) ? `Appearance:\n${characterDescription}` : "",
     characterPersonality ? `Personality:\n${characterPersonality}` : "",
     characterImageInstructions ? `Character image preferences:\n${characterImageInstructions}` : "",
     input.contentPolicy ? `Creator content policy:\n${input.contentPolicy}` : "",
@@ -354,6 +358,7 @@ export async function generateSlpPostImage(input: {
     input.visualBrief && rewrittenPrompt && slurpVisualBriefPromptViolatesPolicy(input.visualBrief, rewrittenPrompt)
       ? null
       : compiledRewrittenPrompt?.prompt || rewrittenPrompt;
+  let usedRewrite = Boolean(acceptedRewrittenPrompt);
   const finalPromptBase = selectSlpImageProviderPrompt({
     rewrittenPrompt: acceptedRewrittenPrompt,
     rawPrompt: rawProviderPrompt,
@@ -364,7 +369,10 @@ export async function generateSlpPostImage(input: {
       .filter(Boolean)
       .join("\n"),
     rewriteAttempted,
-    onFallback: (reason) => logger.warn("[slurp] Image prompt rewrite unusable (%s); sending the capped draft", reason),
+    onFallback: (reason) => {
+      usedRewrite = false;
+      logger.warn("[slurp] Image prompt rewrite unusable (%s); sending the capped draft", reason);
+    },
     // Art style and the character's image habits are meant to reach the provider, so a rewrite
     // that applies them is doing its job. Personality never belongs in a visual prompt at any
     // length; the instruction fields are guidance and only leak as a copied block.
@@ -373,9 +381,12 @@ export async function generateSlpPostImage(input: {
   });
   // The rewrite reads the caption, which may say "I held my phone up", so the device is removed
   // once more from what actually reaches the provider.
-  const finalPrompt = ensureSlpImageAppearance(
+  // One copy of the look: the writer's words, Slurp's insert, or the writer's plus the missing traits.
+  const finalPrompt = slurpApplyImageLook(
     slurpWithoutCameraDevice(finalPromptBase) || finalPromptBase,
-    stageAppearance,
+    ownLook,
+    lookMode,
+    usedRewrite,
   );
   // A reviewer who cleared the negative prompt still gets the style profile's own negatives back,
   // for the same reason the positive prompt is recompiled above.

@@ -585,13 +585,11 @@ export function SlpCreatorDangerSection({ creator, onClose }: SlpCreatorSettings
         message: t("ui.slurp.settings.creators.deleteDetail", { name: creator.displayName }),
       });
       if (!confirmed) return;
-      deleteCreator.mutate(creator.id, {
-        onSuccess: () => {
-          toast.success(t("ui.slurp.settings.creators.deleted", { name: creator.displayName }));
-          onClose();
-        },
-        onError: (error) => toast.error(errorMessage(error)),
-      });
+      // Awaited, not per-call `mutate` callbacks: the list refetch removes this Creator and unmounts
+      // this section before they ran, so the toast never showed and the modal spun (0.3.0 report B).
+      await deleteCreator.mutateAsync(creator.id);
+      toast.success(t("ui.slurp.settings.creators.deleted", { name: creator.displayName }));
+      onClose();
     } catch (error) {
       toast.error(errorMessage(error));
     }

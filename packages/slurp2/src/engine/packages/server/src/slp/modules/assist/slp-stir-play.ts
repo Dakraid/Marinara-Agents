@@ -52,3 +52,27 @@ export async function slpRunStirSteps<Undo>(
   }
   return { steps: out, results, undo };
 }
+
+/**
+ * A Support plan plays once (0.3.0 review): a second "Do it" (a double tap, a card not yet refreshed,
+ * a second tab) gets null instead of playing it again. The id is held from the check until the play
+ * is marked, so two requests at the same time cannot both pass.
+ * ponytail: in-process lock, the Engine is one process; a claim column if it ever runs as several.
+ */
+export function slpSupportPlayOnce() {
+  const running = new Set<string>();
+  return async <T>(
+    messageId: string | undefined,
+    playedAlready: (messageId: string) => Promise<boolean>,
+    play: () => Promise<T>,
+  ): Promise<T | null> => {
+    if (!messageId) return play();
+    if (running.has(messageId)) return null;
+    running.add(messageId);
+    try {
+      return (await playedAlready(messageId)) ? null : await play();
+    } finally {
+      running.delete(messageId);
+    }
+  };
+}

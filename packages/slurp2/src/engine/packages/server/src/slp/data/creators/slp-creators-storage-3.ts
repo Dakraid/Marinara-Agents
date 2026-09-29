@@ -48,6 +48,7 @@ import {
 } from "../../base/identity/slp-source.js";
 import { resolveCreatorSourceSnapshot } from "./slp-source-resolve.js";
 import { withoutHiddenAmbientAccounts } from "../audience/slp-ambient-profiles.js";
+import { isSlurpCharacterFanAccount } from "../../../../../shared/src/slp/slp-audience-characters.js";
 import { slurpViewerSettingsKey } from "../host/slp-storage-constants.js";
 import {
   emptySlpAccountSettings,
@@ -249,7 +250,11 @@ export function createCreatorsStorage3(context: SlurpStorageContext) {
       return existing;
     },
     async listNoodlerStageProfiles(): Promise<SlurpManagedStageProfile[]> {
-      const accounts = (await this.listNoodlerAccounts()).filter((account) => !isSlurpViewerActorAccount(account));
+      // A character in the audience has its own fan row with no source; it is not a Creator (0.3.0
+      // report B: it showed as a second Creator with an appearance nobody could extract).
+      const accounts = (await this.listNoodlerAccounts()).filter(
+        (account) => !isSlurpViewerActorAccount(account) && !isSlurpCharacterFanAccount(account),
+      );
       return Promise.all(
         accounts.map(async (account) => {
           const disclosureMode = account.settings.privacy.identityDisclosure ?? null;

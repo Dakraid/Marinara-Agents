@@ -49,6 +49,7 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
     "enableImageInterpretation",
     "imageGenerationUseAvatarReferences",
     "imageGenerationIncludeDescriptions",
+    "imageAppearanceMode",
     "appearanceProfileMode",
     "autoPostingImagesEnabled",
     "allowGalleryImageAttachments",

@@ -367,6 +367,24 @@ export function SlpImagesPanel(page: SlpBackstagePageProps) {
             onChange={(value) => update("imageGenerationIncludeDescriptions", value)}
           />
         </div>
+        {settings.imageGenerationIncludeDescriptions && (
+          <ChoiceSetting
+            settingKey="imageAppearanceMode"
+            label={t("ui.slurp.settings.images.lookMode")}
+            detail={t(
+              settings.enableImageInterpretation
+                ? "ui.slurp.settings.images.lookModeDetail"
+                : "ui.slurp.settings.images.lookModeEnhanceOff",
+            )}
+            options={[
+              { value: "writer", label: t("ui.slurp.settings.images.lookMode.writer") },
+              { value: "insert", label: t("ui.slurp.settings.images.lookMode.insert") },
+              { value: "both", label: t("ui.slurp.settings.images.lookMode.both") },
+            ]}
+            value={settings.imageAppearanceMode ?? "writer"}
+            onChange={(value: SlurpSettings["imageAppearanceMode"]) => void update("imageAppearanceMode", value)}
+          />
+        )}
       </AdvancedGroup>
     </div>
   );

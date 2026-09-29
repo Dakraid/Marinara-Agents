@@ -31,6 +31,8 @@ export function SlpStirSupportCards({ messageId, proposal }: { messageId: string
   const [removed, setRemoved] = useState<Set<number>>(new Set());
   const [hidden, setHidden] = useState(false);
   const played = Boolean(proposal.playId);
+  // Tapped once: stays off until the thread refetches with playId. A failed play is retried from Pulse.
+  const [sent, setSent] = useState(false);
   const query = useQuery({
     queryKey: [...slpKeys.noodlerRoot(), "stir-support", messageId, played],
     enabled: proposal.steps.length > 0,
@@ -84,13 +86,14 @@ export function SlpStirSupportCards({ messageId, proposal }: { messageId: string
           </SlpButton>
           <SlpPrimaryButton
             className="flex-1"
-            disabled={!cards.some((card) => !card.error) || doIt.pending}
-            onClick={(event) =>
+            disabled={!cards.some((card) => !card.error) || doIt.pending || sent}
+            onClick={(event) => {
+              setSent(true);
               doIt.run(cards, "support", {
                 from: event.currentTarget.getBoundingClientRect(),
                 supportMessageId: messageId,
-              })
-            }
+              });
+            }}
           >
             {doIt.pending ? t("ui.slurp.stir.doing") : t("ui.slurp.stir.doIt")}
           </SlpPrimaryButton>

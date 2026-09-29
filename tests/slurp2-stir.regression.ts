@@ -41,6 +41,7 @@ import {
 import {
   slpRunStirSteps,
   slpSortStirSteps,
+  slpSupportPlayOnce,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/assist/slp-stir-play.ts";
 import {
   slpStirLive,
@@ -423,11 +424,7 @@ async function main() {
     );
     assert.match(server("base/prompting/slp-response-format.ts"), /"takeaway", "stir"\]/u);
     const routes = server("features/assist/slp-stir-routes.ts");
-    assert.match(
-      routes,
-      /if \(parsed\.data\.supportMessageId\)\s+await markSupportPlayed/u,
-      "a played plan shows as played",
-    );
+    assert.match(routes, /if \(supportMessageId\)\s+await markSupportPlayed/u, "a played plan shows as played");
   }
 
   // --- 7. "In play" and the suggestions (code only) -------------------------------------------------
@@ -589,6 +586,49 @@ async function main() {
   assert.match(server("slp-server-entry.ts"), /await slpStirRoutes\(app, deps\);/u);
   // Merge R × W (on purpose): the "soon" hook is gone; the brand deal is a deck card with a preview.
   assert.doesNotMatch(shared("slp-actions.ts"), /SLP_STIR_SOON/u);
+
+  // --- 0.3.0 review: a Support plan plays once, and the ✦ sheet's cards keep their data ------------
+  {
+    const once = slpSupportPlayOnce();
+    const marked = new Set<string>();
+    let plays = 0;
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const played = async (id: string) => marked.has(id);
+    const play = (id: string) => async () => {
+      plays++;
+      await gate;
+      marked.add(id);
+      return `play-${plays}`;
+    };
+    // A double tap: both requests arrive before the first play is marked.
+    const first = once("m1", played, play("m1"));
+    const second = await once("m1", played, play("m1"));
+    release();
+    assert.equal(await first, "play-1");
+    assert.equal(second, null, "the second request at the same time does not play");
+    assert.equal(await once("m1", played, play("m1")), null, "a stale card after the play does not play again");
+    assert.equal(await once("m2", played, play("m2")), "play-2", "another Support plan still plays");
+    assert.equal(await once(undefined, played, play("x")), "play-3", "a play from Stir has no lock");
+    await assert.rejects(
+      once("m3", played, async () => {
+        throw new Error("model down");
+      }),
+    );
+    assert.equal(await once("m3", played, play("m3")), "play-4", "a failed play can be tried again");
+    const routes = server("features/assist/slp-stir-routes.ts");
+    assert.match(
+      routes,
+      /await supportOnce\(supportMessageId, supportPlayed, async \(\) => \{[\s\S]{0,400}markSupportPlayed\(/u,
+    );
+    assert.match(routes, /return answer \?\? reply\.code\(409\)/u);
+    assert.match(client("features/stir/SlpStirSupportCards.tsx"), /doIt\.pending \|\| sent\}/u);
+    // The play sheet a quick card opens closes the ✦ sheet; the query must not follow `target` to "none".
+    const sheet = client("features/stir/SlpStirCreatorSheet.tsx");
+    assert.match(sheet, /useSlurpStir\(about \? personaId : null\)/u);
+    assert.doesNotMatch(sheet, /useSlurpStir\(target/u);
+    assert.match(sheet, /<SlpStirPlaySheet\s+action=\{playing\}[\s\S]{0,120}view=\{view\}/u);
+  }
 }
 
 void main().then(

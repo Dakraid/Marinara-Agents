@@ -12,6 +12,7 @@ import {
   slpStirStepSchema,
 } from "../../../../../shared/src/slp/slp-stir.js";
 import { createSlurpMessagesStorage } from "../../data/messages/slp-messages-storage.js";
+import { slpSupportPlayOnce } from "../../modules/assist/slp-stir-play.js";
 
 /**
  * Stir (W) over HTTP: preview one action or a list of steps, turn words into a plan, do a play,
@@ -26,6 +27,11 @@ export async function slpStirRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
     if (proposal && typeof proposal === "object")
       await storage.mergeMessageMetadata(messageId, { stirProposal: { ...proposal, playId } });
   };
+  const supportPlayed = async (messageId: string) => {
+    const proposal = (await createSlurpMessagesStorage(app.db).getMessageById(messageId))?.metadata?.stirProposal;
+    return Boolean(proposal && typeof proposal === "object" && (proposal as { playId?: unknown }).playId);
+  };
+  const supportOnce = slpSupportPlayOnce();
   const guard = async <T>(
     label: string,
     reply: { code: (code: number) => { send: (value: unknown) => unknown } },
@@ -69,13 +75,17 @@ export async function slpStirRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
     const parsed = slpStirPlaySchema.safeParse(req.body ?? {});
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
     return guard("play", reply, async () => {
-      const answer = await playSlpStir(app.db, parsed.data);
-      // A Support thread's plan shows as played, so its cards do not offer "Do it" again.
-      if (parsed.data.supportMessageId)
-        await markSupportPlayed(parsed.data.supportMessageId, answer.play.id).catch((error: unknown) =>
-          logger.warn(error, "[slurp] Could not mark the Support plan as played"),
-        );
-      return answer;
+      const { supportMessageId } = parsed.data;
+      const answer = await supportOnce(supportMessageId, supportPlayed, async () => {
+        const answer = await playSlpStir(app.db, parsed.data);
+        // A Support thread's plan shows as played, so its cards do not offer "Do it" again.
+        if (supportMessageId)
+          await markSupportPlayed(supportMessageId, answer.play.id).catch((error: unknown) =>
+            logger.warn(error, "[slurp] Could not mark the Support plan as played"),
+          );
+        return answer;
+      });
+      return answer ?? reply.code(409).send({ error: "This plan is already in play." });
     });
   });
 

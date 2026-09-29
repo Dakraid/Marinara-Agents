@@ -39,6 +39,11 @@ export function SlpCreatorSettingsModal({
   const close = useSlpCreatorSettingsStore((state) => state.close);
   const accountsQuery = useCreatorAccounts(creatorId !== null);
   const creator = accountsQuery.data?.find((entry) => entry.id === creatorId) ?? null;
+  // A Creator that is gone (deleted here or elsewhere) closes the modal instead of loading forever.
+  const gone = creatorId !== null && accountsQuery.isSuccess && !accountsQuery.isFetching && !creator;
+  useEffect(() => {
+    if (gone) close();
+  }, [gone, close]);
   const panelRef = useRef<HTMLDivElement>(null);
   const dirtyRef = useRef(false);
   const [profileDirty, setProfileDirty] = useState(false);

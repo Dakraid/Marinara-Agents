@@ -195,6 +195,8 @@ export const slurpSettingsSchema = z.object({
   enableImageInterpretation: z.boolean(),
   imageGenerationUseAvatarReferences: z.boolean(),
   imageGenerationIncludeDescriptions: z.boolean(),
+  /** How the look reaches the picture prompt: `slurpApplyImageLook`. */
+  imageAppearanceMode: z.enum(["writer", "insert", "both"]),
   appearanceProfileMode: z.enum(["ask", "high_confidence", "always"]),
   autoPostingImagesEnabled: z.boolean(),
   allowRandomUsers: z.boolean(),
@@ -530,6 +532,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   // reference image simply ignores the references.
   imageGenerationUseAvatarReferences: true,
   imageGenerationIncludeDescriptions: true,
+  imageAppearanceMode: "writer",
   appearanceProfileMode: "high_confidence",
   autoPostingImagesEnabled: false,
   allowRandomUsers: false,

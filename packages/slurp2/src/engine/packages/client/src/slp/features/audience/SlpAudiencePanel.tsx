@@ -16,6 +16,7 @@ import { SLURP_AUDIENCE_PRESETS, slurpAudiencePresetPatch } from "../../../../..
 import type { SlpBackstagePageProps } from "../backstage/slp-backstage-contract";
 import { ChoiceSetting, StatusStrip } from "../../modules/settings/SlpSettingsInputs";
 import { AmbientProfilesPanel } from "./SlpAmbientProfilesPanel";
+import { openSlpCreatorSettings } from "../creators/slp-creators-contract";
 
 /** Audience: crowd scale, tone, fan types, the reaction bank and simulation tuning. */
 export function SlpAudiencePanel(page: SlpBackstagePageProps) {
@@ -311,6 +312,8 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
                         group.characterIds.includes(character.id),
                     );
                     const enabled = value !== false && (value !== undefined || inGroup);
+                    // Already a Creator: open that page instead of adding a second account as a fan.
+                    const creatorId = character.creatorAccountId ?? null;
                     return (
                       <div
                         key={character.id}
@@ -320,6 +323,7 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
                           type="checkbox"
                           aria-label={character.name}
                           checked={enabled}
+                          disabled={Boolean(creatorId) && !enabled}
                           onChange={() =>
                             void update("audienceCharacters", {
                               ...settings.audienceCharacters,
@@ -328,6 +332,15 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
                           }
                         />
                         <span className="min-w-0 flex-1 truncate text-sm font-semibold">{character.name}</span>
+                        {creatorId && (
+                          <button
+                            type="button"
+                            onClick={() => openSlpCreatorSettings(creatorId)}
+                            className="min-h-9 rounded-lg px-2 text-xs font-semibold text-[var(--slurp-muted)] hover:bg-[var(--accent)] hover:text-[var(--slurp-ink)]"
+                          >
+                            {t("ui.slurp.settings.audience.alreadyCreator")}
+                          </button>
+                        )}
                         <select
                           aria-label={t("ui.slurp.settings.audience.characterFanType", {
                             defaultValue: "Fan Type for {{name}}",

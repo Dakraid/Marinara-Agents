@@ -35,6 +35,8 @@ export type SlurpAudienceCharacterSummary = {
   avatarUrl: string | null;
   avatarCrop: unknown;
   conversationStatus?: string;
+  /** Set when this character already runs a Creator page. */
+  creatorAccountId?: string | null;
 };
 export type SlurpAudienceCharacterGroup = {
   id: string;

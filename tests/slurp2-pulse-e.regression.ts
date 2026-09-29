@@ -11,6 +11,7 @@ import {
 import {
   formatFollowUpContext,
   isFollowUpLate,
+  slurpFailedFollowUpPatch,
   slurpFollowUpExpires,
   slurpFollowUpRetryAt,
   type ScheduledFollowUp,
@@ -142,11 +143,27 @@ const client = (path: string) => slurp2Source(new URL(`client/src/slp/${path}`, 
   const storage = server("data/messages/slp-messages-storage-follow-ups.ts");
   assert.match(storage, /firstDueAt: followUp\.scheduledAt,\s+status: "pending"/u, "the first due time is kept");
   assert.match(storage, /firstDueAt: row\.firstDueAt \?\? row\.scheduledAt/u, "old rows use their due time");
-  assert.match(
-    storage,
-    /status: opener \? "failed" : "pending",\s+scheduledAt: opener[\s\S]{0,120}slurpFollowUpRetryAt\(/u,
-    "a failed promise goes back to the queue later",
-  );
+  // 0.3.0 review: the failure update pins firstDueAt, so an old row (none stored) backs off too.
+  assert.match(storage, /\.set\(\{\s+\.\.\.slurpFailedFollowUpPatch\(row, new Date\(timestamp\)\),/u);
+  assert.match(storage, /firstDueAt: row\?\.firstDueAt \?\? row\?\.scheduledAt \?\? scheduledAt,/u, "postpone too");
+  const opener = slurpFailedFollowUpPatch({ type: "opener", scheduledAt: due, firstDueAt: null }, now);
+  assert.deepEqual(opener, { status: "failed", scheduledAt: due, firstDueAt: due }, "an opener fails for good");
+  // A pre-0.3.0 promise failing on a dead connection for three days: the rows the storage writes.
+  let row: { type: string; scheduledAt: string; firstDueAt: string | null } = {
+    type: "promise_delivery",
+    scheduledAt: due,
+    firstDueAt: null,
+  };
+  let tries = 0;
+  for (let at = new Date(due); at.getTime() < Date.parse(due) + 3 * 24 * 60 * 60_000; tries++) {
+    const patch = slurpFailedFollowUpPatch(row, at);
+    assert.equal(patch.status, "pending", "a promise is never given up");
+    assert.equal(patch.firstDueAt, due, "the first due time stays put");
+    row = { ...row, ...patch };
+    at = new Date(row.scheduledAt);
+  }
+  assert.ok(tries < 20, `the retries back off to the 12 hour cap (${tries} tries in three days, not ~288)`);
+  assert.equal(isFollowUpLate(row.firstDueAt ?? row.scheduledAt, new Date(row.scheduledAt)), true, "it says sorry");
   assert.doesNotMatch(storage, /failedBefore \? "failed"/u, "no more give-up after two failures");
   const scheduler = server("features/messages/slp-follow-up-scheduler-service.ts");
   assert.match(scheduler, /isFollowUpLate\(followUp\.firstDueAt \?\? followUp\.scheduledAt\)/u);

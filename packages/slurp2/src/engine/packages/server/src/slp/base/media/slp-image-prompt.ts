@@ -222,6 +222,34 @@ export function ensureSlpImageAppearance(prompt: string, appearance: string): st
 }
 
 /**
+ * How Slurp adds the Creator's look to a picture prompt (`imageAppearanceMode`, player report on
+ * 0.2.41): one setting used to both hand the look to the prompt writer and insert it again, so a
+ * look the writer had already worded was added a second time.
+ * - `writer`: only the prompt writer gets it and words it into the scene (default).
+ * - `insert`: the writer does not see it; Slurp inserts it into the final prompt.
+ * - `both`: the writer gets it, and Slurp adds the traits the writer missed.
+ */
+export type SlurpImageAppearanceMode = "writer" | "insert" | "both";
+export const SLURP_IMAGE_APPEARANCE_MODES = ["writer", "insert", "both"] as const;
+
+/** Whether the prompt writer gets the look as context. */
+export const slurpLookForWriter = (mode: SlurpImageAppearanceMode): boolean => mode !== "insert";
+
+/**
+ * The look in the final prompt. A prompt the writer did not produce (enhance off, a failed or
+ * rejected rewrite, a reviewed prompt) always gets the missing traits, or nobody would be drawn;
+ * only a used rewrite in `writer` mode is sent as written. A trait is never added twice.
+ */
+export function slurpApplyImageLook(
+  prompt: string,
+  look: string,
+  mode: SlurpImageAppearanceMode,
+  usedRewrite: boolean,
+): string {
+  return mode === "writer" && usedRewrite ? prompt : ensureSlpImageAppearance(prompt, look);
+}
+
+/**
  * The device, as words. The post writer kept putting "phone held at arm's length" into the scene
  * even when the camera was a tripod, and the image model drew a phone in 37 of 46 pictures on prod
  * (0.2.74). The camera choice already decides how the picture was taken; the picture itself must
