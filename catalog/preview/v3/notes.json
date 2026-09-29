@@ -4,6 +4,12 @@
     "modern-life-sim": {
       "versions": [
         {
+          "version": "0.2.5",
+          "date": "2026-09-29",
+          "notes": "- Contacts no longer freezes: opening it doesn't load your whole life again, and each part of someone's sheet is drawn on its own, so one that can't be shown is just missing and the rest is there.\n- If a whole screen can't be shown, it says so, with a button to go back to the map, instead of leaving the game stuck.",
+          "highlight": false
+        },
+        {
           "version": "0.2.4",
           "date": "2026-09-28",
           "notes": "- You can use your own pictures for what people wear each season or at work, and for you in any of your outfits: pick one and frame it yourself. Yours stays until you ask for a drawn one again.\n- You can rename someone in Settings, and updating from their card brings a new name from the card too.\n- When a model puts quotes in the wrong place or leaves part of a line out, the game still reads its reply, so turns in scenes aren't lost.\n- The names on the clothes store's rack are sharp again. The phone's shop opens on its own inside a store, and going back returns you to the store with your cart.\n- A fix in the optional Adult Module.",

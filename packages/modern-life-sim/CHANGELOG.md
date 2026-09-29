@@ -1,3 +1,7 @@
+## 0.2.5 — 2026-09-29
+- Contacts no longer freezes: opening it doesn't load your whole life again, and each part of someone's sheet is drawn on its own, so one that can't be shown is just missing and the rest is there.
+- If a whole screen can't be shown, it says so, with a button to go back to the map, instead of leaving the game stuck.
+
 ## 0.2.4 — 2026-09-28
 - You can use your own pictures for what people wear each season or at work, and for you in any of your outfits: pick one and frame it yourself. Yours stays until you ask for a drawn one again.
 - You can rename someone in Settings, and updating from their card brings a new name from the card too.
