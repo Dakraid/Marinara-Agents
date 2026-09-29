@@ -414,6 +414,13 @@ export async function slpMaintenanceRoutes(app: FastifyInstance, deps: SlpRouteD
     return locked.value;
   });
 
+  // The recovery reset: keeps Creators, their artwork and every setting (deleteAllSlurpData).
+  app.delete("/data/activity", async (_req, reply) => {
+    const locked = await trySlurpDataDeletion(() => noodle.deleteAllSlurpData({ keepCreators: true }));
+    if (!locked.acquired) return reply.code(409).send({ error: "Another Slurp operation is already running." });
+    return locked.value;
+  });
+
   app.delete("/data/unused", async (_req, reply) => {
     const locked = await trySlurpDataDeletion(() => noodle.deleteUnusedSlurpData());
     if (!locked.acquired) return reply.code(409).send({ error: "Another Slurp operation is already running." });

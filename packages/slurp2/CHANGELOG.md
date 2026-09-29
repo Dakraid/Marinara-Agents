@@ -1,5 +1,11 @@
 # Slurp Remastered release notes
 
+## 0.3.1 — 2026-09-29
+
+- New Backstage action "Start over, keep Creators" (`DELETE /api/slurp2/data/activity`): clears posts, post media, comments, messages, fans, world events, queued and stuck work, and the planning memory built on them. Creators, their artwork, follows, the wallet and every Slurp setting stay. For installs that stay empty or stuck after an update.
+- "Delete all Slurp data" now also clears post deep details, reports, message follow-ups, world claims and Creator planning rows, which it used to leave behind.
+- The empty Home feed says why: automatic posting is off (with a one-tap "Turn on automatic posting"), first posts are still being written, no Creators yet, or no persona yet.
+
 ## 0.3.0 — 2026-09-29
 
 Small changes.

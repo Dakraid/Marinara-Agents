@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.0";
+export const SLURP2_VERSION = "0.3.1";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -12,6 +12,14 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.1",
+    date: "2026-09-29",
+    notes: [
+      "An empty feed now says why, and turns on automatic posting in one tap when that is the reason.",
+      "Slurp stuck or empty after an update? Backstage › Start over clears posts and messages and keeps your Creators and settings.",
+    ],
+  },
   {
     version: "0.3.0",
     date: "2026-09-29",

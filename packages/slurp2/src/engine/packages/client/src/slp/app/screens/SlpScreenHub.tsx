@@ -50,7 +50,7 @@ import { holdNewSlpFeedPosts, newestSlpFeedTime } from "../../features/feed/slp-
 import { useSlurpHubDiscoveryFilters } from "./slp-hub-discovery-filters";
 import { SlurpInlineSuggestedCreators } from "./SlpScreenSuggestedCreators";
 import { SlpHubDiscover } from "./SlpHubDiscover";
-import { useSlurpSettings } from "../../features/settings/slp-settings-hooks";
+import { useSlurpSettings, useTurnOnSlurpAutoPosting } from "../../features/settings/slp-settings-hooks";
 
 // ---------------------------------------------------------------------------
 // Local types
@@ -266,7 +266,13 @@ export function ViewerHub({
   // The paid period of each subscription, so a Discover card can say "ends Thu" after a cancel.
   const walletSubscriptions = useSlurpWallet(scope?.viewer.entityId ?? null).data?.subscriptions;
   // "Tap a preview to open the full post" (on by default); off, a tap shows the picture alone.
-  const previewOpensPost = useSlurpSettings().data?.previewOpensPost !== false;
+  const slurpSettings = useSlurpSettings().data;
+  const previewOpensPost = slurpSettings?.previewOpensPost !== false;
+  // An empty feed says why: automatic posting is off (one tap turns it on), or first posts are on the way.
+  const turnOnAutoPosting = useTurnOnSlurpAutoPosting((error) =>
+    toast.error(errorMessage(error, localizeUi("ui.slurp.empty.autoPostingError"))),
+  );
+  const autoPostingOff = slurpSettings?.autoPostingScheduleEnabled === false;
   // "Create a persona" is a claim about the user's data, so it waits for the personas query to
   // actually succeed instead of speaking for a cold or failed load.
   if (personas.length === 0) {
@@ -285,7 +291,7 @@ export function ViewerHub({
     return (
       <SlpEmptyState
         title={localizeUi("ui.noodle.viewerhub.createAPersonaToBrowseNoodler")}
-        detail={localizeUi("ui.noodle.viewerhub.personaAccessDetail")}
+        detail={localizeUi("ui.slurp.empty.noPersonaDetail")}
       />
     );
   }
@@ -587,23 +593,29 @@ export function ViewerHub({
                   ? localizeUi("ui.slurp.empty.searchDetail")
                   : tab === "following"
                     ? localizeUi("ui.slurp.empty.followingDetail")
-                    : undefined
+                    : autoPostingOff
+                      ? localizeUi("ui.slurp.empty.autoPostingOffDetail")
+                      : localizeUi("ui.slurp.empty.firstPostsDetail")
               }
               action={
                 searchTerm
                   ? localizeUi("ui.slurp.empty.clearSearch")
                   : tab === "following"
                     ? localizeUi("ui.slurp.empty.browseAll")
-                    : authorProfile && onOpenAuthorProfile
-                      ? localizeUi("ui.noodle.viewerhub.viewValue1", { value1: authorProfile.displayName })
-                      : undefined
+                    : autoPostingOff
+                      ? localizeUi("ui.slurp.empty.turnOnAutoPosting")
+                      : authorProfile && onOpenAuthorProfile
+                        ? localizeUi("ui.noodle.viewerhub.viewValue1", { value1: authorProfile.displayName })
+                        : undefined
               }
               onAction={
                 searchTerm
                   ? () => onSearchChange("")
                   : tab === "following"
                     ? () => onTabChange("all")
-                    : onOpenAuthorProfile
+                    : autoPostingOff
+                      ? turnOnAutoPosting
+                      : onOpenAuthorProfile
               }
               icon={searchTerm ? Search : UserRound}
             />
@@ -715,7 +727,9 @@ export function ViewerHub({
               ? localizeUi("ui.noodle.viewerhub.noOtherStageProfilesAreVisibleToThisPersona")
               : localizeUi("ui.noodle.viewerhub.noStageProfilesAreVisibleToThisPersona")
           }
-          detail={authorProfile ? localizeUi("ui.noodle.viewerhub.ownStageProfileStillAvailable") : undefined}
+          detail={localizeUi(
+            authorProfile ? "ui.noodle.viewerhub.ownStageProfileStillAvailable" : "ui.slurp.empty.noCreatorsDetail",
+          )}
           // First run ended here with no way on: with no Creators at all, the action adds some (R1-131).
           action={
             authorProfile && onOpenAuthorProfile
