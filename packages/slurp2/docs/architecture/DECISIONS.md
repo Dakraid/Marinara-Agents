@@ -506,3 +506,34 @@ modules, rejected alternative, and migration consequence.
   sized number on every Creator change (a write per Creator toggle, and stale on import).
 - **Migration consequence:** a save without `postsPerDayCustom` keeps any number other than the
   shipped 4 as the player's; the shipped 4 grows.
+
+## Pulse + E: long actions are Pulse tasks; follow-ups are promises (2026-09-29)
+
+- **Problem:** long actions held the player (the Stir play sheet and the sign-up modal could not
+  close, the composer waited for the post's AI picture, a Stir plan was lost when the player left
+  the box), and Pulse showed each pending mutation twice, without a name, reason or retry. A
+  follow-up blocked for two days was dropped, and automatic Creators never answered an AI fan.
+- **Decision:** one client task tracker, `base/state/slp-task-store.ts` (`startSlpTask`): the caller
+  closes its sheet at once, the task runs on, Pulse lists it (running / done with a result and a
+  tap-through / failed with why and Try again), a toast says how it went with See in Pulse. Its
+  words come from the caller's `t` (the package's bundled `i18next` is never initialised). Pulse's
+  open state lives in that store, so any screen or toast opens it. The server's `/slurp/tasks`
+  also sends Stir plays, a `retry` route per failed task and a `next` list ("Coming up", pure in
+  `modules/maintenance/slp-pulse.ts`). Follow-ups keep `first_due_at`; a wait never ends a promise
+  (only an opener expires), a failed one retries later by how late it is, a late one opens with an
+  in-character sorry. The unattended reply path answers an AI fan's text when
+  `slurpAnswersAiFan` picks it (1 in 4, by message id), text only, inside the AI budget.
+- **Affected modules:** client `base/state/slp-task-store.ts`, `slp-task-list.ts`,
+  `slp-stir-sheet-store.ts`, `modules/chrome/SlpPulse*.tsx`, `slp-pulse-model.ts`, `SlpShell.tsx`,
+  `features/stir/`, `features/onboarding/`, `app/slp-home-*.ts`; server
+  `features/maintenance/slp-maintenance-routes.ts`, `modules/maintenance/slp-pulse.ts`,
+  `features/messages/slp-message-operation.ts`, `slp-follow-up-scheduler-service.ts`,
+  `data/messages/slp-messages-storage-follow-ups.ts`, `modules/messages/slp-{follow-up,messaging}.ts`,
+  schema `slurp2_follow_ups.first_due_at`.
+- **Rejected alternatives:** server job rows for every long action (a migration and a poller for
+  work that already returns in one request); reading `useMutationState` for Pulse (no name, no
+  result, no retry, and every mutation twice); a stored attempt count for follow-up retries (the
+  lateness already says how often it failed).
+- **Migration consequence:** follow-up rows from before have no `first_due_at`; their current
+  `scheduledAt` stands in. Client tasks live in memory for the tab (a reload forgets finished ones;
+  server jobs and plays stay in Pulse).

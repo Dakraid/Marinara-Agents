@@ -31,7 +31,11 @@ export function SlpPulseCard({ open, onOpen, note = false }: { open: boolean; on
   const serverTasks = useSlpPulseTasks(false);
   // Long actions started in this tab count too (task B), so the dot shows the moment one starts.
   const clientRunning = useSlpTasks((state) => state.tasks.filter((task) => task.status === "running").length);
-  const activeCount = (serverTasks.data?.tasks.filter((task) => isActiveTask(task.status)).length ?? 0) + clientRunning;
+  const serverRunning =
+    serverTasks.data?.tasks.filter(
+      (task) => slpPulseServerSection(task.status, isTerminalTask(task.status)) === "running",
+    ).length ?? 0;
+  const activeCount = serverRunning + clientRunning;
   return (
     <button
       type="button"
@@ -132,6 +136,7 @@ export function SlpPulsePanel({
     const retry = task.retry;
     if (!retry) return;
     void startSlpTask({
+      t,
       kind: task.kind,
       label: pulseTaskLabel(task, t),
       accountIds: task.accountIds,
@@ -144,13 +149,16 @@ export function SlpPulsePanel({
     <SlpSheet open={open} onClose={onClose} title={t("ui.slurp.pulse.title", { defaultValue: "Pulse" })}>
       <div id="slurp-pulse-panel" className="space-y-6 px-2 pb-2">
         {/* One status line: what runs, waits, failed and comes next, or "All quiet". */}
-        <p className={cn(SLP_TYPE.meta, "-mt-1 flex items-center gap-2 px-1 text-[var(--slurp-muted)]")}>
+        <p className={cn(SLP_TYPE.meta, "flex items-center gap-2 px-1 text-[var(--slurp-muted)]")}>
           {counts.running > 0 ? (
             <span className="size-2 shrink-0 rounded-full bg-[var(--noodle-accent)]" aria-hidden="true" />
           ) : (
             <CheckCircle2 size={14} className="shrink-0 text-[var(--slurp-success)]" aria-hidden="true" />
           )}
-          {summary || t("ui.slurp.pulse.quietNothing", { defaultValue: "All quiet. Nothing is running." })}
+          {summary ||
+            t("ui.slurp.pulse.quietNothing", {
+              defaultValue: "All quiet. What Slurp does, and what you start, shows up here.",
+            })}
         </p>
 
         {/* W: Pulse shows what runs and ran. A new plan never starts here (Stir does that). */}
@@ -394,7 +402,7 @@ function pulseGroupKind(kind: string) {
     return "post-production";
   }
   if (kind === "audience-activity") return "audience-activity";
-  if (["conversation-schedule", "conversation-follow-up"].includes(kind)) return "conversation";
+  if (["conversation-schedule", "conversation-follow-up", "conversation-opener"].includes(kind)) return "conversation";
   if (kind === "creator-improvement") return "creator-improvement";
   if (kind === "commission") return "commission";
   return kind;
@@ -555,7 +563,8 @@ function PulseGroupCard({
   const [expanded, setExpanded] = useState(false);
   const [showAllTasks, setShowAllTasks] = useState(false);
   const latest = group.tasks[0];
-  const label = pulseGroupLabel(group.kind, t);
+  // A card of one names that task ("Play: Set them up"); a stack names its kind.
+  const label = group.tasks.length === 1 ? pulseTaskLabel(latest, t) : pulseGroupLabel(group.kind, t);
   const scope =
     group.accountIds.length > 1
       ? t("ui.slurp.pulse.creatorCount", { defaultValue: "{{count}} Creators", count: group.accountIds.length })
@@ -669,9 +678,9 @@ function PulseGroupCard({
 
 function pulseGroupLabel(kind: string, t: (key: string, options?: Record<string, unknown>) => string) {
   const labels: Record<string, [string, string]> = {
-    "post-production": ["ui.slurp.pulse.generatePosts", "Generate posts"],
+    "post-production": ["ui.slurp.pulse.generatePosts", "New posts"],
     "audience-activity": ["ui.slurp.pulse.audienceActivity", "Audience activity"],
-    conversation: ["ui.slurp.pulse.conversation", "Conversation work"],
+    conversation: ["ui.slurp.pulse.conversation", "Chats and promises"],
     "creator-improvement": ["ui.slurp.pulse.creatorImprovement", "Creator improvements"],
     commission: ["ui.slurp.pulse.commission", "Commission work"],
     "scheduled-post": ["ui.slurp.pulse.scheduledPost", "Scheduled post"],
@@ -701,7 +710,8 @@ function pulseTaskStatus(
   if (taskStatus === "scheduled") {
     return t("ui.slurp.pulse.scheduledStatus", { defaultValue: "Scheduled" });
   }
-  if (["queued", "prepared"].includes(taskStatus)) {
+  // A follow-up waiting for its time is queued, not finished (task C).
+  if (["queued", "prepared", "pending", "claimed"].includes(taskStatus)) {
     return t("ui.slurp.pulse.queued", { defaultValue: "Queued" });
   }
   if (taskStatus === "error" || taskStatus === "failed" || taskStatus === "abandoned") {
@@ -736,7 +746,8 @@ function pulseTaskLabel(
     "conversation-schedule": ["ui.slurp.pulse.scheduleTask", "Refreshing conversation schedule"],
     "first-post": ["ui.slurp.pulse.firstPost", "Creating first post"],
     "creator-improvement": ["ui.slurp.pulse.improvingCreators", "Improving Creator profiles"],
-    "conversation-follow-up": ["ui.slurp.pulse.followUp", "Preparing conversation follow-up"],
+    "conversation-follow-up": ["ui.slurp.pulse.followUp", "A promised message"],
+    "conversation-opener": ["ui.slurp.pulse.openerTask", "A first message"],
     commission: ["ui.slurp.pulse.preparingCommission", "Preparing commission"],
   };
   const [keyName, defaultValue] = labels[key] ?? ["ui.slurp.pulse.slurpTask", "Slurp task"];

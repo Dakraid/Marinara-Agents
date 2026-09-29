@@ -357,6 +357,7 @@ function useSlurpHomeActions(state: SlurpHomeBaseState) {
     // B: the picture is drawn as a Pulse task, so the composer closes as soon as the post is out.
     if (wantsImage && postId)
       void startSlpTask({
+        t: localizeUi,
         kind: "generate-post-image",
         label: localizeUi("ui.slurp.pulse.task.drawPost"),
         accountIds: [profileId],
@@ -374,6 +375,7 @@ function useSlurpHomeActions(state: SlurpHomeBaseState) {
     if (!(await confirmProviderDisclosure())) return;
     const name = accountsQuery.data?.find((profile) => profile.id === accountId)?.displayName;
     void startSlpTask({
+      t: localizeUi,
       kind: "auto-post",
       label: localizeUi("ui.slurp.pulse.task.postNow", { name: name ?? "" }),
       accountIds: [accountId],

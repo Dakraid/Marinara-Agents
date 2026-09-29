@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { toast } from "sonner";
-import i18next from "i18next";
 import { slpPutTask } from "./slp-task-list";
 
 /**
@@ -49,18 +48,25 @@ function put(task: SlpTask) {
   useSlpTasks.setState((state) => ({ tasks: slpPutTask(state.tasks, task, Date.now()) }));
 }
 
-const seeInPulse = () => ({
-  label: i18next.t("ui.slurp.pulse.seeInPulse", { defaultValue: "See in Pulse" }),
+type Translate = (key: string, options?: Record<string, unknown>) => string;
+
+const seeInPulse = (t: Translate) => ({
+  label: t("ui.slurp.pulse.seeInPulse", { defaultValue: "See in Pulse" }),
   onClick: openSlpPulse,
 });
 
-export function slpErrorText(error: unknown): string {
+function taskErrorText(error: unknown, t: Translate): string {
   if (error instanceof Error && error.message) return error.message;
   if (typeof error === "string" && error) return error;
-  return i18next.t("ui.slurp.pulse.failedUnknown", { defaultValue: "Slurp could not finish it. Try again." });
+  return t("ui.slurp.pulse.failedUnknown", { defaultValue: "Slurp could not finish it. Try again." });
 }
 
 export type SlpTaskStart<T> = {
+  /**
+   * The caller's translate function. The package bundles its own i18next copy that is never
+   * initialised, so only the one from `useTranslation` knows Slurp's words.
+   */
+  t: Translate;
   kind: string;
   label: string;
   accountIds?: string[];
@@ -90,9 +96,9 @@ export function startSlpTask<T>(input: SlpTaskStart<T>, retryOf?: string): Promi
   const retry = () => void startSlpTask({ ...input, startedToast: false }, id);
   put(base);
   if (input.startedToast !== false)
-    toast(input.startedToast ?? i18next.t("ui.slurp.pulse.started", { defaultValue: "Started. You can keep going." }), {
+    toast(input.startedToast ?? input.t("ui.slurp.pulse.started", { defaultValue: "Started. You can keep going." }), {
       description: input.label,
-      action: seeInPulse(),
+      action: seeInPulse(input.t),
     });
   return input.run().then(
     (value) => {
@@ -102,22 +108,22 @@ export function startSlpTask<T>(input: SlpTaskStart<T>, retryOf?: string): Promi
         const open = outcome.open;
         toast.success(
           input.doneToast ??
-            i18next.t("ui.slurp.pulse.doneToast", { defaultValue: "{{label}}: done", label: input.label }),
+            input.t("ui.slurp.pulse.doneToast", { defaultValue: "{{label}}: done", label: input.label }),
           {
             description: outcome.result,
-            action: open ? { label: open.label, onClick: open.run } : seeInPulse(),
+            action: open ? { label: open.label, onClick: open.run } : seeInPulse(input.t),
           },
         );
       }
       return value;
     },
     (error: unknown) => {
-      put({ ...base, status: "failed", finishedAt: Date.now(), error: slpErrorText(error), retry });
+      put({ ...base, status: "failed", finishedAt: Date.now(), error: taskErrorText(error, input.t), retry });
       toast.error(
-        i18next.t("ui.slurp.pulse.failedToast", { defaultValue: "{{label}}: it did not work", label: input.label }),
+        input.t("ui.slurp.pulse.failedToast", { defaultValue: "{{label}}: it did not work", label: input.label }),
         {
-          description: slpErrorText(error),
-          action: seeInPulse(),
+          description: taskErrorText(error, input.t),
+          action: seeInPulse(input.t),
         },
       );
       return undefined;

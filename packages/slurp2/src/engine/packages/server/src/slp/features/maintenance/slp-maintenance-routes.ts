@@ -225,7 +225,8 @@ export async function slpMaintenanceRoutes(app: FastifyInstance, deps: SlpRouteD
         .map((row) =>
           task({
             id: `follow-up:${row.id}`,
-            kind: "conversation-follow-up",
+            // An opener was never promised; Pulse names it apart (task C).
+            kind: row.type === "opener" ? "conversation-opener" : "conversation-follow-up",
             status: row.status,
             createdAt: row.createdAt,
             updatedAt: row.updatedAt,

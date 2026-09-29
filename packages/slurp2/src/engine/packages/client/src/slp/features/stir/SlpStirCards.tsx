@@ -111,6 +111,7 @@ export function useSlpStirDoIt() {
         ? t("ui.slurp.stir.taskLabelMore", { what: slpStirWhat(t, playable[0]!), count: playable.length - 1 })
         : slpStirWhat(t, playable[0]!);
     void startSlpTask({
+      t,
       kind: "stir-play",
       label,
       accountIds: [...new Set(playable.flatMap((card) => card.who.map((person) => person.id)))],

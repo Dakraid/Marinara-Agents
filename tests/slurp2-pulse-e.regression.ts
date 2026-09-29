@@ -401,11 +401,14 @@ const client = (path: string) => slurp2Source(new URL(`client/src/slp/${path}`, 
   );
   assert.match(
     store,
-    /put\(\{ \.\.\.base, status: "failed", finishedAt: Date\.now\(\), error: slpErrorText\(error\), retry \}\);/u,
+    /put\(\{ \.\.\.base, status: "failed", finishedAt: Date\.now\(\), error: taskErrorText\(error, input\.t\), retry \}\);/u,
   );
   assert.match(store, /return undefined;/u, "a failure never throws at a caller whose sheet is gone");
   assert.match(store, /export const openSlpPulse = \(\) => useSlpTasks\.setState\(\{ pulseOpen: true \}\);/u);
   assert.match(store, /ui\.slurp\.pulse\.seeInPulse/u, "every toast offers See in Pulse");
+  // The bundled i18next copy is never initialised: the store words come from the caller's t.
+  assert.doesNotMatch(store, /from "i18next"|i18next\.t\(/u);
+  assert.equal((store.match(/seeInPulse\(input\.t\)/gu) ?? []).length, 3);
   // The locks named by the user are gone: sheets close on Do it, the sign-up modal can close, the
   // composer is not held by the picture, the plan survives leaving the box.
   const cards = client("features/stir/SlpStirCards.tsx");
@@ -421,6 +424,10 @@ const client = (path: string) => slurp2Source(new URL(`client/src/slp/${path}`, 
   assert.match(box, /kind: "stir-plan",/u);
   assert.match(box, /openSlpStirReadyPlan\(answer, origin\)/u);
   assert.match(client("features/onboarding/slp-onboarding-wizard-model.ts"), /kind: "sign-up",/u);
+  // "Generate now" (Settings › Generate posts): the modal closes on the tap, the run is a task.
+  const refresh = client("features/creators/SlpCreatorRefreshModal.tsx");
+  assert.doesNotMatch(refresh, /closeDisabled/u);
+  assert.match(refresh, /setRefreshModalOpen\(false\);\s+void startSlpTask\(\{\s+t,\s+kind: "generate-posts",/u);
 }
 
 console.log("slurp2 pulse + E regression passed");

@@ -181,6 +181,7 @@ export function useSlurpHomePostActions({
     setGeneratingPostImageIds((current) => [...current, post.id]);
     // B: a (re)draw is a Pulse task; the card keeps its own spinner, a toast opens the post when done.
     void startSlpTask({
+      t: localizeUi,
       kind: "generate-post-image",
       label: localizeUi("ui.slurp.pulse.task.drawPost"),
       accountIds: [post.authorAccountId],

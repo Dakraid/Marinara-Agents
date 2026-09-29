@@ -11,6 +11,7 @@ import {
   Users,
 } from "lucide-react";
 import i18next from "i18next";
+import { useTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { formatRelativeTime } from "../../base/ui/slp-date-time";
@@ -32,9 +33,10 @@ export function PulseAiToday({
   t: Translate;
   onOpenBudget?: () => void;
 }) {
+  const { i18n } = useTranslation();
   const today = slpPulseAiToday(usage);
   if (!today) return null;
-  const compact = new Intl.NumberFormat(i18next.language, { notation: "compact", maximumFractionDigits: 1 });
+  const compact = new Intl.NumberFormat(i18n.language, { notation: "compact", maximumFractionDigits: 1 });
   return (
     <section
       aria-labelledby="slurp-pulse-ai"

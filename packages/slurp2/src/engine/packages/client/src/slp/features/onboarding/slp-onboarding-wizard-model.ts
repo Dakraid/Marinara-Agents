@@ -401,6 +401,7 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
   const finishAsTask = (retryIds?: string[]) => {
     const count = retryIds?.length ?? selected.size;
     return startSlpTask({
+      t,
       kind: "sign-up",
       label: t("ui.slurp.pulse.task.signUp", { count }),
       startedToast: false,

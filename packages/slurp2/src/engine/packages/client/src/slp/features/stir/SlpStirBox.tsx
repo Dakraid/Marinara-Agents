@@ -88,6 +88,7 @@ export function SlpStirBox({
       } else setPlan({ plan: answer, key: Date.now() });
     };
     void startSlpTask({
+      t,
       kind: "stir-plan",
       label: t("ui.slurp.stir.taskPlan", { words: words.length > 48 ? `${words.slice(0, 47)}…` : words }),
       accountIds: about ? [about.id] : [],
@@ -105,6 +106,7 @@ export function SlpStirBox({
           toast.success(t("ui.slurp.stir.planReady"), {
             description: words,
             action: { label: open.label, onClick: open.run },
+            duration: 12_000,
           });
         return { result: t("ui.slurp.stir.planCards", { count: answer.cards.length }), open };
       },
