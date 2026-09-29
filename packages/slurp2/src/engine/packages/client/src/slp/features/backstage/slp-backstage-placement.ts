@@ -121,6 +121,7 @@ export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBac
   postMaxLength: automation("general", "post length", "maximum post length"),
   postShowMoreLength: automation("general", "show more", "post preview length"),
   characterImageInstructions: place("creators", "creators", "creator", "character image instructions"),
+  creatorImageNames: place("creators", "creators", "creator", "image model knows", "character name in pictures"),
   creatorCollabs: place("creators", "creators", "creator", "collabs", "collab partners", "crossover"),
   promptPresets: prompts("prompt presets", "writing presets"),
   promptInstructions: prompts("saved instructions", "reusable instructions"),

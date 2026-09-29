@@ -2207,9 +2207,9 @@
   "ui.slurp.settings.images.enhancePrompts": "Enhance image prompts",
   "ui.slurp.settings.audience.alreadyCreator": "Already a Creator · Open",
   "ui.slurp.settings.images.lookMode": "How Slurp adds the look",
-  "ui.slurp.settings.images.lookModeDetail": "Choose who puts the Creator's appearance into the picture prompt. Each trait goes in once.",
-  "ui.slurp.settings.images.lookModeEnhanceOff": "Enhance image prompts is off, so Slurp inserts the look itself. This choice counts when it is on.",
-  "ui.slurp.settings.images.lookMode.writer": "The prompt writer includes it",
+  "ui.slurp.settings.images.lookModeDetail": "Choose who puts the Creator's appearance into the picture prompt. The post writer only plans the scene; the look comes from the Creator's stored appearance, and each trait goes in once.",
+  "ui.slurp.settings.images.lookModeEnhanceOff": "Enhance image prompts is off, so there is no enhancer to write the look in: Slurp inserts it itself. This choice counts when enhancing is on.",
+  "ui.slurp.settings.images.lookMode.writer": "The enhancer writes it in",
   "ui.slurp.settings.images.lookMode.insert": "Slurp inserts it",
   "ui.slurp.settings.images.lookMode.both": "Both (fill in what's missed)",
   "ui.slurp.settings.images.enhancePromptsDetail": "Before a picture is drawn, the prompt model rewrites its prompt for your image model. It keeps the viewpoint, the Creator's look, the art style and the spice level. Each picture is one AI call, counted under AI budget as Image prompt enhancing.",
@@ -5866,5 +5866,7 @@
   "ui.slurp.steering.relationshipStyles.poly": "Polyamorous",
   "ui.slurp.stir.part.style": "relationships: {{style}}",
   "ui.slurp.stir.cant.mono": "One of them is monogamous and already with someone.",
-  "ui.slurp.ties.moment.joined": "{{name}} joined them"
+  "ui.slurp.ties.moment.joined": "{{name}} joined them",
+  "ui.slurp.settings.creators.imageName": "The image model knows this character",
+  "ui.slurp.settings.creators.imageNameDetail": "Puts their card name at the start of every picture prompt (as a tag for tag models), so a model that learned them draws the real character. Turn it off for an original character, or when their Appearance already has their tag under another spelling."
 }

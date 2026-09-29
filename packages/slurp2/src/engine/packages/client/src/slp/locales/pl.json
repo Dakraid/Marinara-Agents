@@ -582,9 +582,9 @@
   "ui.slurp.settings.images.includeDescriptions": "Używaj wyglądu Twórcy",
   "ui.slurp.settings.images.includeDescriptionsDetail": "Obrazy wiedzą, jak wygląda Twórca: jego wygląd trafia do promptu obrazu. Wyłączone: obrazy używają tylko posta, nawyków obrazów i odniesień do awatara.",
   "ui.slurp.settings.images.lookMode": "Jak Slurp dodaje wygląd",
-  "ui.slurp.settings.images.lookModeDetail": "Wybierz, kto wpisuje wygląd Twórcy do promptu obrazu. Każda cecha trafia tam raz.",
-  "ui.slurp.settings.images.lookModeEnhanceOff": "Ulepszanie promptów obrazów jest wyłączone, więc Slurp sam wstawia wygląd. Ten wybór działa, gdy jest włączone.",
-  "ui.slurp.settings.images.lookMode.writer": "Autor promptu go uwzględnia",
+  "ui.slurp.settings.images.lookModeDetail": "Wybierz, kto wstawia wygląd twórcy do promptu obrazu. Autor posta planuje tylko scenę; wygląd pochodzi z zapisanego wyglądu twórcy, a każda cecha trafia tam raz.",
+  "ui.slurp.settings.images.lookModeEnhanceOff": "Ulepszanie promptów obrazów jest wyłączone, więc nie ma ulepszacza, który wpisze wygląd: Slurp wstawia go sam. Ten wybór działa, gdy ulepszanie jest włączone.",
+  "ui.slurp.settings.images.lookMode.writer": "Ulepszacz je wpisuje",
   "ui.slurp.settings.images.lookMode.insert": "Slurp go wstawia",
   "ui.slurp.settings.images.lookMode.both": "Oba (uzupełnij braki)",
   "ui.slurp.settings.images.enhancePromptsDetail": "Zanim powstanie obraz, model promptów przepisuje prompt dla twojego modelu obrazów. Zachowuje punkt widzenia, wygląd Twórcy, styl i poziom pikanterii. Każdy obraz to jedno wywołanie AI, liczone w budżecie AI jako Ulepszanie promptów obrazów.",
@@ -2510,5 +2510,7 @@
   "ui.slurp.steering.relationshipStyles.poly": "Poliamoryczny",
   "ui.slurp.stir.part.style": "związki: {{style}}",
   "ui.slurp.stir.cant.mono": "Jedna z tych osób jest monogamiczna i już z kimś jest.",
-  "ui.slurp.ties.moment.joined": "{{name}} dołącza"
+  "ui.slurp.ties.moment.joined": "{{name}} dołącza",
+  "ui.slurp.settings.creators.imageName": "Model obrazów zna tę postać",
+  "ui.slurp.settings.creators.imageNameDetail": "Wstawia imię z karty na początek każdego promptu obrazu (dla modeli tagowych jako tag), żeby model, który zna postać, narysował prawdziwą postać. Wyłącz dla własnej postaci albo gdy jej wygląd ma już jej tag w innej pisowni."
 }

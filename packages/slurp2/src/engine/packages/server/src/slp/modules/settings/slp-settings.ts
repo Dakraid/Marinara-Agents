@@ -240,6 +240,8 @@ export const slurpSettingsSchema = z.object({
   /** Whether Professor Mari, the Engine's built-in character, may be picked as a new Creator source. */
   professorMariCreatorSource: z.boolean(),
   characterImageInstructions: z.record(z.string(), z.boolean()),
+  /** Per Creator: false turns off "The image model knows this character" (the card name in picture prompts). */
+  creatorImageNames: z.record(z.string(), z.boolean()),
   /** Saved sets of generation guidance and image prompt, switched from Settings. */
   promptPresets: z
     .array(
@@ -556,6 +558,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   postMaxLength: NOODLER_CONTENT_HARD_MAX_LENGTH,
   postShowMoreLength: 300,
   characterImageInstructions: {},
+  creatorImageNames: {},
   promptPresets: [],
   promptBlocks: {} satisfies SlurpPromptBlockOverrides,
   classicPromptBlocks: {} satisfies SlurpPromptBlockOverrides,

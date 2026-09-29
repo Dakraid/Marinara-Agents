@@ -101,6 +101,8 @@ export type SlurpSettings = {
   postMaxLength: number;
   postShowMoreLength: number;
   characterImageInstructions: Record<string, boolean>;
+  /** Per Creator: false turns off "The image model knows this character". */
+  creatorImageNames: Record<string, boolean>;
   promptPresets: SlurpPromptPreset[];
   promptBlocks: Record<string, SlurpPromptBlockOverride[]>;
   /** Prompt edits from before Classic generation was removed. Source of the Classic prompt preset. */

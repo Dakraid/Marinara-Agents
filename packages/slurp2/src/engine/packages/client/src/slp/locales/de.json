@@ -570,9 +570,9 @@
   "ui.slurp.settings.images.includeDescriptions": "Aussehen der Creator nutzen",
   "ui.slurp.settings.images.includeDescriptionsDetail": "Bilder wissen, wie die Creator aussehen: Das Aussehen kommt in den Bild-Prompt. Aus: Bilder nutzen nur den Beitrag, Bildgewohnheiten und Avatar-Referenzen.",
   "ui.slurp.settings.images.lookMode": "Wie Slurp das Aussehen einfügt",
-  "ui.slurp.settings.images.lookModeDetail": "Wähle, wer das Aussehen der Creator in den Bild-Prompt bringt. Jedes Merkmal kommt nur einmal hinein.",
-  "ui.slurp.settings.images.lookModeEnhanceOff": "„Bild-Prompts verbessern“ ist aus, darum fügt Slurp das Aussehen selbst ein. Diese Wahl zählt, wenn es an ist.",
-  "ui.slurp.settings.images.lookMode.writer": "Der Prompt-Schreiber baut es ein",
+  "ui.slurp.settings.images.lookModeDetail": "Wähle, wer das Aussehen des Creators in den Bild-Prompt bringt. Der Post-Schreiber plant nur die Szene; das Aussehen kommt aus dem gespeicherten Aussehen des Creators, und jedes Merkmal kommt einmal hinein.",
+  "ui.slurp.settings.images.lookModeEnhanceOff": "„Bild-Prompts verbessern“ ist aus, also gibt es keinen Verbesserer, der das Aussehen hineinschreibt: Slurp fügt es selbst ein. Diese Wahl zählt, wenn Verbessern an ist.",
+  "ui.slurp.settings.images.lookMode.writer": "Der Verbesserer schreibt es hinein",
   "ui.slurp.settings.images.lookMode.insert": "Slurp fügt es ein",
   "ui.slurp.settings.images.lookMode.both": "Beides (Fehlendes ergänzen)",
   "ui.slurp.settings.images.enhancePromptsDetail": "Bevor ein Bild entsteht, schreibt das Prompt-Modell den Prompt für dein Bildmodell um. Blickwinkel, Aussehen des Creators, Kunststil und Schärfegrad bleiben erhalten. Jedes Bild ist ein KI-Aufruf und zählt im KI-Budget unter Bild-Prompts verbessern.",
@@ -2476,5 +2476,7 @@
   "ui.slurp.steering.relationshipStyles.poly": "Polyamor",
   "ui.slurp.stir.part.style": "Beziehungen: {{style}}",
   "ui.slurp.stir.cant.mono": "Eine Person ist monogam und schon mit jemandem zusammen.",
-  "ui.slurp.ties.moment.joined": "{{name}} ist dazugekommen"
+  "ui.slurp.ties.moment.joined": "{{name}} ist dazugekommen",
+  "ui.slurp.settings.creators.imageName": "Das Bildmodell kennt diese Figur",
+  "ui.slurp.settings.creators.imageNameDetail": "Setzt ihren Kartennamen an den Anfang jedes Bild-Prompts (bei Tag-Modellen als Tag), damit ein Modell, das sie gelernt hat, die echte Figur zeichnet. Für eine eigene Figur ausschalten, oder wenn ihr Aussehen ihren Tag schon in anderer Schreibweise enthält."
 }

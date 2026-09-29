@@ -180,6 +180,7 @@ export const SLURP_SETTINGS_NOT_RESET: readonly (keyof SlurpSettings)[] = [
   "contentPacks",
   "discoveryTags",
   "characterImageInstructions",
+  "creatorImageNames",
   "onboarding",
   "audienceCharacters",
   "audienceCharacterGroupIds",

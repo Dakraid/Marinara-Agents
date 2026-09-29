@@ -35,4 +35,5 @@ export type SlpCreatorSettingsSectionProps = {
 export const SLP_CREATOR_SETTING_TAB: Record<string, import("./slp-creator-settings-store").SlpCreatorSettingsBlock> = {
   creatorCollabs: "collaborations",
   characterImageInstructions: "production",
+  creatorImageNames: "production",
 };

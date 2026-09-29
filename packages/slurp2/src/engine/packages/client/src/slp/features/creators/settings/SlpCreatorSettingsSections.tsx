@@ -479,6 +479,22 @@ export function SlpCreatorImagesSection({ creator, active }: SlpCreatorSettingsS
           ))}
         </select>
       </Field>
+      {creator.sourceAccountId && settings && (
+        // 0.3.5 (player report): a model that learned a known character draws them from the name.
+        <Toggle
+          settingKey="creatorImageNames"
+          label={t("ui.slurp.settings.creators.imageName", { defaultValue: "The image model knows this character" })}
+          detail={t("ui.slurp.settings.creators.imageNameDetail", {
+            defaultValue:
+              "Puts their card name at the start of every picture prompt (as a tag for tag models), so a model that learned them draws the real character. Turn it off for an original character, or when their Appearance already has their tag under another spelling.",
+          })}
+          value={settings.creatorImageNames?.[creator.id] !== false}
+          onChange={(value) => {
+            const { [creator.id]: _previous, ...rest } = settings.creatorImageNames ?? {};
+            updateSettings.mutate({ creatorImageNames: value ? rest : { ...rest, [creator.id]: false } });
+          }}
+        />
+      )}
       {creator.sourceAccountId && !personaBacked && settings && (
         <Field
           settingKey="characterImageInstructions"

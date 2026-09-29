@@ -1410,9 +1410,9 @@
   "ui.slurp.settings.images.includeDescriptions": "크리에이터 외모 사용",
   "ui.slurp.settings.images.includeDescriptionsDetail": "그림이 크리에이터의 외모를 알게 됩니다. 외모가 이미지 프롬프트에 들어갑니다. 끄면 게시물, 이미지 습관, 아바타 참고만 사용합니다.",
   "ui.slurp.settings.images.lookMode": "Slurp가 외모를 넣는 방법",
-  "ui.slurp.settings.images.lookModeDetail": "누가 크리에이터의 외모를 그림 프롬프트에 넣을지 고르세요. 각 특징은 한 번만 들어갑니다.",
-  "ui.slurp.settings.images.lookModeEnhanceOff": "이미지 프롬프트 향상이 꺼져 있어 Slurp가 직접 외모를 넣습니다. 이 선택은 향상이 켜져 있을 때 적용됩니다.",
-  "ui.slurp.settings.images.lookMode.writer": "프롬프트 작성기가 포함",
+  "ui.slurp.settings.images.lookModeDetail": "크리에이터의 외모를 누가 이미지 프롬프트에 넣을지 고르세요. 게시물 작성 모델은 장면만 계획하고, 외모는 저장된 외모에서 가져오며, 각 특징은 한 번만 들어갑니다.",
+  "ui.slurp.settings.images.lookModeEnhanceOff": "이미지 프롬프트 개선이 꺼져 있어 외모를 넣을 개선기가 없습니다: Slurp가 직접 넣습니다. 이 선택은 개선이 켜져 있을 때 적용됩니다.",
+  "ui.slurp.settings.images.lookMode.writer": "프롬프트 개선기가 넣음",
   "ui.slurp.settings.images.lookMode.insert": "Slurp가 직접 삽입",
   "ui.slurp.settings.images.lookMode.both": "둘 다 (빠진 것만 채우기)",
   "ui.slurp.settings.images.enhancePromptsDetail": "그림을 그리기 전에 프롬프트 모델이 이미지 모델에 맞게 프롬프트를 다시 씁니다. 시점, 크리에이터의 외모, 화풍, 수위는 유지됩니다. 그림 하나당 AI 호출 1회이며 AI 예산의 이미지 프롬프트 향상 항목에 집계됩니다.",
@@ -3291,5 +3291,7 @@
   "ui.slurp.steering.relationshipStyles.poly": "폴리아모리",
   "ui.slurp.stir.part.style": "연애 방식: {{style}}",
   "ui.slurp.stir.cant.mono": "한 명이 모노가미이고 이미 연애 중입니다.",
-  "ui.slurp.ties.moment.joined": "{{name}} 합류"
+  "ui.slurp.ties.moment.joined": "{{name}} 합류",
+  "ui.slurp.settings.creators.imageName": "이미지 모델이 이 캐릭터를 알고 있음",
+  "ui.slurp.settings.creators.imageNameDetail": "카드 이름을 모든 이미지 프롬프트 맨 앞에 넣습니다(태그 모델에는 태그로). 이 캐릭터를 학습한 모델이 진짜 캐릭터를 그리게 합니다. 오리지널 캐릭터이거나, 외모에 이미 다른 표기의 태그가 있다면 끄세요."
 }
