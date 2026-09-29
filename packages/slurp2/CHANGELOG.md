@@ -2,13 +2,14 @@
 
 ## 0.3.5 — 2026-09-29
 
-The Slurp Support desk, polyamory, three inbox fixes. Design: `docs/SUPPORT-DESK.md`.
+Support desk, polyamory, character names in pictures. Design: `docs/SUPPORT-DESK.md`.
 
 - Support is no fan: each Creator gets a desk record (trust, suspicion and the risk of being caught, badges, feature or throttle, favours, a challenge, a contract, a ticket, leaving). Support is always "Slurp Support".
 - Stir gets a Support desk and eight desk actions; Support threads leave persona inboxes. Support chats get offers the Creator answers, perks, warnings, rumours, private notes and a ticket bar.
-- The world clock runs the desk on templates, rewritten in voice on open. New Settings › Stir.
+- The world clock runs the desk on templates. New Settings › Stir.
 - Polyamory (off by default): couples of up to four, polyamorous Creators in several couples; each Creator is monogamous or polyamorous.
-- Fixes: desktop persona switcher hidden by the main column; Inbox badge disagreed with Messages; Inbox listed only three chats.
+- Pictures of a known character lead with their card name ("The image model knows this character", on by default); the enhancer learns who they are. See `docs/IMAGE-PROMPTS.md`.
+- Fixes: persona switcher hidden on desktop; Inbox badge disagreed with Messages; Inbox listed only three chats.
 
 ## 0.3.4 — 2026-09-29
 
