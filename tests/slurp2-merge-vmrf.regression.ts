@@ -17,11 +17,12 @@ const root = "packages/slurp2/src/engine/packages";
 const source = (side: "client" | "server" | "shared", path: string) => slurp2Source(`${root}/${side}/src/slp/${path}`);
 
 // --- F: "Posts per day" = 2 + 1.9 per active Creator, inside 1–96 --------------------------------
-assert.equal(slurpSizedPostsPerDay(0), 2);
+// Pulse + E (orchestrator, 2026-09-29): never below the old default 4, so 0 Creators give 4, not 2.
+assert.equal(slurpSizedPostsPerDay(0), 4);
 assert.equal(slurpSizedPostsPerDay(3), 8);
 assert.equal(slurpSizedPostsPerDay(8), 17, "the sim's 17 at 8 Creators");
 assert.equal(slurpSizedPostsPerDay(100), 96, "never above the setting's ceiling");
-assert.equal(slurpSizedPostsPerDay(-2), 2);
+assert.equal(slurpSizedPostsPerDay(-2), 4);
 // Only a number the player set stays: a fresh install and the shipped 4 grow, another number is theirs.
 assert.equal(slurpPostsPerDayIsCustom({}), false);
 assert.equal(slurpPostsPerDayIsCustom({ postsPerDay: 4 }), false);
@@ -41,9 +42,11 @@ assert.match(
   source("server", "data/creators/slp-creators-storage-2.ts"),
   /input\.postsPerDay !== undefined && input\.postsPerDayCustom === undefined/u,
 );
+// Pulse + E: "Let it grow again" became the fifth Publishing preset "Grows with Creators", whose
+// patch clears the flag (tests/slurp2-pulse-e.regression.ts).
 assert.match(
-  source("client", "features/feed/SlpPublishingPanel.tsx"),
-  /updatePatch\(\{ postsPerDayCustom: false \}\)/u,
+  source("client", "modules/creator/slp-activity-presets.ts"),
+  /if \(preset === "grows"\) return \{ autoPostingScheduleEnabled: true, postsPerDayCustom: false \};/u,
 );
 assert.match(source("client", "features/settings/slp-settings-defaults.ts"), /"postsPerDayCustom",/u);
 

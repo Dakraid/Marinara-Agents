@@ -17,7 +17,7 @@ import { BackstagePageHeader, SettingAnchor } from "../../modules/settings/SlpSe
 import type { SlurpSettings } from "../settings/slp-settings-contract";
 import { useCreatorAccounts } from "../creators/slp-creators-contract";
 import {
-  SLURP_ACTIVITY_PRESETS,
+  SLURP_PUBLISHING_PRESETS,
   slurpActivityPresetPatch,
   slurpPostsPerDayForPreset,
 } from "../../modules/creator/slp-activity-presets";
@@ -111,8 +111,8 @@ export function SlpPublishingPanel(page: SlpBackstagePageProps) {
           <p className="mb-3 max-w-prose text-xs leading-5 text-[var(--slurp-muted)]">
             {t("ui.slurp.settings.publishing.howDetail")}
           </p>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-            {SLURP_ACTIVITY_PRESETS.map((preset) => (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {SLURP_PUBLISHING_PRESETS.map((preset) => (
               <button
                 key={preset}
                 type="button"
@@ -128,9 +128,14 @@ export function SlpPublishingPanel(page: SlpBackstagePageProps) {
                 <span className="mt-1 block text-xs text-[var(--muted-foreground)]">
                   {preset === "manual"
                     ? t("ui.slurp.settings.presets.manualDetail")
-                    : t("ui.slurp.settings.presets.postsDetail", {
-                        count: slurpPostsPerDayForPreset(preset),
-                      })}
+                    : preset === "grows"
+                      ? // F + orchestrator: the default; it replaced the "Grows with your Creators" line below.
+                        t("ui.slurp.settings.presets.growsDetail", {
+                          count: settings.postsPerDayCustom ? recommendedPosts : settings.postsPerDay,
+                        })
+                      : t("ui.slurp.settings.presets.postsDetail", {
+                          count: slurpPostsPerDayForPreset(preset),
+                        })}
                 </span>
               </button>
             ))}
@@ -147,28 +152,6 @@ export function SlpPublishingPanel(page: SlpBackstagePageProps) {
               </span>
             </button>
           </div>
-          {settings.autoPostingScheduleEnabled && (
-            <p
-              className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-5 text-[var(--slurp-muted)]"
-              data-slurp-posts-sizing
-            >
-              {settings.postsPerDayCustom ? (
-                <>
-                  {t("ui.slurp.settings.aiBudget.setByYou", { value: recommendedPosts })}
-                  <button
-                    type="button"
-                    disabled={updateSettings.isPending}
-                    onClick={() => void updatePatch({ postsPerDayCustom: false })}
-                    className="min-h-11 rounded-lg px-2 font-semibold text-[var(--slurp-ink)] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50"
-                  >
-                    {t("ui.slurp.settings.publishing.useRecommended")}
-                  </button>
-                </>
-              ) : (
-                t("ui.slurp.settings.publishing.postsGrow", { count: settings.postsPerDay })
-              )}
-            </p>
-          )}
         </SettingAnchor>
         {(customPaceOpen || activityPreset === null) && (
           <Field

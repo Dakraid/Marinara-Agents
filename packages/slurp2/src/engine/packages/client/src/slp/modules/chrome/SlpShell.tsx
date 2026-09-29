@@ -76,7 +76,11 @@ const SlpBalanceContext = createContext<{ coins: number | null; onOpen?: () => v
  * What a screen may open that belongs to the shell (W): Pulse (Stir's "See all") and the More sheet
  * (Settings, Wallet, switching account), which the own profile's ⋯ opens now that the tab is "Me".
  */
-const SlpShellActionsContext = createContext<{ openPulse?: () => void; openMore?: () => void }>({});
+const SlpShellActionsContext = createContext<{
+  openPulse?: () => void;
+  openMore?: () => void;
+  openSettings?: () => void;
+}>({});
 export const useSlpShellActions = () => useContext(SlpShellActionsContext);
 
 /** The viewer's coin balance inside the shell (null while it loads or outside the shell). */
@@ -651,7 +655,7 @@ export function SlpShell({
               >
                 <SlpBalanceContext.Provider value={{ coins: walletBalance ?? null, onOpen: onOpenWallet }}>
                   <SlpShellActionsContext.Provider
-                    value={{ openPulse, openMore: () => onMobileDrawerOpenChange(true) }}
+                    value={{ openPulse, openMore: () => onMobileDrawerOpenChange(true), openSettings: onOpenSettings }}
                   >
                     {children}
                   </SlpShellActionsContext.Provider>

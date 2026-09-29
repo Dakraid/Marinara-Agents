@@ -1,4 +1,4 @@
-import { ChartNoAxesColumn, Check, Pencil, Plus } from "lucide-react";
+import { ChartNoAxesColumn, Check, ChevronRight, Pencil, Plus, Settings2 } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { cn } from "../../../lib/utils";
@@ -19,14 +19,16 @@ const TIP_AMOUNTS = [5, 10, 25, 50];
  * The profile's action row (design step 3). Another Creator: full-width Subscribe (or Resume
  * subscription while a cancelled one is still paid), then Follow · Message · Tip; subscribed:
  * ✓ Subscribed · Message · Tip. The own Creator: New post · Edit profile · Dashboard (W: the old
- * Studio's own-page half).
+ * Studio's own-page half), then a Settings row on phones (the Me tab; desktop has it in the sidebar).
  */
 export function SlpProfileLeadingActions({
   model,
   onOpenDashboard,
+  onOpenSettings,
 }: {
   model: StageProfileViewModel;
   onOpenDashboard?: () => void;
+  onOpenSettings?: () => void;
 }) {
   const {
     editing,
@@ -48,29 +50,57 @@ export function SlpProfileLeadingActions({
   if (editing) return null;
   if (viewingOwnCreator) {
     return (
-      <div className={cn("grid gap-2", onOpenDashboard ? "grid-cols-3" : "grid-cols-2")}>
-        <SlpButton
-          variant="quiet"
-          onClick={() => openComposer()}
-          className="min-w-0 gap-1.5 whitespace-nowrap px-2 text-[13px]"
-        >
-          <Plus size={16} aria-hidden="true" />
-          {localizeUi("ui.slurp.profile.newPost", { defaultValue: "New post" })}
-        </SlpButton>
-        <SlpButton variant="quiet" onClick={onEdit} className="min-w-0 gap-1.5 whitespace-nowrap px-2 text-[13px]">
-          <Pencil size={15} aria-hidden="true" />
-          {localizeUi("ui.slurp.profile.editProfile", { defaultValue: "Edit profile" })}
-        </SlpButton>
-        {onOpenDashboard && (
+      <div className="space-y-2">
+        <div className={cn("grid gap-2", onOpenDashboard ? "grid-cols-3" : "grid-cols-2")}>
           <SlpButton
-            variant="secondary"
-            onClick={onOpenDashboard}
-            data-slp-dashboard-open=""
+            variant="quiet"
+            onClick={() => openComposer()}
             className="min-w-0 gap-1.5 whitespace-nowrap px-2 text-[13px]"
           >
-            <ChartNoAxesColumn size={15} aria-hidden="true" />
-            {localizeUi("ui.slurp.dashboard.open")}
+            <Plus size={16} aria-hidden="true" />
+            {localizeUi("ui.slurp.profile.newPost", { defaultValue: "New post" })}
           </SlpButton>
+          <SlpButton variant="quiet" onClick={onEdit} className="min-w-0 gap-1.5 whitespace-nowrap px-2 text-[13px]">
+            <Pencil size={15} aria-hidden="true" />
+            {localizeUi("ui.slurp.profile.editProfile", { defaultValue: "Edit profile" })}
+          </SlpButton>
+          {onOpenDashboard && (
+            <SlpButton
+              variant="secondary"
+              onClick={onOpenDashboard}
+              data-slp-dashboard-open=""
+              className="min-w-0 gap-1.5 whitespace-nowrap px-2 text-[13px]"
+            >
+              <ChartNoAxesColumn size={15} aria-hidden="true" />
+              {localizeUi("ui.slurp.dashboard.open")}
+            </SlpButton>
+          )}
+        </div>
+        {/* Pulse + E (user): Settings was only behind ⋯ on the Me tab; a plain row finds it. */}
+        {onOpenSettings && (
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            data-slp-me-settings=""
+            className="flex min-h-12 w-full items-center gap-3 rounded-xl bg-[var(--slurp-surface-raised)] px-3 text-start ring-1 ring-inset ring-[var(--noodle-divider)] transition-[background-color,transform] hover:bg-[var(--accent)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100 @min-[1024px]:hidden"
+          >
+            <Settings2 size={20} className="shrink-0 text-[var(--noodle-accent-foreground)]" aria-hidden="true" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold">
+                {localizeUi("ui.slurp.profile.settingsRow", { defaultValue: "Settings" })}
+              </span>
+              <span className={cn(SLP_TYPE.meta, "block truncate text-[var(--slurp-muted)]")}>
+                {localizeUi("ui.slurp.profile.settingsRowDetail", {
+                  defaultValue: "Posting, AI budget, Creators and your account",
+                })}
+              </span>
+            </span>
+            <ChevronRight
+              size={18}
+              className="shrink-0 text-[var(--slurp-muted)] rtl:-scale-x-100"
+              aria-hidden="true"
+            />
+          </button>
         )}
       </div>
     );

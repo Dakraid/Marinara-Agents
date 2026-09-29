@@ -303,10 +303,12 @@ export const SLURP_TOKENS_PER_CALL_ESTIMATE = 3000;
 
 /**
  * "Posts per day" grows with the Creators too (user decision on F): 2 + 1.9 per active Creator, the
- * sim's sizing (17 at 8 Creators), inside the setting's 1–96. A number the player set stays theirs.
+ * sim's sizing (17 at 8 Creators), never below the old default 4 (orchestrator, 2026-09-29) and at
+ * most the setting's 96. A number the player set stays theirs, low or not.
  */
+export const SLURP_SIZED_POSTS_PER_DAY_MIN = 4;
 export function slurpSizedPostsPerDay(activeCreators: number): number {
-  return Math.min(96, Math.max(1, Math.round(2 + 1.9 * Math.max(0, activeCreators))));
+  return Math.min(96, Math.max(SLURP_SIZED_POSTS_PER_DAY_MIN, Math.round(2 + 1.9 * Math.max(0, activeCreators))));
 }
 
 /**

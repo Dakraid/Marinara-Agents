@@ -421,6 +421,7 @@ export function StageProfileView({
             <SlpProfileLeadingActions
               model={couplePage ? { ...model, onOpenMessages: () => setCoupleWriteOpen(true) } : model}
               onOpenDashboard={viewingOwnCreator ? () => setDashboardOpen(true) : undefined}
+              onOpenSettings={viewingOwnCreator ? shellActions.openSettings : undefined}
             />
           )
         }

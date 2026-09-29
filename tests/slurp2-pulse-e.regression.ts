@@ -15,10 +15,18 @@ import {
   slurpFollowUpRetryAt,
   type ScheduledFollowUp,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-follow-up.ts";
+import {
+  SLURP_ACTIVITY_PRESETS,
+  SLURP_PUBLISHING_PRESETS,
+  slurpActivityPresetForSettings,
+  slurpActivityPresetPatch,
+} from "../packages/slurp2/src/engine/packages/client/src/slp/modules/creator/slp-activity-presets.ts";
+import { slurpSizedPostsPerDay } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-model-budget.ts";
 import { slurp2Source } from "./slurp2-source.ts";
 
 const root = new URL("../packages/slurp2/src/engine/packages/", import.meta.url);
 const server = (path: string) => slurp2Source(new URL(`server/src/slp/${path}`, root));
+const client = (path: string) => slurp2Source(new URL(`client/src/slp/${path}`, root));
 
 // E1. About one AI fan in four is answered, the same one on every retry, text messages only.
 {
@@ -72,7 +80,8 @@ const server = (path: string) => slurp2Source(new URL(`server/src/slp/${path}`, 
 
   // Retry after a failure: 15 minutes at first, half the lateness later, never over 12 hours.
   const now = new Date("2026-09-28T20:00:00.000Z");
-  const wait = (firstDueAt: string | undefined, at: Date) => (Date.parse(slurpFollowUpRetryAt(firstDueAt, at)) - at.getTime()) / 60_000;
+  const wait = (firstDueAt: string | undefined, at: Date) =>
+    (Date.parse(slurpFollowUpRetryAt(firstDueAt, at)) - at.getTime()) / 60_000;
   assert.equal(wait(due, now), 15);
   assert.equal(wait(due, new Date("2026-09-29T02:00:00.000Z")), 180, "six hours late → three hours");
   assert.equal(wait(due, new Date("2026-10-05T20:00:00.000Z")), 720, "a week late → the 12 hour cap");
@@ -86,7 +95,10 @@ const server = (path: string) => slurp2Source(new URL(`server/src/slp/${path}`, 
     reason: "the gym pic she promised",
     context: "",
   };
-  assert.match(formatFollowUpContext(followUp, "a pic after the gym", true), /You are late with this\. Open with a short, casual sorry/u);
+  assert.match(
+    formatFollowUpContext(followUp, "a pic after the gym", true),
+    /You are late with this\. Open with a short, casual sorry/u,
+  );
   assert.doesNotMatch(formatFollowUpContext(followUp, "a pic after the gym", false), /late/u);
   assert.doesNotMatch(formatFollowUpContext({ ...followUp, type: "opener" }, undefined, true), /late/u);
 
@@ -102,11 +114,52 @@ const server = (path: string) => slurp2Source(new URL(`server/src/slp/${path}`, 
   const scheduler = server("features/messages/slp-follow-up-scheduler-service.ts");
   assert.match(scheduler, /isFollowUpLate\(followUp\.firstDueAt \?\? followUp\.scheduledAt\)/u);
   // Dropped only when the thread is gone or closed (and the Creator's own "writes first" switch).
-  assert.match(scheduler, /if \(!thread \|\| thread\.state !== "active"\) \{\s+await messages\.cancelScheduledFollowUp/u);
   assert.match(
-    slurp2Source(new URL("server/src/db/schema/slurp.ts", root)),
-    /firstDueAt: text\("first_due_at"\),/u,
+    scheduler,
+    /if \(!thread \|\| thread\.state !== "active"\) \{\s+await messages\.cancelScheduledFollowUp/u,
   );
+  assert.match(slurp2Source(new URL("server/src/db/schema/slurp.ts", root)), /firstDueAt: text\("first_due_at"\),/u);
+}
+
+// Small items. "Posts per day" grows but never below 4; Publishing's fifth preset "Grows with Creators".
+{
+  assert.deepEqual(
+    [0, 1, 2, 3, 8].map(slurpSizedPostsPerDay),
+    [4, 4, 6, 8, 17],
+    "never below 4, then about 2 more per Creator",
+  );
+  assert.deepEqual(
+    SLURP_PUBLISHING_PRESETS,
+    [...SLURP_ACTIVITY_PRESETS, "grows"],
+    "five presets, onboarding keeps four",
+  );
+  assert.equal(SLURP_ACTIVITY_PRESETS.includes("grows"), false);
+  // Picked while nothing is set by hand, even when the grown number equals a fixed preset.
+  assert.equal(
+    slurpActivityPresetForSettings({ autoPostingScheduleEnabled: true, postsPerDay: 4, postsPerDayCustom: false }),
+    "grows",
+  );
+  assert.equal(
+    slurpActivityPresetForSettings({ autoPostingScheduleEnabled: true, postsPerDay: 4, postsPerDayCustom: true }),
+    "lively",
+  );
+  assert.equal(
+    slurpActivityPresetForSettings({ autoPostingScheduleEnabled: true, postsPerDay: 5, postsPerDayCustom: true }),
+    null,
+  );
+  assert.equal(
+    slurpActivityPresetForSettings({ autoPostingScheduleEnabled: false, postsPerDay: 4, postsPerDayCustom: false }),
+    "manual",
+  );
+  assert.deepEqual(slurpActivityPresetPatch("grows"), { autoPostingScheduleEnabled: true, postsPerDayCustom: false });
+  // A fixed preset sends a number, which the server marks as the player's.
+  assert.deepEqual(slurpActivityPresetPatch("lively"), { autoPostingScheduleEnabled: true, postsPerDay: 4 });
+  const panel = client("features/feed/SlpPublishingPanel.tsx");
+  assert.match(panel, /SLURP_PUBLISHING_PRESETS\.map/u);
+  assert.doesNotMatch(panel, /data-slurp-posts-sizing/u, "the line under the presets is gone");
+  const en = JSON.parse(client("locales/en.json")) as Record<string, string>;
+  assert.equal(en["ui.slurp.settings.presets.grows"], "Grows with Creators");
+  assert.ok(en["ui.slurp.settings.presets.growsDetail_other"]?.includes("{{count}}"));
 }
 
 console.log("slurp2 pulse + E regression passed");
