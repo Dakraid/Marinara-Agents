@@ -48,7 +48,6 @@ import {
   useUpdateCreatorInteraction,
 } from "../features/feed/slp-feed-viewer-hooks";
 import { useSlurpUnreadCount } from "../features/messages/slp-messages-hooks";
-import { useSlurpNotificationUnseenCount } from "../features/notifications/slp-notification-hooks";
 import { useSlurpSettings, useUpdateSlurpSettings } from "../features/settings/slp-settings-hooks";
 import { useActivePersona, usePersonas } from "../../hooks/use-creator-personas";
 import { useSlurpConnections } from "../base/state/slp-host-connections";
@@ -254,7 +253,6 @@ export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onL
   const gatePresentedRef = useRef(false);
   const onboardingPresentedRef = useRef(false);
   const noodlerUnseenCount = useCreatorUnseenCount(viewerPersonaId);
-  const notificationUnseenCountQuery = useSlurpNotificationUnseenCount(viewerPersonaId);
   const unreadCountQuery = useSlurpUnreadCount(viewerPersonaId);
   const markFeedSeenMutation = useMarkCreatorFeedSeen();
   const [frozenFeedSeenAt, setFrozenFeedSeenAt] = useState<Record<string, string | null>>({});
@@ -669,7 +667,6 @@ export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onL
     onboardingPresentedRef,
     viewerQuery,
     noodlerUnseenCount,
-    notificationUnseenCountQuery,
     unreadCountQuery,
     markFeedSeenMutation,
     frozenFeedSeenAt,

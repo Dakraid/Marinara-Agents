@@ -15,6 +15,8 @@ export function useSendSlurpMessage() {
       tip?: { amount: number; note?: string } | null;
       /** Written as Slurp Support (Slurp's staff), not as the persona. */
       asSupport?: boolean;
+      /** Support only: an Offer or a move riding this line (docs/SUPPORT-DESK.md). */
+      desk?: { mode: "offer" | "now"; step: { action: string; input: Record<string, unknown> } };
     }) => api.post<SlurpSendResponse>("/slurp2/messages/send", input),
     // Settled, not success: a request that timed out may still have been stored.
     onSettled: () => invalidateSlurpMessages(queryClient),
@@ -302,6 +304,36 @@ export function useCancelSlurpFollowUp() {
         },
       ),
     // Settled, not success: a request that timed out may still have been stored.
+    onSettled: () => invalidateSlurpMessages(queryClient),
+  });
+}
+
+/** An internal note in a Support thread: the player's own, never shown to the Creator or a model. */
+export function useAddSlurpDeskNote() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { personaId: string; creatorAccountId: string; text: string }) =>
+      api.post<{ message: SlurpMessage }>("/slurp2/slurp/desk/note", input),
+    onSettled: () => invalidateSlurpMessages(queryClient),
+  });
+}
+
+/** Support marks the open ticket resolved; the Creator answers and rates it. */
+export function useResolveSlurpDeskTicket() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { personaId: string; creatorAccountId: string }) =>
+      api.post<{ message: SlurpMessage; replyStatus: string }>("/slurp2/slurp/desk/ticket/resolve", input),
+    onSettled: () => invalidateSlurpMessages(queryClient),
+  });
+}
+
+/** The player, as a Creator they run, answers an Offer AI Support sent them. */
+export function useAnswerSlurpDeskOffer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { personaId: string; messageId: string; answer: "accept" | "decline" }) =>
+      api.post<{ status: string; error: string | null }>("/slurp2/slurp/desk/offer/answer", input),
     onSettled: () => invalidateSlurpMessages(queryClient),
   });
 }

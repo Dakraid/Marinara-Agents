@@ -35,6 +35,9 @@ import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../../modules/chrome/
 import { SlpCreatorFrame } from "./SlpHomeHelpers";
 import { SlurpMessagesView, ThreadRow } from "../../features/messages/SlpMessages";
 
+/** How many conversations the Inbox hub lists before "N more". */
+const INBOX_HUB_THREADS = 12;
+
 function SlurpInboxHub({
   personaId,
   initialActivity,
@@ -236,7 +239,8 @@ function SlurpInboxHub({
               />
             ) : (
               <div className={SLP_GROUP_CLASS}>
-                {visibleThreads.slice(0, 3).map((thread) => (
+                {/* The newest conversations, not just three: the hub is where a chat is picked up again. */}
+                {visibleThreads.slice(0, INBOX_HUB_THREADS).map((thread) => (
                   <ThreadRow
                     key={thread.id}
                     thread={thread}
@@ -244,6 +248,18 @@ function SlurpInboxHub({
                     onOpen={() => onOpenMessages(thread.id)}
                   />
                 ))}
+                {visibleThreads.length > INBOX_HUB_THREADS && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenMessages(null)}
+                    className="min-h-11 w-full px-4 text-start text-[13px] font-semibold text-[var(--slurp-ink)] transition-colors hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)]"
+                  >
+                    {localizeUi("ui.slurp.inbox.moreConversations", {
+                      defaultValue: "{{count}} more conversations",
+                      count: visibleThreads.length - INBOX_HUB_THREADS,
+                    })}
+                  </button>
+                )}
               </div>
             )}
           </section>
@@ -274,7 +290,10 @@ function SlurpInboxView({
   onBack,
   leaveOnExit = false,
   onOpenProfile,
+  onOpenDesk,
 }: {
+  /** The Stir tab's Support desk (docs/SUPPORT-DESK.md). */
+  onOpenDesk?: () => void;
   personaId: string | null;
   ownedCreatorAccountIds: string[];
   composeWithCreatorAccountId: string | null;
@@ -334,6 +353,7 @@ function SlurpInboxView({
             onExit={closeWorkspace}
             exitTitle={localizeUi("ui.slurp.inbox.messagesTitle", { defaultValue: "Messages" })}
             workspace
+            onOpenDesk={onOpenDesk}
           />
         ) : (
           <SlurpInboxHub

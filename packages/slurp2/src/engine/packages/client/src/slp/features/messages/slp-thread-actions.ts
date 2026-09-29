@@ -24,6 +24,7 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
     busy,
     cheat,
     composerRef,
+    composerDesk,
     composerTipAmount,
     composerTipNote,
     creatorReply,
@@ -36,6 +37,7 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
     sendRequest,
     setActiveTipAmount,
     setCommissionPrefill,
+    setComposerDesk,
     setComposerTipAmount,
     setComposerTipNote,
     setDraft,
@@ -227,7 +229,11 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
         // Slurp Support never tips; an attached tip waits in the composer for the persona.
         tip: !asSupport && composerTipAmount > 0 ? { amount: composerTipAmount, note: composerTipNote.trim() } : null,
         ...(asSupport ? { asSupport: true } : {}),
+        ...(asSupport && composerDesk
+          ? { desk: { mode: composerDesk.mode, step: { action: composerDesk.card.action, input: composerDesk.card.input } } }
+          : {}),
       });
+      if (asSupport) setComposerDesk(null);
       setSendRequest(null);
       if (sendOrigin) playSlpSpendMoment(sendOrigin);
       setPending({ content, id: result.message.id, startedAt: optimisticStartedAt });

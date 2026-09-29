@@ -142,6 +142,26 @@ async function milestoneNotice(db: DB, creator: { id: string; displayName: strin
 }
 
 /**
+ * Slurp's trending notice: a post from the last day with at least twice the likes of their usual post
+ * (and ten or more). Once per post.
+ */
+async function trendingNotice(db: DB, creator: { id: string; displayName: string }, desk: SlpSupportDesk, at: Date) {
+  const posts = (await createSlurpStorage(db).listNoodlerPostsByAccount(creator.id, 8)).filter(
+    (post) => post.access !== "draft",
+  );
+  const recent = posts.filter((post) => at.getTime() - Date.parse(post.createdAt) < DAY_MS);
+  const usual = posts.filter((post) => !recent.includes(post));
+  if (!recent.length || usual.length < 3) return desk;
+  const average = usual.reduce((sum, post) => sum + (post.likeCount ?? 0), 0) / usual.length;
+  const best = [...recent].sort((left, right) => (right.likeCount ?? 0) - (left.likeCount ?? 0))[0]!;
+  const key = `trending:${best.id}`;
+  if ((best.likeCount ?? 0) < Math.max(10, average * 2) || desk.noticed.includes(key)) return desk;
+  const title = (best.title || best.content || "").replace(/\s+/gu, " ").slice(0, 60);
+  await notice(db, creator.id, `Slurp: ${creator.displayName}'s post "${title}" is trending.`, { deskTrending: best.id });
+  return { ...desk, noticed: [...desk.noticed, key].slice(-40) };
+}
+
+/**
  * AI Support writes to a Creator the player runs: now and then an offer (a challenge with a reward),
  * which the player answers as that Creator. With "games" on, now and then a quiet throttle.
  */
@@ -219,6 +239,7 @@ export async function advanceSlurpSupportDesk(db: DB, at = new Date()): Promise<
       });
       desk = await applyEvents(db, account, ticked.events, ticked.desk, settings, at);
       if (settings.noticeMilestones) desk = await milestoneNotice(db, account, desk, followers.get(account.id) ?? 0);
+      if (settings.noticeTrending && !desk.pausedAt) desk = await trendingNotice(db, account, desk, at);
       if (yours && settings.toYourCreators && elapsed > 0) desk = await supportToYourCreator(db, account, desk, settings, elapsed, at);
       return desk;
     }).catch((error: unknown) => logger.warn(error, "[slurp-desk] Tick failed for %s", account.id));

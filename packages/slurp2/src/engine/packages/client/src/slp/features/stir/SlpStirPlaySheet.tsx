@@ -5,11 +5,11 @@ import { Avatar, SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { focusRing } from "../../base/chrome/slp-focus";
 import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { SlpButton, SlpChip, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
-import { SlpCreatorChips } from "../../modules/chrome/SlpCreatorChips";
 import { SlpSheet } from "../../modules/chrome/SlpSheet";
 import { Toggle } from "../../modules/settings/SlpSettingsControls";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
 import {
+  SLP_ACTION_META,
   SLP_COUPLE_STEERS,
   SLP_STORYLINE_MOVES,
   type SlpActionName,
@@ -20,13 +20,15 @@ import type { SlpActionPreview, SlpStirView } from "../../../../../shared/src/sl
 import { SlpTextAssist } from "../assist/slp-assist-contract";
 import { useSlurpStirPreview } from "./slp-stir-hooks";
 import { SlpStirCard, useSlpStirDoIt } from "./SlpStirCards";
-import { SLP_STIR_DECK } from "./slp-stir-deck";
+import { SlpStirDeskFields } from "./SlpStirDeskFields";
 import { SlpStirBrandPick } from "./SlpStirBrandPick";
+import { Choice, CreatorPicker } from "./SlpStirFormParts";
+import { slpStirStepOf, type SlpStirForm } from "./slp-stir-steps";
 
 const inputClass = `min-h-11 w-full rounded-xl bg-[var(--slurp-canvas)] px-3 text-base ring-1 ring-inset ring-[var(--slurp-outline)] sm:text-sm ${focusRing}`;
 
 type Creator = SlpStirView["creators"][number];
-type Form = Record<string, string | boolean | string[] | null>;
+type Form = SlpStirForm;
 
 /** What each lever may pick: the pages Slurp posts for write posts and throw shade; anyone can be set up. */
 const needsAutomatic = new Set<SlpActionName>([
@@ -39,70 +41,6 @@ const needsAutomatic = new Set<SlpActionName>([
 
 /** Everyday moments a Creator could post about (0.3.1): one tap fills the idea. */
 const MOMENTS = ["badDay", "workout", "newOutfit", "bigWin", "quietWeek", "tripAway"] as const;
-
-/** Who can be picked, as avatar chips. `max` 1 or 2. */
-function CreatorPicker({
-  creators,
-  picked,
-  onPick,
-  max,
-  label,
-}: {
-  creators: Creator[];
-  picked: string[];
-  onPick: (ids: string[]) => void;
-  max: 1 | 2;
-  label: string;
-}) {
-  // A full pick swaps out the last one, so the Creator the sheet came from stays picked.
-  const toggle = (id: string) =>
-    onPick(
-      picked.includes(id)
-        ? picked.filter((entry) => entry !== id)
-        : picked.length < max
-          ? [...picked, id]
-          : [...picked.slice(0, max - 1), id],
-    );
-  return (
-    <fieldset className="space-y-2">
-      <legend className={cn(SLP_TYPE.meta, "font-semibold")}>{label}</legend>
-      <SlpCreatorChips creators={creators} picked={picked} onToggle={toggle} label={label} />
-    </fieldset>
-  );
-}
-
-/** One choice out of a few, as chips (steer, move, mood, pace, level). */
-function Choice({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string;
-  options: { value: string; label: string }[];
-  value: string | null;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <fieldset className="space-y-2">
-      <legend className={cn(SLP_TYPE.meta, "font-semibold")}>{label}</legend>
-      <div className="flex flex-wrap gap-1.5" role="radiogroup">
-        {options.map((option) => (
-          <SlpChip
-            key={option.value}
-            role="radio"
-            aria-pressed={undefined}
-            aria-checked={value === option.value}
-            selected={value === option.value}
-            onClick={() => onChange(option.value)}
-          >
-            {option.label}
-          </SlpChip>
-        ))}
-      </div>
-    </fieldset>
-  );
-}
 
 /** A picked thing in the world (a couple, a collab, a rivalry, an event, a storyline) as rows. */
 function Pick({
@@ -168,76 +106,6 @@ function Pick({
   );
 }
 
-/** The step a filled form stands for, or null while something is missing. */
-function stepOf(action: SlpActionName, form: Form): Record<string, unknown> | null {
-  const one = (form.who as string[] | undefined)?.[0];
-  const two = form.who as string[] | undefined;
-  const text = typeof form.text === "string" ? form.text.trim() : "";
-  switch (action) {
-    case "add-idea":
-      return one && text ? { accountId: one, text, story: form.story === true } : null;
-    case "write-post":
-      return one ? { accountId: one, ...(text ? { idea: text } : {}), story: form.story === true } : null;
-    case "steer-creator": {
-      if (!one || (!form.mood && !form.pace)) return null;
-      return {
-        accountId: one,
-        ...(form.mood ? { mood: form.mood === "none" ? null : form.mood } : {}),
-        ...(form.pace ? { pace: form.pace } : {}),
-      };
-    }
-    case "set-spice":
-      return one && form.level ? { accountId: one, level: form.level === "default" ? null : form.level } : null;
-    case "set-up-couple":
-      return two?.length === 2 ? { aId: two[0], bId: two[1] } : null;
-    case "suggest-collab":
-      return two?.length === 2 ? { aId: two[0], bId: two[1], happen: form.happen === true } : null;
-    case "offer-brand-deal":
-      return one && form.pick ? { accountId: one, productId: form.pick, happen: form.happen === true } : null;
-    case "start-rivalry":
-      return two?.length === 2 ? { fromId: two[0], toId: two[1], ...(text ? { cause: text } : {}) } : null;
-    case "steer-couple":
-      return form.pick && form.steer ? { coupleId: form.pick, steer: form.steer } : null;
-    case "couple-page":
-      return form.pick ? { coupleId: form.pick, open: form.open !== false } : null;
-    case "push-collab":
-      return form.pick ? { collabId: form.pick } : null;
-    case "cool-rivalry":
-      return form.pick ? { rivalryId: form.pick } : null;
-    case "start-event":
-      return form.pick ? { eventId: form.pick } : null;
-    case "steer-storyline": {
-      if (!form.pick || !form.move) return null;
-      const [accountId, projectId] = String(form.pick).split("|");
-      const needsText = form.move === "insert" || form.move === "label";
-      if (needsText && !text) return null;
-      return { accountId, projectId, move: form.move, ...(needsText ? { text } : {}) };
-    }
-    case "run-audience":
-      return {};
-    case "start-storyline": {
-      const title = typeof form.title === "string" ? form.title.trim() : "";
-      const others = ((form.with as string[] | undefined) ?? []).filter((id) => id !== one);
-      return one && title
-        ? { accountId: one, title, ...(text ? { direction: text } : {}), ...(others.length ? { withIds: others } : {}) }
-        : null;
-    }
-    case "set-tip-goal": {
-      const target = Number(form.target);
-      return one && text && Number.isInteger(target) && target >= 1 ? { accountId: one, label: text, target } : null;
-    }
-    case "new-look":
-      return one && text ? { accountId: one, change: text } : null;
-    case "invent-event": {
-      const name = typeof form.title === "string" ? form.title.trim() : "";
-      const days = Number(form.days ?? 1);
-      return name ? { name, ...(text ? { guidance: text } : {}), days } : null;
-    }
-    default:
-      return null;
-  }
-}
-
 /**
  * Playing one card: who (and a few options), then the preview card, then "Do it". Nothing runs
  * before the tap, and the preview is free.
@@ -247,12 +115,20 @@ export function SlpStirPlaySheet({
   view,
   prefill,
   onClose,
+  onUse,
+  useLabel,
 }: {
   action: SlpActionName | null;
   view: SlpStirView | undefined;
   /** The Creator the sheet came from (the ✦ sheet, a suggestion). */
   prefill?: { who?: string[]; pick?: string };
   onClose: () => void;
+  /**
+   * Hands the checked card back instead of running it: a Support thread attaches it to the next
+   * line as an Offer or a move (docs/SUPPORT-DESK.md).
+   */
+  onUse?: (card: SlpActionPreview) => void;
+  useLabel?: string;
 }) {
   const { t } = useTranslation();
   const textId = useId();
@@ -275,9 +151,10 @@ export function SlpStirPlaySheet({
   const byId = new Map((view?.creators ?? []).map((creator) => [creator.id, creator]));
   const who = (...ids: string[]) => ids.flatMap((id) => (byId.get(id) ? [byId.get(id)!] : []));
   const nameOf = (id: string) => byId.get(id)?.name ?? "";
-  const step = stepOf(action, form);
+  const step = slpStirStepOf(action, form);
   const picked = (form.who as string[] | undefined) ?? [];
-  const deck = SLP_STIR_DECK[action];
+  // Desk levers (0.3.5) are no deck cards, so the action's own metadata says what it acts on.
+  const deck = SLP_ACTION_META[action];
 
   const body: ReactNode[] = [];
   const textField = (label: string, placeholder: string, field?: "idea" | "chapter") =>
@@ -362,6 +239,8 @@ export function SlpStirPlaySheet({
         </SlpButton>
       </div>,
     );
+  if (deck.category === "desk")
+    body.push(<SlpStirDeskFields key="desk" action={action} form={form} set={set} creators={creators} />);
   switch (action) {
     case "add-idea":
       textField(t("ui.slurp.stir.form.idea"), t("ui.slurp.stir.form.ideaPlaceholder"), "idea");
@@ -700,12 +579,18 @@ export function SlpStirPlaySheet({
               <SlpPrimaryButton
                 className="flex-1"
                 disabled={!cards.some((card) => !card.error) || doIt.pending}
-                onClick={(event) =>
-                  doIt.run(cards, "deck", { from: event.currentTarget.getBoundingClientRect(), onDone: onClose })
-                }
+                onClick={(event) => {
+                  const usable = cards.find((card) => !card.error);
+                  if (onUse) {
+                    if (usable) onUse(usable);
+                    onClose();
+                    return;
+                  }
+                  doIt.run(cards, "deck", { from: event.currentTarget.getBoundingClientRect(), onDone: onClose });
+                }}
               >
                 <SlpSparkleGlyph size={16} aria-hidden="true" />
-                {doIt.pending ? t("ui.slurp.stir.doing") : t("ui.slurp.stir.doIt")}
+                {onUse ? (useLabel ?? t("ui.slurp.stir.desk.attach", { defaultValue: "Attach" })) : doIt.pending ? t("ui.slurp.stir.doing") : t("ui.slurp.stir.doIt")}
               </SlpPrimaryButton>
             </>
           ) : (

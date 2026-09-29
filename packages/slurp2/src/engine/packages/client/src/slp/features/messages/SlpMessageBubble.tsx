@@ -13,6 +13,7 @@ import { SlpSheet, SlpSheetItem } from "../../modules/chrome/SlpSheet";
 import { SlpLockedMediaTile } from "../../modules/post/SlpLockedMedia";
 import { playSlpPop, playSlpSpendMoment } from "../../modules/sparkle/SlpSparkle";
 import type { SlurpMessage, SlurpThreadRelationship } from "../../features/messages/slp-messages-contract";
+import { SlpDeskNoteRow, SlpDeskNoticeRow, SlpDeskStaffLabel } from "./SlpDeskRows";
 import { slurpBubbleRadius, type SlurpBubbleGroup } from "./slp-bubble-group";
 import type { SlurpAwayKind } from "./slp-away-kind";
 import { slpErrorText } from "../../base/ui/slp-error-text";
@@ -304,6 +305,9 @@ export function MessageBubble({
   };
   useEffect(() => endPress, []);
 
+  // The Support desk's own rows (docs/SUPPORT-DESK.md): a note only the player sees, Slurp's notices.
+  if (message.metadata?.deskNote === true) return <SlpDeskNoteRow message={message} />;
+  if (message.metadata?.deskNotice === true) return <SlpDeskNoticeRow message={message} />;
   if (message.kind === "tip") {
     // A system line, not a button-like pill: the coin, what happened, the amount.
     return (
@@ -458,9 +462,14 @@ export function MessageBubble({
       )}
     >
       {/* A kept sign-up chat says who spoke when it was not the player (Slurp Support, a helper). */}
-      {typeof message.metadata?.sceneSpeaker === "string" && !joinsAbove && (
-        <p className="px-2 text-xs font-semibold text-[var(--slurp-muted)]">{String(message.metadata.sceneSpeaker)}</p>
-      )}
+      {typeof message.metadata?.sceneSpeaker === "string" &&
+        !joinsAbove &&
+        (message.metadata.supportVoice === true || message.metadata.signUpScene === "support" ? (
+          // Slurp's staff: a headset and "Staff", the same label the sign-up scene gives Support.
+          <SlpDeskStaffLabel name={String(message.metadata.sceneSpeaker)} />
+        ) : (
+          <p className="px-2 text-xs font-semibold text-[var(--slurp-muted)]">{String(message.metadata.sceneSpeaker)}</p>
+        ))}
       {message.kind === "ppv" && (locked || message.imageUrl) && (
         // The shared locked media tile: blurred stage, Sparkle Veil, lock and price. Bought, it is the
         // picture in the same frame, and the veil dissolves off it once.

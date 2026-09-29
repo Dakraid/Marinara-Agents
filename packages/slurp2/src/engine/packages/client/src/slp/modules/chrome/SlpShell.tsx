@@ -401,7 +401,9 @@ export function SlpShell({
             data-slurp-desktop-frame={slurpActive ? resolvedContextualRail : undefined}
           >
             {slurpActive && <SlpCanvasAmbient />}
-            <aside className="hidden w-[14rem] shrink-0 border-r border-[var(--noodle-divider)] bg-[radial-gradient(circle_at_12%_6%,color-mix(in_srgb,var(--noodle-accent)_13%,transparent),transparent_16rem),linear-gradient(180deg,color-mix(in_srgb,var(--slurp-glass)_92%,transparent),color-mix(in_srgb,var(--slurp-glass)_70%,transparent))] shadow-[var(--slurp-highlight)] backdrop-blur-xl @min-[1024px]:flex @min-[1024px]:flex-col">
+            {/* `relative z-20`: the blur makes the rail its own layer, and the main column painted over
+                the persona menu where it reaches past the rail. Above it, the menu shows whole. */}
+            <aside className="relative z-20 hidden w-[14rem] shrink-0 border-r border-[var(--noodle-divider)] bg-[radial-gradient(circle_at_12%_6%,color-mix(in_srgb,var(--noodle-accent)_13%,transparent),transparent_16rem),linear-gradient(180deg,color-mix(in_srgb,var(--slurp-glass)_92%,transparent),color-mix(in_srgb,var(--slurp-glass)_70%,transparent))] shadow-[var(--slurp-highlight)] backdrop-blur-xl @min-[1024px]:flex @min-[1024px]:flex-col">
               <div className="flex min-h-0 flex-1 flex-col px-4 py-4">
                 <div className="mb-5 flex h-12 items-center gap-3 px-2">
                   <SlpLogo

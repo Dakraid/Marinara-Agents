@@ -29,6 +29,8 @@ export function useSlurpThreads(personaId: string | null) {
         unread: number;
         inboundUnread: number;
         attentionCommissions: Array<SlurpCommission & { side: "viewer" | "creator" }>;
+        /** Slurp Support's threads live on the Stir desk; the inbox shows one row for them. */
+        desk?: { threads: number; unread: number; lastMessageAt: string | null };
       }>(`/slurp2/messages/threads?personaId=${encodeURIComponent(personaId!)}`),
     enabled: Boolean(personaId),
     // A creator who is offline answers minutes or hours later, through the scheduler. Without a

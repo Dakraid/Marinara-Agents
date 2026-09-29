@@ -87,6 +87,15 @@ export function renderSlurpHomeDestinations({
         <SlpStirTab
           personaId={viewerPersonaId}
           onOpenTarget={shellProps.onOpenPulseTarget}
+          onOpenSupport={(creatorAccountId) =>
+            onNavigate({
+              mode: "creator",
+              view: "messages",
+              creatorAccountId,
+              asSupport: true,
+              returnTo: { mode: "creator", view: "stir" },
+            })
+          }
           onOpenDashboard={
             myCreatorProfile
               ? () => onNavigate({ mode: "creator", view: "profile", accountId: myCreatorProfile.id, dashboard: true })
@@ -109,6 +118,7 @@ export function renderSlurpHomeDestinations({
           onBack={navigation.returnTo ? () => onNavigate(navigation.returnTo!) : exitToCreatorHub}
           leaveOnExit={Boolean(navigation.returnTo)}
           onOpenProfile={(accountId) => onNavigate({ mode: "creator", view: "profile", accountId })}
+          onOpenDesk={() => onNavigate({ mode: "creator", view: "stir" })}
         />
       </SlpShell>
     );
@@ -270,14 +280,17 @@ function SlpStirTab({
   personaId,
   onOpenDashboard,
   onOpenTarget,
+  onOpenSupport,
 }: {
   personaId: string | null;
   onOpenDashboard?: () => void;
   onOpenTarget?: ComponentProps<typeof SlpStirScreen>["onOpenTarget"];
+  onOpenSupport?: (creatorId: string) => void;
 }) {
   return (
     <SlpStirScreen
       personaId={personaId}
+      onOpenSupport={onOpenSupport}
       onOpenPulse={openSlpPulse}
       onOpenDashboard={onOpenDashboard}
       onOpenTarget={onOpenTarget}

@@ -99,6 +99,32 @@ export function slpStirWhat(t: T, card: SlpActionPreview): string {
         card.input.happen ? "ui.slurp.stir.what.offer-brand-deal.happen" : "ui.slurp.stir.what.offer-brand-deal",
         { ...names, brand: d.brand ?? "", product: d.product ?? "", count: Number(d.fee) || 0 },
       );
+    // The Support desk (0.3.5): the words carry the card's own values.
+    case "grant-perk":
+      return t(`ui.slurp.stir.what.grant-perk.${d.perk}`, {
+        ...names,
+        badge: d.badge ? t(`ui.slurp.desk.badge.${d.badge}`, { defaultValue: String(d.badge) }) : "",
+        count: Number(d.coins ?? d.days) || 0,
+        defaultValue: "Slurp gives {{name}} a perk",
+      });
+    case "set-challenge":
+      return t(`ui.slurp.stir.what.set-challenge.${d.metric}`, {
+        ...names,
+        count: Number(d.count) || 0,
+        days: Number(d.days) || 0,
+        defaultValue: "{{name}} gets a Slurp challenge",
+      });
+    case "offer-contract":
+    case "cash-favour":
+    case "throttle-reach":
+    case "plant-rumour":
+    case "seed-trend":
+    case "warn-creator":
+      return t(`ui.slurp.stir.what.${card.action}`, {
+        ...names,
+        ...Object.fromEntries(Object.entries(d).map(([key, value]) => [key, value ?? ""])),
+        name: names.name || (card.who.length > 1 ? card.who.map((entry) => entry.name).join(", ") : names.name),
+      });
     default:
       return t(`ui.slurp.stir.what.${card.action}`, names);
   }

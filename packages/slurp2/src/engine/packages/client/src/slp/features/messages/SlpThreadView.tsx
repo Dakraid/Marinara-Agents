@@ -38,6 +38,7 @@ import {
 } from "./SlpMessageBubble";
 import { slurpBubbleGroup } from "./slp-bubble-group";
 import { readSlpStirProposal, SlpStirSupportCards } from "../stir/slp-stir-contract";
+import { readSlpDeskOffer, SlpDeskOfferCard } from "./SlpDeskRows";
 import { slurpAwayKind } from "./slp-away-kind";
 import { formatClockTime } from "../../base/ui/slp-date-time";
 
@@ -177,7 +178,12 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
               // Reaching the top is the same request as pressing the button, so it does the same thing.
               if ((olderCount > 0 || nextOlderCursor) && container.scrollTop < 64) void showOlder();
             }}
-            className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-3 py-4"
+            className={cn(
+              "min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-3 py-4",
+              // Slurp Support's thread reads as a staff console, not a fan chat (docs/SUPPORT-DESK.md).
+              relationship?.desk && "bg-[color-mix(in_srgb,var(--slurp-canvas)_90%,var(--slurp-muted))]",
+            )}
+            data-slp-desk-thread={relationship?.desk ? "" : undefined}
           >
             <div className={cn(SLP_THREAD_COLUMN_CLASS, "flex min-h-full min-w-0 flex-col gap-3")}>
               {notLoaded &&
@@ -254,6 +260,14 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
                             fresh={Boolean(openedWith.current && !openedWith.current.has(entry.message.id))}
                             onOpenProfile={model.onOpenProfile}
                           />
+                          {/* The Support desk: an Offer sits under the line that made it (docs/SUPPORT-DESK.md). */}
+                          {readSlpDeskOffer(entry.message) && (
+                            <SlpDeskOfferCard
+                              message={entry.message}
+                              ownsCreator={ownsCreator}
+                              personaId={personaId}
+                            />
+                          )}
                           {/* W: a talk with Slurp Support proposes Stir cards under the Creator's reply. */}
                           {readSlpStirProposal(entry.message.metadata) && (
                             <SlpStirSupportCards

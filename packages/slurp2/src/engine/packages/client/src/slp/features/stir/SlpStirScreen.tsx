@@ -30,6 +30,7 @@ import { useSlurpStir, useSlurpStirDismiss, useSlurpStirPreview } from "./slp-st
 import { SlpStirBox } from "./SlpStirBox";
 import { SlpStirPlanSheet, useSlpStirUndo } from "./SlpStirCards";
 import { SlpStirPlaySheet } from "./SlpStirPlaySheet";
+import { SlpStirDesk } from "./SlpStirDesk";
 import { SLP_STIR_DECK, SLP_STIR_DECK_ORDER } from "./slp-stir-deck";
 import { slpStirDeckNeed, slpStirLiveLever, slpStirPlayTarget } from "./slp-stir-screen-model";
 
@@ -501,8 +502,11 @@ export function SlpStirScreen({
   onOpenPulse,
   onOpenDashboard,
   onOpenTarget,
+  onOpenSupport,
 }: {
   personaId: string | null;
+  /** A Creator's Slurp Support chat, from the Support desk (docs/SUPPORT-DESK.md). */
+  onOpenSupport?: (creatorId: string) => void;
   onOpenPulse?: () => void;
   /** An owed #ad post is your own page's business: its suggestion opens the Dashboard. */
   onOpenDashboard?: () => void;
@@ -569,6 +573,12 @@ export function SlpStirScreen({
                   </Group>
                 </div>
               )}
+              {/* The Support desk sits last: Slurp's own staff work, apart from the world's levers. */}
+              <SlpStirDesk
+                personaId={personaId}
+                onOpenThread={onOpenSupport}
+                onPlay={(action, who) => setPlaying({ action, who })}
+              />
             </>
           ) : null}
         </div>

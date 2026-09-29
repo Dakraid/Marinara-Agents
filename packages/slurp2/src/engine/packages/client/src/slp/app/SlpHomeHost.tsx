@@ -80,7 +80,6 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
     onboardingPresentedRef,
     viewerQuery,
     noodlerUnseenCount,
-    notificationUnseenCountQuery,
     unreadCountQuery,
     frozenFeedSeenAt,
     markFeedShown,
@@ -224,10 +223,9 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
           onDismiss: dismissBudgetNote,
         }
       : undefined,
-    notificationCount:
-      (notificationUnseenCountQuery.data?.unseenCount ?? 0) +
-      (unreadCountQuery.data?.unread ?? 0) +
-      (unreadCountQuery.data?.inboundUnread ?? 0),
+    // Unread messages only, the same number the Inbox's Messages section shows. Adding the Activity
+    // stream's unseen count made the badge disagree with every count on the page it opens.
+    notificationCount: (unreadCountQuery.data?.unread ?? 0) + (unreadCountQuery.data?.inboundUnread ?? 0),
     walletBalanceLabel: activeWalletCoins === null ? undefined : `${activeWalletCoins}`,
     walletBalance: viewerWalletsQuery.data?.[viewerPersonaId ?? ""]?.coins,
     personaBannerUrl: myCreatorProfile?.bannerUrl ?? null,
