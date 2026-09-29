@@ -18,6 +18,13 @@ export const slpStirPlayInput = (input: Record<string, unknown>): Record<string,
 };
 
 /**
+ * A "cannot" line the app words itself (0.3.1), so it reads in the player's language: a step that is
+ * no play at all, or one whose input the preview refused. The planner's own lines stay as written.
+ */
+export const SLP_STIR_CANT_UNKNOWN = "slp-stir:unknown:";
+export const SLP_STIR_CANT_INVALID = "slp-stir:invalid";
+
+/**
  * Split steps into plays and the plain-words reasons the rest cannot happen. An unknown name is said,
  * never dropped in silence.
  */
@@ -29,7 +36,7 @@ export function slpSortStirSteps(steps: readonly SlpStirStep[]): {
   const cant: string[] = [];
   for (const step of steps) {
     if (isSlpStirPlayAction(step.action)) plays.push({ action: step.action, input: slpStirPlayInput(step.input) });
-    else cant.push(`Slurp cannot do "${step.action}" yet.`);
+    else cant.push(`${SLP_STIR_CANT_UNKNOWN}${step.action}`);
   }
   return { plays, cant };
 }

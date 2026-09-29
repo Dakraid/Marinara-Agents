@@ -23,6 +23,7 @@ import {
 } from "../../../../../shared/src/slp/slp-actions.js";
 import { SLP_STEERING_NUDGES_MAX } from "../../../../../shared/src/slp/slp-creator-steering.js";
 import { SLP_SPICE_LEVELS } from "../../../../../shared/src/slp/slp-spice.js";
+import { SLURP_PLATFORM_EVENTS_MAX } from "../../../../../shared/src/slp/slp-platform-events.js";
 import type { SlpActionPreview } from "../../../../../shared/src/slp/slp-stir.js";
 import type { SlpAssistOutcome } from "./slp-assist-service.js";
 
@@ -208,6 +209,51 @@ async function previewOther(
         },
         error,
         summary: `${nameOf}'s storyline "${project.title}": ${move.move}${move.text ? ` (${move.text})` : ""}.`,
+      };
+    }
+    case "start-storyline": {
+      const story = input as SlpActionParsed<"start-storyline">;
+      const others = (await Promise.all((story.withIds ?? []).map((id) => storage.getNoodlerAccountById(id)))).filter(
+        Boolean,
+      ) as Account[];
+      if (others.length !== (story.withIds ?? []).length)
+        return { who, error: "notFound", summary: "One of these Creators does not exist." };
+      const everyone = [account!, ...others.filter((other) => other.id !== account!.id)];
+      const room = await Promise.all(everyone.map((entry) => storage.arcHasRoom(entry.id)));
+      return {
+        who: everyone.map((entry) => ({ id: entry.id, name: entry.displayName, avatarUrl: entry.avatarUrl ?? null })),
+        when: "nextPost",
+        detail: { title: story.title, with: others.map((other) => other.displayName).join(", ") || null },
+        error: ownPage ?? (room.every(Boolean) ? null : "storylinesFull"),
+        summary: `${nameOf} starts a storyline: ${story.title}${others.length ? `, with ${others.map((other) => other.displayName).join(", ")}` : ""}.`,
+      };
+    }
+    case "set-tip-goal": {
+      const goal = input as SlpActionParsed<"set-tip-goal">;
+      const before = await storage.getGoal(goal.accountId);
+      return {
+        who,
+        detail: { label: goal.label, target: goal.target, replaces: before?.label ?? null },
+        summary: `${nameOf} asks their fans for ${goal.target} coins: ${goal.label}.`,
+      };
+    }
+    case "new-look": {
+      const look = input as SlpActionParsed<"new-look">;
+      return {
+        who,
+        when: "nextPost",
+        detail: { change: look.change },
+        summary: `${nameOf}'s look changes from now on: ${look.change}.`,
+      };
+    }
+    case "invent-event": {
+      const event = input as SlpActionParsed<"invent-event">;
+      const settings = await storage.getSettings();
+      return {
+        when: "ongoing",
+        detail: { name: event.name, days: event.days },
+        error: settings.platformEvents.length >= SLURP_PLATFORM_EVENTS_MAX ? "eventsFull" : null,
+        summary: `${event.name} starts now for ${event.days} day(s); every Creator joins in their own way.`,
       };
     }
     case "run-audience": {

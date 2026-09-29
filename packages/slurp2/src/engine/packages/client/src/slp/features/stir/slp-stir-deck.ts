@@ -1,4 +1,8 @@
 import {
+  BookPlus,
+  CalendarPlus,
+  Palette,
+  Target,
   CalendarHeart,
   Flame,
   Handshake,
@@ -43,6 +47,10 @@ const ICONS: Partial<Record<SlpActionName, LucideIcon>> = {
   "start-event": PartyPopper,
   "steer-storyline": BookOpen,
   "run-audience": Megaphone,
+  "start-storyline": BookPlus,
+  "set-tip-goal": Target,
+  "new-look": Palette,
+  "invent-event": CalendarPlus,
 };
 
 export type SlpStirDeckCard = {
@@ -74,13 +82,17 @@ export const SLP_STIR_DECK_ORDER: SlpActionName[] = [
   "suggest-collab",
   "push-collab",
   "offer-brand-deal",
+  "set-tip-goal",
   "start-rivalry",
   "cool-rivalry",
   "add-idea",
   "write-post",
+  "start-storyline",
   "steer-creator",
+  "new-look",
   "set-spice",
   "start-event",
+  "invent-event",
   "steer-storyline",
   "run-audience",
 ];

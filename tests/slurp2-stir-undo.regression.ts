@@ -36,7 +36,12 @@ import {
   type SlpStirLiveInput,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/assist/slp-stir-live.ts";
 import { buildSlpStirPlanMessages } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/assist/slp-stir-plan.ts";
-import { SLP_ACTION_META } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-actions.ts";
+import { SLP_ACTION_META, SLP_ACTIONS } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-actions.ts";
+import {
+  slpStirDeckNeed,
+  slpStirLiveLever,
+  slpStirPlayTarget,
+} from "../packages/slurp2/src/engine/packages/client/src/slp/features/stir/slp-stir-screen-model.ts";
 
 const AT = new Date("2026-10-01T12:00:00Z");
 const STAMP = AT.toISOString();
@@ -272,6 +277,55 @@ const creator = (id: string, fields: Partial<SlurpTieCreator> = {}): SlurpTieCre
   );
   assert.doesNotMatch(user!.content, /preview: True/u, "the planner never hears of a dry run");
   assert.match(system!.content, /Undo in Recent plays/u);
+}
+
+// --- 5. The Stir tab's rules and the new levers --------------------------------------------------------
+{
+  const who = [{ id: "mira", name: "Mira", avatarUrl: null }];
+  const live = (kind: string, state: string, id: string) =>
+    ({ id, kind, who, state, label: null, until: null }) as Parameters<typeof slpStirLiveLever>[0];
+  assert.deepEqual(slpStirLiveLever(live("couple", "dating", "couple:k1")), { action: "steer-couple", pick: "k1" });
+  assert.deepEqual(slpStirLiveLever(live("collab", "asked", "collab:c1")), { action: "push-collab", pick: "c1" });
+  assert.equal(slpStirLiveLever(live("collab", "planned", "collab:c1")), null, "nothing to push once planned");
+  assert.equal(slpStirLiveLever(live("rivalry", "cooling", "rivalry:r1")), null);
+  assert.deepEqual(slpStirLiveLever(live("ideas", "queued", "ideas:mira")), { action: "add-idea", who: ["mira"] });
+  assert.equal(slpStirLiveLever(live("event", "running", "event:slurpcon")), null);
+
+  const empty = { couples: [], collabs: [], rivalries: [], storylines: [], events: [] } as never;
+  assert.equal(slpStirDeckNeed("steer-couple", empty), "couple");
+  assert.equal(slpStirDeckNeed("start-event", empty), "event");
+  assert.equal(slpStirDeckNeed("set-up-couple", empty), null, "a pair needs nothing but two Creators");
+  assert.equal(slpStirDeckNeed("invent-event", empty), null, "a made-up event needs nothing");
+  assert.equal(slpStirDeckNeed("steer-couple", undefined), null, "no view yet: nothing is greyed out");
+
+  const play = {
+    id: "p1",
+    at: STAMP,
+    origin: "deck" as const,
+    undoable: false,
+    undone: false,
+    steps: [{ action: "write-post", input: { accountId: "mira" }, ok: true, error: null, ref: { postId: "post-1" } }],
+  };
+  assert.deepEqual(slpStirPlayTarget(play), { accountId: "mira", postId: "post-1" }, "a written post opens itself");
+  assert.equal(slpStirPlayTarget({ ...play, steps: [{ ...play.steps[0]!, input: { eventId: "e" } }] }), null);
+
+  for (const name of ["start-storyline", "set-tip-goal", "new-look", "invent-event"] as const)
+    assert.ok(SLP_ACTION_META[name].deck && SLP_ACTION_META[name].reversible, `${name} is a deck card with Undo`);
+  assert.deepEqual(SLP_ACTIONS["invent-event"].schema.parse({ name: "Heatwave" }), {
+    name: "Heatwave",
+    guidance: "",
+    days: 1,
+  });
+  assert.equal(SLP_ACTIONS["invent-event"].schema.safeParse({ name: "x", days: 30 }).success, false, "at most 14 days");
+  assert.equal(
+    SLP_ACTIONS["start-storyline"].schema.safeParse({ accountId: "a", title: "t", withIds: ["b", "c", "d"] }).success,
+    false,
+    "a crossover shares at most three Creators",
+  );
+  assert.equal(
+    SLP_ACTIONS["set-tip-goal"].schema.safeParse({ accountId: "a", label: "cam", target: 0 }).success,
+    false,
+  );
 }
 
 console.log("slurp2-stir-undo: ok");

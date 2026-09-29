@@ -71,7 +71,7 @@ backLayer();
   assert.match(sheet, /const showBack = back && !desktop;/u);
   assert.match(client("features/stir/SlpStirPlaySheet.tsx"), /onClose=\{onClose\}\n\s+back\n/u);
   assert.match(client("features/stir/SlpStirCards.tsx"), /onClose=\{close\}\n\s+back\n/u);
-  assert.match(client("features/stir/SlpStirCreatorSheet.tsx"), /onClose=\{close\} back /u);
+  assert.match(client("features/stir/SlpStirCreatorSheet.tsx"), /onClose=\{close\}\s+back\s/u);
   const stir = client("features/stir/SlpStirScreen.tsx");
   assert.match(stir, /<SlpSheet open=\{open\} onClose=\{\(\) => setOpen\(false\)\} title=\{title\} size="full"/u);
   assert.match(stir, /t\("ui\.slurp\.stir\.hint\.more"\)/u);

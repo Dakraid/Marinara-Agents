@@ -10,9 +10,15 @@ import { SlpUsesAiMark, noteSlpAiUseOnce } from "../../modules/chrome/SlpAiMark"
 import { SlpSheet } from "../../modules/chrome/SlpSheet";
 import { playSlpBurst } from "../../modules/sparkle/SlpSparkle";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
-import type { SlpActionPreview, SlpStirOrigin } from "../../../../../shared/src/slp/slp-stir.js";
+import {
+  SLP_STIR_TEXT_MAX,
+  type SlpActionPreview,
+  type SlpStirOrigin,
+  type SlpStirPlan,
+  type SlpStirPlanRequest,
+} from "../../../../../shared/src/slp/slp-stir.js";
 import { SlpCoinText } from "../../modules/coin/SlpCoin";
-import { useSlurpStirPlay } from "./slp-stir-hooks";
+import { useSlurpStirPlan, useSlurpStirPlay } from "./slp-stir-hooks";
 import { SlpStirBrandLogo } from "./SlpStirBrandPick";
 import { openSlpPulse, startSlpTask } from "../../base/state/slp-task-store";
 
@@ -76,6 +82,18 @@ export function slpStirWhat(t: T, card: SlpActionPreview): string {
       return t("ui.slurp.stir.what.start-event", { name: d.name, count: Number(d.days) || 1 });
     case "start-rivalry":
       return t("ui.slurp.stir.what.start-rivalry", { ...names, cause: d.cause ?? "" });
+    case "start-storyline":
+      return t(d.with ? "ui.slurp.stir.what.start-storyline.with" : "ui.slurp.stir.what.start-storyline", {
+        ...names,
+        title: d.title ?? "",
+        others: d.with ?? "",
+      });
+    case "set-tip-goal":
+      return t("ui.slurp.stir.what.set-tip-goal", { ...names, label: d.label ?? "", count: Number(d.target) || 0 });
+    case "new-look":
+      return t("ui.slurp.stir.what.new-look", { ...names, change: d.change ?? "" });
+    case "invent-event":
+      return t("ui.slurp.stir.what.invent-event", { name: d.name ?? "", count: Number(d.days) || 1 });
     case "offer-brand-deal":
       return t(
         card.input.happen ? "ui.slurp.stir.what.offer-brand-deal.happen" : "ui.slurp.stir.what.offer-brand-deal",
@@ -86,6 +104,30 @@ export function slpStirWhat(t: T, card: SlpActionPreview): string {
   }
 }
 
+/** A "cannot" line: the planner's own words, or a code the server sends for the app to word (0.3.1). */
+export function slpStirCantLine(t: T, line: string): string {
+  if (line.startsWith("slp-stir:unknown:")) return t("ui.slurp.stir.cantLine.unknown");
+  if (line === "slp-stir:invalid") return t("ui.slurp.stir.cantLine.invalid");
+  return line;
+}
+
+/**
+ * One Undo for a play, with its toast. `mutateAsync`, so the answer shows even after the sheet or
+ * tab that played it is gone (a per-call callback would not run once it unmounted).
+ */
+export function useSlpStirUndo() {
+  const { t } = useTranslation();
+  const { undo } = useSlurpStirPlay();
+  return {
+    run: (id: string) =>
+      undo.mutateAsync(id).then(
+        ({ kept }) => void toast(kept ? t("ui.slurp.stir.undoneKept", { count: kept }) : t("ui.slurp.stir.undone")),
+        (error: unknown) => void toast.error(errorMessage(error)),
+      ),
+    pending: undo.isPending,
+  };
+}
+
 /**
  * The Burst, the toast, and one Undo for everything that can be taken back. Task B: the play is a
  * Pulse task, so the sheet closes at once (`onDone` runs on the tap) and the player keeps going; a
@@ -93,7 +135,8 @@ export function slpStirWhat(t: T, card: SlpActionPreview): string {
  */
 export function useSlpStirDoIt() {
   const { t } = useTranslation();
-  const { play, undo } = useSlurpStirPlay();
+  const { play } = useSlurpStirPlay();
+  const undo = useSlpStirUndo();
   const run = (
     cards: SlpActionPreview[],
     origin: SlpStirOrigin,
@@ -119,20 +162,22 @@ export function useSlpStirDoIt() {
       doneToast: false,
       run: async () => {
         const answer = await play.mutateAsync({ steps, origin, supportMessageId: options.supportMessageId });
-        const failed = answer.results.filter((result) => !result.ok);
-        // Nothing ran: a failed task in Pulse, with why and Try again.
-        if (failed.length === answer.results.length) throw new Error(failed[0]?.error ?? t("ui.slurp.stir.failed"));
-        return { ...answer, failed };
+        return { ...answer, failed: answer.results.filter((result) => !result.ok) };
       },
       done: ({ play: done, results, failed }) => {
+        const serverId = `play:${done.id}`;
+        // Nothing ran: the play is in the ledger anyway, so Pulse's own row says it failed and why.
+        if (failed.length === results.length) {
+          toast.error(t("ui.slurp.stir.failed"), {
+            description: failed[0]?.error ?? undefined,
+            action: { label: t("ui.slurp.pulse.seeInPulse", { defaultValue: "See in Pulse" }), onClick: openSlpPulse },
+          });
+          return { result: failed[0]?.error ?? t("ui.slurp.stir.failed"), serverId };
+        }
         const undoAction = done.undoable
           ? {
               label: t("ui.slurp.wallet.undo", { defaultValue: "Undo" }),
-              onClick: () =>
-                undo.mutate(done.id, {
-                  onSuccess: () => toast(t("ui.slurp.stir.undone")),
-                  onError: (error) => toast.error(errorMessage(error)),
-                }),
+              onClick: () => void undo.run(done.id),
             }
           : undefined;
         const detail = failed.length
@@ -145,7 +190,7 @@ export function useSlpStirDoIt() {
           duration: undoAction ? 8000 : 4000,
         });
         const first = playable[0]?.who[0]?.id;
-        return { result: detail, target: first ? { accountId: first } : undefined };
+        return { result: detail, target: first ? { accountId: first } : undefined, serverId };
       },
     });
   };
@@ -261,16 +306,19 @@ export function SlpStirCard({ card, onRemove }: { card: SlpActionPreview; onRemo
 
 /**
  * "Here is the plan": the preview cards, with ✕ to take one out, the lines Slurp cannot do, a
- * question when the words were unclear, and "Do it". Nothing runs before the tap.
+ * question when the words were unclear (answered right here, 0.3.1), and "Do it". Nothing runs
+ * before the tap.
  */
 export function SlpStirPlanSheet({
   open,
   onClose,
   cards: initial,
-  cant = [],
-  question = null,
+  cant: initialCant = [],
+  question: initialQuestion = null,
   origin,
   onChangeWords,
+  onPlayed,
+  request,
   intro,
 }: {
   open: boolean;
@@ -281,16 +329,43 @@ export function SlpStirPlanSheet({
   origin: SlpStirOrigin;
   /** Back to the words, kept (the box). */
   onChangeWords?: () => void;
+  /** "Do it" ran (the box lets its words go). */
+  onPlayed?: () => void;
+  /** What was asked, so an answer to the planner's question can plan again. */
+  request?: Omit<SlpStirPlanRequest, "followUp">;
   intro?: string;
 }) {
   const { t } = useTranslation();
+  const [current, setCurrent] = useState<SlpStirPlan>({
+    cards: initial,
+    cant: initialCant,
+    question: initialQuestion,
+  });
   const [removed, setRemoved] = useState<Set<number>>(new Set());
-  const cards = initial.filter((_, index) => !removed.has(index));
+  const [answer, setAnswer] = useState("");
+  const planner = useSlurpStirPlan();
+  const cards = current.cards.filter((_, index) => !removed.has(index));
   const playable = cards.filter((card) => !card.error);
   const doIt = useSlpStirDoIt();
+  const question = current.question;
   const close = () => {
     setRemoved(new Set());
     onClose();
+  };
+  const reply = () => {
+    const words = answer.trim();
+    if (!request || !question || !words || planner.isPending) return;
+    noteSlpAiUseOnce(t);
+    planner.mutate(
+      { ...request, followUp: { question, answer: words } },
+      {
+        onSuccess: (next) => {
+          setRemoved(new Set());
+          setAnswer("");
+          setCurrent(next);
+        },
+      },
+    );
   };
   return (
     <SlpSheet
@@ -306,9 +381,15 @@ export function SlpStirPlanSheet({
             </SlpButton>
           )}
           <SlpPrimaryButton
-            disabled={!playable.length || doIt.pending}
+            disabled={!playable.length || doIt.pending || planner.isPending}
             onClick={(event) =>
-              doIt.run(cards, origin, { from: event.currentTarget.getBoundingClientRect(), onDone: close })
+              doIt.run(cards, origin, {
+                from: event.currentTarget.getBoundingClientRect(),
+                onDone: () => {
+                  onPlayed?.();
+                  close();
+                },
+              })
             }
             className="flex-1"
           >
@@ -321,16 +402,46 @@ export function SlpStirPlanSheet({
       <div className="space-y-3 px-2 pb-2" data-slp-stir-plan>
         {intro && <p className={cn(SLP_TYPE.meta, "px-1 text-[var(--slurp-muted)]")}>{intro}</p>}
         {question && (
-          <p className={cn(SLP_TYPE.body, "rounded-2xl bg-[var(--slurp-tint)] p-3 font-semibold")}>{question}</p>
+          <div className="space-y-2 rounded-2xl bg-[var(--slurp-tint)] p-3" data-slp-stir-question>
+            <p id="slp-stir-question" className={cn(SLP_TYPE.body, "font-semibold")}>
+              {question}
+            </p>
+            {request && (
+              <form
+                className="flex gap-2"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  reply();
+                }}
+              >
+                <input
+                  value={answer}
+                  maxLength={SLP_STIR_TEXT_MAX}
+                  aria-labelledby="slp-stir-question"
+                  placeholder={t("ui.slurp.stir.answerPlaceholder")}
+                  onChange={(event) => setAnswer(event.target.value)}
+                  className="min-h-11 min-w-0 flex-1 rounded-xl bg-[var(--slurp-canvas)] px-3 text-base outline-none ring-1 ring-inset ring-[var(--slurp-outline)] focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] sm:text-sm"
+                />
+                <SlpPrimaryButton type="submit" disabled={!answer.trim() || planner.isPending} className="shrink-0">
+                  {planner.isPending ? t("ui.slurp.stir.planning") : t("ui.slurp.stir.answer")}
+                </SlpPrimaryButton>
+              </form>
+            )}
+            {planner.error && !planner.isPending && (
+              <p role="alert" className={cn(SLP_TYPE.meta, "text-[var(--slurp-danger)]")}>
+                {errorMessage(planner.error)}
+              </p>
+            )}
+          </div>
         )}
-        {initial.length > 0 ? (
+        {current.cards.length > 0 ? (
           <ul className="space-y-2">
-            {initial.map((card, index) =>
+            {current.cards.map((card, index) =>
               removed.has(index) ? null : (
                 <SlpStirCard
                   key={`${card.action}:${index}`}
                   card={card}
-                  onRemove={() => setRemoved((current) => new Set(current).add(index))}
+                  onRemove={() => setRemoved((value) => new Set(value).add(index))}
                 />
               ),
             )}
@@ -340,10 +451,13 @@ export function SlpStirPlanSheet({
             <p className={cn(SLP_TYPE.body, "px-1 text-[var(--slurp-muted)]")}>{t("ui.slurp.stir.noCards")}</p>
           )
         )}
-        {cant.map((line) => (
-          <p key={line} className={cn(SLP_TYPE.meta, "flex items-start gap-1.5 px-1 text-[var(--slurp-muted)]")}>
+        {current.cant.map((line, index) => (
+          <p
+            key={`${index}:${line}`}
+            className={cn(SLP_TYPE.meta, "flex items-start gap-1.5 px-1 text-[var(--slurp-muted)]")}
+          >
             <CircleAlert size={14} aria-hidden="true" className="mt-0.5 shrink-0" />
-            {line}
+            {slpStirCantLine(t, line)}
           </p>
         ))}
         {playable.length > 0 && (

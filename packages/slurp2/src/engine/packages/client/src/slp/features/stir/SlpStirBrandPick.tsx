@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { Avatar, SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { Toggle } from "../../modules/settings/SlpSettingsControls";
+import { errorMessage } from "../../modules/settings/slp-backstage-format";
 import { useSlurpStirBrands } from "./slp-stir-hooks";
 
 /** The brand's logo, or the initials of its first two words (the feed ad's avatar). */
@@ -36,6 +37,10 @@ export function SlpStirBrandPick({
       <legend className={cn(SLP_TYPE.meta, "font-semibold")}>{t("ui.slurp.stir.form.product")}</legend>
       {brands.isLoading ? (
         <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>{t("ui.slurp.stir.looking")}</p>
+      ) : brands.isError ? (
+        <p role="alert" className={cn(SLP_TYPE.meta, "text-[var(--slurp-danger)]")}>
+          {errorMessage(brands.error)}
+        </p>
       ) : brands.data && !brands.data.adsOn ? (
         <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>{t("ui.slurp.stir.cant.adsOff")}</p>
       ) : (

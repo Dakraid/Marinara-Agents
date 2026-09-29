@@ -31,6 +31,11 @@ export type SlpTask = {
   /** A result only its screen can show (a finished plan): opens it again. */
   open?: { label: string; run: () => void };
   retry?: () => void;
+  /**
+   * The server keeps its own Pulse row for this work (a Stir play's `play:<id>`), which lasts past a
+   * reload: the client's copy goes once it is finished, so Pulse shows it once (0.3.1).
+   */
+  serverId?: string;
 };
 
 type SlpTaskState = {
@@ -103,7 +108,7 @@ export type SlpTaskStart<T> = {
   accountIds?: string[];
   run: () => Promise<T>;
   /** The result line and where a tap goes once it worked. */
-  done?: (value: T) => Pick<SlpTask, "result" | "target" | "open"> | void;
+  done?: (value: T) => Pick<SlpTask, "result" | "target" | "open" | "serverId"> | void;
   /** The started toast, or false for none (the caller already shows the start). */
   startedToast?: string | false;
   /** The done toast; default "<label> is done". False: the caller shows its own (an Undo toast). */
@@ -134,7 +139,8 @@ export function startSlpTask<T>(input: SlpTaskStart<T>, retryOf?: string): Promi
   return input.run().then(
     (value) => {
       const outcome = input.done?.(value) ?? {};
-      put({ ...base, ...outcome, status: "done", finishedAt: Date.now() });
+      if (outcome.serverId) dismissSlpTask(id);
+      else put({ ...base, ...outcome, status: "done", finishedAt: Date.now() });
       if (input.doneToast !== false) {
         const open = outcome.open;
         toast.success(

@@ -27,8 +27,12 @@ import { isSlurpTieLever, runSlurpTieLever } from "../projects/slp-projects-cont
 import {
   readSlpStirWorld,
   runSlpRunAudience,
+  runSlpInventEvent,
+  runSlpNewLook,
   runSlpSetSpice,
+  runSlpSetTipGoal,
   runSlpStartEvent,
+  runSlpStartStoryline,
   runSlpSteerStoryline,
   type SlpActionUndo,
 } from "./slp-stir-levers.js";
@@ -100,6 +104,14 @@ async function dispatch(
       return runSlpRunAudience(db);
     case "set-spice":
       return runSlpSetSpice(db, input as SlpActionParsed<"set-spice">);
+    case "start-storyline":
+      return runSlpStartStoryline(db, input as SlpActionParsed<"start-storyline">);
+    case "set-tip-goal":
+      return runSlpSetTipGoal(db, input as SlpActionParsed<"set-tip-goal">);
+    case "new-look":
+      return runSlpNewLook(db, input as SlpActionParsed<"new-look">);
+    case "invent-event":
+      return runSlpInventEvent(db, input as SlpActionParsed<"invent-event">);
     case "write-text":
       return runSlpAssistText(db, { ...(input as SlpActionParsed<"write-text">), mode: "write" });
     case "improve-text":

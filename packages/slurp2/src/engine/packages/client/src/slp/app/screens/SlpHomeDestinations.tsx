@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SlpShell } from "../../modules/chrome/SlpShell";
 import { openSlpPulse } from "../../base/state/slp-task-store";
@@ -85,6 +86,7 @@ export function renderSlurpHomeDestinations({
       <SlpShell {...shellProps}>
         <SlpStirTab
           personaId={viewerPersonaId}
+          onOpenTarget={shellProps.onOpenPulseTarget}
           onOpenDashboard={
             myCreatorProfile
               ? () => onNavigate({ mode: "creator", view: "profile", accountId: myCreatorProfile.id, dashboard: true })
@@ -263,7 +265,22 @@ export function renderSlurpHomeDestinations({
   return null;
 }
 
-/** The Stir tab inside the shell: "See all" opens the shell's Pulse sheet. */
-function SlpStirTab({ personaId, onOpenDashboard }: { personaId: string | null; onOpenDashboard?: () => void }) {
-  return <SlpStirScreen personaId={personaId} onOpenPulse={openSlpPulse} onOpenDashboard={onOpenDashboard} />;
+/** The Stir tab inside the shell: "See all" opens the shell's Pulse sheet; a recent play opens what it touched. */
+function SlpStirTab({
+  personaId,
+  onOpenDashboard,
+  onOpenTarget,
+}: {
+  personaId: string | null;
+  onOpenDashboard?: () => void;
+  onOpenTarget?: ComponentProps<typeof SlpStirScreen>["onOpenTarget"];
+}) {
+  return (
+    <SlpStirScreen
+      personaId={personaId}
+      onOpenPulse={openSlpPulse}
+      onOpenDashboard={onOpenDashboard}
+      onOpenTarget={onOpenTarget}
+    />
+  );
 }

@@ -6,9 +6,10 @@ import { Avatar, SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { SlpUsesAiMark } from "../../modules/chrome/SlpAiMark";
 import { SlpSheet } from "../../modules/chrome/SlpSheet";
 import type { SlpActionName } from "../../../../../shared/src/slp/slp-actions.js";
-import type { SlpStirPlan } from "../../../../../shared/src/slp/slp-stir.js";
+import type { SlpStirPlan, SlpStirPlanRequest } from "../../../../../shared/src/slp/slp-stir.js";
+import { SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SlpCreatorSteeringCard } from "../creators/slp-creators-contract";
-import { useSlpStirSheet } from "../../base/state/slp-stir-sheet-store";
+import { openSlpStir, setSlpStirDraft, useSlpStirSheet } from "../../base/state/slp-stir-sheet-store";
 import { useSlurpStir } from "./slp-stir-hooks";
 import { SlpStirBox } from "./SlpStirBox";
 import { SlpStirPlanSheet } from "./SlpStirCards";
@@ -23,6 +24,8 @@ const QUICK: SlpActionName[] = [
   "suggest-collab",
   "start-rivalry",
   "steer-creator",
+  "start-storyline",
+  "new-look",
   "steer-storyline",
 ];
 
@@ -43,30 +46,46 @@ export function SlpStirCreatorSheet({
   const { target, close } = useSlpStirSheet();
   // Kept after the sheet closes, so the plan and card sheets it opens stay about them.
   const [about, setAbout] = useState(target);
+  const [steerOpen, setSteerOpen] = useState(false);
   useEffect(() => {
-    if (target) setAbout(target);
+    if (!target) return;
+    setAbout(target);
+    // Each Creator's sheet opens as it starts, not as the last one was left.
+    setSteerOpen(false);
   }, [target]);
   // Keyed on `about`, not `target`: a quick card's play sheet closes this sheet (one overlay at a
   // time), and a "none" key would leave the play sheet with no Creators, couples or storylines.
   const query = useSlurpStir(about ? personaId : null);
   const view = query.data;
   const [playing, setPlaying] = useState<SlpActionName | null>(null);
-  const [plan, setPlan] = useState<{ plan: SlpStirPlan; key: number } | null>(null);
-  const [steerOpen, setSteerOpen] = useState(false);
+  const [plan, setPlan] = useState<{
+    plan: SlpStirPlan;
+    key: number;
+    request: Omit<SlpStirPlanRequest, "followUp">;
+  } | null>(null);
   const creator = view?.creators.find((entry) => entry.id === about?.creatorId);
   const name = creator?.name ?? "";
   const hasStoryline = Boolean(view?.storylines.some((story) => story.accountId === about?.creatorId));
   const quick = QUICK.filter((action) =>
     action === "steer-storyline"
       ? hasStoryline
-      : action === "add-idea" || action === "write-post" || action === "steer-creator"
+      : action === "add-idea" || action === "write-post" || action === "steer-creator" || action === "start-storyline"
         ? creator?.automatic
         : true,
   );
   return (
     <>
-      <SlpSheet open={Boolean(target)} onClose={close} back title={t("ui.slurp.stir.sheetTitle", { name })}>
+      <SlpSheet
+        open={Boolean(target)}
+        onClose={close}
+        back
+        title={name ? t("ui.slurp.stir.sheetTitle", { name }) : t("ui.slurp.stir.title")}
+      >
         <div className="space-y-4 px-2 pb-2" data-slp-stir-sheet>
+          {query.isPending && <SlpSkeleton shape="card" count={2} label={t("ui.slurp.state.loading")} />}
+          {query.isError && !view && (
+            <SlpErrorState title={t("ui.slurp.stir.loadError")} onRetry={() => void query.refetch()} />
+          )}
           {creator && (
             <div className="flex items-center gap-3 px-1">
               <Avatar account={{ displayName: creator.name, avatarUrl: creator.avatarUrl }} size="md" />
@@ -80,33 +99,36 @@ export function SlpStirCreatorSheet({
               names={(view?.creators ?? []).filter((entry) => !entry.couplePage).map((entry) => entry.name)}
               about={{ id: creator.id, name: creator.name }}
               postId={target?.postId}
-              onPlan={(answer) => setPlan({ plan: answer, key: Date.now() })}
+              personaId={personaId}
+              onPlan={(answer, request) => setPlan({ plan: answer, key: Date.now(), request })}
             />
           )}
-          <section aria-labelledby="slp-stir-quick" className="space-y-2">
-            <h3 id="slp-stir-quick" className={cn(SLP_TYPE.title, "px-1")}>
-              {t("ui.slurp.stir.quick", { name })}
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              {quick.map((action) => {
-                const Icon = SLP_STIR_DECK[action].icon;
-                return (
-                  <button
-                    key={action}
-                    type="button"
-                    onClick={() => setPlaying(action)}
-                    className="flex min-h-12 items-center gap-2.5 rounded-2xl bg-[var(--slurp-canvas)] px-3 py-2 text-start ring-1 ring-inset ring-[var(--slurp-outline)] transition-colors hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none [&_svg]:!text-[var(--slurp-ink)]"
-                  >
-                    <Icon size={18} aria-hidden="true" className="shrink-0" />
-                    <span className={cn(SLP_TYPE.body, "min-w-0 flex-1 font-semibold")}>
-                      {t(`ui.slurp.stir.card.${action}.title`)}
-                    </span>
-                    {SLP_STIR_DECK[action].ai && <SlpUsesAiMark />}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
+          {view && (
+            <section aria-labelledby="slp-stir-quick" className="space-y-2">
+              <h3 id="slp-stir-quick" className={cn(SLP_TYPE.title, "px-1")}>
+                {t("ui.slurp.stir.quick", { name })}
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                {quick.map((action) => {
+                  const Icon = SLP_STIR_DECK[action].icon;
+                  return (
+                    <button
+                      key={action}
+                      type="button"
+                      onClick={() => setPlaying(action)}
+                      className="flex min-h-12 items-center gap-2.5 rounded-2xl bg-[var(--slurp-canvas)] px-3 py-2 text-start ring-1 ring-inset ring-[var(--slurp-outline)] transition-colors hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none [&_svg]:!text-[var(--slurp-ink)]"
+                    >
+                      <Icon size={18} aria-hidden="true" className="shrink-0" />
+                      <span className={cn(SLP_TYPE.body, "min-w-0 flex-1 font-semibold")}>
+                        {t(`ui.slurp.stir.card.${action}.title`)}
+                      </span>
+                      {SLP_STIR_DECK[action].ai && <SlpUsesAiMark />}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
           {creator?.automatic && !creator.couplePage && (
             <section className="rounded-2xl bg-[var(--slurp-surface-raised)] shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
               <button
@@ -164,9 +186,15 @@ export function SlpStirCreatorSheet({
         key={plan?.key ?? 0}
         open={Boolean(plan)}
         onClose={() => setPlan(null)}
+        onChangeWords={() => {
+          setPlan(null);
+          if (about) openSlpStir(about);
+        }}
+        onPlayed={() => about && setSlpStirDraft(`creator:${about.creatorId}`, "")}
         cards={plan?.plan.cards ?? []}
         cant={plan?.plan.cant ?? []}
         question={plan?.plan.question ?? null}
+        request={plan?.request}
         origin="sheet"
       />
     </>

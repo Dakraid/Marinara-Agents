@@ -30,7 +30,7 @@ import { readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ti
 import { slurpDealOwesPost } from "../../modules/economy/slp-brand-deals.js";
 import { buildSlpStirPlanMessages, readSlpStirPlanAnswer } from "../../modules/assist/slp-stir-plan.js";
 import { slpStirLive, slpStirSuggestions } from "../../modules/assist/slp-stir-live.js";
-import { slpRunStirSteps, slpSortStirSteps } from "../../modules/assist/slp-stir-play.js";
+import { SLP_STIR_CANT_INVALID, slpRunStirSteps, slpSortStirSteps } from "../../modules/assist/slp-stir-play.js";
 import {
   listSlurpBrandCatalog,
   loadSlurpTieCreators,
@@ -105,7 +105,7 @@ export async function previewSlpStirSteps(
   for (const play of plays) {
     const preview = await previewSlpAction(db, play.action, play.input);
     if (preview.ok) cards.push(preview.value);
-    else cant.push(preview.error);
+    else cant.push(SLP_STIR_CANT_INVALID);
   }
   return { cards, cant };
 }

@@ -18,6 +18,11 @@ import { slurpModelWorkerAllows } from "../../base/model/slp-model-worker.js";
 import { readSlurpStirTies, undoSlurpTieLever, type SlurpTieUndo } from "../projects/slp-projects-contract.js";
 import { runCreatorFanActivity } from "../audience/slp-audience-contract.js";
 import { SLP_SPICE_TO_EXPLICIT } from "../../../../../shared/src/slp/slp-spice.js";
+import {
+  SLURP_PLATFORM_EVENTS_MAX,
+  slurpPlatformEventSchema,
+} from "../../../../../shared/src/slp/slp-platform-events.js";
+import { newId } from "../../../utils/id-generator.js";
 import type { SlurpPostGuidanceEntry } from "../../modules/feed/slp-post-guidance.js";
 import type { SlpActionParsed, SlpStirWorld } from "../../../../../shared/src/slp/slp-actions.js";
 import type { SlpCreatorSteering } from "../../../../../shared/src/slp/slp-creator-steering.js";
@@ -36,6 +41,10 @@ export type SlpActionUndo =
   | { kind: "idea"; accountId: string; ideaId: string }
   | { kind: "occurrence"; id: string }
   | { kind: "spice"; accountId: string; level: SlurpPostGuidanceEntry["level"]; set?: SlurpPostGuidanceEntry["level"] }
+  | { kind: "project"; accountId: string; projectId: string }
+  | { kind: "goal"; accountId: string; before: unknown; set: unknown }
+  | { kind: "look"; accountId: string; before: string | null; set: string }
+  | { kind: "customEvent"; eventId: string; occurrenceId: string }
   | {
       kind: "storyline";
       accountId: string;
@@ -178,6 +187,114 @@ async function setSlpSpiceLevel(db: DB, accountId: string, level: SlurpPostGuida
 }
 
 /**
+ * A new storyline for a Creator (0.3.1), the same as opening one in Creator settings; with `withIds`
+ * a crossover the others share. Never "focus": that would quietly push their other arcs aside.
+ */
+export async function runSlpStartStoryline(
+  db: DB,
+  input: SlpActionParsed<"start-storyline">,
+): Promise<SlpAssistOutcome<{ projectId: string }> | LeverDone<{ projectId: string }>> {
+  const storage = createSlurpStorage(db);
+  for (const id of [input.accountId, ...(input.withIds ?? [])])
+    if (!(await storage.getNoodlerAccountById(id))) return { ok: false, status: 404, error: "Creator not found." };
+  const withIds = (input.withIds ?? []).filter((id) => id !== input.accountId);
+  const project = await storage.createProject(input.accountId, {
+    title: input.title,
+    ...(input.direction ? { direction: input.direction } : {}),
+    ...(withIds.length ? { crossoverWith: withIds } : {}),
+  });
+  if (!project) return { ok: false, status: 409, error: "They already have as many storylines as they can follow." };
+  return {
+    ok: true,
+    value: { projectId: project.id },
+    undo: { kind: "project", accountId: input.accountId, projectId: project.id },
+  };
+}
+
+/** A tip goal (0.3.1), the same as setting one on the Creator's page; the old one comes back on Undo. */
+export async function runSlpSetTipGoal(
+  db: DB,
+  input: SlpActionParsed<"set-tip-goal">,
+): Promise<SlpAssistOutcome<{ accountId: string }> | LeverDone<{ accountId: string }>> {
+  const storage = createSlurpStorage(db);
+  if (!(await storage.getNoodlerAccountById(input.accountId)))
+    return { ok: false, status: 404, error: "Creator not found." };
+  const before = await storage.getGoal(input.accountId);
+  const goal = await storage.setGoal(input.accountId, input.label, input.target);
+  if (!goal) return { ok: false, status: 400, error: "That goal does not work. Give it a name and a number." };
+  return {
+    ok: true,
+    value: { accountId: input.accountId },
+    undo: { kind: "goal", accountId: input.accountId, before, set: goal },
+  };
+}
+
+type LookAccount = {
+  settings?: { stage?: { appearance?: string }; appearanceProfile?: { text?: string } | null };
+};
+
+/** How a Creator looks now: their own look line, or the accepted appearance profile. */
+export function slpCurrentLook(account: LookAccount): { override: string | null; text: string } {
+  const override = account.settings?.stage?.appearance?.trim() || null;
+  return { override, text: override ?? account.settings?.appearanceProfile?.text?.trim() ?? "" };
+}
+
+/**
+ * A lasting change of look (0.3.1): the change joins what they look like, so the rest stays.
+ * ponytail: appended as a line, not merged by the model; a line that contradicts the old look
+ * ("pink hair" over "blonde") leans on the picture model reading "Now:" as the newer one.
+ */
+export async function runSlpNewLook(
+  db: DB,
+  input: SlpActionParsed<"new-look">,
+): Promise<SlpAssistOutcome<{ accountId: string }> | LeverDone<{ accountId: string }>> {
+  const storage = createSlurpStorage(db);
+  const account = (await storage.getNoodlerAccountById(input.accountId)) as LookAccount | null;
+  if (!account) return { ok: false, status: 404, error: "Creator not found." };
+  const look = slpCurrentLook(account);
+  const next = [look.text, `Now: ${input.change.replace(/[.!]+$/u, "")}.`].filter(Boolean).join("\n").slice(0, 2000);
+  if (!(await storage.updateNoodlerAppearanceChoice(input.accountId, "edit_override", next)))
+    return { ok: false, status: 409, error: "Their look could not be changed." };
+  return {
+    ok: true,
+    value: { accountId: input.accountId },
+    undo: { kind: "look", accountId: input.accountId, before: look.override, set: next },
+  };
+}
+
+/**
+ * An event in the player's words (0.3.1): saved like any Backstage event, so it can run again or be
+ * edited there, and started now. Undo stops it and takes the event away again.
+ */
+export async function runSlpInventEvent(
+  db: DB,
+  input: SlpActionParsed<"invent-event">,
+): Promise<
+  SlpAssistOutcome<{ eventId: string; occurrenceId: string }> | LeverDone<{ eventId: string; occurrenceId: string }>
+> {
+  const storage = createSlurpStorage(db);
+  const settings = await storage.getSettings();
+  if (settings.platformEvents.length >= SLURP_PLATFORM_EVENTS_MAX)
+    return { ok: false, status: 409, error: "Slurp keeps no more events. Remove one in Backstage first." };
+  const event = slurpPlatformEventSchema.parse({
+    id: `stir-${newId()}`.slice(0, 64),
+    name: input.name,
+    guidance: input.guidance,
+    enabled: true,
+    activation: { kind: "manual", durationDays: input.days },
+    target: { kind: "all" },
+  });
+  await storage.updateSettings({ platformEvents: [...settings.platformEvents, event] });
+  const occurrence = await storage.startStoryEvent(event.id);
+  if (!occurrence) return { ok: false, status: 409, error: "The event could not start." };
+  return {
+    ok: true,
+    value: { eventId: event.id, occurrenceId: occurrence.id },
+    undo: { kind: "customEvent", eventId: event.id, occurrenceId: occurrence.id },
+  };
+}
+
+/**
  * Take one play step back. The world may have moved on: what is gone stays gone, and a step that
  * would undo a later change answers false and stays as it is.
  */
@@ -206,6 +323,35 @@ export async function undoSlpAction(db: DB, undo: SlpActionUndo): Promise<boolea
       if (undo.set !== undefined && current !== undo.set) return false;
       await setSlpSpiceLevel(db, undo.accountId, undo.level);
       return true;
+    }
+    case "project":
+      return createSlurpStorage(db).deleteProject(undo.accountId, undo.projectId);
+    case "goal": {
+      const storage = createSlurpStorage(db);
+      // A goal changed since (or met and closed) stays as it is.
+      if (JSON.stringify(await storage.getGoal(undo.accountId)) !== JSON.stringify(undo.set)) return false;
+      await storage.restoreGoal(undo.accountId, undo.before ?? null);
+      return true;
+    }
+    case "look": {
+      const storage = createSlurpStorage(db);
+      const account = (await storage.getNoodlerAccountById(undo.accountId)) as LookAccount | null;
+      if (!account || slpCurrentLook(account).override !== undo.set) return false;
+      return Boolean(
+        undo.before
+          ? await storage.updateNoodlerAppearanceChoice(undo.accountId, "edit_override", undo.before)
+          : await storage.updateNoodlerAppearanceChoice(undo.accountId, "clear_override"),
+      );
+    }
+    case "customEvent": {
+      const storage = createSlurpStorage(db);
+      const cancelled = await storage.cancelStartedStoryEvent(undo.occurrenceId);
+      const { platformEvents } = await storage.getSettings();
+      if (platformEvents.some((event: { id: string }) => event.id === undo.eventId))
+        await storage.updateSettings({
+          platformEvents: platformEvents.filter((event: { id: string }) => event.id !== undo.eventId),
+        });
+      return cancelled;
     }
     case "storyline": {
       const storage = createSlurpStorage(db);

@@ -29,7 +29,16 @@ type Creator = SlpStirView["creators"][number];
 type Form = Record<string, string | boolean | string[] | null>;
 
 /** What each lever may pick: the pages Slurp posts for write posts and throw shade; anyone can be set up. */
-const needsAutomatic = new Set<SlpActionName>(["add-idea", "write-post", "steer-creator", "set-spice"]);
+const needsAutomatic = new Set<SlpActionName>([
+  "add-idea",
+  "write-post",
+  "steer-creator",
+  "set-spice",
+  "start-storyline",
+]);
+
+/** Everyday moments a Creator could post about (0.3.1): one tap fills the idea. */
+const MOMENTS = ["badDay", "workout", "newOutfit", "bigWin", "quietWeek", "tripAway"] as const;
 
 /** Who can be picked, as avatar chips. `max` 1 or 2. */
 function CreatorPicker({
@@ -45,8 +54,15 @@ function CreatorPicker({
   max: 1 | 2;
   label: string;
 }) {
+  // A full pick swaps out the last one, so the Creator the sheet came from stays picked.
   const toggle = (id: string) =>
-    onPick(picked.includes(id) ? picked.filter((entry) => entry !== id) : [...picked, id].slice(-max));
+    onPick(
+      picked.includes(id)
+        ? picked.filter((entry) => entry !== id)
+        : picked.length < max
+          ? [...picked, id]
+          : [...picked.slice(0, max - 1), id],
+    );
   return (
     <fieldset className="space-y-2">
       <legend className={cn(SLP_TYPE.meta, "font-semibold")}>{label}</legend>
@@ -72,7 +88,14 @@ function Choice({
       <legend className={cn(SLP_TYPE.meta, "font-semibold")}>{label}</legend>
       <div className="flex flex-wrap gap-1.5" role="radiogroup">
         {options.map((option) => (
-          <SlpChip key={option.value} selected={value === option.value} onClick={() => onChange(option.value)}>
+          <SlpChip
+            key={option.value}
+            role="radio"
+            aria-pressed={undefined}
+            aria-checked={value === option.value}
+            selected={value === option.value}
+            onClick={() => onChange(option.value)}
+          >
             {option.label}
           </SlpChip>
         ))}
@@ -192,6 +215,24 @@ function stepOf(action: SlpActionName, form: Form): Record<string, unknown> | nu
     }
     case "run-audience":
       return {};
+    case "start-storyline": {
+      const title = typeof form.title === "string" ? form.title.trim() : "";
+      const others = ((form.with as string[] | undefined) ?? []).filter((id) => id !== one);
+      return one && title
+        ? { accountId: one, title, ...(text ? { direction: text } : {}), ...(others.length ? { withIds: others } : {}) }
+        : null;
+    }
+    case "set-tip-goal": {
+      const target = Number(form.target);
+      return one && text && Number.isInteger(target) && target >= 1 ? { accountId: one, label: text, target } : null;
+    }
+    case "new-look":
+      return one && text ? { accountId: one, change: text } : null;
+    case "invent-event": {
+      const name = typeof form.title === "string" ? form.title.trim() : "";
+      const days = Number(form.days ?? 1);
+      return name ? { name, ...(text ? { guidance: text } : {}), days } : null;
+    }
     default:
       return null;
   }
@@ -266,6 +307,23 @@ export function SlpStirPlaySheet({
       </div>,
     );
 
+  const titleField = (label: string, placeholder: string) =>
+    body.push(
+      <div key="title" className="space-y-2">
+        <label htmlFor={`${textId}-title`} className={cn(SLP_TYPE.meta, "font-semibold")}>
+          {label}
+        </label>
+        <input
+          id={`${textId}-title`}
+          value={String(form.title ?? "")}
+          maxLength={60}
+          placeholder={placeholder}
+          onChange={(event) => set({ title: event.target.value })}
+          className={inputClass}
+        />
+      </div>,
+    );
+
   if (deck.targets === "creator")
     body.push(
       <CreatorPicker
@@ -288,9 +346,39 @@ export function SlpStirPlaySheet({
         onPick={(ids) => set({ who: ids })}
       />,
     );
+  // Who starts a rivalry matters: say the order and let it flip (0.3.1).
+  if (action === "start-rivalry" && picked.length === 2)
+    body.push(
+      <div key="order" className="flex items-center justify-between gap-2">
+        <p className={cn(SLP_TYPE.meta, "min-w-0 text-[var(--slurp-muted)]")}>
+          {t("ui.slurp.stir.form.rivalOrder", { a: nameOf(picked[0]!), b: nameOf(picked[1]!) })}
+        </p>
+        <SlpButton
+          variant="quiet"
+          className="min-h-11 shrink-0 text-xs"
+          onClick={() => set({ who: [picked[1]!, picked[0]!] })}
+        >
+          {t("ui.slurp.stir.form.swap")}
+        </SlpButton>
+      </div>,
+    );
   switch (action) {
     case "add-idea":
       textField(t("ui.slurp.stir.form.idea"), t("ui.slurp.stir.form.ideaPlaceholder"), "idea");
+      body.push(
+        <div key="moments" role="group" aria-label={t("ui.slurp.stir.form.moments")} className="space-y-2">
+          <p className={cn(SLP_TYPE.meta, "font-semibold")} aria-hidden="true">
+            {t("ui.slurp.stir.form.moments")}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {MOMENTS.map((moment) => (
+              <SlpChip key={moment} onClick={() => set({ text: t(`ui.slurp.stir.moment.${moment}`) })}>
+                {t(`ui.slurp.stir.moment.${moment}`)}
+              </SlpChip>
+            ))}
+          </div>
+        </div>,
+      );
       body.push(
         <Toggle
           key="story"
@@ -298,6 +386,61 @@ export function SlpStirPlaySheet({
           label={t("ui.slurp.steering.asStory")}
           value={form.story === true}
           onChange={(story) => set({ story })}
+        />,
+      );
+      break;
+    case "start-storyline":
+      titleField(t("ui.slurp.stir.form.storyTitle"), t("ui.slurp.stir.form.storyTitlePlaceholder"));
+      textField(t("ui.slurp.stir.form.storyWhere"), t("ui.slurp.stir.form.storyWherePlaceholder"));
+      if (picked[0])
+        body.push(
+          <CreatorPicker
+            key="with"
+            max={2}
+            label={t("ui.slurp.stir.form.storyWith")}
+            creators={creators.filter((creator) => creator.automatic && creator.id !== picked[0])}
+            picked={(form.with as string[] | undefined) ?? []}
+            onPick={(ids) => set({ with: ids })}
+          />,
+        );
+      break;
+    case "set-tip-goal":
+      textField(t("ui.slurp.stir.form.goalFor"), t("ui.slurp.stir.form.goalForPlaceholder"));
+      body.push(
+        <div key="target" className="space-y-2">
+          <label htmlFor={`${textId}-target`} className={cn(SLP_TYPE.meta, "font-semibold")}>
+            {t("ui.slurp.stir.form.goalTarget")}
+          </label>
+          <input
+            id={`${textId}-target`}
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={1_000_000}
+            step={1}
+            value={String(form.target ?? "")}
+            onChange={(event) => set({ target: event.target.value })}
+            className={inputClass}
+          />
+        </div>,
+      );
+      break;
+    case "new-look":
+      textField(t("ui.slurp.stir.form.lookChange"), t("ui.slurp.stir.form.lookChangePlaceholder"));
+      break;
+    case "invent-event":
+      titleField(t("ui.slurp.stir.form.eventName"), t("ui.slurp.stir.form.eventNamePlaceholder"));
+      textField(t("ui.slurp.stir.form.eventWhat"), t("ui.slurp.stir.form.eventWhatPlaceholder"));
+      body.push(
+        <Choice
+          key="days"
+          label={t("ui.slurp.stir.form.eventDays")}
+          value={String(form.days ?? "1")}
+          onChange={(days) => set({ days })}
+          options={["1", "3", "7", "14"].map((days) => ({
+            value: days,
+            label: t("ui.slurp.stir.form.days", { count: Number(days) }),
+          }))}
         />,
       );
       break;

@@ -92,6 +92,14 @@ export function createProjectsStorage1(context: SlurpStorageContext) {
       await settingsStore.set(slurpGoalKey(creatorAccountId), JSON.stringify(goal));
       return goal;
     },
+    /**
+     * Put a goal back exactly as it was (a Stir Undo, 0.3.1), progress included: `setGoal` would
+     * start its count again from today's earnings.
+     */
+    async restoreGoal(creatorAccountId: string, goal: SlurpGoal | null): Promise<void> {
+      if (goal) await settingsStore.set(slurpGoalKey(creatorAccountId), JSON.stringify(goal));
+      else await settingsStore.remove(slurpGoalKey(creatorAccountId));
+    },
     /** This Creator's stored arc overrides. Missing fields use the global settings. */
     async getArcConfig(creatorAccountId: string): Promise<SlurpCreatorArcConfig> {
       return readSlurpCreatorArcConfig(await settingsStore.get(slurpArcConfigKey(creatorAccountId)));

@@ -300,6 +300,58 @@ export const SLP_ACTIONS = {
       })
       .strict(),
   },
+  // ─── 0.3.1: new world levers over systems that already exist (storylines, goals, looks, events). ──
+  "start-storyline": {
+    summary:
+      "Give a Creator a new storyline: what they go through over the next posts (training for a marathon, a move abroad). With withIds it is a crossover the others share.",
+    inputs: {
+      accountId: "The Creator.",
+      title: "The storyline in a few words, in the player's words.",
+      direction: "Where it should go, one short line (optional).",
+      withIds: "One or two more Creators who share it (optional).",
+    },
+    schema: z
+      .object({
+        accountId,
+        title: z.string().trim().min(1).max(80),
+        direction: z.string().trim().max(300).optional(),
+        withIds: z.array(accountId).max(2).optional(),
+      })
+      .strict(),
+  },
+  "set-tip-goal": {
+    summary: "Open a tip goal for a Creator: something they ask their fans to help pay for (a new camera).",
+    inputs: { accountId: "The Creator.", label: "What it is for.", target: "How many coins it needs." },
+    schema: z
+      .object({
+        accountId,
+        label: z.string().trim().min(1).max(80),
+        target: z.number().int().min(1).max(1_000_000),
+      })
+      .strict(),
+  },
+  "new-look": {
+    summary:
+      "Change how a Creator looks from now on (pink hair, a tattoo, a new style). Their pictures show it; the rest of their look stays.",
+    inputs: { accountId: "The Creator.", change: "What changes, one short line." },
+    schema: z.object({ accountId, change: z.string().trim().min(1).max(300) }).strict(),
+  },
+  "invent-event": {
+    summary:
+      "Make up a Slurp event in the player's words and start it now (a heatwave, Slurp is down, a dance challenge). Every Creator joins in their own way.",
+    inputs: {
+      name: "The event's name, a few words.",
+      guidance: "What it is and what people post about, one or two lines (optional).",
+      days: "How many days it lasts, 1 to 14.",
+    },
+    schema: z
+      .object({
+        name: z.string().trim().min(1).max(60),
+        guidance: z.string().trim().max(600).default(""),
+        days: z.number().int().min(1).max(14).default(1),
+      })
+      .strict(),
+  },
   "draw-brand-picture": {
     summary:
       "Draw a brand's logo, or a picture of one of its products, from the brand's own words and what the player typed. Returns it without saving it.",
@@ -360,6 +412,10 @@ export type SlpActionResult = {
   };
   "offer-brand-deal": { dealId: string | null; preview: SlpBrandDealPreview };
   "draw-brand-picture": { image: string; prompt: string };
+  "start-storyline": { projectId: string };
+  "set-tip-goal": { accountId: string };
+  "new-look": { accountId: string };
+  "invent-event": { eventId: string; occurrenceId: string };
 };
 
 /** Whether a product fits a Creator (the Stir brand picker): both spice and brand words, R's two fit rules. */
@@ -465,6 +521,17 @@ export const SLP_ACTION_META: Record<
     refusable: true,
     deck: true,
   },
+  "start-storyline": {
+    category: "life",
+    targets: "creator",
+    reversible: true,
+    ai: false,
+    refusable: false,
+    deck: true,
+  },
+  "set-tip-goal": { category: "work", targets: "creator", reversible: true, ai: false, refusable: false, deck: true },
+  "new-look": { category: "life", targets: "creator", reversible: true, ai: false, refusable: false, deck: true },
+  "invent-event": { category: "world", targets: "none", reversible: true, ai: false, refusable: false, deck: true },
 };
 
 /** The catalog without the schemas: what a helper reads to know what it can ask Slurp to do. */

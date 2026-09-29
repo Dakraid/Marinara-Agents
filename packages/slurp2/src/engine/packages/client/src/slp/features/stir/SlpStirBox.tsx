@@ -7,11 +7,20 @@ import { SlpStirGlyph } from "../../base/chrome/SlpGlyphs";
 import { SlpChip, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
 import { SlpUsesAiMark, noteSlpAiUseOnce } from "../../modules/chrome/SlpAiMark";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
-import { SLP_STIR_TEXT_MAX, type SlpStirPlan } from "../../../../../shared/src/slp/slp-stir.js";
+import {
+  SLP_STIR_TEXT_MAX,
+  type SlpStirPlan,
+  type SlpStirPlanRequest,
+} from "../../../../../shared/src/slp/slp-stir.js";
 import { useSlurpStirPlan } from "./slp-stir-hooks";
 import { SlpStirPlanSheet } from "./SlpStirCards";
 import { startSlpTask } from "../../base/state/slp-task-store";
-import { openSlpStirReadyPlan, useSlpStirReadyPlan } from "../../base/state/slp-stir-sheet-store";
+import {
+  openSlpStirReadyPlan,
+  setSlpStirDraft,
+  useSlpStirDrafts,
+  useSlpStirReadyPlan,
+} from "../../base/state/slp-stir-sheet-store";
 
 /** Real examples from this world: the placeholder rotates through them, the chips fill the box. */
 function useExamples(fullNames: string[], aboutName?: string) {
@@ -43,10 +52,13 @@ export function SlpStirBox({
   names,
   about,
   postId,
+  personaId,
   onPlan,
 }: {
   /** Inside another sheet, the plan opens there (one Slurp sheet at a time closes the one below). */
-  onPlan?: (plan: SlpStirPlan) => void;
+  onPlan?: (plan: SlpStirPlan, request: Omit<SlpStirPlanRequest, "followUp">) => void;
+  /** The persona playing: only their pages are "my page" to the planner. */
+  personaId?: string | null;
   /** Creator names for the examples. */
   names: string[];
   /** The ✦ sheet's Creator. */
@@ -56,20 +68,28 @@ export function SlpStirBox({
   const { t } = useTranslation();
   const inputId = useId();
   const examples = useExamples(names, about?.name);
-  const [text, setText] = useState("");
+  // Kept per box until a play runs, so "Change words" finds them again.
+  const draftKey = about ? `creator:${about.id}` : "tab";
+  const text = useSlpStirDrafts((state) => state.drafts[draftKey] ?? "");
+  const setText = (value: string) => setSlpStirDraft(draftKey, value);
   const [tick, setTick] = useState(0);
-  const [plan, setPlan] = useState<{ plan: SlpStirPlan; key: number } | null>(null);
+  const [plan, setPlan] = useState<{
+    plan: SlpStirPlan;
+    key: number;
+    request: Omit<SlpStirPlanRequest, "followUp">;
+  } | null>(null);
   const planner = useSlurpStirPlan();
   const [planning, setPlanning] = useState(false);
   // Planning is a Pulse task (B): the player may leave; a plan that comes back to an empty screen
   // opens from its toast or from Pulse instead of being lost.
   const mounted = useRef(true);
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    // Set again on mount: React's dev double effect runs the cleanup once before the real mount.
+    mounted.current = true;
+    return () => {
       mounted.current = false;
-    },
-    [],
-  );
+    };
+  }, []);
   useEffect(() => {
     if (text) return;
     const timer = window.setInterval(() => setTick((value) => value + 1), 4000);
@@ -81,11 +101,15 @@ export function SlpStirBox({
     noteSlpAiUseOnce(t);
     setPlanning(true);
     const origin = about ? "sheet" : "words";
+    const request = {
+      text: words,
+      ...(about ? { creatorId: about.id } : {}),
+      ...(postId ? { postId } : {}),
+      ...(personaId ? { personaId } : {}),
+    };
     const openHere = (answer: SlpStirPlan) => {
-      if (onPlan) {
-        setText("");
-        onPlan(answer);
-      } else setPlan({ plan: answer, key: Date.now() });
+      if (onPlan) onPlan(answer, request);
+      else setPlan({ plan: answer, key: Date.now(), request });
     };
     void startSlpTask({
       t,
@@ -95,10 +119,9 @@ export function SlpStirBox({
       // The button says "Planning…" while the box is on screen; the toast only when the player left.
       startedToast: false,
       doneToast: false,
-      run: () =>
-        planner.mutateAsync({ text: words, ...(about ? { creatorId: about.id } : {}), ...(postId ? { postId } : {}) }),
+      run: () => planner.mutateAsync(request),
       done: (answer) => {
-        const open = { label: t("ui.slurp.stir.openPlan"), run: () => openSlpStirReadyPlan(answer, origin) };
+        const open = { label: t("ui.slurp.stir.openPlan"), run: () => openSlpStirReadyPlan(answer, origin, request) };
         if (mounted.current) {
           setPlanning(false);
           openHere(answer);
@@ -154,6 +177,7 @@ export function SlpStirBox({
           className="block min-h-[4.5rem] w-full resize-none rounded-2xl bg-[var(--slurp-canvas)] px-3.5 py-3 text-base leading-6 outline-none ring-1 ring-inset ring-[var(--slurp-outline)] transition-shadow placeholder:text-[var(--slurp-muted)] focus-visible:shadow-[0_0_0_4px_color-mix(in_srgb,var(--noodle-accent)_22%,transparent)] focus-visible:ring-2 focus-visible:ring-[var(--noodle-accent)] sm:text-sm"
         />
         <div
+          role="group"
           className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none]"
           aria-label={t("ui.slurp.stir.examples")}
         >
@@ -185,14 +209,13 @@ export function SlpStirBox({
       <SlpStirPlanSheet
         key={plan?.key ?? 0}
         open={Boolean(plan)}
-        onClose={() => {
-          setPlan(null);
-          setText("");
-        }}
+        onClose={() => setPlan(null)}
         onChangeWords={() => setPlan(null)}
+        onPlayed={() => setText("")}
         cards={plan?.plan.cards ?? []}
         cant={plan?.plan.cant ?? []}
         question={plan?.plan.question ?? null}
+        request={plan?.request}
         origin={about ? "sheet" : "words"}
       />
     </section>
@@ -210,6 +233,11 @@ export function SlpStirReadyPlanHost() {
       cards={ready?.plan.cards ?? []}
       cant={ready?.plan.cant ?? []}
       question={ready?.plan.question ?? null}
+      request={ready?.request}
+      onPlayed={() => {
+        const request = ready?.request;
+        if (request) setSlpStirDraft(request.creatorId ? `creator:${request.creatorId}` : "tab", "");
+      }}
       origin={ready?.origin ?? "words"}
     />
   );

@@ -39,6 +39,8 @@ const EXPECTED = [
   "POST /slurp/stir/plan",
   "POST /slurp/stir/play",
   "POST /slurp/stir/plays/:id/undo",
+  // 0.3.1: "Not now" on a Stir suggestion.
+  "POST /slurp/stir/suggestions/:id/dismiss",
   "GET /slurp/stir",
   // 7b-c: collabs, rivalries and brand deals in Studio.
   "GET /slurp/ties",
@@ -326,6 +328,8 @@ const ADDED_ROUTES = new Set([
   "POST /slurp/stir/plan",
   "POST /slurp/stir/play",
   "POST /slurp/stir/plays/:id/undo",
+  // 0.3.1: "Not now" on a Stir suggestion.
+  "POST /slurp/stir/suggestions/:id/dismiss",
   "GET /slurp/stir",
   // 7b-c: collabs, rivalries and brand deals in Studio.
   "GET /slurp/ties",
@@ -420,7 +424,7 @@ assert.deepEqual([...EXPECTED].sort(), mappedStagingRoutes, "the route mapping m
 
 const EXPECTED_HANDLER_COUNTS = {
   "features/ads": 24,
-  "features/assist": 8,
+  "features/assist": 9,
   "features/audience": 13,
   "features/creators": 47,
   "features/discovery": 4,
@@ -436,7 +440,7 @@ const EXPECTED_HANDLER_COUNTS = {
   "features/world": 11,
 } as const;
 // W: +5 POST, +1 GET (Stir). R: +3 POST, +1 GET, +1 PATCH, +1 DELETE (brands).
-const EXPECTED_METHOD_COUNTS = { DELETE: 18, GET: 80, PATCH: 20, POST: 141, PUT: 6 } as const;
+const EXPECTED_METHOD_COUNTS = { DELETE: 18, GET: 80, PATCH: 20, POST: 142, PUT: 6 } as const;
 
 const root = join(import.meta.dirname, "../packages/slurp2/src/engine/packages/server/src/slp");
 const registration = /\bapp\.(get|post|put|patch|delete|addContentTypeParser)(?:<[^()]*?>)?\(\s*["'`]([^"'`]+)["'`]/gu;
@@ -491,7 +495,7 @@ const methodCounts = Object.fromEntries(
     }, new Map<string, number>()),
 );
 assert.deepEqual(methodCounts, EXPECTED_METHOD_COUNTS, "HTTP method multiset changed from staging");
-assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 265);
+assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 266);
 assert.deepEqual(handlerCounts, EXPECTED_HANDLER_COUNTS, "handler count changed in a feature");
 assert.ok(foundRoutes.includes("POST /slurp/posts/:id/media"), "the renamed POST media route must remain registered");
 assert.ok(

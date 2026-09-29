@@ -117,14 +117,19 @@ async function main() {
       "add-idea",
       "cool-rivalry",
       "couple-page",
+      // 0.3.1: new levers over systems that already existed.
+      "invent-event",
+      "new-look",
       // Merge R × W (on purpose): R's brand deal lever is a work card now, no longer "soon".
       "offer-brand-deal",
       "push-collab",
       "run-audience",
       "set-spice",
+      "set-tip-goal",
       "set-up-couple",
       "start-event",
       "start-rivalry",
+      "start-storyline",
       "steer-couple",
       "steer-creator",
       "steer-storyline",
@@ -294,7 +299,11 @@ async function main() {
       { action: "set-up-couple", input: { aId: "mira", bId: "kai" } },
       { action: "offer-brand-deal", input: { accountId: "mira" } },
     ]);
-    assert.deepEqual(sorted.cant, ['Slurp cannot do "write-text" yet.', 'Slurp cannot do "make-it-rain" yet.']);
+    assert.deepEqual(
+      sorted.cant,
+      ["slp-stir:unknown:write-text", "slp-stir:unknown:make-it-rain"],
+      "a step that is no play is said by the app, in the player's language",
+    );
     // The plan's one card is the preview of that step.
     const card = slurpPreviewTieLever(world(), "set-up-couple", sorted.plays[0]!.input, AT);
     assert.equal(card.error, null);

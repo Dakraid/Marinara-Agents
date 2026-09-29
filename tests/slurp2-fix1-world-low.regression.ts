@@ -105,7 +105,7 @@ assert.match(read("server/src/slp/features/audience/slp-audience-routes.ts"), /r
 // W: "Run audience" is the Stir card "Wake the fans"; AI Off is its preview's reason and its run's error.
 assert.match(
   read("server/src/slp/features/assist/slp-action-preview.ts"),
-  /error: slurpModelWorkerAllows\(settings\.modelBudget, "present"\) \? null : "aiOff"/u,
+  /error: !slurpModelWorkerAllows\(settings\.modelBudget, "present"\)\s+\? "aiOff"/u,
 );
 assert.match(
   read("server/src/slp/features/assist/slp-stir-levers.ts"),
