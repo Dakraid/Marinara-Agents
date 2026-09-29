@@ -15,7 +15,6 @@ import {
 import { resolveCreatorImageConnectionId } from "../../base/media/slp-image-connections.js";
 import { resolveCreatorMediaAbsolutePath, unlinkCreatorMedia } from "../../base/media/slp-media.js";
 import { tryCreatorAccountOperation } from "../../base/locking/slp-account-operation-lock.js";
-import { claimSlurpModelBudget, slurpModelWorkerAllows } from "../../base/model/slp-model-worker.js";
 import { resolveSlurpCreatorFlavour } from "../../data/creators/slp-flavour-source.js";
 import { resolveSlurpCreatorSpice } from "../../data/creators/slp-spice-storage.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
@@ -68,9 +67,8 @@ export async function runSlpAssistText(
   db: DB,
   input: SlpActionParsed<"write-text"> & { text?: string; mode: "write" | "improve" },
 ): Promise<SlpAssistOutcome<SlpActionResult["write-text"]>> {
+  // The player pressed Write or Improve: their own tap never spends the world's AI budget (0.3.6).
   const settings = await createSlurpStorage(db).getSettings();
-  if (!slurpModelWorkerAllows(settings.modelBudget, "present"))
-    return fail(409, "The AI budget is off. Turn it on under Audience → AI budget.");
   const connection = await resolveSlurpTextConnection(
     createConnectionsStorage(db),
     settings.modelBudget.connectionId ?? settings.generationConnectionId,
@@ -90,8 +88,6 @@ export async function runSlpAssistText(
           sequence: Math.floor(Date.now() / 60_000),
         })
       : "";
-  if (!(await claimSlurpModelBudget(db, settings.modelBudget, "assist")))
-    return fail(429, "Today's AI budget for writing help is used up.");
   const provider = slpWithProviderRetry(
     createLLMProvider(
       connection.provider,
@@ -192,6 +188,7 @@ export async function drawSlpAssistPicture(
       db,
       debugMode: false,
       previewOnly: false,
+      playerAsked: true,
       story: input.target === "story",
       ...(PICTURE_SIZE[input.target] ?? {}),
       // A profile picture or cover keeps the artwork tool's framing guard (no banner in an avatar,

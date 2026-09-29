@@ -638,7 +638,6 @@ export function SlpShell({
                   ? cn(
                       // No bottom padding: every screen scrolls behind the glass nav, and only the end of
                       // each list keeps room for it (`SLP_PAGE_SCROLL_CLASS`).
-                      "data-[slp-nav-hidden]:[--slp-nav-live:0px]",
                       reserveContextualRail && "@min-[1280px]:border-r @min-[1280px]:border-[var(--noodle-divider)]",
                     )
                   : "pb-[calc(48px+var(--slurp-bottom-safe-inset))] @min-[1024px]:max-w-[680px] @min-[1024px]:border-r @min-[1024px]:border-[var(--noodle-divider)]",

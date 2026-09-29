@@ -42,12 +42,15 @@ export function parseSlpCreatorPageAnswer(
   now: string,
   keepPostIds: ReadonlySet<string> = new Set(),
 ): SlpCreatorPage | null {
-  const start = answer.indexOf("{");
-  const end = answer.lastIndexOf("}");
+  // A thinking model's notes and code fences hold braces too; only the answer after them counts.
+  // Some providers send the notes with no opening tag, so everything up to the last closing tag goes.
+  const text = answer.replace(/^[\s\S]*<\/think>/iu, " ").replace(/```[a-z]*|```/giu, " ");
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
   if (start < 0 || end <= start) return null;
   let value: unknown;
   try {
-    value = JSON.parse(jsonrepair(answer.slice(start, end + 1)));
+    value = JSON.parse(jsonrepair(text.slice(start, end + 1)));
   } catch {
     return null;
   }
@@ -69,6 +72,24 @@ export function parseSlpCreatorPageAnswer(
   });
   const page = normalizeSlpCreatorPage({ ...raw, blocks, composedBy: "creator", updatedAt: now });
   return page ? { ...page, composedBy: "creator", updatedAt: now } : null;
+}
+
+/**
+ * An answer's structure without its words, for the logs: every string becomes its length, so a
+ * parser miss is visible without Creator text (often adult) landing in the Engine log.
+ */
+function slpAnswerShape(answer: string): string {
+  const start = answer.lastIndexOf("</think>") + 1;
+  const open = answer.indexOf("{", start);
+  try {
+    const value: unknown = JSON.parse(jsonrepair(answer.slice(open, answer.lastIndexOf("}") + 1)));
+    return JSON.stringify(value, (_key, item: unknown) => (typeof item === "string" ? `<${item.length}>` : item)).slice(
+      0,
+      1500,
+    );
+  } catch {
+    return `unparsable, ${answer.length} characters`;
+  }
 }
 
 /** Keep a hinted Creator's other name and handle out of every word the model wrote. */
@@ -129,11 +150,12 @@ export async function composeSlpCreatorPage(
   if (account.sourceKind === "persona")
     return { ok: false, status: 409, error: "A persona's own page is yours to build." };
   const settings = await noodle.getSettings();
-  if (!slurpModelWorkerAllows(settings.modelBudget, input.context))
+  // "Let Creator design it" is the player's tap: it never spends the AI budget (0.3.6). World pages do.
+  if (input.world && !slurpModelWorkerAllows(settings.modelBudget, input.context))
     return { ok: false, status: 409, error: "The AI budget is off. Turn it on under Audience → AI budget." };
   const connection = await resolveSlurpTextConnection(
     createConnectionsStorage(db),
-    settings.modelBudget.connectionId ?? settings.generationConnectionId,
+    settings.pageConnectionId ?? settings.modelBudget.connectionId ?? settings.generationConnectionId,
   );
   if (!connection) return { ok: false, status: 409, error: "Select a text generation connection first." };
   const current = account.settings.profile.page ?? null;
@@ -141,7 +163,7 @@ export async function composeSlpCreatorPage(
   // World work keeps to the day's pace; a player's tap never waits for it.
   if (input.world && !(await slurpModelBudgetPaceOpen(db, settings.modelBudget, "page")))
     return { ok: false, status: 429, error: "The AI budget's pace for Creator pages is used up for now." };
-  if (!(await claimSlurpModelBudget(db, settings.modelBudget, "page")))
+  if (input.world && !(await claimSlurpModelBudget(db, settings.modelBudget, "page")))
     return { ok: false, status: 429, error: "Today's AI budget for Creator pages is used up." };
 
   const mode = account.settings.privacy.identityDisclosure ?? "hinted";
@@ -175,7 +197,8 @@ export async function composeSlpCreatorPage(
     const result = await provider.chatComplete(messages, {
       model: connection.model,
       temperature: 0.9,
-      maxTokens: 1400,
+      // 1400 cut a seven-block Page (or a reasoning model's answer) short, and a cut answer has no Page.
+      maxTokens: 4000,
     });
     answer = result.content ?? "";
   } catch (error) {
@@ -188,8 +211,20 @@ export async function composeSlpCreatorPage(
   );
   const parsed = parseSlpCreatorPageAnswer(answer, now, keepPostIds);
   const page = parsed ? protectSlpCreatorPage(parsed, mode, identity) : null;
-  if (!page?.blocks.length)
+  // The prompt asks for 4 to 7 blocks: fewer means the reader dropped some, so keep the answer to see why.
+  if (page && page.blocks.length < 4)
+    logger.warn(
+      { accountId: account.id, kept: page.blocks.map((block) => block.kind), answer: slpAnswerShape(answer) },
+      "[slurp-creator-page] The Page kept fewer blocks than asked",
+    );
+  if (!page?.blocks.length) {
+    // Logged so a failing model can be told apart from a parser that is too strict.
+    logger.warn(
+      { accountId: account.id, answer: slpAnswerShape(answer) },
+      "[slurp-creator-page] The answer held no usable Page",
+    );
     return { ok: false, status: 502, error: "The connection returned no usable Page. Try again." };
+  }
   if (input.world) {
     // The call took seconds; a Page the player saved meanwhile is theirs.
     // ponytail: re-read, not a transactional compare-and-set; the window is one DB round trip.

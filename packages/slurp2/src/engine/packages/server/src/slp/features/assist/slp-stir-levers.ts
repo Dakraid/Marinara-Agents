@@ -14,7 +14,6 @@ import {
   removeSlurpCreatorNudge,
 } from "../../data/creators/slp-steering-storage.js";
 import { slpUndoPatch } from "../../modules/assist/slp-stir-play.js";
-import { slurpModelWorkerAllows } from "../../base/model/slp-model-worker.js";
 import {
   readSlurpStirTies,
   slurpRunsItself,
@@ -186,9 +185,8 @@ export async function runSlpSteerStoryline(
  * (B: long actions never lock the player); Pulse shows it running and what it did.
  */
 export async function runSlpRunAudience(db: DB): Promise<SlpAssistOutcome<{ started: boolean }>> {
+  // The player's tap: the AI budget's mode never blocks it (0.3.6).
   const settings = await createSlurpStorage(db).getSettings();
-  if (!slurpModelWorkerAllows(settings.modelBudget, "present"))
-    return { ok: false, status: 409, error: "The AI budget is off. Turn it on under Audience → AI budget." };
   if (!settings.fanActivityEnabled)
     return { ok: false, status: 409, error: "Fan activity is off. Turn it on under Audience." };
   void runCreatorFanActivity({ db, mode: "manual" }).catch((error: unknown) =>

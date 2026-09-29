@@ -7,6 +7,7 @@ import { SlurpMomentsShelf, SlurpMomentViewer } from "./SlpScreenMoments";
 import { slpShowPostInPlace } from "../../modules/post/SlpPostPurposeNote";
 import { ArrowUp, LayoutGrid, List, Search, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useSlpDrawnCount } from "../../base/ui/slp-drawn-count";
 import { useSlpStoryRings } from "../../modules/story/SlpStoryRing";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
@@ -247,6 +248,7 @@ export function ViewerHub({
     !searchTerm && feedMark?.key === feedMarkKey ? feedMark.at : null,
     ({ creator }) => (creator as { ownedByViewer?: boolean }).ownedByViewer === true,
   );
+  const drawnFeedCount = useSlpDrawnCount(Math.min(feed.length, visibleFeedCount), `${feedMarkKey}:${searchTerm}`);
   // Up to three faces of who posted, newest first, one per Creator.
   const heldPosters = [
     ...new Map(heldPosts.map(({ creator }) => [creator.profile.id, creator.profile])).values(),
@@ -660,10 +662,9 @@ export function ViewerHub({
           ) : (
             <div className={cn(SLP_CARD_STACK_CLASS, "px-3 pb-6 sm:px-4 @min-[1024px]:bg-[var(--slurp-canvas)]")}>
               <AnimatePresence initial={false} mode="popLayout">
-                {visibleFeed.map((item, index) => (
+                {visibleFeed.slice(0, drawnFeedCount).map((item, index) => (
                   <motion.div
                     key={item.post.id}
-                    layout
                     initial={false}
                     animate={{ opacity: 1, height: "auto", y: 0 }}
                     transition={reduceMotion ? { duration: 0 } : { duration: 0.28, ease: "easeOut" }}
@@ -696,6 +697,7 @@ export function ViewerHub({
                   </motion.div>
                 ))}
               </AnimatePresence>
+              {drawnFeedCount < visibleFeed.length && <SlpSkeleton shape="posts" count={1} />}
               {(visibleFeed.length < feed.length || feedHasMore) && (
                 <LoadMoreFeedButton
                   visible={visibleFeed.length}

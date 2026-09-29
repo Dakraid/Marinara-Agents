@@ -443,7 +443,10 @@ assert.match(
 );
 const operation = server("features/messages/slp-message-operation.ts");
 // Slice I (user): a free chat picture is a tease for everybody (a subscriber's casual one too); a paid one goes all the way.
-assert.match(operation, /level: offer\.price > 0 \? creatorLevel : slurpDmSpiceLevel\(creatorLevel, false\)/u);
+assert.match(
+  operation,
+  /level: offer\.price > 0 && !demanded \? creatorLevel : slurpDmSpiceLevel\(creatorLevel, false\)/u,
+);
 assert.match(
   server("data/creators/slp-flavour-source.ts"),
   /if \(input\.use === "comment" \|\| input\.use === "delivery"\) return \[\];/u,

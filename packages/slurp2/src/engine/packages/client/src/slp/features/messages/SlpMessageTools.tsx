@@ -336,11 +336,14 @@ export function FanImageTool({
   personaId,
   mode,
   onSent,
+  asSupport = false,
 }: {
   threadId: string;
   creatorAccountId: string;
   personaId: string;
   mode: "choose" | "upload" | "generate";
+  /** Slurp Support sends it, in Support's thread; a created picture shows only what is described. */
+  asSupport?: boolean;
   /** The photo landed: the thread shows the answer (typing first) and closes the sheet (R1-019). */
   onSent?: (result: SlurpPhotoSendResult) => void;
 }) {
@@ -445,8 +448,15 @@ export function FanImageTool({
                   setError(null);
                   const request =
                     activeMode === "upload"
-                      ? file && send.mutateAsync({ threadId, creatorAccountId, personaId, file, content })
-                      : generate.mutateAsync({ threadId, creatorAccountId, personaId, prompt: viewerPrompt, content });
+                      ? file && send.mutateAsync({ threadId, creatorAccountId, personaId, file, content, asSupport })
+                      : generate.mutateAsync({
+                          threadId,
+                          creatorAccountId,
+                          personaId,
+                          prompt: viewerPrompt,
+                          content,
+                          asSupport,
+                        });
                   if (!request) return;
                   void request
                     .then((result) => {

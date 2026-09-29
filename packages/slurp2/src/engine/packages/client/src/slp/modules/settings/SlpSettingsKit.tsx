@@ -127,10 +127,27 @@ export function SettingAnchor({ settingKey, children }: { settingKey: SlpSetting
   );
 }
 
-/** Opens closed disclosures around a setting, scrolls to it, and focuses its first control. */
-export function focusSettingAnchor(settingKey: string): boolean {
+/**
+ * Opens closed disclosures around a setting, scrolls to it, and focuses its first control. A lazy fold
+ * (`SlpLazyFold`) draws its settings only once open, so it names them in `data-setting-keys`: open it,
+ * and try again once it has drawn.
+ */
+export function focusSettingAnchor(settingKey: string, retry = true): boolean {
   const anchor = document.querySelector<HTMLElement>(`[data-setting-key="${CSS.escape(settingKey)}"]`);
-  if (!anchor) return false;
+  if (!anchor) {
+    const fold = document.querySelector<HTMLDetailsElement>(`details[data-setting-keys~="${CSS.escape(settingKey)}"]`);
+    if (!fold || fold.open || !retry) return false;
+    fold.open = true;
+    // Tried each frame until the fold has drawn, for a second at most: a setting that is not shown in
+    // this state stays unfocused.
+    const deadline = window.performance.now() + 1000;
+    const retryUntilDrawn = () => {
+      if (focusSettingAnchor(settingKey, false)) return;
+      if (window.performance.now() < deadline) window.requestAnimationFrame(retryUntilDrawn);
+    };
+    window.requestAnimationFrame(retryUntilDrawn);
+    return true;
+  }
   for (let node = anchor.parentElement; node; node = node.parentElement) {
     if (node instanceof HTMLDetailsElement) node.open = true;
   }

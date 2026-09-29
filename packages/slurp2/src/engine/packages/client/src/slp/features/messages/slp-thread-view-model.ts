@@ -1,8 +1,10 @@
 import {
+  Aperture,
   BriefcaseBusiness,
   Gift,
   Image as ImageIcon,
   MessageCircle,
+  Newspaper,
   NotebookPen,
   Palette,
   PenLine,
@@ -128,11 +130,15 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
     | "offer"
     | "move"
     | "note"
+    | "show-post"
+    | "demand"
     | null
   >(null);
   // Slurp Support's desk step for the next line (docs/SUPPORT-DESK.md): an Offer or a move, and the
   // lever whose play sheet is open to build one.
   const [composerDesk, setComposerDesk] = useState<SlurpComposerDesk | null>(null);
+  // Support's "photo, right now" rides the next line like an Offer does (0.3.6).
+  const [photoDemand, setPhotoDemand] = useState(false);
   const [deskPick, setDeskPick] = useState<{ action: SlpActionName; mode: "offer" | "now" } | null>(null);
   const [commissionPrefill, setCommissionPrefill] = useState("");
   const settingsQuery = useSlurpSettings();
@@ -292,37 +298,74 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
     () =>
       (asSupport
         ? ([
+            // Slurp's staff console (0.3.6): the player works at Slurp here, so the tools read like work tools.
             {
               id: "write",
               icon: PenLine,
-              label: localizeUi("ui.slurp.messages.helpWrite", { defaultValue: "Help me write" }),
-              detail: localizeUi("ui.slurp.messages.helpWriteDetail", {
-                defaultValue: "Slurp writes or polishes your message",
+              label: localizeUi("ui.slurp.desk.tools.write", { defaultValue: "Draft reply" }),
+              detail: localizeUi("ui.slurp.desk.tools.writeDetail", {
+                defaultValue: "Suggested wording for this ticket",
               }),
               group: "conversation" as const,
             },
             {
               id: "offer",
               icon: Stamp,
-              label: localizeUi("ui.slurp.desk.tools.offer", { defaultValue: "Make an offer" }),
+              label: localizeUi("ui.slurp.desk.tools.offer", { defaultValue: "Send offer" }),
               detail: localizeUi("ui.slurp.desk.tools.offerDetail", {
-                defaultValue: "A challenge, a contract, a deal: they answer first",
+                defaultValue: "Deal, challenge or contract. Needs their answer",
               }),
               group: "conversation" as const,
             },
             {
               id: "move",
               icon: Gift,
-              label: localizeUi("ui.slurp.desk.tools.move", { defaultValue: "Perk, warning or rumour" }),
-              detail: localizeUi("ui.slurp.desk.tools.moveDetail", { defaultValue: "Happens with your message" }),
+              label: localizeUi("ui.slurp.desk.tools.move", { defaultValue: "Apply action" }),
+              detail: localizeUi("ui.slurp.desk.tools.moveDetail", {
+                defaultValue: "Perk, warning or rumour, sent with your reply",
+              }),
               group: "conversation" as const,
             },
             {
               id: "note",
               icon: NotebookPen,
               label: localizeUi("ui.slurp.desk.tools.note", { defaultValue: "Internal note" }),
-              detail: localizeUi("ui.slurp.desk.tools.noteDetail", { defaultValue: "Only you see it" }),
+              detail: localizeUi("ui.slurp.desk.tools.noteDetail", { defaultValue: "Visible to staff only" }),
               group: "conversation" as const,
+            },
+            {
+              id: "photo",
+              icon: ImageIcon,
+              label: localizeUi("ui.slurp.desk.tools.attach", { defaultValue: "Attach image" }),
+              detail: localizeUi("ui.slurp.desk.tools.attachDetail", { defaultValue: "Upload a file to this ticket" }),
+              group: "media" as const,
+            },
+            {
+              id: "generated-photo",
+              icon: Palette,
+              label: localizeUi("ui.slurp.desk.tools.order", { defaultValue: "Studio image" }),
+              detail: localizeUi("ui.slurp.desk.tools.orderDetail", {
+                defaultValue: "Request an image from the content team",
+              }),
+              group: "media" as const,
+            },
+            {
+              id: "show-post",
+              icon: Newspaper,
+              label: localizeUi("ui.slurp.desk.tools.pullUp", { defaultValue: "Link a post" }),
+              detail: localizeUi("ui.slurp.desk.tools.pullUpDetail", {
+                defaultValue: "Reference one of their posts or Stories",
+              }),
+              group: "media" as const,
+            },
+            {
+              id: "demand",
+              icon: Aperture,
+              label: localizeUi("ui.slurp.desk.tools.photoCheck", { defaultValue: "Photo verification" }),
+              detail: localizeUi("ui.slurp.desk.tools.photoCheckDetail", {
+                defaultValue: "Creator must send a live photo now",
+              }),
+              group: "media" as const,
             },
           ] as const)
         : ownsCreator
@@ -732,6 +775,8 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
     toolTabs,
     composerDesk,
     setComposerDesk,
+    photoDemand,
+    setPhotoDemand,
     deskPick,
     setDeskPick,
     messageSearchMatches: searchMessageIds,

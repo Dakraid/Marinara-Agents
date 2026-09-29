@@ -99,7 +99,7 @@ assert.match(pendingSource, /resolveSlurpCharacterFanVoice/u);
   const creatorsStorage = slurp2Source(`${engine}/server/src/slp/data/creators/slp-creators-storage-3.ts`);
   assert.match(
     creatorsStorage,
-    /async listNoodlerStageProfiles\(\)[\s\S]{0,400}!isSlurpViewerActorAccount\(account\) && !isSlurpCharacterFanAccount\(account\)/u,
+    /async buildNoodlerStageProfiles\(\)[\s\S]{0,400}!isSlurpViewerActorAccount\(account\) && !isSlurpCharacterFanAccount\(account\)/u,
   );
   assert.match(
     slurp2Source(`${engine}/server/src/slp/features/world/slp-world-operation.ts`),

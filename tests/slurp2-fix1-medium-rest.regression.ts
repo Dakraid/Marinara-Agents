@@ -115,7 +115,8 @@ assert.match(
   /ne\(slurpEvents\.kind, "message"\)/u,
 );
 // ── R1-103: a skipped run is finished ──
-assert.match(read("client/src/slp/modules/chrome/SlpPulse.tsx"), /"skipped",\s*\]\)\.has\(status\)/u);
+// 0.3.6: the terminal-status list moved to the pure Pulse model.
+assert.match(read("client/src/slp/modules/chrome/slp-pulse-model.ts"), /"skipped",\s*\]\)\.has\(status\)/u);
 // ── R1-131: an empty Hub offers Add creators ──
 assert.match(
   read("client/src/slp/app/screens/SlpScreenHub.tsx"),

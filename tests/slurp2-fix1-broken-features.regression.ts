@@ -138,7 +138,7 @@ assert.equal(garnishRotateInline(pool, ["a", "b", "c"]).length, 2, "never empty 
 const operation = read("server/src/slp/features/messages/slp-message-operation.ts");
 assert.match(
   operation,
-  /const imageAllowedBySettings = creator\.settings\.scheduler\.autoPosting\?\.imagesEnabled === true;/u,
+  /const imageAllowedBySettings = demanded \|\| creator\.settings\.scheduler\.autoPosting\?\.imagesEnabled === true;/u,
 );
 assert.doesNotMatch(operation, /settings\.enableImagePrompts === true/u);
 

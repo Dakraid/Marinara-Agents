@@ -103,7 +103,9 @@ assert.deepEqual(
 );
 assert.equal(holdNewSlpFeedPosts(feed, null).shown.length, 3, "no mark yet: everything shows");
 
-// Point 5: no refresh action; the feed polls every 30 s (not in the background) and new posts use the pill.
+// Point 5: no refresh action; new posts are checked every 30 s (not in the background) and use the pill.
+// 0.3.6: the cheap unseen count polls at 30 s and refreshes the feed on a change; the full feed polls slowly.
+assert.match(viewerHooks, /refetchInterval: enabled && personaId \? 180_000 : false,/u);
 assert.doesNotMatch(hub, /onRefresh|isRefreshing|headerMenuRef|RefreshCw/u);
 assert.doesNotMatch(host, /onRefresh=|isRefreshing=/u);
 assert.match(

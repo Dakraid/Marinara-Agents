@@ -28,7 +28,9 @@ assert.match(nav, /rounded-full p-1[\s\S]*?SLP_BAR_GLASS_CLASS/u);
 assert.match(nav, /bottom-\[calc\(10px\+var\(--slurp-bottom-safe-inset\)\)\]/u, "safe-area aware");
 assert.match(shell, /useHideOnScroll\(scrollRoot,/u);
 assert.match(shell, /resetKey: activeView/u, "a new screen brings the nav back");
-assert.match(shell, /data-\[slp-nav-hidden\]:\[--slp-nav-live:0px\]/u);
+// 0.3.6: the nav-hidden flag restyles only the bars that follow it, not every post under the scroll root.
+assert.match(shell, /toggleAttribute\("data-slp-nav-hidden", hidden\)/u);
+assert.match(entry, /\[data-slp-nav-hidden\] \.slp-nav-live \{ --slp-nav-live: 0px; \}/u);
 assert.match(
   shell,
   // Step 2: the tint is a gradient, so it needs the `image:` hint (`bg-[var(...)]` compiled to an

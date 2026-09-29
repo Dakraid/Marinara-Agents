@@ -663,7 +663,7 @@ const creator = (id: string, text: string, tags: string[], over: Partial<SlurpTi
   assert.equal(reply.image?.spicy, true);
   assert.equal(readSlurpDmReply({ content: "x", image: { prompt: "cat pic", spicy: "yes" } }).image?.spicy, undefined);
   const operation = server("features/messages/slp-message-operation.ts");
-  assert.match(operation, /spicy: slurpDmPictureSpicy\(reply\.image\)/u);
+  assert.match(operation, /spicy: slurpDmPictureSpicy\(image\)/u);
   assert.match(
     server("features/messages/slp-message-generation-service.ts"),
     /"spicy": true when the picture shows nudity/u,

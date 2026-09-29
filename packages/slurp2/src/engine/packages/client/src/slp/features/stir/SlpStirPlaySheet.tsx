@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { Avatar, SLP_TYPE } from "../../base/chrome/SlpChrome";
@@ -19,7 +19,7 @@ import { SLP_SPICE_LEVELS } from "../../../../../shared/src/slp/slp-spice.js";
 import type { SlpActionPreview, SlpStirView } from "../../../../../shared/src/slp/slp-stir.js";
 import { SlpTextAssist } from "../assist/slp-assist-contract";
 import { useSlurpStirPreview } from "./slp-stir-hooks";
-import { SlpStirCard, useSlpStirDoIt } from "./SlpStirCards";
+import { SlpStirCard, slpStirCantLine, useSlpStirDoIt } from "./SlpStirCards";
 import { SlpStirDeskFields } from "./SlpStirDeskFields";
 import { SlpStirBrandPick } from "./SlpStirBrandPick";
 import { Choice, CreatorPicker } from "./SlpStirFormParts";
@@ -134,18 +134,26 @@ export function SlpStirPlaySheet({
   const textId = useId();
   const [form, setForm] = useState<Form>({});
   const [cards, setCards] = useState<SlpActionPreview[] | null>(null);
+  // Why a step made no card, so an empty sheet never leaves "Do it" greyed out without a word.
+  const [cant, setCant] = useState<string[]>([]);
   const preview = useSlurpStirPreview();
   const doIt = useSlpStirDoIt();
+  // Each reset starts a new generation; a preview that answers for an older one is dropped.
+  const generation = useRef(0);
   useEffect(() => {
+    generation.current += 1;
     setForm({ who: prefill?.who ?? [], pick: prefill?.pick ?? null });
     setCards(null);
+    setCant([]);
     // The prefill's ids, not its object: a caller may build a new one on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [action, prefill?.who?.join("|"), prefill?.pick]);
   if (!action) return null;
   const set = (patch: Form) => {
+    generation.current += 1;
     setForm((current) => ({ ...current, ...patch }));
     setCards(null);
+    setCant([]);
   };
   const creators = (view?.creators ?? []).filter((creator) => !creator.couplePage);
   const byId = new Map((view?.creators ?? []).map((creator) => [creator.id, creator]));
@@ -596,12 +604,22 @@ export function SlpStirPlaySheet({
       break;
   }
 
-  const onPreview = () =>
-    step &&
+  const onPreview = () => {
+    if (!step) return;
+    const asked = generation.current;
     preview.mutate([{ action, input: step }], {
-      onSuccess: (answer) => setCards(answer.cards),
-      onError: () => setCards([]),
+      onSuccess: (answer) => {
+        if (asked !== generation.current) return;
+        setCant(answer.cant);
+        setCards(answer.cards);
+      },
+      onError: () => {
+        if (asked !== generation.current) return;
+        setCant([]);
+        setCards([]);
+      },
     });
+  };
 
   return (
     <SlpSheet
@@ -651,6 +669,11 @@ export function SlpStirPlaySheet({
           <ul className="space-y-2">
             {cards.map((card, index) => (
               <SlpStirCard key={`${card.action}:${index}`} card={card} />
+            ))}
+            {cant.map((line, index) => (
+              <li key={`${index}:${line}`} className={cn(SLP_TYPE.meta, "px-1 text-[var(--slurp-muted)]")}>
+                {slpStirCantLine(t, line)}
+              </li>
             ))}
             {preview.error && (
               <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-danger)]")}>{errorMessage(preview.error)}</p>

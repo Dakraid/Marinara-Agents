@@ -25,6 +25,8 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
     cheat,
     composerRef,
     composerDesk,
+    photoDemand,
+    setPhotoDemand,
     composerTipAmount,
     composerTipNote,
     creatorReply,
@@ -237,8 +239,12 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
               },
             }
           : {}),
+        ...(asSupport && photoDemand ? { photoDemand: true } : {}),
       });
-      if (asSupport) setComposerDesk(null);
+      if (asSupport) {
+        setComposerDesk(null);
+        setPhotoDemand(false);
+      }
       setSendRequest(null);
       if (sendOrigin) playSlpSpendMoment(sendOrigin);
       setPending({ content, id: result.message.id, startedAt: optimisticStartedAt });

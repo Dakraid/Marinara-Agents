@@ -113,7 +113,8 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
         }
       : null;
   // The player may speak as Slurp Support (Slurp's staff) in any chat with a Creator they do not run.
-  const canSwitchVoice = Boolean(personaId && targetCreatorAccountId && !ownsCreator);
+  // Support's own thread is a staff console: it has no way back to the persona's voice.
+  const canSwitchVoice = Boolean(personaId && targetCreatorAccountId && !ownsCreator && !asSupport);
   const menuAction = (run: () => void) => () => {
     setHeaderMenuOpen(false);
     run();
@@ -289,7 +290,8 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
               {localizeUi("ui.slurp.messages.memories", { defaultValue: "Memories" })}
             </SlpSheetItem>
           )}
-          {threadId && (
+          {/* Slurp's staff do not commission pictures: Support has its own photo tools (0.3.6). */}
+          {threadId && !asSupport && (
             <SlpSheetItem onSelect={menuAction(() => setDrawerMode("commissions"))}>
               <BriefcaseBusiness aria-hidden="true" />
               <span className="min-w-0 flex-1">
@@ -305,14 +307,12 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
         </SlpSheetGroup>
         {canSwitchVoice && (
           <SlpSheetGroup>
-            <SlpSheetItem onSelect={menuAction(() => setSupportChoice(!asSupport))}>
-              {asSupport ? <UserRound aria-hidden="true" /> : <Headset aria-hidden="true" />}
-              {asSupport
-                ? localizeUi("ui.slurp.messages.supportVoiceOff", { defaultValue: "Back to your persona" })
-                : localizeUi("ui.slurp.messages.supportVoiceOn", {
-                    defaultValue: "Switch to {{name}}",
-                    name: supportName,
-                  })}
+            <SlpSheetItem onSelect={menuAction(() => setSupportChoice(true))}>
+              <Headset aria-hidden="true" />
+              {localizeUi("ui.slurp.messages.supportVoiceOn", {
+                defaultValue: "Switch to {{name}}",
+                name: supportName,
+              })}
             </SlpSheetItem>
           </SlpSheetGroup>
         )}
@@ -388,7 +388,7 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
         </div>
       )}
 
-      {activeCommission && personaId && (
+      {activeCommission && personaId && !asSupport && (
         // The same commission component as the chat and the drawer, as one line with its next step.
         <div
           className={cn("relative z-[8] shrink-0 px-3 py-2 shadow-[var(--slurp-shadow-raised)]", SLP_BAR_GLASS_CLASS)}

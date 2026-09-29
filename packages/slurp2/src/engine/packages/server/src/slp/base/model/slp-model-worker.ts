@@ -23,8 +23,14 @@ let claimQueue: Promise<unknown> = Promise.resolve();
  * account. The budget's untouched limits grow with this number (task F).
  */
 export async function countSlurpActiveCreators(db: DB): Promise<number> {
+  // Every `getSettings()` asks for this, and it parses every account row: the feed paid for it several
+  // times per Creator per request. Cached until the accounts table is written again (0.3.6).
+  const store = (db as { _fileStore?: { getTableWriteGeneration?: (table: string) => number } })._fileStore;
+  const generation = store?.getTableWriteGeneration?.("slurp2_accounts");
+  const cached = store ? activeCreatorsCache.get(store) : undefined;
+  if (generation !== undefined && cached?.generation === generation) return cached.count;
   const rows = await db.select().from(slpAccounts).where(eq(slpAccounts.platform, "slurp"));
-  return rows.filter((row) => {
+  const count = rows.filter((row) => {
     if (row.kind === "persona" && (row.sourceKind ?? row.kind) === "persona") return false;
     try {
       const settings = typeof row.settings === "string" ? JSON.parse(row.settings) : row.settings;
@@ -33,7 +39,11 @@ export async function countSlurpActiveCreators(db: DB): Promise<number> {
       return false;
     }
   }).length;
+  if (store && generation !== undefined) activeCreatorsCache.set(store, { generation, count });
+  return count;
 }
+
+const activeCreatorsCache = new WeakMap<object, { generation: number; count: number }>();
 
 /** The saved budget sized for today's Creators. Every claim goes through this, so callers pass the saved one. */
 export async function slurpEffectiveModelBudget(db: DB, budget: SlurpModelBudget): Promise<SlurpModelBudget> {

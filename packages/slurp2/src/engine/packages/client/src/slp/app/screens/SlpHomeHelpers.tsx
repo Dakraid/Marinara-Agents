@@ -266,6 +266,9 @@ export function SlurpAccessTransition({
   const reduceMotion = useReducedMotion();
   const previousLocked = useRef(locked);
   const [celebrating, setCelebrating] = useState(false);
+  // Only a card that starts locked can grow on a reveal. A layout node on every card made framer
+  // measure the whole feed on each mount: most of a Hub tab switch on a phone (0.3.6).
+  const [mayReveal] = useState(locked);
 
   useEffect(() => {
     const revealed = previousLocked.current && !locked;
@@ -279,14 +282,13 @@ export function SlurpAccessTransition({
 
   return (
     <motion.div
-      layout={reduceMotion ? false : "size"}
+      layout={reduceMotion || !mayReveal ? false : "size"}
       transition={{ type: "spring", duration: 0.58, bounce: 0 }}
-      style={
-        menuOpen
-          ? { position: "relative", zIndex: 40 }
-          : { contentVisibility: "auto", containIntrinsicSize: "auto 720px" }
-      }
+      // `content-visibility` is desktop-only (slp-client-entry.tsx): on a phone a fast flick outran it
+      // and showed half-black pages; on desktop it spares off-screen cards every restyle (0.3.6).
+      style={menuOpen ? { position: "relative", zIndex: 40 } : undefined}
       data-slurp-access-transition={postId}
+      data-slp-menu-open={menuOpen ? "" : undefined}
     >
       <AnimatePresence initial={false} mode="popLayout">
         <motion.div

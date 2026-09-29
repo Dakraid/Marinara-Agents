@@ -3,7 +3,6 @@ import { resolveBaseUrl } from "../../../services/generation/connection-base-url
 import { createLLMProvider } from "../../../services/llm/provider-registry.js";
 import { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
 import { resolveSlurpTextConnection } from "../../base/identity/slp-connection.js";
-import { claimSlurpModelBudget, slurpModelWorkerAllows } from "../../base/model/slp-model-worker.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import {
   buildSlpFanVoiceDraftMessages,
@@ -16,21 +15,17 @@ export type SlpFanVoiceDraftResult =
   { ok: true; voice: string } | { ok: false; status: 409 | 429 | 502; error: string };
 
 /**
- * One model call for the fan type editor's "Draft voice". The player pressed it, so it is present work
- * and never paced, but it follows the AI budget's mode, connection and the "Fan type voice drafts" row.
+ * One model call for the fan type editor's "Draft voice". The player pressed it, so it uses the AI
+ * budget's connection but never its mode or caps (0.3.6).
  */
 // ponytail: plain prompt, not a Prompt Studio recipe; add a recipe if players want to edit it.
 export async function draftSlpFanTypeVoice(db: DB, input: SlpFanVoiceDraftInput): Promise<SlpFanVoiceDraftResult> {
   const settings = await createSlurpStorage(db).getSettings();
-  if (!slurpModelWorkerAllows(settings.modelBudget, "present"))
-    return { ok: false, status: 409, error: "The AI budget is off. Turn it on under Audience → AI budget." };
   const connection = await resolveSlurpTextConnection(
     createConnectionsStorage(db),
     settings.modelBudget.connectionId ?? settings.generationConnectionId,
   );
   if (!connection) return { ok: false, status: 409, error: "Select a text generation connection first." };
-  if (!(await claimSlurpModelBudget(db, settings.modelBudget, "fan_type_voice")))
-    return { ok: false, status: 429, error: "Today's AI budget for fan type voice drafts is used up." };
   const provider = slpWithProviderRetry(
     createLLMProvider(
       connection.provider,

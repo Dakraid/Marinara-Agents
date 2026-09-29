@@ -129,7 +129,7 @@ export function WizardFooter({
   const labels = ["Source", "Disclosure", "Profile"];
   return (
     <div
-      className="sticky bottom-[var(--slp-nav-live,0px)] z-[60] shrink-0 border-t border-[var(--noodle-divider)] bg-[var(--background)] px-4 pb-3 pt-3 sm:px-6"
+      className="slp-nav-live sticky bottom-[var(--slp-nav-live,0px)] z-[60] shrink-0 border-t border-[var(--noodle-divider)] bg-[var(--background)] px-4 pb-3 pt-3 sm:px-6"
       // Glides with the floating nav instead of jumping when it slides away.
       style={{ transition: `bottom ${SLP_MOTION.bar}ms ${SLP_MOTION.barEase}` }}
     >

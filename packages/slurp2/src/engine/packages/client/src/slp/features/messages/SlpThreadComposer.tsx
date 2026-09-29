@@ -1,7 +1,7 @@
 import { requestHintGuidance } from "./SlpMessages";
 import { SlpTextAssist } from "../assist/slp-assist-contract";
 import { slurpAssistChatContext } from "./slp-assist-chat-context";
-import { ArrowDown, ChevronLeft, Headset, Plus, Send, X } from "lucide-react";
+import { ArrowDown, ChevronLeft, Plus, Send, X } from "lucide-react";
 import { CommissionRequest } from "./commissions/SlpCommissions";
 import { CreatorMessageTools, FanImageTool, SlurpTipPanel } from "./SlpMessageTools";
 import type { SlurpPhotoSendResult } from "./slp-message-action-hooks";
@@ -13,7 +13,14 @@ import { SlpSheet, SlpSheetGroup } from "../../modules/chrome/SlpSheet";
 import { SlurpConnectionSwitcher } from "./SlpThreadChrome";
 import { SLP_THREAD_COLUMN_CLASS } from "./slp-thread-view-model";
 import type { SlurpThreadViewModel } from "./slp-thread-actions";
-import { SlpDeskComposerChip, SlpDeskPlayHost, SlpDeskToolPanel } from "./SlpDeskComposer";
+import {
+  SlpDeskComposerChip,
+  SlpDeskPlayHost,
+  SlpDeskToolPanel,
+  SlpPhotoDemandChip,
+  SlpPhotoDemandTool,
+  SlpSupportPostPicker,
+} from "./SlpDeskComposer";
 
 /** The message composer: a glass bar with add, the draft and send; the tools open in a sheet. */
 export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
@@ -52,7 +59,6 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
     setPreparingImage,
     setReplyStatus,
     setRequestHint,
-    setSupportChoice,
     supportName,
     setToolTab,
     setToolsOpen,
@@ -70,7 +76,12 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
   // These tools act on a conversation that exists. In a new chat they opened an empty panel.
   const availableTabs = toolTabs.filter(
     (tab) =>
-      thread || (tab.id !== "photo" && tab.id !== "generated-photo" && tab.id !== "request" && tab.id !== "creator"),
+      thread ||
+      (tab.id !== "photo" &&
+        tab.id !== "generated-photo" &&
+        tab.id !== "request" &&
+        tab.id !== "creator" &&
+        tab.id !== "show-post"),
   );
   const activeTab = availableTabs.find((tab) => tab.id === toolTab) ?? null;
   // A paid first message says its price where it is spent: on the Send button. The server charges it
@@ -124,7 +135,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
     <>
       {/* Pinned above the floating nav; glides to the edge with the nav while it is away. */}
       <div
-        className="relative mb-[var(--slp-nav-live,0px)] shrink-0 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5"
+        className="slp-nav-live relative mb-[var(--slp-nav-live,0px)] shrink-0 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5"
         style={{ transition: `margin-bottom ${SLP_MOTION.bar}ms ${SLP_MOTION.barEase}` }}
       >
         {awayFromBottom && (
@@ -149,26 +160,8 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
           </div>
         )}
         <div className={cn(SLP_THREAD_COLUMN_CLASS, "flex flex-col gap-2")}>
-          {asSupport && (
-            // Whose voice the next line is in, one tap from switching back.
-            <div className="slurp-bubble-in flex h-9 items-center gap-2 self-start rounded-full bg-[var(--slurp-tint)] ps-3 pe-1 text-xs font-semibold text-[var(--slurp-text)]">
-              <Headset size={14} aria-hidden="true" />
-              {localizeUi("ui.slurp.messages.supportVoiceChip", {
-                defaultValue: "Writing as {{name}}",
-                name: supportName,
-              })}
-              <button
-                type="button"
-                onClick={() => setSupportChoice(false)}
-                aria-label={localizeUi("ui.slurp.messages.supportVoiceOff", { defaultValue: "Back to your persona" })}
-                title={localizeUi("ui.slurp.messages.supportVoiceOff", { defaultValue: "Back to your persona" })}
-                className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
-              >
-                <X size={14} aria-hidden="true" />
-              </button>
-            </div>
-          )}
           {asSupport && <SlpDeskComposerChip model={model} />}
+          {asSupport && <SlpPhotoDemandChip model={model} />}
           {composerTipAmount > 0 && !asSupport && (
             <div className="slurp-bubble-in flex h-9 items-center gap-2 self-start rounded-full bg-[var(--slurp-tint)] ps-3 pe-1 text-xs font-semibold text-[var(--slurp-text)]">
               {localizeUi("ui.slurp.messages.tipAttached", { defaultValue: "Tip attached" })}
@@ -397,6 +390,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
             personaId={personaId}
             mode="choose"
             onSent={answerPhoto}
+            asSupport={asSupport}
           />
         )}
 
@@ -494,6 +488,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
             personaId={personaId}
             mode="generate"
             onSent={answerPhoto}
+            asSupport={asSupport}
           />
         )}
 
@@ -544,6 +539,8 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
           />
         )}
 
+        {toolTab === "show-post" && asSupport && thread && <SlpSupportPostPicker model={model} onDone={closeTools} />}
+        {toolTab === "demand" && asSupport && <SlpPhotoDemandTool model={model} onDone={closeTools} />}
         {(toolTab === "offer" || toolTab === "move" || toolTab === "note") && asSupport && (
           <SlpDeskToolPanel model={model} onPicked={closeTools} />
         )}

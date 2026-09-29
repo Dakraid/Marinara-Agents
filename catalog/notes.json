@@ -332,6 +332,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.6",
+          "date": "2026-09-30",
+          "notes": "Faster (measured on a slowed phone), and your own taps never spend the AI budget.\n\n- Speed: a fast scroll no longer restyles the whole feed or shows black gaps; Hub and profiles draw a few cards at a time; fewer polls, cached server work; Settings loads only what is open; other languages load on demand; new pictures are stored as WebP.\n- AI budget: only the world's own writing counts; anything you ask for never uses it and \"Off\" never blocks it. New AI limits page and a Creator Pages connection.\n- Slurp Support: attach or order an image, link a post or Story, ask for photo verification; a staff-console menu, no Commissions, one grey console, pictures that load.\n- Fixes: Stir's Support tools no longer grey out \"Do it\"; Creator Pages keep their blocks.",
+          "highlight": false
+        },
+        {
           "version": "0.3.5",
           "date": "2026-09-29",
           "notes": "Support desk, polyamory, character names in pictures. Design: `docs/SUPPORT-DESK.md`.\n\n- Support is no fan: each Creator gets a desk record (trust, suspicion and the risk of being caught, badges, feature or throttle, favours, a challenge, a contract, a ticket, leaving). Support is always \"Slurp Support\".\n- Stir gets a Support desk and eight desk actions; Support threads leave persona inboxes. Support chats get offers the Creator answers, perks, warnings, rumours, private notes and a ticket bar.\n- The world clock runs the desk on templates. New Settings › Stir.\n- Polyamory (off by default): couples of up to four, polyamorous Creators in several couples; each Creator is monogamous or polyamorous.\n- Pictures of a known character lead with their card name (\"The image model knows this character\", on by default); the enhancer learns who they are. See `docs/IMAGE-PROMPTS.md`.\n- Fixes: persona switcher hidden on desktop; Inbox badge disagreed with Messages; Inbox listed only three chats.",
@@ -443,12 +449,6 @@
           "version": "0.2.66",
           "date": "2026-09-25",
           "notes": "- Publishing, Images, Ads and Messaging show fixed choices as button rows instead of dropdowns: story rate, post ideas, free teasers, generation mode, image context, appearance updates, ad frequency, steering, content ceiling, era, tone and the default DM policy.\n- Every folded block in settings looks and works the same, and shows how many settings it holds.\n- The \"Set Slurp's pace\" wizard is gone from Publishing; the preset cards on the same page do the same job.",
-          "highlight": false
-        },
-        {
-          "version": "0.2.65",
-          "date": "2026-09-25",
-          "notes": "- Life details sit right after \"Waiting for you\" in a Creator's Memory tab. People, places, work, things, habits and running jokes are chips: type and press Enter to add, tap the cross to remove.\n- The heat range of a card is picked with button rows, and the note filters fold away behind the search box, with the number of active filters shown.",
           "highlight": false
         }
       ]

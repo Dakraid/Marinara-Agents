@@ -167,7 +167,15 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
       {/* `overflow: clip` (not hidden) on both boxes: focus must never scroll them (7c M-006). */}
       <div data-slp-task="" className="flex min-h-0 min-w-0 max-w-full flex-1" style={{ overflow: "clip" }}>
         <SlurpBubbleStyles />
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col" style={{ overflow: "clip" }}>
+        <div
+          className={cn(
+            "flex min-h-0 min-w-0 flex-1 flex-col",
+            // Slurp Support's thread reads as a staff console, header to composer (docs/SUPPORT-DESK.md).
+            relationship?.desk && "bg-[color-mix(in_srgb,var(--slurp-canvas)_90%,var(--slurp-muted))]",
+          )}
+          style={{ overflow: "clip" }}
+          data-slp-desk-thread={relationship?.desk ? "" : undefined}
+        >
           <SlpThreadHeader model={model} />
 
           <div
@@ -178,12 +186,7 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
               // Reaching the top is the same request as pressing the button, so it does the same thing.
               if ((olderCount > 0 || nextOlderCursor) && container.scrollTop < 64) void showOlder();
             }}
-            className={cn(
-              "min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-3 py-4",
-              // Slurp Support's thread reads as a staff console, not a fan chat (docs/SUPPORT-DESK.md).
-              relationship?.desk && "bg-[color-mix(in_srgb,var(--slurp-canvas)_90%,var(--slurp-muted))]",
-            )}
-            data-slp-desk-thread={relationship?.desk ? "" : undefined}
+            className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-3 py-4"
           >
             <div className={cn(SLP_THREAD_COLUMN_CLASS, "flex min-h-full min-w-0 flex-col gap-3")}>
               {notLoaded &&

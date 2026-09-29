@@ -126,6 +126,19 @@ export function SlpConnectionsPanel({
           })}
         </Field>
         <Field
+          settingKey="pageConnectionId"
+          label={t("ui.slurp.settings.connections.creatorPages")}
+          detail={t("ui.slurp.settings.connections.creatorPagesUse")}
+        >
+          {picker({
+            value: settings.pageConnectionId,
+            available: textConnections,
+            fallback: t("ui.slurp.settings.connections.aiWritingFallback"),
+            emptyLabel: useDefault,
+            onChange: (id) => void update("pageConnectionId", id),
+          })}
+        </Field>
+        <Field
           label={t("ui.slurp.settings.connections.imageContext")}
           detail={t("ui.slurp.settings.connections.imageContextUse")}
         >

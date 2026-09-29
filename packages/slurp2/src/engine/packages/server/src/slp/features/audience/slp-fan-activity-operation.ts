@@ -383,11 +383,17 @@ export async function runCreatorFanActivity(input: {
       // Fan activity has its own on switch, and a scheduled run is what that switch asked for. Sent as
       // "background", every run was refused under the default "present" budget mode — nothing
       // detects presence — so automatic audience activity never ran. The daily caps still apply.
+      // A run the player started ("Refresh now", Stir's "Run audience") never spends the budget (0.3.6).
+      const world = input.mode !== "manual";
       const workerContext = "present";
-      if (!slurpModelWorkerAllows(settings.modelBudget, workerContext)) return { status: "ai_off", created: 0 };
+      if (world && !slurpModelWorkerAllows(settings.modelBudget, workerContext))
+        return { status: "ai_off", created: 0 };
       // Look without spending: the call is claimed below, once the run has somebody to write for,
       // so a run with no eligible posts no longer uses a call (R1-113).
-      if (!spendSlurpModelBudget(settings.modelBudget, await getSlurpModelBudgetLedger(input.db, at), "thread")) {
+      if (
+        world &&
+        !spendSlurpModelBudget(settings.modelBudget, await getSlurpModelBudgetLedger(input.db, at), "thread")
+      ) {
         return { status: "limit_reached", created: 0 };
       }
       await writePlan(input.db, plan);
@@ -464,7 +470,7 @@ export async function runCreatorFanActivity(input: {
       }
       // ponytail: another worker can spend the last call between the look above and this claim; the
       // run is then skipped rather than retried. Reserve-and-release on the ledger if that matters.
-      if (!(await claimSlurpModelBudget(input.db, settings.modelBudget, "thread", at))) {
+      if (world && !(await claimSlurpModelBudget(input.db, settings.modelBudget, "thread", at))) {
         plan = finishSlpFanActivityRun(plan, run.id, "skipped", at);
         await writePlan(input.db, plan);
         return { status: "limit_reached", created: 0, runId: run.id };

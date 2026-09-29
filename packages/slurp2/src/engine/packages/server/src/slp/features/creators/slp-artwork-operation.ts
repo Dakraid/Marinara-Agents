@@ -106,6 +106,8 @@ export async function generateCreatorArtwork(
       db,
       debugMode: false,
       previewOnly: false,
+      // Only the player's routes call this; the world's backfill below stays on the budget.
+      playerAsked: true,
       width: input.kind === "banner" ? 1536 : 1024,
       height: input.kind === "banner" ? 512 : 1024,
       compositionGuard: options.composition ? artworkCompositionGuard(input.kind) : undefined,

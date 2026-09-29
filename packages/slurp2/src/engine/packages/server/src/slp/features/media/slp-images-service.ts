@@ -4,7 +4,7 @@ import { logger, logDebugOverride } from "../../../lib/logger.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { type SlurpSettings } from "../../modules/settings/slp-settings.js";
 import { SLURP_ENERGY_COST } from "../../modules/creators/slp-creator-state.js";
-import { NOODLER_MEDIA_PREFIX } from "../../base/media/slp-media.js";
+import { NOODLER_MEDIA_PREFIX, slpCompactGeneratedImage } from "../../base/media/slp-media.js";
 import { resolveImageConnectionFallback } from "../../../services/generation/media-connection-fallback.js";
 import { generateImage, stageImageToDisk, type StagedGalleryImage } from "../../../services/image/image-generation.js";
 import { generateSlurpImageWithHost, stageSlurpImageWithHost } from "../../base/host/slp-generation-integrations.js";
@@ -54,7 +54,6 @@ import {
 } from "../../base/media/slp-image-prompt.js";
 import { slurpViewpointForFamily, slurpViewpointIn } from "../../modules/feed/slp-camera-source.js";
 import { slurpImageNegativePrompt, slurpImageNegativeTerms } from "../../modules/feed/slp-image-brief.js";
-import { slurpImageExtension } from "../../base/media/slp-image-format.js";
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
 
 /**
@@ -141,6 +140,8 @@ type CreatorPostImageInput = {
   beforeProviderAttempt?: (attempt: number) => Promise<void>;
   onProviderAttemptFailure?: (attempt: number) => Promise<void>;
   admissionMode?: ConnectionAdmissionMode;
+  /** The player asked for this picture: its prompt rewrite never spends the world's AI budget (0.3.6). */
+  playerAsked?: boolean;
   width?: number;
   height?: number;
   /** A Story picture: drawn at the Story size unless the caller names its own size. */
@@ -484,7 +485,7 @@ async function generateCreatorPostImageRun(
         promptBlocks: slurpPromptContext(input.settings).blocks,
         connectionId: input.settings.imagePromptConnectionId || input.settings.generationConnectionId,
         viewpoint: viewpoint?.phrase,
-        budget: input.settings.modelBudget,
+        budget: input.playerAsked ? undefined : input.settings.modelBudget,
         onRequest: ({ messages, ...model }) => {
           run.rewrite.model = model;
           run.rewrite.messages = messages;
@@ -692,17 +693,10 @@ async function generateCreatorPostImageRun(
       logger.warn(error, "[slurp] Could not charge image energy for %s", input.account.id);
     }
   }
+  const stored = await slpCompactGeneratedImage(image);
   const file =
-    stageSlurpImageWithHost(
-      `${NOODLER_MEDIA_PREFIX}${input.account.id}`,
-      image.base64,
-      slurpImageExtension(image.base64, image.ext),
-    ) ??
-    stageImageToDisk(
-      `${NOODLER_MEDIA_PREFIX}${input.account.id}`,
-      image.base64,
-      slurpImageExtension(image.base64, image.ext),
-    );
+    stageSlurpImageWithHost(`${NOODLER_MEDIA_PREFIX}${input.account.id}`, stored.base64, stored.ext) ??
+    stageImageToDisk(`${NOODLER_MEDIA_PREFIX}${input.account.id}`, stored.base64, stored.ext);
   return {
     metadata: {
       imageGenerated: true,

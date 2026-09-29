@@ -1,5 +1,14 @@
 # Slurp release notes
 
+## 0.3.6 — 2026-09-30
+
+Faster (measured on a slowed phone), and your own taps never spend the AI budget.
+
+- Speed: a fast scroll no longer restyles the whole feed or shows black gaps; Hub and profiles draw a few cards at a time; fewer polls, cached server work; Settings loads only what is open; other languages load on demand; new pictures are stored as WebP.
+- AI budget: only the world's own writing counts; anything you ask for never uses it and "Off" never blocks it. New AI limits page and a Creator Pages connection.
+- Slurp Support: attach or order an image, link a post or Story, ask for photo verification; a staff-console menu, no Commissions, one grey console, pictures that load.
+- Fixes: Stir's Support tools no longer grey out "Do it"; Creator Pages keep their blocks.
+
 ## 0.3.5 — 2026-09-29
 
 Support desk, polyamory, character names in pictures. Design: `docs/SUPPORT-DESK.md`.

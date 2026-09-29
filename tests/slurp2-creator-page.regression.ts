@@ -43,11 +43,16 @@ test("a page is read block by block: a bad block is dropped, the rest stay", () 
   });
   assert.ok(page);
   assert.equal(page.theme, "slurp", "an unknown theme falls back to Slurp pink");
+  // 0.3.6: an extra field is removed (the price is never stored) and an unknown layout gets the
+  // default; only an empty block is dropped. Dropping them left most model answers with no Page.
   assert.deepEqual(
     page.blocks.map((block) => block.kind),
-    ["quote", "list", "facts"],
-    "empty, unknown-layout and extra-field blocks are dropped",
+    ["quote", "list", "menu", "facts", "collage"],
+    "empty blocks are dropped; extra fields and unknown layouts are not fatal",
   );
+  assert.equal("price" in page.blocks[2], false, "a field no block has is never stored");
+  const collage = page.blocks[4];
+  assert.equal(collage.kind === "collage" && collage.layout, "bento");
   const list = page.blocks[1];
   assert.equal(
     list.kind === "list" && list.items[1].length,
@@ -105,6 +110,71 @@ test("duplicate block ids are made unique, so the editor can key on them", () =>
   });
   assert.ok(page);
   assert.notEqual(page.blocks[0].id, page.blocks[1].id);
+});
+
+test("a model's own spelling, a named pick and a made-up style still make a Page (0.3.6)", () => {
+  const page = normalizeSlpCreatorPage({
+    theme: "candle",
+    blocks: [
+      {
+        kind: "this_or_that",
+        title: "pick one",
+        emoji: "🔥",
+        pairs: [
+          { left: "tea", right: "coffee", pick: "coffee" },
+          { left: "Cats", right: "Dogs", pick: " dogs " },
+          { left: "Sun", right: "Rain", pick: " Right " },
+        ],
+      },
+      { kind: "Q&A", items: [{ question: "fav night?", answer: "all of them", mood: "x" }] },
+      { kind: "list", style: "stars", items: ["tarot"] },
+    ],
+  });
+  assert.ok(page);
+  assert.deepEqual(
+    page.blocks.map((block) => block.kind),
+    ["thisOrThat", "qa", "list"],
+  );
+  const pairs = page.blocks[0];
+  assert.equal(pairs.kind === "thisOrThat" && pairs.pairs[0].pick, "right", "a pick named by its word finds its side");
+  assert.equal(pairs.kind === "thisOrThat" && pairs.pairs[1].pick, "right", "case and spaces do not change the side");
+  assert.equal(pairs.kind === "thisOrThat" && pairs.pairs[2].pick, "right", "a side named in any case is that side");
+  const list = page.blocks[2];
+  assert.equal(list.kind === "list" && list.style, "bullets");
+  const service = slurp2Source(
+    "packages/slurp2/src/engine/packages/server/src/slp/features/creators/slp-creator-page-service.ts",
+  );
+  // Everything up to the last closing tag goes, with or without an opening tag.
+  assert.match(service, /replace\(\/\^\[\\s\\S\]\*<\\\/think>\/iu/u, "a thinking model's notes never hide the answer");
+  assert.doesNotMatch(service, /answerStart/u, "the log never carries the Creator's words");
+  assert.match(service, /maxTokens: 4000/u);
+});
+
+test("a model's other field names still make blocks (0.3.6)", () => {
+  const page = normalizeSlpCreatorPage({
+    theme: "ocean",
+    blocks: [
+      { type: "quote", content: "salt in my hair" },
+      { type: "list", title: null, items: [{ text: "surf" }, { label: "sunsets" }, "tacos"] },
+      { type: "qa", items: [{ q: "fav spot?", a: "the pier" }] },
+      { type: "this_or_that", pairs: [["sunrise", "sunset"], { this: "boards", that: "fins", pick: "left" }] },
+      { type: "facts", title: "where i am" },
+    ],
+  });
+  assert.ok(page);
+  assert.deepEqual(
+    page.blocks.map((block) => block.kind),
+    ["quote", "list", "qa", "thisOrThat", "facts"],
+  );
+  const list = page.blocks[1];
+  assert.deepEqual(list.kind === "list" && list.items, ["surf", "sunsets", "tacos"]);
+  const qa = page.blocks[2];
+  assert.equal(qa.kind === "qa" && qa.items[0].answer, "the pier");
+  const pairs = page.blocks[3];
+  assert.deepEqual(pairs.kind === "thisOrThat" && pairs.pairs.map((pair) => [pair.left, pair.right]), [
+    ["sunrise", "sunset"],
+    ["boards", "fins"],
+  ]);
 });
 
 test("a stale Now line hides instead of lying", () => {

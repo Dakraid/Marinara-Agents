@@ -2,6 +2,7 @@ import { Clock3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { readSlpPurpose } from "../../../../../shared/src/slp/slp-post-purpose.js";
 import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
+import { slpDrawAllCards } from "../../base/ui/slp-drawn-count";
 import { SlpDropTime } from "../story/SlpStoryStickers";
 
 /**
@@ -63,7 +64,10 @@ export function SlpPostPurposeNote({
  * highlight. False when it is not there, so the caller can open the Creator's page instead.
  */
 export function slpShowPostInPlace(postId: string): boolean {
-  const card = document.querySelector<HTMLElement>(`[data-noodle-post-id="${CSS.escape(postId)}"]`);
+  const find = () => document.querySelector<HTMLElement>(`[data-noodle-post-id="${CSS.escape(postId)}"]`);
+  // A long list draws its cards a few at a time (0.3.6): draw the rest before giving up on the post.
+  if (!find()) slpDrawAllCards();
+  const card = find();
   if (!card) return false;
   const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   const behavior = reduce ? "auto" : "smooth";

@@ -14,7 +14,9 @@ import {
   slpPulseClientSection,
   slpPulseComingUp,
   slpPulseNextTarget,
+  slpPulseRunningCount,
   slpPulseServerSection,
+  slpPulseTaskDone,
   slpPulseServerTarget,
   slpPulseSummaryCounts,
   type PulseNext,
@@ -40,11 +42,7 @@ export function SlpPulseCard({ open, onOpen, note = false }: { open: boolean; on
   const serverTasks = useSlpPulseTasks(false);
   // Long actions started in this tab count too (task B), so the dot shows the moment one starts.
   const clientRunning = useSlpTasks((state) => state.tasks.filter((task) => task.status === "running").length);
-  const serverRunning =
-    serverTasks.data?.tasks.filter(
-      (task) => slpPulseServerSection(task.status, isTerminalTask(task.status)) === "running",
-    ).length ?? 0;
-  const activeCount = serverRunning + clientRunning;
+  const activeCount = slpPulseRunningCount(serverTasks.data?.tasks) + clientRunning;
   return (
     <button
       type="button"
@@ -363,10 +361,20 @@ type PulseTasksResponse = {
 };
 
 function useSlpPulseTasks(active = false) {
+  // A tap in this tab starts a client task first; poll fast until the server shows its row.
+  const clientRunning = useSlpTasks((state) => state.tasks.some((task) => task.status === "running"));
   return useQuery({
     queryKey: ["slurp", "pulse", "tasks"],
     queryFn: () => api.get<PulseTasksResponse>("/slurp2/slurp/tasks"),
-    refetchInterval: active ? 2_000 : 15_000,
+    // The route reads many tables: poll fast only while something runs (0.3.6), slowly otherwise.
+    refetchInterval: (query) =>
+      clientRunning || slpPulseRunningCount(query.state.data?.tasks) > 0
+        ? active
+          ? 2_000
+          : 15_000
+        : active
+          ? 10_000
+          : 60_000,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
   });
@@ -386,7 +394,7 @@ function mergePulseTasks(serverTasks: PulseServerTask[]) {
   return {
     active: combined.filter((task) => isActiveTask(task.status)),
     scheduled: sortSlpPulseScheduled(combined.filter((task) => task.status === "scheduled")),
-    recent: combined.filter((task) => isTerminalTask(task.status)),
+    recent: combined.filter((task) => slpPulseTaskDone(task.status)),
   };
 }
 
@@ -394,7 +402,7 @@ function groupPulseTasks(tasks: { active: PulseTask[]; scheduled: PulseTask[]; r
   const grouped = new Map<string, PulseGroup>();
   const add = (task: PulseTask) => {
     const kind = pulseGroupKind(task.kind);
-    const section = slpPulseServerSection(task.status, isTerminalTask(task.status));
+    const section = slpPulseServerSection(task.status, slpPulseTaskDone(task.status));
     // One card per kind and section, so a failed run never hides inside a group of finished ones.
     const id = `${kind}:${section}`;
     const current = grouped.get(id) ?? {
@@ -428,7 +436,7 @@ function groupPulseTasks(tasks: { active: PulseTask[]; scheduled: PulseTask[]; r
 }
 
 function isActiveTask(status: string) {
-  return !isTerminalTask(status) && status !== "scheduled";
+  return !slpPulseTaskDone(status) && status !== "scheduled";
 }
 
 function pulseGroupKind(kind: string) {
@@ -451,25 +459,6 @@ function pulseGroupKind(kind: string) {
   if (kind === "creator-improvement") return "creator-improvement";
   if (kind === "commission") return "commission";
   return kind;
-}
-
-function isTerminalTask(status: string) {
-  return new Set([
-    "completed",
-    "complete",
-    "success",
-    "failed",
-    "error",
-    "abandoned",
-    "published",
-    "discarded",
-    "sent",
-    "cancelled",
-    // A Stir play taken back with Undo (task C).
-    "undone",
-    // A fan run that found nothing to do ends as "skipped"; Pulse showed it "Working" forever (R1-103).
-    "skipped",
-  ]).has(status);
 }
 
 function PulseTaskRow({
@@ -741,7 +730,7 @@ function taskSummary(task: PulseTask | undefined, t: (key: string, options?: Rec
     return `${t("ui.slurp.pulse.nextPublish", { defaultValue: "Next publish" })} · ${formatPulseUntil(task.publishAt)}`;
   const progress =
     task.progress && task.progress.total > 0 ? `${task.progress.completed}/${task.progress.total}` : null;
-  return task.detail || progress || pulseTaskStatus(task.status, !isTerminalTask(task.status), t);
+  return task.detail || progress || pulseTaskStatus(task.status, !slpPulseTaskDone(task.status), t);
 }
 
 function pulseTaskStatus(

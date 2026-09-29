@@ -100,6 +100,7 @@ export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBac
   generationConnectionId: place("models", "connections", "all-slurp", "text connection", "model"),
   imageContextMode: automation("images", "image context", "vision"),
   imageContextConnectionId: automation("images", "vision connection", "image description"),
+  pageConnectionId: place("models", "connections", "all-slurp", "creator pages connection", "page builder"),
   imageStyleProfileId: automation("images", "image style", "style profile"),
   imageGenerationPrompt: prompts("image instructions", "image prompt"),
   imagePromptInterpretation: prompts("image prompt interpretation", "image prompt style", "Danbooru"),

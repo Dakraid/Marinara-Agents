@@ -10,7 +10,9 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   applySlurpSupportTalk,
+  isSlurpSupportPhotoDemand,
   migrateSlurpSupportLines,
+  slurpSupportPhotoFallback,
   readSlurpSupportTakeaway,
   slurpSupportMessageIds,
   slurpSupportSteeringPatch,
@@ -362,6 +364,58 @@ async function main() {
       thread: { id: "ben-mira", viewerAccountId: "persona-ben", creatorAccountId: "mira" },
     });
     assert.deepEqual(writes, []);
+  }
+
+  // 5. Support's pictures (0.3.6): send, create, show a post, and demand one right now.
+  {
+    assert.equal(isSlurpSupportPhotoDemand({ metadata: { supportVoice: true, photoDemand: true } }), true);
+    assert.equal(isSlurpSupportPhotoDemand({ metadata: { photoDemand: true } }), false, "only Support demands");
+    assert.equal(isSlurpSupportPhotoDemand({ metadata: { supportVoice: true } }), false);
+    assert.equal(isSlurpSupportPhotoDemand(null), false);
+    const root = join(fileURLToPath(new URL("..", import.meta.url)), "packages/slurp2/src/engine/packages");
+    const read = (path: string) => readFileSync(join(root, path), "utf8");
+    const operation = read("server/src/slp/features/messages/slp-message-operation.ts");
+    assert.match(operation, /const demanded = support && isSlurpSupportPhotoDemand\(trigger\);/u);
+    assert.match(
+      operation,
+      /const image = reply\.image \?\? \(demanded \? slurpSupportPhotoFallback\(trigger\?\.content \?\? ""\) : null\);/u,
+    );
+    // The fallback follows what Support asked for, so two different requests never draw the same picture.
+    const desk = slurpSupportPhotoFallback("Show me   your desk,\n with today's receipt");
+    assert.match(desk.prompt, /shows what was asked for: "Show me your desk, with today's receipt"/u);
+    assert.notEqual(desk.prompt, slurpSupportPhotoFallback("outside, by the door").prompt);
+    assert.match(slurpSupportPhotoFallback("  ").prompt, /where they are at this moment/u, "no words: where they are");
+    assert.equal(desk.spicy, false);
+    assert.match(operation, /const price = demanded \? 0 : offer\.price;/u, "a demanded photo is free, never PPV");
+    const send = read("server/src/slp/features/messages/slp-messages-send-routes.ts");
+    assert.match(
+      send,
+      /if \(photoDemand && \(!parsed\.data\.asSupport \|\| \(await ownsCreator\(viewer\.id, parsed\.data\.creatorAccountId\)\)\)\)/u,
+    );
+    assert.match(
+      send,
+      /asSupport\s+\? await messages\.openThread\(SLURP_SUPPORT_ACCOUNT_ID, creator\.id, "creator", "waive"\)/u,
+    );
+    const media = read("server/src/slp/features/messages/slp-messages-media-routes.ts");
+    assert.match(
+      media,
+      /thread\.viewerAccountId !== SLURP_SUPPORT_ACCOUNT_ID \|\| \(await ownsCreator\(viewer\.id, thread\.creatorAccountId\)\)/u,
+    );
+    assert.match(
+      media,
+      /personaId: parsed\.data\.asSupport \? null : parsed\.data\.personaId,/u,
+      "Support's picture is never the persona",
+    );
+    const header = read("client/src/slp/features/messages/SlpThreadHeader.tsx");
+    assert.match(
+      header,
+      /threadId && !asSupport && \(\s+<SlpSheetItem onSelect=\{menuAction\(\(\) => setDrawerMode\("commissions"\)\)\}/u,
+    );
+    // Every persona of the player reads Support's pictures (they 404'd before, so none showed).
+    assert.match(
+      media,
+      /thread\.viewerAccountId === SLURP_SUPPORT_ACCOUNT_ID && Boolean\(await requireViewer\(parsed\.data\.personaId\)\)/u,
+    );
   }
 
   // Wiring: one Support account end to end, the migration runs on start and after a restore, and the

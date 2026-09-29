@@ -14,6 +14,8 @@ import type { SlpMessagesContext } from "./slp-messages-context.js";
 import { slpCreatorUnlockPriceFromMetadata } from "../../modules/economy/slp-prices.js";
 import { slpStoredMediaSize } from "../../base/media/slp-media.js";
 import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
+import { SLURP_SUPPORT_PHOTO_GUIDANCE } from "../../modules/messages/slp-support.js";
+import { SLURP_SUPPORT_NAME } from "../../modules/messages/slp-dm-roles.js";
 import { markSlurpDeskSupportTurn, prepareSlurpDeskSend, slurpDeskSendSchema } from "./desk/slp-desk-send.js";
 
 const sendSchema = z.object({
@@ -32,6 +34,8 @@ const sendSchema = z.object({
   asSupport: z.boolean().optional(),
   /** Support only: an Offer or a move that rides this line (docs/SUPPORT-DESK.md). */
   desk: slurpDeskSendSchema.optional(),
+  /** Support only: "send me a photo, right now". The Creator answers with a free picture (0.3.6). */
+  photoDemand: z.boolean().optional(),
 });
 
 const tipSchema = z.object({
@@ -56,6 +60,8 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
         personaId: z.string().trim().min(1),
         creatorAccountId: z.string().trim().min(1),
         postId: z.string().trim().min(1),
+        /** Slurp Support puts a post (or Story) in front of the Creator, in Support's thread (0.3.6). */
+        asSupport: z.boolean().optional(),
       })
       .strict()
       .safeParse(req.body ?? {});
@@ -67,18 +73,24 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
     // Any post may go into any chat: the reader picks the chat, and sharing a Creator's post back
     // to that same Creator was the one target the picker never means.
     if (!creator || !post) return reply.code(404).send({ error: "Post not found" });
+    const asSupport = parsed.data.asSupport === true;
+    if (asSupport && (await ownsCreator(viewer.id, creator.id)))
+      return reply.code(400).send({ error: "Slurp Support writes to Creators you do not run." });
     // A locked post travels as a teaser. The bubble hides the body of a locked preview, but the
     // body used to ride along in the metadata anyway, so a share was a way to read it.
     // A post the fan already unlocked is theirs to show: it is no longer a paid teaser to them.
     const owned =
       post.access !== "public" &&
       (await slurp.listPostUnlocksForViewer(viewer.id)).some((unlock) => unlock.postId === post.id);
-    const locked = post.access !== "public" && !owned;
+    // Slurp's staff see every post; the Creator is looking at their own work.
+    const locked = !asSupport && post.access !== "public" && !owned;
     // The shared post now travels outside its author's own chat, so the card has to say whose
     // post it is. A missing author is not worth refusing the share over.
     const author =
       post.authorAccountId === creator.id ? creator : await slurp.getNoodlerAccountById(post.authorAccountId);
-    const opened = await messages.openThread(viewer.id, creator.id, "viewer", "refuse");
+    const opened = asSupport
+      ? await messages.openThread(SLURP_SUPPORT_ACCOUNT_ID, creator.id, "creator", "waive")
+      : await messages.openThread(viewer.id, creator.id, "viewer", "refuse");
     if (opened.status === "closed") return reply.code(403).send({ error: slurpClosedThreadText(opened) });
     if (opened.status === "fee_required")
       return reply
@@ -89,7 +101,7 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
     if (opened.status !== "ok") return reply.code(404).send({ error: "Could not open conversation" });
     const size = slpStoredMediaSize((post.metadata as Record<string, unknown> | undefined)?.noodlerMediaPath);
     const message = await messages.appendMessage(opened.thread.id, {
-      senderAccountId: viewer.id,
+      senderAccountId: asSupport ? SLURP_SUPPORT_ACCOUNT_ID : viewer.id,
       role: "viewer",
       kind: "post_preview",
       content: locked ? post.title || "" : post.title || post.content.slice(0, 180),
@@ -106,6 +118,7 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
         authorAvatarUrl: author?.avatarUrl ?? null,
         price: slpCreatorUnlockPriceFromMetadata(post.metadata as Record<string, unknown> | undefined),
         shareReason: "player",
+        ...(asSupport ? { sceneSpeaker: SLURP_SUPPORT_NAME, supportVoice: true } : {}),
         // The card reserves the post's own picture ratio (V).
         ...(size ? { imageWidth: size.width, imageHeight: size.height } : {}),
       },
@@ -136,6 +149,9 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
         : { ok: false as const, status: 400, error: "Only Slurp Support offers, to a Creator you do not run." }
       : null;
     if (deskStep && !deskStep.ok) return reply.code(deskStep.status).send({ error: deskStep.error });
+    const photoDemand = parsed.data.photoDemand === true;
+    if (photoDemand && (!parsed.data.asSupport || (await ownsCreator(viewer.id, parsed.data.creatorAccountId))))
+      return reply.code(400).send({ error: "Only Slurp Support demands a photo, from a Creator you do not run." });
     // A rumour told by Support is its own line: the lever writes it, and the Creator answers that.
     // A resend of the same request finds the line it already wrote and tells nothing twice.
     const toldBefore =
@@ -172,7 +188,14 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
           parsed.data.creatorAccountId,
           parsed.data.content,
           parsed.data.requestId,
-          { asSupport: parsed.data.asSupport === true, metadata: deskStep?.ok ? deskStep.metadata : undefined },
+          {
+            asSupport: parsed.data.asSupport === true,
+            metadata: photoDemand
+              ? { ...(deskStep?.ok ? deskStep.metadata : {}), photoDemand: true }
+              : deskStep?.ok
+                ? deskStep.metadata
+                : undefined,
+          },
         );
     if (sent.status === "not_found") return reply.code(404).send({ error: "Creator not found" });
     if (sent.status === "closed") return reply.code(403).send({ error: slurpClosedThreadText(sent) });
@@ -215,7 +238,7 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
       outcome = await replyToSlurpMessage(app.db, {
         threadId: sent.thread.id,
         triggerMessageId: replyTriggerMessageId,
-        generationGuidance: parsed.data.generationGuidance,
+        generationGuidance: photoDemand ? SLURP_SUPPORT_PHOTO_GUIDANCE : parsed.data.generationGuidance,
       });
     } catch (error) {
       logger.error(error, "[slurp-message] Reply failed after a send in thread %s", sent.thread.id);

@@ -225,8 +225,9 @@ assert.match(
 assert.match(service, /generateCreatorPostImage\(\{/u, "the Creator's own image pipeline");
 assert.match(service, /from "\.\.\/media\/slp-media-contract\.js"/u);
 assert.match(service, /finally \{\s*unlinkCreatorMedia\(mediaPath\);/u, "a drawn picture is never kept on disk");
-assert.match(service, /claimSlurpModelBudget\(db, settings\.modelBudget, "assist"\)/u, "text runs on the AI budget");
-assert.match(service, /slurpModelWorkerAllows\(settings\.modelBudget, "present"\)/u, "the budget's off switch holds");
+// 0.3.6: Write and Improve are the player's tap: never on the AI budget, never blocked by its mode.
+assert.doesNotMatch(service, /claimSlurpModelBudget|slurpModelWorkerAllows/u, "the player's own tap is off the budget");
+assert.match(service, /playerAsked: true/u, "a drawn picture's prompt rewrite is off the budget too");
 assert.match(
   service,
   /creator\?\.open && SLP_ASSIST_FIELDS\[input\.field\]\.voice !== "player"/u,

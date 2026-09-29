@@ -110,16 +110,20 @@ export async function previewSlpStirSteps(
   return { cards, cant };
 }
 
-/** Plain words → a previewed plan. One model call on the "Plans" row; nothing in the world changes. */
+/**
+ * Plain words → a previewed plan. One model call; nothing in the world changes. The player's own
+ * request never spends the AI budget (0.3.6); a Creator's DM proposal (`world`) is on the "Plans" row.
+ */
 export async function planSlpStir(
   db: DB,
   request: Omit<SlpStirPlanRequest, "personaId">,
   /** The pages the playing persona runs; without one, every page the player runs is theirs. */
   own?: (account: Account) => boolean,
+  origin: "player" | "world" = "world",
 ): Promise<SlpAssistOutcome<SlpStirPlan>> {
   const storage = createSlurpStorage(db);
   const settings = await storage.getSettings();
-  if (!slurpModelWorkerAllows(settings.modelBudget, "present"))
+  if (origin === "world" && !slurpModelWorkerAllows(settings.modelBudget, "present"))
     return { ok: false, status: 409, error: "Plans need your AI connection. The cards still work." };
   const connection = await resolveSlurpTextConnection(
     createConnectionsStorage(db),
@@ -134,7 +138,7 @@ export async function planSlpStir(
     listSlurpBrandCatalog(db),
     readSlurpStirPlays(db),
   ]);
-  if (!(await claimSlurpModelBudget(db, settings.modelBudget, "plan")))
+  if (origin === "world" && !(await claimSlurpModelBudget(db, settings.modelBudget, "plan")))
     return { ok: false, status: 429, error: "Today's AI budget for plans is used up. The cards still work." };
   const provider = slpWithProviderRetry(
     createLLMProvider(

@@ -44,7 +44,9 @@ import { slurpCreatorStateCanUseMedia } from "../../modules/creators/slp-creator
 import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
 import {
   applySlurpSupportTalk,
+  isSlurpSupportPhotoDemand,
   isSlurpSupportThread,
+  slurpSupportPhotoFallback,
   type SlurpSupportTalkStore,
 } from "../../modules/messages/slp-support.js";
 import { applySlurpDeskTalk } from "./desk/slp-desk-talk-operation.js";
@@ -396,13 +398,17 @@ export async function replyToSlurpMessage(
             },
           })) ?? stored;
       }
+      // Support's "photo, right now": always a free picture, even when the model forgot to add one.
+      const demanded = support && isSlurpSupportPhotoDemand(trigger);
+      const image = reply.image ?? (demanded ? slurpSupportPhotoFallback(trigger?.content ?? "") : null);
       if (
-        reply.image &&
-        reply.canSendImage &&
-        !support &&
-        // An AI fan gets words only: a picture needs the image budget the world does not spend on them.
-        !aiFan &&
-        slurpCreatorStateCanUseMedia(creatorState, thread.threadState)
+        image &&
+        (demanded ||
+          (reply.canSendImage &&
+            !support &&
+            // An AI fan gets words only: a picture needs the image budget the world does not spend on them.
+            !aiFan &&
+            slurpCreatorStateCanUseMedia(creatorState, thread.threadState)))
       ) {
         // A delayed ("away") reply draws too. The scheduler only ever answers the player's own
         // message, so the player asked; blocking it meant most chats never got a picture or a PPV
@@ -410,7 +416,7 @@ export async function replyToSlurpMessage(
         // The Creator's own Images switch, the one its posts use. The old gate read
         // `enableImagePrompts`, an internal flag with no control that is off on every install, so
         // no Creator ever sent a picture in a chat (R1-122). No image connection → "unavailable".
-        const imageAllowedBySettings = creator.settings.scheduler.autoPosting?.imagesEnabled === true;
+        const imageAllowedBySettings = demanded || creator.settings.scheduler.autoPosting?.imagesEnabled === true;
         // Decided before the picture: a paid (PPV) picture goes as far as the Creator does, a free
         // one to somebody who has not subscribed stays a tease.
         const offer = resolveSlurpMediaOffer({
@@ -418,7 +424,7 @@ export async function replyToSlurpMessage(
           rapportTier: thread.rapport.tier,
           subscribed,
           configuredPrice: messaging.ppvPrice,
-          spicy: slurpDmPictureSpicy(reply.image),
+          spicy: slurpDmPictureSpicy(image),
         });
         const creatorLevel = await resolveSlurpExplicitLevel(db, thread.creatorAccountId).catch(
           () => "suggestive" as const,
@@ -426,24 +432,24 @@ export async function replyToSlurpMessage(
         const drawn = imageAllowedBySettings
           ? await generateSlurpCommissionImage(db, {
               creatorAccountId: thread.creatorAccountId,
-              brief: `${reply.image.prompt}\nImage mode: ${reply.imageMode}`,
+              brief: `${image.prompt}\nImage mode: ${reply.imageMode}`,
               // A free picture stays a tease (a subscriber's casual one too); a paid one goes as far as the Creator does.
-              level: offer.price > 0 ? creatorLevel : slurpDmSpiceLevel(creatorLevel, false),
+              level: offer.price > 0 && !demanded ? creatorLevel : slurpDmSpiceLevel(creatorLevel, false),
             })
           : "unavailable";
         if (drawn !== "unavailable") {
-          const price = offer.price;
+          const price = demanded ? 0 : offer.price;
           const imageMessage = await messagesStore.appendMessage(thread.id, {
             senderAccountId: thread.creatorAccountId,
             role: "creator",
             kind: price > 0 ? "ppv" : "text",
-            content: reply.image.caption,
+            content: image.caption ?? "",
             price,
             unlockedAt: price > 0 ? null : new Date().toISOString(),
             metadata: {
               noodlerMediaPath: drawn.mediaPath,
               generatedContext: reply.imageMode,
-              imagePrompt: reply.image.prompt,
+              imagePrompt: image.prompt,
             },
           });
           if (!imageMessage) {

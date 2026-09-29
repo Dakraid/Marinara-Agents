@@ -91,7 +91,8 @@ export async function generateSlurpCommissionImage(
  */
 export async function generateSlurpViewerPhoto(
   db: DB,
-  input: { creatorAccountId: string; personaId: string; brief: string },
+  /** `personaId` null: Slurp Support's picture shows only the brief, nobody's appearance (0.3.6). */
+  input: { creatorAccountId: string; personaId: string | null; brief: string },
 ): Promise<{ mediaPath: string; promote: () => void; compensate: () => void } | "unavailable"> {
   const noodle = createSlurpStorage(db);
   const connections = createConnectionsStorage(db);
@@ -102,7 +103,7 @@ export async function generateSlurpViewerPhoto(
     (mappedId ? await connections.getWithKey(mappedId) : null) ?? (await connections.getDefaultForImageGeneration());
   if (!imageConnection) return "unavailable";
   const characters = createCharactersStorage(db);
-  const appearance = (await characters.getPersona(input.personaId))?.appearance?.trim() ?? "";
+  const appearance = input.personaId ? ((await characters.getPersona(input.personaId))?.appearance?.trim() ?? "") : "";
   const brief = input.brief.trim().slice(0, 2000);
   const image = await generateCreatorPostImage({
     account,

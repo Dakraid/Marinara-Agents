@@ -147,6 +147,9 @@ const noodleOwnedSourcePaths = [
   "packages/server/src/services/storage/noodle.storage.ts",
 ];
 const slurp2SourceRoot = join(packagesDir, "slurp2/src/engine");
+const slurp2LazyLocalePaths = ["de", "ko", "pl"].map(
+  (language) => `src/engine/packages/client/src/slp/locales/${language}.json`,
+);
 const slurp2OwnedSourcePaths = [
   "packages/client/src/slp",
   "packages/server/src/slp",
@@ -357,7 +360,7 @@ const features = [
   },
   {
     id: "slurp2",
-    version: "0.3.5",
+    version: "0.3.6",
     minEngineVersion: "2.4.6",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Slurp",
@@ -415,7 +418,9 @@ const features = [
     // `slurpcoin.svg` is deliberately not shipped: the Engine keeps SVG out of its servable
     // package-asset content types, so the route 404s it whatever the manifest declares. The coin
     // is inlined as a data URI in SlurpCoin.tsx instead, from the same file kept as source.
-    assetPaths: ["slurp2-logo.png", "slurp2agent.png"],
+    // The UI catalogs other than English are served as package assets and fetched on demand, so
+    // client.js carries one language instead of four (slp-client-entry.tsx, 0.3.6).
+    assetPaths: ["slurp2-logo.png", "slurp2agent.png", ...slurp2LazyLocalePaths],
     contributions: {
       slots: ["home-browser-tab"],
       homeBrowserTab: {
@@ -423,6 +428,7 @@ const features = [
         ariaLabel: "Open Slurp",
         iconPaths: ["slurp2-logo.png"],
       },
+      assets: { paths: slurp2LazyLocalePaths },
     },
   },
   {

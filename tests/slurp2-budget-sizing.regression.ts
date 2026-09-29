@@ -165,4 +165,11 @@ assert.equal(fresh.raisedNotice, false);
   assert.match(source("client", "app/SlpHomeHost.tsx"), /raisedNotice: false/u);
 }
 
+// 0.3.6: every `getSettings()` counts active Creators; the count is cached per accounts write generation.
+{
+  const worker = source("server", "base/model/slp-model-worker.ts");
+  assert.match(worker, /getTableWriteGeneration\?\.\("slurp2_accounts"\)/u);
+  assert.match(worker, /if \(generation !== undefined && cached\?\.generation === generation\) return cached\.count;/u);
+}
+
 console.log("slurp2 budget sizing regression passed");

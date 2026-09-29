@@ -322,16 +322,28 @@ export function slpPreviewIsCut(naturalWidth: number, naturalHeight: number, box
   if (!naturalWidth || !naturalHeight || !boxWidth || !boxHeight) return false;
   return Math.abs(Math.log(naturalWidth / naturalHeight / (boxWidth / boxHeight))) > 0.04;
 }
-const markSlpImgLoaded = (event: SyntheticEvent<HTMLImageElement>) => {
-  const image = event.currentTarget;
-  image.setAttribute("data-slp-loaded", "");
+// Pictures that loaded since the last frame. Their marks are written together in one frame, reads
+// first: marking each picture in its own load event forced a layout per picture while the feed
+// scrolled (0.3.6).
+let slpLoadedImages: HTMLImageElement[] = [];
+const flushSlpLoadedImages = () => {
+  const images = slpLoadedImages;
+  slpLoadedImages = [];
   // ponytail: measured once on load; a frame that later changes shape keeps its first answer. Add a
   // ResizeObserver if a preview frame ever resizes with the window.
-  if (image.classList.contains(SLP_CROP_CLASS))
-    image.toggleAttribute(
-      "data-slp-cut",
-      slpPreviewIsCut(image.naturalWidth, image.naturalHeight, image.clientWidth, image.clientHeight),
-    );
+  const cuts = images.map((image) =>
+    image.classList.contains(SLP_CROP_CLASS)
+      ? slpPreviewIsCut(image.naturalWidth, image.naturalHeight, image.clientWidth, image.clientHeight)
+      : null,
+  );
+  images.forEach((image, index) => {
+    image.setAttribute("data-slp-loaded", "");
+    if (cuts[index] !== null) image.toggleAttribute("data-slp-cut", cuts[index]);
+  });
+};
+const markSlpImgLoaded = (event: SyntheticEvent<HTMLImageElement>) => {
+  if (!slpLoadedImages.length) requestAnimationFrame(flushSlpLoadedImages);
+  slpLoadedImages.push(event.currentTarget);
 };
 // A failed picture also ends the shimmer; its caller shows its own fallback.
 export const slpImgFade = { "data-slp-fade": "", onLoad: markSlpImgLoaded, onError: markSlpImgLoaded };
