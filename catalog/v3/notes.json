@@ -332,6 +332,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.4",
+          "date": "2026-09-29",
+          "notes": "Creator Pages, and Stir built out.\n\n- Profiles get a Page above the posts: six looks and ten blocks (quote, now, collage, list, this or that, Q&A, facts, prices, people, latest poll). It stores only choices and words; pictures, prices, facts, people and polls come from real data, and locked posts only appear as the server's teaser.\n- New character Creators design their own Page on a later open; any Creator can be asked to (one AI call, new \"Creator pages\" budget row) or the player builds it. A week-old AI Page may refresh after real news; a player's Page never changes by itself.\n- Stir: new levers (storyline, crossover, tip goal, new look, events), Recent plays with Undo that stays safe when the world moved on, steering what is in play, and suggestions of who would click.\n- Fixes: brand deals marked done too early, events started twice, plays twice in Pulse, lost Undo answers, Polish plurals, accessibility.",
+          "highlight": false
+        },
+        {
           "version": "0.3.3",
           "date": "2026-09-29",
           "notes": "- Renamed from Slurp Remastered to Slurp. The Home tab reads \"Slurp\" without the trailing period.\n- New catalog description; it states that the default guidance is tuned for an adult experience.\n- Slurp Legacy (`slurp`) is retired and no longer in the catalog. Its backups still restore here.",
@@ -443,12 +449,6 @@
           "version": "0.2.64",
           "date": "2026-09-25",
           "notes": "- A Creator's Storylines tab follows the Slurp settings by default and shows their values. Turn on \"Own value\" on a row to set it for this Creator; turn it off to follow Slurp again.\n- Storyline types for one Creator are picked with tappable chips, and all controls in the tab have full-size touch targets.",
-          "highlight": false
-        },
-        {
-          "version": "0.2.63",
-          "date": "2026-09-25",
-          "notes": "- Storylines settings show every choice at once: story activity presets are cards with a short description, and the start, pace and source settings are button rows instead of dropdowns.\n- Audience presets, scale, tone and world activity use the same button rows.",
           "highlight": false
         }
       ]
