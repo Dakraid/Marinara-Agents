@@ -570,3 +570,25 @@ modules, rejected alternative, and migration consequence.
   already say it); zustand `persist` (the package's other stored state uses plain `localStorage`).
 - **Migration consequence:** none stored server-side; a browser without the key starts with an empty
   Pulse history.
+
+## 0.3.2 Creator Pages: one shared page schema, filled by code (2026-09-29)
+
+- **Problem:** a Creator could present themselves only through a bio and posts. A Page needs one
+  shape that the server stores and repairs (including a model's answer) and the client renders and
+  edits, without letting the model write facts that go stale.
+- **Decision:** `shared/src/slp/slp-creator-page.ts` holds the schema, limits and a lenient reader
+  that drops a bad block and keeps the rest. The Page stores only a theme id, block order and words;
+  pictures, prices, facts, people and the poll are filled on the client from data the profile already
+  loads. The Page lives in `settings.profile.page` (plus `pageWanted` for a new Creator's first Page)
+  and is on the audience allowlist. Model work sits in `features/creators/slp-creator-page-service.ts`
+  behind a new AI budget row (`page`); catch-up on open runs it detached, at most once at a time.
+- **Affected modules:** shared `slp-creator-page.ts`, `slp-social.schema.ts`/`types.ts`,
+  `slp-model-budget.ts`; server `modules/creators/slp-creator-page-{prompt,refresh}.ts`,
+  `modules/creators/slp-disclosure.ts`, `modules/records/slp-storage-model.ts`, the creators and
+  onboarding routes, `workflows/slp-world-tick-workflow.ts`; client `modules/creator/SlpCreatorPage.tsx`,
+  `slp-creator-page-{data,styles}.ts`, `features/creators/SlpCreatorPageEditor.tsx`,
+  `app/screens/SlpProfilePage.tsx` and the `pageContent` slot of `SlpProfileSurface`.
+- **Rejected alternatives:** storing the rendered page (prices and pictures would go stale); a
+  generated collage picture (costs an image call, drifts from the look, cannot be tapped); a sixth
+  profile tab (five already crowd a phone).
+- **Migration consequence:** none; both fields are optional and absent on existing accounts.

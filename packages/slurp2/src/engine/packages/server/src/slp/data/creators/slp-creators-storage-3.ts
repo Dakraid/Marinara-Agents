@@ -279,6 +279,7 @@ export function createCreatorsStorage3(context: SlurpStorageContext) {
             avatarUrl: account.avatarUrl,
             avatarCrop: account.avatarCrop,
             bannerUrl: account.settings.profile.bannerUrl ?? null,
+            page: account.settings.profile.page ?? null,
             gender: account.settings.profile.gender,
             tags: account.settings.profile.tags,
             disclosureMode,

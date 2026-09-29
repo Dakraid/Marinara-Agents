@@ -13,7 +13,8 @@ packages/shared/src/slp/    pure code imported by both client and server
 
 `shared/src/slp/` holds pure rules that both sides genuinely need: the autopurge date calculation,
 plus the messaging Details edit schema, tone, tuning, model-budget, modifier, platform-event, fan-type, and population rules the
-settings surface reads and the server enforces. It imports neither client nor server code, depends
+settings surface reads and the server enforces, and the Creator Page schema (`slp-creator-page.ts`, see `docs/CREATOR-PAGES.md`)
+that the server stores and repairs and the client renders and edits. It imports neither client nor server code, depends
 only on `zod` and `@marinara-engine/shared`, and holds no I/O, no React, and no Fastify. Client and
 server may import it. A rule belongs here only when both sides already need it; a rule one side
 needs stays in that side's `base/` or `modules/`.

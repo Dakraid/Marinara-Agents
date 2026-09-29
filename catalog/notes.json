@@ -360,6 +360,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.2",
+          "date": "2026-09-29",
+          "notes": "Creator Pages.\n\n- Profiles get a Page above the posts: six looks and ten blocks (quote, now, collage, list, this or that, Q&A, facts, prices, people, latest poll).\n- A Page stores only choices and words. Pictures, prices, facts, people and polls come from real data on every view. A collage shows the best recent pictures, one per shoot, plus one locked teaser; locked posts only appear as the server's teaser.\n- New character Creators design their own Page on a later open. Any Creator: \"Let them design it\" (one AI call) or build it by hand. A new \"Creator pages\" AI budget row counts the calls.\n- After real news (a collab, couple, rivalry, brand deal or achievement) an AI Creator may refresh a week-old Page. A Page the player edited is never changed by the world.",
+          "highlight": false
+        },
+        {
           "version": "0.3.1",
           "date": "2026-09-29",
           "notes": "Stir, built out.\n\n- New levers: start a storyline or crossover, set a tip goal, give a new look, make up an event. All with preview and Undo.\n- Recent plays with Undo; tap \"In play\" to steer it; suggestions offer who would click and can be put away; Surprise me; everyday moments.\n- The planner takes your answer to its question in place, knows your last plays, each Creator and your own pages.\n- Undo is safe when the world moved on. Cooling a rivalry, pushing a collab, storyline moves and opening a shared page can be taken back.\n- Fixes: a brand deal said done while nothing happened, events started twice, couple pages as quiet Creators, plays twice in Pulse, lost Undo answers, Polish plurals, error states, accessibility.",
@@ -471,12 +477,6 @@
           "version": "0.2.62",
           "date": "2026-09-25",
           "notes": "- The Identity tab in Creator settings uses the full width again; the Save bar sits at the bottom of the tab.\n- Memory shows readable names instead of raw ids such as multi_image_set, in Recent plans, filters, proposals and signals.",
-          "highlight": false
-        },
-        {
-          "version": "0.2.61",
-          "date": "2026-09-25",
-          "notes": "- The Creator settings window no longer shows \"{{name}}'s settings\" while it loads.",
           "highlight": false
         }
       ]

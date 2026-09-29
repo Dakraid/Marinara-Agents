@@ -1,5 +1,14 @@
 # Slurp Remastered release notes
 
+## 0.3.2 — 2026-09-29
+
+Creator Pages.
+
+- Profiles get a Page above the posts: six looks and ten blocks (quote, now, collage, list, this or that, Q&A, facts, prices, people, latest poll).
+- A Page stores only choices and words. Pictures, prices, facts, people and polls come from real data on every view. A collage shows the best recent pictures, one per shoot, plus one locked teaser; locked posts only appear as the server's teaser.
+- New character Creators design their own Page on a later open. Any Creator: "Let them design it" (one AI call) or build it by hand. A new "Creator pages" AI budget row counts the calls.
+- After real news (a collab, couple, rivalry, brand deal or achievement) an AI Creator may refresh a week-old Page. A Page the player edited is never changed by the world.
+
 ## 0.3.1 — 2026-09-29
 
 Stir, built out.

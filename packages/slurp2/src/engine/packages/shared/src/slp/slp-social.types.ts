@@ -3,6 +3,7 @@
 // AvatarCrop stays an Engine contract because Engine avatar rendering consumes it.
 // ──────────────────────────────────────────────
 import type { AvatarCrop } from "@marinara-engine/shared";
+import type { SlpCreatorPage } from "./slp-creator-page.js";
 
 export type SlpAccountKind = "persona" | "character" | "random_user";
 /**
@@ -62,6 +63,10 @@ export interface SlpAccountProfileSettings {
   noodlerWizardExecutionId?: string;
   /** Server-owned source state used to detect changes after a Creator profile is drafted. */
   noodlerSourceSnapshot?: SlpCreatorSourceSnapshot;
+  /** The Creator's Page under the profile header (see `slp-creator-page.ts`). */
+  page?: SlpCreatorPage;
+  /** A new AI Creator who should design their Page on the next catch-up (one per open). */
+  pageWanted?: boolean;
 }
 
 /**
@@ -310,6 +315,8 @@ export interface SlpCreatorStageProfile {
   wardrobe: string;
   locations: string;
   publicIdentity: { displayName: string; handle: string } | null;
+  /** The Creator's Page, or null before one is made. */
+  page: SlpCreatorPage | null;
   createdAt: string;
   updatedAt: string;
 }

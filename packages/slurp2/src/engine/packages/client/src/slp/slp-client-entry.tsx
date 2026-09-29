@@ -17,6 +17,7 @@ import { ModalPortalContext } from "../components/ui/Modal";
 import { AppDialogRenderer } from "../components/ui/AppDialogRenderer";
 import { SLP_DISPLAY_FONT_STYLES } from "./base/chrome/slp-display-font";
 import { SLP_SPARKLE_STYLES } from "./modules/sparkle/slp-sparkle-styles";
+import { SLP_CREATOR_PAGE_STYLES } from "./modules/creator/slp-creator-page-styles";
 import { BOTTOM_SAFE_INSET, getSlpAccentStyle, SLP_PINK, SlpAccentContext } from "./base/chrome/SlpChrome";
 import { SlpErrorState } from "./modules/chrome/SlpStateKit";
 
@@ -186,7 +187,7 @@ function syncSlurpPackageStyles() {
 
   const style = existing ?? document.createElement("style");
   style.id = SLURP_STYLE_ID;
-  style.textContent = `${slurpPackageStyles}\n${SLURP_ICON_COLOR_FIX}\n${SLURP_TOAST_STYLES}\n${SLURP_SHELL_STYLES}\n${SLP_SPARKLE_STYLES}\n${SLP_DISPLAY_FONT_STYLES}`;
+  style.textContent = `${slurpPackageStyles}\n${SLURP_ICON_COLOR_FIX}\n${SLURP_TOAST_STYLES}\n${SLURP_SHELL_STYLES}\n${SLP_SPARKLE_STYLES}\n${SLP_DISPLAY_FONT_STYLES}\n${SLP_CREATOR_PAGE_STYLES}`;
   if (!existing) document.head.appendChild(style);
 }
 

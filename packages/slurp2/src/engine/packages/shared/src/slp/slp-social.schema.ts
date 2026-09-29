@@ -4,6 +4,7 @@
 // ──────────────────────────────────────────────
 import { z } from "zod";
 import { avatarCropSchema } from "@marinara-engine/shared";
+import { slpCreatorPageSchema } from "./slp-creator-page.js";
 
 export const slpAccountKindSchema = z.enum(["persona", "character", "random_user"]);
 export const slpInteractionTypeSchema = z.enum(["like", "repost", "reply", "vote"]);
@@ -198,6 +199,8 @@ export const slpAccountProfileSettingsSchema = z
     profileManuallyEdited: z.boolean().optional(),
     noodlerWizardExecutionId: z.string().min(1).max(128).optional(),
     noodlerSourceSnapshot: slpCreatorSourceSnapshotSchema.optional(),
+    page: slpCreatorPageSchema.optional(),
+    pageWanted: z.boolean().optional(),
   })
   .strict();
 
