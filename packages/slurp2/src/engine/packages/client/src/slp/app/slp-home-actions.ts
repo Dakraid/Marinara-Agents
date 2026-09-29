@@ -362,7 +362,7 @@ function useSlurpHomeActions(state: SlurpHomeBaseState) {
         label: localizeUi("ui.slurp.pulse.task.drawPost"),
         accountIds: [profileId],
         startedToast: false,
-        run: () => generatePostImage.mutateAsync({ id: postId, accountId: profileId }),
+        run: () => generatePostImage.mutateAsync({ id: created.id, accountId: profileId }),
         done: () => ({
           result: localizeUi("ui.slurp.pulse.result.drawn"),
           target: { accountId: profileId, postId },

@@ -147,7 +147,9 @@ assert.match(
 );
 
 // --- R1-059: each draw keeps its own "Drawing" state ---------------------------------------------------
-const homeState = read("client/src/slp/app/slp-home-state.ts");
+// Pulse + E: the post-picture draw moved into the post actions hook (a Pulse task; slp-home-state.ts
+// sits at the 800-line cap). Same per-post "Drawing" state.
+const homeState = read("client/src/slp/app/slp-home-post-actions.ts");
 assert.match(homeState, /setGeneratingPostImageIds\(\(current\) => \[\.\.\.current, post\.id\]\)/u);
 assert.match(homeState, /current\.filter\(\(id\) => id !== post\.id\)/u);
 
