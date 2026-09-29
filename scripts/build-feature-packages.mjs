@@ -1654,10 +1654,9 @@ if (!customElements.get(${JSON.stringify(tag)})) customElements.define(${JSON.st
 
 const { catalog } = await readCatalogFamily(repoRoot);
 const featureIds = new Set(selectedFeatures.map((feature) => feature.id));
-// About Me is a core Engine feature; Slurp Legacy was retired when Slurp2 took the Slurp name.
-const droppedPackageIds = new Set(["about-me-keeper", "slurp"]);
+const nonDownloadableCoreFeatures = new Set(["about-me-keeper"]);
 catalog.packages = catalog.packages.filter(
-  (entry) => !featureIds.has(entry.manifest.id) && !droppedPackageIds.has(entry.manifest.id),
+  (entry) => !featureIds.has(entry.manifest.id) && !nonDownloadableCoreFeatures.has(entry.manifest.id),
 );
 
 for (const feature of selectedFeatures) {
