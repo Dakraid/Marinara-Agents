@@ -1,8 +1,10 @@
 import {
+  Aperture,
   BriefcaseBusiness,
   Gift,
   Image as ImageIcon,
   MessageCircle,
+  Newspaper,
   NotebookPen,
   Palette,
   PenLine,
@@ -128,11 +130,15 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
     | "offer"
     | "move"
     | "note"
+    | "show-post"
+    | "demand"
     | null
   >(null);
   // Slurp Support's desk step for the next line (docs/SUPPORT-DESK.md): an Offer or a move, and the
   // lever whose play sheet is open to build one.
   const [composerDesk, setComposerDesk] = useState<SlurpComposerDesk | null>(null);
+  // Support's "photo, right now" rides the next line like an Offer does (0.3.9).
+  const [photoDemand, setPhotoDemand] = useState(false);
   const [deskPick, setDeskPick] = useState<{ action: SlpActionName; mode: "offer" | "now" } | null>(null);
   const [commissionPrefill, setCommissionPrefill] = useState("");
   const settingsQuery = useSlurpSettings();
@@ -323,6 +329,43 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
               label: localizeUi("ui.slurp.desk.tools.note", { defaultValue: "Internal note" }),
               detail: localizeUi("ui.slurp.desk.tools.noteDetail", { defaultValue: "Only you see it" }),
               group: "conversation" as const,
+            },
+            // Support's pictures (0.3.9): send or create one, show one of their posts, or demand one now.
+            {
+              id: "photo",
+              icon: ImageIcon,
+              label: localizeUi("ui.slurp.messages.sendPhoto", { defaultValue: "Send a photo" }),
+              detail: localizeUi("ui.slurp.messages.sendPhotoDetail", {
+                defaultValue: "Choose an image from your device",
+              }),
+              group: "media" as const,
+            },
+            {
+              id: "generated-photo",
+              icon: Palette,
+              label: localizeUi("ui.slurp.messages.createPhoto", { defaultValue: "Create a photo" }),
+              detail: localizeUi("ui.slurp.desk.tools.createPhotoDetail", {
+                defaultValue: "Only what you describe, never your persona",
+              }),
+              group: "media" as const,
+            },
+            {
+              id: "show-post",
+              icon: Newspaper,
+              label: localizeUi("ui.slurp.desk.tools.showPost", { defaultValue: "Show a post" }),
+              detail: localizeUi("ui.slurp.desk.tools.showPostDetail", {
+                defaultValue: "One of their posts or Stories, as a card",
+              }),
+              group: "media" as const,
+            },
+            {
+              id: "demand",
+              icon: Aperture,
+              label: localizeUi("ui.slurp.desk.tools.demand", { defaultValue: "Photo, right now" }),
+              detail: localizeUi("ui.slurp.desk.tools.demandDetail", {
+                defaultValue: "They send a photo taken this moment",
+              }),
+              group: "media" as const,
             },
           ] as const)
         : ownsCreator
@@ -732,6 +775,8 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
     toolTabs,
     composerDesk,
     setComposerDesk,
+    photoDemand,
+    setPhotoDemand,
     deskPick,
     setDeskPick,
     messageSearchMatches: searchMessageIds,

@@ -277,3 +277,20 @@ export function slurpSupportUndoPatch(
     ...(note.more || note.less ? { push: note.before.push, avoid: note.before.avoid } : {}),
   };
 }
+
+/**
+ * Support demands a photo taken right now (0.3.9): not a commission, not a paid picture. The Creator
+ * answers the line with a free picture whatever their Images switch says, and a model that forgot
+ * the picture still sends one drawn from `SLURP_SUPPORT_PHOTO_FALLBACK`.
+ */
+export const isSlurpSupportPhotoDemand = (line: { metadata?: Record<string, unknown> } | null | undefined) =>
+  line?.metadata?.supportVoice === true && line.metadata.photoDemand === true;
+
+export const SLURP_SUPPORT_PHOTO_GUIDANCE =
+  'Slurp Support demands a photo taken right now. You send it: put a candid phone photo of where you are and what you are doing at this moment in "image" (prompt and a short caption), and answer Support in your own voice about being asked.';
+
+export const SLURP_SUPPORT_PHOTO_FALLBACK = {
+  prompt: "a candid phone photo taken right now, where they are at this moment, natural light, unposed",
+  caption: "",
+  spicy: false,
+};

@@ -13,7 +13,14 @@ import { SlpSheet, SlpSheetGroup } from "../../modules/chrome/SlpSheet";
 import { SlurpConnectionSwitcher } from "./SlpThreadChrome";
 import { SLP_THREAD_COLUMN_CLASS } from "./slp-thread-view-model";
 import type { SlurpThreadViewModel } from "./slp-thread-actions";
-import { SlpDeskComposerChip, SlpDeskPlayHost, SlpDeskToolPanel } from "./SlpDeskComposer";
+import {
+  SlpDeskComposerChip,
+  SlpDeskPlayHost,
+  SlpDeskToolPanel,
+  SlpPhotoDemandChip,
+  SlpPhotoDemandTool,
+  SlpSupportPostPicker,
+} from "./SlpDeskComposer";
 
 /** The message composer: a glass bar with add, the draft and send; the tools open in a sheet. */
 export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
@@ -69,7 +76,12 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
   // These tools act on a conversation that exists. In a new chat they opened an empty panel.
   const availableTabs = toolTabs.filter(
     (tab) =>
-      thread || (tab.id !== "photo" && tab.id !== "generated-photo" && tab.id !== "request" && tab.id !== "creator"),
+      thread ||
+      (tab.id !== "photo" &&
+        tab.id !== "generated-photo" &&
+        tab.id !== "request" &&
+        tab.id !== "creator" &&
+        tab.id !== "show-post"),
   );
   const activeTab = availableTabs.find((tab) => tab.id === toolTab) ?? null;
   // A paid first message says its price where it is spent: on the Send button. The server charges it
@@ -149,6 +161,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
         )}
         <div className={cn(SLP_THREAD_COLUMN_CLASS, "flex flex-col gap-2")}>
           {asSupport && <SlpDeskComposerChip model={model} />}
+          {asSupport && <SlpPhotoDemandChip model={model} />}
           {composerTipAmount > 0 && !asSupport && (
             <div className="slurp-bubble-in flex h-9 items-center gap-2 self-start rounded-full bg-[var(--slurp-tint)] ps-3 pe-1 text-xs font-semibold text-[var(--slurp-text)]">
               {localizeUi("ui.slurp.messages.tipAttached", { defaultValue: "Tip attached" })}
@@ -377,6 +390,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
             personaId={personaId}
             mode="choose"
             onSent={answerPhoto}
+            asSupport={asSupport}
           />
         )}
 
@@ -474,6 +488,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
             personaId={personaId}
             mode="generate"
             onSent={answerPhoto}
+            asSupport={asSupport}
           />
         )}
 
@@ -524,6 +539,8 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
           />
         )}
 
+        {toolTab === "show-post" && asSupport && thread && <SlpSupportPostPicker model={model} onDone={closeTools} />}
+        {toolTab === "demand" && asSupport && <SlpPhotoDemandTool model={model} onDone={closeTools} />}
         {(toolTab === "offer" || toolTab === "move" || toolTab === "note") && asSupport && (
           <SlpDeskToolPanel model={model} onPicked={closeTools} />
         )}

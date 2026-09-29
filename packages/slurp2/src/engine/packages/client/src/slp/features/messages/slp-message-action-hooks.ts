@@ -15,6 +15,8 @@ export function useSendSlurpMessage() {
       tip?: { amount: number; note?: string } | null;
       /** Written as Slurp Support (Slurp's staff), not as the persona. */
       asSupport?: boolean;
+      /** Support only: the Creator answers with a photo taken right now (0.3.9). */
+      photoDemand?: boolean;
       /** Support only: an Offer or a move riding this line (docs/SUPPORT-DESK.md). */
       desk?: { mode: "offer" | "now"; step: { action: string; input: Record<string, unknown> } };
     }) => api.post<SlurpSendResponse>("/slurp2/messages/send", input),
@@ -195,9 +197,11 @@ export function useSendSlurpViewerImage() {
       personaId: string;
       file: File;
       content: string;
+      asSupport?: boolean;
     }) => {
       const form = new FormData();
       form.append("personaId", input.personaId);
+      if (input.asSupport) form.append("asSupport", "true");
       form.append("creatorAccountId", input.creatorAccountId);
       form.append("content", input.content);
       form.append("file", input.file);
@@ -226,6 +230,7 @@ export function useGenerateSlurpViewerImage() {
       personaId: string;
       prompt: string;
       content?: string;
+      asSupport?: boolean;
     }) =>
       api.post<SlurpPhotoSendResult>(
         `/slurp2/messages/threads/${encodeURIComponent(input.threadId)}/viewer-image`,

@@ -290,7 +290,8 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
               {localizeUi("ui.slurp.messages.memories", { defaultValue: "Memories" })}
             </SlpSheetItem>
           )}
-          {threadId && (
+          {/* Slurp's staff do not commission pictures: Support has its own photo tools (0.3.9). */}
+          {threadId && !asSupport && (
             <SlpSheetItem onSelect={menuAction(() => setDrawerMode("commissions"))}>
               <BriefcaseBusiness aria-hidden="true" />
               <span className="min-w-0 flex-1">
@@ -387,7 +388,7 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
         </div>
       )}
 
-      {activeCommission && personaId && (
+      {activeCommission && personaId && !asSupport && (
         // The same commission component as the chat and the drawer, as one line with its next step.
         <div
           className={cn("relative z-[8] shrink-0 px-3 py-2 shadow-[var(--slurp-shadow-raised)]", SLP_BAR_GLASS_CLASS)}

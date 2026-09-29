@@ -1,12 +1,18 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Gift, Stamp, X } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Aperture, Gift, Stamp, X } from "lucide-react";
+import type { SlpCreatorPostView } from "../../../../../shared/src/slp/slp-social.types.js";
+import { useNearViewportSlurpMediaSrc } from "../../base/media/slp-media-src";
+import { useShareSlpPost } from "../../modules/post/slp-post-action-hooks";
+import { useCreatorPosts } from "../feed/slp-feed-contract";
+import { invalidateSlurpMessages } from "./slp-message-keys";
 import { toast } from "sonner";
 import { cn } from "../../../lib/utils";
 import { SlpCoinText } from "../../modules/coin/SlpCoin";
-import { SLP_TYPE } from "../../base/chrome/SlpChrome";
+import { SLP_IMG_FRAME_CLASS, SLP_TYPE, slpImgFade } from "../../base/chrome/SlpChrome";
 import { focusRing } from "../../base/chrome/slp-focus";
-import { SlpPrimaryButton } from "../../modules/chrome/SlpButton";
+import { SlpChip, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
 import { SlpSheetGroup } from "../../modules/chrome/SlpSheet";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
 import { SLP_DESK_NOW, SLP_DESK_OFFERABLE, type SlpActionName } from "../../../../../shared/src/slp/slp-actions.js";
@@ -154,5 +160,141 @@ export function SlpDeskPlayHost({ model }: { model: SlurpThreadViewModel }) {
         composerRef.current?.focus();
       }}
     />
+  );
+}
+
+/** "Photo, right now" on the next line, above the composer, one tap from removing it (0.3.9). */
+export function SlpPhotoDemandChip({ model }: { model: SlurpThreadViewModel }) {
+  const { t } = useTranslation();
+  const { photoDemand, setPhotoDemand } = model;
+  if (!photoDemand) return null;
+  return (
+    <div className="slurp-bubble-in flex min-h-9 max-w-full items-center gap-2 self-start rounded-full bg-[var(--slurp-tint)] ps-3 pe-1 text-xs font-semibold text-[var(--slurp-text)]">
+      <Aperture size={14} aria-hidden="true" className="shrink-0" />
+      <span className="min-w-0 truncate">
+        {t("ui.slurp.desk.demandAttached", { defaultValue: "With this line: a photo, right now" })}
+      </span>
+      <button
+        type="button"
+        onClick={() => setPhotoDemand(false)}
+        aria-label={t("ui.slurp.desk.removeAttached", { defaultValue: "Remove" })}
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+      >
+        <X size={14} aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
+
+/** The "Photo, right now" tool: attach the demand to the next line, with words ready if the box is empty. */
+export function SlpPhotoDemandTool({ model, onDone }: { model: SlurpThreadViewModel; onDone: () => void }) {
+  const { t } = useTranslation();
+  const { setPhotoDemand, draft, setDraft, composerRef } = model;
+  return (
+    <div className="flex flex-col gap-3 px-1">
+      <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>
+        {t("ui.slurp.desk.demandHelp", {
+          defaultValue:
+            "They answer your next line with a photo taken this moment, wherever they are. Not a commission: it is free and it comes at once.",
+        })}
+      </p>
+      <SlpPrimaryButton
+        onClick={() => {
+          setPhotoDemand(true);
+          if (!draft.trim()) setDraft(t("ui.slurp.desk.demandWords", { defaultValue: "Send me a photo, right now." }));
+          onDone();
+          composerRef.current?.focus();
+        }}
+      >
+        <Aperture size={16} aria-hidden="true" />
+        {t("ui.slurp.desk.demandAttach", { defaultValue: "Attach to my next line" })}
+      </SlpPrimaryButton>
+    </div>
+  );
+}
+
+const isStory = (post: SlpCreatorPostView) =>
+  (post as SlpCreatorPostView & { story?: boolean }).story === true || post.metadata?.noodlerPostType === "story";
+
+function SlpSupportPostRow({ post, busy, onPick }: { post: SlpCreatorPostView; busy: boolean; onPick: () => void }) {
+  const { t } = useTranslation();
+  const { src, observe } = useNearViewportSlurpMediaSrc(post.imageUrl ?? null, { width: 160 });
+  const words = (post.title || post.content || "").trim();
+  return (
+    <li>
+      <button
+        type="button"
+        ref={observe}
+        disabled={busy}
+        onClick={onPick}
+        className={cn(
+          "flex min-h-14 w-full items-center gap-3 rounded-xl px-2 py-1.5 text-start hover:bg-[var(--accent)] disabled:opacity-60",
+          focusRing,
+        )}
+      >
+        <span className={cn(SLP_IMG_FRAME_CLASS, "relative block size-12 shrink-0 overflow-hidden rounded-lg")}>
+          {src && <img src={src} alt="" {...slpImgFade} className="slp-crop-top h-full w-full object-cover" />}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className={cn(SLP_TYPE.body, "line-clamp-2")}>
+            {words || t("ui.slurp.desk.showPostNoWords", { defaultValue: "A picture" })}
+          </span>
+        </span>
+        {isStory(post) && (
+          <SlpChip className="pointer-events-none shrink-0">
+            {t("ui.slurp.desk.story", { defaultValue: "Story" })}
+          </SlpChip>
+        )}
+      </button>
+    </li>
+  );
+}
+
+/** "Show a post" (0.3.9): one of this Creator's posts or Stories goes into Support's thread as a card. */
+export function SlpSupportPostPicker({ model, onDone }: { model: SlurpThreadViewModel; onDone: () => void }) {
+  const { t } = useTranslation();
+  const { personaId, targetCreatorAccountId } = model;
+  const posts = useCreatorPosts(targetCreatorAccountId ?? null, personaId ?? null);
+  const share = useShareSlpPost();
+  const queryClient = useQueryClient();
+  const items = (posts.data ?? [])
+    .map((item) => item.viewerPost ?? ("managed" in item ? (item.managed as unknown as SlpCreatorPostView) : null))
+    .filter((post): post is SlpCreatorPostView => Boolean(post))
+    .slice(0, 40);
+  if (posts.isLoading)
+    return (
+      <p className={cn(SLP_TYPE.meta, "px-2 text-[var(--slurp-muted)]")}>
+        {t("ui.slurp.state.loading", { defaultValue: "Loading…" })}
+      </p>
+    );
+  if (!items.length)
+    return (
+      <p className={cn(SLP_TYPE.meta, "px-2 text-[var(--slurp-muted)]")}>
+        {t("ui.slurp.desk.showPostEmpty", { defaultValue: "They have not posted anything yet." })}
+      </p>
+    );
+  return (
+    <ul
+      className="max-h-80 space-y-0.5 overflow-y-auto"
+      aria-label={t("ui.slurp.desk.tools.showPost", { defaultValue: "Show a post" })}
+    >
+      {items.map((post) => (
+        <SlpSupportPostRow
+          key={post.id}
+          post={post}
+          busy={share.isPending}
+          onPick={() => {
+            if (!personaId || !targetCreatorAccountId) return;
+            share
+              .mutateAsync({ personaId, creatorAccountId: targetCreatorAccountId, postId: post.id, asSupport: true })
+              .then(() => {
+                void invalidateSlurpMessages(queryClient);
+                onDone();
+              })
+              .catch((error: unknown) => toast.error(errorMessage(error)));
+          }}
+        />
+      ))}
+    </ul>
   );
 }

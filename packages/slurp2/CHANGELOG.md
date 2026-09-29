@@ -3,6 +3,8 @@
 ## 0.3.9 — 2026-09-29
 
 - New post pictures are stored as WebP (quality 90, same size) instead of the provider's PNG: about a fifth of the disk space, and the full-screen view opens faster. Pictures already stored stay as they are.
+- Slurp Support can send or create a photo (only what you describe, never your persona), show one of the Creator's posts or Stories as a card, and demand a photo right now: the Creator answers with a free picture taken on the spot.
+- Support threads have no Commissions, and Support's lines wear a glitter border.
 
 ## 0.3.8 — 2026-09-29
 
