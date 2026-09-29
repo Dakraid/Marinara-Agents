@@ -5706,7 +5706,7 @@
   "ui.slurp.desk.tools.photoCheck": "Photo verification",
   "ui.slurp.desk.tools.photoCheckDetail": "Creator must send a live photo now",
   "ui.slurp.desk.photoCheckAttached": "With this reply: photo verification",
-  "ui.slurp.desk.photoCheckHelp": "The Creator must answer your next reply with a photo taken now, from where they are. No fee, no delay.",
+  "ui.slurp.desk.photoCheckHelp": "Write what the photo must show in your reply. The Creator must answer with a photo taken now; if you name nothing, it shows where they are. No fee, no delay.",
   "ui.slurp.desk.photoCheckWords": "Verification: please send a photo taken right now.",
   "ui.slurp.desk.photoCheckAttach": "Add to my reply",
   "ui.slurp.desk.showPostNoWords": "A picture",

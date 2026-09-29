@@ -195,7 +195,7 @@ export function SlpPhotoDemandTool({ model, onDone }: { model: SlurpThreadViewMo
       <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>
         {t("ui.slurp.desk.photoCheckHelp", {
           defaultValue:
-            "The Creator must answer your next reply with a photo taken now, from where they are. No fee, no delay.",
+            "Write what the photo must show in your reply. The Creator must answer with a photo taken now; if you name nothing, it shows where they are. No fee, no delay.",
         })}
       </p>
       <SlpPrimaryButton

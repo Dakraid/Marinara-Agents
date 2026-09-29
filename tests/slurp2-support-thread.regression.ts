@@ -12,6 +12,7 @@ import {
   applySlurpSupportTalk,
   isSlurpSupportPhotoDemand,
   migrateSlurpSupportLines,
+  slurpSupportPhotoFallback,
   readSlurpSupportTakeaway,
   slurpSupportMessageIds,
   slurpSupportSteeringPatch,
@@ -375,7 +376,16 @@ async function main() {
     const read = (path: string) => readFileSync(join(root, path), "utf8");
     const operation = read("server/src/slp/features/messages/slp-message-operation.ts");
     assert.match(operation, /const demanded = support && isSlurpSupportPhotoDemand\(trigger\);/u);
-    assert.match(operation, /const image = reply\.image \?\? \(demanded \? SLURP_SUPPORT_PHOTO_FALLBACK : null\);/u);
+    assert.match(
+      operation,
+      /const image = reply\.image \?\? \(demanded \? slurpSupportPhotoFallback\(trigger\?\.content \?\? ""\) : null\);/u,
+    );
+    // The fallback follows what Support asked for, so two different requests never draw the same picture.
+    const desk = slurpSupportPhotoFallback("Show me   your desk,\n with today's receipt");
+    assert.match(desk.prompt, /shows what was asked for: "Show me your desk, with today's receipt"/u);
+    assert.notEqual(desk.prompt, slurpSupportPhotoFallback("outside, by the door").prompt);
+    assert.match(slurpSupportPhotoFallback("  ").prompt, /where they are at this moment/u, "no words: where they are");
+    assert.equal(desk.spicy, false);
     assert.match(operation, /const price = demanded \? 0 : offer\.price;/u, "a demanded photo is free, never PPV");
     const send = read("server/src/slp/features/messages/slp-messages-send-routes.ts");
     assert.match(

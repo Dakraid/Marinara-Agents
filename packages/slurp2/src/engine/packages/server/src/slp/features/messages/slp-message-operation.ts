@@ -46,7 +46,7 @@ import {
   applySlurpSupportTalk,
   isSlurpSupportPhotoDemand,
   isSlurpSupportThread,
-  SLURP_SUPPORT_PHOTO_FALLBACK,
+  slurpSupportPhotoFallback,
   type SlurpSupportTalkStore,
 } from "../../modules/messages/slp-support.js";
 import { applySlurpDeskTalk } from "./desk/slp-desk-talk-operation.js";
@@ -400,7 +400,7 @@ export async function replyToSlurpMessage(
       }
       // Support's "photo, right now": always a free picture, even when the model forgot to add one.
       const demanded = support && isSlurpSupportPhotoDemand(trigger);
-      const image = reply.image ?? (demanded ? SLURP_SUPPORT_PHOTO_FALLBACK : null);
+      const image = reply.image ?? (demanded ? slurpSupportPhotoFallback(trigger?.content ?? "") : null);
       if (
         image &&
         (demanded ||

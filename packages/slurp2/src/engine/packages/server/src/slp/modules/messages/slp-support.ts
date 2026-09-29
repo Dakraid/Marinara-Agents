@@ -281,16 +281,22 @@ export function slurpSupportUndoPatch(
 /**
  * Support demands a photo taken right now (0.3.6): not a commission, not a paid picture. The Creator
  * answers the line with a free picture whatever their Images switch says, and a model that forgot
- * the picture still sends one drawn from `SLURP_SUPPORT_PHOTO_FALLBACK`.
+ * the picture still sends one drawn from Support's own words (`slurpSupportPhotoFallback`).
  */
 export const isSlurpSupportPhotoDemand = (line: { metadata?: Record<string, unknown> } | null | undefined) =>
   line?.metadata?.supportVoice === true && line.metadata.photoDemand === true;
 
 export const SLURP_SUPPORT_PHOTO_GUIDANCE =
-  'Slurp Support demands a photo taken right now. You send it: put a candid phone photo of where you are and what you are doing at this moment in "image" (prompt and a short caption), and answer Support in your own voice about being asked.';
+  'Slurp Support asks for a photo taken right now, and you send it. Put it in "image": show exactly what Support asked to see in their message (a place, an object, an outfit, a pose, proof of something), with every detail they named. Only if they named nothing, a candid phone photo of where you are and what you are doing at this moment. Make it this moment, never a photo you sent before. Add a short caption, and answer Support in your own voice about being asked.';
 
-export const SLURP_SUPPORT_PHOTO_FALLBACK = {
-  prompt: "a candid phone photo taken right now, where they are at this moment, natural light, unposed",
-  caption: "",
-  spicy: false,
-};
+/** The picture when the model forgot one: Support's own words are its subject, so it differs each time. */
+export function slurpSupportPhotoFallback(request: string): { prompt: string; caption: string; spicy: boolean } {
+  const asked = request.replace(/\s+/gu, " ").trim().slice(0, 400);
+  return {
+    prompt: asked
+      ? `a phone photo taken right now that shows what was asked for: "${asked}"; candid, natural light`
+      : "a candid phone photo taken right now, where they are at this moment, natural light, unposed",
+    caption: "",
+    spicy: false,
+  };
+}
