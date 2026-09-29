@@ -18,6 +18,14 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
     notes: ["Slurp is just Slurp now: the old version is retired and this one carries the name."],
   },
   {
+    version: "0.3.2",
+    date: "2026-09-29",
+    notes: [
+      "Home, profiles and the feed load again when fans from your cast are in the audience.",
+      "Start over and Stir work again.",
+    ],
+  },
+  {
     version: "0.3.1",
     date: "2026-09-29",
     notes: [

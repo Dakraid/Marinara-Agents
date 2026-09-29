@@ -6,6 +6,11 @@
 - New catalog description; it states that the default guidance is tuned for an adult experience.
 - Slurp Legacy (`slurp`) is retired and no longer in the catalog. Its backups still restore here.
 
+## 0.3.2 — 2026-09-29
+
+- Fix "Viewer access could not be loaded" and an empty Home: the viewer feed listed character fan accounts (0.3.0 audience characters) as Creators without a profile, and the client threw on `creator.profile.id`. The feed now lists only accounts with a stage profile.
+- Fix "Slurp core storage factory is required" on "Start over, keep Creators" and on the Stir routes: both built the messages storage without its core factory.
+
 ## 0.3.1 — 2026-09-29
 
 - New Backstage action "Start over, keep Creators" (`DELETE /api/slurp2/data/activity`): clears posts, post media, comments, messages, fans, world events, queued and stuck work, and the continuity and content plans built on them. It first refunds commissions that were paid and not delivered. Creators, their artwork and projects, follows, the wallet and every Slurp setting stay. For installs that stay empty or stuck after an update.
