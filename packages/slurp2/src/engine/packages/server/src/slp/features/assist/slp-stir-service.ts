@@ -241,6 +241,14 @@ export async function undoSlpStirPlay(
     if (!done) kept += 1;
   }
   const { undo: _undo, ...visible } = claimed;
+  if (kept && kept === claimed.undo.length) {
+    // Nothing could go back: the play is not "taken back" in the ledger or to the planner.
+    await mutateSlurpStirPlays(db, (plays) => ({
+      plays: plays.map((entry) => (entry.id === id ? { ...entry, undone: false, undoable: false } : entry)),
+      result: null,
+    }));
+    return { ok: false, status: 409, error: "Too much has happened since to take that back." };
+  }
   return { ok: true, value: { play: { ...visible, undone: true }, kept } };
 }
 

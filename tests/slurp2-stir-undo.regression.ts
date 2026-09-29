@@ -235,6 +235,16 @@ const creator = (id: string, fields: Partial<SlurpTieCreator> = {}): SlurpTieCre
   const first = slpStirSuggestions({ ...input, couples: [], firstVisit: true });
   assert.equal(first[0]?.id, "first:mira:kai", "the first visit offers the best match");
   assert.ok(!first.some((entry) => entry.kind === "match"), "and not the same two again as a match");
+  const putAway = slpStirSuggestions({
+    ...input,
+    couples: [],
+    firstVisit: true,
+    dismissed: new Set(["first:mira:kai"]),
+  });
+  assert.ok(
+    !putAway.some((entry) => entry.id === "match:mira:kai"),
+    "the first-visit pair put away does not come back as a match",
+  );
   const noMatch = slpStirSuggestions({ ...input, couples: [], firstVisit: true, matches: [] });
   assert.equal(noMatch[0]?.id, "first:mira:kai", "without a match, the first two Creators, never a couple page");
 

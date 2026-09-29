@@ -6,7 +6,7 @@ import {
 } from "../../data/creators/slp-steering-storage.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { generateAndApplyCreatorPost, resolveSlurpAutomaticPostAccess } from "../feed/slp-feed-contract.js";
-import { listSlurpBrandCatalog, slurpBrandDealLever } from "../projects/slp-projects-contract.js";
+import { listSlurpBrandCatalog, slurpBrandDealLever, slurpRunsItself } from "../projects/slp-projects-contract.js";
 import { drawSlurpBrandPicture } from "../ads/slp-ads-contract.js";
 import {
   isSlpActionName,
@@ -46,6 +46,8 @@ const POST_FAILURE: Record<string, string> = {
   noodler_account_not_found: "Creator not found.",
 };
 
+const OWN_PAGE_NO_EFFECT = new Set<SlpActionName>(["add-idea", "steer-creator", "set-spice"]);
+
 async function creatorExists(db: DB, accountId: string) {
   return Boolean(await createSlurpStorage(db).getNoodlerAccountById(accountId));
 }
@@ -80,6 +82,14 @@ export async function runSlpActionWithUndo(db: DB, name: string, raw: unknown): 
   if (!isSlpActionName(name)) return { ok: false, status: 404, error: `Slurp has no action called "${name}".` };
   const parsed = SLP_ACTIONS[name].schema.safeParse(raw ?? {});
   if (!parsed.success) return { ok: false, status: 400, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  const accountId = (parsed.data as { accountId?: unknown }).accountId;
+  // The player writes their own page's posts: its ideas, life and spice would change nothing. The
+  // preview says so; the run refuses too, for callers that skip the preview (Mari, Support).
+  if (OWN_PAGE_NO_EFFECT.has(name) && typeof accountId === "string") {
+    const account = await createSlurpStorage(db).getNoodlerAccountById(accountId);
+    if (account && !slurpRunsItself(account))
+      return { ok: false, status: 409, error: "You post for this page yourself." };
+  }
   const ran = await dispatch(db, name, parsed.data);
   return ran.ok ? { ok: true, value: ran.value, undo: "undo" in ran ? (ran.undo ?? null) : null } : ran;
 }

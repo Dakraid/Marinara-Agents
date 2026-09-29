@@ -335,6 +335,7 @@ function RecentPlays({
                   variant="quiet"
                   disabled={undo.pending}
                   onClick={() => void undo.run(play.id)}
+                  aria-label={t("ui.slurp.stir.undoPlay", { title })}
                   className="min-h-11 shrink-0 px-3 text-xs"
                 >
                   <RotateCcw size={14} aria-hidden="true" />

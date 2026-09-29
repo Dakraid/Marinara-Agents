@@ -1600,6 +1600,7 @@
   "ui.slurp.stir.someFailed": "Ein Teil konnte nicht passieren: {{reason}}",
   "ui.slurp.stir.failed": "Das konnte nicht passieren.",
   "ui.slurp.stir.undone": "Zurückgenommen.",
+  "ui.slurp.stir.undoPlay": "{{title}} zurücknehmen",
   "ui.slurp.stir.card.start-storyline.title": "Eine Storyline starten",
   "ui.slurp.stir.card.start-storyline.line": "Etwas, das sie über die nächsten Beiträge erleben.",
   "ui.slurp.stir.card.start-storyline.blurb": "Sie läuft Kapitel für Kapitel über ihre nächsten Beiträge. Nimm ein oder zwei andere dazu.",

@@ -5093,6 +5093,7 @@
   "ui.slurp.stir.someFailed": "Some of it could not happen: {{reason}}",
   "ui.slurp.stir.failed": "That could not happen.",
   "ui.slurp.stir.undone": "Taken back.",
+  "ui.slurp.stir.undoPlay": "Undo {{title}}",
   "ui.slurp.stir.card.start-storyline.title": "Start a storyline",
   "ui.slurp.stir.card.start-storyline.line": "Something they go through over the next posts.",
   "ui.slurp.stir.card.start-storyline.blurb": "It runs over their next posts, chapter by chapter. Add one or two others to share it.",

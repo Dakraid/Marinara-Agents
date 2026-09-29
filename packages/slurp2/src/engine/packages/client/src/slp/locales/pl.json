@@ -1616,6 +1616,7 @@
   "ui.slurp.stir.someFailed": "Część z tego nie mogła się wydarzyć: {{reason}}",
   "ui.slurp.stir.failed": "To nie mogło się wydarzyć.",
   "ui.slurp.stir.undone": "Wycofano.",
+  "ui.slurp.stir.undoPlay": "Cofnij: {{title}}",
   "ui.slurp.stir.card.start-storyline.title": "Zacznij historię",
   "ui.slurp.stir.card.start-storyline.line": "Coś, przez co przechodzą w kolejnych postach.",
   "ui.slurp.stir.card.start-storyline.blurb": "Toczy się rozdział po rozdziale w ich kolejnych postach. Dodaj jedną lub dwie osoby, aby ją dzieliły.",

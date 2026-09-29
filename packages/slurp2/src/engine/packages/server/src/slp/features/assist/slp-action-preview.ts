@@ -208,6 +208,8 @@ async function previewOther(
           text: move.text ?? null,
         },
         error,
+        // Only hold and release undo each other (the run keeps no Undo for the other moves).
+        reversible: move.move === "hold" || move.move === "release",
         summary: `${nameOf}'s storyline "${project.title}": ${move.move}${move.text ? ` (${move.text})` : ""}.`,
       };
     }
@@ -219,12 +221,13 @@ async function previewOther(
       if (others.length !== (story.withIds ?? []).length)
         return { who, error: "notFound", summary: "One of these Creators does not exist." };
       const everyone = [account!, ...others.filter((other) => other.id !== account!.id)];
+      const ownOther = others.some((other) => !slurpRunsItself(other));
       const room = await Promise.all(everyone.map((entry) => storage.arcHasRoom(entry.id)));
       return {
         who: everyone.map((entry) => ({ id: entry.id, name: entry.displayName, avatarUrl: entry.avatarUrl ?? null })),
         when: "nextPost",
         detail: { title: story.title, with: others.map((other) => other.displayName).join(", ") || null },
-        error: ownPage ?? (room.every(Boolean) ? null : "storylinesFull"),
+        error: ownPage ?? (ownOther ? "notAutomatic" : room.every(Boolean) ? null : "storylinesFull"),
         summary: `${nameOf} starts a storyline: ${story.title}${others.length ? `, with ${others.map((other) => other.displayName).join(", ")}` : ""}.`,
       };
     }

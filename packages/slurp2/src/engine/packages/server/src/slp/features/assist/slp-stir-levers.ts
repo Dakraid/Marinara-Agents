@@ -15,7 +15,12 @@ import {
 } from "../../data/creators/slp-steering-storage.js";
 import { slpUndoPatch } from "../../modules/assist/slp-stir-play.js";
 import { slurpModelWorkerAllows } from "../../base/model/slp-model-worker.js";
-import { readSlurpStirTies, undoSlurpTieLever, type SlurpTieUndo } from "../projects/slp-projects-contract.js";
+import {
+  readSlurpStirTies,
+  slurpRunsItself,
+  undoSlurpTieLever,
+  type SlurpTieUndo,
+} from "../projects/slp-projects-contract.js";
 import { runCreatorFanActivity } from "../audience/slp-audience-contract.js";
 import { SLP_SPICE_TO_EXPLICIT } from "../../../../../shared/src/slp/slp-spice.js";
 import {
@@ -23,6 +28,13 @@ import {
   slurpPlatformEventSchema,
 } from "../../../../../shared/src/slp/slp-platform-events.js";
 import { newId } from "../../../utils/id-generator.js";
+import { resolveCreatorSourceSnapshot } from "../../data/creators/slp-source-resolve.js";
+import {
+  appearanceEvidenceFromSource,
+  appearanceSourceAccount,
+  resolveSlpAppearanceProfile,
+} from "../../modules/creators/slp-appearance-profile.js";
+import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
 import type { SlurpPostGuidanceEntry } from "../../modules/feed/slp-post-guidance.js";
 import type { SlpActionParsed, SlpStirWorld } from "../../../../../shared/src/slp/slp-actions.js";
 import type { SlpCreatorSteering } from "../../../../../shared/src/slp/slp-creator-steering.js";
@@ -105,9 +117,26 @@ export async function runSlpStartEvent(
   db: DB,
   input: SlpActionParsed<"start-event">,
 ): Promise<SlpAssistOutcome<{ occurrenceId: string }> | LeverDone<{ occurrenceId: string }>> {
+  // A second start while it runs would double what it gives (a double tap, two tabs): one start at a
+  // time per event, and none while one runs.
+  // ponytail: in-process lock, the Engine is one process; a claim in storage if it ever runs as several.
+  if (startingEvents.has(input.eventId)) return { ok: false, status: 409, error: "That event is already on." };
+  startingEvents.add(input.eventId);
+  try {
+    return await startSlpEventOnce(db, input);
+  } finally {
+    startingEvents.delete(input.eventId);
+  }
+}
+
+const startingEvents = new Set<string>();
+
+async function startSlpEventOnce(
+  db: DB,
+  input: SlpActionParsed<"start-event">,
+): Promise<SlpAssistOutcome<{ occurrenceId: string }> | LeverDone<{ occurrenceId: string }>> {
   const storage = createSlurpStorage(db);
   const at = new Date();
-  // A second start while it runs would double what it gives (a double tap, two tabs).
   if (
     (await storage.listStoryOccurrences()).some(
       (occurrence: { blueprintId: string; status: string; endsAt: string }) =>
@@ -132,6 +161,10 @@ export async function runSlpSteerStoryline(
   if (!before) return { ok: false, status: 404, error: "Storyline not found." };
   const project = await storage.directProject(input.accountId, input.projectId, input.move, input.text);
   if (!project) return { ok: false, status: 409, error: "That does not apply to this storyline right now." };
+  // hold and release undo each other. A skip, back, insert or label also moves day ranges, polls and
+  // chapter choices, which a chapter list cannot put back, so those stay (0.3.1 review).
+  if (input.move !== "hold" && input.move !== "release")
+    return { ok: true, value: { projectId: input.projectId }, undo: null };
   return {
     ok: true,
     value: { projectId: input.projectId },
@@ -195,8 +228,12 @@ export async function runSlpStartStoryline(
   input: SlpActionParsed<"start-storyline">,
 ): Promise<SlpAssistOutcome<{ projectId: string }> | LeverDone<{ projectId: string }>> {
   const storage = createSlurpStorage(db);
-  for (const id of [input.accountId, ...(input.withIds ?? [])])
-    if (!(await storage.getNoodlerAccountById(id))) return { ok: false, status: 404, error: "Creator not found." };
+  for (const id of [input.accountId, ...(input.withIds ?? [])]) {
+    const account = await storage.getNoodlerAccountById(id);
+    if (!account) return { ok: false, status: 404, error: "Creator not found." };
+    // Slurp writes a storyline's posts; a page the player runs would never post a chapter.
+    if (!slurpRunsItself(account)) return { ok: false, status: 409, error: "You post for this page yourself." };
+  }
   const withIds = (input.withIds ?? []).filter((id) => id !== input.accountId);
   const project = await storage.createProject(input.accountId, {
     title: input.title,
@@ -229,20 +266,38 @@ export async function runSlpSetTipGoal(
   };
 }
 
-type LookAccount = {
-  settings?: { stage?: { appearance?: string }; appearanceProfile?: { text?: string } | null };
+type LookAccount = SlpAccount & {
+  settings: SlpAccount["settings"] & { stage?: { appearance?: string } };
 };
 
-/** How a Creator looks now: their own look line, or the accepted appearance profile. */
-export function slpCurrentLook(account: LookAccount): { override: string | null; text: string } {
-  const override = account.settings?.stage?.appearance?.trim() || null;
-  return { override, text: override ?? account.settings?.appearanceProfile?.text?.trim() ?? "" };
+/** The Creator's own look line, if the player or a play set one. */
+const slpLookOverride = (account: LookAccount) => account.settings?.stage?.appearance?.trim() || null;
+
+/**
+ * How a Creator looks now, the way their pictures read it: their own look line, else the linked
+ * card's Appearance, else the accepted profile. No AI call.
+ */
+async function slpCurrentLook(db: DB, account: LookAccount): Promise<string> {
+  // The same source the picture pipeline reads: the linked card or persona behind the page.
+  const linked = (await createSlurpStorage(db)
+    .resolveAccountSource(account)
+    .catch(() => null)) as SlpAccount | null;
+  const sourceAccount = appearanceSourceAccount(account, linked);
+  const source = await resolveCreatorSourceSnapshot(db, sourceAccount).catch(() => null);
+  return (
+    resolveSlpAppearanceProfile({
+      stageAppearance: account.settings?.stage?.appearance,
+      profile: account.settings?.appearanceProfile,
+      evidence: source ? appearanceEvidenceFromSource(source, sourceAccount.entityId) : null,
+    }).text ?? ""
+  );
 }
 
 /**
- * A lasting change of look (0.3.1): the change joins what they look like, so the rest stays.
- * ponytail: appended as a line, not merged by the model; a line that contradicts the old look
- * ("pink hair" over "blonde") leans on the picture model reading "Now:" as the newer one.
+ * A lasting change of look (0.3.1): the change comes first, then the rest of how they look, so the
+ * rest stays and the change is never the part cut for length.
+ * ponytail: a line, not merged by the model; "pink hair" over "blonde" leans on the picture model
+ * reading "Now:" as the newer one.
  */
 export async function runSlpNewLook(
   db: DB,
@@ -251,14 +306,18 @@ export async function runSlpNewLook(
   const storage = createSlurpStorage(db);
   const account = (await storage.getNoodlerAccountById(input.accountId)) as LookAccount | null;
   if (!account) return { ok: false, status: 404, error: "Creator not found." };
-  const look = slpCurrentLook(account);
-  const next = [look.text, `Now: ${input.change.replace(/[.!]+$/u, "")}.`].filter(Boolean).join("\n").slice(0, 2000);
+  const before = slpLookOverride(account);
+  const next = [`Now: ${input.change.replace(/[.!]+$/u, "")}.`, await slpCurrentLook(db, account)]
+    .filter(Boolean)
+    .join("\n")
+    .slice(0, 2000)
+    .trim();
   if (!(await storage.updateNoodlerAppearanceChoice(input.accountId, "edit_override", next)))
     return { ok: false, status: 409, error: "Their look could not be changed." };
   return {
     ok: true,
     value: { accountId: input.accountId },
-    undo: { kind: "look", accountId: input.accountId, before: look.override, set: next },
+    undo: { kind: "look", accountId: input.accountId, before, set: next },
   };
 }
 
@@ -324,8 +383,13 @@ export async function undoSlpAction(db: DB, undo: SlpActionUndo): Promise<boolea
       await setSlpSpiceLevel(db, undo.accountId, undo.level);
       return true;
     }
-    case "project":
-      return createSlurpStorage(db).deleteProject(undo.accountId, undo.projectId);
+    case "project": {
+      const storage = createSlurpStorage(db);
+      const project = await storage.getProject(undo.accountId, undo.projectId);
+      // Once a chapter went out it is part of their story: it stays.
+      if (!project || project.chapter > 0 || project.posts > 0) return false;
+      return storage.deleteProject(undo.accountId, undo.projectId);
+    }
     case "goal": {
       const storage = createSlurpStorage(db);
       // A goal changed since (or met and closed) stays as it is.
@@ -336,7 +400,7 @@ export async function undoSlpAction(db: DB, undo: SlpActionUndo): Promise<boolea
     case "look": {
       const storage = createSlurpStorage(db);
       const account = (await storage.getNoodlerAccountById(undo.accountId)) as LookAccount | null;
-      if (!account || slpCurrentLook(account).override !== undo.set) return false;
+      if (!account || slpLookOverride(account) !== undo.set) return false;
       return Boolean(
         undo.before
           ? await storage.updateNoodlerAppearanceChoice(undo.accountId, "edit_override", undo.before)
@@ -345,7 +409,9 @@ export async function undoSlpAction(db: DB, undo: SlpActionUndo): Promise<boolea
     }
     case "customEvent": {
       const storage = createSlurpStorage(db);
+      // Over already (or changed in Backstage since): it stays, event and all.
       const cancelled = await storage.cancelStartedStoryEvent(undo.occurrenceId);
+      if (!cancelled) return false;
       const { platformEvents } = await storage.getSettings();
       if (platformEvents.some((event: { id: string }) => event.id === undo.eventId))
         await storage.updateSettings({
@@ -356,19 +422,11 @@ export async function undoSlpAction(db: DB, undo: SlpActionUndo): Promise<boolea
     case "storyline": {
       const storage = createSlurpStorage(db);
       const current = await storage.getProject(undo.accountId, undo.projectId);
-      if (!current) return false;
-      if (undo.move === "hold" || undo.move === "release")
-        return Boolean(
-          await storage.directProject(undo.accountId, undo.projectId, undo.move === "hold" ? "release" : "hold"),
-        );
-      // Only while the storyline is where the move left it; a chapter that went out since stays.
-      if (current.chapter !== undo.after.chapter || current.chapters.join("\n") !== undo.after.chapters.join("\n"))
-        return false;
+      // Only hold and release are opposites; other moves are not offered for Undo (see the run).
+      if (!current || (undo.move !== "hold" && undo.move !== "release")) return false;
+      if (Boolean(current.held) !== (undo.move === "hold")) return false;
       return Boolean(
-        await storage.updateProject(undo.accountId, undo.projectId, {
-          chapters: undo.before.chapters,
-          chapter: undo.before.chapter,
-        }),
+        await storage.directProject(undo.accountId, undo.projectId, undo.move === "hold" ? "release" : "hold"),
       );
     }
   }

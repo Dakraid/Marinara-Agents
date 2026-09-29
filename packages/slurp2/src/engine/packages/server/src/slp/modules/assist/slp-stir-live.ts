@@ -202,13 +202,14 @@ export function slpStirSuggestions(input: SlpStirLiveInput): SlpStirSuggestion[]
       });
   }
   const open = out
-    .filter((suggestion) => !input.dismissed?.has(suggestion.id))
-    // The first-visit pair is the best match already; do not offer the same two twice.
+    // The first-visit pair is the best match already; do not offer the same two twice (and not as
+    // a match once the player put the first-visit card away).
     .filter(
       (suggestion, _index, all) =>
         suggestion.kind !== "match" ||
         !all.some((other) => other.kind === "firstPlay" && other.id.slice(6) === suggestion.id.slice(6)),
     )
+    .filter((suggestion) => !input.dismissed?.has(suggestion.id))
     .sort((left, right) => SUGGESTION_ORDER.indexOf(left.kind) - SUGGESTION_ORDER.indexOf(right.kind));
   const firsts = open.filter(
     (suggestion, index) => open.findIndex((other) => other.kind === suggestion.kind) === index,

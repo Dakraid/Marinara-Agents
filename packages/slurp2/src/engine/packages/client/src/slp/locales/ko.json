@@ -2438,6 +2438,7 @@
   "ui.slurp.stir.someFailed": "일부는 실행되지 않았습니다: {{reason}}",
   "ui.slurp.stir.failed": "실행되지 않았습니다.",
   "ui.slurp.stir.undone": "취소되었습니다.",
+  "ui.slurp.stir.undoPlay": "{{title}} 되돌리기",
   "ui.slurp.stir.card.start-storyline.title": "스토리라인 시작",
   "ui.slurp.stir.card.start-storyline.line": "다음 게시물들에서 겪게 될 일.",
   "ui.slurp.stir.card.start-storyline.blurb": "다음 게시물들에서 한 장씩 이어져요. 한두 명을 더해 함께할 수 있어요.",
