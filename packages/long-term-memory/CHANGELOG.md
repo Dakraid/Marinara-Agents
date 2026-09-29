@@ -1,5 +1,42 @@
 # Long-Term Memory changelog
 
+## 1.3.31 — 2026-09-28
+
+- Keep character facts whose wording looks event-shaped for review instead of deleting them, so durable abilities, roles, and possessions phrased in past-tense narrative are not lost before a human decides.
+- Block low-risk auto-apply when that review warning is present, including when the warning falls outside the retained diagnostic list.
+
+## 1.3.30 — 2026-09-28
+
+- Add a second optional place selector to the Memory Vault. When two places are selected they combine with AND, so the list and bulk selection show only memories available in both; clearing the second place restores the normal single-place view.
+
+## 1.3.29 — 2026-09-27
+
+- Align the bulk Change Availability workbench with the single-memory Memory Availability editor: same Available in heading and pills, collapsible place picker, and clearer chat-mode eligibility versus place-scope copy. Add/Remove still drives incremental `enableModes` / `disableModes` and `addScope` / `removeScope`.
+
+## 1.3.28 — 2026-09-27
+
+- Keep the Sources navigation tab labeled Sources while a source task runs or reports its result; show import, refresh, re-extract, cancelled, failed, and completed state as a separate status indicator instead of replacing the destination name.
+
+## 1.3.27 — 2026-09-27
+
+- Use All / Chats / Branches / Characters / Personas tabs in the Sources "Find sources in" picker so it matches Memory Vault and availability scope pickers.
+- Collapse the Sources "Make memories available in" destination search, tab rail, and result list under a summary that shows the current destination, matching the Memory Vault picker.
+- Show one spinner and one source count while a source task runs instead of a duplicated loader and a repeated count.
+
+## 1.3.26 — 2026-09-27
+
+- Render the Memory Vault unsaved-changes and rename-details dialogs as small centred cards again; both used a width class the Engine never emits, so they stretched across the screen.
+
+## 1.3.24 — 2026-09-27
+
+- Reconcile extracted candidates against notes committed after the extraction snapshot, so importing several sources at once (or two imports running at the same time) reuses the first memory instead of creating a duplicate under a second ID.
+- Never revive an archived or resolved memory as a reconciliation target, including when a stale batch projection still shows it active.
+
+## 1.3.23 — 2026-09-27
+
+- Stop sending the whole vault's existing notes to the extraction model: the prompt now carries only the source, and the server matches extracted candidates against existing memories after extraction, so prompt size no longer grows with the vault.
+- Remove the now-unused existing-note prompt-token setting from Memory Settings; stale saved values are discarded on load instead of blocking the settings.
+
 ## 1.3.22 — 2026-09-26
 
 - Reuse an existing memory when an extracted candidate names the same subject as a note already in the vault, instead of creating a second note under a different ID.
