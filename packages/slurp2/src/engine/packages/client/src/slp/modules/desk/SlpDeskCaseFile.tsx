@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { SLP_TYPE } from "../../base/chrome/SlpChrome";
+import { SlpCoinText } from "../coin/SlpCoin";
 import {
   slpDeskActive,
   slpDeskDailyRisk,
@@ -176,11 +177,13 @@ export function SlpDeskCaseFile({
       )}
       {!compact && desk.contract?.status === "active" && (
         <p className={cn(SLP_TYPE.body, "text-[var(--slurp-muted)]")}>
-          {tx("contractTerms", "{{count}} posts a week · {{coins}} coins a kept week · {{broken}} weeks missed", {
-            count: desk.contract.postsPerWeek,
-            coins: desk.contract.weeklyBonus,
-            broken: desk.contract.broken,
-          })}
+          <SlpCoinText>
+            {tx("contractTerms", "{{count}} posts a week · {{coins}} <coin/> a kept week · {{broken}} weeks missed", {
+              count: desk.contract.postsPerWeek,
+              coins: desk.contract.weeklyBonus,
+              broken: desk.contract.broken,
+            })}
+          </SlpCoinText>
           {desk.contract.themes.length ? ` · ${desk.contract.themes.join(", ")}` : ""}
         </p>
       )}

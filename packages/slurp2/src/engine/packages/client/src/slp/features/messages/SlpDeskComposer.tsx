@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Gift, Stamp, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "../../../lib/utils";
+import { SlpCoinText } from "../../modules/coin/SlpCoin";
 import { SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { focusRing } from "../../base/chrome/slp-focus";
 import { SlpPrimaryButton } from "../../modules/chrome/SlpButton";
@@ -98,15 +99,17 @@ export function SlpDeskComposerChip({ model }: { model: SlurpThreadViewModel }) 
     <div className="slurp-bubble-in flex min-h-9 max-w-full items-center gap-2 self-start rounded-full bg-[var(--slurp-tint)] ps-3 pe-1 text-xs font-semibold text-[var(--slurp-text)]">
       <Icon size={14} aria-hidden="true" className="shrink-0" />
       <span className="min-w-0 truncate">
-        {composerDesk.mode === "offer"
-          ? t("ui.slurp.desk.offerAttached", {
-              defaultValue: "Offer: {{what}}",
-              what: slpStirWhat(t, composerDesk.card),
-            })
-          : t("ui.slurp.desk.moveAttached", {
-              defaultValue: "With this line: {{what}}",
-              what: slpStirWhat(t, composerDesk.card),
-            })}
+        <SlpCoinText>
+          {composerDesk.mode === "offer"
+            ? t("ui.slurp.desk.offerAttached", {
+                defaultValue: "Offer: {{what}}",
+                what: slpStirWhat(t, composerDesk.card),
+              })
+            : t("ui.slurp.desk.moveAttached", {
+                defaultValue: "With this line: {{what}}",
+                what: slpStirWhat(t, composerDesk.card),
+              })}
+        </SlpCoinText>
       </span>
       <button
         type="button"

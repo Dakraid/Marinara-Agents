@@ -67,6 +67,16 @@ assert.deepEqual(
     "new-look",
     "set-tip-goal",
     "start-storyline",
+    // 0.3.5: polyamory and the Slurp Support desk.
+    "add-to-couple",
+    "cash-favour",
+    "grant-perk",
+    "offer-contract",
+    "plant-rumour",
+    "seed-trend",
+    "set-challenge",
+    "throttle-reach",
+    "warn-creator",
   ].sort(),
   "one named layer: text, pictures, steering, ideas, posting, and (W) every Stir lever",
 );
@@ -125,8 +135,15 @@ assert.match(runner, /if \(!parsed\.success\) return \{ ok: false, status: 400/u
 // W: the tie levers dispatch through the projects contract (`runSlurpTieLever`); their cases live there.
 const tieLevers = server("features/projects/slp-stir-ties.ts");
 assert.match(runner, /if \(isSlurpTieLever\(name\)\) \{\s+const ran = await runSlurpTieLever\(db, name, input\);/u);
+// 0.3.5: the Support desk's levers dispatch through `runSlpDeskLever` (`slp-desk-levers.ts`).
+const deskLevers = server("features/assist/slp-desk-levers.ts");
+assert.match(runner, /if \(isSlpDeskLever\(name\)\) return runSlpDeskLever\(db, name, input\);/u);
 for (const name of SLP_ACTION_NAMES)
-  assert.match(runner + tieLevers, new RegExp(`case "${name}":`, "u"), `${name} is dispatched`);
+  assert.match(
+    runner + tieLevers + deskLevers,
+    new RegExp(`case "${name}":|name === "${name}"`, "u"),
+    `${name} is dispatched`,
+  );
 assert.match(runner, /generateAndApplyCreatorPost[\s\S]*resolveSlurpAutomaticPostAccess/u, "write-post = Run now");
 assert.match(runner, /from "\.\.\/feed\/slp-feed-contract\.js"/u, "another feature only through its contract");
 

@@ -27,6 +27,8 @@ assert.deepEqual(SLP_BACKSTAGE_SECTIONS, [
   "automation",
   "content",
   "world",
+  // 0.3.5: Settings › Stir (the Support desk, polyamory).
+  "stir",
   "fans",
   // 7b-spice: Backstage › Spice (user plan: "Backstage › Spice › Your taste").
   "spice",

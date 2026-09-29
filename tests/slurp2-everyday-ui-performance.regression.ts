@@ -50,7 +50,8 @@ assert.match(
   /useSlurpConnections\([\s\S]*?creatorView === "create-profile"[\s\S]*?creationStep === "draft"[\s\S]*?editingProfileId !== null/u,
 );
 assert.doesNotMatch(homeState, /useSlurpNotifications|useSlurpThreads/u);
-assert.match(homeState, /useSlurpNotificationUnseenCount\(viewerPersonaId\)/u);
+// 0.3.5: the Inbox badge counts unread messages only, so Home no longer reads the Activity count.
+assert.doesNotMatch(homeState, /useSlurpNotificationUnseenCount/u);
 assert.match(homeState, /useSlurpUnreadCount\(viewerPersonaId\)/u);
 
 const notificationHooks = read("client/src/slp/features/notifications/slp-notification-hooks.ts");

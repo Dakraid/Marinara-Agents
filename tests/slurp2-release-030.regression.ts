@@ -111,7 +111,8 @@ backLayer();
   assert.deepEqual(slpCreatorChipList(creators, [], "  zz ").length, 0);
   const chips = client("modules/chrome/SlpCreatorChips.tsx");
   assert.match(chips, /const searchable = creators\.length > SLP_CREATOR_CHIPS_SEARCH_FROM;/u);
-  assert.match(client("features/stir/SlpStirPlaySheet.tsx"), /<SlpCreatorChips creators=\{creators\}/u);
+  // 0.3.5: the play sheet's creator picker moved to SlpStirFormParts.tsx.
+  assert.match(client("features/stir/SlpStirFormParts.tsx"), /<SlpCreatorChips creators=\{creators\}/u);
   assert.match(client("features/projects/SlpCollabsPanel.tsx"), /<SlpCreatorChips\s+creators=\{creators\.filter/u);
 }
 
