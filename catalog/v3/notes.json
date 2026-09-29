@@ -360,6 +360,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.1",
+          "date": "2026-09-29",
+          "notes": "Stir, built out.\n\n- New levers: start a storyline or crossover, set a tip goal, give a new look, make up an event. All with preview and Undo.\n- Recent plays with Undo; tap \"In play\" to steer it; suggestions offer who would click and can be put away; Surprise me; everyday moments.\n- The planner takes your answer to its question in place, knows your last plays, each Creator and your own pages.\n- Undo is safe when the world moved on. Cooling a rivalry, pushing a collab, storyline moves and opening a shared page can be taken back.\n- Fixes: a brand deal said done while nothing happened, events started twice, couple pages as quiet Creators, plays twice in Pulse, lost Undo answers, Polish plurals, error states, accessibility.",
+          "highlight": false
+        },
+        {
           "version": "0.3.0",
           "date": "2026-09-29",
           "notes": "Small changes.\n\n- Stir, a new tab: make crushes, collabs, rivalries and events happen between your Creators, in your own words or with a card. Every play shows a preview first and has Undo.\n- Life and spice: collabs, couples with an optional shared page, rivalries, brand deals, teases that lead to drops, fan polls, steering with flavour and spice levels.\n- A new look for the whole app: floating phone nav, Hub, Stories, profiles, Discover, Wallet, the Dashboard, a role-play onboarding and a What's new sheet.\n- Messages rebuilt: a real inbox, full-screen chats, write as Slurp Support, AI fans sometimes get an answer, and promised messages arrive.\n- Pulse shows what runs, what is queued, what failed and why, and what comes next. Long actions run in the background and never lock the screen.\n- The AI budget grows with your Creators; limits you set yourself stay. Pictures keep their viewpoint and art style better, with an optional prompt enhancer.\n- 215 fixes.",
@@ -471,12 +477,6 @@
           "version": "0.2.61",
           "date": "2026-09-25",
           "notes": "- The Creator settings window no longer shows \"{{name}}'s settings\" while it loads.",
-          "highlight": false
-        },
-        {
-          "version": "0.2.60",
-          "date": "2026-09-25",
-          "notes": "- The Storylines card in Posting and the storyline button in the Calendar now open the new Storylines page, and the Advanced block shows an arrow.",
           "highlight": false
         }
       ]

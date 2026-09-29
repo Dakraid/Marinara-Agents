@@ -62,6 +62,11 @@ assert.deepEqual(
     "steer-couple",
     "steer-storyline",
     "suggest-collab",
+    // 0.3.1: storylines, goals, looks and made-up events.
+    "invent-event",
+    "new-look",
+    "set-tip-goal",
+    "start-storyline",
   ].sort(),
   "one named layer: text, pictures, steering, ideas, posting, and (W) every Stir lever",
 );

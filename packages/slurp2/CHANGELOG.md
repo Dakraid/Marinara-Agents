@@ -1,5 +1,15 @@
 # Slurp Remastered release notes
 
+## 0.3.1 — 2026-09-29
+
+Stir, built out.
+
+- New levers: start a storyline or crossover, set a tip goal, give a new look, make up an event. All with preview and Undo.
+- Recent plays with Undo; tap "In play" to steer it; suggestions offer who would click and can be put away; Surprise me; everyday moments.
+- The planner takes your answer to its question in place, knows your last plays, each Creator and your own pages.
+- Undo is safe when the world moved on. Cooling a rivalry, pushing a collab, storyline moves and opening a shared page can be taken back.
+- Fixes: a brand deal said done while nothing happened, events started twice, couple pages as quiet Creators, plays twice in Pulse, lost Undo answers, Polish plurals, error states, accessibility.
+
 ## 0.3.0 — 2026-09-29
 
 Small changes.
