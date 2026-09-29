@@ -7,6 +7,8 @@
 import type { DB } from "../../../db/connection.js";
 import { logger } from "../../../lib/logger.js";
 import { newId } from "../../../utils/id-generator.js";
+import { readSlurpCreatorSteering } from "../../data/creators/slp-steering-storage.js";
+import { SLP_POLY_CARD_WORDS } from "../../../../../shared/src/slp/slp-creator-steering.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
 import { readSlurpCardPartners, readSlurpCreatorFitText } from "../../data/creators/slp-flavour-source.js";
@@ -74,20 +76,28 @@ export async function loadSlurpTieCreators(db: DB, at = new Date()): Promise<Slu
   );
   const scale = slurpPlatformScaleMultiplier(settings.platformScale);
   return Promise.all(
-    accounts.map(async (account: Account) => ({
-      id: account.id,
-      name: account.displayName,
-      text: await readSlurpCreatorFitText(db, { account, source: await storage.resolveAccountSource(account) }),
-      tags: account.settings.profile.tags ?? [],
-      automatic: slurpRunsItself(account),
-      gender: account.settings.profile.gender ?? null,
-      cardPartners: await readSlurpCardPartners(db, account.id).catch(() => []),
-      followers: slurpCreatorReach(
-        { accountId: account.id, createdAt: account.createdAt, realFollowers: followers.get(account.id) ?? 0, scale },
-        at,
-        settings.simulationTuning.reach,
-      ),
-    })),
+    accounts.map(async (account: Account) => {
+      const text = await readSlurpCreatorFitText(db, { account, source: await storage.resolveAccountSource(account) });
+      // Polyamory (0.3.5): the style the player picked, else poly words on their card.
+      const style = await readSlurpCreatorSteering(db, account.id)
+        .then((steering) => steering.relationshipStyle)
+        .catch(() => null);
+      return {
+        id: account.id,
+        name: account.displayName,
+        text,
+        tags: account.settings.profile.tags ?? [],
+        automatic: slurpRunsItself(account),
+        gender: account.settings.profile.gender ?? null,
+        cardPartners: await readSlurpCardPartners(db, account.id).catch(() => []),
+        poly: style ? style === "poly" : SLP_POLY_CARD_WORDS.test(text),
+        followers: slurpCreatorReach(
+          { accountId: account.id, createdAt: account.createdAt, realFollowers: followers.get(account.id) ?? 0, scale },
+          at,
+          settings.simulationTuning.reach,
+        ),
+      };
+    }),
   );
 }
 

@@ -8,11 +8,7 @@ import { focusRing } from "../../base/chrome/slp-focus";
 import { SlpPrimaryButton } from "../../modules/chrome/SlpButton";
 import { SlpSheetGroup } from "../../modules/chrome/SlpSheet";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
-import {
-  SLP_DESK_NOW,
-  SLP_DESK_OFFERABLE,
-  type SlpActionName,
-} from "../../../../../shared/src/slp/slp-actions.js";
+import { SLP_DESK_NOW, SLP_DESK_OFFERABLE, type SlpActionName } from "../../../../../shared/src/slp/slp-actions.js";
 import { SlpStirPlaySheet, slpStirWhat, useSlurpStir } from "../stir/slp-stir-contract";
 import { useAddSlurpDeskNote } from "./slp-message-action-hooks";
 import type { SlurpThreadViewModel } from "./slp-thread-actions";
@@ -82,7 +78,9 @@ export function SlpDeskToolPanel({ model, onPicked }: { model: SlurpThreadViewMo
             <span className="block truncate text-[15px] font-bold leading-5">
               {t(`ui.slurp.stir.card.${action}.title`)}
             </span>
-            <span className="block text-xs leading-4 text-[var(--slurp-muted)]">{t(`ui.slurp.stir.card.${action}.line`)}</span>
+            <span className="block text-xs leading-4 text-[var(--slurp-muted)]">
+              {t(`ui.slurp.stir.card.${action}.line`)}
+            </span>
           </span>
         </button>
       ))}
@@ -101,8 +99,14 @@ export function SlpDeskComposerChip({ model }: { model: SlurpThreadViewModel }) 
       <Icon size={14} aria-hidden="true" className="shrink-0" />
       <span className="min-w-0 truncate">
         {composerDesk.mode === "offer"
-          ? t("ui.slurp.desk.offerAttached", { defaultValue: "Offer: {{what}}", what: slpStirWhat(t, composerDesk.card) })
-          : t("ui.slurp.desk.moveAttached", { defaultValue: "With this line: {{what}}", what: slpStirWhat(t, composerDesk.card) })}
+          ? t("ui.slurp.desk.offerAttached", {
+              defaultValue: "Offer: {{what}}",
+              what: slpStirWhat(t, composerDesk.card),
+            })
+          : t("ui.slurp.desk.moveAttached", {
+              defaultValue: "With this line: {{what}}",
+              what: slpStirWhat(t, composerDesk.card),
+            })}
       </span>
       <button
         type="button"

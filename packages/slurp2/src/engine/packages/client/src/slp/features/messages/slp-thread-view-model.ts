@@ -118,7 +118,17 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [connectionPickerOpen, setConnectionPickerOpen] = useState(false);
   const [toolTab, setToolTab] = useState<
-    "tip" | "commission" | "photo" | "generated-photo" | "creator" | "request" | "write" | "offer" | "move" | "note" | null
+    | "tip"
+    | "commission"
+    | "photo"
+    | "generated-photo"
+    | "creator"
+    | "request"
+    | "write"
+    | "offer"
+    | "move"
+    | "note"
+    | null
   >(null);
   // Slurp Support's desk step for the next line (docs/SUPPORT-DESK.md): an Offer or a move, and the
   // lever whose play sheet is open to build one.
@@ -316,87 +326,89 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
             },
           ] as const)
         : ownsCreator
-        ? ([
-            {
-              id: "write",
-              icon: PenLine,
-              label: localizeUi("ui.slurp.messages.helpWrite", { defaultValue: "Help me write" }),
-              detail: localizeUi("ui.slurp.messages.helpWriteDetail", {
-                defaultValue: "Slurp writes or polishes your message",
-              }),
-              group: "conversation" as const,
-            },
-            {
-              id: "request",
-              icon: MessageCircle,
-              label: localizeUi("ui.slurp.messages.requestFanReply", { defaultValue: "Request a reply" }),
-              detail: localizeUi("ui.slurp.messages.requestFanReplyDetail", {
-                defaultValue: "Ask the fan to write back",
-              }),
-              group: "conversation" as const,
-            },
-            {
-              id: "generated-photo",
-              icon: Palette,
-              label: localizeUi("ui.slurp.messages.createPhoto", { defaultValue: "Create a photo" }),
-              detail: localizeUi("ui.slurp.messages.createPhotoDetail", { defaultValue: "Generate and send an image" }),
-              group: "media" as const,
-            },
-            {
-              id: "creator",
-              icon: SlpLockGlyph,
-              label: localizeUi("ui.slurp.messages.lockedContent", { defaultValue: "Locked content" }),
-              detail: localizeUi("ui.slurp.messages.lockedContentDetail", { defaultValue: "Send a paid message" }),
-              group: "creator" as const,
-            },
-          ] as const)
-        : ([
-            {
-              id: "photo",
-              icon: ImageIcon,
-              label: localizeUi("ui.slurp.messages.sendPhoto", { defaultValue: "Send a photo" }),
-              detail: localizeUi("ui.slurp.messages.sendPhotoDetail", {
-                defaultValue: "Choose an image from your device",
-              }),
-              group: "media" as const,
-            },
-            {
-              id: "request",
-              icon: MessageCircle,
-              label: localizeUi("ui.slurp.messages.requestReply", { defaultValue: "Request a reply" }),
-              detail: localizeUi("ui.slurp.messages.requestReplyDetail", {
-                defaultValue: "Ask gently without forcing a reply",
-              }),
-              group: "conversation" as const,
-            },
-            {
-              id: "write",
-              icon: PenLine,
-              label: localizeUi("ui.slurp.messages.helpWrite", { defaultValue: "Help me write" }),
-              detail: localizeUi("ui.slurp.messages.helpWriteDetail", {
-                defaultValue: "Slurp writes or polishes your message",
-              }),
-              group: "conversation" as const,
-            },
-            {
-              id: "commission",
-              icon: BriefcaseBusiness,
-              label: localizeUi("ui.slurp.messages.askCommission", { defaultValue: "Ask for commission" }),
-              detail: localizeUi("ui.slurp.messages.askCommissionDetail", {
-                defaultValue: "Request made-to-order work",
-              }),
-              group: "conversation" as const,
-            },
-            {
-              id: "tip",
-              icon: SlurpCoin,
-              label: localizeUi("ui.slurp.messages.addTip", { defaultValue: "Send a tip" }),
-              detail: localizeUi("ui.slurp.messages.addTipDetailNowOrLater", {
-                defaultValue: "Now, or with your next message",
-              }),
-              group: "payment" as const,
-            },
-          ] as const)
+          ? ([
+              {
+                id: "write",
+                icon: PenLine,
+                label: localizeUi("ui.slurp.messages.helpWrite", { defaultValue: "Help me write" }),
+                detail: localizeUi("ui.slurp.messages.helpWriteDetail", {
+                  defaultValue: "Slurp writes or polishes your message",
+                }),
+                group: "conversation" as const,
+              },
+              {
+                id: "request",
+                icon: MessageCircle,
+                label: localizeUi("ui.slurp.messages.requestFanReply", { defaultValue: "Request a reply" }),
+                detail: localizeUi("ui.slurp.messages.requestFanReplyDetail", {
+                  defaultValue: "Ask the fan to write back",
+                }),
+                group: "conversation" as const,
+              },
+              {
+                id: "generated-photo",
+                icon: Palette,
+                label: localizeUi("ui.slurp.messages.createPhoto", { defaultValue: "Create a photo" }),
+                detail: localizeUi("ui.slurp.messages.createPhotoDetail", {
+                  defaultValue: "Generate and send an image",
+                }),
+                group: "media" as const,
+              },
+              {
+                id: "creator",
+                icon: SlpLockGlyph,
+                label: localizeUi("ui.slurp.messages.lockedContent", { defaultValue: "Locked content" }),
+                detail: localizeUi("ui.slurp.messages.lockedContentDetail", { defaultValue: "Send a paid message" }),
+                group: "creator" as const,
+              },
+            ] as const)
+          : ([
+              {
+                id: "photo",
+                icon: ImageIcon,
+                label: localizeUi("ui.slurp.messages.sendPhoto", { defaultValue: "Send a photo" }),
+                detail: localizeUi("ui.slurp.messages.sendPhotoDetail", {
+                  defaultValue: "Choose an image from your device",
+                }),
+                group: "media" as const,
+              },
+              {
+                id: "request",
+                icon: MessageCircle,
+                label: localizeUi("ui.slurp.messages.requestReply", { defaultValue: "Request a reply" }),
+                detail: localizeUi("ui.slurp.messages.requestReplyDetail", {
+                  defaultValue: "Ask gently without forcing a reply",
+                }),
+                group: "conversation" as const,
+              },
+              {
+                id: "write",
+                icon: PenLine,
+                label: localizeUi("ui.slurp.messages.helpWrite", { defaultValue: "Help me write" }),
+                detail: localizeUi("ui.slurp.messages.helpWriteDetail", {
+                  defaultValue: "Slurp writes or polishes your message",
+                }),
+                group: "conversation" as const,
+              },
+              {
+                id: "commission",
+                icon: BriefcaseBusiness,
+                label: localizeUi("ui.slurp.messages.askCommission", { defaultValue: "Ask for commission" }),
+                detail: localizeUi("ui.slurp.messages.askCommissionDetail", {
+                  defaultValue: "Request made-to-order work",
+                }),
+                group: "conversation" as const,
+              },
+              {
+                id: "tip",
+                icon: SlurpCoin,
+                label: localizeUi("ui.slurp.messages.addTip", { defaultValue: "Send a tip" }),
+                detail: localizeUi("ui.slurp.messages.addTipDetailNowOrLater", {
+                  defaultValue: "Now, or with your next message",
+                }),
+                group: "payment" as const,
+              },
+            ] as const)
       ).slice(),
     [localizeUi, ownsCreator, asSupport],
   );

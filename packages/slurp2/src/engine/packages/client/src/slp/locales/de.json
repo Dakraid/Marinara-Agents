@@ -2461,7 +2461,7 @@
   "ui.slurp.stir.note.shady": "Unsauber: {{name}} wird misstrauischer.",
   "ui.slurp.stir.settings.groupLove": "Liebe",
   "ui.slurp.stir.settings.polyamory": "Polyamorie",
-  "ui.slurp.stir.settings.polyamoryDetail": "Ein Paar kann auf drei oder vier Menschen wachsen. Stir bekommt die Karte „Zu einem Paar hinzufügen“, und jeder Partner taucht in ihren Posts und Chats auf.",
+  "ui.slurp.stir.settings.polyamoryDetail": "Ein Paar kann auf drei oder vier wachsen, und ein polyamorer Creator kann in mehr als einem Paar sein. Den Stil jedes Creators stellst du in seiner Steuerung ein: laut Karte, monogam oder polyamor.",
   "ui.slurp.stir.card.add-to-couple.title": "Zu einem Paar hinzufügen",
   "ui.slurp.stir.card.add-to-couple.line": "Jemand kommt dazu: zu dritt oder zu viert.",
   "ui.slurp.stir.card.add-to-couple.blurb": "Ein Paar, das datet oder zusammen ist, nimmt einen weiteren Partner auf, bis zu vier Menschen. Alle posten auf ihre eigene Art darüber.",
@@ -2469,5 +2469,12 @@
   "ui.slurp.stir.form.joiner": "Wer dazukommt",
   "ui.slurp.stir.cant.polyOff": "Polyamorie ist in Einstellungen › Stir aus.",
   "ui.slurp.stir.cant.notTogether": "Sie daten noch nicht.",
-  "ui.slurp.stir.cant.full": "Das Paar ist schon zu viert."
+  "ui.slurp.stir.cant.full": "Das Paar ist schon zu viert.",
+  "ui.slurp.steering.relationshipStyle": "Beziehungen",
+  "ui.slurp.steering.relationshipStyles.card": "Laut ihrer Karte",
+  "ui.slurp.steering.relationshipStyles.mono": "Monogam",
+  "ui.slurp.steering.relationshipStyles.poly": "Polyamor",
+  "ui.slurp.stir.part.style": "Beziehungen: {{style}}",
+  "ui.slurp.stir.cant.mono": "Eine Person ist monogam und schon mit jemandem zusammen.",
+  "ui.slurp.ties.moment.joined": "{{name}} ist dazugekommen"
 }

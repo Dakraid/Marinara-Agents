@@ -26,6 +26,7 @@ import {
 } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-support-desk.ts";
 import {
   findPendingSlurpDeskOffer,
+  slurpDeskAcceptedInput,
   readSlurpDeskReply,
   slurpDeskOfferOutcome,
   slurpDeskOfferSummary,
@@ -44,7 +45,12 @@ const at = new Date("2026-09-29T12:00:00.000Z");
 const later = (days: number) => new Date(at.getTime() + days * DAY);
 const settings = SLP_DEFAULT_SUPPORT_DESK_SETTINGS;
 const desk = (patch: Partial<SlpSupportDesk> = {}): SlpSupportDesk =>
-  normalizeSlpSupportDesk({ ...SLP_DEFAULT_SUPPORT_DESK, tickedAt: at.toISOString(), seededAt: at.toISOString(), ...patch });
+  normalizeSlpSupportDesk({
+    ...SLP_DEFAULT_SUPPORT_DESK,
+    tickedAt: at.toISOString(),
+    seededAt: at.toISOString(),
+    ...patch,
+  });
 const tick = (value: SlpSupportDesk, days: number, patch: Partial<Parameters<typeof slpDeskTick>[1]> = {}) =>
   slpDeskTick(value, {
     at: later(days),
@@ -56,7 +62,12 @@ const tick = (value: SlpSupportDesk, days: number, patch: Partial<Parameters<typ
 
 // 1. The record reads defensively and keeps its bounds.
 {
-  const broken = normalizeSlpSupportDesk({ trust: 900, suspicion: -4, badges: ["verified", "verified", "nope"], log: "x" });
+  const broken = normalizeSlpSupportDesk({
+    trust: 900,
+    suspicion: -4,
+    badges: ["verified", "verified", "nope"],
+    log: "x",
+  });
   assert.equal(broken.trust, 100);
   assert.equal(broken.suspicion, 0);
   assert.deepEqual(broken.badges, ["verified"]);
@@ -99,12 +110,16 @@ const tick = (value: SlpSupportDesk, days: number, patch: Partial<Parameters<typ
   assert.ok(Math.abs(oneDay - twoHalves) < 1e-9);
   // Caught: trust drops, suspicion resets, the event is out.
   const caught = tick(desk({ suspicion: 90 }), 1, { rolls: [0, 0.99, 0] });
-  assert.deepEqual(caught.events.map((event) => event.kind), ["caught"]);
+  assert.deepEqual(
+    caught.events.map((event) => event.kind),
+    ["caught"],
+  );
   assert.equal(caught.desk.suspicion, 0);
   assert.ok(caught.desk.trust <= -35);
   // Shady moves off: never caught.
   assert.equal(
-    tick(desk({ suspicion: 90 }), 1, { rolls: [0, 0.99, 0], settings: { ...settings, shadyMoves: false } }).events.length,
+    tick(desk({ suspicion: 90 }), 1, { rolls: [0, 0.99, 0], settings: { ...settings, shadyMoves: false } }).events
+      .length,
     0,
   );
   // Suspicion fades with time.
@@ -185,7 +200,16 @@ const tick = (value: SlpSupportDesk, days: number, patch: Partial<Parameters<typ
   assert.deepEqual(ticket.events, [{ kind: "ticket", topic: "views" }], "a throttled Creator asks about views");
   // An open ticket blocks a second one.
   const open = desk({
-    ticket: { id: "t", kind: "help", topic: "x", status: "open", openedBy: "creator", openedAt: at.toISOString(), resolvedAt: null, rating: null },
+    ticket: {
+      id: "t",
+      kind: "help",
+      topic: "x",
+      status: "open",
+      openedBy: "creator",
+      openedAt: at.toISOString(),
+      resolvedAt: null,
+      rating: null,
+    },
   });
   assert.equal(tick(open, 3, { settings: on, rolls: [0.99, 0, 0] }).events.length, 0);
 }
@@ -200,7 +224,13 @@ const tick = (value: SlpSupportDesk, days: number, patch: Partial<Parameters<typ
 // 8. The Creator's answer: trust, the offer, intel, a rating.
 {
   assert.equal(readSlurpDeskReply(null), null);
-  const reply = readSlurpDeskReply({ trust: "down", offer: "counter", counter: "  more coins ", intel: "null", rating: 9 });
+  const reply = readSlurpDeskReply({
+    trust: "down",
+    offer: "counter",
+    counter: "  more coins ",
+    intel: "null",
+    rating: 9,
+  });
   assert.deepEqual(reply, { trust: "down", offer: "counter", counter: "more coins", intel: "", rating: null });
   assert.equal(slurpDeskOfferOutcome(reply, true), "countered");
   assert.equal(slurpDeskOfferOutcome(reply, false), "accepted", "refusals off: they go along");
@@ -214,8 +244,16 @@ const tick = (value: SlpSupportDesk, days: number, patch: Partial<Parameters<typ
   assert.doesNotMatch(summary, /secret-id/u, "ids never reach the model");
   assert.match(summary, /stories/u);
   const history = [
-    { id: "1", role: "viewer", metadata: { deskOffer: { action: "add-idea", input: {}, summary: "old", status: "declined" } } },
-    { id: "2", role: "viewer", metadata: { deskOffer: { action: "add-idea", input: {}, summary: "new", status: "pending" } } },
+    {
+      id: "1",
+      role: "viewer",
+      metadata: { deskOffer: { action: "add-idea", input: {}, summary: "old", status: "declined" } },
+    },
+    {
+      id: "2",
+      role: "viewer",
+      metadata: { deskOffer: { action: "add-idea", input: {}, summary: "new", status: "pending" } },
+    },
     { id: "3", role: "creator", metadata: {} },
   ];
   assert.equal(findPendingSlurpDeskOffer(history)?.messageId, "2");
@@ -235,13 +273,26 @@ const tick = (value: SlpSupportDesk, days: number, patch: Partial<Parameters<typ
 // 9. A note is the player's own: no transcript carries it. An offer reads as an event with its answer.
 {
   const line = (id: string, metadata: Record<string, unknown>, content = "hi"): SlurpDmLine =>
-    ({ id, role: "viewer", kind: "text", content, price: 0, unlockedAt: null, metadata, createdAt: at.toISOString() }) as SlurpDmLine;
+    ({
+      id,
+      role: "viewer",
+      kind: "text",
+      content,
+      price: 0,
+      unlockedAt: null,
+      metadata,
+      createdAt: at.toISOString(),
+    }) as SlurpDmLine;
   const transcript = slurpDmTranscript(
     [
       line("n", { deskNote: true }, "secret plan"),
       line("o", { deskOffer: { summary: "a challenge", status: "accepted" } }, "want a challenge?"),
     ],
-    { writer: "creator", creator: { name: "Mira", handle: "mira" }, viewer: { name: "Slurp Support", handle: "slurpsupport" } },
+    {
+      writer: "creator",
+      creator: { name: "Mira", handle: "mira" },
+      viewer: { name: "Slurp Support", handle: "slurpsupport" },
+    },
   );
   assert.equal(transcript.length, 1);
   assert.doesNotMatch(JSON.stringify(transcript), /secret plan/u);
@@ -249,18 +300,55 @@ const tick = (value: SlpSupportDesk, days: number, patch: Partial<Parameters<typ
 }
 
 // 10. Every desk action is in the action layer, off the deck.
-for (const name of ["grant-perk", "set-challenge", "offer-contract", "cash-favour", "throttle-reach", "plant-rumour", "seed-trend", "warn-creator"] as const) {
+for (const name of [
+  "grant-perk",
+  "set-challenge",
+  "offer-contract",
+  "cash-favour",
+  "throttle-reach",
+  "plant-rumour",
+  "seed-trend",
+  "warn-creator",
+] as const) {
   assert.ok(SLP_ACTIONS[name], name);
   assert.equal(SLP_ACTION_META[name].category, "desk");
   assert.equal(SLP_ACTION_META[name].deck, false);
 }
 
+// 11. An accepted Offer is final: a lever that may still refuse is told to happen.
+assert.deepEqual(slurpDeskAcceptedInput({ input: { aId: "a", bId: "b", happen: false } }), {
+  aId: "a",
+  bId: "b",
+  happen: true,
+});
+assert.deepEqual(slurpDeskAcceptedInput({ input: { accountId: "a" } }), { accountId: "a" });
+
 // Wiring pins.
 {
-  assert.match(read("server/src/slp/features/messages/slp-messages-thread-routes.ts"), /if \(isSlurpSupportThread\(thread\)\)\s+return \{\s+side,\s+desk:/u);
+  // A desk notice or note asks nobody for an answer, and never stands in for the line to answer.
+  assert.match(
+    read("server/src/slp/data/messages/slp-messages-storage-conversation.ts"),
+    /metadata\?\.deskQuiet === true/u,
+  );
+  assert.match(read("server/src/slp/data/messages/slp-reply-storage-methods.ts"), /"deskQuiet":true/u);
+  assert.match(read("server/src/slp/data/messages/slp-support-desk-thread.ts"), /deskQuiet: true/u);
+  // A resend of the same request runs its move once (review 0.3.5).
+  assert.match(
+    read("server/src/slp/features/messages/slp-messages-send-routes.ts"),
+    /!\("replayed" in sent && sent\.replayed\)/u,
+  );
+  // The desk pass writes the record first, then runs its lines, coins and switches.
+  assert.match(read("server/src/slp/features/messages/desk/slp-desk-tick-operation.ts"), /if \(!written\) continue;/u);
+  assert.match(
+    read("server/src/slp/features/messages/slp-messages-thread-routes.ts"),
+    /if \(isSlurpSupportThread\(thread\)\)\s+return \{\s+side,\s+desk:/u,
+  );
   assert.match(read("server/src/slp/data/world/slp-story-engine-storage.ts"), /slpDeskReachFactor/u);
   assert.match(read("server/src/slp/features/messages/slp-message-operation.ts"), /applySlurpDeskTalk\(db,/u);
-  assert.match(read("server/src/slp/features/world/slp-world-scheduler-service.ts"), /advanceSlurpSupportDesk\(app\.db\)/u);
+  assert.match(
+    read("server/src/slp/features/world/slp-world-scheduler-service.ts"),
+    /advanceSlurpSupportDesk\(app\.db\)/u,
+  );
   assert.match(read("server/src/slp/workflows/slp-world-tick-workflow.ts"), /advanceSlurpSupportDesk\(app\.db\)/u);
   assert.match(read("server/src/slp/features/assist/slp-action-runner.ts"), /isSlpDeskLever\(name\)/u);
 }

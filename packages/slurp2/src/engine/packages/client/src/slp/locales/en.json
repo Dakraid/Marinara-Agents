@@ -5851,7 +5851,7 @@
   "ui.slurp.stir.note.shady": "Shady: {{name}} gets more suspicious.",
   "ui.slurp.stir.settings.groupLove": "Love",
   "ui.slurp.stir.settings.polyamory": "Polyamory",
-  "ui.slurp.stir.settings.polyamoryDetail": "A couple can grow to three or four people. Stir gets an \"Add to a couple\" card, and every partner shows up in their posts and chats.",
+  "ui.slurp.stir.settings.polyamoryDetail": "A couple can grow to three or four, and a polyamorous Creator can be in more than one couple. Each Creator's style is in their steering: from their card, monogamous or polyamorous.",
   "ui.slurp.stir.card.add-to-couple.title": "Add to a couple",
   "ui.slurp.stir.card.add-to-couple.line": "Someone joins them: three, or four.",
   "ui.slurp.stir.card.add-to-couple.blurb": "A couple that is dating or together takes in one more partner, up to four people. Everyone in it posts about it their own way.",
@@ -5859,5 +5859,12 @@
   "ui.slurp.stir.form.joiner": "Who joins them",
   "ui.slurp.stir.cant.polyOff": "Polyamory is off in Settings › Stir.",
   "ui.slurp.stir.cant.notTogether": "They are not dating yet.",
-  "ui.slurp.stir.cant.full": "That couple is already four people."
+  "ui.slurp.stir.cant.full": "That couple is already four people.",
+  "ui.slurp.steering.relationshipStyle": "Relationships",
+  "ui.slurp.steering.relationshipStyles.card": "From their card",
+  "ui.slurp.steering.relationshipStyles.mono": "Monogamous",
+  "ui.slurp.steering.relationshipStyles.poly": "Polyamorous",
+  "ui.slurp.stir.part.style": "relationships: {{style}}",
+  "ui.slurp.stir.cant.mono": "One of them is monogamous and already with someone.",
+  "ui.slurp.ties.moment.joined": "{{name}} joined them"
 }

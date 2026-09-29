@@ -3276,7 +3276,7 @@
   "ui.slurp.stir.note.shady": "수상함: {{name}}의 의심이 커집니다.",
   "ui.slurp.stir.settings.groupLove": "연애",
   "ui.slurp.stir.settings.polyamory": "폴리아모리",
-  "ui.slurp.stir.settings.polyamoryDetail": "커플이 세 명이나 네 명까지 늘어날 수 있습니다. Stir에 \"커플에 추가\" 카드가 생기고, 모든 파트너가 게시물과 채팅에 등장합니다.",
+  "ui.slurp.stir.settings.polyamoryDetail": "커플이 세 명이나 네 명까지 늘어날 수 있고, 폴리아모리 크리에이터는 여러 커플에 속할 수 있습니다. 각 크리에이터의 방식은 조정에서 정합니다: 카드 설정대로, 모노가미, 폴리아모리.",
   "ui.slurp.stir.card.add-to-couple.title": "커플에 추가",
   "ui.slurp.stir.card.add-to-couple.line": "누군가 합류합니다: 셋, 또는 넷.",
   "ui.slurp.stir.card.add-to-couple.blurb": "사귀는 중이거나 연인인 커플이 파트너를 한 명 더 받아들입니다. 최대 네 명까지. 모두 각자 방식으로 게시합니다.",
@@ -3284,5 +3284,12 @@
   "ui.slurp.stir.form.joiner": "누가 합류할까",
   "ui.slurp.stir.cant.polyOff": "설정 › Stir에서 폴리아모리가 꺼져 있습니다.",
   "ui.slurp.stir.cant.notTogether": "아직 사귀는 사이가 아닙니다.",
-  "ui.slurp.stir.cant.full": "이미 네 명인 커플입니다."
+  "ui.slurp.stir.cant.full": "이미 네 명인 커플입니다.",
+  "ui.slurp.steering.relationshipStyle": "연애 방식",
+  "ui.slurp.steering.relationshipStyles.card": "카드 설정대로",
+  "ui.slurp.steering.relationshipStyles.mono": "모노가미",
+  "ui.slurp.steering.relationshipStyles.poly": "폴리아모리",
+  "ui.slurp.stir.part.style": "연애 방식: {{style}}",
+  "ui.slurp.stir.cant.mono": "한 명이 모노가미이고 이미 연애 중입니다.",
+  "ui.slurp.ties.moment.joined": "{{name}} 합류"
 }

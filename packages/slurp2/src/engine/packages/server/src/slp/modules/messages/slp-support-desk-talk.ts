@@ -46,7 +46,9 @@ export function readSlurpDeskOffer(metadata: Record<string, unknown> | null | un
 export function slurpDeskOfferSummary(action: string, input: Record<string, unknown>): string {
   const what = isSlpActionName(action) ? SLP_ACTIONS[action].summary : action;
   const terms = Object.entries(input)
-    .filter(([key, value]) => !/id$|Id$|Ids$|^preview$/u.test(key) && value !== undefined && value !== null && value !== "")
+    .filter(
+      ([key, value]) => !/id$|Id$|Ids$|^preview$/u.test(key) && value !== undefined && value !== null && value !== "",
+    )
     .map(([key, value]) => `${key}: ${typeof value === "object" ? JSON.stringify(value) : String(value)}`);
   return `${what}${terms.length ? ` (${terms.join("; ")})` : ""}`.slice(0, 600);
 }
@@ -132,3 +134,7 @@ export function slurpDeskOfferOutcome(
   if (!refusals) return "accepted";
   return reply.offer === "accept" ? "accepted" : reply.offer === "counter" ? "countered" : "declined";
 }
+
+/** The step an accepted Offer runs: the Creator said yes, so a lever that may still refuse is told to happen. */
+export const slurpDeskAcceptedInput = (offer: Pick<SlurpDeskOffer, "input">): Record<string, unknown> =>
+  "happen" in offer.input ? { ...offer.input, happen: true } : offer.input;

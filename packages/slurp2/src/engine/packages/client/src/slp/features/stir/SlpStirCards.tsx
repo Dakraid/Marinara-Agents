@@ -34,6 +34,11 @@ export function slpStirWhat(t: T, card: SlpActionPreview): string {
       const parts = [
         d.mood ? t("ui.slurp.stir.part.mood", { mood: t(`ui.slurp.steering.moods.${d.mood}`) }) : null,
         d.pace ? t("ui.slurp.stir.part.pace", { pace: t(`ui.slurp.steering.paces.${d.pace}`) }) : null,
+        d.relationshipStyle
+          ? t("ui.slurp.stir.part.style", {
+              style: t(`ui.slurp.steering.relationshipStyles.${d.relationshipStyle}`),
+            })
+          : null,
         d.lifePhase ? t("ui.slurp.stir.part.life", { text: d.lifePhase }) : null,
         d.focus ? t("ui.slurp.stir.part.focus", { text: d.focus }) : null,
         d.push ? t("ui.slurp.stir.part.push", { text: d.push }) : null,

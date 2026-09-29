@@ -124,7 +124,7 @@ export function createMessagesStorageActions(context: SlurpMessagesContext) {
         const existing = (await context.storage.listMessages(opened.thread.id)).find(
           (message) => message.role === "viewer" && message.metadata.requestId === requestId,
         );
-        if (existing) return { status: "sent", thread: opened.thread, message: existing };
+        if (existing) return { status: "sent", thread: opened.thread, message: existing, replayed: true };
       }
       // Support is a faceless team: every line it writes is "Slurp Support".
       const support = options.asSupport ? { sceneSpeaker: SLURP_SUPPORT_NAME, supportVoice: true } : null;

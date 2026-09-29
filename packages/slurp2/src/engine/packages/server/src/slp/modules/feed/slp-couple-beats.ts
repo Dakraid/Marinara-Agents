@@ -127,7 +127,9 @@ export function slurpCoupleBeat(input: {
   for (const couple of input.couples) {
     const partnerId = slurpCoupleOther(couple, creatorId);
     // Polyamory (0.3.5): every partner is named; the stamp keeps the first one.
-    const partnerNames = slurpCouplePartners(couple, creatorId).flatMap((id) => (names.has(id) ? [names.get(id)!] : []));
+    const partnerNames = slurpCouplePartners(couple, creatorId).flatMap((id) =>
+      names.has(id) ? [names.get(id)!] : [],
+    );
     const partner = slurpNameList(partnerNames);
     if (!partnerId || !partner) continue;
     const page = couple.page;
@@ -152,7 +154,8 @@ export function slurpCoupleBeat(input: {
       const onPage = page && (PAGE_ONLY.includes(moment.kind) || (joint && pageOpen));
       // The one who joined is "other" to the rest, and posts it as their own news.
       const other = moment.withId && moment.withId !== creatorId ? (names.get(moment.withId) ?? null) : null;
-      const told = moment.kind === "joined" && other ? slurpNameList(partnerNames.filter((name) => name !== other)) : partner;
+      const told =
+        moment.kind === "joined" && other ? slurpNameList(partnerNames.filter((name) => name !== other)) : partner;
       // Not a collab (U): on their own page, each posts their side; the partner is in it, not tagged.
       const where = onPage
         ? ` It goes up on ${names.get(page.accountId) ?? "your shared page"}, the page you two share, not your own.`

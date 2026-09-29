@@ -137,8 +137,12 @@ export async function runSlpDeskLever(
   const accountId = (raw as { accountId: string }).accountId;
   const creator = await storage.getNoodlerAccountById(accountId);
   if (!creator) return { ok: false, status: 404, error: "Creator not found." };
-  const shady = name === "throttle-reach" || name === "plant-rumour" || (name === "warn-creator" && !(raw as { cause: boolean }).cause);
-  if (shady && !settings.shadyMoves) return { ok: false, status: 409, error: "Shady moves are off in Settings › Stir." };
+  const shady =
+    name === "throttle-reach" ||
+    name === "plant-rumour" ||
+    (name === "warn-creator" && !(raw as { cause: boolean }).cause);
+  if (shady && !settings.shadyMoves)
+    return { ok: false, status: 409, error: "Shady moves are off in Settings › Stir." };
   const current = await readSlurpSupportDesk(db, accountId);
   if (current.pausedAt && name !== "grant-perk")
     return { ok: false, status: 409, error: `${creator.displayName} has left Slurp. Only a perk can win them back.` };
@@ -149,12 +153,13 @@ export async function runSlpDeskLever(
       if (perk.kind === "badge" && !perk.badge) return { ok: false, status: 400, error: "Pick a badge." };
       if (perk.kind === "coins" && !perk.coins) return { ok: false, status: 400, error: "Pick how many coins." };
       if (perk.kind === "feature") perk.days = perk.days ?? 2;
-      const { undo } = await changeDesk(
-        db,
-        accountId,
-        (desk) => slpDeskGrantPerk(desk, perk, settings, at),
-        ["trust", "favours", "badges", "featuredUntil", "log"],
-      );
+      const { undo } = await changeDesk(db, accountId, (desk) => slpDeskGrantPerk(desk, perk, settings, at), [
+        "trust",
+        "favours",
+        "badges",
+        "featuredUntil",
+        "log",
+      ]);
       if (perk.kind === "coins")
         await storage.creditSponsorFee(accountId, perk.coins ?? 0, "Slurp bonus", `desk:perk:${newId()}`);
       await appendSlurpDeskLine(db, accountId, {
@@ -242,22 +247,28 @@ export async function runSlpDeskLever(
     }
     case "cash-favour": {
       const input = raw as SlpActionParsed<"cash-favour">;
-      if (current.favours <= 0)
-        return { ok: false, status: 409, error: `${creator.displayName} does not owe Slurp a favour.` };
-      const steering = slurpRunsItself(creator) ? await addSlurpCreatorNudge(db, accountId, { text: input.ask, story: false }) : null;
-      const added = steering?.nudges.at(-1);
+      // The favour is spent inside the desk's own update, so two calls at once cannot both spend one.
+      let spent = false;
       const { desk, undo } = await changeDesk(
         db,
         accountId,
-        (desk) =>
-          slpDeskAdjust(
+        (desk) => {
+          if (desk.favours <= 0) return desk;
+          spent = true;
+          return slpDeskAdjust(
             slpDeskAsk({ ...desk, favours: desk.favours - 1 }, settings, at),
             { trust: desk.favours <= 1 ? -2 : -1, suspicion: 5, text: `Called in a favour: ${input.ask}` },
             settings,
             at,
-          ),
+          );
+        },
         ["favours", "asks", "trust", "suspicion", "log"],
       );
+      if (!spent) return { ok: false, status: 409, error: `${creator.displayName} does not owe Slurp a favour.` };
+      const steering = slurpRunsItself(creator)
+        ? await addSlurpCreatorNudge(db, accountId, { text: input.ask, story: false })
+        : null;
+      const added = steering?.nudges.at(-1);
       return {
         ok: true,
         value: { accountId, favours: desk.favours },
@@ -315,11 +326,17 @@ export async function runSlpDeskLever(
           : null;
       // A rumour about someone they already distrust sparks something about one time in three.
       if (about && about.id !== accountId && slurpRunsItself(creator) && slpDeskTier(current.trust) !== "partner") {
-        const roll = [...`${accountId}:${about.id}:${input.text}`].reduce((sum, char) => (sum * 31 + char.charCodeAt(0)) >>> 0, 7) % 3;
+        const roll =
+          [...`${accountId}:${about.id}:${input.text}`].reduce(
+            (sum, char) => (sum * 31 + char.charCodeAt(0)) >>> 0,
+            7,
+          ) % 3;
         if (roll === 0)
-          await runSlurpTieLever(db, "start-rivalry", { fromId: accountId, toId: about.id, cause: input.text.slice(0, 160) }).catch(
-            () => undefined,
-          );
+          await runSlurpTieLever(db, "start-rivalry", {
+            fromId: accountId,
+            toId: about.id,
+            cause: input.text.slice(0, 160),
+          }).catch(() => undefined);
       }
       return { ok: true, value: { accountId, messageId: line?.id ?? null }, undo: null };
     }
@@ -365,7 +382,8 @@ export async function undoSlpDeskLever(db: DB, undo: SlpDeskUndo): Promise<boole
     await updateSlurpSupportDesk(db, undo.accountId, (desk) => {
       const restore = Object.fromEntries(
         Object.entries(undo.before).filter(
-          ([key]) => JSON.stringify(desk[key as keyof SlpSupportDesk]) === JSON.stringify(undo.set[key as keyof SlpSupportDesk]),
+          ([key]) =>
+            JSON.stringify(desk[key as keyof SlpSupportDesk]) === JSON.stringify(undo.set[key as keyof SlpSupportDesk]),
         ),
       );
       changed = Object.keys(restore).length > 0;
@@ -408,7 +426,11 @@ export async function previewSlpDeskLever(
       avatarUrl?: string | null;
     }[];
     return {
-      who: accounts.map((account) => ({ id: account.id, name: account.displayName, avatarUrl: account.avatarUrl ?? null })),
+      who: accounts.map((account) => ({
+        id: account.id,
+        name: account.displayName,
+        avatarUrl: account.avatarUrl ?? null,
+      })),
       when: "nextPost",
       detail: { topic: String(input.topic ?? ""), count: accounts.length },
       error: accounts.length ? null : "notFound",
@@ -422,7 +444,8 @@ export async function previewSlpDeskLever(
   if (!account) return { error: "notFound", summary: "That Creator does not exist." };
   const who = [{ id: account.id, name: account.displayName, avatarUrl: account.avatarUrl ?? null }];
   const desk = await readSlurpSupportDesk(db, account.id);
-  const shady = name === "throttle-reach" || name === "plant-rumour" || (name === "warn-creator" && input.cause === false);
+  const shady =
+    name === "throttle-reach" || name === "plant-rumour" || (name === "warn-creator" && input.cause === false);
   const notes: SlpActionPreview["notes"] = shady ? [{ kind: "shady", name: account.displayName }] : [];
   const error =
     shady && !settings.shadyMoves
@@ -494,4 +517,3 @@ export async function previewSlpDeskLever(
       };
   }
 }
-

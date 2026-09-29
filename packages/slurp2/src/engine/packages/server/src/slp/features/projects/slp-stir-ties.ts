@@ -62,6 +62,7 @@ const WHY: Record<SlurpTieError | SlurpCoupleError | SlurpCoupleJoinError | "not
   orientation: [409, "They are not each other's type."],
   pageOpen: [409, "Their shared page is already open."],
   polyOff: [409, "Polyamory is off in Settings › Stir."],
+  mono: [409, "One of them is monogamous and already with someone."],
   notTogether: [409, "They are not dating yet."],
   full: [409, "That couple is already four people."],
 };
@@ -184,7 +185,8 @@ export async function runSlurpTieLever(
       const b = find(bId);
       if (!a || !b) return fail("notFound");
       const id = newId();
-      const next = await onCouples((couples) => slurpSetUpCouple(couples, a, b, { at, id }));
+      const polyamory = (await createSlurpStorage(db).getSettings()).polyamory === true;
+      const next = await onCouples((couples) => slurpSetUpCouple(couples, a, b, { at, id, polyamory }));
       if (!next || typeof next === "string") return fail(next ?? "notFound");
       return { ok: true, value: { coupleId: id }, undo: { kind: "removeCouple", id } };
     }
@@ -211,7 +213,7 @@ export async function runSlurpTieLever(
       let previous: SlurpCouple | undefined;
       const next = await onCouples((couples) => {
         previous = couples.find((entry) => entry.id === coupleId);
-        return slurpAddToCouple(couples, coupleId, joiner, { at, polyamory });
+        return slurpAddToCouple(couples, coupleId, joiner, { at, polyamory, creators });
       });
       if (!next || typeof next === "string") return fail(next ?? "notFound");
       return { ok: true, value: { coupleId }, undo: previous ? { kind: "restoreCouple", couple: previous } : null };

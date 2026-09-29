@@ -177,18 +177,18 @@ const BASE_PROMPT_DESCRIPTIONS: SlurpPromptDescription[] = [
       ["history", "context"],
     ]),
   },
-  ...(["pendingCommission", "pendingQuestion", "pendingOpener", "pendingDelivery", "pendingDesk", "fanReply"] as const).map(
-    (id): SlurpPromptDescription => ({
-      id,
-      group: "messages",
-      blocks: descriptions([
-        ["task", "editable"],
-        ["safety", "required"],
-        ["output", "required"],
-        ["source", "context"],
-      ]),
-    }),
-  ),
+  ...(
+    ["pendingCommission", "pendingQuestion", "pendingOpener", "pendingDelivery", "pendingDesk", "fanReply"] as const
+  ).map((id): SlurpPromptDescription => ({
+    id,
+    group: "messages",
+    blocks: descriptions([
+      ["task", "editable"],
+      ["safety", "required"],
+      ["output", "required"],
+      ["source", "context"],
+    ]),
+  })),
   {
     id: "postGuidance",
     group: "writing",

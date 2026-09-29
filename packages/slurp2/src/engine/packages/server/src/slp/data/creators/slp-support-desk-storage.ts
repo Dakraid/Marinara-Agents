@@ -5,10 +5,7 @@
  */
 import type { DB } from "../../../db/connection.js";
 import { createAppSettingsStorage } from "../../../services/storage/app-settings.storage.js";
-import {
-  normalizeSlpSupportDesk,
-  type SlpSupportDesk,
-} from "../../../../../shared/src/slp/slp-support-desk.js";
+import { normalizeSlpSupportDesk, type SlpSupportDesk } from "../../../../../shared/src/slp/slp-support-desk.js";
 
 export const slurpSupportDeskKey = (creatorAccountId: string) => `slurp2.creator.${creatorAccountId}.desk`;
 
@@ -43,7 +40,9 @@ export function updateSlurpSupportDesk(
   const previous = chains.get(creatorAccountId) ?? Promise.resolve();
   const run = previous
     .catch(() => undefined)
-    .then(async () => writeSlurpSupportDesk(db, creatorAccountId, await change(await readSlurpSupportDesk(db, creatorAccountId))));
+    .then(async () =>
+      writeSlurpSupportDesk(db, creatorAccountId, await change(await readSlurpSupportDesk(db, creatorAccountId))),
+    );
   chains.set(creatorAccountId, run);
   const done = () => {
     if (chains.get(creatorAccountId) === run) chains.delete(creatorAccountId);

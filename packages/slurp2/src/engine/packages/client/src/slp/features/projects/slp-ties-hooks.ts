@@ -183,8 +183,7 @@ export function slurpCoupleForAccount(view: SlurpTiesView | undefined, accountId
       (entry) =>
         entry.stage !== "split" &&
         (entry.aId === accountId || entry.bId === accountId || Boolean(entry.moreIds?.includes(accountId))),
-    ) ??
-    null;
+    ) ?? null;
   const page = view.couples.find((entry) => entry.page?.accountId === accountId) ?? null;
   return couple || page ? { couple, page } : null;
 }

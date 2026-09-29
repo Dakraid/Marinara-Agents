@@ -29,7 +29,10 @@ import {
   type SlurpCouplesInput,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples.ts";
 // Moved with polyamory (0.3.5): the couple-page helpers live with the group rules.
-import { slurpCoupleBuzz, slurpCouplePageSplit } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-group.ts";
+import {
+  slurpCoupleBuzz,
+  slurpCouplePageSplit,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-group.ts";
 // U: the relationship line moved out of the couples module (import path only).
 import { slurpRelationshipLine } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-lines.ts";
 import {
@@ -574,7 +577,11 @@ function run(days: number, over: Partial<SlurpCouplesInput> = {}, start: SlurpCo
   assert.match(reserve, /authorAccountId: author\.id/u, "a prepared page post publishes on the page");
   assert.match(reserve, /snapshotForAccount\(author\)/u);
   const context = read("server/src/slp/data/host/slp-storage-context.ts");
-  assert.match(context, /slurpCouplePageSplit\(amount, members\.length\)/u, "a shared page's earnings go to every member");
+  assert.match(
+    context,
+    /slurpCouplePageSplit\(amount, members\.length\)/u,
+    "a shared page's earnings go to every member",
+  );
   const service = read("server/src/slp/features/projects/slp-creator-ties-service.ts");
   assert.match(service, /slurpAdvanceCouples\(document\.couples/u, "couples move on the ties' clock");
   assert.match(service, /closeSlurpCouplePages\(db, before\.couples, after\.couples\)/u);

@@ -230,7 +230,12 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
         tip: !asSupport && composerTipAmount > 0 ? { amount: composerTipAmount, note: composerTipNote.trim() } : null,
         ...(asSupport ? { asSupport: true } : {}),
         ...(asSupport && composerDesk
-          ? { desk: { mode: composerDesk.mode, step: { action: composerDesk.card.action, input: composerDesk.card.input } } }
+          ? {
+              desk: {
+                mode: composerDesk.mode,
+                step: { action: composerDesk.card.action, input: composerDesk.card.input },
+              },
+            }
           : {}),
       });
       if (asSupport) setComposerDesk(null);

@@ -29,6 +29,8 @@ function useMomentLine() {
     if (!moment) return couple.origin === "card" ? t("ui.slurp.ties.couple.fromCards") : "";
     if (moment.kind === "jealous" && moment.withId)
       return t("ui.slurp.ties.moment.jealousCollab", { name: name(moment.withId) });
+    if (moment.kind === "joined" && moment.withId)
+      return t("ui.slurp.ties.moment.joined", { name: name(moment.withId) });
     return t(`ui.slurp.ties.moment.${moment.kind}`, { detail: moment.detail });
   };
 }

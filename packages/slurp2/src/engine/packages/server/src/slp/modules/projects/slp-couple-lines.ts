@@ -20,6 +20,33 @@ export function slurpRelationshipLine(
   names: ReadonlyMap<string, string>,
   options: { withId?: string | null; at?: Date } = {},
 ): string {
+  const line = oneRelationshipLine(couples, creatorId, names, options);
+  // Polyamory (0.3.5): one person in several couples hears about all of them.
+  const main = options.withId ? slurpCoupleOf(couples, creatorId, options.withId) : slurpCoupleFor(couples, creatorId);
+  const more = couples
+    .filter((couple) => couple !== main && slurpCoupleActive(couple))
+    .flatMap((couple) => {
+      const who = slurpNameList(
+        slurpCouplePartners(couple, creatorId).flatMap((id) => (names.has(id) ? [names.get(id)!] : [])),
+      );
+      if (!who) return [];
+      return [
+        couple.stage === "sparks"
+          ? `flirting with ${who}`
+          : couple.stage === "dating"
+            ? `dating ${who}`
+            : `with ${who}`,
+      ];
+    });
+  return more.length ? `${line} You are polyamorous, and you are also ${more.join(", and ")}.`.trim() : line;
+}
+
+function oneRelationshipLine(
+  couples: readonly SlurpCouple[],
+  creatorId: string,
+  names: ReadonlyMap<string, string>,
+  options: { withId?: string | null; at?: Date },
+): string {
   const at = options.at ?? new Date();
   const withThem = options.withId ? slurpCoupleOf(couples, creatorId, options.withId) : null;
   const couple = withThem ?? slurpCoupleFor(couples, creatorId) ?? slurpRecentEx(couples, creatorId, at);

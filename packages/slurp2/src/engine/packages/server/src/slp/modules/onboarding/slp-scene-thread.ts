@@ -22,7 +22,11 @@ export function slpSceneThreadMessages(input: {
 }): { role: "viewer" | "creator"; content: string; metadata: Record<string, unknown>; createdAt: string }[] {
   // Support is a faceless team: always "Slurp Support", whatever the sign-up screen called it.
   const speaker =
-    input.preset === "friend" ? "" : input.preset === "support" ? "Slurp Support" : input.hostName.trim() || "Slurp Support";
+    input.preset === "friend"
+      ? ""
+      : input.preset === "support"
+        ? "Slurp Support"
+        : input.hostName.trim() || "Slurp Support";
   // The kept chat ends on the Creator's last word: a trailing host line would read as a fan
   // message waiting for an answer and start a DM reply nobody asked for.
   let end = input.lines.length;

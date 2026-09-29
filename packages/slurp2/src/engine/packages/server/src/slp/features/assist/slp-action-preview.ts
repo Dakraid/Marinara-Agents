@@ -64,7 +64,8 @@ export async function previewSlpAction(
   };
   if (isSlurpTieLever(name))
     return { ok: true, value: { ...base, ...(await previewSlurpTieLever(db, name, input, at)) } };
-  if (isSlpDeskLever(name)) return { ok: true, value: { ...base, ...(await previewSlpDeskLever(db, name, input, at)) } };
+  if (isSlpDeskLever(name))
+    return { ok: true, value: { ...base, ...(await previewSlpDeskLever(db, name, input, at)) } };
   return { ok: true, value: { ...base, ...(await previewOther(db, name, input, at)) } };
 }
 
@@ -119,6 +120,7 @@ async function previewOther(
           lifePhase: patch.lifePhase ?? null,
           focus: patch.focus ?? null,
           pace: patch.pace ?? null,
+          relationshipStyle: patch.relationshipStyle === undefined ? null : (patch.relationshipStyle ?? "card"),
           push: patch.push?.join(", ") || null,
           avoid: patch.avoid?.join(", ") || null,
         },

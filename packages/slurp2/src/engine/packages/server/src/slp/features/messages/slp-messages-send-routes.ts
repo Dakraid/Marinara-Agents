@@ -13,6 +13,7 @@ import { personaQuerySchema } from "../../modules/messages/slp-messages-schemas.
 import type { SlpMessagesContext } from "./slp-messages-context.js";
 import { slpCreatorUnlockPriceFromMetadata } from "../../modules/economy/slp-prices.js";
 import { slpStoredMediaSize } from "../../base/media/slp-media.js";
+import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
 import { markSlurpDeskSupportTurn, prepareSlurpDeskSend, slurpDeskSendSchema } from "./desk/slp-desk-send.js";
 
 const sendSchema = z.object({
@@ -136,12 +137,30 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
       : null;
     if (deskStep && !deskStep.ok) return reply.code(deskStep.status).send({ error: deskStep.error });
     // A rumour told by Support is its own line: the lever writes it, and the Creator answers that.
-    const rumour = deskStep?.ok && deskStep.rumour ? await deskStep.run!() : null;
+    // A resend of the same request finds the line it already wrote and tells nothing twice.
+    const toldBefore =
+      deskStep?.ok && deskStep.rumour && parsed.data.requestId
+        ? await messages
+            .getThread(SLURP_SUPPORT_ACCOUNT_ID, parsed.data.creatorAccountId)
+            .then((thread) => (thread ? messages.listMessages(thread.id, 40) : []))
+            .then((lines) => lines.find((line) => line.metadata?.requestId === parsed.data.requestId) ?? null)
+        : null;
+    const rumour =
+      deskStep?.ok && deskStep.rumour && !toldBefore
+        ? await deskStep.run!()
+        : toldBefore
+          ? { error: null, value: { messageId: toldBefore.id } }
+          : null;
+    if (rumour && !rumour.error && !toldBefore && parsed.data.requestId)
+      await messages.mergeMessageMetadata(String((rumour.value as { messageId?: string | null })?.messageId ?? ""), {
+        requestId: parsed.data.requestId,
+      });
     const rumourMessage =
       rumour && !rumour.error
         ? await messages.getMessageById(String((rumour.value as { messageId?: string | null })?.messageId ?? ""))
         : null;
-    if (rumour && !rumourMessage) return reply.code(409).send({ error: rumour.error ?? "The rumour could not be told." });
+    if (rumour && !rumourMessage)
+      return reply.code(409).send({ error: rumour.error ?? "The rumour could not be told." });
     const sent = rumourMessage
       ? {
           status: "sent" as const,
@@ -162,7 +181,8 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
 
     if (parsed.data.asSupport) {
       // A move happens with its line; a failure is noted on the line, the line stays.
-      if (deskStep?.ok && deskStep.run && !deskStep.rumour) {
+      // Only a new line moves: a resend of a stored one ran its move already.
+      if (deskStep?.ok && deskStep.run && !deskStep.rumour && !("replayed" in sent && sent.replayed)) {
         const moved = await deskStep.run().catch((error: unknown) => ({
           error: error instanceof Error ? error.message : "The move failed.",
           value: null,

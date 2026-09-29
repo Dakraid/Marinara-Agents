@@ -165,8 +165,7 @@ export async function resolveSlurpReplyViewer(
 ): Promise<SlpAccount | null> {
   const personaViewer = await createSlurpStorage(db).getViewer(thread.viewerAccountId);
   if (personaViewer) return personaViewer;
-  if (isSlurpSupportThread(thread))
-    return slurpSupportAccount(SLURP_SUPPORT_NAME);
+  if (isSlurpSupportThread(thread)) return slurpSupportAccount(SLURP_SUPPORT_NAME);
   // A hand-operated Creator's fans are audience members, not personas. The draft still needs them
   // as the one being answered; `getViewer` alone made every draft for them ineligible.
   return operatorDraft && creator ? resolveAudienceFanAccount(db, thread.viewerAccountId, creator) : null;

@@ -27,7 +27,8 @@ export function SlpDeskStamp({ label, tone = "ok" }: { label: string; tone?: "ok
       className={cn(
         "inline-flex -rotate-3 items-center rounded-md border-2 px-1.5 py-0.5 text-[11px] font-extrabold uppercase leading-4 tracking-[0.08em]",
         tone === "ok" && "border-[var(--slurp-success)] text-[var(--slurp-success)]",
-        tone === "no" && "border-[var(--slurp-danger,var(--destructive))] text-[var(--slurp-danger,var(--destructive))]",
+        tone === "no" &&
+          "border-[var(--slurp-danger,var(--destructive))] text-[var(--slurp-danger,var(--destructive))]",
         tone === "wait" && "border-[var(--slurp-muted)] text-[var(--slurp-muted)]",
       )}
     >

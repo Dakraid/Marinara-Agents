@@ -406,11 +406,6 @@ export function SlpStirPlaySheet({
           (couple.stage === "dating" || couple.stage === "together" || couple.stage === "rocky") &&
           2 + (couple.moreIds?.length ?? 0) < 4,
       );
-      const taken = new Set(
-        (view?.couples ?? [])
-          .filter((couple) => couple.stage !== "split")
-          .flatMap((couple) => [couple.aId, couple.bId, ...(couple.moreIds ?? [])]),
-      );
       body.push(
         <Pick
           key="pick"
@@ -429,7 +424,13 @@ export function SlpStirPlaySheet({
           key="who"
           max={1}
           label={t("ui.slurp.stir.form.joiner", { defaultValue: "Who joins them" })}
-          creators={creators.filter((creator) => !taken.has(creator.id))}
+          creators={creators.filter(
+            (creator) =>
+              !couples.some(
+                (couple) =>
+                  couple.id === form.pick && [couple.aId, couple.bId, ...(couple.moreIds ?? [])].includes(creator.id),
+              ),
+          )}
           picked={picked}
           onPick={(ids) => set({ who: ids })}
         />,
@@ -629,7 +630,11 @@ export function SlpStirPlaySheet({
                 }}
               >
                 <SlpSparkleGlyph size={16} aria-hidden="true" />
-                {onUse ? (useLabel ?? t("ui.slurp.stir.desk.attach", { defaultValue: "Attach" })) : doIt.pending ? t("ui.slurp.stir.doing") : t("ui.slurp.stir.doIt")}
+                {onUse
+                  ? (useLabel ?? t("ui.slurp.stir.desk.attach", { defaultValue: "Attach" }))
+                  : doIt.pending
+                    ? t("ui.slurp.stir.doing")
+                    : t("ui.slurp.stir.doIt")}
               </SlpPrimaryButton>
             </>
           ) : (

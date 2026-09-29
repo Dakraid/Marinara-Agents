@@ -10,7 +10,12 @@
  * ("Action layer").
  */
 import { z } from "zod";
-import { SLP_STEERING_MOODS, SLP_STEERING_PACES, SLP_STEERING_TEXT_MAX } from "./slp-creator-steering.js";
+import {
+  SLP_RELATIONSHIP_STYLES,
+  SLP_STEERING_MOODS,
+  SLP_STEERING_PACES,
+  SLP_STEERING_TEXT_MAX,
+} from "./slp-creator-steering.js";
 import { SLP_SPICE_LEVELS } from "./slp-spice.js";
 import {
   SLP_DESK_BADGES,
@@ -169,11 +174,13 @@ export const SLP_ACTIONS = {
       push: "Topics to bring up more.",
       avoid: "Topics to leave out.",
       pace: `One of: ${SLP_STEERING_PACES.join(", ")}.`,
+      relationshipStyle: `One of: ${SLP_RELATIONSHIP_STYLES.join(", ")}, or null to read it from their card (polyamory).`,
     },
     schema: z
       .object({
         accountId,
         mood: z.enum(SLP_STEERING_MOODS).nullable().optional(),
+        relationshipStyle: z.enum(SLP_RELATIONSHIP_STYLES).nullable().optional(),
         lifePhase: z.string().trim().max(SLP_STEERING_TEXT_MAX).optional(),
         focus: z.string().trim().max(SLP_STEERING_TEXT_MAX).optional(),
         push: z.array(z.string().trim().min(1).max(40)).max(6).optional(),
@@ -468,7 +475,7 @@ export const SLP_ACTIONS = {
   },
   "plant-rumour": {
     summary:
-      "Plant a rumour with a Creator (\"I heard X plans a collab with Y\"). They remember it; about another Creator it may start a rivalry. Told by Support it is traceable; anonymous it is quieter.",
+      'Plant a rumour with a Creator ("I heard X plans a collab with Y"). They remember it; about another Creator it may start a rivalry. Told by Support it is traceable; anonymous it is quieter.',
     inputs: {
       accountId: "The Creator who hears it.",
       text: "The rumour, one short line.",
@@ -696,7 +703,14 @@ export const SLP_ACTION_META: Record<
   "set-challenge": { category: "desk", targets: "creator", reversible: true, ai: false, refusable: true, deck: false },
   "offer-contract": { category: "desk", targets: "creator", reversible: true, ai: false, refusable: true, deck: false },
   "cash-favour": { category: "desk", targets: "creator", reversible: true, ai: false, refusable: true, deck: false },
-  "throttle-reach": { category: "desk", targets: "creator", reversible: true, ai: false, refusable: false, deck: false },
+  "throttle-reach": {
+    category: "desk",
+    targets: "creator",
+    reversible: true,
+    ai: false,
+    refusable: false,
+    deck: false,
+  },
   "plant-rumour": { category: "desk", targets: "creator", reversible: false, ai: false, refusable: false, deck: false },
   "seed-trend": { category: "desk", targets: "none", reversible: true, ai: false, refusable: false, deck: false },
   "warn-creator": { category: "desk", targets: "creator", reversible: true, ai: false, refusable: false, deck: false },

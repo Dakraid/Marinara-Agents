@@ -39,7 +39,10 @@ export function SlpStirSettingsPanel(page: SlpBackstagePageProps) {
             )}
             options={SLP_DESK_TICKET_PACES.map((value) => ({
               value,
-              label: tx(`ticketPace.${value}`, { off: "Off", rare: "Rarely", sometimes: "Sometimes", often: "Often" }[value]),
+              label: tx(
+                `ticketPace.${value}`,
+                { off: "Off", rare: "Rarely", sometimes: "Sometimes", often: "Often" }[value],
+              ),
             }))}
             value={desk.tickets}
             disabled={updateSettings.isPending}
@@ -91,7 +94,9 @@ export function SlpStirSettingsPanel(page: SlpBackstagePageProps) {
             )}
             value={desk.gamesWithYourCreators}
             onChange={(value) => set("gamesWithYourCreators", value)}
-            disabledReason={desk.toYourCreators ? null : tx("needsToYourCreators", "Needs Support to write to your Creators.")}
+            disabledReason={
+              desk.toYourCreators ? null : tx("needsToYourCreators", "Needs Support to write to your Creators.")
+            }
           />
         </SettingsGroup>
       </div>
@@ -101,7 +106,7 @@ export function SlpStirSettingsPanel(page: SlpBackstagePageProps) {
           label={tx("polyamory", "Polyamory")}
           detail={tx(
             "polyamoryDetail",
-            "A couple can grow to three or four people. Stir gets an \"Add to a couple\" card, and every partner shows up in their posts and chats.",
+            "A couple can grow to three or four, and a polyamorous Creator can be in more than one couple. Each Creator's style is in their steering: from their card, monogamous or polyamorous.",
           )}
           value={settings.polyamory}
           onChange={(value) => update("polyamory", value)}

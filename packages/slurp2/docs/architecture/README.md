@@ -13,7 +13,8 @@ packages/shared/src/slp/    pure code imported by both client and server
 
 `shared/src/slp/` holds pure rules that both sides genuinely need: the autopurge date calculation,
 plus the messaging Details edit schema, tone, tuning, model-budget, modifier, platform-event, fan-type, and population rules the
-settings surface reads and the server enforces, and the Creator Page schema (`slp-creator-page.ts`, see `docs/CREATOR-PAGES.md`)
+settings surface reads and the server enforces, the Creator Page schema (`slp-creator-page.ts`, see `docs/CREATOR-PAGES.md`),
+and the Support desk record and its rules (`slp-support-desk.ts`, see `docs/SUPPORT-DESK.md`)
 that the server stores and repairs and the client renders and edits. It imports neither client nor server code, depends
 only on `zod` and `@marinara-engine/shared`, and holds no I/O, no React, and no Fastify. Client and
 server may import it. A rule belongs here only when both sides already need it; a rule one side
@@ -91,7 +92,8 @@ media helpers stay in `base/media/`.
 Client and server share one feature vocabulary: `creators`, `feed`, `messages`, `discovery`,
 `audience`, `projects`, `economy`, `notifications`, `world`, `ads`, `onboarding`, `maintenance`,
 `assist`, plus client-only `backstage` and server-only `viewer`, `media`, and `settings`. Submodules that are deliberate expansion seams get a folder:
-`creators/improvement`, `feed/reserve`, `messages/commissions`, `world/events`.
+`creators/improvement`, `feed/reserve`, `messages/commissions`, `messages/desk` (the Slurp Support desk,
+`docs/SUPPORT-DESK.md`), `world/events`.
 
 These are not features: Stories (a `modules/story/` presentation composed by Feed), tags
 (Discovery), wallet (Economy), goals and arcs (Projects).
@@ -112,7 +114,8 @@ Everything a helper may do for the player goes through one named, typed layer:
 `use-picture`, `undo-picture`, `keep-picture`, `steer-creator`, `add-idea`, `list-creators`,
 `write-post`, and the Stir levers: `list-world`, `suggest-collab`, `push-collab`, `start-rivalry`,
 `cool-rivalry`, `set-up-couple`, `steer-couple`, `couple-page`, `start-event`, `steer-storyline`,
-`run-audience`, `set-spice`) with a
+`run-audience`, `set-spice`, `add-to-couple`, and the Support desk's `grant-perk`, `set-challenge`,
+`offer-contract`, `cash-favour`, `throttle-reach`, `plant-rumour`, `seed-trend`, `warn-creator`) with a
 plain summary, a description of every input, a strict zod schema, its result type, and its Stir
 metadata (`SLP_ACTION_META`). Every action also has a `preview` (`features/assist/slp-action-preview.ts`)
 that answers who, what, when, cost, fit notes and why it cannot happen, without writing anything.
@@ -166,7 +169,10 @@ the Stir tab (deck of cards from the catalog, "In play", suggestions, the plain-
 on a Creator or a post, and a Slurp Support thread (the Creator's reply carries a proposal as cards).
 The planner (`features/assist/slp-stir-service.ts`, pure half `modules/assist/slp-stir-plan.ts`) turns
 words into steps with one model call on the AI budget's "Plans" row; every step is validated and
-previewed. `POST /slurp/stir/play` runs exactly the steps the player saw (`modules/assist/slp-stir-play.ts`)
+previewed. The Support desk (`docs/SUPPORT-DESK.md`) sits at the bottom of the Stir tab: its levers
+(category `desk`, no deck cards) run from the desk, the ✦ sheet, or ride a Support line as an Offer
+the Creator answers (`features/messages/desk/`); their preview and run live in
+`features/assist/slp-desk-levers.ts`, like the tie levers in `projects`. `POST /slurp/stir/play` runs exactly the steps the player saw (`modules/assist/slp-stir-play.ts`)
 and keeps the play in a short ledger with what one Undo needs. Rule for new controls: a change with a
 "who" in the story that a character could say is a Stir lever (an action); machine settings stay in
 Backstage; Pulse shows what runs or ran.

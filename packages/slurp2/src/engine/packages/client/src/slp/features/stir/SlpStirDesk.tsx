@@ -54,7 +54,8 @@ export function SlpStirDesk({
   const query = useQuery({
     queryKey: [...slpKeys.noodlerRoot(), "desk", personaId ?? "none"] as const,
     enabled: Boolean(personaId),
-    queryFn: () => api.get<{ cases: DeskCase[]; unread: number }>(`/slurp2/slurp/desk?personaId=${encodeURIComponent(personaId!)}`),
+    queryFn: () =>
+      api.get<{ cases: DeskCase[]; unread: number }>(`/slurp2/slurp/desk?personaId=${encodeURIComponent(personaId!)}`),
     refetchInterval: personaId ? 60_000 : false,
   });
   const cases = [...(query.data?.cases ?? [])].sort(

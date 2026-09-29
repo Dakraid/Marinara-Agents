@@ -162,7 +162,7 @@ export function slurpPreviewTieLever(
       const a = find(aId);
       const b = find(bId);
       if (!a || !b) return result({ error: "notFound", summary: "One of these Creators does not exist." });
-      const next = slurpSetUpCouple(couples, a, b, { at, id: "preview" });
+      const next = slurpSetUpCouple(couples, a, b, { at, id: "preview", polyamory: world.polyamory === true });
       const made = typeof next === "string" ? null : next.find((entry) => entry.id === "preview");
       const misfit = made?.forced ?? (typeof next === "string" ? null : slurpCoupleMisfitOf(a, b));
       return result({
@@ -193,14 +193,24 @@ export function slurpPreviewTieLever(
       const couple = couples.find((entry) => entry.id === coupleId);
       const joiner = find(accountId);
       const next = joiner
-        ? slurpAddToCouple(couples, coupleId, joiner, { at, polyamory: world.polyamory === true })
+        ? slurpAddToCouple(couples, coupleId, joiner, {
+            at,
+            polyamory: world.polyamory === true,
+            creators: world.creators,
+          })
         : "notFound";
       return result({
         who: couple ? people(world, [...slurpCoupleMembers(couple), accountId]) : [],
-        detail: { joiner: joiner?.name ?? "", couple: couple ? slurpNameList(slurpCoupleMembers(couple).map((id) => nameOf(world, id))) : "" },
+        detail: {
+          joiner: joiner?.name ?? "",
+          couple: couple ? slurpNameList(slurpCoupleMembers(couple).map((id) => nameOf(world, id))) : "",
+        },
         when: "nextPost",
         error: typeof next === "string" ? next : null,
-        summary: couple && joiner ? `${joiner.name} joins ${slurpNameList(slurpCoupleMembers(couple).map((id) => nameOf(world, id)))}.` : "",
+        summary:
+          couple && joiner
+            ? `${joiner.name} joins ${slurpNameList(slurpCoupleMembers(couple).map((id) => nameOf(world, id)))}.`
+            : "",
       });
     }
     case "couple-page": {
@@ -327,6 +337,8 @@ export function slurpUndoTie(document: TieDocument, undo: SlurpTieUndo): TieDocu
         togetherAt: previous.togetherAt,
         troubles: previous.troubles,
         reunions: previous.reunions,
+        // Polyamory: someone who joined by this play leaves again.
+        moreIds: previous.moreIds,
         moments: previous.moments,
       };
       return { ties, couples: couples.map((entry) => (entry.id === previous.id ? restored : entry)) };

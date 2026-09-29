@@ -25,7 +25,9 @@ export function createStoryEngineStorage({ settingsStore }: SlurpStorageContext)
   const write = async (key: string, value: unknown) => settingsStore.set(key, JSON.stringify(value));
   const readDesk = async (creatorAccountId: string) => {
     try {
-      return normalizeSlpSupportDesk(JSON.parse((await settingsStore.get(slurpSupportDeskKey(creatorAccountId))) ?? "null"));
+      return normalizeSlpSupportDesk(
+        JSON.parse((await settingsStore.get(slurpSupportDeskKey(creatorAccountId))) ?? "null"),
+      );
     } catch {
       return normalizeSlpSupportDesk(null);
     }

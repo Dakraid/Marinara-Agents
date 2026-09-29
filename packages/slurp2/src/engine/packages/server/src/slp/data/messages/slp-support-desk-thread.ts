@@ -47,7 +47,8 @@ export async function appendSlurpDeskLine(
     content: line.content,
     metadata:
       line.as === "notice"
-        ? { desk: true, deskNotice: true, ...line.metadata }
+        ? // Quiet: a notice or a note asks nobody for an answer (no reply flag, no unread).
+          { desk: true, deskNotice: true, deskQuiet: true, ...line.metadata }
         : { desk: true, sceneSpeaker: SUPPORT_NAME, supportVoice: true, ...line.metadata },
   });
 }

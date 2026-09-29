@@ -563,7 +563,12 @@ export function slurpAdvanceCouples(couples: readonly SlurpCouple[], input: Slur
     );
     // A joined partner who left Slurp just leaves the couple (polyamory, `slp-couple-group.ts`).
     const staying = couple.moreIds?.filter((id) => byId.has(id));
-    next[index] = advanceCouple(staying?.length === couple.moreIds?.length ? couple : { ...couple, moreIds: staying }, input, byId, taken);
+    next[index] = advanceCouple(
+      staying?.length === couple.moreIds?.length ? couple : { ...couple, moreIds: staying },
+      input,
+      byId,
+      taken,
+    );
   }
   const busy = () =>
     new Set(next.filter(slurpCoupleActive).flatMap((couple) => [couple.aId, couple.bId, ...(couple.moreIds ?? [])]));
@@ -662,7 +667,7 @@ export function slurpGetBackTogether(couple: SlurpCouple, at: Date): SlurpCouple
   );
 }
 
-export type SlurpCoupleError = SlurpCoupleMisfit | "notFound" | "notOpen" | "noHost" | "pageOpen";
+export type SlurpCoupleError = SlurpCoupleMisfit | "notFound" | "notOpen" | "noHost" | "pageOpen" | "mono";
 
 /**
  * The player sets two Creators up: they start flirting now. Chemistry then decides whether it
@@ -673,12 +678,16 @@ export function slurpSetUpCouple(
   couples: readonly SlurpCouple[],
   a: SlurpTieCreator,
   b: SlurpTieCreator,
-  input: { at: Date; id: string },
+  input: { at: Date; id: string; polyamory?: boolean },
 ): SlurpCouple[] | SlurpCoupleError {
   if (!a.automatic && !b.automatic) return "noHost";
   const fit = slurpCoupleFit(a, b);
   if (fit.misfit === "same") return "same";
-  if (slurpCoupleFor(couples, a.id) || slurpCoupleFor(couples, b.id)) return "busy";
+  // Polyamory (0.3.5): someone already with somebody may start another couple only if they are poly.
+  const paired = couples.some((c) => slurpCoupleActive(c) && slurpCoupleOther(c, a.id) && slurpCoupleOther(c, b.id));
+  const blocked = (x: SlurpTieCreator) => Boolean(slurpCoupleFor(couples, x.id)) && !(input.polyamory && x.poly);
+  if (paired || ((blocked(a) || blocked(b)) && !input.polyamory)) return "busy";
+  if (blocked(a) || blocked(b)) return "mono";
   // Against a card (slice I, user): it happens anyway, and the card colors how it goes.
   const forced = fit.fits ? null : slurpCoupleMisfitOf(a, b);
   // Partners on their cards are together already, like the couples the cards make on their own:

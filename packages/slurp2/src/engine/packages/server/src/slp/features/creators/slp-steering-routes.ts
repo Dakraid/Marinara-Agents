@@ -7,6 +7,7 @@ import {
   SLP_STEERING_TEXT_MAX,
   SLP_STEERING_TOPIC_MAX,
   SLP_STEERING_TOPICS_MAX,
+  SLP_RELATIONSHIP_STYLES,
 } from "../../../../../shared/src/slp/slp-creator-steering.js";
 import {
   addSlurpCreatorNudge,
@@ -102,6 +103,8 @@ export async function slpSteeringRoutes(app: FastifyInstance, deps: SlpRouteDeps
         push: topics.optional(),
         avoid: topics.optional(),
         pace: z.enum(SLP_STEERING_PACES).optional(),
+        /** Polyamory (0.3.5): monogamous, polyamorous, or null = from their card. */
+        relationshipStyle: z.enum(SLP_RELATIONSHIP_STYLES).nullable().optional(),
         turnOns: spiceChips.optional(),
         hardNoes: spiceChips.optional(),
         /** The Creator's own level; null goes back to the Slurp-wide default. */

@@ -102,11 +102,18 @@ export function slpStirStepOf(action: SlpActionName, form: Form): Record<string,
     case "cash-favour":
       return one && text ? { accountId: one, ask: text } : null;
     case "throttle-reach":
-      return one ? { accountId: one, days: Number(form.days ?? 2), strength: form.strength === "heavy" ? "heavy" : "light" } : null;
+      return one
+        ? { accountId: one, days: Number(form.days ?? 2), strength: form.strength === "heavy" ? "heavy" : "light" }
+        : null;
     case "plant-rumour": {
       const about = (form.about as string[] | undefined)?.[0];
       return one && text
-        ? { accountId: one, text, via: form.via === "support" ? "support" : "anonymous", ...(about && about !== one ? { aboutId: about } : {}) }
+        ? {
+            accountId: one,
+            text,
+            via: form.via === "support" ? "support" : "anonymous",
+            ...(about && about !== one ? { aboutId: about } : {}),
+          }
         : null;
     }
     case "seed-trend": {
@@ -115,7 +122,9 @@ export function slpStirStepOf(action: SlpActionName, form: Form): Record<string,
     }
     case "warn-creator": {
       const topic = typeof form.title === "string" ? form.title.trim() : "";
-      return one && text ? { accountId: one, reason: text, cause: form.cause !== "none", ...(topic ? { topic } : {}) } : null;
+      return one && text
+        ? { accountId: one, reason: text, cause: form.cause !== "none", ...(topic ? { topic } : {}) }
+        : null;
     }
     default:
       return null;
@@ -129,4 +138,3 @@ export function deskReward(choice: string): Record<string, unknown> {
   if (choice === "rising" || choice === "verified") return { perk: "badge", badge: choice };
   return { perk: "feature", days: 2 };
 }
-

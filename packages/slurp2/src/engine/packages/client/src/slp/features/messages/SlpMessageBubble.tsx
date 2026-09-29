@@ -468,7 +468,9 @@ export function MessageBubble({
           // Slurp's staff: a headset and "Staff", the same label the sign-up scene gives Support.
           <SlpDeskStaffLabel name={String(message.metadata.sceneSpeaker)} />
         ) : (
-          <p className="px-2 text-xs font-semibold text-[var(--slurp-muted)]">{String(message.metadata.sceneSpeaker)}</p>
+          <p className="px-2 text-xs font-semibold text-[var(--slurp-muted)]">
+            {String(message.metadata.sceneSpeaker)}
+          </p>
         ))}
       {message.kind === "ppv" && (locked || message.imageUrl) && (
         // The shared locked media tile: blurred stage, Sparkle Veil, lock and price. Bought, it is the

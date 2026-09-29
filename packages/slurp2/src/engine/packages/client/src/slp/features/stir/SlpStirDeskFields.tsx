@@ -57,7 +57,10 @@ export function SlpStirDeskFields({
     choice(
       "days",
       tx("days", "For how long"),
-      options.map((count) => [String(count), t("ui.slurp.stir.desk.dayCount", { count, defaultValue: `${count} days` })]),
+      options.map((count) => [
+        String(count),
+        t("ui.slurp.stir.desk.dayCount", { count, defaultValue: `${count} days` }),
+      ]),
       fallback,
     );
 
@@ -108,14 +111,27 @@ export function SlpStirDeskFields({
             ],
             "",
           )}
-          {choice("count", tx("count", "How many"), ["1", "3", "5", "10"].map((count) => [count, count]), "3")}
+          {choice(
+            "count",
+            tx("count", "How many"),
+            ["1", "3", "5", "10"].map((count) => [count, count]),
+            "3",
+          )}
           {days([3, 7, 14], "7")}
           {choice(
             "reward",
             tx("reward", "The reward"),
             SLP_DESK_REWARDS.map((reward) => [
               reward,
-              tx(`reward.${reward}`, { feature: "2 days on Discover", coins: "200 coins", rising: "Rising badge", verified: "Verified badge" }[reward]),
+              tx(
+                `reward.${reward}`,
+                {
+                  feature: "2 days on Discover",
+                  coins: "200 coins",
+                  rising: "Rising badge",
+                  verified: "Verified badge",
+                }[reward],
+              ),
             ]),
             "feature",
           )}
@@ -124,14 +140,27 @@ export function SlpStirDeskFields({
     case "offer-contract":
       return (
         <>
-          {choice("count", tx("postsPerWeek", "Posts a week"), ["2", "3", "5", "7"].map((count) => [count, count]), "3")}
+          {choice(
+            "count",
+            tx("postsPerWeek", "Posts a week"),
+            ["2", "3", "5", "7"].map((count) => [count, count]),
+            "3",
+          )}
           {choice(
             "weeks",
             tx("weeks", "How long"),
-            ["2", "4", "8"].map((count) => [count, t("ui.slurp.stir.desk.weekCount", { count: Number(count), defaultValue: `${count} weeks` })]),
+            ["2", "4", "8"].map((count) => [
+              count,
+              t("ui.slurp.stir.desk.weekCount", { count: Number(count), defaultValue: `${count} weeks` }),
+            ]),
             "4",
           )}
-          {choice("coins", tx("weeklyBonus", "Coins a kept week"), ["0", "100", "300", "600"].map((count) => [count, count]), "100")}
+          {choice(
+            "coins",
+            tx("weeklyBonus", "Coins a kept week"),
+            ["0", "100", "300", "600"].map((count) => [count, count]),
+            "100",
+          )}
           {text(tx("themes", "Themes (optional, comma between)"), tx("themesPlaceholder", "gym, travel"), "title", 180)}
         </>
       );
@@ -155,7 +184,12 @@ export function SlpStirDeskFields({
     case "plant-rumour":
       return (
         <>
-          {text(tx("rumour", "The rumour"), tx("rumourPlaceholder", "I heard Kai is planning a collab with Lena"), "text", 200)}
+          {text(
+            tx("rumour", "The rumour"),
+            tx("rumourPlaceholder", "I heard Kai is planning a collab with Lena"),
+            "text",
+            200,
+          )}
           <CreatorPicker
             key="about"
             max={1}
@@ -192,7 +226,12 @@ export function SlpStirDeskFields({
     case "warn-creator":
       return (
         <>
-          {text(tx("reason", "What Slurp says is wrong"), tx("reasonPlaceholder", "Your posts are off-brand lately"), "text", 200)}
+          {text(
+            tx("reason", "What Slurp says is wrong"),
+            tx("reasonPlaceholder", "Your posts are off-brand lately"),
+            "text",
+            200,
+          )}
           {text(tx("avoid", "A topic to leave alone (optional)"), tx("avoidPlaceholder", "politics"), "title", 60)}
           {choice(
             "cause",

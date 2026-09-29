@@ -5,7 +5,7 @@
  *
  * Pure, so the rules run in tests.
  */
-import { slurpCoupleActive, type SlurpCouple, type SlurpCoupleMoment } from "./slp-creator-couples.js";
+import type { SlurpCouple, SlurpCoupleMoment } from "./slp-creator-couples.js";
 import type { SlurpTieCreator } from "./slp-creator-ties.js";
 import { readSlurpTieStamp } from "./slp-tie-stamp.js";
 
@@ -30,17 +30,18 @@ export function slurpNameList(names: readonly string[]): string {
   return `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
 }
 
-export type SlurpCoupleJoinError = "polyOff" | "notFound" | "notTogether" | "full" | "same" | "busy";
+export type SlurpCoupleJoinError = "polyOff" | "notFound" | "notTogether" | "full" | "same" | "mono";
 
 /**
  * Someone joins a couple: only with polyamory on, only a couple that is dating or together, never
- * past four, never someone already in another couple. The couple gets a "joined" moment.
+ * past four, and everyone in it (the joiner too) must be polyamorous (`SlurpTieCreator.poly`). The
+ * joiner may have other couples too. The couple gets a "joined" moment.
  */
 export function slurpAddToCouple(
   couples: readonly SlurpCouple[],
   coupleId: string,
-  joiner: Pick<SlurpTieCreator, "id">,
-  options: { at: Date; polyamory: boolean },
+  joiner: Pick<SlurpTieCreator, "id" | "poly">,
+  options: { at: Date; polyamory: boolean; creators?: readonly Pick<SlurpTieCreator, "id" | "poly">[] },
 ): SlurpCouple[] | SlurpCoupleJoinError {
   if (!options.polyamory) return "polyOff";
   const couple = couples.find((entry) => entry.id === coupleId);
@@ -49,8 +50,8 @@ export function slurpAddToCouple(
   const members = slurpCoupleMembers(couple);
   if (members.includes(joiner.id)) return "same";
   if (members.length >= SLURP_COUPLE_GROUP_MAX) return "full";
-  if (couples.some((entry) => entry.id !== couple.id && slurpCoupleActive(entry) && slurpCoupleMembers(entry).includes(joiner.id)))
-    return "busy";
+  const poly = new Map((options.creators ?? []).map((creator) => [creator.id, creator.poly === true]));
+  if (!joiner.poly || members.some((id) => poly.get(id) === false)) return "mono";
   const stamp = options.at.toISOString();
   const moment: SlurpCoupleMoment = {
     id: `joined:${Date.parse(stamp).toString(36)}:${couple.moments.length}`,

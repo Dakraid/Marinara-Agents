@@ -206,8 +206,7 @@ const RATE: Record<SlpDeskRate, number> = { low: 0.5, normal: 1, high: 1.6 };
 // Reading a stored record
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-const num = (value: unknown, fallback = 0) =>
-  typeof value === "number" && Number.isFinite(value) ? value : fallback;
+const num = (value: unknown, fallback = 0) => (typeof value === "number" && Number.isFinite(value) ? value : fallback);
 const str = (value: unknown, max = SLP_DESK_TEXT_MAX) =>
   typeof value === "string" ? value.replace(/\s+/gu, " ").trim().slice(0, max) : "";
 const date = (value: unknown) => {
@@ -389,7 +388,12 @@ export function slpDeskAdjust(
     suspicion,
     log: [
       ...desk.log,
-      { at: at.toISOString(), text: change.text.slice(0, 200), trust: trust - desk.trust, suspicion: suspicion - desk.suspicion },
+      {
+        at: at.toISOString(),
+        text: change.text.slice(0, 200),
+        trust: trust - desk.trust,
+        suspicion: suspicion - desk.suspicion,
+      },
     ].slice(-LOG_MAX),
   };
 }
@@ -554,7 +558,13 @@ export function slpDeskTick(
   // A ticket, only when none is open and nothing louder happened this tick.
   const pace = { off: 0, rare: 0.15, sometimes: 0.35, often: 0.7 }[settings.tickets];
   const ticketOpen = next.ticket && next.ticket.status !== "resolved";
-  if (pace > 0 && !ticketOpen && events.length === 0 && elapsed > 0 && rolls[1] < 1 - Math.pow(1 - pace, elapsed / DAY_MS)) {
+  if (
+    pace > 0 &&
+    !ticketOpen &&
+    events.length === 0 &&
+    elapsed > 0 &&
+    rolls[1] < 1 - Math.pow(1 - pace, elapsed / DAY_MS)
+  ) {
     events.push({ kind: "ticket", topic: slpDeskTicketTopic(next, input.situation ?? {}, rolls[2]) });
   }
   return { desk: next, events };

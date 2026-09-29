@@ -2495,7 +2495,7 @@
   "ui.slurp.stir.note.shady": "Podejrzane: {{name}} robi się bardziej podejrzliwy.",
   "ui.slurp.stir.settings.groupLove": "Miłość",
   "ui.slurp.stir.settings.polyamory": "Poliamoria",
-  "ui.slurp.stir.settings.polyamoryDetail": "Para może urosnąć do trzech lub czterech osób. Stir dostaje kartę „Dodaj do pary”, a każdy partner pojawia się w ich postach i czatach.",
+  "ui.slurp.stir.settings.polyamoryDetail": "Para może urosnąć do trzech lub czterech osób, a poliamoryczny twórca może być w więcej niż jednej parze. Styl każdego twórcy ustawiasz w jego sterowaniu: według karty, monogamiczny lub poliamoryczny.",
   "ui.slurp.stir.card.add-to-couple.title": "Dodaj do pary",
   "ui.slurp.stir.card.add-to-couple.line": "Ktoś dołącza: we troje albo we czworo.",
   "ui.slurp.stir.card.add-to-couple.blurb": "Para, która się spotyka lub jest razem, przyjmuje jeszcze jednego partnera, maksymalnie cztery osoby. Każdy pisze o tym po swojemu.",
@@ -2503,5 +2503,12 @@
   "ui.slurp.stir.form.joiner": "Kto dołącza",
   "ui.slurp.stir.cant.polyOff": "Poliamoria jest wyłączona w Ustawienia › Stir.",
   "ui.slurp.stir.cant.notTogether": "Jeszcze się nie spotykają.",
-  "ui.slurp.stir.cant.full": "Ta para to już cztery osoby."
+  "ui.slurp.stir.cant.full": "Ta para to już cztery osoby.",
+  "ui.slurp.steering.relationshipStyle": "Związki",
+  "ui.slurp.steering.relationshipStyles.card": "Według ich karty",
+  "ui.slurp.steering.relationshipStyles.mono": "Monogamiczny",
+  "ui.slurp.steering.relationshipStyles.poly": "Poliamoryczny",
+  "ui.slurp.stir.part.style": "związki: {{style}}",
+  "ui.slurp.stir.cant.mono": "Jedna z tych osób jest monogamiczna i już z kimś jest.",
+  "ui.slurp.ties.moment.joined": "{{name}} dołącza"
 }

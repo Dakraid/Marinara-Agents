@@ -11,6 +11,7 @@ import { updateSlurpSupportDesk } from "../../../data/creators/slp-support-desk-
 import { runSlpAction } from "../../assist/slp-assist-contract.js";
 import {
   findPendingSlurpDeskOffer,
+  slurpDeskAcceptedInput,
   readSlurpDeskReply,
   slurpDeskOfferOutcome,
   slurpDeskTalkTrust,
@@ -55,11 +56,13 @@ export async function applySlurpDeskTalk(
   let offerStatus: "accepted" | "countered" | "declined" | "failed" | null = outcome;
   let offerError: string | undefined;
   if (pending && outcome === "accepted") {
-    const ran = await runSlpAction(db, pending.offer.action, pending.offer.input).catch((error: unknown) => ({
-      ok: false as const,
-      status: 500,
-      error: error instanceof Error ? error.message : "The offer could not run.",
-    }));
+    const ran = await runSlpAction(db, pending.offer.action, slurpDeskAcceptedInput(pending.offer)).catch(
+      (error: unknown) => ({
+        ok: false as const,
+        status: 500,
+        error: error instanceof Error ? error.message : "The offer could not run.",
+      }),
+    );
     if (!ran.ok) {
       offerStatus = "failed";
       offerError = ran.error;
@@ -78,23 +81,48 @@ export async function applySlurpDeskTalk(
   await updateSlurpSupportDesk(db, input.creatorAccountId, (current) => {
     let desk = slpDeskSeed(current, { signedUpBySupport: false, at });
     const talk = reply ? slurpDeskTalkTrust(reply) : 0;
-    if (talk) desk = slpDeskAdjust(desk, { trust: talk, text: talk > 0 ? "A good talk with Support" : "A bad talk with Support" }, settings, at);
+    if (talk)
+      desk = slpDeskAdjust(
+        desk,
+        { trust: talk, text: talk > 0 ? "A good talk with Support" : "A bad talk with Support" },
+        settings,
+        at,
+      );
     if (pending && offerStatus) {
       desk = slpDeskAsk(desk, settings, at);
       if (offerStatus === "accepted")
-        desk = slpDeskAdjust(desk, { trust: 2, text: `Took Slurp's offer: ${pending.offer.summary.slice(0, 120)}` }, settings, at);
+        desk = slpDeskAdjust(
+          desk,
+          { trust: 2, text: `Took Slurp's offer: ${pending.offer.summary.slice(0, 120)}` },
+          settings,
+          at,
+        );
       else if (offerStatus === "declined")
         desk = slpDeskAdjust(desk, { text: `Turned down: ${pending.offer.summary.slice(0, 120)}` }, settings, at);
       else if (offerStatus === "countered")
-        desk = slpDeskAdjust(desk, { text: `Asked for something else: ${reply?.counter || "a better offer"}` }, settings, at);
+        desk = slpDeskAdjust(
+          desk,
+          { text: `Asked for something else: ${reply?.counter || "a better offer"}` },
+          settings,
+          at,
+        );
     }
     // Intel only comes from a Creator who trusts Slurp; anything else was the model being chatty.
     if (reply?.intel && (slpDeskTier(desk.trust) === "cooperative" || slpDeskTier(desk.trust) === "partner"))
       desk = {
         ...desk,
-        intel: [...desk.intel, { id: newId(), text: reply.intel, aboutAccountId: null, at: at.toISOString(), used: false }],
+        intel: [
+          ...desk.intel,
+          { id: newId(), text: reply.intel, aboutAccountId: null, at: at.toISOString(), used: false },
+        ],
       };
-    if (resolvedTicket && desk.ticket && desk.ticket.status === "resolved" && desk.ticket.rating === null && reply?.rating) {
+    if (
+      resolvedTicket &&
+      desk.ticket &&
+      desk.ticket.status === "resolved" &&
+      desk.ticket.rating === null &&
+      reply?.rating
+    ) {
       desk = slpDeskAdjust(
         { ...desk, ticket: { ...desk.ticket, rating: reply.rating } },
         { trust: slpDeskRatingTrust(reply.rating), text: `Rated Support ${reply.rating}/5` },
@@ -107,8 +135,10 @@ export async function applySlurpDeskTalk(
     return desk;
   });
   if (resolvedTicket)
-    for (const line of ordered.filter((entry) => entry.metadata?.deskTicketResolved === true && entry.metadata?.deskTicketRated !== true))
-      await messages.mergeMessageMetadata(line.id, { deskTicketRated: true }).catch((error: unknown) =>
-        logger.warn(error, "[slurp-desk] Could not mark the ticket rating"),
-      );
+    for (const line of ordered.filter(
+      (entry) => entry.metadata?.deskTicketResolved === true && entry.metadata?.deskTicketRated !== true,
+    ))
+      await messages
+        .mergeMessageMetadata(line.id, { deskTicketRated: true })
+        .catch((error: unknown) => logger.warn(error, "[slurp-desk] Could not mark the ticket rating"));
 }

@@ -1,6 +1,7 @@
 # Slurp Support Desk (design)
 
-Status: design, agreed 2026-09-29 on `stir-buildout`. Nothing here is built yet.
+Status: built in 0.3.5 (2026-09-29, `stir-buildout`). Where the build differs from the design it says
+so under "As built" at the end.
 
 Slurp Support is Slurp's own staff: a faceless team, always named "Slurp Support". It is two things
 at once, and both must feel like one desk:
@@ -179,3 +180,19 @@ Advanced: Trust and suspicion rates, risk curve, win-back window length.
 5. **Tickets and leaving.** Ticket opener and close prompts, ticket bar, leave warning, win-back,
    pause.
 6. **Your Creators.** AI Support writing to the Creators you run; the "plays games too" setting.
+
+## As built (0.3.5)
+
+- Offers and notes are ordinary lines with metadata (`deskOffer`, `deskNote`, `deskNotice`), not new
+  stored message kinds. A note never reaches a prompt (`slurpDmTranscript` drops it).
+- Intel is listed in the case file; there is no "use it" button yet (plant it as a rumour by hand).
+- The desk runs at most every 30 minutes per process; the risk and ticket odds scale with the time
+  since a Creator's last pass, so the pace does not change them.
+- AI Support to the player's Creators sends a Stories challenge now and then, answered with Accept or
+  Decline on the card; with "games" on it may throttle them quietly.
+- The Inbox badge now counts unread messages only (it used to add the Activity stream).
+- Polyamory (a separate request, same release): groups of up to four and polyamorous Creators in
+  several couples, each Creator monogamous or polyamorous; see DECISIONS, "0.3.5 Polyamory".
+- Desk notices and notes are "quiet" lines (`deskQuiet`): no reply flag, no unread, never the line
+  a reply answers. Effects of a desk pass run only after its record is written.
+

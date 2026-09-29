@@ -97,9 +97,7 @@ export function SlpDeskCaseFile({
   const now = Date.now();
   const status = [
     desk.pausedAt ? tx("status.left", "Left Slurp") : null,
-    desk.leaving
-      ? tx("status.leaving", "Leaving in {{count}} days", { count: days(desk.leaving.until, now) })
-      : null,
+    desk.leaving ? tx("status.leaving", "Leaving in {{count}} days", { count: days(desk.leaving.until, now) }) : null,
     desk.contract?.status === "active" ? tx("status.contract", "Under contract") : null,
     slpDeskActive(desk.featuredUntil)
       ? tx("status.featured", "Featured for {{count}} days", { count: days(desk.featuredUntil!, now) })
@@ -156,9 +154,13 @@ export function SlpDeskCaseFile({
           {challenges.map((entry) => (
             <Bar
               key={entry.id}
-              label={tx(`challenge.${entry.metric}`, entry.metric === "stories" ? "{{count}} Stories" : "{{count}} posts", {
-                count: entry.count,
-              })}
+              label={tx(
+                `challenge.${entry.metric}`,
+                entry.metric === "stories" ? "{{count}} Stories" : "{{count}} posts",
+                {
+                  count: entry.count,
+                },
+              )}
               value={Math.min(entry.count, entry.progress)}
               min={0}
               max={entry.count}
@@ -210,7 +212,11 @@ export function SlpDeskCaseFile({
                   {(entry.trust !== 0 || entry.suspicion !== 0) && (
                     <span className="shrink-0 tabular-nums text-[var(--slurp-muted)]">
                       {[
-                        entry.trust ? tx("logTrust", "Trust {{value}}", { value: entry.trust > 0 ? `+${entry.trust}` : entry.trust }) : null,
+                        entry.trust
+                          ? tx("logTrust", "Trust {{value}}", {
+                              value: entry.trust > 0 ? `+${entry.trust}` : entry.trust,
+                            })
+                          : null,
                         entry.suspicion
                           ? tx("logSuspicion", "Suspicion {{value}}", {
                               value: entry.suspicion > 0 ? `+${entry.suspicion}` : entry.suspicion,

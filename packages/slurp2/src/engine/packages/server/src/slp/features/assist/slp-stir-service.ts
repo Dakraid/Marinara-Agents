@@ -272,7 +272,11 @@ export async function readSlpStirView(
   const rivals = new Set(world.rivalries.map((rivalry) => slurpPairKey(rivalry.fromId, rivalry.toId)));
   const matches = slurpCoupleMatches(
     tieCreators,
-    new Set(document.couples.filter(slurpCoupleActive).flatMap((couple) => [couple.aId, couple.bId])),
+    new Set(
+      document.couples
+        .filter(slurpCoupleActive)
+        .flatMap((couple) => [couple.aId, couple.bId, ...(couple.moreIds ?? [])]),
+    ),
     (a, b) => rivals.has(slurpPairKey(a, b)),
   )
     .sort((left, right) => right.fit.chemistry - left.fit.chemistry)

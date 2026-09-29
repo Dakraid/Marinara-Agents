@@ -21,7 +21,12 @@ export function SlpDeskTicketBar({ model, desk }: { model: SlurpThreadViewModel;
         <div className="min-w-0 flex-1">
           <p className={cn(SLP_TYPE.caption, "text-[var(--slurp-muted)]")}>
             {t(`ui.slurp.desk.ticketKind.${ticket.kind}`, {
-              defaultValue: ticket.kind === "leaving" ? "They want to leave" : ticket.kind === "caught" ? "They caught Slurp" : "Ticket",
+              defaultValue:
+                ticket.kind === "leaving"
+                  ? "They want to leave"
+                  : ticket.kind === "caught"
+                    ? "They caught Slurp"
+                    : "Ticket",
             })}
             {" · "}
             {t(`ui.slurp.desk.ticketStatus.${ticket.status}`, {

@@ -95,7 +95,8 @@ export function slpPagePeople(creatorId: string, ties: SlpPageTies | null | unde
     // Polyamory (0.3.5): everyone else in their couple is a partner.
     const members = [couple.aId, couple.bId, ...(couple.moreIds ?? [])];
     if (members.includes(creatorId))
-      for (const other of members) if (other !== creatorId) add(other, couple.stage === "sparks" ? "dating" : "partner");
+      for (const other of members)
+        if (other !== creatorId) add(other, couple.stage === "sparks" ? "dating" : "partner");
   }
   for (const collab of ties.collabs) {
     if (collab.status !== "posted" && collab.status !== "planned" && collab.status !== "agreed") continue;

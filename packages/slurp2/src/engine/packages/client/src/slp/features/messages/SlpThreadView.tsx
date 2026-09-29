@@ -262,11 +262,7 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
                           />
                           {/* The Support desk: an Offer sits under the line that made it (docs/SUPPORT-DESK.md). */}
                           {readSlpDeskOffer(entry.message) && (
-                            <SlpDeskOfferCard
-                              message={entry.message}
-                              ownsCreator={ownsCreator}
-                              personaId={personaId}
-                            />
+                            <SlpDeskOfferCard message={entry.message} ownsCreator={ownsCreator} personaId={personaId} />
                           )}
                           {/* W: a talk with Slurp Support proposes Stir cards under the Creator's reply. */}
                           {readSlpStirProposal(entry.message.metadata) && (

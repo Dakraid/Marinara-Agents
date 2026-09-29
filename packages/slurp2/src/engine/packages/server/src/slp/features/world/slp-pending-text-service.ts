@@ -132,18 +132,18 @@ function buildMessages(input: {
           'Return exactly one JSON object with one string field named "content". Return JSON only.',
         ]
       : input.kind === "delivery"
-      ? [
-          NOODLER_UNTRUSTED_CONTENT_INSTRUCTION,
-          "You are rewriting one short note a Slurp creator sends with a finished commission. Write only the creator's words.",
-          "Never write as the fan, and never speak for them.",
-          'Return exactly one JSON object with one string field named "content". Return JSON only.',
-        ]
-      : [
-          NOODLER_UNTRUSTED_CONTENT_INSTRUCTION,
-          "You are rewriting one short piece of text a fan sent to a Slurp creator. Write only the fan's words.",
-          "Never write as the creator, and never answer on their behalf.",
-          'Return exactly one JSON object with one string field named "content". Return JSON only.',
-        ];
+        ? [
+            NOODLER_UNTRUSTED_CONTENT_INSTRUCTION,
+            "You are rewriting one short note a Slurp creator sends with a finished commission. Write only the creator's words.",
+            "Never write as the fan, and never speak for them.",
+            'Return exactly one JSON object with one string field named "content". Return JSON only.',
+          ]
+        : [
+            NOODLER_UNTRUSTED_CONTENT_INSTRUCTION,
+            "You are rewriting one short piece of text a fan sent to a Slurp creator. Write only the fan's words.",
+            "Never write as the creator, and never answer on their behalf.",
+            'Return exactly one JSON object with one string field named "content". Return JSON only.',
+          ];
   const instruction =
     input.kind === "commission"
       ? "Rewrite this commission request so it asks for something specific that suits this particular creator, in the fan's own voice. Keep it to a few sentences and stay polite about price and timing."
@@ -152,8 +152,8 @@ function buildMessages(input: {
         : input.kind === "desk"
           ? "Rewrite this message to Slurp Support so it sounds like this particular creator writing to the platform's staff: the same point, in their own voice and mood. One to three sentences. Keep the message's language."
           : input.kind === "delivery"
-          ? "Rewrite this hand-over note so it sounds like this particular creator giving a fan the piece they paid for. One or two sentences, warm, no greeting, never describe the picture, and keep the note's language."
-          : "Rewrite this first message so it sounds like this particular person writing to this particular creator for the first time. Keep it short and a little awkward. Do not ask for anything.";
+            ? "Rewrite this hand-over note so it sounds like this particular creator giving a fan the piece they paid for. One or two sentences, warm, no greeting, never describe the picture, and keep the note's language."
+            : "Rewrite this first message so it sounds like this particular person writing to this particular creator for the first time. Keep it short and a little awkward. Do not ask for anything.";
 
   const data = {
     creator: input.creator,
@@ -351,11 +351,9 @@ export async function drainSlurpPendingText(
           creator: { displayName: creator.displayName, handle: creator.handle, bio: creator.bio },
           speaker,
           // A placeholder rewritten in the fan's own voice is the whole point of the upgrade.
-          speakerVoice:
-            creatorSpeaks(kind)
-              ? undefined
-              : (characterFanVoice ??
-                slurpFanVoiceForPrompt(slurpResolveFanType(settings.fanTypes, member ?? {}).voice)),
+          speakerVoice: creatorSpeaks(kind)
+            ? undefined
+            : (characterFanVoice ?? slurpFanVoiceForPrompt(slurpResolveFanType(settings.fanTypes, member ?? {}).voice)),
           speakerMemory:
             creatorSpeaks(kind) || !(member || characterFanVoice) ? undefined : slurpFanMemoryForPrompt(tie),
           placeholder,
