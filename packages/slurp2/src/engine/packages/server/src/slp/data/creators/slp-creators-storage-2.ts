@@ -99,21 +99,24 @@ export function createCreatorsStorage2(context: SlurpStorageContext) {
       const accounts = await db.select().from(slpAccounts).where(eq(slpAccounts.platform, "slurp"));
       const accountIds = accounts.map((account) => account.id);
       const personaIds = (await characters.listPersonas()).map((persona) => persona.id);
-      const posts = await db.select().from(slpPosts);
+      let deletedPosts = 0;
       // The full reset removes the whole media folder; this one must spare Creator artwork, so it
       // collects the files that belong to what it deletes and unlinks them after the commit.
-      const mediaPaths = keepCreators
-        ? [
+      const mediaPaths: unknown[] = [];
+      await db.transaction(async (tx) => {
+        const posts = await tx.select().from(slpPosts);
+        deletedPosts = posts.length;
+        if (keepCreators) {
+          mediaPaths.push(
             ...posts.map((post) => parseRecord(post.metadata).noodlerMediaPath),
-            ...(await db.select().from(slpPostMedia)).map((item) => item.mediaPath),
-            ...(await db.select().from(slurpMessages)).map((message) => parseRecord(message.metadata).noodlerMediaPath),
-            ...(await db.select().from(slurpCommissions)).map((commission) => commission.mediaPath),
-            ...(await db.select().from(slpCreatorPreparedPosts)).map(
+            ...(await tx.select().from(slpPostMedia)).map((item) => item.mediaPath),
+            ...(await tx.select().from(slurpMessages)).map((message) => parseRecord(message.metadata).noodlerMediaPath),
+            ...(await tx.select().from(slurpCommissions)).map((commission) => commission.mediaPath),
+            ...(await tx.select().from(slpCreatorPreparedPosts)).map(
               (row) => parseRecord(parseRecord(row.payload).metadata).noodlerMediaPath,
             ),
-          ].filter((path): path is string => typeof path === "string" && path.length > 0)
-        : [];
-      await db.transaction(async (tx) => {
+          );
+        }
         for (const table of [
           slpActivityDigests,
           slpRefreshRuns,
@@ -167,8 +170,8 @@ export function createCreatorsStorage2(context: SlurpStorageContext) {
         }
         await tx._fileStore.flush();
       });
-      for (const path of new Set(mediaPaths)) unlinkCreatorMedia(path);
-      return { deletedCreators: keepCreators ? 0 : accounts.length, deletedPosts: posts.length };
+      for (const path of new Set(mediaPaths)) if (typeof path === "string" && path) unlinkCreatorMedia(path);
+      return { deletedCreators: keepCreators ? 0 : accounts.length, deletedPosts };
     },
     async previewUnusedSlurpData(): Promise<{
       preparedPosts: number;

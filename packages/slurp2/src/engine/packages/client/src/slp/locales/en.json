@@ -4289,7 +4289,7 @@
   "ui.slurp.settings.advanced.resetActivityDetail": "Clear every post, message, fan and queued job, and keep your Creators, their looks and all settings. Use this when Slurp stays empty or stuck after an update.",
   "ui.slurp.settings.advanced.resetActivityButton": "Start over",
   "ui.slurp.settings.advanced.resetActivityConfirmTitle": "Start over with your Creators?",
-  "ui.slurp.settings.advanced.resetActivityConfirmDetail": "This permanently deletes all posts, comments, messages, fans, stories and queued work, and what Creators remember about them. Your Creators, their pictures, your wallet and all Slurp settings stay. You cannot undo this.",
+  "ui.slurp.settings.advanced.resetActivityConfirmDetail": "This permanently deletes all posts, comments, messages, fans, stories and queued work, and what Creators remember about them. Coins paid for commissions that were not delivered are refunded. Your Creators, their pictures, their projects, your wallet and all Slurp settings stay. You cannot undo this.",
   "ui.slurp.settings.advanced.resetActivitySuccess": "Slurp started over. Your Creators are still here.",
   "ui.slurp.settings.connections.textGroup": "Text models",
   "ui.slurp.settings.connections.imageGroup": "Picture models",

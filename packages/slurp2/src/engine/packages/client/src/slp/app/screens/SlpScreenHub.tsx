@@ -595,7 +595,7 @@ export function ViewerHub({
                     ? localizeUi("ui.slurp.empty.followingDetail")
                     : autoPostingOff
                       ? localizeUi("ui.slurp.empty.autoPostingOffDetail")
-                      : localizeUi("ui.slurp.empty.firstPostsDetail")
+                      : slurpSettings && localizeUi("ui.slurp.empty.firstPostsDetail")
               }
               action={
                 searchTerm

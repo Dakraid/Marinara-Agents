@@ -19,6 +19,7 @@ import {
 } from "../../../db/schema/slurp.js";
 import { readSlurpStirPlays } from "../../data/assist/slp-stir-plays-storage.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
+import { createSlurpMessagesStorage } from "../../data/messages/slp-messages-storage.js";
 import { mapThread } from "../../data/messages/slp-messages-storage-helpers.js";
 import { slurpPulseNext, slurpPulsePlayTasks, slurpUpcomingAnnualEvents } from "../../modules/maintenance/slp-pulse.js";
 import { now } from "../../../utils/id-generator.js";
@@ -415,8 +416,15 @@ export async function slpMaintenanceRoutes(app: FastifyInstance, deps: SlpRouteD
   });
 
   // The recovery reset: keeps Creators, their artwork and every setting (deleteAllSlurpData).
+  // ponytail: refresh runs, first-post jobs and DM replies do not check the deletion lock, so one
+  // already generating can still land a post or message after the reset; a per-thread and per-run
+  // epoch check before commit would close that.
   app.delete("/data/activity", async (_req, reply) => {
-    const locked = await trySlurpDataDeletion(() => noodle.deleteAllSlurpData({ keepCreators: true }));
+    const locked = await trySlurpDataDeletion(async () => {
+      // The wallet stays, so coins paid for a commission that will now never arrive come back first.
+      await createSlurpMessagesStorage(app.db).refundOpenCommissions();
+      return noodle.deleteAllSlurpData({ keepCreators: true });
+    });
     if (!locked.acquired) return reply.code(409).send({ error: "Another Slurp operation is already running." });
     return locked.value;
   });
