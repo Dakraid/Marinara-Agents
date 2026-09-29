@@ -5,6 +5,7 @@
  * without an Engine checkout. Nothing here reads the DB or the clock beyond what it is handed.
  */
 import { readSlurpRapportWeights, type SlurpRapport, type SlurpRapportWeights } from "./slp-rapport.js";
+import { slurpRotationHash } from "../feed/slp-post-variation.js";
 
 /** Storage key for the per-creator messaging settings blob. Mirrors the creator-prices key. */
 export const SLURP_CREATOR_MESSAGING_KEY = "slurp2.creator.messaging";
@@ -660,6 +661,17 @@ export function slurpExpiredRequestIds(
         now.getTime() - Date.parse(thread.lastMessageAt) > SLURP_REQUEST_EXPIRY_DAYS * 86_400_000,
     )
     .map((thread) => thread.id);
+}
+
+/**
+ * An automatic Creator answers about one in four AI fans who write to her (task E); the rest go
+ * unanswered and expire with the requests above. Picked by the fan's message id, so a retry after
+ * a busy lock or a spent budget asks the same question and gets the same answer. Only a plain text
+ * message fits: a tip, a shared post or a commission brief has its own path.
+ */
+export const SLURP_AI_FAN_ANSWER_ONE_IN = 4;
+export function slurpAnswersAiFan(message: { id: string; kind: string }): boolean {
+  return message.kind === "text" && slurpRotationHash(`ai-fan:${message.id}`) % SLURP_AI_FAN_ANSWER_ONE_IN === 0;
 }
 
 /** One line of thread summary for the inbox. Kept short: the list shows it on one row. */

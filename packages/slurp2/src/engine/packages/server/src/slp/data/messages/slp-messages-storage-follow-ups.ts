@@ -21,7 +21,7 @@ import {
 } from "../../../db/schema/slurp.js";
 import { isSlurpFileUniqueConstraintError } from "../../base/host/slp-file-errors.js";
 import { applySlurpMood, type SlurpMoodShift } from "../../modules/world/slp-mood.js";
-import { isFollowUpOverdue } from "../../modules/messages/slp-follow-up.js";
+import { slurpFollowUpExpires, slurpFollowUpRetryAt } from "../../modules/messages/slp-follow-up.js";
 import {
   applySlurpThreadNotes,
   readStoredNotes,
@@ -140,6 +140,7 @@ export function createMessagesStorageFollowUps(context: SlurpMessagesContext) {
           creatorAccountId: String(thread.creatorAccountId),
           sequenceNumber: followUp.sequenceNumber == null ? null : String(followUp.sequenceNumber),
           totalInSequence: followUp.totalInSequence == null ? null : String(retained.length),
+          firstDueAt: followUp.scheduledAt,
           status: "pending",
           claimedAt: null,
           sentAt: null,
@@ -228,11 +229,14 @@ export function createMessagesStorageFollowUps(context: SlurpMessagesContext) {
     },
     /**
      * Put a claimed follow-up back in the queue at a later time: cool-off, night quiet, offline.
-     * Two days after the promise it is dropped instead (7c M-007), whichever wait held it.
+     * A promise always waits (task E: it is delivered late, with a sorry); only an opener nobody
+     * asked for ends two days after it was planned (7c M-007).
      */
     async postponeScheduledFollowUp(threadId: string, followUpId: string, scheduledAt: string): Promise<void> {
       const row = (await db.select().from(slurpFollowUps).where(eq(slurpFollowUps.id, followUpId)))[0];
-      const overdue = Boolean(row && isFollowUpOverdue({ createdAt: String(row.createdAt) }));
+      const overdue = Boolean(
+        row && slurpFollowUpExpires({ type: String(row.type), createdAt: String(row.createdAt) }),
+      );
       const timestamp = now();
       await db
         .update(slurpFollowUps)
@@ -251,15 +255,18 @@ export function createMessagesStorageFollowUps(context: SlurpMessagesContext) {
     },
     async failScheduledFollowUp(threadId: string, followUpId: string): Promise<void> {
       const timestamp = now();
-      // ponytail: one retry, then give up. A follow-up that failed twice went back to pending with
-      // the same due time forever and slowed every other follow-up; count attempts if one is not enough.
-      const failedBefore = Boolean(
-        (await db.select().from(slurpFollowUps).where(eq(slurpFollowUps.id, followUpId)))[0]?.failedAt,
-      );
+      // A promise is never given up for a failed call (task E). It goes back to the queue later
+      // and later (15 minutes up to 12 hours, by how late it is already), so a dead connection
+      // neither drops it nor holds the queue's first slot; an opener nobody asked for fails for good.
+      const row = (await db.select().from(slurpFollowUps).where(eq(slurpFollowUps.id, followUpId)))[0];
+      const opener = row?.type === "opener";
       await db
         .update(slurpFollowUps)
         .set({
-          status: failedBefore ? "failed" : "pending",
+          status: opener ? "failed" : "pending",
+          scheduledAt: opener
+            ? String(row?.scheduledAt ?? timestamp)
+            : slurpFollowUpRetryAt(String(row?.firstDueAt ?? row?.scheduledAt ?? timestamp)),
           claimedAt: null,
           failedAt: timestamp,
           updatedAt: timestamp,
@@ -290,6 +297,7 @@ export function createMessagesStorageFollowUps(context: SlurpMessagesContext) {
           sequenceNumber?: number;
           totalInSequence?: number;
           recurringPattern?: string;
+          firstDueAt?: string;
         };
       }>
     > {
@@ -307,6 +315,7 @@ export function createMessagesStorageFollowUps(context: SlurpMessagesContext) {
           sequenceNumber: slurpFollowUps.sequenceNumber,
           totalInSequence: slurpFollowUps.totalInSequence,
           recurringPattern: slurpFollowUps.recurringPattern,
+          firstDueAt: slurpFollowUps.firstDueAt,
         })
         .from(slurpFollowUps)
         .where(
@@ -341,6 +350,7 @@ export function createMessagesStorageFollowUps(context: SlurpMessagesContext) {
           sequenceNumber: row.sequenceNumber == null ? undefined : Number(row.sequenceNumber),
           totalInSequence: row.totalInSequence == null ? undefined : Number(row.totalInSequence),
           recurringPattern: row.recurringPattern ?? undefined,
+          firstDueAt: row.firstDueAt ?? row.scheduledAt,
         },
       }));
     },

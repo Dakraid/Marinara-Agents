@@ -29,6 +29,8 @@ export type ScheduledFollowUp = {
   totalInSequence?: number;
   /** For recurring: pattern like "every 4 hours" */
   recurringPattern?: string;
+  /** When it first came due; `scheduledAt` moves with each wait (task E). */
+  firstDueAt?: string;
 };
 
 /**
@@ -213,23 +215,44 @@ export function isFollowUpDue(followUp: ScheduledFollowUp, now: Date = new Date(
 }
 
 /**
- * A follow-up still blocked two days after it was promised is dropped instead of postponed again
- * (7c M-007): a promise moved forward for days reads as forgotten, and the queue must end. The
- * promise itself stays in the thread notes, so the Creator still knows it in the next reply.
- * ponytail: counted from the promise, not the first due time (not stored), so a promise made for more
- * than two days out is dropped at its first soft wait; store a postpone count if that matters.
+ * Follow-ups are promises (task E): a blocked one waits and tries again, it is never dropped for
+ * being old. Only an opener (nobody asked for it) ends two days after it was planned; a promise
+ * ends only with its thread (gone, closed, cleared) or the Creator's "writes on their own" switch.
  */
 export const SLURP_FOLLOW_UP_OVERDUE_MS = 2 * 24 * 60 * 60_000;
-/** `createdAt`: when it was promised (the follow-up row's creation). */
+/** `createdAt`: when it was planned (the follow-up row's creation). */
 export function isFollowUpOverdue(followUp: { createdAt?: string }, now: Date = new Date()): boolean {
   const promised = Date.parse(followUp.createdAt ?? "");
   return Number.isFinite(promised) && now.getTime() - promised > SLURP_FOLLOW_UP_OVERDUE_MS;
+}
+/** Whether a wait may end this follow-up: an old opener only. */
+export function slurpFollowUpExpires(followUp: { type: string; createdAt?: string }, now: Date = new Date()): boolean {
+  return followUp.type === "opener" && isFollowUpOverdue(followUp, now);
+}
+
+/** More than this past its first due time, the Creator says sorry for the wait. */
+export const SLURP_FOLLOW_UP_LATE_MS = 2 * 60 * 60_000;
+export function isFollowUpLate(firstDueAt: string | undefined, now: Date = new Date()): boolean {
+  const due = Date.parse(firstDueAt ?? "");
+  return Number.isFinite(due) && now.getTime() - due > SLURP_FOLLOW_UP_LATE_MS;
+}
+
+/**
+ * The next try after a failed generation: half the time the promise is already late, between 15
+ * minutes and 12 hours. A failure right after it came due retries soon; a promise failing for days
+ * costs two model calls a day at most. No attempt count is stored: the lateness is the count.
+ */
+export function slurpFollowUpRetryAt(firstDueAt: string | undefined, now: Date = new Date()): string {
+  const due = Date.parse(firstDueAt ?? "");
+  const late = Number.isFinite(due) ? Math.max(0, now.getTime() - due) : 0;
+  const delay = Math.min(12 * 60 * 60_000, Math.max(15 * 60_000, late / 2));
+  return new Date(now.getTime() + delay).toISOString();
 }
 
 /**
  * Generate a follow-up message prompt context.
  */
-export function formatFollowUpContext(followUp: ScheduledFollowUp, promiseText?: string): string {
+export function formatFollowUpContext(followUp: ScheduledFollowUp, promiseText?: string, late = false): string {
   // `scheduledAt` is when it came due, not when it was promised, so no "minutes ago" is stated:
   // the old count told the model a false fact.
   // Nobody asked for an opener, so it must not claim a promise.
@@ -248,6 +271,11 @@ export function formatFollowUpContext(followUp: ScheduledFollowUp, promiseText?:
   // The words she remembered, so the follow-up keeps the promise she actually made.
   if (promiseText) {
     context += ` What you promised: "${promiseText}". Keep this promise now.`;
+  }
+
+  // A promise kept late is still kept (task E): she owns the wait in her own words, then delivers.
+  if (late) {
+    context += ` You are late with this. Open with a short, casual sorry for the wait in your own voice (one line, no excuses list), then keep the promise.`;
   }
 
   return context;

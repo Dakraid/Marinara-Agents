@@ -290,9 +290,11 @@ const at = (days: number) => new Date(T0 + days * 86_400_000);
   assert.equal(SLURP_FOLLOW_UP_OVERDUE_MS, 2 * 86_400_000);
   assert.equal(isFollowUpOverdue({}, new Date()), false, "no date, no guess");
   const storage = server("data/messages/slp-messages-storage-follow-ups.ts");
+  // Pulse + E (user, 2026-09-28): follow-ups are promises. The two-day cap now ends only an opener
+  // nobody asked for; a promise waits and is delivered late (tests/slurp2-pulse-e.regression.ts).
   assert.match(
     storage,
-    /async postponeScheduledFollowUp\([^)]*\): Promise<void> \{\s+const row = [^\n]+\n\s+const overdue = Boolean\(row && isFollowUpOverdue\(\{ createdAt: String\(row\.createdAt\) \}\)\);[\s\S]{0,200}overdue\s+\? \{ status: "cancelled"/u,
+    /async postponeScheduledFollowUp\([^)]*\): Promise<void> \{\s+const row = [^\n]+\n\s+const overdue = Boolean\(\s*row && slurpFollowUpExpires\(\{ type: String\(row\.type\), createdAt: String\(row\.createdAt\) \}\),?\s*\);[\s\S]{0,200}overdue\s+\? \{ status: "cancelled"/u,
     "every postpone path goes through the cap",
   );
 }

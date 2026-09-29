@@ -2,7 +2,12 @@ import type { FastifyInstance } from "fastify";
 import { logger } from "../../../lib/logger.js";
 import { createSlurpMessagesStorage } from "../../data/slp-storage.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
-import { isFollowUpDue, formatFollowUpContext, type ScheduledFollowUp } from "../../modules/messages/slp-follow-up.js";
+import {
+  isFollowUpDue,
+  isFollowUpLate,
+  formatFollowUpContext,
+  type ScheduledFollowUp,
+} from "../../modules/messages/slp-follow-up.js";
 import { generateSlurpMessageReply, SlurpMessageBudgetUnavailableError } from "./slp-message-generation-service.js";
 import { resolveSlurpTextConnection } from "../../base/identity/slp-connection.js";
 import { describeSlurpDayVibe } from "../world/slp-world-contract.js";
@@ -168,7 +173,11 @@ export function startSlurpFollowUpScheduler(app: FastifyInstance, registerStop?:
                 coolingOff,
                 strikes: activeSlurpStrikes(thread.strikes, thread.lastStrikeAt),
                 connection,
-                generationGuidance: formatFollowUpContext(followUp, promise?.text),
+                generationGuidance: formatFollowUpContext(
+                  followUp,
+                  promise?.text,
+                  isFollowUpLate(followUp.firstDueAt ?? followUp.scheduledAt),
+                ),
                 // A follow-up is a promise the Creator already made in a reply, like an away reply that
                 // `slp-message-operation` also sends as "present". As "background" it needed the global
                 // background mode, so with default settings every follow-up postponed itself forever.

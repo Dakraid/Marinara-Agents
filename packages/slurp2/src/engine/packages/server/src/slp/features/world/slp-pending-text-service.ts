@@ -174,6 +174,14 @@ function buildMessages(input: {
   ];
 }
 
+/** The line was answered as it stands (an AI fan's opener, task E), so a later rewrite must not change it. */
+export async function dropSlurpPendingText(db: DB, subjectId: string): Promise<void> {
+  await db
+    .delete(slurpPendingText)
+    .where(eq(slurpPendingText.subjectId, subjectId))
+    .catch(() => undefined);
+}
+
 /**
  * Rewrite the newest few placeholders.
  *

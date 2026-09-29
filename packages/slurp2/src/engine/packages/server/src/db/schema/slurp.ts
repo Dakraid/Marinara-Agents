@@ -392,6 +392,11 @@ export const slurpFollowUps = fileTable(
     sequenceNumber: text("sequence_number"),
     totalInSequence: text("total_in_sequence"),
     recurringPattern: text("recurring_pattern"),
+    /**
+     * When the promise first came due. `scheduledAt` moves with every wait; this does not, so the
+     * Creator knows when she is late (task E). Null on rows from before it: `scheduledAt` stands in.
+     */
+    firstDueAt: text("first_due_at"),
     status: text("status").notNull().default("pending"),
     claimedAt: text("claimed_at"),
     sentAt: text("sent_at"),

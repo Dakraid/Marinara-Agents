@@ -17,7 +17,7 @@ import { createSlurpMessagesStorage, type SlurpMessage } from "../../data/slp-st
 import { createSlurpEventsStorage } from "../../data/notifications/slp-notification-storage.js";
 import { tryCreatorAccountOperation } from "../../base/locking/slp-account-operation-lock.js";
 import { generateSlurpMessageReply, SlurpMessageBudgetUnavailableError } from "./slp-message-generation-service.js";
-import { describeSlurpDayVibe } from "../world/slp-world-contract.js";
+import { describeSlurpDayVibe, dropSlurpPendingText } from "../world/slp-world-contract.js";
 import { recoverSlurpMood } from "../../modules/world/slp-mood.js";
 import { activeSlurpStrikes, type SlurpStanceLatitude } from "../../modules/world/slp-stance.js";
 import {
@@ -34,6 +34,7 @@ import { readTalkativenessProfile, allowMultiBubbleSplit } from "../../modules/w
 import {
   slurpReplyBubbleDelayMs,
   slurpReplyPacing,
+  slurpAnswersAiFan,
   splitSlurpReplyBurst,
   type SlurpReplyPacing,
 } from "../../modules/messages/slp-messaging.js";
@@ -111,10 +112,18 @@ export async function replyToSlurpMessage(
   const support = isSlurpSupportThread(thread);
   // A hand-operated Creator's fans are audience members, not personas. The draft still needs them
   // as the one being answered; `getViewer` alone made every draft for them ineligible.
+  // An AI fan is answered unattended about one time in four (task E); the rest expire unanswered.
+  const aiFanTrigger =
+    !personaViewer && !support && !input.operatorDraft && input.background && creator
+      ? await messagesStore.getMessageById(input.triggerMessageId)
+      : null;
+  const aiFan = Boolean(aiFanTrigger && slurpAnswersAiFan(aiFanTrigger));
   const viewer =
     personaViewer ??
     (support ? slurpSupportAccount(slurpSupportName(await messagesStore.listMessages(thread.id, 120))) : null) ??
-    (input.operatorDraft && creator ? await resolveAudienceFanAccount(db, thread.viewerAccountId, creator) : null);
+    ((input.operatorDraft || aiFan) && creator
+      ? await resolveAudienceFanAccount(db, thread.viewerAccountId, creator)
+      : null);
   // A persona-backed Creator is operated by hand: it never auto-posts and it never answers a DM
   // on its own either. The operator writes the answer through the draft-reply route.
   if (!creator || !viewer || (creator.kind === "persona" && creator.sourceKind === "persona" && !input.operatorDraft)) {
@@ -429,6 +438,8 @@ export async function replyToSlurpMessage(
         reply.image &&
         reply.canSendImage &&
         !support &&
+        // An AI fan gets words only: a picture needs the image budget the world does not spend on them.
+        !aiFan &&
         slurpCreatorStateCanUseMedia(creatorState, thread.threadState)
       ) {
         // A delayed ("away") reply draws too. The scheduler only ever answers the player's own
@@ -515,6 +526,7 @@ export async function replyToSlurpMessage(
         await agreeSlurpCollabInDm(db, { hostId: thread.creatorAccountId, ...reply.agreedCollab }).catch(
           (error: unknown) => logger.warn(error, "[slurp-message] Could not record the collab agreed in this chat"),
         );
+      if (stored && aiFan) await dropSlurpPendingText(db, input.triggerMessageId);
       if (stored) {
         // Whoever just answered is, for the next few minutes, obviously around: every reply keeps
         // her online briefly, and a hot conversation keeps her longer.
