@@ -1,5 +1,36 @@
 # Slurp release notes
 
+## 0.3.9 — 2026-09-29
+
+- New post pictures are stored as WebP (quality 90, same size) instead of the provider's PNG: about a fifth of the disk space, and the full-screen view opens faster. Pictures already stored stay as they are.
+
+## 0.3.8 — 2026-09-29
+
+- Creator Pages: a Page designed on 0.3.7 still kept only one block. The reader now also takes a model's other names for the same fields (`type` for `kind`, `content` for `text`, list items and Q&A as objects, pairs as two-item lists, a `null` title).
+- A Page that keeps fewer than the four blocks asked for is logged with the model's answer, so the next miss shows its cause.
+
+## 0.3.7 — 2026-09-29
+
+Measured on a phone-sized browser with the CPU slowed 4x.
+
+- Fast scroll: the nav's hide no longer restyles the whole feed (worst frame 792 → 159 ms), and picture load marks are written once per frame.
+- Hub and profiles draw their first cards at once and the rest a few at a time, with a shimmer card below; feed rows lost a layout animation that measured every row (Hub switch 1311 → about 400 ms, profile 644 → 292 ms).
+- Pictures start loading about two screens ahead; the 160 px thumbnail gets its small WebP copy instead of the original.
+- Creator Pages: an extra field, an unknown layout or style, a named pick or another spelling of a block no longer loses the block; thinking notes are skipped, the answer may be longer, and an unusable answer is logged.
+- The frosted blur under the phone nav is back.
+
+## 0.3.6 — 2026-09-29
+
+Faster, and your own taps never spend the AI budget.
+
+- AI budget: only what the world writes on its own counts. Anything you ask for (Write, Stir plans, refreshes, replies to your messages, your pictures) never uses or waits on it, and "Off" never blocks it.
+- AI limits page: one World AI switch, one "World calls per day" slider, a toggle per area; per-job limits under Advanced.
+- New Connections › Creator Pages picker for the page builder.
+- Stir: Support tools no longer leave "Do it" greyed out; an empty result says why.
+- Support threads: the grey console covers the whole chat; no "Writing as" chip, no "Staff" pill, no switch back.
+- Speed: fewer Home polls, cached server work, Backstage and Fans & Money load only what is open, other languages load on demand.
+- Phones: no half-black pages on a fast scroll.
+
 ## 0.3.5 — 2026-09-29
 
 Support desk, polyamory, character names in pictures. Design: `docs/SUPPORT-DESK.md`.

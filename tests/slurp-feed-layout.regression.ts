@@ -82,14 +82,28 @@ assert.match(
   "the Wallet balance must animate spending and earning",
 );
 assert.match(home, /function SlurpAccessTransition/u, "locked and revealed post shapes need a persistent shell");
-assert.match(home, /layout=\{reduceMotion \? false : "size"\}/u, "post height changes must animate instead of jumping");
+// 0.3.6: only a card that starts locked keeps the layout animation; the rest skip framer's measuring.
+assert.match(
+  home,
+  /layout=\{reduceMotion \|\| !mayReveal \? false : "size"\}/u,
+  "a revealed post's height change still animates",
+);
 assert.match(home, /mode="popLayout"/u, "the old post must remain while its revealed form enters");
 assert.match(creatorPostCard, /runTransaction/u, "the unlock sheet must stay mounted through payment");
 assert.match(creatorPostCard, /ui\.slurp\.unlocksheet\.bestValue/u, "the subscription offer must carry its value cue");
 assert.match(sparkle, /data-slurp-celebration-ring/u, "creator identity must share the reveal celebration");
 assert.match(sparkle, /new IntersectionObserver/u, "sparkles must observe their viewport visibility");
 assert.match(sparkle, /\{inViewport && \(/u, "off-screen sparkle particles must not remain mounted");
-assert.match(home, /contentVisibility: "auto"/u, "off-screen feed cards must skip unnecessary rendering work");
+assert.doesNotMatch(
+  home,
+  /contentVisibility: "auto"/u,
+  "feed cards never skip painting: a fast phone flick showed half-black pages (0.3.6)",
+);
+// 0.3.9: desktop keeps it (off-screen cards skip restyles); phones do not.
+assert.match(
+  slurp2Source(join(root, "packages/slurp2/src/engine/packages/client/src/slp/slp-client-entry.tsx")),
+  /@media \(min-width: 1024px\) \{\s*\[data-slurp-access-transition\]:not\(\[data-slp-menu-open\]\) \{\s*content-visibility: auto;/u,
+);
 assert.match(
   home,
   /const \{ moments, feed, searchResults, discoveredCreators, suggestedCreators \} = useMemo/u,

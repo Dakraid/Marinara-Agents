@@ -248,11 +248,13 @@ export async function slpFeedPublishingRoutes(app: FastifyInstance, deps: SlpRou
   app.post("/slurp/accounts/:id/auto-post/run-now", async (req, reply) => {
     const { id } = req.params as { id: string };
     try {
-      const result = await generateAndApplyCreatorPost(app.db, {
-        mode: "noodler",
-        targetAccountId: id,
-        access: await resolveSlurpAutomaticPostAccess(noodle, id),
-      });
+      // The player's tap: foreground, so its picture prompt rewrite is off the AI budget (0.3.6).
+      const result = await generateAndApplyCreatorPost(
+        app.db,
+        { mode: "noodler", targetAccountId: id, access: await resolveSlurpAutomaticPostAccess(noodle, id) },
+        undefined,
+        { kind: "foreground" },
+      );
       // Run-now never sets reviewImagePromptsBeforeSend, so the generator can only return a
       // plain post here — no image-prompt review is ever produced on this path.
       if (result.status === "generated") return result.post;

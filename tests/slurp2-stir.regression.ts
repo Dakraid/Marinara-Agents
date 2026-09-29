@@ -319,6 +319,10 @@ async function main() {
       ["slp-stir:unknown:write-text", "slp-stir:unknown:make-it-rain"],
       "a step that is no play is said by the app, in the player's language",
     );
+    // The desk opens its tools in the Stir play sheet: a desk step is a play, never "unknown" (0.3.6).
+    assert.deepEqual(slpSortStirSteps([{ action: "grant-perk", input: { accountId: "mira" } }]).plays, [
+      { action: "grant-perk", input: { accountId: "mira" } },
+    ]);
     // The plan's one card is the preview of that step.
     const card = slurpPreviewTieLever(world(), "set-up-couple", sorted.plays[0]!.input, AT);
     assert.equal(card.error, null);
@@ -329,7 +333,15 @@ async function main() {
     assert.equal(readSlpStirPlanAnswer("I think they should flirt!"), null, "no JSON: no plan, never a crash");
     assert.deepEqual(readSlpStirPlanAnswer('{"steps":[],"question":"Which Lena?"}')?.question, "Which Lena?");
     const service = server("features/assist/slp-stir-service.ts");
-    assert.match(service, /claimSlurpModelBudget\(db, settings\.modelBudget, "plan"\)/u, "one call on the Plans row");
+    // 0.3.6: the player's plan is off the budget; a Creator's DM proposal (world) is on the Plans row.
+    assert.match(
+      service,
+      /origin === "world" && !\(await claimSlurpModelBudget\(db, settings\.modelBudget, "plan"\)\)/u,
+    );
+    assert.match(
+      server("features/assist/slp-stir-routes.ts"),
+      /creatorBelongsToViewer\(account as never, viewer\) : undefined,\s+"player",/u,
+    );
     assert.match(service, /Plans need your AI connection\. The cards still work\./u);
     assert.match(
       service,

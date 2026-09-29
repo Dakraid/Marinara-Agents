@@ -66,6 +66,11 @@ import { isSlurpViewerActorAccount } from "../../modules/settings/slp-settings.j
 import { mapAccount } from "../host/slp-storage-mappers.js";
 import type { SlurpStorageContext } from "../host/slp-storage-context.js";
 
+const stageProfilesCache = new WeakMap<
+  object,
+  { key: string; at: number; value: Promise<SlurpManagedStageProfile[]> }
+>();
+
 export function createCreatorsStorage3(context: SlurpStorageContext) {
   const {
     db,
@@ -249,7 +254,26 @@ export function createCreatorsStorage3(context: SlurpStorageContext) {
       await this.clearWardrobe(id);
       return existing;
     },
+    /**
+     * Every Creator's stage profile. It resolves each Creator's source card, so the feed, the Creators
+     * poll and many routes paid for it on every request; it is kept until an account, character or
+     * persona is written, and at most 15 s for the schedule status, which ages with time (0.3.6).
+     */
     async listNoodlerStageProfiles(): Promise<SlurpManagedStageProfile[]> {
+      const store = (db as { _fileStore?: { getTableWriteGeneration?: (table: string) => number } })._fileStore;
+      const key = ["slurp2_accounts", "characters", "personas"]
+        .map((table) => store?.getTableWriteGeneration?.(table))
+        .join("|");
+      const cached = store ? stageProfilesCache.get(store) : undefined;
+      if (store?.getTableWriteGeneration && cached?.key === key && Date.now() - cached.at < 15_000) return cached.value;
+      const value = this.buildNoodlerStageProfiles();
+      if (store?.getTableWriteGeneration) {
+        stageProfilesCache.set(store, { key, at: Date.now(), value });
+        value.catch(() => stageProfilesCache.delete(store));
+      }
+      return value;
+    },
+    async buildNoodlerStageProfiles(): Promise<SlurpManagedStageProfile[]> {
       // A character in the audience has its own fan row with no source; it is not a Creator (0.3.0
       // report B: it showed as a second Creator with an appearance nobody could extract).
       const accounts = (await this.listNoodlerAccounts()).filter(

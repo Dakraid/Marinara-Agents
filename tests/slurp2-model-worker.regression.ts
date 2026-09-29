@@ -84,7 +84,9 @@ assert.match(messages, /workerContext: "present"/u);
 assert.match(followUps, /postponeScheduledFollowUp/u);
 // Replies to the player's own send are chat, not upkeep; only the scheduler's answers spend caps.
 assert.match(messages, /playerSend: input\.background !== true/u);
-assert.match(generation, /!input\.playerSend && !\(await claimSlurpModelBudget\(input\.db, budget, "dm_reply"\)\)/u);
-assert.match(generation, /input\.playerSend && !budget\.jobs\.dm_reply\.enabled/u, "the DM job switch still applies");
+// 0.3.6: the player's own chat is off the budget entirely (mode, job switch and caps).
+assert.match(generation, /const world = !input\.skipBudgetCap && !input\.playerSend;/u);
+assert.match(generation, /if \(world && !slurpModelWorkerAllows\(budget, context\)\)/u);
+assert.match(generation, /if \(world && !\(await claimSlurpModelBudget\(input\.db, budget, "dm_reply"\)\)\)/u);
 
 console.log("slurp2 model worker regression passed");

@@ -1,7 +1,7 @@
-import { ChevronRight, Loader2, RefreshCw, UsersRound } from "lucide-react";
+import { Loader2, RefreshCw, UsersRound } from "lucide-react";
 import { BackstagePageHeader, BackstageWizard } from "../../modules/settings/SlpSettingsKit";
 
-import { Field, NumberSetting, SettingsGroup, Toggle } from "../../modules/settings/SlpSettingsControls";
+import { Field, NumberSetting, SlpLazyFold, Toggle } from "../../modules/settings/SlpSettingsControls";
 import { SlurpSimulationSettings } from "./SlpSimulationPanel";
 import { SlurpFanTypesSettings } from "./SlpFanTypesPanel";
 import { SlurpAudienceConfigSettings, useSlurpEffectiveModelBudget } from "./SlpAudienceConfigPanel";
@@ -30,7 +30,6 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
     updatePatch,
     fanStatusQuery,
     refreshFans,
-    connectionsQuery,
     audiencePreset,
     audienceWizardOpen,
     setAudienceWizardOpen,
@@ -221,17 +220,16 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
         />
       </SettingAnchor>
 
-      <SettingsGroup
+      <SlpLazyFold
         title={t("ui.slurp.settings.audience.characterFansTitle", {
           defaultValue: "Character audience",
         })}
+        detail={t("ui.slurp.settings.audience.characterFansDetail", {
+          defaultValue: "Invite your Engine characters to read posts and join the audience.",
+        })}
+        settingKeys={["audienceCharacterGroupIds", "audienceCharacterLimit", "audienceCharacters"]}
       >
         <div className="space-y-4">
-          <p className="text-xs leading-5 text-[var(--muted-foreground)]">
-            {t("ui.slurp.settings.audience.characterFansDetail", {
-              defaultValue: "Invite your Engine characters to read posts and join the audience.",
-            })}
-          </p>
           <Field
             settingKey="audienceCharacterLimit"
             label={t("ui.slurp.settings.audience.characterLimit", {
@@ -388,229 +386,204 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
             </>
           )}
         </div>
-      </SettingsGroup>
+      </SlpLazyFold>
 
-      <details className="group rounded-xl bg-[var(--slurp-surface-raised)] ring-1 ring-inset ring-[var(--slurp-outline)]">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 px-4 py-2 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] [&::-webkit-details-marker]:hidden">
-          <span className="min-w-0 flex-1">
-            <span className="block">{t("ui.slurp.settings.audience.fanTypesTitle")}</span>
-            <span className="block text-xs font-normal text-[var(--muted-foreground)]">
-              {t("ui.slurp.settings.audience.fanTypesSummary", {
-                enabled: settings.fanTypes.filter((type) => type.enabled).length,
-                count: settings.fanTypes.length,
-              })}
-            </span>
-          </span>
-          <ChevronRight
-            size={17}
-            className="transition-transform group-open:rotate-90 rtl:rotate-180"
-            aria-hidden="true"
+      <SlpLazyFold
+        title={t("ui.slurp.settings.audience.fanTypesTitle")}
+        detail={t("ui.slurp.settings.audience.fanTypesSummary", {
+          enabled: settings.fanTypes.filter((type) => type.enabled).length,
+          count: settings.fanTypes.length,
+        })}
+        settingKeys={["allowRandomUsers", "audienceReactionBank", "fanTypes"]}
+      >
+        <SettingAnchor settingKey="allowRandomUsers">
+          <AmbientProfilesPanel
+            allowRandomUsers={settings.allowRandomUsers}
+            onAllowRandomUsersChange={(value) => update("allowRandomUsers", value)}
           />
-        </summary>
-        <div className="space-y-5 border-t border-[var(--slurp-outline)] p-4 sm:p-5">
-          <SettingAnchor settingKey="allowRandomUsers">
-            <AmbientProfilesPanel
-              allowRandomUsers={settings.allowRandomUsers}
-              onAllowRandomUsersChange={(value) => update("allowRandomUsers", value)}
-            />
-          </SettingAnchor>
-          <Field
-            settingKey="audienceReactionBank"
-            label={t("ui.slurp.settings.audience.reactionBank")}
-            detail={t("ui.slurp.settings.audience.reactionBankDetail", {
-              count: settings.audienceReactionBank.shared.length,
-            })}
-          >
-            <textarea
-              rows={6}
-              value={reactionBankDraft ?? settings.audienceReactionBank.shared.join("\n")}
-              onChange={(event) => setReactionBankDraft(event.target.value)}
-              onBlur={() => {
-                const draft = reactionBankDraft;
-                setReactionBankDraft(null);
-                if (draft === null) return;
-                // Same rules the server applies, so what the box shows after a save is
-                // what was actually stored rather than a list that silently lost rows.
-                const seen = new Set<string>();
-                const next: string[] = [];
-                for (const line of draft.split("\n")) {
-                  const body = line.trim().slice(0, 120);
-                  const key = body.toLowerCase();
-                  if (!body || seen.has(key) || next.length >= 400) continue;
-                  seen.add(key);
-                  next.push(body);
-                }
-                // The box edits the shared bank only; per-type banks have their own
-                // editor in the Fan Types panel.
-                if (next.join("\n") !== settings.audienceReactionBank.shared.join("\n"))
-                  void update("audienceReactionBank", {
-                    ...settings.audienceReactionBank,
-                    shared: next,
-                  });
-              }}
-              className="w-full rounded-lg border border-[var(--slurp-outline)] bg-[var(--slurp-canvas)] p-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 sm:text-sm"
-            />
-          </Field>
-          <SettingAnchor settingKey="fanTypes">
-            <SlurpFanTypesSettings
-              fanTypes={settings.fanTypes}
-              bankCounts={settings.audienceReactionBank.byType}
-              crowdTone={settings.audienceTone}
-              onSave={(fanTypes) => update("fanTypes", fanTypes)}
-            />
-          </SettingAnchor>
-        </div>
-      </details>
-
-      <details className="group rounded-xl bg-[var(--slurp-surface-raised)] ring-1 ring-inset ring-[var(--slurp-outline)]">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 px-4 py-2 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] [&::-webkit-details-marker]:hidden">
-          <span className="min-w-0 flex-1">
-            <span className="block">{t("ui.slurp.settings.audience.aiTitle")}</span>
-            <span className="block text-xs font-normal text-[var(--muted-foreground)]">
-              {t("ui.slurp.settings.audience.aiSummary")}
-            </span>
-          </span>
-          <ChevronRight
-            size={17}
-            className="transition-transform group-open:rotate-90 rtl:rotate-180"
-            aria-hidden="true"
-          />
-        </summary>
-        <div className="space-y-5 border-t border-[var(--slurp-outline)] p-4 sm:p-5">
-          <SettingAnchor settingKey="modelBudget">
-            <SlurpAudienceConfigSettings
-              tuning={settings.simulationTuning}
-              fanTypes={settings.fanTypes}
-              budget={settings.modelBudget}
-              postsPerDay={settings.postsPerDay}
-              connections={connectionsQuery.data ?? []}
-              onSave={(patch) => updatePatch(patch)}
-            />
-          </SettingAnchor>
-        </div>
-      </details>
-
-      <details className="group rounded-xl bg-[var(--slurp-surface-raised)] ring-1 ring-inset ring-[var(--slurp-outline)]">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 px-4 py-2 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] [&::-webkit-details-marker]:hidden">
-          <span className="min-w-0 flex-1">
-            <span className="block">{t("ui.slurp.settings.audience.advancedTitle")}</span>
-            <span className="block text-xs font-normal text-[var(--muted-foreground)]">
-              {t("ui.slurp.settings.audience.advancedDetail")}
-            </span>
-          </span>
-          <ChevronRight
-            size={17}
-            className="transition-transform group-open:rotate-90 rtl:rotate-180"
-            aria-hidden="true"
-          />
-        </summary>
-        <div className="space-y-5 border-t border-[var(--slurp-outline)] p-4 sm:p-5">
-          <Toggle
-            settingKey="fanActivityEnabled"
-            label={t("ui.slurp.settings.audience.enabled")}
-            detail={t("ui.slurp.settings.audience.enabledDetail")}
-            value={settings.fanActivityEnabled}
-            onChange={(value) => update("fanActivityEnabled", value)}
-          />
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field
-              settingKey="fanActivityRunsPerDay"
-              label={t("ui.slurp.settings.audience.runsPerDay")}
-              detail={
-                // The "Comment threads" AI budget caps the runs; say so instead of capping silently (R1-104).
-                settings.fanActivityRunsPerDay > effectiveBudget.jobs.thread.maxPerDay
-                  ? t("ui.slurp.settings.audience.runsPerDayCapped", {
-                      count: effectiveBudget.jobs.thread.maxPerDay,
-                      defaultValue:
-                        "Your AI budget allows {{count}} a day. Raise Comment threads under AI budget for more.",
-                    })
-                  : t("ui.slurp.settings.audience.runsPerDayDetail")
+        </SettingAnchor>
+        <Field
+          settingKey="audienceReactionBank"
+          label={t("ui.slurp.settings.audience.reactionBank")}
+          detail={t("ui.slurp.settings.audience.reactionBankDetail", {
+            count: settings.audienceReactionBank.shared.length,
+          })}
+        >
+          <textarea
+            rows={6}
+            value={reactionBankDraft ?? settings.audienceReactionBank.shared.join("\n")}
+            onChange={(event) => setReactionBankDraft(event.target.value)}
+            onBlur={() => {
+              const draft = reactionBankDraft;
+              setReactionBankDraft(null);
+              if (draft === null) return;
+              // Same rules the server applies, so what the box shows after a save is
+              // what was actually stored rather than a list that silently lost rows.
+              const seen = new Set<string>();
+              const next: string[] = [];
+              for (const line of draft.split("\n")) {
+                const body = line.trim().slice(0, 120);
+                const key = body.toLowerCase();
+                if (!body || seen.has(key) || next.length >= 400) continue;
+                seen.add(key);
+                next.push(body);
               }
-            >
-              <NumberSetting
-                value={settings.fanActivityRunsPerDay}
-                min={1}
-                max={96}
-                onSave={(value) => update("fanActivityRunsPerDay", value)}
-              />
-            </Field>
-            <Field settingKey="fanLikesPerRefresh" label={t("ui.slurp.settings.audience.likes")}>
-              <NumberSetting
-                value={settings.fanLikesPerRefresh}
-                min={0}
-                max={24}
-                onSave={(value) => update("fanLikesPerRefresh", value)}
-              />
-            </Field>
-            <Field settingKey="fanRepliesPerRefresh" label={t("ui.slurp.settings.audience.replies")}>
-              <NumberSetting
-                value={settings.fanRepliesPerRefresh}
-                min={0}
-                max={12}
-                onSave={(value) => update("fanRepliesPerRefresh", value)}
-              />
-            </Field>
-          </div>
+              // The box edits the shared bank only; per-type banks have their own
+              // editor in the Fan Types panel.
+              if (next.join("\n") !== settings.audienceReactionBank.shared.join("\n"))
+                void update("audienceReactionBank", {
+                  ...settings.audienceReactionBank,
+                  shared: next,
+                });
+            }}
+            className="w-full rounded-lg border border-[var(--slurp-outline)] bg-[var(--slurp-canvas)] p-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 sm:text-sm"
+          />
+        </Field>
+        <SettingAnchor settingKey="fanTypes">
+          <SlurpFanTypesSettings
+            fanTypes={settings.fanTypes}
+            bankCounts={settings.audienceReactionBank.byType}
+            crowdTone={settings.audienceTone}
+            onSave={(fanTypes) => update("fanTypes", fanTypes)}
+          />
+        </SettingAnchor>
+      </SlpLazyFold>
+
+      <SlpLazyFold
+        title={t("ui.slurp.settings.audience.aiTitle")}
+        detail={t("ui.slurp.settings.audience.aiSummary")}
+        settingKeys={["modelBudget"]}
+      >
+        <SettingAnchor settingKey="modelBudget">
+          <SlurpAudienceConfigSettings
+            tuning={settings.simulationTuning}
+            fanTypes={settings.fanTypes}
+            budget={settings.modelBudget}
+            postsPerDay={settings.postsPerDay}
+            onSave={(patch) => updatePatch(patch)}
+          />
+        </SettingAnchor>
+      </SlpLazyFold>
+
+      <SlpLazyFold
+        title={t("ui.slurp.settings.audience.advancedTitle")}
+        detail={t("ui.slurp.settings.audience.advancedDetail")}
+        settingKeys={[
+          "creatorRepliesPerDay",
+          "fanActivityEnabled",
+          "fanActivityRunsPerDay",
+          "fanArchetypeWeights",
+          "fanLikesPerRefresh",
+          "fanRepliesPerRefresh",
+          "simulationTuning",
+          "worldActivity",
+        ]}
+      >
+        <Toggle
+          settingKey="fanActivityEnabled"
+          label={t("ui.slurp.settings.audience.enabled")}
+          detail={t("ui.slurp.settings.audience.enabledDetail")}
+          value={settings.fanActivityEnabled}
+          onChange={(value) => update("fanActivityEnabled", value)}
+        />
+        <div className="grid gap-4 sm:grid-cols-3">
           <Field
-            settingKey="creatorRepliesPerDay"
-            label={t("ui.slurp.settings.audience.creatorRepliesPerDay", { defaultValue: "Creator replies per day" })}
-            detail={t("ui.slurp.settings.audience.creatorRepliesPerDayDetail", {
-              defaultValue:
-                "How many comments Creators answer in 24 hours, yours and your fans' together. When it runs out, they answer again the next day.",
-            })}
+            settingKey="fanActivityRunsPerDay"
+            label={t("ui.slurp.settings.audience.runsPerDay")}
+            detail={
+              // The "Comment threads" AI budget caps the runs; say so instead of capping silently (R1-104).
+              settings.fanActivityRunsPerDay > effectiveBudget.jobs.thread.maxPerDay
+                ? t("ui.slurp.settings.audience.runsPerDayCapped", {
+                    count: effectiveBudget.jobs.thread.maxPerDay,
+                    defaultValue:
+                      "Your AI budget allows {{count}} a day. Raise Comment threads under AI budget for more.",
+                  })
+                : t("ui.slurp.settings.audience.runsPerDayDetail")
+            }
           >
             <NumberSetting
-              value={settings.creatorRepliesPerDay}
+              value={settings.fanActivityRunsPerDay}
               min={1}
-              max={200}
-              onSave={(value) => update("creatorRepliesPerDay", value)}
+              max={96}
+              onSave={(value) => update("fanActivityRunsPerDay", value)}
             />
           </Field>
-          <SettingAnchor settingKey="worldActivity">
-            <ChoiceSetting
-              label={t("ui.slurp.settings.audience.activityTitle")}
-              detail={t("ui.slurp.settings.audience.activityDetail")}
-              options={(["off", "quiet", "normal", "busy"] as const).map((level) => ({
-                value: level,
-                label: t(`ui.slurp.settings.audience.activity.${level}`),
-              }))}
-              value={settings.worldActivity}
-              onChange={(level) => update("worldActivity", level)}
+          <Field settingKey="fanLikesPerRefresh" label={t("ui.slurp.settings.audience.likes")}>
+            <NumberSetting
+              value={settings.fanLikesPerRefresh}
+              min={0}
+              max={24}
+              onSave={(value) => update("fanLikesPerRefresh", value)}
             />
-          </SettingAnchor>
-          {/* ponytail: the global archetype mix stays a hidden stored field that the server still
-                          reads; drop it together with the per-Creator archetype UI. */}
-          {Object.values(settings.fanArchetypeWeights).some((weight) => weight !== 1) && (
-            <SettingAnchor settingKey="fanArchetypeWeights">
-              <div className="rounded-lg border border-[var(--border)] p-3 text-xs text-[var(--muted-foreground)]">
-                <p>{t("ui.slurp.settings.audience.legacyMix")}</p>
-                <button
-                  type="button"
-                  onClick={() =>
-                    void update(
-                      "fanArchetypeWeights",
-                      Object.fromEntries(Object.keys(settings.fanArchetypeWeights).map((key) => [key, 1])),
-                    )
-                  }
-                  className="mt-2 inline-flex min-h-10 items-center rounded-lg border border-[var(--border)] px-3 text-xs font-semibold hover:bg-[var(--accent)]"
-                >
-                  {t("ui.slurp.settings.audience.legacyMixReset")}
-                </button>
-              </div>
-            </SettingAnchor>
-          )}
-          {/* Every number the simulation runs on, in its own file. Keyed on the preset so an Activity click resets the local draft instead of saving stale tuning back. */}
-          <SettingAnchor settingKey="simulationTuning">
-            <SlurpSimulationSettings
-              key={settings.simulationTuning.preset}
-              tuning={settings.simulationTuning}
-              // The estimate caps AI fan runs by the budget row sized for today's Creators (merge L × F).
-              world={{ ...settings, modelBudget: effectiveBudget }}
-              onSave={(next) => void update("simulationTuning", next)}
+          </Field>
+          <Field settingKey="fanRepliesPerRefresh" label={t("ui.slurp.settings.audience.replies")}>
+            <NumberSetting
+              value={settings.fanRepliesPerRefresh}
+              min={0}
+              max={12}
+              onSave={(value) => update("fanRepliesPerRefresh", value)}
             />
-          </SettingAnchor>
+          </Field>
         </div>
-      </details>
+        <Field
+          settingKey="creatorRepliesPerDay"
+          label={t("ui.slurp.settings.audience.creatorRepliesPerDay", { defaultValue: "Creator replies per day" })}
+          detail={t("ui.slurp.settings.audience.creatorRepliesPerDayDetail", {
+            defaultValue:
+              "How many comments Creators answer in 24 hours, yours and your fans' together. When it runs out, they answer again the next day.",
+          })}
+        >
+          <NumberSetting
+            value={settings.creatorRepliesPerDay}
+            min={1}
+            max={200}
+            onSave={(value) => update("creatorRepliesPerDay", value)}
+          />
+        </Field>
+        <SettingAnchor settingKey="worldActivity">
+          <ChoiceSetting
+            label={t("ui.slurp.settings.audience.activityTitle")}
+            detail={t("ui.slurp.settings.audience.activityDetail")}
+            options={(["off", "quiet", "normal", "busy"] as const).map((level) => ({
+              value: level,
+              label: t(`ui.slurp.settings.audience.activity.${level}`),
+            }))}
+            value={settings.worldActivity}
+            onChange={(level) => update("worldActivity", level)}
+          />
+        </SettingAnchor>
+        {/* ponytail: the global archetype mix stays a hidden stored field that the server still
+                        reads; drop it together with the per-Creator archetype UI. */}
+        {Object.values(settings.fanArchetypeWeights).some((weight) => weight !== 1) && (
+          <SettingAnchor settingKey="fanArchetypeWeights">
+            <div className="rounded-lg border border-[var(--border)] p-3 text-xs text-[var(--muted-foreground)]">
+              <p>{t("ui.slurp.settings.audience.legacyMix")}</p>
+              <button
+                type="button"
+                onClick={() =>
+                  void update(
+                    "fanArchetypeWeights",
+                    Object.fromEntries(Object.keys(settings.fanArchetypeWeights).map((key) => [key, 1])),
+                  )
+                }
+                className="mt-2 inline-flex min-h-10 items-center rounded-lg border border-[var(--border)] px-3 text-xs font-semibold hover:bg-[var(--accent)]"
+              >
+                {t("ui.slurp.settings.audience.legacyMixReset")}
+              </button>
+            </div>
+          </SettingAnchor>
+        )}
+        {/* Every number the simulation runs on, in its own file. Keyed on the preset so an Activity click resets the local draft instead of saving stale tuning back. */}
+        <SettingAnchor settingKey="simulationTuning">
+          <SlurpSimulationSettings
+            key={settings.simulationTuning.preset}
+            tuning={settings.simulationTuning}
+            // The estimate caps AI fan runs by the budget row sized for today's Creators (merge L × F).
+            world={{ ...settings, modelBudget: effectiveBudget }}
+            onSave={(next) => void update("simulationTuning", next)}
+          />
+        </SettingAnchor>
+      </SlpLazyFold>
     </div>
   );
 }

@@ -6,11 +6,8 @@ import i18next from "i18next";
 import { Toaster } from "sonner";
 import { I18nextProvider, initReactI18next } from "react-i18next";
 import english from "./locales/en.json";
-import german from "./locales/de.json";
-import korean from "./locales/ko.json";
-import polish from "./locales/pl.json";
 import { SlpApp } from "./app/SlpApp";
-import { ApiError } from "../lib/api-client";
+import { api, ApiError } from "../lib/api-client";
 import { useSlurpUIStore } from "./base/state/slp-package-store";
 import { configureSlurpPackageState } from "./base/state/slp-package-store";
 import { ModalPortalContext } from "../components/ui/Modal";
@@ -39,13 +36,30 @@ void localization.use(initReactI18next).init({
   fallbackLng: "en",
   interpolation: { escapeValue: false },
   lng: "en",
-  resources: {
-    de: { translation: german },
-    en: { translation: english },
-    ko: { translation: korean },
-    pl: { translation: polish },
-  },
+  resources: { en: { translation: english } },
 });
+
+/**
+ * Only English ships inside client.js (0.3.6): the other catalogs were about 650 KB the app parsed on
+ * every start. They are package assets (`contributions.assets` in scripts/build-feature-packages.mjs),
+ * fetched once when the Engine asks for that language. Until one arrives, or if it fails, English shows.
+ */
+const SLP_LAZY_LOCALES = new Set(["de", "ko", "pl"]);
+let slpLanguageRequest = 0;
+async function applySlpLanguage(language: string) {
+  // A later switch wins: a slow catalog must not flip the app back to an older choice.
+  const request = ++slpLanguageRequest;
+  if (SLP_LAZY_LOCALES.has(language) && !localization.hasResourceBundle(language, "translation")) {
+    const bundle = await api
+      .get<Record<string, string>>(
+        `/capability-packages/slurp2/assets/src/engine/packages/client/src/slp/locales/${language}.json`,
+      )
+      .catch(() => null);
+    if (bundle) localization.addResourceBundle(language, "translation", bundle);
+  }
+  if (request !== slpLanguageRequest) return;
+  await localization.changeLanguage(localization.hasResourceBundle(language, "translation") ? language : "en");
+}
 
 type CapabilityElement = HTMLElement & {
   capabilityProps?: Record<string, unknown>;
@@ -129,6 +143,17 @@ const SLURP_TOAST_STYLES = `
  * (`SLP_IMG_FRAME_CLASS` / `slpImgFade` in base/chrome/SlpChrome.tsx).
  */
 const SLURP_SHELL_STYLES = `
+  /* The nav slides away: only the bottom bars that follow it (\`slp-nav-live\`) restyle. Setting
+     --slp-nav-live on the scroll root restyled every post in the feed on each flick (0.3.6). */
+  [data-slp-nav-hidden] .slp-nav-live { --slp-nav-live: 0px; }
+  /* Desktop only: off-screen feed cards skip restyles and layout (4 s → 1.5 s of restyling per scroll,
+     measured 0.3.9). Not on phones, where a fast flick outran it and showed half-black pages. An open
+     menu must not be clipped by the containment. */
+  @media (min-width: 1024px) {
+    [data-slurp-access-transition]:not([data-slp-menu-open]) {
+      content-visibility: auto; contain-intrinsic-size: auto 720px;
+    }
+  }
   .slp-page-scroll:not(:has(.slp-page-scroll))::after {
     content: ""; display: block; flex: none; height: var(--slp-nav-space, 0px);
   }
@@ -326,9 +351,7 @@ function SlurpPackageRoot({ element }: { element: CapabilityElement }) {
   }, [element]);
 
   useEffect(() => {
-    const language = requestedLanguage(element);
-    const supportedLanguages = new Set(Object.keys(localization.options.resources ?? {}));
-    void localization.changeLanguage(supportedLanguages.has(language) ? language : "en");
+    void applySlpLanguage(requestedLanguage(element));
   }, [element, revision]);
 
   return (

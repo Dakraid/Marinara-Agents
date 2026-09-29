@@ -121,7 +121,8 @@ export function useNearViewportSlurpMediaSrc(
   options: { eager?: boolean; width?: number; rootMargin?: string } = {},
 ) {
   const [nearViewport, setNearViewport] = useState(options.eager ?? false);
-  const rootMargin = options.rootMargin ?? "600px 0px";
+  // About two phone screens ahead: at 600 px a fast flick outran the fetch and showed empty frames (0.3.6).
+  const rootMargin = options.rootMargin ?? "1600px 0px";
   // React calls a ref callback with `null` when the node detaches. Returning early there left one
   // observer alive per card that unmounted before it ever entered the viewport.
   const observerRef = useRef<IntersectionObserver | null>(null);

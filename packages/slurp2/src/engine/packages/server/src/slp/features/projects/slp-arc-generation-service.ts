@@ -183,12 +183,12 @@ export async function generateSlurpArc(
           collab: slurpCollabPartners(collabs, creatorAccountId).find((entry) => entry.partnerId === id)?.content,
         });
     }
-    const workerContext = admissionMode.kind === "background" ? "background" : "present";
-    if (!slurpModelWorkerAllows(settings.modelBudget, workerContext)) return null;
-    // A storyline the world starts on its own is upkeep and follows the day's pace; one the player asks for is not.
-    if (workerContext === "background" && !(await slurpModelBudgetPaceOpen(db, settings.modelBudget, "arc")))
-      return null;
-    if (!(await claimSlurpModelBudget(db, settings.modelBudget, "arc"))) return null;
+    // A storyline the world starts on its own is upkeep: the budget's mode, pace and caps apply. One the
+    // player asks for (the routes pass foreground) never spends the budget (0.3.6).
+    const world = admissionMode.kind === "background";
+    if (world && !slurpModelWorkerAllows(settings.modelBudget, "background")) return null;
+    if (world && !(await slurpModelBudgetPaceOpen(db, settings.modelBudget, "arc"))) return null;
+    if (world && !(await claimSlurpModelBudget(db, settings.modelBudget, "arc"))) return null;
     const connections = createConnectionsStorage(db);
     const connection = await resolveSlurpTextConnection(
       connections,
@@ -263,7 +263,7 @@ export async function generateSlurpArc(
     } catch (firstError) {
       // One retry with the shape spelled out, same as the stage profile draft.
       const answer = modelAnswerForCorrection(response.content);
-      if (!(await claimSlurpModelBudget(db, settings.modelBudget, "arc"))) return null;
+      if (world && !(await claimSlurpModelBudget(db, settings.modelBudget, "arc"))) return null;
       const retry = await provider.chatComplete(
         [
           ...messages,

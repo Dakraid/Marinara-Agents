@@ -74,6 +74,7 @@ export async function slpStirRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
         app.db,
         request,
         viewer ? (account) => creatorBelongsToViewer(account as never, viewer) : undefined,
+        "player",
       );
       return outcome.ok ? outcome.value : reply.code(outcome.status).send({ error: outcome.error });
     });

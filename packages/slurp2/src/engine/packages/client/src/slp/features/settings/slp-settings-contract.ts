@@ -76,6 +76,7 @@ export type SlurpSettings = {
   generationConnectionId: string | null;
   imageContextMode: "auto" | "imagePrompt" | "vision";
   imageContextConnectionId: string | null;
+  pageConnectionId: string | null;
   imagePromptConnectionId: string | null;
   imageStyleProfileId: string | null;
   imageGenerationPrompt: string;

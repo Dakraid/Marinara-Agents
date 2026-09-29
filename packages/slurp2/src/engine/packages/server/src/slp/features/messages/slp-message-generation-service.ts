@@ -704,13 +704,11 @@ export async function generateSlurpMessageReply(input: SlurpMessagePromptInput):
   const support = input.viewer.id === SLURP_SUPPORT_ACCOUNT_ID;
   const budget = (await createSlurpStorage(input.db).getSettings()).modelBudget;
   const context = input.workerContext ?? "present";
-  if (!input.skipBudgetCap && !slurpModelWorkerAllows(budget, context))
-    throw new SlurpMessageBudgetUnavailableError(null);
-  // A reply to the player's own send is chat, not upkeep: the mode and the DM job switch still
-  // apply, the caps do not. Counting it let four messages an hour stall a conversation.
-  if (!input.skipBudgetCap && input.playerSend && !budget.jobs.dm_reply.enabled)
-    throw new SlurpMessageBudgetUnavailableError(null);
-  if (!input.skipBudgetCap && !input.playerSend && !(await claimSlurpModelBudget(input.db, budget, "dm_reply")))
+  // A reply to the player's own send is chat, not upkeep: the AI budget (mode, job switch, caps) is
+  // only for the world's own messages (0.3.6). Counting it let four messages an hour stall a chat.
+  const world = !input.skipBudgetCap && !input.playerSend;
+  if (world && !slurpModelWorkerAllows(budget, context)) throw new SlurpMessageBudgetUnavailableError(null);
+  if (world && !(await claimSlurpModelBudget(input.db, budget, "dm_reply")))
     throw new SlurpMessageBudgetUnavailableError(await slurpModelBudgetRetryAtNow(input.db, budget, "dm_reply"));
   const connections = createConnectionsStorage(input.db);
   const fallbackConnection = await connections.getFallbackForMain();

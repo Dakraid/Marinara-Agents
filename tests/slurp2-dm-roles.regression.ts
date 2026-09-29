@@ -404,7 +404,10 @@ const keptSupport = slpSceneThreadMessages({
     /asSupport: parsed\.data\.asSupport === true/u,
   );
   assert.match(read("client/src/slp/features/messages/SlpMessages.tsx"), /startAsSupport=\{startAsSupport\}/u);
-  assert.match(read("client/src/slp/features/messages/SlpThreadHeader.tsx"), /setSupportChoice\(!asSupport\)/u);
+  // 0.3.6: a persona chat can switch to Support; Support's own thread is a console with no way back.
+  const header = read("client/src/slp/features/messages/SlpThreadHeader.tsx");
+  assert.match(header, /setSupportChoice\(true\)/u);
+  assert.match(header, /const canSwitchVoice = Boolean\([^)]*&& !asSupport\);/u);
 }
 
 // 7c M-001. Payment markers (the exact strings `reactToSlurpPayment` stores as the payer's text line)

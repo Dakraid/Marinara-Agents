@@ -72,12 +72,6 @@ export function useSlurpAdState(personaId: string | null) {
     enabled: Boolean(personaId),
   });
 }
-export function useSlurpAdPool() {
-  return useQuery({
-    queryKey: slpKeys.adPool(),
-    queryFn: () => api.get<{ items: SlurpPromotion[] }>(`/slurp2/slurp/ads/pool`),
-  });
-}
 export function useGenerateSlurpAds() {
   const qc = useQueryClient();
   return useMutation({

@@ -19,7 +19,7 @@ import { SLP_SPICE_LEVELS } from "../../../../../shared/src/slp/slp-spice.js";
 import type { SlpActionPreview, SlpStirView } from "../../../../../shared/src/slp/slp-stir.js";
 import { SlpTextAssist } from "../assist/slp-assist-contract";
 import { useSlurpStirPreview } from "./slp-stir-hooks";
-import { SlpStirCard, useSlpStirDoIt } from "./SlpStirCards";
+import { SlpStirCard, slpStirCantLine, useSlpStirDoIt } from "./SlpStirCards";
 import { SlpStirDeskFields } from "./SlpStirDeskFields";
 import { SlpStirBrandPick } from "./SlpStirBrandPick";
 import { Choice, CreatorPicker } from "./SlpStirFormParts";
@@ -134,6 +134,8 @@ export function SlpStirPlaySheet({
   const textId = useId();
   const [form, setForm] = useState<Form>({});
   const [cards, setCards] = useState<SlpActionPreview[] | null>(null);
+  // Why a step made no card, so an empty sheet never leaves "Do it" greyed out without a word.
+  const [cant, setCant] = useState<string[]>([]);
   const preview = useSlurpStirPreview();
   const doIt = useSlpStirDoIt();
   useEffect(() => {
@@ -599,8 +601,14 @@ export function SlpStirPlaySheet({
   const onPreview = () =>
     step &&
     preview.mutate([{ action, input: step }], {
-      onSuccess: (answer) => setCards(answer.cards),
-      onError: () => setCards([]),
+      onSuccess: (answer) => {
+        setCant(answer.cant);
+        setCards(answer.cards);
+      },
+      onError: () => {
+        setCant([]);
+        setCards([]);
+      },
     });
 
   return (
@@ -651,6 +659,11 @@ export function SlpStirPlaySheet({
           <ul className="space-y-2">
             {cards.map((card, index) => (
               <SlpStirCard key={`${card.action}:${index}`} card={card} />
+            ))}
+            {cant.map((line, index) => (
+              <li key={`${index}:${line}`} className={cn(SLP_TYPE.meta, "px-1 text-[var(--slurp-muted)]")}>
+                {slpStirCantLine(t, line)}
+              </li>
             ))}
             {preview.error && (
               <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-danger)]")}>{errorMessage(preview.error)}</p>

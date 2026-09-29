@@ -104,10 +104,11 @@ export function useCreatorViewer(personaId: string | null, enabled = true) {
     enabled: enabled && Boolean(personaId),
     staleTime: 30_000,
     gcTime: 10 * 60_000,
-    // The feed keeps itself fresh (there is no refresh button): every 30 s while the tab is visible,
-    // and on focus (the Slurp query client's default), like creators and notifications. New posts
-    // wait behind the Hub's "New posts" pill, so a poll never moves what the reader is looking at.
-    refetchInterval: enabled && personaId ? 30_000 : false,
+    // The feed keeps itself fresh (there is no refresh button): on focus (the Slurp query client's
+    // default), and whenever the cheap unseen-count poll sees new posts (`useCreatorUnseenCount`), with
+    // a slow poll behind that. New posts wait behind the Hub's "New posts" pill, so a refresh never
+    // moves what the reader is looking at. The full feed every 30 s was the Hub's heaviest cost (0.3.6).
+    refetchInterval: enabled && personaId ? 180_000 : false,
     refetchIntervalInBackground: false,
   });
   const loadMore = async () => {
@@ -192,9 +193,9 @@ export function useCreatorUnseenCount(personaId: string | null, enabled = true) 
       api.get<{ count: number }>(`/slurp2/slurp/viewer/unseen-count?personaId=${encodeURIComponent(personaId!)}`),
     enabled: enabled && Boolean(personaId),
     staleTime: 10_000,
-    // The unseen-count poll already announces new posts; the full page only needs a slow refresh.
-    // ponytail: fixed 2-minute poll; refetch on a count change if that feels stale.
-    refetchInterval: enabled && personaId ? 120_000 : false,
+    // The one fast poll on the Hub: a count, cached by the accounts write generation on the server.
+    // A higher count refreshes the feed and the Creators below.
+    refetchInterval: enabled && personaId ? 30_000 : false,
     refetchIntervalInBackground: false,
   });
   const count = Math.max(0, Math.floor(data?.count ?? 0));
@@ -210,7 +211,10 @@ export function useCreatorUnseenCount(personaId: string | null, enabled = true) 
       previousCount.current = count;
       return;
     }
-    if (count > previousCount.current) void qc.invalidateQueries({ queryKey: slpKeys.viewer(personaId) });
+    if (count > previousCount.current) {
+      void qc.invalidateQueries({ queryKey: slpKeys.viewer(personaId) });
+      void qc.invalidateQueries({ queryKey: slpKeys.noodlerAccounts() });
+    }
     previousCount.current = count;
   }, [count, enabled, personaId, qc]);
   return count;

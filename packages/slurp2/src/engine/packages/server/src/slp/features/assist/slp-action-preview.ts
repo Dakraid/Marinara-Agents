@@ -7,7 +7,6 @@ import type { DB } from "../../../db/connection.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { readSlurpCreatorSteering } from "../../data/creators/slp-steering-storage.js";
 import { readSlurpSpice } from "../../data/creators/slp-spice-storage.js";
-import { slurpModelWorkerAllows } from "../../base/model/slp-model-worker.js";
 import {
   isSlurpTieLever,
   previewSlurpTieLever,
@@ -266,11 +265,7 @@ async function previewOther(
     case "run-audience": {
       const settings = await storage.getSettings();
       return {
-        error: !slurpModelWorkerAllows(settings.modelBudget, "present")
-          ? "aiOff"
-          : settings.fanActivityEnabled
-            ? null
-            : "audienceOff",
+        error: settings.fanActivityEnabled ? null : "audienceOff",
         summary: "The fans like, comment and reply now.",
       };
     }

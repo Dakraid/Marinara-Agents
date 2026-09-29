@@ -75,7 +75,8 @@ assert.match(
 );
 assert.match(
   readSlurp2Source("server", "features/projects/slp-arc-generation-service.ts"),
-  /workerContext === "background" && !\(await slurpModelBudgetPaceOpen\(db, settings\.modelBudget, "arc"\)\)/u,
+  // 0.3.6: only a world storyline is paced and counted; the player's request never is.
+  /if \(world && !\(await slurpModelBudgetPaceOpen\(db, settings\.modelBudget, "arc"\)\)\) return null;/u,
 );
 
 // R1-073: fans see Hinted Creators' storylines; the linked name never reaches them.
@@ -111,8 +112,8 @@ const long = cleanSlpFanVoiceDraft(`${"Short, warm comments about the post. ".re
 assert.ok(long.length <= 600 && long.endsWith("."), "cut at a sentence, inside the field limit");
 assert.throws(() => slpFanVoiceDraftSchema.parse({ ...voiceInput, extra: 1 }), "strict body");
 const voiceService = readSlurp2Source("server", "features/audience/slp-fan-voice-draft-service.ts");
-assert.match(voiceService, /claimSlurpModelBudget\(db, settings\.modelBudget, "fan_type_voice"\)/u);
-assert.match(voiceService, /slurpModelWorkerAllows\(settings\.modelBudget, "present"\)/u);
+// 0.3.6: "Draft voice" is the player's tap: the budget's connection, never its mode or caps.
+assert.doesNotMatch(voiceService, /claimSlurpModelBudget|slurpModelWorkerAllows/u);
 assert.match(
   readSlurp2Source("client", "features/audience/SlpFanTypesPanel.tsx"),
   /"\/slurp2\/fan-types\/voice-draft"/u,

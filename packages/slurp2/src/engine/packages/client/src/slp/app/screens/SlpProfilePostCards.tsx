@@ -1,5 +1,6 @@
 import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SlurpProfileMediaTile } from "./SlpScreenProfile";
+import { useSlpDrawnCount } from "../../base/ui/slp-drawn-count";
 import { Images, Loader2, PenLine, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSlpStoryRings } from "../../modules/story/SlpStoryRing";
@@ -62,6 +63,7 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
     viewingOwnCreator,
     visiblePosts,
   } = model;
+  const drawnPostCount = useSlpDrawnCount(visiblePosts.length);
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
   // A ringed avatar asked for this Creator's Stories (the hero, or a tap elsewhere that led here).
   const { pending: pendingStories, taken: storiesTaken, startOf: storyStartOf } = useSlpStoryRings();
@@ -271,7 +273,7 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
         // Raised cards with the shared gap, like the feed (locked posts were already cards here).
         <div className={cn(SLP_CARD_STACK_CLASS, "px-3 pt-4 @min-[680px]:px-0")}>
           {showPaywall && <SlpPaywallCard model={model} />}
-          {visiblePosts.map((item) => {
+          {visiblePosts.slice(0, drawnPostCount).map((item) => {
             const itemId = item.kind === "locked" || item.kind === "controller-locked" ? item.post.id : item.model.id;
             const locked = item.kind === "locked" || item.kind === "controller-locked";
             return (
@@ -359,6 +361,7 @@ export function SlpProfilePostCards({ model }: { model: StageProfileViewModel })
               </SlurpAccessTransition>
             );
           })}
+          {drawnPostCount < visiblePosts.length && <SlpSkeleton shape="posts" count={1} />}
         </div>
       ) : activeTab === "posts" && posts.length === 0 ? (
         // Nobody has posted here yet: say who, and offer the one useful next step.

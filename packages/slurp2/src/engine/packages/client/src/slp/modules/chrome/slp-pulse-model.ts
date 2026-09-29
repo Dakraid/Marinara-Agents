@@ -117,3 +117,27 @@ export function slpPulseComingUp(
 export function slpPulseSummaryCounts(counts: Record<PulseSection | "next", number>) {
   return (["running", "queued", "failed", "next"] as const).filter((key) => counts[key] > 0);
 }
+
+/** Server tasks still running: Pulse polls fast only while there are any (0.3.6). */
+export const slpPulseRunningCount = (tasks: readonly PulseServerTask[] = []) =>
+  tasks.filter((task) => slpPulseServerSection(task.status, slpPulseTaskDone(task.status)) === "running").length;
+
+/** A status that ends a task: it moves to "Recent". */
+export function slpPulseTaskDone(status: string) {
+  return new Set([
+    "completed",
+    "complete",
+    "success",
+    "failed",
+    "error",
+    "abandoned",
+    "published",
+    "discarded",
+    "sent",
+    "cancelled",
+    // A Stir play taken back with Undo (task C).
+    "undone",
+    // A fan run that found nothing to do ends as "skipped"; Pulse showed it "Working" forever (R1-103).
+    "skipped",
+  ]).has(status);
+}

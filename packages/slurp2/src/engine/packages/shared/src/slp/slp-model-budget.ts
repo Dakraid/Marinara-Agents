@@ -16,6 +16,13 @@ export const SLURP_MODEL_JOB_KINDS = [
   "page",
 ] as const;
 export type SlurpModelJobKind = (typeof SLURP_MODEL_JOB_KINDS)[number];
+/**
+ * The kinds the world spends on its own (0.3.6). `assist`, `fan_type_voice` and `schedule` only ever run
+ * when the player presses a button, so they never touch the budget and have no row in Settings.
+ */
+export const SLURP_WORLD_JOB_KINDS = SLURP_MODEL_JOB_KINDS.filter(
+  (kind) => kind !== "assist" && kind !== "fan_type_voice" && kind !== "schedule",
+);
 export type SlurpModelWorkerContext = "present" | "background";
 
 const jobPolicy = (priority: number, maxPerDay: number) =>

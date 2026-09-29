@@ -187,6 +187,8 @@ export const slurpSettingsSchema = z.object({
   imageContextMode: z.enum(["auto", "imagePrompt", "vision"]),
   /** Describes pictures for image context. Null uses the Creator text connection. */
   imageContextConnectionId: z.string().nullable(),
+  /** Builds Creator Pages (a long structured answer); null = the AI writing connection. */
+  pageConnectionId: z.string().nullable().default(null),
   /** The LLM connection that enhances picture prompts; null = Slurp's text connection. */
   imagePromptConnectionId: z.string().nullable(),
   /**
@@ -531,6 +533,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   generationConnectionId: null,
   imageContextMode: "auto",
   imageContextConnectionId: null,
+  pageConnectionId: null,
   imagePromptConnectionId: null,
   imageStyleProfileId: null,
   imageGenerationPrompt: SLP_CREATOR_DEFAULT_IMAGE_GENERATION_PROMPT,

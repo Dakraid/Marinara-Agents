@@ -173,12 +173,18 @@ export async function refreshAllCreatorsNow(db: DB): Promise<SlpCreatorRefreshNo
     prioritized,
     MAX_CONCURRENT_MANUAL_REFRESH,
     async (account): Promise<SlpCreatorRefreshNowOutcome> => {
-      const result = await generateAndApplyCreatorPost(db, {
-        mode: "noodler",
-        targetAccountId: account.id,
-        format: "caption",
-        access: await resolveSlurpAutomaticPostAccess(noodle, account.id),
-      });
+      // "Refresh now" is the player's tap: foreground, so its pictures are off the AI budget (0.3.6).
+      const result = await generateAndApplyCreatorPost(
+        db,
+        {
+          mode: "noodler",
+          targetAccountId: account.id,
+          format: "caption",
+          access: await resolveSlurpAutomaticPostAccess(noodle, account.id),
+        },
+        undefined,
+        { kind: "foreground" },
+      );
       // "disabled"/"busy" are no-op refreshes, not failures; surface them as skipped so the
       // client doesn't lump a busy creator in with a real generation/connection failure.
       const status = result.status === "disabled" || result.status === "busy" ? "skipped" : result.status;
@@ -220,7 +226,8 @@ export async function refreshTargetedCreatorsNow(
           db,
           { mode: "noodler", targetAccountId: accountId, format: "caption", access, executionId },
           undefined,
-          undefined,
+          // "Create posts now" is the player's tap: its pictures are off the AI budget (0.3.6).
+          { kind: "foreground" },
           // The player pressed "Create posts now" and counts feed posts. A Story never reaches the feed,
           // so a batch that landed on a Story slot looked like one post had gone missing.
           { allowStory: false },

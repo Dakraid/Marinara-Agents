@@ -75,7 +75,8 @@ assert.doesNotMatch(entry, /\[data-slp-whole\] \.slp-crop-top/u, "banners keep f
 const chrome = client("base/chrome/SlpChrome.tsx");
 assert.match(
   chrome,
-  /classList\.contains\(SLP_CROP_CLASS\)\)\s*image\.toggleAttribute\(\s*"data-slp-cut",\s*slpPreviewIsCut\(image\.naturalWidth, image\.naturalHeight, image\.clientWidth, image\.clientHeight\)/u,
+  // 0.3.7: measured in the once-per-frame flush (reads first, then the marks), still from real sizes.
+  /classList\.contains\(SLP_CROP_CLASS\)\s*\?\s*slpPreviewIsCut\(image\.naturalWidth, image\.naturalHeight, image\.clientWidth, image\.clientHeight\)/u,
   "the mark follows the real picture and frame sizes",
 );
 assert.match(chrome, /Math\.abs\(Math\.log\(naturalWidth \/ naturalHeight \/ \(boxWidth \/ boxHeight\)\)\) > 0\.04/u);

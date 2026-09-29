@@ -37,16 +37,12 @@ export function SlpDeskStamp({ label, tone = "ok" }: { label: string; tone?: "ok
   );
 }
 
-/** The name over a Support line: a headset and "Staff", so it never reads as the persona. */
+/** The name over a Support line: a headset, so it never reads as the persona. */
 export function SlpDeskStaffLabel({ name }: { name: string }) {
-  const { t } = useTranslation();
   return (
     <p className="flex items-center gap-1.5 px-2 text-xs font-semibold text-[var(--slurp-muted)]">
       <Headset size={12} aria-hidden="true" />
       {name}
-      <span className="rounded-full bg-[var(--slurp-surface)] px-1.5 text-[10px] font-bold leading-4 text-[var(--slurp-text)]">
-        {t("ui.slurp.desk.staff", { defaultValue: "Staff" })}
-      </span>
     </p>
   );
 }

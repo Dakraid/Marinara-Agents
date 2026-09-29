@@ -177,6 +177,46 @@ export function RangeSetting({
   );
 }
 
+/**
+ * A fold that draws its body only while open (0.3.6): a closed `<details>` still mounted every control
+ * inside, so a long settings page paid for all of them on every visit. `settingKeys` names the anchors
+ * inside, so a search result can open the fold (`focusSettingAnchor`).
+ */
+export function SlpLazyFold({
+  title,
+  detail,
+  settingKeys,
+  children,
+}: {
+  title: string;
+  detail?: ReactNode;
+  settingKeys: readonly SlpSettingKey[];
+  children: ReactNode;
+}) {
+  // Drawn on first open and kept: a panel with unsaved local edits (a fan type draft) survives a close.
+  const [seen, setSeen] = useState(false);
+  return (
+    <details
+      data-setting-keys={settingKeys.join(" ")}
+      onToggle={(event) => event.currentTarget.open && setSeen(true)}
+      className="group rounded-xl bg-[var(--slurp-surface-raised)] ring-1 ring-inset ring-[var(--slurp-outline)]"
+    >
+      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 px-4 py-2 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] [&::-webkit-details-marker]:hidden">
+        <span className="min-w-0 flex-1">
+          <span className="block">{title}</span>
+          {detail && <span className="block text-xs font-normal text-[var(--muted-foreground)]">{detail}</span>}
+        </span>
+        <ChevronRight
+          size={17}
+          className="transition-transform group-open:rotate-90 rtl:rotate-180 motion-reduce:transition-none"
+          aria-hidden="true"
+        />
+      </summary>
+      {seen && <div className="space-y-5 border-t border-[var(--slurp-outline)] p-4 sm:p-5">{children}</div>}
+    </details>
+  );
+}
+
 /** One label, two numbers: a lower and an upper bound side by side, "to" between them. */
 export function RangePairField({
   label,

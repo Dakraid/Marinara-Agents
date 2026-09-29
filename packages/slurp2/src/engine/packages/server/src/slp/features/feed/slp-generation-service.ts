@@ -679,6 +679,7 @@ export async function generateCreatorPost(
       db,
       debugMode,
       admissionMode: input.admissionMode,
+      playerAsked: input.admissionMode?.kind === "foreground", // only request routes pass it (0.3.6)
       negativePromptAdditions: negativePrompt,
       story: storyVariation,
     };

@@ -10,7 +10,6 @@ import {
   SLURP_DISCOVERY_GENDERS,
 } from "../../modules/discovery/slp-discovery-profile.js";
 import { z } from "zod";
-import { claimSlurpModelBudget, slurpModelWorkerAllows } from "../../base/model/slp-model-worker.js";
 import { resolveSlurpTextConnection } from "../../base/identity/slp-connection.js";
 import { generateSlurpConversationSchedule } from "../messages/slp-messages-contract.js";
 import { slurpPlatformScaleMultiplier } from "../../../../../shared/src/slp/slp-scale.js";
@@ -180,16 +179,12 @@ export async function slpCreatorsRoutes(app: FastifyInstance, deps: SlpRouteDeps
     const character = await characters.getById(source.entityId);
     if (!character) return reply.code(404).send({ error: "Linked Engine character not found." });
     const scheduleSettings = await noodle.getSettings();
-    // The AI budget's "Creator schedules" row: its mode, connection and daily cap apply (R1-107).
-    if (!slurpModelWorkerAllows(scheduleSettings.modelBudget, "present"))
-      return reply.code(409).send({ error: "The AI budget is off. Turn it on under Audience → AI budget." });
+    // The player pressed it: the AI budget's connection applies, never its mode or caps (0.3.6).
     const connection = await resolveSlurpTextConnection(
       connections,
       scheduleSettings.modelBudget.connectionId ?? scheduleSettings.generationConnectionId,
     );
     if (!connection) return reply.code(409).send({ error: "Select a text generation connection first." });
-    if (!(await claimSlurpModelBudget(app.db, scheduleSettings.modelBudget, "schedule")))
-      return reply.code(429).send({ error: "Today's AI budget for Creator schedules is used up." });
     const data = (typeof character.data === "string" ? JSON.parse(character.data) : character.data) as Record<
       string,
       unknown

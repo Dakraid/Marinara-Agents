@@ -4,9 +4,12 @@
 import { isSlpActionName, SLP_ACTION_META, type SlpActionName } from "../../../../../shared/src/slp/slp-actions.js";
 import type { SlpStirPlay, SlpStirStep } from "../../../../../shared/src/slp/slp-stir.js";
 
-/** A step Stir may run: a deck lever. Writing help and pictures stay in their own fields. */
+/**
+ * A step Stir may run: a deck lever or a Support desk tool (the desk opens its tools in the same play
+ * sheet). Writing help and pictures stay in their own fields.
+ */
 export const isSlpStirPlayAction = (name: string): name is SlpActionName =>
-  isSlpActionName(name) && SLP_ACTION_META[name].deck;
+  isSlpActionName(name) && (SLP_ACTION_META[name].deck || SLP_ACTION_META[name].category === "desk");
 
 /**
  * The input a play runs with: never a dry run. `preview` belongs to outside helpers (Mari, the brand
