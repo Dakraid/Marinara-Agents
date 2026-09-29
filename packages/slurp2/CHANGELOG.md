@@ -1,5 +1,25 @@
 # Slurp release notes
 
+## 0.3.5 — 2026-09-29
+
+Support desk, polyamory, character names in pictures. Design: `docs/SUPPORT-DESK.md`.
+
+- Support is no fan: each Creator gets a desk record (trust, suspicion and the risk of being caught, badges, feature or throttle, favours, a challenge, a contract, a ticket, leaving). Support is always "Slurp Support".
+- Stir gets a Support desk and eight desk actions; Support threads leave persona inboxes. Support chats get offers the Creator answers, perks, warnings, rumours, private notes and a ticket bar.
+- The world clock runs the desk on templates. New Settings › Stir.
+- Polyamory (off by default): couples of up to four, polyamorous Creators in several couples; each Creator is monogamous or polyamorous.
+- Pictures of a known character lead with their card name ("The image model knows this character", on by default); the enhancer learns who they are. See `docs/IMAGE-PROMPTS.md`.
+- Fixes: persona switcher hidden on desktop; Inbox badge disagreed with Messages; Inbox listed only three chats.
+
+## 0.3.4 — 2026-09-29
+
+Creator Pages, and Stir built out.
+
+- Profiles get a Page above the posts: six looks and ten blocks (quote, now, collage, list, this or that, Q&A, facts, prices, people, latest poll). It stores only choices and words; pictures, prices, facts, people and polls come from real data, and locked posts only appear as the server's teaser.
+- New character Creators design their own Page on a later open; any Creator can be asked to (one AI call, new "Creator pages" budget row) or the player builds it. A week-old AI Page may refresh after real news; a player's Page never changes by itself.
+- Stir: new levers (storyline, crossover, tip goal, new look, events), Recent plays with Undo that stays safe when the world moved on, steering what is in play, and suggestions of who would click.
+- Fixes: brand deals marked done too early, events started twice, plays twice in Pulse, lost Undo answers, Polish plurals, accessibility.
+
 ## 0.3.3 — 2026-09-29
 
 - Renamed from Slurp Remastered to Slurp. The Home tab reads "Slurp" without the trailing period.

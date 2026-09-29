@@ -10,8 +10,21 @@
  * ("Action layer").
  */
 import { z } from "zod";
-import { SLP_STEERING_MOODS, SLP_STEERING_PACES, SLP_STEERING_TEXT_MAX } from "./slp-creator-steering.js";
+import {
+  SLP_RELATIONSHIP_STYLES,
+  SLP_STEERING_MOODS,
+  SLP_STEERING_PACES,
+  SLP_STEERING_TEXT_MAX,
+} from "./slp-creator-steering.js";
 import { SLP_SPICE_LEVELS } from "./slp-spice.js";
+import {
+  SLP_DESK_BADGES,
+  SLP_DESK_CHALLENGE_METRICS,
+  SLP_DESK_COINS_MAX,
+  SLP_DESK_FEATURE_DAYS_MAX,
+  SLP_DESK_PERKS,
+  SLP_DESK_THROTTLE_DAYS_MAX,
+} from "./slp-support-desk.js";
 
 /**
  * The text fields the assist can write or improve, with what the model is told the field is, who
@@ -66,6 +79,14 @@ const context = z.string().trim().max(2000).optional();
 const textInput = z
   .object({ field: z.enum(SLP_ASSIST_FIELD_NAMES), accountId: accountId.optional(), note, context })
   .strict();
+
+/** A Slurp perk (docs/SUPPORT-DESK.md): a Discover feature, a badge or a coin bonus. */
+const deskPerkSchema = z.object({
+  perk: z.enum(SLP_DESK_PERKS),
+  badge: z.enum(SLP_DESK_BADGES).optional(),
+  coins: z.number().int().min(1).max(SLP_DESK_COINS_MAX).optional(),
+  days: z.number().int().min(1).max(SLP_DESK_FEATURE_DAYS_MAX).optional(),
+});
 
 export const SLP_ACTIONS = {
   "write-text": {
@@ -153,11 +174,13 @@ export const SLP_ACTIONS = {
       push: "Topics to bring up more.",
       avoid: "Topics to leave out.",
       pace: `One of: ${SLP_STEERING_PACES.join(", ")}.`,
+      relationshipStyle: `One of: ${SLP_RELATIONSHIP_STYLES.join(", ")}, or null to read it from their card (polyamory).`,
     },
     schema: z
       .object({
         accountId,
         mood: z.enum(SLP_STEERING_MOODS).nullable().optional(),
+        relationshipStyle: z.enum(SLP_RELATIONSHIP_STYLES).nullable().optional(),
         lifePhase: z.string().trim().max(SLP_STEERING_TEXT_MAX).optional(),
         focus: z.string().trim().max(SLP_STEERING_TEXT_MAX).optional(),
         push: z.array(z.string().trim().min(1).max(40)).max(6).optional(),
@@ -300,6 +323,58 @@ export const SLP_ACTIONS = {
       })
       .strict(),
   },
+  // ─── 0.3.1: new world levers over systems that already exist (storylines, goals, looks, events). ──
+  "start-storyline": {
+    summary:
+      "Give a Creator a new storyline: what they go through over the next posts (training for a marathon, a move abroad). With withIds it is a crossover the others share.",
+    inputs: {
+      accountId: "The Creator.",
+      title: "The storyline in a few words, in the player's words.",
+      direction: "Where it should go, one short line (optional).",
+      withIds: "One or two more Creators who share it (optional).",
+    },
+    schema: z
+      .object({
+        accountId,
+        title: z.string().trim().min(1).max(80),
+        direction: z.string().trim().max(300).optional(),
+        withIds: z.array(accountId).max(2).optional(),
+      })
+      .strict(),
+  },
+  "set-tip-goal": {
+    summary: "Open a tip goal for a Creator: something they ask their fans to help pay for (a new camera).",
+    inputs: { accountId: "The Creator.", label: "What it is for.", target: "How many coins it needs." },
+    schema: z
+      .object({
+        accountId,
+        label: z.string().trim().min(1).max(80),
+        target: z.number().int().min(1).max(1_000_000),
+      })
+      .strict(),
+  },
+  "new-look": {
+    summary:
+      "Change how a Creator looks from now on (pink hair, a tattoo, a new style). Their pictures show it; the rest of their look stays.",
+    inputs: { accountId: "The Creator.", change: "What changes, one short line." },
+    schema: z.object({ accountId, change: z.string().trim().min(1).max(300) }).strict(),
+  },
+  "invent-event": {
+    summary:
+      "Make up a Slurp event in the player's words and start it now (a heatwave, Slurp is down, a dance challenge). Every Creator joins in their own way.",
+    inputs: {
+      name: "The event's name, a few words.",
+      guidance: "What it is and what people post about, one or two lines (optional).",
+      days: "How many days it lasts, 1 to 14.",
+    },
+    schema: z
+      .object({
+        name: z.string().trim().min(1).max(60),
+        guidance: z.string().trim().max(600).default(""),
+        days: z.number().int().min(1).max(14).default(1),
+      })
+      .strict(),
+  },
   "draw-brand-picture": {
     summary:
       "Draw a brand's logo, or a picture of one of its products, from the brand's own words and what the player typed. Returns it without saving it.",
@@ -313,6 +388,131 @@ export const SLP_ACTIONS = {
         brandId: z.string().trim().min(1).max(120),
         productId: z.string().trim().min(1).max(120).optional(),
         request: z.string().trim().max(SLP_ASSIST_REQUEST_MAX).default(""),
+      })
+      .strict(),
+  },
+  "add-to-couple": {
+    summary:
+      "Polyamory: someone joins a couple that is dating or together, up to four people. Only when polyamory is on in Settings › Stir.",
+    inputs: { coupleId: "The couple (from list-world).", accountId: "The Creator who joins." },
+    schema: z.object({ coupleId: accountId, accountId }).strict(),
+  },
+  // ─── 0.3.5: the Slurp Support desk (docs/SUPPORT-DESK.md). Offered in a Support thread, the Creator
+  // answers first; run from Stir or a helper, they just happen. ───────────────────────────────────
+  "grant-perk": {
+    summary:
+      "Slurp gives a Creator a perk: a Discover feature for some days, a badge (rising, verified, partner) or a coin bonus. They owe Slurp a favour for it.",
+    inputs: {
+      accountId: "The Creator.",
+      perk: `One of: ${SLP_DESK_PERKS.join(", ")}.`,
+      badge: `For badge: one of ${SLP_DESK_BADGES.join(", ")}.`,
+      coins: `For coins: how many, 1 to ${SLP_DESK_COINS_MAX}.`,
+      days: `For feature: how many days, 1 to ${SLP_DESK_FEATURE_DAYS_MAX}.`,
+    },
+    schema: deskPerkSchema.extend({ accountId }).strict(),
+  },
+  "set-challenge": {
+    summary:
+      "Give a Creator a challenge from Slurp: post so many posts or Stories before a deadline and win a perk. The world counts; they win or fail.",
+    inputs: {
+      accountId: "The Creator.",
+      metric: `What counts: ${SLP_DESK_CHALLENGE_METRICS.join(" or ")}.`,
+      count: "How many, 1 to 30.",
+      days: "Days to do it in, 1 to 14.",
+      reward: "The perk they win: { perk, badge?, coins?, days? } like grant-perk.",
+    },
+    schema: z
+      .object({
+        accountId,
+        metric: z.enum(SLP_DESK_CHALLENGE_METRICS),
+        count: z.number().int().min(1).max(30),
+        days: z.number().int().min(1).max(14),
+        reward: deskPerkSchema.strict(),
+      })
+      .strict(),
+  },
+  "offer-contract": {
+    summary:
+      "Sign a Creator to an exclusive Slurp contract: so many posts a week (maybe on set themes) for a weekly coin bonus. A week they miss pays nothing.",
+    inputs: {
+      accountId: "The Creator.",
+      postsPerWeek: "Posts and Stories a week, 1 to 21.",
+      themes: "Up to 3 themes their posts should be about (optional).",
+      weeks: "How long it runs, 1 to 12 weeks.",
+      weeklyBonus: `Coins a kept week pays, 0 to ${SLP_DESK_COINS_MAX}.`,
+    },
+    schema: z
+      .object({
+        accountId,
+        postsPerWeek: z.number().int().min(1).max(21),
+        themes: z.array(z.string().trim().min(1).max(60)).max(3).default([]),
+        weeks: z.number().int().min(1).max(12).default(4),
+        weeklyBonus: z.number().int().min(0).max(SLP_DESK_COINS_MAX).default(100),
+      })
+      .strict(),
+  },
+  "cash-favour": {
+    summary:
+      "Call in a favour a Creator owes Slurp: they do what Slurp asks in their next posts. Shady: it raises their suspicion.",
+    inputs: { accountId: "The Creator.", ask: "What Slurp asks for, one short line." },
+    schema: z.object({ accountId, ask: z.string().trim().min(1).max(160) }).strict(),
+  },
+  "throttle-reach": {
+    summary:
+      "Quietly show fewer people a Creator's posts for some days. Shady: it raises their suspicion, and they may notice.",
+    inputs: {
+      accountId: "The Creator.",
+      days: `How many days, 1 to ${SLP_DESK_THROTTLE_DAYS_MAX}.`,
+      strength: "light or heavy.",
+    },
+    schema: z
+      .object({
+        accountId,
+        days: z.number().int().min(1).max(SLP_DESK_THROTTLE_DAYS_MAX).default(2),
+        strength: z.enum(["light", "heavy"]).default("light"),
+      })
+      .strict(),
+  },
+  "plant-rumour": {
+    summary:
+      'Plant a rumour with a Creator ("I heard X plans a collab with Y"). They remember it; about another Creator it may start a rivalry. Told by Support it is traceable; anonymous it is quieter.',
+    inputs: {
+      accountId: "The Creator who hears it.",
+      text: "The rumour, one short line.",
+      aboutId: "The Creator it is about (optional).",
+      via: "support (Slurp Support says it) or anonymous.",
+    },
+    schema: z
+      .object({
+        accountId,
+        text: z.string().trim().min(1).max(200),
+        aboutId: accountId.optional(),
+        via: z.enum(["support", "anonymous"]).default("anonymous"),
+      })
+      .strict(),
+  },
+  "seed-trend": {
+    summary: "Tell a few Creators a topic is hot on Slurp right now. Each gets it as an idea for a post.",
+    inputs: { topic: "The topic, a few words.", accountIds: "One to six Creators." },
+    schema: z
+      .object({ topic: z.string().trim().min(1).max(80), accountIds: z.array(accountId).min(1).max(6) })
+      .strict(),
+  },
+  "warn-creator": {
+    summary:
+      "Slurp Support warns a Creator about their content. They tone it down (the topic goes on their leave-alone list). It costs trust; a warning without cause is shady.",
+    inputs: {
+      accountId: "The Creator.",
+      reason: "What Slurp says is wrong, one short line.",
+      topic: "A topic they should leave alone for now (optional).",
+      cause: "False when there was no real reason (shady).",
+    },
+    schema: z
+      .object({
+        accountId,
+        reason: z.string().trim().min(1).max(200),
+        topic: z.string().trim().min(1).max(60).optional(),
+        cause: z.boolean().default(true),
       })
       .strict(),
   },
@@ -360,6 +560,19 @@ export type SlpActionResult = {
   };
   "offer-brand-deal": { dealId: string | null; preview: SlpBrandDealPreview };
   "draw-brand-picture": { image: string; prompt: string };
+  "start-storyline": { projectId: string };
+  "set-tip-goal": { accountId: string };
+  "new-look": { accountId: string };
+  "invent-event": { eventId: string; occurrenceId: string };
+  "add-to-couple": { coupleId: string };
+  "grant-perk": { accountId: string };
+  "set-challenge": { accountId: string; challengeId: string };
+  "offer-contract": { accountId: string; contractId: string };
+  "cash-favour": { accountId: string; favours: number };
+  "throttle-reach": { accountId: string; until: string };
+  "plant-rumour": { accountId: string; messageId: string | null };
+  "seed-trend": { accountIds: string[] };
+  "warn-creator": { accountId: string };
 };
 
 /** Whether a product fits a Creator (the Stir brand picker): both spice and brand words, R's two fit rules. */
@@ -391,7 +604,15 @@ export type SlpBrandDealPreview = {
 
 /** What `list-world` answers: the ids and names the world levers take. */
 export type SlpStirWorld = {
-  couples: { id: string; aId: string; bId: string; stage: string; page: "open" | "closed" | null }[];
+  couples: {
+    id: string;
+    aId: string;
+    bId: string;
+    /** Polyamory (0.3.5): more partners. */
+    moreIds?: string[];
+    stage: string;
+    page: "open" | "closed" | null;
+  }[];
   collabs: { id: string; hostId: string; partnerId: string; status: string }[];
   rivalries: { id: string; fromId: string; toId: string; stage: string }[];
   events: { id: string; name: string; running: boolean }[];
@@ -410,7 +631,7 @@ export type SlpStirCategory = (typeof SLP_STIR_CATEGORIES)[number];
 export const SLP_ACTION_META: Record<
   SlpActionName,
   {
-    category: SlpStirCategory | "help";
+    category: SlpStirCategory | "help" | "desk";
     targets: "creator" | "pair" | "couple" | "collab" | "rivalry" | "event" | "storyline" | "none";
     reversible: boolean;
     ai: boolean;
@@ -435,14 +656,14 @@ export const SLP_ACTION_META: Record<
   "steer-couple": { category: "love", targets: "couple", reversible: true, ai: false, refusable: false, deck: true },
   "couple-page": { category: "love", targets: "couple", reversible: false, ai: false, refusable: false, deck: true },
   "suggest-collab": { category: "work", targets: "pair", reversible: true, ai: false, refusable: true, deck: true },
-  "push-collab": { category: "work", targets: "collab", reversible: false, ai: false, refusable: false, deck: true },
+  "push-collab": { category: "work", targets: "collab", reversible: true, ai: false, refusable: false, deck: true },
   "start-rivalry": { category: "drama", targets: "pair", reversible: true, ai: false, refusable: false, deck: true },
-  "cool-rivalry": { category: "drama", targets: "rivalry", reversible: false, ai: false, refusable: false, deck: true },
+  "cool-rivalry": { category: "drama", targets: "rivalry", reversible: true, ai: false, refusable: false, deck: true },
   "start-event": { category: "world", targets: "event", reversible: true, ai: false, refusable: false, deck: true },
   "steer-storyline": {
     category: "world",
     targets: "storyline",
-    reversible: false,
+    reversible: true,
     ai: false,
     refusable: false,
     deck: true,
@@ -465,7 +686,50 @@ export const SLP_ACTION_META: Record<
     refusable: true,
     deck: true,
   },
+  "start-storyline": {
+    category: "life",
+    targets: "creator",
+    reversible: true,
+    ai: false,
+    refusable: false,
+    deck: true,
+  },
+  "set-tip-goal": { category: "work", targets: "creator", reversible: true, ai: false, refusable: false, deck: true },
+  "new-look": { category: "life", targets: "creator", reversible: true, ai: false, refusable: false, deck: true },
+  "invent-event": { category: "world", targets: "none", reversible: true, ai: false, refusable: false, deck: true },
+  "add-to-couple": { category: "love", targets: "couple", reversible: true, ai: false, refusable: false, deck: true },
+  // The Support desk's tools live on the desk and in Support threads, not in the deck.
+  "grant-perk": { category: "desk", targets: "creator", reversible: true, ai: false, refusable: false, deck: false },
+  "set-challenge": { category: "desk", targets: "creator", reversible: true, ai: false, refusable: true, deck: false },
+  "offer-contract": { category: "desk", targets: "creator", reversible: true, ai: false, refusable: true, deck: false },
+  "cash-favour": { category: "desk", targets: "creator", reversible: true, ai: false, refusable: true, deck: false },
+  "throttle-reach": {
+    category: "desk",
+    targets: "creator",
+    reversible: true,
+    ai: false,
+    refusable: false,
+    deck: false,
+  },
+  "plant-rumour": { category: "desk", targets: "creator", reversible: false, ai: false, refusable: false, deck: false },
+  "seed-trend": { category: "desk", targets: "none", reversible: true, ai: false, refusable: false, deck: false },
+  "warn-creator": { category: "desk", targets: "creator", reversible: true, ai: false, refusable: false, deck: false },
 };
+
+/** What Slurp Support can put in a thread as an Offer: the Creator answers yes, no or a counter first. */
+export const SLP_DESK_OFFERABLE = [
+  "set-challenge",
+  "offer-contract",
+  "cash-favour",
+  "offer-brand-deal",
+  "suggest-collab",
+  "start-storyline",
+  "set-tip-goal",
+  "new-look",
+  "add-idea",
+] as const satisfies readonly SlpActionName[];
+/** What Slurp Support does in a thread straight away, with its message. */
+export const SLP_DESK_NOW = ["grant-perk", "warn-creator", "plant-rumour"] as const satisfies readonly SlpActionName[];
 
 /** The catalog without the schemas: what a helper reads to know what it can ask Slurp to do. */
 export function slpActionCatalog() {

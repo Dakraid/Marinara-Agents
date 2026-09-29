@@ -54,7 +54,7 @@ import { composeSlurpPromptBlocks, type SlurpPromptBlockOverrides } from "../../
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
 import { slpWithProviderRetry } from "../../base/model/slp-provider-retry.js";
 
-export type SlurpPendingKind = "commission" | "question" | "opener" | "delivery";
+export type SlurpPendingKind = "commission" | "question" | "opener" | "delivery" | "desk";
 
 /** Rewritten per drain. Small: a long absence must not stall the first read behind a queue. */
 const DRAIN_LIMIT = 2;
@@ -62,7 +62,15 @@ const JOB_MAX_ATTEMPTS = 3;
 const JOB_TTL_MS = 7 * 86_400_000;
 
 /** Longest a rewrite may be. These are one-liners; a paragraph would not fit where they render. */
-const MAX_LENGTH: Record<SlurpPendingKind, number> = { commission: 400, question: 180, opener: 240, delivery: 240 };
+const MAX_LENGTH: Record<SlurpPendingKind, number> = {
+  commission: 400,
+  question: 180,
+  opener: 240,
+  delivery: 240,
+  desk: 400,
+};
+/** The kinds the Creator speaks: a delivery note, and a line to Slurp Support (docs/SUPPORT-DESK.md). */
+const creatorSpeaks = (kind: SlurpPendingKind) => kind === "delivery" || kind === "desk";
 
 export async function enqueueSlurpPendingText(
   db: DB,
@@ -116,27 +124,36 @@ function buildMessages(input: {
   // A delivery note is the only kind the creator speaks, so it gets the opposite framing. Handing
   // it the fan-voice preamble produced deliveries written as if the fan had drawn the picture.
   const shared =
-    input.kind === "delivery"
+    input.kind === "desk"
       ? [
           NOODLER_UNTRUSTED_CONTENT_INSTRUCTION,
-          "You are rewriting one short note a Slurp creator sends with a finished commission. Write only the creator's words.",
-          "Never write as the fan, and never speak for them.",
+          "You are rewriting one short message a Slurp creator sends to Slurp Support, the staff who run the platform. Write only the creator's words.",
+          "Never write as Slurp Support, and never answer on their behalf.",
           'Return exactly one JSON object with one string field named "content". Return JSON only.',
         ]
-      : [
-          NOODLER_UNTRUSTED_CONTENT_INSTRUCTION,
-          "You are rewriting one short piece of text a fan sent to a Slurp creator. Write only the fan's words.",
-          "Never write as the creator, and never answer on their behalf.",
-          'Return exactly one JSON object with one string field named "content". Return JSON only.',
-        ];
+      : input.kind === "delivery"
+        ? [
+            NOODLER_UNTRUSTED_CONTENT_INSTRUCTION,
+            "You are rewriting one short note a Slurp creator sends with a finished commission. Write only the creator's words.",
+            "Never write as the fan, and never speak for them.",
+            'Return exactly one JSON object with one string field named "content". Return JSON only.',
+          ]
+        : [
+            NOODLER_UNTRUSTED_CONTENT_INSTRUCTION,
+            "You are rewriting one short piece of text a fan sent to a Slurp creator. Write only the fan's words.",
+            "Never write as the creator, and never answer on their behalf.",
+            'Return exactly one JSON object with one string field named "content". Return JSON only.',
+          ];
   const instruction =
     input.kind === "commission"
       ? "Rewrite this commission request so it asks for something specific that suits this particular creator, in the fan's own voice. Keep it to a few sentences and stay polite about price and timing."
       : input.kind === "question"
         ? "Rewrite this question so it is about the actual post below, in the fan's own voice. One sentence, lowercase is fine, no greeting."
-        : input.kind === "delivery"
-          ? "Rewrite this hand-over note so it sounds like this particular creator giving a fan the piece they paid for. One or two sentences, warm, no greeting, never describe the picture, and keep the note's language."
-          : "Rewrite this first message so it sounds like this particular person writing to this particular creator for the first time. Keep it short and a little awkward. Do not ask for anything.";
+        : input.kind === "desk"
+          ? "Rewrite this message to Slurp Support so it sounds like this particular creator writing to the platform's staff: the same point, in their own voice and mood. One to three sentences. Keep the message's language."
+          : input.kind === "delivery"
+            ? "Rewrite this hand-over note so it sounds like this particular creator giving a fan the piece they paid for. One or two sentences, warm, no greeting, never describe the picture, and keep the note's language."
+            : "Rewrite this first message so it sounds like this particular person writing to this particular creator for the first time. Keep it short and a little awkward. Do not ask for anything.";
 
   const data = {
     creator: input.creator,
@@ -334,19 +351,17 @@ export async function drainSlurpPendingText(
           creator: { displayName: creator.displayName, handle: creator.handle, bio: creator.bio },
           speaker,
           // A placeholder rewritten in the fan's own voice is the whole point of the upgrade.
-          speakerVoice:
-            kind === "delivery"
-              ? undefined
-              : (characterFanVoice ??
-                slurpFanVoiceForPrompt(slurpResolveFanType(settings.fanTypes, member ?? {}).voice)),
+          speakerVoice: creatorSpeaks(kind)
+            ? undefined
+            : (characterFanVoice ?? slurpFanVoiceForPrompt(slurpResolveFanType(settings.fanTypes, member ?? {}).voice)),
           speakerMemory:
-            kind === "delivery" || !(member || characterFanVoice) ? undefined : slurpFanMemoryForPrompt(tie),
+            creatorSpeaks(kind) || !(member || characterFanVoice) ? undefined : slurpFanMemoryForPrompt(tie),
           placeholder,
           post: post ? { title: post.title, content: post.content } : null,
           // Only the Creator speaks in a delivery note. A concealed Creator's card stays out of this
           // prompt, which has no identity protection of its own.
           flavourBrief:
-            kind === "delivery" && (creator.settings.privacy.identityDisclosure ?? "open") === "open"
+            creatorSpeaks(kind) && (creator.settings.privacy.identityDisclosure ?? "open") === "open"
               ? await resolveSlurpCreatorFlavour(db, {
                   account: creator,
                   source: await noodle.resolveAccountSource(creator),

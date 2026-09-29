@@ -28,6 +28,7 @@ import {
   SlpRefreshAttempt,
 } from "../../../../../shared/src/slp/slp-social.types.js";
 import { slurpDiscoveryFields, SlurpDiscoveryGender } from "../discovery/slp-discovery-profile.js";
+import { normalizeSlpCreatorPage } from "../../../../../shared/src/slp/slp-creator-page.js";
 import { SLURP_DEFAULT_ECONOMY } from "../economy/slp-wallet.js";
 import type {
   slpAccounts,
@@ -395,6 +396,7 @@ export function normalizeSlpAccountSettings(value: unknown): SlurpSlpAccountSett
   const rawAccess = parseRecord(rawPrivacy.access);
   const normalizedAvatarCrop = rawAvatarCrop === null ? null : normalizeAvatarCrop(rawAvatarCrop);
   const discovery = slurpDiscoveryFields(rawProfile);
+  const page = rawProfile.page === undefined ? null : normalizeSlpCreatorPage(rawProfile.page);
   const profile = {
     ...(rawAvatarCrop !== undefined &&
       (rawAvatarCrop === null || normalizedAvatarCrop !== null) && { avatarCrop: normalizedAvatarCrop }),
@@ -407,6 +409,8 @@ export function normalizeSlpAccountSettings(value: unknown): SlurpSlpAccountSett
     ...(rawCreatorWizardExecutionId !== undefined &&
       validProfileField("noodlerWizardExecutionId", rawCreatorWizardExecutionId)),
     ...(rawCreatorSourceSnapshot !== undefined && validProfileField("noodlerSourceSnapshot", rawCreatorSourceSnapshot)),
+    ...(page && { page }),
+    ...(rawProfile.pageWanted !== undefined && validProfileField("pageWanted", rawProfile.pageWanted)),
     ...discovery,
   };
   const followingAccountTimestamps = Object.fromEntries(

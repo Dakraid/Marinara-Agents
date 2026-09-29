@@ -16,7 +16,9 @@ import {
   slurpPushCollab,
   slurpRivalryActive,
   slurpStartRivalry,
+  type SlurpCollab,
   type SlurpCreatorTies,
+  type SlurpRivalry,
   type SlurpTieError,
 } from "../../modules/projects/slp-creator-ties.js";
 import {
@@ -29,28 +31,25 @@ import {
 import {
   slurpPreviewTieLever,
   slurpSuggestCollabPlay,
+  slurpUndoTie,
+  slurpUnblockedBy,
   type SlurpStirTieWorld,
   type SlurpTieLever,
   type SlurpTiePreview,
+  type SlurpTieUndo,
 } from "../../modules/projects/slp-stir-tie-preview.js";
 import { loadSlurpTieCreators } from "./slp-creator-ties-service.js";
+import { slurpAddToCouple, type SlurpCoupleJoinError } from "../../modules/projects/slp-couple-group.js";
 import { closeSlurpCouplePage, closeSlurpCouplePages, openSlurpCouplePage } from "./slp-creator-couples-service.js";
 import type { SlpActionParsed, SlpStirWorld } from "../../../../../shared/src/slp/slp-actions.js";
 
-export { isSlurpTieLever } from "../../modules/projects/slp-stir-tie-preview.js";
-
-/** What one Undo does for a tie play: remove what it added, or put one couple back as it was. */
-export type SlurpTieUndo =
-  | { kind: "removeCollab"; id: string }
-  | { kind: "removeRivalry"; id: string }
-  | { kind: "removeCouple"; id: string }
-  | { kind: "restoreCouple"; couple: SlurpCouple };
+export { isSlurpTieLever, type SlurpTieUndo } from "../../modules/projects/slp-stir-tie-preview.js";
 
 type Failure = { ok: false; status: 400 | 404 | 409; error: string };
 type Done = { ok: true; value: Record<string, unknown>; undo: SlurpTieUndo | null };
 
 /** The world's words for why a tie play cannot happen (the same as the Studio routes). */
-const WHY: Record<SlurpTieError | SlurpCoupleError | "notFound", [400 | 404 | 409, string]> = {
+const WHY: Record<SlurpTieError | SlurpCoupleError | SlurpCoupleJoinError | "notFound", [400 | 404 | 409, string]> = {
   notFound: [404, "That one is gone."],
   notOpen: [409, "That does not fit where they are right now."],
   sameCreator: [400, "Pick two different Creators."],
@@ -62,18 +61,24 @@ const WHY: Record<SlurpTieError | SlurpCoupleError | "notFound", [400 | 404 | 40
   noDating: [409, "One of them does not date, and would not start for this."],
   orientation: [409, "They are not each other's type."],
   pageOpen: [409, "Their shared page is already open."],
+  polyOff: [409, "Polyamory is off in Settings › Stir."],
+  mono: [409, "One of them is monogamous and already with someone."],
+  notTogether: [409, "They are not dating yet."],
+  full: [409, "That couple is already four people."],
 };
 const fail = (code: keyof typeof WHY): Failure => ({ ok: false, status: WHY[code][0], error: WHY[code][1] });
 
 type World = SlurpStirTieWorld;
 
 async function readWorld(db: DB): Promise<World> {
-  const [creators, accounts, document] = await Promise.all([
+  const [creators, accounts, document, settings] = await Promise.all([
     loadSlurpTieCreators(db),
     createSlurpStorage(db).listNoodlerAccounts(),
     readSlurpCreatorTiesDocument(db),
+    createSlurpStorage(db).getSettings(),
   ]);
   return {
+    polyamory: settings.polyamory === true,
     creators,
     avatars: new Map(
       accounts.map((account: { id: string; avatarUrl?: string | null }) => [account.id, account.avatarUrl ?? null]),
@@ -112,9 +117,9 @@ export async function runSlurpTieLever(
         : { document: { ...document, ties: next }, result: next };
     });
   const onCouples = async (
-    change: (couples: SlurpCouple[]) => SlurpCouple[] | SlurpCoupleError,
-  ): Promise<SlurpCouple[] | SlurpCoupleError | null> =>
-    mutateSlurpCreatorTies<SlurpCouple[] | SlurpCoupleError>(db, (document) => {
+    change: (couples: SlurpCouple[]) => SlurpCouple[] | SlurpCoupleError | SlurpCoupleJoinError,
+  ): Promise<SlurpCouple[] | SlurpCoupleError | SlurpCoupleJoinError | null> =>
+    mutateSlurpCreatorTies<SlurpCouple[] | SlurpCoupleError | SlurpCoupleJoinError>(db, (document) => {
       const next = change(document.couples);
       return typeof next === "string"
         ? { document, result: next }
@@ -128,15 +133,27 @@ export async function runSlurpTieLever(
       const b = find(bId);
       if (!a || !b) return fail("notFound");
       const id = newId();
-      const next = await onTies((ties) => slurpSuggestCollabPlay(ties, a, b, { at, id, happen }));
+      let blocked: string | null = null;
+      const next = await onTies((ties) => {
+        blocked = slurpUnblockedBy(ties, aId, bId);
+        return slurpSuggestCollabPlay(ties, a, b, { at, id, happen });
+      });
       if (!next || typeof next === "string") return fail(next ?? "notFound");
-      return { ok: true, value: { collabId: id }, undo: { kind: "removeCollab", id } };
+      return {
+        ok: true,
+        value: { collabId: id },
+        undo: { kind: "removeCollab", id, ...(blocked ? { blocked } : {}) },
+      };
     }
     case "push-collab": {
       const { collabId } = input as SlpActionParsed<"push-collab">;
-      const next = await onTies((ties) => slurpPushCollab(ties, collabId, at));
+      let previous: SlurpCollab | undefined;
+      const next = await onTies((ties) => {
+        previous = ties.collabs.find((entry) => entry.id === collabId);
+        return slurpPushCollab(ties, collabId, at);
+      });
       if (!next || typeof next === "string") return fail(next ?? "notFound");
-      return { ok: true, value: { collabId }, undo: null };
+      return { ok: true, value: { collabId }, undo: previous ? { kind: "restoreCollab", collab: previous } : null };
     }
     case "start-rivalry": {
       const { fromId, toId, cause } = input as SlpActionParsed<"start-rivalry">;
@@ -150,9 +167,17 @@ export async function runSlurpTieLever(
     }
     case "cool-rivalry": {
       const { rivalryId } = input as SlpActionParsed<"cool-rivalry">;
-      const next = await onTies((ties) => slurpCoolRivalry(ties, rivalryId, at));
+      let previous: SlurpRivalry | undefined;
+      const next = await onTies((ties) => {
+        previous = ties.rivalries.find((entry) => entry.id === rivalryId);
+        return slurpCoolRivalry(ties, rivalryId, at);
+      });
       if (!next || typeof next === "string") return fail(next ?? "notFound");
-      return { ok: true, value: { rivalryId }, undo: null };
+      return {
+        ok: true,
+        value: { rivalryId },
+        undo: previous ? { kind: "restoreRivalry", rivalry: previous } : null,
+      };
     }
     case "set-up-couple": {
       const { aId, bId } = input as SlpActionParsed<"set-up-couple">;
@@ -160,7 +185,8 @@ export async function runSlurpTieLever(
       const b = find(bId);
       if (!a || !b) return fail("notFound");
       const id = newId();
-      const next = await onCouples((couples) => slurpSetUpCouple(couples, a, b, { at, id }));
+      const polyamory = (await createSlurpStorage(db).getSettings()).polyamory === true;
+      const next = await onCouples((couples) => slurpSetUpCouple(couples, a, b, { at, id, polyamory }));
       if (!next || typeof next === "string") return fail(next ?? "notFound");
       return { ok: true, value: { coupleId: id }, undo: { kind: "removeCouple", id } };
     }
@@ -179,36 +205,48 @@ export async function runSlurpTieLever(
         undo: previous && !(steer === "breakUp" && pageWasOpen) ? { kind: "restoreCouple", couple: previous } : null,
       };
     }
+    case "add-to-couple": {
+      const { coupleId, accountId } = input as SlpActionParsed<"add-to-couple">;
+      const joiner = find(accountId);
+      if (!joiner) return fail("notFound");
+      const polyamory = (await createSlurpStorage(db).getSettings()).polyamory === true;
+      let previous: SlurpCouple | undefined;
+      const next = await onCouples((couples) => {
+        previous = couples.find((entry) => entry.id === coupleId);
+        return slurpAddToCouple(couples, coupleId, joiner, { at, polyamory, creators });
+      });
+      if (!next || typeof next === "string") return fail(next ?? "notFound");
+      return { ok: true, value: { coupleId }, undo: previous ? { kind: "restoreCouple", couple: previous } : null };
+    }
     case "couple-page": {
       const { coupleId, open } = input as SlpActionParsed<"couple-page">;
       const outcome = open ? await openSlurpCouplePage(db, coupleId) : await closeSlurpCouplePage(db, coupleId);
       if (typeof outcome === "string") return fail(outcome);
-      return { ok: true, value: { coupleId, accountId: outcome.page?.accountId ?? null }, undo: null };
+      // Opening is taken back by closing it again; a closed page does not reopen by Undo.
+      return {
+        ok: true,
+        value: { coupleId, accountId: outcome.page?.accountId ?? null },
+        undo: open ? { kind: "closeCouplePage", coupleId } : null,
+      };
     }
   }
 }
 
-/** Take one tie play back. Missing entries are fine: the world may have moved on. */
-export async function undoSlurpTieLever(db: DB, undo: SlurpTieUndo): Promise<void> {
-  await mutateSlurpCreatorTies(db, (document) => {
-    const { ties, couples } = document;
-    if (undo.kind === "removeCollab")
-      return {
-        document: { ...document, ties: { ...ties, collabs: ties.collabs.filter((entry) => entry.id !== undo.id) } },
-        result: true,
-      };
-    if (undo.kind === "removeRivalry")
-      return {
-        document: { ...document, ties: { ...ties, rivalries: ties.rivalries.filter((entry) => entry.id !== undo.id) } },
-        result: true,
-      };
-    if (undo.kind === "removeCouple")
-      return { document: { ...document, couples: couples.filter((entry) => entry.id !== undo.id) }, result: true };
-    return {
-      document: { ...document, couples: couples.map((entry) => (entry.id === undo.couple.id ? undo.couple : entry)) },
-      result: true,
-    };
+/**
+ * Take one tie play back. Answers false when the world has moved on and this part stays as it is
+ * (`slurpUndoTie` says when).
+ */
+export async function undoSlurpTieLever(db: DB, undo: SlurpTieUndo): Promise<boolean> {
+  if (undo.kind === "closeCouplePage") {
+    const couple = (await readSlurpCreatorTiesDocument(db)).couples.find((entry) => entry.id === undo.coupleId);
+    if (!couple?.page || couple.page.closedAt || !slurpCoupleActive(couple)) return false;
+    return typeof (await closeSlurpCouplePage(db, undo.coupleId)) !== "string";
+  }
+  const applied = await mutateSlurpCreatorTies(db, (document) => {
+    const next = slurpUndoTie(document, undo);
+    return next ? { document: { ...document, ...next }, result: true } : null;
   });
+  return applied === true;
 }
 
 /** The ids and names the world levers take (`list-world`, the Stir tab). */
@@ -221,6 +259,7 @@ export async function readSlurpStirTies(db: DB): Promise<Pick<SlpStirWorld, "cou
         id: couple.id,
         aId: couple.aId,
         bId: couple.bId,
+        ...(couple.moreIds?.length ? { moreIds: couple.moreIds } : {}),
         stage: couple.stage,
         page: couple.page ? (couple.page.closedAt ? ("closed" as const) : ("open" as const)) : null,
       }))

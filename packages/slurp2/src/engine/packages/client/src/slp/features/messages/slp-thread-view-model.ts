@@ -1,4 +1,18 @@
-import { BriefcaseBusiness, Image as ImageIcon, MessageCircle, Palette, PenLine } from "lucide-react";
+import {
+  BriefcaseBusiness,
+  Gift,
+  Image as ImageIcon,
+  MessageCircle,
+  NotebookPen,
+  Palette,
+  PenLine,
+  Stamp,
+} from "lucide-react";
+import type { SlpActionName } from "../../../../../shared/src/slp/slp-actions.js";
+import type { SlpActionPreview } from "../../../../../shared/src/slp/slp-stir.js";
+
+/** A desk step riding the next Support line: an Offer the Creator answers, or a move that happens now. */
+export type SlurpComposerDesk = { mode: "offer" | "now"; card: SlpActionPreview };
 import { SlpLockGlyph } from "../../base/chrome/SlpGlyphs";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
@@ -104,8 +118,22 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [connectionPickerOpen, setConnectionPickerOpen] = useState(false);
   const [toolTab, setToolTab] = useState<
-    "tip" | "commission" | "photo" | "generated-photo" | "creator" | "request" | "write" | null
+    | "tip"
+    | "commission"
+    | "photo"
+    | "generated-photo"
+    | "creator"
+    | "request"
+    | "write"
+    | "offer"
+    | "move"
+    | "note"
+    | null
   >(null);
+  // Slurp Support's desk step for the next line (docs/SUPPORT-DESK.md): an Offer or a move, and the
+  // lever whose play sheet is open to build one.
+  const [composerDesk, setComposerDesk] = useState<SlurpComposerDesk | null>(null);
+  const [deskPick, setDeskPick] = useState<{ action: SlpActionName; mode: "offer" | "now" } | null>(null);
   const [commissionPrefill, setCommissionPrefill] = useState("");
   const settingsQuery = useSlurpSettings();
   const connectionsQuery = useSlurpConnections(true);
@@ -241,14 +269,8 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
   const setSupportChoice = (next: boolean) => {
     if (targetCreatorAccountId && next !== asSupport) onSwitchVoice?.(targetCreatorAccountId, next);
   };
-  const supportName =
-    messages
-      .map((message) => message.metadata.sceneSpeaker)
-      .find(
-        (speaker, index): speaker is string =>
-          typeof speaker === "string" &&
-          (messages[index]!.metadata.supportVoice === true || messages[index]!.metadata.signUpScene === "support"),
-      ) ?? "Slurp Support";
+  // Support is a faceless team (docs/SUPPORT-DESK.md): always this name.
+  const supportName = "Slurp Support";
   const headerAccount = ownsCreator ? counterpart : creator;
   const headerProfileId = ownsCreator ? thread?.viewerAccountId : targetCreatorAccountId;
   const busy = send.isPending || tip.isPending || creatorReply.isPending || draftReply.isPending;
@@ -268,7 +290,7 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
   // the Creator has no image request to make of herself.
   const toolTabs = useMemo(
     () =>
-      (ownsCreator
+      (asSupport
         ? ([
             {
               id: "write",
@@ -280,78 +302,115 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
               group: "conversation" as const,
             },
             {
-              id: "request",
-              icon: MessageCircle,
-              label: localizeUi("ui.slurp.messages.requestFanReply", { defaultValue: "Request a reply" }),
-              detail: localizeUi("ui.slurp.messages.requestFanReplyDetail", {
-                defaultValue: "Ask the fan to write back",
+              id: "offer",
+              icon: Stamp,
+              label: localizeUi("ui.slurp.desk.tools.offer", { defaultValue: "Make an offer" }),
+              detail: localizeUi("ui.slurp.desk.tools.offerDetail", {
+                defaultValue: "A challenge, a contract, a deal: they answer first",
               }),
               group: "conversation" as const,
             },
             {
-              id: "generated-photo",
-              icon: Palette,
-              label: localizeUi("ui.slurp.messages.createPhoto", { defaultValue: "Create a photo" }),
-              detail: localizeUi("ui.slurp.messages.createPhotoDetail", { defaultValue: "Generate and send an image" }),
-              group: "media" as const,
+              id: "move",
+              icon: Gift,
+              label: localizeUi("ui.slurp.desk.tools.move", { defaultValue: "Perk, warning or rumour" }),
+              detail: localizeUi("ui.slurp.desk.tools.moveDetail", { defaultValue: "Happens with your message" }),
+              group: "conversation" as const,
             },
             {
-              id: "creator",
-              icon: SlpLockGlyph,
-              label: localizeUi("ui.slurp.messages.lockedContent", { defaultValue: "Locked content" }),
-              detail: localizeUi("ui.slurp.messages.lockedContentDetail", { defaultValue: "Send a paid message" }),
-              group: "creator" as const,
+              id: "note",
+              icon: NotebookPen,
+              label: localizeUi("ui.slurp.desk.tools.note", { defaultValue: "Internal note" }),
+              detail: localizeUi("ui.slurp.desk.tools.noteDetail", { defaultValue: "Only you see it" }),
+              group: "conversation" as const,
             },
           ] as const)
-        : ([
-            {
-              id: "photo",
-              icon: ImageIcon,
-              label: localizeUi("ui.slurp.messages.sendPhoto", { defaultValue: "Send a photo" }),
-              detail: localizeUi("ui.slurp.messages.sendPhotoDetail", {
-                defaultValue: "Choose an image from your device",
-              }),
-              group: "media" as const,
-            },
-            {
-              id: "request",
-              icon: MessageCircle,
-              label: localizeUi("ui.slurp.messages.requestReply", { defaultValue: "Request a reply" }),
-              detail: localizeUi("ui.slurp.messages.requestReplyDetail", {
-                defaultValue: "Ask gently without forcing a reply",
-              }),
-              group: "conversation" as const,
-            },
-            {
-              id: "write",
-              icon: PenLine,
-              label: localizeUi("ui.slurp.messages.helpWrite", { defaultValue: "Help me write" }),
-              detail: localizeUi("ui.slurp.messages.helpWriteDetail", {
-                defaultValue: "Slurp writes or polishes your message",
-              }),
-              group: "conversation" as const,
-            },
-            {
-              id: "commission",
-              icon: BriefcaseBusiness,
-              label: localizeUi("ui.slurp.messages.askCommission", { defaultValue: "Ask for commission" }),
-              detail: localizeUi("ui.slurp.messages.askCommissionDetail", {
-                defaultValue: "Request made-to-order work",
-              }),
-              group: "conversation" as const,
-            },
-            {
-              id: "tip",
-              icon: SlurpCoin,
-              label: localizeUi("ui.slurp.messages.addTip", { defaultValue: "Send a tip" }),
-              detail: localizeUi("ui.slurp.messages.addTipDetailNowOrLater", {
-                defaultValue: "Now, or with your next message",
-              }),
-              group: "payment" as const,
-            },
-          ] as const)
+        : ownsCreator
+          ? ([
+              {
+                id: "write",
+                icon: PenLine,
+                label: localizeUi("ui.slurp.messages.helpWrite", { defaultValue: "Help me write" }),
+                detail: localizeUi("ui.slurp.messages.helpWriteDetail", {
+                  defaultValue: "Slurp writes or polishes your message",
+                }),
+                group: "conversation" as const,
+              },
+              {
+                id: "request",
+                icon: MessageCircle,
+                label: localizeUi("ui.slurp.messages.requestFanReply", { defaultValue: "Request a reply" }),
+                detail: localizeUi("ui.slurp.messages.requestFanReplyDetail", {
+                  defaultValue: "Ask the fan to write back",
+                }),
+                group: "conversation" as const,
+              },
+              {
+                id: "generated-photo",
+                icon: Palette,
+                label: localizeUi("ui.slurp.messages.createPhoto", { defaultValue: "Create a photo" }),
+                detail: localizeUi("ui.slurp.messages.createPhotoDetail", {
+                  defaultValue: "Generate and send an image",
+                }),
+                group: "media" as const,
+              },
+              {
+                id: "creator",
+                icon: SlpLockGlyph,
+                label: localizeUi("ui.slurp.messages.lockedContent", { defaultValue: "Locked content" }),
+                detail: localizeUi("ui.slurp.messages.lockedContentDetail", { defaultValue: "Send a paid message" }),
+                group: "creator" as const,
+              },
+            ] as const)
+          : ([
+              {
+                id: "photo",
+                icon: ImageIcon,
+                label: localizeUi("ui.slurp.messages.sendPhoto", { defaultValue: "Send a photo" }),
+                detail: localizeUi("ui.slurp.messages.sendPhotoDetail", {
+                  defaultValue: "Choose an image from your device",
+                }),
+                group: "media" as const,
+              },
+              {
+                id: "request",
+                icon: MessageCircle,
+                label: localizeUi("ui.slurp.messages.requestReply", { defaultValue: "Request a reply" }),
+                detail: localizeUi("ui.slurp.messages.requestReplyDetail", {
+                  defaultValue: "Ask gently without forcing a reply",
+                }),
+                group: "conversation" as const,
+              },
+              {
+                id: "write",
+                icon: PenLine,
+                label: localizeUi("ui.slurp.messages.helpWrite", { defaultValue: "Help me write" }),
+                detail: localizeUi("ui.slurp.messages.helpWriteDetail", {
+                  defaultValue: "Slurp writes or polishes your message",
+                }),
+                group: "conversation" as const,
+              },
+              {
+                id: "commission",
+                icon: BriefcaseBusiness,
+                label: localizeUi("ui.slurp.messages.askCommission", { defaultValue: "Ask for commission" }),
+                detail: localizeUi("ui.slurp.messages.askCommissionDetail", {
+                  defaultValue: "Request made-to-order work",
+                }),
+                group: "conversation" as const,
+              },
+              {
+                id: "tip",
+                icon: SlurpCoin,
+                label: localizeUi("ui.slurp.messages.addTip", { defaultValue: "Send a tip" }),
+                detail: localizeUi("ui.slurp.messages.addTipDetailNowOrLater", {
+                  defaultValue: "Now, or with your next message",
+                }),
+                group: "payment" as const,
+              },
+            ] as const)
       ).slice(),
-    [localizeUi, ownsCreator],
+    [localizeUi, ownsCreator, asSupport],
   );
 
   const messageSearchMatches = useMemo(() => {
@@ -671,6 +730,10 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
     promptDebug,
     activeCommission,
     toolTabs,
+    composerDesk,
+    setComposerDesk,
+    deskPick,
+    setDeskPick,
     messageSearchMatches: searchMessageIds,
     closeDrawer,
     messageScrollRef,

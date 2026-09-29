@@ -23,6 +23,16 @@ export const SLP_STEERING_PACE_FACTOR: Record<SlpSteeringPace, number> = {
   very_busy: 2.4,
 };
 
+/**
+ * How they do relationships (polyamory, 0.3.5). Null: read from their card (poly words there make them
+ * polyamorous, else monogamous). Only matters while polyamory is on in Settings › Stir.
+ */
+export const SLP_RELATIONSHIP_STYLES = ["mono", "poly"] as const;
+export type SlpRelationshipStyle = (typeof SLP_RELATIONSHIP_STYLES)[number];
+/** Card words that make a Creator polyamorous when the player has not picked a style. */
+export const SLP_POLY_CARD_WORDS =
+  /\b(polyamor\w*|poly|open relationships?|non-?monogam\w*|ethically non-?monogam\w*)\b/iu;
+
 export const SLP_STEERING_TEXT_MAX = 160;
 export const SLP_STEERING_TOPIC_MAX = 40;
 export const SLP_STEERING_TOPICS_MAX = 6;
@@ -38,6 +48,8 @@ export type SlpCreatorSteering = {
   /** Where their life is ("just moved to Berlin", "exam season"). */
   lifePhase: string;
   mood: SlpSteeringMood | null;
+  /** Monogamous, polyamorous, or null = from their card (0.3.5). */
+  relationshipStyle: SlpRelationshipStyle | null;
   /** Topics that come up more. */
   push: string[];
   /** Topics they leave alone for now. */
@@ -73,6 +85,7 @@ export const SLP_DEFAULT_STEERING: SlpCreatorSteering = {
   focus: "",
   lifePhase: "",
   mood: null,
+  relationshipStyle: null,
   push: [],
   avoid: [],
   pace: "usual",
@@ -127,6 +140,9 @@ export function normalizeSlpCreatorSteering(raw: unknown): SlpCreatorSteering {
     focus: text(value.focus, SLP_STEERING_TEXT_MAX),
     lifePhase: text(value.lifePhase, SLP_STEERING_TEXT_MAX),
     mood: mood(value.mood),
+    relationshipStyle: SLP_RELATIONSHIP_STYLES.includes(value.relationshipStyle as SlpRelationshipStyle)
+      ? (value.relationshipStyle as SlpRelationshipStyle)
+      : null,
     push: topics(value.push),
     avoid: topics(value.avoid),
     pace: SLP_STEERING_PACES.includes(value.pace as SlpSteeringPace) ? (value.pace as SlpSteeringPace) : "usual",

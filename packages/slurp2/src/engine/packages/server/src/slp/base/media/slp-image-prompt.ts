@@ -222,6 +222,65 @@ export function ensureSlpImageAppearance(prompt: string, appearance: string): st
 }
 
 /**
+ * The character's name at the head of a picture prompt (0.3.5, player report): an image model that
+ * learned a known character draws them from the name far better than from any appearance text, and
+ * no scene field carried it, so every picture came out as a stranger with the same hair. Only when
+ * the Creator's "The image model knows this character" switch is on and the identity is open.
+ */
+export function slurpApplyImageSubject(prompt: string, name: string, family: SlurpPromptFamily = "natural"): string {
+  const who = name.replace(/\s+/gu, " ").trim();
+  if (!who) return prompt;
+  // Danbooru-style Appearance fields write the name as a tag ("asuka_langley_soryu", "\(eva\)"):
+  // that counts as present too, so a tag prompt never gets the name twice (player report 0.3.5).
+  const plain = (text: string) =>
+    text
+      .toLocaleLowerCase()
+      .replace(/\\([()])/gu, "$1")
+      .replace(/[_\s]+/gu, " ");
+  if (plain(prompt).includes(plain(who))) return prompt;
+  return family === "natural" ? `${who}\n${prompt}` : `${who.toLocaleLowerCase()}, ${prompt}`;
+}
+
+/**
+ * The name the picture leads with: the post writer's tagged name ("fubuki (one punch man)", player
+ * report 0.3.5) when it names the same character as the card or the page, else the card name. A
+ * writer's name for somebody else (a partner, another series) is never used.
+ */
+export function slurpImageSubjectName(knownAs: string | null | undefined, names: readonly string[]): string {
+  const written = knownAs?.replace(/\s+/gu, " ").trim() ?? "";
+  const words = (text: string) =>
+    text
+      .toLocaleLowerCase()
+      .split(/[^\p{L}\p{N}]+/u)
+      .filter((word) => word.length >= 3);
+  const own = new Set(names.flatMap(words));
+  return written && written.length <= 120 && words(written).some((word) => own.has(word))
+    ? written
+    : (names[0]?.trim() ?? "");
+}
+
+/**
+ * Who the character is, for the enhancer only: the name and the start of their card, as context it
+ * must not copy. The image model still gets only visible facts.
+ */
+export function slurpImageIdentityContext(name: string, cardDescription: string): string {
+  const who = name.trim();
+  const about = cardDescription.replace(/\s+/gu, " ").trim();
+  const cut =
+    about.length > 400
+      ? `${
+          about
+            .slice(0, 400)
+            .replace(/[^.!?]*$/u, "")
+            .trim() || about.slice(0, 400)
+        }`
+      : about;
+  return [who ? `Who this is: ${who}` : "", cut ? `From their card (context, do not copy): ${cut}` : ""]
+    .filter(Boolean)
+    .join("\n");
+}
+
+/**
  * How Slurp adds the Creator's look to a picture prompt (`imageAppearanceMode`, player report on
  * 0.2.41): one setting used to both hand the look to the prompt writer and insert it again, so a
  * look the writer had already worded was added a second time.

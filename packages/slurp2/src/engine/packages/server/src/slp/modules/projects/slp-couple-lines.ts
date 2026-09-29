@@ -4,6 +4,7 @@
  */
 import { slurpCoupleActive, slurpCoupleFor, slurpCoupleOf, type SlurpCouple } from "./slp-creator-couples.js";
 import { slurpForcedCoupleLine } from "./slp-couple-words.js";
+import { slurpCouplePartners, slurpNameList } from "./slp-couple-group.js";
 
 /** An ex stays on a Creator's mind (and in their posts and chats) this long after the breakup. */
 export const SLURP_EX_DAYS = 30;
@@ -19,13 +20,42 @@ export function slurpRelationshipLine(
   names: ReadonlyMap<string, string>,
   options: { withId?: string | null; at?: Date } = {},
 ): string {
+  const line = oneRelationshipLine(couples, creatorId, names, options);
+  // Polyamory (0.3.5): one person in several couples hears about all of them.
+  const main = options.withId ? slurpCoupleOf(couples, creatorId, options.withId) : slurpCoupleFor(couples, creatorId);
+  const more = couples
+    .filter((couple) => couple !== main && slurpCoupleActive(couple))
+    .flatMap((couple) => {
+      const who = slurpNameList(
+        slurpCouplePartners(couple, creatorId).flatMap((id) => (names.has(id) ? [names.get(id)!] : [])),
+      );
+      if (!who) return [];
+      return [
+        couple.stage === "sparks"
+          ? `flirting with ${who}`
+          : couple.stage === "dating"
+            ? `dating ${who}`
+            : `with ${who}`,
+      ];
+    });
+  return more.length ? `${line} You are polyamorous, and you are also ${more.join(", and ")}.`.trim() : line;
+}
+
+function oneRelationshipLine(
+  couples: readonly SlurpCouple[],
+  creatorId: string,
+  names: ReadonlyMap<string, string>,
+  options: { withId?: string | null; at?: Date },
+): string {
   const at = options.at ?? new Date();
   const withThem = options.withId ? slurpCoupleOf(couples, creatorId, options.withId) : null;
   const couple = withThem ?? slurpCoupleFor(couples, creatorId) ?? slurpRecentEx(couples, creatorId, at);
   if (!couple) return "";
-  const partnerId = couple.aId === creatorId ? couple.bId : couple.aId;
-  const partner = names.get(partnerId);
+  // Polyamory (0.3.5): a couple of three or four names every partner; "they" for more than one.
+  const partnerIds = slurpCouplePartners(couple, creatorId);
+  const partner = slurpNameList(partnerIds.flatMap((id) => (names.has(id) ? [names.get(id)!] : [])));
   if (!partner) return "";
+  if (partnerIds.length > 1) return slurpGroupLine(couple, partner, Boolean(withThem));
   const days = Math.max(0, Math.round((at.getTime() - Date.parse(couple.stageAt)) / 86_400_000));
   const trouble = [...couple.moments].reverse().find((moment) => moment.kind === "fight" || moment.kind === "jealous");
   // A couple the player forced against a card: the card colors how it feels (slice I).
@@ -67,9 +97,23 @@ function slurpRecentEx(couples: readonly SlurpCouple[], creatorId: string, at: D
         (couple) =>
           couple.ending === "breakup" &&
           !slurpCoupleActive(couple) &&
-          (couple.aId === creatorId || couple.bId === creatorId) &&
+          slurpCouplePartners(couple, creatorId).length > 0 &&
           at.getTime() - Date.parse(couple.stageAt) >= 0 &&
           at.getTime() - Date.parse(couple.stageAt) < SLURP_EX_DAYS * 86_400_000,
       ) ?? null
   );
+}
+
+/** A couple of three or four, from one member's side. */
+function slurpGroupLine(couple: SlurpCouple, partners: string, inChat: boolean): string {
+  if (couple.stage === "split")
+    return `${partners} are your exes: the relationship you had together is over. It still comes up now and then.`;
+  const rocky = couple.stage === "rocky" ? " Things are rocky between you right now." : "";
+  const what =
+    couple.stage === "together"
+      ? `You are in a polyamorous relationship with ${partners}, and your fans know.`
+      : `You are dating ${partners} together, a polyamorous relationship that is still new.`;
+  return inChat
+    ? `${what}${rocky}`
+    : `${what}${rocky} They are part of your life, not the topic of everything you write.`;
 }

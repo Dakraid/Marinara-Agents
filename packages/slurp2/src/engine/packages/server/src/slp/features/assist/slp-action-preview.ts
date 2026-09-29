@@ -23,8 +23,10 @@ import {
 } from "../../../../../shared/src/slp/slp-actions.js";
 import { SLP_STEERING_NUDGES_MAX } from "../../../../../shared/src/slp/slp-creator-steering.js";
 import { SLP_SPICE_LEVELS } from "../../../../../shared/src/slp/slp-spice.js";
+import { SLURP_PLATFORM_EVENTS_MAX } from "../../../../../shared/src/slp/slp-platform-events.js";
 import type { SlpActionPreview } from "../../../../../shared/src/slp/slp-stir.js";
 import type { SlpAssistOutcome } from "./slp-assist-service.js";
+import { isSlpDeskLever, previewSlpDeskLever, type SlpDeskLever } from "./slp-desk-levers.js";
 
 type Account = {
   id: string;
@@ -62,12 +64,14 @@ export async function previewSlpAction(
   };
   if (isSlurpTieLever(name))
     return { ok: true, value: { ...base, ...(await previewSlurpTieLever(db, name, input, at)) } };
+  if (isSlpDeskLever(name))
+    return { ok: true, value: { ...base, ...(await previewSlpDeskLever(db, name, input, at)) } };
   return { ok: true, value: { ...base, ...(await previewOther(db, name, input, at)) } };
 }
 
 async function previewOther(
   db: DB,
-  name: Exclude<SlpActionName, Parameters<typeof previewSlurpTieLever>[1]>,
+  name: Exclude<SlpActionName, Parameters<typeof previewSlurpTieLever>[1] | SlpDeskLever>,
   input: Record<string, unknown>,
   at: Date,
 ): Promise<Partial<SlpActionPreview>> {
@@ -78,6 +82,8 @@ async function previewOther(
   const missing = typeof input.accountId === "string" && !account;
   const nameOf = account?.displayName ?? "";
   if (missing) return { who, error: "notFound", summary: "That Creator does not exist." };
+  // The player writes their own page's posts, so its ideas, life and spice would change nothing.
+  const ownPage = account && !slurpRunsItself(account) ? "notAutomatic" : null;
   switch (name) {
     case "write-text":
     case "improve-text":
@@ -107,12 +113,14 @@ async function previewOther(
       const patch = input as SlpActionParsed<"steer-creator">;
       return {
         who,
+        error: ownPage,
         when: "nextPost",
         detail: {
           mood: patch.mood === undefined ? null : (patch.mood ?? "none"),
           lifePhase: patch.lifePhase ?? null,
           focus: patch.focus ?? null,
           pace: patch.pace ?? null,
+          relationshipStyle: patch.relationshipStyle === undefined ? null : (patch.relationshipStyle ?? "card"),
           push: patch.push?.join(", ") || null,
           avoid: patch.avoid?.join(", ") || null,
         },
@@ -127,7 +135,7 @@ async function previewOther(
         when: "nextPost",
         detail: { text: idea.text, story: idea.story },
         notes: steering.pace === "break" ? [{ kind: "onBreak", name: nameOf }] : [],
-        error: steering.nudges.length >= SLP_STEERING_NUDGES_MAX ? "ideasFull" : null,
+        error: ownPage ?? (steering.nudges.length >= SLP_STEERING_NUDGES_MAX ? "ideasFull" : null),
         summary: `${nameOf} gets an idea for a ${idea.story ? "Story" : "post"}: ${idea.text}`,
       };
     }
@@ -136,7 +144,7 @@ async function previewOther(
       return {
         who,
         detail: { idea: post.idea ?? null, story: post.story },
-        error: account && !slurpRunsItself(account) ? "notAutomatic" : null,
+        error: ownPage,
         summary: `${nameOf} writes and posts their next ${post.story ? "Story" : "post"} now.`,
       };
     }
@@ -149,6 +157,7 @@ async function previewOther(
         when: "nextPost",
         detail: { level: spice.level, max },
         notes: above ? [{ kind: "capped", name: nameOf }] : [],
+        error: ownPage,
         summary: `${nameOf}'s spice level becomes ${spice.level ?? "the default"}.`,
       };
     }
@@ -165,7 +174,8 @@ async function previewOther(
       return {
         when: "ongoing",
         detail: { name: event.name, days },
-        notes: live ? [{ kind: "alreadyRunning", name: event.name }] : [],
+        // A second start while it runs would double what it gives; the run refuses it too.
+        error: live ? "alreadyRunning" : null,
         summary: `${event.name} starts now for ${days} day(s); every Creator it fits joins.`,
       };
     }
@@ -202,13 +212,65 @@ async function previewOther(
           text: move.text ?? null,
         },
         error,
+        // Only hold and release undo each other (the run keeps no Undo for the other moves).
+        reversible: move.move === "hold" || move.move === "release",
         summary: `${nameOf}'s storyline "${project.title}": ${move.move}${move.text ? ` (${move.text})` : ""}.`,
+      };
+    }
+    case "start-storyline": {
+      const story = input as SlpActionParsed<"start-storyline">;
+      const others = (await Promise.all((story.withIds ?? []).map((id) => storage.getNoodlerAccountById(id)))).filter(
+        Boolean,
+      ) as Account[];
+      if (others.length !== (story.withIds ?? []).length)
+        return { who, error: "notFound", summary: "One of these Creators does not exist." };
+      const everyone = [account!, ...others.filter((other) => other.id !== account!.id)];
+      const ownOther = others.some((other) => !slurpRunsItself(other));
+      const room = await Promise.all(everyone.map((entry) => storage.arcHasRoom(entry.id)));
+      return {
+        who: everyone.map((entry) => ({ id: entry.id, name: entry.displayName, avatarUrl: entry.avatarUrl ?? null })),
+        when: "nextPost",
+        detail: { title: story.title, with: others.map((other) => other.displayName).join(", ") || null },
+        error: ownPage ?? (ownOther ? "notAutomatic" : room.every(Boolean) ? null : "storylinesFull"),
+        summary: `${nameOf} starts a storyline: ${story.title}${others.length ? `, with ${others.map((other) => other.displayName).join(", ")}` : ""}.`,
+      };
+    }
+    case "set-tip-goal": {
+      const goal = input as SlpActionParsed<"set-tip-goal">;
+      const before = await storage.getGoal(goal.accountId);
+      return {
+        who,
+        detail: { label: goal.label, target: goal.target, replaces: before?.label ?? null },
+        summary: `${nameOf} asks their fans for ${goal.target} coins: ${goal.label}.`,
+      };
+    }
+    case "new-look": {
+      const look = input as SlpActionParsed<"new-look">;
+      return {
+        who,
+        when: "nextPost",
+        detail: { change: look.change },
+        summary: `${nameOf}'s look changes from now on: ${look.change}.`,
+      };
+    }
+    case "invent-event": {
+      const event = input as SlpActionParsed<"invent-event">;
+      const settings = await storage.getSettings();
+      return {
+        when: "ongoing",
+        detail: { name: event.name, days: event.days },
+        error: settings.platformEvents.length >= SLURP_PLATFORM_EVENTS_MAX ? "eventsFull" : null,
+        summary: `${event.name} starts now for ${event.days} day(s); every Creator joins in their own way.`,
       };
     }
     case "run-audience": {
       const settings = await storage.getSettings();
       return {
-        error: slurpModelWorkerAllows(settings.modelBudget, "present") ? null : "aiOff",
+        error: !slurpModelWorkerAllows(settings.modelBudget, "present")
+          ? "aiOff"
+          : settings.fanActivityEnabled
+            ? null
+            : "audienceOff",
         summary: "The fans like, comment and reply now.",
       };
     }

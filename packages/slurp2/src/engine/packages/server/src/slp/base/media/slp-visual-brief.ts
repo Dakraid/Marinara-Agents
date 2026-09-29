@@ -10,6 +10,8 @@ export type SlurpVisualBrief = {
   camera: string;
   mood: string | null;
   sexualLevel: SlurpVisualSexualLevel;
+  /** The post writer's name for a known character ("fubuki (one punch man)"); not part of the text. */
+  knownAs?: string;
 };
 
 /** The typed visual contract between post planning and image prompt writing. */

@@ -164,8 +164,9 @@ function slpCreatorPostSchema(
                 expression: { type: "string", maxLength: 300 },
                 visualDirection: { type: "string", maxLength: 500 },
                 outfit: { type: "string", maxLength: 300 },
+                subject: { anyOf: [{ type: "string", maxLength: 120 }, { type: "null" }] },
               },
-              required: ["wardrobeId", "setting", "action", "expression", "visualDirection", "outfit"],
+              required: ["wardrobeId", "setting", "action", "expression", "visualDirection", "outfit", "subject"],
               additionalProperties: false,
             },
           }
@@ -322,8 +323,22 @@ const slpCreatorStaffDmSchema = {
         { type: "null" },
       ],
     },
+    // The Support desk (docs/SUPPORT-DESK.md): how the talk moved their trust, their answer to an offer,
+    // something they let slip about another Creator, and a ticket rating. Read by `slp-support-desk-talk.ts`.
+    desk: {
+      type: "object",
+      properties: {
+        trust: { type: "string", enum: ["up", "same", "down"] },
+        offer: { type: ["string", "null"], enum: ["accept", "counter", "decline", null] },
+        counter: nullableString,
+        intel: nullableString,
+        rating: { type: ["number", "null"] },
+      },
+      required: ["trust", "offer", "counter", "intel", "rating"],
+      additionalProperties: false,
+    },
   },
-  required: [...slpCreatorDmSchema.required, "staff"],
+  required: [...slpCreatorDmSchema.required, "staff", "desk"],
 } as const;
 
 /** Creator to Creator: the two may agree on a joint post (7b-c). */

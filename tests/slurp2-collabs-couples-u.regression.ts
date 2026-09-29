@@ -29,9 +29,10 @@ import {
   readSlurpCouples,
   slurpAdvanceCouples,
   slurpBreakUp,
-  slurpCoupleBuzz,
   type SlurpCouple,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples.ts";
+// Moved with polyamory (0.3.5): the couple-page helpers live with the group rules.
+import { slurpCoupleBuzz } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-group.ts";
 import {
   SLURP_EX_DAYS,
   slurpRelationshipLine,

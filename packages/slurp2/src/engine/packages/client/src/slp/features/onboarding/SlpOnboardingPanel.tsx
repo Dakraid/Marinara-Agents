@@ -58,6 +58,7 @@ export const DEMO_PROFILE: SlpCreatorStageProfile = {
   wardrobe: "",
   locations: "",
   publicIdentity: null,
+  page: null,
   createdAt: "",
   updatedAt: "",
 };

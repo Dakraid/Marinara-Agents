@@ -6,8 +6,15 @@ type Person = { id: string; name: string; avatarUrl: string | null };
 
 export type SlpStirLiveInput = {
   at: Date;
-  creators: (Person & { automatic: boolean; lastPostAt: string | null; pace: string; ideas: number })[];
-  couples: { id: string; aId: string; bId: string; stage: string; stageAt: string }[];
+  creators: (Person & {
+    automatic: boolean;
+    /** A couple's shared page: never "quiet", never set up (0.3.1). */
+    couplePage?: boolean;
+    lastPostAt: string | null;
+    pace: string;
+    ideas: number;
+  })[];
+  couples: { id: string; aId: string; bId: string; moreIds?: string[]; stage: string; stageAt: string }[];
   collabs: { id: string; hostId: string; partnerId: string; status: string; dropAt?: string | null }[];
   rivalries: { id: string; fromId: string; toId: string; stage: string }[];
   events: { id: string; name: string; running: boolean; endsAt: string | null }[];
@@ -15,6 +22,10 @@ export type SlpStirLiveInput = {
   owed: { id: string; creatorId: string; brand: string }[];
   /** No play in the ledger yet: the first-visit card offers one to start with. */
   firstVisit: boolean;
+  /** Free pairs with chemistry, best first (`slurpCoupleMatches`). */
+  matches?: { aId: string; bId: string }[];
+  /** Suggestion ids the player put away for now. */
+  dismissed?: ReadonlySet<string>;
 };
 
 const DAY_MS = 86_400_000;
@@ -45,7 +56,7 @@ export function slpStirLive(input: SlpStirLiveInput): SlpStirLive[] {
       .map((couple) => ({
         id: `couple:${couple.id}`,
         kind: "couple" as const,
-        who: who(couple.aId, couple.bId),
+        who: who(couple.aId, couple.bId, ...(couple.moreIds ?? [])),
         state: couple.stage,
         label: null,
         until: null,
@@ -89,11 +100,25 @@ export function slpStirLive(input: SlpStirLiveInput): SlpStirLive[] {
   ].filter((entry) => entry.kind === "event" || entry.who.length > 0);
 }
 
+/** The order suggestions are worth it in: love first, then money owed, then drama, the quiet, the world. */
+const SUGGESTION_ORDER: SlpStirSuggestion["kind"][] = [
+  "firstPlay",
+  "rocky",
+  "sparks",
+  "owedAd",
+  "match",
+  "cooling",
+  "quiet",
+  "event",
+];
+
 /**
  * Up to three plays that fit what is going on: a couple stuck at flirting, a rough patch, an owed #ad
- * post, a Creator gone quiet, an event to start, and on the first visit one pair to set up. Each
- * comes with a ready step where one is clear; a quiet Creator opens the idea card instead (the idea
- * is the player's).
+ * post, two free Creators who would click, a feud to cool, a Creator gone quiet, an event to start,
+ * and on the first visit one pair to set up. Every rule offers all it finds; the three shown are the
+ * best of different kinds first, and one the player put away does not come back until it expires.
+ * Each comes with a ready step where one is clear; a quiet Creator opens the idea card instead (the
+ * idea is the player's).
  */
 export function slpStirSuggestions(input: SlpStirLiveInput): SlpStirSuggestion[] {
   const byId = new Map(input.creators.map((creator) => [creator.id, creator]));
@@ -103,9 +128,9 @@ export function slpStirSuggestions(input: SlpStirLiveInput): SlpStirSuggestion[]
       return found ? [{ id: found.id, name: found.name, avatarUrl: found.avatarUrl }] : [];
     });
   const age = (iso: string | null) => (iso ? (input.at.getTime() - Date.parse(iso)) / DAY_MS : Infinity);
+  const people = input.creators.filter((creator) => !creator.couplePage);
   const out: SlpStirSuggestion[] = [];
-  const rocky = input.couples.find((couple) => couple.stage === "rocky");
-  if (rocky)
+  for (const rocky of input.couples.filter((couple) => couple.stage === "rocky"))
     out.push({
       id: `rocky:${rocky.id}`,
       kind: "rocky",
@@ -113,8 +138,9 @@ export function slpStirSuggestions(input: SlpStirLiveInput): SlpStirSuggestion[]
       label: null,
       step: { action: "steer-couple", input: { coupleId: rocky.id, steer: "patchUp" } },
     });
-  const sparks = input.couples.find((couple) => couple.stage === "sparks" && age(couple.stageAt) >= SPARKS_DAYS);
-  if (sparks)
+  for (const sparks of input.couples.filter(
+    (couple) => couple.stage === "sparks" && age(couple.stageAt) >= SPARKS_DAYS,
+  ))
     out.push({
       id: `sparks:${sparks.id}`,
       kind: "sparks",
@@ -122,11 +148,18 @@ export function slpStirSuggestions(input: SlpStirLiveInput): SlpStirSuggestion[]
       label: null,
       step: { action: "steer-couple", input: { coupleId: sparks.id, steer: "date" } },
     });
-  const owed = input.owed[0];
-  if (owed)
+  for (const owed of input.owed)
     out.push({ id: `owed:${owed.id}`, kind: "owedAd", who: who(owed.creatorId), label: owed.brand, step: null });
-  const feud = input.rivalries.find((rivalry) => rivalry.stage === "feud");
-  if (feud)
+  for (const match of (input.matches ?? []).slice(0, 3))
+    if (byId.has(match.aId) && byId.has(match.bId))
+      out.push({
+        id: `match:${match.aId}:${match.bId}`,
+        kind: "match",
+        who: who(match.aId, match.bId),
+        label: null,
+        step: { action: "set-up-couple", input: { aId: match.aId, bId: match.bId } },
+      });
+  for (const feud of input.rivalries.filter((rivalry) => rivalry.stage === "feud"))
     out.push({
       id: `cooling:${feud.id}`,
       kind: "cooling",
@@ -134,10 +167,9 @@ export function slpStirSuggestions(input: SlpStirLiveInput): SlpStirSuggestion[]
       label: null,
       step: { action: "cool-rivalry", input: { rivalryId: feud.id } },
     });
-  const quiet = input.creators
+  for (const quiet of people
     .filter((creator) => creator.automatic && creator.pace !== "break" && age(creator.lastPostAt) >= QUIET_DAYS)
-    .sort((left, right) => age(right.lastPostAt) - age(left.lastPostAt))[0];
-  if (quiet)
+    .sort((left, right) => age(right.lastPostAt) - age(left.lastPostAt)))
     out.push({
       id: `quiet:${quiet.id}`,
       kind: "quiet",
@@ -158,9 +190,10 @@ export function slpStirSuggestions(input: SlpStirLiveInput): SlpStirSuggestion[]
       step: { action: "start-event", input: { eventId: event.id } },
     });
   if (input.firstVisit && input.couples.every((couple) => couple.stage === "split")) {
-    const [a, b] = input.creators.filter((creator) => creator.automatic);
+    const match = input.matches?.[0];
+    const [a, b] = match ? [byId.get(match.aId), byId.get(match.bId)] : people.filter((creator) => creator.automatic);
     if (a && b)
-      out.unshift({
+      out.push({
         id: `first:${a.id}:${b.id}`,
         kind: "firstPlay",
         who: who(a.id, b.id),
@@ -168,5 +201,18 @@ export function slpStirSuggestions(input: SlpStirLiveInput): SlpStirSuggestion[]
         step: { action: "set-up-couple", input: { aId: a.id, bId: b.id } },
       });
   }
-  return out.slice(0, 3);
+  const open = out
+    // The first-visit pair is the best match already; do not offer the same two twice (and not as
+    // a match once the player put the first-visit card away).
+    .filter(
+      (suggestion, _index, all) =>
+        suggestion.kind !== "match" ||
+        !all.some((other) => other.kind === "firstPlay" && other.id.slice(6) === suggestion.id.slice(6)),
+    )
+    .filter((suggestion) => !input.dismissed?.has(suggestion.id))
+    .sort((left, right) => SUGGESTION_ORDER.indexOf(left.kind) - SUGGESTION_ORDER.indexOf(right.kind));
+  const firsts = open.filter(
+    (suggestion, index) => open.findIndex((other) => other.kind === suggestion.kind) === index,
+  );
+  return [...firsts, ...open.filter((suggestion) => !firsts.includes(suggestion))].slice(0, 3);
 }

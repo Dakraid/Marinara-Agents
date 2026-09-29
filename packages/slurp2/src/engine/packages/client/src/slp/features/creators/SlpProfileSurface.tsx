@@ -72,6 +72,8 @@ interface SlurpProfileSurfaceProps<TTab extends string = SlurpProfileTab> {
   tabs?: Array<{ id: TTab; label: string; count?: number | null; ariaLabel?: string; management?: boolean }>;
   activeTab: TTab;
   onTabChange: (tab: TTab) => void;
+  /** Between the header and the tabs: the Creator's Page. */
+  pageContent?: ReactNode;
   /** Right under the sticky tabs, above the list: the Posts tab's fan cards and the Creator tools card. */
   afterTabsContent?: ReactNode;
   postList: ReactNode;
@@ -98,6 +100,7 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
   tabs,
   activeTab,
   onTabChange,
+  pageContent,
   afterTabsContent,
   postList,
   postPanelId = "slurp-profile-panel",
@@ -353,6 +356,8 @@ export function SlurpProfileSurface<TTab extends string = SlurpProfileTab>({
           </button>
         </div>
       )}
+
+      {pageContent && <div className="@min-[680px]:mx-5 @min-[1040px]:mx-8">{pageContent}</div>}
 
       <div className="mt-5 @min-[680px]:mx-5 @min-[1040px]:mx-8">
         {/* Sticky under the profile's scroll top, on glass, so switching tabs never needs a scroll up. */}

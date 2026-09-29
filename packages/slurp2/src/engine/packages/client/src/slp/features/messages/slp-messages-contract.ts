@@ -1,3 +1,4 @@
+import type { SlpSupportDesk } from "../../../../../shared/src/slp/slp-support-desk.js";
 export type SlurpDmPolicy = "open" | "subscribers" | "paid" | "closed";
 export type SlurpRapportContribution = {
   key: string;
@@ -106,7 +107,23 @@ export type SlurpSendResponse = {
  * because a meter invites the player to farm it. The Creator's operator gets every number,
  * because that side is a business rather than a relationship.
  */
-export type SlurpThreadRelationship = {
+export type SlurpThreadRelationship = SlurpFanRelationship | SlurpSupportRelationship;
+
+/**
+ * Slurp Support's thread (docs/SUPPORT-DESK.md): no fan relationship at all. The Details panel shows
+ * the Creator's standing with Slurp (the desk record) instead.
+ */
+export type SlurpSupportRelationship = {
+  side: "viewer" | "creator";
+  desk: SlpSupportDesk;
+  availability: SlurpFanRelationship["availability"];
+  notes: SlurpFanRelationship["notes"];
+  coolUntil: null;
+  scheduledFollowUps: SlurpFanRelationship["scheduledFollowUps"];
+};
+
+export type SlurpFanRelationship = {
+  desk?: undefined;
   side: "viewer" | "creator";
   tier: string;
   score: number;

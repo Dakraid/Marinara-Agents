@@ -4,3 +4,4 @@ export { replyToSlurpMessage } from "./slp-message-operation.js";
 export { generateCreatorReply } from "./slp-reply-generation-service.js";
 export { drainSlurpContinuityExtraction } from "./slp-continuity-extraction-service.js";
 export { settleSlurpStuckMessages } from "./slp-stuck-messages-service.js";
+export { advanceSlurpSupportDesk } from "./desk/slp-desk-tick-operation.js";

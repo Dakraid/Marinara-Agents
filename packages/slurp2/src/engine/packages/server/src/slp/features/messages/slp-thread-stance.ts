@@ -25,7 +25,7 @@ import { protectCreatorGeneratedIdentity, resolveNoodlerPublicIdentity } from ".
 import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
 import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
 import { emptySlpAccountSettings } from "../../modules/records/slp-storage-model.js";
-import { slurpSupportName } from "../../modules/messages/slp-dm-roles.js";
+import { SLURP_SUPPORT_NAME } from "../../modules/messages/slp-dm-roles.js";
 import { isSlurpSupportThread } from "../../modules/messages/slp-support.js";
 
 type SlurpThread = NonNullable<Awaited<ReturnType<ReturnType<typeof createSlurpMessagesStorage>["getThreadById"]>>>;
@@ -165,8 +165,7 @@ export async function resolveSlurpReplyViewer(
 ): Promise<SlpAccount | null> {
   const personaViewer = await createSlurpStorage(db).getViewer(thread.viewerAccountId);
   if (personaViewer) return personaViewer;
-  if (isSlurpSupportThread(thread))
-    return slurpSupportAccount(slurpSupportName(await createSlurpMessagesStorage(db).listMessages(thread.id, 120)));
+  if (isSlurpSupportThread(thread)) return slurpSupportAccount(SLURP_SUPPORT_NAME);
   // A hand-operated Creator's fans are audience members, not personas. The draft still needs them
   // as the one being answered; `getViewer` alone made every draft for them ineligible.
   return operatorDraft && creator ? resolveAudienceFanAccount(db, thread.viewerAccountId, creator) : null;

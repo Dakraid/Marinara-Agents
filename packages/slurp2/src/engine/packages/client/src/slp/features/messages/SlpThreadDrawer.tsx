@@ -1,6 +1,7 @@
 import { ArrowLeft, X } from "lucide-react";
 import { SlpStoryRingAvatar } from "../../modules/story/SlpStoryRing";
 import { SlurpPromptDebugPanel, SlurpRelationshipPanel } from "./SlpMessageInsights";
+import { SlpDeskCaseFile } from "../../modules/desk/SlpDeskCaseFile";
 import { SlurpMemoriesPanel } from "./SlpMemoriesPanel";
 import { SlurpThreadRequestsPanel } from "./SlpThreadRequestsPanel";
 import { SlurpCommissionsPanel } from "./commissions/SlpCommissions";
@@ -110,7 +111,13 @@ export function SlpThreadDrawer({ model }: { model: SlurpThreadViewModel }) {
             )}
           </section>
         )}
-        {relationship && (
+        {relationship?.desk && (
+          // Slurp Support's thread: where the Creator stands with Slurp, not a fan relationship.
+          <div className="p-4">
+            <SlpDeskCaseFile desk={relationship.desk} name={headerAccount?.displayName ?? ""} />
+          </div>
+        )}
+        {relationship && !relationship.desk && (
           <SlurpRelationshipPanel
             key={threadId}
             relationship={relationship}

@@ -63,6 +63,8 @@ export type SlurpTieCreator = {
   gender?: "male" | "female" | "other" | null;
   /** For couples: partners the card itself names (anchor people with a partner relation). */
   cardPartners?: readonly string[];
+  /** Polyamory (0.3.5): their steering's relationship style, else poly words on their card. */
+  poly?: boolean;
 };
 
 export type SlurpCollabStatus = "asked" | "agreed" | "planned" | "posted" | "declined" | "blocked";

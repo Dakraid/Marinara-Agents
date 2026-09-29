@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.3";
+export const SLURP2_VERSION = "0.3.5";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -12,6 +12,24 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.5",
+    date: "2026-09-29",
+    notes: [
+      "Slurp Support has a desk in Stir: every Creator's trust and suspicion, perks, challenges, contracts, favours, and the shady moves that can get you caught.",
+      "In a Support chat you can make offers they answer, give perks, warn, plant rumours and keep notes only you see. With Settings › Stir, Creators can even write in on their own.",
+      "Polyamory, if you turn it on: couples of three or four, and polyamorous Creators in more than one couple. Each Creator is monogamous or polyamorous.",
+    ],
+  },
+  {
+    version: "0.3.4",
+    date: "2026-09-29",
+    notes: [
+      "Creators have Pages now: a collage of their best pictures, lists, a quote, prices and their people, in a look of their own, right above their posts.",
+      "New Creators design their own Page. For the others, tap “Let them design it”, or build it yourself with six looks and ten kinds of blocks.",
+      "Stir can do more: start a storyline, give someone a new look, set a tip goal or make up an event, and undo anything from Recent plays.",
+    ],
+  },
   {
     version: "0.3.3",
     date: "2026-09-29",

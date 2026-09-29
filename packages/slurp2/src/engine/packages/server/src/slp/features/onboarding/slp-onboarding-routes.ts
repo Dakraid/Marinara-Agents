@@ -106,6 +106,9 @@ export async function slpOnboardingRoutes(app: FastifyInstance, deps: SlpRouteDe
         artwork.bannerUrl,
       );
       if (!created) return reply.code(404).send({ error: "Noodle account not found" });
+      // A character Creator designs their own Page on a later open; a persona's page is the player's to build.
+      if (publicAccount.kind === "character")
+        await noodle.updateAccountProfile(created.id, { profile: { pageWanted: true } }).catch(() => undefined); // a missing wish only means no automatic first Page
       const profile = (await noodle.listNoodlerStageProfiles()).find((item) => item.id === created.id);
       if (!profile) throw new Error("Failed to load the created Slurp stage profile.");
       return reply.code(201).send(profile);
@@ -265,6 +268,8 @@ export async function slpOnboardingRoutes(app: FastifyInstance, deps: SlpRouteDe
             noteReason(noodleAccountId, "The creator record could not be written.");
             return;
           }
+          if (publicAccount.kind === "character")
+            await noodle.updateAccountProfile(account.id, { profile: { pageWanted: true } }).catch(() => undefined); // a missing wish only means no automatic first Page
           await applyAutoPosting(account.id);
           created.push(account.id);
         } catch (error) {

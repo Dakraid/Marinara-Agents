@@ -8,6 +8,7 @@
  * - `undoSlpStirPlay`, `readSlpStirView`.
  */
 import type { DB } from "../../../db/connection.js";
+import { logger } from "../../../lib/logger.js";
 import { resolveBaseUrl } from "../../../services/generation/connection-base-url.js";
 import { createLLMProvider } from "../../../services/llm/provider-registry.js";
 import { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
@@ -17,13 +18,25 @@ import { claimSlurpModelBudget, slurpModelWorkerAllows } from "../../base/model/
 import { slpWithProviderRetry } from "../../base/model/slp-provider-retry.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { readSlurpCreatorSteering } from "../../data/creators/slp-steering-storage.js";
-import { mutateSlurpStirPlays, readSlurpStirPlays } from "../../data/assist/slp-stir-plays-storage.js";
+import {
+  mutateSlurpStirPlays,
+  readSlurpStirDismissed,
+  readSlurpStirPlays,
+  type SlurpStoredStirPlay,
+} from "../../data/assist/slp-stir-plays-storage.js";
+import { slurpCoupleActive, slurpCoupleMatches } from "../../modules/projects/slp-creator-couples.js";
+import { slurpPairKey } from "../../modules/projects/slp-creator-ties.js";
 import { readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ties-storage.js";
 import { slurpDealOwesPost } from "../../modules/economy/slp-brand-deals.js";
 import { buildSlpStirPlanMessages, readSlpStirPlanAnswer } from "../../modules/assist/slp-stir-plan.js";
 import { slpStirLive, slpStirSuggestions } from "../../modules/assist/slp-stir-live.js";
-import { slpRunStirSteps, slpSortStirSteps } from "../../modules/assist/slp-stir-play.js";
-import { listSlurpBrandCatalog, slurpIsCouplePage, slurpRunsItself } from "../projects/slp-projects-contract.js";
+import { SLP_STIR_CANT_INVALID, slpRunStirSteps, slpSortStirSteps } from "../../modules/assist/slp-stir-play.js";
+import {
+  listSlurpBrandCatalog,
+  loadSlurpTieCreators,
+  slurpIsCouplePage,
+  slurpRunsItself,
+} from "../projects/slp-projects-contract.js";
 import { previewSlpAction } from "./slp-action-preview.js";
 import { runSlpActionWithUndo } from "./slp-action-runner.js";
 import { readSlpStirWorld, undoSlpAction, type SlpActionUndo } from "./slp-stir-levers.js";
@@ -32,6 +45,7 @@ import type {
   SlpActionPreview,
   SlpStirOrigin,
   SlpStirPlan,
+  SlpStirPlanRequest,
   SlpStirPlay,
   SlpStirStep,
   SlpStirView,
@@ -45,6 +59,37 @@ type Account = {
   kind: string;
   sourceKind?: string | null;
   sourceEntityId?: string | null;
+  settings?: { profile?: { stagePersonality?: string; bio?: string; tags?: string[] } };
+};
+
+/** One public line per Creator for the planner, so "someone who would hate him" can be picked. */
+const slpStirCardLine = (account: Account) => {
+  const profile = account.settings?.profile;
+  const about = (profile?.stagePersonality || profile?.bio || "").trim();
+  const tags = (profile?.tags ?? []).slice(0, 4).join(", ");
+  return [about, tags && `tags: ${tags}`].filter(Boolean).join("; ") || undefined;
+};
+
+/** The Creator ids a step names, whatever the action calls them. */
+const slpStirStepPeople = (input: Record<string, unknown>) =>
+  ["accountId", "aId", "bId", "fromId", "toId"].flatMap((key) =>
+    typeof input[key] === "string" ? [input[key] as string] : [],
+  );
+
+/** What a step made or touched, from its result: the ids a ledger row can link to. */
+const slpStirStepRef = (value: unknown): Record<string, string> | undefined => {
+  if (!value || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  const post = record.post as { id?: unknown } | undefined;
+  const ref = Object.fromEntries(
+    [
+      ...["collabId", "rivalryId", "coupleId", "occurrenceId", "projectId", "dealId"].map(
+        (key) => [key, record[key]] as const,
+      ),
+      ["postId", post?.id] as const,
+    ].filter((entry): entry is readonly [string, string] => typeof entry[1] === "string"),
+  );
+  return Object.keys(ref).length ? ref : undefined;
 };
 
 /**
@@ -60,7 +105,7 @@ export async function previewSlpStirSteps(
   for (const play of plays) {
     const preview = await previewSlpAction(db, play.action, play.input);
     if (preview.ok) cards.push(preview.value);
-    else cant.push(preview.error);
+    else cant.push(SLP_STIR_CANT_INVALID);
   }
   return { cards, cant };
 }
@@ -68,7 +113,9 @@ export async function previewSlpStirSteps(
 /** Plain words → a previewed plan. One model call on the "Plans" row; nothing in the world changes. */
 export async function planSlpStir(
   db: DB,
-  request: { text: string; creatorId?: string; postId?: string },
+  request: Omit<SlpStirPlanRequest, "personaId">,
+  /** The pages the playing persona runs; without one, every page the player runs is theirs. */
+  own?: (account: Account) => boolean,
 ): Promise<SlpAssistOutcome<SlpStirPlan>> {
   const storage = createSlurpStorage(db);
   const settings = await storage.getSettings();
@@ -82,7 +129,11 @@ export async function planSlpStir(
   const accounts = (await storage.listNoodlerAccounts()) as Account[];
   const about = request.creatorId ? accounts.find((account) => account.id === request.creatorId) : null;
   const post = request.postId ? await storage.getPostById(request.postId) : null;
-  const [world, catalog] = await Promise.all([readSlpStirWorld(db), listSlurpBrandCatalog(db)]);
+  const [world, catalog, plays] = await Promise.all([
+    readSlpStirWorld(db),
+    listSlurpBrandCatalog(db),
+    readSlurpStirPlays(db),
+  ]);
   if (!(await claimSlurpModelBudget(db, settings.modelBudget, "plan")))
     return { ok: false, status: 429, error: "Today's AI budget for plans is used up. The cards still work." };
   const provider = slpWithProviderRetry(
@@ -101,16 +152,26 @@ export async function planSlpStir(
   const result = await provider.chatComplete(
     buildSlpStirPlanMessages({
       text: request.text,
-      creators: accounts.map((account) => ({
-        id: account.id,
-        name: account.displayName,
-        handle: account.handle,
-        automatic: slurpRunsItself(account),
-      })),
+      creators: accounts
+        .filter((account) => !slurpIsCouplePage(account))
+        .map((account) => ({
+          id: account.id,
+          name: account.displayName,
+          handle: account.handle,
+          automatic: slurpRunsItself(account),
+          own: own ? own(account) : undefined,
+          card: slpStirCardLine(account),
+        })),
       world,
       brands: catalog.brands,
       about: about ? { id: about.id, name: about.displayName } : null,
       post: post ? { id: post.id, caption: String((post as { content?: unknown }).content ?? "") } : null,
+      recent: plays.slice(0, 5).map((play) => ({
+        action: play.steps.map((step) => step.action).join(" + "),
+        who: [...new Set(play.steps.flatMap((step) => slpStirStepPeople(step.input)))],
+        undone: play.undone,
+      })),
+      followUp: request.followUp ?? null,
     }),
     // Reasoning headroom, like the writing help: a plan is short, the thinking may not be.
     { model: connection.model, temperature: 0.3, maxTokens: 3072 },
@@ -138,7 +199,10 @@ export async function playSlpStir(
     id: newId(),
     at: at.toISOString(),
     origin: input.origin,
-    steps,
+    steps: steps.map((step, index) => {
+      const ref = results[index]?.ok ? slpStirStepRef(results[index]!.value) : undefined;
+      return ref ? { ...step, ref } : step;
+    }),
     undoable: undo.length > 0,
     undone: false,
     undo,
@@ -148,18 +212,44 @@ export async function playSlpStir(
   return { play: visible, results };
 }
 
-/** One Undo for everything reversible in that play, newest step first. */
-export async function undoSlpStirPlay(db: DB, id: string): Promise<SlpAssistOutcome<SlpStirPlay>> {
-  const play = (await readSlurpStirPlays(db)).find((entry) => entry.id === id);
-  if (!play) return { ok: false, status: 404, error: "That play is gone." };
-  if (play.undone || !play.undoable) return { ok: false, status: 409, error: "That one cannot be taken back." };
-  for (const entry of [...play.undo].reverse()) await undoSlpAction(db, entry as SlpActionUndo);
-  const undone = await mutateSlurpStirPlays(db, (plays) => {
-    const next = plays.map((entry) => (entry.id === id ? { ...entry, undone: true, undo: [] } : entry));
-    return { plays: next, result: next.find((entry) => entry.id === id)! };
+/**
+ * One Undo for everything reversible in that play, newest step first. The play is marked taken back
+ * before anything runs, so a second tap cannot run it twice. `kept` counts the steps the world has
+ * moved past (a partner with someone new, an idea already posted): those stay as they are.
+ */
+export async function undoSlpStirPlay(
+  db: DB,
+  id: string,
+): Promise<SlpAssistOutcome<{ play: SlpStirPlay; kept: number }>> {
+  const claimed = await mutateSlurpStirPlays<SlurpStoredStirPlay | "gone" | "cant">(db, (plays) => {
+    const play = plays.find((entry) => entry.id === id);
+    if (!play) return { plays, result: "gone" as const };
+    if (play.undone || !play.undoable) return { plays, result: "cant" as const };
+    return {
+      plays: plays.map((entry) => (entry.id === id ? { ...entry, undone: true, undo: [] } : entry)),
+      result: play,
+    };
   });
-  const { undo: _undo, ...visible } = undone;
-  return { ok: true, value: visible };
+  if (claimed === "gone") return { ok: false, status: 404, error: "That play is gone." };
+  if (claimed === "cant") return { ok: false, status: 409, error: "That one cannot be taken back." };
+  let kept = 0;
+  for (const entry of [...claimed.undo].reverse()) {
+    const done = await undoSlpAction(db, entry as SlpActionUndo).catch((error: unknown) => {
+      logger.warn(error, "[slurp] A Stir undo step failed");
+      return false;
+    });
+    if (!done) kept += 1;
+  }
+  const { undo: _undo, ...visible } = claimed;
+  if (kept && kept === claimed.undo.length) {
+    // Nothing could go back: the play is not "taken back" in the ledger or to the planner.
+    await mutateSlurpStirPlays(db, (plays) => ({
+      plays: plays.map((entry) => (entry.id === id ? { ...entry, undone: false, undoable: false } : entry)),
+      result: null,
+    }));
+    return { ok: false, status: 409, error: "Too much has happened since to take that back." };
+  }
+  return { ok: true, value: { play: { ...visible, undone: true }, kept } };
 }
 
 /** Everything the Stir tab shows, in one read. `own` marks the pages this persona runs. */
@@ -169,13 +259,28 @@ export async function readSlpStirView(
   at = new Date(),
 ): Promise<SlpStirView> {
   const storage = createSlurpStorage(db);
-  const [accounts, world, document, plays, occurrences] = await Promise.all([
+  const [accounts, world, document, plays, occurrences, dismissed, tieCreators] = await Promise.all([
     storage.listNoodlerAccounts() as Promise<Account[]>,
     readSlpStirWorld(db, at),
     readSlurpCreatorTiesDocument(db),
     readSlurpStirPlays(db),
     storage.listStoryOccurrences(),
+    readSlurpStirDismissed(db, at),
+    // ponytail: every Creator's fit text on each Stir visit, for "they would click"; cache it if a big cast feels slow.
+    loadSlurpTieCreators(db, at),
   ]);
+  const rivals = new Set(world.rivalries.map((rivalry) => slurpPairKey(rivalry.fromId, rivalry.toId)));
+  const matches = slurpCoupleMatches(
+    tieCreators,
+    new Set(
+      document.couples
+        .filter(slurpCoupleActive)
+        .flatMap((couple) => [couple.aId, couple.bId, ...(couple.moreIds ?? [])]),
+    ),
+    (a, b) => rivals.has(slurpPairKey(a, b)),
+  )
+    .sort((left, right) => right.fit.chemistry - left.fit.chemistry)
+    .map(({ a, b }) => ({ aId: a.id, bId: b.id }));
   const creators = await Promise.all(
     accounts.map(async (account) => {
       const automatic = slurpRunsItself(account);
@@ -217,6 +322,8 @@ export async function readSlpStirView(
       .filter((deal) => ownIds.has(deal.creatorId) && slurpDealOwesPost(deal, at))
       .map((deal) => ({ id: deal.id, creatorId: deal.creatorId, brand: deal.brand })),
     firstVisit: plays.length === 0,
+    matches,
+    dismissed,
   };
   return {
     live: slpStirLive(liveInput),

@@ -43,3 +43,33 @@ export function mutateSlurpStirPlays<T>(
   queue = run.catch(() => undefined);
   return run;
 }
+
+/** Suggestions the player put away (the Stir tab's "Not now"): id → until when. */
+export const SLURP_STIR_DISMISSED_KEY = "slurp2.stir-dismissed";
+const DISMISS_DAYS = 3;
+
+async function readDismissed(db: DB): Promise<Record<string, string>> {
+  try {
+    const parsed = JSON.parse((await createAppSettingsStorage(db).get(SLURP_STIR_DISMISSED_KEY)) ?? "{}") as unknown;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** The suggestion ids still put away now. */
+export async function readSlurpStirDismissed(db: DB, at = new Date()): Promise<Set<string>> {
+  const now = at.toISOString();
+  return new Set(Object.entries(await readDismissed(db)).flatMap(([id, until]) => (until > now ? [id] : [])));
+}
+
+/** Put one suggestion away for a few days; expired entries are dropped on the way. */
+export async function dismissSlurpStirSuggestion(db: DB, id: string, at = new Date()): Promise<void> {
+  const now = at.toISOString();
+  const kept = Object.entries(await readDismissed(db)).filter(([, until]) => until > now);
+  const until = new Date(at.getTime() + DISMISS_DAYS * 86_400_000).toISOString();
+  await createAppSettingsStorage(db).set(
+    SLURP_STIR_DISMISSED_KEY,
+    JSON.stringify(Object.fromEntries([...kept.slice(-100), [id, until]])),
+  );
+}

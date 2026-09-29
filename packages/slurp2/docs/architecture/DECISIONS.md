@@ -570,3 +570,67 @@ modules, rejected alternative, and migration consequence.
   already say it); zustand `persist` (the package's other stored state uses plain `localStorage`).
 - **Migration consequence:** none stored server-side; a browser without the key starts with an empty
   Pulse history.
+
+## 0.3.2 Creator Pages: one shared page schema, filled by code (2026-09-29)
+
+- **Problem:** a Creator could present themselves only through a bio and posts. A Page needs one
+  shape that the server stores and repairs (including a model's answer) and the client renders and
+  edits, without letting the model write facts that go stale.
+- **Decision:** `shared/src/slp/slp-creator-page.ts` holds the schema, limits and a lenient reader
+  that drops a bad block and keeps the rest. The Page stores only a theme id, block order and words;
+  pictures, prices, facts, people and the poll are filled on the client from data the profile already
+  loads. The Page lives in `settings.profile.page` (plus `pageWanted` for a new Creator's first Page)
+  and is on the audience allowlist. Model work sits in `features/creators/slp-creator-page-service.ts`
+  behind a new AI budget row (`page`); catch-up on open runs it detached, at most once at a time.
+- **Affected modules:** shared `slp-creator-page.ts`, `slp-social.schema.ts`/`types.ts`,
+  `slp-model-budget.ts`; server `modules/creators/slp-creator-page-{prompt,refresh}.ts`,
+  `modules/creators/slp-disclosure.ts`, `modules/records/slp-storage-model.ts`, the creators and
+  onboarding routes, `workflows/slp-world-tick-workflow.ts`; client `modules/creator/SlpCreatorPage.tsx`,
+  `slp-creator-page-{data,styles}.ts`, `features/creators/SlpCreatorPageEditor.tsx`,
+  `app/screens/SlpProfilePage.tsx` and the `pageContent` slot of `SlpProfileSurface`.
+- **Rejected alternatives:** storing the rendered page (prices and pictures would go stale); a
+  generated collage picture (costs an image call, drifts from the look, cannot be tapped); a sixth
+  profile tab (five already crowd a phone).
+- **Migration consequence:** none; both fields are optional and absent on existing accounts.
+
+## 0.3.5 Slurp Support desk: a desk record per Creator, a `messages/desk` seam (2026-09-29)
+
+- **Problem:** Slurp Support's thread ran on the fan-chat machinery (rapport, strikes, pictures, fees),
+  which does not describe a Creator's standing with the platform, and Support had two tools. The
+  design (`docs/SUPPORT-DESK.md`) adds trust, suspicion, offers, tickets, challenges, contracts,
+  leaving, notices and eight desk actions.
+- **Decision:** one desk record per Creator in app settings (`slurp2.creator.<id>.desk`, like the
+  steering), read through `shared/src/slp/slp-support-desk.ts` (pure rules and the settings schema,
+  both sides need them). The desk's routes, send-time checks, reply handling and clock live in the
+  new seam `features/messages/desk/`; its actions join the one action layer
+  (`features/assist/slp-desk-levers.ts`), so an Offer the Creator accepts runs through the same
+  runner. The world clock runs the desk on templates only; a Creator's line is rewritten on open
+  (pending-text kind `desk`, prompt `pendingDesk`). The reach effects go through the one
+  `platformInfluenceMultiplier("feed.reach")`.
+- **Affected modules:** shared `slp-support-desk.ts`, `slp-actions.ts`, `slp-stir.ts`; server
+  `data/creators/slp-support-desk-{storage,counts}.ts`, `data/messages/slp-support-desk-thread.ts`,
+  `modules/messages/slp-support-desk-talk.ts`, `features/messages/desk/*`, the thread, send and
+  generation paths, `features/world/slp-pending-text-service.ts`, the world scheduler and tick
+  workflow; client `modules/desk/SlpDeskCaseFile.tsx`, `features/messages/SlpDesk*.tsx`,
+  `features/stir/SlpStirDesk.tsx`, `SlpStirDeskFields.tsx`, `SlpStirSettingsPanel.tsx` and a new
+  Backstage section `stir`.
+- **Rejected alternatives:** new message kinds (`offer`, `note`) in the stored enum (a `system` or
+  `text` line with metadata needs no schema change and older clients render it); a table for the
+  desk (an app-settings record per Creator follows the steering and needs no migration); keeping
+  Support threads in every persona's inbox (they are staff work, not the persona's chats).
+- **Migration consequence:** none stored; a Creator without a record starts neutral on the first
+  desk pass, and one Support signed up starts warmer when its sign-up chat is kept.
+
+## 0.3.5 Polyamory: `moreIds` on a couple, group helpers apart (2026-09-29)
+
+- **Problem:** a couple could only be two people.
+- **Decision:** `SlurpCouple.moreIds` (up to two more, four people in all); the pair (`aId`, `bId`)
+  still drives the stage clock. Group rules, names and the couple-page money helpers
+  (`slurpCoupleBuzz`, `slurpCouplePageSplit`, now N-way) live in `modules/projects/slp-couple-group.ts`,
+  keeping `slp-creator-couples.ts` under the file limit. Off by default (`polyamory` setting).
+- **Also:** a polyamorous Creator may be in several couples (`slurpSetUpCouple` with `polyamory`); a
+  Creator's style is `relationshipStyle` in their steering (null = poly words on their card,
+  `SLP_POLY_CARD_WORDS`), read into `SlurpTieCreator.poly`. Monogamous Creators keep the old rule.
+- **Rejected alternatives:** only overlapping pairs (a throuple would read as three separate couples);
+  only groups (a Creator with two separate partners could not exist).
+- **Migration consequence:** none; `moreIds` and `relationshipStyle` are optional.

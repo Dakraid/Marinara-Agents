@@ -37,7 +37,7 @@ import {
   type SlurpCreatorStateSignal,
 } from "../../modules/creators/slp-creator-state.js";
 import { activeSlurpStrikes } from "../../modules/world/slp-stance.js";
-import { slurpSupportName } from "../../modules/messages/slp-dm-roles.js";
+import { SLURP_SUPPORT_NAME } from "../../modules/messages/slp-dm-roles.js";
 import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
 import { SLURP_ONLINE_AFTER_DELIVERY_MINUTES } from "../../modules/messages/slp-conversation-momentum.js";
 import { createAppSettingsStorage } from "../../../services/storage/app-settings.storage.js";
@@ -111,7 +111,7 @@ export function createMessagesStorageActions(context: SlurpMessagesContext) {
       content: string,
       requestId?: string,
       /** The player writes as Slurp Support: staff reach any Creator, and the line is Support's, not the fan's. */
-      options: { asSupport?: boolean } = {},
+      options: { asSupport?: boolean; metadata?: Record<string, unknown> } = {},
     ): Promise<SlurpSendResult> {
       // Support writes from its own account, so a Creator has one Support thread whichever persona
       // the player writes from (`slp-support.ts`). Staff reach any Creator without a fee.
@@ -124,18 +124,19 @@ export function createMessagesStorageActions(context: SlurpMessagesContext) {
         const existing = (await context.storage.listMessages(opened.thread.id)).find(
           (message) => message.role === "viewer" && message.metadata.requestId === requestId,
         );
-        if (existing) return { status: "sent", thread: opened.thread, message: existing };
+        if (existing) return { status: "sent", thread: opened.thread, message: existing, replayed: true };
       }
-      // One continuous Support per thread: the name the kept sign-up chat gave Support is reused.
-      const support = options.asSupport
-        ? { sceneSpeaker: slurpSupportName(await context.storage.listMessages(opened.thread.id)), supportVoice: true }
-        : null;
+      // Support is a faceless team: every line it writes is "Slurp Support".
+      const support = options.asSupport ? { sceneSpeaker: SLURP_SUPPORT_NAME, supportVoice: true } : null;
       const message = await context.storage.appendMessage(opened.thread.id, {
         id: requestId ? `dm:${requestId}:message` : undefined,
         senderAccountId: viewerAccountId,
         role: "viewer",
         content,
-        metadata: requestId || support ? { ...(requestId ? { requestId } : {}), ...support } : undefined,
+        metadata:
+          requestId || support || options.metadata
+            ? { ...(requestId ? { requestId } : {}), ...support, ...options.metadata }
+            : undefined,
       });
       if (!message) return { status: "not_found" };
       // Slurp's staff writing is not a fan engaging: no event, no tie.

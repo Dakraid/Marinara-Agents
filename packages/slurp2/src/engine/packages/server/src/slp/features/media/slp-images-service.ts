@@ -36,9 +36,14 @@ import { type ConnectionAdmissionMode } from "../../../services/generation/conne
 import { characterAppearanceFromRow, characterSlpImageContextFromRow } from "./slp-public-images-service.js";
 import type { SlpImagePromptReviewItem } from "./slp-public-images-service.js";
 import { characterNameFromRow } from "../../modules/creators/slp-public-support.js";
+import { parseRecord } from "../../modules/records/slp-storage-model.js";
+import { slpResolveCardMacros } from "../../base/prompting/slp-prompt-safety.js";
 import {
   selectSlpImageProviderPrompt,
   slurpApplyImageLook,
+  slurpApplyImageSubject,
+  slurpImageSubjectName,
+  slurpImageIdentityContext,
   slurpLookForWriter,
   slurpArtStyle,
   slurpStyledImagePrompt,
@@ -113,6 +118,7 @@ type CreatorPostImageInput = {
     | "storyImageWidth"
     | "storyImageHeight"
     | "characterImageInstructions"
+    | "creatorImageNames"
     | "promptBlocks"
     | "generationConnectionId"
     | "imagePromptConnectionId"
@@ -337,6 +343,25 @@ async function generateCreatorPostImageRun(
 
   // Card appearance carries clothes and costumes; the scene decides what is worn in this picture.
   if (!stageAppearance) characterDescription = slurpImageLook(characterDescription);
+  // A character the image model knows is drawn from their name (0.3.5, player report). The card's
+  // own name, on by default per Creator, only for an open identity; an OC's switch can be turned off.
+  const sourceName = sourceCharacter ? characterNameFromRow(sourceCharacter) : sourcePersona?.name?.trim() || "";
+  const subjectName =
+    !input.suppressCreatorDetails &&
+    !input.suppressCharacterContext &&
+    input.disclosureMode === "open" &&
+    input.settings.creatorImageNames?.[input.account.id] !== false &&
+    sourceName &&
+    sourceName !== "Character"
+      ? slurpImageSubjectName(input.visualBrief?.knownAs, [sourceName, input.account.displayName])
+      : "";
+  const sourceCard = sourceCharacter ? parseRecord(sourceCharacter.data) : null;
+  const identityContext = subjectName
+    ? slurpImageIdentityContext(
+        subjectName,
+        typeof sourceCard?.description === "string" ? slpResolveCardMacros(sourceCard.description, subjectName) : "",
+      )
+    : "";
   run.appearance = { source: appearanceSource, text: redactIdentity(characterDescription) };
   run.referenceImages = referenceImages?.length ?? 0;
 
@@ -427,6 +452,7 @@ async function generateCreatorPostImageRun(
   const lookMode = input.settings.imageAppearanceMode ?? "writer";
   const characterContext = redactIdentity(
     [
+      identityContext,
       characterDescription && slurpLookForWriter(lookMode) ? `Appearance:\n${characterDescription}` : "",
       characterPersonality ? `Personality:\n${characterPersonality}` : "",
       characterImageInstructions ? `Character image preferences:\n${characterImageInstructions}` : "",
@@ -542,8 +568,12 @@ async function generateCreatorPostImageRun(
     lookMode,
     usedRewrite,
   );
+  // The name leads on every path, with or without the enhancer; a prompt a human approved stays as written.
+  const finalPromptSubject = skipInterpretation
+    ? finalPromptLook
+    : slurpApplyImageSubject(finalPromptLook, subjectName, promptFamily);
   const finalPrompt = [
-    artStyle ? slurpStyledImagePrompt(finalPromptLook, styleSource) : finalPromptLook,
+    artStyle ? slurpStyledImagePrompt(finalPromptSubject, styleSource) : finalPromptSubject,
     input.compositionGuard,
   ]
     .filter(Boolean)

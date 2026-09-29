@@ -8,7 +8,7 @@ import { slurpWorldTimerDue } from "../../../../../shared/src/slp/slp-tuning.js"
 import { slurpPlayerPresent } from "./slp-world-tick-state.js";
 import { drainSlurpPendingText } from "./slp-pending-text-service.js";
 import { drainSlurpAudienceReplies } from "../audience/slp-audience-contract.js";
-import { drainSlurpContinuityExtraction } from "../messages/slp-messages-contract.js";
+import { advanceSlurpSupportDesk, drainSlurpContinuityExtraction } from "../messages/slp-messages-contract.js";
 
 /**
  * The background half of the world clock.
@@ -56,6 +56,10 @@ export function startSlurpWorldScheduler(app: FastifyInstance, registerStop?: (s
       lastRunMs = Date.now();
       const result = await advanceSlurpWorld(app.db);
       if (result.actions > 0) logger.info("[slurp-world] Tick applied %d actions", result.actions);
+      // The Support desk rides the same clock (free tier: templates only).
+      await advanceSlurpSupportDesk(app.db).catch((error: unknown) =>
+        logger.warn(error, "[slurp-desk] Desk tick failed"),
+      );
       // After the tick, and never in a way that can fail it: the bank feeds the free comments the
       // tick above just wrote, so a slow or refused top-up costs nothing that is due now.
       await topUpSlurpReactionBank(app.db).catch((error: unknown) =>

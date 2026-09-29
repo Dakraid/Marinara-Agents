@@ -71,7 +71,7 @@ backLayer();
   assert.match(sheet, /const showBack = back && !desktop;/u);
   assert.match(client("features/stir/SlpStirPlaySheet.tsx"), /onClose=\{onClose\}\n\s+back\n/u);
   assert.match(client("features/stir/SlpStirCards.tsx"), /onClose=\{close\}\n\s+back\n/u);
-  assert.match(client("features/stir/SlpStirCreatorSheet.tsx"), /onClose=\{close\} back /u);
+  assert.match(client("features/stir/SlpStirCreatorSheet.tsx"), /onClose=\{close\}\s+back\s/u);
   const stir = client("features/stir/SlpStirScreen.tsx");
   assert.match(stir, /<SlpSheet open=\{open\} onClose=\{\(\) => setOpen\(false\)\} title=\{title\} size="full"/u);
   assert.match(stir, /t\("ui\.slurp\.stir\.hint\.more"\)/u);
@@ -111,7 +111,8 @@ backLayer();
   assert.deepEqual(slpCreatorChipList(creators, [], "  zz ").length, 0);
   const chips = client("modules/chrome/SlpCreatorChips.tsx");
   assert.match(chips, /const searchable = creators\.length > SLP_CREATOR_CHIPS_SEARCH_FROM;/u);
-  assert.match(client("features/stir/SlpStirPlaySheet.tsx"), /<SlpCreatorChips creators=\{creators\}/u);
+  // 0.3.5: the play sheet's creator picker moved to SlpStirFormParts.tsx.
+  assert.match(client("features/stir/SlpStirFormParts.tsx"), /<SlpCreatorChips creators=\{creators\}/u);
   assert.match(client("features/projects/SlpCollabsPanel.tsx"), /<SlpCreatorChips\s+creators=\{creators\.filter/u);
 }
 

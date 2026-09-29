@@ -6,6 +6,7 @@ export const SLP_BACKSTAGE_SECTIONS = [
   "automation",
   "content",
   "world",
+  "stir",
   "fans",
   "spice",
   "prompts",
@@ -37,6 +38,7 @@ export const SLP_BACKSTAGE_TARGETS = [
   "spice",
   "prompts",
   "autopurge",
+  "stir",
 ] as const;
 export type SlpBackstageTarget = (typeof SLP_BACKSTAGE_TARGETS)[number];
 
@@ -47,6 +49,7 @@ export const SLP_BACKSTAGE_TARGETS_BY_SECTION: Record<SlpBackstageSection, reado
   automation: ["general"],
   content: ["storylines", "arcs", "packs"],
   world: ["events", "calendar"],
+  stir: ["stir"],
   fans: ["audience", "messaging", "wallet", "ads", "tags"],
   spice: ["spice"],
   prompts: ["prompts"],
@@ -58,6 +61,7 @@ export const SLP_BACKSTAGE_DEFAULT_TARGET: Record<SlpBackstageSection, SlpBackst
   models: "connections",
   creators: "creators",
   world: "events",
+  stir: "stir",
   fans: "audience",
   content: "storylines",
   automation: "general",
@@ -71,6 +75,7 @@ export const SLP_BACKSTAGE_SECTION_LABELS: Record<SlpBackstageSection, string> =
   models: "Connections",
   creators: "Creators",
   world: "World",
+  stir: "Stir",
   fans: "Fans & money",
   content: "Storylines",
   automation: "Posting",
@@ -99,6 +104,7 @@ export const SLP_BACKSTAGE_TARGET_LABELS: Record<SlpBackstageTarget, string> = {
   spice: "Spice",
   prompts: "Prompts",
   autopurge: "Storage and backup",
+  stir: "Support desk",
 };
 
 export function destinationForTarget(target: SlpBackstageTarget): SlpBackstageSection {

@@ -21,6 +21,8 @@ import { SlpButton, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
 import { SlpSheet, SlpSheetGroup, SlpSheetItem } from "../../modules/chrome/SlpSheet";
 import { CommissionRow } from "./commissions/SlpCommissions";
 import type { SlurpThreadViewModel } from "./slp-thread-actions";
+import { SlpDeskTrustChip } from "../../modules/desk/SlpDeskCaseFile";
+import { SlpDeskTicketBar } from "./SlpDeskTicketBar";
 
 const ICON_BUTTON =
   "relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--slurp-muted)] transition-[background-color,transform] hover:bg-[var(--accent)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none motion-reduce:active:scale-100 [&_svg]:!text-current";
@@ -176,7 +178,20 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
             )}
           </span>
         </button>
-        {thread?.rapport && !asSupport && (
+        {relationship?.desk && (
+          // Slurp Support's thread: where the Creator stands with Slurp, and the open ticket.
+          <span className="flex shrink-0 items-center gap-1 pe-1">
+            <SlpDeskTrustChip desk={relationship.desk} />
+            {relationship.desk.ticket && relationship.desk.ticket.status !== "resolved" && (
+              <span className="hidden rounded-full bg-[var(--slurp-tint)] px-2 text-[11px] font-bold leading-6 text-[var(--slurp-text)] sm:inline">
+                {localizeUi(`ui.slurp.desk.ticketStatus.${relationship.desk.ticket.status}`, {
+                  defaultValue: relationship.desk.ticket.status === "open" ? "Open ticket" : "Waiting on them",
+                })}
+              </span>
+            )}
+          </span>
+        )}
+        {thread?.rapport && !asSupport && !relationship?.desk && (
           // The tier icon (the word too on wider screens) in a 44 px target. Slurp's staff are no fan tier.
           <button
             ref={tierTriggerRef}
@@ -407,6 +422,8 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
           </div>
         </div>
       )}
+
+      {relationship?.desk && asSupport && <SlpDeskTicketBar model={model} desk={relationship.desk} />}
 
       {thread?.state === "request" && (
         <div className="mx-auto mt-3 w-full max-w-[45rem] shrink-0 px-3">

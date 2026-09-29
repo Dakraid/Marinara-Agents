@@ -9,7 +9,27 @@ import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { SlpButton, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
 import { slpKeys } from "../../base/state/slp-query-keys";
 import type { SlpActionPreview, SlpStirStep } from "../../../../../shared/src/slp/slp-stir.js";
-import { SlpStirCard, useSlpStirDoIt } from "./SlpStirCards";
+import { errorMessage } from "../../modules/settings/slp-backstage-format";
+import { SlpStirCard, slpStirCantLine, useSlpStirDoIt } from "./SlpStirCards";
+
+const HIDDEN_KEY = "slurp2:stir-support-hidden";
+
+/** Support plans the player said "Not now" to, so they stay closed when the thread opens again. */
+const readHidden = (): string[] => {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(HIDDEN_KEY) ?? "[]") as unknown;
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
+};
+const hide = (messageId: string) => {
+  try {
+    window.localStorage.setItem(HIDDEN_KEY, JSON.stringify([...readHidden(), messageId].slice(-100)));
+  } catch {
+    // Private mode: the plan shows again next time, which is fine.
+  }
+};
 
 /** What a Creator's reply in a Support thread proposes (server: `stirProposal` on the message). */
 export type SlpStirProposal = { steps: SlpStirStep[]; cant?: string[]; playId?: string | null };
@@ -29,7 +49,7 @@ export function readSlpStirProposal(metadata: Record<string, unknown> | null | u
 export function SlpStirSupportCards({ messageId, proposal }: { messageId: string; proposal: SlpStirProposal }) {
   const { t } = useTranslation();
   const [removed, setRemoved] = useState<Set<number>>(new Set());
-  const [hidden, setHidden] = useState(false);
+  const [hidden, setHidden] = useState(() => readHidden().includes(messageId));
   const played = Boolean(proposal.playId);
   // Tapped once: stays off until the thread refetches with playId. A failed play is retried from Pulse.
   const [sent, setSent] = useState(false);
@@ -56,6 +76,10 @@ export function SlpStirSupportCards({ messageId, proposal }: { messageId: string
       </p>
       {query.isPending && proposal.steps.length > 0 ? (
         <p className={cn(SLP_TYPE.meta, "px-1 text-[var(--slurp-muted)]")}>{t("ui.slurp.stir.looking")}</p>
+      ) : query.isError ? (
+        <p role="alert" className={cn(SLP_TYPE.meta, "px-1 text-[var(--slurp-danger)]")}>
+          {errorMessage(query.error)}
+        </p>
       ) : (
         <ul className="space-y-2">
           {all.map((card, index) =>
@@ -69,9 +93,9 @@ export function SlpStirSupportCards({ messageId, proposal }: { messageId: string
           )}
         </ul>
       )}
-      {cant.map((line) => (
-        <p key={line} className={cn(SLP_TYPE.meta, "px-1 text-[var(--slurp-muted)]")}>
-          {line}
+      {cant.map((line, index) => (
+        <p key={`${index}:${line}`} className={cn(SLP_TYPE.meta, "px-1 text-[var(--slurp-muted)]")}>
+          {slpStirCantLine(t, line)}
         </p>
       ))}
       {played ? (
@@ -81,7 +105,15 @@ export function SlpStirSupportCards({ messageId, proposal }: { messageId: string
         </p>
       ) : (
         <div className="flex gap-2">
-          <SlpButton variant="quiet" className="flex-1" disabled={doIt.pending} onClick={() => setHidden(true)}>
+          <SlpButton
+            variant="quiet"
+            className="flex-1"
+            disabled={doIt.pending}
+            onClick={() => {
+              hide(messageId);
+              setHidden(true);
+            }}
+          >
             {t("ui.slurp.stir.support.notNow")}
           </SlpButton>
           <SlpPrimaryButton

@@ -117,7 +117,10 @@ export function SlurpMessagesView({
   workspace = false,
   onExit = null,
   exitTitle,
+  onOpenDesk,
 }: {
+  /** The Stir tab's Support desk, where Slurp Support's threads live (docs/SUPPORT-DESK.md). */
+  onOpenDesk?: () => void;
   personaId: string | null;
   /** Creator profiles this persona owns, so their request trays can be answered from here. */
   ownedCreatorAccountIds: string[];
@@ -386,6 +389,34 @@ export function SlurpMessagesView({
               ))}
             </div>
           </section>
+        )}
+
+        {onOpenDesk && filter === "all" && !needle && (threadsQuery.data?.desk?.threads ?? 0) > 0 && (
+          // Support's threads moved to the Stir desk: one row here says where they went.
+          <div className={SLP_GROUP_CLASS}>
+            <button
+              type="button"
+              onClick={onOpenDesk}
+              className="flex min-h-16 w-full items-center gap-3 px-3 py-2 text-start transition-colors hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--slurp-tint)] text-[var(--slurp-ink)]">
+                <Headset size={20} aria-hidden="true" className="!text-current" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[15px] font-bold leading-5">
+                  {localizeUi("ui.slurp.desk.title", { defaultValue: "Support desk" })}
+                </span>
+                <span className="block truncate text-[13px] leading-[19px] text-[var(--slurp-muted)]">
+                  {localizeUi("ui.slurp.desk.inboxRow", {
+                    defaultValue: "Your chats as Slurp Support live in Stir",
+                  })}
+                </span>
+              </span>
+              {(threadsQuery.data?.desk?.unread ?? 0) > 0 && (
+                <span className={slpTagClass(true)}>{threadsQuery.data!.desk!.unread}</span>
+              )}
+            </button>
+          </div>
         )}
 
         {visibleRequests.length > 0 && (

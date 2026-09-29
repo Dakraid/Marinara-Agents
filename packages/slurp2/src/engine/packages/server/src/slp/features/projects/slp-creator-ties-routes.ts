@@ -54,6 +54,7 @@ const COUPLE_ERRORS: Record<SlurpCoupleError, [number, string]> = {
   noDating: [409, "One of them does not date, and would not start for this."],
   orientation: [409, "They are not each other's type."],
   pageOpen: [409, "Their shared page is already open."],
+  mono: [409, "One of them is monogamous and already with someone."],
 };
 
 /**
@@ -285,7 +286,8 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
     const a = creators.find((creator) => creator.id === parsed.data.aId);
     const b = creators.find((creator) => creator.id === parsed.data.bId);
     if (!a || !b) return reply.code(404).send({ error: "Creator account not found" });
-    return changeCouples(req, reply, (couples, at) => slurpSetUpCouple(couples, a, b, { at, id: newId() }));
+    const polyamory = (await noodle.getSettings()).polyamory === true;
+    return changeCouples(req, reply, (couples, at) => slurpSetUpCouple(couples, a, b, { at, id: newId(), polyamory }));
   });
 
   /** Plan a date, stir some drama, patch it up, end it, or get them back together. */

@@ -18,6 +18,7 @@ import { SlpSpicePanel } from "../../features/creators/SlpSpicePanel";
 import { SlpWorldEventsPanel } from "../../features/world/SlpWorldEventsPanel";
 import { SlpPacksPanel } from "../../features/world/SlpPacksPanel";
 import { SlpCalendarPanel } from "../../features/world/SlpCalendarPanel";
+import { SlpStirSettingsPanel } from "../../features/stir/SlpStirSettingsPanel";
 import type { SlpBackstageTarget } from "../../base/navigation/slp-backstage-target";
 
 /**
@@ -48,6 +49,7 @@ export const SLP_BACKSTAGE_PANELS: readonly SlpBackstagePanelEntry[] = [
   { target: "spice", Component: SlpSpicePanel },
   { target: "prompts", Component: SlpPromptsPanel },
   { target: "autopurge", Component: SlpAutopurgePanel },
+  { target: "stir", Component: SlpStirSettingsPanel },
 ];
 
 const byTarget = new Map(SLP_BACKSTAGE_PANELS.map((entry) => [entry.target, entry]));

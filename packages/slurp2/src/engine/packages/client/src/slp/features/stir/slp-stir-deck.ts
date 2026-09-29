@@ -1,4 +1,8 @@
 import {
+  BookPlus,
+  CalendarPlus,
+  Palette,
+  Target,
   CalendarHeart,
   Flame,
   Handshake,
@@ -13,6 +17,7 @@ import {
   SunMoon,
   Zap,
   BookOpen,
+  UsersRound,
   type LucideIcon,
 } from "lucide-react";
 import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
@@ -30,6 +35,7 @@ import {
 const ICONS: Partial<Record<SlpActionName, LucideIcon>> = {
   "set-up-couple": HeartHandshake,
   "steer-couple": CalendarHeart,
+  "add-to-couple": UsersRound,
   "couple-page": Store,
   "suggest-collab": Handshake,
   "push-collab": Zap,
@@ -43,6 +49,10 @@ const ICONS: Partial<Record<SlpActionName, LucideIcon>> = {
   "start-event": PartyPopper,
   "steer-storyline": BookOpen,
   "run-audience": Megaphone,
+  "start-storyline": BookPlus,
+  "set-tip-goal": Target,
+  "new-look": Palette,
+  "invent-event": CalendarPlus,
 };
 
 export type SlpStirDeckCard = {
@@ -70,17 +80,22 @@ export const SLP_STIR_DECK = Object.fromEntries(
 export const SLP_STIR_DECK_ORDER: SlpActionName[] = [
   "set-up-couple",
   "steer-couple",
+  "add-to-couple",
   "couple-page",
   "suggest-collab",
   "push-collab",
   "offer-brand-deal",
+  "set-tip-goal",
   "start-rivalry",
   "cool-rivalry",
   "add-idea",
   "write-post",
+  "start-storyline",
   "steer-creator",
+  "new-look",
   "set-spice",
   "start-event",
+  "invent-event",
   "steer-storyline",
   "run-audience",
 ];

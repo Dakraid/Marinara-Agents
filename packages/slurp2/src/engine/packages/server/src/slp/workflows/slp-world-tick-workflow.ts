@@ -4,7 +4,8 @@ import { drainSlurpAudienceReplies } from "../features/audience/slp-audience-con
 import { drainSlurpPendingText } from "../features/world/slp-world-contract.js";
 import { topUpSlurpReactionBank } from "../features/world/slp-world-contract.js";
 import { advanceSlurpWorld } from "../features/world/slp-world-contract.js";
-import { drainSlurpContinuityExtraction } from "../features/messages/slp-messages-contract.js";
+import { advanceSlurpSupportDesk, drainSlurpContinuityExtraction } from "../features/messages/slp-messages-contract.js";
+import { refreshSlurpCreatorPages } from "../features/creators/slp-creators-contract.js";
 
 /** World work that runs when the player opens the notification stream. Each step fails soft. */
 export async function slpCatchUpWorldOnOpen(app: FastifyInstance) {
@@ -14,6 +15,8 @@ export async function slpCatchUpWorldOnOpen(app: FastifyInstance) {
   await advanceSlurpWorld(app.db).catch((error: unknown) =>
     logger.warn(error, "[slurp-world] Catch-up on open failed"),
   );
+  // The Support desk: suspicion, tickets, challenges, contracts (docs/SUPPORT-DESK.md). Templates only.
+  await advanceSlurpSupportDesk(app.db).catch((error: unknown) => logger.warn(error, "[slurp-desk] Catch-up failed"));
   // Tier 2. The world writes from templates because unattended work never calls the model; this
   // is where that debt is paid, with the player present and against text they are about to read.
   await drainSlurpPendingText(app.db).catch((error: unknown) =>
@@ -35,5 +38,10 @@ export async function slpCatchUpWorldOnOpen(app: FastifyInstance) {
   // on it, and it spends from the same budget as everything above.
   await drainSlurpContinuityExtraction(app.db).catch((error: unknown) =>
     logger.warn(error, "[slurp-continuity] Drain on open failed"),
+  );
+  // Not awaited: an AI Creator designing or refreshing their Page is never urgent, and nothing this
+  // open answers with depends on it. The runner itself never runs twice at once.
+  void refreshSlurpCreatorPages(app.db).catch((error: unknown) =>
+    logger.warn(error, "[slurp-creator-page] Refresh on open failed"),
   );
 }

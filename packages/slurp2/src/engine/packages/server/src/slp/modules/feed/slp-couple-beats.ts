@@ -19,11 +19,13 @@ import {
   type SlurpCoupleMomentKind,
 } from "../projects/slp-creator-couples.js";
 import type { SlurpTieStamp } from "../projects/slp-tie-stamp.js";
+import { slurpCouplePartners, slurpNameList } from "../projects/slp-couple-group.js";
 import type { SlurpBeat } from "./slp-post-beat.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 // Moving on (U: exes) is posted once by each, so it always takes the slot like the other news.
 const BIG: readonly SlurpCoupleMomentKind[] = [
+  "joined",
   "launch",
   "anniversary",
   "breakup",
@@ -100,6 +102,10 @@ function momentLine(moment: SlurpCoupleMoment, partner: string, couple: SlurpCou
       return `You and ${partner} just opened a page together. This is its first post: say hi to everyone as a couple, your way.`;
     case "pageClose":
       return `This is the last post on the page you shared with ${partner}. Say goodbye to the fans who followed you both, kindly and your way.`;
+    case "joined":
+      return other
+        ? `${other} joined you and ${partner}: the relationship is three now (or more). Tell your fans your way.`
+        : `You joined ${partner} as a partner. Tell your fans your way.`;
     case "movingOn":
       return `It has been a little while since you and ${partner} broke up. Post about moving on, your way: a glow-up, a quiet day for yourself, a kind word, or a small dig. Your ex is not the whole post.`;
   }
@@ -120,7 +126,11 @@ export function slurpCoupleBeat(input: {
   const { creatorId, names, at } = input;
   for (const couple of input.couples) {
     const partnerId = slurpCoupleOther(couple, creatorId);
-    const partner = partnerId ? names.get(partnerId) : undefined;
+    // Polyamory (0.3.5): every partner is named; the stamp keeps the first one.
+    const partnerNames = slurpCouplePartners(couple, creatorId).flatMap((id) =>
+      names.has(id) ? [names.get(id)!] : [],
+    );
+    const partner = slurpNameList(partnerNames);
     if (!partnerId || !partner) continue;
     const page = couple.page;
     const pageOpen = Boolean(page && !page.closedAt);
@@ -142,7 +152,10 @@ export function slurpCoupleBeat(input: {
           couple.stage !== "dating" &&
           hash(`${moment.id}:joint`) % 2 === 0);
       const onPage = page && (PAGE_ONLY.includes(moment.kind) || (joint && pageOpen));
-      const other = moment.withId ? (names.get(moment.withId) ?? null) : null;
+      // The one who joined is "other" to the rest, and posts it as their own news.
+      const other = moment.withId && moment.withId !== creatorId ? (names.get(moment.withId) ?? null) : null;
+      const told =
+        moment.kind === "joined" && other ? slurpNameList(partnerNames.filter((name) => name !== other)) : partner;
       // Not a collab (U): on their own page, each posts their side; the partner is in it, not tagged.
       const where = onPage
         ? ` It goes up on ${names.get(page.accountId) ?? "your shared page"}, the page you two share, not your own.`
@@ -153,8 +166,8 @@ export function slurpCoupleBeat(input: {
         type: moment.kind === "fight" || moment.kind === "jealous" ? "opinion" : "relationship_moment",
         anchorKind: "couple",
         anchor: partner,
-        line: `${momentLine(moment, partner, couple, other)}${where}`,
-        cast: other ? [partner, other] : [partner],
+        line: `${momentLine(moment, told, couple, other)}${where}`,
+        cast: other ? [...partnerNames, other] : partnerNames,
         place: null,
         tie: {
           kind: "couple",
@@ -175,7 +188,7 @@ export function slurpCoupleBeat(input: {
         anchorKind: "couple",
         anchor: partner,
         line: `You post on ${names.get(page!.accountId) ?? "the page you share with " + partner}, the page you and ${partner} share: ${idea}. Your way; it goes up there, not on your own page.`,
-        cast: [partner],
+        cast: partnerNames,
         place: null,
         tie: { kind: "couple", id: couple.id, partnerId, pageId: page!.accountId, hostId: creatorId },
       };
@@ -195,7 +208,7 @@ export function slurpCoupleBeat(input: {
           couple.stage === "dating"
             ? `${partner} is part of your day, but it is not official yet: ${cameo}. Keep it coy, your way; no tag, no names needed.`
             : `${partner} makes a cameo in today's post: ${cameo}. It is your everyday life, not a collab: no tag, no announcement, just the two of you being a couple in the background of your day.`,
-        cast: [partner],
+        cast: partnerNames,
         place: null,
         tie: { kind: "couple", id: couple.id, partnerId, moment: "cameo" },
       };

@@ -121,6 +121,7 @@ export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBac
   postMaxLength: automation("general", "post length", "maximum post length"),
   postShowMoreLength: automation("general", "show more", "post preview length"),
   characterImageInstructions: place("creators", "creators", "creator", "character image instructions"),
+  creatorImageNames: place("creators", "creators", "creator", "image model knows", "character name in pictures"),
   creatorCollabs: place("creators", "creators", "creator", "collabs", "collab partners", "crossover"),
   promptPresets: prompts("prompt presets", "writing presets"),
   promptInstructions: prompts("saved instructions", "reusable instructions"),
@@ -178,6 +179,8 @@ export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBac
   nightQuiet: automation("general", "quiet hours", "night"),
   simulationTuning: world("audience", "simulation tuning", "fine tune audience"),
   modelBudget: world("audience", "AI budget", "model calls"),
+  supportDesk: place("stir", "stir", "all-slurp", "Slurp Support", "support desk", "tickets", "trust", "stir"),
+  polyamory: place("stir", "stir", "all-slurp", "polyamory", "throuple", "couples", "love"),
   postsPerDayCustom: internal(automation("general", "posts per day", "grows with creators")),
   onboarding: internal(place("creators", "creators", "new-creators", "setup", "onboarding")),
 };

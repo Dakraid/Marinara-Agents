@@ -22,7 +22,7 @@ import { cn } from "../../../lib/utils";
 import { SlpSegment } from "../../modules/chrome/SlpButton";
 import { SlurpPromptDebugPanel, useDismissablePopover } from "./SlpMessageInsightParts";
 export { SlurpPromptDebugPanel, useDismissablePopover };
-import type { SlurpRapport, SlurpThreadRelationship } from "./slp-messages-contract";
+import type { SlurpRapport, SlurpFanRelationship } from "./slp-messages-contract";
 
 const ADULT_LEVELS = ["ordinary", "suggestive", "provocative", "intimate", "explicit"] as const;
 const ADULT_LEVEL_HINT: Record<string, string> = {
@@ -336,7 +336,7 @@ export function SlurpTierLadder({ tier, className }: { tier: SlurpRapport["tier"
 }
 
 const ESCALATION_BLOCK_TEXT: Record<
-  Exclude<NonNullable<NonNullable<SlurpThreadRelationship["escalation"]>["blockedBy"]>, "top">,
+  Exclude<NonNullable<NonNullable<SlurpFanRelationship["escalation"]>["blockedBy"]>, "top">,
   string
 > = {
   falling: "Comfort or desire has dropped below this step, so it is easing back one.",
@@ -347,7 +347,7 @@ const ESCALATION_BLOCK_TEXT: Record<
   desire: "Not wanting more from this conversation right now.",
 };
 
-const PICTURE_BLOCK_TEXT: Record<NonNullable<NonNullable<SlurpThreadRelationship["pictures"]>["blockedBy"]>, string> = {
+const PICTURE_BLOCK_TEXT: Record<NonNullable<NonNullable<SlurpFanRelationship["pictures"]>["blockedBy"]>, string> = {
   support: "Slurp Support's chat never gets pictures.",
   cooling_off: "Taking space from this conversation.",
   images_off: "This Creator's Images switch is off.",
@@ -363,7 +363,7 @@ export function SlurpRelationshipPanel({
   threadId,
   personaId,
 }: {
-  relationship: NonNullable<SlurpThreadRelationship>;
+  relationship: NonNullable<SlurpFanRelationship>;
   threadId: string | null;
   personaId: string | null;
 }) {

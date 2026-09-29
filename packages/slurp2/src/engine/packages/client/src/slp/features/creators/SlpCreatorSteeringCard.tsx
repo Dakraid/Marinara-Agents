@@ -6,9 +6,11 @@ import {
   SLP_STEERING_MOODS,
   SLP_STEERING_NUDGE_MAX,
   SLP_STEERING_NUDGES_MAX,
+  SLP_RELATIONSHIP_STYLES,
   SLP_STEERING_PACES,
   SLP_STEERING_TEXT_MAX,
   type SlpSteeringMood,
+  type SlpRelationshipStyle,
   type SlpSteeringPace,
   type SlpSteeringSupportNote,
 } from "../../../../../shared/src/slp/slp-creator-steering.js";
@@ -21,6 +23,7 @@ import { SlpUsesAiMark } from "../../modules/chrome/SlpAiMark";
 import { noteClass, selectClass } from "./slp-creator-classes";
 import { SlpTextAssist } from "../assist/slp-assist-contract";
 import { useSlurpCreatorSteering, useSlurpCreatorSteeringMutations, type SlpCreatorSpice } from "./slp-steering-hooks";
+import { useSlurpSettings } from "../settings/slp-settings-contract";
 
 const labelClass = "block text-xs font-semibold";
 
@@ -208,6 +211,7 @@ export function SlpCreatorSteeringCard({
     useSlurpCreatorSteeringMutations(creatorId);
   const steering = query.data?.steering;
   const spice = query.data?.spice ?? null;
+  const polyamory = useSlurpSettings().data?.polyamory === true;
   const [lifePhase, setLifePhase] = useState("");
   const [focus, setFocus] = useState("");
   const [idea, setIdea] = useState("");
@@ -387,6 +391,28 @@ export function SlpCreatorSteeringCard({
           </div>
         )}
       </div>
+
+      {polyamory && (
+        // Polyamory (0.3.5): whether they can be with more than one person. "From their card" reads it.
+        <PillChoice<SlpRelationshipStyle | "card">
+          layout="row"
+          label={t("ui.slurp.steering.relationshipStyle", { defaultValue: "Relationships" })}
+          options={[
+            {
+              value: "card",
+              label: t("ui.slurp.steering.relationshipStyles.card", { defaultValue: "From their card" }),
+            },
+            ...SLP_RELATIONSHIP_STYLES.map((style) => ({
+              value: style,
+              label: t(`ui.slurp.steering.relationshipStyles.${style}`, {
+                defaultValue: style === "poly" ? "Polyamorous" : "Monogamous",
+              }),
+            })),
+          ]}
+          value={steering.relationshipStyle ?? "card"}
+          onChange={(style) => save({ relationshipStyle: style === "card" ? null : style })}
+        />
+      )}
 
       <PillChoice<SlpSteeringPace>
         layout="row"

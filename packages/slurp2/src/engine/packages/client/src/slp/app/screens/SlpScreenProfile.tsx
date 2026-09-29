@@ -38,6 +38,7 @@ import { api } from "../../../lib/api-client";
 import { SlpPostSurfaceMenu } from "../../modules/post/SlpPostMenu";
 import { downloadSlpShareCard, toSlpShareCardInput } from "../../modules/post/slp-share-card";
 import { errorMessage, toSlpPostCardModel, LoadMoreFeedButton, SlurpPostDialog } from "./SlpHomeHelpers";
+import { SlpProfilePage } from "./SlpProfilePage";
 
 // ---------------------------------------------------------------------------
 // Local types
@@ -463,6 +464,7 @@ export function StageProfileView({
         ]}
         activeTab={activeTab}
         onTabChange={setActiveTab}
+        pageContent={<SlpProfilePage model={model} />}
         afterTabsContent={
           editing ? null : (
             <>

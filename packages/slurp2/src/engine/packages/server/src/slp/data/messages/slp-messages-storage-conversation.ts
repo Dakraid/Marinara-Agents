@@ -135,6 +135,8 @@ export function createMessagesStorageConversation(context: SlurpMessagesContext)
           // A quote, a delivery or a system note is not an answer. Letting one clear the obligation
           // meant a fan who wrote just before an automatic delivery never got a reply.
           const notAnAnswer = kind === "system" || kind.startsWith("commission");
+          // A Support desk notice or note (`deskQuiet`, docs/SUPPORT-DESK.md) asks nobody for an answer.
+          const quiet = input.role === "viewer" && input.metadata?.deskQuiet === true;
           const newerViewer =
             input.role === "creator" && (input.preserveReplyObligation || notAnAnswer)
               ? current.needsReply === "true"
@@ -163,13 +165,14 @@ export function createMessagesStorageConversation(context: SlurpMessagesContext)
                   ? slurpMessagePreview(kind, content, price)
                   : current.lastMessagePreview,
               viewerUnread: input.role === "creator" ? String(Number(current.viewerUnread) + 1) : current.viewerUnread,
-              creatorUnread:
-                input.role === "viewer"
+              creatorUnread: quiet
+                ? current.creatorUnread
+                : input.role === "viewer"
                   ? String(Number(current.creatorUnread) + 1)
                   : newerViewer
                     ? current.creatorUnread
                     : "0",
-              needsReply: input.role === "viewer" || newerViewer ? "true" : "false",
+              needsReply: quiet ? current.needsReply : input.role === "viewer" || newerViewer ? "true" : "false",
               replyNotBeforeAt: input.role === "creator" && !newerViewer ? null : current.replyNotBeforeAt,
               rapport: JSON.stringify(rapport),
               updatedAt: timestamp,

@@ -461,7 +461,7 @@ const client = (path: string) => slurp2Source(new URL(`client/src/slp/${path}`, 
   assert.match(client("app/slp-home-post-actions.ts"), /kind: "generate-post-image",/u);
   const box = client("features/stir/SlpStirBox.tsx");
   assert.match(box, /kind: "stir-plan",/u);
-  assert.match(box, /openSlpStirReadyPlan\(answer, origin\)/u);
+  assert.match(box, /openSlpStirReadyPlan\(answer, origin, request\)/u);
   assert.match(client("features/onboarding/slp-onboarding-wizard-model.ts"), /kind: "sign-up",/u);
   // "Generate now" (Settings › Generate posts): the modal closes on the tap, the run is a task.
   const refresh = client("features/creators/SlpCreatorRefreshModal.tsx");

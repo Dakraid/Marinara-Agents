@@ -13,6 +13,7 @@ export const SLURP_MODEL_JOB_KINDS = [
   "assist",
   "image_prompt",
   "plan",
+  "page",
 ] as const;
 export type SlurpModelJobKind = (typeof SLURP_MODEL_JOB_KINDS)[number];
 export type SlurpModelWorkerContext = "present" | "background";
@@ -49,6 +50,8 @@ export const SLURP_MODEL_BUDGET_SIZING = {
     assist: { base: 40, perCreator: 0 },
     // One rewrite per picture: posts, DM pictures and ad pictures. Never below the 60 it shipped with.
     image_prompt: { base: 60, perCreator: 2 },
+    // Creator Pages: a player's "Let <Creator> design it" taps plus the rare page refresh after big news.
+    page: { base: 4, perCreator: 0.25 },
   } as Partial<Record<SlurpModelJobKind, { base: number; perCreator: number }>>,
 } as const;
 
@@ -124,6 +127,8 @@ export const slurpModelBudgetSchema = z
           // Stir (W): "What should we stir up?" turns the player's words into a plan. Present work, never
           // paced. Flat like writing help (the player's own taps, not the world), so no sizing entry.
           plan: jobPolicy(2, 20),
+          // Creator Pages (design and refresh). Low priority: a page can wait for a quiet hour.
+          page: jobPolicy(7, 4),
         })
         .default({}),
       /** Limits the player set by hand. Every other limit follows the number of active Creators. */

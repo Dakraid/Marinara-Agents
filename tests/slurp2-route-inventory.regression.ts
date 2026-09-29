@@ -6,6 +6,11 @@ import { join } from "node:path";
 // parser. The route list below is the post-rename inventory. BASELINE is derived from it through
 // the explicit mapping table, so a method change or a missing route cannot pass by rebaselining.
 const EXPECTED = [
+  // 0.3.5: the Slurp Support desk.
+  "GET /slurp/desk",
+  "POST /slurp/desk/note",
+  "POST /slurp/desk/ticket/resolve",
+  "POST /slurp/desk/offer/answer",
   "PATCH /messages/threads/:threadId/details",
   "GET /slurp/posts/:id/deep-details",
   "GET /continuity",
@@ -39,6 +44,8 @@ const EXPECTED = [
   "POST /slurp/stir/plan",
   "POST /slurp/stir/play",
   "POST /slurp/stir/plays/:id/undo",
+  // 0.3.1: "Not now" on a Stir suggestion.
+  "POST /slurp/stir/suggestions/:id/dismiss",
   "GET /slurp/stir",
   // 7b-c: collabs, rivalries and brand deals in Studio.
   "GET /slurp/ties",
@@ -55,6 +62,9 @@ const EXPECTED = [
   "POST /slurp/ties/couples",
   "POST /slurp/ties/couples/:id/steer",
   "POST /slurp/ties/couples/:id/page",
+  // 0.3.2 Creator Pages: the player's edit, and "Let <Creator> design it".
+  "PUT /slurp/accounts/:id/page",
+  "POST /slurp/accounts/:id/page/compose",
   // 7b-spice: Backstage › Spice (the Slurp-wide limit, the player's taste, "Slurp noticed you like …").
   "GET /slurp/spice",
   "PATCH /slurp/spice",
@@ -329,6 +339,8 @@ const ADDED_ROUTES = new Set([
   "POST /slurp/stir/plan",
   "POST /slurp/stir/play",
   "POST /slurp/stir/plays/:id/undo",
+  // 0.3.1: "Not now" on a Stir suggestion.
+  "POST /slurp/stir/suggestions/:id/dismiss",
   "GET /slurp/stir",
   // 7b-c: collabs, rivalries and brand deals in Studio.
   "GET /slurp/ties",
@@ -345,6 +357,9 @@ const ADDED_ROUTES = new Set([
   "POST /slurp/ties/couples",
   "POST /slurp/ties/couples/:id/steer",
   "POST /slurp/ties/couples/:id/page",
+  // 0.3.2 Creator Pages: the player's edit, and "Let <Creator> design it".
+  "PUT /slurp/accounts/:id/page",
+  "POST /slurp/accounts/:id/page/compose",
   // 7b-spice: Backstage › Spice (the Slurp-wide limit, the player's taste, "Slurp noticed you like …").
   "GET /slurp/spice",
   "PATCH /slurp/spice",
@@ -396,6 +411,11 @@ const ADDED_ROUTES = new Set([
   "DELETE /slurp/ads/brands/:id",
   "POST /slurp/ads/brands/:id/products",
   "POST /slurp/ads/pool/:id/picture",
+  // 0.3.5: the Slurp Support desk (case files, notes, ticket resolve, answering an Offer as your Creator).
+  "GET /slurp/desk",
+  "POST /slurp/desk/note",
+  "POST /slurp/desk/ticket/resolve",
+  "POST /slurp/desk/offer/answer",
 ]);
 
 // Routes staging had that Slurp2 no longer serves. The share card is now drawn on a canvas in
@@ -423,15 +443,15 @@ assert.deepEqual([...EXPECTED].sort(), mappedStagingRoutes, "the route mapping m
 
 const EXPECTED_HANDLER_COUNTS = {
   "features/ads": 24,
-  "features/assist": 8,
+  "features/assist": 9,
   "features/audience": 13,
-  "features/creators": 47,
+  "features/creators": 49,
   "features/discovery": 4,
   "features/economy": 14,
   "features/feed": 39,
   "features/maintenance": 15,
   "features/media": 7,
-  "features/messages": 41,
+  "features/messages": 45,
   "features/notifications": 3,
   "features/onboarding": 6,
   "features/projects": 27,
@@ -439,7 +459,8 @@ const EXPECTED_HANDLER_COUNTS = {
   "features/world": 11,
 } as const;
 // W: +5 POST, +1 GET (Stir). R: +3 POST, +1 GET, +1 PATCH, +1 DELETE (brands).
-const EXPECTED_METHOD_COUNTS = { DELETE: 19, GET: 80, PATCH: 20, POST: 141, PUT: 6 } as const;
+// 0.3.4: +1 POST, +1 PUT (Creator Pages). 0.3.5: +1 GET, +3 POST (Support desk).
+const EXPECTED_METHOD_COUNTS = { DELETE: 19, GET: 81, PATCH: 20, POST: 146, PUT: 7 } as const;
 
 const root = join(import.meta.dirname, "../packages/slurp2/src/engine/packages/server/src/slp");
 const registration = /\bapp\.(get|post|put|patch|delete|addContentTypeParser)(?:<[^()]*?>)?\(\s*["'`]([^"'`]+)["'`]/gu;
@@ -494,7 +515,8 @@ const methodCounts = Object.fromEntries(
     }, new Map<string, number>()),
 );
 assert.deepEqual(methodCounts, EXPECTED_METHOD_COUNTS, "HTTP method multiset changed from staging");
-assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 266);
+// 0.3.5: +4 (the Support desk).
+assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 273);
 assert.deepEqual(handlerCounts, EXPECTED_HANDLER_COUNTS, "handler count changed in a feature");
 assert.ok(foundRoutes.includes("POST /slurp/posts/:id/media"), "the renamed POST media route must remain registered");
 assert.ok(

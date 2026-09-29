@@ -23,7 +23,7 @@ import { readSlurpCreatorSteering } from "./slp-steering-storage.js";
 import { readSlurpCreatorTiesDocument } from "../projects/slp-creator-ties-storage.js";
 import { resolveSlurpExplicitLevel } from "../settings/slp-post-guidance-storage.js";
 import { SLP_EXPLICIT_LEVELS } from "../../../../../shared/src/slp/slp-spice.js";
-import { slurpCoupleOther } from "../../modules/projects/slp-creator-couples.js";
+import { slurpCouplePartners } from "../../modules/projects/slp-couple-group.js";
 import { slurpRelationshipLine } from "../../modules/projects/slp-couple-lines.js";
 import { readSlurpAgentMemoryLines } from "./slp-agent-memory-source.js";
 import { createSlurpStorage } from "../slp-storage.js";
@@ -311,7 +311,7 @@ export async function readSlurpRelationshipLine(
     // Every partner they had (the line picks the current one, a crush, or a recent ex).
     const storage = createSlurpStorage(db);
     const partners = await Promise.all(
-      [...new Set(couples.map((couple) => slurpCoupleOther(couple, creatorId)))].map((partnerId) =>
+      [...new Set(couples.flatMap((couple) => slurpCouplePartners(couple, creatorId)))].map((partnerId) =>
         partnerId ? storage.getNoodlerAccountById(partnerId) : null,
       ),
     );

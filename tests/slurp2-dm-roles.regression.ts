@@ -11,7 +11,6 @@ import {
   SLURP_SUPPORT_NAME,
   slurpDmRoleHeader,
   slurpDmTranscript,
-  slurpSupportName,
   type SlurpDmLine,
   type SlurpDmRoleInput,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-dm-roles.ts";
@@ -209,22 +208,10 @@ const keptSupport = slpSceneThreadMessages({
 }
 
 // 6. The player writes as Slurp Support (in-universe staff). The Creator answers Support, never the
-//    persona; the Support name continues the kept sign-up chat's Support.
+//    persona; Support is a faceless team, always "Slurp Support".
 {
-  assert.equal(slurpSupportName([]), SLURP_SUPPORT_NAME);
-  const renamed = keptSupport.map((message) =>
-    message.metadata.sceneSpeaker
-      ? { ...message, metadata: { ...message.metadata, sceneSpeaker: "Desk Dana" } }
-      : message,
-  );
-  assert.equal(slurpSupportName(renamed), "Desk Dana", "the kept chat's Support identity is reused");
-  // A helping Creator from the seat preset is not Support.
-  assert.equal(
-    slurpSupportName([{ role: "viewer", metadata: { signUpScene: "seat", sceneSpeaker: "Kai Torres" } }]),
-    SLURP_SUPPORT_NAME,
-  );
   const supportLine = (text: string) =>
-    line("viewer", text, { metadata: { sceneSpeaker: slurpSupportName(keptSupport), supportVoice: true } });
+    line("viewer", text, { metadata: { sceneSpeaker: SLURP_SUPPORT_NAME, supportVoice: true } });
 
   // In the continuous thread: sign-up, then Support writes again later.
   const history = [...keptSupport, supportLine("Quick check-in from Support: how is your first week going?")];
@@ -404,7 +391,8 @@ const keptSupport = slpSceneThreadMessages({
   assert.match(fanReply, /writer: "viewer"/u);
   assert.match(fanReply, /conversation: slurpDmTranscript\(history/u);
   const store = read("server/src/slp/data/messages/slp-messages-storage-actions.ts");
-  assert.match(store, /sceneSpeaker: slurpSupportName\(/u);
+  // Support is a faceless team: every live Support line is "Slurp Support".
+  assert.match(store, /sceneSpeaker: SLURP_SUPPORT_NAME/u);
   assert.match(store, /supportVoice: true/u);
   assert.match(
     read("server/src/slp/features/messages/slp-message-operation.ts"),

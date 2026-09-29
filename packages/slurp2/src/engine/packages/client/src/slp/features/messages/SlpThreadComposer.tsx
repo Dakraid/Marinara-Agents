@@ -13,6 +13,7 @@ import { SlpSheet, SlpSheetGroup } from "../../modules/chrome/SlpSheet";
 import { SlurpConnectionSwitcher } from "./SlpThreadChrome";
 import { SLP_THREAD_COLUMN_CLASS } from "./slp-thread-view-model";
 import type { SlurpThreadViewModel } from "./slp-thread-actions";
+import { SlpDeskComposerChip, SlpDeskPlayHost, SlpDeskToolPanel } from "./SlpDeskComposer";
 
 /** The message composer: a glass bar with add, the draft and send; the tools open in a sheet. */
 export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
@@ -167,6 +168,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
               </button>
             </div>
           )}
+          {asSupport && <SlpDeskComposerChip model={model} />}
           {composerTipAmount > 0 && !asSupport && (
             <div className="slurp-bubble-in flex h-9 items-center gap-2 self-start rounded-full bg-[var(--slurp-tint)] ps-3 pe-1 text-xs font-semibold text-[var(--slurp-text)]">
               {localizeUi("ui.slurp.messages.tipAttached", { defaultValue: "Tip attached" })}
@@ -542,6 +544,10 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
           />
         )}
 
+        {(toolTab === "offer" || toolTab === "move" || toolTab === "note") && asSupport && (
+          <SlpDeskToolPanel model={model} onPicked={closeTools} />
+        )}
+
         {toolTab === "tip" && (
           <SlurpTipPanel
             personaId={personaId}
@@ -557,6 +563,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
           />
         )}
       </SlpSheet>
+      {asSupport && <SlpDeskPlayHost model={model} />}
     </>
   );
 }
