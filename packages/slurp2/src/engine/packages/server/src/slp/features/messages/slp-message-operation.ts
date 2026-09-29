@@ -7,7 +7,6 @@
  */
 import { agreeSlurpCollabInDm } from "../projects/slp-projects-contract.js";
 import type { DB } from "../../../db/connection.js";
-import { slurpInfluenceMultiplier } from "../../../../../shared/src/slp/slp-platform-events.js";
 import { logger } from "../../../lib/logger.js";
 import { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
 import { resolveSlurpTextConnection } from "../../base/identity/slp-connection.js";
@@ -17,13 +16,11 @@ import { createSlurpMessagesStorage, type SlurpMessage } from "../../data/slp-st
 import { createSlurpEventsStorage } from "../../data/notifications/slp-notification-storage.js";
 import { tryCreatorAccountOperation } from "../../base/locking/slp-account-operation-lock.js";
 import { generateSlurpMessageReply, SlurpMessageBudgetUnavailableError } from "./slp-message-generation-service.js";
+import { resolveSlurpReplyAvailability, resolveSlurpReplyViewer } from "./slp-thread-stance.js";
 import { describeSlurpDayVibe, dropSlurpPendingText } from "../world/slp-world-contract.js";
 import { recoverSlurpMood } from "../../modules/world/slp-mood.js";
 import { activeSlurpStrikes, type SlurpStanceLatitude } from "../../modules/world/slp-stance.js";
-import {
-  resolveSlurpCreatorAvailability,
-  resolveSlurpCreatorScheduleTraits,
-} from "../../modules/creators/slp-creator-schedule-context.js";
+import { resolveSlurpCreatorScheduleTraits } from "../../modules/creators/slp-creator-schedule-context.js";
 import {
   calculateConversationMomentum,
   extendedOnlineDurationMinutes,
@@ -44,16 +41,12 @@ import { resolveSlurpMediaOffer, slurpDmPictureSpicy } from "../../modules/econo
 import { slurpDmSpiceLevel } from "../../modules/creators/slp-spice.js";
 import { resolveSlurpExplicitLevel } from "../../data/settings/slp-post-guidance-storage.js";
 import { slurpCreatorStateCanUseMedia } from "../../modules/creators/slp-creator-state.js";
-import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
 import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
-import { slurpSupportName } from "../../modules/messages/slp-dm-roles.js";
 import {
   applySlurpSupportTalk,
   isSlurpSupportThread,
   type SlurpSupportTalkStore,
 } from "../../modules/messages/slp-support.js";
-import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
-import { emptySlpAccountSettings } from "../../modules/records/slp-storage-model.js";
 import { slpCreatorUnlockPriceFromMetadata } from "../../modules/economy/slp-prices.js";
 import { readSlurpCreatorSteering } from "../../data/creators/slp-steering-storage.js";
 import { planSlpStir } from "../assist/slp-assist-contract.js";
@@ -104,26 +97,18 @@ export async function replyToSlurpMessage(
   const thread = await messagesStore.getThreadById(input.threadId);
   if (!thread || (thread.state !== "active" && thread.state !== "request")) return { status: "ineligible" };
 
-  const [creator, personaViewer] = await Promise.all([
-    slurp.getNoodlerAccountById(thread.creatorAccountId),
-    slurp.getViewer(thread.viewerAccountId),
-  ]);
+  const creator = await slurp.getNoodlerAccountById(thread.creatorAccountId);
   // Slurp Support's own thread: the one writing is Slurp's staff, named as the thread names them.
   const support = isSlurpSupportThread(thread);
-  // A hand-operated Creator's fans are audience members, not personas. The draft still needs them
-  // as the one being answered; `getViewer` alone made every draft for them ineligible.
-  // An AI fan is answered unattended about one time in four (task E); the rest expire unanswered.
+  const listedViewer = await resolveSlurpReplyViewer(db, thread, creator, input.operatorDraft === true);
+  // An AI fan (no persona, not Support) is answered unattended about one time in four (task E);
+  // the rest expire unanswered.
   const aiFanTrigger =
-    !personaViewer && !support && !input.operatorDraft && input.background && creator
+    !listedViewer && !input.operatorDraft && input.background && creator
       ? await messagesStore.getMessageById(input.triggerMessageId)
       : null;
   const aiFan = Boolean(aiFanTrigger && slurpAnswersAiFan(aiFanTrigger));
-  const viewer =
-    personaViewer ??
-    (support ? slurpSupportAccount(slurpSupportName(await messagesStore.listMessages(thread.id, 120))) : null) ??
-    ((input.operatorDraft || aiFan) && creator
-      ? await resolveAudienceFanAccount(db, thread.viewerAccountId, creator)
-      : null);
+  const viewer = aiFan ? await resolveSlurpReplyViewer(db, thread, creator, true) : listedViewer;
   // A persona-backed Creator is operated by hand: it never auto-posts and it never answers a DM
   // on its own either. The operator writes the answer through the draft-reply route.
   if (!creator || !viewer || (creator.kind === "persona" && creator.sourceKind === "persona" && !input.operatorDraft)) {
@@ -139,46 +124,14 @@ export async function replyToSlurpMessage(
     return { status: "cooling", until: thread.coolUntil };
   }
 
-  const source = await slurp.resolveAccountSource(creator);
-  const latestPost = await slurp.getNoodlerLatestPublishedPost(creator.id);
-  const settingsForDelays = await slurp.getSettings();
-  // Occasions may slow or speed replies ("messages.reply-delay"); the editor offered it, nothing read it.
-  const replyDelays = {
-    ...settingsForDelays,
-    // 0 means "always answer right away" and stays 0; the old floor of 1 queued the reply (R1-004).
-    messagesMaxReplyDelayMinutes:
-      settingsForDelays.messagesMaxReplyDelayMinutes <= 0
-        ? 0
-        : Math.max(
-            1,
-            Math.round(
-              settingsForDelays.messagesMaxReplyDelayMinutes *
-                slurpInfluenceMultiplier(
-                  settingsForDelays.platformEvents,
-                  new Date(),
-                  "messages.reply-delay",
-                  await slurp.platformInfluenceStory(creator.id),
-                ),
-            ),
-          ),
-  };
-  const scheduled = source
-    ? await resolveSlurpCreatorAvailability(
-        createCharactersStorage(db),
-        source,
-        undefined,
-        new Date(),
-        latestPost?.createdAt ?? null,
-        replyDelays,
-      )
-    : { online: true, activity: null, minutesUntilOnline: 0 };
-  // An open conversation window keeps the Creator online; momentum alone never wakes her.
-  const details = await messagesStore.getDetailsOverrides(thread.id);
-  const naturalAvailability =
-    thread.extendedOnlineUntil && thread.extendedOnlineUntil > new Date().toISOString()
-      ? { online: true, activity: "chatting", minutesUntilOnline: 0 }
-      : scheduled;
-  const availability = { ...naturalAvailability, ...details.availability };
+  // The same availability the Prompt details view reads (R1-011).
+  const {
+    settings: settingsForDelays,
+    replyDelays,
+    source,
+    details,
+    availability,
+  } = await resolveSlurpReplyAvailability(db, thread, creator);
 
   const history = await messagesStore.listMessages(thread.id, 60);
   const trigger = history.find((message) => message.id === input.triggerMessageId);
@@ -697,51 +650,6 @@ function slurpSupportTalkStore(
         contribution: "generated",
       });
     },
-  };
-}
-
-/** Support as the one the Creator is talking to. Not a persona and not a fan: no page, no wallet. */
-function slurpSupportAccount(name: string): SlpAccount {
-  return {
-    id: SLURP_SUPPORT_ACCOUNT_ID,
-    // `random_user` keeps every "does this person run a Creator page" lookup away from it.
-    kind: "random_user",
-    entityId: SLURP_SUPPORT_ACCOUNT_ID,
-    handle: "slurpsupport",
-    displayName: name,
-    bio: "",
-    avatarUrl: null,
-    avatarCrop: null,
-    invited: false,
-    settings: emptySlpAccountSettings() as SlpAccount["settings"],
-    platform: "slurp",
-    noodleAccountId: null,
-    createdAt: "",
-    updatedAt: "",
-  };
-}
-
-/** An audience member or ambient account, shaped as the account the reply prompt reads. */
-async function resolveAudienceFanAccount(db: DB, fanId: string, creator: SlpAccount): Promise<SlpAccount | null> {
-  const account = await createSlurpStorage(db).getNoodlerAccountById(fanId);
-  if (account) return account;
-  const member = await createSlurpPopulationStorage(db)
-    .get(fanId)
-    .catch(() => null);
-  if (!member) return null;
-  // ponytail: borrows the Creator's settings and platform for the fields no prompt reads.
-  return {
-    ...creator,
-    id: member.id,
-    kind: "random_user",
-    entityId: member.id,
-    handle: member.handle,
-    displayName: member.displayName,
-    bio: "",
-    avatarUrl: null,
-    avatarCrop: null,
-    invited: false,
-    noodleAccountId: null,
   };
 }
 

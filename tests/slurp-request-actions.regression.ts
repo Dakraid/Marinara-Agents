@@ -100,10 +100,11 @@ assert.match(
   /row\.intent !== "teaser" \|\| input\.access === "public"/u,
   "a teaser promise needs a public slot",
 );
-// Both completion paths record a kept promise.
+// Both completion paths record a kept promise. Pin changed on purpose in L (R1-034): the reserve
+// path records it when the scheduled post publishes (reserve storage), not when its slot is prepared.
 for (const file of [
   "packages/slurp2/src/engine/packages/server/src/slp/features/feed/slp-post-plan-service.ts",
-  "packages/slurp2/src/engine/packages/server/src/slp/features/feed/reserve/slp-reserve-operation.ts",
+  "packages/slurp2/src/engine/packages/server/src/slp/data/feed/reserve/slp-reserve-storage-2.ts",
 ]) {
   assert.match(slurp2Source(file), /recordSlurpPromiseKept\(db, opportunity, \{/u, file);
 }

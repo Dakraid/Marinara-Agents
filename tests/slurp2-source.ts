@@ -237,6 +237,21 @@ export const SLURP2_SOURCE_MODULES: Record<string, readonly string[]> = {
   "packages/client/src/hooks/use-slurp-media-src.ts": ["packages/client/src/slp/base/media/slp-media-src.ts"],
   "packages/client/src/lib/slurp-discovery.ts": ["packages/client/src/slp/features/discovery/slp-discovery.ts"],
   "packages/client/src/lib/slurp-refresh-batch.ts": ["packages/client/src/slp/features/creators/slp-refresh-batch.ts"],
+  // L (R1-011/R1-012): the reply's availability and stance moved into one helper the thread and
+  // prompt routes read too.
+  "packages/server/src/slp/features/messages/slp-message-operation.ts": [
+    "packages/server/src/slp/features/messages/slp-message-operation.ts",
+    "packages/server/src/slp/features/messages/slp-thread-stance.ts",
+  ],
+  "packages/server/src/slp/features/messages/slp-message-generation-service.ts": [
+    "packages/server/src/slp/features/messages/slp-message-generation-service.ts",
+    "packages/server/src/slp/features/messages/slp-thread-stance.ts",
+  ],
+  // L (R1-034): the kept-promise record moved to the opportunity storage both post paths reach.
+  "packages/server/src/slp/features/feed/slp-post-plan-service.ts": [
+    "packages/server/src/slp/features/feed/slp-post-plan-service.ts",
+    "packages/server/src/slp/data/feed/slp-opportunity-storage.ts",
+  ],
   "packages/server/src/routes/slurp.routes.ts": [
     "packages/server/src/slp/modules/requests/slp-request-schemas.ts",
     "packages/server/src/slp/base/host/slp-multipart.ts",
@@ -645,7 +660,7 @@ export const SLURP2_SOURCE_MODULES: Record<string, readonly string[]> = {
     "packages/server/src/slp/features/audience/slp-audience-reply-operation.ts",
   ],
   "packages/server/src/services/slurp/slurp-reach.ts": ["packages/shared/src/slp/slp-reach.ts"],
-  "packages/server/src/services/slurp/slurp-scale.ts": ["packages/server/src/slp/modules/audience/slp-scale.ts"],
+  "packages/server/src/services/slurp/slurp-scale.ts": ["packages/shared/src/slp/slp-scale.ts"],
   "packages/server/src/services/slurp/slurp-ambient-profiles.ts": [
     "packages/server/src/slp/data/audience/slp-ambient-profiles.ts",
   ],

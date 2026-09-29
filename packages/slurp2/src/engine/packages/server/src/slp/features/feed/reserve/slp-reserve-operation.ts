@@ -18,7 +18,6 @@ import { readSlurpCreatorPaceFactor } from "../../../data/creators/slp-steering-
 import { generateCreatorPost } from "../slp-generation-service.js";
 import { resolveSlurpAutomaticPostAccess } from "../slp-automatic-post-access.js";
 import { slurpDeepDetailsImageRunRecorder } from "../../../data/feed/slp-post-deep-details-storage.js";
-import { recordSlurpPromiseKept } from "../slp-post-plan-service.js";
 import { generateCreatorPostImage } from "../../media/slp-media-contract.js";
 import { slurpHeldCollabDrop } from "../../projects/slp-projects-contract.js";
 import { tryCreatorAccountOperation } from "../../../base/locking/slp-account-operation-lock.js";
@@ -385,7 +384,7 @@ export async function prepareNextCreatorReservePost(db: DB, at = new Date()): Pr
           // The set's post id is not known until it publishes, so a scheduled set's teaser falls
           // back to the newest locked picture, which by then is normally that set.
           await completeSlurpCampaignStageFor(db, opportunity.id, { at: completedAt });
-          await recordSlurpPromiseKept(db, opportunity, { at: completedAt });
+          // The kept promise waits for the publish: a prepared slot can still be discarded (R1-034).
         }
       } catch (persistError) {
         // The row never landed, so the staged image belongs to nothing: drop it before rethrowing.

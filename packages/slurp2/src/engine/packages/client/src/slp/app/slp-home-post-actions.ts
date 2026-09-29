@@ -153,6 +153,7 @@ export function useSlurpHomePostActions({
           accountId: post.authorAccountId,
           file: input.image.file,
           crop: input.image.crop,
+          ...(input.image.position > 0 && { imagePosition: input.image.position }),
           title: input.title,
           ...(input.content !== post.content.trim() && { content: input.content }),
           ...(input.poll !== undefined && { poll: input.poll }),
@@ -165,6 +166,7 @@ export function useSlurpHomePostActions({
           ...(input.content !== post.content.trim() && { content: input.content }),
           ...(input.poll !== undefined && { poll: input.poll }),
           ...(input.image?.kind === "crop" && { imageCrop: input.image.crop }),
+          ...(input.image?.kind === "crop" && input.image.position > 0 && { imagePosition: input.image.position }),
           ...(input.image?.kind === "remove" && { removeImage: true }),
         });
       }

@@ -159,10 +159,11 @@ export function SlpPostCard({
       setOwnsEditSheet(false);
     };
   }, [isEditingPost]);
-  const imageCrop = readSlpPostImageCrop(post.metadata);
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const activeImage = post.images[activeImageIndex] ?? post.images[0] ?? null;
+  const activeCrop =
+    activeImage && activeImage.position > 0 ? (activeImage.crop ?? null) : readSlpPostImageCrop(post.metadata);
   const [commentsExpanded, setCommentsExpanded] = useState(false);
   const [expandedThreadIds, setExpandedThreadIds] = useState<ReadonlySet<string>>(new Set());
   const {
@@ -490,11 +491,11 @@ export function SlpPostCard({
                 aria-label={localizeUi("ui.noodle.noodlepostcard.openPostImage")}
               />
             )}
-            {displayedImageUrl && imageCrop ? (
+            {displayedImageUrl && activeCrop ? (
               <PostImageFrame
                 src={displayedImageUrl}
                 onError={() => setFailedImageUrl(displayedImageUrl)}
-                crop={imageCrop}
+                crop={activeCrop}
                 alt={imageAlt}
               />
             ) : (

@@ -11,7 +11,7 @@ import { canViewCreatorPost } from "../../base/identity/slp-access.js";
 import { readSlurpTieStamp } from "../../modules/projects/slp-tie-stamp.js";
 import { slurpGoalProgress } from "../../modules/projects/slp-goal.js";
 import { SLP_CREATOR_SUBSCRIPTION_COST, slpCreatorUnlockPriceFromMetadata } from "../../modules/economy/slp-prices.js";
-import { slurpPlatformScaleMultiplier } from "../../modules/audience/slp-scale.js";
+import { slurpPlatformScaleMultiplier } from "../../../../../shared/src/slp/slp-scale.js";
 import {
   slurpCreatorReach,
   slurpPostLikeCount,

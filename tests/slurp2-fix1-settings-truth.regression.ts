@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { resolveSlurpTextConnection } from "../packages/slurp2/src/engine/packages/server/src/slp/base/identity/slp-connection";
 import { splitSlurpReplyBurst } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-messaging";
 import { slurpModelBudgetSchema } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-model-budget";
+import { slurp2Source } from "./slurp2-source.ts";
 
 // Fix phase 1, batch E (REVIEW-1 settings that lied or did nothing): R1-003, R1-004, R1-009, R1-095,
 // R1-097, R1-104, R1-105, R1-107, R1-108, R1-109, R1-123, R1-124, R1-126, R1-127, R1-128, R1-129, R1-130.
@@ -28,7 +29,7 @@ async function main() {
 
   // ── R1-004: 0 minutes means right away ──
   assert.match(
-    read("server/src/slp/features/messages/slp-message-operation.ts"),
+    slurp2Source(join(pkg, "server/src/slp/features/messages/slp-message-operation.ts")),
     /settingsForDelays\.messagesMaxReplyDelayMinutes <= 0\s*\?\s*0/u,
   );
 

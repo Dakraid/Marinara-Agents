@@ -7,7 +7,7 @@ import type { DB } from "../../../db/connection.js";
 import { logger } from "../../../lib/logger.js";
 import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
 import { slurpCreatorReach } from "../../../../../shared/src/slp/slp-reach.js";
-import { slurpPlatformScaleMultiplier } from "../../modules/audience/slp-scale.js";
+import { slurpPlatformScaleMultiplier } from "../../../../../shared/src/slp/slp-scale.js";
 import { slurpFollowerMilestone } from "../../modules/world/slp-milestones.js";
 import {
   SLURP_NO_LIFE_SIGNALS,

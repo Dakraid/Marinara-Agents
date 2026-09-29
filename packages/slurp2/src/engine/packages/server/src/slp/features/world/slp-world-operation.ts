@@ -50,7 +50,7 @@ import {
   slurpAudienceSubscriptionDecision,
   slurpLapseReason,
 } from "../../../../../shared/src/slp/slp-audience-subscription.js";
-import { slurpPlatformScaleMultiplier, slurpWorldActivityMultiplier } from "../../modules/audience/slp-scale.js";
+import { slurpPlatformScaleMultiplier, slurpWorldActivityMultiplier } from "../../../../../shared/src/slp/slp-scale.js";
 import { slurpCreatorOpener, slurpCreatorReaction, slurpLapseNote } from "../../modules/world/slp-world-copy.js";
 import { generateSlurpArc } from "../projects/slp-projects-contract.js";
 import {

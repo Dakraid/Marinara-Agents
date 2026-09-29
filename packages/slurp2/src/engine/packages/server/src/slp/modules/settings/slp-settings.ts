@@ -60,7 +60,7 @@ import {
   SLURP_DEFAULT_WORLD_ACTIVITY,
   SLURP_PLATFORM_SCALE,
   SLURP_WORLD_ACTIVITY,
-} from "../audience/slp-scale.js";
+} from "../../../../../shared/src/slp/slp-scale.js";
 import {
   SLURP_DEFAULT_PROJECT_RATE,
   SLURP_DEFAULT_STORY_RATE,

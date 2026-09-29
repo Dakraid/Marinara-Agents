@@ -591,6 +591,8 @@ export function SlpAudiencePanel(page: SlpBackstagePageProps) {
             <SlurpSimulationSettings
               key={settings.simulationTuning.preset}
               tuning={settings.simulationTuning}
+              // The estimate caps AI fan runs by the budget row sized for today's Creators (merge L × F).
+              world={{ ...settings, modelBudget: effectiveBudget }}
               onSave={(next) => void update("simulationTuning", next)}
             />
           </SettingAnchor>

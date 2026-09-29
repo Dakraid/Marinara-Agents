@@ -47,10 +47,9 @@ import {
   type SlurpCreatorAvailability,
 } from "../../modules/creators/slp-creator-schedule-context.js";
 import { describeSlurpRapport, type SlurpRapport } from "../../modules/messages/slp-rapport.js";
-import { recoverSlurpMood, slurpMoodTone } from "../../modules/world/slp-mood.js";
 import { slurpModifierLines } from "../../modules/creators/slp-creator-state.js";
-import { resolveSlurpStance, type SlurpStance } from "../../modules/world/slp-stance.js";
-import { readSlurpAudienceTone } from "../../../../../shared/src/slp/slp-tone.js";
+import { type SlurpStance } from "../../modules/world/slp-stance.js";
+import { resolveSlurpThreadStance } from "./slp-thread-stance.js";
 import {
   readSlurpDmReply,
   readSlurpDmCollab,
@@ -69,8 +68,6 @@ import {
   type SlurpCreatorState,
   type SlurpThreadState,
 } from "../../modules/creators/slp-creator-state.js";
-import { slurpAudienceArcDescription } from "../../modules/projects/slp-audience-arc.js";
-import { slurpArcLifeLine } from "../../modules/projects/slp-arc-progress.js";
 import { SLURP_PLATFORM_CONTEXT } from "../../modules/prompting/slp-prompt.js";
 import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
 import {
@@ -553,43 +550,21 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
     (await slurp.listPostUnlocksForViewer(input.viewer.id).catch(() => [])).map((unlock) => unlock.postId),
   );
   const recentPosts = slurpDmRecentPosts(recentPostRows, unlockedPostIds, RECENT_POSTS);
-  // The arc the feed is posting about, so a DM and the feed come from the same life. Protected like
-  // every other supplied value: a Secret Creator's arc title can name a real place.
-  const creatorArc = settings.arcAffectsMood
-    ? (protectCreatorGeneratedIdentity(
-        slurpArcLifeLine(await slurp.listProjects(input.creator.id).catch(() => [])),
-        disclosureMode,
-        publicIdentity,
-      ) ?? null)
-    : null;
-  const stance = resolveSlurpStance({
-    rapportTier: input.rapport.tier,
-    rapportScore: input.rapport.score,
-    // Healed for the time since it was last written, so a fan who returns a day later is not
-    // answered through yesterday's argument.
-    moodTone: slurpMoodTone(
-      recoverSlurpMood(
-        input.mood ?? 0,
-        input.moodUpdatedAt ? Math.max(0, (Date.now() - Date.parse(input.moodUpdatedAt)) / 60_000) : 0,
-      ),
-    ),
-    audienceArc: tie ? slurpAudienceArcDescription(tie.audienceArc) : null,
-    creatorArc,
-    dayVibe: details.dayVibe !== undefined ? details.dayVibe : (input.dayVibe ?? null),
+  const stance = await resolveSlurpThreadStance(input.db, {
+    creator: input.creator,
+    viewerId: input.viewer.id,
+    rapport: input.rapport,
+    mood: input.mood,
+    moodUpdatedAt: input.moodUpdatedAt,
+    dayVibe: input.dayVibe,
     availability,
     subscribed: input.subscribed,
     isRequest: input.isRequest,
-    // The audience dial reaches private chat for the first time. It governed comments and
-    // reactions only, so a maintainer who chose `unfiltered` still met a uniformly
-    // accommodating creator in every DM.
-    tone: details.audienceTone ?? readSlurpAudienceTone(settings.audienceTone),
-    coolingOff: input.coolingOff ?? false,
-    strikes: input.strikes ?? 0,
+    coolingOff: input.coolingOff,
+    strikes: input.strikes,
+    details,
+    settings,
   });
-  if (details.imageMode !== undefined && !input.coolingOff) {
-    stance.imageMode = details.imageMode;
-    stance.canSendImage = details.imageMode !== "none";
-  }
   // Pictures reach the model through the one image context setting: the thread's own pictures, and
   // the Creator's recent posts a fan is likely to mention. The creator is one side of this thread,
   // so a locked picture in it is theirs to see. Recent posts use stored prompts and saved

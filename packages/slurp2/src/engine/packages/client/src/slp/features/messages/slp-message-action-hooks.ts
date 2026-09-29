@@ -199,7 +199,7 @@ export function useSendSlurpViewerImage() {
       form.append("creatorAccountId", input.creatorAccountId);
       form.append("content", input.content);
       form.append("file", input.file);
-      return api.upload<{ message: SlurpMessage; replyStatus: string }>(
+      return api.upload<SlurpPhotoSendResult>(
         `/slurp2/messages/threads/${encodeURIComponent(input.threadId)}/image-upload`,
         form,
       );
@@ -208,6 +208,13 @@ export function useSendSlurpViewerImage() {
     onSettled: () => invalidateSlurpMessages(queryClient),
   });
 }
+/** A sent photo and the Creator's answer to it, shaped like a text send's (R1-019). */
+export type SlurpPhotoSendResult = {
+  message: SlurpMessage;
+  reply: SlurpMessage | null;
+  replyStatus: string;
+  typingMs?: number;
+};
 export function useGenerateSlurpViewerImage() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -218,7 +225,7 @@ export function useGenerateSlurpViewerImage() {
       prompt: string;
       content?: string;
     }) =>
-      api.post<{ message: SlurpMessage; replyStatus: string }>(
+      api.post<SlurpPhotoSendResult>(
         `/slurp2/messages/threads/${encodeURIComponent(input.threadId)}/viewer-image`,
         input,
       ),

@@ -14,6 +14,7 @@ import {
   generateSlurpViewerPhoto,
 } from "./commissions/slp-commission-image-operation.js";
 import { replyToSlurpMessage } from "./slp-message-operation.js";
+import { logger } from "../../../lib/logger.js";
 import { trySlurpWrite } from "../../base/locking/slp-operation-lock.js";
 import { personaQuerySchema } from "../../modules/messages/slp-messages-schemas.js";
 import { slurpViewerImageReadyAt } from "../../modules/messages/slp-messaging.js";
@@ -85,7 +86,26 @@ const requestDecisionSchema = z.object({
 /** Threads whose player photo is being drawn right now (one draw per thread at a time). */
 const drawingViewerPhotos = new Set<string>();
 export async function slpMessagesMediaRoutes(app: FastifyInstance, messaging: SlpMessagesContext) {
-  const { freshView, messages, ownsCreator, requireViewer, slurp } = messaging;
+  const { freshView, maskForViewer, messages, ownsCreator, requireViewer, slurp } = messaging;
+  /**
+   * The Creator's answer to a photo, returned like the answer to a text: the reply, its status and
+   * how long they type first, so the chat shows the typing indicator after a photo too (R1-019). A
+   * failed reply is a status, never an error: the photo is already stored and must stay.
+   */
+  const replyToPhoto = async (threadId: string, triggerMessageId: string) => {
+    let outcome: Awaited<ReturnType<typeof replyToSlurpMessage>>;
+    try {
+      outcome = await replyToSlurpMessage(app.db, { threadId, triggerMessageId });
+    } catch (error) {
+      logger.error(error, "[slurp-message] Reply failed after a photo in thread %s", threadId);
+      outcome = { status: "failed", error: "Reply generation failed." };
+    }
+    return {
+      reply: outcome.status === "replied" ? maskForViewer(outcome.message) : null,
+      replyStatus: outcome.status,
+      typingMs: "pacing" in outcome ? outcome.pacing.typingMs : 0,
+    };
+  };
   /**
    * The bytes of a generated message image.
    *
@@ -220,8 +240,11 @@ export async function slpMessagesMediaRoutes(app: FastifyInstance, messaging: Sl
       }
       staged.promote();
       await messages.setMessageMedia(sent.id, slurpMessageMediaUrl(sent.id), staged.filePath);
-      const outcome = await replyToSlurpMessage(app.db, { threadId, triggerMessageId: sent.id });
-      return { message: { ...sent, imageUrl: slurpMessageMediaUrl(sent.id) }, replyStatus: outcome.status };
+      // Never throws, so a failed reply cannot reach the catch and delete the stored photo.
+      return {
+        message: { ...sent, imageUrl: slurpMessageMediaUrl(sent.id) },
+        ...(await replyToPhoto(threadId, sent.id)),
+      };
     } catch (error) {
       staged.compensate();
       throw error;
@@ -287,8 +310,11 @@ export async function slpMessagesMediaRoutes(app: FastifyInstance, messaging: Sl
       }
       drawn.promote();
       await messages.setMessageMedia(message.id, slurpMessageMediaUrl(message.id), drawn.mediaPath);
-      const outcome = await replyToSlurpMessage(app.db, { threadId, triggerMessageId: message.id });
-      return { message: { ...message, imageUrl: slurpMessageMediaUrl(message.id) }, replyStatus: outcome.status };
+      // Never throws, so a failed reply cannot reach the catch and delete the stored picture.
+      return {
+        message: { ...message, imageUrl: slurpMessageMediaUrl(message.id) },
+        ...(await replyToPhoto(threadId, message.id)),
+      };
     } catch (error) {
       drawn.compensate();
       throw error;

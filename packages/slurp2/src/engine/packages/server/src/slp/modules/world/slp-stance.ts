@@ -260,3 +260,31 @@ const WARMTH_ORDER: SlurpStanceWarmth[] = ["cold", "guarded", "neutral", "warm",
 /** Rapport's floor. History softens a bad mood; it never makes somebody warmer than the mood earned. */
 const atLeast = (value: SlurpStanceWarmth, floor: SlurpStanceWarmth): SlurpStanceWarmth =>
   WARMTH_ORDER[Math.max(WARMTH_ORDER.indexOf(value), WARMTH_ORDER.indexOf(floor))]!;
+
+/** Why a Creator will not send a picture in this chat right now, in the order the reply checks it. */
+export type SlurpDmPictureBlock =
+  "support" | "cooling_off" | "images_off" | "stance" | "energy" | "posture" | "comfort" | "respect";
+
+/**
+ * The Details panel's "Pictures" verdict, read off the same gates the reply passes before it draws
+ * (R1-012): Support's thread never gets one, the stance must allow one, the Creator's state must not
+ * hold it back, and the Creator's own Images switch must be on. Whether the model then wants a
+ * picture is its call; this says only whether one could come.
+ */
+export function slurpDmPictureVerdict(input: {
+  stance: Pick<SlurpStance, "latitude" | "canSendImage" | "imageMode">;
+  support: boolean;
+  imagesEnabled: boolean;
+  stateBlock: "energy" | "posture" | "comfort" | "respect" | null;
+}): { mode: SlurpStance["imageMode"]; blockedBy: SlurpDmPictureBlock | null } {
+  const blockedBy: SlurpDmPictureBlock | null = input.support
+    ? "support"
+    : input.stance.latitude === "cool_off"
+      ? "cooling_off"
+      : !input.imagesEnabled
+        ? "images_off"
+        : !input.stance.canSendImage
+          ? "stance"
+          : input.stateBlock;
+  return { mode: blockedBy ? "none" : input.stance.imageMode, blockedBy };
+}

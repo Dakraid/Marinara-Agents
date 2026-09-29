@@ -537,3 +537,17 @@ modules, rejected alternative, and migration consequence.
 - **Migration consequence:** follow-up rows from before have no `first_due_at`; their current
   `scheduledAt` stands in. Client tasks live in memory for the tab (a reload forgets finished ones;
   server jobs and plays stay in Pulse).
+
+## World dial rule moves to shared (L, R1-116, 2026-09-28)
+
+- **Problem:** the audience estimate in Backstage (client) ignored the world-activity dial because
+  its rule (`slurpWorldActivityMultiplier`) lived in server `modules/audience/slp-scale.ts`, which the
+  client may not import. A copy of the multiplier on the client would be a second rule to keep in step.
+- **Decision:** `slp-scale.ts` is pure and has no imports, so it moves as is to
+  `shared/src/slp/slp-scale.ts`; every server reader imports it from there. The estimate now reads it,
+  plus the Fan Types, the background-profile switch and the AI-written fan runs.
+- **Affected modules:** shared `slp-scale.ts`; the eight server importers; client
+  `modules/audience/slp-simulation-estimate.ts`; `tests/slurp2-source.ts` maps the historical key.
+- **Rejected alternatives:** passing the multiplier in from the settings screen (the screen would own
+  the rule instead).
+- **Migration consequence:** none stored.

@@ -12,7 +12,7 @@ import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-s
 import { readSlurpCardPartners, readSlurpCreatorFitText } from "../../data/creators/slp-flavour-source.js";
 import { mutateSlurpCreatorTies, readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ties-storage.js";
 import { slurpCreatorReach } from "../../../../../shared/src/slp/slp-reach.js";
-import { slurpPlatformScaleMultiplier, slurpWorldActivityMultiplier } from "../../modules/audience/slp-scale.js";
+import { slurpPlatformScaleMultiplier, slurpWorldActivityMultiplier } from "../../../../../shared/src/slp/slp-scale.js";
 import {
   slurpPairKey,
   slurpAdvanceCreatorTies,

@@ -573,6 +573,11 @@ export const slpCreatorPostUpdateSchema = z
     content: z.string().trim().max(SLP_CREATOR_POST_CONTENT_MAX_LENGTH).optional(),
     removeImage: z.literal(true).optional(),
     imageCrop: slpPostImageCropSchema.nullable().optional(),
+    /**
+     * Which picture of a photo set a crop or a replacement is for (R1-039). Absent or 0 is the post
+     * picture; a later one is the set picture at that position. Remove always takes the whole set.
+     */
+    imagePosition: z.number().int().min(0).max(64).optional(),
     poll: slpPollInputSchema.nullable().optional(),
   })
   .strict()

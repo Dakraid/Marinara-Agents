@@ -10,6 +10,7 @@ import {
   type SlpPostAccess,
 } from "../../../../../shared/src/slp/slp-social.types.js";
 import { createSlurpMessagesStorage } from "../../data/slp-storage.js";
+import { listSlurpPostMedia } from "../../data/feed/slp-post-media-storage.js";
 import type { SlpImagePromptReviewItem } from "../media/slp-media-contract.js";
 import type { DB } from "../../../db/connection.js";
 import { logger } from "../../../lib/logger.js";
@@ -336,12 +337,18 @@ export async function updateCreatorPostWithMedia(
     const current = await noodle.getNoodlerPostById(id);
     if (!current) return { status: "noodler_post_not_found" } as const;
     if (current.authorAccountId !== accountId) return { status: "forbidden" } as const;
-    const oldPath = readCreatorMediaPath(current);
+    // A later picture of a set is replaced in its own row (R1-039); the post picture as before.
+    const position = input.imagePosition ?? 0;
+    const setFile = async () =>
+      position > 0
+        ? ((await listSlurpPostMedia(db, id)).find((item) => item.position === position)?.mediaPath ?? null)
+        : null;
+    const oldPath = position > 0 ? await setFile() : readCreatorMediaPath(current);
     const post = await persistCreatorPostWithUploadedMedia(current.authorAccountId, id, media, (persistedMedia) =>
       noodle.updateNoodlerPost(id, input, persistedMedia),
     );
     if (!post) return { status: "noodler_post_not_found" } as const;
-    const nextPath = readCreatorMediaPath(post);
+    const nextPath = position > 0 ? await setFile() : readCreatorMediaPath(post);
     if (oldPath !== nextPath) unlinkCreatorMedia(oldPath);
     return { status: "updated", post } as const;
   });

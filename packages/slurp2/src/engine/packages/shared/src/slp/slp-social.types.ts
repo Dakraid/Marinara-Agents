@@ -389,6 +389,8 @@ export interface SlpPostMedia {
   /** Pixel size of the stored picture, when known (V: the frame is reserved in its ratio). */
   width?: number;
   height?: number;
+  /** This picture's own crop. Position zero reads the post's `imageCrop`; a set picture its own. */
+  crop?: SlpPostImageCrop | null;
 }
 
 export interface SlpCreatorManagedPost extends SlpPost {

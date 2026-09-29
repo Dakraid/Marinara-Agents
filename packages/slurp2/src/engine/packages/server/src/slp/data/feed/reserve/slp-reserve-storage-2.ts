@@ -26,6 +26,7 @@ import { mapAccount, snapshotForAccount } from "../../host/slp-storage-mappers.j
 import { readSlurpTieStamp } from "../../../modules/projects/slp-tie-stamp.js";
 import type { SlurpStorageContext } from "../../host/slp-storage-context.js";
 import { linkSlurpPurposePost } from "../slp-purpose-storage.js";
+import { findSlurpOpportunityBySlot, recordSlurpPromiseKept } from "../slp-opportunity-storage.js";
 
 export function createReserveStorage2(context: SlurpStorageContext) {
   const {
@@ -235,6 +236,11 @@ export function createReserveStorage2(context: SlurpStorageContext) {
         if (typeof item.payload.projectId === "string" && item.payload.projectId) {
           await this.advanceProject(item.creatorAccountId, item.payload.projectId, didPublish);
         }
+        // A promise is kept when the post goes up, not when its slot was prepared: a prepared slot
+        // can still be discarded (R1-034). Best effort, like the steps around it.
+        const opportunity = await findSlurpOpportunityBySlot(db, item.id).catch(() => null);
+        if (opportunity)
+          await recordSlurpPromiseKept(db, opportunity, { postId: didPublish, at }).catch(() => undefined);
         // A drop links its tease and countdowns to itself; a tease links to a drop already up (3b).
         await linkSlurpPurposePost(db, {
           id: didPublish,

@@ -87,9 +87,10 @@ export interface SlpPostCardTitleEditingCap {
   maxLength: number;
 }
 
+/** `position` is the picture of a set the change is for; 0 is the post picture (R1-039). */
 export type SlpPostImageUpdate =
-  | { kind: "replace"; file: File; crop: SlpPostImageCrop }
-  | { kind: "crop"; crop: SlpPostImageCrop }
+  | { kind: "replace"; file: File; crop: SlpPostImageCrop; position: number }
+  | { kind: "crop"; crop: SlpPostImageCrop; position: number }
   | { kind: "remove" };
 
 export type SlpPostImageCropSource =
@@ -107,6 +108,9 @@ export interface SlpPostCardImageEditingCap {
   error: string | null;
   fileInputRef: RefObject<HTMLInputElement | null>;
   beginCrop: (post: SlpPostCardModel) => void;
+  /** The picture of a set that Crop and Replace act on (its position; 0 is the post picture). */
+  position: number;
+  choosePosition: (position: number) => void;
   selectReplacement: (event: ChangeEvent<HTMLInputElement>) => void;
   applyCrop: (crop: SlpPostImageCrop) => Promise<void>;
   cancelCrop: () => void;

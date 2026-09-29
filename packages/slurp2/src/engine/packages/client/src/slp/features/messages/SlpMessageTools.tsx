@@ -19,6 +19,7 @@ import {
   useSendSlurpCreatorImage,
   useSendSlurpCreatorPpv,
   useSendSlurpViewerImage,
+  type SlurpPhotoSendResult,
 } from "../../features/messages/slp-message-action-hooks";
 
 // Creator-side tools: broadcast, the message toolbar and the fan image picker.
@@ -334,11 +335,14 @@ export function FanImageTool({
   creatorAccountId,
   personaId,
   mode,
+  onSent,
 }: {
   threadId: string;
   creatorAccountId: string;
   personaId: string;
   mode: "choose" | "upload" | "generate";
+  /** The photo landed: the thread shows the answer (typing first) and closes the sheet (R1-019). */
+  onSent?: (result: SlurpPhotoSendResult) => void;
 }) {
   const { t: localizeUi, i18n } = useUiTranslation();
   const send = useSendSlurpViewerImage();
@@ -445,11 +449,12 @@ export function FanImageTool({
                       : generate.mutateAsync({ threadId, creatorAccountId, personaId, prompt: viewerPrompt, content });
                   if (!request) return;
                   void request
-                    .then(() => {
+                    .then((result) => {
                       setFile(null);
                       setPrompt("");
                       setContent("");
                       setReviewing(false);
+                      onSent?.(result);
                     })
                     .catch((cause: unknown) => {
                       // The picture wait answers with the time it ends, so say when, not "later".

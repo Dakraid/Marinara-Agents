@@ -1,6 +1,6 @@
 import { slpCreatorViewerPersonaSchema } from "../../../../../shared/src/slp/slp-social.schema.js";
 import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
-import { slurpPlatformScaleMultiplier } from "../../modules/audience/slp-scale.js";
+import { slurpPlatformScaleMultiplier } from "../../../../../shared/src/slp/slp-scale.js";
 import { readSlurpStudioSnapshot, writeSlurpStudioSnapshot } from "./slp-studio-snapshot.js";
 import {
   slurpCreatorReach,

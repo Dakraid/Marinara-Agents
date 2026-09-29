@@ -59,10 +59,11 @@ const client = (path: string) => slurp2Source(new URL(`client/src/slp/${path}`, 
   const operation = server("features/messages/slp-message-operation.ts");
   assert.match(
     operation,
-    /const aiFanTrigger =\s+!personaViewer && !support && !input\.operatorDraft && input\.background && creator/u,
+    // Merge L: the viewer comes from L's shared helper; "no persona, not Support" = it found none (changed on purpose).
+    /const aiFanTrigger =\s+!listedViewer && !input\.operatorDraft && input\.background && creator/u,
     "only the unattended scheduler answers an AI fan",
   );
-  assert.match(operation, /\(input\.operatorDraft \|\| aiFan\) && creator\s+\? await resolveAudienceFanAccount/u);
+  assert.match(operation, /const viewer = aiFan \? await resolveSlurpReplyViewer\(db, thread, creator, true\) : listedViewer;/u);
   assert.match(operation, /!support &&\s+\/\/[^\n]+\n\s+!aiFan &&/u, "an AI fan gets words, never a picture");
   assert.match(operation, /if \(stored && aiFan\) await dropSlurpPendingText\(db, input\.triggerMessageId\)/u);
   // Inside the AI budget: an unattended answer is never a player send, so it claims the budget.
