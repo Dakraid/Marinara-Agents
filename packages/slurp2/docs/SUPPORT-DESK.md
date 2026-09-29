@@ -195,4 +195,3 @@ Advanced: Trust and suspicion rates, risk curve, win-back window length.
   several couples, each Creator monogamous or polyamorous; see DECISIONS, "0.3.5 Polyamory".
 - Desk notices and notes are "quiet" lines (`deskQuiet`): no reply flag, no unread, never the line
   a reply answers. Effects of a desk pass run only after its record is written.
-

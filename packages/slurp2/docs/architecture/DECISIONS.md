@@ -634,4 +634,3 @@ modules, rejected alternative, and migration consequence.
 - **Rejected alternatives:** only overlapping pairs (a throuple would read as three separate couples);
   only groups (a Creator with two separate partners could not exist).
 - **Migration consequence:** none; `moreIds` and `relationshipStyle` are optional.
-
