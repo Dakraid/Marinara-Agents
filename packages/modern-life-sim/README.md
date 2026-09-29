@@ -26,6 +26,8 @@ This is an **alpha** and the package is **staging only**: Engine `staging` teste
 
 0.2.4 lets you use your own pictures for people's season and work outfits and for you in your outfits, lets you rename someone (by hand, or from their card), keeps scene turns when a model's reply has small mistakes, makes the clothes store's rack sharp again, keeps the phone's shop apart from a store's, and fixes something in the optional Adult Module.
 
+0.2.5 stops Contacts from freezing: it opens without loading your life again, and a part of someone's sheet that can't be shown no longer stops the whole screen.
+
 All generation — cast readings, scene lines, backgrounds and outfit pictures — runs through the Engine profile's own configured model and image connections. The package adds no external services and sends nothing anywhere else. The numbers (bonds, money, time, outcomes) are always decided by the package's code; the model only writes the words.
 
 ## Requirements
