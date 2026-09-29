@@ -2067,5 +2067,14 @@
   "ui.slurp.messages.tipAttach": "{{amount}} <coin/> anhängen",
   "ui.slurp.messages.tipBalance": "Kontostand",
   "ui.slurp.messages.tipSendNow": "{{amount}} <coin/> senden",
-  "ui.slurp.settings.connections.adImagesUse": "Bildmaterial für gesponserte Beiträge. Leer verwendet das Creator-Bildmodell."
+  "ui.slurp.settings.connections.adImagesUse": "Bildmaterial für gesponserte Beiträge. Leer verwendet das Creator-Bildmodell.",
+  "ui.slurp.stir.hint.more": "Weitere Arten zum Umrühren köcheln noch. Sie kommen mit zukünftigen Updates.",
+  "ui.slurp.pulse.quick": "Schnellstart",
+  "ui.slurp.pulse.quickGenerate": "Beiträge generieren",
+  "ui.slurp.pulse.runAudience": "Fan-Aktivität starten",
+  "ui.slurp.pulse.runAudienceDone": "Die Fans liken, kommentieren und antworten.",
+  "ui.slurp.pulse.again.stir": "In Stir neu starten",
+  "ui.slurp.pulse.again.generate": "Unter Beiträge generieren neu starten",
+  "ui.slurp.pulse.again.creator": "Auf der Seite neu starten",
+  "ui.slurp.pulse.again.add": "Unter Creator hinzufügen neu starten"
 }

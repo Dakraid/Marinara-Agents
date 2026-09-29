@@ -1,11 +1,12 @@
-import { useId, useState, type ReactNode } from "react";
-import { ChevronDown, Handshake, Heart, X, type LucideIcon } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { ChevronRight, Handshake, Heart, X, type LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { Avatar, SLP_PAGE_SCROLL_CLASS, SLP_TOP_BAR_CLASS, SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { SlpSparkleGlyph, SlpStirGlyph } from "../../base/chrome/SlpGlyphs";
 import { formatUpcomingDay } from "../../base/ui/slp-date-time";
 import { SlpButton, SlpChip } from "../../modules/chrome/SlpButton";
+import { SlpSheet } from "../../modules/chrome/SlpSheet";
 import { SlpUsesAiMark } from "../../modules/chrome/SlpAiMark";
 import { SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SLP_CARD_STACK_CLASS } from "../../modules/post/SlpPostHelpers";
@@ -58,6 +59,7 @@ function StirHint() {
         {t("ui.slurp.stir.hint.title")}
       </p>
       <p className={cn(SLP_TYPE.body, "mt-1 text-[var(--slurp-text)]")}>{t("ui.slurp.stir.hint.body")}</p>
+      <p className={cn(SLP_TYPE.body, "mt-2 font-semibold text-[var(--slurp-text)]")}>{t("ui.slurp.stir.hint.more")}</p>
       <button
         type="button"
         onClick={hide}
@@ -246,7 +248,10 @@ function Deck({ onPick }: { onPick: (action: SlpActionName) => void }) {
   );
 }
 
-/** Business and Relationships (U), moved from Studio: every tie between Creators, with its own buttons. */
+/**
+ * Business and Relationships (U), moved from Studio: every tie between Creators, with its own
+ * buttons. Each is a Stir sub-page (release step): a row here, a full sheet with the back arrow.
+ */
 function Group({
   icon: Icon,
   title,
@@ -259,14 +264,12 @@ function Group({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const id = useId();
   return (
     <section className="rounded-2xl bg-[var(--slurp-surface-raised)] shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
       <button
         type="button"
-        onClick={() => setOpen((value) => !value)}
-        aria-expanded={open}
-        aria-controls={id}
+        onClick={() => setOpen(true)}
+        aria-haspopup="dialog"
         className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-4 text-start text-[var(--slurp-muted)] transition-colors hover:text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] [&_svg]:!text-current"
       >
         <Icon size={18} aria-hidden="true" className="shrink-0" />
@@ -274,15 +277,11 @@ function Group({
           <span className={cn(SLP_TYPE.body, "block font-semibold text-[var(--slurp-text)]")}>{title}</span>
           <span className={cn(SLP_TYPE.meta, "block truncate")}>{detail}</span>
         </span>
-        <ChevronDown
-          size={16}
-          aria-hidden="true"
-          className={cn("shrink-0 transition-transform motion-reduce:transition-none", open && "rotate-180")}
-        />
+        <ChevronRight size={16} aria-hidden="true" className="shrink-0 rtl:rotate-180" />
       </button>
-      <div id={id} hidden={!open} className="border-t border-[var(--noodle-divider)] px-4 pb-4 pt-3">
-        {open && children}
-      </div>
+      <SlpSheet open={open} onClose={() => setOpen(false)} title={title} size="full" width="max-w-2xl" back>
+        <div className="px-2 pb-2">{open && children}</div>
+      </SlpSheet>
     </section>
   );
 }

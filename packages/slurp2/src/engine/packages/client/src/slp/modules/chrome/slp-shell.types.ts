@@ -1,7 +1,7 @@
-import type { SlpPulseBudgetNote } from "./SlpPulse";
+import type { SlpPulseBudgetNote, SlpPulsePanel } from "./SlpPulse";
 import type { SlpPulseTarget } from "../../base/state/slp-task-store";
 // Shell contract, split out of components/slurp/SlurpShell.tsx in Slice 10.
-import type { ReactNode, RefObject } from "react";
+import type { ComponentProps, ReactNode, RefObject } from "react";
 import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
 import type { SlpStoryRings } from "../story/SlpStoryRing";
 
@@ -56,6 +56,8 @@ export interface SlpShellProps {
   /** Omit on surfaces with no scoped equivalent. */
   /** Omit on surfaces with no scoped equivalent. */
   onOpenProfile?: () => void;
+  /** The own page's Dashboard, a row under the identity card in More; absent without a Creator page. */
+  onOpenDashboard?: () => void;
   onOpenSettings: () => void;
   /** Omit on surfaces with no scoped equivalent. */
   onOpenMessages?: () => void;
@@ -69,6 +71,8 @@ export interface SlpShellProps {
   onOpenPulseTarget?: (target: SlpPulseTarget) => void;
   /** Pulse's "AI budget" link. */
   onOpenBudget?: () => void;
+  /** Pulse's quick "Generate posts" chip and "Start it again from …" on restored failed tasks. */
+  pulseStarts?: Pick<ComponentProps<typeof SlpPulsePanel>, "onGeneratePosts" | "onStartAgain">;
   /** Unseen activity, shown on the unified Inbox entry. */
   notificationCount?: number;
   /** Shown on the desktop Wallet row and the identity card, so the balance is not mobile-only. */

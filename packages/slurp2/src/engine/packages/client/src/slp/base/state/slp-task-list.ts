@@ -28,3 +28,28 @@ export function slpStoredTasks<T extends { status: string; finishedAt?: number; 
     .slice(0, SLP_TASKS_MAX)
     .map(({ open: _open, retry: _retry, ...task }) => task);
 }
+
+/** The screen a task kind starts from, for a failed task restored after a reload (its Try again died with the tab). */
+export type SlpTaskAgainScreen = "stir" | "generate" | "creator" | "add";
+
+/**
+ * Where "Start it again from …" goes for a restored failed task: Stir for plays and plans, the
+ * Generate posts picker, the Creator's page for Run now and picture draws, Add Creators for a
+ * sign-up. Null for a kind with no screen (the row keeps its reason only) or a Creator task without one.
+ */
+export function slpTaskAgainScreen(task: { kind: string; accountIds?: readonly string[] }): SlpTaskAgainScreen | null {
+  switch (task.kind) {
+    case "stir-play":
+    case "stir-plan":
+      return "stir";
+    case "generate-posts":
+      return "generate";
+    case "auto-post":
+    case "generate-post-image":
+      return task.accountIds?.[0] ? "creator" : null;
+    case "sign-up":
+      return "add";
+    default:
+      return null;
+  }
+}

@@ -63,7 +63,7 @@ export function SlpStirCreatorSheet({
   );
   return (
     <>
-      <SlpSheet open={Boolean(target)} onClose={close} title={t("ui.slurp.stir.sheetTitle", { name })}>
+      <SlpSheet open={Boolean(target)} onClose={close} back title={t("ui.slurp.stir.sheetTitle", { name })}>
         <div className="space-y-4 px-2 pb-2" data-slp-stir-sheet>
           {creator && (
             <div className="flex items-center gap-3 px-1">

@@ -21,22 +21,22 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
+import { ChevronLeft, X } from "lucide-react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { ModalPortalContext } from "../../../components/ui/Modal";
 import { useDialogFocusScope } from "../../../hooks/use-dialog-focus-scope";
 import { getSlpAccentStyle, SLP_TYPE, useSlpAccent, useSlpMediaQuery } from "../../base/chrome/SlpChrome";
 import { SLP_MOTION, slpPrefersReducedMotion } from "../../base/chrome/slp-motion";
+import { registerSlpBackLayer } from "../../base/navigation/slp-back-layer";
 
 const useWideScreen = () => useSlpMediaQuery("(min-width: 768px)");
 
 /** Closes the Slurp overlay that is open now, so a second one never stacks on top of it. */
 let closeOpenOverlay: (() => void) | null = null;
 
-// ponytail: no back-gesture close. A history entry of our own confuses the Engine's back handler
-// (it closed the Engine's top layer when the sheet closed), and the Engine's back stack is not
-// reachable from a package bundle. Upgrade path: a host API to register a back layer.
+// Back gesture: only a sheet that is a sub-page (`back`) closes on Android / browser back, through
+// Slurp's own back layer (base/navigation/slp-back-layer.ts); other sheets leave history alone.
 
 // A swipe this long, or this fast (px per ms), closes the sheet; anything less snaps back.
 const SWIPE_CLOSE_PX = 90;
@@ -53,6 +53,7 @@ export function SlpSheet({
   size = "auto",
   headerAccessory,
   footer,
+  back = false,
   children,
 }: {
   open: boolean;
@@ -77,11 +78,18 @@ export function SlpSheet({
   headerAccessory?: ReactNode;
   /** A bar pinned under the scrolling body (a sticky "Post" / "Save"). */
   footer?: ReactNode;
+  /**
+   * A sub-page (the Stir pages): phones and tablets get the back arrow in the header, and Android /
+   * browser back closes it and returns to the screen under it. Desktop keeps the plain header.
+   */
+  back?: boolean;
   children: ReactNode;
 }) {
   const { t: localizeUi } = useUiTranslation();
   const full = size === "full";
   const wide = useWideScreen();
+  const desktop = useSlpMediaQuery("(min-width: 1024px)");
+  const showBack = back && !desktop;
   const mode = !wide ? "sheet" : anchorRef ? "popover" : "modal";
   const accent = useSlpAccent();
   const portal = useContext(ModalPortalContext);
@@ -130,6 +138,8 @@ export function SlpSheet({
   }, [open]);
 
   useDialogFocusScope(open && mounted, panelRef);
+
+  useEffect(() => (open && back ? registerSlpBackLayer(() => onCloseRef.current()) : undefined), [open, back]);
 
   // Popover: a tap anywhere but the panel or its trigger closes it (the trigger toggles on its own).
   useEffect(() => {
@@ -282,18 +292,31 @@ export function SlpSheet({
                 className="mx-auto mb-3 block h-1.5 w-10 rounded-full bg-[var(--slurp-muted)]/40"
               />
             )}
-            {full || headerAccessory ? (
+            {full || headerAccessory || showBack ? (
               <div className="flex min-h-10 items-center gap-2">
-                {full && (
+                {showBack ? (
                   <button
                     type="button"
                     onClick={requestClose}
                     disabled={closeDisabled}
-                    aria-label={localizeUi("capabilities.actions.close")}
-                    className="-ms-2 grid size-10 shrink-0 place-items-center rounded-full text-[var(--slurp-muted)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 [&_svg]:!text-current"
+                    aria-label={localizeUi("ui.slurp.settings.backstage.kit.back")}
+                    title={localizeUi("ui.slurp.settings.backstage.kit.back")}
+                    className="-ms-2 grid size-11 shrink-0 place-items-center rounded-full text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 [&_svg]:!text-current"
                   >
-                    <X size={20} aria-hidden="true" />
+                    <ChevronLeft size={22} aria-hidden="true" />
                   </button>
+                ) : (
+                  full && (
+                    <button
+                      type="button"
+                      onClick={requestClose}
+                      disabled={closeDisabled}
+                      aria-label={localizeUi("capabilities.actions.close")}
+                      className="-ms-2 grid size-10 shrink-0 place-items-center rounded-full text-[var(--slurp-muted)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 [&_svg]:!text-current"
+                    >
+                      <X size={20} aria-hidden="true" />
+                    </button>
+                  )
                 )}
                 <h2 className={cn(SLP_TYPE.title, "min-w-0 flex-1 truncate")}>{title}</h2>
                 {headerAccessory}

@@ -5,7 +5,8 @@ import { useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
 import { Avatar, SLP_EYEBROW_CLASS, SLP_TYPE } from "../../base/chrome/SlpChrome";
-import { startSlpTask, useSlpTasks, type SlpPulseTarget } from "../../base/state/slp-task-store";
+import { startSlpTask, useSlpTasks, type SlpPulseTarget, type SlpTask } from "../../base/state/slp-task-store";
+import type { SlpTaskAgainScreen } from "../../base/state/slp-task-list";
 import { api } from "../../../lib/api-client.js";
 import { cn } from "../../../lib/utils";
 import { sortSlpPulseScheduled } from "./slp-pulse-order";
@@ -20,7 +21,15 @@ import {
   type PulseServerTask,
   type PulseUsage,
 } from "./slp-pulse-model";
-import { PulseAiToday, PulseClientTaskRow, PulseNextRow, formatPulseAge, formatPulseUntil } from "./SlpPulseRows";
+import {
+  PulseAiToday,
+  PulseClientTaskRow,
+  PulseNextRow,
+  PulseQuickStarts,
+  slpPulseRunAudience,
+  formatPulseAge,
+  formatPulseUntil,
+} from "./SlpPulseRows";
 import { SlpSheet } from "./SlpSheet";
 import { SlpButton, SlpPrimaryButton } from "./SlpButton";
 
@@ -78,6 +87,8 @@ export function SlpPulsePanel({
   accounts = [],
   onOpenTarget,
   onOpenBudget,
+  onGeneratePosts,
+  onStartAgain,
 }: {
   open: boolean;
   onClose: () => void;
@@ -86,6 +97,10 @@ export function SlpPulsePanel({
   /** Opens a task's result; Pulse closes first. */
   onOpenTarget?: (target: SlpPulseTarget) => void;
   onOpenBudget?: () => void;
+  /** The quick "Generate posts" chip: the Creator picker, whose run is a Pulse task. */
+  onGeneratePosts?: () => void;
+  /** "Start it again from …" on a failed task restored after a reload; Pulse closes first. */
+  onStartAgain?: (screen: SlpTaskAgainScreen, task: SlpTask) => void;
 }) {
   const { t } = useUiTranslation();
   const serverTasks = useSlpPulseTasks(open);
@@ -101,7 +116,12 @@ export function SlpPulsePanel({
   const comingUp = slpPulseComingUp(serverTasks.data?.next ?? [], tasks.scheduled);
   const client = {
     running: clientTasks.filter((task) => slpPulseClientSection(task) === "running"),
-    failed: clientTasks.filter((task) => slpPulseClientSection(task) === "failed"),
+    // A restored failed audience run can run again from right here.
+    failed: clientTasks
+      .filter((task) => slpPulseClientSection(task) === "failed")
+      .map((task) =>
+        !task.retry && task.kind === "run-audience" ? { ...task, retry: () => slpPulseRunAudience(t, task.id) } : task,
+      ),
     done: clientTasks.filter((task) => slpPulseClientSection(task) === "done"),
   };
   const taskAccounts = [...accounts, ...(serverTasks.data?.accounts ?? [])].filter(
@@ -115,6 +135,12 @@ export function SlpPulsePanel({
         if (!target) return;
         onClose();
         onOpenTarget(target);
+      }
+    : undefined;
+  const startAgain = onStartAgain
+    ? (screen: SlpTaskAgainScreen, task: SlpTask) => {
+        onClose();
+        onStartAgain(screen, task);
       }
     : undefined;
   const counts = {
@@ -146,7 +172,7 @@ export function SlpPulsePanel({
   };
 
   return (
-    <SlpSheet open={open} onClose={onClose} title={t("ui.slurp.pulse.title", { defaultValue: "Pulse" })}>
+    <SlpSheet open={open} onClose={onClose} back title={t("ui.slurp.pulse.title", { defaultValue: "Pulse" })}>
       <div id="slurp-pulse-panel" className="space-y-6 px-2 pb-2">
         {/* One status line: what runs, waits, failed and comes next, or "All quiet". */}
         <p className={cn(SLP_TYPE.meta, "flex items-center gap-2 px-1 text-[var(--slurp-muted)]")}>
@@ -161,7 +187,19 @@ export function SlpPulsePanel({
             })}
         </p>
 
-        {/* W: Pulse shows what runs and ran. A new plan never starts here (Stir does that). */}
+        {/* Quick starts (release step): small chips, each runs on as a task below. Plans start in Stir. */}
+        <PulseQuickStarts
+          t={t}
+          onGeneratePosts={
+            onGeneratePosts
+              ? () => {
+                  onClose();
+                  onGeneratePosts();
+                }
+              : undefined
+          }
+        />
+
         {budgetNote && (
           // One-time note from Slurp after the AI budget defaults went up (task F). Either button clears it.
           <section
@@ -236,7 +274,14 @@ export function SlpPulsePanel({
             {heading("slurp-pulse-attention", t("ui.slurp.pulse.sections.failed", { defaultValue: "Failed" }), true)}
             <div className="space-y-2">
               {client.failed.map((task) => (
-                <PulseClientTaskRow key={task.id} task={task} name={name} t={t} onOpen={openTarget} />
+                <PulseClientTaskRow
+                  key={task.id}
+                  task={task}
+                  name={name}
+                  t={t}
+                  onOpen={openTarget}
+                  onStartAgain={startAgain}
+                />
               ))}
               {groups.attention.flatMap((group) =>
                 group.tasks.map((task) => (

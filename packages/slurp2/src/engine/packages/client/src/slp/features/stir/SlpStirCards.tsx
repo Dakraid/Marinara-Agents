@@ -296,7 +296,7 @@ export function SlpStirPlanSheet({
     <SlpSheet
       open={open}
       onClose={close}
-
+      back
       title={t("ui.slurp.stir.planTitle")}
       footer={
         <div className="flex gap-2 px-3 py-2">

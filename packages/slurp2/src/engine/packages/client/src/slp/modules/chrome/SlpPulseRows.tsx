@@ -6,6 +6,7 @@ import {
   Handshake,
   ImagePlus,
   Loader2,
+  Megaphone,
   MessageCircle,
   RotateCcw,
   Users,
@@ -15,13 +16,52 @@ import { useTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { formatRelativeTime } from "../../base/ui/slp-date-time";
-import { dismissSlpTask, type SlpPulseTarget, type SlpTask } from "../../base/state/slp-task-store";
+import { dismissSlpTask, startSlpTask, type SlpPulseTarget, type SlpTask } from "../../base/state/slp-task-store";
+import { api } from "../../../lib/api-client.js";
+import { slpTaskAgainScreen, type SlpTaskAgainScreen } from "../../base/state/slp-task-list";
 import { slpPulseAiToday, type PulseNext, type PulseUsage } from "./slp-pulse-model";
-import { SlpButton } from "./SlpButton";
+import { SlpButton, SlpChip } from "./SlpButton";
+import { SlpUsesAiMark, noteSlpAiUseOnce } from "./SlpAiMark";
+import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 
 /** Pulse's rows (task C): today's AI use, one "Coming up" line, one long action from this tab (task B). */
 
 export type Translate = (key: string, options?: Record<string, unknown>) => string;
+
+/** Fans like, comment and reply now, as a Pulse task (task B); `retryOf` reruns a restored failed one in its row. */
+export function slpPulseRunAudience(t: Translate, retryOf?: string) {
+  noteSlpAiUseOnce(t);
+  void startSlpTask(
+    {
+      t,
+      kind: "run-audience",
+      label: t("ui.slurp.pulse.runAudience"),
+      run: () => api.post("/slurp2/slurp/actions/run-audience", {}),
+      done: () => ({ result: t("ui.slurp.pulse.runAudienceDone") }),
+    },
+    retryOf,
+  );
+}
+
+/** Quick starts at the top of Pulse (release step): small chips; each runs on as a task. */
+export function PulseQuickStarts({ t, onGeneratePosts }: { t: Translate; onGeneratePosts?: () => void }) {
+  const chip = "min-h-9 gap-1.5 px-3 text-xs";
+  return (
+    <div className="flex flex-wrap gap-2 px-1" role="group" aria-label={t("ui.slurp.pulse.quick")}>
+      {onGeneratePosts && (
+        <SlpChip aria-pressed={undefined} onClick={onGeneratePosts} className={chip}>
+          <SlpSparkleGlyph size={14} aria-hidden="true" />
+          {t("ui.slurp.pulse.quickGenerate")}
+        </SlpChip>
+      )}
+      <SlpChip aria-pressed={undefined} onClick={() => slpPulseRunAudience(t)} className={chip}>
+        <Megaphone size={14} aria-hidden="true" />
+        {t("ui.slurp.pulse.runAudience")}
+        <SlpUsesAiMark />
+      </SlpChip>
+    </div>
+  );
+}
 
 /** Today's AI use against the day's limit, in tokens (F), with the way to the AI budget. */
 export function PulseAiToday({
@@ -169,13 +209,17 @@ export function PulseClientTaskRow({
   name,
   t,
   onOpen,
+  onStartAgain,
 }: {
   task: SlpTask;
   name: (id: string | undefined) => string | undefined;
   t: Translate;
   onOpen?: (target: SlpPulseTarget | null) => void;
+  /** A failed task restored after a reload has no Try again: this opens the screen it started from. */
+  onStartAgain?: (screen: SlpTaskAgainScreen, task: SlpTask) => void;
 }) {
   const failed = task.status === "failed";
+  const againScreen = failed && !task.retry && onStartAgain ? slpTaskAgainScreen(task) : null;
   const running = task.status === "running";
   const who = task.accountIds
     .map((id) => name(id))
@@ -226,7 +270,7 @@ export function PulseClientTaskRow({
             : formatPulseAge(new Date(task.finishedAt ?? task.startedAt).toISOString())}
         </span>
       </div>
-      {(openTask || (failed && task.retry)) && (
+      {(openTask || (failed && task.retry) || againScreen) && (
         <div className="mt-1 flex flex-wrap justify-end gap-2">
           {failed && (
             <SlpButton variant="quiet" onClick={() => dismissSlpTask(task.id)}>
@@ -236,6 +280,11 @@ export function PulseClientTaskRow({
           {openTask && (
             <SlpButton variant="quiet" onClick={openTask.run}>
               {openTask.label}
+            </SlpButton>
+          )}
+          {againScreen && (
+            <SlpButton onClick={() => onStartAgain?.(againScreen, task)}>
+              {t(`ui.slurp.pulse.again.${againScreen}`)}
             </SlpButton>
           )}
           {failed && task.retry && (

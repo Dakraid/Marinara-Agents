@@ -5450,5 +5450,13 @@
   "ui.slurp.settings.events.targetAdvanced": "Existing filtered target",
   "ui.slurp.settings.events.targetRandomDetail": "This event picks {{min}}–{{max}} matching Creators once, then keeps that list.",
   "ui.slurp.post.editOnePicture": "Picture {{number}} of {{total}}. Save to change another one.",
-  "ui.slurp.composer.setRemovedOnSave": "All {{count}} pictures removed when you save"
+  "ui.slurp.composer.setRemovedOnSave": "All {{count}} pictures removed when you save",
+  "ui.slurp.stir.hint.more": "More ways to stir are still simmering. They arrive in future updates.",
+  "ui.slurp.pulse.quick": "Quick starts",
+  "ui.slurp.pulse.quickGenerate": "Generate posts",
+  "ui.slurp.pulse.runAudienceDone": "Fans are liking, commenting and replying.",
+  "ui.slurp.pulse.again.stir": "Start it again from Stir",
+  "ui.slurp.pulse.again.generate": "Start it again from Generate posts",
+  "ui.slurp.pulse.again.creator": "Start it again from their page",
+  "ui.slurp.pulse.again.add": "Start it again from Add creators"
 }

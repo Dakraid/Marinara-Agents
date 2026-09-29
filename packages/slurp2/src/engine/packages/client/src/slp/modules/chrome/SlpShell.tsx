@@ -6,11 +6,12 @@
 // Split out of components/slurp/SlurpShell.tsx in Slice 10. It renders a wallet balance through
 // modules/coin, so it is a reusable module rather than base/ chrome.
 // ──────────────────────────────────────────────
-import { AtSign, ChevronDown, Settings2, Wallet } from "lucide-react";
+import { AtSign, ChartNoAxesColumn, ChevronDown, Settings2, Wallet } from "lucide-react";
 import {
   SlpDiscoverGlyph,
   SlpHubGlyph,
   SlpInboxGlyph,
+  SlpMoreGlyph,
   SlpProfileGlyph,
   SlpStirGlyph,
 } from "../../base/chrome/SlpGlyphs";
@@ -195,6 +196,7 @@ export function SlpShell({
   onOpenNoodler,
   onOpenSearch,
   onOpenProfile,
+  onOpenDashboard,
   onOpenSettings,
   onOpenMessages,
   onOpenWallet,
@@ -202,6 +204,7 @@ export function SlpShell({
   budgetNote,
   onOpenPulseTarget,
   onOpenBudget,
+  pulseStarts,
   notificationCount = 0,
   walletBalanceLabel,
   walletBalance,
@@ -320,6 +323,12 @@ export function SlpShell({
                   : localizeUi("ui.noodle.noodleshell.noodleAccountNavigation")
               }
             >
+              {onOpenDashboard && (
+                <button type="button" onClick={onOpenDashboard} className={SLURP_ROW_CLASS}>
+                  <ChartNoAxesColumn size={20} />
+                  {localizeUi("ui.slurp.dashboard.open")}
+                </button>
+              )}
               {onOpenWallet && (
                 <button
                   type="button"
@@ -345,12 +354,7 @@ export function SlpShell({
               </button>
             </nav>
             {slurpActive && <SlpPulseCard open={pulseOpen} onOpen={openSlpPulse} note={Boolean(budgetNote)} />}
-            {/*
-              The drawer used to render the whole persona list open, so the identity card
-              was pushed off-screen on any install with more than a couple of personas.
-              `<details>` gives the same disclosure as the desktop rail with no state to
-              hold and no outside-click handler to get wrong.
-            */}
+            {/* `<details>`, closed: the whole persona list open pushed the identity card off-screen. */}
             <details className="group mt-3">
               <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 text-left [&::-webkit-details-marker]:hidden">
                 <span className={labelClass}>{localizeUi("ui.noodle.noodleshell.switchAccount")}</span>
@@ -677,6 +681,7 @@ export function SlpShell({
           accounts={sortedPersonaAccounts}
           onOpenTarget={onOpenPulseTarget}
           onOpenBudget={onOpenBudget}
+          {...pulseStarts}
         />
 
         {/* The frosted fade under the phone nav, down to the bottom edge. A sibling, not a backdrop on
@@ -703,8 +708,7 @@ export function SlpShell({
           }
           data-component="NoodleView.MobileBottomNav"
         >
-          {/* W: Hub · Discover · ✦ Stir (the centre) · Inbox · Me. "More" became "Me": the own profile,
-              with Wallet on the balance chip and Settings / switching account behind its ⋯. */}
+          {/* Hub · Discover · Stir · Inbox · More (own page + Dashboard, Wallet, Settings, Pulse, accounts). */}
           <div className="grid grid-flow-col auto-cols-fr gap-0.5">
             <SlpNavTab
               onClick={onMobileHomeTap}
@@ -736,13 +740,7 @@ export function SlpShell({
                 active={activeView === "stir"}
                 aria-current={activeView === "stir" ? "page" : undefined}
                 label={localizeUi("ui.slurp.navigation.stir")}
-                icon={
-                  // The centre spoon: the one pink disc in the bar, so the lever is always one tap away. The
-                  // disc sets the ink: the tab paints its icons `currentColor`, which is this colour here.
-                  <span className="flex size-7 items-center justify-center rounded-full bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] shadow-[var(--slurp-glow)]">
-                    <SlpStirGlyph size={18} filled />
-                  </span>
-                }
+                icon={<SlpStirGlyph size={20} filled={activeView === "stir"} />}
               />
             )}
             {onOpenMessages && (
@@ -758,19 +756,20 @@ export function SlpShell({
             <SlpNavTab
               ref={mobileDrawerTriggerRef}
               data-component="NoodleView.MobileAccountSwitcher"
-              onClick={onOpenProfile ?? (() => onMobileDrawerOpenChange(true))}
-              active={activeView === "profile"}
-              aria-current={activeView === "profile" ? "page" : undefined}
+              onClick={() => onMobileDrawerOpenChange(true)}
+              aria-expanded={mobileDrawerOpen}
+              aria-haspopup="dialog"
+              active={mobileDrawerOpen}
               label={
                 slurpActive
-                  ? localizeUi("ui.slurp.navigation.me")
+                  ? localizeUi("ui.slurp.navigation.more", { defaultValue: "More" })
                   : localizeUi("ui.noodle.noodleshell.noodleAccountMenu")
               }
               icon={
                 personaAccount ? (
                   <Avatar account={personaAccount} size="xs" />
                 ) : (
-                  <SlpProfileGlyph size={20} filled={activeView === "profile"} />
+                  <SlpMoreGlyph size={20} filled={mobileDrawerOpen} />
                 )
               }
             />

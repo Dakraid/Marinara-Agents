@@ -2892,5 +2892,14 @@
   "ui.slurp.messages.tipAttach": "{{amount}} <coin/> 첨부",
   "ui.slurp.messages.tipBalance": "잔액",
   "ui.slurp.messages.tipSendNow": "{{amount}} <coin/> 보내기",
-  "ui.slurp.settings.connections.adImagesUse": "스폰서 게시물용 아트워크입니다. 비워두면 크리에이터 사진 모델을 사용합니다."
+  "ui.slurp.settings.connections.adImagesUse": "스폰서 게시물용 아트워크입니다. 비워두면 크리에이터 사진 모델을 사용합니다.",
+  "ui.slurp.stir.hint.more": "더 많은 Stir 방법이 아직 끓고 있어요. 앞으로의 업데이트에서 추가됩니다.",
+  "ui.slurp.pulse.quick": "빠른 시작",
+  "ui.slurp.pulse.quickGenerate": "게시물 생성",
+  "ui.slurp.pulse.runAudience": "팬 활동 시작",
+  "ui.slurp.pulse.runAudienceDone": "팬들이 좋아요, 댓글, 답장을 하고 있어요.",
+  "ui.slurp.pulse.again.stir": "Stir에서 다시 시작",
+  "ui.slurp.pulse.again.generate": "게시물 생성에서 다시 시작",
+  "ui.slurp.pulse.again.creator": "크리에이터 페이지에서 다시 시작",
+  "ui.slurp.pulse.again.add": "크리에이터 추가에서 다시 시작"
 }

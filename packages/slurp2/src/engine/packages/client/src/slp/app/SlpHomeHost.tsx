@@ -202,6 +202,19 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
     },
     onOpenBudget: () =>
       onNavigate({ mode: "creator-settings", section: "world", target: "audience", settingKey: "modelBudget" }),
+    pulseStarts: {
+      // The Creator picker in Backstage; its Generate is a Pulse task (task B).
+      onGeneratePosts: () =>
+        onNavigate({ mode: "creator-settings", section: "overview", target: "overview", openRefresh: true }),
+      // A failed task restored after a reload: the screen it started from (no dead end).
+      onStartAgain: (screen, task) => {
+        if (screen === "stir") void goToStir();
+        else if (screen === "generate")
+          onNavigate({ mode: "creator-settings", section: "overview", target: "overview", openRefresh: true });
+        else if (screen === "add") setOnboardingMode("add-creators");
+        else if (task.accountIds[0]) onNavigate({ mode: "creator", view: "profile", accountId: task.accountIds[0] });
+      },
+    },
     budgetNote: budgetNoteBudget
       ? {
           onOpenBudget: () => {
@@ -236,6 +249,12 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
             : { mode: "creator", view: "profiles" },
       );
     },
+    onOpenDashboard: mainAuthorProfile
+      ? () => {
+          setMobileDrawerOpen(false);
+          onNavigate({ mode: "creator", view: "profile", accountId: mainAuthorProfile.id, dashboard: true });
+        }
+      : undefined,
     onOpenSettings: openSettings,
     // Every NoodleR branch spreads shellProps, so these mount once wherever the user is. The
     // Creator settings modal is opened from Backstage, from a Creator's profile and from a

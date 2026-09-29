@@ -2083,5 +2083,14 @@
   "ui.slurp.messages.tipAttach": "Dołącz {{amount}} <coin/>",
   "ui.slurp.messages.tipBalance": "Saldo",
   "ui.slurp.messages.tipSendNow": "Wyślij {{amount}} <coin/>",
-  "ui.slurp.settings.connections.adImagesUse": "Grafika do sponsorowanych postów. Puste używa modelu obrazów twórcy."
+  "ui.slurp.settings.connections.adImagesUse": "Grafika do sponsorowanych postów. Puste używa modelu obrazów twórcy.",
+  "ui.slurp.stir.hint.more": "Kolejne sposoby na zamieszanie jeszcze się gotują. Pojawią się w przyszłych aktualizacjach.",
+  "ui.slurp.pulse.quick": "Szybki start",
+  "ui.slurp.pulse.quickGenerate": "Generuj posty",
+  "ui.slurp.pulse.runAudience": "Uruchom aktywność fanów",
+  "ui.slurp.pulse.runAudienceDone": "Fani lajkują, komentują i odpowiadają.",
+  "ui.slurp.pulse.again.stir": "Zacznij od nowa w Stir",
+  "ui.slurp.pulse.again.generate": "Zacznij od nowa w Generuj posty",
+  "ui.slurp.pulse.again.creator": "Zacznij od nowa na stronie twórcy",
+  "ui.slurp.pulse.again.add": "Zacznij od nowa w Dodaj twórców"
 }

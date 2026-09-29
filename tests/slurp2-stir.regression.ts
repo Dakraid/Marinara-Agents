@@ -498,19 +498,33 @@ async function main() {
   // --- 9. The client: three ways in, one preview, one "Do it" ------------------------------------
   {
     const shell = client("modules/chrome/SlpShell.tsx");
-    const tabs = shell.slice(shell.indexOf("W: Hub · Discover · ✦ Stir"));
-    const order = ["onMobileHomeTap", "onOpenSearch", "onOpenStir", "onOpenMessages", "onOpenProfile"].map((name) =>
-      tabs.indexOf(`onClick={${name}`),
-    );
+    // Release 0.3.0 (user): the last tab is "More" again (it opens the More sheet with the own page and
+    // its Dashboard); the spoon is a plain nav glyph, no pink disc. Studio stays gone.
+    const tabs = shell.slice(shell.indexOf("Hub · Discover · Stir · Inbox · More"));
+    const order = [
+      "onMobileHomeTap",
+      "onOpenSearch",
+      "onOpenStir",
+      "onOpenMessages",
+      "() => onMobileDrawerOpenChange(true)",
+    ].map((name) => tabs.indexOf(`onClick={${name}`));
     assert.ok(
       order.every((at, index) => at > 0 && (index === 0 || at > order[index - 1]!)),
-      "Hub · Discover · Stir · Inbox · Me",
+      "Hub · Discover · Stir · Inbox · More",
     );
-    assert.match(shell, /label=\{\s*slurpActive\s*\? localizeUi\("ui\.slurp\.navigation\.me"\)/u, "More became Me");
-    assert.doesNotMatch(shell, /onOpenStudio|ChartNoAxesColumn/u, "no Studio row left");
+    assert.match(
+      shell,
+      /localizeUi\("ui\.slurp\.navigation\.more", \{ defaultValue: "More" \}\)/u,
+      "Me became More again",
+    );
+    assert.doesNotMatch(shell, /onOpenStudio/u, "no Studio row left");
     // The user's call: Stir has its own spoon glyph (Slurp's glyph set, not a library icon).
     assert.match(client("base/chrome/SlpGlyphs.tsx"), /export const SlpStirGlyph = slpGlyph\("Stir"/u);
-    assert.match(shell, /<SlpStirGlyph size=\{18\} filled \/>/u, "the centre tab wears the spoon");
+    assert.match(
+      shell,
+      /<SlpStirGlyph size=\{20\} filled=\{activeView === "stir"\} \/>/u,
+      "the Stir tab wears the spoon",
+    );
     // The deck is fed from the catalog, never hand-built.
     const deck = client("features/stir/slp-stir-deck.ts");
     assert.match(deck, /SLP_ACTION_NAMES\.filter\(\(name\) => SLP_ACTION_META\[name\]\.deck\)/u);
@@ -550,10 +564,12 @@ async function main() {
     // Studio went: its own-page half is the Dashboard sheet from the own profile's action row.
     assert.match(client("app/screens/SlpProfileLeadingActions.tsx"), /data-slp-dashboard-open/u);
     assert.match(client("app/screens/SlpDashboard.tsx"), /function SlpDashboardSheet\(/u);
-    // Start now and chapter moves left Settings; Generate posts left Pulse.
+    // Start now and chapter moves left Settings. Release 0.3.0 (user): Pulse's quick starts are back as
+    // small chips (Generate posts, Run audience) that run as tasks; a new plan still starts in Stir only.
     assert.doesNotMatch(client("features/world/SlpPlatformEventsPanel.tsx"), /startEvent\.mutate/u);
     assert.doesNotMatch(client("features/projects/SlpProjectsBoard.tsx"), /<SlpArcChapterControls/u);
-    assert.doesNotMatch(client("modules/chrome/SlpPulse.tsx"), /onGeneratePosts|onRunAudience|runAudience"/u);
+    assert.match(client("modules/chrome/SlpPulse.tsx"), /<PulseQuickStarts/u);
+    assert.doesNotMatch(client("modules/chrome/SlpPulse.tsx"), /stir\/plan/u);
     // First visit: one short hint; the box has examples.
     assert.match(client("features/stir/SlpStirScreen.tsx"), /slurp2:stir-hint-seen/u);
     assert.match(client("locales/en.json"), /"ui\.slurp\.stir\.box": "What should we stir up\?"/u);
