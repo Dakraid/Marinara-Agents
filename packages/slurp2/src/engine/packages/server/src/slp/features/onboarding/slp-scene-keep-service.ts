@@ -10,6 +10,8 @@ import type { DB } from "../../../db/connection.js";
 import { createSlurpMessagesStorage, createSlurpStorage } from "../../data/slp-storage.js";
 import { slpSceneThreadMessages } from "../../modules/onboarding/slp-scene-thread.js";
 import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
+import { updateSlurpSupportDesk } from "../../data/creators/slp-support-desk-storage.js";
+import { slpDeskSeed } from "../../../../../shared/src/slp/slp-support-desk.js";
 
 export async function keepSlpSceneTranscript(
   db: DB,
@@ -33,5 +35,8 @@ export async function keepSlpSceneTranscript(
       ...message,
     });
   }
+  // Support signed them up: the case file starts with the sign-up, and a little warmer (docs/SUPPORT-DESK.md).
+  if (request.preset === "support")
+    await updateSlurpSupportDesk(db, creator.id, (desk) => slpDeskSeed(desk, { signedUpBySupport: true }));
   return { status: "kept", threadId: opened.thread.id };
 }

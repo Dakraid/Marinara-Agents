@@ -236,7 +236,8 @@ async function main() {
     assert.match(header, /add "staff" to your JSON/u);
     assert.match(header, /"takeaway": one sentence you will remember, starting "Slurp Support told me"/u);
     assert.match(header, /Lines marked "Slurp Support \(during the sign-up\)" are Slurp Support signing you up\./u);
-    assert.match(header, /In the data, "creator" is you and "fan" is Slurp Support, Slurp's staff/u);
+    // 0.3.5: Support's thread has its own data label, never "fan".
+    assert.match(header, /In the data, "creator" is you and "slurpStaff" is Slurp Support, Slurp's staff/u);
     assert.doesNotMatch(header, /is a fan writing to you/u);
     assert.doesNotMatch(header, /not Slurp Support and not a fan/u, "no 'Support on the persona's side' framing");
     assert.doesNotMatch(header, /do not address Slurp Support/u);
@@ -388,7 +389,8 @@ async function main() {
     assert.match(generation, /slpResponseFormat\(input\.connection\.model, "noodler_dm", \{ staff: true \}\)/u);
     assert.match(
       read("server/src/slp/base/prompting/slp-response-format.ts"),
-      /required: \[\.\.\.slpCreatorDmSchema\.required, "staff"\]/u,
+      // 0.3.5: the Support desk's "desk" field rides along (docs/SUPPORT-DESK.md).
+      /required: \[\.\.\.slpCreatorDmSchema\.required, "staff", "desk"\]/u,
     );
     assert.match(read("server/src/slp/slp-server-entry.ts"), /await migrateSlurpSupportThreads\(app\.db\);/u);
     assert.match(

@@ -13,6 +13,7 @@ import { personaQuerySchema } from "../../modules/messages/slp-messages-schemas.
 import type { SlpMessagesContext } from "./slp-messages-context.js";
 import { slpCreatorUnlockPriceFromMetadata } from "../../modules/economy/slp-prices.js";
 import { slpStoredMediaSize } from "../../base/media/slp-media.js";
+import { markSlurpDeskSupportTurn, prepareSlurpDeskSend, slurpDeskSendSchema } from "./desk/slp-desk-send.js";
 
 const sendSchema = z.object({
   personaId: z.string().trim().min(1),
@@ -28,6 +29,8 @@ const sendSchema = z.object({
     .optional(),
   /** The player writes this one as Slurp Support (Slurp's staff), not as their persona. Support never tips. */
   asSupport: z.boolean().optional(),
+  /** Support only: an Offer or a move that rides this line (docs/SUPPORT-DESK.md). */
+  desk: slurpDeskSendSchema.optional(),
 });
 
 const tipSchema = z.object({
@@ -121,18 +124,58 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
     const viewer = await requireViewer(parsed.data.personaId);
     if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
-    const sent = await messages.sendViewerMessage(
-      viewer.id,
-      parsed.data.creatorAccountId,
-      parsed.data.content,
-      parsed.data.requestId,
-      { asSupport: parsed.data.asSupport === true },
-    );
+    // Support's desk step: checked before anything is sent (docs/SUPPORT-DESK.md).
+    const deskStep = parsed.data.desk
+      ? parsed.data.asSupport && !(await ownsCreator(viewer.id, parsed.data.creatorAccountId))
+        ? await prepareSlurpDeskSend(app.db, {
+            creatorAccountId: parsed.data.creatorAccountId,
+            content: parsed.data.content,
+            desk: parsed.data.desk,
+          })
+        : { ok: false as const, status: 400, error: "Only Slurp Support offers, to a Creator you do not run." }
+      : null;
+    if (deskStep && !deskStep.ok) return reply.code(deskStep.status).send({ error: deskStep.error });
+    // A rumour told by Support is its own line: the lever writes it, and the Creator answers that.
+    const rumour = deskStep?.ok && deskStep.rumour ? await deskStep.run!() : null;
+    const rumourMessage =
+      rumour && !rumour.error
+        ? await messages.getMessageById(String((rumour.value as { messageId?: string | null })?.messageId ?? ""))
+        : null;
+    if (rumour && !rumourMessage) return reply.code(409).send({ error: rumour.error ?? "The rumour could not be told." });
+    const sent = rumourMessage
+      ? {
+          status: "sent" as const,
+          thread: (await messages.getThreadById(rumourMessage.threadId))!,
+          message: rumourMessage,
+        }
+      : await messages.sendViewerMessage(
+          viewer.id,
+          parsed.data.creatorAccountId,
+          parsed.data.content,
+          parsed.data.requestId,
+          { asSupport: parsed.data.asSupport === true, metadata: deskStep?.ok ? deskStep.metadata : undefined },
+        );
     if (sent.status === "not_found") return reply.code(404).send({ error: "Creator not found" });
     if (sent.status === "closed") return reply.code(403).send({ error: slurpClosedThreadText(sent) });
     if (sent.status === "insufficient_funds")
       return reply.code(402).send({ error: "Not enough coins.", required: sent.required });
 
+    if (parsed.data.asSupport) {
+      // A move happens with its line; a failure is noted on the line, the line stays.
+      if (deskStep?.ok && deskStep.run && !deskStep.rumour) {
+        const moved = await deskStep.run().catch((error: unknown) => ({
+          error: error instanceof Error ? error.message : "The move failed.",
+          value: null,
+        }));
+        if (moved.error)
+          await messages.mergeMessageMetadata(sent.message.id, {
+            deskMove: { ...(deskStep.metadata.deskMove as Record<string, unknown>), error: moved.error },
+          });
+      }
+      await markSlurpDeskSupportTurn(app.db, parsed.data.creatorAccountId).catch((error: unknown) =>
+        logger.warn(error, "[slurp-desk] Could not update the ticket"),
+      );
+    }
     let outcome;
     let tipError: string | null = null;
     let replyTriggerMessageId = sent.message.id;

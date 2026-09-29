@@ -102,7 +102,11 @@ async function main() {
   for (const name of SLP_ACTION_NAMES) {
     const meta = SLP_ACTION_META[name];
     assert.ok(meta, `${name}: metadata`);
-    assert.ok(meta.category === "help" || SLP_STIR_CATEGORIES.includes(meta.category), `${name}: a deck category`);
+    // "desk": the Support desk's tools (0.3.5), used from the desk and Support threads, not the deck.
+    assert.ok(
+      meta.category === "help" || meta.category === "desk" || SLP_STIR_CATEGORIES.includes(meta.category),
+      `${name}: a deck category`,
+    );
     assert.ok(SLP_ACTIONS[name].summary.length <= 300, `${name}: a summary Professor Mari accepts`);
   }
   for (const entry of slpActionCatalog()) {
@@ -150,12 +154,21 @@ async function main() {
   const preview = server("features/assist/slp-action-preview.ts");
   const tiePreview = server("modules/projects/slp-stir-tie-preview.ts");
   const runner = server("features/assist/slp-action-runner.ts");
+  // The Support desk's levers (0.3.5) preview and run in their own file, like the tie levers.
+  const deskLevers = server("features/assist/slp-desk-levers.ts");
+  const isDesk = (name: string) => SLP_ACTION_META[name as keyof typeof SLP_ACTION_META].category === "desk";
   for (const name of SLP_ACTION_NAMES) {
     const tie = (SLURP_TIE_LEVERS as readonly string[]).includes(name);
-    assert.match(tie ? tiePreview : preview, new RegExp(`case "${name}"`, "u"), `${name}: has a preview`);
+    const source = tie ? tiePreview : isDesk(name) ? deskLevers : preview;
+    if (isDesk(name) && name === "seed-trend")
+      assert.match(source, /if \(name === "seed-trend"\)/u, `${name}: has a preview`);
+    else assert.match(source, new RegExp(`case "${name}"`, "u"), `${name}: has a preview`);
   }
   for (const name of SLP_ACTION_NAMES.filter((entry) => !(SLURP_TIE_LEVERS as readonly string[]).includes(entry)))
-    assert.match(runner, new RegExp(`case "${name}"`, "u"), `${name}: the runner dispatches it`);
+    if (isDesk(name))
+      assert.match(deskLevers, new RegExp(`case "${name}"|name === "${name}"`, "u"), `${name}: the desk runs it`);
+    else assert.match(runner, new RegExp(`case "${name}"`, "u"), `${name}: the runner dispatches it`);
+  assert.match(runner, /if \(isSlpDeskLever\(name\)\) return runSlpDeskLever\(db, name, input\)/u, "desk levers too");
   assert.match(runner, /if \(isSlurpTieLever\(name\)\) \{\s+const ran = await runSlurpTieLever/u, "tie levers too");
   assert.match(runner, /preview: \(name: string, input: unknown\) => previewSlpAction\(db, name, input\)/u);
   assert.match(

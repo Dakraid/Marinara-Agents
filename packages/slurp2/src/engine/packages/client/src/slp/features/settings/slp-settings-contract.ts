@@ -1,5 +1,6 @@
 import type { SlurpFanType } from "../../../../../shared/src/slp/slp-fan-types.js";
 import type { SlurpModelBudget } from "../../../../../shared/src/slp/slp-model-budget.js";
+import type { SlpSupportDeskSettings } from "../../../../../shared/src/slp/slp-support-desk.js";
 import type { SlurpPlatformEvent } from "../../../../../shared/src/slp/slp-platform-events.js";
 import type { SlurpSimulationTuning } from "../../../../../shared/src/slp/slp-tuning.js";
 import type { SlurpPromptPreset } from "./slp-prompt-presets.js";
@@ -166,6 +167,8 @@ export type SlurpSettings = {
   simulationTuning: SlurpSimulationTuning;
   /** When model-written audience text may run and how many calls it may spend. */
   modelBudget: SlurpModelBudget;
+  /** Settings › Stir: the Slurp Support desk. */
+  supportDesk: SlpSupportDeskSettings;
   onboarding: "not_started" | "in_progress" | "completed";
 };
 export type SlurpSettingsUpdate = Partial<SlurpSettings>;

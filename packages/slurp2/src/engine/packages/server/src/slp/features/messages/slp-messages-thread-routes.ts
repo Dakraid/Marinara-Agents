@@ -19,6 +19,7 @@ import { SLURP_SUPPORT_NAME } from "../../modules/messages/slp-dm-roles.js";
 import { personaQuerySchema } from "../../modules/messages/slp-messages-schemas.js";
 import { slurpIsCouplePage } from "../../modules/projects/slp-creator-couples.js";
 import type { SlpMessagesContext } from "./slp-messages-context.js";
+import { readSlurpSupportDesk } from "../../data/creators/slp-support-desk-storage.js";
 
 const messagePageSchema = personaQuerySchema.extend({
   cursorAt: z.string().datetime().optional(),
@@ -57,6 +58,17 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     side: "viewer" | "creator",
     availability: Awaited<ReturnType<typeof creatorPresence>>["creatorAvailability"],
   ) => {
+    // Slurp Support is not a fan: no rapport, mood, strikes, pictures or fees. Its Details panel
+    // shows where the Creator stands with Slurp (docs/SUPPORT-DESK.md).
+    if (isSlurpSupportThread(thread))
+      return {
+        side,
+        desk: await readSlurpSupportDesk(app.db, thread.creatorAccountId),
+        availability,
+        notes: thread.notes,
+        coolUntil: null,
+        scheduledFollowUps: thread.scheduledFollowUps,
+      };
     const details = await messages.getDetailsOverrides(thread.id);
     const settings = await slurp.getSettings();
     const dayVibe =
@@ -121,32 +133,34 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
       operatedCreatorAccountIds,
       accounts.map((account) => account.id),
     );
-    // Slurp Support's threads show in every persona's inbox, so their unread counts there too.
+    // Slurp Support's threads live on the Stir desk, not in the inbox (docs/SUPPORT-DESK.md): their
+    // unread is counted apart, for the desk and the inbox's one link row.
     const support = await messages.countUnread(
       SLURP_SUPPORT_ACCOUNT_ID,
       [],
       accounts.filter((account) => !operatedCreatorAccountIds.includes(account.id)).map((account) => account.id),
     );
-    return { ...own, unread: own.unread + support.unread };
+    return { ...own, deskUnread: support.unread };
   });
   app.get("/messages/threads", async (req, reply) => {
     const parsed = personaQuerySchema.safeParse(req.query);
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
     const viewer = await requireViewer(parsed.data.personaId);
     if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
-    // Slurp Support's threads are the player's from every persona (`slp-support.ts`), except with a
-    // Creator this persona runs: there Support is someone writing to them (the inbound list).
+    // Slurp Support's threads are the player's from every persona (`slp-support.ts`), but they live on
+    // the Stir desk (docs/SUPPORT-DESK.md); the inbox gets one link row with their count. With a
+    // Creator this persona runs, Support is someone writing to them: that stays in the inbound list.
     const operatedIds = new Set(
       (await slurp.listNoodlerAccounts())
         .filter((account) => account.sourceKind === "persona" && account.sourceEntityId === viewer.id)
         .map((account) => account.id),
     );
-    const threads = [
-      ...(await messages.listThreadsForViewer(viewer.id)),
-      ...(await messages.listThreadsForViewer(SLURP_SUPPORT_ACCOUNT_ID)).filter(
-        (thread) => !operatedIds.has(thread.creatorAccountId),
-      ),
-    ].sort((left, right) => right.lastMessageAt.localeCompare(left.lastMessageAt));
+    const threads = (await messages.listThreadsForViewer(viewer.id)).sort((left, right) =>
+      right.lastMessageAt.localeCompare(left.lastMessageAt),
+    );
+    const deskThreads = (await messages.listThreadsForViewer(SLURP_SUPPORT_ACCOUNT_ID)).filter(
+      (thread) => !operatedIds.has(thread.creatorAccountId),
+    );
     // Threads written *to* the Creators this persona operates. Without these the inbox showed only
     // conversations the player started, and anything a fan or the world opened was unreachable.
     const operated = [...operatedIds];
@@ -193,6 +207,14 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
         .filter((thread) => thread.state !== "declined")
         .reduce((sum, thread) => sum + thread.creatorUnread, 0),
       attentionCommissions,
+      desk: {
+        threads: deskThreads.length,
+        unread: deskThreads.reduce((sum, thread) => sum + thread.viewerUnread, 0),
+        lastMessageAt: deskThreads.reduce<string | null>(
+          (latest, thread) => (!latest || thread.lastMessageAt > latest ? thread.lastMessageAt : latest),
+          null,
+        ),
+      },
     };
   });
 

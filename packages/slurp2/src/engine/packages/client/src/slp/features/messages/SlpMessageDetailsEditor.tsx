@@ -8,7 +8,7 @@ import {
   type SlpMessageDetailsPatch,
 } from "../../../../../shared/src/slp/slp-message-details.js";
 import { useSetSlurpMessageDetails } from "./slp-messages-hooks";
-import type { SlurpThreadRelationship } from "./slp-messages-contract";
+import type { SlurpFanRelationship } from "./slp-messages-contract";
 
 type Detail = {
   value: string | number;
@@ -34,7 +34,7 @@ export function SlpMessageDetailsEditor({
   enabled,
   children,
 }: {
-  relationship: SlurpThreadRelationship;
+  relationship: SlurpFanRelationship;
   threadId: string | null;
   personaId: string | null;
   enabled: boolean;

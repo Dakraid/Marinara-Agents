@@ -52,6 +52,11 @@ import {
 import { readSlurpContentPackToggles, slurpApplyContentPacks } from "../world/events/slp-content-packs.js";
 import { slurpNormalizeReactionBanks, SlurpReactionBanks } from "../world/slp-reaction-bank.js";
 import { slurpModelBudgetSchema, slurpPostsPerDayIsCustom } from "../../../../../shared/src/slp/slp-model-budget.js";
+import {
+  normalizeSlpSupportDeskSettings,
+  slpSupportDeskSettingsSchema,
+  SLP_DEFAULT_SUPPORT_DESK_SETTINGS,
+} from "../../../../../shared/src/slp/slp-support-desk.js";
 import { SLURP_STORY_JOB_DEFAULTS, type SlurpStoryJobWeights } from "../../../../../shared/src/slp/slp-post-purpose.js";
 import { DEFAULT_SLP_CREATOR_REPLIES_PER_24_HOURS } from "../../../../../shared/src/slp/slp-social.schema.js";
 import { SLURP_COOL_OFF_HOURS } from "../world/slp-stance.js";
@@ -386,6 +391,8 @@ export const slurpSettingsSchema = z.object({
   creatorCollabs: slurpCreatorCollabsSchema,
   /** Which visible text may call a model, and the hard hourly/daily budget for it. */
   modelBudget: slurpModelBudgetSchema,
+  /** Settings › Stir: the Slurp Support desk (tickets, notices, refusals, shady moves, leaving). */
+  supportDesk: slpSupportDeskSettingsSchema,
   nightQuiet: z.boolean(),
   onboarding: z.enum(["not_started", "in_progress", "completed"]),
 });
@@ -619,6 +626,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   platformEvents: slurpPlatformEventsDefault(),
   creatorCollabs: [],
   modelBudget: slurpModelBudgetSchema.parse({}),
+  supportDesk: { ...SLP_DEFAULT_SUPPORT_DESK_SETTINGS },
   nightQuiet: false,
   onboarding: "not_started",
 };
@@ -749,6 +757,8 @@ function normalizeSlurpSettingsUncached(raw: unknown): SlurpSettings {
   candidate.postsPerDayCustom = slurpPostsPerDayIsCustom(rawRecord);
   // A partial or older value keeps the balanced weight for every job it does not name.
   candidate.storyJobs = { ...DEFAULT_SLURP_SETTINGS.storyJobs, ...parseRecord(rawRecord.storyJobs) };
+  // A partial or older value keeps the default for every field it does not name.
+  candidate.supportDesk = normalizeSlpSupportDeskSettings(rawRecord.supportDesk);
   candidate.fanArchetypeWeights = {
     ...DEFAULT_SLURP_SETTINGS.fanArchetypeWeights,
     ...parseRecord(rawRecord.fanArchetypeWeights),

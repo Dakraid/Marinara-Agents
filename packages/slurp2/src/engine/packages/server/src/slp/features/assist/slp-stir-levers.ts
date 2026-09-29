@@ -39,6 +39,7 @@ import type { SlurpPostGuidanceEntry } from "../../modules/feed/slp-post-guidanc
 import type { SlpActionParsed, SlpStirWorld } from "../../../../../shared/src/slp/slp-actions.js";
 import type { SlpCreatorSteering } from "../../../../../shared/src/slp/slp-creator-steering.js";
 import type { SlpAssistOutcome } from "./slp-assist-service.js";
+import { undoSlpDeskLever, type SlpDeskUndo } from "./slp-desk-levers.js";
 
 /** What one Undo takes back. Kept in the plays ledger; never sent to the app. */
 type SteeringPatch = Partial<Omit<SlpCreatorSteering, "nudges" | "support">>;
@@ -48,6 +49,7 @@ type SteeringPatch = Partial<Omit<SlpCreatorSteering, "nudges" | "support">>;
  * wrote, so the Undo leaves a later change alone (entries from before 0.3.1 lack it).
  */
 export type SlpActionUndo =
+  | SlpDeskUndo
   | { kind: "tie"; undo: SlurpTieUndo }
   | { kind: "steering"; accountId: string; patch: SteeringPatch; set?: SteeringPatch }
   | { kind: "idea"; accountId: string; ideaId: string }
@@ -359,6 +361,8 @@ export async function runSlpInventEvent(
  */
 export async function undoSlpAction(db: DB, undo: SlpActionUndo): Promise<boolean> {
   switch (undo.kind) {
+    case "desk":
+      return undoSlpDeskLever(db, undo);
     case "tie":
       return undoSlurpTieLever(db, undo.undo);
     case "steering": {

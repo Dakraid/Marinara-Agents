@@ -17,7 +17,8 @@ export type SlurpResettableSection =
   | "messaging"
   | "wallet"
   | "ads"
-  | "autopurge";
+  | "autopurge"
+  | "stir";
 
 export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonly (keyof SlurpSettings)[]> = {
   general: [
@@ -142,6 +143,7 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
     "inlineAdsWorldContext",
     "inlineAdsImagesEnabled",
   ],
+  stir: ["supportDesk"],
   autopurge: [
     "autopurgeEnabled",
     "autopurgeRetentionValue",

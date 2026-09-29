@@ -30,7 +30,9 @@ export type SlpStirNote = {
     // Brand deals (R): the product is spicier than the page, the Creator dislikes ads, not their thing.
     | "spice"
     | "noAds"
-    | "offBrand";
+    | "offBrand"
+    // The Support desk: a shady move raises the Creator's suspicion.
+    | "shady";
   name?: string;
 };
 

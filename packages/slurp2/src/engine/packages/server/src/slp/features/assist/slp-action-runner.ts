@@ -37,6 +37,7 @@ import {
   type SlpActionUndo,
 } from "./slp-stir-levers.js";
 import { previewSlpAction } from "./slp-action-preview.js";
+import { isSlpDeskLever, runSlpDeskLever } from "./slp-desk-levers.js";
 
 const POST_FAILURE: Record<string, string> = {
   busy: "A post for this Creator is already being written.",
@@ -99,6 +100,7 @@ async function dispatch(
   name: SlpActionName,
   input: unknown,
 ): Promise<SlpAssistOutcome<unknown> | { ok: true; value: unknown; undo: SlpActionUndo | null }> {
+  if (isSlpDeskLever(name)) return runSlpDeskLever(db, name, input);
   if (isSlurpTieLever(name)) {
     const ran = await runSlurpTieLever(db, name, input);
     return ran.ok ? { ok: true, value: ran.value, undo: ran.undo ? { kind: "tie", undo: ran.undo } : null } : ran;

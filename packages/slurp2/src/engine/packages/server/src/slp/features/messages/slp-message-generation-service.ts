@@ -92,12 +92,15 @@ import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
 import { SLURP_PERFORMED_INTIMACY } from "../../modules/creators/slp-performance.js";
 import {
   SLURP_DM_UNNAMED_FAN,
+  SLURP_SUPPORT_NAME,
   slurpDmRoleHeader,
   slurpDmTranscript,
   type SlurpDmParty,
 } from "../../modules/messages/slp-dm-roles.js";
 import { slurpCoupleDmPage } from "../projects/slp-projects-contract.js";
 import { protectSlurpSupportStaff } from "../../modules/messages/slp-support.js";
+import { findPendingSlurpDeskOffer, slurpDeskPromptData } from "../../modules/messages/slp-support-desk-talk.js";
+import { readSlurpSupportDesk } from "../../data/creators/slp-support-desk-storage.js";
 import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
 import { slpWithProviderRetry } from "../../base/model/slp-provider-retry.js";
 
@@ -172,6 +175,8 @@ export function buildSlurpMessageChat(input: {
   viewerGenerationGuidance?: string;
   promptBlocks?: SlurpPromptBlockOverrides;
   promptInstructions?: SlurpReusablePromptInstruction[];
+  /** Slurp Support's thread only: where the Creator stands with Slurp (`slp-support-desk-talk.ts`). */
+  supportDesk?: Record<string, string | boolean>;
 }): ChatMessage[] {
   const protect = (value: string | null | undefined) =>
     protectCreatorGeneratedIdentity(value, input.disclosureMode, input.publicIdentity) ?? "";
@@ -247,7 +252,14 @@ export function buildSlurpMessageChat(input: {
       // availability and the tone dial all argue in `slurp-stance.ts` and arrive here agreed. Nine
       // separate lines describing the same person is a contradiction, and a model resolves a
       // contradiction by averaging it away.
-      { id: "state", kind: "context" as const, optional: true, text: input.stance.instructions.join("\n") },
+      // Slurp Support is not a fan: the stance is a fan relationship, so Support's thread goes without
+      // it and reads "slurpStanding" instead (docs/SUPPORT-DESK.md).
+      {
+        id: "state",
+        kind: "context" as const,
+        optional: true,
+        text: support ? "" : input.stance.instructions.join("\n"),
+      },
       // Without this the creator answered "loved your new set" with a compliment about nothing: the
       // prompt carried the whole conversation and not one thing the conversation was ever about.
       {
@@ -329,7 +341,7 @@ export function buildSlurpMessageChat(input: {
       ...(input.contentMenu ? { contentMenu: protect(input.contentMenu) } : {}),
       dmPolicy: input.dmPolicy,
     },
-    fan: {
+    [support ? "slurpStaff" : "fan"]: {
       displayName: protect(input.viewer.displayName),
       handle: protect(input.viewer.handle),
       subscribed: input.subscribed,
@@ -344,6 +356,7 @@ export function buildSlurpMessageChat(input: {
       ...(input.fanMemory ? { memory: input.fanMemory } : {}),
     },
     relationship: support ? undefined : describeSlurpRapport(input.rapport, parties.viewer.name),
+    ...(support && input.supportDesk ? { slurpStanding: input.supportDesk } : {}),
     ...(known
       ? {
           knownAboutFan: {
@@ -356,7 +369,7 @@ export function buildSlurpMessageChat(input: {
     ...(input.viewerGenerationGuidance?.trim()
       ? { viewerRequest: protect(input.viewerGenerationGuidance.trim()) }
       : {}),
-    ...(input.threadState
+    ...(input.threadState && !support
       ? {
           relationshipState: {
             posture: input.threadState.posture,
@@ -613,8 +626,20 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
         .then((ledger) => slurpContinuityInstruction({ ...ledger, threadId: input.threadId }))
         .catch(() => "")
     : "";
+  // Slurp Support's thread: the desk record, the Offer waiting for an answer, the ticket.
+  const supportDesk =
+    input.viewer.id === SLURP_SUPPORT_ACCOUNT_ID
+      ? slurpDeskPromptData({
+          desk: await readSlurpSupportDesk(input.db, input.creator.id),
+          settings: settings.supportDesk,
+          supportName: SLURP_SUPPORT_NAME,
+          pendingOffer: findPendingSlurpDeskOffer(input.history)?.offer ?? null,
+          ticketResolved: input.history.at(-1)?.metadata?.deskTicketResolved === true,
+        })
+      : undefined;
   const messages = buildSlurpMessageChat({
     ...input,
+    supportDesk,
     continuityInstruction,
     contentMenu: await resolveSlurpCreatorMenu(input.db, input.creator.id).catch(() => ""),
     platformEvents: await resolveSlurpEventInstruction(input.db, input.creator.id, new Date()),
@@ -765,6 +790,7 @@ export async function generateSlurpMessageReply(input: SlurpMessagePromptInput):
     followUp: generated.followUp,
     // Support's thread only; stored and fed back into later prompts, so redacted like a note.
     staff: protectSlurpSupportStaff(support ? generated.staff : undefined, (value) => protect(value, 400)),
+    desk: protectSlurpSupportStaff(support ? generated.desk : undefined, (value) => protect(value, 400)),
     // Creator to Creator only: the two agreed on a joint post (7b-c).
     agreedCollab: pageId ? readSlurpDmCollab(generated.collab, pageId, (value) => protect(value, 200)) : undefined,
   };

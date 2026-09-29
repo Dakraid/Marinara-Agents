@@ -11,6 +11,7 @@ export const SLURP_PROMPT_IDS = [
   "pendingQuestion",
   "pendingOpener",
   "pendingDelivery",
+  "pendingDesk",
   "fanReply",
   "postGuidance",
   "conversationSchedule",
@@ -176,7 +177,7 @@ const BASE_PROMPT_DESCRIPTIONS: SlurpPromptDescription[] = [
       ["history", "context"],
     ]),
   },
-  ...(["pendingCommission", "pendingQuestion", "pendingOpener", "pendingDelivery", "fanReply"] as const).map(
+  ...(["pendingCommission", "pendingQuestion", "pendingOpener", "pendingDelivery", "pendingDesk", "fanReply"] as const).map(
     (id): SlurpPromptDescription => ({
       id,
       group: "messages",
@@ -367,6 +368,9 @@ const PROMPT_EDITABLE_DEFAULTS: SlurpPromptEditableDefaults = {
   },
   pendingDelivery: {
     task: "Rewrite this hand-over note as this creator giving a fan the piece they paid for. Use one or two warm sentences, no greeting, and do not describe the picture.",
+  },
+  pendingDesk: {
+    task: "Rewrite this message to Slurp Support as this creator writing to the platform's staff: the same point, in their own voice and mood, in one to three sentences.",
   },
   fanReply: {
     task: "Write this fan's next message in the conversation below, in their own voice. One or two sentences, no greeting, and never speak for the creator.",

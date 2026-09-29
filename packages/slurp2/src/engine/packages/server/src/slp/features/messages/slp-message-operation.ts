@@ -47,6 +47,7 @@ import {
   isSlurpSupportThread,
   type SlurpSupportTalkStore,
 } from "../../modules/messages/slp-support.js";
+import { applySlurpDeskTalk } from "./desk/slp-desk-talk-operation.js";
 import { slpCreatorUnlockPriceFromMetadata } from "../../modules/economy/slp-prices.js";
 import { readSlurpCreatorSteering } from "../../data/creators/slp-steering-storage.js";
 import { planSlpStir } from "../assist/slp-assist-contract.js";
@@ -481,6 +482,13 @@ export async function replyToSlurpMessage(
           staff: reply.staff,
           supportName: viewer.displayName,
         }).catch((error: unknown) => logger.warn(error, "[slurp-message] Could not apply the talk with Slurp Support"));
+        // The desk: trust, an Offer's answer, intel, a ticket rating (docs/SUPPORT-DESK.md).
+        await applySlurpDeskTalk(db, {
+          threadId: thread.id,
+          creatorAccountId: thread.creatorAccountId,
+          replyId: stored.id,
+          desk: reply.desk,
+        }).catch((error: unknown) => logger.warn(error, "[slurp-message] Could not apply the desk talk"));
       }
       // Two pages agreed on a joint post in this chat: the replying Creator hosts it (7b-c).
       if (stored && reply.agreedCollab)

@@ -26,6 +26,7 @@ import { SLP_SPICE_LEVELS } from "../../../../../shared/src/slp/slp-spice.js";
 import { SLURP_PLATFORM_EVENTS_MAX } from "../../../../../shared/src/slp/slp-platform-events.js";
 import type { SlpActionPreview } from "../../../../../shared/src/slp/slp-stir.js";
 import type { SlpAssistOutcome } from "./slp-assist-service.js";
+import { isSlpDeskLever, previewSlpDeskLever, type SlpDeskLever } from "./slp-desk-levers.js";
 
 type Account = {
   id: string;
@@ -63,12 +64,13 @@ export async function previewSlpAction(
   };
   if (isSlurpTieLever(name))
     return { ok: true, value: { ...base, ...(await previewSlurpTieLever(db, name, input, at)) } };
+  if (isSlpDeskLever(name)) return { ok: true, value: { ...base, ...(await previewSlpDeskLever(db, name, input, at)) } };
   return { ok: true, value: { ...base, ...(await previewOther(db, name, input, at)) } };
 }
 
 async function previewOther(
   db: DB,
-  name: Exclude<SlpActionName, Parameters<typeof previewSlurpTieLever>[1]>,
+  name: Exclude<SlpActionName, Parameters<typeof previewSlurpTieLever>[1] | SlpDeskLever>,
   input: Record<string, unknown>,
   at: Date,
 ): Promise<Partial<SlpActionPreview>> {

@@ -135,4 +135,5 @@ export const SLP_BACKSTAGE_LABEL_KEYS: Partial<Record<keyof SlurpSettings, strin
   nightQuiet: "ui.slurp.settings.strip.ideas",
   simulationTuning: "ui.slurp.settings.searchLabel.simulationTuning",
   modelBudget: "ui.slurp.settings.aiBudget.title",
+  supportDesk: "ui.slurp.stir.settings.title",
 };

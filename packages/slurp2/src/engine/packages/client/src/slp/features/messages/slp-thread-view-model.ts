@@ -241,14 +241,8 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
   const setSupportChoice = (next: boolean) => {
     if (targetCreatorAccountId && next !== asSupport) onSwitchVoice?.(targetCreatorAccountId, next);
   };
-  const supportName =
-    messages
-      .map((message) => message.metadata.sceneSpeaker)
-      .find(
-        (speaker, index): speaker is string =>
-          typeof speaker === "string" &&
-          (messages[index]!.metadata.supportVoice === true || messages[index]!.metadata.signUpScene === "support"),
-      ) ?? "Slurp Support";
+  // Support is a faceless team (docs/SUPPORT-DESK.md): always this name.
+  const supportName = "Slurp Support";
   const headerAccount = ownsCreator ? counterpart : creator;
   const headerProfileId = ownsCreator ? thread?.viewerAccountId : targetCreatorAccountId;
   const busy = send.isPending || tip.isPending || creatorReply.isPending || draftReply.isPending;

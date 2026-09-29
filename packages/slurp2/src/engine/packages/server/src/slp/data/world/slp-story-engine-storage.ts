@@ -18,8 +18,18 @@ import {
   selectSlpEventParticipants,
 } from "../../modules/world/events/slp-story-runtime.js";
 
+import { normalizeSlpSupportDesk, slpDeskReachFactor } from "../../../../../shared/src/slp/slp-support-desk.js";
+import { slurpSupportDeskKey } from "../creators/slp-support-desk-storage.js";
+
 export function createStoryEngineStorage({ settingsStore }: SlurpStorageContext) {
   const write = async (key: string, value: unknown) => settingsStore.set(key, JSON.stringify(value));
+  const readDesk = async (creatorAccountId: string) => {
+    try {
+      return normalizeSlpSupportDesk(JSON.parse((await settingsStore.get(slurpSupportDeskKey(creatorAccountId))) ?? "null"));
+    } catch {
+      return normalizeSlpSupportDesk(null);
+    }
+  };
   return {
     async listStoryOccurrences() {
       return readSlpOccurrences(await settingsStore.get(SLP_STORY_OCCURRENCES_KEY));
@@ -38,12 +48,16 @@ export function createStoryEngineStorage({ settingsStore }: SlurpStorageContext)
     /** The running events' multiplier on one target, for one Creator or (no id) for everybody. */
     async platformInfluenceMultiplier(target: SlpInfluenceTarget, creatorAccountId?: string, at = new Date()) {
       const settings = await this.getSettings();
-      return slurpInfluenceMultiplier(
+      const events = slurpInfluenceMultiplier(
         settings.platformEvents,
         at,
         target,
         await this.platformInfluenceStory(creatorAccountId),
       );
+      // The Support desk's throttle, Discover feature and Partner badge reach the same place.
+      return target === "feed.reach" && creatorAccountId
+        ? events * slpDeskReachFactor(await readDesk(creatorAccountId), at)
+        : events;
     },
     /**
      * Settings as the post reserve reads them: "feed.posting-rate" events scale posts per day for

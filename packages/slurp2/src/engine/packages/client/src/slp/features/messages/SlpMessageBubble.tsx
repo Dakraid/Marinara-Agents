@@ -642,7 +642,7 @@ export function SlurpPlatformActionCard({
             })}
           </SlpCoinText>
         </span>
-        {relationship && (
+        {relationship && !relationship.desk && (
           <span className="mt-1 block text-xs font-semibold text-[var(--slurp-ink)]">
             {localizeUi("ui.slurp.messages.relationshipAfterTip", {
               defaultValue: "Relationship: {{tier}}",

@@ -65,6 +65,8 @@ export const slurpDmReplySchema = z.object({
     .catch(undefined),
   /** Only in Slurp Support's thread: what the talk changed for the Creator. Read by `slp-support.ts`. */
   staff: z.record(z.string(), z.unknown()).nullable().optional().catch(undefined),
+  /** Only in Slurp Support's thread: trust, an offer's answer, intel, a rating (`slp-support-desk-talk.ts`). */
+  desk: z.record(z.string(), z.unknown()).nullable().optional().catch(undefined),
   /** Only Creator to Creator: the two agreed on a joint post. Read by `readSlurpDmCollab`. */
   collab: z.record(z.string(), z.unknown()).nullable().optional().catch(undefined),
 });
@@ -91,6 +93,7 @@ export type SlurpDmReply = {
     context?: string;
   };
   staff?: Record<string, unknown>;
+  desk?: Record<string, unknown>;
   collab?: Record<string, unknown>;
 };
 
@@ -173,6 +176,7 @@ export function readSlurpDmReply(value: unknown): SlurpDmReply {
         }
       : {}),
     ...(parsed.data.staff ? { staff: parsed.data.staff } : {}),
+    ...(parsed.data.desk ? { desk: parsed.data.desk } : {}),
     ...(parsed.data.collab ? { collab: parsed.data.collab } : {}),
   };
 }
