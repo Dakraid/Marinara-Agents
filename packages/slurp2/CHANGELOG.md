@@ -1,23 +1,30 @@
-# Slurp Remastered release notes
+# Slurp release notes
+
+## 0.3.4 — 2026-09-29
+
+Creator Pages, and Stir built out.
+
+- Profiles get a Page above the posts: six looks and ten blocks (quote, now, collage, list, this or that, Q&A, facts, prices, people, latest poll). It stores only choices and words; pictures, prices, facts, people and polls come from real data, and locked posts only appear as the server's teaser.
+- New character Creators design their own Page on a later open; any Creator can be asked to (one AI call, new "Creator pages" budget row) or the player builds it. A week-old AI Page may refresh after real news; a player's Page never changes by itself.
+- Stir: new levers (storyline, crossover, tip goal, new look, events), Recent plays with Undo that stays safe when the world moved on, steering what is in play, and suggestions of who would click.
+- Fixes: brand deals marked done too early, events started twice, plays twice in Pulse, lost Undo answers, Polish plurals, accessibility.
+
+## 0.3.3 — 2026-09-29
+
+- Renamed from Slurp Remastered to Slurp. The Home tab reads "Slurp" without the trailing period.
+- New catalog description; it states that the default guidance is tuned for an adult experience.
+- Slurp Legacy (`slurp`) is retired and no longer in the catalog. Its backups still restore here.
 
 ## 0.3.2 — 2026-09-29
 
-Creator Pages.
-
-- Profiles get a Page above the posts: six looks and ten blocks (quote, now, collage, list, this or that, Q&A, facts, prices, people, latest poll).
-- A Page stores only choices and words. Pictures, prices, facts, people and polls come from real data on every view. A collage shows the best recent pictures, one per shoot, plus one locked teaser; locked posts only appear as the server's teaser.
-- New character Creators design their own Page on a later open. Any Creator: "Let them design it" (one AI call) or build it by hand. A new "Creator pages" AI budget row counts the calls.
-- After real news (a collab, couple, rivalry, brand deal or achievement) an AI Creator may refresh a week-old Page. A Page the player edited is never changed by the world.
+- Fix "Viewer access could not be loaded" and an empty Home: the viewer feed listed character fan accounts (0.3.0 audience characters) as Creators without a profile, and the client threw on `creator.profile.id`. The feed now lists only accounts with a stage profile.
+- Fix "Slurp core storage factory is required" on "Start over, keep Creators" and on the Stir routes: both built the messages storage without its core factory.
 
 ## 0.3.1 — 2026-09-29
 
-Stir, built out.
-
-- New levers: start a storyline or crossover, set a tip goal, give a new look, make up an event. All with preview and Undo.
-- Recent plays with Undo; tap "In play" to steer it; suggestions offer who would click and can be put away; Surprise me; everyday moments.
-- The planner takes your answer to its question in place, knows your last plays, each Creator and your own pages.
-- Undo is safe when the world moved on. Cooling a rivalry, pushing a collab, storyline moves and opening a shared page can be taken back.
-- Fixes: a brand deal said done while nothing happened, events started twice, couple pages as quiet Creators, plays twice in Pulse, lost Undo answers, Polish plurals, error states, accessibility.
+- New Backstage action "Start over, keep Creators" (`DELETE /api/slurp2/data/activity`): clears posts, post media, comments, messages, fans, world events, queued and stuck work, and the continuity and content plans built on them. It first refunds commissions that were paid and not delivered. Creators, their artwork and projects, follows, the wallet and every Slurp setting stay. For installs that stay empty or stuck after an update.
+- "Delete all Slurp data" now also clears post deep details, reports, message follow-ups, world claims and Creator planning rows, which it used to leave behind.
+- The empty Home feed says why: automatic posting is off (with a one-tap "Turn on automatic posting"), first posts are still being written, no Creators yet, or no persona yet.
 
 ## 0.3.0 — 2026-09-29
 

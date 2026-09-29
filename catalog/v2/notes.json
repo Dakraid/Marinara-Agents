@@ -56,6 +56,12 @@
     "gacha-forge": {
       "versions": [
         {
+          "version": "1.8.8",
+          "date": "2026-09-29",
+          "notes": "- Fixed: with a Character Story open, the chapters you already cleared open again — their map, their scenes, and their Hard and Very Hard fights. Only the next chapter of the main story waits for the Character Story to end.",
+          "highlight": false
+        },
+        {
           "version": "1.8.7",
           "date": "2026-09-25",
           "notes": "- Fixed: world creation lists your whole character card library. It stopped at 100 cards, so a library larger than that died around the letter M and the cards past it showed in your cast as “No longer in your library”.\n- Fixed: loading a preset no longer leaves out cards it could not see — it reads the whole library before deciding what the Engine still has.",
@@ -127,6 +133,12 @@
     },
     "long-term-memory": {
       "versions": [
+        {
+          "version": "1.3.32",
+          "date": "2026-09-29",
+          "notes": "- Keep timeline events extracted from flat summaries without recognized headings instead of dropping them as invalid, so a valid event and any memory that links to it survive normalization.\n- Stop the structured backfill from adding character memory units the provider already returned for the same source, and stop text under an unrecognized structured heading from falling into the previous section.",
+          "highlight": false
+        },
         {
           "version": "1.3.31",
           "date": "2026-09-28",
@@ -240,12 +252,6 @@
           "date": "2026-09-22",
           "notes": "- Compare extraction candidates against the canonical scoped target notes even when ranked retrieval did not return them, so equivalent memories under abbreviated or full-name subject variants deduplicate instead of forking repeated notes, while distinct subjects, scopes, sections, and genuinely additive facts remain separate.",
           "highlight": false
-        },
-        {
-          "version": "1.3.11",
-          "date": "2026-09-22",
-          "notes": "- Canonicalize character name variants during extraction so short names, first-name-only forms, and minor spelling variations resolve to one trusted identity instead of forking duplicate memories, while shared or ambiguous names keep failing closed with the competing identities listed.",
-          "highlight": false
         }
       ]
     },
@@ -323,52 +329,24 @@
         }
       ]
     },
-    "slurp": {
-      "versions": [
-        {
-          "version": "1.51.0",
-          "date": "2026-09-13",
-          "notes": "- Completion and error notifications now appear inside the standalone package.\n- Fan reactions and creator replies can use stored image prompts or vision descriptions. Auto prefers the stored prompt, with vision as a fallback for uploaded images. Public fans never receive locked images, and descriptions follow the creator's identity protection.\n- The targeted creator refresh shows the remaining count as each generation finishes, including failed or skipped jobs.",
-          "highlight": true
-        },
-        {
-          "version": "1.50.1",
-          "date": "2026-09-13",
-          "notes": "- Maintenance: remove unused legacy code and an unnecessary settings read when checking the posting schedule.",
-          "highlight": false
-        },
-        {
-          "version": "1.50.0",
-          "date": "2026-09-11",
-          "notes": "- Mark Slurp as the legacy version while it is being reworked.\n- Add a full ZIP backup export containing Slurp data and media for migration.\n- New development is moving to Slurp Remastered. Bug fixes are not planned for this version.",
-          "highlight": true
-        },
-        {
-          "version": "1.0.31",
-          "date": "2026-09-09",
-          "notes": "- Include image generation guidance in the main Slurp post-generation prompt so image interpretation receives the generated image prompt and configured instructions.",
-          "highlight": false
-        },
-        {
-          "version": "1.0.30",
-          "date": "2026-09-08",
-          "notes": "- Preserve the selected image style profile after image prompt interpretation.",
-          "highlight": false
-        }
-      ]
-    },
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.3",
+          "date": "2026-09-29",
+          "notes": "- Renamed from Slurp Remastered to Slurp. The Home tab reads \"Slurp\" without the trailing period.\n- New catalog description; it states that the default guidance is tuned for an adult experience.\n- Slurp Legacy (`slurp`) is retired and no longer in the catalog. Its backups still restore here.",
+          "highlight": false
+        },
+        {
           "version": "0.3.2",
           "date": "2026-09-29",
-          "notes": "Creator Pages.\n\n- Profiles get a Page above the posts: six looks and ten blocks (quote, now, collage, list, this or that, Q&A, facts, prices, people, latest poll).\n- A Page stores only choices and words. Pictures, prices, facts, people and polls come from real data on every view. A collage shows the best recent pictures, one per shoot, plus one locked teaser; locked posts only appear as the server's teaser.\n- New character Creators design their own Page on a later open. Any Creator: \"Let them design it\" (one AI call) or build it by hand. A new \"Creator pages\" AI budget row counts the calls.\n- After real news (a collab, couple, rivalry, brand deal or achievement) an AI Creator may refresh a week-old Page. A Page the player edited is never changed by the world.",
+          "notes": "- Fix \"Viewer access could not be loaded\" and an empty Home: the viewer feed listed character fan accounts (0.3.0 audience characters) as Creators without a profile, and the client threw on `creator.profile.id`. The feed now lists only accounts with a stage profile.\n- Fix \"Slurp core storage factory is required\" on \"Start over, keep Creators\" and on the Stir routes: both built the messages storage without its core factory.",
           "highlight": false
         },
         {
           "version": "0.3.1",
           "date": "2026-09-29",
-          "notes": "Stir, built out.\n\n- New levers: start a storyline or crossover, set a tip goal, give a new look, make up an event. All with preview and Undo.\n- Recent plays with Undo; tap \"In play\" to steer it; suggestions offer who would click and can be put away; Surprise me; everyday moments.\n- The planner takes your answer to its question in place, knows your last plays, each Creator and your own pages.\n- Undo is safe when the world moved on. Cooling a rivalry, pushing a collab, storyline moves and opening a shared page can be taken back.\n- Fixes: a brand deal said done while nothing happened, events started twice, couple pages as quiet Creators, plays twice in Pulse, lost Undo answers, Polish plurals, error states, accessibility.",
+          "notes": "- New Backstage action \"Start over, keep Creators\" (`DELETE /api/slurp2/data/activity`): clears posts, post media, comments, messages, fans, world events, queued and stuck work, and the continuity and content plans built on them. It first refunds commissions that were paid and not delivered. Creators, their artwork and projects, follows, the wallet and every Slurp setting stay. For installs that stay empty or stuck after an update.\n- \"Delete all Slurp data\" now also clears post deep details, reports, message follow-ups, world claims and Creator planning rows, which it used to leave behind.\n- The empty Home feed says why: automatic posting is off (with a one-tap \"Turn on automatic posting\"), first posts are still being written, no Creators yet, or no persona yet.",
           "highlight": false
         },
         {
@@ -471,12 +449,6 @@
           "version": "0.2.63",
           "date": "2026-09-25",
           "notes": "- Storylines settings show every choice at once: story activity presets are cards with a short description, and the start, pace and source settings are button rows instead of dropdowns.\n- Audience presets, scale, tone and world activity use the same button rows.",
-          "highlight": false
-        },
-        {
-          "version": "0.2.62",
-          "date": "2026-09-25",
-          "notes": "- The Identity tab in Creator settings uses the full width again; the Save bar sits at the bottom of the tab.\n- Memory shows readable names instead of raw ids such as multi_image_set, in Recent plans, filters, proposals and signals.",
           "highlight": false
         }
       ]

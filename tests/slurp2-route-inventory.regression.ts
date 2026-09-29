@@ -73,6 +73,7 @@ const EXPECTED = [
   "POST /slurp/posts/:id/report",
   "ADDCONTENTTYPEPARSER application/zip",
   "DELETE /data",
+  "DELETE /data/activity",
   "DELETE /data/unused",
   "DELETE /slurp/accounts/:id",
   "DELETE /slurp/accounts/:id/avatar",
@@ -296,6 +297,8 @@ const RETAINED_OLD_PATHS = new Set([
   "GET /noodler/posts/:id/media/:position",
 ]);
 const ADDED_ROUTES = new Set([
+  // The recovery reset: clears activity, keeps Creators and settings.
+  "DELETE /data/activity",
   "PATCH /messages/threads/:threadId/details",
   // Fix phase 1b (R1-107): "Draft voice" in the fan type editor.
   "POST /fan-types/voice-draft",
@@ -436,7 +439,7 @@ const EXPECTED_HANDLER_COUNTS = {
   "features/discovery": 4,
   "features/economy": 14,
   "features/feed": 39,
-  "features/maintenance": 14,
+  "features/maintenance": 15,
   "features/media": 7,
   "features/messages": 41,
   "features/notifications": 3,
@@ -446,8 +449,8 @@ const EXPECTED_HANDLER_COUNTS = {
   "features/world": 11,
 } as const;
 // W: +5 POST, +1 GET (Stir). R: +3 POST, +1 GET, +1 PATCH, +1 DELETE (brands).
-// 0.3.2: +1 POST, +1 PUT (Creator Pages).
-const EXPECTED_METHOD_COUNTS = { DELETE: 18, GET: 80, PATCH: 20, POST: 143, PUT: 7 } as const;
+// 0.3.4: +1 POST, +1 PUT (Creator Pages).
+const EXPECTED_METHOD_COUNTS = { DELETE: 19, GET: 80, PATCH: 20, POST: 143, PUT: 7 } as const;
 
 const root = join(import.meta.dirname, "../packages/slurp2/src/engine/packages/server/src/slp");
 const registration = /\bapp\.(get|post|put|patch|delete|addContentTypeParser)(?:<[^()]*?>)?\(\s*["'`]([^"'`]+)["'`]/gu;
@@ -502,7 +505,7 @@ const methodCounts = Object.fromEntries(
     }, new Map<string, number>()),
 );
 assert.deepEqual(methodCounts, EXPECTED_METHOD_COUNTS, "HTTP method multiset changed from staging");
-assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 268);
+assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 269);
 assert.deepEqual(handlerCounts, EXPECTED_HANDLER_COUNTS, "handler count changed in a feature");
 assert.ok(foundRoutes.includes("POST /slurp/posts/:id/media"), "the renamed POST media route must remain registered");
 assert.ok(
@@ -525,3 +528,12 @@ assert.deepEqual(
 const entry = readFileSync(join(root, "slp-server-entry.ts"), "utf8");
 assert.match(entry, /mountSlpRoutes\(Object\.assign\(router, \{ db: app\.db, noodle \}\)/u);
 assert.equal(existsSync(join(root, "features/maintenance/slp-backup-routes.ts")), true);
+// A route that builds the messages storage from the facet module gets no core factory and throws
+// "Slurp core storage factory is required" (0.3.1 Start over, 0.3.0 Stir); data/slp-storage.ts wires it.
+for (const route of ["features/maintenance/slp-maintenance-routes.ts", "features/assist/slp-stir-routes.ts"]) {
+  assert.doesNotMatch(
+    readFileSync(join(root, route), "utf8"),
+    /import \{[^}]*\bcreateSlurpMessagesStorage\b[^}]*\} from "\.\.\/\.\.\/data\/messages\/slp-messages-storage\.js"/u,
+    `${route} must build the messages storage through data/slp-storage.ts`,
+  );
+}

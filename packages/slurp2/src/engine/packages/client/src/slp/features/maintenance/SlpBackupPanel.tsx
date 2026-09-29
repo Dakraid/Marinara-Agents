@@ -336,6 +336,35 @@ export function SlpBackupPanel(page: SlpBackstagePageProps) {
           </h2>
           <MaintenanceTask
             danger
+            title={t("ui.slurp.settings.advanced.resetActivityTitle")}
+            detail={t("ui.slurp.settings.advanced.resetActivityDetail")}
+          >
+            <button
+              type="button"
+              disabled={deleteAllData.isPending}
+              onClick={() =>
+                void showConfirmDialog({
+                  title: t("ui.slurp.settings.advanced.resetActivityConfirmTitle"),
+                  message: t("ui.slurp.settings.advanced.resetActivityConfirmDetail"),
+                  confirmLabel: t("ui.slurp.settings.advanced.resetActivityButton"),
+                })
+                  .then((confirmed) => {
+                    if (!confirmed) return;
+                    deleteAllData.mutate(true, {
+                      onSuccess: () => toast.success(t("ui.slurp.settings.advanced.resetActivitySuccess")),
+                      onError: (error) => toast.error(errorMessage(error)),
+                    });
+                  })
+                  .catch((error) => toast.error(errorMessage(error)))
+              }
+              className={`inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-xs font-semibold text-[var(--slurp-danger)] ring-1 ring-inset ring-[var(--slurp-danger)]/50 hover:bg-[var(--slurp-danger)]/10 disabled:opacity-50 ${focusRing}`}
+            >
+              <RefreshCw size={14} aria-hidden="true" />
+              {t("ui.slurp.settings.advanced.resetActivityButton")}
+            </button>
+          </MaintenanceTask>
+          <MaintenanceTask
+            danger
             title={t("ui.slurp.settings.advanced.deleteAllTitle")}
             detail={t("ui.slurp.settings.advanced.deleteAllDetail")}
           >
