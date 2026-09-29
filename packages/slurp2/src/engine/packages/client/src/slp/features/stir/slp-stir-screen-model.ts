@@ -30,6 +30,7 @@ export function slpStirDeckNeed(action: SlpActionName, view: SlpStirView | undef
   switch (action) {
     case "steer-couple":
       return view.couples.length ? null : "couple";
+    case "add-to-couple":
     case "couple-page":
       return view.couples.some((couple) => couple.stage === "dating" || couple.stage === "together")
         ? null

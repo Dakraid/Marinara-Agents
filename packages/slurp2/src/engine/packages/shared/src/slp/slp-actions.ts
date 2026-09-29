@@ -384,6 +384,12 @@ export const SLP_ACTIONS = {
       })
       .strict(),
   },
+  "add-to-couple": {
+    summary:
+      "Polyamory: someone joins a couple that is dating or together, up to four people. Only when polyamory is on in Settings › Stir.",
+    inputs: { coupleId: "The couple (from list-world).", accountId: "The Creator who joins." },
+    schema: z.object({ coupleId: accountId, accountId }).strict(),
+  },
   // ─── 0.3.5: the Slurp Support desk (docs/SUPPORT-DESK.md). Offered in a Support thread, the Creator
   // answers first; run from Stir or a helper, they just happen. ───────────────────────────────────
   "grant-perk": {
@@ -551,6 +557,7 @@ export type SlpActionResult = {
   "set-tip-goal": { accountId: string };
   "new-look": { accountId: string };
   "invent-event": { eventId: string; occurrenceId: string };
+  "add-to-couple": { coupleId: string };
   "grant-perk": { accountId: string };
   "set-challenge": { accountId: string; challengeId: string };
   "offer-contract": { accountId: string; contractId: string };
@@ -590,7 +597,15 @@ export type SlpBrandDealPreview = {
 
 /** What `list-world` answers: the ids and names the world levers take. */
 export type SlpStirWorld = {
-  couples: { id: string; aId: string; bId: string; stage: string; page: "open" | "closed" | null }[];
+  couples: {
+    id: string;
+    aId: string;
+    bId: string;
+    /** Polyamory (0.3.5): more partners. */
+    moreIds?: string[];
+    stage: string;
+    page: "open" | "closed" | null;
+  }[];
   collabs: { id: string; hostId: string; partnerId: string; status: string }[];
   rivalries: { id: string; fromId: string; toId: string; stage: string }[];
   events: { id: string; name: string; running: boolean }[];
@@ -675,6 +690,7 @@ export const SLP_ACTION_META: Record<
   "set-tip-goal": { category: "work", targets: "creator", reversible: true, ai: false, refusable: false, deck: true },
   "new-look": { category: "life", targets: "creator", reversible: true, ai: false, refusable: false, deck: true },
   "invent-event": { category: "world", targets: "none", reversible: true, ai: false, refusable: false, deck: true },
+  "add-to-couple": { category: "love", targets: "couple", reversible: true, ai: false, refusable: false, deck: true },
   // The Support desk's tools live on the desk and in Support threads, not in the deck.
   "grant-perk": { category: "desk", targets: "creator", reversible: true, ai: false, refusable: false, deck: false },
   "set-challenge": { category: "desk", targets: "creator", reversible: true, ai: false, refusable: true, deck: false },

@@ -165,7 +165,15 @@ export type SlpStirView = {
     couplePage: boolean;
   }[];
   events: { id: string; name: string; running: boolean }[];
-  couples: { id: string; aId: string; bId: string; stage: string; page: "open" | "closed" | null }[];
+  couples: {
+    id: string;
+    aId: string;
+    bId: string;
+    /** Polyamory (0.3.5): more partners. */
+    moreIds?: string[];
+    stage: string;
+    page: "open" | "closed" | null;
+  }[];
   collabs: { id: string; hostId: string; partnerId: string; status: string }[];
   rivalries: { id: string; fromId: string; toId: string; stage: string }[];
   storylines: { accountId: string; projectId: string; title: string; chapter: string; held: boolean }[];

@@ -39,6 +39,7 @@ import {
   type SlurpTieUndo,
 } from "../../modules/projects/slp-stir-tie-preview.js";
 import { loadSlurpTieCreators } from "./slp-creator-ties-service.js";
+import { slurpAddToCouple, type SlurpCoupleJoinError } from "../../modules/projects/slp-couple-group.js";
 import { closeSlurpCouplePage, closeSlurpCouplePages, openSlurpCouplePage } from "./slp-creator-couples-service.js";
 import type { SlpActionParsed, SlpStirWorld } from "../../../../../shared/src/slp/slp-actions.js";
 
@@ -48,7 +49,7 @@ type Failure = { ok: false; status: 400 | 404 | 409; error: string };
 type Done = { ok: true; value: Record<string, unknown>; undo: SlurpTieUndo | null };
 
 /** The world's words for why a tie play cannot happen (the same as the Studio routes). */
-const WHY: Record<SlurpTieError | SlurpCoupleError | "notFound", [400 | 404 | 409, string]> = {
+const WHY: Record<SlurpTieError | SlurpCoupleError | SlurpCoupleJoinError | "notFound", [400 | 404 | 409, string]> = {
   notFound: [404, "That one is gone."],
   notOpen: [409, "That does not fit where they are right now."],
   sameCreator: [400, "Pick two different Creators."],
@@ -60,18 +61,23 @@ const WHY: Record<SlurpTieError | SlurpCoupleError | "notFound", [400 | 404 | 40
   noDating: [409, "One of them does not date, and would not start for this."],
   orientation: [409, "They are not each other's type."],
   pageOpen: [409, "Their shared page is already open."],
+  polyOff: [409, "Polyamory is off in Settings › Stir."],
+  notTogether: [409, "They are not dating yet."],
+  full: [409, "That couple is already four people."],
 };
 const fail = (code: keyof typeof WHY): Failure => ({ ok: false, status: WHY[code][0], error: WHY[code][1] });
 
 type World = SlurpStirTieWorld;
 
 async function readWorld(db: DB): Promise<World> {
-  const [creators, accounts, document] = await Promise.all([
+  const [creators, accounts, document, settings] = await Promise.all([
     loadSlurpTieCreators(db),
     createSlurpStorage(db).listNoodlerAccounts(),
     readSlurpCreatorTiesDocument(db),
+    createSlurpStorage(db).getSettings(),
   ]);
   return {
+    polyamory: settings.polyamory === true,
     creators,
     avatars: new Map(
       accounts.map((account: { id: string; avatarUrl?: string | null }) => [account.id, account.avatarUrl ?? null]),
@@ -110,9 +116,9 @@ export async function runSlurpTieLever(
         : { document: { ...document, ties: next }, result: next };
     });
   const onCouples = async (
-    change: (couples: SlurpCouple[]) => SlurpCouple[] | SlurpCoupleError,
-  ): Promise<SlurpCouple[] | SlurpCoupleError | null> =>
-    mutateSlurpCreatorTies<SlurpCouple[] | SlurpCoupleError>(db, (document) => {
+    change: (couples: SlurpCouple[]) => SlurpCouple[] | SlurpCoupleError | SlurpCoupleJoinError,
+  ): Promise<SlurpCouple[] | SlurpCoupleError | SlurpCoupleJoinError | null> =>
+    mutateSlurpCreatorTies<SlurpCouple[] | SlurpCoupleError | SlurpCoupleJoinError>(db, (document) => {
       const next = change(document.couples);
       return typeof next === "string"
         ? { document, result: next }
@@ -197,6 +203,19 @@ export async function runSlurpTieLever(
         undo: previous && !(steer === "breakUp" && pageWasOpen) ? { kind: "restoreCouple", couple: previous } : null,
       };
     }
+    case "add-to-couple": {
+      const { coupleId, accountId } = input as SlpActionParsed<"add-to-couple">;
+      const joiner = find(accountId);
+      if (!joiner) return fail("notFound");
+      const polyamory = (await createSlurpStorage(db).getSettings()).polyamory === true;
+      let previous: SlurpCouple | undefined;
+      const next = await onCouples((couples) => {
+        previous = couples.find((entry) => entry.id === coupleId);
+        return slurpAddToCouple(couples, coupleId, joiner, { at, polyamory });
+      });
+      if (!next || typeof next === "string") return fail(next ?? "notFound");
+      return { ok: true, value: { coupleId }, undo: previous ? { kind: "restoreCouple", couple: previous } : null };
+    }
     case "couple-page": {
       const { coupleId, open } = input as SlpActionParsed<"couple-page">;
       const outcome = open ? await openSlurpCouplePage(db, coupleId) : await closeSlurpCouplePage(db, coupleId);
@@ -238,6 +257,7 @@ export async function readSlurpStirTies(db: DB): Promise<Pick<SlpStirWorld, "cou
         id: couple.id,
         aId: couple.aId,
         bId: couple.bId,
+        ...(couple.moreIds?.length ? { moreIds: couple.moreIds } : {}),
         stage: couple.stage,
         page: couple.page ? (couple.page.closedAt ? ("closed" as const) : ("open" as const)) : null,
       }))

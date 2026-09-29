@@ -95,6 +95,18 @@ export function SlpStirSettingsPanel(page: SlpBackstagePageProps) {
           />
         </SettingsGroup>
       </div>
+      <SettingsGroup title={tx("groupLove", "Love")}>
+        <Toggle
+          settingKey="polyamory"
+          label={tx("polyamory", "Polyamory")}
+          detail={tx(
+            "polyamoryDetail",
+            "A couple can grow to three or four people. Stir gets an \"Add to a couple\" card, and every partner shows up in their posts and chats.",
+          )}
+          value={settings.polyamory}
+          onChange={(value) => update("polyamory", value)}
+        />
+      </SettingsGroup>
       <SettingsGroup title={tx("groupNotices", "Slurp's notices")}>
         <Toggle
           label={tx("noticeMilestones", "Milestones")}

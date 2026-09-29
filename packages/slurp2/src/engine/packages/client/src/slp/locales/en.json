@@ -5848,5 +5848,16 @@
   "ui.slurp.stir.cant.leftSlurp": "They have left Slurp. Only a perk can win them back.",
   "ui.slurp.stir.cant.noFavour": "They do not owe Slurp a favour.",
   "ui.slurp.stir.cant.underContract": "They are already under contract.",
-  "ui.slurp.stir.note.shady": "Shady: {{name}} gets more suspicious."
+  "ui.slurp.stir.note.shady": "Shady: {{name}} gets more suspicious.",
+  "ui.slurp.stir.settings.groupLove": "Love",
+  "ui.slurp.stir.settings.polyamory": "Polyamory",
+  "ui.slurp.stir.settings.polyamoryDetail": "A couple can grow to three or four people. Stir gets an \"Add to a couple\" card, and every partner shows up in their posts and chats.",
+  "ui.slurp.stir.card.add-to-couple.title": "Add to a couple",
+  "ui.slurp.stir.card.add-to-couple.line": "Someone joins them: three, or four.",
+  "ui.slurp.stir.card.add-to-couple.blurb": "A couple that is dating or together takes in one more partner, up to four people. Everyone in it posts about it their own way.",
+  "ui.slurp.stir.what.add-to-couple": "{{joiner}} joins {{couple}}",
+  "ui.slurp.stir.form.joiner": "Who joins them",
+  "ui.slurp.stir.cant.polyOff": "Polyamory is off in Settings › Stir.",
+  "ui.slurp.stir.cant.notTogether": "They are not dating yet.",
+  "ui.slurp.stir.cant.full": "That couple is already four people."
 }

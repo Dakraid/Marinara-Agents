@@ -21,11 +21,8 @@ import { slurpArcEffectMultiplier } from "../../modules/projects/slp-arc-progres
 import { SLP_STORY_OCCURRENCES_KEY, readSlpOccurrences } from "../../modules/world/events/slp-story-runtime.js";
 import { slurpInfluenceMultiplier } from "../../../../../shared/src/slp/slp-platform-events.js";
 import { isSlurpCrossover } from "../../modules/projects/slp-project.js";
-import {
-  readSlurpCouples,
-  slurpCoupleOfPage,
-  slurpCouplePageSplit,
-} from "../../modules/projects/slp-creator-couples.js";
+import { readSlurpCouples, slurpCoupleOfPage } from "../../modules/projects/slp-creator-couples.js";
+import { slurpCoupleMembers, slurpCouplePageSplit } from "../../modules/projects/slp-couple-group.js";
 import { SLURP_CREATOR_TIES_KEY } from "../projects/slp-creator-ties-storage.js";
 import {
   readSlurpCrossoverRef,
@@ -279,13 +276,14 @@ export function createSlurpStorageContext(db: DB) {
     note?: string,
     id?: string,
   ): Promise<void> => {
-    // A couple's shared page earns for the two of them: half each, straight into their own earnings.
+    // A couple's shared page earns for all of them: equal shares, straight into their own earnings.
     // ponytail: the page keeps no receipt of its own, so an operation-amount read on the page is empty.
     const couple = await couplePageOf(creatorAccountId);
     if (couple) {
-      const [first, second] = slurpCouplePageSplit(amount);
-      await creditEarningsNow(couple.aId, kind, first, note, id && `${id}:a`);
-      await creditEarningsNow(couple.bId, kind, second, note, id && `${id}:b`);
+      const members = slurpCoupleMembers(couple);
+      const shares = slurpCouplePageSplit(amount, members.length);
+      for (const [index, memberId] of members.entries())
+        await creditEarningsNow(memberId, kind, shares[index]!, note, id && `${id}:${"abcd"[index]}`);
       return;
     }
     const settings = normalizeSlurpSettings(await settingsStore.get(SLURP_SETTINGS_KEY));

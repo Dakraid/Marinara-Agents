@@ -2458,5 +2458,16 @@
   "ui.slurp.stir.cant.leftSlurp": "Sie haben Slurp verlassen. Nur ein Bonus holt sie zurück.",
   "ui.slurp.stir.cant.noFavour": "Sie schulden Slurp keinen Gefallen.",
   "ui.slurp.stir.cant.underContract": "Sie sind schon unter Vertrag.",
-  "ui.slurp.stir.note.shady": "Unsauber: {{name}} wird misstrauischer."
+  "ui.slurp.stir.note.shady": "Unsauber: {{name}} wird misstrauischer.",
+  "ui.slurp.stir.settings.groupLove": "Liebe",
+  "ui.slurp.stir.settings.polyamory": "Polyamorie",
+  "ui.slurp.stir.settings.polyamoryDetail": "Ein Paar kann auf drei oder vier Menschen wachsen. Stir bekommt die Karte „Zu einem Paar hinzufügen“, und jeder Partner taucht in ihren Posts und Chats auf.",
+  "ui.slurp.stir.card.add-to-couple.title": "Zu einem Paar hinzufügen",
+  "ui.slurp.stir.card.add-to-couple.line": "Jemand kommt dazu: zu dritt oder zu viert.",
+  "ui.slurp.stir.card.add-to-couple.blurb": "Ein Paar, das datet oder zusammen ist, nimmt einen weiteren Partner auf, bis zu vier Menschen. Alle posten auf ihre eigene Art darüber.",
+  "ui.slurp.stir.what.add-to-couple": "{{joiner}} kommt zu {{couple}} dazu",
+  "ui.slurp.stir.form.joiner": "Wer dazukommt",
+  "ui.slurp.stir.cant.polyOff": "Polyamorie ist in Einstellungen › Stir aus.",
+  "ui.slurp.stir.cant.notTogether": "Sie daten noch nicht.",
+  "ui.slurp.stir.cant.full": "Das Paar ist schon zu viert."
 }

@@ -71,6 +71,8 @@ export type SlurpTiesCouple = {
   id: string;
   aId: string;
   bId: string;
+  /** Polyamory (0.3.5): more partners. */
+  moreIds?: string[];
   origin: "card" | "world" | "player" | "storyline";
   stage: SlurpTiesCoupleStage;
   ending: "breakup" | "fizzled" | null;
@@ -177,7 +179,11 @@ export function useSlurpCouplePageClosed(personaId: string | null, accountId: st
 export function slurpCoupleForAccount(view: SlurpTiesView | undefined, accountId: string) {
   if (!view) return null;
   const couple =
-    view.couples.find((entry) => entry.stage !== "split" && (entry.aId === accountId || entry.bId === accountId)) ??
+    view.couples.find(
+      (entry) =>
+        entry.stage !== "split" &&
+        (entry.aId === accountId || entry.bId === accountId || Boolean(entry.moreIds?.includes(accountId))),
+    ) ??
     null;
   const page = view.couples.find((entry) => entry.page?.accountId === accountId) ?? null;
   return couple || page ? { couple, page } : null;

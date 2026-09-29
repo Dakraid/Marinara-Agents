@@ -136,4 +136,5 @@ export const SLP_BACKSTAGE_LABEL_KEYS: Partial<Record<keyof SlurpSettings, strin
   simulationTuning: "ui.slurp.settings.searchLabel.simulationTuning",
   modelBudget: "ui.slurp.settings.aiBudget.title",
   supportDesk: "ui.slurp.stir.settings.title",
+  polyamory: "ui.slurp.stir.settings.polyamory",
 };

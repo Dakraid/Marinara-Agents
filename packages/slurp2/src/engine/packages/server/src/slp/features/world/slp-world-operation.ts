@@ -9,7 +9,7 @@
  * model, so briefs and questions come from the combinatorial bank in `slurp-world-copy.ts`.
  * Auto-posting is the one exception to that rule and it lives in its own scheduler.
  */
-import { slurpCoupleBuzz } from "../../modules/projects/slp-creator-couples.js";
+import { slurpCoupleBuzz } from "../../modules/projects/slp-couple-group.js";
 import { settleSlurpStuckMessages } from "../messages/slp-messages-contract.js";
 import { advanceSlurpCreatorTies, readSlurpClosedCouplePageIds } from "../projects/slp-projects-contract.js";
 import {

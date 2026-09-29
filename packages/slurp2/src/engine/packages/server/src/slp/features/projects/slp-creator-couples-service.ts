@@ -76,8 +76,12 @@ export async function openSlurpCouplePage(db: DB, coupleId: string): Promise<Slu
     storage.getNoodlerAccountById(couple.bId),
   ]);
   if (!a || !b) return "notFound";
+  // Polyamory (0.3.5): a group's page carries every name.
+  const more = (await Promise.all((couple.moreIds ?? []).map((id) => storage.getNoodlerAccountById(id)))).filter(
+    (account): account is NonNullable<typeof account> => Boolean(account),
+  );
   const existing = couple.page ? await storage.getNoodlerAccountById(couple.page.accountId) : null;
-  const accountId = existing?.id ?? (await createCouplePage(db, couple, a, b));
+  const accountId = existing?.id ?? (await createCouplePage(db, couple, a, b, more));
   const opened = await mutateSlurpCreatorTies(db, (document) => {
     const current = document.couples.find((entry) => entry.id === coupleId);
     if (!current || !slurpCouplePageOpenable(current)) return null;
@@ -95,6 +99,7 @@ async function createCouplePage(
   couple: SlurpCouple,
   a: { displayName: string; settings: { profile: { tags?: string[] } } },
   b: { displayName: string; settings: { profile: { tags?: string[] } } },
+  more: readonly { displayName: string }[] = [],
 ): Promise<string> {
   const storage = createSlurpStorage(db);
   const accounts: { handle: string }[] = await storage.listNoodlerAccounts();
@@ -113,7 +118,9 @@ async function createCouplePage(
     kind: "character",
     entityId: source,
     handle,
-    displayName: `${names.a} & ${names.b}`,
+    displayName: more.length
+      ? `${[names.a, ...more.map((member) => first(member.displayName))].join(", ")} & ${names.b}`
+      : `${names.a} & ${names.b}`,
     bio,
     avatarUrl: null,
     invited: "false",

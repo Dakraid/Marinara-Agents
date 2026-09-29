@@ -26,6 +26,7 @@ import {
   type SlurpCoupleForced,
 } from "./slp-creator-couples.js";
 import type { SlpActionParsed } from "../../../../../shared/src/slp/slp-actions.js";
+import { slurpAddToCouple, slurpCoupleMembers, slurpNameList } from "./slp-couple-group.js";
 import type { SlpActionPreview, SlpStirNote } from "../../../../../shared/src/slp/slp-stir.js";
 
 export const SLURP_TIE_LEVERS = [
@@ -36,6 +37,7 @@ export const SLURP_TIE_LEVERS = [
   "set-up-couple",
   "steer-couple",
   "couple-page",
+  "add-to-couple",
 ] as const;
 export type SlurpTieLever = (typeof SLURP_TIE_LEVERS)[number];
 export const isSlurpTieLever = (name: string): name is SlurpTieLever =>
@@ -43,6 +45,8 @@ export const isSlurpTieLever = (name: string): name is SlurpTieLever =>
 
 /** The world a tie play is worked out on: the Creators as the tie rules see them, and the ties. */
 export type SlurpStirTieWorld = {
+  /** Settings › Stir: a couple may grow past two (0.3.5). */
+  polyamory?: boolean;
   creators: readonly SlurpTieCreator[];
   avatars: ReadonlyMap<string, string | null>;
   ties: SlurpCreatorTies;
@@ -182,6 +186,21 @@ export function slurpPreviewTieLever(
         // A breakup closes an open shared page, and that is not taken back (the run keeps no Undo).
         ...(steer === "breakUp" && couple?.page && !couple.page.closedAt ? { reversible: false } : {}),
         summary: couple ? `${nameOf(world, couple.aId)} and ${nameOf(world, couple.bId)}: ${steer}.` : "",
+      });
+    }
+    case "add-to-couple": {
+      const { coupleId, accountId } = input as SlpActionParsed<"add-to-couple">;
+      const couple = couples.find((entry) => entry.id === coupleId);
+      const joiner = find(accountId);
+      const next = joiner
+        ? slurpAddToCouple(couples, coupleId, joiner, { at, polyamory: world.polyamory === true })
+        : "notFound";
+      return result({
+        who: couple ? people(world, [...slurpCoupleMembers(couple), accountId]) : [],
+        detail: { joiner: joiner?.name ?? "", couple: couple ? slurpNameList(slurpCoupleMembers(couple).map((id) => nameOf(world, id))) : "" },
+        when: "nextPost",
+        error: typeof next === "string" ? next : null,
+        summary: couple && joiner ? `${joiner.name} joins ${slurpNameList(slurpCoupleMembers(couple).map((id) => nameOf(world, id)))}.` : "",
       });
     }
     case "couple-page": {

@@ -77,9 +77,10 @@ export function SlpCouplesSection({
       { aId: couple.aId, bId: couple.bId },
       { onSuccess: () => toast.success(t("ui.slurp.ties.couple.workDone")), onError },
     );
+  // Polyamory (0.3.5): a couple of three or four reads "A, B & C" in the same line.
   const title = (couple: SlurpTiesCouple) =>
     t(`ui.slurp.ties.couple.${couple.stage === "split" && couple.ending === "fizzled" ? "fizzled" : couple.stage}`, {
-      a: name(couple.aId),
+      a: [couple.aId, ...(couple.moreIds ?? [])].map(name).join(", "),
       b: name(couple.bId),
     });
 
@@ -246,6 +247,12 @@ export function SlpProfileCoupleLine({
           {heart}
           <span className="shrink-0">{t("ui.slurp.profile.couple.page")}</span>
           {link(couple.aId)}
+          {(couple.moreIds ?? []).map((id) => (
+            <span key={id} className="contents">
+              <span className="shrink-0">,</span>
+              {link(id)}
+            </span>
+          ))}
           <span className="shrink-0">{t("ui.slurp.profile.couple.and")}</span>
           {link(couple.bId)}
         </p>
@@ -269,7 +276,13 @@ export function SlpProfileCoupleLine({
     <p className={lineClass} data-slurp-couple-line="badge">
       {heart}
       <span className="shrink-0">{t("ui.slurp.profile.couple.with")}</span>
-      {link(couple.aId === accountId ? couple.bId : couple.aId)}
+      {[couple.aId, couple.bId, ...(couple.moreIds ?? [])]
+        .filter((id) => id !== accountId)
+        .map((id) => (
+          <span key={id} className="contents">
+            {link(id)}
+          </span>
+        ))}
     </p>
   );
 }
@@ -295,7 +308,9 @@ export function SlpCouplePageWriteSheet({
   const { data } = useSlurpTies(personaId);
   const couple = data?.couples.find((entry) => entry.page?.accountId === accountId);
   const partners = couple
-    ? [couple.aId, couple.bId].flatMap((id) => data?.creators.filter((creator) => creator.id === id) ?? [])
+    ? [couple.aId, couple.bId, ...(couple.moreIds ?? [])].flatMap(
+        (id) => data?.creators.filter((creator) => creator.id === id) ?? [],
+      )
     : [];
   return (
     <SlpSheet open={open} onClose={onClose} title={t("ui.slurp.profile.couple.writeTitle")}>

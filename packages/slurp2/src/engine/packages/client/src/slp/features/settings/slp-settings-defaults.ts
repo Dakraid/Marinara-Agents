@@ -143,7 +143,7 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
     "inlineAdsWorldContext",
     "inlineAdsImagesEnabled",
   ],
-  stir: ["supportDesk"],
+  stir: ["supportDesk", "polyamory"],
   autopurge: [
     "autopurgeEnabled",
     "autopurgeRetentionValue",

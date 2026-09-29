@@ -119,6 +119,8 @@ async function main() {
     [...deck].sort(),
     [
       "add-idea",
+      // 0.3.5: polyamory's card (shown only with the setting on).
+      "add-to-couple",
       "cool-rivalry",
       "couple-page",
       // 0.3.1: new levers over systems that already existed.

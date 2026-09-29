@@ -3273,5 +3273,16 @@
   "ui.slurp.stir.cant.leftSlurp": "Slurp를 떠났습니다. 보상만이 다시 데려올 수 있습니다.",
   "ui.slurp.stir.cant.noFavour": "Slurp에게 빚진 부탁이 없습니다.",
   "ui.slurp.stir.cant.underContract": "이미 계약 중입니다.",
-  "ui.slurp.stir.note.shady": "수상함: {{name}}의 의심이 커집니다."
+  "ui.slurp.stir.note.shady": "수상함: {{name}}의 의심이 커집니다.",
+  "ui.slurp.stir.settings.groupLove": "연애",
+  "ui.slurp.stir.settings.polyamory": "폴리아모리",
+  "ui.slurp.stir.settings.polyamoryDetail": "커플이 세 명이나 네 명까지 늘어날 수 있습니다. Stir에 \"커플에 추가\" 카드가 생기고, 모든 파트너가 게시물과 채팅에 등장합니다.",
+  "ui.slurp.stir.card.add-to-couple.title": "커플에 추가",
+  "ui.slurp.stir.card.add-to-couple.line": "누군가 합류합니다: 셋, 또는 넷.",
+  "ui.slurp.stir.card.add-to-couple.blurb": "사귀는 중이거나 연인인 커플이 파트너를 한 명 더 받아들입니다. 최대 네 명까지. 모두 각자 방식으로 게시합니다.",
+  "ui.slurp.stir.what.add-to-couple": "{{joiner}}, {{couple}}에 합류",
+  "ui.slurp.stir.form.joiner": "누가 합류할까",
+  "ui.slurp.stir.cant.polyOff": "설정 › Stir에서 폴리아모리가 꺼져 있습니다.",
+  "ui.slurp.stir.cant.notTogether": "아직 사귀는 사이가 아닙니다.",
+  "ui.slurp.stir.cant.full": "이미 네 명인 커플입니다."
 }

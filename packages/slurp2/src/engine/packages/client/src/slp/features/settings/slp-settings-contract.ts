@@ -169,6 +169,8 @@ export type SlurpSettings = {
   modelBudget: SlurpModelBudget;
   /** Settings › Stir: the Slurp Support desk. */
   supportDesk: SlpSupportDeskSettings;
+  /** Settings › Stir: a couple may grow to four people. */
+  polyamory: boolean;
   onboarding: "not_started" | "in_progress" | "completed";
 };
 export type SlurpSettingsUpdate = Partial<SlurpSettings>;

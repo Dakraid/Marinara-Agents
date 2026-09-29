@@ -28,7 +28,6 @@
 import { SLURP_NEVER_PATTERN } from "../feed/slp-life-moments.js";
 import { DAY_MS, clampText, hash } from "./slp-project.js";
 import { slurpCollabFit, slurpPairKey, slurpSharedNiche, type SlurpTieCreator } from "./slp-creator-ties.js";
-import { readSlurpTieStamp } from "./slp-tie-stamp.js";
 import {
   SLURP_COUPLE_DATES as DATES,
   SLURP_COUPLE_FIGHTS as FIGHTS,
@@ -60,7 +59,9 @@ export type SlurpCoupleMomentKind =
   | "pageOpen"
   | "pageClose"
   /** An ex posts about moving on, once, a week or so after the breakup (U: exes). */
-  | "movingOn";
+  | "movingOn"
+  /** Polyamory (0.3.5): someone joined the couple; `withId` is who. */
+  | "joined";
 
 export type SlurpCoupleMoment = {
   id: string;
@@ -91,6 +92,8 @@ export type SlurpCouple = {
   id: string;
   aId: string;
   bId: string;
+  /** Polyamory (0.3.5, `slp-couple-group.ts`): more partners, up to four people in all. */
+  moreIds?: string[];
   origin: "card" | "world" | "player" | "storyline";
   stage: SlurpCoupleStage;
   /** How it ended: a breakup, or sparks that went nowhere. Null while it lasts. */
@@ -118,8 +121,9 @@ export type SlurpCouple = {
 export type SlurpCoupleForced = { misfit: Exclude<SlurpCoupleMisfit, "same" | "busy">; byId: string };
 
 export const slurpCoupleActive = (couple: SlurpCouple) => couple.stage !== "split";
+/** One other member, or null when `id` is not in it (a joined partner's "other" is the first of the pair). */
 export const slurpCoupleOther = (couple: SlurpCouple, id: string) =>
-  couple.aId === id ? couple.bId : couple.bId === id ? couple.aId : null;
+  couple.aId === id ? couple.bId : couple.bId === id || couple.moreIds?.includes(id) ? couple.aId : null;
 /** Together in public: dating, official, or rocky. Sparks are only flirting. */
 export const slurpCoupleTaken = (couple: SlurpCouple) =>
   couple.stage === "dating" || couple.stage === "together" || couple.stage === "rocky";
@@ -251,10 +255,16 @@ const KINDS: readonly SlurpCoupleMomentKind[] = [
   "pageOpen",
   "pageClose",
   "movingOn",
+  "joined",
 ];
 const record = (value: unknown) =>
   value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 const date = (value: unknown) => (typeof value === "string" && !Number.isNaN(Date.parse(value)) ? value : null);
+/** Joined partners (polyamory): up to two more, never the pair themselves. */
+const slurpReadMoreIds = (value: unknown, aId: string, bId: string) => {
+  const more = [...new Set(strings(value, 2).filter((id) => id !== aId && id !== bId))];
+  return more.length ? { moreIds: more } : {};
+};
 const strings = (value: unknown, max: number) =>
   (Array.isArray(value) ? value : []).filter((entry): entry is string => typeof entry === "string").slice(-max);
 
@@ -298,6 +308,7 @@ export function readSlurpCouples(raw: unknown): SlurpCouple[] {
             },
           ];
         }),
+        ...slurpReadMoreIds(item.moreIds, aId, bId),
         told: strings(item.told, 40),
         postIds: strings(item.postIds, 40),
         page:
@@ -361,7 +372,7 @@ function pickDate(couple: SlurpCouple, byId: ReadonlyMap<string, SlurpTieCreator
 /** A collab with someone else than the partner (a collab of the two of them is no reason to be jealous). */
 const collabOther = (couple: SlurpCouple, id: string, collabbedWith: ReadonlyMap<string, string>) => {
   const other = collabbedWith.get(id);
-  return other && other !== couple.aId && other !== couple.bId ? other : undefined;
+  return other && other !== couple.aId && other !== couple.bId && !couple.moreIds?.includes(other) ? other : undefined;
 };
 
 /** Trouble: jealousy over a recent collab with someone else when there is one, else a fight. */
@@ -546,11 +557,16 @@ export function slurpAdvanceCouples(couples: readonly SlurpCouple[], input: Slur
   let next = [...couples];
   for (const [index, couple] of next.entries()) {
     const taken = new Set(
-      next.filter((other) => other !== couple && slurpCoupleActive(other)).flatMap((other) => [other.aId, other.bId]),
+      next
+        .filter((other) => other !== couple && slurpCoupleActive(other))
+        .flatMap((other) => [other.aId, other.bId, ...(other.moreIds ?? [])]),
     );
-    next[index] = advanceCouple(couple, input, byId, taken);
+    // A joined partner who left Slurp just leaves the couple (polyamory, `slp-couple-group.ts`).
+    const staying = couple.moreIds?.filter((id) => byId.has(id));
+    next[index] = advanceCouple(staying?.length === couple.moreIds?.length ? couple : { ...couple, moreIds: staying }, input, byId, taken);
   }
-  const busy = () => new Set(next.filter(slurpCoupleActive).flatMap((couple) => [couple.aId, couple.bId]));
+  const busy = () =>
+    new Set(next.filter(slurpCoupleActive).flatMap((couple) => [couple.aId, couple.bId, ...(couple.moreIds ?? [])]));
   const rested = (a: string, b: string) =>
     !next.some(
       (couple) =>
@@ -768,24 +784,4 @@ export function slurpCouplePostIdsFor(couples: readonly SlurpCouple[], creatorId
 /** The couple whose shared page this account is, or null. */
 export function slurpCoupleOfPage(couples: readonly SlurpCouple[], accountId: string): SlurpCouple | null {
   return couples.find((couple) => couple.page?.accountId === accountId) ?? null;
-}
-
-/**
- * How much a couple post draws the crowd, as a reach factor for the world pulse: a launch, a breakup
- * or a reunion is news, a date a little. Any other post: 1.
- */
-export function slurpCoupleBuzz(metadata: Record<string, unknown> | null | undefined): number {
-  const stamp = readSlurpTieStamp(metadata);
-  if (stamp?.kind !== "couple") return 1;
-  const moment = stamp.moment ?? "";
-  if (["launch", "breakup", "reunion", "pageOpen"].includes(moment)) return 1.8;
-  if (["anniversary", "fight", "jealous", "pageClose", "movingOn"].includes(moment)) return 1.4;
-  return 1.15;
-}
-
-/** What a shared page earns goes to both of them, half each (the odd coin to the first). */
-export function slurpCouplePageSplit(amount: number): [number, number] {
-  const whole = Math.max(0, Math.floor(amount));
-  const second = Math.floor(whole / 2);
-  return [whole - second, second];
 }

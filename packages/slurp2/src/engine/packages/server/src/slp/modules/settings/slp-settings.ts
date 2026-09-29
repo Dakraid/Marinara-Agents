@@ -393,6 +393,8 @@ export const slurpSettingsSchema = z.object({
   modelBudget: slurpModelBudgetSchema,
   /** Settings › Stir: the Slurp Support desk (tickets, notices, refusals, shady moves, leaving). */
   supportDesk: slpSupportDeskSettingsSchema,
+  /** Settings › Stir: a couple may grow to four people (0.3.5). Off by default. */
+  polyamory: z.boolean(),
   nightQuiet: z.boolean(),
   onboarding: z.enum(["not_started", "in_progress", "completed"]),
 });
@@ -627,6 +629,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   creatorCollabs: [],
   modelBudget: slurpModelBudgetSchema.parse({}),
   supportDesk: { ...SLP_DEFAULT_SUPPORT_DESK_SETTINGS },
+  polyamory: false,
   nightQuiet: false,
   onboarding: "not_started",
 };

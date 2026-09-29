@@ -14,7 +14,7 @@ export type SlpStirLiveInput = {
     pace: string;
     ideas: number;
   })[];
-  couples: { id: string; aId: string; bId: string; stage: string; stageAt: string }[];
+  couples: { id: string; aId: string; bId: string; moreIds?: string[]; stage: string; stageAt: string }[];
   collabs: { id: string; hostId: string; partnerId: string; status: string; dropAt?: string | null }[];
   rivalries: { id: string; fromId: string; toId: string; stage: string }[];
   events: { id: string; name: string; running: boolean; endsAt: string | null }[];
@@ -56,7 +56,7 @@ export function slpStirLive(input: SlpStirLiveInput): SlpStirLive[] {
       .map((couple) => ({
         id: `couple:${couple.id}`,
         kind: "couple" as const,
-        who: who(couple.aId, couple.bId),
+        who: who(couple.aId, couple.bId, ...(couple.moreIds ?? [])),
         state: couple.stage,
         label: null,
         until: null,

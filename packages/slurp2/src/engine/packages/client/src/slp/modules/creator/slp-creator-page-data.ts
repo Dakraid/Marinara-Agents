@@ -73,7 +73,7 @@ export type SlpPagePerson = { id: string; name: string; avatarUrl: string | null
 /** The parts of the ties view the People block reads (structural, so this module needs no feature import). */
 export type SlpPageTies = {
   creators: { id: string; name: string; avatarUrl: string | null; couplePage?: boolean }[];
-  couples: { aId: string; bId: string; stage: string; ending: string | null }[];
+  couples: { aId: string; bId: string; moreIds?: string[]; stage: string; ending: string | null }[];
   collabs: { hostId: string; partnerId: string; status: string }[];
   rivalries: { fromId: string; toId: string; stage: string }[];
 };
@@ -92,8 +92,10 @@ export function slpPagePeople(creatorId: string, ties: SlpPageTies | null | unde
   };
   for (const couple of ties.couples) {
     if (couple.ending || couple.stage === "split") continue;
-    const other = couple.aId === creatorId ? couple.bId : couple.bId === creatorId ? couple.aId : null;
-    if (other) add(other, couple.stage === "sparks" ? "dating" : "partner");
+    // Polyamory (0.3.5): everyone else in their couple is a partner.
+    const members = [couple.aId, couple.bId, ...(couple.moreIds ?? [])];
+    if (members.includes(creatorId))
+      for (const other of members) if (other !== creatorId) add(other, couple.stage === "sparks" ? "dating" : "partner");
   }
   for (const collab of ties.collabs) {
     if (collab.status !== "posted" && collab.status !== "planned" && collab.status !== "agreed") continue;

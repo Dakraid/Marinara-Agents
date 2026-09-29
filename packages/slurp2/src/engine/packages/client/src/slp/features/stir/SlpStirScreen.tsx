@@ -31,6 +31,7 @@ import { SlpStirBox } from "./SlpStirBox";
 import { SlpStirPlanSheet, useSlpStirUndo } from "./SlpStirCards";
 import { SlpStirPlaySheet } from "./SlpStirPlaySheet";
 import { SlpStirDesk } from "./SlpStirDesk";
+import { useSlurpSettings } from "../settings/slp-settings-contract";
 import { SLP_STIR_DECK, SLP_STIR_DECK_ORDER } from "./slp-stir-deck";
 import { slpStirDeckNeed, slpStirLiveLever, slpStirPlayTarget } from "./slp-stir-screen-model";
 
@@ -364,7 +365,11 @@ function Deck({
 }) {
   const { t } = useTranslation();
   const [category, setCategory] = useState<SlpStirCategory>("love");
-  const cards = SLP_STIR_DECK_ORDER.filter((action) => SLP_STIR_DECK[action].category === category);
+  // Polyamory is a Settings › Stir choice (0.3.5): off, its card stays out of the deck.
+  const polyamory = useSlurpSettings().data?.polyamory === true;
+  const cards = SLP_STIR_DECK_ORDER.filter(
+    (action) => SLP_STIR_DECK[action].category === category && (action !== "add-to-couple" || polyamory),
+  );
   const move = (by: number) => {
     const index = SLP_STIR_CATEGORIES.indexOf(category);
     const next = SLP_STIR_CATEGORIES[(index + by + SLP_STIR_CATEGORIES.length) % SLP_STIR_CATEGORIES.length]!;

@@ -399,6 +399,43 @@ export function SlpStirPlaySheet({
     case "start-rivalry":
       textField(t("ui.slurp.stir.form.cause"), t("ui.slurp.stir.form.causePlaceholder"));
       break;
+    case "add-to-couple": {
+      // Polyamory (0.3.5): a couple that is dating or together, and someone who is in no couple.
+      const couples = (view?.couples ?? []).filter(
+        (couple) =>
+          (couple.stage === "dating" || couple.stage === "together" || couple.stage === "rocky") &&
+          2 + (couple.moreIds?.length ?? 0) < 4,
+      );
+      const taken = new Set(
+        (view?.couples ?? [])
+          .filter((couple) => couple.stage !== "split")
+          .flatMap((couple) => [couple.aId, couple.bId, ...(couple.moreIds ?? [])]),
+      );
+      body.push(
+        <Pick
+          key="pick"
+          label={t("ui.slurp.stir.form.couple")}
+          empty={t("ui.slurp.stir.form.noCouples")}
+          value={(form.pick as string) ?? null}
+          onChange={(pick) => set({ pick })}
+          items={couples.map((couple) => ({
+            id: couple.id,
+            title: [couple.aId, couple.bId, ...(couple.moreIds ?? [])].map(nameOf).join(" · "),
+            detail: t(`ui.slurp.stir.live.couple.${couple.stage}`),
+            who: who(couple.aId, couple.bId, ...(couple.moreIds ?? [])),
+          }))}
+        />,
+        <CreatorPicker
+          key="who"
+          max={1}
+          label={t("ui.slurp.stir.form.joiner", { defaultValue: "Who joins them" })}
+          creators={creators.filter((creator) => !taken.has(creator.id))}
+          picked={picked}
+          onPick={(ids) => set({ who: ids })}
+        />,
+      );
+      break;
+    }
     case "steer-couple":
     case "couple-page": {
       const couples = (view?.couples ?? []).filter((couple) =>
@@ -413,7 +450,9 @@ export function SlpStirPlaySheet({
           onChange={(pick) => set({ pick, steer: null })}
           items={couples.map((couple) => ({
             id: couple.id,
-            title: t("ui.slurp.stir.pair", { a: nameOf(couple.aId), b: nameOf(couple.bId) }),
+            title: couple.moreIds?.length
+              ? [couple.aId, couple.bId, ...couple.moreIds].map(nameOf).join(" · ")
+              : t("ui.slurp.stir.pair", { a: nameOf(couple.aId), b: nameOf(couple.bId) }),
             detail: t(`ui.slurp.stir.live.couple.${couple.stage}`),
             who: who(couple.aId, couple.bId),
           }))}

@@ -99,6 +99,8 @@ export function slpStirWhat(t: T, card: SlpActionPreview): string {
         card.input.happen ? "ui.slurp.stir.what.offer-brand-deal.happen" : "ui.slurp.stir.what.offer-brand-deal",
         { ...names, brand: d.brand ?? "", product: d.product ?? "", count: Number(d.fee) || 0 },
       );
+    case "add-to-couple":
+      return t("ui.slurp.stir.what.add-to-couple", { joiner: d.joiner ?? "", couple: d.couple ?? "" });
     // The Support desk (0.3.5): the words carry the card's own values.
     case "grant-perk":
       return t(`ui.slurp.stir.what.grant-perk.${d.perk}`, {

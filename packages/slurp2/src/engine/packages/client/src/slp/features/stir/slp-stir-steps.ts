@@ -31,6 +31,8 @@ export function slpStirStepOf(action: SlpActionName, form: Form): Record<string,
       return one && form.pick ? { accountId: one, productId: form.pick, happen: form.happen === true } : null;
     case "start-rivalry":
       return two?.length === 2 ? { fromId: two[0], toId: two[1], ...(text ? { cause: text } : {}) } : null;
+    case "add-to-couple":
+      return form.pick && one ? { coupleId: form.pick, accountId: one } : null;
     case "steer-couple":
       return form.pick && form.steer ? { coupleId: form.pick, steer: form.steer } : null;
     case "couple-page":
