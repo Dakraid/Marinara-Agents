@@ -5985,5 +5985,6 @@
   "ui.slurp.page.relation.bestie": "bestie",
   "ui.slurp.page.relation.roommate": "roommate",
   "ui.slurp.page.relation.friend": "friend",
-  "ui.slurp.page.relation.coworker": "coworker"
+  "ui.slurp.page.relation.coworker": "coworker",
+  "ui.slurp.drama.settings.title": "Drama"
 }

@@ -2597,5 +2597,6 @@
   "ui.slurp.page.relation.bestie": "najlepsza przyjaciółka",
   "ui.slurp.page.relation.roommate": "współlokator",
   "ui.slurp.page.relation.friend": "przyjaciel",
-  "ui.slurp.page.relation.coworker": "współpracownik"
+  "ui.slurp.page.relation.coworker": "współpracownik",
+  "ui.slurp.drama.settings.title": "Drama"
 }

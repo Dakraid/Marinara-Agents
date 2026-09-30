@@ -186,6 +186,7 @@ export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBac
   modelBudget: world("audience", "AI budget", "model calls"),
   supportDesk: place("stir", "stir", "all-slurp", "Slurp Support", "support desk", "tickets", "trust", "stir"),
   polyamory: place("stir", "stir", "all-slurp", "polyamory", "throuple", "couples", "love"),
+  drama: place("stir", "stir", "all-slurp", "drama", "packs", "situations", "storylines", "friends"),
   postsPerDayCustom: internal(automation("general", "posts per day", "grows with creators")),
   onboarding: internal(place("creators", "creators", "new-creators", "setup", "onboarding")),
 };
