@@ -225,11 +225,12 @@ function friendCounts(bonds: readonly SlurpBond[]) {
 
 /** Whether a friend bond may step up to `level` without passing either Creator's caps. */
 function roomFor(bonds: readonly SlurpBond[], bond: SlurpBond, level: number): boolean {
-  const { friends, best } = friendCounts(bonds);
+  // Counted without this bond, so a new bond, a jump from 0 to 2-3 and a step up are judged alike.
+  const { friends, best } = friendCounts(bonds.filter((entry) => entry.id !== bond.id));
   return [bond.aId, bond.bId].every(
     (id) =>
-      (level !== 1 || (friends.get(id) ?? 0) < SLURP_MAX_FRIENDS) &&
-      (level !== SLURP_BOND_MAX_LEVEL || (best.get(id) ?? 0) < SLURP_MAX_BEST_FRIENDS),
+      (level < 1 || (friends.get(id) ?? 0) < SLURP_MAX_FRIENDS) &&
+      (level < SLURP_BOND_MAX_LEVEL || (best.get(id) ?? 0) < SLURP_MAX_BEST_FRIENDS),
   );
 }
 
@@ -395,7 +396,8 @@ export function slurpAdvanceBonds(bonds: readonly SlurpBond[], input: SlurpBonds
 /** Keeps every active bond and the newest ended ones. */
 function trim(bonds: SlurpBond[]): SlurpBond[] {
   // Ended exes stay: they are how a breakup knows it already made its ex bond (few, one per breakup).
-  const ended = bonds.filter((bond) => !slurpBondActive(bond) && bond.kind !== "ex");
+  // Ended card bonds stay too: they are how a card knows it already made its bond (bounded by the card).
+  const ended = bonds.filter((bond) => !slurpBondActive(bond) && bond.kind !== "ex" && bond.origin !== "card");
   const drop = new Set(ended.slice(0, Math.max(0, ended.length - KEEP_ENDED)));
   return bonds.filter((bond) => !drop.has(bond));
 }

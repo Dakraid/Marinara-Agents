@@ -415,8 +415,11 @@ export function createEconomyStorage2(context: SlurpStorageContext) {
     },
     /** Coins a Creator gives the player in a drama (an allowance, a gift). `id` is its receipt: never twice. */
     async creditGift(viewerAccountId: string, amount: number, note: string, id: string): Promise<SlurpWallet> {
+      const settings = await this.getSettings();
       return enqueueFinancial(async () => {
         const wallet = await getWalletNow(viewerAccountId);
+        // SlurpCoins off: everything is on the house, so no balance moves.
+        if (!settings.walletEnabled) return wallet;
         return writeWallet(viewerAccountId, credit(wallet, "income", amount, new Date(), note, id));
       });
     },

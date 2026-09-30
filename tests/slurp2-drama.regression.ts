@@ -70,6 +70,23 @@ async function main() {
   );
   assert.ok(issues(slpDramaSchema.safeParse({ ...rivals, id: "Bad Id" })).length > 0, "ids are lowercase keys");
 
+  // CodeRabbit: role conditions name real roles; "fans" and "crowd" only where they belong.
+  assert.ok(
+    broken((copy) => ((copy.roles[1]!.needs as { sharesNicheWith: string }).sharesNicheWith = "nobody")).some((m) =>
+      m.includes('unknown role "nobody"'),
+    ),
+  );
+  assert.ok(
+    broken((copy) => ((copy.stages[0]!.beats[0] as { on: string }).on = "crowd")).some((m) =>
+      m.includes('unknown role "crowd"'),
+    ),
+  );
+  assert.ok(
+    issues(
+      slpSituationSchema.safeParse({ ...partner, deck: [{ role: "her", channel: "dm", to: "fans", seed: "x" }] }),
+    ).some((m) => m.includes('unknown role "fans"')),
+  );
+
   // Old packs import unchanged; a pack with drama entries parses; the bundled packs still build.
   const old = {
     format: "marinara-slurp-story-pack",
@@ -149,6 +166,15 @@ async function main() {
     dials: {},
   });
   assert.deepEqual(normalizeSlpDramaSettings(null), SLP_DEFAULT_DRAMA_SETTINGS);
+  // One bad id drops alone, duplicates go, the rest stays switched on.
+  assert.deepEqual(normalizeSlpDramaSettings({ enabled: ["rivals", "Bad Id", 7, "rivals", "top-fan"] }).enabled, [
+    "rivals",
+    "top-fan",
+  ]);
+  assert.equal(
+    normalizeSlpDramaSettings({ enabled: Array.from({ length: 150 }, (_, index) => `d${index}`) }).enabled.length,
+    150,
+  );
 
   console.log("slurp2 drama regression passed");
 }

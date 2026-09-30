@@ -158,25 +158,25 @@ const common = {
   builtin: z.boolean().default(false),
 };
 
-/** Roles every beat, choice and outcome names must exist (the crowd and the fans always do). */
-function checkRoles(
-  entry: { roles: { key: string }[] },
-  named: (string | undefined)[],
-  context: z.RefinementCtx,
-): void {
-  const known = new Set([...entry.roles.map((role) => role.key), "crowd", "fans"]);
+/**
+ * Every role a beat, choice, outcome or role condition names must exist. "crowd" is only who acts in
+ * a beat and "fans" only who a post is for: `beatRoles` leaves those two out where they belong.
+ */
+function checkRoles(entry: { roles: SlpDramaRole[] }, named: (string | undefined)[], context: z.RefinementCtx): void {
   const keys = entry.roles.map((role) => role.key);
-  if (new Set(keys).size !== keys.length) context.addIssue({ code: "custom", message: "role keys must be unique" });
-  for (const name of named)
+  const known = new Set(keys);
+  if (known.size !== keys.length) context.addIssue({ code: "custom", message: "role keys must be unique" });
+  const conditions = entry.roles.flatMap((role) => [role.needs.tiedTo?.role, role.needs.sharesNicheWith]);
+  for (const name of [...named, ...conditions])
     if (name && !known.has(name)) context.addIssue({ code: "custom", message: `unknown role "${name}"` });
 }
 const beatRoles = (beat: SlpDramaBeat) => [
-  beat.role,
+  beat.role === "crowd" ? undefined : beat.role,
   beat.to,
   beat.on,
   beat.heat?.with,
   beat.heat?.shotBy,
-  beat.heat?.for,
+  beat.heat?.for === "fans" ? undefined : beat.heat?.for,
 ];
 
 export const slpSituationSchema = z
@@ -258,7 +258,11 @@ export const slpDramaSettingsSchema = z
     /** How much drama runs at once and how often a post carries a drama line. */
     level: z.enum(SLP_DRAMA_LEVELS).catch("lively"),
     /** Situations and dramas the player switched on, by id. Empty: nothing runs. */
-    enabled: z.array(key).max(80).catch([]),
+    // Entry by entry: a bad id is dropped, not the whole list (one bad value used to switch everything off).
+    enabled: z
+      .array(z.unknown())
+      .catch([])
+      .transform((list) => [...new Set(list.filter((id): id is string => key.safeParse(id).success))].slice(0, 200)),
     /** A situation's dials, by situation id and dial key (e.g. "audience-knows": "yes"). */
     dials: z.record(key, z.record(key, key)).catch({}),
   })

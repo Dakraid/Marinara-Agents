@@ -225,6 +225,11 @@ async function main() {
       slurpSetBond(bonds, { aId: "hub", bId: "one-more", kind: "friend", level: 1 }, { at: T0, id: "z" }),
       "full",
     );
+    // CodeRabbit: going straight to close or best friend counts against the friend cap too.
+    assert.equal(
+      slurpSetBond(bonds, { aId: "hub", bId: "one-more", kind: "friend", level: 2 }, { at: T0, id: "z2" }),
+      "full",
+    );
     assert.ok(
       Array.isArray(slurpSetBond(bonds, { aId: "hub", bId: "one-more", kind: "roommate" }, { at: T0, id: "r" })),
     );
@@ -283,6 +288,38 @@ async function main() {
       0,
       "and it does not come back",
     );
+  }
+
+  // CodeRabbit: an ended card bond is never trimmed either, so a card cannot bring back a bond the player ended.
+  {
+    const card = readSlurpBonds([
+      {
+        id: "card",
+        aId: "lena",
+        bId: "mia",
+        kind: "roommate",
+        origin: "card",
+        since: T0.toISOString(),
+        endedAt: at(1).toISOString(),
+        ending: "player",
+      },
+    ]);
+    const noise = readSlurpBonds(
+      Array.from({ length: 60 }, (_, index) => ({
+        id: `m${index}`,
+        aId: `p${index}`,
+        bId: `q${index}`,
+        since: T0.toISOString(),
+        endedAt: at(2).toISOString(),
+      })),
+    );
+    const lena = creator("lena", [], [{ name: "Mia", relation: "roommate" }]);
+    const after = slurpAdvanceBonds(
+      [...card, ...noise],
+      input({ creators: [lena, creator("mia", [])], at: at(3), activity: 0 }),
+    );
+    assert.ok(after.some((bond) => bond.id === "card"));
+    assert.equal(after.filter((bond) => bond.kind === "roommate" && slurpBondActive(bond)).length, 0);
   }
 
   // Old and broken data reads back safely.

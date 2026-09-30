@@ -64,13 +64,16 @@ export function SlpPeopleGraph({
   const [, setFrame] = useState(0);
 
   const links = useMemo(() => ties.map((tie) => ({ a: tie.a, b: tie.b, length: 150 - tie.closeness * 18 })), [ties]);
+  // The running animation reads the ties of the latest render, not of the render that started it.
+  const linksRef = useRef(links);
+  linksRef.current = links;
   const shape = `${people.map((person) => person.id).join(",")}|${ties.map((tie) => `${tie.a}-${tie.b}`).join(",")}`;
 
   const run = () => {
     if (raf.current !== null) return;
     const tick = () => {
       let nodes = [...positions.current.values()];
-      for (let step = 0; step < 2; step += 1) nodes = slpForceStep(nodes, links, alpha.current);
+      for (let step = 0; step < 2; step += 1) nodes = slpForceStep(nodes, linksRef.current, alpha.current);
       positions.current = new Map(nodes.map((node) => [node.id, node]));
       if (!drag.current?.moved) alpha.current *= 1 - SLP_FORCE_COOLING;
       setFrame((frame) => frame + 1);
