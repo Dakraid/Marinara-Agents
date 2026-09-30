@@ -21,6 +21,10 @@ import {
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-drama-runtime.ts";
 import { partner, rivals } from "./slurp2-drama-fixtures";
 import { slurp2Source } from "./slurp2-source";
+import {
+  SLURP_BUILTIN_DRAMAS,
+  SLURP_BUILTIN_SITUATIONS,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-drama-packs.ts";
 import { slurpApplyDramaTie } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-drama-ties.ts";
 import {
   slurpSetBond,
@@ -374,6 +378,51 @@ async function main() {
     assert.match(src("features/world/slp-world-scheduler-service.ts"), /advanceSlurpDrama\(app\.db\)/u);
     assert.match(src("workflows/slp-world-tick-workflow.ts"), /advanceSlurpDrama\(app\.db\)/u);
     assert.match(src("modules/notifications/slp-event-weight.ts"), /drama: 6\d,/u);
+  }
+
+  // The starter set: valid, unique, every drama's situation exists, and in a lived-in world every
+  // drama gets cast and starts within 90 days at "soap", with only the post lines the packs wrote.
+  {
+    const ids = [...SLURP_BUILTIN_SITUATIONS, ...SLURP_BUILTIN_DRAMAS].map((entry) => entry.id);
+    assert.equal(new Set(ids).size, ids.length);
+    assert.ok([...SLURP_BUILTIN_SITUATIONS, ...SLURP_BUILTIN_DRAMAS].every((entry) => entry.builtin && !entry.enabled));
+    for (const entry of SLURP_BUILTIN_DRAMAS)
+      if (entry.requires) assert.ok(SLURP_BUILTIN_SITUATIONS.some((item) => item.id === entry.requires!.situation));
+    const lived: SlpDramaWorld = {
+      creators: [
+        ...people,
+        creator("kai", ["fitness"], { gender: "male", followers: 90_000 }),
+        creator("sam", ["art"], { gender: "male" }),
+      ],
+      relations: new Map([["mia", [{ playerId: "me", relation: "partner" as const }]]]),
+      ties: new Set(["couple:me|mia", "friend:lena|nora", "roommate:ivy|zoe", "couple:sam|zoe"]),
+    };
+    counter = 0;
+    let state = SLP_EMPTY_DRAMA_STATE;
+    for (let hour = 0; hour < 24 * 90; hour += 1)
+      state = slpAdvanceDrama(state, {
+        ...input(T0 + hour * HOUR),
+        situations: SLURP_BUILTIN_SITUATIONS,
+        dramas: SLURP_BUILTIN_DRAMAS,
+        world: lived,
+      }).state;
+    const started = new Set(state.runs.map((entry) => entry.dramaId));
+    const missing = SLURP_BUILTIN_DRAMAS.map((entry) => entry.id).filter((id) => !started.has(id));
+    assert.deepEqual(missing, [], `every starter drama runs within 90 days (missing ${missing.join(", ")})`);
+    assert.deepEqual(
+      state.situations
+        .filter((entry) => !entry.endedAt)
+        .map((entry) => entry.situationId)
+        .sort(),
+      ["partner-is-creator", "roommates"],
+    );
+    const lines = state.jobs
+      .filter((entry) => entry.channel === "post")
+      .map((entry) => slpDramaText(entry.heat!.line, entry.names));
+    assert.ok(
+      lines.length > 0 && lines.every((line) => !/\{[a-z-]+\}/u.test(line) && line.length <= 200),
+      "post lines read clean",
+    );
   }
 
   console.log("slurp2 drama runtime regression passed");

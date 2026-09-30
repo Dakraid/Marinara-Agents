@@ -225,20 +225,31 @@ export function slpDramaCast(
   const next = { ...cast };
   const byKey = new Map(roles.map((role) => [role.key, role]));
   const playerKey = roles.find((role) => role.player)?.key;
-  // Roles with conditions on other roles come after those roles.
-  const order = [...keys].sort((a, b) => {
+  // A role's conditions name other roles ("tied to him"): those are cast too, and first.
+  const wanted = new Set(keys);
+  for (const key of keys) {
+    const needs = byKey.get(key)?.needs;
+    if (needs?.tiedTo) wanted.add(needs.tiedTo.role);
+    if (needs?.sharesNicheWith) wanted.add(needs.sharesNicheWith);
+  }
+  const order = [...wanted].sort((a, b) => {
     const depends = (key: string) =>
       Number(Boolean(byKey.get(key)?.needs.sharesNicheWith || byKey.get(key)?.needs.tiedTo || byKey.get(key)?.player));
     return depends(a) - depends(b);
   });
-  for (const key of order) {
-    if (next[key]) continue;
+  // A small search: try the best candidates for each role in order and step back when a later role
+  // cannot be filled ("her partner" only works for someone who has one). Bounded, so it stays cheap.
+  let budget = 400;
+  const fill = (index: number, current: Record<string, string>): Record<string, string> | null => {
+    const key = order[index];
+    if (key === undefined) return current;
+    if (current[key]) return fill(index + 1, current);
     const role = byKey.get(key);
     if (!role) return null;
-    const taken = new Set(Object.values(next));
+    const taken = new Set(Object.values(current));
     const options = input.world.creators
       .filter((creator) => !taken.has(creator.id) && (role.player || !input.busy.has(creator.id)))
-      .map((creator) => ({ creator, fit: fits(role, creator, next, input.world, playerKey) }))
+      .map((creator) => ({ creator, fit: fits(role, creator, current, input.world, playerKey) }))
       .filter((option) => option.fit.ok)
       .sort((left, right) => {
         const newcomer = (creator: SlpDramaCreator) =>
@@ -249,14 +260,17 @@ export function slpDramaCast(
           return right.creator.followers - left.creator.followers;
         return hash(`${input.seed}:${key}:${left.creator.id}`) - hash(`${input.seed}:${key}:${right.creator.id}`);
       });
-    const pick = options[0];
-    if (!pick) return null;
-    next[key] = pick.creator.id;
-    // Whoever needs a relation to the player brings that player's page along.
-    const playerRole = roles.find((entry) => entry.player && !next[entry.key]);
-    if (pick.fit.player && playerRole) next[playerRole.key] = pick.fit.player;
-  }
-  return next;
+    for (const pick of options) {
+      if ((budget -= 1) < 0) return null;
+      const tried = { ...current, [key]: pick.creator.id };
+      // Whoever needs a relation to the player brings that player's page along.
+      if (pick.fit.player && playerKey && !tried[playerKey]) tried[playerKey] = pick.fit.player;
+      const done = fill(index + 1, tried);
+      if (done) return done;
+    }
+    return null;
+  };
+  return fill(0, next);
 }
 
 // ─── Jobs ───────────────────────────────────────────────────────────────────────────────────────
@@ -488,7 +502,7 @@ export function slpAdvanceDrama(
           choice: { ...current.choice, answer: decided, by: choice.asks === "player" ? "default" : choice.asks },
         },
         "choice",
-        choice.options[decided]!.label,
+        slpDramaText(choice.options[decided]!.label, names(current.cast)),
       );
     }
     const waiting = choice && current.choice?.answer === null;
