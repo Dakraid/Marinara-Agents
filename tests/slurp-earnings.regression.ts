@@ -112,6 +112,11 @@ assert.equal(slurpShownSubscribers(17, 1, W), 86);
 // A tip goal opened before 0.3.7 counted coins: both ends scale, so its progress does not jump.
 const oldGoal = readSlurpGoal('{"label":"Set","target":100,"startLifetime":40,"startedAt":"2026-09-01T00:00:00.000Z"}');
 assert.deepEqual([oldGoal?.target, oldGoal?.startLifetime, oldGoal?.platform], [500, 200, true]);
+const bigGoal = readSlurpGoal(
+  '{"label":"Car","target":500000,"startLifetime":0,"startedAt":"2026-09-01T00:00:00.000Z"}',
+);
+assert.equal(bigGoal?.target, 2_500_000, "a converted goal keeps its full target");
+assert.equal(readSlurpGoal(JSON.stringify(bigGoal))?.target, 2_500_000, "and reads back after it is stored");
 
 // ── A payout moves money out but never lowers the score ─────────────────────
 // Withdrawing what you earned does not mean you earned less. `lifetime` is what the Creator home

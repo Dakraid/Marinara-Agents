@@ -58,14 +58,16 @@ export function readSlurpGoal(raw: string | null): SlurpGoal | null {
     const target = intOrNull(parsed.target);
     const startLifetime = intOrNull(parsed.startLifetime);
     if (typeof parsed.label !== "string" || !parsed.label.trim()) return null;
-    if (target === null || target < SLURP_GOAL_MIN_TARGET || target > SLURP_GOAL_MAX_TARGET) return null;
+    // A goal converted from coins (0.3.7) may sit above the limit for new goals; it keeps its full target.
+    const maxTarget = SLURP_GOAL_MAX_TARGET * SLURP_EARNINGS_LEGACY_SCALE;
+    if (target === null || target < SLURP_GOAL_MIN_TARGET || target > maxTarget) return null;
     if (startLifetime === null || startLifetime < 0) return null;
     if (typeof parsed.startedAt !== "string" || Number.isNaN(Date.parse(parsed.startedAt))) return null;
     // A goal opened before 0.3.7 counted coins; earnings are now dollars, so both ends scale alike.
     const scale = parsed.platform === true ? 1 : SLURP_EARNINGS_LEGACY_SCALE;
     return {
       label: parsed.label.trim().slice(0, SLURP_GOAL_LABEL_MAX_LENGTH),
-      target: Math.min(SLURP_GOAL_MAX_TARGET, target * scale),
+      target: Math.min(maxTarget, target * scale),
       startLifetime: startLifetime * scale,
       startedAt: parsed.startedAt,
       platform: true,

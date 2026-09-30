@@ -133,7 +133,7 @@ export function slurpPostPictureBriefs(input: {
         : undefined,
     negativePrompt:
       input.postImages && camera && variation
-        ? slurpImageNegativePrompt(sexualLevel, Boolean(input.partner || company), camera)
+        ? slurpImageNegativePrompt(sexualLevel, Boolean(input.partner), camera)
         : undefined,
     // Each extra picture is briefed exactly like the first, so it reaches the image model as a
     // complete picture. A shot that names its own outfit wears it; otherwise it keeps the chosen look.

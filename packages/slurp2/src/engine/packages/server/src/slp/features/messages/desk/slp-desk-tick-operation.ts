@@ -151,7 +151,9 @@ async function applyEvents(
             notice(
               db,
               creator.id,
-              `Slurp: ${name} won the challenge. ${slpDeskPerkLine(event.challenge.reward).replace(/^Got/u, "Reward:")}.`,
+              event.challenge.reward.kind === "coins" && !paysCoins
+                ? `Slurp: ${name} won the challenge. No coin reward: Slurp does not pay coins to a page you run.`
+                : `Slurp: ${name} won the challenge. ${slpDeskPerkLine(event.challenge.reward).replace(/^Got/u, "Reward:")}.`,
             ),
           );
         break;
@@ -173,7 +175,13 @@ async function applyEvents(
           );
         if (settings.noticeResults)
           later(() =>
-            notice(db, creator.id, `Slurp: ${name} kept the contract this week (${event.contract.weeklyBonus} coins).`),
+            notice(
+              db,
+              creator.id,
+              paysCoins || event.contract.weeklyBonus <= 0
+                ? `Slurp: ${name} kept the contract this week (${event.contract.weeklyBonus} coins).`
+                : `Slurp: ${name} kept the contract this week. No bonus: Slurp does not pay coins to a page you run.`,
+            ),
           );
         break;
       case "contract-broken":

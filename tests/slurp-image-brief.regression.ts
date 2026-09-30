@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   slurpImageBrief,
   slurpImageNegativePrompt,
+  slurpImageNegativeWithCompany,
   slurpShootContinuity,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-image-brief.ts";
 import { slurpWithoutCameraDevice } from "../packages/slurp2/src/engine/packages/server/src/slp/base/media/slp-image-prompt.ts";
@@ -156,6 +157,13 @@ assert.match(
   images,
   /slurpImageNegativePrompt\(input\.visualBrief\?\.sexualLevel, companionNamed, viewpoint\?\.source\)/u,
 );
+// The brief keeps the one-person rule; the service lifts it only when the final prompt names somebody.
+assert.equal(slurpImageNegativeWithCompany("second person, extra people, duplicate person"), "duplicate person");
+assert.match(
+  images,
+  /companionNamed && input\.negativePromptAdditions\s*\? slurpImageNegativeWithCompany\(input\.negativePromptAdditions\)/u,
+);
+assert.match(images, /look: includeAppearance/u, "descriptions off keeps the companions' looks out too");
 // Nobody else joins a nude or explicit picture unless the spice consent gate chose them as the partner.
 const pictureBriefs = slurp2Source(
   "packages/slurp2/src/engine/packages/server/src/slp/features/feed/slp-post-picture-briefs.ts",

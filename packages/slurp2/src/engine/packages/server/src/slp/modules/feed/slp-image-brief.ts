@@ -52,7 +52,11 @@ const DEVICE_NEGATIVE = "smartphone, holding phone, selfie stick";
 const TEXT_NEGATIVE = "text, watermark";
 
 /** A partner scene has two people on purpose; only the stray and doubled bodies stay out. */
-const PARTNER_NEGATIVE = SHARED_NEGATIVE.replace("second person, extra people, ", "");
+const SECOND_PERSON_NEGATIVE = "second person, extra people, ";
+const PARTNER_NEGATIVE = SHARED_NEGATIVE.replace(SECOND_PERSON_NEGATIVE, "");
+
+/** A negative prompt that lets a second person in: for a picture whose final prompt names one (0.3.7). */
+export const slurpImageNegativeWithCompany = (negative: string): string => negative.replace(SECOND_PERSON_NEGATIVE, "");
 
 /**
  * Without a level (a redraw or a scheduled picture that kept none), only the shared terms apply.

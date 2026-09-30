@@ -53,7 +53,11 @@ import {
   stripAppearanceLabel,
 } from "../../base/media/slp-image-prompt.js";
 import { slurpViewpointForFamily, slurpViewpointIn } from "../../modules/feed/slp-camera-source.js";
-import { slurpImageNegativePrompt, slurpImageNegativeTerms } from "../../modules/feed/slp-image-brief.js";
+import {
+  slurpImageNegativePrompt,
+  slurpImageNegativeTerms,
+  slurpImageNegativeWithCompany,
+} from "../../modules/feed/slp-image-brief.js";
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
 
 /**
@@ -399,7 +403,10 @@ async function generateCreatorPostImageRun(
       const row = character ?? persona;
       return {
         name: account.displayName,
-        look: account.settings.stage?.appearance?.trim() || (appearance ? slurpImageLook(appearance) : ""),
+        // Descriptions off keeps every look out of the prompt, the companions' too; references stay.
+        look: includeAppearance
+          ? account.settings.stage?.appearance?.trim() || (appearance ? slurpImageLook(appearance) : "")
+          : "",
         card: row ? { id: row.id, avatarPath: row.avatarPath ?? null, appearance } : null,
       };
     }),
@@ -643,8 +650,12 @@ async function generateCreatorPostImageRun(
       : compiledPrompt.negativePrompt || undefined;
   const finalNegativePrompt = slurpImageNegativeTerms(
     baseNegativePrompt,
-    input.negativePromptAdditions ??
-      slurpImageNegativePrompt(input.visualBrief?.sexualLevel, companionNamed, viewpoint?.source),
+    // The one-person rule is lifted here, after the writer decided who is in the picture: the brief's
+    // own negatives keep it, and a companion the final prompt names takes it away.
+    companionNamed && input.negativePromptAdditions
+      ? slurpImageNegativeWithCompany(input.negativePromptAdditions)
+      : (input.negativePromptAdditions ??
+          slurpImageNegativePrompt(input.visualBrief?.sexualLevel, companionNamed, viewpoint?.source)),
     artStyle?.negative,
   );
   // Chosen here rather than by each caller, so a scheduled or redrawn Story is a Story too (R1-052).

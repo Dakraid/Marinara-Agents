@@ -118,15 +118,22 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
   }, [wholePictures]);
   // "Blur pictures until tapped": the CSS in slp-client-entry blurs every Slurp picture and video; the
   // first tap on one shows it instead of opening it. On <html> for the same reason as above.
-  // ponytail: a tap on an overlay above a picture (a veil, a carousel arrow) does its usual action;
-  // the picture is shown once it is tapped itself.
+  // ponytail: a tap on an overlay that is not the picture's own button (a veil, a carousel arrow)
+  // does its usual action; a picture that is not focusable has no keyboard reveal of its own.
   const blurPictures = slurpSettingsQuery.data?.blurPictures === true;
   useEffect(() => {
     const root = document.documentElement;
     root.toggleAttribute("data-slp-blur", blurPictures);
     if (!blurPictures) return () => root.removeAttribute("data-slp-blur");
     const reveal = (event: MouseEvent) => {
-      const media = event.target instanceof Element ? event.target.closest("img, video") : null;
+      const target = event.target instanceof Element ? event.target : null;
+      // The picture itself, or a blurred one inside the button or link that was activated: Enter or
+      // Space on a picture button sends its click to the button, not the picture.
+      const media =
+        target?.closest("img, video") ??
+        target
+          ?.closest("button, a, [role='button']")
+          ?.querySelector("img:not([data-slp-revealed]), video:not([data-slp-revealed])");
       if (!media || media.hasAttribute("data-slp-revealed") || !media.closest(SLP_SCOPE_SELECTOR)) return;
       event.preventDefault();
       event.stopPropagation();

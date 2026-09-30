@@ -253,10 +253,9 @@ export async function applyPulse(
   db: DB,
   action: SlurpPulseAction,
   banks: SlurpReactionBanks,
-  settings: Pick<SlurpSettings, "fanTypes" | "messagesFanOpeners" | "messagesCommissionOpeners">,
+  fanTypes: readonly SlurpFanType[],
   characterFanPinnedTypeIds: ReadonlyMap<string, string | null>,
 ): Promise<boolean> {
-  const { fanTypes } = settings;
   const noodle = createSlurpStorage(db);
   const actor = await resolveActor(db, action.actorAccountId, characterFanPinnedTypeIds, fanTypes);
   if (!actor) return false;
