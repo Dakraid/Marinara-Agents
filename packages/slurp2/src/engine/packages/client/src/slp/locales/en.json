@@ -5981,5 +5981,9 @@
   "ui.slurp.people.note.ended": "You ended it",
   "ui.slurp.people.howTo": "Tap someone to open their people too. Tap the highlighted person again to close them. Drag anyone to move them.",
   "ui.slurp.people.find": "Add someone to the map",
-  "ui.slurp.people.onlyThis": "Only {{name}}"
+  "ui.slurp.people.onlyThis": "Only {{name}}",
+  "ui.slurp.page.relation.bestie": "bestie",
+  "ui.slurp.page.relation.roommate": "roommate",
+  "ui.slurp.page.relation.friend": "friend",
+  "ui.slurp.page.relation.coworker": "coworker"
 }

@@ -3374,5 +3374,9 @@
   "ui.slurp.people.note.ended": "직접 끝냄",
   "ui.slurp.people.howTo": "누군가를 탭하면 그 사람의 사람들도 열려요. 강조된 사람을 다시 탭하면 닫혀요. 끌어서 옮길 수 있어요.",
   "ui.slurp.people.find": "지도에 사람 추가",
-  "ui.slurp.people.onlyThis": "{{name}}만 보기"
+  "ui.slurp.people.onlyThis": "{{name}}만 보기",
+  "ui.slurp.page.relation.bestie": "베프",
+  "ui.slurp.page.relation.roommate": "룸메이트",
+  "ui.slurp.page.relation.friend": "친구",
+  "ui.slurp.page.relation.coworker": "동료"
 }

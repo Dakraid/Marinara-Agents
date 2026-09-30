@@ -2559,5 +2559,9 @@
   "ui.slurp.people.note.ended": "Von dir beendet",
   "ui.slurp.people.howTo": "Tippe auf jemanden, um auch deren Leute zu öffnen. Tippe die markierte Person noch einmal, um sie zu schließen. Ziehe Personen, um sie zu verschieben.",
   "ui.slurp.people.find": "Jemanden zur Karte hinzufügen",
-  "ui.slurp.people.onlyThis": "Nur {{name}}"
+  "ui.slurp.people.onlyThis": "Nur {{name}}",
+  "ui.slurp.page.relation.bestie": "beste Freundin",
+  "ui.slurp.page.relation.roommate": "Mitbewohner",
+  "ui.slurp.page.relation.friend": "Freund",
+  "ui.slurp.page.relation.coworker": "Kollege"
 }

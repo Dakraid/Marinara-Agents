@@ -13,7 +13,7 @@ import { createSlurpStorage } from "../../data/slp-storage.js";
 import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
 import { readSlurpCardPeople, readSlurpCreatorFitText } from "../../data/creators/slp-flavour-source.js";
 import { SLURP_PARTNER_RELATION } from "../../modules/creators/slp-spice.js";
-import { slurpAdvanceBonds } from "../../modules/projects/slp-creator-bonds.js";
+import { slurpAdvanceBonds, slurpBondsFor } from "../../modules/projects/slp-creator-bonds.js";
 import { mutateSlurpCreatorTies, readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ties-storage.js";
 import { slurpCreatorReach } from "../../../../../shared/src/slp/slp-reach.js";
 import { slurpPlatformScaleMultiplier, slurpWorldActivityMultiplier } from "../../../../../shared/src/slp/slp-scale.js";
@@ -49,6 +49,7 @@ import {
 } from "../../modules/economy/slp-brand-deals.js";
 import { loadSlurpDealAds, loadSlurpDealSpice } from "./slp-brand-deal-source.js";
 import { slurpTieBeat } from "../../modules/feed/slp-tie-beats.js";
+import { slurpBondBeat } from "../../modules/feed/slp-bond-beats.js";
 import {
   slurpAdvanceCouples,
   slurpCoupleTold,
@@ -398,6 +399,32 @@ export async function planSlurpTieBeat(
     return planned.beat;
   } catch (error) {
     logger.warn(error, "[slurp-ties] Could not plan a collab, deal or rivalry post; this one is ordinary");
+    return null;
+  }
+}
+
+/**
+ * Now and then an ordinary post is a moment with a friend, roommate or coworker (Drama, bonds). Runs
+ * after the player's steering, so it never takes a slot the player pointed somewhere. Never fails a post.
+ */
+export async function planSlurpBondBeat(
+  db: DB,
+  input: { creatorId: string; sequence: number },
+): Promise<SlurpBeat | null> {
+  try {
+    const { bonds } = await readSlurpCreatorTiesDocument(db);
+    const mine = slurpBondsFor(bonds, input.creatorId);
+    if (!mine.length) return null;
+    const storage = createSlurpStorage(db);
+    const names = new Map<string, string>();
+    for (const bond of mine) {
+      const otherId = bond.aId === input.creatorId ? bond.bId : bond.aId;
+      const account = await storage.getNoodlerAccountById(otherId);
+      if (account) names.set(otherId, account.displayName);
+    }
+    return slurpBondBeat({ creatorId: input.creatorId, bonds: mine, names, sequence: input.sequence });
+  } catch (error) {
+    logger.warn(error, "[slurp-ties] Could not plan a moment with a friend; this post is ordinary");
     return null;
   }
 }

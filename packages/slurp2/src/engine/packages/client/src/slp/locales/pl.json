@@ -2593,5 +2593,9 @@
   "ui.slurp.people.note.ended": "Zakończone przez ciebie",
   "ui.slurp.people.howTo": "Stuknij kogoś, aby otworzyć też jego ludzi. Stuknij podświetloną osobę ponownie, aby ją zamknąć. Przeciągnij, aby przesunąć.",
   "ui.slurp.people.find": "Dodaj kogoś do mapy",
-  "ui.slurp.people.onlyThis": "Tylko {{name}}"
+  "ui.slurp.people.onlyThis": "Tylko {{name}}",
+  "ui.slurp.page.relation.bestie": "najlepsza przyjaciółka",
+  "ui.slurp.page.relation.roommate": "współlokator",
+  "ui.slurp.page.relation.friend": "przyjaciel",
+  "ui.slurp.page.relation.coworker": "współpracownik"
 }

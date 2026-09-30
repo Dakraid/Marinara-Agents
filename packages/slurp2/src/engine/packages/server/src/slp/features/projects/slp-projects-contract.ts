@@ -3,6 +3,7 @@ export {
   advanceSlurpCreatorTies,
   agreeSlurpCollabInDm,
   planSlurpTieBeat,
+  planSlurpBondBeat,
   slurpCollabPostIdsForCreator,
   slurpHeldCollabDrop,
 } from "./slp-creator-ties-service.js";

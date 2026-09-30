@@ -26,7 +26,7 @@ import { readSlurpLifeSignals } from "../../data/feed/slp-life-signals.js";
 import { planSlurpOccasionBeat } from "./slp-occasion-service.js";
 import { selectSlurpReference, slurpReferenceCandidates } from "../../modules/feed/slp-post-reference.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
-import { planSlurpTieBeat } from "../projects/slp-projects-contract.js";
+import { planSlurpBondBeat, planSlurpTieBeat } from "../projects/slp-projects-contract.js";
 import { SLURP_CANON_ANCHORS_KEY as ANCHORS_KEY } from "../../data/creators/slp-flavour-source.js";
 import {
   normalizeSlurpCanonAnchors,
@@ -249,6 +249,9 @@ export async function planSlurpBeat(
     if (occasion) return occasion;
     const steered = slurpSteeredBeat(input.accountId, input.sequence, input.context.steering, read, input.intents);
     if (steered) return steered;
+    // Drama bonds: now and then a friend, roommate or coworker is in the post.
+    const bond = await planSlurpBondBeat(db, { creatorId: input.accountId, sequence: input.sequence });
+    if (bond) return bond;
     if (!read) return null;
     const anchors = slurpAnchorsWithout(read, input.context.steering?.avoid ?? []);
     // A day-to-day life moment takes some ordinary slots: only one that fits this Creator.

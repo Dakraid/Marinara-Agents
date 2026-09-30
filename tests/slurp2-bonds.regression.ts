@@ -36,6 +36,11 @@ import {
   slpPeopleGraph,
 } from "../packages/slurp2/src/engine/packages/client/src/slp/features/projects/slp-people-map.ts";
 import {
+  slurpBondBeat,
+  SLURP_BOND_BEAT_PERCENT,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-bond-beats.ts";
+import { slpPagePeople } from "../packages/slurp2/src/engine/packages/client/src/slp/modules/creator/slp-creator-page-data.ts";
+import {
   SLP_FORCE_COOLING,
   slpForceBox,
   slpForceSeed,
@@ -431,6 +436,56 @@ async function main() {
     for (const node of nodes)
       assert.ok(node.x > box.x && node.x < box.x + box.size && node.y > box.y && node.y < box.y + box.size);
     assert.equal(slpForceBox([]).size, 220);
+  }
+
+  // Cameos: about one slot in five, only people who are close (never an acquaintance, an ex or a cold
+  // bond), with their account in the cast so their look reaches the picture; after the player's steering.
+  {
+    const bonds = readSlurpBonds([
+      { id: "f", aId: "me", bId: "best", since: T0.toISOString(), kind: "friend", level: 3 },
+      { id: "r", aId: "me", bId: "flat", since: T0.toISOString(), kind: "roommate" },
+      { id: "a", aId: "me", bId: "acq", since: T0.toISOString(), kind: "friend", level: 0 },
+      { id: "x", aId: "me", bId: "ex", since: T0.toISOString(), kind: "ex" },
+      { id: "c", aId: "me", bId: "cold", since: T0.toISOString(), kind: "friend", level: 1, temperature: "cold" },
+    ]);
+    const names = new Map([
+      ["best", "Nora"],
+      ["flat", "Mia"],
+      ["acq", "Acq"],
+      ["ex", "Tom"],
+      ["cold", "Cold"],
+    ]);
+    const beats = Array.from({ length: 400 }, (_, sequence) =>
+      slurpBondBeat({ creatorId: "me", bonds, names, sequence }),
+    );
+    const hits = beats.filter(Boolean);
+    const share = (hits.length / beats.length) * 100;
+    assert.ok(Math.abs(share - SLURP_BOND_BEAT_PERCENT) < 8, `about one slot in five (${share}%)`);
+    assert.deepEqual([...new Set(hits.map((beat) => beat!.castIds![0]))].sort(), ["best", "flat"]);
+    assert.ok(hits.every((beat) => beat!.cast.length === 1 && beat!.line.includes(beat!.cast[0]!)));
+    assert.equal(slurpBondBeat({ creatorId: "nobody", bonds, names, sequence: 1 }), null);
+    const planner = slurp2Source(
+      new URL(
+        "../packages/slurp2/src/engine/packages/server/src/slp/features/feed/slp-post-beat-service.ts",
+        import.meta.url,
+      ),
+    );
+    assert.ok(
+      planner.indexOf("planSlurpBondBeat(db") > planner.indexOf("if (steered) return steered;"),
+      "cameos never take a steered slot",
+    );
+    // The page's People block: best friend and roommate before collabs, friends after, no exes.
+    const people = slpPagePeople("me", {
+      creators: ["best", "flat", "acq", "ex", "cold", "kai"].map((id) => ({ id, name: id, avatarUrl: null })),
+      couples: [],
+      collabs: [{ hostId: "me", partnerId: "kai", status: "posted" }],
+      rivalries: [],
+      bonds: bonds.map((bond) => ({ ...bond })),
+    });
+    assert.deepEqual(
+      people.map((person) => `${person.id}:${person.relation}`),
+      ["best:bestie", "flat:roommate", "kai:collab", "cold:friend"],
+    );
   }
 
   // Every ties write keeps the bonds: the document reads and writes them.
