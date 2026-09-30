@@ -11,7 +11,9 @@ import { readSlurpCreatorSteering } from "../../data/creators/slp-steering-stora
 import { SLP_POLY_CARD_WORDS } from "../../../../../shared/src/slp/slp-creator-steering.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
-import { readSlurpCardPartners, readSlurpCreatorFitText } from "../../data/creators/slp-flavour-source.js";
+import { readSlurpCardPeople, readSlurpCreatorFitText } from "../../data/creators/slp-flavour-source.js";
+import { SLURP_PARTNER_RELATION } from "../../modules/creators/slp-spice.js";
+import { slurpAdvanceBonds } from "../../modules/projects/slp-creator-bonds.js";
 import { mutateSlurpCreatorTies, readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ties-storage.js";
 import { slurpCreatorReach } from "../../../../../shared/src/slp/slp-reach.js";
 import { slurpPlatformScaleMultiplier, slurpWorldActivityMultiplier } from "../../../../../shared/src/slp/slp-scale.js";
@@ -82,6 +84,7 @@ export async function loadSlurpTieCreators(db: DB, at = new Date()): Promise<Slu
       const style = await readSlurpCreatorSteering(db, account.id)
         .then((steering) => steering.relationshipStyle)
         .catch(() => null);
+      const cardPeople = await readSlurpCardPeople(db, account.id).catch(() => []);
       return {
         id: account.id,
         name: account.displayName,
@@ -89,7 +92,10 @@ export async function loadSlurpTieCreators(db: DB, at = new Date()): Promise<Slu
         tags: account.settings.profile.tags ?? [],
         automatic: slurpRunsItself(account),
         gender: account.settings.profile.gender ?? null,
-        cardPartners: await readSlurpCardPartners(db, account.id).catch(() => []),
+        cardPartners: cardPeople
+          .filter((person) => SLURP_PARTNER_RELATION.test(person.relation))
+          .map((person) => person.name),
+        cardPeople,
         poly: style ? style === "poly" : SLP_POLY_CARD_WORDS.test(text),
         followers: slurpCreatorReach(
           { accountId: account.id, createdAt: account.createdAt, realFollowers: followers.get(account.id) ?? 0, scale },
@@ -122,16 +128,12 @@ export async function advanceSlurpCreatorTies(db: DB, at = new Date()): Promise<
   const before = await readSlurpCreatorTiesDocument(db);
   const after = await mutateSlurpCreatorTies(db, (document) => {
     const ties = slurpAdvanceCreatorTies(document.ties, { creators, at, activity, paired, newId });
+    const around = fromTies(ties, at);
+    const couples = slurpAdvanceCouples(document.couples, { creators, at, activity, newId, storylines, ...around });
     const next = {
       ties,
-      couples: slurpAdvanceCouples(document.couples, {
-        creators,
-        at,
-        activity,
-        newId,
-        storylines,
-        ...fromTies(ties, at),
-      }),
+      couples,
+      bonds: slurpAdvanceBonds(document.bonds, { creators, couples, at, activity, newId, ...around }),
       deals: slurpAdvanceBrandDeals(document.deals, {
         creators,
         ads,
@@ -355,6 +357,7 @@ export async function planSlurpTieBeat(
     const { tie } = planned.beat;
     await mutateSlurpCreatorTies(db, (document) => ({
       document: {
+        ...document,
         // A couple moment is told once each; one on their shared page for both of them.
         couples:
           tie.kind === "couple" && tie.momentId
