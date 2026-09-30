@@ -33,6 +33,15 @@ import {
   type SlurpCoupleError,
 } from "../../modules/projects/slp-creator-couples.js";
 import { closeSlurpCouplePage, closeSlurpCouplePages, openSlurpCouplePage } from "./slp-creator-couples-service.js";
+import {
+  SLURP_BOND_KINDS,
+  SLURP_BOND_MAX_LEVEL,
+  slurpBondActive,
+  slurpEndBond,
+  slurpSetBond,
+  type SlurpBond,
+  type SlurpBondError,
+} from "../../modules/projects/slp-creator-bonds.js";
 
 const RECENT = 8;
 const ERRORS: Record<SlurpTieError | "notFound" | "notOpen", [number, string]> = {
@@ -57,6 +66,14 @@ const COUPLE_ERRORS: Record<SlurpCoupleError, [number, string]> = {
   mono: [409, "One of them is monogamous and already with someone."],
 };
 
+/** Why a bond cannot be set, in the world's words (Drama, bonds). */
+const BOND_ERRORS: Record<SlurpBondError, [number, string]> = {
+  same: [400, "Pick two different Creators."],
+  unknown: [404, "That bond is gone."],
+  full: [409, "One of them already has as many friends at that level as anyone keeps."],
+  couple: [409, "Those two are together right now, not exes."],
+};
+
 /**
  * Collabs, rivalries and brand deals in Studio: see what is going on between Creators, push a
  * request through, block a pair, suggest a pairing, cool a rivalry down, and answer brand offers for
@@ -68,7 +85,7 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
 
   async function view(viewer: NonNullable<Awaited<ReturnType<typeof resolveViewerPersona>>>) {
     const { pool } = createGarnishAds(app.db);
-    const [{ ties, deals, couples }, accounts, ads, brands] = await Promise.all([
+    const [{ ties, deals, couples, bonds }, accounts, ads, brands] = await Promise.all([
       readSlurpCreatorTiesDocument(app.db),
       noodle.listNoodlerAccounts(),
       pool.listAll("slurp"),
@@ -126,6 +143,14 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
         bannerUrl: deal.status === "offered" ? (bannerOf.get(deal.adId) ?? null) : null,
         logoUrl: logoOf.get(deal.adId) ?? null,
       })),
+      // Bonds (Drama): every active one, then the newest that ended, for the People map.
+      bonds: [
+        ...bonds.filter(slurpBondActive),
+        ...newest(
+          bonds.filter((bond: SlurpBond) => !slurpBondActive(bond)),
+          (bond: SlurpBond) => bond.endedAt ?? bond.changedAt,
+        ),
+      ],
       blocked: ties.blocked,
     };
   }
@@ -321,4 +346,52 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
       return reply.code(COUPLE_ERRORS[outcome][0]).send({ error: COUPLE_ERRORS[outcome][1] });
     return view(viewer);
   });
+
+  /** One change to the bonds, answered with the whole Studio view. */
+  const changeBonds = async (
+    req: { body: unknown },
+    reply: Parameters<typeof viewerFrom>[1],
+    run: (bonds: SlurpBond[], couples: SlurpCouple[], at: Date) => SlurpBond[] | SlurpBondError,
+  ) => {
+    const viewer = await viewerFrom(req.body, reply);
+    if (!viewer) return;
+    const outcome = await mutateSlurpCreatorTies(app.db, (document) => {
+      const next = run(document.bonds, document.couples, new Date());
+      return typeof next === "string"
+        ? { document, result: next }
+        : { document: { ...document, bonds: next }, result: "ok" as const };
+    });
+    if (outcome && outcome !== "ok")
+      return reply.code(BOND_ERRORS[outcome][0]).send({ error: BOND_ERRORS[outcome][1] });
+    return view(viewer);
+  };
+
+  /** Make two Creators friends, roommates, coworkers or exes, or change how close friends are. Locked. */
+  app.post("/slurp/ties/bonds", async (req, reply) => {
+    const parsed = z
+      .object({
+        aId: z.string().trim().min(1),
+        bId: z.string().trim().min(1),
+        kind: z.enum(SLURP_BOND_KINDS),
+        level: z.number().int().min(0).max(SLURP_BOND_MAX_LEVEL).optional(),
+      })
+      .passthrough()
+      .safeParse(req.body);
+    if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
+    const [a, b] = await Promise.all([
+      noodle.getNoodlerAccountById(parsed.data.aId),
+      noodle.getNoodlerAccountById(parsed.data.bId),
+    ]);
+    if (!a || !b || slurpIsCouplePage(a) || slurpIsCouplePage(b))
+      return reply.code(404).send({ error: "Creator account not found" });
+    const { aId, bId, kind, level } = parsed.data;
+    return changeBonds(req, reply, (bonds, couples, at) =>
+      slurpSetBond(bonds, { aId, bId, kind, level, couples }, { at, id: newId() }),
+    );
+  });
+
+  /** End a bond: they stop being friends, move out, stop working together, or let the ex go. */
+  app.post("/slurp/ties/bonds/:id/end", (req, reply) =>
+    changeBonds(req, reply, (bonds, _couples, at) => slurpEndBond(bonds, id(req), at)),
+  );
 }

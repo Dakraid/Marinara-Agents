@@ -29,6 +29,11 @@ import {
   slurpBreakUp,
   type SlurpCouple,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples.ts";
+import {
+  slpBusiestCreator,
+  slpEgoTies,
+  slpPeopleEdges,
+} from "../packages/slurp2/src/engine/packages/client/src/slp/features/projects/slp-people-map.ts";
 
 const DAY = 86_400_000;
 const T0 = new Date("2026-10-01T00:00:00.000Z");
@@ -313,6 +318,70 @@ async function main() {
       "the card's roommate is there",
     );
     assert.deepEqual(run(), first, "same seed, same world");
+  }
+
+  // The People map: every tie as an edge, the strongest first; an old breakup without a bond still shows.
+  {
+    const bond = readSlurpBonds([
+      { id: "b1", aId: "lena", bId: "nora", since: T0.toISOString(), kind: "friend", level: 3 },
+      {
+        id: "b2",
+        aId: "lena",
+        bId: "gone",
+        since: T0.toISOString(),
+        kind: "friend",
+        level: 1,
+        endedAt: T0.toISOString(),
+      },
+    ]);
+    const together = newSlurpCouple("c1", "lena", "max", "world", T0.toISOString(), "together");
+    const oldSplit = slurpBreakUp(newSlurpCouple("c2", "lena", "tom", "world", T0.toISOString(), "together"), at(1));
+    const view = {
+      creators: [],
+      collabs: [
+        {
+          id: "k1",
+          hostId: "lena",
+          partnerId: "nora",
+          idea: "a shoot",
+          hostShare: 50,
+          status: "agreed" as const,
+          origin: "world" as const,
+          askedAt: T0.toISOString(),
+          answeredAt: null,
+          postId: null,
+          decline: null,
+        },
+      ],
+      rivalries: [
+        {
+          id: "r1",
+          fromId: "lena",
+          toId: "zoe",
+          cause: "copied",
+          stage: "feud" as const,
+          stageAt: T0.toISOString(),
+          ending: null,
+        },
+      ],
+      deals: [],
+      blocked: [],
+      couples: [together, oldSplit],
+      bonds: bond,
+    };
+    const edges = slpPeopleEdges(view as never, at(2));
+    const kinds = edges.map((edge) => edge.kind).sort();
+    assert.deepEqual(kinds, ["collab", "couple", "ex", "friend", "rival"]);
+    const ego = slpEgoTies(edges, "lena");
+    assert.deepEqual(
+      ego.map((tie) => tie.otherId),
+      ["max", "tom", "zoe", "nora"],
+    );
+    assert.deepEqual(
+      ego.find((tie) => tie.otherId === "nora")!.edges.map((edge) => edge.kind),
+      ["friend", "collab"],
+    );
+    assert.equal(slpBusiestCreator(edges, ["nora", "lena", "zoe"]), "lena");
   }
 
   // Every ties write keeps the bonds: the document reads and writes them.

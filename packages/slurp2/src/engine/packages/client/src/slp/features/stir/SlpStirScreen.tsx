@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { ChevronRight, Handshake, Heart, RotateCcw, X, type LucideIcon } from "lucide-react";
+import { ChevronRight, Handshake, Heart, RotateCcw, Users, X, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
@@ -25,7 +25,7 @@ import type {
   SlpStirSuggestion,
   SlpStirView,
 } from "../../../../../shared/src/slp/slp-stir.js";
-import { SlpCollabsPanel, SlpRelationshipsPanel } from "../projects/slp-projects-contract";
+import { SlpCollabsPanel, SlpPeoplePanel, SlpRelationshipsPanel } from "../projects/slp-projects-contract";
 import { useSlurpStir, useSlurpStirDismiss, useSlurpStirPreview } from "./slp-stir-hooks";
 import { SlpStirBox } from "./SlpStirBox";
 import { SlpStirPlanSheet, useSlpStirUndo } from "./SlpStirCards";
@@ -570,6 +570,9 @@ export function SlpStirScreen({
               <RecentPlays plays={view.plays} creators={view.creators} onOpenTarget={onOpenTarget} />
               {personaId && (
                 <div className={SLP_CARD_STACK_CLASS}>
+                  <Group icon={Users} title={t("ui.slurp.people.title")} detail={t("ui.slurp.people.detail")}>
+                    <SlpPeoplePanel personaId={personaId} />
+                  </Group>
                   <Group icon={Handshake} title={t("ui.slurp.ties.title")} detail={t("ui.slurp.ties.detail")}>
                     <SlpCollabsPanel personaId={personaId} />
                   </Group>
