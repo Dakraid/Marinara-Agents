@@ -286,6 +286,13 @@ const anniversaryLabel = (days: number) => {
   return `${YEAR_WORDS[years - 1] ?? years} year${years === 1 ? "" : "s"}`;
 };
 
+/** The next anniversary after `at`, counted from when they got together: when, and after how many days. */
+export function slurpNextAnniversary(togetherAt: string, at: Date): { at: string; days: number } {
+  const days = slurpDaysSince(togetherAt, at);
+  const next = anniversaryDays(days + 400).find((mark) => mark > days)!;
+  return { at: new Date(Date.parse(togetherAt) + next * DAY_MS).toISOString(), days: next };
+}
+
 /** One couple, one look: stage moves, dates and anniversaries. */
 function advanceCouple(
   couple: SlurpCouple,

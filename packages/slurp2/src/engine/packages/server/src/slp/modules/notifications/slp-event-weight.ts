@@ -40,7 +40,9 @@ export type SlurpEventKind =
   /** A drama moved (docs/DRAMA.md): the pack's own line, e.g. "Mia was tagged in a post by Jake". */
   | "drama"
   /** Something happened between the player and the Creator they are with: a date, an anniversary, a crush that faded. */
-  | "couple";
+  | "couple"
+  /** A fan's note to the player's own page: fans write notes there, never open a chat. */
+  | "fan_note";
 
 /**
  * Base weights. The gaps matter more than the numbers: anything at or above `SLURP_EVENT_NOTABLE`
@@ -71,6 +73,8 @@ const BASE: Record<SlurpEventKind, number> = {
   drama: 64,
   // Her life with the player: above a drama beat, below a message from her.
   couple: 66,
+  // A person wrote to you: a line of its own, below a real message.
+  fan_note: 58,
 };
 
 /**

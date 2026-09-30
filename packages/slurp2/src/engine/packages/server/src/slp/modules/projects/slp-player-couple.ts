@@ -4,6 +4,7 @@
  */
 import { clampText } from "./slp-project.js";
 import {
+  slurpNextAnniversary,
   slurpCoupleMoment,
   slurpDaysSince,
   slurpMakeOfficial,
@@ -50,4 +51,38 @@ export function slurpPlayerCoupleStep(
       slurpCoupleMoment(couple, "makeup", stamp, detail),
     );
   return null;
+}
+
+/** What the player's thread with her shows about the two of them (Details › You two). */
+export type SlurpPlayerCoupleView = {
+  id: string;
+  stage: SlurpCoupleStage;
+  ending: SlurpCouple["ending"];
+  startedAt: string;
+  togetherAt: string | null;
+  stageAt: string;
+  secret: boolean;
+  lastDate: { at: string; detail: string } | null;
+  lastFight: { at: string; detail: string } | null;
+  nextAnniversary: { at: string; days: number } | null;
+};
+
+export function slurpPlayerCoupleView(couple: SlurpCouple, at: Date): SlurpPlayerCoupleView {
+  const last = (kinds: readonly string[]) => {
+    const moment = [...couple.moments].reverse().find((entry) => kinds.includes(entry.kind));
+    return moment ? { at: moment.at, detail: moment.detail } : null;
+  };
+  const official = couple.stage === "together" || couple.stage === "rocky";
+  return {
+    id: couple.id,
+    stage: couple.stage,
+    ending: couple.ending,
+    startedAt: couple.startedAt,
+    togetherAt: couple.togetherAt,
+    stageAt: couple.stageAt,
+    secret: Boolean(couple.secret),
+    lastDate: last(["date"]),
+    lastFight: last(["fight", "jealous"]),
+    nextAnniversary: official && couple.togetherAt ? slurpNextAnniversary(couple.togetherAt, at) : null,
+  };
 }

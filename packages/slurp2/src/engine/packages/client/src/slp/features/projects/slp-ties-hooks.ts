@@ -84,8 +84,10 @@ export type SlurpTiesCouple = {
   page: { accountId: string; openedAt: string; closedAt: string | null } | null;
   /** Set up by the player against a card: whose card, and what it says. */
   forced?: { misfit: "taken" | "notInto" | "noDating" | "orientation"; byId: string };
+  /** A couple with the player's own page, kept out of public. */
+  secret?: boolean;
 };
-export type SlurpCoupleSteer = "date" | "drama" | "patchUp" | "breakUp" | "reunite";
+export type SlurpCoupleSteer = "date" | "drama" | "patchUp" | "breakUp" | "reunite" | "official" | "secret" | "public";
 /** Mirrors `SlurpBond` on the server (Drama): friends, roommates, coworkers and exes. */
 export type SlurpTiesBondKind = "friend" | "roommate" | "coworker" | "ex";
 export type SlurpTiesBond = {

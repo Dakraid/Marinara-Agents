@@ -173,6 +173,8 @@ export type SlpStirView = {
     moreIds?: string[];
     stage: string;
     page: "open" | "closed" | null;
+    /** A couple with the player's own page, kept out of public. */
+    secret?: boolean;
   }[];
   collabs: { id: string; hostId: string; partnerId: string; status: string }[];
   rivalries: { id: string; fromId: string; toId: string; stage: string }[];

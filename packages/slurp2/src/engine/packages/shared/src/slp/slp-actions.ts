@@ -69,7 +69,17 @@ export type SlpPictureTarget = (typeof SLP_PICTURE_TARGETS)[number];
 
 const accountId = z.string().trim().min(1).max(200);
 /** What a player can do to a couple (7b-couples); the Stir sheet and the couples panel share it. */
-export const SLP_COUPLE_STEERS = ["date", "drama", "patchUp", "breakUp", "reunite"] as const;
+/** "official": sparks or dating become together. "secret"/"public": a couple with the player's own page only. */
+export const SLP_COUPLE_STEERS = [
+  "date",
+  "drama",
+  "patchUp",
+  "breakUp",
+  "reunite",
+  "official",
+  "secret",
+  "public",
+] as const;
 /** The chapter moves open without Director mode. */
 export const SLP_STORYLINE_MOVES = ["hold", "release", "skip", "back", "insert", "label"] as const;
 const note = z.string().trim().max(SLP_ASSIST_NOTE_MAX).optional();

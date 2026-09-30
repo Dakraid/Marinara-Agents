@@ -8,4 +8,5 @@ export { readSlpStirProposal, SlpStirSupportCards } from "./SlpStirSupportCards"
 // The Support desk (0.3.5): a Support thread builds its Offers and moves with the same play sheet.
 export { SlpStirPlaySheet } from "./SlpStirPlaySheet";
 export { useSlurpStir } from "./slp-stir-hooks";
-export { slpStirWhat } from "./SlpStirCards";
+export { slpStirWhat, useSlpStirDoIt } from "./SlpStirCards";
+export { useSlurpStirPreview } from "./slp-stir-hooks";

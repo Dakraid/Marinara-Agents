@@ -11,6 +11,7 @@ import {
 } from "../../../../../shared/src/slp/slp-fan-types.js";
 import {
   slurpAudienceOpener,
+  slurpFanNote,
   slurpAudienceQuestion,
   slurpAudienceReactionFrom,
   slurpRivalryBodies,
@@ -20,6 +21,8 @@ import {
 } from "../../modules/world/slp-world-copy.js";
 import { slurpReactionBodiesForType, type SlurpReactionBanks } from "../../modules/world/slp-reaction-bank.js";
 import { enqueueSlurpPendingText } from "./slp-pending-text-service.js";
+import { createSlurpEventsStorage } from "../../data/notifications/slp-notification-storage.js";
+import { readSlurpCouplePartnerOf } from "../../data/projects/slp-creator-ties-storage.js";
 import { readSlurpTieStamp } from "../../modules/projects/slp-tie-stamp.js";
 import { hash } from "../../modules/projects/slp-project.js";
 import { type SlurpWorldAction } from "../../../../../shared/src/slp/slp-world.js";
@@ -27,6 +30,19 @@ import type { SlurpSettings } from "../../modules/settings/slp-settings.js";
 import { slurpPulseTieAdvance, type SlurpPulseAction } from "../../../../../shared/src/slp/slp-world-pulse.js";
 
 /** The local day, so a per-pair roll is made once a day rather than on every page load. */
+/** The Creator the player's page is with, when the fans know: they write about her now and then. */
+async function publicPartnerName(db: DB, pageId: string): Promise<string | null> {
+  const couple = await readSlurpCouplePartnerOf(db, pageId).catch(() => null);
+  if (!couple || couple.secret || couple.stage === "sparks") return null;
+  return (
+    (
+      await createSlurpStorage(db)
+        .getNoodlerAccountById(couple.partnerId)
+        .catch(() => null)
+    )?.displayName ?? null
+  );
+}
+
 export function localDayKey(at: Date): string {
   return `${at.getFullYear()}-${at.getMonth() + 1}-${at.getDate()}`;
 }
@@ -158,6 +174,28 @@ export async function applyAction(
   }
 
   if (action.kind === "message") {
+    // The player's own page: a fan writes a note there, never a chat the player has to keep up.
+    const target = await noodle.getNoodlerAccountById(action.creatorAccountId).catch(() => null);
+    if (target?.kind === "persona" && target.sourceKind === "persona" && target.sourceEntityId) {
+      const note = await createSlurpEventsStorage(db).recordAndPrune({
+        recipientPersonaId: target.sourceEntityId,
+        kind: "fan_note",
+        creatorAccountId: target.id,
+        subjectId: actor.id,
+        actorLabel: actor.id,
+        note: slurpFanNote(
+          `${target.id}:${actor.id}:${at.toISOString()}`,
+          settings.messagesFanOpeners,
+          await publicPartnerName(db, target.id),
+        ),
+        operationId: `fan-note:${target.id}:${actor.id}:${localDayKey(at)}`,
+      });
+      if (!note) return false;
+      await createSlurpPopulationStorage(db)
+        .advanceTie(actor.id, target.id, { stage: "viewer", interactions: 1 })
+        .catch(() => undefined);
+      return true;
+    }
     const messages = createSlurpMessagesStorage(db, () => noodle);
     const sent = await messages.sendViewerMessage(
       action.actorAccountId,
@@ -318,7 +356,8 @@ async function rivalrySides(
   // A couple post: `rival` is the partner, and the fans' mood follows the moment.
   return {
     self: self.displayName,
-    rival: rival.displayName,
+    // A secret couple with the player: the fans only know there is somebody.
+    rival: stamp.secret ? "mystery bae" : rival.displayName,
     ...(stamp.kind === "couple" ? { moment: stamp.moment ?? "" } : {}),
   };
 }

@@ -357,9 +357,11 @@ export async function planSlurpTieBeat(
     if (!ids.has(input.creatorId) && !deals.some((deal) => deal.creatorId === input.creatorId)) return null;
     const storage = createSlurpStorage(db);
     const names = new Map<string, string>();
+    const playerIds = new Set<string>();
     for (const id of ids) {
       const account = await storage.getNoodlerAccountById(id);
       if (account) names.set(id, account.displayName);
+      if (account && !slurpRunsItself(account)) playerIds.add(id);
     }
     // A collab to announce names its drop hour, and Slurp holds that hour like a teased drop (V).
     const announcing = ties.collabs.some(
@@ -369,7 +371,7 @@ export async function planSlurpTieBeat(
       announcing && !input.previewOnly
         ? await readSlurpSlotTimes(db, input.creatorId, input.at).catch(() => null)
         : null;
-    const planned = slurpTieBeat({ ...input, ties, deals, couples, names, slots });
+    const planned = slurpTieBeat({ ...input, ties, deals, couples, names, playerIds, slots });
     if (!planned || input.previewOnly) return planned?.beat ?? null;
     const { tie } = planned.beat;
     await mutateSlurpCreatorTies(db, (document) => ({

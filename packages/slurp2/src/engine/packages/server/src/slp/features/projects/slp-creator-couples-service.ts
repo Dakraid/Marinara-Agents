@@ -30,6 +30,7 @@ import type { SlurpTieCreator } from "../../modules/projects/slp-creator-ties.js
 import { slurpDmViewerPage, type SlurpDmParty } from "../../modules/messages/slp-dm-roles.js";
 import { readSlurpRelationshipLine } from "../../data/creators/slp-flavour-source.js";
 import { slurpPartnerWord } from "../../modules/projects/slp-couple-lines.js";
+import { slurpPlayerCoupleView, type SlurpPlayerCoupleView } from "../../modules/projects/slp-player-couple.js";
 
 /** A storyline about two Creators getting together: a live crossover whose words are romance. */
 const ROMANCE =
@@ -284,6 +285,23 @@ export async function notifySlurpPlayerCouples(
           .catch((error: unknown) => logger.warn(error, "[slurp-couples] Could not notify the player"));
     }
   }
+}
+
+/**
+ * Her and the persona's own page as a couple, newest first (an ex too), for the thread's Details
+ * panel: null when the persona has no page or they never were a couple.
+ */
+export async function readSlurpPlayerCoupleView(
+  db: DB,
+  creatorId: string,
+  personaId: string,
+): Promise<SlurpPlayerCoupleView | null> {
+  const page = await createSlurpStorage(db)
+    .getSlurpAccountForEntity("persona", personaId, "creator")
+    .catch(() => null);
+  if (!page) return null;
+  const couple = slurpCoupleOf((await readSlurpCreatorTiesDocument(db)).couples, creatorId, page.id);
+  return couple ? slurpPlayerCoupleView(couple, new Date()) : null;
 }
 
 /** The couple partner for a partner scene, or null; `inCouple` says whether they are taken at all. */

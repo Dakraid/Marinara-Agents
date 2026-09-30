@@ -470,6 +470,9 @@ export function SlpStirPlaySheet({
       );
       const couple = couples.find((entry) => entry.id === form.pick);
       if (couple && action === "steer-couple") {
+        const withPlayer = [couple.aId, couple.bId].some(
+          (id) => creators.find((creator) => creator.id === id)?.automatic === false,
+        );
         const allowed = SLP_COUPLE_STEERS.filter((steer) =>
           couple.stage === "split"
             ? steer === "reunite"
@@ -481,7 +484,11 @@ export function SlpStirPlaySheet({
                   ? couple.stage === "dating" || couple.stage === "together"
                   : steer === "date"
                     ? couple.stage !== "rocky"
-                    : true,
+                    : steer === "official"
+                      ? couple.stage === "sparks" || couple.stage === "dating"
+                      : steer === "secret" || steer === "public"
+                        ? withPlayer && (steer === "secret") !== Boolean(couple.secret)
+                        : true,
         );
         body.push(
           <Choice

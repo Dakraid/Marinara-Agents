@@ -17,7 +17,11 @@ import { SlpHeartGlyph, SlpLockGlyph } from "../../base/chrome/SlpGlyphs";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
-import type { SlurpEventGroup, SlurpEventItem } from "../../features/notifications/slp-notifications-contract";
+import {
+  SlpFanNoteActions,
+  type SlurpEventGroup,
+  type SlurpEventItem,
+} from "../../features/notifications/slp-notifications-contract";
 import {
   useMarkSlurpNotificationsSeen,
   useSlurpNotifications,
@@ -464,6 +468,7 @@ function SlurpNotificationsView({
     if (kind === "arc_phase" || kind === "arc_complete" || kind === "arc_started") return { icon: Star, tone: violet };
     if (kind === "drama") return { icon: Clapperboard, tone: violet };
     if (kind === "couple") return { icon: SlpHeartGlyph, tone: pink };
+    if (kind === "fan_note") return { icon: MessageCircle, tone: pink };
     if (kind === "tip") return { icon: Coins, tone: warm };
     if (kind === "unlock" || kind === "ppv_unlock") return { icon: SlpLockGlyph, tone: warm };
     if (kind === "subscribed") return { icon: Crown, tone: pink };
@@ -635,10 +640,11 @@ function SlurpNotificationsView({
         );
       }
       const actionable = group.event.kind === "commission_requested";
+      const fanNote = group.event.kind === "fan_note";
       const creatorId = group.event.creatorAccountId;
       const destination = actionable
         ? () => onOpenMessages(group.event.subjectId)
-        : creatorId
+        : creatorId && !fanNote
           ? () => onOpenProfile(creatorId)
           : null;
       const appearance = eventAppearance(group.event.kind);
@@ -655,6 +661,7 @@ function SlurpNotificationsView({
           </span>
           <span className="min-w-0 flex-1 text-[13px] leading-[19px]">
             <SlpCoinText>{describeEvent(group.event)}</SlpCoinText>
+            {fanNote && personaId && <SlpFanNoteActions event={group.event} personaId={personaId} />}
           </span>
           <SlpTimestamp
             value={at}

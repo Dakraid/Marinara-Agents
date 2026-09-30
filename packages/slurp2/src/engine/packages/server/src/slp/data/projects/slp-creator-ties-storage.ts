@@ -67,6 +67,15 @@ export function mutateSlurpCreatorTies<T>(
 }
 
 /** The couple a Creator is in with this page of the player's, or null. Rocky counts; a breakup does not. */
+/** The active couple a page is in, with the one other member (the first, for a group), or null. */
+export async function readSlurpCouplePartnerOf(db: DB, pageId: string) {
+  const { couples } = await readSlurpCreatorTiesDocument(db);
+  const couple = couples.find(
+    (entry) => entry.stage !== "split" && [entry.aId, entry.bId, ...(entry.moreIds ?? [])].includes(pageId),
+  );
+  return couple ? { ...couple, partnerId: couple.aId === pageId ? couple.bId : couple.aId } : null;
+}
+
 export async function readSlurpPlayerCouple(db: DB, creatorAccountId: string, pageId: string) {
   const { couples } = await readSlurpCreatorTiesDocument(db);
   return (

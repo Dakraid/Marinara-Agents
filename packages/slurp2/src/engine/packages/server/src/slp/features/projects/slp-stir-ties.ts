@@ -262,6 +262,7 @@ export async function readSlurpStirTies(db: DB): Promise<Pick<SlpStirWorld, "cou
         ...(couple.moreIds?.length ? { moreIds: couple.moreIds } : {}),
         stage: couple.stage,
         page: couple.page ? (couple.page.closedAt ? ("closed" as const) : ("open" as const)) : null,
+        ...(couple.secret ? { secret: true } : {}),
       }))
       .concat(
         couples
