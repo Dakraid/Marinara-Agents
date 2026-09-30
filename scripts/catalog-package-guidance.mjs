@@ -1,4 +1,8 @@
 export const OFFICIAL_PACKAGE_GUIDANCE = Object.freeze({
+  "card-editor": {
+    modes: ["roleplay"],
+    activation: "Open a character card and choose Run Card Editor to propose changes for approval.",
+  },
   "card-evolution-auditor": {
     modes: ["roleplay"],
     activation: "Add the Agent in Chat Settings → Agents → Writer Agents for Roleplay mode.",
@@ -111,6 +115,10 @@ export const OFFICIAL_PACKAGE_GUIDANCE = Object.freeze({
   html: {
     modes: ["roleplay"],
     activation: "Add the Agent in Chat Settings → Agents → Misc Agents for Roleplay mode.",
+  },
+  "lorebook-editor": {
+    modes: ["roleplay"],
+    activation: "Open a lorebook and choose Run Lorebook Editor to propose changes for approval.",
   },
   "lorebook-keeper": {
     modes: ["roleplay", "game"],

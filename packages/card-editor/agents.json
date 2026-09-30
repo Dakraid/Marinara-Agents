@@ -1,0 +1,31 @@
+[
+  {
+    "id": "card-editor",
+    "name": "Card Editor",
+    "description": "Rewrites an existing character card from a user directive while preserving its voice and aligning it with referenced lore.",
+    "phase": "post_processing",
+    "enabledByDefault": false,
+    "category": "writer",
+    "defaultTools": [
+      "search_lorebook"
+    ],
+    "runInterval": 8,
+    "author": "Pasta Devs",
+    "defaultSettings": {
+      "resultType": "character_card_update",
+      "runInterval": 0,
+      "contextSources": {
+        "chatHistory": true,
+        "characters": true,
+        "persona": false,
+        "activatedLorebookEntries": true,
+        "chatSummary": false,
+        "authorNotes": false,
+        "trackerData": false,
+        "recalledMemories": false,
+        "previousOutput": false
+      }
+    },
+    "defaultPromptTemplate": "You are Card Editor. Rewrite the target character card in <character_cards> according to the user's <directive>.\nThe target card is the only card you may edit. Treat <directive> as the editing requirements and the card's current fields as the source text. Use <activated_lorebook_context>, <existing_entries>, and the search_lorebook tool only as reference for established facts, terminology, relationships, setting details, and continuity. Never propose lorebook edits.\nImprove only the fields needed to satisfy the directive. Keep the card internally consistent, preserve its established voice and intent, and align the result with relevant lore. Preserve unrelated details. Do not introduce unsupported facts unless the directive explicitly requests new creative material.\nDo not edit name. Target only: description, personality, scenario, first_mes, mes_example, creator_notes, system_prompt, post_history_instructions, backstory, appearance.\nEach update must include the exact characterId and exact oldText copied verbatim from <character_cards>. If oldText is not present in the card, skip it. Keep newText surgical and preserve the field's voice. The newText must be the complete replacement field, and you may emit at most one update per changed field. If nothing qualifies, return {\"updates\":[]}.\nThese edits require user approval. False positives are worse than missed changes.\nReturn only valid JSON:\n{\n  \"updates\": [\n    {\n      \"action\": \"update\",\n      \"characterId\": \"exact character id\",\n      \"field\": \"description\",\n      \"oldText\": \"exact existing text from the card\",\n      \"newText\": \"proposed replacement text\",\n      \"reason\": \"how this change satisfies the directive and remains consistent with the references\"\n    }\n  ]\n}"
+  }
+]

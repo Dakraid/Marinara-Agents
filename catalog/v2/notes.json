@@ -11,6 +11,16 @@
         }
       ]
     },
+    "card-editor": {
+      "versions": [
+        {
+          "version": "1.0.0",
+          "date": "2026-09-30",
+          "notes": "- Added directive-driven character-card rewriting with lorebook references and approval-ready field updates.",
+          "highlight": false
+        }
+      ]
+    },
     "character-tracker": {
       "versions": [
         {
@@ -139,6 +149,16 @@
           "version": "1.2.19",
           "date": "2026-09-04",
           "notes": "- Bound the Sources destination panel and restored page scrolling when its list is hovered.\n- Restricted Already imported counts and rows to the selected source scope.",
+          "highlight": false
+        }
+      ]
+    },
+    "lorebook-editor": {
+      "versions": [
+        {
+          "version": "1.0.0",
+          "date": "2026-09-30",
+          "notes": "- Added directive-driven lorebook entry rewriting with character-card references and approval-ready create, update, and delete proposals.",
           "highlight": false
         }
       ]

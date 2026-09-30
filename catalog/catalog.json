@@ -236,6 +236,48 @@
     {
       "manifest": {
         "schemaVersion": 1,
+        "id": "card-editor",
+        "name": "Card Editor",
+        "version": "1.0.0",
+        "description": "Rewrites an existing character card from a user directive while preserving its voice and aligning it with referenced lore. Open a character card and choose Run Card Editor to propose changes for approval.",
+        "engine": {
+          "min": "2.3.0",
+          "maxExclusive": "4.0.0"
+        },
+        "kind": [
+          "agent"
+        ],
+        "entrypoints": {
+          "agents": "agents.json"
+        },
+        "files": [
+          {
+            "path": "agents.json",
+            "sha256": "63a34a737fe5f20dc55b434331a6f7b1a30eeaa86c5057fae83b9ffc0ffcd7a6",
+            "bytes": 2642
+          }
+        ],
+        "permissions": [
+          "agent-runtime",
+          "chat-read",
+          "prompt-context",
+          "storage",
+          "ui"
+        ],
+        "restartRequired": false
+      },
+      "category": "writer",
+      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/card-editor.png",
+      "artifact": {
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/card-editor-1.0.0.zip",
+        "sha256": "fb537ce109d981b1219968020de9dd4bc6d4c971996f41deb705924ad4734974",
+        "bytes": 1884
+      },
+      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#card-editor"
+    },
+    {
+      "manifest": {
+        "schemaVersion": 1,
         "id": "card-evolution-auditor",
         "name": "Card Evolution Auditor",
         "version": "1.0.2",
@@ -2505,6 +2547,48 @@
     {
       "manifest": {
         "schemaVersion": 1,
+        "id": "lorebook-editor",
+        "name": "Lorebook Editor",
+        "version": "1.0.0",
+        "description": "Rewrites entries in a target lorebook from a user directive while preserving continuity with referenced character cards. Open a lorebook and choose Run Lorebook Editor to propose changes for approval.",
+        "engine": {
+          "min": "2.3.0",
+          "maxExclusive": "4.0.0"
+        },
+        "kind": [
+          "agent"
+        ],
+        "entrypoints": {
+          "agents": "agents.json"
+        },
+        "files": [
+          {
+            "path": "agents.json",
+            "sha256": "f5c9524f3050b8c5ff0c4cbbf31550105a94955fd1b56fbab32061561364039a",
+            "bytes": 3267
+          }
+        ],
+        "permissions": [
+          "agent-runtime",
+          "chat-read",
+          "prompt-context",
+          "storage",
+          "ui"
+        ],
+        "restartRequired": false
+      },
+      "category": "misc",
+      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/lorebook-editor.png",
+      "artifact": {
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/lorebook-editor-1.0.0.zip",
+        "sha256": "2faedcf37b2cb77b781ecd0ed85f4b6e92efe38b58aafc5312ac56667248bbaf",
+        "bytes": 2005
+      },
+      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#lorebook-editor"
+    },
+    {
+      "manifest": {
+        "schemaVersion": 1,
         "id": "lorebook-keeper",
         "name": "Lorebook Keeper",
         "version": "1.0.5",
@@ -2763,8 +2847,8 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "9a8c9371d2f8799251a28b90cd5fed6b855ad1eeef8123fe77c37b672e574360",
-            "bytes": 2218589
+            "sha256": "7683a52102dd555e01420bcfb384731935edcd0d6be299d509e8bd9427c70d01",
+            "bytes": 2218682
           },
           {
             "path": "client.js",
@@ -2791,8 +2875,8 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/noodle.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/noodle-1.2.24.zip",
-        "sha256": "fc34f67225c422ed754c7cede1a8961854677d730376f0b0b328e6c30006bab3",
-        "bytes": 4579666
+        "sha256": "d706ae80c873cb1ac8b5442742c35fa402c448f36dda92658e784ca1409c59a0",
+        "bytes": 4579759
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/noodle/README.md"
     },
@@ -3125,8 +3209,8 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "a5cb558e8d8fd1e589b8164704dcf662fa9e8bd53b1b8d95611b6c0505dceb66",
-            "bytes": 2170157
+            "sha256": "9c0b208f192156690951298ad74af5675a47b47f574a934f6dd2242fada8dc51",
+            "bytes": 2171104
           },
           {
             "path": "client.js",
@@ -3157,8 +3241,8 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/slurp.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/slurp-1.51.0.zip",
-        "sha256": "c03e5e223aa146cf2f0f9eafe7a748ef0d38bc4b83c2714141cd417fcd022926",
-        "bytes": 4783737
+        "sha256": "b70daa14184b75a17e534c3b0f0383816fee54d158b3e670fea2fa351afd5d34",
+        "bytes": 4784684
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/slurp/README.md"
     },
@@ -3227,8 +3311,8 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "f78bff8fc083df44012bee98b9baabd8c008463b9cb008be5faee78f77faef49",
-            "bytes": 2675294
+            "sha256": "fed39d093ee077595843d8332f8d9a4b9ff931b2731063a4ba1cff276ebee4cc",
+            "bytes": 2675436
           },
           {
             "path": "client.js",
@@ -3260,8 +3344,8 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/slurp2.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/slurp2-0.0.15.zip",
-        "sha256": "5ef12147420fd07cb9aa9285cd7776581c709395a51982c7fc5fc07c73e39411",
-        "bytes": 6104374
+        "sha256": "609a00eb9ad4c5e32953bb161908e906da7c0c146a93a760cb28c2ba9cc63600",
+        "bytes": 6104516
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/slurp2/README.md"
     },
