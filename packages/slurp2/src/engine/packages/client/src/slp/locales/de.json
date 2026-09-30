@@ -2608,5 +2608,12 @@
   "ui.slurp.settings.overview.pause.label": "Alles pausieren",
   "ui.slurp.settings.overview.pause.title": "Slurp ist pausiert",
   "ui.slurp.settings.overview.pause.detail": "Keine KI-Aufrufe, keine Posts, keine Fans und keine Nachrichten. Alles wartet hier, bis du fortsetzt.",
-  "ui.slurp.settings.overview.pause.resume": "Slurp fortsetzen"
+  "ui.slurp.settings.overview.pause.resume": "Slurp fortsetzen",
+  "ui.slurp.events.single.couple_date": "{{who}} hatte ein Date mit dir.",
+  "ui.slurp.events.single.couple_anniversary": "Du hast Jahrestag mit {{who}}.",
+  "ui.slurp.events.single.couple_jealous": "{{who}} ist eifersüchtig.",
+  "ui.slurp.events.single.couple_movingOn": "{{who}} schließt ab.",
+  "ui.slurp.events.single.couple_fizzled": "Der Funke mit {{who}} ist erloschen.",
+  "ui.slurp.events.category.couple": "Ihr zwei",
+  "ui.slurp.events.group.couple": "{{count}} Momente mit deinem Schatz"
 }

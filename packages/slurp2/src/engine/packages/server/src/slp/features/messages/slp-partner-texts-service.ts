@@ -9,7 +9,13 @@ import type { DB } from "../../../db/connection.js";
 import { logger } from "../../../lib/logger.js";
 import { createSlurpMessagesStorage, createSlurpStorage } from "../../data/slp-storage.js";
 import { readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ties-storage.js";
-import { slurpPartnerText, type SlurpPartnerStage } from "../../modules/messages/slp-partner-texts.js";
+import {
+  slurpPartnerNews,
+  slurpPartnerText,
+  type SlurpPartnerStage,
+} from "../../modules/messages/slp-partner-texts.js";
+import { resolveSlurpExplicitLevel } from "../../data/settings/slp-post-guidance-storage.js";
+import { SLP_EXPLICIT_LEVELS } from "../../../../../shared/src/slp/slp-spice.js";
 
 const HOUR = 3_600_000;
 
@@ -37,6 +43,11 @@ export async function textSlurpPartners(db: DB, at = new Date()): Promise<void> 
           const reason = slurpPartnerText({
             pairKey: `${creatorId}|${viewer}`,
             stage: couple.stage as SlurpPartnerStage,
+            news: slurpPartnerNews(couple, at, thread?.lastMessageAt ?? null),
+            heat:
+              SLP_EXPLICIT_LEVELS.indexOf(
+                await resolveSlurpExplicitLevel(db, creatorId).catch(() => "none" as const),
+              ) >= 2,
             // ponytail: the server's clock, not the Creator's own time zone; use her schedule's zone if it drifts.
             hour: at.getHours(),
             hoursSinceLast: thread ? (at.getTime() - Date.parse(thread.lastMessageAt)) / HOUR : null,

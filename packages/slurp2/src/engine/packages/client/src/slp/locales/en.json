@@ -6030,5 +6030,12 @@
   "ui.slurp.settings.overview.pause.label": "Pause all",
   "ui.slurp.settings.overview.pause.title": "Slurp is paused",
   "ui.slurp.settings.overview.pause.detail": "No AI calls, no posts, no fans and no messages. Everything waits here until you resume.",
-  "ui.slurp.settings.overview.pause.resume": "Resume Slurp"
+  "ui.slurp.settings.overview.pause.resume": "Resume Slurp",
+  "ui.slurp.events.single.couple_date": "{{who}} had a date with you.",
+  "ui.slurp.events.single.couple_anniversary": "It is your anniversary with {{who}}.",
+  "ui.slurp.events.single.couple_jealous": "{{who}} is jealous.",
+  "ui.slurp.events.single.couple_movingOn": "{{who}} is moving on.",
+  "ui.slurp.events.single.couple_fizzled": "The spark with {{who}} faded.",
+  "ui.slurp.events.category.couple": "You two",
+  "ui.slurp.events.group.couple": "{{count}} moments with your partner"
 }

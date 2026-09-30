@@ -72,7 +72,12 @@ export const SLURP_BUILTIN_SITUATIONS: readonly SlpSituation[] = [
         channel: "comment",
         on: "her",
         when: { "audience-knows": "yes" },
-        lines: ["lucky man", "does your bf see these? 👀", "tell him to share 😏", "your bf is winning at life"],
+        lines: [
+          "lucky {you-man}",
+          "does your {you-bf} see these? 👀",
+          "tell {you-him} to share 😏",
+          "your {you-bf} is winning at life",
+        ],
       },
       {
         role: "crowd",
@@ -650,7 +655,7 @@ export const SLURP_BUILTIN_DRAMAS: readonly SlpDrama[] = [
   drama({
     id: "she-spoils-you",
     name: "She spoils you",
-    description: "A Creator decides you are her project: coins, rules, and posts about her favourite boy.",
+    description: "A Creator decides you are her project: coins, rules, and posts about her favourite.",
     roles: [{ key: "her", needs: { minSpice: 1 } }, you],
     cooldownDays: 30,
     maxDays: 14,
@@ -687,7 +692,11 @@ export const SLURP_BUILTIN_DRAMAS: readonly SlpDrama[] = [
         minSpice: 2,
         beats: [
           { role: "her", channel: "money", to: "you", amount: { min: 20, max: 40 } },
-          { role: "her", channel: "post", heat: { line: "my favourite boy did exactly as he was told.", for: "you" } },
+          {
+            role: "her",
+            channel: "post",
+            heat: { line: "my favourite {you-boy} did exactly as {you-he} was told.", for: "you" },
+          },
           {
             role: "her",
             channel: "dm",

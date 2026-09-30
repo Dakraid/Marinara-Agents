@@ -38,7 +38,9 @@ export type SlurpEventKind =
   /** An automatic arc was started or suggested for a Creator. */
   | "arc_started"
   /** A drama moved (docs/DRAMA.md): the pack's own line, e.g. "Mia was tagged in a post by Jake". */
-  | "drama";
+  | "drama"
+  /** Something happened between the player and the Creator they are with: a date, an anniversary, a crush that faded. */
+  | "couple";
 
 /**
  * Base weights. The gaps matter more than the numbers: anything at or above `SLURP_EVENT_NOTABLE`
@@ -67,6 +69,8 @@ const BASE: Record<SlurpEventKind, number> = {
   arc_phase: 42,
   // The player switched drama on to see it: worth a line, below money and messages.
   drama: 64,
+  // Her life with the player: above a drama beat, below a message from her.
+  couple: 66,
 };
 
 /**

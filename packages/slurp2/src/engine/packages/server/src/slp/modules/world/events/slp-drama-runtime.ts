@@ -182,6 +182,23 @@ const active = <T extends { endedAt: string | null }>(entry: T) => entry.endedAt
 const pairKey = (kind: string, a: string, b: string) => `${kind}:${[a, b].sort().join("|")}`;
 const iso = (ms: number) => new Date(ms).toISOString();
 
+/**
+ * Words about the player in pack text, from their page's gender: "{you-bf}" is bf, gf or partner,
+ * "{you-man}" man, girl or one, "{you-him}", "{you-he}", "{you-boy}". None: the neutral words.
+ */
+export function slpDramaPlayerWords(player: Pick<SlpDramaCreator, "gender"> | undefined): Record<string, string> {
+  const gender = player?.gender;
+  const pick = (male: string, female: string, other: string) =>
+    gender === "male" ? male : gender === "female" ? female : other;
+  return {
+    "you-bf": pick("bf", "gf", "partner"),
+    "you-man": pick("man", "girl", "one"),
+    "you-boy": pick("boy", "girl", "one"),
+    "you-him": pick("him", "her", "them"),
+    "you-he": pick("he", "she", "they"),
+  };
+}
+
 /** `{role}` in pack text becomes that role's name. Unknown roles stay as they are. */
 export function slpDramaText(text: string, names: Readonly<Record<string, string>>): string {
   return text.replace(/\{([a-z][a-z0-9-]*)\}/gu, (whole, role: string) => names[role] ?? whole);
@@ -341,8 +358,16 @@ export function slpAdvanceDrama(
   const ties: SlpDramaTieEffect[] = [];
   let jobs = [...state.jobs];
   const ended = { ...state.ended };
-  const names = (cast: Readonly<Record<string, string>>) =>
-    Object.fromEntries(Object.entries(cast).flatMap(([key, id]) => (live.get(id) ? [[key, live.get(id)!.name]] : [])));
+  const names = (cast: Readonly<Record<string, string>>) => ({
+    ...Object.fromEntries(
+      Object.entries(cast).flatMap(([key, id]) => (live.get(id) ? [[key, live.get(id)!.name]] : [])),
+    ),
+    ...slpDramaPlayerWords(
+      Object.values(cast)
+        .map((id) => live.get(id))
+        .find((creator) => creator && !creator.automatic),
+    ),
+  });
   const log = (run: SlpDramaRun, code: string, detail?: string): SlpDramaRun => ({
     ...run,
     log: [...run.log, { at: stamp, code, ...(detail ? { detail } : {}) }].slice(-20),

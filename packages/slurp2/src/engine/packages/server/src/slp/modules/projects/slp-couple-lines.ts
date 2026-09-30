@@ -146,6 +146,32 @@ function slurpPlayerLine(
     : `${name} is your ex: you broke up ${days <= 1 ? "just now" : `${days} days ago`}. It still comes up now and then.`;
 }
 
+/**
+ * The player's relationship with a character, for an ordinary Engine chat with that character (the
+ * chat bridge, `slp-chat-context.ts`): one standing fact, in the third person. "" when there is none.
+ */
+export function slurpChatBridgeCoupleLine(
+  couple: SlurpCouple | null,
+  input: { her: string; herGender: string | null | undefined; you: string; at: Date },
+): string {
+  if (!couple) return "";
+  const { her, you } = input;
+  const since = (iso: string | null) => (iso ? ` since ${iso.slice(0, 10)}` : "");
+  const hush = couple.secret ? ", kept secret from her fans" : "";
+  const fight = [...couple.moments].reverse().find((moment) => moment.kind === "fight" || moment.kind === "jealous");
+  if (couple.stage === "sparks")
+    return `${her} and ${you} have a crush on each other on Slurp; nothing is official yet.`;
+  if (couple.stage === "dating") return `${her} and ${you} are dating on Slurp${since(couple.stageAt)}${hush}.`;
+  if (couple.stage === "together" || couple.stage === "rocky")
+    return `${her} is ${you}'s ${slurpPartnerWord(input.herGender)} on Slurp: together${since(couple.togetherAt)}${hush}.${
+      couple.stage === "rocky" ? ` Things are rocky right now${fight?.detail ? ` (${fight.detail})` : ""}.` : ""
+    }`;
+  const days = Math.round((input.at.getTime() - Date.parse(couple.stageAt)) / 86_400_000);
+  return couple.ending === "breakup" && days <= SLURP_EX_DAYS
+    ? `${her} and ${you} broke up on Slurp ${days <= 1 ? "just now" : `${days} days ago`}.`
+    : "";
+}
+
 /** The newest breakup of this Creator in the last `SLURP_EX_DAYS` days, or null. */
 function slurpRecentEx(couples: readonly SlurpCouple[], creatorId: string, at: Date): SlurpCouple | null {
   return (

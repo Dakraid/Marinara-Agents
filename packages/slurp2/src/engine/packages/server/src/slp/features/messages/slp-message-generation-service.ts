@@ -77,7 +77,7 @@ import {
   slurpFanVoiceForPrompt,
   slurpResolveFanType,
 } from "../../../../../shared/src/slp/slp-fan-types.js";
-import { prepareSlurpPostImageContexts, slurpImageCaptioning } from "../../base/media/slp-post-image-context.js";
+import { slurpDmImageContexts } from "./slp-message-image-context.js";
 import { createSlurpMessagesStorage, type SlurpMessage } from "../../data/slp-storage.js";
 import { slurpDmRecentPosts, type SlurpDmPolicy } from "../../modules/messages/slp-messaging.js";
 import { isSlurpCharacterFanAccount } from "../../../../../shared/src/slp/slp-audience-characters.js";
@@ -579,44 +579,12 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
     strikes: input.strikes,
     details,
     settings,
+    partner: viewerPage?.partner,
   });
-  // Pictures reach the model through the one image context setting: the thread's own pictures, and
-  // the Creator's recent posts a fan is likely to mention. The creator is one side of this thread,
-  // so a locked picture in it is theirs to see. Recent posts use stored prompts and saved
-  // descriptions only, so a reply never pays for vision across the whole feed, and a locked post
-  // stays out like its text does. A failed description costs the picture its context, never the reply.
-  const imageContexts = await slurpImageCaptioning(input.db, settings.imageContextConnectionId, input.connection)
-    .then(async (captioning) => {
-      const messageStore = createSlurpMessagesStorage(input.db);
-      const [threadImages, postImages] = await Promise.all([
-        prepareSlurpPostImageContexts({
-          posts: input.history
-            .slice(-HISTORY_TURNS)
-            .filter((message) => message.imageUrl)
-            .map((message) => ({
-              id: message.id,
-              access: "public" as const,
-              imageUrl: message.imageUrl,
-              imagePrompt: typeof message.metadata.imagePrompt === "string" ? message.metadata.imagePrompt : null,
-              metadata: message.metadata,
-              createdAt: message.createdAt,
-            })),
-          mode: settings.imageContextMode,
-          captioning,
-          allowLocked: true,
-          debugMode: input.debugMode,
-          onDescribed: (message, description, source) =>
-            messageStore.setMessageImageDescription(message.id, description, source),
-        }),
-        prepareSlurpPostImageContexts({
-          posts: recentPostRows.filter((post) => post.access !== "draft").slice(0, RECENT_POSTS),
-          mode: "imagePrompt",
-          captioning,
-        }),
-      ]);
-      return new Map([...postImages, ...threadImages]);
-    })
-    .catch(() => new Map<string, string>());
+  const imageContexts = await slurpDmImageContexts(input, settings, recentPostRows, {
+    historyTurns: HISTORY_TURNS,
+    recentPosts: RECENT_POSTS,
+  });
   // Approved notes: the Creator's own, plus anything private to this thread. Another fan's thread
   // is unreachable from here — `slurpContinuityReadable` decides that, not this call site.
   const continuityInstruction = input.threadId

@@ -18,8 +18,11 @@ export function resolveSlurpMediaOffer(input: {
   requestedVisibility?: SlurpMediaVisibility;
   /** A chat picture's heat (slice I, user): for a subscriber a casual one is free and a spicy one is PPV. */
   spicy?: boolean;
+  /** She is with the viewer (Drama, "your relationship"): what she sends her partner is never sold. */
+  partner?: boolean;
 }): SlurpMediaOffer {
   if (input.intent === "hostile") return { visibility: "free", price: 0, reason: "hostile_free" };
+  if (input.partner) return { visibility: "free", price: 0, reason: "relationship_reward" };
   if (input.subscribed && input.spicy !== undefined && input.intent !== "premium")
     return input.spicy
       ? { visibility: "locked", price: slurpPpvPrice(input.configuredPrice), reason: "premium_content" }

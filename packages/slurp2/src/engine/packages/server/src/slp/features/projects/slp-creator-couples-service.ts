@@ -10,6 +10,7 @@ import { logger } from "../../../lib/logger.js";
 import { newId, now } from "../../../utils/id-generator.js";
 import { slpAccounts } from "../../../db/schema/slurp.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
+import { createSlurpEventsStorage } from "../../data/notifications/slp-notification-storage.js";
 import { mutateSlurpCreatorTies, readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ties-storage.js";
 import { emptySlpAccountSettings, normalizeHandle } from "../../modules/records/slp-storage-model.js";
 import { hash } from "../../modules/projects/slp-project.js";
@@ -233,6 +234,56 @@ export async function slurpCoupleDmPage(
     ...(partner ? { partner: true } : {}),
     ...(player ? { us: true, partnerWord: slurpPartnerWord(page.settings.profile?.gender) } : {}),
   };
+}
+
+/** Couple moments the player hears about (the chat and the player's own steering are there already). */
+const SLURP_COUPLE_NEWS = new Set(["date", "anniversary", "jealous", "movingOn"]);
+
+/**
+ * The world clock moved a couple with one of the player's pages: a date, an anniversary, her jealousy,
+ * a crush that faded. The persona behind the page gets one notification per moment (Drama, "your
+ * relationship"). Best-effort: a failed notification never undoes the tick.
+ */
+export async function notifySlurpPlayerCouples(
+  db: DB,
+  before: readonly SlurpCouple[],
+  after: readonly SlurpCouple[],
+): Promise<void> {
+  const storage = createSlurpStorage(db);
+  const events = createSlurpEventsStorage(db);
+  for (const couple of after) {
+    const was = before.find((entry) => entry.id === couple.id);
+    const fresh = couple.moments.filter(
+      (moment) => SLURP_COUPLE_NEWS.has(moment.kind) && !was?.moments.some((old) => old.id === moment.id),
+    );
+    const faded = couple.ending === "fizzled" && was && was.stage !== "split";
+    if (!fresh.length && !faded) continue;
+    const members = await Promise.all(
+      [couple.aId, couple.bId, ...(couple.moreIds ?? [])].map((id) =>
+        storage.getNoodlerAccountById(id).catch(() => null),
+      ),
+    );
+    const her = members.find((account) => account && !(account.kind === "persona" && account.sourceKind === "persona"));
+    for (const page of members) {
+      if (!page || !her || page.kind !== "persona" || page.sourceKind !== "persona" || !page.sourceEntityId) continue;
+      const news = [
+        ...fresh.map((moment) => ({ id: moment.id, kind: moment.kind, detail: moment.detail })),
+        ...(faded ? [{ id: `fizzled:${couple.stageAt}`, kind: "fizzled", detail: "" }] : []),
+      ];
+      for (const item of news)
+        await events
+          .recordAndPrune({
+            recipientPersonaId: page.sourceEntityId,
+            kind: "couple",
+            creatorAccountId: her.id,
+            subjectId: item.kind,
+            actorLabel: her.displayName,
+            note: item.detail || null,
+            operationId: `couple:${couple.id}:${item.id}:${page.id}`,
+          })
+          .catch((error: unknown) => logger.warn(error, "[slurp-couples] Could not notify the player"));
+    }
+  }
 }
 
 /** The couple partner for a partner scene, or null; `inCouple` says whether they are taken at all. */

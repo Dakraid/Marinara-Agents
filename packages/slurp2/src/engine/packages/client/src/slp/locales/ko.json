@@ -3423,5 +3423,12 @@
   "ui.slurp.settings.overview.pause.label": "모두 일시정지",
   "ui.slurp.settings.overview.pause.title": "Slurp가 일시정지되었습니다",
   "ui.slurp.settings.overview.pause.detail": "AI 호출, 게시물, 팬 활동, 메시지가 모두 멈춥니다. 다시 시작할 때까지 모든 것이 그대로 기다립니다.",
-  "ui.slurp.settings.overview.pause.resume": "Slurp 다시 시작"
+  "ui.slurp.settings.overview.pause.resume": "Slurp 다시 시작",
+  "ui.slurp.events.single.couple_date": "{{who}}님과 데이트했습니다.",
+  "ui.slurp.events.single.couple_anniversary": "{{who}}님과의 기념일입니다.",
+  "ui.slurp.events.single.couple_jealous": "{{who}}님이 질투하고 있습니다.",
+  "ui.slurp.events.single.couple_movingOn": "{{who}}님이 마음을 정리하고 있습니다.",
+  "ui.slurp.events.single.couple_fizzled": "{{who}}님과의 설렘이 식었습니다.",
+  "ui.slurp.events.category.couple": "우리 둘",
+  "ui.slurp.events.group.couple": "연인과의 순간 {{count}}개"
 }

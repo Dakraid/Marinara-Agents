@@ -17,6 +17,13 @@ import {
   slurpPartnerWord,
   slurpRelationshipLine,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-lines.ts";
+import { slurpPartnerNews } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-partner-texts.ts";
+import { resolveSlurpMediaOffer } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/economy/slp-media-offer.ts";
+import { slurpChatBridgeCoupleLine } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-lines.ts";
+import {
+  slpDramaPlayerWords,
+  slpDramaText,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-drama-runtime.ts";
 import { slurpDmRoleHeader } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-dm-roles.ts";
 import { readSlurpDmUs } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-dm-response.ts";
 import {
@@ -289,6 +296,92 @@ async function main() {
       readSlurpDmUs({ step: "marry" }, (value) => value),
       undefined,
     );
+  }
+
+  // ── Her texts, her pictures, the chat bridge and the packs know who the player is to her ──
+  {
+    const mira = creator("mira", "Romantic, loves the gym.");
+    const you = creator("you", "", { automatic: false, gender: "female" });
+    const [couple] = slurpSetUpCouple([], mira, you, { at: new Date(T0), id: "k" }) as SlurpCouple[];
+    const dated: SlurpCouple = {
+      ...couple!,
+      moments: [
+        ...couple!.moments,
+        { id: "d1", kind: "date", at: new Date(T0 + DAY).toISOString(), detail: "the night market" },
+      ],
+    };
+    const invite = slurpPartnerNews(dated, new Date(T0 + DAY + 2 * 3_600_000), new Date(T0).toISOString());
+    assert.match(
+      invite ?? "",
+      /date today \(the night market\)/u,
+      "a date with the player: she asks them out on the day",
+    );
+    const recap = slurpPartnerNews(
+      dated,
+      new Date(T0 + DAY + 20 * 3_600_000),
+      new Date(T0 + DAY + 3 * 3_600_000).toISOString(),
+    );
+    assert.match(recap ?? "", /last night/u, "and texts about it the morning after");
+    assert.equal(
+      slurpPartnerNews(dated, new Date(T0 + DAY + 20 * 3_600_000), new Date(T0 + DAY + 13 * 3_600_000).toISOString()),
+      null,
+      "news the two already talked about is not news",
+    );
+    assert.equal(
+      slurpPartnerText({
+        pairKey: "p",
+        stage: "together",
+        hour: 12,
+        hoursSinceLast: 0,
+        busy: false,
+        slot: 1,
+        news: "N",
+      }),
+      "N",
+    );
+    assert.equal(
+      slurpPartnerText({
+        pairKey: "p",
+        stage: "together",
+        hour: 12,
+        hoursSinceLast: 0,
+        busy: true,
+        slot: 1,
+        news: "N",
+      }),
+      null,
+    );
+
+    assert.deepEqual(
+      resolveSlurpMediaOffer({
+        intent: "friendly",
+        rapportTier: "stranger",
+        subscribed: false,
+        configuredPrice: 20,
+        spicy: true,
+        partner: true,
+      }),
+      { visibility: "free", price: 0, reason: "relationship_reward" },
+      "what she sends her partner is never sold",
+    );
+    const rocky = scoreSlurpRapport(emptySlurpRapportFacts(), undefined, { partner: "rocky" });
+    const close = scoreSlurpRapport(emptySlurpRapportFacts(), undefined, { partner: "partner" });
+    assert.ok(rocky.score < close.score && rocky.score > 0, "after a fight still close, less close");
+    assert.match(describeSlurpRapport(rocky, "Sam"), /your partner/u);
+
+    const bridge = slurpChatBridgeCoupleLine(
+      { ...couple!, togetherAt: "2026-10-01T00:00:00.000Z" },
+      { her: "Mira", herGender: "female", you: "Sam", at: new Date(T0) },
+    );
+    assert.equal(bridge, "Mira is Sam's girlfriend on Slurp: together since 2026-10-01.");
+    assert.equal(slurpChatBridgeCoupleLine(null, { her: "Mira", herGender: null, you: "Sam", at: new Date(T0) }), "");
+
+    const words = slpDramaPlayerWords({ gender: "female" });
+    assert.equal(
+      slpDramaText("does your {you-bf} see these? tell {you-him}", words),
+      "does your gf see these? tell her",
+    );
+    assert.equal(slpDramaText("lucky {you-man}", slpDramaPlayerWords(undefined)), "lucky one");
   }
 
   // ── Pause all: not one model or image call ──

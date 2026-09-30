@@ -412,7 +412,9 @@ function SlurpNotificationsView({
         ? `ui.slurp.events.single.audience_arc_${event.subjectId}`
         : kind === "subscribed" && event.subjectId === "renewed"
           ? "ui.slurp.events.single.subscribed_renewed"
-          : `ui.slurp.events.single.${kind}`;
+          : kind === "couple"
+            ? `ui.slurp.events.single.couple_${event.subjectId ?? "date"}`
+            : `ui.slurp.events.single.${kind}`;
     // A drama's line is the pack's own words, already about someone: shown as it is.
     if (kind === "drama" && event.note) return event.note;
     const line = localizeUi(arcKey, {
@@ -461,6 +463,7 @@ function SlurpNotificationsView({
       return { icon: SlpHeartGlyph, tone: pink };
     if (kind === "arc_phase" || kind === "arc_complete" || kind === "arc_started") return { icon: Star, tone: violet };
     if (kind === "drama") return { icon: Clapperboard, tone: violet };
+    if (kind === "couple") return { icon: SlpHeartGlyph, tone: pink };
     if (kind === "tip") return { icon: Coins, tone: warm };
     if (kind === "unlock" || kind === "ppv_unlock") return { icon: SlpLockGlyph, tone: warm };
     if (kind === "subscribed") return { icon: Crown, tone: pink };

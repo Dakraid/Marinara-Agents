@@ -63,7 +63,11 @@ import {
   type SlurpCouple,
 } from "../../modules/projects/slp-creator-couples.js";
 import { slurpCoupleFit } from "../../modules/projects/slp-couple-fit.js";
-import { closeSlurpCouplePages, slurpCouplesWorldInput } from "./slp-creator-couples-service.js";
+import {
+  closeSlurpCouplePages,
+  notifySlurpPlayerCouples,
+  slurpCouplesWorldInput,
+} from "./slp-creator-couples-service.js";
 import { slurpIsCouplePage } from "../../modules/projects/slp-creator-couples.js";
 import type { SlurpBeat } from "../../modules/feed/slp-post-beat.js";
 import type { SlurpContentIntent } from "../../../../../shared/src/slp/slp-content-axes.js";
@@ -160,6 +164,8 @@ export async function advanceSlurpCreatorTies(db: DB, at = new Date()): Promise<
   });
   // A breakup closes a shared page: nobody is charged again for a page that stopped.
   if (after) await closeSlurpCouplePages(db, before.couples, after.couples);
+  // Dates, anniversaries and her jealousy with the player's own page reach the player's inbox.
+  if (after) await notifySlurpPlayerCouples(db, before.couples, after.couples);
 }
 
 /** What the couple rules need from the ties: open rivalries, and who made a collab with someone lately. */

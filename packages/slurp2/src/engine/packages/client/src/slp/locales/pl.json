@@ -2642,5 +2642,12 @@
   "ui.slurp.settings.overview.pause.label": "Wstrzymaj wszystko",
   "ui.slurp.settings.overview.pause.title": "Slurp jest wstrzymany",
   "ui.slurp.settings.overview.pause.detail": "Żadnych wywołań AI, postów, fanów ani wiadomości. Wszystko czeka tutaj, aż wznowisz.",
-  "ui.slurp.settings.overview.pause.resume": "Wznów Slurp"
+  "ui.slurp.settings.overview.pause.resume": "Wznów Slurp",
+  "ui.slurp.events.single.couple_date": "Randka z {{who}}.",
+  "ui.slurp.events.single.couple_anniversary": "Masz rocznicę z {{who}}.",
+  "ui.slurp.events.single.couple_jealous": "{{who}} czuje zazdrość.",
+  "ui.slurp.events.single.couple_movingOn": "{{who}} zamyka ten rozdział.",
+  "ui.slurp.events.single.couple_fizzled": "Iskra z {{who}} zgasła.",
+  "ui.slurp.events.category.couple": "Wy dwoje",
+  "ui.slurp.events.group.couple": "{{count}} chwil z twoją drugą połówką"
 }

@@ -14,7 +14,8 @@ export type SlurpEventKind =
   | "arc_phase"
   | "arc_complete"
   | "arc_started"
-  | "drama";
+  | "drama"
+  | "couple";
 export type SlurpEventItem = {
   id: string;
   kind: SlurpEventKind;
