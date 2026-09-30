@@ -158,13 +158,13 @@ const common = {
   builtin: z.boolean().default(false),
 };
 
-/** Roles every beat, choice and outcome names must exist (the player and the crowd always do). */
+/** Roles every beat, choice and outcome names must exist (the crowd and the fans always do). */
 function checkRoles(
   entry: { roles: { key: string }[] },
   named: (string | undefined)[],
   context: z.RefinementCtx,
 ): void {
-  const known = new Set([...entry.roles.map((role) => role.key), "crowd", "fans", "player"]);
+  const known = new Set([...entry.roles.map((role) => role.key), "crowd", "fans"]);
   const keys = entry.roles.map((role) => role.key);
   if (new Set(keys).size !== keys.length) context.addIssue({ code: "custom", message: "role keys must be unique" });
   for (const name of named)

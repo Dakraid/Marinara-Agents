@@ -1,0 +1,293 @@
+/**
+ * Drama runtime (`docs/DRAMA.md`): late casting, the level's caps, choices (player, fans, default on
+ * silence), outcomes, the exit, and a 60-day world where Creators join and leave. Every drama ends,
+ * nobody is in more than two, nothing is queued for someone who left, and the same seed gives the
+ * same world.
+ */
+import assert from "node:assert/strict";
+import { slpDramaSchema, slpSituationSchema } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-drama.ts";
+import {
+  slpAdvanceDrama,
+  slpAnswerDramaChoice,
+  slpDramaCast,
+  slpDramaText,
+  slpDueDramaJobs,
+  SLP_DRAMA_LEVEL_RULES,
+  SLP_EMPTY_DRAMA_STATE,
+  type SlpDramaCreator,
+  type SlpDramaInput,
+  type SlpDramaState,
+  type SlpDramaWorld,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-drama-runtime.ts";
+import { partner, rivals } from "./slurp2-drama-fixtures";
+
+const HOUR = 3_600_000;
+const T0 = Date.parse("2026-10-01T00:00:00.000Z");
+
+const creator = (id: string, tags: string[], extra: Partial<SlpDramaCreator> = {}): SlpDramaCreator => ({
+  id,
+  name: id[0]!.toUpperCase() + id.slice(1),
+  automatic: true,
+  gender: "female",
+  spice: 3,
+  tags,
+  joinedAt: new Date(T0 - 60 * 24 * HOUR).toISOString(),
+  followers: 1000,
+  ...extra,
+});
+const people = [
+  creator("mia", ["fitness"]),
+  creator("lena", ["fitness"]),
+  creator("nora", ["fitness"]),
+  creator("zoe", ["art"]),
+  creator("ivy", ["art"]),
+  creator("jake", ["fitness"], { gender: "male", joinedAt: new Date(T0 - 2 * 24 * HOUR).toISOString() }),
+  creator("tom", ["gaming"], { gender: "male" }),
+  creator("me", [], { automatic: false, gender: "male" }),
+];
+const world = (creators = people): SlpDramaWorld => ({
+  creators,
+  relations: new Map(
+    creators.some((entry) => entry.id === "mia") ? [["mia", [{ playerId: "me", relation: "partner" as const }]]] : [],
+  ),
+  ties: new Set(["couple:me|mia"]),
+});
+
+const situation = slpSituationSchema.parse(partner);
+const rivalry = slpDramaSchema.parse({ ...rivals, cooldownDays: 3 });
+const open = slpDramaSchema.parse({
+  id: "test-open",
+  name: "Open relationship",
+  requires: { situation: "test-partner" },
+  cooldownDays: 5,
+  roles: [
+    { key: "her", needs: { relationToPlayer: ["partner"] } },
+    { key: "you", player: true },
+    { key: "him", needs: { gender: "male", minSpice: 2 }, prefer: "newcomer" },
+  ],
+  maxDays: 20,
+  stages: [
+    {
+      key: "noticed",
+      days: [1, 2],
+      beats: [
+        { role: "him", channel: "comment", on: "her", lines: ["{him} was here"] },
+        { role: "her", channel: "dm", to: "you", seed: "{him} keeps commenting" },
+      ],
+    },
+    {
+      key: "ask",
+      days: [1, 2],
+      choice: {
+        asks: "player",
+        question: "{him} wants to shoot with me. ok?",
+        options: [
+          { label: "ok", next: "shoot" },
+          { label: "no", next: "end" },
+        ],
+        default: 0,
+        timeoutDays: 2,
+      },
+    },
+    {
+      key: "shoot",
+      days: [2, 3],
+      minSpice: 3,
+      beats: [
+        { role: "her", channel: "post", heat: { line: "shot at {him}'s place", with: "him", shotBy: "him" } },
+        { role: "crowd", channel: "comment", on: "her", lines: ["does your bf know?"] },
+        { role: "him", channel: "money", to: "her", amount: { min: 50, max: 100 } },
+      ],
+      outcomes: [{ kind: "tie", tie: "friend", between: ["her", "him"], level: 2 }],
+    },
+  ],
+  exit: { role: "her", channel: "dm", to: "you", seed: "home again" },
+});
+
+let counter = 0;
+const input = (at: number, overrides: Partial<SlpDramaInput> = {}): SlpDramaInput => ({
+  at: new Date(at),
+  level: "soap",
+  situations: [situation],
+  dramas: [rivalry, open],
+  dials: {},
+  world: world(),
+  activity: 1,
+  newId: () => `id-${++counter}`,
+  ...overrides,
+});
+const run = (
+  state: SlpDramaState,
+  hours: number,
+  from: number,
+  overrides: (at: number) => Partial<SlpDramaInput> = () => ({}),
+) => {
+  let current = state;
+  const ties: ReturnType<typeof slpAdvanceDrama>["ties"] = [];
+  for (let step = 0; step < hours; step += 1) {
+    const result = slpAdvanceDrama(current, input(from + step * HOUR, overrides(from + step * HOUR)));
+    current = result.state;
+    ties.push(...result.ties);
+  }
+  return { state: current, ties };
+};
+
+async function main() {
+  assert.equal(slpDramaText("{him} and {her}, {nobody}", { him: "Jake", her: "Mia" }), "Jake and Mia, {nobody}");
+
+  // Casting: relations bring the player's page along; newcomers first; a drama with no fit waits.
+  const cast = slpDramaCast(
+    open.roles,
+    ["her", "him"],
+    {},
+    { world: world(), busy: new Set(), seed: "s", at: new Date(T0) },
+  );
+  assert.deepEqual(cast, { her: "mia", you: "me", him: "jake" });
+  assert.equal(
+    slpDramaCast(
+      open.roles,
+      ["her"],
+      {},
+      { world: world(people.filter((entry) => entry.id !== "mia")), busy: new Set(), seed: "s", at: new Date(T0) },
+    ),
+    null,
+  );
+
+  // Nothing switched on: nothing runs.
+  counter = 0;
+  const quiet = run(SLP_EMPTY_DRAMA_STATE, 48, T0, () => ({ situations: [], dramas: [] })).state;
+  assert.deepEqual([quiet.runs.length, quiet.situations.length, quiet.jobs.length], [0, 0, 0]);
+
+  // The situation stands at once and draws at most `perDay` beats a day, only those its dials allow.
+  counter = 0;
+  const standing = run(SLP_EMPTY_DRAMA_STATE, 72, T0, () => ({
+    dramas: [],
+    dials: { "test-partner": { "audience-knows": "no" } },
+  })).state;
+  assert.equal(standing.situations.filter((entry) => entry.endedAt === null).length, 1);
+  assert.deepEqual(standing.situations[0]!.cast, { her: "mia", you: "me" });
+  const deckJobs = standing.jobs;
+  assert.ok(
+    deckJobs.length >= 1 && deckJobs.length <= 3 * situation.perDay,
+    `deck draws stay within perDay (${deckJobs.length})`,
+  );
+  assert.ok(
+    deckJobs.every((entry) => entry.channel === "dm" && entry.toId === "me"),
+    "audience-knows=no keeps the crowd quiet",
+  );
+
+  // The open drama, answered "no" by the player: it ends after the question, no shoot, no outcome.
+  const toAsk = (overrides: (at: number) => Partial<SlpDramaInput> = () => ({ dramas: [open] })) => {
+    counter = 0;
+    let state = SLP_EMPTY_DRAMA_STATE;
+    for (let hour = 0; hour < 24 * 20; hour += 1) {
+      state = slpAdvanceDrama(state, input(T0 + hour * HOUR, overrides(T0 + hour * HOUR))).state;
+      const asking = state.jobs.find((entry) => entry.channel === "choice");
+      if (asking) return { state, hour, asking };
+    }
+    throw new Error("the open drama never asked");
+  };
+  const asked = toAsk();
+  assert.equal(asked.asking.toId, "me");
+  assert.equal(slpDramaText(asked.asking.choice!.question, asked.asking.names), "Jake wants to shoot with me. ok?");
+  const runId = asked.asking.runId;
+  const said = slpAnswerDramaChoice(asked.state, runId, 1, new Date(T0 + asked.hour * HOUR))!;
+  assert.ok(said);
+  assert.equal(slpAnswerDramaChoice(said, runId, 0, new Date(T0)), null, "a settled choice stays settled");
+  const afterNo = run(said, 24 * 4, T0 + (asked.hour + 1) * HOUR, () => ({ dramas: [open] }));
+  const ended = afterNo.state.runs.find((entry) => entry.id === runId)!;
+  assert.equal(ended.ending, "done");
+  assert.ok(!ended.log.some((entry) => entry.code === "stage" && entry.detail === "shoot"));
+  assert.equal(afterNo.ties.length, 0);
+  assert.ok(
+    afterNo.state.jobs.some((entry) => entry.runId === runId && entry.channel === "dm" && entry.seed === "home again"),
+    "the exit",
+  );
+
+  // Silence means the pack's default ("ok"): the shoot runs, with its post line, the crowd, coins and the tie.
+  const silent = run(asked.state, 24 * 8, T0 + (asked.hour + 1) * HOUR, () => ({ dramas: [open] }));
+  const shot = silent.state.runs.find((entry) => entry.id === runId)!;
+  assert.ok(shot.log.some((entry) => entry.code === "choice" && entry.detail === "ok"));
+  assert.ok(shot.log.some((entry) => entry.code === "stage" && entry.detail === "shoot"));
+  const post = silent.state.jobs.find((entry) => entry.runId === runId && entry.channel === "post")!;
+  assert.deepEqual([post.actorId, post.heat?.withId, post.heat?.shotById], ["mia", "jake", "jake"]);
+  assert.ok(
+    silent.state.jobs.some((entry) => entry.runId === runId && entry.channel === "comment" && entry.actorId === null),
+  );
+  const coins = silent.state.jobs.find((entry) => entry.runId === runId && entry.channel === "money")!;
+  assert.ok(coins.amount! >= 50 && coins.amount! <= 100);
+  assert.deepEqual(
+    silent.ties.map((entry) => [entry.outcome.kind, ...entry.ids]),
+    [["tie", "mia", "jake"]],
+  );
+
+  // Too hot for her: the shoot stage is skipped, never forced.
+  const mild = people.map((entry) => (entry.id === "mia" ? { ...entry, spice: 1 } : entry));
+  const cooler = run(asked.state, 24 * 8, T0 + (asked.hour + 1) * HOUR, () => ({ dramas: [open], world: world(mild) }));
+  const skipped = cooler.state.runs.find((entry) => entry.id === runId)!;
+  assert.ok(skipped.log.some((entry) => entry.code === "skipped" && entry.detail === "shoot"));
+  assert.ok(!cooler.state.jobs.some((entry) => entry.runId === runId && entry.channel === "post"));
+
+  // The lead leaves: the drama ends ("left"); nothing more is queued for her.
+  const gone = run(asked.state, 24, T0 + (asked.hour + 1) * HOUR, () => ({
+    dramas: [open],
+    world: world(people.filter((entry) => entry.id !== "mia")),
+  }));
+  assert.equal(gone.state.runs.find((entry) => entry.id === runId)!.ending, "left");
+  assert.equal(gone.state.situations.find((entry) => entry.situationId === "test-partner")!.ending, "left");
+
+  // 60 days, Creators joining and leaving at random, levels switching: every rule holds.
+  const simulate = () => {
+    counter = 0;
+    let state = SLP_EMPTY_DRAMA_STATE;
+    const levels = ["calm", "lively", "soap"] as const;
+    for (let hour = 0; hour < 24 * 60; hour += 1) {
+      const at = T0 + hour * HOUR;
+      const creators = people.filter(
+        (entry, index) => !((Math.floor(hour / 30) + index * 7) % 11 < 2 && entry.id !== "me"),
+      );
+      const level = levels[Math.floor(hour / (24 * 20))]!;
+      const result = slpAdvanceDrama(state, input(at, { level, world: world(creators) }));
+      state = result.state;
+      const liveIds = new Set(creators.map((entry) => entry.id));
+      const running = state.runs.filter((entry) => entry.endedAt === null);
+      assert.ok(running.length <= SLP_DRAMA_LEVEL_RULES.soap.running);
+      for (const entry of running) {
+        const drama = [rivalry, open].find((item) => item.id === entry.dramaId)!;
+        assert.ok(at - Date.parse(entry.startedAt) <= drama.maxDays * 24 * HOUR, "every drama ends by maxDays");
+        assert.ok(liveIds.has(entry.cast[drama.roles[0]!.key]!), "a drama whose lead left is over");
+      }
+      const load = new Map<string, number>();
+      for (const entry of running) for (const id of Object.values(entry.cast)) load.set(id, (load.get(id) ?? 0) + 1);
+      for (const [id, count] of load) assert.ok(id === "me" || count <= 2, `${id} is in ${count} dramas`);
+      for (const due of slpDueDramaJobs(state, new Date(at)))
+        if (due.status === "queued" && Date.parse(due.dueAt) === at)
+          assert.ok(!due.actorId || liveIds.has(due.actorId));
+      for (const entry of state.jobs)
+        if (entry.channel === "post") assert.ok(entry.heat?.line, "a post job carries its line");
+    }
+    return state;
+  };
+  const world60 = simulate();
+  assert.ok(world60.runs.length >= 3, `dramas happen over 60 days (${world60.runs.length})`);
+  assert.ok(
+    world60.runs.some((entry) => entry.ending !== null),
+    "and end",
+  );
+  assert.deepEqual(simulate(), world60, "same seed, same world");
+
+  // Calm: never more than one at once.
+  counter = 0;
+  let calm = SLP_EMPTY_DRAMA_STATE;
+  for (let hour = 0; hour < 24 * 30; hour += 1) {
+    calm = slpAdvanceDrama(calm, input(T0 + hour * HOUR, { level: "calm" })).state;
+    assert.ok(calm.runs.filter((entry) => entry.endedAt === null).length <= 1);
+  }
+
+  console.log("slurp2 drama runtime regression passed");
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
