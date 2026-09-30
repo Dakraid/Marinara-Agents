@@ -352,4 +352,3 @@ Differences from the design above:
   People map.
 - **Not built yet:** named fans, leaks, deleted posts, the chat-context line, places, live, and a
   pack author's own dial labels (dials show their keys as words).
-
