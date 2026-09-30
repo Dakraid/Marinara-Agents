@@ -2547,6 +2547,48 @@
     {
       "manifest": {
         "schemaVersion": 1,
+        "id": "lorebook-editor",
+        "name": "Lorebook Editor",
+        "version": "1.0.0",
+        "description": "Rewrites entries in a target lorebook from a user directive while preserving continuity with referenced character cards. Open a lorebook and choose Run Lorebook Editor to propose changes for approval.",
+        "engine": {
+          "min": "2.3.0",
+          "maxExclusive": "4.0.0"
+        },
+        "kind": [
+          "agent"
+        ],
+        "entrypoints": {
+          "agents": "agents.json"
+        },
+        "files": [
+          {
+            "path": "agents.json",
+            "sha256": "f5c9524f3050b8c5ff0c4cbbf31550105a94955fd1b56fbab32061561364039a",
+            "bytes": 3267
+          }
+        ],
+        "permissions": [
+          "agent-runtime",
+          "chat-read",
+          "prompt-context",
+          "storage",
+          "ui"
+        ],
+        "restartRequired": false
+      },
+      "category": "misc",
+      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/lorebook-editor.png",
+      "artifact": {
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/lorebook-editor-1.0.0.zip",
+        "sha256": "2faedcf37b2cb77b781ecd0ed85f4b6e92efe38b58aafc5312ac56667248bbaf",
+        "bytes": 2005
+      },
+      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#lorebook-editor"
+    },
+    {
+      "manifest": {
+        "schemaVersion": 1,
         "id": "lorebook-keeper",
         "name": "Lorebook Keeper",
         "version": "1.0.5",

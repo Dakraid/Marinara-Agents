@@ -27,6 +27,7 @@ const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const documentationAnchors = {
   "card-editor": "card-editor",
   continuity: "continuity-checker",
+  "lorebook-editor": "lorebook-editor",
   director: "narrative-director",
   expression: "expression-engine",
   quest: "quest-tracker",
