@@ -82,7 +82,7 @@
         },
         "id": "modern-life-sim",
         "name": "Modern Life Sim",
-        "version": "0.2.5",
+        "version": "0.3.0",
         "description": "A modern life sim in its own Home tab: a town on a clock, a job, rent and needs, and a cast drawn from your character cards whose relationships grow scene by scene, with a visual-novel narrator for the scenes that matter. Install it, restart Marinara Engine when prompted, then open Home → Life Sim.",
         "engine": {
           "min": "2.4.4",
@@ -116,13 +116,13 @@
           },
           {
             "path": "client.js",
-            "sha256": "048550bb8be996653d59150562a399e0c5dc19b14962a6fcc2008c81590f4049",
-            "bytes": 853280
+            "sha256": "a63b73c2b072337501b661c39d047c202260ab284f742b618e66b62c435dea72",
+            "bytes": 958115
           },
           {
             "path": "server.mjs",
-            "sha256": "a37acf0ea66265adc84f9cbbb7652c8204ebf9d917f72a2a2b96a2d50dc0223b",
-            "bytes": 886878
+            "sha256": "43f26474f274468f25b41bab7691600716b8c75e7244f3a52cf43a444ffdd091",
+            "bytes": 1269002
           },
           {
             "path": "life-sim-icon.png",
@@ -141,9 +141,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/modern-life-sim.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/modern-life-sim-0.2.5.zip",
-        "sha256": "f1684cb1c5c279635bb5d59d8ba70dd41502d8c583f00b031b97ea315feb0bf4",
-        "bytes": 1750208
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/modern-life-sim-0.3.0.zip",
+        "sha256": "f83d12f988b9ffd8833212968b9647f823a48b9f57f8ff6cce5467393389bb8a",
+        "bytes": 2237168
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/staging/packages/modern-life-sim/README.md"
     },

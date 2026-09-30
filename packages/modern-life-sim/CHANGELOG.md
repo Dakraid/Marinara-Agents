@@ -1,3 +1,13 @@
+## 0.3.0 — 2026-09-30
+- Cooking and food: a kitchen at home, twelve recipes, a Cooking skill, and dinner on a date at your place.
+- A home of your own: Hillcrest on the hill, buying or a mortgage, furniture for each home, and people noticing where you live.
+- People drop by, and you throw parties at home, lived room by room; friends throw theirs, and birthdays are parties now.
+- Friends and family can live with you, as many as your home has rooms for.
+- Anyone in the cast can be your family, partner, ex or rival from day one.
+- Scenes do what's said: favours where they're told, money asked in your own words, outings that follow the talk, a memory for everyone there.
+- Clearer Special Actions, work from home, half the practice for skills, and always a way on when the model can't answer.
+- Many fixes, and more in the optional Adult Module.
+
 ## 0.2.5 — 2026-09-29
 - Contacts no longer freezes: opening it doesn't load your whole life again, and each part of someone's sheet is drawn on its own, so one that can't be shown is just missing and the rest is there.
 - If a whole screen can't be shown, it says so, with a button to go back to the map, instead of leaving the game stuck.
