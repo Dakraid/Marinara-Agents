@@ -124,6 +124,10 @@ export const OFFICIAL_PACKAGE_GUIDANCE = Object.freeze({
     modes: ["roleplay"],
     activation: "Add the Agent in Chat Settings → Agents → Misc Agents for Roleplay mode.",
   },
+  "lorebook-editor": {
+    modes: ["roleplay"],
+    activation: "Open a lorebook and choose Run Lorebook Editor to propose changes for approval.",
+  },
   "lorebook-keeper": {
     modes: ["roleplay", "game"],
     activation: "Add the Agent in Chat Settings → Agents → Misc Agents/Lorebook Keeper for Roleplay and Game modes.",

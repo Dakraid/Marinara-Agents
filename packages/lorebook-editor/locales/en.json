@@ -1,0 +1,17 @@
+{
+  "$schema": "../../../schemas/package-localization.schema.json",
+  "_meta": {
+    "locale": "en",
+    "direction": "ltr"
+  },
+  "package": {
+    "name": "Lorebook Editor",
+    "description": "Rewrites entries in a target lorebook from a user directive while preserving continuity with referenced character cards. Open a lorebook and choose Run Lorebook Editor to propose changes for approval."
+  },
+  "agents": {
+    "lorebook-editor": {
+      "name": "Lorebook Editor",
+      "description": "Rewrites entries in a target lorebook from a user directive while preserving continuity with referenced character cards."
+    }
+  }
+}
