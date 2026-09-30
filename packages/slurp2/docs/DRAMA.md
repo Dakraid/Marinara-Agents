@@ -173,6 +173,24 @@ often a post carries a line. At most one main and one side drama per Creator.
 - Feed use: cameos and tags in beats, friends' comments first, People block on the Page. Family
   ties are out of scope; when added, they never get romantic or explicit beats at any spice.
 
+## Transparency: the People map
+
+Today relations are spread over the ties document, per-Creator arcs, steering and continuity, and
+nothing says why a tie exists. The ties document already is an edge list; this makes it visible.
+
+- **Edge record:** type, level, temperature, origin (`card | world | player | drama | chat`), since,
+  and a short **history with reasons** ("started: Lena's card says 'best friend'", "tense: Rivals,
+  stage one-up", "ended: Nora left Slurp"), capped per edge.
+- **Stir → People map.** Phone: an **ego map** (one Creator in the center, her ties around her; line
+  color = type, width = level, tint = temperature; tap a person to re-center) and a **list view**
+  with the same data. Wide screens: the whole map. Plain SVG with a radial layout, no new dependency.
+- **Tap an edge:** history, the running drama, and edit, lock, end.
+- **"Why" on content:** a post, DM or comment made by a drama carries its drama and stage, shown as
+  a small tag in post details ("Rivals · one-up") that opens the drama in Stir.
+- **Creator Page People block:** the public view of the same ties.
+
+Built in phase 2, with the ties, so every later phase can be checked by looking at the map.
+
 ## Built-in content (0.3.8)
 
 All off by default, enabled per pack in Backstage → Drama.
@@ -226,7 +244,7 @@ Pack text is English at first; UI strings ship in en, de, ko and pl.
 ## Phases inside 0.3.8
 
 1. Pack format + importer rules + simulation harness (pure).
-2. Ties: new types, levels, temperature, from cards, People block.
+2. Ties: new types, levels, temperature, from cards, edge history, People map, People block.
 3. Persona as a tie side + relation to you + choice DMs (fix the audit holes).
 4. Drama runtime: casting, stages, channels, drama level, join/leave.
 5. Built-in situation and three dramas; Backstage and Stir screens; locales.
