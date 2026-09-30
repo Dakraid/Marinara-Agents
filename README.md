@@ -4,7 +4,7 @@ Official downloadable agents and capability packages for [Marinara Engine](https
 
 Marinara Engine starts lightweight: a fresh installation contains no optional agents. Open **Agents → Download Agents** on desktop or mobile to browse this catalog, read what each package does, and install only the features you want. Installed packages appear in the normal Agents panel and the chat modes they support. You can update or uninstall them from the same catalog. Restart Marinara Engine when the installer asks you to do so.
 
-Across its Engine compatibility lanes, the stable catalog currently contains **37 first-party packages**: 6 Writer Agents, 11 Tracker Agents, and 20 Misc Agents. Staging-only previews below are additional and are not included in these stable counts. Most packages support **Marinara Engine v2.3.0+**; World Maps and Storyboard require **v2.4.2**; Inventory Tracker and Haptic Feedback require **v2.4.3**; Beholder, Noodle, Memory Nag, and Gacha Forge require **v2.4.4**; Long-Term Memory requires **v2.4.1**; and Slurp requires **v2.4.6**. Every package accepts compatible Engine v2 and v3 releases below **v4.0.0**. Each Engine release sees only the packages compatible with its major version. Users upgrading from an older Engine keep every feature that was available before the package split. Migration downloads matching packages once and preserves existing chat selections, agent settings, runtime data, and history.
+Across its Engine compatibility lanes, the stable catalog currently contains **38 first-party packages**: 7 Writer Agents, 11 Tracker Agents, and 20 Misc Agents. Staging-only previews below are additional and are not included in these stable counts. Most packages support **Marinara Engine v2.3.0+**; World Maps and Storyboard require **v2.4.2**; Inventory Tracker and Haptic Feedback require **v2.4.3**; Beholder, Noodle, Memory Nag, and Gacha Forge require **v2.4.4**; Long-Term Memory requires **v2.4.1**; and Slurp requires **v2.4.6**. Every package accepts compatible Engine v2 and v3 releases below **v4.0.0**. Each Engine release sees only the packages compatible with its major version. Users upgrading from an older Engine keep every feature that was available before the package split. Migration downloads matching packages once and preserves existing chat selections, agent settings, runtime data, and history.
 
 ## Official catalog
 
@@ -12,6 +12,7 @@ Across its Engine compatibility lanes, the stable catalog currently contains **3
 
 | Agent | Package | What it does |
 | --- | --- | --- |
+| Card Editor | [`card-editor`](packages/card-editor/manifest.json) | Rewrites an existing character card from a directive while preserving its voice and aligning it with referenced lore. |
 | Card Evolution Auditor | [`card-evolution-auditor`](packages/card-evolution-auditor/manifest.json) | Audits durable roleplay changes and proposes precise character-card edits for approval. |
 | Continuity Checker | [`continuity`](packages/continuity/manifest.json) | Fixes concrete spatial, timeline, and physical logic errors without changing the story. |
 | Knowledge Retrieval | [`knowledge-retrieval`](packages/knowledge-retrieval/manifest.json) | Finds relevant lorebook information, summarizes it, and injects it into the prompt. |

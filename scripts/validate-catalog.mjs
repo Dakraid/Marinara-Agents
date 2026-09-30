@@ -331,6 +331,7 @@ if (aboutMeKeeperMarkers.some((marker) => readme.includes(marker))) {
 const ids = new Set();
 const agentDefinitionIds = new Set();
 const expectedCategories = new Map([
+  ["card-editor", "writer"],
   ["card-evolution-auditor", "writer"],
   ["hierarchical-maps", "tracker"],
   // A ruleset is neither a writer nor a tracker; it is data the Game Mode setup
@@ -913,8 +914,8 @@ const agentOnly = publishedCatalog.packages.filter(
   (entry) => !isRulesetPackage(entry.manifest) && !entry.manifest.entrypoints.server,
 ).length;
 const features = publishedCatalog.packages.length - agentOnly - rulesets;
-if (publishedCatalog.packages.length !== 37 || agentOnly !== 24 || features !== 13 || rulesets !== 0) {
-  throw new Error(`Expected 24 agents, 13 features, and 0 rulesets, found ${agentOnly}, ${features}, and ${rulesets}`);
+if (publishedCatalog.packages.length !== 38 || agentOnly !== 25 || features !== 13 || rulesets !== 0) {
+  throw new Error(`Expected 25 agents, 13 features, and 0 rulesets, found ${agentOnly}, ${features}, and ${rulesets}`);
 }
 console.log(
   `Catalog valid: ${publishedCatalog.packages.length} packages (${agentOnly} agents, ${features} features, ${rulesets} rulesets).`,
