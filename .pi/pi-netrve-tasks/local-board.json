@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "buckets": [
+    {
+      "key": "backlog",
+      "title": "Backlog",
+      "position": 0
+    },
+    {
+      "key": "todo",
+      "title": "To-Do",
+      "position": 1
+    },
+    {
+      "key": "doing",
+      "title": "Doing",
+      "position": 2
+    },
+    {
+      "key": "review",
+      "title": "In Review",
+      "position": 3
+    },
+    {
+      "key": "done",
+      "title": "Done",
+      "position": 4
+    }
+  ],
+  "tasks": [],
+  "nextLocalId": -1
+}
