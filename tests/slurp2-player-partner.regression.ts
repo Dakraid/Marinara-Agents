@@ -13,6 +13,16 @@ import {
   type SlurpCouple,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples.ts";
 import type { SlurpTieCreator } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-ties.ts";
+import {
+  SLURP_PARTNER_TEXT_PACE,
+  slurpPartnerText,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-partner-texts.ts";
+import {
+  describeSlurpRapport,
+  emptySlurpRapportFacts,
+  scoreSlurpRapport,
+  SLURP_PARTNER_RAPPORT,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-rapport.ts";
 
 const T0 = Date.parse("2026-10-01T00:00:00.000Z");
 const DAY = 86_400_000;
@@ -104,6 +114,78 @@ async function main() {
   assert.ok(
     spice.indexOf('account?.kind === "persona"') < spice.indexOf("selectSlurpExplicitLevel(guidance, partnerId)"),
   );
+
+  // She texts like a partner: a few times a day together, less when dating, rarely after a fight, never
+  // while something is pending or inside the gap; time-of-day reasons; the same hour decides once.
+  {
+    const day = (stage: "together" | "dating" | "rocky" | "sparks") => {
+      let last: number | null = null;
+      let texts = 0;
+      for (let slot = 0; slot < 24 * 14; slot += 1) {
+        const reason = slurpPartnerText({
+          pairKey: "mia|me",
+          stage,
+          hour: slot % 24,
+          hoursSinceLast: last === null ? null : slot - last,
+          busy: false,
+          slot,
+        });
+        if (reason) {
+          texts += 1;
+          last = slot;
+        }
+      }
+      return texts / 14;
+    };
+    const together = day("together");
+    assert.ok(together >= 1.5 && together <= 4.8, `together: ${together.toFixed(1)} texts a day`);
+    assert.ok(day("dating") < together && day("rocky") < day("dating"), "less when dating, least after a fight");
+    assert.equal(
+      slurpPartnerText({ pairKey: "a", stage: "together", hour: 9, hoursSinceLast: 1, busy: false, slot: 1 }),
+      null,
+    );
+    assert.equal(
+      slurpPartnerText({ pairKey: "a", stage: "together", hour: 9, hoursSinceLast: null, busy: true, slot: 1 }),
+      null,
+    );
+    const morning = Array.from({ length: 400 }, (_, slot) =>
+      slurpPartnerText({ pairKey: "x", stage: "together", hour: 8, hoursSinceLast: null, busy: false, slot }),
+    ).filter(Boolean);
+    assert.ok(
+      morning.length > 0 && morning.every((reason) => /morning|slept|dream|woke/iu.test(reason!)),
+      "morning texts are morning texts",
+    );
+    assert.ok(
+      morning.every((reason) => !/\b(she|her|him|his)\b/iu.test(reason!)),
+      "no gender assumed",
+    );
+    assert.equal(SLURP_PARTNER_TEXT_PACE.together.gapHours, 5);
+  }
+
+  // A partner starts close: the head start lifts a brand-new thread to "your partner", not a fan tier.
+  {
+    const fresh = scoreSlurpRapport(emptySlurpRapportFacts());
+    const partner = scoreSlurpRapport(emptySlurpRapportFacts(), undefined, { partner: "partner" });
+    const crush = scoreSlurpRapport(emptySlurpRapportFacts(), undefined, { partner: "crush" });
+    assert.equal(partner.score - fresh.score, SLURP_PARTNER_RAPPORT);
+    assert.ok(crush.score > fresh.score && crush.score < partner.score);
+    assert.match(describeSlurpRapport(partner, "Me"), /^Your history with Me: your partner \(/u);
+    assert.match(describeSlurpRapport(crush, "Me"), /your crush/u);
+    const base = slurp2Source(
+      new URL(
+        "../packages/slurp2/src/engine/packages/server/src/slp/data/messages/slp-messages-storage-base.ts",
+        import.meta.url,
+      ),
+    );
+    assert.match(base, /readSlurpPlayerCouple\(db, creatorAccountId, page\.id\)/u);
+    const scheduler = slurp2Source(
+      new URL(
+        "../packages/slurp2/src/engine/packages/server/src/slp/features/world/slp-world-scheduler-service.ts",
+        import.meta.url,
+      ),
+    );
+    assert.match(scheduler, /textSlurpPartners\(app\.db\)/u);
+  }
 
   console.log("slurp2 player partner regression passed");
 }

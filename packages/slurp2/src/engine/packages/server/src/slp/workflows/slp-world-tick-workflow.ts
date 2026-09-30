@@ -4,7 +4,11 @@ import { drainSlurpAudienceReplies } from "../features/audience/slp-audience-con
 import { drainSlurpPendingText } from "../features/world/slp-world-contract.js";
 import { topUpSlurpReactionBank } from "../features/world/slp-world-contract.js";
 import { advanceSlurpDrama, advanceSlurpWorld } from "../features/world/slp-world-contract.js";
-import { advanceSlurpSupportDesk, drainSlurpContinuityExtraction } from "../features/messages/slp-messages-contract.js";
+import {
+  advanceSlurpSupportDesk,
+  drainSlurpContinuityExtraction,
+  textSlurpPartners,
+} from "../features/messages/slp-messages-contract.js";
 import { refreshSlurpCreatorPages } from "../features/creators/slp-creators-contract.js";
 
 /** World work that runs when the player opens the notification stream. Each step fails soft. */
@@ -19,6 +23,8 @@ export async function slpCatchUpWorldOnOpen(app: FastifyInstance) {
   await advanceSlurpSupportDesk(app.db).catch((error: unknown) => logger.warn(error, "[slurp-desk] Catch-up failed"));
   // Drama (docs/DRAMA.md): situations and dramas the player switched on, and their due beats.
   await advanceSlurpDrama(app.db).catch((error: unknown) => logger.warn(error, "[slurp-drama] Catch-up failed"));
+  // A Creator who is with the player texts like a partner.
+  await textSlurpPartners(app.db).catch((error: unknown) => logger.warn(error, "[slurp-partner] Catch-up failed"));
   // Tier 2. The world writes from templates because unattended work never calls the model; this
   // is where that debt is paid, with the player present and against text they are about to read.
   await drainSlurpPendingText(app.db).catch((error: unknown) =>

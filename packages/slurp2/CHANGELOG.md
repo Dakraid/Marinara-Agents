@@ -6,7 +6,7 @@ Drama, friends and a People map. Design: `docs/DRAMA.md`.
 
 - Drama (off until switched on in Settings › Stir › Drama): situations and dramas from Story Packs, cast from the Creators on Slurp now, with choices you answer in a DM. Stir › Drama shows what runs; start or end one.
 - Starter set: Your partner is a Creator, Roommates, Rivals, Top fan, Friends to lovers, Love triangle, Getting bolder, Open relationship, The secret, You are the other one, Spoiled, She spoils you.
-- You as a partner: a couple with your own page starts together and only you or a drama changes it.
+- You as a partner: a couple with your own page starts together and only you or a drama changes it; she texts you like a partner a few times a day, and your chat starts close.
 - Bonds: friends, roommates, coworkers and exes, from cards and from the world; they show up in posts and on Pages.
 - Stir › People: a living map of everyone's ties and why each one exists.
 

@@ -64,3 +64,15 @@ export function mutateSlurpCreatorTies<T>(
   queue = run.catch(() => undefined);
   return run;
 }
+
+/** The couple a Creator is in with this page of the player's, or null. Rocky counts; a breakup does not. */
+export async function readSlurpPlayerCouple(db: DB, creatorAccountId: string, pageId: string) {
+  const { couples } = await readSlurpCreatorTiesDocument(db);
+  return (
+    couples.find((couple) => {
+      if (couple.stage === "split") return false;
+      const members = [couple.aId, couple.bId, ...(couple.moreIds ?? [])];
+      return members.includes(creatorAccountId) && members.includes(pageId);
+    }) ?? null
+  );
+}

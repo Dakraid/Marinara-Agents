@@ -124,6 +124,10 @@ export function slurpRapportTier(score: number): SlurpRapportTier {
   return "stranger";
 }
 
+/** Rapport points a relationship with the viewer's own page brings (Drama, the player as a partner). */
+export const SLURP_PARTNER_RAPPORT = 60;
+export const SLURP_CRUSH_RAPPORT = 25;
+
 export function scoreSlurpRapport(
   facts: SlurpRapportFacts,
   weights: SlurpRapportWeights = SLURP_DEFAULT_RAPPORT_WEIGHTS,
@@ -132,6 +136,8 @@ export function scoreSlurpRapport(
     subscriberBoost?: boolean;
     /** Arc stat effect on loyalty: scales every positive contribution, never the penalties. */
     gain?: number;
+    /** The viewer is the Creator's partner (or crush) through one of their own pages (Drama). */
+    partner?: "partner" | "crush";
   },
 ): SlurpRapport {
   const round = (value: number) => Math.round(value * 10) / 10;
@@ -209,6 +215,16 @@ export function scoreSlurpRapport(
       points: facts.lapsed ? -round(weights.lapsedPenalty) : 0,
     },
   ];
+  // A relationship is history the counters cannot see: a partner starts close, a crush warm.
+  if (options?.partner) {
+    const points = options.partner === "partner" ? SLURP_PARTNER_RAPPORT : SLURP_CRUSH_RAPPORT;
+    contributions.unshift({
+      key: "partner",
+      detail: options.partner === "partner" ? "you are together" : "a mutual crush",
+      weight: points,
+      points,
+    });
+  }
   const gain = Number.isFinite(options?.gain) && options!.gain! > 0 ? options!.gain! : 1;
   const adjustedContributions = contributions.map((entry) => ({
     ...entry,
@@ -249,7 +265,10 @@ export function describeSlurpRapport(rapport: SlurpRapport, viewerName: string):
     .sort((left, right) => Math.abs(right.points) - Math.abs(left.points))
     .slice(0, 4)
     .map((entry) => entry.detail);
-  return `Your history with ${viewerName}: ${rapport.tier} (${rapport.score}/100).${
+  // A partner is not a "whale": the tier names fans, so a relationship names itself.
+  const partner = rapport.contributions.find((entry) => entry.key === "partner" && entry.points > 0);
+  const tier = partner ? (partner.detail === "you are together" ? "your partner" : "your crush") : rapport.tier;
+  return `Your history with ${viewerName}: ${tier} (${rapport.score}/100).${
     notable.length > 0 ? ` What stands out: ${notable.join("; ")}.` : ""
   }`;
 }
