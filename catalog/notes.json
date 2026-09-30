@@ -11,6 +11,16 @@
         }
       ]
     },
+    "card-editor": {
+      "versions": [
+        {
+          "version": "1.0.0",
+          "date": "2026-09-30",
+          "notes": "- Added directive-driven character-card rewriting with lorebook references and approval-ready field updates.",
+          "highlight": false
+        }
+      ]
+    },
     "character-tracker": {
       "versions": [
         {

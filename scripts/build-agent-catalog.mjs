@@ -25,6 +25,7 @@ await mkdir(artifactsDir, { recursive: true });
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const documentationAnchors = {
+  "card-editor": "card-editor",
   continuity: "continuity-checker",
   director: "narrative-director",
   expression: "expression-engine",

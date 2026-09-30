@@ -330,6 +330,7 @@ if (aboutMeKeeperMarkers.some((marker) => readme.includes(marker))) {
 const ids = new Set();
 const agentDefinitionIds = new Set();
 const expectedCategories = new Map([
+  ["card-editor", "writer"],
   ["card-evolution-auditor", "writer"],
   ["hierarchical-maps", "tracker"],
 ]);
@@ -869,8 +870,8 @@ if (JSON.stringify(guidanceIds) !== JSON.stringify([...ids].sort())) {
 // Staging-only packages live in the preview overlay and are counted separately.
 const agentOnly = publishedCatalog.packages.filter((entry) => !entry.manifest.entrypoints.server).length;
 const features = publishedCatalog.packages.length - agentOnly;
-if (publishedCatalog.packages.length !== 38 || agentOnly !== 24 || features !== 14) {
-  throw new Error(`Expected 24 agents and 14 features, found ${agentOnly} and ${features}`);
+if (publishedCatalog.packages.length !== 39 || agentOnly !== 25 || features !== 14) {
+  throw new Error(`Expected 25 agents and 14 features, found ${agentOnly} and ${features}`);
 }
 console.log(`Catalog valid: ${publishedCatalog.packages.length} packages (${agentOnly} agents, ${features} features).`);
 if (uncataloguedIntegrity.checked.length > 0) {
