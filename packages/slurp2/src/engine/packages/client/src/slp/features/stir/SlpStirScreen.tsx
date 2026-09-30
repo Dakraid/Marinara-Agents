@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
-import { ChevronRight, Handshake, Heart, RotateCcw, Users, X, type LucideIcon } from "lucide-react";
+import { ChevronRight, Clapperboard, Handshake, Heart, RotateCcw, Users, X, type LucideIcon } from "lucide-react";
+import { SlpStirDrama } from "./SlpStirDrama";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
@@ -572,6 +573,9 @@ export function SlpStirScreen({
                 <div className={SLP_CARD_STACK_CLASS}>
                   <Group icon={Users} title={t("ui.slurp.people.title")} detail={t("ui.slurp.people.detail")}>
                     <SlpPeoplePanel personaId={personaId} />
+                  </Group>
+                  <Group icon={Clapperboard} title={t("ui.slurp.drama.title")} detail={t("ui.slurp.drama.detail")}>
+                    <SlpStirDrama personaId={personaId} />
                   </Group>
                   <Group icon={Handshake} title={t("ui.slurp.ties.title")} detail={t("ui.slurp.ties.detail")}>
                     <SlpCollabsPanel personaId={personaId} />

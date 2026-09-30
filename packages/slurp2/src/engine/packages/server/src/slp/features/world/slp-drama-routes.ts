@@ -7,9 +7,9 @@ import {
   readSlurpDramaLibrary,
   readSlurpDramaState,
 } from "../../data/world/slp-drama-storage.js";
-import { slpDramaCatalog } from "../../modules/world/events/slp-drama-library.js";
-import { slpEndDramaRun } from "../../modules/world/events/slp-drama-runtime.js";
-import { answerSlurpDramaChoice } from "./slp-drama-service.js";
+import { slpDramaCatalog, slpEnabledDrama } from "../../modules/world/events/slp-drama-library.js";
+import { slpEndDramaRun, slpRequestDrama } from "../../modules/world/events/slp-drama-runtime.js";
+import { advanceSlurpDrama, answerSlurpDramaChoice } from "./slp-drama-service.js";
 
 const RECENT = 12;
 
@@ -20,11 +20,8 @@ const RECENT = 12;
 export async function slpDramaRoutes(app: FastifyInstance, { noodle, resolveViewerPersona }: SlpRouteDeps) {
   const personaSchema = z.object({ personaId: z.string().trim().min(1) }).passthrough();
 
-  app.get("/slurp/drama", async (req, reply) => {
-    const parsed = personaSchema.safeParse(req.query);
-    if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
-    if (!(await resolveViewerPersona(parsed.data.personaId)))
-      return reply.code(404).send({ error: "Slurp persona not found" });
+  // Install-wide, like the settings it goes with: no persona needed to read it.
+  app.get("/slurp/drama", async () => {
     const [settings, accounts] = await Promise.all([noodle.getSettings(), noodle.listNoodlerAccounts()]);
     const library = await readSlurpDramaLibrary(app.db);
     const { state } = await readSlurpDramaState(app.db);
@@ -92,6 +89,26 @@ export async function slpDramaRoutes(app: FastifyInstance, { noodle, resolveView
     return answered
       ? { chosen: parsed.data.option }
       : reply.code(409).send({ error: "Too late: it already went the other way." });
+  });
+
+  /** Start a switched-on drama now (Stir), past the level's cap; it still needs a cast that fits. */
+  app.post("/slurp/drama/start", async (req, reply) => {
+    const parsed = personaSchema.extend({ dramaId: z.string().trim().min(1).max(64) }).safeParse(req.body ?? {});
+    if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
+    if (!(await resolveViewerPersona(parsed.data.personaId)))
+      return reply.code(404).send({ error: "Slurp persona not found" });
+    const settings = await noodle.getSettings();
+    const enabled = slpEnabledDrama(slpDramaCatalog(await readSlurpDramaLibrary(app.db)), settings.drama.enabled);
+    if (!enabled.dramas.some((drama) => drama.id === parsed.data.dramaId))
+      return reply.code(409).send({ error: "Switch it on first (and its situation, if it needs one)." });
+    await mutateSlurpDramaState(app.db, (current) => ({
+      stored: { state: slpRequestDrama(current.state, parsed.data.dramaId), advancedAt: null },
+      result: null,
+    }));
+    await advanceSlurpDrama(app.db);
+    const { state } = await readSlurpDramaState(app.db);
+    const started = state.runs.some((run) => run.dramaId === parsed.data.dramaId && !run.endedAt);
+    return started ? { started: true } : reply.code(409).send({ error: "Nobody fits the roles right now." });
   });
 
   /** End a running drama now: no goodbye post, nothing more goes out. */

@@ -119,6 +119,8 @@ export type SlpDramaState = {
   /** Drama id → when it last ended, for its cooldown. */
   ended: Record<string, string>;
   startWindow: number | null;
+  /** The player asked Stir to start this drama now: the next tick tries it first, past the level's cap. */
+  requested?: string | null;
 };
 export const SLP_EMPTY_DRAMA_STATE: SlpDramaState = {
   runs: [],
@@ -148,6 +150,7 @@ export function readSlpDramaState(raw: unknown): SlpDramaState {
       string
     >,
     startWindow: typeof value.startWindow === "number" ? value.startWindow : null,
+    requested: typeof value.requested === "string" ? value.requested : null,
   };
 }
 
@@ -503,6 +506,42 @@ export function slpAdvanceDrama(
     return enter(current, drama, answer ?? stage.next ?? drama.stages[index + 1]?.key ?? "end");
   });
 
+  // A drama starts: cast its lead and first stage; on a situation, with the situation's people.
+  const standing = new Map(situationRuns.filter(active).map((run) => [run.situationId, run]));
+  const start = (pick: SlpDrama): boolean => {
+    if (pick.requires && !standing.has(pick.requires.situation)) return false;
+    const id = input.newId();
+    const base = pick.requires ? { ...standing.get(pick.requires.situation)!.cast } : {};
+    const first = pick.stages[0]!;
+    const cast = slpDramaCast(pick.roles, [pick.roles[0]!.key, ...stageRoles(first, pick.roles)], base, {
+      world: input.world,
+      busy: busy(),
+      seed: id,
+      at: input.at,
+    });
+    if (!cast) return false;
+    const run: SlpDramaRun = {
+      id,
+      dramaId: pick.id,
+      cast,
+      stage: "",
+      stageAt: stamp,
+      stageDays: 0,
+      startedAt: stamp,
+      endedAt: null,
+      ending: null,
+      choice: null,
+      log: [],
+    };
+    runs.push(enter(log(run, "started"), pick, first.key));
+    return true;
+  };
+  const running = () => new Set(runs.filter(active).map((run) => run.dramaId));
+
+  // The player asked for this one: now, whatever the level (once; a drama with no cast waits no longer).
+  const requested = state.requested ? dramas.get(state.requested) : undefined;
+  if (requested && !running().has(requested.id)) start(requested);
+
   // Now and then a new drama starts, within the level's cap and each drama's cooldown.
   const window = Math.floor(now / START_WINDOW);
   const rules = SLP_DRAMA_LEVEL_RULES[input.level];
@@ -512,45 +551,16 @@ export function slpAdvanceDrama(
     const room = runs.filter(active).length < rules.running;
     const roll = hash(`${window}:drama-start`) % 100 < Math.round(rules.startChance * Math.max(0, input.activity));
     if (room && roll) {
-      const running = new Set(runs.filter(active).map((run) => run.dramaId));
-      const standing = new Map(situationRuns.filter(active).map((run) => [run.situationId, run]));
       const options = input.dramas.filter(
         (drama) =>
-          !running.has(drama.id) &&
+          !running().has(drama.id) &&
           (!ended[drama.id] || now - Date.parse(ended[drama.id]!) >= drama.cooldownDays * DAY) &&
           (!drama.requires || standing.has(drama.requires.situation)),
       );
       const total = options.reduce((sum, drama) => sum + drama.weight, 0);
       let point = ((hash(`${window}:drama-pick`) % 10_000) / 10_000) * total;
       const pick = options.find((drama) => (point -= drama.weight) < 0) ?? options.at(-1);
-      if (pick) {
-        const id = input.newId();
-        // A drama on a situation plays with the situation's people under the same role keys.
-        const base = pick.requires ? { ...standing.get(pick.requires.situation)!.cast } : {};
-        const first = pick.stages[0]!;
-        const cast = slpDramaCast(pick.roles, [pick.roles[0]!.key, ...stageRoles(first, pick.roles)], base, {
-          world: input.world,
-          busy: busy(),
-          seed: id,
-          at: input.at,
-        });
-        if (cast) {
-          const run: SlpDramaRun = {
-            id,
-            dramaId: pick.id,
-            cast,
-            stage: "",
-            stageAt: stamp,
-            stageDays: 0,
-            startedAt: stamp,
-            endedAt: null,
-            ending: null,
-            choice: null,
-            log: [],
-          };
-          runs.push(enter(log(run, "started"), pick, first.key));
-        }
-      }
+      if (pick) start(pick);
     }
   }
 
@@ -571,6 +581,7 @@ export function slpAdvanceDrama(
       jobs,
       ended,
       startWindow,
+      requested: null,
     },
     ties,
   };
@@ -655,3 +666,9 @@ export function slpEndDramaRun(state: SlpDramaState, runId: string, at: Date): S
     ended: { ...state.ended, [run.dramaId]: stamp },
   };
 }
+
+/** Stir: start this drama on the next tick, past the level's cap. The drama must be switched on. */
+export const slpRequestDrama = (state: SlpDramaState, dramaId: string): SlpDramaState => ({
+  ...state,
+  requested: dramaId,
+});
