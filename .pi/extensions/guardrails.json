@@ -5,6 +5,22 @@
       {
         "kind": "directory",
         "path": "~/Source"
+      },
+      {
+        "kind": "directory",
+        "path": "~/.bun/bin"
+      },
+      {
+        "kind": "directory",
+        "path": ""
+      },
+      {
+        "kind": "directory",
+        "path": "~/.local/share/rtk/tee"
+      },
+      {
+        "kind": "directory",
+        "path": "/tmp"
       }
     ]
   },
