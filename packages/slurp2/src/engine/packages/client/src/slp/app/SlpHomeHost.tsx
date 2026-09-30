@@ -427,6 +427,12 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
             {accountsQuery.isError ? (
               <SlpErrorState
                 title={localizeUi("ui.noodle.noodlerhome.noodlerCouldNotBeLoaded")}
+                detail={
+                  // From another device, every Slurp route fails until the Admin Secret is set (#1136).
+                  accountsQuery.error instanceof Error && /admin.secret/i.test(accountsQuery.error.message)
+                    ? localizeUi("ui.slurp.state.adminSecretMissing")
+                    : undefined
+                }
                 onRetry={retryAccountsOrReload}
               />
             ) : (
