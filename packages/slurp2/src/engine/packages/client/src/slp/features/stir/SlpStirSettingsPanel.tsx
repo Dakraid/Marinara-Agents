@@ -3,6 +3,7 @@ import { AdvancedGroup, Field, NumberSetting, SettingsGroup, Toggle } from "../.
 import { BackstagePageHeader } from "../../modules/settings/SlpSettingsKit";
 import { ChoiceSetting } from "../../modules/settings/SlpSettingsInputs";
 import type { SlpBackstagePageProps } from "../backstage/slp-backstage-contract";
+import { SlpDramaSettings } from "./SlpDramaSettings";
 import {
   SLP_DESK_RATES,
   SLP_DESK_TICKET_PACES,
@@ -112,6 +113,7 @@ export function SlpStirSettingsPanel(page: SlpBackstagePageProps) {
           onChange={(value) => update("polyamory", value)}
         />
       </SettingsGroup>
+      <SlpDramaSettings {...page} settingKey="drama" />
       <SettingsGroup title={tx("groupNotices", "Slurp's notices")}>
         <Toggle
           label={tx("noticeMilestones", "Milestones")}

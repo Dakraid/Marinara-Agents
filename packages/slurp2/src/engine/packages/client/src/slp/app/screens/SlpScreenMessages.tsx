@@ -10,6 +10,7 @@ import {
   Gift,
   MessageCircle,
   Search,
+  Clapperboard,
   Star,
 } from "lucide-react";
 import { SlpHeartGlyph, SlpLockGlyph } from "../../base/chrome/SlpGlyphs";
@@ -412,6 +413,8 @@ function SlurpNotificationsView({
         : kind === "subscribed" && event.subjectId === "renewed"
           ? "ui.slurp.events.single.subscribed_renewed"
           : `ui.slurp.events.single.${kind}`;
+    // A drama's line is the pack's own words, already about someone: shown as it is.
+    if (kind === "drama" && event.note) return event.note;
     const line = localizeUi(arcKey, {
       defaultValue: kind,
       amount,
@@ -457,6 +460,7 @@ function SlurpNotificationsView({
     if (kind === "comment" || kind === "returned" || kind === "audience_arc")
       return { icon: SlpHeartGlyph, tone: pink };
     if (kind === "arc_phase" || kind === "arc_complete" || kind === "arc_started") return { icon: Star, tone: violet };
+    if (kind === "drama") return { icon: Clapperboard, tone: violet };
     if (kind === "tip") return { icon: Coins, tone: warm };
     if (kind === "unlock" || kind === "ppv_unlock") return { icon: SlpLockGlyph, tone: warm };
     if (kind === "subscribed") return { icon: Crown, tone: pink };

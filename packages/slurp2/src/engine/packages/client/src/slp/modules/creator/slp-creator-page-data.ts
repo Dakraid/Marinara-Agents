@@ -67,7 +67,8 @@ export function pickSlpCollageTiles(input: {
     : open;
 }
 
-export type SlpPagePersonRelation = "partner" | "dating" | "collab" | "rival";
+export type SlpPagePersonRelation =
+  "partner" | "dating" | "bestie" | "roommate" | "collab" | "friend" | "coworker" | "rival";
 export type SlpPagePerson = { id: string; name: string; avatarUrl: string | null; relation: SlpPagePersonRelation };
 
 /** The parts of the ties view the People block reads (structural, so this module needs no feature import). */
@@ -76,11 +77,16 @@ export type SlpPageTies = {
   couples: { aId: string; bId: string; moreIds?: string[]; stage: string; ending: string | null }[];
   collabs: { hostId: string; partnerId: string; status: string }[];
   rivalries: { fromId: string; toId: string; stage: string }[];
+  /** Drama bonds; older servers send none. Exes stay off a public page. */
+  bonds?: { aId: string; bId: string; kind: string; level: number; endedAt: string | null }[];
 };
 
 const PEOPLE_MAX = 6;
 
-/** Partner first, then collab partners, then a live rivalry. Each person once, at their closest tie. */
+/**
+ * Partner first, then best friends and roommates, collab partners, friends, coworkers, then a live
+ * rivalry. Each person once, at their closest tie.
+ */
 export function slpPagePeople(creatorId: string, ties: SlpPageTies | null | undefined): SlpPagePerson[] {
   if (!ties) return [];
   const byId = new Map(ties.creators.filter((creator) => !creator.couplePage).map((creator) => [creator.id, creator]));
@@ -98,12 +104,24 @@ export function slpPagePeople(creatorId: string, ties: SlpPageTies | null | unde
       for (const other of members)
         if (other !== creatorId) add(other, couple.stage === "sparks" ? "dating" : "partner");
   }
+  const bonds = (ties.bonds ?? []).filter((bond) => bond.endedAt === null);
+  const bonded = (kinds: readonly string[], minLevel: number, relation: SlpPagePersonRelation) => {
+    for (const bond of bonds) {
+      if (!kinds.includes(bond.kind) || bond.level < minLevel) continue;
+      const other = bond.aId === creatorId ? bond.bId : bond.bId === creatorId ? bond.aId : null;
+      if (other) add(other, relation);
+    }
+  };
+  bonded(["friend"], 3, "bestie");
+  bonded(["roommate"], 0, "roommate");
   for (const collab of ties.collabs) {
     if (collab.status !== "posted" && collab.status !== "planned" && collab.status !== "agreed") continue;
     const other =
       collab.hostId === creatorId ? collab.partnerId : collab.partnerId === creatorId ? collab.hostId : null;
     if (other) add(other, "collab");
   }
+  bonded(["friend"], 1, "friend");
+  bonded(["coworker"], 0, "coworker");
   for (const rivalry of ties.rivalries) {
     if (rivalry.stage !== "shade" && rivalry.stage !== "feud") continue;
     const other = rivalry.fromId === creatorId ? rivalry.toId : rivalry.toId === creatorId ? rivalry.fromId : null;

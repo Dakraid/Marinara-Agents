@@ -23,6 +23,7 @@ import {
 import { isSlurpFileUniqueConstraintError } from "../../base/host/slp-file-errors.js";
 import { applySlurpMood, type SlurpMoodShift } from "../../modules/world/slp-mood.js";
 import { slurpIsCouplePage } from "../../modules/projects/slp-creator-couples.js";
+import { readSlurpPlayerCouple } from "../projects/slp-creator-ties-storage.js";
 import {
   applySlurpThreadNotes,
   readStoredNotes,
@@ -426,7 +427,14 @@ export function createMessagesStorageBase(context: SlurpMessagesContext) {
       // Apply subscriber boost: subscribers gain rapport 1.5x faster from conversation and effort
       // Arc stat effects on fan loyalty scale here, the one place rapport is scored.
       const gain = await slurp.arcEffectMultiplier(creatorAccountId, "loyalty");
-      const computed = scoreSlurpRapport(facts, messaging.rapportWeights, { subscriberBoost: true, gain });
+      // The persona's own Creator page may be her partner: a relationship starts the score close.
+      const page = await slurp.getSlurpAccountForEntity("persona", viewerAccountId, "creator").catch(() => null);
+      const partner = page ? await readSlurpPlayerCouple(db, creatorAccountId, page.id).catch(() => null) : null;
+      const computed = scoreSlurpRapport(facts, messaging.rapportWeights, {
+        subscriberBoost: true,
+        gain,
+        ...(partner ? { partner: partner.stage === "sparks" ? ("crush" as const) : ("partner" as const) } : {}),
+      });
       const thread = await context.storage.getThread(viewerAccountId, creatorAccountId);
       return thread ? slpOverrideRapport(computed, await context.storage.getDetailsOverrides(thread.id)) : computed;
     },

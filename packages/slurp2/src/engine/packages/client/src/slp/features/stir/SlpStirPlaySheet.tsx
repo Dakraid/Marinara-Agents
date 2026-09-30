@@ -226,7 +226,8 @@ export function SlpStirPlaySheet({
         key="who"
         max={2}
         label={action === "start-rivalry" ? t("ui.slurp.stir.form.rivals") : t("ui.slurp.stir.form.two")}
-        creators={creators}
+        // Another persona's page is not the player's to pair (Drama audit); their own pages are.
+        creators={creators.filter((creator) => creator.automatic || creator.own)}
         picked={picked}
         onPick={(ids) => set({ who: ids })}
       />,

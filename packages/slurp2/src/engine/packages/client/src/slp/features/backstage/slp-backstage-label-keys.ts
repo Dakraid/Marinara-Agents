@@ -143,4 +143,5 @@ export const SLP_BACKSTAGE_LABEL_KEYS: Partial<Record<keyof SlurpSettings, strin
   modelBudget: "ui.slurp.settings.aiBudget.title",
   supportDesk: "ui.slurp.stir.settings.title",
   polyamory: "ui.slurp.stir.settings.polyamory",
+  drama: "ui.slurp.drama.settings.title",
 };

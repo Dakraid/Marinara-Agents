@@ -39,6 +39,7 @@ import {
 import { slurpBubbleGroup } from "./slp-bubble-group";
 import { readSlpStirProposal, SlpStirSupportCards } from "../stir/slp-stir-contract";
 import { readSlpDeskOffer, SlpDeskOfferCard } from "./SlpDeskRows";
+import { readSlpDramaChoice, SlpDramaChoiceCard } from "./SlpDramaChoiceCard";
 import { slurpAwayKind } from "./slp-away-kind";
 import { formatClockTime } from "../../base/ui/slp-date-time";
 
@@ -266,6 +267,10 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
                           {/* The Support desk: an Offer sits under the line that made it (docs/SUPPORT-DESK.md). */}
                           {readSlpDeskOffer(entry.message) && (
                             <SlpDeskOfferCard message={entry.message} ownsCreator={ownsCreator} personaId={personaId} />
+                          )}
+                          {/* Drama: a Creator's question with its answers (docs/DRAMA.md). */}
+                          {readSlpDramaChoice(entry.message) && (
+                            <SlpDramaChoiceCard message={entry.message} personaId={personaId} />
                           )}
                           {/* W: a talk with Slurp Support proposes Stir cards under the Creator's reply. */}
                           {readSlpStirProposal(entry.message.metadata) && (

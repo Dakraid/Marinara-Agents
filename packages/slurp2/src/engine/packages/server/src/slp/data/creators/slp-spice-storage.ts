@@ -161,11 +161,16 @@ export async function slurpSpicyCollabNames(db: DB, partnerIds: readonly string[
   const storage = createSlurpStorage(db);
   const names: string[] = [];
   for (const partnerId of partnerIds.slice(0, 6)) {
+    const account = await storage.getNoodlerAccountById(partnerId).catch(() => null);
+    // A page the player runs is the player: its own level and hard noes are not theirs to set here (Drama).
+    if (account?.kind === "persona" && account.sourceKind === "persona") {
+      if (account.displayName) names.push(account.displayName);
+      continue;
+    }
     const level = slpClampExplicitLevel(selectSlurpExplicitLevel(guidance, partnerId), spice.max);
     if (level !== "explicit") continue;
     const steering = await readSlurpCreatorSteering(db, partnerId);
     if (steering.hardNoes.some((no) => /\b(sex|partner|collab|others?)\b/iu.test(no))) continue;
-    const account = await storage.getNoodlerAccountById(partnerId).catch(() => null);
     if (account?.displayName) names.push(account.displayName);
   }
   return names;

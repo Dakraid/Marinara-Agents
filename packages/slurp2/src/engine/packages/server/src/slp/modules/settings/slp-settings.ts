@@ -17,22 +17,15 @@ import {
 import { SLURP_DEFAULT_ECONOMY } from "../economy/slp-wallet.js";
 import {
   slurpCreatorCollabsSchema,
-  SLURP_PROJECT_CHAPTER_MAX_LENGTH,
-  SLURP_PROJECT_DIRECTION_MAX_LENGTH,
-  SLURP_PROJECT_MAX_CHAPTERS,
   SLURP_ARC_STAT_EFFECTS,
-  SLURP_ARC_BIO_MAX_LENGTH,
-  SLURP_ARC_LOCATION_MAX_LENGTH,
   SLURP_ARC_PACES,
   SLURP_DEFAULT_ARC_PACE,
 } from "../projects/slp-project.js";
-import { SLURP_ARC_MAX_DURATION_DAYS, SLURP_ARC_TONE_MAX_LENGTH } from "../projects/slp-project.js";
 import {
   slurpArcLibraryFromLegacy,
   slurpNormalizeArcLibrary,
   SLURP_ARC_AUTO_MODES,
   SLURP_ARC_SOURCES,
-  SLURP_ARC_TYPE_NAME_MAX_LENGTH,
   SLURP_DEFAULT_ARC_AUTO_MODE,
 } from "../projects/slp-arc-library.js";
 import { SLURP_AUDIENCE_TONES, SLURP_DEFAULT_AUDIENCE_TONE } from "../../../../../shared/src/slp/slp-tone.js";
@@ -57,6 +50,7 @@ import {
   slpSupportDeskSettingsSchema,
   SLP_DEFAULT_SUPPORT_DESK_SETTINGS,
 } from "../../../../../shared/src/slp/slp-support-desk.js";
+import { slpDramaSettingsSchema } from "../../../../../shared/src/slp/slp-drama.js";
 import { SLURP_STORY_JOB_DEFAULTS, type SlurpStoryJobWeights } from "../../../../../shared/src/slp/slp-post-purpose.js";
 import { DEFAULT_SLP_CREATOR_REPLIES_PER_24_HOURS } from "../../../../../shared/src/slp/slp-social.schema.js";
 import { SLURP_COOL_OFF_HOURS } from "../world/slp-stance.js";
@@ -77,11 +71,9 @@ import {
 } from "../feed/slp-post-variation.js";
 import { logger } from "../../../lib/logger.js";
 import { SLURP_DEFAULT_CREATOR_MESSAGING, SLURP_DM_POLICIES } from "../messages/slp-messaging.js";
-import { NOODLER_CONTENT_HARD_MAX_LENGTH } from "../../base/prompting/slp-content-format.js";
-import { SLURP_MODIFIER_KINDS } from "../creators/slp-creator-state.js";
 import { SLURP_DEFAULT_REPLY_DELAYS } from "../messages/slp-messaging.js";
-import { parseRecord } from "../records/slp-storage-model.js";
-import type { SlurpAccount } from "../records/slp-storage-model.js";
+import { NOODLER_CONTENT_HARD_MAX_LENGTH } from "../../base/prompting/slp-content-format.js";
+import { parseRecord, type SlurpAccount } from "../records/slp-storage-model.js";
 export const slpCreatorFanArchetypeWeightsSchema = z
   .object({
     ordinary: z.number().finite().min(0),
@@ -410,6 +402,7 @@ export const slurpSettingsSchema = z.object({
   modelBudget: slurpModelBudgetSchema,
   /** Settings › Stir: the Slurp Support desk (tickets, notices, refusals, shady moves, leaving). */
   supportDesk: slpSupportDeskSettingsSchema,
+  drama: slpDramaSettingsSchema,
   /** Settings › Stir: a couple may grow to four people (0.3.5). Off by default. */
   polyamory: z.boolean(),
   nightQuiet: z.boolean(),
@@ -652,6 +645,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   creatorCollabs: [],
   modelBudget: slurpModelBudgetSchema.parse({}),
   supportDesk: { ...SLP_DEFAULT_SUPPORT_DESK_SETTINGS },
+  drama: slpDramaSettingsSchema.parse({}),
   polyamory: false,
   nightQuiet: false,
   onboarding: "not_started",
@@ -671,15 +665,14 @@ export function isSlurpViewerActorAccount(account: Pick<SlurpAccount, "invited" 
 
 // The world tick reads settings many times per pass; a full zod parse each time held the Engine's
 // event loop for seconds. Stored settings arrive as a JSON string (null before the first save), so
-// the last one is the cache key.
-// Callers get a clone because some of them build on the returned object.
+// the last one is the cache key. Callers get a clone because some of them build on the result.
 let cachedSettingsRaw: string | null = null;
 let cachedSettings: SlurpSettings | null = null;
 
 /**
- * Keys retired in fix phase 1b (R1-136): nothing read them. Stored copies are safe to leave: the
- * normalizer below only takes the keys it knows, the PATCH schema strips unknown keys, and the next
- * save writes the settings without them. Listed so a test can prove old data still loads.
+ * Keys retired in fix phase 1b (R1-136): nothing read them. Stored copies are safe: the normalizer
+ * takes only known keys, the PATCH schema strips unknown ones, and the next save drops them. Listed
+ * so a test can prove old data still loads.
  */
 export const SLURP_RETIRED_SETTINGS_KEYS = [
   "imageGenerationConnectionId",

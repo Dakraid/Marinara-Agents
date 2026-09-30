@@ -29,7 +29,6 @@ import { readSlurpAgentMemoryLines } from "./slp-agent-memory-source.js";
 import { createSlurpStorage } from "../slp-storage.js";
 import { resolveSlurpCreatorSpice, type SlurpCreatorSpice } from "./slp-spice-storage.js";
 import {
-  SLURP_PARTNER_RELATION,
   slurpDmSpiceLevel,
   slurpSpiceBriefLines,
   slurpTastePick,
@@ -290,11 +289,9 @@ export async function readSlurpCreatorFitText(
 }
 
 /** The partners a card names (anchor people with a partner relation), for couples. */
-export async function readSlurpCardPartners(db: DB, accountId: string): Promise<string[]> {
-  const anchors = await readAnchors(db, accountId);
-  return (anchors?.people ?? [])
-    .filter((person) => SLURP_PARTNER_RELATION.test(person.relation))
-    .map((person) => person.name);
+/** Everyone the card names, with how they relate (canon anchors), for bonds. Empty until anchors exist. */
+export async function readSlurpCardPeople(db: DB, accountId: string): Promise<{ name: string; relation: string }[]> {
+  return (await readAnchors(db, accountId))?.people ?? [];
 }
 
 /**

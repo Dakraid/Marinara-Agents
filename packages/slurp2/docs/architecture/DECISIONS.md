@@ -634,3 +634,25 @@ modules, rejected alternative, and migration consequence.
 - **Rejected alternatives:** only overlapping pairs (a throuple would read as three separate couples);
   only groups (a Creator with two separate partners could not exist).
 - **Migration consequence:** none; `moreIds` and `relationshipStyle` are optional.
+
+## 0.3.8 Drama: situations and dramas as Story Pack data, no new domain (2026-09-30)
+
+- **Problem:** couples, collabs and rivalries are hard-coded dramas the player cannot join, the
+  world has no friends, roommates or exes, and a new kind of drama needs new code. Design:
+  `docs/DRAMA.md`.
+- **Decision:** no new top-level domain. Dramas and standing situations are new optional
+  arrays in the Story Pack schema (`shared/src/slp/slp-story-engine.ts`); a running drama is an arc
+  with a cast; new tie types (`friend`, `roommate`, `coworker`, `ex`) join the ties document; the
+  player's persona Creator can be one side of a tie; arc choices may ask the player or a Creator;
+  a hidden fact is a continuity record with `knownBy`, read through the one continuity gate. Posts
+  get at most one drama line through the existing beat brief; comments come from the reaction bank.
+- **Affected modules (planned):** shared `slp-story-engine.ts`; server `modules/projects/*` (ties,
+  couples, arc progress), `modules/feed/slp-tie-beats.ts`, `modules/continuity/*`,
+  `modules/world/slp-reaction-bank.ts`, `features/assist/slp-stir-*`, the world tick; client Backstage,
+  Creator settings, Stir, Creator Page People block.
+- **Rejected alternatives:** a separate "social world" graph store beside ties and continuity (two
+  sources of truth for relations and facts); hard-coded dramas per genre (every new drama would be
+  code); a relation/fact dump in the post prompt (infodumps cost heat and tokens).
+- **Migration consequence:** none; every new field is optional, old packs import unchanged, and
+  drama state and library live in their own app settings (`slurp2.drama.state`, `slurp2.drama.library`).
+  Built as designed; the differences are listed under "As built" in `docs/DRAMA.md`.

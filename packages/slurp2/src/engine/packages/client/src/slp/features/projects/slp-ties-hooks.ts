@@ -86,6 +86,25 @@ export type SlurpTiesCouple = {
   forced?: { misfit: "taken" | "notInto" | "noDating" | "orientation"; byId: string };
 };
 export type SlurpCoupleSteer = "date" | "drama" | "patchUp" | "breakUp" | "reunite";
+/** Mirrors `SlurpBond` on the server (Drama): friends, roommates, coworkers and exes. */
+export type SlurpTiesBondKind = "friend" | "roommate" | "coworker" | "ex";
+export type SlurpTiesBond = {
+  id: string;
+  kind: SlurpTiesBondKind;
+  aId: string;
+  bId: string;
+  /** Friends: 0 acquaintance, 1 friend, 2 close, 3 best. Other kinds are 1. */
+  level: number;
+  temperature: "warm" | "tense" | "cold";
+  origin: "card" | "world" | "player" | "couple";
+  since: string;
+  changedAt: string;
+  endedAt: string | null;
+  ending: "drifted" | "left" | "player" | "together" | null;
+  locked?: boolean;
+  /** Each change with a reason code (`ui.slurp.people.note.<code>`). */
+  notes: { at: string; code: string; detail?: string }[];
+};
 
 export type SlurpTiesView = {
   creators: SlurpTiesCreator[];
@@ -94,6 +113,8 @@ export type SlurpTiesView = {
   deals: SlurpTiesDeal[];
   blocked: string[];
   couples: SlurpTiesCouple[];
+  /** Older servers send none. */
+  bonds?: SlurpTiesBond[];
 };
 
 const key = (personaId: string) => [...slpKeys.noodlerRoot(), "ties", personaId] as const;
@@ -152,6 +173,15 @@ export function useSlurpTiesMutations(personaId: string) {
         // A new page is a new Creator everywhere: Discover, the feed, profiles.
         void qc.invalidateQueries({ queryKey: slpKeys.noodlerRoot() });
       },
+    }),
+    setBond: useMutation({
+      mutationFn: (input: { aId: string; bId: string; kind: SlurpTiesBondKind; level?: number }) =>
+        post("/bonds", input),
+      onSuccess: store,
+    }),
+    endBond: useMutation({
+      mutationFn: (id: string) => post(`/bonds/${encodeURIComponent(id)}/end`),
+      onSuccess: store,
     }),
     markPosted: useMutation({
       mutationFn: (id: string) => post(`/deals/${encodeURIComponent(id)}/posted`),

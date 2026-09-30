@@ -91,4 +91,6 @@ export { SlurpProjectsPanel } from "./SlpProjectsBoard";
 export { useSlurpProjects } from "./slp-projects-hooks";
 // W: Business and Relationships (U) moved from Studio into the Stir tab; the ✦ sheet moves chapters.
 export { SlpCollabsPanel, SlpRelationshipsPanel } from "./SlpCollabsPanel";
+// Drama: the People map (who is what to whom, and why).
+export { SlpPeoplePanel } from "./SlpPeoplePanel";
 export { SlpArcChapterControls } from "./SlpArcChapterControls";

@@ -338,6 +338,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.8",
+          "date": "2026-09-30",
+          "notes": "Drama, friends and a People map. Design: `docs/DRAMA.md`.\n\n- Drama (off until switched on in Settings › Stir › Drama): situations and dramas from Story Packs, cast from the Creators on Slurp now, with choices you answer in a DM. Stir › Drama shows what runs; start or end one.\n- Starter set: Your partner is a Creator, Roommates, Rivals, Top fan, Friends to lovers, Love triangle, Getting bolder, Open relationship, The secret, You are the other one, Spoiled, She spoils you.\n- You as a partner: a couple with your own page starts together and only you or a drama changes it; she texts you like a partner a few times a day, and your chat starts close.\n- Bonds: friends, roommates, coworkers and exes, from cards and from the world; they show up in posts and on Pages.\n- Stir › People: a living map of everyone's ties and why each one exists.",
+          "highlight": false
+        },
+        {
           "version": "0.3.7",
           "date": "2026-09-30",
           "notes": "Two-layer economy, faster rewrites, partners in pictures.\n\n- Economy: earnings are platform dollars. A paying fan stands for \"People per paying fan\" (5) in subscribers and earnings, less a 20% fee; Collect pays 1 coin per 5 dollars, 15–60 coins a day per persona. Old balances convert once.\n- Fixes: no Slurp coins for your own Creators from the desk; milestones use shown followers.\n- Rewrites: 10 per tick, a waiting count and \"Rewrite all now\".\n- Couple and collab pictures may show the partner when the post calls for it.\n- Messaging: quote delay and your own first lines. \"Blur pictures until tapped\".",
@@ -449,12 +455,6 @@
           "version": "0.2.68",
           "date": "2026-09-25",
           "notes": "- Creator settings open on an Overview status page: what needs review, whether the Creator posts (with a live Auto-post switch), the next post, running storylines, notes waiting in Memory, and a way into each part.",
-          "highlight": false
-        },
-        {
-          "version": "0.2.67",
-          "date": "2026-09-25",
-          "notes": "- Creator settings have 7 tabs instead of 14: Overview, Profile (identity, appearance, wardrobe), Posting (automation, production, storylines, collaborations), Content rules, Fans & messages, Memory and Tools. Each merged tab shows its parts under their own headings.\n- Links and search results that named an old tab open the new tab and scroll to the right part.",
           "highlight": false
         }
       ]

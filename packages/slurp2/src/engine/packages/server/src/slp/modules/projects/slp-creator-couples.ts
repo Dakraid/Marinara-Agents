@@ -210,14 +210,15 @@ export function slurpCoupleMisfitOf(a: SlurpTieCreator, b: SlurpTieCreator): Slu
     misfit: SlurpCoupleForced["misfit"],
     test: (self: SlurpTieCreator, other: SlurpTieCreator) => boolean,
   ) => {
-    const hit = pairs.find(([self, other]) => test(self, other));
+    // A page the player runs is the player's: its text is not a card, and it has no gender to read.
+    const hit = pairs.find(([self, other]) => self.automatic && test(self, other));
     return hit ? { misfit, byId: hit[0].id } : null;
   };
   return (
     (cards ? null : first("taken", (self) => (self.cardPartners ?? []).length > 0)) ??
     first("notInto", (self) => NOT_INTO_ANYONE.test(self.text)) ??
     first("noDating", neverDates) ??
-    first("orientation", (self, other) => !into(self, other))
+    first("orientation", (self, other) => other.automatic && !into(self, other))
   );
 }
 
@@ -482,6 +483,7 @@ function advanceCouple(
     const withId = collabOther(couple, selfId, input.collabbedWith);
     if (
       withId &&
+      byId.get(otherId)?.automatic !== false &&
       slurpCoupleTaken(couple) &&
       hash(`${couple.id}:${selfId}:${withId}:sting`) % 3 === 0 &&
       !next.moments.some((entry) => entry.kind === "jealous" && entry.withId === withId && entry.fromId === otherId)
@@ -516,7 +518,7 @@ function advanceCouple(
     !couple.moments.some((entry) => entry.kind === "movingOn" && entry.at >= couple.stageAt)
   )
     next = withMoment(next, moment(next, "movingOn", stamp));
-  if (!due) return next;
+  if (!due || !a.automatic || !b.automatic) return next;
   if (couple.stage === "dating")
     return withMoment(
       { ...next, stage: "together", stageAt: stamp, togetherAt: next.togetherAt ?? stamp },
@@ -585,7 +587,8 @@ export function slurpAdvanceCouples(couples: readonly SlurpCouple[], input: Slur
   for (const [index, a] of input.creators.entries())
     for (const b of input.creators.slice(index + 1)) {
       const taken = busy();
-      if (taken.has(a.id) || taken.has(b.id) || ever.has(slurpPairKey(a.id, b.id))) continue;
+      if (!a.automatic || !b.automatic || taken.has(a.id) || taken.has(b.id) || ever.has(slurpPairKey(a.id, b.id)))
+        continue;
       const fit = slurpCoupleFit(a, b);
       if (fit.fits && fit.cards) next = [...next, newSlurpCouple(input.newId(), a.id, b.id, "card", stamp, "together")];
     }
@@ -698,7 +701,7 @@ export function slurpSetUpCouple(
     b.id,
     "player",
     input.at.toISOString(),
-    fit.cards ? "together" : "sparks",
+    fit.cards || !a.automatic || !b.automatic ? "together" : "sparks",
   );
   return [...couples, forced ? { ...couple, forced } : couple];
 }
