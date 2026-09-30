@@ -2638,5 +2638,9 @@
   "ui.slurp.drama.log.choice": "Odpowiedź: {{detail}}",
   "ui.slurp.drama.log.skipped": "Pominięte: {{detail}}",
   "ui.slurp.drama.log.ended": "Koniec",
-  "ui.slurp.settings.backstage.sectionHints.stir": "Biuro wsparcia, miłość, drama"
+  "ui.slurp.settings.backstage.sectionHints.stir": "Biuro wsparcia, miłość, drama",
+  "ui.slurp.settings.overview.pause.label": "Wstrzymaj wszystko",
+  "ui.slurp.settings.overview.pause.title": "Slurp jest wstrzymany",
+  "ui.slurp.settings.overview.pause.detail": "Żadnych wywołań AI, postów, fanów ani wiadomości. Wszystko czeka tutaj, aż wznowisz.",
+  "ui.slurp.settings.overview.pause.resume": "Wznów Slurp"
 }

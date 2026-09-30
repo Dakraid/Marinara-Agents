@@ -896,7 +896,10 @@ async function main() {
       undefined,
     );
     const generation = read("server/src/slp/features/messages/slp-message-generation-service.ts");
-    assert.match(generation, /slpResponseFormat\(input\.connection\.model, "noodler_dm", \{ collab: true \}\)/u);
+    assert.match(
+      generation,
+      /slpResponseFormat\(input\.connection\.model, "noodler_dm", \{ collab: Boolean\(pageId\)/u,
+    );
     assert.match(
       generation,
       /agreedCollab: pageId \? readSlurpDmCollab\(generated\.collab, pageId, \(value\) => protect\(value, 200\)\)/u,

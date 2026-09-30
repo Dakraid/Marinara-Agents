@@ -412,126 +412,118 @@ export function SlpShell({
                   />
                   {slurpActive && <span className="slp-display text-lg">{SLURP_NAME}</span>}
                 </div>
-                {/* Its own scroll box: Backstage lists every settings section, which runs past a short
-                    window. The persona menu stays below it, outside, so its popover is never clipped. */}
-                <div className="min-h-0 flex-1 overflow-y-auto">
-                  {desktopSidebar ?? (
-                    <nav
-                      className="space-y-1"
-                      aria-label={slurpActive ? localizeUi("ui.slurp.navigation.menuNavigation") : undefined}
+                {desktopSidebar ?? (
+                  <nav
+                    className="space-y-1"
+                    aria-label={slurpActive ? localizeUi("ui.slurp.navigation.menuNavigation") : undefined}
+                  >
+                    <button
+                      type="button"
+                      onClick={onOpenHomeDestination}
+                      aria-current={homeActive ? "page" : undefined}
+                      className={cn(SLURP_ROW_CLASS, homeActive && SLURP_ROW_ACTIVE_CLASS)}
                     >
+                      <SlpHubGlyph size={22} filled={homeActive} className="!text-[var(--noodle-accent-foreground)]" />
+                      {desktopHomeLabel}
+                    </button>
+                    {onOpenSearch && (
                       <button
                         type="button"
-                        onClick={onOpenHomeDestination}
-                        aria-current={homeActive ? "page" : undefined}
-                        className={cn(SLURP_ROW_CLASS, homeActive && SLURP_ROW_ACTIVE_CLASS)}
+                        onClick={onOpenSearch}
+                        aria-current={activeView === "search" ? "page" : undefined}
+                        className={cn(SLURP_ROW_CLASS, activeView === "search" && SLURP_ROW_ACTIVE_CLASS)}
                       >
-                        <SlpHubGlyph
+                        <SlpDiscoverGlyph
                           size={22}
-                          filled={homeActive}
+                          filled={activeView === "search"}
                           className="!text-[var(--noodle-accent-foreground)]"
                         />
-                        {desktopHomeLabel}
+                        {slpCreatorActive
+                          ? localizeUi("ui.noodle.noodleshell.discover")
+                          : slurpActive
+                            ? localizeUi("ui.slurp.navigation.search", { defaultValue: "Discover" })
+                            : localizeUi("ui.noodle.noodlehome.searchNoodle")}
                       </button>
-                      {onOpenSearch && (
-                        <button
-                          type="button"
-                          onClick={onOpenSearch}
-                          aria-current={activeView === "search" ? "page" : undefined}
-                          className={cn(SLURP_ROW_CLASS, activeView === "search" && SLURP_ROW_ACTIVE_CLASS)}
-                        >
-                          <SlpDiscoverGlyph
-                            size={22}
-                            filled={activeView === "search"}
-                            className="!text-[var(--noodle-accent-foreground)]"
-                          />
-                          {slpCreatorActive
-                            ? localizeUi("ui.noodle.noodleshell.discover")
-                            : slurpActive
-                              ? localizeUi("ui.slurp.navigation.search", { defaultValue: "Discover" })
-                              : localizeUi("ui.noodle.noodlehome.searchNoodle")}
-                        </button>
-                      )}
-                      {onOpenStir && (
-                        <button
-                          type="button"
-                          onClick={onOpenStir}
-                          aria-current={activeView === "stir" ? "page" : undefined}
-                          className={cn(SLURP_ROW_CLASS, activeView === "stir" && SLURP_ROW_ACTIVE_CLASS)}
-                        >
-                          <SlpStirGlyph
-                            size={22}
-                            filled={activeView === "stir"}
-                            className="!text-[var(--noodle-accent-foreground)]"
-                          />
-                          {localizeUi("ui.slurp.navigation.stir")}
-                        </button>
-                      )}
-                      {onOpenMessages && (
-                        <button
-                          type="button"
-                          onClick={onOpenMessages}
-                          aria-current={activeView === "messages" ? "page" : undefined}
-                          className={cn(SLURP_ROW_CLASS, activeView === "messages" && SLURP_ROW_ACTIVE_CLASS)}
-                        >
-                          <SlpInboxGlyph
-                            size={22}
-                            filled={activeView === "messages"}
-                            className="!text-[var(--noodle-accent-foreground)]"
-                          />
-                          <span className="min-w-0 flex-1">
-                            {localizeUi("ui.slurp.navigation.messages", { defaultValue: "Inbox" })}
-                          </span>
-                          {notificationCount > 0 && (
-                            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--noodle-accent)] px-1.5 text-[11px] font-black tabular-nums text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]">
-                              {notificationCount}
-                            </span>
-                          )}
-                        </button>
-                      )}
-                      {onOpenProfile && (
-                        <button
-                          type="button"
-                          onClick={onOpenProfile}
-                          aria-current={activeView === "profile" ? "page" : undefined}
-                          className={cn(SLURP_ROW_CLASS, activeView === "profile" && SLURP_ROW_ACTIVE_CLASS)}
-                        >
-                          <SlpProfileGlyph
-                            size={22}
-                            filled={activeView === "profile"}
-                            className="!text-[var(--noodle-accent-foreground)]"
-                          />
-                          {slurpActive
-                            ? localizeUi("ui.slurp.navigation.profile")
-                            : localizeUi("ui.noodle.noodlehome.profile")}
-                        </button>
-                      )}
-                      {onOpenWallet && (
-                        <button
-                          type="button"
-                          onClick={onOpenWallet}
-                          aria-current={activeView === "wallet" ? "page" : undefined}
-                          className={cn(SLURP_ROW_CLASS, activeView === "wallet" && SLURP_ROW_ACTIVE_CLASS)}
-                        >
-                          <Wallet size={22} className="!text-[var(--noodle-accent-foreground)]" />
-                          <span className="min-w-0 flex-1">
-                            {localizeUi("ui.slurp.navigation.wallet", { defaultValue: "Wallet" })}
-                          </span>
-                          {walletChip("h-7 px-2.5 text-xs")}
-                        </button>
-                      )}
+                    )}
+                    {onOpenStir && (
                       <button
                         type="button"
-                        onClick={onOpenSettings}
-                        aria-current={activeView === "settings" ? "page" : undefined}
-                        className={cn(SLURP_ROW_CLASS, activeView === "settings" && SLURP_ROW_ACTIVE_CLASS)}
+                        onClick={onOpenStir}
+                        aria-current={activeView === "stir" ? "page" : undefined}
+                        className={cn(SLURP_ROW_CLASS, activeView === "stir" && SLURP_ROW_ACTIVE_CLASS)}
                       >
-                        <Settings2 size={22} className="!text-[var(--noodle-accent-foreground)]" />
-                        {localizeUi("navigation.topbar.settings")}
+                        <SlpStirGlyph
+                          size={22}
+                          filled={activeView === "stir"}
+                          className="!text-[var(--noodle-accent-foreground)]"
+                        />
+                        {localizeUi("ui.slurp.navigation.stir")}
                       </button>
-                    </nav>
-                  )}
-                </div>
+                    )}
+                    {onOpenMessages && (
+                      <button
+                        type="button"
+                        onClick={onOpenMessages}
+                        aria-current={activeView === "messages" ? "page" : undefined}
+                        className={cn(SLURP_ROW_CLASS, activeView === "messages" && SLURP_ROW_ACTIVE_CLASS)}
+                      >
+                        <SlpInboxGlyph
+                          size={22}
+                          filled={activeView === "messages"}
+                          className="!text-[var(--noodle-accent-foreground)]"
+                        />
+                        <span className="min-w-0 flex-1">
+                          {localizeUi("ui.slurp.navigation.messages", { defaultValue: "Inbox" })}
+                        </span>
+                        {notificationCount > 0 && (
+                          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--noodle-accent)] px-1.5 text-[11px] font-black tabular-nums text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)]">
+                            {notificationCount}
+                          </span>
+                        )}
+                      </button>
+                    )}
+                    {onOpenProfile && (
+                      <button
+                        type="button"
+                        onClick={onOpenProfile}
+                        aria-current={activeView === "profile" ? "page" : undefined}
+                        className={cn(SLURP_ROW_CLASS, activeView === "profile" && SLURP_ROW_ACTIVE_CLASS)}
+                      >
+                        <SlpProfileGlyph
+                          size={22}
+                          filled={activeView === "profile"}
+                          className="!text-[var(--noodle-accent-foreground)]"
+                        />
+                        {slurpActive
+                          ? localizeUi("ui.slurp.navigation.profile")
+                          : localizeUi("ui.noodle.noodlehome.profile")}
+                      </button>
+                    )}
+                    {onOpenWallet && (
+                      <button
+                        type="button"
+                        onClick={onOpenWallet}
+                        aria-current={activeView === "wallet" ? "page" : undefined}
+                        className={cn(SLURP_ROW_CLASS, activeView === "wallet" && SLURP_ROW_ACTIVE_CLASS)}
+                      >
+                        <Wallet size={22} className="!text-[var(--noodle-accent-foreground)]" />
+                        <span className="min-w-0 flex-1">
+                          {localizeUi("ui.slurp.navigation.wallet", { defaultValue: "Wallet" })}
+                        </span>
+                        {walletChip("h-7 px-2.5 text-xs")}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={onOpenSettings}
+                      aria-current={activeView === "settings" ? "page" : undefined}
+                      className={cn(SLURP_ROW_CLASS, activeView === "settings" && SLURP_ROW_ACTIVE_CLASS)}
+                    >
+                      <Settings2 size={22} className="!text-[var(--noodle-accent-foreground)]" />
+                      {localizeUi("navigation.topbar.settings")}
+                    </button>
+                  </nav>
+                )}
                 <div ref={accountSwitcherRef} className="relative mt-auto">
                   {accountSwitcherOpen && (
                     // Sized to its own content rather than to the rail. It used to be pinned

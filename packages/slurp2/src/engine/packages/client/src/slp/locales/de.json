@@ -2604,5 +2604,9 @@
   "ui.slurp.drama.log.choice": "Antwort: {{detail}}",
   "ui.slurp.drama.log.skipped": "Übersprungen: {{detail}}",
   "ui.slurp.drama.log.ended": "Beendet",
-  "ui.slurp.settings.backstage.sectionHints.stir": "Support-Desk, Liebe, Drama"
+  "ui.slurp.settings.backstage.sectionHints.stir": "Support-Desk, Liebe, Drama",
+  "ui.slurp.settings.overview.pause.label": "Alles pausieren",
+  "ui.slurp.settings.overview.pause.title": "Slurp ist pausiert",
+  "ui.slurp.settings.overview.pause.detail": "Keine KI-Aufrufe, keine Posts, keine Fans und keine Nachrichten. Alles wartet hier, bis du fortsetzt.",
+  "ui.slurp.settings.overview.pause.resume": "Slurp fortsetzen"
 }

@@ -1,3 +1,4 @@
+import { assertSlurpNotPaused } from "./slp-pause.js";
 import { lookup as dnsLookup } from "node:dns/promises";
 import { isIP } from "node:net";
 
@@ -140,8 +141,12 @@ export function slpWithProviderRetry<P extends { chatComplete: (...args: never[]
   // defineProperty, not assignment: the host's providers carry a read-only `chatComplete`, and a
   // read-only property on the prototype makes plain assignment on the wrapper throw.
   return Object.defineProperty(Object.create(provider) as P, "chatComplete", {
-    value: (...args: Parameters<P["chatComplete"]>) =>
-      slpRetryProviderCall(() => provider.chatComplete(...args), options),
+    // "Pause all" (`slp-pause.ts`): not one model call while Slurp is paused.
+    // Async, so a paused call rejects like any failed call and a `.catch()` on it still catches it.
+    value: async (...args: Parameters<P["chatComplete"]>) => {
+      assertSlurpNotPaused();
+      return slpRetryProviderCall(() => provider.chatComplete(...args), options);
+    },
     writable: true,
     configurable: true,
     enumerable: true,

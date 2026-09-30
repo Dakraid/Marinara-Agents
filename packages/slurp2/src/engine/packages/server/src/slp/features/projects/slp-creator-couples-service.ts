@@ -14,6 +14,7 @@ import { mutateSlurpCreatorTies, readSlurpCreatorTiesDocument } from "../../data
 import { emptySlpAccountSettings, normalizeHandle } from "../../modules/records/slp-storage-model.js";
 import { hash } from "../../modules/projects/slp-project.js";
 import {
+  slurpCoupleActive,
   slurpCoupleFor,
   slurpCoupleOf,
   slurpCoupleTaken,
@@ -27,6 +28,7 @@ import {
 import type { SlurpTieCreator } from "../../modules/projects/slp-creator-ties.js";
 import { slurpDmViewerPage, type SlurpDmParty } from "../../modules/messages/slp-dm-roles.js";
 import { readSlurpRelationshipLine } from "../../data/creators/slp-flavour-source.js";
+import { slurpPartnerWord } from "../../modules/projects/slp-couple-lines.js";
 
 /** A storyline about two Creators getting together: a live crossover whose words are romance. */
 const ROMANCE =
@@ -200,22 +202,36 @@ export async function closeSlurpCouplePages(
 /**
  * The Creator page writing in a DM, for the role header (`slurpDmViewerPage`), with who they are to
  * the Creator when the two are (or were) a couple: the header then says so in one plain sentence.
+ *
+ * The player's own page (Drama, "your relationship") also says what she calls them and lets her answer
+ * say what the talk did to the two of them ("us"). A concealed page of the player still counts when
+ * she is with it: she knows who she is with. The header then never names the page.
  */
 export async function slurpCoupleDmPage(
   db: DB,
-  page: Parameters<typeof slurpDmViewerPage>[0],
+  page:
+    | (Parameters<typeof slurpDmViewerPage>[0] & {
+        kind?: string;
+        sourceKind?: string | null;
+        settings: { profile?: { gender?: string | null } };
+      })
+    | null,
   creatorId: string,
   viewerId: string,
 ): Promise<SlurpDmParty | null> {
   const party = slurpDmViewerPage(page, creatorId, viewerId);
-  if (!party || !page) return party;
-  const relationship = await readSlurpRelationshipLine(db, creatorId, { withId: page.id });
+  if (!page || page.id === creatorId || page.id === viewerId || page.invited) return party;
+  const player = page.kind === "persona" && page.sourceKind === "persona";
   const { couples } = await readSlurpCreatorTiesDocument(db).catch(() => ({ couples: [] as SlurpCouple[] }));
   const couple = slurpCoupleOf(couples, creatorId, page.id);
+  const partner = Boolean(couple && slurpCoupleTaken(couple));
+  if (!party && !(player && couple && slurpCoupleActive(couple))) return party;
+  const relationship = await readSlurpRelationshipLine(db, creatorId, { withId: page.id });
   return {
-    ...party,
+    ...(party ?? { name: page.displayName, handle: page.handle, concealed: true }),
     ...(relationship ? { relationship } : {}),
-    ...(couple && slurpCoupleTaken(couple) ? { partner: true } : {}),
+    ...(partner ? { partner: true } : {}),
+    ...(player ? { us: true, partnerWord: slurpPartnerWord(page.settings.profile?.gender) } : {}),
   };
 }
 

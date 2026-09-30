@@ -10,9 +10,12 @@ import {
   textSlurpPartners,
 } from "../features/messages/slp-messages-contract.js";
 import { refreshSlurpCreatorPages } from "../features/creators/slp-creators-contract.js";
+import { slurpPausedNow } from "../data/settings/slp-pause-storage.js";
 
 /** World work that runs when the player opens the notification stream. Each step fails soft. */
 export async function slpCatchUpWorldOnOpen(app: FastifyInstance) {
+  // "Pause all": nothing catches up while Slurp is paused.
+  if (await slurpPausedNow(app.db)) return;
   // Catch-up on open. This is one of the two callers of `advanceSlurpWorld`; the other is the
   // background scheduler. Advancing on read mirrors `applyStipend`, which bills on read and
   // needs no timer to stay correct. A failure here must not cost the player their feed.

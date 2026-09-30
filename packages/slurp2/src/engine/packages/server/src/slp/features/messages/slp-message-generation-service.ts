@@ -53,6 +53,7 @@ import { resolveSlurpThreadStance } from "./slp-thread-stance.js";
 import {
   readSlurpDmReply,
   readSlurpDmCollab,
+  readSlurpDmUs,
   protectNoteOperation,
   SLURP_NOTE_MAX_LENGTH,
   SLURP_NOTES_PER_REPLY,
@@ -492,6 +493,7 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
   disclosureMode: Parameters<typeof slpCreatorIdentityInstruction>[0];
   publicIdentity: Parameters<typeof slpCreatorIdentityInstruction>[1];
   viewerPageId?: string;
+  usPageId?: string;
 }> {
   const slurp = createSlurpStorage(input.db);
   const disclosureMode = input.creator.settings.privacy.identityDisclosure ?? "open";
@@ -688,8 +690,10 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
   // The redaction rules travel with the prompt. The answer has to be protected with the same two
   // values the question was built from, or a concealed creator can be unmasked by their own reply.
   // The page named in the role header, which also offers the "collab" field (7b-c).
-  const viewerPageId = viewerPage ? viewerPageAccount?.id : undefined;
-  return { messages, stance, disclosureMode, publicIdentity, recentPosts, viewerPageId };
+  // A concealed page offers no collab: the header does not name it. "us": the player's own page.
+  const viewerPageId = viewerPage && !viewerPage.concealed ? viewerPageAccount?.id : undefined;
+  const usPageId = viewerPage?.us ? viewerPageAccount?.id : undefined;
+  return { messages, stance, disclosureMode, publicIdentity, recentPosts, viewerPageId, usPageId };
 }
 
 export async function generateSlurpMessageReply(input: SlurpMessagePromptInput): Promise<SlurpGeneratedDmReply> {
@@ -700,6 +704,7 @@ export async function generateSlurpMessageReply(input: SlurpMessagePromptInput):
     publicIdentity,
     recentPosts,
     viewerPageId: pageId,
+    usPageId,
   } = await buildSlurpMessagePrompt(input);
   const support = input.viewer.id === SLURP_SUPPORT_ACCOUNT_ID;
   const budget = (await createSlurpStorage(input.db).getSettings()).modelBudget;
@@ -748,9 +753,7 @@ export async function generateSlurpMessageReply(input: SlurpMessagePromptInput):
     debugMode,
     responseFormat: support
       ? slpResponseFormat(input.connection.model, "noodler_dm", { staff: true })
-      : pageId
-        ? slpResponseFormat(input.connection.model, "noodler_dm", { collab: true })
-        : slpResponseFormat(input.connection.model, "noodler_dm"),
+      : slpResponseFormat(input.connection.model, "noodler_dm", { collab: Boolean(pageId), us: Boolean(usPageId) }),
   });
   const content = response.content ?? "";
   logDebugOverride(
@@ -791,5 +794,7 @@ export async function generateSlurpMessageReply(input: SlurpMessagePromptInput):
     desk: protectSlurpSupportStaff(support ? generated.desk : undefined, (value) => protect(value, 400)),
     // Creator to Creator only: the two agreed on a joint post (7b-c).
     agreedCollab: pageId ? readSlurpDmCollab(generated.collab, pageId, (value) => protect(value, 200)) : undefined,
+    us: usPageId ? readSlurpDmUs(generated.us, (value) => protect(value, 120)) : undefined,
+    usPageId,
   };
 }

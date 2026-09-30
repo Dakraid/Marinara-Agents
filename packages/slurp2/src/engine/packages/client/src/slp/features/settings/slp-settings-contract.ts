@@ -183,6 +183,8 @@ export type SlurpSettings = {
   supportDesk: SlpSupportDeskSettings;
   /** Settings › Stir: a couple may grow to four people. */
   polyamory: boolean;
+  /** Settings › Overview › Pause all: no AI calls, no ticks, nothing, until switched back on. */
+  paused: boolean;
   /** Backstage › Drama: level, the situations and dramas switched on, situation dials. */
   drama: SlpDramaSettings;
   onboarding: "not_started" | "in_progress" | "completed";

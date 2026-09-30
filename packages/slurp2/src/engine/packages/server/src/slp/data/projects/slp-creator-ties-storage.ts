@@ -8,7 +8,8 @@ import type { DB } from "../../../db/connection.js";
 import { createAppSettingsStorage } from "../../../services/storage/app-settings.storage.js";
 import { readSlurpCreatorTies, type SlurpCreatorTies } from "../../modules/projects/slp-creator-ties.js";
 import { readSlurpBrandDeals, type SlurpBrandDeal } from "../../modules/economy/slp-brand-deals.js";
-import { readSlurpCouples, type SlurpCouple } from "../../modules/projects/slp-creator-couples.js";
+import type { SlurpCouple } from "../../modules/projects/slp-creator-couples.js";
+import { readSlurpCouples } from "../../modules/projects/slp-couple-read.js";
 import { readSlurpBonds, type SlurpBond } from "../../modules/projects/slp-creator-bonds.js";
 
 export const SLURP_CREATOR_TIES_KEY = "slurp2.creator-ties";

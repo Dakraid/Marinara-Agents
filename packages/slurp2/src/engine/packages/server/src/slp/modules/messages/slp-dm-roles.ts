@@ -19,6 +19,15 @@ export type SlurpDmParty = {
   relationship?: string;
   /** The two are a couple now: the chat is as private and as spicy as both their levels allow. */
   partner?: boolean;
+  /** What the Creator calls them: "boyfriend", "girlfriend" or "partner" (from the page's gender). */
+  partnerWord?: string;
+  /**
+   * The page is the player's own and concealed: she knows who she is with, but the header never
+   * names the page, and there is no collab to agree on in this chat.
+   */
+  concealed?: boolean;
+  /** The one writing is the player: the answer may say what the talk did to the two of them ("us"). */
+  us?: boolean;
 };
 
 /** The message fields the transcript reads. A subset of `SlurpMessage`. */
@@ -133,17 +142,25 @@ export function slurpDmRoleHeader(input: SlurpDmRoleInput & { history: readonly 
       `Also add "desk" to your JSON every time: {"trust": "up" if this talk made you think better of Slurp, "down" if worse, else "same", "offer": when slurpStanding.pendingOffer is set, your answer to that offer: "accept", "counter" (you want something different) or "decline"; otherwise null, "counter": what you would take instead, in plain words, or null, "intel": rarely, and only when you trust Slurp, one thing you let slip about another Creator on Slurp, or null, "rating": when slurpStanding.ticketResolved is set, 1 to 5 for how Slurp handled your ticket; otherwise null}. When slurpStanding.youGoAlong is set you accept the offer, however you feel about it. Your "content" says your answer in your own words; decide the way you really would, from slurpStanding.standing.`,
     );
   } else if (input.writer === "creator") {
+    const page = input.viewerPage;
     lines.push(
       `You are ${at(input.creator)}, a Creator on Slurp. This is your private chat with ${at(input.viewer)}.`,
-      input.viewerPage
-        ? `${viewer} runs a Creator page on Slurp too (${at(input.viewerPage)}). This is one Creator writing to another: talk to ${viewer} as a fellow Creator, not as a customer, though they can still subscribe or buy like anyone.`
-        : unnamed
-          ? "The person writing to you is a fan."
-          : `${viewer} is a fan writing to you.`,
+      // Her partner is neither a fan nor a customer: nothing here is for sale to them (Drama, "your relationship").
+      page?.partner
+        ? `${viewer} is your ${page.partnerWord ?? "partner"}${page.concealed ? "" : ` and runs a Creator page on Slurp too (${at(page)})`}. This chat is just the two of you: talk to ${viewer} the way you talk to the person you are with, never as a fan or a customer. Nothing you send ${viewer} is for sale; what you share here is yours to give.`
+        : page && !page.concealed
+          ? `${viewer} runs a Creator page on Slurp too (${at(page)}). This is one Creator writing to another: talk to ${viewer} as a fellow Creator, not as a customer, though they can still subscribe or buy like anyone.`
+          : unnamed
+            ? "The person writing to you is a fan."
+            : `${viewer} is a fan writing to you.`,
     );
-    if (input.viewerPage?.relationship) lines.push(input.viewerPage.relationship);
+    if (page?.relationship) lines.push(page.relationship);
+    if (page?.us)
+      lines.push(
+        `Also add "us" to your JSON: {"step": "closer" when this talk really brought you two closer (a confession, asking ${viewer} out or saying yes, agreeing to be a couple), "hurt" when you two really fought or ${viewer} hurt you, "madeUp" when you made up after a fight; "why": a few words about it}. Most messages change nothing between you: then "us" is null.`,
+      );
     // Two pages can plan a joint post here; the split is theirs to agree (7b-c).
-    if (input.viewerPage)
+    if (page && !page.concealed)
       lines.push(
         `If you two really agree in this chat to make a post together, add "collab" to your JSON: {"idea": what you make together, "yourShare": the percent of what it earns that is yours, 50 unless you two agreed otherwise, "shoot": true if it is a spicy shoot together you two negotiated here (what you do, your limits, the split), else false}. Otherwise "collab" is null. A collab is work: you announce it, tag each other and split what it earns. Only agree if it fits you; you can say no.`,
       );

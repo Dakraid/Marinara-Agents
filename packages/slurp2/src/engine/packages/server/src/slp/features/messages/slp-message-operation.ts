@@ -5,7 +5,7 @@
  * release after the visible bubble plus delayed batch are durable. The claim is what stops the live
  * send path and the offline scheduler from both answering the same message.
  */
-import { agreeSlurpCollabInDm } from "../projects/slp-projects-contract.js";
+import { agreeSlurpCollabInDm, applySlurpPlayerUs } from "../projects/slp-projects-contract.js";
 import type { DB } from "../../../db/connection.js";
 import { logger } from "../../../lib/logger.js";
 import { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
@@ -253,6 +253,8 @@ export async function replyToSlurpMessage(
   try {
     const locked = await tryCreatorAccountOperation(thread.creatorAccountId, async () => {
       const settings = await slurp.getSettings();
+      // "Pause all": the reply waits, and the player hears "AI replies are off", as with the budget off.
+      if (settings.paused) throw new SlurpMessageBudgetUnavailableError(null);
       const connection = await resolveSlurpTextConnection(
         createConnectionsStorage(db),
         settings.modelBudget.connectionId ?? settings.generationConnectionId,
@@ -500,6 +502,16 @@ export async function replyToSlurpMessage(
       if (stored && reply.agreedCollab)
         await agreeSlurpCollabInDm(db, { hostId: thread.creatorAccountId, ...reply.agreedCollab }).catch(
           (error: unknown) => logger.warn(error, "[slurp-message] Could not record the collab agreed in this chat"),
+        );
+      // With the player: the talk moved the two of them (a crush, dating, official, a fight, making up).
+      if (stored && reply.us && reply.usPageId)
+        await applySlurpPlayerUs(db, {
+          creatorId: thread.creatorAccountId,
+          pageId: reply.usPageId,
+          step: reply.us.step,
+          why: reply.us.why,
+        }).catch((error: unknown) =>
+          logger.warn(error, "[slurp-message] Could not apply what the talk did to the couple"),
         );
       if (stored && aiFan) await dropSlurpPendingText(db, input.triggerMessageId);
       if (stored) {

@@ -21,7 +21,8 @@ import { slurpArcEffectMultiplier } from "../../modules/projects/slp-arc-progres
 import { SLP_STORY_OCCURRENCES_KEY, readSlpOccurrences } from "../../modules/world/events/slp-story-runtime.js";
 import { slurpInfluenceMultiplier } from "../../../../../shared/src/slp/slp-platform-events.js";
 import { isSlurpCrossover } from "../../modules/projects/slp-project.js";
-import { readSlurpCouples, slurpCoupleOfPage } from "../../modules/projects/slp-creator-couples.js";
+import { slurpCoupleOfPage } from "../../modules/projects/slp-creator-couples.js";
+import { readSlurpCouples } from "../../modules/projects/slp-couple-read.js";
 import { slurpCoupleMembers, slurpCouplePageSplit } from "../../modules/projects/slp-couple-group.js";
 import { SLURP_CREATOR_TIES_KEY } from "../projects/slp-creator-ties-storage.js";
 import {

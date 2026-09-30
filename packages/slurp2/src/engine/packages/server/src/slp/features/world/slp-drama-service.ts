@@ -238,6 +238,8 @@ function hashOf(value: string): number {
  */
 export async function advanceSlurpDrama(db: DB, at = new Date()): Promise<void> {
   const settings = await createSlurpStorage(db).getSettings();
+  // "Pause all": no drama moves while Slurp is paused.
+  if (settings.paused) return;
   const catalog = slpEnabledDrama(slpDramaCatalog(await readSlurpDramaLibrary(db)), settings.drama.enabled);
   const stored = await readSlurpDramaState(db);
   const idle =

@@ -17,7 +17,6 @@ import {
 } from "./slp-creator-ties.js";
 import {
   slurpCoupleActive,
-  slurpCoupleMisfitOf,
   slurpCoupleOther,
   slurpCouplePageOpenable,
   slurpSetUpCouple,
@@ -25,6 +24,7 @@ import {
   type SlurpCouple,
   type SlurpCoupleForced,
 } from "./slp-creator-couples.js";
+import { slurpCoupleMisfitOf } from "./slp-couple-fit.js";
 import type { SlpActionParsed } from "../../../../../shared/src/slp/slp-actions.js";
 import { slurpAddToCouple, slurpCoupleMembers, slurpNameList } from "./slp-couple-group.js";
 import type { SlpActionPreview, SlpStirNote } from "../../../../../shared/src/slp/slp-stir.js";

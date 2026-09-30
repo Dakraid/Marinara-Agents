@@ -1,3 +1,4 @@
+import { setSlurpPaused } from "../../base/model/slp-pause.js";
 import { and, desc, eq, inArray, or } from "../../../db/file-query.js";
 import { deleteSlurpCreatorPlanningRows } from "../continuity/slp-continuity-storage.js";
 import { SlpAccount, SlpAccountKind } from "../../../../../shared/src/slp/slp-social.types.js";
@@ -243,6 +244,7 @@ export function createCreatorsStorage2(context: SlurpStorageContext) {
         const mark = input.postsPerDay !== undefined && input.postsPerDayCustom === undefined;
         const next = normalizeSlurpSettings({ ...current, ...input, ...(mark ? { postsPerDayCustom: true } : {}) });
         await settingsStore.set(SLURP_SETTINGS_KEY, JSON.stringify(next));
+        setSlurpPaused(next.paused);
         if (!current.autoPostingScheduleEnabled && next.autoPostingScheduleEnabled) {
           const timestamp = now();
           const rows = await db.select().from(slpCreatorPreparedPosts);

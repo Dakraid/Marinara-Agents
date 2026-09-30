@@ -1,3 +1,4 @@
+import { setSlurpPaused } from "../../base/model/slp-pause.js";
 import { and, eq, like, or } from "../../../db/file-query.js";
 import { PROFESSOR_MARI_ID } from "@marinara-engine/shared";
 import { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
@@ -171,6 +172,8 @@ export function createCreatorsStorage1(context: SlurpStorageContext) {
     async getSettings(): Promise<SlurpSettings> {
       const raw = await settingsStore.get(SLURP_SETTINGS_KEY);
       const settings = normalizeSlurpSettings(raw);
+      // Every read keeps "Pause all" in step for the model and image gates (`slp-pause.ts`).
+      setSlurpPaused(settings.paused);
       // F: an untouched "Posts per day" grows with the active Creators; every reader sees the sized number.
       if (!settings.postsPerDayCustom) settings.postsPerDay = slurpSizedPostsPerDay(await countSlurpActiveCreators(db));
       return settings;

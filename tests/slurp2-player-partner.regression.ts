@@ -8,10 +8,23 @@ import assert from "node:assert/strict";
 import { slurp2Source } from "./slurp2-source";
 import {
   slurpAdvanceCouples,
-  slurpCoupleMisfitOf,
   slurpSetUpCouple,
   type SlurpCouple,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples.ts";
+import { slurpCoupleMisfitOf } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-fit.ts";
+import { slurpPlayerCoupleStep } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-player-couple.ts";
+import {
+  slurpPartnerWord,
+  slurpRelationshipLine,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-lines.ts";
+import { slurpDmRoleHeader } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-dm-roles.ts";
+import { readSlurpDmUs } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-dm-response.ts";
+import {
+  SlurpPausedError,
+  setSlurpPaused,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/base/model/slp-pause.ts";
+import { slpWithProviderRetry } from "../packages/slurp2/src/engine/packages/server/src/slp/base/model/slp-provider-retry.ts";
+import { generateSlpImageWithRetry } from "../packages/slurp2/src/engine/packages/server/src/slp/base/media/slp-image-retry.ts";
 import type { SlurpTieCreator } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-ties.ts";
 import {
   SLURP_PARTNER_TEXT_PACE,
@@ -185,6 +198,113 @@ async function main() {
       ),
     );
     assert.match(scheduler, /textSlurpPartners\(app\.db\)/u);
+  }
+
+  // ── The chat moves the player's couple (0.3.9): a crush, dating, official, a fight, making up ──
+  {
+    const mira = creator("mira", "Romantic, loves the gym.");
+    const you = creator("you", "", { automatic: false, gender: "male" });
+    const at = (days: number) => new Date(T0 + days * DAY);
+    const crush = slurpSetUpCouple([], mira, you, { at: at(0), id: "c", crush: true });
+    assert.ok(Array.isArray(crush));
+    let couple = (crush as SlurpCouple[])[0]!;
+    assert.equal(couple.stage, "sparks", "a crush from the chat starts as sparks");
+    assert.equal(
+      slurpPlayerCoupleStep(couple, "closer", { at: at(0.5), creatorId: "mira" }),
+      null,
+      "one warm evening does not make it dating",
+    );
+    couple = slurpPlayerCoupleStep(couple, "closer", { at: at(1), creatorId: "mira", detail: "coffee" })!;
+    assert.equal(couple.stage, "dating");
+    assert.equal(slurpPlayerCoupleStep(couple, "closer", { at: at(2), creatorId: "mira" }), null, "dating needs days");
+    couple = slurpPlayerCoupleStep(couple, "closer", { at: at(4), creatorId: "mira" })!;
+    assert.equal(couple.stage, "together");
+    assert.equal(couple.moments.at(-1)!.kind, "launch", "official means a launch post");
+    couple = slurpPlayerCoupleStep(couple, "hurt", { at: at(5), creatorId: "mira", detail: "he forgot" })!;
+    assert.equal(couple.stage, "rocky");
+    assert.equal(couple.moments.at(-1)!.fromId, "mira", "the fight is hers to post, never the player's");
+    assert.equal(slurpPlayerCoupleStep(couple, "closer", { at: at(6), creatorId: "mira" }), null);
+    couple = slurpPlayerCoupleStep(couple, "madeUp", { at: at(6), creatorId: "mira" })!;
+    assert.equal(couple.stage, "together");
+
+    // A crush nobody acts on fades; the clock never moves it on by itself.
+    const [faded] = slurpAdvanceCouples((crush as SlurpCouple[]).slice(), {
+      creators: [mira, you],
+      at: at(13),
+      activity: 1,
+      storylines: [],
+      rivals: new Set(),
+      collabbedWith: new Map(),
+      newId: () => "n",
+    });
+    assert.equal(faded!.stage, "split");
+    assert.equal(faded!.ending, "fizzled");
+
+    // Set up by hand with the player: official at once, with a launch.
+    const set = slurpSetUpCouple([], mira, you, { at: at(0), id: "s" }) as SlurpCouple[];
+    assert.equal(set[0]!.stage, "together");
+    assert.equal(set[0]!.moments.at(-1)!.kind, "launch");
+
+    // Her lines: the player is "your boyfriend", never "another Creator on Slurp"; a secret stays private.
+    const names = new Map([["you", "Sam"]]);
+    const options = { at: at(1), playerIds: new Set(["you"]), words: new Map([["you", slurpPartnerWord("male")]]) };
+    const withYou = slurpRelationshipLine(set, "mira", names, { ...options, withId: "you" });
+    assert.match(withYou, /Sam is your boyfriend: you two are together, and your fans know\./u);
+    assert.doesNotMatch(slurpRelationshipLine(set, "mira", names, options), /another Creator/u);
+    const secret = slurpRelationshipLine([{ ...set[0]!, secret: true }], "mira", names, options);
+    assert.match(secret, /never name Sam in public/u);
+    assert.doesNotMatch(secret, /fans know/u);
+    assert.equal(slurpPartnerWord("female"), "girlfriend");
+    assert.equal(slurpPartnerWord(null), "partner");
+  }
+
+  // ── Her DM header: her partner is neither a fan nor a customer; the answer may carry "us" ──
+  {
+    const header = slurpDmRoleHeader({
+      writer: "creator",
+      creator: { name: "Mira", handle: "mira" },
+      viewer: { name: "Sam", handle: "sam" },
+      viewerPage: {
+        name: "Sam",
+        handle: "sam_page",
+        partner: true,
+        partnerWord: "boyfriend",
+        concealed: true,
+        us: true,
+      },
+      history: [],
+    });
+    assert.match(header, /Sam is your boyfriend\. This chat is just the two of you/u);
+    assert.doesNotMatch(header, /sam_page/u, "a concealed page is never named");
+    assert.doesNotMatch(header, /"collab"/u, "no collab on a concealed page");
+    assert.match(header, /add "us" to your JSON/u);
+    assert.deepEqual(
+      readSlurpDmUs({ step: "madeUp", why: " sorry " }, (value) => value),
+      {
+        step: "madeUp",
+        why: "sorry",
+      },
+    );
+    assert.equal(
+      readSlurpDmUs({ step: "marry" }, (value) => value),
+      undefined,
+    );
+  }
+
+  // ── Pause all: not one model or image call ──
+  {
+    let calls = 0;
+    const provider = slpWithProviderRetry({ chatComplete: async () => ((calls += 1), { content: "hi" }) });
+    setSlurpPaused(true);
+    await assert.rejects(provider.chatComplete(), SlurpPausedError);
+    await assert.rejects(
+      generateSlpImageWithRetry(async () => ((calls += 1), "img")),
+      SlurpPausedError,
+    );
+    assert.equal(calls, 0);
+    setSlurpPaused(false);
+    await provider.chatComplete();
+    assert.equal(calls, 1);
   }
 
   console.log("slurp2 player partner regression passed");

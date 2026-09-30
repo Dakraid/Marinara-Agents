@@ -9,13 +9,11 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  readSlurpCouples,
   newSlurpCouple,
   slurpAdvanceCouples,
   slurpBreakUp,
   slurpCloseCouplePage,
   slurpCoupleActive,
-  slurpCoupleFit,
   slurpCoupleFor,
   slurpCoupleOfPage,
   slurpCouplePageOpenable,
@@ -28,6 +26,8 @@ import {
   type SlurpCouple,
   type SlurpCouplesInput,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples.ts";
+import { readSlurpCouples } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-read.ts";
+import { slurpCoupleFit } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-fit.ts";
 // Moved with polyamory (0.3.5): the couple-page helpers live with the group rules.
 import {
   slurpCoupleBuzz,
@@ -535,7 +535,7 @@ function run(days: number, over: Partial<SlurpCouplesInput> = {}, start: SlurpCo
   const flavourSource = read("server/src/slp/data/creators/slp-flavour-source.ts");
   assert.match(
     flavourSource,
-    /input\.chat\?\.with === "staff" \? "" : await readSlurpRelationshipLine/u,
+    /input\.chat\?\.with === "staff" \|\| input\.chat\?\.partnerId\s*\?\s*""\s*:\s*await readSlurpRelationshipLine/u,
     "Support gets no love life",
   );
   assert.match(

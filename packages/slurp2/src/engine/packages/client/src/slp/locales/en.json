@@ -6026,5 +6026,9 @@
   "ui.slurp.drama.log.choice": "Answer: {{detail}}",
   "ui.slurp.drama.log.skipped": "Skipped: {{detail}}",
   "ui.slurp.drama.log.ended": "Ended",
-  "ui.slurp.settings.backstage.sectionHints.stir": "Support desk, love, drama"
+  "ui.slurp.settings.backstage.sectionHints.stir": "Support desk, love, drama",
+  "ui.slurp.settings.overview.pause.label": "Pause all",
+  "ui.slurp.settings.overview.pause.title": "Slurp is paused",
+  "ui.slurp.settings.overview.pause.detail": "No AI calls, no posts, no fans and no messages. Everything waits here until you resume.",
+  "ui.slurp.settings.overview.pause.resume": "Resume Slurp"
 }

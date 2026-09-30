@@ -24,7 +24,7 @@ import { readSlurpCreatorTiesDocument } from "../projects/slp-creator-ties-stora
 import { resolveSlurpExplicitLevel } from "../settings/slp-post-guidance-storage.js";
 import { SLP_EXPLICIT_LEVELS } from "../../../../../shared/src/slp/slp-spice.js";
 import { slurpCouplePartners } from "../../modules/projects/slp-couple-group.js";
-import { slurpRelationshipLine } from "../../modules/projects/slp-couple-lines.js";
+import { slurpPartnerWord, slurpRelationshipLine } from "../../modules/projects/slp-couple-lines.js";
 import { readSlurpAgentMemoryLines } from "./slp-agent-memory-source.js";
 import { createSlurpStorage } from "../slp-storage.js";
 import { resolveSlurpCreatorSpice, type SlurpCreatorSpice } from "./slp-spice-storage.js";
@@ -157,8 +157,13 @@ export async function resolveSlurpCreatorFlavour(
         steering: input.steering ?? (await readSlurpCreatorSteering(db, input.account.id)),
         lately: agents,
         spice: spiceLines,
-        // Slurp Support is staff: their love life is not its business.
-        relationship: input.chat?.with === "staff" ? "" : await readSlurpRelationshipLine(db, input.account.id),
+        // Slurp Support is staff: their love life is not its business. In a chat with the partner the
+        // role header already says who they are to each other; the general line ("you are with X,
+        // not the topic of everything you write") would contradict it there.
+        relationship:
+          input.chat?.with === "staff" || input.chat?.partnerId
+            ? ""
+            : await readSlurpRelationshipLine(db, input.account.id),
       },
       { use: input.use, sequence: input.sequence },
     );
@@ -312,20 +317,36 @@ export async function readSlurpRelationshipLine(
         partnerId ? storage.getNoodlerAccountById(partnerId) : null,
       ),
     );
-    const names = new Map(partners.flatMap((partner) => (partner ? [[partner.id, partner.displayName] as const] : [])));
-    return slurpRelationshipLine(couples, creatorId, names, options);
+    const found = partners.flatMap((partner) => (partner ? [partner] : []));
+    const names = new Map(found.map((partner) => [partner.id, partner.displayName] as const));
+    // A page the player runs is the player: she is with them, not with "another Creator on Slurp".
+    const players = found.filter((partner) => partner.kind === "persona" && partner.sourceKind === "persona");
+    return slurpRelationshipLine(couples, creatorId, names, {
+      ...options,
+      playerIds: new Set(players.map((partner) => partner.id)),
+      words: new Map(
+        players.map((partner) => [partner.id, slurpPartnerWord(partner.settings.profile.gender)] as const),
+      ),
+    });
   } catch (error) {
     logger.warn(error, "[slurp] Could not read a Creator's relationship");
     return "";
   }
 }
 
-/** The lower of a Creator's own level and their partner's. */
+/**
+ * The lower of a Creator's own level and their partner's. A page the player runs is the player, whose
+ * own level is not theirs to set here: with the player she goes as far as her own level (Drama).
+ */
 async function partnerLevel(
   db: DB,
   own: SlurpCreatorSpice["level"],
   partnerId: string,
 ): Promise<SlurpCreatorSpice["level"]> {
+  const account = await createSlurpStorage(db)
+    .getNoodlerAccountById(partnerId)
+    .catch(() => null);
+  if (account?.kind === "persona" && account.sourceKind === "persona") return own;
   const theirs = await resolveSlurpExplicitLevel(db, partnerId).catch(() => null);
   return theirs && SLP_EXPLICIT_LEVELS.indexOf(theirs) < SLP_EXPLICIT_LEVELS.indexOf(own) ? theirs : own;
 }
