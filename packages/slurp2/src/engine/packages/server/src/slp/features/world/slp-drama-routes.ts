@@ -75,18 +75,24 @@ export async function slpDramaRoutes(app: FastifyInstance, { noodle, resolveView
     const message = await messages.getMessageById(parsed.data.messageId);
     const thread = message ? await messages.getThreadById(message.threadId) : null;
     const choice = message?.metadata?.dramaChoice as
-      { runId?: unknown; options?: unknown; chosen?: unknown } | undefined;
+      { runId?: unknown; stage?: unknown; options?: unknown; chosen?: unknown } | undefined;
     if (!message || !thread || thread.viewerAccountId !== parsed.data.personaId || typeof choice?.runId !== "string")
       return reply.code(404).send({ error: "That question is gone." });
     const options = Array.isArray(choice.options) ? choice.options : [];
     if (choice.chosen !== null && choice.chosen !== undefined)
       return reply.code(409).send({ error: "You already answered." });
     if (parsed.data.option >= options.length) return reply.code(400).send({ error: "That is not one of the answers." });
-    const answered = await answerSlurpDramaChoice(app.db, choice.runId, parsed.data.option);
-    await messages.mergeMessageMetadata(message.id, {
-      dramaChoice: { ...choice, chosen: answered ? parsed.data.option : "late" },
+    const answered = await answerSlurpDramaChoice(app.db, {
+      runId: choice.runId,
+      option: parsed.data.option,
+      ...(typeof choice.stage === "string" ? { stage: choice.stage } : {}),
     });
-    return answered
+    // A second quick tap ("taken") writes nothing, so it never turns the real answer into "late".
+    if (answered === "taken") return reply.code(409).send({ error: "You already answered." });
+    await messages.mergeMessageMetadata(message.id, {
+      dramaChoice: { ...choice, chosen: answered === "answered" ? parsed.data.option : "late" },
+    });
+    return answered === "answered"
       ? { chosen: parsed.data.option }
       : reply.code(409).send({ error: "Too late: it already went the other way." });
   });

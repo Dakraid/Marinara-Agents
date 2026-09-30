@@ -150,7 +150,14 @@ async function sendDramaJob(
     if (job.channel === "choice") {
       const sent = await messages.sendCreatorMessage(job.actorId, viewer, {
         content: text(job.choice!.question),
-        metadata: { dramaChoice: { runId: job.runId, options: job.choice!.options.map(text), chosen: null } },
+        metadata: {
+          dramaChoice: {
+            runId: job.runId,
+            stage: job.choice!.stage ?? null,
+            options: job.choice!.options.map(text),
+            chosen: null,
+          },
+        },
       });
       return sent ? true : "drop";
     }
@@ -212,7 +219,8 @@ async function sendDramaJob(
     const viewer = job.toId ? viewerOf.get(job.toId) : undefined;
     const from = job.actorId ? (await storage.getNoodlerAccountById(job.actorId))?.displayName : undefined;
     if (viewer) await storage.creditGift(viewer, amount, `gift from ${from ?? "a Creator"}`, `drama:${job.id}`);
-    else if (job.toId) await storage.creditEarnings(job.toId, "tip", amount, `from ${from ?? "a Creator"}`);
+    else if (job.toId)
+      await storage.creditEarnings(job.toId, "tip", amount, `from ${from ?? "a Creator"} (drama ${job.id})`);
     return true;
   }
   return "drop";
@@ -238,8 +246,9 @@ export async function advanceSlurpDrama(db: DB, at = new Date()): Promise<void> 
     !stored.state.runs.some((run) => !run.endedAt) &&
     !stored.state.situations.some((run) => !run.endedAt);
   if (idle && !stored.state.jobs.some((job) => job.status === "queued")) return;
-  const world = await loadDramaWorld(db, at);
+  // The full world (every Creator's spice, card people, followers) only when the runtime moves.
   if (!stored.advancedAt || at.getTime() - Date.parse(stored.advancedAt) >= ADVANCE_EVERY_MS) {
+    const world = await loadDramaWorld(db, at);
     const effects = await mutateSlurpDramaState(db, ({ state }) => {
       const result = slpAdvanceDrama(state, {
         at,
@@ -258,19 +267,58 @@ export async function advanceSlurpDrama(db: DB, at = new Date()): Promise<void> 
       logger.warn(error, "[slurp-drama] Could not apply a drama's tie outcome"),
     );
   }
-  // Everything due except post lines (the post planner takes those).
-  const due = slpDueDramaJobs((await readSlurpDramaState(db)).state, at).filter((job) => job.channel !== "post");
-  for (const job of due.slice(0, 12)) {
-    const outcome = await sendDramaJob(db, job, world.viewerOf, at).catch((error: unknown) => {
+  // Everything due except post lines (the post planner takes those): questions and DMs first, so
+  // comments that wait for a post never hold them up.
+  const order = ["choice", "dm", "money", "notification", "comment"];
+  const due = slpDueDramaJobs((await readSlurpDramaState(db)).state, at)
+    .filter((job) => job.channel !== "post")
+    .sort((left, right) => order.indexOf(left.channel) - order.indexOf(right.channel));
+  if (!due.length) return;
+  const viewerOf = await loadViewerPages(db);
+  let sent = 0;
+  for (const job of due) {
+    if (sent >= 12) break;
+    // Claimed before it goes out: a second tick running at the same time never sends it again.
+    const claimed = await mutateSlurpDramaState(db, (current) =>
+      current.state.jobs.some((entry) => entry.id === job.id && entry.status === "queued")
+        ? { stored: { ...current, state: slpMarkDramaJob(current.state, job.id, "done") }, result: true }
+        : null,
+    );
+    if (!claimed) continue;
+    const outcome = await sendDramaJob(db, job, viewerOf, at).catch((error: unknown) => {
       logger.warn(error, "[slurp-drama] Could not send a drama beat; it is dropped");
       return "drop" as const;
     });
-    if (outcome === false) continue;
-    await mutateSlurpDramaState(db, (current) => ({
-      stored: { ...current, state: slpMarkDramaJob(current.state, job.id, outcome === true ? "done" : "dropped") },
-      result: null,
-    }));
+    if (outcome === true) sent += 1;
+    // Not yet (a comment waiting for a post): back in the queue until it goes or expires.
+    if (outcome !== true)
+      await mutateSlurpDramaState(db, (current) => ({
+        stored: {
+          ...current,
+          state: {
+            ...current.state,
+            jobs: current.state.jobs.map((entry) =>
+              entry.id === job.id
+                ? { ...entry, status: outcome === false ? ("queued" as const) : ("dropped" as const) }
+                : entry,
+            ),
+          },
+        },
+        result: null,
+      }));
   }
+}
+
+/** The player's pages and the persona behind each: DMs, coins and notifications go to that persona. */
+async function loadViewerPages(db: DB): Promise<Map<string, string>> {
+  const accounts = await createSlurpStorage(db).listNoodlerAccounts();
+  return new Map(
+    accounts.flatMap((account) =>
+      account.kind === "persona" && account.sourceKind === "persona" && account.sourceEntityId
+        ? [[account.id, account.sourceEntityId] as const]
+        : [],
+    ),
+  );
 }
 
 /**
@@ -321,11 +369,21 @@ export async function planSlurpDramaBeat(
   }
 }
 
-/** The player tapped an answer in a drama's DM. False: the question is gone or already answered. */
-export async function answerSlurpDramaChoice(db: DB, runId: string, option: number, at = new Date()): Promise<boolean> {
-  const answered = await mutateSlurpDramaState(db, (current) => {
-    const next = slpAnswerDramaChoice(current.state, runId, option, at);
-    return next ? { stored: { ...current, state: next }, result: true } : null;
+/**
+ * The player tapped an answer in a drama's DM. "answered": it counts. "taken": the player already
+ * answered this question (a second tap). "late": the question is gone or went its own way.
+ */
+export async function answerSlurpDramaChoice(
+  db: DB,
+  input: { runId: string; option: number; stage?: string },
+  at = new Date(),
+): Promise<"answered" | "taken" | "late"> {
+  const result = await mutateSlurpDramaState(db, (current) => {
+    const next = slpAnswerDramaChoice(current.state, input.runId, input.option, at, input.stage);
+    if (next) return { stored: { ...current, state: next }, result: "answered" as const };
+    const run = current.state.runs.find((entry) => entry.id === input.runId && !entry.endedAt);
+    const taken = run?.choice?.by === "player" && (input.stage === undefined || run.choice.stage === input.stage);
+    return { stored: current, result: taken ? ("taken" as const) : ("late" as const) };
   });
-  return answered === true;
+  return result ?? "late";
 }

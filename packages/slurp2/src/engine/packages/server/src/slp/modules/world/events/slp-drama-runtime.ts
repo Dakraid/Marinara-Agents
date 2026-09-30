@@ -76,8 +76,8 @@ export type SlpDramaJob = {
   lines?: string[];
   heat?: SlpDramaHeat;
   amount?: number;
-  /** A choice for the player: the question and its options. */
-  choice?: { question: string; options: string[] };
+  /** A choice for the player: the question, its options, and the stage it belongs to. */
+  choice?: { question: string; options: string[]; stage?: string };
   /** Names for `{role}` in the text, filled at queue time. */
   names: Record<string, string>;
   /** The player's pages in the cast when it was queued (who a notification is for). */
@@ -98,7 +98,16 @@ export type SlpDramaRun = {
   startedAt: string;
   endedAt: string | null;
   ending: "done" | "left" | "off" | "player" | "time" | null;
-  choice: { stage: string; askedAt: string; dueAt: string; answer: number | null; by: string | null } | null;
+  choice: {
+    stage: string;
+    askedAt: string;
+    dueAt: string;
+    answer: number | null;
+    by: string | null;
+    /** Who is asked, and how many answers there are: an answer is checked against these. */
+    asks?: "fans" | "player" | "role";
+    count?: number;
+  } | null;
   log: SlpDramaLog[];
 };
 export type SlpSituationRun = {
@@ -419,6 +428,11 @@ export function slpAdvanceDrama(
   let runs = [...state.runs];
   const end = (run: SlpDramaRun, ending: NonNullable<SlpDramaRun["ending"]>, exit: boolean): SlpDramaRun => {
     const drama = dramas.get(run.dramaId);
+    // Switched off, lead gone, out of time: what it still had queued goes nowhere (the exit is new).
+    if (ending !== "done")
+      jobs = jobs.map((entry) =>
+        entry.runId === run.id && entry.status === "queued" ? { ...entry, status: "dropped" as const } : entry,
+      );
     if (exit && drama) queue([drama.exit], { id: run.id, cast: aliveCast(run.cast) }, now + 2 * DAY, "exit");
     ended[run.dramaId] = stamp;
     return log({ ...run, endedAt: stamp, ending, choice: null }, "ended", ending);
@@ -456,7 +470,18 @@ export function slpAdvanceDrama(
     if (stage.choice) {
       const dueAt =
         stage.choice.asks === "role" ? now + ROLE_CHOICE_HOURS * HOUR : now + stage.choice.timeoutDays * DAY;
-      entered = { ...entered, choice: { stage: key, askedAt: stamp, dueAt: iso(dueAt), answer: null, by: null } };
+      entered = {
+        ...entered,
+        choice: {
+          stage: key,
+          askedAt: stamp,
+          dueAt: iso(dueAt),
+          answer: null,
+          by: null,
+          asks: stage.choice.asks,
+          count: stage.choice.options.length,
+        },
+      };
       if (stage.choice.asks === "player" && playerKey && cast[playerKey]) {
         const asker = cast[drama.roles[0]!.key] ?? null;
         jobs.push({
@@ -465,7 +490,11 @@ export function slpAdvanceDrama(
           channel: "choice",
           actorId: asker,
           toId: cast[playerKey],
-          choice: { question: stage.choice.question, options: stage.choice.options.map((option) => option.label) },
+          choice: {
+            question: stage.choice.question,
+            options: stage.choice.options.map((option) => option.label),
+            stage: key,
+          },
           names: names(cast),
           dueAt: stamp,
           expiresAt: iso(dueAt),
@@ -515,7 +544,7 @@ export function slpAdvanceDrama(
     }
     const answer =
       choice && current.choice?.answer !== null && current.choice
-        ? choice.options[current.choice.answer]!.next
+        ? choice.options[current.choice.answer]?.next
         : undefined;
     return enter(current, drama, answer ?? stage.next ?? drama.stages[index + 1]?.key ?? "end");
   });
@@ -620,9 +649,14 @@ export function slpAnswerDramaChoice(
   runId: string,
   option: number,
   at: Date,
+  /** The stage the question was asked in: an old message never answers a newer question. */
+  stage?: string,
 ): SlpDramaState | null {
   const run = state.runs.find((entry) => entry.id === runId && active(entry));
   if (!run?.choice || run.choice.answer !== null || option < 0) return null;
+  if (stage !== undefined && run.choice.stage !== stage) return null;
+  if (run.choice.asks !== undefined && run.choice.asks !== "player") return null;
+  if (run.choice.count !== undefined && option >= run.choice.count) return null;
   return {
     ...state,
     runs: state.runs.map((entry) =>

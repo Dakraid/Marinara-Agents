@@ -380,6 +380,59 @@ async function main() {
     assert.match(src("modules/notifications/slp-event-weight.ts"), /drama: 6\d,/u);
   }
 
+  // Review fixes: an old message never answers a newer question, only the player's own questions take
+  // a tap, an answer outside the options is refused, and a stored bad answer never crashes the tick.
+  {
+    const said = slpAnswerDramaChoice(asked.state, runId, 0, new Date(T0), "noticed");
+    assert.equal(said, null, "an answer for another stage is refused");
+    assert.equal(
+      slpAnswerDramaChoice(asked.state, runId, 5, new Date(T0), "ask"),
+      null,
+      "an answer outside the options is refused",
+    );
+    assert.ok(
+      slpAnswerDramaChoice(asked.state, runId, 1, new Date(T0), "ask"),
+      "the right stage and a real option count",
+    );
+    const broken: SlpDramaState = {
+      ...asked.state,
+      runs: asked.state.runs.map((entry) =>
+        entry.id === runId ? { ...entry, stageDays: 0, choice: { ...entry.choice!, answer: 9, by: "player" } } : entry,
+      ),
+    };
+    assert.doesNotThrow(() => slpAdvanceDrama(broken, input(T0 + (asked.hour + 1) * HOUR, { dramas: [open] })));
+    const rivalsAsk = asked.state.runs.find((entry) => entry.id === runId)!;
+    const fansChoice: SlpDramaState = {
+      ...asked.state,
+      runs: asked.state.runs.map((entry) =>
+        entry === rivalsAsk ? { ...entry, choice: { ...entry.choice!, asks: "fans" } } : entry,
+      ),
+    };
+    assert.equal(slpAnswerDramaChoice(fansChoice, runId, 0, new Date(T0)), null, "a tap never answers the fans' vote");
+    // Switched off: the run ends and nothing it had queued goes out.
+    const off = slpAdvanceDrama(asked.state, input(T0 + (asked.hour + 1) * HOUR, { dramas: [] })).state;
+    assert.equal(off.runs.find((entry) => entry.id === runId)!.ending, "off");
+    assert.ok(off.jobs.filter((entry) => entry.runId === runId).every((entry) => entry.status !== "queued"));
+    // The question job carries its stage, for the DM's metadata.
+    assert.equal(asked.asking.choice!.stage, "ask");
+  }
+  {
+    const src = slurp2Source(
+      new URL(
+        "../packages/slurp2/src/engine/packages/server/src/slp/features/world/slp-drama-service.ts",
+        import.meta.url,
+      ),
+    );
+    assert.ok(
+      src.indexOf("const claimed = await mutateSlurpDramaState") < src.indexOf("await sendDramaJob(db, job"),
+      "claimed before sent",
+    );
+    assert.ok(
+      src.indexOf("const world = await loadDramaWorld(db, at);") > src.indexOf("ADVANCE_EVERY_MS) {"),
+      "the world loads only to move",
+    );
+  }
+
   // The starter set: valid, unique, every drama's situation exists, and in a lived-in world every
   // drama gets cast and starts within 90 days at "soap", with only the post lines the packs wrote.
   {

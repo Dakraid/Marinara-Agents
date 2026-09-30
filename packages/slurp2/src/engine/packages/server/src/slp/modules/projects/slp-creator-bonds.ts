@@ -394,7 +394,8 @@ export function slurpAdvanceBonds(bonds: readonly SlurpBond[], input: SlurpBonds
 
 /** Keeps every active bond and the newest ended ones. */
 function trim(bonds: SlurpBond[]): SlurpBond[] {
-  const ended = bonds.filter((bond) => !slurpBondActive(bond));
+  // Ended exes stay: they are how a breakup knows it already made its ex bond (few, one per breakup).
+  const ended = bonds.filter((bond) => !slurpBondActive(bond) && bond.kind !== "ex");
   const drop = new Set(ended.slice(0, Math.max(0, ended.length - KEEP_ENDED)));
   return bonds.filter((bond) => !drop.has(bond));
 }

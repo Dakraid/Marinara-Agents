@@ -246,6 +246,45 @@ async function main() {
     assert.equal(slurpEndBond(moved, "missing", at(61)), "unknown");
   }
 
+  // An ended ex bond is never trimmed: it is how a breakup knows it already made its ex, so a bond the
+  // player ended cannot come back after many other bonds end.
+  {
+    const ex = readSlurpBonds([
+      {
+        id: "ex",
+        aId: "ana",
+        bId: "ben",
+        kind: "ex",
+        since: at(1).toISOString(),
+        endedAt: at(2).toISOString(),
+        ending: "player",
+      },
+    ]);
+    const noise = readSlurpBonds(
+      Array.from({ length: 60 }, (_, index) => ({
+        id: `n${index}`,
+        aId: `x${index}`,
+        bId: `y${index}`,
+        since: T0.toISOString(),
+        endedAt: at(3).toISOString(),
+      })),
+    );
+    const couple = slurpBreakUp(newSlurpCouple("cb", "ana", "ben", "world", T0.toISOString(), "together"), at(1));
+    const after = slurpAdvanceBonds(
+      [...ex, ...noise],
+      input({ creators: [creator("ana", []), creator("ben", [])], couples: [couple], at: at(4), activity: 0 }),
+    );
+    assert.ok(
+      after.some((bond) => bond.id === "ex"),
+      "the ended ex is kept",
+    );
+    assert.equal(
+      after.filter((bond) => bond.kind === "ex" && slurpBondActive(bond)).length,
+      0,
+      "and it does not come back",
+    );
+  }
+
   // Old and broken data reads back safely.
   {
     const read = readSlurpBonds([
