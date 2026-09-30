@@ -1,5 +1,9 @@
 # Noodle release notes
 
+## 1.3.1 — 2026-09-30
+
+- When Noodle cannot load, it now says so instead of showing an empty timeline. If Marinara Engine blocked it because this device has no Admin Secret, it explains how to set one.
+
 ## 1.2.25 — 2026-09-24
 
 - Widgets on Homescreen now available.

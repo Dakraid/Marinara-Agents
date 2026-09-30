@@ -1267,7 +1267,7 @@
   "ui.noodle.viewerhub.tabs.allCreators": "All creators",
   "ui.noodle.viewerhub.tabs.following": "Following",
   "ui.noodle.viewerhub.viewValue1": "View {{value1}}",
-  "ui.noodle.widget.adminSecretMissing": "Noodle cannot read the feed because the Engine rejected the request. Set the Engine admin secret and restart Marinara Engine.",
+  "ui.noodle.widget.adminSecretMissing": "Marinara Engine blocked Noodle because this device has no Admin Secret. Set ADMIN_SECRET in the Engine's .env file if it is not set yet, then enter the same value in Settings → Advanced → Admin Access.",
   "ui.noodle.widget.compactDescription": "A compact look at what is happening now.",
   "ui.noodle.widget.description": "A quick pulse from the public timeline.",
   "ui.noodle.widget.empty": "No posts yet. Open Noodle to start the timeline.",
