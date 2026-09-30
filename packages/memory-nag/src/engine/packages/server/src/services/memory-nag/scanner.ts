@@ -287,6 +287,7 @@ async function scanMemoryNagBatchUnlocked(chatId: string, range?: unknown): Prom
     JSON.stringify(fitted.messages),
   );
   const completion = await model.chatComplete(fitted.messages, {
+    // Package fallbacks; the capability host gives explicitly stored connection parameters precedence.
     maxTokens: fitted.maxTokens ?? MEMORY_NAG_SCAN_MAX_TOKENS,
     temperature: 0.2,
     reasoningEffort: "none",

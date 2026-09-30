@@ -1,7 +1,9 @@
 import { resolveBaseUrl } from "../../../services/generation/connection-base-url.js";
+import { resolveStoredChatOptions } from "../../../services/generation/generation-parameters.js";
 import { createLLMProvider } from "../../../services/llm/provider-registry.js";
 import type { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
 import { composeSlurpPromptBlocks, type SlurpPromptBlockOverrides } from "../../base/prompting/slp-prompt-blocks.js";
+import { slpSamplingOptions } from "../../base/prompting/slp-sampling-options.js";
 import { slpWithProviderRetry } from "../../base/model/slp-provider-retry.js";
 
 type GenerationConnection = NonNullable<Awaited<ReturnType<ReturnType<typeof createConnectionsStorage>["getWithKey"]>>>;
@@ -202,7 +204,10 @@ export async function generateSlurpConversationSchedule(
           ],
       {
         model: connection.model,
-        temperature: attempt === 0 ? 0.5 : 0.2,
+        ...slpSamplingOptions(
+          resolveStoredChatOptions(connection.defaultParameters, connection.provider, connection.model),
+          { temperature: attempt === 0 ? 0.5 : 0.2, topP: 1 },
+        ),
         maxTokens: Math.min(provider.maxTokensOverrideValue ?? 8192, 8192),
         responseFormat: { type: "json_object" },
       },

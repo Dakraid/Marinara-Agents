@@ -2,6 +2,10 @@ import type { DB } from "../../../db/connection.js";
 import type { ChatMessage } from "../../../services/llm/base-provider.js";
 import { logger } from "../../../lib/logger.js";
 import { resolveBaseUrl } from "../../../services/generation/connection-base-url.js";
+import {
+  resolveStoredChatOptions,
+  resolveStoredMaxTokens,
+} from "../../../services/generation/generation-parameters.js";
 import { resolveIllustratorPromptRuntime } from "../../../services/generation/illustrator-prompt-runtime.js";
 import { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
 import { createPromptOverridesStorage } from "../../../services/storage/prompt-overrides.storage.js";
@@ -10,6 +14,7 @@ import { composeSlurpPromptBlocks, type SlurpPromptBlockOverrides } from "../pro
 import type { SlurpVisualBrief } from "./slp-visual-brief.js";
 import { slurpVisualBriefPolicyText, slurpVisualBriefText } from "./slp-visual-brief.js";
 import { resolveSlurpTextConnection } from "../identity/slp-connection.js";
+import { slpSamplingOptions } from "../prompting/slp-sampling-options.js";
 import { claimSlurpModelBudget, type SlurpModelBudget } from "../model/slp-model-worker.js";
 
 const MAX_REWRITTEN_PROMPT_LENGTH = 12_000;
@@ -174,7 +179,15 @@ export async function rewriteSlpImagePrompt(input: {
     const result = await runtime.provider.chatComplete(messages, {
       model: runtime.model,
       // Headroom for reasoning connections: 2048 was spent entirely on thinking, with no answer.
-      ...(runtime.suppressModelParameters ? {} : { temperature: 0.3, maxTokens: 4_096 }),
+      ...(runtime.suppressModelParameters
+        ? {}
+        : {
+            ...slpSamplingOptions(
+              resolveStoredChatOptions(textConnection.defaultParameters, textConnection.provider, runtime.model),
+              { temperature: 0.3, topP: 1 },
+            ),
+            maxTokens: resolveStoredMaxTokens(textConnection.defaultParameters, 4_096),
+          }),
       suppressModelParameters: runtime.suppressModelParameters,
       enableCaching: runtime.enableCaching,
       anthropicExtendedCacheTtl: runtime.anthropicExtendedCacheTtl,

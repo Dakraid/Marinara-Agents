@@ -129,6 +129,7 @@ function spatialMapJsonRepairRequest(resolved: CapabilityResolvedLanguageModel, 
       throw new Error("The malformed response could not fit in a complete formatting-repair request.");
     }
     return resolved.chatComplete(repairPrompt.messages, {
+      // Package fallback; the capability host gives explicitly stored connection parameters precedence.
       temperature: 0,
       maxTokens,
       debugMode,
@@ -1206,6 +1207,7 @@ export async function spatialContextRoutes(app: FastifyInstance) {
 
     try {
       const result = await resolved.chatComplete(prompt.messages, {
+        // Package fallback; the capability host gives explicitly stored connection parameters precedence.
         temperature: 0.55,
         maxTokens: prompt.maxTokens,
         debugMode: debugOverrideEnabled,
@@ -1869,6 +1871,7 @@ export async function spatialContextRoutes(app: FastifyInstance) {
 
     try {
       const result = await resolved.chatComplete(prompt.messages, {
+        // Package fallback; the capability host gives explicitly stored connection parameters precedence.
         temperature: 0.55,
         maxTokens: prompt.maxTokens,
         debugMode: debugOverrideEnabled,

@@ -1,10 +1,12 @@
 import type { DB } from "../../db/connection.js";
 import { logger } from "../../lib/logger.js";
 import { resolveBaseUrl } from "../generation/connection-base-url.js";
+import { resolveStoredChatOptions, resolveStoredMaxTokens } from "../generation/generation-parameters.js";
 import { resolveIllustratorPromptRuntime } from "../generation/illustrator-prompt-runtime.js";
 import { createConnectionsStorage } from "../storage/connections.storage.js";
 import { createPromptOverridesStorage } from "../storage/prompt-overrides.storage.js";
 import { loadPrompt, NOODLE_IMAGE_INTERPRET } from "../prompt-overrides/index.js";
+import { noodleSamplingOptions } from "./noodle-sampling-options.js";
 
 const MAX_REWRITTEN_PROMPT_LENGTH = 12_000;
 const MAX_INSTRUCTIONS_LENGTH = 5_000;
@@ -95,7 +97,15 @@ export async function rewriteNoodleImagePrompt(input: {
       ],
       {
         model: runtime.model,
-        ...(runtime.suppressModelParameters ? {} : { temperature: 0.3, maxTokens: 2_048 }),
+        ...(runtime.suppressModelParameters
+          ? {}
+          : {
+              ...noodleSamplingOptions(
+                resolveStoredChatOptions(textConnection.defaultParameters, textConnection.provider, runtime.model),
+                { temperature: 0.3, topP: 1 },
+              ),
+              maxTokens: resolveStoredMaxTokens(textConnection.defaultParameters, 2_048),
+            }),
         suppressModelParameters: runtime.suppressModelParameters,
         enableCaching: runtime.enableCaching,
         anthropicExtendedCacheTtl: runtime.anthropicExtendedCacheTtl,
