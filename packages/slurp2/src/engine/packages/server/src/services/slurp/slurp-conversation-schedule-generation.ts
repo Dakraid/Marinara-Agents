@@ -1,6 +1,8 @@
 import { resolveBaseUrl } from "../generation/connection-base-url.js";
+import { resolveStoredChatOptions } from "../generation/generation-parameters.js";
 import { createLLMProvider } from "../llm/provider-registry.js";
 import type { createConnectionsStorage } from "../storage/connections.storage.js";
+import { noodleSamplingOptions } from "./slurp-sampling-options.js";
 
 type GenerationConnection = NonNullable<Awaited<ReturnType<ReturnType<typeof createConnectionsStorage>["getWithKey"]>>>;
 
@@ -84,7 +86,14 @@ export async function generateSlurpConversationSchedule(
       },
       { role: "user", content: "Generate the current week's schedule." },
     ],
-    { model: connection.model, temperature: 0.8, maxTokens: Math.min(provider.maxTokensOverrideValue ?? 8192, 8192) },
+    {
+      model: connection.model,
+      ...noodleSamplingOptions(
+        resolveStoredChatOptions(connection.defaultParameters, connection.provider, connection.model),
+        { temperature: 0.8, topP: 1 },
+      ),
+      maxTokens: Math.min(provider.maxTokensOverrideValue ?? 8192, 8192),
+    },
   );
   return parseResponse(result.content ?? "");
 }
