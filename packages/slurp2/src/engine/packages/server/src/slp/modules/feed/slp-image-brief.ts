@@ -52,7 +52,11 @@ const DEVICE_NEGATIVE = "smartphone, holding phone, selfie stick";
 const TEXT_NEGATIVE = "text, watermark";
 
 /** A partner scene has two people on purpose; only the stray and doubled bodies stay out. */
-const PARTNER_NEGATIVE = SHARED_NEGATIVE.replace("second person, extra people, ", "");
+const SECOND_PERSON_NEGATIVE = "second person, extra people, ";
+const PARTNER_NEGATIVE = SHARED_NEGATIVE.replace(SECOND_PERSON_NEGATIVE, "");
+
+/** A negative prompt that lets a second person in: for a picture whose final prompt names one (0.3.7). */
+export const slurpImageNegativeWithCompany = (negative: string): string => negative.replace(SECOND_PERSON_NEGATIVE, "");
 
 /**
  * Without a level (a redraw or a scheduled picture that kept none), only the shared terms apply.
@@ -132,6 +136,8 @@ export function slurpImageBrief(input: {
   selectedWardrobe?: { name: string; description: string } | null;
   /** Who is in a partner scene with them ("Jonas, their boyfriend"). Absent: they are alone. */
   partner?: string | null;
+  /** Who else the post is about ("Kai"): in the picture only if the moment calls for them. */
+  company?: string | null;
 }): string {
   const shootBrief =
     input.shoot?.brief &&
@@ -162,7 +168,11 @@ export function slurpImageBrief(input: {
         ? "explicit adult content with their partner"
         : LEVEL_PHOTO[input.sexualLevel],
     ),
-    input.partner ? `Two people: the Creator and ${input.partner}.` : "The only person in the photo.",
+    input.partner
+      ? `Two people: the Creator and ${input.partner}.`
+      : input.company
+        ? `${input.company} may be in the photo too, if the moment calls for it.`
+        : "The only person in the photo.",
   ]
     .filter(Boolean)
     .join("\n");

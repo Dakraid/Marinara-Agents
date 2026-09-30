@@ -25,6 +25,13 @@ import { advanceSlurpSupportDesk, drainSlurpContinuityExtraction } from "../mess
  */
 const INITIAL_DELAY_MS = 90_000;
 
+/**
+ * Rewrites per scheduled pass. The read path keeps its small limit so the first read stays fast;
+ * here the AI budget and its day pace already decide the spend, so a busy world does not queue
+ * faster than it rewrites. ponytail: fixed at 10; derive it from the budget if 10 still falls behind.
+ */
+const SCHEDULED_DRAIN_LIMIT = 10;
+
 /** Fallback wake interval when settings cannot be read. Normally `clock.tickMinutes`. */
 const POLL_MS = 5 * 60 * 1000;
 
@@ -69,7 +76,7 @@ export function startSlurpWorldScheduler(app: FastifyInstance, registerStop?: (s
       // here, "background" (only in the AI budget's background mode) while they are away. Each job
       // claims a paced share of the day, so the budget is spread over the whole day (R1-106).
       const context = present ? "present" : "background";
-      await drainSlurpPendingText(app.db, undefined, context).catch((error: unknown) =>
+      await drainSlurpPendingText(app.db, SCHEDULED_DRAIN_LIMIT, context).catch((error: unknown) =>
         logger.warn(error, "[slurp-pending] Scheduled drain failed"),
       );
       // Written replies to comments stay present-only work (R1-105).

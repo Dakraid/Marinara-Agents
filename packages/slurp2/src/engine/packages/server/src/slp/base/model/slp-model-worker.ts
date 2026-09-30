@@ -56,6 +56,8 @@ export function claimSlurpModelBudget(
   budget: SlurpModelBudget,
   kind: SlurpModelJobKind,
   at = new Date(),
+  /** False when the player asked for this upkeep job now ("Rewrite all pending"): the day's caps still hold. */
+  paced = SLURP_UPKEEP_JOB_KINDS.has(kind),
 ): Promise<boolean> {
   let allowed = false;
   const run = claimQueue.then(async () => {
@@ -63,7 +65,7 @@ export function claimSlurpModelBudget(
     const store = createAppSettingsStorage(db);
     const current = readSlurpModelBudgetLedger(await store.get(LEDGER_KEY), at);
     // Upkeep kinds follow the day's pace; a player's request never does (fix phase 1b, R1-106).
-    const next = spendSlurpModelBudget(budget, current, kind, SLURP_UPKEEP_JOB_KINDS.has(kind) ? at : undefined);
+    const next = spendSlurpModelBudget(budget, current, kind, paced ? at : undefined);
     if (!next) return;
     await store.set(LEDGER_KEY, JSON.stringify(next));
     allowed = true;

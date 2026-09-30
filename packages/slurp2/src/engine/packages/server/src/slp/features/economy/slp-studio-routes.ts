@@ -3,6 +3,7 @@ import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-s
 import { slurpPlatformScaleMultiplier } from "../../../../../shared/src/slp/slp-scale.js";
 import { readSlurpStudioSnapshot, writeSlurpStudioSnapshot } from "./slp-studio-snapshot.js";
 import {
+  slurpShownSubscribers,
   slurpCreatorReach,
   slurpPostImpressions,
   slurpPostLikeCount,
@@ -11,7 +12,6 @@ import {
 } from "../../../../../shared/src/slp/slp-reach.js";
 import { slurpFollowerMilestone, slurpMilestonesCrossed } from "../../modules/world/slp-milestones.js";
 import { slurpGoalProgress } from "../../modules/projects/slp-goal.js";
-import { slurpPayoutAllowance } from "../../modules/economy/slp-earnings.js";
 import { slurpLikesByWeek } from "../../modules/economy/slp-studio-stats.js";
 import { isSlurpViewerActorAccount } from "../../modules/settings/slp-settings.js";
 import type { FastifyInstance } from "fastify";
@@ -117,9 +117,11 @@ export async function slpStudioRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
             firstSeenAt: entry.tie.firstSeenAt,
           })),
         );
-        const subscribers =
-          (await noodle.listSubscriptionsForCreator(account.id)).length +
-          ((await population.countSubscribersForCreators([account.id])).get(account.id) ?? 0);
+        const subscribers = slurpShownSubscribers(
+          (await population.countSubscribersForCreators([account.id])).get(account.id) ?? 0,
+          (await noodle.listSubscriptionsForCreator(account.id)).length,
+          studioScaleSettings.simulationTuning.economy.crowdWeight,
+        );
         return {
           id: account.id,
           handle: account.handle,
@@ -133,7 +135,10 @@ export async function slpStudioRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
           earnings,
           milestone: slurpFollowerMilestone(followers),
           goal: goal ? slurpGoalProgress(goal, earnings.lifetime) : null,
-          payoutAllowance: slurpPayoutAllowance(earnings, at),
+          ...(await noodle.getPayoutState(account.id, at).then(({ allowance, allowanceCoins }) => ({
+            payoutAllowance: allowance,
+            payoutCoins: allowanceCoins,
+          }))),
           // Null rather than zero on a first read: "no change yet" and "measured no change" are
           // different, and the client renders them differently.
           followersDelta:
@@ -158,9 +163,12 @@ export async function slpStudioRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
     }
 
     await writeSlurpStudioSnapshot(app.db, viewer.id, {
-      baseline: stored ? { at: stored.at, platformScale: stored.platformScale, creators: stored.creators } : null,
+      baseline: stored
+        ? { at: stored.at, platformScale: stored.platformScale, creators: stored.creators, platform: true }
+        : null,
       at: at.toISOString(),
       platformScale: studioScale,
+      platform: true,
       creators: Object.fromEntries(
         creators.map((creator) => [
           creator.id,
@@ -238,7 +246,11 @@ export async function slpStudioRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
           followers,
           likes,
           replies,
-          subscribers: subscriptions.length + (fanSubscribers.get(account.id) ?? 0),
+          subscribers: slurpShownSubscribers(
+            fanSubscribers.get(account.id) ?? 0,
+            subscriptions.length,
+            settings.simulationTuning.economy.crowdWeight,
+          ),
           earnings: earnings.lifetime,
           unread: threads
             .filter((thread) => thread.creatorAccountId === account.id)

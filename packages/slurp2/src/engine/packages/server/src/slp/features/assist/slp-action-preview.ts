@@ -240,7 +240,7 @@ async function previewOther(
       return {
         who,
         detail: { label: goal.label, target: goal.target, replaces: before?.label ?? null },
-        summary: `${nameOf} asks their fans for ${goal.target} coins: ${goal.label}.`,
+        summary: `${nameOf} asks their fans for $${goal.target}: ${goal.label}.`,
       };
     }
     case "new-look": {

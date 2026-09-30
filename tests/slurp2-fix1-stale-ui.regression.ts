@@ -72,7 +72,7 @@ assert.match(studio, /const snapshot = visit \? stored : \(stored\?\.baseline \?
 assert.match(studio, /if \(!visit\) return \{ since: snapshot\?\.at \?\? null, creators \};/u);
 assert.match(
   studio,
-  /baseline: stored \? \{ at: stored\.at, platformScale: stored\.platformScale, creators: stored\.creators \} : null,/u,
+  /baseline: stored\s*\?\s*\{ at: stored\.at, platformScale: stored\.platformScale, creators: stored\.creators(?:, platform: true)? \}\s*: null,/u,
 );
 const economyHooks = read("client/src/slp/features/economy/slp-economy-hooks.ts");
 assert.match(economyHooks, /const mark = markVisit && !marked\.current;/u);

@@ -216,6 +216,12 @@ const FIELDS: Record<Group, NumberField[]> = {
   ],
   economy: [
     {
+      path: ["economy", "crowdWeight"],
+      label: "People per paying fan",
+      detail:
+        "How many people on the platform one real paying fan stands for. It multiplies the subscribers you see and the dollars a Creator earns, and sets how many dollars make one SlurpCoin when you collect.",
+    },
+    {
       path: ["economy", "audienceCommissionPrice"],
       label: "Commission price",
       detail: "Coins an audience commission pays.",

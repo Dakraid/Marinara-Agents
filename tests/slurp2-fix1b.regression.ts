@@ -60,7 +60,7 @@ assert.match(badge, /markSlurpPlayerPresent\(\);\s*return \{ unseenCount/u);
 const worldScheduler = readSlurp2Source("server", "features/world/slp-world-scheduler-service.ts");
 assert.match(worldScheduler, /if \(!present && !slurpWorldTimerDue\(clock, lastRunMs, Date\.now\(\)\)\) return;/u);
 assert.match(worldScheduler, /const context = present \? "present" : "background";/u);
-assert.match(worldScheduler, /await drainSlurpPendingText\(app\.db, undefined, context\)/u);
+assert.match(worldScheduler, /await drainSlurpPendingText\(app\.db, SCHEDULED_DRAIN_LIMIT, context\)/u);
 assert.match(worldScheduler, /await drainSlurpContinuityExtraction\(app\.db, context\)/u);
 assert.match(
   worldScheduler,
@@ -68,7 +68,9 @@ assert.match(
   "written replies stay present-only",
 );
 const worker = readSlurp2Source("server", "base/model/slp-model-worker.ts");
-assert.match(worker, /SLURP_UPKEEP_JOB_KINDS\.has\(kind\) \? at : undefined/u);
+// Upkeep is paced unless the player asked for it now ("Rewrite all now"); the day's caps still hold.
+assert.match(worker, /paced = SLURP_UPKEEP_JOB_KINDS\.has\(kind\)/u);
+assert.match(worker, /spendSlurpModelBudget\(budget, current, kind, paced \? at : undefined\)/u);
 assert.match(
   readSlurp2Source("server", "features/audience/slp-audience-reply-operation.ts"),
   /slurpModelBudgetPaceOpen\(db, settings\.modelBudget, "thread"\)/u,

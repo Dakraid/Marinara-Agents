@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { formatSlpDollars } from "../../base/ui/slp-number-format";
 import { Ban, Check, Handshake, HeartHandshake, Zap } from "lucide-react";
 import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { toast } from "sonner";
@@ -195,7 +196,7 @@ export function SlpCollabsPanel({ personaId }: { personaId: string }) {
     return t(deal.status === "done" ? done : "ui.slurp.ties.deal.accepted", {
       brand: deal.brand,
       name: who,
-      count: deal.fee,
+      amount: formatSlpDollars(deal.fee, i18n.language),
     });
   };
 
@@ -487,7 +488,7 @@ export function SlpRelationshipsPanel({ personaId }: { personaId: string }) {
  * the fee into their earnings now, no ends it.
  */
 export function SlpBrandOffers({ personaId, creatorId }: { personaId: string; creatorId: string }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { data } = useSlurpTies(personaId);
   const { answerDeal, markPosted } = useSlurpTiesMutations(personaId);
   const offers = (data?.deals ?? []).filter((deal) => deal.creatorId === creatorId && deal.status === "offered");
@@ -498,7 +499,11 @@ export function SlpBrandOffers({ personaId, creatorId }: { personaId: string; cr
     answerDeal.mutate(
       { id: deal.id, accept },
       {
-        onSuccess: () => accept && toast.success(t("ui.slurp.ties.deal.paid", { brand: deal.brand, count: deal.fee })),
+        onSuccess: () =>
+          accept &&
+          toast.success(
+            t("ui.slurp.ties.deal.paid", { brand: deal.brand, amount: formatSlpDollars(deal.fee, i18n.language) }),
+          ),
         onError: (error) => toast.error(errorMessage(error)),
       },
     );
@@ -578,7 +583,7 @@ export function SlpBrandOffers({ personaId, creatorId }: { personaId: string; cr
                     </span>
                   </span>
                   <span className={cn(SLP_TYPE.body, "shrink-0 font-bold tabular-nums")}>
-                    <SlpCoinText>{t("ui.slurp.ties.fee", { count: deal.fee })}</SlpCoinText>
+                    {t("ui.slurp.ties.fee", { amount: formatSlpDollars(deal.fee, i18n.language) })}
                   </span>
                 </div>
                 {deal.copy && <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>“{deal.copy}”</p>}

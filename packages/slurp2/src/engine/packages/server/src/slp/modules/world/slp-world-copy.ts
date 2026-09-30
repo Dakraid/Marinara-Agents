@@ -15,15 +15,7 @@
  */
 
 import type { SlurpAudienceTone } from "../../../../../shared/src/slp/slp-tone.js";
-
-const COMMISSION_OPENERS = [
-  "Would you take a request?",
-  "Hoping you have space for a commission.",
-  "Not sure if you do these, but",
-  "Been saving up for this one.",
-  "If your list is open,",
-  "Long shot, but",
-] as const;
+import { SLURP_COMMISSION_OPENERS, SLURP_FAN_OPENERS } from "../../../../../shared/src/slp/slp-world.js";
 
 const COMMISSION_ASKS = [
   "something soft, whatever direction you feel like taking it",
@@ -78,9 +70,11 @@ function pickIndex(seed: string, salt: string, length: number): number {
 }
 
 /** One commission brief. Three banks combined give several hundred distinct requests. */
-export function slurpCommissionBrief(seed: string): string {
+export function slurpCommissionBrief(seed: string, openers: readonly string[] = []): string {
+  // The player's own openers (Messaging settings) replace the built-in ones when there are any.
+  const bank = openers.length > 0 ? openers : SLURP_COMMISSION_OPENERS;
   return [
-    COMMISSION_OPENERS[pickIndex(seed, "opener", COMMISSION_OPENERS.length)]!,
+    bank[pickIndex(seed, "opener", bank.length)]!,
     COMMISSION_ASKS[pickIndex(seed, "ask", COMMISSION_ASKS.length)]!,
     COMMISSION_CLOSERS[pickIndex(seed, "closer", COMMISSION_CLOSERS.length)]!,
   ].join(" ");
@@ -91,25 +85,10 @@ export function slurpAudienceQuestion(seed: string): string {
   return QUESTIONS[pickIndex(seed, "question", QUESTIONS.length)]!;
 }
 
-/**
- * An opening line from somebody who has never written before.
- *
- * Same rule as the commission briefs: vague on purpose. A first message that pretends to know
- * something specific about a post it has not read is worse than one that simply says hello.
- */
-const OPENERS = [
-  "hi — been reading for a while, finally said something",
-  "hope it is ok to message. just wanted to say I like what you do",
-  "you probably get this a lot but you seem genuinely nice",
-  "not asking for anything, just wanted to say hi",
-  "been meaning to write for weeks and kept chickening out",
-  "hey. long time reader, first time writing",
-  "sorry to appear out of nowhere. your last few posts got me",
-  "is it weird to message? felt weird not to",
-] as const;
-
-export function slurpAudienceOpener(seed: string): string {
-  return OPENERS[pickIndex(seed, "opener-dm", OPENERS.length)]!;
+/** An opening line from somebody who has never written before; the player's own list wins when set. */
+export function slurpAudienceOpener(seed: string, openers: readonly string[] = []): string {
+  const bank = openers.length > 0 ? openers : SLURP_FAN_OPENERS;
+  return bank[pickIndex(seed, "opener-dm", bank.length)]!;
 }
 
 /**

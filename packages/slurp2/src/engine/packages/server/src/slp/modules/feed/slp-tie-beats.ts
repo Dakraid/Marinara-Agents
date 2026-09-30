@@ -91,6 +91,7 @@ export function slurpTieBeat(input: {
           anchor: partner,
           line: `Announce your collab with ${partner}: ${what}. It drops ${slurpDropClock(dropAt, input.at)} on both your pages. Name that time, your way: it is a date with your fans. Tag ${partner} and build a little hype, without showing it yet.`,
           cast: [partner],
+          castIds: [collab.partnerId],
           place: null,
           ...heat,
           tie: { kind: "collab", id: collab.id, partnerId: collab.partnerId, announce: true },
@@ -115,6 +116,7 @@ export function slurpTieBeat(input: {
         anchor: partner,
         line: `Your collab with ${partner} drops today, the one you announced: ${what}. It goes up on both your pages and you tag each other. ${split}${business}`,
         cast: [partner],
+        castIds: [collab.partnerId],
         place: null,
         ...heat,
         tie: {
@@ -146,6 +148,7 @@ export function slurpTieBeat(input: {
         anchor: host,
         line: `Your collab with ${host} is up on both your pages (${posted.idea}). Post your own side of it: a moment from behind the scenes, what you took from it, or a thank-you. Your own post, not a copy of the joint one.`,
         cast: [host],
+        castIds: [posted.hostId],
         place: null,
         ...heat,
         tie: { kind: "collab", id: posted.id, partnerId: posted.hostId, echo: true },

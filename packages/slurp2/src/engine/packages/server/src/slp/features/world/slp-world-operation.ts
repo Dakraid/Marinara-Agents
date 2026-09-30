@@ -522,11 +522,12 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
       // generated fans are not one, so this path handles their decision without a wallet debit.
       //
       // Deterministic per commission, so the same quote does not flip its answer between two ticks,
-      // and gated on a day's thinking time so a price is never answered the instant it is named.
+      // and gated on thinking time ("Time before fans answer a quote", a day by default) so a price
+      // is not answered the instant it is named unless the player wants that.
       for (const commission of await messages.listQuotedCommissions()) {
         await yieldToEngine();
-        const quotedFor = (until.getTime() - Date.parse(commission.updatedAt)) / 86_400_000;
-        if (!Number.isFinite(quotedFor) || quotedFor < 1) continue;
+        const quotedForMinutes = (until.getTime() - Date.parse(commission.updatedAt)) / 60_000;
+        if (!Number.isFinite(quotedForMinutes) || quotedForMinutes < settings.messagesQuoteAnswerMinutes) continue;
         const member = await population.get(commission.viewerAccountId).catch(() => null);
         const invitedCharacter = invitedCharacters.find((entry) => entry.account.id === commission.viewerAccountId);
         if (!member && !invitedCharacter) continue;
@@ -778,7 +779,7 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
       for (const action of plan) {
         await yieldToEngine();
         try {
-          if (await applyAction(db, action, until, noodle, settings.fanTypes, characterFanPinnedTypeIds)) applied += 1;
+          if (await applyAction(db, action, until, noodle, settings, characterFanPinnedTypeIds)) applied += 1;
         } catch (error) {
           // One failed action must not abandon the rest of the tick, and must never stop the mark
           // being written — otherwise the same stretch of time is replayed on every call.

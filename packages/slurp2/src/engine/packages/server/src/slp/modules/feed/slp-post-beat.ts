@@ -124,6 +124,8 @@ export type SlurpBeat = {
   line: string;
   /** Named people in the beat. Empty means alone. */
   cast: string[];
+  /** The Creator accounts among them (a partner, a collab), so their look can reach the picture. */
+  castIds?: string[];
   place: string | null;
   /** The shared idea this beat came from, for the per-day cap. Absent for a deck beat. */
   sharedId?: string;
@@ -482,6 +484,9 @@ export function parseSlurpBeat(raw: unknown): SlurpBeat | null {
       anchor: beat.anchor,
       line: beat.line,
       cast: Array.isArray(beat.cast) ? beat.cast.filter((entry): entry is string => typeof entry === "string") : [],
+      ...(Array.isArray(beat.castIds)
+        ? { castIds: beat.castIds.filter((entry): entry is string => typeof entry === "string") }
+        : {}),
       place: typeof beat.place === "string" ? beat.place : null,
       ...(typeof beat.sharedId === "string" ? { sharedId: beat.sharedId } : {}),
       ...(beat.elsewhere === true ? { elsewhere: true } : {}),

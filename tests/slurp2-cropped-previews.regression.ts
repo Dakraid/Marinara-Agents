@@ -94,6 +94,18 @@ assert.match(
   /document\.documentElement\.toggleAttribute\("data-slp-whole", wholePictures\)/u,
 );
 
+// --- "Blur pictures until tapped" (0.3.7): off by default, CSS blurs, the first tap shows ------------
+assert.match(serverSettings, /blurPictures: false,/u);
+assert.match(images, /settingKey="blurPictures"/u);
+const hostSource = client("app/SlpHomeHost.tsx");
+assert.match(hostSource, /root\.toggleAttribute\("data-slp-blur", blurPictures\)/u);
+assert.match(hostSource, /document\.addEventListener\("click", reveal, true\)/u, "capture: the tap shows, not opens");
+assert.match(hostSource, /media\.setAttribute\("data-slp-revealed", ""\)/u);
+assert.match(
+  slurp2Source("packages/slurp2/src/engine/packages/client/src/slp/slp-client-entry.tsx"),
+  /\[data-slp-blur\][^{]*:is\(img, video\):not\(\[data-slp-revealed\]\)/u,
+);
+
 // --- A tap on a post picture -------------------------------------------------------------------------
 const hub = client("app/screens/SlpScreenHub.tsx");
 assert.match(hub, /openPost: previewOpensPost \? setOpenPostId : undefined/u, "feed and search");

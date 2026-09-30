@@ -1,3 +1,4 @@
+import { CircleDollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
@@ -6,7 +7,8 @@ import { SLP_TYPE } from "../../base/chrome/SlpChrome";
 import type { SlurpStudioCreator } from "../../features/economy/slp-economy-contract";
 import { useSlurpPayout } from "../../features/economy/slp-economy-hooks";
 import { SlpPrimaryButton } from "../../modules/chrome/SlpButton";
-import { SlurpCoin, SlurpCoinAmount, SlpCoinText } from "../../modules/coin/SlpCoin";
+import { SlpCoinText } from "../../modules/coin/SlpCoin";
+import { formatSlpDollars } from "../../base/ui/slp-number-format";
 import { playSlpBurst } from "../../modules/sparkle/SlpSparkle";
 import { errorMessage } from "./SlpHomeHelpers";
 
@@ -27,9 +29,11 @@ export function SlpCollectCard({
   personaId: string;
   burst?: boolean;
 }) {
-  const { t: localizeUi } = useUiTranslation();
+  const { t: localizeUi, i18n } = useUiTranslation();
   const payout = useSlurpPayout();
+  // Earnings are platform dollars; the Wallet gets SlurpCoins (0.3.7). `allowance` is the dollars.
   const allowance = creator.payoutAllowance;
+  const coins = creator.payoutCoins;
   const collect = (button: HTMLElement) => {
     const origin = button.getBoundingClientRect();
     payout.mutate(
@@ -41,7 +45,7 @@ export function SlpCollectCard({
             <SlpCoinText>
               {localizeUi("ui.slurp.wallet.collected", {
                 defaultValue: "Collected {{amount}} <coin/> into your Wallet",
-                amount: allowance,
+                amount: coins,
               })}
             </SlpCoinText>,
           );
@@ -58,7 +62,7 @@ export function SlpCollectCard({
     >
       <div className="min-w-0">
         <p className={cn(SLP_TYPE.meta, "flex items-center gap-1.5 text-[var(--slurp-muted)]")}>
-          <SlurpCoin size={14} />
+          <CircleDollarSign size={14} aria-hidden="true" />
           <span className="truncate">
             {localizeUi("ui.slurp.wallet.creatorEarnings", { defaultValue: "Creator earnings" })}
           </span>
@@ -66,22 +70,20 @@ export function SlpCollectCard({
             side="bottom"
             text={localizeUi("ui.slurp.wallet.creatorEarningsHelp", {
               defaultValue:
-                "SlurpCoins earned through your creator page stay here until you collect them into your Wallet.",
+                "What your Creator page earns, in dollars, after Slurp's 20% fee. Collect turns it into SlurpCoins for your Wallet, up to a daily limit shared by all your Creators.",
             })}
           />
         </p>
-        <SlurpCoinAmount
-          amount={creator.earnings.coins}
-          watchAmount={creator.earnings.coins}
-          className="slp-display mt-1 text-[28px] leading-8 tabular-nums"
-          size={22}
-        />
+        <p className="slp-display mt-1 text-[28px] leading-8 tabular-nums">
+          {formatSlpDollars(creator.earnings.coins, i18n.language)}
+        </p>
         <p className={cn(SLP_TYPE.meta, "mt-0.5 text-[var(--slurp-muted)]")}>
           {allowance > 0 ? (
             <SlpCoinText>
-              {localizeUi("ui.slurp.wallet.collectToday", {
-                defaultValue: "{{amount}} <coin/> ready to collect today",
-                amount: allowance,
+              {localizeUi("ui.slurp.wallet.collectTodayDollars", {
+                defaultValue: "{{dollars}} become {{amount}} <coin/> today",
+                dollars: formatSlpDollars(allowance, i18n.language),
+                amount: coins,
               })}
             </SlpCoinText>
           ) : creator.earnings.coins <= 0 ? (
@@ -104,7 +106,7 @@ export function SlpCollectCard({
           <SlpCoinText>
             {localizeUi("ui.slurp.wallet.collectAmount", {
               defaultValue: "Collect {{amount}} <coin/>",
-              amount: allowance,
+              amount: coins,
             })}
           </SlpCoinText>
         </SlpPrimaryButton>

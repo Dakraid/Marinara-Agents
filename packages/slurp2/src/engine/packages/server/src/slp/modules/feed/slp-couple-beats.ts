@@ -127,9 +127,8 @@ export function slurpCoupleBeat(input: {
   for (const couple of input.couples) {
     const partnerId = slurpCoupleOther(couple, creatorId);
     // Polyamory (0.3.5): every partner is named; the stamp keeps the first one.
-    const partnerNames = slurpCouplePartners(couple, creatorId).flatMap((id) =>
-      names.has(id) ? [names.get(id)!] : [],
-    );
+    const partnerIds = slurpCouplePartners(couple, creatorId).filter((id) => names.has(id));
+    const partnerNames = partnerIds.map((id) => names.get(id)!);
     const partner = slurpNameList(partnerNames);
     if (!partnerId || !partner) continue;
     const page = couple.page;
@@ -168,6 +167,7 @@ export function slurpCoupleBeat(input: {
         anchor: partner,
         line: `${momentLine(moment, told, couple, other)}${where}`,
         cast: other ? [...partnerNames, other] : partnerNames,
+        castIds: other && moment.withId ? [...new Set([...partnerIds, moment.withId])] : partnerIds,
         place: null,
         tie: {
           kind: "couple",
@@ -189,6 +189,7 @@ export function slurpCoupleBeat(input: {
         anchor: partner,
         line: `You post on ${names.get(page!.accountId) ?? "the page you share with " + partner}, the page you and ${partner} share: ${idea}. Your way; it goes up there, not on your own page.`,
         cast: partnerNames,
+        castIds: partnerIds,
         place: null,
         tie: { kind: "couple", id: couple.id, partnerId, pageId: page!.accountId, hostId: creatorId },
       };
@@ -209,6 +210,7 @@ export function slurpCoupleBeat(input: {
             ? `${partner} is part of your day, but it is not official yet: ${cameo}. Keep it coy, your way; no tag, no names needed.`
             : `${partner} makes a cameo in today's post: ${cameo}. It is your everyday life, not a collab: no tag, no announcement, just the two of you being a couple in the background of your day.`,
         cast: partnerNames,
+        castIds: partnerIds,
         place: null,
         tie: { kind: "couple", id: couple.id, partnerId, moment: "cameo" },
       };

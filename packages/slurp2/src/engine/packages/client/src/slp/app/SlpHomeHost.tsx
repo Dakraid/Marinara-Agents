@@ -34,6 +34,9 @@ import { slurpLiveStories } from "./screens/slp-hub-view";
 import { slpShowPostWhenRendered } from "../modules/post/SlpPostPurposeNote";
 import type { SlpPulseTarget } from "../base/state/slp-task-store";
 
+/** Slurp's own tree and its portalled sheets. */
+const SLP_SCOPE_SELECTOR = 'marinara-capability-slurp2, [data-marinara-capability-scope="slurp2"]';
+
 export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
   const model = useSlurpHomeState({ navigation, onNavigate, onLeave });
   const {
@@ -113,6 +116,35 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
     document.documentElement.toggleAttribute("data-slp-whole", wholePictures);
     return () => document.documentElement.removeAttribute("data-slp-whole");
   }, [wholePictures]);
+  // "Blur pictures until tapped": the CSS in slp-client-entry blurs every Slurp picture and video; the
+  // first tap on one shows it instead of opening it. On <html> for the same reason as above.
+  // ponytail: a tap on an overlay that is not the picture's own button (a veil, a carousel arrow)
+  // does its usual action; a picture that is not focusable has no keyboard reveal of its own.
+  const blurPictures = slurpSettingsQuery.data?.blurPictures === true;
+  useEffect(() => {
+    const root = document.documentElement;
+    root.toggleAttribute("data-slp-blur", blurPictures);
+    if (!blurPictures) return () => root.removeAttribute("data-slp-blur");
+    const reveal = (event: MouseEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      // The picture itself, or a blurred one inside the button or link that was activated: Enter or
+      // Space on a picture button sends its click to the button, not the picture.
+      const media =
+        target?.closest("img, video") ??
+        target
+          ?.closest("button, a, [role='button']")
+          ?.querySelector("img:not([data-slp-revealed]), video:not([data-slp-revealed])");
+      if (!media || media.hasAttribute("data-slp-revealed") || !media.closest(SLP_SCOPE_SELECTOR)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      media.setAttribute("data-slp-revealed", "");
+    };
+    document.addEventListener("click", reveal, true);
+    return () => {
+      document.removeEventListener("click", reveal, true);
+      root.removeAttribute("data-slp-blur");
+    };
+  }, [blurPictures]);
   const personaSourceIds = new Set(personas.map((persona) => persona.id));
   const storyRings = useSlurpStoryRings(model);
   // Task F: an older budget moved to the sized defaults; Pulse says so once, then this clears it.

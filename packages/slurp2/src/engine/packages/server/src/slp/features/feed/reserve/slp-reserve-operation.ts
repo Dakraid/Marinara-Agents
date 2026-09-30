@@ -273,6 +273,7 @@ export async function prepareNextCreatorReservePost(db: DB, at = new Date()): Pr
             const image = await generateCreatorPostImage({
               account: selectedAccount,
               linkedPublicAccount,
+              companionIds: payload.metadata.slurpPictureCast,
               disclosureMode: selectedAccount.settings.privacy.identityDisclosure ?? "open",
               postContent: payload.content,
               draftPrompt: payload.imagePrompt,

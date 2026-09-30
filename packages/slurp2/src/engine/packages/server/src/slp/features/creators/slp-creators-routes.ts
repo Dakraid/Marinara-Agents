@@ -14,7 +14,7 @@ import { resolveSlurpTextConnection } from "../../base/identity/slp-connection.j
 import { generateSlurpConversationSchedule } from "../messages/slp-messages-contract.js";
 import { slurpPlatformScaleMultiplier } from "../../../../../shared/src/slp/slp-scale.js";
 import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
-import { slurpCreatorReach } from "../../../../../shared/src/slp/slp-reach.js";
+import { slurpCreatorReach, slurpShownSubscribers } from "../../../../../shared/src/slp/slp-reach.js";
 import { generateCreatorStageProfileDraft } from "./slp-stage-profile-draft-service.js";
 import { logger } from "../../../lib/logger.js";
 import { moveSlurpStrategyLimits } from "../../data/creators/slp-spice-storage.js";
@@ -253,8 +253,11 @@ export async function slpCreatorsRoutes(app: FastifyInstance, deps: SlpRouteDeps
           // Fans are subscribers. Both halves are exact rows and neither is reach: the personas
           // on this install pay through subscription rows, and the generated audience pays through
           // the funnel because it holds no wallet.
-          fans:
-            (await noodle.listSubscriptionsForCreator(creator.id)).length + (countsSubscribers.get(creator.id) ?? 0),
+          fans: slurpShownSubscribers(
+            countsSubscribers.get(creator.id) ?? 0,
+            (await noodle.listSubscriptionsForCreator(creator.id)).length,
+            countsScaleSettings.simulationTuning.economy.crowdWeight,
+          ),
           // Followers are social proof and nothing charges against them, so they carry the
           // synthetic platform reach. Real followers are folded in at a heavy weight.
           followers: slurpCreatorReach(

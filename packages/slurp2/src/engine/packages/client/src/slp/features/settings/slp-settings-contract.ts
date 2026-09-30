@@ -126,6 +126,8 @@ export type SlurpSettings = {
   allowGalleryImageAttachments: boolean;
   previewOpensPost: boolean;
   previewWholePictures: boolean;
+  /** Every Slurp picture and video stays blurred until it is tapped. */
+  blurPictures: boolean;
   fanActivityRunsPerDay: number;
   audienceReactionBank: { shared: string[]; byType: Record<string, string[]> };
   fanLikesPerRefresh: number;
@@ -157,6 +159,12 @@ export type SlurpSettings = {
   messagesViewerImageCooldownMinutes: number;
   /** Minutes a Creator stays away after they have had enough; 0 = they do not step away. */
   messagesCoolOffMinutes: number;
+  /** Minutes a fan thinks over a quote before answering it; 0 = the next world tick. */
+  messagesQuoteAnswerMinutes: number;
+  /** The player's own first lines for fan DMs; empty = the built-in ones. */
+  messagesFanOpeners: string[];
+  /** The player's own first words for commission requests; empty = the built-in ones. */
+  messagesCommissionOpeners: string[];
   /** Creator replies to comments in any 24 hours (1–200). */
   creatorRepliesPerDay: number;
   autopurgeEnabled: boolean;

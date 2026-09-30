@@ -183,6 +183,11 @@ const SLURP_SHELL_STYLES = `
      picture gets a small quiet corner mark on its frame. */
   .slp-crop, .slp-crop-top { object-position: top center; }
   [data-slp-whole] .slp-crop { object-fit: contain; }
+  /* "Blur pictures until tapped" (data-slp-blur on <html>, SlpHomeHost): every picture and video in
+     Slurp and its sheets stays blurred until it is tapped. */
+  [data-slp-blur] :is(marinara-capability-slurp2, [data-marinara-capability-scope="slurp2"]) :is(img, video):not([data-slp-revealed]) {
+    filter: blur(22px); cursor: pointer;
+  }
   :has(> img.slp-crop[data-slp-cut])::after {
     content: ""; position: absolute; z-index: 1; top: 8px; inset-inline-end: 8px; width: 22px; height: 22px;
     border-radius: 999px; pointer-events: none; background-color: rgb(8 4 10 / 0.42);
