@@ -76,6 +76,8 @@ export async function openSlurpCouplePage(db: DB, coupleId: string): Promise<Slu
     storage.getNoodlerAccountById(couple.bId),
   ]);
   if (!a || !b) return "notFound";
+  // A couple with the player in it has no shared page: nobody could post there for the player.
+  if ([a, b].some((account) => account.kind === "persona" && account.sourceKind === "persona")) return "notOpen";
   // Polyamory (0.3.5): a group's page carries every name.
   const more = (await Promise.all((couple.moreIds ?? []).map((id) => storage.getNoodlerAccountById(id)))).filter(
     (account): account is NonNullable<typeof account> => Boolean(account),

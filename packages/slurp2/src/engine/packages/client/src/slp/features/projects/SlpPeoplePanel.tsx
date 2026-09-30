@@ -31,7 +31,8 @@ const KIND_COLOR: Record<SlpPeopleEdgeKind, string> = {
   coworker: "var(--slurp-warm)",
   collab: "var(--slurp-warning)",
 };
-const BOND_KINDS: readonly SlurpTiesBondKind[] = ["friend", "roommate", "coworker", "ex"];
+/** What the player can make two people: a couple ("partner", through the couple rules) or a bond. */
+const TIE_CHOICES: readonly (SlurpTiesBondKind | "partner")[] = ["partner", "friend", "roommate", "coworker", "ex"];
 
 /**
  * Who is what to whom (Drama, People map): one living network. Tap someone to open their people on
@@ -46,7 +47,7 @@ export function SlpPeoplePanel({ personaId }: { personaId: string }) {
   const [opened, setOpened] = useState<string[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
-  const [adding, setAdding] = useState<{ otherId: string | null; kind: SlurpTiesBondKind; level: number }>({
+  const [adding, setAdding] = useState<{ otherId: string | null; kind: SlurpTiesBondKind | "partner"; level: number }>({
     otherId: null,
     kind: "friend",
     level: 1,
@@ -91,23 +92,27 @@ export function SlpPeoplePanel({ personaId }: { personaId: string }) {
     setSelectedId(rest.at(-1)!);
   };
 
+  const added = {
+    onSuccess: () => {
+      setAdding((current) => ({ ...current, otherId: null }));
+      toast.success(t("ui.slurp.people.added"));
+    },
+    onError,
+  };
+  // A partner is a couple: with one of the player's own pages it starts together and stays as set.
   const add = () =>
     adding.otherId &&
-    actions.setBond.mutate(
-      {
-        aId: center.id,
-        bId: adding.otherId,
-        kind: adding.kind,
-        level: adding.kind === "friend" ? adding.level : undefined,
-      },
-      {
-        onSuccess: () => {
-          setAdding((current) => ({ ...current, otherId: null }));
-          toast.success(t("ui.slurp.people.added"));
-        },
-        onError,
-      },
-    );
+    (adding.kind === "partner"
+      ? actions.setUp.mutate({ aId: center.id, bId: adding.otherId }, added)
+      : actions.setBond.mutate(
+          {
+            aId: center.id,
+            bId: adding.otherId,
+            kind: adding.kind,
+            level: adding.kind === "friend" ? adding.level : undefined,
+          },
+          added,
+        ));
 
   return (
     <div data-slurp-people className="flex flex-col gap-5">
@@ -248,13 +253,13 @@ export function SlpPeoplePanel({ personaId }: { personaId: string }) {
           label={t("ui.slurp.people.addWho")}
         />
         <div className="flex flex-wrap gap-2" role="group" aria-label={t("ui.slurp.people.addKind")}>
-          {BOND_KINDS.map((kind) => (
+          {TIE_CHOICES.map((kind) => (
             <SlpChip
               key={kind}
               selected={adding.kind === kind}
               onClick={() => setAdding((current) => ({ ...current, kind }))}
             >
-              {t(`ui.slurp.people.kind.${kind}`)}
+              {t(`ui.slurp.people.kind.${kind === "partner" ? "couple" : kind}`)}
             </SlpChip>
           ))}
         </div>
@@ -262,7 +267,7 @@ export function SlpPeoplePanel({ personaId }: { personaId: string }) {
           <LevelPick value={adding.level} onChange={(level) => setAdding((current) => ({ ...current, level }))} />
         )}
         <SlpPrimaryButton
-          disabled={!adding.otherId || actions.setBond.isPending}
+          disabled={!adding.otherId || actions.setBond.isPending || actions.setUp.isPending}
           onClick={add}
           className="min-h-11 w-full px-4 text-sm sm:w-auto"
         >
