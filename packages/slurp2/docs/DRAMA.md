@@ -1,6 +1,7 @@
 # Slurp Drama (design)
 
-Status: **proposal** for 0.3.8 (2026-09-30, branch `slurp2-drama-packs`). Nothing here is built yet.
+Status: **built in 0.3.8** (2026-09-30, branch `slurp2-drama-packs`). Where the build differs from the
+design, "As built" at the end says so.
 This extends `WORLD-SIMULATION.md`: drama is one more source of beats and signals, not a second
 planner.
 
@@ -312,3 +313,43 @@ Paths under `packages/slurp2/src/engine/packages/`.
   partner pays like any fan, which the situation uses on purpose.
 - Canon anchors may never be built for persona pages, so persona `cardPartners` stays empty. Check
   in phase 3.
+
+## As built (0.3.8)
+
+Where to find it (paths as above):
+
+| Part | Files |
+|---|---|
+| Bonds | `modules/projects/slp-creator-bonds.ts` (rules), `modules/feed/slp-bond-beats.ts` (cameos), stored as `bonds` in `slurp2.creator-ties` |
+| Pack format, settings | `shared/src/slp/slp-drama.ts`; Story Packs carry `situations` and `dramas` (`shared/src/slp/slp-story-engine.ts`) |
+| Catalog | `modules/world/events/slp-drama-library.ts` (built-ins + imported library `slurp2.drama.library`), `slp-drama-packs.ts` (starter set) |
+| Runtime | `modules/world/events/slp-drama-runtime.ts` (pure), state in `slurp2.drama.state` (`data/world/slp-drama-storage.ts`) |
+| Clock and channels | `features/world/slp-drama-service.ts`, run by the world scheduler and the catch-up on open, next to the Support desk |
+| Tie outcomes | `modules/projects/slp-drama-ties.ts` (through the ties' own rules) |
+| Routes | `features/world/slp-drama-routes.ts` (`/slurp/drama`, `/choice`, `/start`, `/runs/:id/end`); bonds in `features/projects/slp-creator-ties-routes.ts` (`/slurp/ties/bonds`) |
+| Client | People map (`features/projects/SlpPeoplePanel.tsx`, `modules/creator/SlpPeopleGraph.tsx`, `slp-force-layout.ts`), Drama settings and Stir view (`features/stir/SlpDramaSettings.tsx`, `SlpStirDrama.tsx`), choice chips (`features/messages/SlpDramaChoiceCard.tsx`) |
+
+Differences from the design above:
+
+- **Channels.** `post`, `dm`, `comment`, `notification` and `money` ship. A DM goes out only to the
+  player's persona (a Creator-to-Creator DM is nobody's thread to read); it rides the follow-up writer
+  as an `opener`, so a pending opener in that thread (a check-in) makes the drama's DM wait for its
+  window and then drop. The People block is not a beat channel: it shows the ties the outcomes make.
+- **Choices.** `player` choices arrive as a DM with answer chips (`metadata.dramaChoice`); `fans`
+  choices are settled at their timeout by a seeded draw that favours the pack's default (no real poll
+  yet); `role` choices settle after three hours the same way.
+- **Casting** searches: roles a condition names ("tied to him") are cast with it, and a role that
+  cannot be filled makes the search step back. A player role is the page tied to whoever needed a
+  relation to the player, else any of the player's pages.
+- **Relation to you** is set on the People map ("Partner", "Friend", …) rather than in Creator
+  settings. A couple with the player starts together and only the player or a drama changes it.
+- **Pace.** The runtime moves every 20 minutes; due beats go out every tick, at most 12 per tick.
+- **Starter set:** situations *Your partner is a Creator* and *Roommates*; dramas *Rivals*, *Top fan*,
+  *Friends to lovers*, *Love triangle*, *Getting bolder*, *Open relationship*, *The secret*,
+  *You are the other one*, *Spoiled*, *She spoils you*. All off by default.
+- **Persona audit holes:** fixed 1–7, 9 and 10. Hole 8 (a concealed persona page named in a partner's
+  posts) is left: the page's display name is public on Slurp already. Hole 11 is covered by the
+  People map.
+- **Not built yet:** named fans, leaks, deleted posts, the chat-context line, places, live, and a
+  pack author's own dial labels (dials show their keys as words).
+

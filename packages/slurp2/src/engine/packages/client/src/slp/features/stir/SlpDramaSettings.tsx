@@ -9,7 +9,12 @@ import { slpDramaWords, useSlurpDrama } from "./slp-drama-hooks";
  * Settings › Stir › Drama (docs/DRAMA.md): how much drama, which situations and dramas may run, and
  * each standing situation's dials. One stored object, `drama`; nothing runs until something is on.
  */
-export function SlpDramaSettings({ settings, update, updateSettings }: SlpBackstagePageProps) {
+export function SlpDramaSettings({
+  settings,
+  update,
+  updateSettings,
+  settingKey,
+}: SlpBackstagePageProps & { settingKey: "drama" }) {
   const { t } = useTranslation();
   const { data } = useSlurpDrama();
   const drama = settings.drama;
@@ -26,7 +31,7 @@ export function SlpDramaSettings({ settings, update, updateSettings }: SlpBackst
     <>
       <SettingsGroup title={tx("title")}>
         <ChoiceSetting
-          settingKey="drama"
+          settingKey={settingKey}
           label={tx("level")}
           detail={tx("levelDetail")}
           options={SLP_DRAMA_LEVELS.map((value) => ({ value, label: tx(`levels.${value}`) }))}

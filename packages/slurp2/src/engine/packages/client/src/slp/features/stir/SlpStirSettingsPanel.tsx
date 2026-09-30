@@ -113,7 +113,7 @@ export function SlpStirSettingsPanel(page: SlpBackstagePageProps) {
           onChange={(value) => update("polyamory", value)}
         />
       </SettingsGroup>
-      <SlpDramaSettings {...page} />
+      <SlpDramaSettings {...page} settingKey="drama" />
       <SettingsGroup title={tx("groupNotices", "Slurp's notices")}>
         <Toggle
           label={tx("noticeMilestones", "Milestones")}
