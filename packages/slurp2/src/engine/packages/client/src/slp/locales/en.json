@@ -5930,7 +5930,6 @@
   "ui.slurp.people.detail": "Who is what to whom, and why",
   "ui.slurp.people.intro": "Friends, partners, exes, rivals and the people they work with. Pick someone to see their people; tap a person to open why they are tied.",
   "ui.slurp.people.noCreators": "No Creators yet.",
-  "ui.slurp.people.pickCenter": "Whose people",
   "ui.slurp.people.mapLabel": "{{name}}'s people",
   "ui.slurp.people.empty": "{{name}} has no ties yet. Friendships start on their own when Creators share a scene or make a collab, or add one below.",
   "ui.slurp.people.legend": "Kinds of ties",
@@ -5942,7 +5941,7 @@
   "ui.slurp.people.addPick": "Pick someone first",
   "ui.slurp.people.added": "Tie added",
   "ui.slurp.people.ended": "Tie ended",
-  "ui.slurp.people.center": "Show {{name}}'s people",
+  "ui.slurp.people.center": "Open {{name}}'s people",
   "ui.slurp.people.level": "How close",
   "ui.slurp.people.since": "since {{when}}",
   "ui.slurp.people.locked": "You set this one, so the world leaves it alone.",
@@ -5979,5 +5978,8 @@
   "ui.slurp.people.note.warm": "Warmed up again",
   "ui.slurp.people.note.together": "Back together",
   "ui.slurp.people.note.left": "Someone left Slurp",
-  "ui.slurp.people.note.ended": "You ended it"
+  "ui.slurp.people.note.ended": "You ended it",
+  "ui.slurp.people.howTo": "Tap someone to open their people too. Tap the highlighted person again to close them. Drag anyone to move them.",
+  "ui.slurp.people.find": "Add someone to the map",
+  "ui.slurp.people.onlyThis": "Only {{name}}"
 }

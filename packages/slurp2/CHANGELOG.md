@@ -5,7 +5,7 @@
 Friends, roommates, coworkers and exes, and a People map. Design: `docs/DRAMA.md`.
 
 - Bonds: Creators meet through a collab or a shared scene and grow from acquaintances to best friends, or drift apart; roommates, coworkers, friends and exes named on a card become real ties; a breakup leaves an ex; a rivalry makes a friendship tense for a while. Each Creator keeps at most eight friends and two best friends.
-- Stir › People: an ego map of anyone's ties (partner, crush, friends, exes, rivals, roommates, coworkers, collabs) with a list, why each tie exists, and controls to add, change or end friends, roommates, coworkers and exes. Ties you set stay as you set them.
+- Stir › People: a living map of ties (partner, crush, friends, exes, rivals, roommates, coworkers, collabs). Open several people at once, drag anyone, add people by search; a list shows why each tie exists, with controls to add, change or end friends, roommates, coworkers and exes. Ties you set stay as you set them.
 
 ## 0.3.7 — 2026-09-30
 

@@ -33,7 +33,15 @@ import {
   slpBusiestCreator,
   slpEgoTies,
   slpPeopleEdges,
+  slpPeopleGraph,
 } from "../packages/slurp2/src/engine/packages/client/src/slp/features/projects/slp-people-map.ts";
+import {
+  SLP_FORCE_COOLING,
+  slpForceBox,
+  slpForceSeed,
+  slpForceStep,
+  type SlpForceNode,
+} from "../packages/slurp2/src/engine/packages/client/src/slp/modules/creator/slp-force-layout.ts";
 
 const DAY = 86_400_000;
 const T0 = new Date("2026-10-01T00:00:00.000Z");
@@ -382,6 +390,47 @@ async function main() {
       ["friend", "collab"],
     );
     assert.equal(slpBusiestCreator(edges, ["nora", "lena", "zoe"]), "lena");
+    // Open Lena: her people show; open Nora too and nothing is drawn twice.
+    const one = slpPeopleGraph(edges, ["lena"]);
+    assert.deepEqual([...one.ids].sort(), ["lena", "max", "nora", "tom", "zoe"]);
+    assert.equal(one.ties.filter((edge) => [edge.aId, edge.bId].sort().join() === "lena,nora").length, 1);
+    assert.equal(one.ties.find((edge) => [edge.aId, edge.bId].sort().join() === "lena,nora")!.kind, "friend");
+    assert.deepEqual(slpPeopleGraph(edges, ["nobody"]).ids, ["nobody"]);
+  }
+
+  // The layout: settles without NaN, ties pull together, strangers push apart, a held person stays put,
+  // and people already placed keep their spot when someone new arrives.
+  {
+    const links = [
+      { a: "a", b: "b", length: 100 },
+      { a: "a", b: "c", length: 100 },
+    ];
+    let nodes: SlpForceNode[] = slpForceSeed(new Map(), ["a", "b", "c", "d"], () => []);
+    nodes = nodes.map((node) => (node.id === "d" ? { ...node, x: 5, y: 5, pinned: true } : node));
+    let alpha = 1;
+    for (let step = 0; step < 400; step += 1) {
+      nodes = slpForceStep(nodes, links, alpha);
+      alpha *= 1 - SLP_FORCE_COOLING;
+    }
+    const at = new Map(nodes.map((node) => [node.id, node]));
+    for (const node of nodes) assert.ok(Number.isFinite(node.x) && Number.isFinite(node.y));
+    const gap = (x: string, y: string) => Math.hypot(at.get(x)!.x - at.get(y)!.x, at.get(x)!.y - at.get(y)!.y);
+    assert.ok(gap("a", "b") < 160, `tied people stay close (${gap("a", "b")})`);
+    assert.ok(gap("b", "c") > 40, "people push apart");
+    assert.deepEqual([at.get("d")!.x, at.get("d")!.y], [5, 5], "a held person stays put");
+    const again = slpForceSeed(at, ["a", "b", "c", "d", "e"], (id) => (id === "e" ? ["a"] : []));
+    assert.deepEqual(
+      again.slice(0, 4).map((node) => [node.x, node.y]),
+      nodes.map((node) => [node.x, node.y]),
+    );
+    assert.ok(
+      Math.hypot(again[4]!.x - at.get("a")!.x, again[4]!.y - at.get("a")!.y) < 30,
+      "a newcomer starts next to who opened them",
+    );
+    const box = slpForceBox(nodes);
+    for (const node of nodes)
+      assert.ok(node.x > box.x && node.x < box.x + box.size && node.y > box.y && node.y < box.y + box.size);
+    assert.equal(slpForceBox([]).size, 220);
   }
 
   // Every ties write keeps the bonds: the document reads and writes them.

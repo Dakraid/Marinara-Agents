@@ -148,3 +148,26 @@ export function slpBusiestCreator(edges: readonly SlpPeopleEdge[], ids: readonly
     null
   );
 }
+
+/**
+ * The part of the network the map shows: everyone whose people are open, and those people. Between
+ * two shown people only the strongest tie is drawn (also between two people nobody opened).
+ */
+export function slpPeopleGraph(edges: readonly SlpPeopleEdge[], openIds: readonly string[]) {
+  const open = new Set(openIds);
+  const ids = new Set(openIds);
+  for (const edge of edges)
+    if (open.has(edge.aId) || open.has(edge.bId)) {
+      ids.add(edge.aId);
+      ids.add(edge.bId);
+    }
+  const strongest = new Map<string, SlpPeopleEdge>();
+  for (const edge of edges) {
+    if (!ids.has(edge.aId) || !ids.has(edge.bId)) continue;
+    const pair = [edge.aId, edge.bId].sort().join("|");
+    const kept = strongest.get(pair);
+    if (!kept || rank(edge.kind) < rank(kept.kind) || (edge.kind === kept.kind && edge.level > kept.level))
+      strongest.set(pair, edge);
+  }
+  return { ids: [...ids], ties: [...strongest.values()] };
+}

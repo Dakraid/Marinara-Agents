@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { ChevronDown, UserPlus } from "lucide-react";
+import { ChevronDown, RotateCcw, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { Avatar, SLP_EYEBROW_CLASS, SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { SlpButton, SlpChip, SlpPrimaryButton, SlpSegment, slpTagClass } from "../../modules/chrome/SlpButton";
-import { SlpCreatorChips } from "../../modules/chrome/SlpCreatorChips";
-import { SlpEgoMap, type SlpEgoSpoke } from "../../modules/creator/SlpEgoMap";
+import { SlpPeopleGraph } from "../../modules/creator/SlpPeopleGraph";
+import { SlpPersonSearch } from "../../modules/creator/SlpPersonSearch";
 import { formatRelativeTime } from "../../base/ui/slp-date-time";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
 import { useSlurpTies, useSlurpTiesMutations, type SlurpTiesBondKind } from "./slp-ties-hooks";
@@ -15,6 +15,7 @@ import {
   slpBusiestCreator,
   slpEgoTies,
   slpPeopleEdges,
+  slpPeopleGraph,
   type SlpPeopleEdge,
   type SlpPeopleEdgeKind,
 } from "./slp-people-map";
@@ -33,15 +34,17 @@ const KIND_COLOR: Record<SlpPeopleEdgeKind, string> = {
 const BOND_KINDS: readonly SlurpTiesBondKind[] = ["friend", "roommate", "coworker", "ex"];
 
 /**
- * Who is what to whom (Drama, People map): pick a Creator, see their people around them, tap one to
- * move them to the middle, and open any tie to read why it exists. Friends, roommates, coworkers and
- * exes can be set or ended here; couples, rivalries and collabs are steered in their own panels.
+ * Who is what to whom (Drama, People map): one living network. Tap someone to open their people on
+ * the map (several at once), tap again to close them; the selected person's ties are listed below,
+ * each with why it exists. Friends, roommates, coworkers and exes can be set or ended here; couples,
+ * rivalries and collabs are steered in their own panels.
  */
 export function SlpPeoplePanel({ personaId }: { personaId: string }) {
   const { t, i18n } = useTranslation();
   const query = useSlurpTies(personaId);
   const actions = useSlurpTiesMutations(personaId);
-  const [centerId, setCenterId] = useState<string | null>(null);
+  const [opened, setOpened] = useState<string[] | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [adding, setAdding] = useState<{ otherId: string | null; kind: SlurpTiesBondKind; level: number }>({
     otherId: null,
@@ -56,17 +59,16 @@ export function SlpPeoplePanel({ personaId }: { personaId: string }) {
   const people = view.creators.filter((creator) => !creator.couplePage);
   const byId = new Map(people.map((creator) => [creator.id, creator]));
   const edges = slpPeopleEdges(view).filter((edge) => byId.has(edge.aId) && byId.has(edge.bId));
-  const center =
-    byId.get(centerId ?? "") ??
-    byId.get(
-      slpBusiestCreator(
-        edges,
-        people.map((creator) => creator.id),
-      ) ?? "",
-    ) ??
-    null;
+  const busiest = slpBusiestCreator(
+    edges,
+    people.map((creator) => creator.id),
+  );
+  // Nobody opened yet: the Creator with the most ties. People who left drop out on their own.
+  const openIds = (opened ?? (busiest ? [busiest] : [])).filter((id) => byId.has(id));
+  const center = byId.get(selectedId ?? "") ?? byId.get(openIds.at(-1) ?? "") ?? null;
   if (!center)
     return <p className={cn(SLP_TYPE.body, "text-[var(--slurp-muted)]")}>{t("ui.slurp.people.noCreators")}</p>;
+  const graph = slpPeopleGraph(edges, openIds.includes(center.id) ? openIds : [...openIds, center.id]);
   const ties = slpEgoTies(edges, center.id).filter((tie) => byId.has(tie.otherId));
   const open = ties.find((tie) => tie.otherId === openId) ?? null;
   const onError = (error: unknown) => toast.error(errorMessage(error));
@@ -74,16 +76,20 @@ export function SlpPeoplePanel({ personaId }: { personaId: string }) {
   const kindLabel = (edge: SlpPeopleEdge) =>
     edge.kind === "friend" ? t(`ui.slurp.people.friendLevel.${edge.level}`) : t(`ui.slurp.people.kind.${edge.kind}`);
 
-  const spokes: SlpEgoSpoke[] = ties.map(({ otherId, edges: list }) => {
-    const main = list[0]!;
-    return {
-      node: { id: otherId, name: byId.get(otherId)!.name, avatarUrl: byId.get(otherId)!.avatarUrl },
-      color: KIND_COLOR[main.kind],
-      closeness: main.level,
-      dash: main.temperature === "warm" ? undefined : main.temperature,
-      label: list.map(kindLabel).join(", "),
-    };
-  });
+  const openPerson = (id: string) => {
+    setOpened([...openIds.filter((entry) => entry !== id), id]);
+    setSelectedId(id);
+    setOpenId(null);
+  };
+  // Tap: open someone (and select them); tap the selected one again to close their people.
+  const tap = (id: string) => {
+    if (!openIds.includes(id)) return openPerson(id);
+    if (center.id !== id) return setSelectedId(id);
+    const rest = openIds.filter((entry) => entry !== id);
+    if (!rest.length) return;
+    setOpened(rest);
+    setSelectedId(rest.at(-1)!);
+  };
 
   const add = () =>
     adding.otherId &&
@@ -106,24 +112,54 @@ export function SlpPeoplePanel({ personaId }: { personaId: string }) {
   return (
     <div data-slurp-people className="flex flex-col gap-5">
       <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>{t("ui.slurp.people.intro")}</p>
-      <SlpCreatorChips
-        creators={people}
-        picked={[center.id]}
-        onToggle={(id) => setCenterId(id)}
-        label={t("ui.slurp.people.pickCenter")}
-      />
-      <SlpEgoMap
-        center={{ id: center.id, name: center.name, avatarUrl: center.avatarUrl }}
-        spokes={spokes}
-        onPick={setCenterId}
+      <SlpPeopleGraph
+        people={graph.ids.flatMap((id) => {
+          const person = byId.get(id);
+          return person
+            ? [
+                {
+                  id,
+                  name: person.name,
+                  avatarUrl: person.avatarUrl,
+                  open: openIds.includes(id),
+                  selected: id === center.id,
+                },
+              ]
+            : [];
+        })}
+        ties={graph.ties.map((edge) => ({
+          a: edge.aId,
+          b: edge.bId,
+          color: KIND_COLOR[edge.kind],
+          closeness: edge.level,
+          dash: edge.temperature === "warm" ? undefined : edge.temperature,
+        }))}
+        onTap={tap}
         label={t("ui.slurp.people.mapLabel", { name: center.name })}
       />
+      <p className={cn(SLP_TYPE.meta, "text-center text-[var(--slurp-muted)]")}>{t("ui.slurp.people.howTo")}</p>
+      <Legend />
+      <div className="flex flex-col gap-2">
+        <SlpPersonSearch people={people} picked={openIds} onPick={openPerson} label={t("ui.slurp.people.find")} />
+        {openIds.length > 1 && (
+          <SlpButton
+            variant="tertiary"
+            onClick={() => {
+              setOpened([center.id]);
+              setSelectedId(center.id);
+            }}
+            className="min-h-11 self-start"
+          >
+            <RotateCcw size={16} aria-hidden="true" />
+            {t("ui.slurp.people.onlyThis", { name: center.name })}
+          </SlpButton>
+        )}
+      </div>
       {!ties.length && (
         <p className={cn(SLP_TYPE.body, "text-center text-[var(--slurp-muted)]")}>
           {t("ui.slurp.people.empty", { name: center.name })}
         </p>
       )}
-      <Legend />
 
       {ties.length > 0 && (
         <section className="space-y-2" aria-label={t("ui.slurp.people.listTitle", { name: center.name })}>
@@ -189,10 +225,7 @@ export function SlpPeoplePanel({ personaId }: { personaId: string }) {
                       ))}
                       <SlpButton
                         variant="quiet"
-                        onClick={() => {
-                          setCenterId(otherId);
-                          setOpenId(null);
-                        }}
+                        onClick={() => openPerson(otherId)}
                         className="min-h-11 w-full sm:w-auto"
                       >
                         {t("ui.slurp.people.center", { name: other.name })}
@@ -208,10 +241,10 @@ export function SlpPeoplePanel({ personaId }: { personaId: string }) {
 
       <section className="space-y-3" aria-label={t("ui.slurp.people.addTitle", { name: center.name })}>
         <h4 className={cn(SLP_EYEBROW_CLASS, "px-1")}>{t("ui.slurp.people.addTitle", { name: center.name })}</h4>
-        <SlpCreatorChips
-          creators={people.filter((creator) => creator.id !== center.id)}
+        <SlpPersonSearch
+          people={people.filter((creator) => creator.id !== center.id)}
           picked={adding.otherId ? [adding.otherId] : []}
-          onToggle={(id) => setAdding((current) => ({ ...current, otherId: current.otherId === id ? null : id }))}
+          onPick={(id) => setAdding((current) => ({ ...current, otherId: current.otherId === id ? null : id }))}
           label={t("ui.slurp.people.addWho")}
         />
         <div className="flex flex-wrap gap-2" role="group" aria-label={t("ui.slurp.people.addKind")}>

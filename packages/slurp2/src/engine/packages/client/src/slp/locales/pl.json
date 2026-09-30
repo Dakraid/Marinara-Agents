@@ -2542,7 +2542,6 @@
   "ui.slurp.people.detail": "Kto jest kim dla kogo, i dlaczego",
   "ui.slurp.people.intro": "Przyjaciele, partnerzy, byli, rywale i ludzie, z którymi pracują. Wybierz kogoś, aby zobaczyć ich ludzi; stuknij osobę, aby zobaczyć, dlaczego są powiązani.",
   "ui.slurp.people.noCreators": "Nie ma jeszcze twórców.",
-  "ui.slurp.people.pickCenter": "Czyi ludzie",
   "ui.slurp.people.mapLabel": "Ludzie: {{name}}",
   "ui.slurp.people.empty": "{{name}} nie ma jeszcze powiązań. Przyjaźnie zaczynają się same, gdy twórcy dzielą scenę albo robią collab, albo dodaj jedną poniżej.",
   "ui.slurp.people.legend": "Rodzaje powiązań",
@@ -2554,7 +2553,7 @@
   "ui.slurp.people.addPick": "Najpierw wybierz osobę",
   "ui.slurp.people.added": "Dodano powiązanie",
   "ui.slurp.people.ended": "Zakończono powiązanie",
-  "ui.slurp.people.center": "Pokaż ludzi: {{name}}",
+  "ui.slurp.people.center": "Otwórz ludzi: {{name}}",
   "ui.slurp.people.level": "Jak blisko",
   "ui.slurp.people.since": "od {{when}}",
   "ui.slurp.people.locked": "To ustawiłeś ty, więc świat tego nie rusza.",
@@ -2591,5 +2590,8 @@
   "ui.slurp.people.note.warm": "Znów ciepło",
   "ui.slurp.people.note.together": "Znów razem",
   "ui.slurp.people.note.left": "Ktoś opuścił Slurp",
-  "ui.slurp.people.note.ended": "Zakończone przez ciebie"
+  "ui.slurp.people.note.ended": "Zakończone przez ciebie",
+  "ui.slurp.people.howTo": "Stuknij kogoś, aby otworzyć też jego ludzi. Stuknij podświetloną osobę ponownie, aby ją zamknąć. Przeciągnij, aby przesunąć.",
+  "ui.slurp.people.find": "Dodaj kogoś do mapy",
+  "ui.slurp.people.onlyThis": "Tylko {{name}}"
 }

@@ -2508,7 +2508,6 @@
   "ui.slurp.people.detail": "Wer wem was ist, und warum",
   "ui.slurp.people.intro": "Freunde, Partner, Exes, Rivalen und die Leute, mit denen sie arbeiten. Wähle jemanden, um die Leute um sie herum zu sehen; tippe auf eine Person, um zu sehen, warum sie verbunden sind.",
   "ui.slurp.people.noCreators": "Noch keine Creator.",
-  "ui.slurp.people.pickCenter": "Wessen Leute",
   "ui.slurp.people.mapLabel": "Die Leute von {{name}}",
   "ui.slurp.people.empty": "{{name}} hat noch keine Verbindungen. Freundschaften entstehen von selbst, wenn Creator dieselbe Szene teilen oder eine Collab machen, oder füge unten eine hinzu.",
   "ui.slurp.people.legend": "Arten von Verbindungen",
@@ -2520,7 +2519,7 @@
   "ui.slurp.people.addPick": "Zuerst jemanden wählen",
   "ui.slurp.people.added": "Verbindung hinzugefügt",
   "ui.slurp.people.ended": "Verbindung beendet",
-  "ui.slurp.people.center": "Die Leute von {{name}} zeigen",
+  "ui.slurp.people.center": "Die Leute von {{name}} öffnen",
   "ui.slurp.people.level": "Wie nah",
   "ui.slurp.people.since": "seit {{when}}",
   "ui.slurp.people.locked": "Du hast das festgelegt, also lässt die Welt es in Ruhe.",
@@ -2557,5 +2556,8 @@
   "ui.slurp.people.note.warm": "Wieder warm geworden",
   "ui.slurp.people.note.together": "Wieder zusammen",
   "ui.slurp.people.note.left": "Jemand hat Slurp verlassen",
-  "ui.slurp.people.note.ended": "Von dir beendet"
+  "ui.slurp.people.note.ended": "Von dir beendet",
+  "ui.slurp.people.howTo": "Tippe auf jemanden, um auch deren Leute zu öffnen. Tippe die markierte Person noch einmal, um sie zu schließen. Ziehe Personen, um sie zu verschieben.",
+  "ui.slurp.people.find": "Jemanden zur Karte hinzufügen",
+  "ui.slurp.people.onlyThis": "Nur {{name}}"
 }

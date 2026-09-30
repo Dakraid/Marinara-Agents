@@ -3323,7 +3323,6 @@
   "ui.slurp.people.detail": "누가 누구에게 어떤 사이인지, 그리고 이유",
   "ui.slurp.people.intro": "친구, 연인, 전 애인, 라이벌, 함께 일하는 사람들. 누군가를 골라 주변 사람들을 보고, 사람을 탭하면 왜 이어져 있는지 볼 수 있어요.",
   "ui.slurp.people.noCreators": "아직 크리에이터가 없어요.",
-  "ui.slurp.people.pickCenter": "누구의 사람들",
   "ui.slurp.people.mapLabel": "{{name}}의 사람들",
   "ui.slurp.people.empty": "{{name}}에게는 아직 관계가 없어요. 크리에이터들이 같은 분야에 있거나 콜라보를 하면 우정이 저절로 생겨요. 아래에서 직접 추가할 수도 있어요.",
   "ui.slurp.people.legend": "관계 종류",
@@ -3335,7 +3334,7 @@
   "ui.slurp.people.addPick": "먼저 사람을 고르세요",
   "ui.slurp.people.added": "관계를 추가했어요",
   "ui.slurp.people.ended": "관계를 끝냈어요",
-  "ui.slurp.people.center": "{{name}}의 사람들 보기",
+  "ui.slurp.people.center": "{{name}}의 사람들 열기",
   "ui.slurp.people.level": "얼마나 가까운지",
   "ui.slurp.people.since": "{{when}}부터",
   "ui.slurp.people.locked": "직접 정한 관계라서 세계가 건드리지 않아요.",
@@ -3372,5 +3371,8 @@
   "ui.slurp.people.note.warm": "다시 따뜻해짐",
   "ui.slurp.people.note.together": "다시 만남",
   "ui.slurp.people.note.left": "누군가 Slurp를 떠남",
-  "ui.slurp.people.note.ended": "직접 끝냄"
+  "ui.slurp.people.note.ended": "직접 끝냄",
+  "ui.slurp.people.howTo": "누군가를 탭하면 그 사람의 사람들도 열려요. 강조된 사람을 다시 탭하면 닫혀요. 끌어서 옮길 수 있어요.",
+  "ui.slurp.people.find": "지도에 사람 추가",
+  "ui.slurp.people.onlyThis": "{{name}}만 보기"
 }

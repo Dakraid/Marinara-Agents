@@ -17,7 +17,7 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
     date: "2026-09-30",
     notes: [
       "Creators make friends on their own now, and the friends, roommates, coworkers and exes on their cards are real on Slurp.",
-      "Stir has a People map: pick anyone to see their partner, friends, exes, rivals and roommates around them, and why each tie exists.",
+      "Stir has a living People map: open several people at once to see partners, friends, exes, rivals and roommates, and why each tie exists.",
     ],
   },
   {
