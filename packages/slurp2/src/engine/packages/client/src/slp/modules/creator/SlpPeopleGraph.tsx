@@ -169,7 +169,7 @@ export function SlpPeopleGraph({
       role="group"
       aria-label={label}
       className="relative mx-auto w-full overflow-hidden"
-      style={{ maxWidth: "40rem", aspectRatio: "1 / 1" }}
+      style={{ maxWidth: "34rem", aspectRatio: "1 / 1" }}
     >
       <svg
         viewBox={`${box.x} ${box.y} ${box.size} ${box.size}`}

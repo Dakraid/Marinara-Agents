@@ -3321,7 +3321,7 @@
   "ui.slurp.settings.creators.imageNameDetail": "카드 이름을 모든 이미지 프롬프트 맨 앞에 넣습니다(태그 모델에는 태그로). 이 캐릭터를 학습한 모델이 진짜 캐릭터를 그리게 합니다. 오리지널 캐릭터이거나, 외모에 이미 다른 표기의 태그가 있다면 끄세요.",
   "ui.slurp.people.title": "사람들",
   "ui.slurp.people.detail": "누가 누구에게 어떤 사이인지, 그리고 이유",
-  "ui.slurp.people.intro": "친구, 연인, 전 애인, 라이벌, 함께 일하는 사람들. 누군가를 골라 주변 사람들을 보고, 사람을 탭하면 왜 이어져 있는지 볼 수 있어요.",
+  "ui.slurp.people.intro": "친구, 연인, 전 애인, 라이벌, 함께 일하는 사람들. 지도에서 누군가를 탭하면 그 사람의 사람들이 열리고, 아래 목록에서 각 관계의 이유를 볼 수 있어요.",
   "ui.slurp.people.noCreators": "아직 크리에이터가 없어요.",
   "ui.slurp.people.mapLabel": "{{name}}의 사람들",
   "ui.slurp.people.empty": "{{name}}에게는 아직 관계가 없어요. 크리에이터들이 같은 분야에 있거나 콜라보를 하면 우정이 저절로 생겨요. 아래에서 직접 추가할 수도 있어요.",
@@ -3418,5 +3418,6 @@
   "ui.slurp.drama.log.stage": "지금: {{detail}}",
   "ui.slurp.drama.log.choice": "대답: {{detail}}",
   "ui.slurp.drama.log.skipped": "건너뜀: {{detail}}",
-  "ui.slurp.drama.log.ended": "끝남"
+  "ui.slurp.drama.log.ended": "끝남",
+  "ui.slurp.settings.backstage.sectionHints.stir": "지원 데스크, 사랑, 드라마"
 }

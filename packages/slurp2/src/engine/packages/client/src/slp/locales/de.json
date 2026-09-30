@@ -2506,7 +2506,7 @@
   "ui.slurp.settings.creators.imageNameDetail": "Setzt ihren Kartennamen an den Anfang jedes Bild-Prompts (bei Tag-Modellen als Tag), damit ein Modell, das sie gelernt hat, die echte Figur zeichnet. Für eine eigene Figur ausschalten, oder wenn ihr Aussehen ihren Tag schon in anderer Schreibweise enthält.",
   "ui.slurp.people.title": "Leute",
   "ui.slurp.people.detail": "Wer wem was ist, und warum",
-  "ui.slurp.people.intro": "Freunde, Partner, Exes, Rivalen und die Leute, mit denen sie arbeiten. Wähle jemanden, um die Leute um sie herum zu sehen; tippe auf eine Person, um zu sehen, warum sie verbunden sind.",
+  "ui.slurp.people.intro": "Freunde, Partner, Exes, Rivalen und die Leute, mit denen sie arbeiten. Tippe auf der Karte auf jemanden, um deren Leute zu öffnen; die Liste unten sagt, warum jede Verbindung besteht.",
   "ui.slurp.people.noCreators": "Noch keine Creator.",
   "ui.slurp.people.mapLabel": "Die Leute von {{name}}",
   "ui.slurp.people.empty": "{{name}} hat noch keine Verbindungen. Freundschaften entstehen von selbst, wenn Creator dieselbe Szene teilen oder eine Collab machen, oder füge unten eine hinzu.",
@@ -2603,5 +2603,6 @@
   "ui.slurp.drama.log.stage": "Jetzt: {{detail}}",
   "ui.slurp.drama.log.choice": "Antwort: {{detail}}",
   "ui.slurp.drama.log.skipped": "Übersprungen: {{detail}}",
-  "ui.slurp.drama.log.ended": "Beendet"
+  "ui.slurp.drama.log.ended": "Beendet",
+  "ui.slurp.settings.backstage.sectionHints.stir": "Support-Desk, Liebe, Drama"
 }

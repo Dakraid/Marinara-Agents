@@ -2540,7 +2540,7 @@
   "ui.slurp.settings.creators.imageNameDetail": "Wstawia imię z karty na początek każdego promptu obrazu (dla modeli tagowych jako tag), żeby model, który zna postać, narysował prawdziwą postać. Wyłącz dla własnej postaci albo gdy jej wygląd ma już jej tag w innej pisowni.",
   "ui.slurp.people.title": "Ludzie",
   "ui.slurp.people.detail": "Kto jest kim dla kogo, i dlaczego",
-  "ui.slurp.people.intro": "Przyjaciele, partnerzy, byli, rywale i ludzie, z którymi pracują. Wybierz kogoś, aby zobaczyć ich ludzi; stuknij osobę, aby zobaczyć, dlaczego są powiązani.",
+  "ui.slurp.people.intro": "Przyjaciele, partnerzy, byli, rywale i ludzie, z którymi pracują. Stuknij kogoś na mapie, aby otworzyć jego ludzi; lista poniżej mówi, skąd bierze się każde powiązanie.",
   "ui.slurp.people.noCreators": "Nie ma jeszcze twórców.",
   "ui.slurp.people.mapLabel": "Ludzie: {{name}}",
   "ui.slurp.people.empty": "{{name}} nie ma jeszcze powiązań. Przyjaźnie zaczynają się same, gdy twórcy dzielą scenę albo robią collab, albo dodaj jedną poniżej.",
@@ -2637,5 +2637,6 @@
   "ui.slurp.drama.log.stage": "Teraz: {{detail}}",
   "ui.slurp.drama.log.choice": "Odpowiedź: {{detail}}",
   "ui.slurp.drama.log.skipped": "Pominięte: {{detail}}",
-  "ui.slurp.drama.log.ended": "Koniec"
+  "ui.slurp.drama.log.ended": "Koniec",
+  "ui.slurp.settings.backstage.sectionHints.stir": "Biuro wsparcia, miłość, drama"
 }

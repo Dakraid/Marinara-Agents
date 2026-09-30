@@ -5928,7 +5928,7 @@
   "ui.slurp.settings.creators.imageNameDetail": "Puts their card name at the start of every picture prompt (as a tag for tag models), so a model that learned them draws the real character. Turn it off for an original character, or when their Appearance already has their tag under another spelling.",
   "ui.slurp.people.title": "People",
   "ui.slurp.people.detail": "Who is what to whom, and why",
-  "ui.slurp.people.intro": "Friends, partners, exes, rivals and the people they work with. Pick someone to see their people; tap a person to open why they are tied.",
+  "ui.slurp.people.intro": "Friends, partners, exes, rivals and the people they work with. Tap anyone on the map to open their people; the list below says why each tie exists.",
   "ui.slurp.people.noCreators": "No Creators yet.",
   "ui.slurp.people.mapLabel": "{{name}}'s people",
   "ui.slurp.people.empty": "{{name}} has no ties yet. Friendships start on their own when Creators share a scene or make a collab, or add one below.",
@@ -6025,5 +6025,6 @@
   "ui.slurp.drama.log.stage": "Now: {{detail}}",
   "ui.slurp.drama.log.choice": "Answer: {{detail}}",
   "ui.slurp.drama.log.skipped": "Skipped: {{detail}}",
-  "ui.slurp.drama.log.ended": "Ended"
+  "ui.slurp.drama.log.ended": "Ended",
+  "ui.slurp.settings.backstage.sectionHints.stir": "Support desk, love, drama"
 }

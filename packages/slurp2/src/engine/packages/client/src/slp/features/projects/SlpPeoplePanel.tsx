@@ -28,7 +28,8 @@ const KIND_COLOR: Record<SlpPeopleEdgeKind, string> = {
   rival: "var(--slurp-danger)",
   roommate: "var(--slurp-violet)",
   friend: "var(--slurp-success)",
-  coworker: "var(--slurp-warm)",
+  // Collab is already warm yellow: a teal from two theme colors keeps the two apart.
+  coworker: "color-mix(in srgb, var(--slurp-violet) 45%, var(--slurp-success))",
   collab: "var(--slurp-warning)",
 };
 /** What the player can make two people: a couple ("partner", through the couple rules) or a bond. */
