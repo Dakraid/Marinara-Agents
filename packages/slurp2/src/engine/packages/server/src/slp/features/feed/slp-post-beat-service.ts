@@ -27,6 +27,7 @@ import { planSlurpOccasionBeat } from "./slp-occasion-service.js";
 import { selectSlurpReference, slurpReferenceCandidates } from "../../modules/feed/slp-post-reference.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { planSlurpBondBeat, planSlurpTieBeat } from "../projects/slp-projects-contract.js";
+import { planSlurpDramaBeat } from "../world/slp-world-contract.js";
 import { SLURP_CANON_ANCHORS_KEY as ANCHORS_KEY } from "../../data/creators/slp-flavour-source.js";
 import {
   normalizeSlurpCanonAnchors,
@@ -235,6 +236,13 @@ export async function planSlurpBeat(
       previewOnly: input.previewOnly,
     });
     if (tie) return tie;
+    // A drama's post line (docs/DRAMA.md): due ones ride the next ordinary slot, like a tie.
+    const drama = await planSlurpDramaBeat(db, {
+      creatorId: input.accountId,
+      at: input.at,
+      previewOnly: input.previewOnly,
+    });
+    if (drama) return drama;
     const history = await readSlurpBeatHistory(db, input.accountId, input.at);
     // A pack occasion running now (SlurpCon, a holiday, their birthday week): only one that fits them.
     const occasion = await planSlurpOccasionBeat(db, {

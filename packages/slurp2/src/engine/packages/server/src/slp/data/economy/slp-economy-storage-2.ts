@@ -413,6 +413,13 @@ export function createEconomyStorage2(context: SlurpStorageContext) {
       });
       return run;
     },
+    /** Coins a Creator gives the player in a drama (an allowance, a gift). `id` is its receipt: never twice. */
+    async creditGift(viewerAccountId: string, amount: number, note: string, id: string): Promise<SlurpWallet> {
+      return enqueueFinancial(async () => {
+        const wallet = await getWalletNow(viewerAccountId);
+        return writeWallet(viewerAccountId, credit(wallet, "income", amount, new Date(), note, id));
+      });
+    },
     async reverseCreatorIncome(creatorAccountId: string, amount: number, note: string, id?: string): Promise<boolean> {
       const creator = await this.getNoodlerAccountById(creatorAccountId);
       if (!creator) return false;

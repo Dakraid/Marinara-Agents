@@ -7,6 +7,7 @@ import { createSlurpStorage } from "../../data/slp-storage.js";
 import { slurpWorldTimerDue } from "../../../../../shared/src/slp/slp-tuning.js";
 import { slurpPlayerPresent } from "./slp-world-tick-state.js";
 import { drainSlurpPendingText } from "./slp-pending-text-service.js";
+import { advanceSlurpDrama } from "./slp-drama-service.js";
 import { drainSlurpAudienceReplies } from "../audience/slp-audience-contract.js";
 import { advanceSlurpSupportDesk, drainSlurpContinuityExtraction } from "../messages/slp-messages-contract.js";
 
@@ -67,6 +68,8 @@ export function startSlurpWorldScheduler(app: FastifyInstance, registerStop?: (s
       await advanceSlurpSupportDesk(app.db).catch((error: unknown) =>
         logger.warn(error, "[slurp-desk] Desk tick failed"),
       );
+      // Drama rides the same clock too (docs/DRAMA.md): nothing runs until the player switches it on.
+      await advanceSlurpDrama(app.db).catch((error: unknown) => logger.warn(error, "[slurp-drama] Drama tick failed"));
       // After the tick, and never in a way that can fail it: the bank feeds the free comments the
       // tick above just wrote, so a slow or refused top-up costs nothing that is due now.
       await topUpSlurpReactionBank(app.db).catch((error: unknown) =>

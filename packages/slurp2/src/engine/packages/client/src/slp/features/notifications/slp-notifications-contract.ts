@@ -13,7 +13,8 @@ export type SlurpEventKind =
   | "returned"
   | "arc_phase"
   | "arc_complete"
-  | "arc_started";
+  | "arc_started"
+  | "drama";
 export type SlurpEventItem = {
   id: string;
   kind: SlurpEventKind;

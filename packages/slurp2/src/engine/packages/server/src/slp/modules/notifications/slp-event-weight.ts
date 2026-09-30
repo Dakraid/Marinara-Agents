@@ -36,7 +36,9 @@ export type SlurpEventKind =
   /** One of the Creator's own arcs finished. */
   | "arc_complete"
   /** An automatic arc was started or suggested for a Creator. */
-  | "arc_started";
+  | "arc_started"
+  /** A drama moved (docs/DRAMA.md): the pack's own line, e.g. "Mia was tagged in a post by Jake". */
+  | "drama";
 
 /**
  * Base weights. The gaps matter more than the numbers: anything at or above `SLURP_EVENT_NOTABLE`
@@ -63,6 +65,8 @@ const BASE: Record<SlurpEventKind, number> = {
   // The player did not start this one, so it has to be seen, or a suggestion would wait unnoticed.
   arc_started: 62,
   arc_phase: 42,
+  // The player switched drama on to see it: worth a line, below money and messages.
+  drama: 64,
 };
 
 /**

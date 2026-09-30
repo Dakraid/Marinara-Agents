@@ -45,6 +45,7 @@ export const SLURP_BOND_NOTE_CODES = [
   "together",
   "left",
   "ended",
+  "drama",
 ] as const;
 export type SlurpBondNoteCode = (typeof SLURP_BOND_NOTE_CODES)[number];
 /** One change, for the People map: a reason code and an optional plain detail ("best friend", a cause). */
@@ -57,7 +58,7 @@ export type SlurpBond = {
   bId: string;
   level: number;
   temperature: SlurpBondTemperature;
-  origin: "card" | "world" | "player" | "couple";
+  origin: "card" | "world" | "player" | "couple" | "drama";
   since: string;
   changedAt: string;
   endedAt: string | null;
@@ -144,7 +145,7 @@ export function readSlurpBonds(raw: unknown): SlurpBond[] {
         bId,
         level: kind === "friend" && Number.isFinite(level) ? Math.min(SLURP_BOND_MAX_LEVEL, Math.max(0, level)) : 1,
         temperature: pick(SLURP_BOND_TEMPERATURES, item.temperature, "warm"),
-        origin: pick(["card", "world", "player", "couple"] as const, item.origin, "world"),
+        origin: pick(["card", "world", "player", "couple", "drama"] as const, item.origin, "world"),
         since,
         changedAt: date(item.changedAt) ?? since,
         endedAt: date(item.endedAt),
@@ -409,7 +410,7 @@ export type SlurpBondError = "same" | "unknown" | "full" | "couple";
 export function slurpSetBond(
   bonds: readonly SlurpBond[],
   input: { aId: string; bId: string; kind: SlurpBondKind; level?: number; couples?: readonly SlurpCouple[] },
-  options: { at: Date; id: string },
+  options: { at: Date; id: string; origin?: "player" | "drama" },
 ): SlurpBond[] | SlurpBondError {
   if (input.aId === input.bId) return "same";
   const stamp = options.at.toISOString();
@@ -422,9 +423,13 @@ export function slurpSetBond(
     )
   )
     return "couple";
+  const origin = options.origin ?? "player";
+  const code = origin === "player" ? ("player" as const) : ("drama" as const);
   const existing = activeOf(bonds, input.aId, input.bId, input.kind);
+  // A drama never moves a bond the player set.
+  if (existing?.locked && origin === "drama") return [...bonds];
   if (existing) {
-    const changed = { ...existing, level, locked: true };
+    const changed = { ...existing, level, ...(origin === "player" ? { locked: true } : {}) };
     if (
       level > existing.level &&
       !roomFor(
@@ -434,13 +439,13 @@ export function slurpSetBond(
       )
     )
       return "full";
-    return bonds.map((bond) => (bond === existing ? note(changed, { at: stamp, code: "player" }) : bond));
+    return bonds.map((bond) => (bond === existing ? note(changed, { at: stamp, code }) : bond));
   }
   const created = newBond(options.id, input.kind, input.aId, input.bId, {
     level,
-    origin: "player",
+    origin,
     at: stamp,
-    code: "player",
+    code,
   });
   if (input.kind === "friend" && level >= 1 && !roomFor(bonds, created, level)) return "full";
   return [...bonds, created];

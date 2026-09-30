@@ -80,6 +80,8 @@ export type SlpDramaJob = {
   choice?: { question: string; options: string[] };
   /** Names for `{role}` in the text, filled at queue time. */
   names: Record<string, string>;
+  /** The player's pages in the cast when it was queued (who a notification is for). */
+  playerIds?: string[];
   dueAt: string;
   expiresAt: string;
   status: "queued" | "done" | "dropped";
@@ -125,6 +127,29 @@ export const SLP_EMPTY_DRAMA_STATE: SlpDramaState = {
   ended: {},
   startWindow: null,
 };
+
+/**
+ * Stored state back. It is Slurp's own record, so the check is shallow: the lists must be lists and
+ * every entry needs an id; anything else starts empty rather than failing the tick.
+ */
+export function readSlpDramaState(raw: unknown): SlpDramaState {
+  const value = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+  const list = <T>(entry: unknown) =>
+    (Array.isArray(entry) ? entry : []).filter(
+      (item): item is T => Boolean(item) && typeof (item as { id?: unknown }).id === "string",
+    );
+  const ended = value.ended && typeof value.ended === "object" && !Array.isArray(value.ended) ? value.ended : {};
+  return {
+    runs: list<SlpDramaRun>(value.runs),
+    situations: list<SlpSituationRun>(value.situations),
+    jobs: list<SlpDramaJob>(value.jobs),
+    ended: Object.fromEntries(Object.entries(ended).filter(([, at]) => typeof at === "string")) as Record<
+      string,
+      string
+    >,
+    startWindow: typeof value.startWindow === "number" ? value.startWindow : null,
+  };
+}
 
 export type SlpDramaTieEffect = { runId: string; outcome: SlpDramaOutcome; ids: [string, string] };
 
@@ -302,6 +327,7 @@ export function slpAdvanceDrama(
     until: number,
     tag: string,
   ) => {
+    const playerIds = Object.values(run.cast).filter((id) => live.get(id)?.automatic === false);
     beats.forEach((beat, index) => {
       const made = job(beat, run, {
         dueAt: now,
@@ -310,7 +336,7 @@ export function slpAdvanceDrama(
         id: input.newId(),
         seed: `${run.id}:${tag}:${index}`,
       });
-      if (made) jobs.push(made);
+      if (made) jobs.push(playerIds.length ? { ...made, playerIds } : made);
     });
   };
 
@@ -604,3 +630,28 @@ export const slpMarkDramaJob = (state: SlpDramaState, id: string, status: "done"
   ...state,
   jobs: state.jobs.map((entry) => (entry.id === id ? { ...entry, status } : entry)),
 });
+
+/** The player ends a running drama in Stir: no exit beat, its queued beats drop. Null when not running. */
+export function slpEndDramaRun(state: SlpDramaState, runId: string, at: Date): SlpDramaState | null {
+  const run = state.runs.find((entry) => entry.id === runId && active(entry));
+  if (!run) return null;
+  const stamp = at.toISOString();
+  return {
+    ...state,
+    runs: state.runs.map((entry) =>
+      entry === run
+        ? {
+            ...run,
+            endedAt: stamp,
+            ending: "player" as const,
+            choice: null,
+            log: [...run.log, { at: stamp, code: "ended", detail: "player" }].slice(-20),
+          }
+        : entry,
+    ),
+    jobs: state.jobs.map((entry) =>
+      entry.runId === runId && entry.status === "queued" ? { ...entry, status: "dropped" as const } : entry,
+    ),
+    ended: { ...state.ended, [run.dramaId]: stamp },
+  };
+}

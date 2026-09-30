@@ -3379,5 +3379,12 @@
   "ui.slurp.page.relation.roommate": "룸메이트",
   "ui.slurp.page.relation.friend": "친구",
   "ui.slurp.page.relation.coworker": "동료",
-  "ui.slurp.drama.settings.title": "드라마"
+  "ui.slurp.drama.settings.title": "드라마",
+  "ui.slurp.drama.choice.label": "내 대답",
+  "ui.slurp.drama.choice.hint": "내 대답에 따라 일이 달라져요. 대답하지 않으면 알아서 흘러가요.",
+  "ui.slurp.drama.choice.answered": "대답했어요.",
+  "ui.slurp.drama.choice.late": "너무 늦었어요: 이미 알아서 흘러갔어요.",
+  "ui.slurp.events.single.drama": "무슨 일이 있었어요",
+  "ui.slurp.events.category.drama": "드라마",
+  "ui.slurp.people.note.drama": "드라마로 생긴 관계"
 }

@@ -2564,5 +2564,12 @@
   "ui.slurp.page.relation.roommate": "Mitbewohner",
   "ui.slurp.page.relation.friend": "Freund",
   "ui.slurp.page.relation.coworker": "Kollege",
-  "ui.slurp.drama.settings.title": "Drama"
+  "ui.slurp.drama.settings.title": "Drama",
+  "ui.slurp.drama.choice.label": "Deine Antwort",
+  "ui.slurp.drama.choice.hint": "Deine Antwort entscheidet, was passiert. Ohne Antwort nimmt es seinen eigenen Lauf.",
+  "ui.slurp.drama.choice.answered": "Du hast geantwortet.",
+  "ui.slurp.drama.choice.late": "Zu spät: Es hat schon seinen eigenen Lauf genommen.",
+  "ui.slurp.events.single.drama": "Etwas ist passiert",
+  "ui.slurp.events.category.drama": "Drama",
+  "ui.slurp.people.note.drama": "Ein Drama hat das ausgelöst"
 }

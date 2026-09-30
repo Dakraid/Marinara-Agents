@@ -5986,5 +5986,12 @@
   "ui.slurp.page.relation.roommate": "roommate",
   "ui.slurp.page.relation.friend": "friend",
   "ui.slurp.page.relation.coworker": "coworker",
-  "ui.slurp.drama.settings.title": "Drama"
+  "ui.slurp.drama.settings.title": "Drama",
+  "ui.slurp.drama.choice.label": "Your answer",
+  "ui.slurp.drama.choice.hint": "Your answer decides what happens. No answer, and it goes its own way.",
+  "ui.slurp.drama.choice.answered": "You answered.",
+  "ui.slurp.drama.choice.late": "Too late: it already went its own way.",
+  "ui.slurp.events.single.drama": "Something happened",
+  "ui.slurp.events.category.drama": "Drama",
+  "ui.slurp.people.note.drama": "A drama brought this about"
 }

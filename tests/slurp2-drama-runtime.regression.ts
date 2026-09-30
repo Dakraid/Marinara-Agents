@@ -20,6 +20,14 @@ import {
   type SlpDramaWorld,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-drama-runtime.ts";
 import { partner, rivals } from "./slurp2-drama-fixtures";
+import { slurp2Source } from "./slurp2-source";
+import { slurpApplyDramaTie } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-drama-ties.ts";
+import {
+  slurpSetBond,
+  type SlurpBond,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-bonds.ts";
+import { SLURP_NO_TIES } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-ties.ts";
+import { newSlurpCouple } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples.ts";
 
 const HOUR = 3_600_000;
 const T0 = Date.parse("2026-10-01T00:00:00.000Z");
@@ -282,6 +290,90 @@ async function main() {
   for (let hour = 0; hour < 24 * 30; hour += 1) {
     calm = slpAdvanceDrama(calm, input(T0 + hour * HOUR, { level: "calm" })).state;
     assert.ok(calm.runs.filter((entry) => entry.endedAt === null).length <= 1);
+  }
+
+  // Outcomes go through the ties' own rules: a drama makes an unlocked bond, never moves one the player
+  // set, starts a rivalry, breaks a couple up, and changes how a bond feels.
+  {
+    const at = new Date(T0);
+    const tieCreators = ["mia", "jake"].map((id) => ({
+      id,
+      name: id,
+      text: "",
+      tags: [],
+      automatic: true,
+      followers: 1,
+    }));
+    const doc = {
+      ties: { ...SLURP_NO_TIES, collabs: [], rivalries: [], blocked: [] },
+      couples: [],
+      bonds: [] as SlurpBond[],
+    };
+    const opts = { at, newId: () => `t-${++counter}`, creators: tieCreators, polyamory: false };
+    const friends = slurpApplyDramaTie(
+      doc,
+      { kind: "tie", tie: "friend", between: ["her", "him"], level: 2 },
+      ["mia", "jake"],
+      opts,
+    );
+    assert.deepEqual(
+      [friends.bonds[0]!.origin, friends.bonds[0]!.level, friends.bonds[0]!.locked],
+      ["drama", 2, undefined],
+    );
+    const tense = slurpApplyDramaTie(
+      friends,
+      { kind: "temperature", between: ["her", "him"], value: "tense" },
+      ["mia", "jake"],
+      opts,
+    );
+    assert.equal(tense.bonds[0]!.temperature, "tense");
+    const mine = {
+      ...doc,
+      bonds: slurpSetBond([], { aId: "mia", bId: "jake", kind: "friend", level: 1 }, { at, id: "p" }) as SlurpBond[],
+    };
+    const kept = slurpApplyDramaTie(
+      mine,
+      { kind: "tie", tie: "friend", between: ["her", "him"], level: 3 },
+      ["mia", "jake"],
+      opts,
+    );
+    assert.equal(kept.bonds[0]!.level, 1, "a bond the player set stays as set");
+    const ended = slurpApplyDramaTie(
+      mine,
+      { kind: "end-tie", tie: "friend", between: ["her", "him"] },
+      ["mia", "jake"],
+      opts,
+    );
+    assert.equal(ended.bonds[0]!.endedAt, null, "nor does a drama end it");
+    const rival = slurpApplyDramaTie(
+      doc,
+      { kind: "tie", tie: "rival", between: ["her", "him"] },
+      ["mia", "jake"],
+      opts,
+    );
+    assert.equal(rival.ties.rivalries.length, 1);
+    const couple = { ...doc, couples: [newSlurpCouple("c", "mia", "jake", "world", at.toISOString(), "together")] };
+    const split = slurpApplyDramaTie(
+      couple,
+      { kind: "end-tie", tie: "couple", between: ["her", "him"] },
+      ["mia", "jake"],
+      opts,
+    );
+    assert.equal(split.couples[0]!.stage, "split");
+  }
+
+  // Wiring: the post planner takes due post lines right after ties; the dispatcher never sends a post
+  // line itself; the scheduler and the catch-up both move drama; a drama notification is worth a line.
+  {
+    const src = (path: string) =>
+      slurp2Source(new URL(`../packages/slurp2/src/engine/packages/server/src/slp/${path}`, import.meta.url));
+    const planner = src("features/feed/slp-post-beat-service.ts");
+    assert.ok(planner.indexOf("planSlurpDramaBeat(db") > planner.indexOf("if (tie) return tie;"));
+    assert.ok(planner.indexOf("planSlurpDramaBeat(db") < planner.indexOf("planSlurpOccasionBeat(db"));
+    assert.match(src("features/world/slp-drama-service.ts"), /filter\(\(job\) => job\.channel !== "post"\)/u);
+    assert.match(src("features/world/slp-world-scheduler-service.ts"), /advanceSlurpDrama\(app\.db\)/u);
+    assert.match(src("workflows/slp-world-tick-workflow.ts"), /advanceSlurpDrama\(app\.db\)/u);
+    assert.match(src("modules/notifications/slp-event-weight.ts"), /drama: 6\d,/u);
   }
 
   console.log("slurp2 drama runtime regression passed");
