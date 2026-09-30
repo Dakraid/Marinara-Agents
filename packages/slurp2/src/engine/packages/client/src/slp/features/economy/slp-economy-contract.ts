@@ -79,8 +79,10 @@ export type SlurpStudioCreator = {
   };
   milestone: { reached: number | null; next: number | null; progress: number; remaining: number };
   goal: SlurpGoalProgress | null;
-  /** Coins this Creator may still withdraw today. */
+  /** Earnings (platform dollars) this Creator may still withdraw today; always whole coins' worth. */
   payoutAllowance: number;
+  /** The SlurpCoins that payout brings into the Wallet. */
+  payoutCoins: number;
   topFans: SlurpTopFan[];
   /** Null on a first visit: "no change yet" and "measured no change" are different. */
   followersDelta: number | null;

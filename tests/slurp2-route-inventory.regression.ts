@@ -110,6 +110,7 @@ const EXPECTED = [
   "GET /messages/threads/:threadId",
   "GET /messages/threads/:threadId/prompt",
   "GET /model-budget/usage",
+  "POST /model-budget/rewrite-pending",
   "GET /slurp/account-connection-counts",
   "GET /slurp/accounts",
   "GET /slurp/accounts/:id/arc-config",
@@ -416,6 +417,8 @@ const ADDED_ROUTES = new Set([
   "POST /slurp/desk/note",
   "POST /slurp/desk/ticket/resolve",
   "POST /slurp/desk/offer/answer",
+  // 0.3.7: "Rewrite all now" in AI budget settings.
+  "POST /model-budget/rewrite-pending",
 ]);
 
 // Routes staging had that Slurp2 no longer serves. The share card is now drawn on a canvas in
@@ -455,12 +458,12 @@ const EXPECTED_HANDLER_COUNTS = {
   "features/notifications": 3,
   "features/onboarding": 6,
   "features/projects": 27,
-  "features/settings": 7,
+  "features/settings": 8,
   "features/world": 11,
 } as const;
 // W: +5 POST, +1 GET (Stir). R: +3 POST, +1 GET, +1 PATCH, +1 DELETE (brands).
-// 0.3.4: +1 POST, +1 PUT (Creator Pages). 0.3.5: +1 GET, +3 POST (Support desk).
-const EXPECTED_METHOD_COUNTS = { DELETE: 19, GET: 81, PATCH: 20, POST: 146, PUT: 7 } as const;
+// 0.3.4: +1 POST, +1 PUT (Creator Pages). 0.3.5: +1 GET, +3 POST (Support desk). 0.3.7: +1 POST (rewrite all).
+const EXPECTED_METHOD_COUNTS = { DELETE: 19, GET: 81, PATCH: 20, POST: 147, PUT: 7 } as const;
 
 const root = join(import.meta.dirname, "../packages/slurp2/src/engine/packages/server/src/slp");
 const registration = /\bapp\.(get|post|put|patch|delete|addContentTypeParser)(?:<[^()]*?>)?\(\s*["'`]([^"'`]+)["'`]/gu;
@@ -515,8 +518,8 @@ const methodCounts = Object.fromEntries(
     }, new Map<string, number>()),
 );
 assert.deepEqual(methodCounts, EXPECTED_METHOD_COUNTS, "HTTP method multiset changed from staging");
-// 0.3.5: +4 (the Support desk).
-assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 273);
+// 0.3.5: +4 (the Support desk). 0.3.7: +1 (rewrite all).
+assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 274);
 assert.deepEqual(handlerCounts, EXPECTED_HANDLER_COUNTS, "handler count changed in a feature");
 assert.ok(foundRoutes.includes("POST /slurp/posts/:id/media"), "the renamed POST media route must remain registered");
 assert.ok(

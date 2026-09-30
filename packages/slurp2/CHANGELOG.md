@@ -1,5 +1,15 @@
 # Slurp release notes
 
+## 0.3.7 — 2026-09-30
+
+Two-layer economy, faster rewrites, partners in pictures.
+
+- Economy: earnings are platform dollars. A paying fan stands for "People per paying fan" (5) in subscribers and earnings, less a 20% fee; Collect pays 1 coin per 5 dollars, 15–60 coins a day per persona. Old balances convert once.
+- Fixes: no Slurp coins for your own Creators from the desk; milestones use shown followers.
+- Rewrites: 10 per tick, a waiting count and "Rewrite all now".
+- Couple and collab pictures may show the partner when the post calls for it.
+- Messaging: quote delay and your own first lines. "Blur pictures until tapped".
+
 ## 0.3.6 — 2026-09-30
 
 Faster (measured on a slowed phone), and your own taps never spend the AI budget.

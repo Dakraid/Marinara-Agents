@@ -23,6 +23,7 @@ import { enqueueSlurpPendingText } from "./slp-pending-text-service.js";
 import { readSlurpTieStamp } from "../../modules/projects/slp-tie-stamp.js";
 import { hash } from "../../modules/projects/slp-project.js";
 import { type SlurpWorldAction } from "../../../../../shared/src/slp/slp-world.js";
+import type { SlurpSettings } from "../../modules/settings/slp-settings.js";
 import { slurpPulseTieAdvance, type SlurpPulseAction } from "../../../../../shared/src/slp/slp-world-pulse.js";
 
 /** The local day, so a per-pair roll is made once a day rather than on every page load. */
@@ -84,9 +85,10 @@ export async function applyAction(
   action: SlurpWorldAction,
   at: Date,
   noodle: ReturnType<typeof createSlurpStorage>,
-  fanTypes: readonly SlurpFanType[],
+  settings: Pick<SlurpSettings, "fanTypes" | "messagesFanOpeners" | "messagesCommissionOpeners">,
   characterFanPinnedTypeIds: ReadonlyMap<string, string | null>,
 ): Promise<boolean> {
+  const { fanTypes } = settings;
   const actor = await resolveActor(db, action.actorAccountId, characterFanPinnedTypeIds, fanTypes);
   if (!actor) return false;
 
@@ -160,7 +162,10 @@ export async function applyAction(
     const sent = await messages.sendViewerMessage(
       action.actorAccountId,
       action.creatorAccountId,
-      slurpAudienceOpener(`${action.creatorAccountId}:${action.actorAccountId}:${at.toISOString()}`),
+      slurpAudienceOpener(
+        `${action.creatorAccountId}:${action.actorAccountId}:${at.toISOString()}`,
+        settings.messagesFanOpeners,
+      ),
     );
     if (sent.status !== "sent") return false;
     await enqueueSlurpPendingText(db, {
@@ -179,7 +184,10 @@ export async function applyAction(
 
   if (action.kind === "commission") {
     const messages = createSlurpMessagesStorage(db, () => noodle);
-    const brief = slurpCommissionBrief(`${action.creatorAccountId}:${action.actorAccountId}:${at.toISOString()}`);
+    const brief = slurpCommissionBrief(
+      `${action.creatorAccountId}:${action.actorAccountId}:${at.toISOString()}`,
+      settings.messagesCommissionOpeners,
+    );
     const commission = await messages.createCommission(action.actorAccountId, action.creatorAccountId, brief);
     // `"open_request"` means this fan already has one waiting. Piling on a second is exactly what
     // the cap exists to stop, so the tick spends its action elsewhere.
@@ -245,9 +253,10 @@ export async function applyPulse(
   db: DB,
   action: SlurpPulseAction,
   banks: SlurpReactionBanks,
-  fanTypes: readonly SlurpFanType[],
+  settings: Pick<SlurpSettings, "fanTypes" | "messagesFanOpeners" | "messagesCommissionOpeners">,
   characterFanPinnedTypeIds: ReadonlyMap<string, string | null>,
 ): Promise<boolean> {
+  const { fanTypes } = settings;
   const noodle = createSlurpStorage(db);
   const actor = await resolveActor(db, action.actorAccountId, characterFanPinnedTypeIds, fanTypes);
   if (!actor) return false;

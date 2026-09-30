@@ -105,6 +105,20 @@ async function remember(db: DB, accountId: string, text: string, sourceHash: str
   });
 }
 
+/**
+ * A page the player runs pays out into their own wallet, so Slurp coins the player sets there are
+ * free money: a coin perk, a challenge that rewards coins, a contract with a weekly bonus. The run
+ * and the preview both refuse them.
+ */
+function deskPaysOwnPage(name: SlpDeskLever, raw: unknown, creator: { kind: string; sourceKind?: string | null }) {
+  const ask = raw as { perk?: string; reward?: { perk?: string }; weeklyBonus?: number };
+  const paysCoins =
+    (name === "grant-perk" && ask.perk === "coins") ||
+    (name === "set-challenge" && ask.reward?.perk === "coins") ||
+    (name === "offer-contract" && (ask.weeklyBonus ?? 0) > 0);
+  return paysCoins && !slurpRunsItself(creator);
+}
+
 export async function runSlpDeskLever(
   db: DB,
   name: SlpDeskLever,
@@ -137,6 +151,8 @@ export async function runSlpDeskLever(
   const accountId = (raw as { accountId: string }).accountId;
   const creator = await storage.getNoodlerAccountById(accountId);
   if (!creator) return { ok: false, status: 404, error: "Creator not found." };
+  if (deskPaysOwnPage(name, raw, creator))
+    return { ok: false, status: 409, error: "Slurp coins are for Creators you do not run yourself." };
   const shady =
     name === "throttle-reach" ||
     name === "plant-rumour" ||
@@ -436,11 +452,7 @@ export async function previewSlpDeskLever(
       error: accounts.length ? null : "notFound",
     };
   }
-  const account = (await storage.getNoodlerAccountById(String(input.accountId))) as {
-    id: string;
-    displayName: string;
-    avatarUrl?: string | null;
-  } | null;
+  const account = await storage.getNoodlerAccountById(String(input.accountId));
   if (!account) return { error: "notFound", summary: "That Creator does not exist." };
   const who = [{ id: account.id, name: account.displayName, avatarUrl: account.avatarUrl ?? null }];
   const desk = await readSlurpSupportDesk(db, account.id);
@@ -450,13 +462,15 @@ export async function previewSlpDeskLever(
   const error =
     shady && !settings.shadyMoves
       ? "shadyOff"
-      : desk.pausedAt && name !== "grant-perk"
-        ? "leftSlurp"
-        : name === "cash-favour" && desk.favours <= 0
-          ? "noFavour"
-          : name === "offer-contract" && desk.contract?.status === "active"
-            ? "underContract"
-            : null;
+      : deskPaysOwnPage(name, input, account)
+        ? "ownPageCoins"
+        : desk.pausedAt && name !== "grant-perk"
+          ? "leftSlurp"
+          : name === "cash-favour" && desk.favours <= 0
+            ? "noFavour"
+            : name === "offer-contract" && desk.contract?.status === "active"
+              ? "underContract"
+              : null;
   const base = { who, notes, error, when: "now" as const };
   switch (name) {
     case "grant-perk":

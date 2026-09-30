@@ -244,6 +244,12 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
         <div className="mt-2 grid gap-x-8 sm:grid-cols-2">
           <Toggle
             compact
+            label={t("ui.slurp.settings.images.blurPictures")}
+            value={settings.blurPictures}
+            onChange={(value) => void update("blurPictures", value)}
+          />
+          <Toggle
+            compact
             label={t("ui.slurp.settings.overview.quick.publishing", { defaultValue: "Automatic publishing" })}
             value={settings.autoPostingScheduleEnabled}
             onChange={(value) => void update("autoPostingScheduleEnabled", value)}

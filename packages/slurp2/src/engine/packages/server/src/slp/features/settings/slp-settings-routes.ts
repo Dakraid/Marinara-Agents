@@ -22,6 +22,11 @@ import { z } from "zod";
 import { getErrorMessage } from "../../modules/creators/slp-public-support.js";
 import { generateCreatorPost, previewSlurpPromptBlocks } from "../feed/slp-feed-contract.js";
 import { SLURP_PROMPT_IDS } from "../../base/prompting/slp-prompt-blocks.js";
+import {
+  countSlurpPendingText,
+  slurpRewritingAllPending,
+  startSlurpRewriteAllPending,
+} from "../world/slp-world-contract.js";
 
 const slurpPromptPreviewSchema = z.object({
   promptId: z.enum(SLURP_PROMPT_IDS),
@@ -154,6 +159,10 @@ export async function slpSettingsRoutes(app: FastifyInstance, deps: SlpRouteDeps
       mode: budget.mode,
       callsPerDayLimit: budget.callsPerDay,
       tokensPerCall: SLURP_TOKENS_PER_CALL_ESTIMATE,
+      pendingRewrites: await countSlurpPendingText(app.db),
+      rewritingAll: slurpRewritingAllPending(),
     };
   });
+  // "Rewrite all pending" runs in the background; Settings polls the usage above for progress.
+  app.post("/model-budget/rewrite-pending", async () => ({ started: startSlurpRewriteAllPending(app.db) }));
 }

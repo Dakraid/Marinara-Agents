@@ -49,7 +49,13 @@ function downloadConfig(config: PortableAudienceConfig) {
   URL.revokeObjectURL(href);
 }
 
-type SlurpModelBudgetUsage = SlurpModelBudgetLedger & { activeCreators?: number };
+type SlurpModelBudgetUsage = SlurpModelBudgetLedger & {
+  activeCreators?: number;
+  /** Fan messages and requests still written from the built-in lines, waiting for a rewrite. */
+  pendingRewrites?: number;
+  /** A "Rewrite all now" run is still going. */
+  rewritingAll?: boolean;
+};
 
 /** Today's usage and the active Creator count that sizes every limit the player did not set (task F). */
 export function useSlurpModelBudgetUsage() {
@@ -57,6 +63,8 @@ export function useSlurpModelBudgetUsage() {
     queryKey: ["slurp", "model-budget", "usage"],
     queryFn: () => api.get<SlurpModelBudgetUsage>("/slurp2/model-budget/usage"),
     staleTime: 30_000,
+    // Follow a "Rewrite all now" run until it ends, so the count goes down while the player watches.
+    refetchInterval: (query) => (query.state.data?.rewritingAll ? 3000 : false),
   });
 }
 
@@ -113,6 +121,17 @@ export function SlurpAudienceConfigSettings({
   const usageQuery = useSlurpModelBudgetUsage();
   const usage = usageQuery.data ?? null;
   const refreshUsage = () => void usageQuery.refetch();
+  const [rewriteStarting, setRewriteStarting] = useState(false);
+  const rewriteAll = async () => {
+    setRewriteStarting(true);
+    try {
+      await api.post<{ started: boolean }>("/slurp2/model-budget/rewrite-pending", {});
+    } finally {
+      setRewriteStarting(false);
+      refreshUsage();
+    }
+  };
+  const rewriting = rewriteStarting || Boolean(usage?.rewritingAll);
   const [status, setStatus] = useState("");
   const creators = usage?.activeCreators ?? 0;
   // Shown sized for today's Creators; saved as the player's own budget (only limits they set carry numbers).
@@ -248,7 +267,7 @@ export function SlurpAudienceConfigSettings({
           label={t("ui.slurp.settings.aiBudget.mode", { defaultValue: "When models may run" })}
           detail={t("ui.slurp.settings.aiBudget.worldModeDetail", {
             defaultValue:
-              "Off: the world writes nothing on its own. On: Creators and fans write on their own. On + upkeep: also memory notes, reply banks and rewrites.",
+              "Off: the world writes nothing on its own. On: Creators and fans write on their own. On + upkeep: also memory notes, reply banks and rewrites while Slurp is closed. While you are away, this runs about four times a day unless Run in the background is on.",
           })}
         >
           <SlpSegment
@@ -291,6 +310,42 @@ export function SlurpAudienceConfigSettings({
             {t("ui.slurp.settings.aiBudget.refresh", { defaultValue: "Refresh" })}
           </button>
         </p>
+        {usage && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-[var(--accent)]/35 p-3 text-sm">
+            <div className="min-w-0" aria-live="polite">
+              <p className="font-semibold">
+                {rewriting
+                  ? t("ui.slurp.settings.aiBudget.rewriting", {
+                      defaultValue: "Rewriting. Waiting now: {{count}}",
+                      count: usage.pendingRewrites ?? 0,
+                    })
+                  : t("ui.slurp.settings.aiBudget.pendingRewrites", {
+                      defaultValue: "Fan messages and requests waiting for a rewrite: {{count}}",
+                      count: usage.pendingRewrites ?? 0,
+                    })}
+              </p>
+              <p className="mt-0.5 text-xs leading-5 text-[var(--muted-foreground)]">
+                {t("ui.slurp.settings.aiBudget.rewriteAllDetail", {
+                  defaultValue:
+                    "Until the model rewrites them, they show the built-in lines. Rewrite all now does not wait for the day's pace, but it stops at the daily limit.",
+                })}
+              </p>
+            </div>
+            <button
+              type="button"
+              className={buttonClass}
+              disabled={rewriting || budget.mode === "off" || !usage.pendingRewrites}
+              onClick={() => void rewriteAll()}
+            >
+              <RefreshCw
+                className={rewriting ? "animate-spin motion-reduce:animate-none" : undefined}
+                size={14}
+                aria-hidden="true"
+              />
+              {t("ui.slurp.settings.aiBudget.rewriteAll", { defaultValue: "Rewrite all now" })}
+            </button>
+          </div>
+        )}
       </SettingsGroup>
 
       <SettingsGroup title={t("ui.slurp.settings.aiBudget.areas", { defaultValue: "What the world may write" })}>

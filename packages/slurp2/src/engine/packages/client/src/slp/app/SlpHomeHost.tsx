@@ -34,6 +34,9 @@ import { slurpLiveStories } from "./screens/slp-hub-view";
 import { slpShowPostWhenRendered } from "../modules/post/SlpPostPurposeNote";
 import type { SlpPulseTarget } from "../base/state/slp-task-store";
 
+/** Slurp's own tree and its portalled sheets. */
+const SLP_SCOPE_SELECTOR = 'marinara-capability-slurp2, [data-marinara-capability-scope="slurp2"]';
+
 export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
   const model = useSlurpHomeState({ navigation, onNavigate, onLeave });
   const {
@@ -113,6 +116,28 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
     document.documentElement.toggleAttribute("data-slp-whole", wholePictures);
     return () => document.documentElement.removeAttribute("data-slp-whole");
   }, [wholePictures]);
+  // "Blur pictures until tapped": the CSS in slp-client-entry blurs every Slurp picture and video; the
+  // first tap on one shows it instead of opening it. On <html> for the same reason as above.
+  // ponytail: a tap on an overlay above a picture (a veil, a carousel arrow) does its usual action;
+  // the picture is shown once it is tapped itself.
+  const blurPictures = slurpSettingsQuery.data?.blurPictures === true;
+  useEffect(() => {
+    const root = document.documentElement;
+    root.toggleAttribute("data-slp-blur", blurPictures);
+    if (!blurPictures) return () => root.removeAttribute("data-slp-blur");
+    const reveal = (event: MouseEvent) => {
+      const media = event.target instanceof Element ? event.target.closest("img, video") : null;
+      if (!media || media.hasAttribute("data-slp-revealed") || !media.closest(SLP_SCOPE_SELECTOR)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      media.setAttribute("data-slp-revealed", "");
+    };
+    document.addEventListener("click", reveal, true);
+    return () => {
+      document.removeEventListener("click", reveal, true);
+      root.removeAttribute("data-slp-blur");
+    };
+  }, [blurPictures]);
   const personaSourceIds = new Set(personas.map((persona) => persona.id));
   const storyRings = useSlurpStoryRings(model);
   // Task F: an older budget moved to the sized defaults; Pulse says so once, then this clears it.

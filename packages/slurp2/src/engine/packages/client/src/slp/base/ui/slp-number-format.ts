@@ -9,6 +9,16 @@ function formatter(locale: string, options: Intl.NumberFormatOptions) {
   return found;
 }
 
+/** Creator earnings are platform dollars (0.3.7), never cents: "$1,284", "1.284 $". */
+export function formatSlpDollars(value: number, locale: string) {
+  return formatter(locale, {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
 /** Money and counts with the reader's separators: "1,284" in English, "1.284" in German. */
 export function formatSlpNumber(value: number, locale: string) {
   return formatter(locale, { maximumFractionDigits: 0 }).format(value);

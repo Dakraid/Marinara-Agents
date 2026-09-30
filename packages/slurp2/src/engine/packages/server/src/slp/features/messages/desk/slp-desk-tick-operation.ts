@@ -18,6 +18,9 @@ import { appendSlurpDeskLine } from "../../../data/messages/slp-support-desk-thr
 import { enqueueSlurpPendingText } from "../../world/slp-world-contract.js";
 import { readSlurpDeskOffer, slurpDeskOfferSummary } from "../../../modules/messages/slp-support-desk-talk.js";
 import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../../shared/src/slp/slp-support.js";
+import { slurpCreatorReach } from "../../../../../../shared/src/slp/slp-reach.js";
+import { slurpRunsItself } from "../../projects/slp-projects-contract.js";
+import { slurpPlatformScaleMultiplier } from "../../../../../../shared/src/slp/slp-scale.js";
 import { isSlurpViewerActorAccount } from "../../../modules/settings/slp-settings.js";
 import {
   SLP_DESK_STAY_AT,
@@ -65,7 +68,7 @@ type Later = (effect: () => Promise<unknown>) => void;
 async function applyEvents(
   later: Later,
   db: DB,
-  creator: { id: string; displayName: string },
+  creator: { id: string; displayName: string; kind: string; sourceKind?: string | null },
   events: SlpDeskTickEvent[],
   desk: SlpSupportDesk,
   settings: Awaited<ReturnType<ReturnType<typeof createSlurpStorage>["getSettings"]>>["supportDesk"],
@@ -74,6 +77,9 @@ async function applyEvents(
   const storage = createSlurpStorage(db);
   let next = desk;
   const name = creator.displayName;
+  // A page the player runs pays out into their own wallet: a coin reward or bonus set before 0.3.7
+  // (the desk refuses new ones) stops paying there.
+  const paysCoins = slurpRunsItself(creator);
   for (const event of events) {
     switch (event.kind) {
       case "caught": {
@@ -131,7 +137,7 @@ async function applyEvents(
       }
       case "challenge-won": {
         next = slpDeskGrantPerk(next, event.challenge.reward, settings, at);
-        if (event.challenge.reward.kind === "coins")
+        if (event.challenge.reward.kind === "coins" && paysCoins)
           later(() =>
             storage.creditSponsorFee(
               creator.id,
@@ -156,7 +162,7 @@ async function applyEvents(
           later(() => notice(db, creator.id, `Slurp: ${name} did not finish the challenge in time.`));
         break;
       case "contract-kept":
-        if (event.contract.weeklyBonus > 0)
+        if (event.contract.weeklyBonus > 0 && paysCoins)
           later(() =>
             storage.creditSponsorFee(
               creator.id,
@@ -200,6 +206,17 @@ async function applyEvents(
   return next;
 }
 
+/** The one-time mark that milestones count shown followers (0.3.7). */
+const MILESTONE_SHOWN = "milestone:shown";
+
+/** The newest 40 notices. The one-time mark stays however many come after it, so the silent pass never repeats. */
+function noticedWith(noticed: readonly string[], ...keys: string[]): string[] {
+  const all = [...noticed, ...keys];
+  const pinned = all.includes(MILESTONE_SHOWN);
+  const rest = all.filter((key) => key !== MILESTONE_SHOWN).slice(pinned ? -39 : -40);
+  return pinned ? [MILESTONE_SHOWN, ...rest] : rest;
+}
+
 /** Slurp's milestone notice, once per step. */
 async function milestoneNotice(
   later: Later,
@@ -209,13 +226,20 @@ async function milestoneNotice(
   followers: number,
 ) {
   const reached = MILESTONES.filter((step) => followers >= step).at(-1);
+  // 0.3.7 counts shown followers, which are far above the real ones: the first pass records where a
+  // Creator already is without a notice, so the update does not send one for every Creator at once.
+  if (!desk.noticed.includes(MILESTONE_SHOWN))
+    return {
+      ...desk,
+      noticed: noticedWith(desk.noticed, MILESTONE_SHOWN, ...(reached ? [`milestone:${reached}`] : [])),
+    };
   if (!reached || desk.noticed.includes(`milestone:${reached}`)) return desk;
   later(() =>
     notice(db, creator.id, `Slurp: ${creator.displayName} reached ${reached.toLocaleString("en")} followers.`, {
       deskMilestone: reached,
     }),
   );
-  return { ...desk, noticed: [...desk.noticed, `milestone:${reached}`].slice(-40) };
+  return { ...desk, noticed: noticedWith(desk.noticed, `milestone:${reached}`) };
 }
 
 /**
@@ -245,7 +269,7 @@ async function trendingNotice(
       deskTrending: best.id,
     }),
   );
-  return { ...desk, noticed: [...desk.noticed, key].slice(-40) };
+  return { ...desk, noticed: noticedWith(desk.noticed, key) };
 }
 
 /**
@@ -313,7 +337,10 @@ export async function advanceSlurpSupportDesk(db: DB, at = new Date()): Promise<
   if (at.getTime() - lastPassMs < PASS_MS) return;
   lastPassMs = at.getTime();
   const storage = createSlurpStorage(db);
-  const settings = (await storage.getSettings()).supportDesk;
+  const allSettings = await storage.getSettings();
+  const settings = allSettings.supportDesk;
+  // Milestones count the followers the profile shows (reach plus real followers), not the real ones alone.
+  const reachScale = slurpPlatformScaleMultiplier(allSettings.platformScale);
   const accounts = (await storage.listNoodlerAccounts()).filter((account) => !isSlurpViewerActorAccount(account));
   const followers = await createSlurpPopulationStorage(db)
     .countFollowersForCreators(accounts.map((account) => account.id))
@@ -354,7 +381,22 @@ export async function advanceSlurpSupportDesk(db: DB, at = new Date()): Promise<
       });
       desk = await applyEvents(later, db, account, ticked.events, ticked.desk, settings, at);
       if (settings.noticeMilestones)
-        desk = await milestoneNotice(later, db, account, desk, followers.get(account.id) ?? 0);
+        desk = await milestoneNotice(
+          later,
+          db,
+          account,
+          desk,
+          slurpCreatorReach(
+            {
+              accountId: account.id,
+              createdAt: account.createdAt,
+              realFollowers: followers.get(account.id) ?? 0,
+              scale: reachScale,
+            },
+            at,
+            allSettings.simulationTuning.reach,
+          ),
+        );
       if (settings.noticeTrending && !desk.pausedAt) desk = await trendingNotice(later, db, account, desk, at);
       if (yours && settings.toYourCreators && elapsed > 0)
         desk = await supportToYourCreator(later, db, account, desk, settings, elapsed, at);

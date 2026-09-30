@@ -344,7 +344,11 @@ export const SLP_ACTIONS = {
   },
   "set-tip-goal": {
     summary: "Open a tip goal for a Creator: something they ask their fans to help pay for (a new camera).",
-    inputs: { accountId: "The Creator.", label: "What it is for.", target: "How many coins it needs." },
+    inputs: {
+      accountId: "The Creator.",
+      label: "What it is for.",
+      target: "How many dollars it needs (Creator earnings are in dollars).",
+    },
     schema: z
       .object({
         accountId,

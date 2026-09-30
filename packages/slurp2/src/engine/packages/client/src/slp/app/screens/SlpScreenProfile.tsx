@@ -20,8 +20,7 @@ import { openSlpStir } from "../../features/stir/slp-stir-contract";
 import { SlpDashboardSheet } from "./SlpDashboard";
 import { SlpButton, slpTagClass } from "../../modules/chrome/SlpButton";
 import { SlpUsesAiMark } from "../../modules/chrome/SlpAiMark";
-import { SlpCoinText } from "../../modules/coin/SlpCoin";
-import { formatSlpNumber, formatSlpPercent } from "../../base/ui/slp-number-format";
+import { formatSlpDollars, formatSlpPercent } from "../../base/ui/slp-number-format";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { SlurpInlineAdTile } from "../../features/ads/SlpInlineAd";
 import { openSlpCreatorSettings } from "../../features/creators/settings/slp-creator-settings-store";
@@ -494,18 +493,14 @@ export function StageProfileView({
                         />
                       </div>
                       <p className="mt-1.5 text-xs tabular-nums text-[var(--slurp-muted)]">
-                        {goalForViewer.met ? (
-                          localizeUi("ui.slurp.profile.goalMet", { defaultValue: "Goal met" })
-                        ) : (
-                          <SlpCoinText>
-                            {localizeUi("ui.slurp.profile.goalProgressCoins", {
-                              defaultValue: "{{raised}} of {{target}} <coin/> · {{percent}}",
-                              raised: formatSlpNumber(goalForViewer.raised, i18n.language),
-                              target: formatSlpNumber(goalForViewer.target, i18n.language),
+                        {goalForViewer.met
+                          ? localizeUi("ui.slurp.profile.goalMet", { defaultValue: "Goal met" })
+                          : localizeUi("ui.slurp.profile.goalProgressDollars", {
+                              defaultValue: "{{raised}} of {{target}} · {{percent}}",
+                              raised: formatSlpDollars(goalForViewer.raised, i18n.language),
+                              target: formatSlpDollars(goalForViewer.target, i18n.language),
                               percent: formatSlpPercent(Math.min(1, goalForViewer.progress), i18n.language),
                             })}
-                          </SlpCoinText>
-                        )}
                       </p>
                     </section>
                   )}

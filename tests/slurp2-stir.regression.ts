@@ -171,6 +171,16 @@ async function main() {
       assert.match(deskLevers, new RegExp(`case "${name}"|name === "${name}"`, "u"), `${name}: the desk runs it`);
     else assert.match(runner, new RegExp(`case "${name}"`, "u"), `${name}: the runner dispatches it`);
   assert.match(runner, /if \(isSlpDeskLever\(name\)\) return runSlpDeskLever\(db, name, input\)/u, "desk levers too");
+  // 0.3.7: Slurp coins (a perk, a challenge reward, a contract bonus) never go to a page the player
+  // runs: its earnings pay out into the player's own wallet. The run, the preview and the desk tick agree.
+  assert.match(deskLevers, /\(name === "grant-perk" && ask\.perk === "coins"\)/u);
+  assert.match(deskLevers, /\(name === "set-challenge" && ask\.reward\?\.perk === "coins"\)/u);
+  assert.match(deskLevers, /\(name === "offer-contract" && \(ask\.weeklyBonus \?\? 0\) > 0\)/u);
+  assert.match(deskLevers, /if \(deskPaysOwnPage\(name, raw, creator\)\)/u, "the run refuses");
+  assert.match(deskLevers, /: deskPaysOwnPage\(name, input, account\)\s*\? "ownPageCoins"/u, "the preview refuses");
+  const deskTick = server("features/messages/desk/slp-desk-tick-operation.ts");
+  assert.match(deskTick, /event\.challenge\.reward\.kind === "coins" && paysCoins/u);
+  assert.match(deskTick, /event\.contract\.weeklyBonus > 0 && paysCoins/u);
   assert.match(runner, /if \(isSlurpTieLever\(name\)\) \{\s+const ran = await runSlurpTieLever/u, "tie levers too");
   assert.match(runner, /preview: \(name: string, input: unknown\) => previewSlpAction\(db, name, input\)/u);
   assert.match(

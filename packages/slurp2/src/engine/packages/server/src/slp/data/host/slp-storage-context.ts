@@ -31,6 +31,7 @@ import {
 } from "../../modules/projects/slp-arc-crossover.js";
 import {
   earn as earnCreatorIncome,
+  slurpPlatformEarnings,
   readSlurpEarnings,
   slurpEarningsKey,
   SlurpEarnings,
@@ -287,6 +288,11 @@ export function createSlurpStorageContext(db: DB) {
       return;
     }
     const settings = normalizeSlurpSettings(await settingsStore.get(SLURP_SETTINGS_KEY));
+    // Fan money is platform money (0.3.7): a real payment stands for the crowd, less Slurp's fee. A
+    // brand's fee is already priced on the shown audience, so it is not scaled again.
+    // The mood reads the payment itself: dollars would make every small unlock feel like being paid well.
+    const paidCoins = amount;
+    if (kind !== "sponsor") amount = slurpPlatformEarnings(amount, settings.simulationTuning.economy.crowdWeight);
     // Storyline effects and platform events aimed at this Creator both move earnings (R1-112).
     // ponytail: no tags here, so a date-only event aimed at tags misses; occurrences carry tag targets.
     const occurrences = readSlpOccurrences(await settingsStore.get(SLP_STORY_OCCURRENCES_KEY));
@@ -303,7 +309,7 @@ export function createSlurpStorageContext(db: DB) {
     if (next === current) return;
     await writeEarnings(creatorAccountId, next);
     try {
-      if (amount >= SLURP_PAID_WELL_COINS) {
+      if (paidCoins >= SLURP_PAID_WELL_COINS) {
         await mutateCreatorStateNow(creatorAccountId, (state) => addSlurpModifier(state, "paid_well", note ?? kind));
       }
       const goal = readSlurpGoal(await settingsStore.get(slurpGoalKey(creatorAccountId)));

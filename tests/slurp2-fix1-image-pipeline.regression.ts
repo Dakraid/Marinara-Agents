@@ -49,7 +49,7 @@ assert.match(images, /slurpWithoutCameraDevice\(finalPromptBase, keep\) \|\| fin
 assert.match(
   images,
   // P: the camera source is passed too, so a mirror shot does not fight its own phone.
-  /input\.negativePromptAdditions \?\? slurpImageNegativePrompt\(input\.visualBrief\?\.sexualLevel(?:, false, viewpoint\?\.source)?\)/u,
+  /input\.negativePromptAdditions \?\?\s*slurpImageNegativePrompt\(input\.visualBrief\?\.sexualLevel(?:, (?:false|companionNamed), viewpoint\?\.source)?\)/u,
 );
 
 // --- R1-051: removing a set's picture removes the set --------------------------------------------

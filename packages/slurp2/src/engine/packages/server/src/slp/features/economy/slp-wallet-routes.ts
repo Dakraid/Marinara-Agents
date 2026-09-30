@@ -2,6 +2,7 @@ import {
   slpCreatorSubscriptionSchema,
   slpCreatorUnlockSchema,
 } from "../../../../../shared/src/slp/slp-social.schema.js";
+import { slurpShownSubscribers } from "../../../../../shared/src/slp/slp-reach.js";
 import { recordSlurpTasteSignal } from "../../data/creators/slp-spice-storage.js";
 import { type SlpCreatorSubscriber } from "../../../../../shared/src/slp/slp-social.types.js";
 import { randomInt } from "node:crypto";
@@ -21,7 +22,6 @@ import {
 } from "../../data/messages/slp-messages-storage-context.js";
 import { reactToSlurpPayment } from "./slp-payment-reaction.js";
 import { readSlurpClosedCouplePageIds } from "../projects/slp-projects-contract.js";
-import { slurpPayoutAllowance } from "../../modules/economy/slp-earnings.js";
 import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
 import { SLURP_NAMED_CAST_LIMIT } from "../../../../../shared/src/slp/slp-population.js";
 import { slpCreatorUnlockPriceFromMetadata } from "../../modules/economy/slp-prices.js";
@@ -220,18 +220,10 @@ export async function slpWalletRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
     const creator = await noodle.getNoodlerAccountById(id);
     if (!creator) return reply.code(404).send({ error: "Creator account not found" });
     const result = await noodle.payOutEarnings(creator.id, parsed.data.amount);
-    if (result.status !== "paid") {
-      const earnings = await noodle.getEarnings(creator.id);
-      return reply.code(400).send({
-        error: "That is more than today's payout allows.",
-        allowance: slurpPayoutAllowance(earnings, new Date()),
-      });
-    }
-    return {
-      earnings: result.earnings,
-      allowance: slurpPayoutAllowance(result.earnings, new Date()),
-      wallet: result.wallet,
-    };
+    const { allowance, allowanceCoins } = await noodle.getPayoutState(creator.id);
+    if (result.status !== "paid")
+      return reply.code(400).send({ error: "That is more than today's payout allows.", allowance, allowanceCoins });
+    return { earnings: result.earnings, allowance, allowanceCoins, wallet: result.wallet };
   });
 
   app.post("/slurp/accounts/:id/subscribe", async (req, reply) => {
@@ -334,7 +326,12 @@ export async function slpWalletRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
     const audienceTotal = (await population.countSubscribersForCreators([id])).get(id) ?? 0;
     return {
       items: [...named, ...subscribers],
-      total: page.total + audienceTotal,
+      // The count is the shown one (each real fan stands for the crowd); the list names real people.
+      total: slurpShownSubscribers(
+        audienceTotal,
+        page.total,
+        (await noodle.getSettings()).simulationTuning.economy.crowdWeight,
+      ),
       nextCursor: page.nextCursor,
     };
   });

@@ -283,6 +283,13 @@ export function SlpImagesPanel(page: SlpBackstagePageProps) {
       {/* How pictures look in the app, not how they are made: display only, no AI. */}
       <SettingsGroup title={t("ui.slurp.settings.images.previewsGroup")}>
         <Toggle
+          settingKey="blurPictures"
+          label={t("ui.slurp.settings.images.blurPictures")}
+          detail={t("ui.slurp.settings.images.blurPicturesDetail")}
+          value={settings.blurPictures}
+          onChange={(value) => update("blurPictures", value)}
+        />
+        <Toggle
           settingKey="previewWholePictures"
           label={t("ui.slurp.settings.images.previewWholePictures")}
           detail={t("ui.slurp.settings.images.previewWholePicturesDetail")}

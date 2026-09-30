@@ -199,16 +199,50 @@ export async function dropSlurpPendingText(db: DB, subjectId: string): Promise<v
     .catch(() => undefined);
 }
 
+/** Placeholders still waiting for a rewrite, for the count in AI budget settings. */
+export async function countSlurpPendingText(db: DB): Promise<number> {
+  try {
+    return (
+      await db.select({ id: slurpPendingText.id }).from(slurpPendingText).where(eq(slurpPendingText.status, "pending"))
+    ).length;
+  } catch (error) {
+    if (isUnsupportedTableError(error)) return 0;
+    throw error;
+  }
+}
+
+let rewritingAll: Promise<unknown> | null = null;
+
+/** Whether a "Rewrite all pending" run is still going. */
+export const slurpRewritingAllPending = () => rewritingAll !== null;
+
+/**
+ * "Rewrite all pending": the player asked for it, so no per-read limit and no day pace. The day's
+ * caps still hold, so the run stops where the budget does. Not awaited by the route: a long queue
+ * is many sequential model calls. Returns false while a run is already going.
+ */
+export function startSlurpRewriteAllPending(db: DB): boolean {
+  if (rewritingAll) return false;
+  rewritingAll = drainSlurpPendingText(db, Number.POSITIVE_INFINITY, "present", false)
+    .catch((error: unknown) => logger.warn(error, "[slurp-pending] Rewrite all failed"))
+    .finally(() => {
+      rewritingAll = null;
+    });
+  return true;
+}
+
 /**
  * Rewrite the newest few placeholders.
  *
  * Called from a read, so the player is present and the spend is against text they are about to
- * see. Returns how many were rewritten.
+ * see, and from the world scheduler with a larger limit. Returns how many were rewritten.
  */
 export async function drainSlurpPendingText(
   db: DB,
   limit = DRAIN_LIMIT,
   context: SlurpModelWorkerContext = "present",
+  /** False only for a player's "Rewrite all pending". */
+  paced = true,
 ): Promise<number> {
   const noodle = createSlurpStorage(db);
   const settings = await noodle.getSettings();
@@ -319,7 +353,7 @@ export async function drainSlurpPendingText(
       .update(slurpPendingText)
       .set({ status: "running", attempts: String(attempts), claimedAt: now() })
       .where(eq(slurpPendingText.id, id));
-    if (!(await claimSlurpModelBudget(db, settings.modelBudget, jobKind))) {
+    if (!(await claimSlurpModelBudget(db, settings.modelBudget, jobKind, undefined, paced ? undefined : false))) {
       await db
         .update(slurpPendingText)
         .set({ status: "pending", attempts: String(attempts - 1), claimedAt: null })

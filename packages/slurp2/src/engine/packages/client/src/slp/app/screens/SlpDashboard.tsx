@@ -9,7 +9,7 @@ import { Avatar, SLP_EYEBROW_CLASS, SLP_GROUP_CLASS, SLP_TYPE } from "../../base
 import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SlpButton, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
-import { formatSlpNumber } from "../../base/ui/slp-number-format";
+import { formatSlpDollars, formatSlpNumber } from "../../base/ui/slp-number-format";
 import { SlpSheet } from "../../modules/chrome/SlpSheet";
 import { formatRelativeTime, formatTime } from "../../base/ui/slp-date-time";
 import { BroadcastPanel } from "../../features/messages/SlpMessages";
@@ -394,7 +394,7 @@ function SlpStudioStat({
  * never drags the bar backwards.
  */
 function SlurpGoalEditor({ creator, personaId }: { creator: SlurpStudioCreator; personaId: string | null }) {
-  const { t: localizeUi } = useUiTranslation();
+  const { t: localizeUi, i18n } = useUiTranslation();
   const setGoal = useSetSlurpGoal();
   const [editing, setEditing] = useState(false);
   const [label, setLabel] = useState(creator.goal?.label ?? "");
@@ -432,17 +432,13 @@ function SlurpGoalEditor({ creator, personaId }: { creator: SlurpStudioCreator; 
           />
         </div>
         <p className={cn(SLP_TYPE.meta, "mt-1.5 tabular-nums text-[var(--slurp-muted)]")}>
-          {creator.goal.met ? (
-            localizeUi("ui.slurp.studio.goalMet", { defaultValue: "Goal met." })
-          ) : (
-            <SlpCoinText>
-              {localizeUi("ui.slurp.studio.goalProgress", {
-                defaultValue: "{{raised}} of {{target}} <coin/>",
-                raised: creator.goal.raised.toLocaleString(),
-                target: creator.goal.target.toLocaleString(),
+          {creator.goal.met
+            ? localizeUi("ui.slurp.studio.goalMet", { defaultValue: "Goal met." })
+            : localizeUi("ui.slurp.studio.goalProgressDollars", {
+                defaultValue: "{{raised}} of {{target}}",
+                raised: formatSlpDollars(creator.goal.raised, i18n.language),
+                target: formatSlpDollars(creator.goal.target, i18n.language),
               })}
-            </SlpCoinText>
-          )}
         </p>
       </div>
     ) : (

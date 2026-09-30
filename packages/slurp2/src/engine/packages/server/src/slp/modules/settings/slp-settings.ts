@@ -60,6 +60,7 @@ import {
 import { SLURP_STORY_JOB_DEFAULTS, type SlurpStoryJobWeights } from "../../../../../shared/src/slp/slp-post-purpose.js";
 import { DEFAULT_SLP_CREATOR_REPLIES_PER_24_HOURS } from "../../../../../shared/src/slp/slp-social.schema.js";
 import { SLURP_COOL_OFF_HOURS } from "../world/slp-stance.js";
+import { SLURP_CUSTOM_OPENER_MAX_LENGTH, SLURP_CUSTOM_OPENERS_MAX } from "../../../../../shared/src/slp/slp-world.js";
 import {
   SLURP_DEFAULT_PLATFORM_SCALE,
   SLURP_DEFAULT_WORLD_ACTIVITY,
@@ -309,6 +310,8 @@ export const slurpSettingsSchema = z.object({
   previewOpensPost: z.boolean(),
   /** Previews show the whole picture fitted instead of cropping it (top centre). Display only. */
   previewWholePictures: z.boolean(),
+  /** Every Slurp picture and video stays blurred until it is tapped (for using Slurp in public). */
+  blurPictures: z.boolean(),
   /**
    * Posts a day across the whole Creator cast, and now actually that number: the reserve used to
    * lay down twice as many slots as this asked for. The ceiling is well above the old 24 so a
@@ -374,6 +377,16 @@ export const slurpSettingsSchema = z.object({
   messagesViewerImageCooldownMinutes: z.number().int().min(0).max(10080),
   /** Minutes a Creator stays away after they have had enough. 0 = they do not step away (the strike still counts). */
   messagesCoolOffMinutes: z.number().int().min(0).max(10080),
+  /** Minutes a fan thinks over a quote before answering it. 0 = the next world tick. */
+  messagesQuoteAnswerMinutes: z.number().int().min(0).max(10080),
+  /** The player's own first lines for fan DMs. Empty = the built-in ones. */
+  messagesFanOpeners: z
+    .array(z.string().trim().min(1).max(SLURP_CUSTOM_OPENER_MAX_LENGTH))
+    .max(SLURP_CUSTOM_OPENERS_MAX),
+  /** The player's own first words for commission requests. Empty = the built-in ones. */
+  messagesCommissionOpeners: z
+    .array(z.string().trim().min(1).max(SLURP_CUSTOM_OPENER_MAX_LENGTH))
+    .max(SLURP_CUSTOM_OPENERS_MAX),
   /**
    * Creator replies to comments in any 24 hours, installation-wide (your comments and the
    * audience's share it). No "off": the audience drain runs on page loads and this is its only cap.
@@ -582,6 +595,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   allowGalleryImageAttachments: false,
   previewOpensPost: true,
   previewWholePictures: false,
+  blurPictures: false,
   postsPerDay: 4,
   postsPerDayCustom: false,
   autoPostingScheduleEnabled: false,
@@ -622,6 +636,9 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   ...SLURP_DEFAULT_REPLY_DELAYS,
   messagesViewerImageCooldownMinutes: 180,
   messagesCoolOffMinutes: SLURP_COOL_OFF_HOURS * 60,
+  messagesQuoteAnswerMinutes: 1440,
+  messagesFanOpeners: [],
+  messagesCommissionOpeners: [],
   creatorRepliesPerDay: DEFAULT_SLP_CREATOR_REPLIES_PER_24_HOURS,
   autopurgeEnabled: false,
   autopurgeRetentionValue: 4,

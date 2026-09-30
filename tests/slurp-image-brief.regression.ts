@@ -131,4 +131,53 @@ assert.match(
 assert.match(slurpImageNegativePrompt("none"), /smartphone/u, "the negative prompt names the phone");
 assert.match(slurpImageNegativePrompt("explicit"), /duplicate person/u, "and a doubled Creator");
 
+// ── A post about somebody else (0.3.7): they may be in it, nobody is forced in ───────────────
+// A couple or collab post used to say "The only person in the photo." and ban a second person, so the
+// partner the post was about could never appear.
+const withKai = slurpImageBrief({
+  cameraPhoto: slurpCameraSourcePhoto("tripod"),
+  variation,
+  sexualLevel: "none",
+  company: "Kai",
+});
+assert.match(withKai, /Kai may be in the photo too, if the moment calls for it\./u);
+assert.doesNotMatch(withKai, /The only person in the photo/u);
+assert.match(
+  slurpImageBrief({ cameraPhoto: slurpCameraSourcePhoto("tripod"), variation, sexualLevel: "none" }),
+  /The only person in the photo/u,
+  "alone stays alone",
+);
+assert.doesNotMatch(slurpImageNegativePrompt("none", true) ?? "", /second person|extra people/u);
+// The writer gets their looks with the choice; a reference picture only for somebody the final prompt names.
+assert.match(images, /Put one in the picture only when the post or the scene calls for them/u);
+assert.match(images, /promptText: finalPrompt,/u);
+// Two people only when the writer named a companion; left out, the one-person rule stands.
+assert.match(
+  images,
+  /slurpImageNegativePrompt\(input\.visualBrief\?\.sexualLevel, companionNamed, viewpoint\?\.source\)/u,
+);
+// Nobody else joins a nude or explicit picture unless the spice consent gate chose them as the partner.
+const pictureBriefs = slurp2Source(
+  "packages/slurp2/src/engine/packages/server/src/slp/features/feed/slp-post-picture-briefs.ts",
+);
+assert.match(pictureBriefs, /const clothed = sexualLevel === "none" \|\| sexualLevel === "suggestive";/u);
+assert.match(pictureBriefs, /const company = !input\.partner && clothed && input\.cast\?\.length/u);
+assert.match(
+  pictureBriefs,
+  /const pictureCast = clothed \|\| \(Boolean\(input\.partner\) && input\.cast\?\.length === 1\);/u,
+);
+// The cast reaches the picture on the first draw and on every later one (reserve, review, retry).
+const generation = slurp2Source(
+  "packages/slurp2/src/engine/packages/server/src/slp/features/feed/slp-generation-service.ts",
+);
+assert.match(generation, /companionIds: pictureCast \? beat\?\.castIds : undefined,/u);
+assert.match(generation, /pictureCast && beat\?\.castIds\?\.length \? \{ slurpPictureCast: beat\.castIds \}/u);
+for (const path of ["feed/reserve/slp-reserve-operation.ts", "media/slp-reviewed-images-service.ts"]) {
+  assert.match(
+    slurp2Source(`packages/slurp2/src/engine/packages/server/src/slp/features/${path}`),
+    /companionIds: \w+\.metadata\.slurpPictureCast,/u,
+    path,
+  );
+}
+
 console.log("slurp image brief regression checks passed");

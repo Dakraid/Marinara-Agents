@@ -515,3 +515,36 @@ export function slurpCreatorCheckIn(input: {
 
 /** Unprompted creator messages per tick. Being messaged stops meaning anything in bulk. */
 export const SLURP_MAX_CREATOR_OPENERS_PER_TICK = 1;
+
+/**
+ * The first words of a commission brief the world writes on its own. Players can replace them in
+ * Messaging settings; the model rewrites the whole brief later when the budget allows.
+ */
+export const SLURP_COMMISSION_OPENERS: readonly string[] = [
+  "Would you take a request?",
+  "Hoping you have space for a commission.",
+  "Not sure if you do these, but",
+  "Been saving up for this one.",
+  "If your list is open,",
+  "Long shot, but",
+];
+
+/**
+ * An opening line from somebody who has never written before. Vague on purpose, like the briefs:
+ * a first message that pretends to know something specific about a post it has not read is worse
+ * than one that simply says hello. Players can replace them in Messaging settings.
+ */
+export const SLURP_FAN_OPENERS: readonly string[] = [
+  "hi — been reading for a while, finally said something",
+  "hope it is ok to message. just wanted to say I like what you do",
+  "you probably get this a lot but you seem genuinely nice",
+  "not asking for anything, just wanted to say hi",
+  "been meaning to write for weeks and kept chickening out",
+  "hey. long time reader, first time writing",
+  "sorry to appear out of nowhere. your last few posts got me",
+  "is it weird to message? felt weird not to",
+];
+
+/** Most custom openers a player may keep, and the longest one. The rewrite caps an opener at 240. */
+export const SLURP_CUSTOM_OPENERS_MAX = 40;
+export const SLURP_CUSTOM_OPENER_MAX_LENGTH = 200;

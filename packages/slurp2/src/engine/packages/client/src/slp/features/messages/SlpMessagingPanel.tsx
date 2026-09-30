@@ -1,4 +1,11 @@
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, RotateCcw } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  SLURP_COMMISSION_OPENERS,
+  SLURP_CUSTOM_OPENER_MAX_LENGTH,
+  SLURP_CUSTOM_OPENERS_MAX,
+  SLURP_FAN_OPENERS,
+} from "../../../../../shared/src/slp/slp-world.js";
 import { BackstagePageHeader, BackstageWizard } from "../../modules/settings/SlpSettingsKit";
 
 import {
@@ -14,6 +21,70 @@ import { ChoiceSetting, StatusStrip } from "../../modules/settings/SlpSettingsIn
 import type { SlurpSettings } from "../settings/slp-settings-contract";
 
 import type { SlpBackstagePageProps } from "../backstage/slp-backstage-contract";
+
+const QUOTE_ANSWER_MINUTES = ["0", "60", "360", "1440"] as const;
+
+/**
+ * One editable list of first lines, one per line. It shows the built-in lines until the player
+ * saves their own; saving the built-in lines unchanged (or nothing) keeps following the built-in ones.
+ */
+function OpenerListField({
+  settingKey,
+  label,
+  detail,
+  resetLabel,
+  value,
+  builtIn,
+  disabled,
+  onSave,
+}: {
+  settingKey: "messagesFanOpeners" | "messagesCommissionOpeners";
+  label: string;
+  detail: string;
+  resetLabel: string;
+  value: readonly string[];
+  builtIn: readonly string[];
+  disabled: boolean;
+  onSave: (value: string[]) => void;
+}) {
+  const shown = (value.length > 0 ? value : builtIn).join("\n");
+  const [draft, setDraft] = useState(shown);
+  useEffect(() => setDraft(shown), [shown]);
+  const save = () => {
+    const lines = [...new Set(draft.split("\n").map((line) => line.trim().slice(0, SLURP_CUSTOM_OPENER_MAX_LENGTH)))]
+      .filter(Boolean)
+      .slice(0, SLURP_CUSTOM_OPENERS_MAX);
+    const next = lines.join("\n") === builtIn.join("\n") ? [] : lines;
+    if (next.join("\n") !== value.join("\n")) onSave(next);
+    else setDraft(shown);
+  };
+  return (
+    <Field settingKey={settingKey} label={label} detail={detail} wide group>
+      <div className="space-y-2">
+        <textarea
+          aria-label={label}
+          value={draft}
+          disabled={disabled}
+          rows={Math.min(10, Math.max(4, builtIn.length))}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={save}
+          className="w-full resize-y rounded-lg bg-[var(--slurp-canvas,var(--background))] p-3 text-base leading-6 ring-1 ring-inset ring-[var(--slurp-outline,var(--border))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus,var(--noodle-accent))] sm:text-sm"
+        />
+        {value.length > 0 && (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onSave([])}
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold ring-1 ring-inset ring-[var(--slurp-outline)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50"
+          >
+            <RotateCcw size={13} aria-hidden="true" />
+            {resetLabel}
+          </button>
+        )}
+      </div>
+    </Field>
+  );
+}
 
 /** Messaging rules: DM policy, away replies, fees and reply timing. */
 export function SlpMessagingPanel(page: SlpBackstagePageProps) {
@@ -314,6 +385,58 @@ export function SlpMessagingPanel(page: SlpBackstagePageProps) {
               />
             </Field>
           </div>
+        </AdvancedGroup>
+      </SettingsGroup>
+      <SettingsGroup title={t("ui.slurp.settings.messaging.requestsTitle", { defaultValue: "Fan requests" })}>
+        <ChoiceSetting
+          settingKey="messagesQuoteAnswerMinutes"
+          label={t("ui.slurp.settings.messaging.quoteAnswer", { defaultValue: "Time before fans answer a quote" })}
+          detail={t("ui.slurp.settings.messaging.quoteAnswerDetail", {
+            defaultValue:
+              "How long a fan thinks about your price before they accept, bargain or say no. The answer comes on the next world tick after this time.",
+          })}
+          options={QUOTE_ANSWER_MINUTES.map((minutes) => ({
+            value: minutes,
+            label: t(`ui.slurp.settings.messaging.quoteAnswer${minutes}`),
+          }))}
+          value={
+            QUOTE_ANSWER_MINUTES.find((minutes) => Number(minutes) === settings.messagesQuoteAnswerMinutes) ?? null
+          }
+          disabled={updateSettings.isPending}
+          onChange={(minutes) => void update("messagesQuoteAnswerMinutes", Number(minutes))}
+        />
+        <AdvancedGroup
+          title={t("ui.slurp.settings.messaging.openersTitle", { defaultValue: "Your own first lines" })}
+          count={2}
+        >
+          <OpenerListField
+            settingKey="messagesFanOpeners"
+            label={t("ui.slurp.settings.messaging.fanOpeners", { defaultValue: "First messages from fans" })}
+            detail={t("ui.slurp.settings.messaging.fanOpenersDetail", {
+              defaultValue:
+                "One message per line. A new fan starts a chat with one of these lines. When the AI budget allows rewrites, the model then writes it again in the fan's voice.",
+            })}
+            resetLabel={t("ui.slurp.settings.messaging.openersReset", { defaultValue: "Use the built-in lines" })}
+            value={settings.messagesFanOpeners}
+            builtIn={SLURP_FAN_OPENERS}
+            disabled={updateSettings.isPending}
+            onSave={(value) => void update("messagesFanOpeners", value)}
+          />
+          <OpenerListField
+            settingKey="messagesCommissionOpeners"
+            label={t("ui.slurp.settings.messaging.commissionOpeners", {
+              defaultValue: "First words of commission requests",
+            })}
+            detail={t("ui.slurp.settings.messaging.commissionOpenersDetail", {
+              defaultValue:
+                "One opener per line. Each request starts with one of these, then says what the fan wants. When the AI budget allows rewrites, the model then writes the request again.",
+            })}
+            resetLabel={t("ui.slurp.settings.messaging.openersReset", { defaultValue: "Use the built-in lines" })}
+            value={settings.messagesCommissionOpeners}
+            builtIn={SLURP_COMMISSION_OPENERS}
+            disabled={updateSettings.isPending}
+            onSave={(value) => void update("messagesCommissionOpeners", value)}
+          />
         </AdvancedGroup>
       </SettingsGroup>
       <SettingsGroup title={t("ui.slurp.settings.messaging.defaultsTitle")}>

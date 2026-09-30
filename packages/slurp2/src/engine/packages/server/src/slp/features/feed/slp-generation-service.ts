@@ -506,9 +506,8 @@ export async function generateCreatorPost(
     recentIds: recentWardrobeIds,
   });
 
-  // What the picture is, and what it may show. Assembled in one place so the two briefs cannot
-  // disagree about the level, the shoot, or the effort.
-  const { draftImagePrompt, visualBrief, negativePrompt, shotBriefs } = slurpPostPictureBriefs({
+  // What the picture is and may show, in one place so the two briefs agree on level, shoot and effort.
+  const { draftImagePrompt, visualBrief, negativePrompt, shotBriefs, pictureCast } = slurpPostPictureBriefs({
     project,
     variation,
     camera,
@@ -521,6 +520,7 @@ export async function generateCreatorPost(
     access: input.request.access,
     explicitLevel,
     partner: spiceAngle?.partner?.company ?? null,
+    cast: beat?.cast,
     modelImagePrompt: generated.imagePrompt,
     stageFacts: account.settings.stage,
     scene: generated.scene,
@@ -530,11 +530,10 @@ export async function generateCreatorPost(
     shots: generated.shots.slice(0, sceneShots),
   });
 
-  // Shoot bookkeeping, once the post definitely has text and its picture brief. A set drop opens a
-  // shoot that later callbacks can draw from, and stores its brief so their pictures keep its
-  // clothes and light; a callback that used one spends a shot. Recorded here rather than after
-  // persistence because a run that fails on the image still produced the shoot; a shoot left
-  // behind by a run that throws later is pruned with the rest.
+  // Shoot bookkeeping, once the post has text and its picture brief. A set drop opens a shoot later
+  // callbacks draw from (its brief keeps their clothes and light); a callback spends a shot. Recorded
+  // before persistence because a run that fails on the image still produced the shoot; a shoot left
+  // by a run that throws later is pruned with the rest.
   let openedShootId: string | null = null;
   if (!input.previewOnly) {
     if (axes?.intent === "set" && camera && variation) {
@@ -630,6 +629,7 @@ export async function generateCreatorPost(
       ...(beat ? { slurpBeat: { type: beat.type, line: beat.line, anchor: beat.anchor } } : {}),
       // A collab, a sponsored post or a rivalry post: labels, the partner's page, the split, the fee.
       ...(beat?.tie ? { slurpTie: beat.tie } : {}),
+      ...(pictureCast && beat?.castIds?.length ? { slurpPictureCast: beat.castIds } : {}),
       // What made it spicy, so unlocks, likes and tips can teach Slurp the player's taste.
       ...spiced.metadata,
       ...(wardrobeSelection.look ? { wardrobeLookId: wardrobeSelection.look.id } : {}),
@@ -641,8 +641,7 @@ export async function generateCreatorPost(
         : {}),
       // Where a reused picture came from. The bytes are a copy, so this is provenance, not a link.
       ...(reusedMedia && reusedSource ? { reusedFromPostId: reusedSource.id } : {}),
-      // Stamped at creation like a manual post, so a generated locked post honours the configured
-      // unlock price and keeps it across refreshes and edits instead of falling back to 1.
+      // Stamped at creation like a manual post: a generated locked post keeps its unlock price (not 1).
       ...(input.request.access === "locked"
         ? slpCreatorUnlockPriceMetadata(
             input.request.unlockPrice ??
@@ -667,6 +666,7 @@ export async function generateCreatorPost(
     return {
       account,
       linkedPublicAccount,
+      companionIds: pictureCast ? beat?.castIds : undefined,
       disclosureMode,
       postContent: protectedGenerated.content,
       draftPrompt,

@@ -56,6 +56,7 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
     "allowGalleryImageAttachments",
     "previewOpensPost",
     "previewWholePictures",
+    "blurPictures",
   ],
   prompts: [
     "generationGuidance",
@@ -116,6 +117,9 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
     "messagesStalePostAwayMaxMinutes",
     "messagesViewerImageCooldownMinutes",
     "messagesCoolOffMinutes",
+    "messagesQuoteAnswerMinutes",
+    "messagesFanOpeners",
+    "messagesCommissionOpeners",
   ],
   wallet: [
     "walletEnabled",

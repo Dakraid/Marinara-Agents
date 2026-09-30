@@ -132,6 +132,8 @@ export function slurpImageBrief(input: {
   selectedWardrobe?: { name: string; description: string } | null;
   /** Who is in a partner scene with them ("Jonas, their boyfriend"). Absent: they are alone. */
   partner?: string | null;
+  /** Who else the post is about ("Kai"): in the picture only if the moment calls for them. */
+  company?: string | null;
 }): string {
   const shootBrief =
     input.shoot?.brief &&
@@ -162,7 +164,11 @@ export function slurpImageBrief(input: {
         ? "explicit adult content with their partner"
         : LEVEL_PHOTO[input.sexualLevel],
     ),
-    input.partner ? `Two people: the Creator and ${input.partner}.` : "The only person in the photo.",
+    input.partner
+      ? `Two people: the Creator and ${input.partner}.`
+      : input.company
+        ? `${input.company} may be in the photo too, if the moment calls for it.`
+        : "The only person in the photo.",
   ]
     .filter(Boolean)
     .join("\n");

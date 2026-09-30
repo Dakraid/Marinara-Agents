@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { formatSlpDollars } from "../../base/ui/slp-number-format";
 import { ArrowDown, Crown, Dices, Gift, type LucideIcon, MessageCircle, ReceiptText, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation as useUiTranslation } from "react-i18next";
@@ -500,7 +501,10 @@ export function SlurpWalletView({
                           >
                             {gamble && entry.amount === 0 ? (
                               localizeUi("ui.slurp.wallet.free", { defaultValue: "Free" })
-                            ) : entry.kind === "renew" && entry.amount === 0 ? null : (
+                            ) : entry.kind === "renew" && entry.amount === 0 ? null : ledgerMode === "earnings" ? (
+                              // Earnings are platform dollars (0.3.7); only the Wallet counts SlurpCoins.
+                              `${entry.amount > 0 ? "+" : ""}${formatSlpDollars(entry.amount, i18n.language)}`
+                            ) : (
                               <SlurpCoinAmount
                                 amount={entry.amount > 0 ? `+${entry.amount}` : entry.amount}
                                 size={15}

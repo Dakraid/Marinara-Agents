@@ -108,6 +108,7 @@ export function createCreatorSlpImagesService(db: DB) {
         image = await generateCreatorPostImage({
           account,
           linkedPublicAccount,
+          companionIds: claimed.metadata.slurpPictureCast,
           disclosureMode,
           postContent: claimed.content,
           draftPrompt: claimed.imagePrompt,
