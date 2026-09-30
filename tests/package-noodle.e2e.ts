@@ -164,6 +164,30 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe("package-owned Noodle interface", () => {
+  test("a missing Admin Secret tells remote readers how to set it", async ({ page }) => {
+    // Package routes are privileged, so another device without the secret gets this 403 (#1136).
+    await page.route(
+      (url) => url.pathname === "/api/noodle" || url.pathname.startsWith("/api/noodle/"),
+      (route) =>
+        route.fulfill({
+          status: 403,
+          json: {
+            error: "ADMIN_SECRET is required for privileged APIs",
+            message:
+              "Set ADMIN_SECRET=<secret> in the server .env and send the same value in the X-Admin-Secret header.",
+          },
+        }),
+    );
+    await page.goto("/");
+    await openNoodle(page);
+    const failure = page
+      .locator('[data-component="NoodleView"]')
+      .getByRole("alert")
+      .filter({ hasText: "Admin Secret" });
+    await expect(failure).toContainText("Settings → Advanced → Admin Access");
+    await expect(failure.getByRole("button", { name: "Try again" })).toBeVisible();
+  });
+
   test("Latest Posts can be added, read, hidden, and opened on desktop and mobile", async ({ page }) => {
     const openWidgetManager = async () => {
       const mobileBookmarks = page.locator('[data-component="HomeBrowserHub.MobileBookmarksTrigger"]');

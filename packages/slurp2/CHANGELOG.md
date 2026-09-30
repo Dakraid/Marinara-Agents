@@ -1,5 +1,9 @@
 # Slurp release notes
 
+## 0.3.10 — 2026-09-30
+
+- If Slurp cannot load because this device has no Admin Secret, it now explains how to set one instead of asking you to check your connection.
+
 ## 0.3.8 — 2026-09-30
 
 Drama, friends and a People map. Design: `docs/DRAMA.md`.

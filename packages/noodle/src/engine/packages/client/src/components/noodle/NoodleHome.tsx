@@ -619,11 +619,21 @@ export function NoodleHome({ navigation, onNavigate, focusPostId, onFocusPostHan
   const selectedPersonaId = useUIStore((state) => state.noodleSelectedPersonaId);
   const setSelectedPersonaId = useUIStore((state) => state.setNoodleSelectedPersonaId);
   const notificationViewActive = navigation.mode === "public" && navigation.view === "notifications";
-  const { data, isLoading: isBootstrapLoading, isError: isBootstrapError } = useNoodle();
+  const {
+    data,
+    isLoading: isBootstrapLoading,
+    isError: isBootstrapError,
+    error: bootstrapError,
+    refetch: refetchBootstrap,
+  } = useNoodle();
   const feedQuery = useNoodleFeed();
   const notificationDataQuery = useNoodleNotificationData(notificationViewActive);
   const isLoading = isBootstrapLoading || feedQuery.isLoading;
   const isError = isBootstrapError || feedQuery.isError;
+  // From another device, every Noodle route fails until the Admin Secret is set (#1136).
+  const adminSecretMissing = [bootstrapError, feedQuery.error].some(
+    (error) => error instanceof Error && /admin.secret/i.test(error.message),
+  );
   const feedPosts = useMemo(() => feedQuery.data?.pages.flatMap((page) => page.items) ?? [], [feedQuery.data]);
   const feedInteractions = useMemo(
     () => feedQuery.data?.pages.flatMap((page) => page.interactions) ?? [],
@@ -5300,6 +5310,23 @@ export function NoodleHome({ navigation, onNavigate, focusPostId, onFocusPostHan
                   </div>
                 </div>
               ))}
+            </div>
+          ) : isError && posts.length === 0 ? (
+            <div role="alert" className="px-8 py-14 text-center">
+              <p className="text-base font-bold">{localizeUi("ui.noodle.widget.unavailable")}</p>
+              <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[var(--muted-foreground)]">
+                {localizeUi(adminSecretMissing ? "ui.noodle.widget.adminSecretMissing" : "ui.noodle.widget.loadReason")}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  if (isBootstrapError) void refetchBootstrap();
+                  if (feedQuery.isError) void feedQuery.refetch();
+                }}
+                className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+              >
+                <RefreshCw size="0.875rem" aria-hidden="true" /> {localizeUi("ui.noodle.widget.retry")}
+              </button>
             </div>
           ) : isAccountSearch ? (
             accountSearchResults.length > 0 ? (
