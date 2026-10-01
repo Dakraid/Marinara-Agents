@@ -1,15 +1,14 @@
-import { useState, type ReactNode } from "react";
-import { ChevronRight, Clapperboard, Handshake, Heart, RotateCcw, Users, X, type LucideIcon } from "lucide-react";
-import { SlpStirDrama } from "./SlpStirDrama";
+import { useState } from "react";
+import { ChevronRight, Clapperboard, RotateCcw, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { Avatar, SLP_PAGE_SCROLL_CLASS, SLP_TOP_BAR_CLASS, SLP_TYPE } from "../../base/chrome/SlpChrome";
-import { SlpSparkleGlyph, SlpStirGlyph } from "../../base/chrome/SlpGlyphs";
+import { SlpHeartGlyph, SlpSparkleGlyph, SlpStirGlyph } from "../../base/chrome/SlpGlyphs";
 import { formatRelativeTime, formatUpcomingDay } from "../../base/ui/slp-date-time";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
 import type { SlpPulseTarget } from "../../base/state/slp-task-store";
-import { SlpButton, SlpChip } from "../../modules/chrome/SlpButton";
+import { SlpButton, SlpChip, SlpSegment } from "../../modules/chrome/SlpButton";
 import { SlpSheet } from "../../modules/chrome/SlpSheet";
 import { SlpUsesAiMark } from "../../modules/chrome/SlpAiMark";
 import { SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
@@ -26,10 +25,11 @@ import type {
   SlpStirSuggestion,
   SlpStirView,
 } from "../../../../../shared/src/slp/slp-stir.js";
-import { SlpCollabsPanel, SlpPeoplePanel, SlpRelationshipsPanel } from "../projects/slp-projects-contract";
+import { SlpPeoplePanel } from "../projects/slp-projects-contract";
 import { useSlurpStir, useSlurpStirDismiss, useSlurpStirPreview } from "./slp-stir-hooks";
 import { SlpStirBox } from "./SlpStirBox";
-import { SlpStirPlanSheet, useSlpStirUndo } from "./SlpStirCards";
+import { SlpStirPlanSheet, useSlpStirDoIt, useSlpStirUndo } from "./SlpStirCards";
+import { SlpYouTwo } from "./SlpYouTwo";
 import { SlpStirPlaySheet } from "./SlpStirPlaySheet";
 import { SlpStirDesk } from "./SlpStirDesk";
 import { useSlurpSettings } from "../settings/slp-settings-contract";
@@ -97,19 +97,27 @@ function Faces({ who }: { who: { id: string; name: string; avatarUrl: string | n
 }
 
 /**
- * "In play": what is going on in the world right now, one small card each; a card with something
- * to steer opens that lever on it (0.3.1). "See all" opens Pulse.
+ * "Now showing" (0.3.11): everything running in the world, one row each, newest story first: drama
+ * packs, couples, rivalries, collabs, events, storylines. A row with something to steer opens that
+ * lever; a running drama can end here. The player's own couple is above, in "Your relationship".
  */
-function InPlay({
-  live,
+function NowShowing({
+  view,
   onSeeAll,
   onOpen,
+  onEndDrama,
 }: {
-  live: SlpStirLive[];
+  view: SlpStirView;
   onSeeAll?: () => void;
   onOpen: (lever: NonNullable<ReturnType<typeof slpStirLiveLever>>) => void;
+  onEndDrama: (runId: string) => void;
 }) {
   const { t, i18n } = useTranslation();
+  const byId = new Map(view.creators.map((creator) => [creator.id, creator]));
+  const yours = new Set(view.yourCouples.map((entry) => entry.couple.id));
+  const live = view.live.filter(
+    (entry) => !(entry.kind === "couple" && yours.has(entry.id.slice(entry.id.indexOf(":") + 1))),
+  );
   const label = (entry: SlpStirLive) => {
     const [a, b] = entry.who;
     const who = b ? t("ui.slurp.stir.pair", { a: a!.name, b: b.name }) : (a?.name ?? entry.label ?? "");
@@ -119,11 +127,14 @@ function InPlay({
         : t(`ui.slurp.stir.live.${entry.kind}.${entry.state}`);
     return { who, state };
   };
+  const row =
+    "flex min-h-14 w-full items-center gap-3 rounded-2xl bg-[var(--slurp-surface-raised)] px-3 py-2.5 text-start shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]";
+  const empty = !view.runs.length && !live.length;
   return (
-    <section aria-labelledby="slp-stir-live" className="space-y-2">
+    <section aria-labelledby="slp-stir-now" className="space-y-2" data-slp-stir-now>
       <div className="flex items-center justify-between px-1">
-        <h2 id="slp-stir-live" className={SLP_TYPE.title}>
-          {t("ui.slurp.stir.inPlay")}
+        <h2 id="slp-stir-now" className={SLP_TYPE.title}>
+          {t("ui.slurp.stir.now.title")}
         </h2>
         {onSeeAll && (
           <SlpButton variant="tertiary" onClick={onSeeAll} className="min-h-11 text-xs">
@@ -131,10 +142,39 @@ function InPlay({
           </SlpButton>
         )}
       </div>
-      {live.length === 0 ? (
+      {empty ? (
         <p className={cn(SLP_TYPE.meta, "px-1 text-[var(--slurp-muted)]")}>{t("ui.slurp.stir.inPlayEmpty")}</p>
       ) : (
-        <ul className="-mx-3 flex gap-2 overflow-x-auto px-3 pb-1 [scrollbar-width:none] @min-[680px]:mx-0 @min-[680px]:px-0">
+        <ul className={SLP_CARD_STACK_CLASS}>
+          {view.runs.map((run) => {
+            const cast = Object.values(run.cast).flatMap((id) => {
+              const creator = byId.get(id);
+              return creator ? [{ id, name: creator.name, avatarUrl: creator.avatarUrl }] : [];
+            });
+            return (
+              <li key={`drama:${run.id}`} className={row}>
+                <span className="relative shrink-0">
+                  <Faces who={cast} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className={cn(SLP_TYPE.body, "flex items-center gap-1.5 truncate font-semibold")}>
+                    <Clapperboard size={14} aria-hidden="true" className="shrink-0 text-[var(--slurp-ink)]" />
+                    <span className="truncate">{run.name}</span>
+                  </span>
+                  <span className={cn(SLP_TYPE.meta, "block truncate text-[var(--slurp-muted)]")}>
+                    {cast.map((person) => person.name).join(", ")}
+                  </span>
+                </span>
+                <SlpButton
+                  variant="quiet"
+                  onClick={() => onEndDrama(run.id)}
+                  className="min-h-11 shrink-0 px-3 text-xs"
+                >
+                  {t("ui.slurp.stir.now.end")}
+                </SlpButton>
+              </li>
+            );
+          })}
           {live.map((entry) => {
             const { who, state } = label(entry);
             const lever = slpStirLiveLever(entry);
@@ -151,37 +191,86 @@ function InPlay({
                 </span>
                 {lever && (
                   <ChevronRight
-                    size={14}
+                    size={16}
                     aria-hidden="true"
                     className="shrink-0 text-[var(--slurp-muted)] rtl:rotate-180"
                   />
                 )}
               </>
             );
-            const card =
-              "flex w-56 shrink-0 items-center gap-2.5 rounded-2xl bg-[var(--slurp-surface-raised)] px-3 py-2.5 text-start shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]";
             return (
-              <li key={entry.id} className="flex shrink-0">
+              <li key={entry.id}>
                 {lever ? (
                   <button
                     type="button"
                     onClick={() => onOpen(lever)}
                     aria-label={`${who}: ${state}. ${t(`ui.slurp.stir.card.${lever.action}.title`)}`}
                     className={cn(
-                      card,
-                      "min-h-11 transition-shadow hover:shadow-[var(--slurp-shadow-floating),var(--slurp-highlight)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none",
+                      row,
+                      "transition-shadow hover:shadow-[var(--slurp-shadow-floating),var(--slurp-highlight)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none",
                     )}
                   >
                     {body}
                   </button>
                 ) : (
-                  <div className={card}>{body}</div>
+                  <div className={row}>{body}</div>
                 )}
               </li>
             );
           })}
         </ul>
       )}
+    </section>
+  );
+}
+
+/**
+ * "Your relationship" (0.3.11): one small row per Creator the player's own page is with, above the
+ * world. It stays out of the way of the stories; a tap opens You two with every move.
+ */
+function YourRelationship({ view }: { view: SlpStirView }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState<string | null>(null);
+  if (!view.yourCouples.length) return null;
+  const shown = view.yourCouples.find((entry) => entry.couple.id === open);
+  return (
+    <section aria-label={t("ui.slurp.stir.yours.title")} className="space-y-2" data-slp-stir-yours>
+      {view.yourCouples.slice(0, 2).map(({ partner, couple }) => (
+        <button
+          key={couple.id}
+          type="button"
+          onClick={() => setOpen(couple.id)}
+          aria-haspopup="dialog"
+          className="flex min-h-14 w-full items-center gap-3 rounded-2xl bg-[var(--slurp-surface-raised)] px-3 py-2 text-start shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] transition-shadow hover:shadow-[var(--slurp-shadow-floating),var(--slurp-highlight)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none"
+        >
+          <Avatar account={{ displayName: partner.name, avatarUrl: partner.avatarUrl }} size="sm" />
+          <span className="min-w-0 flex-1">
+            <span className={cn(SLP_TYPE.body, "block truncate font-semibold")}>{partner.name}</span>
+            <span className={cn(SLP_TYPE.meta, "block truncate text-[var(--slurp-muted)]")}>
+              {t("ui.slurp.stir.yours.title")} ·{" "}
+              {couple.stage === "split"
+                ? t(couple.ending === "fizzled" ? "ui.slurp.youTwo.stage.faded" : "ui.slurp.youTwo.stage.ex")
+                : t(`ui.slurp.youTwo.stage.${couple.stage}`)}
+            </span>
+          </span>
+          <SlpHeartGlyph
+            size={16}
+            filled={couple.stage !== "split"}
+            aria-hidden="true"
+            className="shrink-0 text-[var(--slurp-ink)]"
+          />
+          <ChevronRight size={16} aria-hidden="true" className="shrink-0 text-[var(--slurp-muted)] rtl:rotate-180" />
+        </button>
+      ))}
+      <SlpSheet
+        open={Boolean(shown)}
+        onClose={() => setOpen(null)}
+        title={shown?.partner.name ?? ""}
+        width="max-w-lg"
+        back
+      >
+        {shown && <SlpYouTwo couple={shown.couple} name={shown.partner.name} creatorId={shown.partner.id} />}
+      </SlpSheet>
     </section>
   );
 }
@@ -352,25 +441,39 @@ function RecentPlays({
 }
 
 /**
- * The deck: a card per lever, by category. A card shows its icon, a name and one line; a card with
- * nothing to act on yet says what it needs. The categories are tabs (arrow keys move between them).
+ * "Start a story" (0.3.11): the drama packs first, then every lever as a one-step story, by genre. A
+ * card shows its icon, a name and one line; a card with nothing to act on yet says what it needs.
+ * The genres are tabs (arrow keys move between them).
  */
-function Deck({
+function StartAStory({
   view,
   onPick,
+  onStartDrama,
+  onOpenSettings,
   onSurprise,
 }: {
   view: SlpStirView | undefined;
   onPick: (action: SlpActionName) => void;
+  onStartDrama: (dramaId: string) => void;
+  onOpenSettings?: () => void;
   onSurprise?: () => void;
 }) {
   const { t } = useTranslation();
-  const [category, setCategory] = useState<SlpStirCategory>("love");
+  const [category, setCategory] = useState<SlpStirCategory>(() => (view?.dramas.length ? "drama" : "love"));
   // Polyamory is a Settings › Stir choice (0.3.5): off, its card stays out of the deck.
   const polyamory = useSlurpSettings().data?.polyamory === true;
+  // The packs are the drama cards; "start-drama" is how they play, not a card of its own.
   const cards = SLP_STIR_DECK_ORDER.filter(
-    (action) => SLP_STIR_DECK[action].category === category && (action !== "add-to-couple" || polyamory),
+    (action) =>
+      SLP_STIR_DECK[action].category === category &&
+      action !== "start-drama" &&
+      (action !== "add-to-couple" || polyamory),
   );
+  const running = new Set((view?.runs ?? []).map((run) => run.dramaId));
+  const cardClass =
+    "group flex h-full min-h-32 w-full flex-col items-start gap-2 rounded-2xl bg-[var(--slurp-surface-raised)] p-3.5 text-start shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] transition-[transform,box-shadow] duration-[var(--slurp-motion-fast)] hover:shadow-[var(--slurp-shadow-floating),var(--slurp-highlight)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-60 disabled:shadow-none disabled:active:scale-100 motion-reduce:transition-none motion-reduce:active:scale-100";
+  const iconClass =
+    "flex size-10 items-center justify-center rounded-2xl bg-[image:var(--slurp-nav-active)] text-[var(--slurp-ink)] ring-1 ring-inset ring-[var(--noodle-accent)]/30 [&_svg]:!text-current";
   const move = (by: number) => {
     const index = SLP_STIR_CATEGORIES.indexOf(category);
     const next = SLP_STIR_CATEGORIES[(index + by + SLP_STIR_CATEGORIES.length) % SLP_STIR_CATEGORIES.length]!;
@@ -381,7 +484,7 @@ function Deck({
     <section aria-labelledby="slp-stir-deck" className="space-y-3">
       <div className="flex items-center justify-between gap-2 px-1">
         <h2 id="slp-stir-deck" className={SLP_TYPE.title}>
-          {t("ui.slurp.stir.deck")}
+          {t("ui.slurp.stir.start.title")}
         </h2>
         {onSurprise && (
           <SlpButton variant="tertiary" onClick={onSurprise} className="min-h-11 text-xs" data-slp-stir-surprise>
@@ -427,6 +530,50 @@ function Deck({
         className="grid grid-cols-2 gap-2.5 @min-[680px]:grid-cols-3"
         data-slp-stir-deck={category}
       >
+        {category === "drama" &&
+          (view?.dramas.length ? (
+            view.dramas.map((drama) => (
+              <li key={`pack:${drama.id}`}>
+                <button
+                  type="button"
+                  onClick={() => onStartDrama(drama.id)}
+                  disabled={running.has(drama.id)}
+                  data-slp-stir-pack={drama.id}
+                  className={cardClass}
+                >
+                  <span className="flex w-full items-start justify-between gap-2">
+                    <span className={iconClass}>
+                      <Clapperboard size={20} aria-hidden="true" />
+                    </span>
+                    {running.has(drama.id) && (
+                      <span className={cn(SLP_TYPE.meta, "font-semibold text-[var(--slurp-ink)]")}>
+                        {t("ui.slurp.stir.start.onNow")}
+                      </span>
+                    )}
+                  </span>
+                  <span className={cn(SLP_TYPE.body, "font-bold")}>{drama.name}</span>
+                  <span className={cn(SLP_TYPE.meta, "line-clamp-3 text-[var(--slurp-muted)]")}>
+                    {drama.description}
+                  </span>
+                </button>
+              </li>
+            ))
+          ) : (
+            // Every pack is off by default: say so where they would be, with the way to switch them on.
+            <li className="col-span-2 @min-[680px]:col-span-3">
+              <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-[var(--slurp-surface-raised)] p-3.5 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
+                <span className={iconClass}>
+                  <Clapperboard size={20} aria-hidden="true" />
+                </span>
+                <p className={cn(SLP_TYPE.body, "min-w-0 flex-1")}>{t("ui.slurp.stir.start.packsOff")}</p>
+                {onOpenSettings && (
+                  <SlpButton onClick={onOpenSettings} className="min-h-11 shrink-0 px-4 text-xs">
+                    {t("ui.slurp.stir.start.choosePacks")}
+                  </SlpButton>
+                )}
+              </div>
+            </li>
+          ))}
         {cards.map((action) => {
           const card = SLP_STIR_DECK[action];
           const Icon = card.icon;
@@ -460,44 +607,6 @@ function Deck({
 }
 
 /**
- * Business and Relationships (U), moved from Studio: every tie between Creators, with its own
- * buttons. Each is a Stir sub-page (release step): a row here, a full sheet with the back arrow.
- */
-function Group({
-  icon: Icon,
-  title,
-  detail,
-  children,
-}: {
-  icon: LucideIcon;
-  title: string;
-  detail: string;
-  children: ReactNode;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <section className="rounded-2xl bg-[var(--slurp-surface-raised)] shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-haspopup="dialog"
-        className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-4 text-start text-[var(--slurp-muted)] transition-colors hover:text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] [&_svg]:!text-current"
-      >
-        <Icon size={18} aria-hidden="true" className="shrink-0" />
-        <span className="min-w-0 flex-1">
-          <span className={cn(SLP_TYPE.body, "block font-semibold text-[var(--slurp-text)]")}>{title}</span>
-          <span className={cn(SLP_TYPE.meta, "block truncate")}>{detail}</span>
-        </span>
-        <ChevronRight size={16} aria-hidden="true" className="shrink-0 rtl:rotate-180" />
-      </button>
-      <SlpSheet open={open} onClose={() => setOpen(false)} title={title} size="full" width="max-w-2xl" back>
-        <div className="px-2 pb-2">{open && children}</div>
-      </SlpSheet>
-    </section>
-  );
-}
-
-/**
  * The Stir tab (W): make things happen in the world. The box turns words into a plan, "In play"
  * shows what is going on, suggestions offer a next move, the deck holds every lever as a card, and
  * the full Business and Relationships lists sit at the end. Every play shows a preview first; plays
@@ -509,8 +618,11 @@ export function SlpStirScreen({
   onOpenDashboard,
   onOpenTarget,
   onOpenSupport,
+  onOpenSettings,
 }: {
   personaId: string | null;
+  /** Settings › Stir › Drama, where the packs are switched on (0.3.11). */
+  onOpenSettings?: () => void;
   /** A Creator's Slurp Support chat, from the Support desk (docs/SUPPORT-DESK.md). */
   onOpenSupport?: (creatorId: string) => void;
   onOpenPulse?: () => void;
@@ -525,6 +637,16 @@ export function SlpStirScreen({
   const [playing, setPlaying] = useState<{ action: SlpActionName; who?: string[]; pick?: string } | null>(null);
   const [suggested, setSuggested] = useState<{ cards: SlpActionPreview[]; cant: string[]; key: number } | null>(null);
   const preview = useSlurpStirPreview();
+  const doIt = useSlpStirDoIt();
+  // Stir is the world's levers; the Support desk is Slurp's own staff work (0.3.11: its own mode).
+  const [mode, setMode] = useState<"stir" | "desk">("stir");
+  const [people, setPeople] = useState(false);
+  // Ending a drama runs through the runner like any play: a preview, the ledger, a toast.
+  const endDrama = (runId: string) =>
+    preview.mutate([{ action: "end-drama", input: { runId } }], {
+      onSuccess: ({ cards }) => (cards[0]?.error ? void toast.error(cards[0].summary) : doIt.run(cards, "deck")),
+      onError: (error) => void toast.error(errorMessage(error)),
+    });
   const names = (view?.creators ?? [])
     .filter((creator) => creator.automatic && !creator.couplePage)
     .map((creator) => creator.name);
@@ -554,47 +676,76 @@ export function SlpStirScreen({
       <header className={cn("flex h-14 shrink-0 items-center gap-2 px-4", SLP_TOP_BAR_CLASS)}>
         <SlpStirGlyph size={22} aria-hidden="true" className="text-[var(--slurp-ink)]" />
         <h1 className="slp-display min-w-0 flex-1 truncate text-xl leading-none">{t("ui.slurp.stir.title")}</h1>
+        <SlpSegment
+          label={t("ui.slurp.stir.mode.label")}
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: "stir", label: t("ui.slurp.stir.mode.stir") },
+            { value: "desk", label: t("ui.slurp.stir.mode.desk") },
+          ]}
+          className="shrink-0"
+        />
+        {personaId && (
+          <button
+            type="button"
+            onClick={() => setPeople(true)}
+            aria-label={t("ui.slurp.people.title")}
+            title={t("ui.slurp.people.title")}
+            className="-me-2 flex size-11 shrink-0 items-center justify-center rounded-full text-[var(--slurp-ink)] hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] [&_svg]:!text-current"
+          >
+            <Users size={20} aria-hidden="true" />
+          </button>
+        )}
       </header>
       <main className={cn("min-h-0 flex-1 overflow-y-auto", SLP_PAGE_SCROLL_CLASS)}>
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-3 sm:p-5">
-          <StirHint />
-          <SlpStirBox names={names} personaId={personaId} />
-          {query.isPending ? (
-            <SlpSkeleton shape="card" count={2} label={t("ui.slurp.state.loading")} />
-          ) : query.isError && !view ? (
-            <SlpErrorState title={t("ui.slurp.stir.loadError")} onRetry={() => void query.refetch()} />
-          ) : view ? (
+          {mode === "desk" ? (
+            <SlpStirDesk
+              personaId={personaId}
+              onOpenThread={onOpenSupport}
+              onPlay={(action, who) => setPlaying({ action, who })}
+            />
+          ) : (
             <>
-              <InPlay live={view.live} onSeeAll={onOpenPulse} onOpen={setPlaying} />
-              <Suggested suggestions={view.suggestions} onPlay={playSuggestion} pending={preview.isPending} />
-              <Deck view={view} onPick={(action) => setPlaying({ action })} onSurprise={surprise} />
-              <RecentPlays plays={view.plays} creators={view.creators} onOpenTarget={onOpenTarget} />
-              {personaId && (
-                <div className={SLP_CARD_STACK_CLASS}>
-                  <Group icon={Users} title={t("ui.slurp.people.title")} detail={t("ui.slurp.people.detail")}>
-                    <SlpPeoplePanel personaId={personaId} />
-                  </Group>
-                  <Group icon={Clapperboard} title={t("ui.slurp.drama.title")} detail={t("ui.slurp.drama.detail")}>
-                    <SlpStirDrama personaId={personaId} />
-                  </Group>
-                  <Group icon={Handshake} title={t("ui.slurp.ties.title")} detail={t("ui.slurp.ties.detail")}>
-                    <SlpCollabsPanel personaId={personaId} />
-                  </Group>
-                  <Group icon={Heart} title={t("ui.slurp.ties.life.title")} detail={t("ui.slurp.ties.life.detail")}>
-                    <SlpRelationshipsPanel personaId={personaId} />
-                  </Group>
-                </div>
-              )}
-              {/* The Support desk sits last: Slurp's own staff work, apart from the world's levers. */}
-              <SlpStirDesk
-                personaId={personaId}
-                onOpenThread={onOpenSupport}
-                onPlay={(action, who) => setPlaying({ action, who })}
-              />
+              <StirHint />
+              <SlpStirBox names={names} personaId={personaId} />
+              {query.isPending ? (
+                <SlpSkeleton shape="card" count={2} label={t("ui.slurp.state.loading")} />
+              ) : query.isError && !view ? (
+                <SlpErrorState title={t("ui.slurp.stir.loadError")} onRetry={() => void query.refetch()} />
+              ) : view ? (
+                <>
+                  <YourRelationship view={view} />
+                  <NowShowing view={view} onSeeAll={onOpenPulse} onOpen={setPlaying} onEndDrama={endDrama} />
+                  <Suggested suggestions={view.suggestions} onPlay={playSuggestion} pending={preview.isPending} />
+                  <StartAStory
+                    key={view.dramas.length ? "packs" : "no-packs"}
+                    view={view}
+                    onPick={(action) => setPlaying({ action })}
+                    onStartDrama={(dramaId) => setPlaying({ action: "start-drama", pick: dramaId })}
+                    onOpenSettings={onOpenSettings}
+                    onSurprise={surprise}
+                  />
+                  <RecentPlays plays={view.plays} creators={view.creators} onOpenTarget={onOpenTarget} />
+                </>
+              ) : null}
             </>
-          ) : null}
+          )}
         </div>
       </main>
+      {personaId && (
+        <SlpSheet
+          open={people}
+          onClose={() => setPeople(false)}
+          title={t("ui.slurp.people.title")}
+          size="full"
+          width="max-w-2xl"
+          back
+        >
+          <div className="px-2 pb-2">{people && <SlpPeoplePanel personaId={personaId} />}</div>
+        </SlpSheet>
+      )}
       <SlpStirPlaySheet
         action={playing?.action ?? null}
         prefill={playing?.who || playing?.pick ? { who: playing.who, pick: playing.pick } : undefined}

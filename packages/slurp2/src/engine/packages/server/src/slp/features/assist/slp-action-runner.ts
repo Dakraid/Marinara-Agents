@@ -38,6 +38,7 @@ import {
 } from "./slp-stir-levers.js";
 import { previewSlpAction } from "./slp-action-preview.js";
 import { isSlpDeskLever, runSlpDeskLever } from "./slp-desk-levers.js";
+import { isSlurpDramaLever, runSlurpDramaLever } from "../world/slp-world-contract.js";
 
 const POST_FAILURE: Record<string, string> = {
   busy: "A post for this Creator is already being written.",
@@ -104,6 +105,10 @@ async function dispatch(
   if (isSlurpTieLever(name)) {
     const ran = await runSlurpTieLever(db, name, input);
     return ran.ok ? { ok: true, value: ran.value, undo: ran.undo ? { kind: "tie", undo: ran.undo } : null } : ran;
+  }
+  if (isSlurpDramaLever(name)) {
+    const ran = await runSlurpDramaLever(db, name, input);
+    return ran.ok ? { ok: true, value: ran.value, undo: ran.undo ? { kind: "drama", undo: ran.undo } : null } : ran;
   }
   switch (name) {
     case "list-world":

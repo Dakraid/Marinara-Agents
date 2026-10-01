@@ -34,6 +34,8 @@ export type SlurpTieStamp = {
   announce?: boolean;
   /** A collab the two planned as a spicy shoot together in their DMs (U). */
   shoot?: boolean;
+  /** A couple post about a secret relationship with the player: the fans do not know who it is. */
+  secret?: boolean;
 };
 
 export function readSlurpTieStamp(metadata: Record<string, unknown> | null | undefined): SlurpTieStamp | null {
@@ -57,5 +59,6 @@ export function readSlurpTieStamp(metadata: Record<string, unknown> | null | und
     ...(value.echo === true ? { echo: true } : {}),
     ...(value.announce === true ? { announce: true } : {}),
     ...(value.shoot === true ? { shoot: true } : {}),
+    ...(value.secret === true ? { secret: true } : {}),
   };
 }

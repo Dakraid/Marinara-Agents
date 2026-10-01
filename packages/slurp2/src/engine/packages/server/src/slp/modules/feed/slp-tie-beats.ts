@@ -58,6 +58,8 @@ export function slurpTieBeat(input: {
   couples?: readonly SlurpCouple[];
   /** Public names by account id. */
   names: ReadonlyMap<string, string>;
+  /** Pages the player runs (`slp-couple-beats.ts`: a secret stays secret, and "you took this"). */
+  playerIds?: ReadonlySet<string>;
   intents: readonly SlurpContentIntent[];
   at: Date;
   /** The slot's own time (the reserve prepares ahead): a collab drop goes to the slot held at its hour. */

@@ -9,6 +9,9 @@
  * - **Seeded.** The same pair at the same hour decides the same way.
  */
 import { hash } from "../projects/slp-project.js";
+import type { SlurpCouple } from "../projects/slp-creator-couples.js";
+
+const HOUR = 3_600_000;
 
 export type SlurpPartnerStage = "sparks" | "dating" | "together" | "rocky";
 
@@ -52,6 +55,49 @@ const REASONS: Record<"morning" | "day" | "evening" | "night" | "rocky" | "spark
   sparks: ["Text your crush something flirty and pretend it is casual.", "Find an excuse to text your crush."],
 };
 
+/** Late at night, for a Creator whose level goes that far: she says what she wants, in private. */
+/** Her public side, for a Creator whose level goes that far: her fans see her too, and her partner knows. */
+const PUBLIC_HEAT: readonly string[] = [
+  "You just posted something revealing for your fans. Tell your partner before they find it, and tease them about who else is looking.",
+  "A fan left a bold comment on your latest post. Tell your partner what they said, and see how they take it.",
+  "Your newest post is getting a lot of attention. Ask your partner what they think of everyone seeing you like that.",
+];
+
+const NIGHT_HEAT: readonly string[] = [
+  "You are in bed and cannot stop thinking about your partner. Tell them exactly what you would do if they were here.",
+  "You just got out of the shower and you are thinking about your partner. Describe it, and make them want to be there.",
+  "It is late and you want your partner. Say it plainly, the way you only say it to them.",
+];
+
+/**
+ * What happened to the two of them that she has not texted about yet: news comes before the ordinary
+ * pace (dates with you: an invite on the day, a recap the morning after). `lastMessageAt`: the chat's
+ * newest message, so news the two already talked about is not news any more. Null: nothing new.
+ */
+export function slurpPartnerNews(couple: SlurpCouple, at: Date, lastMessageAt: string | null): string | null {
+  const since = lastMessageAt ? Date.parse(lastMessageAt) : 0;
+  const age = (iso: string) => (at.getTime() - Date.parse(iso)) / HOUR;
+  for (const moment of [...couple.moments].reverse()) {
+    const hours = age(moment.at);
+    if (hours < 0 || hours > 36) continue;
+    const detail = moment.detail ? ` (${moment.detail})` : "";
+    if (moment.kind === "date" && hours < 12 && Date.parse(moment.at) > since)
+      return `You two have a date today${detail}. Ask your partner out for it, a little excited, and say what you are looking forward to.`;
+    if (moment.kind === "date" && hours >= 12 && since < Date.parse(moment.at) + 12 * HOUR)
+      return `Your date last night${detail} is still on your mind. Tell your partner what you liked most, and what you want next time.`;
+    if (Date.parse(moment.at) <= since) continue;
+    if (moment.kind === "anniversary")
+      return `Today is your ${moment.detail || "anniversary"} with your partner. Text them about it, the way you would.`;
+    // A secret has no public launch to talk about.
+    if (moment.kind === "launch" && !couple.secret)
+      return "You just made it official in public. Tell your partner how it feels, and what your fans are saying.";
+    if (moment.kind === "makeup")
+      return "You two made up after the fight. Tell your partner how you feel about them now.";
+    if (moment.kind === "reunion") return "You are back together. Text your partner like you mean it this time.";
+  }
+  return null;
+}
+
 const part = (hour: number) =>
   hour < 5 ? "night" : hour < 11 ? "morning" : hour < 17 ? "day" : hour < 22 ? "evening" : "night";
 
@@ -68,12 +114,26 @@ export function slurpPartnerText(input: {
   busy: boolean;
   /** The hour this look is for (a whole-hour number), so one hour decides once. */
   slot: number;
+  /** `slurpPartnerNews`: something new between the two of them; it does not wait for the pace. */
+  news?: string | null;
+  /** Her level goes to nudity or further: late at night she can say what she wants. */
+  heat?: boolean;
 }): string | null {
   if (input.busy) return null;
+  if (input.news) return input.news;
   const pace = SLURP_PARTNER_TEXT_PACE[input.stage];
   if (input.hoursSinceLast !== null && input.hoursSinceLast < pace.gapHours) return null;
   if (hash(`${input.pairKey}:${input.slot}:partner-text`) % 100 >= pace.chance) return null;
+  const time = part(input.hour);
   const pool =
-    input.stage === "rocky" ? REASONS.rocky : input.stage === "sparks" ? REASONS.sparks : REASONS[part(input.hour)];
+    input.stage === "rocky"
+      ? REASONS.rocky
+      : input.stage === "sparks"
+        ? REASONS.sparks
+        : time === "night" && input.heat
+          ? [...REASONS.night, ...NIGHT_HEAT]
+          : (time === "day" || time === "evening") && input.heat
+            ? [...REASONS[time], ...PUBLIC_HEAT]
+            : REASONS[time];
   return pool[hash(`${input.pairKey}:${input.slot}:partner-why`) % pool.length]!;
 }

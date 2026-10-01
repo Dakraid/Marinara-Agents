@@ -130,6 +130,8 @@ export type SlpDramaState = {
   startWindow: number | null;
   /** The player asked Stir to start this drama now: the next tick tries it first, past the level's cap. */
   requested?: string | null;
+  /** Who the player picked for the requested drama's first role (0.3.11), when they picked one. */
+  requestedLead?: string | null;
 };
 export const SLP_EMPTY_DRAMA_STATE: SlpDramaState = {
   runs: [],
@@ -160,6 +162,7 @@ export function readSlpDramaState(raw: unknown): SlpDramaState {
     >,
     startWindow: typeof value.startWindow === "number" ? value.startWindow : null,
     requested: typeof value.requested === "string" ? value.requested : null,
+    requestedLead: typeof value.requestedLead === "string" ? value.requestedLead : null,
   };
 }
 
@@ -181,6 +184,23 @@ export type SlpDramaInput = {
 const active = <T extends { endedAt: string | null }>(entry: T) => entry.endedAt === null;
 const pairKey = (kind: string, a: string, b: string) => `${kind}:${[a, b].sort().join("|")}`;
 const iso = (ms: number) => new Date(ms).toISOString();
+
+/**
+ * Words about the player in pack text, from their page's gender: "{you-bf}" is bf, gf or partner,
+ * "{you-man}" man, girl or one, "{you-him}", "{you-he}", "{you-boy}". None: the neutral words.
+ */
+export function slpDramaPlayerWords(player: Pick<SlpDramaCreator, "gender"> | undefined): Record<string, string> {
+  const gender = player?.gender;
+  const pick = (male: string, female: string, other: string) =>
+    gender === "male" ? male : gender === "female" ? female : other;
+  return {
+    "you-bf": pick("bf", "gf", "partner"),
+    "you-man": pick("man", "girl", "one"),
+    "you-boy": pick("boy", "girl", "one"),
+    "you-him": pick("him", "her", "them"),
+    "you-he": pick("he", "she", "they"),
+  };
+}
 
 /** `{role}` in pack text becomes that role's name. Unknown roles stay as they are. */
 export function slpDramaText(text: string, names: Readonly<Record<string, string>>): string {
@@ -341,8 +361,16 @@ export function slpAdvanceDrama(
   const ties: SlpDramaTieEffect[] = [];
   let jobs = [...state.jobs];
   const ended = { ...state.ended };
-  const names = (cast: Readonly<Record<string, string>>) =>
-    Object.fromEntries(Object.entries(cast).flatMap(([key, id]) => (live.get(id) ? [[key, live.get(id)!.name]] : [])));
+  const names = (cast: Readonly<Record<string, string>>) => ({
+    ...Object.fromEntries(
+      Object.entries(cast).flatMap(([key, id]) => (live.get(id) ? [[key, live.get(id)!.name]] : [])),
+    ),
+    ...slpDramaPlayerWords(
+      Object.values(cast)
+        .map((id) => live.get(id))
+        .find((creator) => creator && !creator.automatic),
+    ),
+  });
   const log = (run: SlpDramaRun, code: string, detail?: string): SlpDramaRun => ({
     ...run,
     log: [...run.log, { at: stamp, code, ...(detail ? { detail } : {}) }].slice(-20),
@@ -551,10 +579,12 @@ export function slpAdvanceDrama(
 
   // A drama starts: cast its lead and first stage; on a situation, with the situation's people.
   const standing = new Map(situationRuns.filter(active).map((run) => [run.situationId, run]));
-  const start = (pick: SlpDrama): boolean => {
+  const start = (pick: SlpDrama, lead?: string | null): boolean => {
     if (pick.requires && !standing.has(pick.requires.situation)) return false;
     const id = input.newId();
-    const base = pick.requires ? { ...standing.get(pick.requires.situation)!.cast } : {};
+    const base: Record<string, string> = pick.requires ? { ...standing.get(pick.requires.situation)!.cast } : {};
+    // The player's pick for the first role (Stir), when it still fits once the rest is cast.
+    if (lead && !pick.requires) base[pick.roles[0]!.key] = lead;
     const first = pick.stages[0]!;
     const cast = slpDramaCast(pick.roles, [pick.roles[0]!.key, ...stageRoles(first, pick.roles)], base, {
       world: input.world,
@@ -583,7 +613,7 @@ export function slpAdvanceDrama(
 
   // The player asked for this one: now, whatever the level (once; a drama with no cast waits no longer).
   const requested = state.requested ? dramas.get(state.requested) : undefined;
-  if (requested && !running().has(requested.id)) start(requested);
+  if (requested && !running().has(requested.id)) start(requested, state.requestedLead);
 
   // Now and then a new drama starts, within the level's cap and each drama's cooldown.
   const window = Math.floor(now / START_WINDOW);
@@ -625,6 +655,7 @@ export function slpAdvanceDrama(
       ended,
       startWindow,
       requested: null,
+      requestedLead: null,
     },
     ties,
   };
@@ -716,7 +747,33 @@ export function slpEndDramaRun(state: SlpDramaState, runId: string, at: Date): S
 }
 
 /** Stir: start this drama on the next tick, past the level's cap. The drama must be switched on. */
-export const slpRequestDrama = (state: SlpDramaState, dramaId: string): SlpDramaState => ({
+export const slpRequestDrama = (state: SlpDramaState, dramaId: string, lead?: string | null): SlpDramaState => ({
   ...state,
   requested: dramaId,
+  requestedLead: lead ?? null,
 });
+
+/**
+ * Whether this drama can start now with `leadId` in its first role: the rest of its first stage is
+ * cast as the tick would, and the lead must still fit once they are (Stir's lead pick, 0.3.11).
+ */
+export function slpDramaLeadFits(
+  drama: SlpDrama,
+  leadId: string,
+  input: { world: SlpDramaWorld; busy: ReadonlySet<string>; at: Date },
+): boolean {
+  const role = drama.roles[0]!;
+  const lead = input.world.creators.find((creator) => creator.id === leadId);
+  if (!lead || drama.requires || (input.busy.has(leadId) && !role.player)) return false;
+  const cast = slpDramaCast(
+    drama.roles,
+    [role.key, ...stageRoles(drama.stages[0]!, drama.roles)],
+    { [role.key]: leadId },
+    {
+      ...input,
+      seed: `lead:${leadId}`,
+    },
+  );
+  const playerKey = drama.roles.find((entry) => entry.player)?.key;
+  return Boolean(cast && fits(role, lead, cast, input.world, playerKey).ok);
+}

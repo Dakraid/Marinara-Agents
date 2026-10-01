@@ -90,6 +90,8 @@ export type SlurpStanceInput = {
   coolingOff: boolean;
   /** Cool-off periods already served in this thread inside the strike window. */
   strikes: number;
+  /** The one writing is her partner (Drama, "your relationship"): no paywall, and she never shuts them out. */
+  partner?: boolean;
 };
 
 /**
@@ -149,7 +151,8 @@ const WARMTH_INSTRUCTION: Record<SlurpStanceWarmth, string> = {
 
 export function resolveSlurpStance(input: SlurpStanceInput): SlurpStance {
   const evidence: SlurpStanceEvidence[] = [];
-  const ceiling = LATITUDE_CEILING[input.tone];
+  // A partner can get a short, cold answer after a fight, but she never cools off on them or ends the chat.
+  const ceiling = input.partner && input.tone === "unfiltered" ? "curt" : LATITUDE_CEILING[input.tone];
 
   // Rule 1. A boundary is not a mood, and nothing outranks it.
   if (input.coolingOff) {
@@ -212,9 +215,11 @@ export function resolveSlurpStance(input: SlurpStanceInput): SlurpStance {
   }
 
   instructions.push(
-    input.subscribed
-      ? "This fan is a paying subscriber right now. Treat them as one."
-      : "This fan is not subscribed. You may flirt, but paid content stays behind the paywall, and it is fair to say so.",
+    input.partner
+      ? "This is the person you are with, not a customer: nothing is behind a paywall for them."
+      : input.subscribed
+        ? "This fan is a paying subscriber right now. Treat them as one."
+        : "This fan is not subscribed. You may flirt, but paid content stays behind the paywall, and it is fair to say so.",
   );
   if (input.isRequest) {
     instructions.push("This is an unanswered message request, not an open conversation. Keep it brief and cautious.");

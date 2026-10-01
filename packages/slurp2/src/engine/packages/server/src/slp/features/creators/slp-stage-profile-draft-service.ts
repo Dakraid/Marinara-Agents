@@ -3,6 +3,7 @@ import { type SlpStageProfileDraftRequest } from "../../../../../shared/src/slp/
 import { slpStageProfileDraftResponseSchema } from "../../../../../shared/src/slp/slp-social.schema.js";
 import { type SlpIdentityDisclosure } from "../../../../../shared/src/slp/slp-social.types.js";
 import { isDebugAgentsEnabled } from "../../../config/runtime-config.js";
+import { assertSlurpNotPaused } from "../../base/model/slp-pause.js";
 import type { DB } from "../../../db/connection.js";
 import { logDebugOverride } from "../../../lib/logger.js";
 import { resolveBaseUrl } from "../../../services/generation/connection-base-url.js";
@@ -240,6 +241,8 @@ export async function generateCreatorStageProfileDraft(
     "[debug/slurp] Stage profile draft prompt prepared with %d messages; private source content is redacted.",
     messages.length,
   );
+  // "Pause all": this draft skips the retry wrapper, so it checks the switch itself.
+  assertSlurpNotPaused();
   const connections = createConnectionsStorage(db);
   const fallbackConnection = await connections.getFallbackForMain();
   const fallbackProvider = withConnectionFallbackProvider({

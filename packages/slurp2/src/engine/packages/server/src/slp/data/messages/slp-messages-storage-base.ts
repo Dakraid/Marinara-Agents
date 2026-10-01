@@ -433,7 +433,16 @@ export function createMessagesStorageBase(context: SlurpMessagesContext) {
       const computed = scoreSlurpRapport(facts, messaging.rapportWeights, {
         subscriberBoost: true,
         gain,
-        ...(partner ? { partner: partner.stage === "sparks" ? ("crush" as const) : ("partner" as const) } : {}),
+        ...(partner
+          ? {
+              partner:
+                partner.stage === "sparks"
+                  ? ("crush" as const)
+                  : partner.stage === "rocky"
+                    ? ("rocky" as const)
+                    : ("partner" as const),
+            }
+          : {}),
       });
       const thread = await context.storage.getThread(viewerAccountId, creatorAccountId);
       return thread ? slpOverrideRapport(computed, await context.storage.getDetailsOverrides(thread.id)) : computed;

@@ -2,6 +2,7 @@ export { generateSlurpArc } from "./slp-arc-generation-service.js";
 export {
   advanceSlurpCreatorTies,
   agreeSlurpCollabInDm,
+  applySlurpPlayerUs,
   planSlurpTieBeat,
   planSlurpBondBeat,
   slurpCollabPostIdsForCreator,
@@ -9,6 +10,7 @@ export {
 } from "./slp-creator-ties-service.js";
 export {
   readSlurpClosedCouplePageIds,
+  readSlurpPlayerCoupleView,
   readSlurpCouplePartner,
   slurpCoupleDmPage,
 } from "./slp-creator-couples-service.js";

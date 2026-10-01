@@ -133,6 +133,8 @@ export function startSlpRefreshScheduler(
     try {
       const now = new Date();
       const settings = await noodle.getSettings();
+      // "Pause all": no feed refresh while Slurp is paused.
+      if (settings.paused) return;
       // A lorebook-backed ad pool follows its book. This is a no-op unless the book's content
       // fingerprint actually changed, so a steady setting costs one cheap read per poll.
       if (settings.inlineAdsLorebookId) {

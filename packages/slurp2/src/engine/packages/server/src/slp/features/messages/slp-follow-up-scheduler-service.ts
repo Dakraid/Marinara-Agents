@@ -48,6 +48,8 @@ export function startSlurpFollowUpScheduler(app: FastifyInstance, registerStop?:
         const messages = createSlurpMessagesStorage(app.db);
         const slurp = createSlurpStorage(app.db);
         const settings = await slurp.getSettings();
+        // "Pause all": no follow-ups while Slurp is paused.
+        if (settings.paused) return;
         const connection = await resolveSlurpTextConnection(
           createConnectionsStorage(app.db),
           settings.modelBudget.connectionId ?? settings.generationConnectionId,

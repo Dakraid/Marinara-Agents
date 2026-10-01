@@ -350,6 +350,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.11",
+          "date": "2026-10-01",
+          "notes": "Your relationship with a Creator, and a story-first Stir.\n\n- Your chats move your relationship: crush, dating, official, fights, making up. She calls you her boyfriend or girlfriend, sends you free pictures, texts about dates and anniversaries, and can keep it secret.\n- Details › You two shows the stage, the dates that matter and the moves, with Undo. Notifications and the main chat know about it.\n- Stir: Stir | Desk, your relationship on top, Now showing, Start a story with drama packs you can lead and end. Each persona sees only its own pages.\n- Fans leave notes on your page instead of chats. Settings › Overview › Pause all stops all of Slurp.\n- Adding many Creators at once: taken handles get the next free one instead of failing, the sign-up runs in the background with progress (close Slurp if you like), and first posts work for batches over 24.\n- Fixes: Backstage menu scrolls on short screens, reunions with you are official, a few couple and label bugs.",
+          "highlight": false
+        },
+        {
           "version": "0.3.10",
           "date": "2026-09-30",
           "notes": "- If Slurp cannot load because this device has no Admin Secret, it now explains how to set one instead of asking you to check your connection.",
@@ -461,12 +467,6 @@
           "version": "0.2.70",
           "date": "2026-09-25",
           "notes": "- Settings have new sections in order of use: Overview, Models & connections, Creators, Posting, Stories, World, Fans & money, Writing & content level, Maintenance.\n- Models & connections holds Connections and Image generation, right under Overview. World holds Events and Calendar; Fans & money holds Audience, Messaging rules, Coins and access, Ads and Discovery; Stories holds Storylines, Storyline types and Packs.\n- Old links and saved places open the page in its new section.",
-          "highlight": false
-        },
-        {
-          "version": "0.2.69",
-          "date": "2026-09-25",
-          "notes": "- A Creator's posting schedule is a day list: each upcoming post shows its time, which you change in place and which saves when you leave the field. \"Another day\" moves a post to a new day at the same time. The 8 Save buttons are gone.",
           "highlight": false
         }
       ]

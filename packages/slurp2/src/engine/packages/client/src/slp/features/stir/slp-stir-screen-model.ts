@@ -45,6 +45,8 @@ export function slpStirDeckNeed(action: SlpActionName, view: SlpStirView | undef
       return view.storylines.length ? null : "storyline";
     case "start-event":
       return view.events.length ? null : "event";
+    case "start-drama":
+      return view.dramas?.length ? null : "dramaOff";
     default:
       return null;
   }

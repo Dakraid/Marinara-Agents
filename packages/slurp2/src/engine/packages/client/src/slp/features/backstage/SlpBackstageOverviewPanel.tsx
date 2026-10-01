@@ -8,12 +8,14 @@ import {
   Image,
   Megaphone,
   MessageCircle,
+  Pause,
   Play,
   UsersRound,
 } from "lucide-react";
 import { toast } from "sonner";
 import { nextSlurpAutopurgeRunAt } from "../../../../../shared/src/slp/slp-autopurge-time.js";
 import { Toggle } from "../../modules/settings/SlpSettingsControls";
+import { SettingAnchor } from "../../modules/settings/SlpSettingsKit";
 import { slurpAudiencePresetFor } from "../../../../../shared/src/slp/slp-tuning.js";
 import type { SlpBackstagePageProps } from "./slp-backstage-contract";
 import type { SlpBackstageSection, SlpBackstageTarget } from "../../base/navigation/slp-backstage-target";
@@ -146,19 +148,26 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
               {t("ui.slurp.settings.overview.eyebrow")}
             </p>
             <h1 className="mt-1 text-xl font-black tracking-tight text-balance sm:text-2xl">
-              {automaticPublishingActive
-                ? t("ui.slurp.settings.overview.live")
-                : t("ui.slurp.settings.overview.paused")}
+              {settings.paused
+                ? t("ui.slurp.settings.overview.pause.title", { defaultValue: "Slurp is paused" })
+                : automaticPublishingActive
+                  ? t("ui.slurp.settings.overview.live")
+                  : t("ui.slurp.settings.overview.paused")}
             </h1>
             <p className="mt-1 max-w-xl text-xs leading-5 text-white/85 text-pretty">
-              {automaticPublishingActive
-                ? t("ui.slurp.settings.overview.liveDetail", {
-                    posts: settings.postsPerDay,
-                    count: autoPostingCreators.length,
+              {settings.paused
+                ? t("ui.slurp.settings.overview.pause.detail", {
+                    defaultValue:
+                      "No AI calls, no posts, no fans and no messages. Everything waits here until you resume.",
                   })
-                : t("ui.slurp.settings.overview.pausedDetail")}
+                : automaticPublishingActive
+                  ? t("ui.slurp.settings.overview.liveDetail", {
+                      posts: settings.postsPerDay,
+                      count: autoPostingCreators.length,
+                    })
+                  : t("ui.slurp.settings.overview.pausedDetail")}
             </p>
-            <p className="mt-2 text-xs font-semibold text-white">
+            <p className={settings.paused ? "hidden" : "mt-2 text-xs font-semibold text-white"}>
               {nextPost
                 ? t("ui.slurp.settings.overview.nextUp", {
                     defaultValue: "Next post: {{time}}",
@@ -167,37 +176,55 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
                 : t("ui.slurp.settings.overview.nextUpNone", { defaultValue: "No post is prepared yet" })}
             </p>
           </div>
-          <div className="flex shrink-0 flex-col gap-2">
-            <button
-              type="button"
-              disabled={accountsQuery.isLoading || accountsQuery.isError || automationCreators.length === 0}
-              onClick={openRefresh}
-              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-black text-[#791444] shadow-lg transition-[opacity,transform] hover:opacity-90 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#9f1f5c] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:opacity-50"
-            >
-              <Play size={15} fill="currentColor" aria-hidden="true" />
-              {t("ui.slurp.settings.overview.runNow")}
-            </button>
-            <div className="grid grid-cols-2 gap-2">
+          <SettingAnchor settingKey="paused">
+            {settings.paused ? (
+              // Paused: the one thing to do here is to switch it back on. The run buttons all call the AI.
               <button
                 type="button"
-                disabled={refreshFans.isPending}
-                onClick={() => refreshFans.mutate()}
-                className={heroSecondary}
+                onClick={() => void update("paused", false)}
+                className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-black text-[#791444] shadow-lg transition-[opacity,transform] hover:opacity-90 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#9f1f5c] motion-reduce:transition-none motion-reduce:active:scale-100"
               >
-                <UsersRound size={15} aria-hidden="true" />
-                {t("ui.slurp.settings.overview.runFans", { defaultValue: "Fans now" })}
+                <Play size={15} fill="currentColor" aria-hidden="true" />
+                {t("ui.slurp.settings.overview.pause.resume", { defaultValue: "Resume Slurp" })}
               </button>
-              <button
-                type="button"
-                disabled={schedulesRefreshing || automationCreators.length === 0}
-                onClick={() => void refreshSchedules()}
-                className={heroSecondary}
-              >
-                <MessageCircle size={15} aria-hidden="true" />
-                {t("ui.slurp.settings.overview.runSchedules", { defaultValue: "Schedules" })}
-              </button>
-            </div>
-          </div>
+            ) : (
+              <div className="flex shrink-0 flex-col gap-2">
+                <button
+                  type="button"
+                  disabled={accountsQuery.isLoading || accountsQuery.isError || automationCreators.length === 0}
+                  onClick={openRefresh}
+                  className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-black text-[#791444] shadow-lg transition-[opacity,transform] hover:opacity-90 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#9f1f5c] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:opacity-50"
+                >
+                  <Play size={15} fill="currentColor" aria-hidden="true" />
+                  {t("ui.slurp.settings.overview.runNow")}
+                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    disabled={refreshFans.isPending}
+                    onClick={() => refreshFans.mutate()}
+                    className={heroSecondary}
+                  >
+                    <UsersRound size={15} aria-hidden="true" />
+                    {t("ui.slurp.settings.overview.runFans", { defaultValue: "Fans now" })}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={schedulesRefreshing || automationCreators.length === 0}
+                    onClick={() => void refreshSchedules()}
+                    className={heroSecondary}
+                  >
+                    <MessageCircle size={15} aria-hidden="true" />
+                    {t("ui.slurp.settings.overview.runSchedules", { defaultValue: "Schedules" })}
+                  </button>
+                </div>
+                <button type="button" onClick={() => void update("paused", true)} className={heroSecondary}>
+                  <Pause size={15} aria-hidden="true" />
+                  {t("ui.slurp.settings.overview.pause.label", { defaultValue: "Pause all" })}
+                </button>
+              </div>
+            )}
+          </SettingAnchor>
         </div>
         {attention.length === 0 && (
           <p className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-white/85">

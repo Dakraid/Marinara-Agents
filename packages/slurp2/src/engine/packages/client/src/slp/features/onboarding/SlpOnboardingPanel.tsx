@@ -120,6 +120,7 @@ export function SlurpOnboardingWizard(props: WizardProps) {
     setImagesEnabled,
     completion,
     firstPostsQueued,
+    signUpProgress,
     providerConfirmationOpen,
     setProviderConfirmationOpen,
     demoProfile,
@@ -158,11 +159,13 @@ export function SlurpOnboardingWizard(props: WizardProps) {
   // Short screens (the tour, the lane choice) sit in the middle of a phone instead of under the title.
   const centred = intro !== null || setupLane === null;
   const running =
-    bulkCreate.isPending || enqueueFirstPosts.isPending
-      ? t("ui.noodle.noodlerwizard.progressCreating")
-      : refreshTargeted.isPending || firstPostsQueued
-        ? t("ui.noodle.noodlerwizard.progressWriting")
-        : "";
+    signUpProgress && signUpProgress.total > 1
+      ? t("ui.noodle.noodlerwizard.progressSigningUp", { done: signUpProgress.done, total: signUpProgress.total })
+      : bulkCreate.isPending || enqueueFirstPosts.isPending
+        ? t("ui.noodle.noodlerwizard.progressCreating")
+        : refreshTargeted.isPending || firstPostsQueued
+          ? t("ui.noodle.noodlerwizard.progressWriting")
+          : "";
   const back =
     intro !== null
       ? intro > 0

@@ -127,6 +127,23 @@ export function slurpRapportTier(score: number): SlurpRapportTier {
 /** Rapport points a relationship with the viewer's own page brings (Drama, the player as a partner). */
 export const SLURP_PARTNER_RAPPORT = 60;
 export const SLURP_CRUSH_RAPPORT = 25;
+/** Together but after a fight: still close, not as close. */
+export const SLURP_ROCKY_RAPPORT = 40;
+const PARTNER_DETAIL = {
+  partner: "you are together",
+  rocky: "you are together, but it is rocky",
+  crush: "a mutual crush",
+};
+export type SlurpRapportPartner = keyof typeof PARTNER_DETAIL;
+
+/** Who the viewer is to her through one of their own pages, read back from the score. Null: a fan. */
+export function slurpRapportPartner(rapport: Pick<SlurpRapport, "contributions">): SlurpRapportPartner | null {
+  const entry = rapport.contributions.find((item) => item.key === "partner" && item.points > 0);
+  return entry
+    ? ((Object.keys(PARTNER_DETAIL) as SlurpRapportPartner[]).find((key) => PARTNER_DETAIL[key] === entry.detail) ??
+        "partner")
+    : null;
+}
 
 export function scoreSlurpRapport(
   facts: SlurpRapportFacts,
@@ -137,7 +154,7 @@ export function scoreSlurpRapport(
     /** Arc stat effect on loyalty: scales every positive contribution, never the penalties. */
     gain?: number;
     /** The viewer is the Creator's partner (or crush) through one of their own pages (Drama). */
-    partner?: "partner" | "crush";
+    partner?: SlurpRapportPartner;
   },
 ): SlurpRapport {
   const round = (value: number) => Math.round(value * 10) / 10;
@@ -217,13 +234,13 @@ export function scoreSlurpRapport(
   ];
   // A relationship is history the counters cannot see: a partner starts close, a crush warm.
   if (options?.partner) {
-    const points = options.partner === "partner" ? SLURP_PARTNER_RAPPORT : SLURP_CRUSH_RAPPORT;
-    contributions.unshift({
-      key: "partner",
-      detail: options.partner === "partner" ? "you are together" : "a mutual crush",
-      weight: points,
-      points,
-    });
+    const points =
+      options.partner === "partner"
+        ? SLURP_PARTNER_RAPPORT
+        : options.partner === "rocky"
+          ? SLURP_ROCKY_RAPPORT
+          : SLURP_CRUSH_RAPPORT;
+    contributions.unshift({ key: "partner", detail: PARTNER_DETAIL[options.partner], weight: points, points });
   }
   const gain = Number.isFinite(options?.gain) && options!.gain! > 0 ? options!.gain! : 1;
   const adjustedContributions = contributions.map((entry) => ({
@@ -266,8 +283,8 @@ export function describeSlurpRapport(rapport: SlurpRapport, viewerName: string):
     .slice(0, 4)
     .map((entry) => entry.detail);
   // A partner is not a "whale": the tier names fans, so a relationship names itself.
-  const partner = rapport.contributions.find((entry) => entry.key === "partner" && entry.points > 0);
-  const tier = partner ? (partner.detail === "you are together" ? "your partner" : "your crush") : rapport.tier;
+  const partner = slurpRapportPartner(rapport);
+  const tier = partner ? (partner === "crush" ? "your crush" : "your partner") : rapport.tier;
   return `Your history with ${viewerName}: ${tier} (${rapport.score}/100).${
     notable.length > 0 ? ` What stands out: ${notable.join("; ")}.` : ""
   }`;

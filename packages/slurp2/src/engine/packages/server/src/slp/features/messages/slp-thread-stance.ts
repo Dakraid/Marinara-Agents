@@ -104,6 +104,8 @@ export async function resolveSlurpThreadStance(
     strikes: number | undefined;
     details: SlurpThreadDetails;
     settings: SlurpSettings;
+    /** Her partner is writing (`slurpCoupleDmPage`). */
+    partner?: boolean;
   },
 ): Promise<SlurpStance> {
   const slurp = createSlurpStorage(db);
@@ -144,6 +146,7 @@ export async function resolveSlurpThreadStance(
     tone: details.audienceTone ?? readSlurpAudienceTone(settings.audienceTone),
     coolingOff: input.coolingOff ?? false,
     strikes: input.strikes ?? 0,
+    partner: input.partner,
   });
   if (details.imageMode !== undefined && !input.coolingOff) {
     stance.imageMode = details.imageMode;

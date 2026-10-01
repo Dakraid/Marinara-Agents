@@ -86,6 +86,9 @@ export function renderSlurpHomeDestinations({
       <SlpShell {...shellProps}>
         <SlpStirTab
           personaId={viewerPersonaId}
+          onOpenSettings={() =>
+            onNavigate({ mode: "creator-settings", section: "stir", target: "stir", settingKey: "drama" })
+          }
           onOpenTarget={shellProps.onOpenPulseTarget}
           onOpenSupport={(creatorAccountId) =>
             onNavigate({
@@ -281,8 +284,10 @@ function SlpStirTab({
   onOpenDashboard,
   onOpenTarget,
   onOpenSupport,
+  onOpenSettings,
 }: {
   personaId: string | null;
+  onOpenSettings?: () => void;
   onOpenDashboard?: () => void;
   onOpenTarget?: ComponentProps<typeof SlpStirScreen>["onOpenTarget"];
   onOpenSupport?: (creatorId: string) => void;
@@ -291,6 +296,7 @@ function SlpStirTab({
     <SlpStirScreen
       personaId={personaId}
       onOpenSupport={onOpenSupport}
+      onOpenSettings={onOpenSettings}
       onOpenPulse={openSlpPulse}
       onOpenDashboard={onOpenDashboard}
       onOpenTarget={onOpenTarget}

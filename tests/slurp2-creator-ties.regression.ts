@@ -896,7 +896,10 @@ async function main() {
       undefined,
     );
     const generation = read("server/src/slp/features/messages/slp-message-generation-service.ts");
-    assert.match(generation, /slpResponseFormat\(input\.connection\.model, "noodler_dm", \{ collab: true \}\)/u);
+    assert.match(
+      generation,
+      /slpResponseFormat\(input\.connection\.model, "noodler_dm", \{ collab: Boolean\(pageId\)/u,
+    );
     assert.match(
       generation,
       /agreedCollab: pageId \? readSlurpDmCollab\(generated\.collab, pageId, \(value\) => protect\(value, 200\)\)/u,
@@ -924,11 +927,8 @@ async function main() {
         studio.indexOf("<SlpBrandOffers") < studio.indexOf("<SlpStudioStat"),
       "brand offers right after the money",
     );
-    // W: collabs are world levers now: the Stir tab lists them (Business), not the own page.
-    assert.match(
-      read("client/src/slp/features/stir/SlpStirScreen.tsx"),
-      /<SlpCollabsPanel personaId=\{personaId\} \/>/u,
-    );
+    // W: collabs are world levers now: the Stir tab lists them, not the own page (0.3.11: in "Now showing").
+    assert.match(read("client/src/slp/features/stir/SlpStirScreen.tsx"), /<NowShowing view=\{view\}/u);
     const panel = read("client/src/slp/features/projects/SlpCollabsPanel.tsx");
     for (const action of [
       "actions.push.mutate",

@@ -14,7 +14,10 @@ export type SlurpEventKind =
   | "arc_phase"
   | "arc_complete"
   | "arc_started"
-  | "drama";
+  | "drama"
+  | "couple"
+  | "fan_note"
+  | "sign_up";
 export type SlurpEventItem = {
   id: string;
   kind: SlurpEventKind;
@@ -28,6 +31,8 @@ export type SlurpEventItem = {
   weight: number;
   createdAt: string;
   seenAt: string | null;
+  /** A fan's note to the player's page: the player's heart and one reply. */
+  answer?: { hearted: boolean; reply: string | null } | null;
 };
 export type SlurpEventGroup =
   | { type: "single"; event: SlurpEventItem }
@@ -40,3 +45,5 @@ export type SlurpEventGroup =
       ids: string[];
       events: SlurpEventItem[];
     };
+
+export { SlpFanNoteActions } from "./SlpFanNoteActions";

@@ -405,6 +405,8 @@ export const slurpSettingsSchema = z.object({
   drama: slpDramaSettingsSchema,
   /** Settings › Stir: a couple may grow to four people (0.3.5). Off by default. */
   polyamory: z.boolean(),
+  /** Settings › Overview › Pause all: no model or image call, no tick, nothing (`slp-pause.ts`). */
+  paused: z.boolean(),
   nightQuiet: z.boolean(),
   onboarding: z.enum(["not_started", "in_progress", "completed"]),
 });
@@ -647,6 +649,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   supportDesk: { ...SLP_DEFAULT_SUPPORT_DESK_SETTINGS },
   drama: slpDramaSettingsSchema.parse({}),
   polyamory: false,
+  paused: false,
   nightQuiet: false,
   onboarding: "not_started",
 };
@@ -751,6 +754,7 @@ function normalizeSlurpSettingsUncached(raw: unknown): SlurpSettings {
   candidate.classicPromptBlocks =
     rawRecord.classicPromptBlocks ?? slurpLegacyClassicPromptBlocks(rawRecord.promptBlocks);
   candidate.nightQuiet = rawRecord.nightQuiet ?? DEFAULT_SLURP_SETTINGS.nightQuiet;
+  candidate.paused = rawRecord.paused === true;
   // Repaired rather than replaced: a player who edited one type must not lose the other seven
   // because a single field went out of range. An all-disabled list re-enables built-in Regular,
   // which is the one state the tick cannot run in — there would be nobody to pick.

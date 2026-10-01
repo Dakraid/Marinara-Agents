@@ -8,7 +8,8 @@ import type { DB } from "../../../db/connection.js";
 import { createAppSettingsStorage } from "../../../services/storage/app-settings.storage.js";
 import { readSlurpCreatorTies, type SlurpCreatorTies } from "../../modules/projects/slp-creator-ties.js";
 import { readSlurpBrandDeals, type SlurpBrandDeal } from "../../modules/economy/slp-brand-deals.js";
-import { readSlurpCouples, type SlurpCouple } from "../../modules/projects/slp-creator-couples.js";
+import type { SlurpCouple } from "../../modules/projects/slp-creator-couples.js";
+import { readSlurpCouples } from "../../modules/projects/slp-couple-read.js";
 import { readSlurpBonds, type SlurpBond } from "../../modules/projects/slp-creator-bonds.js";
 
 export const SLURP_CREATOR_TIES_KEY = "slurp2.creator-ties";
@@ -66,6 +67,15 @@ export function mutateSlurpCreatorTies<T>(
 }
 
 /** The couple a Creator is in with this page of the player's, or null. Rocky counts; a breakup does not. */
+/** The active couple a page is in, with the one other member (the first, for a group), or null. */
+export async function readSlurpCouplePartnerOf(db: DB, pageId: string) {
+  const { couples } = await readSlurpCreatorTiesDocument(db);
+  const couple = couples.find(
+    (entry) => entry.stage !== "split" && [entry.aId, entry.bId, ...(entry.moreIds ?? [])].includes(pageId),
+  );
+  return couple ? { ...couple, partnerId: couple.aId === pageId ? couple.bId : couple.aId } : null;
+}
+
 export async function readSlurpPlayerCouple(db: DB, creatorAccountId: string, pageId: string) {
   const { couples } = await readSlurpCreatorTiesDocument(db);
   return (
