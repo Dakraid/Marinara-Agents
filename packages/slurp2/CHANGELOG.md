@@ -1,5 +1,17 @@
 # Slurp release notes
 
+## 0.3.9 — 2026-10-01
+
+Your relationship with a Creator, all the way through, and a story-first Stir.
+
+- Your relationship: the chat moves it (a crush, dating, official, a real fight, making up), and a crush nobody acts on fades. She calls you her boyfriend or girlfriend, never "another Creator"; you are not a customer in her DMs, her pictures to you are free and go as far as she does, and she texts you about your dates, anniversaries and making up. Anniversaries go on every year.
+- Keep it secret or go public; a secret has no launch, her posts never name or show you, and fans talk about her "mystery bae". Dates and anniversaries are pictures you took.
+- Details › You two in your chat with her: the stage, together since, the next anniversary, the last date and fight, and the moves, each with Undo. Notifications for dates, anniversaries and her jealousy. The main chat knows you are together.
+- Drama packs fit your gender (bf or gf). Fans write notes to your own page, never chats: heart them or reply once.
+- Stir: Stir | Desk, your relationship on top, Now showing (every running drama, couple, collab, rivalry and event in one list), Start a story (drama packs first, then every card). Drama packs start with your pick in the lead and end with Undo in Recent plays; friends, roommates, coworkers and exes are plays too. Each persona only sees and steers its own pages.
+- Settings › Overview › Pause all: no AI calls, no posts, no fans, no messages until you resume.
+- Fixes: the Backstage side menu scrolls on short screens; a reunion with you is official again; the jealous one is always a Creator; sexting with you uses her own level; a concealed page keeps its relationship in DMs; no shared-page button on your own couple; Creator page labels for crushes and dating.
+
 ## 0.3.8 — 2026-09-30
 
 Drama, friends and a People map. Design: `docs/DRAMA.md`.

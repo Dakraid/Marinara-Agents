@@ -656,3 +656,28 @@ modules, rejected alternative, and migration consequence.
 - **Migration consequence:** none; every new field is optional, old packs import unchanged, and
   drama state and library live in their own app settings (`slurp2.drama.state`, `slurp2.drama.library`).
   Built as designed; the differences are listed under "As built" in `docs/DRAMA.md`.
+
+## 0.3.9 Your relationship, a story-first Stir, Pause all (2026-10-01)
+
+- **Problem:** the player's own couple lived in her public posts only (the chat could not move it,
+  her DMs treated the player as a customer, pictures were sold to her partner); Stir stacked ten
+  sections with couples, collabs and dramas editable in three places, only one of them with preview
+  and Undo, and every persona saw and steered the others' couples and plays.
+- **Decision:**
+  - The DM answer to the player carries `us` (closer / hurt / madeUp); `modules/projects/slp-player-couple.ts`
+    decides whether it counts (days per stage), `features/projects` applies it. Couples gain `secret`.
+  - Every change to couples, bonds, collabs, rivalries and drama packs is a Stir play through the one
+    runner: new actions `set-bond`, `end-bond` (tie levers), `start-drama`, `end-drama`
+    (`features/world/slp-drama-levers.ts`, through the world contract). The ties panels' hooks and the
+    drama routes call the same levers.
+  - Stir preview, play, undo and the view take the playing persona; plays record it.
+  - Fans' DMs to the player's own page are notification events of kind `fan_note`; the player's heart
+    and one reply live in the app setting `slurp2.fan-notes`.
+  - "Pause all" is a setting kept in step with a process flag in `base/model/slp-pause.ts`; the
+    provider and image wrappers and every scheduler check it.
+  - `slp-creator-couples.ts` split into `slp-couple-fit.ts` and `slp-couple-read.ts` (size cap).
+- **Rejected alternatives:** a model-decided relationship stage (the model only reports the talk);
+  keeping the Business and Relationships sheets beside "Now showing" (a second way to change the
+  same couple); a DB column for fan-note replies (a migration for one small, capped list).
+- **Migration consequence:** none; `secret`, `personaId` on plays, `requestedLead` on the drama state
+  and `paused` are optional with safe defaults. Old fan threads to the player's page stay as they are.
