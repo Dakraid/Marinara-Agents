@@ -376,6 +376,90 @@ test.describe("package-owned Noodle interface", () => {
     }
   });
 
+  test("posts and comments translate with the saved translator defaults", async ({ page }) => {
+    const errors = collectUnexpectedErrors(page);
+    const translateBodies: Array<Record<string, unknown>> = [];
+    await page.route("**/api/translate", async (route) => {
+      const body = route.request().postDataJSON() as Record<string, unknown>;
+      translateBodies.push(body);
+      await route.fulfill({ json: { translatedText: `Przetłumaczone: ${String(body.text)}` } });
+    });
+    const savedDefaults = await page.request.put("/api/app-settings/translator-defaults", {
+      data: {
+        value: JSON.stringify({
+          translationProvider: "deepl",
+          translationOutputTargetLang: "PL",
+          translationDeeplApiKey: "test-key",
+        }),
+      },
+    });
+    expect(savedDefaults.ok()).toBe(true);
+    await page.request.get("/api/noodle");
+    const postResponse = await page.request.post("/api/noodle/posts", {
+      data: {
+        authorKind: "character",
+        authorEntityId: "__professor_mari__",
+        content: `Translation regression ${Date.now()}`,
+      },
+    });
+    expect(postResponse.ok()).toBe(true);
+    const post = (await postResponse.json()) as { id: string; content: string };
+    try {
+      const commentResponse = await page.request.post(`/api/noodle/posts/${post.id}/interactions`, {
+        data: {
+          actorKind: "character",
+          actorEntityId: "__professor_mari__",
+          type: "reply",
+          content: "A comment worth translating.",
+        },
+      });
+      expect(commentResponse.ok()).toBe(true);
+      const comment = (await commentResponse.json()) as { id: string };
+
+      await page.goto("/");
+      await openNoodle(page);
+      const article = page.locator(`[data-noodle-post-id="${post.id}"]`);
+      const commentRow = article.locator(`[data-noodle-interaction-id="${comment.id}"]`);
+      const translations = article.locator("[data-noodle-translation]");
+      await expect(article).toContainText(post.content);
+
+      await article.getByRole("button", { name: "Post actions", exact: true }).click();
+      await article.getByRole("button", { name: "Translate", exact: true }).click();
+      await expect(translations).toHaveCount(1);
+      await expect(translations).toContainText(`Przetłumaczone: ${post.content}`);
+      // The original stays above its translation.
+      await expect(article.getByText(post.content, { exact: true })).toBeVisible();
+      expect(translateBodies).toEqual([
+        { text: post.content, provider: "deepl", targetLanguage: "PL", deeplApiKey: "test-key" },
+      ]);
+      await article.getByRole("button", { name: "Post actions", exact: true }).click();
+      await article.getByRole("button", { name: "Hide translation", exact: true }).click();
+      await expect(translations).toHaveCount(0);
+
+      await commentRow.getByRole("button", { name: "Translate comment" }).click();
+      await expect(commentRow.locator("[data-noodle-translation]")).toContainText(
+        "Przetłumaczone: A comment worth translating.",
+      );
+      await commentRow.getByRole("button", { name: "Hide translation" }).click();
+      await expect(translations).toHaveCount(0);
+      expect(errors).toEqual([]);
+
+      // A provider error reaches the reader instead of an empty translation.
+      await page.unroute("**/api/translate");
+      await page.route("**/api/translate", (route) =>
+        route.fulfill({ status: 400, json: { error: "Connection ID is required for AI translation" } }),
+      );
+      await commentRow.getByRole("button", { name: "Translate comment" }).click();
+      await expect(page.getByText("Connection ID is required for AI translation")).toBeVisible();
+      await expect(translations).toHaveCount(0);
+    } finally {
+      await page.request.delete(`/api/noodle/posts/${post.id}`, { timeout: 5_000 }).catch(() => undefined);
+      await page.request
+        .put("/api/app-settings/translator-defaults", { data: { value: "" }, timeout: 5_000 })
+        .catch(() => undefined);
+    }
+  });
+
   test("Delete All Noodle Data can be cancelled before typing DELETE", async ({ page }, testInfo) => {
     let deletions = 0;
     page.on("request", (request) => {
@@ -1369,7 +1453,7 @@ test.describe("package-owned Noodle interface", () => {
       await expect(characterComment.getByRole("button", { name: "Delete comment" })).toBeVisible();
       await expect(ownComment.locator("[data-noodle-avatar-fallback]")).toHaveCSS("color", NOODLE_BLUE_RGB);
       await expect(ownComment.locator("[data-noodle-comment-metadata]")).toHaveCSS("color", NOODLE_BLUE_RGB);
-      for (const name of ["Like comment", "Edit comment", "Delete comment"]) {
+      for (const name of ["Like comment", "Translate comment", "Edit comment", "Delete comment"]) {
         await expect(ownComment.getByRole("button", { name })).toHaveCSS("color", NOODLE_BLUE_RGB);
       }
 
@@ -1380,7 +1464,7 @@ test.describe("package-owned Noodle interface", () => {
       await expect(ownComment).toBeVisible();
       await expectSurfaceAccent(ownComment.locator("[data-noodle-avatar-fallback]"), "#7EA7FF");
       await expectSurfaceAccent(ownComment.locator("[data-noodle-comment-metadata]"), "#7EA7FF");
-      for (const name of ["Like comment", "Edit comment", "Delete comment"]) {
+      for (const name of ["Like comment", "Translate comment", "Edit comment", "Delete comment"]) {
         await expectSurfaceAccent(ownComment.getByRole("button", { name }), "#7EA7FF");
       }
 
