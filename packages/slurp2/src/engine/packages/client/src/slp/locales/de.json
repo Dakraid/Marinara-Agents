@@ -2715,5 +2715,11 @@
   "ui.noodle.noodlerwizard.progressSigningUp": "{{done}} von {{total}} Creators werden angemeldet …",
   "ui.slurp.events.category.sign_up": "Anmeldungen",
   "ui.slurp.events.group.sign_up": "{{count}} Anmeldungen fertig",
-  "ui.slurp.events.single.sign_up": "Anmeldung fertig: {{amount}} neue Creators. Ihre ersten Posts kommen gleich."
+  "ui.slurp.events.single.sign_up": "Anmeldung fertig: {{amount}} neue Creators. Ihre ersten Posts kommen gleich.",
+  "ui.slurp.youTwo.headerLabel": "Ihr zwei: {{stage}}",
+  "ui.slurp.youTwo.public.title": "{{name}} öffentlich",
+  "ui.slurp.youTwo.public.week": "Diese Woche: {{posts}} Posts, davon {{paid}} für Abonnenten",
+  "ui.slurp.youTwo.public.level": "Ihre Posts gehen bis: {{level}}",
+  "ui.slurp.youTwo.public.more": "Mehr zeigen",
+  "ui.slurp.youTwo.public.less": "Weniger zeigen"
 }

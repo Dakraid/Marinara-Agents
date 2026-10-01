@@ -30,6 +30,8 @@ import type { SlurpTieCreator } from "../../modules/projects/slp-creator-ties.js
 import { slurpDmViewerPage, type SlurpDmParty } from "../../modules/messages/slp-dm-roles.js";
 import { readSlurpRelationshipLine } from "../../data/creators/slp-flavour-source.js";
 import { slurpPartnerWord } from "../../modules/projects/slp-couple-lines.js";
+import { resolveSlurpExplicitLevel } from "../../data/settings/slp-post-guidance-storage.js";
+import { slpSpiceFromExplicit } from "../../../../../shared/src/slp/slp-spice.js";
 import { slurpPlayerCoupleView, type SlurpPlayerCoupleView } from "../../modules/projects/slp-player-couple.js";
 
 /** A storyline about two Creators getting together: a live crossover whose words are romance. */
@@ -301,7 +303,19 @@ export async function readSlurpPlayerCoupleView(
     .catch(() => null);
   if (!page) return null;
   const couple = slurpCoupleOf((await readSlurpCreatorTiesDocument(db)).couples, creatorId, page.id);
-  return couple ? slurpPlayerCoupleView(couple, new Date()) : null;
+  if (!couple) return null;
+  const at = new Date();
+  // Her public side: how far she goes, and what her fans got this week.
+  const weekAgo = new Date(at.getTime() - 7 * 86_400_000).toISOString();
+  const posts = (await createSlurpStorage(db)
+    .listNoodlerPostsByAccount(creatorId, 40)
+    .catch(() => [])) as { createdAt: string; access: string }[];
+  const week = posts.filter((post) => post.createdAt >= weekAgo && post.access !== "draft");
+  return {
+    ...slurpPlayerCoupleView(couple, at),
+    herSpice: slpSpiceFromExplicit(await resolveSlurpExplicitLevel(db, creatorId).catch(() => null)),
+    herWeek: { posts: week.length, paid: week.filter((post) => post.access === "locked").length },
+  };
 }
 
 /** The couple partner for a partner scene, or null; `inCouple` says whether they are taken at all. */

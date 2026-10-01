@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils";
 import { Avatar, SLP_PAGE_SCROLL_CLASS, SLP_TOP_BAR_CLASS, SLP_TYPE } from "../../base/chrome/SlpChrome";
-import { SlpSparkleGlyph, SlpStirGlyph } from "../../base/chrome/SlpGlyphs";
+import { SlpHeartGlyph, SlpSparkleGlyph, SlpStirGlyph } from "../../base/chrome/SlpGlyphs";
 import { formatRelativeTime, formatUpcomingDay } from "../../base/ui/slp-date-time";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
 import type { SlpPulseTarget } from "../../base/state/slp-task-store";
@@ -224,26 +224,53 @@ function NowShowing({
   );
 }
 
-/** "Your relationship" (0.3.11): the Creator the player's own page is with, pinned above the world. */
+/**
+ * "Your relationship" (0.3.11): one small row per Creator the player's own page is with, above the
+ * world. It stays out of the way of the stories; a tap opens You two with every move.
+ */
 function YourRelationship({ view }: { view: SlpStirView }) {
   const { t } = useTranslation();
+  const [open, setOpen] = useState<string | null>(null);
   if (!view.yourCouples.length) return null;
+  const shown = view.yourCouples.find((entry) => entry.couple.id === open);
   return (
     <section aria-label={t("ui.slurp.stir.yours.title")} className="space-y-2" data-slp-stir-yours>
       {view.yourCouples.slice(0, 2).map(({ partner, couple }) => (
-        <div
+        <button
           key={couple.id}
-          className="overflow-hidden rounded-3xl bg-[var(--slurp-surface-raised)] shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] ring-1 ring-inset ring-[var(--noodle-accent)]/25"
+          type="button"
+          onClick={() => setOpen(couple.id)}
+          aria-haspopup="dialog"
+          className="flex min-h-14 w-full items-center gap-3 rounded-2xl bg-[var(--slurp-surface-raised)] px-3 py-2 text-start shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] transition-shadow hover:shadow-[var(--slurp-shadow-floating),var(--slurp-highlight)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none"
         >
-          <div className="flex items-center gap-3 px-4 pt-4">
-            <Avatar account={{ displayName: partner.name, avatarUrl: partner.avatarUrl }} size="md" />
-            <p className={cn(SLP_TYPE.meta, "min-w-0 flex-1 font-semibold text-[var(--slurp-muted)]")}>
-              {t("ui.slurp.stir.yours.title")}
-            </p>
-          </div>
-          <SlpYouTwo couple={couple} name={partner.name} />
-        </div>
+          <Avatar account={{ displayName: partner.name, avatarUrl: partner.avatarUrl }} size="sm" />
+          <span className="min-w-0 flex-1">
+            <span className={cn(SLP_TYPE.body, "block truncate font-semibold")}>{partner.name}</span>
+            <span className={cn(SLP_TYPE.meta, "block truncate text-[var(--slurp-muted)]")}>
+              {t("ui.slurp.stir.yours.title")} ·{" "}
+              {couple.stage === "split"
+                ? t(couple.ending === "fizzled" ? "ui.slurp.youTwo.stage.faded" : "ui.slurp.youTwo.stage.ex")
+                : t(`ui.slurp.youTwo.stage.${couple.stage}`)}
+            </span>
+          </span>
+          <SlpHeartGlyph
+            size={16}
+            filled={couple.stage !== "split"}
+            aria-hidden="true"
+            className="shrink-0 text-[var(--slurp-ink)]"
+          />
+          <ChevronRight size={16} aria-hidden="true" className="shrink-0 text-[var(--slurp-muted)] rtl:rotate-180" />
+        </button>
       ))}
+      <SlpSheet
+        open={Boolean(shown)}
+        onClose={() => setOpen(null)}
+        title={shown?.partner.name ?? ""}
+        width="max-w-lg"
+        back
+      >
+        {shown && <SlpYouTwo couple={shown.couple} name={shown.partner.name} creatorId={shown.partner.id} />}
+      </SlpSheet>
     </section>
   );
 }

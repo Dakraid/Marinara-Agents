@@ -20,6 +20,9 @@ export type SlpPlayerCouple = {
   lastFight: { at: string; detail: string } | null;
   /** Days since they got together at that mark: 30, 90, 180, then every 365. */
   nextAnniversary: { at: string; days: number } | null;
+  /** Her public side: how far her posts go, and what she posted this week (paid = subscribers only). */
+  herSpice?: "flirty" | "suggestive" | "explicit" | null;
+  herWeek?: { posts: number; paid: number };
 };
 
 /** When a play shows in the world. */

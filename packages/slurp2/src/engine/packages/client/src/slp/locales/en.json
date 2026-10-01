@@ -6138,5 +6138,11 @@
   "ui.noodle.noodlerwizard.progressSigningUp": "Signing up {{done}} of {{total}} Creators…",
   "ui.slurp.events.category.sign_up": "Sign-ups",
   "ui.slurp.events.group.sign_up": "{{count}} sign-ups finished",
-  "ui.slurp.events.single.sign_up": "Sign-up done: {{amount}} new Creators. Their first posts are on the way."
+  "ui.slurp.events.single.sign_up": "Sign-up done: {{amount}} new Creators. Their first posts are on the way.",
+  "ui.slurp.youTwo.headerLabel": "You two: {{stage}}",
+  "ui.slurp.youTwo.public.title": "{{name}} in public",
+  "ui.slurp.youTwo.public.week": "This week: {{posts}} posts, {{paid}} of them for subscribers",
+  "ui.slurp.youTwo.public.level": "Her posts go as far as: {{level}}",
+  "ui.slurp.youTwo.public.more": "Show more",
+  "ui.slurp.youTwo.public.less": "Show less"
 }

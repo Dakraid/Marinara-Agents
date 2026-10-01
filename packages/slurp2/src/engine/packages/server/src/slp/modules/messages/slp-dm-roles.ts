@@ -155,6 +155,11 @@ export function slurpDmRoleHeader(input: SlurpDmRoleInput & { history: readonly 
             : `${viewer} is a fan writing to you.`,
     );
     if (page?.relationship) lines.push(page.relationship);
+    // Her public side: she is a Creator, and the one she is with sees her page like everyone else.
+    if (page?.partner)
+      lines.push(
+        `Your page is public, and ${viewer} sees what you post there like everyone else does. That is part of you two: you can tell ${viewer} what you posted and who is looking, tease them with what your fans get, or ask how it makes them feel.`,
+      );
     if (page?.us)
       lines.push(
         `Also add "us" to your JSON: {"step": "closer" when this talk really brought you two closer (a confession, asking ${viewer} out or saying yes, agreeing to be a couple), "hurt" when you two really fought or ${viewer} hurt you, "madeUp" when you made up after a fight; "why": a few words about it}. Most messages change nothing between you: then "us" is null.`,

@@ -12,6 +12,7 @@ import {
 import {
   slurpAudienceOpener,
   slurpFanNote,
+  slurpPartnerCommentBodies,
   slurpAudienceQuestion,
   slurpAudienceReactionFrom,
   slurpRivalryBodies,
@@ -309,6 +310,11 @@ export async function applyPulse(
       ? slurpResolveFanType(fanTypes, actor).id
       : slurpPickFanType(fanTypes, actor.id).id;
   const sides = isComment ? await rivalrySides(noodle, action.postId) : null;
+  // Somebody she is publicly with: now and then the crowd talks to her about them (her public side).
+  const partner =
+    isComment && !sides && hash(`${action.postId}:${actor.id}:partner`) % 4 === 0
+      ? await publicPartnerName(db, action.creatorAccountId)
+      : null;
   const result = await noodle.createNoodlerWorldInteraction(action.postId, {
     creatorAccountId: action.creatorAccountId,
     actorId: actor.id,
@@ -322,7 +328,9 @@ export async function applyPulse(
             ? sides.moment !== undefined
               ? slurpCoupleReactionBodies(sides.self, sides.rival, sides.moment)
               : slurpRivalryBodies(sides.self, sides.rival)
-            : slurpReactionBodiesForType(banks, fanTypeId, SLURP_SHIPPED_TYPE_REACTIONS[fanTypeId ?? ""] ?? []),
+            : partner
+              ? slurpPartnerCommentBodies(partner)
+              : slurpReactionBodiesForType(banks, fanTypeId, SLURP_SHIPPED_TYPE_REACTIONS[fanTypeId ?? ""] ?? []),
         )
       : null,
   });

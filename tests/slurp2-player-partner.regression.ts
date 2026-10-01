@@ -32,6 +32,11 @@ import {
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-stir-tie-preview.ts";
 import { SLURP_NO_TIES } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-ties.ts";
 import { slurpSetBond } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-bonds.ts";
+import {
+  SLURP_THREAD_STATE_DEFAULT,
+  slurpPartnerThreadFloor,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/creators/slp-creator-state.ts";
+import { slurpPartnerCommentBodies } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/slp-world-copy.ts";
 import { slurpDmRoleHeader } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-dm-roles.ts";
 import { readSlurpDmUs } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-dm-response.ts";
 import {
@@ -426,6 +431,47 @@ async function main() {
     assert.equal(slurpSteerCouple([paged], "c", "secret", { at, creators: [mira, you] }), "notOpen");
     const news = slurpPartnerNews({ ...couple!, secret: true }, new Date(T0 + 3_600_000), null);
     assert.equal(news, null, "a secret launch is no news to text about");
+  }
+
+  // ── Her partner starts close; her public side reaches the chat, her texts and her comments ──
+  {
+    const fresh = { ...SLURP_THREAD_STATE_DEFAULT, updatedAt: new Date(T0).toISOString() };
+    assert.equal(slurpPartnerThreadFloor(fresh, null), fresh, "a fan keeps the fan ladder");
+    const together = slurpPartnerThreadFloor(fresh, "partner");
+    assert.equal(together.adultLevel, "explicit", "no stranger ladder for her partner");
+    assert.equal(together.posture, "playful");
+    assert.ok(together.familiarity >= 80 && together.sexualComfort >= 80);
+    const hurt = slurpPartnerThreadFloor(fresh, "rocky");
+    assert.equal(hurt.adultLevel, "intimate");
+    assert.ok(hurt.resentment >= 30, "after a fight some hurt stays");
+    const further = { ...fresh, familiarity: 95, adultLevel: "explicit" as const };
+    assert.equal(slurpPartnerThreadFloor(further, "crush").familiarity, 95, "floors never lower anything");
+    assert.ok(slurpPartnerCommentBodies("Sam").every((body) => body.includes("Sam")));
+    const night = new Set<string>();
+    for (let slot = 0; slot < 400; slot += 1) {
+      const reason = slurpPartnerText({
+        pairKey: "p",
+        stage: "together",
+        hour: 14,
+        hoursSinceLast: 99,
+        busy: false,
+        slot,
+        heat: true,
+      });
+      if (reason) night.add(reason);
+    }
+    assert.ok(
+      [...night].some((reason) => /fans|everyone seeing you/u.test(reason)),
+      "her public side comes up in her texts",
+    );
+    const header = slurpDmRoleHeader({
+      writer: "creator",
+      creator: { name: "Mira", handle: "mira" },
+      viewer: { name: "Sam", handle: "sam" },
+      viewerPage: { name: "Sam", handle: "sam_page", partner: true, partnerWord: "boyfriend" },
+      history: [],
+    });
+    assert.match(header, /Your page is public, and Sam sees what you post there/u);
   }
 
   // ── Pause all: not one model or image call ──

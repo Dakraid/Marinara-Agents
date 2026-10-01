@@ -3,6 +3,7 @@ import { useId, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { cn } from "../../../lib/utils";
+import { SLP_SPICE_LEVELS } from "../../../../../shared/src/slp/slp-spice.js";
 import { SlpButton } from "../../modules/chrome/SlpButton";
 import { SlpHeartGlyph, SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { formatRelativeTime, formatUpcomingDay } from "../../base/ui/slp-date-time";
@@ -29,7 +30,16 @@ const markLabel = (t: (key: string, options?: Record<string, unknown>) => string
  * with (or were), the two of them in place of a fan's standing: the stage, the dates that matter, and
  * the moves. Every move is a Stir play, so it is previewed, lands in Recent plays, and has Undo.
  */
-export function SlpYouTwo({ couple, name }: { couple: SlurpPlayerCouple; name: string }) {
+export function SlpYouTwo({
+  couple,
+  name,
+  creatorId,
+}: {
+  couple: SlurpPlayerCouple;
+  name: string;
+  /** Her account: "Show more" / "Show less" set how far her own posts go. */
+  creatorId?: string;
+}) {
   const { t, i18n } = useTranslation();
   const titleId = useId();
   const preview = useSlurpStirPreview();
@@ -41,11 +51,16 @@ export function SlpYouTwo({ couple, name }: { couple: SlurpPlayerCouple; name: s
     ? t(couple.ending === "fizzled" ? "ui.slurp.youTwo.stage.faded" : "ui.slurp.youTwo.stage.ex")
     : t(`ui.slurp.youTwo.stage.${couple.stage}`);
 
-  const run = (steer: Steer) =>
+  const play = (step: { action: string; input: Record<string, unknown> }) =>
     preview
-      .mutateAsync([{ action: "steer-couple", input: { coupleId: couple.id, steer } }])
+      .mutateAsync([step])
       .then(({ cards }) => (cards[0]?.error ? void toast.error(t("ui.slurp.youTwo.cant")) : doIt.run(cards, "sheet")))
       .catch(() => void toast.error(t("ui.slurp.youTwo.cant")));
+  const run = (steer: Steer) => play({ action: "steer-couple", input: { coupleId: couple.id, steer } });
+  // Her public side: one step more or less in what her posts show (her spice level).
+  const spiceAt = couple.herSpice ? SLP_SPICE_LEVELS.indexOf(couple.herSpice) : -1;
+  const shift = (by: 1 | -1) =>
+    creatorId && play({ action: "set-spice", input: { accountId: creatorId, level: SLP_SPICE_LEVELS[spiceAt + by] } });
 
   const moves: { steer: Steer; icon: ReactNode; show: boolean; quiet?: boolean }[] = [
     { steer: "reunite", icon: <SlpHeartGlyph size={15} aria-hidden="true" />, show: over },
@@ -134,6 +149,49 @@ export function SlpYouTwo({ couple, name }: { couple: SlurpPlayerCouple; name: s
             <li key={fact}>{fact}</li>
           ))}
         </ul>
+      )}
+
+      {couple.herWeek && !over && (
+        // What everyone else sees of her: you are with a Creator, and her page is part of it.
+        <div className="mt-4 rounded-2xl bg-[var(--slurp-surface)] p-3">
+          <p className="text-xs font-semibold text-[var(--slurp-muted)]">
+            {t("ui.slurp.youTwo.public.title", { name })}
+          </p>
+          <p className="mt-1 text-sm">
+            {t("ui.slurp.youTwo.public.week", { posts: couple.herWeek.posts, paid: couple.herWeek.paid })}
+          </p>
+          {couple.herSpice && (
+            <p className="text-xs text-[var(--slurp-muted)]">
+              {t("ui.slurp.youTwo.public.level", { level: t(`ui.slurp.spice.levels.${couple.herSpice}`) })}
+            </p>
+          )}
+          {creatorId && spiceAt >= 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {spiceAt < SLP_SPICE_LEVELS.length - 1 && (
+                <SlpButton
+                  variant="secondary"
+                  disabled={preview.isPending || doIt.pending}
+                  onClick={() => void shift(1)}
+                  className="min-h-11 px-4 text-sm"
+                >
+                  <Eye size={15} aria-hidden="true" />
+                  {t("ui.slurp.youTwo.public.more")}
+                </SlpButton>
+              )}
+              {spiceAt > 0 && (
+                <SlpButton
+                  variant="tertiary"
+                  disabled={preview.isPending || doIt.pending}
+                  onClick={() => void shift(-1)}
+                  className="min-h-11 px-4 text-sm"
+                >
+                  <EyeOff size={15} aria-hidden="true" />
+                  {t("ui.slurp.youTwo.public.less")}
+                </SlpButton>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       <div className="mt-3 flex flex-wrap gap-2">

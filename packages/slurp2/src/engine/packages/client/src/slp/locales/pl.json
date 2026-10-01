@@ -2751,5 +2751,11 @@
   "ui.noodle.noodlerwizard.progressSigningUp": "Rejestracja twórców: {{done}} z {{total}}…",
   "ui.slurp.events.category.sign_up": "Rejestracje",
   "ui.slurp.events.group.sign_up": "Zakończone rejestracje: {{count}}",
-  "ui.slurp.events.single.sign_up": "Rejestracja gotowa, nowi twórcy: {{amount}}. Pierwsze posty są w drodze."
+  "ui.slurp.events.single.sign_up": "Rejestracja gotowa, nowi twórcy: {{amount}}. Pierwsze posty są w drodze.",
+  "ui.slurp.youTwo.headerLabel": "Wy dwoje: {{stage}}",
+  "ui.slurp.youTwo.public.title": "{{name}} publicznie",
+  "ui.slurp.youTwo.public.week": "W tym tygodniu: posty: {{posts}}, w tym dla subskrybentów: {{paid}}",
+  "ui.slurp.youTwo.public.level": "Jej posty sięgają: {{level}}",
+  "ui.slurp.youTwo.public.more": "Pokaż więcej",
+  "ui.slurp.youTwo.public.less": "Pokaż mniej"
 }

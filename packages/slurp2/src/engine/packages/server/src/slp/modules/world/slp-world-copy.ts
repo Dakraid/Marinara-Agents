@@ -91,6 +91,22 @@ export function slurpAudienceOpener(seed: string, openers: readonly string[] = [
   return bank[pickIndex(seed, "opener-dm", bank.length)]!;
 }
 
+/** Fans under a post of somebody who is publicly with someone: they talk to her about them. */
+const COMMENTS_ABOUT_PARTNER = [
+  "does {partner} see these? 👀",
+  "{partner} really lets you post this? respect",
+  "lucky {partner} 😮‍💨",
+  "{partner} better be sharing",
+  "if I were {partner} I'd never let you log off",
+  "tell {partner} we said thanks",
+  "how is {partner} ok with this 😳",
+  "{partner} is a saint fr",
+] as const;
+
+export function slurpPartnerCommentBodies(partner: string): string[] {
+  return COMMENTS_ABOUT_PARTNER.map((body) => body.replaceAll("{partner}", partner));
+}
+
 /** A fan's note to the player's page about the Creator the player is with, in public. */
 const FAN_NOTES_ABOUT_PARTNER = [
   "you and {partner} are the cutest thing on here",

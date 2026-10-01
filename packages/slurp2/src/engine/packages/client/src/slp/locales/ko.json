@@ -3529,5 +3529,11 @@
   "ui.noodle.noodlerwizard.progressSigningUp": "크리에이터 {{total}}명 중 {{done}}명 가입 중…",
   "ui.slurp.events.category.sign_up": "가입",
   "ui.slurp.events.group.sign_up": "가입 {{count}}건 완료",
-  "ui.slurp.events.single.sign_up": "가입 완료: 새 크리에이터 {{amount}}명. 첫 게시물이 곧 올라옵니다."
+  "ui.slurp.events.single.sign_up": "가입 완료: 새 크리에이터 {{amount}}명. 첫 게시물이 곧 올라옵니다.",
+  "ui.slurp.youTwo.headerLabel": "우리 둘: {{stage}}",
+  "ui.slurp.youTwo.public.title": "공개된 {{name}}",
+  "ui.slurp.youTwo.public.week": "이번 주: 게시물 {{posts}}개, 그중 구독자 전용 {{paid}}개",
+  "ui.slurp.youTwo.public.level": "게시물 수위: {{level}}",
+  "ui.slurp.youTwo.public.more": "더 보여주기",
+  "ui.slurp.youTwo.public.less": "덜 보여주기"
 }

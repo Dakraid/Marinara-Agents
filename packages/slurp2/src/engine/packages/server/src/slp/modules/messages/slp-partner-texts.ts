@@ -56,6 +56,13 @@ const REASONS: Record<"morning" | "day" | "evening" | "night" | "rocky" | "spark
 };
 
 /** Late at night, for a Creator whose level goes that far: she says what she wants, in private. */
+/** Her public side, for a Creator whose level goes that far: her fans see her too, and her partner knows. */
+const PUBLIC_HEAT: readonly string[] = [
+  "You just posted something revealing for your fans. Tell your partner before they find it, and tease them about who else is looking.",
+  "A fan left a bold comment on your latest post. Tell your partner what they said, and see how they take it.",
+  "Your newest post is getting a lot of attention. Ask your partner what they think of everyone seeing you like that.",
+];
+
 const NIGHT_HEAT: readonly string[] = [
   "You are in bed and cannot stop thinking about your partner. Tell them exactly what you would do if they were here.",
   "You just got out of the shower and you are thinking about your partner. Describe it, and make them want to be there.",
@@ -125,6 +132,8 @@ export function slurpPartnerText(input: {
         ? REASONS.sparks
         : time === "night" && input.heat
           ? [...REASONS.night, ...NIGHT_HEAT]
-          : REASONS[time];
+          : (time === "day" || time === "evening") && input.heat
+            ? [...REASONS[time], ...PUBLIC_HEAT]
+            : REASONS[time];
   return pool[hash(`${input.pairKey}:${input.slot}:partner-why`) % pool.length]!;
 }

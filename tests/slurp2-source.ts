@@ -121,11 +121,17 @@ export const SLURP2_SOURCE_MODULES: Record<string, readonly string[]> = {
     "packages/client/src/slp/base/navigation/slp-backstage-target.ts",
     "packages/client/src/slp/features/backstage/slp-backstage-placement.ts",
   ],
+  // 0.3.11: the Details panel's small parts moved to SlpDetailsParts.tsx (size cap).
+  "packages/client/src/slp/features/messages/SlpMessageInsights.tsx": [
+    "packages/client/src/slp/features/messages/SlpMessageInsights.tsx",
+    "packages/client/src/slp/features/messages/SlpDetailsParts.tsx",
+  ],
   "packages/client/src/components/slurp/SlurpMessages.tsx": [
     "packages/client/src/slp/features/messages/SlpMessages.tsx",
     "packages/client/src/slp/features/messages/commissions/SlpCommissions.tsx",
     "packages/client/src/slp/features/messages/SlpMessageInsights.tsx",
     "packages/client/src/slp/features/messages/SlpMessageInsightParts.tsx",
+    "packages/client/src/slp/features/messages/SlpDetailsParts.tsx",
     "packages/client/src/slp/features/messages/SlpThreadView.tsx",
     "packages/client/src/slp/features/messages/slp-thread-view-model.ts",
     "packages/client/src/slp/features/messages/slp-thread-actions.ts",

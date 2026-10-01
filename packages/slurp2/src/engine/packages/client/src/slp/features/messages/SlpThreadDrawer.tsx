@@ -120,7 +120,11 @@ export function SlpThreadDrawer({ model }: { model: SlurpThreadViewModel }) {
         )}
         {/* The one she is with (or was): the two of them come first, before the fan standing. */}
         {relationship?.couple && !relationship.desk && (
-          <SlpYouTwo couple={relationship.couple} name={headerAccount?.displayName ?? ""} />
+          <SlpYouTwo
+            couple={relationship.couple}
+            name={headerAccount?.displayName ?? ""}
+            creatorId={targetCreatorAccountId ?? undefined}
+          />
         )}
         {relationship && !relationship.desk && (
           <SlurpRelationshipPanel
