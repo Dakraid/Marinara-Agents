@@ -184,7 +184,7 @@
         {
           "version": "1.3.35",
           "date": "2026-10-01",
-          "notes": "- The description now says what it does in plain words.",
+          "notes": "- Before permanently deleting memories, the confirmation now lists exactly which ones you picked and how many, with a short excerpt of each, and warns when some are hidden by your filters.\n- The description now says what it does in plain words.",
           "highlight": false
         },
         {

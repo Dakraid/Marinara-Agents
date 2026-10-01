@@ -2,6 +2,7 @@
 
 ## 1.3.35 — 2026-10-01
 
+- Before permanently deleting memories, the confirmation now lists exactly which ones you picked and how many, with a short excerpt of each, and warns when some are hidden by your filters.
 - The description now says what it does in plain words.
 
 ## 1.3.34 — 2026-09-30 [highlight]
