@@ -92,6 +92,12 @@ export const spatialSnapshotSourceSchema = z.enum([
     "definition_repair",
     "branch_copy",
 ]);
+export const spatialAssessedTravelSchema = z
+    .object({
+    fromLocationId: spatialIdSchema,
+    routeLocationIds: z.array(spatialIdSchema),
+})
+    .strict();
 export const spatialContextSnapshotSchema = z
     .object({
     id: z.string().trim().min(1).max(SPATIAL_CONTEXT_LIMITS.maxIdLength),
@@ -106,6 +112,7 @@ export const spatialContextSnapshotSchema = z
         .string()
         .regex(/^[a-f0-9]{64}$/u)
         .nullable(),
+    travel: spatialAssessedTravelSchema.nullable().optional(),
     createdAt: z.string().datetime(),
 })
     .strict();

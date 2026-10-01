@@ -363,7 +363,7 @@
   "packages/shared/dist/schemas/prompt.schema.js": "orphaned:4a5dbdac8fdc86ff9d07200662af4b21a9efad4ca4942560f4d04c60b0030cf4:orphaned",
   "packages/shared/dist/schemas/regex.schema.js": "orphaned:55fdf108b1bf89ec075a59b5df9c6c13fe43f9298a2c7dd1505629c478c9f37f:orphaned",
   "packages/shared/dist/schemas/scene-analysis.schema.js": "orphaned:756a862d8f2322078934c1cc5d3e7a91c0c34af277941ed91f42374b647a5e7a:orphaned",
-  "packages/shared/dist/schemas/spatial-context.schema.js": "orphaned:5fafa119cdc889e945e01c0833ce785eaa218ffb80157a11cc370e902118863a:orphaned",
+  "packages/shared/dist/schemas/spatial-context.schema.js": "orphaned:f3d3faba2bfdad293c99fc57fa7fd5127d5bffe5565985c0a8e78495366a31cc:orphaned",
   "packages/shared/dist/schemas/theme.schema.js": "orphaned:82c1617b9d6591372f56e39e0e2bc26399dbc5ea6c9e8626221b8053926ff967:orphaned",
   "packages/shared/dist/types/achievement.js": "orphaned:d9f5da5e2de003e11bfb1b3d04ab54b2eb1f63f43b4d0a4ae976ef7b649072a3:orphaned",
   "packages/shared/dist/types/agent.js": "orphaned:9a4fc96bd4060a637d75323fcd6ccae566665a198293de1c8dc0754bc26fd78e:orphaned",

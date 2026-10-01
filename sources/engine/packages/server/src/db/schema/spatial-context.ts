@@ -12,5 +12,6 @@ export const spatialContextSnapshots = fileTable("spatial_context_snapshots", {
   source: text("source").notNull(),
   transitionCommandId: text("transition_command_id"),
   transitionPayloadHash: text("transition_payload_hash"),
+  travel: text("travel"),
   createdAt: text("created_at").notNull(),
 });
