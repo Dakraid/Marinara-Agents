@@ -5,7 +5,7 @@ import type { FastifyInstance } from "fastify";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
 import { readSlpNotifications } from "./slp-notification-read-model.js";
 import { markSlurpPlayerPresent } from "../world/slp-world-contract.js";
-import { answerSlurpFanNote } from "../../data/notifications/slp-fan-note-storage.js";
+import { answerSlurpFanNote, readSlurpFanNoteAnswers } from "../../data/notifications/slp-fan-note-storage.js";
 import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
 
 /**
@@ -58,10 +58,12 @@ export async function slpNotificationsRoutes(
     if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
     const event = await createSlurpEventsStorage(app.db).get(viewer.id, String((req.params as { id: string }).id));
     if (!event || event.kind !== "fan_note") return reply.code(404).send({ error: "Note not found" });
+    const before = (await readSlurpFanNoteAnswers(app.db, [event.id])).get(event.id);
     const answer = await answerSlurpFanNote(app.db, event.id, { heart: parsed.data.heart, reply: parsed.data.reply });
     if (answer === "replied") return reply.code(409).send({ error: "You already replied to this note." });
-    // The fan felt seen: a heart or a reply warms them up to the page, like any interaction.
-    if (event.subjectId && event.creatorAccountId)
+    const changed = answer.hearted !== Boolean(before?.hearted) || answer.reply !== (before?.reply ?? null);
+    // The fan felt seen: a new heart or the reply warms them up to the page, once each.
+    if (changed && event.subjectId && event.creatorAccountId)
       await createSlurpPopulationStorage(app.db)
         .advanceTie(event.subjectId, event.creatorAccountId, { stage: "viewer", interactions: 1 })
         .catch(() => undefined);

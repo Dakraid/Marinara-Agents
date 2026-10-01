@@ -521,7 +521,7 @@ export function SlpStirPlaySheet({
       );
       const couple = couples.find((entry) => entry.id === form.pick);
       if (couple && action === "steer-couple") {
-        const withPlayer = [couple.aId, couple.bId].some(
+        const withPlayer = [couple.aId, couple.bId, ...(couple.moreIds ?? [])].some(
           (id) => creators.find((creator) => creator.id === id)?.automatic === false,
         );
         const allowed = SLP_COUPLE_STEERS.filter((steer) =>

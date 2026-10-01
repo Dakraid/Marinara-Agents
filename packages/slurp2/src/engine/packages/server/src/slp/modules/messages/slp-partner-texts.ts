@@ -81,7 +81,8 @@ export function slurpPartnerNews(couple: SlurpCouple, at: Date, lastMessageAt: s
     if (Date.parse(moment.at) <= since) continue;
     if (moment.kind === "anniversary")
       return `Today is your ${moment.detail || "anniversary"} with your partner. Text them about it, the way you would.`;
-    if (moment.kind === "launch")
+    // A secret has no public launch to talk about.
+    if (moment.kind === "launch" && !couple.secret)
       return "You just made it official in public. Tell your partner how it feels, and what your fans are saying.";
     if (moment.kind === "makeup")
       return "You two made up after the fight. Tell your partner how you feel about them now.";

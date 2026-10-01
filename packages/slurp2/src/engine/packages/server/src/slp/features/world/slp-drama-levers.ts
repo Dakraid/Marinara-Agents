@@ -15,6 +15,7 @@ import { slpDramaLeadFits, slpEndDramaRun, slpRequestDrama } from "../../modules
 import type { SlpActionParsed, SlpStirWorld } from "../../../../../shared/src/slp/slp-actions.js";
 import type { SlpActionPreview } from "../../../../../shared/src/slp/slp-stir.js";
 import { advanceSlurpDrama, loadDramaWorld } from "./slp-drama-service.js";
+import { slurpPausedNow } from "../../data/settings/slp-pause-storage.js";
 
 export const SLURP_DRAMA_LEVERS = ["start-drama", "end-drama"] as const;
 export type SlurpDramaLever = (typeof SLURP_DRAMA_LEVERS)[number];
@@ -26,6 +27,7 @@ type Failure = { ok: false; status: 404 | 409; error: string };
 
 const OFF = "Switch it on first in Settings › Stir › Drama (and its situation, if it needs one).";
 const NOBODY = "Nobody fits the roles right now.";
+const PAUSED = "Slurp is paused (Settings › Overview). Resume it to start a drama.";
 const LEAD_NO = "They do not fit the first role of this drama right now.";
 
 async function enabledDramas(db: DB) {
@@ -143,6 +145,8 @@ async function startDrama(
   at: Date,
 ): Promise<{ ok: true; value: { runId: string }; undo: SlurpDramaUndo | null } | Failure> {
   const { dramaId, leadId } = input as SlpActionParsed<"start-drama">;
+  // Paused, nothing would start now, and the request would wait to start later with no Undo.
+  if (await slurpPausedNow(db)) return { ok: false, status: 409, error: PAUSED };
   const preview = await previewSlurpDramaLever(db, "start-drama", input, at);
   if (preview.error) return { ok: false, status: 409, error: preview.summary };
   const before = new Set((await readSlurpDramaState(db)).state.runs.map((run) => run.id));
@@ -155,9 +159,14 @@ async function startDrama(
   const run = (await readSlurpDramaState(db)).state.runs.find(
     (entry) => entry.dramaId === dramaId && !entry.endedAt && !before.has(entry.id),
   );
-  return run
-    ? { ok: true, value: { runId: run.id }, undo: { kind: "endDrama", runId: run.id } }
-    : { ok: false, status: 409, error: NOBODY };
+  if (run) return { ok: true, value: { runId: run.id }, undo: { kind: "endDrama", runId: run.id } };
+  // Not started now: the request goes, so it never starts later without a play to undo it.
+  await mutateSlurpDramaState(db, (current) =>
+    current.state.requested === dramaId
+      ? { stored: { ...current, state: { ...current.state, requested: null, requestedLead: null } }, result: null }
+      : null,
+  );
+  return { ok: false, status: 409, error: NOBODY };
 }
 
 /** Take a start back: the drama ends; what already went out stays. False when it ended already. */

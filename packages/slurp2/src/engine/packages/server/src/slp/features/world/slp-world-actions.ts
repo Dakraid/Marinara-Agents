@@ -33,7 +33,8 @@ import { slurpPulseTieAdvance, type SlurpPulseAction } from "../../../../../shar
 /** The Creator the player's page is with, when the fans know: they write about her now and then. */
 async function publicPartnerName(db: DB, pageId: string): Promise<string | null> {
   const couple = await readSlurpCouplePartnerOf(db, pageId).catch(() => null);
-  if (!couple || couple.secret || couple.stage === "sparks") return null;
+  // Only once it is official and public: dating is "not official in public yet".
+  if (!couple || couple.secret || (couple.stage !== "together" && couple.stage !== "rocky")) return null;
   return (
     (
       await createSlurpStorage(db)

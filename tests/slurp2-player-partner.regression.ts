@@ -8,6 +8,8 @@ import assert from "node:assert/strict";
 import { slurp2Source } from "./slurp2-source";
 import {
   slurpAdvanceCouples,
+  slurpCouplePageOpenable,
+  slurpSteerCouple,
   slurpSetUpCouple,
   type SlurpCouple,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples.ts";
@@ -411,6 +413,19 @@ async function main() {
     assert.equal(back?.couples[0]?.secret, true);
     const open = slurpUndoTie({ ties: SLURP_NO_TIES, couples: [secret] }, { kind: "restoreCouple", couple: couple! });
     assert.equal("secret" in (open?.couples[0] ?? {}), false, "going public again drops the flag");
+  }
+
+  // ── Review fixes: a secret couple has no public page, and no "public launch" text ──
+  {
+    const mira = creator("mira", "Romantic.");
+    const you = creator("you", "", { automatic: false });
+    const at = new Date(T0);
+    const [couple] = slurpSetUpCouple([], mira, you, { at, id: "c" }) as SlurpCouple[];
+    assert.equal(slurpCouplePageOpenable({ ...couple!, secret: true }), false);
+    const paged = { ...couple!, page: { accountId: "page", openedAt: at.toISOString(), closedAt: null } };
+    assert.equal(slurpSteerCouple([paged], "c", "secret", { at, creators: [mira, you] }), "notOpen");
+    const news = slurpPartnerNews({ ...couple!, secret: true }, new Date(T0 + 3_600_000), null);
+    assert.equal(news, null, "a secret launch is no news to text about");
   }
 
   // ── Pause all: not one model or image call ──

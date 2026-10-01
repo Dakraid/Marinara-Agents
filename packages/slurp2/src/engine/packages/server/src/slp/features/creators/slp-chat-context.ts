@@ -105,16 +105,21 @@ export async function buildSlurpChatContext(db: DB, request: SlurpChatContextReq
   const persona = request.personaId ? await slurp.getViewer(request.personaId) : null;
   if (persona) {
     // The persona's own page may be with one of these characters: a standing fact, never cut first.
-    const page = await slurp.getSlurpAccountForEntity("persona", request.personaId!, "creator").catch(() => null);
-    const { couples } = page ? await readSlurpCreatorTiesDocument(db) : { couples: [] };
-    for (const creator of creators) {
-      const line = slurpChatBridgeCoupleLine(page ? slurpCoupleOf(couples, creator.id, page.id) : null, {
-        her: creator.displayName,
-        herGender: creator.settings.profile.gender,
-        you: persona.displayName,
-        at: new Date(),
-      });
-      if (line) entries.push({ at: SLURP_STANDING_FACT_AT, line });
+    // Best-effort: a relationship that cannot be read never costs the chat its Slurp context.
+    try {
+      const page = await slurp.getSlurpAccountForEntity("persona", request.personaId!, "creator");
+      const { couples } = page ? await readSlurpCreatorTiesDocument(db) : { couples: [] };
+      for (const creator of creators) {
+        const line = slurpChatBridgeCoupleLine(page ? slurpCoupleOf(couples, creator.id, page.id) : null, {
+          her: creator.displayName,
+          herGender: creator.settings.profile.gender,
+          you: persona.displayName,
+          at: new Date(),
+        });
+        if (line) entries.push({ at: SLURP_STANDING_FACT_AT, line });
+      }
+    } catch {
+      // No relationship line this time.
     }
     const messages = createSlurpMessagesStorage(db);
     const subscribed = new Set(

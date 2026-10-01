@@ -627,7 +627,9 @@ export function slurpSteerCouple(
   if (steer === "official" && (couple.stage === "sparks" || couple.stage === "dating"))
     return replace(slurpMakeOfficial(couple, input.at));
   if ((steer === "secret" || steer === "public") && slurpCoupleActive(couple) && playerIds(couple, byId).size)
-    return (steer === "secret") === Boolean(couple.secret)
+    // An open shared page names them both: it closes before the couple can be a secret.
+    return (steer === "secret") === Boolean(couple.secret) ||
+      (steer === "secret" && couple.page && !couple.page.closedAt)
       ? "notOpen"
       : replace(steer === "secret" ? { ...couple, secret: true } : withoutSecret(couple, stamp));
   if (steer === "patchUp" && couple.stage === "rocky")
@@ -679,7 +681,8 @@ function withoutSecret(couple: SlurpCouple, stamp: string): SlurpCouple {
 
 /** Whether this couple may open a shared page: together in public, and not already running one. */
 export function slurpCouplePageOpenable(couple: SlurpCouple): boolean {
-  return slurpCoupleTaken(couple) && !(couple.page && !couple.page.closedAt);
+  // A secret couple has no public page: the page would name them both.
+  return slurpCoupleTaken(couple) && !couple.secret && !(couple.page && !couple.page.closedAt);
 }
 
 /** The shared page is open (a new account, or their old one again): its first post says hi. */

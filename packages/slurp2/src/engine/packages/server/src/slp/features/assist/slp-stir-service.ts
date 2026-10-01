@@ -41,6 +41,7 @@ import {
 import { previewSlpAction } from "./slp-action-preview.js";
 import { runSlpActionWithUndo } from "./slp-action-runner.js";
 import { readSlpStirWorld, undoSlpAction, type SlpActionUndo } from "./slp-stir-levers.js";
+import { readSlurpStirDramas } from "../world/slp-world-contract.js";
 import type { SlpAssistOutcome } from "./slp-assist-service.js";
 import type {
   SlpActionPreview,
@@ -73,8 +74,8 @@ const slpStirCardLine = (account: Account) => {
 
 /** The Creator ids a step names, whatever the action calls them. */
 const slpStirStepPeople = (input: Record<string, unknown>) =>
-  ["accountId", "aId", "bId", "fromId", "toId"].flatMap((key) =>
-    typeof input[key] === "string" ? [input[key] as string] : [],
+  ["accountId", "aId", "bId", "fromId", "toId", "leadId", "aboutId", "withIds", "accountIds"].flatMap((key) =>
+    [input[key]].flat().filter((id): id is string => typeof id === "string"),
   );
 
 /** What a step made or touched, from its result: the ids a ledger row can link to. */
@@ -105,7 +106,8 @@ export async function readSlpStirHidden(db: DB, own?: (account: Account) => bool
 
 /** Every page a step names or reaches through a couple, collab or rivalry id. */
 async function slpStirStepReach(db: DB, steps: readonly SlpStirStep[]): Promise<Set<string>> {
-  const { ties, couples } = await readSlurpCreatorTiesDocument(db);
+  const { ties, couples, bonds } = await readSlurpCreatorTiesDocument(db);
+  const { runs } = await readSlurpStirDramas(db);
   const ids = new Set<string>();
   for (const step of steps) {
     const input = step.input as Record<string, unknown>;
@@ -116,6 +118,10 @@ async function slpStirStepReach(db: DB, steps: readonly SlpStirStep[]): Promise<
     for (const id of collab ? [collab.hostId, collab.partnerId] : []) ids.add(id);
     const rivalry = ties.rivalries.find((entry) => entry.id === input.rivalryId);
     for (const id of rivalry ? [rivalry.fromId, rivalry.toId] : []) ids.add(id);
+    const bond = bonds.find((entry) => entry.id === input.bondId);
+    for (const id of bond ? [bond.aId, bond.bId] : []) ids.add(id);
+    const run = runs?.find((entry) => entry.id === input.runId);
+    for (const id of run ? Object.values(run.cast) : []) ids.add(id);
   }
   return ids;
 }
@@ -171,11 +177,25 @@ export async function planSlpStir(
   const accounts = (await storage.listNoodlerAccounts()) as Account[];
   const about = request.creatorId ? accounts.find((account) => account.id === request.creatorId) : null;
   const post = request.postId ? await storage.getPostById(request.postId) : null;
-  const [world, catalog, plays] = await Promise.all([
+  const [fullWorld, catalog, plays] = await Promise.all([
     readSlpStirWorld(db),
     listSlurpBrandCatalog(db),
     readSlurpStirPlays(db),
   ]);
+  // Another persona's pages, and every tie and drama they are in, stay out of this plan (0.3.9).
+  const hidden = new Set(
+    own ? accounts.filter((account) => !slurpRunsItself(account) && !own(account)).map((account) => account.id) : [],
+  );
+  const seen = (...ids: string[]) => !ids.some((id) => hidden.has(id));
+  const world = {
+    ...fullWorld,
+    couples: fullWorld.couples.filter((couple) => seen(couple.aId, couple.bId, ...(couple.moreIds ?? []))),
+    collabs: fullWorld.collabs.filter((collab) => seen(collab.hostId, collab.partnerId)),
+    rivalries: fullWorld.rivalries.filter((rivalry) => seen(rivalry.fromId, rivalry.toId)),
+    bonds: (fullWorld.bonds ?? []).filter((bond) => seen(bond.aId, bond.bId)),
+    runs: (fullWorld.runs ?? []).filter((run) => seen(...Object.values(run.cast))),
+    storylines: fullWorld.storylines.filter((story) => seen(story.accountId)),
+  };
   if (origin === "world" && !(await claimSlurpModelBudget(db, settings.modelBudget, "plan")))
     return { ok: false, status: 429, error: "Today's AI budget for plans is used up. The cards still work." };
   const provider = slpWithProviderRetry(
@@ -209,11 +229,14 @@ export async function planSlpStir(
       brands: catalog.brands,
       about: about ? { id: about.id, name: about.displayName } : null,
       post: post ? { id: post.id, caption: String((post as { content?: unknown }).content ?? "") } : null,
-      recent: plays.slice(0, 5).map((play) => ({
-        action: play.steps.map((step) => step.action).join(" + "),
-        who: [...new Set(play.steps.flatMap((step) => slpStirStepPeople(step.input)))],
-        undone: play.undone,
-      })),
+      recent: plays
+        .filter((play) => play.steps.every((step) => seen(...slpStirStepPeople(step.input))))
+        .slice(0, 5)
+        .map((play) => ({
+          action: play.steps.map((step) => step.action).join(" + "),
+          who: [...new Set(play.steps.flatMap((step) => slpStirStepPeople(step.input)))],
+          undone: play.undone,
+        })),
       followUp: request.followUp ?? null,
     }),
     // Reasoning headroom, like the writing help: a plan is short, the thinking may not be.

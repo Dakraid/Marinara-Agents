@@ -1,10 +1,10 @@
-import { CalendarHeart, EyeOff, Eye, HeartCrack, HeartHandshake, Sparkles } from "lucide-react";
-import type { ReactNode } from "react";
+import { CalendarHeart, EyeOff, Eye, HeartCrack, HeartHandshake } from "lucide-react";
+import { useId, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { cn } from "../../../lib/utils";
 import { SlpButton } from "../../modules/chrome/SlpButton";
-import { SlpHeartGlyph } from "../../base/chrome/SlpGlyphs";
+import { SlpHeartGlyph, SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { formatRelativeTime, formatUpcomingDay } from "../../base/ui/slp-date-time";
 import { useSlpStirDoIt } from "./SlpStirCards";
 import { useSlurpStirPreview } from "./slp-stir-hooks";
@@ -31,6 +31,7 @@ const markLabel = (t: (key: string, options?: Record<string, unknown>) => string
  */
 export function SlpYouTwo({ couple, name }: { couple: SlurpPlayerCouple; name: string }) {
   const { t, i18n } = useTranslation();
+  const titleId = useId();
   const preview = useSlurpStirPreview();
   const doIt = useSlpStirDoIt();
   const over = couple.stage === "split";
@@ -51,7 +52,7 @@ export function SlpYouTwo({ couple, name }: { couple: SlurpPlayerCouple; name: s
     { steer: "patchUp", icon: <HeartHandshake size={15} aria-hidden="true" />, show: rocky },
     {
       steer: "official",
-      icon: <Sparkles size={15} aria-hidden="true" />,
+      icon: <SlpSparkleGlyph size={15} aria-hidden="true" />,
       show: couple.stage === "sparks" || couple.stage === "dating",
     },
     { steer: "date", icon: <CalendarHeart size={15} aria-hidden="true" />, show: !over && !rocky },
@@ -82,10 +83,10 @@ export function SlpYouTwo({ couple, name }: { couple: SlurpPlayerCouple; name: s
   ].filter((fact): fact is string => Boolean(fact));
 
   return (
-    <section aria-labelledby="slurp-you-two" className="border-b border-[var(--noodle-divider)] p-4">
+    <section aria-labelledby={titleId} data-slp-you-two className="border-b border-[var(--noodle-divider)] p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 id="slurp-you-two" className="text-xs font-semibold text-[var(--slurp-muted)]">
+          <h2 id={titleId} className="text-xs font-semibold text-[var(--slurp-muted)]">
             {t("ui.slurp.youTwo.title", { name })}
           </h2>
           <p className="mt-0.5 text-xl font-extrabold leading-[26px]">{stageWord}</p>
