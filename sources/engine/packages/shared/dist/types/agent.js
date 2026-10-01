@@ -204,7 +204,7 @@ export const BUILT_IN_AGENT_IDS = {
     CYOA: "cyoa",
 };
 export const RETIRED_BUILT_IN_AGENT_IDS = [
-    "about-me-keeper",
+    "conversation-about-me",
     "prompt-reviewer",
     "response-orchestrator",
     "schedule-planner",

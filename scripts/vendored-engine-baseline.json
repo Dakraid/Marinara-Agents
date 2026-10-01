@@ -418,7 +418,7 @@
   "packages/shared/dist/schemas/theme.schema.js": "orphaned:82c1617b9d6591372f56e39e0e2bc26399dbc5ea6c9e8626221b8053926ff967:orphaned",
   "packages/shared/dist/types/achievement.js": "orphaned:d9f5da5e2de003e11bfb1b3d04ab54b2eb1f63f43b4d0a4ae976ef7b649072a3:orphaned",
   "packages/shared/dist/types/advanced-memory.js": "orphaned:c5105daae458b36e733c75bd0ea429616646094d06cbe58f46b3079a13e7f8db:orphaned",
-  "packages/shared/dist/types/agent.js": "orphaned:4aeda3a2ead6e49febefd628f6e30b2c68fe4b6530a5b829ab4c21a51803391d:orphaned",
+  "packages/shared/dist/types/agent.js": "orphaned:3bb764d1019fd0d8d11fa709533c2e3f6fa1c0b934ce98ad615aed0ed8ef0f14:orphaned",
   "packages/shared/dist/types/avatar-crop.js": "orphaned:07cb1d4bdeb674477ca3762fca56fb99b11e5b276e0d06a244c3f55821b78a35:orphaned",
   "packages/shared/dist/types/capability-runtime.js": "orphaned:3fcf453a63a4bff40ac010bf8841baf092ad3cf92ba6234474b01ba000099c36:orphaned",
   "packages/shared/dist/types/character-catalog.js": "orphaned:f1d51d4003fe30601c3a1563e5b641c3dc4f688d38b2af72a6358f9c1feeadcd:orphaned",
