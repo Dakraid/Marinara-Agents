@@ -52,12 +52,17 @@ export function startSlurpFollowUpScheduler(app: FastifyInstance, registerStop?:
         // "Pause all": no follow-ups while Slurp is paused.
         if (settings.paused) return;
         const dueThreads = await messages.getThreadsWithDueFollowUps();
-        // Nothing due: no work to skip, so no connection lookup and no warning.
-        if (!dueThreads.length) return;
+        // Nothing due and no earlier warning: skip the connection lookup.
+        if (!dueThreads.length && !warnedNoConnection) return;
         const connection = await resolveSlurpTextConnection(
           createConnectionsStorage(app.db),
           settings.modelBudget.connectionId ?? settings.generationConnectionId,
         );
+        // Nothing due: only watch for recovery so the next outage warns again.
+        if (!dueThreads.length) {
+          if (connection) warnedNoConnection = false;
+          return;
+        }
         if (!connection) {
           // Warn once per outage, not on every poll.
           if (!warnedNoConnection) {
