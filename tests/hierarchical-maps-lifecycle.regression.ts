@@ -1671,7 +1671,9 @@ async function main() {
           messageIds: [gameWorldTurn.id, gameAssistantAtWorld.id],
         },
       },
-      204,
+      // ponytail: upstream added message-trash semantics; bulk-delete now always
+      // answers 200 with {trashed, trashedCount} (hard-delete when trash is unused).
+      200,
     );
     const verifySharedWorldLifecycle = async () => {
       const sharedWorldArtwork = await createGlobalGalleryStorage(app.db).createImage({
@@ -2880,7 +2882,8 @@ async function main() {
         headers: csrfHeaders,
         payload: { messageIds: [worldTurn.message.id, assistantAtWorld.id] },
       },
-      204,
+      // ponytail: message-trash upstream semantics — always 200 + {trashed, trashedCount}.
+      200,
     );
     const rewoundSource = (await expectJson(app, {
       method: "GET",
@@ -3022,7 +3025,8 @@ async function main() {
       fromLocationId: "assess_start",
       routeLocationIds: ["assess_mid", "assess_destination"],
       commandId: `assessment:${validAssessmentFixture.assistantMessage.id}:0`,
-      definitionRevision: 0,
+      // The fixture PUT saved the definition once (0 → 1); snapshots carry the saved revision.
+      definitionRevision: 1,
     });
     const validAssessmentSnapshot = await assessmentStorage.getByCommand(
       validAssessmentFixture.chatId,
