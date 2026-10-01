@@ -8,6 +8,7 @@ Your relationship with a Creator, and a story-first Stir.
 - Details › You two shows the stage, the dates that matter and the moves, with Undo. Notifications and the main chat know about it.
 - Stir: Stir | Desk, your relationship on top, Now showing, Start a story with drama packs you can lead and end. Each persona sees only its own pages.
 - Fans leave notes on your page instead of chats. Settings › Overview › Pause all stops all of Slurp.
+- Adding many Creators at once: taken handles get the next free one instead of failing, the sign-up runs in the background with progress (close Slurp if you like), and first posts work for batches over 24.
 - Fixes: Backstage menu scrolls on short screens, reunions with you are official, a few couple and label bugs.
 
 ## 0.3.10 — 2026-09-30

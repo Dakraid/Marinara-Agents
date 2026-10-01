@@ -469,6 +469,7 @@ function SlurpNotificationsView({
     if (kind === "drama") return { icon: Clapperboard, tone: violet };
     if (kind === "couple") return { icon: SlpHeartGlyph, tone: pink };
     if (kind === "fan_note") return { icon: MessageCircle, tone: pink };
+    if (kind === "sign_up") return { icon: Star, tone: violet };
     if (kind === "tip") return { icon: Coins, tone: warm };
     if (kind === "unlock" || kind === "ppv_unlock") return { icon: SlpLockGlyph, tone: warm };
     if (kind === "subscribed") return { icon: Crown, tone: pink };

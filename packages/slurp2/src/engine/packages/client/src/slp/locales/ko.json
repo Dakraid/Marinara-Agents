@@ -3525,5 +3525,9 @@
   "ui.slurp.stir.card.start-drama.blurb": "드라마 팩을 고르세요. Slurp가 지금 어울리는 사람으로 역할을 정하거나, 이끌 사람을 직접 고를 수 있습니다. 피드, DM, 댓글에서 펼쳐집니다.",
   "ui.slurp.stir.card.end-drama.blurb": "드라마가 지금 끝납니다. 이미 올라간 것은 그대로 남습니다.",
   "ui.slurp.stir.card.set-bond.blurb": "두 사람과 서로의 관계를 고르세요. 정한 관계는 직접 끝낼 때까지 유지되고, 게시물에도 나타납니다.",
-  "ui.slurp.stir.card.end-bond.blurb": "서서히 멀어집니다. 예전 게시물은 남습니다."
+  "ui.slurp.stir.card.end-bond.blurb": "서서히 멀어집니다. 예전 게시물은 남습니다.",
+  "ui.noodle.noodlerwizard.progressSigningUp": "크리에이터 {{total}}명 중 {{done}}명 가입 중…",
+  "ui.slurp.events.category.sign_up": "가입",
+  "ui.slurp.events.group.sign_up": "가입 {{count}}건 완료",
+  "ui.slurp.events.single.sign_up": "가입 완료: 새 크리에이터 {{amount}}명. 첫 게시물이 곧 올라옵니다."
 }

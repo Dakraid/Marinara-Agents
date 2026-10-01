@@ -40,7 +40,8 @@ import {
 import { readCreatorAccountMediaPath, readCreatorAvatarMediaPath } from "../../base/identity/slp-avatar.js";
 import { NOODLER_MEDIA_PREFIX, unlinkCreatorMedia } from "../../base/media/slp-media.js";
 import { slurpUploadedMessageMediaPaths } from "../../modules/messages/slp-messaging.js";
-import { parseRecord } from "../../modules/records/slp-storage-model.js";
+import { nextAvailablePublicHandle, parseRecord } from "../../modules/records/slp-storage-model.js";
+import { isSlurpFileUniqueConstraintError } from "../../base/host/slp-file-errors.js";
 import { newId, now } from "../../../utils/id-generator.js";
 import {
   compareMinimizedCreatorSourceSnapshot,
@@ -409,11 +410,10 @@ export function createCreatorsStorage3(context: SlurpStorageContext) {
           access: { hiddenFromAccountIds: [] },
         },
       };
-      await db.insert(slpAccounts).values({
+      const row = {
         id,
         kind: publicAccount.kind,
         entityId: publicAccount.entityId,
-        handle: normalizeHandle(stageProfile.handle, publicAccount.entityId),
         displayName: stageProfile.displayName,
         bio: stageProfile.bio,
         avatarUrl: stageProfile.disclosureMode === "open" ? (avatarUrl ?? null) : null,
@@ -428,7 +428,21 @@ export function createCreatorsStorage3(context: SlurpStorageContext) {
         publicAccountId: null,
         createdAt: timestamp,
         updatedAt: timestamp,
-      });
+      };
+      // A drafted handle can already be taken (an earlier Creator, another one of the same bulk add):
+      // the Creator gets the next free one ("mia_2") instead of failing the sign-up. Two sign-ups at
+      // once can pick the same one; the loser looks again.
+      const wanted = normalizeHandle(stageProfile.handle, publicAccount.entityId);
+      for (let attempt = 0; ; attempt += 1) {
+        const taken = new Set<string>((await db.select().from(slpAccounts)).map((account) => String(account.handle)));
+        try {
+          await db.insert(slpAccounts).values({ ...row, handle: nextAvailablePublicHandle(wanted, taken) });
+          break;
+        } catch (error) {
+          if (attempt < 4 && isSlurpFileUniqueConstraintError(error, "slurp2_accounts", ["handle"])) continue;
+          throw error;
+        }
+      }
       return this.getNoodlerAccountById(id);
     },
     async updateNoodlerStageProfile(

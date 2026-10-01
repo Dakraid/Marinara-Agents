@@ -6134,5 +6134,9 @@
   "ui.slurp.stir.card.start-drama.blurb": "Pick a drama pack. Slurp casts the roles from who fits right now, or pick who leads it. It plays out on the feed, in DMs and in the comments.",
   "ui.slurp.stir.card.end-drama.blurb": "The drama stops now. What already went out stays.",
   "ui.slurp.stir.card.set-bond.blurb": "Pick two and what they are to each other. A bond you set stays until you end it, and it shows up in their posts.",
-  "ui.slurp.stir.card.end-bond.blurb": "They drift apart. Their old posts stay."
+  "ui.slurp.stir.card.end-bond.blurb": "They drift apart. Their old posts stay.",
+  "ui.noodle.noodlerwizard.progressSigningUp": "Signing up {{done}} of {{total}} Creators…",
+  "ui.slurp.events.category.sign_up": "Sign-ups",
+  "ui.slurp.events.group.sign_up": "{{count}} sign-ups finished",
+  "ui.slurp.events.single.sign_up": "Sign-up done: {{amount}} new Creators. Their first posts are on the way."
 }

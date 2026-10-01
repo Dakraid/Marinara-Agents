@@ -42,7 +42,9 @@ export type SlurpEventKind =
   /** Something happened between the player and the Creator they are with: a date, an anniversary, a crush that faded. */
   | "couple"
   /** A fan's note to the player's own page: fans write notes there, never open a chat. */
-  | "fan_note";
+  | "fan_note"
+  /** A background sign-up finished: how many Creators joined (amount). */
+  | "sign_up";
 
 /**
  * Base weights. The gaps matter more than the numbers: anything at or above `SLURP_EVENT_NOTABLE`
@@ -75,6 +77,8 @@ const BASE: Record<SlurpEventKind, number> = {
   couple: 66,
   // A person wrote to you: a line of its own, below a real message.
   fan_note: 58,
+  // The player started it and may have left: it has to be seen.
+  sign_up: 70,
 };
 
 /**

@@ -2711,5 +2711,9 @@
   "ui.slurp.stir.card.start-drama.blurb": "Wähle ein Drama-Paket. Slurp besetzt die Rollen mit denen, die gerade passen, oder du wählst, wer führt. Es spielt sich im Feed, in DMs und in den Kommentaren ab.",
   "ui.slurp.stir.card.end-drama.blurb": "Das Drama hört jetzt auf. Was schon raus ist, bleibt.",
   "ui.slurp.stir.card.set-bond.blurb": "Wähle zwei und was sie füreinander sind. Eine Verbindung, die du setzt, bleibt, bis du sie beendest, und taucht in ihren Posts auf.",
-  "ui.slurp.stir.card.end-bond.blurb": "Sie leben sich auseinander. Ihre alten Posts bleiben."
+  "ui.slurp.stir.card.end-bond.blurb": "Sie leben sich auseinander. Ihre alten Posts bleiben.",
+  "ui.noodle.noodlerwizard.progressSigningUp": "{{done}} von {{total}} Creators werden angemeldet …",
+  "ui.slurp.events.category.sign_up": "Anmeldungen",
+  "ui.slurp.events.group.sign_up": "{{count}} Anmeldungen fertig",
+  "ui.slurp.events.single.sign_up": "Anmeldung fertig: {{amount}} neue Creators. Ihre ersten Posts kommen gleich."
 }
