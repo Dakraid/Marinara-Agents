@@ -2,6 +2,9 @@
 // Connection Zod Schemas
 // ──────────────────────────────────────────────
 import { z } from "zod";
+import { DECISION_SOURCES, IMAGE_GENERATION_QUALITIES } from "../types/connection.js";
+import { DECISION_CONNECTION_TIMEOUT_BOUNDS_MS } from "../types/decision.js";
+import { MAX_IMAGE_PROMPT_INSTRUCTIONS_LENGTH } from "../constants/defaults.js";
 export const apiProviderSchema = z.enum([
     "openai",
     "openai_chatgpt",
@@ -15,10 +18,16 @@ export const apiProviderSchema = z.enum([
     "openrouter",
     "nanogpt",
     "xai",
+    "arli",
+    "zai",
     "custom",
     "image_generation",
     "video_generation",
+    "audio",
+    "decision",
 ]);
+export const audioGenerationSourceSchema = z.enum(["openai", "elevenlabs", "pockettts", "xai"]);
+export const imageGenerationQualitySchema = z.enum(IMAGE_GENERATION_QUALITIES);
 export const connectionImageCaptioningDefaultsSchema = z.object({
     imageCaptioningEnabled: z.boolean().optional(),
     imageCaptioningConnectionId: z.string().trim().min(1).nullable().optional(),
@@ -60,12 +69,42 @@ export const createConnectionSchema = z.object({
     comfyuiWorkflow: z.string().nullable().default(null),
     imageService: z.string().nullable().default(null),
     imageEndpointId: z.string().nullable().default(null),
+    imagePromptInstructions: z.string().trim().max(MAX_IMAGE_PROMPT_INSTRUCTIONS_LENGTH).nullable().default(null),
+    imageGenerationQuality: imageGenerationQualitySchema.default("auto"),
     videoGenerationSource: z.string().nullable().default(null),
     videoService: z.string().nullable().default(null),
+    audioSource: audioGenerationSourceSchema.nullable().default(null),
+    decisionSource: z.enum(DECISION_SOURCES).nullable().default(null),
+    credentialsFromConnectionId: z.string().trim().min(1).nullable().default(null),
+    maxStateTokens: z.number().int().min(1).max(30000).nullable().default(null),
+    /** Milliseconds; null keeps the default. */
+    decisionTimeoutMs: z
+        .number()
+        .int()
+        .min(DECISION_CONNECTION_TIMEOUT_BOUNDS_MS.min)
+        .max(DECISION_CONNECTION_TIMEOUT_BOUNDS_MS.max)
+        .nullable()
+        .default(null),
+    audioVoice: z.string().nullable().default(null),
+    audioSoundEffects: z.boolean().default(false),
+    audioMusic: z.boolean().default(false),
     promptPresetId: z.string().nullable().default(null),
     maxTokensOverride: z.number().int().min(1).nullable().default(null),
     maxParallelJobs: z.number().int().min(1).max(16).default(1),
+    /**
+     * Cap on outbound requests per minute to this connection (null = unlimited). Paces bursty
+     * callers — notably Professor Mari's tool-call loop — so a rate-limited proxy is not exceeded.
+     */
+    maxRequestsPerMinute: z.number().int().min(1).max(600).nullable().default(null),
     treatAsLocalEndpoint: z.boolean().default(false),
     claudeFastMode: z.boolean().default(false),
+    /**
+     * NanoGPT only: a management token with the `usage:read` scope, used solely to
+     * read subscription quotas for the usage widget. It cannot authenticate
+     * inference endpoints, so it is never used in place of the API key.
+     */
+    managementToken: z.string().default(""),
+    /** NanoGPT only: show the subscription usage widget in the connection editor. */
+    showUsageWidget: z.boolean().default(false),
 });
 //# sourceMappingURL=connection.schema.js.map

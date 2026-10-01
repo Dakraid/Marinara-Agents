@@ -1,3 +1,4 @@
+import { estimateTextTokens } from "./token-estimator.js";
 const VALID_KINDS = new Set(["rolling"]);
 const VALID_ORIGINS = new Set(["manual", "automated", "legacy"]);
 const VALID_SOURCES = new Set(["last", "range", "agent"]);
@@ -37,7 +38,7 @@ export function estimateChatSummaryTokens(content) {
     const normalized = content.trim();
     if (!normalized)
         return 0;
-    return Math.max(1, Math.ceil(normalized.length / 4));
+    return estimateTextTokens(normalized);
 }
 /** Generate a concise default title from an entry's origin and source metadata. */
 export function generateChatSummaryEntryTitle(entry) {
@@ -132,44 +133,19 @@ export function createChatSummaryEntry(input, options = {}) {
     return entry;
 }
 export function sortChatSummaryEntries(entries) {
-    return entries
-        .map((entry, index) => ({ entry, index }))
-        .sort((a, b) => {
-        const aRange = a.entry.rangeStartIndex ?? Number.MAX_SAFE_INTEGER;
-        const bRange = b.entry.rangeStartIndex ?? Number.MAX_SAFE_INTEGER;
-        if (aRange !== bRange)
-            return aRange - bRange;
-        const created = Date.parse(a.entry.createdAt) - Date.parse(b.entry.createdAt);
-        if (created !== 0)
-            return created;
-        return a.index - b.index;
-    })
-        .map(({ entry }) => entry);
+    // Array order is persisted user intent. New summaries append to this order,
+    // while combine/reorder operations deliberately place entries within it.
+    return [...entries];
 }
 function pruneAutomatedChatSummaryEntries(entries) {
-    let prunableAutomatedCount = 0;
-    for (const entry of entries) {
-        if (entry.origin === "automated" &&
-            entry.enabled &&
-            !(entry.hiddenMessageIds && entry.hiddenMessageIds.length > 0)) {
-            prunableAutomatedCount += 1;
-        }
-    }
-    let removable = prunableAutomatedCount - MAX_AUTOMATED_CHAT_SUMMARY_ENTRIES;
-    if (removable <= 0)
+    const prunable = entries
+        .filter((entry) => entry.origin === "automated" && entry.enabled && !(entry.hiddenMessageIds && entry.hiddenMessageIds.length > 0))
+        .sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt));
+    const removeCount = prunable.length - MAX_AUTOMATED_CHAT_SUMMARY_ENTRIES;
+    if (removeCount <= 0)
         return entries;
-    const pruned = [];
-    for (const entry of entries) {
-        if (removable > 0 &&
-            entry.origin === "automated" &&
-            entry.enabled &&
-            !(entry.hiddenMessageIds && entry.hiddenMessageIds.length > 0)) {
-            removable -= 1;
-            continue;
-        }
-        pruned.push(entry);
-    }
-    return pruned;
+    const removedIds = new Set(prunable.slice(0, removeCount).map((entry) => entry.id));
+    return entries.filter((entry) => !removedIds.has(entry.id));
 }
 export function normalizeChatSummaryEntries(rawEntries, options = {}) {
     const seen = new Set();
@@ -202,6 +178,20 @@ export function compileChatSummaryEntries(entries) {
     if (!compiled)
         return null;
     return compiled;
+}
+/** Message IDs that are no longer covered by an enabled summary after deleting entries. */
+export function getChatSummaryMessageIdsToUnhideAfterDelete(entries, deletedEntryIds) {
+    const deletedCoverage = new Set();
+    const retainedCoverage = new Set();
+    for (const entry of entries) {
+        const coverage = entry.hiddenMessageIds ?? entry.messageIds ?? [];
+        const target = deletedEntryIds.has(entry.id) ? deletedCoverage : entry.enabled ? retainedCoverage : null;
+        if (!target)
+            continue;
+        for (const messageId of coverage)
+            target.add(messageId);
+    }
+    return [...deletedCoverage].filter((messageId) => !retainedCoverage.has(messageId));
 }
 export function combineChatSummaryEntryHistory(entries, sourceEntryIds, combinedEntry, now) {
     const firstIndex = entries.findIndex((entry) => sourceEntryIds.has(entry.id));

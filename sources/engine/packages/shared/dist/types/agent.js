@@ -1,7 +1,7 @@
 // ──────────────────────────────────────────────
 // Agent System Types
 // ──────────────────────────────────────────────
-import { BUILT_IN_AGENT_MANIFESTS, replaceBuiltInAgentManifestRegistry, } from "../features/agents/agent-registry.js";
+import { BUILT_IN_AGENT_MANIFESTS, replaceBuiltInAgentManifestRegistry } from "../features/agents/agent-registry.js";
 const AGENT_PHASE_VALUES = new Set(["pre_generation", "parallel", "post_processing"]);
 export function normalizeAgentPhaseValue(value, fallback = "post_processing") {
     return typeof value === "string" && AGENT_PHASE_VALUES.has(value) ? value : fallback;
@@ -12,6 +12,41 @@ export function normalizeAgentPhaseForType(_agentType, configuredPhase, fallback
     // that valid phase must survive storage, UI hydration, and runtime resolution.
     return normalizeAgentPhaseValue(configuredPhase, fallback);
 }
+/** Ordered vocabulary of result types that agents can produce. */
+export const AGENT_RESULT_TYPE_VALUES = [
+    "game_state_update",
+    "text_rewrite",
+    "sprite_change",
+    "echo_message",
+    "quest_update",
+    "image_prompt",
+    "context_injection",
+    "continuity_check",
+    "director_event",
+    "lorebook_update",
+    "character_card_update",
+    "character_card_create",
+    "background_change",
+    "character_tracker_update",
+    "persona_stats_update",
+    "custom_tracker_update",
+    "inventory_tracker_update",
+    "spotify_control",
+    "youtube_control",
+    "local_music_control",
+    "haptic_command",
+    "cyoa_choices",
+    "secret_plot",
+    "game_master_narration",
+    "party_action",
+    "game_map_update",
+    "game_state_transition",
+    "prompt_patch",
+    "character_activity_update",
+    "frontend_theme_update",
+    "about_me_update",
+    "memory_nag",
+];
 export const DEFAULT_AGENT_AUTHOR = "Pasta Devs";
 export const DEFAULT_AGENT_PROMPT_TEMPLATE_ID = "default";
 function isRecord(value) {
@@ -169,6 +204,7 @@ export const BUILT_IN_AGENT_IDS = {
     CYOA: "cyoa",
 };
 export const RETIRED_BUILT_IN_AGENT_IDS = [
+    "about-me-keeper",
     "prompt-reviewer",
     "response-orchestrator",
     "schedule-planner",
@@ -199,33 +235,113 @@ function toBuiltInAgentMeta(agent) {
     };
 }
 export const BUILT_IN_AGENTS = [];
-export const BUILT_IN_AGENT_RUN_INTERVAL_DEFAULTS = {};
 export const DEFAULT_AGENT_CONTEXT_SIZE = 5;
 export const DEFAULT_AGENT_MAX_TOKENS = 4096;
 export const MIN_AGENT_MAX_TOKENS = 128;
 export const MAX_AGENT_MAX_TOKENS = 32768;
 export const CUSTOM_AGENT_CAPABILITY_IDS = [
+    "create_characters",
     "create_lorebooks",
     "edit_lorebooks",
     "edit_messages",
     "edit_trackers",
     "change_frontend_styling",
+    "change_backgrounds",
+    "change_sprites",
+    "control_media",
+    "control_haptics",
+    "edit_about_me",
     "trigger_image_generation",
     "access_vectors",
     "edit_main_prompt",
+    "manage_chat_characters",
 ];
+export const CUSTOM_AGENT_CONTEXT_SOURCE_IDS = [
+    "chatHistory",
+    "characters",
+    "persona",
+    "activatedLorebookEntries",
+    "chatSummary",
+    "authorNotes",
+    "trackerData",
+    "recalledMemories",
+    "previousOutput",
+];
+export const DEFAULT_CUSTOM_AGENT_CONTEXT_SOURCES = {
+    chatHistory: true,
+    characters: false,
+    persona: false,
+    activatedLorebookEntries: false,
+    chatSummary: false,
+    authorNotes: false,
+    trackerData: false,
+    recalledMemories: false,
+    previousOutput: false,
+};
+export function normalizeCustomAgentContextSources(settings) {
+    const stored = parseAgentSettingsRecord(settings).contextSources;
+    if (!isRecord(stored))
+        return { ...DEFAULT_CUSTOM_AGENT_CONTEXT_SOURCES };
+    const normalized = { ...DEFAULT_CUSTOM_AGENT_CONTEXT_SOURCES };
+    for (const source of CUSTOM_AGENT_CONTEXT_SOURCE_IDS) {
+        if (typeof stored[source] === "boolean")
+            normalized[source] = stored[source];
+    }
+    return normalized;
+}
+/** Built-in agents retain their existing context unless the user explicitly configures sources. */
+export function getAgentContextSources(config) {
+    const settings = parseAgentSettingsRecord(config.settings);
+    if (config.isCustomAgent || isRecord(settings.contextSources))
+        return normalizeCustomAgentContextSources(settings);
+    return {
+        chatHistory: true,
+        characters: true,
+        persona: true,
+        activatedLorebookEntries: true,
+        chatSummary: true,
+        authorNotes: true,
+        trackerData: true,
+        recalledMemories: true,
+        previousOutput: false,
+    };
+}
+export const CUSTOM_AGENT_IMPORT_SOURCE_SETTING = "customAgentImportSource";
+export const CUSTOM_AGENT_PERMISSIONS_EXPLICIT_SETTING = "customAgentPermissionsExplicit";
+export function createImportedAgentType(sourceType) {
+    const slug = sourceType
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "") || "agent";
+    const suffix = globalThis.crypto && "randomUUID" in globalThis.crypto
+        ? globalThis.crypto.randomUUID()
+        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    return `custom-import-${slug}-${suffix}`;
+}
 const CUSTOM_AGENT_CAPABILITY_SET = new Set(CUSTOM_AGENT_CAPABILITY_IDS);
 const CUSTOM_AGENT_RESULT_CAPABILITY = {
+    character_card_create: "create_characters",
     text_rewrite: "edit_messages",
     lorebook_update: "edit_lorebooks",
     character_tracker_update: "edit_trackers",
     persona_stats_update: "edit_trackers",
     custom_tracker_update: "edit_trackers",
+    inventory_tracker_update: "edit_trackers",
     quest_update: "edit_trackers",
     game_state_update: "edit_trackers",
     image_prompt: "trigger_image_generation",
     prompt_patch: "edit_main_prompt",
+    character_activity_update: "manage_chat_characters",
     frontend_theme_update: "change_frontend_styling",
+    background_change: "change_backgrounds",
+    sprite_change: "change_sprites",
+    spotify_control: "control_media",
+    youtube_control: "control_media",
+    local_music_control: "control_media",
+    haptic_command: "control_haptics",
+    about_me_update: "edit_about_me",
+    cyoa_choices: "edit_messages",
+    echo_message: "edit_messages",
 };
 function normalizeCapabilityMap(value) {
     if (!value || typeof value !== "object" || Array.isArray(value))
@@ -243,10 +359,13 @@ export function normalizeCustomAgentCapabilities(settings) {
     const enabledToolsValue = settings?.enabledTools;
     const enabledTools = Array.isArray(enabledToolsValue) ? enabledToolsValue : [];
     const resultType = typeof settings?.resultType === "string" ? settings.resultType : null;
-    if (settings?.lorebookWriteEnabled === true || enabledTools.includes("save_lorebook_entry")) {
+    if (settings?.[CUSTOM_AGENT_PERMISSIONS_EXPLICIT_SETTING] !== true &&
+        (settings?.lorebookWriteEnabled === true || enabledTools.includes("save_lorebook_entry"))) {
         capabilities.edit_lorebooks = true;
     }
-    if (resultType && Object.prototype.hasOwnProperty.call(CUSTOM_AGENT_RESULT_CAPABILITY, resultType)) {
+    if (settings?.[CUSTOM_AGENT_PERMISSIONS_EXPLICIT_SETTING] !== true &&
+        resultType &&
+        Object.prototype.hasOwnProperty.call(CUSTOM_AGENT_RESULT_CAPABILITY, resultType)) {
         const capability = CUSTOM_AGENT_RESULT_CAPABILITY[resultType];
         if (capability)
             capabilities[capability] = true;
@@ -258,6 +377,19 @@ export function customAgentHasCapability(settings, capability) {
 }
 export function getCustomAgentResultCapability(resultType) {
     return CUSTOM_AGENT_RESULT_CAPABILITY[resultType] ?? null;
+}
+export function isExternallyImportedAgent(type, settings) {
+    const parsed = parseAgentSettingsRecord(settings);
+    const source = parsed[CUSTOM_AGENT_IMPORT_SOURCE_SETTING];
+    if (source === "file" || source === "folder" || source === "repository")
+        return true;
+    if (parsed.customAgentRepositorySource && typeof parsed.customAgentRepositorySource === "object")
+        return true;
+    // Repository-backed Agents predate explicit provenance and retain a stable
+    // repo-* identity. File/folder imports always persist provenance now, so a
+    // locally authored Agent whose slug happens to begin with "import" must not
+    // be disabled as an external import.
+    return typeof type === "string" && type.startsWith("repo-");
 }
 export function getDefaultBuiltInAgentSettings(agentType) {
     const builtIn = BUILT_IN_AGENT_MANIFESTS.find((agent) => agent.id === agentType);
@@ -282,38 +414,70 @@ export function getDefaultBuiltInAgentSettings(agentType) {
 const OBSOLETE_BUILT_IN_PROMPT_TEMPLATE_IDS = {
     illustrator: new Set(["illustration", "sketch"]),
 };
-export function mergeBuiltInAgentSettings(agentType, settings) {
-    const parsed = parseAgentSettingsRecord(settings);
-    const builtIn = BUILT_IN_AGENT_MANIFESTS.find((agent) => agent.id === agentType);
-    if (!builtIn)
-        return parsed;
-    const defaults = getDefaultBuiltInAgentSettings(agentType);
-    const merged = {
-        ...defaults,
-        ...parsed,
-    };
-    const defaultPromptTemplates = normalizeAgentPromptTemplateOptions(defaults.promptTemplates);
-    const savedPromptTemplates = normalizeAgentPromptTemplateOptions(parsed.promptTemplates);
-    const obsoleteIds = OBSOLETE_BUILT_IN_PROMPT_TEMPLATE_IDS[agentType] ?? new Set();
-    const savedPromptTemplatesById = new Map(savedPromptTemplates.filter((entry) => !obsoleteIds.has(entry.id)).map((entry) => [entry.id, entry]));
+const ADDITIONAL_BUILT_IN_PROMPT_TEMPLATE_COLLECTION_KEYS = {
+    storyboard: [
+        "illustrationTemplates",
+        "videoTemplates",
+        "animationRefinementTemplates",
+        "roleplayEpisodeTemplates",
+        "roleplayStyleTemplates",
+        "roleplayAnimationTemplates",
+        "roleplayOutputTemplates",
+    ],
+};
+const RETIRED_BUILT_IN_AGENT_TOOLS = {
+    expression: new Set(["set_expression"]),
+};
+export function normalizeBuiltInAgentEnabledTools(agentType, value) {
+    if (!Array.isArray(value))
+        return null;
+    const enabledTools = value.filter((tool) => typeof tool === "string");
+    const retiredTools = RETIRED_BUILT_IN_AGENT_TOOLS[agentType];
+    return retiredTools ? enabledTools.filter((tool) => !retiredTools.has(tool)) : enabledTools;
+}
+function mergeBuiltInPromptTemplateCollection(defaultValue, savedValue, obsoleteIds = new Set()) {
+    const defaultOptions = normalizeAgentPromptTemplateOptions(defaultValue);
+    const savedOptions = normalizeAgentPromptTemplateOptions(savedValue);
+    const savedOptionsById = new Map(savedOptions.filter((entry) => !obsoleteIds.has(entry.id)).map((entry) => [entry.id, entry]));
     const usedIds = new Set();
-    const mergedDefaultPromptTemplates = defaultPromptTemplates.map((defaultOption) => {
+    const mergedDefaultOptions = defaultOptions.map((defaultOption) => {
         usedIds.add(defaultOption.id);
-        const savedOption = savedPromptTemplatesById.get(defaultOption.id);
+        const savedOption = savedOptionsById.get(defaultOption.id);
         return savedOption ? { ...defaultOption, ...savedOption } : defaultOption;
     });
-    const customPromptTemplates = savedPromptTemplates.filter((entry) => {
+    const customOptions = savedOptions.filter((entry) => {
         if (obsoleteIds.has(entry.id) || usedIds.has(entry.id))
             return false;
         usedIds.add(entry.id);
         return true;
     });
-    const promptTemplates = [...mergedDefaultPromptTemplates, ...customPromptTemplates];
-    if (promptTemplates.length) {
-        merged.promptTemplates = promptTemplates;
-    }
-    else {
-        delete merged.promptTemplates;
+    return [...mergedDefaultOptions, ...customOptions];
+}
+export function mergeBuiltInAgentSettings(agentType, settings) {
+    const parsed = parseAgentSettingsRecord(settings);
+    const normalizedEnabledTools = normalizeBuiltInAgentEnabledTools(agentType, parsed.enabledTools);
+    const normalizedSettings = normalizedEnabledTools === null ? parsed : { ...parsed, enabledTools: normalizedEnabledTools };
+    const builtIn = BUILT_IN_AGENT_MANIFESTS.find((agent) => agent.id === agentType);
+    if (!builtIn)
+        return normalizedSettings;
+    const defaults = getDefaultBuiltInAgentSettings(agentType);
+    const merged = {
+        ...defaults,
+        ...normalizedSettings,
+    };
+    const promptTemplateCollectionKeys = [
+        "promptTemplates",
+        ...(ADDITIONAL_BUILT_IN_PROMPT_TEMPLATE_COLLECTION_KEYS[agentType] ?? []),
+    ];
+    for (const key of promptTemplateCollectionKeys) {
+        const obsoleteIds = key === "promptTemplates" ? (OBSOLETE_BUILT_IN_PROMPT_TEMPLATE_IDS[agentType] ?? new Set()) : undefined;
+        const promptTemplates = mergeBuiltInPromptTemplateCollection(defaults[key], normalizedSettings[key], obsoleteIds);
+        if (promptTemplates.length) {
+            merged[key] = promptTemplates;
+        }
+        else {
+            delete merged[key];
+        }
     }
     return merged;
 }
@@ -322,14 +486,10 @@ export const DEFAULT_AGENT_TOOLS = {};
 export function replaceBuiltInAgentDefinitions(manifests) {
     replaceBuiltInAgentManifestRegistry(manifests);
     BUILT_IN_AGENTS.splice(0, BUILT_IN_AGENTS.length, ...manifests.map(toBuiltInAgentMeta));
-    for (const key of Object.keys(BUILT_IN_AGENT_RUN_INTERVAL_DEFAULTS))
-        delete BUILT_IN_AGENT_RUN_INTERVAL_DEFAULTS[key];
     for (const key of Object.keys(DEFAULT_AGENT_TOOLS))
         delete DEFAULT_AGENT_TOOLS[key];
     for (const agent of manifests) {
-        if (agent.runInterval !== undefined)
-            BUILT_IN_AGENT_RUN_INTERVAL_DEFAULTS[agent.id] = agent.runInterval;
-        DEFAULT_AGENT_TOOLS[agent.id] = [...(agent.defaultTools ?? [])];
+        DEFAULT_AGENT_TOOLS[agent.id] = normalizeBuiltInAgentEnabledTools(agent.id, agent.defaultTools ?? []) ?? [];
     }
 }
 /**

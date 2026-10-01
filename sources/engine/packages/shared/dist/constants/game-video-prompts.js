@@ -88,8 +88,8 @@ export const GAME_VIDEO_BUILT_IN_PROMPT_TEMPLATES = [
     },
     {
         id: LTX_DIRECTOR_GAME_VIDEO_PROMPT_TEMPLATE_ID,
-        name: "LTX Director Video",
-        description: "Passes the Storyboard planner's complete image-to-video direction through the universal video prompt contract.",
+        name: "Narration Passthrough",
+        description: "Passes the Storyboard's current motion direction through the universal video prompt contract without another planning call.",
         promptTemplate: LTX_DIRECTOR_GAME_VIDEO_PROMPT_TEMPLATE,
     },
 ];

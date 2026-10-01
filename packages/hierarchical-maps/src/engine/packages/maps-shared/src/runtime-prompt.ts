@@ -105,6 +105,8 @@ type ResolvedOwnerSpatialProjectionWithTemplate = ResolvedOwnerSpatialProjection
   turnPromptTemplate?: string;
 };
 
+type PriorArrivalTravel = ResolvedSpatialTravel & { priorArrival?: true };
+
 export function formatOwnerSpatialPrompt(projection: ResolvedOwnerSpatialProjection, template?: string): string {
   const breadcrumb = escapeXmlText(formatOwnerSpatialBreadcrumb(projection));
   const description = projection.description
@@ -132,20 +134,28 @@ export function formatOwnerSpatialPrompt(projection: ResolvedOwnerSpatialProject
     ...knownLocationLines,
     "",
   ].join("\n");
+  const priorArrival = (projection.travel as PriorArrivalTravel | undefined)?.priorArrival === true;
   const travelFacts =
     projection.travel && projection.travelSummary
-      ? [
-          `<movement_this_turn mode="${projection.travel.mode}">`,
-          `From: ${escapeXmlText(projection.travelSummary.fromLocationName)}`,
-          `Accepted destination: ${escapeXmlText(projection.travelSummary.acceptedLocationName)}`,
-          `Target: ${escapeXmlText(projection.travelSummary.targetLocationName)}`,
-          `Validated route: ${projection.travelSummary.routeLocationNames.map(escapeXmlText).join(" > ")}`,
-          `Remaining route: ${projection.travelSummary.remainingLocationNames.length ? projection.travelSummary.remainingLocationNames.map(escapeXmlText).join(" > ") : "None"}`,
-          `Complete: ${projection.travel.complete ? "yes" : "no"}`,
-          "Movement is already canonical for this turn. Do not emit another location change or topology mutation.",
-          "</movement_this_turn>",
-          "",
-        ].join("\n")
+      ? priorArrival
+        ? [
+            "<prior_arrival>",
+            `Arrived from ${escapeXmlText(projection.travelSummary.fromLocationName)} via ${projection.travelSummary.routeLocationNames.map(escapeXmlText).join(" > ")} last turn.`,
+            "</prior_arrival>",
+            "",
+          ].join("\n")
+        : [
+            `<movement_this_turn mode="${projection.travel.mode}">`,
+            `From: ${escapeXmlText(projection.travelSummary.fromLocationName)}`,
+            `Accepted destination: ${escapeXmlText(projection.travelSummary.acceptedLocationName)}`,
+            `Target: ${escapeXmlText(projection.travelSummary.targetLocationName)}`,
+            `Validated route: ${projection.travelSummary.routeLocationNames.map(escapeXmlText).join(" > ")}`,
+            `Remaining route: ${projection.travelSummary.remainingLocationNames.length ? projection.travelSummary.remainingLocationNames.map(escapeXmlText).join(" > ") : "None"}`,
+            `Complete: ${projection.travel.complete ? "yes" : "no"}`,
+            "Movement is already canonical for this turn. Do not emit another location change or topology mutation.",
+            "</movement_this_turn>",
+            "",
+          ].join("\n")
       : "";
   const userLedTransitionInstruction =
     'Use the latest user message as the authority for map changes. Treat direct present-tense or imperative movement by the focal party, such as “We go to the Kitchen” or “We follow her into the outdoor section,” as establishing arrival for this turn. When that user-led arrival matches a known map location, append [spatial_move: destination_id="exact_id"] as the final line, even when it was reached through a newly revealed or secret route; the application records that direct route. When the user explicitly establishes discovery or arrival at a significant named, durable, revisitable place that has no known match, such as “We discover a hidden room,” append [spatial_discover: name="Place Name" relation="enter" description="Short orientation"] as the final line. For a newly discovered neighboring or travel-connected place, use relation="link" and include direction="outgoing", direction="incoming", or direction="both" relative to the current location; a link discovery without direction is invalid. A known but unreachable location is not discovery and must not create a link. The visible response may narrate the consequence, but your own narration alone never authorizes either command. Do not emit either command for future intentions, failed or unfinished travel, mentions, NPC-only movement, imagined places, temporary camps, hallways, vehicles, or other transient scene details. These commands are hidden from the user and validated by the application.';

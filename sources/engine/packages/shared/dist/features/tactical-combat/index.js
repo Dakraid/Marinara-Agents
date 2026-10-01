@@ -5,10 +5,11 @@
 // TacticalCombatUI (Phase C). Internal helpers used only by ai.ts stay in
 // engine.ts and are intentionally not re-exported here.
 export * from "./types.js";
-export { createTacticalCombat, getUnit, getMovementRange, getTargetsInRange, forecastAttack, applyAction, isTerminal, buildTacticalSummary, } from "./engine.js";
-export { runEnemyPhase } from "./ai.js";
-export { TERRAIN_DATA } from "./types.js";
+export { createTacticalCombat, getUnit, getMovementRange, getTargetsInRange, forecastAttack, forecastFrom as forecastTacticalAttack, applyAction, isTerminal, buildTacticalSummary, validateTacticalUnitAction, normalizeEnvironment as normalizeTacticalEnvironment, normalizeFormation as normalizeTacticalFormation, performUnitAction as performTacticalUnitAction, tickRound as tickTacticalRound, } from "./engine.js";
+export { decideTacticalAction, runEnemyPhase, applyTacticalTurn } from "./ai.js";
+export { summarizeTacticalBattlefield } from "./battlefield-summary.js";
 export { deriveMovement, elementMultiplier, DIFFICULTY_DAMAGE_MULT } from "./math.js";
 export { CLASS_PROFILES, deriveClass, normalizeClass } from "./classes.js";
-export { gridDimensions } from "./grid-gen.js";
+export { TACTICAL_BATTLEFIELD_GENERATOR_VERSION, generateTacticalBattlefield, gridDimensions, placeSpawns, validateTacticalBattlefieldBrief, } from "./grid-gen.js";
+export { deterministicRng } from "./rng.js";
 //# sourceMappingURL=index.js.map

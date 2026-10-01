@@ -31,8 +31,7 @@ export function compileImagePrompt(input) {
     const providerVisiblePrompt = [initial.prompt, input.dedupeAgainstPrompt].filter(Boolean).join("\n");
     const protectGeneratedStyle = Boolean(generatedStyle) &&
         !promptContainsPositiveNormalizedValue(providerVisiblePrompt, generatedStyle, fragmentMode);
-    const protectUserPositive = Boolean(userPositive) &&
-        !promptContainsPositiveNormalizedValue(providerVisiblePrompt, userPositive, fragmentMode);
+    const protectUserPositive = Boolean(userPositive) && !promptContainsPositiveNormalizedValue(providerVisiblePrompt, userPositive, fragmentMode);
     if (!protectGeneratedStyle && !protectUserPositive)
         return initial;
     return compileImagePromptPass(input, protectGeneratedStyle, protectUserPositive);
@@ -45,7 +44,7 @@ function compileImagePromptPass(input, protectGeneratedStyle, protectUserPositiv
     const movedNegativeFragments = [];
     const generatedStyle = input.generatedStyle?.trim() ?? "";
     const userPositive = input.userPositive?.trim() ?? "";
-    const { preserveGeneratedPrompt, compactPrompt, fragmentMode, } = resolveImagePromptCompilationMode(input, profile);
+    const { preserveGeneratedPrompt, compactPrompt, fragmentMode } = resolveImagePromptCompilationMode(input, profile);
     const duplicateComparisonPrompt = [input.prompt, input.dedupeAgainstPrompt].filter(Boolean).join("\n");
     const generatedStylePart = protectGeneratedStyle
         ? generatedStyle
@@ -158,8 +157,8 @@ function resolveImagePromptCompilationMode(input, profile) {
     const applyPromptModeToSourcePrompt = input.applyPromptModeToSourcePrompt === true;
     const preserveGeneratedPrompt = !applyPromptModeToSourcePrompt &&
         (input.kind === "illustration" || input.kind === "background" || input.kind === "selfie");
-    const compactTags = !applyPromptModeToSourcePrompt && !preserveGeneratedPrompt && taggedPromptMode;
-    const compactVisualPrompt = profile.baseStyle !== "z_image_turbo" && ["avatar", "portrait", "sprite"].includes(input.kind);
+    const compactTags = !applyPromptModeToSourcePrompt && !preserveGeneratedPrompt && taggedPromptMode && input.kind !== "avatar";
+    const compactVisualPrompt = promptMode !== "natural" && profile.baseStyle !== "z_image_turbo" && ["portrait", "sprite"].includes(input.kind);
     const compactPrompt = compactTags || compactVisualPrompt;
     return {
         preserveGeneratedPrompt,
@@ -356,9 +355,7 @@ function splitStandaloneNegativeInstruction(value) {
         return [clean];
     const body = match[1].trim();
     const sentenceBoundary = findTopLevelSentenceBoundary(body);
-    const listText = (sentenceBoundary >= 0 ? body.slice(0, sentenceBoundary) : body)
-        .replace(/[.!?]+$/g, "")
-        .trim();
+    const listText = (sentenceBoundary >= 0 ? body.slice(0, sentenceBoundary) : body).replace(/[.!?]+$/g, "").trim();
     const trailingText = sentenceBoundary >= 0 ? body.slice(sentenceBoundary + 1).trim() : "";
     const negativeItems = splitPromptListItems(listText)
         .map((item) => item.replace(/^(?:and|or)\s+/i, "").trim())

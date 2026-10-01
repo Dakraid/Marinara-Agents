@@ -1,6 +1,12 @@
 // ──────────────────────────────────────────────
 // Prompt System Types
 // ──────────────────────────────────────────────
+export const MARINARA_UNIVERSAL_PRESET_NAME = "Marinara's Universal Preset";
+export const MARINARA_UNIVERSAL_PRESET_AUTHOR = "Marinara";
+export const MARINARA_UNIVERSAL_PRESET_SYSTEM_KEY = "marinara-universal-preset";
+export function isStockMarinaraUniversalPreset(preset) {
+    return preset.systemKey === MARINARA_UNIVERSAL_PRESET_SYSTEM_KEY;
+}
 export const GENERATION_PARAMETER_SEND_KEYS = [
     "temperature",
     "maxTokens",

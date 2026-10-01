@@ -8,7 +8,7 @@
 // a loadout is starting to get heavy, not to predict billing.
 //
 // Two axes:
-//   - instructionTokens: sum of agents' prompt-template tokens (chars/4).
+//   - instructionTokens: sum of agents' prompt-template token estimates.
 //     Does NOT include the chat context (recent messages, character cards,
 //     persona, lorebook, summary) that each call also carries — real per-turn
 //     usage will be substantially higher. UI copy should make that clear.
@@ -21,6 +21,7 @@
 //     the tool-extraction nuance (tool-using agents technically run alone,
 //     adding 1 call each beyond the batch) — fine for a soft signal.
 // ──────────────────────────────────────────────
+import { estimateTextTokens } from "./token-estimator.js";
 // v1 thresholds, tunable via user feedback:
 //   - 4 extra calls roughly doubles a typical 2-call baseline.
 //   - 4000 instruction tokens fills ~50% of an 8k local-model context.
@@ -39,17 +40,11 @@ const BUILT_IN_REWRITE_AGENT_TYPES = new Set(["prose-guardian", "continuity", "h
 function getAgentCostLane(agent) {
     return agent.resultType === "text_rewrite" || BUILT_IN_REWRITE_AGENT_TYPES.has(agent.type) ? "rewrite" : "standard";
 }
-// TODO: replace chars/4 with a real tokenizer when the project picks one up.
-// Matches the existing `estimateTokens` helpers scattered across the client
-// (PeekPromptModal, LorebookFormFields, etc.).
-function approximateTokens(text) {
-    return Math.ceil(text.length / 4);
-}
 export function estimateAgentLoadCost(enabled, defaultConnectionId) {
     let instructionTokens = 0;
     const callKeys = new Set();
     for (const a of enabled) {
-        instructionTokens += approximateTokens(a.promptTemplate);
+        instructionTokens += estimateTextTokens(a.promptTemplate);
         if (NO_EXTRA_CALL_AGENT_TYPES.has(a.type))
             continue;
         const connection = a.connectionId ?? defaultConnectionId ?? "default";

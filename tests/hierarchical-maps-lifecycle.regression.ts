@@ -195,10 +195,55 @@ let catalogVersion = "1.1.7";
 let catalogOnline = true;
 let generationProviderRequestCount = 0;
 let generationProviderFailure = false;
+let assessmentProviderFailure = false;
+let assessmentProviderRequestCount = 0;
 const generationProviderRequests: Array<{
   messages?: Array<{ role?: string; content?: unknown }>;
 }> = [];
 let mapExpansionExistingTargetId: string | null = null;
+
+function assessmentResponseForPrompt(prompt: string): string | null {
+  if (prompt.includes("Repair the supplied World Map JSON") && prompt.includes("ASSESS_MALFORMED")) {
+    return '{"assessmentCase":"ASSESS_MALFORMED"';
+  }
+  if (!prompt.includes("World Maps movement assessment")) return null;
+  assessmentProviderRequestCount += 1;
+  if (prompt.includes("ASSESS_VALID_PATH")) {
+    return JSON.stringify({
+      changed: true,
+      destinationId: "assess_destination",
+      viaLocationIds: ["assess_mid"],
+      rationale: "The party completed the narrated route.",
+    });
+  }
+  if (prompt.includes("ASSESS_INVALID_PATH")) {
+    return JSON.stringify({
+      changed: true,
+      destinationId: "assess_destination",
+      viaLocationIds: ["assess_isolated"],
+      rationale: "The supplied route is invalid and must fall back to BFS.",
+    });
+  }
+  if (prompt.includes("ASSESS_UNREACHABLE")) {
+    return JSON.stringify({ changed: true, destinationId: "assess_isolated", viaLocationIds: [] });
+  }
+  if (prompt.includes("ASSESS_DISCOVER")) {
+    return JSON.stringify({
+      changed: true,
+      discover: {
+        name: "Moonlit Observatory",
+        relation: "enter",
+        description: "A durable observatory reached after the climb.",
+      },
+      rationale: "The party arrived at a durable new place.",
+    });
+  }
+  if (prompt.includes("ASSESS_MALFORMED")) return '{"assessmentCase":"ASSESS_MALFORMED"';
+  if (prompt.includes("ASSESS_REGENERATE")) {
+    return JSON.stringify({ changed: true, destinationId: "assess_mid", viaLocationIds: [] });
+  }
+  return JSON.stringify({ changed: false });
+}
 
 const candidateFixture = fixtures.get("1.1.7");
 assert.ok(candidateFixture);
@@ -305,136 +350,151 @@ globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) =>
       });
     }
     const providerPrompt = capturedProviderPrompt(body);
-    const responseContent = providerPrompt.includes("You design practical hierarchical world maps")
-      ? JSON.stringify({
-          worldName: "Route Test World",
-          hierarchyName: "Harbor city",
-          locationTypes: [
-            { key: "world", label: "World", baseKind: "region" },
-            { key: "city", label: "City Quarter", baseKind: "place" },
-            { key: "type_city", label: "Typed City", baseKind: "settlement" },
-          ],
-          startingLocationKey: "route_world",
-          locations: [
-            {
-              key: "route_world",
-              parentKey: null,
-              name: "Route Test World",
-              typeKey: "world",
-              kind: "region",
-              description: "A compact world used to prove generated routes.",
-              modelMemory: "The route graph must stay sparse and connected.",
-              awarenessSummary: "Old Town, Market Square, and Harbor share practical roads.",
-              icon: "🗺️",
-              sourceKeys: [],
-              origin: "added_by_ai",
-              childPresentation: "map",
-              placement: null,
-              layerOrder: null,
-              links: [],
-            },
-            {
-              key: "old_town",
-              parentKey: "route_world",
-              name: "Old Town",
-              typeKey: "type_city",
-              kind: "place",
-              description: "A walled neighborhood west of the market.",
-              modelMemory: "The market road is the ordinary eastern exit.",
-              awarenessSummary: "Market Street leads east.",
-              icon: "🏘️",
-              sourceKeys: [],
-              origin: "added_by_ai",
-              childPresentation: "list",
-              placement: { x: 20, y: 50 },
-              layerOrder: null,
-              links: [{ targetKey: "market_square", label: "Market Street", bidirectional: true, state: "available" }],
-            },
-            {
-              key: "market_square",
-              parentKey: "route_world",
-              name: "Market Square",
-              typeKey: "type_city",
-              kind: "place",
-              description: "The city market between Old Town and the harbor road.",
-              modelMemory: "Merchants know every public route through the city.",
-              awarenessSummary: "Old Town lies west and the harbor lies east.",
-              icon: "🏪",
-              sourceKeys: [],
-              origin: "added_by_ai",
-              childPresentation: "list",
-              placement: { x: 50, y: 50 },
-              layerOrder: null,
-              links: [],
-            },
-            {
-              key: "harbor",
-              parentKey: "route_world",
-              name: "Harbor",
-              typeKey: "type_city",
-              kind: "place",
-              description: "A working harbor east of the market.",
-              modelMemory: "A canal bridge can support future expansion.",
-              awarenessSummary: "The market road returns west.",
-              icon: "⚓",
-              sourceKeys: [],
-              origin: "added_by_ai",
-              childPresentation: "list",
-              placement: { x: 80, y: 50 },
-              layerOrder: null,
-              links: [],
-            },
-          ],
-        })
-      : providerPrompt.includes("You expand an existing hierarchical world map") && mapExpansionExistingTargetId
+    const assessmentResponse = assessmentResponseForPrompt(providerPrompt);
+    if (assessmentResponse !== null && assessmentProviderFailure) {
+      return new Response(JSON.stringify({ error: "Assessment provider failure" }), {
+        status: 500,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    const responseContent =
+      assessmentResponse ??
+      (providerPrompt.includes("You design practical hierarchical world maps")
         ? JSON.stringify({
+            worldName: "Route Test World",
+            hierarchyName: "Harbor city",
+            locationTypes: [
+              { key: "world", label: "World", baseKind: "region" },
+              { key: "city", label: "City Quarter", baseKind: "place" },
+              { key: "type_city", label: "Typed City", baseKind: "settlement" },
+            ],
+            startingLocationKey: "route_world",
             locations: [
               {
-                key: "canal_ward",
+                key: "route_world",
                 parentKey: null,
-                name: "Canal Ward",
+                name: "Route Test World",
+                typeKey: "world",
+                kind: "region",
+                description: "A compact world used to prove generated routes.",
+                modelMemory: "The route graph must stay sparse and connected.",
+                awarenessSummary: "Old Town, Market Square, and Harbor share practical roads.",
+                icon: "🗺️",
+                sourceKeys: [],
+                origin: "added_by_ai",
+                childPresentation: "map",
+                placement: null,
+                layerOrder: null,
+                links: [],
+              },
+              {
+                key: "old_town",
+                parentKey: "route_world",
+                name: "Old Town",
+                typeKey: "type_city",
                 kind: "place",
-                description: "A canal district reached from the existing harbor.",
-                modelMemory: "The canal bridge is the ward's main approach.",
-                awarenessSummary: "Canal Bridge returns to Harbor.",
-                icon: "🌉",
+                description: "A walled neighborhood west of the market.",
+                modelMemory: "The market road is the ordinary eastern exit.",
+                awarenessSummary: "Market Street leads east.",
+                icon: "🏘️",
                 sourceKeys: [],
                 origin: "added_by_ai",
                 childPresentation: "list",
-                placement: { x: 88, y: 72 },
+                placement: { x: 20, y: 50 },
                 layerOrder: null,
                 links: [
-                  {
-                    targetKey: mapExpansionExistingTargetId,
-                    label: "Canal Bridge",
-                    bidirectional: true,
-                    state: "available",
-                  },
+                  { targetKey: "market_square", label: "Market Street", bidirectional: true, state: "available" },
                 ],
               },
               {
-                key: "canal_house",
-                parentKey: "canal_ward",
-                name: "Canal House",
-                kind: "building",
-                description: "A ferryman's house beside the canal lock.",
-                modelMemory: "The ferryman maintains the bridge winch.",
-                awarenessSummary: "The front door opens onto Canal Ward.",
-                icon: "🏠",
+                key: "market_square",
+                parentKey: "route_world",
+                name: "Market Square",
+                typeKey: "type_city",
+                kind: "place",
+                description: "The city market between Old Town and the harbor road.",
+                modelMemory: "Merchants know every public route through the city.",
+                awarenessSummary: "Old Town lies west and the harbor lies east.",
+                icon: "🏪",
                 sourceKeys: [],
                 origin: "added_by_ai",
                 childPresentation: "list",
-                placement: null,
+                placement: { x: 50, y: 50 },
+                layerOrder: null,
+                links: [],
+              },
+              {
+                key: "harbor",
+                parentKey: "route_world",
+                name: "Harbor",
+                typeKey: "type_city",
+                kind: "place",
+                description: "A working harbor east of the market.",
+                modelMemory: "A canal bridge can support future expansion.",
+                awarenessSummary: "The market road returns west.",
+                icon: "⚓",
+                sourceKeys: [],
+                origin: "added_by_ai",
+                childPresentation: "list",
+                placement: { x: 80, y: 50 },
                 layerOrder: null,
                 links: [],
               },
             ],
           })
-        : providerPrompt.includes("Repeat the already committed move into Lifecycle Harbor.")
-          ? "RETRY_PROVIDER_RESPONSE_SHOULD_NOT_PERSIST"
-          : providerPrompt.includes("Move into Lifecycle Harbor.")
-            ? 'GAME_HISTORY_PROVIDER_RESPONSE: The party reaches Lifecycle Harbor.\n[spatial_move: destination_id="lifecycle_harbor"]'
-            : "GAME_HISTORY_PROVIDER_RESPONSE: The party surveys the wider Existing World.";
+        : providerPrompt.includes("You expand an existing hierarchical world map") && mapExpansionExistingTargetId
+          ? JSON.stringify({
+              locations: [
+                {
+                  key: "canal_ward",
+                  parentKey: null,
+                  name: "Canal Ward",
+                  kind: "place",
+                  description: "A canal district reached from the existing harbor.",
+                  modelMemory: "The canal bridge is the ward's main approach.",
+                  awarenessSummary: "Canal Bridge returns to Harbor.",
+                  icon: "🌉",
+                  sourceKeys: [],
+                  origin: "added_by_ai",
+                  childPresentation: "list",
+                  placement: { x: 88, y: 72 },
+                  layerOrder: null,
+                  links: [
+                    {
+                      targetKey: mapExpansionExistingTargetId,
+                      label: "Canal Bridge",
+                      bidirectional: true,
+                      state: "available",
+                    },
+                  ],
+                },
+                {
+                  key: "canal_house",
+                  parentKey: "canal_ward",
+                  name: "Canal House",
+                  kind: "building",
+                  description: "A ferryman's house beside the canal lock.",
+                  modelMemory: "The ferryman maintains the bridge winch.",
+                  awarenessSummary: "The front door opens onto Canal Ward.",
+                  icon: "🏠",
+                  sourceKeys: [],
+                  origin: "added_by_ai",
+                  childPresentation: "list",
+                  placement: null,
+                  layerOrder: null,
+                  links: [],
+                },
+              ],
+            })
+          : providerPrompt.includes("ASSESS_MAIN_DIRECTIVE")
+            ? 'The party takes the Old Road.\n[spatial_move: destination_id="assess_mid"]'
+            : providerPrompt.includes("ASSESS_MAIN_VALID")
+              ? "ASSESS_VALID_PATH"
+              : providerPrompt.includes("Repeat the already committed move into Lifecycle Harbor.")
+                ? "RETRY_PROVIDER_RESPONSE_SHOULD_NOT_PERSIST"
+                : providerPrompt.includes("Move into Lifecycle Harbor.")
+                  ? 'GAME_HISTORY_PROVIDER_RESPONSE: The party reaches Lifecycle Harbor.\n[spatial_move: destination_id="lifecycle_harbor"]'
+                  : "GAME_HISTORY_PROVIDER_RESPONSE: The party surveys the wider Existing World.");
     return new Response(
       JSON.stringify({
         id: `chatcmpl-maps-lifecycle-${generationProviderRequestCount}`,
@@ -507,6 +567,37 @@ function metadata(value: unknown): Record<string, unknown> {
   }
 }
 
+type MovementAssessmentResult = {
+  applied: boolean;
+  destinationId?: string;
+  fromLocationId?: string;
+  routeLocationIds?: string[];
+  discovered?: boolean;
+  commandId?: string;
+  definitionRevision?: number;
+};
+
+type MovementAssessmentService = {
+  assessAssistantMovement(input: {
+    chatId: string;
+    messageId: string;
+    swipeIndex: number;
+    regenerate: boolean;
+    continuation: boolean;
+    userMessageText: string;
+    assistantMessageText: string;
+  }): Promise<MovementAssessmentResult>;
+};
+
+type AssessmentSnapshot = {
+  messageId: string;
+  swipeIndex: number;
+  currentLocationId: string | null;
+  definitionRevision: number;
+  transitionCommandId: string | null;
+  travel?: { fromLocationId: string; routeLocationIds: string[] } | null;
+};
+
 type RouteGraphDefinition = {
   locations: Array<{
     id: string;
@@ -536,6 +627,76 @@ function assertSiblingRouteGraphConnected(definition: RouteGraphDefinition, pare
   }
   assert.equal(visited.size, siblings.length, message);
 }
+
+const assessmentDefinition = {
+  schemaVersion: 1,
+  ownerMode: "roleplay",
+  enabled: true,
+  revision: 0,
+  startingLocationId: "assess_start",
+  locations: [
+    {
+      id: "assess_root",
+      parentId: null,
+      name: "Assessment World",
+      kind: "region",
+      description: "A bounded world used for implied-movement assessment.",
+      lorebookEntryIds: [],
+      childPresentation: "list",
+      links: [],
+      status: "active",
+      sortOrder: 0,
+    },
+    {
+      id: "assess_start",
+      parentId: "assess_root",
+      name: "Starting Gate",
+      kind: "place",
+      description: "The assessment route begins here.",
+      lorebookEntryIds: [],
+      childPresentation: "list",
+      links: [{ targetId: "assess_mid", label: "Old Road", bidirectional: true, state: "available" }],
+      status: "active",
+      sortOrder: 0,
+    },
+    {
+      id: "assess_mid",
+      parentId: null,
+      name: "Wayside Inn",
+      kind: "building",
+      description: "A narrated intermediate stop.",
+      lorebookEntryIds: [],
+      childPresentation: "list",
+      links: [{ targetId: "assess_destination", label: "Hill Path", bidirectional: true, state: "available" }],
+      status: "active",
+      sortOrder: 1,
+    },
+    {
+      id: "assess_destination",
+      parentId: null,
+      name: "Hilltop Keep",
+      kind: "building",
+      description: "The known implied destination.",
+      lorebookEntryIds: [],
+      childPresentation: "list",
+      links: [],
+      status: "active",
+      sortOrder: 2,
+    },
+    {
+      id: "assess_isolated",
+      parentId: null,
+      name: "Sealed Island",
+      kind: "place",
+      description: "A known but unreachable location.",
+      lorebookEntryIds: [],
+      childPresentation: "list",
+      links: [],
+      status: "active",
+      sortOrder: 3,
+    },
+  ],
+};
 
 const definition = {
   schemaVersion: 1,
@@ -641,6 +802,9 @@ async function main() {
     const { buildApp } = await importEngine<{
       buildApp(): Promise<NonNullable<typeof app>>;
     }>("packages/server/src/app.ts");
+    const { getCapabilityService } = await importEngine<{
+      getCapabilityService<T>(key: string): T | null;
+    }>("packages/server/src/services/capability-packages/capability-service-registry.service.ts");
     const {
       materializeAssistantSpatialState: materializeAssistantSpatialStateHost,
       resolveEffectiveSpatialState: resolveEffectiveSpatialStateHost,
@@ -1507,7 +1671,9 @@ async function main() {
           messageIds: [gameWorldTurn.id, gameAssistantAtWorld.id],
         },
       },
-      204,
+      // ponytail: upstream added message-trash semantics; bulk-delete now always
+      // answers 200 with {trashed, trashedCount} (hard-delete when trash is unused).
+      200,
     );
     const verifySharedWorldLifecycle = async () => {
       const sharedWorldArtwork = await createGlobalGalleryStorage(app.db).createImage({
@@ -2716,7 +2882,8 @@ async function main() {
         headers: csrfHeaders,
         payload: { messageIds: [worldTurn.message.id, assistantAtWorld.id] },
       },
-      204,
+      // ponytail: message-trash upstream semantics — always 200 + {trashed, trashedCount}.
+      200,
     );
     const rewoundSource = (await expectJson(app, {
       method: "GET",
@@ -2758,6 +2925,366 @@ async function main() {
         treatAsLocalEndpoint: true,
       },
     })) as { id: string };
+    const movementAssessment = getCapabilityService<MovementAssessmentService>("hierarchical-maps:movement-assessment");
+    assert.ok(movementAssessment, "The current World Maps package must register movement assessment");
+    const assessmentStorageService = getCapabilityService<{
+      create(): {
+        getByCommand(chatId: string, commandId: string): Promise<AssessmentSnapshot | null>;
+        listForChat(chatId: string): Promise<AssessmentSnapshot[]>;
+      };
+    }>("hierarchical-maps:storage");
+    assert.ok(assessmentStorageService);
+    const assessmentStorage = assessmentStorageService.create();
+    const assessmentChatIds: string[] = [];
+    const configureAssessment = async (settings: {
+      assessImpliedMovement?: boolean;
+      assessmentDiscovery?: boolean;
+      assessmentPersistTravel?: boolean;
+    }) => {
+      await expectJson(app!, {
+        method: "PATCH",
+        url: "/api/agents/type/hierarchical-maps",
+        headers: csrfHeaders,
+        payload: {
+          connectionId: impersonateConnection.id,
+          settings: {
+            assessImpliedMovement: settings.assessImpliedMovement ?? true,
+            assessmentDiscovery: settings.assessmentDiscovery ?? true,
+            assessmentPersistTravel: settings.assessmentPersistTravel ?? true,
+          },
+        },
+      });
+    };
+    const createAssessmentFixture = async (name: string, assistantMessageText: string) => {
+      const chat = (await expectJson(app!, {
+        method: "POST",
+        url: "/api/chats",
+        headers: csrfHeaders,
+        payload: {
+          name,
+          mode: "roleplay",
+          characterIds: [],
+          connectionId: impersonateConnection.id,
+        },
+      })) as { id: string };
+      assessmentChatIds.push(chat.id);
+      await expectJson(app!, {
+        method: "PATCH",
+        url: `/api/chats/${chat.id}/metadata`,
+        headers: csrfHeaders,
+        payload: { enableAgents: true, activeAgentIds: ["hierarchical-maps"] },
+      });
+      await expectJson(app!, {
+        method: "PUT",
+        url: `/api/chats/${chat.id}/spatial-context`,
+        headers: csrfHeaders,
+        payload: {
+          expectedRevision: 0,
+          expectedCurrentLocationId: null,
+          definition: assessmentDefinition,
+        },
+      });
+      const userMessage = (await expectJson(app!, {
+        method: "POST",
+        url: `/api/chats/${chat.id}/messages`,
+        headers: csrfHeaders,
+        payload: { role: "user", content: `User context for ${assistantMessageText}` },
+      })) as { id: string };
+      const assistantMessage = (await expectJson(app!, {
+        method: "POST",
+        url: `/api/chats/${chat.id}/messages`,
+        headers: csrfHeaders,
+        payload: { role: "assistant", content: assistantMessageText },
+      })) as { id: string; activeSwipeIndex: number };
+      return { chatId: chat.id, userMessageId: userMessage.id, assistantMessage };
+    };
+    const assessFixture = async (
+      fixture: Awaited<ReturnType<typeof createAssessmentFixture>>,
+      assistantMessageText: string,
+      options: { regenerate?: boolean; swipeIndex?: number } = {},
+    ) =>
+      movementAssessment.assessAssistantMovement({
+        chatId: fixture.chatId,
+        messageId: fixture.assistantMessage.id,
+        swipeIndex: options.swipeIndex ?? fixture.assistantMessage.activeSwipeIndex ?? 0,
+        regenerate: options.regenerate ?? false,
+        continuation: false,
+        userMessageText: `User context for ${assistantMessageText}`,
+        assistantMessageText,
+      });
+
+    await configureAssessment({});
+    const validAssessmentFixture = await createAssessmentFixture(
+      "World Maps valid implied movement fixture",
+      "ASSESS_VALID_PATH",
+    );
+    const validAssessment = await assessFixture(validAssessmentFixture, "ASSESS_VALID_PATH");
+    assert.deepEqual(validAssessment, {
+      applied: true,
+      destinationId: "assess_destination",
+      fromLocationId: "assess_start",
+      routeLocationIds: ["assess_mid", "assess_destination"],
+      commandId: `assessment:${validAssessmentFixture.assistantMessage.id}:0`,
+      // The fixture PUT saved the definition once (0 → 1); snapshots carry the saved revision.
+      definitionRevision: 1,
+    });
+    const validAssessmentSnapshot = await assessmentStorage.getByCommand(
+      validAssessmentFixture.chatId,
+      validAssessment.commandId!,
+    );
+    assert.equal(validAssessmentSnapshot?.currentLocationId, "assess_destination");
+    assert.deepEqual(validAssessmentSnapshot?.travel, {
+      fromLocationId: "assess_start",
+      routeLocationIds: ["assess_mid", "assess_destination"],
+    });
+    const arrivalPrompt = (await expectJson(app, {
+      method: "POST",
+      url: `/api/chats/${validAssessmentFixture.chatId}/peek-prompt`,
+      headers: csrfHeaders,
+      payload: {},
+    })) as { messages: Array<{ content: string }> };
+    const arrivalPromptText = arrivalPrompt.messages.map((message) => message.content).join("\n");
+    assert.match(arrivalPromptText, /Arrived from Starting Gate via Wayside Inn > Hilltop Keep last turn\./u);
+    assert.doesNotMatch(arrivalPromptText, /Movement is already canonical for this turn/u);
+    assert.doesNotMatch(arrivalPromptText, /Do not emit another location change/u);
+
+    const invalidPathFixture = await createAssessmentFixture(
+      "World Maps invalid via path fixture",
+      "ASSESS_INVALID_PATH",
+    );
+    const invalidPathAssessment = await assessFixture(invalidPathFixture, "ASSESS_INVALID_PATH");
+    assert.equal(invalidPathAssessment.applied, true);
+    assert.deepEqual(invalidPathAssessment.routeLocationIds, ["assess_mid", "assess_destination"]);
+    const invalidPathSnapshot = await assessmentStorage.getByCommand(
+      invalidPathFixture.chatId,
+      invalidPathAssessment.commandId!,
+    );
+    assert.deepEqual(invalidPathSnapshot?.travel?.routeLocationIds, ["assess_mid", "assess_destination"]);
+
+    const unreachableFixture = await createAssessmentFixture(
+      "World Maps unreachable implied movement fixture",
+      "ASSESS_UNREACHABLE",
+    );
+    const unreachableAssessment = await assessFixture(unreachableFixture, "ASSESS_UNREACHABLE");
+    assert.deepEqual(unreachableAssessment, { applied: false });
+    const unreachableSpatial = (await expectJson(app, {
+      method: "GET",
+      url: `/api/chats/${unreachableFixture.chatId}/spatial-context`,
+    })) as { currentLocationId: string };
+    assert.equal(unreachableSpatial.currentLocationId, "assess_start");
+
+    const discoveryFixture = await createAssessmentFixture("World Maps implied discovery fixture", "ASSESS_DISCOVER");
+    const discoveryAssessment = await assessFixture(discoveryFixture, "ASSESS_DISCOVER");
+    assert.equal(discoveryAssessment.applied, true);
+    assert.equal(discoveryAssessment.discovered, true);
+    assert.match(discoveryAssessment.destinationId ?? "", /^loc_/u);
+    assert.deepEqual(discoveryAssessment.routeLocationIds, [discoveryAssessment.destinationId]);
+    const discoverySpatial = (await expectJson(app, {
+      method: "GET",
+      url: `/api/chats/${discoveryFixture.chatId}/spatial-context`,
+    })) as {
+      currentLocationId: string;
+      definition: { locations: Array<{ id: string; name: string; parentId: string | null }> };
+    };
+    assert.equal(discoverySpatial.currentLocationId, discoveryAssessment.destinationId);
+    const discoveredAssessmentLocation = discoverySpatial.definition.locations.find(
+      (location) => location.id === discoveryAssessment.destinationId,
+    );
+    assert.equal(discoveredAssessmentLocation?.name, "Moonlit Observatory");
+    assert.equal(discoveredAssessmentLocation?.parentId, "assess_start");
+
+    await configureAssessment({ assessmentDiscovery: false });
+    const disabledDiscoveryFixture = await createAssessmentFixture(
+      "World Maps disabled implied discovery fixture",
+      "ASSESS_DISCOVER",
+    );
+    const disabledDiscoveryAssessment = await assessFixture(disabledDiscoveryFixture, "ASSESS_DISCOVER");
+    assert.deepEqual(disabledDiscoveryAssessment, { applied: false });
+    const disabledDiscoverySpatial = (await expectJson(app, {
+      method: "GET",
+      url: `/api/chats/${disabledDiscoveryFixture.chatId}/spatial-context`,
+    })) as { currentLocationId: string; definition: { locations: Array<{ name: string }> } };
+    assert.equal(disabledDiscoverySpatial.currentLocationId, "assess_start");
+    assert.equal(
+      disabledDiscoverySpatial.definition.locations.some((location) => location.name === "Moonlit Observatory"),
+      false,
+    );
+
+    await configureAssessment({ assessmentPersistTravel: false });
+    const ephemeralFixture = await createAssessmentFixture(
+      "World Maps ephemeral implied movement fixture",
+      "ASSESS_VALID_PATH",
+    );
+    const ephemeralAssessment = await assessFixture(ephemeralFixture, "ASSESS_VALID_PATH");
+    assert.equal(ephemeralAssessment.applied, true);
+    assert.deepEqual(ephemeralAssessment.routeLocationIds, ["assess_mid", "assess_destination"]);
+    const ephemeralSnapshot = await assessmentStorage.getByCommand(
+      ephemeralFixture.chatId,
+      ephemeralAssessment.commandId!,
+    );
+    assert.equal(ephemeralSnapshot?.travel, null);
+
+    await configureAssessment({});
+    const malformedFixture = await createAssessmentFixture(
+      "World Maps malformed assessment fixture",
+      "ASSESS_MALFORMED",
+    );
+    const malformedAssessment = await assessFixture(malformedFixture, "ASSESS_MALFORMED");
+    assert.deepEqual(malformedAssessment, { applied: false });
+    assert.equal((await assessmentStorage.listForChat(malformedFixture.chatId)).length, 1);
+
+    const providerFailureFixture = await createAssessmentFixture(
+      "World Maps provider failure fixture",
+      "ASSESS_VALID_PATH",
+    );
+    assessmentProviderFailure = true;
+    let providerFailureAssessment: MovementAssessmentResult;
+    try {
+      providerFailureAssessment = await assessFixture(providerFailureFixture, "ASSESS_VALID_PATH");
+    } finally {
+      assessmentProviderFailure = false;
+    }
+    assert.deepEqual(providerFailureAssessment!, { applied: false });
+    assert.equal((await assessmentStorage.listForChat(providerFailureFixture.chatId)).length, 1);
+
+    const regenerateFixture = await createAssessmentFixture(
+      "World Maps regenerate assessment fixture",
+      "ASSESS_VALID_PATH",
+    );
+    const firstRegenerateAssessment = await assessFixture(regenerateFixture, "ASSESS_VALID_PATH");
+    assert.equal(firstRegenerateAssessment.applied, true);
+    const assessmentRegeneratedSwipe = (await expectJson(app, {
+      method: "POST",
+      url: `/api/chats/${regenerateFixture.chatId}/messages/${regenerateFixture.assistantMessage.id}/swipes`,
+      headers: csrfHeaders,
+      payload: { content: "ASSESS_REGENERATE" },
+    })) as { index: number };
+    const secondRegenerateAssessment = await assessFixture(regenerateFixture, "ASSESS_REGENERATE", {
+      regenerate: true,
+      swipeIndex: assessmentRegeneratedSwipe.index,
+    });
+    assert.equal(secondRegenerateAssessment.applied, true);
+    assert.equal(secondRegenerateAssessment.destinationId, "assess_mid");
+    assert.equal(
+      secondRegenerateAssessment.commandId,
+      `assessment:${regenerateFixture.assistantMessage.id}:${assessmentRegeneratedSwipe.index}`,
+    );
+    const regenerateSnapshots = await assessmentStorage.listForChat(regenerateFixture.chatId);
+    const regenerateCommandIds = regenerateSnapshots
+      .map((snapshot) => snapshot.transitionCommandId)
+      .filter((commandId): commandId is string => commandId?.startsWith("assessment:") === true);
+    assert.equal(new Set(regenerateCommandIds).size, regenerateCommandIds.length);
+
+    await configureAssessment({ assessImpliedMovement: false });
+    const disabledAssessmentFixture = await createAssessmentFixture(
+      "World Maps disabled assessment fixture",
+      "ASSESS_VALID_PATH",
+    );
+    const callsBeforeDisabledAssessment = assessmentProviderRequestCount;
+    const disabledAssessment = await assessFixture(disabledAssessmentFixture, "ASSESS_VALID_PATH");
+    assert.deepEqual(disabledAssessment, { applied: false });
+    assert.equal(assessmentProviderRequestCount, callsBeforeDisabledAssessment);
+
+    await configureAssessment({});
+    const createGeneratedAssessmentChat = async (name: string) => {
+      const chat = (await expectJson(app!, {
+        method: "POST",
+        url: "/api/chats",
+        headers: csrfHeaders,
+        payload: {
+          name,
+          mode: "roleplay",
+          characterIds: [],
+          connectionId: impersonateConnection.id,
+        },
+      })) as { id: string };
+      assessmentChatIds.push(chat.id);
+      await expectJson(app!, {
+        method: "PATCH",
+        url: `/api/chats/${chat.id}/metadata`,
+        headers: csrfHeaders,
+        payload: { enableAgents: true, activeAgentIds: ["hierarchical-maps"] },
+      });
+      await expectJson(app!, {
+        method: "PUT",
+        url: `/api/chats/${chat.id}/spatial-context`,
+        headers: csrfHeaders,
+        payload: {
+          expectedRevision: 0,
+          expectedCurrentLocationId: null,
+          definition: assessmentDefinition,
+        },
+      });
+      return chat.id;
+    };
+    const generatedAssessmentChatId = await createGeneratedAssessmentChat(
+      "World Maps generated implied movement fixture",
+    );
+    const generatedAssessment = await app.inject({
+      method: "POST",
+      url: "/api/generate",
+      headers: csrfHeaders,
+      payload: {
+        chatId: generatedAssessmentChatId,
+        connectionId: impersonateConnection.id,
+        userMessage: "ASSESS_MAIN_VALID",
+        streaming: false,
+        skipPresenceDelay: true,
+        musicPlayerEnabled: false,
+      },
+    });
+    assert.equal(generatedAssessment.statusCode, 200, generatedAssessment.body);
+    const generatedAssessmentEvents = generatedAssessment.body
+      .split("\n\n")
+      .filter((event) => event.startsWith("data: "))
+      .map((event) => JSON.parse(event.slice("data: ".length)) as { type: string; data: Record<string, unknown> });
+    const assessedTransitionEvent = generatedAssessmentEvents.find(
+      (event) => event.type === "spatial_transition_committed" && event.data.assessed === true,
+    );
+    assert.ok(assessedTransitionEvent, "An applied implied move must emit an assessed transition event");
+    assert.equal(assessedTransitionEvent.data.fromLocationId, "assess_start");
+    assert.deepEqual(assessedTransitionEvent.data.routeLocationIds, ["assess_mid", "assess_destination"]);
+    assert.match(String(assessedTransitionEvent.data.commandId), /^assessment:/u);
+
+    const directiveAssessmentChatId = await createGeneratedAssessmentChat(
+      "World Maps directive assessment skip fixture",
+    );
+    const callsBeforeDirectiveGeneration = assessmentProviderRequestCount;
+    const directiveGeneration = await app.inject({
+      method: "POST",
+      url: "/api/generate",
+      headers: csrfHeaders,
+      payload: {
+        chatId: directiveAssessmentChatId,
+        connectionId: impersonateConnection.id,
+        userMessage: "ASSESS_MAIN_DIRECTIVE",
+        streaming: false,
+        skipPresenceDelay: true,
+        musicPlayerEnabled: false,
+      },
+    });
+    assert.equal(directiveGeneration.statusCode, 200, directiveGeneration.body);
+    assert.equal(assessmentProviderRequestCount, callsBeforeDirectiveGeneration);
+    assert.match(directiveGeneration.body, /spatial_transition_committed/u);
+    const directiveSnapshots = await assessmentStorage.listForChat(directiveAssessmentChatId);
+    assert.ok(directiveSnapshots.some((snapshot) => snapshot.transitionCommandId?.startsWith("assistant:")));
+    assert.equal(
+      directiveSnapshots.some((snapshot) => snapshot.transitionCommandId?.startsWith("assessment:")),
+      false,
+    );
+
+    for (const assessmentChatId of assessmentChatIds) {
+      await expectJson(
+        app,
+        {
+          method: "DELETE",
+          url: `/api/chats/${assessmentChatId}?force=true`,
+          headers: csrfHeaders,
+        },
+        204,
+      );
+    }
+
     const impersonateChat = (await expectJson(app, {
       method: "POST",
       url: "/api/chats",

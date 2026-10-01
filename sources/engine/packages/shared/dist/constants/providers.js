@@ -1,4 +1,8 @@
 export const LOCAL_AUTH_PROVIDERS = ["openai_chatgpt", "claude_subscription", "grok_subscription"];
+/** These subscription transports send text only; they ignore native tool schemas. */
+export function supportsNativeToolCalls(provider) {
+    return !!provider && provider !== "claude_subscription" && provider !== "grok_subscription";
+}
 export function isLocalAuthProvider(provider) {
     return LOCAL_AUTH_PROVIDERS.includes(provider);
 }
@@ -116,7 +120,8 @@ export const PROVIDERS = {
         id: "nanogpt",
         name: "NanoGPT",
         defaultBaseUrl: "https://nano-gpt.com/api/v1",
-        modelsEndpoint: "/models",
+        // Detailed catalog: the plain one omits context_length and max_output_tokens.
+        modelsEndpoint: "/models?detailed=true",
         supportsStreaming: true,
         usesAuthHeader: true,
         apiKeyHeader: null,
@@ -125,6 +130,26 @@ export const PROVIDERS = {
         id: "xai",
         name: "xAI / Grok",
         defaultBaseUrl: "https://api.x.ai/v1",
+        modelsEndpoint: "/models",
+        supportsStreaming: true,
+        usesAuthHeader: true,
+        apiKeyHeader: null,
+    },
+    arli: {
+        id: "arli",
+        name: "Arli AI",
+        defaultBaseUrl: "https://api.arliai.com/v1",
+        modelsEndpoint: "/models",
+        supportsStreaming: true,
+        usesAuthHeader: true,
+        apiKeyHeader: null,
+    },
+    zai: {
+        id: "zai",
+        name: "Z.AI",
+        // Pay-as-you-go endpoint. The Coding Plan endpoint (/api/coding/paas/v4)
+        // is licensed for Z.AI's listed tools only, so it is not the default here.
+        defaultBaseUrl: "https://api.z.ai/api/paas/v4",
         modelsEndpoint: "/models",
         supportsStreaming: true,
         usesAuthHeader: true,
@@ -156,6 +181,26 @@ export const PROVIDERS = {
         supportsStreaming: false,
         usesAuthHeader: false,
         apiKeyHeader: "x-goog-api-key",
+    },
+    decision: {
+        id: "decision",
+        name: "Decision",
+        defaultBaseUrl: "https://api.typesafe.ai",
+        modelsEndpoint: "",
+        supportsStreaming: false,
+        usesAuthHeader: true,
+        apiKeyHeader: null,
+    },
+    audio: {
+        id: "audio",
+        name: "Audio",
+        // The per-source default is applied by the audio resolver; ElevenLabs is
+        // the fullest-featured backend (speech + sound effects + music).
+        defaultBaseUrl: "https://api.elevenlabs.io",
+        modelsEndpoint: "",
+        supportsStreaming: false,
+        usesAuthHeader: false,
+        apiKeyHeader: "xi-api-key",
     },
 };
 //# sourceMappingURL=providers.js.map

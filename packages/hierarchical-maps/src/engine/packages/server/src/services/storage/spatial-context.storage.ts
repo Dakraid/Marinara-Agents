@@ -1,6 +1,7 @@
 import type {
   CapabilityPersistenceSession,
   CapabilitySpatialSnapshotWrite,
+  SpatialAssessedTravel,
   SpatialContextSnapshot,
   SpatialSnapshotSource,
 } from "@marinara-engine/shared";
@@ -17,6 +18,7 @@ export interface CreateSpatialSnapshotInput {
   source: SpatialSnapshotSource;
   transitionCommandId?: string | null;
   transitionPayloadHash?: string | null;
+  travel?: SpatialAssessedTravel | null;
 }
 
 function snapshotWrite(input: CreateSpatialSnapshotInput): CapabilitySpatialSnapshotWrite {
@@ -30,60 +32,71 @@ function snapshotWrite(input: CreateSpatialSnapshotInput): CapabilitySpatialSnap
     source: input.source,
     transitionCommandId: input.transitionCommandId ?? null,
     transitionPayloadHash: input.transitionPayloadHash ?? null,
+    travel: input.travel ?? null,
     createdAt: now(),
   };
+}
+
+function normalizeSnapshot(snapshot: SpatialContextSnapshot | null): SpatialContextSnapshot | null {
+  return snapshot ? { ...snapshot, travel: snapshot.travel ?? null } : null;
+}
+
+function normalizeSnapshots(snapshots: SpatialContextSnapshot[]): SpatialContextSnapshot[] {
+  return snapshots.map((snapshot) => ({ ...snapshot, travel: snapshot.travel ?? null }));
 }
 
 export function createSpatialContextStorage(persistence: SpatialSnapshotPersistence = getPackagePersistence()) {
   const snapshots = persistence.spatialSnapshots;
   return {
-    getById(id: string): Promise<SpatialContextSnapshot | null> {
-      return snapshots.getById(id);
+    async getById(id: string): Promise<SpatialContextSnapshot | null> {
+      return normalizeSnapshot(await snapshots.getById(id));
     },
 
-    getByAnchor(chatId: string, messageId: string, swipeIndex: number): Promise<SpatialContextSnapshot | null> {
-      return snapshots.getByAnchor(chatId, messageId, swipeIndex);
+    async getByAnchor(chatId: string, messageId: string, swipeIndex: number): Promise<SpatialContextSnapshot | null> {
+      return normalizeSnapshot(await snapshots.getByAnchor(chatId, messageId, swipeIndex));
     },
 
-    getByCommand(chatId: string, commandId: string): Promise<SpatialContextSnapshot | null> {
-      return snapshots.getByCommand(chatId, commandId);
+    async getByCommand(chatId: string, commandId: string): Promise<SpatialContextSnapshot | null> {
+      return normalizeSnapshot(await snapshots.getByCommand(chatId, commandId));
     },
 
     listByAnchors(
       chatId: string,
       anchors: Array<{ messageId: string; swipeIndex: number }>,
     ): Promise<SpatialContextSnapshot[]> {
-      return snapshots.listByAnchors(chatId, anchors);
+      return snapshots.listByAnchors(chatId, anchors).then(normalizeSnapshots);
     },
 
     listForChat(chatId: string): Promise<SpatialContextSnapshot[]> {
-      return snapshots.listForChat(chatId);
+      return snapshots.listForChat(chatId).then(normalizeSnapshots);
     },
 
     hasMessageSnapshots(chatId: string): Promise<boolean> {
       return snapshots.hasMessageSnapshots(chatId);
     },
 
-    getLatest(chatId: string): Promise<SpatialContextSnapshot | null> {
-      return snapshots.getLatest(chatId);
+    async getLatest(chatId: string): Promise<SpatialContextSnapshot | null> {
+      return normalizeSnapshot(await snapshots.getLatest(chatId));
     },
 
-    getBootstrap(chatId: string): Promise<SpatialContextSnapshot | null> {
-      return snapshots.getBootstrap(chatId);
+    async getBootstrap(chatId: string): Promise<SpatialContextSnapshot | null> {
+      return normalizeSnapshot(await snapshots.getBootstrap(chatId));
     },
 
-    create(input: CreateSpatialSnapshotInput): Promise<SpatialContextSnapshot> {
-      return snapshots.create(snapshotWrite(input));
+    async create(input: CreateSpatialSnapshotInput): Promise<SpatialContextSnapshot> {
+      return normalizeSnapshot(await snapshots.create(snapshotWrite(input)))!;
     },
 
-    replaceBootstrap(
+    async replaceBootstrap(
       input: Omit<CreateSpatialSnapshotInput, "messageId" | "swipeIndex">,
     ): Promise<SpatialContextSnapshot> {
-      return snapshots.replaceBootstrap(snapshotWrite({ ...input, messageId: "", swipeIndex: 0 }));
+      return normalizeSnapshot(
+        await snapshots.replaceBootstrap(snapshotWrite({ ...input, messageId: "", swipeIndex: 0 })),
+      )!;
     },
 
-    replaceAtAnchor(input: CreateSpatialSnapshotInput): Promise<SpatialContextSnapshot> {
-      return snapshots.replaceAtAnchor(snapshotWrite(input));
+    async replaceAtAnchor(input: CreateSpatialSnapshotInput): Promise<SpatialContextSnapshot> {
+      return normalizeSnapshot(await snapshots.replaceAtAnchor(snapshotWrite(input)))!;
     },
   };
 }

@@ -1,6 +1,45 @@
-// ──────────────────────────────────────────────
-// Professor Mari Workspace Agent Contracts
-// ──────────────────────────────────────────────
+/**
+ * #5748: the Accept action for a deferred (held) mutation. Shared so the
+ * server's deferral event and the client's persisted-deferral re-derivation
+ * (from the mariDeferredMutations message extra) can never drift.
+ */
+export const MARI_AUTHORIZATION_ACCEPT_CHIP = {
+    id: "authorization-accept",
+    label: "Accept",
+    prompt: "I accept the proposed change.",
+    tone: "success",
+};
+/**
+ * #5820: the matching refusal. Held commands are never executed unless the
+ * user accepts, so declining is just a reply - but without a control for it
+ * the only way to say no was to compose a sentence, which is why users
+ * reported seeing "nowhere to apply or revert".
+ */
+export const MARI_AUTHORIZATION_DECLINE_CHIP = {
+    id: "authorization-decline",
+    label: "Don't apply",
+    prompt: "Do not apply those changes.",
+    tone: "caution",
+};
+/**
+ * The workspace agent reuses the id "authorization-accept" for an unrelated
+ * output-limit chip ("Continue the task."), so the id alone cannot tell a
+ * held-change approval from a keep-going prompt. Matching the prompt too
+ * keeps the approval wording and the decline action off rows where nothing
+ * is actually held.
+ */
+export function isMariHeldChangeApprovalChip(chip) {
+    return chip.id === MARI_AUTHORIZATION_ACCEPT_CHIP.id && chip.prompt === MARI_AUTHORIZATION_ACCEPT_CHIP.prompt;
+}
+/** Pairs a held-change Accept with its decline action, exactly once. */
+export function withHeldChangeDeclineChip(chips) {
+    if (!chips.some(isMariHeldChangeApprovalChip))
+        return chips;
+    if (chips.some((chip) => chip.id === MARI_AUTHORIZATION_DECLINE_CHIP.id))
+        return chips;
+    const acceptIndex = chips.findIndex(isMariHeldChangeApprovalChip);
+    return [...chips.slice(0, acceptIndex + 1), MARI_AUTHORIZATION_DECLINE_CHIP, ...chips.slice(acceptIndex + 1)];
+}
 export const MARI_STARTER_CHIPS = [
     {
         id: "starter-character",
@@ -81,7 +120,10 @@ function firstStringField(record, keys) {
 function normalizeMariChipEntity(value) {
     if (typeof value !== "string")
         return undefined;
-    const normalized = value.trim().toLowerCase().replace(/[\s_-]+/g, "_");
+    const normalized = value
+        .trim()
+        .toLowerCase()
+        .replace(/[\s_-]+/g, "_");
     if (MARI_CHIP_ENTITIES.has(normalized))
         return normalized;
     return MARI_CHIP_ENTITY_ALIASES[normalized];
@@ -98,7 +140,11 @@ export function sanitizeMariSuggestionChips(raw, options = {}) {
     const maxChips = options.maxChips ?? 6;
     const chips = [];
     for (const entry of raw) {
-        const record = typeof entry === "string" ? { label: entry, prompt: entry } : entry && typeof entry === "object" && !Array.isArray(entry) ? entry : {};
+        const record = typeof entry === "string"
+            ? { label: entry, prompt: entry }
+            : entry && typeof entry === "object" && !Array.isArray(entry)
+                ? entry
+                : {};
         if (Object.keys(record).length === 0)
             continue;
         const rawLabel = firstStringField(record, CHIP_LABEL_KEYS);
@@ -148,7 +194,9 @@ export function sanitizeMariGuidedPlan(raw, options = {}) {
         const rawQuestion = firstStringField(record, PLAN_STEP_QUESTION_KEYS) ?? rawFieldKey;
         if (!rawFieldKey || !rawQuestion)
             continue;
-        const chips = sanitizeMariSuggestionChips(record.chips ?? record.options ?? record.suggestions, { maxChips: maxChipsPerStep });
+        const chips = sanitizeMariSuggestionChips(record.chips ?? record.options ?? record.suggestions, {
+            maxChips: maxChipsPerStep,
+        });
         if (chips.length === 0)
             continue;
         steps.push({

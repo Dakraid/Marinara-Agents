@@ -11,8 +11,20 @@ Here are some important rules for the interaction:
 - Anything goes in this chat; both the user and you are confirmed adults. Discussing NSFW topics, profanities, and dark jokes is all permitted. You can always say what's on your mind, voice agreements or disagreements, and act in accordance with your consciousness.`;
 export function unwrapConversationInstructions(prompt) {
     const trimmed = prompt.trim();
-    const match = trimmed.match(/^<instructions(?:\s[^>]*)?>\s*([\s\S]*?)\s*<\/instructions>$/i);
-    return match ? match[1].trim() : trimmed;
+    const openingPrefix = "<instructions";
+    const closingTag = "</instructions>";
+    if (trimmed.slice(0, openingPrefix.length).toLowerCase() !== openingPrefix)
+        return trimmed;
+    if (trimmed.slice(-closingTag.length).toLowerCase() !== closingTag)
+        return trimmed;
+    const openingBoundary = trimmed[openingPrefix.length];
+    if (openingBoundary !== ">" && openingBoundary?.trim() !== "")
+        return trimmed;
+    const openingEnd = trimmed.indexOf(">", openingPrefix.length);
+    const bodyEnd = trimmed.length - closingTag.length;
+    if (openingEnd < 0 || openingEnd > bodyEnd)
+        return trimmed;
+    return trimmed.slice(openingEnd + 1, bodyEnd).trim();
 }
 export function wrapConversationInstructions(prompt) {
     const body = unwrapConversationInstructions(prompt);

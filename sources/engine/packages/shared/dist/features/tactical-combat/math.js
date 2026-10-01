@@ -1,14 +1,6 @@
-// ──────────────────────────────────────────────
-// Tactical Combat — pure combat math
-// ──────────────────────────────────────────────
-// Stateless helpers: distance, terrain lookups, stat-derived movement / range,
-// the element multiplier table (mirrors the classic element wheel, simplified
-// to strong 1.5x / weak 0.5x per the plan), and the hit / crit / damage
-// formulas. Kept separate from engine.ts so both the resolver and the forecast
-// compute from the exact same primitives (forecast MUST match applyAction
-// statistically).
+import { ENEMY_DAMAGE_MULTIPLIERS, normalizeGameDifficulty, weatherDamageMultiplier, weatherHitPenalty, } from "../combat-conditions.js";
 import { CLASS_PROFILES } from "./classes.js";
-import { TERRAIN_DATA } from "./types.js";
+import { TERRAIN_DATA, } from "./types.js";
 export function clamp(value, lo, hi) {
     return Math.max(lo, Math.min(hi, value));
 }
@@ -35,12 +27,7 @@ export function deriveMovement(speed) {
 }
 // ── Difficulty ──
 /** Classic combat difficulty multipliers (combat.service.ts). Applied to ENEMY damage in tactical. */
-export const DIFFICULTY_DAMAGE_MULT = {
-    casual: 0.6,
-    normal: 1.0,
-    hard: 1.3,
-    brutal: 1.6,
-};
+export const DIFFICULTY_DAMAGE_MULT = ENEMY_DAMAGE_MULTIPLIERS;
 // ── Elements ──
 // Simplified wheel over the classic six elements. Fire/Ice/Lightning form a
 // rock-paper-scissors trio; Holy and Shadow are mutually super-effective;
@@ -97,12 +84,12 @@ export function terrainAvoid(grid, unit) {
     return terrainInfoAt(grid, unit.x, unit.y).avoidBonus;
 }
 /** 0–100 chance the attack lands. */
-export function hitChance(grid, attacker, defender) {
+export function hitChance(grid, attacker, defender, weather, traits = attacker) {
     const raw = 80 +
         (effectiveSpeed(attacker) - effectiveSpeed(defender)) * 2 -
         terrainAvoid(grid, defender) -
         (defender.defending ? 10 : 0);
-    return clamp(Math.round(raw), 30, 100);
+    return clamp(clamp(Math.round(raw), 30, 100) - weatherHitPenalty(weather, traits), 5, 100);
 }
 /** 0–60 chance of a x2 critical. Adds the attacker's class crit bonus (absent class → fighter, +0). */
 export function critChance(attacker, defender) {
@@ -126,12 +113,13 @@ export function computeDamage(inp) {
     const mitigation = effectiveDefense(defender) * 0.6 + defTile.defenseBonus * 2;
     let dmg = raw - mitigation;
     dmg *= elementMultiplier(element, defender.element);
+    dmg *= weatherDamageMultiplier(inp.weather, element);
     if (crit)
         dmg *= 2;
     if (defender.defending)
         dmg *= 0.5;
     if (attacker.side === "enemy")
-        dmg *= DIFFICULTY_DAMAGE_MULT[difficulty];
+        dmg *= DIFFICULTY_DAMAGE_MULT[normalizeGameDifficulty(difficulty)];
     return Math.max(1, Math.floor(dmg));
 }
 /** Heal amount for a heal skill (mirrors classic resolveSkillAction heal math). */

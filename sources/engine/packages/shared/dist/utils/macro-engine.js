@@ -2,7 +2,32 @@
 // Macro Engine — {{user}}, {{char}}, {{date}}, etc.
 // ──────────────────────────────────────────────
 export const CHARACTER_REFERENCE_ID_PATTERN = /\{\{([A-Za-z0-9_-]{21})\}\}/g;
-const CHARACTER_MACRO_PATTERN = /\{\{(?:char|charName|charNamePhonetic|charPhonetic|description|personality|backstory|appearance|scenario|example|charSysInfo|charPostHistory|convo_display|char_about|convo_behavior)\}\}|\{\{\s*#if\s+[^}]*\b(?:char|charName|charNamePhonetic|charPhonetic|character|speaker|description|personality|backstory|appearance|scenario|example|charSysInfo|charPostHistory|convo_display|char_about|convo_behavior)\b/i;
+export const PERSONA_REFERENCE_ID_PATTERN = /\{\{persona-([A-Za-z0-9_-]{21})\}\}/gi;
+const CHARACTER_MACRO_NAMES = new Set([
+    "appearance",
+    "backstory",
+    "char",
+    "char_about",
+    "charname",
+    "charnamephonetic",
+    "charphonetic",
+    "charposthistory",
+    "charsysinfo",
+    "convo_behavior",
+    "convo_display",
+    "description",
+    "example",
+    "group",
+    "personality",
+    "scenario",
+]);
+const CHARACTER_CONDITIONAL_OPERAND_NAMES = new Set([
+    ...CHARACTER_MACRO_NAMES,
+    "character",
+    "characterphonetic",
+    "speaker",
+    "speakerphonetic",
+]);
 const MAX_CHARACTER_FIELD_RESOLUTION_DEPTH = 4;
 const MAX_DICE_COUNT = 1000;
 const MAX_DICE_SIDES = 1_000_000;
@@ -20,7 +45,6 @@ const DEFERRED_CHARACTER_CONDITIONAL_TOKEN_RE = new RegExp(`${DEFERRED_CHARACTER
 // per-character decode and hasDeferredCharacterMacros never touch it.
 const DEFERRED_RELOCATION_CONDITIONAL_TOKEN_PREFIX = "\x1eMARINARA_DEFERRED_RELOCATION_IF:";
 export const DEFERRED_RELOCATION_CONDITIONAL_TOKEN_RE = new RegExp(`${DEFERRED_RELOCATION_CONDITIONAL_TOKEN_PREFIX.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^\\x1f]+)\\x1f`, "g");
-const MACRO_COMMENT_PATTERN = /\{\{\/\/[^}]*\}\}/g;
 const DEFERRED_CHARACTER_MACRO_TOKENS = {
     char: `${DEFERRED_CHARACTER_MACRO_TOKEN_PREFIX}CHAR\x1f`,
     charPhonetic: `${DEFERRED_CHARACTER_MACRO_TOKEN_PREFIX}CHAR_PHONETIC\x1f`,
@@ -38,7 +62,19 @@ const DEFERRED_CHARACTER_MACRO_TOKENS = {
     convoBehavior: `${DEFERRED_CHARACTER_MACRO_TOKEN_PREFIX}CONVO_BEHAVIOR\x1f`,
 };
 export function stripMacroComments(template) {
-    return template.replace(MACRO_COMMENT_PATTERN, "");
+    let result = "";
+    let cursor = 0;
+    while (cursor < template.length) {
+        const start = template.indexOf("{{//", cursor);
+        if (start < 0)
+            break;
+        const firstClose = template.indexOf("}}", start + 4);
+        if (firstClose < 0)
+            break;
+        result += template.slice(cursor, start);
+        cursor = firstClose + 2;
+    }
+    return result + template.slice(cursor);
 }
 function getMacroBudget(options) {
     if (options.macroBudget)
@@ -73,9 +109,25 @@ function nestedMacroOptions(options) {
         macroDepth: (options.macroDepth ?? 0) + 1,
     };
 }
+/**
+ * Read a named value from a macro variable map.
+ *
+ * Own properties only: a bare `{{constructor}}` or `{{toString}}` must never
+ * reach `Object.prototype` and render native-code source text into a prompt.
+ * The string check keeps a malformed stored map from injecting a non-string.
+ */
+function readMacroVariable(map, name) {
+    if (!map || !Object.prototype.hasOwnProperty.call(map, name))
+        return undefined;
+    const value = map[name];
+    return typeof value === "string" ? value : undefined;
+}
 function clampMacroOutput(value, options) {
     const maxLength = macroLimit(options, "maxMacroOutputLength");
-    return value.length > maxLength ? value.slice(0, maxLength) : value;
+    if (value.length <= maxLength)
+        return value;
+    getMacroBudget(options).exceeded = true;
+    return value.slice(0, maxLength);
 }
 function hashStringToUint32(value) {
     let hash = 2166136261;
@@ -85,7 +137,7 @@ function hashStringToUint32(value) {
     }
     return hash >>> 0;
 }
-function seededUnitRandom(seed) {
+export function seededUnitRandom(seed) {
     let state = hashStringToUint32(seed) || 0x9e3779b9;
     state ^= state << 13;
     state ^= state >>> 17;
@@ -160,6 +212,11 @@ export const SUPPORTED_MACROS = [
         category: "Identity",
         syntax: "{{21-character-card-ID}}",
         description: "Name of another character, pulls the card into the context; referenced by its exact 21-character ID",
+    },
+    {
+        category: "Identity",
+        syntax: "{{persona-21-character-card-ID}}",
+        description: "Name of another persona, pulls the card into the context; referenced by its exact 21-character ID",
     },
     {
         category: "Identity",
@@ -238,9 +295,14 @@ export const SUPPORTED_MACROS = [
         description: "Activated lorebook entries assigned to the exact, case-sensitive Outlet name",
     },
     {
+        category: "Lorebooks",
+        syntax: "{{lorebooksize::ID}}",
+        description: "Total number of entries in the lorebook with the given ID",
+    },
+    {
         category: "Game",
         syntax: "{{gameStoryboardKeyframeCount}}",
-        description: "Current Game Mode Keyframes per Turn target (1-6, default 3)",
+        description: "Current Game Mode Keyframes per Turn target (1-200, default 3)",
     },
     { category: "Time", syntax: "{{date}}", description: "Current real date in the user's timezone" },
     { category: "Time", syntax: "{{time}}", description: "Current real time in the user's timezone" },
@@ -259,6 +321,7 @@ export const SUPPORTED_MACROS = [
     { category: "Variables", syntax: "{{getvar::name}}", description: "Read a dynamic variable" },
     { category: "Variables", syntax: "{{setvar::name::value}}", description: "Set a dynamic variable" },
     { category: "Variables", syntax: "{{addvar::name::value}}", description: "Append to a dynamic variable" },
+    { category: "Variables", syntax: "{{addnumvar::name::value}}", description: "Add to a numeric variable" },
     {
         category: "Variables",
         syntax: "{{incvar::name}} / {{decvar::name}}",
@@ -286,6 +349,36 @@ export const SUPPORTED_MACROS = [
         category: "Formatting",
         syntax: '{{#if char == "Name" || "Other"}}...{{else}}...{{/if}}',
         description: "Conditional block with ||, &&, parentheses, else branches, and straight or typographic quotes",
+    },
+    {
+        category: "Formatting",
+        syntax: '{{#if character != "Maukie"}}...{{/if}}',
+        description: 'Negated comparison; "is not", "not contains", and "not includes" are also supported',
+    },
+    {
+        category: "Formatting",
+        syntax: '{{#if decision:"The latest message moves the scene to a new place"}}...{{/if}}',
+        description: "True when the Decision model says the statement is true of the recent messages; false with no Decision model or no answer",
+    },
+    {
+        category: "Formatting",
+        syntax: '{{#if decision_choice:"Kaelen\'s mood in the latest message" == "angry"}}...{{else if decision_choice:"Kaelen\'s mood in the latest message" == "sad"}}...{{/if}}',
+        description: "The Decision model picks one of the options this statement is compared with, or none; every comparison is false with no Decision model or no answer",
+    },
+    {
+        category: "Formatting",
+        syntax: '{{#if decision:"The latest message starts a fight" sticky:3 cooldown:5}}...{{/if}}',
+        description: "After a yes, stays yes for 3 turns without being asked, then reads as no for 5; held turns take no statement slot",
+    },
+    {
+        category: "Formatting",
+        syntax: '{{#if decision:"The weather changes in the latest message" every:3}}...{{/if}}',
+        description: "Asked only every 3 turns; reads as no between checks and takes no statement slot then",
+    },
+    {
+        category: "Formatting",
+        syntax: '{{#if decision:"In the latest message, a character is badly hurt" priority:high}}...{{/if}}',
+        description: "When a turn has more statements than its limit, priority:high is asked first and priority:low dropped first; unset is medium",
     },
     { category: "Formatting", syntax: "{{noop}}", description: "No-op placeholder removed from output" },
     { category: "Formatting", syntax: "{{// comment}}", description: "Inline author comment removed from output" },
@@ -326,6 +419,8 @@ function macroContextForCharacterProfile(profile, base) {
         groupCharacters: base?.groupCharacters,
         characterProfiles: base?.characterProfiles ?? [profile],
         variables: base?.variables ?? {},
+        localVariables: base?.localVariables,
+        deferredPresetVariableNames: base?.deferredPresetVariableNames,
         lastInput: base?.lastInput,
         chatId: base?.chatId,
         model: base?.model,
@@ -333,8 +428,10 @@ function macroContextForCharacterProfile(profile, base) {
         idleDuration: base?.idleDuration,
         timeZone: base?.timeZone,
         agentData: base?.agentData,
+        personaReferences: base?.personaReferences,
         personaFields: base?.personaFields,
         convoFields: base?.convoFields,
+        decisions: base?.decisions,
         characterFields: {
             phoneticName: profile.phoneticName ?? "",
             description: profile.description ?? "",
@@ -352,17 +449,18 @@ export function resolveCharacterScopedMacros(template, profile, depth = 0, baseC
     const scopedContext = macroContextForCharacterProfile(profile, baseContext);
     const scoped = resolveConditionalBlocks(stripMacroComments(template), scopedContext, {});
     return scoped
-        .replace(/\{\{char(?:Name)?\}\}/gi, profile.name)
-        .replace(/\{\{char(?:Name)?Phonetic\}\}/gi, profile.phoneticName ?? profile.name)
-        .replace(/\{\{group\}\}/gi, resolveGroupCharacters(scopedContext))
-        .replace(/\{\{description\}\}/gi, () => resolveCharacterFieldValue(profile, "description", depth, baseContext))
-        .replace(/\{\{personality\}\}/gi, () => resolveCharacterFieldValue(profile, "personality", depth, baseContext))
-        .replace(/\{\{backstory\}\}/gi, () => resolveCharacterFieldValue(profile, "backstory", depth, baseContext))
-        .replace(/\{\{appearance\}\}/gi, () => resolveCharacterFieldValue(profile, "appearance", depth, baseContext))
-        .replace(/\{\{scenario\}\}/gi, () => resolveCharacterFieldValue(profile, "scenario", depth, baseContext))
-        .replace(/\{\{example\}\}/gi, () => resolveCharacterFieldValue(profile, "example", depth, baseContext))
-        .replace(/\{\{charSysInfo\}\}/gi, () => resolveCharacterFieldValue(profile, "systemPrompt", depth, baseContext))
-        .replace(/\{\{charPostHistory\}\}/gi, () => resolveCharacterFieldValue(profile, "postHistoryInstructions", depth, baseContext));
+        .replace(/\{\{\s*original\s*\}\}/gi, "")
+        .replace(/\{\{\s*char(?:Name)?\s*\}\}/gi, () => profile.name)
+        .replace(/\{\{\s*char(?:Name)?Phonetic\s*\}\}/gi, () => profile.phoneticName ?? profile.name)
+        .replace(/\{\{\s*group\s*\}\}/gi, () => resolveGroupCharacters(scopedContext))
+        .replace(/\{\{\s*description\s*\}\}/gi, () => resolveCharacterFieldValue(profile, "description", depth, baseContext))
+        .replace(/\{\{\s*personality\s*\}\}/gi, () => resolveCharacterFieldValue(profile, "personality", depth, baseContext))
+        .replace(/\{\{\s*backstory\s*\}\}/gi, () => resolveCharacterFieldValue(profile, "backstory", depth, baseContext))
+        .replace(/\{\{\s*appearance\s*\}\}/gi, () => resolveCharacterFieldValue(profile, "appearance", depth, baseContext))
+        .replace(/\{\{\s*scenario\s*\}\}/gi, () => resolveCharacterFieldValue(profile, "scenario", depth, baseContext))
+        .replace(/\{\{\s*example\s*\}\}/gi, () => resolveCharacterFieldValue(profile, "example", depth, baseContext))
+        .replace(/\{\{\s*charSysInfo\s*\}\}/gi, () => resolveCharacterFieldValue(profile, "systemPrompt", depth, baseContext))
+        .replace(/\{\{\s*charPostHistory\s*\}\}/gi, () => resolveCharacterFieldValue(profile, "postHistoryInstructions", depth, baseContext));
 }
 export function resolveDeferredCharacterMacros(template, profile, baseContext) {
     if (!hasDeferredCharacterMacros(template))
@@ -399,9 +497,7 @@ export function resolveDeferredCharacterMacros(template, profile, baseContext) {
     result = result
         .split(DEFERRED_CHARACTER_MACRO_TOKENS.convoDisplay)
         .join(scopedContext.convoFields?.charDisplayName ?? "");
-    result = result
-        .split(DEFERRED_CHARACTER_MACRO_TOKENS.charAbout)
-        .join(scopedContext.convoFields?.charAbout ?? "");
+    result = result.split(DEFERRED_CHARACTER_MACRO_TOKENS.charAbout).join(scopedContext.convoFields?.charAbout ?? "");
     result = result
         .split(DEFERRED_CHARACTER_MACRO_TOKENS.convoBehavior)
         .join(scopedContext.convoFields?.convoBehavior ?? "");
@@ -439,9 +535,96 @@ function resolveDeferredCharacterConditionals(template, ctx) {
         return resolveMacros(selected, ctx, { trimResult: false });
     });
 }
+function hasCharacterConditionalOperandCandidate(condition) {
+    let quote = null;
+    let escaped = false;
+    for (let index = 0; index < condition.length; index++) {
+        const character = condition[index];
+        if (quote) {
+            if (escaped)
+                escaped = false;
+            else if (character === "\\")
+                escaped = true;
+            else if (quoteKind(character) === quote)
+                quote = null;
+            continue;
+        }
+        const nextQuote = quoteKind(character);
+        if (nextQuote) {
+            quote = nextQuote;
+            continue;
+        }
+        const candidateStart = character === "@" ? index + 1 : index;
+        let candidateEnd = candidateStart;
+        while (candidateEnd < condition.length) {
+            const code = condition.charCodeAt(candidateEnd);
+            const isIdentifierCharacter = (code >= 48 && code <= 57) || (code >= 65 && code <= 90) || code === 95 || (code >= 97 && code <= 122);
+            if (!isIdentifierCharacter)
+                break;
+            candidateEnd++;
+        }
+        if (candidateEnd === candidateStart)
+            continue;
+        if (CHARACTER_CONDITIONAL_OPERAND_NAMES.has(condition.slice(candidateStart, candidateEnd).toLowerCase())) {
+            return true;
+        }
+        index = candidateEnd - 1;
+    }
+    return false;
+}
+function hasCharacterMacro(template) {
+    const lowerTemplate = template.toLowerCase();
+    for (const name of CHARACTER_MACRO_NAMES) {
+        if (lowerTemplate.includes(`{{${name}}}`))
+            return true;
+    }
+    let searchIndex = 0;
+    while (searchIndex < template.length) {
+        const start = template.indexOf("{{", searchIndex);
+        if (start === -1)
+            return false;
+        let bodyStart = start + 2;
+        while (bodyStart < template.length && /\s/u.test(template[bodyStart]))
+            bodyStart++;
+        let nameEnd = bodyStart;
+        while (nameEnd < template.length && /[A-Za-z_]/u.test(template[nameEnd]))
+            nameEnd++;
+        const name = template.slice(bodyStart, nameEnd).toLowerCase();
+        let directEnd = nameEnd;
+        while (directEnd < template.length && /\s/u.test(template[directEnd]))
+            directEnd++;
+        if (template.startsWith("}}", directEnd) && CHARACTER_MACRO_NAMES.has(name))
+            return true;
+        const ifEnd = bodyStart + 3;
+        const elseIfEnd = directEnd + 2;
+        const isIf = template.slice(bodyStart, ifEnd).toLowerCase() === "#if" &&
+            (template.startsWith("}}", ifEnd) || (ifEnd < template.length && /\s/u.test(template[ifEnd])));
+        const isElseIf = name === "else" &&
+            directEnd > nameEnd &&
+            template.slice(directEnd, elseIfEnd).toLowerCase() === "if" &&
+            (template.startsWith("}}", elseIfEnd) || (elseIfEnd < template.length && /\s/u.test(template[elseIfEnd])));
+        if (!isIf && !isElseIf) {
+            searchIndex = Math.max(start + 2, nameEnd);
+            continue;
+        }
+        const end = findBalancedMacroEnd(template, start);
+        if (end === -1) {
+            return hasCharacterConditionalOperandCandidate(template.slice(bodyStart));
+        }
+        const body = template.slice(start + 2, end - 2).trim();
+        const condition = parseIfCondition(body) ?? parseElseIfCondition(body);
+        if (condition !== null &&
+            hasCharacterConditionalOperandCandidate(condition) &&
+            (conditionDependsOnCharacter(condition) || conditionHasLegacyAdjacentCharacterReference(condition))) {
+            return true;
+        }
+        searchIndex = end;
+    }
+    return false;
+}
 function expandBracketedCharacterBlocks(template, ctx) {
     const profiles = ctx.characterProfiles ?? [];
-    if (profiles.length <= 1 || !CHARACTER_MACRO_PATTERN.test(template)) {
+    if (profiles.length <= 1 || !hasCharacterMacro(template)) {
         return template;
     }
     const lines = template.split(/\r?\n/);
@@ -462,7 +645,7 @@ function expandBracketedCharacterBlocks(template, ctx) {
             continue;
         }
         const block = lines.slice(index, endIndex + 1).join("\n");
-        if (!CHARACTER_MACRO_PATTERN.test(block)) {
+        if (!hasCharacterMacro(block)) {
             expandedLines.push(...lines.slice(index, endIndex + 1));
             index = endIndex;
             continue;
@@ -546,6 +729,168 @@ function stripOuterQuotes(value) {
         .replace(/\\(["'\u2018\u2019\u201a\u201b\u201c\u201d\u201e\u201f\\])/g, "$1")
         .replace(/\\n/g, "\n");
 }
+const DECISION_OPERAND_PREFIX_RE = /^decision\s*:/iu;
+const DECISION_CHOICE_OPERAND_PREFIX_RE = /^decision_choice\s*:/iu;
+/** The most turns a timing modifier holds for. */
+export const MAX_DECISION_TIMING_TURNS = 1000;
+// A quoted statement followed only by `name:value` modifiers. Greedy, so a quote inside
+// the statement is part of it: the closing quote is the last one before the modifiers.
+const DECISION_STATEMENT_WITH_MODIFIERS_RE = /^(["\u201c\u201d\u201e\u201f]|['\u2018\u2019\u201a\u201b])([\s\S]*)(["\u201c\u201d\u201e\u201f]|['\u2018\u2019\u201a\u201b])((?:\s+[a-z_]+\s*:\s*\S+)*)\s*$/iu;
+function statementAfterPrefix(raw, prefix) {
+    const token = raw.trim();
+    if (!prefix.test(token))
+        return null;
+    const rest = token.replace(prefix, "").trim();
+    const quoted = DECISION_STATEMENT_WITH_MODIFIERS_RE.exec(rest);
+    if (quoted && quoteKind(quoted[1]) === quoteKind(quoted[3]) && quoted[4].trim()) {
+        const question = stripOuterQuotes(`${quoted[1]}${quoted[2]}${quoted[3]}`) ?? quoted[2];
+        if (!question.trim())
+            return null;
+        const timing = {};
+        for (const modifier of quoted[4].trim().split(/\s+(?=[a-z_]+\s*:)/iu)) {
+            const [name, value] = modifier.split(":").map((part) => part.trim().toLowerCase());
+            const turns = /^\d+$/u.test(value ?? "") ? Math.min(MAX_DECISION_TIMING_TURNS, Number(value)) : NaN;
+            // Unknown modifiers are ignored, so a later one does not break an older build.
+            if ((name === "sticky" || name === "cooldown" || name === "every") && turns > 0)
+                timing[name] = turns;
+            // Medium is the default, so it is not stored.
+            else if (name === "priority" && (value === "high" || value === "low"))
+                timing.priority = value;
+        }
+        return { question, timing };
+    }
+    const question = stripOuterQuotes(rest) ?? rest;
+    return question.trim() ? { question, timing: {} } : null;
+}
+/** The statement inside a `decision:"..."` operand, as written, or null for any other operand. */
+function decisionQuestionFromOperand(raw) {
+    return statementAfterPrefix(raw, DECISION_OPERAND_PREFIX_RE)?.question ?? null;
+}
+/** The statement inside a `decision_choice:"..."` operand, or null for any other operand. */
+function decisionChoiceQuestionFromOperand(raw) {
+    return statementAfterPrefix(raw, DECISION_CHOICE_OPERAND_PREFIX_RE)?.question ?? null;
+}
+/** The modifiers written after a decision operand's statement. */
+function decisionOperandTiming(raw) {
+    return ((statementAfterPrefix(raw, DECISION_OPERAND_PREFIX_RE) ??
+        statementAfterPrefix(raw, DECISION_CHOICE_OPERAND_PREFIX_RE))?.timing ?? {});
+}
+/** Comparisons that name one option. `contains` and the numeric operators do not. */
+const DECISION_CHOICE_OPERATORS = new Set(["==", "=", "is", "!=", "is not"]);
+/** Whitespace-normalized, so a line break inside a statement does not change its key. */
+export function normalizeDecisionQuestion(text) {
+    return text.replace(/\s+/gu, " ").trim();
+}
+/**
+ * A statement's text once its own macros are resolved in `ctx`: the key an answer is
+ * stored and looked up under. Collection and evaluation both go through here, so the
+ * two can never disagree about what was asked.
+ */
+export function resolveDecisionQuestionText(question, ctx) {
+    return normalizeDecisionQuestion(resolveMacros(question, { ...ctx, decisions: undefined }, { trimResult: true }));
+}
+/**
+ * Every decision statement in a template, as written, in order of appearance: each
+ * `decision:"..."`, and each `decision_choice:"..."` with the options it is compared
+ * against (`decision_choice:"..." == "angry"` offers "angry").
+ *
+ * Read with the same tag and condition parsers the engine evaluates with, so a
+ * statement is found exactly when a condition would ask it. The same Choice statement
+ * compared in several places is returned once per place; the caller merges options.
+ */
+export function collectDecisionQuestions(template) {
+    const questions = [];
+    if (!/decision(?:_choice)?\s*:/iu.test(template))
+        return questions;
+    const text = stripMacroComments(template);
+    let index = 0;
+    while (index < text.length) {
+        const tag = readNextMacroTag(text, index);
+        if (!tag)
+            break;
+        const condition = parseIfCondition(tag.body) ?? parseElseIfCondition(tag.body);
+        if (condition) {
+            // `decision_choice:"q" == "rain" || "snow"`: the shorthand's later literals
+            // parse as bare atoms, and belong to the Choice statement before them.
+            let lastChoice = null;
+            for (const parsed of parseConditionComparisons(condition)) {
+                if (parsed.right === undefined) {
+                    const literal = stripOuterQuotes(parsed.left);
+                    if (literal !== null && lastChoice && literal.trim())
+                        lastChoice.options.push(literal.trim());
+                    if (literal !== null)
+                        continue;
+                }
+                for (const [operand, other] of [
+                    [parsed.left, parsed.right],
+                    [parsed.right, parsed.left],
+                ]) {
+                    if (operand === undefined)
+                        continue;
+                    const question = decisionQuestionFromOperand(operand);
+                    if (question) {
+                        questions.push({ kind: "noul", question, options: [], ...decisionOperandTiming(operand) });
+                        continue;
+                    }
+                    const choice = decisionChoiceQuestionFromOperand(operand);
+                    if (!choice)
+                        continue;
+                    const literal = other !== undefined && DECISION_CHOICE_OPERATORS.has(parsed.operator.toLowerCase())
+                        ? stripOuterQuotes(other)
+                        : null;
+                    lastChoice = {
+                        kind: "choice",
+                        question: choice,
+                        options: literal?.trim() ? [literal.trim()] : [],
+                        ...decisionOperandTiming(operand),
+                    };
+                    questions.push(lastChoice);
+                }
+            }
+        }
+        index = tag.end;
+    }
+    return questions;
+}
+/**
+ * Whether parsed import data uses decisions: prompt statements, lorebook activation,
+ * or agent activation questions. Walks parsed data rather than raw JSON text, whose
+ * escaped quotes the condition parser should never see.
+ */
+export function containsDecisionStatements(value, depth = 0) {
+    if (depth > 12)
+        return false;
+    if (typeof value === "string")
+        return /decision(?:_choice)?\s*:/iu.test(value) && collectDecisionQuestions(value).length > 0;
+    if (Array.isArray(value))
+        return value.some((item) => containsDecisionStatements(item, depth + 1));
+    if (value && typeof value === "object") {
+        // A lorebook entry activated by a decision (#6570), wherever the file keeps it.
+        const record = value;
+        if (typeof record.activationQuestion === "string" && record.activationQuestion.trim())
+            return true;
+        if ((record.decisionMode === "require" || record.decisionMode === "trigger") &&
+            typeof record.decisionStatement === "string" &&
+            record.decisionStatement.trim())
+            return true;
+        return Object.values(value).some((item) => containsDecisionStatements(item, depth + 1));
+    }
+    return false;
+}
+/**
+ * The resolved statements a template can ask in this context: one for the context
+ * itself, plus one per character when the statement names `{{char}}` or another
+ * character macro, because a group block or a per-responder pass asks it once per
+ * character.
+ */
+export function resolveDecisionQuestionVariants(question, ctx) {
+    const variants = new Set([resolveDecisionQuestionText(question, ctx)]);
+    if (hasCharacterMacro(question))
+        for (const profile of ctx.characterProfiles ?? [])
+            variants.add(resolveDecisionQuestionText(question, macroContextForCharacterProfile(profile, ctx)));
+    variants.delete("");
+    return [...variants];
+}
 function normalizeConditionKey(value) {
     return value.trim().replace(/^@/, "").toLowerCase();
 }
@@ -564,6 +909,27 @@ function resolveConditionalOperand(raw, ctx, options) {
     const quoted = stripOuterQuotes(raw);
     if (quoted !== null)
         return quoted;
+    // A decision is true only when an answer says so. Before this branch existed the
+    // operand fell through to its own literal text, which is non-empty and so read as
+    // true on every turn.
+    const decisionQuestion = decisionQuestionFromOperand(raw);
+    if (decisionQuestion !== null) {
+        const key = resolveDecisionQuestionText(decisionQuestion, ctx);
+        const answer = ctx.decisions?.answers?.get(key);
+        if (answer === undefined && key)
+            ctx.decisions?.unanswered?.add(key);
+        return answer === true ? "true" : "";
+    }
+    // The chosen option, compared like any other value. No answer compares equal to
+    // nothing an author would write, so every branch that names an option is false.
+    const choiceQuestion = decisionChoiceQuestionFromOperand(raw);
+    if (choiceQuestion !== null) {
+        const key = resolveDecisionQuestionText(choiceQuestion, ctx);
+        const choice = ctx.decisions?.choices?.get(key);
+        if (choice === undefined && key)
+            ctx.decisions?.unanswered?.add(key);
+        return choice ?? "";
+    }
     const token = raw.trim();
     const normalized = normalizeConditionKey(token);
     switch (normalized) {
@@ -624,7 +990,7 @@ function resolveConditionalOperand(raw, ctx, options) {
         default:
             if (/^var[:.]/i.test(token)) {
                 const name = token.replace(/^var[:.]/i, "").trim();
-                return ctx.variables[name] ?? "";
+                return readMacroVariable(ctx.variables, name) ?? readMacroVariable(ctx.localVariables, name) ?? "";
             }
             // Resolve any other bare operand through the same flat pass used for
             // {{token}}, so every read macro valid in {{...}} is also testable bare in
@@ -636,7 +1002,7 @@ function resolveConditionalOperand(raw, ctx, options) {
             //     plain word or number still compares as itself — unchanged behavior;
             //   • force concrete resolution (deferCharacterMacros off) so a group chat
             //     compares the real value, not a deferred per-character placeholder.
-            if (!/^(setvar|addvar|incvar|decvar)\b/i.test(token)) {
+            if (!/^(setvar|addvar|addnumvar|incvar|decvar)\b/i.test(token)) {
                 const braced = `{{${token}}}`;
                 const resolved = resolveMacros(braced, ctx, {
                     ...nestedMacroOptions(options),
@@ -646,126 +1012,18 @@ function resolveConditionalOperand(raw, ctx, options) {
                 if (resolved !== braced)
                     return resolved;
             }
-            return ctx.variables[token] ?? token;
+            return readMacroVariable(ctx.variables, token) ?? readMacroVariable(ctx.localVariables, token) ?? token;
     }
 }
 function isCharacterConditionalOperand(raw) {
-    const normalized = normalizeConditionKey(raw);
-    return /^(char|charname|charphonetic|charnamephonetic|character|characterphonetic|speaker|speakerphonetic|group|description|personality|backstory|appearance|scenario|example|charsysinfo|charposthistory|convo_display|char_about|convo_behavior)$/.test(normalized);
+    // A decision about `{{char}}` asks something different for each character, so it
+    // takes the per-character path like any other character condition.
+    const decisionQuestion = decisionQuestionFromOperand(raw) ?? decisionChoiceQuestionFromOperand(raw);
+    if (decisionQuestion !== null)
+        return hasCharacterMacro(decisionQuestion);
+    return CHARACTER_CONDITIONAL_OPERAND_NAMES.has(normalizeConditionKey(raw));
 }
-function splitTopLevelCondition(input, delimiter) {
-    const parts = [];
-    let partStart = 0;
-    let quote = null;
-    let escaped = false;
-    let macroDepth = 0;
-    let parenthesisDepth = 0;
-    for (let index = 0; index < input.length; index += 1) {
-        const character = input[index];
-        if (quote) {
-            if (escaped) {
-                escaped = false;
-            }
-            else if (character === "\\") {
-                escaped = true;
-            }
-            else if (quoteKind(character) === quote) {
-                quote = null;
-            }
-            continue;
-        }
-        if (macroDepth > 0) {
-            if (character === "{" && input[index + 1] === "{") {
-                macroDepth += 1;
-                index += 1;
-            }
-            else if (character === "}" && input[index + 1] === "}") {
-                macroDepth -= 1;
-                index += 1;
-            }
-            continue;
-        }
-        const nextQuote = quoteKind(character);
-        if (nextQuote) {
-            quote = nextQuote;
-            continue;
-        }
-        if (character === "{" && input[index + 1] === "{") {
-            macroDepth = 1;
-            index += 1;
-            continue;
-        }
-        if (character === "(") {
-            parenthesisDepth += 1;
-            continue;
-        }
-        if (character === ")" && parenthesisDepth > 0) {
-            parenthesisDepth -= 1;
-            continue;
-        }
-        if (parenthesisDepth === 0 && input.startsWith(delimiter, index)) {
-            parts.push(input.slice(partStart, index).trim());
-            partStart = index + delimiter.length;
-            index += delimiter.length - 1;
-        }
-    }
-    parts.push(input.slice(partStart).trim());
-    return parts;
-}
-function isWrappedCondition(input) {
-    if (!input.startsWith("(") || !input.endsWith(")"))
-        return false;
-    let quote = null;
-    let escaped = false;
-    let macroDepth = 0;
-    let parenthesisDepth = 0;
-    for (let index = 0; index < input.length; index += 1) {
-        const character = input[index];
-        if (quote) {
-            if (escaped)
-                escaped = false;
-            else if (character === "\\")
-                escaped = true;
-            else if (quoteKind(character) === quote)
-                quote = null;
-            continue;
-        }
-        if (macroDepth > 0) {
-            if (character === "{" && input[index + 1] === "{") {
-                macroDepth += 1;
-                index += 1;
-            }
-            else if (character === "}" && input[index + 1] === "}") {
-                macroDepth -= 1;
-                index += 1;
-            }
-            continue;
-        }
-        const nextQuote = quoteKind(character);
-        if (nextQuote) {
-            quote = nextQuote;
-            continue;
-        }
-        if (character === "{" && input[index + 1] === "{") {
-            macroDepth = 1;
-            index += 1;
-            continue;
-        }
-        if (character === "(")
-            parenthesisDepth += 1;
-        else if (character === ")")
-            parenthesisDepth -= 1;
-        if (parenthesisDepth === 0 && index < input.length - 1)
-            return false;
-    }
-    return parenthesisDepth === 0;
-}
-function unwrapCondition(input) {
-    let unwrapped = input.trim();
-    while (isWrappedCondition(unwrapped))
-        unwrapped = unwrapped.slice(1, -1).trim();
-    return unwrapped;
-}
+const CONDITION_WORD_OPERATOR_RE = /(?:is\s+not|not\s+contains|not\s+includes|contains|includes|is)(?=\s|$)/iuy;
 function parseConditionExpression(condition) {
     const symbolicOperators = [">=", "<=", "==", "!=", ">", "<", "="];
     let quote = null;
@@ -811,9 +1069,8 @@ function parseConditionExpression(condition) {
                 return { left, operator: symbolicOperator, right };
         }
         if (index === 0 || /\s/u.test(condition[index - 1])) {
-            const wordMatch = condition
-                .slice(index)
-                .match(/^(is\s+not|not\s+contains|not\s+includes|contains|includes|is)(?=\s|$)/iu);
+            CONDITION_WORD_OPERATOR_RE.lastIndex = index;
+            const wordMatch = CONDITION_WORD_OPERATOR_RE.exec(condition);
             if (wordMatch?.[0]) {
                 const left = condition.slice(0, index).trim();
                 const right = condition.slice(index + wordMatch[0].length).trim();
@@ -825,15 +1082,208 @@ function parseConditionExpression(condition) {
     }
     return { left: condition.trim(), operator: "truthy" };
 }
+function createConditionSyntaxFrame(atomStart) {
+    return {
+        atomStart,
+        andChildren: [],
+        orChildren: [],
+        expectsOperand: true,
+        literalParenthesisDepth: 0,
+    };
+}
+function appendConditionSyntaxNode(frame, node) {
+    if (!frame.expectsOperand) {
+        const previous = frame.andChildren.pop();
+        if (previous.kind === "adjacent") {
+            previous.children.push(node);
+            frame.andChildren.push(previous);
+        }
+        else {
+            frame.andChildren.push({ kind: "adjacent", children: [previous, node] });
+        }
+        frame.expectsOperand = false;
+        return;
+    }
+    frame.andChildren.push(node);
+    frame.expectsOperand = false;
+}
+function conditionSyntaxNodeText(node) {
+    const parts = [];
+    const pending = [node];
+    while (pending.length > 0) {
+        const part = pending.pop();
+        if (typeof part === "string") {
+            parts.push(part);
+        }
+        else if (part.kind === "atom") {
+            parts.push(part.value);
+        }
+        else if (part.kind === "group") {
+            pending.push(")", part.child, "(");
+        }
+        else {
+            const separator = part.kind === "and" ? " && " : part.kind === "or" ? " || " : "";
+            for (let index = part.children.length - 1; index >= 0; index -= 1) {
+                pending.push(part.children[index]);
+                if (index > 0 && separator)
+                    pending.push(separator);
+            }
+        }
+    }
+    return parts.join("");
+}
+function appendConditionAtom(frame, condition, end, forceEmpty) {
+    const value = condition.slice(frame.atomStart, end).trim();
+    frame.atomStart = end;
+    if (!value && !(forceEmpty && frame.expectsOperand))
+        return;
+    appendConditionSyntaxNode(frame, { kind: "atom", value });
+}
+function combineConditionNodes(kind, children) {
+    return children.length === 1 ? children[0] : { kind, children };
+}
+function finishConditionSyntaxFrame(frame) {
+    const andNode = combineConditionNodes("and", frame.andChildren);
+    if (frame.orChildren.length === 0)
+        return andNode;
+    return combineConditionNodes("or", [...frame.orChildren, andNode]);
+}
+/** Parse the supported boolean grammar in one quote- and macro-aware pass. */
+function parseConditionSyntax(condition) {
+    const frames = [createConditionSyntaxFrame(0)];
+    let quote = null;
+    let escaped = false;
+    let macroDepth = 0;
+    for (let index = 0; index < condition.length; index += 1) {
+        const character = condition[index];
+        const frame = frames[frames.length - 1];
+        if (quote) {
+            if (escaped)
+                escaped = false;
+            else if (character === "\\")
+                escaped = true;
+            else if (quoteKind(character) === quote)
+                quote = null;
+            continue;
+        }
+        if (macroDepth > 0) {
+            if (character === "{" && condition[index + 1] === "{") {
+                macroDepth += 1;
+                index += 1;
+            }
+            else if (character === "}" && condition[index + 1] === "}") {
+                macroDepth -= 1;
+                index += 1;
+            }
+            continue;
+        }
+        const nextQuote = quoteKind(character);
+        if (nextQuote) {
+            quote = nextQuote;
+            continue;
+        }
+        if (character === "{" && condition[index + 1] === "{") {
+            macroDepth = 1;
+            index += 1;
+            continue;
+        }
+        if (character === "(") {
+            const prefix = condition.slice(frame.atomStart, index);
+            if (frame.literalParenthesisDepth === 0 && frame.expectsOperand && prefix.trim().length === 0) {
+                frames.push(createConditionSyntaxFrame(index + 1));
+            }
+            else {
+                frame.literalParenthesisDepth += 1;
+            }
+            continue;
+        }
+        if (character === ")") {
+            if (frame.literalParenthesisDepth > 0) {
+                frame.literalParenthesisDepth -= 1;
+                continue;
+            }
+            if (frames.length === 1) {
+                if (frame.andChildren.length > 0) {
+                    appendConditionSyntaxNode(frame, { kind: "atom", value: ")" });
+                    frame.atomStart = index + 1;
+                }
+                continue;
+            }
+            appendConditionAtom(frame, condition, index, true);
+            const groupedNode = finishConditionSyntaxFrame(frame);
+            frames.pop();
+            const parent = frames[frames.length - 1];
+            appendConditionSyntaxNode(parent, { kind: "group", child: groupedNode });
+            parent.atomStart = index + 1;
+            continue;
+        }
+        const operator = frame.literalParenthesisDepth === 0 ? condition.slice(index, index + 2) : "";
+        if (operator !== "&&" && operator !== "||")
+            continue;
+        appendConditionAtom(frame, condition, index, true);
+        if (operator === "||") {
+            frame.orChildren.push(combineConditionNodes("and", frame.andChildren));
+            frame.andChildren = [];
+        }
+        frame.expectsOperand = true;
+        frame.atomStart = index + 2;
+        index += 1;
+    }
+    // An unmatched opening parenthesis makes every operator after it nested in
+    // the legacy grammar. Treat that suffix as one atom without rescanning it.
+    const root = frames[0];
+    appendConditionAtom(root, condition, condition.length, true);
+    return finishConditionSyntaxFrame(root);
+}
 function parseConditionComparisons(condition) {
-    const expression = unwrapCondition(condition);
-    const orParts = splitTopLevelCondition(expression, "||");
-    if (orParts.length > 1)
-        return orParts.flatMap(parseConditionComparisons);
-    const andParts = splitTopLevelCondition(expression, "&&");
-    if (andParts.length > 1)
-        return andParts.flatMap(parseConditionComparisons);
-    return [parseConditionExpression(expression)];
+    const comparisons = [];
+    const pending = [parseConditionSyntax(condition)];
+    while (pending.length > 0) {
+        const node = pending.pop();
+        if (node.kind === "atom") {
+            comparisons.push(parseConditionExpression(node.value));
+        }
+        else if (node.kind === "group") {
+            pending.push(node.child);
+        }
+        else if (node.kind === "adjacent") {
+            comparisons.push(parseConditionExpression(conditionSyntaxNodeText(node)));
+        }
+        else {
+            for (let index = node.children.length - 1; index >= 0; index -= 1)
+                pending.push(node.children[index]);
+        }
+    }
+    return comparisons;
+}
+// Bracket expansion historically recognized character operands even in
+// malformed adjacent groups such as `(char)()`. Keep that compatibility local
+// while comparison/deferred-operand consumers match the atom actually evaluated.
+function conditionHasLegacyAdjacentCharacterReference(condition) {
+    const pending = [
+        { node: parseConditionSyntax(condition), insideAdjacent: false },
+    ];
+    while (pending.length > 0) {
+        const { node, insideAdjacent } = pending.pop();
+        if (node.kind === "atom") {
+            if (!insideAdjacent)
+                continue;
+            const parsed = parseConditionExpression(node.value);
+            if (isCharacterConditionalOperand(parsed.left) ||
+                (parsed.right ? isCharacterConditionalOperand(parsed.right) : false)) {
+                return true;
+            }
+        }
+        else if (node.kind === "group") {
+            pending.push({ node: node.child, insideAdjacent });
+        }
+        else {
+            const childInsideAdjacent = insideAdjacent || node.kind === "adjacent";
+            for (const child of node.children)
+                pending.push({ node: child, insideAdjacent: childInsideAdjacent });
+        }
+    }
+    return false;
 }
 function conditionDependsOnCharacter(condition) {
     return parseConditionComparisons(condition).some((parsed) => isCharacterConditionalOperand(parsed.left) ||
@@ -895,46 +1345,126 @@ function evaluateParsedCondition(parsed, ctx, options) {
     if (parsed.operator === "truthy")
         return left.trim().length > 0 && !/^(false|0|no|off|null|undefined)$/i.test(left);
     const right = resolveConditionalOperand(parsed.right ?? "", ctx, options);
+    // No answer means no, whatever the comparison: without this, `decision_choice:"mood"
+    // != "calm"` would compare "" with "calm" and read as true on every turn for a user
+    // with no Decision model. Checked after both sides resolve, so both are recorded.
+    if (isUnansweredDecisionOperand(parsed.left, ctx) || isUnansweredDecisionOperand(parsed.right ?? "", ctx))
+        return false;
     return compareConditionValues(left, parsed.operator, right);
 }
-function parseSimpleCondition(condition, ctx, options) {
-    const expression = unwrapCondition(condition);
-    if (splitTopLevelCondition(expression, "||").length > 1 ||
-        splitTopLevelCondition(expression, "&&").length > 1) {
-        return null;
+/** A `decision:` or `decision_choice:` operand that has no answer this turn. */
+function isUnansweredDecisionOperand(raw, ctx) {
+    const question = decisionQuestionFromOperand(raw);
+    if (question !== null)
+        return ctx.decisions?.answers?.get(resolveDecisionQuestionText(question, ctx)) === undefined;
+    const choiceQuestion = decisionChoiceQuestionFromOperand(raw);
+    if (choiceQuestion !== null)
+        return ctx.decisions?.choices?.get(resolveDecisionQuestionText(choiceQuestion, ctx)) === undefined;
+    return false;
+}
+function parseResolvedConditionAtom(atom, ctx, options) {
+    return parseConditionExpression(resolveConditionMacros(atom, ctx, options));
+}
+function conditionSyntaxAtomValue(node) {
+    if (node.kind === "atom")
+        return node.value;
+    return node.kind === "adjacent" ? conditionSyntaxNodeText(node) : null;
+}
+function evaluateOrConditionAtom(atom, equalityShorthand, ctx, options) {
+    const parsed = parseResolvedConditionAtom(atom, ctx, options);
+    let effective = parsed;
+    let nextShorthand = equalityShorthand;
+    if (["=", "==", "is"].includes(parsed.operator) && parsed.right !== undefined) {
+        nextShorthand = { left: parsed.left, operator: parsed.operator };
     }
-    return parseConditionExpression(resolveConditionMacros(expression, ctx, options));
+    else if (equalityShorthand && parsed.operator === "truthy" && stripOuterQuotes(parsed.left) !== null) {
+        effective = { ...equalityShorthand, right: parsed.left };
+    }
+    return { matches: evaluateParsedCondition(effective, ctx, options), equalityShorthand: nextShorthand };
 }
 function evaluateConditionExpression(condition, ctx, options) {
-    const expression = unwrapCondition(condition);
-    const orParts = splitTopLevelCondition(expression, "||");
-    if (orParts.length > 1) {
-        let equalityShorthand = null;
-        for (const part of orParts) {
-            const parsed = parseSimpleCondition(part, ctx, options);
-            if (parsed) {
-                let effective = parsed;
-                if (["=", "==", "is"].includes(parsed.operator) && parsed.right !== undefined) {
-                    equalityShorthand = { left: parsed.left, operator: parsed.operator };
-                }
-                else if (equalityShorthand && parsed.operator === "truthy" && stripOuterQuotes(parsed.left) !== null) {
-                    effective = { ...equalityShorthand, right: parsed.left };
-                }
-                if (evaluateParsedCondition(effective, ctx, options))
-                    return true;
+    const frames = [];
+    let current = parseConditionSyntax(condition);
+    let result = false;
+    while (true) {
+        if (current) {
+            if (current.kind === "atom" || current.kind === "adjacent") {
+                result = evaluateParsedCondition(parseResolvedConditionAtom(conditionSyntaxAtomValue(current), ctx, options), ctx, options);
+                current = null;
             }
-            else if (evaluateConditionExpression(part, ctx, options)) {
-                return true;
+            else if (current.kind === "group") {
+                frames.push({ kind: "group" });
+                current = current.child;
+                continue;
+            }
+            else if (current.kind === "and") {
+                frames.push({ kind: "and", children: current.children, index: 0 });
+                current = current.children[0];
+                continue;
+            }
+            else {
+                const frame = {
+                    kind: "or",
+                    children: current.children,
+                    index: 0,
+                    equalityShorthand: null,
+                };
+                frames.push(frame);
+                const child = current.children[0];
+                if (child.kind === "atom" || child.kind === "adjacent") {
+                    const evaluated = evaluateOrConditionAtom(conditionSyntaxAtomValue(child), frame.equalityShorthand, ctx, options);
+                    frame.equalityShorthand = evaluated.equalityShorthand;
+                    result = evaluated.matches;
+                    current = null;
+                }
+                else {
+                    current = child;
+                }
+                continue;
             }
         }
-        return false;
+        const frame = frames[frames.length - 1];
+        if (!frame)
+            return result;
+        if (frame.kind === "group") {
+            frames.pop();
+            continue;
+        }
+        if (frame.kind === "and") {
+            if (!result) {
+                frames.pop();
+                continue;
+            }
+            frame.index += 1;
+            if (frame.index >= frame.children.length) {
+                frames.pop();
+                result = true;
+            }
+            else {
+                current = frame.children[frame.index];
+            }
+            continue;
+        }
+        if (result) {
+            frames.pop();
+            continue;
+        }
+        frame.index += 1;
+        if (frame.index >= frame.children.length) {
+            frames.pop();
+            result = false;
+            continue;
+        }
+        const child = frame.children[frame.index];
+        if (child.kind === "atom" || child.kind === "adjacent") {
+            const evaluated = evaluateOrConditionAtom(conditionSyntaxAtomValue(child), frame.equalityShorthand, ctx, options);
+            frame.equalityShorthand = evaluated.equalityShorthand;
+            result = evaluated.matches;
+        }
+        else {
+            current = child;
+        }
     }
-    const andParts = splitTopLevelCondition(expression, "&&");
-    if (andParts.length > 1) {
-        return andParts.every((part) => evaluateConditionExpression(part, ctx, options));
-    }
-    const parsed = parseSimpleCondition(expression, ctx, options);
-    return parsed ? evaluateParsedCondition(parsed, ctx, options) : false;
 }
 function evaluateCondition(condition, ctx, options = {}) {
     return evaluateConditionExpression(condition, ctx, options);
@@ -959,6 +1489,20 @@ function parseIfCondition(body) {
 function parseElseIfCondition(body) {
     const match = body.match(/^else\s+if(?:\s+([\s\S]*))?$/i);
     return match ? (match[1] ?? "").trim() : null;
+}
+/** Detect authored field references without treating comments or literal prose as macros. */
+export function templateReferencesAnyMacro(template, names) {
+    const aliases = new Set(names.map((name) => name.toLowerCase()));
+    for (const [, body] of stripMacroComments(template).matchAll(/\{\{([^{}]*?)\}\}/g)) {
+        if (aliases.has(body.toLowerCase()))
+            return true;
+        const condition = parseIfCondition(body.trim()) ?? parseElseIfCondition(body.trim());
+        if (condition === null)
+            continue;
+        if (parseConditionComparisons(condition).some(({ left, right }) => [left, right].some((operand) => operand !== undefined && stripOuterQuotes(operand) === null && aliases.has(normalizeConditionKey(operand)))))
+            return true;
+    }
+    return false;
 }
 function findConditionalStart(input, fromIndex) {
     let searchIndex = fromIndex;
@@ -1023,6 +1567,29 @@ function branchDependsOnCharacter(branches) {
 function conditionDependsOnDeferredOperand(condition, predicate) {
     return parseConditionComparisons(condition).some((parsed) => predicate(parsed.left) || (parsed.right ? predicate(parsed.right) : false));
 }
+/**
+ * Whether a `{{#if}}` operand names a preset variable whose value is still
+ * pending, so the block must be deferred rather than decided from the chat's
+ * value. Accepts the `var:`/`var.` spellings as well as the bare name.
+ */
+function isDeferredPresetOperand(operand, ctx) {
+    const claimed = ctx.deferredPresetVariableNames;
+    if (!claimed?.size)
+        return false;
+    const unwrap = (value) => value
+        .trim()
+        .replace(/^var[:.]/i, "")
+        .trim();
+    if (claimed.has(unwrap(operand)))
+        return true;
+    // An operand may also name the variable inside braces — `{{char1}} == "Anna"`
+    // on either side of the comparison — which is not the whole operand string.
+    for (const match of operand.matchAll(/\{\{\s*([^{}]+?)\s*\}\}/g)) {
+        if (claimed.has(unwrap(match[1])))
+            return true;
+    }
+    return false;
+}
 function branchDependsOnDeferredOperand(branches, predicate) {
     return branches.some((branch) => branch.condition !== null && conditionDependsOnDeferredOperand(branch.condition, predicate));
 }
@@ -1054,9 +1621,14 @@ export function selectConditionalPayloadBranch(payload, ctx, options) {
     const branches = Array.isArray(chainBranches)
         ? chainBranches
         : [
-            { condition: payload.condition, content: payload.truthy },
+            {
+                condition: payload.condition,
+                content: payload.truthy,
+            },
             { condition: null, content: payload.falsy },
         ];
+    if (ctx.decisions?.planned)
+        return planConditionalBranches(branches, ctx.decisions.planned, ctx, options);
     for (const branch of branches) {
         if (branch.condition === null || evaluateCondition(branch.condition, ctx, options)) {
             return branch.content;
@@ -1064,36 +1636,256 @@ export function selectConditionalPayloadBranch(payload, ctx, options) {
     }
     return "";
 }
+/**
+ * Operands a planning pass can read now: fixed for the turn, whatever the prompt does.
+ * Conversation fields (`char_about` and the rest) are filled in after planning, so
+ * they are not here and read as unknown.
+ */
+const PLAN_LATE_OPERAND_NAMES = new Set(["char_about", "convo_display", "convo_behavior"]);
+const PLAN_FIXED_OPERAND_NAMES = new Set([
+    ...[...CHARACTER_CONDITIONAL_OPERAND_NAMES].filter((name) => !PLAN_LATE_OPERAND_NAMES.has(name)),
+    "user",
+    "username",
+    "userphonetic",
+    "usernamephonetic",
+    "persona",
+    "personadescription",
+    "personapersonality",
+    "personabackstory",
+    "personaappearance",
+    "personascenario",
+    "characters",
+    "group",
+    "input",
+    "model",
+    "chatid",
+    "description",
+    "personality",
+    "backstory",
+    "appearance",
+    "scenario",
+    "example",
+    "charsysinfo",
+    "charposthistory",
+]);
+/** Operands that differ between the characters of a group chat. */
+const PLAN_PER_CHARACTER_OPERAND_NAMES = new Set([
+    ...CHARACTER_CONDITIONAL_OPERAND_NAMES,
+    "description",
+    "personality",
+    "backstory",
+    "appearance",
+    "scenario",
+    "example",
+    "charsysinfo",
+    "charposthistory",
+]);
+/** An operand's value in a planning pass, or null when it is unknown. Decisions are recorded. */
+function planConditionOperand(raw, statements, ctx, options) {
+    const quoted = stripOuterQuotes(raw);
+    if (quoted !== null)
+        return quoted;
+    const noulQuestion = decisionQuestionFromOperand(raw);
+    const question = noulQuestion ?? decisionChoiceQuestionFromOperand(raw);
+    if (question !== null) {
+        // Both forms: as written, so every character's variant of a `{{char}}` statement
+        // is kept, and as resolved, for a pass that resolved the macro before this point.
+        const written = normalizeDecisionQuestion(question);
+        if (written)
+            statements.push(written);
+        const resolved = resolveDecisionQuestionText(question, ctx);
+        if (resolved && resolved !== written)
+            statements.push(resolved);
+        // An answer this turn already has settles the operand; anything else is unknown.
+        if (noulQuestion !== null) {
+            const answer = ctx.decisions?.answers?.get(resolved);
+            return answer === undefined ? null : answer ? "true" : "";
+        }
+        return ctx.decisions?.choices?.get(resolved) ?? null;
+    }
+    // A settled-only pass follows the branch the real pass takes once decisions are
+    // answered, so every operand that is not a decision reads its current value.
+    if (ctx.decisions?.plannedSettledOnly)
+        return resolveConditionalOperand(raw, ctx, options);
+    const token = raw.trim();
+    if (/^-?\d+(?:\.\d+)?$/u.test(token))
+        return token;
+    const key = normalizeConditionKey(token);
+    if (!PLAN_FIXED_OPERAND_NAMES.has(key))
+        return null;
+    const group = (ctx.characterProfiles?.length ?? 0) > 1 || ctx.characters.length > 1;
+    if (group && PLAN_PER_CHARACTER_OPERAND_NAMES.has(key))
+        return null;
+    return resolveConditionalOperand(raw, ctx, options);
+}
+function planConditionAtom(atom, equalityShorthand, ctx, options) {
+    // A settled-only pass reads macros in the atom (`{{getvar::mode}}`) as the real pass does.
+    const parsed = ctx.decisions?.plannedSettledOnly
+        ? parseResolvedConditionAtom(atom, ctx, options)
+        : parseConditionExpression(atom);
+    let effective = parsed;
+    let nextShorthand = equalityShorthand;
+    if (["=", "==", "is"].includes(parsed.operator) && parsed.right !== undefined) {
+        nextShorthand = { left: parsed.left, operator: parsed.operator };
+    }
+    else if (equalityShorthand && parsed.operator === "truthy" && stripOuterQuotes(parsed.left) !== null) {
+        effective = { ...equalityShorthand, right: parsed.left };
+    }
+    const statements = [];
+    const left = planConditionOperand(effective.left, statements, ctx, options);
+    const right = effective.operator === "truthy" ? "" : planConditionOperand(effective.right ?? "", statements, ctx, options);
+    let value;
+    if (left === null || right === null)
+        value = "unknown";
+    else if (effective.operator === "truthy")
+        value = left.trim().length > 0 && !/^(false|0|no|off|null|undefined)$/i.test(left);
+    else
+        value = compareConditionValues(left, effective.operator, right);
+    return { value, statements, equalityShorthand: nextShorthand };
+}
+/**
+ * A condition's value with decisions unknown, and the statements whose answers could
+ * change it. A statement behind a part that already settles the result is dropped:
+ * `char == "Dottore" && decision:"..."` asks nothing while the character is Mira.
+ */
+function planCondition(node, ctx, options) {
+    if (node.kind === "atom" || node.kind === "adjacent")
+        return planConditionAtom(conditionSyntaxAtomValue(node), null, ctx, options);
+    if (node.kind === "group")
+        return planCondition(node.child, ctx, options);
+    const settles = node.kind === "and" ? false : true;
+    const statements = [];
+    let unknown = false;
+    let equalityShorthand = null;
+    for (const child of node.children) {
+        let result;
+        if (node.kind === "or" && (child.kind === "atom" || child.kind === "adjacent")) {
+            const atom = planConditionAtom(conditionSyntaxAtomValue(child), equalityShorthand, ctx, options);
+            equalityShorthand = atom.equalityShorthand;
+            result = atom;
+        }
+        else {
+            result = planCondition(child, ctx, options);
+        }
+        if (result.value === settles)
+            return { value: settles, statements: [] };
+        if (result.value === "unknown")
+            unknown = true;
+        statements.push(...result.statements);
+    }
+    return { value: unknown ? "unknown" : !settles, statements };
+}
+/** Every branch a planning pass could take, joined, recording the statements that decide between them. */
+function planConditionalBranches(branches, planned, ctx, options) {
+    const reached = [];
+    for (const branch of branches) {
+        if (branch.condition === null) {
+            reached.push(branch.content);
+            break;
+        }
+        const result = planCondition(parseConditionSyntax(branch.condition), ctx, options);
+        for (const statement of result.statements)
+            planned.add(statement);
+        if (result.value === false)
+            continue;
+        // Settled only: an undecided branch, and every branch after it, is left out.
+        if (result.value === "unknown" && ctx.decisions?.plannedSettledOnly)
+            break;
+        reached.push(branch.content);
+        if (result.value === true)
+            break;
+    }
+    return reached.join("\n");
+}
+/**
+ * The decision statements `template` can reach this turn, with every other value in
+ * `ctx` as it is. Answers the turn already has count; any other decision is unknown.
+ * Nothing is written back: variables are copied, and nothing is asked.
+ *
+ * `text` is the template with every branch that could be taken, or with `settledOnly`,
+ * only the branches already settled, for a lorebook scan that must not follow a branch
+ * before its decision is answered.
+ */
+export function planDecisionStatements(template, ctx, options = {}) {
+    const planned = new Set();
+    const text = resolveMacros(template, {
+        ...ctx,
+        variables: { ...ctx.variables },
+        ...(ctx.localVariables ? { localVariables: { ...ctx.localVariables } } : {}),
+        decisions: {
+            answers: ctx.decisions?.answers ?? new Map(),
+            choices: ctx.decisions?.choices ?? new Map(),
+            unanswered: new Set(),
+            planned,
+            ...(options.settledOnly ? { plannedSettledOnly: true } : {}),
+        },
+    }, { trimResult: false });
+    return { text, statements: planned };
+}
 function resolveVariableOperationMacros(input, ctx, options) {
     return replaceBalancedMacros(input, (body, original) => {
         const readMatch = body.match(/^(getvar|incvar|decvar)::([\w.-]+)$/i);
-        const writeMatch = body.match(/^(setvar|addvar)::([\w.-]+)::([\s\S]*)$/i);
+        const writeMatch = body.match(/^(setvar|addvar|addnumvar)::([\w.-]+)::([\s\S]*)$/i);
         const op = String(readMatch?.[1] ?? writeMatch?.[1] ?? "").toLowerCase();
         const name = readMatch?.[2] ?? writeMatch?.[2];
         if (!op || !name)
             return undefined;
         if (!consumeMacroExpansion(options))
             return original;
+        // Older internal callers provide only `variables`; retain that in-memory
+        // fallback while production prompt contexts supply a distinct chat-local map.
+        const localVariables = (ctx.localVariables ??= ctx.variables);
+        const readLocalVariable = () => Object.prototype.hasOwnProperty.call(localVariables, name) ? localVariables[name] : undefined;
+        const writeLocalVariable = (value) => {
+            Object.defineProperty(localVariables, name, {
+                value,
+                enumerable: true,
+                configurable: true,
+                writable: true,
+            });
+            return value;
+        };
         switch (op) {
             case "getvar":
-                return ctx.variables[name] ?? "";
+                return readLocalVariable() ?? "";
             case "setvar":
-                ctx.variables[name] = resolveMacros(writeMatch?.[3] ?? "", ctx, {
+                writeLocalVariable(resolveMacros(writeMatch?.[3] ?? "", ctx, {
+                    ...nestedMacroOptions(options),
+                    trimResult: false,
+                }));
+                return "";
+            case "addvar": {
+                const current = readLocalVariable() ?? "";
+                const added = resolveMacros(writeMatch?.[3] ?? "", ctx, {
                     ...nestedMacroOptions(options),
                     trimResult: false,
                 });
+                const currentNumber = Number(current);
+                const addedNumber = Number(added);
+                writeLocalVariable(current.trim() && added.trim() && Number.isFinite(currentNumber) && Number.isFinite(addedNumber)
+                    ? String(currentNumber + addedNumber)
+                    : current + added);
                 return "";
-            case "addvar":
-                ctx.variables[name] =
-                    (ctx.variables[name] ?? "") +
-                        resolveMacros(writeMatch?.[3] ?? "", ctx, { ...nestedMacroOptions(options), trimResult: false });
+            }
+            case "addnumvar": {
+                const currentValue = Number(readLocalVariable() ?? "0");
+                const addedValue = Number(resolveMacros(writeMatch?.[3] ?? "", ctx, { ...nestedMacroOptions(options), trimResult: false }));
+                const currentNumber = Number.isFinite(currentValue) ? currentValue : 0;
+                const addedNumber = Number.isFinite(addedValue) ? addedValue : 0;
+                const sum = currentNumber + addedNumber;
+                writeLocalVariable(String(Number.isFinite(sum) ? sum : currentNumber));
                 return "";
-            case "incvar":
-                ctx.variables[name] = String((parseInt(ctx.variables[name] ?? "0", 10) || 0) + 1);
-                return "";
-            case "decvar":
-                ctx.variables[name] = String((parseInt(ctx.variables[name] ?? "0", 10) || 0) - 1);
-                return "";
+            }
+            case "incvar": {
+                const current = Number(readLocalVariable() ?? "0");
+                const next = (Number.isFinite(current) ? current : 0) + 1;
+                return writeLocalVariable(String(next));
+            }
+            case "decvar": {
+                const current = Number(readLocalVariable() ?? "0");
+                const next = (Number.isFinite(current) ? current : 0) - 1;
+                return writeLocalVariable(String(next));
+            }
             default:
                 return "";
         }
@@ -1137,9 +1929,13 @@ function resolveConditionalBlocks(input, ctx, options) {
         const closeTrailing = input.slice(blockEnd.endEnd).match(/^[ \t]*\n/);
         const closeStandalone = closeLineStart && closeTrailing !== null;
         const deferCharacter = Boolean(options.deferCharacterMacros) && branchDependsOnCharacter(branches);
-        const deferRelocation = !deferCharacter &&
-            options.deferConditionalOperand !== undefined &&
-            branchDependsOnDeferredOperand(branches, options.deferConditionalOperand);
+        // A pending preset variable defers a block for the same reason a relocation
+        // operand does: its value is not knowable yet, and deciding the branch from
+        // the chat's value would contradict the bare {{name}} in the same message.
+        const deferOperand = options.deferConditionalOperand !== undefined || ctx.deferredPresetVariableNames?.size
+            ? (operand) => options.deferConditionalOperand?.(operand) === true || isDeferredPresetOperand(operand, ctx)
+            : undefined;
+        const deferRelocation = !deferCharacter && deferOperand !== undefined && branchDependsOnDeferredOperand(branches, deferOperand);
         if (deferCharacter) {
             // Per-character deferral keeps its original (untrimmed) behavior.
             result += resolvedPreTag;
@@ -1171,6 +1967,100 @@ function resolveConditionalBlocks(input, ctx, options) {
             result += emittedPre + emittedBlock;
             index = nextIndex;
         }
+    }
+    return result;
+}
+const AGENT_CONDITIONAL_ENTITY_REPLACEMENTS = [
+    [/&quot;|&#34;|&#x22;/gi, '"'],
+    [/&apos;|&#39;|&#x27;/gi, "'"],
+    [/&lt;|&#60;|&#x3c;/gi, "<"],
+    [/&gt;|&#62;|&#x3e;/gi, ">"],
+    [/&amp;|&#38;|&#x26;/gi, "&"],
+];
+/** Decode one layer of XML protocol escaping, not authored prompt/content leaves. */
+export function decodeAgentXmlEntities(input) {
+    return AGENT_CONDITIONAL_ENTITY_REPLACEMENTS.reduce((value, [pattern, replacement]) => value.replace(pattern, replacement), input);
+}
+function decodeAgentConditionalEntities(input) {
+    return replaceBalancedMacros(input, (body) => {
+        if (parseIfCondition(body) === null && parseElseIfCondition(body) === null)
+            return undefined;
+        return `{{${decodeAgentXmlEntities(body)}}}`;
+    });
+}
+/**
+ * Remove conditional control syntax from agent-bound text while keeping every
+ * authored branch. Agent calls need the prose as context, not the main prompt's
+ * character-specific control flow.
+ */
+export function flattenAgentConditionalMacros(input) {
+    return flattenAgentConditionalMacrosInner(input, false);
+}
+function flattenAgentConditionalMacrosInner(input, decodeTextEntities) {
+    const normalized = decodeAgentConditionalEntities(decodeTextEntities ? decodeAgentXmlEntities(input) : input);
+    let result = "";
+    let index = 0;
+    while (index < normalized.length) {
+        const start = findConditionalStart(normalized, index);
+        if (!start)
+            return result + normalized.slice(index);
+        const block = findConditionalBranches(normalized, start.end, start.condition);
+        if (!block)
+            return result + normalized.slice(index);
+        result += normalized.slice(index, start.start);
+        result += block.branches
+            .map((branch) => flattenAgentConditionalMacrosInner(normalized.slice(branch.contentStart, branch.contentEnd), true))
+            .join("");
+        index = block.endEnd;
+    }
+    return result;
+}
+/** Keep generated summaries inside their readers' scope without nesting duplicate character guards. */
+export function scopeCharacterSummary(input, characterNames, depth = 0) {
+    const names = [...new Set(characterNames)];
+    if (!names.length)
+        return "";
+    if (names.some((name) => name.includes("{{") || name.includes("}}")))
+        throw new Error("Cannot scope a summary: character names must not contain macro delimiters ({{ or }}).");
+    const wrap = (text) => {
+        if (!text.trim())
+            return text;
+        const condition = names
+            .map((name) => `"${name.replace(/\\/gu, "\\\\").replace(/["\u201c\u201d\u201e\u201f]/gu, "\\$&")}"`)
+            .join(" || ");
+        return `{{#if char == ${condition}}}${text}{{/if}}`;
+    };
+    if (depth >= MAX_MACRO_RESOLUTION_DEPTH)
+        return wrap(input);
+    let result = "";
+    let cursor = 0;
+    while (cursor < input.length) {
+        const start = findConditionalStart(input, cursor);
+        if (!start)
+            return result + wrap(input.slice(cursor));
+        const block = findConditionalBranches(input, start.end, start.condition);
+        if (!block)
+            return result + wrap(input.slice(cursor));
+        result += wrap(input.slice(cursor, start.start));
+        // Only character/literal conditions can be simplified now. Keep authored
+        // variable conditions intact so changing a variable still changes visibility.
+        const characterOnly = block.branches.every(({ condition }) => condition === null ||
+            (!condition.includes("{{") &&
+                parseConditionComparisons(condition).every(({ left, right }) => [left, right].every((operand) => operand === undefined ||
+                    ["char", "charname", "character", "speaker"].includes(normalizeConditionKey(operand)) ||
+                    stripOuterQuotes(operand) !== null))));
+        if (!characterOnly)
+            result += wrap(input.slice(start.start, block.endEnd));
+        else {
+            let remaining = names;
+            for (const branch of block.branches) {
+                const readers = remaining.filter((name) => branch.condition === null ||
+                    evaluateCondition(branch.condition, { user: "", char: name, characters: [name], variables: {} }));
+                result += scopeCharacterSummary(input.slice(branch.contentStart, branch.contentEnd), readers, depth + 1);
+                remaining = remaining.filter((name) => !readers.includes(name));
+            }
+        }
+        cursor = block.endEnd;
     }
     return result;
 }
@@ -1312,6 +2202,7 @@ function formatMacroDateTime(now, requestedTimeZone) {
  *  - {{persona}} — active persona description, personality, backstory, appearance, and scenario joined by new lines
  *  - {{char}} — current character name
  *  - {{CHARACTER_ID}} — name of another character card referenced by its exact ID
+ *  - {{persona-PERSONA_ID}} — name of another persona card referenced by its exact ID
  *  - {{characters}} — comma-separated list of all character names
  *  - {{group}} — comma-separated list of other active chat characters
  *  - {{description}} / {{personality}} / {{backstory}} / {{appearance}} / {{scenario}} / {{example}} — current character card fields
@@ -1330,6 +2221,7 @@ function formatMacroDateTime(now, requestedTimeZone) {
  *  - {{getvar::name}} — read a dynamic variable
  *  - {{setvar::name::value}} — set a variable
  *  - {{addvar::name::value}} — append to a variable
+ *  - {{addnumvar::name::value}} — add to a numeric variable
  *  - {{incvar::name}} — increment numeric variable by 1
  *  - {{decvar::name}} — decrement numeric variable by 1
  *  - {{input}} — last user message
@@ -1338,6 +2230,7 @@ function formatMacroDateTime(now, requestedTimeZone) {
  *  - {{lastGenerationType}} — current generation type label
  *  - {{idle_duration}} — time since the last chat activity
  *  - {{outlet::name}} — activated lorebook entries assigned to a named Outlet
+ *  - {{lorebooksize::ID}} — total number of entries in the lorebook with the given ID
  *  - {{gameStoryboardKeyframeCount}} — current Game Mode Keyframes per Turn target
  *  - {{// comment}} — removed (author comments)
  *  - {{trim}} — remove surrounding whitespace
@@ -1420,7 +2313,8 @@ export function resolveMacros(template, ctx, options = {}) {
     // ── Conditional blocks — choose a branch before resolving branch-local macros. ──
     result = resolveConditionalBlocks(result, ctx, options);
     // ── No-op & banned ──
-    result = result.replace(/\{\{noop\}\}/gi, "");
+    // SillyTavern's original instruction has no counterpart in preset-owned prompts.
+    result = result.replace(/\{\{\s*(?:noop|original)\s*\}\}/gi, "");
     result = replaceBalancedMacros(result, (body) => (/^banned(?:\s+[\s\S]*)?$/i.test(body.trim()) ? "" : undefined));
     // ── Static substitutions ──
     result = result.replace(/\{\{user(?:Name)?\}\}/gi, ctx.user);
@@ -1437,18 +2331,18 @@ export function resolveMacros(template, ctx, options = {}) {
     result = result.replace(/\{\{personaBackstory\}\}/gi, () => resolveNestedFieldMacros(ctx.personaFields?.backstory ?? ""));
     result = result.replace(/\{\{personaAppearance\}\}/gi, () => resolveNestedFieldMacros(ctx.personaFields?.appearance ?? ""));
     result = result.replace(/\{\{personaScenario\}\}/gi, () => resolveNestedFieldMacros(ctx.personaFields?.scenario ?? ""));
-    result = result.replace(/\{\{char(?:Name)?\}\}/gi, characterReplacement("char"));
-    result = result.replace(/\{\{char(?:Name)?Phonetic\}\}/gi, characterReplacement("charPhonetic"));
-    result = result.replace(/\{\{characters\}\}/gi, ctx.characters.join(", "));
-    result = result.replace(/\{\{group\}\}/gi, characterReplacement("group"));
-    result = result.replace(/\{\{description\}\}/gi, characterReplacement("description"));
-    result = result.replace(/\{\{personality\}\}/gi, characterReplacement("personality"));
-    result = result.replace(/\{\{backstory\}\}/gi, characterReplacement("backstory"));
-    result = result.replace(/\{\{appearance\}\}/gi, characterReplacement("appearance"));
-    result = result.replace(/\{\{scenario\}\}/gi, characterReplacement("scenario"));
-    result = result.replace(/\{\{example\}\}/gi, characterReplacement("example"));
-    result = result.replace(/\{\{charSysInfo\}\}/gi, characterReplacement("systemPrompt"));
-    result = result.replace(/\{\{charPostHistory\}\}/gi, characterReplacement("postHistoryInstructions"));
+    result = result.replace(/\{\{char(?:Name)?\}\}/gi, () => characterReplacement("char"));
+    result = result.replace(/\{\{char(?:Name)?Phonetic\}\}/gi, () => characterReplacement("charPhonetic"));
+    result = result.replace(/\{\{characters\}\}/gi, () => ctx.characters.join(", "));
+    result = result.replace(/\{\{group\}\}/gi, () => characterReplacement("group"));
+    result = result.replace(/\{\{description\}\}/gi, () => characterReplacement("description"));
+    result = result.replace(/\{\{personality\}\}/gi, () => characterReplacement("personality"));
+    result = result.replace(/\{\{backstory\}\}/gi, () => characterReplacement("backstory"));
+    result = result.replace(/\{\{appearance\}\}/gi, () => characterReplacement("appearance"));
+    result = result.replace(/\{\{scenario\}\}/gi, () => characterReplacement("scenario"));
+    result = result.replace(/\{\{example\}\}/gi, () => characterReplacement("example"));
+    result = result.replace(/\{\{charSysInfo\}\}/gi, () => characterReplacement("systemPrompt"));
+    result = result.replace(/\{\{charPostHistory\}\}/gi, () => characterReplacement("postHistoryInstructions"));
     // Conversation-mode-only macros. `convoFields` is set only by the convo prompt
     // branch, so these are "" in every other mode.
     result = result.replace(/\{\{convo_display\}\}/gi, () => conversationCharacterReplacement("convoDisplay", ctx.convoFields?.charDisplayName));
@@ -1460,6 +2354,10 @@ export function resolveMacros(template, ctx, options = {}) {
     result = result.replace(/\{\{chatId\}\}/gi, ctx.chatId ?? "");
     result = result.replace(/\{\{lastGenerationType\}\}/gi, ctx.lastGenerationType ?? "");
     result = result.replace(/\{\{idle_duration\}\}/gi, ctx.idleDuration ?? "");
+    result = result.replace(PERSONA_REFERENCE_ID_PATTERN, (match, personaId) => {
+        const reference = ctx.personaReferences?.[personaId];
+        return reference !== undefined ? reference : match;
+    });
     const unresolvedCharacterReferences = new Set();
     result = result.replace(CHARACTER_REFERENCE_ID_PATTERN, (match, characterId) => {
         const reference = ctx.characterReferences?.[characterId];
@@ -1545,12 +2443,22 @@ export function resolveMacros(template, ctx, options = {}) {
         result = result.replace(/\s*\x00TRIM_END\x00/g, "");
     }
     // ── Catch-all: resolve any remaining {{name}} from variables ──
-    // This allows preset variables like {{POV}} to resolve directly
+    // Preset variables like {{POV}} resolve directly, then the chat's own
+    // variables, so a name defined in Chat Settings works anywhere macros do —
+    // including a message the user typed. Preset values win on a name clash,
+    // matching the post-assembly merge in generate.routes.ts.
     result = result.replace(/\{\{(\w+)\}\}/g, (match, name) => {
         if (unresolvedCharacterReferences.has(name))
             return match;
-        const val = ctx.variables[name];
-        return val !== undefined ? val : match; // leave unknown macros as-is
+        const presetValue = readMacroVariable(ctx.variables, name);
+        if (presetValue !== undefined)
+            return presetValue;
+        // A preset owns this name but its value has not been merged yet: leave the
+        // tag for the later pass rather than letting the chat value win the race.
+        if (ctx.deferredPresetVariableNames?.has(name))
+            return match;
+        const chatValue = readMacroVariable(ctx.localVariables, name);
+        return chatValue !== undefined ? chatValue : match; // leave unknown macros as-is
     });
     // ── Agent data ──
     // Agent/tracker output is model-generated text. Insert it only after every
@@ -1567,9 +2475,14 @@ export function resolveMacros(template, ctx, options = {}) {
         if (!match)
             return undefined;
         const name = (match[1] ?? "").trim();
-        return name && ctx.outlets && Object.prototype.hasOwnProperty.call(ctx.outlets, name)
-            ? ctx.outlets[name]
-            : "";
+        return name && ctx.outlets && Object.prototype.hasOwnProperty.call(ctx.outlets, name) ? ctx.outlets[name] : "";
+    });
+    // ── Lorebook entry count ──
+    // Resolves {{lorebooksize::ID}} to the total number of entries in the
+    // referenced lorebook. Unknown IDs resolve to 0.
+    result = result.replace(/\{\{lorebooksize::([\w-]+)\}\}/gi, (_, id) => {
+        const counts = ctx.lorebookEntryCounts;
+        return counts && Object.prototype.hasOwnProperty.call(counts, id) ? String(counts[id]) : "0";
     });
     if (options.trimResult !== false) {
         result = result.trim();

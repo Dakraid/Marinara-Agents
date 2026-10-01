@@ -11,7 +11,9 @@
  *  with positive zoom. */
 export function normalizeAvatarCrop(value) {
     let parsed = value;
-    if (typeof parsed === "string") {
+    // Older persona snapshots encoded the already-serialized database crop again.
+    // Decode at most twice, then apply the same geometry validation below.
+    for (let depth = 0; depth < 2 && typeof parsed === "string"; depth += 1) {
         if (!parsed.trim())
             return null;
         try {

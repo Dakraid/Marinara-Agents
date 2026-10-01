@@ -26,14 +26,7 @@ function validateDepthRange(data, ctx) {
 const regexScriptShape = z.object({
     name: z.string().min(1).max(200),
     enabled: z.boolean().default(true),
-    findRegex: z
-        .string()
-        .min(1)
-        .refine(
-    // Macros like {{char}}/{{user}} are resolved before the pattern is compiled
-    // at apply-time; strip them here so the static check doesn't read the macro
-    // braces as a malformed `{n,m}` quantifier and reject a legitimate pattern.
-    (pattern) => isPatternSafe(pattern.replace(/\{\{[^}]*\}\}/g, "x")), "Regex pattern is unsafe: it may cause catastrophic backtracking. Avoid nested quantifiers and overly long patterns."),
+    findRegex: z.string().min(1),
     replaceString: z.string().default(""),
     trimStrings: z.array(z.string()).default([]),
     placement: z.array(regexPlacementSchema).min(1),
@@ -46,8 +39,44 @@ const regexScriptShape = z.object({
     minDepth: z.number().int().nullable().default(null),
     maxDepth: z.number().int().nullable().default(null),
 });
-export const createRegexScriptSchema = regexScriptShape.superRefine(validateDepthRange);
-export const updateRegexScriptSchema = regexScriptShape.partial().superRefine(validateDepthRange);
+function validatePatternSafety(data, ctx) {
+    if (data.findRegex !== undefined &&
+        // Macros like {{char}}/{{user}} are resolved before the pattern is compiled
+        // at apply-time; strip them here so the static check doesn't read the macro
+        // braces as a malformed `{n,m}` quantifier and reject a legitimate pattern.
+        !isPatternSafe(data.findRegex.replace(/\{\{[^}]*\}\}/g, "x"))) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["findRegex"],
+            message: "Regex pattern is unsafe: it may cause catastrophic backtracking. Avoid nested quantifiers and overly long patterns.",
+        });
+    }
+}
+function validatePatternSyntax(data, ctx) {
+    if (data.findRegex === undefined)
+        return;
+    try {
+        new RegExp(data.findRegex.replace(/\{\{[^}]*\}\}/g, "x"), data.flags ?? "gi");
+    }
+    catch {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["findRegex"],
+            message: "Invalid regex pattern.",
+        });
+    }
+}
+function validateImportedRegexScript(data, ctx) {
+    validateDepthRange(data, ctx);
+    validatePatternSyntax(data, ctx);
+}
+function validateEditableRegexScript(data, ctx) {
+    validateDepthRange(data, ctx);
+    validatePatternSafety(data, ctx);
+}
+export const createRegexScriptSchema = regexScriptShape.superRefine(validateEditableRegexScript);
+export const importRegexScriptSchema = regexScriptShape.superRefine(validateImportedRegexScript);
+export const updateRegexScriptSchema = regexScriptShape.partial().superRefine(validateEditableRegexScript);
 export const reorderRegexScriptsSchema = z.object({
     scriptIds: z.array(z.string().min(1)),
 });

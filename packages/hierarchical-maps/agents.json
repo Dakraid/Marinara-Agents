@@ -13,7 +13,11 @@
       "game"
     ],
     "defaultTools": [],
-    "defaultSettings": {},
+    "defaultSettings": {
+      "assessImpliedMovement": true,
+      "assessmentDiscovery": true,
+      "assessmentPersistTravel": true
+    },
     "defaultPromptTemplate": "",
     "execution": "feature"
   }

@@ -8,11 +8,29 @@
 // union; the profile table + `deriveClass`/`normalizeClass` live here.
 export const CLASS_PROFILES = {
     fighter: { attackRange: { min: 1, max: 1 }, moveBonus: 0, critBonus: 0, label: "Fighter", blurb: "Balanced melee." },
-    knight: { attackRange: { min: 1, max: 1 }, moveBonus: -1, critBonus: 0, label: "Knight", blurb: "Armored frontline." },
+    knight: {
+        attackRange: { min: 1, max: 1 },
+        moveBonus: -1,
+        critBonus: 0,
+        label: "Knight",
+        blurb: "Armored frontline.",
+    },
     rogue: { attackRange: { min: 1, max: 1 }, moveBonus: 1, critBonus: 10, label: "Rogue", blurb: "Fast flanker." },
-    archer: { attackRange: { min: 2, max: 3 }, moveBonus: 0, critBonus: 5, label: "Archer", blurb: "Cannot strike or counter adjacent." },
+    archer: {
+        attackRange: { min: 2, max: 3 },
+        moveBonus: 0,
+        critBonus: 5,
+        label: "Archer",
+        blurb: "Cannot strike or counter adjacent.",
+    },
     mage: { attackRange: { min: 1, max: 2 }, moveBonus: 0, critBonus: 0, label: "Mage", blurb: "Ranged caster." },
-    healer: { attackRange: { min: 1, max: 1 }, moveBonus: 0, critBonus: 0, label: "Healer", blurb: "Support; heal reach stays 2." },
+    healer: {
+        attackRange: { min: 1, max: 1 },
+        moveBonus: 0,
+        critBonus: 0,
+        label: "Healer",
+        blurb: "Support; heal reach stays 2.",
+    },
 };
 const CLASS_NAMES = Object.keys(CLASS_PROFILES);
 /** Normalize a free-form class string (trim + lowercase) to a valid TacticalClass, else undefined. */

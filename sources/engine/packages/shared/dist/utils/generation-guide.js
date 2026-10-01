@@ -5,7 +5,16 @@ export function buildGuidedGenerationInstructionMessage(direction) {
     return `[Guided generation instruction — do not include a reply from {{user}}. Instead, write the next generated message steering it toward the following: ${direction.trim()}]`;
 }
 export function stripGenerationGuideInstruction(value) {
-    const match = value.match(/^\[(?:Narrator|Guided generation) instruction [^\]]*? following:\s*([\s\S]*)\]$/);
-    return match?.[1]?.trim() || value;
+    if (!value.endsWith("]"))
+        return value;
+    const prefixes = ["[Narrator instruction ", "[Guided generation instruction "];
+    const prefix = prefixes.find((candidate) => value.startsWith(candidate));
+    if (!prefix)
+        return value;
+    const marker = " following:";
+    const markerIndex = value.indexOf(marker, prefix.length);
+    if (markerIndex < 0 || value.indexOf("]", prefix.length) < markerIndex)
+        return value;
+    return value.slice(markerIndex + marker.length, -1).trim() || value;
 }
 //# sourceMappingURL=generation-guide.js.map
