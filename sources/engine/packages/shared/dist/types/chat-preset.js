@@ -24,6 +24,10 @@ export const CHAT_PRESET_EXCLUDED_METADATA_KEYS = [
     "weekSummaries",
     "tags",
     "appliedChatPresetId",
+    "branchName",
+    "branchParentChatId",
+    "branchParentMessageId",
+    "branchMessageId",
     "agentVariables",
     "presetChoices",
     "spriteCharacterIds",
@@ -89,7 +93,14 @@ export const CHAT_PRESET_EXCLUDED_METADATA_KEYS = [
     "gameCharacterCards",
     "gameWidgetState",
     "gameMorale",
+    "gameInventoryTurn",
+    "gameInventedItems",
     "lastMapPosition",
+    // Engine-owned per-chat write ordinals (#5406). They index one chat's counter space, so saving
+    // them into a reusable profile would stamp every chat the profile is applied to with another
+    // chat's numbering; being excluded also means an apply PRESERVES the target chat's own mirror
+    // instead of wiping the ordering its packages depend on.
+    "metadataWriteOrdinals",
 ];
 /** Top-level chat keys that CAN be saved into a profile. */
 export const CHAT_PRESET_INCLUDED_CHAT_KEYS = ["connectionId", "promptPresetId"];

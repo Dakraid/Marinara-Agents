@@ -15,9 +15,7 @@ function normalizeTemplates(value) {
         const record = item;
         const id = typeof record.id === "string" ? record.id.trim() : "";
         const name = typeof record.name === "string" ? record.name.trim() : "";
-        const prompt = typeof record.prompt === "string"
-            ? record.prompt.trim().slice(0, CHAT_SUMMARY_PROMPT_MAX_LENGTH)
-            : "";
+        const prompt = typeof record.prompt === "string" ? record.prompt.trim().slice(0, CHAT_SUMMARY_PROMPT_MAX_LENGTH) : "";
         if (!id || !name || !prompt || id === LONG_TERM_MEMORY_CHAT_SUMMARY_PROMPT_ID || seen.has(id))
             continue;
         seen.add(id);

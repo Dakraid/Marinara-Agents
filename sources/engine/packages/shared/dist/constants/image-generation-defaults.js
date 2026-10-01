@@ -1,5 +1,7 @@
 export const IMAGE_DEFAULTS_STORAGE_KEY = "imageGeneration";
 export const IMAGE_GENERATION_DEFAULTS_VERSION = 1;
+export const COMFYUI_LORA_STRENGTH_MIN = -100;
+export const COMFYUI_LORA_STRENGTH_MAX = 100;
 export const IMAGE_DEFAULTS_SERVICES = ["automatic1111", "comfyui", "novelai"];
 /** Transparent placeholder accepted by ComfyUI image-processing nodes that reject 1×1 inputs. */
 export const COMFYUI_PLACEHOLDER_REFERENCE_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCA1LjEuMTITAUd0AAAAuGVYSWZJSSoACAAAAAUAGgEFAAEAAABKAAAAGwEFAAEAAABSAAAAKAEDAAEAAAACAAAAMQECABEAAABaAAAAaYcEAAEAAABsAAAAAAAAAGAAAAABAAAAYAAAAAEAAABQYWludC5ORVQgNS4xLjEyAAADAACQBwAEAAAAMDIzMAGhAwABAAAAAQAAAAWgBAABAAAAlgAAAAAAAAACAAEAAgAEAAAAUjk4AAIABwAEAAAAMDEwMAAAAADZp5qVybcLXwAAABJJREFUOE9jYBgFo2AUjAIIAAAEEAABTLtGVQAAAABJRU5ErkJggg==";
@@ -24,6 +26,7 @@ export const DEFAULT_COMFYUI_DEFAULTS = {
     denoisingStrength: 1,
     clipSkip: null,
     uploadPlaceholderOnMissingReference: false,
+    saveToBackend: false,
     loras: [],
 };
 export const DEFAULT_NOVELAI_DEFAULTS = {
@@ -124,7 +127,7 @@ export function imageSourceToDefaultsService(value) {
     const normalized = value.trim().toLowerCase();
     if (normalized === "drawthings" || normalized === "arli")
         return "automatic1111";
-    if (normalized === "swarmui")
+    if (normalized === "swarmui" || normalized === "runpod_comfyui")
         return "comfyui";
     return isImageDefaultsService(normalized) ? normalized : null;
 }
@@ -194,10 +197,15 @@ export function mergeNegativePrompt(prefix, prompt) {
     return `${trimmedPrefix}, ${trimmedPrompt}`;
 }
 function normalizePromptPrefixForMerge(prefix) {
-    return prefix
-        .trim()
-        .replace(/[\s,;.]+$/g, "")
-        .trim();
+    const trimmed = prefix.trim();
+    let end = trimmed.length;
+    while (end > 0) {
+        const character = trimmed[end - 1];
+        if (character !== "," && character !== ";" && character !== "." && character.trim() !== "")
+            break;
+        end -= 1;
+    }
+    return trimmed.slice(0, end).trim();
 }
 function promptAlreadyStartsWithPrefix(prompt, prefix) {
     if (prompt === prefix)
@@ -218,9 +226,7 @@ function promptAlreadyStartsWithPrefix(prompt, prefix) {
 function promptPrefixFragments(value) {
     return value
         .split(/[,;\n]+/g)
-        .map((fragment) => fragment
-        .trim()
-        .replace(/^[([{]\s*(.+?)\s*[)\]}]$/g, "$1")
+        .map((fragment) => unwrapSingleLineBracketedFragment(fragment.trim())
         .replace(/: ?[+-]?\d+(?:\.\d+)?$/g, "")
         .replace(/[^\p{L}\p{N}\s_-]/gu, "")
         .replace(/[_-]+/g, " ")
@@ -228,6 +234,19 @@ function promptPrefixFragments(value) {
         .trim()
         .toLowerCase())
         .filter(Boolean);
+}
+function unwrapSingleLineBracketedFragment(fragment) {
+    const first = fragment[0];
+    const last = fragment[fragment.length - 1];
+    if (!first || !last || !"([{".includes(first) || !")]}".includes(last))
+        return fragment;
+    const body = fragment.slice(1, -1).trim();
+    for (const character of body) {
+        if (character === "\n" || character === "\r" || character === "\u2028" || character === "\u2029") {
+            return fragment;
+        }
+    }
+    return body || fragment;
 }
 function normalizeAutomatic1111Defaults(rawDefaults) {
     const raw = isRecord(rawDefaults) ? rawDefaults : {};
@@ -256,6 +275,7 @@ function normalizeComfyUiDefaults(rawDefaults) {
         clipSkip: readNullableInteger(raw.clipSkip, DEFAULT_COMFYUI_DEFAULTS.clipSkip, 1, 12),
         uploadPlaceholderOnMissingReference: readBoolean(raw.uploadPlaceholderOnMissingReference, DEFAULT_COMFYUI_DEFAULTS.uploadPlaceholderOnMissingReference),
         loras: normalizeComfyUiLoraSettings(raw.loras),
+        saveToBackend: readBoolean(raw.saveToBackend, false),
     };
 }
 export function normalizeComfyUiLoraSettings(rawLoras) {
@@ -265,7 +285,7 @@ export function normalizeComfyUiLoraSettings(rawLoras) {
         const raw = isRecord(entry) ? entry : {};
         return {
             model: readString(raw.model, "").trim(),
-            strength: readNumber(raw.strength, 1, -2, 2),
+            strength: readNumber(raw.strength, 1, COMFYUI_LORA_STRENGTH_MIN, COMFYUI_LORA_STRENGTH_MAX),
         };
     });
 }

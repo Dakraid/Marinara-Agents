@@ -1,8 +1,15 @@
 // ──────────────────────────────────────────────
 // Game Audio Score — Rule-Based Selectors
 //
-// Music uses the structured format:
-// music:<state>:<genre>:<intensity>:<filename>
+// Music uses two structured formats:
+// - music:<state>:<genre>:<intensity>:<filename>   (the bundled/state library)
+// - music:area:<slug>:<filename>                   (context tracks, #5161)
+//   music:tier:<tier>:<filename>
+//
+// Context tracks are persistent per-place / per-encounter-tier compositions;
+// when one matches the current context it wins outright and the CURRENT track
+// is kept if it already belongs to that context — music changes when context
+// changes, never per turn. The state library remains the universal fallback.
 //
 // Scene analysis provides compact direction fields (genre, intensity,
 // location kind); the server/client pick actual asset tags deterministically.
@@ -21,10 +28,71 @@ export const MUSIC_GENRES = [
 ];
 export const MUSIC_INTENSITIES = ["calm", "tense", "intense"];
 export const LOCATION_KINDS = ["interior", "exterior", "underground", "urban", "nature"];
+export const MUSIC_ENEMY_TIERS = ["common", "miniboss", "boss", "special"];
 const GAME_STATES = new Set(["exploration", "dialogue", "combat", "travel_rest"]);
 const MUSIC_GENRE_SET = new Set(MUSIC_GENRES);
 const MUSIC_INTENSITY_SET = new Set(MUSIC_INTENSITIES);
 const LOCATION_KIND_SET = new Set(LOCATION_KINDS);
+const MUSIC_ENEMY_TIER_SET = new Set(MUSIC_ENEMY_TIERS);
+const ENEMY_TIER_ALIASES = {
+    elite: "miniboss",
+    mini_boss: "miniboss",
+    "mini-boss": "miniboss",
+    final_boss: "boss",
+    finalboss: "boss",
+    unique: "special",
+    legendary: "special",
+};
+export function normalizeMusicEnemyTier(value) {
+    const normalized = (value ?? "").trim().toLowerCase();
+    if (!normalized)
+        return null;
+    if (MUSIC_ENEMY_TIER_SET.has(normalized))
+        return normalized;
+    return ENEMY_TIER_ALIASES[normalized] ?? null;
+}
+/** Canonical area key for context music. The style follows the background
+ *  slug conventions, but the key is its OWN namespace (music/area/<slug>) —
+ *  nothing joins it to background slugs, whose generators use their own
+ *  slugification and may differ on accented or very long names.
+ *  Input is length-capped before any regex work and dash runs are trimmed
+ *  with linear scans, never anchored `-+` patterns — location strings arrive
+ *  from request payloads, and CodeQL rightly flags polynomial regexes on
+ *  uncontrolled input (the class this repo scrubbed in #5067). */
+export function musicAreaSlug(value) {
+    // Only the first 60 slug chars ever matter; 200 source chars is generous
+    // headroom for leading punctuation while keeping regex input bounded.
+    const collapsed = (value ?? "")
+        .slice(0, 200)
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-");
+    let start = 0;
+    let end = collapsed.length;
+    while (start < end && collapsed.charCodeAt(start) === 45 /* '-' */)
+        start++;
+    while (end > start && collapsed.charCodeAt(end - 1) === 45)
+        end--;
+    let slug = collapsed.slice(start, end).slice(0, 60);
+    // The 60-char cut can land on a dash; retrim the tail the same way.
+    let tail = slug.length;
+    while (tail > 0 && slug.charCodeAt(tail - 1) === 45)
+        tail--;
+    slug = slug.slice(0, tail);
+    if (slug)
+        return slug;
+    // Non-Latin location names (CJK, Cyrillic, …) strip to nothing; a stable
+    // hash keeps the area axis alive for them instead of silently disabling it.
+    const source = (value ?? "").slice(0, 200).trim().toLowerCase();
+    if (!source)
+        return null;
+    let h = 0x811c9dc5;
+    for (let i = 0; i < source.length; i++) {
+        h ^= source.charCodeAt(i);
+        h = Math.imul(h, 0x01000193);
+    }
+    return `x${(h >>> 0).toString(36)}`;
+}
 const INTENSITY_RANK = {
     calm: 0,
     tense: 1,
@@ -198,6 +266,40 @@ export function normalizeLocationKind(value) {
         return aliases[normalized];
     return LOCATION_KIND_SET.has(normalized) ? normalized : null;
 }
+/** Context tracks (#5161): music:area:<slug>:<name> and music:tier:<tier>:<name>. */
+function parseContextMusicTag(tag) {
+    const parts = tag.split(":");
+    if (parts.length < 4 || parts[0] !== "music")
+        return null;
+    const axis = parts[1];
+    const key = parts[2]?.toLowerCase();
+    if (!key)
+        return null;
+    if (axis === "area")
+        return { tag, axis: "area", key };
+    // Case-insensitive like area keys: a user-created music/tier/Boss folder
+    // must not be silently unselectable.
+    if (axis === "tier" && MUSIC_ENEMY_TIER_SET.has(key))
+        return { tag, axis: "tier", key };
+    return null;
+}
+/** True for #5161 context tracks (music:area:* / music:tier:*). Used by the
+ *  client to keep context tags OUT of the recent-music anti-repeat history —
+ *  a kept area theme would otherwise fill the whole window and disable the
+ *  legacy pool's rotation memory. */
+export function isContextMusicTag(tag) {
+    return parseContextMusicTag(tag) !== null;
+}
+/** Stability contract for context tracks: keep the current track whenever it
+ *  still belongs to the selected context; otherwise prefer a variant that
+ *  hasn't just played. */
+function pickContextTrack(tags, currentMusic, recentMusic) {
+    if (currentMusic && tags.includes(currentMusic))
+        return currentMusic;
+    const recent = new Set(recentMusic ?? []);
+    const fresh = tags.filter((tag) => !recent.has(tag));
+    return pickRandom(fresh.length ? fresh : tags);
+}
 function parseMusicTag(tag) {
     const parts = tag.split(":");
     if (parts.length < 5 || parts[0] !== "music")
@@ -265,13 +367,42 @@ function scoreStructuredMusic(candidate, desiredGenre, desiredIntensity, hasExac
 }
 /**
  * Pick the best music tag for the current game context.
- * Returns `null` only when there is no music or no structured candidates for this state; deliberately
- * rotates off `currentMusic` when alternatives exist (the keep-current contract belongs to `scoreAmbient`).
+ * Returns `null` only when there is no music or no structured candidates for this state.
+ * Since #5161 the keep-current contract applies everywhere: the current track is
+ * KEPT while it still fits the context (context set membership, or a legacy score
+ * within one point of the best), and rotation happens only when the context — the
+ * area, the encounter tier, or the state/genre/intensity — actually moved.
  */
 export function scoreMusic(input) {
     const { state, weather, timeOfDay, currentMusic, recentMusic, availableMusic } = input;
     if (!availableMusic.length)
         return null;
+    // Context tracks win outright (#5161): tier tracks during combat, area
+    // tracks everywhere else. The state library below never sees these tags
+    // (parseMusicTag rejects them), and they never leak across contexts.
+    const contextTags = availableMusic
+        .map((tag) => parseContextMusicTag(tag))
+        .filter((candidate) => !!candidate);
+    if (state === "combat") {
+        const tier = normalizeMusicEnemyTier(typeof input.enemyTier === "string" ? input.enemyTier : null);
+        if (tier) {
+            const tierTags = contextTags
+                .filter((candidate) => candidate.axis === "tier" && candidate.key === tier)
+                .map((candidate) => candidate.tag);
+            if (tierTags.length)
+                return pickContextTrack(tierTags, currentMusic, recentMusic);
+        }
+    }
+    else {
+        const slug = (input.locationSlug ?? "").trim().toLowerCase();
+        if (slug) {
+            const areaTags = contextTags
+                .filter((candidate) => candidate.axis === "area" && candidate.key === slug)
+                .map((candidate) => candidate.tag);
+            if (areaTags.length)
+                return pickContextTrack(areaTags, currentMusic, recentMusic);
+        }
+    }
     const desiredGenre = normalizeMusicGenre(input.musicGenre);
     const desiredIntensity = normalizeMusicIntensity(input.musicIntensity) ?? inferMusicIntensity(state, weather, timeOfDay);
     const candidates = availableMusic
@@ -292,9 +423,14 @@ export function scoreMusic(input) {
         return null;
     const bestScore = Math.max(...scored.map((entry) => entry.score));
     const currentScore = currentMusic ? scored.find((entry) => entry.tag === currentMusic)?.score : undefined;
+    // Keep-current (#5161): scoring now runs on every turn, and per-turn
+    // rotation of a still-fitting track is exactly the churn this feature
+    // removes. The track only changes when its fit degraded — state, genre,
+    // or intensity moved — which is when the score falls behind.
+    if (currentScore !== undefined && currentScore >= bestScore - 1)
+        return currentMusic ?? null;
     const poolBestScore = Math.max(...poolBase.map((entry) => entry.score));
-    const rotationWindow = currentScore !== undefined && currentScore >= bestScore - 1 ? 8 : 1;
-    const selectionPool = poolBase.filter((entry) => entry.score >= poolBestScore - rotationWindow);
+    const selectionPool = poolBase.filter((entry) => entry.score >= poolBestScore - 1);
     return pickRandom(selectionPool).tag;
 }
 function inferLocationKindFromBackground(background) {

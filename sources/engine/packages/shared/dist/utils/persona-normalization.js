@@ -1,4 +1,5 @@
 import { convoBehaviorInsertionStrategySchema } from "../schemas/character.schema.js";
+import { capImportedRulesetSheets } from "../schemas/ruleset.schema.js";
 import { normalizeStatIcon } from "../constants/stat-icons.js";
 /** Decode a serialized JSON value without turning malformed historical data into an exception. */
 function decodeJsonValue(value) {
@@ -169,6 +170,13 @@ export function normalizePersonaStats(value) {
         result.rpgStats = rpgStats;
     else
         delete result.rpgStats;
+    // Ruleset sheets are kept under their key whether or not the ruleset is installed; only a sheet
+    // the boundary would refuse (oversized, unusable key) is dropped, so it cannot sink the persona.
+    const { sheets } = capImportedRulesetSheets(config.rulesetSheets);
+    if (sheets)
+        result.rulesetSheets = sheets;
+    else
+        delete result.rulesetSheets;
     return result;
 }
 /** Apply the established Conversation insertion fallback while preserving extensions. */

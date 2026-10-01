@@ -33,7 +33,15 @@ export const DEFAULT_ATLAS_CLOUD_VIDEO_DEFAULTS = {
     durationSeconds: 8,
     aspectRatio: "16:9",
     resolution: "720p",
+    modelOptions: {},
 };
+const ATLAS_CLOUD_MODEL_OPTIONS_MAX_MODELS = 40;
+const ATLAS_CLOUD_MODEL_OPTIONS_MAX_KEYS = 40;
+const ATLAS_CLOUD_MODEL_OPTION_MAX_STRING_LENGTH = 4_000;
+const ATLAS_CLOUD_MODEL_OPTION_MAX_JSON_LENGTH = 8_000;
+const ATLAS_CLOUD_MODEL_OPTION_MAX_KEY_LENGTH = 64;
+/** Names that would reach Object.prototype instead of becoming an own property. */
+const UNSAFE_OBJECT_KEYS = new Set(["__proto__", "constructor"]);
 export const DEFAULT_SEEDANCE_VIDEO_DEFAULTS = {
     durationSeconds: 5,
     aspectRatio: "16:9",
@@ -56,7 +64,7 @@ export function createDefaultVideoGenerationProfile(service = "gemini_omni") {
         googleVeo: { ...DEFAULT_GOOGLE_VEO_VIDEO_DEFAULTS },
         xai: { ...DEFAULT_XAI_VIDEO_DEFAULTS },
         openrouter: { ...DEFAULT_OPENROUTER_VIDEO_DEFAULTS },
-        atlas: { ...DEFAULT_ATLAS_CLOUD_VIDEO_DEFAULTS },
+        atlas: { ...DEFAULT_ATLAS_CLOUD_VIDEO_DEFAULTS, modelOptions: {} },
         seedance: { ...DEFAULT_SEEDANCE_VIDEO_DEFAULTS },
         comfyui: { ...DEFAULT_COMFYUI_VIDEO_DEFAULTS, loras: [] },
     };
@@ -94,6 +102,7 @@ export function normalizeVideoGenerationProfile(rawProfile) {
         durationSeconds: readInteger(rawAtlas.durationSeconds, DEFAULT_ATLAS_CLOUD_VIDEO_DEFAULTS.durationSeconds, 1, 60),
         aspectRatio: readAspectRatio(rawAtlas.aspectRatio, DEFAULT_ATLAS_CLOUD_VIDEO_DEFAULTS.aspectRatio),
         resolution: readResolution(rawAtlas.resolution, DEFAULT_ATLAS_CLOUD_VIDEO_DEFAULTS.resolution),
+        modelOptions: normalizeAtlasCloudModelOptionsMap(rawAtlas.modelOptions),
     };
     const rawSeedance = isRecord(raw.seedance) ? raw.seedance : rawService === "seedance" ? raw : {};
     profile.seedance = {
@@ -116,6 +125,56 @@ export function normalizeVideoGenerationProfile(rawProfile) {
 }
 export function sanitizeVideoGenerationProfile(profile) {
     return normalizeVideoGenerationProfile(profile).profile;
+}
+function readAtlasCloudModelOptionValue(value) {
+    if (typeof value === "boolean")
+        return value;
+    if (typeof value === "number")
+        return Number.isFinite(value) ? value : undefined;
+    if (typeof value === "string") {
+        return value.length <= ATLAS_CLOUD_MODEL_OPTION_MAX_STRING_LENGTH ? value : undefined;
+    }
+    if (Array.isArray(value) || isRecord(value)) {
+        try {
+            return JSON.stringify(value).length <= ATLAS_CLOUD_MODEL_OPTION_MAX_JSON_LENGTH ? value : undefined;
+        }
+        catch {
+            return undefined;
+        }
+    }
+    return undefined;
+}
+/** Keeps bounded option names and JSON-safe values; what a model accepts is checked against its schema at request time. */
+export function normalizeAtlasCloudModelOptions(raw) {
+    const options = {};
+    if (!isRecord(raw))
+        return options;
+    for (const [key, rawValue] of Object.entries(raw)) {
+        if (Object.keys(options).length >= ATLAS_CLOUD_MODEL_OPTIONS_MAX_KEYS)
+            break;
+        if (!key || key.length > ATLAS_CLOUD_MODEL_OPTION_MAX_KEY_LENGTH || UNSAFE_OBJECT_KEYS.has(key))
+            continue;
+        const value = readAtlasCloudModelOptionValue(rawValue);
+        if (value !== undefined)
+            options[key] = value;
+    }
+    return options;
+}
+function normalizeAtlasCloudModelOptionsMap(raw) {
+    const byModel = {};
+    if (!isRecord(raw))
+        return byModel;
+    for (const [rawModel, rawOptions] of Object.entries(raw)) {
+        if (Object.keys(byModel).length >= ATLAS_CLOUD_MODEL_OPTIONS_MAX_MODELS)
+            break;
+        const model = rawModel.trim();
+        if (!model || model.length > 200 || UNSAFE_OBJECT_KEYS.has(model))
+            continue;
+        const options = normalizeAtlasCloudModelOptions(rawOptions);
+        if (Object.keys(options).length > 0)
+            byModel[model] = options;
+    }
+    return byModel;
 }
 function isRecord(value) {
     return !!value && typeof value === "object" && !Array.isArray(value);

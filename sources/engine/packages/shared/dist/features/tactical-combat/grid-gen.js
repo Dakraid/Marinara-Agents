@@ -12,6 +12,78 @@
 // passable tile, no two units share a tile, and every enemy is BFS-reachable
 // from every party unit (corridors are carved to a central hub when needed).
 import { clamp, isImpassable, manhattan } from "./math.js";
+import { TERRAIN_DATA } from "./types.js";
+/** Increment when a generated brief's resolved-grid semantics intentionally change. */
+export const TACTICAL_BATTLEFIELD_GENERATOR_VERSION = 1;
+const BATTLEFIELD_SIZES = {
+    small: { width: 12, height: 8 },
+    medium: { width: 13, height: 9 },
+    large: { width: 14, height: 10 },
+};
+const FEATURE_PLACEMENTS = ["center", "north", "south", "east", "west"];
+const FEATURE_SHAPES = ["patch", "barrier"];
+function hasOwnKey(object, key) {
+    return Object.prototype.hasOwnProperty.call(object, key);
+}
+/**
+ * Validates only the bounded structured brief. Board-specific checks happen
+ * after placement because they depend on the resolved dimensions.
+ */
+export function validateTacticalBattlefieldBrief(value) {
+    if (value === undefined)
+        return { ok: true };
+    if (!value || typeof value !== "object" || Array.isArray(value))
+        return { ok: false, error: "Invalid battlefield brief." };
+    const source = value;
+    if (source.exposure !== undefined &&
+        (typeof source.exposure !== "string" || !["exposed", "sheltered", "unknown"].includes(source.exposure)))
+        return { ok: false, error: "Unknown battlefield exposure." };
+    if (source.size !== undefined && (typeof source.size !== "string" || !hasOwnKey(BATTLEFIELD_SIZES, source.size))) {
+        return { ok: false, error: "Unknown battlefield size." };
+    }
+    if (source.features !== undefined && !Array.isArray(source.features)) {
+        return { ok: false, error: "Battlefield features must be a list." };
+    }
+    if ((source.features?.length ?? 0) > 4)
+        return { ok: false, error: "A battlefield can have at most four features." };
+    const seen = new Set();
+    const features = [];
+    for (const rawFeature of source.features ?? []) {
+        if (!rawFeature || typeof rawFeature !== "object" || Array.isArray(rawFeature))
+            return { ok: false, error: "Invalid battlefield feature." };
+        const feature = rawFeature;
+        if (!(typeof feature.terrain === "string" && hasOwnKey(TERRAIN_DATA, feature.terrain))) {
+            return { ok: false, error: "Unknown battlefield terrain." };
+        }
+        if (!(typeof feature.placement === "string" &&
+            FEATURE_PLACEMENTS.includes(feature.placement))) {
+            return { ok: false, error: "Unknown battlefield feature placement." };
+        }
+        if (!(typeof feature.shape === "string" && FEATURE_SHAPES.includes(feature.shape))) {
+            return { ok: false, error: "Unknown battlefield feature shape." };
+        }
+        if (feature.shape === "barrier" && !TERRAIN_DATA[feature.terrain].impassable) {
+            return { ok: false, error: "Barrier features must use wall, water, or mountain terrain." };
+        }
+        const key = `${feature.terrain}:${feature.placement}:${feature.shape}`;
+        if (seen.has(key))
+            return { ok: false, error: "Duplicate battlefield feature." };
+        seen.add(key);
+        features.push({
+            terrain: feature.terrain,
+            placement: feature.placement,
+            shape: feature.shape,
+        });
+    }
+    return {
+        ok: true,
+        brief: {
+            ...(source.exposure ? { exposure: source.exposure } : {}),
+            ...(source.size ? { size: source.size } : {}),
+            ...(features.length ? { features } : {}),
+        },
+    };
+}
 const DEFAULT_PROFILE = {
     weights: { forest: 4, mountain: 3, ruin: 3, water: 2, wall: 1 },
     density: 1.0,
@@ -50,17 +122,16 @@ function pickTerrain(weights, rng) {
     }
     return "forest";
 }
+function defaultBattlefieldSize(unitCount) {
+    return unitCount > 8 ? "large" : unitCount > 5 ? "medium" : "small";
+}
 /** Grid dimensions scale with the number of combatants. Default 12x8, cap 14x10. */
-export function gridDimensions(unitCount) {
-    if (unitCount > 8)
-        return { width: 14, height: 10 };
-    if (unitCount > 5)
-        return { width: 13, height: 9 };
-    return { width: 12, height: 8 };
+export function gridDimensions(unitCount, size) {
+    return { ...BATTLEFIELD_SIZES[size ?? defaultBattlefieldSize(unitCount)] };
 }
 const SPAWN_COLS = 2;
 function set(grid, x, y, terrain) {
-    if (x >= 0 && y >= 0 && x < grid.width && y < grid.height)
+    if (Number.isInteger(x) && Number.isInteger(y) && x >= 0 && y >= 0 && x < grid.width && y < grid.height)
         grid.tiles[y][x] = terrain;
 }
 function inBounds(grid, x, y) {
@@ -136,8 +207,8 @@ function reachable(grid, from, to) {
     return false;
 }
 /** Build a seeded terrain grid with clear spawn strips and guaranteed left↔right connectivity. */
-export function generateGrid(unitCount, rng, environment) {
-    const { width, height } = gridDimensions(unitCount);
+export function generateGrid(unitCount, rng, environment, size) {
+    const { width, height } = gridDimensions(unitCount, size);
     const tiles = Array.from({ length: height }, () => Array.from({ length: width }, () => "plains"));
     const grid = { width, height, tiles };
     const profile = envProfile(environment);
@@ -165,6 +236,136 @@ export function generateGrid(unitCount, rng, environment) {
     }
     return grid;
 }
+function tileKey(x, y) {
+    return `${x},${y}`;
+}
+function featureAnchor(grid, placement) {
+    const center = { x: Math.floor(grid.width / 2), y: Math.floor(grid.height / 2) };
+    switch (placement) {
+        case "north":
+            return { x: center.x, y: 1 };
+        case "south":
+            return { x: center.x, y: grid.height - 2 };
+        case "east":
+            return { x: grid.width - SPAWN_COLS - 1, y: center.y };
+        case "west":
+            return { x: SPAWN_COLS, y: center.y };
+        default:
+            return center;
+    }
+}
+function featureTiles(grid, feature) {
+    const anchor = featureAnchor(grid, feature.placement);
+    const horizontal = feature.placement === "center" || feature.placement === "north" || feature.placement === "south";
+    const offsets = feature.shape === "barrier"
+        ? horizontal
+            ? [
+                [-1, 0],
+                [0, 0],
+                [1, 0],
+            ]
+            : [
+                [0, -1],
+                [0, 0],
+                [0, 1],
+            ]
+        : horizontal
+            ? [
+                [-1, 0],
+                [0, 0],
+                [1, 0],
+                [0, 1],
+            ]
+            : [
+                [0, -1],
+                [0, 0],
+                [0, 1],
+                [1, 0],
+            ];
+    return offsets
+        .map(([dx, dy]) => ({ x: anchor.x + dx, y: anchor.y + dy }))
+        .filter((tile) => inBounds(grid, tile.x, tile.y) && !inSpawnZone(grid, tile.x));
+}
+function carveCorridorWithoutProtectedTiles(grid, from, to, protectedTiles) {
+    const queue = [from];
+    const parent = new Map([[tileKey(from.x, from.y), null]]);
+    while (queue.length) {
+        const current = queue.shift();
+        if (current.x === to.x && current.y === to.y)
+            break;
+        for (const [dx, dy] of [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+        ]) {
+            const next = { x: current.x + dx, y: current.y + dy };
+            const key = tileKey(next.x, next.y);
+            if (!inBounds(grid, next.x, next.y) || parent.has(key))
+                continue;
+            if (protectedTiles.has(key) && isImpassable(grid, next.x, next.y))
+                continue;
+            parent.set(key, tileKey(current.x, current.y));
+            queue.push(next);
+        }
+    }
+    const targetKey = tileKey(to.x, to.y);
+    if (!parent.has(targetKey))
+        return false;
+    for (let key = targetKey; key; key = parent.get(key) ?? null) {
+        if (!protectedTiles.has(key)) {
+            const [x, y] = key.split(",").map(Number);
+            set(grid, x, y, "plains");
+        }
+    }
+    return true;
+}
+/**
+ * Builds a generated battlefield from the bounded terrain brief. Feature tiles
+ * are protected after painting: later connectivity repair may route around them
+ * but cannot silently turn them back into plains.
+ */
+export function generateTacticalBattlefield(unitCount, rng, environment, requestedBrief) {
+    const validated = validateTacticalBattlefieldBrief(requestedBrief);
+    if (!validated.ok)
+        return validated;
+    const brief = validated.brief;
+    const size = brief?.size ?? defaultBattlefieldSize(unitCount);
+    const grid = generateGrid(unitCount, rng, environment, size);
+    const protectedTiles = new Set();
+    for (const feature of brief?.features ?? []) {
+        for (const tile of featureTiles(grid, feature)) {
+            const key = tileKey(tile.x, tile.y);
+            const existing = grid.tiles[tile.y][tile.x];
+            // A brief declares constraints, not ordered paint layers. Silently
+            // overwriting one landmark would violate it; the UI offers explicit
+            // generated-terrain fallback when constraints conflict.
+            if (protectedTiles.has(key) && existing !== feature.terrain) {
+                return { ok: false, error: "Battlefield features overlap with different terrain." };
+            }
+            set(grid, tile.x, tile.y, feature.terrain);
+            protectedTiles.add(key);
+        }
+    }
+    const midY = Math.floor(grid.height / 2);
+    const partyAnchor = { x: SPAWN_COLS - 1, y: midY };
+    const enemyAnchor = { x: grid.width - SPAWN_COLS, y: midY };
+    if (!reachable(grid, partyAnchor, enemyAnchor) &&
+        !carveCorridorWithoutProtectedTiles(grid, partyAnchor, enemyAnchor, protectedTiles)) {
+        return { ok: false, error: "Battlefield features block every route between deployment zones." };
+    }
+    return {
+        ok: true,
+        grid,
+        protectedTiles,
+        battlefield: {
+            kind: "generated",
+            generatorVersion: TACTICAL_BATTLEFIELD_GENERATOR_VERSION,
+            size,
+            ...(brief && (brief.size || brief.features?.length) ? { brief } : {}),
+        },
+    };
+}
 // ── Spawn placement (formation-aware) ──
 /**
  * Claim the free tile nearest `target` (BFS outward, fixed neighbor order so it's
@@ -172,7 +373,7 @@ export function generateGrid(unitCount, rng, environment) {
  * placed unit is guaranteed to stand on passable footing. Records the tile in
  * `occupied` so no two units ever share it.
  */
-function claimNear(grid, occupied, target) {
+function claimNear(grid, occupied, target, protectedTiles) {
     const sx = clamp(Math.round(target.x), 0, grid.width - 1);
     const sy = clamp(Math.round(target.y), 0, grid.height - 1);
     const seen = new Set([`${sx},${sy}`]);
@@ -180,7 +381,7 @@ function claimNear(grid, occupied, target) {
     while (queue.length) {
         const cur = queue.shift();
         const key = `${cur.x},${cur.y}`;
-        if (!occupied.has(key)) {
+        if (!occupied.has(key) && (!isImpassable(grid, cur.x, cur.y) || !protectedTiles.has(key))) {
             occupied.add(key);
             if (isImpassable(grid, cur.x, cur.y))
                 set(grid, cur.x, cur.y, "plains");
@@ -330,7 +531,7 @@ function formationTargets(grid, formation, partyCount, enemyCount, rng) {
                 }
             }
             quadrant.sort((a, b) => b.def - a.def || a.dist - b.dist);
-            const party = Array.from({ length: partyCount }, (_, i) => (quadrant[i]?.c ?? home));
+            const party = Array.from({ length: partyCount }, (_, i) => quadrant[i]?.c ?? home);
             // Enemies fan out along the two edges meeting at the opposite corner.
             const enemies = [];
             for (let i = 0; i < enemyCount; i++) {
@@ -359,16 +560,57 @@ function formationTargets(grid, formation, partyCount, enemyCount, rng) {
  * route doesn't already exist. Connectivity to a common hub over an undirected
  * passable graph makes all units mutually reachable.
  */
-function ensureConnectivity(grid, units) {
+function nearestUnprotectedHub(grid, protectedTiles) {
+    const center = { x: Math.floor(grid.width / 2), y: Math.floor(grid.height / 2) };
+    const queue = [center];
+    const seen = new Set([tileKey(center.x, center.y)]);
+    let firstUnprotected = null;
+    while (queue.length) {
+        const current = queue.shift();
+        if (!protectedTiles.has(tileKey(current.x, current.y))) {
+            firstUnprotected ??= current;
+            if (!isImpassable(grid, current.x, current.y))
+                return current;
+        }
+        for (const [dx, dy] of [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+        ]) {
+            const next = { x: current.x + dx, y: current.y + dy };
+            const key = tileKey(next.x, next.y);
+            if (!inBounds(grid, next.x, next.y) || seen.has(key))
+                continue;
+            seen.add(key);
+            queue.push(next);
+        }
+    }
+    return firstUnprotected;
+}
+function ensureConnectivity(grid, units, protectedTiles) {
     if (!units.length)
-        return;
-    const hub = { x: Math.floor(grid.width / 2), y: Math.floor(grid.height / 2) };
+        return true;
+    // Preserve legacy output exactly: its hub is the board center. Briefed maps
+    // choose the closest unprotected tile so a center landmark stays intact.
+    const hub = protectedTiles.size === 0
+        ? { x: Math.floor(grid.width / 2), y: Math.floor(grid.height / 2) }
+        : nearestUnprotectedHub(grid, protectedTiles);
+    if (!hub)
+        return false;
     set(grid, hub.x, hub.y, "plains");
     for (const u of units) {
         const from = { x: u.x, y: u.y };
-        if (!reachable(grid, from, hub))
+        if (reachable(grid, from, hub))
+            continue;
+        if (protectedTiles.size === 0) {
             carveCorridor(grid, from, hub);
+        }
+        else if (!carveCorridorWithoutProtectedTiles(grid, from, hub, protectedTiles)) {
+            return false;
+        }
     }
+    return true;
 }
 /**
  * Place units according to `formation`. Party/enemy target tiles come from
@@ -379,7 +621,7 @@ function ensureConnectivity(grid, units) {
  * Deterministic: given the same grid + units + formation + rng stream, the
  * placement is identical.
  */
-export function placeSpawns(grid, units, formation = "line", rng = () => 0) {
+export function placeSpawns(grid, units, formation = "line", rng = () => 0, protectedTiles = new Set()) {
     const occupied = new Set();
     const party = units.filter((u) => u.side === "party");
     const enemies = units.filter((u) => u.side === "enemy");
@@ -388,16 +630,19 @@ export function placeSpawns(grid, units, formation = "line", rng = () => 0) {
     const targets = formationTargets(grid, formation, party.length, bossFirst.length, rng);
     const lastPartyTarget = targets.party[targets.party.length - 1] ?? { x: 0, y: Math.floor(grid.height / 2) };
     party.forEach((u, i) => {
-        const tile = claimNear(grid, occupied, targets.party[i] ?? lastPartyTarget);
+        const tile = claimNear(grid, occupied, targets.party[i] ?? lastPartyTarget, protectedTiles);
         u.x = tile.x;
         u.y = tile.y;
     });
-    const lastEnemyTarget = targets.enemies[targets.enemies.length - 1] ?? { x: grid.width - 1, y: Math.floor(grid.height / 2) };
+    const lastEnemyTarget = targets.enemies[targets.enemies.length - 1] ?? {
+        x: grid.width - 1,
+        y: Math.floor(grid.height / 2),
+    };
     bossFirst.forEach((u, i) => {
-        const tile = claimNear(grid, occupied, targets.enemies[i] ?? lastEnemyTarget);
+        const tile = claimNear(grid, occupied, targets.enemies[i] ?? lastEnemyTarget, protectedTiles);
         u.x = tile.x;
         u.y = tile.y;
     });
-    ensureConnectivity(grid, units);
+    return ensureConnectivity(grid, units, protectedTiles);
 }
 //# sourceMappingURL=grid-gen.js.map

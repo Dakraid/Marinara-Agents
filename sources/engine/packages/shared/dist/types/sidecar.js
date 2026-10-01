@@ -13,10 +13,12 @@ export const SIDECAR_RUNTIME_PREFERENCES = ["auto", "nvidia", "amd", "intel", "v
 export const SIDECAR_DEFAULT_CONFIG = {
     backend: "llama_cpp",
     modelPath: null,
+    externalModelPath: null,
     modelRepo: null,
     quantization: null,
     customModelRepo: null,
     useForTrackers: false,
+    useAsAgentsDefault: false,
     useForGameScene: true,
     contextSize: 8192,
     maxTokens: 4096,
@@ -29,6 +31,8 @@ export const SIDECAR_DEFAULT_CONFIG = {
     embeddingPooling: "none",
     embeddingBatchSize: 512,
     runtimePreference: "auto",
+    kvCacheType: "f16",
+    decisionThinking: "auto",
 };
 /**
  * Reserved ID for the synthetic sidecar connection entry. The connections

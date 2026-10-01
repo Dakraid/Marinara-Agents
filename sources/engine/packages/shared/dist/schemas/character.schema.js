@@ -2,6 +2,7 @@
 // Character Zod Schemas
 // ──────────────────────────────────────────────
 import { z } from "zod";
+import { storedRulesetSheetsSchema } from "./ruleset.schema.js";
 export const depthPromptSchema = z.object({
     prompt: z.string().default(""),
     depth: z.number().int().min(0).default(4),
@@ -45,11 +46,15 @@ export const characterExtensionsSchema = z
     depth_prompt: depthPromptSchema.default({}),
     backstory: z.string().default(""),
     appearance: z.string().default(""),
+    /** Marinara Engine: retain card revisions and advance the visible version on edits. */
+    versioningEnabled: z.boolean().default(true),
     // Conversation-mode-only fields (optional — absent on non-convo cards).
     convoDisplayName: z.string().optional(),
     convoDisplayNameInCard: z.boolean().optional(),
     aboutMe: z.string().optional(),
     convoBehavior: convoBehaviorConfigSchema.optional(),
+    /** Starting builds for Game Mode rulesets, keyed by ruleset id. Bounded, never shape-checked. */
+    rulesetSheets: storedRulesetSheetsSchema.optional(),
 })
     .passthrough();
 export const characterBookEntrySchema = z
@@ -86,6 +91,7 @@ export const characterBookSchema = z
 export const characterDataSchema = z
     .object({
     name: z.string().trim().min(1),
+    summary: z.string().trim().max(500).default(""),
     description: z.string().default(""),
     personality: z.string().default(""),
     scenario: z.string().default(""),
@@ -96,7 +102,7 @@ export const characterDataSchema = z
     post_history_instructions: z.string().default(""),
     tags: z.array(z.string()).default([]),
     creator: z.string().default(""),
-    character_version: z.string().default(""),
+    character_version: z.string().default("1.0"),
     alternate_greetings: z.array(z.string()).default([]),
     extensions: characterExtensionsSchema.default({}),
     character_book: characterBookSchema.nullable().default(null),

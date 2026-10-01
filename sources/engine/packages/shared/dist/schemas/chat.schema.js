@@ -5,12 +5,18 @@ import { z } from "zod";
 import { pendingSpatialTransitionSchema } from "./spatial-context.schema.js";
 export const chatModeSchema = z.enum(["conversation", "roleplay", "game"]);
 export const messageRoleSchema = z.enum(["user", "assistant", "system", "narrator"]);
+export const messageReplySchema = z.object({
+    messageId: z.string().min(1).max(200),
+    name: z.string().min(1).max(200),
+    content: z.string().min(1).max(16000),
+});
 export const createChatSchema = z.object({
     name: z.string().min(1).max(200),
     mode: chatModeSchema,
     characterIds: z.array(z.string()).default([]),
     groupId: z.string().nullable().default(null),
     personaId: z.string().nullable().default(null),
+    personaCharacterId: z.string().nullable().default(null),
     promptPresetId: z.string().nullable().default(null),
     connectionId: z.string().nullable().default(null),
 });
@@ -24,6 +30,7 @@ export const createMessageSchema = z.object({
 export const generateRequestSchema = z.object({
     chatId: z.string(),
     userMessage: z.string().nullable().default(null),
+    replyTo: messageReplySchema.optional(),
     submissionId: z.string().min(1).max(100).nullable().optional().default(null),
     regenerateMessageId: z.string().nullable().default(null),
     continueMessageId: z.string().nullable().default(null),
@@ -43,6 +50,8 @@ export const generateRequestSchema = z.object({
     currentBackground: z.string().nullable().optional(),
     mentionedCharacterNames: z.array(z.string()).optional().default([]),
     forCharacterId: z.string().nullable().optional().default(null),
+    /** Select the next Roleplay group responder for this request without changing the saved order. */
+    smartResponse: z.boolean().optional().default(false),
     skipPresenceDelay: z.boolean().optional().default(false),
     narrativeDirectorMode: z.enum(["natural", "random"]).nullable().optional().default(null),
     generationGuide: z.string().nullable().optional().default(null),
@@ -86,5 +95,20 @@ export const summariesPatchSchema = z.object({
 export const markAutonomousUnreadSchema = z.object({
     characterId: z.string().min(1).nullable().optional().default(null),
     count: z.number().int().positive().max(100).optional().default(1),
+});
+export const reassignMessagePersonaSchema = z
+    .object({
+    scope: z.enum(["unassigned", "persona", "all"]),
+    sourcePersonaId: z.string().trim().min(1).optional(),
+    sourcePersonaSource: z.enum(["persona", "character"]).optional(),
+})
+    .superRefine((data, ctx) => {
+    if (data.scope === "persona" && !data.sourcePersonaId) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["sourcePersonaId"],
+            message: "sourcePersonaId is required when scope is 'persona'",
+        });
+    }
 });
 //# sourceMappingURL=chat.schema.js.map

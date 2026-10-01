@@ -1,5 +1,5 @@
 export const SPATIAL_CONTEXT_LIMITS = {
-    maxLocations: 500,
+    maxLocations: 5_000,
     maxDepth: 20,
     maxLinksPerLocation: 50,
     maxNameLength: 200,
@@ -158,7 +158,8 @@ export function validateSpatialContextDefinition(definition) {
             }
             seen.add(current.id);
             depth += 1;
-            if (current.parentId === null)
+            // Past maxDepth the location is already invalid, so a long chain costs at most maxDepth steps.
+            if (current.parentId === null || depth > SPATIAL_CONTEXT_LIMITS.maxDepth)
                 break;
             current = byId.get(current.parentId);
         }
