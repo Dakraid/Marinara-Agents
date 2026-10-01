@@ -350,6 +350,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.12",
+          "date": "2026-10-01",
+          "notes": "- Fix: the follow-up scheduler no longer logs \"No text connection configured\" on every poll. It checks for due follow-ups first, and warns once per outage only when work is waiting.",
+          "highlight": false
+        },
+        {
           "version": "0.3.11",
           "date": "2026-10-01",
           "notes": "Your relationship with a Creator, and a story-first Stir.\n\n- Your chats move your relationship: crush, dating, official, fights, making up. She calls you her boyfriend or girlfriend, sends you free pictures, texts about dates and anniversaries, and can keep it secret.\n- Details › You two shows the stage, the dates that matter and the moves, with Undo. Notifications and the main chat know about it.\n- Stir: Stir | Desk, your relationship on top, Now showing, Start a story with drama packs you can lead and end. Each persona sees only its own pages.\n- Fans leave notes on your page instead of chats. Settings › Overview › Pause all stops all of Slurp.\n- Adding many Creators at once: taken handles get the next free one instead of failing, the sign-up runs in the background with progress (close Slurp if you like), and first posts work for batches over 24.\n- Fixes: Backstage menu scrolls on short screens, reunions with you are official, a few couple and label bugs.",
@@ -461,12 +467,6 @@
           "version": "0.2.71",
           "date": "2026-09-25",
           "notes": "- Bounded numbers are sliders with a value chip: weeks between storylines, storylines at once, wallet day start, weekly price change and creator revenue share. A slider saves when you let go.\n- Posts per day, storyline check interval and carryover limits have − and + buttons.\n- Messaging reply and away delays are four min–max rows instead of eight separate fields; the lower value can never pass the upper one.",
-          "highlight": false
-        },
-        {
-          "version": "0.2.70",
-          "date": "2026-09-25",
-          "notes": "- Settings have new sections in order of use: Overview, Models & connections, Creators, Posting, Stories, World, Fans & money, Writing & content level, Maintenance.\n- Models & connections holds Connections and Image generation, right under Overview. World holds Events and Calendar; Fans & money holds Audience, Messaging rules, Coins and access, Ads and Discovery; Stories holds Storylines, Storyline types and Packs.\n- Old links and saved places open the page in its new section.",
           "highlight": false
         }
       ]
