@@ -53,7 +53,7 @@ import {
 import type { ChatImage } from "../../hooks/use-gallery";
 import { Avatar, getNoodleAccentStyle, NOODLE_ICON_SCOPE_CLASS, useNoodleAccent } from "./NoodleShell";
 import { formatTime } from "./NoodleDateTime";
-import { NoodleImageComposer } from "./NoodleImageComposer";
+import { NOODLE_IMAGE_ACCEPT, NoodleImageComposer } from "./NoodleImageComposer";
 import { NoodlePollComposer } from "./NoodlePollComposer";
 import { PostImageCropEditor, PostImageFrame } from "./PostImageCropEditor";
 import { useTranslation as useUiTranslation } from "react-i18next";
@@ -1005,7 +1005,7 @@ export function PostImageEditControls({
       <input
         ref={editing.fileInputRef}
         type="file"
-        accept="image/*"
+        accept={NOODLE_IMAGE_ACCEPT}
         className="hidden"
         onChange={editing.selectReplacement}
       />

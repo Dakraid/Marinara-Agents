@@ -344,6 +344,38 @@ test.describe("package-owned Noodle interface", () => {
     }
   });
 
+  test("post image pickers let a phone take a photo as well as choose a file", async ({ page }) => {
+    // Chrome on Android 13+ answers an image-only accept list with a photo picker that has no camera (#6939).
+    await page.request.get("/api/noodle");
+    const postResponse = await page.request.post("/api/noodle/posts", {
+      data: {
+        authorKind: "character",
+        authorEntityId: "__professor_mari__",
+        content: `Camera picker regression ${Date.now()}`,
+      },
+    });
+    expect(postResponse.ok()).toBe(true);
+    const post = (await postResponse.json()) as { id: string };
+    try {
+      await page.goto("/");
+      await openNoodle(page);
+      const noodle = page.locator('[data-component="NoodleView"]');
+      const imagePickers = noodle.locator('input[type="file"][accept*="image/"]');
+      // The post composer and the comment composer.
+      await expect(imagePickers).toHaveCount(2);
+      const article = noodle.locator(`[data-noodle-post-id="${post.id}"]`);
+      await article.getByRole("button", { name: "Post actions", exact: true }).click();
+      await article.getByRole("button", { name: "Edit", exact: true }).click();
+      // Plus the picker that replaces an edited post's image.
+      await expect(imagePickers).toHaveCount(3);
+      expect(await imagePickers.evaluateAll((inputs) => inputs.map((input) => input.getAttribute("accept")))).toEqual(
+        Array(3).fill("image/*,android/allowCamera"),
+      );
+    } finally {
+      await page.request.delete(`/api/noodle/posts/${post.id}`, { timeout: 5_000 }).catch(() => undefined);
+    }
+  });
+
   test("Delete All Noodle Data can be cancelled before typing DELETE", async ({ page }, testInfo) => {
     let deletions = 0;
     page.on("request", (request) => {
