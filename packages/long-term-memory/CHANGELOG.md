@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 1.3.35 — 2026-10-01
+
+- The description now says what it does in plain words.
+
 ## 1.3.34 — 2026-09-30 [highlight]
 
 - Stop Long-Term Memory from failing to activate when the vault contains a note that no longer passes validation. The invalid note is skipped by the note index and still surfaces as a vault read error, so the package no longer rolls back to an old version.
