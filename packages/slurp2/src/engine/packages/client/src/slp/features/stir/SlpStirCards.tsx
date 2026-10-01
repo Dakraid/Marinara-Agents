@@ -106,6 +106,17 @@ export function slpStirWhat(t: T, card: SlpActionPreview): string {
       );
     case "add-to-couple":
       return t("ui.slurp.stir.what.add-to-couple", { joiner: d.joiner ?? "", couple: d.couple ?? "" });
+    case "set-bond":
+      return t(`ui.slurp.stir.what.set-bond.${d.kind === "friend" ? `friend${Number(d.level ?? 1)}` : d.kind}`, names);
+    case "end-bond":
+      return t(`ui.slurp.stir.what.end-bond.${d.kind ?? "friend"}`, names);
+    case "start-drama":
+      return t(a ? "ui.slurp.stir.what.start-drama.lead" : "ui.slurp.stir.what.start-drama", {
+        ...names,
+        drama: d.name ?? "",
+      });
+    case "end-drama":
+      return t("ui.slurp.stir.what.end-drama", { drama: d.name ?? "" });
     // The Support desk (0.3.5): the words carry the card's own values.
     case "grant-perk":
       return t(`ui.slurp.stir.what.grant-perk.${d.perk}`, {

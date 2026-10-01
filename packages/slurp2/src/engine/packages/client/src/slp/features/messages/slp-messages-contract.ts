@@ -1,4 +1,5 @@
 import type { SlpSupportDesk } from "../../../../../shared/src/slp/slp-support-desk.js";
+import type { SlpPlayerCouple } from "../../../../../shared/src/slp/slp-stir.js";
 export type SlurpDmPolicy = "open" | "subscribers" | "paid" | "closed";
 export type SlurpRapportContribution = {
   key: string;
@@ -122,20 +123,8 @@ export type SlurpSupportRelationship = {
   scheduledFollowUps: SlurpFanRelationship["scheduledFollowUps"];
 };
 
-/** Her and the player's own page as a couple (Details › You two), mirrors `SlurpPlayerCoupleView`. */
-export type SlurpPlayerCouple = {
-  id: string;
-  stage: "sparks" | "dating" | "together" | "rocky" | "split";
-  ending: "breakup" | "fizzled" | null;
-  startedAt: string;
-  togetherAt: string | null;
-  stageAt: string;
-  secret: boolean;
-  lastDate: { at: string; detail: string } | null;
-  lastFight: { at: string; detail: string } | null;
-  /** Days since they got together at that mark: 30, 90, 180, then every 365. */
-  nextAnniversary: { at: string; days: number } | null;
-};
+/** Her and the player's own page as a couple (Details › You two). */
+export type SlurpPlayerCouple = SlpPlayerCouple;
 
 export type SlurpFanRelationship = {
   desk?: undefined;

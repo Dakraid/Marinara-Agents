@@ -47,7 +47,7 @@ const COMMENT_POST_DAYS = 3;
 const pairKey = (kind: string, a: string, b: string) => `${kind}:${[a, b].sort().join("|")}`;
 
 /** The runtime's view of the world: live Creators and the player's pages, their spice, and the ties. */
-async function loadDramaWorld(
+export async function loadDramaWorld(
   db: DB,
   at: Date,
 ): Promise<SlpDramaWorld & { viewerOf: Map<string, string>; tieCreators: SlurpTieCreator[] }> {

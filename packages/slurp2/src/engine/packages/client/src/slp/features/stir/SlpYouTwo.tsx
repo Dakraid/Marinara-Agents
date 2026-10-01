@@ -6,8 +6,9 @@ import { cn } from "../../../lib/utils";
 import { SlpButton } from "../../modules/chrome/SlpButton";
 import { SlpHeartGlyph } from "../../base/chrome/SlpGlyphs";
 import { formatRelativeTime, formatUpcomingDay } from "../../base/ui/slp-date-time";
-import { useSlpStirDoIt, useSlurpStirPreview } from "../stir/slp-stir-contract";
-import type { SlurpPlayerCouple } from "./slp-messages-contract";
+import { useSlpStirDoIt } from "./SlpStirCards";
+import { useSlurpStirPreview } from "./slp-stir-hooks";
+import type { SlpPlayerCouple as SlurpPlayerCouple } from "../../../../../shared/src/slp/slp-stir.js";
 
 type Steer = "date" | "official" | "patchUp" | "secret" | "public" | "breakUp" | "reunite";
 

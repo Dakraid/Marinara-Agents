@@ -52,6 +52,22 @@ export function slpStirStepOf(action: SlpActionName, form: Form): Record<string,
     }
     case "run-audience":
       return {};
+    // 0.3.9: bonds and drama packs are plays too.
+    case "set-bond":
+      return two?.length === 2 && form.kind
+        ? {
+            aId: two[0],
+            bId: two[1],
+            kind: form.kind,
+            ...(form.kind === "friend" ? { level: Number(form.level ?? 1) } : {}),
+          }
+        : null;
+    case "end-bond":
+      return form.pick ? { bondId: form.pick } : null;
+    case "start-drama":
+      return form.pick ? { dramaId: form.pick, ...(one ? { leadId: one } : {}) } : null;
+    case "end-drama":
+      return form.pick ? { runId: form.pick } : null;
     case "start-storyline": {
       const title = typeof form.title === "string" ? form.title.trim() : "";
       const others = ((form.with as string[] | undefined) ?? []).filter((id) => id !== one);

@@ -3,7 +3,7 @@ import { SlpStoryRingAvatar } from "../../modules/story/SlpStoryRing";
 import { SlurpPromptDebugPanel, SlurpRelationshipPanel } from "./SlpMessageInsights";
 import { SlpDeskCaseFile } from "../../modules/desk/SlpDeskCaseFile";
 import { SlurpMemoriesPanel } from "./SlpMemoriesPanel";
-import { SlpYouTwo } from "./SlpYouTwo";
+import { SlpYouTwo } from "../stir/slp-stir-contract";
 import { SlurpThreadRequestsPanel } from "./SlpThreadRequestsPanel";
 import { SlurpCommissionsPanel } from "./commissions/SlpCommissions";
 import { Avatar, SLP_BAR_GLASS_CLASS, useSlpMediaQuery } from "../../base/chrome/SlpChrome";

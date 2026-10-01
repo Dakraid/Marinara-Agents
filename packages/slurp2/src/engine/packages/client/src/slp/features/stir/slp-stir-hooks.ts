@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../../lib/api-client";
 import { slpKeys } from "../../base/state/slp-query-keys";
+import { useSlurpUIStore } from "../../base/state/slp-package-store";
 import type { SlpActionResult } from "../../../../../shared/src/slp/slp-actions.js";
 import type {
   SlpActionPreview,
@@ -13,6 +14,8 @@ import type {
 } from "../../../../../shared/src/slp/slp-stir.js";
 
 const base = "/slurp2/slurp/stir";
+/** The persona playing: another persona's pages, couples and plays are out of its reach (0.3.9). */
+const playing = () => useSlurpUIStore.getState().viewerPersonaId ?? undefined;
 const viewKey = (personaId: string) => [...slpKeys.noodlerRoot(), "stir", personaId] as const;
 
 /** Everything the Stir tab shows: what is in play, suggestions, recent plays, and the ids the cards pick from. */
@@ -28,7 +31,7 @@ export function useSlurpStir(personaId: string | null) {
 export function useSlurpStirPreview() {
   return useMutation({
     mutationFn: (steps: SlpStirStep[]) =>
-      api.post<{ cards: SlpActionPreview[]; cant: string[] }>(`${base}/preview`, { steps }),
+      api.post<{ cards: SlpActionPreview[]; cant: string[] }>(`${base}/preview`, { steps, personaId: playing() }),
   });
 }
 
@@ -58,12 +61,17 @@ export function useSlurpStirPlay() {
   return {
     play: useMutation({
       mutationFn: (input: { steps: SlpStirStep[]; origin: SlpStirOrigin; supportMessageId?: string }) =>
-        api.post<{ play: SlpStirPlay; results: { ok: boolean; error: string | null }[] }>(`${base}/play`, input),
+        api.post<{ play: SlpStirPlay; results: { ok: boolean; error: string | null }[] }>(`${base}/play`, {
+          ...input,
+          personaId: playing(),
+        }),
       onSuccess: refresh,
     }),
     undo: useMutation({
       mutationFn: (id: string) =>
-        api.post<{ play: SlpStirPlay; kept: number }>(`${base}/plays/${encodeURIComponent(id)}/undo`, {}),
+        api.post<{ play: SlpStirPlay; kept: number }>(`${base}/plays/${encodeURIComponent(id)}/undo`, {
+          personaId: playing(),
+        }),
       onSuccess: refresh,
     }),
   };

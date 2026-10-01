@@ -3,6 +3,7 @@
  * reports what the talk did to the two of them ("us"), and these rules decide whether it counts.
  */
 import { clampText } from "./slp-project.js";
+import type { SlpPlayerCouple } from "../../../../../shared/src/slp/slp-stir.js";
 import {
   slurpNextAnniversary,
   slurpCoupleMoment,
@@ -54,18 +55,7 @@ export function slurpPlayerCoupleStep(
 }
 
 /** What the player's thread with her shows about the two of them (Details › You two). */
-export type SlurpPlayerCoupleView = {
-  id: string;
-  stage: SlurpCoupleStage;
-  ending: SlurpCouple["ending"];
-  startedAt: string;
-  togetherAt: string | null;
-  stageAt: string;
-  secret: boolean;
-  lastDate: { at: string; detail: string } | null;
-  lastFight: { at: string; detail: string } | null;
-  nextAnniversary: { at: string; days: number } | null;
-};
+export type SlurpPlayerCoupleView = SlpPlayerCouple;
 
 export function slurpPlayerCoupleView(couple: SlurpCouple, at: Date): SlurpPlayerCoupleView {
   const last = (kinds: readonly string[]) => {

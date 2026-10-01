@@ -10,6 +10,7 @@
  * ("Action layer").
  */
 import { z } from "zod";
+import type { SlpBrandDealPreview, SlpBrandFit } from "./slp-brand-deal-preview.js";
 import {
   SLP_RELATIONSHIP_STYLES,
   SLP_STEERING_MOODS,
@@ -68,8 +69,12 @@ export const SLP_PICTURE_TARGETS = ["avatar", "cover", "post", "story"] as const
 export type SlpPictureTarget = (typeof SLP_PICTURE_TARGETS)[number];
 
 const accountId = z.string().trim().min(1).max(200);
-/** What a player can do to a couple (7b-couples); the Stir sheet and the couples panel share it. */
-/** "official": sparks or dating become together. "secret"/"public": a couple with the player's own page only. */
+/** Bonds the player can set between two Creators (mirrors `SLURP_BOND_KINDS`). */
+export const SLP_BOND_KINDS = ["friend", "roommate", "coworker", "ex"] as const;
+/**
+ * What a player can do to a couple (7b-couples); the Stir sheet and the couples panel share it.
+ * "official": sparks or dating become together. "secret"/"public": a couple with the player's own page only.
+ */
 export const SLP_COUPLE_STEERS = [
   "date",
   "drama",
@@ -266,6 +271,43 @@ export const SLP_ACTIONS = {
       steer: `One of: ${SLP_COUPLE_STEERS.join(", ")}.`,
     },
     schema: z.object({ coupleId: accountId, steer: z.enum(SLP_COUPLE_STEERS) }).strict(),
+  },
+  "set-bond": {
+    summary:
+      "Make two Creators friends, best friends, roommates, coworkers or exes. A bond the player sets stays until the player ends it.",
+    inputs: {
+      aId: "One Creator.",
+      bId: "The other Creator.",
+      kind: `One of: ${SLP_BOND_KINDS.join(", ")}.`,
+      level: "For friends only: 0 acquaintances to 3 best friends (optional, 1).",
+    },
+    schema: z
+      .object({
+        aId: accountId,
+        bId: accountId,
+        kind: z.enum(SLP_BOND_KINDS),
+        level: z.number().int().min(0).max(3).optional(),
+      })
+      .strict(),
+  },
+  "end-bond": {
+    summary: "End a bond: they stop being friends, move out, stop working together, or let the ex go.",
+    inputs: { bondId: "The bond (from list-world)." },
+    schema: z.object({ bondId: accountId }).strict(),
+  },
+  "start-drama": {
+    summary:
+      "Start a drama pack now (it must be switched on): Slurp casts the roles, or the player picks who leads it.",
+    inputs: {
+      dramaId: "The drama (from list-world).",
+      leadId: "The Creator in its first role (optional; must fit it).",
+    },
+    schema: z.object({ dramaId: accountId, leadId: accountId.optional() }).strict(),
+  },
+  "end-drama": {
+    summary: "End a running drama now: nothing more of it goes out.",
+    inputs: { runId: "The running drama (from list-world)." },
+    schema: z.object({ runId: accountId }).strict(),
   },
   "couple-page": {
     summary: "Open a couple's shared page, or close it with a goodbye post.",
@@ -557,6 +599,10 @@ export type SlpActionResult = {
   "set-up-couple": { coupleId: string };
   "steer-couple": { coupleId: string };
   "couple-page": { coupleId: string; accountId: string | null };
+  "set-bond": { bondId: string };
+  "end-bond": { bondId: string };
+  "start-drama": { runId: string };
+  "end-drama": { runId: string };
   "start-event": { occurrenceId: string };
   "steer-storyline": { projectId: string };
   "run-audience": unknown;
@@ -589,33 +635,6 @@ export type SlpActionResult = {
   "warn-creator": { accountId: string };
 };
 
-/** Whether a product fits a Creator (the Stir brand picker): both spice and brand words, R's two fit rules. */
-export type SlpBrandFit = "fits" | "spice" | "offBrand";
-
-/**
- * What `offer-brand-deal` would do (R). Shaped like a Stir preview card (who, detail, notes, error,
- * when, refusable, summary), so Stir can show it as one. `notes[].kind`: notAutomatic (the player's
- * own page answers in the Dashboard), spice (the product is spicier than the page), noAds / offBrand (the
- * card will likely say no), mayDecline. `error`: notFound, noProduct, busy (an offer is open), adsOff.
- */
-export type SlpBrandDealPreview = {
-  who: { id: string; name: string }[];
-  detail: {
-    brand: string | null;
-    product: string | null;
-    productId: string | null;
-    brandId: string | null;
-    fee: number | null;
-    pitch: string | null;
-    logoUrl: string | null;
-  };
-  notes: { kind: string; name: string }[];
-  error: "notFound" | "noProduct" | "busy" | "adsOff" | null;
-  when: "nextPost" | "now";
-  refusable: boolean;
-  summary: string;
-};
-
 /** What `list-world` answers: the ids and names the world levers take. */
 export type SlpStirWorld = {
   couples: {
@@ -626,11 +645,18 @@ export type SlpStirWorld = {
     moreIds?: string[];
     stage: string;
     page: "open" | "closed" | null;
+    /** A couple with the player's own page, kept out of public. */
+    secret?: boolean;
   }[];
   collabs: { id: string; hostId: string; partnerId: string; status: string }[];
   rivalries: { id: string; fromId: string; toId: string; stage: string }[];
   events: { id: string; name: string; running: boolean }[];
   storylines: { accountId: string; projectId: string; title: string; chapter: string; held: boolean }[];
+  /** Friends, roommates, coworkers and exes (0.3.9: Stir sets and ends them). */
+  bonds?: { id: string; aId: string; bId: string; kind: string; level: number }[];
+  /** Drama packs switched on, and the ones running now with their cast (0.3.9). */
+  dramas?: { id: string; name: string; description: string; leadRole: string }[];
+  runs?: { id: string; dramaId: string; name: string; stage: string; cast: Record<string, string> }[];
 };
 
 /** Where a lever sits in the Stir deck. `help` (writing and picture help) is not a card. */
@@ -646,7 +672,7 @@ export const SLP_ACTION_META: Record<
   SlpActionName,
   {
     category: SlpStirCategory | "help" | "desk";
-    targets: "creator" | "pair" | "couple" | "collab" | "rivalry" | "event" | "storyline" | "none";
+    targets: "creator" | "pair" | "couple" | "collab" | "rivalry" | "event" | "storyline" | "bond" | "drama" | "none";
     reversible: boolean;
     ai: boolean;
     refusable: boolean;
@@ -669,6 +695,10 @@ export const SLP_ACTION_META: Record<
   "set-up-couple": { category: "love", targets: "pair", reversible: true, ai: false, refusable: false, deck: true },
   "steer-couple": { category: "love", targets: "couple", reversible: true, ai: false, refusable: false, deck: true },
   "couple-page": { category: "love", targets: "couple", reversible: false, ai: false, refusable: false, deck: true },
+  "set-bond": { category: "life", targets: "pair", reversible: true, ai: false, refusable: false, deck: true },
+  "end-bond": { category: "life", targets: "bond", reversible: true, ai: false, refusable: false, deck: false },
+  "start-drama": { category: "drama", targets: "drama", reversible: true, ai: false, refusable: false, deck: true },
+  "end-drama": { category: "drama", targets: "drama", reversible: false, ai: false, refusable: false, deck: false },
   "suggest-collab": { category: "work", targets: "pair", reversible: true, ai: false, refusable: true, deck: true },
   "push-collab": { category: "work", targets: "collab", reversible: true, ai: false, refusable: false, deck: true },
   "start-rivalry": { category: "drama", targets: "pair", reversible: true, ai: false, refusable: false, deck: true },

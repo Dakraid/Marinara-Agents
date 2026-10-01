@@ -573,12 +573,14 @@ const beatFor = (creatorId: string, ties: SlurpCreatorTies, at: Date, couples: S
 // --- 11. Studio: two areas, plain words ------------------------------------------------------------------
 {
   const studio = client("app/screens/SlpScreenStudio.tsx");
+  // 0.3.9 Stir overhaul: the Business and Relationships sheets became rows of "Now showing", below
+  // the player's own relationship.
   assert.ok(
-    studio.indexOf("<SlpCollabsPanel") < studio.indexOf("<SlpRelationshipsPanel"),
-    "Business, then Relationships",
+    studio.indexOf("<YourRelationship") >= 0 && studio.indexOf("<YourRelationship") < studio.indexOf("<NowShowing"),
+    "Your relationship, then everything else that runs",
   );
-  // W: the two areas moved into the Stir tab, which words them with `t`.
-  assert.match(studio, /title=\{(?:localizeUi|t)\("ui\.slurp\.ties\.life\.title"\)\}/u);
+  // W: the two areas moved into the Stir tab, which words them with `t` (0.3.9: "Now showing").
+  assert.match(studio, /\{t\("ui\.slurp\.stir\.now\.title"\)\}/u);
   const panel = client("features/projects/SlpCollabsPanel.tsx");
   assert.doesNotMatch(
     panel.slice(0, panel.indexOf("export function SlpRelationshipsPanel")),

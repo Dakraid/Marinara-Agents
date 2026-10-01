@@ -24,7 +24,8 @@ import {
   readSlurpStirPlays,
   type SlurpStoredStirPlay,
 } from "../../data/assist/slp-stir-plays-storage.js";
-import { slurpCoupleActive, slurpCoupleMatches } from "../../modules/projects/slp-creator-couples.js";
+import { slurpCoupleActive, slurpCoupleMatches, type SlurpCouple } from "../../modules/projects/slp-creator-couples.js";
+import { slurpPlayerCoupleView } from "../../modules/projects/slp-player-couple.js";
 import { slurpPairKey } from "../../modules/projects/slp-creator-ties.js";
 import { readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ties-storage.js";
 import { slurpDealOwesPost } from "../../modules/economy/slp-brand-deals.js";
@@ -93,6 +94,43 @@ const slpStirStepRef = (value: unknown): Record<string, string> | undefined => {
 };
 
 /**
+ * The pages the other personas run (0.3.9): one persona's Stir never lists, steers or undoes them, and
+ * never shows a couple, collab or rivalry one of them is in. Empty without a persona (a Support plan).
+ */
+export async function readSlpStirHidden(db: DB, own?: (account: Account) => boolean): Promise<Set<string>> {
+  if (!own) return new Set();
+  const accounts = (await createSlurpStorage(db).listNoodlerAccounts()) as Account[];
+  return new Set(accounts.filter((account) => !slurpRunsItself(account) && !own(account)).map((account) => account.id));
+}
+
+/** Every page a step names or reaches through a couple, collab or rivalry id. */
+async function slpStirStepReach(db: DB, steps: readonly SlpStirStep[]): Promise<Set<string>> {
+  const { ties, couples } = await readSlurpCreatorTiesDocument(db);
+  const ids = new Set<string>();
+  for (const step of steps) {
+    const input = step.input as Record<string, unknown>;
+    for (const id of slpStirStepPeople(input)) ids.add(id);
+    const couple = couples.find((entry) => entry.id === input.coupleId);
+    for (const id of couple ? [couple.aId, couple.bId, ...(couple.moreIds ?? [])] : []) ids.add(id);
+    const collab = ties.collabs.find((entry) => entry.id === input.collabId);
+    for (const id of collab ? [collab.hostId, collab.partnerId] : []) ids.add(id);
+    const rivalry = ties.rivalries.find((entry) => entry.id === input.rivalryId);
+    for (const id of rivalry ? [rivalry.fromId, rivalry.toId] : []) ids.add(id);
+  }
+  return ids;
+}
+
+/** Whether these steps reach one of another persona's pages. */
+export async function slpStirReachesHidden(
+  db: DB,
+  steps: readonly SlpStirStep[],
+  hidden: ReadonlySet<string>,
+): Promise<boolean> {
+  if (!hidden.size) return false;
+  return [...(await slpStirStepReach(db, steps))].some((id) => hidden.has(id));
+}
+
+/**
  * Preview a list of steps (a plan, a card, a Support proposal). A step the layer does not know, or
  * with input its schema refuses, comes back in `cant` in plain words, never as a silent drop.
  */
@@ -157,7 +195,8 @@ export async function planSlpStir(
     buildSlpStirPlanMessages({
       text: request.text,
       creators: accounts
-        .filter((account) => !slurpIsCouplePage(account))
+        // Another persona's pages are not this persona's to plan with (0.3.9).
+        .filter((account) => !slurpIsCouplePage(account) && (!own || slurpRunsItself(account) || own(account)))
         .map((account) => ({
           id: account.id,
           name: account.displayName,
@@ -193,7 +232,7 @@ export async function planSlpStir(
  */
 export async function playSlpStir(
   db: DB,
-  input: { steps: readonly SlpStirStep[]; origin: SlpStirOrigin },
+  input: { steps: readonly SlpStirStep[]; origin: SlpStirOrigin; personaId?: string },
   at = new Date(),
 ): Promise<{ play: SlpStirPlay; results: { ok: boolean; value: unknown; error: string | null }[] }> {
   const { steps, results, undo } = await slpRunStirSteps<SlpActionUndo>(input.steps, (action, stepInput) =>
@@ -209,6 +248,7 @@ export async function playSlpStir(
     }),
     undoable: undo.length > 0,
     undone: false,
+    ...(input.personaId ? { personaId: input.personaId } : {}),
     undo,
   };
   await mutateSlurpStirPlays(db, (plays) => ({ plays: [play, ...plays], result: null }));
@@ -224,10 +264,13 @@ export async function playSlpStir(
 export async function undoSlpStirPlay(
   db: DB,
   id: string,
+  /** The persona asking: another persona's play is not theirs to take back (0.3.9). */
+  personaId?: string,
 ): Promise<SlpAssistOutcome<{ play: SlpStirPlay; kept: number }>> {
   const claimed = await mutateSlurpStirPlays<SlurpStoredStirPlay | "gone" | "cant">(db, (plays) => {
     const play = plays.find((entry) => entry.id === id);
-    if (!play) return { plays, result: "gone" as const };
+    if (!play || (personaId && play.personaId && play.personaId !== personaId))
+      return { plays, result: "gone" as const };
     if (play.undone || !play.undoable) return { plays, result: "cant" as const };
     return {
       plays: plays.map((entry) => (entry.id === id ? { ...entry, undone: true, undo: [] } : entry)),
@@ -256,14 +299,18 @@ export async function undoSlpStirPlay(
   return { ok: true, value: { play: { ...visible, undone: true }, kept } };
 }
 
-/** Everything the Stir tab shows, in one read. `own` marks the pages this persona runs. */
+/**
+ * Everything the Stir tab shows, in one read. `own` marks the pages this persona runs; another
+ * persona's pages, their couples, collabs, rivalries and plays are left out (0.3.9).
+ */
 export async function readSlpStirView(
   db: DB,
   own: (account: Account) => boolean,
   at = new Date(),
+  personaId?: string,
 ): Promise<SlpStirView> {
   const storage = createSlurpStorage(db);
-  const [accounts, world, document, plays, occurrences, dismissed, tieCreators] = await Promise.all([
+  const [allAccounts, fullWorld, fullDocument, allPlays, occurrences, dismissed, allTieCreators] = await Promise.all([
     storage.listNoodlerAccounts() as Promise<Account[]>,
     readSlpStirWorld(db, at),
     readSlurpCreatorTiesDocument(db),
@@ -273,6 +320,29 @@ export async function readSlpStirView(
     // ponytail: every Creator's fit text on each Stir visit, for "they would click"; cache it if a big cast feels slow.
     loadSlurpTieCreators(db, at),
   ]);
+  const hidden = new Set(
+    allAccounts.filter((account) => !slurpRunsItself(account) && !own(account)).map((account) => account.id),
+  );
+  const seen = (...ids: (string | undefined)[]) => !ids.some((id) => id && hidden.has(id));
+  const accounts = allAccounts.filter((account) => seen(account.id));
+  const tieCreators = allTieCreators.filter((creator) => seen(creator.id));
+  const plays = allPlays.filter((play) => !personaId || !play.personaId || play.personaId === personaId);
+  const world = {
+    ...fullWorld,
+    couples: fullWorld.couples.filter((couple) => seen(couple.aId, couple.bId, ...(couple.moreIds ?? []))),
+    collabs: fullWorld.collabs.filter((collab) => seen(collab.hostId, collab.partnerId)),
+    rivalries: fullWorld.rivalries.filter((rivalry) => seen(rivalry.fromId, rivalry.toId)),
+    bonds: (fullWorld.bonds ?? []).filter((bond) => seen(bond.aId, bond.bId)),
+    runs: (fullWorld.runs ?? []).filter((run) => seen(...Object.values(run.cast))),
+  };
+  const document = {
+    ...fullDocument,
+    couples: fullDocument.couples.filter((couple) => seen(couple.aId, couple.bId, ...(couple.moreIds ?? []))),
+    ties: {
+      ...fullDocument.ties,
+      collabs: fullDocument.ties.collabs.filter((collab) => seen(collab.hostId, collab.partnerId)),
+    },
+  };
   const rivals = new Set(world.rivalries.map((rivalry) => slurpPairKey(rivalry.fromId, rivalry.toId)));
   const matches = slurpCoupleMatches(
     tieCreators,
@@ -339,5 +409,39 @@ export async function readSlpStirView(
     collabs: world.collabs,
     rivalries: world.rivalries,
     storylines: world.storylines,
+    bonds: world.bonds,
+    dramas: world.dramas ?? [],
+    runs: world.runs,
+    yourCouples: slpStirYourCouples(accounts, own, fullDocument.couples, at),
   };
+}
+
+/** The Creators this persona's own pages are with, or were lately (an ex for a month), newest first. */
+function slpStirYourCouples(
+  accounts: readonly Account[],
+  own: (account: Account) => boolean,
+  couples: readonly SlurpCouple[],
+  at: Date,
+): SlpStirView["yourCouples"] {
+  const byId = new Map(accounts.map((account) => [account.id, account]));
+  const pages = new Set(accounts.filter((account) => !slurpRunsItself(account) && own(account)).map((a) => a.id));
+  const recent = (couple: SlurpCouple) =>
+    slurpCoupleActive(couple) || at.getTime() - Date.parse(couple.stageAt) < 30 * 86_400_000;
+  const seenPartners = new Set<string>();
+  return [...couples]
+    .reverse()
+    .flatMap((couple) => {
+      const members = [couple.aId, couple.bId, ...(couple.moreIds ?? [])];
+      const page = members.find((id) => pages.has(id));
+      const partner = members.map((id) => byId.get(id)).find((account) => account && slurpRunsItself(account));
+      if (!page || !partner || !recent(couple) || seenPartners.has(partner.id)) return [];
+      seenPartners.add(partner.id);
+      return [
+        {
+          partner: { id: partner.id, name: partner.displayName, avatarUrl: partner.avatarUrl ?? null },
+          couple: slurpPlayerCoupleView(couple, at),
+        },
+      ];
+    })
+    .sort((left, right) => Number(right.couple.stage !== "split") - Number(left.couple.stage !== "split"));
 }

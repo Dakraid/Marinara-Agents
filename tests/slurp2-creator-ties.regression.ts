@@ -927,11 +927,8 @@ async function main() {
         studio.indexOf("<SlpBrandOffers") < studio.indexOf("<SlpStudioStat"),
       "brand offers right after the money",
     );
-    // W: collabs are world levers now: the Stir tab lists them (Business), not the own page.
-    assert.match(
-      read("client/src/slp/features/stir/SlpStirScreen.tsx"),
-      /<SlpCollabsPanel personaId=\{personaId\} \/>/u,
-    );
+    // W: collabs are world levers now: the Stir tab lists them, not the own page (0.3.9: in "Now showing").
+    assert.match(read("client/src/slp/features/stir/SlpStirScreen.tsx"), /<NowShowing view=\{view\}/u);
     const panel = read("client/src/slp/features/projects/SlpCollabsPanel.tsx");
     for (const action of [
       "actions.push.mutate",

@@ -10,3 +10,4 @@ export { SlpStirPlaySheet } from "./SlpStirPlaySheet";
 export { useSlurpStir } from "./slp-stir-hooks";
 export { slpStirWhat, useSlpStirDoIt } from "./SlpStirCards";
 export { useSlurpStirPreview } from "./slp-stir-hooks";
+export { SlpYouTwo } from "./SlpYouTwo";

@@ -5,7 +5,22 @@
  * what the Stir tab shows ("In play", suggestions). See docs/architecture/README.md ("Stir").
  */
 import { z } from "zod";
-import type { SlpActionName } from "./slp-actions.js";
+import type { SlpActionName, SlpStirWorld } from "./slp-actions.js";
+
+/** The player's own page and a Creator as a couple (Details › You two, Stir's "Your relationship"). */
+export type SlpPlayerCouple = {
+  id: string;
+  stage: "sparks" | "dating" | "together" | "rocky" | "split";
+  ending: "breakup" | "fizzled" | null;
+  startedAt: string;
+  togetherAt: string | null;
+  stageAt: string;
+  secret: boolean;
+  lastDate: { at: string; detail: string } | null;
+  lastFight: { at: string; detail: string } | null;
+  /** Days since they got together at that mark: 30, 90, 180, then every 365. */
+  nextAnniversary: { at: string; days: number } | null;
+};
 
 /** When a play shows in the world. */
 export type SlpStirWhen = "now" | "nextPost" | "nextLook" | "ongoing";
@@ -80,6 +95,8 @@ export const slpStirPlaySchema = z
     origin: z.enum(SLP_STIR_ORIGINS).default("deck"),
     /** A Support thread's plan: the Creator's reply that proposed it (marked as played). */
     supportMessageId: z.string().trim().min(1).max(200).optional(),
+    /** The persona playing: another persona's pages are out of reach, and the play is theirs (0.3.9). */
+    personaId: z.string().trim().min(1).max(200).optional(),
   })
   .strict();
 
@@ -127,6 +144,8 @@ export type SlpStirPlay = {
   }[];
   undoable: boolean;
   undone: boolean;
+  /** Whose play it is: another persona never sees or undoes it. Absent on plays before 0.3.9. */
+  personaId?: string;
 };
 
 /** One live thread in the world, for the "In play" strip. */
@@ -179,4 +198,10 @@ export type SlpStirView = {
   collabs: { id: string; hostId: string; partnerId: string; status: string }[];
   rivalries: { id: string; fromId: string; toId: string; stage: string }[];
   storylines: { accountId: string; projectId: string; title: string; chapter: string; held: boolean }[];
+  /** 0.3.9: friends, roommates, coworkers and exes; drama packs switched on, and the ones running. */
+  bonds: NonNullable<SlpStirWorld["bonds"]>;
+  dramas: NonNullable<SlpStirWorld["dramas"]>;
+  runs: NonNullable<SlpStirWorld["runs"]>;
+  /** The Creators this persona's own pages are (or were lately) with, newest first: "Your relationship". */
+  yourCouples: { partner: { id: string; name: string; avatarUrl: string | null }; couple: SlpPlayerCouple }[];
 };

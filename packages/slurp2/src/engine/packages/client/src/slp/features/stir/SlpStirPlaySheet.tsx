@@ -10,6 +10,7 @@ import { Toggle } from "../../modules/settings/SlpSettingsControls";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
 import {
   SLP_ACTION_META,
+  SLP_BOND_KINDS,
   SLP_COUPLE_STEERS,
   SLP_STORYLINE_MOVES,
   type SlpActionName,
@@ -165,7 +166,7 @@ export function SlpStirPlaySheet({
   const deck = SLP_ACTION_META[action];
 
   const body: ReactNode[] = [];
-  const textField = (label: string, placeholder: string, field?: "idea" | "chapter") =>
+  const textField = (label: string, placeholder: string, field?: "idea" | "chapter", max = 160) =>
     body.push(
       <div key="text" className="space-y-2">
         <div className="flex flex-wrap items-center gap-x-2">
@@ -184,7 +185,7 @@ export function SlpStirPlaySheet({
         <input
           id={textId}
           value={String(form.text ?? "")}
-          maxLength={160}
+          maxLength={max}
           placeholder={placeholder}
           onChange={(event) => set({ text: event.target.value })}
           className={inputClass}
@@ -293,7 +294,8 @@ export function SlpStirPlaySheet({
         );
       break;
     case "set-tip-goal":
-      textField(t("ui.slurp.stir.form.goalFor"), t("ui.slurp.stir.form.goalForPlaceholder"));
+      // The goal's label is 80 characters at most (the schema); a longer one only failed as "invalid".
+      textField(t("ui.slurp.stir.form.goalFor"), t("ui.slurp.stir.form.goalForPlaceholder"), undefined, 80);
       body.push(
         <div key="target" className="space-y-2">
           <label htmlFor={`${textId}-target`} className={cn(SLP_TYPE.meta, "font-semibold")}>
@@ -407,6 +409,55 @@ export function SlpStirPlaySheet({
       break;
     case "start-rivalry":
       textField(t("ui.slurp.stir.form.cause"), t("ui.slurp.stir.form.causePlaceholder"));
+      break;
+    case "set-bond":
+      body.push(
+        <Choice
+          key="kind"
+          label={t("ui.slurp.stir.form.bondKind")}
+          value={(form.kind as string) ?? null}
+          onChange={(kind) => set({ kind })}
+          options={SLP_BOND_KINDS.map((kind) => ({ value: kind, label: t(`ui.slurp.stir.bond.${kind}`) }))}
+        />,
+      );
+      if (form.kind === "friend")
+        body.push(
+          <Choice
+            key="level"
+            label={t("ui.slurp.stir.form.bondLevel")}
+            value={String(form.level ?? "1")}
+            onChange={(level) => set({ level })}
+            options={["0", "1", "2", "3"].map((level) => ({
+              value: level,
+              label: t(`ui.slurp.stir.bond.level${level}`),
+            }))}
+          />,
+        );
+      break;
+    case "start-drama":
+      body.push(
+        <Pick
+          key="pick"
+          label={t("ui.slurp.stir.form.drama")}
+          empty={t("ui.slurp.stir.needs.dramaOff")}
+          value={(form.pick as string) ?? null}
+          onChange={(pick) => set({ pick })}
+          items={(view?.dramas ?? [])
+            .filter((drama) => !(view?.runs ?? []).some((run) => run.dramaId === drama.id))
+            .map((drama) => ({ id: drama.id, title: drama.name, detail: drama.description, who: [] }))}
+        />,
+      );
+      if (form.pick)
+        body.push(
+          <CreatorPicker
+            key="who"
+            max={1}
+            label={t("ui.slurp.stir.form.dramaLead")}
+            creators={creators.filter((creator) => creator.automatic || creator.own)}
+            picked={picked}
+            onPick={(ids) => set({ who: ids })}
+          />,
+        );
       break;
     case "add-to-couple": {
       // Polyamory (0.3.5): a couple that is dating or together, and someone who is in no couple.

@@ -24,6 +24,12 @@ import {
   slpDramaPlayerWords,
   slpDramaText,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-drama-runtime.ts";
+import {
+  slurpPreviewTieLever,
+  slurpUndoTie,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-stir-tie-preview.ts";
+import { SLURP_NO_TIES } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-ties.ts";
+import { slurpSetBond } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-bonds.ts";
 import { slurpDmRoleHeader } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-dm-roles.ts";
 import { readSlurpDmUs } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-dm-response.ts";
 import {
@@ -382,6 +388,29 @@ async function main() {
       "does your gf see these? tell her",
     );
     assert.equal(slpDramaText("lucky {you-man}", slpDramaPlayerWords(undefined)), "lucky one");
+  }
+
+  // ── Stir 0.3.9: bonds are plays with Undo; Undo of "keep it secret" brings the secret back ──
+  {
+    const mira = creator("mira", "Romantic.");
+    const lena = creator("lena", "Loves the gym.");
+    const you = creator("you", "", { automatic: false });
+    const at = new Date(T0);
+    const world = { creators: [mira, lena, you], avatars: new Map(), ties: SLURP_NO_TIES, couples: [], bonds: [] };
+    const preview = slurpPreviewTieLever(world, "set-bond", { aId: "mira", bId: "lena", kind: "friend", level: 3 }, at);
+    assert.equal(preview.error, null);
+    assert.equal(preview.who.length, 2);
+    const bonds = slurpSetBond([], { aId: "mira", bId: "lena", kind: "friend", level: 3 }, { at, id: "b1" });
+    assert.ok(Array.isArray(bonds));
+    const undone = slurpUndoTie({ ties: SLURP_NO_TIES, couples: [], bonds }, { kind: "removeBond", id: "b1" });
+    assert.deepEqual(undone?.bonds, []);
+
+    const [couple] = slurpSetUpCouple([], mira, you, { at, id: "c" }) as SlurpCouple[];
+    const secret = { ...couple!, secret: true };
+    const back = slurpUndoTie({ ties: SLURP_NO_TIES, couples: [couple!] }, { kind: "restoreCouple", couple: secret });
+    assert.equal(back?.couples[0]?.secret, true);
+    const open = slurpUndoTie({ ties: SLURP_NO_TIES, couples: [secret] }, { kind: "restoreCouple", couple: couple! });
+    assert.equal("secret" in (open?.couples[0] ?? {}), false, "going public again drops the flag");
   }
 
   // ── Pause all: not one model or image call ──

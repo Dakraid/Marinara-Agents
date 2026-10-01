@@ -4,7 +4,15 @@ import { logger } from "../../../lib/logger.js";
 import { getErrorMessage } from "../../modules/creators/slp-public-support.js";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
 import { previewSlpAction } from "./slp-action-preview.js";
-import { planSlpStir, playSlpStir, previewSlpStirSteps, readSlpStirView, undoSlpStirPlay } from "./slp-stir-service.js";
+import {
+  planSlpStir,
+  playSlpStir,
+  previewSlpStirSteps,
+  readSlpStirHidden,
+  readSlpStirView,
+  slpStirReachesHidden,
+  undoSlpStirPlay,
+} from "./slp-stir-service.js";
 import {
   SLP_STIR_STEPS_MAX,
   slpStirPlanRequestSchema,
@@ -33,6 +41,18 @@ export async function slpStirRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
     return Boolean(proposal && typeof proposal === "object" && (proposal as { playId?: unknown }).playId);
   };
   const supportOnce = slpSupportPlayOnce();
+  /**
+   * The persona playing (0.3.9), when the request names one: null when it names none, "missing" when
+   * it names one that is gone. Its own pages mark the rest of the player's pages as out of reach.
+   */
+  const personaScope = async (personaId: string | undefined) => {
+    if (!personaId) return null;
+    const viewer = await resolveViewerPersona(personaId);
+    if (!viewer) return "missing" as const;
+    const own = (account: unknown) => creatorBelongsToViewer(account as never, viewer);
+    return { viewer, own, hidden: await readSlpStirHidden(app.db, own) };
+  };
+  const OTHER_PERSONA = "That page belongs to another of your personas. Switch to it to play with it.";
   const guard = async <T>(
     label: string,
     reply: { code: (code: number) => { send: (value: unknown) => unknown } },
@@ -56,10 +76,17 @@ export async function slpStirRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
 
   app.post("/slurp/stir/preview", async (req, reply) => {
     const parsed = z
-      .object({ steps: z.array(slpStirStepSchema).min(1).max(SLP_STIR_STEPS_MAX) })
+      .object({
+        steps: z.array(slpStirStepSchema).min(1).max(SLP_STIR_STEPS_MAX),
+        personaId: z.string().trim().min(1).max(200).optional(),
+      })
       .strict()
       .safeParse(req.body ?? {});
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
+    const scope = await personaScope(parsed.data.personaId);
+    if (scope === "missing") return reply.code(404).send({ error: "Slurp persona not found" });
+    if (scope && (await slpStirReachesHidden(app.db, parsed.data.steps, scope.hidden)))
+      return reply.code(403).send({ error: OTHER_PERSONA });
     return guard("preview", reply, () => previewSlpStirSteps(app.db, parsed.data.steps));
   });
 
@@ -83,6 +110,10 @@ export async function slpStirRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
   app.post("/slurp/stir/play", async (req, reply) => {
     const parsed = slpStirPlaySchema.safeParse(req.body ?? {});
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
+    const scope = await personaScope(parsed.data.personaId);
+    if (scope === "missing") return reply.code(404).send({ error: "Slurp persona not found" });
+    if (scope && (await slpStirReachesHidden(app.db, parsed.data.steps, scope.hidden)))
+      return reply.code(403).send({ error: OTHER_PERSONA });
     return guard("play", reply, async () => {
       const { supportMessageId } = parsed.data;
       const answer = await supportOnce(supportMessageId, supportPlayed, async () => {
@@ -98,12 +129,17 @@ export async function slpStirRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
     });
   });
 
-  app.post("/slurp/stir/plays/:id/undo", async (req, reply) =>
-    guard("undo", reply, async () => {
-      const outcome = await undoSlpStirPlay(app.db, (req.params as { id: string }).id);
+  app.post("/slurp/stir/plays/:id/undo", async (req, reply) => {
+    const personaId = (req.body as { personaId?: unknown } | undefined)?.personaId;
+    return guard("undo", reply, async () => {
+      const outcome = await undoSlpStirPlay(
+        app.db,
+        (req.params as { id: string }).id,
+        typeof personaId === "string" ? personaId : undefined,
+      );
       return outcome.ok ? outcome.value : reply.code(outcome.status).send({ error: outcome.error });
-    }),
-  );
+    });
+  });
 
   app.post("/slurp/stir/suggestions/:id/dismiss", async (req, reply) => {
     const parsed = z.object({ id: z.string().trim().min(1).max(300) }).safeParse(req.params ?? {});
@@ -120,7 +156,12 @@ export async function slpStirRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
     const viewer = await resolveViewerPersona(parsed.data.personaId);
     if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
     return guard("view", reply, () =>
-      readSlpStirView(app.db, (account) => creatorBelongsToViewer(account as never, viewer)),
+      readSlpStirView(
+        app.db,
+        (account) => creatorBelongsToViewer(account as never, viewer),
+        new Date(),
+        parsed.data.personaId,
+      ),
     );
   });
 }

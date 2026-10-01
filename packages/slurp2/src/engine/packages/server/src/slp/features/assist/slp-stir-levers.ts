@@ -39,6 +39,7 @@ import type { SlpActionParsed, SlpStirWorld } from "../../../../../shared/src/sl
 import type { SlpCreatorSteering } from "../../../../../shared/src/slp/slp-creator-steering.js";
 import type { SlpAssistOutcome } from "./slp-assist-service.js";
 import { undoSlpDeskLever, type SlpDeskUndo } from "./slp-desk-levers.js";
+import { readSlurpStirDramas, undoSlurpDramaLever, type SlurpDramaUndo } from "../world/slp-world-contract.js";
 
 /** What one Undo takes back. Kept in the plays ledger; never sent to the app. */
 type SteeringPatch = Partial<Omit<SlpCreatorSteering, "nudges" | "support">>;
@@ -50,6 +51,7 @@ type SteeringPatch = Partial<Omit<SlpCreatorSteering, "nudges" | "support">>;
 export type SlpActionUndo =
   | SlpDeskUndo
   | { kind: "tie"; undo: SlurpTieUndo }
+  | { kind: "drama"; undo: SlurpDramaUndo }
   | { kind: "steering"; accountId: string; patch: SteeringPatch; set?: SteeringPatch }
   | { kind: "idea"; accountId: string; ideaId: string }
   | { kind: "occurrence"; id: string }
@@ -106,6 +108,7 @@ export async function readSlpStirWorld(db: DB, at = new Date()): Promise<SlpStir
   ).flat();
   return {
     ...ties,
+    ...(await readSlurpStirDramas(db)),
     events: settings.platformEvents
       .filter((event: { enabled: boolean }) => event.enabled)
       .map((event: { id: string; name: string }) => ({ id: event.id, name: event.name, running: live.has(event.id) })),
@@ -363,6 +366,8 @@ export async function undoSlpAction(db: DB, undo: SlpActionUndo): Promise<boolea
       return undoSlpDeskLever(db, undo);
     case "tie":
       return undoSlurpTieLever(db, undo.undo);
+    case "drama":
+      return undoSlurpDramaLever(db, undo.undo);
     case "steering": {
       const current = await readSlurpCreatorSteering(db, undo.accountId);
       const patch = slpUndoPatch(current, undo.patch, undo.set);
