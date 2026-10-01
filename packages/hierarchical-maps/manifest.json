@@ -41,18 +41,18 @@
   "files": [
     {
       "path": "agents.json",
-      "sha256": "42d95c7fea1ac79de89fbc8805e1dc8e2886ad3ba2a8d8396718bdc643f4f165",
-      "bytes": 557
+      "sha256": "7d2cce13b968d490305b8a2130424da98a33235ad234dc455e66fab098435839",
+      "bytes": 672
     },
     {
       "path": "server.mjs",
-      "sha256": "8ce7f9f0d294912e03090c938ed8c885d4cb982bd5368b54171b95457adb406d",
-      "bytes": 311804
+      "sha256": "48e5e46fa7619ad98d773278fe01899233c33b2e4fc6a4aac5001994d7247de3",
+      "bytes": 488027
     },
     {
       "path": "client.js",
-      "sha256": "7993c325f4cbfd4222cfd1900c765b8695c74c5056d9dfc594e4897cf3ed8063",
-      "bytes": 957731
+      "sha256": "894e6a458fb3841be96443109ce62fdc8f775310e4025312ab08da6c767dc6d9",
+      "bytes": 1132486
     }
   ],
   "permissions": [
