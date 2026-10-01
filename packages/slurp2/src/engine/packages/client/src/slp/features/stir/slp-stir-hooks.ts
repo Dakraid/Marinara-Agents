@@ -14,7 +14,7 @@ import type {
 } from "../../../../../shared/src/slp/slp-stir.js";
 
 const base = "/slurp2/slurp/stir";
-/** The persona playing: another persona's pages, couples and plays are out of its reach (0.3.9). */
+/** The persona playing: another persona's pages, couples and plays are out of its reach (0.3.11). */
 const playing = () => useSlurpUIStore.getState().viewerPersonaId ?? undefined;
 const viewKey = (personaId: string) => [...slpKeys.noodlerRoot(), "stir", personaId] as const;
 

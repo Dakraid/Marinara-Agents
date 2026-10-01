@@ -215,7 +215,7 @@ async function main() {
     assert.match(scheduler, /textSlurpPartners\(app\.db\)/u);
   }
 
-  // ── The chat moves the player's couple (0.3.9): a crush, dating, official, a fight, making up ──
+  // ── The chat moves the player's couple (0.3.11): a crush, dating, official, a fight, making up ──
   {
     const mira = creator("mira", "Romantic, loves the gym.");
     const you = creator("you", "", { automatic: false, gender: "male" });
@@ -392,7 +392,7 @@ async function main() {
     assert.equal(slpDramaText("lucky {you-man}", slpDramaPlayerWords(undefined)), "lucky one");
   }
 
-  // ── Stir 0.3.9: bonds are plays with Undo; Undo of "keep it secret" brings the secret back ──
+  // ── Stir 0.3.11: bonds are plays with Undo; Undo of "keep it secret" brings the secret back ──
   {
     const mira = creator("mira", "Romantic.");
     const lena = creator("lena", "Loves the gym.");

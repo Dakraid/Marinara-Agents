@@ -657,7 +657,7 @@ modules, rejected alternative, and migration consequence.
   drama state and library live in their own app settings (`slurp2.drama.state`, `slurp2.drama.library`).
   Built as designed; the differences are listed under "As built" in `docs/DRAMA.md`.
 
-## 0.3.9 Your relationship, a story-first Stir, Pause all (2026-10-01)
+## 0.3.11 Your relationship, a story-first Stir, Pause all (2026-10-01)
 
 - **Problem:** the player's own couple lived in her public posts only (the chat could not move it,
   her DMs treated the player as a customer, pictures were sold to her partner); Stir stacked ten

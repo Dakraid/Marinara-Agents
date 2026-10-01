@@ -87,7 +87,7 @@ export function buildSlpStirPlanMessages(context: SlpStirPlanContext) {
     world.bonds?.length
       ? `# Bonds\n${world.bonds.map((bond) => `- ${bond.id}: ${who(bond.aId)} + ${who(bond.bId)}, ${bond.kind}${bond.kind === "friend" ? ` level ${bond.level}` : ""}`).join("\n")}`
       : "",
-    // 0.3.9: drama packs are plays; only the ones switched on can start.
+    // 0.3.11: drama packs are plays; only the ones switched on can start.
     world.dramas?.length
       ? `# Drama packs (start-drama)\n${world.dramas.map((drama) => `- ${drama.id}: ${line(drama.name)}: ${line(drama.description)}`).join("\n")}`
       : "",

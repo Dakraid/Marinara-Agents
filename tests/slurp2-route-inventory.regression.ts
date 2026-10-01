@@ -373,7 +373,7 @@ const ADDED_ROUTES = new Set([
   "POST /slurp/drama/choice",
   "POST /slurp/drama/start",
   "POST /slurp/drama/runs/:id/end",
-  // 0.3.9: a heart or one reply to a fan's note on the player's own page (fans write notes there, not chats).
+  // 0.3.11: a heart or one reply to a fan's note on the player's own page (fans write notes there, not chats).
   "POST /slurp/notifications/:id/fan-note",
   // 0.3.2 Creator Pages: the player's edit, and "Let <Creator> design it".
   "PUT /slurp/accounts/:id/page",
@@ -480,7 +480,7 @@ const EXPECTED_HANDLER_COUNTS = {
 } as const;
 // W: +5 POST, +1 GET (Stir). R: +3 POST, +1 GET, +1 PATCH, +1 DELETE (brands).
 // 0.3.4: +1 POST, +1 PUT (Creator Pages). 0.3.5: +1 GET, +3 POST (Support desk). 0.3.7: +1 POST (rewrite all).
-// 0.3.8: +1 GET, +5 POST (Drama: bonds, drama view, choice, start, end). 0.3.9: +1 POST (fan notes).
+// 0.3.8: +1 GET, +5 POST (Drama: bonds, drama view, choice, start, end). 0.3.11: +1 POST (fan notes).
 const EXPECTED_METHOD_COUNTS = { DELETE: 19, GET: 82, PATCH: 20, POST: 153, PUT: 7 } as const;
 
 const root = join(import.meta.dirname, "../packages/slurp2/src/engine/packages/server/src/slp");

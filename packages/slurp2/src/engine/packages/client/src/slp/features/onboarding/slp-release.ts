@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.9";
+export const SLURP2_VERSION = "0.3.11";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -13,12 +13,19 @@ export interface Slurp2ReleaseEntry {
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
   {
-    version: "0.3.9",
+    version: "0.3.11",
     date: "2026-10-01",
     notes: [
       "A Creator can fall for you in your chats: a crush, dating, official, fights and making up. She calls you her boyfriend or girlfriend, sends you pictures for free, invites you on dates and keeps it secret if you want.",
       "Stir is rebuilt around stories: your relationship on top, everything running in one list, and drama packs you can start, lead and end.",
       "Fans leave notes on your own page instead of chats, and Settings › Overview can pause all of Slurp.",
+    ],
+  },
+  {
+    version: "0.3.10",
+    date: "2026-09-30",
+    notes: [
+      "If Slurp cannot open on another device because Marinara is missing its Admin Secret, Slurp now tells you how to set one.",
     ],
   },
   {

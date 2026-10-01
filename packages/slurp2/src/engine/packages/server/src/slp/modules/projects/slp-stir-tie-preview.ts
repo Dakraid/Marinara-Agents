@@ -39,7 +39,7 @@ export const SLURP_TIE_LEVERS = [
   "steer-couple",
   "couple-page",
   "add-to-couple",
-  // 0.3.9: bonds are Stir plays too (preview, the ledger, Undo), not a side route.
+  // 0.3.11: bonds are Stir plays too (preview, the ledger, Undo), not a side route.
   "set-bond",
   "end-bond",
 ] as const;

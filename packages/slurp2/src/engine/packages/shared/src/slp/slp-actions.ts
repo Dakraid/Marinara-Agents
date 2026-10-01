@@ -652,9 +652,9 @@ export type SlpStirWorld = {
   rivalries: { id: string; fromId: string; toId: string; stage: string }[];
   events: { id: string; name: string; running: boolean }[];
   storylines: { accountId: string; projectId: string; title: string; chapter: string; held: boolean }[];
-  /** Friends, roommates, coworkers and exes (0.3.9: Stir sets and ends them). */
+  /** Friends, roommates, coworkers and exes (0.3.11: Stir sets and ends them). */
   bonds?: { id: string; aId: string; bId: string; kind: string; level: number }[];
-  /** Drama packs switched on, and the ones running now with their cast (0.3.9). */
+  /** Drama packs switched on, and the ones running now with their cast (0.3.11). */
   dramas?: { id: string; name: string; description: string; leadRole: string }[];
   runs?: { id: string; dramaId: string; name: string; stage: string; cast: Record<string, string> }[];
 };

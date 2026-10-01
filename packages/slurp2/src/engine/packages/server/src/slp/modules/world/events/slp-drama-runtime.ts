@@ -130,7 +130,7 @@ export type SlpDramaState = {
   startWindow: number | null;
   /** The player asked Stir to start this drama now: the next tick tries it first, past the level's cap. */
   requested?: string | null;
-  /** Who the player picked for the requested drama's first role (0.3.9), when they picked one. */
+  /** Who the player picked for the requested drama's first role (0.3.11), when they picked one. */
   requestedLead?: string | null;
 };
 export const SLP_EMPTY_DRAMA_STATE: SlpDramaState = {
@@ -755,7 +755,7 @@ export const slpRequestDrama = (state: SlpDramaState, dramaId: string, lead?: st
 
 /**
  * Whether this drama can start now with `leadId` in its first role: the rest of its first stage is
- * cast as the tick would, and the lead must still fit once they are (Stir's lead pick, 0.3.9).
+ * cast as the tick would, and the lead must still fit once they are (Stir's lead pick, 0.3.11).
  */
 export function slpDramaLeadFits(
   drama: SlpDrama,

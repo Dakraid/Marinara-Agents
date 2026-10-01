@@ -95,7 +95,7 @@ export const slpStirPlaySchema = z
     origin: z.enum(SLP_STIR_ORIGINS).default("deck"),
     /** A Support thread's plan: the Creator's reply that proposed it (marked as played). */
     supportMessageId: z.string().trim().min(1).max(200).optional(),
-    /** The persona playing: another persona's pages are out of reach, and the play is theirs (0.3.9). */
+    /** The persona playing: another persona's pages are out of reach, and the play is theirs (0.3.11). */
     personaId: z.string().trim().min(1).max(200).optional(),
   })
   .strict();
@@ -144,7 +144,7 @@ export type SlpStirPlay = {
   }[];
   undoable: boolean;
   undone: boolean;
-  /** Whose play it is: another persona never sees or undoes it. Absent on plays before 0.3.9. */
+  /** Whose play it is: another persona never sees or undoes it. Absent on plays before 0.3.11. */
   personaId?: string;
 };
 
@@ -198,7 +198,7 @@ export type SlpStirView = {
   collabs: { id: string; hostId: string; partnerId: string; status: string }[];
   rivalries: { id: string; fromId: string; toId: string; stage: string }[];
   storylines: { accountId: string; projectId: string; title: string; chapter: string; held: boolean }[];
-  /** 0.3.9: friends, roommates, coworkers and exes; drama packs switched on, and the ones running. */
+  /** 0.3.11: friends, roommates, coworkers and exes; drama packs switched on, and the ones running. */
   bonds: NonNullable<SlpStirWorld["bonds"]>;
   dramas: NonNullable<SlpStirWorld["dramas"]>;
   runs: NonNullable<SlpStirWorld["runs"]>;

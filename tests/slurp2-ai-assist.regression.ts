@@ -77,7 +77,7 @@ assert.deepEqual(
     "set-challenge",
     "throttle-reach",
     "warn-creator",
-    // 0.3.9: bonds and drama packs are Stir plays too.
+    // 0.3.11: bonds and drama packs are Stir plays too.
     "end-bond",
     "end-drama",
     "set-bond",
@@ -143,7 +143,7 @@ assert.match(runner, /if \(isSlurpTieLever\(name\)\) \{\s+const ran = await runS
 // 0.3.5: the Support desk's levers dispatch through `runSlpDeskLever` (`slp-desk-levers.ts`).
 const deskLevers = server("features/assist/slp-desk-levers.ts");
 assert.match(runner, /if \(isSlpDeskLever\(name\)\) return runSlpDeskLever\(db, name, input\);/u);
-// 0.3.9: drama packs dispatch through `runSlurpDramaLever` (`slp-drama-levers.ts`).
+// 0.3.11: drama packs dispatch through `runSlurpDramaLever` (`slp-drama-levers.ts`).
 const dramaLevers = server("features/world/slp-drama-levers.ts");
 assert.match(runner, /if \(isSlurpDramaLever\(name\)\) \{\s+const ran = await runSlurpDramaLever\(db, name, input\);/u);
 for (const name of SLP_ACTION_NAMES)

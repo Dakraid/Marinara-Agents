@@ -97,7 +97,7 @@ function Faces({ who }: { who: { id: string; name: string; avatarUrl: string | n
 }
 
 /**
- * "Now showing" (0.3.9): everything running in the world, one row each, newest story first: drama
+ * "Now showing" (0.3.11): everything running in the world, one row each, newest story first: drama
  * packs, couples, rivalries, collabs, events, storylines. A row with something to steer opens that
  * lever; a running drama can end here. The player's own couple is above, in "Your relationship".
  */
@@ -224,7 +224,7 @@ function NowShowing({
   );
 }
 
-/** "Your relationship" (0.3.9): the Creator the player's own page is with, pinned above the world. */
+/** "Your relationship" (0.3.11): the Creator the player's own page is with, pinned above the world. */
 function YourRelationship({ view }: { view: SlpStirView }) {
   const { t } = useTranslation();
   if (!view.yourCouples.length) return null;
@@ -414,7 +414,7 @@ function RecentPlays({
 }
 
 /**
- * "Start a story" (0.3.9): the drama packs first, then every lever as a one-step story, by genre. A
+ * "Start a story" (0.3.11): the drama packs first, then every lever as a one-step story, by genre. A
  * card shows its icon, a name and one line; a card with nothing to act on yet says what it needs.
  * The genres are tabs (arrow keys move between them).
  */
@@ -594,7 +594,7 @@ export function SlpStirScreen({
   onOpenSettings,
 }: {
   personaId: string | null;
-  /** Settings › Stir › Drama, where the packs are switched on (0.3.9). */
+  /** Settings › Stir › Drama, where the packs are switched on (0.3.11). */
   onOpenSettings?: () => void;
   /** A Creator's Slurp Support chat, from the Support desk (docs/SUPPORT-DESK.md). */
   onOpenSupport?: (creatorId: string) => void;
@@ -611,7 +611,7 @@ export function SlpStirScreen({
   const [suggested, setSuggested] = useState<{ cards: SlpActionPreview[]; cant: string[]; key: number } | null>(null);
   const preview = useSlurpStirPreview();
   const doIt = useSlpStirDoIt();
-  // Stir is the world's levers; the Support desk is Slurp's own staff work (0.3.9: its own mode).
+  // Stir is the world's levers; the Support desk is Slurp's own staff work (0.3.11: its own mode).
   const [mode, setMode] = useState<"stir" | "desk">("stir");
   const [people, setPeople] = useState(false);
   // Ending a drama runs through the runner like any play: a preview, the ledger, a toast.

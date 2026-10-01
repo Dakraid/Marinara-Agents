@@ -1442,6 +1442,7 @@
   "ui.slurp.state.loading": "Loading…",
   "ui.slurp.state.openGithubIssue": "Open GitHub issue",
   "ui.slurp.state.error": "Could not load this",
+  "ui.slurp.state.adminSecretMissing": "Marinara Engine blocked Slurp because this device has no Admin Secret. Set ADMIN_SECRET in the Engine's .env file if it is not set yet, then enter the same value in Settings → Advanced → Admin Access.",
   "ui.slurp.state.errorDetail": "Nothing was lost. Check your connection and try again.",
   "ui.slurp.state.reportBug": "Report bug",
   "ui.slurp.state.reportOnDiscord": "Report on Discord",

@@ -95,7 +95,7 @@ const slpStirStepRef = (value: unknown): Record<string, string> | undefined => {
 };
 
 /**
- * The pages the other personas run (0.3.9): one persona's Stir never lists, steers or undoes them, and
+ * The pages the other personas run (0.3.11): one persona's Stir never lists, steers or undoes them, and
  * never shows a couple, collab or rivalry one of them is in. Empty without a persona (a Support plan).
  */
 export async function readSlpStirHidden(db: DB, own?: (account: Account) => boolean): Promise<Set<string>> {
@@ -182,7 +182,7 @@ export async function planSlpStir(
     listSlurpBrandCatalog(db),
     readSlurpStirPlays(db),
   ]);
-  // Another persona's pages, and every tie and drama they are in, stay out of this plan (0.3.9).
+  // Another persona's pages, and every tie and drama they are in, stay out of this plan (0.3.11).
   const hidden = new Set(
     own ? accounts.filter((account) => !slurpRunsItself(account) && !own(account)).map((account) => account.id) : [],
   );
@@ -215,7 +215,7 @@ export async function planSlpStir(
     buildSlpStirPlanMessages({
       text: request.text,
       creators: accounts
-        // Another persona's pages are not this persona's to plan with (0.3.9).
+        // Another persona's pages are not this persona's to plan with (0.3.11).
         .filter((account) => !slurpIsCouplePage(account) && (!own || slurpRunsItself(account) || own(account)))
         .map((account) => ({
           id: account.id,
@@ -287,7 +287,7 @@ export async function playSlpStir(
 export async function undoSlpStirPlay(
   db: DB,
   id: string,
-  /** The persona asking: another persona's play is not theirs to take back (0.3.9). */
+  /** The persona asking: another persona's play is not theirs to take back (0.3.11). */
   personaId?: string,
 ): Promise<SlpAssistOutcome<{ play: SlpStirPlay; kept: number }>> {
   const claimed = await mutateSlurpStirPlays<SlurpStoredStirPlay | "gone" | "cant">(db, (plays) => {
@@ -324,7 +324,7 @@ export async function undoSlpStirPlay(
 
 /**
  * Everything the Stir tab shows, in one read. `own` marks the pages this persona runs; another
- * persona's pages, their couples, collabs, rivalries and plays are left out (0.3.9).
+ * persona's pages, their couples, collabs, rivalries and plays are left out (0.3.11).
  */
 export async function readSlpStirView(
   db: DB,

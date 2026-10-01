@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 /**
- * Slurp 0.3.9 browser proof: the story-first Stir with the player's own relationship on top, the
+ * Slurp 0.3.11 browser proof: the story-first Stir with the player's own relationship on top, the
  * Desk switch, Pause all in Settings › Overview, "You two" in a thread's Details, and the Backstage
  * side menu on a short window. Screenshots at 390, 768 and 1440 px go to SLURP_SHOTS_DIR when set.
  */
@@ -81,7 +81,7 @@ async function shoot(page: Page, name: string) {
   await page.setViewportSize({ width: 1440, height: 900 });
 }
 
-test("0.3.9: your relationship, story-first Stir, Pause all", async ({ page }, testInfo) => {
+test("0.3.11: your relationship, story-first Stir, Pause all", async ({ page }, testInfo) => {
   test.setTimeout(240_000);
   test.skip(!testInfo.project.name.includes("desktop"), "One flow; it sets its own viewports.");
   const errors = collectUnexpectedErrors(page);
@@ -108,7 +108,7 @@ test("0.3.9: your relationship, story-first Stir, Pause all", async ({ page }, t
         stageProfile: {
           displayName,
           handle: `${displayName.toLowerCase().replace(/[^a-z]/gu, "")}_${suffix}`,
-          bio: "0.3.9 browser proof.",
+          bio: "0.3.11 browser proof.",
           stagePersonality: "Romantic, playful, loves the gym.",
           disclosureMode: "open",
           gender,

@@ -1,5 +1,5 @@
 /**
- * Drama packs as Stir plays (0.3.9): start one now (Slurp casts it, or the player picks who leads),
+ * Drama packs as Stir plays (0.3.11): start one now (Slurp casts it, or the player picks who leads),
  * end one, and take a start back. Through the action layer like every other lever, so a drama is
  * previewed, lands in the plays ledger and has Undo. See docs/DRAMA.md.
  */

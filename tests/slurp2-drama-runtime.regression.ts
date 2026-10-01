@@ -167,7 +167,7 @@ async function main() {
     null,
   );
 
-  // Stir's lead pick (0.3.9): only someone who fits the first role, not someone already busy, and
+  // Stir's lead pick (0.3.11): only someone who fits the first role, not someone already busy, and
   // not on a drama that stands on a situation (its people come from the situation).
   const lead = rivalry.roles[0]!.key;
   const fits = (id: string, busy: string[] = []) =>

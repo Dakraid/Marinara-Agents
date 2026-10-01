@@ -42,7 +42,7 @@ export async function slpStirRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
   };
   const supportOnce = slpSupportPlayOnce();
   /**
-   * The persona playing (0.3.9), when the request names one: null when it names none, "missing" when
+   * The persona playing (0.3.11), when the request names one: null when it names none, "missing" when
    * it names one that is gone. Its own pages mark the rest of the player's pages as out of reach.
    */
   const personaScope = async (personaId: string | undefined) => {

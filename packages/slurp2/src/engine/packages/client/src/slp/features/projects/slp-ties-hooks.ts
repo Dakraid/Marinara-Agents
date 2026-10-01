@@ -132,7 +132,7 @@ export function useSlurpTies(personaId: string | null) {
 
 /**
  * Every change answers with the whole view, which replaces the cached copy. A change that is also a
- * Stir play (0.3.9: couples, bonds, collabs, rivalries) runs through the one runner instead of a side
+ * Stir play (0.3.11: couples, bonds, collabs, rivalries) runs through the one runner instead of a side
  * route, so it lands in Recent plays with Undo, whichever screen started it.
  */
 export function useSlurpTiesMutations(personaId: string) {

@@ -130,7 +130,7 @@ async function main() {
       "offer-brand-deal",
       "push-collab",
       "run-audience",
-      // 0.3.9: bonds and drama packs.
+      // 0.3.11: bonds and drama packs.
       "set-bond",
       "set-spice",
       "set-tip-goal",
@@ -162,7 +162,7 @@ async function main() {
   // The Support desk's levers (0.3.5) preview and run in their own file, like the tie levers.
   const deskLevers = server("features/assist/slp-desk-levers.ts");
   const isDesk = (name: string) => SLP_ACTION_META[name as keyof typeof SLP_ACTION_META].category === "desk";
-  // 0.3.9: drama packs preview and run in their own file too.
+  // 0.3.11: drama packs preview and run in their own file too.
   const dramaLevers = server("features/world/slp-drama-levers.ts");
   for (const name of SLP_ACTION_NAMES) {
     const tie = (SLURP_TIE_LEVERS as readonly string[]).includes(name);

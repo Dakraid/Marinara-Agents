@@ -95,7 +95,7 @@ export async function slpDramaRoutes(app: FastifyInstance, { noodle, resolveView
 
   /**
    * Start a switched-on drama now, or end one: the same levers as Stir's `start-drama` / `end-drama`
-   * (0.3.9), for callers that do not keep a play in the ledger.
+   * (0.3.11), for callers that do not keep a play in the ledger.
    */
   app.post("/slurp/drama/start", async (req, reply) => {
     const parsed = personaSchema.extend({ dramaId: z.string().trim().min(1).max(64) }).safeParse(req.body ?? {});

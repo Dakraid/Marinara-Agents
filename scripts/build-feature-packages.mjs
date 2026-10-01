@@ -280,7 +280,7 @@ async function removeOwnedSourceSnapshots(excludedPaths) {
 const features = [
   {
     id: "noodle",
-    version: "1.2.25",
+    version: "1.3.1",
     minEngineVersion: "2.4.6",
     capabilityApi: { major: 1, minor: 35 },
     builtAgainst: { engineVersion: "2.4.6", engineCommit: "2f5c8e314f8583cc274b488cfd309a2bc2a214d3" },
@@ -360,7 +360,7 @@ const features = [
   },
   {
     id: "slurp2",
-    version: "0.3.9",
+    version: "0.3.11",
     minEngineVersion: "2.4.6",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Slurp",
@@ -513,7 +513,7 @@ const features = [
   },
   {
     id: "hierarchical-maps",
-    version: "1.4.3",
+    version: "1.5.0",
     minEngineVersion: "2.4.2",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "World Maps",

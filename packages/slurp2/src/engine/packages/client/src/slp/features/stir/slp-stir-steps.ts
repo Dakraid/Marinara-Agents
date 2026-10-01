@@ -52,7 +52,7 @@ export function slpStirStepOf(action: SlpActionName, form: Form): Record<string,
     }
     case "run-audience":
       return {};
-    // 0.3.9: bonds and drama packs are plays too.
+    // 0.3.11: bonds and drama packs are plays too.
     case "set-bond":
       return two?.length === 2 && form.kind
         ? {

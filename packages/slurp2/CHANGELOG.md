@@ -1,6 +1,6 @@
 # Slurp release notes
 
-## 0.3.9 — 2026-10-01
+## 0.3.11 — 2026-10-01
 
 Your relationship with a Creator, and a story-first Stir.
 
@@ -9,6 +9,10 @@ Your relationship with a Creator, and a story-first Stir.
 - Stir: Stir | Desk, your relationship on top, Now showing, Start a story with drama packs you can lead and end. Each persona sees only its own pages.
 - Fans leave notes on your page instead of chats. Settings › Overview › Pause all stops all of Slurp.
 - Fixes: Backstage menu scrolls on short screens, reunions with you are official, a few couple and label bugs.
+
+## 0.3.10 — 2026-09-30
+
+- If Slurp cannot load because this device has no Admin Secret, it now explains how to set one instead of asking you to check your connection.
 
 ## 0.3.8 — 2026-09-30
 
