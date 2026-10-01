@@ -26,6 +26,7 @@ import { SLURP_PLATFORM_EVENTS_MAX } from "../../../../../shared/src/slp/slp-pla
 import type { SlpActionPreview } from "../../../../../shared/src/slp/slp-stir.js";
 import type { SlpAssistOutcome } from "./slp-assist-service.js";
 import { isSlpDeskLever, previewSlpDeskLever, type SlpDeskLever } from "./slp-desk-levers.js";
+import { isSlurpDramaLever, previewSlurpDramaLever, type SlurpDramaLever } from "../world/slp-world-contract.js";
 
 type Account = {
   id: string;
@@ -65,12 +66,14 @@ export async function previewSlpAction(
     return { ok: true, value: { ...base, ...(await previewSlurpTieLever(db, name, input, at)) } };
   if (isSlpDeskLever(name))
     return { ok: true, value: { ...base, ...(await previewSlpDeskLever(db, name, input, at)) } };
+  if (isSlurpDramaLever(name))
+    return { ok: true, value: { ...base, ...(await previewSlurpDramaLever(db, name, input, at)) } };
   return { ok: true, value: { ...base, ...(await previewOther(db, name, input, at)) } };
 }
 
 async function previewOther(
   db: DB,
-  name: Exclude<SlpActionName, Parameters<typeof previewSlurpTieLever>[1] | SlpDeskLever>,
+  name: Exclude<SlpActionName, Parameters<typeof previewSlurpTieLever>[1] | SlpDeskLever | SlurpDramaLever>,
   input: Record<string, unknown>,
   at: Date,
 ): Promise<Partial<SlpActionPreview>> {

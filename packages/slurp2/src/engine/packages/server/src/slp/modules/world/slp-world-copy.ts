@@ -91,6 +91,41 @@ export function slurpAudienceOpener(seed: string, openers: readonly string[] = [
   return bank[pickIndex(seed, "opener-dm", bank.length)]!;
 }
 
+/** Fans under a post of somebody who is publicly with someone: they talk to her about them. */
+const COMMENTS_ABOUT_PARTNER = [
+  "does {partner} see these? 👀",
+  "{partner} really lets you post this? respect",
+  "lucky {partner} 😮‍💨",
+  "{partner} better be sharing",
+  "if I were {partner} I'd never let you log off",
+  "tell {partner} we said thanks",
+  "how is {partner} ok with this 😳",
+  "{partner} is a saint fr",
+] as const;
+
+export function slurpPartnerCommentBodies(partner: string): string[] {
+  return COMMENTS_ABOUT_PARTNER.map((body) => body.replaceAll("{partner}", partner));
+}
+
+/** A fan's note to the player's page about the Creator the player is with, in public. */
+const FAN_NOTES_ABOUT_PARTNER = [
+  "you and {partner} are the cutest thing on here",
+  "saw you with {partner}. lucky 😭",
+  "{partner} better know how lucky they are",
+  "ok the {partner} posts. I'm not jealous. I'm fine.",
+  "shipping you two since day one, just so you know",
+] as const;
+
+/** A fan's note to the player's page: now and then about their partner (one in three), else an opener. */
+export function slurpFanNote(seed: string, openers: readonly string[], partner: string | null): string {
+  return partner && pickIndex(seed, "note-partner", 3) === 0
+    ? FAN_NOTES_ABOUT_PARTNER[pickIndex(seed, "note-line", FAN_NOTES_ABOUT_PARTNER.length)]!.replaceAll(
+        "{partner}",
+        partner,
+      )
+    : slurpAudienceOpener(seed, openers);
+}
+
 /**
  * The note a character Creator sends with a finished commission.
  *

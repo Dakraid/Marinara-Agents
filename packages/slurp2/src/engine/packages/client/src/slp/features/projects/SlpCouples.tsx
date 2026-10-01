@@ -93,6 +93,8 @@ export function SlpCouplesSection({
         {couples.map((couple) => {
           const live = couple.stage !== "split";
           const pageOpen = Boolean(couple.page && !couple.page.closedAt);
+          // A couple with the player's own page has no shared page (the server refuses one).
+          const withPlayer = [couple.aId, couple.bId].some((id) => byId.get(id)?.automatic === false);
           const forced = couple.forced
             ? t(`ui.slurp.ties.couple.forced.${couple.forced.misfit}`, { name: name(couple.forced.byId) })
             : "";
@@ -138,7 +140,7 @@ export function SlpCouplesSection({
                   </SlpButton>
                 )}
                 {/* Opened while it is good; a page already open can be closed any time. */}
-                {(pageOpen ? live : couple.stage === "dating" || couple.stage === "together") && (
+                {(pageOpen ? live : !withPlayer && (couple.stage === "dating" || couple.stage === "together")) && (
                   <SlpButton
                     variant="secondary"
                     disabled={busy}

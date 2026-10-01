@@ -84,6 +84,16 @@ export function buildSlpStirPlanMessages(context: SlpStirPlanContext) {
     world.events.length
       ? `# Events\n${world.events.map((event) => `- ${event.id}: ${line(event.name)}${event.running ? " (running now)" : ""}`).join("\n")}`
       : "",
+    world.bonds?.length
+      ? `# Bonds\n${world.bonds.map((bond) => `- ${bond.id}: ${who(bond.aId)} + ${who(bond.bId)}, ${bond.kind}${bond.kind === "friend" ? ` level ${bond.level}` : ""}`).join("\n")}`
+      : "",
+    // 0.3.11: drama packs are plays; only the ones switched on can start.
+    world.dramas?.length
+      ? `# Drama packs (start-drama)\n${world.dramas.map((drama) => `- ${drama.id}: ${line(drama.name)}: ${line(drama.description)}`).join("\n")}`
+      : "",
+    world.runs?.length
+      ? `# Running dramas (end-drama)\n${world.runs.map((run) => `- ${run.id}: ${line(run.name)} with ${Object.values(run.cast).map(who).join(", ")}`).join("\n")}`
+      : "",
     world.storylines.length
       ? `# Running storylines\n${world.storylines.map((story) => `- ${story.projectId} (${who(story.accountId)}, accountId ${story.accountId}): "${line(story.title)}", now: ${line(story.chapter)}${story.held ? " (held)" : ""}`).join("\n")}`
       : "",

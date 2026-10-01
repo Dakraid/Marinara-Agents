@@ -9,6 +9,7 @@ import { SLP_CREATOR_BULK_ACCOUNT_MAX } from "../../../../../shared/src/slp/slp-
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { startSlpTask } from "../../base/state/slp-task-store";
+import { useSlurpUIStore } from "../../base/state/slp-package-store";
 import { useSlurpConnections } from "../../base/state/slp-host-connections";
 import {
   useBulkCreateCreatorStageProfiles,
@@ -84,6 +85,8 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
   const [outcomes, setOutcomes] = useState<SlpCreatorRefreshNowOutcome[]>([]);
   const [completion, setCompletion] = useState<CompletionKind | null>(null);
   const [executionId, setExecutionId] = useState("");
+  // A background sign-up's progress (0.3.11): how many of the batch are done.
+  const [signUpProgress, setSignUpProgress] = useState<{ done: number; total: number } | null>(null);
   const [firstPostsQueued, setFirstPostsQueued] = useState(false);
   const [providerConfirmationOpen, setProviderConfirmationOpen] = useState(false);
   const completionHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -306,7 +309,16 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
           disclosureExceptions: exceptions,
           autoPosting: { enabled: autoPostingEnabled, imagesEnabled },
           connectionId: generationConnectionId || null,
+          // Done on the server when the batch ends, so closing Slurp in between misses nothing.
+          then: {
+            firstPosts: generateNow,
+            imageConnectionId: imageConnectionId || null,
+            personaId: useSlurpUIStore.getState().viewerPersonaId ?? undefined,
+            completeOnboarding: !selectionOnly,
+          },
+          onProgress: (done, total) => setSignUpProgress({ done, total }),
         });
+        setSignUpProgress(null);
         newIds = result.created.map((profile) => profile.id);
         allCreatedIds = retryIds ? [...new Set([...createdIds, ...newIds])] : newIds;
         setCreatedIds(allCreatedIds);
@@ -325,6 +337,7 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
         setCreationRetryIds(result.retryable ?? result.failed ?? []);
       }
     } catch (error) {
+      setSignUpProgress(null);
       // The request may still have created profiles before the response was lost. The server
       // replays the same executionId idempotently, so keep the run retryable in place rather
       // than making the user reselect everything.
@@ -495,6 +508,7 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
     setCompletion,
     executionId,
     setExecutionId,
+    signUpProgress,
     firstPostsQueued,
     setFirstPostsQueued,
     providerConfirmationOpen,

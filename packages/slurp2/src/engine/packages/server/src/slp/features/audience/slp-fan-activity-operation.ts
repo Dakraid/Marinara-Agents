@@ -342,6 +342,8 @@ export async function runCreatorFanActivity(input: {
     const at = input.at ?? new Date();
     const noodle = createSlurpStorage(input.db);
     const settings = fanActivitySettingsFor(await noodle.getSettings(), input.mode === "manual");
+    // "Pause all": no audience, whoever asks (the scheduler, "Fans now", a Stir play).
+    if (settings.paused) return { status: "disabled", created: 0 };
     settings.modelBudget = await slurpEffectiveModelBudget(input.db, settings.modelBudget);
     const recoverable = await findRecoverablePlan(input.db);
     if (recoverable?.interrupted) {

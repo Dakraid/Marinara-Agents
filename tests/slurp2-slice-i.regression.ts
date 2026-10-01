@@ -15,13 +15,13 @@ import {
   slurpPublicSexualLevel,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-post-guidance.ts";
 import {
-  readSlurpCouples,
   slurpAdvanceCouples,
-  slurpCoupleMisfitOf,
   slurpSetUpCouple,
   slurpSteerCouple,
   type SlurpCouple,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples.ts";
+import { readSlurpCouples } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-read.ts";
+import { slurpCoupleMisfitOf } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-fit.ts";
 // U: the relationship line moved out of the couples module (import path only).
 import { slurpRelationshipLine } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-lines.ts";
 import {

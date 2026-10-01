@@ -3,6 +3,7 @@ import { SlpStoryRingAvatar } from "../../modules/story/SlpStoryRing";
 import { SlurpPromptDebugPanel, SlurpRelationshipPanel } from "./SlpMessageInsights";
 import { SlpDeskCaseFile } from "../../modules/desk/SlpDeskCaseFile";
 import { SlurpMemoriesPanel } from "./SlpMemoriesPanel";
+import { SlpYouTwo } from "../stir/slp-stir-contract";
 import { SlurpThreadRequestsPanel } from "./SlpThreadRequestsPanel";
 import { SlurpCommissionsPanel } from "./commissions/SlpCommissions";
 import { Avatar, SLP_BAR_GLASS_CLASS, useSlpMediaQuery } from "../../base/chrome/SlpChrome";
@@ -116,6 +117,14 @@ export function SlpThreadDrawer({ model }: { model: SlurpThreadViewModel }) {
           <div className="p-4">
             <SlpDeskCaseFile desk={relationship.desk} name={headerAccount?.displayName ?? ""} />
           </div>
+        )}
+        {/* The one she is with (or was): the two of them come first, before the fan standing. */}
+        {relationship?.couple && !relationship.desk && (
+          <SlpYouTwo
+            couple={relationship.couple}
+            name={headerAccount?.displayName ?? ""}
+            creatorId={targetCreatorAccountId ?? undefined}
+          />
         )}
         {relationship && !relationship.desk && (
           <SlurpRelationshipPanel

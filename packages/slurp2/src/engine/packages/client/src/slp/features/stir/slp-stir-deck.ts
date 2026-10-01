@@ -18,6 +18,8 @@ import {
   Zap,
   BookOpen,
   UsersRound,
+  Clapperboard,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
@@ -53,6 +55,8 @@ const ICONS: Partial<Record<SlpActionName, LucideIcon>> = {
   "set-tip-goal": Target,
   "new-look": Palette,
   "invent-event": CalendarPlus,
+  "set-bond": Users,
+  "start-drama": Clapperboard,
 };
 
 export type SlpStirDeckCard = {
@@ -86,8 +90,10 @@ export const SLP_STIR_DECK_ORDER: SlpActionName[] = [
   "push-collab",
   "offer-brand-deal",
   "set-tip-goal",
+  "start-drama",
   "start-rivalry",
   "cool-rivalry",
+  "set-bond",
   "add-idea",
   "write-post",
   "start-storyline",

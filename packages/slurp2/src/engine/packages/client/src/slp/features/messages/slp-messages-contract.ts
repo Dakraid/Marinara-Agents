@@ -1,4 +1,5 @@
 import type { SlpSupportDesk } from "../../../../../shared/src/slp/slp-support-desk.js";
+import type { SlpPlayerCouple } from "../../../../../shared/src/slp/slp-stir.js";
 export type SlurpDmPolicy = "open" | "subscribers" | "paid" | "closed";
 export type SlurpRapportContribution = {
   key: string;
@@ -122,8 +123,13 @@ export type SlurpSupportRelationship = {
   scheduledFollowUps: SlurpFanRelationship["scheduledFollowUps"];
 };
 
+/** Her and the player's own page as a couple (Details › You two). */
+export type SlurpPlayerCouple = SlpPlayerCouple;
+
 export type SlurpFanRelationship = {
   desk?: undefined;
+  /** The player's own side only: she and the player's page as a couple, or null. */
+  couple?: SlurpPlayerCouple | null;
   side: "viewer" | "creator";
   tier: string;
   score: number;

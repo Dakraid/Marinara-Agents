@@ -18,6 +18,7 @@ import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-supp
 import { SLURP_SUPPORT_NAME } from "../../modules/messages/slp-dm-roles.js";
 import { personaQuerySchema } from "../../modules/messages/slp-messages-schemas.js";
 import { slurpIsCouplePage } from "../../modules/projects/slp-creator-couples.js";
+import { readSlurpPlayerCoupleView } from "../projects/slp-projects-contract.js";
 import type { SlpMessagesContext } from "./slp-messages-context.js";
 import { readSlurpSupportDesk } from "../../data/creators/slp-support-desk-storage.js";
 
@@ -117,6 +118,11 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
       threadState: thread.threadState,
       // The same list on both routes, so a chat opened from a profile lists its follow-ups (R1-008).
       scheduledFollowUps: thread.scheduledFollowUps,
+      // The player's own side: her and the player's page as a couple (Details › You two), or null.
+      couple:
+        side === "viewer"
+          ? await readSlurpPlayerCoupleView(app.db, thread.creatorAccountId, thread.viewerAccountId)
+          : null,
     };
   };
   app.get("/messages/unread-count", async (req, reply) => {

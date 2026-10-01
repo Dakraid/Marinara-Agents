@@ -53,6 +53,7 @@ import {
 import { composeSlurpPromptBlocks, type SlurpPromptBlockOverrides } from "../../base/prompting/slp-prompt-blocks.js";
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
 import { slpWithProviderRetry } from "../../base/model/slp-provider-retry.js";
+import { slurpPausedNow } from "../../data/settings/slp-pause-storage.js";
 
 export type SlurpPendingKind = "commission" | "question" | "opener" | "delivery" | "desk";
 
@@ -247,6 +248,8 @@ export async function drainSlurpPendingText(
   /** False only for a player's "Rewrite all pending". */
   paced = true,
 ): Promise<number> {
+  // "Pause all": nothing is written while Slurp is paused; the queue waits.
+  if (await slurpPausedNow(db)) return 0;
   const noodle = createSlurpStorage(db);
   const settings = await noodle.getSettings();
   if (!slurpModelWorkerAllows(settings.modelBudget, context)) return 0;

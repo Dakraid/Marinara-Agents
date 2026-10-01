@@ -113,6 +113,16 @@ export function createSlurpEventsStorage(db: DB) {
       return rows.map(mapEvent);
     },
 
+    /** One event of this persona's, or null (someone else's is null too). */
+    async get(recipientPersonaId: string, id: string): Promise<SlurpEvent | null> {
+      const rows = await db
+        .select()
+        .from(slurpEvents)
+        .where(and(eq(slurpEvents.recipientPersonaId, recipientPersonaId), eq(slurpEvents.id, id)))
+        .limit(1);
+      return rows[0] ? mapEvent(rows[0]) : null;
+    },
+
     /** Everything not yet marked seen, newest first. This is what the catch-up panel reads. */
     async listUnseen(recipientPersonaId: string, limit = 60): Promise<SlurpEvent[]> {
       const rows = await db
@@ -180,6 +190,7 @@ export function createSlurpEventsStorage(db: DB) {
   return tolerateMissingTables(storage, {
     record: () => null,
     recordAndPrune: () => null,
+    get: () => null,
     list: () => [],
     listUnseen: () => [],
     countUnseen: () => 0,

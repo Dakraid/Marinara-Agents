@@ -5,7 +5,7 @@
  * release after the visible bubble plus delayed batch are durable. The claim is what stops the live
  * send path and the offline scheduler from both answering the same message.
  */
-import { agreeSlurpCollabInDm } from "../projects/slp-projects-contract.js";
+import { agreeSlurpCollabInDm, applySlurpPlayerUs } from "../projects/slp-projects-contract.js";
 import type { DB } from "../../../db/connection.js";
 import { logger } from "../../../lib/logger.js";
 import { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
@@ -38,6 +38,7 @@ import {
 import { generateSlurpCommissionImage } from "./commissions/slp-commission-image-operation.js";
 import { slpStoredMediaSize, slurpMessageMediaUrl } from "../../base/media/slp-media.js";
 import { resolveSlurpMediaOffer, slurpDmPictureSpicy } from "../../modules/economy/slp-media-offer.js";
+import { slurpRapportPartner } from "../../modules/messages/slp-rapport.js";
 import { slurpDmSpiceLevel } from "../../modules/creators/slp-spice.js";
 import { resolveSlurpExplicitLevel } from "../../data/settings/slp-post-guidance-storage.js";
 import { slurpCreatorStateCanUseMedia } from "../../modules/creators/slp-creator-state.js";
@@ -253,6 +254,8 @@ export async function replyToSlurpMessage(
   try {
     const locked = await tryCreatorAccountOperation(thread.creatorAccountId, async () => {
       const settings = await slurp.getSettings();
+      // "Pause all": the reply waits, and the player hears "AI replies are off", as with the budget off.
+      if (settings.paused) throw new SlurpMessageBudgetUnavailableError(null);
       const connection = await resolveSlurpTextConnection(
         createConnectionsStorage(db),
         settings.modelBudget.connectionId ?? settings.generationConnectionId,
@@ -419,12 +422,15 @@ export async function replyToSlurpMessage(
         const imageAllowedBySettings = demanded || creator.settings.scheduler.autoPosting?.imagesEnabled === true;
         // Decided before the picture: a paid (PPV) picture goes as far as the Creator does, a free
         // one to somebody who has not subscribed stays a tease.
+        // Her partner (or after a fight, still her partner) gets it free, as far as she goes.
+        const partner = ["partner", "rocky"].includes(slurpRapportPartner(thread.rapport) ?? "");
         const offer = resolveSlurpMediaOffer({
           intent: reply.imageMode === "hostile" ? "hostile" : "friendly",
           rapportTier: thread.rapport.tier,
           subscribed,
           configuredPrice: messaging.ppvPrice,
           spicy: slurpDmPictureSpicy(image),
+          partner,
         });
         const creatorLevel = await resolveSlurpExplicitLevel(db, thread.creatorAccountId).catch(
           () => "suggestive" as const,
@@ -434,7 +440,7 @@ export async function replyToSlurpMessage(
               creatorAccountId: thread.creatorAccountId,
               brief: `${image.prompt}\nImage mode: ${reply.imageMode}`,
               // A free picture stays a tease (a subscriber's casual one too); a paid one goes as far as the Creator does.
-              level: offer.price > 0 && !demanded ? creatorLevel : slurpDmSpiceLevel(creatorLevel, false),
+              level: (offer.price > 0 || partner) && !demanded ? creatorLevel : slurpDmSpiceLevel(creatorLevel, false),
             })
           : "unavailable";
         if (drawn !== "unavailable") {
@@ -500,6 +506,16 @@ export async function replyToSlurpMessage(
       if (stored && reply.agreedCollab)
         await agreeSlurpCollabInDm(db, { hostId: thread.creatorAccountId, ...reply.agreedCollab }).catch(
           (error: unknown) => logger.warn(error, "[slurp-message] Could not record the collab agreed in this chat"),
+        );
+      // With the player: the talk moved the two of them (a crush, dating, official, a fight, making up).
+      if (stored && reply.us && reply.usPageId)
+        await applySlurpPlayerUs(db, {
+          creatorId: thread.creatorAccountId,
+          pageId: reply.usPageId,
+          step: reply.us.step,
+          why: reply.us.why,
+        }).catch((error: unknown) =>
+          logger.warn(error, "[slurp-message] Could not apply what the talk did to the couple"),
         );
       if (stored && aiFan) await dropSlurpPendingText(db, input.triggerMessageId);
       if (stored) {

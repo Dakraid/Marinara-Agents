@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { Avatar, SLP_BAR_GLASS_CLASS } from "../../base/chrome/SlpChrome";
+import { SlpHeartGlyph } from "../../base/chrome/SlpGlyphs";
 import { SlurpRapportBadge, SlurpTierLadder } from "./SlpMessageInsights";
 import { showConfirmDialog } from "../../../lib/app-dialogs";
 import { SlpButton, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
@@ -76,6 +77,8 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
   // other, so Search, Memories, Commissions and Clear show there too (R1-008).
   const threadId = thread?.id ?? threadIdProp;
   const tierLabel = thread?.rapport ? localizeUi(`ui.slurp.rapport.tier.${thread.rapport.tier}`) : "";
+  // Her partner (or crush) is no fan tier: the header says where the two of them are, and opens You two.
+  const partnerStage = relationship?.couple && relationship.couple.stage !== "split" ? relationship.couple.stage : null;
   const closeSearch = () => {
     setMessageSearchOpen(false);
     (searchTriggerRef.current?.offsetParent ? searchTriggerRef.current : headerMenuTriggerRef.current)?.focus();
@@ -192,7 +195,22 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
             )}
           </span>
         )}
-        {thread?.rapport && !asSupport && !relationship?.desk && (
+        {partnerStage && !asSupport && (
+          <button
+            type="button"
+            onClick={() => setDrawerMode("details")}
+            className="flex h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-full px-2 text-[var(--noodle-accent-foreground)] transition-colors hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] sm:pe-3"
+            aria-label={localizeUi("ui.slurp.youTwo.headerLabel", {
+              stage: localizeUi(`ui.slurp.youTwo.stage.${partnerStage}`),
+            })}
+          >
+            <SlpHeartGlyph size={18} filled aria-hidden="true" />
+            <span className="hidden text-[0.72rem] font-bold sm:inline">
+              {localizeUi(`ui.slurp.youTwo.stage.${partnerStage}`)}
+            </span>
+          </button>
+        )}
+        {thread?.rapport && !asSupport && !relationship?.desk && !partnerStage && (
           // The tier icon (the word too on wider screens) in a 44 px target. Slurp's staff are no fan tier.
           <button
             ref={tierTriggerRef}

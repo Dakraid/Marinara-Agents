@@ -25,9 +25,9 @@
  * - **A shared page** (opt-in from Studio) gets its own posts from both, and closes on a breakup
  *   with a goodbye post.
  */
-import { SLURP_NEVER_PATTERN } from "../feed/slp-life-moments.js";
-import { DAY_MS, clampText, hash } from "./slp-project.js";
+import { DAY_MS, hash } from "./slp-project.js";
 import { slurpCollabFit, slurpPairKey, slurpSharedNiche, type SlurpTieCreator } from "./slp-creator-ties.js";
+import { slurpCoupleFit, slurpCoupleMisfitOf, type SlurpCoupleFit, type SlurpCoupleMisfit } from "./slp-couple-fit.js";
 import {
   SLURP_COUPLE_DATES as DATES,
   SLURP_COUPLE_FIGHTS as FIGHTS,
@@ -42,6 +42,8 @@ const REST_DAYS = 60;
 /** A moment is news this long; a Creator who has not posted it by then lets it go. */
 export const SLURP_COUPLE_MOMENT_DAYS = 4;
 const MAX_REUNIONS = 2;
+/** A crush on the player that nobody acts on in the chat fades after this many days. */
+export const SLURP_PLAYER_CRUSH_DAYS = 12;
 const KEEP_MOMENTS = 10;
 const KEEP_ENDED = 20;
 
@@ -116,6 +118,11 @@ export type SlurpCouple = {
    * couple happens, and the card colors how it goes (complicated, reluctant, awkward).
    */
   forced?: SlurpCoupleForced;
+  /**
+   * A couple with the player (Drama, "your relationship"): kept out of public. Her posts, captions and
+   * the crowd do not name the player while it is set; she still knows, and says so in private.
+   */
+  secret?: boolean;
 };
 
 export type SlurpCoupleForced = { misfit: Exclude<SlurpCoupleMisfit, "same" | "busy">; byId: string };
@@ -139,194 +146,6 @@ export function slurpCoupleOf(couples: readonly SlurpCouple[], a: string, b: str
   return [...couples].reverse().find((couple) => slurpPairKey(couple.aId, couple.bId) === key) ?? null;
 }
 
-// ─── Fit ────────────────────────────────────────────────────────────────────────────────────────
-
-// Not "partners": "won't tattoo names of partners" is about work, not about dating (7b-couples measure).
-const DATING_TOPIC = /\b(dat(e|es|ing)|relationships?|romance|romantic|love life|fall(s|ing)? in love)\b/iu;
-/** "Never dates fans" is about fans, not about another Creator. */
-const ABOUT_FANS = /\b(fans?|subscribers?|clients?|customers?|followers?|viewers?)\b/iu;
-const NOT_INTO_ANYONE = /\b(aromantic|asexual)\b/iu;
-const ROMANTIC =
-  /\b(romantic|flirt\w*|lonely|single|looking for love|crush\w*|hopeless romantic|heart on (her|his|their) sleeve)\b/iu;
-
-export type SlurpCoupleMisfit = "taken" | "notInto" | "noDating" | "orientation" | "same" | "busy";
-
-type Want = "same" | "other" | "any";
-
-/** Who a card says they are into, when it says so. */
-function orientation(text: string): Want | null {
-  if (/\b(bi(sexual)?|pan(sexual)?|queer)\b/iu.test(text)) return "any";
-  if (/\b(lesbian|gay|homosexual|sapphic)\b/iu.test(text)) return "same";
-  if (/\b(straight|heterosexual)\b/iu.test(text)) return "other";
-  return null;
-}
-
-/** Whether `a`'s stated orientation takes `b`. Unknown orientation takes anyone; unknown gender only then. */
-function into(a: SlurpTieCreator, b: SlurpTieCreator): boolean {
-  const want = orientation(a.text);
-  if (!want || want === "any") return true;
-  if (!a.gender || !b.gender || a.gender === "other" || b.gender === "other") return false;
-  return want === "same" ? a.gender === b.gender : a.gender !== b.gender;
-}
-
-const firstName = (name: string) => name.trim().split(/\s+/u)[0]!.toLocaleLowerCase();
-/** Whether one of the card's own partners is this other Creator (by name). */
-const cardNames = (a: SlurpTieCreator, b: SlurpTieCreator) =>
-  (a.cardPartners ?? []).some((partner) => firstName(partner) === firstName(b.name));
-
-// Not "partner" or "together": "business partner", "works together with" are about work.
-const PARTNER_WORDS =
-  /\b(?:boyfriend|girlfriend|wife|husband|fianc[eé]e?|spouse|married|dating|in a relationship|lovers?|mated?)\b/iu;
-const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-/**
- * Whether a card's own words say the other one is their partner ("Dating Juniper Vale for two
- * years"). The anchors only exist after the first post, so a couple set up right after sign-up used
- * to start at "sparks" although both cards said they were together.
- */
-const textNames = (a: SlurpTieCreator, b: SlurpTieCreator) => {
-  const first = b.name.trim().split(/\s+/u)[0];
-  if (!first || first.length < 3) return false;
-  const name = new RegExp(`(?<![\\p{L}])${escapeRegExp(first)}(?![\\p{L}])`, "iu");
-  return a.text.split(/(?<=[.!?])\s+|\n+/u).some((sentence) => name.test(sentence) && PARTNER_WORDS.test(sentence));
-};
-
-const neverDates = (creator: SlurpTieCreator) =>
-  creator.text
-    .split(/(?<=[.!?])\s+|\n+/u)
-    .some(
-      (sentence) => SLURP_NEVER_PATTERN.test(sentence) && DATING_TOPIC.test(sentence) && !ABOUT_FANS.test(sentence),
-    );
-
-export type SlurpCoupleFit = { fits: boolean; misfit: SlurpCoupleMisfit | null; chemistry: number; cards: boolean };
-
-/** Whose card says no to this pair, and why: the first of the two that does. Null when both cards allow it. */
-export function slurpCoupleMisfitOf(a: SlurpTieCreator, b: SlurpTieCreator): SlurpCoupleForced | null {
-  const cards = cardNames(a, b) || cardNames(b, a) || textNames(a, b) || textNames(b, a);
-  const pairs = [
-    [a, b],
-    [b, a],
-  ] as const;
-  const first = (
-    misfit: SlurpCoupleForced["misfit"],
-    test: (self: SlurpTieCreator, other: SlurpTieCreator) => boolean,
-  ) => {
-    // A page the player runs is the player's: its text is not a card, and it has no gender to read.
-    const hit = pairs.find(([self, other]) => self.automatic && test(self, other));
-    return hit ? { misfit, byId: hit[0].id } : null;
-  };
-  return (
-    (cards ? null : first("taken", (self) => (self.cardPartners ?? []).length > 0)) ??
-    first("notInto", (self) => NOT_INTO_ANYONE.test(self.text)) ??
-    first("noDating", neverDates) ??
-    first("orientation", (self, other) => other.automatic && !into(self, other))
-  );
-}
-
-/**
- * Whether these two could be a couple without making either less themselves. `cards` is true when a
- * card names the other one as their partner already. Chemistry: a shared tag counts 2, a shared
- * interest 1, a romantic card 1 each.
- */
-export function slurpCoupleFit(a: SlurpTieCreator, b: SlurpTieCreator): SlurpCoupleFit {
-  const no = (misfit: SlurpCoupleMisfit) => ({ fits: false, misfit, chemistry: 0, cards: false });
-  if (a.id === b.id) return no("same");
-  const misfit = slurpCoupleMisfitOf(a, b);
-  if (misfit) return no(misfit.misfit);
-  const cards = cardNames(a, b) || cardNames(b, a) || textNames(a, b) || textNames(b, a);
-  const niche = slurpSharedNiche(a, b);
-  const chemistry =
-    niche.tags.length * 2 + niche.interests.length + [a, b].filter((creator) => ROMANTIC.test(creator.text)).length;
-  return { fits: true, misfit: null, chemistry: cards ? chemistry + 4 : chemistry, cards };
-}
-
-// ─── Storage shape ──────────────────────────────────────────────────────────────────────────────
-
-const STAGES: readonly SlurpCoupleStage[] = ["sparks", "dating", "together", "rocky", "split"];
-const FORCED: readonly SlurpCoupleForced["misfit"][] = ["taken", "notInto", "noDating", "orientation"];
-const KINDS: readonly SlurpCoupleMomentKind[] = [
-  "flirt",
-  "date",
-  "launch",
-  "anniversary",
-  "jealous",
-  "fight",
-  "makeup",
-  "breakup",
-  "reunion",
-  "pageOpen",
-  "pageClose",
-  "movingOn",
-  "joined",
-];
-const record = (value: unknown) =>
-  value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
-const date = (value: unknown) => (typeof value === "string" && !Number.isNaN(Date.parse(value)) ? value : null);
-/** Joined partners (polyamory): up to two more, never the pair themselves. */
-const slurpReadMoreIds = (value: unknown, aId: string, bId: string) => {
-  const more = [...new Set(strings(value, 2).filter((id) => id !== aId && id !== bId))];
-  return more.length ? { moreIds: more } : {};
-};
-const strings = (value: unknown, max: number) =>
-  (Array.isArray(value) ? value : []).filter((entry): entry is string => typeof entry === "string").slice(-max);
-
-export function readSlurpCouples(raw: unknown): SlurpCouple[] {
-  return (Array.isArray(raw) ? raw : []).flatMap((entry): SlurpCouple[] => {
-    const item = record(entry);
-    const id = clampText(item?.id, 64);
-    const aId = clampText(item?.aId, 128);
-    const bId = clampText(item?.bId, 128);
-    const startedAt = date(item?.startedAt);
-    if (!item || !id || !aId || !bId || aId === bId || !startedAt) return [];
-    const page = record(item.page);
-    const pageAccount = clampText(page?.accountId, 128);
-    return [
-      {
-        id,
-        aId,
-        bId,
-        origin: (["card", "world", "player", "storyline"] as const).find((origin) => origin === item.origin) ?? "world",
-        stage: STAGES.includes(item.stage as SlurpCoupleStage) ? (item.stage as SlurpCoupleStage) : "split",
-        ending: (["breakup", "fizzled"] as const).find((ending) => ending === item.ending) ?? null,
-        startedAt,
-        stageAt: date(item.stageAt) ?? startedAt,
-        togetherAt: date(item.togetherAt),
-        troubles: typeof item.troubles === "number" ? Math.max(0, Math.floor(item.troubles)) : 0,
-        reunions: typeof item.reunions === "number" ? Math.max(0, Math.floor(item.reunions)) : 0,
-        moments: (Array.isArray(item.moments) ? item.moments : []).flatMap((raw): SlurpCoupleMoment[] => {
-          const moment = record(raw);
-          const at = date(moment?.at);
-          const kind = KINDS.find((entry) => entry === moment?.kind);
-          const momentId = clampText(moment?.id, 64);
-          if (!moment || !at || !kind || !momentId) return [];
-          return [
-            {
-              id: momentId,
-              kind,
-              at,
-              detail: clampText(moment.detail, 200),
-              ...(typeof moment.withId === "string" ? { withId: moment.withId } : {}),
-              ...(typeof moment.fromId === "string" ? { fromId: moment.fromId } : {}),
-            },
-          ];
-        }),
-        ...slurpReadMoreIds(item.moreIds, aId, bId),
-        told: strings(item.told, 40),
-        postIds: strings(item.postIds, 40),
-        page:
-          page && pageAccount && date(page.openedAt)
-            ? { accountId: pageAccount, openedAt: date(page.openedAt)!, closedAt: date(page.closedAt) }
-            : null,
-        ...(() => {
-          const forced = record(item.forced);
-          const misfit = FORCED.find((entry) => entry === forced?.misfit);
-          const byId = clampText(forced?.byId, 128);
-          return misfit && (byId === aId || byId === bId) ? { forced: { misfit, byId } } : {};
-        })(),
-      },
-    ];
-  });
-}
-
 // ─── The world clock ────────────────────────────────────────────────────────────────────────────
 
 /** Days on a stage before it moves on. Seeded per couple and stage visit. */
@@ -340,9 +159,9 @@ function stageDays(couple: SlurpCouple): number {
   return 10 + (roll % 12);
 }
 
-const daysSince = (from: string, at: Date) => (at.getTime() - Date.parse(from)) / DAY_MS;
+export const slurpDaysSince = (from: string, at: Date) => (at.getTime() - Date.parse(from)) / DAY_MS;
 
-function moment(
+export function slurpCoupleMoment(
   couple: SlurpCouple,
   kind: SlurpCoupleMomentKind,
   stamp: string,
@@ -354,7 +173,7 @@ function moment(
   return { id, kind, at: stamp, detail, ...(withId ? { withId } : {}) };
 }
 
-function withMoment(couple: SlurpCouple, next: SlurpCoupleMoment): SlurpCouple {
+export function slurpWithMoment(couple: SlurpCouple, next: SlurpCoupleMoment): SlurpCouple {
   return { ...couple, moments: [...couple.moments, next].slice(-KEEP_MOMENTS) };
 }
 
@@ -376,24 +195,39 @@ const collabOther = (couple: SlurpCouple, id: string, collabbedWith: ReadonlyMap
   return other && other !== couple.aId && other !== couple.bId && !couple.moreIds?.includes(other) ? other : undefined;
 };
 
-/** Trouble: jealousy over a recent collab with someone else when there is one, else a fight. */
-function trouble(couple: SlurpCouple, stamp: string, collabbedWith: ReadonlyMap<string, string>): SlurpCoupleMoment {
+/**
+ * Trouble: jealousy over a recent collab with someone else when there is one, else a fight. Only a
+ * Creator Slurp writes for is ever the jealous one: a jealous moment is posted by the one who feels
+ * it, and the player's page posts nothing on its own (`players`: the pages the player runs).
+ */
+function trouble(
+  couple: SlurpCouple,
+  stamp: string,
+  collabbedWith: ReadonlyMap<string, string>,
+  players: ReadonlySet<string> = new Set(),
+): SlurpCoupleMoment {
   const roll = hash(`${couple.id}:trouble:${stamp}`);
-  const aWith = collabOther(couple, couple.aId, collabbedWith);
-  const bWith = collabOther(couple, couple.bId, collabbedWith);
   // The one whose partner made the collab is the jealous one.
-  if ((aWith || bWith) && roll % 2 === 0)
+  const stung = (
+    [
+      [couple.bId, collabOther(couple, couple.aId, collabbedWith)],
+      [couple.aId, collabOther(couple, couple.bId, collabbedWith)],
+    ] as const
+  ).find(([jealous, withId]) => withId && !players.has(jealous));
+  if (stung && roll % 2 === 0)
+    return { ...slurpCoupleMoment(couple, "jealous", stamp, "a collab with someone else", stung[1]), fromId: stung[0] };
+  const feels = [couple.aId, couple.bId].filter((id) => !players.has(id));
+  if (roll % 3 === 0 && feels.length)
     return {
-      ...moment(couple, "jealous", stamp, "a collab with someone else", aWith ?? bWith),
-      fromId: aWith ? couple.bId : couple.aId,
+      ...slurpCoupleMoment(couple, "jealous", stamp, JEALOUSY[roll % JEALOUSY.length]!),
+      fromId: feels[roll % feels.length]!,
     };
-  if (roll % 3 === 0)
-    return {
-      ...moment(couple, "jealous", stamp, JEALOUSY[roll % JEALOUSY.length]!),
-      fromId: roll % 2 ? couple.aId : couple.bId,
-    };
-  return moment(couple, "fight", stamp, FIGHTS[roll % FIGHTS.length]!);
+  return slurpCoupleMoment(couple, "fight", stamp, FIGHTS[roll % FIGHTS.length]!);
 }
+
+/** The members of a couple who are pages the player runs. */
+const playerIds = (couple: SlurpCouple, byId: ReadonlyMap<string, SlurpTieCreator>) =>
+  new Set([couple.aId, couple.bId, ...(couple.moreIds ?? [])].filter((id) => byId.get(id)?.automatic === false));
 
 export type SlurpCouplesInput = {
   creators: readonly SlurpTieCreator[];
@@ -434,12 +268,30 @@ export function newSlurpCouple(
     postIds: [],
     page: null,
   };
-  return stage === "sparks" ? withMoment(couple, moment(couple, "flirt", stamp)) : couple;
+  return stage === "sparks" ? slurpWithMoment(couple, slurpCoupleMoment(couple, "flirt", stamp)) : couple;
 }
 
 const ANNIVERSARY_DAYS = [30, 90, 180, 365] as const;
-const anniversaryLabel = (days: number) =>
-  days === 30 ? "one month" : days === 90 ? "three months" : days === 180 ? "half a year" : "one year";
+const YEAR_WORDS = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+/** Month marks the first year, then every full year. */
+const anniversaryDays = (days: number) => [
+  ...ANNIVERSARY_DAYS,
+  ...Array.from({ length: Math.max(0, Math.floor(days / 365) - 1) }, (_, index) => 365 * (index + 2)),
+];
+const anniversaryLabel = (days: number) => {
+  if (days === 30) return "one month";
+  if (days === 90) return "three months";
+  if (days === 180) return "half a year";
+  const years = Math.round(days / 365);
+  return `${YEAR_WORDS[years - 1] ?? years} year${years === 1 ? "" : "s"}`;
+};
+
+/** The next anniversary after `at`, counted from when they got together: when, and after how many days. */
+export function slurpNextAnniversary(togetherAt: string, at: Date): { at: string; days: number } {
+  const days = slurpDaysSince(togetherAt, at);
+  const next = anniversaryDays(days + 400).find((mark) => mark > days)!;
+  return { at: new Date(Date.parse(togetherAt) + next * DAY_MS).toISOString(), days: next };
+}
 
 /** One couple, one look: stage moves, dates and anniversaries. */
 function advanceCouple(
@@ -454,21 +306,26 @@ function advanceCouple(
   // A Creator who left Slurp ends it; a shared page closes like after any breakup.
   if (!byId.has(couple.aId) || !byId.has(couple.bId))
     return slurpCoupleActive(couple) ? slurpBreakUp(couple, at) : couple;
-  const due = daysSince(couple.stageAt, at) >= stageDays(couple);
+  const due = slurpDaysSince(couple.stageAt, at) >= stageDays(couple);
   const roll = hash(`${couple.id}:${couple.stage}:${couple.stageAt}:next`);
   const a = byId.get(couple.aId)!;
   const b = byId.get(couple.bId)!;
 
   if (couple.stage === "sparks") {
+    // With the player the chat moves it (`slurpPlayerCoupleStep`); a crush nobody acts on fades.
+    if (!a.automatic || !b.automatic)
+      return slurpDaysSince(couple.stageAt, at) >= SLURP_PLAYER_CRUSH_DAYS
+        ? { ...couple, stage: "split", stageAt: stamp, ending: "fizzled" }
+        : couple;
     if (!due) return couple;
     // Chemistry decides whether flirting turns into dating: 45 % with nothing shared, up to 90 %.
     const chemistry = slurpCoupleFit(a, b).chemistry;
     const sticks =
       roll % 100 < Math.min(90, 45 + 15 * chemistry) || couple.origin === "storyline" || Boolean(couple.forced);
     return sticks
-      ? withMoment(
+      ? slurpWithMoment(
           { ...couple, stage: "dating", stageAt: stamp },
-          moment(couple, "date", stamp, pickDate(couple, byId, stamp)),
+          slurpCoupleMoment(couple, "date", stamp, pickDate(couple, byId, stamp)),
         )
       : { ...couple, stage: "split", stageAt: stamp, ending: "fizzled" };
   }
@@ -488,8 +345,8 @@ function advanceCouple(
       hash(`${couple.id}:${selfId}:${withId}:sting`) % 3 === 0 &&
       !next.moments.some((entry) => entry.kind === "jealous" && entry.withId === withId && entry.fromId === otherId)
     )
-      next = withMoment(next, {
-        ...moment(next, "jealous", stamp, "a collab with someone else", withId),
+      next = slurpWithMoment(next, {
+        ...slurpCoupleMoment(next, "jealous", stamp, "a collab with someone else", withId),
         fromId: otherId,
       });
   }
@@ -499,42 +356,42 @@ function advanceCouple(
   const dateEvery = couple.stage === "dating" ? 3 : 5 + (hash(`${couple.id}:pace`) % 4);
   if (
     (couple.stage === "dating" || couple.stage === "together") &&
-    (!lastDate || daysSince(lastDate.at, at) >= dateEvery)
+    (!lastDate || slurpDaysSince(lastDate.at, at) >= dateEvery)
   )
-    next = withMoment(next, moment(next, "date", stamp, pickDate(next, byId, stamp)));
+    next = slurpWithMoment(next, slurpCoupleMoment(next, "date", stamp, pickDate(next, byId, stamp)));
 
   if (couple.stage === "together" && couple.togetherAt) {
-    const days = daysSince(couple.togetherAt, at);
-    const reached = ANNIVERSARY_DAYS.filter((entry) => days >= entry && days < entry + SLURP_COUPLE_MOMENT_DAYS);
+    const days = slurpDaysSince(couple.togetherAt, at);
+    const reached = anniversaryDays(days).filter((entry) => days >= entry && days < entry + SLURP_COUPLE_MOMENT_DAYS);
     const label = reached.length ? anniversaryLabel(reached.at(-1)!) : null;
     if (label && !couple.moments.some((entry) => entry.kind === "anniversary" && entry.detail === label))
-      next = withMoment(next, moment(next, "anniversary", stamp, label));
+      next = slurpWithMoment(next, slurpCoupleMoment(next, "anniversary", stamp, label));
   }
 
   // Exes (U): a week or so after a breakup each posts about moving on, once.
   if (
     couple.ending === "breakup" &&
-    daysSince(couple.stageAt, at) >= 5 + (hash(`${couple.id}:${couple.stageAt}:on`) % 5) &&
+    slurpDaysSince(couple.stageAt, at) >= 5 + (hash(`${couple.id}:${couple.stageAt}:on`) % 5) &&
     !couple.moments.some((entry) => entry.kind === "movingOn" && entry.at >= couple.stageAt)
   )
-    next = withMoment(next, moment(next, "movingOn", stamp));
+    next = slurpWithMoment(next, slurpCoupleMoment(next, "movingOn", stamp));
   if (!due || !a.automatic || !b.automatic) return next;
   if (couple.stage === "dating")
-    return withMoment(
+    return slurpWithMoment(
       { ...next, stage: "together", stageAt: stamp, togetherAt: next.togetherAt ?? stamp },
-      moment(next, "launch", stamp),
+      slurpCoupleMoment(next, "launch", stamp),
     );
   if (couple.stage === "together")
-    return withMoment(
+    return slurpWithMoment(
       { ...next, stage: "rocky", stageAt: stamp, troubles: next.troubles + 1 },
-      trouble(next, stamp, input.collabbedWith),
+      trouble(next, stamp, input.collabbedWith, playerIds(next, byId)),
     );
   if (couple.stage === "rocky") {
     // Every trouble since they got together makes the next one likelier to end it.
     const ends = roll % 100 < 20 + 15 * Math.max(0, couple.troubles - 1);
     return ends
       ? slurpBreakUp(next, at)
-      : withMoment({ ...next, stage: "together", stageAt: stamp }, moment(next, "makeup", stamp));
+      : slurpWithMoment({ ...next, stage: "together", stageAt: stamp }, slurpCoupleMoment(next, "makeup", stamp));
   }
   // Split: now and then they find their way back. Sparks that fizzled stay over.
   if (
@@ -578,7 +435,7 @@ export function slurpAdvanceCouples(couples: readonly SlurpCouple[], input: Slur
     !next.some(
       (couple) =>
         slurpPairKey(couple.aId, couple.bId) === slurpPairKey(a, b) &&
-        (slurpCoupleActive(couple) || daysSince(couple.stageAt, input.at) < REST_DAYS),
+        (slurpCoupleActive(couple) || slurpDaysSince(couple.stageAt, input.at) < REST_DAYS),
     );
 
   // The cards say so: two Creators whose cards name each other are together from the start. Once
@@ -653,20 +510,35 @@ function trim(couples: SlurpCouple[]): SlurpCouple[] {
 /** They break up: a breakup moment, and a shared page closes with a goodbye post. */
 export function slurpBreakUp(couple: SlurpCouple, at: Date): SlurpCouple {
   const stamp = at.toISOString();
-  const split = withMoment(
+  const split = slurpWithMoment(
     { ...couple, stage: "split", stageAt: stamp, ending: "breakup" },
-    moment(couple, "breakup", stamp),
+    slurpCoupleMoment(couple, "breakup", stamp),
   );
   return couple.page && !couple.page.closedAt
-    ? withMoment({ ...split, page: { ...couple.page, closedAt: stamp } }, moment(split, "pageClose", stamp))
+    ? slurpWithMoment(
+        { ...split, page: { ...couple.page, closedAt: stamp } },
+        slurpCoupleMoment(split, "pageClose", stamp),
+      )
     : split;
 }
 
-export function slurpGetBackTogether(couple: SlurpCouple, at: Date): SlurpCouple {
+/**
+ * They get back together: dating again, or together at once (`official`) when it is the player's
+ * own couple, since nothing on the clock would ever make that official again.
+ */
+export function slurpGetBackTogether(couple: SlurpCouple, at: Date, official = false): SlurpCouple {
   const stamp = at.toISOString();
-  return withMoment(
-    { ...couple, stage: "dating", stageAt: stamp, ending: null, troubles: 0, reunions: couple.reunions + 1 },
-    moment(couple, "reunion", stamp),
+  return slurpWithMoment(
+    {
+      ...couple,
+      stage: official ? "together" : "dating",
+      stageAt: stamp,
+      ...(official ? { togetherAt: stamp } : {}),
+      ending: null,
+      troubles: 0,
+      reunions: couple.reunions + 1,
+    },
+    slurpCoupleMoment(couple, "reunion", stamp),
   );
 }
 
@@ -681,7 +553,12 @@ export function slurpSetUpCouple(
   couples: readonly SlurpCouple[],
   a: SlurpTieCreator,
   b: SlurpTieCreator,
-  input: { at: Date; id: string; polyamory?: boolean },
+  input: {
+    at: Date;
+    id: string;
+    polyamory?: boolean;
+    /** A crush on the player, for the chat to take on. */ crush?: boolean;
+  },
 ): SlurpCouple[] | SlurpCoupleError {
   if (!a.automatic && !b.automatic) return "noHost";
   const fit = slurpCoupleFit(a, b);
@@ -695,18 +572,35 @@ export function slurpSetUpCouple(
   const forced = fit.fits ? null : slurpCoupleMisfitOf(a, b);
   // Partners on their cards are together already, like the couples the cards make on their own:
   // starting them at "sparks" told both "nothing is official" and kept their shared page shut.
+  const withPlayer = !a.automatic || !b.automatic;
+  const stamp = input.at.toISOString();
   const couple = newSlurpCouple(
     input.id,
     a.id,
     b.id,
     "player",
-    input.at.toISOString(),
-    fit.cards || !a.automatic || !b.automatic ? "together" : "sparks",
+    stamp,
+    input.crush ? "sparks" : fit.cards || withPlayer ? "together" : "sparks",
   );
-  return [...couples, forced ? { ...couple, forced } : couple];
+  // With the player, official from the start: she makes it public (a hard launch).
+  const launched =
+    withPlayer && couple.stage === "together"
+      ? slurpWithMoment(couple, slurpCoupleMoment(couple, "launch", stamp))
+      : couple;
+  return [...couples, forced ? { ...launched, forced } : launched];
 }
 
-export type SlurpCoupleSteer = "date" | "drama" | "patchUp" | "breakUp" | "reunite";
+export type SlurpCoupleSteer =
+  | "date"
+  | "drama"
+  | "patchUp"
+  | "breakUp"
+  | "reunite"
+  /** Make it official now: sparks or dating become together, with a launch. */
+  | "official"
+  /** Keep a couple with the player out of public, or go public again. */
+  | "secret"
+  | "public";
 
 /** The player steers a couple's story: plan a date, stir some drama, patch it up, end it, or reunite. */
 export function slurpSteerCouple(
@@ -722,16 +616,26 @@ export function slurpSteerCouple(
   const replace = (next: SlurpCouple) => couples.map((entry) => (entry.id === id ? next : entry));
   const live = couple.stage === "dating" || couple.stage === "together" || couple.stage === "sparks";
   if (steer === "date" && live)
-    return replace(withMoment(couple, moment(couple, "date", stamp, pickDate(couple, byId, stamp))));
+    return replace(slurpWithMoment(couple, slurpCoupleMoment(couple, "date", stamp, pickDate(couple, byId, stamp))));
   if (steer === "drama" && (couple.stage === "dating" || couple.stage === "together"))
     return replace(
-      withMoment(
+      slurpWithMoment(
         { ...couple, stage: "rocky", stageAt: stamp, troubles: couple.troubles + 1 },
-        trouble(couple, stamp, new Map()),
+        trouble(couple, stamp, new Map(), playerIds(couple, byId)),
       ),
     );
+  if (steer === "official" && (couple.stage === "sparks" || couple.stage === "dating"))
+    return replace(slurpMakeOfficial(couple, input.at));
+  if ((steer === "secret" || steer === "public") && slurpCoupleActive(couple) && playerIds(couple, byId).size)
+    // An open shared page names them both: it closes before the couple can be a secret.
+    return (steer === "secret") === Boolean(couple.secret) ||
+      (steer === "secret" && couple.page && !couple.page.closedAt)
+      ? "notOpen"
+      : replace(steer === "secret" ? { ...couple, secret: true } : withoutSecret(couple, stamp));
   if (steer === "patchUp" && couple.stage === "rocky")
-    return replace(withMoment({ ...couple, stage: "together", stageAt: stamp }, moment(couple, "makeup", stamp)));
+    return replace(
+      slurpWithMoment({ ...couple, stage: "together", stageAt: stamp }, slurpCoupleMoment(couple, "makeup", stamp)),
+    );
   if (steer === "breakUp" && slurpCoupleActive(couple))
     return replace(
       couple.stage === "sparks"
@@ -753,22 +657,40 @@ export function slurpSteerCouple(
       )
     )
       return "busy";
-    return replace(slurpGetBackTogether(couple, input.at));
+    return replace(slurpGetBackTogether(couple, input.at, !a.automatic || !b.automatic));
   }
   return "notOpen";
 }
 
+/** Together now, with a launch post (she makes it public), from sparks or dating. */
+export function slurpMakeOfficial(couple: SlurpCouple, at: Date): SlurpCouple {
+  const stamp = at.toISOString();
+  return slurpWithMoment(
+    { ...couple, stage: "together", stageAt: stamp, togetherAt: couple.togetherAt ?? stamp },
+    slurpCoupleMoment(couple, "launch", stamp),
+  );
+}
+
+/** Going public after a secret: the launch she could not post before. */
+function withoutSecret(couple: SlurpCouple, stamp: string): SlurpCouple {
+  const { secret: _secret, ...open } = couple;
+  return slurpCoupleTaken(open)
+    ? slurpWithMoment(open, slurpCoupleMoment(open, "launch", stamp, "going public"))
+    : open;
+}
+
 /** Whether this couple may open a shared page: together in public, and not already running one. */
 export function slurpCouplePageOpenable(couple: SlurpCouple): boolean {
-  return slurpCoupleTaken(couple) && !(couple.page && !couple.page.closedAt);
+  // A secret couple has no public page: the page would name them both.
+  return slurpCoupleTaken(couple) && !couple.secret && !(couple.page && !couple.page.closedAt);
 }
 
 /** The shared page is open (a new account, or their old one again): its first post says hi. */
 export function slurpOpenCouplePage(couple: SlurpCouple, accountId: string, at: Date): SlurpCouple {
   const stamp = at.toISOString();
-  return withMoment(
+  return slurpWithMoment(
     { ...couple, page: { accountId, openedAt: stamp, closedAt: null } },
-    moment(couple, "pageOpen", stamp),
+    slurpCoupleMoment(couple, "pageOpen", stamp),
   );
 }
 
@@ -776,7 +698,10 @@ export function slurpOpenCouplePage(couple: SlurpCouple, accountId: string, at: 
 export function slurpCloseCouplePage(couple: SlurpCouple, at: Date): SlurpCouple {
   if (!couple.page || couple.page.closedAt) return couple;
   const stamp = at.toISOString();
-  return withMoment({ ...couple, page: { ...couple.page, closedAt: stamp } }, moment(couple, "pageClose", stamp));
+  return slurpWithMoment(
+    { ...couple, page: { ...couple.page, closedAt: stamp } },
+    slurpCoupleMoment(couple, "pageClose", stamp),
+  );
 }
 
 export function slurpCoupleTold(couple: SlurpCouple, keys: readonly string[]): SlurpCouple {

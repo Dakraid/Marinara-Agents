@@ -102,7 +102,9 @@ export function slpPagePeople(creatorId: string, ties: SlpPageTies | null | unde
     const members = [couple.aId, couple.bId, ...(couple.moreIds ?? [])];
     if (members.includes(creatorId))
       for (const other of members)
-        if (other !== creatorId) add(other, couple.stage === "sparks" ? "dating" : "partner");
+        // A crush is nothing official yet, so it is not on the page; dating is dating.
+        if (other !== creatorId && couple.stage !== "sparks")
+          add(other, couple.stage === "dating" ? "dating" : "partner");
   }
   const bonds = (ties.bonds ?? []).filter((bond) => bond.endedAt === null);
   const bonded = (kinds: readonly string[], minLevel: number, relation: SlpPagePersonRelation) => {

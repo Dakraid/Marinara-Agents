@@ -13,7 +13,7 @@ import {
   slurpDealSpiceFits,
   type SlurpDealAd,
 } from "../../modules/economy/slp-brand-deals.js";
-import type { SlpBrandFit } from "../../../../../shared/src/slp/slp-actions.js";
+import type { SlpBrandFit } from "../../../../../shared/src/slp/slp-brand-deal-preview.js";
 import { createGarnishAds } from "../ads/slp-ads-contract.js";
 import { loadSlurpDealAds, loadSlurpDealSpice } from "./slp-brand-deal-source.js";
 import { loadSlurpTieCreators } from "./slp-creator-ties-service.js";

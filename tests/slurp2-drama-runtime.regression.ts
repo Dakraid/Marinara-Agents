@@ -10,7 +10,9 @@ import {
   slpAdvanceDrama,
   slpAnswerDramaChoice,
   slpDramaCast,
+  slpDramaLeadFits,
   slpDramaText,
+  slpRequestDrama,
   slpDueDramaJobs,
   SLP_DRAMA_LEVEL_RULES,
   SLP_EMPTY_DRAMA_STATE,
@@ -164,6 +166,23 @@ async function main() {
     ),
     null,
   );
+
+  // Stir's lead pick (0.3.11): only someone who fits the first role, not someone already busy, and
+  // not on a drama that stands on a situation (its people come from the situation).
+  const lead = rivalry.roles[0]!.key;
+  const fits = (id: string, busy: string[] = []) =>
+    slpDramaLeadFits(rivalry, id, { world: world(), busy: new Set(busy), at: new Date(T0) });
+  assert.equal(fits("lena"), true);
+  assert.equal(fits("me"), false, "the player's page is never cast in a Creator's role");
+  assert.equal(fits("lena", ["lena"]), false);
+  assert.equal(slpDramaLeadFits(open, "mia", { world: world(), busy: new Set(), at: new Date(T0) }), false);
+  counter = 0;
+  const led = slpAdvanceDrama(
+    slpRequestDrama(SLP_EMPTY_DRAMA_STATE, rivalry.id, "lena"),
+    input(T0, { dramas: [rivalry] }),
+  );
+  assert.equal(led.state.runs[0]?.cast[lead], "lena", "the requested drama starts with the player's pick");
+  assert.equal(led.state.requestedLead, null, "the pick is used once");
 
   // Nothing switched on: nothing runs.
   counter = 0;

@@ -1,4 +1,5 @@
 import {
+  SLP_CREATOR_BULK_ACCOUNT_MAX,
   slpBulkCreatorAccountCreateSchema,
   slpStageProfileSchema,
 } from "../../../../../shared/src/slp/slp-social.schema.js";
@@ -26,9 +27,50 @@ import { generateCreatorStageProfileDraft } from "../creators/slp-creators-contr
 import type { FastifyInstance } from "fastify";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
 import { slpSceneRoutes } from "./slp-scene-routes.js";
+import { updateCreatorImageConnections } from "../../base/media/slp-image-connections.js";
+import { createSlurpEventsStorage } from "../../data/notifications/slp-notification-storage.js";
 
 const slurpBulkCreatorAccountCreateSchema = slpBulkCreatorAccountCreateSchema.extend({
   connectionId: z.string().min(1).nullable().optional(),
+  /** Run as a server job and answer at once (needs `executionId`); poll `GET /slurp/accounts/bulk/:id`. */
+  background: z.boolean().optional(),
+  /** What a background sign-up does once the Creators exist, so a closed tab misses nothing. */
+  then: z
+    .object({
+      firstPosts: z.boolean().optional(),
+      imageConnectionId: z.string().min(1).nullable().optional(),
+      personaId: z.string().min(1).max(200).optional(),
+      completeOnboarding: z.boolean().optional(),
+    })
+    .strict()
+    .optional(),
+});
+
+type SignUpJob = {
+  total: number;
+  done: number;
+  finished: boolean;
+  finishedAt?: number;
+  result: Record<string, unknown> | null;
+  error: string | null;
+};
+/**
+ * Background sign-ups by execution id. ponytail: in this process only; a restart loses the progress
+ * (the wizard says so, and a retry with the same execution id replays the Creators already made).
+ */
+const signUpJobs = new Map<string, SignUpJob>();
+const KEEP_FINISHED_MS = 60 * 60_000;
+const pruneSignUpJobs = () => {
+  for (const [id, job] of signUpJobs)
+    if (job.finished && Date.now() - (job.finishedAt ?? 0) > KEEP_FINISHED_MS) signUpJobs.delete(id);
+};
+const signUpProgress = (executionId: string, job: SignUpJob) => ({
+  executionId,
+  total: job.total,
+  done: job.done,
+  finished: job.finished,
+  result: job.result,
+  error: job.error,
 });
 
 /**
@@ -143,6 +185,58 @@ export async function slpOnboardingRoutes(app: FastifyInstance, deps: SlpRouteDe
         error: `Slurp could not reach the writing connection: looking up ${unreachable.host} failed (getaddrinfo ${unreachable.code}) even after a few tries. Check this device's internet or DNS, then try again. Nobody was signed up yet.`,
       });
     }
+    const input = { noodleAccountIds, disclosureMode, disclosureExceptions, autoPosting, connection, executionId };
+    if (!parsed.data.background || !executionId) return reply.code(201).send(await signUp(input));
+    // In the background (0.3.11): a big batch takes minutes, longer than a proxy, a phone or a closed
+    // tab waits for one request. The wizard polls; the Creators, their image connection and their first
+    // posts keep coming either way, and a notification says when it is done.
+    const running = signUpJobs.get(executionId);
+    if (running && !running.finished) return reply.code(202).send(signUpProgress(executionId, running));
+    const job: SignUpJob = { total: noodleAccountIds.length, done: 0, finished: false, result: null, error: null };
+    signUpJobs.set(executionId, job);
+    void signUp(input, () => (job.done += 1))
+      .then(async (result) => {
+        job.result = result;
+        await afterSignUp(
+          executionId,
+          result.created.map((profile) => profile.id),
+          parsed.data.then ?? {},
+        );
+      })
+      .catch((error: unknown) => {
+        logger.error(error, "[slurp] Background sign-up %s failed", executionId);
+        job.error = error instanceof Error ? error.message : String(error);
+      })
+      .finally(() => {
+        job.finished = true;
+        job.finishedAt = Date.now();
+        pruneSignUpJobs();
+      });
+    return reply.code(202).send(signUpProgress(executionId, job));
+  });
+
+  /** A background sign-up's progress, and its result once it is done. 404: unknown (or the server restarted). */
+  app.get("/slurp/accounts/bulk/:executionId", async (req, reply) => {
+    const executionId = (req.params as { executionId: string }).executionId;
+    const job = signUpJobs.get(executionId);
+    return job ? signUpProgress(executionId, job) : reply.code(404).send({ error: "That sign-up is not running." });
+  });
+
+  /** Sign the Creators up: draft each stage profile, write the account. `onSettled` counts each one done. */
+  async function signUp(
+    {
+      noodleAccountIds,
+      disclosureMode,
+      disclosureExceptions,
+      autoPosting,
+      connection,
+      executionId,
+    }: Pick<
+      z.infer<typeof slurpBulkCreatorAccountCreateSchema>,
+      "noodleAccountIds" | "disclosureMode" | "disclosureExceptions" | "autoPosting" | "executionId"
+    > & { connection: NonNullable<Awaited<ReturnType<typeof resolveSlurpTextConnection>>> },
+    onSettled?: () => void,
+  ) {
     const created: string[] = [];
     const skipped: string[] = [];
     // Operational failures (provider/storage) are reported apart from expected exclusions
@@ -172,6 +266,16 @@ export async function slpOnboardingRoutes(app: FastifyInstance, deps: SlpRouteDe
     const settledCreations = await slpSettleAdaptive(
       noodleAccountIds,
       async (noodleAccountId, slowDown) => {
+        try {
+          await signUpOne(noodleAccountId, slowDown);
+        } finally {
+          onSettled?.();
+        }
+      },
+      SLP_BULK_DRAFT_CONCURRENCY,
+    );
+    async function signUpOne(noodleAccountId: string, slowDown: () => void): Promise<void> {
+      {
         const publicAccount = await noodle.resolveSourceByEntityId(noodleAccountId);
         const existing = publicAccount
           ? await noodle.getNoodlerAccountForSource(
@@ -305,9 +409,8 @@ export async function slpOnboardingRoutes(app: FastifyInstance, deps: SlpRouteDe
           noteFailure(noodleAccountId, error);
           return;
         }
-      },
-      SLP_BULK_DRAFT_CONCURRENCY,
-    );
+      }
+    }
     settledCreations.forEach((result, index) => {
       if (result.status === "fulfilled") return;
       const noodleAccountId = noodleAccountIds[index]!;
@@ -315,21 +418,54 @@ export async function slpOnboardingRoutes(app: FastifyInstance, deps: SlpRouteDe
       noteFailure(noodleAccountId, result.reason);
     });
     const profiles = await noodle.listNoodlerStageProfiles();
-    return reply.code(201).send({
+    return {
       created: profiles.filter((profile) => created.includes(profile.id)),
       skipped,
       failed,
       reasons,
       retryable,
       executionId,
-    });
-  });
+    };
+  }
+
+  /** After a background sign-up: the image connection, the first posts, onboarding done, and a notification. */
+  async function afterSignUp(
+    executionId: string,
+    ids: string[],
+    then: { firstPosts?: boolean; imageConnectionId?: string | null; personaId?: string; completeOnboarding?: boolean },
+  ) {
+    if (!ids.length) return;
+    const imageConnection = then.imageConnectionId ? await connections.getWithKey(then.imageConnectionId) : null;
+    if (imageConnection?.provider === "image_generation")
+      await updateCreatorImageConnections(app.db, (current) => ({
+        ...current,
+        creatorConnectionIds: {
+          ...current.creatorConnectionIds,
+          ...Object.fromEntries(ids.map((id) => [id, imageConnection.id])),
+        },
+      })).catch((error: unknown) => logger.warn(error, "[slurp] Sign-up could not set the image connection"));
+    if (then.completeOnboarding)
+      await noodle
+        .updateSettings({ onboarding: "completed" })
+        .catch((error: unknown) => logger.warn(error, "[slurp] Sign-up could not finish onboarding"));
+    if (then.firstPosts) await firstPostQueue.enqueue(executionId, ids);
+    if (then.personaId)
+      await createSlurpEventsStorage(app.db)
+        .recordAndPrune({
+          recipientPersonaId: then.personaId,
+          kind: "sign_up",
+          amount: ids.length,
+          operationId: `sign-up:${executionId}`,
+        })
+        .catch((error: unknown) => logger.warn(error, "[slurp] Sign-up could not notify"));
+  }
 
   app.post("/slurp/first-posts/enqueue", async (req, reply) => {
     const parsed = z
       .object({
         executionId: z.string().trim().min(1).max(128),
-        accountIds: z.array(z.string().trim().min(1).max(64)).min(1).max(24),
+        // As many as one sign-up can make: 24 failed every first post of a bigger batch.
+        accountIds: z.array(z.string().trim().min(1).max(64)).min(1).max(SLP_CREATOR_BULK_ACCOUNT_MAX),
       })
       .safeParse(req.body ?? {});
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });

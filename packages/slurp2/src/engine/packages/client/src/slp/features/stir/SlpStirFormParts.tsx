@@ -30,7 +30,7 @@ export function CreatorPicker({
           : [...picked.slice(0, max - 1), id],
     );
   return (
-    <fieldset className="space-y-2">
+    <fieldset className="min-w-0 space-y-2">
       <legend className={cn(SLP_TYPE.meta, "font-semibold")}>{label}</legend>
       <SlpCreatorChips creators={creators} picked={picked} onToggle={toggle} label={label} />
     </fieldset>
@@ -50,7 +50,7 @@ export function Choice({
   onChange: (value: string) => void;
 }) {
   return (
-    <fieldset className="space-y-2">
+    <fieldset className="min-w-0 space-y-2">
       <legend className={cn(SLP_TYPE.meta, "font-semibold")}>{label}</legend>
       <div className="flex flex-wrap gap-1.5" role="radiogroup">
         {options.map((option) => (
