@@ -121,8 +121,8 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "e849ce00609cf6234c7883a180034ec518dc795f86e4ebbae72ce8454a82c0b3",
-            "bytes": 1278530
+            "sha256": "535be2cda8e3c4712bd1892ed8172da1c0483b3049824ac785e9581fbd553300",
+            "bytes": 1278536
           },
           {
             "path": "life-sim-icon.png",
@@ -142,8 +142,8 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/modern-life-sim.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/modern-life-sim-0.3.1.zip",
-        "sha256": "29e85d550a7a29c8ed369f4135c2fe464161e3d641debecd816ba9bdbf461687",
-        "bytes": 2248629
+        "sha256": "d7976ce2229f724242f10754d9c476879d777595f84229106ffa473f2142759e",
+        "bytes": 2248635
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/staging/packages/modern-life-sim/README.md"
     },

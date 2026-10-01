@@ -49,8 +49,8 @@
     },
     {
       "path": "server.mjs",
-      "sha256": "e849ce00609cf6234c7883a180034ec518dc795f86e4ebbae72ce8454a82c0b3",
-      "bytes": 1278530
+      "sha256": "535be2cda8e3c4712bd1892ed8172da1c0483b3049824ac785e9581fbd553300",
+      "bytes": 1278536
     },
     {
       "path": "life-sim-icon.png",
