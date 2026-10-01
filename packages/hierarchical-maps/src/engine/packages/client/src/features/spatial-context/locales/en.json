@@ -13,5 +13,14 @@
   "ui.worldMaps.connection.saving": "Saving…",
   "ui.worldMaps.connection.useChat": "Use chat connection",
   "ui.worldMaps.connection.useDefault": "Use default connection",
-  "ui.worldMaps.runtime.nextStop": "Next stop"
+  "ui.worldMaps.runtime.nextStop": "Next stop",
+  "ui.worldMaps.settings.movementAssessment.heading": "Movement Assessment",
+  "ui.worldMaps.settings.movementAssessment.assessImpliedMovement.label": "Assess implied movement",
+  "ui.worldMaps.settings.movementAssessment.assessImpliedMovement.description": "Run an engine-side assessment of implied location changes after each turn.",
+  "ui.worldMaps.settings.movementAssessment.assessmentDiscovery.label": "Discover unknown destinations",
+  "ui.worldMaps.settings.movementAssessment.assessmentDiscovery.description": "Allow assessment to create significant, durable unknown places.",
+  "ui.worldMaps.settings.movementAssessment.assessmentPersistTravel.label": "Remember travel route",
+  "ui.worldMaps.settings.movementAssessment.assessmentPersistTravel.description": "Persist the travel route onto the snapshot and surface it as prior-arrival context next turn.",
+  "ui.worldMaps.settings.movementAssessment.saving": "Saving movement assessment settings…",
+  "ui.worldMaps.settings.movementAssessment.saveError": "Movement assessment settings could not be saved."
 }

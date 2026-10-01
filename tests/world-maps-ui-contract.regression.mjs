@@ -101,6 +101,26 @@ const mapsEnglishCatalog = JSON.parse(
     "utf8",
   ),
 );
+const mapsKoreanCatalog = JSON.parse(
+  readFileSync(
+    new URL(
+      "../packages/hierarchical-maps/src/engine/packages/client/src/features/spatial-context/locales/ko.json",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+);
+const settingsSectionSource = readFileSync(
+  new URL(
+    "../packages/hierarchical-maps/src/engine/packages/client/src/features/spatial-context/SpatialContextSettingsSection.tsx",
+    import.meta.url,
+  ),
+  "utf8",
+);
+const spatialHooksSource = readFileSync(
+  new URL("../packages/hierarchical-maps/src/engine/packages/client/src/hooks/use-spatial-context.ts", import.meta.url),
+  "utf8",
+);
 const aiDraftSource = readFileSync(
   new URL(
     "../packages/hierarchical-maps/src/engine/packages/server/src/services/spatial-context/ai-draft.ts",
@@ -356,6 +376,82 @@ assert.match(
   "The browser suite must cover reciprocal editing, unlinking, and incoming source navigation.",
 );
 
+assert.match(
+  settingsSectionSource,
+  /MOVEMENT_ASSESSMENT_SETTING_KEYS = \[\s*"assessImpliedMovement",\s*"assessmentDiscovery",\s*"assessmentPersistTravel",?\s*\] as const/u,
+  "The Movement Assessment group must render the three pinned agent settings keys.",
+);
+assert.match(
+  settingsSectionSource,
+  /MOVEMENT_ASSESSMENT_SETTING_KEYS\.map\([\s\S]*?role="switch"[\s\S]*?aria-checked=\{checked\}[\s\S]*?data-settings-key=\{key\}/u,
+  "Each movement assessment setting must render as a switch row keyed by its agent settings key.",
+);
+assert.match(
+  settingsSectionSource,
+  /data-settings-key=\{key\}[\s\S]*?data-settings-switch-track[\s\S]*?data-settings-switch-thumb/u,
+  "Movement assessment switches must reuse the Enable World Maps track/thumb styling.",
+);
+assert.match(
+  settingsSectionSource,
+  /agentSettings\[key\] !== false/u,
+  "Movement assessment switches must default to on unless the agent setting is explicitly false.",
+);
+assert.match(
+  settingsSectionSource,
+  /useSpatialAgentConfiguration\(\)[\s\S]*?parseAgentSettings\(configuration\?\.settings\)/u,
+  "Movement assessment switches must initialize from the fetched agent configuration so settings survive reload.",
+);
+assert.match(
+  settingsSectionSource,
+  /updateAgentConfiguration\.mutateAsync\(\{[\s\S]*?phase: "pre_generation"[\s\S]*?connectionId: configuration\.connectionId[\s\S]*?settings: \{[\s\S]*?\[key\]: next/u,
+  "Movement assessment toggles must persist through the agent-configuration mutation without dropping existing settings.",
+);
+assert.match(
+  spatialHooksSource,
+  /packageApi\.patch<MapsAgentConfigRecord>\("\/chats\/spatial-context\/agent-configuration", patch\)/u,
+  "The agent-configuration mutation must keep targeting the existing PATCH route.",
+);
+assert.match(
+  settingsSectionSource,
+  /data-settings-group="movement-assessment"[\s\S]*?role="status"[\s\S]*?role="alert"/u,
+  "Movement assessment saves must keep the section's optimistic status and error banner conventions.",
+);
+assert.match(
+  mapsLocalizationSource,
+  /koreanCatalog[\s\S]*?catalogForLocale[\s\S]*?catalogs\.en\[key\] \?\? key/u,
+  "World Maps localization must resolve Korean strings with an English fallback.",
+);
+const movementAssessmentLocaleKeys = [
+  "heading",
+  "assessImpliedMovement.label",
+  "assessImpliedMovement.description",
+  "assessmentDiscovery.label",
+  "assessmentDiscovery.description",
+  "assessmentPersistTravel.label",
+  "assessmentPersistTravel.description",
+  "saving",
+  "saveError",
+].map((suffix) => `ui.worldMaps.settings.movementAssessment.${suffix}`);
+for (const key of movementAssessmentLocaleKeys) {
+  assert.equal(typeof mapsEnglishCatalog[key], "string", `Missing English movement assessment string ${key}.`);
+  assert.ok(mapsEnglishCatalog[key].trim(), `Empty English movement assessment string ${key}.`);
+  assert.equal(typeof mapsKoreanCatalog[key], "string", `Missing Korean movement assessment string ${key}.`);
+  assert.ok(mapsKoreanCatalog[key].trim(), `Empty Korean movement assessment string ${key}.`);
+}
+assert.equal(mapsEnglishCatalog["ui.worldMaps.settings.movementAssessment.heading"], "Movement Assessment");
+assert.equal(
+  mapsEnglishCatalog["ui.worldMaps.settings.movementAssessment.assessImpliedMovement.label"],
+  "Assess implied movement",
+);
+assert.equal(
+  mapsEnglishCatalog["ui.worldMaps.settings.movementAssessment.assessmentDiscovery.label"],
+  "Discover unknown destinations",
+);
+assert.equal(
+  mapsEnglishCatalog["ui.worldMaps.settings.movementAssessment.assessmentPersistTravel.label"],
+  "Remember travel route",
+);
+
 console.log(
-  "World Maps UI contract regression passed: Direct Link endpoint parity, linked-lore/export ownership, portable-lore choices, normalized refresh, and JSON repair parity.",
+  "World Maps UI contract regression passed: Direct Link endpoint parity, linked-lore/export ownership, portable-lore choices, normalized refresh, JSON repair parity, and movement assessment settings.",
 );

@@ -1,0 +1,15 @@
+{
+  "_meta": {
+    "locale": "ko",
+    "direction": "ltr"
+  },
+  "ui.worldMaps.settings.movementAssessment.heading": "이동 평가",
+  "ui.worldMaps.settings.movementAssessment.assessImpliedMovement.label": "암시된 이동 평가",
+  "ui.worldMaps.settings.movementAssessment.assessImpliedMovement.description": "매 턴이 끝난 후 암시된 위치 변화를 엔진 측에서 평가합니다.",
+  "ui.worldMaps.settings.movementAssessment.assessmentDiscovery.label": "알려지지 않은 목적지 발견",
+  "ui.worldMaps.settings.movementAssessment.assessmentDiscovery.description": "평가가 중요하고 오래 유지되는 미지의 장소를 만들도록 허용합니다.",
+  "ui.worldMaps.settings.movementAssessment.assessmentPersistTravel.label": "이동 경로 기억",
+  "ui.worldMaps.settings.movementAssessment.assessmentPersistTravel.description": "이동 경로를 스냅샷에 저장하고 다음 턴에 이전 도착 맥락으로 표시합니다.",
+  "ui.worldMaps.settings.movementAssessment.saving": "이동 평가 설정을 저장하는 중…",
+  "ui.worldMaps.settings.movementAssessment.saveError": "이동 평가 설정을 저장할 수 없습니다."
+}

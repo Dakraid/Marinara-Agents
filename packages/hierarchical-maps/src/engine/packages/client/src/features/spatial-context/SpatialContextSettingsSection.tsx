@@ -1,6 +1,19 @@
 import { useState, type CSSProperties } from "react";
 import { AlertTriangle, ChevronRight, MapPin } from "lucide-react";
-import { useSpatialContext } from "../../hooks/use-spatial-context";
+import {
+  parseAgentSettings,
+  useSpatialAgentConfiguration,
+  useSpatialContext,
+  useUpdateSpatialAgentConfiguration,
+} from "../../hooks/use-spatial-context";
+import { useSpatialMapTranslation } from "./localization";
+
+const MOVEMENT_ASSESSMENT_SETTING_KEYS = [
+  "assessImpliedMovement",
+  "assessmentDiscovery",
+  "assessmentPersistTravel",
+] as const;
+type MovementAssessmentSettingKey = (typeof MOVEMENT_ASSESSMENT_SETTING_KEYS)[number];
 
 interface SpatialContextSettingsSectionProps {
   chatId: string;
@@ -18,6 +31,15 @@ export function SpatialContextSettingsSection({
   onOpenEditor,
 }: SpatialContextSettingsSectionProps) {
   const spatial = useSpatialContext(chatId);
+  const { t } = useSpatialMapTranslation();
+  const agentConfiguration = useSpatialAgentConfiguration();
+  const updateAgentConfiguration = useUpdateSpatialAgentConfiguration();
+  const [assessmentSavingKey, setAssessmentSavingKey] = useState<MovementAssessmentSettingKey | null>(null);
+  const [assessmentOptimistic, setAssessmentOptimistic] = useState<{
+    key: MovementAssessmentSettingKey;
+    value: boolean;
+  } | null>(null);
+  const [assessmentError, setAssessmentError] = useState<string | null>(null);
   const [activationPending, setActivationPending] = useState(false);
   const [activationError, setActivationError] = useState<string | null>(null);
   const definition = spatial.data?.definition ?? null;
@@ -34,6 +56,42 @@ export function SpatialContextSettingsSection({
       setActivationError(error instanceof Error ? error.message : "World Maps could not be updated for this chat.");
     } finally {
       setActivationPending(false);
+    }
+  };
+
+  const configuration = agentConfiguration.data ?? null;
+  const agentSettings = parseAgentSettings(configuration?.settings);
+  const movementAssessmentValue = (key: MovementAssessmentSettingKey) =>
+    assessmentOptimistic?.key === key ? assessmentOptimistic.value : agentSettings[key] !== false;
+  const movementAssessmentDisabled =
+    !configuration || assessmentSavingKey !== null || updateAgentConfiguration.isPending;
+
+  const toggleMovementAssessment = async (key: MovementAssessmentSettingKey) => {
+    if (!configuration || movementAssessmentDisabled) return;
+    const next = !movementAssessmentValue(key);
+    setAssessmentOptimistic({ key, value: next });
+    setAssessmentSavingKey(key);
+    setAssessmentError(null);
+    try {
+      await updateAgentConfiguration.mutateAsync({
+        description: configuration.description,
+        phase: "pre_generation",
+        connectionId: configuration.connectionId,
+        settings: {
+          author:
+            typeof agentSettings.author === "string" && agentSettings.author.trim()
+              ? agentSettings.author
+              : "Pasta Devs",
+          [key]: next,
+        },
+      });
+    } catch (error) {
+      setAssessmentError(
+        error instanceof Error ? error.message : t("ui.worldMaps.settings.movementAssessment.saveError"),
+      );
+    } finally {
+      setAssessmentOptimistic(null);
+      setAssessmentSavingKey(null);
     }
   };
 
@@ -90,6 +148,70 @@ export function SpatialContextSettingsSection({
             className="rounded-lg bg-[var(--destructive)]/10 px-3 py-2 text-[0.6875rem] text-[var(--destructive)]"
           >
             {activationError}
+          </p>
+        )}
+      </div>
+      <div className="mb-3 space-y-2 border-t border-[var(--border)] pt-3" data-settings-group="movement-assessment">
+        <h4 className="px-1 text-[0.6875rem] font-semibold text-[var(--foreground)]">
+          {t("ui.worldMaps.settings.movementAssessment.heading")}
+        </h4>
+        {MOVEMENT_ASSESSMENT_SETTING_KEYS.map((key) => {
+          const checked = movementAssessmentValue(key);
+          return (
+            <button
+              key={key}
+              type="button"
+              role="switch"
+              aria-checked={checked}
+              data-settings-key={key}
+              disabled={movementAssessmentDisabled}
+              onClick={() => void toggleMovementAssessment(key)}
+              className={`flex min-h-11 w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left ring-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] disabled:cursor-not-allowed disabled:opacity-60 ${
+                checked
+                  ? "bg-[var(--primary)]/10 ring-[var(--primary)]/30"
+                  : "bg-[var(--secondary)] ring-[var(--border)] hover:bg-[var(--accent)]"
+              }`}
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block text-xs font-medium text-[var(--foreground)]">
+                  {t(`ui.worldMaps.settings.movementAssessment.${key}.label`)}
+                </span>
+                <span className="mt-0.5 block text-[0.625rem] leading-relaxed text-[var(--marinara-chat-chrome-accent)]">
+                  {t(`ui.worldMaps.settings.movementAssessment.${key}.description`)}
+                </span>
+              </span>
+              <span
+                aria-hidden="true"
+                data-settings-switch-track
+                className={`inline-flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition-colors ${
+                  checked ? "bg-[var(--primary)]/70 mari-accent-animated" : "bg-[var(--border)]"
+                }`}
+              >
+                <span
+                  data-settings-switch-thumb
+                  className={`pointer-events-none block h-4 w-4 shrink-0 rounded-full bg-[var(--background)] shadow-sm ring-1 ring-[var(--border)] transition-transform ${
+                    checked ? "translate-x-4" : ""
+                  }`}
+                />
+              </span>
+            </button>
+          );
+        })}
+        {assessmentSavingKey && (
+          <p
+            role="status"
+            aria-live="polite"
+            className="px-1 text-[0.625rem] text-[var(--marinara-chat-chrome-accent)]"
+          >
+            {t("ui.worldMaps.settings.movementAssessment.saving")}
+          </p>
+        )}
+        {assessmentError && (
+          <p
+            role="alert"
+            className="rounded-lg bg-[var(--destructive)]/10 px-3 py-2 text-[0.6875rem] text-[var(--destructive)]"
+          >
+            {assessmentError}
           </p>
         )}
       </div>
