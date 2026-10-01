@@ -523,6 +523,13 @@ const features = [
     kind: ["agent", "maps"],
     modes: ["roleplay", "game"],
     permissions: ["agent-runtime", "chat-read", "chat-write", "network", "prompt-context", "routes", "storage", "ui"],
+    agent: {
+      defaultSettings: {
+        assessImpliedMovement: true,
+        assessmentDiscovery: true,
+        assessmentPersistTravel: true,
+      },
+    },
     serverImport: "packages/server/src/routes/spatial-context.routes.ts",
     serverExport: "spatialContextRoutes",
     prefix: "/api/chats",
@@ -656,6 +663,7 @@ async function bundleServer(feature, output) {
         ? `import { ${feature.serverExport} as register } from ${JSON.stringify(target)};
 import * as projection from ${JSON.stringify(resolve(prepared.buildRoot, "packages/server/src/services/spatial-context/projection.ts"))};
 import * as stateResolution from ${JSON.stringify(resolve(prepared.buildRoot, "packages/server/src/services/spatial-context/state-resolution.ts"))};
+import * as movementAssessment from ${JSON.stringify(resolve(prepared.buildRoot, "packages/server/src/services/spatial-context/movement-assessment.ts"))};
 import * as ownerTurn from ${JSON.stringify(resolve(prepared.buildRoot, "packages/server/src/services/spatial-context/owner-turn.ts"))};
 import * as gameMapBinding from ${JSON.stringify(resolve(prepared.buildRoot, "packages/server/src/services/spatial-context/game-map-binding.ts"))};
 import { configurePackageRuntime } from ${JSON.stringify(resolve(prepared.buildRoot, "packages/server/src/services/spatial-context/package-runtime.ts"))};
@@ -695,6 +703,7 @@ export async function activate({ app, api }) {
       cleanupRuntime,
       api.registerService("hierarchical-maps:projection", projection),
       api.registerService("hierarchical-maps:state-resolution", stateResolution),
+      api.registerService("hierarchical-maps:movement-assessment", movementAssessment),
       api.registerService("hierarchical-maps:owner-turn", ownerTurn),
       api.registerService("hierarchical-maps:game-map-binding", gameMapBinding),
       api.registerService("hierarchical-maps:storage", { create: () => createSpatialContextStorage() }),

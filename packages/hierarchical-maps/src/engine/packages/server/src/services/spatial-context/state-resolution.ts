@@ -4,6 +4,7 @@ import {
   SPATIAL_CONTEXT_LIMITS,
   type CapabilityPersistenceSession,
   spatialContextDefinitionSchema,
+  type SpatialAssessedTravel,
   type SpatialContextDefinition,
   type SpatialContextSnapshot,
   type ResolvedSpatialTravel,
@@ -47,6 +48,30 @@ export interface ResolveSpatialStateOptions {
   throughMessageId?: string;
   beforeMessageId?: string;
   acceptedTravel?: ResolvedSpatialTravel | null;
+}
+
+type PriorArrivalTravel = ResolvedSpatialTravel & { priorArrival: true };
+
+function exposePriorArrival(options: ResolveSpatialStateOptions, state: EffectiveSpatialState): EffectiveSpatialState {
+  const travel = state.snapshot?.travel;
+  if (
+    options.acceptedTravel ||
+    !state.currentLocationId ||
+    !travel ||
+    travel.routeLocationIds.at(-1) !== state.currentLocationId
+  ) {
+    return state;
+  }
+  options.acceptedTravel = {
+    mode: "travel_now",
+    fromLocationId: travel.fromLocationId,
+    targetLocationId: state.currentLocationId,
+    routeLocationIds: travel.routeLocationIds,
+    remainingLocationIds: [],
+    complete: true,
+    priorArrival: true,
+  } satisfies PriorArrivalTravel;
+  return state;
 }
 
 function normalizedLocationName(value: string): string {
@@ -154,10 +179,11 @@ function addAvailableLink(
   };
 }
 
-function discoverLocation(
+export function discoverLocation(
   definition: SpatialContextDefinition,
   currentLocationId: string,
   directive: Extract<AssistantSpatialDirective, { type: "discover" }>,
+  createdLocationId = `loc_${newId()}`,
 ): { definition: SpatialContextDefinition; destinationId: string } | null {
   const nameKey = normalizedLocationName(directive.name);
   if (!nameKey) return null;
@@ -179,7 +205,7 @@ function discoverLocation(
     directive.relation === "enter" && current.childPresentation === "layers"
       ? Math.max(-1, ...siblings.map((location) => location.layerOrder ?? -1)) + 1
       : undefined;
-  const destinationId = `loc_${newId()}`;
+  const destinationId = createdLocationId;
   const discovered: SpatialLocation = {
     id: destinationId,
     parentId,
@@ -243,14 +269,14 @@ export async function resolveEffectiveSpatialState(
 
   if (options.exactAnchor) {
     const snapshot = await storage.getByAnchor(chatId, options.exactAnchor.messageId, options.exactAnchor.swipeIndex);
-    return {
+    return exposePriorArrival(options, {
       definition,
       snapshot,
       currentLocationId: snapshot?.currentLocationId ?? null,
       definitionRevision: snapshot?.definitionRevision ?? definition?.revision ?? 0,
       visibleAnchor: options.exactAnchor,
       virtual: false,
-    };
+    });
   }
 
   const ordered = await persistence.listMessages(chatId);
@@ -277,40 +303,40 @@ export async function resolveEffectiveSpatialState(
     const anchor = anchorForMessage(message);
     const snapshot = snapshotsByAnchor.get(`${anchor.messageId}\u0000${anchor.swipeIndex}`);
     if (!snapshot) continue;
-    return {
+    return exposePriorArrival(options, {
       definition,
       snapshot,
       currentLocationId: snapshot.currentLocationId,
       definitionRevision: snapshot.definitionRevision,
       visibleAnchor,
       virtual: false,
-    };
+    });
   }
 
   const bootstrap = await storage.getBootstrap(chatId);
   if (bootstrap) {
-    return {
+    return exposePriorArrival(options, {
       definition,
       snapshot: bootstrap,
       currentLocationId: bootstrap.currentLocationId,
       definitionRevision: bootstrap.definitionRevision,
       visibleAnchor,
       virtual: false,
-    };
+    });
   }
 
   const startingLocationId = definition?.enabled ? definition.startingLocationId : null;
-  return {
+  return exposePriorArrival(options, {
     definition,
     snapshot: null,
     currentLocationId: startingLocationId,
     definitionRevision: definition?.revision ?? 0,
     visibleAnchor,
     virtual: startingLocationId !== null,
-  };
+  });
 }
 
-export async function materializeAssistantSpatialState(input: {
+export interface MaterializeAssistantSpatialStateInput {
   chatId: string;
   messageId: string;
   swipeIndex: number;
@@ -318,116 +344,154 @@ export async function materializeAssistantSpatialState(input: {
   continuation: boolean;
   directive?: AssistantSpatialDirective | null;
   locationGuidance?: string | null;
-}): Promise<SpatialContextSnapshot | null> {
+  assessedTravel?: SpatialAssessedTravel | null;
+  persistTravel?: boolean;
+  commandIdPrefix?: "assistant" | "assessment";
+  discoveryLocationId?: string;
+}
+
+export async function materializeAssistantSpatialStateInTransaction(
+  input: MaterializeAssistantSpatialStateInput,
+  transaction: CapabilityPersistenceSession,
+): Promise<SpatialContextSnapshot | null> {
+  const existingAtAnchor = await transaction.spatialSnapshots.getByAnchor(
+    input.chatId,
+    input.messageId,
+    input.swipeIndex,
+  );
+  if (input.locationGuidance && existingAtAnchor?.transitionCommandId?.startsWith("assistant:")) {
+    return existingAtAnchor;
+  }
+  const state = input.regenerate
+    ? await resolveEffectiveSpatialState(input.chatId, { beforeMessageId: input.messageId }, transaction)
+    : input.continuation
+      ? await resolveEffectiveSpatialState(input.chatId, { throughMessageId: input.messageId }, transaction)
+      : await resolveEffectiveSpatialState(input.chatId, {}, transaction);
+
+  if (!state.definition?.enabled || state.currentLocationId === null) return null;
+  let definition = state.definition;
+  let destinationId = state.currentLocationId;
+  let transitionApplied = false;
+
+  if (input.directive?.type === "move") {
+    const requestedDestinationId = input.directive.destinationId;
+    const reachable = new Set(
+      resolveSpatialDestinations(definition, state.currentLocationId).map((destination) => destination.id),
+    );
+    const destination = definition.locations.find(
+      (location) => location.id === requestedDestinationId && location.status === "active",
+    );
+    const assessedDestination =
+      input.commandIdPrefix === "assessment" &&
+      input.assessedTravel?.fromLocationId === state.currentLocationId &&
+      input.assessedTravel.routeLocationIds.at(-1) === requestedDestinationId;
+    if (
+      destination &&
+      (destination.id === state.currentLocationId || reachable.has(destination.id) || assessedDestination)
+    ) {
+      destinationId = destination.id;
+      transitionApplied = destinationId !== state.currentLocationId;
+    }
+  } else if (input.directive?.type === "discover") {
+    const discovered = discoverLocation(
+      definition,
+      state.currentLocationId,
+      input.directive,
+      input.discoveryLocationId,
+    );
+    if (discovered) {
+      definition = discovered.definition;
+      destinationId = discovered.destinationId;
+      transitionApplied =
+        destinationId !== state.currentLocationId || definition.revision !== state.definition.revision;
+    }
+  } else if (input.locationGuidance) {
+    const guidedDestinationId = exactGuidanceDestination(definition, input.locationGuidance);
+    if (guidedDestinationId && guidedDestinationId !== state.currentLocationId) {
+      const reachable = new Set(
+        resolveSpatialDestinations(definition, state.currentLocationId).map((destination) => destination.id),
+      );
+      if (reachable.has(guidedDestinationId)) {
+        destinationId = guidedDestinationId;
+        transitionApplied = true;
+      }
+    }
+  }
+
+  const chat = await transaction.getChat(input.chatId);
+  if (!chat) return null;
+  const metadata = parseSpatialMetadata(chat.metadata);
+  let nextMetadata = metadata;
+  if (definition.revision !== state.definition.revision) {
+    const link = readSpatialSharedWorldLink(metadata);
+    if (link) {
+      const source = await resolveSpatialWorldSource(chat, transaction);
+      nextMetadata = withSpatialSharedWorldDraft(
+        nextMetadata,
+        link,
+        link.draft?.baseWorldRevision ?? source.world?.revision ?? state.definition.revision,
+        definition,
+        source.hierarchyProfile,
+        now(),
+      );
+    } else {
+      nextMetadata = { ...nextMetadata, spatialContext: definition };
+    }
+  }
+  if (chat.mode === "game" && transitionApplied) {
+    nextMetadata = selectBoundGameMapForLocation(nextMetadata, definition, destinationId);
+  }
+  if (nextMetadata !== metadata) {
+    await transaction.updateChatMetadata({
+      chatId: input.chatId,
+      metadata: nextMetadata,
+      updatedAt: now(),
+    });
+  }
+
+  const commandIdPrefix = input.commandIdPrefix ?? "assistant";
+  const transitionCommandId = transitionApplied
+    ? `${commandIdPrefix}:${input.messageId}:${input.swipeIndex}`.slice(0, 200)
+    : (existingAtAnchor?.transitionCommandId ?? null);
+  const assessedTravelMatchesTransition =
+    input.assessedTravel?.fromLocationId === state.currentLocationId &&
+    input.assessedTravel.routeLocationIds.at(-1) === destinationId;
+  const travel =
+    transitionApplied && input.persistTravel !== false && assessedTravelMatchesTransition
+      ? {
+          fromLocationId: input.assessedTravel!.fromLocationId,
+          routeLocationIds: [...input.assessedTravel!.routeLocationIds],
+        }
+      : null;
+  const snapshot = await transaction.spatialSnapshots.replaceAtAnchor({
+    id: newTimeSortableId(),
+    chatId: input.chatId,
+    messageId: input.messageId,
+    swipeIndex: input.swipeIndex,
+    currentLocationId: destinationId,
+    definitionRevision: definition.revision,
+    source: "assistant_swipe",
+    transitionCommandId,
+    transitionPayloadHash: null,
+    travel,
+    createdAt: now(),
+  });
+  if (transitionApplied) {
+    logger.info(
+      "[spatial/%s] Applied narrated location transition for chat %s to %s",
+      commandIdPrefix,
+      input.chatId,
+      destinationId,
+    );
+  }
+  return snapshot;
+}
+
+export async function materializeAssistantSpatialState(
+  input: MaterializeAssistantSpatialStateInput,
+): Promise<SpatialContextSnapshot | null> {
   const persistence = getPackagePersistence();
   return persistence.withChatLock(input.chatId, async () =>
-    persistence.transaction(async (transaction) => {
-      const existingAtAnchor = await transaction.spatialSnapshots.getByAnchor(
-        input.chatId,
-        input.messageId,
-        input.swipeIndex,
-      );
-      if (input.locationGuidance && existingAtAnchor?.transitionCommandId?.startsWith("assistant:")) {
-        return existingAtAnchor;
-      }
-      const state = input.regenerate
-        ? await resolveEffectiveSpatialState(input.chatId, { beforeMessageId: input.messageId }, transaction)
-        : input.continuation
-          ? await resolveEffectiveSpatialState(input.chatId, { throughMessageId: input.messageId }, transaction)
-          : await resolveEffectiveSpatialState(input.chatId, {}, transaction);
-
-      if (!state.definition?.enabled || state.currentLocationId === null) return null;
-      let definition = state.definition;
-      let destinationId = state.currentLocationId;
-      let transitionApplied = false;
-
-      if (input.directive?.type === "move") {
-        const requestedDestinationId = input.directive.destinationId;
-        const reachable = new Set(
-          resolveSpatialDestinations(definition, state.currentLocationId).map((destination) => destination.id),
-        );
-        const destination = definition.locations.find(
-          (location) => location.id === requestedDestinationId && location.status === "active",
-        );
-        if (destination && (destination.id === state.currentLocationId || reachable.has(destination.id))) {
-          destinationId = destination.id;
-          transitionApplied = destinationId !== state.currentLocationId;
-        }
-      } else if (input.directive?.type === "discover") {
-        const discovered = discoverLocation(definition, state.currentLocationId, input.directive);
-        if (discovered) {
-          definition = discovered.definition;
-          destinationId = discovered.destinationId;
-          transitionApplied =
-            destinationId !== state.currentLocationId || definition.revision !== state.definition.revision;
-        }
-      } else if (input.locationGuidance) {
-        const guidedDestinationId = exactGuidanceDestination(definition, input.locationGuidance);
-        if (guidedDestinationId && guidedDestinationId !== state.currentLocationId) {
-          const reachable = new Set(
-            resolveSpatialDestinations(definition, state.currentLocationId).map((destination) => destination.id),
-          );
-          if (reachable.has(guidedDestinationId)) {
-            destinationId = guidedDestinationId;
-            transitionApplied = true;
-          }
-        }
-      }
-
-      const chat = await transaction.getChat(input.chatId);
-      if (!chat) return null;
-      const metadata = parseSpatialMetadata(chat.metadata);
-      let nextMetadata = metadata;
-      if (definition.revision !== state.definition.revision) {
-        const link = readSpatialSharedWorldLink(metadata);
-        if (link) {
-          const source = await resolveSpatialWorldSource(chat, transaction);
-          nextMetadata = withSpatialSharedWorldDraft(
-            nextMetadata,
-            link,
-            link.draft?.baseWorldRevision ?? source.world?.revision ?? state.definition.revision,
-            definition,
-            source.hierarchyProfile,
-            now(),
-          );
-        } else {
-          nextMetadata = { ...nextMetadata, spatialContext: definition };
-        }
-      }
-      if (chat.mode === "game" && transitionApplied) {
-        nextMetadata = selectBoundGameMapForLocation(nextMetadata, definition, destinationId);
-      }
-      if (nextMetadata !== metadata) {
-        await transaction.updateChatMetadata({
-          chatId: input.chatId,
-          metadata: nextMetadata,
-          updatedAt: now(),
-        });
-      }
-
-      const transitionCommandId = transitionApplied
-        ? `assistant:${input.messageId}:${input.swipeIndex}`.slice(0, 200)
-        : (existingAtAnchor?.transitionCommandId ?? null);
-      const snapshot = await transaction.spatialSnapshots.replaceAtAnchor({
-        id: newTimeSortableId(),
-        chatId: input.chatId,
-        messageId: input.messageId,
-        swipeIndex: input.swipeIndex,
-        currentLocationId: destinationId,
-        definitionRevision: definition.revision,
-        source: "assistant_swipe",
-        transitionCommandId,
-        transitionPayloadHash: null,
-        createdAt: now(),
-      });
-      if (transitionApplied) {
-        logger.info(
-          "[spatial/assistant] Applied narrated location transition for chat %s to %s",
-          input.chatId,
-          destinationId,
-        );
-      }
-      return snapshot;
-    }),
+    persistence.transaction((transaction) => materializeAssistantSpatialStateInTransaction(input, transaction)),
   );
 }
