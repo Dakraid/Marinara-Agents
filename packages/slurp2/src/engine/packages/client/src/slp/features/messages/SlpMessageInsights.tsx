@@ -393,6 +393,8 @@ export function SlurpRelationshipPanel({
   const blockedBy = riseBlock && riseBlock !== "top" ? ESCALATION_BLOCK_TEXT[riseBlock] : null;
   const pictures = relationship.pictures ?? { mode: relationship.imageMode, blockedBy: null };
   const modifiers = creatorState.modifiers ?? [];
+  // Her partner (You two above) is no fan: the fan tier and its ladder say nothing about them.
+  const partnered = Boolean(relationship.couple && relationship.couple.stage !== "split");
 
   return (
     <SlpMessageDetailsEditor
@@ -405,9 +407,11 @@ export function SlurpRelationshipPanel({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 className="text-xs font-semibold text-[var(--slurp-muted)]">Conversation overview</h2>
-            <p className="mt-0.5 text-xl font-extrabold capitalize leading-[26px]">
-              {humanizeValue(relationship.tier)}
-            </p>
+            {!partnered && (
+              <p className="mt-0.5 text-xl font-extrabold capitalize leading-[26px]">
+                {humanizeValue(relationship.tier)}
+              </p>
+            )}
             <p className="mt-0.5 text-xs text-[var(--slurp-muted)]">
               {advanced
                 ? `Rapport ${relationship.score}/100 · mood ${mood > 0 ? `+${mood}` : mood}`
@@ -428,7 +432,7 @@ export function SlurpRelationshipPanel({
           />
         </div>
         <div
-          className="mt-4"
+          className={partnered ? "hidden" : "mt-4"}
           role="meter"
           aria-label={localizeUi("ui.slurp.messages.relationshipLevel", { defaultValue: "Relationship level" })}
           aria-valuemin={0}

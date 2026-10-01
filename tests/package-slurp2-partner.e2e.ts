@@ -39,10 +39,14 @@ async function boot(page: Page, personaId: string, navigation: Record<string, un
       localStorage.setItem("marinara:whats-new:seen-version", appVersion);
       localStorage.setItem("slurp2:splash-seen-version", slurpVersion);
       localStorage.setItem("slurp2:stir-hint-seen", "1");
-      localStorage.setItem(
-        "marinara:slurp2:package-ui",
-        JSON.stringify({ navigation, viewerPersonaId: personaId, onboardingState: "completed" }),
-      );
+      // Once per tab: later steps set their own view and reload.
+      if (!sessionStorage.getItem("slurp2:e2e-booted")) {
+        localStorage.setItem(
+          "marinara:slurp2:package-ui",
+          JSON.stringify({ navigation, viewerPersonaId: personaId, onboardingState: "completed" }),
+        );
+        sessionStorage.setItem("slurp2:e2e-booted", "1");
+      }
       localStorage.setItem(
         "marinara-engine-ui",
         JSON.stringify({

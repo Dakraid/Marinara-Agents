@@ -1934,7 +1934,7 @@
   "ui.slurp.stir.form.noProducts": "Jeszcze brak marek. Dodaj je w Ustawienia › Fani i pieniądze › Reklamy.",
   "ui.slurp.stir.fit.spice": "Bardziej pikantne niż ich strona",
   "ui.slurp.stir.fit.offBrand": "To nie ich styl",
-  "ui.slurp.stir.card.start-rivalry.title": "Zacznij dramę",
+  "ui.slurp.stir.card.start-rivalry.title": "Zacznij rywalizację",
   "ui.slurp.stir.card.start-rivalry.line": "Jedno rzuca cień na drugie.",
   "ui.slurp.stir.card.start-rivalry.blurb": "Wybierz, kto to zaczyna, a potem w kogo jest wymierzone. Drama zawsze się dzieje; spokojny twórca zostaje przy drobnej sprzeczce.",
   "ui.slurp.stir.card.cool-rivalry.title": "Ochłodź to",
@@ -2743,5 +2743,9 @@
   "ui.slurp.stir.what.end-bond.ex": "{{a}} i {{b}} zostawiają przeszłość",
   "ui.slurp.stir.what.start-drama": "{{drama}} się zaczyna",
   "ui.slurp.stir.what.start-drama.lead": "{{drama}} zaczyna się z {{a}}",
-  "ui.slurp.stir.what.end-drama": "{{drama}} się kończy"
+  "ui.slurp.stir.what.end-drama": "{{drama}} się kończy",
+  "ui.slurp.stir.card.start-drama.blurb": "Wybierz pakiet dramy. Slurp obsadza role tymi, którzy teraz pasują, albo wybierz, kto prowadzi. Rozgrywa się w feedzie, w DM-ach i w komentarzach.",
+  "ui.slurp.stir.card.end-drama.blurb": "Drama kończy się teraz. To, co już wyszło, zostaje.",
+  "ui.slurp.stir.card.set-bond.blurb": "Wybierz dwie osoby i kim dla siebie są. Ustawiona więź trwa, dopóki jej nie zakończysz, i pojawia się w ich postach.",
+  "ui.slurp.stir.card.end-bond.blurb": "Oddalają się. Ich stare posty zostają."
 }

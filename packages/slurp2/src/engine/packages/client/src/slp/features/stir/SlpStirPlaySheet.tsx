@@ -58,7 +58,7 @@ function Pick({
   onChange: (id: string) => void;
 }) {
   return (
-    <fieldset className="space-y-2">
+    <fieldset className="min-w-0 space-y-2">
       <legend className={cn(SLP_TYPE.meta, "font-semibold")}>{label}</legend>
       {items.length === 0 ? (
         <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>{empty}</p>
@@ -453,7 +453,8 @@ export function SlpStirPlaySheet({
             key="who"
             max={1}
             label={t("ui.slurp.stir.form.dramaLead")}
-            creators={creators.filter((creator) => creator.automatic || creator.own)}
+            // The first role is a Creator's: the player's own pages play their own roles.
+            creators={creators.filter((creator) => creator.automatic)}
             picked={picked}
             onPick={(ids) => set({ who: ids })}
           />,

@@ -5411,7 +5411,7 @@
   "ui.slurp.stir.form.noProducts": "No brands yet. Add some in Settings › Fans & money › Ads.",
   "ui.slurp.stir.fit.spice": "Spicier than their page",
   "ui.slurp.stir.fit.offBrand": "Not their thing",
-  "ui.slurp.stir.card.start-rivalry.title": "Start drama",
+  "ui.slurp.stir.card.start-rivalry.title": "Start a rivalry",
   "ui.slurp.stir.card.start-rivalry.line": "One throws shade at the other.",
   "ui.slurp.stir.card.start-rivalry.blurb": "Pick who starts it, then who it is aimed at. Drama always happens; a calm Creator keeps it petty.",
   "ui.slurp.stir.card.cool-rivalry.title": "Cool it down",
@@ -6130,5 +6130,9 @@
   "ui.slurp.stir.what.end-bond.ex": "{{a}} and {{b}} let the past go",
   "ui.slurp.stir.what.start-drama": "{{drama}} starts",
   "ui.slurp.stir.what.start-drama.lead": "{{drama}} starts with {{a}}",
-  "ui.slurp.stir.what.end-drama": "{{drama}} ends"
+  "ui.slurp.stir.what.end-drama": "{{drama}} ends",
+  "ui.slurp.stir.card.start-drama.blurb": "Pick a drama pack. Slurp casts the roles from who fits right now, or pick who leads it. It plays out on the feed, in DMs and in the comments.",
+  "ui.slurp.stir.card.end-drama.blurb": "The drama stops now. What already went out stays.",
+  "ui.slurp.stir.card.set-bond.blurb": "Pick two and what they are to each other. A bond you set stays until you end it, and it shows up in their posts.",
+  "ui.slurp.stir.card.end-bond.blurb": "They drift apart. Their old posts stay."
 }

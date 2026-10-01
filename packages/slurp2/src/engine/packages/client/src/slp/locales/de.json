@@ -1896,7 +1896,7 @@
   "ui.slurp.stir.form.noProducts": "Noch keine Marken. Füge welche unter Einstellungen › Fans & Geld › Werbung hinzu.",
   "ui.slurp.stir.fit.spice": "Spicier als ihre Seite",
   "ui.slurp.stir.fit.offBrand": "Nicht ihr Ding",
-  "ui.slurp.stir.card.start-rivalry.title": "Drama starten",
+  "ui.slurp.stir.card.start-rivalry.title": "Rivalität starten",
   "ui.slurp.stir.card.start-rivalry.line": "Einer zieht über den anderen her.",
   "ui.slurp.stir.card.start-rivalry.blurb": "Wähle, wer es beginnt und gegen wen es sich richtet. Drama passiert immer; ein ruhiger Creator hält es kleinlich.",
   "ui.slurp.stir.card.cool-rivalry.title": "Beruhigen",
@@ -2707,5 +2707,9 @@
   "ui.slurp.stir.what.end-bond.ex": "{{a}} und {{b}} lassen die Vergangenheit los",
   "ui.slurp.stir.what.start-drama": "{{drama}} beginnt",
   "ui.slurp.stir.what.start-drama.lead": "{{drama}} beginnt mit {{a}}",
-  "ui.slurp.stir.what.end-drama": "{{drama}} endet"
+  "ui.slurp.stir.what.end-drama": "{{drama}} endet",
+  "ui.slurp.stir.card.start-drama.blurb": "Wähle ein Drama-Paket. Slurp besetzt die Rollen mit denen, die gerade passen, oder du wählst, wer führt. Es spielt sich im Feed, in DMs und in den Kommentaren ab.",
+  "ui.slurp.stir.card.end-drama.blurb": "Das Drama hört jetzt auf. Was schon raus ist, bleibt.",
+  "ui.slurp.stir.card.set-bond.blurb": "Wähle zwei und was sie füreinander sind. Eine Verbindung, die du setzt, bleibt, bis du sie beendest, und taucht in ihren Posts auf.",
+  "ui.slurp.stir.card.end-bond.blurb": "Sie leben sich auseinander. Ihre alten Posts bleiben."
 }
