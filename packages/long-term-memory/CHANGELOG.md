@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 1.3.38 — 2026-10-02
+
+- Rebuild the recall index during a settings save when a stop-word or "filter generated" change alters what it contains, and report the save as saved-but-index-failed instead of a plain success when that rebuild fails. A recall queued behind that save no longer republishes an index built with the old stop words, and extraction edits made while the rebuild is in flight stay unsaved instead of being discarded.
+
 ## 1.3.37 — 2026-10-02
 
 - The description now says what it does in plain words.
