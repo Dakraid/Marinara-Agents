@@ -25,11 +25,6 @@
     "client": "client.js"
   },
   "contributions": {
-    "agentDetail": {
-      "agentIds": [
-        "pokedex"
-      ]
-    },
     "slots": [
       "chat-settings",
       "roleplay-tracker",

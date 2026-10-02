@@ -580,7 +580,6 @@ const features = [
       ].join("\n"),
     },
     contributions: {
-      agentDetail: { agentIds: ["pokedex"] },
       slots: ["chat-settings", "roleplay-tracker", "tracker-panel"],
     },
   },

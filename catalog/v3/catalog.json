@@ -2981,11 +2981,6 @@
           "client": "client.js"
         },
         "contributions": {
-          "agentDetail": {
-            "agentIds": [
-              "pokedex"
-            ]
-          },
           "slots": [
             "chat-settings",
             "roleplay-tracker",
@@ -3023,8 +3018,8 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/pokedex.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/pokedex-0.1.0.zip",
-        "sha256": "1dc8e2bf0871fde5db54d22ee7ab83e4da2b299a27dc813b7ea0abcdaa08f405",
-        "bytes": 318380
+        "sha256": "573a25237a88f9e05f57685123b48dbac9deb2c7ac77b06fb502984df398212e",
+        "bytes": 318306
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#pokedex"
     },
