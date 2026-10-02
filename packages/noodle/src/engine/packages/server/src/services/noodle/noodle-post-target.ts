@@ -7,8 +7,12 @@ export interface NoodleTimelinePostTargetRange {
 
 /** A timeline answer with less room than this would stop mid-JSON, so the refresh fails instead. */
 export const NOODLE_TIMELINE_MIN_OUTPUT_TOKENS = 1024;
-/** Same slack the context fitter leaves when it lowers max_tokens itself. */
-const PROMPT_HEADROOM_TOKENS = 64;
+/**
+ * The fitter estimates 4 characters per token, but the timeline's IDs, timestamps and digits cost
+ * several times that on some tokenizers (Gemma spends a token per digit), and KoboldCpp cuts the start
+ * of a prompt that overflows. Part of the estimate is kept back as slack.
+ */
+const PROMPT_ESTIMATE_SLACK = 0.15;
 
 function normalizedCount(value: number) {
   return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
@@ -19,23 +23,23 @@ export function noodleTimelineRefreshMaxTokens(selectedAuthorCount: number) {
 }
 
 /**
- * Returns the max_tokens that lets the whole timeline prompt reach the model, or null when not even
- * the minimum answer fits beside it. `fit` is the context fitter's verdict for the requested budget.
+ * Returns the max_tokens that lets the whole timeline prompt reach the model, or null when less than
+ * the minimum answer would fit beside it. `fit` is the context fitter's result for the requested budget.
  *
  * ponytail: the bundled fitter predates Engine #4124. When a prompt with no chat history does not fit
  * beside max_tokens, it deletes the prompt body (accounts, profiles, chats and timeline) and keeps the
- * full max_tokens. This hands answer room back instead, using the fitter's own estimate. Ceiling: it
- * checks the primary connection's context only; a fallback connection is fitted by its own provider.
- * Upgrade path: generate through the Engine's live LLM integration (Capability API 1.31).
+ * full max_tokens. This hands answer room back instead, from the fitter's own estimate plus slack.
+ * Ceiling: the estimate is still characters / 4. Upgrade path: generate through the Engine's live LLM
+ * integration (Capability API 1.31), and count real tokens where the backend can.
  */
 export function noodleTimelineMaxTokensForPrompt(
-  fit: Pick<ContextFitResult, "trimmed" | "maxTokens" | "maxContext" | "reservedTokens" | "estimatedTokensBefore">,
+  fit: Pick<ContextFitResult, "maxContext" | "reservedTokens" | "estimatedTokensBefore">,
   requestedMaxTokens: number,
 ): number | null {
-  const fitting = fit.trimmed
-    ? (fit.maxContext ?? 0) - (fit.reservedTokens ?? 0) - fit.estimatedTokensBefore - PROMPT_HEADROOM_TOKENS
-    : (fit.maxTokens ?? requestedMaxTokens);
-  const maxTokens = Math.min(requestedMaxTokens, fitting);
+  if (fit.maxContext === undefined) return requestedMaxTokens;
+  const room =
+    fit.maxContext - (fit.reservedTokens ?? 0) - Math.ceil(fit.estimatedTokensBefore * (1 + PROMPT_ESTIMATE_SLACK));
+  const maxTokens = Math.min(requestedMaxTokens, room);
   return maxTokens >= Math.min(requestedMaxTokens, NOODLE_TIMELINE_MIN_OUTPUT_TOKENS) ? maxTokens : null;
 }
 

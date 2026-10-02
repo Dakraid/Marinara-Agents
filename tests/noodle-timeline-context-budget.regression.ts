@@ -57,6 +57,10 @@ const kept = fit(messages, { maxContext: 16_384, maxTokens: guarded });
 assert.equal(kept.trimmed, false);
 assert.deepEqual(kept.messages, messages, "the whole prompt reaches the model");
 assert.equal(kept.maxTokens, guarded);
+assert.ok(
+  Math.ceil(kept.estimatedTokensBefore * 1.15) + guarded <= 16_384 - kept.reservedTokens!,
+  "15% of the prompt estimate stays free, since the backend can count more tokens than characters / 4",
+);
 
 // A prompt that leaves less than the minimum answer fails visibly instead of being cut.
 assert.equal(
@@ -77,20 +81,15 @@ assert.equal(noodleTimelineMaxTokensForPrompt(fit(messages, { maxTokens: request
 // A smaller answer budget saved on the connection is respected, and is its own minimum.
 assert.equal(noodleTimelineMaxTokensForPrompt(fit(messages, { maxContext: 128_000, maxTokens: 600 }), 600), 600);
 
-// Across context sizes, prompt sizes and account counts: a returned budget always keeps the prompt
-// whole, and null only means the minimum answer (plus the fitter's 64-token headroom) would cut it.
+// Across context sizes, prompt sizes and account counts, a returned budget always keeps the prompt whole.
 for (const maxContext of [8_192, 16_384, 32_768, 49_152, 128_000]) {
   for (const accounts of [1, 3, 6]) {
     const budget = noodleTimelineRefreshMaxTokens(accounts);
     for (let contextChars = 0; contextChars <= 200_000; contextChars += 997) {
       const prompt = timelineMessages(contextChars);
       const result = noodleTimelineMaxTokensForPrompt(fit(prompt, { maxContext, maxTokens: budget }), budget);
+      if (result === null) continue;
       const label = `maxContext ${maxContext}, ${accounts} accounts, ${contextChars} context chars`;
-      if (result === null) {
-        const minimum = Math.min(budget, NOODLE_TIMELINE_MIN_OUTPUT_TOKENS) + 64;
-        assert.equal(fit(prompt, { maxContext, maxTokens: minimum }).trimmed, true, label);
-        continue;
-      }
       assert.ok(result <= budget && result >= Math.min(budget, NOODLE_TIMELINE_MIN_OUTPUT_TOKENS), label);
       const refit = fit(prompt, { maxContext, maxTokens: result });
       assert.equal(refit.trimmed, false, label);
@@ -100,7 +99,8 @@ for (const maxContext of [8_192, 16_384, 32_768, 49_152, 128_000]) {
   }
 }
 
-// Every timeline call (first try, text-only retry and correction) is sized this way.
+// Every timeline call (first try, text-only retry and correction) goes through the wrapper, and only
+// the primary connection is wrapped, so a configured fallback still gets the original request.
 const service = readFileSync(
   new URL(
     "../packages/noodle/src/engine/packages/server/src/services/noodle/noodle-public-generation.service.ts",
@@ -108,8 +108,13 @@ const service = readFileSync(
   ),
   "utf8",
 );
-const calls = [...service.matchAll(/provider\.chatComplete\(([\w.]+), ([^)]*)\)/g)];
-assert.equal(calls.length, 3);
-for (const [, callMessages, options] of calls) assert.equal(options, `timelineOptionsFor(${callMessages}`);
+assert.deepEqual(service.match(/[\w.]*provider\.chatComplete\([^)]*\)/gi), [
+  "this.provider.chatComplete(messages, sized)",
+  "timelineProvider.chatComplete(requestMessages, completionOptions)",
+  "timelineProvider.chatComplete(prompt.textOnlyMessages, completionOptions)",
+  "timelineProvider.chatComplete(correctionMessages, completionOptions)",
+]);
+assert.match(service, /const timelinePrimary = new NoodleTimelineBudgetProvider\(primaryProvider\);/);
+assert.match(service, /withConnectionFallbackProvider\(\{ primary: timelinePrimary, \.\.\.fallbackArgs \}\)/);
 
 console.log("noodle timeline context budget regression passed");
