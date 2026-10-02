@@ -99,7 +99,7 @@ class NoodleTimelineTooLongError extends Error {
  * the original request and fits it to its own context.
  */
 class NoodleTimelineBudgetProvider extends BaseLLMProvider {
-  /** True when this connection's last answer came back under a lowered max_tokens. */
+  /** True when this connection's last answer ran out of a lowered max_tokens. */
   answeredUnderLoweredBudget = false;
 
   constructor(private readonly provider: BaseLLMProvider) {
@@ -142,7 +142,9 @@ class NoodleTimelineBudgetProvider extends BaseLLMProvider {
     this.answeredUnderLoweredBudget = false;
     const sized = this.sized(messages, options);
     const result = await this.provider.chatComplete(messages, sized);
-    this.answeredUnderLoweredBudget = sized.maxTokens !== options.maxTokens;
+    // Only a length stop counts: an empty "error" result sends ConnectionFallbackProvider to the
+    // fallback, whose own length stop must not be read as this connection's.
+    this.answeredUnderLoweredBudget = sized.maxTokens !== options.maxTokens && result.finishReason === "length";
     return result;
   }
 
