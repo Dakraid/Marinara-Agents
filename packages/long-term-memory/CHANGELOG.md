@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 1.3.37 — 2026-10-02
+
+- The description now says what it does in plain words.
+
 ## 1.3.36 — 2026-10-02
 
 - Drop the cached vault scan as official maintenance quarantines a malformed note, so full reads and recall stop serving the removed note's id and text without a package restart.
