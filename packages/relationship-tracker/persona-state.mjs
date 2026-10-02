@@ -209,7 +209,11 @@ export function createPersonaStateRepository(runtime) {
     if (!Array.isArray(proposed) || (stalePolicy !== "skip" && stalePolicy !== "reject")) fail("Automatic persona update options are invalid.");
     return persistence.withChatLock(chatId, async () => {
       const scope = await resolveScope(chatId);
-      if (!scope.persona) return null;
+      // Persona removed while the model ran: stale like a persona switch, so History must not report success.
+      if (!scope.persona) {
+        if (stalePolicy === "reject" && proposed.length > 0) fail("Persona state changed while the model was running; retry the operation.", { code: "persona_state_stale", statusCode: 409 });
+        return null;
+      }
       const current = await readDocument(chatId);
       const state = current?.state ?? { schemaVersion: 1, chatId, showPersona: true, perceptions: [] };
       if ((current?.revision ?? null) !== expectedStateRevision) {

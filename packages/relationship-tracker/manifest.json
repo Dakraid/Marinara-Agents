@@ -68,8 +68,8 @@
     },
     {
       "path": "persona-state.mjs",
-      "sha256": "685f7290429af553f4e3cfbaee9fe1fc75863e067977665d3fb3eb014d460e42",
-      "bytes": 14565
+      "sha256": "0f212da4ccef0dcd32a9ca1f79ca0176cc4ae46ff62e80ae3abc0ca95e9da1bb",
+      "bytes": 14886
     },
     {
       "path": "persona-tracking.mjs",
