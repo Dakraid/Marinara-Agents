@@ -539,7 +539,7 @@ const features = [
     capabilityApi: { major: 1, minor: 66 },
     agent: {
       description:
-        "Scans Pokémon on first encounter and keeps the trainer's harem, pregnancies, and recent encounters in sync with the story.",
+        "Scans Pokémon on first encounter, renders a Pokédex entry card in the chat, and tracks the trainer's active harem, pregnancies, and recent encounters.",
       phase: "post_processing",
       runtimeDisabled: false,
       execution: "pipeline",

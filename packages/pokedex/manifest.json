@@ -39,8 +39,8 @@
   "files": [
     {
       "path": "agents.json",
-      "sha256": "1bd84cb46db7b84b045dfec25dd1ce66a17a4ced15228a46b695329a6aa57474",
-      "bytes": 3802
+      "sha256": "318e8af98988ca3b23cd76034238522da1bfb90a298d6b00444a766a451134b8",
+      "bytes": 3831
     },
     {
       "path": "server.mjs",

@@ -182,6 +182,12 @@
       "palette": "emerald, ruby, sapphire, gold"
     },
     {
+      "id": "pokedex",
+      "name": "Pokédex Scanner",
+      "concept": "Mari kneels on one knee, grinning with excitement, holding a small red handheld scanner toward a cute tiny orange fox-like creature with a cream belly and a flame-tipped tail, while a glowing translucent cyan holographic scan card with a heart meter and a row of stars hovers above the device.",
+      "palette": "pokedex red, white, luminous cyan, deep navy, warm gold"
+    },
+    {
       "id": "poker",
       "name": "Poker",
       "concept": "Mari sits at a friendly poker table with a confident smile, fanning a small hand of playing cards while colorful chips arc toward the center.",

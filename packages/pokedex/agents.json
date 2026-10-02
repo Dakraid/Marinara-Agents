@@ -2,7 +2,7 @@
   {
     "id": "pokedex",
     "name": "Pokédex Scanner",
-    "description": "Scans Pokémon on first encounter and keeps the trainer's harem, pregnancies, and recent encounters in sync with the story.",
+    "description": "Scans Pokémon on first encounter, renders a Pokédex entry card in the chat, and tracks the trainer's active harem, pregnancies, and recent encounters.",
     "author": "Pasta Devs",
     "phase": "post_processing",
     "enabledByDefault": false,
