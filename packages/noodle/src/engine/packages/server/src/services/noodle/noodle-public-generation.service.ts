@@ -12,9 +12,9 @@ import { resolveStoredChatOptions, resolveStoredMaxTokens } from "../generation/
 import type { ImageCaptioningRuntime } from "../generation/image-captioning-runtime.js";
 import { clampGenerationMaxOutputTokens } from "../generation/output-token-limits.js";
 import { noodleSamplingOptions } from "./noodle-sampling-options.js";
-import { noodleTimelineRefreshMaxTokens } from "./noodle-post-target.js";
+import { noodleTimelineMaxTokensForPrompt, noodleTimelineRefreshMaxTokens } from "./noodle-post-target.js";
 import { withConnectionFallbackProvider } from "../llm/connection-fallback-provider.js";
-import { llmFetch, type ChatMessage } from "../llm/base-provider.js";
+import { fitMessagesToContext, llmFetch, type ChatMessage } from "../llm/base-provider.js";
 import { createLLMProvider } from "../llm/provider-registry.js";
 import { createCharacterGalleryStorage } from "../storage/character-gallery.storage.js";
 import { createCharactersStorage } from "../storage/characters.storage.js";
@@ -320,9 +320,36 @@ export function createPublicNoodleGenerationService(db: DB) {
           debugMode,
           responseFormat: noodleResponseFormat(input.connection.model, "timeline"),
         } as const;
+        // Size the answer per call so the provider never has to cut the prompt to fit the context.
+        const timelineOptionsFor = (messages: ChatMessage[]) => {
+          const fit = fitMessagesToContext(messages, {
+            maxContext: input.connection.maxContext,
+            maxTokens: timelineMaxTokens,
+          });
+          const maxTokens = noodleTimelineMaxTokensForPrompt(fit, timelineMaxTokens);
+          if (maxTokens === null) {
+            logger.warn(
+              "[noodle] The timeline prompt needs ~%d of the connection's %d context tokens, leaving no room for an answer",
+              fit.estimatedTokensBefore,
+              fit.maxContext,
+            );
+            throw new Error(
+              "The timeline prompt is too long for this connection's context window. No timeline changes were saved. Lower Accounts per refresh, or turn off Lorebook context or Allow Noodle references on some chats.",
+            );
+          }
+          if (maxTokens < timelineMaxTokens)
+            logDebugOverride(
+              debugMode,
+              "[debug/noodle] Lowered the answer budget from %d to %d tokens so the whole prompt fits the %d-token context",
+              timelineMaxTokens,
+              maxTokens,
+              fit.maxContext,
+            );
+          return { ...completionOptions, maxTokens };
+        };
         let result: Awaited<ReturnType<typeof provider.chatComplete>>;
         try {
-          result = await provider.chatComplete(requestMessages, completionOptions);
+          result = await provider.chatComplete(requestMessages, timelineOptionsFor(requestMessages));
         } catch (error) {
           if (
             !canRetryNoodleVisionRequest(firstAttemptKind, prompt.visionAttachmentCount) ||
@@ -340,7 +367,7 @@ export function createPublicNoodleGenerationService(db: DB) {
           );
           requestMessages = prompt.textOnlyMessages;
           firstAttemptKind = "text_only_fallback";
-          result = await provider.chatComplete(prompt.textOnlyMessages, completionOptions);
+          result = await provider.chatComplete(prompt.textOnlyMessages, timelineOptionsFor(prompt.textOnlyMessages));
         }
         let content = result.content ?? "";
         logDebugOverride(
@@ -398,7 +425,7 @@ export function createPublicNoodleGenerationService(db: DB) {
             "[debug/noodle] Correction prompt sent to model:\n%s",
             formatNoodleMessagesForLog(correctionMessages),
           );
-          result = await provider.chatComplete(correctionMessages, completionOptions);
+          result = await provider.chatComplete(correctionMessages, timelineOptionsFor(correctionMessages));
           content = result.content ?? "";
           logDebugOverride(
             debugMode,
