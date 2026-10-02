@@ -520,7 +520,7 @@ const features = [
   {
     id: "pokedex",
     version: "0.1.0",
-    minEngineVersion: "2.4.4",
+    minEngineVersion: "2.4.6",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Pokédex Scanner",
     description:
@@ -536,7 +536,7 @@ const features = [
     ownedSourcePaths: pokedexOwnedSourcePaths,
     engineBoundaryPath: join(packagesDir, "pokedex/engine-boundary.json"),
     boundaryDisplayName: "Pokédex Scanner",
-    capabilityApi: { major: 1, minor: 14 },
+    capabilityApi: { major: 1, minor: 66 },
     agent: {
       description:
         "Scans Pokémon on first encounter and keeps the trainer's harem, pregnancies, and recent encounters in sync with the story.",
@@ -729,7 +729,7 @@ const pokedexBoundary = selectedFeatures.some((feature) => feature.id === "poked
       sourceRoot: pokedexSourceRoot,
       boundaryPath: join(packagesDir, "pokedex/engine-boundary.json"),
       displayName: "Pokédex Scanner",
-      capabilityApi: { major: 1, minor: 14 },
+      capabilityApi: { major: 1, minor: 66 },
     })
   : null;
 
