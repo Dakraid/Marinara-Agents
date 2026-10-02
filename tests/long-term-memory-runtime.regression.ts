@@ -25,10 +25,16 @@ async function main() {
   Module._initPaths();
   const source = "../packages/long-term-memory/src/engine/packages/server/src/services/long-term-memory";
   const { activate } = await import(`${source}/server-entry.ts`);
-  const { longTermMemoryRecallIndexPath, parseLtmRecallIndex, rebuildLongTermMemoryIndexes } = await import(
-    `${source}/rebuild.ts`
-  );
+  const {
+    longTermMemoryRecallIndexPath,
+    parseLtmRecallIndex,
+    rebuildLongTermMemoryIndexes,
+    loadOrRebuildLongTermMemoryIndexes,
+  } = await import(`${source}/rebuild.ts`);
+  const { withLtmVaultLock } = await import(`${source}/vault-lock.ts`);
+  const { LongTermMemoryStorage } = await import(`${source}/storage.ts`);
   const { ltmIndexStatePath, readLtmIndexState } = await import(`${source}/index-state.ts`);
+  const { repairLongTermMemory } = await import(`${source}/maintenance.ts`);
   const { retrieveLongTermMemory } = await import(`${source}/retrieval.ts`);
   const { applyLtmBudget } = await import(`${source}/budget.ts`);
   const { serializeLongTermMemoryPrompt } = await import(`${source}/prompt.ts`);
@@ -1264,6 +1270,309 @@ async function main() {
         preferencesBeforeUninstall,
         "uninstall and reinstall must preserve exact agent preference bytes",
       );
+
+      // #1178: reconcile index freshness under the vault lock and honor recall cancellation.
+      {
+        const vaultRoot = storage.root;
+        const recallIndexPath = longTermMemoryRecallIndexPath(vaultRoot);
+        const deferred = () => {
+          let resolve!: () => void;
+          const promise = new Promise<void>((next) => (resolve = next));
+          return { promise, resolve };
+        };
+
+        // Concurrent stale loaders: while the vault lock is held, only a buggy loader's
+        // pre-lock freshness read can run; a fixed loader queues before reading. Releasing
+        // the lock must produce exactly one rebuild.
+        await storage.createNote(note("world_1178_lock", "chat-a", "A cobalt archive lock-coordination entry."));
+        const concurrentEmbeds: string[][] = [];
+        const concurrentAdapter = {
+          spaceId: "test-space",
+          label: "concurrent test embeddings",
+          async embed(texts: string[]) {
+            concurrentEmbeds.push(texts);
+            return texts.map(() => [1, 0]);
+          },
+        };
+        const originalListNotes = LongTermMemoryStorage.prototype.listNotes;
+        let preLockReads = 0;
+        LongTermMemoryStorage.prototype.listNotes = async function (this: { root: string }, ...args: unknown[]) {
+          const notes = await originalListNotes.apply(this, args);
+          if (this.root === vaultRoot) preLockReads += 1;
+          return notes;
+        };
+        const lockHold = deferred();
+        const holder = withLtmVaultLock(vaultRoot, () => lockHold.promise);
+        let firstLoad: Promise<unknown> | undefined;
+        let secondLoad: Promise<unknown> | undefined;
+        try {
+          firstLoad = loadOrRebuildLongTermMemoryIndexes(vaultRoot, concurrentAdapter, []);
+          secondLoad = loadOrRebuildLongTermMemoryIndexes(vaultRoot, concurrentAdapter, []);
+          for (let turn = 0; turn < 100 && preLockReads < 2; turn += 1) {
+            await new Promise((next) => setImmediate(next));
+          }
+        } finally {
+          LongTermMemoryStorage.prototype.listNotes = originalListNotes;
+          lockHold.resolve();
+        }
+        await Promise.all([holder, firstLoad, secondLoad]);
+        assert.equal(
+          concurrentEmbeds.length,
+          1,
+          "concurrent stale loaders must recheck freshness under the lock and rebuild once",
+        );
+
+        // Recall cancellation must reach rebuild embedding work, avoid publishing after
+        // abort, and release the vault lock so a queued reader proceeds.
+        await storage.createNote(note("world_1178_abort", "chat-a", "A cobalt archive cancellation entry."));
+        const embeddingEntered = deferred();
+        const releaseEmbedding = deferred();
+        let rebuildSignal: AbortSignal | undefined;
+        const originalConcurrentEmbed = concurrentAdapter.embed;
+        concurrentAdapter.embed = async (texts: string[], signal?: AbortSignal) => {
+          if (texts.length > 1) {
+            rebuildSignal = signal;
+            embeddingEntered.resolve();
+            await releaseEmbedding.promise;
+          }
+          return originalConcurrentEmbed(texts);
+        };
+        const abortController = new AbortController();
+        let waiterDone = false;
+        let recallOutcome: { error?: Error } | undefined;
+        try {
+          const pendingRecall = retrieveLongTermMemory({
+            root: vaultRoot,
+            embeddingAdapter: concurrentAdapter,
+            signal: abortController.signal,
+            queryText: "cobalt archive",
+            scope: { chatId: "chat-a", chatIds: ["chat-a"] },
+            mode: "roleplay",
+            semanticWeight: 0,
+          }).then(
+            () => ({}),
+            (error: Error) => ({ error }),
+          );
+          await embeddingEntered.promise;
+          assert.equal(rebuildSignal, abortController.signal, "recall cancellation must reach rebuild embedding work");
+          const waiter = storage.listNotes().then(() => {
+            waiterDone = true;
+          });
+          abortController.abort();
+          releaseEmbedding.resolve();
+          recallOutcome = await pendingRecall;
+          await waiter;
+        } finally {
+          concurrentAdapter.embed = originalConcurrentEmbed;
+          releaseEmbedding.resolve();
+        }
+        assert.equal(waiterDone, true, "cancelled rebuild must release the vault lock for waiters");
+        assert.equal(recallOutcome?.error?.name, "AbortError", "cancelled recall must not resolve after abort");
+
+        // Cancellation during a semantic upgrade must not quarantine the valid lexical
+        // index or suppress a later upgrade retry.
+        await rebuildLongTermMemoryIndexes({ root: vaultRoot, embeddingAdapter: null, stopWords: [] });
+        const lexicalIndexBytes = await readFile(recallIndexPath, "utf8");
+        const upgradeController = new AbortController();
+        const abortingAdapter = {
+          spaceId: "test-space",
+          label: "aborting test embeddings",
+          async embed() {
+            upgradeController.abort();
+            throw new DOMException("cancelled", "AbortError");
+          },
+        };
+        await assert.rejects(
+          () => loadOrRebuildLongTermMemoryIndexes(vaultRoot, abortingAdapter, [], upgradeController.signal),
+          { name: "AbortError" },
+          "a cancelled semantic upgrade must surface cancellation",
+        );
+        assert.equal(
+          await readFile(recallIndexPath, "utf8"),
+          lexicalIndexBytes,
+          "cancellation must not quarantine or rewrite the valid lexical index",
+        );
+        const upgraded = await loadOrRebuildLongTermMemoryIndexes(vaultRoot, {
+          spaceId: "test-space",
+          label: "retry test embeddings",
+          async embed(texts: string[]) {
+            return texts.map(() => [1, 0]);
+          },
+        });
+        assert.ok(upgraded.embeddings.embeddedChunkCount > 0, "a later semantic upgrade must still be attempted");
+
+        // A cancelled recall that is handed an already-current index must reject before
+        // ranking, not return a result the generation path could still publish.
+        const preloadedController = new AbortController();
+        preloadedController.abort();
+        const preloadedIndex = parseLtmRecallIndex(JSON.parse(await readFile(recallIndexPath, "utf8")));
+        await assert.rejects(
+          () =>
+            retrieveLongTermMemory({
+              root: vaultRoot,
+              embeddingAdapter: null,
+              signal: preloadedController.signal,
+              index: preloadedIndex,
+              queryText: "cobalt archive",
+              scope: { chatId: "chat-a", chatIds: ["chat-a"] },
+              mode: "roleplay",
+              semanticWeight: 0,
+            }),
+          { name: "AbortError" },
+          "a cancelled recall with a preloaded index must not return results",
+        );
+
+        // Cancellation stopped in flight must not issue another embedding batch.
+        const batchController = new AbortController();
+        let batchCalls = 0;
+        await assert.rejects(
+          () =>
+            embedLongTermMemoryTexts(
+              Array.from({ length: 129 }, (_, index) => `chunk-${index}`),
+              {
+                signal: batchController.signal,
+                embeddingAdapter: {
+                  spaceId: "test-space",
+                  label: "batch test embeddings",
+                  async embed(texts: string[]) {
+                    batchCalls += 1;
+                    batchController.abort();
+                    return texts.map(() => [1]);
+                  },
+                },
+              },
+            ),
+          { name: "AbortError" },
+          "cancellation must stop further embedding batches",
+        );
+        assert.equal(batchCalls, 1, "only the in-flight batch may run after cancellation");
+      }
+
+      // #1179: the private vault-mutation boundary serializes host publication/rollback
+      // and resets the package-owned caches so reads never see a partially published vault.
+      {
+        const vaultRoot = storage.root;
+        const liveRuntime = services.get("long-term-memory:runtime");
+        assert.equal(
+          typeof liveRuntime.withVaultMutation,
+          "function",
+          "the runtime service must expose a private vault-mutation hook",
+        );
+        assert.equal(typeof liveRuntime.recall, "function", "recall must remain registered");
+        assert.equal(
+          typeof liveRuntime.recordPromptAccepted,
+          "function",
+          "recordPromptAccepted must remain registered",
+        );
+
+        const mutationPath = join(vaultRoot, "vault", "world", "world_1179_mutation.json");
+        await storage.createNote(note("world_1179_mutation", "chat-a", "Original observatory text."));
+        await rebuildLongTermMemoryIndexes({ root: vaultRoot, embeddingAdapter: null, stopWords: [] });
+        const currentMutationText = async () =>
+          (await storage.listNotes()).find((entry) => entry.id === "world_1179_mutation")?.sections.facts.text;
+        assert.equal(await currentMutationText(), "Original observatory text.", "the snapshot must warm first");
+
+        const published = note("world_1179_mutation", "chat-a", "Replacement from a trusted host.");
+        assert.equal(
+          await liveRuntime.withVaultMutation(async () => {
+            await writeFile(mutationPath, `${JSON.stringify(published)}\n`);
+            return "published";
+          }),
+          "published",
+          "the boundary must preserve the operation return value",
+        );
+        assert.equal(
+          await currentMutationText(),
+          "Replacement from a trusted host.",
+          "publication must reset the cached snapshot before the next read",
+        );
+
+        const deferred = () => {
+          let resolve!: () => void;
+          const promise = new Promise<void>((next) => (resolve = next));
+          return { promise, resolve };
+        };
+        const mutationEntered = deferred();
+        const mutationGate = deferred();
+        const serialized = note("world_1179_mutation", "chat-a", "Serialized replacement text.");
+        const mutation = liveRuntime.withVaultMutation(async () => {
+          await writeFile(mutationPath, "{\n");
+          mutationEntered.resolve();
+          await mutationGate.promise;
+          await writeFile(mutationPath, `${JSON.stringify(serialized)}\n`);
+          return "published";
+        });
+        await mutationEntered.promise;
+        let queuedReadSettled = false;
+        const queuedRead = storage.listNotes().finally(() => {
+          queuedReadSettled = true;
+        });
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        assert.equal(
+          queuedReadSettled,
+          false,
+          "a read queued behind the mutation must stay pending while the mutation holds the vault",
+        );
+        mutationGate.resolve();
+        const [mutationResult, queuedNotes] = await Promise.all([mutation, queuedRead]);
+        assert.equal(mutationResult, "published", "the serialized mutation must still complete");
+        assert.equal(
+          queuedNotes.find((entry) => entry.id === "world_1179_mutation")?.sections.facts.text,
+          "Serialized replacement text.",
+          "a read queued behind the mutation must rebuild from the published bytes, not the warm snapshot",
+        );
+
+        const intermediate = note("world_1179_mutation", "chat-a", "Intermediate publication text.");
+        const restored = note("world_1179_mutation", "chat-a", "Restored after a failed publication.");
+        await assert.rejects(
+          liveRuntime.withVaultMutation(async () => {
+            await writeFile(mutationPath, `${JSON.stringify(intermediate)}\n`);
+            // A host read during publication warms the package snapshot with the intermediate bytes.
+            await storage.listNotes();
+            await writeFile(mutationPath, `${JSON.stringify(restored)}\n`);
+            throw new Error("host publication failed");
+          }),
+          /host publication failed/u,
+          "the boundary must propagate the operation error",
+        );
+        assert.equal(
+          await currentMutationText(),
+          "Restored after a failed publication.",
+          "rollback must reset the cache so the next read sees the restored disk bytes, not the intermediate snapshot",
+        );
+        assert.equal(
+          (await storage.listNotes()).some((entry) => entry.id === "world_1179_mutation"),
+          true,
+          "a failed mutation must release the vault lock for later reads",
+        );
+
+        // Official maintenance quarantine must also drop the note from live recall.
+        await storage.createNote(note("world_1179_quarantine", "chat-a", "Quarantined recall text."));
+        await rebuildLongTermMemoryIndexes({ root: vaultRoot, embeddingAdapter: null, stopWords: [] });
+        await writeFile(join(vaultRoot, "vault", "world", "world_1179_quarantine.json"), "{");
+        const quarantineRepair = await repairLongTermMemory(["quarantine_malformed_notes"], vaultRoot);
+        assert.equal(
+          quarantineRepair.actions[0]?.count,
+          1,
+          "official maintenance must quarantine the malformed recall note",
+        );
+        const quarantinedRecall = await retrieveLongTermMemory({
+          root: vaultRoot,
+          embeddingAdapter: null,
+          queryText: "Quarantined recall text.",
+          scope: { chatId: "chat-a", chatIds: ["chat-a"] },
+          mode: "roleplay",
+          semanticWeight: 0,
+        });
+        assert.equal(
+          quarantinedRecall.chunks.some(
+            (hit) =>
+              hit.chunk.noteId === "world_1179_quarantine" || hit.chunk.text.includes("Quarantined recall text."),
+          ),
+          false,
+          "recall must not serve a note quarantined by official maintenance",
+        );
+      }
     },
     [
       () => cleanup?.(),
