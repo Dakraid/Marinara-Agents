@@ -433,12 +433,12 @@ const features = [
   },
   {
     id: "long-term-memory",
-    version: "1.3.36",
+    version: "1.3.37",
     minEngineVersion: "2.4.1",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Long-Term Memory",
     description:
-      "Extracts durable memories from chat summaries, character records, and lorebooks, then recalls relevant context from a package-owned vault.",
+      "Remembers important things from your chat summaries, characters, and lorebooks, and brings them back when they matter.",
     category: "misc",
     kind: ["agent"],
     modes: ["conversation", "roleplay", "game"],
@@ -458,12 +458,12 @@ const features = [
   },
   {
     id: "memory-nag",
-    version: "1.1.2",
+    version: "1.1.3",
     minEngineVersion: "2.4.4",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Memory Nag",
     description:
-      "Keeps a short per-chat vault of roleplay memories and recalls only the unresolved details that matter to the current turn.",
+      "Remembers loose ends from your roleplay, like promises and open questions, and reminds the AI when they matter.",
     category: "tracker",
     kind: ["agent"],
     modes: ["roleplay"],
@@ -478,7 +478,7 @@ const features = [
     capabilityApi: { major: 1, minor: 14 },
     agent: {
       description:
-        "Keeps a short per-chat vault of roleplay memories and recalls only the unresolved details that matter to the current turn.",
+        "Remembers loose ends from your roleplay, like promises and open questions, and reminds the AI when they matter.",
       phase: "post_processing",
       runtimeDisabled: false,
       execution: "pipeline",
@@ -513,12 +513,12 @@ const features = [
   },
   {
     id: "hierarchical-maps",
-    version: "1.5.0",
+    version: "1.5.1",
     minEngineVersion: "2.4.2",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "World Maps",
     description:
-      "Adds persistent hierarchical locations, durable shared worlds, reusable artwork, customizable Direct Link lines, and movement to Roleplay and Game.",
+      "Adds world maps to Roleplay and Game, from whole regions down to single rooms, with art and travel between places.",
     category: "tracker",
     kind: ["agent", "maps"],
     modes: ["roleplay", "game"],
