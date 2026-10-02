@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page, type Route } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -457,6 +457,52 @@ test.describe("package-owned Noodle interface", () => {
       await page.request
         .put("/api/app-settings/translator-defaults", { data: { value: "" }, timeout: 5_000 })
         .catch(() => undefined);
+    }
+  });
+
+  test("a translation hidden while loading cannot cancel the next one", async ({ page }) => {
+    // Translate, hide, and translate again while the first request is still out; its late error must not count.
+    const held: Route[] = [];
+    await page.route("**/api/translate", (route) => {
+      held.push(route);
+    });
+    await page.request.get("/api/noodle");
+    const postResponse = await page.request.post("/api/noodle/posts", {
+      data: {
+        authorKind: "character",
+        authorEntityId: "__professor_mari__",
+        content: `Stale translation regression ${Date.now()}`,
+      },
+    });
+    expect(postResponse.ok()).toBe(true);
+    const post = (await postResponse.json()) as { id: string };
+    try {
+      await page.goto("/");
+      await openNoodle(page);
+      const article = page.locator(`[data-noodle-post-id="${post.id}"]`);
+      const translation = article.locator("[data-noodle-translation]");
+      const choose = async (action: "Translate" | "Hide translation") => {
+        await article.getByRole("button", { name: "Post actions", exact: true }).click();
+        await article.getByRole("button", { name: action, exact: true }).click();
+      };
+      await choose("Translate");
+      await expect.poll(() => held.length).toBe(1);
+      await choose("Hide translation");
+      await expect(translation).toHaveCount(0);
+      await choose("Translate");
+      await expect.poll(() => held.length).toBe(2);
+      await expect(translation).toContainText("Translating…");
+
+      const staleFailure = page.waitForResponse(
+        (response) => new URL(response.url()).pathname === "/api/translate" && response.status() === 500,
+      );
+      await held[0].fulfill({ status: 500, json: { error: "Stale translation failed" } });
+      await staleFailure;
+      await held[1].fulfill({ json: { translatedText: "Fresh translation" } });
+      await expect(translation).toContainText("Fresh translation");
+      await expect(page.getByText("Stale translation failed")).toHaveCount(0);
+    } finally {
+      await page.request.delete(`/api/noodle/posts/${post.id}`, { timeout: 5_000 }).catch(() => undefined);
     }
   });
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { api } from "../../lib/api-client";
@@ -43,30 +43,38 @@ async function translateNoodleText(text: string) {
   return result.translatedText;
 }
 
+let lastRequest = 0;
+
 /** Translations shown under posts and comments, keyed by post or comment id. */
 export function useNoodleTranslations() {
   const { t: localizeUi } = useUiTranslation();
   const [shown, setShown] = useState<Record<string, NoodleTranslation>>({});
-  const hide = (id: string, source: string) =>
-    setShown((current) => {
-      if (current[id]?.source !== source) return current;
-      const { [id]: _hidden, ...rest } = current;
-      return rest;
-    });
+  // The request each shown translation waits on. Hiding forgets it, so an answer or error that arrives
+  // after a hide, or after a newer request, changes nothing and shows no toast. A ref, because the
+  // toast has to be decided outside a state update.
+  const requests = useRef<Record<string, number>>({});
+  const hide = (id: string) => {
+    delete requests.current[id];
+    setShown(({ [id]: _hidden, ...rest }) => rest);
+  };
   return {
     /** Only a translation of this exact text, so an edited post or comment drops its old one. */
     read: (id: string, source: string): NoodleTranslation | null => (shown[id]?.source === source ? shown[id] : null),
     toggle: (id: string, source: string) => {
       if (shown[id]?.source === source) {
-        hide(id, source);
+        hide(id);
         return;
       }
+      const request = ++lastRequest;
+      requests.current[id] = request;
       setShown((current) => ({ ...current, [id]: { source, text: null } }));
       translateNoodleText(source).then(
-        (text) =>
-          setShown((current) => (current[id]?.source === source ? { ...current, [id]: { source, text } } : current)),
+        (text) => {
+          if (requests.current[id] === request) setShown((current) => ({ ...current, [id]: { source, text } }));
+        },
         (error: unknown) => {
-          hide(id, source);
+          if (requests.current[id] !== request) return;
+          hide(id);
           toast.error(
             error instanceof Error && error.message
               ? error.message
