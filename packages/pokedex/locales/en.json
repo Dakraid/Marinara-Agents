@@ -1,0 +1,17 @@
+{
+  "$schema": "../../../schemas/package-localization.schema.json",
+  "_meta": {
+    "locale": "en",
+    "direction": "ltr"
+  },
+  "package": {
+    "name": "Pokédex Scanner",
+    "description": "Scans Pokémon on first encounter, renders a Pokédex entry card in the chat, and tracks the trainer's active harem, pregnancies, and recent encounters. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode. Once active, configure it in its standalone Pokédex Scanner section."
+  },
+  "agents": {
+    "pokedex": {
+      "name": "Pokédex Scanner",
+      "description": "Scans Pokémon on first encounter and keeps the trainer's harem, pregnancies, and recent encounters in sync with the story."
+    }
+  }
+}

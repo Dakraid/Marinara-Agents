@@ -157,6 +157,11 @@ export const OFFICIAL_PACKAGE_GUIDANCE = Object.freeze({
     modes: ["game"],
     activation: "Install it, then choose Pixelforge as the Experience when creating a Game Mode chat.",
   },
+  pokedex: {
+    modes: ["roleplay"],
+    activation:
+      "Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode. Once active, configure it in its standalone Pokédex Scanner section.",
+  },
   // A ruleset is data, not an Agent: nothing is added under Chat Settings and
   // nothing runs. It becomes selectable in the Game Mode setup wizard instead.
   "ruleset-5e-2014": {

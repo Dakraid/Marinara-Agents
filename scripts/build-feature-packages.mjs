@@ -99,6 +99,12 @@ const memoryNagOwnedSourcePaths = [
   "packages/server/src/services/memory-nag",
   "packages/client/src/features/memory-nag",
 ];
+const pokedexSourceRoot = join(packagesDir, "pokedex/src/engine");
+const pokedexOwnedSourcePaths = [
+  "packages/shared/src/features/agents/pokedex",
+  "packages/server/src/services/pokedex",
+  "packages/client/src/features/pokedex",
+];
 const noodleSourceRoot = join(packagesDir, "noodle/src/engine");
 const noodleOwnedSourcePaths = [
   "packages/client/src/components/noodle",
@@ -194,7 +200,7 @@ async function prepareFeatureBuildRoot(feature) {
       cleanup: () => rm(buildRoot, { recursive: true, force: true }),
     };
   }
-  if (feature.id === "long-term-memory" || feature.id === "memory-nag") {
+  if (feature.id === "long-term-memory" || feature.id === "memory-nag" || feature.id === "pokedex") {
     if (!existsSync(feature.packageSourceRoot)) {
       throw new Error(`Missing package-owned ${feature.name} source`);
     }
@@ -512,6 +518,73 @@ const features = [
     },
   },
   {
+    id: "pokedex",
+    version: "0.1.0",
+    minEngineVersion: "2.4.4",
+    maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
+    name: "Pokédex Scanner",
+    description:
+      "Scans Pokémon on first encounter, renders a Pokédex entry card in the chat, and tracks the trainer's active harem, pregnancies, and recent encounters.",
+    category: "tracker",
+    kind: ["agent"],
+    modes: ["roleplay"],
+    permissions: ["agent-runtime", "chat-read", "prompt-context", "routes", "storage", "ui"],
+    serverImport: "packages/server/src/services/pokedex/server-entry.ts",
+    serverEntry: true,
+    clientImport: "packages/client/src/features/pokedex/client-entry.tsx",
+    packageSourceRoot: pokedexSourceRoot,
+    ownedSourcePaths: pokedexOwnedSourcePaths,
+    engineBoundaryPath: join(packagesDir, "pokedex/engine-boundary.json"),
+    boundaryDisplayName: "Pokédex Scanner",
+    capabilityApi: { major: 1, minor: 14 },
+    agent: {
+      description:
+        "Scans Pokémon on first encounter and keeps the trainer's harem, pregnancies, and recent encounters in sync with the story.",
+      phase: "post_processing",
+      runtimeDisabled: false,
+      execution: "pipeline",
+      defaultInjectAsSection: false,
+      defaultSettings: {
+        resultType: "context_injection",
+        jsonContextOutput: true,
+        contextSize: 8,
+        maxTokens: 4096,
+        temperature: 0.7,
+        contextSources: {
+          chatHistory: true,
+          characters: false,
+          persona: false,
+          activatedLorebookEntries: false,
+          chatSummary: false,
+          authorNotes: false,
+          trackerData: false,
+          recalledMemories: false,
+        },
+      },
+      defaultPromptTemplate: [
+        "You are the Pokédex Scanner for this roleplay. The scanner's current state is supplied as JSON in <agent_runtime_context>: knownDex lists every species key already scanned, plus harem, pregnancies, recentEncounters, and settings.",
+        "Read the latest story turn and output JSON only — never story text, never commentary.",
+        "",
+        'SCAN — When a Pokémon physically appears or is directly interacted with for the first time and its species key is not in knownDex, create one full scan entry. A mere mention does not count. Never scan humans. Use the species\' official National Pokédex number, category, height, and weight. Take gender from the story (male / female / futanari). Invent: a unique dere-combination archetype; a speech-pattern description; 5-10 words of sexual knowledge; 10-20 words of anatomical details (size, shape, color, curve); a 2-7 word sexual evolution requirement; starting affection (rating 0-5, a state word, a 1-5 word cause) and heat (rating 0-5, a state word, a short suggestion for the current state) based on the first impression; a 5-20 word pervy comic review from the trainer; starRating 0-5; verdict "smash" or "pass".',
+        "",
+        "UPDATE — For species already in knownDex (or scanned in this pass), report affection, heat, relationshipStatus, lastInteraction, or currentStatus only when the latest turn actually changed them. Values are absolute, never deltas.",
+        "",
+        'TRACK — haremJoins and haremLeaves only on clear story events (a Pokémon joins or leaves the trainer\'s active group). pregnancyEvents: {"type":"bred","key","eggsExpected","sire"} starts a pregnancy; {"type":"laid","key"} ends one. Record every Pokémon encountered this turn in encounters with outcome met, joined, left, battled, or fled.',
+        "",
+        'Species keys are the species name lowercased (e.g. "braixen"). Skip everything when settings.autoScan is false except harem/pregnancy upkeep for already-known species.',
+        "",
+        'Output exactly one JSON object; every array may be empty. Always include "text":"" — the Engine requires the field, and this agent never injects prompt text directly.',
+        '{"text":"","newScans":[{"species","dexNumber","name","category","gender","archetype","speech","heightM","weightKg","sexualKnowledge","anatomicalDetails","evolutionRequirement","affection":{"rating","state","cause"},"heat":{"rating","state","advice"},"trainerReview","starRating","verdict"}],"updates":[{"key","affection","heat","relationshipStatus","lastInteraction","currentStatus"}],"haremJoins":["key"],"haremLeaves":["key"],"pregnancyEvents":[{"type","key","eggsExpected","sire"}],"encounters":[{"key","outcome"}]}',
+        "",
+        "This roleplay may contain adult content; always fill the SEXUAL fields of a scan without refusing.",
+      ].join("\n"),
+    },
+    contributions: {
+      agentDetail: { agentIds: ["pokedex"] },
+      slots: ["chat-settings", "roleplay-tracker", "tracker-panel"],
+    },
+  },
+  {
     id: "hierarchical-maps",
     version: "1.5.0",
     minEngineVersion: "2.4.2",
@@ -648,6 +721,14 @@ const memoryNagBoundary = selectedFeatures.some((feature) => feature.id === "mem
       sourceRoot: memoryNagSourceRoot,
       boundaryPath: join(packagesDir, "memory-nag/engine-boundary.json"),
       displayName: "Memory Nag",
+      capabilityApi: { major: 1, minor: 14 },
+    })
+  : null;
+const pokedexBoundary = selectedFeatures.some((feature) => feature.id === "pokedex")
+  ? await assertPackagePrivateImportBoundary({
+      sourceRoot: pokedexSourceRoot,
+      boundaryPath: join(packagesDir, "pokedex/engine-boundary.json"),
+      displayName: "Pokédex Scanner",
       capabilityApi: { major: 1, minor: 14 },
     })
   : null;
@@ -1742,7 +1823,9 @@ for (const feature of selectedFeatures) {
         ? longTermMemoryBoundary
         : feature.id === "memory-nag"
           ? memoryNagBoundary
-          : null;
+          : feature.id === "pokedex"
+            ? pokedexBoundary
+            : null;
   const manifest = {
     schemaVersion: boundary || feature.capabilityApi ? 2 : 1,
     ...(boundary
