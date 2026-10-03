@@ -1174,6 +1174,8 @@ export interface NoodlePostCardCtx {
   replyManagement?: NoodlePostCardReplyManagementCap;
   /** @mention autocomplete capability. Absent → no mention suggestions. */
   mentions?: NoodlePostCardMentionsCap;
+  /** Translate posts and comments without waiting for Translate. */
+  autoTranslate?: boolean;
 }
 
 interface NoodlePostCardControllerOptions {
@@ -1509,8 +1511,6 @@ export function NoodlePostCard({ post, ctx }: { post: NoodlePostCardModel; ctx: 
   const author = authorAccount ?? post.authorSnapshot;
   const containImage = ctx.imageFit === "contain";
   const imageCrop = readNoodlePostImageCrop(post.metadata);
-  const translations = useNoodleTranslations();
-  const postTranslation = translations.read(post.id, post.content);
 
   // Card-owned defaults for absent capability groups. Hosts pass only the capabilities they
   // support; the card fills the
@@ -1600,6 +1600,19 @@ export function NoodlePostCard({ post, ctx }: { post: NoodlePostCardModel; ctx: 
     if (!reply.parentInteractionId || !replyById.has(reply.parentInteractionId)) appendReplyBranch(reply);
   }
   for (const reply of replies) appendReplyBranch(reply);
+  // Automatic translation skips what the user's own personas wrote.
+  const autoTranslateItems = ctx.autoTranslate
+    ? [
+        ...(authorAccount?.kind === "persona" ? [] : [post]),
+        ...replies.filter(
+          (reply) => (accountById.get(reply.actorAccountId)?.kind ?? reply.actorSnapshot?.kind) !== "persona",
+        ),
+      ]
+        .map((item) => [item.id, item.content ?? ""] as const)
+        .filter(([, text]) => text.trim())
+    : null;
+  const translations = useNoodleTranslations(autoTranslateItems);
+  const postTranslation = translations.read(post.id, post.content);
   const replyTarget = replyParentInteractionId ? (replyById.get(replyParentInteractionId) ?? null) : null;
   const replyTargetActor = replyTarget
     ? (accountById.get(replyTarget.actorAccountId) ?? replyTarget.actorSnapshot)
