@@ -84,6 +84,7 @@ import {
 import { useUploadGlobalGalleryImages } from "../../hooks/use-global-gallery";
 import type { ChatImage } from "../../hooks/use-gallery";
 import type { PackageNoodleSettings, PackageNoodleSettingsUpdateInput } from "./noodle-settings-defaults";
+import { forgetNoodleTranslations, stopNoodleAutoTranslations } from "./noodle-translation";
 import {
   mergeNoodlePromptPreset,
   NOODLE_PROMPT_PRESET_LIMIT,
@@ -845,6 +846,10 @@ export function NoodleHome({ navigation, onNavigate, focusPostId, onFocusPostHan
 
   const activeNoodleView = navigation.mode === "public" ? navigation.view : navigation.mode;
   const settings = data?.settings;
+  const autoTranslatePosts = (settings as PackageNoodleSettings | undefined)?.autoTranslatePosts === true;
+  useEffect(() => {
+    if (!autoTranslatePosts) stopNoodleAutoTranslations();
+  }, [autoTranslatePosts]);
   const settingsTab: SocialSettingsTab = "noodle";
   const requestedSettingsSection: SocialSettingsSection =
     navigation.mode === "settings" ? (navigation.section ?? "general") : "general";
@@ -2841,6 +2846,7 @@ export function NoodleHome({ navigation, onNavigate, focusPostId, onFocusPostHan
       if (deleteAllConfirmation !== "DELETE") return;
       deleteAllData.mutate(undefined, {
         onSuccess: (counts) => {
+          forgetNoodleTranslations();
           setConfirmAction(null);
           setDeleteAllConfirmation("");
           toast.success(
@@ -2859,6 +2865,7 @@ export function NoodleHome({ navigation, onNavigate, focusPostId, onFocusPostHan
     }
     resetNoodleTimeline.mutate(undefined, {
       onSuccess: () => {
+        forgetNoodleTranslations();
         setFocusedPostResult(null);
         clearReplyComposer();
         setPostMenuId(null);
@@ -3812,6 +3819,19 @@ export function NoodleHome({ navigation, onNavigate, focusPostId, onFocusPostHan
           </Section>
 
           <Section
+            visible={settingsTab === "noodle" && settingsSection === "general"}
+            title={localizeUi("ui.noodle.noodlehome.translation")}
+          >
+            <ToggleSetting
+              label={localizeUi("ui.noodle.noodlehome.autoTranslatePosts")}
+              help={localizeUi("ui.noodle.noodlehome.autoTranslatePostsHelp")}
+              checked={(settings as PackageNoodleSettings).autoTranslatePosts === true}
+              disabled={updateSettings.isPending}
+              onChange={(checked) => saveSettings({ autoTranslatePosts: checked })}
+            />
+          </Section>
+
+          <Section
             visible={settingsTab === "noodle" && settingsSection === "participants"}
             title={localizeUi("ui.noodle.noodlehome.activeAccounts")}
             help={localizeUi("ui.noodle.noodlehome.controlsHowManyEligibleCharactersOrRandomUsersAre")}
@@ -4367,6 +4387,7 @@ export function NoodleHome({ navigation, onNavigate, focusPostId, onFocusPostHan
           replyMentionSuggestions,
           selectReplyMention,
         },
+        autoTranslate: autoTranslatePosts,
       }}
     />
   );

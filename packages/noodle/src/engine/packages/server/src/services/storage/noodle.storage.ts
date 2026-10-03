@@ -43,6 +43,7 @@ const DEFAULT_SETTINGS: Record<string, unknown> = {
   imageWidth: 1024,
   imageHeight: 1536,
   enableImageInterpretation: true,
+  autoTranslatePosts: false,
   imageGenerationConnectionId: null,
   imageGenerationPrompt:
     "Create either a social-media-ready character image or an in-character meme for the post. For character images, mention build, clothing, visible appearance, pose, expression, setting, lighting, mood, and composition. For memes, mention meme format, visual gag, composition, and short readable caption/text when relevant.",
@@ -388,6 +389,7 @@ export function createNoodleStorage(db: DB) {
       if ("promptPresets" in patch) patch.promptPresets = sanitizePromptPresets(patch.promptPresets);
       if ("imageWidth" in patch) patch.imageWidth = imageDimension(patch.imageWidth, 1024);
       if ("imageHeight" in patch) patch.imageHeight = imageDimension(patch.imageHeight, 1536);
+      if ("autoTranslatePosts" in patch) patch.autoTranslatePosts = bool(patch.autoTranslatePosts);
       const next = { ...(await this.getSettings()), ...patch };
       await saveSettingsRaw(next);
       const schedule = await this.getRefreshSchedule();

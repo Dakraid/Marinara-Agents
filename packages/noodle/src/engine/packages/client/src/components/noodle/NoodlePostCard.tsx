@@ -902,7 +902,10 @@ interface NoodlePostCardMentionsCap {
   selectReplyMention: (account: NoodleAccount) => void;
 }
 
-type NoodlePostCardAuthor = Pick<NoodleAuthorSnapshot, "id" | "handle" | "displayName" | "avatarUrl" | "avatarCrop">;
+type NoodlePostCardAuthor = Pick<
+  NoodleAuthorSnapshot,
+  "id" | "kind" | "handle" | "displayName" | "avatarUrl" | "avatarCrop"
+>;
 export type NoodlePostCardModel = Pick<
   NoodlePost,
   "id" | "authorAccountId" | "content" | "imageUrl" | "imagePrompt" | "metadata" | "createdAt" | "access"
@@ -1174,6 +1177,8 @@ export interface NoodlePostCardCtx {
   replyManagement?: NoodlePostCardReplyManagementCap;
   /** @mention autocomplete capability. Absent → no mention suggestions. */
   mentions?: NoodlePostCardMentionsCap;
+  /** Translate posts and comments without waiting for Translate. */
+  autoTranslate?: boolean;
 }
 
 interface NoodlePostCardControllerOptions {
@@ -1509,8 +1514,6 @@ export function NoodlePostCard({ post, ctx }: { post: NoodlePostCardModel; ctx: 
   const author = authorAccount ?? post.authorSnapshot;
   const containImage = ctx.imageFit === "contain";
   const imageCrop = readNoodlePostImageCrop(post.metadata);
-  const translations = useNoodleTranslations();
-  const postTranslation = translations.read(post.id, post.content);
 
   // Card-owned defaults for absent capability groups. Hosts pass only the capabilities they
   // support; the card fills the
@@ -1600,6 +1603,19 @@ export function NoodlePostCard({ post, ctx }: { post: NoodlePostCardModel; ctx: 
     if (!reply.parentInteractionId || !replyById.has(reply.parentInteractionId)) appendReplyBranch(reply);
   }
   for (const reply of replies) appendReplyBranch(reply);
+  // Automatic translation skips what the user's own personas wrote.
+  const autoTranslateItems = ctx.autoTranslate
+    ? [
+        ...(author?.kind === "persona" ? [] : [post]),
+        ...replies.filter(
+          (reply) => (accountById.get(reply.actorAccountId)?.kind ?? reply.actorSnapshot?.kind) !== "persona",
+        ),
+      ]
+        .map((item) => [item.id, item.content ?? ""] as const)
+        .filter(([, text]) => text.trim())
+    : null;
+  const translations = useNoodleTranslations(autoTranslateItems);
+  const postTranslation = translations.read(post.id, post.content);
   const replyTarget = replyParentInteractionId ? (replyById.get(replyParentInteractionId) ?? null) : null;
   const replyTargetActor = replyTarget
     ? (accountById.get(replyTarget.actorAccountId) ?? replyTarget.actorSnapshot)
@@ -1756,7 +1772,11 @@ export function NoodlePostCard({ post, ctx }: { post: NoodlePostCardModel; ctx: 
   // Shown under the original, as a translated chat message is; the same action hides it again.
   const renderTranslation = (translation: NoodleTranslation | null, className: string) =>
     translation && (
-      <div data-noodle-translation aria-live="polite" className="mt-2 border-t border-[var(--noodle-divider)] pt-2">
+      <div
+        data-noodle-translation
+        aria-live={translation.asked ? "polite" : "off"}
+        className="mt-2 border-t border-[var(--noodle-divider)] pt-2"
+      >
         <p className="text-[0.68rem] font-semibold text-[var(--muted-foreground)]">
           {translation.text === null
             ? localizeUi("ui.noodle.noodlepostcard.translating")
