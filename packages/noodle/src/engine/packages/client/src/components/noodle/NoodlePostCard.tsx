@@ -902,7 +902,10 @@ interface NoodlePostCardMentionsCap {
   selectReplyMention: (account: NoodleAccount) => void;
 }
 
-type NoodlePostCardAuthor = Pick<NoodleAuthorSnapshot, "id" | "handle" | "displayName" | "avatarUrl" | "avatarCrop">;
+type NoodlePostCardAuthor = Pick<
+  NoodleAuthorSnapshot,
+  "id" | "kind" | "handle" | "displayName" | "avatarUrl" | "avatarCrop"
+>;
 export type NoodlePostCardModel = Pick<
   NoodlePost,
   "id" | "authorAccountId" | "content" | "imageUrl" | "imagePrompt" | "metadata" | "createdAt" | "access"
@@ -1603,7 +1606,7 @@ export function NoodlePostCard({ post, ctx }: { post: NoodlePostCardModel; ctx: 
   // Automatic translation skips what the user's own personas wrote.
   const autoTranslateItems = ctx.autoTranslate
     ? [
-        ...(authorAccount?.kind === "persona" ? [] : [post]),
+        ...(author?.kind === "persona" ? [] : [post]),
         ...replies.filter(
           (reply) => (accountById.get(reply.actorAccountId)?.kind ?? reply.actorSnapshot?.kind) !== "persona",
         ),
@@ -1769,7 +1772,11 @@ export function NoodlePostCard({ post, ctx }: { post: NoodlePostCardModel; ctx: 
   // Shown under the original, as a translated chat message is; the same action hides it again.
   const renderTranslation = (translation: NoodleTranslation | null, className: string) =>
     translation && (
-      <div data-noodle-translation aria-live="polite" className="mt-2 border-t border-[var(--noodle-divider)] pt-2">
+      <div
+        data-noodle-translation
+        aria-live={translation.asked ? "polite" : "off"}
+        className="mt-2 border-t border-[var(--noodle-divider)] pt-2"
+      >
         <p className="text-[0.68rem] font-semibold text-[var(--muted-foreground)]">
           {translation.text === null
             ? localizeUi("ui.noodle.noodlepostcard.translating")

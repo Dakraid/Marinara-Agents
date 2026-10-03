@@ -84,7 +84,7 @@ import {
 import { useUploadGlobalGalleryImages } from "../../hooks/use-global-gallery";
 import type { ChatImage } from "../../hooks/use-gallery";
 import type { PackageNoodleSettings, PackageNoodleSettingsUpdateInput } from "./noodle-settings-defaults";
-import { forgetNoodleTranslations } from "./noodle-translation";
+import { forgetNoodleTranslations, stopNoodleAutoTranslations } from "./noodle-translation";
 import {
   mergeNoodlePromptPreset,
   NOODLE_PROMPT_PRESET_LIMIT,
@@ -846,6 +846,10 @@ export function NoodleHome({ navigation, onNavigate, focusPostId, onFocusPostHan
 
   const activeNoodleView = navigation.mode === "public" ? navigation.view : navigation.mode;
   const settings = data?.settings;
+  const autoTranslatePosts = (settings as PackageNoodleSettings | undefined)?.autoTranslatePosts === true;
+  useEffect(() => {
+    if (!autoTranslatePosts) stopNoodleAutoTranslations();
+  }, [autoTranslatePosts]);
   const settingsTab: SocialSettingsTab = "noodle";
   const requestedSettingsSection: SocialSettingsSection =
     navigation.mode === "settings" ? (navigation.section ?? "general") : "general";
@@ -4383,7 +4387,7 @@ export function NoodleHome({ navigation, onNavigate, focusPostId, onFocusPostHan
           replyMentionSuggestions,
           selectReplyMention,
         },
-        autoTranslate: (settings as PackageNoodleSettings | undefined)?.autoTranslatePosts === true,
+        autoTranslate: autoTranslatePosts,
       }}
     />
   );
