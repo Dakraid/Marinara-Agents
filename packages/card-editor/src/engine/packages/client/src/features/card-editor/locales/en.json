@@ -20,6 +20,7 @@
   "cardEditor.dialog.targets.styleLabel": "Style override for {{name}}",
   "cardEditor.dialog.targets.styleSession": "— use session style —",
   "cardEditor.dialog.targets.styleNone": "None",
+  "cardEditor.dialog.targets.unloadableBlock": "Remove cards that could not be loaded before dispatching.",
   "cardEditor.dialog.targets.remove": "Remove {{name}}",
   "cardEditor.dialog.search.placeholder": "Search characters…",
   "cardEditor.dialog.search.loading": "Searching…",

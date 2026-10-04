@@ -29,6 +29,9 @@ export interface SessionPromptMaterial {
   version: 1;
   lorebooks: LorebookLike[];
   behaviorCharacter: CharacterLike | null;
+  /** Per-target style-override cards (DESIGN §2: an override picks ANY library character, so its
+   *  fields ship with the dispatch), keyed by the TARGET characterId. Absent in pre-#241 docs. */
+  behaviorOverrideCards?: Record<string, CharacterLike>;
 }
 
 /** Structural subset of the capability document store (keeps the module importable in tests). */
@@ -89,6 +92,9 @@ function migrateMaterial(value: unknown): SessionPromptMaterial | null {
     version: 1,
     lorebooks: Array.isArray(source.lorebooks) ? (source.lorebooks as LorebookLike[]) : [],
     behaviorCharacter: sourceRecord(source.behaviorCharacter) as CharacterLike | null,
+    ...(sourceRecord(source.behaviorOverrideCards)
+      ? { behaviorOverrideCards: source.behaviorOverrideCards as Record<string, CharacterLike> }
+      : {}),
   };
 }
 

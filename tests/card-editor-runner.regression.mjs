@@ -567,6 +567,62 @@ async function testEditRetryUsesVerbatimPrompt() {
   assert.equal(retryCall.user, "Edited user");
 }
 
+async function testBehaviorOverrideCardMaterial() {
+  stopAllRunners();
+  const documents = createFakeDocuments();
+  const languageModels = createFakeLanguageModels(() => ({ content: singleUpdate("Styled") }));
+  const { deps, store } = createDeps(documents, languageModels);
+  const invoke = await createRouteHarness(deps);
+  // DESIGN §2: a per-target style override picks ANY library character, so the card material
+  // ships with the dispatch; "style-outside" is deliberately NOT a session target.
+  const created = await createSessionViaRoute(invoke, {
+    targets: [
+      makeTarget(0, {
+        behaviorOverride: "style-outside",
+        behaviorOverrideCard: { name: "Style Bot", personality: "Meticulous" },
+      }),
+      makeTarget(1),
+    ],
+    config: normalizeSessionConfig({ mode: "individual", providerRetries: 0, concurrency: 2 }),
+  });
+  const settled = await settledSession(store, created.id);
+  assert.equal(settled.status, "completed");
+  const styledCall = languageModels.calls.find((call) => call.user.includes('name="Character 0"'));
+  assert.ok(styledCall, "a call ran for the override target");
+  assert.ok(styledCall.user.includes("<behavior_character>"), "the materialized override injects the block");
+  assert.ok(styledCall.user.includes("Name: Style Bot"));
+  assert.ok(styledCall.user.includes("Personality: Meticulous"));
+  const plainCall = languageModels.calls.find((call) => call.user.includes('name="Character 1"'));
+  assert.ok(plainCall, "a call ran for the plain target");
+  assert.ok(!plainCall.user.includes("<behavior_character>"), "targets without an override get no block");
+  const material = await store.getSessionMaterial(created.id);
+  assert.equal(
+    material.behaviorOverrideCards["char-0"].name,
+    "Style Bot",
+    "the override card persists in the prompt material for retries",
+  );
+}
+
+async function testBehaviorOverrideReferenceStillResolves() {
+  stopAllRunners();
+  const documents = createFakeDocuments();
+  const languageModels = createFakeLanguageModels(() => ({ content: singleUpdate("Styled") }));
+  const { deps, store } = createDeps(documents, languageModels);
+  const invoke = await createRouteHarness(deps);
+  // Backward compat: the reference-by-target-id form (no card material) still resolves.
+  const created = await createSessionViaRoute(invoke, {
+    targets: [makeTarget(0, { behaviorOverride: "char-1" }), makeTarget(1)],
+    config: normalizeSessionConfig({ mode: "individual", providerRetries: 0, concurrency: 2 }),
+  });
+  const settled = await settledSession(store, created.id);
+  assert.equal(settled.status, "completed");
+  const styledCall = languageModels.calls.find((call) => call.user.includes('name="Character 0"'));
+  assert.ok(styledCall.user.includes("<behavior_character>"), "the reference form still injects the block");
+  assert.ok(styledCall.user.includes("Name: Character 1"));
+  const material = await store.getSessionMaterial(created.id);
+  assert.equal(material.behaviorOverrideCards, undefined, "reference-only dispatches store no card map");
+}
+
 // ---------------------------------------------------------------------------
 // Routes
 
@@ -590,6 +646,19 @@ async function testRouteValidation() {
     [
       "behaviorOverride referencing an unknown character",
       (body) => ({ ...body, targets: [{ ...body.targets[0], behaviorOverride: "ghost" }] }),
+    ],
+    [
+      "behaviorOverrideCard with an oversized field",
+      (body) => ({
+        ...body,
+        targets: [
+          {
+            ...body.targets[0],
+            behaviorOverride: "style-outside",
+            behaviorOverrideCard: { name: "Style Bot", description: "x".repeat(100_001) },
+          },
+        ],
+      }),
     ],
     [
       "behaviorOverride referencing itself",
@@ -920,6 +989,8 @@ const tests = [
   ["cancel aborts in-flight", testCancelAbortsInFlight],
   ["retry item", testRetryItem],
   ["edit-retry verbatim prompt", testEditRetryUsesVerbatimPrompt],
+  ["behaviorOverrideCard material", testBehaviorOverrideCardMaterial],
+  ["behaviorOverride reference form", testBehaviorOverrideReferenceStillResolves],
   ["route validation", testRouteValidation],
   ["session lifecycle routes", testSessionLifecycleRoutes],
   ["verdict holds and force", testVerdictHoldsAndForce],

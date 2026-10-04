@@ -87,7 +87,24 @@ for (const [name, source] of Object.entries(componentSources)) {
   visit(ast);
 }
 
-// ── 3. Client config mirror stays behaviorally identical to the shared schema ──
+// ── 3. session-config re-exports the shared schema's normalizer (mirror deleted) ──
+assert.equal(
+  normalizeBulkSessionConfig,
+  normalizeSessionConfig,
+  "session-config.ts must re-export the shared normalizeSessionConfig through the client import path",
+);
+const sessionConfigSource = read("session-config.ts");
+assert.doesNotMatch(
+  sessionConfigSource,
+  /node:crypto/u,
+  "the client config path must stay free of node-only imports (browser bundle)",
+);
+const sharedSchemaSource = readFileSync(
+  new URL("../../../../shared/src/features/agents/card-editor/schema.ts", featureRoot),
+  "utf8",
+);
+assert.doesNotMatch(sharedSchemaSource, /node:crypto/u, "the shared schema must stay browser-safe");
+assert.match(sharedSchemaSource, /globalThis\.crypto\.randomUUID\(\)/u, "ids come from globalThis.crypto");
 const validConfigs = [
   {},
   {
@@ -113,7 +130,7 @@ for (const input of validConfigs) {
   assert.deepEqual(
     normalizeBulkSessionConfig(input),
     normalizeSessionConfig(input),
-    `client config mirror drifted from the shared schema for ${JSON.stringify(input)}`,
+    `client config path drifted from the shared schema for ${JSON.stringify(input)}`,
   );
 }
 for (const garbage of [
@@ -131,7 +148,7 @@ for (const garbage of [
   { rebalance: "yes" },
   { customTemplate: 42 },
 ]) {
-  assert.throws(() => normalizeBulkSessionConfig(garbage), undefined, `mirror must reject ${JSON.stringify(garbage)}`);
+  assert.throws(() => normalizeBulkSessionConfig(garbage), undefined, `config must reject ${JSON.stringify(garbage)}`);
   assert.throws(() => normalizeSessionConfig(garbage), undefined, `schema must reject ${JSON.stringify(garbage)}`);
 }
 
@@ -190,6 +207,20 @@ assert.match(dialogTargets, /data-ce-autofocus/u, "initial focus lands on the fi
 assert.match(dialog, /dispatching \|\| targets\.length === 0/u, "dispatch stays disabled without targets or in flight");
 assert.match(dialog, /behaviorOverride: null/u, "per-target None style maps to behaviorOverride null");
 assert.match(dialog, /behaviorOverride: target\.style\.id/u, "per-target character style maps to its id");
+assert.match(
+  dialog,
+  /behaviorOverrideCard: behaviorCardMaterial\(/u,
+  "per-target character style ships the override card's material (any library character)",
+);
+assert.match(dialog, /card: target\.card!/u, "dispatch carries the full target card material");
+assert.match(dialog, /getHostCharacterCard\(id, controller\.signal\)/u, "target rows load the full card fields");
+assert.match(dialog, /getHostLorebookEntries\(id\)/u, "global lorebooks ship their entries with the dispatch");
+assert.match(
+  dialog,
+  /behaviorCharacter: behaviorCardMaterial\(sessionBehaviorCard\)/u,
+  "the session-level behavior character ships its card material",
+);
+assert.match(dialog, /unloadableTargets/u, "cards that failed to load block the dispatch");
 assert.match(dialog, /estimateBulkCalls\(targets\.length, batchSize\)/u, "footer estimate must stay live");
 assert.match(dialog, /storeBulkConfig\(config/u, "last-used config persists after a successful dispatch");
 assert.match(dialog, /loadStoredBulkConfig/u, "last-used config pre-fills the dialog");

@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import type { HostCardFields } from "./api";
 import { BehaviorCharacterSelect, type BehaviorSelection } from "./BehaviorCharacterSelect";
 import { translateCardEditor, type CardEditorLocalizationContext } from "./localization";
 
@@ -6,6 +7,8 @@ export type DialogTarget = {
   characterId: string;
   name: string;
   avatarPath: string | null;
+  /** Full editable card fields (the dispatch prompt material); null when the card failed to load. */
+  card: HostCardFields | null;
   note: string;
   style: BehaviorSelection;
   loadError: boolean;

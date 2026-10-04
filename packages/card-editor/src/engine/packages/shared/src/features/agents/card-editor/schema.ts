@@ -1,5 +1,3 @@
-import { randomUUID as nodeRandomUUID } from "node:crypto";
-
 export const SESSION_SCHEMA_VERSION = 1 as const;
 const BULK_EDITABLE_CARD_FIELDS = [
   "description",
@@ -245,8 +243,11 @@ export function recomputeStats(session: BulkSession): BulkSession {
   return { ...session, stats };
 }
 
+// Node 22+ and every modern browser expose crypto.randomUUID on globalThis; keeping Node-only
+// imports out of this module lets the browser client bundle it (session-config.ts re-exports
+// normalizeSessionConfig from here — the client mirror is deleted).
 function createId(): string {
-  return globalThis.crypto?.randomUUID?.() ?? nodeRandomUUID();
+  return globalThis.crypto.randomUUID();
 }
 
 export function newItem(

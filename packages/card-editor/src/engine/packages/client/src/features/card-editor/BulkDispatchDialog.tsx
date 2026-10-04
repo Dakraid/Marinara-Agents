@@ -2,8 +2,11 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import type { BulkSession, SaveMode } from "../../../../shared/src/features/agents/card-editor/schema.js";
 import {
+  behaviorCardMaterial,
   createSession,
   getHostCharacter,
+  getHostCharacterCard,
+  getHostLorebookEntries,
   listHostLorebooks,
   listLanguageConnections,
   type HostLorebook,
@@ -63,7 +66,7 @@ export function BulkDispatchDialog({
     let cancelled = false;
     const controller = new AbortController();
     setTargetsLoading(true);
-    void Promise.allSettled(initialIds.map((id) => getHostCharacter(id, controller.signal))).then((results) => {
+    void Promise.allSettled(initialIds.map((id) => getHostCharacterCard(id, controller.signal))).then((results) => {
       if (cancelled) return;
       setTargets(
         results.map((result, index) => {
@@ -73,6 +76,7 @@ export function BulkDispatchDialog({
               characterId,
               name: result.value.name,
               avatarPath: result.value.avatarPath,
+              card: result.value.fields,
               note: "",
               style: { kind: "inherit" } as BehaviorSelection,
               loadError: false,
@@ -82,6 +86,7 @@ export function BulkDispatchDialog({
             characterId,
             name: characterId,
             avatarPath: null,
+            card: null,
             note: "",
             style: { kind: "inherit" } as BehaviorSelection,
             loadError: true,
@@ -169,9 +174,13 @@ export function BulkDispatchDialog({
       !lorebookFilter.trim() || lorebook.name.toLocaleLowerCase().includes(lorebookFilter.trim().toLocaleLowerCase()),
   );
   const estimate = estimateBulkCalls(targets.length, batchSize);
+  const unloadableTargets = targets.some((target) => target.loadError || !target.card);
 
+  // The server never fetches engine data (coordinator decision 1): every prompt input travels
+  // with the dispatch — target cards, per-target style-override cards (ANY library character),
+  // the session-level behavior character, and the global lorebooks' entries.
   const dispatch = async () => {
-    if (dispatching || targets.length === 0) return;
+    if (dispatching || targets.length === 0 || unloadableTargets) return;
     setDispatching(true);
     setDispatchError(null);
     const config = normalizeBulkSessionConfig({
@@ -190,17 +199,38 @@ export function BulkDispatchDialog({
       saveMode,
     });
     try {
+      const overrideIds = [
+        ...new Set(targets.flatMap((target) => (target.style.kind === "character" ? [target.style.id] : []))),
+      ];
+      const [overrideCards, sessionBehaviorCard, lorebookMaterials] = await Promise.all([
+        Promise.all(overrideIds.map((id) => getHostCharacterCard(id))),
+        behavior.kind === "character" ? getHostCharacterCard(behavior.id) : Promise.resolve(null),
+        Promise.all(
+          globalLorebookIds.map(async (id) => {
+            const book = (lorebooks ?? []).find((candidate) => candidate.id === id);
+            return { name: book?.name ?? id, entries: await getHostLorebookEntries(id) };
+          }),
+        ),
+      ]);
+      const overrideById = new Map(overrideCards.map((card, index) => [overrideIds[index]!, card]));
       const session = await createSession({
         targets: targets.map((target) => ({
           characterId: target.characterId,
+          characterName: target.name,
+          card: target.card!,
           ...(target.note.trim() ? { note: target.note.trim() } : {}),
           ...(target.style.kind === "none"
             ? { behaviorOverride: null }
             : target.style.kind === "character"
-              ? { behaviorOverride: target.style.id }
+              ? {
+                  behaviorOverride: target.style.id,
+                  behaviorOverrideCard: behaviorCardMaterial(overrideById.get(target.style.id)!),
+                }
               : {}),
         })),
         config,
+        ...(lorebookMaterials.length > 0 ? { lorebooks: lorebookMaterials } : {}),
+        ...(sessionBehaviorCard ? { behaviorCharacter: behaviorCardMaterial(sessionBehaviorCard) } : {}),
       });
       storeBulkConfig(config, safeLocalStorage());
       onDispatched(session);
@@ -470,6 +500,11 @@ export function BulkDispatchDialog({
               {t("cardEditor.dialog.dispatchError", { message: dispatchError })}
             </div>
           ) : null}
+          {unloadableTargets ? (
+            <div className="ce-status ce-status--error ce-foot-error" role="alert">
+              {t("cardEditor.dialog.targets.unloadableBlock")}
+            </div>
+          ) : null}
           <span className="ce-estimate">
             {t("cardEditor.dialog.estimate", {
               batch: batchSize,
@@ -480,7 +515,7 @@ export function BulkDispatchDialog({
           <button
             type="button"
             className="mari-chrome-control mari-chrome-control--primary mari-chrome-control--small"
-            disabled={dispatching || targets.length === 0}
+            disabled={dispatching || targets.length === 0 || unloadableTargets}
             onClick={() => void dispatch()}
           >
             {dispatching ? t("cardEditor.dialog.dispatching") : t("cardEditor.dialog.dispatch")}

@@ -158,6 +158,9 @@ function resolveBehaviorCharacter(
 ): CharacterLike | null | undefined {
   if (item.behaviorOverride === undefined) return undefined; // inherit the session-level character
   if (item.behaviorOverride === null) return null; // explicit None for this card
+  // A materialized override card (any library character) wins over the reference form.
+  const overrideCard = material.behaviorOverrideCards?.[item.characterId];
+  if (overrideCard) return overrideCard;
   const source = allItems.find((candidate) => candidate.characterId === item.behaviorOverride);
   if (!source) {
     // POST /sessions rejects unresolvable overrides; this is the corrupt-storage fallback.

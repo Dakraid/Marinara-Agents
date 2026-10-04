@@ -88,7 +88,27 @@ interface TargetPayload {
   characterName?: string;
   note?: string;
   behaviorOverride?: string | null;
+  behaviorOverrideCard?: CharacterLike;
   card: CharacterLike;
+}
+
+const BEHAVIOR_CARD_FIELDS = [
+  "name",
+  "description",
+  "personality",
+  "backstory",
+  "appearance",
+  "system_prompt",
+] as const;
+
+/** Style-card fields validated exactly like the session-level behavior character. */
+function parseBehaviorCardFields(value: unknown, fieldPrefix: string): CharacterLike {
+  const source = sourceRecord(value);
+  const character: CharacterLike = {};
+  for (const field of BEHAVIOR_CARD_FIELDS) {
+    character[field] = cappedString(source[field], `${fieldPrefix}.${field}`, MAX_CONTENT_CHARS, { optional: true });
+  }
+  return character;
 }
 
 function parseTarget(value: unknown, index: number): TargetPayload {
@@ -119,6 +139,12 @@ function parseTarget(value: unknown, index: number): TargetPayload {
     target.behaviorOverride = cappedString(source.behaviorOverride, `targets[${index}].behaviorOverride`, 160);
   } else if (source.behaviorOverride === null) {
     target.behaviorOverride = null;
+  }
+  if (source.behaviorOverrideCard !== undefined && source.behaviorOverrideCard !== null) {
+    target.behaviorOverrideCard = parseBehaviorCardFields(
+      source.behaviorOverrideCard,
+      `targets[${index}].behaviorOverrideCard`,
+    );
   }
   return target;
 }
@@ -156,12 +182,7 @@ function parseLorebooks(value: unknown): LorebookLike[] {
 
 function parseBehaviorCharacter(value: unknown): CharacterLike | null {
   if (value === undefined || value === null) return null;
-  const source = sourceRecord(value);
-  const character: CharacterLike = {};
-  for (const field of ["name", "description", "personality", "backstory", "appearance", "system_prompt"] as const) {
-    character[field] = cappedString(source[field], `behaviorCharacter.${field}`, MAX_CONTENT_CHARS, { optional: true });
-  }
-  return character;
+  return parseBehaviorCardFields(value, "behaviorCharacter");
 }
 
 function parseIncludeFields(value: unknown): string[] | undefined {
@@ -255,6 +276,9 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
         }
         for (const target of targets) {
           if (typeof target.behaviorOverride === "string") {
+            // A materialized override card (any library character, DESIGN §2) needs no
+            // reference resolution; the reference form must point at another session target.
+            if (target.behaviorOverrideCard) continue;
             if (target.behaviorOverride === target.characterId || !seen.has(target.behaviorOverride)) {
               throw badRequest(
                 `targets[].behaviorOverride must reference another target's characterId (unknown: ${target.behaviorOverride}).`,
@@ -279,10 +303,16 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
         if (config.presetId === "custom" && !(config.customTemplate ?? "").trim()) {
           throw badRequest('presetId "custom" requires a non-empty customTemplate.');
         }
+        const behaviorOverrideCards = Object.fromEntries(
+          targets
+            .filter((target) => target.behaviorOverrideCard !== undefined)
+            .map((target) => [target.characterId, target.behaviorOverrideCard!]),
+        );
         const material: SessionPromptMaterial = {
           version: 1,
           lorebooks: parseLorebooks(body.lorebooks),
           behaviorCharacter: parseBehaviorCharacter(body.behaviorCharacter),
+          ...(Object.keys(behaviorOverrideCards).length > 0 ? { behaviorOverrideCards } : {}),
         };
         const label =
           (body.label === undefined ? "" : cappedString(body.label, "label", 200).trim()) ||
