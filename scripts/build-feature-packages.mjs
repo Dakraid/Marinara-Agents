@@ -99,6 +99,12 @@ const memoryNagOwnedSourcePaths = [
   "packages/server/src/services/memory-nag",
   "packages/client/src/features/memory-nag",
 ];
+const cardEditorSourceRoot = join(packagesDir, "card-editor/src/engine");
+const cardEditorOwnedSourcePaths = [
+  "packages/shared/src/features/agents/card-editor",
+  "packages/server/src/services/card-editor",
+  "packages/client/src/features/card-editor",
+];
 const pokedexSourceRoot = join(packagesDir, "pokedex/src/engine");
 const pokedexOwnedSourcePaths = [
   "packages/shared/src/features/agents/pokedex",
@@ -200,7 +206,12 @@ async function prepareFeatureBuildRoot(feature) {
       cleanup: () => rm(buildRoot, { recursive: true, force: true }),
     };
   }
-  if (feature.id === "long-term-memory" || feature.id === "memory-nag" || feature.id === "pokedex") {
+  if (
+    feature.id === "card-editor" ||
+    feature.id === "long-term-memory" ||
+    feature.id === "memory-nag" ||
+    feature.id === "pokedex"
+  ) {
     if (!existsSync(feature.packageSourceRoot)) {
       throw new Error(`Missing package-owned ${feature.name} source`);
     }
@@ -518,6 +529,28 @@ const features = [
     },
   },
   {
+    id: "card-editor",
+    version: "1.0.0",
+    minEngineVersion: "2.4.6",
+    maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
+    name: "Card Editor",
+    description:
+      "Rewrites an existing character card from a user directive while preserving its voice and aligning it with referenced lore.",
+    category: "writer",
+    kind: ["agent"],
+    modes: ["roleplay"],
+    permissions: ["agent-runtime", "chat-read", "prompt-context", "routes", "storage", "ui"],
+    serverImport: "packages/server/src/services/card-editor/server-entry.ts",
+    serverEntry: true,
+    clientImport: "packages/client/src/features/card-editor/client-entry.tsx",
+    packageSourceRoot: cardEditorSourceRoot,
+    ownedSourcePaths: cardEditorOwnedSourcePaths,
+    engineBoundaryPath: join(packagesDir, "card-editor/engine-boundary.json"),
+    boundaryDisplayName: "Card Editor",
+    capabilityApi: { major: 1, minor: 66 },
+    agentsSource: "agents.json",
+  },
+  {
     id: "pokedex",
     version: "0.1.0",
     minEngineVersion: "2.4.6",
@@ -721,6 +754,14 @@ const memoryNagBoundary = selectedFeatures.some((feature) => feature.id === "mem
       boundaryPath: join(packagesDir, "memory-nag/engine-boundary.json"),
       displayName: "Memory Nag",
       capabilityApi: { major: 1, minor: 14 },
+    })
+  : null;
+const cardEditorBoundary = selectedFeatures.some((feature) => feature.id === "card-editor")
+  ? await assertPackagePrivateImportBoundary({
+      sourceRoot: cardEditorSourceRoot,
+      boundaryPath: join(packagesDir, "card-editor/engine-boundary.json"),
+      displayName: "Card Editor",
+      capabilityApi: { major: 1, minor: 66 },
     })
   : null;
 const pokedexBoundary = selectedFeatures.some((feature) => feature.id === "pokedex")
@@ -1759,26 +1800,39 @@ for (const feature of selectedFeatures) {
   const description = withPackageActivationGuidance(feature.id, feature.description);
   const sourceDir = join(packagesDir, feature.id);
   await mkdir(sourceDir, { recursive: true });
-  const agentDefinition = {
-    id: feature.id,
-    name: feature.name,
-    description: feature.agent?.description ?? feature.description,
-    author: "Pasta Devs",
-    phase: feature.agent?.phase ?? "pre_generation",
-    enabledByDefault: false,
-    category: feature.category ?? "misc",
-    runtimeDisabled: feature.agent?.runtimeDisabled ?? true,
-    ...(feature.agent?.defaultInjectAsSection === undefined
-      ? {}
-      : { defaultInjectAsSection: feature.agent.defaultInjectAsSection }),
-    ...(feature.libraryHidden ? { libraryHidden: true } : {}),
-    modeAllowlist: feature.modes,
-    defaultTools: [],
-    defaultSettings: feature.agent?.defaultSettings ?? {},
-    defaultPromptTemplate: feature.agent?.defaultPromptTemplate ?? "",
-    execution: feature.agent?.execution ?? "feature",
-  };
-  const agentsBuffer = Buffer.from(`${JSON.stringify([agentDefinition], null, 2)}\n`);
+  let agentDefinitions;
+  let agentsBuffer;
+  if (feature.agentsSource) {
+    agentsBuffer = await readFile(join(sourceDir, feature.agentsSource));
+    agentDefinitions = JSON.parse(agentsBuffer.toString("utf8"));
+  } else {
+    agentDefinitions = [
+      {
+        id: feature.id,
+        name: feature.name,
+        description: feature.agent?.description ?? feature.description,
+        author: "Pasta Devs",
+        phase: feature.agent?.phase ?? "pre_generation",
+        enabledByDefault: false,
+        category: feature.category ?? "misc",
+        runtimeDisabled: feature.agent?.runtimeDisabled ?? true,
+        ...(feature.agent?.defaultInjectAsSection === undefined
+          ? {}
+          : { defaultInjectAsSection: feature.agent.defaultInjectAsSection }),
+        ...(feature.libraryHidden ? { libraryHidden: true } : {}),
+        modeAllowlist: feature.modes,
+        defaultTools: [],
+        defaultSettings: feature.agent?.defaultSettings ?? {},
+        defaultPromptTemplate: feature.agent?.defaultPromptTemplate ?? "",
+        execution: feature.agent?.execution ?? "feature",
+      },
+    ];
+    agentsBuffer = Buffer.from(`${JSON.stringify(agentDefinitions, null, 2)}\n`);
+  }
+  if (!Array.isArray(agentDefinitions) || agentDefinitions.length !== 1 || agentDefinitions[0]?.id !== feature.id) {
+    throw new Error(`${feature.id} must provide exactly one matching Agent definition`);
+  }
+  const [agentDefinition] = agentDefinitions;
   const serverPath = join(sourceDir, "server.mjs");
   const serverSourceRoot =
     feature.id === "hierarchical-maps" ? hierarchicalMapsSourceRoot : (feature.packageSourceRoot ?? sourceRoot);
@@ -1822,9 +1876,11 @@ for (const feature of selectedFeatures) {
         ? longTermMemoryBoundary
         : feature.id === "memory-nag"
           ? memoryNagBoundary
-          : feature.id === "pokedex"
-            ? pokedexBoundary
-            : null;
+          : feature.id === "card-editor"
+            ? cardEditorBoundary
+            : feature.id === "pokedex"
+              ? pokedexBoundary
+              : null;
   const manifest = {
     schemaVersion: boundary || feature.capabilityApi ? 2 : 1,
     ...(boundary

@@ -6,13 +6,21 @@ const manifest = JSON.parse(await readFile(new URL("manifest.json", packageRoot)
 const agents = JSON.parse(await readFile(new URL("agents.json", packageRoot), "utf8"));
 const editor = agents.find((agent) => agent.id === "card-editor");
 
+assert.equal(manifest.schemaVersion, 2);
+assert.deepEqual(manifest.capabilityApi, { major: 1, minor: 66 });
+assert.equal(manifest.builtAgainst.engineVersion, "2.4.6");
 assert.equal(manifest.id, "card-editor");
 assert.equal(manifest.version, "1.0.0");
 assert.deepEqual(manifest.kind, ["agent"]);
-assert.deepEqual(manifest.entrypoints, { agents: "agents.json" });
-assert.deepEqual(manifest.engine, { min: "2.3.0", maxExclusive: "4.0.0" });
-assert.deepEqual(manifest.permissions, ["agent-runtime", "chat-read", "prompt-context", "storage", "ui"]);
-assert.equal(manifest.restartRequired, false);
+assert.deepEqual(manifest.entrypoints, {
+  agents: "agents.json",
+  server: "server.mjs",
+  client: "client.js",
+});
+assert.deepEqual(manifest.engine, { min: "2.4.6", maxExclusive: "4.0.0" });
+assert.deepEqual(manifest.permissions, ["agent-runtime", "chat-read", "prompt-context", "routes", "storage", "ui"]);
+assert.equal(manifest.contributions, undefined);
+assert.equal(manifest.restartRequired, true);
 
 assert.ok(editor, "Card Editor definition must exist");
 assert.equal(editor.name, "Card Editor");

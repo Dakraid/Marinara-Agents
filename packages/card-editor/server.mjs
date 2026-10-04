@@ -1,0 +1,2 @@
+import { createRequire as __createRequire } from 'node:module'; const require = __createRequire(import.meta.url);
+var r=async t=>{t.get("/health",async()=>({ok:!0}))},e=!1;async function o({api:t}){let i=await t.registerPrivilegedRoutes(r,{prefix:"/api/card-editor"});return e=!0,()=>{e=!1,i()}}async function s(){if(!e)throw new Error("Card Editor did not initialize")}export{o as activate,s as selfCheck};
