@@ -140,6 +140,8 @@ const TRANSITIONS: Readonly<Partial<Record<ItemStatus, readonly ItemStatus[]>>> 
   running: ["succeeded", "failed-provider", "failed-refusal", "failed-parse"],
   succeeded: ["awaiting-review", "applied", "needs-review", "duplicated"],
   "awaiting-review": ["applied", "rejected"],
+  // Verdict queue resolves held-back auto-approve items (DESIGN §3): force applies, else reject.
+  "needs-review": ["applied", "rejected"],
   "failed-provider": ["running"],
   "failed-refusal": ["running"],
   "failed-parse": ["running"],

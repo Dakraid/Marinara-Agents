@@ -10,6 +10,24 @@ import {
   recomputeStats,
   validateCardFieldUpdate,
 } from "../packages/card-editor/src/engine/packages/shared/src/features/agents/card-editor/schema.ts";
+import {
+  escapeXml,
+  normalizeCardPromptText,
+} from "../packages/card-editor/src/engine/packages/shared/src/features/agents/card-editor/text.ts";
+import {
+  buildBehaviorCharacterBlock,
+  buildCharacterBlock,
+  buildLorebookBlocks,
+} from "../packages/card-editor/src/engine/packages/server/src/services/card-editor/context.ts";
+import {
+  PRESETS,
+  assemblePrompt,
+} from "../packages/card-editor/src/engine/packages/server/src/services/card-editor/prompts.ts";
+import {
+  parseBatchResponse,
+  parseSingleResponse,
+} from "../packages/card-editor/src/engine/packages/server/src/services/card-editor/parse.ts";
+import { planApply } from "../packages/card-editor/src/engine/packages/server/src/services/card-editor/apply.ts";
 
 const defaults = normalizeSessionConfig({});
 assert.deepEqual(defaults, {
@@ -97,6 +115,7 @@ const graph = new Map([
   ["running", ["succeeded", "failed-provider", "failed-refusal", "failed-parse"]],
   ["succeeded", ["awaiting-review", "applied", "needs-review", "duplicated"]],
   ["awaiting-review", ["applied", "rejected"]],
+  ["needs-review", ["applied", "rejected"]],
   ["failed-provider", ["running"]],
   ["failed-refusal", ["running"]],
   ["failed-parse", ["running"]],
@@ -185,4 +204,416 @@ for (const garbage of [null, {}, { schemaVersion: 2 }, { ...session, items: null
   assert.equal(migrateSessionDocument(garbage), null);
 }
 
-process.stdout.write("Card Editor bulk schema regression passed.\n");
+const fidelityText = `  A & <tag> 'quote' "double" {{char}} {{user}} {{// remove me}} tail  `;
+assert.equal(normalizeCardPromptText(fidelityText), `A & <tag> 'quote' "double" {{char}} {{user}}  tail`);
+assert.equal(normalizeCardPromptText(null), "");
+assert.equal(escapeXml(`&<>"' {{char}} {{user}}`), "&amp;&lt;&gt;&quot;&apos; {{char}} {{user}}");
+const fidelityCard = {
+  id: "character<&",
+  name: `A & "B"`,
+  description: fidelityText,
+  personality: "  steady  ",
+  scenario: "",
+  first_mes: "Hello",
+  mes_example: "Example",
+  creator_notes: "Notes",
+  system_prompt: "System",
+  post_history_instructions: "After",
+  backstory: "History",
+  appearance: "Look",
+};
+const characterBlock = buildCharacterBlock(fidelityCard, { id: fidelityCard.id });
+assert.match(characterBlock, /^<character id="character&lt;&amp;" name="A &amp; &quot;B&quot;">/);
+assert.ok(characterBlock.includes("{{char}} {{user}}"), "ordinary macros must remain literal");
+assert.ok(!characterBlock.includes("remove me"), "macro comments must be removed");
+assert.ok(characterBlock.includes("A &amp; &lt;tag&gt; &apos;quote&apos; &quot;double&quot;"));
+
+const behaviorWithoutSystem = buildBehaviorCharacterBlock({
+  name: "Guide",
+  description: "Measured",
+  personality: "Patient",
+  backstory: "Old",
+  appearance: "Silver",
+  system_prompt: " {{// no system after normalization}} ",
+});
+assert.ok(behaviorWithoutSystem.includes("Name: Guide"));
+assert.ok(behaviorWithoutSystem.includes("guides HOW cards are written"));
+assert.ok(!behaviorWithoutSystem.includes("System:"));
+const behaviorWithSystem = buildBehaviorCharacterBlock({
+  name: "Guide",
+  description: "Measured",
+  personality: "Patient",
+  backstory: "Old",
+  appearance: "Silver",
+  system_prompt: "Be exact",
+});
+assert.ok(behaviorWithSystem.includes("System: Be exact"));
+
+// Byte-parity with the engine's buildBehaviorCharacterBlock (SPEC AC3): the engine regression
+// card-editor-behavior-character.regression.ts pins this exact output for the pre-normalized
+// fixture; the package must produce the same bytes from the raw stored card fields (snake_case,
+// un-normalized). The expectation is constructed independently, mirroring the engine regression.
+const ENGINE_BEHAVIOR_INSTRUCTION =
+  "Adopt this character's behavior, judgment, and writing style when editing — it guides HOW cards are written; the directive and user notes govern WHAT changes.";
+const behaviorFixture = {
+  name: `Seraphina "Sage" & Co`,
+  description: `  Calm, precise & kind — with <tags> and 'quotes'  `,
+  personality: `  Wry 'mentor' energy  `,
+  backstory: `  Raised by "scholars" & travelers  `,
+  appearance: `  Wears <silver>  `,
+  system_prompt: `  Always speak plainly & kindly  `,
+};
+const normalizedFixture = {
+  name: behaviorFixture.name,
+  description: normalizeCardPromptText(behaviorFixture.description),
+  personality: normalizeCardPromptText(behaviorFixture.personality),
+  backstory: normalizeCardPromptText(behaviorFixture.backstory),
+  appearance: normalizeCardPromptText(behaviorFixture.appearance),
+  systemPrompt: normalizeCardPromptText(behaviorFixture.system_prompt),
+};
+assert.deepEqual(
+  buildBehaviorCharacterBlock(behaviorFixture),
+  [
+    "<behavior_character>",
+    `Name: ${escapeXml(normalizedFixture.name)}`,
+    `Description: ${escapeXml(normalizedFixture.description)}`,
+    `Personality: ${escapeXml(normalizedFixture.personality)}`,
+    `Backstory: ${escapeXml(normalizedFixture.backstory)}`,
+    `Appearance: ${escapeXml(normalizedFixture.appearance)}`,
+    `System: ${escapeXml(normalizedFixture.systemPrompt)}`,
+    "</behavior_character>",
+    ENGINE_BEHAVIOR_INSTRUCTION,
+  ].join("\n"),
+  "package behavior block must be byte-identical to the engine's pinned format",
+);
+assert.equal(buildBehaviorCharacterBlock({}), "", "empty behavior character must produce no block");
+assert.equal(
+  buildBehaviorCharacterBlock({ name: "   ", description: "" }),
+  "",
+  "whitespace-only fields must produce no block",
+);
+
+const perEntryLore = buildLorebookBlocks([
+  {
+    name: `Book & "One"`,
+    entries: [
+      { name: "Disabled", content: "hidden", enabled: false },
+      { name: "Long", content: "x".repeat(4_500), enabled: true },
+      { name: "Second", content: "second", enabled: true },
+    ],
+  },
+]);
+assert.ok(perEntryLore.includes('<lorebook name="Book &amp; &quot;One&quot;">'));
+assert.ok(perEntryLore.includes("[…truncated]"));
+assert.ok(!perEntryLore.includes("hidden"));
+const longLore = buildLorebookBlocks([
+  {
+    name: "Large",
+    entries: Array.from({ length: 10 }, (_, index) => ({
+      name: `Entry ${index}`,
+      content: String(index).repeat(4_500),
+      enabled: true,
+    })),
+  },
+]);
+const longLoreBodies = [...longLore.matchAll(/<entry[^>]*>([\s\S]*?)<\/entry>/g)].map((match) => match[1]);
+assert.ok(
+  longLoreBodies.every((body) => body.length <= 4_000),
+  "each lorebook entry must be capped",
+);
+assert.ok(
+  longLoreBodies.reduce((total, body) => total + body.length, 0) <= 24_000,
+  "lorebook entry content must respect the total cap",
+);
+assert.deepEqual(
+  longLoreBodies.map((body) => body[0]),
+  ["0", "1", "2", "3", "4", "5"],
+  "lorebook truncation must preserve stable input order",
+);
+
+assert.deepEqual(
+  PRESETS.map(({ id, label }) => ({ id, label })),
+  [
+    { id: "standard", label: "Standard rewrite" },
+    { id: "strict", label: "Strict surgical" },
+    { id: "rebalance", label: "Field rebalancing" },
+  ],
+);
+const assembled = assemblePrompt({
+  preset: "standard",
+  globalInstruction: "Global first",
+  targets: [
+    { characterId: "opaque-1", card: fidelityCard, userNote: "Per-card second", behaviorCharacter: fidelityCard },
+    { characterId: "opaque-2", card: { ...fidelityCard, name: "Second" } },
+  ],
+  lorebooks: [{ name: "Reference", entries: [{ name: "Fact", content: "Canon", enabled: true }] }],
+  rebalance: true,
+});
+assert.ok(assembled.system.includes("strict JSON object keyed by each exact character id"));
+assert.ok(assembled.system.includes("Global first"));
+assert.ok(assembled.system.includes("<lorebook"));
+assert.ok(assembled.user.includes('<character id="opaque-1"'));
+assert.ok(assembled.user.includes("<user_note>Per-card second</user_note>"));
+assert.ok(assembled.user.includes("<behavior_character>"));
+assert.ok(assembled.user.indexOf("Per-card second") < assembled.user.indexOf("Description = general identity"));
+assert.ok(assembled.user.includes('<character_ref id="opaque-1" name="A &amp; &quot;B&quot;" />'));
+const assembledSingle = assemblePrompt({
+  preset: "strict",
+  globalInstruction: "",
+  targets: [{ characterId: "opaque-1", card: fidelityCard }],
+  lorebooks: [],
+  rebalance: false,
+});
+assert.ok(assembledSingle.system.includes('{"updates"'));
+assert.ok(!assembledSingle.system.includes("keyed by each exact character id"));
+
+// A session-level behavior character is inherited by targets without an override; an explicit
+// null override suppresses the block for that card (SPEC F2.2: None = no block).
+const assembledInherited = assemblePrompt({
+  preset: "standard",
+  globalInstruction: "",
+  targets: [
+    { characterId: "inherit-1", card: fidelityCard },
+    { characterId: "none-1", card: fidelityCard, behaviorCharacter: null },
+  ],
+  lorebooks: [],
+  behaviorCharacter: { name: "Session Guide", description: "Calm" },
+  rebalance: false,
+});
+assert.equal(assembledInherited.user.match(/<behavior_character>/g)?.length, 1);
+assert.ok(
+  assembledInherited.user.indexOf('<character id="inherit-1"') <
+    assembledInherited.user.indexOf("<behavior_character>"),
+);
+assert.ok(
+  assembledInherited.user.indexOf("<behavior_character>") < assembledInherited.user.indexOf('<character id="none-1"'),
+  "the explicit-None target must not receive the session behavior block",
+);
+
+// Custom preset: the user's template replaces the base; the mode's response contract is still appended.
+const assembledCustom = assemblePrompt({
+  preset: "custom",
+  customTemplate: "My custom editing contract.",
+  globalInstruction: "",
+  targets: [{ characterId: "opaque-1", card: fidelityCard }],
+  lorebooks: [],
+  rebalance: false,
+});
+assert.ok(assembledCustom.system.startsWith("My custom editing contract."));
+assert.ok(assembledCustom.system.includes('{"updates"'));
+assert.throws(
+  () =>
+    assemblePrompt({
+      preset: "custom",
+      globalInstruction: "",
+      targets: [{ characterId: "opaque-1", card: fidelityCard }],
+      lorebooks: [],
+      rebalance: false,
+    }),
+  SchemaError,
+  "custom preset without a template is a config error",
+);
+
+const validDescriptionUpdate = {
+  field: "description",
+  oldText: "Old",
+  newText: "New",
+  reason: "Clearer",
+};
+const parsedBatch = parseBatchResponse(
+  `preface\n\`\`\`json\n${JSON.stringify({
+    "character-1": {
+      updates: [
+        validDescriptionUpdate,
+        { ...validDescriptionUpdate, field: "name" },
+        { ...validDescriptionUpdate, newText: 7 },
+      ],
+    },
+    "unknown-character": { updates: [validDescriptionUpdate] },
+  })}\n\`\`\`\nafter`,
+  ["character-1"],
+  { rebalance: false },
+);
+assert.equal(parsedBatch.ok, true);
+assert.deepEqual(parsedBatch.results.get("character-1"), [validDescriptionUpdate]);
+assert.equal(parsedBatch.dropped.length, 3);
+assert.ok(parsedBatch.dropped.some((drop) => drop.characterId === "unknown-character"));
+assert.ok(parsedBatch.dropped.some((drop) => drop.field === "name"));
+assert.equal(parsedBatch.results.get("character-1")?.[0]?.characterId, undefined);
+
+// Malformed per-character entries drop with a reason and stay out of results so the runner
+// re-runs those cards individually; a wholly unparseable response is a parse error.
+const malformedBatch = parseBatchResponse(
+  JSON.stringify({
+    "character-1": { updates: [validDescriptionUpdate] },
+    "character-2": { updates: "not-an-array" },
+    "character-3": "garbage",
+  }),
+  ["character-1", "character-2", "character-3"],
+  { rebalance: false },
+);
+assert.equal(malformedBatch.ok, true);
+assert.deepEqual(malformedBatch.results.get("character-1"), [validDescriptionUpdate]);
+assert.equal(malformedBatch.results.has("character-2"), false);
+assert.equal(malformedBatch.results.has("character-3"), false);
+assert.equal(malformedBatch.dropped.length, 2);
+const unparseableBatch = parseBatchResponse("total garbage, no braces", ["character-1"], { rebalance: false });
+assert.equal(unparseableBatch.ok, false);
+assert.ok(unparseableBatch.parseError);
+assert.equal(unparseableBatch.results.size, 0);
+// A character the model answered with an empty updates array is a valid no-op success (edge matrix).
+const noOpBatch = parseBatchResponse(JSON.stringify({ "character-1": { updates: [] } }), ["character-1"], {
+  rebalance: false,
+});
+assert.equal(noOpBatch.ok, true);
+assert.deepEqual(noOpBatch.results.get("character-1"), []);
+assert.deepEqual(noOpBatch.dropped, []);
+
+const parsedSingle = parseSingleResponse(JSON.stringify({ updates: [validDescriptionUpdate] }), "character-1", {
+  rebalance: false,
+});
+assert.equal(parsedSingle.ok, true);
+assert.deepEqual(parsedSingle.results.get("character-1"), [validDescriptionUpdate]);
+assert.equal(parseSingleResponse("not json", "character-1", { rebalance: false }).ok, false);
+const emptyUpdate = { ...validDescriptionUpdate, field: "backstory", newText: "" };
+assert.equal(
+  parseSingleResponse(JSON.stringify({ updates: [emptyUpdate] }), "character-1", { rebalance: false }).results.get(
+    "character-1",
+  )?.length,
+  0,
+);
+assert.deepEqual(
+  parseSingleResponse(JSON.stringify({ updates: [emptyUpdate] }), "character-1", { rebalance: true }).results.get(
+    "character-1",
+  ),
+  [emptyUpdate],
+);
+
+// SessionItem is the frozen schema shape: label lives on the session, duplicateSuffix on the
+// session config, so both reach planApply through opts — never through the item.
+const applyItem = {
+  ...newItem("character-1", "Character One"),
+  snapshots: { description: "Old", personality: "Original" },
+  updates: [
+    validDescriptionUpdate,
+    { field: "personality", oldText: "Original", newText: "Changed", reason: "Sharper" },
+  ],
+};
+const applyOptions = { label: "October cleanup", duplicateSuffix: " (Edited)" };
+assert.deepEqual(
+  planApply(
+    applyItem,
+    { description: " Old ", personality: "Edited elsewhere" },
+    {
+      force: false,
+      saveMode: "confirm",
+      ...applyOptions,
+    },
+  ),
+  [
+    {
+      op: "patchField",
+      characterId: "character-1",
+      field: "description",
+      newText: "New",
+      versionSource: "agent",
+      versionReason: "Card Editor bulk: October cleanup",
+    },
+    { op: "hold", characterId: "character-1", field: "personality", reason: "field changed since dispatch" },
+  ],
+);
+assert.deepEqual(
+  planApply(
+    applyItem,
+    { description: "Old", personality: "Edited elsewhere" },
+    {
+      force: true,
+      includeFields: ["personality"],
+      saveMode: "auto",
+      ...applyOptions,
+    },
+  ),
+  [
+    {
+      op: "patchField",
+      characterId: "character-1",
+      field: "personality",
+      newText: "Changed",
+      versionSource: "agent",
+      versionReason: "Card Editor bulk: October cleanup",
+    },
+  ],
+);
+assert.deepEqual(planApply(applyItem, {}, { force: false, saveMode: "duplicate", ...applyOptions }), [
+  {
+    op: "duplicateThenPatch",
+    characterId: "character-1",
+    fields: { description: "New", personality: "Changed" },
+    nameSuffix: " (Edited)",
+  },
+]);
+assert.deepEqual(
+  planApply(
+    applyItem,
+    { description: "Old", personality: "Original" },
+    {
+      force: false,
+      includeFields: [],
+      saveMode: "confirm",
+      ...applyOptions,
+    },
+  ),
+  [],
+);
+// Macro comments and surrounding whitespace are prompt-normalization artifacts, not user edits:
+// the current field normalizes back to the snapshot, so the row is fresh (SPEC F1 false-positive fix).
+assert.deepEqual(
+  planApply(
+    applyItem,
+    { description: "  Old {{// tidy}} ", personality: "Original" },
+    {
+      force: false,
+      includeFields: ["description"],
+      saveMode: "auto",
+      ...applyOptions,
+    },
+  ),
+  [
+    {
+      op: "patchField",
+      characterId: "character-1",
+      field: "description",
+      newText: "New",
+      versionSource: "agent",
+      versionReason: "Card Editor bulk: October cleanup",
+    },
+  ],
+);
+// Duplicate mode copies the current card, so includeFields filters the copy's patch and stale checks never apply.
+assert.deepEqual(
+  planApply(
+    applyItem,
+    { description: "Changed elsewhere" },
+    {
+      force: false,
+      includeFields: ["personality"],
+      saveMode: "duplicate",
+      ...applyOptions,
+    },
+  ),
+  [
+    {
+      op: "duplicateThenPatch",
+      characterId: "character-1",
+      fields: { personality: "Changed" },
+      nameSuffix: " (Edited)",
+    },
+  ],
+);
+assert.deepEqual(
+  planApply({ ...newItem("character-9", "Quiet") }, {}, { force: false, saveMode: "confirm", ...applyOptions }),
+  [],
+  "an item without updates produces no operations",
+);
+
+process.stdout.write("Card Editor bulk services regression passed.\n");
