@@ -32,13 +32,13 @@
     },
     {
       "path": "server.mjs",
-      "sha256": "8e1a4574728fb5a3d7c82d18d8beb7556df6944c77514f726048e9653f4b1eb7",
-      "bytes": 40401
+      "sha256": "2b18eff192e4f538e2d9e183764475e378f1a0bfdfc6eb0e2ea44d499fdb0408",
+      "bytes": 40858
     },
     {
       "path": "client.js",
-      "sha256": "3d59b19216c0ce016d54919d91746edad72962d345ebc1aac99d71a0aac96cad",
-      "bytes": 276192
+      "sha256": "a7adc8c78a317148fcdaa1689eb005dd7885a906d5f8b8338eb6ef330c0d30f6",
+      "bytes": 326594
     }
   ],
   "permissions": [

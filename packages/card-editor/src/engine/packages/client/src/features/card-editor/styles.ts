@@ -621,13 +621,547 @@ marinara-capability-card-editor[view="selection-action"] {
   white-space: nowrap;
 }
 
+/* ── Runs panel + verdict queue (DESIGN §3) ── */
+
+.ce-panel {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+  border: 1px solid var(--marinara-chat-chrome-panel-border);
+  border-radius: 0.75rem;
+  background: var(--marinara-chat-chrome-panel-bg);
+  padding: 0.75rem;
+  font-size: 0.75rem;
+}
+
+.ce-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ce-panel-heading {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--marinara-chat-chrome-panel-title);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ce-panel-section {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.ce-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ce-refresh-button,
+.ce-back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ce-sessions {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  gap: 0.4rem;
+  list-style: none;
+}
+
+.ce-session {
+  display: grid;
+  gap: 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--card);
+  padding: 0.5rem 0.6rem;
+}
+
+.ce-session--active {
+  border-color: color-mix(in srgb, var(--ce-chroma) 45%, var(--border));
+}
+
+.ce-session-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ce-session-label {
+  min-width: 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--foreground);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ce-session-label:hover {
+  color: var(--marinara-chat-chrome-highlight-text);
+  text-decoration: underline;
+}
+
+.ce-session-label:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.ce-session-chips,
+.ce-session-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.ce-session-date {
+  margin-left: auto;
+}
+
+.ce-session-note {
+  color: var(--marinara-chat-chrome-danger-text, #e08080);
+}
+
+.ce-session-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ce-session-delete {
+  justify-self: end;
+}
+
+.ce-progress {
+  height: 0.375rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--muted);
+}
+
+.ce-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ce-chroma);
+  transition: width 300ms ease;
+}
+
+.ce-live-line {
+  font-variant-numeric: tabular-nums;
+}
+
+.ce-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--muted);
+  padding: 0.0625rem 0.45rem;
+  color: var(--muted-foreground);
+  font-size: 0.59375rem;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.ce-chip--live {
+  border-color: color-mix(in srgb, var(--ce-chroma) 50%, transparent);
+  color: var(--foreground);
+}
+
+.ce-chip--review {
+  border-color: color-mix(in srgb, #d9a13b 55%, transparent);
+  color: #d9a13b;
+}
+
+.ce-chip--ok {
+  border-color: color-mix(in srgb, var(--marinara-chat-chrome-success-text, #86d39a) 45%, transparent);
+  color: var(--marinara-chat-chrome-success-text, #86d39a);
+}
+
+.ce-chip--danger {
+  border-color: color-mix(in srgb, var(--marinara-chat-chrome-danger-text, #e08080) 45%, transparent);
+  color: var(--marinara-chat-chrome-danger-text, #e08080);
+}
+
+.ce-chip--muted {
+  opacity: 0.75;
+}
+
+.ce-confirm-strip {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--muted);
+  padding: 0.35rem 0.5rem;
+}
+
+.ce-danger-button {
+  color: var(--marinara-chat-chrome-danger-text, #e08080);
+}
+
+.ce-items {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  gap: 0.35rem;
+  list-style: none;
+}
+
+.ce-item {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--card);
+  padding: 0.45rem 0.55rem;
+}
+
+.ce-item-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ce-item-name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--foreground);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ce-item-sub {
+  display: grid;
+  gap: 0.125rem;
+  color: var(--muted-foreground);
+  font-size: 0.65625rem;
+  line-height: 1.4;
+}
+
+.ce-item-failure {
+  overflow: hidden;
+  color: var(--marinara-chat-chrome-danger-text, #e08080);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.ce-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.ce-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+/* Verdict queue */
+
+.ce-queue {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+}
+
+.ce-queue-head {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ce-queue-dots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+.ce-dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--muted);
+  padding: 0;
+  cursor: pointer;
+}
+
+.ce-dot--approved {
+  border-color: var(--marinara-chat-chrome-success-text, #86d39a);
+  background: var(--marinara-chat-chrome-success-text, #86d39a);
+}
+
+.ce-dot--rejected {
+  border-color: var(--marinara-chat-chrome-danger-text, #e08080);
+  background: var(--marinara-chat-chrome-danger-text, #e08080);
+}
+
+.ce-dot--current {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.ce-dot:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.ce-queue-card {
+  display: grid;
+  width: min(36rem, 100%);
+  gap: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--card);
+  padding: 0.75rem;
+}
+
+.ce-queue-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ce-queue-name {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--foreground);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ce-queue-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.ce-queue-fields {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.ce-queue-field {
+  display: grid;
+  gap: 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.55rem;
+}
+
+.ce-queue-field-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.ce-queue-field-name {
+  color: var(--foreground);
+  font-size: 0.6875rem;
+}
+
+.ce-queue-minirow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: transparent;
+  padding: 0.35rem 0.55rem;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.6875rem;
+  text-align: left;
+}
+
+.ce-queue-minirow:hover {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.ce-queue-minirow:focus-visible,
+.ce-queue-expander:focus-visible,
+.ce-queue-approve-all:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.ce-queue-minirow-field {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.ce-diff {
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--background);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.625rem;
+  line-height: 1.5;
+  scrollbar-color: var(--marinara-chat-chrome-panel-scrollbar) transparent;
+  scrollbar-width: thin;
+}
+
+.ce-diff-line {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0 0.4rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ce-diff-sign {
+  flex: none;
+  width: 0.6rem;
+  color: var(--muted-foreground);
+}
+
+.ce-diff-line--del {
+  background: color-mix(in srgb, var(--marinara-chat-chrome-danger-text, #e08080) 14%, transparent);
+  color: var(--marinara-chat-chrome-danger-text, #e08080);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.ce-diff-line--add {
+  background: color-mix(in srgb, var(--marinara-chat-chrome-success-text, #86d39a) 13%, transparent);
+  color: var(--marinara-chat-chrome-success-text, #86d39a);
+}
+
+.ce-diff-line--marker {
+  justify-content: center;
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
+.ce-queue-expander,
+.ce-queue-approve-all {
+  border: 0;
+  background: transparent;
+  padding: 0.15rem 0;
+  color: var(--ce-chroma);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.65625rem;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.ce-queue-approve-all:disabled,
+.ce-queue-expander:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.ce-queue-fullfield {
+  max-height: 16rem;
+  margin: 0;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--background);
+  padding: 0.4rem 0.5rem;
+  color: var(--foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.625rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  scrollbar-color: var(--marinara-chat-chrome-panel-scrollbar) transparent;
+  scrollbar-width: thin;
+}
+
+.ce-queue-stale {
+  display: grid;
+  gap: 0.4rem;
+  border: 1px solid color-mix(in srgb, #d9a13b 55%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, #d9a13b 12%, transparent);
+  padding: 0.5rem 0.6rem;
+  color: var(--foreground);
+  font-size: 0.6875rem;
+}
+
+.ce-queue-stale p {
+  margin: 0;
+}
+
+.ce-queue-stale-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.ce-queue-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ce-queue-reject,
+.ce-queue-approve {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ce-key-hint {
+  border: 1px solid currentcolor;
+  border-radius: 0.25rem;
+  padding: 0 0.25rem;
+  font-family: inherit;
+  font-size: 0.5625rem;
+  opacity: 0.7;
+}
+
+.ce-edit-retry .ce-dialog-body {
+  gap: 0.75rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ce-dialog-close,
   .ce-target-remove,
   .ce-notice-close,
   .ce-search-option,
   .ce-search-chevron,
-  .ce-lorebook {
+  .ce-lorebook,
+  .ce-progress-fill {
     transition: none;
   }
 }

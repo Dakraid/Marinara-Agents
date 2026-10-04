@@ -4,6 +4,7 @@ import { SquarePen, X } from "lucide-react";
 import type { BulkSession } from "../../../../shared/src/features/agents/card-editor/schema.js";
 import { BulkDispatchDialog } from "./BulkDispatchDialog";
 import { translateCardEditor, type CardEditorLocalizationContext } from "./localization";
+import { RunsPanel } from "./RunsPanel";
 import { CARD_EDITOR_STYLES } from "./styles";
 
 type CapabilityProps = {
@@ -87,25 +88,11 @@ function SelectionActionView({ props }: { props: CapabilityProps }) {
   );
 }
 
-function RunsPanelPlaceholder({ props }: { props: CapabilityProps }) {
-  const t = (key: string) => translateCardEditor(props.localization, key);
-  return (
-    <section
-      className="ce-shell"
-      data-card-editor-view="agent-panel"
-      data-package-id={props.packageId ?? "card-editor"}
-    >
-      <h2>{t("cardEditor.title")}</h2>
-      <p>{t("cardEditor.panel.empty")}</p>
-    </section>
-  );
-}
-
 function CapabilityRoot({ element }: { element: CardEditorElement }) {
   const props = element.capabilityProps ?? {};
   const view = element.getAttribute("view");
   if (view === "selection-action") return <SelectionActionView props={props} />;
-  if (view === "agent-panel") return <RunsPanelPlaceholder props={props} />;
+  if (view === "agent-panel") return <RunsPanel localization={props.localization} agentName={props.agent?.name} />;
   return null;
 }
 

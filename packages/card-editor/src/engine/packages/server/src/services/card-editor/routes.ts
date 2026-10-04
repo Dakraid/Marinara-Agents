@@ -370,6 +370,28 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
       }),
     );
 
+    app.post("/sessions/:id/items/:itemId/cancel", async (request, reply) =>
+      handle(reply, async () => {
+        const params = request.params as { id?: unknown; itemId?: unknown };
+        const session = await requireSession(params.id);
+        if (typeof params.itemId !== "string" || !params.itemId) throw badRequest("An item id is required.");
+        const item = findItem(session, params.itemId);
+        if (item.status !== "queued") throw conflict("Only a queued item can be canceled.");
+        // The runner absorbs canceled items on its own (pump skips non-queued tasks and the drain
+        // check completes the session), so a plain status write is the whole cancel.
+        const updated = await store.updateSession(session.id, (current) => ({
+          ...current,
+          items: current.items.map((candidate) =>
+            candidate.itemId === item.itemId && candidate.status === "queued"
+              ? advanceItemStatus(candidate, "canceled")
+              : candidate,
+          ),
+        }));
+        if (!updated) throw notFound("Card Editor session not found.");
+        return toPublicSession(updated);
+      }),
+    );
+
     app.post("/sessions/:id/items/:itemId/edit-retry", async (request, reply) =>
       handle(reply, async () => {
         const params = request.params as { id?: unknown; itemId?: unknown };

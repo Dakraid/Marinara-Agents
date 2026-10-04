@@ -914,6 +914,44 @@ async function testEditRetryRoute() {
   assert.deepEqual([languageModels.calls[2].system, languageModels.calls[2].user], ["Edited system", "Edited user"]);
 }
 
+async function testCancelQueuedItemRoute() {
+  stopAllRunners();
+  const documents = createFakeDocuments();
+  const languageModels = createFakeLanguageModels(() => ({ hang: true }));
+  const { deps, store } = createDeps(documents, languageModels);
+  const invoke = await createRouteHarness(deps);
+  const created = await createSessionViaRoute(invoke, {
+    targets: [makeTarget(0), makeTarget(1)],
+    config: normalizeSessionConfig({ mode: "individual", providerRetries: 0, concurrency: 1 }),
+  });
+  await waitFor(() => languageModels.calls.length >= 1, "the first call to be in flight");
+  const detail = await invoke("GET", "/sessions/:id", { params: { id: created.id } });
+  const running = detail.body.items.find((item) => item.status === "running");
+  const queued = detail.body.items.find((item) => item.status === "queued");
+  assert.ok(running && queued, "concurrency 1: one running, one queued");
+  const wrongState = await invoke("POST", "/sessions/:id/items/:itemId/cancel", {
+    params: { id: created.id, itemId: running.itemId },
+  });
+  assert.equal(wrongState.status, 409, "only queued items cancel individually");
+  const canceled = await invoke("POST", "/sessions/:id/items/:itemId/cancel", {
+    params: { id: created.id, itemId: queued.itemId },
+  });
+  assert.equal(canceled.status, 200);
+  assert.equal(
+    canceled.body.items.find((item) => item.itemId === queued.itemId).status,
+    "canceled",
+    "the queued item flips to canceled",
+  );
+  assert.equal(
+    canceled.body.items.find((item) => item.itemId === running.itemId).status,
+    "running",
+    "the in-flight item keeps running (session-level cancel owns it)",
+  );
+  await cancelSessionRun(deps, created.id);
+  const settled = await settledSession(store, created.id);
+  assert.equal(settled.status, "canceled");
+}
+
 // ---------------------------------------------------------------------------
 // Activation smoke (mirrors the catalog's registration expectations)
 
@@ -997,6 +1035,7 @@ const tests = [
   ["duplicate-mode verdict", testDuplicateModeVerdict],
   ["delete active session", testDeleteActiveSession],
   ["edit-retry route", testEditRetryRoute],
+  ["cancel queued item route", testCancelQueuedItemRoute],
   ["activation lifecycle", testActivationLifecycle],
 ];
 

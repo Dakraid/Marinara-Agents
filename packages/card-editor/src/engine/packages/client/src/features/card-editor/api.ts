@@ -118,13 +118,16 @@ export interface SessionIndexEntry {
 }
 
 export class CardEditorApiError extends Error {
-  constructor(
-    public status: number,
-    message: string,
-    public payload?: unknown,
-  ) {
+  status: number;
+  payload?: unknown;
+
+  // Explicit assignments (no parameter properties): the panel regression imports the API module
+  // under plain Node type-stripping, which only supports erasable TypeScript syntax.
+  constructor(status: number, message: string, payload?: unknown) {
     super(message);
     this.name = "CardEditorApiError";
+    this.status = status;
+    this.payload = payload;
   }
 }
 
@@ -201,6 +204,11 @@ export function cancelSession(sessionId: string): Promise<BulkSession> {
 
 export function retrySessionItem(sessionId: string, itemId: string): Promise<BulkSession> {
   return request<BulkSession>(itemPath(sessionId, itemId, "/retry"), "POST");
+}
+
+/** Queued items only (409 otherwise); running items cancel with the session-level cancel. */
+export function cancelSessionItem(sessionId: string, itemId: string): Promise<BulkSession> {
+  return request<BulkSession>(itemPath(sessionId, itemId, "/cancel"), "POST");
 }
 
 export function editRetrySessionItem(sessionId: string, itemId: string, body: EditRetryRequest): Promise<BulkSession> {
