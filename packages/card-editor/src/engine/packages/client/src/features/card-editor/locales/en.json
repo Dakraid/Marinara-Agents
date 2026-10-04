@@ -1,0 +1,10 @@
+{
+  "_meta": {
+    "locale": "en",
+    "direction": "ltr"
+  },
+  "cardEditor.title": "Card Editor",
+  "cardEditor.panel.empty": "No bulk editing sessions yet.",
+  "cardEditor.dialog.placeholder": "Bulk editing for {{count}} selected characters will appear here.",
+  "cardEditor.error.network": "Could not reach Card Editor."
+}
