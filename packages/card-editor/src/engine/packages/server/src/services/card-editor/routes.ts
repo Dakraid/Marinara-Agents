@@ -1,0 +1,513 @@
+/**
+ * HTTP routes for Card Editor bulk sessions (ARCH §2/§4, SPEC F3/F5), registered under
+ * /api/card-editor by server-entry. All errors answer a JSON `{ error: string }` envelope (the
+ * typed client's errorMessage() reads `error` first) with 400/404/409 as appropriate.
+ *
+ * Two coordinator decisions shape the payload contract:
+ * 1. The capability host has no character/lorebook access, so POST /sessions carries ALL prompt
+ *    material (target cards, lorebooks, behavior character); the server validates, captures
+ *    per-field snapshots via normalizeCardPromptText, and never fetches engine data.
+ * 2. Card writes are client-side over engine REST. The verdict route only plans (planApply) and
+ *    answers { status: "needs-confirmation", holds } or { status: "apply", ops } with the ops
+ *    stashed on the item (pendingOps, stripped from every response); the client executes the ops
+ *    and reports per-op outcomes to the apply-result route, which confirms or fails the item.
+ */
+import type { FastifyPluginAsync, FastifyReply } from "fastify";
+import {
+  advanceItemStatus,
+  newSession,
+  normalizeSessionConfig,
+  SchemaError,
+  type BulkSession,
+  type SessionItem,
+} from "../../../../shared/src/features/agents/card-editor/schema.ts";
+import { normalizeCardPromptText } from "../../../../shared/src/features/agents/card-editor/text.ts";
+import { planApply, type ApplyOperation } from "./apply.ts";
+import type { CharacterLike, LorebookLike } from "./context.ts";
+import { cancelSessionRun, retryItemRun, startRunner, type RunnerDeps, type RunnerLogger } from "./runner.ts";
+import type { SessionPromptMaterial, SessionStore } from "./session-store.ts";
+
+export interface CardEditorRouteDeps extends RunnerDeps {
+  store: SessionStore;
+  logger: RunnerLogger;
+}
+
+/** The snapshot covers every bulk-editable field so the verdict staleness check compares exactly
+ *  the text the model saw (SPEC F1). Mirrors the schema's bulk-editable field list. */
+const SNAPSHOT_FIELDS = [
+  "description",
+  "personality",
+  "scenario",
+  "first_mes",
+  "mes_example",
+  "creator_notes",
+  "system_prompt",
+  "post_history_instructions",
+  "backstory",
+  "appearance",
+] as const;
+
+const CARD_FIELDS = ["name", ...SNAPSHOT_FIELDS] as const;
+
+const MAX_CONTENT_CHARS = 100_000;
+const MAX_PROMPT_CHARS = 500_000;
+const MAX_TARGETS = 500;
+const MAX_LOREBOOKS = 50;
+const MAX_LOREBOOK_ENTRIES = 500;
+const MAX_INCLUDE_FIELDS = 100;
+
+function badRequest(message: string): Error {
+  return Object.assign(new Error(message), { statusCode: 400 });
+}
+function notFound(message: string): Error {
+  return Object.assign(new Error(message), { statusCode: 404 });
+}
+function conflict(message: string): Error {
+  return Object.assign(new Error(message), { statusCode: 409 });
+}
+
+function sourceRecord(value: unknown): Record<string, unknown> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw badRequest("A JSON request body is required.");
+  }
+  return value as Record<string, unknown>;
+}
+
+function cappedString(value: unknown, field: string, max: number, { optional = false } = {}): string {
+  if (value === undefined || value === null) {
+    if (optional) return "";
+    throw badRequest(`${field} is required.`);
+  }
+  if (typeof value !== "string") throw badRequest(`${field} must be a string.`);
+  if (value.length > max) throw badRequest(`${field} must be at most ${max} characters.`);
+  return value;
+}
+
+interface TargetPayload {
+  characterId: string;
+  characterName?: string;
+  note?: string;
+  behaviorOverride?: string | null;
+  card: CharacterLike;
+}
+
+function parseTarget(value: unknown, index: number): TargetPayload {
+  const source = sourceRecord(value);
+  const characterId = cappedString(source.characterId, `targets[${index}].characterId`, 160).trim();
+  if (!characterId) throw badRequest(`targets[${index}].characterId is required.`);
+  if (
+    source.card === undefined ||
+    source.card === null ||
+    typeof source.card !== "object" ||
+    Array.isArray(source.card)
+  ) {
+    throw badRequest(`targets[${index}].card is required.`);
+  }
+  const cardSource = source.card as Record<string, unknown>;
+  const card: CharacterLike = {};
+  for (const field of CARD_FIELDS) {
+    card[field] = cappedString(cardSource[field], `targets[${index}].card.${field}`, MAX_CONTENT_CHARS, {
+      optional: true,
+    });
+  }
+  const target: TargetPayload = { characterId, card };
+  if (source.characterName !== undefined) {
+    target.characterName = cappedString(source.characterName, `targets[${index}].characterName`, 300);
+  }
+  if (source.note !== undefined) target.note = cappedString(source.note, `targets[${index}].note`, 10_000);
+  if (source.behaviorOverride !== undefined && source.behaviorOverride !== null) {
+    target.behaviorOverride = cappedString(source.behaviorOverride, `targets[${index}].behaviorOverride`, 160);
+  } else if (source.behaviorOverride === null) {
+    target.behaviorOverride = null;
+  }
+  return target;
+}
+
+function parseLorebooks(value: unknown): LorebookLike[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || value.length > MAX_LOREBOOKS) {
+    throw badRequest(`lorebooks must be an array of at most ${MAX_LOREBOOKS} books.`);
+  }
+  return value.map((entry, index) => {
+    const source = sourceRecord(entry);
+    const lorebook: LorebookLike = { name: cappedString(source.name, `lorebooks[${index}].name`, 300) };
+    if (source.entries !== undefined) {
+      if (!Array.isArray(source.entries) || source.entries.length > MAX_LOREBOOK_ENTRIES) {
+        throw badRequest(`lorebooks[${index}].entries must be an array of at most ${MAX_LOREBOOK_ENTRIES} entries.`);
+      }
+      lorebook.entries = source.entries.map((rawEntry, entryIndex) => ({
+        name: cappedString(sourceRecord(rawEntry).name, `lorebooks[${index}].entries[${entryIndex}].name`, 300, {
+          optional: true,
+        }),
+        content: cappedString(
+          sourceRecord(rawEntry).content,
+          `lorebooks[${index}].entries[${entryIndex}].content`,
+          MAX_CONTENT_CHARS,
+          {
+            optional: true,
+          },
+        ),
+        enabled: sourceRecord(rawEntry).enabled !== false,
+      }));
+    }
+    return lorebook;
+  });
+}
+
+function parseBehaviorCharacter(value: unknown): CharacterLike | null {
+  if (value === undefined || value === null) return null;
+  const source = sourceRecord(value);
+  const character: CharacterLike = {};
+  for (const field of ["name", "description", "personality", "backstory", "appearance", "system_prompt"] as const) {
+    character[field] = cappedString(source[field], `behaviorCharacter.${field}`, MAX_CONTENT_CHARS, { optional: true });
+  }
+  return character;
+}
+
+function parseIncludeFields(value: unknown): string[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value) || value.length > MAX_INCLUDE_FIELDS) {
+    throw badRequest(`includeFields must be an array of at most ${MAX_INCLUDE_FIELDS} field names.`);
+  }
+  return value.map((entry, index) => cappedString(entry, `includeFields[${index}]`, 160));
+}
+
+function parseCurrentFields(value: unknown): Record<string, string> | undefined {
+  if (value === undefined) return undefined;
+  const source = sourceRecord(value);
+  const entries = Object.entries(source);
+  if (entries.length > MAX_INCLUDE_FIELDS) throw badRequest("currentFields carries too many fields.");
+  const fields: Record<string, string> = {};
+  for (const [key, entry] of entries) {
+    if (key.length > 160) throw badRequest("currentFields field names must be at most 160 characters.");
+    fields[key] = cappedString(entry, `currentFields.${key}`, MAX_CONTENT_CHARS);
+  }
+  return fields;
+}
+
+/** pendingOps are server-internal correlation state (Decision 2): persisted, never serialized. */
+function toPublicSession(session: BulkSession): BulkSession {
+  return {
+    ...session,
+    items: session.items.map((item) => {
+      if (item.pendingOps === undefined) return item;
+      const { pendingOps: _dropped, ...rest } = item;
+      return rest;
+    }),
+  };
+}
+
+function toSessionIndex(session: BulkSession) {
+  return {
+    id: session.id,
+    label: session.label,
+    status: session.status,
+    stats: session.stats,
+    createdAt: session.createdAt,
+  };
+}
+
+function findItem(session: BulkSession, itemId: string): SessionItem {
+  const item = session.items.find((candidate) => candidate.itemId === itemId);
+  if (!item) throw notFound("Card Editor session item not found.");
+  return item;
+}
+
+function errorStatusCode(error: unknown): number {
+  const code = (error as { statusCode?: unknown } | null)?.statusCode;
+  return typeof code === "number" && Number.isInteger(code) && code >= 400 && code < 600 ? code : 500;
+}
+
+export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPluginAsync {
+  const { store, logger } = deps;
+
+  async function handle(reply: FastifyReply, work: () => Promise<unknown>): Promise<unknown> {
+    try {
+      return await work();
+    } catch (error) {
+      const status = errorStatusCode(error);
+      if (status >= 500) logger.error(error, "Card Editor route failed");
+      return reply.status(status).send({ error: error instanceof Error ? error.message : String(error) });
+    }
+  }
+
+  async function requireSession(id: unknown): Promise<BulkSession> {
+    if (typeof id !== "string" || !id.trim() || id.length > 160) throw badRequest("A session id is required.");
+    const session = await store.getSession(id);
+    if (!session) throw notFound("Card Editor session not found.");
+    return session;
+  }
+
+  const routes: FastifyPluginAsync = async (app) => {
+    app.get("/health", async () => ({ ok: true }));
+
+    app.post("/sessions", async (request, reply) =>
+      handle(reply, async () => {
+        const body = sourceRecord(request.body);
+        if (!Array.isArray(body.targets) || body.targets.length < 1 || body.targets.length > MAX_TARGETS) {
+          throw badRequest(`targets must be an array of 1..${MAX_TARGETS} entries.`);
+        }
+        const targets = body.targets.map(parseTarget);
+        const seen = new Set<string>();
+        for (const target of targets) {
+          if (seen.has(target.characterId)) throw badRequest(`duplicate characterId in targets: ${target.characterId}`);
+          seen.add(target.characterId);
+        }
+        for (const target of targets) {
+          if (typeof target.behaviorOverride === "string") {
+            if (target.behaviorOverride === target.characterId || !seen.has(target.behaviorOverride)) {
+              throw badRequest(
+                `targets[].behaviorOverride must reference another target's characterId (unknown: ${target.behaviorOverride}).`,
+              );
+            }
+          }
+        }
+        let config;
+        try {
+          config = normalizeSessionConfig(body.config ?? {});
+        } catch (error) {
+          if (error instanceof SchemaError) throw badRequest(error.message);
+          throw error;
+        }
+        if (config.globalInstruction.length > MAX_CONTENT_CHARS) {
+          throw badRequest(`config.globalInstruction must be at most ${MAX_CONTENT_CHARS} characters.`);
+        }
+        if (config.customTemplate !== undefined && config.customTemplate.length > MAX_CONTENT_CHARS) {
+          throw badRequest(`config.customTemplate must be at most ${MAX_CONTENT_CHARS} characters.`);
+        }
+        // Mirror assemblePrompt's rule so a bad custom preset fails at dispatch time, not mid-run.
+        if (config.presetId === "custom" && !(config.customTemplate ?? "").trim()) {
+          throw badRequest('presetId "custom" requires a non-empty customTemplate.');
+        }
+        const material: SessionPromptMaterial = {
+          version: 1,
+          lorebooks: parseLorebooks(body.lorebooks),
+          behaviorCharacter: parseBehaviorCharacter(body.behaviorCharacter),
+        };
+        const label =
+          (body.label === undefined ? "" : cappedString(body.label, "label", 200).trim()) ||
+          `Bulk edit · ${targets.length} card${targets.length === 1 ? "" : "s"}`;
+        const session = newSession(
+          label,
+          config,
+          targets.map((target) => ({
+            characterId: target.characterId,
+            characterName: target.characterName || target.card.name || target.characterId,
+            ...(target.note === undefined ? {} : { note: target.note }),
+            ...(target.behaviorOverride === undefined ? {} : { behaviorOverride: target.behaviorOverride }),
+          })),
+        );
+        const withSnapshots: BulkSession = {
+          ...session,
+          items: session.items.map((item) => {
+            const target = targets.find((candidate) => candidate.characterId === item.characterId)!;
+            return {
+              ...item,
+              snapshots: Object.fromEntries(
+                SNAPSHOT_FIELDS.map((field) => [field, normalizeCardPromptText(target.card[field])]),
+              ),
+            };
+          }),
+        };
+        const created = await store.createSession(withSnapshots, material);
+        startRunner(deps, created.id);
+        return toPublicSession(created);
+      }),
+    );
+
+    app.get("/sessions", async (_request, reply) =>
+      handle(reply, async () => (await store.listSessions()).map(toSessionIndex)),
+    );
+
+    app.get("/sessions/:id", async (request, reply) =>
+      handle(reply, async () => toPublicSession(await requireSession((request.params as { id?: unknown }).id))),
+    );
+
+    app.post("/sessions/:id/cancel", async (request, reply) =>
+      handle(reply, async () => {
+        const session = await requireSession((request.params as { id?: unknown }).id);
+        if (session.status !== "active") return toPublicSession(session);
+        return toPublicSession(await cancelSessionRun(deps, session.id));
+      }),
+    );
+
+    app.post("/sessions/:id/items/:itemId/retry", async (request, reply) =>
+      handle(reply, async () => {
+        const params = request.params as { id?: unknown; itemId?: unknown };
+        const session = await requireSession(params.id);
+        if (typeof params.itemId !== "string" || !params.itemId) throw badRequest("An item id is required.");
+        return toPublicSession(await retryItemRun(deps, session.id, params.itemId));
+      }),
+    );
+
+    app.post("/sessions/:id/items/:itemId/edit-retry", async (request, reply) =>
+      handle(reply, async () => {
+        const params = request.params as { id?: unknown; itemId?: unknown };
+        const session = await requireSession(params.id);
+        if (typeof params.itemId !== "string" || !params.itemId) throw badRequest("An item id is required.");
+        const body = sourceRecord(request.body);
+        const prompt = {
+          system: cappedString(body.system, "system", MAX_PROMPT_CHARS),
+          user: cappedString(body.user, "user", MAX_PROMPT_CHARS),
+        };
+        return toPublicSession(await retryItemRun(deps, session.id, params.itemId, prompt));
+      }),
+    );
+
+    app.post("/sessions/:id/items/:itemId/verdict", async (request, reply) =>
+      handle(reply, async () => {
+        const params = request.params as { id?: unknown; itemId?: unknown };
+        const session = await requireSession(params.id);
+        if (typeof params.itemId !== "string" || !params.itemId) throw badRequest("An item id is required.");
+        const item = findItem(session, params.itemId);
+        const reviewable = item.status === "awaiting-review" || item.status === "needs-review";
+        if (!reviewable) {
+          throw conflict("Only an item awaiting review can receive a verdict.");
+        }
+        const body = sourceRecord(request.body);
+        if (body.verdict !== "approve" && body.verdict !== "reject") {
+          throw badRequest('verdict must be "approve" or "reject".');
+        }
+        const reviewableItem = (candidate: SessionItem) =>
+          candidate.itemId === item.itemId &&
+          (candidate.status === "awaiting-review" || candidate.status === "needs-review");
+        const transitioned = (updated: BulkSession, status: SessionItem["status"]) => {
+          const after = updated.items.find((candidate) => candidate.itemId === item.itemId);
+          if (!after || after.status !== status) throw conflict("The item's review state changed; retry the verdict.");
+          return updated;
+        };
+        if (body.verdict === "reject") {
+          const updated = await store.updateSession(session.id, (current) => ({
+            ...current,
+            items: current.items.map((candidate) =>
+              reviewableItem(candidate) ? advanceItemStatus(candidate, "rejected") : candidate,
+            ),
+          }));
+          if (!updated) throw notFound("Card Editor session not found.");
+          return toPublicSession(transitioned(updated, "rejected"));
+        }
+        // approve: two-phase apply (Decision 2) — the route plans, the client executes the ops.
+        const saveMode = session.config.saveMode;
+        const force = body.force === true;
+        const includeFields = parseIncludeFields(body.includeFields);
+        const currentFields = parseCurrentFields(body.currentFields);
+        if (saveMode !== "duplicate" && !currentFields) {
+          throw badRequest("currentFields is required when approving an in-place save mode.");
+        }
+        const ops = planApply(item, currentFields ?? {}, {
+          force,
+          ...(includeFields === undefined ? {} : { includeFields }),
+          saveMode,
+          label: session.label,
+          duplicateSuffix: session.config.duplicateSuffix,
+        });
+        const holds = ops.filter((op) => op.op === "hold");
+        if (holds.length > 0 && !force) {
+          const updated = await store.updateSession(session.id, (current) => ({
+            ...current,
+            items: current.items.map((candidate) =>
+              reviewableItem(candidate) ? advanceItemStatus(candidate, "needs-review") : candidate,
+            ),
+          }));
+          if (!updated) throw notFound("Card Editor session not found.");
+          transitioned(updated, "needs-review");
+          return { status: "needs-confirmation", holds };
+        }
+        const nextStatus = saveMode === "duplicate" ? "duplicated" : "applied";
+        const updated = await store.updateSession(session.id, (current) => ({
+          ...current,
+          items: current.items.map((candidate) =>
+            reviewableItem(candidate) ? { ...advanceItemStatus(candidate, nextStatus), pendingOps: ops } : candidate,
+          ),
+        }));
+        if (!updated) throw notFound("Card Editor session not found.");
+        transitioned(updated, nextStatus);
+        return { status: "apply", ops };
+      }),
+    );
+
+    app.post("/sessions/:id/items/:itemId/apply-result", async (request, reply) =>
+      handle(reply, async () => {
+        const params = request.params as { id?: unknown; itemId?: unknown };
+        const session = await requireSession(params.id);
+        if (typeof params.itemId !== "string" || !params.itemId) throw badRequest("An item id is required.");
+        const item = findItem(session, params.itemId);
+        const pendingOps = (item.pendingOps ?? []) as ApplyOperation[];
+        if ((item.status !== "applied" && item.status !== "duplicated") || !Array.isArray(item.pendingOps)) {
+          throw conflict("The item has no pending apply to confirm.");
+        }
+        const body = sourceRecord(request.body);
+        if (!Array.isArray(body.results) || body.results.length !== pendingOps.length) {
+          throw badRequest("results must report one entry per planned operation.");
+        }
+        const seenIndexes = new Set<number>();
+        const results = body.results.map((value: unknown) => {
+          const source = sourceRecord(value);
+          const index = source.index;
+          if (!Number.isInteger(index) || (index as number) < 0 || (index as number) >= pendingOps.length) {
+            throw badRequest("results indexes must address the planned operations.");
+          }
+          if (seenIndexes.has(index as number)) throw badRequest("results contain a duplicate op index.");
+          seenIndexes.add(index as number);
+          if (typeof source.ok !== "boolean") throw badRequest("results must carry a boolean ok flag.");
+          return {
+            index: index as number,
+            ok: source.ok,
+            error:
+              source.error === undefined ? undefined : cappedString(source.error, `results[${index}].error`, 2_000),
+            resultCardId:
+              source.resultCardId === undefined
+                ? undefined
+                : cappedString(source.resultCardId, `results[${index}].resultCardId`, 160),
+          };
+        });
+        const failures = results.filter((result: { ok: boolean }) => !result.ok);
+        const updated = await store.updateSession(session.id, (current) => ({
+          ...current,
+          items: current.items.map((candidate) => {
+            if (candidate.itemId !== item.itemId) return candidate;
+            if (candidate.status !== "applied" && candidate.status !== "duplicated") return candidate;
+            const { pendingOps: _dropped, autoApply: _autoApply, ...rest } = candidate;
+            if (failures.length === 0) {
+              const resultCardId = results.find(
+                (result: { resultCardId?: string }) => typeof result.resultCardId === "string",
+              )?.resultCardId;
+              return {
+                ...rest,
+                appliedAt: new Date().toISOString(),
+                ...(candidate.status === "duplicated" && resultCardId ? { resultCardId } : {}),
+              };
+            }
+            // A client-side write failed (Decision 2): keep updates + snapshots for retry/review.
+            const failed = advanceItemStatus(rest, "failed-provider");
+            return {
+              ...failed,
+              failure: {
+                kind: "provider" as const,
+                message: failures[0]!.error ?? "The client reported an apply failure.",
+                attempts: 0,
+              },
+            };
+          }),
+        }));
+        if (!updated) throw notFound("Card Editor session not found.");
+        return toPublicSession(updated);
+      }),
+    );
+
+    app.delete("/sessions/:id", async (request, reply) =>
+      handle(reply, async () => {
+        const session = await requireSession((request.params as { id?: unknown }).id);
+        const query = (request.query ?? {}) as { force?: unknown };
+        const force = query.force === "true" || query.force === "1";
+        if (session.status === "active") {
+          if (!force) throw conflict("The session is still active; cancel it first or repeat with ?force=true.");
+          await cancelSessionRun(deps, session.id);
+        }
+        await store.deleteSession(session.id);
+        return reply.status(204).send();
+      }),
+    );
+  };
+  return routes;
+}

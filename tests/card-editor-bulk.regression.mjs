@@ -28,6 +28,14 @@ import {
   parseSingleResponse,
 } from "../packages/card-editor/src/engine/packages/server/src/services/card-editor/parse.ts";
 import { planApply } from "../packages/card-editor/src/engine/packages/server/src/services/card-editor/apply.ts";
+import {
+  REFUSAL_REMINDER,
+  STRICT_JSON_REMINDER,
+  backoffDelayMs,
+  classifyProviderError,
+  detectRefusal,
+} from "../packages/card-editor/src/engine/packages/server/src/services/card-editor/llm.ts";
+import { splitItemIds } from "../packages/card-editor/src/engine/packages/server/src/services/card-editor/runner.ts";
 
 const defaults = normalizeSessionConfig({});
 assert.deepEqual(defaults, {
@@ -114,8 +122,12 @@ const graph = new Map([
   ["queued", ["running"]],
   ["running", ["succeeded", "failed-provider", "failed-refusal", "failed-parse"]],
   ["succeeded", ["awaiting-review", "applied", "needs-review", "duplicated"]],
-  ["awaiting-review", ["applied", "rejected"]],
+  // Verdict route (two-phase apply): holds demote to needs-review; duplicate-mode approve lands on
+  // duplicated; a failed client-side apply-result demotes applied/duplicated back to failed-provider.
+  ["awaiting-review", ["applied", "rejected", "needs-review", "duplicated"]],
   ["needs-review", ["applied", "rejected"]],
+  ["applied", ["failed-provider"]],
+  ["duplicated", ["failed-provider"]],
   ["failed-provider", ["running"]],
   ["failed-refusal", ["running"]],
   ["failed-parse", ["running"]],
@@ -615,5 +627,148 @@ assert.deepEqual(
   [],
   "an item without updates produces no operations",
 );
+
+// ---------------------------------------------------------------------------
+// llm.ts — provider error classification (ARCH §4)
+
+const httpError = (status, message = "Request failed") =>
+  Object.assign(new Error(message), { status, name: "LLMHttpError" });
+assert.equal(classifyProviderError(httpError(400, "Request failed (400): context_length_exceeded")), "overflow");
+assert.equal(classifyProviderError(httpError(400, "This model's maximum context length is 4096 tokens")), "overflow");
+assert.equal(classifyProviderError(httpError(400, "too many tokens in prompt")), "overflow");
+assert.equal(
+  classifyProviderError(httpError(400, "MAXIMUM CONTEXT reached")),
+  "overflow",
+  "matching is case-insensitive",
+);
+assert.equal(classifyProviderError(Object.assign(new Error("bad"), { code: "CONTEXT_LENGTH_EXCEEDED" })), "overflow");
+assert.equal(classifyProviderError(httpError(400, "Invalid request body")), "fatal", "plain 400 is not overflow");
+assert.equal(classifyProviderError(httpError(401)), "fatal");
+assert.equal(classifyProviderError(httpError(403)), "fatal");
+assert.equal(classifyProviderError(httpError(404)), "fatal");
+assert.equal(classifyProviderError(httpError(429)), "retryable-provider");
+assert.equal(classifyProviderError(httpError(500)), "retryable-provider");
+assert.equal(classifyProviderError(httpError(503)), "retryable-provider");
+assert.equal(classifyProviderError(Object.assign(new Error("x"), { statusCode: 502 })), "retryable-provider");
+assert.equal(classifyProviderError(new TypeError("fetch failed")), "retryable-provider", "network error");
+assert.equal(classifyProviderError(new DOMException("The operation timed out", "TimeoutError")), "retryable-provider");
+assert.equal(classifyProviderError("weird string failure"), "retryable-provider");
+
+// detectRefusal: no parseable updates AND (short OR marker); parseable updates always win.
+assert.equal(detectRefusal("Sure.", false), true, "short non-committal output");
+assert.equal(detectRefusal("Sure.", true), false, "parseable updates override shortness");
+assert.equal(detectRefusal(`{"updates":[]}`, true), false, "a valid no-op is never a refusal");
+for (const marker of [
+  "I can't do that",
+  "I cannot comply",
+  "As an AI language model",
+  "I'm sorry, but",
+  "I won't help",
+]) {
+  const long = `${marker}. ${"padding ".repeat(80)}`;
+  assert.ok(long.length >= 400);
+  assert.equal(detectRefusal(long, false), true, `marker: ${marker}`);
+  assert.equal(detectRefusal(long.toUpperCase(), false), true, "markers are case-insensitive");
+}
+assert.equal(
+  detectRefusal(`This has an AI flavor. ${"padding ".repeat(80)}`, false),
+  false,
+  "word-bounded: 'has an AI'",
+);
+assert.equal(detectRefusal(`I cant help. ${"padding ".repeat(80)}`, false), false, "word-bounded: 'cant'");
+assert.equal(detectRefusal(`Long prose without any marker. ${"padding ".repeat(80)}`, false), false);
+assert.ok(
+  REFUSAL_REMINDER.length > 20 && STRICT_JSON_REMINDER.length > 20 && REFUSAL_REMINDER !== STRICT_JSON_REMINDER,
+);
+
+// backoffDelayMs: 1s·2^n with ±25% jitter, capped at 30s.
+assert.equal(
+  backoffDelayMs(0, () => 0),
+  750,
+);
+assert.equal(
+  backoffDelayMs(0, () => 1),
+  1250,
+);
+assert.equal(
+  backoffDelayMs(1, () => 0),
+  1500,
+);
+assert.equal(
+  backoffDelayMs(2, () => 0),
+  3000,
+);
+assert.equal(
+  backoffDelayMs(3, () => 0),
+  6000,
+);
+assert.equal(
+  backoffDelayMs(4, () => 0),
+  12000,
+);
+assert.equal(
+  backoffDelayMs(5, () => 0),
+  22500,
+  "base caps at 30s before jitter",
+);
+assert.equal(
+  backoffDelayMs(5, () => 1),
+  30000,
+  "total caps at 30s",
+);
+assert.equal(
+  backoffDelayMs(99, () => 0.5),
+  30000,
+);
+for (let index = 0; index < 7; index += 1) {
+  const value = backoffDelayMs(index, () => Math.random());
+  assert.ok(value >= 750 && value <= 30_000, `delay in range for retry ${index}`);
+}
+
+// splitItemIds: ⌈n/2⌉ first half; the overflow recursion floors at single-card calls.
+assert.deepEqual(splitItemIds(["a", "b", "c", "d", "e"]), [
+  ["a", "b", "c"],
+  ["d", "e"],
+]);
+assert.deepEqual(splitItemIds(["a", "b", "c", "d"]), [
+  ["a", "b"],
+  ["c", "d"],
+]);
+assert.deepEqual(splitItemIds(["a", "b"]), [["a"], ["b"]]);
+assert.deepEqual(splitItemIds(["a"]), [["a"], []], "a single card never splits further");
+// Recursion trace for a 7-card batch: 7 → 4+3 → 2+2 / 2+1 → singles.
+const trace = [7];
+let sizes = [7];
+while (sizes.some((size) => size > 1)) {
+  sizes = sizes
+    .flatMap((size) =>
+      splitItemIds(Array.from({ length: size }, (_, index) => `${size}:${index}`)).map((half) => half.length),
+    )
+    .filter((size) => size > 0);
+  trace.push(...sizes);
+}
+assert.deepEqual(trace, [7, 4, 3, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1]);
+
+// migrateSessionDocument tolerates the runner's additive item fields (autoApply hint, pendingOps stash).
+const hintSession = newSession("Hints", defaults, [{ characterId: "character-1", characterName: "One" }]);
+const hinted = {
+  ...hintSession,
+  items: hintSession.items.map((item) => ({
+    ...item,
+    autoApply: true,
+    pendingOps: [{ op: "patchField", characterId: "character-1", field: "description", newText: "x" }],
+  })),
+};
+assert.equal(migrateSessionDocument(hinted), hinted, "autoApply/pendingOps must round-trip");
+const badHinted = {
+  ...hintSession,
+  items: hintSession.items.map((item) => ({ ...item, autoApply: "yes" })),
+};
+assert.equal(migrateSessionDocument(badHinted), null, "a non-boolean autoApply is rejected");
+const badOps = {
+  ...hintSession,
+  items: hintSession.items.map((item) => ({ ...item, pendingOps: "not-an-array" })),
+};
+assert.equal(migrateSessionDocument(badOps), null, "a non-array pendingOps is rejected");
 
 process.stdout.write("Card Editor bulk services regression passed.\n");

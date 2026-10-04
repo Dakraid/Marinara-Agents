@@ -74,6 +74,12 @@ export interface SessionItem {
   resultCardId?: string;
   appliedAt?: string;
   batchId?: string;
+  /** Hint for the runs panel: auto-save-mode items land in awaiting-review with this flag so the
+   *  panel auto-drives the verdict flow on first sight (held-back items surface as needs-review). */
+  autoApply?: boolean;
+  /** Server-internal correlation state between the verdict and apply-result routes (the planned
+   *  ops the client is executing). Persisted but stripped from every route response. */
+  pendingOps?: unknown[];
 }
 
 export interface BulkSessionBatch {
@@ -139,9 +145,15 @@ const TRANSITIONS: Readonly<Partial<Record<ItemStatus, readonly ItemStatus[]>>> 
   queued: ["running"],
   running: ["succeeded", "failed-provider", "failed-refusal", "failed-parse"],
   succeeded: ["awaiting-review", "applied", "needs-review", "duplicated"],
-  "awaiting-review": ["applied", "rejected"],
   // Verdict queue resolves held-back auto-approve items (DESIGN §3): force applies, else reject.
+  // needs-review is reachable from awaiting-review when the verdict plans hold ops (stale fields);
+  // duplicated is the duplicate-mode approve outcome from awaiting-review.
+  "awaiting-review": ["applied", "rejected", "needs-review", "duplicated"],
   "needs-review": ["applied", "rejected"],
+  // Two-phase apply: the verdict moves the item to applied/duplicated with pendingOps stashed;
+  // a failed client-side write report (apply-result) demotes it to failed-provider for retry.
+  applied: ["failed-provider"],
+  duplicated: ["failed-provider"],
   "failed-provider": ["running"],
   "failed-refusal": ["running"],
   "failed-parse": ["running"],
@@ -372,6 +384,8 @@ function isSessionItem(value: unknown): value is SessionItem {
       if (!prompt || typeof prompt.system !== "string" || typeof prompt.user !== "string") return false;
     }
   }
+  if (source.autoApply !== undefined && typeof source.autoApply !== "boolean") return false;
+  if (source.pendingOps !== undefined && !Array.isArray(source.pendingOps)) return false;
   return [source.resultCardId, source.appliedAt, source.batchId].every(
     (entry) => entry === undefined || typeof entry === "string",
   );
