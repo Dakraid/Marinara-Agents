@@ -1,7 +1,8 @@
 export const OFFICIAL_PACKAGE_GUIDANCE = Object.freeze({
   "card-editor": {
     modes: ["roleplay"],
-    activation: "Open a character card and choose Run Card Editor to propose changes for approval.",
+    activation:
+      "Open a character card and choose Run Card Editor, or select characters and choose Card Editor for a bulk session, to propose changes for approval.",
   },
   "card-evolution-auditor": {
     modes: ["roleplay"],

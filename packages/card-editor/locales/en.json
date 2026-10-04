@@ -6,12 +6,26 @@
   },
   "package": {
     "name": "Card Editor",
-    "description": "Rewrites an existing character card from a user directive while preserving its voice and aligning it with referenced lore. Open a character card and choose Run Card Editor to propose changes for approval."
+    "description": "Rewrites character cards from your directives while preserving each card's voice and aligning it with referenced lore. Runs on a single card or as bulk dispatch across selected characters, with verdict review, edit-and-retry, and session management in its runs panel. Open a character card and choose Run Card Editor, or select characters and choose Card Editor for a bulk session, to propose changes for approval."
   },
   "agents": {
     "card-editor": {
       "name": "Card Editor",
-      "description": "Rewrites an existing character card from a user directive while preserving its voice and aligning it with referenced lore."
+      "description": "Rewrites character cards from your directives while preserving each card's voice and aligning it with referenced lore. Runs on a single card or as bulk dispatch across selected characters, with verdict review, edit-and-retry, and session management in its runs panel.",
+      "promptTemplates": {
+        "standard": {
+          "name": "Standard rewrite",
+          "description": "Balanced rewrite preset: applies the instruction across the card while preserving each card's voice, facts, and intent."
+        },
+        "strict": {
+          "name": "Strict surgical",
+          "description": "Surgical preset: the smallest whole-field rewrite that satisfies the instruction, touching only the fields it explicitly targets."
+        },
+        "rebalance": {
+          "name": "Field rebalancing",
+          "description": "Field rebalancing preset: moves content between description, personality, backstory, appearance, and scenario to match each field's meaning while preserving every fact."
+        }
+      }
     }
   }
 }

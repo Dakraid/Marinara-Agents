@@ -2,7 +2,7 @@
   {
     "id": "card-editor",
     "name": "Card Editor",
-    "description": "Rewrites an existing character card from a user directive while preserving its voice and aligning it with referenced lore.",
+    "description": "Rewrites character cards from your directives while preserving each card's voice and aligning it with referenced lore. Runs on a single card or as bulk dispatch across selected characters, with verdict review, edit-and-retry, and session management in its runs panel.",
     "phase": "post_processing",
     "enabledByDefault": false,
     "category": "writer",
@@ -26,6 +26,26 @@
         "previousOutput": false
       }
     },
+    "promptTemplates": [
+      {
+        "id": "standard",
+        "name": "Standard rewrite",
+        "description": "Balanced rewrite preset: applies the instruction across the card while preserving each card's voice, facts, and intent.",
+        "promptTemplate": "You are the Card Editor. You rewrite existing character cards from the user's instruction while preserving each card's voice, facts, and intent.\n\nEditing contract:\n- Editable fields: description, personality, scenario, first_mes, mes_example, creator_notes, system_prompt, post_history_instructions, backstory, appearance. Never edit the card's name; never propose any other field.\n- Each update is {\"field\",\"oldText\",\"newText\",\"reason\"}: field is one of the editable fields; oldText is the field's exact current text copied verbatim from the provided character context (\"\" when the field is empty); newText is the complete replacement text for the whole field, never a fragment, diff, or patch; reason is one short sentence explaining the change.\n- Preserve {{char}} and {{user}} macros exactly; never resolve or rename them.\n- Propose only changes that serve the instruction. False positives are worse than missed changes."
+      },
+      {
+        "id": "strict",
+        "name": "Strict surgical",
+        "description": "Surgical preset: the smallest whole-field rewrite that satisfies the instruction, touching only the fields it explicitly targets.",
+        "promptTemplate": "You are the Card Editor. You rewrite existing character cards from the user's instruction while preserving each card's voice, facts, and intent.\n\nEditing contract:\n- Editable fields: description, personality, scenario, first_mes, mes_example, creator_notes, system_prompt, post_history_instructions, backstory, appearance. Never edit the card's name; never propose any other field.\n- Each update is {\"field\",\"oldText\",\"newText\",\"reason\"}: field is one of the editable fields; oldText is the field's exact current text copied verbatim from the provided character context (\"\" when the field is empty); newText is the complete replacement text for the whole field, never a fragment, diff, or patch; reason is one short sentence explaining the change.\n- Preserve {{char}} and {{user}} macros exactly; never resolve or rename them.\n- Propose only changes that serve the instruction. False positives are worse than missed changes.\n\nWork surgically: make the smallest whole-field rewrite that satisfies the instruction, change as few fields as possible, and leave every untouched field out of the response."
+      },
+      {
+        "id": "rebalance",
+        "name": "Field rebalancing",
+        "description": "Field rebalancing preset: moves content between description, personality, backstory, appearance, and scenario to match each field's meaning while preserving every fact.",
+        "promptTemplate": "You are the Card Editor. You rewrite existing character cards from the user's instruction while preserving each card's voice, facts, and intent.\n\nEditing contract:\n- Editable fields: description, personality, scenario, first_mes, mes_example, creator_notes, system_prompt, post_history_instructions, backstory, appearance. Never edit the card's name; never propose any other field.\n- Each update is {\"field\",\"oldText\",\"newText\",\"reason\"}: field is one of the editable fields; oldText is the field's exact current text copied verbatim from the provided character context (\"\" when the field is empty); newText is the complete replacement text for the whole field, never a fragment, diff, or patch; reason is one short sentence explaining the change.\n- Preserve {{char}} and {{user}} macros exactly; never resolve or rename them.\n- Propose only changes that serve the instruction. False positives are worse than missed changes.\n\nRebalance field content across each card. Description = general identity and role. Personality = concise traits, temperament, and behavior patterns. Backstory = history, origin, and formative events. Appearance = physical detail. Scenario = default setting. Move content between fields to match these meanings while preserving every fact. A source field may legitimately be emptied; an empty newText is allowed only under this directive."
+      }
+    ],
     "defaultPromptTemplate": "You are Card Editor. Rewrite the target character card in <character_cards> according to the user's <directive>.\nThe target card is the only card you may edit. Treat <directive> as the editing requirements and the card's current fields as the source text. Use <activated_lorebook_context>, <existing_entries>, and the search_lorebook tool only as reference for established facts, terminology, relationships, setting details, and continuity. Never propose lorebook edits.\nImprove only the fields needed to satisfy the directive. Keep the card internally consistent, preserve its established voice and intent, and align the result with relevant lore. Preserve unrelated details. Do not introduce unsupported facts unless the directive explicitly requests new creative material.\nDo not edit name. Target only: description, personality, scenario, first_mes, mes_example, creator_notes, system_prompt, post_history_instructions, backstory, appearance.\nEach update must include the exact characterId and exact oldText copied verbatim from <character_cards>. If oldText is not present in the card, skip it. Keep newText surgical and preserve the field's voice. The newText must be the complete replacement field, and you may emit at most one update per changed field. If nothing qualifies, return {\"updates\":[]}.\nThese edits require user approval. False positives are worse than missed changes.\nReturn only valid JSON:\n{\n  \"updates\": [\n    {\n      \"action\": \"update\",\n      \"characterId\": \"exact character id\",\n      \"field\": \"description\",\n      \"oldText\": \"exact existing text from the card\",\n      \"newText\": \"proposed replacement text\",\n      \"reason\": \"how this change satisfies the directive and remains consistent with the references\"\n    }\n  ]\n}"
   }
 ]

@@ -530,12 +530,12 @@ const features = [
   },
   {
     id: "card-editor",
-    version: "1.0.0",
-    minEngineVersion: "2.4.6",
+    version: "1.1.0",
+    minEngineVersion: "2.4.7",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Card Editor",
     description:
-      "Rewrites an existing character card from a user directive while preserving its voice and aligning it with referenced lore.",
+      "Rewrites character cards from your directives while preserving each card's voice and aligning it with referenced lore. Runs on a single card or as bulk dispatch across selected characters, with verdict review, edit-and-retry, and session management in its runs panel.",
     category: "writer",
     kind: ["agent"],
     modes: ["roleplay"],
@@ -547,7 +547,11 @@ const features = [
     ownedSourcePaths: cardEditorOwnedSourcePaths,
     engineBoundaryPath: join(packagesDir, "card-editor/engine-boundary.json"),
     boundaryDisplayName: "Card Editor",
-    capabilityApi: { major: 1, minor: 66 },
+    capabilityApi: { major: 1, minor: 67 },
+    contributions: {
+      selectionActions: { contexts: ["characters"] },
+      agentPanel: { agentIds: ["card-editor"] },
+    },
     agentsSource: "agents.json",
   },
   {
@@ -761,7 +765,7 @@ const cardEditorBoundary = selectedFeatures.some((feature) => feature.id === "ca
       sourceRoot: cardEditorSourceRoot,
       boundaryPath: join(packagesDir, "card-editor/engine-boundary.json"),
       displayName: "Card Editor",
-      capabilityApi: { major: 1, minor: 66 },
+      capabilityApi: { major: 1, minor: 67 },
     })
   : null;
 const pokedexBoundary = selectedFeatures.some((feature) => feature.id === "pokedex")

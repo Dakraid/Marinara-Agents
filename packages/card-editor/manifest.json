@@ -2,18 +2,18 @@
   "schemaVersion": 2,
   "capabilityApi": {
     "major": 1,
-    "minor": 66
+    "minor": 67
   },
   "builtAgainst": {
-    "engineVersion": "2.4.6",
-    "engineCommit": "50f68ee2aaca37520f8853981655654dfe49ef3f"
+    "engineVersion": "2.4.7",
+    "engineCommit": "b0bdf8b944fe69ad20b96e61ffe915d69972d597"
   },
   "id": "card-editor",
   "name": "Card Editor",
-  "version": "1.0.0",
-  "description": "Rewrites an existing character card from a user directive while preserving its voice and aligning it with referenced lore. Open a character card and choose Run Card Editor to propose changes for approval.",
+  "version": "1.1.0",
+  "description": "Rewrites character cards from your directives while preserving each card's voice and aligning it with referenced lore. Runs on a single card or as bulk dispatch across selected characters, with verdict review, edit-and-retry, and session management in its runs panel. Open a character card and choose Run Card Editor, or select characters and choose Card Editor for a bulk session, to propose changes for approval.",
   "engine": {
-    "min": "2.4.6",
+    "min": "2.4.7",
     "maxExclusive": "4.0.0"
   },
   "kind": [
@@ -24,11 +24,23 @@
     "server": "server.mjs",
     "client": "client.js"
   },
+  "contributions": {
+    "selectionActions": {
+      "contexts": [
+        "characters"
+      ]
+    },
+    "agentPanel": {
+      "agentIds": [
+        "card-editor"
+      ]
+    }
+  },
   "files": [
     {
       "path": "agents.json",
-      "sha256": "63a34a737fe5f20dc55b434331a6f7b1a30eeaa86c5057fae83b9ffc0ffcd7a6",
-      "bytes": 2642
+      "sha256": "6ea8016320ab2f5a0379df77a5966c9a299d47e30b44478c68a41537f6a14ec4",
+      "bytes": 7076
     },
     {
       "path": "server.mjs",
@@ -37,8 +49,8 @@
     },
     {
       "path": "client.js",
-      "sha256": "a7adc8c78a317148fcdaa1689eb005dd7885a906d5f8b8338eb6ef330c0d30f6",
-      "bytes": 326594
+      "sha256": "f8c8c5dc89013e3bca46ab1835bc7bff7622d2a533489afe42c8dfc13deca621",
+      "bytes": 326295
     }
   ],
   "permissions": [

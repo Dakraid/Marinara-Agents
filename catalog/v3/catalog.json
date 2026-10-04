@@ -235,6 +235,81 @@
     },
     {
       "manifest": {
+        "schemaVersion": 2,
+        "capabilityApi": {
+          "major": 1,
+          "minor": 67
+        },
+        "builtAgainst": {
+          "engineVersion": "2.4.7",
+          "engineCommit": "b0bdf8b944fe69ad20b96e61ffe915d69972d597"
+        },
+        "id": "card-editor",
+        "name": "Card Editor",
+        "version": "1.1.0",
+        "description": "Rewrites character cards from your directives while preserving each card's voice and aligning it with referenced lore. Runs on a single card or as bulk dispatch across selected characters, with verdict review, edit-and-retry, and session management in its runs panel. Open a character card and choose Run Card Editor, or select characters and choose Card Editor for a bulk session, to propose changes for approval.",
+        "engine": {
+          "min": "2.4.7",
+          "maxExclusive": "4.0.0"
+        },
+        "kind": [
+          "agent"
+        ],
+        "entrypoints": {
+          "agents": "agents.json",
+          "server": "server.mjs",
+          "client": "client.js"
+        },
+        "contributions": {
+          "selectionActions": {
+            "contexts": [
+              "characters"
+            ]
+          },
+          "agentPanel": {
+            "agentIds": [
+              "card-editor"
+            ]
+          }
+        },
+        "files": [
+          {
+            "path": "agents.json",
+            "sha256": "6ea8016320ab2f5a0379df77a5966c9a299d47e30b44478c68a41537f6a14ec4",
+            "bytes": 7076
+          },
+          {
+            "path": "server.mjs",
+            "sha256": "2b18eff192e4f538e2d9e183764475e378f1a0bfdfc6eb0e2ea44d499fdb0408",
+            "bytes": 40858
+          },
+          {
+            "path": "client.js",
+            "sha256": "f8c8c5dc89013e3bca46ab1835bc7bff7622d2a533489afe42c8dfc13deca621",
+            "bytes": 326295
+          }
+        ],
+        "permissions": [
+          "agent-runtime",
+          "chat-read",
+          "prompt-context",
+          "routes",
+          "storage",
+          "ui"
+        ],
+        "restartRequired": true
+      },
+      "category": "writer",
+      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/card-editor.png",
+      "artifact": {
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/card-editor-1.1.0.zip",
+        "sha256": "b85a37b10c93bf27a627516dc4c2edc3f00f502d489179349870210ff56c27cc",
+        "bytes": 376338
+      },
+      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#card-editor"
+    },
+    {
+      "manifest": {
         "schemaVersion": 1,
         "id": "card-evolution-auditor",
         "name": "Card Evolution Auditor",

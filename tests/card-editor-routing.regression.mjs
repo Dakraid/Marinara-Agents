@@ -7,19 +7,23 @@ const agents = JSON.parse(await readFile(new URL("agents.json", packageRoot), "u
 const editor = agents.find((agent) => agent.id === "card-editor");
 
 assert.equal(manifest.schemaVersion, 2);
-assert.deepEqual(manifest.capabilityApi, { major: 1, minor: 66 });
-assert.equal(manifest.builtAgainst.engineVersion, "2.4.6");
+assert.deepEqual(manifest.capabilityApi, { major: 1, minor: 67 });
+assert.equal(manifest.builtAgainst.engineVersion, "2.4.7");
+assert.equal(manifest.builtAgainst.engineCommit, "b0bdf8b944fe69ad20b96e61ffe915d69972d597");
 assert.equal(manifest.id, "card-editor");
-assert.equal(manifest.version, "1.0.0");
+assert.equal(manifest.version, "1.1.0");
 assert.deepEqual(manifest.kind, ["agent"]);
 assert.deepEqual(manifest.entrypoints, {
   agents: "agents.json",
   server: "server.mjs",
   client: "client.js",
 });
-assert.deepEqual(manifest.engine, { min: "2.4.6", maxExclusive: "4.0.0" });
+assert.deepEqual(manifest.engine, { min: "2.4.7", maxExclusive: "4.0.0" });
 assert.deepEqual(manifest.permissions, ["agent-runtime", "chat-read", "prompt-context", "routes", "storage", "ui"]);
-assert.equal(manifest.contributions, undefined);
+assert.deepEqual(manifest.contributions, {
+  selectionActions: { contexts: ["characters"] },
+  agentPanel: { agentIds: ["card-editor"] },
+});
 assert.equal(manifest.restartRequired, true);
 
 assert.ok(editor, "Card Editor definition must exist");
