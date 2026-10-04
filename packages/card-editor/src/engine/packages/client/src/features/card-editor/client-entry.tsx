@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { SquarePen, X } from "lucide-react";
+import type { BulkSession } from "../../../../shared/src/features/agents/card-editor/schema.js";
+import { BulkDispatchDialog } from "./BulkDispatchDialog";
 import { translateCardEditor, type CardEditorLocalizationContext } from "./localization";
+import { CARD_EDITOR_STYLES } from "./styles";
 
 type CapabilityProps = {
   packageId?: string;
@@ -18,22 +22,79 @@ type CardEditorElement = HTMLElement & {
   __root?: Root | null;
 };
 
-function BulkDispatchDialogPlaceholder({ props }: { props: CapabilityProps }) {
-  const count = props.selectionCount ?? props.selectedCharacterIds?.length ?? 0;
+const DISPATCH_TOAST_MS = 12_000;
+
+function SelectionActionView({ props }: { props: CapabilityProps }) {
   const t = (key: string, values?: Record<string, string | number>) =>
     translateCardEditor(props.localization, key, values);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [sessionNotice, setSessionNotice] = useState<{ count: number } | null>(null);
+
+  const selectedCharacterIds = props.selectedCharacterIds ?? [];
+  const selectionCount = props.selectionCount ?? selectedCharacterIds.length ?? 0;
+  const canDispatch = selectionCount >= 1;
+
+  useEffect(() => {
+    if (!sessionNotice) return undefined;
+    const handle = setTimeout(() => setSessionNotice(null), DISPATCH_TOAST_MS);
+    return () => clearTimeout(handle);
+  }, [sessionNotice]);
+
+  const onDispatched = (session: BulkSession) => {
+    setDialogOpen(false);
+    setSessionNotice({ count: session.items.length || selectedCharacterIds.length || selectionCount });
+    // Engine contract (capabilityApi 1.67): exit the characters selection mode once the
+    // dispatch is underway so the selection action bar collapses behind the notice.
+    props.onRequestClose?.();
+  };
+
   return (
-    <div data-card-editor-view="selection-action" data-package-id={props.packageId ?? "card-editor"}>
-      <button type="button">{t("cardEditor.title")}</button>
-      <span>{t("cardEditor.dialog.placeholder", { count })}</span>
-    </div>
+    <>
+      {sessionNotice ? (
+        <div className="ce-shell ce-toast" role="status">
+          <span>{t("cardEditor.selection.sessionStarted", { count: sessionNotice.count })}</span>
+          <button
+            type="button"
+            className="ce-notice-close"
+            aria-label={t("cardEditor.selection.noticeDismiss")}
+            onClick={() => setSessionNotice(null)}
+          >
+            <X className="ce-icon" aria-hidden="true" />
+          </button>
+        </div>
+      ) : null}
+      <button
+        type="button"
+        className="mari-chrome-control ce-selection-button"
+        disabled={!canDispatch}
+        onClick={() => {
+          setSessionNotice(null);
+          setDialogOpen(true);
+        }}
+      >
+        <SquarePen className="ce-icon" aria-hidden="true" />
+        {t("cardEditor.action.open")}
+      </button>
+      {dialogOpen ? (
+        <BulkDispatchDialog
+          localization={props.localization}
+          characterIds={selectedCharacterIds}
+          onClose={() => setDialogOpen(false)}
+          onDispatched={onDispatched}
+        />
+      ) : null}
+    </>
   );
 }
 
 function RunsPanelPlaceholder({ props }: { props: CapabilityProps }) {
   const t = (key: string) => translateCardEditor(props.localization, key);
   return (
-    <section data-card-editor-view="agent-panel" data-package-id={props.packageId ?? "card-editor"}>
+    <section
+      className="ce-shell"
+      data-card-editor-view="agent-panel"
+      data-package-id={props.packageId ?? "card-editor"}
+    >
       <h2>{t("cardEditor.title")}</h2>
       <p>{t("cardEditor.panel.empty")}</p>
     </section>
@@ -43,7 +104,7 @@ function RunsPanelPlaceholder({ props }: { props: CapabilityProps }) {
 function CapabilityRoot({ element }: { element: CardEditorElement }) {
   const props = element.capabilityProps ?? {};
   const view = element.getAttribute("view");
-  if (view === "selection-action") return <BulkDispatchDialogPlaceholder props={props} />;
+  if (view === "selection-action") return <SelectionActionView props={props} />;
   if (view === "agent-panel") return <RunsPanelPlaceholder props={props} />;
   return null;
 }
@@ -58,6 +119,7 @@ function CardEditorRoot({ element }: { element: CardEditorElement }) {
   const direction = element.capabilityProps?.localization?.direction === "rtl" ? "rtl" : "ltr";
   return (
     <div dir={direction} style={{ display: "contents" }}>
+      <style>{CARD_EDITOR_STYLES}</style>
       <CapabilityRoot element={element} />
     </div>
   );

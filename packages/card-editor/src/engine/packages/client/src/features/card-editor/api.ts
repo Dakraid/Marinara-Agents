@@ -129,3 +129,119 @@ export function submitSessionItemVerdict(
 export function deleteSession(sessionId: string): Promise<void> {
   return request<void>(sessionPath(sessionId), "DELETE");
 }
+
+/* ── Engine host routes (read-only; not package-scoped) ── */
+
+export interface LanguageConnection {
+  id: string;
+  name: string;
+  provider: string;
+  model: string;
+}
+
+export interface CharacterCatalogEntry {
+  id: string;
+  name: string;
+  avatarPath: string | null;
+}
+
+export interface CharacterCatalogPage {
+  items: CharacterCatalogEntry[];
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}
+
+/** Raw characters table row: card fields live inside the JSON `data` payload. */
+export interface HostCharacterRow {
+  id: string;
+  avatarPath: string | null;
+  data: string;
+}
+
+export interface HostCharacterSummary {
+  id: string;
+  name: string;
+  avatarPath: string | null;
+}
+
+export interface HostLorebook {
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+}
+
+async function hostRequest<TResponse>(path: string, signal?: AbortSignal): Promise<TResponse> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    headers: new Headers(adminHeaders()),
+    signal,
+    cache: "no-store",
+    credentials: "same-origin",
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as unknown;
+    throw new CardEditorApiError(response.status, errorMessage(payload, response.statusText), payload);
+  }
+  return response.json() as Promise<TResponse>;
+}
+
+export function parseHostCharacterName(row: HostCharacterRow): string {
+  try {
+    const parsed: unknown = JSON.parse(row.data);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      const name = (parsed as Record<string, unknown>).name;
+      if (typeof name === "string" && name.trim()) return name;
+    }
+  } catch {
+    // fall through to the caller's id fallback
+  }
+  return "";
+}
+
+/** Language-model connections only (image/video providers can never run an agent). */
+export async function listLanguageConnections(signal?: AbortSignal): Promise<LanguageConnection[]> {
+  const connections = await hostRequest<LanguageConnection[]>("/connections", signal);
+  if (!Array.isArray(connections)) return [];
+  return connections.filter(
+    (connection) =>
+      connection &&
+      typeof connection.id === "string" &&
+      typeof connection.name === "string" &&
+      connection.provider !== "image_generation" &&
+      connection.provider !== "video_generation",
+  );
+}
+
+export async function getHostCharacter(characterId: string, signal?: AbortSignal): Promise<HostCharacterSummary> {
+  const row = await hostRequest<HostCharacterRow>(`/characters/${encodeURIComponent(characterId)}`, signal);
+  const id = typeof row?.id === "string" && row.id ? row.id : characterId;
+  return {
+    id,
+    name: parseHostCharacterName(row) || id,
+    avatarPath: typeof row?.avatarPath === "string" && row.avatarPath ? row.avatarPath : null,
+  };
+}
+
+export function searchHostCharacters(
+  options: { search?: string; limit?: number; offset?: number },
+  signal?: AbortSignal,
+): Promise<CharacterCatalogPage> {
+  const params = new URLSearchParams({
+    limit: String(options.limit ?? 50),
+    offset: String(options.offset ?? 0),
+    sort: "name-asc",
+  });
+  const search = options.search?.trim();
+  if (search) params.set("search", search);
+  return hostRequest<CharacterCatalogPage>(`/characters/catalog?${params.toString()}`, signal);
+}
+
+export async function listHostLorebooks(signal?: AbortSignal): Promise<HostLorebook[]> {
+  const lorebooks = await hostRequest<HostLorebook[]>("/lorebooks", signal);
+  if (!Array.isArray(lorebooks)) return [];
+  return lorebooks.filter(
+    (lorebook): lorebook is HostLorebook =>
+      Boolean(lorebook) && typeof lorebook.id === "string" && typeof lorebook.name === "string",
+  );
+}
