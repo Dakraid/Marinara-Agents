@@ -286,10 +286,30 @@ assert.match(workspaceSource, /splitView/u, "the workspace uses the two-pane pan
 assert.match(read("RunsPanel.tsx"), /onDetailIdChange/u, "the panel detail selection is controllable by the workspace");
 assert.match(styles, /\.ce-workspace-split/u);
 assert.match(styles, /\.ce-dialog\.ce-workspace/u, "the workspace dialog has its own sizing");
+assert.match(
+  styles,
+  /\.ce-dialog\.ce-workspace \{[^}]*max-height: min\(92dvh, 60rem\)/u,
+  "the workspace sizes to its content, capped at min(92dvh, 60rem)",
+);
+assert.doesNotMatch(
+  styles,
+  /\.ce-dialog\.ce-workspace \{[^}]*[^-]height: 92dvh/u,
+  "the workspace no longer forces a 92dvh void",
+);
+assert.match(
+  styles,
+  /\.ce-workspace-split \{[^}]*min-height: 16rem/u,
+  "a sparse workspace keeps a modest floor instead of collapsing",
+);
 
 // ── 10. Styling contract: scoped classes + engine chrome hooks ──
 assert.match(styles, /marinara-capability-card-editor\[view="selection-action"\] \{\s*display: contents;\s*\}/u);
 assert.match(styles, /\.ce-overlay \{\s*position: fixed;/u, "overlay stays inside the element's own DOM");
+assert.match(
+  styles,
+  /\.ce-overlay \{[^}]*pointer-events: auto;/u,
+  "the engine mounts overlays pointer-events-none; the overlay root re-enables hit-testing",
+);
 assert.match(styles, /--marinara-chat-chrome-panel-bg/u, "dark theme tokens come from the engine chrome");
 assert.match(styles, /prefers-reduced-motion/u);
 assert.doesNotMatch(styles, /[^-]pd-|[^-]mn-/u, "styles must use the ce- scope, not another package's");

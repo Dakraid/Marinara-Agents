@@ -76,6 +76,9 @@ export const CARD_EDITOR_STYLES = `
   align-items: center;
   justify-content: center;
   padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
+  /* The engine mounts overlay packages inside a pointer-events-none container;
+     the overlay root must re-enable hit-testing for its own dialog. */
+  pointer-events: auto;
 }
 
 .ce-overlay::before {
@@ -1168,10 +1171,10 @@ marinara-capability-card-editor[view="selection-action"] {
 
 /* ── Overlay workspace (capabilityApi 1.68) ── */
 
+/* The workspace sizes to its content (capped), never a forced full-height void. */
 .ce-dialog.ce-workspace {
   width: min(64rem, 100%);
-  height: 92dvh;
-  max-height: 92dvh;
+  max-height: min(92dvh, 60rem);
 }
 
 .ce-workspace-body {
@@ -1193,7 +1196,8 @@ marinara-capability-card-editor[view="selection-action"] {
 
 .ce-workspace-split {
   display: grid;
-  min-height: 0;
+  /* Content-sized floor so a sparse workspace doesn't collapse to a sliver. */
+  min-height: 16rem;
   flex: 1;
   grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
 }
@@ -1215,6 +1219,15 @@ marinara-capability-card-editor[view="selection-action"] {
 .ce-panel--workspace {
   display: flex;
   flex-direction: column;
+  /* Panes own their padding so the rail divider spans the full height. */
+  padding: 0;
+}
+
+/* The detail panel nests inside the main pane: flatten its box, keep its padding. */
+.ce-workspace-main > .ce-panel {
+  margin-top: 0;
+  border: 0;
+  border-radius: 0;
 }
 
 @media (max-width: 48rem) {

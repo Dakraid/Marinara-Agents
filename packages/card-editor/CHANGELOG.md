@@ -1,3 +1,10 @@
+## 1.2.1 — 2026-10-06 [highlight]
+
+- The overlay workspace is interactive again: clicks, scrolling, and the close button reach the dialog instead of passing through to the chat underneath. Backdrop-click dismissal in the bulk dispatch dialog works again too.
+- The workspace sizes to its content (up to min(92dvh, 60rem)) instead of forcing a 92dvh-tall dialog, so few or no sessions no longer leave a large empty void; long session lists scroll inside the dialog.
+- Tidier workspace panes: consistent rail and detail padding, with the rail divider spanning the full workspace height.
+- Requires Marinara Engine 2.4.8 (Capability API 1.68).
+
 ## 1.2.0 — 2026-10-05 [highlight]
 
 - The whole bulk flow now lives in an overlay workspace above the chat window (Capability API 1.68): session list, verdict review, diffs, and the dispatch dialog share one large two-pane surface instead of the cramped inline panel at the bottom of the agent settings.
