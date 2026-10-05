@@ -6207,5 +6207,20 @@
   "ui.slurp.stir.cant.draftInComposer": "Drafted in New post for you to review.",
   "ui.slurp.postGuide.editDraft": "Edit",
   "ui.slurp.postGuide.generatePicture": "Generate an image with the draft",
-  "ui.slurp.postGuide.uploadPicture": "Upload an image"
+  "ui.slurp.postGuide.uploadPicture": "Upload an image",
+  "ui.slurp.stir.cant.off": "Switch it on first in Settings › Stir › Drama (and its situation, if it needs one).",
+  "ui.slurp.stir.cant.lead": "They do not fit the first role of this drama right now.",
+  "ui.slurp.settings.fanTypes.behavior.activity": "Activity",
+  "ui.slurp.settings.fanTypes.behavior.like": "Likes",
+  "ui.slurp.settings.fanTypes.behavior.follow": "Follows",
+  "ui.slurp.settings.fanTypes.behavior.comment": "Comments",
+  "ui.slurp.settings.fanTypes.behavior.question": "Questions",
+  "ui.slurp.settings.fanTypes.behavior.dm": "Messages",
+  "ui.slurp.settings.fanTypes.behavior.commission": "Commissions",
+  "ui.slurp.settings.fanTypes.behavior.tip": "Tips",
+  "ui.slurp.settings.fanTypes.behavior.unlock": "Unlocks",
+  "ui.slurp.settings.fanTypes.funnel.followChance": "Chance to follow",
+  "ui.slurp.settings.fanTypes.funnel.subConversionPerDay": "Daily chance to subscribe",
+  "ui.slurp.settings.fanTypes.funnel.loyaltyDays": "Days they stay loyal",
+  "ui.slurp.settings.fanTypes.funnel.renewChance": "Chance to renew"
 }

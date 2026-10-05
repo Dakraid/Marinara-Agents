@@ -148,6 +148,8 @@ async function sendDramaJob(
     if (!viewer || !job.actorId) return "drop";
     const messages = createSlurpMessagesStorage(db);
     if (job.channel === "choice") {
+      // A roleplay scene holds the thread (docs/SCENES.md): the question waits in the queue.
+      if ((await messages.getThread(viewer, job.actorId))?.sceneChatId) return false;
       const sent = await messages.sendCreatorMessage(job.actorId, viewer, {
         content: text(job.choice!.question),
         metadata: {

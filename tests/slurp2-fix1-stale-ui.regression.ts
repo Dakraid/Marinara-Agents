@@ -39,7 +39,12 @@ assert.equal(
 
 // ── R1-041: the profile poll reads page one and keeps older posts ──
 assert.match(postHooks, /const firstPageOnly = Boolean\(cached\) && !slpProfilePostsStale;/u);
-assert.match(postHooks, /if \(firstPageOnly\) return mergeSlpProfileFirstPage\(cached!, items, Boolean\(cursor\)\);/u);
+assert.match(
+  postHooks,
+  /if \(firstPageOnly\) return mergeSlpProfileFirstPage\(cached!, first\.items, Boolean\(first\.nextCursor\)\);/u,
+);
+// A cold profile answers with page one and fills older pages in the background.
+assert.match(postHooks, /qc\.setQueryData<SlurpProfilePost\[\]>\(queryKey,[\s\S]{0,200}?\.\.\.rest\.filter/u);
 
 // ── R1-084 / R1-032 / R1-042: search and Following are server-paged; Load more and totals follow ──
 assert.match(
