@@ -159,8 +159,9 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     // Slurp Support's threads are the player's from every persona (`slp-support.ts`), but they live on
     // the Stir desk (docs/SUPPORT-DESK.md); the inbox gets one link row with their count. With a
     // Creator this persona runs, Support is someone writing to them: that stays in the inbound list.
+    const accounts = await slurp.listNoodlerAccounts();
     const operatedIds = new Set(
-      (await slurp.listNoodlerAccounts())
+      accounts
         .filter((account) => account.sourceKind === "persona" && account.sourceEntityId === viewer.id)
         .map((account) => account.id),
     );
@@ -174,22 +175,38 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     // conversations the player started, and anything a fan or the world opened was unreachable.
     const operated = [...operatedIds];
     const inbound = await messages.listThreadsForCreators(operated);
+    // The counterpart is the fan here, not the Creator, so name them or the row is a blank. Looked up
+    // once per fan: this list polls every 30 s and used to make five lookups per thread.
+    const accountById = new Map(accounts.map((account) => [account.id, account]));
+    const counterparts = new Map<string, Promise<{ name: string | null; handle: string | null }>>();
+    const counterpartOf = (id: string) => {
+      let found = counterparts.get(id);
+      if (!found) {
+        found = (async () => {
+          const fan = await population.get(id);
+          const account = accountById.get(id) ?? (await slurp.getNoodlerAccountById(id));
+          const name =
+            (id === SLURP_SUPPORT_ACCOUNT_ID ? SLURP_SUPPORT_NAME : null) ??
+            fan?.displayName ??
+            account?.displayName ??
+            (await slurp.getViewer(id).catch(() => null))?.displayName ??
+            null;
+          return { name, handle: fan?.handle ?? account?.handle ?? null };
+        })();
+        counterparts.set(id, found);
+      }
+      return found;
+    };
     const inboundViews = await Promise.all(
-      inbound.map(async (thread) => ({
-        ...thread,
-        side: "creator" as const,
-        // The counterpart is the fan here, not the Creator, so name them or the row is a blank.
-        counterpartName:
-          (thread.viewerAccountId === SLURP_SUPPORT_ACCOUNT_ID ? SLURP_SUPPORT_NAME : null) ??
-          (await population.get(thread.viewerAccountId))?.displayName ??
-          (await slurp.getNoodlerAccountById(thread.viewerAccountId))?.displayName ??
-          (await slurp.getViewer(thread.viewerAccountId).catch(() => null))?.displayName ??
-          null,
-        counterpartHandle:
-          (await population.get(thread.viewerAccountId))?.handle ??
-          (await slurp.getNoodlerAccountById(thread.viewerAccountId))?.handle ??
-          null,
-      })),
+      inbound.map(async (thread) => {
+        const counterpart = await counterpartOf(thread.viewerAccountId);
+        return {
+          ...thread,
+          side: "creator" as const,
+          counterpartName: counterpart.name,
+          counterpartHandle: counterpart.handle,
+        };
+      }),
     );
     const [viewerCommissionLists, creatorCommissionLists] = await Promise.all([
       Promise.all(threads.map((thread) => messages.listCommissionsForThread(thread.id))),
