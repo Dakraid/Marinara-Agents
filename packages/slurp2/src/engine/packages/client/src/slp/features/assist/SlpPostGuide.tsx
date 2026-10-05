@@ -69,8 +69,8 @@ export function SlpPostGuide({
         ...(dealId ? { dealId } : {}),
         ...(collabId ? { collabId } : {}),
       });
-      onDraft({ ...draft, dealId, collabId });
       if (draft.imageError) setError(t("ui.slurp.postGuide.noPicture", { reason: draft.imageError }));
+      onDraft({ ...draft, dealId, collabId });
     } catch (cause) {
       setError(getApiErrorMessage(cause, t("ui.slurp.postGuide.failed")));
     } finally {
@@ -79,10 +79,15 @@ export function SlpPostGuide({
   }
 
   // An idea from Stir drafts once, as soon as the composer opens with it.
-  const autoRan = useRef(false);
+  const autoRan = useRef<string | null>(null);
   useEffect(() => {
-    if (!autoRun || autoRan.current || !initialIdea.trim()) return;
-    autoRan.current = true;
+    if (!autoRun) {
+      autoRan.current = null;
+      return;
+    }
+    if (autoRan.current === initialIdea || !initialIdea.trim()) return;
+    autoRan.current = initialIdea;
+    setIdea(initialIdea);
     void write(initialIdea);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per handed-over idea
   }, [autoRun, initialIdea]);

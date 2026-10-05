@@ -171,6 +171,7 @@ export function NoodlerPostComposer({
   };
   const discardDraft = () => {
     if (composerBusyRef.current) return;
+    guideDealId.current = null;
     onDiscardDraft();
     resetLocal();
     onClose();
@@ -522,7 +523,7 @@ export function NoodlerPostComposer({
         </p>
 
         <SlpPostGuide
-          key={handedGuide?.idea ?? "guide"}
+          key={profile.id}
           accountId={profile.id}
           personaId={viewerPersonaId}
           story={story}

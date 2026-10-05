@@ -513,7 +513,7 @@ export async function replyToSlurpMessage(
           (error: unknown) => logger.warn(error, "[slurp-message] Could not record the collab agreed in this chat"),
         );
       // Her pitch for a roleplay scene, as a card under her reply (docs/SCENES.md).
-      if (stored && reply.sceneInvite)
+      if (stored && reply.sceneInvite && reply.latitude !== "close")
         await messagesStore
           .appendMessage(thread.id, {
             senderAccountId: thread.creatorAccountId,

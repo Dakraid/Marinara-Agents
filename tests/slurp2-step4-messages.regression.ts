@@ -85,7 +85,7 @@ assert.match(
 // A thread in a roleplay scene shows its lock bar in the composer's place (docs/SCENES.md).
 assert.match(
   view,
-  /\{!notLoaded &&\s*\(sceneChatId \? \([\s\S]{0,160}?<SlpSceneLockBar[\s\S]{0,160}?<SlpThreadComposer model=\{model\} \/>/u,
+  /\{!notLoaded &&\s*\(sceneChatId \? \(\s*<SlpSceneLockBar[^>]+\/>\s*\) : \(\s*<SlpThreadComposer model=\{model\} \/>\s*\)\)\}/u,
   "no composer before the chat loads",
 );
 

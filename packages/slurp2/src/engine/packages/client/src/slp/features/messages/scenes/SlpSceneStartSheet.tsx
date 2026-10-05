@@ -2,7 +2,7 @@
  * Start a roleplay scene from a DM thread (docs/SCENES.md): an optional idea, the Creator's plan,
  * this scene's two settings, then the Engine takes over.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Clapperboard, Eye, EyeOff, Lock, Megaphone, PhoneCall, RefreshCw } from "lucide-react";
 import { getApiErrorMessage } from "../../../../lib/api-client";
@@ -37,6 +37,7 @@ export function SlpSceneStartSheet({ personaId, creatorName }: { personaId: stri
   const [settings, setSettings] = useState<SlpSceneSettings>({ lock: true, reach: "private" });
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const requestSequence = useRef(0);
   const invited = Boolean(sheet?.inviteMessageId);
 
   // A fresh sheet for every thread or invite; an invite plans at once, her pitch is the idea.
@@ -55,18 +56,22 @@ export function SlpSceneStartSheet({ personaId, creatorName }: { personaId: stri
 
   async function write() {
     if (!sheet || !personaId) return;
+    const target = sheet;
+    const request = ++requestSequence.current;
+    const isCurrent = () => request === requestSequence.current && useSlurpUIStore.getState().sceneSheet === target;
     setError(null);
     try {
       const next = await plan.mutateAsync({
         threadId: sheet.threadId,
         personaId,
-        idea,
+        idea: sheet.inviteMessageId ? "" : idea,
         inviteMessageId: sheet.inviteMessageId,
       });
+      if (!isCurrent()) return;
       setPlanned(next);
       setSettings(next.settings);
     } catch (cause) {
-      setError(getApiErrorMessage(cause, t("ui.slurp.rpScene.planFailed")));
+      if (isCurrent()) setError(getApiErrorMessage(cause, t("ui.slurp.rpScene.planFailed")));
     }
   }
 
@@ -103,7 +108,7 @@ export function SlpSceneStartSheet({ personaId, creatorName }: { personaId: stri
               {starting ? t("ui.slurp.rpScene.starting") : t("ui.slurp.rpScene.start")}
             </SlpPrimaryButton>
           </div>
-        ) : invited ? null : (
+        ) : invited && !error ? null : (
           <div className="flex justify-end">
             <SlpPrimaryButton disabled={plan.isPending} onClick={() => void write()}>
               <Clapperboard size={16} aria-hidden="true" />

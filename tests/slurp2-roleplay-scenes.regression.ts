@@ -45,6 +45,7 @@ assert.deepEqual(transcript, [
   { speaker: "Alex", content: "(tipped 15 coins)" },
   { speaker: "Mina", content: "Come to my shoot?" },
 ]);
+assert.deepEqual(slpSceneTranscript([message("viewer", "text", "Hi")], { creator: "Mina", fan: "Alex" }, 0), []);
 
 // ── What her DM prompt reads: the recap as something they did, the invite as hers, no empty notes ──
 const line = (role: "viewer" | "creator", scene: object, content = "") => ({
@@ -122,12 +123,14 @@ const lines = new Map<string, { id: string; metadata: Record<string, unknown> }>
 const facts: Array<{ text: string; audienceScope: string }> = [];
 const retracted: string[] = [];
 const released: string[] = [];
+let recapAppends = 0;
 const reset = () => {
   threads.clear();
   lines.clear();
   facts.length = 0;
   retracted.length = 0;
   released.length = 0;
+  recapAppends = 0;
   threads.set("t1", {
     id: "t1",
     state: "active",
@@ -153,6 +156,7 @@ const messagesStore = {
   },
   getMessageById: async (id: string) => lines.get(id) ?? null,
   appendMessage: async (_threadId: string, input: { id: string; metadata: Record<string, unknown> }) => {
+    recapAppends += 1;
     lines.set(input.id, input);
     return input;
   },
@@ -225,6 +229,7 @@ async function main() {
   await provider.release!("t1", concluded("s1", { lock: true, reach: "private" }));
   await provider.release!("t1", concluded("s1", { lock: true, reach: "private" }));
   assert.equal(lines.size, 1, "The recap is written once");
+  assert.equal(recapAppends, 1, "A retried release never appends the recap again");
   assert.equal((lines.get("scene-s1")!.metadata.scene as { kind: string }).kind, "recap");
   assert.equal(threads.get("t1")!.sceneChatId, null, "The thread is unlocked");
   assert.equal(facts.length, 1);

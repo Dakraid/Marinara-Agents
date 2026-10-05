@@ -87,11 +87,9 @@ export function useSlpSceneFocus() {
         const store = useSlurpUIStore.getState();
         store.setViewerPersonaId(origin.personaId);
         store.setNavigation({ mode: "creator", view: "messages", creatorAccountId: origin.creatorAccountId });
+        handled?.();
       })
-      .catch(() => undefined)
-      .finally(() => {
-        if (!cancelled) handled?.();
-      });
+      .catch(() => undefined);
     return () => {
       cancelled = true;
     };

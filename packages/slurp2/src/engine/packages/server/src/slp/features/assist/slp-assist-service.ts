@@ -369,7 +369,8 @@ export async function draftSlpPost(
   const text = await runSlpAssistText(db, {
     field: input.story ? "story" : "caption",
     accountId: input.accountId,
-    note: [input.idea, ...lines].join(" ").slice(0, SLP_ASSIST_NOTE_MAX),
+    context: lines.join(" "),
+    note: input.idea.slice(0, SLP_ASSIST_NOTE_MAX),
     mode: "write",
   });
   if (!text.ok) return text;

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { logger } from "../../../lib/logger.js";
 import { type SlurpCommissionPricing, slurpCommissionQuote } from "../../modules/economy/slp-creator-pricing.js";
 import { selectSlurpAttentionCommissions } from "./slp-inbox-attention.js";
 import { activeSlurpStrikes, slurpDmPictureVerdict } from "../../modules/world/slp-stance.js";
@@ -241,7 +242,10 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     const side = thread ? await seatIn(viewer.id, thread) : null;
     if (!thread || !side) return reply.code(404).send({ error: "Thread not found" });
     // A scene that ended while Slurp could not hear it: settle the lock and bring the recap in.
-    if (thread.sceneChatId) await reconcileSlpThreadScene(app.db, thread).catch(() => true);
+    if (thread.sceneChatId)
+      await reconcileSlpThreadScene(app.db, thread).catch((error) => {
+        logger.warn({ err: error, threadId: thread.id }, "[slurp-message] Could not reconcile the scene");
+      });
     await messages.markRead(thread.id, side);
     const creator = await slurp.getNoodlerAccountById(thread.creatorAccountId);
     if (!creator) return reply.code(404).send({ error: "Creator not found" });
@@ -422,7 +426,10 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     if (!creator) return reply.code(404).send({ error: "Creator not found" });
     // Writing as Slurp Support opens Support's one thread with this Creator, from any persona.
     const thread = await messages.getThread(parsed.data.support ? SLURP_SUPPORT_ACCOUNT_ID : viewer.id, creator.id);
-    if (thread?.sceneChatId) await reconcileSlpThreadScene(app.db, thread).catch(() => true);
+    if (thread?.sceneChatId)
+      await reconcileSlpThreadScene(app.db, thread).catch((error) => {
+        logger.warn({ err: error, threadId: thread.id }, "[slurp-message] Could not reconcile the scene");
+      });
     if (thread) await messages.markRead(thread.id, "viewer");
     const page = thread ? await messages.listMessagePage(thread.id) : { messages: [], nextCursor: null };
     const presence = await creatorPresence(creator, thread?.id);

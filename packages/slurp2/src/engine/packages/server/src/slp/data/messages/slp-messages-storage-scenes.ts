@@ -6,8 +6,8 @@
  * holds, and a retried release is a no-op.
  */
 import { and, eq, isNotNull } from "../../../db/file-query.js";
-import { slurpMessages, slurpThreads } from "../../../db/schema/slurp.js";
-import { mapMessage, mapThread } from "./slp-messages-storage-helpers.js";
+import { slurpThreads } from "../../../db/schema/slurp.js";
+import { mapThread } from "./slp-messages-storage-helpers.js";
 import type { SlurpMessagesContext } from "./slp-messages-storage-context.js";
 import type { SlurpThread } from "./slp-messages-storage-types.js";
 import type { SlpSceneLine } from "../../../../../shared/src/slp/slp-roleplay-scene.js";
@@ -42,12 +42,7 @@ export function createMessagesStorageScenes(context: SlurpMessagesContext) {
     },
     /** Replace the scene line on a message: a recap's reach, or an invite's answer. */
     async setSceneLine(messageId: string, scene: SlpSceneLine): Promise<void> {
-      const row = (await db.select().from(slurpMessages).where(eq(slurpMessages.id, messageId)))[0];
-      if (!row) return;
-      await db
-        .update(slurpMessages)
-        .set({ metadata: JSON.stringify({ ...mapMessage(row).metadata, scene }) })
-        .where(eq(slurpMessages.id, messageId));
+      await context.storage.mergeMessageMetadata(messageId, { scene });
     },
     /** Every thread of this Creator that is in a scene. Any one of them makes the Creator busy. */
     async listCreatorSceneThreads(creatorAccountId: string): Promise<SlurpThread[]> {

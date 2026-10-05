@@ -23,6 +23,7 @@ export function slpSceneTranscript(
   names: { creator: string; fan: string },
   limit = 30,
 ): Array<{ speaker: string; content: string }> {
+  if (limit <= 0) return [];
   const lines: Array<{ speaker: string; content: string }> = [];
   for (const message of history) {
     if (message.metadata?.scene || message.metadata?.deskNote || message.metadata?.deskNotice) continue;

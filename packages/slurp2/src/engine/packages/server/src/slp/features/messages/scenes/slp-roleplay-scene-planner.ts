@@ -85,8 +85,8 @@ export async function planSlpRoleplayScene(
   if (!creator || source?.kind !== "character") throw new SlpScenePlanRefusal(409, "This Creator cannot do scenes.");
 
   const history = await messages.listMessages(thread.id, 40);
-  const invite = input.inviteMessageId ? history.find((message) => message.id === input.inviteMessageId) : null;
-  const inviteLine = invite ? readSlpSceneLine(invite.metadata) : null;
+  const invite = input.inviteMessageId ? await messages.getMessageById(input.inviteMessageId) : null;
+  const inviteLine = invite?.threadId === thread.id ? readSlpSceneLine(invite.metadata) : null;
   if (input.inviteMessageId && (inviteLine?.kind !== "invite" || inviteLine.state !== "open"))
     throw new SlpScenePlanRefusal(409, "That invite is no longer open.");
   const invitePitch = inviteLine?.kind === "invite" ? inviteLine.pitch : "";
