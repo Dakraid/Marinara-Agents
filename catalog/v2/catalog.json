@@ -242,7 +242,7 @@
         },
         "builtAgainst": {
           "engineVersion": "2.4.8",
-          "engineCommit": "21f0421f1b7f02606a95b20d6b41af43b7cfa422"
+          "engineCommit": "7be229d3d73321b859e0436e45d1f98483bbc69c"
         },
         "id": "card-editor",
         "name": "Card Editor",
@@ -304,7 +304,7 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/card-editor.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/card-editor-1.2.0.zip",
-        "sha256": "c1c58e67123d0a3a10f0212b69808253771c33fe348b72f5046e47c72d522877",
+        "sha256": "6e3a29b3e2f324e8315cdb86ad8489e2f6d2e80640124fbb2f044ee76c1ecd93",
         "bytes": 391640
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#card-editor"

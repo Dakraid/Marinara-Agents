@@ -6,7 +6,7 @@
   },
   "builtAgainst": {
     "engineVersion": "2.4.8",
-    "engineCommit": "21f0421f1b7f02606a95b20d6b41af43b7cfa422"
+    "engineCommit": "7be229d3d73321b859e0436e45d1f98483bbc69c"
   },
   "id": "card-editor",
   "name": "Card Editor",
