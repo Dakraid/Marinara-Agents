@@ -56,27 +56,49 @@ export function useCreatorPosts(accountId: string | null, personaId: string | nu
     queryFn: async ({ signal }) => {
       const cached = qc.getQueryData<SlurpProfilePost[]>(queryKey);
       const firstPageOnly = Boolean(cached) && !slpProfilePostsStale;
+      const refreshAll = Boolean(cached) && slpProfilePostsStale;
       slpProfilePostsStale = false;
-      const items: SlurpProfilePost[] = [];
-      let cursor: SlurpPageCursor | null = null;
-      do {
+      const fetchPage = (cursor: SlurpPageCursor | null, pageSignal?: AbortSignal) => {
         const query = new URLSearchParams({ limit: "20" });
         if (personaId) query.set("personaId", personaId);
         if (cursor) {
           query.set("cursorAt", cursor.createdAt);
           query.set("cursorId", cursor.id);
         }
-        const page: {
-          items: SlurpProfilePost[];
-          nextCursor: SlurpPageCursor | null;
-        } = await api.get(`/slurp2/slurp/accounts/${encodeURIComponent(accountId!)}/posts?${query.toString()}`, {
-          signal,
-        });
-        items.push(...page.items);
-        cursor = page.nextCursor;
-        if (firstPageOnly) return mergeSlpProfileFirstPage(cached!, items, Boolean(cursor));
-      } while (cursor);
-      return items;
+        return api.get<{ items: SlurpProfilePost[]; nextCursor: SlurpPageCursor | null }>(
+          `/slurp2/slurp/accounts/${encodeURIComponent(accountId!)}/posts?${query.toString()}`,
+          { signal: pageSignal },
+        );
+      };
+      const first = await fetchPage(null, signal);
+      if (firstPageOnly) return mergeSlpProfileFirstPage(cached!, first.items, Boolean(first.nextCursor));
+      if (refreshAll) {
+        // A post action changed older posts too: read every page once before answering.
+        const items = [...first.items];
+        for (let cursor = first.nextCursor; cursor;) {
+          const page = await fetchPage(cursor, signal);
+          items.push(...page.items);
+          cursor = page.nextCursor;
+        }
+        return items;
+      }
+      // A cold profile shows page one at once; older pages follow in the background. It used to
+      // walk every page in sequence first, 15 round trips for 300 posts before anything showed.
+      if (first.nextCursor)
+        void (async () => {
+          const rest: SlurpProfilePost[] = [];
+          for (let cursor: SlurpPageCursor | null = first.nextCursor; cursor;) {
+            const page = await fetchPage(cursor);
+            rest.push(...page.items);
+            cursor = page.nextCursor;
+          }
+          qc.setQueryData<SlurpProfilePost[]>(queryKey, (current) => {
+            const shown = current ?? first.items;
+            const ids = new Set(shown.map(slpProfilePostId));
+            return [...shown, ...rest.filter((item) => !ids.has(slpProfilePostId(item)))];
+          });
+        })().catch(() => markSlpProfilePostsStale());
+      return first.items;
     },
     enabled: Boolean(accountId),
     staleTime: 30_000,

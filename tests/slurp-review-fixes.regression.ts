@@ -362,7 +362,7 @@ assert.match(messagesView2, /message\.metadata\.commissionId !== "string"/u);
 assert.match(messagesView2, /deliveryMessage: commission\.deliveryMessageId/u);
 assert.match(messagesView2, /const deliveryImage = useSlurpMediaSrc\(/u);
 assert.match(messagesView2, /commission\.state === "delivered" && deliveryMessage/u);
-assert.match(messagesView2, /const commissionTimeline = commissions\.map/u);
+assert.match(messagesView2, /const commissionTimeline = useMemo\(\s*\(\) =>\s*commissions\.map/u);
 assert.match(messagesView2, /const at = latestMessage[\s\S]{0,180}?commission\.updatedAt/u);
 assert.match(messagesView2, /const timeline = \[/u);
 assert.match(messagesView2, /commissionTimelineKey/u);

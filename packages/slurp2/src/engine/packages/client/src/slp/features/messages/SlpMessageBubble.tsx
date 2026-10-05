@@ -1,5 +1,5 @@
 import { Camera, Check, CheckCheck, Cloud, Copy, Dumbbell, Moon, Plane, WifiOff } from "lucide-react";
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { memo, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { SlpHeartGlyph } from "../../base/chrome/SlpGlyphs";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { useSlurpMediaSrc } from "../../base/media/slp-media-src";
@@ -251,7 +251,8 @@ export function SlurpAwayAnimation({
 const SLURP_LONG_PRESS_MS = 480;
 const SLURP_DOUBLE_TAP_MS = 320;
 
-export function MessageBubble({
+// Memoized: the thread re-renders on every composer keystroke; unchanged bubbles skip it.
+export const MessageBubble = memo(function MessageBubble({
   message,
   locale,
   personaId,
@@ -626,7 +627,7 @@ export function MessageBubble({
       </SlpSheet>
     </div>
   );
-}
+});
 
 export function SlurpPlatformActionCard({
   message,
