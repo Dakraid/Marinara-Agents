@@ -1,5 +1,9 @@
 # Slurp release notes
 
+## 0.3.16 — 2026-10-05
+
+- Stir on your persona page opens a simple one-idea post draft, with caption and picture preview together. Edit opens the full composer without losing your draft.
+
 ## 0.3.15 — 2026-10-05
 
 - Start real Engine roleplay scenes from character-backed Creator DMs, or accept a Creator invite. Choose availability and how the recap can reach Slurp.
