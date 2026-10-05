@@ -360,7 +360,7 @@ const features = [
   },
   {
     id: "slurp2",
-    version: "0.3.15",
+    version: "0.3.16",
     minEngineVersion: "2.4.6",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Slurp",
@@ -417,7 +417,7 @@ const features = [
     capabilityApi: { major: 1, minor: 66 },
     builtAgainst: {
       engineVersion: "2.4.6",
-      engineCommit: "66a4aec373fb0751e99ce71ac8ad9262407129aa",
+      engineCommit: "5a6fafa079c921a3dc1166169f41f318549d595e",
     },
     libraryHidden: true,
     // `slurpcoin.svg` is deliberately not shipped: the Engine keeps SVG out of its servable

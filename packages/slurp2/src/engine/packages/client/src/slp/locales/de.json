@@ -2779,6 +2779,9 @@
   "ui.slurp.postGuide.forLabel": "Wofür dieser Post ist",
   "ui.slurp.postGuide.deal": "#ad für {{brand}}",
   "ui.slurp.postGuide.collab": "Collab mit {{name}}",
-  "ui.slurp.postGuide.draftInComposer": "Im neuen Post entwerfen",
-  "ui.slurp.stir.cant.draftInComposer": "Wird im neuen Post zum Prüfen entworfen."
+  "ui.slurp.postGuide.draftInComposer": "Beitrag entwerfen",
+  "ui.slurp.stir.cant.draftInComposer": "Wird im neuen Post zum Prüfen entworfen.",
+  "ui.slurp.postGuide.editDraft": "Bearbeiten",
+  "ui.slurp.postGuide.generatePicture": "Ein Bild zum Entwurf generieren",
+  "ui.slurp.postGuide.uploadPicture": "Ein Bild hochladen"
 }

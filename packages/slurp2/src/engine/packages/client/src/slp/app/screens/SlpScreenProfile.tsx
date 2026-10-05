@@ -428,6 +428,11 @@ export function StageProfileView({
             <SlpProfileLeadingActions
               model={couplePage ? { ...model, onOpenMessages: () => setCoupleWriteOpen(true) } : model}
               onOpenDashboard={viewingOwnCreator ? () => setDashboardOpen(true) : undefined}
+              onOpenGuide={
+                viewingOwnCreator && model.personaBackedCreator && !couplePage
+                  ? () => useSlurpUIStore.getState().setComposeGuide({ accountId: profile.id, idea: "" })
+                  : undefined
+              }
               onOpenSettings={viewingOwnCreator ? shellActions.openSettings : undefined}
             />
           )

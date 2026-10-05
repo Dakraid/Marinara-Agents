@@ -2815,6 +2815,9 @@
   "ui.slurp.postGuide.forLabel": "Do czego jest ten post",
   "ui.slurp.postGuide.deal": "#reklama dla {{brand}}",
   "ui.slurp.postGuide.collab": "Współpraca z {{name}}",
-  "ui.slurp.postGuide.draftInComposer": "Przygotuj w nowym poście",
-  "ui.slurp.stir.cant.draftInComposer": "Szkic w nowym poście do sprawdzenia."
+  "ui.slurp.postGuide.draftInComposer": "Przygotuj szkic posta",
+  "ui.slurp.stir.cant.draftInComposer": "Szkic w nowym poście do sprawdzenia.",
+  "ui.slurp.postGuide.editDraft": "Edytuj",
+  "ui.slurp.postGuide.generatePicture": "Generuj obraz wraz ze szkicem",
+  "ui.slurp.postGuide.uploadPicture": "Prześlij obraz"
 }

@@ -6,11 +6,11 @@
   },
   "builtAgainst": {
     "engineVersion": "2.4.6",
-    "engineCommit": "66a4aec373fb0751e99ce71ac8ad9262407129aa"
+    "engineCommit": "5a6fafa079c921a3dc1166169f41f318549d595e"
   },
   "id": "slurp2",
   "name": "Slurp",
-  "version": "0.3.15",
+  "version": "0.3.16",
   "description": "A private social app for your characters. Turn characters and personas into Creators, post public or locked photos, and watch a simulated audience follow, subscribe, unlock, comment, and message them. By default, it is tuned for an adult experience. Install it, restart Marinara Engine when prompted, then open Home → Slurp.",
   "localizations": {
     "de": {
@@ -77,13 +77,13 @@
     },
     {
       "path": "server.mjs",
-      "sha256": "2708b2e38144e1a372a88705c669e292b9eabdbc700a7d78093e01786d2426df",
-      "bytes": 3343291
+      "sha256": "45c9434a60759d994050a43ccb76446e7bdc336923f87acca8fc42c5abe37ea3",
+      "bytes": 3544027
     },
     {
       "path": "client.js",
-      "sha256": "734cbd15e70f241f88fa9cb83a8519e730544a25681804a5d9b1657d806595c1",
-      "bytes": 4518170
+      "sha256": "fc2fb0d860e7d6f0ad5fa8698aa4d39d42a2b161f5064150c44f71c93b006ca4",
+      "bytes": 4488378
     },
     {
       "path": "slurp2-logo.png",
@@ -97,18 +97,18 @@
     },
     {
       "path": "src/engine/packages/client/src/slp/locales/de.json",
-      "sha256": "a1874009fa3153f56f0702bc6a1fe2627ca3fc62b6cce1edd548328bb563c137",
-      "bytes": 208475
+      "sha256": "f20723fb9475074dc573d1c17a41e8803c6c8bc43e9612b737f218fcde0fb2bd",
+      "bytes": 208652
     },
     {
       "path": "src/engine/packages/client/src/slp/locales/ko.json",
-      "sha256": "94ce80b47c1ccb118985198bd3f5963a0e8f508274e4571c452cbb5198ed4e63",
-      "bytes": 304383
+      "sha256": "ee4457d861bf93bf02bc0758f060a17c02029c030706d92c7c39da24908feacb",
+      "bytes": 304555
     },
     {
       "path": "src/engine/packages/client/src/slp/locales/pl.json",
-      "sha256": "0975190301a9d39bbc769b0005210845766d8ff5a239e3b24872dfab480e4c83",
-      "bytes": 210338
+      "sha256": "0d40fb6344411f1e87d13a90df00c6f59765076f15081457f165d5a7e455ecd0",
+      "bytes": 210508
     }
   ],
   "permissions": [
