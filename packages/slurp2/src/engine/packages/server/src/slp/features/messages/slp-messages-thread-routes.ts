@@ -417,7 +417,11 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
    */
   app.get("/messages/compose", async (req, reply) => {
     const parsed = personaQuerySchema
-      .extend({ creatorAccountId: z.string().trim().min(1), support: z.enum(["1", "true"]).optional() })
+      .extend({
+        creatorAccountId: z.string().trim().min(1),
+        support: z.enum(["1", "true"]).optional(),
+        peek: z.enum(["1", "true"]).optional(),
+      })
       .safeParse(req.query);
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
     const viewer = await requireViewer(parsed.data.personaId);
@@ -430,7 +434,8 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
       await reconcileSlpThreadScene(app.db, thread).catch((error) => {
         logger.warn({ err: error, threadId: thread.id }, "[slurp-message] Could not reconcile the scene");
       });
-    if (thread) await messages.markRead(thread.id, "viewer");
+    // A profile peeks for prices and policy; only an opened chat reads the thread.
+    if (thread && !parsed.data.peek) await messages.markRead(thread.id, "viewer");
     const page = thread ? await messages.listMessagePage(thread.id) : { messages: [], nextCursor: null };
     const presence = await creatorPresence(creator, thread?.id);
     return {

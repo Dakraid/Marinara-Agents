@@ -551,26 +551,30 @@ export function createMessagesStorageFollowUps(context: SlurpMessagesContext) {
     },
     /** Clear one side's unread count and stamp the messages the other side sent. */
     async markRead(threadId: string, side: "viewer" | "creator"): Promise<void> {
+      // Every open thread polls this. Writing only when something is unread keeps a poll a read and
+      // stops a re-read from bumping `updatedAt` (and with it the thread's place in the inbox).
+      const [thread] = await db.select().from(slurpThreads).where(eq(slurpThreads.id, threadId)).limit(1);
+      if (!thread) return;
       const timestamp = now();
+      if (int((side === "viewer" ? thread.viewerUnread : thread.creatorUnread) as string) !== 0)
+        await db
+          .update(slurpThreads)
+          .set(
+            side === "viewer"
+              ? { viewerUnread: "0", updatedAt: timestamp }
+              : { creatorUnread: "0", updatedAt: timestamp },
+          )
+          .where(eq(slurpThreads.id, threadId));
       await db
-        .update(slurpThreads)
-        .set(
-          side === "viewer"
-            ? { viewerUnread: "0", updatedAt: timestamp }
-            : { creatorUnread: "0", updatedAt: timestamp },
-        )
-        .where(eq(slurpThreads.id, threadId));
-      const unread = await db
-        .select()
-        .from(slurpMessages)
+        .update(slurpMessages)
+        .set({ readAt: timestamp })
         .where(
-          and(eq(slurpMessages.threadId, threadId), eq(slurpMessages.role, side === "viewer" ? "creator" : "viewer")),
-        )
-        .orderBy(asc(slurpMessages.createdAt));
-      for (const row of unread) {
-        if (row.readAt) continue;
-        await db.update(slurpMessages).set({ readAt: timestamp }).where(eq(slurpMessages.id, row.id));
-      }
+          and(
+            eq(slurpMessages.threadId, threadId),
+            eq(slurpMessages.role, side === "viewer" ? "creator" : "viewer"),
+            isNull(slurpMessages.readAt),
+          ),
+        );
     },
   };
 }
