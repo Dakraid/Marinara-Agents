@@ -181,7 +181,10 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
   const activeConversationRef = useRef({ personaId, threadId });
   activeConversationRef.current = { personaId, threadId: thread?.id ?? threadId };
   const messageSearchQuery = useSlurpMessageSearch(threadId, personaId, messageSearch);
-  const searchMessages = messageSearchQuery.data?.pages.flatMap((page) => page.messages) ?? [];
+  const searchMessages = useMemo(
+    () => messageSearchQuery.data?.pages.flatMap((p) => p.messages) ?? [],
+    [messageSearchQuery.data],
+  );
   const searchMessageIds = useMemo(() => searchMessages.map((message) => message.id), [searchMessages]);
   useEffect(() => {
     if (
@@ -216,8 +219,7 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
   const commissions = useMemo(() => threadQuery.data?.commissions ?? [], [threadQuery.data?.commissions]);
   const relationship = "relationship" in (threadQuery.data ?? {}) ? threadQuery.data?.relationship : undefined;
   const availability = threadQuery.data?.creatorAvailability ?? relationship?.availability;
-  // A cleared conversation keeps its paid commission history visible in chat. Memoized: the draft
-  // lives in this model, so each keystroke re-ran these scans.
+  // Paid commissions stay after a clear. Memoized, as the draft (keystrokes) lives in this model.
   const commissionTimeline = useMemo(
     () =>
       commissions.map((commission) => {
@@ -242,9 +244,7 @@ export function useSlurpThreadViewState(props: SlurpThreadViewProps) {
       }),
     [commissions, messages],
   );
-  // Captured once per thread: the inbox count drops to zero as soon as opening marks it read, and
-  // the marker must stay on the same message while new replies arrive below it.
-  // The side (and so which count applies) is only known once the thread has loaded.
+  // Captured once per thread (opening zeroes the count); the side is known once the thread loads.
   const unreadMarkerRef = useRef<{
     threadId: string | null;
     unread: { viewer: number; creator: number } | null;

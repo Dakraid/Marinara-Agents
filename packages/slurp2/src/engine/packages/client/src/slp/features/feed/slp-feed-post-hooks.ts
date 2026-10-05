@@ -25,8 +25,11 @@ import type {
 
 /** Set by a post action: the next profile fetch reads every page once, so older posts refresh too. */
 let slpProfilePostsStale = false;
+/** Bumped by every post action: a background page fill started before one is dropped, not merged. */
+let slpProfilePostsGeneration = 0;
 export function markSlpProfilePostsStale() {
   slpProfilePostsStale = true;
+  slpProfilePostsGeneration += 1;
 }
 
 const profilePostTime = (item: SlurpProfilePost) =>
@@ -84,6 +87,7 @@ export function useCreatorPosts(accountId: string | null, personaId: string | nu
       }
       // A cold profile shows page one at once; older pages follow in the background. It used to
       // walk every page in sequence first, 15 round trips for 300 posts before anything showed.
+      const generation = slpProfilePostsGeneration;
       if (first.nextCursor)
         void (async () => {
           const rest: SlurpProfilePost[] = [];
@@ -92,12 +96,16 @@ export function useCreatorPosts(accountId: string | null, personaId: string | nu
             rest.push(...page.items);
             cursor = page.nextCursor;
           }
+          // A post was deleted or changed meanwhile: its full refresh is the truth, not this fill.
+          if (generation !== slpProfilePostsGeneration) return;
           qc.setQueryData<SlurpProfilePost[]>(queryKey, (current) => {
             const shown = current ?? first.items;
             const ids = new Set(shown.map(slpProfilePostId));
             return [...shown, ...rest.filter((item) => !ids.has(slpProfilePostId(item)))];
           });
-        })().catch(() => markSlpProfilePostsStale());
+        })().catch(() => {
+          slpProfilePostsStale = true;
+        });
       return first.items;
     },
     enabled: Boolean(accountId),

@@ -430,7 +430,7 @@ export function buildSlurpMessageChat(input: {
       protect,
       image: (message) =>
         input.imageContexts?.has(message.id) ? protect(input.imageContexts.get(message.id)) : undefined,
-      postUnlocked: (postId) => input.unlockedPostIds.has(postId),
+      postUnlocked: (postId) => typeof postId === "string" && input.unlockedPostIds.has(postId),
     }),
   };
 
@@ -569,7 +569,7 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
   // The memory is the tie said out loud, and an invited character holds a tie like anybody else.
   const fanMemory = fanMember || isSlurpCharacterFanAccount(input.viewer) ? slurpFanMemoryForPrompt(tie) : undefined;
   // What this fan already owns, so a Creator never tries to sell them a post they bought.
-  const unlockedPostIds = new Set(
+  const unlockedPostIds = new Set<string>(
     (await slurp.listPostUnlocksForViewer(input.viewer.id).catch(() => [])).map((unlock) => unlock.postId),
   );
   const recentPosts = slurpDmRecentPosts(recentPostRows, unlockedPostIds, RECENT_POSTS);

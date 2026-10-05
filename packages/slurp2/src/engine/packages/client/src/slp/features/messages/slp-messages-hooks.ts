@@ -98,6 +98,8 @@ export function useSlurpThread(threadId: string | null, personaId: string | null
         scenes?: boolean;
       }>(`/slurp2/messages/threads/${encodeURIComponent(threadId!)}?personaId=${encodeURIComponent(personaId!)}`),
     enabled: Boolean(threadId && personaId),
+    // Opening a chat marks it read and must show what arrived meanwhile, whatever the cache age.
+    refetchOnMount: "always",
     refetchInterval: threadId && personaId ? 30_000 : false,
     refetchIntervalInBackground: false,
   });
@@ -230,6 +232,7 @@ export function useSlurpCompose(
     enabled: Boolean(creatorAccountId && personaId),
     // Same poll as `useSlurpThread`. Without it a chat opened from a profile never saw the
     // queued off-hours reply, which is most of what the pacing model exists to produce.
+    refetchOnMount: peek ? true : "always",
     refetchInterval: creatorAccountId && personaId && !peek ? 30_000 : false,
     refetchIntervalInBackground: false,
   });
