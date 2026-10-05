@@ -5,8 +5,8 @@
     "minor": 68
   },
   "builtAgainst": {
-    "engineVersion": "2.4.7",
-    "engineCommit": "b0bdf8b944fe69ad20b96e61ffe915d69972d597"
+    "engineVersion": "2.4.8",
+    "engineCommit": "21f0421f1b7f02606a95b20d6b41af43b7cfa422"
   },
   "id": "card-editor",
   "name": "Card Editor",
