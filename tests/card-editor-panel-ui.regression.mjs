@@ -40,6 +40,7 @@ const featureRoot = new URL(
 const read = (name) => readFileSync(new URL(name, featureRoot), "utf8");
 
 const clientEntry = read("client-entry.tsx");
+const workspace = read("OverlayWorkspace.tsx");
 const runsPanel = read("RunsPanel.tsx");
 const sessionDetail = read("SessionDetail.tsx");
 const verdictQueue = read("VerdictQueue.tsx");
@@ -57,6 +58,7 @@ const routesSource = readFileSync(
 const builtClient = readFileSync(new URL("../packages/card-editor/client.js", import.meta.url), "utf8");
 const componentSources = {
   "client-entry.tsx": clientEntry,
+  "OverlayWorkspace.tsx": workspace,
   "RunsPanel.tsx": runsPanel,
   "SessionDetail.tsx": sessionDetail,
   "VerdictQueue.tsx": verdictQueue,
@@ -278,7 +280,9 @@ assert.match(api, /getHostLorebookEntries/u);
 
 // ── 8. Runs panel structure (DESIGN §3) ──
 assert.match(clientEntry, /view === "agent-panel"/u);
-assert.match(clientEntry, /<RunsPanel/u, "the placeholder is replaced by the real panel");
+assert.match(clientEntry, /view === "overlay"/u, "the overlay workspace view is registered (capabilityApi 1.68)");
+assert.match(workspace, /<RunsPanel/u, "the workspace hosts the real panel");
+assert.match(clientEntry, /<AgentPanelSummary/u, "the agent panel is the compact launcher/summary");
 assert.doesNotMatch(clientEntry, /RunsPanelPlaceholder/u);
 assert.match(runsPanel, /useVisiblePoll\(refresh, 2000, detailId === null\)/u, "2s polling while visible");
 assert.match(sessionDetail, /useVisiblePoll\(refresh, 2000\)/u, "the detail polls while visible too");

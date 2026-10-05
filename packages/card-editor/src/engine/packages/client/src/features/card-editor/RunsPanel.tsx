@@ -53,15 +53,29 @@ function LiveStatusLine({
 export function RunsPanel({
   localization,
   agentName,
+  detailId: controlledDetailId,
+  onDetailIdChange,
+  splitView = false,
 }: {
   localization?: CardEditorLocalizationContext;
   agentName?: string;
+  /** Controlled detail selection (overlay workspace). Omit for the standalone panel. */
+  detailId?: string | null;
+  onDetailIdChange?: (sessionId: string | null) => void;
+  /** Workspace layout: session list stays visible as a left rail next to the detail. */
+  splitView?: boolean;
 }) {
   const t = (key: string, values?: Record<string, string | number>) => translateCardEditor(localization, key, values);
   const [sessions, setSessions] = useState<SessionIndexEntry[] | null>(null);
   const [activeDetails, setActiveDetails] = useState<Readonly<Record<string, BulkSession>>>({});
   const [loadError, setLoadError] = useState(false);
-  const [detailId, setDetailId] = useState<string | null>(null);
+  const [internalDetailId, setInternalDetailId] = useState<string | null>(null);
+  const isControlled = controlledDetailId !== undefined;
+  const detailId = isControlled ? controlledDetailId : internalDetailId;
+  const setDetailId = (id: string | null) => {
+    if (isControlled) onDetailIdChange?.(id);
+    else setInternalDetailId(id);
+  };
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -99,35 +113,28 @@ export function RunsPanel({
     }
   };
 
-  if (detailId) {
-    return (
-      <SessionDetail
-        localization={localization}
-        sessionId={detailId}
-        onBack={() => {
-          setDetailId(null);
-          refresh();
-        }}
-        onDeleted={() => {
-          setDetailId(null);
-          setConfirmDeleteId(null);
-          refresh();
-        }}
-      />
-    );
-  }
+  const detailElement = detailId ? (
+    <SessionDetail
+      localization={localization}
+      sessionId={detailId}
+      onBack={() => {
+        setDetailId(null);
+        refresh();
+      }}
+      onDeleted={() => {
+        setDetailId(null);
+        setConfirmDeleteId(null);
+        refresh();
+      }}
+    />
+  ) : null;
 
   const list = sessions ?? [];
   const active = list.filter((entry) => entry.status === "active");
   const history = list.filter((entry) => entry.status !== "active");
 
-  return (
-    <section
-      className="ce-shell ce-panel"
-      data-card-editor-view="agent-panel"
-      ref={pollRef}
-      aria-label={agentName ? t("cardEditor.panel.titleWithAgent", { agent: agentName }) : t("cardEditor.panel.title")}
-    >
+  const listContent = (
+    <>
       <div className="ce-panel-head">
         <strong className="ce-panel-heading">{t("cardEditor.panel.title")}</strong>
         <button
@@ -267,6 +274,36 @@ export function RunsPanel({
           </ul>
         </div>
       ) : null}
+    </>
+  );
+
+  if (detailElement) {
+    if (!splitView) return detailElement;
+    return (
+      <section
+        className="ce-shell ce-panel ce-panel--workspace"
+        data-card-editor-view="agent-panel"
+        ref={pollRef}
+        aria-label={
+          agentName ? t("cardEditor.panel.titleWithAgent", { agent: agentName }) : t("cardEditor.panel.title")
+        }
+      >
+        <div className="ce-workspace-split">
+          <div className="ce-workspace-rail">{listContent}</div>
+          <div className="ce-workspace-main">{detailElement}</div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section
+      className="ce-shell ce-panel"
+      data-card-editor-view="agent-panel"
+      ref={pollRef}
+      aria-label={agentName ? t("cardEditor.panel.titleWithAgent", { agent: agentName }) : t("cardEditor.panel.title")}
+    >
+      {listContent}
     </section>
   );
 }

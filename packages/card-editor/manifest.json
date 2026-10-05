@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "capabilityApi": {
     "major": 1,
-    "minor": 67
+    "minor": 68
   },
   "builtAgainst": {
     "engineVersion": "2.4.7",
@@ -10,7 +10,7 @@
   },
   "id": "card-editor",
   "name": "Card Editor",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Rewrites character cards from your directives while preserving each card's voice and aligning it with referenced lore. Runs on a single card or as bulk dispatch across selected characters, with verdict review, edit-and-retry, and session management in its runs panel. Open a character card and choose Run Card Editor, or select characters and choose Card Editor for a bulk session, to propose changes for approval.",
   "engine": {
     "min": "2.4.7",
@@ -34,23 +34,24 @@
       "agentIds": [
         "card-editor"
       ]
-    }
+    },
+    "overlay": {}
   },
   "files": [
     {
       "path": "agents.json",
-      "sha256": "6ea8016320ab2f5a0379df77a5966c9a299d47e30b44478c68a41537f6a14ec4",
-      "bytes": 7076
+      "sha256": "9ff7fac9f3485bde3f9f0a8bbfecfc3f8519f5e571b668ba2c1d43d9d2001282",
+      "bytes": 9504
     },
     {
       "path": "server.mjs",
-      "sha256": "2b18eff192e4f538e2d9e183764475e378f1a0bfdfc6eb0e2ea44d499fdb0408",
-      "bytes": 40858
+      "sha256": "ca4a87259dae6945a3008c589388bec66c311b7edffd007c2707b72cfb786218",
+      "bytes": 44245
     },
     {
       "path": "client.js",
-      "sha256": "f8c8c5dc89013e3bca46ab1835bc7bff7622d2a533489afe42c8dfc13deca621",
-      "bytes": 326295
+      "sha256": "245ec773faf4ab614755546bb369480d207373b0dde804032c0ba02cedda4b40",
+      "bytes": 335763
     }
   ],
   "permissions": [

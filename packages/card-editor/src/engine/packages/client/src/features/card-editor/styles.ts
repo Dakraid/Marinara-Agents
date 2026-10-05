@@ -1165,4 +1165,66 @@ marinara-capability-card-editor[view="selection-action"] {
     transition: none;
   }
 }
+
+/* ── Overlay workspace (capabilityApi 1.68) ── */
+
+.ce-dialog.ce-workspace {
+  width: min(64rem, 100%);
+  height: 92dvh;
+  max-height: 92dvh;
+}
+
+.ce-workspace-body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ce-workspace-body > .ce-panel {
+  min-height: 0;
+  flex: 1;
+  margin-top: 0;
+  overflow: auto;
+  border: 0;
+  border-radius: 0;
+}
+
+.ce-workspace-split {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
+}
+
+.ce-workspace-rail {
+  display: grid;
+  align-content: start;
+  gap: 0.6rem;
+  overflow: auto;
+  border-right: 1px solid var(--marinara-chat-chrome-panel-divider);
+  padding: 0.75rem;
+}
+
+.ce-workspace-main {
+  min-width: 0;
+  overflow: auto;
+}
+
+.ce-panel--workspace {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 48rem) {
+  .ce-workspace-split {
+    grid-template-columns: 1fr;
+  }
+
+  /* Mobile: the detail's back button provides the return navigation. */
+  .ce-workspace-rail {
+    display: none;
+  }
+}
 `;

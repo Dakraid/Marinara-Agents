@@ -530,7 +530,7 @@ const features = [
   },
   {
     id: "card-editor",
-    version: "1.1.0",
+    version: "1.2.0",
     minEngineVersion: "2.4.7",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Card Editor",
@@ -547,10 +547,11 @@ const features = [
     ownedSourcePaths: cardEditorOwnedSourcePaths,
     engineBoundaryPath: join(packagesDir, "card-editor/engine-boundary.json"),
     boundaryDisplayName: "Card Editor",
-    capabilityApi: { major: 1, minor: 67 },
+    capabilityApi: { major: 1, minor: 68 },
     contributions: {
       selectionActions: { contexts: ["characters"] },
       agentPanel: { agentIds: ["card-editor"] },
+      overlay: {},
     },
     agentsSource: "agents.json",
   },
@@ -765,7 +766,7 @@ const cardEditorBoundary = selectedFeatures.some((feature) => feature.id === "ca
       sourceRoot: cardEditorSourceRoot,
       boundaryPath: join(packagesDir, "card-editor/engine-boundary.json"),
       displayName: "Card Editor",
-      capabilityApi: { major: 1, minor: 67 },
+      capabilityApi: { major: 1, minor: 68 },
     })
   : null;
 const pokedexBoundary = selectedFeatures.some((feature) => feature.id === "pokedex")

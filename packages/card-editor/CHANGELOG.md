@@ -1,3 +1,10 @@
+## 1.2.0 — 2026-10-05 [highlight]
+
+- The whole bulk flow now lives in an overlay workspace above the chat window (Capability API 1.68): session list, verdict review, diffs, and the dispatch dialog share one large two-pane surface instead of the cramped inline panel at the bottom of the agent settings.
+- The sidebar selection action and the agent page open that workspace; engine controls can deep-link straight into a session or a prefilled dispatch through the `marinara:capability-overlay` event.
+- The agent page keeps a compact status summary (active/past session counts) with an **Open Card Editor workspace** button.
+- Requires Marinara Engine 2.4.8 (Capability API 1.68).
+
 ## 1.1.0 — 2026-10-04 [highlight]
 
 - Bulk dispatch from the character selection bar: pick any set of characters and edit them in one session, with batched multi-card XML calls, automatic batch splitting on context overflow, and provider-error and refusal retries.

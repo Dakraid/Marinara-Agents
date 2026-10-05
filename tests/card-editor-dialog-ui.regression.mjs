@@ -253,14 +253,39 @@ assert.match(clientEntry, /selectionCount \?\? selectedCharacterIds\.length/u);
 assert.match(clientEntry, /selectionCount >= 1/u, "the button enables with at least one selected character");
 assert.match(clientEntry, /disabled=\{!canDispatch\}/u);
 assert.match(clientEntry, /cardEditor\.action\.open/u);
-assert.match(clientEntry, /<BulkDispatchDialog/u);
-assert.match(clientEntry, /cardEditor\.selection\.sessionStarted/u, "a dispatched session surfaces a generic notice");
+assert.match(
+  clientEntry,
+  /openCardEditorOverlay\(\{ dispatch: \{ characterIds: selectedCharacterIds \} \}\)/u,
+  "the launcher opens the overlay workspace with the dispatch prefilled (capabilityApi 1.68)",
+);
 assert.match(
   clientEntry,
   /props\.onRequestClose\?\.\(\)/u,
-  "a successful dispatch must exit the engine's characters selection mode (capabilityApi 1.67)",
+  "launching the workspace exits the engine's characters selection mode",
 );
 assert.match(clientEntry, /<style>\{CARD_EDITOR_STYLES\}<\/style>/u, "scoped styles must be injected");
+
+// ── 9b. Overlay workspace contract (capabilityApi 1.68) ──
+const workspaceSource = read("OverlayWorkspace.tsx");
+assert.match(workspaceSource, /OVERLAY_EVENT = "marinara:capability-overlay"/u);
+assert.match(workspaceSource, /OVERLAY_PACKAGE_ID = "card-editor"/u, "the workspace only answers its own events");
+assert.match(workspaceSource, /detail\.action === "close"/u);
+assert.match(workspaceSource, /payload\?\.sessionId/u, "{sessionId} deep-links a session");
+assert.match(
+  workspaceSource,
+  /payload\?\.dispatch\?\.characterIds/u,
+  "{dispatch:{characterIds}} opens the dispatch prefilled",
+);
+assert.match(workspaceSource, /if \(!open\) return null/u, "the idle overlay renders nothing");
+assert.match(workspaceSource, /role="dialog"/u);
+assert.match(workspaceSource, /aria-modal="true"/u);
+assert.match(workspaceSource, /event\.key === "Escape"/u, "Escape closes the workspace");
+assert.match(workspaceSource, /<BulkDispatchDialog/u);
+assert.match(workspaceSource, /setDetailId\(session\.id\)/u, "a dispatched session opens in the workspace");
+assert.match(workspaceSource, /splitView/u, "the workspace uses the two-pane panel layout");
+assert.match(read("RunsPanel.tsx"), /onDetailIdChange/u, "the panel detail selection is controllable by the workspace");
+assert.match(styles, /\.ce-workspace-split/u);
+assert.match(styles, /\.ce-dialog\.ce-workspace/u, "the workspace dialog has its own sizing");
 
 // ── 10. Styling contract: scoped classes + engine chrome hooks ──
 assert.match(styles, /marinara-capability-card-editor\[view="selection-action"\] \{\s*display: contents;\s*\}/u);

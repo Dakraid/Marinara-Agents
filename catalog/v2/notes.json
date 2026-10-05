@@ -14,6 +14,12 @@
     "card-editor": {
       "versions": [
         {
+          "version": "1.2.0",
+          "date": "2026-10-05",
+          "notes": "- The whole bulk flow now lives in an overlay workspace above the chat window (Capability API 1.68): session list, verdict review, diffs, and the dispatch dialog share one large two-pane surface instead of the cramped inline panel at the bottom of the agent settings.\n- The sidebar selection action and the agent page open that workspace; engine controls can deep-link straight into a session or a prefilled dispatch through the `marinara:capability-overlay` event.\n- The agent page keeps a compact status summary (active/past session counts) with an **Open Card Editor workspace** button.\n- Requires Marinara Engine 2.4.8 (Capability API 1.68).",
+          "highlight": true
+        },
+        {
           "version": "1.1.0",
           "date": "2026-10-04",
           "notes": "- Bulk dispatch from the character selection bar: pick any set of characters and edit them in one session, with batched multi-card XML calls, automatic batch splitting on context overflow, and provider-error and refusal retries.\n- Runs panel on the agent page: watch active sessions, browse history, review proposed edits in a verdict queue, and edit & retry failed requests from the exact rendered prompt.\n- Behavior character: give editor runs and bulk sessions a style card whose <behavior_character> block shapes how edits are written.\n- Staleness snapshots with always-apply UX: results remember the exact text the model saw, genuinely changed fields are flagged instead of blocking apply, and you choose to apply anyway or skip (Engine 2.4.7+).\n- Requires Marinara Engine 2.4.7 (Capability API 1.67).\n- Graduated to a full feature package with its own server runtime, client interface, and session storage.",

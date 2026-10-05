@@ -7,8 +7,6 @@
   "cardEditor.panel.empty": "No bulk editing sessions yet.",
   "cardEditor.error.network": "Could not reach Card Editor.",
   "cardEditor.action.open": "Card Editor",
-  "cardEditor.selection.sessionStarted": "Bulk session started for {{count}} characters. Follow its progress in Agents → Card Editor.",
-  "cardEditor.selection.noticeDismiss": "Dismiss",
   "cardEditor.dialog.title": "Bulk Card Editor",
   "cardEditor.dialog.close": "Close",
   "cardEditor.dialog.targets.title": "Targets · {{count}} characters",
@@ -73,6 +71,8 @@
   "cardEditor.dialog.dispatching": "Dispatching…",
   "cardEditor.dialog.dispatchError": "Could not create the session: {{message}}",
   "cardEditor.panel.title": "Bulk runs",
+  "cardEditor.panel.openWorkspace": "Open Card Editor workspace",
+  "cardEditor.panel.summaryCounts": "{{active}} active · {{recent}} past sessions",
   "cardEditor.panel.titleWithAgent": "Bulk runs — {{agent}}",
   "cardEditor.panel.refresh": "Refresh",
   "cardEditor.panel.loading": "Loading sessions…",
@@ -180,5 +180,7 @@
   "cardEditor.editRetry.cancel": "Cancel",
   "cardEditor.editRetry.retry": "Retry",
   "cardEditor.editRetry.retrying": "Retrying…",
-  "cardEditor.editRetry.error": "The retry failed: {{message}}"
+  "cardEditor.editRetry.error": "The retry failed: {{message}}",
+  "cardEditor.workspace.title": "Card Editor",
+  "cardEditor.workspace.close": "Close"
 }
