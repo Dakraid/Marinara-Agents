@@ -83,6 +83,8 @@ test("persona Stir previews a draft and opens Edit without losing it", async ({ 
     const sheet = page.getByRole("dialog", { name: "Stir", exact: true });
     await expect(sheet.getByRole("textbox", { name: "What do you want to post?" })).toBeVisible();
     await expect(sheet.locator("textarea")).toHaveCount(0);
+    await expect(sheet.getByRole("checkbox", { name: "Generate an image with the draft" })).toBeChecked();
+    await expect(sheet.getByRole("button", { name: "Upload an image", exact: true })).toBeVisible();
     await expect(sheet).toHaveCSS("opacity", "1");
     await page.screenshot({ path: info.outputPath(`guided-${width}-empty.png`) });
     await sheet.getByRole("textbox").fill("A quiet morning at the beach");
@@ -146,6 +148,11 @@ test("persona Stir previews a draft and opens Edit without losing it", async ({ 
   await expect(npcGuide).toContainText("Post as NPC Creator");
   await expect(npcStir).toHaveCount(0);
   await expect(npcGuide).toHaveCSS("opacity", "1");
+  const chooser = page.waitForEvent("filechooser");
+  await npcGuide.getByRole("button", { name: "Upload an image", exact: true }).click();
+  await (await chooser).setFiles("packages/slurp2/slurp2-logo.png");
+  await expect(npcGuide.getByRole("img", { name: "Attached post image" })).toBeVisible();
+  await expect(npcGuide.getByRole("checkbox", { name: "Generate an image with the draft" })).not.toBeChecked();
   await page.screenshot({ path: info.outputPath("guided-npc-1440-empty.png") });
   expect(errors).toEqual([]);
   expect(failed).toEqual([]);

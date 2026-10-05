@@ -6205,5 +6205,7 @@
   "ui.slurp.postGuide.collab": "Collab with {{name}}",
   "ui.slurp.postGuide.draftInComposer": "Draft post",
   "ui.slurp.stir.cant.draftInComposer": "Drafted in New post for you to review.",
-  "ui.slurp.postGuide.editDraft": "Edit"
+  "ui.slurp.postGuide.editDraft": "Edit",
+  "ui.slurp.postGuide.generatePicture": "Generate an image with the draft",
+  "ui.slurp.postGuide.uploadPicture": "Upload an image"
 }

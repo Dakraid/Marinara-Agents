@@ -424,7 +424,7 @@
         {
           "version": "0.3.16",
           "date": "2026-10-05",
-          "notes": "- Stir on your persona page and Write a post in an NPC Creator’s Stir use the same simple one-idea draft, with caption and picture preview together. Edit opens the full composer without losing your draft.",
+          "notes": "- The shared guide explicitly offers image generation with an on/off toggle and direct image upload; uploading switches generation off so drafting preserves the photo.\n- Stir on your persona page and Write a post in an NPC Creator’s Stir use the same simple one-idea draft, with caption and picture preview together. Edit opens the full composer without losing your draft.",
           "highlight": false
         },
         {

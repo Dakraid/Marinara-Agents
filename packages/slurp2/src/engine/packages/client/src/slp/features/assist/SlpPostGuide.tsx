@@ -5,13 +5,13 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Handshake, Loader2, Megaphone } from "lucide-react";
+import { Handshake, ImagePlus, Loader2, Megaphone } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { getApiErrorMessage } from "../../../lib/api-client";
 import { SLP_TYPE } from "../../base/chrome/SlpChrome";
 import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { SlpUsesAiMark } from "../../modules/chrome/SlpAiMark";
-import { SlpChip, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
+import { SlpButton, SlpChip, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
 import { useSlurpTies } from "../projects/slp-projects-contract";
 import { runSlpAction } from "./slp-assist-hooks";
 
@@ -32,6 +32,7 @@ export function SlpPostGuide({
   autoRun = false,
   onDraft,
   onPendingChange,
+  onUpload,
 }: {
   accountId: string;
   personaId: string | null;
@@ -42,10 +43,12 @@ export function SlpPostGuide({
   autoRun?: boolean;
   onDraft: (draft: SlpPostGuideDraft) => void;
   onPendingChange?: (pending: boolean) => void;
+  onUpload?: () => void;
 }) {
   const { t } = useTranslation();
   const ties = useSlurpTies(personaId).data;
   const [idea, setIdea] = useState(initialIdea);
+  const [picture, setPicture] = useState(true);
   const [dealId, setDealId] = useState<string | null>(null);
   const [collabId, setCollabId] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -69,6 +72,7 @@ export function SlpPostGuide({
         accountId,
         idea: text.trim(),
         story,
+        picture,
         ...(dealId ? { dealId } : {}),
         ...(collabId ? { collabId } : {}),
       });
@@ -131,6 +135,33 @@ export function SlpPostGuide({
           <SlpUsesAiMark />
         </SlpPrimaryButton>
       </form>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <label
+          className={cn(SLP_TYPE.meta, "flex min-h-11 cursor-pointer items-center gap-2 text-[var(--slurp-text)]")}
+        >
+          <input
+            type="checkbox"
+            checked={picture}
+            disabled={disabled || pending}
+            onChange={(event) => setPicture(event.target.checked)}
+            className="size-4 accent-[var(--noodle-accent)]"
+          />
+          {t("ui.slurp.postGuide.generatePicture")}
+        </label>
+        {onUpload && (
+          <SlpButton
+            variant="secondary"
+            disabled={disabled || pending}
+            onClick={() => {
+              setPicture(false);
+              onUpload();
+            }}
+          >
+            <ImagePlus size={16} aria-hidden="true" />
+            {t("ui.slurp.postGuide.uploadPicture")}
+          </SlpButton>
+        )}
+      </div>
       {(deals.length > 0 || collabs.length > 0) && (
         <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("ui.slurp.postGuide.forLabel")}>
           {deals.map((deal) => (

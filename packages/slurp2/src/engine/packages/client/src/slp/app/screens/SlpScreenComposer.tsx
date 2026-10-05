@@ -549,6 +549,7 @@ export function NoodlerPostComposer({
           story={story}
           disabled={composerBusy}
           onPendingChange={setDrafting}
+          onUpload={() => imageFileRef.current?.click()}
           initialIdea={handedGuide?.idea ?? ""}
           autoRun={Boolean(handedGuide) && open}
           onDraft={(guided) => {

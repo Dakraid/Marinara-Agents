@@ -137,6 +137,9 @@ async function main() {
   guide.props.onPendingChange(false);
   tree = render();
   assert.equal(component(tree, "SlpCreatorDraftImageFrame").length, 1);
+  const keptPicture = draft.image;
+  component(tree, "SlpPostGuide")[0].props.onDraft({ text: "A drafted caption", image: null, dealId: null });
+  assert.equal(draft.image, keptPicture, "Text-only drafting preserves an uploaded or existing picture");
   assert.equal(
     component(tree, "SlpAutoGrowTextarea").length,
     0,
@@ -218,6 +221,48 @@ async function main() {
     },
   });
   assert.deepEqual(calls, ["close", "guide", "navigate"]);
+  // Exercise the actual guide's request, toggle, and direct-upload controls.
+  states.length = 0;
+  deps.length = 0;
+  host.useSlurpTies = () => ({ data: undefined });
+  const requests: any[] = [];
+  host.runSlpAction = async (_action: string, input: any) => {
+    requests.push(input);
+    return { text: "Caption", image: null, imageError: null };
+  };
+  const postGuide = load("../../features/assist/SlpPostGuide.tsx").SlpPostGuide;
+  let uploads = 0;
+  const renderGuide = () => {
+    cursor = 0;
+    return postGuide({
+      accountId: "persona",
+      personaId: "persona",
+      story: false,
+      initialIdea: "An idea",
+      onDraft: () => undefined,
+      onUpload: () => uploads++,
+    });
+  };
+  const submitGuide = async () => {
+    elements(renderGuide())
+      .find((node) => node.type === "form")!
+      .props.onSubmit({ preventDefault() {} });
+    await new Promise((resolve) => setImmediate(resolve));
+  };
+  await submitGuide();
+  assert.equal(requests.at(-1).picture, true, "Image generation is explicit in the request");
+  elements(renderGuide())
+    .find((node) => node.type === "input" && node.props.type === "checkbox")!
+    .props.onChange({ target: { checked: false } });
+  await submitGuide();
+  assert.equal(requests.at(-1).picture, false, "The toggle permits text-only drafting");
+  elements(renderGuide())
+    .find((node) => node.type === "input" && node.props.type === "checkbox")!
+    .props.onChange({ target: { checked: true } });
+  component(renderGuide(), "SlpButton")[0].props.onClick();
+  assert.equal(uploads, 1, "Upload is available directly in the shared guide");
+  await submitGuide();
+  assert.equal(requests.at(-1).picture, false, "Uploading turns generation off to preserve the picture");
   console.log("slurp2 guided preview: ok");
 }
 void main().catch((error) => {
