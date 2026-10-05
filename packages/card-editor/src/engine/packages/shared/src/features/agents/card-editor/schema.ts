@@ -12,7 +12,7 @@ const BULK_EDITABLE_CARD_FIELDS = [
   "appearance",
 ] as const;
 
-export type SaveMode = "confirm" | "auto" | "duplicate";
+export type SaveMode = "confirm" | "auto" | "duplicate" | "combined";
 
 export type ItemStatus =
   | "queued"
@@ -33,7 +33,7 @@ export interface BulkSessionConfig {
   mode: "individual" | "batched";
   batchSize: number;
   connectionId: string | null;
-  presetId: "standard" | "strict" | "rebalance" | "custom";
+  presetId: "standard" | "strict" | "rebalance" | "xml-simple" | "xml-complex" | "custom";
   customTemplate?: string;
   globalInstruction: string;
   behaviorCharacterId: string | null;
@@ -44,6 +44,10 @@ export interface BulkSessionConfig {
   concurrency: number;
   saveMode: SaveMode;
   duplicateSuffix: string;
+  /** Non-empty name prefix for duplicate mode; wins over duplicateSuffix when set (XML transform flow). */
+  duplicatePrefix?: string;
+  /** Target name for the single card produced by combined save mode (required when saveMode is "combined"). */
+  combinedCardName?: string;
 }
 
 export interface CardFieldUpdate {
@@ -103,6 +107,8 @@ export interface BulkSession {
   batches: BulkSessionBatch[];
   status: "active" | "completed" | "canceled" | "interrupted";
   stats: BulkSessionStats;
+  /** Set by the session-level combine action (combined save mode): the created host character id. */
+  combinedCardId?: string;
 }
 
 interface BulkSessionTarget {
@@ -175,6 +181,16 @@ function stringValue(value: unknown, fallback: string, field: string): string {
   throw new SchemaError(`${field} must be a string`);
 }
 
+/** Optional affix/name field: absent stays absent; present values must be non-blank and short. */
+function optionalAffix(value: unknown, field: string, preserve: boolean): string | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string") throw new SchemaError(`${field} must be a string`);
+  if (value.length > 300) throw new SchemaError(`${field} must be at most 300 characters`);
+  const normalized = preserve ? value : value.trim();
+  if (!normalized.trim()) throw new SchemaError(`${field} must not be blank`);
+  return normalized;
+}
+
 function nullableString(value: unknown, field: string): string | null {
   if (value === undefined || value === null) return null;
   if (typeof value === "string") return value;
@@ -203,12 +219,23 @@ export function normalizeSessionConfig(input: unknown): BulkSessionConfig {
   if (source.customTemplate !== undefined && typeof source.customTemplate !== "string") {
     throw new SchemaError("customTemplate must be a string");
   }
+  const duplicatePrefix = optionalAffix(source.duplicatePrefix, "duplicatePrefix", true);
+  const combinedCardName = optionalAffix(source.combinedCardName, "combinedCardName", false);
+  const saveMode = enumValue(source.saveMode, "confirm", ["confirm", "auto", "duplicate", "combined"], "saveMode");
+  if (saveMode === "combined" && combinedCardName === undefined) {
+    throw new SchemaError("combinedCardName is required when saveMode is combined");
+  }
 
   return {
     mode: enumValue(source.mode, "individual", ["individual", "batched"], "mode"),
     batchSize: boundedInteger(source.batchSize, 4, 1, 16, "batchSize"),
     connectionId: nullableString(source.connectionId, "connectionId"),
-    presetId: enumValue(source.presetId, "standard", ["standard", "strict", "rebalance", "custom"], "presetId"),
+    presetId: enumValue(
+      source.presetId,
+      "standard",
+      ["standard", "strict", "rebalance", "xml-simple", "xml-complex", "custom"],
+      "presetId",
+    ),
     ...(source.customTemplate === undefined ? {} : { customTemplate: source.customTemplate }),
     globalInstruction: stringValue(source.globalInstruction, "", "globalInstruction"),
     behaviorCharacterId: nullableString(source.behaviorCharacterId, "behaviorCharacterId"),
@@ -217,8 +244,10 @@ export function normalizeSessionConfig(input: unknown): BulkSessionConfig {
     providerRetries: boundedInteger(source.providerRetries, 2, 0, 5, "providerRetries"),
     refusalRetries: boundedInteger(source.refusalRetries, 3, 0, 5, "refusalRetries"),
     concurrency: boundedInteger(source.concurrency, 1, 1, 4, "concurrency"),
-    saveMode: enumValue(source.saveMode, "confirm", ["confirm", "auto", "duplicate"], "saveMode"),
-    duplicateSuffix: stringValue(source.duplicateSuffix, " (Edited)", "duplicateSuffix"),
+    saveMode,
+    duplicateSuffix: optionalAffix(source.duplicateSuffix, "duplicateSuffix", true) ?? " (Edited)",
+    ...(duplicatePrefix === undefined ? {} : { duplicatePrefix }),
+    ...(combinedCardName === undefined ? {} : { combinedCardName }),
   };
 }
 

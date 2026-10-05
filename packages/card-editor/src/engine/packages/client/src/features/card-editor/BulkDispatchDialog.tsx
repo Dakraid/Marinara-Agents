@@ -316,6 +316,8 @@ export function BulkDispatchDialog({
                 <option value="standard">{t("cardEditor.dialog.model.presetStandard")}</option>
                 <option value="strict">{t("cardEditor.dialog.model.presetStrict")}</option>
                 <option value="rebalance">{t("cardEditor.dialog.model.presetRebalance")}</option>
+                <option value="xml-simple">{t("cardEditor.dialog.model.presetXmlSimple")}</option>
+                <option value="xml-complex">{t("cardEditor.dialog.model.presetXmlComplex")}</option>
                 <option value="custom">{t("cardEditor.dialog.model.presetCustom")}</option>
               </select>
             </label>

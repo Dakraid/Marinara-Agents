@@ -5,7 +5,7 @@ import { normalizeSessionConfig } from "../packages/card-editor/src/engine/packa
 import { PROMPT_PRESET_TEMPLATES } from "../packages/card-editor/src/engine/packages/client/src/features/card-editor/presets.ts";
 import { PRESETS } from "../packages/card-editor/src/engine/packages/server/src/services/card-editor/prompts.ts";
 
-// The three bulk prompt presets have exactly one source of truth: the server
+// The five bulk prompt presets have exactly one source of truth: the server
 // prompts module (prompts.ts PRESETS). The agents.json promptTemplates[] entries
 // (localized into the package metadata catalog) and the dialog's Custom prefill
 // bodies (presets.ts) are byte-identical copies, pinned here so the surfaces can
@@ -30,7 +30,7 @@ const uiCatalog = JSON.parse(
 assert.ok(editor, "Card Editor definition must exist");
 assert.deepEqual(
   PRESETS.map((preset) => preset.id),
-  ["standard", "strict", "rebalance"],
+  ["standard", "strict", "rebalance", "xml-simple", "xml-complex"],
   "server PRESETS are the preset source of truth",
 );
 
@@ -84,6 +84,8 @@ const dialogNameById = {
   standard: uiCatalog["cardEditor.dialog.model.presetStandard"],
   strict: uiCatalog["cardEditor.dialog.model.presetStrict"],
   rebalance: uiCatalog["cardEditor.dialog.model.presetRebalance"],
+  "xml-simple": uiCatalog["cardEditor.dialog.model.presetXmlSimple"],
+  "xml-complex": uiCatalog["cardEditor.dialog.model.presetXmlComplex"],
 };
 const localizedTemplates = metadataCatalog.agents?.["card-editor"]?.promptTemplates ?? {};
 for (const preset of PRESETS) {

@@ -7,11 +7,13 @@
 import type { BulkSession, SessionItem } from "../../../../shared/src/features/agents/card-editor/schema.ts";
 // ".ts" specifiers: the panel regression runs this module under plain Node type-stripping.
 import {
+  createHostCharacter,
   duplicateHostCharacter,
   getHostCharacterCard,
   isVerdictPlan,
   parseHostCharacterName,
   patchHostCharacter,
+  submitSessionCombine,
   submitSessionItemApplyResult,
   submitSessionItemVerdict,
   type ApplyOperation,
@@ -40,6 +42,8 @@ async function executeOp(item: SessionItem, op: ApplyOperation, label: string): 
   // The route never plans hold ops in an "apply" response (holds force needs-confirmation first);
   // treat one as a no-op rather than failing the whole item if the contract ever drifts.
   if (op.op === "hold") return { ok: true };
+  // Combined mode collects each card's produced XML client-side; no per-item write happens.
+  if (op.op === "collectForCombine") return { ok: true };
   if (op.op === "patchField") {
     await patchHostCharacter(op.characterId, buildFieldPatchData(op.field, op.newText), {
       versionSource: op.versionSource,
@@ -47,7 +51,7 @@ async function executeOp(item: SessionItem, op: ApplyOperation, label: string): 
     });
     return { ok: true };
   }
-  // duplicateThenPatch: copy the CURRENT card, rename with the session suffix, patch the copy.
+  // duplicateThenPatch: copy the CURRENT card, rename (prefix wins over suffix), patch the copy.
   const copy = await duplicateHostCharacter(op.characterId);
   const copyId = typeof copy?.id === "string" && copy.id ? copy.id : "";
   if (!copyId) throw new Error("The duplicate call returned no card id.");
@@ -55,7 +59,9 @@ async function executeOp(item: SessionItem, op: ApplyOperation, label: string): 
   const baseName = copyName.endsWith(ENGINE_COPY_SUFFIX)
     ? copyName.slice(0, -ENGINE_COPY_SUFFIX.length)
     : copyName || item.characterName;
-  const data: Record<string, unknown> = { name: `${baseName}${op.nameSuffix}` };
+  const data: Record<string, unknown> = {
+    name: op.namePrefix !== undefined ? `${op.namePrefix}${baseName}` : `${baseName}${op.nameSuffix}`,
+  };
   const extensionFields: Record<string, string> = {};
   for (const [field, value] of Object.entries(op.fields)) {
     if (field === "backstory" || field === "appearance") extensionFields[field] = value;
@@ -105,8 +111,8 @@ export async function approveSessionItem(
   options: { force: boolean },
 ): Promise<ApproveItemOutcome> {
   try {
-    const duplicateMode = session.config.saveMode === "duplicate";
-    const currentFields = duplicateMode
+    const writelessMode = session.config.saveMode === "duplicate" || session.config.saveMode === "combined";
+    const currentFields = writelessMode
       ? undefined
       : currentFieldsFromCard((await getHostCharacterCard(item.characterId)).fields);
     const response = await submitSessionItemVerdict(session.id, item.itemId, {
@@ -149,6 +155,42 @@ export async function rejectSessionItem(
     const response = await submitSessionItemVerdict(session.id, item.itemId, { verdict: "reject" });
     if (isVerdictPlan(response)) return { kind: "failed", message: "The verdict route answered an unexpected shape." };
     return { kind: "rejected", session: response };
+  } catch (error) {
+    return { kind: "failed", message: errorText(error) };
+  }
+}
+
+/** Pure: the collected per-item XML blocks (description updates) in session target order. */
+export function buildCombinedCardBlocks(items: readonly SessionItem[]): string[] {
+  return items
+    .filter((item) => item.status === "applied")
+    .map((item) => (item.updates ?? []).find((update) => update.field === "description")?.newText ?? "")
+    .filter((block) => block.trim().length > 0);
+}
+
+/** Combined-mode finisher: create the ONE card from the collected blocks, then record it.
+ *  Partial combines (not every item collected) require the caller's explicit confirm — the route
+ *  enforces it too (409 without confirmPartial). */
+export async function combineCollectedSession(
+  session: BulkSession,
+  options: { confirmPartial?: boolean } = {},
+): Promise<{ kind: "combined"; session: BulkSession } | { kind: "failed"; message: string }> {
+  try {
+    const collected = session.items.filter((item) => item.status === "applied");
+    const blocks = buildCombinedCardBlocks(session.items);
+    if (collected.length === 0 || blocks.length === 0) {
+      return { kind: "failed", message: "No collected cards to combine yet." };
+    }
+    const name = session.config.combinedCardName?.trim() || session.label;
+    const created = await createHostCharacter({ name, description: blocks.join("\n\n") });
+    const resultCardId = typeof created?.id === "string" && created.id ? created.id : "";
+    if (!resultCardId) throw new Error("The create call returned no card id.");
+    const updated = await submitSessionCombine(session.id, {
+      itemIds: collected.map((item) => item.itemId),
+      resultCardId,
+      ...(options.confirmPartial ? { confirmPartial: true } : {}),
+    });
+    return { kind: "combined", session: updated };
   } catch (error) {
     return { kind: "failed", message: errorText(error) };
   }

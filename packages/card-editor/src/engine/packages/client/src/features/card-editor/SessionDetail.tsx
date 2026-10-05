@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { BulkSession, SessionItem } from "../../../../shared/src/features/agents/card-editor/schema.ts";
 import { cancelSession, cancelSessionItem, deleteSession, getSession, retrySessionItem } from "./api";
-import { approveSessionItem } from "./apply-ops";
+import { approveSessionItem, combineCollectedSession } from "./apply-ops";
 import { EditRetryDialog } from "./EditRetryDialog";
 import { translateCardEditor, type CardEditorLocalizationContext } from "./localization";
 import {
@@ -63,6 +63,7 @@ export function SessionDetail({
   const [session, setSession] = useState<BulkSession | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [confirmCombine, setConfirmCombine] = useState(false);
   const [autoApplyErrors, setAutoApplyErrors] = useState<Readonly<Record<string, string>>>({});
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [page, setPage] = useState(0);
@@ -131,6 +132,17 @@ export function SessionDetail({
       onDeleted();
     });
 
+  const combineCollected = () =>
+    void runAction("combine", async () => {
+      if (!session) return;
+      const collected = session.items.filter((item) => item.status === "applied");
+      const partial = collected.length < session.items.length;
+      const outcome = await combineCollectedSession(session, ...(partial ? [{ confirmPartial: true }] : []));
+      if (outcome.kind === "failed") throw new Error(outcome.message);
+      setConfirmCombine(false);
+      return outcome.session;
+    });
+
   if (loadError && !session) {
     return (
       <section className="ce-shell ce-panel" ref={pollRef}>
@@ -171,6 +183,10 @@ export function SessionDetail({
   const editRetryItem = editRetryId ? (session.items.find((item) => item.itemId === editRetryId) ?? null) : null;
   const reviewableCount = session.items.filter(isReviewable).length;
   const failedCount = session.items.filter(isFailed).length;
+  const combinedMode = session.config.saveMode === "combined";
+  const collectedCount = combinedMode ? session.items.filter((item) => item.status === "applied").length : 0;
+  const combineAvailable = combinedMode && !session.combinedCardId && collectedCount > 0;
+  const combinePartial = combineAvailable && collectedCount < session.items.length;
   const live = deriveLiveStatus(session);
   const pageCount = Math.max(1, Math.ceil(session.items.length / PAGE_SIZE));
   const clampedPage = Math.min(page, pageCount - 1);
@@ -190,6 +206,11 @@ export function SessionDetail({
           {t(`cardEditor.panel.sessionStatus.${session.status}`)}
         </span>
       </div>
+      {session.combinedCardId ? (
+        <div className="ce-notice" role="status">
+          <span>{t("cardEditor.panel.detail.combinedCreated", { id: session.combinedCardId })}</span>
+        </div>
+      ) : null}
       {session.status === "interrupted" ? (
         <div className="ce-notice" role="status">
           <span>{t("cardEditor.panel.interruptedNotice")}</span>
@@ -213,6 +234,52 @@ export function SessionDetail({
         </div>
       ) : null}
       <div className="ce-panel-actions">
+        {combineAvailable ? (
+          combinePartial && !confirmCombine ? (
+            <button
+              type="button"
+              className="mari-chrome-control mari-chrome-control--small"
+              disabled={busyKey !== null}
+              onClick={() => setConfirmCombine(true)}
+            >
+              {t("cardEditor.panel.detail.combine", { count: collectedCount })}
+            </button>
+          ) : combinePartial && confirmCombine ? (
+            <span className="ce-confirm-strip" role="group" aria-label={t("cardEditor.panel.detail.combine")}>
+              <span className="ce-caption">
+                {t("cardEditor.panel.detail.combinePartialConfirm", {
+                  count: collectedCount,
+                  total: session.items.length,
+                })}
+              </span>
+              <button
+                type="button"
+                className="mari-chrome-control mari-chrome-control--small"
+                disabled={busyKey !== null}
+                onClick={combineCollected}
+              >
+                {t("cardEditor.panel.detail.combineYes", { count: collectedCount })}
+              </button>
+              <button
+                type="button"
+                className="mari-chrome-control mari-chrome-control--small"
+                disabled={busyKey !== null}
+                onClick={() => setConfirmCombine(false)}
+              >
+                {t("cardEditor.panel.detail.combineNo")}
+              </button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              className="mari-chrome-control mari-chrome-control--primary mari-chrome-control--small"
+              disabled={busyKey !== null}
+              onClick={combineCollected}
+            >
+              {t("cardEditor.panel.detail.combine", { count: collectedCount })}
+            </button>
+          )
+        ) : null}
         {reviewableCount > 0 ? (
           <button
             type="button"

@@ -81,7 +81,14 @@ export type ApplyOperation =
       versionReason: string;
     }
   | { op: "hold"; characterId: string; field: string; reason: string }
-  | { op: "duplicateThenPatch"; characterId: string; fields: Record<string, string>; nameSuffix: string };
+  | {
+      op: "duplicateThenPatch";
+      characterId: string;
+      fields: Record<string, string>;
+      nameSuffix: string;
+      namePrefix?: string;
+    }
+  | { op: "collectForCombine"; characterId: string; fields: Record<string, string> };
 
 export interface VerdictApplyPlan {
   status: "apply";
@@ -229,6 +236,17 @@ export function submitSessionItemApplyResult(
   results: ApplyOpResult[],
 ): Promise<BulkSession> {
   return request<BulkSession>(itemPath(sessionId, itemId, "/apply-result"), "POST", { results });
+}
+
+/** Session-level combine (combined save mode): record the ONE created card against its items. */
+export interface SessionCombineRequest {
+  itemIds: string[];
+  resultCardId: string;
+  confirmPartial?: boolean;
+}
+
+export function submitSessionCombine(sessionId: string, body: SessionCombineRequest): Promise<BulkSession> {
+  return request<BulkSession>(sessionPath(sessionId, "/combine"), "POST", body);
 }
 
 /** Active sessions refuse deletion without force (409); force cancels the run first. */
@@ -457,6 +475,11 @@ export function patchHostCharacter(
 /** Engine copy of the CURRENT card (name + " (Copy)"); the caller renames and patches the copy. */
 export function duplicateHostCharacter(characterId: string): Promise<HostCharacterRow> {
   return hostWriteRequest<HostCharacterRow>(`/characters/${encodeURIComponent(characterId)}/duplicate`, "POST");
+}
+
+/** Combined save mode: create the ONE new card holding every collected XML block. */
+export function createHostCharacter(card: { name: string; description: string }): Promise<HostCharacterRow> {
+  return hostWriteRequest<HostCharacterRow>("/characters", "POST", { data: card });
 }
 
 export function searchHostCharacters(

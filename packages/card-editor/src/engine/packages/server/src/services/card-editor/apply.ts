@@ -13,6 +13,7 @@ import type {
   SaveMode,
   SessionItem,
 } from "../../../../shared/src/features/agents/card-editor/schema.ts";
+import { SchemaError } from "../../../../shared/src/features/agents/card-editor/schema.ts";
 import { normalizeCardPromptText } from "../../../../shared/src/features/agents/card-editor/text.ts";
 
 export type ApplyOperation =
@@ -25,7 +26,14 @@ export type ApplyOperation =
       versionReason: string;
     }
   | { op: "hold"; characterId: string; field: string; reason: string }
-  | { op: "duplicateThenPatch"; characterId: string; fields: Record<string, string>; nameSuffix: string };
+  | {
+      op: "duplicateThenPatch";
+      characterId: string;
+      fields: Record<string, string>;
+      nameSuffix: string;
+      namePrefix?: string;
+    }
+  | { op: "collectForCombine"; characterId: string; fields: Record<string, string> };
 
 export interface PlanApplyOptions {
   /** force=true applies stale fields anyway (the verdict queue's "Apply anyway" confirm). */
@@ -36,6 +44,10 @@ export interface PlanApplyOptions {
   /** Session label, used for the revision reason on every write. */
   label: string;
   duplicateSuffix: string;
+  /** Non-empty prefix wins over duplicateSuffix in duplicate-mode naming. */
+  duplicatePrefix?: string;
+  /** Required when saveMode is "combined" (the single output card's name). */
+  combinedCardName?: string;
 }
 
 function isStale(item: Pick<SessionItem, "snapshots">, currentCardFields: Record<string, string>, field: string) {
@@ -53,10 +65,26 @@ export function planApply(
   if (updates.length === 0) return [];
 
   // Duplicate mode copies the CURRENT card, so staleness does not apply; the original is untouched.
-  if (options.saveMode === "duplicate") {
+  // Combined mode collects each card's produced XML (no per-item write); the session-level combine
+  // action later creates ONE new card from the collected blocks.
+  if (options.saveMode === "duplicate" || options.saveMode === "combined") {
     const fields: Record<string, string> = {};
     for (const update of updates) fields[update.field] = update.newText;
-    return [{ op: "duplicateThenPatch", characterId: item.characterId, fields, nameSuffix: options.duplicateSuffix }];
+    if (options.saveMode === "combined") {
+      if (!options.combinedCardName?.trim()) {
+        throw new SchemaError("combinedCardName is required when saveMode is combined");
+      }
+      return [{ op: "collectForCombine", characterId: item.characterId, fields }];
+    }
+    const prefix = options.duplicatePrefix?.trim() ? options.duplicatePrefix : undefined;
+    return [
+      {
+        op: "duplicateThenPatch",
+        characterId: item.characterId,
+        fields,
+        ...(prefix === undefined ? { nameSuffix: options.duplicateSuffix } : { namePrefix: prefix }),
+      },
+    ];
   }
 
   const versionReason = `Card Editor bulk: ${options.label}`;

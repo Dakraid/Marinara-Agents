@@ -36,6 +36,7 @@ import {
   detectRefusal,
 } from "../packages/card-editor/src/engine/packages/server/src/services/card-editor/llm.ts";
 import { splitItemIds } from "../packages/card-editor/src/engine/packages/server/src/services/card-editor/runner.ts";
+import { buildCombinedCardBlocks } from "../packages/card-editor/src/engine/packages/client/src/features/card-editor/apply-ops.ts";
 
 const defaults = normalizeSessionConfig({});
 assert.deepEqual(defaults, {
@@ -69,6 +70,7 @@ assert.deepEqual(
     concurrency: 8,
     saveMode: "duplicate",
     duplicateSuffix: " copy",
+    duplicatePrefix: "October ",
   }),
   {
     mode: "batched",
@@ -85,8 +87,14 @@ assert.deepEqual(
     concurrency: 4,
     saveMode: "duplicate",
     duplicateSuffix: " copy",
+    duplicatePrefix: "October ",
   },
 );
+assert.deepEqual(normalizeSessionConfig({ saveMode: "combined", combinedCardName: "  October Cast  " }), {
+  ...defaults,
+  saveMode: "combined",
+  combinedCardName: "October Cast",
+});
 for (const garbage of [
   null,
   [],
@@ -99,6 +107,11 @@ for (const garbage of [
   { connectionId: 4 },
   { globalLorebookIds: ["valid", 3] },
   { rebalance: "yes" },
+  { duplicateSuffix: "x".repeat(301) },
+  { duplicatePrefix: "   " },
+  { duplicatePrefix: "x".repeat(301) },
+  { combinedCardName: "   " },
+  { combinedCardName: "x".repeat(301) },
 ]) {
   assert.throws(() => normalizeSessionConfig(garbage), SchemaError);
 }
@@ -349,6 +362,8 @@ assert.deepEqual(
     { id: "standard", label: "Standard rewrite" },
     { id: "strict", label: "Strict surgical" },
     { id: "rebalance", label: "Field rebalancing" },
+    { id: "xml-simple", label: "XML · Simple" },
+    { id: "xml-complex", label: "XML · Complex" },
   ],
 );
 const assembled = assemblePrompt({
@@ -567,6 +582,51 @@ assert.deepEqual(planApply(applyItem, {}, { force: false, saveMode: "duplicate",
 assert.deepEqual(
   planApply(
     applyItem,
+    {},
+    {
+      force: false,
+      saveMode: "duplicate",
+      duplicatePrefix: "October ",
+      ...applyOptions,
+    },
+  ),
+  [
+    {
+      op: "duplicateThenPatch",
+      characterId: "character-1",
+      fields: { description: "New", personality: "Changed" },
+      namePrefix: "October ",
+    },
+  ],
+  "a non-empty prefix wins over the legacy suffix",
+);
+assert.deepEqual(
+  planApply(
+    applyItem,
+    {},
+    {
+      force: false,
+      saveMode: "combined",
+      combinedCardName: "October Cast",
+      ...applyOptions,
+    },
+  ),
+  [
+    {
+      op: "collectForCombine",
+      characterId: "character-1",
+      fields: { description: "New", personality: "Changed" },
+    },
+  ],
+);
+assert.throws(
+  () => planApply(applyItem, {}, { force: false, saveMode: "combined", ...applyOptions }),
+  SchemaError,
+  "combined planning requires the combined card name",
+);
+assert.deepEqual(
+  planApply(
+    applyItem,
     { description: "Old", personality: "Original" },
     {
       force: false,
@@ -770,5 +830,31 @@ const badOps = {
   items: hintSession.items.map((item) => ({ ...item, pendingOps: "not-an-array" })),
 };
 assert.equal(migrateSessionDocument(badOps), null, "a non-array pendingOps is rejected");
+
+// ── combined save mode ──
+assert.throws(
+  () => normalizeSessionConfig({ saveMode: "combined" }),
+  SchemaError,
+  "combined save mode requires a combinedCardName",
+);
+assert.equal(normalizeSessionConfig({ saveMode: "combined", combinedCardName: "October Cast" }).saveMode, "combined");
+
+// buildCombinedCardBlocks: collected (applied) items in session order; empty/missing blocks skip.
+const combineItem = (status, description) => ({
+  ...newItem(`character-${Math.random().toString(36).slice(2, 8)}`, "Name"),
+  status,
+  ...(description === null ? {} : { updates: [{ ...validDescriptionUpdate, newText: description }] }),
+});
+assert.deepEqual(
+  buildCombinedCardBlocks([
+    combineItem("applied", "<card>one</card>"),
+    combineItem("awaiting-review", "<card>two</card>"),
+    combineItem("applied", "<card>three</card>"),
+    combineItem("applied", null),
+    combineItem("applied", "   "),
+  ]),
+  ["<card>one</card>", "<card>three</card>"],
+  "only applied items with non-blank description blocks contribute, in session order",
+);
 
 process.stdout.write("Card Editor bulk services regression passed.\n");

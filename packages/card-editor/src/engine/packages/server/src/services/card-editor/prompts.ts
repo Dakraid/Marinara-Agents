@@ -12,7 +12,7 @@ import { escapeXml } from "../../../../shared/src/features/agents/card-editor/te
 import { buildCharacterBlock, buildLorebookBlocks, type CharacterLike, type LorebookLike } from "./context.ts";
 
 export interface PromptPreset {
-  id: "standard" | "strict" | "rebalance";
+  id: "standard" | "strict" | "rebalance" | "xml-simple" | "xml-complex";
   label: string;
   template: string;
 }
@@ -45,6 +45,19 @@ const STRICT_ADDENDUM =
   "Work surgically: make the smallest whole-field rewrite that satisfies the instruction, change as few fields " +
   "as possible, and leave every untouched field out of the response.";
 
+function xmlTransformTemplate(form: "Simple" | "Complex"): string {
+  return [
+    `You are the Card Editor. Transform each existing character card into the complete ${form} XML document defined by the global instruction, drawing content from all provided card fields.`,
+    "",
+    "XML transformation contract:",
+    '- Return exactly ONE update for each card: {"action":"update","field":"description","oldText":"…","newText":"…","reason":"…"}.',
+    '- The update field must be "description". oldText must be the exact current description copied verbatim. newText must be the complete XML document, never a fragment, diff, patch, or markdown fence.',
+    "- Assemble the XML from ALL fields in the provided character context. Preserve every relevant fact, instruction, example, greeting, note, and other card content in the target schema.",
+    "- Leave every field other than description untouched and never edit the card's name.",
+    "- Preserve {{char}} and {{user}} macros exactly; never resolve, escape, or rename them.",
+  ].join("\n");
+}
+
 export const PRESETS: readonly PromptPreset[] = [
   { id: "standard", label: "Standard rewrite", template: `${STANDARD_INTRO}\n\n${EDITING_CONTRACT}` },
   {
@@ -57,6 +70,8 @@ export const PRESETS: readonly PromptPreset[] = [
     label: "Field rebalancing",
     template: `${STANDARD_INTRO}\n\n${EDITING_CONTRACT}\n\n${REBALANCE_DIRECTIVE}`,
   },
+  { id: "xml-simple", label: "XML · Simple", template: xmlTransformTemplate("Simple") },
+  { id: "xml-complex", label: "XML · Complex", template: xmlTransformTemplate("Complex") },
 ];
 
 const BATCHED_RESPONSE_CONTRACT =
@@ -80,7 +95,7 @@ export interface PromptTarget {
 }
 
 export interface AssemblePromptInput {
-  preset: "standard" | "strict" | "rebalance" | "custom";
+  preset: "standard" | "strict" | "rebalance" | "xml-simple" | "xml-complex" | "custom";
   customTemplate?: string;
   globalInstruction: string;
   targets: readonly PromptTarget[];

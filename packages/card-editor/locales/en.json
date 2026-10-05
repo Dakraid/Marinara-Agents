@@ -24,6 +24,14 @@
         "rebalance": {
           "name": "Field rebalancing",
           "description": "Field rebalancing preset: moves content between description, personality, backstory, appearance, and scenario to match each field's meaning while preserving every fact."
+        },
+        "xml-simple": {
+          "name": "XML · Simple",
+          "description": "Transform each card into the Simple XML character format defined by the global instruction; the complete XML document replaces the description field."
+        },
+        "xml-complex": {
+          "name": "XML · Complex",
+          "description": "Transform each card into the Complex XML character format defined by the global instruction; the complete XML document replaces the description field."
         }
       }
     }

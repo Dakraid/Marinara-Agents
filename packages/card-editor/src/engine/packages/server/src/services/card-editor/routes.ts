@@ -443,7 +443,7 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
         const force = body.force === true;
         const includeFields = parseIncludeFields(body.includeFields);
         const currentFields = parseCurrentFields(body.currentFields);
-        if (saveMode !== "duplicate" && !currentFields) {
+        if (saveMode !== "duplicate" && saveMode !== "combined" && !currentFields) {
           throw badRequest("currentFields is required when approving an in-place save mode.");
         }
         const ops = planApply(item, currentFields ?? {}, {
@@ -452,6 +452,10 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
           saveMode,
           label: session.label,
           duplicateSuffix: session.config.duplicateSuffix,
+          ...(session.config.duplicatePrefix === undefined ? {} : { duplicatePrefix: session.config.duplicatePrefix }),
+          ...(session.config.combinedCardName === undefined
+            ? {}
+            : { combinedCardName: session.config.combinedCardName }),
         });
         const holds = ops.filter((op) => op.op === "hold");
         if (holds.length > 0 && !force) {
@@ -541,6 +545,55 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
               },
             };
           }),
+        }));
+        if (!updated) throw notFound("Card Editor session not found.");
+        return toPublicSession(updated);
+      }),
+    );
+
+    app.post("/sessions/:id/combine", async (request, reply) =>
+      handle(reply, async () => {
+        const params = request.params as { id?: unknown };
+        const session = await requireSession(params.id);
+        if (session.config.saveMode !== "combined") {
+          throw badRequest("The combine action is only available for combined save-mode sessions.");
+        }
+        if (session.combinedCardId) throw conflict("This session already produced its combined card.");
+        const body = sourceRecord(request.body);
+        const resultCardId = cappedString(body.resultCardId, "resultCardId", 160);
+        if (!resultCardId) throw badRequest("resultCardId is required.");
+        if (!Array.isArray(body.itemIds) || body.itemIds.length === 0) {
+          throw badRequest("itemIds must be a non-empty array of collected item ids.");
+        }
+        const seen = new Set<string>();
+        const itemIds: string[] = [];
+        for (const value of body.itemIds) {
+          if (typeof value !== "string" || !value) throw badRequest("itemIds must be strings.");
+          if (seen.has(value)) throw badRequest("itemIds contains a duplicate.");
+          seen.add(value);
+          itemIds.push(value);
+        }
+        const collected = new Set(
+          session.items.filter((candidate) => candidate.status === "applied").map((candidate) => candidate.itemId),
+        );
+        for (const itemId of itemIds) {
+          if (!collected.has(itemId)) {
+            throw conflict("Only collected (approved) items can join the combined card.");
+          }
+        }
+        // Combining a subset (some items failed or were rejected) is an explicit user decision.
+        if (itemIds.length < session.items.length && body.confirmPartial !== true) {
+          throw conflict("Not every item was collected; repeat with confirmPartial to combine the subset.");
+        }
+        const wanted = new Set(itemIds);
+        const updated = await store.updateSession(session.id, (current) => ({
+          ...current,
+          combinedCardId: resultCardId,
+          items: current.items.map((candidate) =>
+            wanted.has(candidate.itemId)
+              ? { ...candidate, resultCardId, appliedAt: candidate.appliedAt ?? new Date().toISOString() }
+              : candidate,
+          ),
         }));
         if (!updated) throw notFound("Card Editor session not found.");
         return toPublicSession(updated);
