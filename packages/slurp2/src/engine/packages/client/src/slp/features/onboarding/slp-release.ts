@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.16";
+export const SLURP2_VERSION = "0.3.17";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -12,6 +12,15 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.17",
+    date: "2026-10-05",
+    notes: [
+      "Slurp is quicker on phones and desktop: chats type without lag, profiles and notifications open faster, and the app checks for news less often in the background.",
+      "Opening a Creator's profile no longer marks your chat with her as read.",
+      "A scene you keep out of Slurp stays out of her memory, and nothing new lands in a chat while a scene holds it.",
+    ],
+  },
   {
     version: "0.3.16",
     date: "2026-10-05",

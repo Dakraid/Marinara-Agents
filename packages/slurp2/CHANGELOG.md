@@ -1,5 +1,15 @@
 # Slurp release notes
 
+## 0.3.17 — 2026-10-05
+
+Speed and fixes.
+
+- Faster on phones and desktop: chat typing, profile and notification opening, feed pricing and the inbox do less work; reading a chat no longer writes, and hidden or idle parts poll less.
+- Opening a Creator's profile no longer marks your chat with her as read.
+- Adding many Creators at once no longer hangs when two drafts are refused together.
+- Scenes: "Keep out" recaps stay out of her replies; tips and drama questions wait while a scene holds the chat; no posts are written for a Creator in a scene only to be discarded.
+- Failed queue pictures retry; bought shared posts read as owned; guided drafts drop hidden polls and links; ended scenes keep the inbox preview; a reload cannot delete a running backup; fan type labels fixed.
+
 ## 0.3.16 — 2026-10-05
 
 - The shared guide explicitly offers image generation with an on/off toggle and direct image upload; uploading switches generation off so drafting preserves the photo.
