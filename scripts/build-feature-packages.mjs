@@ -360,7 +360,7 @@ const features = [
   },
   {
     id: "slurp2",
-    version: "0.3.12",
+    version: "0.3.15",
     minEngineVersion: "2.4.6",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Slurp",
@@ -414,10 +414,10 @@ const features = [
     clientImport: "packages/client/src/slp/slp-client-entry.tsx",
     packageSourceRoot: slurp2SourceRoot,
     ownedSourcePaths: slurp2OwnedSourcePaths,
-    capabilityApi: { major: 1, minor: 31 },
+    capabilityApi: { major: 1, minor: 66 },
     builtAgainst: {
       engineVersion: "2.4.6",
-      engineCommit: "c3ec876434ba25f5288a549afc292f1ca9b0e5c5",
+      engineCommit: "66a4aec373fb0751e99ce71ac8ad9262407129aa",
     },
     libraryHidden: true,
     // `slurpcoin.svg` is deliberately not shipped: the Engine keeps SVG out of its servable

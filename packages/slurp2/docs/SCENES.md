@@ -6,10 +6,10 @@ comes back into Slurp when it ends. Built on Engine Capability API 1.66 (Engine 
 
 ## Release gate
 
-The code ships switched off. It turns on when `scripts/build-feature-packages.mjs` sets the slurp2
-`capabilityApi` to 1.66 (the builder then adds the optional `scenes` permission) and
-`minEngineVersion` to the Engine release that contains #7119. Before that the server registers
-nothing and the thread menu shows no "Start a scene".
+Slurp 0.3.15 declares Capability API 1.66 and the `scenes` permission. It requires the
+Engine host contract from #7119; an older Engine that does not support API 1.66 rejects the
+package instead of installing an unusable scene feature. The minimum Engine version matches
+the 2.4.6 staging baseline, with exact build provenance pinned in the builder.
 
 ## Flow
 
