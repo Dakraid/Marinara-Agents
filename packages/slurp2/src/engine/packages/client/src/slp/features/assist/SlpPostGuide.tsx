@@ -31,6 +31,7 @@ export function SlpPostGuide({
   initialIdea = "",
   autoRun = false,
   onDraft,
+  onPendingChange,
 }: {
   accountId: string;
   personaId: string | null;
@@ -40,6 +41,7 @@ export function SlpPostGuide({
   initialIdea?: string;
   autoRun?: boolean;
   onDraft: (draft: SlpPostGuideDraft) => void;
+  onPendingChange?: (pending: boolean) => void;
 }) {
   const { t } = useTranslation();
   const ties = useSlurpTies(personaId).data;
@@ -60,6 +62,7 @@ export function SlpPostGuide({
   async function write(text = idea) {
     if (!text.trim() || pending) return;
     setPending(true);
+    onPendingChange?.(true);
     setError(null);
     try {
       const draft = await runSlpAction("draft-post", {
@@ -75,6 +78,7 @@ export function SlpPostGuide({
       setError(getApiErrorMessage(cause, t("ui.slurp.postGuide.failed")));
     } finally {
       setPending(false);
+      onPendingChange?.(false);
     }
   }
 

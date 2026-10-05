@@ -41,6 +41,8 @@ async function main() {
     `${composer.slice(composer.indexOf("  const discardDraft ="), composer.indexOf("  // Remove is one tap"))}\ndiscardDraft();`,
     {
       composerBusyRef: { current: false },
+      drafting: false,
+      setComposeGuide: () => undefined,
       guideDealId,
       onDiscardDraft: () => undefined,
       resetLocal: () => undefined,
