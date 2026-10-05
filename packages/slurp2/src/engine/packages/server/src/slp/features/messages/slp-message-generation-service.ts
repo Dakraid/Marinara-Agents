@@ -168,6 +168,7 @@ export function buildSlurpMessageChat(input: {
     imageUrl: string | null;
     unlockedByFan?: boolean;
   }>;
+  unlockedPostIds: ReadonlySet<string>; // all they own: a shared card older than recentPosts too
   /** What the pictures in the conversation show, keyed by message id. */
   imageContexts?: Map<string, string>;
   /** The Creator's private content menu. See `slurp-post-guidance.ts`. */
@@ -429,7 +430,7 @@ export function buildSlurpMessageChat(input: {
       protect,
       image: (message) =>
         input.imageContexts?.has(message.id) ? protect(input.imageContexts.get(message.id)) : undefined,
-      postUnlocked: (postId) => Boolean(input.recentPosts?.some((post) => post.id === postId && post.unlockedByFan)),
+      postUnlocked: (postId) => input.unlockedPostIds.has(postId),
     }),
   };
 
@@ -641,6 +642,7 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
     fanMemory,
     stance,
     recentPosts,
+    unlockedPostIds,
     availability,
     disclosureMode,
     publicIdentity,
