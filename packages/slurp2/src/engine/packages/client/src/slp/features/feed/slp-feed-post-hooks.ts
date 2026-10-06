@@ -91,7 +91,10 @@ export function useCreatorPosts(accountId: string | null, personaId: string | nu
       if (first.nextCursor)
         void (async () => {
           const rest: SlurpProfilePost[] = [];
+          // Stops once nobody shows this profile any more, so leaving it costs no further requests.
+          const watched = () => (qc.getQueryCache().find({ queryKey })?.getObserversCount() ?? 0) > 0;
           for (let cursor: SlurpPageCursor | null = first.nextCursor; cursor;) {
+            if (!watched()) return;
             const page = await fetchPage(cursor);
             rest.push(...page.items);
             cursor = page.nextCursor;

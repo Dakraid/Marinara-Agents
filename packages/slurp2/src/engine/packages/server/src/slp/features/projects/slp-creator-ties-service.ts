@@ -109,7 +109,8 @@ export async function loadSlurpTieCreators(db: DB, at = new Date()): Promise<Slu
           .map((person) => person.name),
         cardPeople,
         poly: style ? style === "poly" : SLP_POLY_CARD_WORDS.test(text),
-        romance: steering?.romance,
+        // An unreadable setting is no permission: fail closed (no romance) until it reads again.
+        romance: steering ? steering.romance : { off: true, only: [] },
         followers: slurpCreatorReach(
           { accountId: account.id, createdAt: account.createdAt, realFollowers: followers.get(account.id) ?? 0, scale },
           at,

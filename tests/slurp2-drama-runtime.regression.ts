@@ -167,6 +167,22 @@ async function main() {
   );
   assert.notEqual(recast?.him, "jake", "romance off keeps Jake out of a couple role");
   assert.equal(
+    slpDramaCast(
+      open.roles,
+      ["her"],
+      { her: "mia", him: "jake" },
+      {
+        world: world(kept),
+        busy: new Set(),
+        seed: "s",
+        at: new Date(T0),
+        couples: [["her", "him"]],
+      },
+    ),
+    null,
+    "a pair cast before (a situation, an earlier stage) is held to the romance settings too",
+  );
+  assert.equal(
     slpDramaCast(open.roles, ["her", "him"], {}, { world: world(kept), busy: new Set(), seed: "s", at: new Date(T0) })
       ?.him,
     "jake",

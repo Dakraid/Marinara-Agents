@@ -22,7 +22,9 @@ export function SlpCreatorRomanceGroup({
   const { patch } = useSlurpCreatorSteeringMutations(creator.id);
   const romance = steering.data?.steering.romance ?? { off: false, only: [] };
   const others = creators.filter((entry) => entry.id !== creator.id);
-  const save = (next: typeof romance) => patch.mutate({ romance: next });
+  // Only from the loaded value: saving the fallback would wipe a saved list.
+  const ready = Boolean(steering.data) && !patch.isPending;
+  const save = (next: typeof romance) => ready && patch.mutate({ romance: next });
   const pick = (id: string) =>
     save({
       ...romance,
@@ -45,7 +47,7 @@ export function SlpCreatorRomanceGroup({
                 type="checkbox"
                 checked={romance.only.includes(partner.id)}
                 onChange={() => pick(partner.id)}
-                disabled={patch.isPending}
+                disabled={!ready}
                 className="size-4 accent-[var(--noodle-accent)]"
               />
               <Avatar account={partner} size="sm" />

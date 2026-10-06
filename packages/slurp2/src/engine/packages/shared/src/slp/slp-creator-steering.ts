@@ -52,6 +52,12 @@ export function slpRomanceAllows(
   return allows(a, b) && allows(b, a);
 }
 
+/** The same, for two Creators Slurp runs; a player's page, or nobody cast yet, is never held to it. */
+export const slpRomancePairAllowed = (
+  a: { id: string; automatic: boolean; romance?: SlpCreatorRomance } | undefined,
+  b: { id: string; automatic: boolean; romance?: SlpCreatorRomance } | undefined,
+) => !a || !b || !a.automatic || !b.automatic || slpRomanceAllows(a, b);
+
 /** A one-off idea for one upcoming post ("gym post tonight"). Used once, then gone. */
 export type SlpCreatorNudge = { id: string; text: string; story: boolean; createdAt: string };
 

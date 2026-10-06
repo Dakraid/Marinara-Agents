@@ -31,6 +31,11 @@ import { readSlurpCreatorSteering, slurpSteeringKey } from "./slp-steering-stora
 import { createSlurpStorage } from "../slp-storage.js";
 import { SLURP_GUIDANCE_PRESETS, SLURP_HOUSE_STYLE_GUIDANCE } from "../../modules/settings/slp-settings.js";
 
+// One blob behind concurrent writes (a like and a tip landing together) loses the earlier one.
+// ponytail: in-process queue like the post guidance blob; needs a row lock if Engine ever runs
+// more than one process.
+let queue: Promise<unknown> = Promise.resolve();
+
 async function readStoredSpice(db: DB): Promise<SlpSpiceState> {
   const raw = await createAppSettingsStorage(db).get(SLP_SPICE_SETTING_KEY);
   try {
@@ -50,40 +55,40 @@ export async function readSlurpSpice(db: DB): Promise<SlpSpiceState> {
  * becomes the house style. Mild was soft words; steamy and explicit carried the dirty word list,
  * as does anything else (the shipped default). An edited guidance text is never touched.
  */
-let settling: Promise<SlpSpiceState> | null = null;
-function settleSlurpSpiceLanguage(db: DB): Promise<SlpSpiceState> {
-  settling ??= (async () => {
-    const current = await readStoredSpice(db);
-    if (current.language) return current;
-    const storage = createSlurpStorage(db);
-    const guidance = (await storage.getSettings()).generationGuidance;
-    // The text first: if this write fails, the language stays unset and the step runs again.
-    if ((Object.values(SLURP_GUIDANCE_PRESETS) as string[]).includes(guidance))
-      await storage.updateSettings({ generationGuidance: SLURP_HOUSE_STYLE_GUIDANCE });
-    const language = slurpSpiceLanguageFor(guidance, {
-      mild: SLURP_GUIDANCE_PRESETS.mild,
-      dirty: [SLURP_GUIDANCE_PRESETS.steamy, SLURP_GUIDANCE_PRESETS.explicit, SLURP_HOUSE_STYLE_GUIDANCE],
-    });
-    const next = { ...current, language };
-    await createAppSettingsStorage(db).set(SLP_SPICE_SETTING_KEY, JSON.stringify(next));
-    return next;
-  })().finally(() => {
-    settling = null;
+async function migrateSpiceLanguage(db: DB, current: SlpSpiceState): Promise<SlpSpiceState> {
+  if (current.language) return current;
+  const storage = createSlurpStorage(db);
+  const guidance = (await storage.getSettings()).generationGuidance;
+  // The text first: if this write fails, the language stays unset and the step runs again.
+  if ((Object.values(SLURP_GUIDANCE_PRESETS) as string[]).includes(guidance))
+    await storage.updateSettings({ generationGuidance: SLURP_HOUSE_STYLE_GUIDANCE });
+  const language = slurpSpiceLanguageFor(guidance, {
+    mild: SLURP_GUIDANCE_PRESETS.mild,
+    dirty: [SLURP_GUIDANCE_PRESETS.steamy, SLURP_GUIDANCE_PRESETS.explicit, SLURP_HOUSE_STYLE_GUIDANCE],
   });
-  return settling;
+  const next = { ...current, language };
+  await createAppSettingsStorage(db).set(SLP_SPICE_SETTING_KEY, JSON.stringify(next));
+  return next;
 }
 
-// One blob behind concurrent writes (a like and a tip landing together) loses the earlier one.
-// ponytail: in-process queue like the post guidance blob; needs a row lock if Engine ever runs
-// more than one process.
-let queue: Promise<unknown> = Promise.resolve();
+// Inside the write queue, so a taste learned or a PATCH landing meanwhile is never overwritten.
+let settling: Promise<SlpSpiceState> | null = null;
+function settleSlurpSpiceLanguage(db: DB): Promise<SlpSpiceState> {
+  if (!settling) {
+    settling = queue.then(async () => migrateSpiceLanguage(db, await readStoredSpice(db)));
+    queue = settling.catch(() => undefined);
+    void settling.finally(() => (settling = null)).catch(() => undefined);
+  }
+  return settling;
+}
 
 export async function updateSlurpSpice(
   db: DB,
   mutate: (current: SlpSpiceState) => SlpSpiceState,
 ): Promise<SlpSpiceState> {
   const run = queue.then(async () => {
-    const next = normalizeSlpSpice(mutate(await readSlurpSpice(db)));
+    // Read straight from storage: readSlurpSpice could queue the migration behind this very write.
+    const next = normalizeSlpSpice(mutate(await migrateSpiceLanguage(db, await readStoredSpice(db))));
     await createAppSettingsStorage(db).set(SLP_SPICE_SETTING_KEY, JSON.stringify(next));
     return next;
   });
