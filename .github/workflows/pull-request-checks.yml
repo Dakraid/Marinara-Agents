@@ -40,8 +40,13 @@ jobs:
       - name: Test package security invariants
         run: npm run test:security
 
-      - name: Test Calls SwarmUI video generation
-        run: node tests/calls-swarmui-video.regression.mjs
+      - name: Test Calls autoplay recovery
+        run: npx tsx tests/calls-playback.regression.ts
+
+      - name: Test Calls release and SwarmUI video generation
+        run: |
+          node tests/conversation-calls-summary.regression.mjs
+          node tests/calls-swarmui-video.regression.mjs
 
       - name: Test Memory Nag recall selection
         run: npx tsx tests/memory-nag-selection.regression.ts
@@ -59,11 +64,17 @@ jobs:
       - name: Test Beholder client bundle contract
         run: npx tsx tests/beholder-client-contract.regression.ts
 
+      - name: Test Quartermaster dialogs and inventory export
+        run: node tests/quartermaster-modal-lifecycle.regression.mjs
+
       # Prints how much of the reference extension's interface this package actually
       # renders. It is here so the number is read from a run rather than asserted from
       # memory — three separate claims of parity were wrong before this test existed.
       - name: Measure Beholder UI parity against the reference extension
         run: npx tsx tests/beholder-parity.regression.ts
+
+      - name: Test vendored Engine drift detection
+        run: node scripts/tests/vendored-engine.regression.mjs
 
       - name: Test catalog lane routing and build provenance
         run: node scripts/test-catalog-lanes.mjs
@@ -87,8 +98,20 @@ jobs:
       - name: Test package release notes
         run: node scripts/tests/catalog-release-notes.regression.mjs
 
-      - name: Test World Maps UI contracts
-        run: node tests/world-maps-ui-contract.regression.mjs
+      # A ruleset package ships no Agent, so the catalog's agent-definition checks
+      # are skipped for it and this contract is the only thing holding its shape.
+      - name: Test ruleset package contract
+        run: node scripts/tests/ruleset-package.regression.mjs
+
+      - name: Test World Maps UI contracts and location limit
+        run: |
+          node tests/world-maps-ui-contract.regression.mjs
+          npx tsx --tsconfig tests/tsconfig.regressions.json tests/map-location-limit.regression.ts
+
+      - name: Test Noodle timeline context budget and writer images
+        run: |
+          npx tsx --tsconfig tests/tsconfig.regressions.json tests/noodle-timeline-context-budget.regression.ts
+          npx tsx --tsconfig tests/tsconfig.regressions.json tests/noodle-writer-images.regression.ts
 
       - name: Test Long-Term Memory feedback clarity UI contracts
         run: node tests/long-term-memory-feedback-clarity-ui.regression.mjs
