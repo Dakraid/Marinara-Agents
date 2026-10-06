@@ -6222,5 +6222,16 @@
   "ui.slurp.settings.fanTypes.funnel.followChance": "Chance to follow",
   "ui.slurp.settings.fanTypes.funnel.subConversionPerDay": "Daily chance to subscribe",
   "ui.slurp.settings.fanTypes.funnel.loyaltyDays": "Days they stay loyal",
-  "ui.slurp.settings.fanTypes.funnel.renewChance": "Chance to renew"
+  "ui.slurp.settings.fanTypes.funnel.renewChance": "Chance to renew",
+  "ui.slurp.messages.photoChoose": "Choose a photo",
+  "ui.slurp.stir.now.postCollab": "Post it now",
+  "ui.slurp.stir.now.dropCollab": "Drop it",
+  "ui.slurp.stir.now.collabDropped": "The collab is off. They can still team up later.",
+  "ui.slurp.stir.now.collabPosting": "The joint post is on its way.",
+  "ui.slurp.settings.creators.romanceGroup": "Romance",
+  "ui.slurp.settings.creators.romance": "{{name}} can fall for other Creators",
+  "ui.slurp.settings.creators.romanceDetail": "Off: no crushes, dating or couples with other Creators from the world, storylines or dramas. Your own Stir set-up can still bring two together.",
+  "ui.slurp.settings.creators.romanceOnly": "Only with these Creators. Pick none to allow anyone who fits their card.",
+  "ui.slurp.ties.couple.forced.romance": "awkward: {{name}} was set to no romance",
+  "ui.slurp.stir.cant.romance": "Their romance settings keep these two apart."
 }

@@ -66,7 +66,8 @@ export function SlurpBubbleStyles() {
 export function slurpBubbleSurface(mine: boolean): string {
   return mine
     ? "bg-[var(--noodle-accent)] text-[var(--slurp-on-accent)] [&_svg]:!text-[var(--slurp-on-accent)] shadow-[var(--slurp-highlight),0_6px_16px_-10px_color-mix(in_srgb,var(--noodle-accent)_70%,transparent)]"
-    : "bg-[color-mix(in_srgb,var(--slurp-surface-raised)_86%,transparent)] text-[var(--slurp-text)] shadow-[var(--slurp-highlight),var(--slurp-shadow-raised)] backdrop-blur-md";
+    : // No backdrop blur: dozens of blurred bubbles made long threads stutter on phones (0.3.17).
+      "bg-[color-mix(in_srgb,var(--slurp-surface-raised)_95%,transparent)] text-[var(--slurp-text)] shadow-[var(--slurp-highlight),var(--slurp-shadow-raised)]";
 }
 
 /** Per kind: the badge glyph, its motion, and what drifts off it. "away" is the original card. */

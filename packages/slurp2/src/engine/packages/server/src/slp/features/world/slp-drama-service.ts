@@ -79,6 +79,7 @@ export async function loadDramaWorld(
     tags: creator.tags,
     joinedAt: byId.get(creator.id)?.createdAt ?? at.toISOString(),
     followers: creator.followers,
+    romance: creator.romance,
   }));
   const automatic = new Set(creators.filter((creator) => creator.automatic).map((creator) => creator.id));
   const relations = new Map<string, { playerId: string; relation: SlpRelationToPlayer }[]>();

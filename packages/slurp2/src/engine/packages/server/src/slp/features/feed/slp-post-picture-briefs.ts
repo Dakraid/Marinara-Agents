@@ -43,6 +43,8 @@ export function slurpPostPictureBriefs(input: {
   partner?: string | null;
   /** Who else the post is about (its beat's cast): they may be in the picture when it calls for them. */
   cast?: readonly string[];
+  /** The beat is a collab: the partner may appear at any level. */
+  collab?: boolean;
   /** The model's own idea, used only when there is no situation to brief from. */
   modelImagePrompt: string | null | undefined;
   /** This Creator's own look and life. See `SlpCreatorStageFacts`. */
@@ -76,7 +78,8 @@ export function slurpPostPictureBriefs(input: {
   // partner the spice consent gate chose (`partner`), and only when the beat names that one person.
   const clothed = sexualLevel === "none" || sexualLevel === "suggestive";
   const company = !input.partner && clothed && input.cast?.length ? slurpNameList(input.cast) : null;
-  const pictureCast = clothed || (Boolean(input.partner) && input.cast?.length === 1);
+  // A collab partner is in their own collab at any level: their look always reaches the picture.
+  const pictureCast = clothed || Boolean(input.collab) || (Boolean(input.partner) && input.cast?.length === 1);
   // Produce mode briefs the picture from the situation, never from the caption the model just
   // wrote. Identity protection still applies: the brief carries the Creator's own place and
   // company, so a Secret Creator's details must be redacted here exactly as they are in the text.

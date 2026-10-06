@@ -172,7 +172,8 @@ assert.match(pictureBriefs, /const clothed = sexualLevel === "none" \|\| sexualL
 assert.match(pictureBriefs, /const company = !input\.partner && clothed && input\.cast\?\.length/u);
 assert.match(
   pictureBriefs,
-  /const pictureCast = clothed \|\| \(Boolean\(input\.partner\) && input\.cast\?\.length === 1\);/u,
+  // 0.3.17: a collab partner's look reaches their collab picture at any level.
+  /const pictureCast = clothed \|\| Boolean\(input\.collab\) \|\| \(Boolean\(input\.partner\) && input\.cast\?\.length === 1\);/u,
 );
 // The cast reaches the picture on the first draw and on every later one (reserve, review, retry).
 const generation = slurp2Source(
