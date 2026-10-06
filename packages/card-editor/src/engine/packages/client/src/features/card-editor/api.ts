@@ -245,6 +245,16 @@ export interface SessionCombineRequest {
   confirmPartial?: boolean;
 }
 
+/** Post-hoc duplication plan for applied items (SPEC 2026-10-06 P1): one op set per eligible item. */
+export interface DuplicateAppliedPlan {
+  itemId: string;
+  ops: ApplyOperation[];
+}
+
+export function planSessionDuplicateApplied(sessionId: string): Promise<{ plans: DuplicateAppliedPlan[] }> {
+  return request<{ plans: DuplicateAppliedPlan[] }>(sessionPath(sessionId, "/duplicate-applied"), "POST");
+}
+
 export function submitSessionCombine(sessionId: string, body: SessionCombineRequest): Promise<BulkSession> {
   return request<BulkSession>(sessionPath(sessionId, "/combine"), "POST", body);
 }

@@ -9,6 +9,7 @@
  * mode never blindly overwrites a genuinely changed card (F4.2).
  */
 import type {
+  BulkSession,
   CardFieldUpdate,
   SaveMode,
   SessionItem,
@@ -48,6 +49,33 @@ export interface PlanApplyOptions {
   duplicatePrefix?: string;
   /** Required when saveMode is "combined" (the single output card's name). */
   combinedCardName?: string;
+}
+
+/**
+ * Post-hoc duplication for applied items (SPEC 2026-10-06 P1): confirm/auto save modes and
+ * combined-collected items edited the original card in place, so no clone exists for the
+ * quick-assign flow. Plans one duplicateThenPatch op per applied item that has updates and no
+ * result card yet, named per the session's duplicate affix config. Items that already carry a
+ * resultCardId (duplicated, or post-combine collected items) self-exclude.
+ */
+export function planDuplicateApplied(session: BulkSession): Array<{ itemId: string; ops: ApplyOperation[] }> {
+  const plans: Array<{ itemId: string; ops: ApplyOperation[] }> = [];
+  for (const item of session.items) {
+    if (item.status !== "applied" || item.resultCardId !== undefined || (item.updates ?? []).length === 0) continue;
+    const ops = planApply(
+      item,
+      {},
+      {
+        force: true,
+        saveMode: "duplicate",
+        label: session.label,
+        duplicateSuffix: session.config.duplicateSuffix,
+        ...(session.config.duplicatePrefix === undefined ? {} : { duplicatePrefix: session.config.duplicatePrefix }),
+      },
+    );
+    if (ops.length > 0) plans.push({ itemId: item.itemId, ops });
+  }
+  return plans;
 }
 
 function isStale(item: Pick<SessionItem, "snapshots">, currentCardFields: Record<string, string>, field: string) {

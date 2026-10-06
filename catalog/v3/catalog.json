@@ -242,11 +242,11 @@
         },
         "builtAgainst": {
           "engineVersion": "2.4.8",
-          "engineCommit": "7be229d3d73321b859e0436e45d1f98483bbc69c"
+          "engineCommit": "74a2cf9767f5e2428fdb8eaab03380b49abc7c2e"
         },
         "id": "card-editor",
         "name": "Card Editor",
-        "version": "1.2.2",
+        "version": "1.3.0",
         "description": "Rewrites character cards from your directives while preserving each card's voice and aligning it with referenced lore. Runs on a single card or as bulk dispatch across selected characters, with verdict review, edit-and-retry, and session management in its runs panel. Open a character card and choose Run Card Editor, or select characters and choose Card Editor for a bulk session, to propose changes for approval.",
         "engine": {
           "min": "2.4.7",
@@ -281,13 +281,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "ca4a87259dae6945a3008c589388bec66c311b7edffd007c2707b72cfb786218",
-            "bytes": 44245
+            "sha256": "dcf0157dee26e15785d93abc7127c4e087921c8ec9ca9f632d8d1023af278b06",
+            "bytes": 45004
           },
           {
             "path": "client.js",
-            "sha256": "68da5cd66146868f02cefcfe44e18ad7295d8c06a919baa256c0205895945995",
-            "bytes": 336343
+            "sha256": "3411bd3a7aa807fbfaa754769e4d00ea570d98c722e41c81daa3bff520197038",
+            "bytes": 337365
           }
         ],
         "permissions": [
@@ -303,9 +303,9 @@
       "category": "writer",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/card-editor.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/card-editor-1.2.2.zip",
-        "sha256": "e7f6fc8d4ea2df1b5a98a3b18560811a66a126953b18e71a902e24f2675939e4",
-        "bytes": 392220
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/card-editor-1.3.0.zip",
+        "sha256": "7e3f6c6037b8640a7fc1d5ff6bc69b88f4dead73ffea216907cf76a098449d7e",
+        "bytes": 394001
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#card-editor"
     },

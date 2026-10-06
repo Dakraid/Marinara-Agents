@@ -133,6 +133,8 @@
   "cardEditor.panel.detail.combineYes": "Combine {{count}}",
   "cardEditor.panel.detail.combineNo": "Cancel",
   "cardEditor.panel.detail.combinedCreated": "combined card created: {{id}}",
+  "cardEditor.panel.detail.duplicateApplied": "Duplicate applied cards ({{count}})",
+  "cardEditor.panel.detail.duplicateAppliedPartial": "{{failed}} of {{total}} cards could not be duplicated — retry from the item row.",
   "cardEditor.panel.detail.autoApplyError": "Auto-apply failed for {{name}}: {{message}}",
   "cardEditor.panel.detail.actionError": "Action failed: {{message}}",
   "cardEditor.panel.detail.pagePrev": "Previous page",

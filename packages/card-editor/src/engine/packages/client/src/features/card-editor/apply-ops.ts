@@ -13,6 +13,7 @@ import {
   isVerdictPlan,
   parseHostCharacterName,
   patchHostCharacter,
+  planSessionDuplicateApplied,
   submitSessionCombine,
   submitSessionItemApplyResult,
   submitSessionItemVerdict,
@@ -194,4 +195,26 @@ export async function combineCollectedSession(
   } catch (error) {
     return { kind: "failed", message: errorText(error) };
   }
+}
+
+/**
+ * Post-hoc duplication flow (SPEC 2026-10-06 P1): the duplicate-applied route plans one
+ * duplicateThenPatch per eligible applied item; each item is then executed and reported exactly
+ * like a verdict approve. Partial failures demote only their items to failed-provider (retryable
+ * from the item row); successful items keep their clones — no rollback.
+ */
+export async function duplicateAppliedSessionItems(
+  session: BulkSession,
+): Promise<{ session: BulkSession; failedCount: number }> {
+  const { plans } = await planSessionDuplicateApplied(session.id);
+  let current = session;
+  let failedCount = 0;
+  for (const plan of plans) {
+    const item = session.items.find((candidate) => candidate.itemId === plan.itemId);
+    if (!item) continue;
+    const results = await executeApplyOps(item, plan.ops, { label: session.label });
+    current = await submitSessionItemApplyResult(session.id, plan.itemId, results);
+    if (results.some((result) => !result.ok)) failedCount += 1;
+  }
+  return { session: current, failedCount };
 }

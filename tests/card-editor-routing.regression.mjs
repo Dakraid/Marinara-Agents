@@ -9,9 +9,9 @@ const editor = agents.find((agent) => agent.id === "card-editor");
 assert.equal(manifest.schemaVersion, 2);
 assert.deepEqual(manifest.capabilityApi, { major: 1, minor: 68 });
 assert.equal(manifest.builtAgainst.engineVersion, "2.4.8");
-assert.equal(manifest.builtAgainst.engineCommit, "7be229d3d73321b859e0436e45d1f98483bbc69c");
+assert.equal(manifest.builtAgainst.engineCommit, "74a2cf9767f5e2428fdb8eaab03380b49abc7c2e");
 assert.equal(manifest.id, "card-editor");
-assert.equal(manifest.version, "1.2.1");
+assert.equal(manifest.version, "1.3.0");
 assert.deepEqual(manifest.kind, ["agent"]);
 assert.deepEqual(manifest.entrypoints, {
   agents: "agents.json",

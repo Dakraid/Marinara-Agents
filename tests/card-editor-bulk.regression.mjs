@@ -27,7 +27,10 @@ import {
   parseBatchResponse,
   parseSingleResponse,
 } from "../packages/card-editor/src/engine/packages/server/src/services/card-editor/parse.ts";
-import { planApply } from "../packages/card-editor/src/engine/packages/server/src/services/card-editor/apply.ts";
+import {
+  planApply,
+  planDuplicateApplied,
+} from "../packages/card-editor/src/engine/packages/server/src/services/card-editor/apply.ts";
 import {
   REFUSAL_REMINDER,
   STRICT_JSON_REMINDER,
@@ -855,6 +858,77 @@ assert.deepEqual(
   ]),
   ["<card>one</card>", "<card>three</card>"],
   "only applied items with non-blank description blocks contribute, in session order",
+);
+
+// ── planDuplicateApplied (SPEC 2026-10-06 P1): one duplicateThenPatch per applied item with ──
+// ── updates and no result card; everything else self-excludes ──
+const dupAppliedSession = newSession("October cleanup", { saveMode: "confirm" }, [
+  { characterId: "character-1", characterName: "Character One" },
+  { characterId: "character-2", characterName: "Character Two" },
+  { characterId: "character-3", characterName: "Character Three" },
+  { characterId: "character-4", characterName: "Character Four" },
+  { characterId: "character-5", characterName: "Character Five" },
+]);
+dupAppliedSession.items[0] = { ...dupAppliedSession.items[0], status: "applied", updates: [validDescriptionUpdate] };
+// Applied but already has a result card (post-combine or previously duplicated) — self-excludes.
+dupAppliedSession.items[1] = {
+  ...dupAppliedSession.items[1],
+  status: "applied",
+  updates: [validDescriptionUpdate],
+  resultCardId: "combined-1",
+};
+dupAppliedSession.items[2] = { ...dupAppliedSession.items[2], status: "applied" };
+dupAppliedSession.items[3] = {
+  ...dupAppliedSession.items[3],
+  status: "duplicated",
+  updates: [validDescriptionUpdate],
+  resultCardId: "clone-3",
+};
+dupAppliedSession.items[4] = {
+  ...dupAppliedSession.items[4],
+  status: "awaiting-review",
+  updates: [validDescriptionUpdate],
+};
+assert.deepEqual(planDuplicateApplied(dupAppliedSession), [
+  {
+    itemId: dupAppliedSession.items[0].itemId,
+    ops: [
+      {
+        op: "duplicateThenPatch",
+        characterId: "character-1",
+        fields: { description: "New" },
+        nameSuffix: " (Edited)",
+      },
+    ],
+  },
+]);
+// The session's duplicate prefix config wins over the suffix, same as verdict-route planning.
+const dupAppliedPrefixSession = newSession("October cleanup", { saveMode: "confirm", duplicatePrefix: "October " }, [
+  { characterId: "character-1", characterName: "Character One" },
+]);
+dupAppliedPrefixSession.items[0] = {
+  ...dupAppliedPrefixSession.items[0],
+  status: "applied",
+  updates: [validDescriptionUpdate],
+};
+assert.deepEqual(planDuplicateApplied(dupAppliedPrefixSession), [
+  {
+    itemId: dupAppliedPrefixSession.items[0].itemId,
+    ops: [
+      {
+        op: "duplicateThenPatch",
+        characterId: "character-1",
+        fields: { description: "New" },
+        namePrefix: "October ",
+      },
+    ],
+  },
+]);
+// No eligible items → no plans (the route answers { plans: [] }, not an error).
+assert.deepEqual(planDuplicateApplied(newSession("Empty", { saveMode: "confirm" }, [])), []);
+assert.deepEqual(
+  planDuplicateApplied({ ...dupAppliedSession, items: [dupAppliedSession.items[1], dupAppliedSession.items[2]] }),
+  [],
 );
 
 process.stdout.write("Card Editor bulk services regression passed.\n");

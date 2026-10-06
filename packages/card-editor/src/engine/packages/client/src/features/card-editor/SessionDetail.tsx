@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { BulkSession, SessionItem } from "../../../../shared/src/features/agents/card-editor/schema.ts";
 import { cancelSession, cancelSessionItem, deleteSession, getSession, retrySessionItem } from "./api";
-import { approveSessionItem, combineCollectedSession } from "./apply-ops";
+import { approveSessionItem, combineCollectedSession, duplicateAppliedSessionItems } from "./apply-ops";
 import { EditRetryDialog } from "./EditRetryDialog";
 import { translateCardEditor, type CardEditorLocalizationContext } from "./localization";
 import {
@@ -27,7 +27,7 @@ function ItemSummary({
   t: (key: string, values?: Record<string, string | number>) => string;
 }) {
   if (isFailed(item) && item.failure) return <span className="ce-item-failure">{item.failure.message}</span>;
-  if (item.status === "duplicated" && item.resultCardId) {
+  if (item.resultCardId) {
     return (
       <span className="ce-item-result">{t("cardEditor.panel.detail.copyCreated", { id: item.resultCardId })}</span>
     );
@@ -143,6 +143,21 @@ export function SessionDetail({
       return outcome.session;
     });
 
+  const duplicateApplied = (eligibleCount: number) =>
+    void runAction("duplicate-applied", async () => {
+      if (!session) return;
+      const outcome = await duplicateAppliedSessionItems(session);
+      if (outcome.failedCount > 0) {
+        setActionError(
+          t("cardEditor.panel.detail.duplicateAppliedPartial", {
+            failed: outcome.failedCount,
+            total: eligibleCount,
+          }),
+        );
+      }
+      return outcome.session;
+    });
+
   if (loadError && !session) {
     return (
       <section className="ce-shell ce-panel" ref={pollRef}>
@@ -187,6 +202,14 @@ export function SessionDetail({
   const collectedCount = combinedMode ? session.items.filter((item) => item.status === "applied").length : 0;
   const combineAvailable = combinedMode && !session.combinedCardId && collectedCount > 0;
   const combinePartial = combineAvailable && collectedCount < session.items.length;
+  // Duplicate-applied housekeeping action: applied items edited the original in place, so only
+  // those without a result card (and with edits worth cloning) are eligible. Combined mode's
+  // output is the combined card, so the action is hidden there.
+  const duplicateAppliedCount = combinedMode
+    ? 0
+    : session.items.filter(
+        (item) => item.status === "applied" && item.resultCardId === undefined && (item.updates ?? []).length > 0,
+      ).length;
   const live = deriveLiveStatus(session);
   const pageCount = Math.max(1, Math.ceil(session.items.length / PAGE_SIZE));
   const clampedPage = Math.min(page, pageCount - 1);
@@ -279,6 +302,16 @@ export function SessionDetail({
               {t("cardEditor.panel.detail.combine", { count: collectedCount })}
             </button>
           )
+        ) : null}
+        {duplicateAppliedCount > 0 ? (
+          <button
+            type="button"
+            className="mari-chrome-control mari-chrome-control--small"
+            disabled={busyKey !== null}
+            onClick={() => duplicateApplied(duplicateAppliedCount)}
+          >
+            {t("cardEditor.panel.detail.duplicateApplied", { count: duplicateAppliedCount })}
+          </button>
         ) : null}
         {reviewableCount > 0 ? (
           <button

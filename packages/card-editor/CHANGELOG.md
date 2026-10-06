@@ -1,3 +1,9 @@
+## 1.3.0 — 2026-10-06 [quiet]
+
+- Completed runs whose cards were edited in place (confirm/auto save modes) now offer a **Duplicate applied cards** action in the session detail: one click creates a renamed clone per applied card, following the session's duplicate prefix/suffix naming. Cloned items stay marked Applied and show their copy.
+- Group Chat's **Replace characters with generated cast** (Engine) now also includes characters whose run items were only applied in place — they are the run's output, so the replacement no longer silently drops them; items duplicated afterwards yield their clone instead.
+- Requires Marinara Engine 2.4.8 (Capability API 1.68).
+
 ## 1.2.2 — 2026-10-06 [quiet]
 
 - Verdict review now always shows the full proposed field content below the colored diff when a field is expanded — no extra click needed. The expander button still reveals the complete colored diff and is relabeled "show all hunks →" accordingly.

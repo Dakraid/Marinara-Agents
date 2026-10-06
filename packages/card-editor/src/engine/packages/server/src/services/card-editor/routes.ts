@@ -22,7 +22,7 @@ import {
   type SessionItem,
 } from "../../../../shared/src/features/agents/card-editor/schema.ts";
 import { normalizeCardPromptText } from "../../../../shared/src/features/agents/card-editor/text.ts";
-import { planApply, type ApplyOperation } from "./apply.ts";
+import { planApply, planDuplicateApplied, type ApplyOperation } from "./apply.ts";
 import type { CharacterLike, LorebookLike } from "./context.ts";
 import { cancelSessionRun, retryItemRun, startRunner, type RunnerDeps, type RunnerLogger } from "./runner.ts";
 import type { SessionPromptMaterial, SessionStore } from "./session-store.ts";
@@ -482,6 +482,28 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
       }),
     );
 
+    app.post("/sessions/:id/duplicate-applied", async (request, reply) =>
+      handle(reply, async () => {
+        const session = await requireSession((request.params as { id?: unknown }).id);
+        const plans = planDuplicateApplied(session);
+        if (plans.length === 0) return { plans };
+        // Same two-phase contract as the verdict route (Decision 2): the route plans and stashes
+        // pendingOps (never serialized), the client executes the ops and reports to apply-result.
+        const wanted = new Map(plans.map((plan) => [plan.itemId, plan.ops]));
+        const updated = await store.updateSession(session.id, (current) => ({
+          ...current,
+          items: current.items.map((candidate) => {
+            const ops = wanted.get(candidate.itemId);
+            return ops !== undefined && candidate.status === "applied" && candidate.resultCardId === undefined
+              ? { ...candidate, pendingOps: ops }
+              : candidate;
+          }),
+        }));
+        if (!updated) throw notFound("Card Editor session not found.");
+        return { plans };
+      }),
+    );
+
     app.post("/sessions/:id/items/:itemId/apply-result", async (request, reply) =>
       handle(reply, async () => {
         const params = request.params as { id?: unknown; itemId?: unknown };
@@ -531,7 +553,9 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
               return {
                 ...rest,
                 appliedAt: new Date().toISOString(),
-                ...(candidate.status === "duplicated" && resultCardId ? { resultCardId } : {}),
+                // resultCardId is stored for every status: duplicate-applied runs clone an
+                // already-applied item (status stays "applied") and the clone is the result.
+                ...(resultCardId ? { resultCardId } : {}),
               };
             }
             // A client-side write failed (Decision 2): keep updates + snapshots for retry/review.
