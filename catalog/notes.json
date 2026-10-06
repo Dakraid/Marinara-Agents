@@ -14,6 +14,12 @@
     "card-editor": {
       "versions": [
         {
+          "version": "1.2.2",
+          "date": "2026-10-06",
+          "notes": "- Verdict review now always shows the full proposed field content below the colored diff when a field is expanded — no extra click needed. The expander button still reveals the complete colored diff and is relabeled \"show all hunks →\" accordingly.\n- Requires Marinara Engine 2.4.8 (Capability API 1.68).",
+          "highlight": false
+        },
+        {
           "version": "1.2.1",
           "date": "2026-10-06",
           "notes": "- The overlay workspace is interactive again: clicks, scrolling, and the close button reach the dialog instead of passing through to the chat underneath. Backdrop-click dismissal in the bulk dispatch dialog works again too.\n- The workspace sizes to its content (up to min(92dvh, 60rem)) instead of forcing a 92dvh-tall dialog, so few or no sessions no longer leave a large empty void; long session lists scroll inside the dialog.\n- Tidier workspace panes: consistent rail and detail padding, with the rail divider spanning the full workspace height.\n- Requires Marinara Engine 2.4.8 (Capability API 1.68).",

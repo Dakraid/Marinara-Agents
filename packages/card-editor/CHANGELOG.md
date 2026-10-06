@@ -1,3 +1,8 @@
+## 1.2.2 — 2026-10-06 [quiet]
+
+- Verdict review now always shows the full proposed field content below the colored diff when a field is expanded — no extra click needed. The expander button still reveals the complete colored diff and is relabeled "show all hunks →" accordingly.
+- Requires Marinara Engine 2.4.8 (Capability API 1.68).
+
 ## 1.2.1 — 2026-10-06 [highlight]
 
 - The overlay workspace is interactive again: clicks, scrolling, and the close button reach the dialog instead of passing through to the chat underneath. Backdrop-click dismissal in the bulk dispatch dialog works again too.

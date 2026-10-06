@@ -117,7 +117,7 @@ function FieldSection({
           {t("cardEditor.queue.field.expand")}
         </button>
       ) : null}
-      {showAll ? <pre className="ce-queue-fullfield">{preview.newText}</pre> : null}
+      <pre className="ce-queue-fullfield">{preview.newText}</pre>
     </section>
   );
 }

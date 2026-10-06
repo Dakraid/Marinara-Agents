@@ -155,7 +155,7 @@
   "cardEditor.queue.duplicateNote": "Approving copies the current card and applies these fields to the copy.",
   "cardEditor.queue.hiddenLines": "⋯ {{count}} unchanged lines ⋯",
   "cardEditor.queue.miniRowWords": "+{{added}}/−{{removed}} words",
-  "cardEditor.queue.field.expand": "show all hunks + full field →",
+  "cardEditor.queue.field.expand": "show all hunks →",
   "cardEditor.queue.staleTitle": "{{count}} fields changed since the run — applying replaces them.",
   "cardEditor.queue.staleApply": "Apply anyway",
   "cardEditor.queue.staleSkip": "Skip",
