@@ -20,6 +20,7 @@ export function SlpSpiceLevelChoice({
   inherited,
   max,
   disabled = false,
+  inheritLabelKey = "ui.slurp.spice.inherit",
   onChange,
 }: {
   label: string;
@@ -27,6 +28,8 @@ export function SlpSpiceLevelChoice({
   inherited?: SlpSpiceStep;
   max: SlpSpiceLevel;
   disabled?: boolean;
+  /** "Use Slurp-wide (…)" for a Creator; the Slurp-wide default itself says "Shipped (…)". */
+  inheritLabelKey?: string;
   onChange: (step: SlpSpiceStep | null) => void;
 }) {
   const { t } = useTranslation();
@@ -34,7 +37,7 @@ export function SlpSpiceLevelChoice({
   const capped = shown !== null && shown !== "clean" && SLP_SPICE_LEVELS.indexOf(shown) > SLP_SPICE_LEVELS.indexOf(max);
   const options = [
     ...(inherited
-      ? [{ value: INHERIT, label: t("ui.slurp.spice.inherit", { level: t(`ui.slurp.spice.levels.${inherited}`) }) }]
+      ? [{ value: INHERIT, label: t(inheritLabelKey, { level: t(`ui.slurp.spice.levels.${inherited}`) }) }]
       : []),
     ...SLP_SPICE_STEPS.map((step) => ({
       value: step,

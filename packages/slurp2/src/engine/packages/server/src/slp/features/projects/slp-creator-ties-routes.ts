@@ -213,13 +213,20 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
   );
   // Due now, then the host writes it at once (the beat planner takes a due collab first). Not awaited:
   // a post takes a model call, and the Studio view answers right away.
+  // One post per collab at a time: a second tap while the first is being written is refused.
+  const postingNow = new Set<string>();
   app.post("/slurp/ties/collabs/:id/post-now", async (req, reply) => {
-    const hostId = (await readSlurpCreatorTiesDocument(app.db)).ties.collabs.find((c) => c.id === id(req))?.hostId;
-    const answer = await change(req, reply, (ties, at) => slurpCollabDueNow(ties, id(req), at));
-    if (hostId && !reply.sent)
+    const collabId = id(req);
+    if (postingNow.has(collabId)) return reply.code(409).send({ error: "That collab is being posted already." });
+    const hostId = (await readSlurpCreatorTiesDocument(app.db)).ties.collabs.find((c) => c.id === collabId)?.hostId;
+    const answer = await change(req, reply, (ties, at) => slurpCollabDueNow(ties, collabId, at));
+    if (hostId && !reply.sent) {
+      postingNow.add(collabId);
       void resolveSlurpAutomaticPostAccess(createSlurpStorage(app.db), hostId)
         .then((access) => generateAndApplyCreatorPost(app.db, { mode: "noodler", targetAccountId: hostId, access }))
-        .catch((error: unknown) => logger.warn(error, "[slurp-ties] Could not post the collab now"));
+        .catch((error: unknown) => logger.warn(error, "[slurp-ties] Could not post the collab now"))
+        .finally(() => postingNow.delete(collabId));
+    }
     return answer;
   });
   app.post("/slurp/ties/unblock", async (req, reply) => {

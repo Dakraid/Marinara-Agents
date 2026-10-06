@@ -266,7 +266,7 @@ export function slpDramaCast(
   const romanceFits = (key: string, creator: SlpDramaCreator, current: Readonly<Record<string, string>>) =>
     (input.couples ?? []).every(([x, y]) => {
       const partner = creatorById.get((key === x ? current[y] : key === y ? current[x] : undefined) ?? "");
-      return !partner || slpRomanceAllows(creator, partner);
+      return !partner || !creator.automatic || !partner.automatic || slpRomanceAllows(creator, partner);
     });
   const byKey = new Map(roles.map((role) => [role.key, role]));
   const playerKey = roles.find((role) => role.player)?.key;

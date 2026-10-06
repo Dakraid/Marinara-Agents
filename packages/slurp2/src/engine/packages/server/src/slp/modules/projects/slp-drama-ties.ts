@@ -94,7 +94,7 @@ export function slurpApplyDramaTie<T extends SlurpDramaTieDocument>(
     return typeof next === "string" ? document : { ...document, ties: next };
   }
   // The player's romance setting (0.3.17) holds against a drama too: no couple, the story still ends.
-  if (!slpRomanceAllows(from, to)) return document;
+  if (from.automatic && to.automatic && !slpRomanceAllows(from, to)) return document;
   const next = slurpSetUpCouple(document.couples, from, to, {
     at: input.at,
     id: input.newId(),

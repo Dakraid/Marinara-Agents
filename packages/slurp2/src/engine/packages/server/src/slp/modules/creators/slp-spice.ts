@@ -548,3 +548,19 @@ export function slurpAnswerNoticed(
   const taste: SlpTaste = { id: newId(), text: label.trim(), strength: answer === "stronger" ? "often" : "hint" };
   return { ...state, learned, tastes: [...state.tastes, taste] };
 }
+
+/**
+ * The Language an install starts with (0.3.17), from the Writing text it had: the mild preset was
+ * soft words, the steamy and explicit presets (and the shipped default) the dirty word list. An
+ * edited text keeps its own words: the word list means dirty, "no explicit detail" soft, else frank.
+ */
+export function slurpSpiceLanguageFor(
+  guidance: string,
+  shipped: { mild: string; dirty: readonly string[] },
+): SlpSpiceLanguage {
+  if (guidance === shipped.mild) return "soft";
+  if (shipped.dirty.includes(guidance)) return "dirty";
+  if (/\b(pussy|cock|clit|tits)\b/iu.test(guidance)) return "dirty";
+  if (/\b(do not|don't|never) (write|describe) explicit/iu.test(guidance)) return "soft";
+  return "frank";
+}

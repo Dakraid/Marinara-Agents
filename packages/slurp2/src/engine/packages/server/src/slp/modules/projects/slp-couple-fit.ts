@@ -80,8 +80,11 @@ export function slurpCoupleMisfitOf(a: SlurpTieCreator, b: SlurpTieCreator): Slu
     const hit = pairs.find(([self, other]) => self.automatic && test(self, other));
     return hit ? { misfit, byId: hit[0].id } : null;
   };
-  // The player's own romance setting (0.3.17) binds every page, the player's too, and comes first.
-  const romance = pairs.find(([self, other]) => !slpRomanceAllows(self, { id: other.id }));
+  // The player's romance setting (0.3.17) is about Creators with each other: a crush on the player's
+  // own page, or the player's own steers, are not held to it.
+  const romance = pairs.find(
+    ([self, other]) => self.automatic && other.automatic && !slpRomanceAllows(self, { id: other.id }),
+  );
   if (romance) return { misfit: "romance", byId: romance[0].id };
   return (
     (cards ? null : first("taken", (self) => (self.cardPartners ?? []).length > 0)) ??

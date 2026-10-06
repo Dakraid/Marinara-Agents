@@ -109,17 +109,21 @@ function SpiceDefaults({
   const { t } = useTranslation();
   const guidance = useSlurpPostGuidance();
   const update = useUpdateSlurpPostGuidance();
-  const level = guidance.data ? slpSpiceStepOf(guidance.data.defaults.level || guidance.data.builtInLevel) : null;
+  const builtIn = guidance.data ? (slpSpiceStepOf(guidance.data.builtInLevel) ?? undefined) : undefined;
   return (
     <SettingsGroup title={t("ui.slurp.spice.defaultTitle")}>
       <SlpSpiceLevelChoice
         label={t("ui.slurp.spice.defaultLevel")}
-        value={level}
+        value={slpSpiceStepOf(guidance.data?.defaults.level)}
+        inherited={builtIn}
+        inheritLabelKey="ui.slurp.spice.inheritShipped"
         max={max}
         disabled={!guidance.data || update.isPending}
         onChange={(step) =>
-          step &&
-          update.mutate({ level: slpExplicitOfStep(step) }, { onError: (error) => toast.error(errorMessage(error)) })
+          update.mutate(
+            { level: step ? slpExplicitOfStep(step) : "" },
+            { onError: (error) => toast.error(errorMessage(error)) },
+          )
         }
       />
       <ChoiceSetting

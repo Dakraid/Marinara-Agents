@@ -6253,5 +6253,6 @@
   "ui.slurp.spice.languageHint.frank": "Plain and direct, not crude.",
   "ui.slurp.spice.languageHint.dirty": "Graphic, everyday dirty words where nudity or sex is allowed.",
   "ui.slurp.settings.prompts.spiceMoved": "How far Creators go and which words they use now live in Settings › Spice. This text is the house style for everyone.",
-  "ui.slurp.settings.prompts.houseStyle": "House style"
+  "ui.slurp.settings.prompts.houseStyle": "House style",
+  "ui.slurp.spice.inheritShipped": "Shipped ({{level}})"
 }

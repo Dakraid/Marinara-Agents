@@ -26,6 +26,7 @@ import {
   slurpNoticedTastes,
   slurpSpiceAngle,
   slurpSpiceBriefLines,
+  slurpSpiceLanguageFor,
   slurpSpiceLabelsOf,
   slurpTasteChance,
   slurpTasteFit,
@@ -342,6 +343,15 @@ assert.doesNotMatch(post("explicit", "frank"), /pussy/u);
 assert.deepEqual(slurpSpiceBriefLines({ use: "post", level: "none", turnOns: [], hardNoes: [], never: [] }), []);
 assert.equal(normalizeSlpSpice({}).language, null, "unset until the old preset is migrated");
 assert.equal(normalizeSlpSpice({ language: "frank" }).language, "frank");
+// The one-time migration: mild → soft; shipped steamy/explicit and the house style → dirty; an edited
+// text keeps its own words.
+const shipped = { mild: "MILD", dirty: ["STEAMY", "EXPLICIT", "HOUSE"] };
+assert.equal(slurpSpiceLanguageFor("MILD", shipped), "soft");
+assert.equal(slurpSpiceLanguageFor("STEAMY", shipped), "dirty");
+assert.equal(slurpSpiceLanguageFor("HOUSE", shipped), "dirty");
+assert.equal(slurpSpiceLanguageFor("Keep it classy. Do not write explicit sexual detail.", shipped), "soft");
+assert.equal(slurpSpiceLanguageFor("Lots of tits and teasing.", shipped), "dirty");
+assert.equal(slurpSpiceLanguageFor("Cozy, warm, a little cheeky.", shipped), "frank");
 assert.equal(slurpDmSpiceLevel("explicit", true), "explicit", "subscribers get the Creator's level");
 assert.equal(slurpDmSpiceLevel("explicit", false), "nudity", "everybody else gets the tease");
 assert.ok(

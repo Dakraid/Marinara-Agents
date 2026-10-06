@@ -577,9 +577,9 @@ export function slurpDropCollab(ties: SlurpCreatorTies, id: string, at: Date): S
 export function slurpCollabDueNow(ties: SlurpCreatorTies, id: string, at: Date): SlurpCreatorTies | SlurpTieError {
   const collab = ties.collabs.find((entry) => entry.id === id);
   if (!collab) return "notFound";
-  if (collab.status !== "agreed" && collab.status !== "planned") return "notOpen";
+  // "planned" already has a post on the way: only an agreed collab can be pushed, or it posts twice.
+  if (collab.status !== "agreed") return "notOpen";
   return update(ties, id, {
-    status: "agreed",
     announcedAt: collab.announcedAt ?? at.toISOString(),
     dropAt: at.toISOString(),
   });

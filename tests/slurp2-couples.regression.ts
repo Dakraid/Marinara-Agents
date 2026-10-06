@@ -130,6 +130,10 @@ const input = (at: number, over: Partial<SlurpCouplesInput> = {}): SlurpCouplesI
   );
   assert.equal(slurpCoupleFit(kai, { ...mira, romance: { off: false, only: ["someone-else"] } }).misfit, "romance");
   assert.ok(slurpCoupleFit({ ...mira, romance: { off: false, only: [kai.id] } }, kai).fits, "the picked one fits");
+  assert.ok(
+    slurpCoupleFit({ ...mira, romance: { off: true, only: [] } }, { ...kai, automatic: false }).fits,
+    "a crush on the player's own page is not held to it",
+  );
   assert.equal(
     slurpCoupleFit(tess, { ...rue, gender: null }).misfit,
     "orientation",

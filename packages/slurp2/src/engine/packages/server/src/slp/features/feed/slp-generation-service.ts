@@ -520,7 +520,6 @@ export async function generateCreatorPost(
     explicitLevel,
     partner: spiceAngle?.partner?.company ?? null,
     cast: beat?.cast,
-    collab: beat?.tie?.kind === "collab",
     modelImagePrompt: generated.imagePrompt,
     stageFacts: account.settings.stage,
     scene: generated.scene,

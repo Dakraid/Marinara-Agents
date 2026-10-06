@@ -1,14 +1,15 @@
 # Slurp release notes
 
-## 0.3.17 — 2026-10-05
+## 0.3.17 — 2026-10-06
 
-Speed and fixes.
+Spice in one place, user reports, speed.
 
-- Faster on phones and desktop: chat typing, profile and notification opening, feed pricing and the inbox do less work; reading a chat no longer writes, and hidden or idle parts poll less.
-- Opening a Creator's profile no longer marks your chat with her as read.
-- Adding many Creators at once no longer hangs when two drafts are refused together.
-- Scenes: "Keep out" recaps stay out of her replies; tips and drama questions wait while a scene holds the chat; no posts are written for a Creator in a scene only to be discarded.
-- Failed queue pictures retry; bought shared posts read as owned; guided drafts drop hidden polls and links; ended scenes keep the inbox preview; a reload cannot delete a running backup; fan type labels fixed.
+- Spice: one level (Clean, Flirty, Suggestive, Explicit) for text and pictures, set in Settings › Spice, per Creator in Content rules or Stir. New Language: soft, frank or dirty. Writing keeps only the house style; old presets move over.
+- Romance per Creator (Collaborations): off, or only with chosen Creators.
+- Collabs: the partner's look and identity reach the post and picture; agreed collabs get Post it now and Drop it.
+- Stir: End it works; leaving a Support chat returns to Desk. Send a photo: the whole button picks a file.
+- Faster: chat typing, profiles, notifications, feed, inbox; less polling; no blur on chat bubbles.
+- Fixes: a profile no longer marks its chat read; bulk add no longer hangs; scenes keep Keep out recaps private and hold tips and drama questions; failed pictures retry.
 
 ## 0.3.16 — 2026-10-05
 

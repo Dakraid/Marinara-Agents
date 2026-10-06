@@ -14,11 +14,11 @@ export interface Slurp2ReleaseEntry {
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
   {
     version: "0.3.17",
-    date: "2026-10-05",
+    date: "2026-10-06",
     notes: [
-      "Slurp is quicker on phones and desktop: chats type without lag, profiles and notifications open faster, and the app checks for news less often in the background.",
-      "Opening a Creator's profile no longer marks your chat with her as read.",
-      "A scene you keep out of Slurp stays out of her memory, and nothing new lands in a chat while a scene holds it.",
+      "Spice lives in one place now: one level from Clean to Explicit for words and pictures, and a new Language choice for how they say it. Set it for everyone in Settings › Spice, or per Creator.",
+      "Decide who may fall for whom: switch romance off for a Creator, or pick who they could end up with. Collab partners finally know who they are working with.",
+      "Slurp is quicker on phones and desktop, Stir's End it and collab buttons work, and opening a profile no longer marks your chat as read.",
     ],
   },
   {

@@ -21,6 +21,7 @@ import {
   SLURP_TASTE_SIGNAL_WEIGHT,
   slurpLearnTaste,
   slurpSpiceLabelsOf,
+  slurpSpiceLanguageFor,
   slurpTasteLabelsIn,
   type SlurpTasteSignal,
 } from "../../modules/creators/slp-spice.js";
@@ -56,11 +57,15 @@ function settleSlurpSpiceLanguage(db: DB): Promise<SlpSpiceState> {
     if (current.language) return current;
     const storage = createSlurpStorage(db);
     const guidance = (await storage.getSettings()).generationGuidance;
-    const language = guidance === SLURP_GUIDANCE_PRESETS.mild ? "soft" : "dirty";
-    const next = { ...current, language } as const;
-    await createAppSettingsStorage(db).set(SLP_SPICE_SETTING_KEY, JSON.stringify(next));
+    // The text first: if this write fails, the language stays unset and the step runs again.
     if ((Object.values(SLURP_GUIDANCE_PRESETS) as string[]).includes(guidance))
       await storage.updateSettings({ generationGuidance: SLURP_HOUSE_STYLE_GUIDANCE });
+    const language = slurpSpiceLanguageFor(guidance, {
+      mild: SLURP_GUIDANCE_PRESETS.mild,
+      dirty: [SLURP_GUIDANCE_PRESETS.steamy, SLURP_GUIDANCE_PRESETS.explicit, SLURP_HOUSE_STYLE_GUIDANCE],
+    });
+    const next = { ...current, language };
+    await createAppSettingsStorage(db).set(SLP_SPICE_SETTING_KEY, JSON.stringify(next));
     return next;
   })().finally(() => {
     settling = null;
