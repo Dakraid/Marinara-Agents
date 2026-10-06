@@ -28,14 +28,44 @@ import { getSlurpPostGuidance, updateSlurpPostGuidance } from "../settings/slp-p
 import { selectSlurpExplicitLevel } from "../../modules/feed/slp-post-guidance.js";
 import { readSlurpCreatorSteering, slurpSteeringKey } from "./slp-steering-storage.js";
 import { createSlurpStorage } from "../slp-storage.js";
+import { SLURP_GUIDANCE_PRESETS, SLURP_HOUSE_STYLE_GUIDANCE } from "../../modules/settings/slp-settings.js";
 
-export async function readSlurpSpice(db: DB): Promise<SlpSpiceState> {
+async function readStoredSpice(db: DB): Promise<SlpSpiceState> {
   const raw = await createAppSettingsStorage(db).get(SLP_SPICE_SETTING_KEY);
   try {
     return normalizeSlpSpice(raw ? JSON.parse(raw) : null);
   } catch {
     return normalizeSlpSpice(null);
   }
+}
+
+export async function readSlurpSpice(db: DB): Promise<SlpSpiceState> {
+  const state = await readStoredSpice(db);
+  return state.language ? state : settleSlurpSpiceLanguage(db);
+}
+
+/**
+ * Once (0.3.17): the old Writing preset becomes the Language choice, and a still-shipped preset text
+ * becomes the house style. Mild was soft words; steamy and explicit carried the dirty word list,
+ * as does anything else (the shipped default). An edited guidance text is never touched.
+ */
+let settling: Promise<SlpSpiceState> | null = null;
+function settleSlurpSpiceLanguage(db: DB): Promise<SlpSpiceState> {
+  settling ??= (async () => {
+    const current = await readStoredSpice(db);
+    if (current.language) return current;
+    const storage = createSlurpStorage(db);
+    const guidance = (await storage.getSettings()).generationGuidance;
+    const language = guidance === SLURP_GUIDANCE_PRESETS.mild ? "soft" : "dirty";
+    const next = { ...current, language } as const;
+    await createAppSettingsStorage(db).set(SLP_SPICE_SETTING_KEY, JSON.stringify(next));
+    if ((Object.values(SLURP_GUIDANCE_PRESETS) as string[]).includes(guidance))
+      await storage.updateSettings({ generationGuidance: SLURP_HOUSE_STYLE_GUIDANCE });
+    return next;
+  })().finally(() => {
+    settling = null;
+  });
+  return settling;
 }
 
 // One blob behind concurrent writes (a like and a tip landing together) loses the earlier one.

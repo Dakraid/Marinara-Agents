@@ -22,12 +22,13 @@ import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.
 import {
   SLP_SPICE_CHIP_MAX,
   SLP_SPICE_CHIPS_MAX,
-  SLP_SPICE_LEVELS,
-  SLP_SPICE_TO_EXPLICIT,
-  slpSpiceFromExplicit,
+  SLP_SPICE_STEPS,
+  slpExplicitOfStep,
+  slpSpiceStepOf,
 } from "../../../../../shared/src/slp/slp-spice.js";
 import { resolveSlurpSpiceCreator } from "../../data/creators/slp-flavour-source.js";
 import { getSlurpPostGuidance, updateSlurpPostGuidance } from "../../data/settings/slp-post-guidance-storage.js";
+import { SLURP_BUILT_IN_EXPLICIT_LEVEL } from "../../modules/feed/slp-post-guidance.js";
 import { slurpTasteFit } from "../../modules/creators/slp-spice.js";
 import { slurpSteeringContentChanged } from "../../modules/feed/slp-prepared-rewrite.js";
 import { slurpSupportUndoPatch } from "../../modules/messages/slp-support.js";
@@ -54,10 +55,13 @@ async function creatorSpice(
     source,
     disclosureMode: "open",
   });
-  const own = (await getSlurpPostGuidance(db)).creators[account.id]?.level ?? "";
+  const guidance = await getSlurpPostGuidance(db);
+  const own = guidance.creators[account.id]?.level ?? "";
   return {
-    level: slpSpiceFromExplicit(spice.level),
+    level: slpSpiceStepOf(spice.level),
     own: Boolean(own),
+    // The Slurp-wide level, for "Use Slurp-wide (…)" (0.3.17).
+    inherited: slpSpiceStepOf(guidance.defaults.level || SLURP_BUILT_IN_EXPLICIT_LEVEL),
     max: spice.spice.max,
     leans: spice.spice.tastes
       .filter((taste) => slurpTasteFit(taste.text, creator, spice.spice.never) > 0)
@@ -113,7 +117,7 @@ export async function slpSteeringRoutes(app: FastifyInstance, deps: SlpRouteDeps
         turnOns: spiceChips.optional(),
         hardNoes: spiceChips.optional(),
         /** The Creator's own level; null goes back to the Slurp-wide default. */
-        spiceLevel: z.enum(SLP_SPICE_LEVELS).nullable().optional(),
+        spiceLevel: z.enum(SLP_SPICE_STEPS).nullable().optional(),
       })
       .strict()
       .safeParse(req.body ?? {});
@@ -125,7 +129,7 @@ export async function slpSteeringRoutes(app: FastifyInstance, deps: SlpRouteDeps
     const steering = await patchSlurpCreatorSteering(app.db, id, patch);
     let levelChanged = false;
     if (spiceLevel !== undefined) {
-      const level = spiceLevel ? SLP_SPICE_TO_EXPLICIT[spiceLevel] : "";
+      const level = spiceLevel ? slpExplicitOfStep(spiceLevel) : "";
       await updateSlurpPostGuidance(app.db, (current) => {
         const entry = current.creators[id] ?? { public: "", locked: "", menu: "", level: "" };
         levelChanged = entry.level !== level;
