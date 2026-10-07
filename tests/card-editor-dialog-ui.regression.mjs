@@ -121,6 +121,7 @@ const validConfigs = [
     refusalRetries: 12,
     concurrency: 8,
     saveMode: "duplicate",
+    completionMode: "duplicate",
     duplicateSuffix: " copy",
   },
   { mode: "individual", batchSize: 0, connectionId: null, presetId: "strict" },
@@ -140,6 +141,7 @@ for (const garbage of [
   { mode: "parallel" },
   { presetId: "unknown" },
   { saveMode: "overwrite" },
+  { completionMode: "overwrite" },
   { batchSize: "4" },
   { concurrency: Number.NaN },
   { connectionId: 4 },
@@ -173,6 +175,7 @@ const remembered = normalizeBulkSessionConfig({
   refusalRetries: 0,
   concurrency: 3,
   saveMode: "duplicate",
+  completionMode: "apply",
 });
 storeBulkConfig(remembered, storage);
 assert.deepEqual(loadStoredBulkConfig(storage), remembered);
@@ -228,6 +231,12 @@ assert.match(dialog, /role="alert"/u, "dispatch failures render an inline alert"
 assert.match(dialog, /PROMPT_PRESET_TEMPLATES\[presetId\]/u, "Custom prefills from the selected preset body");
 assert.match(dialog, /min=\{1\}[\s\S]*?max=\{16\}/u, "batch size range is 1–16");
 assert.match(dialog, /cardEditor\.dialog\.processing\.overflowCaption/u, "overflow split caption is required");
+assert.match(dialog, /id="ce-completion-mode"/u, "processing exposes the on-completion select");
+assert.match(dialog, /option value="ask"/u, "ask is the default completion choice");
+assert.match(dialog, /option value="apply"/u, "apply enforcement is selectable");
+assert.match(dialog, /option value="duplicate"/u, "duplicate enforcement is selectable");
+assert.match(dialog, /cardEditor\.dialog\.processing\.completionCaption/u, "stale/affix guidance is visible");
+assert.match(dialog, /completionMode,/u, "completion mode travels in the persisted dispatch config");
 
 // ── 7. Behavior character search-select contract ──
 assert.match(behaviorSelect, /role="combobox"/u);
@@ -328,6 +337,9 @@ for (const marker of [
   "XML, N cards per call",
   "use session style",
   "cardEditor.bulkConfig",
+  "On completion",
+  "Always apply in place",
+  "Always duplicate",
   "marinara-capability-card-editor",
 ]) {
   assert.ok(builtClient.includes(marker), `built client.js is missing ${JSON.stringify(marker)} — rebuild the package`);

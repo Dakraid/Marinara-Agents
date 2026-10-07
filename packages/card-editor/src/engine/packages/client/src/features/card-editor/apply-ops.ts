@@ -10,6 +10,7 @@ import {
   createHostCharacter,
   duplicateHostCharacter,
   getHostCharacterCard,
+  getSession,
   isVerdictPlan,
   parseHostCharacterName,
   patchHostCharacter,
@@ -112,7 +113,10 @@ export async function approveSessionItem(
   options: { force: boolean },
 ): Promise<ApproveItemOutcome> {
   try {
-    const writelessMode = session.config.saveMode === "duplicate" || session.config.saveMode === "combined";
+    const completionMode = session.status === "completed" ? (session.config.completionMode ?? "ask") : "ask";
+    const writelessMode =
+      completionMode === "duplicate" ||
+      (completionMode === "ask" && (session.config.saveMode === "duplicate" || session.config.saveMode === "combined"));
     const currentFields = writelessMode
       ? undefined
       : currentFieldsFromCard((await getHostCharacterCard(item.characterId)).fields);
@@ -145,6 +149,61 @@ export async function approveSessionItem(
   } catch (error) {
     return { kind: "failed", message: errorText(error) };
   }
+}
+
+export interface CompletionEnforcementOutcome {
+  session: BulkSession;
+  failedCount: number;
+  messages: string[];
+}
+
+/**
+ * Resumes every unreported completion-enforcement plan exposed by session polling. Apply mode first
+ * sends current host fields through the normal verdict planner, so genuinely stale cards become
+ * needs-review without an operation. Duplicate plans are already stashed by the queue-drain hook.
+ */
+export async function executeCompletionEnforcement(
+  session: BulkSession,
+  onProgress?: (done: number, total: number) => void,
+): Promise<CompletionEnforcementOutcome> {
+  if (session.status !== "completed") return { session, failedCount: 0, messages: [] };
+  const completionMode = session.config.completionMode ?? "ask";
+  const candidates = session.items.filter(
+    (item) => Array.isArray(item.pendingOps) || (completionMode === "apply" && item.status === "awaiting-review"),
+  );
+  let current = session;
+  let failedCount = 0;
+  const messages: string[] = [];
+  onProgress?.(0, candidates.length);
+  for (const [index, sourceItem] of candidates.entries()) {
+    const item = current.items.find((candidate) => candidate.itemId === sourceItem.itemId) ?? sourceItem;
+    try {
+      if (Array.isArray(item.pendingOps)) {
+        const results = await executeApplyOps(item, item.pendingOps as ApplyOperation[], { label: current.label });
+        current = await submitSessionItemApplyResult(current.id, item.itemId, results);
+        if (results.some((result) => !result.ok)) failedCount += 1;
+      } else {
+        const outcome = await approveSessionItem(current, item, { force: false });
+        if (outcome.kind === "applied" || outcome.kind === "apply-failed") {
+          current = outcome.session;
+          if (outcome.kind === "apply-failed") {
+            failedCount += 1;
+            messages.push(outcome.message);
+          }
+        } else if (outcome.kind === "needs-confirmation") {
+          current = await getSession(current.id);
+        } else {
+          failedCount += 1;
+          messages.push(outcome.message);
+        }
+      }
+    } catch (error) {
+      failedCount += 1;
+      messages.push(errorText(error));
+    }
+    onProgress?.(index + 1, candidates.length);
+  }
+  return { session: current, failedCount, messages };
 }
 
 /** Reject needs no card material: the route flips the item and returns the session. */

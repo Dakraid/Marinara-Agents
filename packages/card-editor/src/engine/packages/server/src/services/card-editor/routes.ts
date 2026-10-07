@@ -9,8 +9,9 @@
  *    per-field snapshots via normalizeCardPromptText, and never fetches engine data.
  * 2. Card writes are client-side over engine REST. The verdict route only plans (planApply) and
  *    answers { status: "needs-confirmation", holds } or { status: "apply", ops } with the ops
- *    stashed on the item (pendingOps, stripped from every response); the client executes the ops
- *    and reports per-op outcomes to the apply-result route, which confirms or fails the item.
+ *    stashed on the item as pendingOps; the client executes the ops and reports per-op outcomes
+ *    to the apply-result route, which confirms or fails the item. Pending ops are serialized so a
+ *    completed-session poll can resume completion enforcement after a panel remount.
  */
 import type { FastifyPluginAsync, FastifyReply } from "fastify";
 import {
@@ -206,16 +207,10 @@ function parseCurrentFields(value: unknown): Record<string, string> | undefined 
   return fields;
 }
 
-/** pendingOps are server-internal correlation state (Decision 2): persisted, never serialized. */
+/** Clone the document envelope before returning it; pendingOps intentionally remain visible so
+ *  polling clients can finish the two-phase completion policy and report its outcomes. */
 function toPublicSession(session: BulkSession): BulkSession {
-  return {
-    ...session,
-    items: session.items.map((item) => {
-      if (item.pendingOps === undefined) return item;
-      const { pendingOps: _dropped, ...rest } = item;
-      return rest;
-    }),
-  };
+  return { ...session, items: session.items.map((item) => ({ ...item })) };
 }
 
 function toSessionIndex(session: BulkSession) {
@@ -225,6 +220,12 @@ function toSessionIndex(session: BulkSession) {
     status: session.status,
     stats: session.stats,
     createdAt: session.createdAt,
+    completionMode: session.config.completionMode ?? "ask",
+    pendingApplyCount: session.items.filter((item) => Array.isArray(item.pendingOps)).length,
+    enforcementPendingCount:
+      session.status === "completed" && session.config.completionMode === "apply"
+        ? session.items.filter((item) => item.status === "awaiting-review").length
+        : 0,
   };
 }
 
@@ -361,6 +362,42 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
       }),
     );
 
+    app.post("/sessions/:id/rerun", async (request, reply) =>
+      handle(reply, async () => {
+        const source = await requireSession((request.params as { id?: unknown }).id);
+        if (source.status !== "completed" && source.status !== "canceled") {
+          throw conflict("Only a completed or canceled session can run again.");
+        }
+        const material = await store.getSessionMaterial(source.id);
+        if (!material) throw conflict("The session's prompt material is missing and cannot be rerun.");
+        const orderedItems = source.items.filter(
+          (item, index, items) => items.findIndex((candidate) => candidate.characterId === item.characterId) === index,
+        );
+        const rerun = newSession(
+          `${source.label} (rerun)`,
+          source.config,
+          orderedItems.map((item) => ({
+            characterId: item.characterId,
+            characterName: item.characterName,
+            ...(item.note === undefined ? {} : { note: item.note }),
+            ...(item.behaviorOverride === undefined ? {} : { behaviorOverride: item.behaviorOverride }),
+          })),
+        );
+        const withSnapshots: BulkSession = {
+          ...rerun,
+          items: rerun.items.map((item) => ({
+            ...item,
+            snapshots: {
+              ...(orderedItems.find((sourceItem) => sourceItem.characterId === item.characterId)?.snapshots ?? {}),
+            },
+          })),
+        };
+        const created = await store.createSession(withSnapshots, material);
+        startRunner(deps, created.id);
+        return toPublicSession(created);
+      }),
+    );
+
     app.post("/sessions/:id/items/:itemId/retry", async (request, reply) =>
       handle(reply, async () => {
         const params = request.params as { id?: unknown; itemId?: unknown };
@@ -439,7 +476,10 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
           return toPublicSession(transitioned(updated, "rejected"));
         }
         // approve: two-phase apply (Decision 2) — the route plans, the client executes the ops.
-        const saveMode = session.config.saveMode;
+        // Completion enforcement is independent from the session's interactive save mode.
+        const completionMode = session.status === "completed" ? (session.config.completionMode ?? "ask") : "ask";
+        const saveMode =
+          completionMode === "apply" ? "auto" : completionMode === "duplicate" ? "duplicate" : session.config.saveMode;
         const force = body.force === true;
         const includeFields = parseIncludeFields(body.includeFields);
         const currentFields = parseCurrentFields(body.currentFields);
@@ -488,7 +528,7 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
         const plans = planDuplicateApplied(session);
         if (plans.length === 0) return { plans };
         // Same two-phase contract as the verdict route (Decision 2): the route plans and stashes
-        // pendingOps (never serialized), the client executes the ops and reports to apply-result.
+        // pendingOps; the client executes the ops and reports to apply-result.
         const wanted = new Map(plans.map((plan) => [plan.itemId, plan.ops]));
         const updated = await store.updateSession(session.id, (current) => ({
           ...current,

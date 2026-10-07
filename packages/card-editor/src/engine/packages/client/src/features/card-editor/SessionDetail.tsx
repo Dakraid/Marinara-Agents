@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { BulkSession, SessionItem } from "../../../../shared/src/features/agents/card-editor/schema.ts";
-import { cancelSession, cancelSessionItem, deleteSession, getSession, retrySessionItem } from "./api";
-import { approveSessionItem, combineCollectedSession, duplicateAppliedSessionItems } from "./apply-ops";
+import { cancelSession, cancelSessionItem, deleteSession, getSession, rerunSession, retrySessionItem } from "./api";
+import {
+  approveSessionItem,
+  combineCollectedSession,
+  duplicateAppliedSessionItems,
+  executeCompletionEnforcement,
+} from "./apply-ops";
 import { EditRetryDialog } from "./EditRetryDialog";
 import { translateCardEditor, type CardEditorLocalizationContext } from "./localization";
 import {
@@ -53,11 +58,13 @@ export function SessionDetail({
   sessionId,
   onBack,
   onDeleted,
+  onRerun,
 }: {
   localization?: CardEditorLocalizationContext;
   sessionId: string;
   onBack: () => void;
   onDeleted: () => void;
+  onRerun?: (sessionId: string) => void;
 }) {
   const t = (key: string, values?: Record<string, string | number>) => translateCardEditor(localization, key, values);
   const [session, setSession] = useState<BulkSession | null>(null);
@@ -65,12 +72,14 @@ export function SessionDetail({
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirmCombine, setConfirmCombine] = useState(false);
   const [autoApplyErrors, setAutoApplyErrors] = useState<Readonly<Record<string, string>>>({});
+  const [enforcementProgress, setEnforcementProgress] = useState<{ done: number; total: number } | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [queueFocus, setQueueFocus] = useState<string | null | "closed">("closed");
   const [editRetryId, setEditRetryId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const autoApplyAttempts = useRef(new Set<string>());
+  const enforcementInFlight = useRef(false);
 
   const refresh = useCallback(() => {
     getSession(sessionId)
@@ -85,7 +94,7 @@ export function SessionDetail({
   // Auto-approve driver (DESIGN §3): auto-save items land in awaiting-review with autoApply —
   // the panel drives their verdict flow once per item; holds fall back to needs-review triage.
   useEffect(() => {
-    if (!session) return;
+    if (!session || (session.config.completionMode ?? "ask") !== "ask") return;
     const candidates = session.items.filter(
       (item) =>
         item.status === "awaiting-review" && item.autoApply === true && !autoApplyAttempts.current.has(item.itemId),
@@ -103,6 +112,28 @@ export function SessionDetail({
     })();
   }, [session, refresh]);
 
+  // Queue-drain enforcement resumes from serialized pendingOps. Apply mode first sends the host's
+  // current fields to server planning; stale cards land in needs-review without a write.
+  useEffect(() => {
+    if (!session || enforcementInFlight.current || session.status !== "completed") return;
+    const completionMode = session.config.completionMode ?? "ask";
+    const pendingCount = session.items.filter(
+      (item) => Array.isArray(item.pendingOps) || (completionMode === "apply" && item.status === "awaiting-review"),
+    ).length;
+    if (pendingCount === 0) return;
+    enforcementInFlight.current = true;
+    void executeCompletionEnforcement(session, (done, total) => setEnforcementProgress({ done, total }))
+      .then((outcome) => {
+        setSession(outcome.session);
+        if (outcome.messages.length > 0) setActionError(outcome.messages[0]!);
+      })
+      .finally(() => {
+        enforcementInFlight.current = false;
+        setEnforcementProgress(null);
+        refresh();
+      });
+  }, [session, refresh]);
+
   const runAction = async (key: string, work: () => Promise<BulkSession | void>) => {
     if (busyKey) return;
     setBusyKey(key);
@@ -117,6 +148,13 @@ export function SessionDetail({
       setBusyKey(null);
     }
   };
+
+  const runAgain = () =>
+    void runAction("run-again", async () => {
+      const created = await rerunSession(sessionId);
+      onRerun?.(created.id);
+      return created;
+    });
 
   const rerunAllFailed = () =>
     void runAction("rerun-all", async () => {
@@ -228,6 +266,9 @@ export function SessionDetail({
         >
           {t(`cardEditor.panel.sessionStatus.${session.status}`)}
         </span>
+        <span className="ce-chip">
+          {t(`cardEditor.panel.completionMode.${session.config.completionMode ?? "ask"}`)}
+        </span>
       </div>
       {session.combinedCardId ? (
         <div className="ce-notice" role="status">
@@ -249,6 +290,11 @@ export function SessionDetail({
               : live.kind === "queued"
                 ? t("cardEditor.panel.live.queued", { count: live.queuedItems })
                 : t("cardEditor.panel.progress", { done: session.stats.done, total: session.stats.total })}
+        </p>
+      ) : null}
+      {enforcementProgress ? (
+        <p className="ce-caption ce-live-line" role="status">
+          {t("cardEditor.panel.enforcementProgress", enforcementProgress)}
         </p>
       ) : null}
       {actionError ? (
@@ -330,6 +376,16 @@ export function SessionDetail({
             onClick={() => void runAction("cancel-all", () => cancelSession(sessionId))}
           >
             {t("cardEditor.panel.detail.cancelAll")}
+          </button>
+        ) : null}
+        {session.status === "completed" || session.status === "canceled" ? (
+          <button
+            type="button"
+            className="mari-chrome-control mari-chrome-control--small"
+            disabled={busyKey !== null}
+            onClick={runAgain}
+          >
+            {t("cardEditor.panel.runAgain")}
           </button>
         ) : null}
         {failedCount > 0 ? (

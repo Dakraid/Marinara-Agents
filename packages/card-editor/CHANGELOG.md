@@ -1,3 +1,8 @@
+## 1.4.0 — 2026-10-07
+
+- Bulk runs can now enforce their successful outcomes when processing finishes: always apply in place, with cards edited mid-run held safely for review, or always duplicate using the session's configured name prefix or suffix.
+- Completed and canceled sessions now offer **Run again**, creating a new queued session with the same configuration and targets while leaving the original run untouched.
+
 ## 1.3.0 — 2026-10-06 [quiet]
 
 - Completed runs whose cards were edited in place (confirm/auto save modes) now offer a **Duplicate applied cards** action in the session detail: one click creates a renamed clone per applied card, following the session's duplicate prefix/suffix naming. Cloned items stay marked Applied and show their copy.

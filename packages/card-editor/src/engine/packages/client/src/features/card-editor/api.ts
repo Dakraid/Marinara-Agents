@@ -122,6 +122,9 @@ export interface SessionIndexEntry {
   status: BulkSession["status"];
   stats: BulkSessionStats;
   createdAt: string;
+  completionMode: NonNullable<BulkSessionConfig["completionMode"]>;
+  pendingApplyCount: number;
+  enforcementPendingCount: number;
 }
 
 export class CardEditorApiError extends Error {
@@ -207,6 +210,10 @@ export function getSession(sessionId: string, signal?: AbortSignal): Promise<Bul
 
 export function cancelSession(sessionId: string): Promise<BulkSession> {
   return request<BulkSession>(sessionPath(sessionId, "/cancel"), "POST");
+}
+
+export function rerunSession(sessionId: string): Promise<BulkSession> {
+  return request<BulkSession>(sessionPath(sessionId, "/rerun"), "POST");
 }
 
 export function retrySessionItem(sessionId: string, itemId: string): Promise<BulkSession> {

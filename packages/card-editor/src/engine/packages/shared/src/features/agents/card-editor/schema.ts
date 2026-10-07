@@ -13,6 +13,7 @@ const BULK_EDITABLE_CARD_FIELDS = [
 ] as const;
 
 export type SaveMode = "confirm" | "auto" | "duplicate" | "combined";
+export type CompletionMode = "ask" | "apply" | "duplicate";
 
 export type ItemStatus =
   | "queued"
@@ -43,6 +44,8 @@ export interface BulkSessionConfig {
   refusalRetries: number;
   concurrency: number;
   saveMode: SaveMode;
+  /** Outcome policy applied only after the runner has fully drained. */
+  completionMode?: CompletionMode;
   duplicateSuffix: string;
   /** Non-empty name prefix for duplicate mode; wins over duplicateSuffix when set (XML transform flow). */
   duplicatePrefix?: string;
@@ -79,8 +82,8 @@ export interface SessionItem {
   /** Hint for the runs panel: auto-save-mode items land in awaiting-review with this flag so the
    *  panel auto-drives the verdict flow on first sight (held-back items surface as needs-review). */
   autoApply?: boolean;
-  /** Server-internal correlation state between the verdict and apply-result routes (the planned
-   *  ops the client is executing). Persisted but stripped from every route response. */
+  /** Correlation state between planning and apply-result (the ops the client is executing).
+   *  Persisted and exposed to session polling so unreported completion work can resume. */
   pendingOps?: unknown[];
 }
 
@@ -245,6 +248,7 @@ export function normalizeSessionConfig(input: unknown): BulkSessionConfig {
     refusalRetries: boundedInteger(source.refusalRetries, 3, 0, 5, "refusalRetries"),
     concurrency: boundedInteger(source.concurrency, 1, 1, 4, "concurrency"),
     saveMode,
+    completionMode: enumValue(source.completionMode, "ask", ["ask", "apply", "duplicate"], "completionMode"),
     duplicateSuffix: optionalAffix(source.duplicateSuffix, "duplicateSuffix", true) ?? " (Edited)",
     ...(duplicatePrefix === undefined ? {} : { duplicatePrefix }),
     ...(combinedCardName === undefined ? {} : { combinedCardName }),
@@ -456,6 +460,7 @@ function isStoredConfig(value: unknown): value is BulkSessionConfig {
       source.refusalRetries === normalized.refusalRetries &&
       source.concurrency === normalized.concurrency &&
       source.saveMode === normalized.saveMode &&
+      (source.completionMode ?? "ask") === normalized.completionMode &&
       source.duplicateSuffix === normalized.duplicateSuffix
     );
   } catch {

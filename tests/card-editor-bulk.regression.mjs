@@ -38,7 +38,10 @@ import {
   classifyProviderError,
   detectRefusal,
 } from "../packages/card-editor/src/engine/packages/server/src/services/card-editor/llm.ts";
-import { splitItemIds } from "../packages/card-editor/src/engine/packages/server/src/services/card-editor/runner.ts";
+import {
+  planCompletionEnforcement,
+  splitItemIds,
+} from "../packages/card-editor/src/engine/packages/server/src/services/card-editor/runner.ts";
 import { buildCombinedCardBlocks } from "../packages/card-editor/src/engine/packages/client/src/features/card-editor/apply-ops.ts";
 
 const defaults = normalizeSessionConfig({});
@@ -55,6 +58,7 @@ assert.deepEqual(defaults, {
   refusalRetries: 3,
   concurrency: 1,
   saveMode: "confirm",
+  completionMode: "ask",
   duplicateSuffix: " (Edited)",
 });
 assert.deepEqual(
@@ -72,6 +76,7 @@ assert.deepEqual(
     refusalRetries: 12,
     concurrency: 8,
     saveMode: "duplicate",
+    completionMode: "duplicate",
     duplicateSuffix: " copy",
     duplicatePrefix: "October ",
   }),
@@ -89,6 +94,7 @@ assert.deepEqual(
     refusalRetries: 5,
     concurrency: 4,
     saveMode: "duplicate",
+    completionMode: "duplicate",
     duplicateSuffix: " copy",
     duplicatePrefix: "October ",
   },
@@ -105,6 +111,7 @@ for (const garbage of [
   { mode: "parallel" },
   { presetId: "unknown" },
   { saveMode: "overwrite" },
+  { completionMode: "overwrite" },
   { batchSize: "4" },
   { concurrency: Number.NaN },
   { connectionId: 4 },
@@ -929,6 +936,82 @@ assert.deepEqual(planDuplicateApplied(newSession("Empty", { saveMode: "confirm" 
 assert.deepEqual(
   planDuplicateApplied({ ...dupAppliedSession, items: [dupAppliedSession.items[1], dupAppliedSession.items[2]] }),
   [],
+);
+
+// ── completion enforcement planning (F6): ask/apply/duplicate × fresh/stale ──
+const completionSession = (completionMode) => {
+  const planned = newSession("Completion", { completionMode, duplicatePrefix: "Edited " }, [
+    { characterId: "character-1", characterName: "One" },
+  ]);
+  return {
+    ...planned,
+    status: "completed",
+    items: [
+      {
+        ...planned.items[0],
+        status: "awaiting-review",
+        snapshots: { description: "Old" },
+        updates: [validDescriptionUpdate],
+      },
+    ],
+  };
+};
+const askFresh = planCompletionEnforcement(completionSession("ask"), {
+  "character-1": { description: "Old" },
+});
+assert.equal(askFresh.items[0].status, "awaiting-review", "ask mode never plans an op");
+assert.equal(askFresh.items[0].pendingOps, undefined);
+const askStale = planCompletionEnforcement(completionSession("ask"), {
+  "character-1": { description: "Changed elsewhere" },
+});
+assert.equal(askStale.items[0].status, "awaiting-review", "ask mode ignores staleness until a verdict");
+
+const applyFresh = planCompletionEnforcement(completionSession("apply"), {
+  "character-1": { description: " Old " },
+});
+assert.equal(applyFresh.items[0].status, "applied");
+assert.equal(applyFresh.items[0].pendingOps.length, 1);
+assert.equal(applyFresh.items[0].pendingOps[0].op, "patchField");
+const applyStale = planCompletionEnforcement(completionSession("apply"), {
+  "character-1": { description: "Changed elsewhere" },
+});
+assert.equal(applyStale.items[0].status, "needs-review", "genuinely stale apply is held for review");
+assert.equal(applyStale.items[0].pendingOps, undefined, "a stale item has no write op");
+const applyAwaitingHostFields = planCompletionEnforcement(completionSession("apply"));
+assert.equal(
+  applyAwaitingHostFields.items[0].status,
+  "awaiting-review",
+  "server-only drain waits for client-supplied current host fields",
+);
+
+for (const currentDescription of ["Old", "Changed elsewhere"]) {
+  const duplicate = planCompletionEnforcement(completionSession("duplicate"), {
+    "character-1": { description: currentDescription },
+  });
+  assert.equal(duplicate.items[0].status, "duplicated", "duplicate mode never staleness-blocks");
+  assert.deepEqual(duplicate.items[0].pendingOps, [
+    {
+      op: "duplicateThenPatch",
+      characterId: "character-1",
+      fields: { description: "New" },
+      namePrefix: "Edited ",
+    },
+  ]);
+}
+
+const protectedStatuses = ["rejected", "canceled", "failed-provider", "failed-refusal", "failed-parse"];
+const protectedSession = completionSession("duplicate");
+protectedSession.items = protectedStatuses.map((status, index) => ({
+  ...protectedSession.items[0],
+  itemId: `protected-${index}`,
+  characterId: `protected-${index}`,
+  status,
+}));
+const protectedPlanned = planCompletionEnforcement(protectedSession);
+assert.deepEqual(
+  protectedPlanned.items.map((item) => ({ status: item.status, pendingOps: item.pendingOps })),
+  protectedStatuses.map((status) => ({ status, pendingOps: undefined })),
+  "completion enforcement never touches rejected, canceled, or failed items",
 );
 
 process.stdout.write("Card Editor bulk services regression passed.\n");

@@ -20,6 +20,12 @@
     "card-editor": {
       "versions": [
         {
+          "version": "1.4.0",
+          "date": "2026-10-07",
+          "notes": "- Bulk runs can now enforce their successful outcomes when processing finishes: always apply in place, with cards edited mid-run held safely for review, or always duplicate using the session's configured name prefix or suffix.\n- Completed and canceled sessions now offer **Run again**, creating a new queued session with the same configuration and targets while leaving the original run untouched.",
+          "highlight": true
+        },
+        {
           "version": "1.3.0",
           "date": "2026-10-06",
           "notes": "- Completed runs whose cards were edited in place (confirm/auto save modes) now offer a **Duplicate applied cards** action in the session detail: one click creates a renamed clone per applied card, following the session's duplicate prefix/suffix naming. Cloned items stay marked Applied and show their copy.\n- Group Chat's **Replace characters with generated cast** (Engine) now also includes characters whose run items were only applied in place — they are the run's output, so the replacement no longer silently drops them; items duplicated afterwards yield their clone instead.\n- Requires Marinara Engine 2.4.8 (Capability API 1.68).",

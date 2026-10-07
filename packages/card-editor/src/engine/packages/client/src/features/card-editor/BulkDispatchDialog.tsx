@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import type { BulkSession, SaveMode } from "../../../../shared/src/features/agents/card-editor/schema.js";
+import type {
+  BulkSession,
+  CompletionMode,
+  SaveMode,
+} from "../../../../shared/src/features/agents/card-editor/schema.js";
 import {
   behaviorCardMaterial,
   createSession,
@@ -54,6 +58,7 @@ export function BulkDispatchDialog({
   const [providerRetries, setProviderRetries] = useState(storedConfig?.providerRetries ?? 2);
   const [refusalRetries, setRefusalRetries] = useState(storedConfig?.refusalRetries ?? 3);
   const [concurrency, setConcurrency] = useState(storedConfig?.concurrency ?? 1);
+  const [completionMode, setCompletionMode] = useState<CompletionMode>(storedConfig?.completionMode ?? "ask");
   const [saveMode, setSaveMode] = useState<SaveMode>(storedConfig?.saveMode ?? "confirm");
   const [dispatching, setDispatching] = useState(false);
   const [dispatchError, setDispatchError] = useState<string | null>(null);
@@ -197,6 +202,7 @@ export function BulkDispatchDialog({
       refusalRetries,
       concurrency,
       saveMode,
+      completionMode,
     });
     try {
       const overrideIds = [
@@ -464,6 +470,20 @@ export function BulkDispatchDialog({
                 <strong>{t("cardEditor.dialog.processing.rebalance")}</strong>
                 <small>{t("cardEditor.dialog.processing.rebalanceHint")}</small>
               </span>
+            </label>
+            <label className="ce-label" htmlFor="ce-completion-mode">
+              <span className="ce-label-title">{t("cardEditor.dialog.processing.completionMode")}</span>
+              <select
+                id="ce-completion-mode"
+                className="mari-chrome-field ce-field"
+                value={completionMode}
+                onChange={(event) => setCompletionMode(event.target.value as CompletionMode)}
+              >
+                <option value="ask">{t("cardEditor.dialog.processing.completionAsk")}</option>
+                <option value="apply">{t("cardEditor.dialog.processing.completionApply")}</option>
+                <option value="duplicate">{t("cardEditor.dialog.processing.completionDuplicate")}</option>
+              </select>
+              <small>{t("cardEditor.dialog.processing.completionCaption")}</small>
             </label>
             <p className="ce-caption">{t("cardEditor.dialog.processing.overflowCaption")}</p>
           </fieldset>

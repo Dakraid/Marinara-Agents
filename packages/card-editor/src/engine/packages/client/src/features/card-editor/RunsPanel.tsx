@@ -1,7 +1,8 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import type { BulkSession } from "../../../../shared/src/features/agents/card-editor/schema.ts";
-import { cancelSession, deleteSession, getSession, listSessions, type SessionIndexEntry } from "./api";
+import { cancelSession, deleteSession, getSession, listSessions, rerunSession, type SessionIndexEntry } from "./api";
+import { executeCompletionEnforcement } from "./apply-ops";
 import { translateCardEditor, type CardEditorLocalizationContext } from "./localization";
 import { deriveLiveStatus } from "./panel-status";
 import { SessionDetail } from "./SessionDetail";
@@ -22,6 +23,7 @@ function ModeChips({
           : t("cardEditor.panel.modeIndividual")}
       </span>
       <span className="ce-chip">{t(`cardEditor.panel.saveMode.${session.config.saveMode}`)}</span>
+      <span className="ce-chip">{t(`cardEditor.panel.completionMode.${session.config.completionMode ?? "ask"}`)}</span>
     </span>
   );
 }
@@ -79,25 +81,60 @@ export function RunsPanel({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [enforcementProgress, setEnforcementProgress] = useState<
+    Readonly<Record<string, { done: number; total: number }>>
+  >({});
+  const enforcementInFlight = useRef(new Set<string>());
 
-  // The index projection covers history; the (few) active sessions fetch full details in the
-  // same cycle for the mode chips and the live batch line (DESIGN §3).
+  // The index projection covers history; active sessions and completed sessions with enforcement
+  // work fetch full details in the same cycle.
   const refresh = useCallback(() => {
     listSessions()
       .then(async (list) => {
         setSessions(Array.isArray(list) ? list : []);
         setLoadError(false);
-        const active = (Array.isArray(list) ? list : []).filter((entry) => entry.status === "active");
-        const details = await Promise.allSettled(active.map((entry) => getSession(entry.id)));
+        const detailEntries = (Array.isArray(list) ? list : []).filter(
+          (entry) =>
+            entry.status === "active" ||
+            (entry.status === "completed" && (entry.pendingApplyCount > 0 || entry.enforcementPendingCount > 0)),
+        );
+        const details = await Promise.allSettled(detailEntries.map((entry) => getSession(entry.id)));
         const map: Record<string, BulkSession> = {};
         details.forEach((result, index) => {
-          if (result.status === "fulfilled") map[active[index]!.id] = result.value;
+          if (result.status === "fulfilled") map[detailEntries[index]!.id] = result.value;
         });
         setActiveDetails(map);
       })
       .catch(() => setLoadError(true));
   }, []);
   const pollRef = useVisiblePoll(refresh, 2000, detailId === null);
+
+  useEffect(() => {
+    if (detailId !== null) return;
+    for (const session of Object.values(activeDetails)) {
+      if (session.status !== "completed" || enforcementInFlight.current.has(session.id)) continue;
+      const mode = session.config.completionMode ?? "ask";
+      const count = session.items.filter(
+        (item) => Array.isArray(item.pendingOps) || (mode === "apply" && item.status === "awaiting-review"),
+      ).length;
+      if (count === 0) continue;
+      enforcementInFlight.current.add(session.id);
+      void executeCompletionEnforcement(session, (done, total) =>
+        setEnforcementProgress((current) => ({ ...current, [session.id]: { done, total } })),
+      )
+        .then((outcome) => {
+          if (outcome.messages.length > 0) setActionError(outcome.messages[0]!);
+        })
+        .finally(() => {
+          enforcementInFlight.current.delete(session.id);
+          setEnforcementProgress((current) => {
+            const { [session.id]: _done, ...rest } = current;
+            return rest;
+          });
+          refresh();
+        });
+    }
+  }, [activeDetails, detailId, refresh]);
 
   const runAction = async (id: string, work: () => Promise<unknown>) => {
     if (busyId) return;
@@ -124,6 +161,10 @@ export function RunsPanel({
       onDeleted={() => {
         setDetailId(null);
         setConfirmDeleteId(null);
+        refresh();
+      }}
+      onRerun={(sessionId) => {
+        setDetailId(sessionId);
         refresh();
       }}
     />
@@ -221,6 +262,7 @@ export function RunsPanel({
                   <span className={`ce-chip ce-chip--${entry.status === "completed" ? "ok" : "muted"}`}>
                     {t(`cardEditor.panel.sessionStatus.${entry.status}`)}
                   </span>
+                  <span className="ce-chip">{t(`cardEditor.panel.completionMode.${entry.completionMode}`)}</span>
                   <span className="ce-caption">
                     {t("cardEditor.panel.progress", { done: entry.stats.done, total: entry.stats.total })}
                   </span>
@@ -233,6 +275,26 @@ export function RunsPanel({
                 </span>
                 {entry.status === "interrupted" ? (
                   <p className="ce-caption ce-session-note">{t("cardEditor.panel.interruptedNotice")}</p>
+                ) : null}
+                {enforcementProgress[entry.id] ? (
+                  <p className="ce-caption ce-live-line" role="status">
+                    {t("cardEditor.panel.enforcementProgress", enforcementProgress[entry.id])}
+                  </p>
+                ) : null}
+                {entry.status === "completed" || entry.status === "canceled" ? (
+                  <button
+                    type="button"
+                    className="mari-chrome-control mari-chrome-control--small"
+                    disabled={busyId !== null}
+                    onClick={() =>
+                      void runAction(entry.id, async () => {
+                        const created = await rerunSession(entry.id);
+                        setDetailId(created.id);
+                      })
+                    }
+                  >
+                    {t("cardEditor.panel.runAgain")}
+                  </button>
                 ) : null}
                 {confirmDeleteId === entry.id ? (
                   <span className="ce-confirm-strip" role="group" aria-label={t("cardEditor.panel.delete")}>

@@ -24,6 +24,7 @@ import {
   approveSessionItem,
   buildFieldPatchData,
   currentFieldsFromCard,
+  executeCompletionEnforcement,
 } from "../packages/card-editor/src/engine/packages/client/src/features/card-editor/apply-ops.ts";
 import {
   newSession,
@@ -96,6 +97,9 @@ for (const key of [
   "cardEditor.panel.saveMode.confirm",
   "cardEditor.panel.saveMode.auto",
   "cardEditor.panel.saveMode.duplicate",
+  "cardEditor.panel.completionMode.ask",
+  "cardEditor.panel.completionMode.apply",
+  "cardEditor.panel.completionMode.duplicate",
   "cardEditor.panel.sessionStatus.active",
   "cardEditor.panel.sessionStatus.completed",
   "cardEditor.panel.sessionStatus.canceled",
@@ -273,6 +277,8 @@ assert.match(api, /deleteSession\(sessionId: string, options: \{ force\?: boolea
 assert.match(api, /\?force=true/u);
 assert.match(api, /Promise<SessionIndexEntry\[\]>/u, "listSessions types the index projection");
 assert.match(api, /cancelSessionItem/u);
+assert.match(api, /rerunSession/u);
+assert.match(api, /sessionPath\(sessionId, "\/rerun"\)/u);
 assert.match(api, /patchHostCharacter/u);
 assert.match(api, /duplicateHostCharacter/u);
 assert.match(api, /getHostCharacterCard/u);
@@ -294,6 +300,10 @@ assert.match(runsPanel, /cancelSession\(entry\.id\)/u);
 assert.match(runsPanel, /deleteSession\(entry\.id\)/u);
 assert.match(runsPanel, /cardEditor\.panel\.interruptedNotice/u, "interrupted sessions explain the rerun path");
 assert.match(runsPanel, /cardEditor\.panel\.refresh/u, "manual refresh is always available");
+assert.match(runsPanel, /executeCompletionEnforcement/u, "list polling auto-executes completion plans");
+assert.match(runsPanel, /cardEditor\.panel\.completionMode/u, "list rows show the completion policy chip");
+assert.match(runsPanel, /cardEditor\.panel\.enforcementProgress/u, "list rows show enforcement progress");
+assert.match(runsPanel, /rerunSession\(entry\.id\)/u, "completed/canceled list rows can run again");
 
 // ── 9. Session detail structure ──
 assert.match(sessionDetail, /PAGE_SIZE = 50/u, "items paginate at 50 per page (SPEC §5: 200+ cards)");
@@ -306,6 +316,10 @@ assert.match(sessionDetail, /<VerdictQueue/u);
 assert.match(sessionDetail, /<EditRetryDialog/u);
 assert.match(sessionDetail, /item\.failure\?\.renderedPrompt !== undefined/u, "edit & retry needs the rendered prompt");
 assert.match(sessionDetail, /cardEditor\.panel\.detail\.rerunFailed/u, "rerun-all-failed session action");
+assert.match(sessionDetail, /executeCompletionEnforcement/u, "detail polling auto-executes completion plans");
+assert.match(sessionDetail, /cardEditor\.panel\.completionMode/u, "detail shows the completion policy chip");
+assert.match(sessionDetail, /cardEditor\.panel\.enforcementProgress/u, "detail shows enforcement progress");
+assert.match(sessionDetail, /rerunSession\(sessionId\)/u, "completed/canceled detail can run again");
 
 // ── 10. Verdict queue structure (DESIGN §3) ──
 assert.match(verdictQueue, /PREVIEW_LINE_CAP = 8/u, "field previews cap at ~8 lines");
@@ -344,6 +358,9 @@ for (const marker of [
   "unchanged lines",
   "Edit & retry",
   "Review queue",
+  "Run again",
+  "cardEditor.panel.completionMode.apply",
+  "Applying completion outcome",
   "awaiting review",
 ]) {
   assert.ok(builtClient.includes(marker), `built client.js is missing ${JSON.stringify(marker)} — rebuild the package`);
@@ -634,6 +651,47 @@ async function createSettledSession(configOverrides, hostCards) {
     assert.equal(host.store.get("char-0").description, "Old desc 0", "the original stays untouched");
     assert.equal(outcome.session.items[0].status, "duplicated");
     assert.equal(outcome.session.items[0].resultCardId, "char-0-copy");
+  });
+}
+
+{
+  stopAllRunners();
+  // Completed duplicate enforcement resumes serialized pendingOps without opening the verdict queue.
+  const { harness, host, sessionId } = await createSettledSession(
+    { saveMode: "confirm", completionMode: "duplicate", duplicatePrefix: "Edited " },
+    { "char-0": { name: "Character 0", description: "Old desc 0", extensions: {} } },
+  );
+  await withBridgedFetch(harness, host, async () => {
+    const fresh = await harness.invoke("GET", "/sessions/:id", { params: { id: sessionId } });
+    assert.equal(fresh.body.items[0].status, "duplicated");
+    assert.equal(fresh.body.items[0].pendingOps[0].op, "duplicateThenPatch");
+    const progress = [];
+    const outcome = await executeCompletionEnforcement(fresh.body, (done, total) => progress.push([done, total]));
+    assert.equal(outcome.failedCount, 0);
+    assert.deepEqual(progress, [
+      [0, 1],
+      [1, 1],
+    ]);
+    assert.equal(host.store.get("char-0-copy").name, "Edited Character 0");
+    assert.equal(outcome.session.items[0].resultCardId, "char-0-copy");
+    assert.equal(outcome.session.items[0].pendingOps, undefined);
+  });
+}
+
+{
+  stopAllRunners();
+  // Completed apply enforcement plans against current host fields and holds stale cards.
+  const { harness, host, sessionId } = await createSettledSession(
+    { saveMode: "duplicate", completionMode: "apply" },
+    { "char-0": { name: "Character 0", description: "Changed since dispatch", extensions: {} } },
+  );
+  await withBridgedFetch(harness, host, async () => {
+    const fresh = await harness.invoke("GET", "/sessions/:id", { params: { id: sessionId } });
+    const outcome = await executeCompletionEnforcement(fresh.body);
+    assert.equal(outcome.failedCount, 0);
+    assert.equal(outcome.session.items[0].status, "needs-review");
+    assert.equal(outcome.session.items[0].pendingOps, undefined);
+    assert.equal(host.writes.length, 0, "stale apply enforcement never writes blindly");
   });
 }
 

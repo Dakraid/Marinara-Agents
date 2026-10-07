@@ -260,6 +260,51 @@ async function testAutoSaveModeHint() {
   assert.equal(settled.items[0].autoApply, true, "auto save mode marks items for panel auto-approval");
 }
 
+async function testCompletionEnforcementDispatch() {
+  stopAllRunners();
+  const documents = createFakeDocuments();
+  const languageModels = createFakeLanguageModels(() => ({ content: singleUpdate("Enforced") }));
+  const { deps, store } = createDeps(documents, languageModels);
+
+  const duplicate = makeSession(
+    { mode: "individual", saveMode: "confirm", completionMode: "duplicate", duplicatePrefix: "Edited " },
+    1,
+  );
+  await store.createSession(duplicate, EMPTY_MATERIAL);
+  startRunner(deps, duplicate.id);
+  const duplicated = await settledSession(store, duplicate.id);
+  assert.equal(duplicated.items[0].status, "duplicated", "queue drain plans duplicate enforcement");
+  assert.deepEqual(duplicated.items[0].pendingOps, [
+    {
+      op: "duplicateThenPatch",
+      characterId: "char-0",
+      fields: { description: "Enforced" },
+      namePrefix: "Edited ",
+    },
+  ]);
+
+  const apply = makeSession({ mode: "individual", saveMode: "duplicate", completionMode: "apply" }, 1);
+  await store.createSession(apply, EMPTY_MATERIAL);
+  startRunner(deps, apply.id);
+  const awaitingFields = await settledSession(store, apply.id);
+  assert.equal(
+    awaitingFields.items[0].status,
+    "awaiting-review",
+    "in-place enforcement waits for client-supplied current fields",
+  );
+  assert.equal(awaitingFields.items[0].pendingOps, undefined);
+  const invoke = await createRouteHarness(deps);
+  const stale = await invoke("POST", "/sessions/:id/items/:itemId/verdict", {
+    params: { id: apply.id, itemId: awaitingFields.items[0].itemId },
+    body: { verdict: "approve", currentFields: { description: "Changed mid-run" } },
+  });
+  assert.equal(stale.status, 200);
+  assert.equal(stale.body.status, "needs-confirmation");
+  const held = await store.getSession(apply.id);
+  assert.equal(held.items[0].status, "needs-review", "stale apply enforcement plans no write");
+  assert.equal(held.items[0].pendingOps, undefined);
+}
+
 async function testNoOpAutoApproves() {
   stopAllRunners();
   const documents = createFakeDocuments();
@@ -710,8 +755,8 @@ async function testSessionLifecycleRoutes() {
   assert.equal(index.body.length, 1);
   assert.deepEqual(
     Object.keys(index.body[0]).sort(),
-    ["createdAt", "id", "label", "stats", "status"],
-    "the index projects id/label/status/stats/createdAt only",
+    ["completionMode", "createdAt", "enforcementPendingCount", "id", "label", "pendingApplyCount", "stats", "status"],
+    "the index projects session metadata plus completion-enforcement polling counts",
   );
 
   const detail = await invoke("GET", "/sessions/:id", { params: { id: created.id } });
@@ -745,7 +790,7 @@ async function testSessionLifecycleRoutes() {
 
   const afterApprove = await invoke("GET", "/sessions/:id", { params: { id: created.id } });
   assert.equal(afterApprove.body.items[0].status, "applied", "the verdict moves the item to applied");
-  assert.equal(afterApprove.body.items[0].pendingOps, undefined, "pendingOps stay server-side");
+  assert.equal(afterApprove.body.items[0].pendingOps.length, 1, "polling exposes unreported pendingOps");
 
   const confirm = await invoke("POST", "/sessions/:id/items/:itemId/apply-result", {
     params: { id: created.id, itemId: detail.body.items[0].itemId },
@@ -861,6 +906,56 @@ async function testDuplicateModeVerdict() {
   });
   assert.equal(confirm.body.items[0].status, "duplicated");
   assert.equal(confirm.body.items[0].resultCardId, "char-copy-1", "the duplicate's new card id is recorded");
+}
+
+async function testRerunRoute() {
+  stopAllRunners();
+  const documents = createFakeDocuments();
+  let hang = false;
+  const languageModels = createFakeLanguageModels(() =>
+    hang ? { hang: true } : { content: singleUpdate("Rerun result") },
+  );
+  const { deps, store } = createDeps(documents, languageModels);
+  const invoke = await createRouteHarness(deps);
+  const created = await createSessionViaRoute(invoke, {
+    label: "Original run",
+    targets: [makeTarget(0), makeTarget(1)],
+    config: normalizeSessionConfig({ mode: "individual", providerRetries: 0, completionMode: "ask" }),
+  });
+  const original = await settledSession(store, created.id);
+  const originalSnapshot = structuredClone(original);
+
+  const rerun = await invoke("POST", "/sessions/:id/rerun", { params: { id: original.id } });
+  assert.equal(rerun.status, 200, JSON.stringify(rerun.body));
+  assert.notEqual(rerun.body.id, original.id, "run again creates a new session");
+  assert.equal(rerun.body.label, "Original run (rerun)");
+  assert.deepEqual(rerun.body.config, original.config, "the config is cloned exactly");
+  assert.deepEqual(
+    rerun.body.items.map((item) => item.characterId),
+    ["char-0", "char-1"],
+    "targets preserve first-seen order",
+  );
+  assert.ok(
+    rerun.body.items.every((item) => item.status === "queued"),
+    "new items begin queued",
+  );
+  await settledSession(store, rerun.body.id);
+  assert.deepEqual(await store.getSession(original.id), originalSnapshot, "the original session stays untouched");
+
+  hang = true;
+  const active = await createSessionViaRoute(invoke, {
+    label: "Active run",
+    targets: [makeTarget(2)],
+    config: normalizeSessionConfig({ mode: "individual", providerRetries: 0 }),
+  });
+  await waitFor(() => languageModels.calls.some((call) => call.user.includes("char-2")), "active rerun guard fixture");
+  const guarded = await invoke("POST", "/sessions/:id/rerun", { params: { id: active.id } });
+  assert.equal(guarded.status, 409, "active sessions cannot run again");
+  await cancelSessionRun(deps, active.id);
+  hang = false;
+  const canceledRerun = await invoke("POST", "/sessions/:id/rerun", { params: { id: active.id } });
+  assert.equal(canceledRerun.status, 200, "canceled sessions can run again");
+  await settledSession(store, canceledRerun.body.id);
 }
 
 async function testDeleteActiveSession() {
@@ -1013,6 +1108,7 @@ async function testActivationLifecycle() {
 const tests = [
   ["individual mode", testIndividualMode],
   ["auto save mode autoApply hint", testAutoSaveModeHint],
+  ["completion enforcement dispatch", testCompletionEnforcementDispatch],
   ["no-op auto-approve", testNoOpAutoApproves],
   ["batched mode", testBatchedMode],
   ["batch missing entry fallback", testBatchMissingEntryFallsBackToIndividual],
@@ -1033,6 +1129,7 @@ const tests = [
   ["session lifecycle routes", testSessionLifecycleRoutes],
   ["verdict holds and force", testVerdictHoldsAndForce],
   ["duplicate-mode verdict", testDuplicateModeVerdict],
+  ["rerun route", testRerunRoute],
   ["delete active session", testDeleteActiveSession],
   ["edit-retry route", testEditRetryRoute],
   ["cancel queued item route", testCancelQueuedItemRoute],

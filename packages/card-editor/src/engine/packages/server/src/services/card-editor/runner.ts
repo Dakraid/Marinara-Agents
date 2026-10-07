@@ -26,6 +26,7 @@ import {
   type ItemStatus,
   type SessionItem,
 } from "../../../../shared/src/features/agents/card-editor/schema.ts";
+import { planApply } from "./apply.ts";
 import type { CharacterLike } from "./context.ts";
 import { parseBatchResponse, parseSingleResponse } from "./parse.ts";
 import { assemblePrompt, type PromptTarget } from "./prompts.ts";
@@ -173,7 +174,7 @@ function resolveBehaviorCharacter(
   return cardFromItem(source);
 }
 
-function succeedItem(item: SessionItem, updates: CardFieldUpdate[], saveMode: BulkSession["config"]["saveMode"]) {
+function succeedItem(item: SessionItem, updates: CardFieldUpdate[], config: BulkSession["config"]) {
   // queued is unreachable through the dispatch path but legal to absorb defensively.
   const running = item.status === "queued" ? advanceItemStatus(item, "running") : item;
   let next: SessionItem = advanceItemStatus({ ...running, updates }, "succeeded");
@@ -182,7 +183,8 @@ function succeedItem(item: SessionItem, updates: CardFieldUpdate[], saveMode: Bu
     return { ...advanceItemStatus(next, "applied"), appliedAt: new Date().toISOString() };
   }
   next = advanceItemStatus(next, "awaiting-review");
-  if (saveMode === "auto") return { ...next, autoApply: true };
+  // Legacy auto-save is immediate; completion enforcement must wait until every call drains.
+  if (config.saveMode === "auto" && (config.completionMode ?? "ask") === "ask") return { ...next, autoApply: true };
   if (next.autoApply !== undefined) {
     const { autoApply: _dropped, ...rest } = next;
     return rest;
@@ -297,13 +299,53 @@ async function pump(runner: SessionRunner): Promise<void> {
   if (runner.active === 0) await finishIfDrained(runner);
 }
 
+export type CompletionCurrentFields = Readonly<Record<string, Record<string, string>>>;
+
+/**
+ * Plans the queue-drain policy for successful outcomes only. Duplicate enforcement is fully
+ * server-planable because it copies the current card and never staleness-blocks. In-place apply
+ * requires current host fields, which the package server cannot read; without them the item stays
+ * awaiting-review until the polling client supplies those fields through the verdict route. The
+ * same function is exported for the route regression to pin fresh/stale planning behavior.
+ */
+export function planCompletionEnforcement(
+  session: BulkSession,
+  currentFieldsByCharacterId: CompletionCurrentFields = {},
+): BulkSession {
+  const completionMode = session.config.completionMode ?? "ask";
+  if (completionMode === "ask") return session;
+  return {
+    ...session,
+    items: session.items.map((sourceItem) => {
+      // A succeeded item is only possible in a hand-built/corrupt fixture; normal dispatch moves
+      // it immediately to awaiting-review. No rejected/canceled/failed outcome is ever considered.
+      const item = sourceItem.status === "succeeded" ? advanceItemStatus(sourceItem, "awaiting-review") : sourceItem;
+      if (item.status !== "awaiting-review") return sourceItem;
+      const currentFields = currentFieldsByCharacterId[item.characterId];
+      if (completionMode === "apply" && currentFields === undefined) return item;
+      const ops = planApply(item, currentFields ?? {}, {
+        force: false,
+        saveMode: completionMode === "duplicate" ? "duplicate" : "auto",
+        label: session.label,
+        duplicateSuffix: session.config.duplicateSuffix,
+        ...(session.config.duplicatePrefix === undefined ? {} : { duplicatePrefix: session.config.duplicatePrefix }),
+      });
+      if (ops.some((op) => op.op === "hold")) return advanceItemStatus(item, "needs-review");
+      return {
+        ...advanceItemStatus(item, completionMode === "duplicate" ? "duplicated" : "applied"),
+        pendingOps: ops,
+      };
+    }),
+  };
+}
+
 async function finishIfDrained(runner: SessionRunner): Promise<void> {
   try {
     await runner.deps.store.updateSession(runner.sessionId, (session) => {
       if (session.status !== "active") return session;
       if (session.items.some((item) => item.status === "queued" || item.status === "running")) return session;
       if (session.batches.some((batch) => batch.status === "pending" || batch.status === "running")) return session;
-      return { ...session, status: "completed" as const };
+      return planCompletionEnforcement({ ...session, status: "completed" as const });
     });
   } catch (error) {
     runner.deps.logger.error(error, "Card Editor session completion could not be recorded");
@@ -336,7 +378,7 @@ async function persistSuccess(
     ...session,
     items: mapItems(session, [...updatesByItemId.keys()], (item) =>
       item.status === "running" || item.status === "queued"
-        ? succeedItem(item, updatesByItemId.get(item.itemId) ?? [], session.config.saveMode)
+        ? succeedItem(item, updatesByItemId.get(item.itemId) ?? [], session.config)
         : item,
     ),
     batches: mapBatch(session, task.batchId, "running", "done"),
