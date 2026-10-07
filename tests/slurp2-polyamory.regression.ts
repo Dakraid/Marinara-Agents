@@ -5,11 +5,11 @@
 import assert from "node:assert/strict";
 import {
   newSlurpCouple,
-  readSlurpCouples,
   slurpSetUpCouple,
   slurpCoupleOther,
   type SlurpCouple,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples.ts";
+import { readSlurpCouples } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-read.ts";
 import {
   slurpAddToCouple,
   slurpCoupleMembers,

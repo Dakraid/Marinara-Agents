@@ -1,3 +1,4 @@
+import { assertSlurpNotPaused } from "./slp-pause.js";
 import { lookup as dnsLookup } from "node:dns/promises";
 import { isIP } from "node:net";
 
@@ -99,10 +100,19 @@ export async function slpSettleAdaptive<T, R>(
     changed = new Promise<void>((next) => (wake = next));
     resolve();
   };
-  // The caller is one of the running items: it goes on once nothing else is running.
+  // The caller is one of the running items: it goes on once every other running item is waiting
+  // here too, in arrival order. Waiting for `active > 1` alone deadlocked when two items were
+  // refused together: each counted the other as running.
+  const waiting: number[] = [];
+  let ticket = 0;
   const slowDown = async () => {
     limit = 1;
-    while (active > 1) await changed;
+    const mine = ticket++;
+    waiting.push(mine);
+    notify();
+    while (active > waiting.length || waiting[0] !== mine) await changed;
+    waiting.shift();
+    notify();
   };
   await Promise.all(
     Array.from({ length: Math.min(limit, items.length) }, async () => {
@@ -140,8 +150,12 @@ export function slpWithProviderRetry<P extends { chatComplete: (...args: never[]
   // defineProperty, not assignment: the host's providers carry a read-only `chatComplete`, and a
   // read-only property on the prototype makes plain assignment on the wrapper throw.
   return Object.defineProperty(Object.create(provider) as P, "chatComplete", {
-    value: (...args: Parameters<P["chatComplete"]>) =>
-      slpRetryProviderCall(() => provider.chatComplete(...args), options),
+    // "Pause all" (`slp-pause.ts`): not one model call while Slurp is paused.
+    // Async, so a paused call rejects like any failed call and a `.catch()` on it still catches it.
+    value: async (...args: Parameters<P["chatComplete"]>) => {
+      assertSlurpNotPaused();
+      return slpRetryProviderCall(() => provider.chatComplete(...args), options);
+    },
     writable: true,
     configurable: true,
     enumerable: true,

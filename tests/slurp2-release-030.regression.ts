@@ -73,7 +73,11 @@ backLayer();
   assert.match(client("features/stir/SlpStirCards.tsx"), /onClose=\{close\}\n\s+back\n/u);
   assert.match(client("features/stir/SlpStirCreatorSheet.tsx"), /onClose=\{close\}\s+back\s/u);
   const stir = client("features/stir/SlpStirScreen.tsx");
-  assert.match(stir, /<SlpSheet open=\{open\} onClose=\{\(\) => setOpen\(false\)\} title=\{title\} size="full"/u);
+  // 0.3.11: the People map is Stir's one full sheet, with the back arrow.
+  assert.match(
+    stir,
+    /<SlpSheet\s+open=\{people\}\s+onClose=\{\(\) => setPeople\(false\)\}[\s\S]{0,120}size="full"[\s\S]{0,60}back/u,
+  );
   assert.match(stir, /t\("ui\.slurp\.stir\.hint\.more"\)/u);
 
   const shell = client("modules/chrome/SlpShell.tsx");

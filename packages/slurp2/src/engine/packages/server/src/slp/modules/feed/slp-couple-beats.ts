@@ -57,6 +57,20 @@ const COY_CAMEOS = [
   "two tickets, and you are not saying who the other one is for",
 ] as const;
 const PAGE_ONLY: readonly SlurpCoupleMomentKind[] = ["pageOpen", "pageClose"];
+/** Who she is with, in public, while it is a secret. */
+const SECRET_NAME = "someone special";
+/** A secret couple with the player: no name and no face in public, and the fans may guess. */
+const SECRET_LINE = " It is a secret: never name them, never show their face, and let your fans guess who it is.";
+
+/**
+ * With the player: a secret stays one, and a date or an anniversary is a picture the player took.
+ * ponytail: said in the beat line only; wire the "partner" camera source if the picture ignores it.
+ */
+function playerExtra(kind: SlurpCoupleMomentKind, partner: string, secret: boolean): string {
+  const shot = kind === "date" || kind === "anniversary" ? ` The picture is one ${partner} took of you.` : "";
+  return `${secret ? SECRET_LINE : ""}${shot}`;
+}
+
 /** What goes up on a shared page on an ordinary day, like real couple accounts post. */
 const PAGE_IDEAS = [
   "a morning side by side, before either of you is a person",
@@ -121,13 +135,21 @@ export function slurpCoupleBeat(input: {
   couples: readonly SlurpCouple[];
   /** Public names by account id (Creators and shared pages). */
   names: ReadonlyMap<string, string>;
+  /** Pages the player runs: a couple with one of them may be secret, and they take the pictures. */
+  playerIds?: ReadonlySet<string>;
   at: Date;
 }): (SlurpBeat & { tie: SlurpTieStamp }) | null {
-  const { creatorId, names, at } = input;
+  const { creatorId, at } = input;
   for (const couple of input.couples) {
     const partnerId = slurpCoupleOther(couple, creatorId);
     // Polyamory (0.3.5): every partner is named; the stamp keeps the first one.
-    const partnerIds = slurpCouplePartners(couple, creatorId).filter((id) => names.has(id));
+    const partnerIds = slurpCouplePartners(couple, creatorId).filter((id) => input.names.has(id));
+    const withPlayer = partnerIds.some((id) => input.playerIds?.has(id));
+    // A secret couple with the player (Drama, "your relationship"): never named in public.
+    const secret = Boolean(couple.secret && withPlayer);
+    const names = secret
+      ? new Map([...input.names].map(([id, name]) => [id, partnerIds.includes(id) ? SECRET_NAME : name]))
+      : input.names;
     const partnerNames = partnerIds.map((id) => names.get(id)!);
     const partner = slurpNameList(partnerNames);
     if (!partnerId || !partner) continue;
@@ -139,6 +161,8 @@ export function slurpCoupleBeat(input: {
       // Jealousy is theirs to post, not the one it is about.
       .filter((moment) => !moment.fromId || moment.fromId === creatorId)
       .filter((moment) => !PAGE_ONLY.includes(moment.kind) || page)
+      // A secret has no launch: she tells nobody.
+      .filter((moment) => !(secret && moment.kind === "launch"))
       .reverse();
     const moment = fresh.find(
       (entry) => BIG.includes(entry.kind) || hash(`${entry.id}:${creatorId}:${input.sequence}`) % 2 === 0,
@@ -165,7 +189,7 @@ export function slurpCoupleBeat(input: {
         type: moment.kind === "fight" || moment.kind === "jealous" ? "opinion" : "relationship_moment",
         anchorKind: "couple",
         anchor: partner,
-        line: `${momentLine(moment, told, couple, other)}${where}`,
+        line: `${momentLine(moment, told, couple, other)}${where}${withPlayer ? playerExtra(moment.kind, partner, secret) : ""}`,
         cast: other ? [...partnerNames, other] : partnerNames,
         castIds: other && moment.withId ? [...new Set([...partnerIds, moment.withId])] : partnerIds,
         place: null,
@@ -173,6 +197,7 @@ export function slurpCoupleBeat(input: {
           kind: "couple",
           id: couple.id,
           partnerId,
+          ...(secret ? { secret: true } : {}),
           moment: moment.kind,
           momentId: moment.id,
           ...(onPage ? { pageId: page.accountId, hostId: creatorId } : {}),
@@ -208,11 +233,12 @@ export function slurpCoupleBeat(input: {
         line:
           couple.stage === "dating"
             ? `${partner} is part of your day, but it is not official yet: ${cameo}. Keep it coy, your way; no tag, no names needed.`
-            : `${partner} makes a cameo in today's post: ${cameo}. It is your everyday life, not a collab: no tag, no announcement, just the two of you being a couple in the background of your day.`,
+            : `${partner} makes a cameo in today's post: ${cameo}. It is your everyday life, not a collab: no tag, no announcement, just the two of you being a couple in the background of your day.` +
+              (secret ? SECRET_LINE : ""),
         cast: partnerNames,
         castIds: partnerIds,
         place: null,
-        tie: { kind: "couple", id: couple.id, partnerId, moment: "cameo" },
+        tie: { kind: "couple", id: couple.id, partnerId, moment: "cameo", ...(secret ? { secret: true } : {}) },
       };
     }
   }

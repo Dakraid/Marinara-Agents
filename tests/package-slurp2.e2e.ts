@@ -92,6 +92,22 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe("standalone Slurp package", () => {
+  test("a missing Admin Secret tells remote readers how to set it", async ({ page }) => {
+    // Package routes are privileged, so another device without the secret gets this 403 (#1136).
+    await page.route(
+      (url) => url.pathname.startsWith("/api/slurp2/"),
+      (route) => route.fulfill({ status: 403, json: { error: "Invalid or missing X-Admin-Secret header" } }),
+    );
+    await page.goto("/");
+    await openSlurp(page);
+    await expect(
+      page
+        .locator('[data-component="NoodleView"]')
+        .getByRole("alert")
+        .filter({ hasText: "Slurp could not be loaded." }),
+    ).toContainText("Settings → Advanced → Admin Access");
+  });
+
   test("image context choices persist and creator refresh counts down", async ({ page }, testInfo) => {
     const initialSettings = await (await getSlurpSettings(page)).json();
     let profileId: string | null = null;

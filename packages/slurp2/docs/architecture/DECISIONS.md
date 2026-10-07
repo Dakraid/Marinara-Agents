@@ -634,3 +634,93 @@ modules, rejected alternative, and migration consequence.
 - **Rejected alternatives:** only overlapping pairs (a throuple would read as three separate couples);
   only groups (a Creator with two separate partners could not exist).
 - **Migration consequence:** none; `moreIds` and `relationshipStyle` are optional.
+
+## 0.3.8 Drama: situations and dramas as Story Pack data, no new domain (2026-09-30)
+
+- **Problem:** couples, collabs and rivalries are hard-coded dramas the player cannot join, the
+  world has no friends, roommates or exes, and a new kind of drama needs new code. Design:
+  `docs/DRAMA.md`.
+- **Decision:** no new top-level domain. Dramas and standing situations are new optional
+  arrays in the Story Pack schema (`shared/src/slp/slp-story-engine.ts`); a running drama is an arc
+  with a cast; new tie types (`friend`, `roommate`, `coworker`, `ex`) join the ties document; the
+  player's persona Creator can be one side of a tie; arc choices may ask the player or a Creator;
+  a hidden fact is a continuity record with `knownBy`, read through the one continuity gate. Posts
+  get at most one drama line through the existing beat brief; comments come from the reaction bank.
+- **Affected modules (planned):** shared `slp-story-engine.ts`; server `modules/projects/*` (ties,
+  couples, arc progress), `modules/feed/slp-tie-beats.ts`, `modules/continuity/*`,
+  `modules/world/slp-reaction-bank.ts`, `features/assist/slp-stir-*`, the world tick; client Backstage,
+  Creator settings, Stir, Creator Page People block.
+- **Rejected alternatives:** a separate "social world" graph store beside ties and continuity (two
+  sources of truth for relations and facts); hard-coded dramas per genre (every new drama would be
+  code); a relation/fact dump in the post prompt (infodumps cost heat and tokens).
+- **Migration consequence:** none; every new field is optional, old packs import unchanged, and
+  drama state and library live in their own app settings (`slurp2.drama.state`, `slurp2.drama.library`).
+  Built as designed; the differences are listed under "As built" in `docs/DRAMA.md`.
+
+## 0.3.11 Your relationship, a story-first Stir, Pause all (2026-10-01)
+
+- **Problem:** the player's own couple lived in her public posts only (the chat could not move it,
+  her DMs treated the player as a customer, pictures were sold to her partner); Stir stacked ten
+  sections with couples, collabs and dramas editable in three places, only one of them with preview
+  and Undo, and every persona saw and steered the others' couples and plays.
+- **Decision:**
+  - The DM answer to the player carries `us` (closer / hurt / madeUp); `modules/projects/slp-player-couple.ts`
+    decides whether it counts (days per stage), `features/projects` applies it. Couples gain `secret`.
+  - Every change to couples, bonds, collabs, rivalries and drama packs is a Stir play through the one
+    runner: new actions `set-bond`, `end-bond` (tie levers), `start-drama`, `end-drama`
+    (`features/world/slp-drama-levers.ts`, through the world contract). The ties panels' hooks and the
+    drama routes call the same levers.
+  - Stir preview, play, undo and the view take the playing persona; plays record it.
+  - Fans' DMs to the player's own page are notification events of kind `fan_note`; the player's heart
+    and one reply live in the app setting `slurp2.fan-notes`.
+  - "Pause all" is a setting kept in step with a process flag in `base/model/slp-pause.ts`; the
+    provider and image wrappers and every scheduler check it.
+  - `slp-creator-couples.ts` split into `slp-couple-fit.ts` and `slp-couple-read.ts` (size cap).
+- **Rejected alternatives:** a model-decided relationship stage (the model only reports the talk);
+  keeping the Business and Relationships sheets beside "Now showing" (a second way to change the
+  same couple); a DB column for fan-note replies (a migration for one small, capped list).
+- **Migration consequence:** none; `secret`, `personaId` on plays, `requestedLead` on the drama state
+  and `paused` are optional with safe defaults. Old fan threads to the player's page stay as they are.
+
+## Roleplay scenes from a DM thread (2026-10-05)
+
+- **Problem:** the player could not take a DM conversation into a real roleplay. Engine scenes branch
+  only from Engine Conversations, and Slurp's threads are not Engine chats.
+- **Decision:**
+  - Engine PR #7119 (Capability API 1.66, `scenes` permission) lets a package thread be a scene
+    origin. Slurp registers one provider in `slp-server-entry.ts`
+    (`features/messages/scenes/slp-roleplay-scene-origin.ts`) once its manifest holds `scenes`; the
+    builder adds it as an optional permission at Capability API 1.66.
+  - Slurp writes the plan itself (`slp-roleplay-scene-planner.ts`, prompt in
+    `modules/messages/slp-roleplay-scene-prompt.ts`) and hands it to the Engine's `startScene`.
+  - Each scene carries its own settings as the Engine's `packageData`: `lock` (thread paused, Creator
+    busy everywhere) and `reach` (`none`, `private`, `hint`, `public`). The planner proposes both; the
+    player changes them before the start and the reach again on the recap.
+  - The lock is the scene chat id on the thread (`scene_chat_id`); one guard
+    (`slp-roleplay-scene-lock.ts`, a preHandler on the messages routes) refuses every thread write
+    while it is set. Replies, follow-ups, due posts and comment replies of a busy Creator wait.
+  - Choosing a reach is the explicit promotion the continuity ledger asks for: the recap fact is
+    `slurp` reality at the reach's audience; the event itself stays `roleplay`.
+  - Creators may pitch a scene through an optional `sceneInvite` field in the DM reply, offered only
+    when no invite is open and the last is three days old.
+- **Rejected alternatives:** putting the DM into the Engine planner's prompt; a hidden Engine
+  Conversation as a fake origin (no lock, no way back); one global lock and reach setting.
+- **Migration consequence:** new nullable thread columns `scene_chat_id`, `scene_started_at`; new
+  continuity event type `scene_played`. Nothing runs until Capability API 1.66.
+
+## Guided post, review for everyone (2026-10-05)
+
+- **Problem:** Creators got a post from one Stir line, with its picture; the player's own page had only
+  the split-up composer (text help and picture apart) and no way to reach its owed #ad or a collab.
+- **Decision:**
+  - One action, `draft-post` (`features/assist/slp-assist-service.ts`): an idea in, the caption and its
+    picture out, nothing posted. An owed brand deal or a collab of that page rides along as context.
+  - One composer for every page: `SlpPostGuide` (assist feature, through `slp-assist-contract.ts`) sits
+    at the top of New post. Posting a draft written for an owed #ad marks the deal posted.
+  - Review for everyone: Stir's `write-post` preview answers `draftInComposer`, so "Do it" never posts
+    it; the card hands the idea to the page's composer (`composeGuide` in the package store). Professor
+    Mari's `write-post` still posts directly: the player asked Mari for exactly that.
+  - `SlpActionResult` moved to `shared/src/slp/slp-action-results.ts` (size cap of `slp-actions.ts`).
+- **Rejected alternatives:** a second composer for the player's page; letting Stir post for the
+  player's page unattended (it is the player's voice).
+- **Migration consequence:** none.

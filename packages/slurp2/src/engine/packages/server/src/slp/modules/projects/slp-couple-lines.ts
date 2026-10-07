@@ -9,6 +9,19 @@ import { slurpCouplePartners, slurpNameList } from "./slp-couple-group.js";
 /** An ex stays on a Creator's mind (and in their posts and chats) this long after the breakup. */
 export const SLURP_EX_DAYS = 30;
 
+/** What a Creator calls the one they are with, from that page's gender. */
+export const slurpPartnerWord = (gender: string | null | undefined) =>
+  gender === "male" ? "boyfriend" : gender === "female" ? "girlfriend" : "partner";
+
+export type SlurpRelationshipOptions = {
+  withId?: string | null;
+  at?: Date;
+  /** Pages the player runs: the one she is with is then the player, not "another Creator on Slurp". */
+  playerIds?: ReadonlySet<string>;
+  /** Page id → what she calls them ("boyfriend", `slurpPartnerWord`). */
+  words?: ReadonlyMap<string, string>;
+};
+
 /**
  * What a Creator knows about their own love life, in one plain sentence, or "". In a chat with the
  * partner (or the ex) it says who they are to each other; anywhere else it is part of their life,
@@ -18,7 +31,7 @@ export function slurpRelationshipLine(
   couples: readonly SlurpCouple[],
   creatorId: string,
   names: ReadonlyMap<string, string>,
-  options: { withId?: string | null; at?: Date } = {},
+  options: SlurpRelationshipOptions = {},
 ): string {
   const line = oneRelationshipLine(couples, creatorId, names, options);
   // Polyamory (0.3.5): one person in several couples hears about all of them.
@@ -45,7 +58,7 @@ function oneRelationshipLine(
   couples: readonly SlurpCouple[],
   creatorId: string,
   names: ReadonlyMap<string, string>,
-  options: { withId?: string | null; at?: Date },
+  options: SlurpRelationshipOptions,
 ): string {
   const at = options.at ?? new Date();
   const withThem = options.withId ? slurpCoupleOf(couples, creatorId, options.withId) : null;
@@ -57,6 +70,12 @@ function oneRelationshipLine(
   if (!partner) return "";
   if (partnerIds.length > 1) return slurpGroupLine(couple, partner, Boolean(withThem));
   const days = Math.max(0, Math.round((at.getTime() - Date.parse(couple.stageAt)) / 86_400_000));
+  if (options.playerIds?.has(partnerIds[0]!))
+    return slurpPlayerLine(couple, creatorId, partner, {
+      word: options.words?.get(partnerIds[0]!) ?? "partner",
+      inChat: Boolean(withThem),
+      days,
+    });
   const trouble = [...couple.moments].reverse().find((moment) => moment.kind === "fight" || moment.kind === "jealous");
   // A couple the player forced against a card: the card colors how it feels (slice I).
   const tone = slurpCoupleActive(couple) ? slurpForcedCoupleLine(couple, creatorId, partner) : "";
@@ -86,6 +105,71 @@ function oneRelationshipLine(
       : `You are with ${partner}, another Creator on Slurp.`;
   const rocky = couple.stage === "rocky" ? " Things are rocky between you two right now." : "";
   return colored(`${what}${rocky}`) + " They are part of your life, not the topic of everything you write.";
+}
+
+/**
+ * She is with the player (Drama, "your relationship"): the one she is with, never "another Creator on
+ * Slurp", and never "not the topic of everything" in her chat with them. A secret couple stays out of
+ * public: she knows, her fans do not.
+ */
+function slurpPlayerLine(
+  couple: SlurpCouple,
+  creatorId: string,
+  name: string,
+  { word, inChat, days }: { word: string; inChat: boolean; days: number },
+): string {
+  const trouble = [...couple.moments].reverse().find((moment) => moment.kind === "fight" || moment.kind === "jealous");
+  const tone = slurpCoupleActive(couple) ? slurpForcedCoupleLine(couple, creatorId, name) : "";
+  const colored = (line: string) => (tone ? `${line} ${tone}` : line);
+  const hush = couple.secret ? ` It is a secret: your fans do not know, so you never name ${name} in public.` : "";
+  if (couple.stage === "sparks")
+    return colored(
+      inChat
+        ? `You have a crush on ${name}, and ${name} flirts back. Nothing is official yet.`
+        : `You have a crush on ${name}. Nothing is official.`,
+    );
+  if (couple.stage === "dating")
+    return colored(
+      `You and ${name} are dating. It is new${couple.secret ? "" : ", and not official in public yet"}.${hush}`,
+    );
+  if (couple.stage === "together" || couple.stage === "rocky") {
+    const rocky =
+      couple.stage === "rocky"
+        ? ` Things are rocky between you right now${trouble?.detail ? ` (${trouble.detail})` : ""}.`
+        : "";
+    const known = couple.secret ? "" : inChat ? ", and your fans know" : "";
+    return colored(`${name} is your ${word}: you two are together${known}.${rocky}${hush}`);
+  }
+  if (couple.ending === "fizzled") return `You and ${name} flirted for a while, and it went nowhere.`;
+  return inChat
+    ? `${name} is your ex. You broke up ${days <= 1 ? "just now" : `${days} days ago`}.`
+    : `${name} is your ex: you broke up ${days <= 1 ? "just now" : `${days} days ago`}. It still comes up now and then.`;
+}
+
+/**
+ * The player's relationship with a character, for an ordinary Engine chat with that character (the
+ * chat bridge, `slp-chat-context.ts`): one standing fact, in the third person. "" when there is none.
+ */
+export function slurpChatBridgeCoupleLine(
+  couple: SlurpCouple | null,
+  input: { her: string; herGender: string | null | undefined; you: string; at: Date },
+): string {
+  if (!couple) return "";
+  const { her, you } = input;
+  const since = (iso: string | null) => (iso ? ` since ${iso.slice(0, 10)}` : "");
+  const hush = couple.secret ? ", kept secret from her fans" : "";
+  const fight = [...couple.moments].reverse().find((moment) => moment.kind === "fight" || moment.kind === "jealous");
+  if (couple.stage === "sparks")
+    return `${her} and ${you} have a crush on each other on Slurp; nothing is official yet.`;
+  if (couple.stage === "dating") return `${her} and ${you} are dating on Slurp${since(couple.stageAt)}${hush}.`;
+  if (couple.stage === "together" || couple.stage === "rocky")
+    return `${her} is ${you}'s ${slurpPartnerWord(input.herGender)} on Slurp: together${since(couple.togetherAt)}${hush}.${
+      couple.stage === "rocky" ? ` Things are rocky right now${fight?.detail ? ` (${fight.detail})` : ""}.` : ""
+    }`;
+  const days = Math.round((input.at.getTime() - Date.parse(couple.stageAt)) / 86_400_000);
+  return couple.ending === "breakup" && days <= SLURP_EX_DAYS
+    ? `${her} and ${you} broke up on Slurp ${days <= 1 ? "just now" : `${days} days ago`}.`
+    : "";
 }
 
 /** The newest breakup of this Creator in the last `SLURP_EX_DAYS` days, or null. */

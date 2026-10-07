@@ -720,3 +720,64 @@ export function slurpIntensityBand(value: number): "low" | "medium" | "high" | "
 export function slurpAdultLevelIndex(level: SlurpAdultLevel): number {
   return SLURP_ADULT_LEVELS.indexOf(level);
 }
+
+/**
+ * Where a chat with her partner starts (Drama, "your relationship"): the person she is with is no
+ * stranger she warms up to step by step. These are floors, never ceilings: a chat that is already
+ * further keeps it, and nothing here lowers a value. After a fight (`rocky`) some hurt stays and the
+ * ceiling holds one step lower until they make up. A crush is warm, not yet intimate. Her own spice
+ * level still caps what she does; this only stops the chat ladder from treating her partner as a fan.
+ */
+export function slurpPartnerThreadFloor(
+  state: SlurpThreadState,
+  partner: "partner" | "rocky" | "crush" | null,
+): SlurpThreadState {
+  if (!partner) return state;
+  const floor =
+    partner === "partner"
+      ? {
+          familiarity: 80,
+          emotionalTrust: 70,
+          sexualComfort: 80,
+          threadDesire: 60,
+          respect: 60,
+          adultLevel: "explicit",
+        }
+      : partner === "rocky"
+        ? {
+            familiarity: 75,
+            emotionalTrust: 50,
+            sexualComfort: 60,
+            threadDesire: 45,
+            respect: 50,
+            adultLevel: "intimate",
+          }
+        : {
+            familiarity: 35,
+            emotionalTrust: 30,
+            sexualComfort: 25,
+            threadDesire: 30,
+            respect: 50,
+            adultLevel: "suggestive",
+          };
+  const cold = ["open", "professional", "guarded", "distant"] as const;
+  return {
+    ...state,
+    familiarity: Math.max(state.familiarity, floor.familiarity),
+    emotionalTrust: Math.max(state.emotionalTrust, floor.emotionalTrust),
+    sexualComfort: Math.max(state.sexualComfort, floor.sexualComfort),
+    threadDesire: Math.max(state.threadDesire, floor.threadDesire),
+    respect: Math.max(state.respect, floor.respect),
+    resentment: partner === "rocky" ? Math.max(state.resentment, 30) : state.resentment,
+    adultLevel:
+      slurpAdultLevelIndex(state.adultLevel) >= slurpAdultLevelIndex(floor.adultLevel as SlurpAdultLevel)
+        ? state.adultLevel
+        : (floor.adultLevel as SlurpAdultLevel),
+    // Not the posture of somebody who is talking to a stranger.
+    posture: (cold as readonly string[]).includes(state.posture)
+      ? partner === "rocky"
+        ? "guarded"
+        : "playful"
+      : state.posture,
+  };
+}

@@ -1,6 +1,7 @@
 import type { SlurpFanType } from "../../../../../shared/src/slp/slp-fan-types.js";
 import type { SlurpModelBudget } from "../../../../../shared/src/slp/slp-model-budget.js";
 import type { SlpSupportDeskSettings } from "../../../../../shared/src/slp/slp-support-desk.js";
+import type { SlpDramaSettings } from "../../../../../shared/src/slp/slp-drama.js";
 import type { SlurpPlatformEvent } from "../../../../../shared/src/slp/slp-platform-events.js";
 import type { SlurpSimulationTuning } from "../../../../../shared/src/slp/slp-tuning.js";
 import type { SlurpPromptPreset } from "./slp-prompt-presets.js";
@@ -182,6 +183,10 @@ export type SlurpSettings = {
   supportDesk: SlpSupportDeskSettings;
   /** Settings › Stir: a couple may grow to four people. */
   polyamory: boolean;
+  /** Settings › Overview › Pause all: no AI calls, no ticks, nothing, until switched back on. */
+  paused: boolean;
+  /** Backstage › Drama: level, the situations and dramas switched on, situation dials. */
+  drama: SlpDramaSettings;
   onboarding: "not_started" | "in_progress" | "completed";
 };
 export type SlurpSettingsUpdate = Partial<SlurpSettings>;

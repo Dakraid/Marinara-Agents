@@ -185,7 +185,9 @@ export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBac
   simulationTuning: world("audience", "simulation tuning", "fine tune audience"),
   modelBudget: world("audience", "AI budget", "model calls"),
   supportDesk: place("stir", "stir", "all-slurp", "Slurp Support", "support desk", "tickets", "trust", "stir"),
+  paused: place("overview", "overview", "all-slurp", "pause all", "pause slurp", "stop", "off", "resume"),
   polyamory: place("stir", "stir", "all-slurp", "polyamory", "throuple", "couples", "love"),
+  drama: place("stir", "stir", "all-slurp", "drama", "packs", "situations", "storylines", "friends"),
   postsPerDayCustom: internal(automation("general", "posts per day", "grows with creators")),
   onboarding: internal(place("creators", "creators", "new-creators", "setup", "onboarding")),
 };

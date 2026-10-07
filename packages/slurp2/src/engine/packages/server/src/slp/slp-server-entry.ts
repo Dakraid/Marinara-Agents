@@ -1,5 +1,8 @@
 import { slpDeepDetailsRoutes } from "./features/feed/slp-deep-details-routes.js";
 import { slpCanonAnchorRoutes } from "./features/feed/slp-canon-anchor-routes.js";
+import type { SceneOriginProvider } from "@marinara-engine/shared";
+import { createSlpSceneOriginProvider } from "./features/messages/scenes/slp-roleplay-scene-origin.js";
+import { setSlpScenesAvailable } from "./base/host/slp-scene-host.js";
 import type { FastifyInstance, FastifyPluginAsync, InjectOptions } from "fastify";
 import { createSlpRouteHost } from "./features/viewer/slp-route-host.js";
 import { createSlpViewerContext } from "./features/viewer/slp-viewer-context.js";
@@ -39,6 +42,7 @@ import { startSlurpFollowUpScheduler } from "./features/messages/slp-follow-up-s
 import { startSlurpPaymentRecoveryScheduler } from "./features/economy/slp-payment-recovery-scheduler-service.js";
 import { startSlurpWorldScheduler } from "./features/world/slp-world-scheduler-service.js";
 import { slpStoryRoutes } from "./features/world/slp-story-routes.js";
+import { slpDramaRoutes } from "./features/world/slp-drama-routes.js";
 import { createSlurpActivationLifecycle } from "./base/locking/slp-activation-lifecycle.js";
 import { createSlurpMessagesStorage } from "./data/slp-storage.js";
 import { migrateSlurpSupportThreads } from "./data/messages/slp-support-migration.js";
@@ -71,6 +75,7 @@ export async function mountSlpRoutes(app: FastifyInstance) {
   await slpMaintenanceRoutes(app, deps);
   await slpProjectsRoutes(app, deps);
   await slpStoryRoutes(app, deps);
+  await slpDramaRoutes(app, deps);
   await slpDiscoveryRoutes(app, deps);
   await slpCreatorsRoutes(app, deps);
   await slpSteeringRoutes(app, deps);
@@ -113,6 +118,8 @@ export async function activate({
       options: { prefix: string },
     ): Promise<() => void | Promise<void>>;
     runInternalRoute?: (options: InjectOptions | string) => ReturnType<FastifyInstance["inject"]>;
+    /** Capability API 1.66 with the `scenes` permission: DM threads become scene origins. */
+    registerSceneOrigin?(provider: SceneOriginProvider): () => void | Promise<void>;
     runtime?: { integrations?: CapabilityIntegrationHost };
   };
 }) {
@@ -172,6 +179,13 @@ export async function activate({
       } catch (error) {
         logger.warn(error, `[slurp2] Could not offer Slurp actions as ${key}; the app works without it`);
       }
+    }
+    // Roleplay scenes from DM threads (docs/SCENES.md). The builder adds `scenes` once Slurp declares
+    // Capability API 1.66; without it the Start a scene action stays hidden and nothing registers.
+    if (api.registerSceneOrigin && installed?.manifest?.permissions?.includes("scenes")) {
+      addTeardown(api.registerSceneOrigin(createSlpSceneOriginProvider(app.db)));
+      setSlpScenesAvailable(true);
+      addTeardown(() => setSlpScenesAvailable(false));
     }
     // Slurp activity in ordinary chats. Each chat opts in, so registering costs nothing until then.
     if (api.registerPromptContext) {

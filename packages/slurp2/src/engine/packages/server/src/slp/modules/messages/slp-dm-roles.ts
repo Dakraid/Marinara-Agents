@@ -10,6 +10,7 @@
  *
  * Pure, so every thread kind is built and read in tests.
  */
+import { slpSceneInviteInstruction } from "./slp-roleplay-scene-rules.js";
 
 /** A name as it appears in the chat. */
 export type SlurpDmParty = {
@@ -19,6 +20,15 @@ export type SlurpDmParty = {
   relationship?: string;
   /** The two are a couple now: the chat is as private and as spicy as both their levels allow. */
   partner?: boolean;
+  /** What the Creator calls them: "boyfriend", "girlfriend" or "partner" (from the page's gender). */
+  partnerWord?: string;
+  /**
+   * The page is the player's own and concealed: she knows who she is with, but the header never
+   * names the page, and there is no collab to agree on in this chat.
+   */
+  concealed?: boolean;
+  /** The one writing is the player: the answer may say what the talk did to the two of them ("us"). */
+  us?: boolean;
 };
 
 /** The message fields the transcript reads. A subset of `SlurpMessage`. */
@@ -58,6 +68,8 @@ export type SlurpDmRoleInput = {
   isRequest?: boolean;
   /** Slurp Support's own thread (`slp-support.ts`): the viewer is Slurp's staff, not a fan. */
   support?: boolean;
+  /** The Creator may pitch a roleplay scene in this reply (docs/SCENES.md). */
+  sceneInvite?: boolean;
 };
 
 const at = (party: SlurpDmParty) => (party.handle ? `${party.name} (@${party.handle})` : party.name);
@@ -133,17 +145,31 @@ export function slurpDmRoleHeader(input: SlurpDmRoleInput & { history: readonly 
       `Also add "desk" to your JSON every time: {"trust": "up" if this talk made you think better of Slurp, "down" if worse, else "same", "offer": when slurpStanding.pendingOffer is set, your answer to that offer: "accept", "counter" (you want something different) or "decline"; otherwise null, "counter": what you would take instead, in plain words, or null, "intel": rarely, and only when you trust Slurp, one thing you let slip about another Creator on Slurp, or null, "rating": when slurpStanding.ticketResolved is set, 1 to 5 for how Slurp handled your ticket; otherwise null}. When slurpStanding.youGoAlong is set you accept the offer, however you feel about it. Your "content" says your answer in your own words; decide the way you really would, from slurpStanding.standing.`,
     );
   } else if (input.writer === "creator") {
+    const page = input.viewerPage;
     lines.push(
       `You are ${at(input.creator)}, a Creator on Slurp. This is your private chat with ${at(input.viewer)}.`,
-      input.viewerPage
-        ? `${viewer} runs a Creator page on Slurp too (${at(input.viewerPage)}). This is one Creator writing to another: talk to ${viewer} as a fellow Creator, not as a customer, though they can still subscribe or buy like anyone.`
-        : unnamed
-          ? "The person writing to you is a fan."
-          : `${viewer} is a fan writing to you.`,
+      // Her partner is neither a fan nor a customer: nothing here is for sale to them (Drama, "your relationship").
+      page?.partner
+        ? `${viewer} is your ${page.partnerWord ?? "partner"}${page.concealed ? "" : ` and runs a Creator page on Slurp too (${at(page)})`}. This chat is just the two of you: talk to ${viewer} the way you talk to the person you are with, never as a fan or a customer. Nothing you send ${viewer} is for sale; what you share here is yours to give.`
+        : page && !page.concealed
+          ? `${viewer} runs a Creator page on Slurp too (${at(page)}). This is one Creator writing to another: talk to ${viewer} as a fellow Creator, not as a customer, though they can still subscribe or buy like anyone.`
+          : unnamed
+            ? "The person writing to you is a fan."
+            : `${viewer} is a fan writing to you.`,
     );
-    if (input.viewerPage?.relationship) lines.push(input.viewerPage.relationship);
+    if (page?.relationship) lines.push(page.relationship);
+    // Her public side: she is a Creator, and the one she is with sees her page like everyone else.
+    if (page?.partner)
+      lines.push(
+        `Your page is public, and ${viewer} sees what you post there like everyone else does. That is part of you two: you can tell ${viewer} what you posted and who is looking, tease them with what your fans get, or ask how it makes them feel.`,
+      );
+    if (page?.us)
+      lines.push(
+        `Also add "us" to your JSON: {"step": "closer" when this talk really brought you two closer (a confession, asking ${viewer} out or saying yes, agreeing to be a couple), "hurt" when you two really fought or ${viewer} hurt you, "madeUp" when you made up after a fight; "why": a few words about it}. Most messages change nothing between you: then "us" is null.`,
+      );
+    if (input.sceneInvite) lines.push(slpSceneInviteInstruction(viewer));
     // Two pages can plan a joint post here; the split is theirs to agree (7b-c).
-    if (input.viewerPage)
+    if (page && !page.concealed)
       lines.push(
         `If you two really agree in this chat to make a post together, add "collab" to your JSON: {"idea": what you make together, "yourShare": the percent of what it earns that is yours, 50 unless you two agreed otherwise, "shoot": true if it is a spicy shoot together you two negotiated here (what you do, your limits, the split), else false}. Otherwise "collab" is null. A collab is work: you announce it, tag each other and split what it earns. Only agree if it fits you; you can say no.`,
       );
@@ -250,85 +276,106 @@ export function slurpDmTranscript(
   const creatorObject = creatorSide ? "you" : input.creator.name;
   const viewerObject = creatorSide ? input.viewer.name : "you";
   // A desk note is the player's own (docs/SUPPORT-DESK.md): no model ever reads it.
-  return history
-    .filter((line) => line.metadata?.deskNote !== true)
-    .map((line) => {
-      const speaker = sideSpeaker(line);
-      const from = speaker ? protect(sideLabel(speaker)) : line.role === "creator" ? creatorLabel : viewerLabel;
-      const toObject = line.role === "creator" ? viewerObject : creatorObject;
-      const words = line.content?.trim() ? protect(line.content.trim()) : undefined;
-      const image = input.image?.(line);
-      const out = (event: string | undefined, text: string | undefined): SlurpDmTranscriptLine => ({
-        from,
-        ...(event ? { event } : {}),
-        ...(text ? { text } : {}),
-        ...(image ? { image } : {}),
-        at: line.createdAt,
-      });
-      // A payment marker ("[unlocked one of your posts for 12 coins]") is stored as a text line from
-      // the payer; it is an event, never the fan's words.
-      const payment = line.metadata?.paymentReaction;
-      if (typeof payment === "string" && payment in PAYMENT_EVENT) {
-        const amount = Number(/(\d+)\s*coins/iu.exec(line.content)?.[1] ?? line.price) || 0;
-        const whose = creatorSide ? "your" : `${input.creator.name}'s`;
-        return out(PAYMENT_EVENT[payment as keyof typeof PAYMENT_EVENT](toObject, whose, amount), undefined);
-      }
-      // An Offer from Slurp Support: what it offers, and the answer once there is one.
-      const offer = line.metadata?.deskOffer as { summary?: unknown; status?: unknown } | undefined;
-      if (offer && typeof offer.summary === "string") {
-        const answered = typeof offer.status === "string" && offer.status !== "pending" ? ` (${offer.status})` : "";
-        return out(`made an offer: ${protect(offer.summary)}${answered}`, words);
-      }
-      switch (line.kind) {
-        case "tip":
-          return out(`tipped ${toObject} ${line.price} coins`, words);
-        case "ppv":
-          return out(
-            `sent ${toObject} locked content for ${line.price} coins (${line.unlockedAt ? "unlocked" : "still locked"})`,
-            undefined,
-          );
-        case "broadcast":
-          return out(
-            `sent this to all ${creatorSide ? "your" : `${input.creator.name}'s`} subscribers at once, not only to ${viewerObject}`,
-            words,
-          );
-        case "post_preview": {
-          const title = protect(String(line.metadata?.title ?? line.content));
-          const locked = line.metadata?.access === "locked";
-          const owned = locked && input.postUnlocked?.(line.metadata?.postId);
+  return (
+    history
+      // A scene that ended without a recap left only a note for the player (docs/SCENES.md), and a
+      // recap set to "Keep out" promises she will not remember it.
+      .filter((line) => {
+        const scene = line.metadata?.scene as { kind?: unknown; reach?: unknown } | undefined;
+        return (
+          line.metadata?.deskNote !== true &&
+          scene?.kind !== "ended" &&
+          !(scene?.kind === "recap" && scene.reach === "none")
+        );
+      })
+      .map((line) => {
+        const speaker = sideSpeaker(line);
+        const from = speaker ? protect(sideLabel(speaker)) : line.role === "creator" ? creatorLabel : viewerLabel;
+        const toObject = line.role === "creator" ? viewerObject : creatorObject;
+        const words = line.content?.trim() ? protect(line.content.trim()) : undefined;
+        const image = input.image?.(line);
+        const out = (event: string | undefined, text: string | undefined): SlurpDmTranscriptLine => ({
+          from,
+          ...(event ? { event } : {}),
+          ...(text ? { text } : {}),
+          ...(image ? { image } : {}),
+          at: line.createdAt,
+        });
+        // A payment marker ("[unlocked one of your posts for 12 coins]") is stored as a text line from
+        // the payer; it is an event, never the fan's words.
+        const payment = line.metadata?.paymentReaction;
+        if (typeof payment === "string" && payment in PAYMENT_EVENT) {
+          const amount = Number(/(\d+)\s*coins/iu.exec(line.content)?.[1] ?? line.price) || 0;
           const whose = creatorSide ? "your" : `${input.creator.name}'s`;
-          return out(
-            `shared ${whose} post "${title}"${locked ? (owned ? `, a locked post ${viewerObject} already unlocked` : ", a locked post") : ""}`,
-            undefined,
-          );
+          return out(PAYMENT_EVENT[payment as keyof typeof PAYMENT_EVENT](toObject, whose, amount), undefined);
         }
-        case "commission_brief":
-          return out(`asked ${toObject} for a commission`, words);
-        case "commission_quote":
-          return out(
-            /stands/iu.test(line.content)
-              ? `kept the commission price at ${line.price} coins`
-              : `quoted ${line.price} coins for the commission`,
-            undefined,
-          );
-        case "commission_delivery":
-          return out(`delivered the finished commission to ${toObject}`, words);
-        case "system": {
-          const notice = protect(line.content.trim());
-          // "Accepted the quote…", "Offered 30 coins…": the sender did it.
-          if (/^(accepted|offered)\b/iu.test(notice)) return out(lowerFirst(notice), undefined);
-          // Everything else is Slurp's own notice about the thread, named in the chat's own terms.
+        // A roleplay scene (docs/SCENES.md): her invite is hers; the recap is what the two of them did.
+        const scene = line.metadata?.scene as { kind?: unknown; pitch?: unknown; summary?: unknown } | undefined;
+        if (scene?.kind === "invite" && typeof scene.pitch === "string")
+          return out(`invited ${toObject} into a scene together`, protect(scene.pitch));
+        if (scene?.kind === "recap" && typeof scene.summary === "string")
           return {
             from: "Slurp",
-            event: notice
-              .replace(/\bThe fan\b/gu, creatorSide ? input.viewer.name : "You")
-              .replace(/\bThe Creator\b/gu, creatorSide ? "You" : input.creator.name),
-            ...(image ? { image } : {}),
+            event: `${creatorSide ? `You and ${input.viewer.name}` : `You and ${input.creator.name}`} spent time together in person. What happened: ${protect(scene.summary)}`,
             at: line.createdAt,
           };
+        // An Offer from Slurp Support: what it offers, and the answer once there is one.
+        const offer = line.metadata?.deskOffer as { summary?: unknown; status?: unknown } | undefined;
+        if (offer && typeof offer.summary === "string") {
+          const answered = typeof offer.status === "string" && offer.status !== "pending" ? ` (${offer.status})` : "";
+          return out(`made an offer: ${protect(offer.summary)}${answered}`, words);
         }
-        default:
-          return out(undefined, words ?? "");
-      }
-    });
+        switch (line.kind) {
+          case "tip":
+            return out(`tipped ${toObject} ${line.price} coins`, words);
+          case "ppv":
+            return out(
+              `sent ${toObject} locked content for ${line.price} coins (${line.unlockedAt ? "unlocked" : "still locked"})`,
+              undefined,
+            );
+          case "broadcast":
+            return out(
+              `sent this to all ${creatorSide ? "your" : `${input.creator.name}'s`} subscribers at once, not only to ${viewerObject}`,
+              words,
+            );
+          case "post_preview": {
+            const title = protect(String(line.metadata?.title ?? line.content));
+            const locked = line.metadata?.access === "locked";
+            const owned = locked && input.postUnlocked?.(line.metadata?.postId);
+            const whose = creatorSide ? "your" : `${input.creator.name}'s`;
+            return out(
+              `shared ${whose} post "${title}"${locked ? (owned ? `, a locked post ${viewerObject} already unlocked` : ", a locked post") : ""}`,
+              undefined,
+            );
+          }
+          case "commission_brief":
+            return out(`asked ${toObject} for a commission`, words);
+          case "commission_quote":
+            return out(
+              /stands/iu.test(line.content)
+                ? `kept the commission price at ${line.price} coins`
+                : `quoted ${line.price} coins for the commission`,
+              undefined,
+            );
+          case "commission_delivery":
+            return out(`delivered the finished commission to ${toObject}`, words);
+          case "system": {
+            const notice = protect(line.content.trim());
+            // "Accepted the quote…", "Offered 30 coins…": the sender did it.
+            if (/^(accepted|offered)\b/iu.test(notice)) return out(lowerFirst(notice), undefined);
+            // Everything else is Slurp's own notice about the thread, named in the chat's own terms.
+            return {
+              from: "Slurp",
+              event: notice
+                .replace(/\bThe fan\b/gu, creatorSide ? input.viewer.name : "You")
+                .replace(/\bThe Creator\b/gu, creatorSide ? "You" : input.creator.name),
+              ...(image ? { image } : {}),
+              at: line.createdAt,
+            };
+          }
+          default:
+            return out(undefined, words ?? "");
+        }
+      })
+  );
 }

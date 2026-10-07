@@ -26,6 +26,7 @@ import { SLURP_PLATFORM_EVENTS_MAX } from "../../../../../shared/src/slp/slp-pla
 import type { SlpActionPreview } from "../../../../../shared/src/slp/slp-stir.js";
 import type { SlpAssistOutcome } from "./slp-assist-service.js";
 import { isSlpDeskLever, previewSlpDeskLever, type SlpDeskLever } from "./slp-desk-levers.js";
+import { isSlurpDramaLever, previewSlurpDramaLever, type SlurpDramaLever } from "../world/slp-world-contract.js";
 
 type Account = {
   id: string;
@@ -65,12 +66,14 @@ export async function previewSlpAction(
     return { ok: true, value: { ...base, ...(await previewSlurpTieLever(db, name, input, at)) } };
   if (isSlpDeskLever(name))
     return { ok: true, value: { ...base, ...(await previewSlpDeskLever(db, name, input, at)) } };
+  if (isSlurpDramaLever(name))
+    return { ok: true, value: { ...base, ...(await previewSlurpDramaLever(db, name, input, at)) } };
   return { ok: true, value: { ...base, ...(await previewOther(db, name, input, at)) } };
 }
 
 async function previewOther(
   db: DB,
-  name: Exclude<SlpActionName, Parameters<typeof previewSlurpTieLever>[1] | SlpDeskLever>,
+  name: Exclude<SlpActionName, Parameters<typeof previewSlurpTieLever>[1] | SlpDeskLever | SlurpDramaLever>,
   input: Record<string, unknown>,
   at: Date,
 ): Promise<Partial<SlpActionPreview>> {
@@ -91,6 +94,8 @@ async function previewOther(
         detail: { field: String(input.field) },
         summary: `Writes ${String(input.field)} text for the player to use.`,
       };
+    case "draft-post":
+      return { who, summary: `Drafts a post for ${nameOf} for the player to review; nothing is posted.` };
     case "draw-picture":
     case "use-picture":
     case "undo-picture":
@@ -143,8 +148,10 @@ async function previewOther(
       return {
         who,
         detail: { idea: post.idea ?? null, story: post.story },
-        error: ownPage,
-        summary: `${nameOf} writes and posts their next ${post.story ? "Story" : "post"} now.`,
+        // Review for everyone (0.3.14): Stir never posts this; the card opens the page's composer,
+        // which drafts the idea for the player to check. Professor Mari still runs it directly.
+        error: "draftInComposer",
+        summary: `${nameOf} drafts their next ${post.story ? "Story" : "post"} for the player to review.`,
       };
     }
     case "set-spice": {

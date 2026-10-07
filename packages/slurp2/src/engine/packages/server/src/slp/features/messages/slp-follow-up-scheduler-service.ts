@@ -21,6 +21,7 @@ import { isCreatorNightQuietTime } from "../feed/slp-feed-contract.js";
 import { trySlpOperation } from "../../base/locking/slp-operation-lock.js";
 import { tryCreatorAccountOperation } from "../../base/locking/slp-account-operation-lock.js";
 import { incrementFollowUpCount } from "../../modules/messages/slp-thread-notes.js";
+import { slurpCreatorInScene } from "./scenes/slp-roleplay-scene-lock.js";
 
 const INITIAL_DELAY_MS = 60_000; // Start after 1 minute
 const POLL_MS = 120_000; // Check every 2 minutes
@@ -35,6 +36,7 @@ export function startSlurpFollowUpScheduler(app: FastifyInstance, registerStop?:
   let stopped = false;
   let active: Promise<void> | null = null;
   let consecutiveFailures = 0;
+  let warnedNoConnection = false;
 
   const schedule = (delayMs: number) => {
     if (stopped) return;
@@ -48,16 +50,30 @@ export function startSlurpFollowUpScheduler(app: FastifyInstance, registerStop?:
         const messages = createSlurpMessagesStorage(app.db);
         const slurp = createSlurpStorage(app.db);
         const settings = await slurp.getSettings();
+        // "Pause all": no follow-ups while Slurp is paused.
+        if (settings.paused) return;
+        const dueThreads = await messages.getThreadsWithDueFollowUps();
+        // Nothing due and no earlier warning: skip the connection lookup.
+        if (!dueThreads.length && !warnedNoConnection) return;
         const connection = await resolveSlurpTextConnection(
           createConnectionsStorage(app.db),
           settings.modelBudget.connectionId ?? settings.generationConnectionId,
         );
-        if (!connection) {
-          logger.warn("[slurp-follow-up] No text connection configured, skipping follow-up generation");
+        // Nothing due: only watch for recovery so the next outage warns again.
+        if (!dueThreads.length) {
+          if (connection) warnedNoConnection = false;
           return;
         }
+        if (!connection) {
+          // Warn once per outage, not on every poll.
+          if (!warnedNoConnection) {
+            warnedNoConnection = true;
+            logger.warn("[slurp-follow-up] No text connection configured, skipping follow-up generation");
+          }
+          return;
+        }
+        warnedNoConnection = false;
 
-        const dueThreads = await messages.getThreadsWithDueFollowUps();
         let failed = false;
 
         for (const threadRow of dueThreads) {
@@ -104,6 +120,15 @@ export function startSlurpFollowUpScheduler(app: FastifyInstance, registerStop?:
             // A scheduled follow-up is still the Creator speaking, so it obeys the same silences the
             // reply path obeys: a cool-off she started, night quiet, and her own offline schedule.
             const coolingOff = Boolean(thread.coolUntil && thread.coolUntil > new Date().toISOString());
+            // In a roleplay scene: the follow-up waits a quarter hour at a time until it ends.
+            if (await slurpCreatorInScene(app.db, creator.id)) {
+              await messages.postponeScheduledFollowUp(
+                threadRow.id,
+                followUp.id,
+                new Date(Date.now() + 15 * 60_000).toISOString(),
+              );
+              continue;
+            }
             const source = await slurp.resolveAccountSource(creator);
             const latestPost = await slurp.getNoodlerLatestPublishedPost(creator.id);
             const details = await messages.getDetailsOverrides(thread.id);

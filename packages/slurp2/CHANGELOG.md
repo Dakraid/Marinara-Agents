@@ -1,5 +1,57 @@
 # Slurp release notes
 
+## 0.3.17 — 2026-10-06
+
+Spice in one place, user reports, speed.
+
+- Spice: one level (Clean, Flirty, Suggestive, Explicit) for text and pictures, set in Settings › Spice, per Creator in Content rules or Stir. New Language: soft, frank or dirty. Writing keeps only the house style; old presets move over.
+- Romance per Creator (Collaborations): off, or only with chosen Creators.
+- Collabs: the partner's look and identity reach the post and picture; agreed collabs get Post it now and Drop it.
+- Stir: End it works; leaving a Support chat returns to Desk. Send a photo: the whole button picks a file.
+- Faster: chat typing, profiles, notifications, feed, inbox; less polling; no blur on chat bubbles.
+- Fixes: a profile no longer marks its chat read; bulk add no longer hangs; scenes keep Keep out recaps private and hold tips and drama questions; failed pictures retry.
+
+## 0.3.16 — 2026-10-05
+
+- The shared guide explicitly offers image generation with an on/off toggle and direct image upload; uploading switches generation off so drafting preserves the photo.
+- Stir on your persona page and Write a post in an NPC Creator’s Stir use the same simple one-idea draft, with caption and picture preview together. Edit opens the full composer without losing your draft.
+
+## 0.3.15 — 2026-10-05
+
+- Start real Engine roleplay scenes from character-backed Creator DMs, or accept a Creator invite. Choose availability and how the recap can reach Slurp.
+- Lock the DM and pause the Creator while a locking scene runs; return the recap to the thread on conclude and recover missed releases after discard, convert, delete, or restart.
+- Draft a post from one idea for review in the same composer on every page; Stir hands its draft to the composer.
+- Requires Engine Capability API 1.66 for native scene origins.
+
+## 0.3.12 — 2026-10-01
+
+- Fix: the follow-up scheduler no longer logs "No text connection configured" on every poll. It checks for due follow-ups first, and warns once per outage only when work is waiting.
+
+## 0.3.11 — 2026-10-01
+
+Your relationship with a Creator, and a story-first Stir.
+
+- Your chats move your relationship: crush, dating, official, fights, making up. She calls you her boyfriend or girlfriend, sends you free pictures, texts about dates and anniversaries, and can keep it secret.
+- Details › You two shows the stage, the dates that matter and the moves, with Undo. Notifications and the main chat know about it.
+- Stir: Stir | Desk, your relationship on top, Now showing, Start a story with drama packs you can lead and end. Each persona sees only its own pages.
+- Fans leave notes on your page instead of chats. Settings › Overview › Pause all stops all of Slurp.
+- Adding many Creators at once: taken handles get the next free one instead of failing, the sign-up runs in the background with progress (close Slurp if you like), and first posts work for batches over 24.
+- Fixes: Backstage menu scrolls on short screens, reunions with you are official, a few couple and label bugs.
+
+## 0.3.10 — 2026-09-30
+
+- If Slurp cannot load because this device has no Admin Secret, it now explains how to set one instead of asking you to check your connection.
+
+## 0.3.8 — 2026-09-30
+
+Drama, friends and a People map. Design: `docs/DRAMA.md`.
+
+- Drama (off until switched on in Settings › Stir › Drama): situations and dramas from Story Packs, cast from the Creators on Slurp now, with choices you answer in a DM. Stir › Drama shows what runs; start or end one.
+- Starter set: Your partner is a Creator, Roommates, Rivals, Top fan, Friends to lovers, Love triangle, Getting bolder, Open relationship, The secret, You are the other one, Spoiled, She spoils you.
+- You as a partner: a couple with your own page starts together and only you or a drama changes it; she texts you like a partner a few times a day, and your chat starts close.
+- Bonds: friends, roommates, coworkers and exes, from cards and from the world; they show up in posts and on Pages.
+- Stir › People: a living map of everyone's ties and why each one exists.
+
 ## 0.3.7 — 2026-09-30
 
 Two-layer economy, faster rewrites, partners in pictures.

@@ -33,7 +33,7 @@ export function SlpStirBrandPick({
   const shown = rows.filter((row) => all || row.fits || row.product.id === value);
   const hidden = rows.length - rows.filter((row) => row.fits).length;
   return (
-    <fieldset className="space-y-2" data-slp-stir-brands>
+    <fieldset className="min-w-0 space-y-2" data-slp-stir-brands>
       <legend className={cn(SLP_TYPE.meta, "font-semibold")}>{t("ui.slurp.stir.form.product")}</legend>
       {brands.isLoading ? (
         <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>{t("ui.slurp.stir.looking")}</p>

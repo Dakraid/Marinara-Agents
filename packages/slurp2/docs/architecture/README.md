@@ -14,7 +14,8 @@ packages/shared/src/slp/    pure code imported by both client and server
 `shared/src/slp/` holds pure rules that both sides genuinely need: the autopurge date calculation,
 plus the messaging Details edit schema, tone, tuning, model-budget, modifier, platform-event, fan-type, and population rules the
 settings surface reads and the server enforces, the Creator Page schema (`slp-creator-page.ts`, see `docs/CREATOR-PAGES.md`),
-and the Support desk record and its rules (`slp-support-desk.ts`, see `docs/SUPPORT-DESK.md`)
+the Support desk record and its rules (`slp-support-desk.ts`, see `docs/SUPPORT-DESK.md`), and the
+drama pack format and settings (`slp-drama.ts`, see `docs/DRAMA.md`)
 that the server stores and repairs and the client renders and edits. It imports neither client nor server code, depends
 only on `zod` and `@marinara-engine/shared`, and holds no I/O, no React, and no Fastify. Client and
 server may import it. A rule belongs here only when both sides already need it; a rule one side
@@ -93,7 +94,7 @@ Client and server share one feature vocabulary: `creators`, `feed`, `messages`, 
 `audience`, `projects`, `economy`, `notifications`, `world`, `ads`, `onboarding`, `maintenance`,
 `assist`, plus client-only `backstage` and server-only `viewer`, `media`, and `settings`. Submodules that are deliberate expansion seams get a folder:
 `creators/improvement`, `feed/reserve`, `messages/commissions`, `messages/desk` (the Slurp Support desk,
-`docs/SUPPORT-DESK.md`), `world/events`.
+`docs/SUPPORT-DESK.md`), `messages/scenes` (roleplay scenes from a DM thread, `docs/SCENES.md`), `world/events`.
 
 These are not features: Stories (a `modules/story/` presentation composed by Feed), tags
 (Discovery), wallet (Economy), goals and arcs (Projects).

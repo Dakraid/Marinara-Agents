@@ -365,6 +365,19 @@ const slpCreatorCollabDmSchema = {
   required: [...slpCreatorDmSchema.required, "collab"],
 } as const;
 
+/** A reply to the player may say what the talk did to the two of them ("us", `slp-creator-couples.ts`). */
+const slpUsProperty = {
+  anyOf: [
+    {
+      type: "object",
+      properties: { step: { type: "string", enum: ["closer", "hurt", "madeUp"] }, why: nullableString },
+      required: ["step", "why"],
+      additionalProperties: false,
+    },
+    { type: "null" },
+  ],
+} as const;
+
 const slpCreatorFanActivitySchema = {
   type: "object",
   properties: {
@@ -378,6 +391,24 @@ const slpCreatorFanActivitySchema = {
   required: ["actorHandle", "creatorAccountId", "targetPostId", "type", "content", "parentInteractionId"],
   additionalProperties: false,
 } as const;
+
+/** A DM schema, with the "us" field added when the reply goes to the player. */
+function withUs<T extends { properties: object; required: readonly string[] }>(schema: T, us: boolean) {
+  return us
+    ? { ...schema, properties: { ...schema.properties, us: slpUsProperty }, required: [...schema.required, "us"] }
+    : schema;
+}
+
+/** A DM schema, with the "sceneInvite" field added when the Creator may pitch a scene (docs/SCENES.md). */
+function withSceneInvite<T extends { properties: object; required: readonly string[] }>(schema: T, invite: boolean) {
+  return invite
+    ? {
+        ...schema,
+        properties: { ...schema.properties, sceneInvite: nullableString },
+        required: [...schema.required, "sceneInvite"],
+      }
+    : schema;
+}
 
 export function slpResponseFormat(
   model: string,
@@ -399,6 +430,10 @@ export function slpResponseFormat(
     staff?: boolean;
     /** A reply from one Creator to another may agree on a joint post ("collab", `slp-creator-ties.ts`). */
     collab?: boolean;
+    /** A reply to the player may say what the talk did to the two of them ("us"). */
+    us?: boolean;
+    /** A reply to the player may pitch a roleplay scene ("sceneInvite"). */
+    sceneInvite?: boolean;
   } = {},
 ): { type: string; [key: string]: unknown } {
   if (!isOpenAIGpt56Model(model)) return { type: "json_object" };
@@ -414,9 +449,10 @@ export function slpResponseFormat(
             : kind === "noodler_dm"
               ? options.staff
                 ? slpCreatorStaffDmSchema
-                : options.collab
-                  ? slpCreatorCollabDmSchema
-                  : slpCreatorDmSchema
+                : withSceneInvite(
+                    withUs(options.collab ? slpCreatorCollabDmSchema : slpCreatorDmSchema, options.us === true),
+                    options.sceneInvite === true,
+                  )
               : kind === "noodler_fan_activity"
                 ? {
                     type: "object",

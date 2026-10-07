@@ -133,6 +133,7 @@ export function diagnosticsRequireExtractionReview(diagnostics: readonly LtmExtr
     (diagnostic) =>
       diagnostic.code === "candidate_reconciliation_ambiguous" ||
       diagnostic.code === "candidate_reconciliation_incomplete" ||
+      diagnostic.code === "ambiguous_subject_identity" ||
       diagnostic.code === "event_shaped_character_fact",
   );
 }
@@ -1073,13 +1074,14 @@ async function preflightExtractionPromptContext({
       provider: extractionOptions.languageModel.name,
       model: extractionOptions.languageModel.model,
       counts: {
-        maxContext: providerMaxContext,
+        ...(providerMaxContext != null ? { maxContext: providerMaxContext } : {}),
         requestedOutputTokens: requestedMaxTokens ?? 0,
         providerCappedOutputTokens: providerCappedMaxTokens ?? 0,
         fittedOutputTokens,
         minimumOutputTokens: MIN_LTM_EXTRACTION_OUTPUT_TOKENS,
-        estimatedPromptTokens: fit?.estimatedTokensBefore ?? 0,
-        fittedPromptTokens: fit?.estimatedTokensAfter ?? 0,
+        ...(fit
+          ? { estimatedPromptTokens: fit.estimatedTokensBefore, fittedPromptTokens: fit.estimatedTokensAfter }
+          : {}),
       },
       details: { reason: "output_budget_below_viability_floor" },
     });
@@ -1314,7 +1316,7 @@ export async function runLongTermMemoryEvidenceUnitExtraction(
     counts: {
       messages: messages.length,
       promptChars,
-      promptTokens: estimateLtmPromptTokens(messages.map((message) => message.content).join("\n")),
+      estimatedPromptTokens: estimateLtmPromptTokens(messages.map((message) => message.content).join("\n")),
       sourceChars: options.sourceText.length,
     },
     details: {
@@ -1342,29 +1344,31 @@ export async function runLongTermMemoryEvidenceUnitExtraction(
     });
 
     const content = result.content?.trim() ?? "";
+    const incomplete = ["length", "max_tokens", "token_limit"].includes(result.finishReason.toLowerCase());
     await recordLtmDebugEvent({
       operationId: options.operationId,
       root: options.root,
       phase: "llm",
       action: "evidence_unit_response",
-      status: content ? "ok" : "error",
+      status: content ? (incomplete ? "warning" : "ok") : "error",
       sourceNoteId: options.sourceNote.id,
       provider: options.languageModel.name,
       model: options.languageModel.model,
       durationMs: Date.now() - started,
-      counts: {
-        responseChars: content.length,
-        promptTokens: result.usage?.promptTokens ?? 0,
-        completionTokens: result.usage?.completionTokens ?? 0,
-        completionReasoningTokens: result.usage?.completionReasoningTokens ?? 0,
-        totalTokens: result.usage?.totalTokens ?? 0,
-      },
+      counts: Object.fromEntries(
+        Object.entries({
+          responseChars: content.length,
+          promptTokens: result.usage?.promptTokens,
+          completionTokens: result.usage?.completionTokens,
+          completionReasoningTokens: result.usage?.completionReasoningTokens,
+          totalTokens: result.usage?.totalTokens,
+        }).filter(([, count]) => count != null),
+      ),
       details: {
         finishReason: result.finishReason,
         responseSnippet: content.slice(0, 1_500),
       },
     });
-    const incomplete = ["length", "max_tokens", "token_limit"].includes(result.finishReason.toLowerCase());
     if (!content) {
       throw new LtmServiceError(
         "empty_output: extraction model returned no content; the source remains retryable",
@@ -1475,6 +1479,7 @@ export function compileEvidenceUnitExtraction(options: {
   totalCandidates?: number;
   providerCandidates?: number;
   parserRejectionCount?: number;
+  userSkippedUnits?: number;
   normalizedAdditions?: number;
   parserDroppedCandidates?: LtmExtractionDroppedCandidate[];
   preValidationDroppedCandidates?: LtmExtractionDroppedCandidate[];
@@ -1515,7 +1520,12 @@ export function compileEvidenceUnitExtraction(options: {
   });
   const keptUnits = validated.keptUnits;
   const dedupResult = deduplicateUnits(keptUnits, options.existingNotes, options.scope);
-  const closed = closeSourceEventGraph(dedupResult.deduplicated, options.sourceNote, options.existingNotes);
+  const roleplayOnly = dropLocalCharactersOutsideRoleplay(
+    dedupResult.deduplicated,
+    options.modes,
+    options.existingNotes,
+  );
+  const closed = closeSourceEventGraph(roleplayOnly.units, options.sourceNote, options.existingNotes);
   const parserDroppedCandidates = options.parserDroppedCandidates ?? [];
   const parserRejectionCount = options.parserRejectionCount ?? parserDroppedCandidates.length;
   const preValidationDroppedCandidates = options.preValidationDroppedCandidates ?? [];
@@ -1547,6 +1557,7 @@ export function compileEvidenceUnitExtraction(options: {
     ...parserDroppedCandidates,
     ...preValidationDroppedCandidates,
     ...validated.droppedCandidates,
+    ...roleplayOnly.droppedCandidates,
     ...closed.droppedCandidates,
     ...duplicateAliasClosure.droppedCandidates,
   ];
@@ -1555,6 +1566,7 @@ export function compileEvidenceUnitExtraction(options: {
     parserRejectionCount +
     preValidationDroppedCandidates.length +
     validated.droppedCandidates.length +
+    roleplayOnly.droppedCandidates.length +
     closed.droppedCandidates.length +
     duplicateAliasClosure.droppedCandidates.length;
   const duplicateTitles = duplicateAliasClosure.units.length
@@ -1575,8 +1587,24 @@ export function compileEvidenceUnitExtraction(options: {
   const diagnostics = [
     ...validated.diagnostics,
     ...dedupResult.diagnostics.filter((diagnostic) => !rejectedAliasIds.has(diagnostic.mutationId)),
+    ...roleplayOnly.diagnostics,
     ...closed.diagnostics,
     ...duplicateAliasClosure.diagnostics,
+    // The compiler narrows a new local character note to Roleplay when other modes were also selected.
+    ...compiled.mutations.flatMap((mutation): LtmExtractionDiagnostic[] =>
+      mutation.kind === "create_note" && mutation.note.modes.length < options.modes.length
+        ? [
+            {
+              severity: "warning",
+              code: "local_character_restricted_to_roleplay",
+              mutationId: mutation.id,
+              noteId: mutation.note.id,
+              message:
+                "Local character memories are available only in Roleplay mode, so this memory was restricted to Roleplay.",
+            },
+          ]
+        : [],
+    ),
   ];
   if (options.unitResponse.incomplete) {
     diagnostics.push({
@@ -1592,17 +1620,22 @@ export function compileEvidenceUnitExtraction(options: {
     providerCandidates:
       options.providerCandidates ??
       options.totalCandidates ??
-      options.unitResponse.units.length + parserDroppedCandidates.length + preValidationDroppedCandidates.length,
+      options.unitResponse.units.length +
+        parserDroppedCandidates.length +
+        preValidationDroppedCandidates.length +
+        (options.userSkippedUnits ?? 0),
     normalizedAdditions: (options.normalizedAdditions ?? 0) + normalized.addedUnits,
     parserRejections: parserRejectionCount,
     validationRejections:
       preValidationDroppedCandidates.length +
       validated.droppedCandidates.length +
+      roleplayOnly.droppedCandidates.length +
       closed.droppedCandidates.length +
       duplicateAliasClosure.droppedCandidates.length,
     deduplications:
       validated.keptUnits.length - dedupResult.deduplicated.length - duplicateAliasClosure.droppedCandidates.length,
     keptUnits: closed.units.length,
+    ...(options.userSkippedUnits ? { userSkips: options.userSkippedUnits } : {}),
   });
   const totalCandidates = accounting.providerCandidates + accounting.normalizedAdditions;
   const outcome = summarizeExtractionOutcome({
@@ -1622,6 +1655,37 @@ export function compileEvidenceUnitExtraction(options: {
     outcome,
     accounting,
   };
+}
+
+// A new local character note must be Roleplay-only, so without Roleplay it cannot be created at all.
+function dropLocalCharactersOutsideRoleplay(units: LtmEvidenceUnit[], modes: LtmMode[], existingNotes: LtmNote[]) {
+  const droppedCandidates: LtmExtractionDroppedCandidate[] = [];
+  const diagnostics: LtmExtractionDiagnostic[] = [];
+  if (modes.includes("roleplay")) return { units, droppedCandidates, diagnostics };
+  const existingIds = new Set(existingNotes.map((note) => note.id));
+  const message = "Local character memories are available only in Roleplay mode; select Roleplay to keep this memory.";
+  const kept = units.filter((unit, index) => {
+    const noteId = noteIdForEvidenceUnit(unit);
+    if (existingIds.has(noteId) || !unit.subjects?.some(isLocalCharacterSubject)) return true;
+    droppedCandidates.push({
+      index,
+      reason: "target_note_outside_scope",
+      validatorCode: "local_character_requires_roleplay",
+      message,
+      snippet: safeSnippet(unit.text),
+      recoveryCandidate: unit,
+    });
+    diagnostics.push({
+      severity: "error",
+      code: "local_character_requires_roleplay",
+      candidateIndex: index,
+      mutationId: unit.id,
+      noteId,
+      message,
+    });
+    return false;
+  });
+  return { units: kept, droppedCandidates, diagnostics };
 }
 
 function closeSourceEventGraph(

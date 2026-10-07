@@ -9,13 +9,11 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  readSlurpCouples,
   newSlurpCouple,
   slurpAdvanceCouples,
   slurpBreakUp,
   slurpCloseCouplePage,
   slurpCoupleActive,
-  slurpCoupleFit,
   slurpCoupleFor,
   slurpCoupleOfPage,
   slurpCouplePageOpenable,
@@ -28,6 +26,8 @@ import {
   type SlurpCouple,
   type SlurpCouplesInput,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples.ts";
+import { readSlurpCouples } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-read.ts";
+import { slurpCoupleFit } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-fit.ts";
 // Moved with polyamory (0.3.5): the couple-page helpers live with the group rules.
 import {
   slurpCoupleBuzz,
@@ -121,6 +121,19 @@ const input = (at: number, over: Partial<SlurpCouplesInput> = {}): SlurpCouplesI
   assert.equal(slurpCoupleFit(creator("x", "Asexual and proud, loves climbing.", ["fitness"]), mira).misfit, "notInto");
   assert.equal(slurpCoupleFit(tess, kai).misfit, "orientation", "a lesbian card is not paired with a man");
   assert.ok(slurpCoupleFit(tess, rue).fits, "a lesbian card with a woman fits");
+  // 0.3.17: the player's romance setting, per Creator: off, or only with some Creators.
+  assert.ok(slurpCoupleFit(mira, kai).fits, "no setting changes nothing");
+  assert.deepEqual(
+    slurpCoupleFit({ ...mira, romance: { off: true, only: [] } }, kai),
+    { fits: false, misfit: "romance", chemistry: 0, cards: false },
+    "romance off keeps a Creator out of every couple",
+  );
+  assert.equal(slurpCoupleFit(kai, { ...mira, romance: { off: false, only: ["someone-else"] } }).misfit, "romance");
+  assert.ok(slurpCoupleFit({ ...mira, romance: { off: false, only: [kai.id] } }, kai).fits, "the picked one fits");
+  assert.ok(
+    slurpCoupleFit({ ...mira, romance: { off: true, only: [] } }, { ...kai, automatic: false }).fits,
+    "a crush on the player's own page is not held to it",
+  );
   assert.equal(
     slurpCoupleFit(tess, { ...rue, gender: null }).misfit,
     "orientation",
@@ -535,7 +548,7 @@ function run(days: number, over: Partial<SlurpCouplesInput> = {}, start: SlurpCo
   const flavourSource = read("server/src/slp/data/creators/slp-flavour-source.ts");
   assert.match(
     flavourSource,
-    /input\.chat\?\.with === "staff" \? "" : await readSlurpRelationshipLine/u,
+    /input\.chat\?\.with === "staff" \|\| input\.chat\?\.partnerId\s*\?\s*""\s*:\s*await readSlurpRelationshipLine/u,
     "Support gets no love life",
   );
   assert.match(

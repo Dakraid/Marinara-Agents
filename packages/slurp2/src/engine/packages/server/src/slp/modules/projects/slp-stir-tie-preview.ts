@@ -17,7 +17,6 @@ import {
 } from "./slp-creator-ties.js";
 import {
   slurpCoupleActive,
-  slurpCoupleMisfitOf,
   slurpCoupleOther,
   slurpCouplePageOpenable,
   slurpSetUpCouple,
@@ -25,9 +24,11 @@ import {
   type SlurpCouple,
   type SlurpCoupleForced,
 } from "./slp-creator-couples.js";
+import { slurpCoupleMisfitOf } from "./slp-couple-fit.js";
 import type { SlpActionParsed } from "../../../../../shared/src/slp/slp-actions.js";
 import { slurpAddToCouple, slurpCoupleMembers, slurpNameList } from "./slp-couple-group.js";
 import type { SlpActionPreview, SlpStirNote } from "../../../../../shared/src/slp/slp-stir.js";
+import { slurpEndBond, slurpSetBond, type SlurpBond } from "./slp-creator-bonds.js";
 
 export const SLURP_TIE_LEVERS = [
   "suggest-collab",
@@ -38,6 +39,9 @@ export const SLURP_TIE_LEVERS = [
   "steer-couple",
   "couple-page",
   "add-to-couple",
+  // 0.3.11: bonds are Stir plays too (preview, the ledger, Undo), not a side route.
+  "set-bond",
+  "end-bond",
 ] as const;
 export type SlurpTieLever = (typeof SLURP_TIE_LEVERS)[number];
 export const isSlurpTieLever = (name: string): name is SlurpTieLever =>
@@ -51,6 +55,7 @@ export type SlurpStirTieWorld = {
   avatars: ReadonlyMap<string, string | null>;
   ties: SlurpCreatorTies;
   couples: readonly SlurpCouple[];
+  bonds?: readonly SlurpBond[];
 };
 
 /** A forced couple's card note, in the words the couple lines use (I): taken → complicated, and so on. */
@@ -59,6 +64,7 @@ const FORCED_NOTE: Record<SlurpCoupleForced["misfit"], SlpStirNote["kind"]> = {
   notInto: "reluctant",
   noDating: "awkward",
   orientation: "awkward",
+  romance: "awkward",
 };
 
 export type SlurpTiePreview = Pick<SlpActionPreview, "who" | "detail" | "when" | "notes" | "error" | "summary"> &
@@ -213,6 +219,30 @@ export function slurpPreviewTieLever(
             : "",
       });
     }
+    case "set-bond": {
+      const { aId, bId, kind, level } = input as SlpActionParsed<"set-bond">;
+      const a = find(aId);
+      const b = find(bId);
+      if (!a || !b) return result({ error: "notFound", summary: "One of these Creators does not exist." });
+      const next = slurpSetBond(world.bonds ?? [], { aId, bId, kind, level, couples }, { at, id: "preview" });
+      return result({
+        who: people(world, [aId, bId]),
+        detail: { kind, level: kind === "friend" ? (level ?? 1) : null },
+        error: typeof next === "string" ? next : null,
+        summary: `${a.name} and ${b.name} become ${kind === "ex" ? "exes" : `${kind}s`}.`,
+      });
+    }
+    case "end-bond": {
+      const { bondId } = input as SlpActionParsed<"end-bond">;
+      const bond = (world.bonds ?? []).find((entry) => entry.id === bondId);
+      const next = slurpEndBond(world.bonds ?? [], bondId, at);
+      return result({
+        who: bond ? people(world, [bond.aId, bond.bId]) : [],
+        detail: { kind: bond?.kind ?? null },
+        error: typeof next === "string" ? next : null,
+        summary: bond ? `${nameOf(world, bond.aId)} and ${nameOf(world, bond.bId)} are no longer ${bond.kind}s.` : "",
+      });
+    }
     case "couple-page": {
       const { coupleId, open } = input as SlpActionParsed<"couple-page">;
       const couple = couples.find((entry) => entry.id === coupleId);
@@ -269,9 +299,11 @@ export type SlurpTieUndo =
   | { kind: "removeCouple"; id: string }
   | { kind: "restoreCouple"; couple: SlurpCouple }
   /** Opening a shared page; the service closes it (a goodbye post and stopped renewals). */
-  | { kind: "closeCouplePage"; coupleId: string };
+  | { kind: "closeCouplePage"; coupleId: string }
+  | { kind: "removeBond"; id: string }
+  | { kind: "restoreBond"; bond: SlurpBond };
 
-type TieDocument = { ties: SlurpCreatorTies; couples: SlurpCouple[] };
+type TieDocument = { ties: SlurpCreatorTies; couples: SlurpCouple[]; bonds?: SlurpBond[] };
 
 /**
  * Take one tie play back on the ties as they are now, or null when the world has moved on and the
@@ -340,11 +372,28 @@ export function slurpUndoTie(document: TieDocument, undo: SlurpTieUndo): TieDocu
         // Polyamory: someone who joined by this play leaves again.
         moreIds: previous.moreIds,
         moments: previous.moments,
+        secret: previous.secret,
       };
+      if (!previous.secret) delete restored.secret;
       return { ties, couples: couples.map((entry) => (entry.id === previous.id ? restored : entry)) };
     }
     case "closeCouplePage":
       return null;
+    case "removeBond": {
+      const bonds = document.bonds ?? [];
+      if (!bonds.some((entry) => entry.id === undo.id)) return null;
+      return { ties, couples, bonds: bonds.filter((entry) => entry.id !== undo.id) };
+    }
+    case "restoreBond": {
+      const bonds = document.bonds ?? [];
+      return {
+        ties,
+        couples,
+        bonds: bonds.some((entry) => entry.id === undo.bond.id)
+          ? bonds.map((entry) => (entry.id === undo.bond.id ? undo.bond : entry))
+          : [...bonds, undo.bond],
+      };
+    }
   }
 }
 

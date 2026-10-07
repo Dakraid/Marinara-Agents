@@ -10,16 +10,13 @@
   },
   "id": "hierarchical-maps",
   "name": "World Maps",
-  "version": "1.5.0",
-  "description": "Adds persistent hierarchical locations, durable shared worlds, reusable artwork, customizable Direct Link lines, and movement to Roleplay and Game. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay and Game modes.",
+  "version": "1.5.2",
+  "description": "Adds world maps to Roleplay and Game, from whole regions down to single rooms, with art and travel between places. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay and Game modes.",
   "engine": {
     "min": "2.4.2",
     "maxExclusive": "4.0.0"
   },
-  "kind": [
-    "agent",
-    "maps"
-  ],
+  "kind": ["agent", "maps"],
   "entrypoints": {
     "agents": "agents.json",
     "server": "server.mjs",
@@ -27,43 +24,27 @@
   },
   "contributions": {
     "agentDetail": {
-      "agentIds": [
-        "hierarchical-maps"
-      ]
+      "agentIds": ["hierarchical-maps"]
     },
-    "slots": [
-      "chat-settings",
-      "spatial-workspace",
-      "chat-runtime",
-      "game-world-map"
-    ]
+    "slots": ["chat-settings", "spatial-workspace", "chat-runtime", "game-world-map"]
   },
   "files": [
     {
       "path": "agents.json",
-      "sha256": "7d2cce13b968d490305b8a2130424da98a33235ad234dc455e66fab098435839",
-      "bytes": 672
+      "sha256": "3b01d7ed15f6a8f133da86af6d95924edb5663af78a96bccb31d85b67b92088e",
+      "bytes": 639
     },
     {
       "path": "server.mjs",
-      "sha256": "09700704259d6cb73b3e0cb989722e65c1a1575d0291c0a58590aa86003af468",
-      "bytes": 488033
+      "sha256": "d4818fb7a381e793a8e9fc278a4fc4beb5dd6c512a3dd7f4de16ac71bc4fe95d",
+      "bytes": 489425
     },
     {
       "path": "client.js",
-      "sha256": "355f73262a531fa5d9511733da88adf11868ced5b3a67df13257d5a66d6307d1",
-      "bytes": 1132492
+      "sha256": "490dc6a6426bb3c04f4049944d3b9beb088178655211126d5d39dc74a2bac7e4",
+      "bytes": 1133017
     }
   ],
-  "permissions": [
-    "agent-runtime",
-    "chat-read",
-    "chat-write",
-    "network",
-    "prompt-context",
-    "routes",
-    "storage",
-    "ui"
-  ],
+  "permissions": ["agent-runtime", "chat-read", "chat-write", "network", "prompt-context", "routes", "storage", "ui"],
   "restartRequired": true
 }

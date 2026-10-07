@@ -84,8 +84,29 @@ export type SlurpTiesCouple = {
   page: { accountId: string; openedAt: string; closedAt: string | null } | null;
   /** Set up by the player against a card: whose card, and what it says. */
   forced?: { misfit: "taken" | "notInto" | "noDating" | "orientation"; byId: string };
+  /** A couple with the player's own page, kept out of public. */
+  secret?: boolean;
 };
-export type SlurpCoupleSteer = "date" | "drama" | "patchUp" | "breakUp" | "reunite";
+export type SlurpCoupleSteer = "date" | "drama" | "patchUp" | "breakUp" | "reunite" | "official" | "secret" | "public";
+/** Mirrors `SlurpBond` on the server (Drama): friends, roommates, coworkers and exes. */
+export type SlurpTiesBondKind = "friend" | "roommate" | "coworker" | "ex";
+export type SlurpTiesBond = {
+  id: string;
+  kind: SlurpTiesBondKind;
+  aId: string;
+  bId: string;
+  /** Friends: 0 acquaintance, 1 friend, 2 close, 3 best. Other kinds are 1. */
+  level: number;
+  temperature: "warm" | "tense" | "cold";
+  origin: "card" | "world" | "player" | "couple";
+  since: string;
+  changedAt: string;
+  endedAt: string | null;
+  ending: "drifted" | "left" | "player" | "together" | null;
+  locked?: boolean;
+  /** Each change with a reason code (`ui.slurp.people.note.<code>`). */
+  notes: { at: string; code: string; detail?: string }[];
+};
 
 export type SlurpTiesView = {
   creators: SlurpTiesCreator[];
@@ -94,6 +115,8 @@ export type SlurpTiesView = {
   deals: SlurpTiesDeal[];
   blocked: string[];
   couples: SlurpTiesCouple[];
+  /** Older servers send none. */
+  bonds?: SlurpTiesBond[];
 };
 
 const key = (personaId: string) => [...slpKeys.noodlerRoot(), "ties", personaId] as const;
@@ -107,17 +130,30 @@ export function useSlurpTies(personaId: string | null) {
   });
 }
 
-/** Every change answers with the whole view, which replaces the cached copy. */
+/**
+ * Every change answers with the whole view, which replaces the cached copy. A change that is also a
+ * Stir play (0.3.11: couples, bonds, collabs, rivalries) runs through the one runner instead of a side
+ * route, so it lands in Recent plays with Undo, whichever screen started it.
+ */
 export function useSlurpTiesMutations(personaId: string) {
   const qc = useQueryClient();
   const store = (view: SlurpTiesView) => qc.setQueryData(key(personaId), view);
   const post = (path: string, body: Record<string, unknown> = {}) =>
     api.post<SlurpTiesView>(`${base}${path}`, { personaId, ...body });
+  const play = async (action: string, input: Record<string, unknown>) => {
+    const answer = await api.post<{ results: { ok: boolean; error: string | null }[] }>("/slurp2/slurp/stir/play", {
+      steps: [{ action, input }],
+      origin: "deck",
+      personaId,
+    });
+    const failed = answer.results.find((result) => !result.ok);
+    if (failed) throw new Error(failed.error ?? "That did not work.");
+    return answer;
+  };
+  // A play can touch any read (ties, Stir, profiles, the feed), so they all refresh.
+  const played = () => void qc.invalidateQueries({ queryKey: slpKeys.noodlerRoot() });
   return {
-    push: useMutation({
-      mutationFn: (id: string) => post(`/collabs/${encodeURIComponent(id)}/push`),
-      onSuccess: store,
-    }),
+    push: useMutation({ mutationFn: (id: string) => play("push-collab", { collabId: id }), onSuccess: played }),
     decline: useMutation({
       mutationFn: (id: string) => post(`/collabs/${encodeURIComponent(id)}/decline`),
       onSuccess: store,
@@ -126,33 +162,42 @@ export function useSlurpTiesMutations(personaId: string) {
       mutationFn: (id: string) => post(`/collabs/${encodeURIComponent(id)}/block`),
       onSuccess: store,
     }),
+    // An agreed collab whose host never posted: call it off (no block), or make the host post it now.
+    drop: useMutation({
+      mutationFn: (id: string) => post(`/collabs/${encodeURIComponent(id)}/drop`),
+      onSuccess: (view) => (store(view), played()),
+    }),
+    postNow: useMutation({
+      mutationFn: (id: string) => post(`/collabs/${encodeURIComponent(id)}/post-now`),
+      onSuccess: (view) => (store(view), played()),
+    }),
     unblock: useMutation({ mutationFn: (pair: string) => post("/unblock", { key: pair }), onSuccess: store }),
     suggest: useMutation({
-      mutationFn: (pair: { aId: string; bId: string }) => post("/collabs", pair),
-      onSuccess: store,
+      mutationFn: (pair: { aId: string; bId: string }) => play("suggest-collab", { ...pair, happen: false }),
+      onSuccess: played,
     }),
-    cool: useMutation({
-      mutationFn: (id: string) => post(`/rivalries/${encodeURIComponent(id)}/cool`),
-      onSuccess: store,
-    }),
+    cool: useMutation({ mutationFn: (id: string) => play("cool-rivalry", { rivalryId: id }), onSuccess: played }),
     setUp: useMutation({
-      mutationFn: (pair: { aId: string; bId: string }) => post("/couples", pair),
-      onSuccess: store,
+      mutationFn: (pair: { aId: string; bId: string }) => play("set-up-couple", pair),
+      onSuccess: played,
     }),
     steerCouple: useMutation({
       mutationFn: (input: { id: string; steer: SlurpCoupleSteer }) =>
-        post(`/couples/${encodeURIComponent(input.id)}/steer`, { steer: input.steer }),
-      onSuccess: store,
+        play("steer-couple", { coupleId: input.id, steer: input.steer }),
+      onSuccess: played,
     }),
     couplePage: useMutation({
       mutationFn: (input: { id: string; open: boolean }) =>
-        post(`/couples/${encodeURIComponent(input.id)}/page`, { open: input.open }),
-      onSuccess: (view) => {
-        store(view);
-        // A new page is a new Creator everywhere: Discover, the feed, profiles.
-        void qc.invalidateQueries({ queryKey: slpKeys.noodlerRoot() });
-      },
+        play("couple-page", { coupleId: input.id, open: input.open }),
+      // A new page is a new Creator everywhere: Discover, the feed, profiles.
+      onSuccess: played,
     }),
+    setBond: useMutation({
+      mutationFn: (input: { aId: string; bId: string; kind: SlurpTiesBondKind; level?: number }) =>
+        play("set-bond", input),
+      onSuccess: played,
+    }),
+    endBond: useMutation({ mutationFn: (id: string) => play("end-bond", { bondId: id }), onSuccess: played }),
     markPosted: useMutation({
       mutationFn: (id: string) => post(`/deals/${encodeURIComponent(id)}/posted`),
       onSuccess: store,

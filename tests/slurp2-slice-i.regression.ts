@@ -15,13 +15,13 @@ import {
   slurpPublicSexualLevel,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-post-guidance.ts";
 import {
-  readSlurpCouples,
   slurpAdvanceCouples,
-  slurpCoupleMisfitOf,
   slurpSetUpCouple,
   slurpSteerCouple,
   type SlurpCouple,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples.ts";
+import { readSlurpCouples } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-read.ts";
+import { slurpCoupleMisfitOf } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-fit.ts";
 // U: the relationship line moved out of the couples module (import path only).
 import { slurpRelationshipLine } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-lines.ts";
 import {
@@ -742,7 +742,7 @@ const creator = (id: string, text: string, tags: string[], over: Partial<SlurpTi
   const builder = readFileSync(join(repo, "scripts/build-feature-packages.mjs"), "utf8");
   assert.match(
     builder,
-    /optionalPermissions: \[\{ permission: "mari-actions", capabilityApi: \{ major: 1, minor: 50 \} \}\]/u,
+    /optionalPermissions: \[\s*\{ permission: "mari-actions", capabilityApi: \{ major: 1, minor: 50 \} \}/u,
   );
   assert.match(builder, /permissions: featurePermissions\(feature\),/u);
   const manifest = JSON.parse(readFileSync(join(repo, "packages/slurp2/manifest.json"), "utf8")) as {

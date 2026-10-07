@@ -6,6 +6,11 @@ import { join } from "node:path";
 // parser. The route list below is the post-rename inventory. BASELINE is derived from it through
 // the explicit mapping table, so a method change or a missing route cannot pass by rebaselining.
 const EXPECTED = [
+  // Roleplay scenes from a DM thread (docs/SCENES.md).
+  "GET /messages/threads/:threadId/scene/origin",
+  "POST /messages/threads/:threadId/scene/invite/:messageId/decline",
+  "POST /messages/threads/:threadId/scene/plan",
+  "POST /messages/threads/:threadId/scene/recap/:messageId/reach",
   // 0.3.5: the Slurp Support desk.
   "GET /slurp/desk",
   "POST /slurp/desk/note",
@@ -53,6 +58,8 @@ const EXPECTED = [
   "POST /slurp/ties/collabs/:id/push",
   "POST /slurp/ties/collabs/:id/decline",
   "POST /slurp/ties/collabs/:id/block",
+  "POST /slurp/ties/collabs/:id/drop",
+  "POST /slurp/ties/collabs/:id/post-now",
   "POST /slurp/ties/unblock",
   "POST /slurp/ties/rivalries/:id/cool",
   "POST /slurp/ties/deals/:id/answer",
@@ -62,6 +69,13 @@ const EXPECTED = [
   "POST /slurp/ties/couples",
   "POST /slurp/ties/couples/:id/steer",
   "POST /slurp/ties/couples/:id/page",
+  // 0.3.8 Drama: bonds on the People map; what runs, the player's answer, start and end (docs/DRAMA.md).
+  "POST /slurp/ties/bonds",
+  "POST /slurp/ties/bonds/:id/end",
+  "GET /slurp/drama",
+  "POST /slurp/drama/choice",
+  "POST /slurp/drama/start",
+  "POST /slurp/drama/runs/:id/end",
   // 0.3.2 Creator Pages: the player's edit, and "Let <Creator> design it".
   "PUT /slurp/accounts/:id/page",
   "POST /slurp/accounts/:id/page/compose",
@@ -234,6 +248,7 @@ const EXPECTED = [
   "POST /slurp/accounts/:id/subscribe",
   "POST /slurp/accounts/:id/tip",
   "POST /slurp/accounts/bulk",
+  "GET /slurp/accounts/bulk/:executionId",
   "POST /slurp/accounts/bulk-update",
   "POST /slurp/ads/:id/image",
   "POST /slurp/ads/generate",
@@ -252,6 +267,7 @@ const EXPECTED = [
   "POST /slurp/first-posts/enqueue",
   "POST /slurp/onboarding/scene/keep",
   "POST /slurp/onboarding/scene/turn",
+  "POST /slurp/notifications/:id/fan-note",
   "POST /slurp/notifications/seen",
   "POST /slurp/post-guidance-draft",
   "POST /slurp/posts",
@@ -303,6 +319,11 @@ const RETAINED_OLD_PATHS = new Set([
   "GET /noodler/posts/:id/media/:position",
 ]);
 const ADDED_ROUTES = new Set([
+  // Roleplay scenes from a DM thread (docs/SCENES.md).
+  "GET /messages/threads/:threadId/scene/origin",
+  "POST /messages/threads/:threadId/scene/invite/:messageId/decline",
+  "POST /messages/threads/:threadId/scene/plan",
+  "POST /messages/threads/:threadId/scene/recap/:messageId/reach",
   // The recovery reset: clears activity, keeps Creators and settings.
   "DELETE /data/activity",
   "PATCH /messages/threads/:threadId/details",
@@ -349,6 +370,8 @@ const ADDED_ROUTES = new Set([
   "POST /slurp/ties/collabs/:id/push",
   "POST /slurp/ties/collabs/:id/decline",
   "POST /slurp/ties/collabs/:id/block",
+  "POST /slurp/ties/collabs/:id/drop",
+  "POST /slurp/ties/collabs/:id/post-now",
   "POST /slurp/ties/unblock",
   "POST /slurp/ties/rivalries/:id/cool",
   "POST /slurp/ties/deals/:id/answer",
@@ -358,6 +381,17 @@ const ADDED_ROUTES = new Set([
   "POST /slurp/ties/couples",
   "POST /slurp/ties/couples/:id/steer",
   "POST /slurp/ties/couples/:id/page",
+  // 0.3.8 Drama: bonds on the People map; what runs, the player's answer, start and end (docs/DRAMA.md).
+  "POST /slurp/ties/bonds",
+  "POST /slurp/ties/bonds/:id/end",
+  "GET /slurp/drama",
+  "POST /slurp/drama/choice",
+  "POST /slurp/drama/start",
+  "POST /slurp/drama/runs/:id/end",
+  // 0.3.11: a heart or one reply to a fan's note on the player's own page (fans write notes there, not chats).
+  "POST /slurp/notifications/:id/fan-note",
+  // 0.3.11: a background sign-up's progress (big batches run as a server job).
+  "GET /slurp/accounts/bulk/:executionId",
   // 0.3.2 Creator Pages: the player's edit, and "Let <Creator> design it".
   "PUT /slurp/accounts/:id/page",
   "POST /slurp/accounts/:id/page/compose",
@@ -454,16 +488,17 @@ const EXPECTED_HANDLER_COUNTS = {
   "features/feed": 39,
   "features/maintenance": 15,
   "features/media": 7,
-  "features/messages": 45,
-  "features/notifications": 3,
-  "features/onboarding": 6,
-  "features/projects": 27,
+  "features/messages": 49,
+  "features/notifications": 4,
+  "features/onboarding": 7,
+  "features/projects": 31,
   "features/settings": 8,
-  "features/world": 11,
+  "features/world": 15,
 } as const;
 // W: +5 POST, +1 GET (Stir). R: +3 POST, +1 GET, +1 PATCH, +1 DELETE (brands).
 // 0.3.4: +1 POST, +1 PUT (Creator Pages). 0.3.5: +1 GET, +3 POST (Support desk). 0.3.7: +1 POST (rewrite all).
-const EXPECTED_METHOD_COUNTS = { DELETE: 19, GET: 81, PATCH: 20, POST: 147, PUT: 7 } as const;
+// 0.3.8: +1 GET, +5 POST (Drama: bonds, drama view, choice, start, end). 0.3.11: +1 POST (fan notes).
+const EXPECTED_METHOD_COUNTS = { DELETE: 19, GET: 84, PATCH: 20, POST: 158, PUT: 7 } as const;
 
 const root = join(import.meta.dirname, "../packages/slurp2/src/engine/packages/server/src/slp");
 const registration = /\bapp\.(get|post|put|patch|delete|addContentTypeParser)(?:<[^()]*?>)?\(\s*["'`]([^"'`]+)["'`]/gu;
@@ -518,8 +553,8 @@ const methodCounts = Object.fromEntries(
     }, new Map<string, number>()),
 );
 assert.deepEqual(methodCounts, EXPECTED_METHOD_COUNTS, "HTTP method multiset changed from staging");
-// 0.3.5: +4 (the Support desk). 0.3.7: +1 (rewrite all).
-assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 274);
+// 0.3.5: +4 (the Support desk). 0.3.7: +1 (rewrite all). Roleplay scenes: +4. 0.3.17: +2 (collab drop, post now).
+assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 288);
 assert.deepEqual(handlerCounts, EXPECTED_HANDLER_COUNTS, "handler count changed in a feature");
 assert.ok(foundRoutes.includes("POST /slurp/posts/:id/media"), "the renamed POST media route must remain registered");
 assert.ok(

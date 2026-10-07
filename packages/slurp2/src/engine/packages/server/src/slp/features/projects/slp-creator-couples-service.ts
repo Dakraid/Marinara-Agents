@@ -10,10 +10,12 @@ import { logger } from "../../../lib/logger.js";
 import { newId, now } from "../../../utils/id-generator.js";
 import { slpAccounts } from "../../../db/schema/slurp.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
+import { createSlurpEventsStorage } from "../../data/notifications/slp-notification-storage.js";
 import { mutateSlurpCreatorTies, readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ties-storage.js";
 import { emptySlpAccountSettings, normalizeHandle } from "../../modules/records/slp-storage-model.js";
 import { hash } from "../../modules/projects/slp-project.js";
 import {
+  slurpCoupleActive,
   slurpCoupleFor,
   slurpCoupleOf,
   slurpCoupleTaken,
@@ -27,6 +29,10 @@ import {
 import type { SlurpTieCreator } from "../../modules/projects/slp-creator-ties.js";
 import { slurpDmViewerPage, type SlurpDmParty } from "../../modules/messages/slp-dm-roles.js";
 import { readSlurpRelationshipLine } from "../../data/creators/slp-flavour-source.js";
+import { slurpPartnerWord } from "../../modules/projects/slp-couple-lines.js";
+import { resolveSlurpExplicitLevel } from "../../data/settings/slp-post-guidance-storage.js";
+import { slpSpiceFromExplicit } from "../../../../../shared/src/slp/slp-spice.js";
+import { slurpPlayerCoupleView, type SlurpPlayerCoupleView } from "../../modules/projects/slp-player-couple.js";
 
 /** A storyline about two Creators getting together: a live crossover whose words are romance. */
 const ROMANCE =
@@ -76,6 +82,8 @@ export async function openSlurpCouplePage(db: DB, coupleId: string): Promise<Slu
     storage.getNoodlerAccountById(couple.bId),
   ]);
   if (!a || !b) return "notFound";
+  // A couple with the player in it has no shared page: nobody could post there for the player.
+  if ([a, b].some((account) => account.kind === "persona" && account.sourceKind === "persona")) return "notOpen";
   // Polyamory (0.3.5): a group's page carries every name.
   const more = (await Promise.all((couple.moreIds ?? []).map((id) => storage.getNoodlerAccountById(id)))).filter(
     (account): account is NonNullable<typeof account> => Boolean(account),
@@ -198,22 +206,115 @@ export async function closeSlurpCouplePages(
 /**
  * The Creator page writing in a DM, for the role header (`slurpDmViewerPage`), with who they are to
  * the Creator when the two are (or were) a couple: the header then says so in one plain sentence.
+ *
+ * The player's own page (Drama, "your relationship") also says what she calls them and lets her answer
+ * say what the talk did to the two of them ("us"). A concealed page of the player still counts when
+ * she is with it: she knows who she is with. The header then never names the page.
  */
 export async function slurpCoupleDmPage(
   db: DB,
-  page: Parameters<typeof slurpDmViewerPage>[0],
+  page:
+    | (Parameters<typeof slurpDmViewerPage>[0] & {
+        kind?: string;
+        sourceKind?: string | null;
+        settings: { profile?: { gender?: string | null } };
+      })
+    | null,
   creatorId: string,
   viewerId: string,
 ): Promise<SlurpDmParty | null> {
   const party = slurpDmViewerPage(page, creatorId, viewerId);
-  if (!party || !page) return party;
-  const relationship = await readSlurpRelationshipLine(db, creatorId, { withId: page.id });
+  if (!page || page.id === creatorId || page.id === viewerId || page.invited) return party;
+  const player = page.kind === "persona" && page.sourceKind === "persona";
   const { couples } = await readSlurpCreatorTiesDocument(db).catch(() => ({ couples: [] as SlurpCouple[] }));
   const couple = slurpCoupleOf(couples, creatorId, page.id);
+  const partner = Boolean(couple && slurpCoupleTaken(couple));
+  if (!party && !(player && couple && slurpCoupleActive(couple))) return party;
+  const relationship = await readSlurpRelationshipLine(db, creatorId, { withId: page.id });
   return {
-    ...party,
+    ...(party ?? { name: page.displayName, handle: page.handle, concealed: true }),
     ...(relationship ? { relationship } : {}),
-    ...(couple && slurpCoupleTaken(couple) ? { partner: true } : {}),
+    ...(partner ? { partner: true } : {}),
+    ...(player ? { us: true, partnerWord: slurpPartnerWord(page.settings.profile?.gender) } : {}),
+  };
+}
+
+/** Couple moments the player hears about (the chat and the player's own steering are there already). */
+const SLURP_COUPLE_NEWS = new Set(["date", "anniversary", "jealous", "movingOn"]);
+
+/**
+ * The world clock moved a couple with one of the player's pages: a date, an anniversary, her jealousy,
+ * a crush that faded. The persona behind the page gets one notification per moment (Drama, "your
+ * relationship"). Best-effort: a failed notification never undoes the tick.
+ */
+export async function notifySlurpPlayerCouples(
+  db: DB,
+  before: readonly SlurpCouple[],
+  after: readonly SlurpCouple[],
+): Promise<void> {
+  const storage = createSlurpStorage(db);
+  const events = createSlurpEventsStorage(db);
+  for (const couple of after) {
+    const was = before.find((entry) => entry.id === couple.id);
+    const fresh = couple.moments.filter(
+      (moment) => SLURP_COUPLE_NEWS.has(moment.kind) && !was?.moments.some((old) => old.id === moment.id),
+    );
+    const faded = couple.ending === "fizzled" && was && was.stage !== "split";
+    if (!fresh.length && !faded) continue;
+    const members = await Promise.all(
+      [couple.aId, couple.bId, ...(couple.moreIds ?? [])].map((id) =>
+        storage.getNoodlerAccountById(id).catch(() => null),
+      ),
+    );
+    const her = members.find((account) => account && !(account.kind === "persona" && account.sourceKind === "persona"));
+    for (const page of members) {
+      if (!page || !her || page.kind !== "persona" || page.sourceKind !== "persona" || !page.sourceEntityId) continue;
+      const news = [
+        ...fresh.map((moment) => ({ id: moment.id, kind: moment.kind, detail: moment.detail })),
+        ...(faded ? [{ id: `fizzled:${couple.stageAt}`, kind: "fizzled", detail: "" }] : []),
+      ];
+      for (const item of news)
+        await events
+          .recordAndPrune({
+            recipientPersonaId: page.sourceEntityId,
+            kind: "couple",
+            creatorAccountId: her.id,
+            subjectId: item.kind,
+            actorLabel: her.displayName,
+            note: item.detail || null,
+            operationId: `couple:${couple.id}:${item.id}:${page.id}`,
+          })
+          .catch((error: unknown) => logger.warn(error, "[slurp-couples] Could not notify the player"));
+    }
+  }
+}
+
+/**
+ * Her and the persona's own page as a couple, newest first (an ex too), for the thread's Details
+ * panel: null when the persona has no page or they never were a couple.
+ */
+export async function readSlurpPlayerCoupleView(
+  db: DB,
+  creatorId: string,
+  personaId: string,
+): Promise<SlurpPlayerCoupleView | null> {
+  const page = await createSlurpStorage(db)
+    .getSlurpAccountForEntity("persona", personaId, "creator")
+    .catch(() => null);
+  if (!page) return null;
+  const couple = slurpCoupleOf((await readSlurpCreatorTiesDocument(db)).couples, creatorId, page.id);
+  if (!couple) return null;
+  const at = new Date();
+  // Her public side: how far she goes, and what her fans got this week.
+  const weekAgo = new Date(at.getTime() - 7 * 86_400_000).toISOString();
+  const posts = (await createSlurpStorage(db)
+    .listNoodlerPostsByAccount(creatorId, 40)
+    .catch(() => [])) as { createdAt: string; access: string }[];
+  const week = posts.filter((post) => post.createdAt >= weekAgo && post.access !== "draft");
+  return {
+    ...slurpPlayerCoupleView(couple, at),
+    herSpice: slpSpiceFromExplicit(await resolveSlurpExplicitLevel(db, creatorId).catch(() => null)),
+    herWeek: { posts: week.length, paid: week.filter((post) => post.access === "locked").length },
   };
 }
 

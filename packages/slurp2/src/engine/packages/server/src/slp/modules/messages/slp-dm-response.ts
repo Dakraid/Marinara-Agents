@@ -69,6 +69,10 @@ export const slurpDmReplySchema = z.object({
   desk: z.record(z.string(), z.unknown()).nullable().optional().catch(undefined),
   /** Only Creator to Creator: the two agreed on a joint post. Read by `readSlurpDmCollab`. */
   collab: z.record(z.string(), z.unknown()).nullable().optional().catch(undefined),
+  /** Only in a chat with the player: what the talk did to the two of them. Read by `readSlurpDmUs`. */
+  us: z.record(z.string(), z.unknown()).nullable().optional().catch(undefined),
+  /** Only when offered: her pitch for a roleplay scene (docs/SCENES.md). */
+  sceneInvite: z.string().nullable().optional().catch(undefined),
 });
 
 export type SlurpDmReply = {
@@ -95,6 +99,9 @@ export type SlurpDmReply = {
   staff?: Record<string, unknown>;
   desk?: Record<string, unknown>;
   collab?: Record<string, unknown>;
+  us?: Record<string, unknown>;
+  /** Her pitch for a roleplay scene, when the reply was offered the field (docs/SCENES.md). */
+  sceneInvite?: string;
 };
 
 /** The reply plus what the resolved stance allows the creator to do about the conversation. */
@@ -105,7 +112,25 @@ export type SlurpGeneratedDmReply = SlurpDmReply & {
   sharedPost: { id: string; title: string | null; content: string; access: string; imageUrl: string | null } | null;
   /** Creator to Creator: a joint post the two agreed on, with the replying Creator's share. */
   agreedCollab?: SlurpDmCollab;
+  /** With the player: the talk moved the two of them (`slurpPlayerCoupleStep`). */
+  us?: SlurpDmUs;
+  /** The player's page the "us" step is about. */
+  usPageId?: string;
 };
+
+export type SlurpDmUs = { step: "closer" | "hurt" | "madeUp"; why: string };
+
+/** The "us" field of a reply to the player, or undefined when the talk changed nothing between them. */
+export function readSlurpDmUs(
+  raw: unknown,
+  protect: (value: string) => string | null | undefined,
+): SlurpDmUs | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const value = raw as Record<string, unknown>;
+  const step = (["closer", "hurt", "madeUp"] as const).find((entry) => entry === value.step);
+  if (!step) return undefined;
+  return { step, why: typeof value.why === "string" ? (protect(value.why.trim()) ?? "") : "" };
+}
 
 export type SlurpDmCollab = { partnerId: string; idea: string; hostShare: number | null; shoot?: boolean };
 
@@ -178,6 +203,8 @@ export function readSlurpDmReply(value: unknown): SlurpDmReply {
     ...(parsed.data.staff ? { staff: parsed.data.staff } : {}),
     ...(parsed.data.desk ? { desk: parsed.data.desk } : {}),
     ...(parsed.data.collab ? { collab: parsed.data.collab } : {}),
+    ...(parsed.data.us ? { us: parsed.data.us } : {}),
+    ...(parsed.data.sceneInvite ? { sceneInvite: parsed.data.sceneInvite } : {}),
   };
 }
 

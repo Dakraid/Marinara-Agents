@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.7";
+export const SLURP2_VERSION = "0.3.17";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -12,6 +12,60 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.17",
+    date: "2026-10-06",
+    notes: [
+      "Spice lives in one place now: one level from Clean to Explicit for words and pictures, and a new Language choice for how they say it. Set it for everyone in Settings › Spice, or per Creator.",
+      "Decide who may fall for whom: switch romance off for a Creator, or pick who they could end up with. Collab partners finally know who they are working with.",
+      "Slurp is quicker on phones and desktop, Stir's End it and collab buttons work, and opening a profile no longer marks your chat as read.",
+    ],
+  },
+  {
+    version: "0.3.16",
+    date: "2026-10-05",
+    notes: [
+      "Stir on your page, or Draft post for a Creator, uses one idea to draft a post. Review its words and picture together, then Post; Edit opens the full editor.",
+    ],
+  },
+  {
+    version: "0.3.15",
+    date: "2026-10-05",
+    notes: [
+      "Take a Creator chat into a scene. Choose whether she stays reachable, then bring the memory back to your messages when you finish.",
+      "Give New post an idea and review the drafted caption and picture before posting, on your own page or a Creator page.",
+    ],
+  },
+  {
+    version: "0.3.12",
+    date: "2026-10-01",
+    notes: ["Slurp no longer fills your Engine log with warnings when no text connection is set."],
+  },
+  {
+    version: "0.3.11",
+    date: "2026-10-01",
+    notes: [
+      "A Creator can fall for you in your chats: a crush, dating, official, fights and making up. She calls you her boyfriend or girlfriend, sends you pictures for free, invites you on dates and keeps it secret if you want.",
+      "Stir is rebuilt around stories: your relationship on top, everything running in one list, and drama packs you can start, lead and end.",
+      "Fans leave notes on your own page instead of chats, and Settings › Overview can pause all of Slurp.",
+    ],
+  },
+  {
+    version: "0.3.10",
+    date: "2026-09-30",
+    notes: [
+      "If Slurp cannot open on another device because Marinara is missing its Admin Secret, Slurp now tells you how to set one.",
+    ],
+  },
+  {
+    version: "0.3.8",
+    date: "2026-09-30",
+    notes: [
+      "Drama, if you switch it on: your partner as a Creator, rivals, love triangles, a top fan, sugar both ways and more, played out on the feed, in DMs and in the comments.",
+      "Creators make friends on their own now, and the friends, roommates, coworkers and exes on their cards are real on Slurp.",
+      "Stir has a living People map: open several people at once to see partners, friends, exes, rivals and roommates, and why each tie exists.",
+    ],
+  },
   {
     version: "0.3.7",
     date: "2026-09-30",

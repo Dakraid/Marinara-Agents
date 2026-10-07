@@ -11,7 +11,9 @@ import { readSlurpCreatorSteering } from "../../data/creators/slp-steering-stora
 import { SLP_POLY_CARD_WORDS } from "../../../../../shared/src/slp/slp-creator-steering.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
-import { readSlurpCardPartners, readSlurpCreatorFitText } from "../../data/creators/slp-flavour-source.js";
+import { readSlurpCardPeople, readSlurpCreatorFitText } from "../../data/creators/slp-flavour-source.js";
+import { SLURP_PARTNER_RELATION } from "../../modules/creators/slp-spice.js";
+import { slurpAdvanceBonds, slurpBondsFor } from "../../modules/projects/slp-creator-bonds.js";
 import { mutateSlurpCreatorTies, readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ties-storage.js";
 import { slurpCreatorReach } from "../../../../../shared/src/slp/slp-reach.js";
 import { slurpPlatformScaleMultiplier, slurpWorldActivityMultiplier } from "../../../../../shared/src/slp/slp-scale.js";
@@ -27,6 +29,8 @@ import {
   type SlurpTieCreator,
 } from "../../modules/projects/slp-creator-ties.js";
 import { readSlurpTieStamp } from "../../modules/projects/slp-tie-stamp.js";
+import { DAY_MS } from "../../modules/projects/slp-project.js";
+import { slurpPlayerCoupleStep, type SlurpPlayerCoupleStep } from "../../modules/projects/slp-player-couple.js";
 import {
   slurpAnnounceCollab,
   slurpCollabCrossover,
@@ -47,17 +51,28 @@ import {
 } from "../../modules/economy/slp-brand-deals.js";
 import { loadSlurpDealAds, loadSlurpDealSpice } from "./slp-brand-deal-source.js";
 import { slurpTieBeat } from "../../modules/feed/slp-tie-beats.js";
+import { slurpBondBeat } from "../../modules/feed/slp-bond-beats.js";
 import {
   slurpAdvanceCouples,
+  slurpCoupleActive,
+  slurpCoupleOf,
   slurpCoupleTold,
   slurpCouplePostIdsFor,
+  slurpSetUpCouple,
   slurpSettleCouplePost,
+  type SlurpCouple,
 } from "../../modules/projects/slp-creator-couples.js";
-import { closeSlurpCouplePages, slurpCouplesWorldInput } from "./slp-creator-couples-service.js";
+import { slurpCoupleFit } from "../../modules/projects/slp-couple-fit.js";
+import {
+  closeSlurpCouplePages,
+  notifySlurpPlayerCouples,
+  slurpCouplesWorldInput,
+} from "./slp-creator-couples-service.js";
 import { slurpIsCouplePage } from "../../modules/projects/slp-creator-couples.js";
 import type { SlurpBeat } from "../../modules/feed/slp-post-beat.js";
 import type { SlurpContentIntent } from "../../../../../shared/src/slp/slp-content-axes.js";
 import { bookSlurpHeldSlot, readSlurpSlotTimes } from "../feed/slp-held-slots-contract.js";
+import { slurpPausedNow } from "../../data/settings/slp-pause-storage.js";
 
 type Storage = ReturnType<typeof createSlurpStorage>;
 type Account = Awaited<ReturnType<Storage["listNoodlerAccounts"]>>[number];
@@ -79,9 +94,9 @@ export async function loadSlurpTieCreators(db: DB, at = new Date()): Promise<Slu
     accounts.map(async (account: Account) => {
       const text = await readSlurpCreatorFitText(db, { account, source: await storage.resolveAccountSource(account) });
       // Polyamory (0.3.5): the style the player picked, else poly words on their card.
-      const style = await readSlurpCreatorSteering(db, account.id)
-        .then((steering) => steering.relationshipStyle)
-        .catch(() => null);
+      const steering = await readSlurpCreatorSteering(db, account.id).catch(() => null);
+      const style = steering?.relationshipStyle ?? null;
+      const cardPeople = await readSlurpCardPeople(db, account.id).catch(() => []);
       return {
         id: account.id,
         name: account.displayName,
@@ -89,8 +104,13 @@ export async function loadSlurpTieCreators(db: DB, at = new Date()): Promise<Slu
         tags: account.settings.profile.tags ?? [],
         automatic: slurpRunsItself(account),
         gender: account.settings.profile.gender ?? null,
-        cardPartners: await readSlurpCardPartners(db, account.id).catch(() => []),
+        cardPartners: cardPeople
+          .filter((person) => SLURP_PARTNER_RELATION.test(person.relation))
+          .map((person) => person.name),
+        cardPeople,
         poly: style ? style === "poly" : SLP_POLY_CARD_WORDS.test(text),
+        // An unreadable setting is no permission: fail closed (no romance) until it reads again.
+        romance: steering ? steering.romance : { off: true, only: [] },
         followers: slurpCreatorReach(
           { accountId: account.id, createdAt: account.createdAt, realFollowers: followers.get(account.id) ?? 0, scale },
           at,
@@ -106,6 +126,8 @@ export async function loadSlurpTieCreators(db: DB, at = new Date()): Promise<Slu
  * Settling runs every tick, so a joint post reaches the partner's page within one tick.
  */
 export async function advanceSlurpCreatorTies(db: DB, at = new Date()): Promise<void> {
+  // "Pause all": ties, couples and bonds stand still while Slurp is paused.
+  if (await slurpPausedNow(db)) return;
   await settleSlurpTiePosts(db, at);
   const { ties } = await readSlurpCreatorTiesDocument(db);
   if (ties.advancedAt && at.getTime() - Date.parse(ties.advancedAt) < 6 * 60 * 60 * 1000) return;
@@ -122,16 +144,12 @@ export async function advanceSlurpCreatorTies(db: DB, at = new Date()): Promise<
   const before = await readSlurpCreatorTiesDocument(db);
   const after = await mutateSlurpCreatorTies(db, (document) => {
     const ties = slurpAdvanceCreatorTies(document.ties, { creators, at, activity, paired, newId });
+    const around = fromTies(ties, at);
+    const couples = slurpAdvanceCouples(document.couples, { creators, at, activity, newId, storylines, ...around });
     const next = {
       ties,
-      couples: slurpAdvanceCouples(document.couples, {
-        creators,
-        at,
-        activity,
-        newId,
-        storylines,
-        ...fromTies(ties, at),
-      }),
+      couples,
+      bonds: slurpAdvanceBonds(document.bonds, { creators, couples, at, activity, newId, ...around }),
       deals: slurpAdvanceBrandDeals(document.deals, {
         creators,
         ads,
@@ -147,6 +165,8 @@ export async function advanceSlurpCreatorTies(db: DB, at = new Date()): Promise<
   });
   // A breakup closes a shared page: nobody is charged again for a page that stopped.
   if (after) await closeSlurpCouplePages(db, before.couples, after.couples);
+  // Dates, anniversaries and her jealousy with the player's own page reach the player's inbox.
+  if (after) await notifySlurpPlayerCouples(db, before.couples, after.couples);
 }
 
 /** What the couple rules need from the ties: open rivalries, and who made a collab with someone lately. */
@@ -338,9 +358,11 @@ export async function planSlurpTieBeat(
     if (!ids.has(input.creatorId) && !deals.some((deal) => deal.creatorId === input.creatorId)) return null;
     const storage = createSlurpStorage(db);
     const names = new Map<string, string>();
+    const playerIds = new Set<string>();
     for (const id of ids) {
       const account = await storage.getNoodlerAccountById(id);
       if (account) names.set(id, account.displayName);
+      if (account && !slurpRunsItself(account)) playerIds.add(id);
     }
     // A collab to announce names its drop hour, and Slurp holds that hour like a teased drop (V).
     const announcing = ties.collabs.some(
@@ -350,11 +372,12 @@ export async function planSlurpTieBeat(
       announcing && !input.previewOnly
         ? await readSlurpSlotTimes(db, input.creatorId, input.at).catch(() => null)
         : null;
-    const planned = slurpTieBeat({ ...input, ties, deals, couples, names, slots });
+    const planned = slurpTieBeat({ ...input, ties, deals, couples, names, playerIds, slots });
     if (!planned || input.previewOnly) return planned?.beat ?? null;
     const { tie } = planned.beat;
     await mutateSlurpCreatorTies(db, (document) => ({
       document: {
+        ...document,
         // A couple moment is told once each; one on their shared page for both of them.
         couples:
           tie.kind === "couple" && tie.momentId
@@ -399,6 +422,32 @@ export async function planSlurpTieBeat(
   }
 }
 
+/**
+ * Now and then an ordinary post is a moment with a friend, roommate or coworker (Drama, bonds). Runs
+ * after the player's steering, so it never takes a slot the player pointed somewhere. Never fails a post.
+ */
+export async function planSlurpBondBeat(
+  db: DB,
+  input: { creatorId: string; sequence: number },
+): Promise<SlurpBeat | null> {
+  try {
+    const { bonds } = await readSlurpCreatorTiesDocument(db);
+    const mine = slurpBondsFor(bonds, input.creatorId);
+    if (!mine.length) return null;
+    const storage = createSlurpStorage(db);
+    const names = new Map<string, string>();
+    for (const bond of mine) {
+      const otherId = bond.aId === input.creatorId ? bond.bId : bond.aId;
+      const account = await storage.getNoodlerAccountById(otherId);
+      if (account) names.set(otherId, account.displayName);
+    }
+    return slurpBondBeat({ creatorId: input.creatorId, bonds: mine, names, sequence: input.sequence });
+  } catch (error) {
+    logger.warn(error, "[slurp-ties] Could not plan a moment with a friend; this post is ordinary");
+    return null;
+  }
+}
+
 /** The slot at `slotAt` is held for a collab drop this Creator hosts (V): the reserve keeps ideas off it. */
 export async function slurpHeldCollabDrop(db: DB, creatorId: string, slotAt: Date): Promise<boolean> {
   return slurpHoldsCollabDrop((await readSlurpCreatorTiesDocument(db)).ties, creatorId, slotAt);
@@ -408,6 +457,45 @@ export async function slurpHeldCollabDrop(db: DB, creatorId: string, slotAt: Dat
 export async function slurpCollabPostIdsForCreator(db: DB, creatorId: string): Promise<string[]> {
   const { ties, couples } = await readSlurpCreatorTiesDocument(db);
   return [...slurpCollabPostIdsFor(ties, creatorId), ...slurpCouplePostIdsFor(couples, creatorId)];
+}
+
+/** After a breakup or a crush that faded, the chat does not start a new crush on the player this soon. */
+const SLURP_PLAYER_CRUSH_REST_DAYS = 14;
+
+/**
+ * Her answer to the player said what the talk did to the two of them (Drama, "your relationship"):
+ * a crush starts, dating begins, it becomes official, a fight makes it rocky, or they make up. The
+ * model only reports the talk; `slurpPlayerCoupleStep` and the card rules decide whether it counts.
+ * Returns the couple as it is now, or null when nothing changed.
+ */
+export async function applySlurpPlayerUs(
+  db: DB,
+  input: { creatorId: string; pageId: string; step: SlurpPlayerCoupleStep; why: string },
+): Promise<SlurpCouple | null> {
+  const at = new Date();
+  const creators = await loadSlurpTieCreators(db, at);
+  const creator = creators.find((entry) => entry.id === input.creatorId);
+  const page = creators.find((entry) => entry.id === input.pageId);
+  if (!creator?.automatic || !page || page.automatic) return null;
+  const polyamory = (await createSlurpStorage(db).getSettings()).polyamory === true;
+  return mutateSlurpCreatorTies(db, (document) => {
+    const last = slurpCoupleOf(document.couples, creator.id, page.id);
+    if (last && slurpCoupleActive(last)) {
+      const next = slurpPlayerCoupleStep(last, input.step, { at, creatorId: creator.id, detail: input.why });
+      if (!next) return null;
+      return {
+        document: { ...document, couples: document.couples.map((entry) => (entry.id === last.id ? next : entry)) },
+        result: next,
+      };
+    }
+    // A new crush: only "closer", only where her card allows it, and not right after the last one ended.
+    if (input.step !== "closer" || !slurpCoupleFit(creator, page).fits) return null;
+    if (last && at.getTime() - Date.parse(last.stageAt) < SLURP_PLAYER_CRUSH_REST_DAYS * DAY_MS) return null;
+    const id = newId();
+    const next = slurpSetUpCouple(document.couples, creator, page, { at, id, polyamory, crush: true });
+    if (typeof next === "string") return null;
+    return { document: { ...document, couples: next }, result: next.find((entry) => entry.id === id)! };
+  });
 }
 
 /** Two pages agreed on a joint post in their own DM; the replying Creator hosts and writes it. */

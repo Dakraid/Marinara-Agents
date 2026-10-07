@@ -17,22 +17,15 @@ import {
 import { SLURP_DEFAULT_ECONOMY } from "../economy/slp-wallet.js";
 import {
   slurpCreatorCollabsSchema,
-  SLURP_PROJECT_CHAPTER_MAX_LENGTH,
-  SLURP_PROJECT_DIRECTION_MAX_LENGTH,
-  SLURP_PROJECT_MAX_CHAPTERS,
   SLURP_ARC_STAT_EFFECTS,
-  SLURP_ARC_BIO_MAX_LENGTH,
-  SLURP_ARC_LOCATION_MAX_LENGTH,
   SLURP_ARC_PACES,
   SLURP_DEFAULT_ARC_PACE,
 } from "../projects/slp-project.js";
-import { SLURP_ARC_MAX_DURATION_DAYS, SLURP_ARC_TONE_MAX_LENGTH } from "../projects/slp-project.js";
 import {
   slurpArcLibraryFromLegacy,
   slurpNormalizeArcLibrary,
   SLURP_ARC_AUTO_MODES,
   SLURP_ARC_SOURCES,
-  SLURP_ARC_TYPE_NAME_MAX_LENGTH,
   SLURP_DEFAULT_ARC_AUTO_MODE,
 } from "../projects/slp-arc-library.js";
 import { SLURP_AUDIENCE_TONES, SLURP_DEFAULT_AUDIENCE_TONE } from "../../../../../shared/src/slp/slp-tone.js";
@@ -57,6 +50,7 @@ import {
   slpSupportDeskSettingsSchema,
   SLP_DEFAULT_SUPPORT_DESK_SETTINGS,
 } from "../../../../../shared/src/slp/slp-support-desk.js";
+import { slpDramaSettingsSchema } from "../../../../../shared/src/slp/slp-drama.js";
 import { SLURP_STORY_JOB_DEFAULTS, type SlurpStoryJobWeights } from "../../../../../shared/src/slp/slp-post-purpose.js";
 import { DEFAULT_SLP_CREATOR_REPLIES_PER_24_HOURS } from "../../../../../shared/src/slp/slp-social.schema.js";
 import { SLURP_COOL_OFF_HOURS } from "../world/slp-stance.js";
@@ -77,11 +71,9 @@ import {
 } from "../feed/slp-post-variation.js";
 import { logger } from "../../../lib/logger.js";
 import { SLURP_DEFAULT_CREATOR_MESSAGING, SLURP_DM_POLICIES } from "../messages/slp-messaging.js";
-import { NOODLER_CONTENT_HARD_MAX_LENGTH } from "../../base/prompting/slp-content-format.js";
-import { SLURP_MODIFIER_KINDS } from "../creators/slp-creator-state.js";
 import { SLURP_DEFAULT_REPLY_DELAYS } from "../messages/slp-messaging.js";
-import { parseRecord } from "../records/slp-storage-model.js";
-import type { SlurpAccount } from "../records/slp-storage-model.js";
+import { NOODLER_CONTENT_HARD_MAX_LENGTH } from "../../base/prompting/slp-content-format.js";
+import { parseRecord, type SlurpAccount } from "../records/slp-storage-model.js";
 export const slpCreatorFanArchetypeWeightsSchema = z
   .object({
     ordinary: z.number().finite().min(0),
@@ -410,8 +402,11 @@ export const slurpSettingsSchema = z.object({
   modelBudget: slurpModelBudgetSchema,
   /** Settings › Stir: the Slurp Support desk (tickets, notices, refusals, shady moves, leaving). */
   supportDesk: slpSupportDeskSettingsSchema,
+  drama: slpDramaSettingsSchema,
   /** Settings › Stir: a couple may grow to four people (0.3.5). Off by default. */
   polyamory: z.boolean(),
+  /** Settings › Overview › Pause all: no model or image call, no tick, nothing (`slp-pause.ts`). */
+  paused: z.boolean(),
   nightQuiet: z.boolean(),
   onboarding: z.enum(["not_started", "in_progress", "completed"]),
 });
@@ -434,11 +429,7 @@ const LEGACY_SLP_CREATOR_DEFAULT_GENERATION_GUIDANCE =
 export const LEGACY_SLURP_DEFAULT_GENERATION_GUIDANCE =
   "All Slurp creators and viewers are adults (18+). This is an adult creator page: flirty, suggestive, teasing, and sensual posts are common, and explicit posts appear regularly when they suit the creator — but they are not required and need not be the majority. Tease the locked posts and answer flirty comments in kind. Keep each creator's personality intact: a shy creator flirts shyly, a blunt one bluntly, a funny one filthily. Ordinary posts — updates, humor, behind the scenes, project news — matter just as much and keep both the page and the character human. Keep low mood or conflict uncommon and character-specific, and do not let recent posts set the default mood.";
 
-/**
- * Three shipped spice levels for the generation guidance. The middle level is the default; the
- * settings surface writes one of these verbatim into `generationGuidance`, and any edit to the
- * text is preserved as the user's own.
- */
+/** The old Writing spice presets (before 0.3.17), written verbatim into `generationGuidance`. */
 export const SLURP_GUIDANCE_PRESETS = {
   mild: "All Slurp creators and viewers are adults (18+). This is an adult creator page, but a restrained one: posts are flirty, teasing, and suggestive rather than graphic. Innuendo, charm, and anticipation do the work, and locked posts are teased instead of described. Do not write explicit sexual detail. Keep each creator's personality intact: a shy creator flirts shyly, a blunt one flirts bluntly. Ordinary posts about their day, work, and mood stay just as important as the flirty ones.",
   steamy:
@@ -449,7 +440,12 @@ export const SLURP_GUIDANCE_PRESETS = {
 
 export type SlurpGuidanceLevel = keyof typeof SLURP_GUIDANCE_PRESETS;
 
-export const SLP_CREATOR_DEFAULT_GENERATION_GUIDANCE: string = SLURP_GUIDANCE_PRESETS.steamy;
+// House style (0.3.17), no spice: level and Language reach the prompt as their own lines. The presets
+// above stay only so `readSlurpSpice` can recognise and migrate them.
+export const SLURP_HOUSE_STYLE_GUIDANCE =
+  "All Slurp creators and viewers are adults (18+). This is an adult creator page. How far each creator goes is set by their spice level; their personality decides how: a shy creator stays tamer and flirts shyly, an outgoing one is bolder and blunter. Tease the locked posts and answer flirty comments in kind. Ordinary posts about their day, work, and mood matter just as much and keep the feed believable. Keep each creator's personality intact.";
+
+export const SLP_CREATOR_DEFAULT_GENERATION_GUIDANCE: string = SLURP_HOUSE_STYLE_GUIDANCE;
 
 /** The middle level shipped with a typo before the levels existed; migrate it forward. */
 export const LEGACY_TYPO_SLURP_DEFAULT_GENERATION_GUIDANCE =
@@ -652,7 +648,9 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   creatorCollabs: [],
   modelBudget: slurpModelBudgetSchema.parse({}),
   supportDesk: { ...SLP_DEFAULT_SUPPORT_DESK_SETTINGS },
+  drama: slpDramaSettingsSchema.parse({}),
   polyamory: false,
+  paused: false,
   nightQuiet: false,
   onboarding: "not_started",
 };
@@ -671,15 +669,14 @@ export function isSlurpViewerActorAccount(account: Pick<SlurpAccount, "invited" 
 
 // The world tick reads settings many times per pass; a full zod parse each time held the Engine's
 // event loop for seconds. Stored settings arrive as a JSON string (null before the first save), so
-// the last one is the cache key.
-// Callers get a clone because some of them build on the returned object.
+// the last one is the cache key. Callers get a clone because some of them build on the result.
 let cachedSettingsRaw: string | null = null;
 let cachedSettings: SlurpSettings | null = null;
 
 /**
- * Keys retired in fix phase 1b (R1-136): nothing read them. Stored copies are safe to leave: the
- * normalizer below only takes the keys it knows, the PATCH schema strips unknown keys, and the next
- * save writes the settings without them. Listed so a test can prove old data still loads.
+ * Keys retired in fix phase 1b (R1-136): nothing read them. Stored copies are safe: the normalizer
+ * takes only known keys, the PATCH schema strips unknown ones, and the next save drops them. Listed
+ * so a test can prove old data still loads.
  */
 export const SLURP_RETIRED_SETTINGS_KEYS = [
   "imageGenerationConnectionId",
@@ -758,6 +755,7 @@ function normalizeSlurpSettingsUncached(raw: unknown): SlurpSettings {
   candidate.classicPromptBlocks =
     rawRecord.classicPromptBlocks ?? slurpLegacyClassicPromptBlocks(rawRecord.promptBlocks);
   candidate.nightQuiet = rawRecord.nightQuiet ?? DEFAULT_SLURP_SETTINGS.nightQuiet;
+  candidate.paused = rawRecord.paused === true;
   // Repaired rather than replaced: a player who edited one type must not lose the other seven
   // because a single field went out of range. An all-disabled list re-enables built-in Regular,
   // which is the one state the tick cannot run in — there would be nobody to pick.

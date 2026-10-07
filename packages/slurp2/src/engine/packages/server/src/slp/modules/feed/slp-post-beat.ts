@@ -119,7 +119,7 @@ export type SlurpBeat = {
    * `collab`, `sponsor`, `rival`, `couple`: a collab, a brand deal, a rivalry or a couple's story
    * (see `slp-tie-beats.ts`, `slp-couple-beats.ts`).
    */
-  anchorKind: SlurpAnchorKind | "arc" | "steer" | "life" | "collab" | "sponsor" | "rival" | "couple";
+  anchorKind: SlurpAnchorKind | "arc" | "steer" | "life" | "collab" | "sponsor" | "rival" | "couple" | "drama";
   anchor: string;
   line: string;
   /** Named people in the beat. Empty means alone. */
@@ -470,6 +470,7 @@ export function parseSlurpBeat(raw: unknown): SlurpBeat | null {
         beat.anchorKind === "arc" ||
         beat.anchorKind === "steer" ||
         beat.anchorKind === "life" ||
+        beat.anchorKind === "drama" ||
         TIE_KINDS.includes(beat.anchorKind as string) ||
         SLURP_ANCHOR_KINDS.includes(beat.anchorKind as SlurpAnchorKind)
       ) ||

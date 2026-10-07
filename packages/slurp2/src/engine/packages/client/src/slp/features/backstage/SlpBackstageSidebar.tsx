@@ -55,7 +55,9 @@ export function SlpBackstageSidebar({
   const { t } = useTranslation();
   const section = navigation.section ?? "overview";
   return (
-    <>
+    // Its own scroll box: every settings section runs past a short window. The persona menu below
+    // the side menu stays outside it (`SlpShell`), so its popover is never clipped.
+    <div className="min-h-0 flex-1 overflow-y-auto">
       {/* The way out is the one control that must never be hunted for, so it is the loudest
           thing in the column. */}
       <button
@@ -92,7 +94,7 @@ export function SlpBackstageSidebar({
           );
         })}
       </nav>
-    </>
+    </div>
   );
 }
 

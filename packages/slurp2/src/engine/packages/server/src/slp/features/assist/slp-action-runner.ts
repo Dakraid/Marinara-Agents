@@ -17,6 +17,7 @@ import {
 } from "../../../../../shared/src/slp/slp-actions.js";
 import {
   drawSlpAssistPicture,
+  draftSlpPost,
   keepSlpAssistPicture,
   runSlpAssistText,
   undoSlpAssistPicture,
@@ -38,6 +39,7 @@ import {
 } from "./slp-stir-levers.js";
 import { previewSlpAction } from "./slp-action-preview.js";
 import { isSlpDeskLever, runSlpDeskLever } from "./slp-desk-levers.js";
+import { isSlurpDramaLever, runSlurpDramaLever } from "../world/slp-world-contract.js";
 
 const POST_FAILURE: Record<string, string> = {
   busy: "A post for this Creator is already being written.",
@@ -105,6 +107,10 @@ async function dispatch(
     const ran = await runSlurpTieLever(db, name, input);
     return ran.ok ? { ok: true, value: ran.value, undo: ran.undo ? { kind: "tie", undo: ran.undo } : null } : ran;
   }
+  if (isSlurpDramaLever(name)) {
+    const ran = await runSlurpDramaLever(db, name, input);
+    return ran.ok ? { ok: true, value: ran.value, undo: ran.undo ? { kind: "drama", undo: ran.undo } : null } : ran;
+  }
   switch (name) {
     case "list-world":
       return { ok: true, value: await readSlpStirWorld(db) };
@@ -130,6 +136,8 @@ async function dispatch(
       return runSlpAssistText(db, { ...(input as SlpActionParsed<"improve-text">), mode: "improve" });
     case "draw-picture":
       return drawSlpAssistPicture(db, input as SlpActionParsed<"draw-picture">);
+    case "draft-post":
+      return draftSlpPost(db, input as SlpActionParsed<"draft-post">);
     case "use-picture":
       return useSlpAssistPicture(db, input as SlpActionParsed<"use-picture">);
     case "undo-picture":
