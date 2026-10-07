@@ -2583,7 +2583,7 @@
         "schemaVersion": 1,
         "id": "lorebook-editor",
         "name": "Lorebook Editor",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "description": "Rewrites entries in a target lorebook from a user directive while preserving continuity with referenced character cards. Open a lorebook and choose Run Lorebook Editor to propose changes for approval.",
         "engine": {
           "min": "2.3.0",
@@ -2598,8 +2598,8 @@
         "files": [
           {
             "path": "agents.json",
-            "sha256": "f5c9524f3050b8c5ff0c4cbbf31550105a94955fd1b56fbab32061561364039a",
-            "bytes": 3267
+            "sha256": "81171d8e3aeeba39c3603ac7683b55e9e304c38ef1fbbab13527327b9caec3ab",
+            "bytes": 6066
           }
         ],
         "permissions": [
@@ -2614,9 +2614,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/lorebook-editor.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/lorebook-editor-1.0.0.zip",
-        "sha256": "4ae8f4f18757ce93e553851a60c6ca29277eb4a03d3e57ea05d19c7afcb61fc7",
-        "bytes": 2010
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/lorebook-editor-1.0.1.zip",
+        "sha256": "149149fd272d849d9b68a5e90a198fc191b04288bd24a3e982943b7897adb23b",
+        "bytes": 2675
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#lorebook-editor"
     },
@@ -2625,7 +2625,7 @@
         "schemaVersion": 1,
         "id": "lorebook-keeper",
         "name": "Lorebook Keeper",
-        "version": "1.0.6",
+        "version": "1.0.7",
         "description": "Saves important story facts, characters, places, and world changes to the chat's lorebook as you play. Add the Agent in Chat Settings → Agents → Misc Agents/Lorebook Keeper for Roleplay and Game modes.",
         "engine": {
           "min": "2.4.4",
@@ -2640,8 +2640,8 @@
         "files": [
           {
             "path": "agents.json",
-            "sha256": "73f7966e093375bc64880564ab07e9f5fcd09d83b667a976b4e4844daef0b828",
-            "bytes": 3495
+            "sha256": "4b70b671d4b8cba2ddcadc1a9c7a68266010ac12d5175323dd5be5c90bbdf5b9",
+            "bytes": 4057
           }
         ],
         "permissions": [
@@ -2656,9 +2656,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/lorebook-keeper.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/lorebook-keeper-1.0.6.zip",
-        "sha256": "22133154155984d5639014709db53609fe4e0240cfe42e3794fd6e262617fe36",
-        "bytes": 2202
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/lorebook-keeper-1.0.7.zip",
+        "sha256": "1ec87c3b544b56aa3cbd504e183614883993d7f97b8352af7f6a7b91bf8c7c33",
+        "bytes": 2391
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#lorebook-keeper"
     },

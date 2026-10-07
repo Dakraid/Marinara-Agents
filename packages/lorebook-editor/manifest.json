@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "lorebook-editor",
   "name": "Lorebook Editor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Rewrites entries in a target lorebook from a user directive while preserving continuity with referenced character cards. Open a lorebook and choose Run Lorebook Editor to propose changes for approval.",
   "engine": {
     "min": "2.3.0",
@@ -17,8 +17,8 @@
   "files": [
     {
       "path": "agents.json",
-      "sha256": "f5c9524f3050b8c5ff0c4cbbf31550105a94955fd1b56fbab32061561364039a",
-      "bytes": 3267
+      "sha256": "81171d8e3aeeba39c3603ac7683b55e9e304c38ef1fbbab13527327b9caec3ab",
+      "bytes": 6066
     }
   ],
   "permissions": [

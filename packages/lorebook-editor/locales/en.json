@@ -11,7 +11,12 @@
   "agents": {
     "lorebook-editor": {
       "name": "Lorebook Editor",
-      "description": "Rewrites entries in a target lorebook from a user directive while preserving continuity with referenced character cards."
+      "description": "Rewrites entries in a target lorebook from a user directive while preserving continuity with referenced character cards.",
+      "promptTemplates": {
+        "backfill-descriptions": {
+          "name": "Backfill descriptions"
+        }
+      }
     }
   }
 }

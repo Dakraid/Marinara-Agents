@@ -7,7 +7,7 @@ const agents = JSON.parse(await readFile(new URL("agents.json", packageRoot), "u
 const editor = agents.find((agent) => agent.id === "lorebook-editor");
 
 assert.equal(manifest.id, "lorebook-editor");
-assert.equal(manifest.version, "1.0.0");
+assert.equal(manifest.version, "1.0.1");
 assert.deepEqual(manifest.kind, ["agent"]);
 assert.deepEqual(manifest.entrypoints, { agents: "agents.json" });
 assert.deepEqual(manifest.engine, { min: "2.3.0", maxExclusive: "4.0.0" });
@@ -49,9 +49,21 @@ assert.match(prompt, /search_lorebook/u);
 assert.match(prompt, /"updates"/u);
 assert.match(prompt, /"action": "create\|update\|delete"/u);
 assert.match(prompt, /"targetLorebook"/u);
-for (const field of ["entryName", "content", "newFacts", "keys", "tag", "order", "reason"]) {
+assert.match(prompt, /"bookDescription"/u);
+for (const field of ["entryName", "description", "content", "newFacts", "keys", "tag", "order", "reason"]) {
   assert.match(prompt, new RegExp(`"${field}"`, "u"));
 }
+assert.match(prompt, /fill only empty or missing descriptions/iu);
+assert.match(prompt, /never rewrite an existing non-empty description/iu);
+
+const backfillTemplate = editor.promptTemplates?.find((template) => template.id === "backfill-descriptions");
+assert.ok(backfillTemplate, "Lorebook Editor must provide the backfill-descriptions preset");
+assert.equal(backfillTemplate.name, "Backfill descriptions");
+assert.match(backfillTemplate.promptTemplate, /descriptions only .* description is empty or missing/iu);
+assert.match(backfillTemplate.promptTemplate, /"bookDescription"/u);
+assert.match(backfillTemplate.promptTemplate, /"description"/u);
+assert.match(backfillTemplate.promptTemplate, /never rewrite.*non-empty description/iu);
+
 for (const chatOnlyReference of [
   "<chat_summary>",
   "<decisions>",

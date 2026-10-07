@@ -358,9 +358,25 @@
     "lorebook-editor": {
       "versions": [
         {
+          "version": "1.0.1",
+          "date": "2026-10-07",
+          "notes": "- Added entry and lorebook description backfill proposals, including a focused Backfill descriptions preset that preserves existing descriptions.",
+          "highlight": false
+        },
+        {
           "version": "1.0.0",
           "date": "2026-09-30",
           "notes": "- Added directive-driven lorebook entry rewriting with character-card references and approval-ready create, update, and delete proposals.",
+          "highlight": false
+        }
+      ]
+    },
+    "lorebook-keeper": {
+      "versions": [
+        {
+          "version": "1.0.7",
+          "date": "2026-10-07",
+          "notes": "- Added optional descriptions for new entries and empty-description backfills while preserving existing entry and lorebook descriptions.",
           "highlight": false
         }
       ]
