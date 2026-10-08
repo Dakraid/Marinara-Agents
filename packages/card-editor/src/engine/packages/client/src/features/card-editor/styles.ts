@@ -340,6 +340,20 @@ export const CARD_EDITOR_STYLES = `
   font-size: 0.6875rem;
 }
 
+.ce-choice--disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.ce-settings {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--muted);
+}
+
 .ce-choice input[type="radio"],
 .ce-choice input[type="checkbox"] {
   width: 0.875rem;

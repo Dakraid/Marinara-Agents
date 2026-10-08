@@ -17,6 +17,7 @@ import type { FastifyPluginAsync, FastifyReply } from "fastify";
 import {
   advanceItemStatus,
   newSession,
+  normalizeBulkSettings,
   normalizeSessionConfig,
   SchemaError,
   type BulkSession,
@@ -260,8 +261,35 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
     return session;
   }
 
+  // Panel "require review" toggle: auto-approve and on-completion writes are coerced to their
+  // manual-review equivalents at every session creation (create + rerun).
+  const coerceConfigForSettings = async (config: BulkSession["config"]): Promise<BulkSession["config"]> => {
+    const settings = await deps.store.getSettings();
+    if (!settings.disableAutoVerdicts) return config;
+    return {
+      ...config,
+      saveMode: config.saveMode === "auto" ? ("confirm" as const) : config.saveMode,
+      completionMode: "ask" as const,
+    };
+  };
+
   const routes: FastifyPluginAsync = async (app) => {
     app.get("/health", async () => ({ ok: true }));
+
+    app.get("/settings", async (_request, reply) => handle(reply, async () => deps.store.getSettings()));
+
+    app.put("/settings", async (request, reply) =>
+      handle(reply, async () => {
+        const body = sourceRecord(request.body);
+        if (!body) throw badRequest("settings must be an object");
+        try {
+          return await deps.store.saveSettings(normalizeBulkSettings(body));
+        } catch (error) {
+          if (error instanceof SchemaError) throw badRequest(error.message);
+          throw error;
+        }
+      }),
+    );
 
     app.post("/sessions", async (request, reply) =>
       handle(reply, async () => {
@@ -304,6 +332,7 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
         if (config.presetId === "custom" && !(config.customTemplate ?? "").trim()) {
           throw badRequest('presetId "custom" requires a non-empty customTemplate.');
         }
+        config = await coerceConfigForSettings(config);
         const behaviorOverrideCards = Object.fromEntries(
           targets
             .filter((target) => target.behaviorOverrideCard !== undefined)
@@ -375,7 +404,7 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
         );
         const rerun = newSession(
           `${source.label} (rerun)`,
-          source.config,
+          await coerceConfigForSettings(source.config),
           orderedItems.map((item) => ({
             characterId: item.characterId,
             characterName: item.characterName,

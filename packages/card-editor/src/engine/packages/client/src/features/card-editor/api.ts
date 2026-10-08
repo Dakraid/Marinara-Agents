@@ -2,6 +2,7 @@ import type {
   BulkSession,
   BulkSessionConfig,
   BulkSessionStats,
+  BulkSettings,
 } from "../../../../shared/src/features/agents/card-editor/schema.js";
 
 const API_BASE = "/api";
@@ -198,6 +199,14 @@ function itemPath(sessionId: string, itemId: string, suffix: string): string {
 
 export function createSession(body: CreateSessionRequest): Promise<BulkSession> {
   return request<BulkSession>("/sessions", "POST", body);
+}
+
+export function getBulkSettings(signal?: AbortSignal): Promise<BulkSettings> {
+  return request<BulkSettings>("/settings", "GET", undefined, signal);
+}
+
+export function saveBulkSettings(settings: BulkSettings): Promise<BulkSettings> {
+  return request<BulkSettings>("/settings", "PUT", settings);
 }
 
 export function listSessions(signal?: AbortSignal): Promise<SessionIndexEntry[]> {

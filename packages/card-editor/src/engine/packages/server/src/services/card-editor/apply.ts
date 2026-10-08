@@ -15,7 +15,7 @@ import type {
   SessionItem,
 } from "../../../../shared/src/features/agents/card-editor/schema.ts";
 import { SchemaError } from "../../../../shared/src/features/agents/card-editor/schema.ts";
-import { normalizeCardPromptText } from "../../../../shared/src/features/agents/card-editor/text.ts";
+import { normalizeCardPromptText, decodeXmlEntities } from "../../../../shared/src/features/agents/card-editor/text.ts";
 
 export type ApplyOperation =
   | {
@@ -97,7 +97,7 @@ export function planApply(
   // action later creates ONE new card from the collected blocks.
   if (options.saveMode === "duplicate" || options.saveMode === "combined") {
     const fields: Record<string, string> = {};
-    for (const update of updates) fields[update.field] = update.newText;
+    for (const update of updates) fields[update.field] = decodeXmlEntities(update.newText);
     if (options.saveMode === "combined") {
       if (!options.combinedCardName?.trim()) {
         throw new SchemaError("combinedCardName is required when saveMode is combined");
@@ -123,7 +123,7 @@ export function planApply(
         op: "patchField",
         characterId: item.characterId,
         field: update.field,
-        newText: update.newText,
+        newText: decodeXmlEntities(update.newText),
         versionSource: "agent",
         versionReason,
       });

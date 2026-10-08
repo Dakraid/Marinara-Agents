@@ -260,6 +260,41 @@ async function testAutoSaveModeHint() {
   assert.equal(settled.items[0].autoApply, true, "auto save mode marks items for panel auto-approval");
 }
 
+async function testSettingsPumpCap() {
+  stopAllRunners();
+  // The panel's max-parallel-agents setting narrows a session's own concurrency on every pump
+  // cycle: concurrency 4 + settings cap 1 must run strictly one dispatch at a time.
+  const documents = createFakeDocuments();
+  const store = createSessionStore(documents);
+  await store.saveSettings({ version: 1, maxParallelAgents: 1, disableAutoVerdicts: false });
+  let inFlight = 0;
+  let peak = 0;
+  const languageModels = {
+    async resolve() {
+      return {
+        name: "FakeConnection",
+        model: "fake-model",
+        connectionId: null,
+        async chatComplete() {
+          inFlight += 1;
+          peak = Math.max(peak, inFlight);
+          await new Promise((resolve) => setTimeout(resolve, 20));
+          inFlight -= 1;
+          return { content: singleUpdate("Capped"), finishReason: "stop" };
+        },
+      };
+    },
+  };
+  const deps = { store, languageModels, logger: createLogger() };
+  const session = makeSession({ mode: "individual", concurrency: 4 }, 4);
+  await store.createSession(session, EMPTY_MATERIAL);
+  startRunner(deps, session.id);
+  const settled = await settledSession(store, session.id);
+  assert.equal(settled.status, "completed");
+  assert.equal(settled.stats.done, 4);
+  assert.equal(peak, 1, "the settings cap (1) overrides session concurrency (4)");
+}
+
 async function testCompletionEnforcementDispatch() {
   stopAllRunners();
   const documents = createFakeDocuments();
@@ -1108,6 +1143,7 @@ async function testActivationLifecycle() {
 const tests = [
   ["individual mode", testIndividualMode],
   ["auto save mode autoApply hint", testAutoSaveModeHint],
+  ["settings pump cap", testSettingsPumpCap],
   ["completion enforcement dispatch", testCompletionEnforcementDispatch],
   ["no-op auto-approve", testNoOpAutoApproves],
   ["batched mode", testBatchedMode],

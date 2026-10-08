@@ -5,6 +5,7 @@
  * panel's auto-apply driver, so both paths write identically (SPEC F4: versionSource "agent").
  */
 import type { BulkSession, SessionItem } from "../../../../shared/src/features/agents/card-editor/schema.ts";
+import { decodeXmlEntities } from "../../../../shared/src/features/agents/card-editor/text.ts";
 // ".ts" specifiers: the panel regression runs this module under plain Node type-stripping.
 import {
   createHostCharacter,
@@ -220,11 +221,14 @@ export async function rejectSessionItem(
   }
 }
 
-/** Pure: the collected per-item XML blocks (description updates) in session target order. */
+/** Pure: the collected per-item XML blocks (description updates) in session target order.
+ *  Entity forms the model emitted are decoded so the combined card holds real characters. */
 export function buildCombinedCardBlocks(items: readonly SessionItem[]): string[] {
   return items
     .filter((item) => item.status === "applied")
-    .map((item) => (item.updates ?? []).find((update) => update.field === "description")?.newText ?? "")
+    .map((item) =>
+      decodeXmlEntities((item.updates ?? []).find((update) => update.field === "description")?.newText ?? ""),
+    )
     .filter((block) => block.trim().length > 0);
 }
 

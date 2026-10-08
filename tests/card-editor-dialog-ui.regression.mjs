@@ -230,7 +230,11 @@ assert.match(dialog, /loadStoredBulkConfig/u, "last-used config pre-fills the di
 assert.match(dialog, /role="alert"/u, "dispatch failures render an inline alert");
 assert.match(dialog, /PROMPT_PRESET_TEMPLATES\[presetId\]/u, "Custom prefills from the selected preset body");
 assert.match(dialog, /min=\{1\}[\s\S]*?max=\{16\}/u, "batch size range is 1–16");
-assert.match(dialog, /max=\{concurrencyMax\}/u, "the concurrency ceiling follows the connection agent limit");
+assert.match(
+  dialog,
+  /Math\.min\(16, Math\.max\(1, Math\.trunc\(agentLimit\)\)\)/u,
+  "the connection agent limit clamps to 1–16",
+);
 assert.match(
   dialog,
   /connections\?\.find\(\(connection\) => connection\.id === connectionId\)/u,
@@ -241,7 +245,7 @@ assert.match(
   /connections\?\.find\(\(connection\) => connection\.defaultForAgents\)/u,
   "the default chain falls back to the agents-default connection",
 );
-assert.match(dialog, /Math\.min\(current, concurrencyMax\)/u, "a remembered concurrency only ever clamps down");
+assert.match(dialog, /Math\.min\(current, parallelCap\)/u, "a remembered concurrency only ever clamps down");
 assert.match(dialog, /cardEditor\.dialog\.processing\.overflowCaption/u, "overflow split caption is required");
 assert.match(dialog, /id="ce-completion-mode"/u, "processing exposes the on-completion select");
 assert.match(dialog, /option value="ask"/u, "ask is the default completion choice");
@@ -249,6 +253,40 @@ assert.match(dialog, /option value="apply"/u, "apply enforcement is selectable")
 assert.match(dialog, /option value="duplicate"/u, "duplicate enforcement is selectable");
 assert.match(dialog, /cardEditor\.dialog\.processing\.completionCaption/u, "stale/affix guidance is visible");
 assert.match(dialog, /completionMode,/u, "completion mode travels in the persisted dispatch config");
+
+// Bulk settings integration: the panel's parallel cap and require-review toggle constrain this dialog.
+assert.match(dialog, /getBulkSettings\(\)/u, "the dialog loads the panel's bulk settings");
+assert.match(dialog, /const requireReview = bulkSettings\?\.disableAutoVerdicts === true/u);
+assert.match(
+  dialog,
+  /setSaveMode\(\(current\) => \(current === "auto" \? "confirm" : current\)\)/u,
+  "require-review coerces a remembered auto save mode back to confirm",
+);
+assert.match(
+  dialog,
+  /setCompletionMode\(\(current\) => \(current === "ask" \? current : "ask"\)\)/u,
+  "require-review coerces completion enforcement back to ask",
+);
+assert.match(
+  dialog,
+  /const parallelCap = settingsCap === null \? concurrencyMax : Math\.min\(concurrencyMax, settingsCap\)/u,
+  "the panel cap narrows the connection limit instead of replacing it",
+);
+assert.match(dialog, /max=\{parallelCap\}/u, "the concurrency control ceiling follows the panel cap");
+assert.match(dialog, /disabled=\{requireReview\}/u, "the auto save mode is disabled under require-review");
+assert.match(
+  dialog,
+  /option value="apply" disabled=\{requireReview\}/u,
+  "apply enforcement is disabled under require-review",
+);
+assert.match(
+  dialog,
+  /option value="duplicate" disabled=\{requireReview\}/u,
+  "duplicate enforcement is disabled under require-review",
+);
+assert.match(dialog, /cardEditor\.dialog\.processing\.autoDisabledNote/u, "the require-review note is shown");
+assert.match(dialogControls, /disabled\?: boolean/u, "RadioChoice supports a disabled state");
+assert.match(dialogControls, /ce-choice--disabled/u, "disabled choices render a distinct style");
 
 // ── 7. Behavior character search-select contract ──
 assert.match(behaviorSelect, /role="combobox"/u);

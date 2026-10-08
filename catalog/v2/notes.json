@@ -20,6 +20,12 @@
     "card-editor": {
       "versions": [
         {
+          "version": "1.6.0",
+          "date": "2026-10-08",
+          "notes": "- New **Bulk settings** panel on the Runs page: cap how many agents a bulk run may drive at once (0 = follow the connection's limit, otherwise 1–16), and a **require review** toggle that disables auto-approve and auto-apply — every verdict becomes a confirmation and completion falls back to asking.\n- Text applied from run results (verdict approvals, auto-apply, completion enforcement, and duplicated cards) now decodes HTML entities (`&lt;`, `&gt;`, `&quot;`, `&apos;`, `&amp;`, numeric forms) into their real symbols, so escaped model output no longer lands in card text.",
+          "highlight": true
+        },
+        {
           "version": "1.5.0",
           "date": "2026-10-08",
           "notes": "- Bulk runs can now process more cards in parallel: the concurrency control goes up to the selected connection's parallel job limit (up to 16) instead of the previous fixed cap of 4. With the default connection chain, the limit of the connection marked default for agents is used.\n- Completed results stay inspectable: applied and duplicated cards in a session now offer an **Inspect** action that opens their full diff view — the same review surface used for pending confirmations, read-only.",

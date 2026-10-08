@@ -272,7 +272,14 @@ async function pump(runner: SessionRunner): Promise<void> {
       if (!session || session.status !== "active") {
         runner.queue = [];
       } else {
-        while (!runner.canceled && runner.queue.length > 0 && runner.active < session.config.concurrency) {
+        // The panel's max-parallel-agents setting caps the session's own concurrency on top of
+        // the schema ceiling; a settings read per pump cycle is the same cost as the session read.
+        const settings = await runner.deps.store.getSettings();
+        const parallelCap = Math.min(
+          session.config.concurrency,
+          settings.maxParallelAgents ?? session.config.concurrency,
+        );
+        while (!runner.canceled && runner.queue.length > 0 && runner.active < parallelCap) {
           const task = runner.queue.shift()!;
           runner.active += 1;
           void runTask(runner, task)

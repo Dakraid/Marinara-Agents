@@ -2,15 +2,18 @@ import assert from "node:assert/strict";
 
 import {
   SchemaError,
+  DEFAULT_BULK_SETTINGS,
   advanceItemStatus,
   migrateSessionDocument,
   newItem,
   newSession,
+  normalizeBulkSettings,
   normalizeSessionConfig,
   recomputeStats,
   validateCardFieldUpdate,
 } from "../packages/card-editor/src/engine/packages/shared/src/features/agents/card-editor/schema.ts";
 import {
+  decodeXmlEntities,
   escapeXml,
   normalizeCardPromptText,
 } from "../packages/card-editor/src/engine/packages/shared/src/features/agents/card-editor/text.ts";
@@ -1018,5 +1021,85 @@ assert.deepEqual(
   protectedStatuses.map((status) => ({ status, pendingOps: undefined })),
   "completion enforcement never touches rejected, canceled, or failed items",
 );
+
+// Entity decode: models routinely emit &lt;/&gt;/&quot;/&apos;/&amp; and numeric references instead of the
+// real characters; everything that lands on a card decodes them first. &amp; decodes LAST so an
+// escaped ampersand sequence (&amp;lt;) stays the literal text "&lt;" instead of "<".
+assert.equal(decodeXmlEntities("&lt;wave&gt;"), "<wave>");
+assert.equal(decodeXmlEntities("&quot;hi&quot; &apos;there&apos;s&apos;"), "\"hi\" 'there's'");
+assert.equal(decodeXmlEntities("Tom &amp; Jerry"), "Tom & Jerry");
+assert.equal(decodeXmlEntities("&amp;lt;"), "&lt;");
+assert.equal(decodeXmlEntities("&nbsp;"), "\u00a0");
+assert.equal(decodeXmlEntities("&#65;&#x42;&#x1F600;"), "AB\u{1F600}");
+assert.equal(decodeXmlEntities("&#x110000;"), "&#x110000;");
+assert.equal(decodeXmlEntities("&#0;"), "&#0;");
+assert.equal(decodeXmlEntities("plain <text> & stuff"), "plain <text> & stuff");
+
+const escapedItem = {
+  ...newItem("character-9", "Escaped Output"),
+  snapshots: { description: "Old" },
+  updates: [
+    {
+      field: "description",
+      oldText: "Old",
+      newText: "&lt;wave&gt; &amp; &quot;hi&quot; &#33;",
+      reason: "Entities",
+    },
+  ],
+};
+assert.deepEqual(
+  planApply(escapedItem, { description: "Old" }, { force: false, saveMode: "confirm", label: "L" }),
+  [
+    {
+      op: "patchField",
+      characterId: "character-9",
+      field: "description",
+      newText: '<wave> & "hi" !',
+      versionSource: "agent",
+      versionReason: "Card Editor bulk: L",
+    },
+  ],
+  "applied patches decode entity forms into the real symbols",
+);
+assert.deepEqual(
+  planApply(escapedItem, { description: "Old" }, { force: false, saveMode: "duplicate", duplicateSuffix: " (E)" }),
+  [
+    {
+      op: "duplicateThenPatch",
+      characterId: "character-9",
+      fields: { description: '<wave> & "hi" !' },
+      nameSuffix: " (E)",
+    },
+  ],
+  "duplicate patches decode entity forms too",
+);
+assert.deepEqual(
+  buildCombinedCardBlocks([
+    { ...escapedItem, status: "applied" },
+    { ...escapedItem, itemId: "skip", status: "pending" },
+  ]),
+  ['<wave> & "hi" !'],
+  "combined-mode description blocks decode entity forms",
+);
+
+// Bulk settings: the panel persists maxParallelAgents (null = follow connection) and the
+// require-review toggle; normalize is the single gate for defaults, PUT bodies, and garbage reads.
+assert.deepEqual(normalizeBulkSettings(null), { ...DEFAULT_BULK_SETTINGS });
+assert.deepEqual(normalizeBulkSettings(undefined), { version: 1, maxParallelAgents: null, disableAutoVerdicts: false });
+assert.deepEqual(normalizeBulkSettings({}), { version: 1, maxParallelAgents: null, disableAutoVerdicts: false });
+assert.deepEqual(normalizeBulkSettings({ maxParallelAgents: 16, disableAutoVerdicts: true }), {
+  version: 1,
+  maxParallelAgents: 16,
+  disableAutoVerdicts: true,
+});
+for (const bad of [0, 17, 1.5, Number.NaN, "4", Infinity]) {
+  assert.throws(
+    () => normalizeBulkSettings({ maxParallelAgents: bad }),
+    SchemaError,
+    `maxParallelAgents=${bad} rejected`,
+  );
+}
+assert.throws(() => normalizeBulkSettings({ disableAutoVerdicts: "yes" }), SchemaError);
+assert.throws(() => normalizeBulkSettings("nope"), SchemaError);
 
 process.stdout.write("Card Editor bulk services regression passed.\n");

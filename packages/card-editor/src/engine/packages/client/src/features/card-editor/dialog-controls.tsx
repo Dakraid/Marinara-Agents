@@ -114,16 +114,25 @@ export function RadioChoice({
   checked,
   onChange,
   title,
+  disabled,
 }: {
   name: string;
   value: string;
   checked: boolean;
   onChange: (value: string) => void;
   title: string;
+  disabled?: boolean;
 }) {
   return (
-    <label className="ce-choice">
-      <input type="radio" name={name} value={value} checked={checked} onChange={() => onChange(value)} />
+    <label className={`ce-choice${disabled ? " ce-choice--disabled" : ""}`}>
+      <input
+        type="radio"
+        name={name}
+        value={value}
+        checked={checked}
+        disabled={disabled}
+        onChange={() => onChange(value)}
+      />
       <span className="ce-choice-copy">
         <strong>{title}</strong>
       </span>

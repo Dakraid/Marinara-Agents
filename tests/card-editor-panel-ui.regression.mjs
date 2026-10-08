@@ -304,6 +304,11 @@ assert.match(runsPanel, /executeCompletionEnforcement/u, "list polling auto-exec
 assert.match(runsPanel, /cardEditor\.panel\.completionMode/u, "list rows show the completion policy chip");
 assert.match(runsPanel, /cardEditor\.panel\.enforcementProgress/u, "list rows show enforcement progress");
 assert.match(runsPanel, /rerunSession\(entry\.id\)/u, "completed/canceled list rows can run again");
+assert.match(runsPanel, /data-ce-section="bulk-settings"/u, "the runs panel exposes the bulk settings section");
+assert.match(runsPanel, /getBulkSettings\(\)/u, "bulk settings load with the panel");
+assert.match(runsPanel, /saveBulkSettings\(/u, "the save action persists panel settings");
+assert.match(runsPanel, /maxParallelAgents: maxParallel > 0 \? maxParallel : null/u, "0 maps to follow-the-connection");
+assert.match(runsPanel, /cardEditor\.panel\.settings\.disableAutoVerdicts/u, "the require-review toggle is offered");
 
 // ── 9. Session detail structure ──
 assert.match(sessionDetail, /PAGE_SIZE = 50/u, "items paginate at 50 per page (SPEC §5: 200+ cards)");
@@ -456,6 +461,7 @@ async function createRouteHarness(deps) {
   const app = {
     get: (path, handler) => handlers.set(`GET ${path}`, handler),
     post: (path, handler) => handlers.set(`POST ${path}`, handler),
+    put: (path, handler) => handlers.set(`PUT ${path}`, handler),
     delete: (path, handler) => handlers.set(`DELETE ${path}`, handler),
   };
   await createCardEditorRoutes(deps)(app, {});
@@ -723,6 +729,57 @@ async function createSettledSession(configOverrides, hostCards) {
     const after = await harness.invoke("GET", "/sessions/:id", { params: { id: sessionId } });
     assert.equal(after.body.items[0].status, "awaiting-review", "the item stays reviewable for a retry");
   });
+}
+stopAllRunners();
+
+{
+  stopAllRunners();
+  // Settings route: defaults on first read, PUT roundtrip, validation, and the require-review
+  // coercion that rewrites remembered auto choices at session creation.
+  const documents = createFakeDocuments();
+  const store = createSessionStore(documents);
+  const deps = {
+    store,
+    languageModels: createFakeLanguageModels(() => JSON.stringify({ updates: [] })),
+    logger: silentLogger,
+  };
+  const harness = await createRouteHarness(deps);
+  const initial = await harness.invoke("GET", "/settings");
+  assert.equal(initial.status, 200);
+  assert.deepEqual(initial.body, { version: 1, maxParallelAgents: null, disableAutoVerdicts: false });
+
+  const saved = await harness.invoke("PUT", "/settings", {
+    body: { maxParallelAgents: 6, disableAutoVerdicts: true },
+  });
+  assert.equal(saved.status, 200);
+  assert.deepEqual(saved.body, { version: 1, maxParallelAgents: 6, disableAutoVerdicts: true });
+  assert.deepEqual((await harness.invoke("GET", "/settings")).body, saved.body, "settings persist across reads");
+
+  for (const bad of [null, { maxParallelAgents: 17 }, { disableAutoVerdicts: "yes" }]) {
+    const rejected = await harness.invoke("PUT", "/settings", { body: bad });
+    assert.equal(rejected.status, 400, JSON.stringify(bad));
+  }
+  const cleared = await harness.invoke("PUT", "/settings", { body: {} });
+  assert.deepEqual(cleared.body, { version: 1, maxParallelAgents: null, disableAutoVerdicts: false });
+
+  await harness.invoke("PUT", "/settings", { body: { disableAutoVerdicts: true } });
+  const created = await harness.invoke("POST", "/sessions", {
+    body: {
+      label: "Coerced",
+      targets: [
+        {
+          characterId: "char-0",
+          characterName: "Character 0",
+          card: { name: "Character 0", description: "Old desc 0" },
+        },
+      ],
+      config: normalizeSessionConfig({ providerRetries: 0, saveMode: "auto", completionMode: "duplicate" }),
+    },
+  });
+  assert.equal(created.status, 200, JSON.stringify(created.body));
+  assert.equal(created.body.config.saveMode, "confirm", "require-review coerces auto to confirm");
+  assert.equal(created.body.config.completionMode, "ask", "require-review coerces completion to ask");
+  stopAllRunners();
 }
 stopAllRunners();
 

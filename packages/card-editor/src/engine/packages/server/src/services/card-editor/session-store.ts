@@ -14,12 +14,18 @@ import {
   migrateSessionDocument,
   recomputeStats,
   type BulkSession,
+  type BulkSettings,
+  DEFAULT_BULK_SETTINGS,
+  normalizeBulkSettings,
 } from "../../../../shared/src/features/agents/card-editor/schema.ts";
 import type { CharacterLike, LorebookLike } from "./context.ts";
 
 export const CARD_EDITOR_PACKAGE_ID = "card-editor";
 const SESSION_KIND = "bulk-session";
 const MATERIAL_KIND = "bulk-session-material";
+const SETTINGS_KIND = "settings";
+const SETTINGS_DOCUMENT_ID = "bulk-settings";
+const SETTINGS_DESCRIPTION = "Card Editor bulk settings";
 const MATERIAL_DESCRIPTION = "Card Editor bulk session prompt material";
 const SESSION_DESCRIPTION = "Card Editor bulk session";
 
@@ -73,6 +79,8 @@ export interface SessionStore {
   listSessions(): Promise<BulkSession[]>;
   updateSession(id: string, mutate: (session: BulkSession) => BulkSession): Promise<BulkSession | null>;
   deleteSession(id: string): Promise<boolean>;
+  getSettings(): Promise<BulkSettings>;
+  saveSettings(settings: BulkSettings): Promise<BulkSettings>;
 }
 
 function materialDocumentId(sessionId: string): string {
@@ -199,6 +207,44 @@ export function createSessionStore(documents: SessionDocumentStore): SessionStor
         if (material) await documents.remove(CARD_EDITOR_PACKAGE_ID, material.id, material.revision);
         return documents.remove(CARD_EDITOR_PACKAGE_ID, id, record.revision);
       });
+    },
+
+    // Garbage or missing settings documents read as defaults, so a corrupt doc never blocks runs.
+    async getSettings() {
+      const record = await documents.getById(CARD_EDITOR_PACKAGE_ID, SETTINGS_DOCUMENT_ID);
+      if (!record) return { ...DEFAULT_BULK_SETTINGS };
+      try {
+        return normalizeBulkSettings(record.data);
+      } catch {
+        return { ...DEFAULT_BULK_SETTINGS };
+      }
+    },
+
+    async saveSettings(settings) {
+      const now = new Date().toISOString();
+      const existing = await documents.getById(CARD_EDITOR_PACKAGE_ID, SETTINGS_DOCUMENT_ID);
+      const saved = existing
+        ? await documents.update({
+            id: SETTINGS_DOCUMENT_ID,
+            packageId: CARD_EDITOR_PACKAGE_ID,
+            expectedRevision: existing.revision,
+            name: "Bulk settings",
+            description: SETTINGS_DESCRIPTION,
+            data: settings,
+            updatedAt: now,
+          })
+        : await documents.create({
+            id: SETTINGS_DOCUMENT_ID,
+            packageId: CARD_EDITOR_PACKAGE_ID,
+            kind: SETTINGS_KIND,
+            name: "Bulk settings",
+            description: SETTINGS_DESCRIPTION,
+            data: settings,
+            createdAt: now,
+            updatedAt: now,
+          });
+      if (!saved) throw new Error("Card Editor settings changed while they were being saved. Try again.");
+      return settings;
     },
   };
 }

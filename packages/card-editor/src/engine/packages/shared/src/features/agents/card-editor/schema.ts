@@ -255,6 +255,40 @@ export function normalizeSessionConfig(input: unknown): BulkSessionConfig {
   };
 }
 
+/** Panel-owned bulk settings persisted by the package server (kind "settings").
+ *  maxParallelAgents caps a run's concurrency on top of the connection limit (null = follow the
+ *  connection); disableAutoVerdicts forces manual review — auto-approve and on-completion writes
+ *  are coerced to confirm/ask at session creation. */
+export interface BulkSettings {
+  version: 1;
+  maxParallelAgents: number | null;
+  disableAutoVerdicts: boolean;
+}
+
+export const DEFAULT_BULK_SETTINGS: BulkSettings = { version: 1, maxParallelAgents: null, disableAutoVerdicts: false };
+
+export function normalizeBulkSettings(input: unknown): BulkSettings {
+  if (input === null || input === undefined) return { ...DEFAULT_BULK_SETTINGS };
+  const source = sourceRecord(input);
+  if (!source) throw new SchemaError("bulk settings must be an object");
+  let maxParallelAgents: number | null = null;
+  if (source.maxParallelAgents !== undefined && source.maxParallelAgents !== null) {
+    const value = source.maxParallelAgents;
+    if (typeof value !== "number" || !Number.isInteger(value) || value < 1 || value > 16) {
+      throw new SchemaError("maxParallelAgents must be null or an integer between 1 and 16");
+    }
+    maxParallelAgents = value;
+  }
+  if (source.disableAutoVerdicts !== undefined && typeof source.disableAutoVerdicts !== "boolean") {
+    throw new SchemaError("disableAutoVerdicts must be a boolean");
+  }
+  return {
+    version: 1,
+    maxParallelAgents,
+    disableAutoVerdicts: source.disableAutoVerdicts === true,
+  };
+}
+
 export function advanceItemStatus(item: SessionItem, next: ItemStatus): SessionItem {
   if (!ITEM_STATUSES.has(item.status) || !ITEM_STATUSES.has(next)) throw new SchemaError("item status is invalid");
   const allowed =

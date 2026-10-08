@@ -1,12 +1,118 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
-import type { BulkSession } from "../../../../shared/src/features/agents/card-editor/schema.ts";
-import { cancelSession, deleteSession, getSession, listSessions, rerunSession, type SessionIndexEntry } from "./api";
+import type { BulkSession, BulkSettings } from "../../../../shared/src/features/agents/card-editor/schema.ts";
+import {
+  cancelSession,
+  deleteSession,
+  getBulkSettings,
+  getSession,
+  listSessions,
+  rerunSession,
+  saveBulkSettings,
+  type SessionIndexEntry,
+} from "./api";
 import { executeCompletionEnforcement } from "./apply-ops";
+import { NumberField } from "./dialog-controls";
 import { translateCardEditor, type CardEditorLocalizationContext } from "./localization";
 import { deriveLiveStatus } from "./panel-status";
 import { SessionDetail } from "./SessionDetail";
 import { useVisiblePoll } from "./use-visible-poll";
+
+/** Collapsible bulk settings: the agent-level parallel-call cap and the require-review toggle,
+ *  persisted through the package's own /settings route (the same store the server enforces). */
+function BulkSettingsSection({ localization }: { localization?: CardEditorLocalizationContext }) {
+  const t = (key: string, values?: Record<string, string | number>) => translateCardEditor(localization, key, values);
+  const [loaded, setLoaded] = useState(false);
+  const [maxParallel, setMaxParallel] = useState(0);
+  const [disableAuto, setDisableAuto] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getBulkSettings()
+      .then((settings) => {
+        if (cancelled) return;
+        setMaxParallel(settings.maxParallelAgents ?? 0);
+        setDisableAuto(settings.disableAutoVerdicts);
+        setLoaded(true);
+      })
+      .catch(() => {
+        if (!cancelled) setError("Could not load the bulk settings.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const save = async () => {
+    if (busy || !loaded) return;
+    setBusy(true);
+    setError(null);
+    setSaved(false);
+    try {
+      await saveBulkSettings({
+        version: 1,
+        maxParallelAgents: maxParallel > 0 ? maxParallel : null,
+        disableAutoVerdicts: disableAuto,
+      });
+      setSaved(true);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <details className="ce-settings" data-ce-section="bulk-settings">
+      <summary className="ce-section-heading">{t("cardEditor.panel.settings.title")}</summary>
+      <NumberField
+        id="ce-settings-max-parallel"
+        label={t("cardEditor.panel.settings.maxParallelAgents")}
+        value={maxParallel}
+        min={0}
+        max={16}
+        onChange={(next) => {
+          setMaxParallel(next);
+          setSaved(false);
+        }}
+      />
+      <p className="ce-caption">{t("cardEditor.panel.settings.maxParallelAgentsHint")}</p>
+      <label className="ce-choice">
+        <input
+          type="checkbox"
+          checked={disableAuto}
+          onChange={(event) => {
+            setDisableAuto(event.target.checked);
+            setSaved(false);
+          }}
+        />
+        <span className="ce-choice-copy">
+          <strong>{t("cardEditor.panel.settings.disableAutoVerdicts")}</strong>
+          <small>{t("cardEditor.panel.settings.disableAutoVerdictsHint")}</small>
+        </span>
+      </label>
+      <div className="ce-session-actions">
+        <button
+          type="button"
+          className="mari-chrome-control mari-chrome-control--small"
+          disabled={busy || !loaded}
+          onClick={() => void save()}
+        >
+          {t("cardEditor.panel.settings.save")}
+        </button>
+        {saved ? <span className="ce-caption">{t("cardEditor.panel.settings.saved")}</span> : null}
+      </div>
+      {error ? (
+        <div className="ce-status ce-status--error" role="alert">
+          {t("cardEditor.panel.detail.actionError", { message: error })}
+        </div>
+      ) : null}
+    </details>
+  );
+}
 
 function ModeChips({
   session,
@@ -204,6 +310,7 @@ export function RunsPanel({
         </div>
       ) : null}
       {sessions !== null && list.length === 0 ? <p className="ce-caption">{t("cardEditor.panel.empty")}</p> : null}
+      <BulkSettingsSection localization={localization} />
       {active.length > 0 ? (
         <div className="ce-panel-section" data-ce-section="active">
           <span className="ce-section-heading">{t("cardEditor.panel.activeTitle")}</span>

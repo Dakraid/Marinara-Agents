@@ -1,3 +1,8 @@
+## 1.6.0 — 2026-10-08
+
+- New **Bulk settings** panel on the Runs page: cap how many agents a bulk run may drive at once (0 = follow the connection's limit, otherwise 1–16), and a **require review** toggle that disables auto-approve and auto-apply — every verdict becomes a confirmation and completion falls back to asking.
+- Text applied from run results (verdict approvals, auto-apply, completion enforcement, and duplicated cards) now decodes HTML entities (`&lt;`, `&gt;`, `&quot;`, `&apos;`, `&amp;`, numeric forms) into their real symbols, so escaped model output no longer lands in card text.
+
 ## 1.5.0 — 2026-10-08
 
 - Bulk runs can now process more cards in parallel: the concurrency control goes up to the selected connection's parallel job limit (up to 16) instead of the previous fixed cap of 4. With the default connection chain, the limit of the connection marked default for agents is used.
@@ -43,4 +48,5 @@
 - Graduated to a full feature package with its own server runtime, client interface, and session storage.
 
 ## 1.0.0 — 2026-09-30
+
 - Added directive-driven character-card rewriting with lorebook references and approval-ready field updates.

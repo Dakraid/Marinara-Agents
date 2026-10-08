@@ -8,11 +8,13 @@ import type {
 import {
   behaviorCardMaterial,
   createSession,
+  getBulkSettings,
   getHostCharacter,
   getHostCharacterCard,
   getHostLorebookEntries,
   listHostLorebooks,
   listLanguageConnections,
+  type BulkSettings,
   type HostLorebook,
   type LanguageConnection,
 } from "./api";
@@ -62,6 +64,7 @@ export function BulkDispatchDialog({
   const [saveMode, setSaveMode] = useState<SaveMode>(storedConfig?.saveMode ?? "confirm");
   const [dispatching, setDispatching] = useState(false);
   const [dispatchError, setDispatchError] = useState<string | null>(null);
+  const [bulkSettings, setBulkSettings] = useState<BulkSettings | null>(null);
 
   const dialogRef = useDialogFocusTrap(true, () => dispatching, onClose);
 
@@ -181,6 +184,28 @@ export function BulkDispatchDialog({
   const estimate = estimateBulkCalls(targets.length, batchSize);
   const unloadableTargets = targets.some((target) => target.loadError || !target.card);
 
+  // Agent-level bulk settings: the panel's parallel cap and the require-review toggle both
+  // constrain this dialog. A load failure leaves them unset — the server still enforces them.
+  useEffect(() => {
+    let cancelled = false;
+    getBulkSettings()
+      .then((settings) => {
+        if (!cancelled) setBulkSettings(settings);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const requireReview = bulkSettings?.disableAutoVerdicts === true;
+  // Remembered auto choices from before the toggle was switched on coerce back to manual review.
+  useEffect(() => {
+    if (!requireReview) return;
+    setSaveMode((current) => (current === "auto" ? "confirm" : current));
+    setCompletionMode((current) => (current === "ask" ? current : "ask"));
+  }, [requireReview]);
+
   // Concurrency ceiling: the selected connection's parallel agent-job limit (maxParallelJobs,
   // 1–16). The default chain has no row of its own, so it falls back to the connection marked
   // defaultForAgents (then isDefault); an unresolvable list keeps the previous ceiling of 4.
@@ -194,10 +219,12 @@ export function BulkDispatchDialog({
     typeof agentLimit === "number" && Number.isFinite(agentLimit)
       ? Math.min(16, Math.max(1, Math.trunc(agentLimit)))
       : 4;
+  const settingsCap = bulkSettings?.maxParallelAgents ?? null;
+  const parallelCap = settingsCap === null ? concurrencyMax : Math.min(concurrencyMax, settingsCap);
   // A remembered higher value only ever clamps down — never raises what the user picked.
   useEffect(() => {
-    setConcurrency((current) => Math.min(current, concurrencyMax));
-  }, [concurrencyMax]);
+    setConcurrency((current) => Math.min(current, parallelCap));
+  }, [parallelCap]);
 
   // The server never fetches engine data (coordinator decision 1): every prompt input travels
   // with the dispatch — target cards, per-target style-override cards (ANY library character),
@@ -478,7 +505,7 @@ export function BulkDispatchDialog({
                 label={t("cardEditor.dialog.processing.concurrency")}
                 value={concurrency}
                 min={1}
-                max={concurrencyMax}
+                max={parallelCap}
                 onChange={setConcurrency}
               />
             </div>
@@ -498,10 +525,18 @@ export function BulkDispatchDialog({
                 onChange={(event) => setCompletionMode(event.target.value as CompletionMode)}
               >
                 <option value="ask">{t("cardEditor.dialog.processing.completionAsk")}</option>
-                <option value="apply">{t("cardEditor.dialog.processing.completionApply")}</option>
-                <option value="duplicate">{t("cardEditor.dialog.processing.completionDuplicate")}</option>
+                <option value="apply" disabled={requireReview}>
+                  {t("cardEditor.dialog.processing.completionApply")}
+                </option>
+                <option value="duplicate" disabled={requireReview}>
+                  {t("cardEditor.dialog.processing.completionDuplicate")}
+                </option>
               </select>
-              <small>{t("cardEditor.dialog.processing.completionCaption")}</small>
+              {requireReview ? (
+                <small>{t("cardEditor.dialog.processing.autoDisabledNote")}</small>
+              ) : (
+                <small>{t("cardEditor.dialog.processing.completionCaption")}</small>
+              )}
             </label>
             <p className="ce-caption">{t("cardEditor.dialog.processing.overflowCaption")}</p>
           </fieldset>
@@ -522,6 +557,7 @@ export function BulkDispatchDialog({
                 checked={saveMode === "auto"}
                 onChange={(value) => setSaveMode(value as SaveMode)}
                 title={t("cardEditor.dialog.saving.auto")}
+                disabled={requireReview}
               />
               <RadioChoice
                 name="ce-save-mode"
