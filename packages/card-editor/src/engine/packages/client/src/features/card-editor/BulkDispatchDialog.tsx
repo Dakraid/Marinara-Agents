@@ -181,6 +181,24 @@ export function BulkDispatchDialog({
   const estimate = estimateBulkCalls(targets.length, batchSize);
   const unloadableTargets = targets.some((target) => target.loadError || !target.card);
 
+  // Concurrency ceiling: the selected connection's parallel agent-job limit (maxParallelJobs,
+  // 1–16). The default chain has no row of its own, so it falls back to the connection marked
+  // defaultForAgents (then isDefault); an unresolvable list keeps the previous ceiling of 4.
+  const limitConnection =
+    connections?.find((connection) => connection.id === connectionId) ??
+    connections?.find((connection) => connection.defaultForAgents) ??
+    connections?.find((connection) => connection.isDefault) ??
+    null;
+  const agentLimit = limitConnection?.maxParallelJobs;
+  const concurrencyMax =
+    typeof agentLimit === "number" && Number.isFinite(agentLimit)
+      ? Math.min(16, Math.max(1, Math.trunc(agentLimit)))
+      : 4;
+  // A remembered higher value only ever clamps down — never raises what the user picked.
+  useEffect(() => {
+    setConcurrency((current) => Math.min(current, concurrencyMax));
+  }, [concurrencyMax]);
+
   // The server never fetches engine data (coordinator decision 1): every prompt input travels
   // with the dispatch — target cards, per-target style-override cards (ANY library character),
   // the session-level behavior character, and the global lorebooks' entries.
@@ -460,7 +478,7 @@ export function BulkDispatchDialog({
                 label={t("cardEditor.dialog.processing.concurrency")}
                 value={concurrency}
                 min={1}
-                max={4}
+                max={concurrencyMax}
                 onChange={setConcurrency}
               />
             </div>

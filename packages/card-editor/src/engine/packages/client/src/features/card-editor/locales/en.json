@@ -153,6 +153,7 @@
   "cardEditor.panel.action.review": "Review",
   "cardEditor.panel.action.rerun": "Rerun",
   "cardEditor.panel.action.editRetry": "Edit & retry",
+  "cardEditor.panel.action.inspect": "Inspect",
   "cardEditor.panel.action.cancelItem": "Cancel",
   "cardEditor.queue.title": "Review changes",
   "cardEditor.queue.close": "Back to the session",

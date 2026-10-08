@@ -246,7 +246,7 @@ export function normalizeSessionConfig(input: unknown): BulkSessionConfig {
     rebalance: source.rebalance ?? false,
     providerRetries: boundedInteger(source.providerRetries, 2, 0, 5, "providerRetries"),
     refusalRetries: boundedInteger(source.refusalRetries, 3, 0, 5, "refusalRetries"),
-    concurrency: boundedInteger(source.concurrency, 1, 1, 4, "concurrency"),
+    concurrency: boundedInteger(source.concurrency, 1, 1, 16, "concurrency"),
     saveMode,
     completionMode: enumValue(source.completionMode, "ask", ["ask", "apply", "duplicate"], "completionMode"),
     duplicateSuffix: optionalAffix(source.duplicateSuffix, "duplicateSuffix", true) ?? " (Edited)",

@@ -436,6 +436,8 @@ export function SessionDetail({
       <ul className="ce-items">
         {pageItems.map((item) => {
           const canReview = isReviewable(item);
+          const canInspect =
+            (item.status === "applied" || item.status === "duplicated") && (item.updates ?? []).length > 0;
           const canRerun = isFailed(item);
           const canEditRetry = isFailed(item) && item.failure?.renderedPrompt !== undefined;
           const canCancel = item.status === "queued" && session.status === "active";
@@ -459,7 +461,7 @@ export function SessionDetail({
                   </span>
                 ) : null}
               </div>
-              {canReview || canRerun || canEditRetry || canCancel ? (
+              {canReview || canInspect || canRerun || canEditRetry || canCancel ? (
                 <div className="ce-item-actions">
                   {canReview ? (
                     <button
@@ -468,6 +470,15 @@ export function SessionDetail({
                       onClick={() => setQueueFocus(item.itemId)}
                     >
                       {t("cardEditor.panel.action.review")}
+                    </button>
+                  ) : null}
+                  {canInspect ? (
+                    <button
+                      type="button"
+                      className="mari-chrome-control mari-chrome-control--small"
+                      onClick={() => setQueueFocus(item.itemId)}
+                    >
+                      {t("cardEditor.panel.action.inspect")}
                     </button>
                   ) : null}
                   {canRerun ? (

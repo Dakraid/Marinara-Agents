@@ -316,6 +316,17 @@ assert.match(sessionDetail, /<VerdictQueue/u);
 assert.match(sessionDetail, /<EditRetryDialog/u);
 assert.match(sessionDetail, /item\.failure\?\.renderedPrompt !== undefined/u, "edit & retry needs the rendered prompt");
 assert.match(sessionDetail, /cardEditor\.panel\.detail\.rerunFailed/u, "rerun-all-failed session action");
+assert.match(
+  sessionDetail,
+  /item\.status === "applied" \|\| item\.status === "duplicated"/u,
+  "applied/duplicated items stay inspectable after the verdict",
+);
+assert.match(sessionDetail, /cardEditor\.panel\.action\.inspect/u, "applied items expose an Inspect action");
+assert.match(
+  sessionDetail,
+  /\(item\.updates \?\? \[\]\)\.length > 0/u,
+  "inspect needs proposed updates to diff against",
+);
 assert.match(sessionDetail, /executeCompletionEnforcement/u, "detail polling auto-executes completion plans");
 assert.match(sessionDetail, /cardEditor\.panel\.completionMode/u, "detail shows the completion policy chip");
 assert.match(sessionDetail, /cardEditor\.panel\.enforcementProgress/u, "detail shows enforcement progress");
@@ -357,6 +368,7 @@ for (const marker of [
   "Approve all remaining without review",
   "unchanged lines",
   "Edit & retry",
+  "Inspect",
   "Review queue",
   "Run again",
   "cardEditor.panel.completionMode.apply",

@@ -230,6 +230,18 @@ assert.match(dialog, /loadStoredBulkConfig/u, "last-used config pre-fills the di
 assert.match(dialog, /role="alert"/u, "dispatch failures render an inline alert");
 assert.match(dialog, /PROMPT_PRESET_TEMPLATES\[presetId\]/u, "Custom prefills from the selected preset body");
 assert.match(dialog, /min=\{1\}[\s\S]*?max=\{16\}/u, "batch size range is 1–16");
+assert.match(dialog, /max=\{concurrencyMax\}/u, "the concurrency ceiling follows the connection agent limit");
+assert.match(
+  dialog,
+  /connections\?\.find\(\(connection\) => connection\.id === connectionId\)/u,
+  "the concurrency ceiling resolves the selected connection",
+);
+assert.match(
+  dialog,
+  /connections\?\.find\(\(connection\) => connection\.defaultForAgents\)/u,
+  "the default chain falls back to the agents-default connection",
+);
+assert.match(dialog, /Math\.min\(current, concurrencyMax\)/u, "a remembered concurrency only ever clamps down");
 assert.match(dialog, /cardEditor\.dialog\.processing\.overflowCaption/u, "overflow split caption is required");
 assert.match(dialog, /id="ce-completion-mode"/u, "processing exposes the on-completion select");
 assert.match(dialog, /option value="ask"/u, "ask is the default completion choice");
@@ -247,6 +259,7 @@ assert.match(behaviorSelect, /event\.key === "ArrowDown"/u, "arrow keys must mov
 assert.match(behaviorSelect, /event\.stopPropagation\(\)/u, "Esc inside the search must not close the dialog");
 
 // ── 8. Host API contract ──
+assert.match(api, /maxParallelJobs\?: number \| null/u, "the connection row carries its parallel job limit");
 assert.match(api, /hostRequest<LanguageConnection\[\]>\("\/connections"/u);
 assert.match(api, /connection\.provider !== "image_generation" &&\s*connection\.provider !== "video_generation"/u);
 assert.match(api, /sort: "name-asc"/u);

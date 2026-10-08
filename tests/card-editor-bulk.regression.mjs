@@ -92,7 +92,7 @@ assert.deepEqual(
     rebalance: true,
     providerRetries: 0,
     refusalRetries: 5,
-    concurrency: 4,
+    concurrency: 8,
     saveMode: "duplicate",
     completionMode: "duplicate",
     duplicateSuffix: " copy",
@@ -104,6 +104,11 @@ assert.deepEqual(normalizeSessionConfig({ saveMode: "combined", combinedCardName
   saveMode: "combined",
   combinedCardName: "October Cast",
 });
+assert.equal(
+  normalizeSessionConfig({ concurrency: 99 }).concurrency,
+  16,
+  "concurrency clamps at the connection limit ceiling of 16",
+);
 for (const garbage of [
   null,
   [],

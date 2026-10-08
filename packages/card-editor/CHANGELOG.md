@@ -1,3 +1,8 @@
+## 1.5.0 — 2026-10-08
+
+- Bulk runs can now process more cards in parallel: the concurrency control goes up to the selected connection's parallel job limit (up to 16) instead of the previous fixed cap of 4. With the default connection chain, the limit of the connection marked default for agents is used.
+- Completed results stay inspectable: applied and duplicated cards in a session now offer an **Inspect** action that opens their full diff view — the same review surface used for pending confirmations, read-only.
+
 ## 1.4.0 — 2026-10-07
 
 - Bulk runs can now enforce their successful outcomes when processing finishes: always apply in place, with cards edited mid-run held safely for review, or always duplicate using the session's configured name prefix or suffix.

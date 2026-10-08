@@ -279,6 +279,10 @@ export interface LanguageConnection {
   name: string;
   provider: string;
   model: string;
+  /** The connection's parallel agent-job limit; guides the dialog's concurrency ceiling. */
+  maxParallelJobs?: number | null;
+  defaultForAgents?: boolean | null;
+  isDefault?: boolean | null;
 }
 
 export interface CharacterCatalogEntry {
