@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
 import type { BulkSession, SessionItem } from "../../../../shared/src/features/agents/card-editor/schema.ts";
+import { decodeXmlEntities } from "../../../../shared/src/features/agents/card-editor/text.ts";
 import type { ApplyOperation } from "./api";
 import { approveSessionItem, rejectSessionItem } from "./apply-ops";
 import { buildHunks, countWordChanges, countWords, diffLines, type DiffHunk } from "./diff";
@@ -22,15 +23,19 @@ interface FieldPreview {
 
 function buildFieldPreviews(item: SessionItem): FieldPreview[] {
   return (item.updates ?? []).map((update) => {
-    const oldText = item.snapshots[update.field] ?? update.oldText;
-    const { added, removed } = countWordChanges(oldText, update.newText);
-    const hunks = buildHunks(diffLines(oldText, update.newText), HUNK_CONTEXT);
+    // Display-only decode (SPEC F4): models echo XML-escaped prompt text back in updates.
+    // Snapshots are real card text and stay as-is; a missing snapshot decodes the quoted
+    // fallback. The write path stays single-shot at apply — stored updates remain raw.
+    const oldText = item.snapshots[update.field] ?? decodeXmlEntities(update.oldText);
+    const newText = decodeXmlEntities(update.newText);
+    const { added, removed } = countWordChanges(oldText, newText);
+    const hunks = buildHunks(diffLines(oldText, newText), HUNK_CONTEXT);
     return {
       field: update.field,
-      newText: update.newText,
+      newText,
       added,
       removed,
-      wordCount: countWords(update.newText),
+      wordCount: countWords(newText),
       hunks,
     };
   });

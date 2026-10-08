@@ -8,6 +8,7 @@ import type {
   SessionItem,
 } from "../../../../shared/src/features/agents/card-editor/schema.ts";
 import { countWordChanges } from "./diff.ts";
+import { decodeXmlEntities } from "../../../../shared/src/features/agents/card-editor/text.ts";
 
 /** Every ItemStatus, in display order — the regression asserts the label map covers all of them. */
 export const ITEM_STATUSES: readonly ItemStatus[] = [
@@ -88,7 +89,12 @@ export function summarizeItemChanges(item: Pick<SessionItem, "updates" | "snapsh
   let added = 0;
   let removed = 0;
   for (const update of updates) {
-    const counts = countWordChanges(item.snapshots[update.field] ?? update.oldText, update.newText);
+    // Word chips match the queue's decoded previews (SPEC F4): snapshots are real card text,
+    // the quoted fallback and the proposed text decode for display only.
+    const counts = countWordChanges(
+      item.snapshots[update.field] ?? decodeXmlEntities(update.oldText),
+      decodeXmlEntities(update.newText),
+    );
     added += counts.added;
     removed += counts.removed;
   }

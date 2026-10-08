@@ -233,6 +233,37 @@ for (const [name, source] of Object.entries(componentSources)) {
   };
   assert.deepEqual(summarizeItemChanges(item), { fields: 1, added: 2, removed: 1 });
   assert.equal(summarizeItemChanges({ snapshots: {}, updates: [] }), null);
+  // SPEC F4: word chips decode escaped model output so they match the queue's decoded previews;
+  // snapshots are real card text and are compared verbatim.
+  const escapedItem = {
+    status: "awaiting-review",
+    snapshots: {},
+    updates: [
+      {
+        field: "description",
+        oldText: "old &amp; &lt;b&gt;text&lt;/b&gt;",
+        newText: "new &amp; &lt;b&gt;text&lt;/b&gt;",
+        reason: "t",
+      },
+    ],
+  };
+  const decodedCounts = countWordChanges("old & <b>text</b>", "new & <b>text</b>");
+  assert.deepEqual(
+    summarizeItemChanges(escapedItem),
+    { fields: 1, added: decodedCounts.added, removed: decodedCounts.removed },
+    "chips count decoded text, not raw entities",
+  );
+  const escapedSnapshotItem = {
+    status: "awaiting-review",
+    snapshots: { description: "old &amp; words" },
+    updates: [{ field: "description", oldText: "ignored", newText: "new &amp; words", reason: "t" }],
+  };
+  const snapshotCounts = countWordChanges("old &amp; words", "new & words");
+  assert.deepEqual(
+    summarizeItemChanges(escapedSnapshotItem),
+    { fields: 1, added: snapshotCounts.added, removed: snapshotCounts.removed },
+    "snapshots stay raw; only the proposal decodes",
+  );
   assert.ok(isQueueItem({ status: "awaiting-review" }));
   assert.ok(isQueueItem({ status: "applied" }), "decided items stay for the progress dots");
   assert.ok(!isQueueItem({ status: "failed-parse" }));
@@ -339,7 +370,17 @@ assert.match(sessionDetail, /rerunSession\(sessionId\)/u, "completed/canceled de
 
 // ── 10. Verdict queue structure (DESIGN §3) ──
 assert.match(verdictQueue, /PREVIEW_LINE_CAP = 8/u, "field previews cap at ~8 lines");
-assert.match(verdictQueue, /buildHunks\(diffLines\(oldText, update\.newText\), HUNK_CONTEXT\)/u);
+assert.match(verdictQueue, /buildHunks\(diffLines\(oldText, newText\), HUNK_CONTEXT\)/u);
+assert.match(
+  verdictQueue,
+  /snapshots\[update\.field\] \?\? decodeXmlEntities\(update\.oldText\)/u,
+  "previews decode the quoted fallback (SPEC F4)",
+);
+assert.match(
+  verdictQueue,
+  /const newText = decodeXmlEntities\(update\.newText\)/u,
+  "diff lines, word counts and full-field previews decode escaped model output (SPEC F4)",
+);
 assert.match(verdictQueue, /cardEditor\.queue\.hiddenLines/u, "collapsed-context markers render");
 assert.match(verdictQueue, /event\.key === "r" \|\| event\.key === "R"/u, "R rejects");
 assert.match(verdictQueue, /event\.key === "a" \|\| event\.key === "A"/u, "A approves");
@@ -779,6 +820,46 @@ stopAllRunners();
   assert.equal(created.status, 200, JSON.stringify(created.body));
   assert.equal(created.body.config.saveMode, "confirm", "require-review coerces auto to confirm");
   assert.equal(created.body.config.completionMode, "ask", "require-review coerces completion to ask");
+  stopAllRunners();
+}
+
+{
+  stopAllRunners();
+  // F1 (SPEC 2026-10-09): an omitted raw config.concurrency follows the panel's bulk settings —
+  // min(16, maxParallelAgents ?? 4) — while an explicit value stays untouched (the runner's
+  // runtime clamp is unchanged and not part of this route contract).
+  const documents = createFakeDocuments();
+  const store = createSessionStore(documents);
+  const deps = {
+    store,
+    languageModels: createFakeLanguageModels(() => JSON.stringify({ updates: [] })),
+    logger: silentLogger,
+  };
+  const harness = await createRouteHarness(deps);
+  const target = {
+    characterId: "char-0",
+    characterName: "Character 0",
+    card: { name: "Character 0", description: "Old desc 0" },
+  };
+  const dispatch = async (config) => {
+    const created = await harness.invoke("POST", "/sessions", {
+      body: { label: "Concurrency", targets: [target], ...(config === undefined ? {} : { config }) },
+    });
+    assert.equal(created.status, 200, JSON.stringify(created.body));
+    stopAllRunners();
+    return created.body.config.concurrency;
+  };
+
+  assert.equal(await dispatch({ providerRetries: 0 }), 4, "omitted concurrency + null settings → 4");
+  await harness.invoke("PUT", "/settings", { body: { maxParallelAgents: 5 } });
+  assert.equal(await dispatch({ providerRetries: 0 }), 5, "omitted concurrency follows maxParallelAgents");
+  assert.equal(await dispatch({ providerRetries: 0, concurrency: 2 }), 2, "explicit concurrency is untouched");
+  await harness.invoke("PUT", "/settings", { body: { maxParallelAgents: 3 } });
+  assert.equal(
+    await dispatch({ providerRetries: 0, concurrency: 9 }),
+    9,
+    "explicit values bypass the settings fill entirely",
+  );
   stopAllRunners();
 }
 stopAllRunners();

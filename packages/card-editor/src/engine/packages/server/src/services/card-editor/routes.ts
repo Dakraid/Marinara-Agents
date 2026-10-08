@@ -21,6 +21,7 @@ import {
   normalizeSessionConfig,
   SchemaError,
   type BulkSession,
+  type BulkSettings,
   type SessionItem,
 } from "../../../../shared/src/features/agents/card-editor/schema.ts";
 import { normalizeCardPromptText } from "../../../../shared/src/features/agents/card-editor/text.ts";
@@ -195,6 +196,13 @@ function parseIncludeFields(value: unknown): string[] | undefined {
   return value.map((entry, index) => cappedString(entry, `includeFields[${index}]`, 160));
 }
 
+/** True when the raw request config carries no explicit `concurrency` key. Non-object values
+ *  count as omitted; normalizeSessionConfig rejects those separately before this runs. */
+function configOmitsConcurrency(value: unknown): boolean {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return true;
+  return (value as Record<string, unknown>).concurrency === undefined;
+}
+
 function parseCurrentFields(value: unknown): Record<string, string> | undefined {
   if (value === undefined) return undefined;
   const source = sourceRecord(value);
@@ -263,8 +271,7 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
 
   // Panel "require review" toggle: auto-approve and on-completion writes are coerced to their
   // manual-review equivalents at every session creation (create + rerun).
-  const coerceConfigForSettings = async (config: BulkSession["config"]): Promise<BulkSession["config"]> => {
-    const settings = await deps.store.getSettings();
+  const coerceConfigForSettings = (config: BulkSession["config"], settings: BulkSettings): BulkSession["config"] => {
     if (!settings.disableAutoVerdicts) return config;
     return {
       ...config,
@@ -332,7 +339,14 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
         if (config.presetId === "custom" && !(config.customTemplate ?? "").trim()) {
           throw badRequest('presetId "custom" requires a non-empty customTemplate.');
         }
-        config = await coerceConfigForSettings(config);
+        // F1 (SPEC 2026-10-09): an omitted concurrency follows the panel's bulk settings instead
+        // of the schema default 1, so engine-surface dispatches parallelize like panel runs;
+        // explicit values (and re-run paths with their stored config) are untouched.
+        const settings = await deps.store.getSettings();
+        if (configOmitsConcurrency(body.config)) {
+          config = { ...config, concurrency: Math.min(16, settings.maxParallelAgents ?? 4) };
+        }
+        config = coerceConfigForSettings(config, settings);
         const behaviorOverrideCards = Object.fromEntries(
           targets
             .filter((target) => target.behaviorOverrideCard !== undefined)
@@ -404,7 +418,7 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
         );
         const rerun = newSession(
           `${source.label} (rerun)`,
-          await coerceConfigForSettings(source.config),
+          coerceConfigForSettings(source.config, await deps.store.getSettings()),
           orderedItems.map((item) => ({
             characterId: item.characterId,
             characterName: item.characterName,

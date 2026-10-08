@@ -5,6 +5,8 @@ import type {
   BulkSettings,
 } from "../../../../shared/src/features/agents/card-editor/schema.js";
 
+export type { BulkSession, BulkSessionConfig, BulkSessionStats, BulkSettings };
+
 const API_BASE = "/api";
 const CARD_EDITOR_BASE = "/card-editor";
 const CSRF_HEADER = "x-marinara-csrf";

@@ -1,3 +1,9 @@
+## 1.6.1 — 2026-10-09
+
+- Dispatches that omit a concurrency value now follow the panel's bulk settings (`maxParallelAgents`, default 4) instead of running serially — RP Chat "Process cards" runs parallelize like panel dispatches, while explicit values stay untouched.
+- The bulk dispatch dialog starts the parallel-agents field at the effective cap (connection limit ∩ panel cap) when no previous value is remembered; remembered values still only clamp down.
+- Review previews now decode HTML entities in diff lines, full-field views, and word-count chips, matching the already-decoded applied text.
+
 ## 1.6.0 — 2026-10-08
 
 - New **Bulk settings** panel on the Runs page: cap how many agents a bulk run may drive at once (0 = follow the connection's limit, otherwise 1–16), and a **require review** toggle that disables auto-approve and auto-apply — every verdict becomes a confirmation and completion falls back to asking.

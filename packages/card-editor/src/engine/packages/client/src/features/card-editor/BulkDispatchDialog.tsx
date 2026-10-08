@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import type {
   BulkSession,
@@ -225,6 +225,17 @@ export function BulkDispatchDialog({
   useEffect(() => {
     setConcurrency((current) => Math.min(current, parallelCap));
   }, [parallelCap]);
+  // F2 (SPEC 2026-10-09): with no remembered concurrency the field starts at the effective cap
+  // once the connection list settles; a later-arriving settings cap can only lower it, which the
+  // clamp above already covers. Remembered values keep clamp-down-only behavior.
+  const concurrencyRemembered = storedConfig?.concurrency !== undefined;
+  const concurrencyInitializedFromCap = useRef(false);
+  useEffect(() => {
+    if (concurrencyRemembered || concurrencyInitializedFromCap.current) return;
+    if (connections === null && !connectionsError) return;
+    concurrencyInitializedFromCap.current = true;
+    setConcurrency(parallelCap);
+  }, [concurrencyRemembered, connections, connectionsError, parallelCap]);
 
   // The server never fetches engine data (coordinator decision 1): every prompt input travels
   // with the dispatch — target cards, per-target style-override cards (ANY library character),

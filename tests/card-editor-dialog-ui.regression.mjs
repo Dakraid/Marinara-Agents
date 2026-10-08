@@ -246,6 +246,18 @@ assert.match(
   "the default chain falls back to the agents-default connection",
 );
 assert.match(dialog, /Math\.min\(current, parallelCap\)/u, "a remembered concurrency only ever clamps down");
+assert.match(
+  dialog,
+  /const concurrencyRemembered = storedConfig\?\.concurrency !== undefined/u,
+  "F2: the dialog tracks whether a remembered concurrency exists",
+);
+assert.match(
+  dialog,
+  /if \(connections === null && !connectionsError\) return/u,
+  "F2: the cap default waits for the connection list to settle",
+);
+assert.match(dialog, /concurrencyInitializedFromCap\.current = true/u, "F2: the cap default applies exactly once");
+assert.match(dialog, /setConcurrency\(parallelCap\)/u, "F2: empty storage starts the field at the effective cap");
 assert.match(dialog, /cardEditor\.dialog\.processing\.overflowCaption/u, "overflow split caption is required");
 assert.match(dialog, /id="ce-completion-mode"/u, "processing exposes the on-completion select");
 assert.match(dialog, /option value="ask"/u, "ask is the default completion choice");
