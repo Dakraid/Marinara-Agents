@@ -25,14 +25,28 @@ import { translateCardEditor, type CardEditorLocalizationContext } from "./local
 import { isBundledPromptPreset, PROMPT_PRESET_TEMPLATES, type PromptPresetId } from "./presets";
 import { estimateBulkCalls, loadStoredBulkConfig, normalizeBulkSessionConfig, storeBulkConfig } from "./session-config";
 
+/** Overlay dispatch prefill (unified "Process characters" entry — SPEC 2026-10-10 F5.2):
+ *  initial values for exactly these fields; everything stays editable, and the remembered
+ *  config continues to fill every field the prefill does not mention. */
+export interface BulkDispatchPrefill {
+  presetId?: PromptPresetId;
+  globalInstruction?: string;
+  saveMode?: SaveMode;
+  duplicatePrefix?: string;
+  combinedCardName?: string;
+  label?: string;
+}
+
 export function BulkDispatchDialog({
   localization,
   characterIds,
+  prefill,
   onClose,
   onDispatched,
 }: {
   localization?: CardEditorLocalizationContext;
   characterIds: string[];
+  prefill?: BulkDispatchPrefill;
   onClose: () => void;
   onDispatched: (session: BulkSession) => void;
 }) {
@@ -51,9 +65,11 @@ export function BulkDispatchDialog({
   const [mode, setMode] = useState<"individual" | "batched">(storedConfig?.mode ?? "individual");
   const [batchSize, setBatchSize] = useState(storedConfig?.batchSize ?? 4);
   const [connectionId, setConnectionId] = useState<string | null>(storedConfig?.connectionId ?? null);
-  const [presetId, setPresetId] = useState<PromptPresetId>(storedConfig?.presetId ?? "standard");
+  const [presetId, setPresetId] = useState<PromptPresetId>(prefill?.presetId ?? storedConfig?.presetId ?? "standard");
   const [customTemplate, setCustomTemplate] = useState(storedConfig?.customTemplate ?? "");
-  const [globalInstruction, setGlobalInstruction] = useState(storedConfig?.globalInstruction ?? "");
+  const [globalInstruction, setGlobalInstruction] = useState(
+    prefill?.globalInstruction ?? storedConfig?.globalInstruction ?? "",
+  );
   const [behavior, setBehavior] = useState<BehaviorSelection>({ kind: "none" });
   const [globalLorebookIds, setGlobalLorebookIds] = useState<string[]>(storedConfig?.globalLorebookIds ?? []);
   const [rebalance, setRebalance] = useState(storedConfig?.rebalance ?? false);
@@ -61,7 +77,14 @@ export function BulkDispatchDialog({
   const [refusalRetries, setRefusalRetries] = useState(storedConfig?.refusalRetries ?? 3);
   const [concurrency, setConcurrency] = useState(storedConfig?.concurrency ?? 1);
   const [completionMode, setCompletionMode] = useState<CompletionMode>(storedConfig?.completionMode ?? "ask");
-  const [saveMode, setSaveMode] = useState<SaveMode>(storedConfig?.saveMode ?? "confirm");
+  const [saveMode, setSaveMode] = useState<SaveMode>(prefill?.saveMode ?? storedConfig?.saveMode ?? "confirm");
+  // A set duplicate prefix wins over the default " (Edited)" suffix server-side (apply.ts).
+  const [duplicatePrefix, setDuplicatePrefix] = useState(
+    prefill?.duplicatePrefix ?? storedConfig?.duplicatePrefix ?? "",
+  );
+  const [combinedCardName, setCombinedCardName] = useState(
+    prefill?.combinedCardName ?? (prefill?.label ? `${prefill.label} — Cast` : (storedConfig?.combinedCardName ?? "")),
+  );
   const [dispatching, setDispatching] = useState(false);
   const [dispatchError, setDispatchError] = useState<string | null>(null);
   const [bulkSettings, setBulkSettings] = useState<BulkSettings | null>(null);
@@ -183,6 +206,8 @@ export function BulkDispatchDialog({
   );
   const estimate = estimateBulkCalls(targets.length, batchSize);
   const unloadableTargets = targets.some((target) => target.loadError || !target.card);
+  // Combined mode produces ONE new card — a name is mandatory (schema.ts enforces it too).
+  const combinedNameMissing = saveMode === "combined" && combinedCardName.trim().length === 0;
 
   // Agent-level bulk settings: the panel's parallel cap and the require-review toggle both
   // constrain this dialog. A load failure leaves them unset — the server still enforces them.
@@ -241,7 +266,7 @@ export function BulkDispatchDialog({
   // with the dispatch — target cards, per-target style-override cards (ANY library character),
   // the session-level behavior character, and the global lorebooks' entries.
   const dispatch = async () => {
-    if (dispatching || targets.length === 0 || unloadableTargets) return;
+    if (dispatching || targets.length === 0 || unloadableTargets || combinedNameMissing) return;
     setDispatching(true);
     setDispatchError(null);
     const config = normalizeBulkSessionConfig({
@@ -259,6 +284,10 @@ export function BulkDispatchDialog({
       concurrency,
       saveMode,
       completionMode,
+      // Blank affixes stay out (the schema rejects blank strings); the prefix travels verbatim —
+      // a trailing space the user typed is part of the name join (apply-ops concatenates raw).
+      ...(duplicatePrefix.trim() ? { duplicatePrefix } : {}),
+      ...(saveMode === "combined" ? { combinedCardName: combinedCardName.trim() } : {}),
     });
     try {
       const overrideIds = [
@@ -291,6 +320,8 @@ export function BulkDispatchDialog({
               : {}),
         })),
         config,
+        // Prefilled labels come from the unified "Process characters" entry ("Process: <chat>").
+        ...(prefill?.label?.trim() ? { label: prefill.label.trim().slice(0, 200) } : {}),
         ...(lorebookMaterials.length > 0 ? { lorebooks: lorebookMaterials } : {}),
         ...(sessionBehaviorCard ? { behaviorCharacter: behaviorCardMaterial(sessionBehaviorCard) } : {}),
       });
@@ -577,7 +608,45 @@ export function BulkDispatchDialog({
                 onChange={(value) => setSaveMode(value as SaveMode)}
                 title={t("cardEditor.dialog.saving.duplicate")}
               />
+              {saveMode === "duplicate" ? (
+                <label className="ce-label" htmlFor="ce-duplicate-prefix">
+                  <span className="ce-label-title">{t("cardEditor.dialog.saving.duplicatePrefix")}</span>
+                  <input
+                    id="ce-duplicate-prefix"
+                    type="text"
+                    className="mari-chrome-field ce-field"
+                    value={duplicatePrefix}
+                    placeholder={t("cardEditor.dialog.saving.duplicatePrefixPlaceholder")}
+                    aria-label={t("cardEditor.dialog.saving.duplicatePrefix")}
+                    onChange={(event) => setDuplicatePrefix(event.target.value)}
+                  />
+                  <small>{t("cardEditor.dialog.saving.duplicatePrefixHint")}</small>
+                </label>
+              ) : null}
+              <RadioChoice
+                name="ce-save-mode"
+                value="combined"
+                checked={saveMode === "combined"}
+                onChange={(value) => setSaveMode(value as SaveMode)}
+                title={t("cardEditor.dialog.saving.combined")}
+              />
+              {saveMode === "combined" ? (
+                <label className="ce-label" htmlFor="ce-combined-name">
+                  <span className="ce-label-title">{t("cardEditor.dialog.saving.combinedName")}</span>
+                  <input
+                    id="ce-combined-name"
+                    type="text"
+                    className="mari-chrome-field ce-field"
+                    value={combinedCardName}
+                    placeholder={t("cardEditor.dialog.saving.combinedNamePlaceholder")}
+                    aria-label={t("cardEditor.dialog.saving.combinedName")}
+                    onChange={(event) => setCombinedCardName(event.target.value)}
+                  />
+                  <small>{t("cardEditor.dialog.saving.combinedCaption")}</small>
+                </label>
+              ) : null}
             </div>
+            {requireReview ? <p className="ce-caption">{t("cardEditor.dialog.saving.reviewRequiredHint")}</p> : null}
             <p className="ce-caption">{t("cardEditor.dialog.saving.caption")}</p>
           </fieldset>
         </div>
@@ -592,6 +661,11 @@ export function BulkDispatchDialog({
               {t("cardEditor.dialog.targets.unloadableBlock")}
             </div>
           ) : null}
+          {combinedNameMissing ? (
+            <div className="ce-status ce-status--error ce-foot-error" role="alert">
+              {t("cardEditor.dialog.saving.combinedNameRequired")}
+            </div>
+          ) : null}
           <span className="ce-estimate">
             {t("cardEditor.dialog.estimate", {
               batch: batchSize,
@@ -602,7 +676,7 @@ export function BulkDispatchDialog({
           <button
             type="button"
             className="mari-chrome-control mari-chrome-control--primary mari-chrome-control--small"
-            disabled={dispatching || targets.length === 0 || unloadableTargets}
+            disabled={dispatching || targets.length === 0 || unloadableTargets || combinedNameMissing}
             onClick={() => void dispatch()}
           >
             {dispatching ? t("cardEditor.dialog.dispatching") : t("cardEditor.dialog.dispatch")}

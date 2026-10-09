@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { X } from "lucide-react";
-import type { BulkSession } from "../../../../shared/src/features/agents/card-editor/schema.js";
+import type { BulkSession, SaveMode } from "../../../../shared/src/features/agents/card-editor/schema.js";
 import { listSessions, type SessionIndexEntry } from "./api";
-import { BulkDispatchDialog } from "./BulkDispatchDialog";
+import { BulkDispatchDialog, type BulkDispatchPrefill } from "./BulkDispatchDialog";
 import { translateCardEditor, type CardEditorLocalizationContext } from "./localization";
+import type { PromptPresetId } from "./presets";
 import { RunsPanel } from "./RunsPanel";
 import { useVisiblePoll } from "./use-visible-poll";
 
@@ -13,8 +14,34 @@ export const OVERLAY_PACKAGE_ID = "card-editor";
 
 export type CardEditorOverlayPayload = {
   sessionId?: string;
-  dispatch?: { characterIds?: unknown };
+  dispatch?: { characterIds?: unknown; prefill?: unknown };
 };
+
+const PREFILL_PRESET_IDS = new Set(["standard", "strict", "rebalance", "xml-simple", "xml-complex", "custom"]);
+const PREFILL_SAVE_MODES = new Set(["confirm", "auto", "duplicate", "combined"]);
+
+/**
+ * The overlay payload crosses the engine↔package boundary (SPEC 2026-10-10 F5.2), so prefill
+ * values are re-validated here: invalid enum values and non-string fields are dropped, and the
+ * parse never throws — an unknown prefill simply leaves the dialog at its remembered defaults.
+ */
+export function parseDispatchPrefill(value: unknown): BulkDispatchPrefill | undefined {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const source = value as Record<string, unknown>;
+  const str = (key: string): string | undefined =>
+    typeof source[key] === "string" ? (source[key] as string) : undefined;
+  const presetId = str("presetId");
+  const saveMode = str("saveMode");
+  const prefill: BulkDispatchPrefill = {
+    ...(presetId !== undefined && PREFILL_PRESET_IDS.has(presetId) ? { presetId: presetId as PromptPresetId } : {}),
+    ...(str("globalInstruction") !== undefined ? { globalInstruction: str("globalInstruction") } : {}),
+    ...(saveMode !== undefined && PREFILL_SAVE_MODES.has(saveMode) ? { saveMode: saveMode as SaveMode } : {}),
+    ...(str("duplicatePrefix") !== undefined ? { duplicatePrefix: str("duplicatePrefix") } : {}),
+    ...(str("combinedCardName") !== undefined ? { combinedCardName: str("combinedCardName") } : {}),
+    ...(str("label") !== undefined ? { label: str("label") } : {}),
+  };
+  return Object.keys(prefill).length > 0 ? prefill : undefined;
+}
 
 export function openCardEditorOverlay(payload?: CardEditorOverlayPayload) {
   window.dispatchEvent(
@@ -34,6 +61,7 @@ export function OverlayWorkspace({ localization }: { localization?: CardEditorLo
   const [open, setOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [dispatchIds, setDispatchIds] = useState<string[] | null>(null);
+  const [dispatchPrefill, setDispatchPrefill] = useState<BulkDispatchPrefill | undefined>(undefined);
 
   useEffect(() => {
     const handler = (event: Event) => {
@@ -51,6 +79,7 @@ export function OverlayWorkspace({ localization }: { localization?: CardEditorLo
       setDispatchIds(
         Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string" && id.length > 0) : null,
       );
+      setDispatchPrefill(parseDispatchPrefill(payload?.dispatch?.prefill));
       setOpen(true);
     };
     window.addEventListener(OVERLAY_EVENT, handler);
@@ -100,6 +129,7 @@ export function OverlayWorkspace({ localization }: { localization?: CardEditorLo
           <BulkDispatchDialog
             localization={localization}
             characterIds={dispatchIds}
+            prefill={dispatchPrefill}
             onClose={() => setDispatchIds(null)}
             onDispatched={onDispatched}
           />

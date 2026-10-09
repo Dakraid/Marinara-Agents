@@ -300,6 +300,37 @@ assert.match(dialog, /cardEditor\.dialog\.processing\.autoDisabledNote/u, "the r
 assert.match(dialogControls, /disabled\?: boolean/u, "RadioChoice supports a disabled state");
 assert.match(dialogControls, /ce-choice--disabled/u, "disabled choices render a distinct style");
 
+// Unified-process saving surface (SPEC 2026-10-10 F5.1/F5.2): combined mode + duplicate prefix + prefill.
+assert.match(dialog, /value="combined"/u, "combined save mode is selectable");
+assert.match(dialog, /cardEditor\.dialog\.saving\.combined/u);
+assert.match(
+  dialog,
+  /const combinedNameMissing = saveMode === "combined"/u,
+  "combined mode requires a card name before dispatch",
+);
+assert.match(dialog, /combinedCardName: combinedCardName\.trim\(\)/u, "the combined name travels in the config");
+assert.match(dialog, /cardEditor\.dialog\.saving\.combinedNameRequired/u, "a missing name blocks with an inline error");
+assert.match(dialog, /cardEditor\.dialog\.saving\.duplicatePrefix/u, "duplicate mode exposes the name prefix");
+assert.match(dialog, /duplicatePrefix\.trim\(\)/u, "a blank prefix falls back to the default suffix");
+assert.match(
+  dialog,
+  /cardEditor\.dialog\.saving\.reviewRequiredHint/u,
+  "require-review explains the disabled auto radio in the saving section",
+);
+assert.match(dialog, /prefill\?\.presetId \?\? storedConfig\?\.presetId/u, "prefill overrides the remembered preset");
+assert.match(
+  dialog,
+  /prefill\?\.saveMode \?\? storedConfig\?\.saveMode/u,
+  "prefill overrides the remembered save mode",
+);
+assert.match(
+  dialog,
+  /prefill\?\.duplicatePrefix \?\? storedConfig\?\.duplicatePrefix/u,
+  "prefill overrides the remembered duplicate prefix",
+);
+assert.match(dialog, /prefill\?\.combinedCardName/u, "prefill supplies the combined card name");
+assert.match(dialog, /prefill\?\.label\?\.trim\(\)/u, "a prefilled label reaches the session request");
+
 // ── 7. Behavior character search-select contract ──
 assert.match(behaviorSelect, /role="combobox"/u);
 assert.match(behaviorSelect, /role="listbox"/u);
@@ -348,6 +379,11 @@ assert.match(
   /payload\?\.dispatch\?\.characterIds/u,
   "{dispatch:{characterIds}} opens the dispatch prefilled",
 );
+assert.match(workspaceSource, /payload\?\.dispatch\?\.prefill/u, "{dispatch.prefill} is parsed (SPEC F5.2)");
+assert.match(workspaceSource, /parseDispatchPrefill/u, "the boundary re-validates prefill values");
+assert.match(workspaceSource, /PREFILL_SAVE_MODES/u, "prefill save modes are allowlisted");
+assert.match(workspaceSource, /PREFILL_PRESET_IDS/u, "prefill preset ids are allowlisted");
+assert.match(workspaceSource, /prefill=\{dispatchPrefill\}/u, "the parsed prefill reaches the dispatch dialog");
 assert.match(workspaceSource, /if \(!open\) return null/u, "the idle overlay renders nothing");
 assert.match(workspaceSource, /role="dialog"/u);
 assert.match(workspaceSource, /aria-modal="true"/u);
@@ -403,6 +439,9 @@ for (const marker of [
   "On completion",
   "Always apply in place",
   "Always duplicate",
+  "Combined \\u2014 create one new card",
+  "Name prefix",
+  "saves each character's latest revision",
   "marinara-capability-card-editor",
 ]) {
   assert.ok(builtClient.includes(marker), `built client.js is missing ${JSON.stringify(marker)} — rebuild the package`);
