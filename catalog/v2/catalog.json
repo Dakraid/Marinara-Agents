@@ -246,7 +246,7 @@
         },
         "id": "card-editor",
         "name": "Card Editor",
-        "version": "1.6.1",
+        "version": "1.7.0",
         "description": "Rewrites character cards from your directives while preserving each card's voice and aligning it with referenced lore. Runs on a single card or as bulk dispatch across selected characters, with verdict review, edit-and-retry, and session management in its runs panel. Open a character card and choose Run Card Editor, or select characters and choose Card Editor for a bulk session, to propose changes for approval.",
         "engine": {
           "min": "2.4.7",
@@ -286,8 +286,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "0016f6487a76e38773b72a718751ed155416b2d26bd5d936015bd027395b93da",
-            "bytes": 346787
+            "sha256": "5de38bdd8fe220b2f090dafa974331f4464d12772e32c35f2f8b5b7c6cef10b3",
+            "bytes": 350520
           }
         ],
         "permissions": [
@@ -303,9 +303,9 @@
       "category": "writer",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/card-editor.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/card-editor-1.6.1.zip",
-        "sha256": "1205b5bf322d5ff525a498f25bada128a6ea291cc83a074cf0f8db198b192718",
-        "bytes": 407588
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/card-editor-1.7.0.zip",
+        "sha256": "45c327401723f571c686bb2c59073eb01486f90f1da99bfce886ea4a83fc8f41",
+        "bytes": 411321
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#card-editor"
     },

@@ -1,3 +1,10 @@
+## 1.7.0 — 2026-10-10
+
+- The bulk dispatch dialog now supports **Combined — create one new card**: each character's generated XML document is joined into a single new card's description (no per-card writes), with a required combined card name.
+- Duplicate dispatches gain an optional **name prefix** that replaces the default " (Edited)" suffix, matching the engine's unified process flow.
+- The auto-approve save mode is relabeled to make clear it saves each character's latest revision, and it is disabled with a visible hint whenever the bulk settings require review.
+- The overlay dispatch accepts a **prefill** payload (preset, instruction, save mode, prefix, combined name, label) — the engine's "Process characters with Card Editor" entry opens this dialog fully configured, and every prefilled field stays editable.
+
 ## 1.6.1 — 2026-10-09
 
 - Dispatches that omit a concurrency value now follow the panel's bulk settings (`maxParallelAgents`, default 4) instead of running serially — RP Chat "Process cards" runs parallelize like panel dispatches, while explicit values stay untouched.
