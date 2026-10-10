@@ -45,6 +45,8 @@ See [Building Packages](CONTRIBUTING.md#building-packages), [Release notes](CONT
 - Feature package versions come from their definitions in `scripts/build-feature-packages.mjs`. Run `node scripts/build-feature-packages.mjs <id>`. Re-stamp `packages/card-editor/engine-boundary.json` only when its Engine commit moved; never rebuild Card Editor or Pokédex merely to refresh them during a merge.
 - Run the full gate in order: `npm run check` → `node scripts/test-catalog-lanes.mjs` → `node scripts/validate-package-locales.mjs` → `node scripts/validate-catalog.mjs` → `node scripts/tests/catalog-release-notes.regression.mjs` → affected `tests/*.regression.mjs`. Run `.mjs` tests with `node`; run `.ts` tests with `pnpm exec tsx --tsconfig tests/tsconfig.regressions.json tests/<name>.ts`.
 - A package's newest `CHANGELOG.md` entry must equal its published version or the builder rejects it; keep at most 20 entries and 1,000 characters per entry. Routing regressions pin `manifest.version` and, for Card Editor, `builtAgainst`; update those pins only for intentional version or Engine-boundary moves.
+- Bundle-escaped text is what regression markers must match, not the source: the built `client.js` escapes non-ASCII (an em dash becomes `\u2014`), so pin marker strings with the escaped form. Prefer ASCII-only markers where possible.
+- A feature-package release touches three version pins together: the package `manifest.json`, the version map inside `scripts/build-feature-packages.mjs`, and the version asserted in the package's routing regression. The builder gate only checks the first — the other two are caught by the regression, so run it before declaring a release done.
 
 ## Repository-Specific Cautions
 
