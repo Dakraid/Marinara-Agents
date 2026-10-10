@@ -1,3 +1,9 @@
+## 1.7.1 — 2026-10-10
+
+- Duplicate save mode gains **four independent name affixes** in the dispatch dialog: append prefix and append suffix now both apply together (the old "prefix wins over suffix" rule is gone), and the new **remove prefix** / **remove suffix** boxes strip matching text from the copy's name — case-insensitively, once each — before the append affixes wrap it. Blank boxes are simply omitted.
+- The suffix box comes pre-filled with the **" (Edited)"** suggestion (remembered configs override it; clearing it means no suffix), and the chat entry's prefix remains just an editable suggestion in the prefix box.
+- A live **Copy name** preview under the affix fields shows the resulting name, computed from the first target's card exactly the way the copy will be renamed.
+
 ## 1.7.0 — 2026-10-10
 
 - The bulk dispatch dialog now supports **Combined — create one new card**: each character's generated XML document is joined into a single new card's description (no per-card writes), with a required combined card name.

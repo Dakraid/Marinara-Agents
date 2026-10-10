@@ -20,6 +20,12 @@
     "card-editor": {
       "versions": [
         {
+          "version": "1.7.1",
+          "date": "2026-10-10",
+          "notes": "- Duplicate save mode gains **four independent name affixes** in the dispatch dialog: append prefix and append suffix now both apply together (the old \"prefix wins over suffix\" rule is gone), and the new **remove prefix** / **remove suffix** boxes strip matching text from the copy's name — case-insensitively, once each — before the append affixes wrap it. Blank boxes are simply omitted.\n- The suffix box comes pre-filled with the **\" (Edited)\"** suggestion (remembered configs override it; clearing it means no suffix), and the chat entry's prefix remains just an editable suggestion in the prefix box.\n- A live **Copy name** preview under the affix fields shows the resulting name, computed from the first target's card exactly the way the copy will be renamed.",
+          "highlight": false
+        },
+        {
           "version": "1.7.0",
           "date": "2026-10-10",
           "notes": "- The bulk dispatch dialog now supports **Combined — create one new card**: each character's generated XML document is joined into a single new card's description (no per-card writes), with a required combined card name.\n- Duplicate dispatches gain an optional **name prefix** that replaces the default \" (Edited)\" suffix, matching the engine's unified process flow.\n- The auto-approve save mode is relabeled to make clear it saves each character's latest revision, and it is disabled with a visible hint whenever the bulk settings require review.\n- The overlay dispatch accepts a **prefill** payload (preset, instruction, save mode, prefix, combined name, label) — the engine's \"Process characters with Card Editor\" entry opens this dialog fully configured, and every prefilled field stays editable.",

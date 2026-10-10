@@ -46,9 +46,10 @@ export interface BulkSessionConfig {
   saveMode: SaveMode;
   /** Outcome policy applied only after the runner has fully drained. */
   completionMode?: CompletionMode;
-  duplicateSuffix: string;
-  /** Non-empty name prefix for duplicate mode; wins over duplicateSuffix when set (XML transform flow). */
   duplicatePrefix?: string;
+  duplicateSuffix?: string;
+  duplicateRemovePrefix?: string;
+  duplicateRemoveSuffix?: string;
   /** Target name for the single card produced by combined save mode (required when saveMode is "combined"). */
   combinedCardName?: string;
 }
@@ -223,6 +224,9 @@ export function normalizeSessionConfig(input: unknown): BulkSessionConfig {
     throw new SchemaError("customTemplate must be a string");
   }
   const duplicatePrefix = optionalAffix(source.duplicatePrefix, "duplicatePrefix", true);
+  const duplicateSuffix = optionalAffix(source.duplicateSuffix, "duplicateSuffix", true);
+  const duplicateRemovePrefix = optionalAffix(source.duplicateRemovePrefix, "duplicateRemovePrefix", true);
+  const duplicateRemoveSuffix = optionalAffix(source.duplicateRemoveSuffix, "duplicateRemoveSuffix", true);
   const combinedCardName = optionalAffix(source.combinedCardName, "combinedCardName", false);
   const saveMode = enumValue(source.saveMode, "confirm", ["confirm", "auto", "duplicate", "combined"], "saveMode");
   if (saveMode === "combined" && combinedCardName === undefined) {
@@ -249,8 +253,10 @@ export function normalizeSessionConfig(input: unknown): BulkSessionConfig {
     concurrency: boundedInteger(source.concurrency, 1, 1, 16, "concurrency"),
     saveMode,
     completionMode: enumValue(source.completionMode, "ask", ["ask", "apply", "duplicate"], "completionMode"),
-    duplicateSuffix: optionalAffix(source.duplicateSuffix, "duplicateSuffix", true) ?? " (Edited)",
     ...(duplicatePrefix === undefined ? {} : { duplicatePrefix }),
+    ...(duplicateSuffix === undefined ? {} : { duplicateSuffix }),
+    ...(duplicateRemovePrefix === undefined ? {} : { duplicateRemovePrefix }),
+    ...(duplicateRemoveSuffix === undefined ? {} : { duplicateRemoveSuffix }),
     ...(combinedCardName === undefined ? {} : { combinedCardName }),
   };
 }
@@ -495,7 +501,10 @@ function isStoredConfig(value: unknown): value is BulkSessionConfig {
       source.concurrency === normalized.concurrency &&
       source.saveMode === normalized.saveMode &&
       (source.completionMode ?? "ask") === normalized.completionMode &&
-      source.duplicateSuffix === normalized.duplicateSuffix
+      source.duplicatePrefix === normalized.duplicatePrefix &&
+      source.duplicateSuffix === normalized.duplicateSuffix &&
+      source.duplicateRemovePrefix === normalized.duplicateRemovePrefix &&
+      source.duplicateRemoveSuffix === normalized.duplicateRemoveSuffix
     );
   } catch {
     return false;

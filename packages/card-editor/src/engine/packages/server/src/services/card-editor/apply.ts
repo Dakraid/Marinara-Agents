@@ -31,8 +31,10 @@ export type ApplyOperation =
       op: "duplicateThenPatch";
       characterId: string;
       fields: Record<string, string>;
-      nameSuffix: string;
       namePrefix?: string;
+      nameSuffix?: string;
+      stripNamePrefix?: string;
+      stripNameSuffix?: string;
     }
   | { op: "collectForCombine"; characterId: string; fields: Record<string, string> };
 
@@ -44,9 +46,10 @@ export interface PlanApplyOptions {
   saveMode: SaveMode;
   /** Session label, used for the revision reason on every write. */
   label: string;
-  duplicateSuffix: string;
-  /** Non-empty prefix wins over duplicateSuffix in duplicate-mode naming. */
   duplicatePrefix?: string;
+  duplicateSuffix?: string;
+  duplicateRemovePrefix?: string;
+  duplicateRemoveSuffix?: string;
   /** Required when saveMode is "combined" (the single output card's name). */
   combinedCardName?: string;
 }
@@ -69,8 +72,14 @@ export function planDuplicateApplied(session: BulkSession): Array<{ itemId: stri
         force: true,
         saveMode: "duplicate",
         label: session.label,
-        duplicateSuffix: session.config.duplicateSuffix,
         ...(session.config.duplicatePrefix === undefined ? {} : { duplicatePrefix: session.config.duplicatePrefix }),
+        ...(session.config.duplicateSuffix === undefined ? {} : { duplicateSuffix: session.config.duplicateSuffix }),
+        ...(session.config.duplicateRemovePrefix === undefined
+          ? {}
+          : { duplicateRemovePrefix: session.config.duplicateRemovePrefix }),
+        ...(session.config.duplicateRemoveSuffix === undefined
+          ? {}
+          : { duplicateRemoveSuffix: session.config.duplicateRemoveSuffix }),
       },
     );
     if (ops.length > 0) plans.push({ itemId: item.itemId, ops });
@@ -104,13 +113,15 @@ export function planApply(
       }
       return [{ op: "collectForCombine", characterId: item.characterId, fields }];
     }
-    const prefix = options.duplicatePrefix?.trim() ? options.duplicatePrefix : undefined;
     return [
       {
         op: "duplicateThenPatch",
         characterId: item.characterId,
         fields,
-        ...(prefix === undefined ? { nameSuffix: options.duplicateSuffix } : { namePrefix: prefix }),
+        ...(options.duplicatePrefix === undefined ? {} : { namePrefix: options.duplicatePrefix }),
+        ...(options.duplicateSuffix === undefined ? {} : { nameSuffix: options.duplicateSuffix }),
+        ...(options.duplicateRemovePrefix === undefined ? {} : { stripNamePrefix: options.duplicateRemovePrefix }),
+        ...(options.duplicateRemoveSuffix === undefined ? {} : { stripNameSuffix: options.duplicateRemoveSuffix }),
       },
     ];
   }

@@ -177,6 +177,20 @@ export const CARD_EDITOR_STYLES = `
   line-height: 1.45;
 }
 
+/* Group divider inside a choice list (e.g. the duplicate affix stack): section-heading
+   typography separated from the fields above by a dashed rule. */
+.ce-divider-caption {
+  margin: 0;
+  padding-top: 0.375rem;
+  border-top: 1px dashed var(--marinara-chat-chrome-panel-divider);
+  color: color-mix(in srgb, var(--foreground) 55%, transparent);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 0.875rem;
+  text-transform: uppercase;
+}
+
 .ce-label {
   display: grid;
   gap: 0.25rem;

@@ -534,8 +534,14 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
           ...(includeFields === undefined ? {} : { includeFields }),
           saveMode,
           label: session.label,
-          duplicateSuffix: session.config.duplicateSuffix,
           ...(session.config.duplicatePrefix === undefined ? {} : { duplicatePrefix: session.config.duplicatePrefix }),
+          ...(session.config.duplicateSuffix === undefined ? {} : { duplicateSuffix: session.config.duplicateSuffix }),
+          ...(session.config.duplicateRemovePrefix === undefined
+            ? {}
+            : { duplicateRemovePrefix: session.config.duplicateRemovePrefix }),
+          ...(session.config.duplicateRemoveSuffix === undefined
+            ? {}
+            : { duplicateRemoveSuffix: session.config.duplicateRemoveSuffix }),
           ...(session.config.combinedCardName === undefined
             ? {}
             : { combinedCardName: session.config.combinedCardName }),

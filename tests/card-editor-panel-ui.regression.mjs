@@ -695,8 +695,9 @@ async function createSettledSession(configOverrides, hostCards) {
 {
   stopAllRunners();
   // Duplicate mode: copy the current card, patch + rename the copy, record resultCardId.
+  // The suffix is configured explicitly — normalizeSessionConfig no longer injects " (Edited)".
   const { harness, host, sessionId } = await createSettledSession(
-    { saveMode: "duplicate" },
+    { saveMode: "duplicate", duplicateSuffix: " (Edited)" },
     { "char-0": { name: "Character 0", description: "Old desc 0", extensions: {} } },
   );
   await withBridgedFetch(harness, host, async () => {

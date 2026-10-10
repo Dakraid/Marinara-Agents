@@ -246,7 +246,7 @@
         },
         "id": "card-editor",
         "name": "Card Editor",
-        "version": "1.7.0",
+        "version": "1.7.1",
         "description": "Rewrites character cards from your directives while preserving each card's voice and aligning it with referenced lore. Runs on a single card or as bulk dispatch across selected characters, with verdict review, edit-and-retry, and session management in its runs panel. Open a character card and choose Run Card Editor, or select characters and choose Card Editor for a bulk session, to propose changes for approval.",
         "engine": {
           "min": "2.4.7",
@@ -281,13 +281,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "dfa41bde0a03a101539ca6fae14f0bf75597e0f06d0517327bd0524c40e2b8b8",
-            "bytes": 49169
+            "sha256": "24c06050c00099e3d525a10e8fbe306e1465d48e19b433f90178c511d62ef1c5",
+            "bytes": 50423
           },
           {
             "path": "client.js",
-            "sha256": "5de38bdd8fe220b2f090dafa974331f4464d12772e32c35f2f8b5b7c6cef10b3",
-            "bytes": 350520
+            "sha256": "b558b4a8ca5f97947aad0b820a2c3f2274a449e23650072ca2457b15882d439c",
+            "bytes": 354424
           }
         ],
         "permissions": [
@@ -303,9 +303,9 @@
       "category": "writer",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/card-editor.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/card-editor-1.7.0.zip",
-        "sha256": "45c327401723f571c686bb2c59073eb01486f90f1da99bfce886ea4a83fc8f41",
-        "bytes": 411321
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/card-editor-1.7.1.zip",
+        "sha256": "607526a2e63f5e873a6664e478c6a2a6c75858d3e73b3d6ceb07fa78332ef9e8",
+        "bytes": 416479
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#card-editor"
     },

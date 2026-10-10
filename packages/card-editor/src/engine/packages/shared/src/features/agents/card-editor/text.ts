@@ -5,6 +5,30 @@
  * text the model saw; `escapeXml` is the engine's five-entity set, `&` first.
  * No engine imports — the package boundary (privateEngineImports: []) forbids them.
  */
+export interface DuplicateNameAffixes {
+  prefix?: string;
+  suffix?: string;
+  removePrefix?: string;
+  removeSuffix?: string;
+}
+
+export function computeDuplicateName(baseName: string, affixes: DuplicateNameAffixes): string {
+  const prefix = affixes.prefix?.trim() ? affixes.prefix : undefined;
+  const suffix = affixes.suffix?.trim() ? affixes.suffix : undefined;
+  const removePrefix = affixes.removePrefix?.trim() ? affixes.removePrefix : undefined;
+  const removeSuffix = affixes.removeSuffix?.trim() ? affixes.removeSuffix : undefined;
+  let stripped = baseName;
+  if (removePrefix && stripped.toLowerCase().startsWith(removePrefix.toLowerCase())) {
+    stripped = stripped.slice(removePrefix.length);
+  }
+  if (removeSuffix && stripped.toLowerCase().endsWith(removeSuffix.toLowerCase())) {
+    stripped = stripped.slice(0, -removeSuffix.length);
+  }
+  stripped = stripped.trim();
+  if (!stripped) stripped = baseName;
+  return `${prefix ?? ""}${stripped}${suffix ?? ""}`;
+}
+
 export function normalizeCardPromptText(raw: unknown): string {
   return typeof raw === "string" ? stripMacroComments(raw).trim() : "";
 }

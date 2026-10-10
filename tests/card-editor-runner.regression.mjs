@@ -302,7 +302,15 @@ async function testCompletionEnforcementDispatch() {
   const { deps, store } = createDeps(documents, languageModels);
 
   const duplicate = makeSession(
-    { mode: "individual", saveMode: "confirm", completionMode: "duplicate", duplicatePrefix: "Edited " },
+    {
+      mode: "individual",
+      saveMode: "confirm",
+      completionMode: "duplicate",
+      duplicatePrefix: "Edited ",
+      duplicateSuffix: " (Edited)",
+      duplicateRemovePrefix: "Old ",
+      duplicateRemoveSuffix: " old",
+    },
     1,
   );
   await store.createSession(duplicate, EMPTY_MATERIAL);
@@ -315,6 +323,9 @@ async function testCompletionEnforcementDispatch() {
       characterId: "char-0",
       fields: { description: "Enforced" },
       namePrefix: "Edited ",
+      nameSuffix: " (Edited)",
+      stripNamePrefix: "Old ",
+      stripNameSuffix: " old",
     },
   ]);
 
@@ -914,7 +925,14 @@ async function testDuplicateModeVerdict() {
   const invoke = await createRouteHarness(deps);
   const created = await createSessionViaRoute(invoke, {
     targets: [makeTarget(0)],
-    config: normalizeSessionConfig({ providerRetries: 0, saveMode: "duplicate", duplicateSuffix: " (Edited)" }),
+    config: normalizeSessionConfig({
+      providerRetries: 0,
+      saveMode: "duplicate",
+      duplicatePrefix: "Edited ",
+      duplicateSuffix: " (Edited)",
+      duplicateRemovePrefix: "Old ",
+      duplicateRemoveSuffix: " old",
+    }),
   });
   await settledSession(store, created.id);
 
@@ -929,7 +947,10 @@ async function testDuplicateModeVerdict() {
       op: "duplicateThenPatch",
       characterId: "char-0",
       fields: { description: "Copy text" },
+      namePrefix: "Edited ",
       nameSuffix: " (Edited)",
+      stripNamePrefix: "Old ",
+      stripNameSuffix: " old",
     },
   ]);
   const detail = await invoke("GET", "/sessions/:id", { params: { id: created.id } });

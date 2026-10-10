@@ -300,7 +300,8 @@ assert.match(dialog, /cardEditor\.dialog\.processing\.autoDisabledNote/u, "the r
 assert.match(dialogControls, /disabled\?: boolean/u, "RadioChoice supports a disabled state");
 assert.match(dialogControls, /ce-choice--disabled/u, "disabled choices render a distinct style");
 
-// Unified-process saving surface (SPEC 2026-10-10 F5.1/F5.2): combined mode + duplicate prefix + prefill.
+// Unified-process saving surface (SPEC 2026-10-10 F5.1/F5.2 + duplicate affixes F1/AC4):
+// combined mode, the four-field affix stack with live preview, and prefill.
 assert.match(dialog, /value="combined"/u, "combined save mode is selectable");
 assert.match(dialog, /cardEditor\.dialog\.saving\.combined/u);
 assert.match(
@@ -310,8 +311,55 @@ assert.match(
 );
 assert.match(dialog, /combinedCardName: combinedCardName\.trim\(\)/u, "the combined name travels in the config");
 assert.match(dialog, /cardEditor\.dialog\.saving\.combinedNameRequired/u, "a missing name blocks with an inline error");
+// AC4: four affix fields render in the mandated order — append prefix, append suffix, the dashed
+// "Remove from name" divider, remove prefix, remove suffix — followed by the live preview line.
 assert.match(dialog, /cardEditor\.dialog\.saving\.duplicatePrefix/u, "duplicate mode exposes the name prefix");
-assert.match(dialog, /duplicatePrefix\.trim\(\)/u, "a blank prefix falls back to the default suffix");
+assert.match(dialog, /cardEditor\.dialog\.saving\.duplicateSuffix/u, "duplicate mode exposes the name suffix");
+const affixOrder = [
+  'id="ce-duplicate-prefix"',
+  'id="ce-duplicate-suffix"',
+  "duplicateRemoveGroup",
+  'id="ce-duplicate-remove-prefix"',
+  'id="ce-duplicate-remove-suffix"',
+  "duplicateNamePreview",
+];
+let previousAffixIndex = -1;
+for (const marker of affixOrder) {
+  const index = dialog.indexOf(marker);
+  assert.ok(index > previousAffixIndex, `duplicate affix marker ${marker} is missing or out of order`);
+  previousAffixIndex = index;
+}
+assert.match(
+  dialog,
+  /storedConfig\?\.duplicateSuffix \?\? " \(Edited\)"/u,
+  'the suffix box seeds from the remembered config, defaulting to the " (Edited)" suggestion',
+);
+assert.match(
+  dialog,
+  /storedConfig\?\.duplicateRemovePrefix \?\? ""/u,
+  "the remove-prefix box seeds from the remembered config only",
+);
+assert.match(
+  dialog,
+  /storedConfig\?\.duplicateRemoveSuffix \?\? ""/u,
+  "the remove-suffix box seeds from the remembered config only",
+);
+for (const field of ["duplicatePrefix", "duplicateSuffix", "duplicateRemovePrefix", "duplicateRemoveSuffix"]) {
+  assert.match(
+    dialog,
+    new RegExp(`\\.\\.\\.\\(${field}\\.trim\\(\\) \\? \\{ ${field} \\} : \\{\\}\\)`, "u"),
+    `a blank ${field} box is omitted from the dispatch config`,
+  );
+}
+assert.match(
+  dialog,
+  /computeDuplicateName\(targets\[0\]\?\.name/u,
+  "the live preview computes the copy name from the first target via the shared helper",
+);
+assert.match(dialog, /cardEditor\.dialog\.saving\.duplicateNamePreview/u, "the live preview line renders");
+assert.match(dialog, /ce-divider-caption/u, "the remove group sits under a dashed divider caption");
+assert.match(styles, /\.ce-divider-caption \{[^}]*border-top: 1px dashed/u, "the divider caption is dashed");
+assert.doesNotMatch(dialog, /wins over/u, "the legacy prefix-wins wording is gone from the dialog");
 assert.match(
   dialog,
   /cardEditor\.dialog\.saving\.reviewRequiredHint/u,

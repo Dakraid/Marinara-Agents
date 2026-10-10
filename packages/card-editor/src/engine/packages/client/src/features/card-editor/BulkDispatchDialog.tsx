@@ -5,6 +5,7 @@ import type {
   CompletionMode,
   SaveMode,
 } from "../../../../shared/src/features/agents/card-editor/schema.js";
+import { computeDuplicateName } from "../../../../shared/src/features/agents/card-editor/text.ts";
 import {
   behaviorCardMaterial,
   createSession,
@@ -78,10 +79,16 @@ export function BulkDispatchDialog({
   const [concurrency, setConcurrency] = useState(storedConfig?.concurrency ?? 1);
   const [completionMode, setCompletionMode] = useState<CompletionMode>(storedConfig?.completionMode ?? "ask");
   const [saveMode, setSaveMode] = useState<SaveMode>(prefill?.saveMode ?? storedConfig?.saveMode ?? "confirm");
-  // A set duplicate prefix wins over the default " (Edited)" suffix server-side (apply.ts).
+  // SPEC 2026-10-10 §3: the chat-name prefill is only an editable suggestion in the prefix box.
+  // Append prefix and suffix both apply (the old "prefix wins" rule is gone); blank boxes are
+  // omitted from the dispatch config. The suffix starts at the " (Edited)" suggestion unless a
+  // remembered config overrides it; the remove affixes start empty.
   const [duplicatePrefix, setDuplicatePrefix] = useState(
     prefill?.duplicatePrefix ?? storedConfig?.duplicatePrefix ?? "",
   );
+  const [duplicateSuffix, setDuplicateSuffix] = useState(storedConfig?.duplicateSuffix ?? " (Edited)");
+  const [duplicateRemovePrefix, setDuplicateRemovePrefix] = useState(storedConfig?.duplicateRemovePrefix ?? "");
+  const [duplicateRemoveSuffix, setDuplicateRemoveSuffix] = useState(storedConfig?.duplicateRemoveSuffix ?? "");
   const [combinedCardName, setCombinedCardName] = useState(
     prefill?.combinedCardName ?? (prefill?.label ? `${prefill.label} — Cast` : (storedConfig?.combinedCardName ?? "")),
   );
@@ -208,6 +215,15 @@ export function BulkDispatchDialog({
   const unloadableTargets = targets.some((target) => target.loadError || !target.card);
   // Combined mode produces ONE new card — a name is mandatory (schema.ts enforces it too).
   const combinedNameMissing = saveMode === "combined" && combinedCardName.trim().length === 0;
+  // Live sample for the duplicate naming preview, computed exactly the way apply-ops will name
+  // the copy (shared text.ts helper; blank affixes count as absent). The first target's name is
+  // the sample base; a generic stand-in covers the loading/empty state.
+  const duplicatePreviewName = computeDuplicateName(targets[0]?.name ?? "Character", {
+    prefix: duplicatePrefix,
+    suffix: duplicateSuffix,
+    removePrefix: duplicateRemovePrefix,
+    removeSuffix: duplicateRemoveSuffix,
+  });
 
   // Agent-level bulk settings: the panel's parallel cap and the require-review toggle both
   // constrain this dialog. A load failure leaves them unset — the server still enforces them.
@@ -284,9 +300,12 @@ export function BulkDispatchDialog({
       concurrency,
       saveMode,
       completionMode,
-      // Blank affixes stay out (the schema rejects blank strings); the prefix travels verbatim —
+      // Blank affixes stay out (the schema rejects blank strings); affixes travel verbatim —
       // a trailing space the user typed is part of the name join (apply-ops concatenates raw).
       ...(duplicatePrefix.trim() ? { duplicatePrefix } : {}),
+      ...(duplicateSuffix.trim() ? { duplicateSuffix } : {}),
+      ...(duplicateRemovePrefix.trim() ? { duplicateRemovePrefix } : {}),
+      ...(duplicateRemoveSuffix.trim() ? { duplicateRemoveSuffix } : {}),
       ...(saveMode === "combined" ? { combinedCardName: combinedCardName.trim() } : {}),
     });
     try {
@@ -609,19 +628,61 @@ export function BulkDispatchDialog({
                 title={t("cardEditor.dialog.saving.duplicate")}
               />
               {saveMode === "duplicate" ? (
-                <label className="ce-label" htmlFor="ce-duplicate-prefix">
-                  <span className="ce-label-title">{t("cardEditor.dialog.saving.duplicatePrefix")}</span>
-                  <input
-                    id="ce-duplicate-prefix"
-                    type="text"
-                    className="mari-chrome-field ce-field"
-                    value={duplicatePrefix}
-                    placeholder={t("cardEditor.dialog.saving.duplicatePrefixPlaceholder")}
-                    aria-label={t("cardEditor.dialog.saving.duplicatePrefix")}
-                    onChange={(event) => setDuplicatePrefix(event.target.value)}
-                  />
-                  <small>{t("cardEditor.dialog.saving.duplicatePrefixHint")}</small>
-                </label>
+                <>
+                  <label className="ce-label" htmlFor="ce-duplicate-prefix">
+                    <span className="ce-label-title">{t("cardEditor.dialog.saving.duplicatePrefix")}</span>
+                    <input
+                      id="ce-duplicate-prefix"
+                      type="text"
+                      className="mari-chrome-field ce-field"
+                      value={duplicatePrefix}
+                      placeholder={t("cardEditor.dialog.saving.duplicatePrefixPlaceholder")}
+                      aria-label={t("cardEditor.dialog.saving.duplicatePrefix")}
+                      onChange={(event) => setDuplicatePrefix(event.target.value)}
+                    />
+                    <small>{t("cardEditor.dialog.saving.duplicatePrefixHint")}</small>
+                  </label>
+                  <label className="ce-label" htmlFor="ce-duplicate-suffix">
+                    <span className="ce-label-title">{t("cardEditor.dialog.saving.duplicateSuffix")}</span>
+                    <input
+                      id="ce-duplicate-suffix"
+                      type="text"
+                      className="mari-chrome-field ce-field"
+                      value={duplicateSuffix}
+                      placeholder={t("cardEditor.dialog.saving.duplicateSuffixPlaceholder")}
+                      aria-label={t("cardEditor.dialog.saving.duplicateSuffix")}
+                      onChange={(event) => setDuplicateSuffix(event.target.value)}
+                    />
+                  </label>
+                  <p className="ce-divider-caption">{t("cardEditor.dialog.saving.duplicateRemoveGroup")}</p>
+                  <label className="ce-label" htmlFor="ce-duplicate-remove-prefix">
+                    <span className="ce-label-title">{t("cardEditor.dialog.saving.duplicateRemovePrefix")}</span>
+                    <input
+                      id="ce-duplicate-remove-prefix"
+                      type="text"
+                      className="mari-chrome-field ce-field"
+                      value={duplicateRemovePrefix}
+                      placeholder={t("cardEditor.dialog.saving.duplicateRemovePrefixPlaceholder")}
+                      aria-label={t("cardEditor.dialog.saving.duplicateRemovePrefix")}
+                      onChange={(event) => setDuplicateRemovePrefix(event.target.value)}
+                    />
+                  </label>
+                  <label className="ce-label" htmlFor="ce-duplicate-remove-suffix">
+                    <span className="ce-label-title">{t("cardEditor.dialog.saving.duplicateRemoveSuffix")}</span>
+                    <input
+                      id="ce-duplicate-remove-suffix"
+                      type="text"
+                      className="mari-chrome-field ce-field"
+                      value={duplicateRemoveSuffix}
+                      placeholder={t("cardEditor.dialog.saving.duplicateRemoveSuffixPlaceholder")}
+                      aria-label={t("cardEditor.dialog.saving.duplicateRemoveSuffix")}
+                      onChange={(event) => setDuplicateRemoveSuffix(event.target.value)}
+                    />
+                  </label>
+                  <p className="ce-caption">
+                    {t("cardEditor.dialog.saving.duplicateNamePreview", { name: duplicatePreviewName })}
+                  </p>
+                </>
               ) : null}
               <RadioChoice
                 name="ce-save-mode"

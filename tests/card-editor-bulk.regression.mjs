@@ -13,6 +13,7 @@ import {
   validateCardFieldUpdate,
 } from "../packages/card-editor/src/engine/packages/shared/src/features/agents/card-editor/schema.ts";
 import {
+  computeDuplicateName,
   decodeXmlEntities,
   escapeXml,
   normalizeCardPromptText,
@@ -62,7 +63,6 @@ assert.deepEqual(defaults, {
   concurrency: 1,
   saveMode: "confirm",
   completionMode: "ask",
-  duplicateSuffix: " (Edited)",
 });
 assert.deepEqual(
   normalizeSessionConfig({
@@ -80,8 +80,10 @@ assert.deepEqual(
     concurrency: 8,
     saveMode: "duplicate",
     completionMode: "duplicate",
-    duplicateSuffix: " copy",
-    duplicatePrefix: "October ",
+    duplicatePrefix: "  October ",
+    duplicateSuffix: " copy  ",
+    duplicateRemovePrefix: "OLD - ",
+    duplicateRemoveSuffix: " - OLD",
   }),
   {
     mode: "batched",
@@ -98,8 +100,10 @@ assert.deepEqual(
     concurrency: 8,
     saveMode: "duplicate",
     completionMode: "duplicate",
-    duplicateSuffix: " copy",
-    duplicatePrefix: "October ",
+    duplicatePrefix: "  October ",
+    duplicateSuffix: " copy  ",
+    duplicateRemovePrefix: "OLD - ",
+    duplicateRemoveSuffix: " - OLD",
   },
 );
 assert.deepEqual(normalizeSessionConfig({ saveMode: "combined", combinedCardName: "  October Cast  " }), {
@@ -125,9 +129,17 @@ for (const garbage of [
   { connectionId: 4 },
   { globalLorebookIds: ["valid", 3] },
   { rebalance: "yes" },
-  { duplicateSuffix: "x".repeat(301) },
   { duplicatePrefix: "   " },
   { duplicatePrefix: "x".repeat(301) },
+  { duplicateSuffix: "   " },
+  { duplicateSuffix: "x".repeat(301) },
+  { duplicateRemovePrefix: "   " },
+  { duplicateRemovePrefix: "x".repeat(301) },
+  { duplicateRemoveSuffix: "   " },
+  { duplicateRemoveSuffix: "x".repeat(301) },
+  ...["duplicatePrefix", "duplicateSuffix", "duplicateRemovePrefix", "duplicateRemoveSuffix"].map((field) => ({
+    [field]: 42,
+  })),
   { combinedCardName: "   " },
   { combinedCardName: "x".repeat(301) },
 ]) {
@@ -243,9 +255,63 @@ assert.equal(session.schemaVersion, 1);
 assert.equal(session.items.length, 1);
 assert.deepEqual(session.items[0].snapshots, {});
 assert.equal(migrateSessionDocument(session), session);
+const affixSession = newSession(
+  "Affix parity",
+  normalizeSessionConfig({
+    duplicatePrefix: "  New ",
+    duplicateSuffix: " copy  ",
+    duplicateRemovePrefix: "OLD - ",
+    duplicateRemoveSuffix: " - OLD",
+  }),
+  [{ characterId: "character-2", characterName: "Character Two" }],
+);
+assert.equal(migrateSessionDocument(affixSession), affixSession, "stored duplicate affixes round-trip exactly");
+for (const affix of ["duplicatePrefix", "duplicateSuffix", "duplicateRemovePrefix", "duplicateRemoveSuffix"]) {
+  assert.equal(
+    migrateSessionDocument({ ...affixSession, config: { ...affixSession.config, [affix]: "   " } }),
+    null,
+    `stored ${affix} uses the same validation as normalized config`,
+  );
+}
 for (const garbage of [null, {}, { schemaVersion: 2 }, { ...session, items: null }, { ...session, config: null }]) {
   assert.equal(migrateSessionDocument(garbage), null);
 }
+
+assert.equal(computeDuplicateName("Maria", { prefix: "Edited ", suffix: " (Edited)" }), "Edited Maria (Edited)");
+assert.equal(computeDuplicateName("Maria", { prefix: "Edited " }), "Edited Maria");
+assert.equal(computeDuplicateName("Maria", { suffix: " (Edited)" }), "Maria (Edited)");
+assert.equal(computeDuplicateName("Maria", {}), "Maria");
+assert.equal(
+  computeDuplicateName("old - MaRiA - OLD", { removePrefix: "OLD - ", removeSuffix: " - old" }),
+  "MaRiA",
+  "strip matching is case-insensitive and preserves the remainder's casing",
+);
+assert.equal(computeDuplicateName("xx xx Name", { removePrefix: "xx " }), "xx Name", "an edge is stripped once");
+assert.equal(
+  computeDuplicateName("OLD -   Maria   - OLD", { removePrefix: "old - ", removeSuffix: " - old" }),
+  "Maria",
+  "the stripped name is trimmed",
+);
+assert.equal(
+  computeDuplicateName("OLD", { removePrefix: "old" }),
+  "OLD",
+  "an empty stripped result falls back to the pre-strip base",
+);
+assert.equal(
+  computeDuplicateName("OLD - Maria - OLD", {
+    prefix: "New - ",
+    suffix: " - New",
+    removePrefix: "old - ",
+    removeSuffix: " - old",
+  }),
+  "New - Maria - New",
+  "remove and append affixes combine",
+);
+assert.equal(
+  computeDuplicateName("  Maria  ", { prefix: "   ", suffix: "\t", removePrefix: " ", removeSuffix: "  " }),
+  "Maria",
+  "blank affixes are absent",
+);
 
 const fidelityText = `  A & <tag> 'quote' "double" {{char}} {{user}} {{// remove me}} tail  `;
 assert.equal(normalizeCardPromptText(fidelityText), `A & <tag> 'quote' "double" {{char}} {{user}}  tail`);
@@ -534,8 +600,8 @@ assert.deepEqual(
   [emptyUpdate],
 );
 
-// SessionItem is the frozen schema shape: label lives on the session, duplicateSuffix on the
-// session config, so both reach planApply through opts — never through the item.
+// SessionItem is the frozen schema shape: label and duplicate-name affixes live on the session,
+// so they reach planApply through opts — never through the item.
 const applyItem = {
   ...newItem("character-1", "Character One"),
   snapshots: { description: "Old", personality: "Original" },
@@ -605,6 +671,8 @@ assert.deepEqual(
       force: false,
       saveMode: "duplicate",
       duplicatePrefix: "October ",
+      duplicateRemovePrefix: "Old ",
+      duplicateRemoveSuffix: " old",
       ...applyOptions,
     },
   ),
@@ -614,9 +682,23 @@ assert.deepEqual(
       characterId: "character-1",
       fields: { description: "New", personality: "Changed" },
       namePrefix: "October ",
+      nameSuffix: " (Edited)",
+      stripNamePrefix: "Old ",
+      stripNameSuffix: " old",
     },
   ],
-  "a non-empty prefix wins over the legacy suffix",
+  "duplicate planning carries every present affix independently",
+);
+assert.deepEqual(
+  planApply(applyItem, {}, { force: false, saveMode: "duplicate", label: "No affixes" }),
+  [
+    {
+      op: "duplicateThenPatch",
+      characterId: "character-1",
+      fields: { description: "New", personality: "Changed" },
+    },
+  ],
+  "duplicate planning omits every absent affix",
 );
 assert.deepEqual(
   planApply(
@@ -877,13 +959,23 @@ assert.deepEqual(
 
 // ── planDuplicateApplied (SPEC 2026-10-06 P1): one duplicateThenPatch per applied item with ──
 // ── updates and no result card; everything else self-excludes ──
-const dupAppliedSession = newSession("October cleanup", { saveMode: "confirm" }, [
-  { characterId: "character-1", characterName: "Character One" },
-  { characterId: "character-2", characterName: "Character Two" },
-  { characterId: "character-3", characterName: "Character Three" },
-  { characterId: "character-4", characterName: "Character Four" },
-  { characterId: "character-5", characterName: "Character Five" },
-]);
+const dupAppliedSession = newSession(
+  "October cleanup",
+  {
+    saveMode: "confirm",
+    duplicatePrefix: "October ",
+    duplicateSuffix: " (Edited)",
+    duplicateRemovePrefix: "Old ",
+    duplicateRemoveSuffix: " old",
+  },
+  [
+    { characterId: "character-1", characterName: "Character One" },
+    { characterId: "character-2", characterName: "Character Two" },
+    { characterId: "character-3", characterName: "Character Three" },
+    { characterId: "character-4", characterName: "Character Four" },
+    { characterId: "character-5", characterName: "Character Five" },
+  ],
+);
 dupAppliedSession.items[0] = { ...dupAppliedSession.items[0], status: "applied", updates: [validDescriptionUpdate] };
 // Applied but already has a result card (post-combine or previously duplicated) — self-excludes.
 dupAppliedSession.items[1] = {
@@ -912,15 +1004,20 @@ assert.deepEqual(planDuplicateApplied(dupAppliedSession), [
         op: "duplicateThenPatch",
         characterId: "character-1",
         fields: { description: "New" },
+        namePrefix: "October ",
         nameSuffix: " (Edited)",
+        stripNamePrefix: "Old ",
+        stripNameSuffix: " old",
       },
     ],
   },
 ]);
-// The session's duplicate prefix config wins over the suffix, same as verdict-route planning.
-const dupAppliedPrefixSession = newSession("October cleanup", { saveMode: "confirm", duplicatePrefix: "October " }, [
-  { characterId: "character-1", characterName: "Character One" },
-]);
+// Legacy persisted affixes remain valid, and prefix + suffix now plan together.
+const dupAppliedPrefixSession = newSession(
+  "October cleanup",
+  { saveMode: "confirm", duplicatePrefix: "October ", duplicateSuffix: " (Edited)" },
+  [{ characterId: "character-1", characterName: "Character One" }],
+);
 dupAppliedPrefixSession.items[0] = {
   ...dupAppliedPrefixSession.items[0],
   status: "applied",
@@ -935,10 +1032,27 @@ assert.deepEqual(planDuplicateApplied(dupAppliedPrefixSession), [
         characterId: "character-1",
         fields: { description: "New" },
         namePrefix: "October ",
+        nameSuffix: " (Edited)",
       },
     ],
   },
 ]);
+assert.equal(migrateSessionDocument(dupAppliedPrefixSession), dupAppliedPrefixSession);
+const legacySuffixSession = newSession("Legacy suffix", { saveMode: "confirm", duplicateSuffix: " (Edited)" }, [
+  { characterId: "character-1", characterName: "Character One" },
+]);
+legacySuffixSession.items[0] = {
+  ...legacySuffixSession.items[0],
+  status: "applied",
+  updates: [validDescriptionUpdate],
+};
+assert.equal(migrateSessionDocument(legacySuffixSession), legacySuffixSession);
+assert.deepEqual(planDuplicateApplied(legacySuffixSession)[0].ops[0], {
+  op: "duplicateThenPatch",
+  characterId: "character-1",
+  fields: { description: "New" },
+  nameSuffix: " (Edited)",
+});
 // No eligible items → no plans (the route answers { plans: [] }, not an error).
 assert.deepEqual(planDuplicateApplied(newSession("Empty", { saveMode: "confirm" }, [])), []);
 assert.deepEqual(

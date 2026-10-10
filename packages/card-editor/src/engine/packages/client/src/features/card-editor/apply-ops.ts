@@ -5,7 +5,7 @@
  * panel's auto-apply driver, so both paths write identically (SPEC F4: versionSource "agent").
  */
 import type { BulkSession, SessionItem } from "../../../../shared/src/features/agents/card-editor/schema.ts";
-import { decodeXmlEntities } from "../../../../shared/src/features/agents/card-editor/text.ts";
+import { computeDuplicateName, decodeXmlEntities } from "../../../../shared/src/features/agents/card-editor/text.ts";
 // ".ts" specifiers: the panel regression runs this module under plain Node type-stripping.
 import {
   createHostCharacter,
@@ -54,7 +54,8 @@ async function executeOp(item: SessionItem, op: ApplyOperation, label: string): 
     });
     return { ok: true };
   }
-  // duplicateThenPatch: copy the CURRENT card, rename (prefix wins over suffix), patch the copy.
+  // duplicateThenPatch: copy the CURRENT card, apply every configured name affix, patch the copy.
+  const duplicateOp = op as typeof op & { stripNamePrefix?: string; stripNameSuffix?: string };
   const copy = await duplicateHostCharacter(op.characterId);
   const copyId = typeof copy?.id === "string" && copy.id ? copy.id : "";
   if (!copyId) throw new Error("The duplicate call returned no card id.");
@@ -63,7 +64,12 @@ async function executeOp(item: SessionItem, op: ApplyOperation, label: string): 
     ? copyName.slice(0, -ENGINE_COPY_SUFFIX.length)
     : copyName || item.characterName;
   const data: Record<string, unknown> = {
-    name: op.namePrefix !== undefined ? `${op.namePrefix}${baseName}` : `${baseName}${op.nameSuffix}`,
+    name: computeDuplicateName(baseName, {
+      ...(duplicateOp.namePrefix === undefined ? {} : { prefix: duplicateOp.namePrefix }),
+      ...(duplicateOp.nameSuffix === undefined ? {} : { suffix: duplicateOp.nameSuffix }),
+      ...(duplicateOp.stripNamePrefix === undefined ? {} : { removePrefix: duplicateOp.stripNamePrefix }),
+      ...(duplicateOp.stripNameSuffix === undefined ? {} : { removeSuffix: duplicateOp.stripNameSuffix }),
+    }),
   };
   const extensionFields: Record<string, string> = {};
   for (const [field, value] of Object.entries(op.fields)) {

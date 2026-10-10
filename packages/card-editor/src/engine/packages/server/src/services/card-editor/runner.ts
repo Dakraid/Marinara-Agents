@@ -334,8 +334,14 @@ export function planCompletionEnforcement(
         force: false,
         saveMode: completionMode === "duplicate" ? "duplicate" : "auto",
         label: session.label,
-        duplicateSuffix: session.config.duplicateSuffix,
         ...(session.config.duplicatePrefix === undefined ? {} : { duplicatePrefix: session.config.duplicatePrefix }),
+        ...(session.config.duplicateSuffix === undefined ? {} : { duplicateSuffix: session.config.duplicateSuffix }),
+        ...(session.config.duplicateRemovePrefix === undefined
+          ? {}
+          : { duplicateRemovePrefix: session.config.duplicateRemovePrefix }),
+        ...(session.config.duplicateRemoveSuffix === undefined
+          ? {}
+          : { duplicateRemoveSuffix: session.config.duplicateRemoveSuffix }),
       });
       if (ops.some((op) => op.op === "hold")) return advanceItemStatus(item, "needs-review");
       return {
