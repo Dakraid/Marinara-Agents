@@ -701,6 +701,7 @@
   "ui.noodle.noodlehome.uploadFromDevice": "Upload From Device",
   "ui.noodle.noodlehome.useAvatarReferences": "Use avatar references",
   "ui.noodle.noodlehome.useCharacterImageInstructions": "Use this character's image instructions in Noodle images",
+  "ui.noodle.noodlehome.useCharacterImageInstructionsHelp": "Adds the character's Image Generation Instructions from the Convo tab to their Noodle images. This saves right away. Slurp uses the same choice until you set one for this character in Slurp.",
   "ui.noodle.noodlehome.useConnectionDefault": "Use connection default",
   "ui.noodle.noodlehome.useGeneratedCharacterSchedules": "Use generated character schedules",
   "ui.noodle.noodlehome.useNoodleGenerationConnection": "Use Noodle generation connection",

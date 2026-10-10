@@ -1857,19 +1857,20 @@ export function NoodleHome({ navigation, onNavigate, focusPostId, onFocusPostHan
     viewedProfileAccount?.kind === "character"
       ? characters.find((character) => character.id === viewedProfileAccount.entityId)
       : undefined;
+  const viewedCharacterId = typeof viewedCharacter?.id === "string" ? viewedCharacter.id : null;
   // The card flag lives on the character, so it saves at once instead of with the profile draft.
   // Slurp reads the same flag as its default.
   const storedApplyImageInstructions =
     parseRecord(parseRecord(viewedCharacter?.data).extensions).applyConversationImageInstructionsToNoodle === true;
   const applyImageInstructions =
-    updateCharacter.isPending && updateCharacter.variables?.id === viewedCharacter?.id
+    updateCharacter.isPending && updateCharacter.variables?.id === viewedCharacterId
       ? parseRecord(updateCharacter.variables?.data?.extensions).applyConversationImageInstructionsToNoodle === true
       : storedApplyImageInstructions;
   const setApplyImageInstructions = (value: boolean) => {
-    if (typeof viewedCharacter?.id !== "string") return;
+    if (!viewedCharacterId) return;
     updateCharacter.mutate(
       {
-        id: viewedCharacter.id,
+        id: viewedCharacterId,
         data: { extensions: { applyConversationImageInstructionsToNoodle: value } },
         skipVersionSnapshot: true,
       },
@@ -5319,30 +5320,33 @@ export function NoodleHome({ navigation, onNavigate, focusPostId, onFocusPostHan
                       onBioChange: setProfileBio,
                       location: profileLocation,
                       onLocationChange: setProfileLocation,
-                      footer:
-                        typeof viewedCharacter?.id === "string" ? (
-                          <div className="space-y-1.5 border-t border-[var(--noodle-divider)] pt-3">
-                            <label className="flex items-start gap-2 text-xs">
-                              <input
-                                type="checkbox"
-                                checked={applyImageInstructions}
-                                disabled={updateCharacter.isPending}
-                                onChange={(event) => setApplyImageInstructions(event.target.checked)}
-                                className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-[var(--noodle-accent)]"
-                              />
-                              <span>{localizeUi("ui.noodle.noodlehome.useCharacterImageInstructions")}</span>
-                            </label>
-                            {openCharacter && (
-                              <button
-                                type="button"
-                                onClick={() => openCharacter(viewedCharacter.id as string, { tab: "convo" })}
-                                className="ml-5 text-xs font-semibold text-[var(--noodle-accent)] hover:underline"
-                              >
-                                {localizeUi("ui.noodle.noodlehome.editImageInstructions")}
-                              </button>
-                            )}
-                          </div>
-                        ) : undefined,
+                      footer: viewedCharacterId ? (
+                        <div className="space-y-1.5 border-t border-[var(--noodle-divider)] pt-3">
+                          <label className="flex items-start gap-2 text-xs">
+                            <input
+                              type="checkbox"
+                              checked={applyImageInstructions}
+                              disabled={updateCharacter.isPending}
+                              onChange={(event) => setApplyImageInstructions(event.target.checked)}
+                              className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-[var(--noodle-accent)]"
+                            />
+                            <span>{localizeUi("ui.noodle.noodlehome.useCharacterImageInstructions")}</span>
+                            <HelpTooltip
+                              wide
+                              text={localizeUi("ui.noodle.noodlehome.useCharacterImageInstructionsHelp")}
+                            />
+                          </label>
+                          {openCharacter && (
+                            <button
+                              type="button"
+                              onClick={() => openCharacter(viewedCharacterId, { tab: "convo" })}
+                              className="ml-5 text-xs font-semibold text-[var(--noodle-accent)] hover:underline"
+                            >
+                              {localizeUi("ui.noodle.noodlehome.editImageInstructions")}
+                            </button>
+                          )}
+                        </div>
+                      ) : undefined,
                     }
                   : undefined
               }
