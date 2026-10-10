@@ -465,3 +465,116 @@ await test("detached elements wait for connection before changing shared state o
   assert.deepEqual(chats, ["chat-a"]);
   assert.equal(unmounts, 1);
 });
+
+const apiSource = await readFile(new URL("../packages/quartermaster/src/00-api.js", import.meta.url), "utf8");
+const flush = () => new Promise((resolve) => setImmediate(resolve));
+function loadApi({ secret = null, storageThrows = false, respond = () => ({ ok: true, status: 200, body: {} }) } = {}) {
+  const calls = [];
+  const context = vm.createContext({
+    localStorage: {
+      getItem(key) {
+        if (storageThrows) throw new Error("blocked");
+        return key === "marinara_admin_secret" ? secret : null;
+      },
+    },
+    fetch: (url, init = {}) => {
+      calls.push({ url, init });
+      return Promise.resolve(respond(url)).then((result) => ({
+        ok: result.ok,
+        status: result.status,
+        json: async () => result.body,
+        blob: async () => ({ blob: url }),
+      }));
+    },
+    URL: { createObjectURL: () => `blob:${calls.length}`, revokeObjectURL() {} },
+    Event,
+  });
+  vm.runInContext(apiSource, context);
+  return { QM: vm.runInContext("QM", context), calls };
+}
+function imageElement() {
+  const listeners = {};
+  return {
+    src: "",
+    errors: 0,
+    addEventListener(name, handler) {
+      (listeners[name] ??= []).push(handler);
+    },
+    dispatchEvent(event) {
+      if (event.type === "error") this.errors++;
+      for (const handler of listeners[event.type] ?? []) handler(event);
+    },
+  };
+}
+
+await test("package requests send the saved Admin Secret and the CSRF marker", async () => {
+  const withSecret = loadApi({ secret: " s3cret " });
+  await withSecret.QM.listItems("chat-a", "persona");
+  await withSecret.QM.addItem("chat-a", "persona", { name: "Sword" });
+  const [read, write] = withSecret.calls;
+  assert.equal(read.init.headers["X-Admin-Secret"], "s3cret");
+  assert.equal(read.init.headers["x-marinara-csrf"], undefined);
+  assert.equal(read.init.headers["Content-Type"], undefined);
+  assert.equal(write.init.headers["X-Admin-Secret"], "s3cret");
+  assert.equal(write.init.headers["x-marinara-csrf"], "1");
+  assert.equal(write.init.headers["Content-Type"], "application/json");
+
+  for (const options of [{ secret: null }, { storageThrows: true }]) {
+    const withoutSecret = loadApi(options);
+    await withoutSecret.QM.listItems("chat-a", "persona");
+    assert.equal(withoutSecret.calls[0].init.headers["X-Admin-Secret"], undefined);
+  }
+});
+
+await test("a refused Admin Secret explains how to fix it on this device", async () => {
+  const refused = () => ({ ok: false, status: 403, body: { error: "Invalid or missing X-Admin-Secret header" } });
+  await assert.rejects(
+    loadApi({ secret: "wrong", respond: refused }).QM.listItems("chat-a", "persona"),
+    /does not match/,
+  );
+  await assert.rejects(loadApi({ respond: refused }).QM.listItems("chat-a", "persona"), /has no Admin Secret/);
+  const missing = () => ({ ok: false, status: 404, body: { error: "Item not found" } });
+  await assert.rejects(
+    loadApi({ secret: "s", respond: missing }).QM.listItems("chat-a", "persona"),
+    /^Error: Item not found$/,
+  );
+});
+
+await test("gated images load with the Admin Secret and report failures through the error event", async () => {
+  const itemUrl = "/api/quartermaster/inventory/chat-a/persona/items/item-a/image";
+
+  const plain = loadApi();
+  const plainImg = imageElement();
+  plain.QM.setImageSrc(plainImg, itemUrl);
+  assert.equal(plainImg.src, itemUrl);
+  assert.equal(plain.calls.length, 0);
+
+  const loaded = loadApi({ secret: "s3cret" });
+  const loadedImg = imageElement();
+  loaded.QM.setImageSrc(loadedImg, itemUrl);
+  await flush();
+  assert.equal(loaded.calls[0].init.headers["X-Admin-Secret"], "s3cret");
+  assert.match(loadedImg.src, /^blob:/);
+
+  const missing = loadApi({ secret: "s3cret", respond: () => ({ ok: false, status: 404, body: {} }) });
+  const missingImg = imageElement();
+  missing.QM.setImageSrc(missingImg, itemUrl);
+  await flush();
+  assert.equal(missingImg.src, "");
+  assert.equal(missingImg.errors, 1);
+
+  let release;
+  const slow = loadApi({
+    secret: "s3cret",
+    respond: () => new Promise((resolve) => (release = () => resolve({ ok: true, status: 200, body: {} }))),
+  });
+  const reusedImg = imageElement();
+  slow.QM.setImageSrc(reusedImg, itemUrl);
+  slow.QM.setImageSrc(reusedImg, "/api/avatars/persona.png");
+  assert.equal(reusedImg.src, "/api/avatars/persona.png");
+  release();
+  await flush();
+  assert.equal(reusedImg.src, "/api/avatars/persona.png");
+  assert.equal(reusedImg.errors, 0);
+  assert.equal(slow.calls.length, 1);
+});

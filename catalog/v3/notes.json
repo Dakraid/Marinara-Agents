@@ -446,6 +446,12 @@
     "quartermaster": {
       "versions": [
         {
+          "version": "0.1.24",
+          "date": "2026-10-10",
+          "notes": "- Works from other devices and remote access: Quartermaster now sends the Admin Secret saved in\n  Settings → Advanced → Admin Access, fixing \"Invalid or missing X-Admin-Secret header\".\n- Item images, outfit portraits and slot icons also load from other devices.\n- A missing or mismatched Admin Secret now explains how to fix it.",
+          "highlight": true
+        },
+        {
           "version": "0.1.23",
           "date": "2026-10-01",
           "notes": "- The description now says what it does in plain words.",
@@ -558,12 +564,6 @@
           "date": "2026-09-08",
           "notes": "- Fixed Build Wardrobe producing no debug-log output.\n- Replaced the dock's 5-second inventory poll with an event-driven refresh.",
           "highlight": false
-        },
-        {
-          "version": "0.1.4",
-          "date": "2026-09-08",
-          "notes": "- Added Build Wardrobe: describe a style and get a proposed set of items and outfits to review\n  before adding.\n- Outfits it builds can reuse existing wearable items instead of always creating new ones.\n- Fixed non-wearable items sometimes turning up in a generated outfit.",
-          "highlight": true
         }
       ]
     },

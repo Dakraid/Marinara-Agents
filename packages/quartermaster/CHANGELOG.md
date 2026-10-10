@@ -1,5 +1,11 @@
 # Quartermaster changelog
 
+## 0.1.24 — 2026-10-10 [highlight]
+- Works from other devices and remote access: Quartermaster now sends the Admin Secret saved in
+  Settings → Advanced → Admin Access, fixing "Invalid or missing X-Admin-Secret header".
+- Item images, outfit portraits and slot icons also load from other devices.
+- A missing or mismatched Admin Secret now explains how to fix it.
+
 ## 0.1.23 — 2026-10-01
 - The description now says what it does in plain words.
 
