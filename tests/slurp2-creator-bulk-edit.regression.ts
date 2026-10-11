@@ -53,10 +53,17 @@ assert.match(settings, /<SlurpTagsSettings/u);
 assert.doesNotMatch(tagsPage, /window\.(prompt|confirm)\(/u);
 assert.match(tagsPage, /<label className="relative flex/u);
 
-// Creators tab: select mode, the bulk panel, and a quick edit that uses the same route.
+// Creators tab: select mode plus the bulk panel for many Creators at once.
 assert.match(settings, /<SlurpCreatorBulkEdit/u);
 assert.match(settings, /<SlurpDiscoveryProfileEditor/u);
-assert.match(settings, /ids: \[selectedCreator\.id\]/u);
+// A single Creator's gender/tags moved off the instant bulk-update quick edit and into the whole
+// profile editor (commit 95cd4c0a0, "whole profile in the Creators tab"), saved with the rest of
+// the profile through the stage-profile route instead of a one-field bulk-update call.
+assert.match(settings, /<SlurpCreatorProfileEditor/u);
+assert.match(
+  read("client/src/slp/features/creators/slp-creator-profile-hooks.ts"),
+  /\/slurp2\/slurp\/accounts\/\$\{encodeURIComponent\(accountId\)\}\/stage-profile/u,
+);
 assert.match(
   read("client/src/slp/features/creators/slp-creators-hooks.ts"),
   /"\/slurp2\/slurp\/accounts\/bulk-update"/u,
