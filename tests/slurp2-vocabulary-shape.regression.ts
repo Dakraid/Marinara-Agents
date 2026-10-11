@@ -3,9 +3,11 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 // Slice 12 copied the Engine Noodle declarations into Slurp2's own `slp` shared root and renamed
-// them. This proves the copy changed names only: every copied declaration, renamed back through
-// the recorded map and stripped of comments and formatting, is identical to the Engine original.
-// Nothing may be removed from the map or from INTENDED_DELTAS.
+// them. Every copied declaration, renamed back through the recorded map and stripped of comments
+// and formatting, must match the Engine original. The only exceptions are the divergences listed in
+// INTENDED_DELTAS: Slurp-only fields, validator changes and Slurp's own prompt wording. Each entry
+// has a comment. Any other difference fails. Nothing may be removed from the map, and a new entry
+// needs a comment.
 const repoRoot = join(import.meta.dirname, "..");
 const packageRoot = join(repoRoot, "packages/slurp2");
 const slpShared = join(packageRoot, "src/engine/packages/shared/src/slp");

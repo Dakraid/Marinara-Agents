@@ -34,6 +34,12 @@ assert.match(routes, /messages\.deliverCommission\(/u);
 // The accept route holds the same per-commission in-flight guard as /deliver, so a double-click or
 // retry cannot draw the same commission twice before the storage write queue can serialize it.
 assert.match(routes, /commissionAcceptRequests\.has\(commission\.id\)/u);
+assert.match(routes, /commissionAcceptRequests\.add\(commission\.id\)/u, "accept must hold the guard while it works");
+assert.match(
+  routes,
+  /\} finally \{\s*commissionAcceptRequests\.delete\(commission\.id\);/u,
+  "accept must release the guard in finally, so a failed draw can be retried",
+);
 assert.match(routes, /commissionDeliveryRequests\.has\(commissionId\)/u);
 
 // A fresh delivery lease belongs to the other worker. A stale lease can be conditionally reclaimed,
