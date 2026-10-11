@@ -16,7 +16,7 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
     version: "0.3.22",
     date: "2026-10-11",
     notes: [
-      "A linked Creator's look reaches her pictures again with Include descriptions off.",
+      "Backups now include reports.",
       "Create posts now says which Creators it skipped or could not post for, not just how many.",
     ],
   },

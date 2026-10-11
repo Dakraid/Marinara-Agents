@@ -2,10 +2,9 @@
 
 ## 0.3.22 — 2026-10-11
 
-- Fixed: backups and restores now carry user reports (`slurp2_reports`) along with everything else.
-- Fixed: a linked character's look reaches the picture again when "Include descriptions" is off; that toggle only ever controlled extra source context, not whether a post's subject is drawn at all.
+- Fixed: reports are now included in backups and restores.
 - Fixed: "Create posts now" names the Creators it skipped or could not post for again, instead of only a count.
-- Fixed: a Slurp Support desk tick checks a throttle against the tick's own time instead of the real clock, so a throttled Creator asks about views even when the tick runs well after "now."
+- Internal: a Slurp Support desk tick checks its throttle against the tick's own time instead of the wall clock.
 
 ## 0.3.21 — 2026-10-11
 
