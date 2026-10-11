@@ -14,8 +14,10 @@
  *
  * ## The approach
  *
- * A short core (who they are) plus a varied handful of true details from the card, the canon
- * anchors and their own past lines, drawn per request. Consecutive requests never share a detail:
+ * A short core (who they are), the few facts that must always hold (the anchors' essentials: how
+ * they communicate, their senses and body, firm limits), and a varied handful of true details from
+ * the card, the canon anchors and their own past lines, drawn per request. The essentials are in
+ * every brief; only the details rotate. Consecutive requests never share a detail:
  * every detail belongs to one of two alternating halves. One real line of theirs shows the voice.
  * A phrase they overuse is allowed now and then and called out the rest of the time. The player's
  * steering (focus, life phase, mood, topics) is always there, in plain words. No labels, no JSON.
@@ -107,11 +109,22 @@ const MOOD_LINE: Record<SlpSteeringMood, string> = {
 
 const clean = (value: string) => value.replace(/\s+/gu, " ").trim();
 
-/** Card text as the Creator's own facts: `{{char}}` resolved, roleplay lines about the player dropped. */
+/**
+ * Card text as the Creator's own facts: `{{char}}` resolved, roleplay lines about the player dropped.
+ *
+ * ponytail: sentence ends are Western and full-width punctuation or a line break. An attribute list
+ * on one line (W++, PList) is cut at its `;` and `)` only when it is too long to keep whole. Other
+ * scripts and shapes stay one long piece; what must not be lost from them is the essentials' job.
+ */
 function cardSentences(value: string | undefined, name: string): string[] {
   return (value ?? "")
     .replace(/\{\{\s*char\s*\}\}/giu, name)
-    .split(/(?<=[.!?])\s+|\n+/u)
+    .split(/(?<=[.!?])\s+|(?<=[。！？])\s*|\n+/u)
+    .flatMap((piece) =>
+      piece.length > (SLP_BODY_WORDS.test(piece) ? BODY_SENTENCE_MAX : SENTENCE_MAX)
+        ? piece.split(/\s*;\s*|(?<=\))\s+/u)
+        : [piece],
+    )
     .map(clean)
     .filter((sentence) => sentence.length >= 8 && !/\{\{\s*user\s*\}\}|<\s*start\s*>/iu.test(sentence))
     .map((sentence) => {
@@ -309,6 +322,14 @@ export function compileSlurpFlavourBrief(
   const description = takeUpTo(cardSentences(source.card.description, name), CORE_DESCRIPTION_MAX);
   const personality = takeUpTo(cardSentences(source.card.personality, name), CORE_PERSONALITY_MAX);
   const core = [...description.taken, ...personality.taken].join(" ");
+  // Never rotated and never dropped for a topic the player wants left alone: without them the
+  // Creator is somebody else (a mute character who talks, a blind one who admires the view).
+  const essentials = (source.anchors?.essentials ?? [])
+    .map((fact) => clean(fact).replace(/[.;\s]+$/u, ""))
+    .filter(Boolean);
+  const always = essentials.length
+    ? `Always true about you, in everything you write, say and show: ${essentials.join("; ")}.`
+    : "";
 
   const cardBits = [...description.rest, ...personality.rest, ...cardSentences(source.card.backstory, name)].map(
     (sentence) => ({ key: `card:${sentence.slice(0, 48)}`, kind: cardKind(sentence), text: sentence }),
@@ -363,6 +384,7 @@ export function compileSlurpFlavourBrief(
 
   const paragraphs = [
     core,
+    always,
     bits.length ? `A few true things about you to draw on this time. ${bits.map((bit) => bit.text).join(" ")}` : "",
     sample ? `How you sound, in a line of yours from before (match the voice, never reuse the words): “${sample}”` : "",
     [...life, source.relationship ?? "", texture, signatureLine].filter(Boolean).join(" "),

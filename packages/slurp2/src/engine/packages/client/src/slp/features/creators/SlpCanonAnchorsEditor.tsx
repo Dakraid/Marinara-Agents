@@ -18,8 +18,9 @@ const entries = (text: string) =>
 const HEAT_LEVELS = [0, 1, 2, 3] as const;
 
 /**
- * What the Beats planner took from this Creator's card, editable. An extraction can miss a person
- * or invent a habit; this is where the player fixes it. Saved edits win until the card changes.
+ * What Slurp took from this Creator's card, editable: the facts that always hold (in every post,
+ * Story and chat) and the life details post ideas are built from. An extraction can miss a person
+ * or invent a habit; this is where the player fixes it. Saved edits are kept when the card changes.
  */
 export function SlpCanonAnchorsEditor({ creatorId }: { creatorId: string }) {
   const { t } = useTranslation();
@@ -60,6 +61,13 @@ export function SlpCanonAnchorsEditor({ creatorId }: { creatorId: string }) {
       <p className={noteClass}>
         {t("ui.slurp.canonAnchors.detail")} {status}
       </p>
+      <ChipListInput
+        label={t("ui.slurp.canonAnchors.essentials")}
+        values={entries(draft.essentials)}
+        disabled={busy || !state.hasCard}
+        onChange={(values) => setDraft((current) => ({ ...current, essentials: values.join("\n") }))}
+        placeholder={t("ui.slurp.canonAnchors.essentialsPlaceholder")}
+      />
       <div className="grid gap-3 lg:grid-cols-2">
         {LIST_FIELDS.map((field) => (
           <ChipListInput

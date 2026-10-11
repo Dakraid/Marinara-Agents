@@ -1,5 +1,14 @@
 # Slurp release notes
 
+## 0.3.25 — 2026-10-12
+
+- Added: Creators keep what is always true about them. When Slurp reads a Creator's card it now also notes the few facts that must hold everywhere (how they communicate, their senses and body, the languages they use, firm limits, and who runs the page when the card is not one person), and every post, Story, chat, comment reply and delivery note carries them. Before, a fact late in the card was only one of the details that rotate, so it was missing from most requests. No extra AI call per post or chat.
+- Added: "Always true" in a Creator's Life details (Creator settings › Memory), so you can see and correct those facts. Life details are now shown with "Post ideas come from: Model's choice" too, where only "Always true" is used; the card is read once there as well.
+- Changed: your edits to Life details are kept when the card changes or Slurp reads cards in a new way. What you added stays, what you removed stays out, and everything you did not touch follows the card. Before, a card change replaced your edits. "Read card again" still clears them.
+- Changed: the card reading sees more of a long card (still bounded), and reads again when that later part changes.
+- Changed: card text with full-width sentence ends (。！？) and long one-line attribute lists (W++, PList) is cut at those points instead of being cut off after 220 characters.
+- Fixed: a failed read of the stored Life details could overwrite every Creator's details with one entry. Slurp now writes nothing in that case, and saving shows the error.
+
 ## 0.3.24 — 2026-10-11
 
 - Changed: in a picture with a second Creator (a partner, a collab), that person now gets their own look in the picture prompt, labelled with their name and placed after the posting Creator's look. Before, their look reached only "Enhance image prompts", so with it off the image model had nothing to draw them from.
