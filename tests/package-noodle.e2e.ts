@@ -267,10 +267,14 @@ test.describe("package-owned Noodle interface", () => {
     const manager = page.getByRole("dialog", { name: "Home Widgets" });
     await manager.getByRole("switch", { name: /Show Noodle.*Latest Posts/ }).click();
     await page.keyboard.press("Escape");
+    // Closing the dialog hands focus back to its opener on the next animation frame. That runs only
+    // once the dialog has left the DOM, so wait for it. Focusing the widget earlier loses the race.
+    await expect(manager).toBeHidden();
     await expect(widget).toBeVisible();
     await expect(widget).toHaveAttribute("data-home-widget-size", "large");
     const scrollRegion = widget.getByRole("region", { name: "Latest Noodle posts" });
     await expect(scrollRegion).toContainText(content);
+    await scrollRegion.scrollIntoViewIfNeeded();
     await scrollRegion.focus();
     await expect(scrollRegion).toBeFocused();
     await page.keyboard.press("ArrowDown");
