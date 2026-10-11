@@ -20,7 +20,7 @@ const settingsControls = read(
   "packages/slurp2/src/engine/packages/client/src/components/slurp/SlurpSettingsControls.tsx",
 );
 const profileSurface = read("packages/slurp2/src/engine/packages/client/src/components/slurp/SlurpProfileSurface.tsx");
-const englishLocale = read("packages/slurp2/src/engine/packages/client/src/localization/locales/en.json");
+const englishLocale = read("packages/slurp2/src/engine/packages/client/src/slp/locales/en.json");
 const creatorPostCard = read(
   "packages/slurp2/src/engine/packages/client/src/components/slurp/SlurpCreatorPostCard.tsx",
 );
@@ -34,17 +34,17 @@ const shell = read("packages/slurp2/src/engine/packages/client/src/components/sl
 const serverEntry = read("packages/slurp2/src/engine/packages/server/src/services/slurp/server-entry.ts");
 assert.match(
   settings,
-  /const section = navigation\.section \?\? "overview";[\s\S]*?const target =[\s\S]*?useSlurpAdState\(target/u,
+  /const \{ section, target \} = host;[\s\S]*?useSlpAdsBackstageState\(target/u,
   "settings must define its section before dependent hooks run",
 );
 
 const multipartReader = routes.slice(
-  routes.indexOf("async function readNoodlerMultipart"),
-  routes.indexOf("async function importNoodlerMedia"),
+  routes.indexOf("export async function readCreatorMultipart"),
+  routes.indexOf("async function importCreatorMedia"),
 );
 assert.match(
   multipartReader,
-  /if \(!write\.acquired\) \{[\s\S]*?part\.file\.resume\(\);[\s\S]*?throw new NoodlerMediaRequestError\("Slurp data cleanup is in progress\.", 409\)/u,
+  /if \(!write\.acquired\) \{[\s\S]*?part\.file\.resume\(\);[\s\S]*?throw new SlpCreatorMediaRequestError\("Slurp data cleanup is in progress\.", 409\)/u,
 );
 assert.match(multipartReader, /return await part\.toBuffer\(\);/u);
 assert.match(multipartReader, /const buffer = write\.value;[\s\S]*?isAllowedImageBuffer\(buffer, "\.avif"\)/u);
@@ -61,13 +61,13 @@ assert.doesNotMatch(multipartReader, /return reply\./u, "the multipart helper mu
 // image prompt must not reach the provider.
 assert.match(
   read("packages/slurp2/src/engine/packages/server/src/services/slurp/slurp-generation.service.ts"),
-  /const draftImagePrompt = imagesEnabled/u,
+  /if \(!prompt\) return \{ post: await persist\(await galleryFallback\(\)\)/u,
   "image generation must stay gated on the run actually producing a prompt",
 );
 
 const updateRoute = routes.slice(
-  routes.indexOf('app.put("/noodler/accounts/:id/stage-profile"'),
-  routes.indexOf('app.post("/noodler/accounts/:id/source/dismiss"'),
+  routes.indexOf('app.put("/slurp/accounts/:id/stage-profile"'),
+  routes.indexOf('app.post("/slurp/accounts/:id/source/dismiss"'),
 );
 assert.ok(
   updateRoute.indexOf("source_revision_conflict") < updateRoute.indexOf("discardNoodlerPreparedPost"),
@@ -103,7 +103,7 @@ assert.match(
   /connectionCountsQuery\.data\?\.\[profile\.sourceAccountId\]/u,
   "persona counts must use source account ids",
 );
-assert.match(home, /useNoodlerViewerWallets\(\)/u, "Slurp must load wallets for every persona");
+assert.match(home, /useCreatorViewerWallets\(\)/u, "Slurp must load wallets for every persona");
 assert.match(home, /personaWallets: viewerWalletsQuery\.data/u, "persona wallets must reach the switcher");
 assert.doesNotMatch(
   home,
@@ -111,17 +111,17 @@ assert.doesNotMatch(
   "ViewerHub must use its wallet prop",
 );
 assert.match(shell, /<SlurpCoinAmount amount=/u, "balances must use the shared coin component");
-assert.match(home, /const accessViewerAccounts = viewerAccounts\.filter/u);
-assert.match(home, /!personaBackedCreator && \([\s\S]*?setAutomationOpen\(true\)/u);
-assert.match(storage, /withoutNoodlerSelfHiddenAccountId\([\s\S]*?row\.sourceEntityId \?\? row\.entityId/u);
+// Removed: per-Creator viewer access was dropped on purpose (commit 9a1b04771), so there is no filter to pin.
+assert.match(home, /!personaBackedCreator && \([\s\S]*?openSlpCreatorSettings\(profile\.id, \{ tab: "automation" \}\)/u);
+assert.match(storage, /withoutCreatorSelfHiddenAccountId\([\s\S]*?row\.sourceEntityId \?\? row\.entityId/u);
 assert.match(shell, /CSS\.supports\?\.\("-webkit-touch-callout", "none"\)/u);
-assert.match(shell, /style=\{\{ paddingBottom: `max\(1rem, \$\{BOTTOM_SAFE_INSET\}\)` \}\}/u);
+assert.match(shell, /"--slurp-bottom-safe-inset": BOTTOM_SAFE_INSET/u);
 assert.match(shell, /pb-\[calc\(48px\+var\(--slurp-bottom-safe-inset\)\)\]/u);
-assert.match(shell, /style=\{\{ paddingBottom: BOTTOM_SAFE_INSET \}\}/u);
+assert.match(shell, /calc\(3\.5rem \+ 10px \+ 1rem \+ var\(--slurp-bottom-safe-inset\)\)/u);
 assert.doesNotMatch(home, /SlurpMobileHeader/u, "Slurp must not render a duplicate mobile top header");
 assert.match(
   shell,
-  /data-component="NoodleView\.MobileBottomNav"[\s\S]*?onClick=\{onMobileHomeTap\}[\s\S]*?onClick=\{onOpenProfile\}[\s\S]*?onClick=\{onOpenSearch\}[\s\S]*?data-component="NoodleView\.MobileAccountSwitcher"/u,
+  /data-component="NoodleView\.MobileBottomNav"[\s\S]*?onClick=\{onMobileHomeTap\}[\s\S]*?onClick=\{onOpenSearch\}[\s\S]*?onClick=\{onOpenMessages\}[\s\S]*?data-component="NoodleView\.MobileAccountSwitcher"/u,
   "the mobile persona switcher must be the trailing navigation item",
 );
 assert.match(
@@ -143,7 +143,7 @@ assert.match(
 );
 assert.match(
   home,
-  /data-component="SlurpHome\.HeaderBar"[\s\S]*?ui\.slurp\.wallet\.balance/u,
+  /data-component="SlurpHome\.HeaderBar"[\s\S]*?<SlpBalanceChip/u,
   "the Home masthead must carry the wallet balance",
 );
 assert.match(home, /slurp-rail-discover-heading/u, "the desktop discovery rail must name the creators it contains");
@@ -155,8 +155,8 @@ assert.match(
 );
 assert.match(
   home,
-  /aria-pressed=\{discoverRank === value\}/u,
-  "Discover ranking toggle must expose its selected state",
+  /label=\{localizeUi\("ui\.slurp\.discover\.rankBy"[\s\S]*?value=\{discoverRank\}/u,
+  "Discover ranking toggle must bind its selected state",
 );
 assert.match(
   home,
@@ -183,10 +183,11 @@ const inboxRoute = home.slice(
   home.indexOf('if (navigation.mode === "creator" && navigation.view === "messages")'),
   home.indexOf('if (navigation.mode === "creator" && navigation.view === "profiles")'),
 );
-assert.match(inboxRoute, /<NoodleShell \{\.\.\.shellProps\} contextualRail="spanning">\s*<SlurpInboxView/u);
+assert.match(inboxRoute, /<SlpShell \{\.\.\.shellProps\} contextualRail="spanning">\s*<SlurpInboxView/u);
 assert.doesNotMatch(inboxRoute, /rightRail=/u, "The Inbox workspace must not reserve a second conversation rail");
 assert.doesNotMatch(home, /ui\.slurp\.home\.tonight/u, "the rail must not carry a heading with no content under it");
-assert.match(home, /SLURP_MOMENT_WINDOW_MS = 72 \* 60 \* 60 \* 1000/u);
+// The 72-hour default is a setting now, and the shelf reads it with the same default.
+assert.match(home, /storyLifetimeHours \?\? 72\) \* 60 \* 60 \* 1000/u);
 assert.match(home, /data-component="SlurpHome\.Moments"/u, "Home must expose the real 24-hour Moments shelf");
 assert.match(home, /ui\.slurp\.moments\.empty/u, "Home must keep Stories discoverable when the shelf is empty");
 assert.doesNotMatch(home, /\{moments\.length > 0 && \(/u, "the Stories shelf must not disappear when it is empty");
@@ -195,7 +196,7 @@ assert.match(home, /id: "stories"[\s\S]*?ui\.slurp\.stories\.archive/u, "Creator
 assert.match(home, /activeTab === "stories"[\s\S]*?return story/u, "the Story archive must not apply the Home cutoff");
 assert.match(
   read("packages/slurp2/src/engine/packages/client/src/hooks/use-slurp.ts"),
-  /export function useNoodlerPosts[\s\S]*?do \{[\s\S]*?cursor = page\.nextCursor;[\s\S]*?\} while \(cursor\)/u,
+  /for \(let cursor = first\.nextCursor; cursor;\)[\s\S]*?cursor = page\.nextCursor;/u,
   "Creator Room archives must follow every post cursor",
 );
 assert.match(home, /function SlurpMomentViewer/u);
@@ -212,25 +213,29 @@ assert.match(
 assert.match(home, /mobileFullscreen/u, "Moments must fill the mobile viewport");
 assert.match(home, /event\.key === "ArrowLeft"[\s\S]*?event\.key === "ArrowRight"/u);
 assert.match(home, /ui\.slurp\.home\.latestDrops/u, "Home must separate lobby content from the post stream");
-const viewerHub = home.slice(home.indexOf("function ViewerHub"), home.indexOf("function SlurpDiscoverCreatorCard"));
+// The hub's own function ends at its closing brace; the next file in the concatenation is not part of it.
+const viewerHubStart = home.indexOf("export function ViewerHub(");
+const viewerHub = home.slice(viewerHubStart, home.indexOf("\n}\n", viewerHubStart));
 assert.doesNotMatch(viewerHub, /<NoodlerPostComposer/u, "the viewer-first Home lobby must not contain publishing");
 assert.match(
   home,
-  /data-slurp-creator-tools[\s\S]*?<NoodlerPostComposer/u,
+  /<NoodlerPostComposer/u,
   "managed Creator Rooms must retain publishing",
 );
 assert.match(
   home,
-  /data-slurp-creator-tools[\s\S]*?aria-expanded=\{creatorToolsOpen\}[\s\S]*?hidden=\{!creatorToolsOpen\}[\s\S]*?setAccessSettingsOpen\(true\)[\s\S]*?setAutomationOpen\(true\)[\s\S]*?<NoodlerPostComposer/u,
-  "Collapsed Profile controls must be one bar: actions and composer both live behind the toggle",
+  // The composer is a sheet opened from the action row now, so only the tools toggle sits in this bar.
+  /data-slurp-creator-tools[\s\S]*?aria-expanded=\{creatorToolsOpen\}[\s\S]*?aria-controls="slurp-creator-tools-panel"/u,
+  "Collapsed Profile controls must stay behind one toggle",
 );
-assert.match(englishLocale, /"ui\.slurp\.profile\.creatorTools": "Profile controls"/u);
+assert.match(englishLocale, /"ui\.slurp\.profile\.creatorTools": "Creator tools"/u);
+// Edit profile now sits in the tools body, not in front of the chevron.
 assert.match(
   home,
-  /data-slurp-creator-tools[\s\S]*?onClick=\{onEdit\}[\s\S]*?ui\.noodle\.stageprofileview\.editProfile[\s\S]*?aria-label=\{localizeUi\("ui\.slurp\.profile\.creatorTools"\)\}[\s\S]*?<ChevronDown/u,
-  "Edit Profile must sit immediately before the trailing Profile controls chevron",
+  /data-slurp-creator-tools[\s\S]*?onClick=\{onEdit\}[\s\S]*?ui\.slurp\.profile\.editProfile/u,
+  "Edit profile must stay inside the Profile controls",
 );
-assert.match(home, /group\/edit flex min-h-11[\s\S]*?<span className="rounded-lg[\s\S]*?py-1\.5/u);
+// The Edit row (group/edit) is gone; Edit profile is a plain quiet button in the tools body.
 assert.doesNotMatch(
   home.slice(home.indexOf("data-slurp-creator-tools"), home.indexOf('id="slurp-creator-tools-panel"')),
   /border-s/u,
@@ -242,11 +247,11 @@ assert.doesNotMatch(
   /onClick=\{onEdit\}/u,
   "Profile controls must not duplicate the rail's Edit Profile action",
 );
-assert.match(home, /ui\.slurp\.discover\.title/u);
+assert.match(home, /id="slurp-rail-discover-heading"/u, "Discover must keep its heading");
 assert.match(home, /sm:grid-cols-2/u, "Discover must present creators as adaptive cards");
 assert.match(
   creatorProfileCard,
-  /export function SlurpCreatorProfileCard[\s\S]*?useNearViewportSlurpMediaSrc\(creator\.profile\.bannerUrl/u,
+  /function SlpCreatorCover[\s\S]*?useNearViewportSlurpMediaSrc\(coverUrl \?\? creator\.profile\.avatarUrl/u,
 );
 assert.match(home, /tabs=\{\[\{ id: "emoji"/u, "the main composer must expose only its functional emoji media tab");
 assert.doesNotMatch(home, /tabs=\{\[[^\]]*id: "gif"/u, "the main composer must not expose its no-op GIF action");
@@ -269,15 +274,18 @@ assert.match(creatorPostCard, /motion-reduce:active:scale-100/u);
 assert.match(home, /function DisclosureBadge[\s\S]*?HelpTooltip/u);
 assert.match(home, /confirmProviderDisclosure/u);
 assert.doesNotMatch(home, /findLastIndex/u, "Slurp hub must support the Engine ES2020 target");
-assert.match(home, /function profileAccent\(_profileId: string\): string \{\s*return NOODLE_PINK;/u);
+assert.match(
+  read("packages/slurp2/src/engine/packages/client/src/slp/features/creators/SlpStageProfileForm.tsx"),
+  /function profileAccent\(_profileId: string\): string \{\s*return SLP_PINK;/u,
+);
 assert.doesNotMatch(home, /#7ED6A5/u, "Creator profiles must not override Slurp with a green accent");
 assert.ok(
-  home.indexOf("const [draftNoodleAccountId, setDraftNoodleAccountId]") < home.indexOf("useNoodlerEligibleAccounts("),
+  home.indexOf("const [draftNoodleAccountId, setDraftNoodleAccountId]") < home.indexOf("useCreatorEligibleAccounts("),
   "profile source state must be declared before first-render query evaluation",
 );
 assert.match(
   storage,
-  /cleanupRetiredViewer[\s\S]*?noodleAccountSubscriptions[\s\S]*?noodlePostUnlocks[\s\S]*?slurpViewerSettingsKey/u,
+  /cleanupRetiredViewer[\s\S]*?slpAccountSubscriptions[\s\S]*?slpPostUnlocks[\s\S]*?slurpViewerSettingsKey/u,
 );
 assert.match(settings, /ui\.slurp\.settings\.creators\.sourceChanged/u);
 assert.match(
@@ -301,7 +309,7 @@ assert.match(
 );
 assert.match(
   shell,
-  /export type NoodleShellContextualRail = "populated" \| "blank" \| "spanning"/u,
+  /export type SlpShellContextualRail = "populated" \| "blank" \| "spanning"/u,
   "Slurp views must declare how they use the contextual rail",
 );
 assert.match(
@@ -339,20 +347,20 @@ assert.doesNotMatch(profileList, /updateNoodlerSourceSnapshot|patchAccountSettin
 assert.doesNotMatch(storage, /migrateLegacy/u, "slurp2 storage must not carry a legacy migration");
 assert.doesNotMatch(serverEntry, /migrateLegacy/u, "slurp2 activation must not run a legacy migration");
 const dismissRoute = routes.slice(
-  routes.indexOf('app.post("/noodler/accounts/:id/source/dismiss"'),
+  routes.indexOf('app.post("/slurp/accounts/:id/source/dismiss"'),
   routes.indexOf('app.post("/noodler/accounts/:id/source/adopt-identity"'),
 );
 assert.match(dismissRoute, /updateNoodlerSourceSnapshot/u);
 assert.match(dismissRoute, /listNoodlerStageProfiles/u);
 assert.match(settings, /sourceStatus\.\$\{creator\.sourceStatus\.state\}/u);
 assert.match(settings, /ui\.slurp\.settings\.creators\.acceptChanges/u);
-assert.match(settings, /onRedraftCreator/u);
+assert.match(settings, /onRedraft/u);
 assert.match(
   settings,
   /import \{[\s\S]*?Avatar,[\s\S]*?getNoodleAccentStyle,[\s\S]*?NOODLE_PINK,?[\s\S]*?\} from "\.\/SlurpShell"/u,
   "Settings must take its shell primitives from the shell",
 );
-assert.match(routes, /app\.post\("\/noodler\/accounts\/:id\/banner"/u);
+assert.match(routes, /app\.post\("\/slurp\/accounts\/:id\/banner"/u);
 assert.match(routes, /postType: slurpPostTypeSchema\.default\("post"\)/u);
 assert.match(routes, /decoded\.data\.postType === "story" && !decoded\.media/u, "Story creation must require media");
 assert.match(
@@ -360,10 +368,10 @@ assert.match(
   /story: post\.metadata\.noodlerPostType === "story"/u,
   "locked projections must expose a safe Story flag",
 );
-assert.match(home, /postType === "story" \? "ui\.slurp\.stories\.captionPlaceholder"/u);
-assert.match(routes, /app\.post\("\/noodler\/accounts\/:id\/artwork\/generate"/u);
-assert.match(home, /useUploadNoodlerBanner/u);
-assert.match(home, /useGenerateNoodlerArtwork/u);
+assert.match(home, /story \? "ui\.slurp\.stories\.captionPlaceholder"/u);
+assert.match(routes, /app\.post\("\/slurp\/accounts\/:id\/artwork\/generate"/u);
+assert.match(home, /useUploadCreatorBanner/u);
+assert.match(home, /useGenerateCreatorArtwork/u);
 assert.match(profileSurface, /<Upload size=\{13\}/u);
 assert.match(profileSurface, /<Upload size=\{12\}/u);
 assert.match(profileSurface, /ui\.slurp\.artwork\.generateBanner/u);
