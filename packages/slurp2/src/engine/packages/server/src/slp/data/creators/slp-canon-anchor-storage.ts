@@ -108,9 +108,11 @@ async function storeReading(
 }
 
 /**
- * This Creator's anchors for the card text `text`, or null. A missing or stale entry starts one
- * background reading and returns null: the caller never waits on a model. A failed reading is not
- * tried again for half an hour, and leaves what is stored as it is.
+ * This Creator's anchors for the card text `text`, or null when the card was never read. A missing
+ * or stale entry starts one background reading; the caller never waits on a model and gets what is
+ * stored meanwhile (the last reading, or the player's own anchors). A failed reading is not tried
+ * again for half an hour and leaves what is stored as it is, so a model that cannot read this card
+ * never takes away anchors that exist.
  */
 export async function slurpCanonAnchorsFor(
   db: DB,
@@ -133,7 +135,7 @@ export async function slurpCanonAnchorsFor(
       })
       .finally(() => inFlight.delete(accountId));
   }
-  return null;
+  return cached?.anchors ?? null;
 }
 
 /**

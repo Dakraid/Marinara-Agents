@@ -109,6 +109,10 @@ const MOOD_LINE: Record<SlpSteeringMood, string> = {
 
 const clean = (value: string) => value.replace(/\s+/gu, " ").trim();
 
+/** Where a one-line attribute list is cut: three or more of these make a list, fewer are prose. */
+const LIST_CUT = /\s*;\s*|(?<=\))\s+/u;
+const CJK = /[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/u;
+
 /**
  * Card text as the Creator's own facts: `{{char}}` resolved, roleplay lines about the player dropped.
  *
@@ -117,22 +121,26 @@ const clean = (value: string) => value.replace(/\s+/gu, " ").trim();
  * scripts and shapes stay one long piece; what must not be lost from them is the essentials' job.
  */
 function cardSentences(value: string | undefined, name: string): string[] {
-  return (value ?? "")
-    .replace(/\{\{\s*char\s*\}\}/giu, name)
-    .split(/(?<=[.!?])\s+|(?<=[。！？])\s*|\n+/u)
-    .flatMap((piece) =>
-      piece.length > (SLP_BODY_WORDS.test(piece) ? BODY_SENTENCE_MAX : SENTENCE_MAX)
-        ? piece.split(/\s*;\s*|(?<=\))\s+/u)
-        : [piece],
-    )
-    .map(clean)
-    .filter((sentence) => sentence.length >= 8 && !/\{\{\s*user\s*\}\}|<\s*start\s*>/iu.test(sentence))
-    .map((sentence) => {
-      // A body sentence stays whole: furry and scalie cards put the whole anatomy in one comma list,
-      // and the cap cut a dragon's wings, tail and claws out of every prompt.
-      const max = SLP_BODY_WORDS.test(sentence) ? BODY_SENTENCE_MAX : SENTENCE_MAX;
-      return sentence.length > max ? `${sentence.slice(0, max - 1).trim()}…` : sentence;
-    });
+  return (
+    (value ?? "")
+      .replace(/\{\{\s*char\s*\}\}/giu, name)
+      .split(/(?<=[.!?])\s+|(?<=[。！？])\s*|\n+/u)
+      .flatMap((piece) => {
+        if (piece.length <= (SLP_BODY_WORDS.test(piece) ? BODY_SENTENCE_MAX : SENTENCE_MAX)) return [piece];
+        const parts = piece.split(LIST_CUT);
+        return parts.length > 3 ? parts : [piece];
+      })
+      .map(clean)
+      // Eight Latin letters are barely a word; four kana or hanzi are a sentence.
+      .filter((sentence) => sentence.length >= (CJK.test(sentence) ? 3 : 8))
+      .filter((sentence) => !/\{\{\s*user\s*\}\}|<\s*start\s*>/iu.test(sentence))
+      .map((sentence) => {
+        // A body sentence stays whole: furry and scalie cards put the whole anatomy in one comma list,
+        // and the cap cut a dragon's wings, tail and claws out of every prompt.
+        const max = SLP_BODY_WORDS.test(sentence) ? BODY_SENTENCE_MAX : SENTENCE_MAX;
+        return sentence.length > max ? `${sentence.slice(0, max - 1).trim()}…` : sentence;
+      })
+  );
 }
 
 function takeUpTo(sentences: string[], max: number): { taken: string[]; rest: string[] } {

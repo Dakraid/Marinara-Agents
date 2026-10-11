@@ -266,4 +266,33 @@ for (const fixture of FIXTURES) {
   assert.equal(mergeSlurpCanonAnchors(many, anchors(), fresh)!.places.length, 6);
 }
 
+// Review fixes. A short Japanese sentence is a sentence (it used to be dropped under eight
+// characters once the line was cut at 。); a long prose sentence with one parenthesis stays whole;
+// and removing the last essential of a card that gave nothing else is an edit that sticks.
+{
+  const short = compileSlurpFlavourBrief(
+    { accountId: "ja", name: "ユキ", card: { description: "彼女は声が出ない。手話で話す。" }, anchors: null },
+    { use: "post", sequence: 0 },
+  ).text;
+  assert.match(short, /手話で話す。/u);
+  const long = `She keeps a workshop behind the bakery (the one her grandmother ran for forty years before the flood) and still opens it every single morning before sunrise because the neighbours expect fresh bread and she has never once managed to tell them no.`;
+  assert.ok(long.length > 220);
+  const kept = compileSlurpFlavourBrief(
+    { accountId: "prose", name: "Ines", card: { description: long }, anchors: null },
+    { use: "post", sequence: 0 },
+  ).text;
+  assert.ok(kept.includes("before the flood) and still opens"), "one parenthesis does not make prose a list");
+
+  const onlyEssentials = anchors({ essentials: ["speaks only French"] });
+  assert.equal(
+    mergeSlurpCanonAnchors(
+      null,
+      onlyEssentials,
+      anchors({ essentials: ["speaks only French", "left-handed"] }),
+    )!.essentials!.includes("speaks only French"),
+    false,
+    "an essential the player removed does not come back with the next reading",
+  );
+}
+
 console.log("slurp2 character essentials regression checks passed");

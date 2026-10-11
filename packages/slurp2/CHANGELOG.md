@@ -2,12 +2,11 @@
 
 ## 0.3.25 — 2026-10-12
 
-- Added: Creators keep what is always true about them. When Slurp reads a Creator's card it now also notes the few facts that must hold everywhere (how they communicate, their senses and body, the languages they use, firm limits, and who runs the page when the card is not one person), and every post, Story, chat, comment reply and delivery note carries them. Before, a fact late in the card was only one of the details that rotate, so it was missing from most requests. No extra AI call per post or chat.
-- Added: "Always true" in a Creator's Life details (Creator settings › Memory), so you can see and correct those facts. Life details are now shown with "Post ideas come from: Model's choice" too, where only "Always true" is used; the card is read once there as well.
-- Changed: your edits to Life details are kept when the card changes or Slurp reads cards in a new way. What you added stays, what you removed stays out, and everything you did not touch follows the card. Before, a card change replaced your edits. "Read card again" still clears them.
-- Changed: the card reading sees more of a long card (still bounded), and reads again when that later part changes.
-- Changed: card text with full-width sentence ends (。！？) and long one-line attribute lists (W++, PList) is cut at those points instead of being cut off after 220 characters.
-- Fixed: a failed read of the stored Life details could overwrite every Creator's details with one entry. Slurp now writes nothing in that case, and saving shows the error.
+- Added: Creators keep what is always true about them. When Slurp reads a card it also notes the few facts that must hold everywhere (how they communicate, senses and body, languages, firm limits, who runs a shared page), and every post, Story, chat and reply carries them, with no extra AI call. Before, a fact late in the card was missing from most requests.
+- Added: "Always true" in a Creator's Life details, to see and correct those facts. Life details also show with "Model's choice" post ideas.
+- Changed: your Life details edits stay when the card changes: what you added stays, what you removed stays out, the rest follows the card. "Read card again" still clears them.
+- Changed: the card reading covers more of a long card, and cards with 。！？ sentence ends or long one-line attribute lists are no longer cut off.
+- Fixed: a failed read of stored Life details could erase every Creator's details; saving now reports the error.
 
 ## 0.3.24 — 2026-10-11
 

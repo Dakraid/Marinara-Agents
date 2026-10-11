@@ -154,7 +154,7 @@ async function main() {
     const first = await context();
     assert.ok(!first.canonText.includes(LATE_FACT), "the post's own canon cuts the late fact");
     answer = reading({});
-    assert.equal(await post(), null, "the first post does not wait");
+    assert.equal(await post(), null, "the first post does not wait, and a card never read has no anchors");
     await settle(1);
     assert.ok(asked[0]!.includes(LATE_FACT), "the reading is given the late part of the card");
     assert.deepEqual((await state()).anchors?.essentials, [ESSENTIAL]);
@@ -205,7 +205,11 @@ async function main() {
       habits: ["humming", "night walks"],
       essentials: [ESSENTIAL, "left-handed"],
     });
-    await post();
+    assert.deepEqual(
+      (await post())?.places,
+      ["the pier", "the studio", "the lighthouse"],
+      "a stale entry still feeds the planner while the card is read again",
+    );
     await settle(2);
     const merged = await state();
     assert.equal(asked.length, 2);
@@ -324,7 +328,8 @@ async function main() {
     };
     await post();
     await settle(6);
-    for (let count = 0; count < 3; count += 1) await post();
+    for (let count = 0; count < 3; count += 1)
+      assert.deepEqual(await post(), raced.anchors, "a model that cannot read the card takes no anchors away");
     assert.equal(asked.length, 6, "a failed reading waits before it is tried again");
     assert.deepEqual((await state()).anchors, raced.anchors);
     // The stale entry still feeds the brief meanwhile.
@@ -340,6 +345,11 @@ async function main() {
         })
       ).includes("left-handed"),
     );
+
+    // --- Anchors the player typed for a Creator never read are in use at once, reading or not.
+    await service.saveSlurpCanonAnchors(db, "typed", { ...legacyEdit, places: ["typed by hand"] } as Anchors);
+    assert.deepEqual((await post("typed"))?.places, ["typed by hand"]);
+    await settle(7);
 
     // --- "Read card again" forgets everything, the edits included.
     await service.clearSlurpCanonAnchors(db, "creator");

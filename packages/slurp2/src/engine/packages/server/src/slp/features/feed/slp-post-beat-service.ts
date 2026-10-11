@@ -133,8 +133,9 @@ const readingText = (context: Pick<SlurpBeatContext, "canonText" | "readingText"
   context.readingText ?? context.canonText;
 
 /**
- * This Creator's canon anchors, or null. A missing or stale entry starts one background reading
- * (one model call, never awaited) and returns null, so this post is planned the classic way.
+ * This Creator's canon anchors, or null when the card was never read (this post is then planned
+ * the classic way). A missing or stale entry starts one background reading: one model call, never
+ * awaited.
  */
 export function slurpBeatAnchorsFor(
   db: DB,
@@ -329,7 +330,8 @@ export async function resolveSlurpBeatDay(
       : null;
     if (scheduled) return slurpTimelineMoment(scheduled.blocks, scheduled.localNow);
     const read = await readSlurpCanonAnchorState(db, input.accountId, input.canonText);
-    const routine = read.current ? read.anchors?.routine : undefined;
+    // A stale routine is still their day until the card is read again.
+    const routine = read.anchors?.routine;
     return routine?.length ? slurpTimelineMoment(routine, input.at) : null;
   } catch (error) {
     logger.warn(error, "[slurp] Could not place the post in the Creator's day");
@@ -341,8 +343,7 @@ export async function resolveSlurpBeatDay(
  * Before a post is planned: the card as the cached reading sees it (more of each field than the
  * prompt carries), the last posts as facts, and where the day stands at publication.
  *
- * "Model's choice" plans no beat, but the brief still needs what must always hold about
- * the Creator, so the one background reading starts here; the Beats planner starts it itself. It is
+ * The one background reading of a new or changed card starts here, whatever the planner: it is
  * never waited on, and a prompt preview starts none.
  */
 export async function prepareSlurpBeatRun(
@@ -367,17 +368,18 @@ export async function prepareSlurpBeatRun(
     input.source,
     input.disclosureMode,
     SLP_CANON_READING_SCALE,
-  ).catch(() => input.canonText);
-  if (!input.beats) {
-    if (!input.preview)
-      void slurpBeatAnchorsFor(
-        db,
-        input.account.id,
-        { canonText: input.canonText, readingText, ...input.model },
-        input.at,
-      ).catch(() => null);
-    return { readingText, day: null };
-  }
+    // Empty starts no reading: the post's shorter text would replace a good reading with a worse one.
+  ).catch(() => "");
+  // Started here for every post, not only where a beat is planned: a directed post, an arc chapter
+  // or a "Model's choice" post plans no beat, and the brief still needs what must always hold.
+  if (!input.preview)
+    void slurpBeatAnchorsFor(
+      db,
+      input.account.id,
+      { canonText: input.canonText, readingText, ...input.model },
+      input.at,
+    ).catch(() => null);
+  if (!input.beats) return { readingText, day: null };
   // Beats mode keeps the last posts as facts, not quotes, so they are written before planning.
   if (!input.preview) await recordSlurpBeatFacts(db, input.account, input.recentPosts, input.at);
   const day = await resolveSlurpBeatDay(db, {

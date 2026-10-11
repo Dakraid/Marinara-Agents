@@ -225,19 +225,26 @@ export function ChipListInput({
   onChange,
   placeholder,
   disabled = false,
+  max,
+  maxLength,
 }: {
   label: string;
   values: readonly string[];
   onChange: (values: string[]) => void;
   placeholder?: string;
   disabled?: boolean;
+  /** The most entries the list keeps: at the limit the input stops taking more, so none is dropped on save. */
+  max?: number;
+  /** The longest entry the list keeps. */
+  maxLength?: number;
 }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState("");
   const inputId = useId();
+  const full = max !== undefined && values.length >= max;
   const add = () => {
     const next = draft.trim();
-    if (next && !values.includes(next)) onChange([...values, next]);
+    if (next && !full && !values.includes(next)) onChange([...values, next]);
     setDraft("");
   };
   return (
@@ -268,8 +275,9 @@ export function ChipListInput({
         <input
           id={inputId}
           value={draft}
-          disabled={disabled}
-          placeholder={placeholder}
+          disabled={disabled || full}
+          maxLength={maxLength}
+          placeholder={full ? undefined : placeholder}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === "Enter") {

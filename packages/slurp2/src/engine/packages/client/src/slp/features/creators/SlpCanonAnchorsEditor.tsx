@@ -16,6 +16,8 @@ const entries = (text: string) =>
     .map((line) => line.trim())
     .filter(Boolean);
 const HEAT_LEVELS = [0, 1, 2, 3] as const;
+/** The server keeps six entries per list; a seventh would be dropped after a "saved". */
+const LIST_MAX = 6;
 
 /**
  * What Slurp took from this Creator's card, editable: the facts that always hold (in every post,
@@ -65,6 +67,8 @@ export function SlpCanonAnchorsEditor({ creatorId }: { creatorId: string }) {
         label={t("ui.slurp.canonAnchors.essentials")}
         values={entries(draft.essentials)}
         disabled={busy || !state.hasCard}
+        max={LIST_MAX}
+        maxLength={140}
         onChange={(values) => setDraft((current) => ({ ...current, essentials: values.join("\n") }))}
         placeholder={t("ui.slurp.canonAnchors.essentialsPlaceholder")}
       />
@@ -75,6 +79,9 @@ export function SlpCanonAnchorsEditor({ creatorId }: { creatorId: string }) {
             label={t(`ui.slurp.canonAnchors.${field}`)}
             values={entries(draft[field])}
             disabled={busy || !state.hasCard}
+            max={LIST_MAX}
+            // A person is "Name - relation": two entries of sixty.
+            maxLength={field === "people" ? undefined : 60}
             onChange={(values) => setDraft((current) => ({ ...current, [field]: values.join("\n") }))}
             placeholder={t(`ui.slurp.canonAnchors.${field}Placeholder`)}
           />

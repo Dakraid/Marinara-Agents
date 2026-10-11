@@ -133,9 +133,10 @@ export function mergeSlurpCanonAnchors(
   base: SlurpCanonAnchors | null | undefined,
   fresh: SlurpCanonAnchors | null,
 ): SlurpCanonAnchors | null {
-  const now = mine ?? NO_ANCHORS;
   const next = fresh ?? NO_ANCHORS;
   const then = base === undefined ? next : (base ?? NO_ANCHORS);
+  // The player emptied everything (stored as null): that includes the essentials they were shown.
+  const now = mine ?? (base?.essentials ? { ...NO_ANCHORS, essentials: [] } : NO_ANCHORS);
   const list = <T>(
     pick: (anchors: SlurpCanonAnchors) => T[] | undefined,
     id: (entry: T) => string,
