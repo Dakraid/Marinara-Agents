@@ -242,6 +242,20 @@ export function slurpApplyImageSubject(prompt: string, name: string, family: Slu
 }
 
 /**
+ * A final prompt cut behind its style lead (0.3.23, player report): the style profile's tags open
+ * the compiled prompt, and the name and the look belong after them, in front of the scene. A name
+ * ahead of the style tags read as style, and in a picture of two people the model mixed their
+ * features. `lead` is the same profile compiled around an empty prompt; a prompt that no longer
+ * starts with it (a reviewed prompt, a style part the device filter removed) has no lead.
+ */
+export function slurpSplitStyleLead(prompt: string, lead: string): [lead: string, scene: string] {
+  const style = lead.trim();
+  if (!style || !prompt.startsWith(style)) return ["", prompt];
+  const gap = /^[ \t]*[,;.\n][\s,;.]*/u.exec(prompt.slice(style.length))?.[0];
+  return gap ? [style + gap, prompt.slice(style.length + gap.length)] : ["", prompt];
+}
+
+/**
  * The name the picture leads with: the post writer's tagged name ("fubuki (one punch man)", player
  * report 0.3.5) when it names the same character as the card or the page, else the card name. A
  * writer's name for somebody else (a partner, another series) is never used.
