@@ -48,24 +48,26 @@ export function useRefreshTargetedCreatorsNow(onRemaining?: (remaining: number) 
       const { made, skipped, failed } = countSlurpRefreshOutcomes(result.outcomes);
       if (skipped + failed > 0) {
         const accounts = qc.getQueryData<Array<{ id: string; displayName: string }>>(slpKeys.noodlerAccounts());
+        const byId = new Map((accounts ?? []).map((account) => [account.id, account.displayName]));
         // Name the Creators that did not post, so a short batch is never a mystery (R1-068).
         const names = (wanted: (status: SlpCreatorRefreshNowOutcome["status"]) => boolean) =>
           result.outcomes
             .filter((outcome) => wanted(outcome.status))
-            .map((outcome) => accounts?.find((account) => account.id === outcome.accountId)?.displayName ?? outcome.accountId)
+            .map((outcome) => byId.get(outcome.accountId) ?? outcome.accountId)
             .join(", ");
-        toast[made > 0 ? "info" : "error"](
-          t("ui.slurp.creators.generateOutcome", {
-            made,
-            skipped,
-            failed,
-            defaultValue: "{{made}} new, {{skipped}} skipped, {{failed}} could not post.",
-          }),
-          {
-            description: names((status) => status === "skipped") || names((status) => status !== "generated" && status !== "skipped"),
+        const outcome = t("ui.slurp.creators.generateOutcome", {
+          made,
+          skipped,
+          failed,
+          defaultValue: "{{made}} new, {{skipped}} skipped, {{failed}} could not post.",
+        });
+        const toaster = made > 0 ? toast.info : toast.error;
+        if (skipped) toaster(outcome, { description: names((status) => status === "skipped"), duration: 10_000 });
+        if (failed)
+          toaster(outcome, {
+            description: names((status) => status !== "generated" && status !== "skipped"),
             duration: 10_000,
-          },
-        );
+          });
       }
       return Promise.all([
         qc.invalidateQueries({ queryKey: slpKeys.noodlerAccounts() }),
