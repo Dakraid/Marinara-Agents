@@ -179,7 +179,7 @@ export function SlpBackstageShell({
                     : sectionLabel}
                 </h1>
               </div>
-              <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-3">
+              <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-3 basis-full sm:basis-auto">
                 <p
                   className={`inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold ${saveState === "error" ? "text-red-300" : saveState === "saved" ? "text-[var(--slurp-success)]" : "text-[var(--slurp-muted)]"}`}
                   role="status"

@@ -305,9 +305,6 @@ assert.match(settings, /ui\.slurp\.settings\.creators\.sourceChanged/u);
 // and mobile `<select>` destination picker with the shell's swappable desktopSidebar
 // (SlpBackstageSidebar) and the horizontal-scrolling SlurpBackstageNavigation row; covered in
 // tests/slurp-feed-layout.regression.ts (aria-current, overflow-x-auto, desktopSidebar).
-// PRODUCT BUG (tracked): the header's search is still hidden on phones inside a section
-// (max-md:hidden); see ~/.cache/tmp/slurp-reg-a-product-bugs.md, also tracked in
-// tests/slurp-feed-layout.regression.ts.
 assert.match(settings, /aria-live="polite"/u, "settings saves must announce their state");
 assert.match(settings, /selectedCreatorId/u, "creator settings must keep an explicit master-detail selection");
 assert.match(settings, /data-slurp-settings-layout/u, "settings must expose its responsive layout boundary");
@@ -362,10 +359,10 @@ assert.ok(profileList.length > 0, "listNoodlerStageProfiles must stay present");
 assert.doesNotMatch(profileList, /updateNoodlerSourceSnapshot|patchAccountSettings/u);
 assert.doesNotMatch(storage, /migrateLegacy/u, "slurp2 storage must not carry a legacy migration");
 assert.doesNotMatch(serverEntry, /migrateLegacy/u, "slurp2 activation must not run a legacy migration");
-const dismissRoute = routes.slice(
-  routes.indexOf('app.post("/slurp/accounts/:id/source/dismiss"'),
-  routes.indexOf('app.post("/noodler/accounts/:id/source/adopt-identity"'),
-);
+const dismissStart = routes.indexOf('app.post("/slurp/accounts/:id/source/dismiss"');
+const dismissEnd = routes.indexOf('app.post("/slurp/accounts/:id/source/adopt-identity"');
+assert.ok(dismissStart >= 0 && dismissEnd > dismissStart, "the dismiss route must sit before adopt-identity");
+const dismissRoute = routes.slice(dismissStart, dismissEnd);
 assert.match(dismissRoute, /updateNoodlerSourceSnapshot/u);
 assert.match(dismissRoute, /listNoodlerStageProfiles/u);
 assert.match(settings, /sourceStatus\.\$\{creator\.sourceStatus\.state\}/u);

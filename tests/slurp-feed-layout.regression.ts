@@ -152,9 +152,15 @@ assert.match(
   "The active destination must be exposed",
 );
 assert.match(navigation, /overflow-x-auto[\s\S]*?md:flex-wrap/u, "Mobile destinations must scroll in one row");
-// The section header's search must stay reachable on a phone: its row wraps, and the search takes
-// the full row on mobile instead of disappearing (`max-md:hidden` used to hide it entirely).
+// The section header's search must stay reachable on a phone: its row wraps, and the group that
+// holds the search takes the full row on mobile instead of disappearing (`max-md:hidden` used to
+// hide it entirely). The search keeps its desktop width (`sm:max-w-xs`, auto width).
 assert.match(settings, /className="max-w-none w-full sm:w-auto sm:max-w-xs"/u, "Mobile search must use a full row");
+assert.match(
+  settings,
+  /flex min-w-0 flex-1 flex-wrap items-center justify-end gap-3 basis-full sm:basis-auto/u,
+  "The group holding the search must take a full row on phones",
+);
 
 const card = slurp2Source(join(componentsDir, "SlurpCreatorProfileCard.tsx"));
 
