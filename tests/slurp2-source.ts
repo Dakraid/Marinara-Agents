@@ -62,6 +62,7 @@ export const SLURP2_SOURCE_MODULES: Record<string, readonly string[]> = {
     "packages/client/src/slp/features/audience/slp-audience-backstage-contract.ts",
     "packages/client/src/slp/features/creators/slp-creators-backstage-contract.ts",
     "packages/client/src/slp/features/creators/SlpCreatorRefreshModal.tsx",
+    "packages/client/src/slp/features/creators/slp-creator-refresh-hooks.ts",
     "packages/client/src/slp/features/economy/slp-economy-backstage-contract.ts",
     "packages/client/src/slp/features/feed/slp-feed-backstage-contract.ts",
     "packages/client/src/slp/features/maintenance/slp-maintenance-backstage-contract.ts",

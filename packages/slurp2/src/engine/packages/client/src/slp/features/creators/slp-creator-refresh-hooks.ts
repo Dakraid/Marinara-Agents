@@ -46,7 +46,14 @@ export function useRefreshTargetedCreatorsNow(onRemaining?: (remaining: number) 
       ),
     onSuccess: (result) => {
       const { made, skipped, failed } = countSlurpRefreshOutcomes(result.outcomes);
-      if (skipped + failed > 0)
+      if (skipped + failed > 0) {
+        const accounts = qc.getQueryData<Array<{ id: string; displayName: string }>>(slpKeys.noodlerAccounts());
+        // Name the Creators that did not post, so a short batch is never a mystery (R1-068).
+        const names = (wanted: (status: SlpCreatorRefreshNowOutcome["status"]) => boolean) =>
+          result.outcomes
+            .filter((outcome) => wanted(outcome.status))
+            .map((outcome) => accounts?.find((account) => account.id === outcome.accountId)?.displayName ?? outcome.accountId)
+            .join(", ");
         toast[made > 0 ? "info" : "error"](
           t("ui.slurp.creators.generateOutcome", {
             made,
@@ -54,7 +61,12 @@ export function useRefreshTargetedCreatorsNow(onRemaining?: (remaining: number) 
             failed,
             defaultValue: "{{made}} new, {{skipped}} skipped, {{failed}} could not post.",
           }),
+          {
+            description: names((status) => status === "skipped") || names((status) => status !== "generated" && status !== "skipped"),
+            duration: 10_000,
+          },
         );
+      }
       return Promise.all([
         qc.invalidateQueries({ queryKey: slpKeys.noodlerAccounts() }),
         qc.invalidateQueries({ queryKey: slpKeys.noodlerReserveStatus() }),
