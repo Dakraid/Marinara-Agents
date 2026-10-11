@@ -599,6 +599,8 @@ test.describe("package-owned Noodle interface", () => {
   test("automatic translation translates other accounts once and keeps a hidden translation hidden", async ({
     page,
   }) => {
+    // About 50 s locally: two reloads and two Noodle opens. CI runners are slower, so allow more room.
+    test.setTimeout(120_000);
     const errors = collectUnexpectedErrors(page);
     const personaId = await prepareNoodlePersona(page, "Noodle Translation Persona");
     const translated: Array<{ text: string; targetLanguage: unknown }> = [];
