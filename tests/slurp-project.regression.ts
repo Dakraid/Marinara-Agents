@@ -119,8 +119,17 @@ assert.equal(slurpArcLifeLine([move]), "Moving house (deciding to move)");
   const stance = slurp2Source(join(serverRoot, "slurp/slurp-stance.ts"));
   assert.match(stance, /do not make every reply about it/u);
   const dm = slurp2Source(join(serverRoot, "slurp/slurp-message-generation.service.ts"));
+  // The life line moved into the shared thread-stance helper; the generation path still calls it.
+  assert.match(dm, /resolveSlurpThreadStance\(/u, "the DM generation path must resolve the thread stance");
+  const threadStance = slurp2Source(
+    join(
+      import.meta.dirname,
+      "..",
+      "packages/slurp2/src/engine/packages/server/src/slp/features/messages/slp-thread-stance.ts",
+    ),
+  );
   // Gated by the setting, and protected: an arc title can name a Secret Creator's real city.
-  assert.match(dm, /settings\.arcAffectsMood\s+\? \(protectNoodlerGeneratedIdentity\(\s+slurpArcLifeLine/u);
+  assert.match(threadStance, /settings\.arcAffectsMood\s+\? \(protectCreatorGeneratedIdentity\(\s+slurpArcLifeLine/u);
   const store = slurp2Source(join(serverRoot, "storage/slurp.storage.ts"));
   assert.match(store, /"arc_complete"/u);
   assert.match(store, /await this\.recordArcChange\(creatorAccountId, current, next\)/u);
