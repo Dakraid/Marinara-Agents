@@ -41,9 +41,18 @@ for (const kind of ["text", "ppv", "post_preview"]) {
     content: "hello",
     imageUrl: "/media/x.png",
     unlockedAt: null,
-    metadata: { noodlerMediaPath: "/srv/private/secret.png", previewLocked: true, content: "hello", imageUrl: "/media/x.png" },
+    metadata: {
+      noodlerMediaPath: "/srv/private/secret.png",
+      previewLocked: true,
+      content: "hello",
+      imageUrl: "/media/x.png",
+    },
   });
-  assert.doesNotMatch(JSON.stringify(masked), /secret\.png|noodlerMediaPath/u, `a ${kind} message leaks the media path`);
+  assert.doesNotMatch(
+    JSON.stringify(masked),
+    /secret\.png|noodlerMediaPath/u,
+    `a ${kind} message leaks the media path`,
+  );
 }
 
 // Paginated responses apply the same policy to their page instead of reading the whole thread.

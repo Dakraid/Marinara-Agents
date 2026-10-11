@@ -15,7 +15,9 @@ const TIMEOUT_MS = 5 * 60 * 1000;
 // Some files copy from an Engine checkout. Fail loudly instead of skipping them when there is none.
 const engineRoot = process.env.MARINARA_ENGINE_ROOT || join(root, "../Marinara-Engine");
 if (!existsSync(join(engineRoot, "packages/shared/src/types/noodle.ts"))) {
-  console.error(`Slurp regressions need a Marinara Engine checkout. Set MARINARA_ENGINE_ROOT (looked in ${engineRoot}).`);
+  console.error(
+    `Slurp regressions need a Marinara Engine checkout. Set MARINARA_ENGINE_ROOT (looked in ${engineRoot}).`,
+  );
   process.exit(1);
 }
 
