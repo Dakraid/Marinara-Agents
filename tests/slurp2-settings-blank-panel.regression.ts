@@ -9,7 +9,6 @@ const entry = slurp2Source(`${clientRoot}/slurp-package-entry.tsx`);
 const shell = slurp2Source(`${clientRoot}/components/slurp/SlurpShell.tsx`);
 const settings = slurp2BackstageSource();
 const backstage = slurp2Source(`${clientRoot}/components/slurp/slurp-backstage.ts`);
-const world = slurp2Source(`${clientRoot}/components/slurp/SlurpBackstageWorld.tsx`);
 const automation = slurp2Source(`${clientRoot}/components/slurp/SlurpBackstageAutomation.tsx`);
 
 assert.match(backstage, /arcLibrary: content\("arcs", "plan templates"/u, "templates must use product vocabulary");

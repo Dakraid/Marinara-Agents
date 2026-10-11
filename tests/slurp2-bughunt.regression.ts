@@ -24,7 +24,6 @@ const generation = read(`${server}/services/slurp/slurp-garnish-generation.servi
 const garnishContext = read(`${server}/services/slurp/slurp-garnish-context.ts`);
 const world = read(`${server}/services/slurp/slurp-world.operation.ts`);
 const followUps = read(`${server}/services/slurp/slurp-follow-up-scheduler.service.ts`);
-const messages = read(`${server}/services/slurp/slurp-message.operation.ts`);
 const messageRoutes = read(`${server}/routes/slurp-messages.routes.ts`);
 const storage = read(`${server}/services/storage/slurp.storage.ts`);
 const postCard = read(`${client}/components/slurp/SlurpPostCard.tsx`);
