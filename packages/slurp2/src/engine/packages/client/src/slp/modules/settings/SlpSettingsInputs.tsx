@@ -251,7 +251,8 @@ export function ChipListInput({
     setDraft("");
   };
   return (
-    <div className="space-y-2">
+    // min-w-0: in a grid the list is as wide as its longest chip otherwise, and the pane scrolls sideways.
+    <div className="min-w-0 space-y-2">
       <label htmlFor={inputId} className="block text-xs font-semibold">
         {label}
       </label>
