@@ -607,6 +607,12 @@ async function main() {
             },
           });
         if (request.method === "GET" && url.pathname.endsWith("/settings")) return send(200, {});
+        if (request.method === "PUT" && url.pathname.endsWith("/settings")) {
+          const chunks: Buffer[] = [];
+          for await (const chunk of request) chunks.push(Buffer.from(chunk));
+          // Echo the saved settings so the toggle-local Save can be observed end to end.
+          return send(200, JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}"));
+        }
         if (request.method === "POST" && url.pathname.endsWith("/notes/batch")) {
           const chunks: Buffer[] = [];
           for await (const chunk of request) chunks.push(Buffer.from(chunk));
@@ -656,19 +662,21 @@ async function main() {
           return send(200, { count: pendingDraftCount });
         if (request.method === "GET" && url.pathname.endsWith("/last-injection/chat-artifact")) {
           lastInjectionRequests += 1;
-          return lastInjectionRequests === 1
-            ? send(200, {
-                memoryCount: 1,
-                tokenCount: 42,
-                memories: [
-                  {
-                    noteId: "retained-memory",
-                    title: "Retained memory",
-                    tokenCount: 42,
-                  },
-                ],
-              })
-            : send(503, { error: "latest recall failed" });
+          if (lastInjectionRequests === 1)
+            return send(200, {
+              memoryCount: 1,
+              tokenCount: 42,
+              memories: [
+                {
+                  noteId: "retained-memory",
+                  title: "Retained memory",
+                  tokenCount: 42,
+                },
+              ],
+            });
+          // Keep the failure in flight briefly so the retry's disabled guard is observable.
+          await new Promise((resolve) => setTimeout(resolve, 120));
+          return send(503, { error: "latest recall failed" });
         }
         if (request.method === "GET" && url.pathname.endsWith("/drafts/review")) {
           reviewQueries.push(url.search);
@@ -2433,75 +2441,802 @@ async function main() {
         debugEvent("partial", "import_sources", "started"),
         debugEvent("partial", "extract_source_note", "error", { error: { message: "One source failed." } }),
         debugEvent("partial", "import_sources", "ok"),
-        debugEvent("noduration", "recall_explanation", "ok"),
+        debugEvent("breakdown", "evidence_units_compiled", "warning", {
+          sourceNoteId: "source_mobile_review",
+          counts: { totalCandidates: 12, units: 7, mutations: 2, targetNotes: 2, deduplications: 1 },
+          details: {
+            mutationKinds: { create_note: 1, append_section: 1 },
+            targetNoteIds: ["world_legacy_global", "world_scoped_desktop"],
+          },
+        }),
+        debugEvent("breakdown", "draft_deferred", "ok", {
+          sourceNoteId: "source_mobile_review",
+          counts: { droppedUnits: 9 },
+          details: {
+            extractionOutcome: {
+              state: "partial_success",
+              totalCandidates: 12,
+              keptUnits: 7,
+              droppedUnits: 4,
+              droppedCandidateDetailsTruncated: true,
+              droppedCandidates: [
+                { reason: "missing_source_evidence", message: "No supporting quote.", snippet: "x".repeat(280) },
+                { reason: "missing_source_evidence", message: "Evidence was omitted." },
+                {
+                  reason: "candidate_overflow",
+                  message: "Dropped candidates exceeding the extraction processing limit.",
+                },
+              ],
+            },
+          },
+        }),
+        debugEvent("noduration", "recall_explanation", "ok", {
+          details: { selected: "truncated", rejected: [null], weights: "truncated", eligibleChunks: 3 },
+        }),
+        debugEvent("noduration", "draft_deferred", "ok", {
+          details: { extractionOutcome: { droppedUnits: "truncated" } },
+        }),
+        debugEvent("counts-only", "draft_deferred", "ok", {
+          counts: { droppedUnits: 3 },
+          details: { truncated: true },
+        }),
+        debugEvent("sample-only", "draft_deferred", "ok", {
+          counts: { droppedUnits: 3 },
+          details: {
+            extractionOutcome: {
+              droppedUnits: "truncated",
+              droppedCandidates: [{ reason: "invalid_format", message: "One recorded sample." }],
+            },
+          },
+        }),
+        debugEvent("missing-samples", "draft_deferred", "ok", {
+          counts: { droppedUnits: 5 },
+          details: { extractionOutcome: { droppedUnits: 0 } },
+        }),
+        debugEvent("complete-empty", "draft_deferred", "ok", {
+          counts: { droppedUnits: 5 },
+          details: { extractionOutcome: { droppedUnits: 0, droppedCandidates: [] } },
+        }),
+        // Fixture events predate the one-hour stale-threshold, so a started step in
+        // a completed operation must not read as unfinished (M1), while a
+        // started-only operation still reads "No completion recorded".
+        debugEvent("oldstarted", "extract_source_note", "started"),
+        // Every recall is an ordinary history row: one names its source chat by the
+        // /scope-targets label, one keeps the raw id when the lookup has no match.
+        debugEvent("recall-desktop", "recall_explanation", "ok", {
+          phase: "retrieval",
+          chatId: "desktop-chat",
+          counts: { selected: 1, rejected: 0, usedTokens: 12 },
+          details: {
+            chatId: "desktop-chat",
+            selected: [],
+            rejected: [],
+          },
+        }),
+        debugEvent("recall", "recall_explanation", "ok", {
+          phase: "retrieval",
+          // No shared source note: this recall must match the memory filter only
+          // through its selected candidate id.
+          sourceNoteId: undefined,
+          chatId: "chat-artifact",
+          counts: { selected: 1, rejected: 6, usedTokens: 42 },
+          details: {
+            chatId: "chat-artifact",
+            maxChunks: 8,
+            maxTokens: 2048,
+            scoreThreshold: 0.5,
+            mode: "on_relevance",
+            includeResolved: false,
+            exclusiveCharacterTargeting: false,
+            contextMessagesUsed: 3,
+            indexLoadOutcome: "loaded",
+            indexedChunks: 4,
+            eligibleChunks: 3,
+            embeddedChunks: 2,
+            semanticOutcome: "available",
+            rejectedLimit: 20,
+            weights: { semanticWeight: 0.6 },
+            selected: [
+              {
+                noteId: "world_legacy_global",
+                sectionKey: "facts",
+                score: 0.35,
+                fusedScore: 0.02,
+                fusedRank: 1,
+                lanes: ["semantic"],
+              },
+            ],
+            rejected: [
+              {
+                noteId: "world_scoped_desktop",
+                sectionKey: "facts",
+                score: 0.45,
+                fusedScore: 0.01,
+                fusedRank: 2,
+                rejectionReason: "lower_rank",
+              },
+              ...["budget", "duplicate_text", "score_threshold", "missing_chunk", "prompt_budget"].map(
+                (rejectionReason) => ({ noteId: "world_scoped_desktop", sectionKey: "facts", rejectionReason }),
+              ),
+            ],
+          },
+        }),
+        // D31: explicit memory-id references the Vault memory filter must match (produced
+        // target, rejected recall candidate), plus operations it must not: an unrelated
+        // source and an apply carrying only change/mutation ids.
+        debugEvent("target", "evidence_units_compiled", "ok", {
+          sourceNoteId: "source_target_other",
+          details: { targetNoteIds: [legacyGlobalNote.id] },
+        }),
+        // Two events; only the second references the memory, so matching must find the
+        // operation by that single event and still show both events and the status.
+        debugEvent("late-reference", "extract_source_note", "started", { sourceNoteId: "world_unrelated" }),
+        debugEvent("late-reference", "extract_source_note", "ok", {
+          sourceNoteId: undefined,
+          noteId: legacyGlobalNote.id,
+          durationMs: 700,
+        }),
+        debugEvent("recall-rejected", "recall_explanation", "ok", {
+          phase: "retrieval",
+          // Matches only through the rejected candidate id, not a shared source note.
+          sourceNoteId: undefined,
+          chatId: "chat-artifact",
+          details: {
+            chatId: "chat-artifact",
+            selected: [],
+            rejected: [
+              { noteId: legacyGlobalNote.id, sectionKey: "facts", score: 0.3, rejectionReason: "score_threshold" },
+            ],
+          },
+        }),
+        debugEvent("apply", "apply_changes", "ok", {
+          sourceNoteId: undefined,
+          mutationIds: ["11111111-2222-3333-4444-555555555555"],
+        }),
+        debugEvent("apply", "mutations_selected", "ok", {
+          sourceNoteId: undefined,
+          details: { skippedMutationIds: ["11111111-2222-3333-4444-555555555555"] },
+        }),
+        debugEvent("unrelated", "extract_source_note", "ok", { sourceNoteId: "world_unrelated" }),
       ];
-      const assertDebugActivity = async (activityPage: typeof page) => {
+      // Simulates a retained log that holds no events for the handed memory.
+      let debugLogEmpty = false;
+      let debugReviewPending = true;
+      let debugExportError = false;
+      let debugLogError = false;
+      let debugClearDeletes = 0;
+      let debugLogDelayMs = 0;
+      let debugLogRequests = 0;
+      const debugReviewSources = structuredClone(reviewSources);
+      const assertDebugActivity = async (activityPage: typeof page, navigation: "desktop" | "mobile") => {
+        // D18/D33: the noncompact Activity log Retry keeps a 44px target. Fail the
+        // first load, measure the Retry, then recover through it.
+        debugLogError = true;
         await activityPage.locator("#settings-tab-debug").click();
         const activity = activityPage.locator('[data-ltm-surface="activity"]');
-        const operation = (id: string) =>
-          activity
-            .locator(":scope > ol > li > details > summary")
-            .nth(
-              ["estimated", "reported", "zero", "truncated", "context", "budget", "partial", "noduration"].indexOf(id),
-            );
-        await operation("estimated").waitFor();
-        const estimated = await operation("estimated").innerText();
+        const details = activity.locator("[data-ltm-debug-details]");
+        const activityRetry = activity.locator('[data-ltm-status="danger"]').getByRole("button", { name: "Retry" });
+        await activityRetry.waitFor();
+        const activityRetryBox = await activityRetry.boundingBox();
+        assert.ok(activityRetryBox && activityRetryBox.height >= 44, "Activity log Retry keeps a 44px target");
+        debugLogError = false;
+        await activityRetry.click();
+        await activity.locator('[data-ltm-debug-operation="estimated"]').waitFor();
+        const showEvents = async () => {
+          const tab = activity.locator('[data-ltm-workspace-pane-tab="navigator"]');
+          if (await tab.count()) await tab.click();
+        };
+        const operation = async (id: string) => {
+          await showEvents();
+          await activity.locator(`[data-ltm-debug-operation="${id}"]`).click();
+          await details.waitFor();
+          return details.innerText();
+        };
+        const estimated = await operation("estimated");
         assert.match(estimated, /AI extraction/u);
         assert.match(estimated, /fixture-model/u);
         assert.match(estimated, /500 ms/u);
         assert.match(estimated, /Estimated input: 123 tokens/u);
         assert.doesNotMatch(estimated, /Input \(provider-reported\)|Output:|Total:/u);
-        const reported = await operation("reported").innerText();
+        // M1: a completed operation's old started steps must not age into "No completion
+        // recorded"; a started-only old operation still must.
+        assert.doesNotMatch(estimated, /No completion recorded/u);
+        assert.match(await operation("oldstarted"), /No completion recorded/u);
+        const reported = await operation("reported");
         assert.match(reported, /Completed/u, "a standalone request/response pair must not stay Running");
         assert.match(reported, /Input \(provider-reported\): 40 tokens/u);
         assert.match(reported, /Reasoning: 8 tokens/u);
         assert.match(reported, /Output: 12 tokens/u);
         assert.match(reported, /Total: 60 tokens/u);
-        assert.match(await operation("zero").innerText(), /Estimated input: 123 tokens/u);
-        assert.match(await operation("zero").innerText(), /Input \(provider-reported\): 0 tokens/u);
-        assert.match(await operation("truncated").innerText(), /Completed with warnings/u);
-        assert.match(await operation("truncated").innerText(), /output limit.*length/iu);
-        assert.match(await operation("context").innerText(), /Failed/u);
-        assert.match(await operation("context").innerText(), /too large.*context/iu);
-        assert.match(await operation("budget").innerText(), /Failed/u);
-        assert.match(await operation("budget").innerText(), /too small.*response/iu);
-        assert.match(await operation("partial").innerText(), /Completed with warnings/u);
-        assert.match(await operation("partial").innerText(), /One source failed\./u);
+        assert.match(await operation("zero"), /Estimated input: 123 tokens/u);
+        assert.match(await operation("zero"), /Input \(provider-reported\): 0 tokens/u);
+        assert.match(await operation("truncated"), /Completed with warnings/u);
+        assert.match(await operation("truncated"), /output limit.*length/iu);
+        assert.match(await operation("context"), /Failed/u);
+        assert.match(await operation("context"), /too large.*context/iu);
+        assert.match(await operation("budget"), /Failed/u);
+        assert.match(await operation("budget"), /too small.*response/iu);
+        assert.match(await operation("partial"), /Completed with warnings/u);
+        assert.match(await operation("partial"), /One source failed\./u);
+        assert.match(await operation("truncated"), /What to try[\s\S]*output budget/iu);
+        const breakdown = await operation("breakdown");
+        assert.match(
+          breakdown,
+          /Result[\s\S]*12 candidates[\s\S]*7 kept units[\s\S]*2 changes[\s\S]*2 target memories/u,
+        );
+        assert.match(breakdown, /1 duplicates[\s\S]*Create note[\s\S]*Append section/u);
+        assert.match(breakdown, /Not kept[\s\S]*No supporting quote\.[\s\S]*Evidence was omitted\./u);
+        assert.match(breakdown, /The extraction processing limit was exceeded\./u);
+        assert.doesNotMatch(breakdown, /unspecified extraction reason/u);
+        assert.equal(await details.locator("[data-ltm-debug-drop-reason]").count(), 2);
+        assert.equal(await details.locator("blockquote").count(), 1, "missing snippets do not render blank quotes");
+        assert.match(breakdown, /and 1 more/u);
+        assert.equal(
+          await activityPage.evaluate(
+            () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+          ),
+          true,
+          "long candidate quotes must wrap on desktop and mobile",
+        );
+        await details.getByRole("button", { name: "Open Review Queue" }).click();
+        await activityPage.locator('[data-ltm-review-source-select="source_mobile_review"]').waitFor();
+        debugReviewPending = false;
+        await activityPage.locator(`[data-ltm-navigation="${navigation}"] [data-ltm-destination="settings"]`).click();
+        await activityPage.locator("#settings-tab-debug").click();
+        await operation("breakdown");
+        await details.getByRole("button", { name: "Open Review Queue" }).waitFor({ state: "hidden" });
+        debugReviewPending = true;
+        assert.match(await operation("apply"), /Not saved[\s\S]*11111111-2222-3333-4444-555555555555/u);
+        for (const [id, count, more, incomplete] of [
+          ["counts-only", 3, 3, true],
+          ["sample-only", 3, 2, true],
+          ["missing-samples", 0, 0, true],
+          ["complete-empty", 0, 0, false],
+        ] as const) {
+          const outcome = await operation(id);
+          assert.match(outcome, new RegExp(`\\b${count} not kept\\b`, "u"));
+          if (more) assert.match(outcome, new RegExp(`and ${more} more`, "u"));
+          else assert.doesNotMatch(outcome, /and \d+ more/u);
+          assert.equal(outcome.includes("this breakdown is incomplete."), incomplete);
+        }
         assert.doesNotMatch(
-          await operation("noduration").innerText(),
+          await operation("noduration"),
           / ms/u,
           "an operation without a recorded duration must not display a fabricated one",
         );
+        assert.match(await operation("noduration"), /Minimum relevance: Not recorded/u);
+        assert.match(await operation("noduration"), /Not recorded indexed · 3 eligible · Not recorded/u);
+        const missingOutcome = await details
+          .getByRole("heading", { name: "Not kept", exact: true })
+          .locator("..")
+          .innerText();
+        assert.match(missingOutcome.trim(), /^Not kept\s+Not recorded\s+Only the recorded candidate samples/u);
+        assert.match(missingOutcome, /this breakdown is incomplete\./u);
+        // The response snippet is never on screen; Copy JSON is the only raw-record path.
         assert.doesNotMatch(await activity.innerText(), /private response snippet/u);
+        await operation("estimated");
+        await details.getByRole("button", { name: /^Copy JSON/u }).click();
+        const copied = await activityPage.evaluate(() => navigator.clipboard.readText());
+        assert.match(copied, /private response snippet/u);
+        assert.match(copied, /"operationId": "estimated"/u);
+        assert.match(copied, /estimated-evidence_unit_response-ok/u);
+        assert.doesNotMatch(await activity.innerText(), /private response snippet/u);
+        // Chips filter whole operations: a partial import that ended ok but recorded
+        // an error must not flip to "Failed" under Problems.
+        await showEvents();
+        await activity.locator('[data-ltm-debug-chip="problems"]').click();
+        await activity.locator('[data-ltm-debug-operation="partial"]').waitFor();
+        const partial = await operation("partial");
+        assert.match(partial, /Completed with warnings/u);
+        assert.match(partial, /One source failed\./u);
+        await showEvents();
+        await activity.locator('[data-ltm-debug-chip="all"]').click();
+        // Search narrows whole operations and keeps the full event list of the match.
+        await showEvents();
+        const searchBox = activity.locator("[data-ltm-debug-search]");
+        await searchBox.fill("fixture-model");
+        await activity.locator('[data-ltm-debug-operation="estimated"]').waitFor();
+        assert.equal(await activity.locator('[data-ltm-debug-operation="reported"]').count(), 0);
+        const searchedEstimated = await operation("estimated");
+        assert.match(searchedEstimated, /AI extraction/u);
+        assert.match(searchedEstimated, /500 ms/u);
+        await showEvents();
+        await searchBox.fill("");
+        // A recorded recall is an ordinary history row naming its source chat, and
+        // its selected/rejected memory names read before the run parameters.
+        const recall = await operation("recall");
+        assert.match(recall, /Memory recall/u);
+        assert.match(recall, /Recall from chat-artifact/u);
+        assert.match(recall, /1 added · 6 not added[\s\S]*Added[\s\S]*Not added[\s\S]*Run parameters/u);
+        assert.match(recall, /Minimum relevance: 50%/u);
+        for (const reason of [
+          "Token budget reached",
+          "Duplicate text",
+          "Below minimum relevance",
+          "Memory chunk unavailable",
+          "Prompt budget reached",
+        ])
+          assert.match(recall, new RegExp(reason, "u"));
+        assert.match(recall, /Legacy global memory/u);
+        assert.match(recall, /Fused rank 1[\s\S]*35%/u);
+        assert.match(recall, /Fused rank 2[\s\S]*45%[\s\S]*Cut by the memory limit \(lower fused rank\)/u);
+        // M6: the recalled-memory link keeps a 44px touch target.
+        const recalledBox = await activity.locator('[data-ltm-recalled-note="world_legacy_global"]').boundingBox();
+        assert.ok(recalledBox && recalledBox.height >= 44, "recalled memory links keep a 44px touch target");
+        // PR 4 (#1275): label/separator/health and honest export controls.
+        assert.equal(
+          await activity.getByRole("heading", { name: "Activity log", exact: true }).count(),
+          1,
+          "the log heading reads Activity log",
+        );
+        assert.equal(
+          await activity.locator('[role="group"][aria-label="Log actions"]').count(),
+          1,
+          "the toolbar is named Log actions",
+        );
+        assert.match(
+          await activity.locator("[data-ltm-debug-export-warning]").innerText(),
+          /full Activity log[\s\S]*model output[\s\S]*before sharing[\s\S]*Filters and search do not limit the export/iu,
+        );
+        const healthText = await activity.locator("[data-ltm-debug-health]").innerText();
+        assert.match(healthText, /\d+ events loaded/u);
+        assert.match(healthText, /Log size unavailable/u);
+        assert.match(healthText, /Index /u);
+        assert.match(healthText, /Semantic search /u);
+        // #1304: the source shows on the health line, and the "source changed" note follows
+        // availability (the embedding space), not a label difference.
+        const sourceChangedNote = activity.locator("[data-ltm-embedding-source-changed]");
+        if (navigation === "desktop") {
+          assert.match(healthText, /Semantic search unavailable · Renamed connection \(bge-m3\)/u);
+          assert.equal(await sourceChangedNote.count(), 1, "unavailable vectors with equal labels show the note");
+          assert.match(await sourceChangedNote.innerText(), /different embedding model or endpoint/u);
+        } else {
+          assert.match(healthText, /Semantic search available · Renamed connection \(bge-m3\)/u);
+          assert.equal(await sourceChangedNote.count(), 0, "a renamed connection with usable vectors shows no note");
+        }
+        // D21: operation metadata composes with one spaced middle-dot separator.
+        assert.match(reported, /Reasoning: 8 tokens · Output: 12 tokens[\s\S]*Total: 60 tokens/u);
+        // D20: runtime count/weight names read as localized labels, not camelCase.
+        assert.match(recall, /42 used tokens/u);
+        assert.match(recall, /Semantic weight 0\.6/u);
+        // D23: a completed operation's start step is Started/Succeeded, never Running.
+        assert.match(estimated, /Started/u);
+        assert.match(estimated, /Succeeded/u);
+        assert.doesNotMatch(estimated, /Running/u);
+        // D14: a warning status carries an icon and stronger weight.
+        await operation("truncated");
+        const warningStatus = details.locator('[data-ltm-debug-detail-status="completed_with_warnings"]');
+        assert.equal((await warningStatus.locator("svg").count()) > 0, true, "warning status shows an icon");
+        assert.match((await warningStatus.getAttribute("class")) ?? "", /items-center/u);
+        assert.equal(
+          await warningStatus.locator("span.font-semibold").count(),
+          1,
+          "warning status label is emphasized",
+        );
+        // D13: Copy JSON keeps its polite live-region confirmation and reset.
+        await operation("estimated");
+        await details.getByRole("button", { name: /^Copy JSON/u }).click();
+        await activity.locator('[role="status"]', { hasText: "Copied" }).first().waitFor();
+        // D07: export uses a timestamped fallback filename and announces success.
+        const exportButton = activity.getByRole("button", { name: "Export full log" });
+        const downloadPromise = activityPage.waitForEvent("download");
+        await exportButton.click();
+        await activityPage.waitForFunction(() => {
+          const button = [...document.querySelectorAll("button")].find((candidate) =>
+            candidate.textContent?.includes("Export full log"),
+          );
+          return button instanceof HTMLButtonElement && button.getAttribute("aria-disabled") === "true";
+        });
+        assert.equal(
+          await activityPage.evaluate(() => document.activeElement?.textContent?.includes("Export full log") ?? false),
+          true,
+          "the export control keeps focus while the action is pending",
+        );
+        const download = await downloadPromise;
+        assert.match(download.suggestedFilename(), /^ltm-debug-log-\d{4}/u);
+        await activity.getByText("Full Activity log exported.").waitFor();
+        // D07: a failed export surfaces the server's JSON error text.
+        debugExportError = true;
+        await exportButton.click();
+        await activity.getByText("Export fixture failed.").waitFor();
+        debugExportError = false;
+        // D32: Clear confirms its all-chat scope and permanent, memory-safe behavior;
+        // cancelling makes no DELETE request.
+        const clearButton = activity.getByRole("button", { name: "Clear", exact: true });
+        const clearDeletesBefore = debugClearDeletes;
+        await activityPage.evaluate(() => {
+          (window as unknown as { __ltmConfirmResult?: boolean }).__ltmConfirmResult = false;
+          (window as unknown as { __ltmConfirmCalls?: number }).__ltmConfirmCalls = 0;
+          (window as unknown as { __ltmLastConfirm?: string }).__ltmLastConfirm = undefined;
+        });
+        // #1275 repair: a same-turn double activation opens the host confirmation once;
+        // the guard is acquired before the dialog is awaited.
+        await activityPage.evaluate(() => {
+          const button = [...document.querySelectorAll('[data-ltm-surface="activity"] button')].find(
+            (candidate) => candidate.textContent?.trim() === "Clear",
+          );
+          if (button instanceof HTMLButtonElement) {
+            button.click();
+            button.click();
+          }
+        });
+        await activityPage.waitForFunction(() =>
+          Boolean((window as unknown as { __ltmLastConfirm?: string }).__ltmLastConfirm),
+        );
+        assert.equal(
+          await activityPage.evaluate(
+            () => (window as unknown as { __ltmConfirmCalls?: number }).__ltmConfirmCalls ?? 0,
+          ),
+          1,
+          "a same-turn double Clear opens the confirmation once",
+        );
+        const clearConfirmation = await activityPage.evaluate(
+          () => (window as unknown as { __ltmLastConfirm?: string }).__ltmLastConfirm ?? "",
+        );
+        assert.match(clearConfirmation, /for every chat/u);
+        assert.match(clearConfirmation, /Memories and settings are not affected/u);
+        assert.equal(debugClearDeletes, clearDeletesBefore, "cancelling Clear must not send a DELETE");
+        await activityPage.evaluate(() => {
+          (window as unknown as { __ltmConfirmResult?: boolean }).__ltmConfirmResult = true;
+        });
+        await clearButton.click();
+        await activity.getByText("Activity log cleared.").waitFor();
+        assert.equal(debugClearDeletes, clearDeletesBefore + 1);
+        // D06: focus returns to the initiating control after the host confirmation.
+        await activityPage.waitForFunction(() =>
+          [...document.querySelectorAll("button")].some(
+            (button) => button.textContent?.trim() === "Clear" && button === document.activeElement,
+          ),
+        );
+        // D05: the Debug toggle shows a local cue and saves through the existing PUT
+        // flow, with its feedback shown exactly once in the Debug panel.
+        const debugToggle = activityPage.locator("#settings-panel-debug input[type=checkbox]").first();
+        const debugChecked = await debugToggle.isChecked();
+        const debugDirty = activityPage.locator("[data-ltm-debug-dirty]");
+        await debugToggle.click();
+        await debugDirty.getByText(/Unsaved change to recall explanations/u).waitFor();
+        await debugDirty.getByRole("button", { name: "Save now" }).click();
+        await activityPage.getByText("Memory settings saved.").waitFor();
+        assert.equal(
+          await activityPage
+            .locator('[data-ltm-surface="memory-settings"] [data-ltm-status]')
+            .filter({ hasText: "Memory settings saved." })
+            .count(),
+          1,
+          "save feedback is shown once in the Debug panel",
+        );
+        assert.equal(await debugToggle.isChecked(), !debugChecked, "saving persists the toggled Debug setting");
+        // D06 repair: a same-turn double Refresh must coalesce into one debug-log
+        // request; the button guard reads React Query's rendered `isFetching`, which is
+        // still false for a second activation in the same task.
+        debugLogDelayMs = 200;
+        const refreshRequestsBefore = debugLogRequests;
+        await activityPage.evaluate(() => {
+          const button = [...document.querySelectorAll('[data-ltm-surface="activity"] button')].find((candidate) =>
+            /refresh/i.test(candidate.textContent ?? ""),
+          );
+          if (button instanceof HTMLButtonElement) {
+            button.click();
+            button.click();
+          }
+        });
+        const refreshPending = (expectPending: boolean) => {
+          const button = [...document.querySelectorAll('[data-ltm-surface="activity"] button')].find((candidate) =>
+            /refresh/i.test(candidate.textContent ?? ""),
+          );
+          return (
+            button instanceof HTMLButtonElement && Boolean(button.querySelector(".animate-spin")) === expectPending
+          );
+        };
+        await activityPage.waitForFunction(refreshPending, true);
+        await activityPage.waitForFunction(refreshPending, false);
+        assert.equal(
+          debugLogRequests,
+          refreshRequestsBefore + 1,
+          "a same-turn double Refresh coalesces into one debug-log request",
+        );
+        debugLogDelayMs = 0;
+        // M2: a recall whose chat resolves through /scope-targets shows the chat label.
+        const resolvedRecall = await operation("recall-desktop");
+        assert.match(resolvedRecall, /Recall from Current Final Branch/u);
+        assert.doesNotMatch(resolvedRecall, /desktop-chat/u);
+        // M4: labelled Details facts (and the resolved source memory) render in the workbench.
+        const estimatedFacts = await operation("estimated");
+        assert.match(estimatedFacts, /Details[\s\S]*Source: Legacy global memory/u);
+        assert.match(estimatedFacts, /Model: fixture-model/u);
+        assert.match(estimatedFacts, /Duration: 500 ms/u);
+        // M3: search also matches the displayed subject, which is not in any event text.
+        await showEvents();
+        await searchBox.fill("Current Final Branch");
+        await activity.locator('[data-ltm-debug-operation="recall-desktop"]').waitFor();
+        assert.equal(await activity.locator('[data-ltm-debug-operation="recall"]').count(), 0);
+        await showEvents();
+        await searchBox.fill("");
         assert.equal(
           await activityPage.evaluate(
             () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
           ),
           true,
         );
+        if (navigation === "mobile") {
+          // M5: selecting a row on a phone opens Details and moves focus to its tab,
+          // leaving nothing focused on the now-hidden row; the switcher returns to Events.
+          await showEvents();
+          const focusRow = activity.locator('[data-ltm-debug-operation="estimated"]');
+          await focusRow.focus();
+          await focusRow.press("Enter");
+          await details.waitFor();
+          await activityPage.waitForFunction(
+            () => document.activeElement?.getAttribute("data-ltm-workspace-pane-tab") === "workbench",
+          );
+          assert.match(await details.innerText(), /AI extraction/u);
+          await activity.locator('[data-ltm-workspace-pane-tab="navigator"]').click();
+        }
+        return details;
+      };
+      // D31: the Vault memory link opens Debug filtered to that memory, with no server
+      // correlation. The filter matches only explicit structured memory-id references.
+      const assertMemoryFilteredDebug = async (debugPage: typeof page, navigation: "desktop" | "mobile") => {
+        const activity = debugPage.locator('[data-ltm-surface="activity"]');
+        const details = activity.locator("[data-ltm-debug-details]");
+        const filterChip = activity.locator('[data-ltm-debug-memory-filter="world_legacy_global"]');
+        const showEvents = async () => {
+          const tab = activity.locator('[data-ltm-workspace-pane-tab="navigator"]');
+          if (await tab.count()) await tab.click();
+        };
+        const openFromVault = async () => {
+          await debugPage.locator(`[data-ltm-navigation="${navigation}"] [data-ltm-destination="vault"]`).click();
+          await debugPage.locator('[data-ltm-surface="vault"]').waitFor();
+          await debugPage.getByLabel("Search memories").fill("Legacy global memory");
+          await debugPage
+            .locator('[data-ltm-note-type="world"]')
+            .filter({ hasText: /^Legacy global memory/u })
+            .locator("button")
+            .first()
+            .click();
+          // The link lives in the Vault inspector's collapsible Record info section.
+          await debugPage.locator("[data-ltm-details-toggle]").click();
+          await debugPage
+            .locator("[data-ltm-record-info]")
+            .first()
+            .evaluate((element) => {
+              (element as HTMLDetailsElement).open = true;
+            });
+          await debugPage.getByRole("button", { name: "Open debug log" }).click();
+          await activity.waitFor();
+          await filterChip.waitFor();
+        };
+
+        // A previous Debug selection must not survive the memory handoff.
+        await showEvents();
+        await activity.locator('[data-ltm-debug-operation="estimated"]').click();
+        await details.waitFor();
+        await openFromVault();
+        // Entry: nothing is selected, the filter names the memory, and the caveat is shown.
+        assert.equal(await details.count(), 0, "the memory handoff selects no operation");
+        assert.match(await filterChip.innerText(), /Legacy global memory/u);
+        assert.match(await activity.innerText(), /Apply operations log change IDs, not memory IDs/u);
+        // Matching extraction source, produced target, recall candidates, and a
+        // single later event each pull their whole operation in.
+        await activity.locator('[data-ltm-debug-operation="estimated"]').waitFor();
+        await activity.locator('[data-ltm-debug-operation="target"]').waitFor();
+        await activity.locator('[data-ltm-debug-operation="target"]').click();
+        await details.waitFor();
+        assert.match(await details.innerText(), /Result[\s\S]*Legacy global memory/u);
+        await showEvents();
+        await activity.locator('[data-ltm-debug-operation="recall"]').waitFor();
+        await activity.locator('[data-ltm-debug-operation="recall-rejected"]').waitFor();
+        await activity.locator('[data-ltm-debug-operation="late-reference"]').waitFor();
+        // Chip counts describe the memory-filtered domain, not the whole loaded log.
+        const listedOperations = await activity.locator("[data-ltm-debug-operation]").count();
+        assert.match(
+          await activity.locator('[data-ltm-debug-chip="all"]').innerText(),
+          new RegExp(`All\\s+${listedOperations}`, "u"),
+        );
+        // An unrelated operation and an apply carrying only change ids are excluded.
+        assert.equal(await activity.locator('[data-ltm-debug-operation="unrelated"]').count(), 0);
+        assert.equal(await activity.locator('[data-ltm-debug-operation="apply"]').count(), 0);
+        // A matching operation keeps its full event list and its status.
+        await activity.locator('[data-ltm-debug-operation="estimated"]').click();
+        await details.waitFor();
+        const matched = await details.innerText();
+        assert.match(matched, /AI extraction/u);
+        assert.match(matched, /500 ms/u);
+        // The recall rows match through their candidate ids, not a shared source note.
+        await showEvents();
+        await activity.locator('[data-ltm-debug-operation="recall-rejected"]').click();
+        await details.waitFor();
+        assert.match(await details.innerText(), /Legacy global memory/u);
+        // late-reference matches through one later event and still shows every event.
+        await showEvents();
+        await activity.locator('[data-ltm-debug-operation="late-reference"]').click();
+        await details.waitFor();
+        assert.match(await details.innerText(), /Completed/u);
+        assert.equal(await details.locator("ol > li").count(), 2, "a matched operation keeps all of its events");
+
+        // Clearing the filter makes the other loaded operations available again.
+        await showEvents();
+        await filterChip.getByRole("button", { name: "Clear memory filter" }).click();
+        await activity.locator('[data-ltm-debug-operation="unrelated"]').waitFor();
+        assert.equal(await activity.locator("[data-ltm-debug-memory-filter]").count(), 0);
+
+        // A cleared filter must not come back when the Debug tab is reopened.
+        await debugPage.locator("#settings-tab-recall").click();
+        await debugPage.locator("#settings-tab-debug").click();
+        await showEvents();
+        assert.equal(await activity.locator("[data-ltm-debug-memory-filter]").count(), 0);
+        await activity.locator('[data-ltm-debug-operation="unrelated"]').waitFor();
+
+        // Re-open from the Vault link and compose with the chips and search.
+        await openFromVault();
+        await showEvents();
+        await activity.locator('[data-ltm-debug-chip="recall"]').click();
+        await activity.locator('[data-ltm-debug-operation="recall"]').waitFor();
+        await activity.locator('[data-ltm-debug-operation="recall-rejected"]').waitFor();
+        assert.equal(await activity.locator('[data-ltm-debug-operation="estimated"]').count(), 0);
+        assert.equal(await activity.locator('[data-ltm-debug-operation="target"]').count(), 0);
+        await activity.locator('[data-ltm-debug-chip="all"]').click();
+        await activity.locator("[data-ltm-debug-search]").fill("fixture-model");
+        await activity.locator('[data-ltm-debug-operation="estimated"]').waitFor();
+        assert.equal(await activity.locator('[data-ltm-debug-operation="target"]').count(), 0);
+        // No-match: an empty result names the memory coverage, not a plain miss.
+        await activity.locator("[data-ltm-debug-search]").fill("no-such-operation");
+        await activity
+          .getByText("No matching operations in the loaded debug log. This does not mean the memory never changed.")
+          .waitFor();
+        await activity.locator("[data-ltm-debug-search]").fill("");
+
+        if (navigation === "mobile") {
+          // The link lands on Events; selecting a row opens Details; the switcher returns.
+          await showEvents();
+          assert.equal(await details.count(), 0);
+          await activity.locator('[data-ltm-debug-operation="estimated"]').click();
+          await details.waitFor();
+          assert.match(await details.innerText(), /AI extraction/u);
+          await activity.locator('[data-ltm-workspace-pane-tab="navigator"]').click();
+        }
+
+        // Leave the remaining Debug flow unfiltered.
+        await showEvents();
+        await filterChip.getByRole("button", { name: "Clear memory filter" }).click();
+
+        // An empty retained log still names the memory coverage, not "no activity".
+        debugLogEmpty = true;
+        await openFromVault();
+        await activity
+          .getByText("No matching operations in the loaded debug log. This does not mean the memory never changed.")
+          .waitFor();
+        debugLogEmpty = false;
+        // Restore the real log for the remaining Debug flow.
+        await debugPage.locator("#settings-tab-recall").click();
+        await debugPage.locator("#settings-tab-debug").click();
+        await activity.locator('[data-ltm-debug-operation="estimated"]').waitFor();
       };
       const openDebugActivity = async (context: typeof browserContext, navigation: "desktop" | "mobile") => {
+        await context.grantPermissions(["clipboard-read", "clipboard-write"], {
+          origin: `http://127.0.0.1:${address.port}`,
+        });
         const debugPage = await context.newPage();
-        await debugPage.route("**/api/long-term-memory/debug-log?*", (route) =>
-          route.fulfill({ json: { events: debugEvents } }),
-        );
+        await debugPage.route("**/api/long-term-memory/status*", async (route) => {
+          // #1304: desktop keeps two equal labels over unavailable vectors (a switched
+          // sidecar model); mobile shows differing labels over available vectors (a renamed connection).
+          const response = await route.fetch();
+          const status = await response.json();
+          const renamed = navigation === "mobile";
+          await route.fulfill({
+            response,
+            json: {
+              ...status,
+              indexes: {
+                ...status.indexes,
+                embeddingsAvailable: renamed,
+                embeddingSource: "Renamed connection (bge-m3)",
+                indexedEmbeddingSource: renamed ? "Old name (bge-m3)" : "Renamed connection (bge-m3)",
+              },
+            },
+          });
+        });
+        await debugPage.route("**/api/long-term-memory/drafts/review?*", async (route) => {
+          const response = await route.fetch();
+          const review = { ...(await response.json()), sources: structuredClone(debugReviewSources) };
+          for (const source of review.sources)
+            if (source.sourceNoteId === "source_mobile_review")
+              for (const item of source.drafts) item.draft.status = debugReviewPending ? "pending" : "accepted";
+          await route.fulfill({ response, json: review });
+        });
+        await debugPage.route("**/api/long-term-memory/debug-log?*", async (route) => {
+          debugLogRequests += 1;
+          // A delay keeps the first request in flight so a same-turn second activation is observable.
+          if (debugLogDelayMs > 0) await new Promise((resolve) => setTimeout(resolve, debugLogDelayMs));
+          if (debugLogError) {
+            route.fulfill({ status: 500, json: { error: "Activity fixture failed." } });
+            return;
+          }
+          if (debugLogEmpty) {
+            route.fulfill({ json: { events: [] } });
+            return;
+          }
+          const query = new URL(route.request().url()).searchParams;
+          const matches = (value: unknown, expected: string | null) => !expected || value === expected;
+          const filtered = debugEvents.filter((event) => {
+            const record = event as Record<string, unknown>;
+            return (
+              matches(record.operationId, query.get("operationId")) &&
+              matches(record.sourceNoteId, query.get("sourceNoteId")) &&
+              matches(record.draftId, query.get("draftId")) &&
+              matches(record.status, query.get("status")) &&
+              matches(record.phase, query.get("phase"))
+            );
+          });
+          const limit = Number(query.get("limit") ?? 0);
+          route.fulfill({ json: { events: limit > 0 ? filtered.slice(-limit) : filtered } });
+        });
+        await debugPage.route("**/api/long-term-memory/debug-log/export", async (route) => {
+          // A small delay lets the test observe the pending/disabled guard.
+          await new Promise((resolve) => setTimeout(resolve, 120));
+          if (debugExportError) {
+            await route.fulfill({
+              status: 500,
+              contentType: "application/json",
+              body: JSON.stringify({ error: "Export fixture failed." }),
+            });
+            return;
+          }
+          await route.fulfill({ contentType: "application/x-ndjson", body: '{"id":"fixture"}\n' });
+        });
+        await debugPage.route("**/api/long-term-memory/debug-log", async (route) => {
+          if (route.request().method() === "DELETE") {
+            debugClearDeletes += 1;
+            await route.fulfill({ json: { ok: true } });
+            return;
+          }
+          await route.continue();
+        });
         await debugPage.goto(`http://127.0.0.1:${address.port}/`);
         await debugPage.evaluate(() => customElements.whenDefined("marinara-capability-long-term-memory"));
-        await debugPage.evaluate(() => {
+        // String form keeps the inline confirmAction out of the tsx/esbuild `__name`
+        // transform, which is unavailable inside the page.
+        await debugPage.evaluate(`(() => {
           const element = document.createElement("marinara-capability-long-term-memory");
           element.setAttribute("view", "detail");
+          // Exercise the host confirmation flow rather than a native dialog, so
+          // cancel/confirm outcomes and focus restoration are observable.
+          element.capabilityProps = {
+            confirmAction: (options) => {
+              window.__ltmLastConfirm = options.message;
+              window.__ltmConfirmCalls = (window.__ltmConfirmCalls ?? 0) + 1;
+              return window.__ltmConfirmResult ?? true;
+            },
+          };
           document.body.append(element);
-        });
+        })()`);
         await debugPage.locator(`[data-ltm-navigation="${navigation}"] [data-ltm-destination="settings"]`).click();
-        await assertDebugActivity(debugPage);
+        // The detail view mounts the Vault first, which pages all notes; count
+        // note queries only from the settings navigation on, so this measures
+        // the Debug tab's own title lookup.
+        const noteQueryStart = noteQueries.length;
+        const notesByIdsResponse = debugPage.waitForResponse((response) =>
+          new URL(response.url()).searchParams.has("ids"),
+        );
+        await assertDebugActivity(debugPage, navigation);
+        await notesByIdsResponse;
+        // Start at the Debug tab's own ids lookup so a Vault page that is still
+        // in flight cannot be read as Debug paging the whole vault.
+        const idsIndex = noteQueries.slice(noteQueryStart).findIndex((query) => query.includes("ids="));
+        assert.ok(idsIndex >= 0, "Debug resolves memory titles by id");
+        assert.equal(
+          noteQueries.slice(noteQueryStart + idsIndex).some((query) => query.includes("limit=500")),
+          false,
+          "Debug does not page the whole vault for titles",
+        );
+        await assertMemoryFilteredDebug(debugPage, navigation);
         return debugPage;
       };
       const desktopDebugPage = await openDebugActivity(browserContext, "desktop");
-      const estimatedOperation = desktopDebugPage.locator('[data-ltm-surface="activity"] > ol > li > details').first();
-      await estimatedOperation.locator(":scope > summary").click();
-      const responseEvent = estimatedOperation.locator(":scope > ol > li").filter({ hasText: "450 ms" });
-      await responseEvent.getByText("Technical details", { exact: true }).click();
-      assert.match(await responseEvent.locator("pre").innerText(), /private response snippet/u);
+      // D31-adjacent handoff: a resolved recall-memory name opens its Vault memory.
+      await desktopDebugPage.locator('[data-ltm-debug-operation="recall"]').click();
+      await desktopDebugPage.locator('[data-ltm-recalled-note="world_legacy_global"]').click();
+      await desktopDebugPage.locator('[data-ltm-surface="vault"]').waitFor();
       await desktopDebugPage.close();
       await page.locator('[data-ltm-navigation="desktop"] [data-ltm-destination="vault"]').click();
       await page.evaluate((version) => {
@@ -2534,8 +3269,25 @@ async function main() {
       });
       await lastInjection.click();
       await lastInjection.locator('[data-ltm-status="danger"]').waitFor();
-      await lastInjection.getByRole("button", { name: /retry/i }).click();
-      await lastInjection.locator('[data-ltm-status="danger"]').waitFor();
+      // D18: compact Retry keeps a 24px target.
+      const compactRetry = lastInjection.getByRole("button", { name: /retry/i });
+      const compactRetryBox = await compactRetry.boundingBox();
+      assert.ok(compactRetryBox && compactRetryBox.height >= 24, "compact Retry keeps a 24px target");
+      await compactRetry.click();
+      // D27 repair: a cached-data retry still shows the title without a loading flash,
+      // but the Retry control stays disabled while that refetch is in flight.
+      await page.waitForFunction(() => {
+        const button = [...document.querySelectorAll("button")].find((candidate) =>
+          /retry/i.test(candidate.textContent ?? ""),
+        );
+        return button instanceof HTMLButtonElement && button.disabled;
+      });
+      await page.waitForFunction(() => {
+        const button = [...document.querySelectorAll("button")].find((candidate) =>
+          /retry/i.test(candidate.textContent ?? ""),
+        );
+        return button instanceof HTMLButtonElement && !button.disabled;
+      });
       assert.equal(lastInjectionRequests, 3);
       assert.equal(await lastInjection.getByText("Retained memory").count(), 0);
       assert.equal(await lastInjection.getByText("42 tokens").count(), 0);
@@ -4427,9 +5179,17 @@ async function main() {
       await retryReextract.click();
       await page.locator("[data-ltm-reextract-result]").waitFor();
       assert.match(await desktopSourcesNavigation.innerText(), /Completed 1/u);
+      // Re-extract and its retry send the current availability modes (#1227);
+      // the retry repeats the original selection even after the mode filter changes.
       assert.deepEqual(reextractionRequests, [
-        { path: "/api/long-term-memory/notes/source_desktop_reextract/extract", body: {} },
-        { path: "/api/long-term-memory/notes/source_desktop_reextract/extract", body: {} },
+        {
+          path: "/api/long-term-memory/notes/source_desktop_reextract/extract",
+          body: { modes: ["conversation"] },
+        },
+        {
+          path: "/api/long-term-memory/notes/source_desktop_reextract/extract",
+          body: { modes: ["conversation"] },
+        },
       ]);
       await page.locator('[data-ltm-source-tab="lorebooks"]').click();
       await page.locator('[data-ltm-source-preview="lorebooks"]').waitFor();

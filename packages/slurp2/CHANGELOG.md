@@ -1,5 +1,29 @@
 # Slurp release notes
 
+## 0.3.21 — 2026-10-11
+
+- Stir's Recent plays follows a collab you suggested or pushed: waiting for an answer, agreed, coming up, turned down (with the reason), blocked, or up on both pages. A posted collab opens its joint post; a deleted post or a collab Slurp no longer keeps says so.
+- A collab request still waiting shows Make it happen, which opens the usual preview before anything changes.
+- Undo is no longer offered once the joint post is on its way or up; published posts are not taken back.
+
+## 0.3.20 — 2026-10-10
+
+- Choose what a breakup leaves behind: keep the usual history, move on while remembering the relationship without ongoing pining or breakup drama, or forget the relationship in future posts and chats. Stir can also move on or forget an existing ex relationship. Published posts and messages stay; Undo restores the previous choice.
+
+## 0.3.19 — 2026-10-10
+
+Stop a Creator from texting again after being left on read.
+
+- New Settings › Messaging toggle, off by default: "Stop after one unanswered text." A Creator may write first once (an opener, a check-in, a recurring update, a drama question), then nothing more until you actually reply. Replies to your messages, and anything a Creator already owes you (a promise, a reminder, a finished commission), still arrive on schedule.
+
+## 0.3.18 — 2026-10-08
+
+Engine macros in Slurp, fewer recycled pictures.
+
+- Character cards and wardrobe looks resolve Engine macros such as `{{random::red::green::blue}}`, `{{char}}`, `{{user}}` and `{{#if}}`. A wardrobe look rolls again for each post.
+- Macros that need a chat, such as `{{input}}` or chat variables, resolve to nothing in Slurp.
+- Picture reuse: each earlier picture goes up again at most once, and a repost is never the source of another repost. New setting in Settings › Publishing: Off, Rare or Regular (the old behavior). Off stops automatic reuse; a reuse the player picks still works.
+
 ## 0.3.17 — 2026-10-06
 
 Spice in one place, user reports, speed.

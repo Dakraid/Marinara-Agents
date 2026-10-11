@@ -47,7 +47,7 @@ async function main() {
     recordLongTermMemoryAttempt,
   } = await import(`${source}/usage.ts`);
   const { readLtmDebugLog } = await import(`${source}/debug-log.ts`);
-  const { resolveLongTermMemoryRecallSettings } =
+  const { resolveLongTermMemoryRecallSettings, LTM_RECALL_SCORE_THRESHOLD_CEILING } =
     await import("../packages/long-term-memory/src/engine/packages/shared/src/features/agents/long-term-memory/runtime-settings.ts");
   const { DEFAULT_LTM_GLOBAL_SETTINGS } =
     await import("../packages/long-term-memory/src/engine/packages/shared/src/features/agents/long-term-memory/schema.ts");
@@ -468,6 +468,23 @@ async function main() {
       );
       assert.doesNotMatch(tight.content, /B{100}/);
 
+      // #1252: a chunk dropped for size must not hide smaller later chunks that still fit.
+      const refill = serializeLongTermMemoryPrompt(
+        [
+          makeChunk("world", "world_refill_a", "A".repeat(60)),
+          makeChunk("world", "world_refill_b", "B".repeat(200)),
+          makeChunk("world", "world_refill_c", "C".repeat(60)),
+        ],
+        { maxTokens: 100 },
+      );
+      assert.ok(refill);
+      assert.deepEqual(
+        refill.chunks.map(({ chunk }) => chunk.noteId),
+        ["world_refill_a", "world_refill_c"],
+      );
+      assert.doesNotMatch(refill.content, /B{200}/);
+      assert.ok(refill.estimatedTokens <= 100);
+
       const duplicateA = makeChunk("world", "world_duplicate_a", "Same fact").chunk;
       const duplicateB = makeChunk("world", "world_duplicate_b", "Same fact").chunk;
       const deduped = applyLtmBudget(
@@ -788,6 +805,23 @@ async function main() {
         ["world_keyword_exact"],
         "an exact keyword match must retain absolute relevance above the threshold",
       );
+      const fuzzyKeywordRecall = await retrieveLongTermMemory({
+        root: storage.root,
+        queryText: "obscryl",
+        scope: { chatId: "chat-a", chatIds: ["chat-a"] },
+        mode: "roleplay",
+        semanticWeight: 0,
+        lexicalWeight: 0,
+        graphWeight: 0,
+        keywordWeight: 1,
+        maxChunks: 5,
+        maxTokens: 4096,
+      });
+      assert.equal(fuzzyKeywordRecall.chunks[0]?.chunk.noteId, "world_keyword_exact");
+      assert.ok(
+        (fuzzyKeywordRecall.chunks[0]?.relevanceScore ?? 0) < 1,
+        "a partial keyword match must not normalize to the full keyword weight",
+      );
       const graphOnly = await retrieveLongTermMemory({
         root: storage.root,
         queryText: "stormvault ledger",
@@ -893,7 +927,10 @@ async function main() {
         queryText: "world_visible cobalt archive",
         scope: { chatId: "chat-a", chatIds: ["chat-a"] },
         mode: "roleplay",
-        minScore: 0.75,
+        // Issue #1258: the calibrated scale spreads these chunks instead of
+        // saturating them all at 1.0, so 0.4 keeps the two relevant memories and
+        // drops the keyword-only one. This threshold used to sit at 0.75.
+        minScore: 0.4,
         maxChunks: 10,
         maxTokens: 4096,
       });
@@ -1260,7 +1297,9 @@ async function main() {
         assert.equal(tightExplanation.counts.selected, 1);
         assert.equal(tightExplanation.counts.usedTokens, tightRecall.receipt.artifact.estimatedTokens);
         assert.equal(tightExplanation.counts.rejected, 1);
-        assert.equal(tightExplanation.details.rejected[0].rejectionReason, "prompt_budget");
+        // #1252: the fixed prompt overhead is reserved in the retrieval budget, so the
+        // second chunk is rejected there instead of being accepted then popped by the serializer.
+        assert.equal(tightExplanation.details.rejected[0].rejectionReason, "budget");
         assert.equal(tightExplanation.details.rejected[0].thresholdPassed, true);
         assert.match(tightExplanation.uiSummary, /^1 memories selected; 1 candidates rejected\.$/);
         assert.equal(JSON.stringify(tightExplanation).includes("p".repeat(300)), false);
@@ -1274,10 +1313,71 @@ async function main() {
         assert.deepEqual(emptyExplanation.counts, { selected: 0, rejected: 2, usedTokens: 0 });
         assert.deepEqual(emptyExplanation.details.selected, []);
 
-        for (const threshold of [0, 0.5, 0.6, 0.61]) {
+        // Issue #1265: title framing can exceed the retrieval estimate even when
+        // the fixed prompt overhead was reserved; report that serializer drop.
+        chats[0].metadata.longTermMemoryRecallPreamble = "";
+        const serializerDropIds = ["char_serializer_drop_a", "char_serializer_drop_b"];
+        for (const id of serializerDropIds) {
+          await storage.createNote(
+            note(id, "chat-a", `A short serializer budget fixture ${id}.`, {
+              type: "character",
+              title: "T".repeat(240),
+              keywords: [],
+            }),
+          );
+        }
+        await rebuildLongTermMemoryIndexes({ root: storage.root });
+        const serializerDropRecall = await runtime.recall({
+          ...tightInput,
+          messages: [{ role: "user", content: serializerDropIds.join(" ") }],
+        });
+        assert.deepEqual(
+          serializerDropRecall?.receipt.artifact.chunks.map((candidate: any) => candidate.chunk.noteId),
+          [serializerDropIds[0]],
+          "a title-framed chunk that does not fit is skipped while a fitting chunk remains injected",
+        );
+        const serializerDropExplanation = (await readLtmDebugLog({ phase: "retrieval" }, storage.root)).at(-1)!;
+        assert.ok(
+          serializerDropExplanation.details.rejected.some(
+            (candidate: any) => candidate.rejectionReason === "prompt_budget",
+          ),
+          "the serializer drop must be reported as a prompt-budget rejection",
+        );
+        await storage.deleteNotesPermanently(serializerDropIds);
+        await rebuildLongTermMemoryIndexes({ root: storage.root });
+
+        // #1252 review repair: when the reserved overhead leaves less room than any candidate
+        // needs, the recall is budget-exhausted, not a genuine no-match. It must report
+        // skipped/prompt_budget and must not overwrite the last injection receipt with an
+        // empty zero-match state.
+        chats[0].metadata.longTermMemoryRecallPreamble = "p".repeat(370);
+        const receiptBeforeBudgetExhaustion = await readLongTermMemoryInjectionReceipt("chat-a", storage.root);
+        assert.equal(
+          await runtime.recall(tightInput),
+          null,
+          "a preamble that leaves less room than any chunk must not inject",
+        );
+        const budgetOnlyAttempt = await readLongTermMemoryAttempt("chat-a", storage.root);
+        assert.equal(budgetOnlyAttempt?.outcome, "skipped");
+        assert.equal(budgetOnlyAttempt?.reason, "prompt_budget");
+        assert.deepEqual(
+          await readLongTermMemoryInjectionReceipt("chat-a", storage.root),
+          receiptBeforeBudgetExhaustion,
+          "a budget-exhausted recall must not record a zero-match injection receipt",
+        );
+
+        for (const threshold of [0, 0.2, 0.4, 0.5, 0.61]) {
+          // Issue #1264: a saved threshold above 0.4 reads as 0.4. Pin the semantic
+          // weight at 0.4 so the top vector match reaches the clamped ceiling exactly,
+          // which proves both the clamp and threshold equality.
+          const effectiveThreshold = Math.min(threshold, LTM_RECALL_SCORE_THRESHOLD_CEILING);
           chats[0].metadata = {
             ...originalRecallMetadata,
-            longTermMemoryRecallStyle: "balanced",
+            longTermMemoryRecallStyle: "custom",
+            longTermMemorySemanticWeight: 0.4,
+            longTermMemoryLexicalWeight: 0.3,
+            longTermMemoryGraphWeight: 0.1,
+            longTermMemoryKeywordWeight: 0.2,
             longTermMemoryScoreThreshold: threshold,
           };
           const thresholdRecall = await runtime.recall({
@@ -1286,11 +1386,16 @@ async function main() {
             debugMode: true,
           });
           const explanation = (await readLtmDebugLog({ phase: "retrieval" }, storage.root)).at(-1)!;
-          assert.equal(explanation.details.scoreThreshold, threshold, "even an all-rejected recall must be explained");
+          assert.equal(
+            explanation.details.scoreThreshold,
+            effectiveThreshold,
+            "a saved threshold above 0.4 must read as 0.4",
+          );
           assert.equal(explanation.counts.selected, thresholdRecall?.receipt.artifact.chunks.length ?? 0);
           for (const candidate of thresholdRecall?.receipt.artifact.chunks ?? []) {
             const detail = explanation.details.selected.find((item: any) => item.noteId === candidate.chunk.noteId);
             assert.equal(detail.fusedScore, candidate.score);
+            assert.equal(typeof detail.fusedRank, "number");
             assert.equal(detail.relevanceScore, candidate.relevanceScore);
             assert.equal(detail.score, detail.relevanceScore, "keep the legacy UI relevance field compatible");
             assert.notEqual(detail.fusedScore, detail.relevanceScore);
@@ -1298,21 +1403,34 @@ async function main() {
           }
           for (const candidate of explanation.details.rejected) {
             assert.equal(typeof candidate.fusedScore, "number");
-            assert.equal(candidate.thresholdPassed, candidate.relevanceScore >= threshold);
+            assert.equal(typeof candidate.fusedRank, "number");
+            assert.equal(candidate.thresholdPassed, candidate.relevanceScore >= effectiveThreshold);
           }
-          if (threshold === 0.6) {
-            assert.equal(
-              thresholdRecall.receipt.artifact.chunks[0].relevanceScore,
-              0.6,
+          if (effectiveThreshold === LTM_RECALL_SCORE_THRESHOLD_CEILING) {
+            assert.ok(
+              (thresholdRecall?.receipt.artifact.chunks ?? []).some(
+                (candidate: any) => candidate.relevanceScore === effectiveThreshold,
+              ),
               "equality passes the threshold",
             );
           }
-          if (threshold === 0.61) {
-            assert.equal(thresholdRecall, null, "scores remain capped by the balanced lane weights");
-            assert.ok(explanation.details.rejected.length > 0);
-            assert.ok(explanation.details.rejected.every((candidate: any) => candidate.thresholdPassed === false));
-          }
         }
+        // Issue #1264: saved thresholds are clamped, so the direct retrieval cap still
+        // rejects everything above the lane weights.
+        const aboveCap = await retrieveLongTermMemory({
+          root: storage.root,
+          queryText: "observatory cobalt archive",
+          scope: { chatId: "chat-a", chatIds: ["chat-a"] },
+          mode: "roleplay",
+          semanticWeight: 0.4,
+          lexicalWeight: 0.3,
+          graphWeight: 0.1,
+          keywordWeight: 0.2,
+          minScore: LTM_RECALL_SCORE_THRESHOLD_CEILING + 0.01,
+          maxChunks: 10,
+          maxTokens: 4096,
+        });
+        assert.deepEqual(aboveCap.chunks, [], "scores remain capped by the lane weights");
       } finally {
         chats[0].metadata = originalRecallMetadata;
       }
@@ -1397,6 +1515,47 @@ async function main() {
       } finally {
         chats.pop();
         await storage.deleteNotesPermanently(noteIds);
+      }
+
+      // #1252 review repair: retrieval must estimate the prompt-normalized chunk text, not the
+      // raw legacy text, so a chunk the serializer can fit is not rejected before serialization.
+      // `summary:`/`text:` label lines are dropped when the bullet is rendered.
+      const legacySummaryChat = {
+        ...chats[0],
+        id: "chat-legacy-summary",
+        groupId: null,
+        metadata: {
+          enableLongTermMemory: true,
+          longTermMemoryBudgetTokens: 128,
+          longTermMemoryRecallPreamble: "p",
+          longTermMemorySemanticWeight: 0,
+          longTermMemoryLexicalWeight: 0,
+          longTermMemoryKeywordWeight: 0,
+          longTermMemoryGraphWeight: 0,
+        },
+      };
+      chats.push(legacySummaryChat);
+      try {
+        await storage.createNote(
+          note("world_legacy_summary", legacySummaryChat.id, `Known fact\nsummary: ${"cobalt ".repeat(90)}`),
+        );
+        await rebuildLongTermMemoryIndexes({ root: storage.root });
+        const legacySummaryRecall = await runtime.recall({
+          chatId: legacySummaryChat.id,
+          chatMode: "roleplay",
+          characterIds: [],
+          messages: [{ role: "user", content: "world_legacy_summary" }],
+          debugMode: false,
+        });
+        assert.match(
+          legacySummaryRecall?.text ?? "",
+          /Known fact/,
+          "a legacy summary: chunk the serializer can fit must not be rejected by retrieval's raw estimate",
+        );
+        assert.doesNotMatch(legacySummaryRecall?.text ?? "", /summary:/);
+      } finally {
+        chats.pop();
+        await storage.deleteNotesPermanently(["world_legacy_summary"]);
       }
 
       chats[0].metadata = {
@@ -1970,6 +2129,11 @@ async function main() {
           "function",
           "recordPromptAccepted must remain registered",
         );
+        assert.equal(
+          typeof liveRuntime.refresh,
+          "function",
+          "the runtime service must expose the embedding refresh hook",
+        );
 
         const mutationPath = join(vaultRoot, "vault", "world", "world_1179_mutation.json");
         await storage.createNote(note("world_1179_mutation", "chat-a", "Original observatory text."));
@@ -2078,6 +2242,135 @@ async function main() {
           false,
           "recall must not serve a note quarantined by official maintenance",
         );
+
+        // Issue #1295: Korean short keywords and particles must survive lexical
+        // recall without any embedding source.
+        await storage.createNote(
+          note("world_korean_ring", "chat-a", "무진에게 반지 선물", { keywords: ["반지", "선물"] }),
+        );
+        await storage.createNote(note("world_korean_market", "chat-a", "시장에서 과일을 샀다", { keywords: ["시장"] }));
+        await rebuildLongTermMemoryIndexes({ root: vaultRoot, embeddingAdapter: null, stopWords: [] });
+        const koreanRecall = await retrieveLongTermMemory({
+          root: vaultRoot,
+          embeddingAdapter: null,
+          queryText: "반지를 받았다",
+          scope: { chatId: "chat-a", chatIds: ["chat-a"] },
+          mode: "roleplay",
+          semanticWeight: 0,
+          maxChunks: 5,
+          maxTokens: 4096,
+        });
+        assert.equal(koreanRecall.embeddingsAvailable, false);
+        assert.ok(
+          koreanRecall.chunks.some((hit) => hit.chunk.noteId === "world_korean_ring"),
+          "a Korean particle query must recall the right memory through lexical and keyword lanes",
+        );
+        assert.equal(
+          koreanRecall.chunks.some((hit) => hit.chunk.noteId === "world_korean_market"),
+          false,
+          "an unrelated Korean memory must not be recalled for the particle query",
+        );
+      }
+
+      // #1303: the Engine calls refresh on the runtime service when a connection or agent
+      // save changes LTM's embedding configuration. It must rebuild for the new space, report
+      // success, skip an already-current index, and reject a source that still cannot embed.
+      {
+        const vaultRoot = storage.root;
+        const liveRuntime = services.get("long-term-memory:runtime");
+        resolvedAdapter = {
+          spaceId: "refresh-space-a",
+          label: "refresh A",
+          async embed(texts: string[]) {
+            return texts.map(() => [5]);
+          },
+        };
+        await rebuildLongTermMemoryIndexes({ root: vaultRoot, embeddingAdapter: resolvedAdapter });
+        assert.equal(
+          parseLtmRecallIndex(JSON.parse(await readFile(longTermMemoryRecallIndexPath(vaultRoot), "utf8"))).embeddings
+            .spaceId,
+          "refresh-space-a",
+          "the starting index must carry the first embedding space",
+        );
+
+        let refreshBEmbeds = 0;
+        resolvedAdapter = {
+          spaceId: "refresh-space-b",
+          label: "refresh B",
+          async embed(texts: string[]) {
+            refreshBEmbeds += 1;
+            return texts.map(() => [6]);
+          },
+        };
+        assert.deepEqual(
+          await liveRuntime.refresh({ signal: new AbortController().signal }),
+          { status: "refreshed" },
+          "refresh must report success after rebuilding for the new embedding space",
+        );
+        assert.equal(
+          parseLtmRecallIndex(JSON.parse(await readFile(longTermMemoryRecallIndexPath(vaultRoot), "utf8"))).embeddings
+            .spaceId,
+          "refresh-space-b",
+          "refresh must rebuild the persisted index for the new embedding space",
+        );
+        assert.ok(refreshBEmbeds > 0, "refresh must embed the vault once for the new space");
+
+        const embedsAfterRebuild = refreshBEmbeds;
+        assert.deepEqual(await liveRuntime.refresh({ signal: new AbortController().signal }), { status: "refreshed" });
+        assert.equal(
+          refreshBEmbeds,
+          embedsAfterRebuild,
+          "an already-current index must not be re-embedded by a second refresh",
+        );
+
+        resolvedAdapter = {
+          spaceId: "refresh-space-fail",
+          label: "refresh failing",
+          async embed() {
+            throw new Error("provider unavailable");
+          },
+        };
+        await assert.rejects(
+          liveRuntime.refresh({ signal: new AbortController().signal }),
+          /could not embed the vault/u,
+          "a refresh that cannot embed the new space must reject so the Engine reports failure",
+        );
+
+        // A failed in-flight upgrade must not suppress the retry a save just asked for: the save
+        // clears the guard under the vault lock, so refresh cannot skip on a restored guard.
+        let releaseRaceEmbed!: () => void;
+        let raceEmbedEntered!: () => void;
+        const raceEmbedStarted = new Promise<void>((resolve) => (raceEmbedEntered = resolve));
+        const raceEmbedHeld = new Promise<void>((resolve) => (releaseRaceEmbed = resolve));
+        const staleUpgrade = loadOrRebuildLongTermMemoryIndexes(vaultRoot, {
+          spaceId: "refresh-race-space",
+          label: "race failing",
+          async embed() {
+            raceEmbedEntered();
+            await raceEmbedHeld;
+            throw new Error("provider unavailable");
+          },
+        });
+        await raceEmbedStarted;
+        let raceEmbeds = 0;
+        resolvedAdapter = {
+          spaceId: "refresh-race-space",
+          label: "race working",
+          async embed(texts: string[]) {
+            raceEmbeds += 1;
+            return texts.map(() => [8]);
+          },
+        };
+        const retryRefresh = liveRuntime.refresh({ signal: new AbortController().signal });
+        await new Promise((resolve) => setImmediate(resolve)); // let refresh queue on the lock first
+        releaseRaceEmbed();
+        await staleUpgrade;
+        assert.deepEqual(
+          await retryRefresh,
+          { status: "refreshed" },
+          "a refresh must retry after an in-flight upgrade fails, not skip on the guard it restored",
+        );
+        assert.ok(raceEmbeds > 0, "the corrected embedding source must actually run");
       }
     },
     [

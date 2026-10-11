@@ -145,6 +145,7 @@ export function LongTermMemoryDetail({ props }: { props: CapabilityProps }) {
   } | null>(null);
   const [selectedSource, setSelectedSource] = useState<SourceTab>("chats");
   const [openActivityRequest, setOpenActivityRequest] = useState(0);
+  const [openActivityMemoryId, setOpenActivityMemoryId] = useState<string | null>(null);
   const [onboardingSource, setOnboardingSource] = useState<SourceTab>("chats");
   const Destination = destinations[destination];
   const destinationLabel = (value: LongTermMemoryDestination) => localizeUi(destinationLabelKeys[value]);
@@ -322,9 +323,10 @@ export function LongTermMemoryDetail({ props }: { props: CapabilityProps }) {
     setDestination("sources");
     return true;
   };
-  const openActivity = async () => {
+  const openActivity = async (memoryId: string) => {
     if (!(await confirmDestinationChange(destinationLabel("settings")))) return;
     setDestinationDirty(false);
+    setOpenActivityMemoryId(memoryId);
     setOpenActivityRequest((value) => value + 1);
     setDestination("settings");
   };
@@ -415,6 +417,24 @@ export function LongTermMemoryDetail({ props }: { props: CapabilityProps }) {
           {localizeUi("ui.longTermMemory.longtermmemorydetail.semanticRecallUnavailable")}
         </p>
       ) : null}
+      {indexHealth?.embeddingSource ? (
+        <p>
+          {localizeUi("ui.longTermMemory.longtermmemorydetail.embeddingSource", {
+            source: indexHealth.embeddingSource,
+          })}
+        </p>
+      ) : null}
+      {indexHealth?.embeddingSource &&
+      indexHealth.indexedEmbeddingSource &&
+      indexHealth.embeddingsAvailable === false ? (
+        <p className="text-[var(--marinara-editor-warning)]">
+          {localizeUi("ui.longTermMemory.activityview.embeddingSourceChanged", {
+            indexed: indexHealth.indexedEmbeddingSource,
+            current: indexHealth.embeddingSource,
+          })}
+        </p>
+      ) : null}
+      <p>{localizeUi("ui.longTermMemory.longtermmemorydetail.embeddingSourceHelp")}</p>
       {repairButton()}
       {repairMessage ? <p role="status">{repairMessage}</p> : null}
     </div>
@@ -1341,7 +1361,6 @@ export function LongTermMemoryDetail({ props }: { props: CapabilityProps }) {
                                       </li>
                                     </ul>
                                     <p>{localizeUi("ui.longTermMemory.longtermmemorydetail.underTheHoodFusion")}</p>
-                                    <p>{localizeUi("ui.longTermMemory.longtermmemorydetail.underTheHoodCooldown")}</p>
                                   </div>
                                 </details>
                               </>
@@ -1571,8 +1590,11 @@ export function LongTermMemoryDetail({ props }: { props: CapabilityProps }) {
                     onOpenSources={openSources}
                     onOpenVault={() => void selectDestination("vault")}
                     onOpenReview={openReview}
-                    onOpenActivity={destination === "vault" ? () => void openActivity() : undefined}
+                    onOpenActivity={
+                      destination === "vault" ? (memoryId: string) => void openActivity(memoryId) : undefined
+                    }
                     openActivityRequest={openActivityRequest}
+                    openActivityMemoryId={openActivityMemoryId}
                     onOpenActivityHandled={() => setOpenActivityRequest(0)}
                     onRecoverCandidate={recoverCandidate}
                     openedNoteId={openedNoteId}

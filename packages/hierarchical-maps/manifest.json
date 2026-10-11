@@ -16,7 +16,10 @@
     "min": "2.4.2",
     "maxExclusive": "4.0.0"
   },
-  "kind": ["agent", "maps"],
+  "kind": [
+    "agent",
+    "maps"
+  ],
   "entrypoints": {
     "agents": "agents.json",
     "server": "server.mjs",
@@ -24,9 +27,16 @@
   },
   "contributions": {
     "agentDetail": {
-      "agentIds": ["hierarchical-maps"]
+      "agentIds": [
+        "hierarchical-maps"
+      ]
     },
-    "slots": ["chat-settings", "spatial-workspace", "chat-runtime", "game-world-map"]
+    "slots": [
+      "chat-settings",
+      "spatial-workspace",
+      "chat-runtime",
+      "game-world-map"
+    ]
   },
   "files": [
     {
@@ -45,6 +55,15 @@
       "bytes": 1133017
     }
   ],
-  "permissions": ["agent-runtime", "chat-read", "chat-write", "network", "prompt-context", "routes", "storage", "ui"],
+  "permissions": [
+    "agent-runtime",
+    "chat-read",
+    "chat-write",
+    "network",
+    "prompt-context",
+    "routes",
+    "storage",
+    "ui"
+  ],
   "restartRequired": true
 }

@@ -1,5 +1,94 @@
 # Long-Term Memory changelog
 
+## 1.4.25 — 2026-10-11
+
+- Show which embedding source Long-Term Memory uses. The semantic search health line now names the source (for example "Built-in local MiniLM"), says when the saved vectors were built with a different source and will be re-embedded on the next recall or reindex, and no longer reports semantic search as available after the source changed. Memory Settings explains that the Extraction connection only drives extraction, and the vault health panel explains which connection drives recall embeddings, that the built-in model is English-only, and to use a multilingual embedding model for Korean, Japanese, Chinese or mixed-language vaults.
+
+## 1.4.24 — 2026-10-11
+
+- Refresh the recall index when a connection or agent save changes Long-Term Memory's embedding source. The Engine rebuilds the vault for the new source during the save instead of re-embedding it inside the next chat's recall, and a source that still cannot embed the vault reports failure instead of a false success.
+
+## 1.4.23 — 2026-10-10
+
+- Recall Korean memories that use short words or particles. Two-syllable Korean nouns such as `반지`, `서래` or `선물` are no longer dropped from keyword extraction, a query written with a particle (`반지를`) now matches the stored noun (`반지`) in both the keyword and lexical lanes, and a compound written with or without a space (`그림 선물` and `그림선물`) matches either way. Existing vaults rebuild their recall indexes once after the update.
+
+## 1.4.22 — 2026-10-10
+
+- Resolve Korean character names written with a particle. A Hangul name followed directly by a whole particle such as `은`, `가`, `를`, `에게` or `한테` now counts as present in the source, a returned name with a trailing particle binds to the known name before the particle, and a 2-syllable name that is the tail of a known 3-syllable name goes to Review Queue instead of becoming a separate character.
+
+## 1.4.21 — 2026-10-09
+
+- Keep extraction results that should be kept. An explicitly empty `subjectKeys` array now behaves like an omitted field instead of falling back to name matching, and a relationship change whose dimension deltas are all zero is no longer treated as a change. A nameless candidate can also borrow the identity a named sibling in the same batch resolved for the same subjectId, so it lands on the right memory instead of being rejected; borrowed identities stay in Review Queue.
+
+## 1.4.20 — 2026-10-09
+
+- Polish the Debug controls: unsaved cues and inline save beside Record recall explanations, pending spinners with focus held on the action, clearer full-log export with an honest privacy warning, and a compact health line. Localize count, weight and action labels, pluralize scanned-message wording, space metadata consistently, and report timeline steps with their own Started/Succeeded/Warning/Failed/Skipped wording. Confirm that clearing the log removes every chat's debug events without touching memories or settings.
+
+## 1.4.19 — 2026-10-09
+
+- Show extraction results and grouped candidates not kept, recall candidates added or not added with their recorded reasons and settings, and skipped apply changes in Debug. Explain recorded problems with guidance, and link pending extraction drafts to Review Queue without duplicating recovery actions.
+
+## 1.4.18 — 2026-10-08
+
+- Open the Memory Vault and switch back to it quickly in large libraries. The place pickers worked out which chats, branches, characters and personas have memories by comparing every place with every memory on each redraw; they now look places up in an index built once, so a library of about 800 places and 180 memories redraws in milliseconds instead of most of a second.
+
+## 1.4.17 — 2026-10-08
+
+- Make `/search` resolve the scoped chat's recall settings and prompt budget like generation, while preserving explicit request overrides.
+- Show fused rank beside relevance in Debug and remove unused cooldown behavior.
+
+## 1.4.16 — 2026-10-08 [highlight]
+
+- Stop one everyday word from deciding recall alone. A single exact keyword counts for half the keyword lane unless the chat uses it as a name; two distinct keywords or a phrase still count in full.
+- Make BM25 count on real chat windows: normalize against the query's eight highest-idf indexed terms instead of every term, so narration padding no longer drives a matching memory toward zero.
+- Choose the bounded fuzzy keyword catalog by query overlap, not alphabetically, so a keyword past the first 512 in a vault can still match.
+- Rescale the recall presets by 0.7 and retune balanced so the default 0.35 threshold keeps the previous 0.5 selection. A saved threshold above 0.4 now reads as 0.4; re-check custom weights.
+
+## 1.4.15 — 2026-10-08
+
+- Rename the Vault memory's "View all activity" link to "Open debug log" and open the Debug tab filtered to that memory, with no operation selected.
+- Match whole operations against explicit memory-id references in the loaded debug events (extraction source and produced target notes, recall selected/rejected candidates), composing with search and the existing chips. The filter is clearable and states that apply operations log change IDs, not memory IDs, so some are not shown.
+
+## 1.4.14 — 2026-10-07
+
+- Rebuild the Debug tab as a two-pane workspace: an event navigator with search and counted All / Problems / Recall / Extraction chips, plus a details pane for the selected operation. Raw records move behind Copy JSON; the response snippet is no longer shown on screen.
+- Record every recall as an ordinary history row that names its source chat. Selected and rejected memory names continue to open the Vault memory they belong to.
+- Show each operation's status as an icon with hidden text, keep steps that share an operation in one timeline, and group rows under Today / Earlier.
+
+## 1.4.13 — 2026-10-07
+
+- Put every recall lane on one comparable 0-1 scale. BM25 is now scaled against a reference document that contains each query term once at average length, instead of saturating near 1, so raising the score threshold removes progressively weaker memories in every style instead of dropping from many to almost none. Keyword matches use the best match on a chunk and count for less when a keyword is shared by much of what the chat can recall, and the graph lane's half-weight ceiling is now documented.
+- Retune the recall presets on that scale. Each style's strongest lane now carries full weight, so a threshold filters the same strength of match in every style, and recall defaults to 12 memories at a score threshold of 0.35. A threshold saved under the old scale (for example 0.25) now means something different, so re-check it after updating.
+- Remove the per-mode recall style defaults, which never applied because resolved global settings always carry a style.
+
+## 1.4.12 — 2026-10-07
+
+- Filter the Debug tab by whole operation on the client. A phase or "Errors only" filter no longer queries a subset of events, so a truncated extraction cannot read "Completed" and a partial import cannot flip to "Failed".
+- Replace only whole-token memory ids in debug text. An id that is only a prefix of another id (for example `character_mara_missing`) is no longer rewritten as `Mara Quill_missing`.
+- Note when the Debug tab shows only the newest 200 events and offer "Show up to 1,000".
+- Keep the "Latest recall workflow" on the newest retrieval-phase explanation.
+- Read "No completion recorded" instead of "Running" when a started run has no completion after an hour.
+- Resolve Debug tab memory titles for the ids on screen with `requestNotesByIds` instead of downloading the whole vault, and stop refetching the lookup on window focus.
+- Render Technical details JSON only while its section is open.
+- Clear a stale export or clear error when Refresh succeeds.
+
+## 1.4.11 — 2026-10-07
+
+- Stop losing selected memories while building the recall prompt. The budget counted only chunk text, so the framing and preamble pushed the assembled prompt past the limit and the serializer dropped its last chunks without reconsidering the smaller ones it had skipped; a high-scoring memory could be dropped while one that fit was left out. The fixed prompt overhead is now reserved in the recall budget, and a chunk that no longer fits is skipped so later chunks that still fit are kept.
+
+## 1.4.10 — 2026-10-07
+
+- Count only in-scope memories toward the recall caps. Keyword, tag and note buckets were truncated to 128 entries before the chat's scope, status and mode filter ran, so 128+ out-of-scope chunks sharing a popular keyword or `#tag` could crowd an in-scope memory out of the exact keyword hit, the direct hit, and the graph seeds those hits produce. The fuzzy keyword scan had the same flaw at 512 vault-wide keywords, which could leave a late-alphabet keyword unmatchable; both caps now count only what the current chat may recall.
+
+## 1.4.9 — 2026-10-07
+
+- Let lane weights and rank fusion decide recall order again. An unbounded BM25 raw score was added as a bonus on top of the fused score, which let a deep lexical hit outrank the best semantic hit of a higher-weighted lane; fusion now uses only the bounded per-lane score.
+- Give keyword matches an absolute relevance. A partial or fuzzy keyword match used to be normalized against the best hit of the same query, so a weak match could reach full keyword relevance; it is now measured against the exact-phrase ceiling. Fuzzy keyword matches also require whole-token or word-boundary containment, so a keyword like "king" no longer triggers on "looking".
+
+## 1.4.8 — 2026-10-07
+
+- Ignore an invalid saved recall setting instead of letting it break settings, recall, and search. A null recall weight or an unknown recall style saved by another build used to make every settings read throw until settings.json was edited by hand. Both now fall back to the defaults, and the invalid value is no longer written back.
+
 ## 1.4.7 — 2026-10-06
 
 - Make Sources re-extract use the availability modes currently selected instead of the ones saved earlier on the source, and save them on the source like a fresh import does. "Retry failed" still repeats the original attempt, and now says which modes it will use. Each import result shows the extraction mode it imports as, plus every availability mode, instead of only the first availability mode.

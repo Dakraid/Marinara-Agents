@@ -645,6 +645,7 @@ QM.dock = {
 
   openPanel() {
     this.isOpenFlag = true;
+    QM.retryFailedImages();
     this._ensureRoot();
     this.root.classList.remove("qm-dock-collapsed");
     this._syncToggles();
@@ -1189,7 +1190,7 @@ QM.dock = {
     if (this.portraitImage && this.portraitPlaceholder) {
       this.portraitImage.style.display = portraitUrl ? "block" : "none";
       this.portraitPlaceholder.style.display = portraitUrl ? "none" : "flex";
-      if (portraitUrl) this.portraitImage.src = portraitUrl;
+      if (portraitUrl) QM.setImageSrc(this.portraitImage, portraitUrl);
       // Scales with Thumbnail Size same as item/outfit thumbnails, relative
       // to the 160x200 / 120x120 box _buildPortrait() sized at "M" — live
       // here (not just at _buildPortrait()'s one-time construction) since a
@@ -1766,10 +1767,10 @@ QM.dock = {
   // re-404ing) it on every repaint. That's the right default, but it means
   // a pack image dropped straight into the gallery folder mid-session, or a
   // just-uploaded image that should now show everywhere it's cached as
-  // missing, doesn't appear until something clears that cache. Closing and
-  // reopening the dock would also work (_resetCachedNodes runs on the next
-  // open regardless), but isn't obvious as the fix — this does the same
-  // rebuild on demand, from a control that's actually about images.
+  // missing, doesn't appear until something clears that cache. Reopening the
+  // dock only retries images that failed for another reason (see
+  // QM.retryFailedImages); this clears everything, including the loaded-image
+  // cache QM.setImageSrc keeps when an Admin Secret is saved.
   _buildRefreshImagesRow() {
     const row = document.createElement("div");
     Object.assign(row.style, { display: "flex", alignItems: "center", gap: "10px" });
@@ -1785,6 +1786,7 @@ QM.dock = {
     });
     refreshButton.addEventListener("click", () => {
       QM._missingItemImageIds.clear();
+      QM.clearImageCache();
       this._resetCachedNodes();
       this._paint();
     });
@@ -2582,12 +2584,12 @@ QM.dock = {
         objectFit: "cover",
         display: "block",
       });
-      img.addEventListener("error", () => {
-        QM._missingItemImageIds.add(equippedItem.id);
+      img.addEventListener("error", (event) => {
+        if (!event.qmRetryable) QM._missingItemImageIds.add(equippedItem.id);
         img.remove();
         qmCenterFallbackIcon();
       });
-      img.src = QM.itemImageUrl(QM.state.chatId, QM_OWNER_ID, equippedItem.id);
+      QM.setImageSrc(img, QM.itemImageUrl(QM.state.chatId, QM_OWNER_ID, equippedItem.id));
       imageArea.appendChild(img);
     } else {
       qmCenterFallbackIcon();
@@ -2857,7 +2859,7 @@ QM.dock = {
     if (outfit.portraitFile) {
       const thumb = document.createElement("img");
       thumb.alt = `${outfit.name} portrait`;
-      thumb.src = QM.outfitPortraitUrl(QM.state.chatId, QM_OWNER_ID, outfit.id);
+      QM.setImageSrc(thumb, QM.outfitPortraitUrl(QM.state.chatId, QM_OWNER_ID, outfit.id));
       Object.assign(thumb.style, { width: "100%", height: "100%", objectFit: "cover", display: "block" });
       thumbButton.appendChild(thumb);
     } else {
@@ -3028,12 +3030,12 @@ QM.dock = {
         img.style.display = "block";
         removeButton.style.display = "block";
       });
-      img.addEventListener("error", () => {
-        QM._missingItemImageIds.add(item.id);
+      img.addEventListener("error", (event) => {
+        if (!event.qmRetryable) QM._missingItemImageIds.add(item.id);
         img.remove();
         applyMissingImageFallback();
       });
-      img.src = QM.itemImageUrl(QM.state.chatId, QM_OWNER_ID, item.id);
+      QM.setImageSrc(img, QM.itemImageUrl(QM.state.chatId, QM_OWNER_ID, item.id));
       thumbButton.appendChild(img);
     }
 

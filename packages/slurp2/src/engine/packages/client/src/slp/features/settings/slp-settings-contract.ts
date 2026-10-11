@@ -44,6 +44,7 @@ export type SlurpSettings = {
   storyImagesEnabled: boolean;
   storyLifetimeHours: number;
   teaserRate: "off" | "rare" | "regular" | "often";
+  pictureReuse: "off" | "rare" | "regular";
   projectRate: "off" | "rare" | "regular" | "often";
   arcPace: "slow" | "normal" | "fast";
   arcAffectsMood: boolean;
@@ -140,6 +141,8 @@ export type SlurpSettings = {
   creatorCollabs: { creatorIds: [string, string]; content: string }[];
   /** Creators answer while you are away. Off leaves the background reply loop asleep. */
   messagesAwayRepliesEnabled: boolean;
+  /** A Creator writes first once, then waits for a real reply before writing first again. */
+  messagesPauseFollowUpsUntilReply: boolean;
   messagesReplyBubbleLimit: number;
   messagesDefaultDmPolicy: "open" | "subscribers" | "paid" | "closed";
   messagesDefaultRequestFee: number;

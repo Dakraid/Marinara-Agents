@@ -10,7 +10,7 @@
   },
   "id": "slurp2",
   "name": "Slurp",
-  "version": "0.3.17",
+  "version": "0.3.21",
   "description": "A private social app for your characters. Turn characters and personas into Creators, post public or locked photos, and watch a simulated audience follow, subscribe, unlock, comment, and message them. By default, it is tuned for an adult experience. Install it, restart Marinara Engine when prompted, then open Home → Slurp.",
   "localizations": {
     "de": {
@@ -77,13 +77,13 @@
     },
     {
       "path": "server.mjs",
-      "sha256": "59b36810386b4d1735c788ac6d3f4f8d527cf6aa8bc3132b049d0a126674ec3d",
-      "bytes": 3522374
+      "sha256": "20bd1ed1fc41c8ba74627a07f9dd5c69d88538c144a865ea1499d00d0aa071eb",
+      "bytes": 3556764
     },
     {
       "path": "client.js",
-      "sha256": "884a037be81048d9988eade3a37b0bdbf6afcfdc37135f02fcd23d36bf990786",
-      "bytes": 4705976
+      "sha256": "bcfaa89736199f6815645ab6b09d555101fee1f85cf4de1d2238548a0f1281e6",
+      "bytes": 4835486
     },
     {
       "path": "slurp2-logo.png",
@@ -97,18 +97,18 @@
     },
     {
       "path": "src/engine/packages/client/src/slp/locales/de.json",
-      "sha256": "f20723fb9475074dc573d1c17a41e8803c6c8bc43e9612b737f218fcde0fb2bd",
-      "bytes": 208652
+      "sha256": "00164ac66741cb53a482b3376fb140af1fd7b3f6b4a66c6fb75290424999e948",
+      "bytes": 211875
     },
     {
       "path": "src/engine/packages/client/src/slp/locales/ko.json",
-      "sha256": "ee4457d861bf93bf02bc0758f060a17c02029c030706d92c7c39da24908feacb",
-      "bytes": 304555
+      "sha256": "8deb4f41b9e1ded02a181c4d772b8c47b66951a65e7e1d8cae3a43709de56cfb",
+      "bytes": 307894
     },
     {
       "path": "src/engine/packages/client/src/slp/locales/pl.json",
-      "sha256": "0d40fb6344411f1e87d13a90df00c6f59765076f15081457f165d5a7e455ecd0",
-      "bytes": 210508
+      "sha256": "c9c44e7c211af16c96f4c25494b31db28be8740733c9180b756c651f0f40deca",
+      "bytes": 213599
     }
   ],
   "permissions": [

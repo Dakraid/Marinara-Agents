@@ -11,7 +11,7 @@ import { searchLtmBm25 } from "./bm25.js";
 import { embedLongTermMemoryTexts, type MemoryRecallEmbeddingOptions } from "./embedding-adapter.js";
 import { expandLtmGraph } from "./graph.js";
 import { buildStopWordSet } from "./keyword-extract.js";
-import { searchLtmKeywordIndex } from "./keyword-index.js";
+import { LTM_KEYWORD_MAX_SCORE, searchLtmKeywordIndex } from "./keyword-index.js";
 import { getLtmMetadataMatches } from "./metadata-index.js";
 import { resolvePackageEmbeddingAdapter } from "./package-runtime.js";
 import { loadOrRebuildLongTermMemoryIndexes, type LtmRecallIndex } from "./rebuild.js";
@@ -40,6 +40,8 @@ export type RetrieveLongTermMemoryInput = MemoryRecallEmbeddingOptions & {
   keywordWeight?: number;
   explain?: boolean;
   rejectedLimit?: number;
+  /** Estimate chunk cost from the serialized prompt text, matching the prompt serializer. */
+  promptNormalizedEstimate?: boolean;
   /** Restrict ranking to these note types before budgeting, so bounded callers do not lose targets to unrelated chunks. */
   noteTypes?: readonly LtmNote["type"][];
   /** Reconciliation needs every matching chunk, even when two notes share identical text. */
@@ -133,13 +135,17 @@ export async function retrieveLongTermMemory(input: RetrieveLongTermMemoryInput)
       .map((chunk) => chunk.id),
   );
   const lanes: LtmRankLane[] = [];
-  const metadata = getLtmMetadataMatches(index.metadata, {
-    noteIds: Array.from(
-      query.matchAll(/\b(?:source|char|rel|scene|thread|world|faction|location|rule|tone)_[a-z0-9_]+\b/g),
-      (match) => match[0],
-    ),
-    tags: Array.from(query.matchAll(/#([a-z][a-z0-9_]+)/g), (match) => match[1]!),
-  }).filter((hit) => allowed.has(hit.chunkId));
+  const metadata = getLtmMetadataMatches(
+    index.metadata,
+    {
+      noteIds: Array.from(
+        query.matchAll(/\b(?:source|char|rel|scene|thread|world|faction|location|rule|tone)_[a-z0-9_]+\b/g),
+        (match) => match[0],
+      ),
+      tags: Array.from(query.matchAll(/#([a-z][a-z0-9_]+)/g), (match) => match[1]!),
+    },
+    { allowedChunks: allowed },
+  );
   if (metadata.length) {
     lanes.push({
       name: "direct",
@@ -156,7 +162,12 @@ export async function retrieveLongTermMemory(input: RetrieveLongTermMemoryInput)
     lanes.push({
       name: "bm25",
       weight: input.lexicalWeight ?? 1,
-      items: lexical.map((hit) => ({ chunkId: hit.chunkId, rawScore: hit.score, reason: "bm25" })),
+      items: lexical.map((hit) => ({
+        chunkId: hit.chunkId,
+        rawScore: hit.score,
+        normalizedScore: hit.normalizedScore,
+        reason: "bm25",
+      })),
     });
   }
   const keywords = searchLtmKeywordIndex(index.keywords, query, {
@@ -164,13 +175,12 @@ export async function retrieveLongTermMemory(input: RetrieveLongTermMemoryInput)
     stopWords: buildStopWordSet(triggerStopWords),
   });
   if ((input.keywordWeight ?? 1) > 0 && keywords.length) {
-    const max = keywords[0]?.score ?? 1;
     lanes.push({
       name: "keyword",
       weight: input.keywordWeight ?? 1,
       items: keywords.map((hit) => ({
         chunkId: hit.chunkId,
-        rawScore: hit.score / max,
+        rawScore: Math.min(1, hit.score / LTM_KEYWORD_MAX_SCORE),
         reason: hit.reasons.join(","),
       })),
     });
@@ -228,6 +238,7 @@ export async function retrieveLongTermMemory(input: RetrieveLongTermMemoryInput)
     explain: input.explain,
     rejectedLimit: input.rejectedLimit,
     dedupeExactText: input.dedupeExactText ?? true,
+    promptNormalizedEstimate: input.promptNormalizedEstimate,
   });
   // Bounded callers reconcile note ids, so "truncated" means a ranked note was dropped from the
   // budget entirely. Dropping extra chunks of a note that is already in the window hides nothing.

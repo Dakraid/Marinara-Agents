@@ -181,11 +181,21 @@ assert.match(workspace, /readyForReviewWithRejectedSuggestions/u);
 assert.match(workspace, /extractionDidNotFinish/u);
 assert.match(activity, /completionReasoningTokens/u);
 assert.match(activity, /data-ltm-activity-warnings/u);
+// #1275 repair: a failed/corrupt index cannot also report semantic search as available.
+assert.match(activity, /embeddingsAvailable && !indexUnusable/u);
+assert.equal(locale["ui.longTermMemory.activityview.result"], "Result");
+assert.equal(locale["ui.longTermMemory.activityview.notKept"], "Not kept");
+assert.equal(locale["ui.longTermMemory.activityview.notAdded"], "Not added");
+assert.equal(locale["ui.longTermMemory.activityview.threshold"], "Minimum relevance:");
 assert.match(settings, /reasoningEffort: resolved\.reasoningEffort \?\? "low"/u);
 assert.match(settings, /memorySettingsSavedIndexRebuilt/u);
 assert.match(settings, /memorySettingsSavedIndexRebuildFailed/u);
 assert.match(settings, /memorySettingsResetIndexRebuildFailed/u);
 assert.match(settings, /rebuild\?\.status === "deferred"/u);
+// #1275 repair: the Debug panel's save surface shows only save feedback started on the
+// Debug tab; unrelated action feedback (e.g. a backup export) stays in the shared surface.
+assert.match(settings, /messageState\.surface === "debug"/u);
+assert.match(settings, /surface: "shared" \| "debug" = "shared"/u);
 // #1193 repair: extraction edits made while the awaited global rebuild is in flight must
 // survive, mirroring the submitted-snapshot guard used for global settings.
 assert.match(
@@ -458,7 +468,7 @@ assert.equal(locale["ui.longTermMemory.memoryvault.memoryInfo"], "Memory info");
 assert.equal(locale["ui.longTermMemory.memoryvault.memoryOptions"], "Memory options");
 assert.equal(locale["ui.longTermMemory.memoryvault.renameDetails"], "Rename details");
 assert.equal(locale["ui.longTermMemory.memoryvault.previewRename"], "Preview rename");
-assert.equal(locale["ui.longTermMemory.memoryvault.viewAllActivity"], "View all activity");
+assert.equal(locale["ui.longTermMemory.memoryvault.openDebugLog"], "Open debug log");
 assert.equal(locale["ui.longTermMemory.memoryvault.groups"], "Chats");
 assert.equal(locale["ui.longTermMemory.memoryvault.unsavedNavigationTitle"], "Unsaved changes");
 assert.match(locale["ui.longTermMemory.memoryvault.unsavedNavigationDescription"], /before leaving this memory/u);
@@ -755,20 +765,13 @@ assert.match(lastInjectionSummary, /const attemptOverridesInjection = observedRe
 assert.match(lastInjectionSummary, /attemptOverridesInjection\s*\? observedRecallMessage/u);
 assert.match(lastInjectionSummary, /!attemptOverridesInjection && data\?\.memories\.length/u);
 assert.match(lastInjectionSummary, /attemptOverridesInjection \|\| !data\?\.memories\.length/u);
-// With a known attempt id the recall workflow must not fall back to another
-// attempt's explanation; a missing match means no recorded explanation.
-assert.match(activity, /if \(attemptId\) return correlated;/u);
-assert.doesNotMatch(activity, /correlated \?\? candidates\.sort/u);
-assert.match(activity, /data-ltm-recall-confirmation/u);
-assert.match(activity, /recallWorkflowInjectionConfirmed/u);
-assert.match(activity, /recallWorkflowInjectionNotConfirmed/u);
+// PR 2 (#1259): the separate latest-recall panel, its correlation, and its
+// injection-confirmation line were replaced by the selected recall operation's
+// details pane; those ActivityView keys and the `data-ltm-recall-confirmation`
+// contract no longer exist. LastInjectionSummary keeps its own outcome keys.
 assert.equal(
   locale["ui.longTermMemory.lastinjectionsummary.recallCompletedNotConfirmed"],
   "Recall completed but no saved memory was confirmed in the latest model context.",
-);
-assert.equal(
-  locale["ui.longTermMemory.activityview.recallWorkflowInjectionConfirmed"],
-  "This recall was confirmed in the latest model context.",
 );
 
 // #1211: the recall workflow explains effective parameters, the recall-time

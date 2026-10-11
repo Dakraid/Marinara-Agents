@@ -120,6 +120,8 @@ export const slurpSettingsSchema = z.object({
   storyLifetimeHours: z.number().int().min(1).max(168),
   /** How often an automatic post goes out free as a teaser. See `slurpTeaserPost`. */
   teaserRate: z.enum(SLURP_TEASER_RATE),
+  /** How often posts reuse an earlier picture. See `slurpReuseDelivery`. */
+  pictureReuse: z.enum(["off", "rare", "regular"]),
   /** Share of a Creator's automatic posts that continue a project rather than standing alone. */
   projectRate: z.enum(SLURP_PROJECT_RATE),
   /** Multiplies every arc chapter's day range. */
@@ -304,11 +306,7 @@ export const slurpSettingsSchema = z.object({
   previewWholePictures: z.boolean(),
   /** Every Slurp picture and video stays blurred until it is tapped (for using Slurp in public). */
   blurPictures: z.boolean(),
-  /**
-   * Posts a day across the whole Creator cast, and now actually that number: the reserve used to
-   * lay down twice as many slots as this asked for. The ceiling is well above the old 24 so a
-   * player who liked the accidental rate can ask for it outright.
-   */
+  /** Posts a day across the whole Creator cast, and now actually that number (the reserve used to lay down twice as many slots). The ceiling is well above the old 24 for a player who liked that accidental rate. */
   postsPerDay: z.number().int().min(1).max(96),
   /** The player set "Posts per day" by hand. Otherwise it grows with the active Creators (F). */
   postsPerDayCustom: z.boolean(),
@@ -347,6 +345,8 @@ export const slurpSettingsSchema = z.object({
    * Commissions and the later bubbles of a reply already sent still arrive — those are owed.
    */
   messagesAwayRepliesEnabled: z.boolean(),
+  /** One unsolicited text, then none until a real reply. See `slurpAllowsUnsolicitedText`. */
+  messagesPauseFollowUpsUntilReply: z.boolean(),
   /** Messages one reply is broken into. One keeps a reply in a single bubble. */
   messagesReplyBubbleLimit: z.number().int().min(1).max(4),
   /** Where a creator nobody has configured by hand starts. */
@@ -513,6 +513,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   storyImagesEnabled: true,
   storyLifetimeHours: 72,
   teaserRate: SLURP_DEFAULT_TEASER_RATE,
+  pictureReuse: "regular",
   projectRate: SLURP_DEFAULT_PROJECT_RATE,
   arcPace: SLURP_DEFAULT_ARC_PACE,
   discoveryTags: SLURP_DISCOVERY_TAG_SEED.map((entry) => ({ ...entry })),
@@ -625,6 +626,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
     freeResource: 1,
   },
   messagesAwayRepliesEnabled: true,
+  messagesPauseFollowUpsUntilReply: false,
   messagesReplyBubbleLimit: 3,
   messagesDefaultDmPolicy: SLURP_DEFAULT_CREATOR_MESSAGING.dmPolicy,
   messagesDefaultRequestFee: SLURP_DEFAULT_CREATOR_MESSAGING.requestFee,

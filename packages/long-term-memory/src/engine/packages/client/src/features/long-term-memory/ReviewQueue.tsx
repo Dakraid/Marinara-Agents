@@ -19,7 +19,7 @@ import {
   type LtmSavedSubjectIdentityChoice,
 } from "../../../../shared/src/features/agents/long-term-memory/schema.js";
 import { invalidateLtmQueries, queryKeys, request, requestNotesByIds } from "./api";
-import { humanizeLabel, labelKeys, localizedLabel } from "./display-labels";
+import { humanizeLabel, labelKeys, localizedLabel, rejectionReasonLabels } from "./display-labels";
 import { Button, IconButton, InfoPopover, inputClass, StatusSurface } from "./shared-controls";
 import type { LongTermMemoryDestinationProps } from "./types";
 import { selectLtmPluralForm, useLtmTranslation } from "./localization";
@@ -696,20 +696,6 @@ function savedIdentityChoiceLabel(
   return choice.subject.ref?.id ?? choice.subject.key;
 }
 
-const rejectionReasonLabels: Partial<Record<LtmExtractionDropReason, string>> = {
-  invalid_format: "ui.longTermMemory.reviewqueue.rejectionReasonInvalidFormat",
-  placeholder_output: "ui.longTermMemory.reviewqueue.rejectionReasonPlaceholderOutput",
-  quote_not_found_in_source: "ui.longTermMemory.reviewqueue.rejectionReasonQuoteNotFound",
-  missing_source_evidence: "ui.longTermMemory.reviewqueue.rejectionReasonMissingEvidence",
-  source_summary_payload: "ui.longTermMemory.reviewqueue.rejectionReasonSourceSummary",
-  unsupported_bucket: "ui.longTermMemory.reviewqueue.rejectionReasonUnsupportedBucket",
-  target_note_outside_scope: "ui.longTermMemory.reviewqueue.rejectionReasonOutsideScope",
-  ambiguous_subject: "ui.longTermMemory.reviewqueue.rejectionReasonAmbiguousSubject",
-  untrusted_subject: "ui.longTermMemory.reviewqueue.rejectionReasonUntrustedSubject",
-  invalid_subject_cardinality: "ui.longTermMemory.reviewqueue.rejectionReasonInvalidSubjectCardinality",
-  too_long_to_keep_safely: "ui.longTermMemory.reviewqueue.rejectionReasonTooLong",
-};
-
 const rejectionRecommendedLabels: Partial<Record<LtmExtractionDropReason, string>> = {
   invalid_format: "ui.longTermMemory.reviewqueue.recommendedFixInvalidFormat",
   placeholder_output: "ui.longTermMemory.reviewqueue.recommendedFixPlaceholderOutput",
@@ -1103,6 +1089,7 @@ const diagnosticCategoryKeys: Record<string, string> = {
   source_backed_npc_identity: "ui.longTermMemory.extractiondetails.normalizedCorrected",
   subject_identity_corrected: "ui.longTermMemory.extractiondetails.normalizedCorrected",
   subject_identity_normalized: "ui.longTermMemory.extractiondetails.normalizedCorrected",
+  borrowed_subject_identity: "ui.longTermMemory.extractiondetails.normalizedCorrected",
   low_lexical_evidence: "ui.longTermMemory.extractiondetails.lowEvidence",
   missing_evidence: "ui.longTermMemory.extractiondetails.lowEvidence",
   missing_source_note_evidence: "ui.longTermMemory.extractiondetails.lowEvidence",
