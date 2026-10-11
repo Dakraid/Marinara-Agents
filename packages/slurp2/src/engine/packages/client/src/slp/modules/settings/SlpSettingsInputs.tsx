@@ -227,6 +227,7 @@ export function ChipListInput({
   disabled = false,
   max,
   maxLength,
+  wrap = false,
 }: {
   label: string;
   values: readonly string[];
@@ -237,6 +238,8 @@ export function ChipListInput({
   max?: number;
   /** The longest entry the list keeps. */
   maxLength?: number;
+  /** Long entries wrap inside their chip instead of being cut to one line: for sentences, not names. */
+  wrap?: boolean;
 }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState("");
@@ -260,7 +263,9 @@ export function ChipListInput({
             key={value}
             className="inline-flex max-w-full items-center rounded-full bg-[var(--slurp-surface-raised,var(--accent))] ps-3 text-sm ring-1 ring-inset ring-[var(--slurp-outline,var(--border))]"
           >
-            <span className="min-w-0 truncate">{value}</span>
+            <span className={wrap ? "min-w-0 break-words py-1.5" : "min-w-0 truncate"} title={value}>
+              {value}
+            </span>
             <button
               type="button"
               disabled={disabled}
@@ -275,7 +280,9 @@ export function ChipListInput({
         <input
           id={inputId}
           value={draft}
-          disabled={disabled || full}
+          disabled={disabled}
+          // Read-only, not disabled, at the limit: focus stays, and Backspace still removes the last chip.
+          readOnly={full}
           maxLength={maxLength}
           placeholder={full ? undefined : placeholder}
           onChange={(event) => setDraft(event.target.value)}

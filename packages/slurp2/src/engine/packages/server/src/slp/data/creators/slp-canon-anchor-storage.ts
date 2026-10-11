@@ -121,9 +121,10 @@ export async function slurpCanonAnchorsFor(
   at: Date,
   read: () => Promise<SlurpCanonAnchors | null>,
 ): Promise<SlurpCanonAnchors | null> {
-  if (!text.trim()) return null;
-  const key = anchorKey(text);
   const cached = (await readAnchorCache(db))[accountId];
+  // No card text (no card, or it could not be read just now): what is stored, and no reading.
+  if (!text.trim()) return cached?.anchors ?? null;
+  const key = anchorKey(text);
   if (cached?.key === key) return cached.anchors;
   if (!inFlight.has(accountId) && (failedUntil.get(accountId) ?? 0) <= at.getTime()) {
     inFlight.add(accountId);

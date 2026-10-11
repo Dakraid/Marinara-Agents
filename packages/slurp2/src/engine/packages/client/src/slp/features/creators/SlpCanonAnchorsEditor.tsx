@@ -69,6 +69,7 @@ export function SlpCanonAnchorsEditor({ creatorId }: { creatorId: string }) {
         disabled={busy || !state.hasCard}
         max={LIST_MAX}
         maxLength={140}
+        wrap
         onChange={(values) => setDraft((current) => ({ ...current, essentials: values.join("\n") }))}
         placeholder={t("ui.slurp.canonAnchors.essentialsPlaceholder")}
       />
