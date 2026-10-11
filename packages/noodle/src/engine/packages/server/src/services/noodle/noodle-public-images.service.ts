@@ -107,12 +107,16 @@ export function characterNoodleImageContextFromRow(row: { data: unknown }) {
 }
 
 /** The image connection a character picked in Noodle's Edit profile, if it still exists. */
-async function characterImageConnection(db: DB, account: NoodleAccount): Promise<ImageConnection | null> {
-  if (account.kind !== "character") return null;
-  const character = await createCharactersStorage(db).getById(account.entityId);
+async function characterImageConnection(input: {
+  account: NoodleAccount;
+  characters: ReturnType<typeof createCharactersStorage>;
+  db: DB;
+}): Promise<ImageConnection | null> {
+  if (input.account.kind !== "character") return null;
+  const character = await input.characters.getById(input.account.entityId);
   const connectionId = parseRecord(parseRecord(character?.data).extensions).noodleImageConnectionId;
   if (typeof connectionId !== "string" || !connectionId) return null;
-  const connection = await createConnectionsStorage(db).getWithKey(connectionId);
+  const connection = await createConnectionsStorage(input.db).getWithKey(connectionId);
   return connection?.provider === "image_generation" ? connection : null;
 }
 
@@ -135,7 +139,7 @@ export async function generateNoodlePostImage(baseInput: {
   // ponytail: the override only replaces a resolved Noodle connection; with none, callers skip images.
   const input = {
     ...baseInput,
-    imageConnection: (await characterImageConnection(baseInput.db, baseInput.account)) ?? baseInput.imageConnection,
+    imageConnection: (await characterImageConnection(baseInput)) ?? baseInput.imageConnection,
   };
   const imageSettings = await loadImageGenerationUserSettings(input.db);
   const imageDefaults = resolveConnectionImageDefaults(input.imageConnection);
