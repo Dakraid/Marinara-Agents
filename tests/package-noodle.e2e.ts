@@ -224,7 +224,12 @@ test.describe("package-owned Noodle interface", () => {
   test("Latest Posts can be added, read, hidden, and opened on desktop and mobile", async ({ page }) => {
     const openWidgetManager = async () => {
       const mobileBookmarks = page.locator('[data-component="HomeBrowserHub.MobileBookmarksTrigger"]');
-      if (await mobileBookmarks.isVisible()) {
+      // The trigger renders after the Home tab mounts, so wait for it instead of checking once.
+      const onPhone = await mobileBookmarks.waitFor({ state: "visible", timeout: 5_000 }).then(
+        () => true,
+        () => false,
+      );
+      if (onPhone) {
         await mobileBookmarks.click();
         const menu = page.locator('[data-component="HomeBrowserHub.MobileBookmarksMenu"]');
         await expect(menu).toBeVisible();
@@ -258,6 +263,8 @@ test.describe("package-owned Noodle interface", () => {
     await expect(widget).toHaveCount(0);
     await openWidgetManager();
     const manager = page.getByRole("dialog", { name: "Home Widgets" });
+    // Packages with several widgets open from one group button; its rows appear after it.
+    await manager.getByRole("button", { name: /^Noodle\b/u }).click();
     await manager.getByRole("switch", { name: /Show Noodle.*Latest Posts/ }).click();
     await page.keyboard.press("Escape");
     await expect(widget).toBeVisible();
@@ -273,6 +280,16 @@ test.describe("package-owned Noodle interface", () => {
       .first()
       .click();
     await expect(page.locator(`[data-noodle-post-id="${post.id}"]`)).toBeVisible();
+    // The first Noodle visit shows its welcome card. Opening a post from a widget does not dismiss it.
+    const welcomeDialog = page.getByRole("dialog", { name: "Welcome to Noodle" });
+    if (
+      await welcomeDialog.waitFor({ state: "visible", timeout: 2_000 }).then(
+        () => true,
+        () => false,
+      )
+    ) {
+      await welcomeDialog.getByRole("button", { name: "Start reading" }).click();
+    }
 
     await page.getByRole("tab", { name: "Home" }).click();
     await widget
