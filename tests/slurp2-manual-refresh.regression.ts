@@ -9,7 +9,7 @@ const read = (path: string) => slurp2Source(join(root, path));
 
 const operation = read("server/src/services/slurp/slurp-post.operation.ts");
 const targeted = operation.slice(operation.indexOf("export async function refreshTargetedCreatorsNow"));
-assert.match(targeted, /\{ allowStory: false \}/u, "manual refresh must not produce Stories");
+assert.match(targeted, /\{ allowStory: false, playerAsked: true \}/u, "manual refresh must not produce Stories");
 assert.match(
   targeted,
   /while \(result\.status === "busy" && Date\.now\(\) - startedAt < MANUAL_REFRESH_BUSY_WAIT_MS\)/u,
