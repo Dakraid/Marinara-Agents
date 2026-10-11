@@ -43,5 +43,7 @@ for (const failure of failures) {
   console.log(failure.output.trimEnd().split("\n").slice(-TAIL_LINES).join("\n"));
 }
 
-console.log(`\nSlurp regressions: ${files.length - failures.length} passed, ${failures.length} failed of ${files.length}`);
+console.log(
+  `\nSlurp regressions: ${files.length - failures.length} passed, ${failures.length} failed of ${files.length}`,
+);
 process.exitCode = failures.length > 0 ? 1 : 0;
