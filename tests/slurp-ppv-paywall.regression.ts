@@ -34,6 +34,17 @@ assert.match(
 const maskForViewerMatch = routes.match(/const maskForViewer = <T[^>]*>\(message: T\): T =>\n([\s\S]*?: message;)/u);
 assert.ok(maskForViewerMatch, "the shared masking helper must exist");
 const maskForViewer = new Function("message", `return ${maskForViewerMatch![1]}`) as (message: unknown) => any;
+// The stored media path is server storage: no fan-facing message may carry it, locked or not.
+for (const kind of ["text", "ppv", "post_preview"]) {
+  const masked = maskForViewer({
+    kind,
+    content: "hello",
+    imageUrl: "/media/x.png",
+    unlockedAt: null,
+    metadata: { noodlerMediaPath: "/srv/private/secret.png", previewLocked: true, content: "hello", imageUrl: "/media/x.png" },
+  });
+  assert.doesNotMatch(JSON.stringify(masked), /secret\.png|noodlerMediaPath/u, `a ${kind} message leaks the media path`);
+}
 
 // Paginated responses apply the same policy to their page instead of reading the whole thread.
 // Execute those actual mapping expressions so accepting the paged route syntax cannot hide a leak.
@@ -66,7 +77,8 @@ for (const match of pagedMappings) {
   const visible = mapPage(page, "viewer", maskForViewer);
   assert.equal(visible[0]!.content, "");
   assert.equal(visible[0]!.imageUrl, null);
-  assert.deepEqual(visible.slice(1, 3), page.messages.slice(1, 3));
+  // Compare what goes over the wire: undefined keys (the dropped media path) do not survive JSON.
+  assert.deepEqual(JSON.parse(JSON.stringify(visible.slice(1, 3))), page.messages.slice(1, 3));
   assert.equal(visible[3]!.content, "");
   assert.equal(visible[3]!.imageUrl, null);
   assert.equal(visible[3]!.metadata.content, "");
@@ -88,20 +100,19 @@ function deepStrictEqualSafe(a: unknown, b: unknown): boolean {
 }
 
 // Every other response must use the full-thread helper or the empty no-thread fallback. Type
-// annotations, parameter declarations and comments also contain the literal "messages: " outside
-// any response object, so they are excluded explicitly rather than guessed at by shape.
+// annotations, parameter declarations and one comment also contain the literal "messages: " outside
+// any response object. They are excluded by their exact text, so a new response line is never hidden.
+const NOT_RESPONSES = new Set([
+  'messages: SlpMessagesStorageDependencies["messages"],',
+  "messages: SlurpMessagesStorage;",
+  "messages: Parameters<typeof createSlpMessagesContext>[2],",
+  "messages: a long chat forgot the last picture (R1-015).",
+]);
 const raw = [
   ...routes.matchAll(
     /messages: (?!await visibleMessages|thread \? await visibleMessages|page\.messages\.map\(|side === "viewer" \? page\.messages\.map\(|\[\])[^\n]*/gu,
   ),
-].filter(
-  (match) =>
-    !match[0].includes("a long chat forgot the last picture") &&
-    !/;\s*$/u.test(match[0]) &&
-    !match[0].includes("Parameters<") &&
-    !match[0].includes("StorageDependencies") &&
-    !match[0].includes("SlurpMessagesStorage"),
-);
+].filter((match) => !NOT_RESPONSES.has(match[0]));
 assert.equal(raw.length, 0, `a route returns messages without masking: ${raw.map((m) => m[0]).join(", ")}`);
 
 console.log("slurp ppv paywall regression passed");
