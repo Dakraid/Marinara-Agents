@@ -206,11 +206,7 @@ for (const [name, source] of [
   // copy of the post image, shared with PostImageCropEditor and the Moments viewer) is a media
   // surface, not a decorative panel glow. Only the latter is banned.
   const decorativeGlow = source.replace(/scale-110[^"]*blur-(?:2xl|3xl)/gu, "");
-  assert.doesNotMatch(
-    decorativeGlow,
-    /blur-(?:2xl|3xl)/u,
-    `${name} panels must not carry one-off decorative glows`,
-  );
+  assert.doesNotMatch(decorativeGlow, /blur-(?:2xl|3xl)/u, `${name} panels must not carry one-off decorative glows`);
 }
 
 // Creator studio was a second door into Settings.

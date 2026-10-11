@@ -172,10 +172,7 @@ assert.match(
   generation,
   /primary: \{ \.\.\.image, metadata: \{ \.\.\.image\.metadata, \.\.\.\(input\.story \? \{ noodlerPostType: "story" \} : \{\}\) \} \}/u,
 );
-assert.match(
-  generation,
-  /imageUrl: slpCreatorPostMediaUrl\(input\.postId\),\s*metadata: input\.primary\.metadata,/u,
-);
+assert.match(generation, /imageUrl: slpCreatorPostMediaUrl\(input\.postId\),\s*metadata: input\.primary\.metadata,/u);
 // The scheduled path returns at prepareOnly, before the committed-image branch, so it carries the
 // story intent in the prepared payload instead — otherwise every scheduled Story silently published
 // as an ordinary post. publishDueNoodlerPreparedPosts drops the flag again when no image attached,
@@ -333,10 +330,7 @@ for (const key of [
   assert.ok(settingsUi.includes(key), `${key} must be reachable in Settings`);
 }
 for (const settingKey of ["storyImageWidth", "storyImageHeight"]) {
-  assert.ok(
-    settingsUi.includes(`settingKey="${settingKey}"`),
-    `${settingKey} must be reachable via search/deep link`,
-  );
+  assert.ok(settingsUi.includes(`settingKey="${settingKey}"`), `${settingKey} must be reachable via search/deep link`);
 }
 const englishUi = JSON.parse(read(join(client, "localization/locales/en.json"))) as Record<string, string>;
 for (const key of [
@@ -455,10 +449,7 @@ assert.match(useSlurpSource, /export function useSlurpCreatorMessagingSettings\(
 assert.match(settingsUi, /function CreatorMessagingGroup\(/u);
 // The persona-backed-only gate is gone: every Creator's policy and prices are the player's to
 // set, world-run ones included (a dedicated settings tab calls CreatorMessagingGroup unconditionally).
-assert.match(
-  settingsUi,
-  /export function SlpCreatorMessagesSection\([\s\S]{0,900}?<CreatorMessagingGroup/u,
-);
+assert.match(settingsUi, /export function SlpCreatorMessagesSection\([\s\S]{0,900}?<CreatorMessagingGroup/u);
 for (const hook of ["useSetSlurpCreatorMessaging", "useSetSlurpCreatorPrice"]) {
   assert.ok(settingsUi.includes(hook), `${hook} must be reachable from Settings`);
 }

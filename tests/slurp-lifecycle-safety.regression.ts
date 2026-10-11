@@ -391,10 +391,7 @@ assert.match(routes, /app\.post\("\/slurp\/accounts\/:id\/artwork\/generate"/u);
 assert.match(home, /useUploadCreatorBanner/u);
 // The artwork-generation call site moved out of Home's view model into the creators feature and
 // onboarding; the hook itself (still exported from use-slurp.ts) is what every caller needs.
-assert.match(
-  read("packages/slurp2/src/engine/packages/client/src/hooks/use-slurp.ts"),
-  /useGenerateCreatorArtwork/u,
-);
+assert.match(read("packages/slurp2/src/engine/packages/client/src/hooks/use-slurp.ts"), /useGenerateCreatorArtwork/u);
 assert.match(profileSurface, /<Upload size=\{13\}/u);
 assert.match(profileSurface, /<Upload size=\{12\}/u);
 assert.match(profileSurface, /ui\.slurp\.artwork\.generateBanner/u);
@@ -539,10 +536,7 @@ assert.match(settings, /title=\{t\("ui\.slurp\.settings\.refresh\.title"\)\}/u);
 assert.match(settings, /open=\{refreshModalOpen\}[\s\S]*?panelStyle=\{getSlpAccentStyle\(SLP_PINK/u);
 // Pulse + E made every long action a client task (startSlpTask); the direct mutate() call became
 // a run: callback so the modal can close immediately while the refresh keeps going.
-assert.match(
-  settings,
-  /run: \(\) => refreshCreators\.mutateAsync\(\{ accountIds, access: refreshAccess \}\)/u,
-);
+assert.match(settings, /run: \(\) => refreshCreators\.mutateAsync\(\{ accountIds, access: refreshAccess \}\)/u);
 assert.match(mediaHook, /const mediaCache = new Map<string, CachedMedia>/u, "managed media requests must be shared");
 assert.match(mediaHook, /cache: "force-cache"/u, "managed media must use the HTTP cache");
 assert.match(

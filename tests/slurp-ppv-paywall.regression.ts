@@ -31,16 +31,16 @@ assert.match(
 // The masking rule itself is now a shared helper (maskForViewer) both the full-thread and the
 // paginated responses call, instead of each writing it out inline. Execute the real helper so
 // extracting it cannot hide a leak.
-const maskForViewerMatch = routes.match(
-  /const maskForViewer = <T[^>]*>\(message: T\): T =>\n([\s\S]*?: message;)/u,
-);
+const maskForViewerMatch = routes.match(/const maskForViewer = <T[^>]*>\(message: T\): T =>\n([\s\S]*?: message;)/u);
 assert.ok(maskForViewerMatch, "the shared masking helper must exist");
 const maskForViewer = new Function("message", `return ${maskForViewerMatch![1]}`) as (message: unknown) => any;
 
 // Paginated responses apply the same policy to their page instead of reading the whole thread.
 // Execute those actual mapping expressions so accepting the paged route syntax cannot hide a leak.
 const pagedMappings = [
-  ...routes.matchAll(/messages: ((?:side === "viewer" \? )?page\.messages\.map\(maskForViewer\)(?: : page\.messages)?),/gu),
+  ...routes.matchAll(
+    /messages: ((?:side === "viewer" \? )?page\.messages\.map\(maskForViewer\)(?: : page\.messages)?),/gu,
+  ),
 ];
 assert.equal(pagedMappings.length, 2, "both paginated message responses must be covered");
 const page = {

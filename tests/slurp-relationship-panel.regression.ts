@@ -151,10 +151,7 @@ assert.match(view, /function SlurpMemoriesPanel\(/u);
 // Both words are on screen with one selected, so the control cannot be read as naming the
 // mode it would switch to rather than the one already showing.
 // The hand-rolled toggle button pair became the shared SlpSegment radiogroup control.
-assert.match(
-  view,
-  /<SlpSegment\s+label="Detail level"\s+value=\{advanced \? "advanced" : "basic"\}/u,
-);
+assert.match(view, /<SlpSegment\s+label="Detail level"\s+value=\{advanced \? "advanced" : "basic"\}/u);
 // SlpSegment renders both option labels itself (role="radiogroup"), so there is no single
 // current-mode label or hand-rolled role="group" left to pin.
 
