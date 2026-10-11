@@ -88,6 +88,9 @@ jobs:
       - name: Test Slurp unanswered follow-up control
         run: npx tsx --tsconfig tests/tsconfig.regressions.json tests/slurp2-pause-follow-ups-until-reply.regression.ts
 
+      - name: Slurp regressions
+        run: npm run test:slurp:regressions
+
       - name: Validate package localization catalogs
         run: |
           node scripts/tests/ui-translation-retention.regression.mjs
