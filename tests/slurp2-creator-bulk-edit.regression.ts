@@ -57,7 +57,10 @@ assert.match(tagsPage, /<label className="relative flex/u);
 assert.match(settings, /<SlurpCreatorBulkEdit/u);
 assert.match(settings, /<SlurpDiscoveryProfileEditor/u);
 assert.match(settings, /ids: \[selectedCreator\.id\]/u);
-assert.match(read("client/src/slp/features/creators/slp-creators-hooks.ts"), /"\/slurp2\/slurp\/accounts\/bulk-update"/u);
+assert.match(
+  read("client/src/slp/features/creators/slp-creators-hooks.ts"),
+  /"\/slurp2\/slurp\/accounts\/bulk-update"/u,
+);
 
 // Every literal key the new UI uses exists in English (plural keys may only have _one/_other).
 for (const source of [tagsPage, bulkEdit, settings]) {

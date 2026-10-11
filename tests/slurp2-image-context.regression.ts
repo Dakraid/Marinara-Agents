@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { stripTypeScriptTypes } from "node:module";
 import { runInNewContext } from "node:vm";
 import { protectCreatorGeneratedIdentity as protect } from "../packages/slurp2/src/engine/packages/server/src/slp/base/identity/slp-identity-protection";
-import { composeSlurpPromptBlocks, slurpPromptContext } from "../packages/slurp2/src/engine/packages/server/src/slp/base/prompting/slp-prompt-blocks";
+import {
+  composeSlurpPromptBlocks,
+  slurpPromptContext,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/base/prompting/slp-prompt-blocks";
 import { SLURP_PERFORMED_INTIMACY } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/creators/slp-performance";
 import { slurpRotationHash } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-post-variation";
 import { SLP_CREATOR_REPLY_CONTENT_MAX_LENGTH } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-social.schema";
