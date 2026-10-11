@@ -24,7 +24,6 @@ import {
   SLURP_DEFAULT_ARC_AUTO_MODE,
   slurpAutoArcType,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-arc-library.js";
-import { slurp2BackstageSource } from "./slurp2-backstage-source";
 import { slurp2Source } from "./slurp2-source";
 
 const at = new Date("2026-09-09T10:00:00.000Z");
