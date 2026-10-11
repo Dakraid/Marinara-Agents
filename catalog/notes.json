@@ -452,6 +452,12 @@
     "quartermaster": {
       "versions": [
         {
+          "version": "0.1.25",
+          "date": "2026-10-11",
+          "notes": "- With an Admin Secret saved, each image now loads once and is reused, instead of reloading after\n  every change in the dock.\n- An image that failed to load for a reason other than having no image tries again when the dock is\n  reopened, and changing the saved Admin Secret retries every image.",
+          "highlight": false
+        },
+        {
           "version": "0.1.24",
           "date": "2026-10-10",
           "notes": "- Works from other devices and remote access: Quartermaster now sends the Admin Secret saved in\n  Settings → Advanced → Admin Access, fixing \"Invalid or missing X-Admin-Secret header\".\n- Item images, outfit portraits and slot icons also load from other devices.\n- A missing or mismatched Admin Secret now explains how to fix it.",
@@ -564,12 +570,6 @@
           "date": "2026-09-08",
           "notes": "- Added Generate Image: an AI-generated alternative to uploading, for both item images and\n  outfit portraits.\n- New Settings section to pick the image connection and edit the two prompt templates.\n- Fixed the portrait prompt leaking a raw appearance-macro token into the image request.\n- Export/import now carry the two prompt templates.",
           "highlight": true
-        },
-        {
-          "version": "0.1.5",
-          "date": "2026-09-08",
-          "notes": "- Fixed Build Wardrobe producing no debug-log output.\n- Replaced the dock's 5-second inventory poll with an event-driven refresh.",
-          "highlight": false
         }
       ]
     },
