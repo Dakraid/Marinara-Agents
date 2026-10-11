@@ -20,6 +20,13 @@ if (!existsSync(join(engineRoot, "packages/shared/src/types/noodle.ts"))) {
   );
   process.exit(1);
 }
+// Some files import the built shared package, so the Engine must have it built first.
+if (!existsSync(join(engineRoot, "packages/shared/dist/index.js"))) {
+  console.error(
+    `Missing ${join(engineRoot, "packages/shared/dist/index.js")}. Build the Engine shared package first: pnpm --filter @marinara-engine/shared build`,
+  );
+  process.exit(1);
+}
 
 const files = readdirSync(join(root, "tests"))
   .filter((name) => /^slurp(2)?-.*\.regression\.ts$/u.test(name))
@@ -39,7 +46,12 @@ function runFile(file) {
     const timer = setTimeout(() => {
       timedOut = true;
       child.kill();
+      setTimeout(() => child.kill("SIGKILL"), 10_000).unref();
     }, TIMEOUT_MS);
+    child.on("error", (error) => {
+      clearTimeout(timer);
+      resolve({ file, passed: false, output: `${output}\n${error.stack ?? error}\n` });
+    });
     child.stdout.on("data", (chunk) => (output += chunk));
     child.stderr.on("data", (chunk) => (output += chunk));
     child.on("close", (code) => {

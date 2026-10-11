@@ -146,6 +146,9 @@ jobs:
       - name: Install Engine dependencies
         run: pnpm --dir engine install --frozen-lockfile
 
+      - name: Build Engine shared package
+        run: pnpm --dir engine --filter @marinara-engine/shared build
+
       - name: Slurp regressions
         env:
           MARINARA_ENGINE_ROOT: ${{ github.workspace }}/engine
