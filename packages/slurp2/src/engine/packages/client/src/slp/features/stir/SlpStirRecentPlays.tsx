@@ -51,17 +51,20 @@ export function SlpStirRecentPlays({
       <ul className={SLP_CARD_STACK_CLASS}>
         {shown.map((play) => {
           const first = play.steps[0];
+          const collab = slpStirPlayCollab(play, collabs);
+          // A push names only the collab id: its pair comes from the collab record.
           const who = [
             ...new Set(
-              play.steps.flatMap((step) =>
-                ["accountId", "aId", "bId", "fromId", "toId", "withIds"]
-                  .flatMap((key) => [step.input[key]].flat())
-                  .flatMap((id) => (typeof id === "string" && names.has(id) ? [names.get(id)!] : [])),
-              ),
+              [
+                ...play.steps.flatMap((step) =>
+                  ["accountId", "aId", "bId", "fromId", "toId", "withIds"].flatMap((key) => [step.input[key]].flat()),
+                ),
+                collab?.hostId,
+                collab?.partnerId,
+              ].flatMap((id) => (typeof id === "string" && names.has(id) ? [names.get(id)!] : [])),
             ),
           ];
           const failed = play.steps.filter((step) => !step.ok).length;
-          const collab = slpStirPlayCollab(play, collabs);
           const target = onOpenTarget ? (collab?.target ?? slpStirPlayTarget(play)) : null;
           const title = first
             ? play.steps.length > 1
@@ -86,7 +89,11 @@ export function SlpStirRecentPlays({
           return (
             <li
               key={play.id}
-              className="flex items-center gap-2 rounded-2xl bg-[var(--slurp-surface-raised)] p-2 ps-3 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]"
+              className={cn(
+                "flex items-center gap-2 rounded-2xl bg-[var(--slurp-surface-raised)] p-2 ps-3 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]",
+                // With two buttons the status would not fit beside them on a phone: buttons go below.
+                collab?.lever && "flex-wrap",
+              )}
             >
               <button
                 type="button"
@@ -112,30 +119,34 @@ export function SlpStirRecentPlays({
                   </span>
                 )}
               </button>
-              {collab?.lever && (
-                <SlpButton
-                  variant="quiet"
-                  onClick={() => onOpen(collab.lever!)}
-                  aria-label={`${t("ui.slurp.ties.push")}: ${t("ui.slurp.stir.pair", {
-                    a: names.get(collab.hostId ?? "") ?? t("ui.slurp.ties.someone"),
-                    b: names.get(collab.partnerId ?? "") ?? t("ui.slurp.ties.someone"),
-                  })}`}
-                  className="min-h-11 shrink-0 px-3 text-xs"
-                >
-                  {t("ui.slurp.ties.push")}
-                </SlpButton>
-              )}
-              {undoable && !play.undone && (
-                <SlpButton
-                  variant="quiet"
-                  disabled={undo.pending}
-                  onClick={() => void undo.run(play.id)}
-                  aria-label={t("ui.slurp.stir.undoPlay", { title })}
-                  className="min-h-11 shrink-0 px-3 text-xs"
-                >
-                  <RotateCcw size={14} aria-hidden="true" />
-                  {t("ui.slurp.wallet.undo", { defaultValue: "Undo" })}
-                </SlpButton>
+              {(collab?.lever || (undoable && !play.undone)) && (
+                <span className={cn("flex shrink-0 gap-1", collab?.lever && "basis-full justify-end")}>
+                  {collab?.lever && (
+                    <SlpButton
+                      variant="quiet"
+                      onClick={() => onOpen(collab.lever!)}
+                      aria-label={`${t("ui.slurp.ties.push")}: ${t("ui.slurp.stir.pair", {
+                        a: names.get(collab.hostId ?? "") ?? t("ui.slurp.ties.someone"),
+                        b: names.get(collab.partnerId ?? "") ?? t("ui.slurp.ties.someone"),
+                      })}`}
+                      className="min-h-11 shrink-0 px-3 text-xs"
+                    >
+                      {t("ui.slurp.ties.push")}
+                    </SlpButton>
+                  )}
+                  {undoable && !play.undone && (
+                    <SlpButton
+                      variant="quiet"
+                      disabled={undo.pending}
+                      onClick={() => void undo.run(play.id)}
+                      aria-label={t("ui.slurp.stir.undoPlay", { title })}
+                      className="min-h-11 shrink-0 px-3 text-xs"
+                    >
+                      <RotateCcw size={14} aria-hidden="true" />
+                      {t("ui.slurp.wallet.undo", { defaultValue: "Undo" })}
+                    </SlpButton>
+                  )}
+                </span>
               )}
             </li>
           );
