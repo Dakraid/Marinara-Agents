@@ -31,6 +31,7 @@ import { generateSlpImageWithRetry } from "../../base/media/slp-image-retry.js";
 import { rewriteSlpImagePrompt } from "../../base/media/slp-image-prompt-rewrite.js";
 import { slpImageReferencesSupported } from "../../base/media/slp-image-references.js";
 import { resolveImageAppearance } from "./slp-appearance-service.js";
+import { resolveSlurpImageCompanions } from "./slp-image-companions.js";
 import { newSlurpImageRun, recordSlurpImageRun, slurpImageRunStyle, trackSlurpImageAttempt } from "./slp-image-run.js";
 import { type ConnectionAdmissionMode } from "../../../services/generation/connection-admission.js";
 import { characterAppearanceFromRow, characterSlpImageContextFromRow } from "./slp-public-images-service.js";
@@ -42,6 +43,7 @@ import {
   selectSlpImageProviderPrompt,
   slurpApplyImageLook,
   slurpApplyImageSubject,
+  slurpImageCompanionBlocks,
   slurpImageSubjectName,
   slurpSplitStyleLead,
   slurpImageIdentityContext,
@@ -99,9 +101,6 @@ function slurpImageDefaultsForStyle(
 }
 
 type ImageConnection = NonNullable<Awaited<ReturnType<ReturnType<typeof createConnectionsStorage>["getWithKey"]>>>;
-
-/** Another Creator the post is about (a partner, a collab), with the card behind their page. */
-type SlurpImageCompanion = { account: SlpAccount; source: SlpAccount | null };
 
 type CreatorPostImageInput = {
   account: SlpAccount;
@@ -185,18 +184,6 @@ type CreatorPostImageResult = {
   /** Exact positive prompt sent to the image provider. Also stored as `metadata.imageProviderPrompt`. */
   providerPrompt: string;
 };
-
-/** The Creators a post's beat names, as picture companions. The author and unknown ids drop out. */
-async function resolveSlurpImageCompanions(db: DB, ids: unknown, authorId: string): Promise<SlurpImageCompanion[]> {
-  const noodle = createSlurpStorage(db);
-  const companions: SlurpImageCompanion[] = [];
-  for (const id of new Set(Array.isArray(ids) ? ids : [])) {
-    if (typeof id !== "string" || id === authorId) continue;
-    const account = await noodle.getNoodlerAccountById(id);
-    if (account) companions.push({ account, source: await noodle.resolveAccountSource(account) });
-  }
-  return companions;
-}
 
 /**
  * NoodleR analog of generateSlpPostImage. The deliberate difference from public
@@ -404,6 +391,12 @@ async function generateCreatorPostImageRun(
       const row = character ?? persona;
       return {
         name: account.displayName,
+        // Their own "The image model knows this character" switch, for an open identity only.
+        known:
+          (account.settings.privacy.identityDisclosure ?? "open") === "open" &&
+          input.settings.creatorImageNames?.[account.id] !== false
+            ? (character ? characterNameFromRow(character) : persona?.name?.trim()) || ""
+            : "",
         // Descriptions off keeps every look out of the prompt, the companions' too; references stay.
         look: includeAppearance
           ? account.settings.stage?.appearance?.trim() || (appearance ? slurpImageLook(appearance) : "")
@@ -624,7 +617,12 @@ async function generateCreatorPostImageRun(
   const namedLook = skipInterpretation
     ? finalPromptLook
     : slurpApplyImageSubject(finalPromptLook, subjectName, promptFamily);
-  const finalPromptSubject = styleLead + namedLook;
+  // Everybody else the scene names gets their own block, between the Creator's and the scene.
+  const people = skipInterpretation
+    ? ""
+    : redactIdentity(slurpImageCompanionBlocks(finalPromptBody, companionCards, promptFamily, lookMode, usedRewrite));
+  const ownBlock = namedLook.slice(0, namedLook.length - finalPromptBody.length);
+  const finalPromptSubject = styleLead + ownBlock + people + finalPromptBody;
   const finalPrompt = [
     artStyle ? slurpStyledImagePrompt(finalPromptSubject, styleSource) : finalPromptSubject,
     input.compositionGuard,

@@ -1,5 +1,10 @@
 # Slurp release notes
 
+## 0.3.24 — 2026-10-11
+
+- Changed: in a picture with a second Creator (a partner, a collab), that person now gets their own look in the picture prompt, labelled with their name and placed after the posting Creator's look. Before, their look reached only "Enhance image prompts", so with it off the image model had nothing to draw them from.
+- Changed: the second Creator's "The image model knows this character" switch now applies to pictures on somebody else's page too: their card name goes along (as a tag for tag models) when their identity is open.
+
 ## 0.3.23 — 2026-10-11
 
 - Changed: with "The image model knows this character" on, the name now comes after your style profile's tags and in front of the character's look, instead of at the very start of the picture prompt. The inserted look follows the style tags too.
