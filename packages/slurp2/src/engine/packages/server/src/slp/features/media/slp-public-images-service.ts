@@ -181,12 +181,14 @@ export async function generateSlpPostImage(input: {
   // meant to decide whether the picture knows who the Creator is. With it off, a Creator with no
   // linked source, or a source card with an empty Appearance field, the image model received a
   // scene containing nobody and invented somebody — a different somebody every post.
-  const stageAppearance = await resolveImageAppearance({
-    db: input.db,
-    account: input.account,
-    connectionId: input.settings.generationConnectionId,
-    mode: input.settings.appearanceProfileMode,
-  });
+  const stageAppearance = input.settings.imageGenerationIncludeDescriptions
+    ? await resolveImageAppearance({
+        db: input.db,
+        account: input.account,
+        connectionId: input.settings.generationConnectionId,
+        mode: input.settings.appearanceProfileMode,
+      })
+    : "";
   let characterDescription = stageAppearance;
   // This Creator's look only: the reference block below may describe the other people in the post too.
   let ownLook = stageAppearance;
@@ -201,8 +203,8 @@ export async function generateSlpPostImage(input: {
         character,
         input.settings.characterImageInstructions[character.id],
       );
-      if (!stageAppearance) characterDescription = characterAppearanceFromRow(character);
-      ownLook = characterDescription;
+      if (input.settings.imageGenerationIncludeDescriptions && !stageAppearance)
+        characterDescription = ownLook = characterAppearanceFromRow(character);
       characterPersonality = imageContext.personality;
       characterImageInstructions = imageContext.imageInstructions;
 
