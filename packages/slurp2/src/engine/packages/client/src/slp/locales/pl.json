@@ -2547,7 +2547,7 @@
   "ui.slurp.stir.cant.mono": "Jedna z tych osób jest monogamiczna i już z kimś jest.",
   "ui.slurp.ties.moment.joined": "{{name}} dołącza",
   "ui.slurp.settings.creators.imageName": "Model obrazów zna tę postać",
-  "ui.slurp.settings.creators.imageNameDetail": "Wstawia imię z karty na początek każdego promptu obrazu (dla modeli tagowych jako tag), żeby model, który zna postać, narysował prawdziwą postać. Wyłącz dla własnej postaci albo gdy jej wygląd ma już jej tag w innej pisowni.",
+  "ui.slurp.settings.creators.imageNameDetail": "Wstawia imię z karty do każdego promptu obrazu, za tagami stylu i przed wyglądem (dla modeli tagowych jako tag), żeby model, który zna postać, narysował prawdziwą postać. Wyłącz dla własnej postaci albo gdy jej wygląd ma już jej tag w innej pisowni.",
   "ui.slurp.people.title": "Ludzie",
   "ui.slurp.people.detail": "Kto jest kim dla kogo, i dlaczego",
   "ui.slurp.people.intro": "Przyjaciele, partnerzy, byli, rywale i ludzie, z którymi pracują. Stuknij kogoś na mapie, aby otworzyć jego ludzi; lista poniżej mówi, skąd bierze się każde powiązanie.",

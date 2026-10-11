@@ -1,5 +1,9 @@
 # Slurp release notes
 
+## 0.3.23 — 2026-10-11
+
+- Changed: with "The image model knows this character" on, the name now comes after your style profile's tags and in front of the character's look, instead of at the very start of the picture prompt. The inserted look follows the style tags too.
+
 ## 0.3.22 — 2026-10-11
 
 - Fixed: reports are now included in backups and restores.

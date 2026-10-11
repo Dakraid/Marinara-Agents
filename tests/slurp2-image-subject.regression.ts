@@ -10,6 +10,7 @@ import { join } from "node:path";
 import {
   slurpApplyImageSubject,
   slurpImageSubjectName,
+  slurpSplitStyleLead,
   slurpImageIdentityContext,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/base/media/slp-image-prompt.ts";
 
@@ -43,6 +44,17 @@ assert.equal(
 );
 
 // The post writer may tag the name with its series (NovelAI style); only for the same character.
+// 0.3.23 (player report): the name follows the style profile's tags instead of leading them.
+const [lead, scene] = slurpSplitStyleLead("masterpiece, best quality, 1girl, red hair", "masterpiece, best quality");
+assert.equal(
+  lead + slurpApplyImageSubject(scene, "Asuka Langley Soryu", "tags"),
+  "masterpiece, best quality, asuka langley soryu, 1girl, red hair",
+);
+// No style, a prompt that does not start with it, or a style that ends inside a word: no lead.
+assert.deepEqual(slurpSplitStyleLead("1girl, red hair", ""), ["", "1girl, red hair"]);
+assert.deepEqual(slurpSplitStyleLead("1girl, anime", "anime"), ["", "1girl, anime"]);
+assert.deepEqual(slurpSplitStyleLead("anime screencap", "anime"), ["", "anime screencap"]);
+
 assert.equal(slurpImageSubjectName("fubuki (one punch man)", ["Fubuki", "Blizzard"]), "fubuki (one punch man)");
 assert.equal(
   slurpImageSubjectName("tatsumaki (one punch man)", ["Fubuki", "Blizzard"]),
@@ -65,6 +77,7 @@ assert.match(
   /input\.disclosureMode === "open" &&\s+input\.settings\.creatorImageNames\?\.\[input\.account\.id\] !== false/u,
 );
 assert.match(service, /slurpApplyImageSubject\(finalPromptLook, subjectName, promptFamily\)/u);
+assert.match(service, /const finalPromptSubject = styleLead \+ namedLook;/u);
 assert.match(service, /\[\s+identityContext,/u);
 assert.match(
   service,
