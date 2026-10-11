@@ -13,7 +13,13 @@ assert.match(home, /aria-label=\{localizeUi\("ui\.slurp\.moments\.title"\)\}/u);
 assert.doesNotMatch(home, /id="slurp-moments-heading"/u, "The rail must not spend a visible row on a heading");
 assert.match(home, /border-b border-\[var\(--noodle-divider\)\].*slurp-surface-raised/u);
 assert.match(home, /function SlurpMomentShelfTile/u);
-assert.match(home, /aspect-\[3\/4\]/u, "Story shelf items must preview the Story rather than only its avatar");
+// The tile moved into the shared SlpStoryTile component and traded aspect-[3/4] for an explicit
+// tall fixed size (SLP_STORY_TILE_SIZE_CLASS), shared with its skeleton and the Add Story tile.
+assert.match(
+  home,
+  /SLP_STORY_TILE_SIZE_CLASS = "h-\[8\.25rem\] w-\[5\.5rem\]/u,
+  "Story shelf items must preview the Story rather than only its avatar",
+);
 assert.match(home, /useSlurpMediaSrc\(moment\.post\.imageUrl, \{ width: 320 \}\)/u);
 assert.match(home, /storyLifetimeHours \?\? 72\) \* 60 \* 60 \* 1000/u, "Stories must remain available for 72 hours");
 assert.match(home, /Keep a Creator's active Stories together/u, "Story navigation must group a Creator's sequence");
