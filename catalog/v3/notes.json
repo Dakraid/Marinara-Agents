@@ -618,7 +618,7 @@
         {
           "version": "0.3.22",
           "date": "2026-10-11",
-          "notes": "- Fixed: reports are now included in backups and restores.\n- Fixed: \"Create posts now\" names the Creators it skipped or could not post for again, instead of only a count.\n- Internal: a Slurp Support desk tick checks its throttle against the tick's own time instead of the wall clock.",
+          "notes": "- Fixed: reports are now included in backups and restores.\n- Fixed: \"Create posts now\" names the Creators it skipped or could not post for again, instead of only a count.\n- Fixed: accepting a commission twice in a row (a double tap, or a retry) no longer draws the picture twice.\n- Fixed: a commission no longer sends its stored file path to the fan or Creator viewing it.\n- Fixed: the settings search box in a settings section now stays reachable on a phone instead of disappearing.\n- Internal: a Slurp Support desk tick checks its throttle against the tick's own time instead of the wall clock.",
           "highlight": false
         },
         {
