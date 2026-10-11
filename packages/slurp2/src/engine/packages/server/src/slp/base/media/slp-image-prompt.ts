@@ -323,6 +323,46 @@ export function slurpApplyImageLook(
 }
 
 /**
+ * One block per other person the scene names (0.3.24, player report): their look reached only the
+ * enhancer, so without it a collab picture had a second person with no look, and the image model
+ * gave them the Creator's features. Each gets a labelled look, to go in front of the scene; a tag model
+ * gets their known name as a tag, since it reads no labels. The look follows the Creator's rule
+ * (`slurpApplyImageLook`): none after a used rewrite in `writer` mode, the missing traits after any
+ * other used rewrite, all of it when no rewrite was used. `own` is the Creator's own block: a
+ * companion page of the same character is not tagged a second time.
+ */
+export function slurpImageCompanionBlocks(
+  prompt: string,
+  companions: readonly { name: string; known: string; look: string }[],
+  family: SlurpPromptFamily,
+  mode: SlurpImageAppearanceMode,
+  usedRewrite: boolean,
+  own = "",
+): string {
+  const scene = prompt.toLocaleLowerCase();
+  const has = (text: string, part: string) => text.toLocaleLowerCase().includes(part.toLocaleLowerCase());
+  const blocks = companions
+    .filter((companion) => companion.name.trim() && scene.includes(companion.name.toLocaleLowerCase()))
+    .map(({ name, known, look }) => {
+      // ponytail: after a rewrite, a trait the Creator shares ("blue eyes") counts as present for
+      // the companion too. Match traits per person if rewritten collab pictures still mix them.
+      const added = usedRewrite ? ensureSlpImageAppearance(prompt, look) : `${slurpImageLook(look)}\n${prompt}`;
+      const traits = usedRewrite && mode === "writer" ? "" : added.slice(0, added.length - prompt.length).trim();
+      if (family !== "natural") {
+        const tag =
+          known && slurpApplyImageSubject(own + prompt, known, family) !== own + prompt
+            ? known.toLocaleLowerCase()
+            : "";
+        return [tag, traits].filter(Boolean).join(", ");
+      }
+      const label = has(known, name) ? known : has(name, known) ? name : `${name} (${known})`;
+      return traits ? `${label}: ${traits}` : "";
+    })
+    .filter(Boolean);
+  return blocks.length ? `${blocks.join("\n")}\n` : "";
+}
+
+/**
  * The device, as words. The post writer kept putting "phone held at arm's length" into the scene
  * even when the camera was a tripod, and the image model drew a phone in 37 of 46 pictures on prod
  * (0.2.74). The camera choice already decides how the picture was taken; the picture itself must

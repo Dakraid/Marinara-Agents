@@ -33,6 +33,20 @@ One picture, from post to image model. Code: `server/src/slp/features/media/slp-
    the look is added (see "How Slurp adds the look") with the name in front of it, both behind the
    Engine style profile's tags, the Creator's art style is applied, then the negative prompt.
 
+## Two people in one picture
+
+A post about another Creator (a partner, a collab) can put them in the picture. The enhancer gets
+their looks as context. In final assembly (0.3.24), everybody else the scene names also gets a block
+of their own between the Creator's block and the scene, so the order is: style, the Creator's name
+and look, `Name: look` for each other person, the scene. Without it a collab picture with the
+enhancer off had no look for the second person, and the image model gave them the Creator's
+features. Their own "The image model knows this character" switch and open identity decide whether
+their card name goes along: beside the page name for a natural-language model, as a tag for a tag
+model. The look follows the Creator's rule: nothing after a used rewrite in "The enhancer writes it
+in" mode, the missing traits after any other used rewrite, all of it otherwise. A prompt a human
+approved stays as written. Text order lowers feature mixing; it cannot rule it out on a model
+without regional prompting.
+
 ## "How Slurp adds the look"
 
 This choice only matters with the enhancer on, because only the enhancer can word the look itself:
