@@ -31,7 +31,9 @@ assert.match(
   slurp2Source("packages/slurp2/src/engine/packages/client/src/slp/features/messages/SlpMessages.tsx"),
   /<Avatar account=\{\{ displayName: thread\.creatorDisplayName[\s\S]*?\{thread\.creatorDisplayName\}/u,
 );
-assert.match(inbox, /absolute -bottom-1 -end-1[\s\S]*?<MessageCircle/u, "every hub avatar needs a message badge");
+// The per-avatar message-type badge was dropped from ThreadRow when it was extracted into the
+// shared messages feature for the "calmer inbox" (1376912d7): Messages and Activity are now two
+// separate sections, so a thread's avatar no longer needs a badge to say it is a message.
 assert.match(messages, /active:scale-\[0\.96\]/u);
 assert.match(home, /eventAppearance[\s\S]*?MessageCircle[\s\S]*?Coins[\s\S]*?Lock[\s\S]*?Crown/u);
 assert.match(inbox, /event\.kind !== "message"/u, "message events must be removed from Activity");
@@ -87,8 +89,13 @@ assert.match(home, /const refillReady = wallet\?\.refillAvailable === true;/u);
 assert.match(english, /"ui\.slurp\.wallet\.entry\.stipend": "Daily refill"/u);
 assert.match(home, /creatorByHandle\.get\(normalized\)/u, "known Creator handles must render as names");
 assert.match(home, /kind === "unlock" \|\| kind === "ppv"[\s\S]*?return null/u, "opaque post IDs must not render");
-assert.match(home, /aria-controls="slurp-wallet-history-panel"/u);
-assert.match(home, /aria-labelledby=\{`slurp-wallet-history-\$\{ledgerMode\}-tab`\}/u);
+// The one-off tabs markup (aria-controls/aria-labelledby pointing at a tab/panel pair) was
+// replaced by the shared, app-wide SlpSegment control, an accessible role="radiogroup" toggle.
+assert.match(
+  home,
+  /<SlpSegment\s+label=\{localizeUi\("ui\.slurp\.wallet\.history"/u,
+  "wallet history uses the shared accessible segmented control",
+);
 assert.match(hooks, /invalidateQueries\(\{ queryKey: \[\.\.\.slpKeys\.noodlerRoot\(\), "wallet"\] \}\)/u);
 assert.doesNotMatch(home, /recipientPersonaId|withdrawalRecipient/u);
 
