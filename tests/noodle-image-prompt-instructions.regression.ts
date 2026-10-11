@@ -13,7 +13,7 @@ import {
   removeCopiedPromptGuidance,
 } from "../packages/noodle/src/engine/packages/server/src/services/noodle/noodle-image-prompt.js";
 
-// Pasta-Devs/Marinara-Agents#1278 (reported in Pasta-Devs/Marinara-Engine#7318): text written for the
+// Dakraid/Marinara-Agents#1278 (reported in Pasta-Devs/Marinara-Engine#7318): text written for the
 // model that writes image prompts must not reach the image model word for word. That covers the
 // poster's Personality and image habits, the image connection's Image Prompting Instructions, a
 // style profile's Style text once the rewrite model gets it, and the built-in Auto instruction.
@@ -66,7 +66,7 @@ assert.match(danbooru.literal.prompt, danbooruStyle, "without a prompt writer a 
 
 // Style text a user writes into a copy of Auto is theirs: it still applies, and the rewrite model gets it
 // as guidance like any other Style text, as in the Engine since Pasta-Devs/Marinara-Engine#7357
-// (Pasta-Devs/Marinara-Agents#1282). Before, it sat in the prompt that model edits.
+// (Dakraid/Marinara-Agents#1282). Before, it sat in the prompt that model edits.
 const autoCopyProfiles = styleProfiles("auto-copy");
 const autoProfile = autoCopyProfiles.profiles.find((profile) => profile.id === "auto")!;
 autoCopyProfiles.profiles = [
@@ -320,7 +320,7 @@ async function main() {
   assert.match(rewriteInput!.styleGuidance ?? "", danbooruStyle);
   assert.match(rewriteInput!.characterContext ?? "", /Personality:\nprecise, arrogant/u);
   assert.match(rewriteInput!.characterContext ?? "", /Character image preferences:\nstark lab photography/u);
-  // Include descriptions (Pasta-Devs/Marinara-Agents#1282): the appearance notes reach the rewrite model
+  // Include descriptions (Dakraid/Marinara-Agents#1282): the appearance notes reach the rewrite model
   // as context, not inside the prompt it edits, where they came back as plain text.
   assert.match(rewriteInput!.characterContext ?? "", /Appearance:\nDottore's Appearance: blue hair/u);
   assert.doesNotMatch(rewriteInput!.prompt, /Dottore's Appearance/u, rewriteInput!.prompt);

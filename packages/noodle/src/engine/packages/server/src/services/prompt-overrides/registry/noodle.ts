@@ -72,7 +72,7 @@ export const NOODLE_IMAGE_POST: PromptOverrideKeyDef<NoodleImagePostCtx> = {
     },
   ],
   // Picture content only. The poster's personality and image habits guide the model that rewrites
-  // this prompt; pasted here they reached the image model as stray words (Pasta-Devs/Marinara-Agents#1278).
+  // this prompt; pasted here they reached the image model as stray words (Dakraid/Marinara-Agents#1278).
   defaultBuilder: (ctx) =>
     [ctx.draftPrompt.trim() || `A social-media-ready image posted by ${ctx.authorName}.`, ctx.characterDescription]
       .map((part) => part.trim())

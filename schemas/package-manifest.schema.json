@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/Pasta-Devs/Marinara-Agents/schemas/package-manifest.schema.json",
+  "$id": "https://github.com/Dakraid/Marinara-Agents/schemas/package-manifest.schema.json",
   "title": "Marinara capability package manifest",
   "type": "object",
   "additionalProperties": false,

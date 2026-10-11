@@ -326,7 +326,7 @@ function catalogFixture(version: string) {
           version === "1.3.5" ||
           version === "1.3.6"
             ? catalogWorldMapsGuideUrl
-            : "https://github.com/Pasta-Devs/Marinara-Agents#hierarchical-maps",
+            : "https://github.com/Dakraid/Marinara-Agents#hierarchical-maps",
       },
     ],
   };

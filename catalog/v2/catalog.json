@@ -65,13 +65,13 @@
         "restartRequired": true
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/eightball.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/eightball.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/eightball-1.0.5.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/eightball-1.0.5.zip",
         "sha256": "7f1eec933118252da717a2ae6ebf88a4c8f2dcaaa5420c8f90c3a6f254158bd9",
         "bytes": 863931
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#eightball"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#eightball"
     },
     {
       "manifest": {
@@ -107,9 +107,9 @@
         "restartRequired": false
       },
       "category": "tracker",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/background.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/background.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/background-1.0.3.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/background-1.0.3.zip",
         "sha256": "c81a75a054570afb6fa6abf3da0b1c9570737afafbecb1172e4f0cb2b23f9fe4",
         "bytes": 1433
       },
@@ -161,9 +161,9 @@
         "restartRequired": false
       },
       "category": "tracker",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/beholder.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/beholder.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/beholder-1.3.12.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/beholder-1.3.12.zip",
         "sha256": "acf9ed156488a2f79db96c9b478604b1193de20ff611bbc2d63246ddd3f7c672",
         "bytes": 460953
       },
@@ -225,13 +225,13 @@
         "restartRequired": true
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/conversation-calls.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/conversation-calls.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/conversation-calls-1.1.1.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/conversation-calls-1.1.1.zip",
         "sha256": "fa0eceb8e3d70ea7b22429ea6a24a5236d3fc1415c139a683599024090d0f1e2",
         "bytes": 3349913
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#conversation-calls"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#conversation-calls"
     },
     {
       "manifest": {
@@ -301,13 +301,13 @@
         "restartRequired": true
       },
       "category": "writer",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/card-editor.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/card-editor.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/card-editor-1.7.1.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/card-editor-1.7.1.zip",
         "sha256": "607526a2e63f5e873a6664e478c6a2a6c75858d3e73b3d6ceb07fa78332ef9e8",
         "bytes": 416479
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#card-editor"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#card-editor"
     },
     {
       "manifest": {
@@ -343,9 +343,9 @@
         "restartRequired": false
       },
       "category": "writer",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/card-evolution-auditor.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/card-evolution-auditor.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/card-evolution-auditor-1.0.3.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/card-evolution-auditor-1.0.3.zip",
         "sha256": "a650a487d8f496267b09e5175309b27825b2f418208adffa2f94cfa597c28149",
         "bytes": 1540
       },
@@ -385,9 +385,9 @@
         "restartRequired": false
       },
       "category": "tracker",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/character-tracker.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/character-tracker.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/character-tracker-1.1.1.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/character-tracker-1.1.1.zip",
         "sha256": "828442219565f73063c1addc1af2731d3228270737bd782e7c49b24185775268",
         "bytes": 2193
       },
@@ -452,13 +452,13 @@
         "restartRequired": true
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/chess.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/chess.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/chess-1.0.5.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/chess-1.0.5.zip",
         "sha256": "3261e35c3d9d0acab853d7f2a19e51ae9cc88587e8379f5a1e3d91ee23e70190",
         "bytes": 875731
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#chess"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#chess"
     },
     {
       "manifest": {
@@ -494,9 +494,9 @@
         "restartRequired": false
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/combat.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/combat.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/combat-1.0.3.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/combat-1.0.3.zip",
         "sha256": "9da6690edaa65f3f54e3a16489ef9780085c630008482e33592c7b6c748f2e82",
         "bytes": 1603
       },
@@ -536,9 +536,9 @@
         "restartRequired": false
       },
       "category": "writer",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/continuity.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/continuity.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/continuity-1.0.3.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/continuity-1.0.3.zip",
         "sha256": "6497e660349e9a9a5b18f1d1c0666d0284f71bdfe8ae2e8a34582b7241b6cdae",
         "bytes": 1555
       },
@@ -578,9 +578,9 @@
         "restartRequired": false
       },
       "category": "tracker",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/custom-tracker.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/custom-tracker.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/custom-tracker-1.1.1.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/custom-tracker-1.1.1.zip",
         "sha256": "9da6be906c6c7fc331e1d307f7203388ab6227c4b05138b71a56a747050740e9",
         "bytes": 1728
       },
@@ -620,9 +620,9 @@
         "restartRequired": false
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/cyoa.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/cyoa.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/cyoa-1.0.4.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/cyoa-1.0.4.zip",
         "sha256": "36b11d7ecfff9cb9c2266352381e24a909c6b0163cb5ec3aeffa3784a39a2c86",
         "bytes": 1446
       },
@@ -662,9 +662,9 @@
         "restartRequired": false
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/echo-chamber.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/echo-chamber.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/echo-chamber-1.0.2.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/echo-chamber-1.0.2.zip",
         "sha256": "e78f4d13e6da36deae79dd6d0f6f4396e1bad8c75935b4cb41ffee4189a93520",
         "bytes": 2429
       },
@@ -704,9 +704,9 @@
         "restartRequired": false
       },
       "category": "tracker",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/expression.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/expression.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/expression-1.0.5.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/expression-1.0.5.zip",
         "sha256": "7bad09b42129dad0899b305fe6023ba99e8254d30b4d69cb4a188c52aafaa6ed",
         "bytes": 1572
       },
@@ -2245,13 +2245,13 @@
         ]
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/gacha-forge.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/gacha-forge.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/gacha-forge-1.8.12.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/gacha-forge-1.8.12.zip",
         "sha256": "83acd099d6aeedc20de1ca7e08c4be36016232f851fa6f41c74642de2baa07bf",
         "bytes": 7841874
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/gacha-forge/README.md"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/gacha-forge/README.md"
     },
     {
       "manifest": {
@@ -2287,9 +2287,9 @@
         "restartRequired": false
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/haptic.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/haptic.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/haptic-1.0.4.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/haptic-1.0.4.zip",
         "sha256": "8f00a3bb33d478850bbfb7be64ae485b344030cc9520c2772e2c8d18b66cf126",
         "bytes": 1946
       },
@@ -2329,9 +2329,9 @@
         "restartRequired": false
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/illustrator.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/illustrator.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/illustrator-1.0.4.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/illustrator-1.0.4.zip",
         "sha256": "d9d11c5edc32fb31206b2b43514aaa2c888697f205f1a4a33d19a2facbf3d529",
         "bytes": 3173
       },
@@ -2371,9 +2371,9 @@
         "restartRequired": false
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/html.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/html.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/html-1.0.3.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/html-1.0.3.zip",
         "sha256": "3d4ba384cb25e051525d31f352c32f4bd4fa37d299f2b18c3091b78e5f29fbce",
         "bytes": 1569
       },
@@ -2413,9 +2413,9 @@
         "restartRequired": false
       },
       "category": "tracker",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/inventory-tracker.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/inventory-tracker.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/inventory-tracker-1.2.1.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/inventory-tracker-1.2.1.zip",
         "sha256": "fc9fe24ed1c6e7e23d3bb75de19b6bc206d626498d1ac99595bae539521c7afc",
         "bytes": 1977
       },
@@ -2455,9 +2455,9 @@
         "restartRequired": false
       },
       "category": "writer",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/knowledge-retrieval.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/knowledge-retrieval.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/knowledge-retrieval-1.0.4.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/knowledge-retrieval-1.0.4.zip",
         "sha256": "e0121d6ed27128ca999504cb0ed31e4e2b7557e2dcff7b9446eaeb73735d9e50",
         "bytes": 1368
       },
@@ -2497,9 +2497,9 @@
         "restartRequired": false
       },
       "category": "writer",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/knowledge-router.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/knowledge-router.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/knowledge-router-1.0.4.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/knowledge-router-1.0.4.zip",
         "sha256": "49b41722c402c91dbfe776f3e87ec8022de0a4553ea2b421d7191dde72a08921",
         "bytes": 1446
       },
@@ -2570,13 +2570,13 @@
         "restartRequired": true
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/long-term-memory.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/long-term-memory.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/long-term-memory-1.4.25.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/long-term-memory-1.4.25.zip",
         "sha256": "2065137411397421ce6e968926b50c614a05cd602f69dcadcda5f2a70a93735b",
         "bytes": 1472256
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#long-term-memory"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#long-term-memory"
     },
     {
       "manifest": {
@@ -2612,9 +2612,9 @@
         "restartRequired": false
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/lorebook-editor.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/lorebook-editor.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/lorebook-editor-1.0.1.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/lorebook-editor-1.0.1.zip",
         "sha256": "149149fd272d849d9b68a5e90a198fc191b04288bd24a3e982943b7897adb23b",
         "bytes": 2675
       },
@@ -2654,9 +2654,9 @@
         "restartRequired": false
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/lorebook-keeper.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/lorebook-keeper.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/lorebook-keeper-1.0.7.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/lorebook-keeper-1.0.7.zip",
         "sha256": "1ec87c3b544b56aa3cbd504e183614883993d7f97b8352af7f6a7b91bf8c7c33",
         "bytes": 2391
       },
@@ -2724,13 +2724,13 @@
         "restartRequired": true
       },
       "category": "tracker",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/memory-nag.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/memory-nag.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/memory-nag-1.1.3.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/memory-nag-1.1.3.zip",
         "sha256": "6ff3c43144b6ca6802912812ab8547f35d12b2e0a9542b10808f32d5aca8fb7b",
         "bytes": 430713
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#memory-nag"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#memory-nag"
     },
     {
       "manifest": {
@@ -2766,9 +2766,9 @@
         "restartRequired": false
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/spotify.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/spotify.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/spotify-1.0.3.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/spotify-1.0.3.zip",
         "sha256": "be8dec8daeaabc8f533be670632ddd6c677d3ff7447aaf94f42ddf7e697efaaa",
         "bytes": 2611
       },
@@ -2808,9 +2808,9 @@
         "restartRequired": false
       },
       "category": "writer",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/director.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/director.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/director-1.0.3.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/director-1.0.3.zip",
         "sha256": "3e364ccdad2360f5663bc659c21647372b39463eeae99b81203c82174ccab838",
         "bytes": 1415
       },
@@ -2937,13 +2937,13 @@
         "restartRequired": true
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/noodle.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/noodle.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/noodle-1.5.5.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/noodle-1.5.5.zip",
         "sha256": "a093ae8ff901ac0a71a4afb333198781704cfc67169ee3ddc90b63563f3ae1e8",
         "bytes": 4996712
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/noodle/README.md"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/noodle/README.md"
     },
     {
       "manifest": {
@@ -2979,9 +2979,9 @@
         "restartRequired": false
       },
       "category": "tracker",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/persona-stats.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/persona-stats.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/persona-stats-1.0.3.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/persona-stats-1.0.3.zip",
         "sha256": "cfa8cdc7e69103c1c027daf9938a980cec6dc60e66c5fa1a9dcb55f1472fa07d",
         "bytes": 1603
       },
@@ -3049,13 +3049,13 @@
         "restartRequired": true
       },
       "category": "tracker",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/pokedex.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/pokedex.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/pokedex-0.1.0.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/pokedex-0.1.0.zip",
         "sha256": "573a25237a88f9e05f57685123b48dbac9deb2c7ac77b06fb502984df398212e",
         "bytes": 318306
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#pokedex"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#pokedex"
     },
     {
       "manifest": {
@@ -3118,13 +3118,13 @@
         "restartRequired": true
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/poker.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/poker.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/poker-1.0.5.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/poker-1.0.5.zip",
         "sha256": "795d2a1a44194d471663606dc5b383c6b428a2d8d8ffcd16ecec0024efe7478b",
         "bytes": 853990
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#poker"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#poker"
     },
     {
       "manifest": {
@@ -3160,9 +3160,9 @@
         "restartRequired": false
       },
       "category": "writer",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/prose-guardian.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/prose-guardian.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/prose-guardian-1.0.3.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/prose-guardian-1.0.3.zip",
         "sha256": "3cc07250d28a1d902c1f09a00f7007e987f5e5c2bdcbaad3ead0f6ab55d867d9",
         "bytes": 1517
       },
@@ -3306,10 +3306,10 @@
         "restartRequired": true
       },
       "category": "tracker",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/quartermaster.png",
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/quartermaster/README.md",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/quartermaster.png",
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/quartermaster/README.md",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/quartermaster-0.1.23.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/quartermaster-0.1.23.zip",
         "sha256": "b69cc02ec41e303b7c236645ed9fefcdfeab3091bcafbdf6386ec80b3570f0c6",
         "bytes": 451050
       }
@@ -3348,9 +3348,9 @@
         "restartRequired": false
       },
       "category": "tracker",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/quest.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/quest.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/quest-1.0.5.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/quest-1.0.5.zip",
         "sha256": "d14d89a105a0f235c7b813366acccbd7049eb3b1ffd5b6815b691ec97225fa8e",
         "bytes": 3000
       },
@@ -3467,13 +3467,13 @@
         "restartRequired": true
       },
       "category": "tracker",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/relationship-tracker.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/relationship-tracker.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/relationship-tracker-0.6.2.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/relationship-tracker-0.6.2.zip",
         "sha256": "40dbf026b4f88fa72a2def0ffa18742c113fb668902c310199b8f83bc4e90bf8",
         "bytes": 198763
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/relationship-tracker/README.md"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/relationship-tracker/README.md"
     },
     {
       "manifest": {
@@ -3536,13 +3536,13 @@
         "restartRequired": true
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/rock-paper-scissors.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/rock-paper-scissors.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/rock-paper-scissors-1.0.5.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/rock-paper-scissors-1.0.5.zip",
         "sha256": "bb7685ecc866ea067d67b18cbd2a4c675960b461d154f3fee5870788581cbaf7",
         "bytes": 833280
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#rock-paper-scissors"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#rock-paper-scissors"
     },
     {
       "manifest": {
@@ -3671,13 +3671,13 @@
         "restartRequired": true
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/slurp2.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/slurp2.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/slurp2-0.3.21.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/slurp2-0.3.21.zip",
         "sha256": "90f48f71e56a155d7f51a37bcd4f27c64565edb24afcb356ef84df6b2afe58a1",
         "bytes": 9283829
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/slurp2/README.md"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/slurp2/README.md"
     },
     {
       "manifest": {
@@ -3713,9 +3713,9 @@
         "restartRequired": false
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/storyboard.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/storyboard.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/storyboard-1.1.6.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/storyboard-1.1.6.zip",
         "sha256": "126c32600cb3d98101f01e2d74a358f47250bb11b1403f5be79cadc07247f6f6",
         "bytes": 17718
       },
@@ -3783,13 +3783,13 @@
         "restartRequired": true
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/tic-tac-toe.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/tic-tac-toe.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/tic-tac-toe-1.0.5.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/tic-tac-toe-1.0.5.zip",
         "sha256": "ad33352f6bdae9d1085d299b0a69cb23f6285746058ef5b5ddbf20349b5a56da",
         "bytes": 828798
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#tic-tac-toe"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#tic-tac-toe"
     },
     {
       "manifest": {
@@ -3850,13 +3850,13 @@
         "restartRequired": true
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/uno.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/uno.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/uno-1.0.5.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/uno-1.0.5.zip",
         "sha256": "339e9ab6a353ffcf103656aef59d6fb4566279c1ff6acb9283edf9ff828b030c",
         "bytes": 852340
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#uno"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#uno"
     },
     {
       "manifest": {
@@ -3929,9 +3929,9 @@
         "restartRequired": true
       },
       "category": "tracker",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/hierarchical-maps.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/hierarchical-maps.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/hierarchical-maps-1.5.2.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/hierarchical-maps-1.5.2.zip",
         "sha256": "8142c93149c117c87980c519b664c9e10dbfd7f45077a874881804b173a0c69f",
         "bytes": 1625072
       },
@@ -3971,9 +3971,9 @@
         "restartRequired": false
       },
       "category": "tracker",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/world-state.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/world-state.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/world-state-1.1.0.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/world-state-1.1.0.zip",
         "sha256": "bedf93879675900da43eedf85320898788fd54920342070ba8dba6b24e339f49",
         "bytes": 2004
       },

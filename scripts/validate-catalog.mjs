@@ -568,7 +568,7 @@ for (const entry of catalog.packages) {
     throw new Error(`Missing or invalid catalog artwork URL for ${manifest.id}`);
   }
   const expectedArtifactName = packageArtifactName(manifest.id, manifest.version);
-  const expectedArtifactUrl = `https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/${expectedArtifactName}`;
+  const expectedArtifactUrl = `https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/${expectedArtifactName}`;
   if (artifact.url !== expectedArtifactUrl) {
     throw new Error(`Artifact URL for ${manifest.id} must be ${expectedArtifactUrl}`);
   }

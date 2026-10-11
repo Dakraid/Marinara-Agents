@@ -56,11 +56,11 @@ catalog.packages.push({
   category: "misc",
   iconUrl: catalogArtworkUrl("gacha-forge"),
   artifact: {
-    url: `https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/${basename(artifactPath)}`,
+    url: `https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/${basename(artifactPath)}`,
     sha256: sha256(archive),
     bytes: archive.byteLength,
   },
-  documentationUrl: "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/gacha-forge/README.md",
+  documentationUrl: "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/gacha-forge/README.md",
 });
 catalog.packages.sort((left, right) => left.manifest.name.localeCompare(right.manifest.name));
 // generatedAt is resolved centrally in writeCatalogFamily (preserved by

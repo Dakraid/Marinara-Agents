@@ -160,7 +160,7 @@ export function SlpSkeleton({
 }
 
 // ponytail: reports leave Slurp (Discord channel or a prefilled GitHub issue); swap for an in-app report flow if one appears.
-const BUG_REPORT_URL = "https://github.com/Pasta-Devs/Marinara-Agents/issues/new";
+const BUG_REPORT_URL = "https://github.com/Dakraid/Marinara-Agents/issues/new";
 const bugReportHref = (cause: string) =>
   `${BUG_REPORT_URL}?${new URLSearchParams({
     title: `Slurp: ${cause}`,

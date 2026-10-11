@@ -4,7 +4,7 @@ Thank you for helping improve the official downloadable packages for [Marinara E
 
 ## Before You Start
 
-1. Open an issue or check the [issue tracker](https://github.com/Pasta-Devs/Marinara-Agents/issues) before implementing a new package or material behavior change. This lets maintainers agree on scope and prevents duplicate work.
+1. Open an issue or check the [issue tracker](https://github.com/Dakraid/Marinara-Agents/issues) before implementing a new package or material behavior change. This lets maintainers agree on scope and prevents duplicate work.
 2. Check for an issue-linked branch, open or draft PR, and visible owner before beginning work.
 3. Base changes on `staging`, the protected testing branch consumed by Marinara Engine staging users.
 

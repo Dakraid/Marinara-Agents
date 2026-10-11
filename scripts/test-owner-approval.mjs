@@ -52,7 +52,7 @@ async function evaluateCase(options, env = {}) {
   const result = await evaluateOwnerApproval({
     request: mock.request,
     env: {
-      GITHUB_REPOSITORY: "Pasta-Devs/Marinara-Agents",
+      GITHUB_REPOSITORY: "Dakraid/Marinara-Agents",
       GITHUB_TOKEN: "github-token",
       MEMBERS_TOKEN_CONFIGURED: "true",
       PASTA_DEVS_MEMBERS_TOKEN: "members-token",

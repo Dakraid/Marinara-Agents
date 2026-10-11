@@ -137,7 +137,7 @@ catalog.packages.push({
   category: "tracker",
   iconUrl: catalogArtworkUrl("beholder"),
   artifact: {
-    url: `https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/${basename(artifactPath)}`,
+    url: `https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/${basename(artifactPath)}`,
     sha256: sha256(archive),
     bytes: archive.byteLength,
   },

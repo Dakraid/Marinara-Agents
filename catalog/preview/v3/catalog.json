@@ -61,9 +61,9 @@
         "restartRequired": false
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/ruleset-5e-2014.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/ruleset-5e-2014.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/ruleset-5e-2014-0.9.1.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/ruleset-5e-2014-0.9.1.zip",
         "sha256": "c9b45dc9087608aebca420d65966ffbcfa7557cdf6ae382eb8da4aa91eed9365",
         "bytes": 1389670
       },
@@ -139,13 +139,13 @@
         "restartRequired": true
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/modern-life-sim.png",
+      "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/modern-life-sim.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/modern-life-sim-0.3.2.zip",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/modern-life-sim-0.3.2.zip",
         "sha256": "3d273253836209e5ecde45e4d4ec1c1e07744faaecf7d5685890338483aa51fb",
         "bytes": 2255359
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/staging/packages/modern-life-sim/README.md"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/staging/packages/modern-life-sim/README.md"
     }
   ]
 }

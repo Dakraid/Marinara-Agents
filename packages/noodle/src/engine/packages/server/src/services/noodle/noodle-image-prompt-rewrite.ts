@@ -59,7 +59,7 @@ export async function rewriteNoodleImagePrompt(input: {
       {},
     );
     // Without an Agents default, Noodle's own text connection rewrites the prompt; before 1.5.3 the
-    // rewrite was skipped and the image settings were silently dropped (Pasta-Devs/Marinara-Agents#1282).
+    // rewrite was skipped and the image settings were silently dropped (Dakraid/Marinara-Agents#1282).
     const noodleConnectionId = input.noodleConnectionId?.trim();
     const textConnection =
       (await connections.getDefaultForAgents()) ??

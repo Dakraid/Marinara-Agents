@@ -59,7 +59,7 @@ const BASE_DESCRIPTION =
 // default so a normal build stays correct with no flag set.
 const ARTIFACT_BASE_URL =
   process.env.QUARTERMASTER_DEV_ARTIFACT_BASE_URL ||
-  "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts";
+  "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
@@ -288,7 +288,7 @@ catalog.packages.push({
   manifest,
   category: "tracker",
   iconUrl: catalogArtworkUrl(PACKAGE_ID),
-  documentationUrl: "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/quartermaster/README.md",
+  documentationUrl: "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/quartermaster/README.md",
   artifact: {
     url: `${ARTIFACT_BASE_URL}/${basename(artifactPath)}`,
     sha256: sha256(archive),

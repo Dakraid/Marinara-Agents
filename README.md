@@ -130,8 +130,8 @@ The build records generic Engine source dependencies needed by feature packages 
 ## Contributors
 
 <p align="left">
-  <a href="https://github.com/Pasta-Devs/Marinara-Agents/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=Pasta-Devs/Marinara-Agents" alt="Marinara Agents contributors" />
+  <a href="https://github.com/Dakraid/Marinara-Agents/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=Dakraid/Marinara-Agents" alt="Marinara Agents contributors" />
   </a>
 </p>
 

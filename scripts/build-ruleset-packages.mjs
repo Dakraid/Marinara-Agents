@@ -128,7 +128,7 @@ for (const id of packageIds) {
       category: "misc",
       iconUrl: catalogArtworkUrl(id),
       artifact: {
-        url: `https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/${artifactName}`,
+        url: `https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/${artifactName}`,
         sha256: sha256(archive),
         bytes: archive.byteLength,
       },

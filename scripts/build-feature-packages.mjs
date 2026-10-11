@@ -2033,7 +2033,7 @@ for (const feature of selectedFeatures) {
       category: feature.category ?? "misc",
       iconUrl: catalogArtworkUrl(feature.id),
       artifact: {
-        url: `https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/${basename(artifactPath)}`,
+        url: `https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/${basename(artifactPath)}`,
         sha256: sha256(artifact),
         bytes: artifact.byteLength,
       },
@@ -2041,10 +2041,10 @@ for (const feature of selectedFeatures) {
         feature.id === "hierarchical-maps"
           ? "https://github.com/Pasta-Devs/Marinara-Engine/blob/main/docs/agents/hierarchical-maps.md"
           : feature.id === "noodle"
-            ? "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/noodle/README.md"
+            ? "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/noodle/README.md"
             : feature.id === "slurp2"
-              ? `https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/${feature.id}/README.md`
-              : `https://github.com/Pasta-Devs/Marinara-Agents#${feature.id}`,
+              ? `https://github.com/Dakraid/Marinara-Agents/blob/main/packages/${feature.id}/README.md`
+              : `https://github.com/Dakraid/Marinara-Agents#${feature.id}`,
     });
   } finally {
     await rm(temporary, { recursive: true, force: true });

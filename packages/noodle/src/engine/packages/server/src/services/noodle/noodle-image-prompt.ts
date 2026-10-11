@@ -12,10 +12,10 @@ const AUTO_STYLE_INSTRUCTION =
 
 /**
  * Compile a post image prompt so Style text meant for a prompt writer stays out of the words sent to
- * the image model (Pasta-Devs/Marinara-Agents#1278). `styleGuidance` is the Style text the rewrite
+ * the image model (Dakraid/Marinara-Agents#1278). `styleGuidance` is the Style text the rewrite
  * model gets as guidance, so `forRewrite` leaves it out of the prompt that model edits. `rewritePrompt`
  * is the source of that prompt when it differs from `input.prompt`, for example without the appearance
- * notes the rewrite model gets as context (Pasta-Devs/Marinara-Agents#1282). `literal` is sent when no
+ * notes the rewrite model gets as context (Dakraid/Marinara-Agents#1282). `literal` is sent when no
  * rewrite runs or it fails: it keeps a style profile's Style text, as the Engine does when no prompt
  * writer handled the style, but never the built-in Auto instruction.
  */
@@ -40,7 +40,7 @@ export function compileNoodleImagePrompts(input: CompileImagePromptInput, rewrit
 
 /**
  * Remove each sentence of `guidance` that the rewrite model copied word for word into `text`
- * (Pasta-Devs/Marinara-Agents#1282), ignoring case and punctuation. Only guidance written as a
+ * (Dakraid/Marinara-Agents#1282), ignoring case and punctuation. Only guidance written as a
  * sentence counts: it ends with . ! or ? and has at least four words between commas, so tag lists
  * and tag phrases such as "masterpiece, best quality" are never removed. If the text was nothing
  * but copied guidance, it comes back unchanged; pass `allowEmpty` when the caller has its own

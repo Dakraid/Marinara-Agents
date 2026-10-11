@@ -6,5 +6,5 @@ export function catalogArtworkRelativePath(packageId) {
 }
 
 export function catalogArtworkUrl(packageId) {
-  return `https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/${catalogArtworkRelativePath(packageId)}`;
+  return `https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/${catalogArtworkRelativePath(packageId)}`;
 }

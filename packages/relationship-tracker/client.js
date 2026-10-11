@@ -75,7 +75,7 @@
   }
 
   // Turn the engine's privileged-route refusals into a step the user can take on this device.
-  // Wording matches Noodle and Slurp (Pasta-Devs/Marinara-Agents#1136).
+  // Wording matches Noodle and Slurp (Dakraid/Marinara-Agents#1136).
   function responseError(response, body, fallback) {
     const message = typeof body?.error === "string" ? body.error : "";
     if (response.status === 403 && /admin.secret/iu.test(message)) {
