@@ -355,22 +355,25 @@ async function main() {
     await slurp.updateSettings({ walletCreatorRevenueSharePercent: 90 });
     await messagesModule.compensateSlurpPaymentForDatabase(db, exact, new Error("fixture"), exact.creditOperationId);
     assert.equal((await slurp.getEarnings("creator")).coins, 0);
+    // 0.3.7 made every non-sponsor credit stand for the crowd, less Slurp's fee: floor(99 * 37%) =
+    // 36 revenue-share dollars, then floor(36 * crowdWeight(5) * (100 - 20%) / 100) = 144. The
+    // reversal still exactly undoes the persisted 37% credit; it is just no longer a 1:1 dollar.
     assert.equal(
       (await slurp.getEarnings("creator")).ledger.find((entry) => entry.id === `${exact.creditOperationId}:reverse`)
         ?.amount,
-      -36,
+      -144,
     );
     for (let index = 0; index < 65; index += 1)
       await slurp.creditCreatorIncome("creator", 2, "commission", `later-income:${index}`);
     for (let index = 0; index < 65; index += 1)
       await slurp.refundCoins("viewer", 1, "later activity", `later-wallet-credit:${index}`);
-    assert.equal(await slurp.getCreatorIncomeOperationAmount("creator", exact.creditOperationId), 36);
+    assert.equal(await slurp.getCreatorIncomeOperationAmount("creator", exact.creditOperationId), 144);
     assert.equal(
       (await slurp.getWallet("viewer")).ledger.some((entry) => entry.id === exact.creditOperationId),
       false,
     );
     assert.equal(await slurp.hasWalletSpendOperation("viewer", exact.creditOperationId), true);
-    assert.equal(await slurp.reverseCreatorIncome("creator", 36, "retry", `${exact.creditOperationId}:reverse`), true);
+    assert.equal(await slurp.reverseCreatorIncome("creator", 144, "retry", `${exact.creditOperationId}:reverse`), true);
     const coinsBeforeRetry = (await slurp.getWallet("viewer")).coins;
     await messagesModule.compensateSlurpPaymentForDatabase(db, exact, new Error("retry"), exact.creditOperationId);
     const walletAfterRetry = await slurp.getWallet("viewer");
@@ -463,6 +466,12 @@ async function main() {
     ]) {
       const paymentId = `commission:${fixture.id}:accept`;
       await db.insert(paymentTable).values(paymentRow(paymentId, "commission", "charged"));
+      // A fresh `charged` row is left alone (still between debit and its message write); back it
+      // off past the 5-minute window so recovery actually evaluates it.
+      await db
+        .update(paymentTable)
+        .set({ updatedAt: new Date(Date.now() - 6 * 60 * 1_000).toISOString() })
+        .where(eq(paymentTable.id, paymentId));
       await db
         .insert(commissionTable)
         .values(commissionRow(fixture.id, fixture.state, fixture.cancellationId, null, null));
@@ -471,6 +480,10 @@ async function main() {
     for (const id of ["accepted", "delivered", "cancelled"])
       assert.equal((await rowById<any>(paymentTable, `commission:${id}:accept`)).status, "settled");
     await db.insert(paymentTable).values(paymentRow("commission:failed:accept", "commission", "charged"));
+    await db
+      .update(paymentTable)
+      .set({ updatedAt: new Date(Date.now() - 6 * 60 * 1_000).toISOString() })
+      .where(eq(paymentTable.id, "commission:failed:accept"));
     await db
       .insert(commissionTable)
       .values(commissionRow("failed", "cancellation_pending", "commission:failed:accept", null, null));
