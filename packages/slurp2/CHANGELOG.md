@@ -5,7 +5,7 @@
 - Fixed: reports are now included in backups and restores.
 - Fixed: "Create posts now" names the Creators it skipped or could not post for again, instead of only a count.
 - Fixed: accepting a commission twice in a row (a double tap, or a retry) no longer draws the picture twice.
-- Fixed: a commission no longer sends its stored file path to the fan or Creator viewing it.
+- Fixed: chat and commission responses to the fan no longer include a picture's stored file location.
 - Fixed: the settings search box in a settings section now stays reachable on a phone instead of disappearing.
 - Internal: a Slurp Support desk tick checks its throttle against the tick's own time instead of the wall clock.
 
