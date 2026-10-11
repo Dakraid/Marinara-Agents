@@ -1,5 +1,14 @@
 # Slurp release notes
 
+## 0.3.22 — 2026-10-11
+
+- Fixed: reports are now included in backups and restores.
+- Fixed: "Create posts now" names the Creators it skipped or could not post for again, instead of only a count.
+- Fixed: accepting a commission twice in a row (a double tap, or a retry) no longer draws the picture twice.
+- Fixed: chat and commission responses to the fan no longer include a picture's stored file location.
+- Fixed: the settings search box in a settings section now stays reachable on a phone instead of disappearing.
+- Internal: a Slurp Support desk tick checks its throttle against the tick's own time instead of the wall clock.
+
 ## 0.3.21 — 2026-10-11
 
 - Stir's Recent plays follows a collab you suggested or pushed: waiting for an answer, agreed, coming up, turned down (with the reason), blocked, or up on both pages. A posted collab opens its joint post; a deleted post or a collab Slurp no longer keeps says so.
