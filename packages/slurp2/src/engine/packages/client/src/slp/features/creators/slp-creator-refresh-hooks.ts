@@ -51,16 +51,15 @@ export function useRefreshTargetedCreatorsNow(onRemaining?: (remaining: number) 
         const byId = new Map((accounts ?? []).map((account) => [account.id, account.displayName]));
         const nameFor = (accountId: string) => byId.get(accountId) ?? t("ui.slurp.ties.someone");
         // Name the Creators that did not post, so a short batch is never a mystery (R1-068).
-        const list = (outcomeClass: "skipped" | "failed", key: string) => {
+        const list = (outcomeClass: "skipped" | "failed", key: string, moreKey: string) => {
           const { names, extra } = slurpRefreshOutcomeNames(result.outcomes, outcomeClass, nameFor);
           if (names.length === 0) return null;
-          const joined =
-            extra > 0 ? `${names.join(", ")} ${t("ui.slurp.calendar.more", { count: extra })}` : names.join(", ");
-          return t(key, { names: joined });
+          const joined = names.join(", ");
+          return extra > 0 ? t(moreKey, { names: joined, count: extra }) : t(key, { names: joined });
         };
         const description = [
-          list("skipped", "ui.slurp.creators.generateSkippedList"),
-          list("failed", "ui.slurp.creators.generateFailedList"),
+          list("skipped", "ui.slurp.creators.generateSkippedList", "ui.slurp.creators.generateSkippedListMore"),
+          list("failed", "ui.slurp.creators.generateFailedList", "ui.slurp.creators.generateFailedListMore"),
         ]
           .filter((line): line is string => line !== null)
           .join("\n");

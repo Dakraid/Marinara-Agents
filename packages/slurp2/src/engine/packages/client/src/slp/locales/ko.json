@@ -1843,6 +1843,8 @@
   "ui.slurp.creators.generateOutcome": "신규 {{made}}명, 건너뜀 {{skipped}}명, 게시 실패 {{failed}}명.",
   "ui.slurp.creators.generateSkippedList": "건너뜀: {{names}}",
   "ui.slurp.creators.generateFailedList": "게시 실패: {{names}}",
+  "ui.slurp.creators.generateSkippedListMore": "건너뜀: {{names}} 외 {{count}}명",
+  "ui.slurp.creators.generateFailedListMore": "게시 실패: {{names}} 외 {{count}}명",
   "ui.slurp.settings.searchLabel.autoPostingScheduleEnabled": "자동 게시",
   "ui.slurp.settings.searchLabel.simulationTuning": "오디언스 조정",
   "ui.slurp.wallet.notEnoughCoins": "코인이 부족합니다.",
