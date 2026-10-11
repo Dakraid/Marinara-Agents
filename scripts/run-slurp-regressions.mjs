@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { readdirSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,20 +10,41 @@ const tsx = join(root, "node_modules/.bin/tsx");
 const PLAIN_TSX = new Set(["tests/slurp-phase1-durability.regression.ts", "tests/slurp2-reset-activity.regression.ts"]);
 const CONCURRENCY = 4;
 const TAIL_LINES = 30;
+const TIMEOUT_MS = 5 * 60 * 1000;
+
+// Some files copy from an Engine checkout. Fail loudly instead of skipping them when there is none.
+const engineRoot = process.env.MARINARA_ENGINE_ROOT || join(root, "../Marinara-Engine");
+if (!existsSync(join(engineRoot, "packages/shared/src/types/noodle.ts"))) {
+  console.error(`Slurp regressions need a Marinara Engine checkout. Set MARINARA_ENGINE_ROOT (looked in ${engineRoot}).`);
+  process.exit(1);
+}
 
 const files = readdirSync(join(root, "tests"))
   .filter((name) => /^slurp(2)?-.*\.regression\.ts$/u.test(name))
   .map((name) => `tests/${name}`)
   .sort();
+if (files.length === 0) {
+  console.error("No Slurp regression files matched tests/slurp-*.regression.ts or tests/slurp2-*.regression.ts.");
+  process.exit(1);
+}
 
 function runFile(file) {
   const args = PLAIN_TSX.has(file) ? [file] : ["--tsconfig", "tests/tsconfig.regressions.json", file];
   return new Promise((resolve) => {
     const child = spawn(tsx, args, { cwd: root, env: process.env });
     let output = "";
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill();
+    }, TIMEOUT_MS);
     child.stdout.on("data", (chunk) => (output += chunk));
     child.stderr.on("data", (chunk) => (output += chunk));
-    child.on("close", (code) => resolve({ file, passed: code === 0, output }));
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      if (timedOut) output += `\nTimed out after ${TIMEOUT_MS / 1000} seconds.\n`;
+      resolve({ file, passed: !timedOut && code === 0, output });
+    });
   });
 }
 
