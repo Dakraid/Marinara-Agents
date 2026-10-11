@@ -223,13 +223,9 @@ test.describe("package-owned Noodle interface", () => {
 
   test("Latest Posts can be added, read, hidden, and opened on desktop and mobile", async ({ page }) => {
     const openWidgetManager = async () => {
-      const mobileBookmarks = page.locator('[data-component="HomeBrowserHub.MobileBookmarksTrigger"]');
-      // The trigger renders after the Home tab mounts, so wait for it instead of checking once.
-      const onPhone = await mobileBookmarks.waitFor({ state: "visible", timeout: 5_000 }).then(
-        () => true,
-        () => false,
-      );
-      if (onPhone) {
+      if (page.viewportSize()!.width < 768) {
+        const mobileBookmarks = page.locator('[data-component="HomeBrowserHub.MobileBookmarksTrigger"]');
+        await expect(mobileBookmarks).toBeVisible();
         await mobileBookmarks.click();
         const menu = page.locator('[data-component="HomeBrowserHub.MobileBookmarksMenu"]');
         await expect(menu).toBeVisible();
@@ -237,6 +233,12 @@ test.describe("package-owned Noodle interface", () => {
       } else {
         await page.getByRole("button", { name: "Widgets", exact: true }).click();
       }
+      // A package with several widgets opens from one group button. Its rows show only after that.
+      // Once the group is open, the button is gone, so a second visit skips the click.
+      const manager = page.getByRole("dialog", { name: "Home Widgets" });
+      await expect(manager).toBeVisible();
+      const group = manager.getByRole("button", { name: /^Noodle\b/u });
+      if ((await group.count()) > 0) await group.click();
     };
     const bootstrap = await page.request.get("/api/noodle");
     expect(bootstrap.ok()).toBe(true);
@@ -263,8 +265,6 @@ test.describe("package-owned Noodle interface", () => {
     await expect(widget).toHaveCount(0);
     await openWidgetManager();
     const manager = page.getByRole("dialog", { name: "Home Widgets" });
-    // Packages with several widgets open from one group button; its rows appear after it.
-    await manager.getByRole("button", { name: /^Noodle\b/u }).click();
     await manager.getByRole("switch", { name: /Show Noodle.*Latest Posts/ }).click();
     await page.keyboard.press("Escape");
     await expect(widget).toBeVisible();
