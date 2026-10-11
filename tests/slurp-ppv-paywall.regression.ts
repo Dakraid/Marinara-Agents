@@ -25,12 +25,23 @@ assert.match(
 // The picture is masked with the text: a locked message is usually sold on its image.
 assert.match(
   routes,
-  /message\.kind === "ppv" && !message\.unlockedAt\s*\?\s*\{\s*\.\.\.message,\s*content: "",\s*imageUrl: null,/u,
+  /message\?\.kind === "ppv" && !message\.unlockedAt\s*\?\s*\{\s*\.\.\.message,\s*content: "",\s*imageUrl: null,/u,
 );
+
+// The masking rule itself is now a shared helper (maskForViewer) both the full-thread and the
+// paginated responses call, instead of each writing it out inline. Execute the real helper so
+// extracting it cannot hide a leak.
+const maskForViewerMatch = routes.match(/const maskForViewer = <T[^>]*>\(message: T\): T =>\n([\s\S]*?: message;)/u);
+assert.ok(maskForViewerMatch, "the shared masking helper must exist");
+const maskForViewer = new Function("message", `return ${maskForViewerMatch![1]}`) as (message: unknown) => any;
 
 // Paginated responses apply the same policy to their page instead of reading the whole thread.
 // Execute those actual mapping expressions so accepting the paged route syntax cannot hide a leak.
-const pagedMappings = [...routes.matchAll(/messages: (page\.messages\.map\(\(message\) =>[\s\S]*?\n\s*\)),/gu)];
+const pagedMappings = [
+  ...routes.matchAll(
+    /messages: ((?:side === "viewer" \? )?page\.messages\.map\(maskForViewer\)(?: : page\.messages)?),/gu,
+  ),
+];
 assert.equal(pagedMappings.length, 2, "both paginated message responses must be covered");
 const page = {
   messages: [
@@ -45,12 +56,14 @@ const page = {
     },
   ],
 };
-for (const [index, match] of pagedMappings.entries()) {
-  const mapPage = new Function("page", "side", `return ${match[1]}`) as (
+let sawCreatorBypass = false;
+for (const match of pagedMappings) {
+  const mapPage = new Function("page", "side", "maskForViewer", `return ${match[1]}`) as (
     inputPage: typeof page,
     side: "viewer" | "creator",
+    mask: typeof maskForViewer,
   ) => typeof page.messages;
-  const visible = mapPage(page, "viewer");
+  const visible = mapPage(page, "viewer", maskForViewer);
   assert.equal(visible[0]!.content, "");
   assert.equal(visible[0]!.imageUrl, null);
   assert.deepEqual(visible.slice(1, 3), page.messages.slice(1, 3));
@@ -58,15 +71,37 @@ for (const [index, match] of pagedMappings.entries()) {
   assert.equal(visible[3]!.imageUrl, null);
   assert.equal(visible[3]!.metadata.content, "");
   assert.equal(visible[3]!.metadata.imageUrl, null);
-  if (index === 0) assert.deepEqual(mapPage(page, "creator"), page.messages);
+  // Only the viewer-and-creator-shared handler bypasses masking for the creator side; the
+  // viewer-only media-viewer route has no "side" to bypass with, so it always masks.
+  if (match[1]!.includes('side === "viewer"'))
+    sawCreatorBypass = sawCreatorBypass || deepStrictEqualSafe(mapPage(page, "creator", maskForViewer), page.messages);
+}
+assert.ok(sawCreatorBypass, "the shared thread route must still let the creator side see its own messages");
+
+function deepStrictEqualSafe(a: unknown, b: unknown): boolean {
+  try {
+    assert.deepEqual(a, b);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-// Every other response must use the full-thread helper or the empty no-thread fallback.
+// Every other response must use the full-thread helper or the empty no-thread fallback. Type
+// annotations, parameter declarations and comments also contain the literal "messages: " outside
+// any response object, so they are excluded explicitly rather than guessed at by shape.
 const raw = [
   ...routes.matchAll(
-    /messages: (?!await visibleMessages|thread \? await visibleMessages|page\.messages\.map\(|\[\])[^\n]*/gu,
+    /messages: (?!await visibleMessages|thread \? await visibleMessages|page\.messages\.map\(|side === "viewer" \? page\.messages\.map\(|\[\])[^\n]*/gu,
   ),
-];
+].filter(
+  (match) =>
+    !match[0].includes("a long chat forgot the last picture") &&
+    !/;\s*$/u.test(match[0]) &&
+    !match[0].includes("Parameters<") &&
+    !match[0].includes("StorageDependencies") &&
+    !match[0].includes("SlurpMessagesStorage"),
+);
 assert.equal(raw.length, 0, `a route returns messages without masking: ${raw.map((m) => m[0]).join(", ")}`);
 
 console.log("slurp ppv paywall regression passed");

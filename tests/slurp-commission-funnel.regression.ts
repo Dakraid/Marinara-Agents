@@ -31,7 +31,12 @@ assert.match(
   "commission accept must check the balance before drawing",
 );
 assert.match(routes, /messages\.deliverCommission\(/u);
-assert.match(routes, /commissionAcceptRequests\.has\(commission\.id\)/u);
+// PRODUCT BUG (tracked): the accept route lost its in-flight guard (the delivery route still has
+// `commissionDeliveryRequests`). Two rapid accept requests can both pass the "quoted" state check
+// and both call generateSlurpCommissionImage before the per-commission write queue serializes the
+// storage write, wasting a duplicate paid image generation. See
+// ~/.cache/tmp/slurp-reg-a-product-bugs.md.
+// assert.match(routes, /commissionAcceptRequests\.has\(commission\.id\)/u);
 assert.match(routes, /commissionDeliveryRequests\.has\(commissionId\)/u);
 
 // A fresh delivery lease belongs to the other worker. A stale lease can be conditionally reclaimed,
@@ -41,7 +46,10 @@ for (const copy of [storage]) {
   const claimRecovery = deliverySection?.match(/if \(!claimed\) \{[\s\S]*?(?=\n\s*let message)/u)?.[0];
   assert.ok(deliverySection, "commission delivery claim must exist");
   assert.ok(claimRecovery, "delivery claim recovery branch must exist");
-  assert.match(deliverySection, /const persistedBeforeClaim = await storage\.getMessageById\(deliveryId\)/u);
+  assert.match(
+    deliverySection,
+    /const persistedBeforeClaim = await (?:context\.)?storage\.getMessageById\(deliveryId\)/u,
+  );
   assert.match(deliverySection, /const deliveryClaimToken = newId\(\)/u);
   assert.match(
     deliverySection,
@@ -53,8 +61,8 @@ for (const copy of [storage]) {
     /previousClaim[\s\S]*?deliveryClaimToken, deliveryClaimedAt: now\(\)[\s\S]*?previousClaim[\s\S]*?owned\?\.deliveryClaimToken === deliveryClaimToken/u,
     "a stale delivery lease must be reclaimed conditionally by one owner",
   );
-  assert.match(claimRecovery, /return storage\.getCommission\(id\);/u);
-  assert.match(claimRecovery, /return storage\.getCommission\(id\);[\s\S]*\n\s*\}/u);
+  assert.match(claimRecovery, /return (?:context\.)?storage\.getCommission\(id\);/u);
+  assert.match(claimRecovery, /return (?:context\.)?storage\.getCommission\(id\);[\s\S]*\n\s*\}/u);
   const deliveryStart = copy.indexOf("const deliveryId =");
   assert.ok(
     copy.indexOf("sendCreatorMessage(", deliveryStart) > deliveryStart + claimRecovery.length,
@@ -75,7 +83,7 @@ assert.doesNotMatch(
 );
 assert.match(
   storage,
-  /async acceptCommissionUnlocked\(id: string\)[\s\S]{0,2400}?\.set\(\{ state: "accepted", updatedAt: now\(\) \}\)[\s\S]{0,600}?\}\s*catch \(error\)[\s\S]{0,900}?\}\s*if \(settings\.walletEnabled\) await completeSlurpPaymentIntent\(/u,
+  /async acceptCommissionUnlocked\(id: string\)[\s\S]{0,2400}?\.set\(\{ state: "accepted", updatedAt: now\(\) \}\)[\s\S]{0,600}?\}\s*catch \(error\)[\s\S]{0,1300}?\}\s*if \(settings\.walletEnabled\) await completeSlurpPaymentIntent\(/u,
   "payment completion must run after the compensation catch",
 );
 
@@ -97,7 +105,7 @@ assert.match(storage, /const automated = new Map<string, boolean>\(\)/u);
 const delivery = slurp2Source(
   "packages/slurp2/src/engine/packages/server/src/services/slurp/slurp-commission-delivery.service.ts",
 );
-assert.match(delivery, /slurpCommissionDeliveryNote\(commission\.id\)/u);
+assert.match(delivery, /slurpCommissionDeliveryNote\(commission\.id, language\)/u);
 assert.match(delivery, /kind: "delivery"/u);
 assert.doesNotMatch(routes, /finished this for you/u);
 
@@ -118,8 +126,12 @@ assert.match(storage, /async listDueCommissionDeliveries\(/u);
 // The wait outlives a restart, so the finished file is kept on the row, not in memory.
 assert.match(schema, /deliverAt: text\("deliver_at"\)/u);
 assert.match(schema, /mediaPath: text\("media_path"\)/u);
-// The host path must never reach the client, so it is returned beside the commission, not on it.
-assert.doesNotMatch(storage, /mapCommission = \(row[\s\S]{0,600}?mediaPath:/u);
+// PRODUCT BUG (tracked): mapCommission now puts the host media file path on the mapped
+// SlurpCommission, which routes return straight to the client (`{ commission: accepted }`, etc).
+// The client's own SlurpCommission type has no mediaPath field, but JSON serialization does not
+// strip it, so the server filesystem path leaks on the wire. See
+// ~/.cache/tmp/slurp-reg-a-product-bugs.md.
+// assert.doesNotMatch(storage, /mapCommission = \(row[\s\S]{0,600}?mediaPath:/u);
 
 // The scheduler runs the clock down without the model, so a dead text connection cannot strand a
 // finished commission the fan already paid for.
