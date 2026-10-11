@@ -14,7 +14,13 @@ const root = "packages/slurp2/src/engine/packages/";
 const read = (path: string) => slurp2Source(root + path);
 const routes = read("server/src/routes/slurp.routes.ts");
 const storage = read("server/src/services/storage/slurp.storage.ts");
-const settings = slurp2BackstageSource();
+// The Creators and Discovery tabs moved out of the Backstage files into feature panels.
+const settings = [
+  slurp2BackstageSource(),
+  read("client/src/slp/features/creators/SlpCreatorsPanel.tsx"),
+  read("client/src/slp/features/discovery/SlpDiscoveryPanel.tsx"),
+  read("client/src/slp/features/creators/SlpStageProfileForm.tsx"),
+].join("\n");
 const tagsPage = read("client/src/components/slurp/SlurpTagsSettings.tsx");
 const bulkEdit = read("client/src/components/slurp/SlurpCreatorBulkEdit.tsx");
 const en = JSON.parse(read("client/src/localization/locales/en.json")) as Record<string, string>;
@@ -51,7 +57,7 @@ assert.match(tagsPage, /<label className="relative flex/u);
 assert.match(settings, /<SlurpCreatorBulkEdit/u);
 assert.match(settings, /<SlurpDiscoveryProfileEditor/u);
 assert.match(settings, /ids: \[selectedCreator\.id\]/u);
-assert.match(read("client/src/hooks/use-slurp.ts"), /"\/slurp2\/slurp\/accounts\/bulk-update"/u);
+assert.match(read("client/src/slp/features/creators/slp-creators-hooks.ts"), /"\/slurp2\/slurp\/accounts\/bulk-update"/u);
 
 // Every literal key the new UI uses exists in English (plural keys may only have _one/_other).
 for (const source of [tagsPage, bulkEdit, settings]) {
