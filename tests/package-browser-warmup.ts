@@ -6,6 +6,8 @@ import { chromium, expect, type FullConfig } from "@playwright/test";
 // opens a view for the first time can stall on a cold module graph. Open Home and one package view on
 // each viewport before any test runs, so the suites start on a warm server.
 export default async function globalSetup(config: FullConfig) {
+  // Only Noodle and Slurp open through a Home tab into this view; other packages (Calls) start cold.
+  if (!["noodle", "slurp2"].includes(process.env.MARINARA_PACKAGE_ID ?? "")) return;
   const engineRoot = process.env.MARINARA_ENGINE_ROOT;
   if (!engineRoot) throw new Error("MARINARA_ENGINE_ROOT is required");
   const appVersion = (JSON.parse(readFileSync(resolve(engineRoot, "package.json"), "utf8")) as { version: string })
