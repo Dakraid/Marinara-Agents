@@ -254,30 +254,33 @@ test.describe("standalone Slurp package", () => {
       persona.id,
     );
 
-    await page.goto("/");
-    await openSlurp(page);
+    try {
+      await page.goto("/");
+      await openSlurp(page);
 
-    const slurp = page.locator('[data-component="NoodleView"]');
-    await expect
-      .poll(() => slurp.evaluate((element) => getComputedStyle(element).getPropertyValue("--noodle-accent").trim()))
-      .toBe("#FF7EC1");
-    // Both widths show the logo in the header, so check it before any drawer opens.
-    const logo = slurp.locator('img[src^="data:image/png;base64,"]:visible').first();
-    await expect(logo).toBeVisible();
-    await expect.poll(() => logo.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
-    if (testInfo.project.name.includes("mobile")) {
-      await slurp.getByRole("button", { name: "More", exact: true }).click();
-      // The drawer's account card and the switcher both carry the viewer persona's name.
-      const drawer = page.getByRole("dialog", { name: "More" });
-      await expect(drawer).toBeVisible();
-      await expect(drawer.getByRole("button", { name: new RegExp(personaName) })).toBeVisible();
-      await expect(page.locator('[data-component="NoodleView.AccountSwitcher"]')).toContainText(personaName);
+      const slurp = page.locator('[data-component="NoodleView"]');
+      await expect
+        .poll(() => slurp.evaluate((element) => getComputedStyle(element).getPropertyValue("--noodle-accent").trim()))
+        .toBe("#FF7EC1");
+      // Both widths show the logo in the header, so check it before any drawer opens.
+      const logo = slurp.locator('img[src^="data:image/png;base64,"]:visible').first();
+      await expect(logo).toBeVisible();
+      await expect.poll(() => logo.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
+      if (testInfo.project.name.includes("mobile")) {
+        await slurp.getByRole("button", { name: "More", exact: true }).click();
+        // The drawer's account card and the switcher both carry the viewer persona's name.
+        const drawer = page.getByRole("dialog", { name: "More" });
+        await expect(drawer).toBeVisible();
+        await expect(drawer.getByRole("button", { name: new RegExp(personaName) })).toBeVisible();
+        await expect(page.locator('[data-component="NoodleView.AccountSwitcher"]')).toContainText(personaName);
+      }
+      if (testInfo.project.name.includes("desktop")) {
+        await expect(page.getByRole("button", { name: "Back to Marinara Home" })).toBeVisible();
+      }
+      expect(errors).toEqual([]);
+    } finally {
+      await page.request.delete(`/api/characters/personas/${persona.id}`);
     }
-    if (testInfo.project.name.includes("desktop")) {
-      await expect(page.getByRole("button", { name: "Back to Marinara Home" })).toBeVisible();
-    }
-    expect(errors).toEqual([]);
-    await page.request.delete(`/api/characters/personas/${persona.id}`);
   });
 
   test("renders the responsive settings overview in the Slurp theme", async ({ page }, testInfo) => {
@@ -425,6 +428,7 @@ test.describe("standalone Slurp package", () => {
     await history.click();
     await expect(whatsNew.locator("#slurp2-earlier-releases")).toBeVisible();
     await whatsNew.getByRole("button", { name: "Hide earlier releases" }).click();
+    await expect(whatsNew.locator("#slurp2-earlier-releases")).toBeHidden();
     await whatsNew.screenshot({ path: testInfo.outputPath("slurp2-whats-new.png") });
     await whatsNew.getByRole("button", { name: "Got it", exact: true }).click();
     await expect(whatsNew).toBeHidden();
