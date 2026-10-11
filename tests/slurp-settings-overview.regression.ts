@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import {
   slurpActivityPresetForSettings,
   slurpActivityPresetPatch,
-} from "../packages/slurp2/src/engine/packages/client/src/components/slurp/slurp-activity-presets";
+} from "../packages/slurp2/src/engine/packages/client/src/slp/modules/creator/slp-activity-presets";
 import { slurp2BackstageSource } from "./slurp2-backstage-source";
 import { slurp2Source } from "./slurp2-source";
 
@@ -22,14 +22,14 @@ async function main() {
     readFile("packages/slurp2/src/engine/packages/client/src/slp/base/navigation/slp-navigation.types.ts", "utf8"),
     slurp2Source("packages/slurp2/src/engine/packages/client/src/stores/slurp-package.store.ts"),
     slurp2Source("packages/slurp2/src/engine/packages/client/src/components/slurp/SlurpHome.tsx"),
-    readFile("packages/slurp2/src/engine/packages/client/src/components/slurp/SlurpShell.tsx", "utf8"),
-    slurp2Source("packages/slurp2/src/engine/packages/client/src/localization/locales/en.json"),
+    readFile("packages/slurp2/src/engine/packages/client/src/slp/modules/chrome/SlpShell.tsx", "utf8"),
+    slurp2Source("packages/slurp2/src/engine/packages/client/src/slp/locales/en.json"),
   ]);
 
   assert.match(navigation, /section\?: SlurpBackstageSection;/u);
   assert.match(navigation, /target\?: SlurpBackstageTarget;/u);
   // The store validates both halves of a deep link and migrates every persisted legacy section.
-  assert.match(store, /isSlurpBackstageSection\(value\.section\)/u);
+  assert.match(store, /isSlpBackstageSection\(value\.section\)/u);
   assert.match(store, /targetBelongsToSection\(value\.section, value\.target\)/u);
   assert.match(store, /SLURP_LEGACY_SETTINGS_DESTINATION/u);
   assert.match(home, /section: "overview"/u);
@@ -64,10 +64,7 @@ async function main() {
   );
   // Lorebook context is opt-in, scoped to Slurp, and never costs a post.
   assert.match(settings, /update\("enableLorebookContext", value\)/u);
-  const generation = await readFile(
-    "packages/slurp2/src/engine/packages/server/src/services/slurp/slurp-generation.service.ts",
-    "utf8",
-  );
+  const generation = slurp2Source("packages/slurp2/src/engine/packages/server/src/services/slurp/slurp-generation.service.ts");
   assert.match(generation, /settings\.enableLorebookContext\s*\?\s*await processLorebooks\(/u);
   assert.match(generation, /generationTriggers: \["slurp"\],\s*previewOnly: true,/u);
   assert.match(
