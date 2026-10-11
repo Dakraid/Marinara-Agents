@@ -112,7 +112,10 @@ assert.doesNotMatch(
 );
 assert.match(shell, /<SlurpCoinAmount amount=/u, "balances must use the shared coin component");
 // Removed: per-Creator viewer access was dropped on purpose (commit 9a1b04771), so there is no filter to pin.
-assert.match(home, /!personaBackedCreator && \([\s\S]*?openSlpCreatorSettings\(profile\.id, \{ tab: "automation" \}\)/u);
+assert.match(
+  home,
+  /!personaBackedCreator && \([\s\S]*?openSlpCreatorSettings\(profile\.id, \{ tab: "automation" \}\)/u,
+);
 assert.match(storage, /withoutCreatorSelfHiddenAccountId\([\s\S]*?row\.sourceEntityId \?\? row\.entityId/u);
 assert.match(shell, /CSS\.supports\?\.\("-webkit-touch-callout", "none"\)/u);
 assert.match(shell, /"--slurp-bottom-safe-inset": BOTTOM_SAFE_INSET/u);
@@ -217,11 +220,7 @@ assert.match(home, /ui\.slurp\.home\.latestDrops/u, "Home must separate lobby co
 const viewerHubStart = home.indexOf("export function ViewerHub(");
 const viewerHub = home.slice(viewerHubStart, home.indexOf("\n}\n", viewerHubStart));
 assert.doesNotMatch(viewerHub, /<NoodlerPostComposer/u, "the viewer-first Home lobby must not contain publishing");
-assert.match(
-  home,
-  /<NoodlerPostComposer/u,
-  "managed Creator Rooms must retain publishing",
-);
+assert.match(home, /<NoodlerPostComposer/u, "managed Creator Rooms must retain publishing");
 assert.match(
   home,
   // The composer is a sheet opened from the action row now, so only the tools toggle sits in this bar.

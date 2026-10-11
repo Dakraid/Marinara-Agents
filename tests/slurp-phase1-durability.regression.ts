@@ -102,47 +102,56 @@ async function main() {
       "dir",
     );
     // The shared sources resolve their packages (zod) from the server's install.
-    await symlink(join(engineRoot, "packages/server/node_modules"), join(overlayRoot, "packages/shared/node_modules"), "dir");
+    await symlink(
+      join(engineRoot, "packages/server/node_modules"),
+      join(overlayRoot, "packages/shared/node_modules"),
+      "dir",
+    );
 
-    const [{ createFileNativeDB }, slurpSchema, messagesStorageFile, messagesContextFile, storageModule, queryModule, schedulerModule] =
-      await Promise.all([
-        importOverlay<{ createFileNativeDB: () => Promise<FileDb> }>("packages/server/src/db/file-backed-store.ts"),
-        importOverlay<Record<string, unknown>>("packages/server/src/db/schema/slurp.ts"),
-        importOverlay<{
-          claimSlurpPaymentIntentForDatabase: (db: FileDb, payment: Payment, id: string) => Promise<string>;
-          compensateSlurpPaymentForDatabase: (
-            db: FileDb,
-            payment: Payment,
-            error: unknown,
-            id: string,
-          ) => Promise<void>;
-          createSlurpMessagesStorage: (db: FileDb) => MessagesStorage;
-          settleSlurpPaymentIntentForDatabase: (
-            db: FileDb,
-            id: string,
-            creatorId: string,
-            creditId: string,
-          ) => Promise<void>;
-        }>("packages/server/src/slp/data/messages/slp-messages-storage.ts"),
-        importOverlay<{
-          claimSlurpPaymentIntentForDatabase: (db: FileDb, payment: Payment, id: string) => Promise<string>;
-          compensateSlurpPaymentForDatabase: (db: FileDb, payment: Payment, error: unknown, id: string) => Promise<void>;
-          settleSlurpPaymentIntentForDatabase: (db: FileDb, id: string, creatorId: string, creditId: string) => Promise<void>;
-        }>("packages/server/src/slp/data/messages/slp-messages-storage-context.ts"),
-        importOverlay<{
-          createSlurpStorage: (db: FileDb) => SlurpStorage;
-          createSlurpMessagesStorage: (db: FileDb) => MessagesStorage;
-        }>(
-          "packages/server/src/slp/data/slp-storage.ts",
-        ),
-        importOverlay<{ eq: (column: unknown, value: unknown) => unknown }>("packages/server/src/db/file-query.ts"),
-        importOverlay<{
-          startSlurpPaymentRecoveryScheduler: (app: {
-            db: FileDb;
-            addHook: (name: string, hook: () => Promise<void>) => void;
-          }) => { pollNow: () => Promise<void>; stop: () => Promise<void> };
-        }>("packages/server/src/slp/features/economy/slp-payment-recovery-scheduler-service.ts"),
-      ]);
+    const [
+      { createFileNativeDB },
+      slurpSchema,
+      messagesStorageFile,
+      messagesContextFile,
+      storageModule,
+      queryModule,
+      schedulerModule,
+    ] = await Promise.all([
+      importOverlay<{ createFileNativeDB: () => Promise<FileDb> }>("packages/server/src/db/file-backed-store.ts"),
+      importOverlay<Record<string, unknown>>("packages/server/src/db/schema/slurp.ts"),
+      importOverlay<{
+        claimSlurpPaymentIntentForDatabase: (db: FileDb, payment: Payment, id: string) => Promise<string>;
+        compensateSlurpPaymentForDatabase: (db: FileDb, payment: Payment, error: unknown, id: string) => Promise<void>;
+        createSlurpMessagesStorage: (db: FileDb) => MessagesStorage;
+        settleSlurpPaymentIntentForDatabase: (
+          db: FileDb,
+          id: string,
+          creatorId: string,
+          creditId: string,
+        ) => Promise<void>;
+      }>("packages/server/src/slp/data/messages/slp-messages-storage.ts"),
+      importOverlay<{
+        claimSlurpPaymentIntentForDatabase: (db: FileDb, payment: Payment, id: string) => Promise<string>;
+        compensateSlurpPaymentForDatabase: (db: FileDb, payment: Payment, error: unknown, id: string) => Promise<void>;
+        settleSlurpPaymentIntentForDatabase: (
+          db: FileDb,
+          id: string,
+          creatorId: string,
+          creditId: string,
+        ) => Promise<void>;
+      }>("packages/server/src/slp/data/messages/slp-messages-storage-context.ts"),
+      importOverlay<{
+        createSlurpStorage: (db: FileDb) => SlurpStorage;
+        createSlurpMessagesStorage: (db: FileDb) => MessagesStorage;
+      }>("packages/server/src/slp/data/slp-storage.ts"),
+      importOverlay<{ eq: (column: unknown, value: unknown) => unknown }>("packages/server/src/db/file-query.ts"),
+      importOverlay<{
+        startSlurpPaymentRecoveryScheduler: (app: {
+          db: FileDb;
+          addHook: (name: string, hook: () => Promise<void>) => void;
+        }) => { pollNow: () => Promise<void>; stop: () => Promise<void> };
+      }>("packages/server/src/slp/features/economy/slp-payment-recovery-scheduler-service.ts"),
+    ]);
     // The default core lives in the slp storage barrel; the messages file needs one passed in.
     const messagesModule = {
       ...messagesStorageFile,
@@ -150,9 +159,7 @@ async function main() {
       createSlurpMessagesStorage: storageModule.createSlurpMessagesStorage,
     };
     assert.match(
-      await slurp2Source(
-        join(repoRoot, "packages/slurp2/src/engine/packages/server/src/slp/slp-server-entry.ts"),
-      ),
+      await slurp2Source(join(repoRoot, "packages/slurp2/src/engine/packages/server/src/slp/slp-server-entry.ts")),
       /startSlurpPaymentRecoveryScheduler\(app, addTeardown\)/u,
     );
     const { eq } = queryModule;

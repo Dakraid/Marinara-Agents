@@ -218,9 +218,9 @@ assert.match(
           const local = name.includes(" as ") ? name.split(" as ")[1]!.trim() : name;
           bound.set(local, (bound.get(local) ?? 0) + 1);
         }
-    }
-    const duplicates = [...bound].filter(([, count]) => count > 1).map(([name]) => name);
-    assert.deepEqual(duplicates, [], `${file} binds the same import name twice: ${duplicates.join(", ")}`);
+      }
+      const duplicates = [...bound].filter(([, count]) => count > 1).map(([name]) => name);
+      assert.deepEqual(duplicates, [], `${file} binds the same import name twice: ${duplicates.join(", ")}`);
     }
   }
 }

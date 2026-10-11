@@ -41,7 +41,10 @@ for (const copy of [storage]) {
   const claimRecovery = deliverySection?.match(/if \(!claimed\) \{[\s\S]*?(?=\n\s*let message)/u)?.[0];
   assert.ok(deliverySection, "commission delivery claim must exist");
   assert.ok(claimRecovery, "delivery claim recovery branch must exist");
-  assert.match(deliverySection, /const persistedBeforeClaim = await (?:context\.)?storage\.getMessageById\(deliveryId\)/u);
+  assert.match(
+    deliverySection,
+    /const persistedBeforeClaim = await (?:context\.)?storage\.getMessageById\(deliveryId\)/u,
+  );
   assert.match(deliverySection, /const deliveryClaimToken = newId\(\)/u);
   assert.match(
     deliverySection,

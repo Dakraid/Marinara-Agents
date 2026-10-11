@@ -64,7 +64,9 @@ async function main() {
   );
   // Lorebook context is opt-in, scoped to Slurp, and never costs a post.
   assert.match(settings, /update\("enableLorebookContext", value\)/u);
-  const generation = slurp2Source("packages/slurp2/src/engine/packages/server/src/services/slurp/slurp-generation.service.ts");
+  const generation = slurp2Source(
+    "packages/slurp2/src/engine/packages/server/src/services/slurp/slurp-generation.service.ts",
+  );
   assert.match(generation, /settings\.enableLorebookContext\s*\?\s*await processLorebooks\(/u);
   assert.match(generation, /generationTriggers: \["slurp"\],\s*previewOnly: true,/u);
   assert.match(

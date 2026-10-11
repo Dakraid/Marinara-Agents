@@ -268,7 +268,10 @@ assert.doesNotMatch(bare, /Your last posts/u);
 const generation = read("services/slurp/slurp-generation.service.ts");
 // One sequence for both rotations, or the project and the variation drift apart.
 assert.match(generation, /const sequence = await noodle\.countNoodlerPostsByAccount\(account\.id\)/u);
-assert.match(generation, /slurpPostVariation\(account\.id, sequence, settings\.storyImagesEnabled \? settings\.storyRate : "off"\)/u);
+assert.match(
+  generation,
+  /slurpPostVariation\(account\.id, sequence, settings\.storyImagesEnabled \? settings\.storyRate : "off"\)/u,
+);
 assert.match(
   generation,
   /slurpPostProject\(\s*account\.id,\s*sequence,\s*slurpArcRotation\(await noodle\.listActiveProjects\(account\.id\)\),\s*settings\.projectRate,?\s*\)/u,
@@ -341,7 +344,10 @@ assert.match(panel, /ui\.slurp\.projects\.resume/u);
 assert.match(panel, /ui\.slurp\.projects\.endEarly/u);
 // "Delete" normally takes the content with it. Say that it does not.
 assert.match(panel, /ui\.slurp\.projects\.deleteNote/u);
-assert.match(readClient("slp/features/creators/settings/SlpCreatorStorylinesSection.tsx"), /<SlurpProjectsPanel\s+personaId=\{personaId\}/u);
+assert.match(
+  readClient("slp/features/creators/settings/SlpCreatorStorylinesSection.tsx"),
+  /<SlurpProjectsPanel\s+personaId=\{personaId\}/u,
+);
 // The pace is one familiar control beside the Story rate, not a second settings screen.
 assert.match(readClient("slp/features/projects/SlpStorylinesPanel.tsx"), /ui\.slurp\.settings\.projectRate/u);
 

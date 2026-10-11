@@ -146,7 +146,11 @@ assert.match(home, /desktopSidebar/u, "The shell must own the desktop settings n
 const navigation = slurp2Source(
   join(root, "packages/slurp2/src/engine/packages/client/src/slp/features/backstage/SlpBackstageNavigation.tsx"),
 );
-assert.match(navigation, /aria-current=\{item === target \? "page" : undefined\}/u, "The active destination must be exposed");
+assert.match(
+  navigation,
+  /aria-current=\{item === target \? "page" : undefined\}/u,
+  "The active destination must be exposed",
+);
 assert.match(navigation, /overflow-x-auto[\s\S]*?md:flex-wrap/u, "Mobile destinations must scroll in one row");
 // Product issue, left red: SlpBackstageShell renders the search with "max-md:hidden", so phones have none.
 assert.match(

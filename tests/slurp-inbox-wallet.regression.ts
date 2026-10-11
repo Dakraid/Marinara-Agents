@@ -57,9 +57,14 @@ assert.match(
 );
 assert.match(messages, /messageSearchMatches[\s\S]*?scrollIntoView/u, "conversation search must navigate to matches");
 // Conversation search lives in the thread header now.
-const threadHeader = slurp2Source("packages/slurp2/src/engine/packages/client/src/slp/features/messages/SlpThreadHeader.tsx");
+const threadHeader = slurp2Source(
+  "packages/slurp2/src/engine/packages/client/src/slp/features/messages/SlpThreadHeader.tsx",
+);
 assert.match(threadHeader, /event\.key === "Escape"\) closeSearch\(\);/u);
-assert.match(threadHeader, /closeSearch = \(\) => \{[\s\S]*?searchTriggerRef\.current\?\.offsetParent[\s\S]*?\.focus\(\);/u);
+assert.match(
+  threadHeader,
+  /closeSearch = \(\) => \{[\s\S]*?searchTriggerRef\.current\?\.offsetParent[\s\S]*?\.focus\(\);/u,
+);
 assert.match(messages, /id=\{entry\.kind === "message" \? `slurp-message-\$\{entry\.message\.id\}`/u);
 assert.match(home, /ui\.slurp\.wallet\.creatorEarnings/u);
 assert.match(home, /ui\.slurp\.wallet\.fanWallet/u);

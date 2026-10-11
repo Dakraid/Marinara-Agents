@@ -21,10 +21,7 @@ for (const [file, kind] of [
 }
 
 // 6.2 — a guided Story stays a Story instead of waiting for the rotation.
-assert.match(
-  read(server + "services/slurp/slurp-generation.service.ts"),
-  /input\.request\.postType === "story"/u,
-);
+assert.match(read(server + "services/slurp/slurp-generation.service.ts"), /input\.request\.postType === "story"/u);
 assert.match(read(server + "routes/slurp.routes.ts"), /(?:slp|slurp)CreatorGenerationRequestSchema/u);
 assert.match(
   read("packages/slurp2/src/engine/packages/client/src/components/slurp/SlurpHome.tsx"),
