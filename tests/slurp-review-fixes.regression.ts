@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { join } from "node:path";
 import { slurp2BackstageSource } from "./slurp2-backstage-source";
-import { slurp2Source } from "./slurp2-source";
+import { readFileSync } from "node:fs";
+import { SLURP2_SOURCE_MODULES, slurp2Source } from "./slurp2-source";
 
 const root = join(import.meta.dirname, "..");
 const server = join(root, "packages/slurp2/src/engine/packages/server/src");
@@ -78,7 +79,7 @@ const messageScheduler = read(join(server, "services/slurp/slurp-message-schedul
 // `replyToSlurpMessage` reports a provider failure instead of rejecting, so discarding its result
 // left `consecutiveFailures` at zero and the backoff never engaged.
 assert.match(messageScheduler, /const outcome = await replyToSlurpMessage\(/u);
-assert.match(messageScheduler, /if \(outcome\.status === "failed"\) failed = true;/u);
+assert.match(messageScheduler, /if \(outcome\.status === "failed"\) \{\s*failed = true;/u);
 assert.match(messageScheduler, /if \(failed\) throw new Error\(/u);
 
 // ── Client state ─────────────────────────────────────────
@@ -177,7 +178,7 @@ const cropEditor = read(join(client, "components/slurp/PostImageCropEditor.tsx")
 assert.match(cropEditor, /lockedRatio\?: number;/u);
 assert.match(cropEditor, /lockedRatio && Number\.isFinite\(lockedRatio\) && lockedRatio > 0\s*\? lockedRatio/u);
 const home = read(join(client, "components/slurp/SlurpHome.tsx"));
-assert.match(home, /lockedRatio=\{postType === "story" \? storyAspectRatio : undefined\}/u);
+assert.match(home, /lockedRatio=\{story \? storyAspectRatio : undefined\}/u);
 assert.match(home, /composerSettings\.storyImageWidth \/ composerSettings\.storyImageHeight/u);
 
 // ── Profile editor ───────────────────────────────────────
@@ -203,19 +204,24 @@ assert.match(
     join(server, "routes/slurp-messages.routes.ts"),
     join(server, "services/slurp/slurp-generation.service.ts"),
   ];
+  // Each module keeps its own import scope, so a logical source is scanned file by file.
+  const engineRoot = join(root, "packages/slurp2/src/engine");
   for (const path of sources) {
-    const text = read(path);
-    const bound = new Map<string, number>();
-    for (const match of text.matchAll(/^import\s*\{([^}]*)\}\s*from\s*"[^"]+";/gmu)) {
-      for (const clause of match[1]!.split(",")) {
-        const name = clause.trim().replace(/^type\s+/u, "");
-        if (!name) continue;
-        const local = name.includes(" as ") ? name.split(" as ")[1]!.trim() : name;
-        bound.set(local, (bound.get(local) ?? 0) + 1);
-      }
+    const key = path.slice(engineRoot.length + 1);
+    for (const file of SLURP2_SOURCE_MODULES[key] ?? [key]) {
+      const text = readFileSync(join(engineRoot, file), "utf8");
+      const bound = new Map<string, number>();
+      for (const match of text.matchAll(/^import\s*\{([^}]*)\}\s*from\s*"[^"]+";/gmu)) {
+        for (const clause of match[1]!.split(",")) {
+          const name = clause.trim().replace(/^type\s+/u, "");
+          if (!name) continue;
+          const local = name.includes(" as ") ? name.split(" as ")[1]!.trim() : name;
+          bound.set(local, (bound.get(local) ?? 0) + 1);
+        }
     }
     const duplicates = [...bound].filter(([, count]) => count > 1).map(([name]) => name);
-    assert.deepEqual(duplicates, [], `${path} binds the same import name twice: ${duplicates.join(", ")}`);
+    assert.deepEqual(duplicates, [], `${file} binds the same import name twice: ${duplicates.join(", ")}`);
+    }
   }
 }
 
