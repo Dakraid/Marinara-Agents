@@ -109,10 +109,19 @@ async function main() {
     messageRoutes.match(/kind === "ppv" && !message\.unlockedAt\s*\?[^:]*?\{[\s\S]{0,300}?\}\s*:/gu) ?? [];
   assert.equal(maskForViewerDef.length, 1, "the PPV redaction must be defined in exactly one shared helper");
   assert.match(maskForViewerDef[0], /imagePrompt: undefined,\s*imageDescription: undefined/u);
+  // Every viewer-facing message response routes through the shared helper, called either directly
+  // (a single reply/outcome) or passed to `.map` (a page of messages). Counted in the current
+  // routes: 5 direct calls in slp-messages-send-routes.ts, 1 in slp-messages-media-routes.ts, 1 in
+  // slp-messages-context.ts's own listMessages, and 2 `.map(maskForViewer)` list pages in
+  // slp-messages-thread-routes.ts — 9 total. A route that returns a message without one of these
+  // is the exact bug this regression exists to catch, so this count is a proof, not a floor:
+  // bump it, with a reason, when a new masked path is added.
   const maskForViewerCalls = messageRoutes.match(/\bmaskForViewer\(/gu) ?? [];
-  assert.ok(
-    maskForViewerCalls.length >= 3,
-    "every fan-facing response that carries a message must route through the shared redaction",
+  const maskForViewerMapRefs = messageRoutes.match(/\.map\(maskForViewer\)/gu) ?? [];
+  assert.equal(
+    maskForViewerCalls.length + maskForViewerMapRefs.length,
+    9,
+    "every viewer-facing list/get path that carries a message must route through the shared redaction",
   );
 
   const fan = read("slurp-fan-activity.service.ts");

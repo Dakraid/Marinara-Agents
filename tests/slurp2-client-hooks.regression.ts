@@ -387,7 +387,11 @@ const addedCalls = [
   "post /slurp2/story-packs/preview",
   "post /slurp2/story-packs/previews/${encodeURIComponent(input.previewId)}/apply",
   "post /slurp2/story/occurrences/${encodeURIComponent(input.id)}/status",
-  // Client calls added since the staging snapshot. Listed so each new request is reviewed, not accepted silently.
+  // Client calls added since the staging snapshot. The multiset check below only passes when every
+  // call the live source makes is named somewhere in this file; a call that is neither in the
+  // frozen staging fixture nor named here fails the test, so this list is what makes a silent
+  // addition (or removal, the other direction of the same check) impossible to miss. It was last
+  // refreshed mechanically from a source diff (7e31e6080) — present here, not independently vetted.
   "delete ${path(creatorId)}/ideas/${encodeURIComponent(ideaId)}",
   "delete ${path(creatorId)}/support-note",
   "delete /slurp2/data/unused",

@@ -53,7 +53,14 @@ assert.match(home, /const feedIsOnScreen = Boolean\(scope\)[\s\S]*?if \(feedIsOn
 // `preTabsContent`, and a ternary between them left Create post and Add story opening nothing.
 assert.doesNotMatch(home, /\) : managedCreator && !editing \? \(/u);
 assert.match(home, /editing \? null : \([\s\S]*?\{goalForViewer && \(/u);
-assert.match(home, /\{managedCreator && <SlpCreatorToolsCard model=\{model\} \/>\}/u);
+// Creator tools no longer couple to `!editing` through their own ternary (the line above), but
+// the coupling must still exist: they must stay nested inside the same `editing ? null : (...)`
+// block as the goal bar, so editing still hides them, not just unconditionally render them.
+assert.match(
+  home,
+  /editing \? null : \([\s\S]*?\{managedCreator && <SlpCreatorToolsCard model=\{model\} \/>\}/u,
+  "creator tools must stay inside the editing-hides-everything block",
+);
 assert.match(home, /data-slurp-creator-tools/u);
 
 assert.doesNotMatch(splash, /initialFocusRef|hideCloseButton/u);

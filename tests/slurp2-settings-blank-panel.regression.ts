@@ -11,15 +11,16 @@ const settings = slurp2BackstageSource();
 const backstage = slurp2Source(`${clientRoot}/components/slurp/slurp-backstage.ts`);
 const automation = slurp2Source(`${clientRoot}/components/slurp/SlurpBackstageAutomation.tsx`);
 
-assert.match(backstage, /arcLibrary: content\("arcs", "plan templates"/u, "templates must use product vocabulary");
 assert.match(
   backstage,
-  /content\("arcs", "plan templates", "stories"\)/u,
-  "stories must remain searchable as templates",
+  /arcLibrary: content\("arcs", "plan templates", "stories"\)/u,
+  "templates must use product vocabulary and stories must remain searchable as templates",
 );
-// The Posting, Stories and World landing pages were replaced by the Overview hub. World controls
-// keep their Backstage placements instead.
-assert.match(backstage, /inlineAdsEnabled: world\("ads"/u, "world controls must keep a Backstage placement");
+// The Posting, Stories and World landing pages (and their "World simulation" / landing.stories
+// copy) are gone with the Overview hub redesign; nothing in the current source plays their role
+// (checked: no "World simulation" or landing.stories/.worldDetail reference anywhere reachable,
+// and SlpBackstageOverviewPanel.tsx — the Overview hub — has no World nav card). There is nothing
+// left to assert here, so this check is deleted rather than replaced with an unrelated one.
 assert.match(
   automation,
   /settingKey="storyRate"[\s\S]*ui\.slurp\.settings\.storyRate/u,
