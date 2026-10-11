@@ -21,6 +21,10 @@ const settings = [
   read("client/src/slp/features/discovery/SlpDiscoveryPanel.tsx"),
   read("client/src/slp/features/creators/SlpStageProfileForm.tsx"),
 ].join("\n");
+const creatorsPanel = read("client/src/slp/features/creators/SlpCreatorsPanel.tsx");
+const stageForm = read("client/src/slp/features/creators/SlpStageProfileForm.tsx");
+const creatorSettings = read("client/src/slp/features/creators/settings/SlpCreatorSettingsSections.tsx");
+const discoveryPanel = read("client/src/slp/features/discovery/SlpDiscoveryPanel.tsx");
 const tagsPage = read("client/src/components/slurp/SlurpTagsSettings.tsx");
 const bulkEdit = read("client/src/components/slurp/SlurpCreatorBulkEdit.tsx");
 const en = JSON.parse(read("client/src/localization/locales/en.json")) as Record<string, string>;
@@ -49,17 +53,18 @@ assert.equal(
 );
 
 // Tags page: no browser prompts, and the filter label is positioned so Firefox does not scroll on focus.
-assert.match(settings, /<SlurpTagsSettings/u);
+assert.match(discoveryPanel, /<SlurpTagsSettings/u);
 assert.doesNotMatch(tagsPage, /window\.(prompt|confirm)\(/u);
 assert.match(tagsPage, /<label className="relative flex/u);
 
-// Creators tab: select mode plus the bulk panel for many Creators at once.
-assert.match(settings, /<SlurpCreatorBulkEdit/u);
-assert.match(settings, /<SlurpDiscoveryProfileEditor/u);
+// Creators tab: select mode plus the bulk panel for many Creators at once. Each control is checked
+// in the panel that renders it, so a control on another tab cannot satisfy the check.
+assert.match(creatorsPanel, /<SlurpCreatorBulkEdit/u);
+assert.match(stageForm, /<SlurpDiscoveryProfileEditor/u);
 // A single Creator's gender/tags moved off the instant bulk-update quick edit and into the whole
 // profile editor (commit 95cd4c0a0, "whole profile in the Creators tab"), saved with the rest of
 // the profile through the stage-profile route instead of a one-field bulk-update call.
-assert.match(settings, /<SlurpCreatorProfileEditor/u);
+assert.match(creatorSettings, /<SlurpCreatorProfileEditor/u);
 assert.match(
   read("client/src/slp/features/creators/slp-creator-profile-hooks.ts"),
   /\/slurp2\/slurp\/accounts\/\$\{encodeURIComponent\(accountId\)\}\/stage-profile/u,

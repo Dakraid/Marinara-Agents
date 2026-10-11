@@ -407,7 +407,7 @@ assert.doesNotMatch(useSlurpSource, /useDeliverSlurpCommission[\s\S]*imageUrl\?:
 // prompt/description from metadata now, so content/imageUrl is no longer the whole masked shape.
 assert.match(
   messageRoutes,
-  /message\?\.kind === "ppv" && !message\.unlockedAt\s*\?\s*\{\s*\.\.\.message,\s*content: "",\s*imageUrl: null,/u,
+  /message\?\.kind === "ppv" && !message\.unlockedAt\s*\?\s*\{\s*\.\.\.message,\s*content: "",\s*imageUrl: null,\s*metadata: \{\s*\.\.\.message\.metadata,\s*imagePrompt: undefined,\s*imageDescription: undefined,/u,
 );
 assert.match(messagesStorage, /kind: "commission_delivery",\s*imageUrl,/u);
 assert.match(messagesView2, /const messageImage = useSlurpMediaSrc\(\s*message\.imageUrl\s*\?/u);
@@ -480,7 +480,7 @@ assert.match(messagesView2, /holdTyping\(result\.reply \? \(result\.typingMs \?\
 // the optimistic echo instead of leaving it to blink.
 assert.match(
   messagesView2,
-  /pending &&\s*\n\s*messages\.some\(\s*\n\s*\(message\) =>\s*\n\s*\(pending\.id !== null && message\.id === pending\.id\) \|\|/u,
+  /pending &&\s*\n\s*messages\.some\(\s*\n\s*\(message\) =>\s*\n\s*\(pending\.id !== null && message\.id === pending\.id\) \|\|\s*\(message\.role === "viewer" &&\s*message\.content === pending\.content &&\s*Date\.parse\(message\.createdAt\) >= pending\.startedAt\)/u,
 );
 
 const slurpHooks = slurp2Source("packages/slurp2/src/engine/packages/client/src/hooks/use-slurp.ts");

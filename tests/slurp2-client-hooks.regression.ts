@@ -398,8 +398,8 @@ const addedCalls = [
   "delete /slurp2/slurp/ads/brands/${encodeURIComponent(id)}",
   "get ${base}?personaId=${encodeURIComponent(personaId!)}",
   "get ${base}?personaId=${encodeURIComponent(personaId!)}",
-  "get ${path(creatorId)}/rewrite-prepared",
-  "get ${path}/noticed",
+  "post ${path(creatorId)}/rewrite-prepared",
+  "post ${path}/noticed",
   "get /connections",
   "get /slurp2/ambient-profiles",
   "get /slurp2/continuity",
@@ -504,8 +504,11 @@ const renamedCalls = new Map([
   ["get /slurp2/settings/prompt-blocks?mode=${encodeURIComponent(mode)}", "get /slurp2/settings/prompt-blocks"],
 ]);
 const calls = [
-  // The generic may hold `;` (an object type), so it is matched across the whole type argument.
-  ...combined.matchAll(/api\.(get|post|put|patch|delete|upload|raw)\s*(?:<[\s\S]*?>)?\s*\(\s*[`"]([^`"]*)/gu),
+  // The generic may hold `;` (an object type), so it is matched across the whole type argument. The
+  // lookahead keeps that scan inside one call, so it cannot run on into the next api call.
+  ...combined.matchAll(
+    /api\.(get|post|put|patch|delete|upload|raw)\s*(?:<(?:(?!api\.)[\s\S])*?>)?\s*\(\s*[`"]([^`"]*)/gu,
+  ),
 ]
   .map((m) => `${m[1]} ${m[2]}`)
   .sort();

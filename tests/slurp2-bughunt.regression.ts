@@ -56,9 +56,14 @@ assert.match(home, /editing \? null : \([\s\S]*?\{goalForViewer && \(/u);
 // Creator tools no longer couple to `!editing` through their own ternary (the line above), but
 // the coupling must still exist: they must stay nested inside the same `editing ? null : (...)`
 // block as the goal bar, so editing still hides them, not just unconditionally render them.
+// Slice the guarded block (up to the next prop), so a tools card rendered after the block closes
+// cannot satisfy the check.
+const guardStart = home.search(/afterTabsContent=\{\s*editing \? null : \(/u);
+assert.ok(guardStart >= 0, "the editing guard around the profile's after-tabs content must exist");
+const guardedBlock = home.slice(guardStart, home.indexOf("postList={cards}", guardStart));
 assert.match(
-  home,
-  /editing \? null : \([\s\S]*?\{managedCreator && <SlpCreatorToolsCard model=\{model\} \/>\}/u,
+  guardedBlock,
+  /\{managedCreator && <SlpCreatorToolsCard model=\{model\} \/>\}/u,
   "creator tools must stay inside the editing-hides-everything block",
 );
 assert.match(home, /data-slurp-creator-tools/u);

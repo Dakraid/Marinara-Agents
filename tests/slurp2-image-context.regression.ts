@@ -106,7 +106,7 @@ async function main() {
     new URL("../packages/slurp2/src/engine/packages/server/src/routes/slurp-messages.routes.ts", import.meta.url),
   );
   const maskForViewerDef =
-    messageRoutes.match(/kind === "ppv" && !message\.unlockedAt\s*\?[^:]*?\{[\s\S]{0,300}?\}\s*:/gu) ?? [];
+    messageRoutes.match(/const maskForViewer = <T[^>]*>\(message: T\): T =>[\s\S]*?: message;/gu) ?? [];
   assert.equal(maskForViewerDef.length, 1, "the PPV redaction must be defined in exactly one shared helper");
   assert.match(maskForViewerDef[0], /imagePrompt: undefined,\s*imageDescription: undefined/u);
   // Every viewer-facing message response routes through the shared helper, called either directly
