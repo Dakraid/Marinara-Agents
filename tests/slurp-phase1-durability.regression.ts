@@ -81,6 +81,13 @@ async function main() {
     // Slurp2's schema uses the package-relative slurp.ts name. Keep the host's
     // legacy schema in its barrel; package tables are registered explicitly below.
     const schemaRoot = join(overlayRoot, "packages/server/src/db/schema");
+    // Server modules import the shared package by relative path, so the overlay needs it too.
+    await cp(join(engineRoot, "packages/shared/src"), join(overlayRoot, "packages/shared/src"), { recursive: true });
+    await cp(
+      join(repoRoot, "packages/slurp2/src/engine/packages/shared/src"),
+      join(overlayRoot, "packages/shared/src"),
+      { recursive: true, force: true },
+    );
     await cp(join(engineRoot, "packages/server/src/db/schema/slurp.ts"), join(schemaRoot, "host-slurp.ts"));
     const hostSchema = await readFile(join(schemaRoot, "index.ts"), "utf8");
     assert.ok(hostSchema.includes('export * from "./slurp.js";'));
@@ -94,8 +101,10 @@ async function main() {
       join(overlayRoot, "packages/server/node_modules"),
       "dir",
     );
+    // The shared sources resolve their packages (zod) from the server's install.
+    await symlink(join(engineRoot, "packages/server/node_modules"), join(overlayRoot, "packages/shared/node_modules"), "dir");
 
-    const [{ createFileNativeDB }, slurpSchema, messagesModule, storageModule, queryModule, schedulerModule] =
+    const [{ createFileNativeDB }, slurpSchema, messagesStorageFile, messagesContextFile, storageModule, queryModule, schedulerModule] =
       await Promise.all([
         importOverlay<{ createFileNativeDB: () => Promise<FileDb> }>("packages/server/src/db/file-backed-store.ts"),
         importOverlay<Record<string, unknown>>("packages/server/src/db/schema/slurp.ts"),
@@ -114,9 +123,17 @@ async function main() {
             creatorId: string,
             creditId: string,
           ) => Promise<void>;
-        }>("packages/server/src/services/storage/slurp-messages.storage.ts"),
-        importOverlay<{ createSlurpStorage: (db: FileDb) => SlurpStorage }>(
-          "packages/server/src/services/storage/slurp.storage.ts",
+        }>("packages/server/src/slp/data/messages/slp-messages-storage.ts"),
+        importOverlay<{
+          claimSlurpPaymentIntentForDatabase: (db: FileDb, payment: Payment, id: string) => Promise<string>;
+          compensateSlurpPaymentForDatabase: (db: FileDb, payment: Payment, error: unknown, id: string) => Promise<void>;
+          settleSlurpPaymentIntentForDatabase: (db: FileDb, id: string, creatorId: string, creditId: string) => Promise<void>;
+        }>("packages/server/src/slp/data/messages/slp-messages-storage-context.ts"),
+        importOverlay<{
+          createSlurpStorage: (db: FileDb) => SlurpStorage;
+          createSlurpMessagesStorage: (db: FileDb) => MessagesStorage;
+        }>(
+          "packages/server/src/slp/data/slp-storage.ts",
         ),
         importOverlay<{ eq: (column: unknown, value: unknown) => unknown }>("packages/server/src/db/file-query.ts"),
         importOverlay<{
@@ -124,17 +141,23 @@ async function main() {
             db: FileDb;
             addHook: (name: string, hook: () => Promise<void>) => void;
           }) => { pollNow: () => Promise<void>; stop: () => Promise<void> };
-        }>("packages/server/src/services/slurp/slurp-payment-recovery-scheduler.service.ts"),
+        }>("packages/server/src/slp/features/economy/slp-payment-recovery-scheduler-service.ts"),
       ]);
+    // The default core lives in the slp storage barrel; the messages file needs one passed in.
+    const messagesModule = {
+      ...messagesStorageFile,
+      ...messagesContextFile,
+      createSlurpMessagesStorage: storageModule.createSlurpMessagesStorage,
+    };
     assert.match(
       await slurp2Source(
-        join(repoRoot, "packages/slurp2/src/engine/packages/server/src/services/slurp/server-entry.ts"),
+        join(repoRoot, "packages/slurp2/src/engine/packages/server/src/slp/slp-server-entry.ts"),
       ),
       /startSlurpPaymentRecoveryScheduler\(app, addTeardown\)/u,
     );
     const { eq } = queryModule;
     const paymentTable = slurpSchema.slurpPaymentCompensations as any;
-    const accountTable = slurpSchema.noodleAccounts as any;
+    const accountTable = slurpSchema.slpAccounts as any;
     const commissionTable = slurpSchema.slurpCommissions as any;
     const messageTable = slurpSchema.slurpMessages as any;
     const threadTable = slurpSchema.slurpThreads as any;
