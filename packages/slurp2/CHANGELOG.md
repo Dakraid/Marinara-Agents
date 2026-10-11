@@ -1,5 +1,12 @@
 # Slurp release notes
 
+## 0.3.22 — 2026-10-11
+
+- Fixed: backups and restores now carry user reports (`slurp2_reports`) along with everything else.
+- Fixed: a linked character's look reaches the picture again when "Include descriptions" is off; that toggle only ever controlled extra source context, not whether a post's subject is drawn at all.
+- Fixed: "Create posts now" names the Creators it skipped or could not post for again, instead of only a count.
+- Fixed: a Slurp Support desk tick checks a throttle against the tick's own time instead of the real clock, so a throttled Creator asks about views even when the tick runs well after "now."
+
 ## 0.3.21 — 2026-10-11
 
 - Stir's Recent plays follows a collab you suggested or pushed: waiting for an answer, agreed, coming up, turned down (with the reason), blocked, or up on both pages. A posted collab opens its joint post; a deleted post or a collab Slurp no longer keeps says so.
