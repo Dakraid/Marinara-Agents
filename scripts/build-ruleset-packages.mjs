@@ -42,7 +42,7 @@ const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 // Rulesets are pure data with no Engine documentation page of their own; the
 // Game Mode guide's rules section is where a user learns what choosing one does.
 const RULESET_DOCUMENTATION_URL =
-  "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/game/getting-started.md#choosing-rules";
+  "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/game/getting-started.md#choosing-rules";
 
 const packageIds = (await readdir(packagesDir, { withFileTypes: true }))
   .filter((entry) => entry.isDirectory())

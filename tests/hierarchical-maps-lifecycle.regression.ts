@@ -17,9 +17,9 @@ const generationProviderBaseUrl = "http://127.0.0.1:9/v1";
 const csrfHeaders = { "x-marinara-csrf": "1" };
 const originalFetch = globalThis.fetch;
 const artifactWorldMapsGuideUrl =
-  "https://github.com/Pasta-Devs/Marinara-Engine/blob/main/docs/agents/hierarchical-maps.md";
+  "https://github.com/Dakraid/Marinara-Engine/blob/main/docs/agents/hierarchical-maps.md";
 const catalogWorldMapsGuideUrl =
-  "https://github.com/Pasta-Devs/Marinara-Engine/blob/main/docs/agents/hierarchical-maps.md";
+  "https://github.com/Dakraid/Marinara-Engine/blob/main/docs/agents/hierarchical-maps.md";
 const defaultTurnPromptTemplate = [
   "Current path: ${currentPath}",
   "Current location ID: ${currentLocationId}",

@@ -113,7 +113,7 @@
         "sha256": "c81a75a054570afb6fa6abf3da0b1c9570737afafbecb1172e4f0cb2b23f9fe4",
         "bytes": 1433
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#background"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#background"
     },
     {
       "manifest": {
@@ -167,7 +167,7 @@
         "sha256": "acf9ed156488a2f79db96c9b478604b1193de20ff611bbc2d63246ddd3f7c672",
         "bytes": 460953
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#beholder"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#beholder"
     },
     {
       "manifest": {
@@ -349,7 +349,7 @@
         "sha256": "a650a487d8f496267b09e5175309b27825b2f418208adffa2f94cfa597c28149",
         "bytes": 1540
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#card-evolution-auditor"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#card-evolution-auditor"
     },
     {
       "manifest": {
@@ -391,7 +391,7 @@
         "sha256": "828442219565f73063c1addc1af2731d3228270737bd782e7c49b24185775268",
         "bytes": 2193
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#character-tracker"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#character-tracker"
     },
     {
       "manifest": {
@@ -500,7 +500,7 @@
         "sha256": "9da6690edaa65f3f54e3a16489ef9780085c630008482e33592c7b6c748f2e82",
         "bytes": 1603
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#combat"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#combat"
     },
     {
       "manifest": {
@@ -542,7 +542,7 @@
         "sha256": "6497e660349e9a9a5b18f1d1c0666d0284f71bdfe8ae2e8a34582b7241b6cdae",
         "bytes": 1555
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#continuity-checker"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#continuity-checker"
     },
     {
       "manifest": {
@@ -584,7 +584,7 @@
         "sha256": "9da6be906c6c7fc331e1d307f7203388ab6227c4b05138b71a56a747050740e9",
         "bytes": 1728
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#custom-tracker"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#custom-tracker"
     },
     {
       "manifest": {
@@ -626,7 +626,7 @@
         "sha256": "36b11d7ecfff9cb9c2266352381e24a909c6b0163cb5ec3aeffa3784a39a2c86",
         "bytes": 1446
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#cyoa-choices"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#cyoa-choices"
     },
     {
       "manifest": {
@@ -668,7 +668,7 @@
         "sha256": "e78f4d13e6da36deae79dd6d0f6f4396e1bad8c75935b4cb41ffee4189a93520",
         "bytes": 2429
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#echo-chamber"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#echo-chamber"
     },
     {
       "manifest": {
@@ -710,7 +710,7 @@
         "sha256": "7bad09b42129dad0899b305fe6023ba99e8254d30b4d69cb4a188c52aafaa6ed",
         "bytes": 1572
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#expression-engine"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#expression-engine"
     },
     {
       "manifest": {
@@ -2293,7 +2293,7 @@
         "sha256": "8f00a3bb33d478850bbfb7be64ae485b344030cc9520c2772e2c8d18b66cf126",
         "bytes": 1946
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#haptic-feedback"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#haptic-feedback"
     },
     {
       "manifest": {
@@ -2335,7 +2335,7 @@
         "sha256": "d9d11c5edc32fb31206b2b43514aaa2c888697f205f1a4a33d19a2facbf3d529",
         "bytes": 3173
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#illustrator"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#illustrator"
     },
     {
       "manifest": {
@@ -2377,7 +2377,7 @@
         "sha256": "3d4ba384cb25e051525d31f352c32f4bd4fa37d299f2b18c3091b78e5f29fbce",
         "bytes": 1569
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#immersive-html"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#immersive-html"
     },
     {
       "manifest": {
@@ -2419,7 +2419,7 @@
         "sha256": "fc9fe24ed1c6e7e23d3bb75de19b6bc206d626498d1ac99595bae539521c7afc",
         "bytes": 1977
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#inventory-tracker"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#inventory-tracker"
     },
     {
       "manifest": {
@@ -2461,7 +2461,7 @@
         "sha256": "e0121d6ed27128ca999504cb0ed31e4e2b7557e2dcff7b9446eaeb73735d9e50",
         "bytes": 1368
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#knowledge-retrieval"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#knowledge-retrieval"
     },
     {
       "manifest": {
@@ -2503,7 +2503,7 @@
         "sha256": "49b41722c402c91dbfe776f3e87ec8022de0a4553ea2b421d7191dde72a08921",
         "bytes": 1446
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#knowledge-router"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#knowledge-router"
     },
     {
       "manifest": {
@@ -2618,7 +2618,7 @@
         "sha256": "149149fd272d849d9b68a5e90a198fc191b04288bd24a3e982943b7897adb23b",
         "bytes": 2675
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#lorebook-editor"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#lorebook-editor"
     },
     {
       "manifest": {
@@ -2660,7 +2660,7 @@
         "sha256": "1ec87c3b544b56aa3cbd504e183614883993d7f97b8352af7f6a7b91bf8c7c33",
         "bytes": 2391
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#lorebook-keeper"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#lorebook-keeper"
     },
     {
       "manifest": {
@@ -2772,7 +2772,7 @@
         "sha256": "be8dec8daeaabc8f533be670632ddd6c677d3ff7447aaf94f42ddf7e697efaaa",
         "bytes": 2611
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#music-dj"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#music-dj"
     },
     {
       "manifest": {
@@ -2814,7 +2814,7 @@
         "sha256": "3e364ccdad2360f5663bc659c21647372b39463eeae99b81203c82174ccab838",
         "bytes": 1415
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#narrative-director"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#narrative-director"
     },
     {
       "manifest": {
@@ -2985,7 +2985,7 @@
         "sha256": "cfa8cdc7e69103c1c027daf9938a980cec6dc60e66c5fa1a9dcb55f1472fa07d",
         "bytes": 1603
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#persona-stats"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#persona-stats"
     },
     {
       "manifest": {
@@ -3166,7 +3166,7 @@
         "sha256": "3cc07250d28a1d902c1f09a00f7007e987f5e5c2bdcbaad3ead0f6ab55d867d9",
         "bytes": 1517
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#prose-guardian"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#prose-guardian"
     },
     {
       "manifest": {
@@ -3354,7 +3354,7 @@
         "sha256": "d14d89a105a0f235c7b813366acccbd7049eb3b1ffd5b6815b691ec97225fa8e",
         "bytes": 3000
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#quest-tracker"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#quest-tracker"
     },
     {
       "manifest": {
@@ -3719,7 +3719,7 @@
         "sha256": "126c32600cb3d98101f01e2d74a358f47250bb11b1403f5be79cadc07247f6f6",
         "bytes": 17718
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#storyboard"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#storyboard"
     },
     {
       "manifest": {
@@ -3935,7 +3935,7 @@
         "sha256": "8142c93149c117c87980c519b664c9e10dbfd7f45077a874881804b173a0c69f",
         "bytes": 1625072
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/main/docs/agents/hierarchical-maps.md"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/main/docs/agents/hierarchical-maps.md"
     },
     {
       "manifest": {
@@ -3977,7 +3977,7 @@
         "sha256": "bedf93879675900da43eedf85320898788fd54920342070ba8dba6b24e339f49",
         "bytes": 2004
       },
-      "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#world-state"
+      "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#world-state"
     }
   ]
 }

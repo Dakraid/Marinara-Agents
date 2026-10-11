@@ -143,7 +143,7 @@ for (const id of selectedPackageDirectories) {
         sha256: sha256(artifact),
         bytes: artifact.byteLength,
       },
-      documentationUrl: `https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#${documentationAnchors[id] || id}`,
+      documentationUrl: `https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#${documentationAnchors[id] || id}`,
     });
     rebuiltIds.add(id);
   } finally {

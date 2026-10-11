@@ -142,7 +142,7 @@ catalog.packages.push({
     bytes: archive.byteLength,
   },
   documentationUrl:
-    "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#beholder",
+    "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#beholder",
 });
 catalog.packages.sort((left, right) => left.manifest.name.localeCompare(right.manifest.name));
 // generatedAt is resolved centrally in writeCatalogFamily (preserved by

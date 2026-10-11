@@ -1,4 +1,4 @@
-export const OPENROUTER_APP_REFERER = "https://github.com/Pasta-Devs/Marinara-Engine";
+export const OPENROUTER_APP_REFERER = "https://github.com/Dakraid/Marinara-Engine";
 export const OPENROUTER_APP_TITLE = "Marinara Engine";
 export const OPENROUTER_APP_CATEGORIES = "roleplay,game";
 

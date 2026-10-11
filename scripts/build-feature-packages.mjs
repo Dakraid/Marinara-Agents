@@ -2039,7 +2039,7 @@ for (const feature of selectedFeatures) {
       },
       documentationUrl:
         feature.id === "hierarchical-maps"
-          ? "https://github.com/Pasta-Devs/Marinara-Engine/blob/main/docs/agents/hierarchical-maps.md"
+          ? "https://github.com/Dakraid/Marinara-Engine/blob/main/docs/agents/hierarchical-maps.md"
           : feature.id === "noodle"
             ? "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/noodle/README.md"
             : feature.id === "slurp2"
