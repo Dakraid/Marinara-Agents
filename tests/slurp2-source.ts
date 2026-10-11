@@ -100,6 +100,7 @@ export const SLURP2_SOURCE_MODULES: Record<string, readonly string[]> = {
   ],
   "packages/client/src/components/slurp/SlurpBackstagePrompts.tsx": [
     "packages/client/src/slp/features/settings/SlpPromptsPanel.tsx",
+    "packages/client/src/slp/features/settings/SlpConnectionsPanel.tsx",
   ],
   "packages/client/src/components/slurp/SlurpBackstageMaintenance.tsx": [
     "packages/client/src/slp/features/maintenance/SlpAutopurgePanel.tsx",
