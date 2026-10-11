@@ -1019,6 +1019,8 @@
   "ui.slurp.post.reportWhatNext": "Zespół Slurp ma już zgłoszenie. Twórca otrzymuje prywatne ostrzeżenie, bez Twojego imienia.",
   "ui.slurp.deepDetails.retrying": "Kolejna próba…",
   "ui.slurp.creators.generateOutcome": "{{made}} nowych, {{skipped}} pominiętych, {{failed}} nie mogło opublikować.",
+  "ui.slurp.creators.generateSkippedList": "Pominięte: {{names}}",
+  "ui.slurp.creators.generateFailedList": "Nie opublikowano: {{names}}",
   "ui.slurp.settings.searchLabel.autoPostingScheduleEnabled": "Automatyczne publikowanie",
   "ui.slurp.settings.searchLabel.simulationTuning": "Dostrajanie odbiorców",
   "ui.slurp.wallet.notEnoughCoins": "Za mało monet.",

@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api } from "../../../lib/api-client.js";
 import { slpKeys } from "../../base/state/slp-query-keys.js";
-import { countSlurpRefreshOutcomes, refreshSlurpCreatorBatch } from "./slp-refresh-batch.js";
+import { countSlurpRefreshOutcomes, refreshSlurpCreatorBatch, slurpRefreshOutcomeNames } from "./slp-refresh-batch.js";
 
 export function useRefreshCreatorConversationSchedule() {
   const qc = useQueryClient();
@@ -49,25 +49,28 @@ export function useRefreshTargetedCreatorsNow(onRemaining?: (remaining: number) 
       if (skipped + failed > 0) {
         const accounts = qc.getQueryData<Array<{ id: string; displayName: string }>>(slpKeys.noodlerAccounts());
         const byId = new Map((accounts ?? []).map((account) => [account.id, account.displayName]));
+        const nameFor = (accountId: string) => byId.get(accountId) ?? t("ui.slurp.ties.someone");
         // Name the Creators that did not post, so a short batch is never a mystery (R1-068).
-        const names = (wanted: (status: SlpCreatorRefreshNowOutcome["status"]) => boolean) =>
-          result.outcomes
-            .filter((outcome) => wanted(outcome.status))
-            .map((outcome) => byId.get(outcome.accountId) ?? outcome.accountId)
-            .join(", ");
+        const list = (outcomeClass: "skipped" | "failed", key: string) => {
+          const { names, extra } = slurpRefreshOutcomeNames(result.outcomes, outcomeClass, nameFor);
+          if (names.length === 0) return null;
+          const joined =
+            extra > 0 ? `${names.join(", ")} ${t("ui.slurp.calendar.more", { count: extra })}` : names.join(", ");
+          return t(key, { names: joined });
+        };
+        const description = [
+          list("skipped", "ui.slurp.creators.generateSkippedList"),
+          list("failed", "ui.slurp.creators.generateFailedList"),
+        ]
+          .filter((line): line is string => line !== null)
+          .join("\n");
         const outcome = t("ui.slurp.creators.generateOutcome", {
           made,
           skipped,
           failed,
           defaultValue: "{{made}} new, {{skipped}} skipped, {{failed}} could not post.",
         });
-        const toaster = made > 0 ? toast.info : toast.error;
-        if (skipped) toaster(outcome, { description: names((status) => status === "skipped"), duration: 10_000 });
-        if (failed)
-          toaster(outcome, {
-            description: names((status) => status !== "generated" && status !== "skipped"),
-            duration: 10_000,
-          });
+        (made > 0 ? toast.info : toast.error)(outcome, { description, duration: 10_000 });
       }
       return Promise.all([
         qc.invalidateQueries({ queryKey: slpKeys.noodlerAccounts() }),
