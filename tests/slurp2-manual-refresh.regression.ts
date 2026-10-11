@@ -18,7 +18,11 @@ assert.match(
 const generation = read("server/src/services/slurp/slurp-generation.service.ts");
 assert.match(generation, /input\.allowStory !== false && variation\?\.story === true/u);
 
-const settings = read("client/src/components/slurp/SlurpSettings.tsx");
-assert.match(settings, /description: names\(\(status\) => status === "skipped"\)/u);
+// The names toast moved off the Backstage monolith's split and into the hook that owns the
+// mutation (the state layer, not a component); read it directly rather than through the
+// SlurpSettings.tsx component key, which tests/slurp2-client-hooks.regression.ts relies on
+// excluding from the state-layer hook inventory.
+const refreshHooks = read("client/src/slp/features/creators/slp-creator-refresh-hooks.ts");
+assert.match(refreshHooks, /description: names\(\(status\) => status === "skipped"\)/u);
 
 console.log("slurp2 manual refresh regression passed");
