@@ -2711,7 +2711,7 @@
         },
         "id": "noodle",
         "name": "Noodle",
-        "version": "1.5.4",
+        "version": "1.5.5",
         "description": "A pretend social network where your characters post, share photos, and talk about your chats. Install it, restart Marinara Engine when prompted, then open Home → Noodle.",
         "localizations": {
           "de": {
@@ -2794,13 +2794,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "849a2acb169ac9c37cf632247b2a279a63bfb1a599b207462bb82514d451b9b3",
-            "bytes": 2121051
+            "sha256": "3f5c4f9e8d094edb55652a5af6bbbc16ff878f4309834b814fd1559a7d499fea",
+            "bytes": 2023455
           },
           {
             "path": "client.js",
-            "sha256": "8d11343672d50bd68f2823c8d073b6b2e870a2680291847249f6b49c2a97afd0",
-            "bytes": 2584657
+            "sha256": "f20263a631b2893478cabd245467d9bec16a8955c6a68c24c7f6c432eebd455b",
+            "bytes": 2395593
           },
           {
             "path": "noodle-klusek.png",
@@ -2821,9 +2821,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/noodle.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/noodle-1.5.4.zip",
-        "sha256": "0ce0f6c45449612c9cb41babfe9b448c16bf7bcfe057273c58798dd8888792e6",
-        "bytes": 4738454
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/noodle-1.5.5.zip",
+        "sha256": "335cba819cee102abe6cfe8c13fbb442419ff219e94abd99a905e99970d35728",
+        "bytes": 4451794
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/noodle/README.md"
     },
