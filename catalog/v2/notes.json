@@ -200,6 +200,12 @@
     "long-term-memory": {
       "versions": [
         {
+          "version": "1.4.25",
+          "date": "2026-10-11",
+          "notes": "- Show which embedding source Long-Term Memory uses. The semantic search health line now names the source (for example \"Built-in local MiniLM\"), says when the saved vectors were built with a different source and will be re-embedded on the next recall or reindex, and no longer reports semantic search as available after the source changed. Memory Settings explains that the Extraction connection only drives extraction, and the vault health panel explains which connection drives recall embeddings, that the built-in model is English-only, and to use a multilingual embedding model for Korean, Japanese, Chinese or mixed-language vaults.",
+          "highlight": false
+        },
+        {
           "version": "1.4.24",
           "date": "2026-10-11",
           "notes": "- Refresh the recall index when a connection or agent save changes Long-Term Memory's embedding source. The Engine rebuilds the vault for the new source during the save instead of re-embedding it inside the next chat's recall, and a source that still cannot embed the vault reports failure instead of a false success.",
@@ -311,12 +317,6 @@
           "version": "1.4.6",
           "date": "2026-10-06",
           "notes": "- Stop a newly met minor character from failing the whole import when Conversation or Game is selected alongside Roleplay. Local character memories are available only in Roleplay, so such a memory is now restricted to Roleplay with a warning; when Roleplay is not selected it is skipped with an explanation. The other memories from the same source are still proposed.",
-          "highlight": false
-        },
-        {
-          "version": "1.4.5",
-          "date": "2026-10-05",
-          "notes": "- Stop a short or partial name for a known character or persona from creating a duplicate local character memory. A first-name form with no explicit alias now waits in review for an explicit identity choice instead of being bound by first name alone or forking a new identity; when more than one trusted character shares the name, the ambiguous candidates are never merged. Once the choice is made it is saved and reused, and relationship memories resolve both participants with the same subjects as their character memories.\n- Review Queue offers bind-existing, different-character, and skip choices for each participant. Decisions are remembered within the chat or group and included in backups. Saved decisions are listed per source; deleting one undoes it, so the next extraction asks again. Recovered content becomes a pending draft without renaming existing memories, replacing other pending proposals, or applying changes automatically.",
           "highlight": false
         }
       ]
@@ -616,6 +616,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.21",
+          "date": "2026-10-11",
+          "notes": "- Stir's Recent plays follows a collab you suggested or pushed: waiting for an answer, agreed, coming up, turned down (with the reason), blocked, or up on both pages. A posted collab opens its joint post; a deleted post or a collab Slurp no longer keeps says so.\n- A collab request still waiting shows Make it happen, which opens the usual preview before anything changes.\n- Undo is no longer offered once the joint post is on its way or up; published posts are not taken back.",
+          "highlight": false
+        },
+        {
           "version": "0.3.20",
           "date": "2026-10-10",
           "notes": "- Choose what a breakup leaves behind: keep the usual history, move on while remembering the relationship without ongoing pining or breakup drama, or forget the relationship in future posts and chats. Stir can also move on or forget an existing ex relationship. Published posts and messages stay; Undo restores the previous choice.",
@@ -727,12 +733,6 @@
           "version": "0.2.78",
           "date": "2026-09-27",
           "notes": "- bugfixing\n- Restyle the update sheet header with a larger animated G face, accent tint and integrated alpha reminder.\n- Replace the cost warning with a direct reminder that Slurp uses background image and text generation.",
-          "highlight": false
-        },
-        {
-          "version": "0.2.77",
-          "date": "2026-09-27",
-          "notes": "- Restore G’s animated face, introduction and alpha reminder in the themed update sheet.\n- Remember Details edit mode per conversation and viewer in this browser. Turning it off keeps saved edits.\n- Expose the displayed state timestamps and conversation cooldown for inline editing too.",
           "highlight": false
         }
       ]
