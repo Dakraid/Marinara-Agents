@@ -437,10 +437,8 @@ export async function readSlpStirView(
         id: collab.id,
         hostId: collab.hostId,
         partnerId: collab.partnerId,
-        idea: collab.idea,
         status: collab.status,
         decline: collab.decline,
-        dropAt: collab.dropAt ?? null,
         postId: collab.postId && (await storage.getPostById(collab.postId)) ? collab.postId : null,
       })),
   );

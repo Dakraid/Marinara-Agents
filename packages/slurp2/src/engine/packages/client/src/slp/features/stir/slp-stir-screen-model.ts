@@ -81,7 +81,7 @@ export type SlpStirCollabProgress = {
   partnerId: string | null;
   target: SlpPulseTarget | null;
   lever: { action: "push-collab"; pick: string } | null;
-  /** False once the joint post is on its way or up: Undo does not take a post back. */
+  /** What Undo can still take back: never a joint post on its way or up. */
   undoable: boolean;
 };
 
@@ -117,13 +117,18 @@ export function slpStirPlayCollab(
         : collab.status === "declined"
           ? `ui.slurp.ties.decline.${collab.decline ?? "noAnswer"}`
           : `ui.slurp.ties.collab.${collab.status}`;
-  const sent = collab.status === "planned" || collab.status === "posted";
+  // The server's Undo rule (`slurpUndoTie`): a suggestion is removed until its post is on the way;
+  // a push puts the request back only while the two are still just agreed.
+  const takesBack =
+    step.action === "push-collab"
+      ? collab.status === "agreed"
+      : collab.status !== "planned" && collab.status !== "posted";
   return {
     label,
     hostId: collab.hostId,
     partnerId: collab.partnerId,
     target: { accountId: collab.hostId, postId: collab.postId },
     lever: collab.status === "asked" ? { action: "push-collab", pick: collab.id } : null,
-    undoable: play.undoable && !(alone && sent),
+    undoable: play.undoable && (!alone || takesBack),
   };
 }

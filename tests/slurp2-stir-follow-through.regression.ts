@@ -3,12 +3,18 @@
  * - waiting, agreed, coming up, up (opens the joint post), turned down (with the reason), blocked;
  * - a removed post or a collab Slurp no longer keeps says so instead of linking nowhere;
  * - "Make it happen" is offered only while the request is still waiting;
- * - Undo is hidden once the joint post is on its way or up (a post is not taken back), but a play with
+ * - Undo shows exactly when the server's Undo (`slurpUndoTie`) would take the collab back, for a
+ *   suggestion and a push in every status (a post on its way or up is never taken back); a play with
  *   other steps keeps it;
  * - a play that made no collab, failed, or was taken back shows no progress.
  */
 import assert from "node:assert/strict";
 import { slpStirPlayCollab } from "../packages/slurp2/src/engine/packages/client/src/slp/features/stir/slp-stir-screen-model.ts";
+import {
+  SLURP_NO_TIES,
+  type SlurpCollab,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-ties.ts";
+import { slurpUndoTie } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-stir-tie-preview.ts";
 import type {
   SlpStirPlay,
   SlpStirPlayedCollab,
@@ -30,10 +36,8 @@ const collab = (fields: Partial<SlpStirPlayedCollab> = {}): SlpStirPlayedCollab 
   id: "c1",
   hostId: "mira",
   partnerId: "kai",
-  idea: "a cook-off",
   status: "asked",
   decline: null,
-  dropAt: null,
   postId: null,
   ...fields,
 });
@@ -45,7 +49,7 @@ assert.deepEqual(waiting?.lever, { action: "push-collab", pick: "c1" });
 assert.equal(waiting?.undoable, true);
 
 // Agreed: no push any more, Undo still works.
-const agreed = slpStirPlayCollab(play(), [collab({ status: "agreed", dropAt: "2026-10-12T12:00:00Z" })]);
+const agreed = slpStirPlayCollab(play(), [collab({ status: "agreed" })]);
 assert.equal(agreed?.label, "ui.slurp.ties.collab.agreed");
 assert.equal(agreed?.lever, null);
 assert.equal(agreed?.undoable, true);
@@ -111,5 +115,37 @@ assert.equal(
 assert.equal(slpStirPlayCollab(play({ undone: true }), [collab()]), null);
 // An older Engine view without `playedCollabs` reads as "no longer kept", never as a fake state.
 assert.equal(slpStirPlayCollab(play())?.label, "ui.slurp.stir.follow.gone");
+
+// Undo on the row matches what the server would do, never an Undo it refuses (409) nor a missing one.
+const STATUSES = ["asked", "agreed", "planned", "posted", "declined", "blocked"] as const;
+for (const status of STATUSES)
+  for (const kind of ["suggest-collab", "push-collab"] as const) {
+    const stored: SlurpCollab = {
+      id: "c1",
+      hostId: "mira",
+      partnerId: "kai",
+      idea: "a cook-off",
+      hostShare: 50,
+      status,
+      origin: "player",
+      askedAt: "2026-10-11T12:00:00Z",
+      answeredAt: null,
+      plannedAt: null,
+      postId: status === "posted" ? "post-9" : null,
+      postedAt: null,
+      decline: status === "declined" ? "player" : null,
+    };
+    const undo =
+      kind === "suggest-collab"
+        ? ({ kind: "removeCollab", id: "c1" } as const)
+        : ({ kind: "restoreCollab", collab: { ...stored, status: "asked" } } as const);
+    const server = slurpUndoTie({ ties: { ...SLURP_NO_TIES, collabs: [stored] }, couples: [] }, undo) !== null;
+    const step =
+      kind === "suggest-collab"
+        ? play().steps[0]!
+        : { action: "push-collab", input: { collabId: "c1" }, ok: true, error: null, ref: { collabId: "c1" } };
+    const row = slpStirPlayCollab(play({ steps: [step] }), [collab({ status, postId: stored.postId })]);
+    assert.equal(row?.undoable, server, `${kind} while ${status}: Undo shows only when the server takes it back`);
+  }
 
 console.log("slurp2-stir-follow-through: ok");

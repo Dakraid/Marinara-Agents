@@ -107,7 +107,7 @@ export function SlpStirRecentPlays({
                   {[who.join(", "), formatRelativeTime(play.at, i18n.language), status].filter(Boolean).join(" · ")}
                 </span>
                 {progress && (
-                  <span className={cn(SLP_TYPE.meta, "block truncate font-semibold")} data-slp-stir-follow>
+                  <span className={cn(SLP_TYPE.meta, "line-clamp-2 font-semibold")} data-slp-stir-follow>
                     {progress}
                   </span>
                 )}
@@ -116,6 +116,10 @@ export function SlpStirRecentPlays({
                 <SlpButton
                   variant="quiet"
                   onClick={() => onOpen(collab.lever!)}
+                  aria-label={`${t("ui.slurp.ties.push")}: ${t("ui.slurp.stir.pair", {
+                    a: names.get(collab.hostId ?? "") ?? t("ui.slurp.ties.someone"),
+                    b: names.get(collab.partnerId ?? "") ?? t("ui.slurp.ties.someone"),
+                  })}`}
                   className="min-h-11 shrink-0 px-3 text-xs"
                 >
                   {t("ui.slurp.ties.push")}

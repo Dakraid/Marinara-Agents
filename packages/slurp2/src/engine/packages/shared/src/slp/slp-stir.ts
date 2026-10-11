@@ -183,10 +183,8 @@ export type SlpStirPlayedCollab = {
   id: string;
   hostId: string;
   partnerId: string;
-  idea: string;
   status: "asked" | "agreed" | "planned" | "posted" | "declined" | "blocked";
   decline: "busy" | "offBrand" | "noCollabs" | "noAnswer" | "player" | null;
-  dropAt: string | null;
   postId: string | null;
 };
 
