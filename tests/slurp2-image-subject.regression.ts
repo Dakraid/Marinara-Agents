@@ -96,6 +96,12 @@ assert.equal(
   "",
 );
 
+// A second page of the Creator's own character: the tag is in the Creator's block already.
+assert.equal(
+  slurpImageCompanionBlocks("2girls, blizzard", [known], "tags", "writer", false, "fubuki (one punch man), "),
+  "Green hair.\n",
+);
+
 // The enhancer's identity context: the name and the start of the card, marked as context.
 const context = slurpImageIdentityContext("Makima", `A devil hunter.  ${"Calm and in control. ".repeat(40)}`);
 assert.match(context, /^Who this is: Makima\nFrom their card \(context, do not copy\): A devil hunter\./u);

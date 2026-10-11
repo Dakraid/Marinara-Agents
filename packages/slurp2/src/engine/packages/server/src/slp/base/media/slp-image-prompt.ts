@@ -328,7 +328,8 @@ export function slurpApplyImageLook(
  * gave them the Creator's features. Each gets a labelled look, to go in front of the scene; a tag model
  * gets their known name as a tag, since it reads no labels. The look follows the Creator's rule
  * (`slurpApplyImageLook`): none after a used rewrite in `writer` mode, the missing traits after any
- * other used rewrite, all of it when no rewrite was used.
+ * other used rewrite, all of it when no rewrite was used. `own` is the Creator's own block: a
+ * companion page of the same character is not tagged a second time.
  */
 export function slurpImageCompanionBlocks(
   prompt: string,
@@ -336,6 +337,7 @@ export function slurpImageCompanionBlocks(
   family: SlurpPromptFamily,
   mode: SlurpImageAppearanceMode,
   usedRewrite: boolean,
+  own = "",
 ): string {
   const scene = prompt.toLocaleLowerCase();
   const has = (text: string, part: string) => text.toLocaleLowerCase().includes(part.toLocaleLowerCase());
@@ -347,7 +349,10 @@ export function slurpImageCompanionBlocks(
       const added = usedRewrite ? ensureSlpImageAppearance(prompt, look) : `${slurpImageLook(look)}\n${prompt}`;
       const traits = usedRewrite && mode === "writer" ? "" : added.slice(0, added.length - prompt.length).trim();
       if (family !== "natural") {
-        const tag = known && slurpApplyImageSubject(prompt, known, family) !== prompt ? known.toLocaleLowerCase() : "";
+        const tag =
+          known && slurpApplyImageSubject(own + prompt, known, family) !== own + prompt
+            ? known.toLocaleLowerCase()
+            : "";
         return [tag, traits].filter(Boolean).join(", ");
       }
       const label = has(known, name) ? known : has(name, known) ? name : `${name} (${known})`;

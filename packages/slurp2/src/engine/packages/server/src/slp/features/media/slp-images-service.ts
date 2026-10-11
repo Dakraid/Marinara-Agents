@@ -617,11 +617,11 @@ async function generateCreatorPostImageRun(
   const namedLook = skipInterpretation
     ? finalPromptLook
     : slurpApplyImageSubject(finalPromptLook, subjectName, promptFamily);
-  // Everybody else the scene names gets their own block, between the Creator's and the scene.
-  const people = skipInterpretation
-    ? ""
-    : redactIdentity(slurpImageCompanionBlocks(finalPromptBody, companionCards, promptFamily, lookMode, usedRewrite));
   const ownBlock = namedLook.slice(0, namedLook.length - finalPromptBody.length);
+  // Everybody else the scene names gets their own block, between the Creator's and the scene.
+  const blocks = () =>
+    slurpImageCompanionBlocks(finalPromptBody, companionCards, promptFamily, lookMode, usedRewrite, ownBlock);
+  const people = skipInterpretation ? "" : redactIdentity(blocks());
   const finalPromptSubject = styleLead + ownBlock + people + finalPromptBody;
   const finalPrompt = [
     artStyle ? slurpStyledImagePrompt(finalPromptSubject, styleSource) : finalPromptSubject,
