@@ -18,6 +18,7 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
     notes: [
       "Backups now include reports.",
       "Create posts now says which Creators it skipped or could not post for, not just how many.",
+      "The settings search box now stays reachable on a phone inside a settings section.",
     ],
   },
   {

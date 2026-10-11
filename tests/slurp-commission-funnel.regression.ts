@@ -31,12 +31,9 @@ assert.match(
   "commission accept must check the balance before drawing",
 );
 assert.match(routes, /messages\.deliverCommission\(/u);
-// PRODUCT BUG (tracked): the accept route lost its in-flight guard (the delivery route still has
-// `commissionDeliveryRequests`). Two rapid accept requests can both pass the "quoted" state check
-// and both call generateSlurpCommissionImage before the per-commission write queue serializes the
-// storage write, wasting a duplicate paid image generation. See
-// ~/.cache/tmp/slurp-reg-a-product-bugs.md.
-// assert.match(routes, /commissionAcceptRequests\.has\(commission\.id\)/u);
+// The accept route holds the same per-commission in-flight guard as /deliver, so a double-click or
+// retry cannot draw the same commission twice before the storage write queue can serialize it.
+assert.match(routes, /commissionAcceptRequests\.has\(commission\.id\)/u);
 assert.match(routes, /commissionDeliveryRequests\.has\(commissionId\)/u);
 
 // A fresh delivery lease belongs to the other worker. A stale lease can be conditionally reclaimed,
@@ -126,12 +123,10 @@ assert.match(storage, /async listDueCommissionDeliveries\(/u);
 // The wait outlives a restart, so the finished file is kept on the row, not in memory.
 assert.match(schema, /deliverAt: text\("deliver_at"\)/u);
 assert.match(schema, /mediaPath: text\("media_path"\)/u);
-// PRODUCT BUG (tracked): mapCommission now puts the host media file path on the mapped
-// SlurpCommission, which routes return straight to the client (`{ commission: accepted }`, etc).
-// The client's own SlurpCommission type has no mediaPath field, but JSON serialization does not
-// strip it, so the server filesystem path leaks on the wire. See
-// ~/.cache/tmp/slurp-reg-a-product-bugs.md.
-// assert.doesNotMatch(storage, /mapCommission = \(row[\s\S]{0,600}?mediaPath:/u);
+// mapCommission must not put the host media file path on the mapped SlurpCommission: routes return
+// this object straight to the client (`{ commission: accepted }`, etc), and the path is server
+// storage detail. A caller that needs the path reads `row.mediaPath` directly.
+assert.doesNotMatch(storage, /mapCommission = \(row[\s\S]{0,600}?mediaPath:/u);
 
 // The scheduler runs the clock down without the model, so a dead text connection cannot strand a
 // finished commission the fan already paid for.

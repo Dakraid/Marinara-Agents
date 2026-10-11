@@ -152,15 +152,13 @@ assert.match(
   "The active destination must be exposed",
 );
 assert.match(navigation, /overflow-x-auto[\s\S]*?md:flex-wrap/u, "Mobile destinations must scroll in one row");
-// PRODUCT BUG (tracked): SlpBackstageShell's section header still renders the search with
-// "max-md:hidden" (app/backstage/SlpBackstageShell.tsx), so a phone inside a settings section has
-// no search at all; only the top-level settings home list has one. See
-// ~/.cache/tmp/slurp-reg-a-product-bugs.md.
-// assert.match(
-//   settings,
-//   /className="max-w-none basis-full md:max-w-xl md:basis-auto"/u,
-//   "Mobile search must use a full row",
-// );
+// The section header's search must stay reachable on a phone: its row wraps, and the search takes
+// the full row on mobile instead of disappearing (`max-md:hidden` used to hide it entirely).
+assert.match(
+  settings,
+  /className="max-w-none w-full sm:w-auto sm:max-w-xs"/u,
+  "Mobile search must use a full row",
+);
 
 const card = slurp2Source(join(componentsDir, "SlurpCreatorProfileCard.tsx"));
 
