@@ -2,16 +2,13 @@ import type { DB } from "../../../db/connection.js";
 import { desc, eq, inArray } from "../../../db/file-query.js";
 import { slpMessageDeepDetails } from "../../../db/schema/slurp.js";
 import { logger } from "../../../lib/logger.js";
-import type { SlpMessageDeepDetailsRecord } from "../../../../../shared/src/slp/slp-deep-details.js";
+import {
+  slpMessageDeepDetailsId,
+  type SlpMessageDeepDetailsRecord,
+} from "../../../../../shared/src/slp/slp-deep-details.js";
 
 /** A chat keeps the records of its newest replies only, so a long conversation cannot grow the store. */
 export const SLP_MESSAGE_DEEP_DETAILS_LIMIT = 50;
-
-/**
- * The record a message belongs to. A reply's later bubbles are stored as `<first bubble id>:<n>`,
- * so every bubble of one reply leads to the one record.
- */
-export const slurpMessageDeepDetailsId = (messageId: string) => messageId.split(":")[0]!;
 
 /**
  * Saves a reply's record and drops the thread's oldest beyond the limit. Best effort: a failed
@@ -49,7 +46,7 @@ export async function getSlurpMessageDeepDetails(
   const [row] = await db
     .select()
     .from(slpMessageDeepDetails)
-    .where(eq(slpMessageDeepDetails.id, slurpMessageDeepDetailsId(messageId)));
+    .where(eq(slpMessageDeepDetails.id, slpMessageDeepDetailsId(messageId)));
   if (!row) return null;
   try {
     return { threadId: String(row.threadId), record: JSON.parse(String(row.record)) as SlpMessageDeepDetailsRecord };
@@ -59,12 +56,12 @@ export async function getSlurpMessageDeepDetails(
 }
 
 /** The record ids a thread still keeps: what decides which replies offer Deep details. */
-export async function listSlurpMessageDeepDetailIds(db: DB, threadId: string): Promise<Set<string>> {
+export async function listSlurpMessageDeepDetailIds(db: DB, threadId: string): Promise<string[]> {
   const rows = await db
     .select({ id: slpMessageDeepDetails.id })
     .from(slpMessageDeepDetails)
     .where(eq(slpMessageDeepDetails.threadId, threadId));
-  return new Set(rows.map((row) => String(row.id)));
+  return rows.map((row) => String(row.id));
 }
 
 /** A cleared or deleted chat takes its records with it: they hold the prompt and its private notes. */

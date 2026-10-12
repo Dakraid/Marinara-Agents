@@ -18,6 +18,8 @@ const EXPECTED = [
   "POST /slurp/desk/offer/answer",
   "PATCH /messages/threads/:threadId/details",
   "GET /slurp/posts/:id/deep-details",
+  // Deep details for a chat reply, from the Message menu (seat-gated).
+  "GET /slurp/messages/:messageId/deep-details",
   "GET /continuity",
   "GET /continuity/:creatorAccountId",
   "GET /messages/threads/:threadId/requests",
@@ -402,6 +404,8 @@ const ADDED_ROUTES = new Set([
   "GET /messages/unread-count",
   "GET /slurp/notifications/unseen-count",
   "GET /slurp/posts/:id/deep-details",
+  // Deep details for a chat reply, from the Message menu (seat-gated).
+  "GET /slurp/messages/:messageId/deep-details",
   "POST /settings/prompt-blocks/generate-preview",
   "GET /continuity",
   "GET /continuity/:creatorAccountId",
@@ -488,7 +492,7 @@ const EXPECTED_HANDLER_COUNTS = {
   "features/feed": 39,
   "features/maintenance": 15,
   "features/media": 7,
-  "features/messages": 49,
+  "features/messages": 50,
   "features/notifications": 4,
   "features/onboarding": 7,
   "features/projects": 31,
@@ -498,7 +502,8 @@ const EXPECTED_HANDLER_COUNTS = {
 // W: +5 POST, +1 GET (Stir). R: +3 POST, +1 GET, +1 PATCH, +1 DELETE (brands).
 // 0.3.4: +1 POST, +1 PUT (Creator Pages). 0.3.5: +1 GET, +3 POST (Support desk). 0.3.7: +1 POST (rewrite all).
 // 0.3.8: +1 GET, +5 POST (Drama: bonds, drama view, choice, start, end). 0.3.11: +1 POST (fan notes).
-const EXPECTED_METHOD_COUNTS = { DELETE: 19, GET: 84, PATCH: 20, POST: 158, PUT: 7 } as const;
+// 0.3.28: +1 GET (Deep details for a chat reply).
+const EXPECTED_METHOD_COUNTS = { DELETE: 19, GET: 85, PATCH: 20, POST: 158, PUT: 7 } as const;
 
 const root = join(import.meta.dirname, "../packages/slurp2/src/engine/packages/server/src/slp");
 const registration = /\bapp\.(get|post|put|patch|delete|addContentTypeParser)(?:<[^()]*?>)?\(\s*["'`]([^"'`]+)["'`]/gu;
@@ -554,7 +559,7 @@ const methodCounts = Object.fromEntries(
 );
 assert.deepEqual(methodCounts, EXPECTED_METHOD_COUNTS, "HTTP method multiset changed from staging");
 // 0.3.5: +4 (the Support desk). 0.3.7: +1 (rewrite all). Roleplay scenes: +4. 0.3.17: +2 (collab drop, post now).
-assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 288);
+assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 289);
 assert.deepEqual(handlerCounts, EXPECTED_HANDLER_COUNTS, "handler count changed in a feature");
 assert.ok(foundRoutes.includes("POST /slurp/posts/:id/media"), "the renamed POST media route must remain registered");
 assert.ok(

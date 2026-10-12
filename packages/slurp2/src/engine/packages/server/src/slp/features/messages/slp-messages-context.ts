@@ -4,10 +4,6 @@ import type { SlurpMessage } from "../../data/messages/slp-messages-storage-type
 import { resolveSlurpCreatorAvailability } from "../../modules/creators/slp-creator-schedule-context.js";
 import { createCharactersStorage } from "../../../services/storage/characters.storage.js";
 import type { FastifyInstance } from "fastify";
-import {
-  listSlurpMessageDeepDetailIds,
-  slurpMessageDeepDetailsId,
-} from "../../data/messages/slp-message-deep-details-storage.js";
 import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
 
 /** Storage handles and access checks shared by every message route. Created once per mount. */
@@ -99,27 +95,9 @@ export function createSlpMessagesContext(
           ? { ...message, metadata: { ...message.metadata, noodlerMediaPath: undefined } }
           : message;
 
-  /**
-   * Marks the Creator replies whose Deep details record is still kept, so the Message menu offers it
-   * on exactly those. Only the id rides along; the record stays behind its own route.
-   */
-  const withDeepDetails = async <T extends SlurpMessage>(threadId: string, list: T[]): Promise<T[]> => {
-    const kept = await listSlurpMessageDeepDetailIds(app.db, threadId);
-    if (kept.size === 0) return list;
-    return list.map((message) => {
-      const deepDetailsId = slurpMessageDeepDetailsId(message.id);
-      return message.role === "creator" && message.kind === "text" && kept.has(deepDetailsId)
-        ? { ...message, metadata: { ...message.metadata, deepDetailsId } }
-        : message;
-    });
-  };
-
   /** The messages of a thread as this side is allowed to see them. The Creator side sees what they wrote. */
   const visibleMessages = async (threadId: string, side: "viewer" | "creator") =>
-    withDeepDetails(
-      threadId,
-      (await messages.listMessages(threadId)).map((message) => (side === "viewer" ? maskForViewer(message) : message)),
-    );
+    (await messages.listMessages(threadId)).map((message) => (side === "viewer" ? maskForViewer(message) : message));
 
   /**
    * Re-read a thread and enrich it, so every response carries the same joined shape.
@@ -166,7 +144,6 @@ export function createSlpMessagesContext(
     requireViewer,
     maskForViewer,
     visibleMessages,
-    withDeepDetails,
     freshView,
     ownsCreator,
   };

@@ -18,6 +18,7 @@ import type { FastifyInstance } from "fastify";
 import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
 import { SLURP_SUPPORT_NAME } from "../../modules/messages/slp-dm-roles.js";
 import { personaQuerySchema } from "../../modules/messages/slp-messages-schemas.js";
+import { listSlurpMessageDeepDetailIds } from "../../data/messages/slp-message-deep-details-storage.js";
 import { slurpIsCouplePage } from "../../modules/projects/slp-creator-couples.js";
 import { readSlurpPlayerCoupleView } from "../projects/slp-projects-contract.js";
 import type { SlpMessagesContext } from "./slp-messages-context.js";
@@ -47,7 +48,6 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     seatIn,
     slurp,
     visibleMessages,
-    withDeepDetails,
   } = messaging;
   type Thread = NonNullable<Awaited<ReturnType<typeof messages.getThreadById>>>;
   type Creator = NonNullable<Awaited<ReturnType<typeof slurp.getNoodlerAccountById>>>;
@@ -287,7 +287,9 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     );
     return {
       thread: await freshView(thread.id, side),
-      messages: await withDeepDetails(thread.id, side === "viewer" ? page.messages.map(maskForViewer) : page.messages),
+      messages: side === "viewer" ? page.messages.map(maskForViewer) : page.messages,
+      // The replies whose Deep details record is still kept: ids only, the record has its own route.
+      deepDetailIds: await listSlurpMessageDeepDetailIds(app.db, thread.id),
       nextCursor: page.nextCursor,
       creator,
       counterpart,

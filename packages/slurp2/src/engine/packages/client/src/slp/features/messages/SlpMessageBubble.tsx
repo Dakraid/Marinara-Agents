@@ -261,6 +261,7 @@ export const MessageBubble = memo(function MessageBubble({
   ownsCreator,
   group = "single",
   fresh = false,
+  hasDeepDetails = false,
   onOpenProfile,
 }: {
   message: SlurpMessage;
@@ -270,6 +271,8 @@ export const MessageBubble = memo(function MessageBubble({
   group?: SlurpBubbleGroup;
   /** Arrived while the conversation was open, so it lands with the entrance motion. */
   fresh?: boolean;
+  /** A Creator reply whose Deep details record is still kept: the Message menu offers it. */
+  hasDeepDetails?: boolean;
   /** A shared post opens its author's page. */
   onOpenProfile?: (accountId: string) => void;
 }) {
@@ -286,8 +289,6 @@ export const MessageBubble = memo(function MessageBubble({
   const bubbleRef = useRef<HTMLDivElement | null>(null);
   const badgeRef = useRef<HTMLSpanElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  // Set by the server on a Creator reply whose record is still kept; older replies have none.
-  const hasDeepDetails = message.role === "creator" && typeof message.metadata?.deepDetailsId === "string";
   const [deepDetailsOpen, setDeepDetailsOpen] = useState(false);
   // The veil dissolves over the picture once, right after this reader bought it.
   const [dissolving, setDissolving] = useState(false);

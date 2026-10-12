@@ -361,6 +361,7 @@ const addedCalls = [
   "get /slurp2/messages/unread-count?personaId=${encodeURIComponent(personaId!)}",
   "get /slurp2/slurp/notifications/unseen-count?personaId=${encodeURIComponent(personaId!)}",
   "get /slurp2/slurp/posts/${encodeURIComponent(postId)}/deep-details",
+  "get /slurp2/slurp/messages/${encodeURIComponent(messageId)}/deep-details?personaId=${encodeURIComponent(personaId)}",
   "post /slurp2/settings/prompt-blocks/generate-preview",
   // The studio keeps every block live for the preview Creator (useSlurpLivePromptBlocks).
   "post /slurp2/settings/prompt-blocks/preview",
@@ -549,7 +550,8 @@ assert.deepEqual(
   counts,
   {
     useMutation: 212,
-    useQuery: 282,
+    // 0.3.28: +2 (the import and the one query of SlpMessageDeepDetails).
+    useQuery: 284,
     useInfiniteQuery: 9,
     invalidateQueries: 151,
     setQueryData: 26,

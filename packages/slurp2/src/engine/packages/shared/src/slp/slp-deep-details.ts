@@ -259,7 +259,7 @@ export type SlpDeepDetailsResponse = {
  * Everything that went into one generated direct-message reply, recorded when it was written.
  *
  * Like the post record it holds the full prompt, the source card and private notes included, so it
- * never travels with the message: a thread's reader gets only `metadata.deepDetailsId`, and the
+ * never travels with the message: a thread's reader gets only the ids of the records it keeps, and the
  * record is served by the managed route. `chat` holds the facts the generator had, never re-read later.
  */
 export type SlpMessageDeepDetailsRecord = {
@@ -289,6 +289,12 @@ export type SlpMessageDeepDetailsRecord = {
     memories: { tier: string; text: string }[];
   };
 };
+
+/**
+ * The record a message belongs to. A reply's later bubbles are stored as `<first bubble id>:<n>`,
+ * so every bubble of one reply leads to the one record.
+ */
+export const slpMessageDeepDetailsId = (messageId: string) => messageId.split(":")[0]!;
 
 export type SlpMessageDeepDetailsResponse = {
   message: { id: string; content: string; createdAt: string };

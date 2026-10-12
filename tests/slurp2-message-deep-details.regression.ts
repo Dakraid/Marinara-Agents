@@ -6,8 +6,8 @@ import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 // Deep details for a Creator reply in a chat: the record is written per reply, a thread keeps the
-// newest 50, only a persona seated in the thread reads it, and the message itself carries just an id
-// (which is what makes the Message menu offer the item). Runs the real storage and route against a
+// newest 50, only a persona seated in the thread reads it, and the thread response carries only the
+// kept record ids (which is what makes the Message menu offer the item). Runs the real storage and route against a
 // file database. Needs MARINARA_ENGINE_ROOT (a built staging Engine checkout); run it without
 // tests/tsconfig.regressions.json, whose `@marinara-engine/shared` stub the Engine overlay cannot use.
 const repoRoot = resolve(dirname(process.argv[1] ?? process.cwd()), "..");
@@ -61,7 +61,7 @@ async function main() {
       "dir",
     );
 
-    const [{ createFileNativeDB }, schema, slpStorage, deep, context, routes, record, { default: fastify }] =
+    const [{ createFileNativeDB }, schema, slpStorage, deep, context, routes, record, { default: fastify }, shared] =
       await Promise.all([
         load<{ createFileNativeDB: () => Promise<FileDb> }>("packages/server/src/db/file-backed-store.ts"),
         load<Record<string, unknown>>("packages/server/src/db/schema/slurp.ts"),
@@ -72,7 +72,7 @@ async function main() {
         load<{
           SLP_MESSAGE_DEEP_DETAILS_LIMIT: number;
           saveSlurpMessageDeepDetails: (db: FileDb, input: Row) => Promise<void>;
-          listSlurpMessageDeepDetailIds: (db: FileDb, threadId: string) => Promise<Set<string>>;
+          listSlurpMessageDeepDetailIds: (db: FileDb, threadId: string) => Promise<string[]>;
         }>("packages/server/src/slp/data/messages/slp-message-deep-details-storage.ts"),
         load<{
           createSlpMessagesContext: (
@@ -81,8 +81,8 @@ async function main() {
             messages: unknown,
           ) => Row & { visibleMessages: (threadId: string, side: "viewer" | "creator") => Promise<Message[]> };
         }>("packages/server/src/slp/features/messages/slp-messages-context.ts"),
-        load<{ slpMessageDetailsRoutes: (app: unknown, messaging: unknown) => Promise<void> }>(
-          "packages/server/src/slp/features/messages/slp-message-details-routes.ts",
+        load<{ slpMessageDeepDetailsRoutes: (app: unknown, messaging: unknown) => Promise<void> }>(
+          "packages/server/src/slp/features/messages/slp-message-deep-details-routes.ts",
         ),
         load<{ buildSlurpMessageDeepDetailsRecord: (ctx: Row) => Row & { chat: Row } }>(
           "packages/server/src/slp/features/messages/slp-message-deep-details-record.ts",
@@ -90,6 +90,7 @@ async function main() {
         load<{ default: () => { decorate: (key: string, value: unknown) => void; inject: Inject } }>(
           "packages/server/node_modules/fastify/fastify.js",
         ),
+        load<{ slpMessageDeepDetailsId: (messageId: string) => string }>("packages/shared/src/slp/slp-deep-details.ts"),
       ]);
     db = await createFileNativeDB();
     await db._fileStore.registerTables(Object.values(schema));
@@ -183,11 +184,14 @@ async function main() {
     const slurp = slpStorage.createSlurpStorage(db);
     const messages = slpStorage.createSlurpMessagesStorage(db);
     const messaging = context.createSlpMessagesContext({ db }, slurp, messages);
-    const offered = async () =>
-      (await messaging.visibleMessages("thread", "viewer"))
-        .filter((entry) => typeof entry.metadata.deepDetailsId === "string")
+    // What the thread view does with the ids the thread response carries.
+    const offered = async () => {
+      const kept = new Set(await deep.listSlurpMessageDeepDetailIds(db!, "thread"));
+      return (await messaging.visibleMessages("thread", "viewer"))
+        .filter((entry) => entry.role === "creator" && kept.has(shared.slpMessageDeepDetailsId(entry.id)))
         .map((entry) => entry.id)
         .sort();
+    };
     assert.deepEqual(await offered(), ["reply", "reply:1"], "only recorded Creator replies offer Deep details");
     const visible = await messaging.visibleMessages("thread", "viewer");
     assert.ok(!JSON.stringify(visible).includes("SECRET CARD"), "the record never travels with the messages");
@@ -195,7 +199,7 @@ async function main() {
     // 3. Only a persona with a seat in the thread reads the record.
     const app = fastify();
     app.decorate("db", db);
-    await routes.slpMessageDetailsRoutes(app, { ...messaging, requireViewer: async (id: string) => ({ id }) });
+    await routes.slpMessageDeepDetailsRoutes(app, { ...messaging, requireViewer: async (id: string) => ({ id }) });
     const read = (messageId: string, personaId: string) =>
       app.inject({ method: "GET", url: `/slurp/messages/${messageId}/deep-details?personaId=${personaId}` });
     const mine = await read("reply:1", "persona-1");
@@ -212,23 +216,30 @@ async function main() {
     assert.equal(limit, 50);
     for (let index = 0; index < limit; index += 1)
       await save(`later-${index}`, "thread", new Date(Date.parse(t) + (index + 1) * 1000).toISOString());
-    const kept = await deep.listSlurpMessageDeepDetailIds(db, "thread");
+    const kept = new Set(await deep.listSlurpMessageDeepDetailIds(db, "thread"));
     assert.equal(kept.size, limit);
     assert.ok(!kept.has("reply") && kept.has("later-0") && kept.has(`later-${limit - 1}`));
     assert.deepEqual(await offered(), [], "a pruned reply no longer offers Deep details");
-    assert.equal((await deep.listSlurpMessageDeepDetailIds(db, "other-thread")).size, 1, "pruning is per thread");
+    assert.equal((await deep.listSlurpMessageDeepDetailIds(db, "other-thread")).length, 1, "pruning is per thread");
 
     // 5. Clearing a chat removes its records: they hold the prompt and its private notes.
     await messages.resetThread("thread");
-    assert.equal((await deep.listSlurpMessageDeepDetailIds(db, "thread")).size, 0);
-    assert.equal((await deep.listSlurpMessageDeepDetailIds(db, "other-thread")).size, 1);
+    assert.equal((await deep.listSlurpMessageDeepDetailIds(db, "thread")).length, 0);
+    assert.equal((await deep.listSlurpMessageDeepDetailIds(db, "other-thread")).length, 1);
 
     // 6. The entry point is the existing Message menu, on recorded replies only: no button on bubbles.
     const bubble = readFileSync(
       join(repoRoot, "packages/slurp2/src/engine/packages/client/src/slp/features/messages/SlpMessageBubble.tsx"),
       "utf8",
     );
-    assert.match(bubble, /hasDeepDetails = message\.role === "creator" && typeof message\.metadata\?\.deepDetailsId/u);
+    const view = readFileSync(
+      join(repoRoot, "packages/slurp2/src/engine/packages/client/src/slp/features/messages/SlpThreadView.tsx"),
+      "utf8",
+    );
+    assert.match(
+      view,
+      /hasDeepDetails=\{\s*entry\.message\.role === "creator" &&\s*deepDetailIds\.has\(slpMessageDeepDetailsId\(entry\.message\.id\)\)/u,
+    );
     const sheet = bubble.slice(bubble.indexOf("<SlpSheet"), bubble.indexOf("</SlpSheet>"));
     assert.match(sheet, /\{hasDeepDetails && personaId && \(\s*<SlpSheetItem/u);
     assert.equal(bubble.split("ui.slurp.deepDetails.title").length, 2, "one entry point, inside the menu");
