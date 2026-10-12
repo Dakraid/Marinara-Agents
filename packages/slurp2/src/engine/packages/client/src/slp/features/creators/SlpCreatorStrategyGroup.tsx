@@ -7,6 +7,7 @@ import { Field, SettingsGroup } from "../../modules/settings/SlpSettingsControls
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
 import { useUpdateCreatorStrategy } from "./slp-creators-hooks";
 import { quietButton, selectClass } from "./slp-creator-classes";
+import { SlpPageStyleSuggest } from "./SlpPageStyleSuggest";
 
 const STYLES = ["homemade", "polished", "documentary", "theatrical"] as const;
 type Style = (typeof STYLES)[number];
@@ -68,6 +69,8 @@ export function SlurpCreatorStrategyGroup({ creator }: { creator: SlpCreatorMana
 
   return (
     <SettingsGroup title={t("ui.slurp.settings.creators.strategy.title", { defaultValue: "Posting strategy" })}>
+      {/* An applied note replaces the saved one, so an old draft must not save itself back on blur. */}
+      <SlpPageStyleSuggest creator={creator} onApplied={() => setDraft(null)} />
       <Field
         label={t("ui.slurp.settings.creators.strategy.styleLabel", { defaultValue: "Production style" })}
         detail={t("ui.slurp.settings.creators.strategy.styleDetail", {
@@ -109,6 +112,24 @@ export function SlurpCreatorStrategyGroup({ creator }: { creator: SlpCreatorMana
           defaultValue:
             "How often a post goes out without a picture. 50 is the default balance. Sets always have pictures.",
         }),
+      )}
+      {/* The mix has no editor of its own; a suggestion sets it, and Reset is the way back. */}
+      {saved?.intentWeights && (
+        <Field
+          label={t("ui.slurp.settings.creators.pageStyle.mixLabel", { defaultValue: "Post mix" })}
+          detail={t("ui.slurp.settings.creators.pageStyle.mixDetail", {
+            defaultValue: "Set by a page style suggestion: what this Creator's posts are mostly for.",
+          })}
+        >
+          <button
+            type="button"
+            className={quietButton}
+            disabled={update.isPending}
+            onClick={() => save({ accountId: creator.id, intentWeights: null })}
+          >
+            {t("ui.slurp.settings.creators.strategy.reset", { defaultValue: "Reset" })}
+          </button>
+        </Field>
       )}
       <Field
         label={t("ui.slurp.settings.creators.strategy.noteLabel", { defaultValue: "How they run their page" })}

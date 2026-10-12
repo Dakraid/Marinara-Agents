@@ -616,6 +616,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.27",
+          "date": "2026-10-12",
+          "notes": "- Added: \"Suggest page style\" in a Creator's Production settings. One tap reads the Character card and proposes how they run their page: production style, how often they post without a picture, their post mix and a short page note. You see why and each change before and after, can leave out any change, and nothing is saved until you apply it. Creators you never ask about keep their current settings.\n- Added: \"Post mix\" with Reset under Posting strategy, once a suggestion has set it.\n- If one of those settings changed after the suggestion was made, Apply is refused with a message instead of saving over your change.",
+          "highlight": false
+        },
+        {
           "version": "0.3.26",
           "date": "2026-10-12",
           "notes": "- Added: Creators keep what is always true about them. When Slurp reads a card it also notes the few facts that must hold everywhere (how they communicate, senses and body, languages, firm limits, who runs a shared page), and every post, Story, chat and reply carries them, with no extra AI call. Before, a fact late in the card was missing from most requests.\n- Added: \"Always true\" in a Creator's Life details, to see and correct those facts. Life details also show with \"Model's choice\" post ideas.\n- Changed: your Life details edits stay when the card changes: what you added stays, what you removed stays out, the rest follows the card. \"Read card again\" still clears them.\n- Changed: the card reading covers more of a long card, and cards with 。！？ sentence ends or long one-line attribute lists are no longer cut off.\n- Fixed: a failed read of stored Life details could erase every Creator's details; saving now reports the error.",
@@ -727,12 +733,6 @@
           "version": "0.3.5",
           "date": "2026-09-29",
           "notes": "Support desk, polyamory, character names in pictures. Design: `docs/SUPPORT-DESK.md`.\n\n- Support is no fan: each Creator gets a desk record (trust, suspicion and the risk of being caught, badges, feature or throttle, favours, a challenge, a contract, a ticket, leaving). Support is always \"Slurp Support\".\n- Stir gets a Support desk and eight desk actions; Support threads leave persona inboxes. Support chats get offers the Creator answers, perks, warnings, rumours, private notes and a ticket bar.\n- The world clock runs the desk on templates. New Settings › Stir.\n- Polyamory (off by default): couples of up to four, polyamorous Creators in several couples; each Creator is monogamous or polyamorous.\n- Pictures of a known character lead with their card name (\"The image model knows this character\", on by default); the enhancer learns who they are. See `docs/IMAGE-PROMPTS.md`.\n- Fixes: persona switcher hidden on desktop; Inbox badge disagreed with Messages; Inbox listed only three chats.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.4",
-          "date": "2026-09-29",
-          "notes": "Creator Pages, and Stir built out.\n\n- Profiles get a Page above the posts: six looks and ten blocks (quote, now, collage, list, this or that, Q&A, facts, prices, people, latest poll). It stores only choices and words; pictures, prices, facts, people and polls come from real data, and locked posts only appear as the server's teaser.\n- New character Creators design their own Page on a later open; any Creator can be asked to (one AI call, new \"Creator pages\" budget row) or the player builds it. A week-old AI Page may refresh after real news; a player's Page never changes by itself.\n- Stir: new levers (storyline, crossover, tip goal, new look, events), Recent plays with Undo that stays safe when the world moved on, steering what is in play, and suggestions of who would click.\n- Fixes: brand deals marked done too early, events started twice, plays twice in Pulse, lost Undo answers, Polish plurals, accessibility.",
           "highlight": false
         }
       ]

@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.26";
+export const SLURP2_VERSION = "0.3.27";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -12,6 +12,13 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.27",
+    date: "2026-10-12",
+    notes: [
+      "New in a Creator's Production settings: “Suggest page style” reads their card and proposes how they run their page. You see every change first, and nothing changes until you apply it.",
+    ],
+  },
   {
     version: "0.3.26",
     date: "2026-10-12",
