@@ -4519,6 +4519,8 @@
   "ui.slurp.post.reportDuplicate": "You already reported this",
   "ui.slurp.post.reportWhatNext": "Slurp's team has it now. The creator gets a private heads-up, without your name.",
   "ui.slurp.deepDetails.retrying": "Retrying…",
+  "ui.slurp.deepDetails.messageLoadError": "Could not load this message's details.",
+  "ui.slurp.deepDetails.messageNotRecorded": "Slurp no longer keeps the details of this message. It keeps them for the newest replies.",
   "ui.slurp.creators.generateOutcome": "{{made}} new, {{skipped}} skipped, {{failed}} could not post.",
   "ui.slurp.creators.generateSkippedList": "Skipped: {{names}}",
   "ui.slurp.creators.generateFailedList": "Could not post: {{names}}",
