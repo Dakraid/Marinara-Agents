@@ -101,13 +101,20 @@ async function main() {
     assert.equal(run.ringing.length, 1);
   }
 
-  // A call already ringing rings again without a second call or chat line.
+  // A call already ringing rings again without a second call or chat line, as the character who placed it: answering
+  // connects that call and plays its greeting, even when another character's [call] re-rings it.
   {
-    const run = scenario({ ringing: { id: "call-old", status: "ringing" } as Session });
+    const old = {
+      id: "call-old",
+      status: "ringing",
+      initiatorCharacterId: "char-2",
+      metadata: { reason: "old reason", greeting: "Hi from char-2" },
+    } as Session;
+    const run = scenario({ ringing: old });
     assert.equal(await ringCharacterCall(run.args, run.host), true);
     assert.equal(run.created.length, 0);
     assert.equal(run.messages.length, 0);
-    assert.equal((run.ringing[0]!.session as Session).id, "call-old");
+    assert.deepEqual(run.ringing, [{ session: old, reason: "old reason", characterId: "char-2" }]);
   }
 
   // A call in progress is left alone.
@@ -139,8 +146,13 @@ async function main() {
   // The built package registers the real handler. Calls 1.0.x-1.1.1 registered the Engine's host shim, which only
   // looked the [call] service up again in its own empty copy of the registry, so a character's call never rang.
   const server = await readFile(new URL("../packages/conversation-calls/server.mjs", import.meta.url), "utf8");
-  assert.ok(
-    !/\w+\("conversation-calls:command"\);return \w+\?\w+\.handleConversationCallCommand\(\w+\):!0/u.test(server),
+  // The shim names the service key a second time to look it up; the real handler only registers it.
+  assert.deepEqual(
+    [
+      server.split('"conversation-calls:command"').length - 1,
+      server.split('registerService("conversation-calls:command"').length - 1,
+    ],
+    [1, 1],
     "the built server.mjs must not register the host shim as the [call] service",
   );
   assert.ok(server.includes("[calls] Character call ringing in chat %s"), "the built server.mjs rings character calls");

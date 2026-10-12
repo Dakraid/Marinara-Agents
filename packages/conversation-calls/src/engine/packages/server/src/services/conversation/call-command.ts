@@ -98,9 +98,14 @@ export async function ringCharacterCall(args: CallCommandArgs, host: CallCommand
       },
     ]);
   }
-  // A call already in progress is left alone; only a ringing one rings.
+  // A call already in progress is left alone; only a ringing one rings. It rings as the character who placed it,
+  // since answering connects that call and plays its greeting, even when another character's [call] re-rings it.
   if (session.status === "ringing") {
-    args.sendRingingEvent({ session, reason, characterId: args.characterId });
+    args.sendRingingEvent({
+      session,
+      reason: parseRecord(session.metadata).reason ?? null,
+      characterId: session.initiatorCharacterId,
+    });
     host.log.info("[calls] Character call ringing in chat %s", args.chatId);
   }
   return true;
