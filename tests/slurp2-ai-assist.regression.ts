@@ -262,6 +262,11 @@ assert.match(
   /protectCreatorGeneratedIdentity\(value, disclosureMode, await slpCreatorPublicIdentityFor\(db, creator\.source\)\)/u,
   "identity protection for everything about a concealed Creator",
 );
+assert.match(
+  service,
+  /cleaned && creator \? await protectFor\(db, creator, cleaned\) : cleaned/u,
+  "the answer for a concealed Creator is protected too",
+);
 assert.match(service, /return protectFor\(db, creator, brief\);/u, "the brief is protected before it reaches a prompt");
 assert.match(service, /bio: creator \? await protectFor\(db, creator, creator\.account\.bio\)/u);
 

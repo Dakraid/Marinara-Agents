@@ -138,7 +138,9 @@ export async function runSlpAssistText(
     // Reasoning headroom: a short field still needs room to think before it answers.
     { model: connection.model, temperature: 0.85, maxTokens: 2048 },
   );
-  const text = cleanSlpAssistText(result.content, input.field);
+  const cleaned = cleanSlpAssistText(result.content, input.field);
+  // The prompt now carries a concealed Creator's card text, so the answer gets the same pass a post does.
+  const text = cleaned && creator ? await protectFor(db, creator, cleaned) : cleaned;
   return text ? { ok: true, value: { text } } : fail(502, "The connection returned nothing. Try again.");
 }
 
