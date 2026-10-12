@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.25";
+export const SLURP2_VERSION = "0.3.26";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -13,7 +13,7 @@ export interface Slurp2ReleaseEntry {
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
   {
-    version: "0.3.25",
+    version: "0.3.26",
     date: "2026-10-12",
     notes: [
       "Creators stay themselves: what is always true about them (how they talk, what they can and cannot do, their firm limits) is now in every post, Story and chat, not just some.",

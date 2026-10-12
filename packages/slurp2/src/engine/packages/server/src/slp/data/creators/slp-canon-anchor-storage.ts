@@ -26,7 +26,7 @@ const FAILED_WAIT_MS = 30 * 60_000;
  * Keyed by a hash of the card text the reading sees, so a card edit re-extracts. `anchors` is what
  * is in use. On an entry the player edited, `extracted` is the reading they edited, which is what
  * tells their edits from the card's own facts when the card is read again; it is missing on edits
- * stored before 0.3.25.
+ * stored before 0.3.26.
  */
 type AnchorEntry = {
   key: string;

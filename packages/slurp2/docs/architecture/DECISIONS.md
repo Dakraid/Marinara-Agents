@@ -743,5 +743,5 @@ modules, rejected alternative, and migration consequence.
   second "user corrections" store beside the cache (one entry with its base reading is enough);
   keyword rules for essential facts (they would cover a few languages and claim more).
 - **Migration consequence:** reading version v3: every card is read once more. An entry the player
-  edited before 0.3.25 has no base reading, so it is kept as it is on that first reading and merges
+  edited before 0.3.26 has no base reading, so it is kept as it is on that first reading and merges
   normally afterwards.

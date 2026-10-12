@@ -1,6 +1,6 @@
 # Slurp release notes
 
-## 0.3.25 — 2026-10-12
+## 0.3.26 — 2026-10-12
 
 - Added: Creators keep what is always true about them. When Slurp reads a card it also notes the few facts that must hold everywhere (how they communicate, senses and body, languages, firm limits, who runs a shared page), and every post, Story, chat and reply carries them, with no extra AI call. Before, a fact late in the card was missing from most requests.
 - Added: "Always true" in a Creator's Life details, to see and correct those facts. Life details also show with "Model's choice" post ideas.
