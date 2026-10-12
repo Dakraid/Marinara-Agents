@@ -622,9 +622,15 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.30",
+          "date": "2026-10-12",
+          "notes": "- Fixed: Write, Improve, the guided post and \"Draw\" gave a Creator with a hidden or hinted identity no brief at all, so the text was written \"in their voice\" with nothing about them. They now get the same brief as an open Creator, read at their own disclosure level (no backstory) and with the real name and handle replaced before it reaches the model.\n- Changed: Write, Improve and the guided post now also read the page's bio and stage voice, the way a normal post does.",
+          "highlight": false
+        },
+        {
           "version": "0.3.29",
           "date": "2026-10-12",
-          "notes": "- Fixed: Write, Improve, the guided post and \"Draw\" gave a Creator with a hidden or hinted identity no brief at all, so the text was written \"in their voice\" with nothing about them. They now get the same brief as an open Creator, read at their own disclosure level (no backstory) and with the real name and handle replaced before it reaches the prompt.\n- Changed: Write, Improve and the guided post now also read the page's bio and stage voice, the way a normal post does.",
+          "notes": "- Changed: when the image prompt rewrite gives nothing, the \"Image prompt rewrite unusable\" server warning now says why: an empty answer, an answer cut off at the token limit, an answer that is not valid JSON or has no \"prompt\" field (with a short quote of it and the model name), no text connection, a failed request, or a rewrite that broke the scene's content level. Before, every case said \"the rewrite did not run or returned nothing\".",
           "highlight": false
         },
         {
@@ -733,12 +739,6 @@
           "version": "0.3.8",
           "date": "2026-09-30",
           "notes": "Drama, friends and a People map. Design: `docs/DRAMA.md`.\n\n- Drama (off until switched on in Settings › Stir › Drama): situations and dramas from Story Packs, cast from the Creators on Slurp now, with choices you answer in a DM. Stir › Drama shows what runs; start or end one.\n- Starter set: Your partner is a Creator, Roommates, Rivals, Top fan, Friends to lovers, Love triangle, Getting bolder, Open relationship, The secret, You are the other one, Spoiled, She spoils you.\n- You as a partner: a couple with your own page starts together and only you or a drama changes it; she texts you like a partner a few times a day, and your chat starts close.\n- Bonds: friends, roommates, coworkers and exes, from cards and from the world; they show up in posts and on Pages.\n- Stir › People: a living map of everyone's ties and why each one exists.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.7",
-          "date": "2026-09-30",
-          "notes": "Two-layer economy, faster rewrites, partners in pictures.\n\n- Economy: earnings are platform dollars. A paying fan stands for \"People per paying fan\" (5) in subscribers and earnings, less a 20% fee; Collect pays 1 coin per 5 dollars, 15–60 coins a day per persona. Old balances convert once.\n- Fixes: no Slurp coins for your own Creators from the desk; milestones use shown followers.\n- Rewrites: 10 per tick, a waiting count and \"Rewrite all now\".\n- Couple and collab pictures may show the partner when the post calls for it.\n- Messaging: quote delay and your own first lines. \"Blur pictures until tapped\".",
           "highlight": false
         }
       ]

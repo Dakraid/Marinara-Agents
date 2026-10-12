@@ -1,9 +1,13 @@
 # Slurp release notes
 
+## 0.3.30 — 2026-10-12
+
+- Fixed: Write, Improve, the guided post and "Draw" gave a Creator with a hidden or hinted identity no brief at all, so the text was written "in their voice" with nothing about them. They now get the same brief as an open Creator, read at their own disclosure level (no backstory) and with the real name and handle replaced before it reaches the model.
+- Changed: Write, Improve and the guided post now also read the page's bio and stage voice, the way a normal post does.
+
 ## 0.3.29 — 2026-10-12
 
-- Fixed: Write, Improve, the guided post and "Draw" gave a Creator with a hidden or hinted identity no brief at all, so the text was written "in their voice" with nothing about them. They now get the same brief as an open Creator, read at their own disclosure level (no backstory) and with the real name and handle replaced before it reaches the prompt.
-- Changed: Write, Improve and the guided post now also read the page's bio and stage voice, the way a normal post does.
+- Changed: when the image prompt rewrite gives nothing, the "Image prompt rewrite unusable" server warning now says why: an empty answer, an answer cut off at the token limit, an answer that is not valid JSON or has no "prompt" field (with a short quote of it and the model name), no text connection, a failed request, or a rewrite that broke the scene's content level. Before, every case said "the rewrite did not run or returned nothing".
 
 ## 0.3.28 — 2026-10-12
 
