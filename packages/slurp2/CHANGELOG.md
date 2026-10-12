@@ -3,6 +3,7 @@
 ## 0.3.29 — 2026-10-12
 
 - Fixed: Write, Improve, the guided post and "Draw" gave a Creator with a hidden or hinted identity no brief at all, so the text was written "in their voice" with nothing about them. They now get the same brief as an open Creator, read at their own disclosure level (no backstory) and with the real name and handle replaced before it reaches the prompt.
+- Changed: Write, Improve and the guided post now also read the page's bio and stage voice, the way a normal post does.
 
 ## 0.3.28 — 2026-10-12
 

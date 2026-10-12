@@ -62,6 +62,17 @@ async function creatorFor(db: DB, accountId: string | undefined) {
  * brief is read at their own disclosure level and protected here, because these prompts have no
  * identity protection of their own (the same pass as the scene plan).
  */
+async function protectFor(
+  db: DB,
+  creator: NonNullable<Awaited<ReturnType<typeof creatorFor>>>,
+  value: string | null | undefined,
+): Promise<string> {
+  const disclosureMode = creator.account.settings.privacy.identityDisclosure ?? "open";
+  return (
+    protectCreatorGeneratedIdentity(value, disclosureMode, await slpCreatorPublicIdentityFor(db, creator.source)) ?? ""
+  );
+}
+
 async function briefFor(
   db: DB,
   creator: NonNullable<Awaited<ReturnType<typeof creatorFor>>>,
@@ -77,9 +88,7 @@ async function briefFor(
     sequence: Math.floor(Date.now() / 60_000),
     spice,
   });
-  return (
-    protectCreatorGeneratedIdentity(brief, disclosureMode, await slpCreatorPublicIdentityFor(db, creator.source)) ?? ""
-  );
+  return protectFor(db, creator, brief);
 }
 
 /**
@@ -119,7 +128,13 @@ export async function runSlpAssistText(
     ),
   );
   const result = await provider.chatComplete(
-    buildSlpAssistTextMessages({ ...input, name: creator?.account.displayName, brief }),
+    buildSlpAssistTextMessages({
+      ...input,
+      name: creator?.account.displayName,
+      brief,
+      bio: creator ? await protectFor(db, creator, creator.account.bio) : "",
+      stageVoice: creator ? await protectFor(db, creator, creator.account.settings.privacy.stagePersonality) : "",
+    }),
     // Reasoning headroom: a short field still needs room to think before it answers.
     { model: connection.model, temperature: 0.85, maxTokens: 2048 },
   );
