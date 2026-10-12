@@ -2,11 +2,9 @@
 
 ## 0.3.27 — 2026-10-12
 
-- Added: "Page style" in a Creator's Posting settings says in plain words how they post (for example "Polished · nearly always pictures · automatic"), and the Overview's Posting tile shows the same line. It replaces the "Posting strategy" box; its number fields are under "Fine-tune page style".
-- Added: "Suggest from card" under Page style. One tap reads the Character card and proposes a page style that fits: a short reason, the result in plain words, and "See exact changes" for the before and after values. "Use this page style" applies it; "Keep current" changes nothing. Creators you never ask about keep their current settings, and a page note you wrote yourself is never replaced.
-- Changed: Page style now comes before the picture settings in the Posting tab.
-- Changed: "Posts without pictures" is now "Lean towards words" and has no percent sign. The number was never a share of posts: most posts have a picture at any value. Saved values keep working as before.
-- If one of those settings changed after the suggestion was made, "Use this page style" is refused with a message instead of saving over your change.
+- Added: "Page style" in a Creator's Posting settings says in plain words how they post (for example "Polished · nearly always pictures · automatic"). The Overview's Posting tile shows the same line. It replaces "Posting strategy"; the number fields are under "Fine-tune page style".
+- Added: "Suggest from card" under Page style reads the Character card and proposes a fitting page style, with a short reason and "See exact changes". "Use this page style" applies it; "Keep current" changes nothing. A page note you wrote is never replaced, and Use is refused if a setting changed in the meantime.
+- Changed: "Posts without pictures" is now "Lean towards words", without a percent sign: it was never a share of posts. Saved values work as before.
 
 ## 0.3.26 — 2026-10-12
 
