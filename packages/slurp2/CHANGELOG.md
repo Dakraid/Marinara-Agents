@@ -2,9 +2,10 @@
 
 ## 0.3.27 — 2026-10-12
 
-- Added: "Suggest page style" in a Creator's Production settings. One tap reads the Character card and proposes how they run their page: production style, how often they post without a picture, their post mix and a short page note. You see why and each change before and after, can leave out any change, and nothing is saved until you apply it. Creators you never ask about keep their current settings.
-- Added: "Post mix" with Reset under Posting strategy, once a suggestion has set it.
-- If one of those settings changed after the suggestion was made, Apply is refused with a message instead of saving over your change.
+- Added: "Page style" in a Creator's Posting settings says in plain words how they post (for example "Polished · mostly pictures · automatic"), and the Overview's Posting tile shows the same line. It replaces the "Posting strategy" box; its number fields are under "Fine-tune page style".
+- Added: "Suggest from card" under Page style. One tap reads the Character card and proposes a page style that fits: a short reason, the result in plain words, and "See exact changes" for the before and after values. "Use this page style" applies it; "Keep current" changes nothing. Creators you never ask about keep their current settings.
+- Changed: Page style now comes before the picture settings in the Posting tab.
+- If one of those settings changed after the suggestion was made, "Use this page style" is refused with a message instead of saving over your change.
 
 ## 0.3.26 — 2026-10-12
 

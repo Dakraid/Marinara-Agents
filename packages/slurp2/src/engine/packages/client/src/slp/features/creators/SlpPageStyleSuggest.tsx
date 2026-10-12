@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -7,13 +7,24 @@ import type {
   SlpPageStylePatch,
   SlpPageStyleSuggestion,
 } from "../../../../../shared/src/slp/slp-social.types.js";
-import { Field } from "../../modules/settings/SlpSettingsControls";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
 import { useSuggestCreatorPageStyle, useUpdateCreatorStrategy } from "./slp-creators-hooks";
 import { accentButton, noteClass, quietButton } from "./slp-creator-classes";
 
-type Key = keyof SlpPageStylePatch;
-const KEYS: Key[] = ["style", "textOnlyRate", "intentWeights", "strategyText"];
+type T = ReturnType<typeof useTranslation>["t"];
+
+/** A page style in plain words: the style and the picture balance, e.g. "Polished · mostly pictures". */
+export function slpPageStyleLine(t: T, style: string, textOnlyRate: number): string {
+  const balance = textOnlyRate <= 30 ? "pictures" : textOnlyRate >= 70 ? "words" : "mixed";
+  return [
+    t(`ui.slurp.settings.creators.strategy.style.${style}`, { defaultValue: style }),
+    t(`ui.slurp.settings.creators.pageStyle.balance.${balance}`, {
+      defaultValue: { pictures: "mostly pictures", words: "mostly words", mixed: "pictures and words" }[balance],
+    }),
+  ].join(" · ");
+}
+
+const KEYS: (keyof SlpPageStylePatch)[] = ["style", "textOnlyRate", "intentWeights", "strategyText"];
 
 /** Each intent's share of the drawn mix, in whole percent. */
 function shares(weights: Record<string, number>): Record<string, number> {
@@ -24,9 +35,9 @@ function shares(weights: Record<string, number>): Record<string, number> {
 }
 
 /**
- * "Suggest page style": one tap reads the Character card and proposes how this Creator runs their
- * page, as changes to the controls below. Nothing is saved until the player applies it, and they
- * can leave out any single change.
+ * "Suggest from card": one tap reads the Character card and proposes a page style. The player sees
+ * the result in plain words and either uses it or keeps what they have; the exact values wait
+ * behind "See exact changes", and the Fine-tune controls adjust anything afterwards.
  */
 export function SlpPageStyleSuggest({
   creator,
@@ -39,9 +50,9 @@ export function SlpPageStyleSuggest({
   const suggest = useSuggestCreatorPageStyle();
   const update = useUpdateCreatorStrategy();
   // Keyed by Creator so a suggestion never shows on the next Creator's settings.
-  const [result, setResult] = useState<{ id: string; suggestion: SlpPageStyleSuggestion; skip: Key[] } | null>(null);
+  const [result, setResult] = useState<{ id: string; suggestion: SlpPageStyleSuggestion } | null>(null);
   const [error, setError] = useState<{ id: string; text: string } | null>(null);
-  const shown = result?.id === creator.id ? result : null;
+  const shown = result?.id === creator.id ? result.suggestion : null;
   const shownError = error?.id === creator.id ? error.text : null;
   const busy = suggest.isPending || update.isPending;
   const styleName = (style: string) => t(`ui.slurp.settings.creators.strategy.style.${style}`, { defaultValue: style });
@@ -51,21 +62,23 @@ export function SlpPageStyleSuggest({
     setError(null);
     setResult(null);
     suggest.mutate(creator.id, {
-      onSuccess: (suggestion) => setResult({ id: creator.id, suggestion, skip: [] }),
+      onSuccess: (suggestion) => setResult({ id: creator.id, suggestion }),
       onError: (failure) => setError({ id: creator.id, text: errorMessage(failure) }),
     });
   };
 
   const apply = () => {
     if (!shown) return;
-    const { proposal, saved } = shown.suggestion;
-    const keys = KEYS.filter((key) => proposal[key] !== undefined && !shown.skip.includes(key));
+    const keys = KEYS.filter((key) => shown.proposal[key] !== undefined);
     if (!keys.length) return;
-    const patch = Object.fromEntries(keys.map((key) => [key, proposal[key]]));
-    const expect = Object.fromEntries(keys.map((key) => [key, saved[key] ?? null]));
     setError(null);
     update.mutate(
-      { accountId: creator.id, ...patch, expect },
+      {
+        accountId: creator.id,
+        ...Object.fromEntries(keys.map((key) => [key, shown.proposal[key]])),
+        // Refuse the apply if any of these changed since the suggestion was made.
+        expect: Object.fromEntries(keys.map((key) => [key, shown.saved[key] ?? null])),
+      },
       {
         onSuccess: () => {
           setResult(null);
@@ -77,137 +90,124 @@ export function SlpPageStyleSuggest({
     );
   };
 
-  const toggle = (key: Key) =>
-    shown &&
-    setResult({
-      ...shown,
-      skip: shown.skip.includes(key) ? shown.skip.filter((entry) => entry !== key) : [...shown.skip, key],
-    });
-
-  const rows = (suggestion: SlpPageStyleSuggestion) => {
+  const changes = (suggestion: SlpPageStyleSuggestion) => {
     const { current, proposal } = suggestion;
-    const out: { key: Key; label: string; change: ReactNode }[] = [];
-    if (proposal.style !== undefined)
-      out.push({
-        key: "style",
-        label: t("ui.slurp.settings.creators.strategy.styleLabel", { defaultValue: "Production style" }),
-        change: `${styleName(current.style)} → ${styleName(proposal.style)}`,
-      });
-    if (proposal.textOnlyRate !== undefined)
-      out.push({
-        key: "textOnlyRate",
-        label: t("ui.slurp.settings.creators.strategy.textLabel", { defaultValue: "Posts without pictures" }),
-        change: `${current.textOnlyRate}% → ${proposal.textOnlyRate}%`,
-      });
-    if (proposal.intentWeights !== undefined) {
-      const before = shares(current.intentWeights);
-      const after = shares(proposal.intentWeights);
-      const changed = Object.keys(after).filter((intent) => (before[intent] ?? 0) !== after[intent]);
-      out.push({
-        key: "intentWeights",
-        label: t("ui.slurp.settings.creators.pageStyle.mixLabel", { defaultValue: "Post mix" }),
-        change: (
-          <ul className="space-y-0.5">
-            {changed.map((intent) => (
-              <li key={intent}>
-                {intentName(intent)} {before[intent] ?? 0}% → {after[intent]}%
-              </li>
-            ))}
-          </ul>
-        ),
-      });
-    }
-    if (proposal.strategyText !== undefined)
-      out.push({
-        key: "strategyText",
-        label: t("ui.slurp.settings.creators.strategy.noteLabel", { defaultValue: "How they run their page" }),
-        change: (
-          <>
-            {current.strategyText && <span className="block line-through opacity-70">{current.strategyText}</span>}
-            <span className="block">{proposal.strategyText}</span>
-          </>
-        ),
-      });
-    return out;
+    const before = shares(current.intentWeights);
+    const after = proposal.intentWeights ? shares(proposal.intentWeights) : before;
+    const mix = Object.keys(after).filter((intent) => (before[intent] ?? 0) !== after[intent]);
+    return {
+      // What fans will notice: the style, the balance, and the kinds of post that grow by a real amount.
+      line: slpPageStyleLine(t, proposal.style ?? current.style, proposal.textOnlyRate ?? current.textOnlyRate),
+      more: mix.filter((intent) => after[intent]! - (before[intent] ?? 0) >= 5).map(intentName),
+      rows: [
+        proposal.style !== undefined && {
+          label: t("ui.slurp.settings.creators.strategy.styleLabel", { defaultValue: "Production style" }),
+          value: `${styleName(current.style)} → ${styleName(proposal.style)}`,
+        },
+        proposal.textOnlyRate !== undefined && {
+          label: t("ui.slurp.settings.creators.strategy.textLabel", { defaultValue: "Posts without pictures" }),
+          value: `${current.textOnlyRate}% → ${proposal.textOnlyRate}%`,
+        },
+        ...mix.map((intent) => ({
+          label: `${t("ui.slurp.settings.creators.pageStyle.mixLabel", { defaultValue: "Post mix" })}: ${intentName(intent)}`,
+          value: `${before[intent] ?? 0}% → ${after[intent]}%`,
+        })),
+        proposal.strategyText !== undefined && {
+          label: t("ui.slurp.settings.creators.strategy.noteLabel", { defaultValue: "How they run their page" }),
+          value: proposal.strategyText,
+        },
+      ].filter((row): row is { label: string; value: string } => Boolean(row)),
+    };
   };
 
-  const list = shown ? rows(shown.suggestion) : [];
-  const chosen = list.filter((row) => !shown?.skip.includes(row.key)).length;
+  const view = shown ? changes(shown) : null;
 
   return (
-    <Field
-      label={t("ui.slurp.settings.creators.pageStyle.label", { defaultValue: "Suggest page style" })}
-      detail={t("ui.slurp.settings.creators.pageStyle.detail", {
-        defaultValue:
-          "Optional. Reads the Character card and proposes the settings below. Nothing changes until you apply it.",
-      })}
-      wide
-    >
-      <div className="space-y-3">
-        <button type="button" className={quietButton} disabled={busy} onClick={run} aria-busy={suggest.isPending}>
-          {suggest.isPending && (
-            <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
-          )}
-          {suggest.isPending
-            ? t("ui.slurp.settings.creators.pageStyle.loading", { defaultValue: "Reading the card…" })
-            : shown || shownError
-              ? t("ui.slurp.settings.creators.pageStyle.again", { defaultValue: "Suggest again" })
-              : t("ui.slurp.settings.creators.pageStyle.action", { defaultValue: "Suggest" })}
-        </button>
-        {shownError && (
-          <p role="alert" className="text-sm text-[var(--slurp-danger)] break-words">
-            {shownError}
+    <div className="space-y-3">
+      {!shown && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <button type="button" className={quietButton} disabled={busy} onClick={run} aria-busy={suggest.isPending}>
+            {suggest.isPending && (
+              <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
+            )}
+            {suggest.isPending
+              ? t("ui.slurp.settings.creators.pageStyle.loading", { defaultValue: "Reading the card…" })
+              : t("ui.slurp.settings.creators.pageStyle.action", { defaultValue: "Suggest from card" })}
+          </button>
+          <p className="min-w-0 flex-1 basis-48 text-xs leading-5 text-[var(--slurp-muted)]">
+            {t("ui.slurp.settings.creators.pageStyle.detail", {
+              defaultValue: "Optional. Nothing changes until you choose Use.",
+            })}
           </p>
-        )}
-        {shown && (
-          <div className={`${noteClass} space-y-3`} aria-live="polite">
-            {shown.suggestion.explanation && (
-              <p className="text-sm leading-6 text-[var(--slurp-text)] break-words">{shown.suggestion.explanation}</p>
-            )}
-            {list.length === 0 ? (
-              <p>
-                {t("ui.slurp.settings.creators.pageStyle.fits", { defaultValue: "The current settings already fit." })}
+        </div>
+      )}
+      {shownError && (
+        <p role="alert" className="text-sm break-words text-[var(--slurp-danger)]">
+          {shownError}
+        </p>
+      )}
+      {shown && view && (
+        <div className={`${noteClass} space-y-3`} aria-live="polite">
+          {shown.explanation && (
+            <p className="text-sm leading-6 break-words text-[var(--slurp-text)]">{shown.explanation}</p>
+          )}
+          {view.rows.length === 0 ? (
+            <p>
+              {t("ui.slurp.settings.creators.pageStyle.fits", { defaultValue: "The current page style already fits." })}
+            </p>
+          ) : (
+            <>
+              <p className="text-sm font-semibold break-words text-[var(--slurp-text)]">
+                {view.line}
+                {view.more.length > 0 && (
+                  <span className="block font-normal text-[var(--slurp-muted)]">
+                    {t("ui.slurp.settings.creators.pageStyle.more", {
+                      defaultValue: "More: {{list}}",
+                      list: view.more.join(", "),
+                    })}
+                  </span>
+                )}
               </p>
-            ) : (
-              <fieldset className="space-y-2">
-                <legend className="sr-only">
-                  {t("ui.slurp.settings.creators.pageStyle.changes", { defaultValue: "Changes to apply" })}
-                </legend>
-                {list.map((row) => (
-                  <label key={row.key} className="flex min-h-11 cursor-pointer items-start gap-3 py-1">
-                    <input
-                      type="checkbox"
-                      className="mt-1 size-4 shrink-0 accent-[var(--noodle-accent)]"
-                      checked={!shown.skip.includes(row.key)}
-                      disabled={busy}
-                      onChange={() => toggle(row.key)}
-                    />
-                    <span className="min-w-0 break-words">
-                      <span className="block font-semibold text-[var(--slurp-text)]">{row.label}</span>
-                      <span className="block tabular-nums">{row.change}</span>
-                    </span>
-                  </label>
-                ))}
-              </fieldset>
-            )}
-            <div className="flex flex-wrap gap-2">
-              {list.length > 0 && (
-                <button type="button" className={accentButton} disabled={busy || chosen === 0} onClick={apply}>
-                  {update.isPending && (
-                    <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
-                  )}
-                  {t("ui.slurp.settings.creators.pageStyle.apply", { defaultValue: "Apply" })}
-                </button>
-              )}
-              <button type="button" className={quietButton} disabled={update.isPending} onClick={() => setResult(null)}>
-                {list.length > 0
-                  ? t("ui.slurp.settings.creators.pageStyle.keep", { defaultValue: "Keep current" })
-                  : t("ui.slurp.settings.creators.pageStyle.close", { defaultValue: "Close" })}
+              <details>
+                <summary className="flex min-h-11 cursor-pointer items-center text-xs font-semibold text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]">
+                  {t("ui.slurp.settings.creators.pageStyle.details", { defaultValue: "See exact changes" })}
+                </summary>
+                <dl className="space-y-1.5 pt-1">
+                  {view.rows.map((row) => (
+                    <div key={row.label} className="min-w-0 break-words">
+                      <dt className="font-semibold text-[var(--slurp-text)]">{row.label}</dt>
+                      <dd className="tabular-nums">{row.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </details>
+            </>
+          )}
+          <div className="flex flex-wrap gap-2">
+            {view.rows.length > 0 && (
+              <button type="button" className={accentButton} disabled={busy} onClick={apply}>
+                {update.isPending && (
+                  <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                )}
+                {t("ui.slurp.settings.creators.pageStyle.apply", { defaultValue: "Use this page style" })}
               </button>
-            </div>
+            )}
+            <button
+              type="button"
+              className={quietButton}
+              disabled={update.isPending}
+              onClick={() => {
+                setResult(null);
+                setError(null);
+              }}
+            >
+              {view.rows.length > 0
+                ? t("ui.slurp.settings.creators.pageStyle.keep", { defaultValue: "Keep current" })
+                : t("ui.slurp.settings.creators.pageStyle.close", { defaultValue: "Close" })}
+            </button>
           </div>
-        )}
-      </div>
-    </Field>
+        </div>
+      )}
+    </div>
   );
 }

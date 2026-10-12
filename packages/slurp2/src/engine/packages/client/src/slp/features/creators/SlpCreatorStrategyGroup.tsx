@@ -3,15 +3,14 @@ import { slpSpiceFromStrategyText } from "../../../../../shared/src/slp/slp-spic
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type { SlpCreatorManagedStageProfile } from "../../../../../shared/src/slp/slp-social.types.js";
-import { Field, SettingsGroup } from "../../modules/settings/SlpSettingsControls";
+import { AdvancedGroup, Field, SettingsGroup } from "../../modules/settings/SlpSettingsControls";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
 import { useUpdateCreatorStrategy } from "./slp-creators-hooks";
 import { quietButton, selectClass } from "./slp-creator-classes";
-import { SlpPageStyleSuggest } from "./SlpPageStyleSuggest";
+import { slpPageStyleLine, SlpPageStyleSuggest } from "./SlpPageStyleSuggest";
 
 const STYLES = ["homemade", "polished", "documentary", "theatrical"] as const;
 type Style = (typeof STYLES)[number];
-
 /**
  * How this Creator runs their page: production style, how often a slot stays quiet, how much they
  * write instead of shooting, and a note in their own words.
@@ -67,89 +66,118 @@ export function SlurpCreatorStrategyGroup({ creator }: { creator: SlpCreatorMana
     </Field>
   );
 
+  const custom = Object.keys(saved ?? {}).length > 0;
+
   return (
-    <SettingsGroup title={t("ui.slurp.settings.creators.strategy.title", { defaultValue: "Posting strategy" })}>
-      {/* An applied note replaces the saved one, so an old draft must not save itself back on blur. */}
-      <SlpPageStyleSuggest creator={creator} onApplied={() => setDraft(null)} />
-      <Field
-        label={t("ui.slurp.settings.creators.strategy.styleLabel", { defaultValue: "Production style" })}
-        detail={t("ui.slurp.settings.creators.strategy.styleDetail", {
-          defaultValue: "How this Creator makes pictures: cameras, effort, and whether they show the work.",
-        })}
-      >
-        <select
-          className={selectClass}
-          disabled={update.isPending}
-          value={saved?.style ?? ""}
-          onChange={(event) => save({ accountId: creator.id, style: (event.target.value || null) as Style | null })}
-        >
-          <option value="">
-            {t("ui.slurp.settings.creators.strategy.styleAuto", {
-              defaultValue: "Automatic ({{style}})",
-              style: styleName(effective.style),
+    <>
+      <SettingsGroup title={t("ui.slurp.settings.creators.pageStyle.title", { defaultValue: "Page style" })}>
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-[var(--slurp-text)]">
+            {slpPageStyleLine(t, effective.style, effective.textOnlyRate)}
+            <span className="font-normal text-[var(--slurp-muted)]">
+              {" · "}
+              {custom
+                ? t("ui.slurp.settings.creators.pageStyle.custom", { defaultValue: "set by you" })
+                : t("ui.slurp.settings.creators.pageStyle.auto", { defaultValue: "automatic" })}
+            </span>
+          </p>
+          <p className="text-xs leading-5 text-[var(--slurp-muted)]">
+            {t(`ui.slurp.settings.creators.pageStyle.about.${effective.style}`, {
+              defaultValue: {
+                homemade: "Shoots on a phone, first take, and never calls it work.",
+                polished: "Puts time into the look: retakes, the right light, chosen frames.",
+                documentary: "Posts what the day really looked like, flaws included.",
+                theatrical: "Plans and stages every drop, and lets fans see the setup.",
+              }[effective.style as Style],
             })}
-          </option>
-          {STYLES.map((style) => (
-            <option key={style} value={style}>
-              {styleName(style)}
-            </option>
-          ))}
-        </select>
-      </Field>
-      {rate(
-        "skipRate",
-        40,
-        t("ui.slurp.settings.creators.strategy.skipLabel", { defaultValue: "Skipped posts" }),
-        t("ui.slurp.settings.creators.strategy.skipDetail", {
-          defaultValue: "How often a scheduled slot stays empty. Never two in a row.",
-        }),
-      )}
-      {rate(
-        "textOnlyRate",
-        100,
-        t("ui.slurp.settings.creators.strategy.textLabel", { defaultValue: "Posts without pictures" }),
-        t("ui.slurp.settings.creators.strategy.textDetail", {
-          defaultValue:
-            "How often a post goes out without a picture. 50 is the default balance. Sets always have pictures.",
-        }),
-      )}
-      {/* The mix has no editor of its own; a suggestion sets it, and Reset is the way back. */}
-      {saved?.intentWeights && (
+          </p>
+        </div>
+        {/* An applied note replaces the saved one, so an old draft must not save itself back on blur. */}
+        <SlpPageStyleSuggest creator={creator} onApplied={() => setDraft(null)} />
+      </SettingsGroup>
+      <AdvancedGroup
+        title={t("ui.slurp.settings.creators.pageStyle.fineTune", { defaultValue: "Fine-tune page style" })}
+      >
         <Field
-          label={t("ui.slurp.settings.creators.pageStyle.mixLabel", { defaultValue: "Post mix" })}
-          detail={t("ui.slurp.settings.creators.pageStyle.mixDetail", {
-            defaultValue: "Set by a page style suggestion: what this Creator's posts are mostly for.",
+          label={t("ui.slurp.settings.creators.strategy.styleLabel", { defaultValue: "Production style" })}
+          detail={t("ui.slurp.settings.creators.strategy.styleDetail", {
+            defaultValue: "How this Creator makes pictures: cameras, effort, and whether they show the work.",
           })}
         >
-          <button
-            type="button"
-            className={quietButton}
+          <select
+            className={selectClass}
             disabled={update.isPending}
-            onClick={() => save({ accountId: creator.id, intentWeights: null })}
+            value={saved?.style ?? ""}
+            onChange={(event) => save({ accountId: creator.id, style: (event.target.value || null) as Style | null })}
           >
-            {t("ui.slurp.settings.creators.strategy.reset", { defaultValue: "Reset" })}
-          </button>
+            <option value="">
+              {t("ui.slurp.settings.creators.strategy.styleAuto", {
+                defaultValue: "Automatic ({{style}})",
+                style: styleName(effective.style),
+              })}
+            </option>
+            {STYLES.map((style) => (
+              <option key={style} value={style}>
+                {styleName(style)}
+              </option>
+            ))}
+          </select>
         </Field>
-      )}
-      <Field
-        label={t("ui.slurp.settings.creators.strategy.noteLabel", { defaultValue: "How they run their page" })}
-        detail={t("ui.slurp.settings.creators.strategy.noteDetail", {
-          defaultValue: "Optional. Describe habits, not personality: the Character card still decides who they are.",
-        })}
-      >
-        <textarea
-          rows={3}
-          maxLength={2000}
-          value={text}
-          disabled={update.isPending}
-          onChange={(event) => setDraft({ id: creator.id, text: event.target.value })}
-          onBlur={() => {
-            if (text.trim() === savedText) return;
-            save({ accountId: creator.id, strategyText: text.trim() || null });
-          }}
-          className={`${selectClass} min-h-24 py-2`}
-        />
-      </Field>
-    </SettingsGroup>
+        {rate(
+          "skipRate",
+          40,
+          t("ui.slurp.settings.creators.strategy.skipLabel", { defaultValue: "Skipped posts" }),
+          t("ui.slurp.settings.creators.strategy.skipDetail", {
+            defaultValue: "How often a scheduled slot stays empty. Never two in a row.",
+          }),
+        )}
+        {rate(
+          "textOnlyRate",
+          100,
+          t("ui.slurp.settings.creators.strategy.textLabel", { defaultValue: "Posts without pictures" }),
+          t("ui.slurp.settings.creators.strategy.textDetail", {
+            defaultValue:
+              "How often a post goes out without a picture. 50 is the default balance. Sets always have pictures.",
+          }),
+        )}
+        {/* The mix has no editor of its own; a suggestion sets it, and Reset is the way back. */}
+        {saved?.intentWeights && (
+          <Field
+            label={t("ui.slurp.settings.creators.pageStyle.mixLabel", { defaultValue: "Post mix" })}
+            detail={t("ui.slurp.settings.creators.pageStyle.mixDetail", {
+              defaultValue: "Set by a page style suggestion: what this Creator's posts are mostly for.",
+            })}
+          >
+            <button
+              type="button"
+              className={quietButton}
+              disabled={update.isPending}
+              onClick={() => save({ accountId: creator.id, intentWeights: null })}
+            >
+              {t("ui.slurp.settings.creators.strategy.reset", { defaultValue: "Reset" })}
+            </button>
+          </Field>
+        )}
+        <Field
+          label={t("ui.slurp.settings.creators.strategy.noteLabel", { defaultValue: "How they run their page" })}
+          detail={t("ui.slurp.settings.creators.strategy.noteDetail", {
+            defaultValue: "Optional. Describe habits, not personality: the Character card still decides who they are.",
+          })}
+        >
+          <textarea
+            rows={3}
+            maxLength={2000}
+            value={text}
+            disabled={update.isPending}
+            onChange={(event) => setDraft({ id: creator.id, text: event.target.value })}
+            onBlur={() => {
+              if (text.trim() === savedText) return;
+              save({ accountId: creator.id, strategyText: text.trim() || null });
+            }}
+            className={`${selectClass} min-h-24 py-2`}
+          />
+        </Field>
+      </AdvancedGroup>
+    </>
   );
 }

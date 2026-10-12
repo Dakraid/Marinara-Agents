@@ -16,7 +16,7 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
     version: "0.3.27",
     date: "2026-10-12",
     notes: [
-      "New in a Creator's Production settings: “Suggest page style” reads their card and proposes how they run their page. You see every change first, and nothing changes until you apply it.",
+      "Each Creator's Posting settings now show their Page style in plain words. Not sure it fits? “Suggest from card” proposes one; nothing changes until you choose Use.",
     ],
   },
   {
