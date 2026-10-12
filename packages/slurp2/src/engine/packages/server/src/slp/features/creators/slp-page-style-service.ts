@@ -3,7 +3,6 @@ import type { SlpPageStyleSuggestion } from "../../../../../shared/src/slp/slp-s
 import type { DB } from "../../../db/connection.js";
 import { logger } from "../../../lib/logger.js";
 import { resolveBaseUrl } from "../../../services/generation/connection-base-url.js";
-import { parseGameJsonish } from "../../../services/game/jsonish.js";
 import { createLLMProvider } from "../../../services/llm/provider-registry.js";
 import { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
 import { resolveSlurpTextConnection } from "../../base/identity/slp-connection.js";
@@ -31,18 +30,15 @@ export type SlpPageStyleResult =
 const MIN_EVIDENCE = 80;
 
 function parseAnswer(answer: string): unknown {
-  // A thinking model's notes come before the answer; only what follows them counts.
-  const text = answer.replace(/^[\s\S]*<\/think>/iu, " ").trim();
+  // A thinking model's notes and code fences hold braces too; only the answer after them counts.
+  const text = answer.replace(/^[\s\S]*<\/think>/iu, " ").replace(/```[a-z]*|```/giu, " ");
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start < 0 || end <= start) return null;
   try {
-    return parseGameJsonish(text);
+    return JSON.parse(jsonrepair(text.slice(start, end + 1)));
   } catch {
-    const start = text.indexOf("{");
-    const end = text.lastIndexOf("}");
-    try {
-      return JSON.parse(jsonrepair(start >= 0 && end > start ? text.slice(start, end + 1) : text));
-    } catch {
-      return null;
-    }
+    return null;
   }
 }
 
@@ -112,6 +108,12 @@ export async function suggestSlpPageStyle(db: DB, accountId: string): Promise<Sl
     logger.warn({ accountId: account.id, error }, "[slurp-page-style] Model call failed");
     return { ok: false, status: 502, error: "The connection failed while reading the card. Try again." };
   }
+  if (!answer.trim())
+    return {
+      ok: false,
+      status: 502,
+      error: "The connection returned an empty answer. Raise its max output tokens, or pick another model.",
+    };
   const proposal = slpPageStyleProposal(parseAnswer(answer), current);
   if (!proposal) {
     logger.warn({ accountId: account.id, length: answer.length }, "[slurp-page-style] The answer held no usable style");

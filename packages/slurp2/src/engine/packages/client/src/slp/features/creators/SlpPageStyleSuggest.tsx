@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type {
@@ -145,10 +145,8 @@ export function SlpPageStyleSuggest({
     >
       <div className="space-y-3">
         <button type="button" className={quietButton} disabled={busy} onClick={run} aria-busy={suggest.isPending}>
-          {suggest.isPending ? (
+          {suggest.isPending && (
             <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
-          ) : (
-            <Sparkles size={14} aria-hidden="true" />
           )}
           {suggest.isPending
             ? t("ui.slurp.settings.creators.pageStyle.loading", { defaultValue: "Reading the card…" })
