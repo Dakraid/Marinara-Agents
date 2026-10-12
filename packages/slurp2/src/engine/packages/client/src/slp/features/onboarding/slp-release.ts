@@ -16,7 +16,7 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
     version: "0.3.29",
     date: "2026-10-12",
     notes: [
-      "When a picture's prompt polish fails, the server log now says why, so a broken text connection is easier to find.",
+      "When a picture's description can't be polished, the server log now names the reason, so connection trouble is easier to spot.",
     ],
   },
   {
