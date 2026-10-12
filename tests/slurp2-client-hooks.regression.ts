@@ -490,6 +490,7 @@ const addedCalls = [
   "post /slurp2/slurp/stories/${encodeURIComponent(input.storyId)}/view",
   "put /slurp2/messages/threads/${encodeURIComponent(input.threadId)}/notes",
   "put /slurp2/slurp/accounts/${encodeURIComponent(input.accountId)}/page",
+  "post /slurp2/slurp/accounts/${encodeURIComponent(accountId)}/strategy/suggest",
   "upload /slurp2/messages/threads/${encodeURIComponent(input.threadId)}/image-upload",
 ];
 const removedCalls = [
@@ -548,7 +549,9 @@ const counts = Object.fromEntries(
 assert.deepEqual(
   counts,
   {
-    useMutation: 212,
+    // 0.3.27 "Suggest page style": one mutation, its two error states, and the strategy save now
+    // refreshes the list when settled (a refused apply also means the list is stale).
+    useMutation: 213,
     useQuery: 282,
     useInfiniteQuery: 9,
     invalidateQueries: 151,
@@ -559,8 +562,8 @@ assert.deepEqual(
     onMutate: 2,
     // SlpConnectionsPanel.tsx moved into the SlurpBackstagePrompts component mapping, so its one
     // onError no longer counts as state-layer code.
-    onError: 91,
-    onSettled: 36,
+    onError: 93,
+    onSettled: 37,
   },
   "query and mutation wiring counts match the monolith plus the later Slurp2 hooks",
 );
