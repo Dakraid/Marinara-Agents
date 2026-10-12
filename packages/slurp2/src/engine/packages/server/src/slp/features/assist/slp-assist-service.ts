@@ -16,7 +16,7 @@ import { resolveCreatorImageConnectionId } from "../../base/media/slp-image-conn
 import { resolveCreatorMediaAbsolutePath, unlinkCreatorMedia } from "../../base/media/slp-media.js";
 import { tryCreatorAccountOperation } from "../../base/locking/slp-account-operation-lock.js";
 import { resolveSlurpCreatorFlavour } from "../../data/creators/slp-flavour-source.js";
-import { resolveSlurpCreatorSpice } from "../../data/creators/slp-spice-storage.js";
+import { resolveSlurpCreatorSpice, type SlurpCreatorSpice } from "../../data/creators/slp-spice-storage.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { slurpPublicSexualLevel } from "../../modules/feed/slp-post-guidance.js";
 import {
@@ -31,6 +31,7 @@ import {
 } from "../../modules/assist/slp-assist-prompt.js";
 import { createSlpPictureUndo } from "../../modules/assist/slp-picture-undo.js";
 import { generateCreatorPostImage } from "../media/slp-media-contract.js";
+import { protectCreatorGeneratedIdentity, slpCreatorPublicIdentityFor } from "../feed/slp-feed-contract.js";
 import { artworkCompositionGuard, artworkNegativePrompt } from "../creators/slp-creators-contract.js";
 import {
   SLP_ASSIST_FIELDS,
@@ -53,11 +54,32 @@ async function creatorFor(db: DB, accountId: string | undefined) {
   const storage = createSlurpStorage(db);
   const account = await storage.getNoodlerAccountById(accountId);
   if (!account) return null;
-  return {
-    account,
-    source: await storage.resolveAccountSource(account),
-    open: (account.settings.privacy.identityDisclosure ?? "open") === "open",
-  };
+  return { account, source: await storage.resolveAccountSource(account) };
+}
+
+/**
+ * The Creator's flavour brief (7b0) for an assist prompt. A concealed Creator keeps their voice: the
+ * brief is read at their own disclosure level and protected here, because these prompts have no
+ * identity protection of their own (the same pass as the scene plan).
+ */
+async function briefFor(
+  db: DB,
+  creator: NonNullable<Awaited<ReturnType<typeof creatorFor>>>,
+  use: "post" | "story" | "dm",
+  spice?: SlurpCreatorSpice,
+): Promise<string> {
+  const disclosureMode = creator.account.settings.privacy.identityDisclosure ?? "open";
+  const brief = await resolveSlurpCreatorFlavour(db, {
+    account: creator.account,
+    source: creator.source,
+    disclosureMode,
+    use,
+    sequence: Math.floor(Date.now() / 60_000),
+    spice,
+  });
+  return (
+    protectCreatorGeneratedIdentity(brief, disclosureMode, await slpCreatorPublicIdentityFor(db, creator.source)) ?? ""
+  );
 }
 
 /**
@@ -79,17 +101,9 @@ export async function runSlpAssistText(
   if (!connection) return fail(409, "Select a text generation connection first.");
   const creator = await creatorFor(db, input.accountId);
   if (input.accountId && !creator) return fail(404, "Creator not found.");
-  // The brief only for an open identity: this prompt has no identity protection of its own
-  // (the same rule as the hand-over note in 7b0).
   const brief =
-    creator?.open && SLP_ASSIST_FIELDS[input.field].voice !== "player"
-      ? await resolveSlurpCreatorFlavour(db, {
-          account: creator.account,
-          source: creator.source,
-          disclosureMode: "open",
-          use: input.field === "story" ? "story" : input.field === "reply" ? "dm" : "post",
-          sequence: Math.floor(Date.now() / 60_000),
-        })
+    creator && SLP_ASSIST_FIELDS[input.field].voice !== "player"
+      ? await briefFor(db, creator, input.field === "story" ? "story" : input.field === "reply" ? "dm" : "post")
       : "";
   const provider = slpWithProviderRetry(
     createLLMProvider(
@@ -140,7 +154,7 @@ export async function drawSlpAssistPicture(
 ): Promise<SlpAssistOutcome<SlpActionResult["draw-picture"]>> {
   const creator = await creatorFor(db, input.accountId);
   if (!creator) return fail(404, "Creator not found.");
-  const { account, source, open } = creator;
+  const { account, source } = creator;
   const connections = createConnectionsStorage(db);
   const mappedId = await resolveCreatorImageConnectionId(db, account.id);
   const imageConnection =
@@ -158,17 +172,9 @@ export async function drawSlpAssistPicture(
     composition: true,
     ...input.options,
   };
-  const brief =
-    open && options.creatorDetails
-      ? await resolveSlurpCreatorFlavour(db, {
-          account,
-          source,
-          disclosureMode: "open",
-          use: input.target === "story" ? "story" : "post",
-          sequence: Math.floor(Date.now() / 60_000),
-          spice,
-        })
-      : "";
+  const brief = options.creatorDetails
+    ? await briefFor(db, creator, input.target === "story" ? "story" : "post", spice)
+    : "";
   const slot = input.target === "avatar" ? "avatar" : input.target === "cover" ? "banner" : null;
   const draftPrompt = slpAssistPictureDraft({
     target: input.target,

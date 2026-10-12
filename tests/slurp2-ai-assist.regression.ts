@@ -218,7 +218,11 @@ assert.match(
   /An everyday moment from Kai's life\./u,
 );
 const service = server("features/assist/slp-assist-service.ts");
-assert.match(service, /resolveSlurpCreatorFlavour\(db, \{[\s\S]*?spice,/u, "draw reads the 7b0 brief");
+assert.match(
+  service,
+  /briefFor\(db, creator, input\.target === "story" \? "story" : "post", spice\)/u,
+  "draw reads the 7b0 brief",
+);
 assert.match(
   service,
   /postContent: options\.creatorDetails \? \[brief, input\.context/u,
@@ -237,10 +241,13 @@ assert.match(service, /finally \{\s*unlinkCreatorMedia\(mediaPath\);/u, "a drawn
 // 0.3.6: Write and Improve are the player's tap: never on the AI budget, never blocked by its mode.
 assert.doesNotMatch(service, /claimSlurpModelBudget|slurpModelWorkerAllows/u, "the player's own tap is off the budget");
 assert.match(service, /playerAsked: true/u, "a drawn picture's prompt rewrite is off the budget too");
+// A concealed Creator keeps their voice: the brief is read at their disclosure level and protected.
+assert.match(service, /creator && SLP_ASSIST_FIELDS\[input\.field\]\.voice !== "player"/u);
+assert.doesNotMatch(service, /disclosureMode: "open"/u, "the brief is never read as an open identity");
 assert.match(
   service,
-  /creator\?\.open && SLP_ASSIST_FIELDS\[input\.field\]\.voice !== "player"/u,
-  "open identities only",
+  /protectCreatorGeneratedIdentity\(brief, disclosureMode, await slpCreatorPublicIdentityFor\(db, creator\.source\)\)/u,
+  "a concealed Creator's brief is protected before it reaches an assist prompt",
 );
 
 // --- 4. Undo -----------------------------------------------------------------------------------------
