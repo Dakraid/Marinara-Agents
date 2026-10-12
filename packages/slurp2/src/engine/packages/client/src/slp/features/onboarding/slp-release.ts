@@ -13,6 +13,14 @@ export interface Slurp2ReleaseEntry {
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
   {
+    version: "0.3.28",
+    date: "2026-10-12",
+    notes: [
+      "Hold a Creator's chat message and pick “Deep details” to see what went into that reply: where the two of you stand, what they remembered, and the full prompt.",
+      "Slurp keeps this for the newest 50 replies of each chat.",
+    ],
+  },
+  {
     version: "0.3.26",
     date: "2026-10-12",
     notes: [

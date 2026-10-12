@@ -78,7 +78,6 @@ export function useSlurpThread(threadId: string | null, personaId: string | null
       api.get<{
         thread: SlurpThread;
         messages: SlurpMessage[];
-        /** The replies whose Deep details record is still kept (`slpMessageDeepDetailsId`). */
         deepDetailIds?: string[];
         nextCursor: { createdAt: string; id: string } | null;
         creator: { id: string; handle: string; displayName: string; avatarUrl: string | null } | null;
