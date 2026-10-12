@@ -1,5 +1,36 @@
 # Slurp release notes
 
+## 0.3.26 — 2026-10-12
+
+- Added: Creators keep what is always true about them. When Slurp reads a card it also notes the few facts that must hold everywhere (how they communicate, senses and body, languages, firm limits, who runs a shared page), and every post, Story, chat and reply carries them, with no extra AI call. Before, a fact late in the card was missing from most requests.
+- Added: "Always true" in a Creator's Life details, to see and correct those facts. Life details also show with "Model's choice" post ideas.
+- Changed: your Life details edits stay when the card changes: what you added stays, what you removed stays out, the rest follows the card. "Read card again" still clears them.
+- Changed: the card reading covers more of a long card, and cards with 。！？ sentence ends or long one-line attribute lists are no longer cut off.
+- Fixed: a failed read of stored Life details could erase every Creator's details; saving now reports the error.
+
+## 0.3.25 — 2026-10-12
+
+- Fixed: "Enhance image prompts" no longer drops a usable answer from the prompt model. An answer with a line break inside the prompt, a trailing comma, or text around the JSON object was read as "no prompt", and the picture went out with the capped draft. An answer that is cut off still falls back.
+- Fixed: when the AI budget is Off, the "Enhance image prompts" row is off, or its daily limit is reached, the picture now goes out with the full draft, as with enhancing switched off. Before, each such picture logged "Image prompt rewrite unusable" and its draft was cut to 1,500 characters (player report).
+
+## 0.3.24 — 2026-10-11
+
+- Changed: in a picture with a second Creator (a partner, a collab), that person now gets their own look in the picture prompt, labelled with their name and placed after the posting Creator's look. Before, their look reached only "Enhance image prompts", so with it off the image model had nothing to draw them from.
+- Changed: the second Creator's "The image model knows this character" switch now applies to pictures on somebody else's page too: their card name goes along (as a tag for tag models) when their identity is open.
+
+## 0.3.23 — 2026-10-11
+
+- Changed: with "The image model knows this character" on, the name now comes after your style profile's tags and in front of the character's look, instead of at the very start of the picture prompt. The inserted look follows the style tags too.
+
+## 0.3.22 — 2026-10-11
+
+- Fixed: reports are now included in backups and restores.
+- Fixed: "Create posts now" names the Creators it skipped or could not post for again, instead of only a count.
+- Fixed: accepting a commission twice in a row (a double tap, or a retry) no longer draws the picture twice.
+- Fixed: chat and commission responses to the fan no longer include a picture's stored file location.
+- Fixed: the settings search box in a settings section now stays reachable on a phone instead of disappearing.
+- Internal: a Slurp Support desk tick checks its throttle against the tick's own time instead of the wall clock.
+
 ## 0.3.21 — 2026-10-11
 
 - Stir's Recent plays follows a collab you suggested or pushed: waiting for an answer, agreed, coming up, turned down (with the reason), blocked, or up on both pages. A posted collab opens its joint post; a deleted post or a collab Slurp no longer keeps says so.

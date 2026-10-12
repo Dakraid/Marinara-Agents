@@ -282,6 +282,24 @@
     "long-term-memory": {
       "versions": [
         {
+          "version": "1.4.28",
+          "date": "2026-10-12",
+          "notes": "- Finish the Memory Settings → Debug details pane. Each event row shows how long ago it last logged, Result reads as counts (for example \"17 candidates found → 9 kept → 9 changes\" or \"148 indexed → 131 usable in this chat → 2 added\"), recall candidates are flat rows with a score bar marking the minimum relevance and a reason that names the limit that applied, a recall that added nothing says why, recall settings read as labelled terms, and What happened lists one sentence per step with its offset from the start. Durations over a second read in seconds or minutes, and a note says what Copy JSON includes.",
+          "highlight": false
+        },
+        {
+          "version": "1.4.27",
+          "date": "2026-10-12",
+          "notes": "- Make the open event visible in Memory Settings → Debug. The selected row keeps a background and accent bar wherever the pointer is, the active filter chip reads pressed, and muted row text stays readable on hovered and selected rows. Rows now show the outcome (\"7 of 12 kept\", \"1 added · 6 not added\", \"1 saved · 1 skipped\") instead of repeating their title, and a failed row keeps its error. A compile-evidence warning says how many candidates failed checks. Result counts use the right singular and read \"kept\"; applied changes show saved and skipped counts rather than raw IDs, and a failed apply reports none; the Details heading appears only when it has content and recall counts are no longer repeated there. The health line drops \"Log size unavailable\", the Vault \"Open debug log\" link has a 44 px target, and the recall-failed message names Memory Settings → Debug.",
+          "highlight": false
+        },
+        {
+          "version": "1.4.26",
+          "date": "2026-10-12",
+          "notes": "- Ask the embedding model for a query embedding when recall searches the vault, instead of treating the search text like an indexed memory. On Engines that pass the input type through, models that distinguish the two, such as multilingual E5 and nomic-embed-text, apply their query prefix to the search. No reindex is needed, because stored vectors were already document embeddings.",
+          "highlight": false
+        },
+        {
           "version": "1.4.25",
           "date": "2026-10-11",
           "notes": "- Show which embedding source Long-Term Memory uses. The semantic search health line now names the source (for example \"Built-in local MiniLM\"), says when the saved vectors were built with a different source and will be re-embedded on the next recall or reindex, and no longer reports semantic search as available after the source changed. Memory Settings explains that the Extraction connection only drives extraction, and the vault health panel explains which connection drives recall embeddings, that the built-in model is English-only, and to use a multilingual embedding model for Korean, Japanese, Chinese or mixed-language vaults.",
@@ -381,24 +399,6 @@
           "version": "1.4.9",
           "date": "2026-10-07",
           "notes": "- Let lane weights and rank fusion decide recall order again. An unbounded BM25 raw score was added as a bonus on top of the fused score, which let a deep lexical hit outrank the best semantic hit of a higher-weighted lane; fusion now uses only the bounded per-lane score.\n- Give keyword matches an absolute relevance. A partial or fuzzy keyword match used to be normalized against the best hit of the same query, so a weak match could reach full keyword relevance; it is now measured against the exact-phrase ceiling. Fuzzy keyword matches also require whole-token or word-boundary containment, so a keyword like \"king\" no longer triggers on \"looking\".",
-          "highlight": false
-        },
-        {
-          "version": "1.4.8",
-          "date": "2026-10-07",
-          "notes": "- Ignore an invalid saved recall setting instead of letting it break settings, recall, and search. A null recall weight or an unknown recall style saved by another build used to make every settings read throw until settings.json was edited by hand. Both now fall back to the defaults, and the invalid value is no longer written back.",
-          "highlight": false
-        },
-        {
-          "version": "1.4.7",
-          "date": "2026-10-06",
-          "notes": "- Make Sources re-extract use the availability modes currently selected instead of the ones saved earlier on the source, and save them on the source like a fresh import does. \"Retry failed\" still repeats the original attempt, and now says which modes it will use. Each import result shows the extraction mode it imports as, plus every availability mode, instead of only the first availability mode.",
-          "highlight": false
-        },
-        {
-          "version": "1.4.6",
-          "date": "2026-10-06",
-          "notes": "- Stop a newly met minor character from failing the whole import when Conversation or Game is selected alongside Roleplay. Local character memories are available only in Roleplay, so such a memory is now restricted to Roleplay with a warning; when Roleplay is not selected it is skipped with an explanation. The other memories from the same source are still proposed.",
           "highlight": false
         }
       ]
@@ -734,6 +734,36 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.26",
+          "date": "2026-10-12",
+          "notes": "- Added: Creators keep what is always true about them. When Slurp reads a card it also notes the few facts that must hold everywhere (how they communicate, senses and body, languages, firm limits, who runs a shared page), and every post, Story, chat and reply carries them, with no extra AI call. Before, a fact late in the card was missing from most requests.\n- Added: \"Always true\" in a Creator's Life details, to see and correct those facts. Life details also show with \"Model's choice\" post ideas.\n- Changed: your Life details edits stay when the card changes: what you added stays, what you removed stays out, the rest follows the card. \"Read card again\" still clears them.\n- Changed: the card reading covers more of a long card, and cards with 。！？ sentence ends or long one-line attribute lists are no longer cut off.\n- Fixed: a failed read of stored Life details could erase every Creator's details; saving now reports the error.",
+          "highlight": false
+        },
+        {
+          "version": "0.3.25",
+          "date": "2026-10-12",
+          "notes": "- Fixed: \"Enhance image prompts\" no longer drops a usable answer from the prompt model. An answer with a line break inside the prompt, a trailing comma, or text around the JSON object was read as \"no prompt\", and the picture went out with the capped draft. An answer that is cut off still falls back.\n- Fixed: when the AI budget is Off, the \"Enhance image prompts\" row is off, or its daily limit is reached, the picture now goes out with the full draft, as with enhancing switched off. Before, each such picture logged \"Image prompt rewrite unusable\" and its draft was cut to 1,500 characters (player report).",
+          "highlight": false
+        },
+        {
+          "version": "0.3.24",
+          "date": "2026-10-11",
+          "notes": "- Changed: in a picture with a second Creator (a partner, a collab), that person now gets their own look in the picture prompt, labelled with their name and placed after the posting Creator's look. Before, their look reached only \"Enhance image prompts\", so with it off the image model had nothing to draw them from.\n- Changed: the second Creator's \"The image model knows this character\" switch now applies to pictures on somebody else's page too: their card name goes along (as a tag for tag models) when their identity is open.",
+          "highlight": false
+        },
+        {
+          "version": "0.3.23",
+          "date": "2026-10-11",
+          "notes": "- Changed: with \"The image model knows this character\" on, the name now comes after your style profile's tags and in front of the character's look, instead of at the very start of the picture prompt. The inserted look follows the style tags too.",
+          "highlight": false
+        },
+        {
+          "version": "0.3.22",
+          "date": "2026-10-11",
+          "notes": "- Fixed: reports are now included in backups and restores.\n- Fixed: \"Create posts now\" names the Creators it skipped or could not post for again, instead of only a count.\n- Fixed: accepting a commission twice in a row (a double tap, or a retry) no longer draws the picture twice.\n- Fixed: chat and commission responses to the fan no longer include a picture's stored file location.\n- Fixed: the settings search box in a settings section now stays reachable on a phone instead of disappearing.\n- Internal: a Slurp Support desk tick checks its throttle against the tick's own time instead of the wall clock.",
+          "highlight": false
+        },
+        {
           "version": "0.3.21",
           "date": "2026-10-11",
           "notes": "- Stir's Recent plays follows a collab you suggested or pushed: waiting for an answer, agreed, coming up, turned down (with the reason), blocked, or up on both pages. A posted collab opens its joint post; a deleted post or a collab Slurp no longer keeps says so.\n- A collab request still waiting shows Make it happen, which opens the usual preview before anything changes.\n- Undo is no longer offered once the joint post is on its way or up; published posts are not taken back.",
@@ -821,36 +851,6 @@
           "version": "0.3.4",
           "date": "2026-09-29",
           "notes": "Creator Pages, and Stir built out.\n\n- Profiles get a Page above the posts: six looks and ten blocks (quote, now, collage, list, this or that, Q&A, facts, prices, people, latest poll). It stores only choices and words; pictures, prices, facts, people and polls come from real data, and locked posts only appear as the server's teaser.\n- New character Creators design their own Page on a later open; any Creator can be asked to (one AI call, new \"Creator pages\" budget row) or the player builds it. A week-old AI Page may refresh after real news; a player's Page never changes by itself.\n- Stir: new levers (storyline, crossover, tip goal, new look, events), Recent plays with Undo that stays safe when the world moved on, steering what is in play, and suggestions of who would click.\n- Fixes: brand deals marked done too early, events started twice, plays twice in Pulse, lost Undo answers, Polish plurals, accessibility.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.3",
-          "date": "2026-09-29",
-          "notes": "- Renamed from Slurp Remastered to Slurp. The Home tab reads \"Slurp\" without the trailing period.\n- New catalog description; it states that the default guidance is tuned for an adult experience.\n- Slurp Legacy (`slurp`) is retired and no longer in the catalog. Its backups still restore here.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.2",
-          "date": "2026-09-29",
-          "notes": "- Fix \"Viewer access could not be loaded\" and an empty Home: the viewer feed listed character fan accounts (0.3.0 audience characters) as Creators without a profile, and the client threw on `creator.profile.id`. The feed now lists only accounts with a stage profile.\n- Fix \"Slurp core storage factory is required\" on \"Start over, keep Creators\" and on the Stir routes: both built the messages storage without its core factory.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.1",
-          "date": "2026-09-29",
-          "notes": "- New Backstage action \"Start over, keep Creators\" (`DELETE /api/slurp2/data/activity`): clears posts, post media, comments, messages, fans, world events, queued and stuck work, and the continuity and content plans built on them. It first refunds commissions that were paid and not delivered. Creators, their artwork and projects, follows, the wallet and every Slurp setting stay. For installs that stay empty or stuck after an update.\n- \"Delete all Slurp data\" now also clears post deep details, reports, message follow-ups, world claims and Creator planning rows, which it used to leave behind.\n- The empty Home feed says why: automatic posting is off (with a one-tap \"Turn on automatic posting\"), first posts are still being written, no Creators yet, or no persona yet.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.0",
-          "date": "2026-09-29",
-          "notes": "Small changes.\n\n- Stir, a new tab: make crushes, collabs, rivalries and events happen between your Creators, in your own words or with a card. Every play shows a preview first and has Undo.\n- Life and spice: collabs, couples with an optional shared page, rivalries, brand deals, teases that lead to drops, fan polls, steering with flavour and spice levels.\n- A new look for the whole app: floating phone nav, Hub, Stories, profiles, Discover, Wallet, the Dashboard, a role-play onboarding and a What's new sheet.\n- Messages rebuilt: a real inbox, full-screen chats, write as Slurp Support, AI fans sometimes get an answer, and promised messages arrive.\n- Pulse shows what runs, what is queued, what failed and why, and what comes next. Long actions run in the background and never lock the screen.\n- The AI budget grows with your Creators; limits you set yourself stay. Pictures keep their viewpoint and art style better, with an optional prompt enhancer.\n- 215 fixes.",
-          "highlight": true
-        },
-        {
-          "version": "0.2.78",
-          "date": "2026-09-27",
-          "notes": "- bugfixing\n- Restyle the update sheet header with a larger animated G face, accent tint and integrated alpha reminder.\n- Replace the cost warning with a direct reminder that Slurp uses background image and text generation.",
           "highlight": false
         }
       ]
