@@ -645,7 +645,15 @@ export const MessageBubble = memo(function MessageBubble({
       </SlpSheet>
       {/* Mounted on demand: a long thread must not carry one window per bubble. */}
       {deepDetailsOpen && personaId && (
-        <SlpMessageDeepDetails messageId={message.id} personaId={personaId} onClose={() => setDeepDetailsOpen(false)} />
+        <SlpMessageDeepDetails
+          messageId={message.id}
+          personaId={personaId}
+          onClose={() => {
+            setDeepDetailsOpen(false);
+            // Back to the bubble the menu came from, so keyboard users keep their place.
+            bubbleRef.current?.focus();
+          }}
+        />
       )}
     </div>
   );

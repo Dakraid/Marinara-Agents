@@ -96,14 +96,21 @@ export function SlpMessageDeepDetails({
                 {chat.stance && chat.stance.evidence.length > 0 && (
                   <div className="mt-3">
                     <Rows
-                      rows={chat.stance.evidence.map((entry) => [entry.layer, `${entry.value}: ${entry.effect}`])}
+                      rows={chat.stance.evidence.map((entry) => [
+                        entry.layer.charAt(0).toUpperCase() + entry.layer.slice(1),
+                        `${entry.value}: ${entry.effect}`,
+                      ])}
                     />
                   </div>
                 )}
               </Section>
 
-              <Section title="Memories" step={2} status={chat.memories.length > 0 ? "done" : "skipped"}>
-                <Rows rows={chat.memories.map((memory, index) => [`${index + 1} · ${memory.tier}`, memory.text])} />
+              <Section title="Memories" step={2}>
+                {chat.memories.length > 0 ? (
+                  <Rows rows={chat.memories.map((memory, index) => [`${index + 1} · ${memory.tier}`, memory.text])} />
+                ) : (
+                  <p className="text-xs text-[var(--muted-foreground)]">None yet when this reply was written.</p>
+                )}
               </Section>
 
               <Section title="Writing model" step={3}>
