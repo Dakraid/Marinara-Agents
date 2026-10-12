@@ -208,7 +208,7 @@ export function SlpPageStyleSuggest({
               )}
               {view.rows.length > 0 && (
                 <details>
-                  <summary className="flex min-h-11 cursor-pointer items-center text-xs font-semibold text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]">
+                  <summary className="-mx-1 flex min-h-11 cursor-pointer items-center rounded-lg px-1 text-xs font-semibold text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]">
                     {t("ui.slurp.settings.creators.pageStyle.details", { defaultValue: "See exact changes" })}
                   </summary>
                   <dl className="space-y-1.5 pt-1">

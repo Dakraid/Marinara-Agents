@@ -89,6 +89,9 @@ export function buildSlpPageStyleMessages(input: {
     "## explanation",
     `One or two plain sentences to the player, at most ${SLP_PAGE_STYLE_LIMITS.explanation} characters: why this fits the character, naming the card's evidence.`,
     "",
+    'In explanation and note, write for a person: never use a field name or an id from this prompt (say "planned shoots", not set; "how a post was made", not behind_the_scenes).',
+    "Choose every value from the card alone; two different characters should get clearly different pages.",
+    "",
     'Return JSON only: {"explanation": "...", "style": "...", "textOnlyRate": 0, "intentWeights": {"casual": 0, ...}, "note": "..."}',
   ].join("\n");
   const user = [
@@ -124,8 +127,13 @@ export function slpPageStyleProposal(
 ): { explanation: string; patch: SlpPageStylePatch } | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const raw = value as Record<string, unknown>;
+  // An id that still slips into the prose at least reads as words.
+  const plain = (text: string) =>
+    text.replace(/behind_the_scenes/gu, "behind the scenes").replace(/textOnlyRate/gu, "lean towards words");
   const explanation =
-    typeof raw.explanation === "string" ? raw.explanation.trim().slice(0, SLP_PAGE_STYLE_LIMITS.explanation) : "";
+    typeof raw.explanation === "string"
+      ? plain(raw.explanation.trim()).slice(0, SLP_PAGE_STYLE_LIMITS.explanation)
+      : "";
   if (!explanation) return null;
 
   const style = (SLURP_PRODUCTION_STYLES as readonly string[]).includes(String(raw.style))
@@ -154,7 +162,7 @@ export function slpPageStyleProposal(
     // All zero would fall back to the shipped weights anyway; offering it would be a no-op.
     if (any && Object.values(next).some((weight) => weight > 0)) weights = next;
   }
-  const note = typeof raw.note === "string" ? raw.note.trim().slice(0, SLP_PAGE_STYLE_LIMITS.note) : "";
+  const note = typeof raw.note === "string" ? plain(raw.note.trim()).slice(0, SLP_PAGE_STYLE_LIMITS.note) : "";
   if (!style && textOnlyRate === null && !weights && !note) return null;
 
   const patch: SlpPageStylePatch = {};
