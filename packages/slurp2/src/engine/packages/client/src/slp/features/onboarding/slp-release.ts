@@ -21,6 +21,13 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
     ],
   },
   {
+    version: "0.3.27",
+    date: "2026-10-12",
+    notes: [
+      "Each Creator's Posting settings now show their Page style in plain words. Not sure it fits? “Suggest from card” proposes one; nothing changes until you choose Use.",
+    ],
+  },
+  {
     version: "0.3.26",
     date: "2026-10-12",
     notes: [

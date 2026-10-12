@@ -81,6 +81,8 @@ const EXPECTED = [
   // 0.3.2 Creator Pages: the player's edit, and "Let <Creator> design it".
   "PUT /slurp/accounts/:id/page",
   "POST /slurp/accounts/:id/page/compose",
+  // 0.3.27: "Suggest page style" proposes a Creator strategy; applying it uses the settings PATCH.
+  "POST /slurp/accounts/:id/strategy/suggest",
   // 7b-spice: Backstage › Spice (the Slurp-wide limit, the player's taste, "Slurp noticed you like …").
   "GET /slurp/spice",
   "PATCH /slurp/spice",
@@ -397,6 +399,8 @@ const ADDED_ROUTES = new Set([
   // 0.3.2 Creator Pages: the player's edit, and "Let <Creator> design it".
   "PUT /slurp/accounts/:id/page",
   "POST /slurp/accounts/:id/page/compose",
+  // 0.3.27: "Suggest page style" proposes a Creator strategy; applying it uses the settings PATCH.
+  "POST /slurp/accounts/:id/strategy/suggest",
   // 7b-spice: Backstage › Spice (the Slurp-wide limit, the player's taste, "Slurp noticed you like …").
   "GET /slurp/spice",
   "PATCH /slurp/spice",
@@ -486,7 +490,7 @@ const EXPECTED_HANDLER_COUNTS = {
   "features/ads": 24,
   "features/assist": 9,
   "features/audience": 13,
-  "features/creators": 49,
+  "features/creators": 50,
   "features/discovery": 4,
   "features/economy": 14,
   "features/feed": 39,
@@ -503,7 +507,7 @@ const EXPECTED_HANDLER_COUNTS = {
 // 0.3.4: +1 POST, +1 PUT (Creator Pages). 0.3.5: +1 GET, +3 POST (Support desk). 0.3.7: +1 POST (rewrite all).
 // 0.3.8: +1 GET, +5 POST (Drama: bonds, drama view, choice, start, end). 0.3.11: +1 POST (fan notes).
 // 0.3.28: +1 GET (Deep details for a chat reply).
-const EXPECTED_METHOD_COUNTS = { DELETE: 19, GET: 85, PATCH: 20, POST: 158, PUT: 7 } as const;
+const EXPECTED_METHOD_COUNTS = { DELETE: 19, GET: 85, PATCH: 20, POST: 159, PUT: 7 } as const;
 
 const root = join(import.meta.dirname, "../packages/slurp2/src/engine/packages/server/src/slp");
 const registration = /\bapp\.(get|post|put|patch|delete|addContentTypeParser)(?:<[^()]*?>)?\(\s*["'`]([^"'`]+)["'`]/gu;
@@ -559,7 +563,7 @@ const methodCounts = Object.fromEntries(
 );
 assert.deepEqual(methodCounts, EXPECTED_METHOD_COUNTS, "HTTP method multiset changed from staging");
 // 0.3.5: +4 (the Support desk). 0.3.7: +1 (rewrite all). Roleplay scenes: +4. 0.3.17: +2 (collab drop, post now).
-assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 289);
+assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 290);
 assert.deepEqual(handlerCounts, EXPECTED_HANDLER_COUNTS, "handler count changed in a feature");
 assert.ok(foundRoutes.includes("POST /slurp/posts/:id/media"), "the renamed POST media route must remain registered");
 assert.ok(
