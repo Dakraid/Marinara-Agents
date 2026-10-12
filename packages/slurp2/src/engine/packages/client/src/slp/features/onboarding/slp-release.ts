@@ -21,6 +21,14 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
     ],
   },
   {
+    version: "0.3.25",
+    date: "2026-10-12",
+    notes: [
+      "Enhance image prompts now understands more of the answers it gets, so fewer pictures fall back to the plain draft.",
+      "With the AI budget off or used up for the day, pictures go out with their full draft and the log stays quiet.",
+    ],
+  },
+  {
     version: "0.3.24",
     date: "2026-10-11",
     notes: [
