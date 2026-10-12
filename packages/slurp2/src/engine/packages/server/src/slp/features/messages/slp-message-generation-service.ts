@@ -762,6 +762,8 @@ export async function generateSlurpMessageReply(input: SlurpMessagePromptInput):
   if (!protectedContent) throw new Error("Slurp direct-message generation returned no usable content.");
   const protect = (value: string, max: number) =>
     protectBoundedCreatorGeneratedText(value, disclosureMode, publicIdentity, max);
+  // Deep details keeps the answer redacted like the prompt, so a concealed Creator cannot name its source.
+  const raw = protectCreatorGeneratedIdentity(content, disclosureMode, publicIdentity) ?? "";
   return {
     content: protectedContent,
     latitude: stance.latitude,
@@ -791,6 +793,6 @@ export async function generateSlurpMessageReply(input: SlurpMessagePromptInput):
       sceneInvite && typeof generated.sceneInvite === "string" && generated.sceneInvite.trim()
         ? (protect(generated.sceneInvite.trim(), 600) ?? undefined)
         : undefined,
-    deepDetails: buildSlurpMessageDeepDetailsRecord({ input, support, stance, messages, options, content }),
+    deepDetails: buildSlurpMessageDeepDetailsRecord({ input, support, stance, messages, options, content: raw }),
   };
 }

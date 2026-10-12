@@ -21,8 +21,10 @@ export async function slpMessageDeepDetailsRoutes(app: FastifyInstance, messagin
     if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
     const message = await messages.getMessageById(messageId);
     const thread = message ? await messages.getThreadById(message.threadId) : null;
-    if (!message || message.role !== "creator" || !thread || !(await seatIn(viewer.id, thread)))
+    // A reply bubble only: a paid message or a locked post card must not show its text through here.
+    if (!message || message.role !== "creator" || message.kind !== "text" || !thread)
       return reply.code(404).send({ error: "Message not found" });
+    if (!(await seatIn(viewer.id, thread))) return reply.code(404).send({ error: "Message not found" });
     const creator = await slurp.getNoodlerAccountById(thread.creatorAccountId);
     if (!creator) return reply.code(404).send({ error: "Message not found" });
     const kept = await getSlurpMessageDeepDetails(app.db, message.id);

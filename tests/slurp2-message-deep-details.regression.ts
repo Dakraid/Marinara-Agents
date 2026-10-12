@@ -118,6 +118,16 @@ async function main() {
     await message("reply", "creator");
     await message("reply:1", "creator"); // the same reply's second bubble
     await message("other-reply", "creator", "other-thread");
+    await db.insert(schema.slurpMessages).values({
+      id: "paid",
+      threadId: "thread",
+      senderAccountId: "creator",
+      role: "creator",
+      kind: "ppv",
+      content: "PAID CAPTION",
+      price: "50",
+      createdAt: t,
+    });
 
     // 1. The record holds what the generator had, as it was: nothing is invented or re-read.
     const built = record.buildSlurpMessageDeepDetailsRecord({
@@ -193,8 +203,21 @@ async function main() {
         .sort();
     };
     assert.deepEqual(await offered(), ["reply", "reply:1"], "only recorded Creator replies offer Deep details");
-    const visible = await messaging.visibleMessages("thread", "viewer");
-    assert.ok(!JSON.stringify(visible).includes("SECRET CARD"), "the record never travels with the messages");
+    // Both ways into a chat carry the ids and nothing else of the record; both reply paths write it.
+    const source = (path: string) =>
+      readFileSync(
+        join(repoRoot, "packages/slurp2/src/engine/packages/server/src/slp/features/messages", path),
+        "utf8",
+      );
+    const threadRoutes = source("slp-messages-thread-routes.ts");
+    assert.equal(threadRoutes.split("deepDetailIds: ").length, 3, "the thread route and the compose route");
+    assert.ok(!/record|getSlurpMessageDeepDetails\b/u.test(threadRoutes.match(/deepDetailIds: [^\n]+/gu)!.join("")));
+    for (const path of ["slp-message-operation.ts", "slp-follow-up-scheduler-service.ts"])
+      assert.match(
+        source(path),
+        /saveSlurpMessageDeepDetails\([^,]+, \{\s*messageId: stored\.id,[\s\S]{0,160}?record: reply\.deepDetails,/u,
+        `${path} records the reply under its first bubble`,
+      );
 
     // 3. Only a persona with a seat in the thread reads the record.
     const app = fastify();
@@ -208,6 +231,12 @@ async function main() {
     assert.equal((await read("reply", "persona-2")).statusCode, 404, "another persona's thread stays closed");
     assert.equal((await read("other-reply", "persona-1")).statusCode, 404);
     assert.equal((await read("fan-line", "persona-1")).statusCode, 404, "a fan's own line has no details");
+    const paid = await read("paid", "persona-1");
+    assert.equal(paid.statusCode, 404, "a locked paid message does not show its text through this route");
+    assert.ok(!JSON.stringify(paid.json()).includes("PAID CAPTION"));
+    // A record is read only through the thread it was written in.
+    await save("old-reply", "other-thread");
+    assert.equal((await read("old-reply", "persona-1")).json().details, null);
     assert.equal((await read("reply", "")).statusCode, 400);
     assert.equal((await read("old-reply", "persona-1")).json().details, null, "an old reply has no record");
 
@@ -220,12 +249,12 @@ async function main() {
     assert.equal(kept.size, limit);
     assert.ok(!kept.has("reply") && kept.has("later-0") && kept.has(`later-${limit - 1}`));
     assert.deepEqual(await offered(), [], "a pruned reply no longer offers Deep details");
-    assert.equal((await deep.listSlurpMessageDeepDetailIds(db, "other-thread")).length, 1, "pruning is per thread");
+    assert.equal((await deep.listSlurpMessageDeepDetailIds(db, "other-thread")).length, 2, "pruning is per thread");
 
     // 5. Clearing a chat removes its records: they hold the prompt and its private notes.
     await messages.resetThread("thread");
     assert.equal((await deep.listSlurpMessageDeepDetailIds(db, "thread")).length, 0);
-    assert.equal((await deep.listSlurpMessageDeepDetailIds(db, "other-thread")).length, 1);
+    assert.equal((await deep.listSlurpMessageDeepDetailIds(db, "other-thread")).length, 2);
 
     // 6. The entry point is the existing Message menu, on recorded replies only: no button on bubbles.
     const bubble = readFileSync(

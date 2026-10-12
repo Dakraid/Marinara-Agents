@@ -24,7 +24,7 @@ export function buildSlurpMessageDeepDetailsRecord(ctx: {
   messages: { role: string; content: unknown }[];
   /** The completion options as sent: the sampling values come from here. */
   options: object;
-  /** The model's raw answer. */
+  /** The model's answer as received, with the Creator's identity protection applied. */
   content: string;
 }): SlpMessageDeepDetailsRecord {
   const { input } = ctx;

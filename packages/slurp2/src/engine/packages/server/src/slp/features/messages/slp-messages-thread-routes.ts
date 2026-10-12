@@ -461,6 +461,7 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     return {
       thread: thread ? await freshView(thread.id) : null,
       messages: page.messages.map(maskForViewer),
+      deepDetailIds: thread ? await listSlurpMessageDeepDetailIds(app.db, thread.id) : [],
       nextCursor: page.nextCursor,
       commissions: thread ? await messages.listCommissionsForThread(thread.id) : [],
       creator,
