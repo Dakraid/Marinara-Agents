@@ -64,6 +64,11 @@ const DERIVED: Record<SlurpProductionStyle, { skipRate: number; textOnlyRate: nu
   theatrical: { skipRate: 18, textOnlyRate: 25 },
 };
 
+/** The lean on words a style implies when the user has saved none. */
+export function slurpDerivedTextOnlyRate(style: SlurpProductionStyle): number {
+  return DERIVED[style].textOnlyRate;
+}
+
 function clamp(value: unknown, min: number, max: number): number | null {
   if (typeof value !== "number" || !Number.isFinite(value)) return null;
   return Math.min(max, Math.max(min, Math.round(value)));

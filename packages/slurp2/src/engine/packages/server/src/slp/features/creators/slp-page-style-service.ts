@@ -23,8 +23,9 @@ import {
   slpCreatorIdentityInstruction,
 } from "../feed/slp-feed-contract.js";
 
+// 422, not 502, for a model that failed: the client shows a server sentence only for a 4xx.
 export type SlpPageStyleResult =
-  { ok: true; suggestion: SlpPageStyleSuggestion } | { ok: false; status: 404 | 409 | 502; error: string };
+  { ok: true; suggestion: SlpPageStyleSuggestion } | { ok: false; status: 404 | 409 | 422; error: string };
 
 /** Less card than this is not enough to tell one character's page from another's. */
 const MIN_EVIDENCE = 80;
@@ -52,8 +53,9 @@ export async function suggestSlpPageStyle(db: DB, accountId: string): Promise<Sl
   const account = await noodle.getNoodlerAccountById(accountId);
   if (!account) return { ok: false, status: 404, error: "Creator account not found" };
   const source = await noodle.resolveAccountSource(account).catch(() => null);
+  if (!source) return { ok: false, status: 409, error: "This Creator has no linked Character card to read." };
   const mode = account.settings.privacy.identityDisclosure ?? "hinted";
-  const canon = await resolveCreatorCharacterCanon(db, source, mode).catch(() => "");
+  const canon = await resolveCreatorCharacterCanon(db, source, mode);
   const stagePersonality = account.settings.privacy.stagePersonality ?? "";
   if (canon.length + stagePersonality.length < MIN_EVIDENCE)
     return {
@@ -105,25 +107,25 @@ export async function suggestSlpPageStyle(db: DB, accountId: string): Promise<Sl
     answer = result.content ?? "";
   } catch (error) {
     logger.warn({ accountId: account.id, error }, "[slurp-page-style] Model call failed");
-    return { ok: false, status: 502, error: "The connection failed while reading the card. Try again." };
+    return { ok: false, status: 422, error: "The connection failed while reading the card. Try again." };
   }
   if (!answer.trim())
     return {
       ok: false,
-      status: 502,
+      status: 422,
       error: "The connection returned an empty answer. Raise its max output tokens, or pick another model.",
     };
-  const proposal = slpPageStyleProposal(parseAnswer(answer), current);
+  const proposal = slpPageStyleProposal(parseAnswer(answer), current, saved.textOnlyRate);
   if (!proposal) {
     logger.warn({ accountId: account.id, length: answer.length }, "[slurp-page-style] The answer held no usable style");
-    return { ok: false, status: 502, error: "The connection returned no usable suggestion. Try again." };
+    return { ok: false, status: 422, error: "The connection returned no usable suggestion. Try again." };
   }
   // A hinted Creator's other name never reaches the page note or the player's preview.
   const protect = (value: string, max: number) => protectBoundedCreatorGeneratedText(value, mode, identity, max) ?? "";
   const explanation = protect(proposal.explanation, SLP_PAGE_STYLE_LIMITS.explanation);
   if (proposal.patch.strategyText !== undefined) {
     const note = protect(proposal.patch.strategyText, SLP_PAGE_STYLE_LIMITS.note);
-    if (note && note !== current.strategyText) proposal.patch.strategyText = note;
+    if (note) proposal.patch.strategyText = note;
     else delete proposal.patch.strategyText;
   }
   const effective = (value: typeof strategy) => ({

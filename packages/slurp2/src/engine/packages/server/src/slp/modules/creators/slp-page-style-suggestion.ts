@@ -13,7 +13,7 @@
 
 import type { SlpPageStyleCurrent, SlpPageStylePatch } from "../../../../../shared/src/slp/slp-social.types.js";
 import { SLURP_PRODUCTION_STYLES, type SlurpProductionStyle } from "./slp-production-profile.js";
-import { SLURP_STRATEGY_LIMITS } from "./slp-creator-strategy.js";
+import { SLURP_STRATEGY_LIMITS, slurpDerivedTextOnlyRate } from "./slp-creator-strategy.js";
 
 /** The intents a weight can steer. `teaser` is decided by the access rotation, not drawn. */
 export const SLP_PAGE_STYLE_INTENTS = [
@@ -30,12 +30,18 @@ export const SLP_PAGE_STYLE_LIMITS = { explanation: 280, note: 400 } as const;
 
 /** Smaller moves than these are noise, not a different page. */
 const MIN_RATE_CHANGE = 5;
-const MIN_WEIGHT_CHANGE = 3;
+/** In points of the mix: what share of posts each intent gets. */
+const MIN_SHARE_CHANGE = 2;
+
+function shares(weights: Record<string, number>): number[] {
+  const total = SLP_PAGE_STYLE_INTENTS.reduce((sum, intent) => sum + (weights[intent] ?? 0), 0) || 1;
+  return SLP_PAGE_STYLE_INTENTS.map((intent) => ((weights[intent] ?? 0) / total) * 100);
+}
 
 const STYLE_MEANINGS: Record<SlurpProductionStyle, string> = {
-  homemade: "shoots on a phone, first take, never calls it work; posts often and writes a lot",
+  homemade: "shoots on a phone, first take, never calls it work; posts often, sometimes just words",
   polished: "puts time into the look, retakes, fights the light; mostly pictures",
-  documentary: "posts what the day really looked like, flaws included; candid, writes a lot",
+  documentary: "posts what the day really looked like, flaws included; candid, sometimes just words",
   theatrical: "plans and stages it as a performance and lets people see the setup; nearly always pictures",
 };
 
@@ -71,7 +77,7 @@ export function buildSlpPageStyleMessages(input: {
     styles,
     "",
     "## textOnlyRate (0 to 100)",
-    "How often they post words without a picture. 50 is the normal balance, lower almost always has a picture, higher writes more often instead.",
+    "A lean, not a share: most posts have a picture whatever you choose. 50 is the normal balance, 0 almost never posts words alone, 100 posts words alone about twice as often as normal.",
     "",
     "## intentWeights (each 0 to 100, relative to each other)",
     "What their posts are for, as a mix:",
@@ -113,6 +119,8 @@ function inRange(value: unknown, min: number, max: number): number | null {
 export function slpPageStyleProposal(
   value: unknown,
   current: SlpPageStyleCurrent,
+  /** The lean the user saved, if any. Without one the lean follows the style's own default. */
+  savedTextOnlyRate?: number,
 ): { explanation: string; patch: SlpPageStylePatch } | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const raw = value as Record<string, unknown>;
@@ -151,15 +159,18 @@ export function slpPageStyleProposal(
 
   const patch: SlpPageStylePatch = {};
   if (style && style !== current.style) patch.style = style;
-  if (textOnlyRate !== null && Math.abs(textOnlyRate - current.textOnlyRate) >= MIN_RATE_CHANGE)
-    patch.textOnlyRate = textOnlyRate;
-  if (
-    weights &&
-    SLP_PAGE_STYLE_INTENTS.some(
-      (intent) => Math.abs((weights[intent] ?? 0) - (current.intentWeights[intent] ?? 0)) >= MIN_WEIGHT_CHANGE,
-    )
-  )
-    patch.intentWeights = weights;
-  if (note && note !== current.strategyText) patch.strategyText = note;
+  // Compared with what the lean would be once the style is applied: an unsaved lean follows the
+  // new style, so an answer near the old style's default can still be a real change, and one that
+  // equals the new default is not worth pinning.
+  const leanAfter = savedTextOnlyRate ?? slurpDerivedTextOnlyRate((style ?? current.style) as SlurpProductionStyle);
+  if (textOnlyRate !== null && Math.abs(textOnlyRate - leanAfter) >= MIN_RATE_CHANGE) patch.textOnlyRate = textOnlyRate;
+  // Compared as shares: the weights are relative, so doubling every one changes nothing.
+  if (weights) {
+    const before = shares(current.intentWeights);
+    if (shares(weights).some((share, index) => Math.abs(share - before[index]!) >= MIN_SHARE_CHANGE))
+      patch.intentWeights = weights;
+  }
+  // A note the player wrote is theirs: a suggestion never replaces it.
+  if (note && !current.strategyText) patch.strategyText = note;
   return { explanation, patch };
 }

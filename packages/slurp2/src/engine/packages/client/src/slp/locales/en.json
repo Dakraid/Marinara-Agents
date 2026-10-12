@@ -6252,9 +6252,9 @@
   "ui.slurp.settings.creators.pageStyle.about.polished": "Puts time into the look: retakes, the right light, chosen frames.",
   "ui.slurp.settings.creators.pageStyle.about.documentary": "Posts what the day really looked like, flaws included.",
   "ui.slurp.settings.creators.pageStyle.about.theatrical": "Plans and stages every drop, and lets fans see the setup.",
-  "ui.slurp.settings.creators.pageStyle.balance.pictures": "mostly pictures",
-  "ui.slurp.settings.creators.pageStyle.balance.mixed": "pictures and words",
-  "ui.slurp.settings.creators.pageStyle.balance.words": "mostly words",
+  "ui.slurp.settings.creators.pageStyle.balance.pictures": "nearly always pictures",
+  "ui.slurp.settings.creators.pageStyle.balance.mixed": "pictures, some notes",
+  "ui.slurp.settings.creators.pageStyle.balance.words": "writes more than most",
   "ui.slurp.settings.creators.pageStyle.action": "Suggest from card",
   "ui.slurp.settings.creators.pageStyle.detail": "Optional. Nothing changes until you choose Use.",
   "ui.slurp.settings.creators.pageStyle.loading": "Reading the card…",
@@ -6319,5 +6319,8 @@
   "ui.slurp.ties.couple.done.moveOn": "They moved on. No more pining.",
   "ui.slurp.ties.couple.done.forget": "Forgotten. Old posts and messages stay.",
   "ui.slurp.ties.couple.done.breakUpMoveOn": "It is over. They move on quietly.",
-  "ui.slurp.ties.couple.done.breakUpForget": "It is over, and they leave it behind."
+  "ui.slurp.ties.couple.done.breakUpForget": "It is over, and they leave it behind.",
+  "ui.slurp.settings.creators.pageStyle.leanLabel": "Lean towards words",
+  "ui.slurp.settings.creators.pageStyle.leanDetail": "0 nearly always posts a picture. 100 posts words alone about twice as often as normal (50). Sets always have pictures.",
+  "ui.slurp.settings.creators.pageStyle.noteLabel": "Page note"
 }

@@ -126,6 +126,34 @@ assert.equal(slpPageStyleProposal({ explanation: "fits", style: "studio" }, curr
 const unchanged = slpPageStyleProposal({ explanation: "Already right.", style: current.style }, current);
 assert.deepEqual(unchanged?.patch, {}, "an answer that matches the current settings proposes nothing");
 
+// The lean is judged against what it becomes once the style applies. Near the old style's default
+// but far from the new one's is a real change; equal to the new default is not worth pinning.
+const homemade = { ...current, style: "homemade", textOnlyRate: 60 };
+assert.equal(
+  slpPageStyleProposal({ explanation: "x", style: "polished", textOnlyRate: 58 }, homemade)?.patch.textOnlyRate,
+  58,
+);
+assert.equal(
+  slpPageStyleProposal({ explanation: "x", style: "polished", textOnlyRate: 30 }, homemade)?.patch.textOnlyRate,
+  undefined,
+);
+// A lean the player saved is the baseline instead.
+assert.equal(
+  slpPageStyleProposal({ explanation: "x", style: "polished", textOnlyRate: 58 }, homemade, 60)?.patch.textOnlyRate,
+  undefined,
+);
+// Weights are relative: every weight doubled is the same mix, so nothing is proposed.
+const doubled = Object.fromEntries(
+  Object.entries(current.intentWeights).map(([intent, weight]) => [intent, weight * 2]),
+);
+assert.deepEqual(slpPageStyleProposal({ explanation: "x", intentWeights: doubled }, current)?.patch, {});
+// A note the player wrote is never replaced by a suggestion.
+assert.equal(
+  slpPageStyleProposal({ explanation: "x", note: "A new note." }, { ...current, strategyText: "my own note" })?.patch
+    .strategyText,
+  undefined,
+);
+
 // Applying: unrelated saved values stay, accepted fields land.
 const stored = { skipRate: 30, strategyText: "my own note" };
 const performer = proposals[0]!.patch;

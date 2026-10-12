@@ -51,7 +51,7 @@ export function SlurpCreatorStrategyGroup({ creator }: { creator: SlpCreatorMana
           }}
           className={`${selectClass} max-w-28 tabular-nums`}
         />
-        <span className="text-sm text-[var(--slurp-muted)]">%</span>
+        {key === "skipRate" && <span className="text-sm text-[var(--slurp-muted)]">%</span>}
         {saved?.[key] !== undefined && (
           <button
             type="button"
@@ -66,7 +66,8 @@ export function SlurpCreatorStrategyGroup({ creator }: { creator: SlpCreatorMana
     </Field>
   );
 
-  const custom = Object.keys(saved ?? {}).length > 0;
+  // The sign-up chat's spice lines in an old note are not the player's tuning.
+  const custom = Boolean(savedText) || Object.keys(saved ?? {}).some((key) => key !== "strategyText");
 
   return (
     <>
@@ -134,10 +135,11 @@ export function SlurpCreatorStrategyGroup({ creator }: { creator: SlpCreatorMana
         {rate(
           "textOnlyRate",
           100,
-          t("ui.slurp.settings.creators.strategy.textLabel", { defaultValue: "Posts without pictures" }),
-          t("ui.slurp.settings.creators.strategy.textDetail", {
+          // A lean, not a share: even at 100 most posts still have a picture.
+          t("ui.slurp.settings.creators.pageStyle.leanLabel", { defaultValue: "Lean towards words" }),
+          t("ui.slurp.settings.creators.pageStyle.leanDetail", {
             defaultValue:
-              "How often a post goes out without a picture. 50 is the default balance. Sets always have pictures.",
+              "0 nearly always posts a picture. 100 posts words alone about twice as often as normal (50). Sets always have pictures.",
           }),
         )}
         {/* The mix has no editor of its own; a suggestion sets it, and Reset is the way back. */}

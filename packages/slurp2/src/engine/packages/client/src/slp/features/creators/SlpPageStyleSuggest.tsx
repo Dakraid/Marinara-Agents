@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -15,11 +15,16 @@ type T = ReturnType<typeof useTranslation>["t"];
 
 /** A page style in plain words: the style and the picture balance, e.g. "Polished · mostly pictures". */
 export function slpPageStyleLine(t: T, style: string, textOnlyRate: number): string {
+  // The rate is a lean, not a share: even at 100 most posts have a picture, so no "mostly words".
   const balance = textOnlyRate <= 30 ? "pictures" : textOnlyRate >= 70 ? "words" : "mixed";
   return [
     t(`ui.slurp.settings.creators.strategy.style.${style}`, { defaultValue: style }),
     t(`ui.slurp.settings.creators.pageStyle.balance.${balance}`, {
-      defaultValue: { pictures: "mostly pictures", words: "mostly words", mixed: "pictures and words" }[balance],
+      defaultValue: {
+        pictures: "nearly always pictures",
+        words: "writes more than most",
+        mixed: "pictures, some notes",
+      }[balance],
     }),
   ].join(" · ");
 }
@@ -55,6 +60,15 @@ export function SlpPageStyleSuggest({
   const shown = result?.id === creator.id ? result.suggestion : null;
   const shownError = error?.id === creator.id ? error.text : null;
   const busy = suggest.isPending || update.isPending;
+  // Keyboard focus follows the swap: to the result when it arrives, back to the button when it goes.
+  const panelRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const hadResult = useRef(false);
+  useEffect(() => {
+    if (shown) panelRef.current?.focus();
+    else if (hadResult.current) buttonRef.current?.focus();
+    hadResult.current = Boolean(shown);
+  }, [shown]);
   const styleName = (style: string) => t(`ui.slurp.settings.creators.strategy.style.${style}`, { defaultValue: style });
   const intentName = (intent: string) => t(`ui.slurp.continuity.intent.${intent}`, { defaultValue: intent });
 
@@ -85,7 +99,11 @@ export function SlpPageStyleSuggest({
           onApplied();
           toast.success(t("ui.slurp.settings.creators.pageStyle.applied", { defaultValue: "Page style applied." }));
         },
-        onError: (failure) => setError({ id: creator.id, text: errorMessage(failure) }),
+        onError: (failure) => {
+          // A conflict cannot be retried: the suggestion was made against values that are gone.
+          if ((failure as { status?: unknown } | null)?.status === 409) setResult(null);
+          setError({ id: creator.id, text: errorMessage(failure) });
+        },
       },
     );
   };
@@ -96,8 +114,8 @@ export function SlpPageStyleSuggest({
     const after = proposal.intentWeights ? shares(proposal.intentWeights) : before;
     const mix = Object.keys(after).filter((intent) => (before[intent] ?? 0) !== after[intent]);
     // Rates are compared as the planner would use them: a new style moves the defaults it derives.
-    const rate = (key: "textOnlyRate" | "skipRate", label: string) =>
-      was[key] !== will[key] && { label, value: `${was[key]}% → ${will[key]}%` };
+    const rate = (key: "textOnlyRate" | "skipRate", label: string, unit: string) =>
+      was[key] !== will[key] && { label, value: `${was[key]}${unit} → ${will[key]}${unit}` };
     return {
       // What fans will notice: the style, the balance, and the kinds of post that grow by a real amount.
       line: slpPageStyleLine(t, will.style, will.textOnlyRate),
@@ -109,30 +127,35 @@ export function SlpPageStyleSuggest({
         },
         rate(
           "textOnlyRate",
-          t("ui.slurp.settings.creators.strategy.textLabel", { defaultValue: "Posts without pictures" }),
+          t("ui.slurp.settings.creators.pageStyle.leanLabel", { defaultValue: "Lean towards words" }),
+          "",
         ),
-        rate("skipRate", t("ui.slurp.settings.creators.strategy.skipLabel", { defaultValue: "Skipped posts" })),
+        rate("skipRate", t("ui.slurp.settings.creators.strategy.skipLabel", { defaultValue: "Skipped posts" }), "%"),
         ...mix.map((intent) => ({
           label: `${t("ui.slurp.settings.creators.pageStyle.mixLabel", { defaultValue: "Post mix" })}: ${intentName(intent)}`,
           value: `${before[intent] ?? 0}% → ${after[intent]}%`,
         })),
-        proposal.strategyText !== undefined && {
-          label: t("ui.slurp.settings.creators.strategy.noteLabel", { defaultValue: "How they run their page" }),
-          value: proposal.strategyText,
-        },
       ].filter((row): row is { label: string; value: string } => Boolean(row)),
       // Applying writes only the proposed keys; rows above may also show derived defaults moving.
       apply: Object.keys(proposal).length > 0,
+      note: proposal.strategyText,
     };
   };
 
   const view = shown ? changes(shown) : null;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" aria-live="polite">
       {!shown && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <button type="button" className={quietButton} disabled={busy} onClick={run} aria-busy={suggest.isPending}>
+          <button
+            ref={buttonRef}
+            type="button"
+            className={quietButton}
+            disabled={busy}
+            onClick={run}
+            aria-busy={suggest.isPending}
+          >
             {suggest.isPending && (
               <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
             )}
@@ -153,7 +176,7 @@ export function SlpPageStyleSuggest({
         </p>
       )}
       {shown && view && (
-        <div className={`${noteClass} space-y-3`} aria-live="polite">
+        <div ref={panelRef} tabIndex={-1} className={`${noteClass} space-y-3 focus-visible:outline-none`}>
           {shown.explanation && (
             <p className="text-sm leading-6 break-words text-[var(--slurp-text)]">{shown.explanation}</p>
           )}
@@ -174,19 +197,30 @@ export function SlpPageStyleSuggest({
                   </span>
                 )}
               </p>
-              <details>
-                <summary className="flex min-h-11 cursor-pointer items-center text-xs font-semibold text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]">
-                  {t("ui.slurp.settings.creators.pageStyle.details", { defaultValue: "See exact changes" })}
-                </summary>
-                <dl className="space-y-1.5 pt-1">
-                  {view.rows.map((row) => (
-                    <div key={row.label} className="min-w-0 break-words">
-                      <dt className="font-semibold text-[var(--slurp-text)]">{row.label}</dt>
-                      <dd className="tabular-nums">{row.value}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </details>
+              {view.note && (
+                <p className="break-words">
+                  <span className="font-semibold text-[var(--slurp-text)]">
+                    {t("ui.slurp.settings.creators.pageStyle.noteLabel", { defaultValue: "Page note" })}
+                    {": "}
+                  </span>
+                  {view.note}
+                </p>
+              )}
+              {view.rows.length > 0 && (
+                <details>
+                  <summary className="flex min-h-11 cursor-pointer items-center text-xs font-semibold text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]">
+                    {t("ui.slurp.settings.creators.pageStyle.details", { defaultValue: "See exact changes" })}
+                  </summary>
+                  <dl className="space-y-1.5 pt-1">
+                    {view.rows.map((row) => (
+                      <div key={row.label} className="min-w-0 break-words">
+                        <dt className="font-semibold text-[var(--slurp-text)]">{row.label}</dt>
+                        <dd className="tabular-nums">{row.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </details>
+              )}
             </>
           )}
           <div className="flex flex-wrap gap-2">
