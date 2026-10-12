@@ -129,7 +129,7 @@ export async function rebuildLongTermMemoryIndexes(
     await markLtmIndexesBuilding(root);
     try {
       clearAutoUpgradeFailure(root, embeddingAdapter ?? null);
-      const notes = await new LongTermMemoryStorage(root).listNotes();
+      const notes = await new LongTermMemoryStorage(root).listNotes({ skipInvalid: true });
       await writeLtmNoteSummary(root, notes);
       const chunks = chunkNotes(notes, { includeSourceNotes: false, stopWords });
       const vectors = await embedLongTermMemoryTexts(
@@ -206,13 +206,15 @@ export async function loadOrRebuildLongTermMemoryIndexes(
     // save must judge freshness against the settings that save just persisted.
     const resolvedStopWords = stopWords ?? ltmGeneratedStopWords(await getLtmGlobalSettings(root));
     signal?.throwIfAborted();
+    let stale = false;
     try {
       const index = parseLtmRecallIndex(JSON.parse(await readFile(path, "utf8")));
-      const notes = await new LongTermMemoryStorage(root).listNotes();
+      const notes = await new LongTermMemoryStorage(root).listNotes({ skipInvalid: true });
       if (
         index.sourceHash !==
         stableJsonHash(chunkNotes(notes, { includeSourceNotes: false, stopWords: resolvedStopWords }))
       ) {
+        stale = true;
         throw new Error("Stale long-term memory recall index.");
       }
       const usableEmbeddings = getUsableEmbeddingState(index, embeddingAdapter);
@@ -227,7 +229,9 @@ export async function loadOrRebuildLongTermMemoryIndexes(
     } catch (error) {
       // Cancellation is not corruption: never quarantine a valid index or rebuild on abort.
       if (isCancellation(error, signal)) throw error;
-      await quarantineLtmIndexArtifact(root, path).catch(() => {});
+      // A stale index parsed fine and the rebuild's atomic write replaces it, so only an
+      // unreadable or malformed one is quarantined; otherwise every edit would park a full copy.
+      if (!stale) await quarantineLtmIndexArtifact(root, path).catch(() => {});
       await rebuildLongTermMemoryIndexes({ root, embeddingAdapter, stopWords: resolvedStopWords, signal });
       if (observation) observation.outcome = "rebuilt";
       return parseLtmRecallIndex(JSON.parse(await readFile(path, "utf8")));

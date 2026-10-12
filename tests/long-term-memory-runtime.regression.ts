@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { Module } from "node:module";
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join, resolve } from "node:path";
@@ -1928,6 +1928,34 @@ async function main() {
           "concurrent stale loaders must recheck freshness under the lock and rebuild once",
         );
 
+        // #1328: an index that is only out of date is replaced by the rebuild; only an
+        // unreadable one is quarantined, so edits do not park a full copy each time.
+        const quarantinedIndexCopies = () =>
+          readdir(join(vaultRoot, "quarantine", "indexes")).then(
+            (names) => names.length,
+            () => 0,
+          );
+        const copiesBeforeStale = await quarantinedIndexCopies();
+        await storage.createNote(note("world_1328_stale", "chat-a", "A cobalt archive stale-index entry."));
+        const staleRebuilt = await loadOrRebuildLongTermMemoryIndexes(vaultRoot, null, []);
+        assert.equal(
+          Object.hasOwn(staleRebuilt.metadata.byNoteId, "world_1328_stale"),
+          true,
+          "a stale index must be rebuilt with the new note",
+        );
+        assert.equal(
+          await quarantinedIndexCopies(),
+          copiesBeforeStale,
+          "a stale but readable index must be replaced, not quarantined",
+        );
+        await writeFile(recallIndexPath, "{");
+        await loadOrRebuildLongTermMemoryIndexes(vaultRoot, null, []);
+        assert.equal(
+          await quarantinedIndexCopies(),
+          copiesBeforeStale + 1,
+          "an unreadable index must still be quarantined",
+        );
+
         // Recall cancellation must reach rebuild embedding work, avoid publishing after
         // abort, and release the vault lock so a queued reader proceeds.
         await storage.createNote(note("world_1178_abort", "chat-a", "A cobalt archive cancellation entry."));
@@ -2252,6 +2280,61 @@ async function main() {
           false,
           "recall must not serve a note quarantined by official maintenance",
         );
+
+        // #1328: a note written by a newer version (unknown field) is skipped by recall, which
+        // keeps serving the rest of the vault; full reads and writes still refuse to run over it.
+        // The index is built while the note is still valid, so the downgrade leaves it stale and
+        // recall has to rebuild it over the invalid note, not just load a fresh index.
+        await storage.createNote(note("world_1328_future", "chat-a", "A cobalt archive future-field entry."));
+        await rebuildLongTermMemoryIndexes({ root: vaultRoot, embeddingAdapter: null, stopWords: [] });
+        assert.equal(
+          Object.hasOwn(
+            parseLtmRecallIndex(JSON.parse(await readFile(longTermMemoryRecallIndexPath(vaultRoot), "utf8"))).metadata
+              .byNoteId,
+            "world_1328_future",
+          ),
+          true,
+          "the index must contain the note before it becomes invalid",
+        );
+        const futureNotePath = join(vaultRoot, "vault", "world", "world_1328_future.json");
+        const futureNote = JSON.parse(await readFile(futureNotePath, "utf8"));
+        await writeFile(futureNotePath, JSON.stringify({ ...futureNote, futureField: true }));
+        invalidateLtmVaultSnapshot(vaultRoot);
+        try {
+          const staleOverInvalid = await loadOrRebuildLongTermMemoryIndexes(vaultRoot, null, []);
+          assert.equal(
+            Object.hasOwn(staleOverInvalid.metadata.byNoteId, "world_1328_future"),
+            false,
+            "rebuilding a stale index must skip the invalid note instead of failing",
+          );
+          assert.equal(
+            Object.hasOwn(staleOverInvalid.metadata.byNoteId, "world_1178_lock"),
+            true,
+            "the rebuilt index must keep the valid notes",
+          );
+          const futureRecall = await retrieveLongTermMemory({
+            root: vaultRoot,
+            embeddingAdapter: null,
+            queryText: "cobalt archive lock-coordination entry",
+            scope: { chatId: "chat-a", chatIds: ["chat-a"] },
+            mode: "roleplay",
+            semanticWeight: 0,
+          });
+          assert.equal(
+            futureRecall.chunks.some((hit) => hit.chunk.noteId === "world_1178_lock"),
+            true,
+            "recall must keep serving valid notes while one note has an unknown field",
+          );
+          assert.equal(
+            futureRecall.chunks.some((hit) => hit.chunk.noteId === "world_1328_future"),
+            false,
+            "recall must not serve the note it could not validate",
+          );
+          await assert.rejects(storage.listNotes(), undefined, "full reads must still surface the invalid note");
+        } finally {
+          await rm(futureNotePath, { force: true });
+          invalidateLtmVaultSnapshot(vaultRoot);
+        }
 
         // Issue #1295: Korean short keywords and particles must survive lexical
         // recall without any embedding source.
