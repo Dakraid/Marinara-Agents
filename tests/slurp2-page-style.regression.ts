@@ -120,6 +120,11 @@ assert.equal(sanitized.patch.intentWeights!.casual, current.intentWeights.casual
 assert.equal(sanitized.patch.strategyText, "I post at night.");
 assert.ok(!("displayName" in sanitized.patch) && !("hardNoes" in sanitized.patch));
 
+// A raw id in the model's prose reaches the player as words.
+assert.equal(
+  slpPageStyleProposal({ explanation: "More behind_the_scenes posts.", style: "polished" }, current)?.explanation,
+  "More behind the scenes posts.",
+);
 assert.equal(slpPageStyleProposal(null, current), null);
 assert.equal(slpPageStyleProposal({ style: "polished" }, current), null, "no explanation, no proposal");
 assert.equal(slpPageStyleProposal({ explanation: "fits", style: "studio" }, current), null, "nothing usable");
