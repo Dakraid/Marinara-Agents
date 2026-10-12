@@ -47,6 +47,7 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     seatIn,
     slurp,
     visibleMessages,
+    withDeepDetails,
   } = messaging;
   type Thread = NonNullable<Awaited<ReturnType<typeof messages.getThreadById>>>;
   type Creator = NonNullable<Awaited<ReturnType<typeof slurp.getNoodlerAccountById>>>;
@@ -286,7 +287,7 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
     );
     return {
       thread: await freshView(thread.id, side),
-      messages: side === "viewer" ? page.messages.map(maskForViewer) : page.messages,
+      messages: await withDeepDetails(thread.id, side === "viewer" ? page.messages.map(maskForViewer) : page.messages),
       nextCursor: page.nextCursor,
       creator,
       counterpart,
