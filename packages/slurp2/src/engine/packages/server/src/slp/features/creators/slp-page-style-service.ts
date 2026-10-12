@@ -9,7 +9,7 @@ import { resolveSlurpTextConnection } from "../../base/identity/slp-connection.j
 import { slpWithProviderRetry } from "../../base/model/slp-provider-retry.js";
 import { resolveCreatorCharacterCanon } from "../../data/creators/slp-source-resolve.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
-import { slurpCreatorStrategy } from "../../modules/creators/slp-creator-strategy.js";
+import { mergeSlurpCreatorStrategy, slurpCreatorStrategy } from "../../modules/creators/slp-creator-strategy.js";
 import {
   buildSlpPageStyleMessages,
   SLP_PAGE_STYLE_LIMITS,
@@ -78,7 +78,6 @@ export async function suggestSlpPageStyle(db: DB, accountId: string): Promise<Sl
     canon,
     stagePersonality,
     bio: account.bio,
-    current,
     identityInstruction: slpCreatorIdentityInstruction(mode, identity),
     untrustedInstruction: NOODLER_UNTRUSTED_CONTENT_INSTRUCTION,
   });
@@ -97,11 +96,11 @@ export async function suggestSlpPageStyle(db: DB, accountId: string): Promise<Sl
         connection.defaultParameters,
       ),
     );
-    // Room for a reasoning model's notes; the answer itself is a few hundred tokens.
+    // Room for a reasoning model's notes, as for the Page (3000 left some answers empty).
     const result = await provider.chatComplete(messages, {
       model: connection.model,
       temperature: 0.7,
-      maxTokens: 3000,
+      maxTokens: 4000,
     });
     answer = result.content ?? "";
   } catch (error) {
@@ -127,5 +126,21 @@ export async function suggestSlpPageStyle(db: DB, accountId: string): Promise<Sl
     if (note && note !== current.strategyText) proposal.patch.strategyText = note;
     else delete proposal.patch.strategyText;
   }
-  return { ok: true, suggestion: { explanation, current, proposal: proposal.patch, saved } };
+  const effective = (value: typeof strategy) => ({
+    style: value.production.style,
+    skipRate: value.skipRate,
+    textOnlyRate: value.textOnlyRate,
+  });
+  const applied = slurpCreatorStrategy(account.id, mergeSlurpCreatorStrategy(saved, proposal.patch));
+  return {
+    ok: true,
+    suggestion: {
+      explanation,
+      current,
+      proposal: proposal.patch,
+      saved,
+      before: effective(strategy),
+      after: effective(applied),
+    },
+  };
 }

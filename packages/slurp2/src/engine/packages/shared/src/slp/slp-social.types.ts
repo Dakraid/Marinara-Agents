@@ -200,6 +200,9 @@ export interface SlpPageStyleSuggestion {
   proposal: SlpPageStylePatch;
   /** What was saved when the suggestion was made, so an apply can refuse a value edited meanwhile. */
   saved: SlpCreatorStrategySettings;
+  /** What the planner would use after applying: a new style also moves the defaults it derives. */
+  before: { style: string; skipRate: number; textOnlyRate: number };
+  after: { style: string; skipRate: number; textOnlyRate: number };
 }
 
 export interface SlpAccountSettings {

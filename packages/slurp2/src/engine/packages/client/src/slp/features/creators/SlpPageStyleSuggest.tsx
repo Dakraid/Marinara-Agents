@@ -91,23 +91,27 @@ export function SlpPageStyleSuggest({
   };
 
   const changes = (suggestion: SlpPageStyleSuggestion) => {
-    const { current, proposal } = suggestion;
+    const { current, proposal, before: was, after: will } = suggestion;
     const before = shares(current.intentWeights);
     const after = proposal.intentWeights ? shares(proposal.intentWeights) : before;
     const mix = Object.keys(after).filter((intent) => (before[intent] ?? 0) !== after[intent]);
+    // Rates are compared as the planner would use them: a new style moves the defaults it derives.
+    const rate = (key: "textOnlyRate" | "skipRate", label: string) =>
+      was[key] !== will[key] && { label, value: `${was[key]}% → ${will[key]}%` };
     return {
       // What fans will notice: the style, the balance, and the kinds of post that grow by a real amount.
-      line: slpPageStyleLine(t, proposal.style ?? current.style, proposal.textOnlyRate ?? current.textOnlyRate),
+      line: slpPageStyleLine(t, will.style, will.textOnlyRate),
       more: mix.filter((intent) => after[intent]! - (before[intent] ?? 0) >= 5).map(intentName),
       rows: [
-        proposal.style !== undefined && {
+        was.style !== will.style && {
           label: t("ui.slurp.settings.creators.strategy.styleLabel", { defaultValue: "Production style" }),
-          value: `${styleName(current.style)} → ${styleName(proposal.style)}`,
+          value: `${styleName(was.style)} → ${styleName(will.style)}`,
         },
-        proposal.textOnlyRate !== undefined && {
-          label: t("ui.slurp.settings.creators.strategy.textLabel", { defaultValue: "Posts without pictures" }),
-          value: `${current.textOnlyRate}% → ${proposal.textOnlyRate}%`,
-        },
+        rate(
+          "textOnlyRate",
+          t("ui.slurp.settings.creators.strategy.textLabel", { defaultValue: "Posts without pictures" }),
+        ),
+        rate("skipRate", t("ui.slurp.settings.creators.strategy.skipLabel", { defaultValue: "Skipped posts" })),
         ...mix.map((intent) => ({
           label: `${t("ui.slurp.settings.creators.pageStyle.mixLabel", { defaultValue: "Post mix" })}: ${intentName(intent)}`,
           value: `${before[intent] ?? 0}% → ${after[intent]}%`,
@@ -117,6 +121,8 @@ export function SlpPageStyleSuggest({
           value: proposal.strategyText,
         },
       ].filter((row): row is { label: string; value: string } => Boolean(row)),
+      // Applying writes only the proposed keys; rows above may also show derived defaults moving.
+      apply: Object.keys(proposal).length > 0,
     };
   };
 
@@ -151,7 +157,7 @@ export function SlpPageStyleSuggest({
           {shown.explanation && (
             <p className="text-sm leading-6 break-words text-[var(--slurp-text)]">{shown.explanation}</p>
           )}
-          {view.rows.length === 0 ? (
+          {!view.apply ? (
             <p>
               {t("ui.slurp.settings.creators.pageStyle.fits", { defaultValue: "The current page style already fits." })}
             </p>
@@ -184,7 +190,7 @@ export function SlpPageStyleSuggest({
             </>
           )}
           <div className="flex flex-wrap gap-2">
-            {view.rows.length > 0 && (
+            {view.apply && (
               <button type="button" className={accentButton} disabled={busy} onClick={apply}>
                 {update.isPending && (
                   <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
@@ -201,7 +207,7 @@ export function SlpPageStyleSuggest({
                 setError(null);
               }}
             >
-              {view.rows.length > 0
+              {view.apply
                 ? t("ui.slurp.settings.creators.pageStyle.keep", { defaultValue: "Keep current" })
                 : t("ui.slurp.settings.creators.pageStyle.close", { defaultValue: "Close" })}
             </button>

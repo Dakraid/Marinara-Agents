@@ -54,7 +54,6 @@ export function buildSlpPageStyleMessages(input: {
   canon: string;
   stagePersonality: string;
   bio: string;
-  current: SlpPageStyleCurrent;
   identityInstruction: string;
   untrustedInstruction: string;
 }) {
@@ -95,9 +94,6 @@ export function buildSlpPageStyleMessages(input: {
     "",
     "# Bio",
     input.bio || "(none)",
-    "",
-    "# Current page settings",
-    JSON.stringify(input.current),
   ].join("\n");
   return [
     { role: "system" as const, content: system },

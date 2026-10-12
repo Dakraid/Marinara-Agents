@@ -35,7 +35,6 @@ const messages = buildSlpPageStyleMessages({
   canon: card,
   stagePersonality: "",
   bio: "",
-  current,
   identityInstruction: "identity rule",
   untrustedInstruction: "untrusted rule",
 });
@@ -43,6 +42,8 @@ assert.equal(messages[0]!.role, "system");
 assert.ok(!messages[0]!.content.includes("librarian"));
 assert.ok(messages[1]!.content.includes("librarian"));
 assert.ok(messages[0]!.content.includes("untrusted rule"));
+// The current values stay out of the prompt, or the model copies them back as its proposal.
+assert.ok(!messages[1]!.content.includes(JSON.stringify(current.intentWeights)));
 
 // Three contrasting characters at the same heat give three different pages.
 const answers = {
