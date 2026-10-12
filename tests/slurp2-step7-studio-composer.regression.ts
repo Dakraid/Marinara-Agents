@@ -81,7 +81,11 @@ assert.match(
   composer,
   /footer=\{[\s\S]*?<SlpPrimaryButton onClick=\{\(\) => void publish\(\)\} disabled=\{!canPost\}/u,
 );
-assert.ok(composer.indexOf("{media}") < composer.indexOf("<SlpAutoGrowTextarea"), "media before the caption");
+// 0.3.31: who sees it, the wish bar, the post's own text, then its picture. The text field is on the
+// first screen, so a post typed by hand needs no scrolling past the picture frame.
+assert.ok(composer.indexOf("<SlpComposerAudience") < composer.indexOf("<SlpPostGuide"), "audience before the wish");
+assert.ok(composer.indexOf("<SlpPostGuide") < composer.indexOf("<SlpAutoGrowTextarea"), "wish bar before the text");
+assert.ok(composer.indexOf("<SlpAutoGrowTextarea") < composer.indexOf("{media}"), "the text before the picture");
 assert.ok(
   composer.indexOf("<SlpComposerAudience") < composer.indexOf('id="slurp-composer-advanced"'),
   "access chips before Advanced",

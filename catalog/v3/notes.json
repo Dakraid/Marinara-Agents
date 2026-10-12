@@ -622,6 +622,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.31",
+          "date": "2026-10-13",
+          "notes": "- Changed: the guided post (\"What do you want to post?\" in New post, and Stir's \"Draft post\") is now written by the same generator as the page's own posts, with your wish as the direction. The draft gets the bio, stage voice, brief, spice level, image directions and live events, and comes back as a title, a text and a picture of its own. Before, your wish went word for word into the picture.\n- Added: choose Public or Locked before you write. It is the composer's own audience setting and decides which guidance the draft gets.\n- Added: \"Add from Slurp\": a storyline of the page, a saved idea (posting the draft uses it up) and a wardrobe look for the picture. Brand deals and collabs stay.\n- Changed: one composer. A guided draft fills the normal title, text and picture fields; the separate preview and its \"Edit\" step are gone.\n- Known limit: posting a draft written for a storyline does not move the storyline to its next chapter.",
+          "highlight": false
+        },
+        {
           "version": "0.3.30",
           "date": "2026-10-12",
           "notes": "- Fixed: Write, Improve, the guided post and \"Draw\" gave a Creator with a hidden or hinted identity no brief at all, so the text was written \"in their voice\" with nothing about them. They now get the same brief as an open Creator, read at their own disclosure level (no backstory) and with the real name and handle replaced before it reaches the model.\n- Changed: Write, Improve and the guided post now also read the page's bio and stage voice, the way a normal post does.",
@@ -733,12 +739,6 @@
           "version": "0.3.10",
           "date": "2026-09-30",
           "notes": "- If Slurp cannot load because this device has no Admin Secret, it now explains how to set one instead of asking you to check your connection.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.8",
-          "date": "2026-09-30",
-          "notes": "Drama, friends and a People map. Design: `docs/DRAMA.md`.\n\n- Drama (off until switched on in Settings › Stir › Drama): situations and dramas from Story Packs, cast from the Creators on Slurp now, with choices you answer in a DM. Stir › Drama shows what runs; start or end one.\n- Starter set: Your partner is a Creator, Roommates, Rivals, Top fan, Friends to lovers, Love triangle, Getting bolder, Open relationship, The secret, You are the other one, Spoiled, She spoils you.\n- You as a partner: a couple with your own page starts together and only you or a drama changes it; she texts you like a partner a few times a day, and your chat starts close.\n- Bonds: friends, roommates, coworkers and exes, from cards and from the world; they show up in posts and on Pages.\n- Stir › People: a living map of everyone's ties and why each one exists.",
           "highlight": false
         }
       ]

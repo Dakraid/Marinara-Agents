@@ -1,4 +1,5 @@
 import type { DB } from "../../../db/connection.js";
+import { logger } from "../../../lib/logger.js";
 import { resolveBaseUrl } from "../../../services/generation/connection-base-url.js";
 import { createLLMProvider } from "../../../services/llm/provider-registry.js";
 import { createCharactersStorage } from "../../../services/storage/characters.storage.js";
@@ -31,14 +32,15 @@ import {
 } from "../../modules/assist/slp-assist-prompt.js";
 import { createSlpPictureUndo } from "../../modules/assist/slp-picture-undo.js";
 import { generateCreatorPostImage } from "../media/slp-media-contract.js";
-import { protectCreatorGeneratedIdentity, slpCreatorPublicIdentityFor } from "../feed/slp-feed-contract.js";
-import { artworkCompositionGuard, artworkNegativePrompt } from "../creators/slp-creators-contract.js";
 import {
-  SLP_ASSIST_FIELDS,
-  SLP_ASSIST_NOTE_MAX,
-  SLP_ASSIST_REQUEST_MAX,
-  type SlpActionParsed,
-} from "../../../../../shared/src/slp/slp-actions.js";
+  generateCreatorPost,
+  protectCreatorGeneratedIdentity,
+  slpCreatorPublicIdentityFor,
+} from "../feed/slp-feed-contract.js";
+import { slurpProjectChapter } from "../../modules/projects/slp-arc-progress.js";
+import { SLP_CREATOR_POST_GUIDE_MAX_LENGTH } from "../../../../../shared/src/slp/slp-social.schema.js";
+import { artworkCompositionGuard, artworkNegativePrompt } from "../creators/slp-creators-contract.js";
+import { SLP_ASSIST_FIELDS, type SlpActionParsed } from "../../../../../shared/src/slp/slp-actions.js";
 import type { SlpActionResult } from "../../../../../shared/src/slp/slp-action-results.js";
 import { readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ties-storage.js";
 import { slpWithProviderRetry } from "../../base/model/slp-provider-retry.js";
@@ -168,6 +170,8 @@ const DATA_URL_MIME: Record<string, string> = {
 export async function drawSlpAssistPicture(
   db: DB,
   input: SlpActionParsed<"draw-picture">,
+  /** A draft for a public post draws at the level a non-subscriber sees, like the post itself. */
+  post: { access?: "public" | "locked" } = {},
 ): Promise<SlpAssistOutcome<SlpActionResult["draw-picture"]>> {
   const creator = await creatorFor(db, input.accountId);
   if (!creator) return fail(404, "Creator not found.");
@@ -180,7 +184,9 @@ export async function drawSlpAssistPicture(
   const settings = await createSlurpStorage(db).getSettings();
   const spice = await resolveSlurpCreatorSpice(db, account);
   const level =
-    input.target === "avatar" || input.target === "cover" ? slurpPublicSexualLevel(spice.level) : spice.level;
+    input.target === "avatar" || input.target === "cover" || post.access === "public"
+      ? slurpPublicSexualLevel(spice.level)
+      : spice.level;
   // The same defaults as the artwork tool: a cover shows a place, not the Creator's face.
   const options = {
     creatorDetails: true,
@@ -361,14 +367,25 @@ export async function keepSlpAssistPicture(
 }
 
 /**
- * One idea in, a post to review out (the player's own page, 0.3.14): the caption in the page's voice
- * and its picture, nothing posted. An owed brand deal or a collab rides along as context, so the
- * caption carries the #ad or tags the partner the way the Creators' own posts do.
+ * One idea in, a post to review out: the page's normal post, written by the post generator in draft
+ * mode with the player's wish as its direction (0.3.31). So the draft has what every post has: bio,
+ * stage voice, brief, the guidance for its audience, the image directions, a title, and an image
+ * prompt of its own. Nothing is posted or recorded. What rides along (an owed #ad, a collab, a
+ * storyline, a wardrobe look) is read here by id and added to the direction.
  */
 export async function draftSlpPost(
   db: DB,
   input: SlpActionParsed<"draft-post">,
 ): Promise<SlpAssistOutcome<SlpActionResult["draft-post"]>> {
+  const storage = createSlurpStorage(db);
+  const account = await storage.getNoodlerAccountById(input.accountId);
+  if (!account) return fail(404, "Creator not found.");
+  const settings = await storage.getSettings();
+  const connection = await resolveSlurpTextConnection(
+    createConnectionsStorage(db),
+    settings.modelBudget.connectionId ?? settings.generationConnectionId,
+  );
+  if (!connection) return fail(409, "Select a text generation connection first.");
   const { deals, ties } = await readSlurpCreatorTiesDocument(db);
   const lines: string[] = [];
   if (input.dealId) {
@@ -384,31 +401,79 @@ export async function draftSlpPost(
         entry.id === input.collabId && (entry.hostId === input.accountId || entry.partnerId === input.accountId),
     );
     if (!collab) return fail(404, "That collab is not this page's.");
-    const partner = await createSlurpStorage(db).getNoodlerAccountById(
+    const partner = await storage.getNoodlerAccountById(
       collab.hostId === input.accountId ? collab.partnerId : collab.hostId,
     );
     lines.push(`This post is about the collab with @${partner?.handle ?? "them"}: ${collab.idea}. Tag them.`);
   }
-  const text = await runSlpAssistText(db, {
-    field: input.story ? "story" : "caption",
-    accountId: input.accountId,
-    context: lines.join(" "),
-    note: input.idea.slice(0, SLP_ASSIST_NOTE_MAX),
-    mode: "write",
-  });
-  if (!text.ok) return text;
-  if (!input.picture) return { ok: true, value: { text: text.value.text, image: null, imageError: null } };
-  const picture = await drawSlpAssistPicture(db, {
-    accountId: input.accountId,
-    target: input.story ? "story" : "post",
-    request: input.idea.slice(0, SLP_ASSIST_REQUEST_MAX),
-    context: text.value.text.slice(0, 2000),
-  });
-  // A picture that failed still leaves a caption worth reviewing: the player can draw again or add one.
+  if (input.projectId) {
+    const project = (await storage.listActiveProjects(account.id)).find((entry) => entry.id === input.projectId);
+    if (!project) return fail(404, "That storyline is not this page's.");
+    const chapter = slurpProjectChapter(project);
+    // ponytail: the draft is written from the chapter, but posting it does not advance the storyline
+    // (a manual post carries no project). Carry the project id on the manual post when players ask.
+    lines.push(`This post is the next step of their storyline "${project.title}"${chapter ? `: ${chapter}` : ""}.`);
+  }
+  if (input.lookId) {
+    const look = (await storage.listWardrobeLooks(account.id)).find((entry) => entry.id === input.lookId);
+    if (!look) return fail(404, "That look is not in this page's wardrobe.");
+    lines.push(`In the picture they wear their look "${look.name}": ${look.description}`);
+  }
+  // What rides along is never cut: a long wish gives way to the #ad line, not the other way round.
+  const extra = lines.join("\n");
+  // A draft has no old picture to post again: those two deliveries fall back to the page's usual one.
+  const delivery =
+    input.contentDelivery === "existing_media" || input.contentDelivery === "cropped_preview"
+      ? null
+      : input.contentDelivery;
+  const wish = input.idea.slice(0, Math.max(0, SLP_CREATOR_POST_GUIDE_MAX_LENGTH - extra.length - 1));
+  let post;
+  try {
+    post = await generateCreatorPost(db, {
+      account,
+      connection,
+      prepareOnly: true,
+      previewOnly: true,
+      // The picture is drawn below, so the rewrite that only fills `providerPrompt` is skipped.
+      skipImagePromptPreview: true,
+      request: {
+        mode: "noodler",
+        targetAccountId: account.id,
+        access: input.access,
+        postType: input.story ? "story" : "post",
+        ...(input.story ? { format: "caption" as const } : {}),
+        generateImage: input.picture,
+        ...(input.contentIntent ? { contentIntent: input.contentIntent } : {}),
+        ...(input.contentIntent && delivery ? { contentDelivery: delivery } : {}),
+        noodlerPostGuide: [wish, extra].filter(Boolean).join("\n").slice(0, SLP_CREATOR_POST_GUIDE_MAX_LENGTH),
+      },
+    });
+  } catch (error) {
+    logger.warn(error, "[slurp] The guided post could not be drafted");
+    return fail(502, "The post could not be drafted. Try again.");
+  }
+  // A draft that would repost an old picture staged a copy of it; the draft only takes the words.
+  post.stagedMedia?.compensate();
+  const drafted = { title: input.story ? "" : (post.title ?? ""), text: post.content };
+  if (!input.picture || delivery === "text_only") {
+    return { ok: true, value: { ...drafted, image: null, imageError: null } };
+  }
+  // The picture is drawn from the image prompt the post wrote for itself, not from the player's wish.
+  const picture = await drawSlpAssistPicture(
+    db,
+    {
+      accountId: input.accountId,
+      target: input.story ? "story" : "post",
+      request: post.imagePrompt ?? "",
+      context: post.content.slice(0, 2000),
+    },
+    { access: input.access },
+  );
+  // A picture that failed still leaves a post worth reviewing: the player can draw again or add one.
   return {
     ok: true,
     value: {
-      text: text.value.text,
+      ...drafted,
       image: picture.ok ? picture.value.image : null,
       imageError: picture.ok ? null : picture.error,
     },

@@ -67,7 +67,9 @@ test("persona Stir previews a draft and opens Edit without losing it", async ({ 
     await new Promise<void>((resolve) => {
       finish = resolve;
     });
-    await route.fulfill({ json: { text: "A quiet morning at the beach. ".repeat(12), image, imageError: null } });
+    await route.fulfill({
+      json: { title: "Beach morning", text: "A quiet morning at the beach. ".repeat(12), image, imageError: null },
+    });
   });
   for (const width of [390, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
@@ -80,14 +82,29 @@ test("persona Stir previews a draft and opens Edit without losing it", async ({ 
       .locator("..")
       .getByRole("button", { name: "Stir", exact: true })
       .click();
-    const sheet = page.getByRole("dialog", { name: "Stir", exact: true });
-    await expect(sheet.getByRole("textbox", { name: "What do you want to post?" })).toBeVisible();
-    await expect(sheet.locator("textarea")).toHaveCount(0);
-    await expect(sheet.getByRole("checkbox", { name: "Generate an image with the draft" })).toBeChecked();
-    await expect(sheet.getByRole("button", { name: "Upload an image", exact: true })).toBeVisible();
+    // One composer: Stir opens "New post" with the guided post on top and the editor below it.
+    const sheet = page.getByRole("dialog", { name: "New post", exact: true });
+    const wish = sheet.getByRole("textbox", { name: "What do you want to post?" });
+    await expect(wish).toBeVisible();
+    await expect(sheet.getByRole("textbox", { name: "Post body" })).toBeVisible();
+    // A post typed by hand needs no scrolling: the text field is on the first screen, under the wish bar.
+    await expect(sheet.getByRole("textbox", { name: "Post body" })).toBeInViewport({ ratio: 1 });
+    await expect(sheet.getByText("or write it yourself")).toBeVisible();
+    // The audience is set first, once, for a typed post and a written one alike.
+    await expect(sheet.getByRole("group", { name: "Who can see this post" })).toBeVisible();
+    await expect(sheet.getByRole("radiogroup", { name: "Written for" })).toHaveCount(0);
+    // The "Add from Slurp" row is always there, also for a page with nothing to add yet.
+    const adds = sheet.getByRole("group", { name: "Add from Slurp" });
+    await expect(adds.getByRole("button", { name: "Picture", exact: true, pressed: true })).toBeVisible();
+    for (const name of ["Storyline", "Idea", "Look"]) {
+      await expect(adds.getByRole("button", { name, exact: true })).toBeVisible();
+    }
+    await adds.getByRole("button", { name: "Look", exact: true }).click();
+    await expect(sheet.getByText("No looks in this page's wardrobe yet.")).toBeVisible();
+    await adds.getByRole("button", { name: "Look", exact: true }).click();
     await expect(sheet).toHaveCSS("opacity", "1");
     await page.screenshot({ path: info.outputPath(`guided-${width}-empty.png`) });
-    await sheet.getByRole("textbox").fill("A quiet morning at the beach");
+    await wish.fill("A quiet morning at the beach");
     await sheet.getByRole("button", { name: /Write it/u }).click();
     await expect(sheet.getByRole("button", { name: "Post", exact: true })).toBeDisabled();
     await expect.poll(() => Boolean(finish)).toBe(true);
@@ -103,15 +120,14 @@ test("persona Stir previews a draft and opens Edit without losing it", async ({ 
       )
       .toBe(true);
     await expect(sheet.getByRole("img", { name: "Attached post image" })).toHaveCSS("opacity", "1");
-    await expect(sheet.locator("[data-slp-guided-preview]")).toContainText("A quiet morning");
-    await expect(sheet.locator("textarea")).toHaveCount(0);
+    // The draft is in the composer's own fields, editable at once: no preview, no Edit step.
+    await expect(sheet.getByPlaceholder("Title (optional)")).toHaveValue("Beach morning");
+    await expect(sheet.getByRole("textbox", { name: "Post body" })).toHaveValue(/A quiet morning/u);
+    await expect(sheet.getByRole("button", { name: "Edit", exact: true })).toHaveCount(0);
     await expect(sheet.getByRole("button", { name: "Post", exact: true })).toBeEnabled();
-    await page.screenshot({ path: info.outputPath(`guided-${width}-preview.png`) });
-    await sheet.getByRole("button", { name: "Edit", exact: true }).click();
-    const editor = page.getByRole("dialog", { name: "New post", exact: true });
-    await expect(editor.locator("textarea")).toHaveValue(/A quiet morning/u);
-    await expect(editor.locator("img").last()).toBeVisible();
-    await page.screenshot({ path: info.outputPath(`guided-${width}-edit.png`) });
+    await page.screenshot({ path: info.outputPath(`guided-${width}-draft.png`), fullPage: true });
+    await sheet.getByRole("button", { name: "Advanced", exact: true }).click();
+    await sheet.getByRole("button", { name: "Discard draft", exact: true }).click();
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
   const npcResponse = await page.request.post("/api/slurp2/accounts/__professor_mari__/noodler", {
@@ -142,17 +158,18 @@ test("persona Stir previews a draft and opens Edit without losing it", async ({ 
   await page.getByRole("button", { name: "Stir NPC Creator", exact: true }).click();
   const npcStir = page.getByRole("dialog", { name: "Stir NPC Creator", exact: true });
   await npcStir.getByRole("button", { name: /Draft post/u }).click();
-  const npcGuide = page.getByRole("dialog", { name: "Stir", exact: true });
+  const npcGuide = page.getByRole("dialog", { name: "New post", exact: true });
   await expect(npcGuide.getByRole("textbox", { name: "What do you want to post?" })).toBeVisible();
-  await expect(npcGuide.locator("textarea")).toHaveCount(0);
   await expect(npcGuide).toContainText("Post as NPC Creator");
   await expect(npcStir).toHaveCount(0);
   await expect(npcGuide).toHaveCSS("opacity", "1");
   const chooser = page.waitForEvent("filechooser");
-  await npcGuide.getByRole("button", { name: "Upload an image", exact: true }).click();
+  await npcGuide.getByRole("button", { name: "Add a photo", exact: true }).click();
   await (await chooser).setFiles("packages/slurp2/slurp2-logo.png");
   await expect(npcGuide.getByRole("img", { name: "Attached post image" })).toBeVisible();
-  await expect(npcGuide.getByRole("checkbox", { name: "Generate an image with the draft" })).not.toBeChecked();
+  // An attached photo is the picture: the wish bar no longer offers to draw one.
+  await expect(npcGuide.getByRole("button", { name: "Picture", exact: true })).toHaveCount(0);
+  await expect(npcGuide.getByRole("button", { name: "Storyline", exact: true })).toBeVisible();
   await page.screenshot({ path: info.outputPath("guided-npc-1440-empty.png") });
   expect(errors).toEqual([]);
   expect(failed).toEqual([]);

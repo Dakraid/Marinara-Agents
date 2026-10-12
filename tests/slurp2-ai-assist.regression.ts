@@ -245,7 +245,7 @@ assert.match(service, /negativePromptAdditions: slurpImageNegativePrompt\(level\
 assert.match(
   service,
   // Slice I (user): public pictures stop below nudity; `slurpPublicSexualLevel` is that public level.
-  /input\.target === "avatar" \|\| input\.target === "cover" \? slurpPublicSexualLevel\(spice\.level\) : spice\.level/u,
+  /input\.target === "avatar" \|\| input\.target === "cover" \|\| post\.access === "public"\s*\? slurpPublicSexualLevel\(spice\.level\)\s*: spice\.level/u,
   "a profile picture or cover is public: the level a non-subscriber sees",
 );
 assert.match(service, /generateCreatorPostImage\(\{/u, "the Creator's own image pipeline");
