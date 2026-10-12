@@ -3309,9 +3309,9 @@
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/quartermaster.png",
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/quartermaster/README.md",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/quartermaster-0.1.23.zip",
-        "sha256": "b69cc02ec41e303b7c236645ed9fefcdfeab3091bcafbdf6386ec80b3570f0c6",
-        "bytes": 451050
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/quartermaster-0.1.25.zip",
+        "sha256": "1de011e60bb102c28b8614e937b22f169effe1c8e86132484d50882d8bd6abca",
+        "bytes": 457712
       }
     },
     {
@@ -3469,9 +3469,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/relationship-tracker.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/relationship-tracker-0.6.2.zip",
-        "sha256": "40dbf026b4f88fa72a2def0ffa18742c113fb668902c310199b8f83bc4e90bf8",
-        "bytes": 198763
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/relationship-tracker-0.6.4.zip",
+        "sha256": "2b434aa0e34e744a221f70ff9bbe22570865f2650f3118e021d1142492101037",
+        "bytes": 206865
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/relationship-tracker/README.md"
     },
