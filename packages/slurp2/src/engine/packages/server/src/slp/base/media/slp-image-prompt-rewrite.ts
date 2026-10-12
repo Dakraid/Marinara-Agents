@@ -11,6 +11,7 @@ import { composeSlurpPromptBlocks, type SlurpPromptBlockOverrides } from "../pro
 import type { SlurpVisualBrief } from "./slp-visual-brief.js";
 import { slurpVisualBriefPolicyText, slurpVisualBriefText } from "./slp-visual-brief.js";
 import { resolveSlurpTextConnection } from "../identity/slp-connection.js";
+import { requireModelAnswer } from "../model/slp-model-answer.js";
 import { claimSlurpModelBudget, type SlurpModelBudget } from "../model/slp-model-worker.js";
 
 const MAX_REWRITTEN_PROMPT_LENGTH = 12_000;
@@ -26,7 +27,7 @@ function parseRecord(value: unknown): Record<string, unknown> {
   // answer stays a failure, because the repair would send half a picture.
   if (jsonishLooksTruncated(value)) return {};
   try {
-    const parsed = parseGameJsonish(value);
+    const parsed = parseGameJsonish(requireModelAnswer(value, "an image prompt rewrite"));
     return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
   } catch {
     return {};

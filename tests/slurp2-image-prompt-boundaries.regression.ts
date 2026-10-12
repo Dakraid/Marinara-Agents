@@ -16,7 +16,7 @@ assert.match(rewrite, /postContent\?: string/u);
 assert.match(rewrite, /<post_context>/u);
 assert.match(rewrite, /Do not increase the sexual intensity/u);
 // A fenced answer with a line break inside the prompt is valid to a reader; strict JSON.parse dropped it.
-assert.match(rewrite, /parseGameJsonish\(value\)/u);
+assert.match(rewrite, /parseGameJsonish\(requireModelAnswer\(value,/u);
 assert.doesNotMatch(rewrite, /JSON\.parse\(/u);
 // The AI budget refusing the rewrite is a setting, not a failure: no "rewrite unusable" warning, no cap.
 assert.match(rewrite, /input\.onBudgetSkip\?\.\(\);\s*return null;/u);
