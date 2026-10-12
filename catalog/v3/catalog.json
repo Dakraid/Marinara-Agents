@@ -3209,8 +3209,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "051624c751f6354ecc30bd89b21d01d1d05a24b392ac60e2ef04eeb860fe27ed",
-            "bytes": 289382
+            "sha256": "fa049362091dfca61dc55fea73240078182d1e09d993ba4777cdebca436c2ea3",
+            "bytes": 296044
           },
           {
             "path": "server.mjs",
@@ -3432,13 +3432,13 @@
           },
           {
             "path": "persona-tracking.mjs",
-            "sha256": "cb36514b2de3155a6b7276b038fddd06734be5bddf2eb78be3773b36ea4b6815",
-            "bytes": 6014
+            "sha256": "9f1f306946fc370ea13b71160bc5207405513f022cd42ffd2d88bf4d7ba516b6",
+            "bytes": 6500
           },
           {
             "path": "client.js",
-            "sha256": "c009aef56c8b6ac495005570b38ba1d4047ccea5485cfb04f89ab16132960b31",
-            "bytes": 60590
+            "sha256": "ee75d1c65835398961c5cc73ca7240f9bfb07e64f67b901dee3a5e84f6030faa",
+            "bytes": 68206
           },
           {
             "path": "contracts/relationship-state-v1.schema.json",

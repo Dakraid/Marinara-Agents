@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/Dakraid/Marinara-Agents/relationship-tracker/contracts/read-api-v1.schema.json",
+  "$id": "https://github.com/Pasta-Devs/Marinara-Agents/relationship-tracker/contracts/read-api-v1.schema.json",
   "title": "Relationship Tracker read API v1 response",
   "type": "object",
   "additionalProperties": false,

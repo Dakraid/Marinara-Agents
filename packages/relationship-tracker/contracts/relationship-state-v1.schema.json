@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/Dakraid/Marinara-Agents/relationship-tracker/contracts/relationship-state-v1.schema.json",
+  "$id": "https://github.com/Pasta-Devs/Marinara-Agents/relationship-tracker/contracts/relationship-state-v1.schema.json",
   "title": "Relationship Tracker chat state v1",
   "type": "object",
   "additionalProperties": false,
