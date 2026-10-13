@@ -586,6 +586,20 @@ const parsedSingle = parseSingleResponse(JSON.stringify({ updates: [validDescrip
 assert.equal(parsedSingle.ok, true);
 assert.deepEqual(parsedSingle.results.get("character-1"), [validDescriptionUpdate]);
 assert.equal(parseSingleResponse("not json", "character-1", { rebalance: false }).ok, false);
+// Auto-heal: trailing commas and a response cut off before its closers still parse.
+const validSingleJson = JSON.stringify({ updates: [validDescriptionUpdate] });
+for (const nearMiss of [
+  validSingleJson.replace(/}]}$/, "},]}"),
+  validSingleJson.replace(/]}$/, ""),
+  "```json\n" + validSingleJson.slice(0, -2),
+]) {
+  assert.deepEqual(
+    parseSingleResponse(nearMiss, "character-1", { rebalance: false }).results.get("character-1"),
+    [validDescriptionUpdate],
+    nearMiss,
+  );
+}
+assert.equal(parseSingleResponse('{"updates": [{"field": "desc', "character-1", { rebalance: false }).ok, false);
 const emptyUpdate = { ...validDescriptionUpdate, field: "backstory", newText: "" };
 assert.equal(
   parseSingleResponse(JSON.stringify({ updates: [emptyUpdate] }), "character-1", { rebalance: false }).results.get(

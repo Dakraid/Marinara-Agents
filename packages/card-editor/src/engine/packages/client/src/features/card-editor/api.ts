@@ -240,6 +240,11 @@ export function editRetrySessionItem(sessionId: string, itemId: string, body: Ed
   return request<BulkSession>(itemPath(sessionId, itemId, "/edit-retry"), "POST", body);
 }
 
+/** failed-parse only: the hand-fixed raw response is parsed as the model's answer (422 if it still fails). */
+export function repairSessionItem(sessionId: string, itemId: string, rawOutput: string): Promise<BulkSession> {
+  return request<BulkSession>(itemPath(sessionId, itemId, "/repair"), "POST", { rawOutput });
+}
+
 export function submitSessionItemVerdict(
   sessionId: string,
   itemId: string,

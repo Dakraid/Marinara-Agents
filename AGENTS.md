@@ -2,6 +2,16 @@
 
 This file is a thin maintainer note for contributors using coding agents. Canonical workflow and validation guidance lives in `CONTRIBUTING.md`.
 
+## Fork Workflow (takes precedence)
+
+This checkout is the Dakraid fork. Where this section conflicts with upstream-oriented guidance below (staging targets, issue and draft-PR ownership, CodeRabbit and approval gates), this section wins.
+
+- The fork lives on `customized`. Do all work on a feature branch cut from `customized` (`feat/…`, `fix/…`, `docs/…`) and merge it back into `customized`. Do not commit directly to `customized`.
+- Merge upstream (`Pasta-Devs/main`, see Upstream merge) into `customized` regularly. Resolve conflicts properly and keep fork behavior; when the right direction is unclear, ask the user before resolving.
+- During development run only the minimal build, test, lint and format for what you touched (file-scoped ESLint and Prettier, the affected `tests/*.regression.*`, a rebuild of the touched package). Run the full suite (the full gate under Rebuild & validation shortcuts) once, before the final commit of all work, and fix what it finds then — not on every branch.
+- Always work with Ponytail and Caveman (full).
+- Commits use Conventional Commits and carry no `Co-Authored-By` or `Claude-Session` trailers.
+
 ## Agent Workflow Overlay
 
 - Follow `.github/agents/chai-workflow.md` as the repository's additive AI-agent workflow overlay for proof discipline, issue ownership, feature sizing, PR gates, and risky package work.

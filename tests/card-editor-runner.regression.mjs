@@ -1065,6 +1065,45 @@ async function testEditRetryRoute() {
   assert.deepEqual([languageModels.calls[2].system, languageModels.calls[2].user], ["Edited system", "Edited user"]);
 }
 
+async function testRepairRoute() {
+  stopAllRunners();
+  const documents = createFakeDocuments();
+  const languageModels = createFakeLanguageModels(() => ({ content: `garbage ${"x".repeat(500)}` }));
+  const { deps, store } = createDeps(documents, languageModels);
+  const invoke = await createRouteHarness(deps);
+  const created = await createSessionViaRoute(invoke, {
+    targets: [makeTarget(0)],
+    config: normalizeSessionConfig({ providerRetries: 0 }),
+  });
+  const failed = await settledSession(store, created.id);
+  assert.equal(failed.items[0].status, "failed-parse");
+  assert.ok(failed.items[0].failure.rawOutput.startsWith("garbage"), "the raw response is kept for the manual fix");
+  const params = { id: created.id, itemId: created.items[0].itemId };
+
+  const stillBroken = await invoke("POST", "/sessions/:id/items/:itemId/repair", {
+    params,
+    body: { rawOutput: "still not json" },
+  });
+  assert.equal(stillBroken.status, 422, "an unparseable fix keeps the item failed");
+  const missing = await invoke("POST", "/sessions/:id/items/:itemId/repair", { params, body: {} });
+  assert.equal(missing.status, 400);
+
+  const repaired = await invoke("POST", "/sessions/:id/items/:itemId/repair", {
+    params,
+    body: { rawOutput: singleUpdate("Hand fixed") },
+  });
+  assert.equal(repaired.status, 200, JSON.stringify(repaired.body));
+  assert.equal(repaired.body.items[0].status, "awaiting-review");
+  assert.equal(repaired.body.items[0].updates[0].newText, "Hand fixed");
+  assert.equal(languageModels.calls.length, 2, "a manual fix makes no model call");
+
+  const again = await invoke("POST", "/sessions/:id/items/:itemId/repair", {
+    params,
+    body: { rawOutput: singleUpdate("Twice") },
+  });
+  assert.equal(again.status, 409, "only failed-parse items can be repaired");
+}
+
 async function testCancelQueuedItemRoute() {
   stopAllRunners();
   const documents = createFakeDocuments();
@@ -1189,6 +1228,7 @@ const tests = [
   ["rerun route", testRerunRoute],
   ["delete active session", testDeleteActiveSession],
   ["edit-retry route", testEditRetryRoute],
+  ["repair route", testRepairRoute],
   ["cancel queued item route", testCancelQueuedItemRoute],
   ["activation lifecycle", testActivationLifecycle],
 ];
