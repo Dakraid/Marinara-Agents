@@ -16,9 +16,9 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
     version: "0.3.31",
     date: "2026-10-13",
     notes: [
-      "“Write it” in New post now writes a real post for the page: title, text and a picture of its own, in the page's voice.",
-      "Pick Public or Locked before you write, and add a storyline, a saved idea or a wardrobe look from Slurp.",
-      "The draft lands straight in New post, where you can change anything before you post.",
+      "New post has one switch: “Write it myself” or “Guided”. Guided writes a real post for the page: title, text and a picture of its own, in the page's voice.",
+      "Add your own photo on top and Guided writes the text to go with it. You can also add a storyline, a saved idea or a wardrobe look from Slurp.",
+      "The draft lands straight in the post, where you can change anything before you post.",
     ],
   },
   {

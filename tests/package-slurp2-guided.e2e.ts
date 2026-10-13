@@ -82,30 +82,38 @@ test("persona Stir previews a draft and opens Edit without losing it", async ({ 
       .locator("..")
       .getByRole("button", { name: "Stir", exact: true })
       .click();
-    // One composer: Stir opens "New post" with the guided post on top and the editor below it.
+    // One composer, one switch for the text. Stir opens it on "Guided"; "Write it myself" is one tap.
     const sheet = page.getByRole("dialog", { name: "New post", exact: true });
+    const by = sheet.getByRole("radiogroup", { name: "Who writes the text" });
     const wish = sheet.getByRole("textbox", { name: "What do you want to post?" });
+    const body = sheet.getByRole("textbox", { name: "Post body" });
+    await expect(by.getByRole("radio", { name: "Guided", exact: true })).toBeChecked();
     await expect(wish).toBeVisible();
-    await expect(sheet.getByRole("textbox", { name: "Post body" })).toBeVisible();
-    // A post typed by hand needs no scrolling: the text field is on the first screen, under the wish bar.
-    await expect(sheet.getByRole("textbox", { name: "Post body" })).toBeInViewport({ ratio: 1 });
-    await expect(sheet.getByText("or write it yourself")).toBeVisible();
-    // The audience is set first, once, for a typed post and a written one alike.
+    await expect(sheet.getByRole("button", { name: /^Write it/u })).toBeInViewport({ ratio: 1 });
+    await expect(sheet.getByRole("button", { name: "Draw a picture too", exact: true, pressed: true })).toBeVisible();
+    // The picture slot is on top, the audience is set once, before either way of writing.
+    await expect(sheet.getByRole("button", { name: "Add a photo", exact: true })).toBeVisible();
     await expect(sheet.getByRole("group", { name: "Who can see this post" })).toBeVisible();
-    await expect(sheet.getByRole("radiogroup", { name: "Written for" })).toHaveCount(0);
     // The "Add from Slurp" row is always there, also for a page with nothing to add yet.
     const adds = sheet.getByRole("group", { name: "Add from Slurp" });
-    await expect(adds.getByRole("button", { name: "Picture", exact: true, pressed: true })).toBeVisible();
     for (const name of ["Storyline", "Idea", "Look"]) {
       await expect(adds.getByRole("button", { name, exact: true })).toBeVisible();
     }
     await adds.getByRole("button", { name: "Look", exact: true }).click();
     await expect(sheet.getByText("No looks in this page's wardrobe yet.")).toBeVisible();
     await adds.getByRole("button", { name: "Look", exact: true }).click();
+    // A post typed by hand: the same sheet, the text field on the first screen, no wish in sight.
+    await by.getByRole("radio", { name: "Write it myself", exact: true }).click();
+    await expect(body).toBeInViewport({ ratio: 1 });
+    await expect(wish).toBeHidden();
+    await expect(sheet).toHaveCSS("opacity", "1");
+    await page.screenshot({ path: info.outputPath(`guided-${width}-manual.png`) });
+    await by.getByRole("radio", { name: "Guided", exact: true }).click();
+    await expect(body).toBeHidden();
     await expect(sheet).toHaveCSS("opacity", "1");
     await page.screenshot({ path: info.outputPath(`guided-${width}-empty.png`) });
     await wish.fill("A quiet morning at the beach");
-    await sheet.getByRole("button", { name: /Write it/u }).click();
+    await sheet.getByRole("button", { name: /^Write it/u }).click();
     await expect(sheet.getByRole("button", { name: "Post", exact: true })).toBeDisabled();
     await expect.poll(() => Boolean(finish)).toBe(true);
     await page.screenshot({ path: info.outputPath(`guided-${width}-loading.png`) });
@@ -120,7 +128,8 @@ test("persona Stir previews a draft and opens Edit without losing it", async ({ 
       )
       .toBe(true);
     await expect(sheet.getByRole("img", { name: "Attached post image" })).toHaveCSS("opacity", "1");
-    // The draft is in the composer's own fields, editable at once: no preview, no Edit step.
+    // The draft is in the composer's own fields, and the switch moved there: no preview, no Edit step.
+    await expect(by.getByRole("radio", { name: "Write it myself", exact: true })).toBeChecked();
     await expect(sheet.getByPlaceholder("Title (optional)")).toHaveValue("Beach morning");
     await expect(sheet.getByRole("textbox", { name: "Post body" })).toHaveValue(/A quiet morning/u);
     await expect(sheet.getByRole("button", { name: "Edit", exact: true })).toHaveCount(0);
@@ -167,8 +176,9 @@ test("persona Stir previews a draft and opens Edit without losing it", async ({ 
   await npcGuide.getByRole("button", { name: "Add a photo", exact: true }).click();
   await (await chooser).setFiles("packages/slurp2/slurp2-logo.png");
   await expect(npcGuide.getByRole("img", { name: "Attached post image" })).toBeVisible();
-  // An attached photo is the picture: the wish bar no longer offers to draw one.
-  await expect(npcGuide.getByRole("button", { name: "Picture", exact: true })).toHaveCount(0);
+  // A photo the player added is the picture: Guided writes the text for it and draws none.
+  await expect(npcGuide.getByText("Your photo stays. The text is written to go with it.")).toBeVisible();
+  await expect(npcGuide.getByRole("button", { name: "Draw a picture too", exact: true })).toHaveCount(0);
   await expect(npcGuide.getByRole("button", { name: "Storyline", exact: true })).toBeVisible();
   await page.screenshot({ path: info.outputPath("guided-npc-1440-empty.png") });
   expect(errors).toEqual([]);

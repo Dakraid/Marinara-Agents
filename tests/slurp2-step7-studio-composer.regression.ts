@@ -81,11 +81,14 @@ assert.match(
   composer,
   /footer=\{[\s\S]*?<SlpPrimaryButton onClick=\{\(\) => void publish\(\)\} disabled=\{!canPost\}/u,
 );
-// 0.3.31: who sees it, the wish bar, the post's own text, then its picture. The text field is on the
-// first screen, so a post typed by hand needs no scrolling past the picture frame.
-assert.ok(composer.indexOf("<SlpComposerAudience") < composer.indexOf("<SlpPostGuide"), "audience before the wish");
-assert.ok(composer.indexOf("<SlpPostGuide") < composer.indexOf("<SlpAutoGrowTextarea"), "wish bar before the text");
-assert.ok(composer.indexOf("<SlpAutoGrowTextarea") < composer.indexOf("{media}"), "the text before the picture");
+// 0.3.31: the picture, who sees it, then one switch for the text: typed by hand or Guided.
+const body = composer.slice(composer.indexOf('data-component="SlurpHome.NoodlerPostComposer"'));
+assert.ok(body.indexOf("{media}") < body.indexOf("<SlpComposerAudience"), "the picture on top");
+assert.ok(body.indexOf("<SlpComposerAudience") < body.indexOf("<SlpSegment"), "audience before the text switch");
+assert.ok(body.indexOf("<SlpSegment") < body.indexOf("<SlpPostGuide"), "the switch before Guided");
+assert.match(body, /<div hidden=\{by !== "guide"\}>\s*<SlpPostGuide/u);
+assert.match(body, /<div hidden=\{by !== "me"\} aria-busy=\{drafting\}/u);
+assert.match(composer, /useState<"me" \| "guide">\("me"\)/u, "a new post opens on Write it myself");
 assert.ok(
   composer.indexOf("<SlpComposerAudience") < composer.indexOf('id="slurp-composer-advanced"'),
   "access chips before Advanced",

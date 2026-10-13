@@ -1,11 +1,11 @@
 /**
- * The guided post (0.3.14, reworked in 0.3.31): a wish in, the page's normal post out. It is one
- * bar on top of the composer, shaped like a message box: the wish, then what rides along as chips
- * (a picture, a storyline, a saved idea, a wardrobe look, an owed #ad, a collab) and "Write it". The
- * server writes it with the post generator for the audience the composer is set to, and the title,
- * text and picture land in the composer's own fields below. Nothing is posted until Post is pressed.
+ * The guided post (0.3.14, reworked in 0.3.31): a wish in, the page's normal post out. It is the
+ * "Guided" side of the composer's text switch: the wish, what rides along from Slurp as chips (a
+ * storyline, a saved idea, a wardrobe look, an owed #ad, a collab), whether a picture is drawn, and
+ * "Write it". The server writes it with the post generator for the audience the composer is set to,
+ * and the title, text and picture land in the composer's own fields. Nothing is posted until Post.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BookOpen, Handshake, ImagePlus, Lightbulb, Loader2, Megaphone, Shirt } from "lucide-react";
 import { cn } from "../../../lib/utils";
@@ -65,6 +65,7 @@ export function SlpPostGuide({
   onPendingChange?: (pending: boolean) => void;
 }) {
   const { t } = useTranslation();
+  const addId = useId();
   const ties = useSlurpTies(personaId).data;
   const projects = useSlurpProjects(personaId, accountId).data?.projects ?? [];
   const ideas = useSlurpCreatorSteering(accountId).data?.steering.nudges ?? [];
@@ -171,89 +172,128 @@ export function SlpPostGuide({
 
   const busy = disabled || pending;
   const question = t(story ? "ui.slurp.postGuide.storyQuestion" : "ui.slurp.postGuide.question");
+  const label = cn(SLP_TYPE.meta, "mb-1.5 block text-[var(--slurp-muted)]");
   return (
-    <section aria-label={t("ui.slurp.postGuide.label")} className="space-y-1.5">
+    <section aria-label={t("ui.slurp.postGuide.label")}>
       <form
-        className="space-y-2 rounded-2xl bg-[var(--slurp-canvas)] p-2 ring-1 ring-inset ring-[var(--noodle-divider)] focus-within:ring-2 focus-within:ring-[var(--slurp-focus)]"
+        className="space-y-4"
         onSubmit={(event) => {
           event.preventDefault();
           void write();
         }}
       >
-        <label className="flex items-start gap-2 px-2 pt-1.5">
-          <span className="grid h-6 shrink-0 place-items-center text-[var(--slurp-ink)] [&_svg]:!text-current">
-            <SlpSparkleGlyph size={16} aria-hidden="true" />
-          </span>
-          <span className="sr-only">{question}</span>
+        <label className="block">
+          <span className={label}>{question}</span>
           <SlpAutoGrowTextarea
             value={idea}
             maxLength={600}
             rows={2}
             disabled={busy}
             onChange={(event) => setIdea(event.target.value)}
-            placeholder={`${question} ${t("ui.slurp.postGuide.placeholder")}`}
-            className="min-h-12 w-full resize-none border-0 bg-transparent text-base leading-6 text-[var(--slurp-text)] outline-none placeholder:text-[var(--slurp-muted)] disabled:opacity-60 sm:text-[15px]"
+            placeholder={t("ui.slurp.postGuide.placeholder")}
+            className="min-h-20 w-full resize-none rounded-xl border-0 bg-[var(--slurp-surface-raised)] px-3 py-2.5 text-base leading-6 text-[var(--slurp-text)] shadow-[var(--slurp-highlight)] outline-none placeholder:text-[var(--slurp-muted)] focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-60 sm:text-[15px]"
           />
         </label>
 
-        {/* What rides along, then the action: chips wrap on a phone and "Write it" keeps the right edge. */}
-        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t("ui.slurp.postGuide.addLabel")}>
-          {!hasImage && (
-            <SlpChip
-              selected={picture}
-              disabled={busy}
-              onClick={() => setPicture((value) => !value)}
-              className="min-h-9"
+        <div className="space-y-2">
+          <div role="group" aria-labelledby={addId}>
+            <span id={addId} className={label}>
+              {t("ui.slurp.postGuide.addLabel")}
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {groups.map((group) => {
+                const picked = group.options.find((option) => option.id === group.selected);
+                return (
+                  <SlpChip
+                    key={group.kind}
+                    selected={Boolean(picked)}
+                    aria-expanded={openKind === group.kind}
+                    disabled={busy}
+                    onClick={() => setOpenKind((current) => (current === group.kind ? null : group.kind))}
+                    className="min-h-9 max-w-full"
+                  >
+                    <group.icon size={14} aria-hidden="true" className="shrink-0" />
+                    <span className="truncate">{picked?.label ?? t(`ui.slurp.postGuide.${group.kind}`)}</span>
+                  </SlpChip>
+                );
+              })}
+              {deals.map((deal) => (
+                <SlpChip
+                  key={deal.id}
+                  selected={dealId === deal.id}
+                  disabled={busy}
+                  onClick={() => setDealId((current) => (current === deal.id ? null : deal.id))}
+                  className="min-h-9 max-w-full"
+                >
+                  <Megaphone size={14} aria-hidden="true" className="shrink-0" />
+                  <span className="truncate">{t("ui.slurp.postGuide.deal", { brand: deal.brand })}</span>
+                </SlpChip>
+              ))}
+              {collabs.map((collab) => (
+                <SlpChip
+                  key={collab.id}
+                  selected={collabId === collab.id}
+                  disabled={busy}
+                  onClick={() => setCollabId((current) => (current === collab.id ? null : collab.id))}
+                  className="min-h-9 max-w-full"
+                >
+                  <Handshake size={14} aria-hidden="true" className="shrink-0" />
+                  <span className="truncate">
+                    {t("ui.slurp.postGuide.collab", {
+                      name: nameOf(collab.hostId === accountId ? collab.partnerId : collab.hostId),
+                    })}
+                  </span>
+                </SlpChip>
+              ))}
+            </div>
+          </div>
+          {open && (
+            <ul
+              aria-label={t(`ui.slurp.postGuide.${open.kind}`)}
+              className="max-h-44 space-y-1 overflow-y-auto rounded-xl bg-[var(--slurp-surface-raised)] p-1 shadow-[var(--slurp-highlight)]"
             >
-              <ImagePlus size={14} aria-hidden="true" />
+              {open.options.length === 0 && (
+                <li className={cn(SLP_TYPE.meta, "px-3 py-2.5 text-[var(--slurp-muted)]")}>
+                  {t(`ui.slurp.postGuide.none.${open.kind}`)}
+                </li>
+              )}
+              {open.options.map((option) => (
+                <li key={option.id}>
+                  <button
+                    type="button"
+                    aria-pressed={open.selected === option.id}
+                    disabled={busy}
+                    onClick={() => {
+                      open.pick(open.selected === option.id ? null : option.id);
+                      setOpenKind(null);
+                    }}
+                    className={cn(
+                      SLP_TYPE.body,
+                      "flex min-h-11 w-full items-center rounded-lg px-3 py-2 text-start hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] disabled:opacity-60",
+                      open.selected === option.id && "bg-[var(--slurp-tint)] font-semibold",
+                    )}
+                  >
+                    <span className="line-clamp-2 break-words">{option.label}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* The picture slot on top decides: a photo the player added stays, an empty slot can be drawn. */}
+        <div className="flex flex-wrap items-center gap-2">
+          {hasImage ? (
+            <p className={cn(SLP_TYPE.body, "basis-full text-[var(--slurp-muted)]")}>
+              {t("ui.slurp.postGuide.aroundPhoto")}
+            </p>
+          ) : (
+            <SlpChip selected={picture} disabled={busy} onClick={() => setPicture((value) => !value)}>
+              <ImagePlus size={15} aria-hidden="true" />
               {t("ui.slurp.postGuide.withPicture")}
             </SlpChip>
           )}
-          {groups.map((group) => {
-            const picked = group.options.find((option) => option.id === group.selected);
-            return (
-              <SlpChip
-                key={group.kind}
-                selected={Boolean(picked)}
-                aria-expanded={openKind === group.kind}
-                disabled={busy}
-                onClick={() => setOpenKind((current) => (current === group.kind ? null : group.kind))}
-                className="min-h-9 max-w-full"
-              >
-                <group.icon size={14} aria-hidden="true" className="shrink-0" />
-                <span className="truncate">{picked?.label ?? t(`ui.slurp.postGuide.${group.kind}`)}</span>
-              </SlpChip>
-            );
-          })}
-          {deals.map((deal) => (
-            <SlpChip
-              key={deal.id}
-              selected={dealId === deal.id}
-              disabled={busy}
-              onClick={() => setDealId((current) => (current === deal.id ? null : deal.id))}
-              className="min-h-9 max-w-full"
-            >
-              <Megaphone size={14} aria-hidden="true" className="shrink-0" />
-              <span className="truncate">{t("ui.slurp.postGuide.deal", { brand: deal.brand })}</span>
-            </SlpChip>
-          ))}
-          {collabs.map((collab) => (
-            <SlpChip
-              key={collab.id}
-              selected={collabId === collab.id}
-              disabled={busy}
-              onClick={() => setCollabId((current) => (current === collab.id ? null : collab.id))}
-              className="min-h-9 max-w-full"
-            >
-              <Handshake size={14} aria-hidden="true" className="shrink-0" />
-              <span className="truncate">
-                {t("ui.slurp.postGuide.collab", {
-                  name: nameOf(collab.hostId === accountId ? collab.partnerId : collab.hostId),
-                })}
-              </span>
-            </SlpChip>
-          ))}
-          <SlpPrimaryButton type="submit" disabled={busy || !idea.trim()} className="ms-auto px-4">
+          <SlpPrimaryButton type="submit" disabled={busy || !idea.trim()} className="min-w-40 flex-1 px-4">
             {pending ? (
               <Loader2 size={16} className="animate-spin" aria-hidden="true" />
             ) : (
@@ -263,41 +303,9 @@ export function SlpPostGuide({
             <SlpUsesAiMark />
           </SlpPrimaryButton>
         </div>
-        {open && (
-          <ul
-            aria-label={t(`ui.slurp.postGuide.${open.kind}`)}
-            className="max-h-44 space-y-1 overflow-y-auto rounded-xl bg-[var(--slurp-surface-raised)] p-1 shadow-[var(--slurp-highlight)]"
-          >
-            {open.options.length === 0 && (
-              <li className={cn(SLP_TYPE.meta, "px-3 py-2.5 text-[var(--slurp-muted)]")}>
-                {t(`ui.slurp.postGuide.none.${open.kind}`)}
-              </li>
-            )}
-            {open.options.map((option) => (
-              <li key={option.id}>
-                <button
-                  type="button"
-                  aria-pressed={open.selected === option.id}
-                  disabled={busy}
-                  onClick={() => {
-                    open.pick(open.selected === option.id ? null : option.id);
-                    setOpenKind(null);
-                  }}
-                  className={cn(
-                    SLP_TYPE.body,
-                    "flex min-h-11 w-full items-center rounded-lg px-3 py-2 text-start hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--slurp-focus)] disabled:opacity-60",
-                    open.selected === option.id && "bg-[var(--slurp-tint)] font-semibold",
-                  )}
-                >
-                  <span className="line-clamp-2 break-words">{option.label}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
       </form>
       {error && (
-        <p role="alert" className={cn(SLP_TYPE.meta, "px-2 text-[var(--slurp-danger)]")}>
+        <p role="alert" className={cn(SLP_TYPE.meta, "mt-2 text-[var(--slurp-danger)]")}>
           {error}
         </p>
       )}

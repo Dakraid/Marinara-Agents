@@ -2,10 +2,9 @@
 
 ## 0.3.31 — 2026-10-13
 
-- Changed: the guided post ("What do you want to post?" in New post, and Stir's "Draft post") is now written by the same generator as the page's own posts, with your wish as the direction. The draft gets the bio, stage voice, brief, spice level, image directions and live events, and comes back as a title, a text and a picture of its own. Before, your wish went word for word into the picture.
-- Added: choose Public or Locked before you write. It is the composer's own audience setting and decides which guidance the draft gets.
-- Added: "Add from Slurp": a storyline of the page, a saved idea (posting the draft uses it up) and a wardrobe look for the picture. Brand deals and collabs stay.
-- Changed: one composer. A guided draft fills the normal title, text and picture fields; the separate preview and its "Edit" step are gone.
+- Changed: the guided post (New post, and Stir's "Draft post") is now written by the same generator as the page's own posts, with your wish as the direction. The draft gets the bio, stage voice, brief, spice level, image directions and live events, and comes back as a title, a text and a picture of its own. Before, your wish went word for word into the picture.
+- Changed: one composer. The picture is on top, then who sees the post, then one switch for the text: "Write it myself" or "Guided". A guided draft fills the normal title, text and picture; the separate preview and its "Edit" step are gone. A photo you add stays, and the text is written to go with it.
+- Added: "Add from Slurp" on Guided: a storyline of the page, a saved idea (posting the draft uses it up) and a wardrobe look for the picture. Brand deals and collabs stay.
 - Known limit: posting a draft written for a storyline does not move the storyline to its next chapter.
 
 ## 0.3.30 — 2026-10-12
