@@ -13,7 +13,6 @@ import { type SlpAccount } from "../../../../../shared/src/slp/slp-social.types.
 import { isDebugAgentsEnabled } from "../../../config/runtime-config.js";
 import { resolveSlurpCreatorMenu } from "../../data/settings/slp-post-guidance-storage.js";
 import { resolveSlurpEventInstruction } from "../world/slp-world-contract.js";
-import type { DB } from "../../../db/connection.js";
 import { logDebugOverride } from "../../../lib/logger.js";
 import { resolveBaseUrl } from "../../../services/generation/connection-base-url.js";
 import { clampGenerationMaxOutputTokens } from "../../../services/generation/output-token-limits.js";
@@ -31,7 +30,6 @@ import {
 import { createLLMProvider } from "../../../services/llm/provider-registry.js";
 import { createConnectionsStorage } from "../../../services/storage/connections.storage.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
-import { type SlurpAccount } from "../../modules/records/slp-storage-model.js";
 import { createCharactersStorage } from "../../../services/storage/characters.storage.js";
 import {
   NOODLER_UNTRUSTED_CONTENT_INSTRUCTION,
@@ -77,6 +75,7 @@ import {
   slurpFanVoiceForPrompt,
   slurpResolveFanType,
 } from "../../../../../shared/src/slp/slp-fan-types.js";
+import type { SlurpMessagePromptInput } from "./slp-message-prompt-input.js";
 import { SlurpMessageBudgetUnavailableError } from "./slp-message-budget-error.js";
 import { resolveSlurpLoreContext } from "../../data/host/slp-lore-context.js";
 import { slurpDmImageContexts } from "./slp-message-image-context.js";
@@ -89,7 +88,6 @@ import {
   claimSlurpModelBudget,
   slurpModelBudgetRetryAtNow,
   slurpModelWorkerAllows,
-  type SlurpModelWorkerContext,
 } from "../../base/model/slp-model-worker.js";
 import { slurpPromptContext } from "../../base/prompting/slp-prompt-blocks.js";
 import { SLURP_PERFORMED_INTIMACY } from "../../modules/creators/slp-performance.js";
@@ -109,8 +107,6 @@ import { slpWithProviderRetry } from "../../base/model/slp-provider-retry.js";
 import { slpScenesAvailable } from "../../base/host/slp-scene-host.js";
 import { slpSceneInviteAllowed } from "../../modules/messages/slp-roleplay-scene-rules.js";
 import { buildSlurpMessageDeepDetailsRecord } from "./slp-message-deep-details-record.js";
-
-type GenerationConnection = NonNullable<Awaited<ReturnType<ReturnType<typeof createConnectionsStorage>["getWithKey"]>>>;
 
 /** A DM has more room than a comment reply, but not enough to become a monologue. */
 export const SLURP_MESSAGE_CONTENT_MAX_LENGTH = 900;
@@ -271,7 +267,7 @@ export function buildSlurpMessageChat(input: {
         optional: true,
         text:
           input.recentPosts && input.recentPosts.length > 0
-            ? "Your own recent posts are supplied. If the fan refers to something you posted, answer about that post rather than in general."
+            ? "Your own recent posts are supplied. If the fan refers to something you posted, answer about that post rather than in general. You know what is in your locked posts; where fanAlreadyUnlocked is false this fan has not seen the text, so do not quote it."
             : "",
       },
       // The history window is sixteen turns. Past that the creator forgot the fan's name, their job,
@@ -441,47 +437,6 @@ export function buildSlurpMessageChat(input: {
     },
   ];
 }
-
-export type SlurpMessagePromptInput = {
-  db: DB;
-  // A `SlurpAccount`, not a bare `SlpAccount`: resolving the creator's Engine source for the
-  // schedule needs the source columns, and only the Slurp account carries them.
-  creator: SlurpAccount;
-  viewer: SlpAccount;
-  history: SlurpMessage[];
-  rapport: SlurpRapport;
-  subscribed: boolean;
-  dmPolicy: SlurpDmPolicy;
-  isRequest: boolean;
-  /** Stored conversation mood and when it was last written, so silence can heal it first. */
-  mood?: number;
-  moodUpdatedAt?: string | null;
-  /** What the creator already knows about this fan, beyond the last sixteen turns. */
-  /** The thread this reply belongs to, so its own private notes can reach only this reply. */
-  threadId?: string | null;
-  notes?: SlurpThreadNote[];
-  threadState?: SlurpThreadState;
-  creatorState?: SlurpCreatorState;
-  /** What kind of day the creator is having, already phrased. */
-  dayVibe?: string | null;
-  coolingOff?: boolean;
-  strikes?: number;
-  connection: GenerationConnection;
-  debugMode?: boolean;
-  /** Extra instruction for scheduled or otherwise specialized replies. */
-  generationGuidance?: string;
-  /** Scheduled follow-ups are background; direct replies default to present. */
-  workerContext?: SlurpModelWorkerContext;
-  /** A player pressed Force reply now: no budget setting, cap or mode may swallow that press. */
-  skipBudgetCap?: boolean;
-  /** The player is waiting on this answer: it neither checks nor spends the hourly and daily caps. */
-  playerSend?: boolean;
-  /**
-   * The availability the reply operation already paced this reply by. Recomputing it here from the
-   * schedule alone ignored an open conversation window, so an instant reply was told "you are not free".
-   */
-  availability?: Awaited<ReturnType<typeof resolveSlurpCreatorAvailability>>;
-};
 
 /**
  * Assemble everything the model is about to be shown, and stop there.
@@ -764,7 +719,7 @@ export async function generateSlurpMessageReply(input: SlurpMessagePromptInput):
   if (!protectedContent) throw new Error("Slurp direct-message generation returned no usable content.");
   const protect = (value: string, max: number) =>
     protectBoundedCreatorGeneratedText(value, disclosureMode, publicIdentity, max);
-  // Deep details keeps the answer redacted like the prompt, so a concealed Creator cannot name its source.
+  // Deep details is redacted like the prompt, so a concealed Creator cannot name its source.
   const raw = protectCreatorGeneratedIdentity(content, disclosureMode, publicIdentity) ?? "";
   return {
     content: protectedContent,
@@ -790,11 +745,20 @@ export async function generateSlurpMessageReply(input: SlurpMessagePromptInput):
     agreedCollab: pageId ? readSlurpDmCollab(generated.collab, pageId, (value) => protect(value, 200)) : undefined,
     us: usPageId ? readSlurpDmUs(generated.us, (value) => protect(value, 120)) : undefined,
     usPageId,
-    // Her pitch for a roleplay scene: shown to the player, so redacted like the reply itself.
     sceneInvite:
       sceneInvite && typeof generated.sceneInvite === "string" && generated.sceneInvite.trim()
         ? (protect(generated.sceneInvite.trim(), 600) ?? undefined)
         : undefined,
-    deepDetails: buildSlurpMessageDeepDetailsRecord({ input, support, stance, messages, options, content: raw }),
+    deepDetails: buildSlurpMessageDeepDetailsRecord({
+      input,
+      support,
+      stance,
+      messages,
+      options,
+      content: raw,
+      paidBodies: recentPosts
+        .filter((post) => post.access === "locked" && !post.unlockedByFan)
+        .map((post) => protectCreatorGeneratedIdentity(post.content, disclosureMode, publicIdentity) ?? ""),
+    }),
   };
 }

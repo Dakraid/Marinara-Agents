@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { slpDeepDetailsSeatView } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-deep-details-mask.ts";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -33,3 +34,23 @@ assert.match(
   "posts share the helper",
 );
 console.log("slurp2 message lore + locked posts: ok");
+
+// The fan seat's Deep details masks a locked body the fan has not unlocked; the Creator seat reads it all.
+{
+  const body = 'secret "set" body';
+  const record = {
+    version: 1,
+    generatedAt: "",
+    model: {},
+    messages: [{ role: "user", content: JSON.stringify({ content: body }) + `\n${body}` }],
+    rawResponse: `she said ${body}`,
+    paidBodies: [body],
+    chat: {},
+  } as never;
+  const fan = slpDeepDetailsSeatView(record, "viewer");
+  assert.ok(!JSON.stringify(fan).includes("secret"), "fan seat sees no paid body");
+  assert.ok(!("paidBodies" in fan), "the mask list never leaves the server");
+  const creator = slpDeepDetailsSeatView(record, "creator");
+  assert.match(JSON.stringify(creator), /secret/u);
+  assert.ok(!("paidBodies" in creator));
+}

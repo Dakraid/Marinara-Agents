@@ -4,6 +4,7 @@
 
 - Fixed: in a chat, a Creator could not see what was inside her own locked posts: the message prompt replaced the body with "[paid post, contents not repeated here]". She now gets the real text, and the existing locked and already-unlocked fields still say whether this fan has seen it. (#1351)
 - Fixed: lorebook entries never reached messages. A reply now gets matching entries from the recent conversation the way posts do (same setting, same Creator scoping), and they show in the message Deep details. A failed scan never fails the message. (#1351)
+- Changed: the fan's own Deep details view masks the body of a locked post that fan has not unlocked; the Creator's view shows it. (#1351)
 
 ## 0.3.33 — 2026-10-13
 
