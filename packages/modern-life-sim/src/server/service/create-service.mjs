@@ -118,6 +118,7 @@ import {
   SUPPORTED_LANGUAGES,
   createModelClient,
   normalizeLanguageName,
+  normalizeSampling,
 } from "../llm/model-client.mjs";
 import { readCharacterCard, readCharacterTraits, settingNoteFor, writeCharacterTone } from "../cast/read-card.mjs";
 import { listWorldLorebooks, loadWorldLore } from "../cast/world-lore.mjs";
@@ -2938,6 +2939,7 @@ function createService({
             cardId: cardId,
             connection = null,
             effort = "low",
+            sampling = {},
             language = DEFAULT_LANGUAGE,
             off = [],
             renamed = {},
@@ -2981,6 +2983,7 @@ function createService({
             settings: {
               connection: connection,
               effort: effort,
+              sampling: normalizeSampling(sampling).sampling,
             },
             onCall: callRecorder(null, "creating"),
           });
@@ -3111,6 +3114,10 @@ function createService({
         let persona = body.persona ?? null;
         if (body.personaId && ((persona = await engineClient.persona(body.personaId).catch(() => null)), !persona)) {
           throw httpError(400, "That persona could not be read.");
+        }
+        let samplingProblem = normalizeSampling(body.settings?.sampling ?? {}).reason;
+        if (samplingProblem) {
+          throw httpError(400, samplingProblem);
         }
         let castPicks = Array.isArray(body.cast) ? body.cast : [];
         if (castPicks.length > MAX_CAST) {
@@ -5259,9 +5266,15 @@ function createService({
     router.post(
       "/lives/:id/settings",
       route(
-        lifeRoute(async (life, req) => ({
-          settings: setLifeSettings(life, req.body ?? {}).settings,
-        })),
+        lifeRoute(async (life, req) => {
+          let result = setLifeSettings(life, req.body ?? {});
+          if (!result.ok) {
+            throw httpError(400, result.reason);
+          }
+          return {
+            settings: result.settings,
+          };
+        }),
       ),
     );
     router.post(

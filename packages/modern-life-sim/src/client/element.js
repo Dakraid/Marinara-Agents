@@ -626,6 +626,11 @@ class ModernLifeSimElement extends HTMLElement {
       if (input.dataset?.setShow) {
         return setSpoiler(input.dataset.setShow, input.value);
       }
+      if (input.dataset?.sample) {
+        return saveSetting("sampling", {
+          [input.dataset.sample]: input.value,
+        });
+      }
       if (input.dataset?.set) {
         return saveSetting(input.dataset.set, input.value);
       }
@@ -1429,6 +1434,9 @@ Type ${picked.length} to delete them.`);
       if (action === "spoil-yes") {
         const warn = S.settingsBox.warn;
         return warn ? saveRule(warn.key, warn.value, "spoilers") : undefined;
+      }
+      if (action === "sampling-reset") {
+        return saveSetting("sampling", null);
       }
       if (action === "spoil-no") {
         S.settingsBox = {};
@@ -2903,6 +2911,8 @@ ${life?.name ?? id}`);
                     draft.size = {
                       ...sizeWH(target.dataset.to),
                     };
+                  } else if (action === "draft-sampling-reset") {
+                    draft.settings.sampling = {};
                   } else if (action === "draft-portrait") {
                     draft.portraitSize = {
                       ...sizeWH(target.dataset.to, PORTRAIT_SIZES, "2:3"),
@@ -3112,6 +3122,12 @@ ${life?.name ?? id}`);
       return;
     } else if (action === "effort") {
       draft.settings.effort = target.value;
+    } else if (action === "sample") {
+      draft.settings.sampling = {
+        ...(draft.settings.sampling ?? {}),
+        [id]: target.value,
+      };
+      return;
     } else if (action === "language") {
       draft.settings.language = target.value;
       this.render();

@@ -96,7 +96,12 @@ import {
   visibleGiftTastes,
 } from "./gifts/gift-tastes.mjs";
 import { THEIR_THING_ACTIVITIES, stayOverBlockedReason } from "./visits/home-visits.mjs";
-import { REASONING_EFFORT_LEVELS, normalizeLanguageName, normalizeReasoningEffort } from "./llm/model-client.mjs";
+import {
+  REASONING_EFFORT_LEVELS,
+  normalizeLanguageName,
+  normalizeReasoningEffort,
+  normalizeSampling,
+} from "./llm/model-client.mjs";
 import { cleanTownNameForPrompt } from "./cast/read-card.mjs";
 import { characterPortrait, setFaceCrop } from "./characters/portrait-face.mjs";
 import { OFFICE_POSITIONS } from "./jobs/office-rules.mjs";
@@ -426,6 +431,7 @@ function createGame({
       connection: settings.connection ?? null,
       effort: normalizeReasoningEffort(settings.effort),
       language: normalizeLanguageName(settings.language),
+      sampling: normalizeSampling(settings.sampling ?? {}).sampling,
     },
     pairs: parseNpcPairsFromCards(pairs, {
       ids: cast.map((card) => card.id),
@@ -3939,6 +3945,17 @@ function setLifeSettings(game, input = {}, { efforts = REASONING_EFFORT_LEVELS }
       String(value ?? "")
         .trim()
         .slice(0, max);
+  if (input.sampling !== undefined) {
+    let { sampling: sampling, reason: reason } = normalizeSampling(input.sampling, settings.sampling);
+    if (reason) {
+      return {
+        ok: false,
+        reason: reason,
+        settings: game.settings,
+      };
+    }
+    settings.sampling = sampling;
+  }
   if (
     (input.connection !== undefined && (settings.connection = clip(input.connection) || null),
     input.effort !== undefined && efforts.includes(input.effort) && (settings.effort = input.effort),

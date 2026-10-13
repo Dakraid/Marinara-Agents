@@ -1116,6 +1116,31 @@ function worldLoreBox(life, lorebooks, box) {
       ${lore && !missing ? '<div class="acts"><button class="mls-btn" data-do="world-lore-pull">RE-PULL</button></div>' : ""}
     </div>`;
 }
+const SAMPLING_NUMBER_FIELDS = [
+  ["temperature", "Temperature", 0, 2, 0.05],
+  ["topP", "Top P", 0, 1, 0.01],
+  ["topK", "Top K", 0, 1e6, 1],
+  ["minP", "Min P", 0, 1, 0.01],
+  ["frequencyPenalty", "Frequency penalty", -2, 2, 0.05],
+  ["presencePenalty", "Presence penalty", -2, 2, 0.05],
+];
+const SAMPLING_CHOICE_FIELDS = [
+  ["verbosity", "Verbosity", ["low", "medium", "high"]],
+  ["serviceTier", "Service tier", ["flex", "priority"]],
+];
+// Blank means "the connection's own value"; attr(key) wires each field, resetAttr the reset button.
+function samplingFields(sampling = {}, attr, resetAttr) {
+  const value = (key) => (sampling[key] === undefined || sampling[key] === null ? "" : String(sampling[key]));
+  return `
+      <div class="mls-set-fields mls-sampling">
+        ${SAMPLING_NUMBER_FIELDS.map(([key, label, min, max, step]) => `<label class="field">${label}<input type="number" ${attr(key)} min="${min}" max="${max}" step="${step}" value="${escape(value(key))}" placeholder="connection default"></label>`).join("")}
+        ${SAMPLING_CHOICE_FIELDS.map(([key, label, choices]) => `<label class="field">${label}<select ${attr(key)}><option value="">connection default</option>${choices.map((choice) => `<option value="${choice}" ${choice === sampling[key] ? "selected" : ""}>${choice}</option>`).join("")}</select></label>`).join("")}
+        <label class="field">Answer length \xD7<input type="number" ${attr("maxTokensScale")} min="0.5" max="4" step="0.25" value="${escape(value("maxTokensScale"))}" placeholder="1"></label>
+        <label class="field wide">Stop sequences<input type="text" ${attr("stop")} value="${escape(Array.isArray(sampling.stop) ? sampling.stop.join(", ") : (sampling.stop ?? ""))}" placeholder="comma or newline separated, up to 8"></label>
+        <label class="field wide">Custom parameters (JSON)<textarea ${attr("customParameters")} rows="3" spellcheck="false" placeholder='{"seed": 7}'>${escape(typeof sampling.customParameters == "object" ? JSON.stringify(sampling.customParameters, null, 2) : (sampling.customParameters ?? ""))}</textarea></label>
+      </div>
+      <div class="row"><button ${resetAttr}>RESET TO CONNECTION DEFAULTS</button></div>`;
+}
 function modelTab(life, resources, options, box, look = null) {
   const settings = life.settings ?? {};
   if (!resources) {
@@ -1131,6 +1156,8 @@ function modelTab(life, resources, options, box, look = null) {
         <label class="field">Reasoning<select data-set="effort">${(resources.efforts ?? []).map((effort) => `<option value="${escape(effort)}" ${effort === settings.effort ? "selected" : ""}>${escape(effort)}</option>`).join("")}</select></label>
         <label class="field">Narration language<select data-set="language">${[...new Set([...(resources.languages ?? []), settings.language].filter(Boolean))].map((language) => `<option value="${escape(language)}" ${language === settings.language ? "selected" : ""}>${escape(language)}</option>`).join("")}</select></label>
       </div>
+      <h3>ADVANCED<small>sampling for this life; blank uses the connection's value</small></h3>
+      ${samplingFields(settings.sampling ?? {}, (key) => `data-sample="${key}"`, 'data-do="sampling-reset"')}
     </div>
     <div class="box">
       <h3>IMAGES ${savedMark(box, "images")}<small>every picture but the town's backgrounds, which are in TOWN LOOK</small></h3>
@@ -1158,6 +1185,7 @@ export {
   picturesBox,
   picturesWarning,
   portraitChoice,
+  samplingFields,
   settingsView,
   sizeChoice,
   sizeWH,
