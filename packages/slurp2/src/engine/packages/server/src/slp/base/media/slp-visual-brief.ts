@@ -45,11 +45,13 @@ export function slurpVisualBriefPolicyText(brief: SlurpVisualBrief): string {
   ].join("\n");
 }
 
+const NEGATED_TERM = /\b(?:no|non|not|without|never)[\s-]+[a-z]+/gu;
+
 /**
  * A cheap last-resort check for sexual escalation before text reaches an image provider. `known` is
- * everything the rewrite was handed (appearance, content policy, instructions, the draft): a word
- * the rewrite found there is carried over, not escalated. Without it a card that says "large
- * breasts" or a policy that says "explicit" rejected every rewrite of a clothed scene.
+ * the scene's own facts the rewrite was handed (the card's appearance and the draft): a word the
+ * rewrite found there is carried over, not escalated. Without it a card that says "large breasts"
+ * rejected every rewrite of a clothed scene. Limits in `known` ("no nudity") are not carried.
  */
 export function slurpVisualBriefPromptViolatesPolicy(
   brief: SlurpVisualBrief | undefined,
@@ -59,8 +61,13 @@ export function slurpVisualBriefPromptViolatesPolicy(
   if (!brief || !prompt) return false;
   // Negated terms are the brief's own limits ("no nudity, non-sexual"), not an escalation. Reading
   // them as matches rejected every rewrite that kept the level line.
-  const value = prompt.toLocaleLowerCase().replace(/\b(?:no|non|not|without|never)[\s-]+[a-z]+/gu, " ");
-  const carried = new Set(known.toLocaleLowerCase().match(/[a-z]+/gu));
+  const value = prompt.toLocaleLowerCase().replace(NEGATED_TERM, " ");
+  const carried = new Set(
+    known
+      .toLocaleLowerCase()
+      .replace(NEGATED_TERM, " ")
+      .match(/[a-z]+/gu),
+  );
   const has = (pattern: RegExp) => (value.match(new RegExp(pattern.source, "gu")) ?? []).some((w) => !carried.has(w));
   const explicit = /\b(?:explicit|pornographic|sex|sexual|intercourse|penetration|cum|clit|pussy|cock|balls)\b/u;
   const nude = /\b(?:nude|naked|topless|bottomless|lingerie|nipples?|breasts?|genitals?)\b/u;

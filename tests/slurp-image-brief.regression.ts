@@ -89,6 +89,14 @@ const capped = selectSlpImageProviderPrompt({
   rewriteAttempted: true,
 });
 assert.match(capped, /park bench at night/u);
+// A short brief after a long look in the prefix keeps its level line.
+const briefAfterLook = selectSlpImageProviderPrompt({
+  rewrittenPrompt: null,
+  rawPrompt: sceneText,
+  fallbackPrefix: `${longLook.slice(0, 500)}\nSexual level: none.`,
+  rewriteAttempted: true,
+});
+assert.match(briefAfterLook, /Sexual level: none/u);
 assert.ok(capped.length <= 1_500);
 
 // A word the rewrite was handed (card look, content policy) is carried over, not an escalation.
@@ -104,6 +112,11 @@ assert.equal(
   false,
 );
 assert.equal(slurpVisualBriefPromptViolatesPolicy(clothed, "She is naked on a bench", "large breasts"), true);
+// Limits are not permissions: "not nude" in the handed text does not allow "nude" in the rewrite.
+assert.equal(
+  slurpVisualBriefPromptViolatesPolicy(clothed, "A sexual pose, nude", "Keep it non-sexual, not nude"),
+  true,
+);
 
 // The rewrite runs on Slurp's own generation connection, with reasoning headroom.
 const rewrite = slurp2Source(

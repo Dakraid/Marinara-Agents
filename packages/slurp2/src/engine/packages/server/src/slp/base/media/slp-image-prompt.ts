@@ -22,6 +22,8 @@ const MIN_GUIDANCE_BLOCK_LENGTH = 40;
 export const MAX_FALLBACK_IMAGE_PROMPT_LENGTH = 1_500;
 
 /** Cut to the ceiling on a sentence, then a word boundary — a mid-word cut reads as a typo. */
+const squash = (value: string) => value.replace(/\s+/gu, " ");
+
 export function capFallbackImagePrompt(value: string, max = MAX_FALLBACK_IMAGE_PROMPT_LENGTH): string {
   if (value.length <= max) return value;
   const head = value.slice(0, max);
@@ -466,7 +468,7 @@ export function selectSlpImageProviderPrompt(input: {
   const fallback = (reason: string) => {
     input.onFallback?.(reason);
     const prefix = input.fallbackPrefix?.trim() ?? "";
-    const full = [prefix && !input.rawPrompt.includes(prefix) ? prefix : "", input.rawPrompt]
+    const full = [prefix && !squash(input.rawPrompt).includes(squash(prefix)) ? prefix : "", input.rawPrompt]
       .filter(Boolean)
       .join("\n\n");
     if (full.length <= MAX_FALLBACK_IMAGE_PROMPT_LENGTH || (!prefix && !input.fallbackScene)) {
@@ -474,7 +476,7 @@ export function selectSlpImageProviderPrompt(input: {
     }
     // Over the cap a long look led and used all of it, so the picture was an appearance and no
     // scene. The look keeps a bounded share and the scene gets the rest.
-    const head = capFallbackImagePrompt(prefix, 500);
+    const head = capFallbackImagePrompt(prefix, 900);
     const scene = capFallbackImagePrompt(
       input.fallbackScene?.trim() || input.rawPrompt,
       MAX_FALLBACK_IMAGE_PROMPT_LENGTH - head.length - 2,

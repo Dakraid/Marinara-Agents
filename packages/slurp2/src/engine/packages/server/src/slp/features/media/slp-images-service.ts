@@ -552,7 +552,7 @@ async function generateCreatorPostImageRun(
         imageDefaults,
       })
     : null;
-  const known = [rawRewriteInput, characterContext, imagePromptInstructions, styleGuidance].join("\n");
+  const known = [rawRewriteInput, characterDescription].join("\n");
   const rewriteViolatesPolicy = slurpVisualBriefPromptViolatesPolicy(input.visualBrief, rewrittenPrompt, known);
   const acceptedRewrittenPrompt = rewriteViolatesPolicy ? null : compiledRewrittenPrompt?.prompt || rewrittenPrompt;
   let usedRewrite = Boolean(acceptedRewrittenPrompt);
