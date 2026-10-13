@@ -512,6 +512,7 @@ async function generateCreatorPostImageRun(
   // Slurp's own viewpoint phrase for this picture (PERSPECTIVE-RESEARCH.md): the rewrite keeps it, the
   // device filter never cuts it, and the image model gets it in its own words below.
   const viewpoint = slurpViewpointIn(input.visualBrief?.camera ?? "") ?? slurpViewpointIn(input.draftPrompt);
+  let rewriteFailure: string | null = null;
   const rewrittenPrompt = rewriteAttempted
     ? await rewriteSlpImagePrompt({
         db: input.db,
@@ -527,6 +528,9 @@ async function generateCreatorPostImageRun(
         budget: input.playerAsked ? undefined : input.settings.modelBudget,
         onBudgetSkip: () => {
           rewriteAttempted = false;
+        },
+        onFailure: (reason) => {
+          rewriteFailure = reason;
         },
         onRequest: ({ messages, ...model }) => {
           run.rewrite.model = model;
@@ -548,9 +552,8 @@ async function generateCreatorPostImageRun(
         imageDefaults,
       })
     : null;
-  const rewriteViolatesPolicy = Boolean(
-    input.visualBrief && rewrittenPrompt && slurpVisualBriefPromptViolatesPolicy(input.visualBrief, rewrittenPrompt),
-  );
+  const known = [rawRewriteInput, characterDescription].join("\n");
+  const rewriteViolatesPolicy = slurpVisualBriefPromptViolatesPolicy(input.visualBrief, rewrittenPrompt, known);
   const acceptedRewrittenPrompt = rewriteViolatesPolicy ? null : compiledRewrittenPrompt?.prompt || rewrittenPrompt;
   let usedRewrite = Boolean(acceptedRewrittenPrompt);
   if (rewriteAttempted) {
@@ -565,11 +568,11 @@ async function generateCreatorPostImageRun(
   const finalPromptBase = redactIdentity(
     selectSlpImageProviderPrompt({
       rewrittenPrompt: acceptedRewrittenPrompt,
-      // The rendered template already holds the draft, the look, and the image habits. A prefix of
-      // the full card appearance plus the typed brief used to go first and push the scene past the
-      // length cap, so the image model received an appearance paragraph and no picture.
       rawPrompt: rawProviderPrompt,
+      fallbackPrefix: redactIdentity(stripAppearanceLabel(characterDescription)),
+      fallbackScene: rawRewriteInput,
       rewriteAttempted,
+      rewriteFailure: rewriteViolatesPolicy ? "the rewrite broke the scene's content level" : rewriteFailure,
       onFallback: (reason) => {
         usedRewrite = false;
         if (run.rewrite.status === "accepted") run.rewrite = { ...run.rewrite, status: "rejected", reason };

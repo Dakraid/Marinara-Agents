@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.28";
+export const SLURP2_VERSION = "0.3.38";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -12,6 +12,77 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.38",
+    date: "2026-10-13",
+    notes: [
+      "A creator whose card has image tags switched on gets a button that uses those tags as her appearance for pictures.",
+    ],
+  },
+  {
+    version: "0.3.37",
+    date: "2026-10-13",
+    notes: [
+      "With Claude (Subscription) on Marinara newer than 2.5.0, Slurp no longer sends your account email or computer details to the model.",
+    ],
+  },
+  {
+    version: "0.3.36",
+    date: "2026-10-13",
+    notes: [
+      "A creator's bio and stage voice now steer what she posts about, so a hobby in her bio shows up in her feed.",
+    ],
+  },
+  {
+    version: "0.3.35",
+    date: "2026-10-13",
+    notes: ["Adding a creator now lets you decide, up front, whether the picture model already knows the character."],
+  },
+  {
+    version: "0.3.34",
+    date: "2026-10-13",
+    notes: [
+      "In chat, a creator now remembers what is inside her own locked posts, and your lorebook entries reach her replies.",
+    ],
+  },
+  {
+    version: "0.3.33",
+    date: "2026-10-13",
+    notes: [
+      "Pictures and helpers now respect the max tokens you set on your connection, so thinking models no longer run dry before they answer.",
+    ],
+  },
+  {
+    version: "0.3.32",
+    date: "2026-10-13",
+    notes: [
+      "A long look on a page no longer pushes the scene out of its picture, and a look's own words no longer get a picture's wording thrown away.",
+    ],
+  },
+  {
+    version: "0.3.31",
+    date: "2026-10-13",
+    notes: [
+      "New post has one switch: “Write it myself” or “Guided”. Guided writes a real post for the page: title, text and a picture of its own, in the page's voice.",
+      "Add your own photo on top and Guided writes the text to go with it. You can also add a storyline, a saved idea or a wardrobe look from Slurp.",
+      "The draft lands straight in the post, where you can change anything before you post.",
+    ],
+  },
+  {
+    version: "0.3.30",
+    date: "2026-10-12",
+    notes: [
+      "Write, Improve and the guided post now sound like the Creator even when their identity is hidden or hinted. Their real name still stays out.",
+      "They also read the page's bio and stage voice, the way a normal post does.",
+    ],
+  },
+  {
+    version: "0.3.29",
+    date: "2026-10-12",
+    notes: [
+      "When a picture's description can't be polished, the server log now names the reason, so connection trouble is easier to spot.",
+    ],
+  },
   {
     version: "0.3.28",
     date: "2026-10-12",
@@ -710,56 +781,6 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
     version: "0.2.2",
     date: "2026-09-21",
     notes: ["Every persona now sees every Creator."],
-  },
-  {
-    version: "0.2.1",
-    date: "2026-09-21",
-    notes: [
-      "Posts never repeat private things from your messages.",
-      "Teasers and everyday posts stay short; behind-the-scenes posts can run long.",
-      "Stories can be thank-yous and requests too.",
-    ],
-  },
-  {
-    version: "0.2.0",
-    date: "2026-09-21",
-    notes: [
-      "Creators plan their posts: teasers, photo sets of up to three pictures and Stories.",
-      "Fan requests get answered, and Creators keep their promises.",
-      "Creators remember what they said and did, and what fans share in private stays private.",
-    ],
-  },
-  {
-    version: "0.1.3",
-    date: "2026-09-20",
-    notes: ["Behind-the-scenes cleanup. Everything works as before."],
-  },
-  {
-    version: "0.1.2",
-    date: "2026-09-19",
-    notes: ["Creator filters, profile expansion and settings tabs respond again."],
-  },
-  {
-    version: "0.1.1",
-    date: "2026-09-19",
-    notes: [
-      "SwarmUI pictures work again when you do not use a custom workflow.",
-      "Fixed a wording slip in the setup wizard.",
-    ],
-  },
-  {
-    version: "0.1.0",
-    date: "2026-09-19",
-    notes: ["Behind-the-scenes cleanup. Everything works as before."],
-  },
-  {
-    version: "0.0.22",
-    date: "2026-09-17",
-    notes: [
-      "Invite your characters into the audience: they comment, follow, subscribe and tip.",
-      "New picture Stories, message actions and a New Chat picker.",
-      "New limits keep costs on your AI connection in check.",
-    ],
   },
 ];
 

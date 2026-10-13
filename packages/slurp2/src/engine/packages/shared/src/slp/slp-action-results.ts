@@ -18,7 +18,7 @@ export type SlpActionResult = {
   "list-creators": { creators: { id: string; name: string; handle: string }[] };
   "write-post": unknown;
   /** `image` is null when the picture could not be drawn; `imageError` says why. */
-  "draft-post": { text: string; image: string | null; imageError: string | null };
+  "draft-post": { title: string; text: string; image: string | null; imageError: string | null };
   "list-world": SlpStirWorld;
   "suggest-collab": { collabId: string };
   "push-collab": { collabId: string };

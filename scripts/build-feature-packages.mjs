@@ -178,9 +178,19 @@ const conversationCallsOwnedSourcePaths = [
   "packages/client/src/lib/call-mic-segmenter.ts",
   "packages/client/src/lib/call-speech-queue.ts",
   "packages/server/src/routes/conversation-calls.routes.ts",
+  "packages/server/src/services/conversation/call-command.ts",
   "packages/server/src/services/conversation/call-transcription.ts",
   "packages/server/src/services/conversation/call-upload.ts",
+  // Replaces the vendored host shim, which rang nothing when registered as the [call] service.
+  "packages/server/src/services/generation/conversation-call-command-runtime.ts",
 ];
+// Noodle, Slurp and Calls bundle the Engine's Claude (Subscription) provider, and the vendored copy is frozen.
+// They share this package-owned overlay of it and ship the Claude Code plugin it loads beside server.mjs.
+const claudeSubscriptionOverlayRoot = join(repoRoot, "sources/claude-subscription-overlay");
+const claudeSubscriptionOverlayPaths = ["packages/server/src/services/llm/providers/claude-subscription.provider.ts"];
+const claudeCodePluginPaths = [".claude-plugin/plugin.json", "hooks/hooks.json", "hooks/register.mjs"].map(
+  (path) => `claude-code-plugin/${path}`,
+);
 // Release builds must bundle the current source; runtime reuse is for explicit non-release verification builds.
 const releaseBuild = process.env.MARINARA_RELEASE_BUILD !== "0";
 const reuseExistingRuntime = !releaseBuild && process.env.MARINARA_REUSE_FEATURE_RUNTIME === "1";
@@ -211,6 +221,8 @@ async function prepareFeatureBuildRoot(feature) {
     }
     const buildRoot = await mkdtemp(join(tmpdir(), `marinara-${feature.id}-source-`));
     await cp(sourceRoot, buildRoot, { recursive: true, force: true });
+    if (feature.claudeSubscription)
+      await cp(claudeSubscriptionOverlayRoot, buildRoot, { recursive: true, force: true });
     await cp(feature.packageSourceRoot, buildRoot, { recursive: true, force: true });
     return {
       buildRoot,
@@ -299,6 +311,13 @@ async function capturePackageSources(metafilePath, buildRoot, excludedPaths) {
   }
 }
 
+/** Owned paths stay out of sources/engine; so does the shared Claude (Subscription) overlay. */
+function ownedCapturePaths(feature) {
+  return feature.claudeSubscription
+    ? [...feature.ownedSourcePaths, ...claudeSubscriptionOverlayPaths]
+    : feature.ownedSourcePaths;
+}
+
 async function removeOwnedSourceSnapshots(excludedPaths) {
   for (const path of excludedPaths) {
     await rm(join(sourcesRoot, path), { recursive: true, force: true });
@@ -308,7 +327,7 @@ async function removeOwnedSourceSnapshots(excludedPaths) {
 const features = [
   {
     id: "noodle",
-    version: "1.5.5",
+    version: "1.5.6",
     minEngineVersion: "2.4.6",
     capabilityApi: { major: 1, minor: 35 },
     builtAgainst: { engineVersion: "2.4.6", engineCommit: "2f5c8e314f8583cc274b488cfd309a2bc2a214d3" },
@@ -353,6 +372,7 @@ const features = [
     clientImport: "packages/client/src/noodle-package-entry.tsx",
     packageSourceRoot: noodleSourceRoot,
     ownedSourcePaths: noodleOwnedSourcePaths,
+    claudeSubscription: true,
     libraryHidden: true,
     assetPaths: ["noodle-klusek.png"],
     contributions: {
@@ -388,7 +408,7 @@ const features = [
   },
   {
     id: "slurp2",
-    version: "0.3.28",
+    version: "0.3.38",
     minEngineVersion: "2.4.6",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Slurp",
@@ -442,6 +462,7 @@ const features = [
     clientImport: "packages/client/src/slp/slp-client-entry.tsx",
     packageSourceRoot: slurp2SourceRoot,
     ownedSourcePaths: slurp2OwnedSourcePaths,
+    claudeSubscription: true,
     capabilityApi: { major: 1, minor: 66 },
     builtAgainst: {
       engineVersion: "2.4.6",
@@ -466,7 +487,7 @@ const features = [
   },
   {
     id: "long-term-memory",
-    version: "1.4.29",
+    version: "1.4.31",
     minEngineVersion: "2.4.1",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Long-Term Memory",
@@ -491,7 +512,7 @@ const features = [
   },
   {
     id: "memory-nag",
-    version: "1.1.3",
+    version: "1.2.0",
     minEngineVersion: "2.4.4",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Memory Nag",
@@ -663,7 +684,7 @@ const features = [
   {
     id: "conversation-calls",
     name: "Calls",
-    version: "1.1.1",
+    version: "1.1.4",
     minEngineVersion: "2.4.1",
     description: "Adds live audio and video calls with Conversation characters.",
     kind: ["agent", "conversation-calls"],
@@ -674,6 +695,7 @@ const features = [
     prefix: "/api/conversation-calls",
     packageSourceRoot: conversationCallsSourceRoot,
     ownedSourcePaths: conversationCallsOwnedSourcePaths,
+    claudeSubscription: true,
   },
   ...[
     ["uno", "UNO", "Play UNO with Conversation characters.", "Uno", "/uno", ["uno"], "Group card game"],
@@ -933,7 +955,7 @@ export async function selfCheck() {
       throw new Error(result.stderr || result.stdout || result.error?.message || `esbuild failed for ${feature.id}`);
     }
     if (feature.ownedSourcePaths?.length) {
-      await capturePackageSources(metafile, prepared.buildRoot, feature.ownedSourcePaths);
+      await capturePackageSources(metafile, prepared.buildRoot, ownedCapturePaths(feature));
       if (feature.id === "slurp2") {
         await removeOwnedSourceSnapshots([
           "packages/client/src/localization/locales",
@@ -1798,7 +1820,7 @@ if (!customElements.get(${JSON.stringify(tag)})) customElements.define(${JSON.st
     if (result.status !== 0)
       throw new Error(result.stderr || result.stdout || `client esbuild failed for ${feature.id}`);
     if (feature.ownedSourcePaths?.length) {
-      await capturePackageSources(metafile, prepared.buildRoot, feature.ownedSourcePaths);
+      await capturePackageSources(metafile, prepared.buildRoot, ownedCapturePaths(feature));
     } else {
       await captureEngineSources(
         metafile,
@@ -1883,8 +1905,17 @@ for (const feature of selectedFeatures) {
     throw new Error(`Missing package-owned client source for ${feature.id}`);
   }
   const clientBuffer = clientPath ? await readFile(clientPath) : null;
+  // The overlay provider finds this plugin beside server.mjs, so each package carries its own copy.
+  const pluginDir = join(sourceDir, "claude-code-plugin");
+  if (feature.claudeSubscription) {
+    await rm(pluginDir, { recursive: true, force: true });
+    await cp(join(claudeSubscriptionOverlayRoot, "packages/server/src/assets/claude-code-plugin"), pluginDir, {
+      recursive: true,
+    });
+  }
+  const assetPaths = [...(feature.assetPaths ?? []), ...(feature.claudeSubscription ? claudeCodePluginPaths : [])];
   const assetPayloads = await Promise.all(
-    (feature.assetPaths ?? []).map(async (assetPath) => {
+    assetPaths.map(async (assetPath) => {
       const assetFile = resolve(sourceDir, assetPath);
       if (assetFile !== sourceDir && !assetFile.startsWith(`${sourceDir}${sep}`)) {
         throw new Error(`Unsafe package asset path for ${feature.id}: ${assetPath}`);

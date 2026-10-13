@@ -174,7 +174,7 @@
         "schemaVersion": 1,
         "id": "conversation-calls",
         "name": "Calls",
-        "version": "1.1.1",
+        "version": "1.1.4",
         "description": "Adds live audio and video calls with Conversation characters. Add as both a Command and an Agent in Chat Settings → Agents → Commands/Calls for Conversation mode.",
         "engine": {
           "min": "2.4.1",
@@ -204,13 +204,28 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "9ac2502ecf6ae1f9abc1fec61e771dc33a7a9f6e80de3297398eb9e8548d7137",
-            "bytes": 2296109
+            "sha256": "b0ab0c23ac4fa3d5899338d809bb5b15ba543fff275d5d91f45adcbf2d1dc43a",
+            "bytes": 2397304
           },
           {
             "path": "client.js",
-            "sha256": "716f54a255a85de096c2c66f0939ebc115f9a399b17b70f4e59912e4ee798677",
-            "bytes": 1051680
+            "sha256": "d825148f64886b55dcb0353f6a67e2b23918a35b533569531220853d0fd75cd5",
+            "bytes": 1053246
+          },
+          {
+            "path": "claude-code-plugin/.claude-plugin/plugin.json",
+            "sha256": "9caabe0dc95c7e0d825533719ae3a84cccba625277ec9e39dfd69fae18880fd3",
+            "bytes": 226
+          },
+          {
+            "path": "claude-code-plugin/hooks/hooks.json",
+            "sha256": "1c169616134dd0e6b5effb616a5dd20934f0f968579e316260568e2130d9d67a",
+            "bytes": 91
+          },
+          {
+            "path": "claude-code-plugin/hooks/register.mjs",
+            "sha256": "170f85d7b4e6c96dd0ed3cca9caeb2d39e0487fabe7f40274d5e6405acd6a1af",
+            "bytes": 504
           }
         ],
         "permissions": [
@@ -227,9 +242,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/conversation-calls.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/conversation-calls-1.1.1.zip",
-        "sha256": "fa0eceb8e3d70ea7b22429ea6a24a5236d3fc1415c139a683599024090d0f1e2",
-        "bytes": 3349913
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/conversation-calls-1.1.4.zip",
+        "sha256": "abb4c4a4511552da7cdec0685380c76096d99a13c1a2b39f574f1fcaad0ef733",
+        "bytes": 3454475
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#conversation-calls"
     },
@@ -2518,7 +2533,7 @@
         },
         "id": "long-term-memory",
         "name": "Long-Term Memory",
-        "version": "1.4.29",
+        "version": "1.4.31",
         "description": "Remembers important things from your chat summaries, characters, and lorebooks, and brings them back when they matter. Enable it per chat from Chat Settings → Agents → Long-Term Memory. In Roleplay and Game, you can also add it from Chat Settings → Agents → Misc Agents.",
         "engine": {
           "min": "2.4.1",
@@ -2550,13 +2565,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "ba123963bec02b84997356e39a10dce0f7f354076906b78a4cfddbb47829d368",
-            "bytes": 466725
+            "sha256": "1ff259cd4a4f5c37521292cc643bfff1763f7acece7c758a134d9a89ebd6aefa",
+            "bytes": 467574
           },
           {
             "path": "client.js",
-            "sha256": "3cb5bfa13781f08f49e3f8ffc0e536986e7221457fae425f37a04bb9b4a89cb3",
-            "bytes": 1014769
+            "sha256": "0f0b4514222d3288b94d418e1045fc4720fbe14bbeea37005a037e6f3fc45bbe",
+            "bytes": 1014939
           }
         ],
         "permissions": [
@@ -2572,9 +2587,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/long-term-memory.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/long-term-memory-1.4.29.zip",
-        "sha256": "595b7371e955bc710b43aac5b63af36f04855f52248cc406afb009f336ffdc9a",
-        "bytes": 1483994
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/long-term-memory-1.4.31.zip",
+        "sha256": "617718b9b9f6a4748b1d02899f793027b28c56acec946a252e11e01fd412b0e4",
+        "bytes": 1485013
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#long-term-memory"
     },
@@ -2675,7 +2690,7 @@
         },
         "id": "memory-nag",
         "name": "Memory Nag",
-        "version": "1.1.3",
+        "version": "1.2.0",
         "description": "Remembers loose ends from your roleplay, like promises and open questions, and reminds the AI when they matter. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode. Once active, configure it in its standalone Memory Nag section.",
         "engine": {
           "min": "2.4.4",
@@ -2704,8 +2719,8 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "c640f5855a0bd534de7e85ddbf4eaf86e3fef956d4772e2d80cb7d404460db25",
-            "bytes": 23750
+            "sha256": "6a986a58fa2e2dcb35d73211b838719e979644a8a2e99a53a6d313517a438aa5",
+            "bytes": 23766
           },
           {
             "path": "client.js",
@@ -2726,9 +2741,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/memory-nag.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/memory-nag-1.1.3.zip",
-        "sha256": "6ff3c43144b6ca6802912812ab8547f35d12b2e0a9542b10808f32d5aca8fb7b",
-        "bytes": 430713
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/memory-nag-1.2.0.zip",
+        "sha256": "4defc083fe1fd1ce86a893121e98b4995e4b273d475ab0c59134727936dff028",
+        "bytes": 430729
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#memory-nag"
     },
@@ -2829,7 +2844,7 @@
         },
         "id": "noodle",
         "name": "Noodle",
-        "version": "1.5.5",
+        "version": "1.5.6",
         "description": "A pretend social network where your characters post, share photos, and talk about your chats. Install it, restart Marinara Engine when prompted, then open Home → Noodle.",
         "localizations": {
           "de": {
@@ -2912,18 +2927,33 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "eb536b9b51ac18a3c23d0a59c392cde205e65c42135837157efcf2b6a9358ecd",
-            "bytes": 2207310
+            "sha256": "622a3997b5c0252aec5421763839de8f610286a1eda147cba199aa9930ebde67",
+            "bytes": 2307233
           },
           {
             "path": "client.js",
-            "sha256": "438cef8c86893577c2796ddf0ee32c110f242b3964efc8f618342584ec99ad8a",
-            "bytes": 2756656
+            "sha256": "00b7ee01f41295ee8138ebe7d25d26de4b3d4b3db2ab967a8c5e60eee79c6c9a",
+            "bytes": 2760153
           },
           {
             "path": "noodle-klusek.png",
             "sha256": "003236ad2b83c5eb44731a48048c86b07aa8c1f9c411f881c15f7d4af3c68212",
             "bytes": 28325
+          },
+          {
+            "path": "claude-code-plugin/.claude-plugin/plugin.json",
+            "sha256": "9caabe0dc95c7e0d825533719ae3a84cccba625277ec9e39dfd69fae18880fd3",
+            "bytes": 226
+          },
+          {
+            "path": "claude-code-plugin/hooks/hooks.json",
+            "sha256": "1c169616134dd0e6b5effb616a5dd20934f0f968579e316260568e2130d9d67a",
+            "bytes": 91
+          },
+          {
+            "path": "claude-code-plugin/hooks/register.mjs",
+            "sha256": "170f85d7b4e6c96dd0ed3cca9caeb2d39e0487fabe7f40274d5e6405acd6a1af",
+            "bytes": 504
           }
         ],
         "permissions": [
@@ -2939,9 +2969,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/noodle.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/noodle-1.5.5.zip",
-        "sha256": "a093ae8ff901ac0a71a4afb333198781704cfc67169ee3ddc90b63563f3ae1e8",
-        "bytes": 4996712
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/noodle-1.5.6.zip",
+        "sha256": "e737df39c6c5c54a95a5a33dfaaf8767d1d81e80bdc4816a1e44c101e90185e5",
+        "bytes": 5101933
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/noodle/README.md"
     },
@@ -3369,7 +3399,7 @@
         },
         "id": "relationship-tracker",
         "name": "Relationship Tracker",
-        "version": "0.6.4",
+        "version": "0.7.0",
         "description": "Tracks how the characters and your persona feel about each other. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode.",
         "engine": {
           "min": "2.4.4",
@@ -3402,8 +3432,8 @@
           },
           {
             "path": "state.mjs",
-            "sha256": "597023170e26cdeb1e27ab1d5021c5f7d69d5610d42ff38691ce965ad5f21c1f",
-            "bytes": 27236
+            "sha256": "1e9dd277e7f6a2028f787023ff15fa571a2eee83270e76b5614a5829440f6965",
+            "bytes": 27619
           },
           {
             "path": "prompt.mjs",
@@ -3422,8 +3452,8 @@
           },
           {
             "path": "history.mjs",
-            "sha256": "eff43a4a279f159d36f7a01bdc0f5b6fb53a9db8f45dabc2c0d481f7307c4c0a",
-            "bytes": 14777
+            "sha256": "29aecc822dcb07804e530b34604317584ea0fd728b6a0e6e4f795be3be4cdb80",
+            "bytes": 14742
           },
           {
             "path": "persona-state.mjs",
@@ -3469,9 +3499,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/relationship-tracker.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/relationship-tracker-0.6.4.zip",
-        "sha256": "2b434aa0e34e744a221f70ff9bbe22570865f2650f3118e021d1142492101037",
-        "bytes": 206865
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/relationship-tracker-0.7.0.zip",
+        "sha256": "02bbae6a79b8f9df9e39283a3fe09145295abbad6d70174e73cc71408fe6c871",
+        "bytes": 207213
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/relationship-tracker/README.md"
     },
@@ -3557,7 +3587,7 @@
         },
         "id": "slurp2",
         "name": "Slurp",
-        "version": "0.3.28",
+        "version": "0.3.38",
         "description": "A private social app for your characters. Turn characters and personas into Creators, post public or locked photos, and watch a simulated audience follow, subscribe, unlock, comment, and message them. By default, it is tuned for an adult experience. Install it, restart Marinara Engine when prompted, then open Home → Slurp.",
         "localizations": {
           "de": {
@@ -3624,13 +3654,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "8d3befff5588430c800fe35cef739e88da15c111064c63ad676a3aa25ae945ee",
-            "bytes": 3670539
+            "sha256": "01a636b72d43e9b0141fded3c81ce4aedae619ffdef90562b1887f97d4b76890",
+            "bytes": 3679990
           },
           {
             "path": "client.js",
-            "sha256": "1dafb394cc2f0acd9247b1e81289763f671587ed5cd0b770fb07780510b3d464",
-            "bytes": 4855637
+            "sha256": "1c4635eea9d4a202be665e7dc11b0235798002ab91a0189be05457c139952080",
+            "bytes": 4862983
           },
           {
             "path": "slurp2-logo.png",
@@ -3644,18 +3674,33 @@
           },
           {
             "path": "src/engine/packages/client/src/slp/locales/de.json",
-            "sha256": "9cdd3915ea57211d64dcf6cfa1e40e7740245344af7128d4e9bd96cfd6c4a6dd",
-            "bytes": 215468
+            "sha256": "81e4991741e74dd49a9409efea06a877362f8f7f5cac223ed872182e6b5d9aff",
+            "bytes": 215701
           },
           {
             "path": "src/engine/packages/client/src/slp/locales/ko.json",
-            "sha256": "b437fa576fc84b44d7aa10d22251a8e6b21aa1968b5312a6529f6e536d72f0a0",
-            "bytes": 311689
+            "sha256": "8609d3d00f005a8636e752022246c2806f0e25dbfa3ff4ee3c4fe78c1f425e22",
+            "bytes": 311908
           },
           {
             "path": "src/engine/packages/client/src/slp/locales/pl.json",
-            "sha256": "9d746a64e4b5d5caf116aed0022b301add3ee0eaed7e61e01908d8acbb4f68ec",
-            "bytes": 217233
+            "sha256": "e8992566d3dd32176e6746ed0cff9ab674d77254347a50d7d21845bb110a3a19",
+            "bytes": 217440
+          },
+          {
+            "path": "claude-code-plugin/.claude-plugin/plugin.json",
+            "sha256": "9caabe0dc95c7e0d825533719ae3a84cccba625277ec9e39dfd69fae18880fd3",
+            "bytes": 226
+          },
+          {
+            "path": "claude-code-plugin/hooks/hooks.json",
+            "sha256": "1c169616134dd0e6b5effb616a5dd20934f0f968579e316260568e2130d9d67a",
+            "bytes": 91
+          },
+          {
+            "path": "claude-code-plugin/hooks/register.mjs",
+            "sha256": "170f85d7b4e6c96dd0ed3cca9caeb2d39e0487fabe7f40274d5e6405acd6a1af",
+            "bytes": 504
           }
         ],
         "permissions": [
@@ -3673,9 +3718,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/slurp2.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/slurp2-0.3.28.zip",
-        "sha256": "2e54ca1bf79a22c45ef68ac06c7a363db65df53d88bb702ffcc866086291d1a7",
-        "bytes": 9428777
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/slurp2-0.3.38.zip",
+        "sha256": "e966791a4b778845157955d20fab6fd9fb3255e84e1dfc5ba3f38f2ddd5eeffd",
+        "bytes": 9448034
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/slurp2/README.md"
     },
