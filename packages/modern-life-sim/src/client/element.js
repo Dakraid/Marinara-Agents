@@ -1,6 +1,6 @@
 // DOM morph helpers, style mounting, custom element class and define
 import { STYLES } from "./styles.js";
-import { MAP, brokenView, cropBox, cropView, escape } from "./views/common.js";
+import { MAP, brokenView, checkedInto, cropBox, cropView, escape } from "./views/common.js";
 import { firstDayCard, titleView } from "./views/title.js";
 import { mapView, phoneButton } from "./views/town-map.js";
 import {
@@ -607,6 +607,10 @@ class ModernLifeSimElement extends HTMLElement {
         return setJobFor(input.dataset.jobTitleFor, "home", input.value);
       }
       if (input.dataset?.orientFor) {
+        if (input.dataset.orient === "into") {
+          const into = checkedInto(input);
+          return into.length ? setOrientation(input.dataset.orientFor, "into", into) : this.render();
+        }
         return setOrientation(input.dataset.orientFor, input.dataset.orient, input.value);
       }
       if (input.dataset?.trait) {
@@ -3003,11 +3007,15 @@ ${life?.name ?? id}`);
       this.render();
       return;
     } else if (action === "cast-into") {
-      draft.cast[id] = {
-        ...draft.cast[id],
-        into: target.value,
-        intoBy: "you",
-      };
+      const into = checkedInto(target);
+      // Someone is always into someone: unticking the last chip just redraws it
+      draft.cast[id] = into.length
+        ? {
+            ...draft.cast[id],
+            into: into,
+            intoBy: "you",
+          }
+        : draft.cast[id];
       this.render();
       return;
     } else if (action === "bday-season" || action === "bday-day") {

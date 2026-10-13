@@ -77,6 +77,7 @@ function describePersonaAsSeen(state, viewerId = null) {
       {
         female: "A woman",
         male: "A man",
+        futanari: "A woman",
       }[state.gender] ?? "",
     richLook = richLookOf(state),
     metViewer = !!viewerId && !!state.bonds?.[viewerId] && state.bonds[viewerId].met !== false,

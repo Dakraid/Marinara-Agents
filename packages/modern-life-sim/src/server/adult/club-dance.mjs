@@ -60,7 +60,9 @@ function clubDancersOnTonight(state, adult) {
   }
   let dayKey = String(clubNightDayIndex(state.minutes)),
     pickDancer = (gender) => {
-      let staff = clubStaffList(adult).filter((dancer) => dancer.gender === gender);
+      let staff = clubStaffList(adult).filter(
+        (dancer) => dancer.gender === gender || (gender === "female" && dancer.gender === "futanari"),
+      );
       return staff.length
         ? staff[Math.floor(seededRandom(state.seed, "club-staff", gender, dayKey) * staff.length)]
         : null;

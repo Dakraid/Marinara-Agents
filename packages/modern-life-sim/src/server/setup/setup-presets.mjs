@@ -1,5 +1,6 @@
 // Saved setup presets: sanitize, name, summarize, reconcile missing refs, build from a life
 import { SEASON_NAMES, clockFromMinutes } from "../time/clock.mjs";
+import { normalizeAttraction } from "../orientation/orientation.mjs";
 import { normalizeStartingRelation } from "../relationships/starting-relations.mjs";
 import { moduleById } from "../modules/module-registry.mjs";
 
@@ -270,7 +271,7 @@ function setupPresetFromLife(life, { gridOf = null } = {}) {
               genderBy: "you",
             }
           : {}),
-        into: character.into ?? "both",
+        into: normalizeAttraction(character.into),
         intoBy: "you",
         ...(character.birthday
           ? {

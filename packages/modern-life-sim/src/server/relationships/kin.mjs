@@ -14,7 +14,7 @@ function kinWordFor(kind, gender = null) {
     cousins: ["cousin", "cousin", "cousin"],
     relatives: ["relative", "relative", "relative"],
   }[kind];
-  return words ? words[gender === "female" ? 0 : gender === "male" ? 1 : 2] : "";
+  return words ? words[gender === "female" || gender === "futanari" ? 0 : gender === "male" ? 1 : 2] : "";
 }
 function kinOrRivalRelationNote({ kin = null, rival = false, gender = null } = {}) {
   return kin

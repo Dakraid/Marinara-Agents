@@ -249,7 +249,7 @@ import { rivalsForYou } from "./relationships/rivals.mjs";
 import { sawIt, takenBy } from "./social/witnesses.mjs";
 import { knownName, networkSheet } from "./relationships/network-sheet.mjs";
 import { APPROACH_STAYS, approachDue, knobsOf } from "./romance/romantic-acts.mjs";
-import { genderOf, intoTick, intoView, learnInto, setOrientation } from "./romance/romanceability.mjs";
+import { genderOf, intoTick, intoView, learnInto, pictureSexOf, setOrientation } from "./romance/romanceability.mjs";
 import {
   agreedFor,
   heardOf,
@@ -3822,7 +3822,9 @@ function figuresOf(game, ids, { you = true } = {}) {
           }
         : figure;
     });
-  return you ? [yourFigure, ...figures] : figures;
+  return (you ? [yourFigure, ...figures] : figures).map((figure) =>
+    figure?.sex ? { ...figure, sex: pictureSexOf(game, figure.sex) } : figure,
+  );
 }
 function picturePeople(game, ids, { you = true } = {}) {
   let figures = figuresOf(game, ids, {
@@ -3833,7 +3835,7 @@ function picturePeople(game, ids, { you = true } = {}) {
       character = personId === "you" ? null : characterOf(game, personId);
     return {
       name: personId === "you" ? game.persona?.name || "the player" : (character?.name ?? npcNameAside(game, personId)),
-      sex: genderOf(game, personId) ?? figure?.sex ?? "other",
+      sex: pictureSexOf(game, genderOf(game, personId) ?? figure?.sex ?? "other"),
       body: figure?.body || (personId === "you" ? "" : (character?.appearance ?? "")),
       outfit: figure?.outfit ?? "",
     };

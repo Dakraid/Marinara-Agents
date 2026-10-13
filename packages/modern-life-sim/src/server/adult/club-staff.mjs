@@ -1,11 +1,12 @@
 // Generating club dancer staff via LLM
 import { settingBlock } from "../scenes/scene-engine.mjs";
+import { normalizeGender } from "../orientation/orientation.mjs";
 import { settingNoteFor } from "../cast/read-card.mjs";
 import { imageChoice } from "../game.mjs";
 import { CLUB_DANCER_SEXES, CLUB_NPC_FIELD_LIMITS, CLUB_NPC_ID_PREFIX, CLUB_PLACE } from "./tuning.mjs";
 import { clubStaffList } from "./party-slip-away.mjs";
 import { clubDancersEnabled } from "./club-dance.mjs";
-import { npcNeedsSprite, paintClubNpcSprites } from "./club-regulars.mjs";
+import { npcNeedsSprite, paintClubNpcSprites, slotSex } from "./club-regulars.mjs";
 
 var GENERATING_STAFF_LIVES = new Set();
 function buildClubStaffPrompt({ setting = "", language = "English" } = {}) {
@@ -31,7 +32,7 @@ function parseClubStaff(reply) {
   let staff = Array.isArray(reply?.staff) ? reply.staff : [],
     clip = (value, max) => (typeof value == "string" ? value.replace(/\s+/g, " ").trim().slice(0, max) : ""),
     parsed = CLUB_DANCER_SEXES.map((sex, index) => {
-      let raw = staff.filter((dancer) => String(dancer?.gender ?? "").toLowerCase() === sex)[
+      let raw = staff.filter((dancer) => slotSex(dancer?.gender) === sex)[
           CLUB_DANCER_SEXES.slice(0, index).filter((sex2) => sex2 === sex).length
         ],
         dancerName = clip(raw?.name, CLUB_NPC_FIELD_LIMITS.name),
@@ -39,12 +40,13 @@ function parseClubStaff(reply) {
       if (!dancerName || !body) {
         return null;
       }
-      let trait = clip(raw?.trait, CLUB_NPC_FIELD_LIMITS.trait);
+      let trait = clip(raw?.trait, CLUB_NPC_FIELD_LIMITS.trait),
+        rawSex = normalizeGender(raw?.gender) ?? sex;
       return {
         id: `${CLUB_NPC_ID_PREFIX}${index + 1}`,
         npc: true,
         name: dancerName,
-        gender: sex,
+        gender: rawSex,
         body: body,
         outfit: clip(raw?.outfit, CLUB_NPC_FIELD_LIMITS.outfit),
         trait: trait,
@@ -52,7 +54,7 @@ function parseClubStaff(reply) {
         appearance: body,
         description: `A dancer at the ${CLUB_PLACE.name}. ${trait}`.trim(),
         figure: {
-          sex: sex,
+          sex: rawSex,
           body: body,
           outfit: clip(raw?.outfit, CLUB_NPC_FIELD_LIMITS.outfit),
           from: "model",

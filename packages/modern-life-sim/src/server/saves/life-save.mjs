@@ -11,6 +11,7 @@ import { residenceForHomeKind } from "../housing/residence-units.mjs";
 import { assignResidences } from "../housing/residences.mjs";
 import { startEventRun } from "../events/event-cast.mjs";
 import { archetypeDefaultTraits, normalizeTraits } from "../traits/traits.mjs";
+import { normalizeAttraction } from "../orientation/orientation.mjs";
 import { TRUST_CAP_DAYS, bondSummary, bondTier, hasMet, settleTierEvent } from "../relationships/bonds.mjs";
 import { normalizeBirthday, rollBirthday } from "../relationships/birthdays.mjs";
 import { TIER_STEP_EVENT } from "../relationships/tier-steps.mjs";
@@ -291,6 +292,10 @@ function migrateLife(life) {
   for (let character of life.characters ?? []) {
     if (isLegacySlotWeek(character.week)) {
       character.week = migrateLegacySlotWeek(character.week);
+    }
+    // Attraction became a list: "women", "men", "both" (women and men)
+    if (character.into != null && !Array.isArray(character.into)) {
+      character.into = normalizeAttraction(character.into);
     }
   }
   for (let bond of Object.values(life.bonds ?? {})) {

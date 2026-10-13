@@ -16,6 +16,7 @@ import { RESIDENCE_UPGRADE, validResidencePlace } from "../housing/residence-uni
 import {
   ORIENTATION_GENDER_RULE,
   ORIENTATION_INTO_RULE,
+  attractionSaid,
   normalizeAttraction,
   normalizeGender,
 } from "../orientation/orientation.mjs";
@@ -123,7 +124,7 @@ function readCardMessages(
         ' "job":"<id from THE JOBS, out, home or none>","title":"<with home: what they do>","work_outfit":"<what they wear at work, or empty>",',
         ' "lives":"apartments, houses or unsaid","settled":0,"rich":false,',
         ' "birthday":{"season":"spring, summer, autumn, winter or unsaid","day":0},',
-        ' "gender":"female or male","into":"women, men, both or unsaid",',
+        ' "gender":"female, male or futanari","into":[one or more of "women", "men", "futanari"] or "unsaid",',
         ' "knows":"no, friendly, friend, close, family, couple, ex or rivals","kin":"siblings, parent, cousins or relatives",',
         ...fields.map((field) => ` "${field.key}":${field.shape},`),
         TASTES_JSON_SHAPE,
@@ -306,11 +307,7 @@ function parseReadCardAnswer(
     birthday: normalizeBirthday(answer?.birthday, "card"),
     gender: normalizeGender(answer?.gender),
     into: normalizeAttraction(answer?.into),
-    intoSaid: ["women", "men", "both"].includes(
-      String(answer?.into ?? "")
-        .trim()
-        .toLowerCase(),
-    ),
+    intoSaid: attractionSaid(answer?.into),
     knows: normalizeStartingRelation(answer?.knows),
     kin: normalizeStartingRelation(answer?.knows) === "family" ? (normalizeKinKind(answer?.kin) ?? "relatives") : null,
     tastes: parseGiftTastes(answer?.gifts),

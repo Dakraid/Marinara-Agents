@@ -140,10 +140,12 @@ function backgroundImagePrompt(key, { profile = {}, townTags = "", prompts = DEF
 var SEX_COUNT_TAGS = {
   female: "1girl",
   male: "1boy",
+  futanari: "1girl, futanari",
 };
 var SEX_NOUNS = {
   female: "a woman",
   male: "a man",
+  futanari: "a futanari woman",
 };
 var promptShortName = (fullName) =>
   String(fullName ?? "")
@@ -235,11 +237,16 @@ var SHOT_CONTACTS = {
 };
 var GROUP_NEGATIVE_TAGS = "multiple views, split screen, 2koma, comic, panels, collage, reference sheet";
 function peopleCountTags(people) {
-  let females = people.filter((person) => person.sex === "female").length,
+  let females = people.filter((person) => person.sex === "female" || person.sex === "futanari").length,
     males = people.filter((person) => person.sex === "male").length,
     others = people.length - females - males,
     countTag = (count, singular, plural) => (count ? `${count}${count === 1 ? singular : plural}` : "");
-  return [countTag(females, "girl", "girls"), countTag(males, "boy", "boys"), countTag(others, "other", "others")]
+  return [
+    countTag(females, "girl", "girls"),
+    countTag(males, "boy", "boys"),
+    countTag(others, "other", "others"),
+    people.some((person) => person.sex === "futanari") ? "futanari" : "",
+  ]
     .filter(Boolean)
     .join(", ");
 }
@@ -261,7 +268,7 @@ function keyImageBrief({
   let subjectInfo = BACKGROUND_SUBJECTS[subject] ?? null,
     peopleLines = people.map(
       (person, index) =>
-        `- ${people.length > 1 ? `${index === 0 ? "left" : index === people.length - 1 ? "right" : `number ${index + 1} from the left`}: ` : ""}${person.name}${person.sex && person.sex !== "other" ? ` (${person.sex === "female" ? "a woman" : "a man"})` : ""} \u2014 ${cleanPromptPhrase(person.body) || "as they are"}${person.outfit ? `; wearing ${cleanPromptPhrase(person.outfit)}` : ""}`,
+        `- ${people.length > 1 ? `${index === 0 ? "left" : index === people.length - 1 ? "right" : `number ${index + 1} from the left`}: ` : ""}${person.name}${SEX_NOUNS[person.sex] ? ` (${SEX_NOUNS[person.sex]})` : ""} \u2014 ${cleanPromptPhrase(person.body) || "as they are"}${person.outfit ? `; wearing ${cleanPromptPhrase(person.outfit)}` : ""}`,
     );
   return [
     prompts[tagged ? "keyImage.register.tags" : "keyImage.register.prose"],

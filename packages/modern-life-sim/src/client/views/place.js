@@ -441,9 +441,9 @@ function sitDown(person, gone) {
       <span class="d">${escape(detail)} \xB7 a scene \xB7 once a day</span></button>`;
 }
 const yourGenderAsk = () => `<div class="mls-ask-veil"><div class="mls-ask">
-    <b>Are you a woman or a man?</b>
-    <small>Some people in town are only into women, or only into men.</small>
-    <div class="row"><button class="main" data-do="your-gender" data-id="female">A WOMAN</button><button class="main" data-do="your-gender" data-id="male">A MAN</button></div>
+    <b>Are you a woman, a man or futanari?</b>
+    <small>Some people in town are only into women, men or futanari.</small>
+    <div class="row"><button class="main" data-do="your-gender" data-id="female">A WOMAN</button><button class="main" data-do="your-gender" data-id="male">A MAN</button><button class="main" data-do="your-gender" data-id="futanari">FUTANARI</button></div>
   </div></div>`;
 const CAP_TAG = {
   daily: "MAX TODAY",
