@@ -622,6 +622,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.35",
+          "date": "2026-10-13",
+          "notes": "- Added: \"The image model knows this character\" can be chosen while adding a Creator, in Quick setup, in the customise path, in the role-play sign-up and in the manual Create flow. It starts on, like before, and is saved with the new Creator. You can still change it later in the Creator's settings. (#1353)",
+          "highlight": false
+        },
+        {
           "version": "0.3.34",
           "date": "2026-10-13",
           "notes": "- Fixed: in a chat, a Creator could not see what was inside her own locked posts: the message prompt replaced the body with \"[paid post, contents not repeated here]\". She now gets the real text, and the existing locked and already-unlocked fields still say whether this fan has seen it. (#1351)\n- Fixed: lorebook entries never reached messages. A reply now gets matching entries from the recent conversation the way posts do (same setting, same Creator scoping), and they show in the message Deep details. A failed scan never fails the message. (#1351)\n- Changed: the fan's own Deep details view masks the body of a locked post that fan has not unlocked; the Creator's view shows it. (#1351)",
@@ -733,12 +739,6 @@
           "version": "0.3.16",
           "date": "2026-10-05",
           "notes": "- The shared guide explicitly offers image generation with an on/off toggle and direct image upload; uploading switches generation off so drafting preserves the photo.\n- Stir on your persona page and Write a post in an NPC Creator’s Stir use the same simple one-idea draft, with caption and picture preview together. Edit opens the full composer without losing your draft.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.15",
-          "date": "2026-10-05",
-          "notes": "- Start real Engine roleplay scenes from character-backed Creator DMs, or accept a Creator invite. Choose availability and how the recap can reach Slurp.\n- Lock the DM and pause the Creator while a locking scene runs; return the recap to the thread on conclude and recover missed releases after discard, convert, delete, or restart.\n- Draft a post from one idea for review in the same composer on every page; Stir hands its draft to the composer.\n- Requires Engine Capability API 1.66 for native scene origins.",
           "highlight": false
         }
       ]
