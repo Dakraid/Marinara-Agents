@@ -350,7 +350,9 @@ export function slurpAccountPageAbout(
   mode: Parameters<typeof resolveCreatorCharacterCanon>[2],
   publicIdentity: PublicIdentity | null,
 ): string {
-  const protect = (value: string | undefined) => protectCreatorGeneratedIdentity(value, mode, publicIdentity) ?? "";
+  // A concealed Creator whose source is gone has no identity to redact with: say nothing rather than leak.
+  const protect = (value: string | undefined) =>
+    mode !== "open" && !publicIdentity ? "" : (protectCreatorGeneratedIdentity(value, mode, publicIdentity) ?? "");
   return slurpPageAboutText(protect(account.bio), protect(account.settings.privacy.stagePersonality));
 }
 

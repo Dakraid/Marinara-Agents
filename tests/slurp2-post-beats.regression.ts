@@ -446,6 +446,7 @@ assert.match(
     beatService,
     /slurpPageAboutText\(protect\(account\.bio\), protect\(account\.settings\.privacy\.stagePersonality\)\)/u,
   );
+  assert.match(beatService, /mode !== "open" && !publicIdentity \? ""/u);
   assert.match(beatService, /protectCreatorGeneratedIdentity\(value, mode, publicIdentity\)/u);
   assert.match(slurp2Source(`${root}features/feed/slp-generation-service.ts`), /canonText: beatRun.planText,/u);
   assert.match(
