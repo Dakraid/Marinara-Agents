@@ -813,6 +813,26 @@ ${modSection(resources, draft)}
           </div>
         </section>`;
 }
+const DISPOSITION_PICK = [
+  ["", "Unset"],
+  ["dominant", "Dominant"],
+  ["submissive", "Submissive"],
+  ["switch", "Switch"],
+];
+// What the card's reading gave the Adult module, editable before the life starts.
+function adultPrefsRow(draft, card, pick) {
+  const adult = pick.modules?.adult,
+    on = draft.adding ? S.life?.modules?.adult?.on : draft.modules?.adult?.on;
+  if (!on || !adult || adult.adult === "no") {
+    return "";
+  }
+  const kinks = adult.intimacy_kinks ?? [];
+  return `<div class="mls-modopt-panel">
+        <label class="mls-modopt-f"><span class="lbl">IN BED \xB7 DISPOSITION</span><select data-do="cast-disposition" data-id="${card.id}">${DISPOSITION_PICK.map(([value, label]) => `<option value="${value}" ${(adult.intimacy_disposition ?? "") === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>
+        <div class="mls-modopt-f"><span class="lbl">KINKS & FETISHES</span><div class="mls-modopt-chips">${kinks.map((kink, index) => `<span class="mls-modopt-chip">${escape(kink)}<button data-do="cast-kink-remove" data-id="${card.id}" data-tag="${index}" title="Take it out">\u2715</button></span>`).join("")}</div>
+        ${kinks.length < 24 ? `<input type="text" maxlength="60" placeholder="Add one, then Enter" data-do="cast-kink-add" data-id="${card.id}">` : ""}</div>
+      </div>`;
+}
 function castSection(setup, draft, { homes = true, add = false } = {}) {
   const chosen = chosenOf(setup, draft),
     memberCard = ({ card: card, pick: pick }) => `
@@ -833,6 +853,7 @@ function castSection(setup, draft, { homes = true, add = false } = {}) {
       ${personalityRow(setup, draft, card, pick)}
       <div class="romance"><label class="mls-tg"><input type="checkbox" data-do="cast-romance" data-id="${card.id}" ${pick.romanceable !== false ? "checked" : ""}><i></i>
         <span><b>Open to romance</b><small>Turned off, you stay just friends</small></span></label></div>
+      ${adultPrefsRow(draft, card, pick)}
       ${workRow(setup, draft, card, pick)}
       ${inTownRow(setup, draft, card, chosen)}
       ${pick.tastes ? tastesRow(setup, draft, card, pick) : ""}

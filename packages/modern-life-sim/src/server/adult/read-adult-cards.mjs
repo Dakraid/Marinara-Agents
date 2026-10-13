@@ -1,11 +1,14 @@
 // Background LLM read of character cards for adult status, ways, likes and limits with backoff
 import { dropRefusedJobs } from "../cast/cast-jobs.mjs";
 import {
+  INTIMACY_DISPOSITION_RULE,
+  INTIMACY_KINKS_RULE,
   INTIMACY_LIKES_RULE,
   INTIMACY_LIMITS_RULE,
   INTIMACY_WAYS_RULE,
   INTIMACY_WAYS_SHAPE,
   cleanAdultAnswer,
+  cleanIntimacyKinks,
   cleanIntimacyLikes,
   cleanIntimacyLimits,
 } from "./intimacy-ways.mjs";
@@ -27,7 +30,9 @@ function buildReadAdultsPrompt(people) {
         INTIMACY_WAYS_RULE.replace("`intimacy_ways`", "`ways`"),
         INTIMACY_LIKES_RULE.replace("`intimacy_likes`", "`likes`"),
         INTIMACY_LIMITS_RULE.replace("`intimacy_limits`", "`limits`"),
-        `Answer with JSON only, exactly: {"people":{"<id>":{"adult":"yes|no|unsaid","ways":${INTIMACY_WAYS_SHAPE},"likes":["\u2026"],"limits":[{"text":"\u2026","stage":"no or not yet"}]}}} with every id given.`,
+        INTIMACY_DISPOSITION_RULE.replace("`intimacy_disposition`", "`disposition`"),
+        INTIMACY_KINKS_RULE.replace("`intimacy_kinks`", "`kinks`"),
+        `Answer with JSON only, exactly: {"people":{"<id>":{"adult":"yes|no|unsaid","ways":${INTIMACY_WAYS_SHAPE},"likes":["\u2026"],"limits":[{"text":"\u2026","stage":"no or not yet"}],"disposition":"dominant, submissive, switch or unsaid","kinks":["\u2026"]}}} with every id given.`,
       ].join(`
 `),
     },
@@ -137,6 +142,8 @@ async function readAdultCards(ctx, state) {
                   text: text,
                   stage: stage,
                 })),
+                intimacy_disposition: entry.disposition,
+                intimacy_kinks: cleanIntimacyKinks(entry.kinks),
               });
               dropRefusedJobs(life, [character.id]);
               READ_ADULTS_BACKOFF.delete(readAdultsBackoffKey(state, character.id));

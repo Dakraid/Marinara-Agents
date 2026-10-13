@@ -1240,6 +1240,7 @@ const STYLES = `@font-face { font-family: "Anton"; font-style: normal; font-weig
 .mls-modopt-chip.bad { background: #2a1214; color: var(--paper); border: 2px solid var(--red); }
 .mls .mls-modopt-chip button { background: none; border: 0; color: inherit; font-weight: 900; cursor: pointer; padding: 0 4px; }
 .mls .mls-modopt-chip select { width: auto; padding: 1px 4px; }
+.mls .mls-modopt-panel input[type="text"] { width: 100%; min-width: 0; background: #000; color: var(--paper); border: 2px solid var(--line); font: 700 12px Arial, sans-serif; padding: 3px 6px; }
 .mls-modopt-none { font-size: 12px; color: var(--muted); }
 @media (max-width: 560px) { .mls-modopt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .mls-tg { display: inline-flex; align-items: flex-start; gap: 10px; cursor: pointer; user-select: none; }

@@ -12,11 +12,15 @@ import {
 } from "./tuning.mjs";
 import { cleanAdultSettings, defaultAdultState } from "./settings.mjs";
 import {
+  INTIMACY_DISPOSITION_RULE,
+  INTIMACY_KINKS_RULE,
   INTIMACY_LIKES_RULE,
   INTIMACY_LIMITS_RULE,
   INTIMACY_WAYS_RULE,
   INTIMACY_WAYS_SHAPE,
   cleanAdultAnswer,
+  cleanIntimacyDisposition,
+  cleanIntimacyKinks,
   cleanIntimacyLikes,
   cleanIntimacyLimits,
 } from "./intimacy-ways.mjs";
@@ -62,8 +66,8 @@ import {
   adultDayTick,
   adultJobWhy,
   adultSheetIntimacyFacts,
+  adultSheetPreferences,
   applyAdultCardRead,
-  pruneStaleAdultAsks,
 } from "./cast-intimacy.mjs";
 import { adultFarewellAsk, adultGoodbyeChosen, adultGoodbyeOptions, adultGoodbyeWords } from "./date-goodbye.mjs";
 import { adultBackdropHere, adultBackdrops } from "./backdrops.mjs";
@@ -118,17 +122,8 @@ var ADULT_MODULE = {
   catalog: {
     name: "Adult",
     about: "Intimacy with adult characters, when the relationship allows it.",
+    confirm: "Switching it on confirms that you are an adult.",
     options: [
-      {
-        group: "You",
-        key: "youAdult",
-        kind: "check",
-        title: "I'm an adult",
-        why: "Your persona is an adult. Without this, the module does nothing.",
-        required: true,
-        missing: "that you are an adult",
-        locks: true,
-      },
       {
         group: "The scenes",
         key: "detail",
@@ -189,18 +184,33 @@ var ADULT_MODULE = {
     return cleaned;
   },
   set(life, adult, patch = {}) {
-    if (
-      (typeof patch.youAdult == "boolean" && ((adult.youAdult = patch.youAdult), pruneStaleAdultAsks(life)),
-      INTIMACY_DETAIL_LEVELS.includes(patch.detail) && (adult.detail = patch.detail),
-      PICTURE_FREQUENCIES.includes(patch.pictures) && (adult.pictures = patch.pictures),
-      typeof patch.afterDark == "boolean" && (adult.afterDark = patch.afterDark),
-      typeof patch.clubDancers == "boolean" && (adult.clubDancers = patch.clubDancers),
-      typeof patch.clubRegulars == "boolean" && (adult.clubRegulars = patch.clubRegulars),
-      patch.on === true && !adult.on && seedIntimateHistory(life, adult),
-      typeof patch.on == "boolean" && (adult.on = patch.on),
-      patch.on === false && life.visit?.staying && (life.visit.staying = false),
-      patch.on === false)
-    ) {
+    if (INTIMACY_DETAIL_LEVELS.includes(patch.detail)) {
+      adult.detail = patch.detail;
+    }
+    if (PICTURE_FREQUENCIES.includes(patch.pictures)) {
+      adult.pictures = patch.pictures;
+    }
+    if (typeof patch.afterDark == "boolean") {
+      adult.afterDark = patch.afterDark;
+    }
+    if (typeof patch.clubDancers == "boolean") {
+      adult.clubDancers = patch.clubDancers;
+    }
+    if (typeof patch.clubRegulars == "boolean") {
+      adult.clubRegulars = patch.clubRegulars;
+    }
+    if (patch.on === true && !adult.on) {
+      seedIntimateHistory(life, adult);
+      // Switching it on is the one confirmation that the player is an adult.
+      adult.youAdult = true;
+    }
+    if (typeof patch.on == "boolean") {
+      adult.on = patch.on;
+    }
+    if (patch.on === false && life.visit?.staying) {
+      life.visit.staying = false;
+    }
+    if (patch.on === false) {
       for (let guest of Object.values(life.party?.guests ?? {})) {
         if (guest.aside?.dark) {
           delete guest.aside;
@@ -219,6 +229,8 @@ var ADULT_MODULE = {
       bonds: saved.bonds ?? {},
       detail: INTIMACY_DETAIL_LEVELS.includes(saved.detail) ? saved.detail : DEFAULT_INTIMACY_DETAIL,
       pictures: PICTURE_FREQUENCIES.includes(saved.pictures) ? saved.pictures : DEFAULT_PICTURE_FREQUENCY,
+      // Being on is the confirmation: older lives that never ticked "I'm an adult" count as confirmed.
+      youAdult: true,
       cast: Object.fromEntries(
         Object.entries(saved.cast ?? {}).map(([id, castEntry]) => {
           let { marked: marked, ...rest } = castEntry ?? {};
@@ -242,11 +254,10 @@ var ADULT_MODULE = {
       });
     }
     if (typeof saved.clubDancers != "boolean") {
-      migrated.clubDancers = clubStaffList(saved).length > 0 || (!!saved.on && !!saved.youAdult);
+      migrated.clubDancers = clubStaffList(saved).length > 0 || !!saved.on;
     }
     if (typeof saved.clubRegulars != "boolean") {
-      migrated.clubRegulars =
-        !!saved.afterDark && (clubRegularsList(saved).length > 0 || (!!saved.on && !!saved.youAdult));
+      migrated.clubRegulars = !!saved.afterDark && (clubRegularsList(saved).length > 0 || !!saved.on);
     }
     for (let character of life?.characters ?? []) {
       if (character.job?.id === "club-bartender" && character.job.place === CLUB_PLACE.id) {
@@ -259,7 +270,6 @@ var ADULT_MODULE = {
     return migrated;
   },
   view: (life, adult) => ({
-    youAdult: !!adult.youAdult,
     detail: adult.detail,
     pictures: adult.pictures ?? DEFAULT_PICTURE_FREQUENCY,
     afterDark: !!adult.afterDark,
@@ -291,6 +301,7 @@ var ADULT_MODULE = {
   sheet: (life, adult, character) => [
     ...adultSheetAdultToggle(life, adult, character),
     ...adultSheetIntimacyFacts(life, adult, character),
+    ...adultSheetPreferences(life, adult, character),
   ],
   setCharacter: setAdultCharacterOption,
   sceneBlocks: (life, adult, scene, options) =>
@@ -353,6 +364,18 @@ var ADULT_MODULE = {
                 text: text,
                 stage: stage,
               })),
+          },
+          {
+            key: "intimacy_disposition",
+            shape: '"dominant, submissive, switch or unsaid"',
+            rule: INTIMACY_DISPOSITION_RULE,
+            clean: (value) => cleanIntimacyDisposition(value),
+          },
+          {
+            key: "intimacy_kinks",
+            shape: '["\u2026"]',
+            rule: INTIMACY_KINKS_RULE,
+            clean: (value) => cleanIntimacyKinks(value),
           },
         ]
       : [],

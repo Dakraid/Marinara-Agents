@@ -12,6 +12,7 @@ import { workHomeUntil, workingHome, workingNow } from "../cast/working-now.mjs"
 import { dropRefusedJobs } from "../cast/cast-jobs.mjs";
 import { bedtimeOf, isAsleep, sleepEndsAt } from "../visits/staying-over.mjs";
 import { HONEYMOON_DAYS } from "../romance/wedding-morning.mjs";
+import { setOrientation } from "../romance/romanceability.mjs";
 import { bondOf, castInTown, characterOf, hasMet2, isCharacterHere, logNote } from "../game.mjs";
 import {
   CLUB_DANCE_MILESTONE,
@@ -28,7 +29,13 @@ import {
   timeOfDayPhrase,
   timeTogetherLabel,
 } from "./consent.mjs";
-import { INTIMACY_WAY_OPTIONS, LIMIT_STAGES, cleanAdultAnswer } from "./intimacy-ways.mjs";
+import {
+  INTIMACY_WAY_OPTIONS,
+  LIMIT_STAGES,
+  cleanAdultAnswer,
+  cleanIntimacyDisposition,
+  cleanIntimacyKinks,
+} from "./intimacy-ways.mjs";
 import { GROUP_INTIMACY_CHANCE, onPairCooldown } from "./spots.mjs";
 import {
   ALREADY_TOGETHER_TODAY,
@@ -253,6 +260,37 @@ function setAdultCharacterOption(state, adult, characterId, key, value) {
     return {
       ok: true,
     };
+  }
+  if (key === "disposition") {
+    let disposition = cleanIntimacyDisposition(value);
+    if (value && !disposition) {
+      return {
+        ok: false,
+        reason: "Dominant, submissive, switch, or unset.",
+      };
+    }
+    castEntry.disposition = disposition;
+    return {
+      ok: true,
+    };
+  }
+  if (key === "kinks") {
+    if (!Array.isArray(value)) {
+      return {
+        ok: false,
+        reason: "A list of kinks.",
+      };
+    }
+    castEntry.kinks = cleanIntimacyKinks(value);
+    castEntry.kinksOwn = true;
+    return {
+      ok: true,
+    };
+  }
+  if (key === "into") {
+    return setOrientation(state, characterId, {
+      into: value,
+    });
   }
   let [kind, subKey] = String(key).split(".");
   if (kind === "way" && INTIMACY_WAY_OPTIONS[subKey]?.includes(value)) {

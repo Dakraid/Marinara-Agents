@@ -4,10 +4,15 @@ import { BOND_AXES, bondTier } from "../relationships/bonds.mjs";
 import { MILESTONE_COUPLE_STATUSES } from "../relationships/milestones.mjs";
 import { hurtBond } from "../romance/jealousy.mjs";
 import { workingHome } from "../cast/working-now.mjs";
-import { bondOf, traitsOf } from "../game.mjs";
+import { bondOf, characterOf, traitsOf } from "../game.mjs";
 import { ADULT_ANSWERS, CLUB_PLACE, CLUB_TALK_MILESTONE, INTIMATE_ENERGY_COST } from "./tuning.mjs";
 import { turnedDownHurt } from "./consent.mjs";
+import { ATTRACTION_LABELS } from "../orientation/orientation.mjs";
+import { ATTRACTION_OPTIONS } from "../orientation/attraction-options.mjs";
 import {
+  INTIMACY_DISPOSITIONS,
+  INTIMACY_DISPOSITION_LABELS,
+  INTIMACY_KINKS_MAX,
   INTIMACY_WAY_AXES,
   INTIMACY_WAY_LABELS,
   INTIMACY_WAY_OPTIONS,
@@ -15,6 +20,8 @@ import {
   LIMIT_PUSH_COST,
   LIMIT_STAGES,
   LIMIT_STAGE_LABELS,
+  cleanIntimacyDisposition,
+  cleanIntimacyKinks,
   cleanIntimacyLikes,
   cleanIntimacyLimits,
   cleanIntimacyWays,
@@ -104,13 +111,14 @@ function adultCardReread(state, adult, characterId) {
     delete castEntry.read;
     delete castEntry.adult;
     delete castEntry.waysRead;
+    delete castEntry.dispositionRead;
     pruneStaleAdultAsks(state);
   }
 }
 function applyAdultCardRead(state, adult, characterId, card) {
   let castEntry = (adult.cast[characterId] ??= {});
   if ((ADULT_ANSWERS.includes(card?.adult) && (castEntry.adult = card.adult), card?.adult === "no")) {
-    for (let key of ["waysRead", "likes", "limits", "found"]) {
+    for (let key of ["waysRead", "likes", "limits", "found", "dispositionRead", "kinks", "kinksOwn"]) {
       delete castEntry[key];
     }
     if (adultMarkOf(adult, characterId) !== "yes") {
@@ -130,6 +138,13 @@ function applyAdultCardRead(state, adult, characterId, card) {
   if (Array.isArray(card?.intimacy_limits) && !castEntry.limits?.length) {
     castEntry.limits = cleanIntimacyLimits(card.intimacy_limits);
   }
+  if (card?.intimacy_disposition !== undefined) {
+    castEntry.dispositionRead = cleanIntimacyDisposition(card.intimacy_disposition);
+  }
+  // Kinks the player set by hand stay theirs; the card only fills them in until then.
+  if (Array.isArray(card?.intimacy_kinks) && !castEntry.kinksOwn) {
+    castEntry.kinks = cleanIntimacyKinks(card.intimacy_kinks);
+  }
   castEntry.read = true;
 }
 function intimacyWaysFor(state, adult, characterId) {
@@ -147,6 +162,32 @@ function intimacyWaysFor(state, adult, characterId) {
 }
 var intimacyLikesFor = (adult, characterId) => adult.cast[characterId]?.likes ?? [];
 var intimacyLimitsFor = (adult, characterId) => adult.cast[characterId]?.limits ?? [];
+// The player's own pick (even "", unset) wins over what the card said.
+var intimacyDispositionFor = (adult, characterId) => {
+  let castEntry = adult.cast?.[characterId] ?? {};
+  return cleanIntimacyDisposition(castEntry.disposition ?? castEntry.dispositionRead);
+};
+var intimacyKinksFor = (adult, characterId) => adult.cast?.[characterId]?.kinks ?? [];
+var DISPOSITION_PROMPTS = {
+  dominant: "dominant (they like to take control)",
+  submissive: "submissive (they like to give up control)",
+  switch: "a switch (they enjoy both taking and giving up control)",
+};
+function intimacyPreferenceLines(adult, ids, { byId = ids.length > 1 } = {}) {
+  let who = (id) => (byId ? `${id}: ` : ""),
+    dispositions = ids
+      .filter((id) => intimacyDispositionFor(adult, id))
+      .map((id) => `${who(id)}${DISPOSITION_PROMPTS[intimacyDispositionFor(adult, id)]}`),
+    kinks = ids.flatMap((id) => intimacyKinksFor(adult, id).map((kink) => `${who(id)}${kink}`));
+  return [
+    dispositions.length
+      ? `IN CONTROL OR NOT${byId ? " (by id)" : ""}: ${dispositions.join(" \xB7 ")}. Who leads and who yields follows this.`
+      : "",
+    kinks.length
+      ? `THEIR KINKS AND FETISHES${byId ? " (id: what)" : ""}: ${kinks.join(" \xB7 ")}. They want these: bring them in where they fit the moment, never past a limit.`
+      : "",
+  ].filter(Boolean);
+}
 var trustForLimits = (state, characterId) => {
   let bond = bondOf(state, characterId);
   return bond ? bondTier(bond, "trust") : 0;
@@ -191,6 +232,37 @@ function adultSheetIntimacyFacts(state, adult, characterId) {
       title: "In bed \xB7 limits",
       items: limits,
       unknown: "???",
+    },
+  ];
+}
+function adultSheetPreferences(state, adult, characterId) {
+  if (!canShowIntimacySheet(state, adult, characterId)) {
+    return [];
+  }
+  let into = characterOf(state, characterId)?.into ?? null;
+  return [
+    {
+      kind: "pick",
+      key: "disposition",
+      title: "DISPOSITION",
+      value: intimacyDispositionFor(adult, characterId),
+      choices: ["", ...INTIMACY_DISPOSITIONS].map((value) => [value, INTIMACY_DISPOSITION_LABELS[value]]),
+    },
+    {
+      kind: "tags",
+      key: "kinks",
+      title: "KINKS & FETISHES",
+      items: intimacyKinksFor(adult, characterId),
+      max: INTIMACY_KINKS_MAX,
+    },
+    {
+      // The core's own orientation ("into"), set through its setter.
+      kind: "orient",
+      key: "into",
+      title: "ORIENTATION",
+      value: into,
+      multi: Array.isArray(into),
+      choices: ATTRACTION_OPTIONS.map((value) => [value, ATTRACTION_LABELS[value] ?? value]),
     },
   ];
 }
@@ -266,6 +338,7 @@ function intimacyWaysPrompt(state, adult, characterId, others = []) {
       limits2 = intimacyLimitsFor(adult, characterId).filter((limit) => limit.stage !== "open");
     return [
       `HOW THEY ARE IN THIS: ${waysLine(intimacyWaysFor(state, adult, characterId))}. Let the passage and the three ways on lean to how they are: it shapes how it goes, never whether it goes on.`,
+      ...intimacyPreferenceLines(adult, [characterId]),
       likes2.length
         ? `WHAT THEY LIKE (id: what): ${likes2.map((like) => `${like.key}: ${like.text}`).join(" \xB7 ")}. If what the player chose is one of these, they love it, and it shows.`
         : "",
@@ -285,6 +358,7 @@ function intimacyWaysPrompt(state, adult, characterId, others = []) {
     );
   return [
     `HOW EACH ONE IS IN THIS (by id): ${everyone.map((id) => `${id}: ${waysLine(intimacyWaysFor(state, adult, id))}`).join(" \u2014 ")}. Let the passage and the three ways on lean to how each one is: it shapes how it goes, never whether it goes on; every one of them takes part.`,
+    ...intimacyPreferenceLines(adult, everyone),
     likes.length
       ? `WHAT EACH ONE LIKES (id:key: what): ${likes.join(" \xB7 ")}. If what the player chose is one of these, that one loves it, and it shows.`
       : "",
@@ -437,11 +511,15 @@ export {
   adultDayTick,
   adultJobWhy,
   adultSheetIntimacyFacts,
+  adultSheetPreferences,
   applyAdultCardRead,
   applyIntimacyLeans,
   applyIntimacyTook,
   declineIntimacyOutcome,
   drainEnergyForIntimacy,
+  intimacyDispositionFor,
+  intimacyKinksFor,
+  intimacyPreferenceLines,
   intimacyWaysFor,
   intimacyWaysPrompt,
   pruneStaleAdultAsks,

@@ -10,7 +10,8 @@ var defaultAdultState = () => ({
   on: true,
   detail: DEFAULT_INTIMACY_DETAIL,
   pictures: DEFAULT_PICTURE_FREQUENCY,
-  youAdult: false,
+  // Switching the module on is the one confirmation that the player is an adult.
+  youAdult: true,
   afterDark: false,
   clubDancers: false,
   clubRegulars: false,
@@ -18,7 +19,7 @@ var defaultAdultState = () => ({
   bonds: {},
 });
 function cleanAdultSettings(input) {
-  return !input || typeof input != "object" || input.on === false || input.youAdult !== true
+  return !input || typeof input != "object" || input.on === false
     ? null
     : {
         ...defaultAdultState(),

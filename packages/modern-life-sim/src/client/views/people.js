@@ -1,7 +1,7 @@
 // Contacts, character sheets, chart, gallery, news, network
 import { colourFor, escape, faceImg, frameImg, headOf, paintIcon, safePart, uploadIcon } from "./common.js";
 import { tierLabel } from "./place.js";
-import { modSheetFacts, modSheetToggles, sheetDates } from "./mods.js";
+import { modSheetEdits, modSheetFacts, modSheetToggles, sheetDates } from "./mods.js";
 import { S } from "../state.js";
 
 const CONTACT_GROUPS = [
@@ -141,7 +141,11 @@ function sheetView(
             memWith: memWith,
           }),
         ),
-      adult: () => safePart("adult", () => `<div class="box">${modSheetToggles(sheet)}${modSheetFacts(sheet)}</div>`),
+      adult: () =>
+        safePart(
+          "adult",
+          () => `<div class="box">${modSheetToggles(sheet)}${modSheetFacts(sheet)}${modSheetEdits(sheet)}</div>`,
+        ),
     }[activeTab];
   return `${backButton}
     <div class="mls-sheet-head">

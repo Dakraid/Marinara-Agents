@@ -2905,12 +2905,15 @@ function createService({
             name: district.name,
             places: [...district.places],
           })),
-          modules: moduleCatalog().map(({ id: id, name: moduleName, about: about, options: options }) => ({
-            id: id,
-            name: moduleName,
-            about: about,
-            options: options ?? [],
-          })),
+          modules: moduleCatalog().map(
+            ({ id: id, name: moduleName, about: about, confirm: confirm, options: options }) => ({
+              id: id,
+              name: moduleName,
+              about: about,
+              confirm: confirm,
+              options: options ?? [],
+            }),
+          ),
           weekPlaces: [
             ...everydayPlaces(buildTown()).map((place) => ({
               id: place.id,

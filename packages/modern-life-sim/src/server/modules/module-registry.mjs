@@ -86,7 +86,8 @@ var MODULE_HOOK_DOCS = {
   routes: 'its own routes, under /lives/:id/mod/<id>/: (kit) => { "POST name": handler }',
   guide: "its articles for the GUIDE: (life, state) => { categories: [{ id, name }], articles: [...] }",
   changelog: `its lines for each version closed for a PR, as the core's are written: { "0.2.0": [line] }`,
-  catalog: "how the Modules group shows it: { name, about, options: [...] }",
+  catalog:
+    "how the Modules group shows it: { name, about, confirm?, options: [...] } (confirm: an extra line for the one switch-on confirmation)",
   covered: "its decisions for free text (freeplay.COVERED): { kind: { id: why } }",
 };
 var MODULE_ID_PATTERN = /^[a-z][a-z0-9-]{1,30}$/;
@@ -446,6 +447,7 @@ function modulesView(life) {
         on: isModuleOn(life, mod.id),
         name: mod.catalog.name,
         about: mod.catalog.about,
+        confirm: mod.catalog.confirm,
         options: (mod.catalog.options ?? []).map(withOptionRuleName),
         ...(moduleState(life, mod.id) && mod.view
           ? safeModuleCall(mod, "view", () => mod.view(life, moduleState(life, mod.id)), {})

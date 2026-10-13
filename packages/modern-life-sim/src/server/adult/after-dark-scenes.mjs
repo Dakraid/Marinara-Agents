@@ -95,7 +95,7 @@ import {
   plainNameOf,
 } from "./after-dark.mjs";
 import { INTIMATE_MILESTONE_DEF, consentFor } from "./intimate-milestone.mjs";
-import { intimacyWaysFor } from "./cast-intimacy.mjs";
+import { intimacyPreferenceLines, intimacyWaysFor } from "./cast-intimacy.mjs";
 import { unlockAdultBackdrop } from "./backdrops.mjs";
 import { CLUB_TALK_HANDLERS, CLUB_VISIT_FACT } from "./club-jealousy.mjs";
 import { PRIVATE_DANCE_FACT, PRIVATE_DANCE_HANDLERS } from "./club-dance.mjs";
@@ -155,6 +155,9 @@ function afterDarkWaysPrompt(state, adult, characterIds) {
     `HOW EACH ONE IS IN THIS (by id): ${castIds.map((id) => `${id}: ${waysLine(id)}`).join(" \u2014 ")}. Let it lean to how each one is.`,
     likes.length ? `WHAT EACH ONE LIKES (id: what): ${likes.join(" \xB7 ")}.` : "",
     limits.length ? `THEIR LIMITS (id: what): ${limits.join(" \xB7 ")}. None of these happens between them.` : "",
+    ...intimacyPreferenceLines(adult, castIds, {
+      byId: true,
+    }),
   ].filter(Boolean).join(`
 `);
 }

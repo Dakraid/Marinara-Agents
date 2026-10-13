@@ -363,7 +363,7 @@ const startLife = () =>
       S.modOn = {
         id: pending.id,
         name: pending.name,
-        step: 1,
+        confirm: pending.confirm,
         where: "start",
         preset: !!draft.modules[pending.id].fromPreset,
       };

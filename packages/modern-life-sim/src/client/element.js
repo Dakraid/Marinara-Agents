@@ -554,12 +554,31 @@ class ModernLifeSimElement extends HTMLElement {
         const [moduleId, characterId, key] = input.dataset.modCast.split("|");
         return moduleCast(moduleId, characterId, key, input.value);
       }
+      if (input.dataset?.modSheet) {
+        const [moduleId, key] = input.dataset.modSheet.split("|");
+        return moduleCharacter(moduleId, key, input.value);
+      }
+      if (input.dataset?.modSheetMulti) {
+        const [moduleId, key] = input.dataset.modSheetMulti.split("|"),
+          picked = [...input.closest(".mls-modopt-chips").querySelectorAll("input:checked")].map((box) => box.value);
+        if (!picked.length) {
+          input.checked = true;
+          return;
+        }
+        return moduleCharacter(moduleId, key, picked);
+      }
+      if (input.dataset?.modSheetTag) {
+        const [moduleId, key] = input.dataset.modSheetTag.split("|"),
+          text = input.value.trim(),
+          current = (S.sheet?.modules ?? []).find((opt) => opt.module === moduleId && opt.key === key)?.items ?? [];
+        return text ? moduleCharacter(moduleId, key, [...current, text]) : undefined;
+      }
       if (input.dataset?.setModule && input.dataset.opt === "on" && input.checked) {
         input.checked = false;
         S.modOn = {
           id: input.dataset.setModule,
           name: S.life?.modules?.[input.dataset.setModule]?.name ?? "It",
-          step: 1,
+          confirm: S.life?.modules?.[input.dataset.setModule]?.confirm,
           where: "settings",
         };
         return this.render();
@@ -575,7 +594,6 @@ class ModernLifeSimElement extends HTMLElement {
         S.modOn = {
           id: input.dataset.setModule,
           name: S.life.modules[input.dataset.setModule].name ?? "It",
-          step: 1,
           where: "settings",
           key: lockingOption.key,
           label: lockingOption.title,
@@ -1681,6 +1699,15 @@ Type ${picked.length} to delete them.`);
         this.render();
         return;
       }
+      if (action === "module-sheet-untag") {
+        const current =
+          (S.sheet?.modules ?? []).find((opt) => opt.module === target.dataset.module && opt.key === id)?.items ?? [];
+        return moduleCharacter(
+          target.dataset.module,
+          id,
+          current.filter((_, index) => index !== Number(target.dataset.tag)),
+        );
+      }
       if (action === "module-cast-remove") {
         const [moduleId, characterId, key] = id.split("|");
         return moduleCast(moduleId, characterId, key, null);
@@ -2785,6 +2812,11 @@ ${life?.name ?? id}`);
       draft.pickerOpen = false;
     } else if (action === "cast-off") {
       delete draft.cast[id];
+    } else if (action === "cast-kink-remove") {
+      const adult = draft.cast[id]?.modules?.adult;
+      if (adult) {
+        adult.intimacy_kinks = (adult.intimacy_kinks ?? []).filter((_, index) => index !== Number(target.dataset.tag));
+      }
     } else if (action === "tastes-edit") {
       draft.cast[id].tastesEdit = !draft.cast[id].tastesEdit;
     } else if (action === "traits-edit") {
@@ -3002,6 +3034,22 @@ ${life?.name ?? id}`);
       };
       this.render();
       return;
+    } else if (action === "cast-disposition" || action === "cast-kink-add") {
+      const adult = draft.cast[id]?.modules?.adult;
+      if (!adult) {
+        return;
+      }
+      if (action === "cast-disposition") {
+        adult.intimacy_disposition = target.value;
+      } else {
+        const text = target.value.replace(/\s+/g, " ").trim().slice(0, 60),
+          kinks = adult.intimacy_kinks ?? [];
+        if (text && kinks.length < 24 && !kinks.some((kink) => kink.toLowerCase() === text.toLowerCase())) {
+          adult.intimacy_kinks = [...kinks, text];
+        }
+      }
+      this.render();
+      return;
     } else if (action === "cast-into") {
       draft.cast[id] = {
         ...draft.cast[id],
@@ -3161,7 +3209,7 @@ ${life?.name ?? id}`);
         S.modOn = {
           id: id,
           name: (S.resources?.modules ?? []).find((module) => module.id === id)?.name ?? "It",
-          step: 1,
+          confirm: (S.resources?.modules ?? []).find((module) => module.id === id)?.confirm,
           where: "create",
         };
         this.render();
