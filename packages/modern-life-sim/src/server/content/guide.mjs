@@ -350,7 +350,7 @@ var GUIDE_ARTICLES = [
       "Pick \u27E6NEW LIFE\u27E7 on the title screen and go step by step: who you are, the world (your model, the town, the season), the people around you, your home, the rules and the pictures.",
       "Only a few things are a must: a name for the life, who you play, a model, and at least one person from your cards. Everything else has a sensible default, so you can jump to \u27E6START\u27E7 whenever you like.",
       "For each person, \u27E6To you\u27E7 says what they are to you when it starts: how well they know you, or your family (they're never romantic with you), your partner, your ex or your rival. Your partner has to be someone who could be.",
-      "You get {startSkillPoints} points to share between \u27E6Fitness\u27E7, \u27E6Charm\u27E7 and \u27E6Knowledge\u27E7, at most {startSkillCap} in one. You also pick how much money you start with: {savingsTight}, {savingsNormal} or {savingsComfortable}.",
+      "We suggest sharing {startSkillPoints} points between your starting skills, such as \u27E6Fitness\u27E7, \u27E6Charm\u27E7 and \u27E6Knowledge\u27E7, but you can add more, up to {startSkillCap} in each. You also pick how much money you start with: {savingsTight}, {savingsNormal} or {savingsComfortable}.",
       "Your choices save as you go, so you can leave and come back. Like how you set a life up? Save it as a preset and start from it again (up to {presetsMax}).",
       "When you first arrive in town, a card on the map tells you where you stand: your home, your money, the job you still need and who you already know.",
     ],

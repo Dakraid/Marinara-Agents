@@ -1135,12 +1135,17 @@
 .mls-create .field { display: grid; gap: 6px; font-size: 11px; font-weight: 900; letter-spacing: 2px;
   text-transform: uppercase; color: var(--muted); align-content: start; }
 .mls-create .field.wide { grid-column: 1 / -1; }
-.mls-create input[type=text], .mls-create select, .mls-create textarea { background: #1c1c20; border: 2px solid #3a3a40;
+.mls-create input[type=text], .mls-create input[type=number], .mls-create select, .mls-create textarea,
+.mls-create .mls-set-fields :is(input, select, textarea) { background: #1c1c20; border: 2px solid #3a3a40;
   padding: 8px 10px; outline: none; width: 100%; color: var(--paper); font: inherit; font-weight: 400;
   letter-spacing: 0; text-transform: none; }
 .mls-create textarea { min-height: 90px; line-height: 1.5; resize: vertical; }
 .mls-create input:focus, .mls-create select:focus, .mls-create textarea:focus { border-color: var(--yellow); }
 .mls-create .count { font-size: 11px; color: var(--muted); text-align: right; }
+.mls-create details > summary { cursor: pointer; font-size: 11px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+.mls-create details[open] > summary { margin-bottom: 12px; }
+.mls-create .mls-sampling .field { flex: 1 1 140px; min-width: 140px; }
+.mls-create .mls-sampling .field.wide { flex-basis: 100%; }
 .mls-create .muted { font-size: 13px; color: var(--muted); }
 
 .mls-homes-who { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 0 0 12px; }
@@ -4590,9 +4595,11 @@
         ${SAMPLING_CHOICE_FIELDS.map(([key,label,choices])=>`<label class="field">${label}<select ${attr(key)}><option value="">connection default</option>${choices.map(choice=>`<option value="${choice}" ${choice===sampling[key]?"selected":""}>${choice}</option>`).join("")}</select></label>`).join("")}
         <label class="field">Answer length \xD7<input type="number" ${attr("maxTokensScale")} min="0.5" max="4" step="0.25" value="${escape(value("maxTokensScale"))}" placeholder="1"></label>
         <label class="field wide">Stop sequences<input type="text" ${attr("stop")} value="${escape(Array.isArray(sampling.stop)?sampling.stop.join(", "):sampling.stop??"")}" placeholder="comma or newline separated, up to 8"></label>
+        <label class="field wide">Assistant prefill<textarea ${attr("assistantPrefill")} rows="3" placeholder="the start of every answer, sent as the model's own words">${escape(sampling.assistantPrefill??"")}</textarea></label>
+        <label class="field wide">Reasoning prefill<textarea ${attr("assistantReasoningPrefill")} rows="3" placeholder="the start of the model's thinking; only OpenAI-style connections take it">${escape(sampling.assistantReasoningPrefill??"")}</textarea></label>
         <label class="field wide">Custom parameters (JSON)<textarea ${attr("customParameters")} rows="3" spellcheck="false" placeholder='{"seed": 7}'>${escape(typeof sampling.customParameters=="object"?JSON.stringify(sampling.customParameters,null,2):sampling.customParameters??"")}</textarea></label>
       </div>
-      <div class="row"><button ${resetAttr}>RESET TO CONNECTION DEFAULTS</button></div>`}function modelTab(life,resources,options,box,look=null){let settings=life.settings??{};if(!resources)return'<div class="box"><p class="hint">Loading\u2026</p></div>';let images=settings.images??{};return`
+      <div class="row"><button class="mls-drop" ${resetAttr}>RESET TO CONNECTION DEFAULTS</button></div>`}function modelTab(life,resources,options,box,look=null){let settings=life.settings??{};if(!resources)return'<div class="box"><p class="hint">Loading\u2026</p></div>';let images=settings.images??{};return`
     <div class="box">
       <h3>MODEL ${savedMark(box,"model")}<small>who writes this life</small></h3>
       ${boxSaid(box)}
@@ -4626,7 +4633,7 @@
     ${thingHtml}
     ${current.tone?`<div class="mls-trait-sub">HOW THEY COME ACROSS</div><p class="mls-tone">${escape(current.tone)}</p>
       <small class="mls-tone-note">Written from their card. It is written again if you change anything above.</small>`:""}
-  </div>`}var HOMES=[{id:"studio",label:"Apartment \xB7 rent $650 \xB7 in the building",rooms:1},{id:"house",label:"House \xB7 rent $1,100 \xB7 on the street",rooms:2},{id:"luxury",label:"Luxury apartment \xB7 rent $2,400 \xB7 in Skyline Tower",rooms:2},{id:"mansion",label:"Mansion \xB7 rent $3,800 \xB7 on the hill",rooms:4}],homeOfDraft=draft=>draft.home==="shared"?"studio":draft.home,roomsOfDraft=draft=>HOMES.find(home=>home.id===homeOfDraft(draft))?.rooms??1,LIVES_IN=[{id:"apartments",label:"A flat in the building"},{id:"houses",label:"A house on the street"},{id:"tower",label:"A luxury flat in Skyline Tower"},{id:"mansions",label:"A mansion on the hill"}],castCap=setup=>setup?.maxCast??30,SAVINGS=[{id:"tight",label:"Tight \xB7 $400"},{id:"normal",label:"Normal \xB7 $1,200"},{id:"comfortable",label:"Comfortable \xB7 $3,000"}],SEASON_OUTFITS_RULE="Outside work, people wear clothes for the season instead of their card's picture.",NPCS_RULE="People who aren't in your cast, like a club's staff and its regulars. Off: only your cast.",RULES=[["hunger","Hunger","You have to eat; skipping meals drains energy."],["jealousy","Jealousy","How jealous someone gets depends on who they are."],["drifting","Drifting apart","People you ignore for too long grow distant."],["multipleRelationships","Multiple relationships","Open relationships and more than one marriage, agreed with each person."],["castCouples","Couples in the cast","People in town can date each other or be exes, from their cards and over time."],["partnersStray","Infidelity","Someone you are with can fall for someone else, and ask you to see other people."],["clothes","Clothes","What you wear changes with the clothes you buy, in every scene and in your picture."],["keyImages","Key images","Big moments with someone get their own picture, kept in the GALLERY."],["workOutfits","Work outfits","People are shown in their work clothes while they work."],["seasonOutfits","Season outfits",SEASON_OUTFITS_RULE],["npcs","NPCs",NPCS_RULE]],START_SEASONS=["Spring","Summer","Autumn","Winter"],SKILL_POINTS=5,SKILL_CAP=3;function emptyDraft(){return{name:"A new life",personaId:"",home:"studio",savings:"normal",season:"Autumn",skills:{fitness:0,charm:0,knowledge:0,cooking:0},cast:{},housemates:[],off:{},rules:{hunger:!0,jealousy:!0,drifting:!0,multipleRelationships:!1,castCouples:!1,partnersStray:!1,clothes:!1,keyImages:!1,workOutfits:!1,seasonOutfits:!1,npcs:!1},modules:{},pairs:{},pairEdit:null,show:{showArchetypes:"hidden",showSchedules:"found"},peek:{archetypes:{},weeks:{}},settings:{connection:"",effort:"low",language:"English",sampling:{}},languageOther:"",townName:"",renamed:{},districtNames:{},birthday:rolledDay(String(Math.random())),gender:"",scenario:"",loreBookId:"",step:1,reached:1,frame:"framed"}}function lookSection(setup,draft){let look=draft.look??{connectionId:"",styleProfileId:"",tags:""},connections=setup.imageConnections??[],libraryHave=draft.libraryHave??{have:0,total:0};return`
+  </div>`}var HOMES=[{id:"studio",label:"Apartment \xB7 rent $650 \xB7 in the building",rooms:1},{id:"house",label:"House \xB7 rent $1,100 \xB7 on the street",rooms:2},{id:"luxury",label:"Luxury apartment \xB7 rent $2,400 \xB7 in Skyline Tower",rooms:2},{id:"mansion",label:"Mansion \xB7 rent $3,800 \xB7 on the hill",rooms:4}],homeOfDraft=draft=>draft.home==="shared"?"studio":draft.home,roomsOfDraft=draft=>HOMES.find(home=>home.id===homeOfDraft(draft))?.rooms??1,LIVES_IN=[{id:"apartments",label:"A flat in the building"},{id:"houses",label:"A house on the street"},{id:"tower",label:"A luxury flat in Skyline Tower"},{id:"mansions",label:"A mansion on the hill"}],castCap=setup=>setup?.maxCast??30,SAVINGS=[{id:"tight",label:"Tight \xB7 $400"},{id:"normal",label:"Normal \xB7 $1,200"},{id:"comfortable",label:"Comfortable \xB7 $3,000"}],SEASON_OUTFITS_RULE="Outside work, people wear clothes for the season instead of their card's picture.",NPCS_RULE="People who aren't in your cast, like a club's staff and its regulars. Off: only your cast.",RULES=[["hunger","Hunger","You have to eat; skipping meals drains energy."],["jealousy","Jealousy","How jealous someone gets depends on who they are."],["drifting","Drifting apart","People you ignore for too long grow distant."],["multipleRelationships","Multiple relationships","Open relationships and more than one marriage, agreed with each person."],["castCouples","Couples in the cast","People in town can date each other or be exes, from their cards and over time."],["partnersStray","Infidelity","Someone you are with can fall for someone else, and ask you to see other people."],["clothes","Clothes","What you wear changes with the clothes you buy, in every scene and in your picture."],["keyImages","Key images","Big moments with someone get their own picture, kept in the GALLERY."],["workOutfits","Work outfits","People are shown in their work clothes while they work."],["seasonOutfits","Season outfits",SEASON_OUTFITS_RULE],["npcs","NPCs",NPCS_RULE]],START_SEASONS=["Spring","Summer","Autumn","Winter"],SKILL_POINTS=5,SKILL_CAP=10;function emptyDraft(){return{name:"A new life",personaId:"",home:"studio",savings:"normal",season:"Autumn",skills:{fitness:0,charm:0,knowledge:0,cooking:0},cast:{},housemates:[],off:{},rules:{hunger:!0,jealousy:!0,drifting:!0,multipleRelationships:!1,castCouples:!1,partnersStray:!1,clothes:!1,keyImages:!1,workOutfits:!1,seasonOutfits:!1,npcs:!1},modules:{},pairs:{},pairEdit:null,show:{showArchetypes:"hidden",showSchedules:"found"},peek:{archetypes:{},weeks:{}},settings:{connection:"",effort:"low",language:"English",sampling:{}},languageOther:"",townName:"",renamed:{},districtNames:{},birthday:rolledDay(String(Math.random())),gender:"",scenario:"",loreBookId:"",step:1,reached:1,frame:"framed"}}function lookSection(setup,draft){let look=draft.look??{connectionId:"",styleProfileId:"",tags:""},connections=setup.imageConnections??[],libraryHave=draft.libraryHave??{have:0,total:0};return`
         <section id="mls-look">
           <h2>CONNECTION AND STYLE <span>optional \xB7 without one, the game has no pictures</span></h2>
           <div class="card">
@@ -4681,7 +4688,7 @@
         ${draft.askResume?resumeAsk(resources,draft):""}
         ${draft.loadedMissing?missingAsk(draft.loadedMissing):""}
       </main>
-    </div>`}function youStep(resources,draft){let left=SKILL_POINTS-spent(draft),personaButton=persona=>`
+    </div>`}function youStep(resources,draft){let used=spent(draft),personaButton=persona=>`
     <button class="mls-persona ${draft.personaId===persona.id?"on":""}" data-do="persona" data-id="${persona.id}" title="${escape(persona.name)}">
       <span class="ph">${persona.avatar?`<img src="${escape(persona.avatar)}" alt="" loading="lazy">`:escape((persona.name[0]??"?").toUpperCase())}</span>
       <b>${escape(persona.name)}</b>
@@ -4696,10 +4703,10 @@
             <div class="row">
               <label class="field">Savings<select data-do="savings">${SAVINGS.map(saving=>`<option value="${saving.id}" ${saving.id===draft.savings?"selected":""}>${escape(saving.label)}</option>`).join("")}</select></label>
               <label class="field">Basic income $ a season<input type="number" data-do="ubi" min="0" max="100000" step="50" value="${Number(draft.rules.ubi)||0}" title="Paid into your cash on day 1 of each season. 0 is off."></label>
-              <label class="field">You are<select data-do="gender">${draft.gender?"":'<option value="" selected disabled>Pick one</option>'}${[["female","A woman"],["male","A man"],["futanari","Futanari"]].map(([value,label])=>`<option value="${value}" ${draft.gender===value?"selected":""}>${label}</option>`).join("")}</select></label>
+              <label class="field">You are<select data-do="gender">${draft.gender?"":'<option value="" selected disabled>Pick one</option>'}${[["female","A woman"],["male","A man"],["futanari","A futanari"]].map(([value,label])=>`<option value="${value}" ${draft.gender===value?"selected":""}>${label}</option>`).join("")}</select></label>
               <label class="field">Your birthday${birthdayPick(draft.birthday)}</label>
             </div>
-            <div class="lbl">Starting skills \xB7 ${left} of ${SKILL_POINTS} points left \xB7 ${SKILL_CAP} at most in one</div>
+            <div class="lbl">Starting skills \xB7 ${used} points used \xB7 ${SKILL_POINTS} recommended${used>SKILL_POINTS?" \xB7 above the recommendation":""} \xB7 up to ${SKILL_CAP} in each</div>
             <div class="points">
               ${resources.skills.map(skill=>`
                 <div class="pt">
@@ -4707,7 +4714,7 @@
                   <span class="pips">${Array.from({length:10},(_unused,pip)=>`<i class="${pip<draft.skills[skill]?"on":""}"></i>`).join("")}</span>
                   <span class="pm">
                     <button data-do="skill-down" data-id="${skill}" ${draft.skills[skill]<=0?"disabled":""}>\u2212</button>
-                    <button data-do="skill-up" data-id="${skill}" ${left<=0||draft.skills[skill]>=SKILL_CAP?"disabled":""}>+</button>
+                    <button data-do="skill-up" data-id="${skill}" ${draft.skills[skill]>=SKILL_CAP?"disabled":""}>+</button>
                   </span>
                 </div>`).join("")}
             </div>
@@ -4906,7 +4913,7 @@ ${modSection(resources,draft)}
         <section>
           <h2>WHAT IT STARTS WITH <span>everything but you and the cast can change later</span></h2>
           <div class="mls-cast">
-            ${summaryRow(1,"YOU",[chip(persona?.name??"no persona",!persona),chip({female:"a woman",male:"a man",futanari:"futanari"}[draft.gender]??"woman, man or futanari?",!draft.gender),chip(SAVINGS.find(saving=>saving.id===draft.savings)?.label),Number(draft.rules.ubi)>0?chip(`basic income $${Number(draft.rules.ubi)}`):"",chip(`born ${BDAY_SEASONS[draft.birthday?.season??0]} ${draft.birthday?.day??1}`),...Object.entries(draft.skills).filter(([,points])=>points).map(([skill,points])=>chip(`${skill} ${points}`))])}
+            ${summaryRow(1,"YOU",[chip(persona?.name??"no persona",!persona),chip({female:"a woman",male:"a man",futanari:"a futanari"}[draft.gender]??"woman, man or futanari?",!draft.gender),chip(SAVINGS.find(saving=>saving.id===draft.savings)?.label),Number(draft.rules.ubi)>0?chip(`basic income $${Number(draft.rules.ubi)}`):"",chip(`born ${BDAY_SEASONS[draft.birthday?.season??0]} ${draft.birthday?.day??1}`),...Object.entries(draft.skills).filter(([,points])=>points).map(([skill,points])=>chip(`${skill} ${points}`))])}
             ${summaryRow(2,"THE WORLD",[chip(connection?connection.name:"no model",!connection),chip(languageOf(draft)),chip(draft.townName||"a town with no name"),chip(`${draftPlaces(setup,draft).length-offCount} of ${draftPlaces(setup,draft).length} places`),chip(`starts in ${draft.season??"Autumn"}`),...modOn(draft,setup).map(mod=>chip(mod))])}
             ${summaryRow(3,"THE CAST",[chip(`${chosen.length} ${chosen.length===1?"person":"people"}`,!chosen.length),chip(`${chosen.length-unread} read`),unread?chip(`${unread} not read yet`,!0):"",...chosen.map(member=>toYouChip(member.pick)?chip(`${member.card.name} \xB7 ${toYouChip(member.pick)}`):"")])}
             ${summaryRow(4,"YOUR HOME",[chip(homeText),mates.length?chip(`with ${mates.map(mateId=>setup.cards.find(card=>card.id===mateId)?.name??"").join(", ")}`):"",homelessNames.length?chip(`${homelessNames.join(", ")} still need${homelessNames.length===1?"s":""} a home`,!0):""])}

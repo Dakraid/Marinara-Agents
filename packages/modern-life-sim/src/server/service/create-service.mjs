@@ -25,13 +25,7 @@ import {
 import { validResidencePlace } from "../housing/residence-units.mjs";
 import { currentEventBeat, isEventRun } from "../events/event-run.mjs";
 import { eventCast } from "../events/event-cast.mjs";
-import {
-  SKILL_NAMES,
-  STARTING_SKILL_MAX,
-  STARTING_SKILL_POINTS,
-  skillLevelInfo,
-  validateStartingSkills,
-} from "../skills/skill-levels.mjs";
+import { SKILL_NAMES, STARTING_SKILL_MAX, skillLevelInfo, validateStartingSkills } from "../skills/skill-levels.mjs";
 import { normalizeAttraction, normalizeGender, readCardOrientation } from "../orientation/orientation.mjs";
 import { archetypeDefaultTraits, normalizeTraits, notableTraitWords, traitsEditorSchema } from "../traits/traits.mjs";
 import { BOND_ACTIONS, bondSummary } from "../relationships/bonds.mjs";
@@ -961,6 +955,7 @@ function createService({
         runtime: runtime,
         settings: life.settings ?? {},
         signal: signal,
+        providerOf: providerOfConnection,
         onCall: callRecorder(life, scope),
         onGone: (connectionId) => {
           if (life.settings?.connection === connectionId) {
@@ -3000,6 +2995,7 @@ function createService({
               effort: effort,
               sampling: normalizeSampling(sampling).sampling,
             },
+            providerOf: providerOfConnection,
             onCall: callRecorder(null, "creating"),
           });
         try {
@@ -3162,10 +3158,7 @@ function createService({
           { id: droppedId, ...lifeFields } = body,
           startingSkills = validateStartingSkills(body.startingSkills);
         if (startingSkills === false) {
-          throw httpError(
-            400,
-            `You have ${STARTING_SKILL_POINTS} points to share among your skills, at most ${STARTING_SKILL_MAX} in one.`,
-          );
+          throw httpError(400, `Each starting skill is a whole number from 0 to ${STARTING_SKILL_MAX}.`);
         }
         let life = createLife(
           {

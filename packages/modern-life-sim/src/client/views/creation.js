@@ -148,8 +148,9 @@ const RULES = [
   ["npcs", "NPCs", NPCS_RULE],
 ];
 const START_SEASONS = ["Spring", "Summer", "Autumn", "Winter"];
+// SKILL_POINTS is a recommendation; each skill can still go up to SKILL_CAP (the top level).
 const SKILL_POINTS = 5;
-const SKILL_CAP = 3;
+const SKILL_CAP = 10;
 function emptyDraft() {
   return {
     name: "A new life",
@@ -662,7 +663,7 @@ function creationView({ resources: resources, draft: draft, error: error, busy: 
     </div>`;
 }
 function youStep(resources, draft) {
-  const left = SKILL_POINTS - spent(draft),
+  const used = spent(draft),
     personaButton = (persona) => `
     <button class="mls-persona ${draft.personaId === persona.id ? "on" : ""}" data-do="persona" data-id="${persona.id}" title="${escape(persona.name)}">
       <span class="ph">${persona.avatar ? `<img src="${escape(persona.avatar)}" alt="" loading="lazy">` : escape((persona.name[0] ?? "?").toUpperCase())}</span>
@@ -691,7 +692,7 @@ function youStep(resources, draft) {
                 .join("")}</select></label>
               <label class="field">Your birthday${birthdayPick(draft.birthday)}</label>
             </div>
-            <div class="lbl">Starting skills \xB7 ${left} of ${SKILL_POINTS} points left \xB7 ${SKILL_CAP} at most in one</div>
+            <div class="lbl">Starting skills \xB7 ${used} points used \xB7 ${SKILL_POINTS} recommended${used > SKILL_POINTS ? " \xB7 above the recommendation" : ""} \xB7 up to ${SKILL_CAP} in each</div>
             <div class="points">
               ${resources.skills
                 .map(
@@ -706,7 +707,7 @@ function youStep(resources, draft) {
                   ).join("")}</span>
                   <span class="pm">
                     <button data-do="skill-down" data-id="${skill}" ${draft.skills[skill] <= 0 ? "disabled" : ""}>\u2212</button>
-                    <button data-do="skill-up" data-id="${skill}" ${left <= 0 || draft.skills[skill] >= SKILL_CAP ? "disabled" : ""}>+</button>
+                    <button data-do="skill-up" data-id="${skill}" ${draft.skills[skill] >= SKILL_CAP ? "disabled" : ""}>+</button>
                   </span>
                 </div>`,
                 )

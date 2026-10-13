@@ -1127,9 +1127,11 @@ function samplingFields(sampling = {}, attr, resetAttr) {
         ${SAMPLING_CHOICE_FIELDS.map(([key, label, choices]) => `<label class="field">${label}<select ${attr(key)}><option value="">connection default</option>${choices.map((choice) => `<option value="${choice}" ${choice === sampling[key] ? "selected" : ""}>${choice}</option>`).join("")}</select></label>`).join("")}
         <label class="field">Answer length \xD7<input type="number" ${attr("maxTokensScale")} min="0.5" max="4" step="0.25" value="${escape(value("maxTokensScale"))}" placeholder="1"></label>
         <label class="field wide">Stop sequences<input type="text" ${attr("stop")} value="${escape(Array.isArray(sampling.stop) ? sampling.stop.join(", ") : (sampling.stop ?? ""))}" placeholder="comma or newline separated, up to 8"></label>
+        <label class="field wide">Assistant prefill<textarea ${attr("assistantPrefill")} rows="3" placeholder="the start of every answer, sent as the model's own words">${escape(sampling.assistantPrefill ?? "")}</textarea></label>
+        <label class="field wide">Reasoning prefill<textarea ${attr("assistantReasoningPrefill")} rows="3" placeholder="the start of the model's thinking; only OpenAI-style connections take it">${escape(sampling.assistantReasoningPrefill ?? "")}</textarea></label>
         <label class="field wide">Custom parameters (JSON)<textarea ${attr("customParameters")} rows="3" spellcheck="false" placeholder='{"seed": 7}'>${escape(typeof sampling.customParameters == "object" ? JSON.stringify(sampling.customParameters, null, 2) : (sampling.customParameters ?? ""))}</textarea></label>
       </div>
-      <div class="row"><button ${resetAttr}>RESET TO CONNECTION DEFAULTS</button></div>`;
+      <div class="row"><button class="mls-drop" ${resetAttr}>RESET TO CONNECTION DEFAULTS</button></div>`;
 }
 function modelTab(life, resources, options, box, look = null) {
   const settings = life.settings ?? {};

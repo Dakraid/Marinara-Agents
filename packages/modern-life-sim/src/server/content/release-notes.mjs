@@ -1,6 +1,28 @@
 // Changelog entries plus module notes merge
 var RELEASE_NOTES = [
   {
+    version: "0.4.1",
+    date: "2026-10-13",
+    lines: [
+      {
+        text: "Starting skills: 5 points is a recommendation, not a limit",
+        items: [
+          "Starting skills: 5 points is a recommendation, not a limit. You can add more, up to 10 in every skill.",
+        ],
+      },
+      {
+        text: "Assistant prefill and reasoning prefill",
+        items: [
+          "Assistant prefill and reasoning prefill in SETTINGS · MODEL · ADVANCED and when you create a life: the model starts its answer, or its thinking, with your words. Reasoning prefill only reaches OpenAI-style connections.",
+        ],
+      },
+      {
+        text: "Tidier creation fields",
+        items: ["The basic income box and the advanced model settings at creation now look like the other fields."],
+      },
+    ],
+  },
+  {
     version: "0.4.0",
     date: "2026-10-13",
     lines: [

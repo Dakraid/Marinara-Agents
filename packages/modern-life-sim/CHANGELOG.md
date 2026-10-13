@@ -1,4 +1,11 @@
+## 0.4.1 — 2026-10-13
+
+- Starting skills: 5 points is a recommendation, not a limit; you can add more, up to 10 in every skill.
+- Assistant prefill and reasoning prefill in the advanced model settings, sent as the model's own opening words.
+- The basic income box and the advanced model settings at creation now match the other fields.
+
 ## 0.4.0 — 2026-10-13
+
 - Advanced model settings per life (temperature, top P/K, min P, penalties, verbosity, stop sequences, custom parameters, answer length) in SETTINGS · MODEL · ADVANCED and at creation.
 - World lore: pick a lorebook when you create a life and every scene reads a copy of it.
 - Several people can share a job (one boss per place), and every job pays by the shift.
@@ -8,6 +15,7 @@
 - Optional Adult Module: switching it on asks once, and each adult has a disposition, kinks and orientation on the ADULT tab.
 
 ## 0.3.2 — 2026-10-02
+
 - If someone is throwing a party or going to one, they won't make plans with you for those hours, even if you said you can't come. When you invite someone out, you can see the hours they have a party.
 - If someone starts dating you knowing you already have a partner, they're okay with it. This also fixes the lives you're already playing.
 - On a phone, you can drag the phone button with your finger.
@@ -15,12 +23,14 @@
 - Fixes in the optional Adult Module.
 
 ## 0.3.1 — 2026-10-01
+
 - NPCs is a rule now, life by life: people who aren't in your cast, like a club's staff and its regulars. It's off by default in a new life; a life that already had them keeps it on. Off, they step aside with their pictures, nothing deleted.
 - Once you're dating, you can stay the night at theirs, or have them stay at yours.
 - No more getting stuck at the end of someone's party, after a lunch break that already went by, with a money request in the middle of an outing, or after reloading during a honeymoon night.
 - In the optional Adult Module, the club's dancers and regulars are options that need NPCs.
 
 ## 0.3.0 — 2026-09-30
+
 - Cooking and food: a kitchen at home, twelve recipes, a Cooking skill, and dinner on a date at your place.
 - A home of your own: Hillcrest on the hill, buying or a mortgage, furniture for each home, and people noticing where you live.
 - People drop by, and you throw parties at home, lived room by room; friends throw theirs, and birthdays are parties now.
@@ -31,10 +41,12 @@
 - Many fixes, and more in the optional Adult Module.
 
 ## 0.2.5 — 2026-09-29
+
 - Contacts no longer freezes: opening it doesn't load your whole life again, and each part of someone's sheet is drawn on its own, so one that can't be shown is just missing and the rest is there.
 - If a whole screen can't be shown, it says so, with a button to go back to the map, instead of leaving the game stuck.
 
 ## 0.2.4 — 2026-09-28
+
 - You can use your own pictures for what people wear each season or at work, and for you in any of your outfits: pick one and frame it yourself. Yours stays until you ask for a drawn one again.
 - You can rename someone in Settings, and updating from their card brings a new name from the card too.
 - When a model puts quotes in the wrong place or leaves part of a line out, the game still reads its reply, so turns in scenes aren't lost.
@@ -42,6 +54,7 @@
 - A fix in the optional Adult Module.
 
 ## 0.2.3 — 2026-09-27
+
 - People look like themselves in their pictures: their name, and whether they're a woman or a man, now go with every picture of them, so a character from a series looks like the one you know.
 - You can choose how big pictures of one person are drawn, in Settings, right below the size of the other pictures.
 - This season's new clothes are for who you play. A character who got dresses they'd never wear gets the season's clothes picked again.
@@ -49,12 +62,14 @@
 - The game finds Marinara however you run it, even from another device or on a secure connection.
 
 ## 0.2.1 — 2026-09-27
+
 - Models that think before they answer, like GLM or DeepSeek, no longer get cut off halfway: every call leaves them room to think, and one that still runs out gets a second try with more room.
 - Reasoning has a new option, none, for models that can answer without thinking first.
 - Pictures no longer flicker or load again while others are being painted, in Settings and on every other screen.
 - Text on the phone, in the Guide and in What's New is sharp again.
 
 ## 0.2.0 — 2026-09-27
+
 - It looks more like a game: a new title screen, a welcome, a first-day card, the GUIDE (a searchable how-it-works app on your phone), a relationship chart in Contacts, and a redone profile.
 - Everyone gets their own personality, read from their card, instead of twelve fixed types.
 - Relationships go all the way: dating, moving in, engagement and weddings (with more than one partner if all agree), jealousy, open relationships and breakups, each in a scene.
@@ -66,6 +81,7 @@
 - Modules: optional extras you switch on for each life.
 
 ## 0.1.0 — 2026-09-23
+
 - First release, staging only: a modern life sim in its own Home tab.
 - A town on a clock with places, opening hours, day and night, and four seasons of thirty days.
 - A job, rent, needs and skills; a home with furniture, cooking and a closet; shops, a mall and online orders.

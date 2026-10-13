@@ -1137,12 +1137,17 @@ const STYLES = `@font-face { font-family: "Anton"; font-style: normal; font-weig
 .mls-create .field { display: grid; gap: 6px; font-size: 11px; font-weight: 900; letter-spacing: 2px;
   text-transform: uppercase; color: var(--muted); align-content: start; }
 .mls-create .field.wide { grid-column: 1 / -1; }
-.mls-create input[type=text], .mls-create select, .mls-create textarea { background: #1c1c20; border: 2px solid #3a3a40;
+.mls-create input[type=text], .mls-create input[type=number], .mls-create select, .mls-create textarea,
+.mls-create .mls-set-fields :is(input, select, textarea) { background: #1c1c20; border: 2px solid #3a3a40;
   padding: 8px 10px; outline: none; width: 100%; color: var(--paper); font: inherit; font-weight: 400;
   letter-spacing: 0; text-transform: none; }
 .mls-create textarea { min-height: 90px; line-height: 1.5; resize: vertical; }
 .mls-create input:focus, .mls-create select:focus, .mls-create textarea:focus { border-color: var(--yellow); }
 .mls-create .count { font-size: 11px; color: var(--muted); text-align: right; }
+.mls-create details > summary { cursor: pointer; font-size: 11px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+.mls-create details[open] > summary { margin-bottom: 12px; }
+.mls-create .mls-sampling .field { flex: 1 1 140px; min-width: 140px; }
+.mls-create .mls-sampling .field.wide { flex-basis: 100%; }
 .mls-create .muted { font-size: 13px; color: var(--muted); }
 
 .mls-homes-who { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 0 0 12px; }
