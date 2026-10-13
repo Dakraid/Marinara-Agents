@@ -202,6 +202,7 @@ function emptyDraft() {
     birthday: rolledDay(String(Math.random())),
     gender: "",
     scenario: "",
+    loreBookId: "",
     step: 1,
     reached: 1,
     frame: "framed",
@@ -768,6 +769,15 @@ ${modSection(resources, draft)}
           <label class="field wide">The setting
             <textarea data-do="scenario" maxlength="600" placeholder="Country, city, vibe\u2026">${escape(draft.scenario)}</textarea></label>
           <div class="count">${draft.scenario.length} / 600</div>
+          ${
+            resources.lorebooks
+              ? `<label class="field wide">World lore
+            <select data-do="lore-book"><option value="">\u2014 none \u2014</option>
+              ${resources.lorebooks.map((book) => `<option value="${escape(book.id)}" ${book.id === draft.loreBookId ? "selected" : ""}>${escape(book.name)} \xB7 ${book.entries} entries</option>`).join("")}
+            </select></label>
+          <p class="muted">A lorebook from Marinara: its enabled entries are copied into this life as world lore, so a later edit to the book does not change it. You can re-pull it in SETTINGS \xB7 MODEL.</p>`
+              : ""
+          }
         </section>
 
         <section id="mls-town">

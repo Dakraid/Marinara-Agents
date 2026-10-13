@@ -1154,6 +1154,9 @@ Type ${picked.length} to delete them.`);
       if (action === "settings-tab") {
         return settingsTab(id);
       }
+      if (action === "world-lore-pull") {
+        return saveSetting("worldLore", S.life?.worldLore?.lorebookId ?? "");
+      }
       if (action === "pair-edit") {
         return pairEdit(id, target.dataset.other);
       }
@@ -3075,6 +3078,8 @@ ${life?.name ?? id}`);
       draft.savings = target.value;
     } else if (action === "season") {
       draft.season = target.value;
+    } else if (action === "lore-book") {
+      draft.loreBookId = target.value;
     } else if (action === "scenario") {
       draft.scenario = target.value;
       const counter = this.querySelector("#mls-note .count");

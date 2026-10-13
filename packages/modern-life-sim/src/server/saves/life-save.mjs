@@ -636,6 +636,13 @@ function lifeView(life) {
     },
     scenario: life.scenario ?? "",
     townName: life.townName ?? "",
+    worldLore: life.worldLore
+      ? {
+          lorebookId: life.worldLore.lorebookId,
+          name: life.worldLore.name,
+          size: life.worldLore.text?.length ?? 0,
+        }
+      : null,
     wearing: life.wearing,
     wearingName: wearingItem(life)?.name ?? "",
     clothes: {

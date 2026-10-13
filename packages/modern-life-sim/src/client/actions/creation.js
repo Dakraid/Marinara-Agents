@@ -438,6 +438,7 @@ const startLife = () =>
             language: languageOf(draft),
           },
           scenario: draft.scenario,
+          loreBookId: draft.loreBookId || "",
           pairs: draftPairs(draft),
           look: draft.look?.connectionId ? draft.look : {},
           pictures: draft.pictures ?? {},
@@ -592,6 +593,7 @@ async function readCardWith(cardId) {
         renamed: renamedOf(draft),
         townName: draft.townName ?? "",
         scenario: draft.scenario ?? "",
+        loreBookId: draft.loreBookId || "",
         others: Object.entries(draft.cast)
           .filter(([id, entry2]) => entry2.on && id !== cardId)
           .map(([id]) => ({

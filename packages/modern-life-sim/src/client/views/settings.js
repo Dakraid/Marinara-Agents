@@ -1101,6 +1101,21 @@ function rulesTab(life, box) {
       ).join("")}
     </div>`;
 }
+function worldLoreBox(life, lorebooks, box) {
+  const lore = life.worldLore,
+    missing = lore && !lorebooks.some((book) => book.id === lore.lorebookId);
+  return `
+    <div class="box">
+      <h3>WORLD LORE ${savedMark(box, "lore")}<small>a copy of a lorebook every prompt reads</small></h3>
+      <div class="mls-set-fields">
+        <label class="field">Lorebook<select data-set="worldLore"><option value="">\u2014 none \u2014</option>
+          ${missing ? `<option value="${escape(lore.lorebookId)}" selected>${escape(lore.name)} (gone from Marinara)</option>` : ""}
+          ${lorebooks.map((book) => `<option value="${escape(book.id)}" ${book.id === lore?.lorebookId ? "selected" : ""}>${escape(book.name)} \xB7 ${book.entries} entries</option>`).join("")}</select></label>
+      </div>
+      <p class="muted">${lore ? `This life keeps a copy of ${escape(lore.name)} (${lore.size} characters). Edits to the book reach it only when you re-pull.` : "No world lore. Pick a lorebook to copy its enabled entries into this life."}</p>
+      ${lore && !missing ? '<div class="acts"><button class="mls-btn" data-do="world-lore-pull">RE-PULL</button></div>' : ""}
+    </div>`;
+}
 function modelTab(life, resources, options, box, look = null) {
   const settings = life.settings ?? {};
   if (!resources) {
@@ -1125,7 +1140,7 @@ function modelTab(life, resources, options, box, look = null) {
         <label class="field">Style<select data-set="imageStyle"><option value="">Engine default</option>
           ${(options?.profiles ?? []).map((profile) => `<option value="${escape(profile.id)}" ${profile.id === images.styleProfileId ? "selected" : ""}>${escape(profile.name)} \xB7 ${escape(profile.promptMode)}</option>`).join("")}</select></label>
       </div>
-    </div>`;
+    </div>${resources.lorebooks ? worldLoreBox(life, resources.lorebooks, box) : ""}`;
 }
 
 export {

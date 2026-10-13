@@ -120,6 +120,7 @@ import {
   normalizeLanguageName,
 } from "../llm/model-client.mjs";
 import { readCharacterCard, readCharacterTraits, settingNoteFor, writeCharacterTone } from "../cast/read-card.mjs";
+import { listWorldLorebooks, loadWorldLore } from "../cast/world-lore.mjs";
 import { gameModuleApi } from "../game/game-module-api.mjs";
 import {
   currentSeasonIndex,
@@ -2832,7 +2833,7 @@ function createService({
       "/resources",
       route(async () => {
         let resources = await engineClient.resources(),
-          [imageConnections, styleProfiles] = await Promise.all([
+          [imageConnections, styleProfiles, lorebooks] = await Promise.all([
             engineClient.imageConnections?.().catch(() => []) ?? [],
             engineClient.styleProfiles?.().catch(() => ({
               defaultId: "",
@@ -2841,9 +2842,11 @@ function createService({
               defaultId: "",
               profiles: [],
             },
+            listWorldLorebooks(runtime),
           ]);
         return {
           ...resources,
+          lorebooks: lorebooks,
           imageConnections: imageConnections,
           styleProfiles: styleProfiles.profiles.map((profile) => ({
             id: profile.id,
@@ -2940,6 +2943,7 @@ function createService({
             renamed = {},
             townName = "",
             scenario = "",
+            loreBookId = "",
             others = [],
             couples = false,
             taken = [],
@@ -2987,6 +2991,7 @@ function createService({
             setting: settingNoteFor({
               townName: townName,
               scenario: scenario,
+              worldLore: await loadWorldLore(runtime, loreBookId),
             }),
             others: otherPeople,
             couples: couples === true,
@@ -3156,6 +3161,7 @@ function createService({
             now: now(),
           },
         );
+        life.worldLore = await loadWorldLore(runtime, body.loreBookId);
         life.look = cleanTownLook(body.look ?? {});
         life.frame = normalizeSpriteFrame(body.frame);
         life.pictureSize = backgroundSizeOr(body.size);
@@ -5256,6 +5262,23 @@ function createService({
         lifeRoute(async (life, req) => ({
           settings: setLifeSettings(life, req.body ?? {}).settings,
         })),
+      ),
+    );
+    router.post(
+      "/lives/:id/world-lore",
+      route(
+        lifeRoute(async (life, req) => {
+          let lorebookId = String(req.body?.lorebookId ?? "");
+          // A snapshot: the life only changes when the player re-pulls or switches here.
+          let lore = await loadWorldLore(runtime, lorebookId);
+          if (lorebookId && !lore) {
+            throw httpError(400, "That lorebook could not be read, or it has no enabled entries.");
+          }
+          life.worldLore = lore;
+          return {
+            worldLore: lore ? { lorebookId: lore.lorebookId, name: lore.name } : null,
+          };
+        }),
       ),
     );
     router.post(

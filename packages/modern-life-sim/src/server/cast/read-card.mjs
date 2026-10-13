@@ -4,6 +4,7 @@ import { assignStoresToWeek } from "../schedule/routines.mjs";
 import { weekFromModelAnswer, workCellsFromModelWeek } from "../schedule/model-week.mjs";
 import { JOB_AWAY_PLACE } from "../jobs/job-catalog.mjs";
 import { placeForJobId } from "../jobs/town-jobs.mjs";
+import { worldLoreNote } from "./world-lore.mjs";
 import {
   applyJobToWeek,
   applyWorkCellsToWeek,
@@ -52,7 +53,7 @@ var cleanTownNameForPrompt = (raw) =>
     .slice(0, TOWN_NAME_PROMPT_MAX);
 var MONEY_SCALE_NOTE =
   "Money here is US dollars ($), on the game's scale: a coffee is about $8, a meal $30, clothes $45 to $75, an intern's shift pays $60, the rent is $650 a month. Any price or sum anyone mentions is in dollars, on that scale; never another currency.";
-function settingNoteFor({ townName = "", scenario = "" } = {}) {
+function settingNoteFor({ townName = "", scenario = "", worldLore = null } = {}) {
   let town = cleanTownNameForPrompt(townName),
     notes = String(scenario ?? "")
       .trim()
@@ -60,6 +61,7 @@ function settingNoteFor({ townName = "", scenario = "" } = {}) {
   return [
     town ? `The town is called ${town}.` : "",
     notes ? `The player's notes on the setting: ${notes}` : "",
+    worldLoreNote(worldLore),
     MONEY_SCALE_NOTE,
   ].filter(Boolean).join(`
 `);

@@ -365,13 +365,15 @@ const moduleCharacter = (moduleId, key, value) =>
     S.sheet = res.sheet;
   });
 const saveSetting = (key, value) =>
-  settingsSave(
-    "settings",
-    {
-      [key]: value,
-    },
-    key.startsWith("image") ? "images" : "model",
-  );
+  key === "worldLore"
+    ? settingsSave("world-lore", { lorebookId: value }, "lore")
+    : settingsSave(
+        "settings",
+        {
+          [key]: value,
+        },
+        key.startsWith("image") ? "images" : "model",
+      );
 const SPOIL_OPEN = {
   hidden: 0,
   found: 1,
@@ -553,6 +555,7 @@ const openAdding = () =>
     };
     draft.townName = S.life.townName ?? "";
     draft.scenario = S.life.scenario ?? "";
+    draft.loreBookId = S.life.worldLore?.lorebookId ?? "";
     draft.pickerOpen = true;
     const inTown = (S.life.contacts ?? []).filter((contact) => !contact.away).length;
     S.resources = {
