@@ -1,21 +1,21 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const localCanvas = await readFile(
+const localCanvas = readFileSync(
   resolve(
     repoRoot,
     "packages/hierarchical-maps/src/engine/packages/client/src/features/spatial-context/components/LocalMapCanvas.tsx",
   ),
   "utf8",
 );
-const runtimeCanvas = await readFile(
+const runtimeCanvas = readFileSync(
   resolve(repoRoot, "packages/hierarchical-maps/src/engine/packages/client/src/components/game/GameWorldMap.tsx"),
   "utf8",
 );
-const packageBuilder = await readFile(resolve(repoRoot, "scripts/build-feature-packages.mjs"), "utf8");
+const packageBuilder = readFileSync(resolve(repoRoot, "scripts/build-feature-packages.mjs"), "utf8");
 
 assert.match(localCanvas, /aspect-square w-full/u, "Editor canvas must keep the canonical square projection");
 assert.match(runtimeCanvas, /aspect-square w-full/u, "Runtime canvas must keep the canonical square projection");
