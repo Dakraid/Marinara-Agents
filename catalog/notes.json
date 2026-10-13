@@ -622,6 +622,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.32",
+          "date": "2026-10-13",
+          "notes": "- Fixed: the picture writer's result was thrown away as \"broke the scene's content level\" when it only repeated a word from the Creator's own look or the draft (for example \"breasts\") on a clothed scene. A word the writer was handed in those two no longer counts as an escalation; limits and the content policy do not count as a source. (#1347)\n- Fixed: when the writer's result was unusable, a long look filled the whole length cap of the fallback prompt, so the picture got an appearance and no scene. The look now keeps a bounded share and the scene keeps the rest.",
+          "highlight": false
+        },
+        {
           "version": "0.3.31",
           "date": "2026-10-13",
           "notes": "- Changed: the guided post (New post, and Stir's \"Draft post\") is now written by the same generator as the page's own posts, with your wish as the direction. The draft gets the bio, stage voice, brief, spice level, image directions and live events, and comes back as a title, a text and a picture of its own. Before, your wish went word for word into the picture.\n- Changed: one composer. The picture is on top, then who sees the post, then one switch for the text: \"Write it myself\" or \"Guided\". A guided draft fills the normal title, text and picture; the separate preview and its \"Edit\" step are gone. A photo you add stays, and the text is written to go with it.\n- Added: \"Add from Slurp\" on Guided: a storyline of the page, a saved idea (posting the draft uses it up) and a wardrobe look for the picture. Brand deals and collabs stay.\n- Known limit: posting a draft written for a storyline does not move the storyline to its next chapter.",
@@ -733,12 +739,6 @@
           "version": "0.3.11",
           "date": "2026-10-01",
           "notes": "Your relationship with a Creator, and a story-first Stir.\n\n- Your chats move your relationship: crush, dating, official, fights, making up. She calls you her boyfriend or girlfriend, sends you free pictures, texts about dates and anniversaries, and can keep it secret.\n- Details › You two shows the stage, the dates that matter and the moves, with Undo. Notifications and the main chat know about it.\n- Stir: Stir | Desk, your relationship on top, Now showing, Start a story with drama packs you can lead and end. Each persona sees only its own pages.\n- Fans leave notes on your page instead of chats. Settings › Overview › Pause all stops all of Slurp.\n- Adding many Creators at once: taken handles get the next free one instead of failing, the sign-up runs in the background with progress (close Slurp if you like), and first posts work for batches over 24.\n- Fixes: Backstage menu scrolls on short screens, reunions with you are official, a few couple and label bugs.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.10",
-          "date": "2026-09-30",
-          "notes": "- If Slurp cannot load because this device has no Admin Secret, it now explains how to set one instead of asking you to check your connection.",
           "highlight": false
         }
       ]

@@ -22,9 +22,11 @@ const MIN_GUIDANCE_BLOCK_LENGTH = 40;
 export const MAX_FALLBACK_IMAGE_PROMPT_LENGTH = 1_500;
 
 /** Cut to the ceiling on a sentence, then a word boundary — a mid-word cut reads as a typo. */
-export function capFallbackImagePrompt(value: string): string {
-  if (value.length <= MAX_FALLBACK_IMAGE_PROMPT_LENGTH) return value;
-  const head = value.slice(0, MAX_FALLBACK_IMAGE_PROMPT_LENGTH);
+const squash = (value: string) => value.replace(/\s+/gu, " ");
+
+export function capFallbackImagePrompt(value: string, max = MAX_FALLBACK_IMAGE_PROMPT_LENGTH): string {
+  if (value.length <= max) return value;
+  const head = value.slice(0, max);
   const sentenceEnd = Math.max(
     head.lastIndexOf("."),
     head.lastIndexOf("!"),
@@ -33,7 +35,7 @@ export function capFallbackImagePrompt(value: string): string {
   );
   // Only honour a boundary in the last quarter, so a prompt with one early full stop is not
   // truncated down to that sentence.
-  const floor = Math.floor(MAX_FALLBACK_IMAGE_PROMPT_LENGTH * 0.75);
+  const floor = Math.floor(max * 0.75);
   if (sentenceEnd >= floor) return head.slice(0, sentenceEnd + 1).trim();
   const wordEnd = head.lastIndexOf(" ");
   return (wordEnd >= floor ? head.slice(0, wordEnd) : head).trim();
@@ -450,6 +452,8 @@ export function selectSlpImageProviderPrompt(input: {
   rawPrompt: string;
   /** Visual facts that must survive a capped fallback when the rewrite is unavailable. */
   fallbackPrefix?: string;
+  /** The post's own scene. When the fallback overflows the cap it leads, so the look cannot push it out. */
+  fallbackScene?: string;
   /** Never belongs in a visual prompt at any length, so it is matched whole. */
   privateContext?: ReadonlyArray<string | null | undefined>;
   /** Authored to steer the image, so only a copied block counts as a leak. */
@@ -463,7 +467,21 @@ export function selectSlpImageProviderPrompt(input: {
 }): string {
   const fallback = (reason: string) => {
     input.onFallback?.(reason);
-    return capFallbackImagePrompt([input.fallbackPrefix?.trim(), input.rawPrompt].filter(Boolean).join("\n\n"));
+    const prefix = input.fallbackPrefix?.trim() ?? "";
+    const full = [prefix && !squash(input.rawPrompt).includes(squash(prefix)) ? prefix : "", input.rawPrompt]
+      .filter(Boolean)
+      .join("\n\n");
+    if (full.length <= MAX_FALLBACK_IMAGE_PROMPT_LENGTH || (!prefix && !input.fallbackScene)) {
+      return capFallbackImagePrompt(full);
+    }
+    // Over the cap a long look led and used all of it, so the picture was an appearance and no
+    // scene. The look keeps a bounded share and the scene gets the rest.
+    const head = capFallbackImagePrompt(prefix, 900);
+    const scene = capFallbackImagePrompt(
+      input.fallbackScene?.trim() || input.rawPrompt,
+      MAX_FALLBACK_IMAGE_PROMPT_LENGTH - head.length - 2,
+    );
+    return [head, scene].filter(Boolean).join("\n\n");
   };
   const rewrittenPrompt = input.rewrittenPrompt?.trim();
   if (!rewrittenPrompt) {

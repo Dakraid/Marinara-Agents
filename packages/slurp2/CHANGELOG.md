@@ -1,5 +1,10 @@
 # Slurp release notes
 
+## 0.3.32 — 2026-10-13
+
+- Fixed: the picture writer's result was thrown away as "broke the scene's content level" when it only repeated a word from the Creator's own look or the draft (for example "breasts") on a clothed scene. A word the writer was handed in those two no longer counts as an escalation; limits and the content policy do not count as a source. (#1347)
+- Fixed: when the writer's result was unusable, a long look filled the whole length cap of the fallback prompt, so the picture got an appearance and no scene. The look now keeps a bounded share and the scene keeps the rest.
+
 ## 0.3.31 — 2026-10-13
 
 - Changed: the guided post (New post, and Stir's "Draft post") is now written by the same generator as the page's own posts, with your wish as the direction. The draft gets the bio, stage voice, brief, spice level, image directions and live events, and comes back as a title, a text and a picture of its own. Before, your wish went word for word into the picture.
@@ -20,6 +25,7 @@
 
 - Added: Deep details for chat messages. Hold a Creator's reply (or right-click it) and choose "Deep details" in the Message menu to see what went into it: the chat facts the reply was built from (relationship, stance, heat, memories), the model, the full prompt and the raw answer. It opens in the same window as a post's Deep details.
 - Slurp keeps these details for the newest 50 replies of each chat. Older replies, and replies written before this update, do not offer the item. Clearing a chat removes its details.
+
 ## 0.3.27 — 2026-10-12
 
 - Added: "Page style" in a Creator's Posting settings says in plain words how they post (for example "Polished · nearly always pictures · automatic"). The Overview's Posting tile shows the same line. It replaces "Posting strategy"; the number fields are under "Fine-tune page style".
