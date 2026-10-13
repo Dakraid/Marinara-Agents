@@ -20,20 +20,29 @@ import { characterOf, nameFor, sharesYourDoor } from "../game.mjs";
 function jobsView(state) {
   let holders = jobHolders(state.characters);
   return {
-    list: townJobs(state.town).map((job) => ({
-      id: job.id,
-      place: job.place,
-      placeName: job.placeName,
-      title: job.title,
-      shift: job.shift,
-      clothes: job.clothes,
-      holder: holders[job.id]
-        ? {
-            id: holders[job.id],
-            name: nameFor(state, characterOf(state, holders[job.id])),
-          }
-        : null,
-    })),
+    list: townJobs(state.town).map((job) => {
+      let held = (holders[job.id] ?? []).map((holderId) => ({
+        id: holderId,
+        name: nameFor(state, characterOf(state, holderId)),
+      }));
+      return {
+        id: job.id,
+        place: job.place,
+        placeName: job.placeName,
+        title: job.title,
+        shift: job.shift,
+        clothes: job.clothes,
+        pay: job.pay,
+        ...(job.boss
+          ? {
+              boss: true,
+            }
+          : {}),
+        holders: held,
+        // Only a boss job is ever full: everyone else can share a job.
+        holder: job.boss ? (held[0] ?? null) : null,
+      };
+    }),
     who: Object.fromEntries(state.characters.map((character) => [character.id, jobChoiceId(character.job) ?? ""])),
     titles: Object.fromEntries(
       state.characters

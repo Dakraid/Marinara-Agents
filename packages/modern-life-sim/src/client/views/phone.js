@@ -104,6 +104,8 @@ function moneyTab(you, { ledgerAll: ledgerAll }) {
       ${money.lodging?.kind === "home" ? `<span class="k">Rent due</span><span>Day ${money.rentDay} of each season \xB7 in ${money.rentIn} day${money.rentIn === 1 ? "" : "s"}</span>` : ""}
       <span class="k">Home</span><span>${escape(money.home)}${money.door ? ` \xB7 ${escape(money.door)}` : ""}</span>
       <span class="k">Living with</span><span>${escape(money.flatmate)}</span>
+      ${money.household ? `<span class="k">Household</span><span>${money$(money.household)} a week from the pay of who lives with you${info("Paid into your cash at the end of each day they work. See BILLS.", "bills")}</span>` : ""}
+      ${money.ubi ? `<span class="k">Basic income</span><span>${money$(money.ubi)} on day 1 of each season</span>` : ""}
     </div>
     <h4>LAST MOVES</h4>
     ${

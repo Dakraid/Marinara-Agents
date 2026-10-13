@@ -14,7 +14,7 @@ import {
   seededRandom,
   whereaboutsOf,
 } from "./schedule/whereabouts.mjs";
-import { jobHolders } from "./jobs/town-jobs.mjs";
+import { jobHolders, townJobById } from "./jobs/town-jobs.mjs";
 import { residenceForHomeKind, validResidencePlace } from "./housing/residence-units.mjs";
 import { assignResidences, buildResidenceDirectory, nextFreeUnit } from "./housing/residences.mjs";
 import {
@@ -123,9 +123,11 @@ import {
   housingCostOf,
   normalizeHomeKind,
   openBills,
+  rentSeasonKey,
   spendMoney,
   totalOwed,
 } from "./money/wallet.mjs";
+import { cleanUbi, payBasicIncome, payHouseholdDay } from "./money/household.mjs";
 import {
   HUNGER_DRAIN_PER_HOUR,
   NEEDS_MAX,
@@ -397,6 +399,8 @@ function createGame({
         home: home,
       }),
       flatmate: null,
+      // A life that starts on day 1 gets its first basic income right away; otherwise on the next day 1.
+      ubiPaidThrough: clockFromMinutes(startMinutes).day === 1 ? null : rentSeasonKey(startMinutes),
     },
     skills: startingSkillXp(startingSkills),
     job: createOfficeJob({
@@ -688,6 +692,7 @@ function advanceTime(game, minutes, { asleep = false, bedQuality = 0.7, walking 
   }
   for (let day = before.dayIndex; day < after.dayIndex; day++) {
     let dayEnd = (day + 1) * 24 * 60 - 1;
+    payHouseholdDay(game, day);
     if (game.job.employed && isOfficeWorkday(dayEnd, game.job) && game.job.lastShiftDay !== day) {
       let missed = missedOfficeShift(game.job, dayEnd);
       events.push({
@@ -704,6 +709,7 @@ function advanceTime(game, minutes, { asleep = false, bedQuality = 0.7, walking 
   }
   if (
     (payRentDay(game, events),
+    payBasicIncome(game),
     runDueEviction(game, events),
     after.dayIndex > before.dayIndex && homeDailyTick(game, events),
     after.dayIndex > before.dayIndex && weddingDayTick(game, events),
@@ -3893,6 +3899,9 @@ function cleanRulesIn(input = {}) {
       rules[key] = input[key];
     }
   }
+  if (input.ubi !== undefined) {
+    rules.ubi = cleanUbi(input.ubi);
+  }
   return rules;
 }
 function setRules(game, input = {}) {
@@ -3919,6 +3928,13 @@ function setRules(game, input = {}) {
   }
   if (rules.seasonOutfits && !imageChoice(game).connectionId) {
     rules.seasonOutfits = false;
+  }
+  if (input.ubi !== undefined) {
+    rules.ubi = cleanUbi(input.ubi);
+    if (rules.ubi && !cleanUbi(game.rules?.ubi)) {
+      // Switched on mid-season: the first basic income comes on the next day 1.
+      game.wallet.ubiPaidThrough = rentSeasonKey(game.minutes);
+    }
   }
   for (let key of ["showArchetypes", "showSchedules"]) {
     if (SHOW_RULE_MODES.includes(input[key])) {
@@ -4128,6 +4144,7 @@ function setAway(game, characterId, away) {
   if (
     !away &&
     character.job?.id &&
+    townJobById(game.town, character.job.id)?.boss &&
     jobHolders(game.characters.filter((other) => other.id !== characterId))[character.job.id]
   ) {
     setJob(game, characterId, "out");

@@ -550,6 +550,9 @@ class ModernLifeSimElement extends HTMLElement {
       if (input.dataset?.setRule) {
         return saveRule(input.dataset.setRule, input.checked, "rules");
       }
+      if (input.dataset?.setUbi !== undefined) {
+        return saveRule("ubi", Math.max(0, Math.floor(Number(input.value) || 0)), "rules");
+      }
       if (input.dataset?.modCast) {
         const [moduleId, characterId, key] = input.dataset.modCast.split("|");
         return moduleCast(moduleId, characterId, key, input.value);
@@ -3073,6 +3076,8 @@ ${life?.name ?? id}`);
       return;
     } else if (action === "savings") {
       draft.savings = target.value;
+    } else if (action === "ubi") {
+      draft.rules.ubi = Math.max(0, Math.min(100000, Math.floor(Number(target.value) || 0)));
     } else if (action === "season") {
       draft.season = target.value;
     } else if (action === "scenario") {
