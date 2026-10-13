@@ -1,5 +1,9 @@
 # Slurp release notes
 
+## 0.3.35 — 2026-10-13
+
+- Added: "The image model knows this character" can be chosen while adding a Creator, in Quick setup, in the customise path and in the role-play sign-up. It starts on, like before, and is saved with the new Creator. You can still change it later in the Creator's settings. (#1353)
+
 ## 0.3.34 — 2026-10-13
 
 - Fixed: in a chat, a Creator could not see what was inside her own locked posts: the message prompt replaced the body with "[paid post, contents not repeated here]". She now gets the real text, and the existing locked and already-unlocked fields still say whether this fan has seen it. (#1351)

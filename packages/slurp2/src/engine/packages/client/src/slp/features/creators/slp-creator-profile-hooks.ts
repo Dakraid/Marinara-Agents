@@ -22,12 +22,15 @@ export function useCreateCreatorStageProfile() {
     mutationFn: ({
       sourceAccountId,
       stageProfile,
+      imageNameKnown,
     }: {
       sourceAccountId: string;
       stageProfile: SlurpStageProfileInput;
+      imageNameKnown?: boolean;
     }) =>
       api.post<SlurpManagedStageProfile>(`/slurp2/accounts/${encodeURIComponent(sourceAccountId)}/noodler`, {
         stageProfile,
+        ...(imageNameKnown === false ? { imageNameKnown } : {}),
       }),
     onSuccess: () =>
       Promise.all([
@@ -58,6 +61,7 @@ export function useBulkCreateCreatorStageProfiles() {
         imageConnectionId?: string | null;
         personaId?: string;
         completeOnboarding?: boolean;
+        imageNameKnown?: boolean;
       };
       onProgress?: (done: number, total: number) => void;
     }) => {
