@@ -1,6 +1,54 @@
 // Changelog entries plus module notes merge
 var RELEASE_NOTES = [
   {
+    version: "0.4.0",
+    date: "2026-10-13",
+    lines: [
+      {
+        text: "Per-life model settings",
+        items: [
+          "Per-life model settings: temperature, top P, top K, min P, frequency and presence penalty, verbosity, service tier, stop sequences, custom parameters and answer length, in SETTINGS · MODEL · ADVANCED and when you create a life. Blank keeps the connection's own value.",
+        ],
+      },
+      {
+        text: "World lore",
+        items: [
+          "World lore: pick one of your lorebooks when you create a life, and every scene reads a copy of it. Switch, clear or re-pull it in SETTINGS · MODEL.",
+        ],
+      },
+      {
+        text: "Several people can hold the same job now; a place still has only one boss",
+        items: [
+          "Several people can hold the same job now; a place still has only one boss. Every job pays by the shift.",
+        ],
+      },
+      {
+        text: "Living together means sharing money",
+        items: [
+          "Living together means sharing money: a partner or housemate who lives with you puts their pay into your wallet each day they work.",
+        ],
+      },
+      {
+        text: "Basic income",
+        items: [
+          "Basic income: set how much you get each season, at creation or in Settings · Rules. It pays on day 1.",
+        ],
+      },
+      {
+        text: "Futanari joins woman and man for you and for everyone in the cast, and who someone is into is a pick of women, men and futanari",
+        items: [
+          "Futanari joins woman and man for you and for everyone in the cast, and who someone is into is a pick of women, men and futanari.",
+        ],
+      },
+      {
+        text: "In the optional Adult Module",
+        items: [
+          "In the optional Adult Module: switching it on asks once and means you're an adult, with no separate box to tick, and each adult in the cast has a disposition (dominant, submissive or switch), their own kinks, and their orientation on the ADULT tab, which intimate scenes follow.",
+        ],
+      },
+    ],
+  },
+  {
     version: "0.3.2",
     date: "2026-10-02",
     lines: [

@@ -34,6 +34,8 @@ This is an **alpha** and the package is **staging only**: Engine `staging` teste
 
 0.3.2 fixes plans landing on a party, dating more than one person, dragging the phone button on a phone, and pictures while a new season's outfits are painted.
 
+0.4.0 adds per-life advanced model settings, a lorebook as world lore, shared jobs with pay by the shift, a household wallet when you live together, basic income, futanari as a sex with attraction as a pick of women, men and futanari, and, in the optional Adult Module, one confirmation and per-person disposition, kinks and orientation.
+
 All generation — cast readings, scene lines, backgrounds and outfit pictures — runs through the Engine profile's own configured model and image connections. The package adds no external services and sends nothing anywhere else. The numbers (bonds, money, time, outcomes) are always decided by the package's code; the model only writes the words.
 
 ## Requirements

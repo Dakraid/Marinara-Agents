@@ -4,6 +4,12 @@
     "modern-life-sim": {
       "versions": [
         {
+          "version": "0.4.0",
+          "date": "2026-10-13",
+          "notes": "- Advanced model settings per life (temperature, top P/K, min P, penalties, verbosity, stop sequences, custom parameters, answer length) in SETTINGS · MODEL · ADVANCED and at creation.\n- World lore: pick a lorebook when you create a life and every scene reads a copy of it.\n- Several people can share a job (one boss per place), and every job pays by the shift.\n- Living together shares money: a partner or housemate puts their pay into your wallet each day they work.\n- Basic income: set an amount paid on day 1 of each season.\n- Futanari joins woman and man, and who someone is into is a pick of women, men and futanari.\n- Optional Adult Module: switching it on asks once, and each adult has a disposition, kinks and orientation on the ADULT tab.",
+          "highlight": true
+        },
+        {
           "version": "0.3.2",
           "date": "2026-10-02",
           "notes": "- If someone is throwing a party or going to one, they won't make plans with you for those hours, even if you said you can't come. When you invite someone out, you can see the hours they have a party.\n- If someone starts dating you knowing you already have a partner, they're okay with it. This also fixes the lives you're already playing.\n- On a phone, you can drag the phone button with your finger.\n- When a new season starts, people keep last season's outfit until the new one is ready.\n- Fixes in the optional Adult Module.",

@@ -541,7 +541,7 @@ import {
 } from "../i18n/call-words.mjs";
 
 var ID = "modern-life-sim";
-var VERSION = "0.3.2";
+var VERSION = "0.4.0";
 var MAX_PICTURE_DATA_URL_LENGTH = Math.ceil((8 * 1024 * 1024 * 4) / 3) + 64;
 var PICTURE_REQUEST_TIMEOUT_MS = 9e4;
 var CANCEL_WAIT_TIMEOUT_MS = 5e3;

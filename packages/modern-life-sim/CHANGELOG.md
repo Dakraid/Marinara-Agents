@@ -1,3 +1,12 @@
+## 0.4.0 — 2026-10-13
+- Advanced model settings per life (temperature, top P/K, min P, penalties, verbosity, stop sequences, custom parameters, answer length) in SETTINGS · MODEL · ADVANCED and at creation.
+- World lore: pick a lorebook when you create a life and every scene reads a copy of it.
+- Several people can share a job (one boss per place), and every job pays by the shift.
+- Living together shares money: a partner or housemate puts their pay into your wallet each day they work.
+- Basic income: set an amount paid on day 1 of each season.
+- Futanari joins woman and man, and who someone is into is a pick of women, men and futanari.
+- Optional Adult Module: switching it on asks once, and each adult has a disposition, kinks and orientation on the ADULT tab.
+
 ## 0.3.2 — 2026-10-02
 - If someone is throwing a party or going to one, they won't make plans with you for those hours, even if you said you can't come. When you invite someone out, you can see the hours they have a party.
 - If someone starts dating you knowing you already have a partner, they're okay with it. This also fixes the lives you're already playing.
