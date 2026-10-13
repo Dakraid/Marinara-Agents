@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.36";
+export const SLURP2_VERSION = "0.3.37";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -13,9 +13,18 @@ export interface Slurp2ReleaseEntry {
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
   {
+    version: "0.3.37",
+    date: "2026-10-13",
+    notes: [
+      "With Claude (Subscription) on Marinara newer than 2.5.0, Slurp no longer sends your account email or computer details to the model.",
+    ],
+  },
+  {
     version: "0.3.36",
     date: "2026-10-13",
-    notes: ["With Claude (Subscription), Slurp no longer sends your account email or computer details to the model."],
+    notes: [
+      "A creator's bio and stage voice now steer what she posts about, so a hobby in her bio shows up in her feed.",
+    ],
   },
   {
     version: "0.3.35",
@@ -773,15 +782,6 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
       "Posts never repeat private things from your messages.",
       "Teasers and everyday posts stay short; behind-the-scenes posts can run long.",
       "Stories can be thank-yous and requests too.",
-    ],
-  },
-  {
-    version: "0.2.0",
-    date: "2026-09-21",
-    notes: [
-      "Creators plan their posts: teasers, photo sets of up to three pictures and Stories.",
-      "Fan requests get answered, and Creators keep their promises.",
-      "Creators remember what they said and did, and what fans share in private stays private.",
     ],
   },
 ];

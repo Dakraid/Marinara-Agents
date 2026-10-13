@@ -29,7 +29,7 @@ await cp(pluginSource, pluginDir, { recursive: true });
 const mocks = new Map([
   [
     join(server, "lib/logger.js"),
-    "export const logger = {debug(){},info(){},warn(){},error(){},isLevelEnabled(){return false}}; export function logDebugOverride(){}",
+    "export const logger = {debug(){},info(){},warn(...args){(globalThis.overlayWarnings ??= []).push(args)},error(){},isLevelEnabled(){return false}}; export function logDebugOverride(){}",
   ],
   [
     join(server, "config/runtime-config.js"),
@@ -71,7 +71,7 @@ const init = (extra = {}) => ({
   skills: [],
   plugins: [{ name: "marinara-chat-context", path: pluginDir }],
   slash_commands: [],
-  claude_code_version: "2.1.0",
+  claude_code_version: "2.1.293",
   apiKeySource: "none",
   ...extra,
 });
@@ -126,6 +126,16 @@ try {
   assert.deepEqual(options.tools, []);
   assert.deepEqual(options.settingSources, []);
   assert.equal(options.systemPrompt, "You are Mari.");
+  assert.equal(globalThis.overlayWarnings, undefined, "a Claude Code that applies the plugin needs no warning");
+
+  // Engine 2.5.0's Claude Code (2.1.282) loads the plugin but ignores it: warn once per process.
+  for (let request = 0; request < 2; request += 1) {
+    script = [init({ claude_code_version: "2.1.282" }), success];
+    assert.equal(await run(), "Hi there.");
+  }
+  assert.equal(globalThis.overlayWarnings?.length, 1);
+  assert.match(globalThis.overlayWarnings[0][0], /ignores the chat-context mod/u);
+  assert.equal(globalThis.overlayWarnings[0][1], "2.1.282");
 
   // Claude Code reporting claude.ai connectors or mcp__ tools stops the request.
   for (const exposed of [
@@ -177,4 +187,6 @@ for (const id of ["noodle", "slurp2", "conversation-calls"]) {
   }
 }
 
-console.log("Claude (Subscription) overlay: title preset, plugin wired and required, MCP exposure stops the request");
+console.log(
+  "Claude (Subscription) overlay: title preset, plugin wired and required, old Claude Code warned, MCP exposure stops the request",
+);

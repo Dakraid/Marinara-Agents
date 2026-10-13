@@ -2,7 +2,7 @@
 
 ## 1.1.3 — 2026-10-13
 
-- With a Claude (Subscription) connection, Calls no longer makes a hidden second request to name each session, and Claude Code no longer adds your account email, the date or this computer's details to the prompt. A request now stops with an error if Claude Code turns on claude.ai connectors. (#1313)
+- With a Claude (Subscription) connection, Calls no longer makes a hidden second request to name each session, and a request now stops with an error if Claude Code turns on claude.ai connectors. With a Marinara Engine release after 2.5.0, Claude Code also no longer adds your account email, the date or this computer's details to the prompt. Engine 2.5.0's Claude Code still adds them, and the server log warns about it until you update Marinara. (#1313)
 
 ## 1.1.2 — 2026-10-12 [highlight]
 

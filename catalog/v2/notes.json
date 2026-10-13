@@ -38,7 +38,7 @@
         {
           "version": "1.1.3",
           "date": "2026-10-13",
-          "notes": "- With a Claude (Subscription) connection, Calls no longer makes a hidden second request to name each session, and Claude Code no longer adds your account email, the date or this computer's details to the prompt. A request now stops with an error if Claude Code turns on claude.ai connectors. (#1313)",
+          "notes": "- With a Claude (Subscription) connection, Calls no longer makes a hidden second request to name each session, and a request now stops with an error if Claude Code turns on claude.ai connectors. With a Marinara Engine release after 2.5.0, Claude Code also no longer adds your account email, the date or this computer's details to the prompt. Engine 2.5.0's Claude Code still adds them, and the server log warns about it until you update Marinara. (#1313)",
           "highlight": false
         },
         {
@@ -212,6 +212,12 @@
     "long-term-memory": {
       "versions": [
         {
+          "version": "1.4.30",
+          "date": "2026-10-13",
+          "notes": "- Recall can now include a memory that nearly matches the chat when a recalled memory links to it with an explanatory link: an evidence link, a thread and the event that caused or triggered it, or a relationship and the event that caused it. The linked memory must match the chat on its own at least a little (relevance 0.2), and links from memories that were not recalled add nothing. Recalled memories keep their places, and the memory cap and token budget still apply. This applies in the balanced, broad and story styles. A memory reached only through a link, with no match of its own, is no longer recalled, even at a threshold of 0. A saved `custom` graph weight now turns linked recall on or off and no longer scales a score, and the Memory Settings help text says so.",
+          "highlight": false
+        },
+        {
           "version": "1.4.29",
           "date": "2026-10-12",
           "notes": "- Clean up how Long-Term Memory behaves around damaged or old data, with no change to recall scoring or extraction. Delete all data now also removes the vault copies that identity and fork repairs keep, and those copies are limited to the newest three. Extraction no longer stops for good at 10,000 rejected suggestions: the least recently seen ones make room and saved identity decisions are kept. A malformed `usage.json` or injection receipt no longer blocks activation, and one note with an unknown field no longer stops recall of the others; writes still refuse to run over a vault they cannot fully read. An out-of-date recall index is rebuilt in place instead of leaving a full copy in quarantine. Identity and fork repairs now redirect rejected suggestions to the surviving memory, as renaming a memory already did.",
@@ -324,17 +330,17 @@
           "date": "2026-10-07",
           "notes": "- Stop losing selected memories while building the recall prompt. The budget counted only chunk text, so the framing and preamble pushed the assembled prompt past the limit and the serializer dropped its last chunks without reconsidering the smaller ones it had skipped; a high-scoring memory could be dropped while one that fit was left out. The fixed prompt overhead is now reserved in the recall budget, and a chunk that no longer fits is skipped so later chunks that still fit are kept.",
           "highlight": false
-        },
-        {
-          "version": "1.4.10",
-          "date": "2026-10-07",
-          "notes": "- Count only in-scope memories toward the recall caps. Keyword, tag and note buckets were truncated to 128 entries before the chat's scope, status and mode filter ran, so 128+ out-of-scope chunks sharing a popular keyword or `#tag` could crowd an in-scope memory out of the exact keyword hit, the direct hit, and the graph seeds those hits produce. The fuzzy keyword scan had the same flaw at 512 vault-wide keywords, which could leave a late-alphabet keyword unmatchable; both caps now count only what the current chat may recall.",
-          "highlight": false
         }
       ]
     },
     "memory-nag": {
       "versions": [
+        {
+          "version": "1.2.0",
+          "date": "2026-10-13",
+          "notes": "Scans now read Roleplay whispers the way the Engine's own agents do, marked private with who they were for, so a promise made in a whisper can become a memory. A message that is only a whisper is no longer read as empty. This needs a Marinara Engine that shares whispers with Agents; older versions keep reading public messages only.",
+          "highlight": true
+        },
         {
           "version": "1.1.3",
           "date": "2026-10-01",
@@ -366,7 +372,7 @@
         {
           "version": "1.5.6",
           "date": "2026-10-13",
-          "notes": "- With a Claude (Subscription) connection, Noodle no longer makes a hidden second request to name each session, and Claude Code no longer adds your account email, the date or this computer's details to the prompt. A request now stops with an error if Claude Code turns on claude.ai connectors. (#1313)",
+          "notes": "- With a Claude (Subscription) connection, Noodle no longer makes a hidden second request to name each session, and a request now stops with an error if Claude Code turns on claude.ai connectors. With a Marinara Engine release after 2.5.0, Claude Code also no longer adds your account email, the date or this computer's details to the prompt. Engine 2.5.0's Claude Code still adds them, and the server log warns about it until you update Marinara. (#1313)",
           "highlight": false
         },
         {
@@ -600,6 +606,12 @@
     "relationship-tracker": {
       "versions": [
         {
+          "version": "0.7.0",
+          "date": "2026-10-13",
+          "notes": "- In Roleplay, Update from History now reads whispers the way the Engine's own agents do, marked private with who they were for. A message that is only a whisper is no longer read as empty.\n- This needs a Marinara Engine that shares whispers with Agents. On older versions, the tracker keeps reading public messages only.",
+          "highlight": true
+        },
+        {
           "version": "0.6.4",
           "date": "2026-10-09",
           "notes": "- Fixed Update from History failing with \"Persona update 1 must contain exactly five values\" when a persona is active. The tracker now tells the model the exact shape of a persona perception, so it stops copying the lock flag into its answer.\n- The same fix helps automatic updates, which were quietly skipping those persona perception changes.\n- If a model still returns the wrong shape, the error now says how many values it sent.",
@@ -634,9 +646,15 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.37",
+          "date": "2026-10-13",
+          "notes": "- With a Claude (Subscription) connection, Slurp no longer makes a hidden second request to name each session, and a request now stops with an error if Claude Code turns on claude.ai connectors. With a Marinara Engine release after 2.5.0, Claude Code also no longer adds your account email, the date or this computer's details to the prompt. Engine 2.5.0's Claude Code still adds them, and the server log warns about it until you update Marinara. (#1313)\n- Changed: avatar references are allowed for SpicyAPI edit models (model IDs ending in /edit) and still left out for its text-to-image models. Slurp's bundled image code cannot call SpicyAPI yet, so SpicyAPI pictures do not work in Slurp until it can. (#1337)",
+          "highlight": false
+        },
+        {
           "version": "0.3.36",
           "date": "2026-10-13",
-          "notes": "- With a Claude (Subscription) connection, Slurp no longer makes a hidden second request to name each session, and Claude Code no longer adds your account email, the date or this computer's details to the prompt. A request now stops with an error if Claude Code turns on claude.ai connectors. (#1313)\n- Changed: avatar references are allowed for SpicyAPI edit models (model IDs ending in /edit) and still left out for its text-to-image models. Slurp's bundled image code cannot call SpicyAPI yet, so SpicyAPI pictures do not work in Slurp until it can. (#1337)",
+          "notes": "- Fixed: a Creator's bio and stage voice now steer what she posts about. The post planner reads them beside the character card (hidden identities stay hidden), so a hobby named only in the bio, such as cosplay, becomes post subjects. The post prompt also says that interests named in the bio and stage voice count. (#1358)\n- Changed: the no-repeat rule no longer blocks a theme that the bio, stage voice, or card names as what the Creator does. A new setting, framing, and look each time is still required, and the same outfit or wording is still a repeat. (#1358)",
           "highlight": false
         },
         {
@@ -745,12 +763,6 @@
           "version": "0.3.18",
           "date": "2026-10-08",
           "notes": "Engine macros in Slurp, fewer recycled pictures.\n\n- Character cards and wardrobe looks resolve Engine macros such as `{{random::red::green::blue}}`, `{{char}}`, `{{user}}` and `{{#if}}`. A wardrobe look rolls again for each post.\n- Macros that need a chat, such as `{{input}}` or chat variables, resolve to nothing in Slurp.\n- Picture reuse: each earlier picture goes up again at most once, and a repost is never the source of another repost. New setting in Settings › Publishing: Off, Rare or Regular (the old behavior). Off stops automatic reuse; a reuse the player picks still works.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.17",
-          "date": "2026-10-06",
-          "notes": "Spice in one place, user reports, speed.\n\n- Spice: one level (Clean, Flirty, Suggestive, Explicit) for text and pictures, set in Settings › Spice, per Creator in Content rules or Stir. New Language: soft, frank or dirty. Writing keeps only the house style; old presets move over.\n- Romance per Creator (Collaborations): off, or only with chosen Creators.\n- Collabs: the partner's look and identity reach the post and picture; agreed collabs get Post it now and Drop it.\n- Stir: End it works; leaving a Support chat returns to Desk. Send a photo: the whole button picks a file.\n- Faster: chat typing, profiles, notifications, feed, inbox; less polling; no blur on chat bubbles.\n- Fixes: a profile no longer marks its chat read; bulk add no longer hangs; scenes keep Keep out recaps private and hold tips and drama questions; failed pictures retry.",
           "highlight": false
         }
       ]

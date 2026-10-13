@@ -63,6 +63,11 @@ const CACHE_READ_COST_MULTIPLIER = 0.1;
 const CHAT_CONTEXT_PLUGIN_DIR = fileURLToPath(new URL("./claude-code-plugin", import.meta.url));
 const CHAT_CONTEXT_PLUGIN_NAME = "marinara-chat-context";
 const CHAT_CONTEXT_PLUGIN_FILES = [".claude-plugin/plugin.json", "hooks/hooks.json", "hooks/register.mjs"];
+/** Oldest Claude Code verified to apply the mod. 2.1.282 (Marinara Engine 2.5.0's Agent SDK) loads
+ * it without an error but ignores its `prompt.attachment` result, so the context still goes out.
+ * Packages run the Claude Code the host Engine links, so they cannot pick a newer one. */
+const CHAT_CONTEXT_MIN_CLAUDE_CODE = "2.1.293";
+let warnedClaudeCodeIgnoresPlugin = false;
 
 /**
  * Refuse to start a request without the chat-context mod. This runs before the
@@ -465,7 +470,8 @@ export class ClaudeSubscriptionProvider extends BaseLLMProvider {
     //     puts between the system prompt and the chat: the account email,
     //     the `# Environment` block, the model note, the date and the like.
     //     `chat()` refuses to start when the plugin's files are missing, and
-    //     the `init` guard below warns when it reports a load error. Where
+    //     the `init` guard below warns when it reports a load error or when
+    //     Claude Code is too old to apply it (Engine 2.5.0's 2.1.282). Where
     //     mods can't run (disabled by settings or policy), Claude Code
     //     reports nothing and that context comes back.
     //
@@ -612,6 +618,21 @@ export class ClaudeSubscriptionProvider extends BaseLLMProvider {
             logger.warn(
               { pluginErrors },
               "[claude-subscription] chat-context mod failed to load; the CLI's email, date and environment context reach the model",
+            );
+          }
+          // ponytail: warns once, after the first request has gone out, and does not refuse,
+          // because refusing would break Claude (Subscription) in these packages on Engine 2.5.0,
+          // whose own chats send the same context. Upgrade path: raise the packages' minimum
+          // Engine to the first release with Claude Code 2.1.293 or newer, then drop this.
+          if (
+            !warnedClaudeCodeIgnoresPlugin &&
+            message.claude_code_version &&
+            message.claude_code_version.localeCompare(CHAT_CONTEXT_MIN_CLAUDE_CODE, "en", { numeric: true }) < 0
+          ) {
+            warnedClaudeCodeIgnoresPlugin = true;
+            logger.warn(
+              "[claude-subscription] Claude Code %s ignores the chat-context mod; the CLI's email, date and environment context reach the model. Update Marinara Engine to a release after 2.5.0.",
+              message.claude_code_version,
             );
           }
         } else if (message.type === "assistant" && !(options.stream ?? true)) {
