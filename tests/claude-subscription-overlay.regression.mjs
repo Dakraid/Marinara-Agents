@@ -143,7 +143,10 @@ try {
     await rm(join(pluginDir, file));
     calls = [];
     script = [init(), success];
-    await assert.rejects(run(), new RegExp(`chat-context plugin.*Missing from .*${file.replace(/[.]/gu, "\\.")}`, "u"));
+    await assert.rejects(
+      run(),
+      (error) => /chat-context plugin/u.test(error.message) && error.message.includes(`: ${file}.`),
+    );
     assert.equal(calls.length, 0, `${file} missing must stop before the SDK`);
     await cp(join(pluginSource, file), join(pluginDir, file));
   }
