@@ -17,6 +17,7 @@ import {
   SLP_STEERING_TEXT_MAX,
 } from "./slp-creator-steering.js";
 import { SLP_SPICE_LEVELS } from "./slp-spice.js";
+import { SLURP_CONTENT_DELIVERIES, SLURP_CONTENT_INTENTS } from "./slp-content-axes.js";
 import {
   SLP_DESK_BADGES,
   SLP_DESK_CHALLENGE_METRICS,
@@ -227,13 +228,18 @@ export const SLP_ACTIONS = {
   },
   "draft-post": {
     summary:
-      "Draft a post from one idea: the caption and its picture, returned without posting so the player reviews it. For the player's own page, which nothing posts for unattended.",
+      "Draft a post from one idea, the way the page's own posts are written: title, text and its picture, returned without posting so the player reviews it.",
     inputs: {
       accountId: "The Creator page.",
       idea: "What the post is about, in the player's words.",
       story: "True for a Story (optional).",
       dealId: "A brand deal this post is the #ad for (optional).",
       collabId: "A collab this post is about (optional).",
+      projectId: "One of the page's storylines: the post is its next step (optional).",
+      lookId: "A wardrobe look they wear in the picture (optional).",
+      access: "public or locked: who the post is written for (optional, public).",
+      contentIntent: "A one-shot post purpose (optional).",
+      contentDelivery: "A one-shot delivery, with a purpose (optional).",
       picture: "False for text only (optional).",
     },
     schema: z
@@ -243,6 +249,11 @@ export const SLP_ACTIONS = {
         story: z.boolean().default(false),
         dealId: accountId.optional(),
         collabId: accountId.optional(),
+        projectId: accountId.optional(),
+        lookId: accountId.optional(),
+        access: z.enum(["public", "locked"]).default("public"),
+        contentIntent: z.enum(SLURP_CONTENT_INTENTS).optional(),
+        contentDelivery: z.enum(SLURP_CONTENT_DELIVERIES).optional(),
         picture: z.boolean().default(true),
       })
       .strict(),

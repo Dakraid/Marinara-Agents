@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { Module } from "node:module";
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join, resolve } from "node:path";
@@ -678,46 +678,67 @@ async function main() {
         updatedAt: timestamp,
         version: 1,
       });
-      await storage.createNote({
-        id: "world_graph_seed",
-        title: "world_graph_seed",
-        type: "world",
-        status: "active",
-        modes: ["roleplay"],
-        scope: { chatId: "chat-a", chatIds: ["chat-a"] },
-        tags: [],
-        keywords: ["stormvault ledger"],
-        links: [{ target: "world_graph_neighbor", relation: "caused_by" }],
-        sections: {
-          facts: {
-            text: "This note mentions the stormvault ledger keyphrase.",
-            updatedAt: timestamp,
+      // Issue: linked recall follows explanatory links from recalled memories to near-miss memories.
+      // Relevance comes from the keyword lane: two distinct keywords score 0.75, one ordinary keyword 0.5.
+      const graphNote = (
+        id: string,
+        type: "thread" | "timeline_event" | "world",
+        sectionKey: string,
+        keywords: string[],
+        links: Array<{ target: string; relation: string }> = [],
+      ) =>
+        storage.createNote({
+          id,
+          // The title and text feed generated keywords, so keep the id prefix out of them.
+          // Text must differ per note, or exact-text dedupe drops a recalled neighbour. Keep it at seven words:
+          // the persona and scope checks below share this BM25 corpus and its average length.
+          title: id.replace(/^[a-z]+_/, ""),
+          type,
+          status: "active",
+          modes: ["roleplay"],
+          scope: { chatId: "chat-a", chatIds: ["chat-a"] },
+          tags: [],
+          keywords,
+          links,
+          sections: {
+            [sectionKey]: {
+              text: `This note mentions the ${id.replace(/^[a-z]+_/, "")} fixture phrase.`,
+              updatedAt: timestamp,
+            },
           },
-        },
-        createdAt: timestamp,
-        updatedAt: timestamp,
-        version: 1,
-      });
-      await storage.createNote({
-        id: "world_graph_neighbor",
-        title: "world_graph_neighbor",
-        type: "world",
-        status: "active",
-        modes: ["roleplay"],
-        scope: { chatId: "chat-a", chatIds: ["chat-a"] },
-        tags: [],
-        keywords: [],
-        links: [],
-        sections: {
-          facts: {
-            text: "The linked continuation is stored elsewhere.",
-            updatedAt: timestamp,
-          },
-        },
-        createdAt: timestamp,
-        updatedAt: timestamp,
-        version: 1,
-      });
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          version: 1,
+        });
+      await graphNote(
+        "thread_graph_seed",
+        "thread",
+        "status",
+        ["stormvault", "ledger"],
+        [
+          { target: "timeline_graph_near", relation: "caused_by" },
+          { target: "world_graph_untyped", relation: "caused_by" },
+        ],
+      );
+      await graphNote("timeline_graph_near", "timeline_event", "event", ["kindlewick"]);
+      await graphNote("world_graph_untyped", "world", "facts", ["cindermoss"]);
+      await graphNote(
+        "thread_graph_quiet",
+        "thread",
+        "status",
+        ["quietcove"],
+        [{ target: "timeline_graph_orphan", relation: "caused_by" }],
+      );
+      await graphNote("timeline_graph_orphan", "timeline_event", "event", ["ashgrove"]);
+      await graphNote("world_graph_bystander", "world", "facts", ["marrowtide", "gatekeep"]);
+      await graphNote("timeline_graph_anchor", "timeline_event", "event", ["duskfern", "ravenmoor"]);
+      await graphNote(
+        "thread_graph_follow",
+        "thread",
+        "status",
+        ["fernlight"],
+        [{ target: "timeline_graph_anchor", relation: "triggered_by" }],
+      );
       await rebuildLongTermMemoryIndexes({ root: storage.root });
       const semanticOnly = await retrieveLongTermMemory({
         root: storage.root,
@@ -832,22 +853,64 @@ async function main() {
         (fuzzyKeywordRecall.chunks[0]?.relevanceScore ?? 0) < 1,
         "a partial keyword match must not normalize to the full keyword weight",
       );
-      const graphOnly = await retrieveLongTermMemory({
-        root: storage.root,
-        queryText: "stormvault ledger",
-        scope: { chatId: "chat-a", chatIds: ["chat-a"] },
-        mode: "roleplay",
-        semanticWeight: 0,
-        lexicalWeight: 0,
-        graphWeight: 1,
-        keywordWeight: 1,
-        maxChunks: 5,
-        maxTokens: 4096,
-      });
-      assert.equal(
-        graphOnly.chunks.some((chunk: any) => chunk.chunk.noteId === "world_graph_neighbor"),
-        true,
-        "graph recall must expand from keyword-seeded notes",
+      const linkedRecall = (queryText: string, overrides: Record<string, unknown> = {}) =>
+        retrieveLongTermMemory({
+          root: storage.root,
+          queryText,
+          scope: { chatId: "chat-a", chatIds: ["chat-a"] },
+          mode: "roleplay",
+          semanticWeight: 0,
+          lexicalWeight: 0,
+          graphWeight: 1,
+          keywordWeight: 1,
+          minScore: 0.6,
+          maxChunks: 5,
+          maxTokens: 4096,
+          ...overrides,
+        });
+      const noteIdsOf = (recall: any) => recall.chunks.map((chunk: any) => chunk.chunk.noteId).sort();
+      const linkedQuery = "stormvault ledger kindlewick cindermoss ashgrove";
+      const linked = await linkedRecall(linkedQuery);
+      assert.deepEqual(
+        noteIdsOf(linked),
+        ["thread_graph_seed", "timeline_graph_near"],
+        "a typed neighbour of a recalled memory with its own relevance in [0.2, threshold) is recalled; an untyped link, and a link from a memory that was not recalled, add nothing",
+      );
+      const linkedChunk = linked.chunks.find((chunk: any) => chunk.chunk.noteId === "timeline_graph_near");
+      assert.ok(linkedChunk.lanes.includes("graph"));
+      assert.ok(
+        linkedChunk.reasons.includes("graph:caused_by:thread_graph_seed"),
+        "the reason names relation and seed",
+      );
+      assert.ok(
+        linkedChunk.relevanceScore >= 0.2 && linkedChunk.relevanceScore < 0.6,
+        "a linked memory keeps its own relevance score",
+      );
+      assert.deepEqual(
+        noteIdsOf(await linkedRecall(linkedQuery, { graphWeight: 0 })),
+        ["thread_graph_seed"],
+        "a graph weight of 0 disables linked recall",
+      );
+      assert.deepEqual(
+        noteIdsOf(await linkedRecall(linkedQuery, { keywordWeight: 0.3, minScore: 0.21 })),
+        ["thread_graph_seed"],
+        "a neighbour whose own relevance is below 0.2 is not recalled",
+      );
+      assert.deepEqual(
+        noteIdsOf(await linkedRecall("duskfern ravenmoor fernlight")),
+        ["thread_graph_follow", "timeline_graph_anchor"],
+        "a link stored by the neighbour is followed toward the recalled memory",
+      );
+      const capQuery = `${linkedQuery} marrowtide gatekeep`;
+      assert.deepEqual(
+        noteIdsOf(await linkedRecall(capQuery, { maxChunks: 2 })),
+        ["thread_graph_seed", "world_graph_bystander"],
+        "the memory cap bounds the total and recalled memories keep their places",
+      );
+      assert.deepEqual(
+        noteIdsOf(await linkedRecall(capQuery, { maxChunks: 3 })),
+        ["thread_graph_seed", "timeline_graph_near", "world_graph_bystander"],
+        "a linked memory takes a free place after the recalled memories",
       );
       const recallIndexPath = longTermMemoryRecallIndexPath(storage.root);
       const currentRecallIndex = JSON.parse(await readFile(recallIndexPath, "utf8"));
@@ -1928,6 +1991,34 @@ async function main() {
           "concurrent stale loaders must recheck freshness under the lock and rebuild once",
         );
 
+        // #1328: an index that is only out of date is replaced by the rebuild; only an
+        // unreadable one is quarantined, so edits do not park a full copy each time.
+        const quarantinedIndexCopies = () =>
+          readdir(join(vaultRoot, "quarantine", "indexes")).then(
+            (names) => names.length,
+            () => 0,
+          );
+        const copiesBeforeStale = await quarantinedIndexCopies();
+        await storage.createNote(note("world_1328_stale", "chat-a", "A cobalt archive stale-index entry."));
+        const staleRebuilt = await loadOrRebuildLongTermMemoryIndexes(vaultRoot, null, []);
+        assert.equal(
+          Object.hasOwn(staleRebuilt.metadata.byNoteId, "world_1328_stale"),
+          true,
+          "a stale index must be rebuilt with the new note",
+        );
+        assert.equal(
+          await quarantinedIndexCopies(),
+          copiesBeforeStale,
+          "a stale but readable index must be replaced, not quarantined",
+        );
+        await writeFile(recallIndexPath, "{");
+        await loadOrRebuildLongTermMemoryIndexes(vaultRoot, null, []);
+        assert.equal(
+          await quarantinedIndexCopies(),
+          copiesBeforeStale + 1,
+          "an unreadable index must still be quarantined",
+        );
+
         // Recall cancellation must reach rebuild embedding work, avoid publishing after
         // abort, and release the vault lock so a queued reader proceeds.
         await storage.createNote(note("world_1178_abort", "chat-a", "A cobalt archive cancellation entry."));
@@ -2252,6 +2343,61 @@ async function main() {
           false,
           "recall must not serve a note quarantined by official maintenance",
         );
+
+        // #1328: a note written by a newer version (unknown field) is skipped by recall, which
+        // keeps serving the rest of the vault; full reads and writes still refuse to run over it.
+        // The index is built while the note is still valid, so the downgrade leaves it stale and
+        // recall has to rebuild it over the invalid note, not just load a fresh index.
+        await storage.createNote(note("world_1328_future", "chat-a", "A cobalt archive future-field entry."));
+        await rebuildLongTermMemoryIndexes({ root: vaultRoot, embeddingAdapter: null, stopWords: [] });
+        assert.equal(
+          Object.hasOwn(
+            parseLtmRecallIndex(JSON.parse(await readFile(longTermMemoryRecallIndexPath(vaultRoot), "utf8"))).metadata
+              .byNoteId,
+            "world_1328_future",
+          ),
+          true,
+          "the index must contain the note before it becomes invalid",
+        );
+        const futureNotePath = join(vaultRoot, "vault", "world", "world_1328_future.json");
+        const futureNote = JSON.parse(await readFile(futureNotePath, "utf8"));
+        await writeFile(futureNotePath, JSON.stringify({ ...futureNote, futureField: true }));
+        invalidateLtmVaultSnapshot(vaultRoot);
+        try {
+          const staleOverInvalid = await loadOrRebuildLongTermMemoryIndexes(vaultRoot, null, []);
+          assert.equal(
+            Object.hasOwn(staleOverInvalid.metadata.byNoteId, "world_1328_future"),
+            false,
+            "rebuilding a stale index must skip the invalid note instead of failing",
+          );
+          assert.equal(
+            Object.hasOwn(staleOverInvalid.metadata.byNoteId, "world_1178_lock"),
+            true,
+            "the rebuilt index must keep the valid notes",
+          );
+          const futureRecall = await retrieveLongTermMemory({
+            root: vaultRoot,
+            embeddingAdapter: null,
+            queryText: "cobalt archive lock-coordination entry",
+            scope: { chatId: "chat-a", chatIds: ["chat-a"] },
+            mode: "roleplay",
+            semanticWeight: 0,
+          });
+          assert.equal(
+            futureRecall.chunks.some((hit) => hit.chunk.noteId === "world_1178_lock"),
+            true,
+            "recall must keep serving valid notes while one note has an unknown field",
+          );
+          assert.equal(
+            futureRecall.chunks.some((hit) => hit.chunk.noteId === "world_1328_future"),
+            false,
+            "recall must not serve the note it could not validate",
+          );
+          await assert.rejects(storage.listNotes(), undefined, "full reads must still surface the invalid note");
+        } finally {
+          await rm(futureNotePath, { force: true });
+          invalidateLtmVaultSnapshot(vaultRoot);
+        }
 
         // Issue #1295: Korean short keywords and particles must survive lexical
         // recall without any embedding source.
