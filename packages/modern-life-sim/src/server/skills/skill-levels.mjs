@@ -20,8 +20,9 @@ function skillLevelInfo(xp) {
     progress: next === null ? 1 : (total - floor) / (next - floor),
   };
 }
+// The recommended starting budget; a player may go past it, up to the top level in every skill.
 var STARTING_SKILL_POINTS = 5;
-var STARTING_SKILL_MAX = 3;
+var STARTING_SKILL_MAX = 10;
 function validateStartingSkills(skills) {
   if (skills == null) {
     return;
@@ -37,7 +38,7 @@ function validateStartingSkills(skills) {
     }
     valid[skill] = level;
   }
-  return Object.values(valid).reduce((sum, level) => sum + level, 0) <= STARTING_SKILL_POINTS ? valid : false;
+  return valid;
 }
 function startingSkillXp(levels = {}) {
   let xp = {};

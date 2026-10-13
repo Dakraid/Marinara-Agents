@@ -4,8 +4,10 @@ import {
   createModelClient,
   normalizeSampling,
   samplingRequestOptions,
+  withPrefill,
 } from "../packages/modern-life-sim/src/server/llm/model-client.mjs";
 import { setLifeSettings } from "../packages/modern-life-sim/src/server/game.mjs";
+import { validateStartingSkills } from "../packages/modern-life-sim/src/server/skills/skill-levels.mjs";
 
 // Clamping, rounding, blank = unset, defaults dropped.
 let { sampling, reason } = normalizeSampling({
@@ -94,5 +96,61 @@ await createModelClient({ runtime, settings: {} }).ask([{ role: "user", content:
 assert.equal(seen[1].maxTokens, 500);
 assert.equal(seen[1].requestWins, undefined);
 assert.equal(seen[1].temperature, undefined);
+
+// Prefills: kept as text, blank clears, never sent as request options.
+assert.deepEqual(
+  normalizeSampling({ assistantPrefill: "Sure:", assistantReasoningPrefill: "Think" }, { assistantPrefill: "old" })
+    .sampling,
+  { assistantPrefill: "Sure:", assistantReasoningPrefill: "Think" },
+);
+assert.deepEqual(normalizeSampling({ assistantPrefill: " " }, { assistantPrefill: "old" }).sampling, {});
+assert.match(normalizeSampling({ assistantPrefill: "x".repeat(4001) }).reason, /Assistant prefill/);
+assert.deepEqual(samplingRequestOptions({ assistantPrefill: "Sure:" }), {});
+
+// withPrefill: appended after a final user turn only; reasoning only for providers that take it.
+let user = [{ role: "user", content: "x" }];
+assert.equal(withPrefill(user, {}), user);
+assert.equal(withPrefill([{ role: "assistant", content: "a" }], { assistantPrefill: "Sure:" }).length, 1);
+assert.deepEqual(withPrefill(user, { assistantPrefill: "Sure: " }).at(-1), { role: "assistant", content: "Sure:" });
+assert.equal(withPrefill(user, { assistantReasoningPrefill: "Think" }, "anthropic"), user);
+assert.deepEqual(withPrefill(user, { assistantReasoningPrefill: "Think" }, "openrouter").at(-1), {
+  role: "assistant",
+  content: "",
+  providerMetadata: { reasoning_content: "Think", partial: true },
+});
+
+let sent = [];
+let prefillRuntime = {
+  languageModels: {
+    resolveForRequest: async () => ({
+      model: "m",
+      connectionId: "c1",
+      chatComplete: async (messages) => {
+        sent.push(messages);
+        return { content: "hi", finishReason: "stop" };
+      },
+    }),
+  },
+};
+await createModelClient({
+  runtime: prefillRuntime,
+  settings: { sampling: { assistantPrefill: "Sure:", assistantReasoningPrefill: "Think" } },
+  providerOf: async (id) => (id === "c1" ? "openai" : ""),
+}).ask([{ role: "user", content: "x" }]);
+assert.deepEqual(sent[0].at(-1), {
+  role: "assistant",
+  content: "Sure:",
+  providerMetadata: { reasoning_content: "Think", partial: true },
+});
+
+// Starting skills: 5 points is only a recommendation; every skill may go to the top level.
+assert.deepEqual(validateStartingSkills({ fitness: 10, charm: 10, knowledge: 10, cooking: 10 }), {
+  fitness: 10,
+  charm: 10,
+  knowledge: 10,
+  cooking: 10,
+});
+assert.equal(validateStartingSkills({ fitness: 11 }), false);
+assert.equal(validateStartingSkills({ fitness: 1.5 }), false);
 
 console.log("modern-life-sim sampling regression: ok");

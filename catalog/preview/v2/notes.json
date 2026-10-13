@@ -4,6 +4,12 @@
     "modern-life-sim": {
       "versions": [
         {
+          "version": "0.4.1",
+          "date": "2026-10-13",
+          "notes": "- Starting skills: 5 points is a recommendation, not a limit; you can add more, up to 10 in every skill.\n- Assistant prefill and reasoning prefill in the advanced model settings, sent as the model's own opening words.\n- The basic income box and the advanced model settings at creation now match the other fields.",
+          "highlight": false
+        },
+        {
           "version": "0.4.0",
           "date": "2026-10-13",
           "notes": "- Advanced model settings per life (temperature, top P/K, min P, penalties, verbosity, stop sequences, custom parameters, answer length) in SETTINGS · MODEL · ADVANCED and at creation.\n- World lore: pick a lorebook when you create a life and every scene reads a copy of it.\n- Several people can share a job (one boss per place), and every job pays by the shift.\n- Living together shares money: a partner or housemate puts their pay into your wallet each day they work.\n- Basic income: set an amount paid on day 1 of each season.\n- Futanari joins woman and man, and who someone is into is a pick of women, men and futanari.\n- Optional Adult Module: switching it on asks once, and each adult has a disposition, kinks and orientation on the ADULT tab.",

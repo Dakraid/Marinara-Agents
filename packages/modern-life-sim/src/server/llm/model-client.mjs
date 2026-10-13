@@ -31,6 +31,14 @@ var SAMPLING_SENT_KEYS = [
 var STOP_MAX = 8;
 var STOP_LENGTH = 40;
 var CUSTOM_PARAMETERS_LENGTH = 4e3;
+// Prefills are not request options: they ride as a final assistant message, as Engine's own agents send them.
+var SAMPLING_PREFILLS = {
+  assistantPrefill: "Assistant prefill",
+  assistantReasoningPrefill: "Reasoning prefill",
+};
+var PREFILL_LENGTH = 4e3;
+// Engine's supportsAssistantReasoningPrefill list: providers whose messages carry a partial reasoning_content.
+var REASONING_PREFILL_PROVIDERS = ["openai", "openrouter", "nanogpt", "xai", "cohere", "arli", "zai", "kimi", "custom"];
 var isPlainObject = (value) => !!value && typeof value == "object" && !Array.isArray(value);
 // Merges a partial patch onto base; null patch resets. Bad keys are skipped and the first reason is kept.
 function normalizeSampling(patch, base = {}) {
@@ -81,6 +89,14 @@ function normalizeSampling(patch, base = {}) {
       } else {
         delete sampling.stop;
       }
+    } else if (key in SAMPLING_PREFILLS) {
+      if (blank) {
+        delete sampling[key];
+      } else if (typeof value != "string" || value.length > PREFILL_LENGTH) {
+        fail(`${SAMPLING_PREFILLS[key]} must be text of up to ${PREFILL_LENGTH} characters.`);
+      } else {
+        sampling[key] = value;
+      }
     } else if (key === "customParameters") {
       let parsed = value;
       if (typeof value == "string") {
@@ -115,6 +131,24 @@ function samplingRequestOptions(sampling = {}) {
     ]),
   );
   return Object.keys(options).length ? { ...options, requestWins: true } : {};
+}
+// Appends the prefill message after a final user turn; the reasoning prefill only where the provider takes one.
+function withPrefill(messages, sampling = {}, provider = "") {
+  let text = String(sampling?.assistantPrefill ?? "").trimEnd(),
+    reasoning = REASONING_PREFILL_PROVIDERS.includes(provider)
+      ? String(sampling?.assistantReasoningPrefill ?? "").trimEnd()
+      : "";
+  if ((!text.trim() && !reasoning.trim()) || messages?.[messages.length - 1]?.role !== "user") {
+    return messages;
+  }
+  return [
+    ...messages,
+    {
+      role: "assistant",
+      content: text.trim() ? text : "",
+      ...(reasoning.trim() ? { providerMetadata: { reasoning_content: reasoning, partial: true } } : {}),
+    },
+  ];
 }
 var EXTRA_ROOM_TOKENS = 16e3;
 var CONTEXT_SAFETY_TOKENS = 512;
@@ -293,6 +327,7 @@ function createModelClient({
   settings = {},
   onCall = null,
   onGone = null,
+  providerOf = null,
   signal: defaultSignal = null,
 }) {
   let languageModels = runtime?.languageModels ?? null,
@@ -357,6 +392,11 @@ function createModelClient({
           answer;
         try {
           model ??= await resolveModel();
+          attemptMessages = withPrefill(
+            attemptMessages,
+            settings.sampling,
+            String((await providerOf?.(model.connectionId)) ?? ""),
+          );
           cap = fitMaxTokensToContext(maxTokens, {
             maxContext: model.maxContext,
             promptTokens: estimatePromptTokens(model, attemptMessages, maxTokens),
@@ -531,5 +571,6 @@ export {
   normalizeLanguageName,
   normalizeReasoningEffort,
   normalizeSampling,
+  withPrefill,
   samplingRequestOptions,
 };
