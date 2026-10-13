@@ -1,5 +1,14 @@
 # Slurp release notes
 
+## 0.3.36 — 2026-10-13
+
+- Fixed: a Creator's bio and stage voice now steer what she posts about. The post planner reads them beside the character card (hidden identities stay hidden), so a hobby named only in the bio, such as cosplay, becomes post subjects. The post prompt also says that interests named in the bio and stage voice count. (#1358)
+- Changed: the no-repeat rule no longer blocks a theme that the bio, stage voice, or card names as what the Creator does. A new setting, framing, and look each time is still required, and the same outfit or wording is still a repeat. (#1358)
+
+## 0.3.35 — 2026-10-13
+
+- Added: "The image model knows this character" can be chosen while adding a Creator, in Quick setup, in the customise path, in the role-play sign-up and in the manual Create flow. It starts on, like before, and is saved with the new Creator. You can still change it later in the Creator's settings. (#1353)
+
 ## 0.3.34 — 2026-10-13
 
 - Fixed: in a chat, a Creator could not see what was inside her own locked posts: the message prompt replaced the body with "[paid post, contents not repeated here]". She now gets the real text, and the existing locked and already-unlocked fields still say whether this fan has seen it. (#1351)
