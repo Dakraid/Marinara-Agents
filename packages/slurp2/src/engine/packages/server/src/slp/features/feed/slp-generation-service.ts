@@ -44,7 +44,7 @@ import { slurpPurposeMetadata } from "../../modules/feed/slp-post-purpose.js";
 import { resolveSlurpCreatorScheduleContext } from "../creators/slp-creators-contract.js";
 import { createChatsStorage } from "../../../services/storage/chats.storage.js";
 import { type SlpCreatorContentFormat } from "../../base/prompting/slp-content-format.js";
-import { resolveSlurpPostLore } from "./slp-post-lore.js";
+import { resolveSlurpLoreContext } from "../../data/host/slp-lore-context.js";
 import { createCharacterGalleryStorage } from "../../../services/storage/character-gallery.storage.js";
 import { createGalleryStorage } from "../../../services/storage/gallery.storage.js";
 import { pickGalleryAttachmentForAccount } from "./slp-generated-activity-service.js";
@@ -163,9 +163,9 @@ export async function generateCreatorPost(
   // Read the card at post time (not the bio and voice frozen at setup), so a sharper character makes a
   // sharper Creator without a migration. Concealed modes get the stage seed; disclosure limits what, not who.
   const sourceCharacterContext = await resolveCreatorCharacterCanon(db, linkedPublicAccount, disclosureMode);
-  const loreContext = await resolveSlurpPostLore(db, {
+  const loreContext = await resolveSlurpLoreContext(db, {
     settings,
-    recentPosts,
+    texts: recentPosts.map((post) => post.content).reverse(),
     sourceCharacterContext,
     source: linkedPublicAccount,
   });
