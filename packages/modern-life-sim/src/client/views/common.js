@@ -256,15 +256,49 @@ function bondChips(life, max) {
       .join("") + (shown.length && more ? `<span class="mls-bond more">+${more}</span>` : "")
   );
 }
+const SEX_PICK = [
+  ["female", "Woman"],
+  ["male", "Man"],
+  ["futanari", "Futanari"],
+];
+const INTO_PICK = [
+  ["women", "Women"],
+  ["men", "Men"],
+  ["futanari", "Futanari"],
+];
+const SEX_GROUP = {
+  female: "women",
+  male: "men",
+  futanari: "futanari",
+};
+// Attraction list; accepts the old single values ("both" is women and men), empty means everyone
+function intoList(into) {
+  const values = (Array.isArray(into) ? into : [into]).flatMap((value) =>
+    value === "both" ? ["women", "men"] : [value],
+  );
+  const groups = INTO_PICK.map(([group]) => group).filter((group) => values.includes(group));
+  return groups.length ? groups : INTO_PICK.map(([group]) => group);
+}
+const likesSex = (into, sex) => !sex || !into || !SEX_GROUP[sex] || intoList(into).includes(SEX_GROUP[sex]);
+// Attraction toggle chips; the change handler reads the checked boxes of the group
+const intoChips = (attrs, into) =>
+  `<span class="mls-into" role="group" aria-label="Into">${INTO_PICK.map(([value, label]) => {
+    const on = intoList(into).includes(value);
+    return `<label class="mls-zz ${on ? "on" : ""}"><input type="checkbox" ${attrs} value="${value}" ${on ? "checked" : ""}>${label}</label>`;
+  }).join("")}</span>`;
+const checkedInto = (input) =>
+  [...(input.closest(".mls-into")?.querySelectorAll("input:checked") ?? [])].map((box) => box.value);
 
 export {
   DISTRICT_LINKS,
+  SEX_PICK,
   MAP,
   TOWN_SPOT,
   bgIcon,
   bondChips,
   bondLine,
   brokenView,
+  checkedInto,
   colourFor,
   cropBox,
   cropView,
@@ -274,7 +308,9 @@ export {
   frameImg,
   headOf,
   hours,
+  intoChips,
   isStreetId,
+  likesSex,
   paintIcon,
   placeHud,
   playtime,

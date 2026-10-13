@@ -501,6 +501,7 @@ function chartView({ chart: chart, said = "", narrow = false, focus = null }) {
 const SEX_NAMES = {
   female: "Woman",
   male: "Man",
+  futanari: "Futanari",
   other: "Other",
 };
 function albumTile(photo, { who = false } = {}) {

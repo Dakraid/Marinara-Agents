@@ -1,5 +1,6 @@
 // Character memories (budget, summary folding, editing) and the contacts list / character sheet views
 import { clockFromMinutes, formatAgoStamp, formatCalendarDate } from "../time/clock.mjs";
+import { normalizeAttraction } from "../orientation/orientation.mjs";
 import { LIKE_LABELS, effectiveTraits, notableTraitWords, relationshipProfile } from "../traits/traits.mjs";
 import {
   BOND_AXES,
@@ -250,7 +251,7 @@ function contactsList(world, { here = [], nameOf = (person) => person.name, metO
         name: nameOf(person),
         met: met,
         gender: person.gender ?? null,
-        into: person.into ?? "both",
+        into: normalizeAttraction(person.into),
         ...characterPortrait(person, world),
         away: !!person.away,
         group: person.away ? "away" : met ? (friendshipTier >= 2 || romanceTier >= 2 ? "close" : "met") : "unmet",

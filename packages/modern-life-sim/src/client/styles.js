@@ -2641,6 +2641,7 @@ const STYLES = `@font-face { font-family: "Anton"; font-style: normal; font-weig
 .mls-line.sleep { background: #1d2230; color: #cfe0ff; }
 .mls-zz { display: inline-flex; gap: 5px; align-items: center; font-size: 11px; font-weight: 900; letter-spacing: 1px; padding: 3px 8px; border: 2px solid #555; cursor: pointer; white-space: nowrap; justify-self: start; width: auto; }
 .mls-zz.on { border-color: #9fb4ff; color: #9fb4ff; }
+.mls-into { display: inline-flex; flex-wrap: wrap; gap: 6px; }
 .mls .mls-zz input { appearance: auto; width: 14px; height: 14px; min-width: 0; padding: 0; margin: 0; border: 0; flex: none; }
 
 

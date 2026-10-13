@@ -1,5 +1,5 @@
 // Prompts, debug, pictures, settings, calendar, cast/rules/model tabs
-import { colourFor, escape, faceImg } from "./common.js";
+import { SEX_PICK, colourFor, escape, faceImg, intoChips } from "./common.js";
 import { SEASON_OUTFITS_RULE, traitsEditor } from "./creation.js";
 import { lookQueue, lookShot, motionTab } from "./phone.js";
 import { modCastOptions, modGroup } from "./mods.js";
@@ -972,26 +972,15 @@ function jobsBox(life) {
 }
 const orientPick = (
   person,
-) => `<span class="mls-work-row"><span class="lbl">GENDER</span><select data-orient-for="${person.id}" data-orient="gender">${person.gender ? "" : '<option value="" selected disabled>Pick one</option>'}${[
-  ["female", "Woman"],
-  ["male", "Man"],
-]
-  .map(([value, label]) => `<option value="${value}" ${person.gender === value ? "selected" : ""}>${label}</option>`)
-  .join("")}</select></span>
-  <span class="mls-work-row"><span class="lbl">INTO</span><select data-orient-for="${person.id}" data-orient="into">${[
-    ["women", "Women"],
-    ["men", "Men"],
-    ["both", "Women and men"],
-  ]
-    .map(
-      ([value, label]) =>
-        `<option value="${value}" ${(person.into ?? "both") === value ? "selected" : ""}>${label}</option>`,
-    )
-    .join("")}</select></span>`;
+) => `<span class="mls-work-row"><span class="lbl">GENDER</span><select data-orient-for="${person.id}" data-orient="gender">${person.gender ? "" : '<option value="" selected disabled>Pick one</option>'}${SEX_PICK.map(
+  ([value, label]) => `<option value="${value}" ${person.gender === value ? "selected" : ""}>${label}</option>`,
+).join("")}</select></span>
+  <span class="mls-work-row"><span class="lbl">INTO</span>${intoChips(`data-orient-for="${person.id}" data-orient="into"`, person.into)}</span>`;
 const youBox = (you) =>
   `<div class="box"><h3>YOU</h3><span class="mls-work-row"><span class="lbl">YOU ARE</span><select data-your-gender>${you.gender ? "" : '<option value="" selected disabled>Pick one</option>'}${[
     ["female", "A woman"],
     ["male", "A man"],
+    ["futanari", "Futanari"],
   ]
     .map(([value, label]) => `<option value="${value}" ${you.gender === value ? "selected" : ""}>${label}</option>`)
     .join("")}</select></span></div>`;

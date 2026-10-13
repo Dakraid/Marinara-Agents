@@ -306,7 +306,13 @@ import {
 import { buyShopItems, shopFor, thingsView, useThing } from "../things/things-actions.mjs";
 import { flirtySeen } from "../social/witnesses.mjs";
 import { knownForModel, markNewsSeen, namesKnown, newsOf, relationChart } from "../relationships/network-sheet.mjs";
-import { genderOf, setOrientation, setYourGender, settleOrientation } from "../romance/romanceability.mjs";
+import {
+  genderOf,
+  pictureSexOf,
+  setOrientation,
+  setYourGender,
+  settleOrientation,
+} from "../romance/romanceability.mjs";
 import {
   crossedPaths,
   jealousAbout,
@@ -1233,7 +1239,7 @@ function createService({
             profile: profile,
             prompts: await loadImagePrompts(),
             name: life.persona?.name ?? "",
-            sex: genderOf(life, "you") ?? life.personaFigure?.sex ?? "",
+            sex: pictureSexOf(life, genderOf(life, "you") ?? life.personaFigure?.sex ?? ""),
           }),
           image = await engineClient.paint({
             connectionId: choice.connectionId,
@@ -1321,7 +1327,7 @@ function createService({
             profile: profile,
             prompts: await loadImagePrompts(),
             name: character.name,
-            sex: genderOf(life, characterId) ?? figure.sex,
+            sex: pictureSexOf(life, genderOf(life, characterId) ?? figure.sex),
           }),
           image = await engineClient.paint({
             connectionId: choice.connectionId,
@@ -1441,7 +1447,7 @@ function createService({
             profile: profile,
             prompts: await loadImagePrompts(),
             name: character.name,
-            sex: genderOf(life, characterId) ?? figure.sex,
+            sex: pictureSexOf(life, genderOf(life, characterId) ?? figure.sex),
           }),
           image = await engineClient.paint({
             connectionId: choice.connectionId,
@@ -7957,7 +7963,7 @@ function createService({
             you: {
               ...figuresOf(life, [])[0],
               name: life.persona?.name ?? "",
-              sex: genderOf(life, "you") ?? figuresOf(life, [])[0]?.sex ?? "",
+              sex: pictureSexOf(life, genderOf(life, "you") ?? figuresOf(life, [])[0]?.sex ?? ""),
             },
             entry: entry,
             people: entry

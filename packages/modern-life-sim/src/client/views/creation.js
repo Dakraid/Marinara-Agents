@@ -1,5 +1,5 @@
 // Life creation wizard steps, presets, cast picker and review
-import { escape } from "./common.js";
+import { SEX_PICK, escape, intoChips, likesSex } from "./common.js";
 import { weekView } from "./week.js";
 import { FAMILY_NAMES, PAIR_NAMES, newsFace, pairName } from "./people.js";
 import { frameChoice, picturesBox, portraitChoice, samplingFields, sizeChoice } from "./settings.js";
@@ -393,14 +393,8 @@ const KIN_PICK = [
     label: "Relative",
   },
 ];
-const likesGender = (into, gender) =>
-  !gender ||
-  !into ||
-  into === "both" ||
-  (into === "women" && gender === "female") ||
-  (into === "men" && gender === "male");
 function toYouChip(pick) {
-  const genderIndex = pick.gender === "female" ? 0 : pick.gender === "male" ? 1 : 2;
+  const genderIndex = pick.gender === "female" || pick.gender === "futanari" ? 0 : pick.gender === "male" ? 1 : 2;
   return pick.knows === "family"
     ? `your ${
         ({
@@ -418,7 +412,7 @@ function toYouChip(pick) {
 function coupleWhy(draft, card, pick) {
   return pick.romanceable === false
     ? "not open to romance"
-    : likesGender(pick.into, draft.gender)
+    : likesSex(pick.into, draft.gender)
       ? Object.entries(draft.cast).some(([id, other]) => id !== card.id && other.on && other.knows === "couple") &&
         !draft.rules?.multipleRelationships
         ? "you have one"
@@ -443,15 +437,6 @@ function knowsField(setup, draft, card, pick) {
         : "";
   return `<label>To you<select data-do="knows" data-id="${card.id}">${options}</select></label>${kinField}`;
 }
-const GENDER_PICK = [
-  ["female", "Woman"],
-  ["male", "Man"],
-];
-const INTO_PICK = [
-  ["women", "Women"],
-  ["men", "Men"],
-  ["both", "Women and men"],
-];
 function orientationFields(card, pick) {
   const genderFrom = pick.genderBy === "you" ? "yours" : pick.proposed && pick.gender ? "from the card" : "not read",
     intoFrom =
@@ -461,10 +446,9 @@ function orientationFields(card, pick) {
           ? pick.intoSaid
             ? "from the card"
             : "the card doesn't say"
-          : "not read",
-    into = pick.into || "both";
-  return `<label>Gender \xB7 ${genderFrom}<select data-do="cast-gender" data-id="${card.id}">${pick.gender ? "" : '<option value="" selected disabled>Pick one</option>'}${GENDER_PICK.map(([value, label]) => `<option value="${value}" ${pick.gender === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>
-        <label>Into \xB7 ${intoFrom}<select data-do="cast-into" data-id="${card.id}">${INTO_PICK.map(([value, label]) => `<option value="${value}" ${into === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>`;
+          : "not read";
+  return `<label>Gender \xB7 ${genderFrom}<select data-do="cast-gender" data-id="${card.id}">${pick.gender ? "" : '<option value="" selected disabled>Pick one</option>'}${SEX_PICK.map(([value, label]) => `<option value="${value}" ${pick.gender === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>
+        <div>Into \xB7 ${intoFrom}${intoChips(`data-do="cast-into" data-id="${card.id}"`, pick.into)}</div>`;
 }
 const BDAY_SEASONS = ["Spring", "Summer", "Autumn", "Winter"];
 function rolledDay(seed) {
@@ -521,7 +505,7 @@ function missing(draft, setup) {
   if (!draft.gender) {
     needs.push({
       step: 1,
-      text: "whether you are a woman or a man",
+      text: "whether you are a woman, a man or futanari",
     });
   }
   if (!draft.settings.connection) {
@@ -540,7 +524,7 @@ function missing(draft, setup) {
     if (!pick.gender) {
       needs.push({
         step: 3,
-        text: `whether ${card.name} is a woman or a man`,
+        text: `whether ${card.name} is a woman, a man or futanari`,
       });
     }
   }
@@ -697,6 +681,7 @@ function youStep(resources, draft) {
               <label class="field">You are<select data-do="gender">${draft.gender ? "" : '<option value="" selected disabled>Pick one</option>'}${[
                 ["female", "A woman"],
                 ["male", "A man"],
+                ["futanari", "Futanari"],
               ]
                 .map(
                   ([value, label]) =>
@@ -1096,7 +1081,8 @@ function startStep(setup, draft) {
                 {
                   female: "a woman",
                   male: "a man",
-                }[draft.gender] ?? "woman or man?",
+                  futanari: "futanari",
+                }[draft.gender] ?? "woman, man or futanari?",
                 !draft.gender,
               ),
               chip(SAVINGS.find((saving) => saving.id === draft.savings)?.label),

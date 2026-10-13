@@ -1,7 +1,7 @@
 // LLM description of a character figure (sex, body, outfit, seasons) for illustration
 import { parseFourSeasonOutfits } from "./season-outfits.mjs";
 
-var FIGURE_SEXES = ["female", "male", "other"];
+var FIGURE_SEXES = ["female", "male", "futanari", "other"];
 var FIGURE_BODY_MAX = 420;
 var FIGURE_OUTFIT_MAX = 260;
 var cleanFigureText = (text, max) =>
@@ -33,7 +33,7 @@ function figureMessages({ name: personName = "", appearance = "", description = 
       content: [
         "Task: figure",
         `You prepare a person to be drawn in an illustration. From what is written about them, give ${seasons ? "four" : "three"} things, in English:`,
-        "- `sex`: exactly one of female, male, other.",
+        "- `sex`: exactly one of female, male, futanari, other (futanari only when the text says so).",
         "- `body`: the body and face ONLY, as the text gives them: the traits it states (age, build, height, hair, eyes, skin, distinctive marks), in its own words and colours; if it is written as tags, keep them as tags. Never add a trait it does not state. When it has the tag of the work they come from (like \xABxxx (series)\xBB), keep that tag first. Not their name: the code adds it. No clothes, no accessories, no personality.",
         "- `outfit`: the clothes they would wear on an ordinary day around town. If several outfits are described (a uniform, a combat suit, a costume), pick the everyday one; if none fits, invent plain casual clothes that suit them.",
         ...(seasons

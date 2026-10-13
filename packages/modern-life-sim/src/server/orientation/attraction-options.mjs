@@ -1,4 +1,4 @@
 // Attraction option list
-var ATTRACTION_OPTIONS = ["women", "men", "both"];
+var ATTRACTION_OPTIONS = ["women", "men", "futanari"];
 
 export { ATTRACTION_OPTIONS };

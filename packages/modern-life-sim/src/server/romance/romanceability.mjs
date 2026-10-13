@@ -1,10 +1,12 @@
 // Gender, orientation, romanceability and pronouns
 import { seededRandom } from "../schedule/whereabouts.mjs";
 import {
-  ATTRACTION_LABELS,
   ORIENTATION_REVEAL_FRIENDSHIP_TIER,
+  SEX_GROUPS,
   attractionBadge,
+  attractionLabel,
   isAttractedToGender,
+  narrowAttraction,
   normalizeAttraction,
   normalizeGender,
 } from "../orientation/orientation.mjs";
@@ -12,9 +14,12 @@ import { bondTier } from "../relationships/bonds.mjs";
 import { npcPairsOf } from "../network/town-facts.mjs";
 import { isPartner } from "./jealousy.mjs";
 import { bondOf, castInTown, characterOf, hasMet2, nameFor } from "../game.mjs";
+import { isModuleOn } from "../modules/module-registry.mjs";
 
 var sexOf = (state, characterId) =>
-  normalizeGender(characterOf(state, characterId)?.gender) ?? characterOf(state, characterId)?.figure?.sex ?? "other";
+  normalizeGender(characterOf(state, characterId)?.gender) ??
+  normalizeGender(characterOf(state, characterId)?.figure?.sex) ??
+  "other";
 var genderOf = (state, characterId) =>
   characterId === "you" ? normalizeGender(state.gender) : normalizeGender(sexOf(state, characterId));
 var likesYou = (state, characterId) =>
@@ -37,7 +42,9 @@ function settleOrientation(state, ids = state.characters.map((id) => id.id)) {
       bond = bondOf(state, id);
     if (!(!character || !bond)) {
       if (!likesYou(state, id) && (isPartner(state, id) || bondTier(bond, "romance") >= 1)) {
-        character.into = "both";
+        character.into = [
+          ...new Set([...normalizeAttraction(character.into), SEX_GROUPS[normalizeGender(state.gender)]]),
+        ].filter(Boolean);
       }
       syncRomance(state, id);
     }
@@ -54,7 +61,7 @@ function setYourGender(state, gender) {
       })
     : {
         ok: false,
-        reason: "A woman or a man.",
+        reason: "A woman, a man or futanari.",
       };
 }
 function setOrientation(state, characterId, { gender: gender, into: into } = {}) {
@@ -76,7 +83,7 @@ function setOrientation(state, characterId, { gender: gender, into: into } = {})
       })
     : {
         ok: false,
-        reason: "A woman or a man.",
+        reason: "A woman, a man or futanari.",
       };
 }
 var intoKnown = (state, characterId) =>
@@ -102,17 +109,14 @@ function intoView(state, characterId) {
     attraction = normalizeAttraction(character.into);
   return {
     known: known,
-    name: known ? ATTRACTION_LABELS[attraction] : null,
+    name: known ? attractionLabel(attraction) : null,
     notYou: known && bondOf(state, characterId)?.notInto ? attractionBadge(attraction) || "Not into you" : null,
   };
 }
 function intoTick(state, events) {
   for (let character of castInTown(state).filter(
     (character2) =>
-      hasMet2(state, character2.id) &&
-      !intoKnown(state, character2.id) &&
-      character2.into &&
-      character2.into !== "both",
+      hasMet2(state, character2.id) && !intoKnown(state, character2.id) && narrowAttraction(character2.into),
   )) {
     let confidant = npcPairsOf(state, character.id).find(
       (pair) =>
@@ -127,7 +131,7 @@ function intoTick(state, events) {
         id: "into-heard",
         characterId: character.id,
         from: confidant.other,
-        text: `${nameFor(state, characterOf(state, confidant.other))} mentioned that ${character.name} is ${character.into === "women" ? "only into women" : "only into men"}.`,
+        text: `${nameFor(state, characterOf(state, confidant.other))} mentioned that ${character.name} is only into ${normalizeAttraction(character.into)[0]}.`,
       });
       return;
     }
@@ -137,11 +141,15 @@ var pronounOf = (state, characterId) =>
   ({
     female: "She",
     male: "He",
+    futanari: "She",
   })[sexOf(state, characterId)] ?? "They";
+// Pictures show futanari only with the Adult module on; otherwise they are drawn as women
+var pictureSexOf = (state, sex) => (sex === "futanari" && !isModuleOn(state, "adult") ? "female" : sex);
 var objectOf = (state, characterId) =>
   ({
     female: "her",
     male: "him",
+    futanari: "her",
   })[sexOf(state, characterId)] ?? "them";
 
 export {
@@ -153,6 +161,7 @@ export {
   likeEachOther,
   likesYou,
   objectOf,
+  pictureSexOf,
   pronounOf,
   setOrientation,
   setYourGender,

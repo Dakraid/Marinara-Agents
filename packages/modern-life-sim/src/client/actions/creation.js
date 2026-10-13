@@ -391,7 +391,7 @@ const startLife = () =>
             from: entry.birthdayFrom ?? "rolled",
           },
           gender: entry.gender || null,
-          into: entry.into || "both",
+          into: entry.into || null,
           knows: entry.knows || "no",
           kin: entry.kin || null,
           tastes: entry.tastes ?? null,
@@ -646,7 +646,7 @@ async function readCardWith(cardId) {
       entry.gender = res.proposal.gender;
     }
     if (entry.intoBy !== "you") {
-      entry.into = res.proposal.into ?? "both";
+      entry.into = res.proposal.into ?? null;
       entry.intoSaid = !!res.proposal.intoSaid;
     }
     if (res.proposal.livesIn && entry.livesBy !== "you") {

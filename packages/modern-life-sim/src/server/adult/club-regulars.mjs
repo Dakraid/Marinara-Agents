@@ -1,5 +1,6 @@
 // Generating club regulars via LLM and painting NPC sprites with backoff
 import { settingBlock } from "../scenes/scene-engine.mjs";
+import { attractionSaid, normalizeAttraction, normalizeGender } from "../orientation/orientation.mjs";
 import { settingNoteFor } from "../cast/read-card.mjs";
 import { imageChoice } from "../game.mjs";
 import { CLUB_NPC_FIELD_LIMITS, CLUB_PLACE } from "./tuning.mjs";
@@ -7,6 +8,8 @@ import { CLUB_REGULAR_ID_PREFIX, CLUB_REGULAR_SEXES } from "./after-dark.mjs";
 import { activeClubNpc, clubRegularsEnabled, clubRegularsList } from "./club-dance.mjs";
 
 var GENERATING_REGULARS_LIVES = new Set();
+// A futanari NPC fills one of the women's slots
+var slotSex = (gender) => (normalizeGender(gender) === "futanari" ? "female" : normalizeGender(gender));
 function buildClubRegularsPrompt({ setting = "", language = "English" } = {}) {
   return [
     {
@@ -14,8 +17,8 @@ function buildClubRegularsPrompt({ setting = "", language = "English" } = {}) {
       content: [
         "Task: club-regulars",
         "You write the regulars of a strip club, the Scarlet Club, in a modern life sim: four of its customers, all grown adults in their twenties to forties: two women, then two men.",
-        'Answer with JSON only, exactly: {"regulars":[{"name":"\u2026","gender":"female","into":"men","body":"\u2026","outfit":"\u2026","trait":"\u2026"},{"name":"\u2026","gender":"female",\u2026},{"name":"\u2026","gender":"male",\u2026},{"name":"\u2026","gender":"male",\u2026}]}',
-        "`into`: who they are attracted to, exactly one of women, men, both. `name`: a first name that fits the world. `body`: how they look, for an illustration, in English: build, height, skin, hair and face, with no clothes; an adult woman or an adult man with a mature face. Never words that read young (petite, small, round face, big eyes, cute, girlish, boyish). `outfit`: what they wear on a night out, in English, a short phrase. `trait`: one short sentence in English of how they are at the club.",
+        'Answer with JSON only, exactly: {"regulars":[{"name":"\u2026","gender":"female","into":["men"],"body":"\u2026","outfit":"\u2026","trait":"\u2026"},{"name":"\u2026","gender":"female",\u2026},{"name":"\u2026","gender":"male",\u2026},{"name":"\u2026","gender":"male",\u2026}]}',
+        "`into`: who they are attracted to, a list from women, men, futanari. `name`: a first name that fits the world. `body`: how they look, for an illustration, in English: build, height, skin, hair and face, with no clothes; an adult woman or an adult man with a mature face. Never words that read young (petite, small, round face, big eyes, cute, girlish, boyish). `outfit`: what they wear on a night out, in English, a short phrase. `trait`: one short sentence in English of how they are at the club.",
         `The four are different from each other. Names in the world's style; every other field in English, whatever the life's language (${language}).`,
       ].join(`
 `),
@@ -30,7 +33,7 @@ function parseClubRegulars(reply) {
   let regulars = Array.isArray(reply?.regulars) ? reply.regulars : [],
     clip = (value, max) => (typeof value == "string" ? value.replace(/\s+/g, " ").trim().slice(0, max) : ""),
     parsed = CLUB_REGULAR_SEXES.map((sex, index) => {
-      let raw = regulars.filter((regular) => String(regular?.gender ?? "").toLowerCase() === sex)[
+      let raw = regulars.filter((regular) => slotSex(regular?.gender) === sex)[
           CLUB_REGULAR_SEXES.slice(0, index).filter((sex2) => sex2 === sex).length
         ],
         regularName = clip(raw?.name, CLUB_NPC_FIELD_LIMITS.name),
@@ -39,16 +42,13 @@ function parseClubRegulars(reply) {
         return null;
       }
       let trait = clip(raw?.trait, CLUB_NPC_FIELD_LIMITS.trait),
-        into = ["women", "men", "both"].includes(String(raw?.into ?? "").toLowerCase())
-          ? String(raw.into).toLowerCase()
-          : sex === "female"
-            ? "men"
-            : "women";
+        rawSex = normalizeGender(raw?.gender) ?? sex,
+        into = attractionSaid(raw?.into) ? normalizeAttraction(raw.into) : sex === "female" ? ["men"] : ["women"];
       return {
         id: `${CLUB_REGULAR_ID_PREFIX}${index + 1}`,
         npc: true,
         name: regularName,
-        gender: sex,
+        gender: rawSex,
         into: into,
         body: body,
         outfit: clip(raw?.outfit, CLUB_NPC_FIELD_LIMITS.outfit),
@@ -57,7 +57,7 @@ function parseClubRegulars(reply) {
         appearance: body,
         description: `A regular customer at the ${CLUB_PLACE.name}. ${trait}`.trim(),
         figure: {
-          sex: sex,
+          sex: rawSex,
           body: body,
           outfit: clip(raw?.outfit, CLUB_NPC_FIELD_LIMITS.outfit),
           from: "model",
@@ -182,4 +182,4 @@ async function ensureClubRegulars(ctx, state) {
   }
 }
 
-export { ensureClubRegulars, npcNeedsSprite, paintClubNpcSprites };
+export { ensureClubRegulars, npcNeedsSprite, paintClubNpcSprites, slotSex };

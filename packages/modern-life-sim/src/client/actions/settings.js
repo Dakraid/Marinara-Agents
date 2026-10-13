@@ -609,7 +609,7 @@ const addPeople = () =>
             knows: pick.knows || "no",
             kin: pick.kin || null,
             gender: pick.gender || null,
-            into: pick.into || "both",
+            into: pick.into || null,
             tastes: pick.tastes ?? null,
             clothesTaste: pick.clothesTaste ?? null,
             dateTastes: pick.dateTastes ?? null,
