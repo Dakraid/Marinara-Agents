@@ -1,3 +1,8 @@
+## 1.8.0 — 2026-10-13
+
+- Responses with near-miss JSON (trailing commas, output cut off before its closing brackets) are now **auto-healed** before the strict-JSON retry, so fewer cards end in failed-parse.
+- Cards that still fail to parse open a **Fix JSON** dialog with the raw model response: edit and apply it without a new model call, retry generation, or dismiss. Failed-parse rows keep a Fix JSON action to reopen it.
+
 ## 1.7.1 — 2026-10-10
 
 - Duplicate save mode gains **four independent name affixes** in the dispatch dialog: append prefix and append suffix now both apply together (the old "prefix wins over suffix" rule is gone), and the new **remove prefix** / **remove suffix** boxes strip matching text from the copy's name — case-insensitively, once each — before the append affixes wrap it. Blank boxes are simply omitted.

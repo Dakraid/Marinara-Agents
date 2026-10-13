@@ -34,18 +34,57 @@ function sourceRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+/** Appends the closers a truncated response is missing; null when the structure is broken, not cut. */
+function closeOpenJsonContainers(raw: string): string | null {
+  const stack: string[] = [];
+  let inString = false;
+  let escaped = false;
+  for (const char of raw) {
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') inString = true;
+    else if (char === "{" || char === "[") stack.push(char);
+    else if ((char === "}" || char === "]") && stack.pop() !== (char === "}" ? "{" : "[")) return null;
+  }
+  if (inString) return null;
+  return (
+    raw +
+    stack
+      .reverse()
+      .map((opening) => (opening === "{" ? "}" : "]"))
+      .join("")
+  );
+}
+
+/** Conservative auto-heal for near-miss JSON: trailing commas and truncated closers. */
+function healJson(text: string): string[] {
+  // shortcut: the comma strip also touches ", }" inside string values; a full repair (jsonrepair) would not.
+  const withoutTrailingCommas = text.replace(/,\s*([}\]])/g, "$1");
+  return [withoutTrailingCommas, closeOpenJsonContainers(text), closeOpenJsonContainers(withoutTrailingCommas)].filter(
+    (candidate): candidate is string => candidate !== null,
+  );
+}
+
 function extractJsonObject(raw: string): Record<string, unknown> | null {
   const trimmed = raw.trim();
   const candidates = [trimmed, trimmed.replace(/```[a-zA-Z0-9]*[ \t]*\n?/g, "").trim()];
   for (const candidate of candidates) {
     const start = candidate.indexOf("{");
+    if (start < 0) continue;
     const end = candidate.lastIndexOf("}");
-    if (start < 0 || end <= start) continue;
-    try {
-      const parsed = sourceRecord(JSON.parse(candidate.slice(start, end + 1)));
-      if (parsed) return parsed;
-    } catch {
-      // Try the next candidate.
+    const body = end > start ? candidate.slice(start, end + 1) : candidate.slice(start);
+    // Parse as written first; heal only when that fails, including a tail cut off mid-object.
+    for (const text of [body, ...healJson(body), ...healJson(candidate.slice(start))]) {
+      try {
+        const parsed = sourceRecord(JSON.parse(text));
+        if (parsed) return parsed;
+      } catch {
+        // Try the next candidate.
+      }
     }
   }
   return null;

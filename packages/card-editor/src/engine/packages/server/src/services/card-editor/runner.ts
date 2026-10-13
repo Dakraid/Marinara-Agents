@@ -741,6 +741,41 @@ export async function retryItemRun(
   return updated;
 }
 
+/** Manual JSON fix (failed-parse only): parses the user-corrected response with the single-card
+ *  contract and settles the item as if the model had answered with it. No model call is made. */
+export async function repairItemRun(
+  deps: RunnerDeps,
+  sessionId: string,
+  itemId: string,
+  rawOutput: string,
+): Promise<BulkSession> {
+  const updated = await deps.store.updateSession(sessionId, (session) => {
+    if (session.status !== "active" && session.status !== "completed") {
+      throw new SessionActionError("Only items of an active or completed session can be repaired.", 409);
+    }
+    const item = session.items.find((candidate) => candidate.itemId === itemId);
+    if (!item) throw new SessionActionError("Card Editor session item not found.", 404);
+    if (item.status !== "failed-parse")
+      throw new SessionActionError("Only items that failed to parse can be repaired.", 409);
+    const parsed = parseSingleResponse(rawOutput, item.characterId, { rebalance: session.config.rebalance });
+    if (!parsed.ok)
+      throw new SessionActionError(parsed.parseError ?? "The response did not contain parseable updates.", 422);
+    const { failure: _failure, ...running } = advanceItemStatus(item, "running");
+    const next = {
+      ...session,
+      items: session.items.map((candidate) =>
+        candidate.itemId === itemId
+          ? succeedItem(running, parsed.results.get(item.characterId) ?? [], session.config)
+          : candidate,
+      ),
+    };
+    // A completed session already ran its drain policy, so the repaired item gets it here.
+    return session.status === "completed" ? planCompletionEnforcement(next) : next;
+  });
+  if (!updated) throw new SessionActionError("Card Editor session not found.", 404);
+  return updated;
+}
+
 /** Deactivation path (ARCH §5): abort every in-flight call without touching session state —
  *  sessions remain readable and the next activation marks stranded ones interrupted. */
 export function stopAllRunners(): void {

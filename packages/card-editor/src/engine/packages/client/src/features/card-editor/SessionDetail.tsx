@@ -9,6 +9,7 @@ import {
   executeCompletionEnforcement,
 } from "./apply-ops";
 import { EditRetryDialog } from "./EditRetryDialog";
+import { FixJsonDialog } from "./FixJsonDialog";
 import { translateCardEditor, type CardEditorLocalizationContext } from "./localization";
 import {
   deriveLiveStatus,
@@ -77,6 +78,8 @@ export function SessionDetail({
   const [page, setPage] = useState(0);
   const [queueFocus, setQueueFocus] = useState<string | null | "closed">("closed");
   const [editRetryId, setEditRetryId] = useState<string | null>(null);
+  const [fixJsonId, setFixJsonId] = useState<string | null>(null);
+  const fixJsonShown = useRef(new Set<string>());
   const [confirmDelete, setConfirmDelete] = useState(false);
   const autoApplyAttempts = useRef(new Set<string>());
   const enforcementInFlight = useRef(false);
@@ -90,6 +93,17 @@ export function SessionDetail({
       .catch(() => setLoadError(true));
   }, [sessionId]);
   const pollRef = useVisiblePoll(refresh, 2000);
+
+  // Auto-heal and the strict-JSON retry already failed for these, so offer the manual fix once per item.
+  useEffect(() => {
+    if (!session || fixJsonId !== null || editRetryId !== null || queueFocus !== "closed") return;
+    const unparsed = session.items.find(
+      (item) => item.status === "failed-parse" && item.failure?.rawOutput && !fixJsonShown.current.has(item.itemId),
+    );
+    if (!unparsed) return;
+    fixJsonShown.current.add(unparsed.itemId);
+    setFixJsonId(unparsed.itemId);
+  }, [editRetryId, fixJsonId, queueFocus, session]);
 
   // Auto-approve driver (DESIGN §3): auto-save items land in awaiting-review with autoApply —
   // the panel drives their verdict flow once per item; holds fall back to needs-review triage.
@@ -233,6 +247,7 @@ export function SessionDetail({
     );
   }
 
+  const fixJsonItem = fixJsonId ? (session.items.find((item) => item.itemId === fixJsonId) ?? null) : null;
   const editRetryItem = editRetryId ? (session.items.find((item) => item.itemId === editRetryId) ?? null) : null;
   const reviewableCount = session.items.filter(isReviewable).length;
   const failedCount = session.items.filter(isFailed).length;
@@ -440,6 +455,7 @@ export function SessionDetail({
             (item.status === "applied" || item.status === "duplicated") && (item.updates ?? []).length > 0;
           const canRerun = isFailed(item);
           const canEditRetry = isFailed(item) && item.failure?.renderedPrompt !== undefined;
+          const canFixJson = item.status === "failed-parse" && !!item.failure?.rawOutput;
           const canCancel = item.status === "queued" && session.status === "active";
           return (
             <li className="ce-item" key={item.itemId}>
@@ -491,6 +507,16 @@ export function SessionDetail({
                       }
                     >
                       {t("cardEditor.panel.action.rerun")}
+                    </button>
+                  ) : null}
+                  {canFixJson ? (
+                    <button
+                      type="button"
+                      className="mari-chrome-control mari-chrome-control--small"
+                      disabled={busyKey !== null}
+                      onClick={() => setFixJsonId(item.itemId)}
+                    >
+                      {t("cardEditor.panel.action.fixJson")}
                     </button>
                   ) : null}
                   {canEditRetry ? (
@@ -545,6 +571,18 @@ export function SessionDetail({
             <ChevronRight className="ce-icon" aria-hidden="true" />
           </button>
         </div>
+      ) : null}
+      {fixJsonItem && fixJsonItem.status === "failed-parse" ? (
+        <FixJsonDialog
+          localization={localization}
+          session={session}
+          item={fixJsonItem}
+          onClose={() => setFixJsonId(null)}
+          onUpdated={(updated) => {
+            setSession(updated);
+            setFixJsonId(null);
+          }}
+        />
       ) : null}
       {editRetryItem ? (
         <EditRetryDialog

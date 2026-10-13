@@ -546,7 +546,7 @@ const features = [
   },
   {
     id: "card-editor",
-    version: "1.7.1",
+    version: "1.8.0",
     minEngineVersion: "2.4.7",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Card Editor",

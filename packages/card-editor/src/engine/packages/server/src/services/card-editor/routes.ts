@@ -27,7 +27,14 @@ import {
 import { normalizeCardPromptText } from "../../../../shared/src/features/agents/card-editor/text.ts";
 import { planApply, planDuplicateApplied, type ApplyOperation } from "./apply.ts";
 import type { CharacterLike, LorebookLike } from "./context.ts";
-import { cancelSessionRun, retryItemRun, startRunner, type RunnerDeps, type RunnerLogger } from "./runner.ts";
+import {
+  cancelSessionRun,
+  repairItemRun,
+  retryItemRun,
+  startRunner,
+  type RunnerDeps,
+  type RunnerLogger,
+} from "./runner.ts";
 import type { SessionPromptMaterial, SessionStore } from "./session-store.ts";
 
 export interface CardEditorRouteDeps extends RunnerDeps {
@@ -483,6 +490,16 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
           user: cappedString(body.user, "user", MAX_PROMPT_CHARS),
         };
         return toPublicSession(await retryItemRun(deps, session.id, params.itemId, prompt));
+      }),
+    );
+
+    app.post("/sessions/:id/items/:itemId/repair", async (request, reply) =>
+      handle(reply, async () => {
+        const params = request.params as { id?: unknown; itemId?: unknown };
+        const session = await requireSession(params.id);
+        if (typeof params.itemId !== "string" || !params.itemId) throw badRequest("An item id is required.");
+        const rawOutput = cappedString(sourceRecord(request.body).rawOutput, "rawOutput", MAX_PROMPT_CHARS);
+        return toPublicSession(await repairItemRun(deps, session.id, params.itemId, rawOutput));
       }),
     );
 
