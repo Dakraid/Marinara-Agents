@@ -45,17 +45,29 @@ export function slurpVisualBriefPolicyText(brief: SlurpVisualBrief): string {
   ].join("\n");
 }
 
-/** A cheap last-resort check for obvious sexual escalation before text reaches an image provider. */
-export function slurpVisualBriefPromptViolatesPolicy(brief: SlurpVisualBrief, prompt: string): boolean {
+/**
+ * A cheap last-resort check for sexual escalation before text reaches an image provider. `known` is
+ * everything the rewrite was handed (appearance, content policy, instructions, the draft): a word
+ * the rewrite found there is carried over, not escalated. Without it a card that says "large
+ * breasts" or a policy that says "explicit" rejected every rewrite of a clothed scene.
+ */
+export function slurpVisualBriefPromptViolatesPolicy(
+  brief: SlurpVisualBrief | undefined,
+  prompt: string | null | undefined,
+  known: string = "",
+): boolean {
+  if (!brief || !prompt) return false;
   // Negated terms are the brief's own limits ("no nudity, non-sexual"), not an escalation. Reading
   // them as matches rejected every rewrite that kept the level line.
   const value = prompt.toLocaleLowerCase().replace(/\b(?:no|non|not|without|never)[\s-]+[a-z]+/gu, " ");
+  const carried = new Set(known.toLocaleLowerCase().match(/[a-z]+/gu));
+  const has = (pattern: RegExp) => (value.match(new RegExp(pattern.source, "gu")) ?? []).some((w) => !carried.has(w));
   const explicit = /\b(?:explicit|pornographic|sex|sexual|intercourse|penetration|cum|clit|pussy|cock|balls)\b/u;
   const nude = /\b(?:nude|naked|topless|bottomless|lingerie|nipples?|breasts?|genitals?)\b/u;
-  if (brief.sexualLevel === "none") return explicit.test(value) || nude.test(value);
+  if (brief.sexualLevel === "none") return has(explicit) || has(nude);
   // Suggestive allows "partly undressed", so lingerie and a mention of breasts are within it.
   if (brief.sexualLevel === "suggestive")
-    return explicit.test(value) || /\b(?:nude|naked|topless|bottomless|nipples?|genitals?)\b/u.test(value);
-  if (brief.sexualLevel === "nudity") return explicit.test(value);
+    return has(explicit) || has(/\b(?:nude|naked|topless|bottomless|nipples?|genitals?)\b/u);
+  if (brief.sexualLevel === "nudity") return has(explicit);
   return false;
 }

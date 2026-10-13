@@ -552,9 +552,8 @@ async function generateCreatorPostImageRun(
         imageDefaults,
       })
     : null;
-  const rewriteViolatesPolicy = Boolean(
-    input.visualBrief && rewrittenPrompt && slurpVisualBriefPromptViolatesPolicy(input.visualBrief, rewrittenPrompt),
-  );
+  const known = [rawRewriteInput, characterContext, imagePromptInstructions, styleGuidance].join("\n");
+  const rewriteViolatesPolicy = slurpVisualBriefPromptViolatesPolicy(input.visualBrief, rewrittenPrompt, known);
   const acceptedRewrittenPrompt = rewriteViolatesPolicy ? null : compiledRewrittenPrompt?.prompt || rewrittenPrompt;
   let usedRewrite = Boolean(acceptedRewrittenPrompt);
   if (rewriteAttempted) {
@@ -569,10 +568,9 @@ async function generateCreatorPostImageRun(
   const finalPromptBase = redactIdentity(
     selectSlpImageProviderPrompt({
       rewrittenPrompt: acceptedRewrittenPrompt,
-      // The rendered template already holds the draft, the look, and the image habits. A prefix of
-      // the full card appearance plus the typed brief used to go first and push the scene past the
-      // length cap, so the image model received an appearance paragraph and no picture.
       rawPrompt: rawProviderPrompt,
+      fallbackPrefix: redactIdentity(stripAppearanceLabel(characterDescription)),
+      fallbackScene: rawRewriteInput,
       rewriteAttempted,
       rewriteFailure: rewriteViolatesPolicy ? "the rewrite broke the scene's content level" : rewriteFailure,
       onFallback: (reason) => {

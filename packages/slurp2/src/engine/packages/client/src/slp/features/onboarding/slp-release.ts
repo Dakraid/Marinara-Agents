@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.31";
+export const SLURP2_VERSION = "0.3.32";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -12,6 +12,13 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.32",
+    date: "2026-10-13",
+    notes: [
+      "A long look on a page no longer pushes the scene out of its picture, and a look's own words no longer get a picture's wording thrown away.",
+    ],
+  },
   {
     version: "0.3.31",
     date: "2026-10-13",
@@ -775,15 +782,6 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
     version: "0.1.0",
     date: "2026-09-19",
     notes: ["Behind-the-scenes cleanup. Everything works as before."],
-  },
-  {
-    version: "0.0.22",
-    date: "2026-09-17",
-    notes: [
-      "Invite your characters into the audience: they comment, follow, subscribe and tip.",
-      "New picture Stories, message actions and a New Chat picker.",
-      "New limits keep costs on your AI connection in check.",
-    ],
   },
 ];
 

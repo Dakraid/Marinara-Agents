@@ -358,8 +358,10 @@ export async function generateSlpPostImage(input: {
         imageDefaults,
       })
     : null;
-  const rewriteViolatesPolicy = Boolean(
-    input.visualBrief && rewrittenPrompt && slurpVisualBriefPromptViolatesPolicy(input.visualBrief, rewrittenPrompt),
+  const rewriteViolatesPolicy = slurpVisualBriefPromptViolatesPolicy(
+    input.visualBrief,
+    rewrittenPrompt,
+    [rawFinalPrompt, characterContext, imagePromptInstructions, styleGuidance].join("\n"),
   );
   const acceptedRewrittenPrompt = rewriteViolatesPolicy ? null : compiledRewrittenPrompt?.prompt || rewrittenPrompt;
   let usedRewrite = Boolean(acceptedRewrittenPrompt);
