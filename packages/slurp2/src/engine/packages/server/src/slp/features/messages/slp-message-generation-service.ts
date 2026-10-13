@@ -77,6 +77,8 @@ import {
   slurpFanVoiceForPrompt,
   slurpResolveFanType,
 } from "../../../../../shared/src/slp/slp-fan-types.js";
+import { SlurpMessageBudgetUnavailableError } from "./slp-message-budget-error.js";
+import { resolveSlurpLoreContext } from "../../data/host/slp-lore-context.js";
 import { slurpDmImageContexts } from "./slp-message-image-context.js";
 import { createSlurpMessagesStorage, type SlurpMessage } from "../../data/slp-storage.js";
 import { slurpDmRecentPosts, type SlurpDmPolicy } from "../../modules/messages/slp-messaging.js";
@@ -113,14 +115,6 @@ type GenerationConnection = NonNullable<Awaited<ReturnType<ReturnType<typeof cre
 /** A DM has more room than a comment reply, but not enough to become a monologue. */
 export const SLURP_MESSAGE_CONTENT_MAX_LENGTH = 900;
 
-/** Expected throttling, kept distinct from connection and generation failures. */
-export class SlurpMessageBudgetUnavailableError extends Error {
-  constructor(readonly retryAt: string | null) {
-    super("Slurp AI reply budget is unavailable.");
-    this.name = "SlurpMessageBudgetUnavailableError";
-  }
-}
-
 /** How many turns of history the model sees. Enough to hold a thread, short enough to stay cheap. */
 const HISTORY_TURNS = 16;
 
@@ -154,6 +148,7 @@ export function buildSlurpMessageChat(input: {
   threadState?: SlurpThreadState;
   creatorState?: SlurpCreatorState;
   characterCanon?: string;
+  loreContext?: string; // lorebook entries matching the recent chat; "" when off or no match
   /** The flavour brief (see `slp-creator-flavour.ts`); replaces the card dump when present. */
   flavourBrief?: string;
   generationGuidance: string;
@@ -373,6 +368,7 @@ export function buildSlurpMessageChat(input: {
           },
         }
       : {}),
+    ...(input.loreContext?.trim() ? { worldLore: protect(input.loreContext) } : {}),
     ...(input.characterCanon && !input.flavourBrief?.trim() ? { characterCanon: protect(input.characterCanon) } : {}),
     ...(input.viewerGenerationGuidance?.trim()
       ? { viewerRequest: protect(input.viewerGenerationGuidance.trim()) }
@@ -410,9 +406,9 @@ export function buildSlurpMessageChat(input: {
       ? {
           yourRecentPosts: input.recentPosts.map((post) => ({
             title: protect(post.title),
-            // A locked body is what the fan is being sold. Quoting it into a free chat gives it away.
-            content: post.access === "locked" ? "[paid post, contents not repeated here]" : protect(post.content),
-            // Never set for a locked post: its picture is withheld for the same reason as its text.
+            // She wrote it, so she knows it; `access` and `fanAlreadyUnlocked` say whether this fan has seen it.
+            content: protect(post.content),
+            // Never set for a locked post: its picture stays withheld.
             image: input.imageContexts?.has(post.id) ? protect(input.imageContexts.get(post.id)) : undefined,
             access: post.access,
             ...(post.access === "locked" ? { fanAlreadyUnlocked: Boolean(post.unlockedByFan) } : {}),
@@ -574,6 +570,12 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
     (await slurp.listPostUnlocksForViewer(input.viewer.id).catch(() => [])).map((unlock) => unlock.postId),
   );
   const recentPosts = slurpDmRecentPosts(recentPostRows, unlockedPostIds, RECENT_POSTS);
+  const loreContext = await resolveSlurpLoreContext(input.db, {
+    settings,
+    texts: input.history.slice(-HISTORY_TURNS).map((message) => message.content),
+    sourceCharacterContext: characterCanon,
+    source,
+  });
   const stance = await resolveSlurpThreadStance(input.db, {
     creator: input.creator,
     viewerId: input.viewer.id,
@@ -594,8 +596,7 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
     historyTurns: HISTORY_TURNS,
     recentPosts: RECENT_POSTS,
   });
-  // Approved notes: the Creator's own, plus anything private to this thread. Another fan's thread
-  // is unreachable from here — `slurpContinuityReadable` decides that, not this call site.
+  // Approved notes: the Creator's own, plus this thread's private ones; `slurpContinuityReadable` fences other threads.
   const continuityInstruction = input.threadId
     ? await listSlurpContinuityFor(input.db, input.creator.id, "fan_thread", {
         at: new Date(),
@@ -653,6 +654,7 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
     promptInstructions: prompts.instructions,
     scheduleContext,
     characterCanon,
+    loreContext,
     // Their own chat lines first: a thread shows how they text, and where they repeat themselves.
     flavourBrief: await resolveSlurpCreatorFlavour(input.db, {
       account: input.creator,
