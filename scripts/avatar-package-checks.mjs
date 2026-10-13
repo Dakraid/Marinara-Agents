@@ -27,7 +27,7 @@ export function assertAvatarPackageContract(manifest, agentDefinitions) {
   const id = manifest?.id;
   if (!AVATAR_PACKAGE_IDS.includes(id)) return false;
   const api = manifest.capabilityApi;
-  if (manifest.schemaVersion !== 2 || api?.major !== 1 || !(api.minor >= 73)) {
+  if (manifest.schemaVersion !== 2 || api?.major !== 1 || !Number.isInteger(api.minor) || api.minor < 73) {
     throw new Error(`${id} must declare schemaVersion 2 and Capability API 1.73 or newer`);
   }
   // One agent per package, with the package id: a second definition would escape every check below.

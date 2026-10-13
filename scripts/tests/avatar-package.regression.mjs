@@ -31,10 +31,12 @@ assert.throws(() => {
   agents.push({ ...agents[0], id: "2d-avatars-extra", execution: "pipeline", defaultPromptTemplate: "Run me." });
   assertAvatarPackageContract(manifest, agents);
 }, /must define exactly one agent, with the package id/);
-assert.throws(
-  mutated("3d-avatars", (manifest) => (manifest.capabilityApi = { major: 1, minor: 72 })),
-  /must declare schemaVersion 2 and Capability API 1\.73 or newer/,
-);
+for (const minor of [72, "73"]) {
+  assert.throws(
+    mutated("3d-avatars", (manifest) => (manifest.capabilityApi = { major: 1, minor })),
+    /must declare schemaVersion 2 and Capability API 1\.73 or newer/,
+  );
+}
 assert.throws(
   mutated("2d-avatars", (_manifest, agent) => (agent.execution = "pipeline")),
   /must define its agent with execution "host"/,
