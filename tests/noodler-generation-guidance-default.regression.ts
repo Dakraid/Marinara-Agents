@@ -31,14 +31,12 @@ function guidancePresets(source: string): string {
   return match[1];
 }
 
-function level(presets: string, name: string): string {
-  const match = presets.match(new RegExp(`\\n  ${name}:\\s+"((?:[^"\\\\]|\\\\.)*)",?`, "u"));
-  assert.ok(match, `spice level ${name} must be a single double-quoted literal`);
-  return match[1];
-}
-
 const serverPresets = guidancePresets(storage);
-const serverDefault = level(serverPresets, "steamy");
+// 0.3.17 replaced the spice presets as the default with one house style; the presets stay so
+// `readSlurpSpice` can recognise and migrate them.
+const houseStyle = storage.match(/export const SLURP_HOUSE_STYLE_GUIDANCE =\s+"((?:[^"\\]|\\.)*)";/u);
+assert.ok(houseStyle, "SLURP_HOUSE_STYLE_GUIDANCE must be a single double-quoted literal");
+const serverDefault = houseStyle[1];
 assert.doesNotMatch(home, /SLP_CREATOR_DEFAULT_GENERATION_GUIDANCE/u);
 assert.equal(
   guidancePresets(settings),
@@ -46,9 +44,9 @@ assert.equal(
   "Slurp settings and server spice levels must match exactly, or the level picker cannot tell which one is active",
 );
 
-// The guidance ships as three spice levels, and the middle one is the default. Every level is
-// adult-first and keeps each creator's personality intact; they differ only in how explicit they
-// let the posts get, and none of them demote ordinary posts to filler.
+// The shipped default is adult-first. The three legacy spice levels keep each creator's
+// personality intact; they differ only in how explicit they let the posts get, and none of them
+// demote ordinary posts to filler.
 assert.match(serverDefault, /adults \(18\+\)/u);
 assert.match(serverDefault, /^All Slurp creators and viewers/u);
 
@@ -57,8 +55,8 @@ for (const level of levels)
   assert.match(serverPresets, new RegExp(`\\n  ${level}:\\s+"`, "u"), `missing level: ${level}`);
 assert.match(
   storage,
-  /export const SLP_CREATOR_DEFAULT_GENERATION_GUIDANCE: string = SLURP_GUIDANCE_PRESETS\.steamy;/u,
-  "the middle level must be the shipped default",
+  /export const SLP_CREATOR_DEFAULT_GENERATION_GUIDANCE: string = SLURP_HOUSE_STYLE_GUIDANCE;/u,
+  "the house style must be the shipped default",
 );
 // The levels must actually differ in explicitness, or the control does nothing.
 assert.match(
@@ -85,7 +83,8 @@ assert.match(
 assert.match(storage, /LEGACY_SLP_CREATOR_DEFAULT_IMAGE_PROMPT_INTERPRETATION/u);
 assert.match(
   storage,
-  /SLP_CREATOR_DEFAULT_IMAGE_PROMPT_INTERPRETATION =\n  "[^"]*tits, nipples, ass, pussy, clit, cock, balls, cum/u,
+  // Since c648bc5d4 the rewrite keeps the post's sexual intensity instead of listing explicit terms.
+  /SLP_CREATOR_DEFAULT_IMAGE_PROMPT_INTERPRETATION =\n  "[^"]*Preserve [^"]*sexual intensity/u,
 );
 
 // The exact previously shipped prompt migrates, while any customized value remains untouched.
