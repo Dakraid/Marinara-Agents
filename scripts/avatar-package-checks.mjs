@@ -27,8 +27,12 @@ export function assertAvatarPackageContract(manifest, agentDefinitions) {
   if (manifest.schemaVersion !== 2 || api?.major !== 1 || !(api.minor >= 73)) {
     throw new Error(`${id} must declare schemaVersion 2 and Capability API 1.73 or newer`);
   }
-  const agent = Array.isArray(agentDefinitions) ? agentDefinitions.find((entry) => entry?.id === id) : undefined;
-  if (agent?.execution !== "host") {
+  // One agent per package, with the package id: a second definition would escape every check below.
+  if (!Array.isArray(agentDefinitions) || agentDefinitions.length !== 1 || agentDefinitions[0]?.id !== id) {
+    throw new Error(`${id} must define exactly one agent, with the package id`);
+  }
+  const agent = agentDefinitions[0];
+  if (agent.execution !== "host") {
     throw new Error(`${id} must define its agent with execution "host" so the Engine runs it`);
   }
   if (agent.defaultPromptTemplate !== "") {

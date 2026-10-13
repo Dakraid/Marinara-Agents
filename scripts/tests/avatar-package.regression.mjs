@@ -26,6 +26,11 @@ function mutated(id, change) {
 const template = (agent, templateId) =>
   agent.defaultSettings.avatarGenerationTemplates.find((entry) => entry.id === templateId);
 
+assert.throws(() => {
+  const { manifest, agents } = structuredClone(shipped["2d-avatars"]);
+  agents.push({ ...agents[0], id: "2d-avatars-extra", execution: "pipeline", defaultPromptTemplate: "Run me." });
+  assertAvatarPackageContract(manifest, agents);
+}, /must define exactly one agent, with the package id/);
 assert.throws(
   mutated("3d-avatars", (manifest) => (manifest.capabilityApi = { major: 1, minor: 72 })),
   /must declare schemaVersion 2 and Capability API 1\.73 or newer/,
