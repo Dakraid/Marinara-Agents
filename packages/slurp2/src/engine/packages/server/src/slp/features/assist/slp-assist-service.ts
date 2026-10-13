@@ -1,3 +1,6 @@
+import type { APIProvider } from "@marinara-engine/shared";
+import { resolveStoredMaxTokens } from "../../../services/generation/generation-parameters.js";
+import { clampGenerationMaxOutputTokens } from "../../../services/generation/output-token-limits.js";
 import type { DB } from "../../../db/connection.js";
 import { logger } from "../../../lib/logger.js";
 import { resolveBaseUrl } from "../../../services/generation/connection-base-url.js";
@@ -138,7 +141,16 @@ export async function runSlpAssistText(
       stageVoice: creator ? await protectFor(db, creator, creator.account.settings.privacy.stagePersonality) : "",
     }),
     // Reasoning headroom: a short field still needs room to think before it answers.
-    { model: connection.model, temperature: 0.85, maxTokens: 2048 },
+    {
+      model: connection.model,
+      temperature: 0.85,
+      maxTokens: clampGenerationMaxOutputTokens({
+        provider: connection.provider as APIProvider,
+        model: connection.model,
+        maxTokens: Math.max(resolveStoredMaxTokens(connection.defaultParameters, 2048), 2048),
+        maxTokensOverride: connection.maxTokensOverride,
+      }),
+    },
   );
   const cleaned = cleanSlpAssistText(result.content, input.field);
   // The prompt now carries a concealed Creator's card text, so the answer gets the same pass a post does.

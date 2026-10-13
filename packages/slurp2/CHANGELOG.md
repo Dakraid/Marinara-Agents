@@ -1,5 +1,9 @@
 # Slurp release notes
 
+## 0.3.33 — 2026-10-13
+
+- Fixed: on a reasoning model (for example GLM) the picture writer and seven other short model calls (Page design, Page style, look reading, fan voice, Stir plans, writing help) sent a small fixed output limit and ignored the max tokens set on the connection, so the model spent it all thinking and returned nothing ("Image prompt rewrite unusable"). They now use the connection's max tokens when it is larger than their small default. The warning also names the limit that was sent. (#1349)
+
 ## 0.3.32 — 2026-10-13
 
 - Fixed: the picture writer's result was thrown away as "broke the scene's content level" when it only repeated a word from the Creator's own look or the draft (for example "breasts") on a clothed scene. A word the writer was handed in those two no longer counts as an escalation; limits and the content policy do not count as a source. (#1347)
