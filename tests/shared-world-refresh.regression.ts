@@ -62,7 +62,7 @@ const hookSource = readFileSync(
 );
 assert.match(
   hookSource,
-  /queryClient\.invalidateQueries\(\{ queryKey: spatialContextKeys\.sharedWorlds \}\)[\s\S]*?predicate: \(query\)[\s\S]*?cached\?\.sharedWorld\?\.worldId === world\.id/u,
+  /queryClient\.invalidateQueries\(\{\s*queryKey: spatialContextKeys\.sharedWorlds,?\s*\}\)[\s\S]*?predicate: \(query\)[\s\S]*?cached\?\.sharedWorld\?\.worldId === world\.id/u,
   "Publishing must narrowly invalidate the shared-world list and affected cached linked-chat queries",
 );
 assert.match(

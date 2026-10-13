@@ -16,8 +16,9 @@ const currentMapsVersion = (
 const generationProviderBaseUrl = "http://127.0.0.1:9/v1";
 const csrfHeaders = { "x-marinara-csrf": "1" };
 const originalFetch = globalThis.fetch;
+// Historical artifacts are immutable and were built before the repository transfer.
 const artifactWorldMapsGuideUrl =
-  "https://github.com/Dakraid/Marinara-Engine/blob/main/docs/agents/hierarchical-maps.md";
+  "https://github.com/Pasta-Devs/Marinara-Engine/blob/main/docs/agents/hierarchical-maps.md";
 const catalogWorldMapsGuideUrl =
   "https://github.com/Dakraid/Marinara-Engine/blob/main/docs/agents/hierarchical-maps.md";
 const defaultTurnPromptTemplate = [

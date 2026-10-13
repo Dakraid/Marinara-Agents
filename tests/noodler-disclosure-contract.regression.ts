@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import {
-  isNoodlerDisclosureDowngrade,
-  noodlerDisclosureReviewReasons,
-  projectNoodlerAudienceProfile,
+  isCreatorDisclosureDowngrade,
+  slpCreatorDisclosureReviewReasons,
+  projectCreatorAudienceProfile,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/creators/slp-disclosure";
 import {
-  compareMinimizedNoodlerSourceSnapshot,
-  isMinimizedNoodlerSourceSnapshot,
-  minimizeNoodlerSourceSnapshot,
+  compareMinimizedCreatorSourceSnapshot,
+  isMinimizedCreatorSourceSnapshot,
+  minimizeCreatorSourceSnapshot,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/base/identity/slp-source";
 import { slurp2Source } from "./slurp2-source";
 
@@ -30,25 +30,25 @@ const managedProfile = {
   updatedAt: "2026-01-01T00:00:00.000Z",
 };
 
-const hintedAudience = projectNoodlerAudienceProfile(managedProfile);
+const hintedAudience = projectCreatorAudienceProfile(managedProfile);
 assert.equal(hintedAudience.slurpSourceAccountId, null);
 assert.equal(hintedAudience.publicIdentity, null);
 assert.equal("access" in hintedAudience, false);
 assert.equal("sourceStatus" in hintedAudience, false);
 
-const openAudience = projectNoodlerAudienceProfile({
+const openAudience = projectCreatorAudienceProfile({
   ...managedProfile,
   disclosureMode: "open",
 });
 assert.equal(openAudience.slurpSourceAccountId, "source-account");
 assert.deepEqual(openAudience.publicIdentity, managedProfile.publicIdentity);
 
-assert.equal(isNoodlerDisclosureDowngrade("open", "hinted"), true);
-assert.equal(isNoodlerDisclosureDowngrade("open", "secret"), true);
-assert.equal(isNoodlerDisclosureDowngrade("hinted", "secret"), true);
-assert.equal(isNoodlerDisclosureDowngrade("secret", "open"), false);
+assert.equal(isCreatorDisclosureDowngrade("open", "hinted"), true);
+assert.equal(isCreatorDisclosureDowngrade("open", "secret"), true);
+assert.equal(isCreatorDisclosureDowngrade("hinted", "secret"), true);
+assert.equal(isCreatorDisclosureDowngrade("secret", "open"), false);
 assert.deepEqual(
-  noodlerDisclosureReviewReasons({
+  slpCreatorDisclosureReviewReasons({
     currentMode: "open",
     nextMode: "secret",
     postCount: 2,
@@ -76,19 +76,19 @@ const snapshot = {
 };
 
 // Open keeps the snapshot; hinted and secret store only salted digests.
-assert.deepEqual(minimizeNoodlerSourceSnapshot(snapshot, "open"), snapshot);
-const secret = minimizeNoodlerSourceSnapshot(snapshot, "secret");
+assert.deepEqual(minimizeCreatorSourceSnapshot(snapshot, "open"), snapshot);
+const secret = minimizeCreatorSourceSnapshot(snapshot, "secret");
 Object.values(secret).forEach((value) => {
   assert.match(value, /^revision:[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43}$/u);
 });
 Object.entries(snapshot).forEach(([field, value]) => {
   assert.equal(secret[field as keyof typeof secret].includes(value), false);
 });
-assert.equal(isMinimizedNoodlerSourceSnapshot(secret), true);
-assert.equal(isMinimizedNoodlerSourceSnapshot(snapshot), false);
+assert.equal(isMinimizedCreatorSourceSnapshot(secret), true);
+assert.equal(isMinimizedCreatorSourceSnapshot(snapshot), false);
 // Legacy unsalted tokens are not accepted, so storage re-minimizes them.
 assert.equal(
-  isMinimizedNoodlerSourceSnapshot({
+  isMinimizedCreatorSourceSnapshot({
     ...secret,
     name: `revision:${"a".repeat(43)}`,
   }),
@@ -96,22 +96,22 @@ assert.equal(
 );
 
 // Hinted mode keeps personality themes readable, and nothing else.
-const hinted = minimizeNoodlerSourceSnapshot(snapshot, "hinted");
+const hinted = minimizeCreatorSourceSnapshot(snapshot, "hinted");
 assert.match(hinted.personality, /^thoughtful witty revision:/u);
 assert.match(hinted.name, /^revision:/u);
-assert.equal(isMinimizedNoodlerSourceSnapshot(hinted), true);
+assert.equal(isMinimizedCreatorSourceSnapshot(hinted), true);
 // The themes prefix pushes the token off the start of the string, so the salt has to be
 // read through the leading-space branch of the pattern. Without it a hinted personality
 // would draw a fresh salt on every comparison and report as changed forever.
-assert.deepEqual(compareMinimizedNoodlerSourceSnapshot(hinted, snapshot, "hinted"), { state: "current" });
-assert.equal(minimizeNoodlerSourceSnapshot(snapshot, "hinted", hinted).personality, hinted.personality);
+assert.deepEqual(compareMinimizedCreatorSourceSnapshot(hinted, snapshot, "hinted"), { state: "current" });
+assert.equal(minimizeCreatorSourceSnapshot(snapshot, "hinted", hinted).personality, hinted.personality);
 
 // Each minimization salts independently, so two stores of the same source do not
 // produce the same token — but a comparison against a baseline reuses its salt.
-assert.notEqual(minimizeNoodlerSourceSnapshot(snapshot, "secret").name, secret.name);
-assert.deepEqual(compareMinimizedNoodlerSourceSnapshot(secret, snapshot, "secret"), { state: "current" });
+assert.notEqual(minimizeCreatorSourceSnapshot(snapshot, "secret").name, secret.name);
+assert.deepEqual(compareMinimizedCreatorSourceSnapshot(secret, snapshot, "secret"), { state: "current" });
 assert.deepEqual(
-  compareMinimizedNoodlerSourceSnapshot(secret, { ...snapshot, backstory: "Came back last spring" }, "secret"),
+  compareMinimizedCreatorSourceSnapshot(secret, { ...snapshot, backstory: "Came back last spring" }, "secret"),
   {
     state: "changed",
     changes: [
@@ -199,13 +199,13 @@ assert.match(fanActivityPrivacy, /Posts marked locked are paid posts\. Only subs
 // bundle. A shared module across the two bundles is more machinery than one three-line constant
 // is worth, so the drift is caught here instead: if the orders ever disagree, a downgrade warning
 // fires on the wrong transition.
-const disclosureRankTable = /secret: 0,\s*hinted: 1,\s*open: 2,/u;
+const disclosureRankTable = /secret: 0,\s*hinted: 1,\s*open: 2\b/u;
 assert.match(
   slurp2Source("packages/slurp2/src/engine/packages/server/src/services/slurp/slurp-disclosure.ts"),
   disclosureRankTable,
 );
 assert.match(
-  slurp2Source("packages/slurp2/src/engine/packages/client/src/components/slurp/SlurpHome.tsx"),
+  slurp2Source("packages/slurp2/src/engine/packages/client/src/slp/features/creators/SlpStageProfileForm.tsx"),
   disclosureRankTable,
   "the client disclosure rank must match the server's",
 );

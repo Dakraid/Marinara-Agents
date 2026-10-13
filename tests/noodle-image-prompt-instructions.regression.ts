@@ -249,6 +249,9 @@ async function runRewrite(options: { agentsDefault: boolean; answer: string; noo
         },
       };
     },
+    noodleSamplingOptions: () => ({}),
+    resolveStoredChatOptions: () => ({}),
+    resolveStoredMaxTokens: (_parameters: unknown, fallback: number) => fallback,
     removeCopiedPromptGuidance,
     logger: { warn: () => undefined },
     result: undefined as unknown,
