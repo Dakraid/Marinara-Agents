@@ -37,8 +37,8 @@
     },
     {
       "path": "client.js",
-      "sha256": "1e06050f694ad460c2d841e6af327ee07a7551ae78dad47e2125032b8a3a3d44",
-      "bytes": 882698
+      "sha256": "21dfd46549c182b1e89804c0cbe944b4e1283ad1e45ba0e41b05f6e2cd80b605",
+      "bytes": 884196
     },
     {
       "path": "claude-code-plugin/.claude-plugin/plugin.json",

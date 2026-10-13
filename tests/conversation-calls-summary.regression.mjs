@@ -116,6 +116,9 @@ const callSurfaceSource = await readFile(
 assert.match(callSurfaceSource, /CALL_AUDIO_CONVERSION_YIELD_SAMPLES = 32_768/u);
 assert.match(callSurfaceSource, /await yieldDuringAudioConversion\(\)/u);
 assert.match(callSurfaceSource, /transcribed\(\);\s+await playTurns\(result\.turns\)/u);
+// The dialog moves focus to its close button, keeps Tab inside, and hands focus back when it closes.
+assert.match(callSurfaceSource, /useDialogFocusScope\(\s*mobileChatSheetOpen,\s*mobileChatSheetRef,/u);
+assert.match(callSurfaceSource, /\{mobileChatSheetOpen && \(\s*<div\s+ref=\{mobileChatSheetRef\}\s+role="dialog"/u);
 
 for (const relativePath of ["catalog/catalog.json", "catalog/v2/catalog.json", "catalog/v3/catalog.json"]) {
   const catalog = JSON.parse(await readFile(join(repoRoot, relativePath), "utf8"));
