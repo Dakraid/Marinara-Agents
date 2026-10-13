@@ -15,9 +15,7 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
   {
     version: "0.3.35",
     date: "2026-10-13",
-    notes: [
-      "With a Claude (Subscription) connection, Slurp no longer sends your account email or this computer's details to the model.",
-    ],
+    notes: ["With Claude (Subscription), Slurp no longer sends your account email or computer details to the model."],
   },
   {
     version: "0.3.34",
