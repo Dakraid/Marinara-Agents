@@ -2,7 +2,7 @@
 
 ## 0.3.35 — 2026-10-13
 
-- Added: "The image model knows this character" can be chosen while adding a Creator, in Quick setup, in the customise path and in the role-play sign-up. It starts on, like before, and is saved with the new Creator. You can still change it later in the Creator's settings. (#1353)
+- Added: "The image model knows this character" can be chosen while adding a Creator, in Quick setup, in the customise path, in the role-play sign-up and in the manual Create flow. It starts on, like before, and is saved with the new Creator. You can still change it later in the Creator's settings. (#1353)
 
 ## 0.3.34 — 2026-10-13
 

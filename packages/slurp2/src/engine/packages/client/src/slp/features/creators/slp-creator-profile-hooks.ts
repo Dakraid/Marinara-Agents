@@ -34,6 +34,7 @@ export function useCreateCreatorStageProfile() {
       }),
     onSuccess: () =>
       Promise.all([
+        qc.invalidateQueries({ queryKey: slpKeys.settings() }),
         qc.invalidateQueries({ queryKey: slpKeys.noodlerAccounts() }),
         qc.invalidateQueries({
           queryKey: slpKeys.noodlerEligibleAccountsRoot(),
@@ -100,6 +101,7 @@ export function useBulkCreateCreatorStageProfiles() {
         toast.success(localizeUi("ui.noodle.noodlerbulkcreatepanel.createdValue1SkippedValue2", counts));
       }
       return Promise.all([
+        qc.invalidateQueries({ queryKey: slpKeys.settings() }),
         qc.invalidateQueries({ queryKey: slpKeys.noodlerAccounts() }),
         qc.invalidateQueries({
           queryKey: slpKeys.noodlerEligibleAccountsRoot(),

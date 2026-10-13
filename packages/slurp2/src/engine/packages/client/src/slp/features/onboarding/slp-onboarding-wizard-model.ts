@@ -317,7 +317,7 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
             imageConnectionId: imageConnectionId || null,
             personaId: useSlurpUIStore.getState().viewerPersonaId ?? undefined,
             completeOnboarding: !selectionOnly,
-            imageNameKnown,
+            imageNameKnown: imagesEnabled ? imageNameKnown : true,
           },
           onProgress: (done, total) => setSignUpProgress({ done, total }),
         });
