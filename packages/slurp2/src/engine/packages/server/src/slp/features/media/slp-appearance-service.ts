@@ -142,7 +142,7 @@ async function resolveImageAppearanceOnce(input: Parameters<typeof resolveImageA
     maxTokens: clampGenerationMaxOutputTokens({
       provider: connection.provider as APIProvider,
       model: connection.model,
-      maxTokens: resolveStoredMaxTokens(connection.defaultParameters, 500),
+      maxTokens: Math.max(resolveStoredMaxTokens(connection.defaultParameters, 500), 500),
       maxTokensOverride: connection.maxTokensOverride,
     }),
     stream: false,

@@ -249,7 +249,7 @@ export async function planSlpStir(
       maxTokens: clampGenerationMaxOutputTokens({
         provider: connection.provider as APIProvider,
         model: connection.model,
-        maxTokens: resolveStoredMaxTokens(connection.defaultParameters, 3072),
+        maxTokens: Math.max(resolveStoredMaxTokens(connection.defaultParameters, 3072), 3072),
         maxTokensOverride: connection.maxTokensOverride,
       }),
     },

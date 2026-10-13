@@ -147,7 +147,7 @@ export async function runSlpAssistText(
       maxTokens: clampGenerationMaxOutputTokens({
         provider: connection.provider as APIProvider,
         model: connection.model,
-        maxTokens: resolveStoredMaxTokens(connection.defaultParameters, 2048),
+        maxTokens: Math.max(resolveStoredMaxTokens(connection.defaultParameters, 2048), 2048),
         maxTokensOverride: connection.maxTokensOverride,
       }),
     },

@@ -48,7 +48,7 @@ export async function draftSlpFanTypeVoice(db: DB, input: SlpFanVoiceDraftInput)
     maxTokens: clampGenerationMaxOutputTokens({
       provider: connection.provider as APIProvider,
       model: connection.model,
-      maxTokens: resolveStoredMaxTokens(connection.defaultParameters, 400),
+      maxTokens: Math.max(resolveStoredMaxTokens(connection.defaultParameters, 400), 400),
       maxTokensOverride: connection.maxTokensOverride,
     }),
   });

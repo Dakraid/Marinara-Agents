@@ -215,11 +215,11 @@ export async function rewriteSlpImagePrompt(input: {
       model: String(runtime.model ?? ""),
       messages: messages.map((message) => ({ role: message.role, content: String(message.content) })),
     });
-    // The connection's own max-tokens setting wins over the default, as in every other Slurp call.
+    // A larger max-tokens setting on the connection raises the default; a smaller one never starves the answer.
     const maxTokens = clampGenerationMaxOutputTokens({
       provider: textConnection.provider as APIProvider,
       model: textConnection.model,
-      maxTokens: resolveStoredMaxTokens(textConnection.defaultParameters, 4_096),
+      maxTokens: Math.max(resolveStoredMaxTokens(textConnection.defaultParameters, 4_096), 4_096),
       maxTokensOverride: textConnection.maxTokensOverride,
     });
     const result = await runtime.provider.chatComplete(messages, {
@@ -233,7 +233,7 @@ export async function rewriteSlpImagePrompt(input: {
     const answer = readRewrittenPrompt(result.content);
     if ("failure" in answer) {
       input.onFailure?.(
-        `${answer.failure} [model ${String(runtime.model ?? "unknown")}, max output tokens ${maxTokens}]`,
+        `${answer.failure} [model ${String(runtime.model ?? "unknown")}, max output tokens ${runtime.suppressModelParameters ? "provider default" : maxTokens}]`,
       );
       return null;
     }

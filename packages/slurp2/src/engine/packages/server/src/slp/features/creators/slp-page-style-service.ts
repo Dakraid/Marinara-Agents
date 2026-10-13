@@ -108,7 +108,7 @@ export async function suggestSlpPageStyle(db: DB, accountId: string): Promise<Sl
       maxTokens: clampGenerationMaxOutputTokens({
         provider: connection.provider as APIProvider,
         model: connection.model,
-        maxTokens: resolveStoredMaxTokens(connection.defaultParameters, 4000),
+        maxTokens: Math.max(resolveStoredMaxTokens(connection.defaultParameters, 4000), 4000),
         maxTokensOverride: connection.maxTokensOverride,
       }),
     });

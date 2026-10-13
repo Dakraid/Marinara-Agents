@@ -42,11 +42,15 @@ for (const file of [
   "server/src/slp/features/assist/slp-assist-service.ts",
 ]) {
   const text = read(file);
-  assert.match(text, /resolveStoredMaxTokens\([\w.]+\.defaultParameters, [\d_]+\)/u, file);
+  assert.match(text, /Math\.max\(\s*resolveStoredMaxTokens\([\w.]+\.defaultParameters, [\d_]+\),\s*[\d_]+/u, file);
   assert.match(text, /maxTokensOverride: \w+\.maxTokensOverride/u, file);
   assert.doesNotMatch(text, /maxTokens: [\d_]+[,\s}]/u, `${file} sends a fixed maxTokens`);
 }
-assert.match(rewrite, /max output tokens \$\{maxTokens\}/u, "the failure names the limit that was sent");
+assert.match(
+  rewrite,
+  /max output tokens \$\{[^}]*"provider default" : maxTokens\}/u,
+  "the failure names the limit that was sent",
+);
 assert.match(rewrite, /the answer looks cut off after/u);
 assert.match(rewrite, /the JSON answer has no "prompt" text/u);
 assert.match(rewrite, /no text connection:/u);
