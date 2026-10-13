@@ -51,6 +51,14 @@ var INTIMACY_WAYS_BY_ARCHETYPE = {
   caretaker: ["either", "slow", "tender", "either", "cautious"],
   grounded: ["either", "either", "either", "either", "either"],
 };
+var INTIMACY_DISPOSITIONS = ["dominant", "submissive", "switch"];
+var INTIMACY_DISPOSITION_LABELS = {
+  "": "Unset",
+  dominant: "Dominant",
+  submissive: "Submissive",
+  switch: "Switch",
+};
+var INTIMACY_KINKS_MAX = 24;
 var INTIMACY_LIKES_MAX = 3;
 var INTIMACY_LIMITS_MAX = 3;
 var INTIMACY_TEXT_MAX = 60;
@@ -130,6 +138,23 @@ function cleanIntimacyLikes(input) {
     }
   }
   return likes;
+}
+// "" when unset or not one of the dispositions.
+var cleanIntimacyDisposition = (value) => {
+  let disposition = String(value ?? "")
+    .trim()
+    .toLowerCase();
+  return INTIMACY_DISPOSITIONS.includes(disposition) ? disposition : "";
+};
+function cleanIntimacyKinks(input) {
+  let kinks = [];
+  for (let entry of Array.isArray(input) ? input : []) {
+    let text = typeof entry == "string" ? cleanIntimacyText(entry) : "";
+    if (text && kinks.length < INTIMACY_KINKS_MAX && !kinks.some((kink) => kink.toLowerCase() === text.toLowerCase())) {
+      kinks.push(text);
+    }
+  }
+  return kinks;
 }
 function cleanIntimacyLimits(input) {
   let limits = [];
@@ -221,8 +246,17 @@ var INTIMACY_LIKES_RULE =
   "`intimacy_likes`: up to 3 things they like in sex, ONLY what the card says about sex, each in a few English words; an empty list when the card says nothing about it. Never invent them.";
 var INTIMACY_LIMITS_RULE =
   '`intimacy_limits`: up to 3 of their limits in sex, ONLY what the card says about sex, each `{"text":"a few English words","stage":"no or not yet"}` (`no`: they would not; `not yet`: maybe some day); an empty list when the card says nothing about it. Never invent them.';
+var INTIMACY_DISPOSITION_RULE =
+  "`intimacy_disposition`: `dominant` (they like to take control in sex), `submissive` (they like to give it up) or `switch` (both), ONLY when the card says or clearly shows it; else `unsaid`.";
+var INTIMACY_KINKS_RULE =
+  "`intimacy_kinks`: up to 8 of their kinks or fetishes, ONLY what the card says, each a short tag of a few English words; an empty list when the card says nothing about it. Never invent them.";
 
 export {
+  INTIMACY_DISPOSITIONS,
+  INTIMACY_DISPOSITION_LABELS,
+  INTIMACY_DISPOSITION_RULE,
+  INTIMACY_KINKS_MAX,
+  INTIMACY_KINKS_RULE,
   INTIMACY_LIKES_MAX,
   INTIMACY_LIKES_RULE,
   INTIMACY_LIMITS_MAX,
@@ -239,6 +273,8 @@ export {
   LIMIT_STAGE_LABELS,
   WAYS_FIT_GAINS,
   cleanAdultAnswer,
+  cleanIntimacyDisposition,
+  cleanIntimacyKinks,
   cleanIntimacyLikes,
   cleanIntimacyLimits,
   cleanIntimacyWays,

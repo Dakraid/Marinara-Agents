@@ -26,8 +26,9 @@ var ADULT_GUIDE_ARTICLES = [
     words: "adult module intimacy explicit fade pictures switch on",
     text: [
       `An extra you can switch on for a life: intimacy with adult characters, when the relationship is there. Turn it on in ${guideButtonLabel("MODULES")} when you create a life, or later in ${guideButtonLabel("SETTINGS")} \xB7 ${guideButtonLabel("RULES")}. Off, it's as if it didn't exist.`,
-      `Its panel asks you to confirm ${guideButtonLabel("I'm an adult")}, how much is written (${guideButtonLabel("Explicit")}, or ${guideButtonLabel("Fade out")} right at the moment) and ${guideButtonLabel("How many pictures")}.`,
+      `Switching it on asks you once to confirm, and that confirms you're an adult. Its panel asks how much is written (${guideButtonLabel("Explicit")}, or ${guideButtonLabel("Fade out")} right at the moment) and ${guideButtonLabel("How many pictures")}.`,
       `It's only ever between adults. If someone's card doesn't make their age clear, you can say so yourself in their ${guideButtonLabel("ADULT")} tab.`,
+      `Their ${guideButtonLabel("ADULT")} tab also holds who they're into, whether they're dominant, submissive or a switch, and their kinks. Their card fills these in when it says; you can change any of it, there or when you create a life.`,
     ],
     see: ["adult-when", "adult-night"],
   },

@@ -74,17 +74,17 @@ const MOD_ON_FIRST = {
   preset: (modName) =>
     `This preset has ${modName} on. Once this life starts, it stays on for good. You won't be able to switch it off later.`,
 };
+// One confirmation switches a module on (or ticks an option that stays ticked).
 function modOnCard(modOnState) {
   if (!modOnState) {
     return "";
   }
-  const first = modOnState.step === 1;
   if (modOnState.key) {
     return `
     <div class="mls-pic-warn"><div class="card">
-      <h2>${first ? `TICK \xB7 ${escape(String(modOnState.label).toUpperCase())}` : "ARE YOU SURE?"}</h2>
-      <p>${escape(first ? "Once you tick this, it stays ticked for this life. You won't be able to untick it later." : "This can't be undone in this life.")}</p>
-      <div class="acts"><button class="mls-btn red" data-do="mod-on-yes">${first ? "TICK IT" : "YES, TICK IT"}</button><button class="mls-btn" data-do="mod-on-no">CANCEL</button></div>
+      <h2>TICK \xB7 ${escape(String(modOnState.label).toUpperCase())}</h2>
+      <p>${escape("Once you tick this, it stays ticked for this life. You won't be able to untick it later.")}</p>
+      <div class="acts"><button class="mls-btn red" data-do="mod-on-yes">TICK IT</button><button class="mls-btn" data-do="mod-on-no">CANCEL</button></div>
     </div></div>`;
   }
   const message =
@@ -95,22 +95,14 @@ function modOnCard(modOnState) {
         : MOD_ON_FIRST.create;
   return `
     <div class="mls-pic-warn"><div class="card">
-      <h2>${first ? `SWITCH ON \xB7 ${escape(String(modOnState.name).toUpperCase())}` : "ARE YOU SURE?"}</h2>
-      <p>${escape(first ? message(modOnState.name) : "This can't be undone in this life.")}</p>
-      <div class="acts"><button class="mls-btn red" data-do="mod-on-yes">${first ? "SWITCH IT ON" : "YES, SWITCH IT ON"}</button><button class="mls-btn" data-do="mod-on-no">CANCEL</button></div>
+      <h2>SWITCH ON \xB7 ${escape(String(modOnState.name).toUpperCase())}</h2>
+      <p>${escape(message(modOnState.name))}${modOnState.confirm ? ` <b>${escape(modOnState.confirm)}</b>` : ""}</p>
+      <div class="acts"><button class="mls-btn red" data-do="mod-on-yes">SWITCH IT ON</button><button class="mls-btn" data-do="mod-on-no">CANCEL</button></div>
     </div></div>`;
 }
 function modOnAnswer(yes) {
   const pending = S.modOn;
   if (!pending || S.busy) {
-    return;
-  }
-  if (yes && pending.step === 1) {
-    S.modOn = {
-      ...pending,
-      step: 2,
-    };
-    notify();
     return;
   }
   if (((S.modOn = null), pending.where === "settings")) {
@@ -382,6 +374,33 @@ const modSheetFacts = (sheet) =>
         : `<div><div class="hint lbl">${escape(opt.title)}</div><div class="likes">${opt.items.length ? opt.items.map((item) => `<span class="like ${item.bad ? "no" : ""}">${escape(item.text)}</span>`).join("") : `<span class="like q">${escape(opt.unknown)}</span>`}</div></div>`,
     )
     .join("");
+// Editable rows of the sheet (kinds pick, tags, orient), saved through the module's setCharacter.
+const modOptionsHtml = (choices, isOn) =>
+  choices
+    .map(
+      ([value, label]) => `<option value="${escape(value)}" ${isOn(value) ? "selected" : ""}>${escape(label)}</option>`,
+    )
+    .join("");
+// Legacy single-value orientation: "both" means women and men.
+const intoList = (value) => (Array.isArray(value) ? value : value === "both" ? ["women", "men"] : value ? [value] : []);
+function modSheetEdits(sheet) {
+  const rows = (sheet.modules ?? []).filter((opt) => ["pick", "tags", "orient"].includes(opt.kind));
+  if (!rows.length) {
+    return "";
+  }
+  const attr = (opt, name) => `${name}="${escape(`${opt.module}|${opt.key}`)}"`,
+    row = (opt) => {
+      if (opt.kind === "pick" || (opt.kind === "orient" && !opt.multi)) {
+        return `<label class="mls-modopt-f"><span class="lbl">${escape(opt.title)}</span><select ${attr(opt, "data-mod-sheet")}>${modOptionsHtml(opt.choices, (value) => value === (opt.value ?? ""))}</select></label>`;
+      }
+      if (opt.kind === "orient") {
+        const on = intoList(opt.value);
+        return `<div class="mls-modopt-f"><span class="lbl">${escape(opt.title)}</span><div class="mls-modopt-chips">${opt.choices.map(([value, label]) => `<label class="mls-modopt-chip"><input type="checkbox" ${attr(opt, "data-mod-sheet-multi")} value="${escape(value)}" ${on.includes(value) ? "checked" : ""}>${escape(label)}</label>`).join("")}</div></div>`;
+      }
+      return `<div class="mls-modopt-sec"><span class="lbl">${escape(opt.title)}</span><div class="mls-modopt-chips">${opt.items.map((item, index) => `<span class="mls-modopt-chip">${escape(item)}<button data-do="module-sheet-untag" data-module="${escape(opt.module)}" data-id="${escape(opt.key)}" data-tag="${index}" title="Take it out">\u2715</button></span>`).join("")}</div>${opt.items.length < (opt.max ?? Infinity) ? `<input type="text" maxlength="60" placeholder="Add one, then Enter" ${attr(opt, "data-mod-sheet-tag")}>` : ""}</div>`;
+    };
+  return `<div class="mls-modopt-panel">${rows.map(row).join("")}</div>`;
+}
 const modCastOpen = {};
 function modCastOptions(life, person) {
   return Object.entries(life.modules ?? {})
@@ -523,6 +542,7 @@ export {
   modOnCard,
   modScene,
   modSection,
+  modSheetEdits,
   modSheetFacts,
   modSheetToggles,
   modSpecialRows,
