@@ -86,7 +86,7 @@ assert.deepEqual(buildCallSummaryCompletionOptions(selected.model), {
 
 const packageRoot = join(repoRoot, "packages/conversation-calls");
 const manifest = JSON.parse(await readFile(join(packageRoot, "manifest.json"), "utf8"));
-assert.equal(manifest.version, "1.1.3");
+assert.equal(manifest.version, "1.1.4");
 assert.equal(manifest.engine.min, "2.4.1");
 for (const payload of manifest.files) {
   const bytes = await readFile(join(packageRoot, payload.path));
@@ -106,6 +106,8 @@ assert.match(artifactClient, /mari-chrome-control flex h-8 w-8 items-center just
 assert.match(artifactClient, /Per-chat call access\./u);
 assert.match(artifactClient, /aria-expanded/u);
 assert.doesNotMatch(artifactClient, /Per-chat call access, microphone handling/u);
+// The mobile call-chat sheet is a chat-local modal, so Engine hides the floating Chat Settings bubble over its close button.
+assert.match(artifactClient, /role:"dialog","aria-modal":"true","aria-label":"Call Chat"/u);
 
 const callSurfaceSource = await readFile(
   join(packageRoot, "src/engine/packages/client/src/components/chat/ConversationCallSurface.tsx"),

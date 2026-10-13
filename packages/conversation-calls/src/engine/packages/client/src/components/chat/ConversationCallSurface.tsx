@@ -3204,8 +3204,15 @@ export function ConversationCallSurface({
           {renderCallComposer()}
         </div>
       </div>
-      {mobileChatOpen && (
-        <div className="absolute inset-0 z-40 flex flex-col bg-[var(--background)] md:hidden">
+      {/* A chat-local modal: Engine hides its floating chat windows and bubbles, which otherwise cover the close button.
+          Mounted only in the mobile layout, so a sheet left open across the breakpoint cannot hide them on desktop. */}
+      {mobileChatOpen && mobileCallLayout && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Call Chat"
+          className="absolute inset-0 z-40 flex flex-col bg-[var(--background)] md:hidden"
+        >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--marinara-chat-chrome-panel-divider)] px-4 py-3">
             <div className="min-w-0">
               <div className="truncate text-sm font-semibold text-[var(--marinara-chat-chrome-panel-title)]">
