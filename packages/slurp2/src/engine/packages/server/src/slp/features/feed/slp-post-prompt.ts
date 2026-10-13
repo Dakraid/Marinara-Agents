@@ -254,7 +254,14 @@ export function buildSlurpPostBlocks(input: SlurpPostPromptInput): SlurpPromptBl
       id: "wardrobe",
       kind: "context" as const,
       optional: true,
-      text: input.allowScenePlan ? (input.wardrobePrompt?.trim() ?? "") : "",
+      // The closet expands `{{char}}` with the Creator's real name; a Hinted or Secret Creator's is redacted.
+      text: input.allowScenePlan
+        ? (protectCreatorGeneratedIdentity(
+            input.wardrobePrompt?.trim() ?? "",
+            input.disclosureMode,
+            input.publicIdentity,
+          ) ?? "")
+        : "",
     },
     {
       id: "output",

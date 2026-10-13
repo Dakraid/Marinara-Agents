@@ -1,5 +1,17 @@
 # Slurp release notes
 
+## 0.3.31 — 2026-10-13
+
+- Changed: the guided post (New post, and Stir's "Draft post") is now written by the same generator as the page's own posts, with your wish as the direction. The draft gets the bio, stage voice, brief, spice level, image directions and live events, and comes back as a title, a text and a picture of its own. Before, your wish went word for word into the picture.
+- Changed: one composer. The picture is on top, then who sees the post, then one switch for the text: "Write it myself" or "Guided". A guided draft fills the normal title, text and picture; the separate preview and its "Edit" step are gone. A photo you add stays, and the text is written to go with it.
+- Added: "Add from Slurp" on Guided: a storyline of the page, a saved idea (posting the draft uses it up) and a wardrobe look for the picture. Brand deals and collabs stay.
+- Known limit: posting a draft written for a storyline does not move the storyline to its next chapter.
+
+## 0.3.30 — 2026-10-12
+
+- Fixed: Write, Improve, the guided post and "Draw" gave a Creator with a hidden or hinted identity no brief at all, so the text was written "in their voice" with nothing about them. They now get the same brief as an open Creator, read at their own disclosure level (no backstory) and with the real name and handle replaced before it reaches the model.
+- Changed: Write, Improve and the guided post now also read the page's bio and stage voice, the way a normal post does.
+
 ## 0.3.29 — 2026-10-12
 
 - Changed: when the image prompt rewrite gives nothing, the "Image prompt rewrite unusable" server warning now says why: an empty answer, an answer cut off at the token limit, an answer that is not valid JSON or has no "prompt" field (with a short quote of it and the model name), no text connection, a failed request, or a rewrite that broke the scene's content level. Before, every case said "the rewrite did not run or returned nothing".

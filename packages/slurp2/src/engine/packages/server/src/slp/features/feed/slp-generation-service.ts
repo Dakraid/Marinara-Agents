@@ -115,6 +115,7 @@ export type SlpCreatorPostGenerationInput = {
   slotId?: string | null;
   /** Skip continuity writes when `prepareOnly` is used for a settings preview. */
   previewOnly?: boolean;
+  skipImagePromptPreview?: boolean;
 };
 
 const SLP_CREATOR_POST_MAX_TOKENS = 2048;
@@ -686,7 +687,7 @@ export async function generateCreatorPost(
 
   if (input.prepareOnly) {
     let providerPrompt: string | null = null;
-    if (input.previewOnly && draftImagePrompt) {
+    if (input.previewOnly && draftImagePrompt && !input.skipImagePromptPreview) {
       const previewInput = await resolveImageInput(draftImagePrompt);
       if (previewInput) {
         providerPrompt = (
