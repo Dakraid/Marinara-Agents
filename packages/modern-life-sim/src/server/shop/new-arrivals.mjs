@@ -97,7 +97,7 @@ var seasonKeyAt = (minutes) => clockFromMinutes(minutes).seasonKey;
 var WEARER_BY_GENDER = {
   male: "man",
   female: "woman",
-  futanari: "woman",
+  futanari: "futanari",
 };
 var OUTFIT_WEARER_RULES = {
   man: "The outfits are for the player to wear, and the player is a man: menswear only, no dresses, skirts, blouses or heels.",

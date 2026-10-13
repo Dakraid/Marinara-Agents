@@ -145,7 +145,7 @@ var SEX_COUNT_TAGS = {
 var SEX_NOUNS = {
   female: "a woman",
   male: "a man",
-  futanari: "a futanari woman",
+  futanari: "a futanari",
 };
 var promptShortName = (fullName) =>
   String(fullName ?? "")

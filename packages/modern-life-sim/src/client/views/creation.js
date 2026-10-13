@@ -682,7 +682,7 @@ function youStep(resources, draft) {
               <label class="field">You are<select data-do="gender">${draft.gender ? "" : '<option value="" selected disabled>Pick one</option>'}${[
                 ["female", "A woman"],
                 ["male", "A man"],
-                ["futanari", "Futanari"],
+                ["futanari", "A futanari"],
               ]
                 .map(
                   ([value, label]) =>
@@ -1103,7 +1103,7 @@ function startStep(setup, draft) {
                 {
                   female: "a woman",
                   male: "a man",
-                  futanari: "futanari",
+                  futanari: "a futanari",
                 }[draft.gender] ?? "woman, man or futanari?",
                 !draft.gender,
               ),

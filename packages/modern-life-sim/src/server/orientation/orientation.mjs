@@ -16,7 +16,7 @@ var SEX_GROUPS = {
 var SEX_NOUN = {
   female: "a woman",
   male: "a man",
-  futanari: "a futanari woman",
+  futanari: "a futanari",
 };
 function normalizeGender(gender) {
   let value = String(gender ?? "")
