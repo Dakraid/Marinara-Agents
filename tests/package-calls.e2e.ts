@@ -121,6 +121,7 @@ test("installed Calls package stays responsive when browser blocks voice playbac
               sidebarOpen: false,
               rightPanelOpen: false,
               chatHelpSeenModes: ["conversation"],
+              chatWindowIntroDismissed: true,
               chibiProfessorMariEnabled: false,
             },
           }),
