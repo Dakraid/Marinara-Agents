@@ -55,6 +55,12 @@ assert.throws(
 );
 assert.throws(
   mutated("2d-avatars", (_manifest, agent) => {
+    template(agent, "avatar-pngtuber-eyes-closed").promptTemplate += " Notes: ${appearance }";
+  }),
+  /avatar-pngtuber-eyes-closed has malformed placeholders: \$\{appearance \}/,
+);
+assert.throws(
+  mutated("2d-avatars", (_manifest, agent) => {
     const layout = template(agent, "avatar-mesh-rig-layout");
     layout.promptTemplate = layout.promptTemplate.replaceAll("${layoutSchema}", "the schema");
   }),

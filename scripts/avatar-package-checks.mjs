@@ -16,8 +16,11 @@ export const AVATAR_PROMPT_TEMPLATE_VARIABLES = Object.freeze({
   "avatar-mesh-rig-layout": Object.freeze(["characterName", "appearance", "imageWidth", "imageHeight", "layoutSchema"]),
 });
 
-// The Engine's renderTemplate() placeholder syntax (services/prompt-overrides/template.ts).
+// The Engine's renderTemplate() placeholder syntax (services/prompt-overrides/template.ts). Anything else
+// that opens with "${" (such as "${appearance }") is never replaced, so it is refused as malformed.
 const TEMPLATE_VARIABLE_PATTERN = /\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g;
+const TEMPLATE_PLACEHOLDER_PATTERN = /\$\{[^}]*\}?/g;
+const TEMPLATE_PLACEHOLDER_SYNTAX = /^\$\{[a-zA-Z_][a-zA-Z0-9_]*\}$/;
 
 /** Returns false for any other package; throws when an avatar package breaks the contract. */
 export function assertAvatarPackageContract(manifest, agentDefinitions) {
@@ -55,6 +58,12 @@ export function assertAvatarPackageContract(manifest, agentDefinitions) {
     }
     if (typeof template.promptTemplate !== "string" || !template.promptTemplate.trim()) {
       throw new Error(`${id} template ${template.id} needs prompt text`);
+    }
+    const malformed = (template.promptTemplate.match(TEMPLATE_PLACEHOLDER_PATTERN) ?? []).filter(
+      (placeholder) => !TEMPLATE_PLACEHOLDER_SYNTAX.test(placeholder),
+    );
+    if (malformed.length > 0) {
+      throw new Error(`${id} template ${template.id} has malformed placeholders: ${malformed.join(", ")}`);
     }
     const used = [...template.promptTemplate.matchAll(TEMPLATE_VARIABLE_PATTERN)].map((match) => match[1]);
     const unknown = [...new Set(used.filter((name) => !declared.includes(name)))];
