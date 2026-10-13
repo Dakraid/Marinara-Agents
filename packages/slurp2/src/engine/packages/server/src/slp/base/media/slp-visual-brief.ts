@@ -46,6 +46,8 @@ export function slurpVisualBriefPolicyText(brief: SlurpVisualBrief): string {
 }
 
 const NEGATED_TERM = /\b(?:no|non|not|without|never)[\s-]+[a-z]+/gu;
+// A limit in the handed text ("not a nude portrait") reaches over a few words, so it is cut wider.
+const NEGATED_LIMIT = /\b(?:no|non|not|without|never)\b(?:[\s-]+[a-z]+){1,3}/gu;
 
 /**
  * A cheap last-resort check for sexual escalation before text reaches an image provider. `known` is
@@ -65,7 +67,7 @@ export function slurpVisualBriefPromptViolatesPolicy(
   const carried = new Set(
     known
       .toLocaleLowerCase()
-      .replace(NEGATED_TERM, " ")
+      .replace(NEGATED_LIMIT, " ")
       .match(/[a-z]+/gu),
   );
   const has = (pattern: RegExp) => (value.match(new RegExp(pattern.source, "gu")) ?? []).some((w) => !carried.has(w));

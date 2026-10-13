@@ -89,6 +89,16 @@ const capped = selectSlpImageProviderPrompt({
   rewriteAttempted: true,
 });
 assert.match(capped, /park bench at night/u);
+// The Creator path: the scene survives an over-cap template that leads with a long look.
+const creator = selectSlpImageProviderPrompt({
+  rewrittenPrompt: null,
+  rawPrompt: `${longLook}\n${sceneText}`,
+  fallbackPrefix: longLook,
+  fallbackScene: sceneText,
+  rewriteAttempted: true,
+});
+assert.match(creator, /park bench at night/u);
+assert.ok(creator.length <= 1_500);
 // A short brief after a long look in the prefix keeps its level line.
 const briefAfterLook = selectSlpImageProviderPrompt({
   rewrittenPrompt: null,
@@ -112,6 +122,7 @@ assert.equal(
   false,
 );
 assert.equal(slurpVisualBriefPromptViolatesPolicy(clothed, "She is naked on a bench", "large breasts"), true);
+assert.equal(slurpVisualBriefPromptViolatesPolicy(clothed, "A nude portrait", "She wants not a nude portrait"), true);
 // Limits are not permissions: "not nude" in the handed text does not allow "nude" in the rewrite.
 assert.equal(
   slurpVisualBriefPromptViolatesPolicy(clothed, "A sexual pose, nude", "Keep it non-sexual, not nude"),
