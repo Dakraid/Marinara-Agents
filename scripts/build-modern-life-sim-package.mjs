@@ -1,9 +1,7 @@
-// Build the Modern Life Sim package: re-derive its manifest hashes and English locale
-// from the committed payloads, write a reproducible artifact zip, and update the
-// catalog family. The client.js and server.mjs payloads are contributed as pre-built
-// esbuild bundles from the package's own source tree, which lives outside this
-// repository; this builder never regenerates them — it only re-derives everything
-// the catalog checks from the committed bytes.
+// Build the Modern Life Sim package: bundle client.js and server.mjs from the package's
+// own src/ tree, re-derive its manifest hashes and English locale, write a reproducible
+// artifact zip, and update the catalog family.
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
@@ -19,6 +17,29 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const packageRoot = join(repoRoot, "packages/modern-life-sim");
 const artifactsDir = join(repoRoot, "artifacts");
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+
+// esbuild's POSIX bin is a native executable; Windows ships a JS shim that needs node.
+const esbuildBin = join(repoRoot, "node_modules/esbuild/bin/esbuild");
+function bundle(entry, outfile, args) {
+  const argv = [
+    join(packageRoot, entry),
+    "--bundle",
+    "--format=esm",
+    "--legal-comments=inline",
+    "--log-level=warning",
+    `--outfile=${join(packageRoot, outfile)}`,
+    ...args,
+  ];
+  const result =
+    process.platform === "win32"
+      ? spawnSync(process.execPath, [esbuildBin, ...argv], { encoding: "utf8" })
+      : spawnSync(esbuildBin, argv, { encoding: "utf8" });
+  if (result.status !== 0)
+    throw new Error(result.stderr || result.stdout || result.error?.message || `esbuild failed for ${entry}`);
+}
+bundle("src/server/index.mjs", "server.mjs", ["--platform=node", "--minify"]);
+// The client keeps its top-level names (as the original build did); only whitespace and syntax are minified.
+bundle("src/client/element.js", "client.js", ["--platform=browser", "--minify-whitespace", "--minify-syntax"]);
 
 const manifest = JSON.parse(await readFile(join(packageRoot, "manifest.json"), "utf8"));
 manifest.description = withPackageActivationGuidance(manifest.id, manifest.description);

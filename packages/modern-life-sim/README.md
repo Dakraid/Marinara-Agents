@@ -40,3 +40,7 @@ All generation â€” cast readings, scene lines, backgrounds and outfit pictures â
 
 - Marinara Engine 2.4.4 or newer, below 4.0.0.
 - A text connection for the model. An image connection is optional: without one, places show their illustrated cards instead of generated backgrounds.
+
+## Source
+
+The package source lives in `src/`: `src/server/` (entry `index.mjs`) and `src/client/` (entry `element.js`). It was recovered from the 0.3.2 bundles, so names and module boundaries are reconstructed rather than original. `node scripts/build-modern-life-sim-package.mjs` bundles both entries with esbuild into `server.mjs` and `client.js`, then re-derives the manifest, locale, artifact and catalog entries.
