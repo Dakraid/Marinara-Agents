@@ -2503,7 +2503,10 @@ const STYLES = `@font-face { font-family: "Anton"; font-style: normal; font-weig
 .mls button.mls-set-btn.soft:hover { color: var(--paper); border-color: var(--red); }
 .mls-set-fields { display: flex; flex-wrap: wrap; gap: 12px; }
 .mls-set-fields .field { display: grid; gap: 4px; font-size: 11px; font-weight: 900; letter-spacing: 2px; color: var(--muted); min-width: 200px; }
-.mls-set-fields select { background: var(--paper); color: var(--ink); border: 0; padding: 7px 9px; font: inherit; font-size: 13px; letter-spacing: 0; font-weight: 700; }
+.mls-set-fields select, .mls-set-fields input, .mls-set-fields textarea { background: var(--paper); color: var(--ink); border: 0; padding: 7px 9px; font: inherit; font-size: 13px; letter-spacing: 0; font-weight: 700; }
+.mls-sampling .field { min-width: 140px; }
+.mls-sampling .field.wide { flex-basis: 100%; }
+.mls-sampling textarea { resize: vertical; font-family: monospace; }
 .mls-spoil-warn { background: var(--yellow); color: var(--ink); padding: 10px 14px; display: grid; gap: 4px; margin-top: 6px; }
 .mls-spoil-warn small { font-size: 12px; font-weight: 700; }
 .mls-spoil-warn .row { display: flex; gap: 8px; margin-top: 4px; }

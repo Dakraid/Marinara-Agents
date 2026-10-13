@@ -2,7 +2,7 @@
 import { escape } from "./common.js";
 import { weekView } from "./week.js";
 import { FAMILY_NAMES, PAIR_NAMES, newsFace, pairName } from "./people.js";
-import { frameChoice, picturesBox, portraitChoice, sizeChoice } from "./settings.js";
+import { frameChoice, picturesBox, portraitChoice, samplingFields, sizeChoice } from "./settings.js";
 import { modMissing, modOn, modSection } from "./mods.js";
 import { S } from "../state.js";
 
@@ -194,6 +194,7 @@ function emptyDraft() {
       connection: "",
       effort: "low",
       language: "English",
+      sampling: {},
     },
     languageOther: "",
     townName: "",
@@ -756,6 +757,10 @@ function worldStep(resources, draft) {
             </div>
             <p class="muted">${resources.connections.length ? "It writes the scenes and everything people say. You can change it later." : "There are no connections in this Marinara. Add one and come back: a life needs a model to be written."}</p>
             <p class="muted">The story is written in this language; the menus stay in English.</p>
+            <details ${Object.values(draft.settings.sampling ?? {}).some((value) => value !== "") ? "open" : ""}>
+              <summary>ADVANCED \xB7 sampling; blank uses the connection's value</summary>
+              ${samplingFields(draft.settings.sampling ?? {}, (key) => `data-do="sample" data-id="${key}"`, 'data-do="draft-sampling-reset"')}
+            </details>
           </div>
         </section>
 ${modSection(resources, draft)}

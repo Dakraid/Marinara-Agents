@@ -2,6 +2,120 @@
 var REASONING_EFFORT_LEVELS = ["none", "low", "medium", "high", "xhigh", "maximum"];
 var normalizeReasoningEffort = (effort) => (REASONING_EFFORT_LEVELS.includes(effort) ? effort : "low");
 var providerReasoningEffort = (effort) => (effort === "maximum" ? "max" : effort);
+// Per-life sampling: unset keys mean "use the connection's value", so only set ones are sent.
+var SAMPLING_NUMBERS = {
+  temperature: [0, 2, "Temperature"],
+  topP: [0, 1, "Top P"],
+  topK: [0, 1e6, "Top K"],
+  minP: [0, 1, "Min P"],
+  frequencyPenalty: [-2, 2, "Frequency penalty"],
+  presencePenalty: [-2, 2, "Presence penalty"],
+  maxTokensScale: [0.5, 4, "Answer length"],
+};
+var SAMPLING_CHOICES = {
+  verbosity: ["low", "medium", "high"],
+  serviceTier: ["flex", "priority"],
+};
+var SAMPLING_SENT_KEYS = [
+  "temperature",
+  "topP",
+  "topK",
+  "minP",
+  "frequencyPenalty",
+  "presencePenalty",
+  "verbosity",
+  "serviceTier",
+  "stop",
+  "customParameters",
+];
+var STOP_MAX = 8;
+var STOP_LENGTH = 40;
+var CUSTOM_PARAMETERS_LENGTH = 4e3;
+var isPlainObject = (value) => !!value && typeof value == "object" && !Array.isArray(value);
+// Merges a partial patch onto base; null patch resets. Bad keys are skipped and the first reason is kept.
+function normalizeSampling(patch, base = {}) {
+  let sampling = isPlainObject(base) ? { ...base } : {},
+    reason = "";
+  if (patch === null) {
+    return { sampling: {}, reason: reason };
+  }
+  if (!isPlainObject(patch)) {
+    return { sampling: sampling, reason: reason };
+  }
+  let fail = (why) => (reason ||= why);
+  for (let [key, value] of Object.entries(patch)) {
+    let blank = value === null || value === undefined || (typeof value == "string" && !value.trim());
+    if (key in SAMPLING_NUMBERS) {
+      let [min, max, label] = SAMPLING_NUMBERS[key],
+        number = Number(value);
+      if (blank) {
+        delete sampling[key];
+      } else if (!Number.isFinite(number)) {
+        fail(`${label} must be a number.`);
+      } else {
+        number = Math.min(max, Math.max(min, key === "topK" ? Math.round(number) : number));
+        if (key === "maxTokensScale" && number === 1) {
+          delete sampling[key];
+        } else {
+          sampling[key] = number;
+        }
+      }
+    } else if (key in SAMPLING_CHOICES) {
+      if (blank) {
+        delete sampling[key];
+      } else if (SAMPLING_CHOICES[key].includes(value)) {
+        sampling[key] = value;
+      } else {
+        fail(
+          `${key === "verbosity" ? "Verbosity" : "Service tier"} must be one of ${SAMPLING_CHOICES[key].join(", ")}.`,
+        );
+      }
+    } else if (key === "stop") {
+      let stops = (Array.isArray(value) ? value : String(value ?? "").split(/[\n,]/))
+        .map((stop) => String(stop ?? "").trim())
+        .filter(Boolean);
+      if (stops.length > STOP_MAX || stops.some((stop) => stop.length > STOP_LENGTH)) {
+        fail(`Use at most ${STOP_MAX} stop sequences of up to ${STOP_LENGTH} characters each.`);
+      } else if (stops.length) {
+        sampling.stop = stops;
+      } else {
+        delete sampling.stop;
+      }
+    } else if (key === "customParameters") {
+      let parsed = value;
+      if (typeof value == "string") {
+        try {
+          parsed = blank ? {} : JSON.parse(value);
+        } catch (err) {
+          fail(`Custom parameters are not valid JSON: ${err.message}`);
+          continue;
+        }
+      }
+      if (blank) {
+        parsed = {};
+      }
+      if (!isPlainObject(parsed)) {
+        fail('Custom parameters must be a JSON object, like {"seed": 7}.');
+      } else if (JSON.stringify(parsed).length > CUSTOM_PARAMETERS_LENGTH) {
+        fail(`Custom parameters must stay under ${CUSTOM_PARAMETERS_LENGTH} characters.`);
+      } else if (Object.keys(parsed).length) {
+        sampling.customParameters = parsed;
+      } else {
+        delete sampling.customParameters;
+      }
+    }
+  }
+  return { sampling: sampling, reason: reason };
+}
+function samplingRequestOptions(sampling = {}) {
+  let options = Object.fromEntries(
+    SAMPLING_SENT_KEYS.filter((key) => sampling?.[key] !== undefined && sampling?.[key] !== null).map((key) => [
+      key,
+      sampling[key],
+    ]),
+  );
+  return Object.keys(options).length ? { ...options, requestWins: true } : {};
+}
 var EXTRA_ROOM_TOKENS = 16e3;
 var CONTEXT_SAFETY_TOKENS = 512;
 function fitMaxTokensToContext(
@@ -209,6 +323,7 @@ function createModelClient({
     if (!languageModels?.resolveForRequest) {
       throw new Error("This engine cannot lend a model to the package.");
     }
+    maxTokens = Math.max(1, Math.round(maxTokens * (Number(settings.sampling?.maxTokensScale) || 1)));
     let originalMessages = messages;
     if (((messages = appendLanguageReminder(messages, settings.language)), signal?.aborted)) {
       throw new CancelledError();
@@ -249,6 +364,7 @@ function createModelClient({
           });
           answer = await raceWithAbortSignal(
             model.chatComplete(attemptMessages, {
+              ...samplingRequestOptions(settings.sampling),
               maxTokens: cap,
               reasoningEffort: providerReasoningEffort(attemptEffort),
               signal: signal,
@@ -414,4 +530,6 @@ export {
   createModelClient,
   normalizeLanguageName,
   normalizeReasoningEffort,
+  normalizeSampling,
+  samplingRequestOptions,
 };
