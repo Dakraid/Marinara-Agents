@@ -1,9 +1,13 @@
 # Slurp release notes
 
-## 0.3.35 — 2026-10-13
+## 0.3.36 — 2026-10-13
 
 - With a Claude (Subscription) connection, Slurp no longer makes a hidden second request to name each session, and Claude Code no longer adds your account email, the date or this computer's details to the prompt. A request now stops with an error if Claude Code turns on claude.ai connectors. (#1313)
 - Changed: avatar references are allowed for SpicyAPI edit models (model IDs ending in /edit) and still left out for its text-to-image models. Slurp's bundled image code cannot call SpicyAPI yet, so SpicyAPI pictures do not work in Slurp until it can. (#1337)
+
+## 0.3.35 — 2026-10-13
+
+- Added: "The image model knows this character" can be chosen while adding a Creator, in Quick setup, in the customise path, in the role-play sign-up and in the manual Create flow. It starts on, like before, and is saved with the new Creator. You can still change it later in the Creator's settings. (#1353)
 
 ## 0.3.34 — 2026-10-13
 

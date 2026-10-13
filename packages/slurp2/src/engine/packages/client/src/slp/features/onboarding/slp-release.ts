@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.35";
+export const SLURP2_VERSION = "0.3.36";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -13,9 +13,14 @@ export interface Slurp2ReleaseEntry {
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
   {
-    version: "0.3.35",
+    version: "0.3.36",
     date: "2026-10-13",
     notes: ["With Claude (Subscription), Slurp no longer sends your account email or computer details to the model."],
+  },
+  {
+    version: "0.3.35",
+    date: "2026-10-13",
+    notes: ["Adding a creator now lets you decide, up front, whether the picture model already knows the character."],
   },
   {
     version: "0.3.34",
@@ -778,11 +783,6 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
       "Fan requests get answered, and Creators keep their promises.",
       "Creators remember what they said and did, and what fans share in private stays private.",
     ],
-  },
-  {
-    version: "0.1.3",
-    date: "2026-09-20",
-    notes: ["Behind-the-scenes cleanup. Everything works as before."],
   },
 ];
 
