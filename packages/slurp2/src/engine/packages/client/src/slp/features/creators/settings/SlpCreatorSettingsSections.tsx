@@ -146,6 +146,16 @@ export function SlpCreatorIdentitySection({
                 {t(appearance.linkedAppearance ? "ui.slurp.appearance.useLinked" : "ui.slurp.appearance.clearOverride")}
               </button>
             )}
+            {appearance.imageAppearance && appearance.imageAppearance !== appearance.text && (
+              <button
+                type="button"
+                disabled={appearanceAction.isPending}
+                onClick={() => runAppearanceAction("edit_override", appearance.imageAppearance)}
+                className={quietButton}
+              >
+                {t("ui.slurp.appearance.useImageTags")}
+              </button>
+            )}
             {appearance.text && (
               <button type="button" onClick={() => setAppearanceDraft(appearance.text)} className={quietButton}>
                 {t("ui.slurp.appearance.edit")}
