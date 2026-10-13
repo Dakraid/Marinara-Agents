@@ -3,7 +3,6 @@
 ## 0.7.0 — 2026-10-13
 
 - In Roleplay, Update from History now reads whispers the way the Engine's own agents do, marked private with who they were for. A message that is only a whisper is no longer read as empty.
-- Whispers in characters' replies now count when the tracker works out who is in the scene, which decides the relationships it shows the AI.
 - This needs a Marinara Engine that shares whispers with Agents. On older versions, the tracker keeps reading public messages only.
 
 ## 0.6.4 — 2026-10-09 [highlight]

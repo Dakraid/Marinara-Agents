@@ -66,12 +66,10 @@ async function main() {
   const history = buildHistoryModelMessages({ characters, state: { relationships: [] } }, messages);
   assertReadsAgentView(history.at(-1)!.content, "Relationship Tracker history");
 
-  // Relationship Tracker: scene presence reads the whisper-only reply.
+  // Relationship Tracker: scene presence picks relationships for character responders' prompts, which never get
+  // whispers, so it reads public content only. A name in a whisper must not add a character to the scene.
   const allowed = new Set(characters.map((character) => character.id));
-  assert.deepEqual(detectPresentCharacterIds([messages[1]], allowed, 10, characters), ["cora", "dax"]);
-  assert.deepEqual(detectPresentCharacterIds([{ ...messages[1], agentContent: undefined }], allowed, 10, characters), [
-    "cora",
-  ]);
+  assert.deepEqual(detectPresentCharacterIds([messages[1]], allowed, 10, characters), ["cora"]);
   assert.deepEqual(detectPresentCharacterIds([messages[3]], allowed, 10, characters), ["bram"]);
 
   // Memory Nag: the vault scan transcript.

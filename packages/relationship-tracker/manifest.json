@@ -48,8 +48,8 @@
     },
     {
       "path": "prompt.mjs",
-      "sha256": "99b5a779c302f20718cc6ac14a518e6baa7ae5aec3dd10cee0210c245c69274b",
-      "bytes": 7011
+      "sha256": "41650a28aa09310fd423811d2052c99a34a5ed0d72a4ba170b9bbd863433dab1",
+      "bytes": 6984
     },
     {
       "path": "tracking.mjs",

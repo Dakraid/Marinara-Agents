@@ -1,4 +1,4 @@
-import { agentMessageText, characterCardName, normalizeRelationshipState } from "./state.mjs";
+import { characterCardName, normalizeRelationshipState } from "./state.mjs";
 
 const compareIds = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
 const compactText = (value) => String(value ?? "").replace(/\s+/gu, " ").trim();
@@ -53,7 +53,7 @@ export function detectPresentCharacterIds(messages, allowedCharacterIds, lookbac
       }
     }
     if (message?.role !== "assistant") continue;
-    const responseText = compactText(agentMessageText(message));
+    const responseText = compactText(message?.content);
     if (!responseText) continue;
     for (const candidate of nameMatchers) {
       if (candidate.matcher.test(responseText)) present.add(candidate.characterId);
