@@ -150,7 +150,18 @@ export function SlpCreatorIdentitySection({
               <button
                 type="button"
                 disabled={appearanceAction.isPending}
-                onClick={() => runAppearanceAction("edit_override", appearance.imageAppearance)}
+                onClick={async () => {
+                  // A hand-written appearance is replaced, and nothing brings it back.
+                  if (
+                    appearance.source === "override" &&
+                    !(await showConfirmDialog({
+                      title: t("ui.slurp.appearance.useImageTags"),
+                      message: t("ui.slurp.appearance.useImageTagsConfirm"),
+                    }))
+                  )
+                    return;
+                  runAppearanceAction("edit_override", appearance.imageAppearance);
+                }}
                 className={quietButton}
               >
                 {t("ui.slurp.appearance.useImageTags")}

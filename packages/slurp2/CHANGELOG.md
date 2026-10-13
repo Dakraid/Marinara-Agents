@@ -2,7 +2,7 @@
 
 ## 0.3.38 — 2026-10-13
 
-- Added: in a Creator's settings, "Appearance for pictures" has a new button, "Use the card's image tags". It shows only while the linked character or persona has the Image Appearance Override switched on and filled in, and it saves those tags as the Creator's appearance. "Use linked appearance" undoes it. (#1366)
+- Added: in a Creator's settings, "Appearance for pictures" has a new button, "Use the card's image tags". It shows only while the linked character or persona has the Image Appearance Override switched on and filled in, and it saves those tags as the Creator's own appearance. It asks first when that replaces an appearance you wrote. "Use linked appearance" (or "Clear override") removes it again. (#1366)
 
 ## 0.3.37 — 2026-10-13
 

@@ -172,6 +172,12 @@ test("a card's image tags are offered only while its Image Appearance Override i
     slpCardImageAppearance({ imageAppearanceEnabled: true, imageAppearance: "a".repeat(2500) }).length,
     2000,
   );
+  // Saving trims, so a cut that lands on a space must not leave the button showing for ever.
+  const cutOnSpace = slpCardImageAppearance({
+    imageAppearanceEnabled: true,
+    imageAppearance: `${"a".repeat(1999)} tail`,
+  });
+  assert.equal(cutOnSpace.length, 1999);
   const storage = slurp2Source(
     "packages/slurp2/src/engine/packages/server/src/slp/data/creators/slp-creators-storage-3.ts",
   );
@@ -184,6 +190,7 @@ test("a card's image tags are offered only while its Image Appearance Override i
   );
   assert.match(section, /appearance\.imageAppearance && appearance\.imageAppearance !== appearance\.text && \(/u);
   assert.match(section, /runAppearanceAction\("edit_override", appearance\.imageAppearance\)/u);
+  assert.match(section, /appearance\.source === "override" &&\s+!\(await showConfirmDialog\(/u);
 });
 
 test("reviewed, rewritten, and fallback prompts all retain appearance", () => {
