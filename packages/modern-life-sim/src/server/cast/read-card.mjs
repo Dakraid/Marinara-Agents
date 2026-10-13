@@ -53,7 +53,7 @@ var cleanTownNameForPrompt = (raw) =>
     .trim()
     .slice(0, TOWN_NAME_PROMPT_MAX);
 var MONEY_SCALE_NOTE =
-  "Money here is US dollars ($), on the game's scale: a coffee is about $8, a meal $30, clothes $45 to $75, an intern's shift pays $60, the rent is $650 a month. Any price or sum anyone mentions is in dollars, on that scale; never another currency.";
+  "Money here is US dollars ($), on the game's scale: a coffee is about $8, a meal $30, clothes $45 to $75, an intern's shift pays $60, a town job pays $55 to $240 a shift, the rent is $650 a month; someone who lives with the player puts their pay into the household money. Any price or sum anyone mentions is in dollars, on that scale; never another currency.";
 function settingNoteFor({ townName = "", scenario = "", worldLore = null } = {}) {
   let town = cleanTownNameForPrompt(townName),
     notes = String(scenario ?? "")
@@ -111,10 +111,11 @@ function readCardMessages(
             ]
           : []),
         "",
-        "THE JOBS \xB7 the only jobs in this town that are free, each with its fixed shift:",
+        "THE JOBS \xB7 the only jobs in this town they can take, each with its fixed shift and pay; several people can share the same job, but a place has only one boss:",
         ...(jobs.length
           ? jobs.map(
-              (job) => `- ${job.id}: ${job.title} at ${job.placeName} \xB7 ${job.shift} \xB7 wears ${job.clothes}`,
+              (job) =>
+                `- ${job.id}: ${job.title} at ${job.placeName} \xB7 ${job.shift} \xB7 $${job.pay} a shift \xB7 wears ${job.clothes}`,
             )
           : ["- none"]),
         "",

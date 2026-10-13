@@ -965,7 +965,7 @@ function jobsBox(life) {
         (
           job,
         ) => `<div class="mls-job-row"><b>${escape(job.placeName)}</b><span>${escape(job.title)}</span><small>${escape(job.shift)}</small><small class="c">${escape(job.clothes)}</small>
-      <span class="who ${job.holder ? "" : "free"}">${job.holder ? escape(job.holder.name) : "free"}</span></div>`,
+      <span class="who ${job.holders?.length ? "" : "free"}">${job.holders?.length ? escape(job.holders.map((holder) => holder.name).join(", ")) : "free"}</span></div>`,
       )
       .join("")}</div>`
     : "";
@@ -1056,6 +1056,7 @@ function rulesTab(life, box) {
         <label class="mls-tg ${life.keyImages?.connection ? "" : "off"}"><input type="checkbox" data-set-rule="keyImages" ${rules.keyImages ? "checked" : ""} ${life.keyImages?.connection ? "" : "disabled"}><i></i><span><b>Key images</b><small>${escape(KEY_IMAGES_RULE)}${life.keyImages?.connection ? "" : " Needs an image connection: pick one in MODEL \xB7 IMAGES or TOWN LOOK."}</small></span></label>
         <label class="mls-tg ${life.keyImages?.connection ? "" : "off"}"><input type="checkbox" data-set-rule="workOutfits" ${rules.workOutfits ? "checked" : ""} ${life.keyImages?.connection ? "" : "disabled"}><i></i><span><b>Work outfits</b><small>${escape(WORK_OUTFITS_RULE)}${life.keyImages?.connection ? "" : " Needs an image connection: pick one in MODEL \xB7 IMAGES or TOWN LOOK."}</small></span></label>
         <label class="mls-tg ${life.keyImages?.connection ? "" : "off"}"><input type="checkbox" data-set-rule="seasonOutfits" ${rules.seasonOutfits ? "checked" : ""} ${life.keyImages?.connection ? "" : "disabled"}><i></i><span><b>Season outfits</b><small>${escape(SEASON_OUTFITS_RULE)}${life.keyImages?.connection ? "" : " Needs an image connection: pick one in MODEL \xB7 IMAGES or TOWN LOOK."}</small></span></label></div>
+      <label class="field">Basic income $ a season<input type="number" data-set-ubi min="0" max="100000" step="50" value="${Number(rules.ubi) || 0}"><small>Paid into your cash on day 1 of each season, from the next one on. 0 is off.</small></label>
       ${modGroup(
         Object.entries(life.modules ?? {}).map(([id, mod]) => ({
           id: id,

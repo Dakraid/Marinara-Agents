@@ -39,6 +39,7 @@ import { outingView, planOuting, settleOuting } from "../outings/outing.mjs";
 import { partyPlanView } from "../parties/house-party.mjs";
 import { buildPartyView } from "../parties/party.mjs";
 import { billsView } from "../home/residence.mjs";
+import { householdView } from "../money/household.mjs";
 import { isClothesRuleOn, personaCutout, personaPicture, wearingItem } from "../home/furniture-and-wardrobe.mjs";
 import { togetherActivities, visitView } from "../visits/staying-over.mjs";
 import { weddingReady, weddingView } from "../romance/wedding.mjs";
@@ -668,6 +669,7 @@ function lifeView(life) {
     bills: {
       ...billsView(life),
       owedToYou: lentView(life),
+      household: householdView(life),
     },
     plea: pleaView(life),
     ride: rideView(life),

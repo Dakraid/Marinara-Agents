@@ -678,6 +678,7 @@ function youStep(resources, draft) {
             <div class="mls-personas">${resources.personas.length ? resources.personas.map(personaButton).join("") : '<div class="muted">No personas in this Marinara yet.</div>'}</div>
             <div class="row">
               <label class="field">Savings<select data-do="savings">${SAVINGS.map((saving) => `<option value="${saving.id}" ${saving.id === draft.savings ? "selected" : ""}>${escape(saving.label)}</option>`).join("")}</select></label>
+              <label class="field">Basic income $ a season<input type="number" data-do="ubi" min="0" max="100000" step="50" value="${Number(draft.rules.ubi) || 0}" title="Paid into your cash on day 1 of each season. 0 is off."></label>
               <label class="field">You are<select data-do="gender">${draft.gender ? "" : '<option value="" selected disabled>Pick one</option>'}${[
                 ["female", "A woman"],
                 ["male", "A man"],
@@ -1086,6 +1087,7 @@ function startStep(setup, draft) {
                 !draft.gender,
               ),
               chip(SAVINGS.find((saving) => saving.id === draft.savings)?.label),
+              Number(draft.rules.ubi) > 0 ? chip(`basic income $${Number(draft.rules.ubi)}`) : "",
               chip(`born ${BDAY_SEASONS[draft.birthday?.season ?? 0]} ${draft.birthday?.day ?? 1}`),
               ...Object.entries(draft.skills)
                 .filter(([, points]) => points)
@@ -1301,11 +1303,11 @@ function workRow(setup, draft, card, pick) {
   const jobs = draftJobs(setup, draft),
     life = draft.adding && typeof S < "u" ? S.life : null,
     holderOf = (jobId) =>
-      Object.entries(draft.cast).find(
-        ([id, otherPick]) => id !== card.id && otherPick.on && otherPick.job === jobId,
-      )?.[0] ??
-      (life?.jobs?.list ?? []).find((job) => job.id === jobId)?.holder?.id ??
-      null,
+      (jobs.find((job) => job.id === jobId)?.boss &&
+        Object.entries(draft.cast).find(
+          ([id, otherPick]) => id !== card.id && otherPick.on && otherPick.job === jobId,
+        )?.[0]) ||
+      ((life?.jobs?.list ?? []).find((job) => job.id === jobId)?.holder?.id ?? null),
     nameOf = (id) =>
       setup.cards.find((person) => person.id === id)?.name ??
       (life?.contacts ?? []).find((person) => person.id === id)?.name ??

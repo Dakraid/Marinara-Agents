@@ -53,7 +53,23 @@ function billsAppView({ life: life, said = "", error = "" }) {
       <span class="search">CASH <b>${usd(bills.cash)}</b></span>
     </div>
     ${error || said ? `<div class="mls-said ${error ? "bad" : ""} mls-portal-said">${escape(error || said)}</div>` : ""}
-    <div class="mls-homes-list">${bills.list.map(billCard).join("")}${owedToYou(bills.owedToYou ?? [])}</div></div>`;
+    <div class="mls-homes-list">${bills.list.map(billCard).join("")}${owedToYou(bills.owedToYou ?? [])}${householdIncome(bills.household)}</div></div>`;
+}
+function householdIncome(household) {
+  const list = household?.list ?? [];
+  return list.length || household?.ubi
+    ? `<div class="mls-bills-owed">HOUSEHOLD INCOME</div>${list
+        .map(
+          (member) => `
+    <div class="mls-home mls-bill theirs"><div class="pic"><span class="f">${frameImg(personOf(member.characterId, member.name))}</span></div>
+      <div><h3>${escape(member.name.toUpperCase())}</h3><div class="sub">${escape(member.title || "Works")} \xB7 lives with you</div>
+        <div class="sum"><span>Pay a shift</span><b>${usd(member.pay)}</b><span>A week</span><b>${usd(member.pay * member.days)}</b></div>
+        <div class="note">Paid into your cash at the end of each day they work.</div></div></div>`,
+        )
+        .join(
+          "",
+        )}${household.ubi ? `<div class="mls-home mls-bill theirs"><div class="pic">\u{1F4B5}</div><div><h3>BASIC INCOME</h3><div class="sub">${usd(household.ubi)} on day 1 of each season</div></div></div>` : ""}`
+    : "";
 }
 function owedToYou(loans) {
   return loans.length

@@ -1,4 +1,4 @@
-// Jobs offered at each town place with shifts and uniforms
+// Jobs offered at each town place with shifts, uniforms and pay per shift (in step with the office ladder)
 var WEEKDAY_INDICES = [0, 1, 2, 3, 4];
 var STORE_SHIFT = {
   days: [1, 2, 3, 4, 5],
@@ -10,6 +10,7 @@ var JOBS_BY_PLACE = {
     {
       id: "barista-am",
       title: "Barista",
+      pay: 60,
       days: WEEKDAY_INDICES,
       from: 7,
       to: 14,
@@ -18,6 +19,7 @@ var JOBS_BY_PLACE = {
     {
       id: "barista-pm",
       title: "Barista",
+      pay: 60,
       days: [2, 3, 4, 5, 6],
       from: 13,
       to: 20,
@@ -28,6 +30,7 @@ var JOBS_BY_PLACE = {
     {
       id: "trainer",
       title: "Personal trainer",
+      pay: 85,
       days: WEEKDAY_INDICES,
       from: 14,
       to: 22,
@@ -36,6 +39,7 @@ var JOBS_BY_PLACE = {
     {
       id: "gym-desk",
       title: "Front desk",
+      pay: 55,
       days: [5, 6, 0, 1, 2],
       from: 6,
       to: 14,
@@ -46,6 +50,7 @@ var JOBS_BY_PLACE = {
     {
       id: "coworker-1",
       title: "Coworker",
+      pay: 75,
       days: WEEKDAY_INDICES,
       from: 9,
       to: 15,
@@ -54,6 +59,7 @@ var JOBS_BY_PLACE = {
     {
       id: "coworker-2",
       title: "Coworker",
+      pay: 75,
       days: WEEKDAY_INDICES,
       from: 9,
       to: 15,
@@ -62,6 +68,7 @@ var JOBS_BY_PLACE = {
     {
       id: "coworker-3",
       title: "Coworker",
+      pay: 75,
       days: WEEKDAY_INDICES,
       from: 9,
       to: 15,
@@ -70,6 +77,7 @@ var JOBS_BY_PLACE = {
     {
       id: "boss",
       title: "Boss",
+      pay: 240,
       days: WEEKDAY_INDICES,
       from: 9,
       to: 17,
@@ -81,6 +89,7 @@ var JOBS_BY_PLACE = {
     {
       id: "cashier-am",
       title: "Cashier",
+      pay: 55,
       days: WEEKDAY_INDICES,
       from: 8,
       to: 15,
@@ -89,6 +98,7 @@ var JOBS_BY_PLACE = {
     {
       id: "cashier-pm",
       title: "Cashier",
+      pay: 55,
       days: [3, 4, 5, 6, 0],
       from: 15,
       to: 22,
@@ -99,6 +109,7 @@ var JOBS_BY_PLACE = {
     {
       id: "bartender-1",
       title: "Bartender",
+      pay: 70,
       days: [1, 2, 3, 4, 5],
       from: 18,
       to: 3,
@@ -107,6 +118,7 @@ var JOBS_BY_PLACE = {
     {
       id: "bartender-2",
       title: "Bartender",
+      pay: 70,
       days: [6, 0, 1, 2, 3],
       from: 18,
       to: 3,
@@ -117,6 +129,7 @@ var JOBS_BY_PLACE = {
     {
       id: "librarian",
       title: "Librarian",
+      pay: 75,
       days: WEEKDAY_INDICES,
       from: 9,
       to: 17,
@@ -127,6 +140,7 @@ var JOBS_BY_PLACE = {
     {
       id: "professor-1",
       title: "Professor",
+      pay: 160,
       days: WEEKDAY_INDICES,
       from: 9,
       to: 15,
@@ -135,6 +149,7 @@ var JOBS_BY_PLACE = {
     {
       id: "professor-2",
       title: "Professor",
+      pay: 160,
       days: [0, 1, 2, 3],
       from: 13,
       to: 20,
@@ -145,6 +160,7 @@ var JOBS_BY_PLACE = {
     {
       id: "doctor",
       title: "Doctor",
+      pay: 180,
       days: WEEKDAY_INDICES,
       from: 8,
       to: 18,
@@ -153,6 +169,7 @@ var JOBS_BY_PLACE = {
     {
       id: "nurse-day",
       title: "Nurse",
+      pay: 120,
       days: [0, 1, 2, 3],
       from: 7,
       to: 19,
@@ -161,6 +178,7 @@ var JOBS_BY_PLACE = {
     {
       id: "nurse-night",
       title: "Nurse",
+      pay: 120,
       days: [4, 5, 6, 0],
       from: 19,
       to: 7,
@@ -171,12 +189,14 @@ var JOBS_BY_PLACE = {
     {
       id: "casual-clerk",
       title: "Shop assistant",
+      pay: 55,
       ...STORE_SHIFT,
       clothes: "the store's clothes and a name tag",
     },
     {
       id: "clothes-clerk",
       title: "Shop assistant",
+      pay: 55,
       days: [3, 4, 5, 6, 0],
       from: 14,
       to: 22,
@@ -187,6 +207,7 @@ var JOBS_BY_PLACE = {
     {
       id: "furniture-clerk",
       title: "Shop assistant",
+      pay: 55,
       ...STORE_SHIFT,
       clothes: "a store polo",
     },
@@ -195,6 +216,7 @@ var JOBS_BY_PLACE = {
     {
       id: "gift-clerk",
       title: "Shop assistant",
+      pay: 55,
       ...STORE_SHIFT,
       clothes: "a cozy cardigan and a name tag",
     },
@@ -203,6 +225,7 @@ var JOBS_BY_PLACE = {
     {
       id: "cook",
       title: "Cook",
+      pay: 75,
       days: [2, 3, 4, 5, 6],
       from: 12,
       to: 22,
@@ -213,6 +236,7 @@ var JOBS_BY_PLACE = {
     {
       id: "waiter-1",
       title: "Waiter",
+      pay: 65,
       days: [1, 2, 3, 4, 5],
       from: 12,
       to: 20,
@@ -221,6 +245,7 @@ var JOBS_BY_PLACE = {
     {
       id: "waiter-2",
       title: "Waiter",
+      pay: 65,
       days: [4, 5, 6, 0, 1],
       from: 16,
       to: 24,
@@ -229,6 +254,7 @@ var JOBS_BY_PLACE = {
     {
       id: "chef",
       title: "Chef",
+      pay: 140,
       days: [2, 3, 4, 5, 6],
       from: 14,
       to: 23,
@@ -239,6 +265,7 @@ var JOBS_BY_PLACE = {
     {
       id: "club-manager",
       title: "Club manager",
+      pay: 220,
       days: [1, 2, 3, 4, 5],
       from: 10,
       to: 18,
@@ -248,6 +275,7 @@ var JOBS_BY_PLACE = {
     {
       id: "lifeguard",
       title: "Lifeguard",
+      pay: 70,
       days: [3, 4, 5, 6, 0],
       from: 9,
       to: 17,
@@ -256,6 +284,7 @@ var JOBS_BY_PLACE = {
     {
       id: "club-bartender",
       title: "Bartender",
+      pay: 80,
       days: [2, 3, 4, 5, 6],
       from: 16,
       to: 23,
@@ -266,6 +295,7 @@ var JOBS_BY_PLACE = {
     {
       id: "boutique-owner",
       title: "Boutique owner",
+      pay: 200,
       days: [1, 2, 3, 4, 5],
       from: 10,
       to: 18,
@@ -275,6 +305,7 @@ var JOBS_BY_PLACE = {
     {
       id: "boutique-stylist",
       title: "Stylist",
+      pay: 90,
       days: [3, 4, 5, 6, 0],
       from: 10,
       to: 20,
@@ -285,6 +316,7 @@ var JOBS_BY_PLACE = {
     {
       id: "usher",
       title: "Usher",
+      pay: 55,
       days: [3, 4, 5, 6, 0],
       from: 14,
       to: 22,
@@ -295,6 +327,7 @@ var JOBS_BY_PLACE = {
     {
       id: "arcade-attendant",
       title: "Attendant",
+      pay: 55,
       days: [2, 3, 4, 5, 6],
       from: 12,
       to: 22,
@@ -305,6 +338,7 @@ var JOBS_BY_PLACE = {
     {
       id: "karaoke-host",
       title: "Host",
+      pay: 60,
       days: [2, 3, 4, 5, 6],
       from: 18,
       to: 22,

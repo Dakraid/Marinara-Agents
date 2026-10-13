@@ -2888,6 +2888,12 @@ function createService({
             title: job.title,
             shift: job.shift,
             clothes: job.clothes,
+            pay: job.pay,
+            ...(job.boss
+              ? {
+                  boss: true,
+                }
+              : {}),
             ...(TOWN_PLACES.find((place) => place.id === job.place)?.module
               ? {
                   module: TOWN_PLACES.find((place) => place.id === job.place).module,

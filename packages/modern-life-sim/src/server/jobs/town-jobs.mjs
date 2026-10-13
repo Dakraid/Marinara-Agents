@@ -21,15 +21,21 @@ var jobPromptLine = (title) =>
   title
     ? `Their job: ${title}. That is their job now, whether or not they are at work right now; if their description says otherwise, this is how it is now.`
     : "";
-var jobHolders = (characters = []) =>
-  Object.fromEntries(
-    characters
-      .filter((character) => character.job?.id && !character.away)
-      .map((character) => [character.job.id, character.id]),
-  );
+// A non-boss job can be shared by any number of people; a place has only one boss.
+var jobHolders = (characters = []) => {
+  let holders = {};
+  for (let character of characters) {
+    if (character.job?.id && !character.away) {
+      (holders[character.job.id] ??= []).push(character.id);
+    }
+  }
+  return holders;
+};
 function openTownJobs(town, characters = [], { except = null, taken = [] } = {}) {
   let holders = jobHolders(characters);
-  return townJobs(town).filter((job) => (!holders[job.id] || holders[job.id] === except) && !taken.includes(job.id));
+  return townJobs(town).filter(
+    (job) => !job.boss || ((holders[job.id] ?? []).every((holderId) => holderId === except) && !taken.includes(job.id)),
+  );
 }
 function placeForJobId(jobId, places = []) {
   let placeId = Object.entries(JOBS_BY_PLACE).find(([, jobs]) =>

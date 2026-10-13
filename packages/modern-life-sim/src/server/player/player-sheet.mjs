@@ -11,6 +11,7 @@ import {
 } from "../jobs/office-rules.mjs";
 import { activeJobWarnings, nextOfficePosition, officePayOf, officePositionById } from "../jobs/office-job.mjs";
 import { daysUntilRent, homeKindOf, totalOwed } from "../money/wallet.mjs";
+import { householdView } from "../money/household.mjs";
 import { needsStatus } from "../needs/needs.mjs";
 
 var SKILL_PERKS2 = {
@@ -173,6 +174,8 @@ function playerSheet(
         lodging.kind === "street" ? "No home" : lodging.kind === "couch" ? `${lodging.name}'s couch` : homeKind.name,
       door: world.residence ? `${placeName(world.residence.place)}, ${world.residence.unit}` : "",
       flatmate: flatmate,
+      household: householdView(world).week,
+      ubi: householdView(world).ubi,
       ledger: ledger,
       birthday: world.birthday
         ? `${formatBirthday(world.birthday)} \xB7 ${formatDaysUntil(daysUntilBirthday(world.birthday, world.minutes))}`
