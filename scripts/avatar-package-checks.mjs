@@ -74,6 +74,11 @@ export function assertAvatarPackageContract(manifest, agentDefinitions) {
     if (template.id === "avatar-mesh-rig-layout" && !used.includes("layoutSchema")) {
       throw new Error(`${id} template ${template.id} must include \${layoutSchema}`);
     }
+    // ${layoutSchema} also says which side comes first and that every part needs a value. A rule of the
+    // package's own beside it contradicts the Engine's strict layout check, which refuses the answer.
+    if (template.id === "avatar-mesh-rig-layout" && /\b(?:left|right|null)\b/i.test(template.promptTemplate)) {
+      throw new Error(`${id} template ${template.id} must leave sides and missing parts to \${layoutSchema}`);
+    }
   }
   return true;
 }

@@ -2,4 +2,4 @@
 
 - First release: animated 2D avatars for characters and personas in Roleplay and Game.
 - Works with PNGTuber-style sprites (your own expression sprites, with blink and talk pictures) and mesh avatar files.
-- Ships the editable prompts for making blink and talk pictures and a mesh avatar from one of your sprites.
+- Ships the prompts for making blink and talk pictures and a mesh avatar from one of your sprites.

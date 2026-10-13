@@ -68,6 +68,17 @@ assert.throws(
   }),
   /avatar-mesh-rig-layout must include \$\{layoutSchema\}/,
 );
+for (const rule of [
+  "Left and right are the character's own left and right, not yours.",
+  "If a part is hidden, set it to null.",
+]) {
+  assert.throws(
+    mutated("2d-avatars", (_manifest, agent) => {
+      template(agent, "avatar-mesh-rig-layout").promptTemplate += `\n${rule}`;
+    }),
+    /avatar-mesh-rig-layout must leave sides and missing parts to \$\{layoutSchema\}/,
+  );
+}
 assert.throws(
   mutated("3d-avatars", (_manifest, agent) => (agent.defaultSettings = { avatarGenerationTemplates: [] })),
   /ships no generation prompts/,
