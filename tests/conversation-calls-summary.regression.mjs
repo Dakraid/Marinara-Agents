@@ -97,7 +97,10 @@ for (const payload of manifest.files) {
 const artifactPath = join(repoRoot, `artifacts/conversation-calls-${manifest.version}.zip`);
 const artifactBytes = await readFile(artifactPath);
 const artifactManifest = JSON.parse(execFileSync("unzip", ["-p", artifactPath, "manifest.json"], { encoding: "utf8" }));
-const artifactClient = execFileSync("unzip", ["-p", artifactPath, "client.js"], { encoding: "utf8" });
+const artifactClient = execFileSync("unzip", ["-p", artifactPath, "client.js"], {
+  encoding: "utf8",
+  maxBuffer: 64 * 1024 * 1024,
+});
 assert.deepEqual(artifactManifest, manifest);
 assert.match(artifactClient, /Call summary connection/u);
 assert.match(artifactClient, /Loading connection(?:…|\\u2026)/u);
