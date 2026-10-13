@@ -174,7 +174,7 @@
         "schemaVersion": 1,
         "id": "conversation-calls",
         "name": "Calls",
-        "version": "1.1.2",
+        "version": "1.1.3",
         "description": "Adds live audio and video calls with Conversation characters. Add as both a Command and an Agent in Chat Settings → Agents → Commands/Calls for Conversation mode.",
         "engine": {
           "min": "2.4.1",
@@ -204,13 +204,28 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "972582e603c2198fe46d35c5f28e198d13579543eae49ccc88572cf7df15c530",
-            "bytes": 2521390
+            "sha256": "5e7185e1fb459cbff8d95fa165087d1547e7cc09ac3d3afb5911d9c252aa9a56",
+            "bytes": 2522959
           },
           {
             "path": "client.js",
             "sha256": "863006fa9bc8af1c2e6c70ce4d694767eeff634a807c34b301ced46f2da6331a",
             "bytes": 882635
+          },
+          {
+            "path": "claude-code-plugin/.claude-plugin/plugin.json",
+            "sha256": "9caabe0dc95c7e0d825533719ae3a84cccba625277ec9e39dfd69fae18880fd3",
+            "bytes": 226
+          },
+          {
+            "path": "claude-code-plugin/hooks/hooks.json",
+            "sha256": "1c169616134dd0e6b5effb616a5dd20934f0f968579e316260568e2130d9d67a",
+            "bytes": 91
+          },
+          {
+            "path": "claude-code-plugin/hooks/register.mjs",
+            "sha256": "170f85d7b4e6c96dd0ed3cca9caeb2d39e0487fabe7f40274d5e6405acd6a1af",
+            "bytes": 504
           }
         ],
         "permissions": [
@@ -227,9 +242,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/conversation-calls.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/conversation-calls-1.1.2.zip",
-        "sha256": "a3a0deae6cbf409db354cc2b033fc183d306ed5158e0b2ef8fcdbe396c1f45c9",
-        "bytes": 3406148
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/conversation-calls-1.1.3.zip",
+        "sha256": "0e4dfa1e723f4abdf384efc4617f09a9eea7246dbf9c9b6f8553b72584780baf",
+        "bytes": 3409518
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#conversation-calls"
     },
@@ -2711,7 +2726,7 @@
         },
         "id": "noodle",
         "name": "Noodle",
-        "version": "1.5.5",
+        "version": "1.5.6",
         "description": "A pretend social network where your characters post, share photos, and talk about your chats. Install it, restart Marinara Engine when prompted, then open Home → Noodle.",
         "localizations": {
           "de": {
@@ -2794,8 +2809,8 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "d7e5688a5bb0d018a38e157b580b906171430109359fc03beaea85dd3165260f",
-            "bytes": 2023466
+            "sha256": "348f79863dc501442705de3637f70e4210074348a86d0ee54abac8247082dca2",
+            "bytes": 2025043
           },
           {
             "path": "client.js",
@@ -2806,6 +2821,21 @@
             "path": "noodle-klusek.png",
             "sha256": "003236ad2b83c5eb44731a48048c86b07aa8c1f9c411f881c15f7d4af3c68212",
             "bytes": 28325
+          },
+          {
+            "path": "claude-code-plugin/.claude-plugin/plugin.json",
+            "sha256": "9caabe0dc95c7e0d825533719ae3a84cccba625277ec9e39dfd69fae18880fd3",
+            "bytes": 226
+          },
+          {
+            "path": "claude-code-plugin/hooks/hooks.json",
+            "sha256": "1c169616134dd0e6b5effb616a5dd20934f0f968579e316260568e2130d9d67a",
+            "bytes": 91
+          },
+          {
+            "path": "claude-code-plugin/hooks/register.mjs",
+            "sha256": "170f85d7b4e6c96dd0ed3cca9caeb2d39e0487fabe7f40274d5e6405acd6a1af",
+            "bytes": 504
           }
         ],
         "permissions": [
@@ -2821,9 +2851,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/noodle.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/noodle-1.5.5.zip",
-        "sha256": "4a2c12fed61d3c20dace7fbca84989d1b5620c919c08a5467b18cc0d93286c1e",
-        "bytes": 4451805
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/noodle-1.5.6.zip",
+        "sha256": "7a3c4c024f649424ce8c1a4853f98300325fa5d62cfbce3facca56e09c32ced0",
+        "bytes": 4455183
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/noodle/README.md"
     },
@@ -3369,7 +3399,7 @@
         },
         "id": "slurp2",
         "name": "Slurp",
-        "version": "0.3.34",
+        "version": "0.3.35",
         "description": "A private social app for your characters. Turn characters and personas into Creators, post public or locked photos, and watch a simulated audience follow, subscribe, unlock, comment, and message them. By default, it is tuned for an adult experience. Install it, restart Marinara Engine when prompted, then open Home → Slurp.",
         "localizations": {
           "de": {
@@ -3436,13 +3466,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "de463ed68116f2dddd5d4e523f36f40dd488071cfc9b0c9da99871027dda860b",
-            "bytes": 3495032
+            "sha256": "6fe391c8687498b5c95ff75421000c688ca2c4a9aef8653c621c1373fecc5c7e",
+            "bytes": 3496639
           },
           {
             "path": "client.js",
-            "sha256": "f30edc041949b2827e984da52c266e302aa0524b8cdaa6b5468572dcc31e53fd",
-            "bytes": 4497998
+            "sha256": "659e91f0cf4f178d5237cd790ce1eae878f556a58861813cb15835df169794b3",
+            "bytes": 4689162
           },
           {
             "path": "slurp2-logo.png",
@@ -3468,6 +3498,21 @@
             "path": "src/engine/packages/client/src/slp/locales/pl.json",
             "sha256": "9d746a64e4b5d5caf116aed0022b301add3ee0eaed7e61e01908d8acbb4f68ec",
             "bytes": 217233
+          },
+          {
+            "path": "claude-code-plugin/.claude-plugin/plugin.json",
+            "sha256": "9caabe0dc95c7e0d825533719ae3a84cccba625277ec9e39dfd69fae18880fd3",
+            "bytes": 226
+          },
+          {
+            "path": "claude-code-plugin/hooks/hooks.json",
+            "sha256": "1c169616134dd0e6b5effb616a5dd20934f0f968579e316260568e2130d9d67a",
+            "bytes": 91
+          },
+          {
+            "path": "claude-code-plugin/hooks/register.mjs",
+            "sha256": "170f85d7b4e6c96dd0ed3cca9caeb2d39e0487fabe7f40274d5e6405acd6a1af",
+            "bytes": 504
           }
         ],
         "permissions": [
@@ -3485,9 +3530,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/slurp2.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/slurp2-0.3.34.zip",
-        "sha256": "c3c25a18ed2a1935ef563f7ec71fa51d22b4debb4448497372b51caa340f9c94",
-        "bytes": 8895631
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/slurp2-0.3.35.zip",
+        "sha256": "43d388773549c8e2666b5e4856cae13eddb2e4c44c0f6faebd72ef4892de46e1",
+        "bytes": 9090203
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/slurp2/README.md"
     },

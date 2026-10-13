@@ -1,5 +1,9 @@
 # Calls release notes
 
+## 1.1.3 — 2026-10-13
+
+- With a Claude (Subscription) connection, Calls no longer makes a hidden second request to name each session, and Claude Code no longer adds your account email, the date or this computer's details to the prompt. A request now stops with an error if Claude Code turns on claude.ai connectors. (#1313)
+
 ## 1.1.2 — 2026-10-12 [highlight]
 
 - Characters can call you on their own again. With the call command on, a character who decides to call you now rings with an incoming call. Before this, nothing happened.

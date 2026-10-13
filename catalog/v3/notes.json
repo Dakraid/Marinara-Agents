@@ -36,6 +36,12 @@
     "conversation-calls": {
       "versions": [
         {
+          "version": "1.1.3",
+          "date": "2026-10-13",
+          "notes": "- With a Claude (Subscription) connection, Calls no longer makes a hidden second request to name each session, and Claude Code no longer adds your account email, the date or this computer's details to the prompt. A request now stops with an error if Claude Code turns on claude.ai connectors. (#1313)",
+          "highlight": false
+        },
+        {
           "version": "1.1.2",
           "date": "2026-10-12",
           "notes": "- Characters can call you on their own again. With the call command on, a character who decides to call you now rings with an incoming call. Before this, nothing happened.",
@@ -358,6 +364,12 @@
     "noodle": {
       "versions": [
         {
+          "version": "1.5.6",
+          "date": "2026-10-13",
+          "notes": "- With a Claude (Subscription) connection, Noodle no longer makes a hidden second request to name each session, and Claude Code no longer adds your account email, the date or this computer's details to the prompt. A request now stops with an error if Claude Code turns on claude.ai connectors. (#1313)",
+          "highlight": false
+        },
+        {
           "version": "1.5.5",
           "date": "2026-10-11",
           "notes": "- Each character can now use their own image generation connection for Noodle images. Open the character's Noodle profile, choose Edit profile and pick it under Image connection. The choice saves right away. Use Noodle image connection keeps the connection from Noodle's settings. Noodle still needs an image connection in its settings or a default image connection before it makes images.",
@@ -622,6 +634,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.35",
+          "date": "2026-10-13",
+          "notes": "- With a Claude (Subscription) connection, Slurp no longer makes a hidden second request to name each session, and Claude Code no longer adds your account email, the date or this computer's details to the prompt. A request now stops with an error if Claude Code turns on claude.ai connectors. (#1313)\n- Changed: avatar references are allowed for SpicyAPI edit models (model IDs ending in /edit) and still left out for its text-to-image models. Slurp's bundled image code cannot call SpicyAPI yet, so SpicyAPI pictures do not work in Slurp until it can. (#1337)",
+          "highlight": false
+        },
+        {
           "version": "0.3.34",
           "date": "2026-10-13",
           "notes": "- Fixed: in a chat, a Creator could not see what was inside her own locked posts: the message prompt replaced the body with \"[paid post, contents not repeated here]\". She now gets the real text, and the existing locked and already-unlocked fields still say whether this fan has seen it. (#1351)\n- Fixed: lorebook entries never reached messages. A reply now gets matching entries from the recent conversation the way posts do (same setting, same Creator scoping), and they show in the message Deep details. A failed scan never fails the message. (#1351)\n- Changed: the fan's own Deep details view masks the body of a locked post that fan has not unlocked; the Creator's view shows it. (#1351)",
@@ -733,12 +751,6 @@
           "version": "0.3.16",
           "date": "2026-10-05",
           "notes": "- The shared guide explicitly offers image generation with an on/off toggle and direct image upload; uploading switches generation off so drafting preserves the photo.\n- Stir on your persona page and Write a post in an NPC Creator’s Stir use the same simple one-idea draft, with caption and picture preview together. Edit opens the full composer without losing your draft.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.15",
-          "date": "2026-10-05",
-          "notes": "- Start real Engine roleplay scenes from character-backed Creator DMs, or accept a Creator invite. Choose availability and how the recap can reach Slurp.\n- Lock the DM and pause the Creator while a locking scene runs; return the recap to the thread on conclude and recover missed releases after discard, convert, delete, or restart.\n- Draft a post from one idea for review in the same composer on every page; Stir hands its draft to the composer.\n- Requires Engine Capability API 1.66 for native scene origins.",
           "highlight": false
         }
       ]

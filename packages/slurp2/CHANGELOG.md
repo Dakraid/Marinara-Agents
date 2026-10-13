@@ -1,5 +1,10 @@
 # Slurp release notes
 
+## 0.3.35 — 2026-10-13
+
+- With a Claude (Subscription) connection, Slurp no longer makes a hidden second request to name each session, and Claude Code no longer adds your account email, the date or this computer's details to the prompt. A request now stops with an error if Claude Code turns on claude.ai connectors. (#1313)
+- Changed: avatar references are allowed for SpicyAPI edit models (model IDs ending in /edit) and still left out for its text-to-image models. Slurp's bundled image code cannot call SpicyAPI yet, so SpicyAPI pictures do not work in Slurp until it can. (#1337)
+
 ## 0.3.34 — 2026-10-13
 
 - Fixed: in a chat, a Creator could not see what was inside her own locked posts: the message prompt replaced the body with "[paid post, contents not repeated here]". She now gets the real text, and the existing locked and already-unlocked fields still say whether this fan has seen it. (#1351)
