@@ -1,3 +1,6 @@
+import type { APIProvider } from "@marinara-engine/shared";
+import { resolveStoredMaxTokens } from "../../../services/generation/generation-parameters.js";
+import { clampGenerationMaxOutputTokens } from "../../../services/generation/output-token-limits.js";
 import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
 import type { DB } from "../../../db/connection.js";
 import { resolveBaseUrl } from "../../../services/generation/connection-base-url.js";
@@ -134,7 +137,16 @@ async function resolveImageAppearanceOnce(input: Parameters<typeof resolveImageA
       ...(image ? { images: [image] } : {}),
     },
   ];
-  const options = { model: connection.model, maxTokens: 500, stream: false } as const;
+  const options = {
+    model: connection.model,
+    maxTokens: clampGenerationMaxOutputTokens({
+      provider: connection.provider as APIProvider,
+      model: connection.model,
+      maxTokens: resolveStoredMaxTokens(connection.defaultParameters, 500),
+      maxTokensOverride: connection.maxTokensOverride,
+    }),
+    stream: false,
+  } as const;
   let usedImage = Boolean(image);
   const response = await provider
     .chatComplete(messages, options)

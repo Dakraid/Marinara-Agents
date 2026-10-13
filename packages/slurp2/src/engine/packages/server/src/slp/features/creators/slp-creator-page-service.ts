@@ -1,3 +1,6 @@
+import type { APIProvider } from "@marinara-engine/shared";
+import { resolveStoredMaxTokens } from "../../../services/generation/generation-parameters.js";
+import { clampGenerationMaxOutputTokens } from "../../../services/generation/output-token-limits.js";
 import { jsonrepair } from "jsonrepair";
 import {
   normalizeSlpCreatorPage,
@@ -198,7 +201,12 @@ export async function composeSlpCreatorPage(
       model: connection.model,
       temperature: 0.9,
       // 1400 cut a seven-block Page (or a reasoning model's answer) short, and a cut answer has no Page.
-      maxTokens: 4000,
+      maxTokens: clampGenerationMaxOutputTokens({
+        provider: connection.provider as APIProvider,
+        model: connection.model,
+        maxTokens: resolveStoredMaxTokens(connection.defaultParameters, 4000),
+        maxTokensOverride: connection.maxTokensOverride,
+      }),
     });
     answer = result.content ?? "";
   } catch (error) {

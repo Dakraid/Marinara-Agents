@@ -7,6 +7,9 @@
  *   with what one Undo needs. Plays are free (a sandbox); only an action that calls the AI costs a call.
  * - `undoSlpStirPlay`, `readSlpStirView`.
  */
+import type { APIProvider } from "@marinara-engine/shared";
+import { resolveStoredMaxTokens } from "../../../services/generation/generation-parameters.js";
+import { clampGenerationMaxOutputTokens } from "../../../services/generation/output-token-limits.js";
 import type { DB } from "../../../db/connection.js";
 import { logger } from "../../../lib/logger.js";
 import { resolveBaseUrl } from "../../../services/generation/connection-base-url.js";
@@ -240,7 +243,16 @@ export async function planSlpStir(
       followUp: request.followUp ?? null,
     }),
     // Reasoning headroom, like the writing help: a plan is short, the thinking may not be.
-    { model: connection.model, temperature: 0.3, maxTokens: 3072 },
+    {
+      model: connection.model,
+      temperature: 0.3,
+      maxTokens: clampGenerationMaxOutputTokens({
+        provider: connection.provider as APIProvider,
+        model: connection.model,
+        maxTokens: resolveStoredMaxTokens(connection.defaultParameters, 3072),
+        maxTokensOverride: connection.maxTokensOverride,
+      }),
+    },
   );
   const answer = readSlpStirPlanAnswer(result.content);
   if (!answer) return { ok: false, status: 502, error: "That plan came back garbled. Try again, or play a card." };

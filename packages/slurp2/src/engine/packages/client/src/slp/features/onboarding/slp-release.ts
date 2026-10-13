@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.32";
+export const SLURP2_VERSION = "0.3.33";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -12,6 +12,13 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.33",
+    date: "2026-10-13",
+    notes: [
+      "Pictures and helpers now respect the max tokens you set on your connection, so thinking models no longer run dry before they answer.",
+    ],
+  },
   {
     version: "0.3.32",
     date: "2026-10-13",
@@ -763,24 +770,6 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
   {
     version: "0.1.3",
     date: "2026-09-20",
-    notes: ["Behind-the-scenes cleanup. Everything works as before."],
-  },
-  {
-    version: "0.1.2",
-    date: "2026-09-19",
-    notes: ["Creator filters, profile expansion and settings tabs respond again."],
-  },
-  {
-    version: "0.1.1",
-    date: "2026-09-19",
-    notes: [
-      "SwarmUI pictures work again when you do not use a custom workflow.",
-      "Fixed a wording slip in the setup wizard.",
-    ],
-  },
-  {
-    version: "0.1.0",
-    date: "2026-09-19",
     notes: ["Behind-the-scenes cleanup. Everything works as before."],
   },
 ];
