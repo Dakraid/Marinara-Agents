@@ -47,6 +47,11 @@ console.log("slurp2 message lore + locked posts: ok");
     paidBodies: [body],
     chat: {},
   } as never;
+  const short = slpDeepDetailsSeatView(
+    { ...(record as object), paidBodies: ["a"], messages: [{ role: "user", content: "a cat" }] } as never,
+    "viewer",
+  );
+  assert.equal(short.messages[0]?.content, "a cat", "a very short body is not masked");
   const fan = slpDeepDetailsSeatView(record, "viewer");
   assert.ok(!JSON.stringify(fan).includes("secret"), "fan seat sees no paid body");
   assert.ok(!("paidBodies" in fan), "the mask list never leaves the server");
