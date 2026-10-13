@@ -29,8 +29,8 @@ const map = (locations: ReturnType<typeof place>[]) => ({
 });
 const places = (count: number) => Array.from({ length: count }, (_, index) => place(index));
 
-// Tripwire: once the vendored snapshot carries the Engine's 5,000, the package-owned ceiling can go (#1132).
-assert.equal(SPATIAL_CONTEXT_LIMITS.maxLocations, 500);
+// The fork's vendored Engine limit already matches the World Maps ceiling.
+assert.equal(SPATIAL_CONTEXT_LIMITS.maxLocations, 5_000);
 assert.equal(SPATIAL_MAP_LOCATION_LIMIT, 5_000);
 
 const atLimit = map(places(SPATIAL_MAP_LOCATION_LIMIT));

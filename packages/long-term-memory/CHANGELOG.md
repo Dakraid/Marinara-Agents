@@ -1,5 +1,10 @@
 # Long-Term Memory changelog
 
+## 1.4.29 — 2026-10-13
+
+- Compact selects keep a fixed 36px height, so platform font metrics no longer make them taller than the compact layout allows.
+- Buttons keep a 44px minimum width as well as height, so short labels such as **Retry** stay full-size tap targets.
+
 ## 1.4.28 — 2026-10-12
 
 - Finish the Memory Settings → Debug details pane. Each event row shows how long ago it last logged, Result reads as counts (for example "17 candidates found → 9 kept → 9 changes" or "148 indexed → 131 usable in this chat → 2 added"), recall candidates are flat rows with a score bar marking the minimum relevance and a reason that names the limit that applied, a recall that added nothing says why, recall settings read as labelled terms, and What happened lists one sentence per step with its offset from the start. Durations over a second read in seconds or minutes, and a note says what Copy JSON includes.

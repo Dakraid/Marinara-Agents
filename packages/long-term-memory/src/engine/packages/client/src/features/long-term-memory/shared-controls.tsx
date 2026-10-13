@@ -15,7 +15,8 @@ import { useLtmTranslation } from "./localization";
 let activePopover: { id: string; close: () => void } | null = null;
 
 export const inputClass = "mari-editor-field min-h-11 w-full px-3 text-sm";
-export const compactInputClass = "mari-chrome-field min-h-9 w-full !rounded-md px-3 py-2 text-xs";
+// A fixed height, not min-height: font metrics vary per platform and must not grow the compact control.
+export const compactInputClass = "mari-chrome-field h-9 w-full !rounded-md px-3 py-2 text-xs";
 export const compactInputStyle = { color: "var(--foreground)" } as const;
 
 export const Button = forwardRef<
@@ -33,7 +34,11 @@ export const Button = forwardRef<
       type="button"
       data-ltm-control="button"
       className={`mari-editor-action min-h-11 px-3 ${tone} ${className}`}
-      style={className.includes("mari-editor-action--compact") ? style : { minHeight: "2.75rem", ...style }}
+      style={
+        className.includes("mari-editor-action--compact")
+          ? style
+          : { minHeight: "2.75rem", minWidth: "2.75rem", ...style }
+      }
       {...props}
     >
       {children}
