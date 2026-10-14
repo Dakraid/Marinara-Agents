@@ -33,6 +33,8 @@ const creators = [
   { id: "other", displayName: "Someone Else", sourceKind: "character", sourceEntityId: "char-other", settings },
   { id: "self", displayName: "Player Creator", sourceKind: "persona", sourceEntityId: "char-mari", settings },
   { id: "kai", displayName: "Kai Rowe", sourceKind: "character", sourceEntityId: "char-kai", settings },
+  // Another persona's page: the player runs it, so its couples are not gossip for this chat.
+  { id: "alt", displayName: "Alt Page", kind: "persona", sourceKind: "persona", sourceEntityId: "p-alt", settings },
 ];
 const couple = (id: string, aId: string, bId: string, stage: string) => ({
   id,
@@ -51,7 +53,12 @@ const couple = (id: string, aId: string, bId: string, stage: string) => ({
   postIds: [],
   page: null,
 });
-const couples = [couple("c1", "mari", "kai", "together"), couple("c2", "other", "kai", "dating")];
+const couples = [
+  couple("c1", "mari", "kai", "together"),
+  couple("c2", "other", "kai", "dating"),
+  couple("c3", "mari", "alt", "dating"),
+  { ...couple("c4", "mari", "other", "sparks"), secret: true },
+];
 const arc = {
   title: "Moving to Lisbon",
   status: "active",
@@ -75,6 +82,8 @@ const { buildSlurpChatContext, slurpCarryoverReach } = runInNewContext(
     slurpChatBridgeCoupleLine,
     slurpChatBridgeLoveLines,
     slurpCoupleOf,
+    slurpRunsItself: (account: { kind?: string; sourceKind?: string }) =>
+      !(account.kind === "persona" && account.sourceKind === "persona"),
     slurpChatBridgeRapportLine,
     SLURP_CONTINUITY_FACT_LABELS,
     readSlurpCreatorTiesDocument: async () => ({ couples }),
@@ -209,6 +218,10 @@ async function main() {
   const noPersona: string = await buildSlurpChatContext({}, { ...request, personaId: null });
   assert.match(noPersona, /Plan: Wants to open a café/u, "without a persona the character's own facts remain");
   assert.doesNotMatch(noPersona, /with Alex|scene with this fan/u, "no thread, no fan-private facts");
+  for (const text of [block, noPersona]) {
+    assert.doesNotMatch(text, /Alt Page/u, "couples with any page the player runs stay out");
+    assert.doesNotMatch(text, /flirting with Someone Else/u, "secret couples stay secret");
+  }
 
   carryoverMaxItems = 2;
   const capped: string = await buildSlurpChatContext({}, { ...request, wrapFormat: "markdown" });

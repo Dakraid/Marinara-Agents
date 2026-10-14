@@ -22,6 +22,7 @@ import { sinceHoursIso } from "../../modules/creators/slp-public-support.js";
 import { readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ties-storage.js";
 import { slurpCoupleOf } from "../../modules/projects/slp-creator-couples.js";
 import { slurpChatBridgeCoupleLine, slurpChatBridgeLoveLines } from "../../modules/projects/slp-couple-lines.js";
+import { slurpRunsItself } from "../projects/slp-projects-contract.js";
 import { slurpArcLifeLine } from "../../modules/projects/slp-arc-progress.js";
 import { slurpChatBridgeRapportLine } from "../../modules/messages/slp-rapport.js";
 import { listSlurpContinuityFor } from "../../data/continuity/slp-continuity-storage.js";
@@ -174,6 +175,8 @@ export async function buildSlurpChatContext(db: DB, request: SlurpChatContextReq
   // its Slurp context.
   const { couples } = await readSlurpCreatorTiesDocument(db).catch(() => ({ couples: [] }));
   const names = new Map(accounts.map((account) => [account.id, account.displayName]));
+  // Every page the player runs, not only this persona's: those couples are the player's own business.
+  const playerIds = new Set(accounts.filter((account) => !slurpRunsItself(account)).map((account) => account.id));
   for (const creator of creators) {
     const story = slurpArcLifeLine(await slurp.listProjects(creator.id).catch(() => []));
     if (story)
@@ -181,7 +184,7 @@ export async function buildSlurpChatContext(db: DB, request: SlurpChatContextReq
     for (const line of slurpChatBridgeLoveLines(couples, creator.id, {
       her: creator.displayName,
       names,
-      playerIds: new Set(page ? [page.id] : []),
+      playerIds,
     }))
       entries.push({ at: SLURP_STANDING.life, line });
   }

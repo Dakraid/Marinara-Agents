@@ -195,7 +195,8 @@ export function slurpChatBridgeCoupleLine(
 /**
  * A character's love life with other Creators, for the chat bridge: one third-person line per
  * running couple, or none. Couples with the player's own pages are left out; the caller says those
- * with `slurpChatBridgeCoupleLine`. A partner without a known name is not mentioned.
+ * with `slurpChatBridgeCoupleLine`. Secret couples stay secret, and a partner without a known name
+ * is not mentioned.
  */
 export function slurpChatBridgeLoveLines(
   couples: readonly SlurpCouple[],
@@ -203,7 +204,7 @@ export function slurpChatBridgeLoveLines(
   input: { her: string; names: ReadonlyMap<string, string>; playerIds: ReadonlySet<string> },
 ): string[] {
   return couples
-    .filter((couple) => slurpCoupleActive(couple))
+    .filter((couple) => slurpCoupleActive(couple) && !couple.secret)
     .flatMap((couple) => {
       const partners = slurpCouplePartners(couple, creatorId);
       if (partners.length === 0 || partners.some((id) => input.playerIds.has(id))) return [];
