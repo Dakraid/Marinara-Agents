@@ -48,12 +48,23 @@ export function SlpCanvasAmbient() {
       const src = slpLeadingPhotoSrc(frame);
       if (src) setLayers((now) => (now.current === src ? now : { current: src, previous: now.current }));
     };
-    look();
-    const timer = window.setInterval(look, 1000);
+    // Measure just after a frame is painted, when layout is clean: from a bare timer the rects forced
+    // an extra layout while a screen was still mounting (177 ms of a 4x-throttled open, 0.3.41).
+    let pending = 0;
+    const lookAfterPaint = () => {
+      if (pending) return;
+      pending = requestAnimationFrame(() => {
+        pending = 0;
+        setTimeout(look, 0);
+      });
+    };
+    lookAfterPaint();
+    const timer = window.setInterval(lookAfterPaint, 1000);
     // Capture: the scrollers are the screens inside the frame, and scroll events do not bubble.
     frame.addEventListener("scroll", onScroll, { capture: true, passive: true });
     return () => {
       window.clearInterval(timer);
+      cancelAnimationFrame(pending);
       frame.removeEventListener("scroll", onScroll, { capture: true });
     };
   }, []);
