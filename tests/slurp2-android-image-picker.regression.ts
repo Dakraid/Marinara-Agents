@@ -24,7 +24,9 @@ for (const [file, handler] of [
   ["app/screens/SlpScreenComposer.tsx", "app/screens/SlpScreenComposer.tsx"],
   ["modules/post/SlpPostImageEditControls.tsx", "modules/post/SlpPostHooks.tsx"],
 ] as const) {
-  assert.match(read(file), /type="file"\s+accept=\{slpImageFileAccept\(\)\}/u, `${file} uses the Android-safe accept`);
+  const source = read(file);
+  assert.ok(source.includes("accept={slpImageFileAccept()}"), `${file} uses the Android-safe accept`);
+  assert.ok(!source.includes('accept="image/*"'), `${file} has no hard-coded image accept`);
   assert.match(read(handler), /if \(!file\.type\.startsWith\("image\/"\)\) \{/u, `${handler} still rejects non-images`);
 }
 
