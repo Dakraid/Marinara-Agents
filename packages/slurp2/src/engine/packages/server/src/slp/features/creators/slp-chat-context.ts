@@ -8,6 +8,10 @@
  * Two switches must both be on. The chat opts in (`slurp2ActivityContextEnabled`, off unless the
  * player turns it on), and the chat's mode is one of the carryover modes in Slurp settings. What a
  * fan is paying for never travels: a locked post is named, not quoted, and a locked message is a note.
+ *
+ * Next to the events, standing facts say where things stand: the story the character is living on
+ * Slurp, their love life, the player's place with them, and what the continuity ledger lets a chat
+ * with this player read (`slurpContinuityReadable`, the `fan_thread` surface of their thread).
  */
 import type { DB } from "../../../db/connection.js";
 import { wrapContent } from "../../../services/prompt/format-engine.js";
@@ -16,7 +20,11 @@ import { createSlurpStorage } from "../../data/slp-storage.js";
 import { sinceHoursIso } from "../../modules/creators/slp-public-support.js";
 import { readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ties-storage.js";
 import { slurpCoupleOf } from "../../modules/projects/slp-creator-couples.js";
-import { slurpChatBridgeCoupleLine } from "../../modules/projects/slp-couple-lines.js";
+import { slurpChatBridgeCoupleLine, slurpChatBridgeLoveLines } from "../../modules/projects/slp-couple-lines.js";
+import { slurpArcLifeLine } from "../../modules/projects/slp-arc-progress.js";
+import { slurpChatBridgeRapportLine } from "../../modules/messages/slp-rapport.js";
+import { listSlurpContinuityFor } from "../../data/continuity/slp-continuity-storage.js";
+import { SLURP_CONTINUITY_FACT_LABELS } from "../../modules/continuity/slp-continuity-prompt.js";
 
 type WrapFormat = "xml" | "markdown" | "none";
 
@@ -35,8 +43,17 @@ const SLURP_CHAT_CONTEXT_SECTION = "Recent Slurp Activity";
 // Same chars/4 estimate and 8k-token ceiling as Noodle's carryover block.
 const SLURP_CHAT_CONTEXT_CHARACTER_BUDGET = 8192 * 4;
 const SLURP_CHAT_CONTEXT_LINE_LIMIT = 600;
-// Sorts after every ISO timestamp, so a standing fact counts as the newest entry.
-const SLURP_STANDING_FACT_AT = "9999";
+// Sorts after every ISO timestamp, so a standing fact counts as the newest entry. Within standing
+// facts the higher rank survives a tight item cap: who they are to each other comes first.
+const SLURP_STANDING = {
+  ledger: "9999-1",
+  life: "9999-2",
+  rapport: "9999-3",
+  subscription: "9999-4",
+  couple: "9999-5",
+};
+// Ledger facts per character: a chat carries what is current, not the whole ledger.
+const SLURP_CHAT_CONTEXT_FACTS = 5;
 
 /** Keep the newest entries that fit, then render them oldest first. */
 export function buildSlurpChatContextBlock(
@@ -76,7 +93,8 @@ export async function buildSlurpChatContext(db: DB, request: SlurpChatContextReq
   const characterIds = new Set(request.targetCharacterIds ?? []);
   if (characterIds.size === 0) return null;
 
-  const creators = (await slurp.listNoodlerAccounts({ includeHidden: true })).filter(
+  const accounts = await slurp.listNoodlerAccounts({ includeHidden: true });
+  const creators = accounts.filter(
     (account) => account.sourceKind === "character" && characterIds.has(account.sourceEntityId),
   );
   if (creators.length === 0) return null;
@@ -103,23 +121,35 @@ export async function buildSlurpChatContext(db: DB, request: SlurpChatContextReq
   }
 
   const persona = request.personaId ? await slurp.getViewer(request.personaId) : null;
+  const page = persona
+    ? await slurp.getSlurpAccountForEntity("persona", request.personaId!, "creator").catch(() => null)
+    : null;
+  // Best-effort, like every standing fact below: a record that cannot be read never costs the chat
+  // its Slurp context.
+  const { couples } = await readSlurpCreatorTiesDocument(db).catch(() => ({ couples: [] }));
+  const names = new Map(accounts.map((account) => [account.id, account.displayName]));
+  for (const creator of creators) {
+    const story = slurpArcLifeLine(await slurp.listProjects(creator.id).catch(() => []));
+    if (story)
+      entries.push({ at: SLURP_STANDING.life, line: `${creator.displayName}'s ongoing story on Slurp: ${story}.` });
+    for (const line of slurpChatBridgeLoveLines(couples, creator.id, {
+      her: creator.displayName,
+      names,
+      playerIds: new Set(page ? [page.id] : []),
+    }))
+      entries.push({ at: SLURP_STANDING.life, line });
+  }
+
   if (persona) {
     // The persona's own page may be with one of these characters: a standing fact, never cut first.
-    // Best-effort: a relationship that cannot be read never costs the chat its Slurp context.
-    try {
-      const page = await slurp.getSlurpAccountForEntity("persona", request.personaId!, "creator");
-      const { couples } = page ? await readSlurpCreatorTiesDocument(db) : { couples: [] };
-      for (const creator of creators) {
-        const line = slurpChatBridgeCoupleLine(page ? slurpCoupleOf(couples, creator.id, page.id) : null, {
-          her: creator.displayName,
-          herGender: creator.settings.profile.gender,
-          you: persona.displayName,
-          at: new Date(),
-        });
-        if (line) entries.push({ at: SLURP_STANDING_FACT_AT, line });
-      }
-    } catch {
-      // No relationship line this time.
+    for (const creator of creators) {
+      const line = slurpChatBridgeCoupleLine(page ? slurpCoupleOf(couples, creator.id, page.id) : null, {
+        her: creator.displayName,
+        herGender: creator.settings.profile.gender,
+        you: persona.displayName,
+        at: new Date(),
+      });
+      if (line) entries.push({ at: SLURP_STANDING.couple, line });
     }
     const messages = createSlurpMessagesStorage(db);
     const subscribed = new Set(
@@ -129,12 +159,18 @@ export async function buildSlurpChatContext(db: DB, request: SlurpChatContextReq
       if (subscribed.has(creator.id)) {
         // A standing fact rather than an event, so it is never cut first.
         entries.push({
-          at: SLURP_STANDING_FACT_AT,
+          at: SLURP_STANDING.subscription,
           line: `${persona.displayName} subscribes to ${creator.displayName} on Slurp.`,
         });
       }
       const thread = await messages.getThread(persona.id, creator.id);
+      await pushLedgerFacts(db, entries, creator, thread?.id ?? null, persona.displayName);
       if (!thread) continue;
+      const standing = slurpChatBridgeRapportLine(thread.rapport, {
+        her: creator.displayName,
+        you: persona.displayName,
+      });
+      if (standing) entries.push({ at: SLURP_STANDING.rapport, line: standing });
       const [threadMessages, commissions] = await Promise.all([
         messages.listMessages(thread.id, Math.max(settings.carryoverMaxItems, 10)),
         messages.listCommissionsForThread(thread.id, since, settings.carryoverMaxItems),
@@ -163,6 +199,34 @@ export async function buildSlurpChatContext(db: DB, request: SlurpChatContextReq
         });
       }
     }
+  } else {
+    for (const creator of creators) await pushLedgerFacts(db, entries, creator, null, null);
   }
   return buildSlurpChatContextBlock(entries, settings.carryoverMaxItems, request.wrapFormat ?? "xml");
+}
+
+/**
+ * What the ledger lets this chat read about one character. Without a thread only the character's
+ * own facts qualify; a thread adds what belongs to that player alone, marked as theirs.
+ */
+async function pushLedgerFacts(
+  db: DB,
+  entries: SlurpChatContextEntry[],
+  creator: { id: string; displayName: string },
+  threadId: string | null,
+  you: string | null,
+): Promise<void> {
+  const { facts } = await listSlurpContinuityFor(db, creator.id, "fan_thread", {
+    at: new Date(),
+    threadId,
+    limit: SLURP_CHAT_CONTEXT_FACTS,
+  }).catch(() => ({ facts: [] }));
+  for (const fact of facts) {
+    const label = SLURP_CONTINUITY_FACT_LABELS[fact.factType] ?? fact.factType;
+    const own = you && threadId && fact.threadId === threadId ? ` (with ${you})` : "";
+    entries.push({
+      at: SLURP_STANDING.ledger,
+      line: `${creator.displayName} remembers from Slurp — ${label}${own}: ${fact.text.replace(/\s+/gu, " ").trim()}`,
+    });
+  }
 }

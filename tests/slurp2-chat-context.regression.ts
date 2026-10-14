@@ -1,11 +1,20 @@
 /**
  * Slurp activity in ordinary Engine chats. It is opt-in per chat and per chat mode, it only speaks
- * about the characters in the chat, and what a fan pays for never travels into it.
+ * about the characters in the chat, and what a fan pays for never travels into it. Standing facts
+ * (story, love life, rapport, ledger) say where things stand, and survive a tight cap by rank.
  */
 import assert from "node:assert/strict";
 import { stripTypeScriptTypes } from "node:module";
 import { runInNewContext } from "node:vm";
 import { slurp2Source } from "./slurp2-source";
+import { slurpArcLifeLine } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-arc-progress.ts";
+import {
+  slurpChatBridgeCoupleLine,
+  slurpChatBridgeLoveLines,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-lines.ts";
+import { slurpCoupleOf } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples.ts";
+import { slurpChatBridgeRapportLine } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-rapport.ts";
+import { SLURP_CONTINUITY_FACT_LABELS } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/continuity/slp-continuity-prompt.ts";
 
 const source = slurp2Source(
   new URL("../packages/slurp2/src/engine/packages/server/src/services/slurp/slurp-chat-context.ts", import.meta.url),
@@ -18,11 +27,42 @@ const stale = hoursAgo(48);
 
 let carryoverModes = ["conversation"];
 let carryoverMaxItems = 20;
+const settings = { profile: { gender: "female" } };
 const creators = [
-  { id: "mari", displayName: "Mari Vale", sourceKind: "character", sourceEntityId: "char-mari" },
-  { id: "other", displayName: "Someone Else", sourceKind: "character", sourceEntityId: "char-other" },
-  { id: "self", displayName: "Player Creator", sourceKind: "persona", sourceEntityId: "char-mari" },
+  { id: "mari", displayName: "Mari Vale", sourceKind: "character", sourceEntityId: "char-mari", settings },
+  { id: "other", displayName: "Someone Else", sourceKind: "character", sourceEntityId: "char-other", settings },
+  { id: "self", displayName: "Player Creator", sourceKind: "persona", sourceEntityId: "char-mari", settings },
+  { id: "kai", displayName: "Kai Rowe", sourceKind: "character", sourceEntityId: "char-kai", settings },
 ];
+const couple = (id: string, aId: string, bId: string, stage: string) => ({
+  id,
+  aId,
+  bId,
+  origin: "world",
+  stage,
+  ending: null,
+  startedAt: older,
+  stageAt: older,
+  togetherAt: stage === "together" ? older : null,
+  troubles: 0,
+  reunions: 0,
+  moments: [],
+  told: [],
+  postIds: [],
+  page: null,
+});
+const couples = [couple("c1", "mari", "kai", "together"), couple("c2", "other", "kai", "dating")];
+const arc = {
+  title: "Moving to Lisbon",
+  status: "active",
+  intensity: "focus",
+  chapters: ["Packing the flat"],
+  chapter: 0,
+  choices: [],
+  history: [],
+  tone: "",
+};
+const ledgerReads: Array<{ creator: string; threadId: string | null }> = [];
 
 const { buildSlurpChatContext } = runInNewContext(
   `${stripTypeScriptTypes(source.replace(/^import[\s\S]*?;\n/gm, "").replace(/^\s*export /gm, ""))}
@@ -31,6 +71,34 @@ const { buildSlurpChatContext } = runInNewContext(
     wrapContent: (content: string, section: string, format: string) =>
       `<${section} format="${format}">\n${content}\n</${section}>`,
     sinceHoursIso: (hours: number) => hoursAgo(hours),
+    slurpArcLifeLine,
+    slurpChatBridgeCoupleLine,
+    slurpChatBridgeLoveLines,
+    slurpCoupleOf,
+    slurpChatBridgeRapportLine,
+    SLURP_CONTINUITY_FACT_LABELS,
+    readSlurpCreatorTiesDocument: async () => ({ couples }),
+    listSlurpContinuityFor: async (
+      _db: unknown,
+      creator: string,
+      surface: string,
+      context: { threadId: string | null },
+    ) => {
+      assert.equal(surface, "fan_thread", "the ledger is read through its privacy rules for one fan");
+      ledgerReads.push({ creator, threadId: context.threadId });
+      return {
+        facts:
+          creator === "mari"
+            ? [
+                { factType: "plan", text: "Wants  to open a café", threadId: null },
+                ...(context.threadId
+                  ? [{ factType: "relationship", text: "A scene with this fan: dinner", threadId: context.threadId }]
+                  : []),
+              ]
+            : [],
+        events: [],
+      };
+    },
     createSlurpStorage: () => ({
       getSettings: async () => ({ carryoverModes, carryoverHours: 24, carryoverMaxItems }),
       listNoodlerAccounts: async () => creators,
@@ -48,11 +116,15 @@ const { buildSlurpChatContext } = runInNewContext(
           ]),
         ),
       getViewer: async (id: string) => ({ id, displayName: "Alex" }),
+      getSlurpAccountForEntity: async () => null,
+      listProjects: async (id: string) => (id === "mari" ? [arc] : []),
       listSubscriptionsForViewer: async () => [{ creatorAccountId: "mari" }],
     }),
     createSlurpMessagesStorage: () => ({
       getThread: async (viewer: string, creator: string) =>
-        creator === "mari" ? { id: `${viewer}:${creator}` } : null,
+        creator === "mari"
+          ? { id: `${viewer}:${creator}`, rapport: { score: 40, tier: "regular", contributions: [] } }
+          : null,
       listMessages: async () => [
         {
           role: "viewer",
@@ -125,12 +197,25 @@ async function main() {
   assert.doesNotMatch(block, /STALE/u, "activity older than the look-back window stays out");
   assert.doesNotMatch(block, /Someone Else|Player Creator|POST BY/u, "only the chat's character Creators count");
   assert.ok(block.indexOf("Loved the beach set") < block.indexOf("tipped"), "entries render oldest first");
+  assert.match(block, /Mari Vale's ongoing story on Slurp: Moving to Lisbon \(Packing the flat\)\./u);
+  assert.match(block, /Mari Vale is together with Kai Rowe on Slurp\./u, "her love life with other Creators");
+  assert.doesNotMatch(block, /Someone Else is dating/u, "couples without the chat's character stay out");
+  assert.match(block, /Alex is one of Mari Vale's regulars on Slurp\./u);
+  assert.doesNotMatch(block, /40\/100|\b40\b(?! coins)/u, "the rapport score is never shown");
+  assert.match(block, /Mari Vale remembers from Slurp — Plan: Wants to open a café/u);
+  assert.match(block, /Mari Vale remembers from Slurp — Relationship \(with Alex\): A scene with this fan: dinner/u);
+  assert.deepEqual(ledgerReads.at(-1), { creator: "mari", threadId: "persona-alex:mari" });
+
+  const noPersona: string = await buildSlurpChatContext({}, { ...request, personaId: null });
+  assert.match(noPersona, /Plan: Wants to open a café/u, "without a persona the character's own facts remain");
+  assert.doesNotMatch(noPersona, /with Alex|scene with this fan/u, "no thread, no fan-private facts");
 
   carryoverMaxItems = 2;
   const capped: string = await buildSlurpChatContext({}, { ...request, wrapFormat: "markdown" });
   assert.match(capped, /format="markdown"/u);
   assert.equal(capped.split("\n").filter((line) => line.startsWith("- ")).length, 2);
   assert.match(capped, /subscribes to/u, "a standing subscription is not cut before events");
+  assert.match(capped, /regulars/u, "rapport outranks story and ledger lines under a tight cap");
 
   carryoverModes = [];
   assert.equal(await buildSlurpChatContext({}, request), null);
