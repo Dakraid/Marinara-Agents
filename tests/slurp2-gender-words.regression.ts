@@ -20,6 +20,7 @@ import {
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-drama-packs.ts";
 import { slurpSpiceAngle } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/creators/slp-spice.ts";
 import { slurpImageSexWord } from "../packages/slurp2/src/engine/packages/server/src/slp/base/media/slp-image-prompt.ts";
+import { slurpStageProfileInput } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/creators/improvement/slp-improvement.ts";
 import { slurpPartnerWord } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-lines.ts";
 
 // --- Words -----------------------------------------------------------------------------------
@@ -79,5 +80,34 @@ assert.equal(slurpImageSexWord("A tall woman with red hair.", "female"), "A tall
 assert.equal(slurpImageSexWord("Femboy, pastel hair.", "male"), "Femboy, pastel hair.", "a look that says it stays");
 assert.equal(slurpImageSexWord("Short black hair.", "other"), "Short black hair.");
 assert.equal(slurpImageSexWord("", "male"), "", "no look: nothing to add to");
+assert.equal(
+  slurpImageSexWord("Translucent skin, transparent shirt.", "male"),
+  "Male. Translucent skin, transparent shirt.",
+  "trans- words that are not a sex keep the prefix",
+);
+assert.equal(slurpImageSexWord("Trans woman, red hair.", "female"), "Trans woman, red hair.");
+assert.equal(slurpImageSexWord("Appearance: short hair.", "male"), "Male. short hair.", "the label is not left behind");
+
+// --- Backstage improvement keeps the stage facts ------------------------------------------------
+const input = slurpStageProfileInput({
+  id: "c",
+  displayName: "Kai",
+  handle: "kai",
+  bio: "",
+  stagePersonality: "",
+  gender: "male",
+  tags: [],
+  disclosureMode: "hinted",
+  autoPosting: { enabled: true },
+  appearance: "Short hair.",
+  wardrobe: "Suits.",
+  locations: "Berlin.",
+  clothingStyle: "feminine",
+});
+assert.deepEqual(
+  [input.appearance, input.wardrobe, input.locations, input.clothingStyle],
+  ["Short hair.", "Suits.", "Berlin.", "feminine"],
+  "an apply or rollback writes the stage facts back, not an empty stage",
+);
 
 console.log("slurp2 gender words: ok");

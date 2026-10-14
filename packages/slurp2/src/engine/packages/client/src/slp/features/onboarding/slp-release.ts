@@ -783,16 +783,6 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
       "Creators reply to new messages within the hour.",
     ],
   },
-  {
-    version: "0.2.3",
-    date: "2026-09-21",
-    notes: ["New Deep details in every post's menu: see the plan and everything behind a post."],
-  },
-  {
-    version: "0.2.2",
-    date: "2026-09-21",
-    notes: ["Every persona now sees every Creator."],
-  },
 ];
 
 /** Everything newer than the acknowledged version. */

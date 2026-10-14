@@ -699,7 +699,7 @@ export const SLURP_BUILTIN_DRAMAS: readonly SlpDrama[] = [
           {
             role: "her",
             channel: "post",
-            heat: { line: "my favourite {you-boy} did exactly as {you-he} was told.", for: "you" },
+            heat: { line: "my favourite {you-boy} did exactly as told.", for: "you" },
           },
           {
             role: "her",

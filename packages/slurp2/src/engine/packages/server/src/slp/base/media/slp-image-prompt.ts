@@ -101,7 +101,7 @@ function withoutClothes(sentence: string): string {
 
 /** Words that already say who is drawn; the look then needs no "Male." or "Female." of its own. */
 const SEX_WORD =
-  /\b(?:male|female|man|woman|men|women|boy|girl|guy|lady|gentleman|femboy|tomboy|futa\w*|trans\w*|androgynous|non-binary|nonbinary|enby|1girl|1boy|he|she|his|her|him)\b/iu;
+  /\b(?:male|female|man|woman|men|women|boy|girl|guy|lady|gentleman|femboy|tomboy|futa\w*|trans(?:gender|woman|man|girl|guy)?|androgynous|non-binary|nonbinary|enby|1girl|1boy|he|she|his|her|him)\b/iu;
 
 /**
  * "Male." or "Female." in front of a look that does not say it (user, 2026-10-14): without it an
@@ -110,7 +110,8 @@ const SEX_WORD =
  */
 export function slurpImageSexWord(appearance: string, gender: string | null | undefined): string {
   if (!appearance.trim() || (gender !== "male" && gender !== "female") || SEX_WORD.test(appearance)) return appearance;
-  return `${gender === "male" ? "Male" : "Female"}. ${appearance}`;
+  // The label goes first, or "Male. Appearance: …" keeps a label stripAppearanceLabel cannot reach.
+  return `${gender === "male" ? "Male" : "Female"}. ${stripAppearanceLabel(appearance)}`;
 }
 
 export function slurpImageLook(appearance: string): string {

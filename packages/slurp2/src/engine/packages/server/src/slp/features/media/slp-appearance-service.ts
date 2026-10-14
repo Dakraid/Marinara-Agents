@@ -42,10 +42,12 @@ export async function resolveImageAppearance(input: {
   const key = `${input.account.id}:${input.regenerate === true}`;
   const inFlight = appearanceFlights.get(key);
   if (inFlight) return inFlight;
-  const flight = resolveImageAppearanceOnce(input);
+  const flight = resolveImageAppearanceOnce(input).then((text) =>
+    slurpImageSexWord(text, slpAccountGender(input.account)),
+  );
   appearanceFlights.set(key, flight);
   try {
-    return slurpImageSexWord(await flight, slpAccountGender(input.account));
+    return await flight;
   } finally {
     if (appearanceFlights.get(key) === flight) appearanceFlights.delete(key);
   }
