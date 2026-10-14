@@ -15,6 +15,7 @@
  */
 import type { DB } from "../../../db/connection.js";
 import { wrapContent } from "../../../services/prompt/format-engine.js";
+import { createChatsStorage } from "../../../services/storage/chats.storage.js";
 import { createSlurpMessagesStorage } from "../../data/slp-storage.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { sinceHoursIso } from "../../modules/creators/slp-public-support.js";
@@ -83,6 +84,51 @@ export function buildSlurpChatContextBlock(
     SLURP_CHAT_CONTEXT_SECTION,
     wrapFormat,
   );
+}
+
+const readJson = (value: unknown): unknown => {
+  if (typeof value !== "string") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * How far carryover reaches: of the Engine chats in a carryover mode that include one of these
+ * characters, how many have "Include Slurp activity" on. The second switch lives in each chat, so
+ * Settings counts it rather than leaving the player to guess why nothing arrives.
+ */
+export function slurpCarryoverReach(
+  chats: readonly { mode: string; characterIds: unknown; metadata: unknown }[],
+  characterIds: ReadonlySet<string>,
+  modes: readonly string[],
+): { on: number; off: number } {
+  let on = 0;
+  let off = 0;
+  for (const chat of chats) {
+    if (!modes.includes(chat.mode)) continue;
+    const ids = readJson(chat.characterIds);
+    if (!Array.isArray(ids) || !ids.some((id) => typeof id === "string" && characterIds.has(id))) continue;
+    const metadata = readJson(chat.metadata) as { slurp2ActivityContextEnabled?: unknown } | null;
+    if (metadata?.slurp2ActivityContextEnabled === true) on += 1;
+    else off += 1;
+  }
+  return { on, off };
+}
+
+/** `slurpCarryoverReach` over every chat and every character-made Creator. */
+export async function readSlurpCarryoverReach(db: DB): Promise<{ on: number; off: number }> {
+  const slurp = createSlurpStorage(db);
+  const settings = await slurp.getSettings();
+  const characterIds = new Set(
+    (await slurp.listNoodlerAccounts({ includeHidden: true }))
+      .filter((account) => account.sourceKind === "character")
+      .map((account) => account.sourceEntityId),
+  );
+  if (characterIds.size === 0 || settings.carryoverModes.length === 0) return { on: 0, off: 0 };
+  return slurpCarryoverReach(await createChatsStorage(db).list(), characterIds, settings.carryoverModes);
 }
 
 export async function buildSlurpChatContext(db: DB, request: SlurpChatContextRequest): Promise<string | null> {

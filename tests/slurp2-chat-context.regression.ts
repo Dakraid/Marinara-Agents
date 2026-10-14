@@ -64,9 +64,9 @@ const arc = {
 };
 const ledgerReads: Array<{ creator: string; threadId: string | null }> = [];
 
-const { buildSlurpChatContext } = runInNewContext(
+const { buildSlurpChatContext, slurpCarryoverReach } = runInNewContext(
   `${stripTypeScriptTypes(source.replace(/^import[\s\S]*?;\n/gm, "").replace(/^\s*export /gm, ""))}
-  ({ buildSlurpChatContext });`,
+  ({ buildSlurpChatContext, slurpCarryoverReach });`,
   {
     wrapContent: (content: string, section: string, format: string) =>
       `<${section} format="${format}">\n${content}\n</${section}>`,
@@ -219,6 +219,20 @@ async function main() {
 
   carryoverModes = [];
   assert.equal(await buildSlurpChatContext({}, request), null);
+
+  // Settings counts the second switch: chats in a carryover mode with a Creator's character.
+  const reach = slurpCarryoverReach(
+    [
+      { mode: "conversation", characterIds: '["char-mari"]', metadata: '{"slurp2ActivityContextEnabled":true}' },
+      { mode: "conversation", characterIds: '["char-mari","char-x"]', metadata: "{}" },
+      { mode: "roleplay", characterIds: '["char-mari"]', metadata: '{"slurp2ActivityContextEnabled":true}' },
+      { mode: "conversation", characterIds: '["char-x"]', metadata: '{"slurp2ActivityContextEnabled":true}' },
+      { mode: "conversation", characterIds: "not json", metadata: null },
+    ],
+    new Set(["char-mari"]),
+    ["conversation"],
+  );
+  assert.equal(`${reach.on}/${reach.off}`, "1/1", "only chats in a chosen mode with a Creator count");
   console.log("slurp2 chat context regression passed");
 }
 
