@@ -51,11 +51,12 @@ export function SlpCanvasAmbient() {
     // Measure just after a frame is painted, when layout is clean: from a bare timer the rects forced
     // an extra layout while a screen was still mounting (177 ms of a 4x-throttled open, 0.3.41).
     let pending = 0;
+    let lookTimer: number | undefined;
     const lookAfterPaint = () => {
       if (pending) return;
       pending = requestAnimationFrame(() => {
         pending = 0;
-        setTimeout(look, 0);
+        lookTimer = window.setTimeout(look, 0);
       });
     };
     lookAfterPaint();
@@ -65,6 +66,7 @@ export function SlpCanvasAmbient() {
     return () => {
       window.clearInterval(timer);
       cancelAnimationFrame(pending);
+      window.clearTimeout(lookTimer);
       frame.removeEventListener("scroll", onScroll, { capture: true });
     };
   }, []);
