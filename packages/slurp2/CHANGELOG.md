@@ -2,13 +2,13 @@
 
 ## 0.3.42 — 2026-10-15
 
-- Added: Engine chats with "Carryover to chats" on now also learn where things stand on Slurp: the character's current storyline, who they are dating or together with, how they know you (regular, favourite fan…), and the facts their Slurp memory allows a chat with you to read, such as a scene you played together. These standing facts outrank single events when the item limit is tight.
-- Added: Settings → Carryover to chats shows in how many chats with your Creators "Include Slurp activity" is turned on, and how to add the others. That switch lives in each chat's settings.
-- Fixed: a roleplay scene started from a DM runs on the same connection Slurp used to plan it. Before, the scene used Slurp's raw connection setting, which is often empty; the Engine then fell back to its plain default connection, and when that was unset the scene's first reply had no connection.
-- Fixed: when the scene plan comes back in a shape Slurp cannot read, Slurp asks once more by itself before it shows "The scene plan got lost".
-- Fixed: "Start the scene" shows an error instead of doing nothing when the Engine has not connected its scene host.
-- Fixed: lorebook entries set to "At Depth" reach Slurp DMs and posts. Slurp has no chat depth to put them at, so it dropped them without a word; they now come after the other entries.
-- Added: a message's Deep details has a "Lore" section: the lorebook entries the reply used, the ones that matched but had no room, or a note that Lorebook context is off in Settings.
+- Added: chats with "Carryover to chats" on also learn the character's Slurp storyline, love life, how well they know you, and the Slurp memories a chat with you may read.
+- Added: Carryover settings show in how many chats with your Creators "Include Slurp activity" is on.
+- Fixed: a scene started from a DM runs on the connection Slurp planned it with, not the Engine's plain default.
+- Fixed: an unreadable scene plan is asked for once more before "The scene plan got lost" shows.
+- Fixed: "Start the scene" shows an error when the Engine's scene host is missing.
+- Fixed: lorebook entries set to "At Depth" reach Slurp DMs and posts.
+- Added: Deep details has a "Lore" section with the entries a reply used or had no room for.
 
 ## 0.3.41 — 2026-10-14
 
