@@ -258,7 +258,7 @@ export const SLURP_BUILTIN_DRAMAS: readonly SlpDrama[] = [
         ],
       },
     ],
-    exit: { role: "her", channel: "dm", to: "you", seed: "tells you you are still her favourite" },
+    exit: { role: "her", channel: "dm", to: "you", seed: "tells you you are still {her:his} favourite" },
   }),
   drama({
     id: "friends-to-lovers",
@@ -710,6 +710,6 @@ export const SLURP_BUILTIN_DRAMAS: readonly SlpDrama[] = [
         ],
       },
     ],
-    exit: { role: "her", channel: "dm", to: "you", seed: "says she will call on you again" },
+    exit: { role: "her", channel: "dm", to: "you", seed: "says {her:he} will call on you again" },
   }),
 ];

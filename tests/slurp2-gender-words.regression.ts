@@ -49,9 +49,13 @@ assert.equal(
 );
 assert.equal(slpDramaText("{her:he} and {him:he}", { ...names }), "he and {him:he}", "an uncast role keeps its token");
 assert.equal(slpDramaText("{her:he}", { her: "Mia", ...slpDramaRoleWords("her", { gender: null }) }), "they");
-// No fixed "she" or "her" left in pack text: a man can play the lead.
-const packText = JSON.stringify([...SLURP_BUILTIN_DRAMAS, ...SLURP_BUILTIN_SITUATIONS]).replace(/\{[^}]*\}/gu, "");
-const keyFree = packText.replace(/"(?:key|role|on|to|next|between)":"[^"]*"|"between":\[[^\]]*\]/gu, "");
+// No fixed "she" or "her" left in pack text: a man can play the lead. Strip only {role:word} tokens; a
+// greedy {…} strip would also eat whole JSON objects and hide their text.
+const packText = JSON.stringify([...SLURP_BUILTIN_DRAMAS, ...SLURP_BUILTIN_SITUATIONS]).replace(
+  /\{[a-z][a-z0-9-]*(?::[A-Za-z]+)?\}/gu,
+  "",
+);
+const keyFree = packText.replace(/"(?:id|key|role|on|to|next|between)":"[^"]*"|"between":\[[^\]]*\]/gu, "");
 assert.doesNotMatch(keyFree, /\b(?:she|her|herself|she's)\b/iu, "pack text uses {role:he} tokens, not she/her");
 
 // --- Spice: lingerie follows the clothing style ----------------------------------------------
