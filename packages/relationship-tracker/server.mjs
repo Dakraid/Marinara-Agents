@@ -205,6 +205,7 @@ export async function activate(context) {
     activeService = null;
     activePromptContributor = null;
     activity.clear();
+    historyUpdates.dispose();
     for (const release of releases.reverse()) await release();
   };
 }

@@ -28,6 +28,7 @@ export const HISTORY_MODEL_TIMEOUT_MS = 120_000;
 export const HISTORY_REVIEW_TTL_MS = 30 * 60_000;
 export const MAX_HISTORY_REVIEW_RESPONSE_LENGTH = 20_000;
 export const MAX_HISTORY_REVIEW_CHANGES = 100;
+export const MAX_HISTORY_REVIEWS = 20;
 
 const REQUEST_KEYS = ["messageCount"];
 const REVIEW_REQUEST_KEYS = ["reviewId", "changes"];
@@ -386,16 +387,23 @@ export function createHistoryUpdateService(repository, runtime, activity, {
     throw new Error("History updates require Marinara chat, agent-configuration, model, and JSON runtime APIs.");
   }
   const activeChats = new Set();
-  // One review per chat, in memory: it lasts until it expires, the next History run, or a restart.
+  // One review per chat, in memory only, holding chat text. It is released once everything in it is saved, when it
+  // expires, on the chat's next History run, or when the package stops; at most MAX_HISTORY_REVIEWS are kept.
   const reviews = new Map();
+
+  function dropReview(chatId) {
+    const review = reviews.get(chatId);
+    if (!review) return;
+    clearTimeout(review.timer);
+    reviews.delete(chatId);
+  }
 
   // Keeps what the run checked against so the user's fixed changes are held to the same rules, then rejects the run.
   function rejectForReview(chatId, run, raw, parsed, message, options) {
-    const now = Date.now();
-    for (const [key, entry] of reviews) if (entry.expiresAt <= now) reviews.delete(key);
+    dropReview(chatId);
     const review = {
       id: newReviewId(),
-      expiresAt: now + reviewTtlMs,
+      expiresAt: Date.now() + reviewTtlMs,
       messageCount: run.messageCount,
       processedMessageCount: run.processedMessageCount,
       evidenceText: run.evidenceText,
@@ -405,13 +413,24 @@ export function createHistoryUpdateService(repository, runtime, activity, {
       personaStateRevision: run.personaSnapshot?.stateRevision ?? null,
       modelResponse: raw.length > MAX_HISTORY_REVIEW_RESPONSE_LENGTH ? `${raw.slice(0, MAX_HISTORY_REVIEW_RESPONSE_LENGTH)}…` : raw,
       savedKinds: new Set(),
+      pendingKinds: new Set(),
+      timer: null,
     };
-    reviews.set(chatId, review);
     const changes = checkReviewChanges(modelReviewChanges(parsed, review), {
       review,
       existingRelationships: run.snapshot.state.relationships,
       personaSnapshot: run.personaSnapshot,
     }, { dropUnchanged: true });
+    review.pendingKinds = new Set(changes.map((change) => change.kind));
+    // With nothing to save, the panel only needs the answer it is sent now, so no chat text is kept.
+    if (review.pendingKinds.size > 0) {
+      while (reviews.size >= MAX_HISTORY_REVIEWS) dropReview(reviews.keys().next().value);
+      review.timer = setTimeout(() => {
+        if (reviews.get(chatId) === review) reviews.delete(chatId);
+      }, reviewTtlMs);
+      review.timer.unref?.();
+      reviews.set(chatId, review);
+    }
     fail(message, { ...options, review: reviewPayload(review, changes) });
   }
 
@@ -423,7 +442,7 @@ export function createHistoryUpdateService(repository, runtime, activity, {
         statusCode: 409,
       });
       activeChats.add(chatId);
-      reviews.delete(chatId);
+      dropReview(chatId);
       let token;
       try {
         token = activity?.begin?.(chatId, "history");
@@ -603,13 +622,14 @@ export function createHistoryUpdateService(repository, runtime, activity, {
       try {
         const review = reviews.get(chatId);
         if (!review || review.id !== reviewId || review.expiresAt <= Date.now()) {
-          if (review?.expiresAt <= Date.now()) reviews.delete(chatId);
+          if (review?.expiresAt <= Date.now()) dropReview(chatId);
           fail("These suggested changes are no longer available. Run Update from History again.", {
             code: "history_review_expired",
             statusCode: 409,
           });
         }
         if (review.savedKinds.has(kind)) fail("These changes were already saved.", { code: "history_review_saved", statusCode: 409 });
+        if (!review.pendingKinds.has(kind)) fail("This History run suggested no changes of that kind.", { code: "history_review_invalid", statusCode: 400 });
         if (kind === "persona" && (!review.persona || !personaRepository)) {
           fail("This History run had no active persona to save perceptions for.", { code: "history_review_invalid", statusCode: 400 });
         }
@@ -621,7 +641,7 @@ export function createHistoryUpdateService(repository, runtime, activity, {
           ? snapshot.stateRevision === review.stateRevision
           : personaSnapshot?.persona?.id === review.persona.id && (personaSnapshot.stateRevision ?? null) === review.personaStateRevision);
         if (!current) {
-          reviews.delete(chatId);
+          dropReview(chatId);
           fail("The characters or relationships changed after this History run. Run Update from History again.", {
             code: "history_review_stale",
             statusCode: 409,
@@ -667,7 +687,7 @@ export function createHistoryUpdateService(repository, runtime, activity, {
             });
           }
           if (error instanceof RelationshipStateError && (error.code === "relationship_state_stale" || error.code === "persona_state_stale")) {
-            reviews.delete(chatId);
+            dropReview(chatId);
             fail("The relationships changed while you were reviewing. Run Update from History again.", {
               code: "history_state_changed",
               statusCode: 409,
@@ -676,6 +696,9 @@ export function createHistoryUpdateService(repository, runtime, activity, {
           throw error;
         }
         review.savedKinds.add(kind);
+        review.pendingKinds.delete(kind);
+        // Nothing left to save: release the chat text now instead of at expiry.
+        if (review.pendingKinds.size === 0) dropReview(chatId);
         return {
           schemaVersion: 1,
           chatId,
@@ -686,6 +709,11 @@ export function createHistoryUpdateService(repository, runtime, activity, {
       } finally {
         activeChats.delete(chatId);
       }
+    },
+
+    // Releases every kept review when the package stops.
+    dispose() {
+      for (const chatId of [...reviews.keys()]) dropReview(chatId);
     },
   });
 }

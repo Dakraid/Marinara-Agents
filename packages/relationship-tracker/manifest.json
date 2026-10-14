@@ -38,8 +38,8 @@
     },
     {
       "path": "server.mjs",
-      "sha256": "88942ae0f8ebeb859d947c01bcbc59e9a882b7843d29861d6c7d3f7b460fa02f",
-      "bytes": 12615
+      "sha256": "c73cb24e40b621c68d87c9cd0ac16ef453bf2da98425a281a4be6c0d710ae684",
+      "bytes": 12645
     },
     {
       "path": "state.mjs",
@@ -63,8 +63,8 @@
     },
     {
       "path": "history.mjs",
-      "sha256": "46a63a73969b52001d2d07409729d02f80126b897e28f092b9787e476e275663",
-      "bytes": 36474
+      "sha256": "703668068763f9be3a6405f8829957ab98e6ffb3e32d8f9496f64868a4273c3e",
+      "bytes": 37720
     },
     {
       "path": "persona-state.mjs",
