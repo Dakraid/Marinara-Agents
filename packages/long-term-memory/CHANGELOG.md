@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 1.4.36 — 2026-10-14
+
+- Fix glued-together sentences and raw server errors in the Long-Term Memory screens. The Review summary after Apply or Discard now reads as separate complete sentences with correct spacing and punctuation, for example "Applied 2 mutations; 1 failed. 1 blocked before Apply.", instead of fragments run together. The Debug separators between metadata parts and the "chunk" label now come from the locale, so a translation can change them. When a request fails with only an HTTP status such as "Not Found" and no message from the server, the screens show their own localized message instead of the raw status text; a message the server does send is still shown as before. Recall, extraction and storage are unchanged.
+
 ## 1.4.34 — 2026-10-14
 
 - Long-Term Memory now uses only styles the app already provides, so its screens look the same in the app as they were designed. Sources → Manage source no longer shows the imported-source preview under the workbench, the Review and Sources action bars sit inline on wide screens, selected Review rows and Vault notes are highlighted, tab focus rings use the editor focus colour, info popovers keep their size, and checkboxes are one size in Vault, Sources and Review. Screen readers now announce the Vault place lists as single-choice, and the arrow keys move between places.

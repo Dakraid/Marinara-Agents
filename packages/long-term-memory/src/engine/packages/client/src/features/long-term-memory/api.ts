@@ -117,6 +117,31 @@ export function requestRaw(path: string, init: RequestInit = {}): Promise<Respon
   });
 }
 
+// Errors that carry no text meant for the user: an HTTP status line, or a detail raised by the client itself.
+// `errorMessage` shows the caller's localized fallback for them instead of the raw text.
+export function withoutUserMessage<T extends Error>(error: T): T {
+  return Object.assign(error, { noUserMessage: true });
+}
+
+export function errorMessage(error: unknown, fallback: string) {
+  if (!(error instanceof Error) || !error.message) return fallback;
+  return (error as { noUserMessage?: boolean }).noUserMessage ? fallback : error.message;
+}
+
+// The error for an unsuccessful response, for `request` and for callers that read the raw `Response` themselves.
+export async function failedResponseError(response: Response): Promise<Error> {
+  const payload = (await response.json().catch(() => null)) as {
+    error?: unknown;
+    code?: unknown;
+  } | null;
+  const serverMessage = typeof payload?.error === "string" ? payload.error : "";
+  const error = new Error(serverMessage || response.statusText || "Long-Term Memory request failed");
+  Object.assign(error, { status: response.status });
+  if (!serverMessage) withoutUserMessage(error);
+  if (typeof payload?.code === "string") Object.assign(error, { code: payload.code });
+  return error;
+}
+
 export async function request<TResponse, TBody = unknown>(
   path: string,
   method = "GET",
@@ -133,17 +158,7 @@ export async function request<TResponse, TBody = unknown>(
     signal,
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as {
-      error?: unknown;
-      code?: unknown;
-    } | null;
-    const message = typeof payload?.error === "string" ? payload.error : response.statusText;
-    const error = new Error(message || "Long-Term Memory request failed");
-    Object.assign(error, { status: response.status });
-    if (typeof payload?.code === "string") Object.assign(error, { code: payload.code });
-    throw error;
-  }
+  if (!response.ok) throw await failedResponseError(response);
   return response.json() as Promise<TResponse>;
 }
 
@@ -156,8 +171,9 @@ export async function requestHost<TResponse>(path: string): Promise<TResponse> {
     const payload = (await response.json().catch(() => null)) as {
       error?: unknown;
     } | null;
-    const message = typeof payload?.error === "string" ? payload.error : response.statusText;
-    throw new Error(message || "Marinara request failed");
+    const serverMessage = typeof payload?.error === "string" ? payload.error : "";
+    const error = new Error(serverMessage || response.statusText || "Marinara request failed");
+    throw serverMessage ? error : withoutUserMessage(error);
   }
   return response.json() as Promise<TResponse>;
 }
@@ -170,7 +186,7 @@ export async function requestAllNotes<T>(path: string): Promise<T[]> {
     if (page.length < 500) return notes;
   }
   const overflow = await request<T[]>(`${path}${path.includes("?") ? "&" : "?"}limit=500&offset=100000`);
-  if (overflow.length) throw new Error("Long-Term Memory note limit exceeded (100,000 notes)");
+  if (overflow.length) throw withoutUserMessage(new Error("Long-Term Memory note limit exceeded (100,000 notes)"));
   return notes;
 }
 
@@ -191,8 +207,10 @@ export async function requestNotesByIds<T extends { id: string }>(
   }
   const missingIds = requestedIds.filter((id) => !notesById.has(id));
   if (missingIds.length && !allowMissing)
-    throw new Error(
-      `Long-Term Memory context unavailable for ${missingIds.length} note${missingIds.length === 1 ? "" : "s"}.`,
+    throw withoutUserMessage(
+      new Error(
+        `Long-Term Memory context unavailable for ${missingIds.length} note${missingIds.length === 1 ? "" : "s"}.`,
+      ),
     );
   return requestedIds.flatMap((id) => {
     const note = notesById.get(id);
