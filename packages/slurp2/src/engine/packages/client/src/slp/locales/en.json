@@ -6004,7 +6004,7 @@
   "ui.slurp.settings.creators.imageName": "The image model knows this character",
   "ui.slurp.settings.creators.imageNameDetail": "Puts their card name in every picture prompt, after the style tags and in front of their look (as a tag for tag models), so a model that learned them draws the real character. Turn it off for an original character, or when their Appearance already has their tag under another spelling.",
   "ui.slurp.settings.creators.imagePrefix": "Always in their pictures",
-  "ui.slurp.settings.creators.imagePrefixDetail": "Words that open their part of every picture prompt, after the style tags. Use it for a character the image model knows under a franchise name. When set, it replaces the card name.",
+  "ui.slurp.settings.creators.imagePrefixDetail": "Words that open their part of every picture prompt, after the style tags. Use it for a character the image model knows under a franchise name. When set, it replaces the card name. Only an Open Creator uses it, so a Hinted or Secret identity stays hidden.",
   "ui.slurp.settings.creators.imagePrefixPlaceholder": "For example: Asuka Langley Soryu from Neon Genesis Evangelion",
   "ui.slurp.people.title": "People",
   "ui.slurp.people.detail": "Who is what to whom, and why",

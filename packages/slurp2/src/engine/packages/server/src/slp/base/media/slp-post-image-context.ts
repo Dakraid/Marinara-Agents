@@ -62,8 +62,8 @@ export async function slurpImageCaptioning(
     ),
   );
   const instructions = prompt.trim() || SLURP_IMAGE_CAPTION_PROMPT;
-  // The Engine's caption helper swallows provider errors, so a refusal is only visible here. Its system
-  // message is the Engine's chat default on every Engine version, so Slurp's instructions replace it here.
+  // The Engine's caption helper swallows provider errors, so a refusal is only visible here. Older Engines
+  // hardcode its one system message (the chat default), so Slurp's instructions replace it here.
   const guardedProvider = Object.assign(Object.create(provider) as typeof provider, {
     chatComplete: async (...[messages, ...rest]: Parameters<typeof provider.chatComplete>) => {
       try {

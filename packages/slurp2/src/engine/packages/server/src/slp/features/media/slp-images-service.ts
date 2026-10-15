@@ -619,8 +619,8 @@ async function generateCreatorPostImageRun(
     lookMode,
     usedRewrite,
   );
-  // The name, or the player's own words for it where names may show, leads the look; a human-approved prompt stays as written.
-  const ownWords = !input.suppressCreatorDetails && !input.suppressCharacterContext;
+  // The name, or the player's own words for it, leads the look only for an open identity; a reviewed prompt stays as written.
+  const ownWords = !input.suppressCreatorDetails && !input.suppressCharacterContext && input.disclosureMode === "open";
   const imagePrefix = (ownWords && input.settings.creatorImagePrefixes?.[input.account.id]?.trim()) || "";
   const namedLook = skipInterpretation
     ? finalPromptLook

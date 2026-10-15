@@ -59,7 +59,10 @@ for (const path of [
 const images = read("server/src/slp/features/media/slp-images-service.ts");
 assert.match(images, /input\.settings\.creatorImagePrefixes\?\.\[input\.account\.id\]/u);
 // A commission shows the player, a banner shows no one: the prefix stays out like the name does.
-assert.match(images, /const ownWords = !input\.suppressCreatorDetails && !input\.suppressCharacterContext;/u);
+assert.match(
+  images,
+  /const ownWords =\s*!input\.suppressCreatorDetails &&\s*!input\.suppressCharacterContext &&\s*input\.disclosureMode === "open";/u,
+);
 assert.match(images, /\(ownWords && input\.settings\.creatorImagePrefixes/u);
 assert.match(images, /slurpApplyImageSubject\(finalPromptLook, imagePrefix \|\| subjectName, promptFamily\)/u);
 
