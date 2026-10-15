@@ -1,5 +1,20 @@
 # Slurp release notes
 
+## 0.3.43 — 2026-10-15
+
+- Fixed: a long DM reply is no longer cut at about 900 characters in the middle of a word. Replies keep up to 2400 characters, and a cut ends at a sentence or a word.
+- Fixed: a Creator who quotes a commission in a DM uses their own usual price and price range.
+- Fixed: Cancel on a subscription to a Creator who no longer exists ends it at once, so it stops showing in the wallet.
+- Fixed: fans comment on what a post's picture shows, not on its art style or rendering.
+- Fixed: post drift. A tip on a Creator's profile or in a DM no longer teaches the spice taste a guessed post kind; only a post's own kind and the player's words do. A post kind used recently is damped harder, and earlier beat notes read as already posted. Spice level and clothing style still decide how much skin a post shows.
+- Fixed: many Creators posting the same thing on one evening (all showers). The player's taste is shared by every Creator, so one strong taste reached all of them at once. A spicy kind or taste that other Creators already posted in the last day now steps aside for this Creator; a Creator with it in their turn-ons still leans in. The "Other Creators posted about these" list now also sees posts that are written but not yet up. How spicy a post is does not change.
+- Changed: two Creators whose cards say they are family ("her sister Mara", "Mara is Ava's stepsister") are never set up as a couple on their own. Cards that say the two are lovers still make them one, and the player can set them up in Stir anyway; that couple is marked "taboo". A family word elsewhere in a sentence ("met Mara at her brother's wedding") does not count.
+- Changed: the "not polyamorous" message in Stir says to set Relationships to Polyamorous in Stir for each Creator, and the Stir Creator sheet now has that switch.
+- Fixed: work mode no longer blurs the coin and G's face; only real pictures and videos blur.
+- Fixed: a Couples page is no longer flagged as a missing source.
+- Fixed: the sign-up scene names the connection it could not reach and says what to do. A dropped line on a working connection is not reported as "start that model".
+- Fixed: only one feed publish pass runs at a time, and post spacing is read on the page that gets the post, so a scheduled post cannot go up twice and partners cannot fill a shared page at once. A shared-page post that comes too soon after the partner's waits its turn and keeps its picture.
+
 ## 0.3.42 — 2026-10-15
 
 - Added: chats with "Carryover to chats" on also learn the character's Slurp storyline, love life, how well they know you, and the Slurp memories a chat with you may read.

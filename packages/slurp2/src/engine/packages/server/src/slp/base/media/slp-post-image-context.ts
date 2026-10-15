@@ -83,7 +83,8 @@ function imageSource(post: SlurpImageContextPost): string {
  * anime illustration", so fans started reviewing the art style (#38). In the world a picture is a
  * photo of the Creator; the label says so once per picture.
  */
-const PICTURE_SEEN = "an ordinary photo in this world: react to what it shows, never to art style, drawing, rendering or picture quality";
+const PICTURE_SEEN =
+  "an ordinary photo in this world: react to what it shows, never to art style, drawing, rendering or picture quality";
 
 export async function prepareSlurpPostImageContexts(input: {
   posts: readonly SlurpImageContextPost[];

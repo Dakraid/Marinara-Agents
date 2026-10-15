@@ -361,12 +361,12 @@ export function createCreatorsStorage3(context: SlurpStorageContext) {
             sourceStatus: slurpIsCouplePage(account)
               ? { state: "current" as const }
               : !currentSource
-              ? { state: "missing" as const }
-              : compareMinimizedCreatorSourceSnapshot(
-                  baseline ?? minimizeCreatorSourceSnapshot(currentSource, disclosureMode ?? "open"),
-                  currentSource,
-                  disclosureMode ?? "open",
-                ),
+                ? { state: "missing" as const }
+                : compareMinimizedCreatorSourceSnapshot(
+                    baseline ?? minimizeCreatorSourceSnapshot(currentSource, disclosureMode ?? "open"),
+                    currentSource,
+                    disclosureMode ?? "open",
+                  ),
             publicIdentity:
               publicAccount && (disclosureMode === "open" || disclosureMode === "hinted")
                 ? { displayName: publicAccount.displayName, handle: publicAccount.handle }

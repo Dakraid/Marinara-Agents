@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import { slpCutAtBoundary } from "../packages/slurp2/src/engine/packages/server/src/slp/base/prompting/slp-prompt-safety";
-import { slurpCommissionPriceRange, slurpCommissionQuote } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/economy/slp-creator-pricing";
-import { slurpCoupleFit, slurpCoupleKin } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-fit";
+import {
+  slurpCommissionPriceRange,
+  slurpCommissionQuote,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/economy/slp-creator-pricing";
+import {
+  slurpCoupleFit,
+  slurpCoupleKin,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-fit";
 import { slurpSetUpCouple } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples";
 import { slpUnreachableCode } from "../packages/slurp2/src/engine/packages/server/src/slp/base/model/slp-provider-retry";
 import { slurp2Source } from "./slurp2-source.ts";
@@ -11,7 +17,10 @@ const server = (path: string) => slurp2Source(`packages/slurp2/src/engine/packag
 // Slurp 0.3.43 bug sweep.
 
 // ── Long DMs are not cut mid-word (#101) ──
-assert.match(server("features/messages/slp-message-generation-service.ts"), /SLURP_MESSAGE_CONTENT_MAX_LENGTH = 2400;/u);
+assert.match(
+  server("features/messages/slp-message-generation-service.ts"),
+  /SLURP_MESSAGE_CONTENT_MAX_LENGTH = 2400;/u,
+);
 assert.match(server("features/feed/slp-public-identity.ts"), /return slpCutAtBoundary\(protectedValue, maxLength\);/u);
 const reply = `${"I loved the shoot today. ".repeat(40)}Can I ask you a QUESTION about it`;
 const cut = slpCutAtBoundary(reply, 1000);
@@ -25,7 +34,11 @@ assert.equal(slpCutAtBoundary("one two three", 7), "one two", "a cut right befor
 // ── A commission price named in chat matches the quote (#45) ──
 const pricing = { commissionBase: 40, commissionMin: 10, commissionMax: 400 };
 assert.deepEqual(slurpCommissionPriceRange(pricing), { usual: 40, from: 10, upTo: 400 });
-assert.deepEqual(slurpCommissionPriceRange({ commissionBase: 500, commissionMin: 90, commissionMax: 60 }), { usual: 60, from: 60, upTo: 60 });
+assert.deepEqual(slurpCommissionPriceRange({ commissionBase: 500, commissionMin: 90, commissionMax: 60 }), {
+  usual: 60,
+  from: 60,
+  upTo: 60,
+});
 for (const brief of ["a quick sketch", "a detailed full-body scene of the two of us together, a set of three"]) {
   const quote = slurpCommissionQuote(brief, pricing);
   const range = slurpCommissionPriceRange(pricing);
@@ -46,7 +59,7 @@ const pictures = server("base/media/slp-post-image-context.ts");
 assert.match(pictures, /never to art style/u);
 assert.equal(pictures.match(/\$\{PICTURE_SEEN\}/gu)?.length, 3, "prompt, saved caption and new caption all carry it");
 
-// ── Family is never a couple (#43) ──
+// ── Family is never an automatic couple, but the player and the cards may (#43) ──
 const tie = (id: string, name: string, extra: Record<string, unknown> = {}) => ({
   id,
   name,
@@ -60,19 +73,40 @@ const tie = (id: string, name: string, extra: Record<string, unknown> = {}) => (
 const mom = tie("m", "Ruth Vale", { cardPeople: [{ name: "Juniper", relation: "daughter" }] });
 const kid = tie("d", "Juniper Vale");
 assert.ok(slurpCoupleKin(mom, kid) && slurpCoupleKin(kid, mom), "a card person with a family relation");
-assert.equal(slurpCoupleFit(mom, kid).misfit, "family");
-assert.ok(slurpCoupleKin(tie("a", "Ava", { text: "Ava's older sister Juniper runs a bakery." }), kid), "a card sentence");
-assert.ok(!slurpCoupleKin(tie("a", "Ava", { text: "Ava loves Juniper's posts." }), kid));
-assert.ok(!slurpCoupleKin(tie("a", "Ava", { text: "Ava steps out with Juniper for the grand opening." }), kid));
-assert.ok(slurpCoupleKin(tie("a", "Ava", { text: "Juniper is Ava's stepsister." }), kid));
+assert.equal(slurpCoupleFit(mom, kid).misfit, "family", "never set up on its own");
+const ava = (text: string) => tie("a", "Ava", { text });
+for (const text of [
+  "Ava's older sister Juniper runs a bakery.",
+  "Juniper is Ava's stepsister.",
+  "Ava and Juniper are sisters.",
+  "Juniper, her cousin, visits on Sundays.",
+  "Avas Schwester Juniper backt.",
+])
+  assert.ok(slurpCoupleKin(ava(text), kid), text);
+for (const text of [
+  "Ava loves Juniper's posts.",
+  "Ava steps out with Juniper for the grand opening.",
+  "She met Juniper at her brother's wedding.",
+  "Juniper is her brother in arms.",
+  "Juniper works at her parent company.",
+  "Ava is a single mom with a crush on Juniper.",
+  "Juniper is her son's teacher.",
+])
+  assert.ok(!slurpCoupleKin(ava(text), kid), text);
 assert.ok(!slurpCoupleKin(tie("a", "Ava", { cardPeople: [{ name: "Juniper", relation: "girlfriend" }] }), kid));
+const lovers = slurpCoupleFit(ava("Ava and her sister Juniper are lovers."), kid);
+assert.ok(lovers.fits && lovers.cards, "cards that say they are lovers make the couple");
 const at = new Date("2026-10-15T12:00:00Z");
-assert.equal(slurpSetUpCouple([], mom, kid, { at, id: "c1" }), "family", "the player cannot force it either");
+const forced = slurpSetUpCouple([], mom, kid, { at, id: "c1" });
+assert.ok(Array.isArray(forced) && forced[0]?.forced?.misfit === "family", "the player may set them up anyway");
 assert.match(server("features/projects/slp-stir-ties.ts"), /family: \[409, /u);
 
 // ── A page the player runs can be set polyamorous (#68) ──
 const sheet = slurp2Source("packages/slurp2/src/engine/packages/client/src/slp/features/stir/SlpStirCreatorSheet.tsx");
-assert.match(sheet, /!creator\.automatic && !creator\.couplePage && \(\s*<SlpCreatorSteeringCard creatorId=\{creator\.id\} name=\{creator\.name\} relationshipOnly \/>/u);
+assert.match(
+  sheet,
+  /!creator\.automatic && !creator\.couplePage && \(\s*<SlpCreatorSteeringCard creatorId=\{creator\.id\} name=\{creator\.name\} relationshipOnly \/>/u,
+);
 assert.match(
   slurp2Source("packages/slurp2/src/engine/packages/client/src/slp/features/creators/SlpCreatorSteeringCard.tsx"),
   /if \(relationshipOnly\)\s*return relationships \?/u,
@@ -85,9 +119,31 @@ assert.match(
 );
 
 // ── A model that is off gets a clear sign-up error (#74) ──
-const refused = new TypeError("fetch failed", { cause: Object.assign(new Error("connect ECONNREFUSED ::1:5001"), { code: "ECONNREFUSED" }) });
+const refused = new TypeError("fetch failed", {
+  cause: Object.assign(new Error("connect ECONNREFUSED ::1:5001"), { code: "ECONNREFUSED" }),
+});
 assert.equal(slpUnreachableCode(refused), "ECONNREFUSED");
 assert.equal(slpUnreachableCode(new Error("API error 400: bad request")), null);
+assert.equal(
+  slpUnreachableCode(Object.assign(new Error("socket hang up"), { code: "ECONNRESET" })),
+  null,
+  "a dropped line is not 'start the model'",
+);
 assert.match(server("features/onboarding/slp-scene-routes.ts"), /Slurp could not reach the connection/u);
+
+// #35: one publish pass at a time, and spacing is read on the page that gets the post.
+const publish = server("data/feed/reserve/slp-reserve-storage-2.ts");
+assert.match(publish, /while \(publishing\) await publishing/u);
+assert.match(publish, /eq\(slpPosts\.authorAccountId, author\.id\)/u);
+assert.doesNotMatch(publish, /eq\(slpPosts\.authorAccountId, account\.id\)/u);
+assert.match(
+  publish,
+  /author\.id !== account\.id\)[\s\S]{0,200}set\(\{ publishAt: new Date\(nextFree\)/u,
+  "a shared-page post waits",
+);
+
+// #104: the spice angle sees other Creators' spicy posts, posted or prepared, and the subject list prepared ones.
+assert.match(server("features/feed/slp-post-spice.ts"), /feed: await listSlurpFeedSpice\(db, input\.account\.id/u);
+assert.match(server("data/feed/slp-feed-subjects-storage.ts"), /otherPreparedPosts\(db, creatorIds, at\)\)\.map/u);
 
 console.log("slurp2 bug sweep regression: pass");

@@ -114,10 +114,7 @@ export function recordSlurpTasteSignal(
   const labels = slurpSpiceLabelsOf(source.metadata);
   const run = async () => {
     await updateSlurpSpice(db, (state) => {
-      const all = [
-        ...labels,
-        ...(source.text ? slurpTasteLabelsIn(source.text, state, SLP_TASTE_IDEAS) : []),
-      ];
+      const all = [...labels, ...(source.text ? slurpTasteLabelsIn(source.text, state, SLP_TASTE_IDEAS) : [])];
       return all.length ? slurpLearnTaste(state, all, signal as SlurpTasteSignal, new Date()) : state;
     });
   };

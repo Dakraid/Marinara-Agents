@@ -106,7 +106,11 @@ assert.match(
   /\[data-slp-blur\][^{]*:is\(img:not\(\[src\^="data:image\/svg"\]\), video\):not\(\[data-slp-revealed\]\)/u,
   "inline SVG art (coin, G) stays sharp (#61)",
 );
-assert.match(hostSource, /const picture = 'img:not\(\[src\^="data:image\/svg"\]\)';/u, "a tap on the coin is not a reveal");
+assert.match(
+  hostSource,
+  /const picture = 'img:not\(\[src\^="data:image\/svg"\]\)';/u,
+  "a tap on the coin is not a reveal",
+);
 
 // --- A tap on a post picture -------------------------------------------------------------------------
 const hub = client("app/screens/SlpScreenHub.tsx");

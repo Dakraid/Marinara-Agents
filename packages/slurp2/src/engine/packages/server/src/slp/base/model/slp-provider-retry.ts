@@ -39,15 +39,11 @@ export function slpTransientNetworkCode(error: unknown): SlpTransientDnsCode | n
   return null;
 }
 
-/** Codes that mean the model server did not answer at all: it is off, or the address is wrong. */
-const SLP_UNREACHABLE_CODES = [
-  "ECONNREFUSED",
-  "ECONNRESET",
-  "ETIMEDOUT",
-  "EHOSTUNREACH",
-  "ENETUNREACH",
-  "UND_ERR_CONNECT_TIMEOUT",
-] as const;
+/**
+ * Codes that mean the model server did not answer at all: it is off, or the address is wrong. Not a
+ * reset or a read timeout: those also hit a cloud connection that works and only dropped the line.
+ */
+const SLP_UNREACHABLE_CODES = ["ECONNREFUSED", "EHOSTUNREACH", "ENETUNREACH", "UND_ERR_CONNECT_TIMEOUT"] as const;
 
 /** The code behind a call that never reached the model server, or null (#74: a local model that was off). */
 export function slpUnreachableCode(error: unknown): string | null {
@@ -55,7 +51,8 @@ export function slpUnreachableCode(error: unknown): string | null {
   for (let depth = 0; depth < 5 && current && typeof current === "object"; depth += 1) {
     const candidate = current as { code?: unknown; message?: unknown; cause?: unknown };
     const code = SLP_UNREACHABLE_CODES.find(
-      (known) => candidate.code === known || (typeof candidate.message === "string" && candidate.message.includes(known)),
+      (known) =>
+        candidate.code === known || (typeof candidate.message === "string" && candidate.message.includes(known)),
     );
     if (code) return code;
     current = candidate.cause;

@@ -286,6 +286,8 @@ export function slurpSpiceAngle(input: {
   couple?: string | null;
   /** Earlier spicy posts of this Creator, newest first. */
   recent: readonly { kind: string; taste?: string | null }[];
+  /** Other Creators' spicy posts of the last day, posted or prepared (#104). */
+  feed?: readonly { kind: string; taste?: string | null }[];
   sequence: number;
   /** A drop delivers the kind its tease hinted at, when it is still allowed (3b). */
   teasedKind?: string | null;
@@ -309,6 +311,9 @@ export function slurpSpiceAngle(input: {
   // explicit ceiling weigh most) halves with each repeat, so a page does not settle on one (#104).
   const lastKind = input.recent[0]?.kind;
   const repeats = (id: string) => input.recent.filter((entry) => entry.kind === id).length;
+  // Other Creators' spicy posts of the last day count too, softer: one taste sent the whole feed
+  // into the shower on the same evening (#104). The level stays; only the kind spreads out.
+  const elsewhere = (id: string) => (input.feed ?? []).filter((entry) => entry.kind === id).length;
   const teased = locked ? kinds.find((candidate) => candidate.id === input.teasedKind) : undefined;
   const kind =
     teased ??
@@ -322,7 +327,8 @@ export function slurpSpiceAngle(input: {
           // The top of the range carries the most weight: an explicit page is mostly explicit.
           (1 + 2 * (LEVEL_INDEX(candidate.min) / Math.max(1, top))) *
           (input.creator.turnOns.some((on) => candidate.words.some((word) => shareWord(on, word))) ? 3 : 1) *
-          (lastKind === candidate.id ? 0.1 : 0.5 ** repeats(candidate.id)),
+          (lastKind === candidate.id ? 0.1 : 0.5 ** repeats(candidate.id)) *
+          SLURP_FEED_KIND_DAMPING ** elsewhere(candidate.id),
       })),
     );
   const partner: SlurpSpicePartner | null = !kind.partnered
@@ -334,7 +340,7 @@ export function slurpSpiceAngle(input: {
       : slurpSpicePartner(input.creator, input.collabs ?? [], seed, input.sequence, input.couple);
   const who = partner?.name ?? "someone you are seeing";
   const fill = (value: string) => value.replace("{partner}", who);
-  const taste = slurpTastePick(input.spice, input.creator, seed, input.sequence, input.recent);
+  const taste = slurpTastePick(input.spice, input.creator, seed, input.sequence, input.recent, input.feed);
   const tasteLine = taste
     ? `Your fans have been into ${taste.text} lately. Work it in if you can, your way, without making it the whole post.`
     : "";
@@ -358,6 +364,9 @@ export function slurpSpiceAngle(input: {
     taste: taste?.text ?? null,
   };
 }
+
+/** How much one other Creator's spicy post of the same kind in the last day lowers this kind's weight. */
+const SLURP_FEED_KIND_DAMPING = 0.75;
 
 // --- The player's taste --------------------------------------------------------------------------
 
@@ -391,16 +400,19 @@ export function slurpTastePick(
   seed: string,
   sequence: number,
   recent: readonly { taste?: string | null }[] = [],
+  /** Other Creators' spicy posts of the last day: a taste already all over the feed waits a turn. */
+  feed: readonly { taste?: string | null }[] = [],
 ): SlpTaste | null {
   const last = recent.slice(0, 3).map((entry) => (entry.taste ? slpTasteKey(entry.taste) : ""));
   const chances = spice.tastes
     .map((taste) => {
       const key = slpTasteKey(taste.text);
-      const variety = last[0] === key ? 0 : last.includes(key) ? 0.35 : 1;
-      return {
-        taste,
-        chance: slurpTasteChance(taste.strength, slurpTasteFit(taste.text, creator, spice.never)) * variety,
-      };
+      const fit = slurpTasteFit(taste.text, creator, spice.never);
+      const elsewhere = feed.filter((entry) => entry.taste && slpTasteKey(entry.taste) === key).length;
+      // A Creator whose turn-ons it is still leans in; everyone else steps aside sooner.
+      const spread = (fit >= 1 ? 0.85 : 0.6) ** elsewhere;
+      const variety = (last[0] === key ? 0 : last.includes(key) ? 0.35 : 1) * spread;
+      return { taste, chance: slurpTasteChance(taste.strength, fit) * variety };
     })
     .filter((entry) => entry.chance > 0);
   if (!chances.length) return null;

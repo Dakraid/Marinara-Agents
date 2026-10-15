@@ -10,6 +10,7 @@ import { logger } from "../../../lib/logger.js";
 import type { SlpAccount, SlpIdentityDisclosure } from "../../../../../shared/src/slp/slp-social.types.js";
 import { resolveSlurpSpiceCreator } from "../../data/creators/slp-flavour-source.js";
 import { slurpSpicyCollabNames } from "../../data/creators/slp-spice-storage.js";
+import { listSlurpFeedSpice } from "../../data/feed/slp-feed-subjects-storage.js";
 import { resolveSlurpExplicitLevel } from "../../data/settings/slp-post-guidance-storage.js";
 import { readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ties-storage.js";
 import { slurpSpiceAngle } from "../../modules/creators/slp-spice.js";
@@ -135,6 +136,7 @@ export async function planSlurpPostSpice(
           spice: spiceRead.spice.spice,
           ...partners,
           recent: recentSpice(input.recentPosts),
+          feed: await listSlurpFeedSpice(db, input.account.id, new Date()),
           sequence: input.sequence,
           teasedKind: input.teasedKind,
         })

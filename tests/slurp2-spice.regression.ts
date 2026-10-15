@@ -205,6 +205,33 @@ for (let sequence = 0; sequence < 400; sequence += 1) {
 const top = Math.max(...kindShare.values());
 console.log("spice kind spread over 400:", Object.fromEntries(kindShare));
 assert.ok(top <= 400 * 0.2, `no kind takes over an explicit page (${top} of 400)`);
+// No feed-wide shower evening (#104): when other Creators posted showers today, this one mostly
+// does something else, and a feed-wide taste waits its turn, unless it is this Creator's turn-on.
+const showers = (feed: { kind: string; taste?: string | null }[], turnOns: string[] = []) =>
+  Array.from({ length: 400 }, (_, sequence) =>
+    slurpSpiceAngle({
+      ...base,
+      creator: creator({ turnOns }),
+      spice: { tastes: [taste("shower", "obsessed")], never: [] },
+      level: "explicit",
+      access: "locked",
+      teaser: false,
+      feed,
+      sequence,
+    }),
+  );
+const showerFeed = Array.from({ length: 5 }, () => ({ kind: "shower", taste: "shower" }));
+const kindOf = (angles: ReturnType<typeof showers>) => angles.filter((angle) => angle?.kind === "shower").length;
+const tasteOf = (angles: ReturnType<typeof showers>) => angles.filter((angle) => angle?.taste === "shower").length;
+const quiet = showers([]);
+const busy = showers(showerFeed);
+assert.ok(kindOf(busy) < kindOf(quiet) * 0.5, `shower posts step aside (${kindOf(quiet)} → ${kindOf(busy)})`);
+assert.ok(tasteOf(busy) < tasteOf(quiet) * 0.3, `a feed-wide taste waits (${tasteOf(quiet)} → ${tasteOf(busy)})`);
+assert.ok(tasteOf(showers(showerFeed, ["shower"])) > tasteOf(busy) * 2, "a turn-on still leans in");
+assert.ok(
+  busy.every((angle) => angle !== null),
+  "the level stays: every locked post is still spicy",
+);
 
 // Partners: a couple partner from the card, a collab partner, or someone unnamed.
 const couple = creator({ anchors: anchors([{ name: "Jonas", relation: "boyfriend" }]) });

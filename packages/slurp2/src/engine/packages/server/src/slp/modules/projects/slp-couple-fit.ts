@@ -16,14 +16,7 @@ const ROMANTIC =
   /\b(romantic|flirt\w*|lonely|single|looking for love|crush\w*|hopeless romantic|heart on (her|his|their) sleeve)\b/iu;
 
 export type SlurpCoupleMisfit =
-  | "taken"
-  | "notInto"
-  | "noDating"
-  | "orientation"
-  | "romance"
-  | "same"
-  | "busy"
-  | "family";
+  "taken" | "notInto" | "noDating" | "orientation" | "romance" | "same" | "busy" | "family";
 
 type Want = "same" | "other" | "any";
 
@@ -64,29 +57,37 @@ const textNames = (a: SlurpTieCreator, b: SlurpTieCreator) => {
   return a.text.split(/(?<=[.!?])\s+|\n+/u).some((sentence) => name.test(sentence) && PARTNER_WORDS.test(sentence));
 };
 
-// Family on a card ("her mother Ruth", a lorebook "relationships" entry) is never romance (#43).
-const KIN =
-  /\b(?:mother|mom|mum|father|dad|daughter|son|sister|brother|sibling|twin|aunt|uncle|niece|nephew|cousin|(?:grand|step-?)(?:mother|father|ma|pa|mom|dad|daughter|son|sister|brother|child|parent)s?|parent|child|mutter|mama|vater|papa|tochter|sohn|schwester|bruder|tante|onkel|nichte|neffe|cousine?)\b/iu;
+// Family on a card ("her mother Ruth", a lorebook "relationships" entry). Never an automatic couple,
+// but the player may still set one up, and cards that say the two are lovers make it so (#43).
+const KIN_WORD =
+  "(?:mother|mom|mum|father|dad|daughter|son|sister|brother|sibling|twin|aunt|uncle|niece|nephew|cousin|(?:grand|step-?)(?:mother|father|ma|pa|mom|dad|daughter|son|sister|brother|child|parent)|parent|child|children|mutter|mama|vater|papa|tochter|sohn|schwester|bruder|tante|onkel|nichte|neffe|cousine?|eltern|geschwister|br\u00fcder)(?:s|n|en)?";
+const KIN = new RegExp(`\\b${KIN_WORD}\\b`, "iu");
 const namesOther = (name: string, other: SlurpTieCreator) => {
   const wanted = name.trim().toLocaleLowerCase();
   return wanted === other.name.trim().toLocaleLowerCase() || firstName(wanted) === firstName(other.name);
 };
 /**
- * Whether either card says the two are family: a card person with a family relation who is the
- * other one, or a card sentence naming the other with a family word. A hard no, not a misfit the
- * player can force.
+ * Whether `self`'s card says `other` is family: a card person with a family relation who is the
+ * other one, or the family word right next to their name and pointing at the card's owner. A family
+ * word elsewhere ("met Mara at her brother's wedding", "Mara is a single mom") says nothing.
  */
-export function slurpCoupleKin(a: SlurpTieCreator, b: SlurpTieCreator): boolean {
-  const kinIn = (self: SlurpTieCreator, other: SlurpTieCreator) => {
-    if ((self.cardPeople ?? []).some((person) => KIN.test(person.relation) && namesOther(person.name, other)))
-      return true;
-    const first = other.name.trim().split(/\s+/u)[0];
-    if (!first || first.length < 3) return false;
-    const name = new RegExp(`(?<![\\p{L}])${escapeRegExp(first)}(?![\\p{L}])`, "iu");
-    return self.text.split(/(?<=[.!?])\s+|\n+/u).some((sentence) => name.test(sentence) && KIN.test(sentence));
-  };
-  return kinIn(a, b) || kinIn(b, a);
+function kinIn(self: SlurpTieCreator, other: SlurpTieCreator): boolean {
+  if ((self.cardPeople ?? []).some((person) => KIN.test(person.relation) && namesOther(person.name, other)))
+    return true;
+  const first = other.name.trim().split(/\s+/u)[0];
+  if (!first || first.length < 3) return false;
+  const name = escapeRegExp(first);
+  const own = escapeRegExp(self.name.trim().split(/\s+/u)[0] ?? "");
+  const kin = `${KIN_WORD}\\b(?!['\u2019]s|\\s+in\\s+arms)`;
+  // "her sister Mara", "Mara, her cousin", "Mara is Ava's older stepsister", "Ava and Mara are twins".
+  const before = `\\b${kin}\\s+${name}(?![\\p{L}])`;
+  const mine = `(?:her|his|their|my|our|ihre?|seine?|${own}['\u2019]s)\\s+(?:\\p{L}+\\s+)?`;
+  const after = `(?<![\\p{L}])${name}(?:,|\\s+(?:is|was|ist))\\s+${mine}${kin}`;
+  const both = `(?<![\\p{L}])(?:\\p{L}+\\s+(?:and|und)\\s+${name}|${name}\\s+(?:and|und)\\s+\\p{L}+)\\s+(?:are|were|sind)\\s+(?:\\p{L}+\\s+)?${kin}`;
+  return new RegExp(`${before}|${after}|${both}`, "iu").test(self.text);
 }
+/** Whether either card says the two are family. */
+export const slurpCoupleKin = (a: SlurpTieCreator, b: SlurpTieCreator) => kinIn(a, b) || kinIn(b, a);
 
 const neverDates = (creator: SlurpTieCreator) =>
   creator.text
@@ -119,6 +120,7 @@ export function slurpCoupleMisfitOf(a: SlurpTieCreator, b: SlurpTieCreator): Slu
   );
   if (romance) return { misfit: "romance", byId: romance[0].id };
   return (
+    (cards ? null : first("family", kinIn)) ??
     (cards ? null : first("taken", (self) => (self.cardPartners ?? []).length > 0)) ??
     first("notInto", (self) => NOT_INTO_ANYONE.test(self.text)) ??
     first("noDating", neverDates) ??
@@ -134,7 +136,6 @@ export function slurpCoupleMisfitOf(a: SlurpTieCreator, b: SlurpTieCreator): Slu
 export function slurpCoupleFit(a: SlurpTieCreator, b: SlurpTieCreator): SlurpCoupleFit {
   const no = (misfit: SlurpCoupleMisfit) => ({ fits: false, misfit, chemistry: 0, cards: false });
   if (a.id === b.id) return no("same");
-  if (slurpCoupleKin(a, b)) return no("family");
   const misfit = slurpCoupleMisfitOf(a, b);
   if (misfit) return no(misfit.misfit);
   const cards = cardNames(a, b) || cardNames(b, a) || textNames(a, b) || textNames(b, a);
