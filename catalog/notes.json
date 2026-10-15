@@ -652,6 +652,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.44",
+          "date": "2026-10-15",
+          "notes": "- Added: trends. A post that takes off (player likes, unlocks and tips count most), your own page's hits, a platform trend, or Stir \"Start a trend\" starts one. The right Creators join, each at their own spice level and limits, quote the origin post, peak, then cool; some roast it, some never join. The starter gains followers.\n- Added: Discover \"Trending on Slurp\" row, a trend chip on posts, and trend search.\n- Changed: the invented \"silly trend\" daily-life moment is gone; trend posts skip the feed spice damping.",
+          "highlight": false
+        },
+        {
           "version": "0.3.43",
           "date": "2026-10-15",
           "notes": "- Fixed: long DMs end at a sentence or word (up to 2400 characters), and commission quotes use the Creator's own prices.\n- Fixed: Cancel ends a subscription to a removed Creator at once.\n- Fixed: fans react to what a picture shows, not its art style.\n- Fixed: post drift. Tips no longer teach a guessed taste, and a spicy kind or taste that other Creators posted that day steps aside, so the whole feed is not in the shower at once. Spice level is unchanged.\n- Changed: family is never paired up on its own. Cards that say they are lovers, or the player in Stir, still can.\n- Fixed: clearer \"monogamous\" message in Stir, with the Relationships switch on the Creator sheet.\n- Fixed: work mode no longer blurs the coin and G's face; Couples pages are not a missing source; the sign-up scene names an unreachable connection.\n- Fixed: a scheduled post goes up once, and a shared-page post waits its turn.",
@@ -763,12 +769,6 @@
           "version": "0.3.25",
           "date": "2026-10-12",
           "notes": "- Fixed: \"Enhance image prompts\" no longer drops a usable answer from the prompt model. An answer with a line break inside the prompt, a trailing comma, or text around the JSON object was read as \"no prompt\", and the picture went out with the capped draft. An answer that is cut off still falls back.\n- Fixed: when the AI budget is Off, the \"Enhance image prompts\" row is off, or its daily limit is reached, the picture now goes out with the full draft, as with enhancing switched off. Before, each such picture logged \"Image prompt rewrite unusable\" and its draft was cut to 1,500 characters (player report).",
-          "highlight": false
-        },
-        {
-          "version": "0.3.24",
-          "date": "2026-10-11",
-          "notes": "- Changed: in a picture with a second Creator (a partner, a collab), that person now gets their own look in the picture prompt, labelled with their name and placed after the posting Creator's look. Before, their look reached only \"Enhance image prompts\", so with it off the image model had nothing to draw them from.\n- Changed: the second Creator's \"The image model knows this character\" switch now applies to pictures on somebody else's page too: their card name goes along (as a tag for tag models) when their identity is open.",
           "highlight": false
         }
       ]

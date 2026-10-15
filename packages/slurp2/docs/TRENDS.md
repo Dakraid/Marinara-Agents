@@ -63,8 +63,8 @@ Caps: adopters per day at most `ceil(0.15 × automatic Creators)` (min 1); total
 
 An adopter's beat reads: `A trend is going around Slurp: "<label>", started by <starter>. Do your own take on it`
 (follower), `… you were one of the first to try it` (early adopter), `… you roast it` (contrarian, with a tone
-note, never mean about a person). The post stores `metadata.slurpTrend = { id, label }` and quotes the origin
-(`quotePostId`) when that post is still public. A world trend uses its `{a}` line instead.
+note, never mean about a person). The post stores `metadata.slurpTrend = { id, label, originPostId }` and sets `quotePostId` to
+the origin post (the stored link; the post card shows it as the trend chip, which opens the origin). A world trend uses its `{a}` line instead.
 
 **Spice.** A trend never lowers spice as such and never raises it. If the origin was spicy, an adopter does
 the trend at their own level through the usual spice angle (their level, their hard noes, the ceiling). A
@@ -76,7 +76,8 @@ adoption only (the angle sees an empty feed), because sameness is the point; eve
 
 1. **A Creator post takes off.** Advanced on the world tick (`advanceSlurpTrends`): a public post from the last
    2 days with a score of at least `max(30, 3 × the median score of that Creator's last posts)` and at least
-   4 posts of history. Score = likes ×1 + replies ×1.5 + **player likes ×4, unlocks ×6, tips ×8**. Code only,
+   4 posts of history. Score = likes ×1 + replies ×1.5 + **player likes ×4, unlocks ×6, tips ×8** (a tip is not
+   tied to a post: it counts for the post that was newest when it came in). Code only,
    no AI: the label is the title's first 6 words. Fewer than one start per tick.
 2. **The player's own page.** The same detector reads a player-run page's posts; the starter is that page.
 3. **Stir "Start a trend"** (new action `start-trend`: `{ label, accountId? }`). With a Creator it makes
@@ -87,8 +88,8 @@ adoption only (the angle sees an empty feed), because sameness is the point; eve
    like a shared idea (exactly one `{a}`).
 
 The starter gains followers: each adopter adds a small real follow (one follow row per adopter, capped at 20
-per trend) through the same funnel that counts followers. The existing `trend` life moment reads the live
-trend (the moment is dropped while none is live, and `{post}` stays with `viral`).
+per trend) through the same funnel that counts followers. The invented `trend` life
+moment is removed: a real trend is joined through the trend beat, so Slurp never talks about a trend that is not there.
 
 ## UI
 
