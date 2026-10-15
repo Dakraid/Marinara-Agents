@@ -41,21 +41,13 @@ function talkPanel(person, talk = {}, error = "", { door = null } = {}) {
     },
     done = person.done ?? {},
     gone = person.gone === true,
-    perDay = person.perDay ?? 1,
-    maxed = (count) => count >= perDay,
     quickWhy = person.quickWhy || "",
     riskText = (risk) =>
       !risk || risk.chance < 0.12
         ? ""
         : `${risk.chance >= 0.3 ? "Risky" : "Can go wrong"}${risk.why ? ` \xB7 ${risk.why}` : ""}`,
     ice = person.ice ? escape(person.ice) : "",
-    chatWhy = gone
-      ? "They left"
-      : quickWhy ||
-        ice ||
-        (maxed(done.chat)
-          ? "Done today \xB7 come back tomorrow"
-          : riskText(person.risk?.chat) || "A few words \xB7 10 minutes"),
+    chatWhy = gone ? "They left" : quickWhy || ice || riskText(person.risk?.chat) || "A few words \xB7 10 minutes",
     flirtWhy = gone
       ? "They left"
       : quickWhy ||
@@ -64,19 +56,15 @@ function talkPanel(person, talk = {}, error = "", { door = null } = {}) {
           ? escape(person.onlyInto)
           : bond.romance.frozen
             ? "They are not open to it with you"
-            : maxed(done.flirt)
-              ? "Done today \xB7 come back tomorrow"
-              : person.with
-                ? `With ${escape(person.with.name)}`
-                : riskText(person.risk?.flirt) || "Keep it light"),
+            : person.with
+              ? `With ${escape(person.with.name)}`
+              : riskText(person.risk?.flirt) || "Keep it light"),
     openWhy = gone
       ? "They left"
       : quickWhy ||
         ice ||
         (person.openUp
-          ? maxed(done.open)
-            ? "Done today \xB7 come back tomorrow"
-            : riskText(person.risk?.open) || "Something of yours \xB7 10 minutes"
+          ? riskText(person.risk?.open) || "Something of yours \xB7 10 minutes"
           : "Get to know them first"),
     optRow = (kind, label, detail, time, used, disabled) =>
       disabled
@@ -104,9 +92,9 @@ function talkPanel(person, talk = {}, error = "", { door = null } = {}) {
             ? giftPicker(person, talk)
             : `
       <div class="sep">QUICK</div>
-      ${optRow("quickChat", "Chat", chatWhy, "10m", done.chat, gone || !!quickWhy || !!ice || maxed(done.chat))}
-      ${person.noFlirt ? "" : optRow("flirt", "Flirt", flirtWhy, "10m", done.flirt, gone || !!quickWhy || !!ice || maxed(done.flirt))}
-      ${optRow("openUp", "Open up", openWhy, "10m", done.open, gone || !!quickWhy || !!ice || !person.openUp || maxed(done.open))}
+      ${optRow("quickChat", "Chat", chatWhy, "10m", done.chat, gone || !!quickWhy || !!ice)}
+      ${person.noFlirt ? "" : optRow("flirt", "Flirt", flirtWhy, "10m", done.flirt, gone || !!quickWhy || !!ice)}
+      ${optRow("openUp", "Open up", openWhy, "10m", done.open, gone || !!quickWhy || !!ice || !person.openUp)}
       ${giftOption(person, gone)}
       ${
         door

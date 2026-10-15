@@ -36,6 +36,12 @@
     "modern-life-sim": {
       "versions": [
         {
+          "version": "0.7.0",
+          "date": "2026-10-15",
+          "notes": "- Chat, Flirt, Open up and gifts are no longer once a day per person. A repeat the same day counts for half, and the daily gain cap still holds.",
+          "highlight": true
+        },
+        {
           "version": "0.6.1",
           "date": "2026-10-15",
           "notes": "- Romance in the family now reaches the Adult module too: family members can share AFTER DARK scenes, club dances and group scenes.",

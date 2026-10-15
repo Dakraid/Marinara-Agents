@@ -1,6 +1,91 @@
 // Changelog entries plus module notes merge
 var RELEASE_NOTES = [
   {
+    version: "0.7.0",
+    date: "2026-10-15",
+    lines: [
+      {
+        text: "Chat, Flirt, Open up and gifts are no longer once a day",
+        items: [
+          "Chat, Flirt, Open up and gifts are no longer once a day per person. Do them as often as you like: a repeat the same day counts for half, and the daily gain cap still holds.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "0.6.1",
+    date: "2026-10-15",
+    lines: [
+      {
+        text: "Romance in the family reaches the Adult module",
+        items: [
+          "Romance in the family now reaches the Adult module too: family members can share AFTER DARK scenes, club dances and group scenes.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "0.6.0",
+    date: "2026-10-15",
+    lines: [
+      {
+        text: "An Adult toggle for each person in SETTINGS · CAST",
+        items: [
+          "SETTINGS · CAST: an Adult toggle for each person, before their Adult module options; switching it on opens the options.",
+        ],
+      },
+      {
+        text: "New rule: Romance in the family",
+        items: [
+          "New rule, Romance in the family: family ties no longer rule out romance, with you or between people in town.",
+        ],
+      },
+      {
+        text: "Infidelity no longer forces a break-up",
+        items: [
+          "Infidelity no longer forces a break-up. A partner who finds out stays, hurt, or, if they aren't the jealous kind, lets it go on: an open relationship, or they like knowing.",
+        ],
+      },
+      {
+        text: "EDIT TRAITS sets relationship, romance and trust too",
+        items: ["EDIT TRAITS sets relationship, romance and trust too."],
+      },
+    ],
+  },
+  {
+    version: "0.5.0",
+    date: "2026-10-15",
+    lines: [
+      {
+        text: "Reading cards runs several at once",
+        items: [
+          "Reading cards runs several at once, up to the Agents parallel limit of the reading connection. Cards not read or that failed can be queued while a read runs, and RE-READ FAILED queues them all.",
+          'A "How to read them" box steers every card read.',
+        ],
+      },
+      {
+        text: "New jobs: Student and Police officer",
+        items: ["New jobs: Student (paid, at the University) and Police officer, at the new Police Station downtown."],
+      },
+      {
+        text: "One-way relations between cast members",
+        items: [
+          "One-way relations between cast members: teacher and student, biological or adoptive parent and child, guardian and ward, owner and property.",
+        ],
+      },
+      {
+        text: "Into both women and men now adds futanari as well",
+        items: ["Into both women and men now adds futanari as well."],
+      },
+      {
+        text: "Whole-cast changes",
+        items: [
+          "Whole-cast changes: everyone open to romance, add or remove a kink for all, set how everyone knows you.",
+        ],
+      },
+    ],
+  },
+  {
     version: "0.4.1",
     date: "2026-10-13",
     lines: [

@@ -68,7 +68,6 @@ import {
   bondOf,
   castInTown,
   characterOf,
-  gaveGiftToday,
   giftInfo,
   giftResultFor,
   handOverGift,
@@ -245,18 +244,17 @@ function freePlan(game, scene = game.scene) {
           name: person.name,
         })),
     ],
-    items =
-      !hasMet(bond) || gaveGiftToday(game, characterId)
-        ? []
-        : giftInfo(game, characterId)
-            .items.filter((item, index, list) => list.findIndex((other) => other.id === item.id) === index)
-            .slice(0, 10)
-            .map((item) => ({
-              key: item.id,
-              name: item.name,
-              index: item.index,
-              result: giftResultFor(character, bond, itemDef(game.things, item.id)),
-            })),
+    items = !hasMet(bond)
+      ? []
+      : giftInfo(game, characterId)
+          .items.filter((item, index, list) => list.findIndex((other) => other.id === item.id) === index)
+          .slice(0, 10)
+          .map((item) => ({
+            key: item.id,
+            name: item.name,
+            index: item.index,
+            result: giftResultFor(character, bond, itemDef(game.things, item.id)),
+          })),
     together = talkState.event
       ? []
       : game.party

@@ -1098,16 +1098,10 @@ function faintMemoFor(game, at = game.minutes) {
       }
     : null;
 }
-var QUICK_PER_DAY = 1;
 var QUICK_ACTION_TODAY_KEYS = {
   quickChat: "time",
   flirt: "flirt",
   openUp: "deep",
-};
-var TODAY_KEY_TO_DONE_KEY = {
-  time: "chat",
-  flirt: "flirt",
-  deep: "open",
 };
 var QUICK_ACTION_MISS_AXIS = {
   quickChat: "friendship",
@@ -1305,11 +1299,9 @@ function giftInfo(game, characterId) {
         ? "Introduce yourself first"
         : isAsleep(game, characterId)
           ? "They're asleep"
-          : gaveGiftToday(game, characterId)
-            ? "You gave them one today. Come back tomorrow"
-            : count
-              ? closingWhy(game, GIFT_GIVE_MINUTES)
-              : "No gift in your backpack. The Supermarket and the Mall sell them";
+          : count
+            ? closingWhy(game, GIFT_GIVE_MINUTES)
+            : "No gift in your backpack. The Supermarket and the Mall sell them";
   return {
     ok: !why,
     why: why,
@@ -1636,7 +1628,6 @@ function personHereView(game, person) {
     done: quickActionsDoneToday(game, person.id),
     ...talkTimeFitFor(game, person.id),
     ...workingLook(game, person.id),
-    perDay: QUICK_PER_DAY,
     step: stepWithRoom(game, person.id),
     special: markTightSpecialActions(game, person.id, specialActions(game, person.id)),
     with: withWhom(game, person.id),
@@ -2507,12 +2498,6 @@ function interactWith(game, characterId, action, { minutes = null, scale = 1, no
       return {
         ok: false,
         reason: iceReason,
-      };
-    }
-    if (quickActionsDoneToday(game, characterId)[TODAY_KEY_TO_DONE_KEY[todayKey]] >= QUICK_PER_DAY) {
-      return {
-        ok: false,
-        reason: "You already did that with them today. Try again tomorrow.",
       };
     }
     let closing = closingWhy(game, BOND_ACTIONS[action].minutes);
@@ -4242,7 +4227,6 @@ export {
   LEAVING_HORIZON,
   MAX_IN_TOWN,
   OPEN_UP_FROM_TIER,
-  QUICK_PER_DAY,
   ROUGH_SLEEP_ACTIVITY,
   SHOW_RULE_MODES,
   UNKNOWN_NAME,

@@ -5998,7 +5998,7 @@ ${msg.content}`).join(`
       <span class="label">${label}</span>
       <span class="num">${delta?`<span class="delta">${delta>0?"+":""}${Math.round(delta*10)/10}</span>`:""}</span>
       <span class="bar"><i style="width:${Math.max(0,Math.min(100,axisBond.value))}%"></i></span>
-      <span class="tier">${capTag?`<b class="cap ${axisEvent?.status==="ready"?"ready":""}">${capTag}</b>`:`${escape(axisBond.name)}${axis==="romance"&&axisBond.frozen?" \xB7 off":""}`}</span></div>`},done=person.done??{},gone=person.gone===!0,perDay=person.perDay??1,maxed=count=>count>=perDay,quickWhy=person.quickWhy||"",riskText=risk=>!risk||risk.chance<.12?"":`${risk.chance>=.3?"Risky":"Can go wrong"}${risk.why?` \xB7 ${risk.why}`:""}`,ice=person.ice?escape(person.ice):"",chatWhy=gone?"They left":quickWhy||ice||(maxed(done.chat)?"Done today \xB7 come back tomorrow":riskText(person.risk?.chat)||"A few words \xB7 10 minutes"),flirtWhy=gone?"They left":quickWhy||ice||(person.onlyInto?escape(person.onlyInto):bond.romance.frozen?"They are not open to it with you":maxed(done.flirt)?"Done today \xB7 come back tomorrow":person.with?`With ${escape(person.with.name)}`:riskText(person.risk?.flirt)||"Keep it light"),openWhy=gone?"They left":quickWhy||ice||(person.openUp?maxed(done.open)?"Done today \xB7 come back tomorrow":riskText(person.risk?.open)||"Something of yours \xB7 10 minutes":"Get to know them first"),optRow=(kind,label,detail,time,used,disabled)=>disabled?`<div class="mls-opt off"><span class="n">${label}</span><span class="hours">${time}</span><span class="d">${detail}</span></div>`:`<button class="mls-opt ${used?"used":""}" data-do="talk" data-kind="${kind}" data-character="${person.id}">
+      <span class="tier">${capTag?`<b class="cap ${axisEvent?.status==="ready"?"ready":""}">${capTag}</b>`:`${escape(axisBond.name)}${axis==="romance"&&axisBond.frozen?" \xB7 off":""}`}</span></div>`},done=person.done??{},gone=person.gone===!0,quickWhy=person.quickWhy||"",riskText=risk=>!risk||risk.chance<.12?"":`${risk.chance>=.3?"Risky":"Can go wrong"}${risk.why?` \xB7 ${risk.why}`:""}`,ice=person.ice?escape(person.ice):"",chatWhy=gone?"They left":quickWhy||ice||riskText(person.risk?.chat)||"A few words \xB7 10 minutes",flirtWhy=gone?"They left":quickWhy||ice||(person.onlyInto?escape(person.onlyInto):bond.romance.frozen?"They are not open to it with you":person.with?`With ${escape(person.with.name)}`:riskText(person.risk?.flirt)||"Keep it light"),openWhy=gone?"They left":quickWhy||ice||(person.openUp?riskText(person.risk?.open)||"Something of yours \xB7 10 minutes":"Get to know them first"),optRow=(kind,label,detail,time,used,disabled)=>disabled?`<div class="mls-opt off"><span class="n">${label}</span><span class="hours">${time}</span><span class="d">${detail}</span></div>`:`<button class="mls-opt ${used?"used":""}" data-do="talk" data-kind="${kind}" data-character="${person.id}">
       <span class="n">${label}</span><span class="hours">${time}</span><span class="d">${detail}</span></button>`,offRow=(label,detail,time,isScene=!1)=>`
     <div class="mls-opt off ${isScene?"vn":""}"><span class="n">${label}</span><span class="hours">${time}</span><span class="d">${detail}</span></div>`;return`
     <div class="mls-talk">
@@ -6014,9 +6014,9 @@ ${msg.content}`).join(`
       ${door&&!talk.picking?door.answer:""}
       ${talk.special&&!gone?specialMenu(person,talk):talk.picking&&!gone?giftPicker(person,talk):`
       <div class="sep">QUICK</div>
-      ${optRow("quickChat","Chat",chatWhy,"10m",done.chat,gone||!!quickWhy||!!ice||maxed(done.chat))}
-      ${person.noFlirt?"":optRow("flirt","Flirt",flirtWhy,"10m",done.flirt,gone||!!quickWhy||!!ice||maxed(done.flirt))}
-      ${optRow("openUp","Open up",openWhy,"10m",done.open,gone||!!quickWhy||!!ice||!person.openUp||maxed(done.open))}
+      ${optRow("quickChat","Chat",chatWhy,"10m",done.chat,gone||!!quickWhy||!!ice)}
+      ${person.noFlirt?"":optRow("flirt","Flirt",flirtWhy,"10m",done.flirt,gone||!!quickWhy||!!ice)}
+      ${optRow("openUp","Open up",openWhy,"10m",done.open,gone||!!quickWhy||!!ice||!person.openUp)}
       ${giftOption(person,gone)}
       ${door?`${door.said?`<div class="mls-said">${escape(door.said)}</div>`:""}<button class="mls-back flat mls-leave" data-do="visit-out">\u25C2 BACK TO THE CORRIDOR</button>`:`
       <div class="sep">LONGER</div>
