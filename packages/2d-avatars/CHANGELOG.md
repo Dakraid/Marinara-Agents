@@ -1,3 +1,7 @@
+## 0.1.2 — 2026-10-15
+
+- Blink and talk pictures now ask only for the eye or mouth change, so the model keeps the same bust.
+
 ## 0.1.1 — 2026-10-14
 
 - Now in Download Agents for Engine staging testers.
