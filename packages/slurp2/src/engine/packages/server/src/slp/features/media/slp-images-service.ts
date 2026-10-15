@@ -12,7 +12,11 @@ import {
   resolveConnectionImageDefaults,
   resolveImageGenerationService,
 } from "../../../services/image/image-generation-defaults.js";
-import { compileImagePrompt, resolveImageStyleGuidanceText } from "../../../services/image/image-prompt-compiler.js";
+import {
+  compileImagePrompt,
+  removeCopiedPromptGuidance,
+  resolveImageStyleGuidanceText,
+} from "../../../services/image/image-prompt-compiler.js";
 import { resolveImagePromptReviewSize } from "../../../services/image/image-prompt-review.js";
 import type { SlurpVisualBrief } from "../../base/media/slp-visual-brief.js";
 import type { SlpDeepDetailsImageRun } from "../../../../../shared/src/slp/slp-deep-details.js";
@@ -474,6 +478,10 @@ async function generateCreatorPostImageRun(
   // sent the same three values twice and asked it to "preserve the visual facts" in a personality
   // trait list.
   const rawRewriteInput = redactIdentity(reviewedOverride?.prompt || compiledDraft?.prompt || draftPrompt);
+  // The writer gets the bare draft: the style arrives as `styleGuidance` and is compiled onto the
+  // output below, so a styled draft made it echo the profile's tags, reworded past the compiler's
+  // exact dedupe, and the picture carried the style twice (player report, NanoGPT + qwen-image).
+  const rewriteInput = redactIdentity(draftPrompt) || rawRewriteInput;
   // Custom prompt templates may omit `userInstructions`, so restore configured instructions only
   // when the rendered prompt does not already contain them.
   const configuredImageInstructions = input.settings.imageGenerationPrompt.trim();
@@ -516,7 +524,7 @@ async function generateCreatorPostImageRun(
   const rewrittenPrompt = rewriteAttempted
     ? await rewriteSlpImagePrompt({
         db: input.db,
-        prompt: rawRewriteInput,
+        prompt: rewriteInput,
         postContent: input.postContent,
         interpretationInstruction: input.settings.imagePromptInterpretation,
         instructions: redactIdentity(imagePromptInstructions),
@@ -544,10 +552,12 @@ async function generateCreatorPostImageRun(
   // applied only when the rewrite was skipped, failed, or was rejected — which is exactly why the
   // setting looked intermittent rather than broken. The compiler dedupes against the prompt it is
   // given, so a rewrite that kept its style is not styled twice.
-  const compiledRewrittenPrompt = rewrittenPrompt
+  // A writer that still copied the style text gets it taken out before the style is compiled on.
+  const cleanRewrittenPrompt = rewrittenPrompt ? removeCopiedPromptGuidance(rewrittenPrompt, [styleGuidance]) : null;
+  const compiledRewrittenPrompt = cleanRewrittenPrompt
     ? compileSlurpImagePrompt({
         kind: "illustration",
-        prompt: rewrittenPrompt,
+        prompt: cleanRewrittenPrompt,
         styleProfiles: imageSettings.styleProfiles,
         imageDefaults,
       })
@@ -560,7 +570,7 @@ async function generateCreatorPostImageRun(
     run.rewrite = {
       ...run.rewrite,
       status: !rewrittenPrompt ? "failed" : rewriteViolatesPolicy ? "rejected" : "accepted",
-      input: rawRewriteInput,
+      input: rewriteInput,
       output: rewrittenPrompt ? redactIdentity(rewrittenPrompt) : null,
       reason: rewriteViolatesPolicy ? "the rewrite broke the scene's content level" : null,
     };

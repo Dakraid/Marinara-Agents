@@ -353,6 +353,8 @@ export async function prepareNextCreatorReservePost(db: DB, at = new Date()): Pr
                 chats: createChatsStorage(db),
                 gallery: createGalleryStorage(db),
                 characterGallery: createCharacterGalleryStorage(db),
+                postingAccountId: selectedAccount.id,
+                noodle,
               }).catch((error: unknown) => {
                 logger.warn(error, "[slurp] Could not attach a gallery image for %s", selectedAccount.displayName);
                 return null;

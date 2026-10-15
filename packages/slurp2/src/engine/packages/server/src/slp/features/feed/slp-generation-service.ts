@@ -775,6 +775,8 @@ export async function generateCreatorPost(
       chats: createChatsStorage(db),
       gallery: createGalleryStorage(db),
       characterGallery: createCharacterGalleryStorage(db),
+      postingAccountId: account.id,
+      noodle: createSlurpStorage(db),
     }).catch((error: unknown) => {
       logger.warn(error, "[slurp] Could not attach a gallery image for %s", account.displayName);
       return null;

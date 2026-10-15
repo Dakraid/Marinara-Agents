@@ -16,6 +16,7 @@ import { canCreateGeneratedSlpInteraction } from "../../modules/feed/slp-interac
 import { type ConnectionAdmissionMode } from "../../../services/generation/connection-admission.js";
 import { normalizeSlpHandle } from "../../base/identity/slp-handle.js";
 import { normalizeSlpImagePrompt } from "../../base/media/slp-image-prompt.js";
+import { slurpLeastRecentGalleryImage } from "../../base/media/slp-generated-media-policy.js";
 import { canGenerateSlpActivityForAccountKind } from "../../modules/prompting/slp-prompt.js";
 import {
   generateSlpPostImage,
@@ -54,10 +55,15 @@ export async function pickGalleryAttachmentForAccount(input: {
   chats: ReturnType<typeof createChatsStorage>;
   gallery: ReturnType<typeof createGalleryStorage>;
   characterGallery: ReturnType<typeof createCharacterGalleryStorage>;
+  /** The posting account's own recent posts tell which gallery pictures it already showed. */
+  postingAccountId: string;
+  noodle: ReturnType<typeof createSlurpStorage>;
 }) {
   if (input.account.kind !== "character") return null;
+  const recentPosts = await input.noodle.listNoodlerPostsByAccount(input.postingAccountId, 50);
+  const used = recentPosts.map((post) => post.metadata?.galleryAttachmentId);
   const characterImages = await input.characterGallery.listByCharacterId(input.account.entityId);
-  const characterImage = characterImages[0];
+  const characterImage = slurpLeastRecentGalleryImage(characterImages, used);
   if (characterImage) {
     return {
       imageUrl: characterGalleryImageUrl(input.account.entityId, characterImage.filePath),
@@ -73,7 +79,7 @@ export async function pickGalleryAttachmentForAccount(input: {
     .map((chat) => chat.id)
     .slice(0, 20);
   const chatImages = await input.gallery.listByChatIds(chatIds);
-  const chatImage = chatImages[0];
+  const chatImage = slurpLeastRecentGalleryImage(chatImages, used);
   if (!chatImage) return null;
   return {
     imageUrl: galleryImageUrl(chatImage.filePath, chatImage.chatId),
@@ -169,6 +175,8 @@ export async function prepareGeneratedSlpMedia(input: {
           chats: input.chats,
           gallery: input.gallery,
           characterGallery: input.characterGallery,
+          postingAccountId: account.id,
+          noodle: createSlurpStorage(input.db),
         });
         if (attachment) {
           prepared.imageUrl = attachment.imageUrl;
