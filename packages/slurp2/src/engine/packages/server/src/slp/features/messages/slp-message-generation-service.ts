@@ -109,8 +109,9 @@ import { slpScenesAvailable } from "../../base/host/slp-scene-host.js";
 import { slpSceneInviteAllowed } from "../../modules/messages/slp-roleplay-scene-rules.js";
 import { buildSlurpMessageDeepDetailsRecord } from "./slp-message-deep-details-record.js";
 
-/** A DM has more room than a comment reply, but not enough to become a monologue. */
-export const SLURP_MESSAGE_CONTENT_MAX_LENGTH = 900;
+/** A DM has more room than a comment reply. The reply is split into bubbles, so this is only a
+ *  ceiling against a runaway answer; 900 cut ordinary long replies short (#101). */
+export const SLURP_MESSAGE_CONTENT_MAX_LENGTH = 2400;
 
 /** How many turns of history the model sees. Enough to hold a thread, short enough to stay cheap. */
 const HISTORY_TURNS = 16;
