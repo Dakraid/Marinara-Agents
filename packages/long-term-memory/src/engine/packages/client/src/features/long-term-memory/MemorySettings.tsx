@@ -9,7 +9,15 @@ import type {
 } from "../../../../shared/src/features/agents/long-term-memory/schema.js";
 import { LTM_RECALL_STYLE_WEIGHTS } from "../../../../shared/src/features/agents/long-term-memory/constants.js";
 import { LTM_RECALL_SCORE_THRESHOLD_CEILING } from "../../../../shared/src/features/agents/long-term-memory/runtime-settings.js";
-import { invalidateLtmQueries, queryKeys, request, requestHost, requestRaw } from "./api";
+import {
+  errorMessage,
+  failedResponseError,
+  invalidateLtmQueries,
+  queryKeys,
+  request,
+  requestHost,
+  requestRaw,
+} from "./api";
 import { Button, InfoPopover, NumberField, StatusSurface, inputClass } from "./shared-controls";
 import type { LongTermMemoryDestinationProps } from "./types";
 import ActivityView from "./ActivityView";
@@ -90,10 +98,6 @@ const repairActions: Array<{
     descriptionKey: "ui.longTermMemory.memorysettings.restoreMissingTitlesOnImportedSourceNotes",
   },
 ];
-
-function errorMessage(error: unknown, fallback: string) {
-  return error instanceof Error ? error.message : fallback;
-}
 
 function same(left: unknown, right: unknown) {
   return JSON.stringify(left) === JSON.stringify(right);
@@ -650,8 +654,7 @@ export default function MemorySettings({
     setMessage("");
     try {
       const response = await requestRaw("/backup/export");
-      if (!response.ok)
-        throw new Error(response.statusText || localizeUi("ui.longTermMemory.memorysettings.couldNotExportMemoryData"));
+      if (!response.ok) throw await failedResponseError(response);
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -912,6 +915,9 @@ export default function MemorySettings({
           [data-ltm-extraction-grid] {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
+          [data-ltm-prompt-template-grid] {
+            grid-template-columns: 12rem minmax(0, 1fr);
+          }
         }
       `}</style>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -962,7 +968,8 @@ export default function MemorySettings({
               document.getElementById(`settings-tab-${settingsTabs[next].id}`)?.focus();
             }}
             data-active={activeTab === tab.id}
-            className="mari-editor-tab min-h-10 rounded-md px-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--marinara-editor-focus-ring)]"
+            data-ltm-tab-focus
+            className="mari-editor-tab min-h-10 rounded-md px-2 text-xs font-semibold transition-colors"
           >
             {localizeUi(tab.labelKey)}
           </button>

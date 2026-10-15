@@ -18,7 +18,7 @@ import {
   type LtmRejectedSuggestionsResponse,
   type LtmSavedSubjectIdentityChoice,
 } from "../../../../shared/src/features/agents/long-term-memory/schema.js";
-import { invalidateLtmQueries, queryKeys, request, requestNotesByIds } from "./api";
+import { errorMessage, invalidateLtmQueries, queryKeys, request, requestNotesByIds } from "./api";
 import { humanizeLabel, labelKeys, localizedLabel, rejectionReasonLabels } from "./display-labels";
 import { Button, IconButton, InfoPopover, inputClass, StatusSurface } from "./shared-controls";
 import type { LongTermMemoryDestinationProps } from "./types";
@@ -129,7 +129,7 @@ const freshnessLabel: Record<string, string> = {
 };
 
 function freshnessClass(freshness: string) {
-  if (freshness === "fresh") return "border-[var(--marinara-editor-accent)]/40 text-[var(--marinara-editor-accent)]";
+  if (freshness === "fresh") return "border-[var(--marinara-editor-accent)]/30 text-[var(--marinara-editor-accent)]";
   if (
     freshness === "stale" ||
     freshness === "missing" ||
@@ -138,7 +138,7 @@ function freshnessClass(freshness: string) {
     freshness === "invalidated" ||
     freshness === "not_pending"
   )
-    return "border-[var(--marinara-editor-warning)]/40 text-[var(--marinara-editor-warning)]";
+    return "";
   return "border-[var(--border)] text-[var(--muted-foreground)]";
 }
 
@@ -624,6 +624,85 @@ function isAbortError(error: unknown) {
     : error instanceof Error && error.name === "AbortError";
 }
 
+// Every part is a whole sentence so a translator can reorder words and punctuation inside it.
+function batchResultSentences(
+  result: BatchResult,
+  localizeUi: ReturnType<typeof useLtmTranslation>["t"],
+  locale: string,
+) {
+  const pick = (count: number, one: string, other: string) =>
+    selectLtmPluralForm(locale, count) === "one" ? one : other;
+  const endSentence = (text: string) => (/[.!?…。！？]$/u.test(text.trim()) ? text.trim() : `${text.trim()}.`);
+  const sentences = [
+    result.phase === "preflight"
+      ? localizeUi("ui.longTermMemory.reviewqueue.preflightSummary", {
+          ready: result.ready,
+          blocked: result.blockedMutationIds.length,
+        })
+      : localizeUi(
+          result.action === "accepted"
+            ? pick(
+                result.completed,
+                "ui.longTermMemory.reviewqueue.appliedSummaryOne",
+                "ui.longTermMemory.reviewqueue.appliedSummary",
+              )
+            : pick(
+                result.completed,
+                "ui.longTermMemory.reviewqueue.discardedSummaryOne",
+                "ui.longTermMemory.reviewqueue.discardedSummary",
+              ),
+          { completed: result.completed, failed: result.failed },
+        ),
+  ];
+  if (result.blockedMutationIds.length)
+    sentences.push(
+      localizeUi("ui.longTermMemory.reviewqueue.blockedBeforeApply", { count: result.blockedMutationIds.length }),
+    );
+  if (result.remaining)
+    sentences.push(
+      localizeUi(
+        pick(
+          result.remaining,
+          "ui.longTermMemory.reviewqueue.otherPendingOne",
+          "ui.longTermMemory.reviewqueue.otherPending",
+        ),
+        { count: result.remaining },
+      ),
+    );
+  if (result.autoIncluded)
+    sentences.push(
+      localizeUi(
+        pick(
+          result.autoIncluded,
+          "ui.longTermMemory.reviewqueue.dependenciesIncludedAutomaticallyOne",
+          "ui.longTermMemory.reviewqueue.dependenciesIncludedAutomatically",
+        ),
+        { count: result.autoIncluded },
+      ),
+    );
+  if (result.indexRebuildFailures.length)
+    sentences.push(
+      endSentence(
+        localizeUi("ui.longTermMemory.reviewqueue.changesWereSavedButTheIndexRebuildFailedValue1", {
+          value1: result.indexRebuildFailures.join(" "),
+        }),
+      ),
+    );
+  sentences.push(...result.messages.map(endSentence));
+  if (result.cascadeMutationLabels.length)
+    sentences.push(
+      localizeUi(
+        pick(
+          result.cascadeMutationLabels.length,
+          "ui.longTermMemory.reviewqueue.cascadeSkippedMutationsOne",
+          "ui.longTermMemory.reviewqueue.cascadeSkippedMutations",
+        ),
+        { count: result.cascadeMutationLabels.length, labels: result.cascadeMutationLabels.join(", ") },
+      ),
+    );
+  return sentences;
+}
+
 function ReviewProgress({
   sources,
   pending,
@@ -758,7 +837,7 @@ function SelectionCheckbox({
         data-ltm-control="review-select"
         checked={checked}
         onChange={onChange}
-        className="h-3.5 w-3.5 rounded accent-[var(--primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
+        className="h-4 w-4 rounded accent-[var(--primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
       />
       <span className={compact ? "sr-only" : undefined}>{label}</span>
     </label>
@@ -784,10 +863,7 @@ function AmbiguousLinkChoice({
   const selectedTarget = ambiguousLinkChoiceTarget(mutation, diagnostic, explicitTarget);
   if (selectedTarget === null) return null;
   return (
-    <div
-      data-ltm-review-link-choice
-      className="mari-editor-panel mari-editor-panel--soft space-y-2 border-[var(--marinara-editor-warning)]/45 p-3 text-xs"
-    >
+    <div data-ltm-review-link-choice className="mari-editor-panel mari-editor-panel--soft space-y-2 p-3 text-xs">
       <p className="font-semibold">{localizeUi("ui.longTermMemory.reviewqueue.ambiguousLinkChoiceTitle")}</p>
       <p className="text-[var(--muted-foreground)]">
         {localizeUi("ui.longTermMemory.reviewqueue.ambiguousLinkChoiceDescription", {
@@ -885,9 +961,7 @@ function MutationEditor({
           id={id}
           data-ltm-character-counter
           className={`block text-right text-[0.6875rem] font-normal ${
-            count <= NEAR_TEXT_LIMIT_THRESHOLD
-              ? "text-[var(--marinara-editor-warning)]"
-              : "text-[var(--muted-foreground)]"
+            count <= NEAR_TEXT_LIMIT_THRESHOLD ? "" : "text-[var(--muted-foreground)]"
           }`}
         >
           {localizeUi(key, { count })}
@@ -933,7 +1007,7 @@ function MutationEditor({
           </label>
         ) : null}
         {Object.entries(mutation.note.sections).map(([sectionKey, section]) => (
-          <div key={sectionKey} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_10rem]">
+          <div key={sectionKey} data-ltm-review-field-grid className="grid gap-2">
             <label className="space-y-1 text-xs font-medium text-[var(--muted-foreground)]">
               <span>{humanizeLabel(sectionKey)}</span>
               <textarea
@@ -999,7 +1073,7 @@ function MutationEditor({
 
   if (mutation.kind === "append_section") {
     return (
-      <div data-ltm-mutation-editor className="grid gap-2 pt-3 sm:grid-cols-[minmax(0,1fr)_10rem]">
+      <div data-ltm-mutation-editor data-ltm-review-field-grid className="grid gap-2 pt-3">
         <label className="space-y-1 text-xs font-medium text-[var(--muted-foreground)]">
           <span>
             {humanizeLabel(mutation.sectionKey)} {localizeUi("ui.longTermMemory.mutationeditor.text")}
@@ -1036,7 +1110,7 @@ function MutationEditor({
 
   if (mutation.kind === "update_section") {
     return (
-      <div data-ltm-mutation-editor className="grid gap-2 pt-3 sm:grid-cols-[minmax(0,1fr)_10rem]">
+      <div data-ltm-mutation-editor data-ltm-review-field-grid className="grid gap-2 pt-3">
         <label className="space-y-1 text-xs font-medium text-[var(--muted-foreground)]">
           <span>
             {humanizeLabel(mutation.sectionKey)} {localizeUi("ui.longTermMemory.mutationeditor.text")}
@@ -1996,8 +2070,7 @@ export default function ReviewQueue({
             requestBody.mutationIds.forEach((id) => failedMutationIds.add(id));
             messages.push(
               localizeUi("ui.longTermMemory.reviewqueue.draftActionFailed", {
-                message:
-                  error instanceof Error ? error.message : localizeUi("ui.longTermMemory.reviewqueue.requestFailed"),
+                message: errorMessage(error, localizeUi("ui.longTermMemory.reviewqueue.requestFailed")),
               }),
             );
           }
@@ -2119,8 +2192,7 @@ export default function ReviewQueue({
           if (failedRequestIds.size) failedDraftIds.add(draftId);
           messages.push(
             localizeUi("ui.longTermMemory.reviewqueue.draftActionFailed", {
-              message:
-                error instanceof Error ? error.message : localizeUi("ui.longTermMemory.reviewqueue.requestFailed"),
+              message: errorMessage(error, localizeUi("ui.longTermMemory.reviewqueue.requestFailed")),
             }),
           );
         }
@@ -2228,8 +2300,7 @@ export default function ReviewQueue({
               messages: [
                 ...current.messages,
                 localizeUi("ui.longTermMemory.reviewqueue.draftActionFailed", {
-                  message:
-                    error instanceof Error ? error.message : localizeUi("ui.longTermMemory.reviewqueue.requestFailed"),
+                  message: errorMessage(error, localizeUi("ui.longTermMemory.reviewqueue.requestFailed")),
                 }),
               ],
             }
@@ -2285,8 +2356,7 @@ export default function ReviewQueue({
               ? "ui.longTermMemory.reviewqueue.draftDiscardFailed"
               : "ui.longTermMemory.reviewqueue.reportDismissalFailed",
             {
-              message:
-                error instanceof Error ? error.message : localizeUi("ui.longTermMemory.reviewqueue.requestFailed"),
+              message: errorMessage(error, localizeUi("ui.longTermMemory.reviewqueue.requestFailed")),
             },
           ),
         ],
@@ -2325,9 +2395,7 @@ export default function ReviewQueue({
           : []),
       ]);
     } catch (error) {
-      setDeleteSuggestionError(
-        error instanceof Error ? error.message : localizeUi("ui.longTermMemory.reviewqueue.requestFailed"),
-      );
+      setDeleteSuggestionError(errorMessage(error, localizeUi("ui.longTermMemory.reviewqueue.requestFailed")));
     } finally {
       setDismissingId(null);
     }
@@ -2369,9 +2437,7 @@ export default function ReviewQueue({
         ),
       );
     } catch (error) {
-      setDeleteSuggestionError(
-        error instanceof Error ? error.message : localizeUi("ui.longTermMemory.reviewqueue.requestFailed"),
-      );
+      setDeleteSuggestionError(errorMessage(error, localizeUi("ui.longTermMemory.reviewqueue.requestFailed")));
     } finally {
       setClearingSourceId(null);
     }
@@ -2432,8 +2498,7 @@ export default function ReviewQueue({
     } catch (error) {
       setExtractionMessage({
         tone: "danger",
-        text:
-          error instanceof Error ? error.message : localizeUi("ui.longTermMemory.reviewqueue.sourceReextractionFailed"),
+        text: errorMessage(error, localizeUi("ui.longTermMemory.reviewqueue.sourceReextractionFailed")),
       });
     } finally {
       setExtractingSourceId(null);
@@ -2514,7 +2579,7 @@ export default function ReviewQueue({
       <article
         key={row.mutation.id}
         data-ltm-review-mutation={row.mutation.id}
-        className={`rounded-md border border-[var(--border)] px-1 py-3 ${selectedIds.has(row.mutation.id) ? "bg-[var(--accent)]/55" : ""}`}
+        className={`rounded-md border border-[var(--border)] px-1 py-3 ${selectedIds.has(row.mutation.id) ? "bg-[var(--accent)]/50" : ""}`}
       >
         <div className="flex min-w-0 items-start gap-2">
           <SelectionCheckbox
@@ -2538,7 +2603,7 @@ export default function ReviewQueue({
               })
             }
             aria-controls={expanded ? `ltm-review-mutation-details-${row.mutation.id}` : undefined}
-            className="relative min-w-0 flex-1 rounded-md px-2 py-1 pr-8 text-left hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--marinara-editor-focus-ring)]"
+            className="relative min-w-0 flex-1 rounded-md px-2 py-1 pr-8 text-left hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 [--ring:var(--marinara-editor-focus-ring)] focus-visible:ring-[var(--ring)]"
             data-ltm-risk={row.mutation.risk}
             data-ltm-disposition={row.disposition}
           >
@@ -2627,7 +2692,7 @@ export default function ReviewQueue({
               label={rowActionLabel}
               data-ltm-review-action={preflightReady ? "apply" : preflightBlocked ? "blocked" : "review"}
               iconSize="1rem"
-              className="mari-editor-action--primary !h-11 !min-h-11 !w-11 !min-w-11"
+              className="mari-editor-action--primary"
               style={{ height: 44, minHeight: 44, width: 44, minWidth: 44 }}
               disabled={
                 !eligibleIds.has(row.mutation.id) ||
@@ -2644,7 +2709,6 @@ export default function ReviewQueue({
                 title: targetTitle,
               })}
               iconSize="1rem"
-              className="!h-11 !min-h-11 !w-11 !min-w-11"
               style={{ height: 44, minHeight: 44, width: 44, minWidth: 44 }}
               destructive
               disabled={!skippableDraftIds.has(row.draftId) || running !== null}
@@ -2656,7 +2720,7 @@ export default function ReviewQueue({
           <div
             id={`ltm-review-mutation-details-${row.mutation.id}`}
             data-ltm-review-mutation-details
-            className="ml-0 space-y-3 border-t border-[var(--border)]/70 pt-3 text-xs sm:ml-10"
+            className="space-y-3 border-t border-[var(--border)]/70 pt-3 text-xs"
           >
             {onOpenMemory && targetExists ? (
               <Button onClick={() => onOpenMemory(row.targetId)}>
@@ -2896,6 +2960,26 @@ export default function ReviewQueue({
       aria-label={localizeUi("ui.longTermMemory.reviewqueue.reviewQueue")}
       className="space-y-4"
     >
+      <style>{`
+        @media (min-width: 40rem) {
+          [data-ltm-review-field-grid] {
+            grid-template-columns: minmax(0, 1fr) 10rem;
+          }
+          [data-ltm-review-mutation-details] {
+            margin-left: 2.5rem;
+          }
+        }
+        @media (min-width: 48rem) {
+          [data-ltm-review-batch-actions] {
+            position: static;
+            z-index: auto;
+            border-width: 0;
+            background-color: transparent;
+            padding: 0;
+            box-shadow: none;
+          }
+        }
+      `}</style>
       {extractionMessage ? <StatusSurface tone={extractionMessage.tone}>{extractionMessage.text}</StatusSurface> : null}
       {reviewStateMessage ? (
         <StatusSurface tone="warning" data-ltm-review-state-warning>
@@ -2907,9 +2991,7 @@ export default function ReviewQueue({
       ) : null}
       {review.isError ? (
         <StatusSurface tone="danger">
-          {review.error instanceof Error
-            ? review.error.message
-            : localizeUi("ui.longTermMemory.reviewqueue.pendingReviewDraftsCouldNotLoad")}{" "}
+          {errorMessage(review.error, localizeUi("ui.longTermMemory.reviewqueue.pendingReviewDraftsCouldNotLoad"))}{" "}
           <Button className="shrink-0" disabled={review.isFetching} onClick={() => void review.refetch()}>
             {localizeUi("ui.longTermMemory.activityview.retry")}
           </Button>
@@ -2923,56 +3005,7 @@ export default function ReviewQueue({
               : "success"
           }
         >
-          {result.phase === "preflight"
-            ? localizeUi("ui.longTermMemory.reviewqueue.preflightSummary", {
-                ready: result.ready,
-                blocked: result.blockedMutationIds.length,
-              })
-            : localizeUi("ui.longTermMemory.reviewqueue.batchResultSummary", {
-                action:
-                  result.action === "accepted"
-                    ? localizeUi("ui.longTermMemory.reviewqueue.applied")
-                    : localizeUi("ui.longTermMemory.reviewqueue.skipped"),
-                completed: result.completed,
-                mutation:
-                  result.completed === 1
-                    ? localizeUi("ui.longTermMemory.reviewqueue.mutation")
-                    : localizeUi("ui.longTermMemory.reviewqueue.mutations"),
-                failed: result.failed,
-              })}
-          {result.blockedMutationIds.length
-            ? localizeUi("ui.longTermMemory.reviewqueue.blockedMutations", {
-                count: result.blockedMutationIds.length,
-              })
-            : ""}
-          {result.remaining
-            ? localizeUi("ui.longTermMemory.reviewqueue.otherMutationsPending", {
-                count: result.remaining,
-                mutation:
-                  result.remaining === 1
-                    ? localizeUi("ui.longTermMemory.reviewqueue.mutation")
-                    : localizeUi("ui.longTermMemory.reviewqueue.mutations"),
-              })
-            : ""}
-          {result.autoIncluded
-            ? localizeUi("ui.longTermMemory.reviewqueue.dependenciesIncludedAutomatically", {
-                count: result.autoIncluded,
-                dependency:
-                  result.autoIncluded === 1
-                    ? localizeUi("ui.longTermMemory.reviewqueue.dependency")
-                    : localizeUi("ui.longTermMemory.reviewqueue.dependencies"),
-              })
-            : ""}
-          {result.indexRebuildFailures.length
-            ? localizeUi("ui.longTermMemory.reviewqueue.changesWereSavedButTheIndexRebuildFailedValue1", {
-                value1: result.indexRebuildFailures.join(" "),
-              })
-            : ""}
-          {result.messages.length
-            ? localizeUi("ui.longTermMemory.reviewqueue.value1_5cb90a9", {
-                value1: result.messages.join(" "),
-              })
-            : ""}
+          {batchResultSentences(result, localizeUi, locale).join(" ")}
           {result.failedMutationIds.length ? (
             <Button disabled={running !== null} onClick={retryFailed}>
               {localizeUi("ui.longTermMemory.reviewqueue.retryFailed")}
@@ -2983,16 +3016,6 @@ export default function ReviewQueue({
               {localizeUi("ui.longTermMemory.reviewqueue.reviewFailed")}
             </Button>
           ) : null}
-          {result.cascadeMutationLabels.length
-            ? localizeUi("ui.longTermMemory.reviewqueue.cascadeSkippedMutations", {
-                count: result.cascadeMutationLabels.length,
-                mutation:
-                  result.cascadeMutationLabels.length === 1
-                    ? localizeUi("ui.longTermMemory.reviewqueue.mutation")
-                    : localizeUi("ui.longTermMemory.reviewqueue.mutations"),
-                labels: result.cascadeMutationLabels.join(", "),
-              })
-            : ""}
           {result.action === "accepted" && result.completed && onOpenVault ? (
             <Button
               onClick={() => {
@@ -3038,8 +3061,7 @@ export default function ReviewQueue({
       {reviewContextFailed ? (
         <StatusSurface tone="danger">
           <span className="min-w-0 break-words [overflow-wrap:anywhere]">
-            {localizeUi("ui.longTermMemory.reviewqueue.memoryContextCouldNotLoad")}{" "}
-            {notes.error instanceof Error ? notes.error.message : ""}
+            {localizeUi("ui.longTermMemory.reviewqueue.memoryContextCouldNotLoad")} {errorMessage(notes.error, "")}
           </span>
           <Button className="shrink-0" disabled={notes.isFetching} onClick={() => void notes.refetch()}>
             {localizeUi("ui.longTermMemory.activityview.retry")}
@@ -3072,7 +3094,7 @@ export default function ReviewQueue({
                   return (
                     <div key={id} className="group">
                       <div
-                        className={`flex min-h-12 items-stretch border-b border-[var(--border)] text-sm ${active ? "bg-[var(--accent)]/55" : ""}`}
+                        className={`flex min-h-12 items-stretch border-b border-[var(--border)] text-sm ${active ? "bg-[var(--accent)]/50" : ""}`}
                       >
                         <button
                           type="button"
@@ -3103,7 +3125,7 @@ export default function ReviewQueue({
                           <Button
                             data-ltm-review-rejected-count={rejectedCount}
                             disabled={identityDirtyIds.size > 0}
-                            className="!min-h-11 !min-w-11 shrink-0 rounded-full border border-[var(--marinara-editor-warning)]/40 px-2 py-0.5 text-[0.625rem] font-semibold text-[var(--marinara-editor-warning)] underline underline-offset-2"
+                            className="shrink-0 rounded-full border px-2 py-0.5 text-[0.625rem] font-semibold underline underline-offset-2"
                             style={{ minHeight: 44, minWidth: 44 }}
                             onClick={() => {
                               setSelectedSourceId(id);
@@ -3208,7 +3230,7 @@ export default function ReviewQueue({
                         setDetailsOpen(next);
                         setMobilePaneAndFocus(next ? "inspector" : "workbench");
                       }}
-                      className="aria-pressed:bg-[var(--accent)]"
+                      className={detailsOpen ? "bg-[var(--accent)]" : undefined}
                     >
                       {localizeUi("ui.longTermMemory.reviewqueue.details")}
                     </Button>
@@ -3277,7 +3299,6 @@ export default function ReviewQueue({
                           <Button
                             destructive
                             data-ltm-clear-rejected-suggestions
-                            className="min-h-[2.75rem]"
                             disabled={dismissingId !== null || clearingSourceId !== null || identityDirtyIds.size > 0}
                             onClick={() => void clearRejectedSuggestions()}
                           >
@@ -3469,7 +3490,7 @@ export default function ReviewQueue({
                   data-ltm-review-batch-actions
                   role="group"
                   aria-label={localizeUi("ui.longTermMemory.reviewqueue.batchActions")}
-                  className="sticky bottom-2 z-10 flex flex-wrap items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)] p-2 shadow-md md:static md:z-auto md:border-0 md:bg-transparent md:p-0 md:shadow-none"
+                  className="sticky bottom-2 z-10 flex flex-wrap items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)] p-2 shadow-md"
                 >
                   <Button
                     primary

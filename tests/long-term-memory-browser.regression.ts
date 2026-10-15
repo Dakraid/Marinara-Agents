@@ -1699,6 +1699,31 @@ async function main() {
         1,
         "The all option is present in the shared scope list",
       );
+      const scopeTabStops = () =>
+        memoryScope
+          .locator('[role="radiogroup"] [role="radio"]')
+          .evaluateAll((radios) =>
+            radios
+              .filter((radio) => (radio as HTMLElement).tabIndex === 0)
+              .map((radio) => radio.getAttribute("data-ltm-vault-scope-target")),
+          );
+      assert.deepEqual(
+        await scopeTabStops(),
+        ["all"],
+        "A checked place collapsed under No memories leaves the first place as the Tab stop",
+      );
+      await memoryScope.locator('[data-ltm-vault-scope-tab="chat"]').click();
+      assert.deepEqual(await scopeTabStops(), ["chat:desktop-chat"], "Only the checked place is a Tab stop");
+      await memoryScope.locator('[data-ltm-vault-scope-current="chat"]').focus();
+      await page.keyboard.press("ArrowUp");
+      await memoryScope
+        .locator('[data-ltm-vault-scope-pinned="all"][aria-checked="true"][tabindex="0"]:focus')
+        .waitFor();
+      await page.keyboard.press("ArrowDown");
+      await memoryScope
+        .locator('[data-ltm-vault-scope-current="chat"][aria-checked="true"][tabindex="0"]:focus')
+        .waitFor();
+      await memoryScope.locator('[data-ltm-vault-scope-tab="all"]').click();
       const scopeControlStyle = await page.locator("[data-ltm-vault-scope-control]").evaluate((element) => {
         const browserControls = document.querySelector<HTMLElement>("[data-ltm-browser-controls]")!;
         const control = element.getBoundingClientRect();
@@ -1783,7 +1808,7 @@ async function main() {
         await memoryScope.locator(`[data-ltm-vault-scope-tab="${kind}"]`).click();
         for (const query of ["", "does-not-match"]) {
           await memoryScope.locator("[data-ltm-vault-scope-search]").fill(query);
-          const rows = memoryScope.locator('[data-ltm-vault-scope-list] [role="checkbox"]');
+          const rows = memoryScope.locator('[data-ltm-vault-scope-list] [role="radiogroup"] [role="radio"]');
           assert.equal(await rows.nth(0).getAttribute("data-ltm-vault-scope-pinned"), "all");
           assert.equal(await rows.nth(1).getAttribute("data-ltm-vault-scope-pinned"), "current");
           assert.equal(await rows.nth(1).isDisabled(), kind === "branch");
@@ -3928,6 +3953,11 @@ async function main() {
       await page.getByRole("button", { name: "Accept eligible (2)" }).click();
       await page.getByRole("button", { name: /^Apply preflighted \(2\)/ }).click();
       await page.getByRole("button", { name: "Retry failed review actions" }).waitFor();
+      // #1375: each part of the batch summary is its own sentence, not a fragment glued to the last.
+      assert.equal(
+        await page.getByText(/Applied \d+ mutations?; [1-9]\d* failed\. .*Draft action failed: .+\./u).count(),
+        1,
+      );
       failSecondReviewAccept = false;
       await page.getByRole("button", { name: "Retry failed review actions" }).click();
       await page.getByText("Retry preflight complete. Review the results before applying again.").waitFor();

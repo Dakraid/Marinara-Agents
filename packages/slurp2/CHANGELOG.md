@@ -1,5 +1,32 @@
 # Slurp release notes
 
+## 0.3.42 — 2026-10-15
+
+- Added: chats with "Carryover to chats" on also learn the character's Slurp storyline, love life, how well they know you, and the Slurp memories a chat with you may read.
+- Added: Carryover settings show in how many chats with your Creators "Include Slurp activity" is on.
+- Fixed: a scene started from a DM runs on the connection Slurp planned it with, not the Engine's plain default.
+- Fixed: an unreadable scene plan is asked for once more before "The scene plan got lost" shows.
+- Fixed: "Start the scene" shows an error when the Engine's scene host is missing.
+- Fixed: lorebook entries set to "At Depth" reach Slurp DMs and posts.
+- Added: Deep details has a "Lore" section with the entries a reply used or had no room for.
+
+## 0.3.41 — 2026-10-14
+
+- Faster: Slurp shows character and persona avatars as small copies instead of the full card picture. On opening Slurp the feed downloaded about 16 MB of avatar pictures (1–2.5 MB each, shown 44 px wide), and Discover about 14 MB more; those downloads also held up the feed's other requests. The small copies are made once and kept in Slurp's own media folder.
+- Faster: the "Report" sheet of a post or a reply is built only when you open it. Before, every post card and reply built a closed copy, which made the feed and Creator pages slower to open.
+- Faster: the ambient background colour measures the pictures on screen only after the screen has drawn, so opening a screen no longer forces extra layout work.
+
+## 0.3.40 — 2026-10-14
+
+- Changed: Slurp follows a Creator's gender instead of calling everyone "she". Drama packs use the gender of whoever plays each role ("{her:he}" tokens), and pack names and descriptions no longer assume a woman. Post, DM and scene prompts tell the model the Creator's pronouns. A Creator without a gender is "they".
+- Added: a "Clothing style" choice in the Creator's stage profile: Auto, Feminine, Masculine or Neutral. Auto follows gender. It decides what a "lingerie" spice post is: lingerie for feminine, an underwear shoot with briefs for masculine, either for neutral. Male Creators no longer get bra-and-panties shoots unless their style is Feminine. The post prompt also names the style.
+- Added: a picture of a Creator whose appearance text does not say their sex starts with "Male." or "Female." from their gender, so the image model stops defaulting to a woman.
+- Changed: the stage profile field hints read "he", "she" or "they" from the gender you picked.
+
+## 0.3.39 — 2026-10-14
+
+- Fixed: on Android, choosing a picture for a post (in the composer, or "replace" while editing a post) no longer opens the system photo picker, which lists only a few albums such as Camera, Screenshots and Downloads. Android now offers its full file browser, so every folder is reachable. A file that is not a picture still gets "Choose an image file.". Other platforms keep the picture-only file dialog. (#1378)
+
 ## 0.3.38 — 2026-10-13
 
 - Added: in a Creator's settings, "Appearance for pictures" has a new button, "Use the card's image tags". It shows only while the linked character or persona has the Image Appearance Override switched on and filled in, and it saves those tags as the Creator's own appearance. It asks first when that replaces an appearance you wrote. "Use linked appearance" (or "Clear override") removes it again. (#1366)
