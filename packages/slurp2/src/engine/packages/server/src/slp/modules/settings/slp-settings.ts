@@ -201,6 +201,8 @@ export const slurpSettingsSchema = z.object({
   imageAppearanceMode: z.enum(["writer", "insert", "both"]),
   appearanceProfileMode: z.enum(["ask", "high_confidence", "always"]),
   autoPostingImagesEnabled: z.boolean(),
+  /** Draw a missing avatar or banner for a Hinted or Secret Creator in the background. */
+  autoCreatorArtworkEnabled: z.boolean(),
   allowRandomUsers: z.boolean(),
   /** Ambient roster entity ids the user deleted; the seeder never recreates these. */
   dismissedAmbientProfileIds: z.array(z.string()),
@@ -559,6 +561,8 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   imageAppearanceMode: "writer",
   appearanceProfileMode: "high_confidence",
   autoPostingImagesEnabled: false,
+  // On for an install that predates the switch; first-run setup sets it from its own images choice.
+  autoCreatorArtworkEnabled: true,
   allowRandomUsers: false,
   dismissedAmbientProfileIds: [],
   allowProfessorMari: false,

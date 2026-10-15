@@ -90,6 +90,7 @@ export type SlurpSettings = {
   imageAppearanceMode: "writer" | "insert" | "both";
   appearanceProfileMode: "ask" | "high_confidence" | "always";
   autoPostingImagesEnabled: boolean;
+  autoCreatorArtworkEnabled: boolean;
   allowRandomUsers: boolean;
   allowProfessorMari: boolean;
   /** Characters the user put in the audience. Value is a Fan Type id, or true to derive one. */

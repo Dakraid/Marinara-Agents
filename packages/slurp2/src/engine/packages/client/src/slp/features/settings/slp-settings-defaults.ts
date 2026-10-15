@@ -54,6 +54,7 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
     "imageAppearanceMode",
     "appearanceProfileMode",
     "autoPostingImagesEnabled",
+    "autoCreatorArtworkEnabled",
     "allowGalleryImageAttachments",
     "previewOpensPost",
     "previewWholePictures",

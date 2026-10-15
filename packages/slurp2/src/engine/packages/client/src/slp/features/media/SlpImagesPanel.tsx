@@ -199,6 +199,13 @@ export function SlpImagesPanel(page: SlpBackstagePageProps) {
           onChange={(value) => update("autoPostingImagesEnabled", value)}
         />
         <Toggle
+          settingKey="autoCreatorArtworkEnabled"
+          label={t("ui.slurp.settings.images.autoArtwork")}
+          detail={t("ui.slurp.settings.images.autoArtworkDetail")}
+          value={settings.autoCreatorArtworkEnabled}
+          onChange={(value) => update("autoCreatorArtworkEnabled", value)}
+        />
+        <Toggle
           settingKey="allowGalleryImageAttachments"
           label={t("ui.slurp.settings.images.galleryFallback")}
           detail={t("ui.slurp.settings.images.galleryFallbackDetail")}

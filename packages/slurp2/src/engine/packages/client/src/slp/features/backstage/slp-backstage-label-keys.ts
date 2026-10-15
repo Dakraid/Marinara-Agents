@@ -76,6 +76,7 @@ export const SLP_BACKSTAGE_LABEL_KEYS: Partial<Record<keyof SlurpSettings, strin
   imageGenerationIncludeDescriptions: "ui.slurp.settings.images.includeDescriptions",
   imageAppearanceMode: "ui.slurp.settings.images.lookMode",
   autoPostingImagesEnabled: "ui.slurp.settings.images.enableForNew",
+  autoCreatorArtworkEnabled: "ui.slurp.settings.images.autoArtwork",
   allowRandomUsers: "ui.slurp.settings.audience.reactionBank",
   audienceCharacters: "ui.slurp.settings.audience.characterOverrides",
   audienceCharacterGroupIds: "ui.slurp.settings.audience.characterGroups",
