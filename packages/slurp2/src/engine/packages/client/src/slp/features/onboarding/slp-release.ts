@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.45";
+export const SLURP2_VERSION = "0.3.46";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -12,6 +12,15 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.46",
+    date: "2026-10-15",
+    notes: [
+      "Creators notice each other now: a like or a quick comment on another Creator's post, your persona's posts too.",
+      "Your phone, your PC and any other browser open Slurp as the same persona, so the Inbox matches everywhere.",
+      "Custom tags tell you when all eight slots are full, and a save that a tag blocks names that tag.",
+    ],
+  },
   {
     version: "0.3.45",
     date: "2026-10-15",
