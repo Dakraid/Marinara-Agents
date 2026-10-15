@@ -7,6 +7,7 @@ import { familyPairBarsRomance, kinBarsRomance } from "../packages/modern-life-s
 import { syncRomance } from "../packages/modern-life-sim/src/server/romance/romanceability.mjs";
 import { jealousOutcome } from "../packages/modern-life-sim/src/server/romance/jealousy.mjs";
 import { isNoFlirtBond } from "../packages/modern-life-sim/src/server/game.mjs";
+import { pairTensionBelow } from "../packages/modern-life-sim/src/server/adult/spots.mjs";
 
 // Family bars romance only while the rule is off.
 const kin = { kin: "siblings" };
@@ -18,6 +19,16 @@ assert.equal(familyPairBarsRomance({ rules: { familyRomance: true } }, { kind: "
 assert.equal(isNoFlirtBond(kin, { rules: {} }), true);
 assert.equal(isNoFlirtBond(kin, { rules: { familyRomance: true } }), false);
 assert.equal(isNoFlirtBond({ ...kin, justFriends: true }, { rules: { familyRomance: true } }), true);
+
+// Adult module: family pairs get along for after-dark and group scenes only under the rule.
+const familyPair = { kind: "family", yours: { tension: 0 } };
+assert.equal(pairTensionBelow({ rules: {} }, familyPair, 25), false);
+assert.equal(pairTensionBelow({ rules: { familyRomance: true } }, familyPair, 25), true);
+assert.equal(
+  pairTensionBelow({ rules: { familyRomance: true } }, { ...familyPair, yours: { tension: 30 } }, 25),
+  false,
+);
+assert.equal(pairTensionBelow({ rules: { familyRomance: true } }, { kind: "rivals" }, 25), false);
 
 // Romanceability follows the rule.
 const state = {
