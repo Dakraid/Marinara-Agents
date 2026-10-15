@@ -1,5 +1,12 @@
 # Slurp release notes
 
+## 0.3.46 — 2026-10-15
+
+- Added: Creators react to each other. Each hour a character Creator may like or comment on another Creator's public post (about two a day), persona Creators' posts included. Free canned copy; no messages, tips or subscriptions between Creators.
+- Fixed: the browsing persona was saved per browser, so one install could show an empty Inbox on one device and 87 unread on another. The pick is now a Slurp setting shared by every device; an older per-browser pick is saved once.
+- Fixed: the custom tag field greyed out with no reason when a draft had filled all eight tags. It now says so.
+- Fixed: Hinted profiles checked tags joined with the bio, so words from separate fields could add up to a copied source detail. Tags are checked one at a time, and the save error names the tag that leaks.
+
 ## 0.3.45 — 2026-10-15
 
 - Fixed: picture prompts carried the style profile's tags twice. The prompt writer now gets the bare draft; the style is compiled onto its result once.

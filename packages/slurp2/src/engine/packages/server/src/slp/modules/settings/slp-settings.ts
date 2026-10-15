@@ -419,6 +419,7 @@ export const slurpSettingsSchema = z.object({
   paused: z.boolean(),
   nightQuiet: z.boolean(),
   onboarding: z.enum(["not_started", "in_progress", "completed"]),
+  viewerPersonaId: z.string().max(200).nullable(), // Who browses Slurp, the same on every device (#103).
 });
 
 export type SlurpSettings = z.infer<typeof slurpSettingsSchema>;
@@ -653,6 +654,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   paused: false,
   nightQuiet: false,
   onboarding: "not_started",
+  viewerPersonaId: null,
 };
 
 /**
@@ -779,7 +781,6 @@ function normalizeSlurpSettingsUncached(raw: unknown): SlurpSettings {
     maxArcs: SLURP_ARC_LIBRARY_MAX,
     maxEvents: SLURP_PLATFORM_EVENTS_MAX,
   }));
-  candidate.onboarding = rawRecord.onboarding ?? DEFAULT_SLURP_SETTINGS.onboarding;
   candidate.postsPerDayCustom = slurpPostsPerDayIsCustom(rawRecord);
   // A partial or older value keeps the balanced weight for every job it does not name.
   candidate.storyJobs = { ...DEFAULT_SLURP_SETTINGS.storyJobs, ...parseRecord(rawRecord.storyJobs) };
