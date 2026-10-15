@@ -273,6 +273,11 @@ export function slurpPickTrendJoin(input: {
   const joinedToday = input.trends
     .flatMap((trend) => trend.adopters)
     .filter((adopter) => at.getTime() - Date.parse(adopter.at) < DAY_MS).length;
+  // The 40% is of everyone, across all live trends together.
+  const peakLimit = Math.max(1, Math.floor(SLURP_TREND_PEAK_SHARE * input.automaticCount));
+  const allJoined = new Set(
+    slurpLiveTrends(input.trends, at).flatMap((trend) => trend.adopters.map((adopter) => adopter.id)),
+  ).size;
   for (const trend of slurpLiveTrends(input.trends, at)) {
     if (
       (trend.starterId === creator.id && trend.originPostId) ||
@@ -280,8 +285,7 @@ export function slurpPickTrendJoin(input: {
     )
       continue;
     const stage = slurpTrendStage(trend, at);
-    const full = trend.adopters.length >= Math.max(1, Math.floor(SLURP_TREND_PEAK_SHARE * input.automaticCount));
-    if (joinedToday >= dailyLimit || full) continue;
+    if (joinedToday >= dailyLimit || allJoined >= peakLimit) continue;
     if (slurpTrendBlocked(creator.text, input.avoid, `${trend.label} ${trend.lean ?? ""}`)) continue;
     const ageHours = (at.getTime() - Date.parse(trend.startedAt)) / HOUR_MS;
     const reach = slurpTrendReach({
@@ -330,4 +334,11 @@ export function slurpTrendQuoteOf(metadata: Record<string, unknown> | null | und
   const stamp = metadata?.slurpTrend;
   const id = stamp && typeof stamp === "object" ? (stamp as Record<string, unknown>).originPostId : null;
   return typeof id === "string" && id ? id : null;
+}
+
+/** The trend label a post carries in `metadata.slurpTrend`, for search. */
+export function slurpTrendLabelOf(metadata: Record<string, unknown> | null | undefined): string {
+  const stamp = metadata?.slurpTrend;
+  const label = stamp && typeof stamp === "object" ? (stamp as Record<string, unknown>).label : "";
+  return typeof label === "string" ? label : "";
 }

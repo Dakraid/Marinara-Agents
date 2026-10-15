@@ -217,7 +217,8 @@ export async function runSlpSetSpice(
   db: DB,
   input: SlpActionParsed<"set-spice">,
 ): Promise<SlpAssistOutcome<{ level: string | null }> | LeverDone<{ level: string | null }>> {
-  if (!(await slurpMayStartTrend(db, input.accountId))) return { ok: false, status: 404, error: "Creator not found." };
+  if (!(await createSlurpStorage(db).getNoodlerAccountById(input.accountId)))
+    return { ok: false, status: 404, error: "Creator not found." };
   const before = (await getSlurpPostGuidance(db)).creators[input.accountId]?.level ?? "";
   const level = input.level ? SLP_SPICE_TO_EXPLICIT[input.level] : "";
   await setSlpSpiceLevel(db, input.accountId, level);
@@ -374,7 +375,7 @@ export async function runSlpStartTrend(
   db: DB,
   input: SlpActionParsed<"start-trend">,
 ): Promise<SlpAssistOutcome<{ trendId: string }> | LeverDone<{ trendId: string }>> {
-  if (input.accountId && !(await createSlurpStorage(db).getNoodlerAccountById(input.accountId)))
+  if (input.accountId && !(await slurpMayStartTrend(db, input.accountId)))
     return { ok: false, status: 404, error: "Creator not found." };
   const trend = await startSlurpTrend(
     db,

@@ -147,7 +147,7 @@ export type SlurpBeat = {
   /** The collab, deal, rivalry or couple moment this beat carries out, stamped on the post as `slurpTie`. */
   tie?: SlurpTieStamp;
   /** The trend this post joins (docs/TRENDS.md), stamped on the post as `slurpTrend`; its origin post is quoted. */
-  trend?: { id: string; label: string; originPostId: string | null };
+  trend?: { id: string; label: string; originPostId: string | null; starterId?: string };
 };
 
 const TIE_KINDS: readonly string[] = ["collab", "sponsor", "rival", "couple"];
@@ -516,6 +516,7 @@ export function parseSlurpBeat(raw: unknown): SlurpBeat | null {
                 id: trend.id,
                 label: trend.label,
                 originPostId: typeof trend.originPostId === "string" ? trend.originPostId : null,
+                ...(typeof trend.starterId === "string" ? { starterId: trend.starterId } : {}),
               },
             }
           : {};

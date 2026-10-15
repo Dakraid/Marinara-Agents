@@ -24,7 +24,8 @@ type SlurpTrend = {
   starterId: string | null; // the Creator or the player's page; null for a world trend
   originPostId: string | null; // adopters quote this post (quotePostId)
   line: string | null; // world trends only: a `{a}` template like a shared idea
-  spicy: { kind: string } | null; // the origin was a spicy post: adopters do their OWN level, see below
+  lean: string | null;      // what the player says posts lean into (Stir "Start / Steer a trend")
+  spicy: boolean;           // the origin was a spicy post: adopters do their OWN level, see below
   startedAt: string;
   adopters: { id: string; at: string; role: SlurpTrendRole; postId: string | null }[];
 };
@@ -58,7 +59,7 @@ The pick runs when a Creator plans an ordinary post, not on a clock (`planSlurpT
 `base(role, stage) × reach`, where reach is x3 for a tie (friend, collab, rival, couple) to the starter or any
 adopter, x2 for a shared niche (`slurpSharedNiche`) with the starter, x1 otherwise. Base chances: early adopter
 rising 0.55, follower peak 0.35, follower rising-late 0.15, tired follower 0.10, contrarian peak/tired 0.3.
-Caps: adopters per day at most `ceil(0.15 × automatic Creators)` (min 1); total at most 40% of them
+Caps: adopters per day at most `ceil(0.15 × automatic Creators)` (min 1); total at most 40% of them (unique Creators across all live trends together)
 (peak target ~20–40%). The roll is `hash(creatorId, trendId, sequence)`, so a retried slot repeats its choice.
 
 An adopter's beat reads: `A trend is going around Slurp: "<label>", started by <starter>. Do your own take on it`

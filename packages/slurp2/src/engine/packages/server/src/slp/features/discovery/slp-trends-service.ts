@@ -195,6 +195,7 @@ export async function planSlurpTrendBeat(
       automatic: true,
       followers: 0,
     };
+    const tiedIds = await tiedIdsOf(db, input.creatorId);
     const starters = new Map<string, SlurpTieCreator>();
     for (const trend of slurpLiveTrends(trends, input.at)) {
       const starter = trend.starterId ? accounts.find((account) => account.id === trend.starterId) : null;
@@ -208,42 +209,55 @@ export async function planSlurpTrendBeat(
           followers: 0,
         });
     }
-    const join = slurpPickTrendJoin({
-      creator,
-      sequence: input.sequence,
-      trends,
-      at: input.at,
-      automaticCount: accounts.filter((account) => account.kind !== "random_user" && !isPlayerPersona(account)).length,
-      creators: starters,
-      tiedIds: await tiedIdsOf(db, input.creatorId),
-      avoid: input.avoid,
-    });
-    if (!join) return null;
-    const type = join.role === "contrarian" ? "opinion" : "audience_game";
-    if (!slurpBeatIntents(type).some((intent) => input.intents.includes(intent))) return null;
-    // ponytail: the Creator counts as joined when planned, not when the post is written; a post that then
-    // fails still counts. Record it from the publish path (with the post id) if that shows up in practice.
-    if (!input.previewOnly) {
-      await followStarter(db, join.trend, input.creatorId, input.at);
-      await mutateSlurpTrends(db, input.at, (current) => ({
-        trends: slurpAddAdopter(current, join.trend.id, {
-          id: input.creatorId,
-          at: input.at.toISOString(),
-          role: join.role,
-          postId: null,
-        }),
-        result: null,
-      }));
-    }
+    const pick = (current: SlurpTrend[]) =>
+      slurpPickTrendJoin({
+        creator,
+        sequence: input.sequence,
+        trends: current,
+        at: input.at,
+        automaticCount: accounts.filter((account) => account.kind !== "random_user" && !isPlayerPersona(account))
+          .length,
+        creators: starters,
+        tiedIds,
+        avoid: input.avoid,
+      });
+    const typeOf = (role: string) => (role === "contrarian" ? "opinion" : "audience_game");
+    const fits = (role: string) => slurpBeatIntents(typeOf(role)).some((intent) => input.intents.includes(intent));
+    // The pick and the adopter write are one serialized change, so two posts planned at once cannot both
+    // take the last place under a quota. ponytail: the Creator counts as joined when planned, not when the
+    // post is written; record it from the publish path (with the post id) if a failed post shows up.
+    const join = input.previewOnly
+      ? pick(trends)
+      : await mutateSlurpTrends(db, input.at, (current) => {
+          const picked = pick(current);
+          if (!picked || !fits(picked.role)) return null;
+          return {
+            trends: slurpAddAdopter(current, picked.trend.id, {
+              id: input.creatorId,
+              at: input.at.toISOString(),
+              role: picked.role,
+              postId: null,
+            }),
+            result: picked,
+          };
+        });
+    if (!join || !fits(join.role)) return null;
+    // The follow is awarded after the write, and only while the starter has room for more.
+    if (!input.previewOnly) await followStarter(db, join.trend, input.creatorId, input.at);
     const starterName = starters.get(join.trend.starterId ?? "")?.name ?? null;
     return {
-      type,
+      type: typeOf(join.role),
       anchorKind: "trend",
       anchor: join.trend.label,
       line: slurpTrendLine(join, starterName).replace("{a}", "something from your own life"),
       cast: [],
       place: null,
-      trend: { id: join.trend.id, label: join.trend.label, originPostId: join.trend.originPostId },
+      trend: {
+        id: join.trend.id,
+        label: join.trend.label,
+        originPostId: join.trend.originPostId,
+        ...(join.trend.starterId ? { starterId: join.trend.starterId } : {}),
+      },
     };
   } catch (error) {
     logger.warn(error, "[slurp] Could not plan a trend post; this one is ordinary");

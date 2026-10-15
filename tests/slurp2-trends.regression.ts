@@ -5,6 +5,7 @@ import {
   slurpPickTrendJoin,
   slurpTrendBlocked,
   slurpTrendLabel,
+  slurpTrendLabelOf,
   slurpTrendLine,
   slurpTrendQuoteOf,
   slurpTrendMayStart,
@@ -253,4 +254,30 @@ assert.equal(
   false,
   "a starter with an origin post already posted it",
 );
+// The 40% is of everyone across all live trends together: 4 of 10 have joined, split over two trends.
+const adopter = (id: string) => ({ id, at: ago(30), role: "follower" as const, postId: null });
+const split = [
+  { ...trend, id: "a", label: "A one", adopters: [adopter("x1"), adopter("x2")] },
+  { ...trend, id: "b", label: "B two", adopters: [adopter("x3"), adopter("x4")] },
+];
+assert.equal(
+  crowd
+    .slice(0, 200)
+    .some((entry) =>
+      slurpPickTrendJoin({
+        creator: entry,
+        sequence: 3,
+        trends: split,
+        at: at(20),
+        automaticCount: 10,
+        creators: byId,
+        tiedIds: new Set(),
+        avoid: [],
+      }),
+    ),
+  false,
+  "4 of 10 across two trends is the limit",
+);
+assert.equal(slurpTrendLabelOf({ slurpTrend: { id: "t", label: "Puppies" } }), "Puppies");
+assert.equal(slurpTrendLabelOf(null), "");
 console.log("slurp2 trends: ok");

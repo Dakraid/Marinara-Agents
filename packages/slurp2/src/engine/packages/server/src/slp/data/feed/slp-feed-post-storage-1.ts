@@ -24,7 +24,7 @@ import type {
 } from "../../modules/records/slp-storage-model.js";
 import { snapshotForAccount, mapPost, mapManagedPost, imageClaimIsAvailable } from "../host/slp-storage-mappers.js";
 import type { SlurpStorageContext } from "../host/slp-storage-context.js";
-import { slurpTrendQuoteOf } from "../../modules/discovery/slp-trends.js";
+import { slurpTrendLabelOf, slurpTrendQuoteOf } from "../../modules/discovery/slp-trends.js";
 
 export function createFeedPostStorage1(context: SlurpStorageContext) {
   const {
@@ -257,6 +257,8 @@ export function createFeedPostStorage1(context: SlurpStorageContext) {
           return (
             creatorMatches.has(row.authorAccountId) ||
             (row.title ?? "").toLowerCase().includes(search) ||
+            // A public post that joined a trend is found by the trend's name.
+            (row.access === "public" && slurpTrendLabelOf(parseRecord(row.metadata)).toLowerCase().includes(search)) ||
             (readable && row.content.toLowerCase().includes(search))
           );
         });
