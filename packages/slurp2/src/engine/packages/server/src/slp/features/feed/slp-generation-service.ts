@@ -42,11 +42,8 @@ import {
 import { slurpArcPoll, slurpArcRotation, slurpProjectChapter } from "../../modules/projects/slp-arc-progress.js";
 import { slurpPurposeMetadata } from "../../modules/feed/slp-post-purpose.js";
 import { resolveSlurpCreatorScheduleContext } from "../creators/slp-creators-contract.js";
-import { createChatsStorage } from "../../../services/storage/chats.storage.js";
 import { type SlpCreatorContentFormat } from "../../base/prompting/slp-content-format.js";
 import { resolveSlurpLoreContext } from "../../data/host/slp-lore-context.js";
-import { createCharacterGalleryStorage } from "../../../services/storage/character-gallery.storage.js";
-import { createGalleryStorage } from "../../../services/storage/gallery.storage.js";
 import { pickGalleryAttachmentForAccount } from "./slp-generated-activity-service.js";
 import { protectCreatorGeneratedIdentity, type PublicIdentity } from "../../base/identity/slp-identity-protection.js";
 import { resolveCreatorCharacterCanon } from "../../data/creators/slp-source-resolve.js";
@@ -771,10 +768,9 @@ export async function generateCreatorPost(
   const galleryFallback = async (): Promise<{ imageUrl?: string; metadata?: Record<string, unknown> }> => {
     if (textOnly || !settings.allowGalleryImageAttachments || linkedPublicAccount?.kind !== "character") return {};
     const attachment = await pickGalleryAttachmentForAccount({
+      db,
       account: linkedPublicAccount,
-      chats: createChatsStorage(db),
-      gallery: createGalleryStorage(db),
-      characterGallery: createCharacterGalleryStorage(db),
+      postingAccountId: account.id,
     }).catch((error: unknown) => {
       logger.warn(error, "[slurp] Could not attach a gallery image for %s", account.displayName);
       return null;

@@ -25,6 +25,16 @@ export type SlurpImageContextPost = Pick<
 >;
 
 /**
+ * How Slurp asks for a picture's description. The Engine's chat default asks for the style too, and
+ * the writer then talked about brushwork instead of the person (player report); the player can
+ * replace this in Settings › Images.
+ */
+export const SLURP_IMAGE_CAPTION_PROMPT =
+  "You describe pictures from a social feed for a writer who cannot see them. " +
+  "Write a faithful, concise description of what is visible: the people, their clothing, pose and expression, what they are doing, the place, and any readable text. " +
+  "Do not describe the art style, medium, or image quality, and do not add speculation beyond what is visible.";
+
+/**
  * The connection that describes pictures. A text-only Creator model cannot read an image, so the
  * image context setting can point descriptions at an image-capable model. Empty, or a connection
  * that no longer exists, keeps the text connection.
@@ -33,6 +43,8 @@ export async function slurpImageCaptioning(
   db: DB,
   connectionId: string | null,
   textConnection: GenerationConnection,
+  /** The player's caption instructions; blank uses SLURP_IMAGE_CAPTION_PROMPT. */
+  prompt = "",
 ): Promise<ImageCaptioningRuntime> {
   const connection =
     (connectionId ? await createConnectionsStorage(db).getWithKey(connectionId) : null) ?? textConnection;
@@ -49,11 +61,16 @@ export async function slurpImageCaptioning(
       connection.defaultParameters,
     ),
   );
-  // The Engine's caption helper swallows provider errors, so a refusal is only visible here.
+  const instructions = prompt.trim() || SLURP_IMAGE_CAPTION_PROMPT;
+  // The Engine's caption helper swallows provider errors, so a refusal is only visible here. Older Engines
+  // hardcode its one system message (the chat default), so Slurp's instructions replace it here.
   const guardedProvider = Object.assign(Object.create(provider) as typeof provider, {
-    chatComplete: async (...args: Parameters<typeof provider.chatComplete>) => {
+    chatComplete: async (...[messages, ...rest]: Parameters<typeof provider.chatComplete>) => {
       try {
-        return await provider.chatComplete(...args);
+        const own = messages.map((message) =>
+          message.role === "system" ? { ...message, content: instructions } : message,
+        );
+        return await provider.chatComplete(own, ...rest);
       } catch (error) {
         if (isUnsupportedSlpVisionInputError(error)) rememberSlurpVisionRejection(connection);
         throw error;

@@ -1,5 +1,14 @@
 # Slurp release notes
 
+## 0.3.45 — 2026-10-15
+
+- Fixed: picture prompts carried the style profile's tags twice. The prompt writer now gets the bare draft; the style is compiled onto its result once.
+- Fixed: the gallery fallback picked the first gallery image every time. It now picks the image this Creator showed least recently.
+- Added: "Draw missing avatars and banners" in Settings › Images. Off stops background drawing; Open Creators still copy their card's pictures. On for existing installs; first-run setup sets it from its images choice.
+- Added: "Caption instructions" in Settings › Images. Blank uses a Slurp default that describes people, clothes, pose, place and text, and leaves out the art style.
+- Added: "Always in their pictures" per Creator. The text opens the Creator's part of every picture prompt, after the style tags, in place of the card name.
+- Fixed: the post writer no longer dresses Creators in worn-out, faded or shabby clothes unless the card or caption asks for it.
+
 ## 0.3.44 — 2026-10-15
 
 - Added: trends. A post that takes off (shown likes; your likes, unlocks and tips count most), your own page's hits, a platform trend, or Stir "Start a trend" (ready-made trends, a starter, what to lean into) starts one. Stir "Steer a trend" changes what it leans into. The right Creators join, each at their own spice level and limits, quote the origin post, peak, then cool; some roast it, some never join. The starter gains followers.
