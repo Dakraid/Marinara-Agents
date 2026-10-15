@@ -753,15 +753,60 @@ const PAIR_NAMES = {
   couple: "a couple",
   ex: "exes",
   rivals: "rivals",
+  teacher: "teacher of",
+  student: "student of",
+  guardian: "guardian of",
+  ward: "ward of",
+  owner: "owner of",
+  property: "property of",
 };
 const FAMILY_NAMES = {
   siblings: "siblings",
   parent: "parent and child",
   cousins: "cousins",
   relatives: "relatives",
+  "bio-parent": "biological parent of",
+  "adoptive-parent": "adoptive parent of",
+  child: "child of",
+  "adopted-child": "adopted child of",
 };
-const pairName = (pair) =>
-  pair.kind === "family" ? (FAMILY_NAMES[pair.detail] ?? "family") : (PAIR_NAMES[pair.kind] ?? pair.kind);
+// One-way relations: the pair's `a` is the lead (teacher, parent, guardian, owner); each lead role and its follower.
+const LEAD_ROLES = {
+  teacher: "student",
+  guardian: "ward",
+  owner: "property",
+  "bio-parent": "child",
+  "adoptive-parent": "adopted-child",
+};
+const REVERSE_ROLES = {
+  student: { kind: "teacher", detail: null },
+  ward: { kind: "guardian", detail: null },
+  property: { kind: "owner", detail: null },
+  child: { kind: "family", detail: "bio-parent" },
+  "adopted-child": { kind: "family", detail: "adoptive-parent" },
+};
+const leadRoleOf = (pair) => {
+  const role = pair?.kind === "family" ? pair.detail : pair?.kind;
+  return LEAD_ROLES[role] ? role : null;
+};
+// What `viewerId` is to the other in a one-way pair ("teacher" or "student"), else null.
+const pairRoleFor = (pair, viewerId) => {
+  const lead = leadRoleOf(pair);
+  return lead ? (pair.a === viewerId ? lead : LEAD_ROLES[lead]) : null;
+};
+const roleName = (role) => PAIR_NAMES[role] ?? FAMILY_NAMES[role] ?? role;
+const pairName = (pair, viewerId) => {
+  const lead = leadRoleOf(pair);
+  if (pair.role) {
+    return pair.role;
+  }
+  if (lead) {
+    return viewerId
+      ? roleName(pairRoleFor(pair, viewerId))
+      : `${roleName(lead).replace(/ of$/, "")} and ${roleName(LEAD_ROLES[lead]).replace(/ of$/, "")}`;
+  }
+  return pair.kind === "family" ? (FAMILY_NAMES[pair.detail] ?? "family") : (PAIR_NAMES[pair.kind] ?? pair.kind);
+};
 function workBox(character) {
   const work = character.work;
   if (!work) {
@@ -974,6 +1019,8 @@ function sheetNetwork(character) {
 }
 
 export {
+  REVERSE_ROLES,
+  pairRoleFor,
   FAMILY_NAMES,
   PAIR_NAMES,
   albumLight,

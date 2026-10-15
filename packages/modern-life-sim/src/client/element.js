@@ -1,6 +1,6 @@
 // DOM morph helpers, style mounting, custom element class and define
 import { STYLES } from "./styles.js";
-import { MAP, brokenView, checkedInto, cropBox, cropView, escape } from "./views/common.js";
+import { MAP, brokenView, checkedInto, cropBox, cropView, escape, withFutanari } from "./views/common.js";
 import { firstDayCard, titleView } from "./views/title.js";
 import { mapView, phoneButton } from "./views/town-map.js";
 import {
@@ -252,7 +252,8 @@ import {
   presetSave,
   presetsClose,
   presetsOpen,
-  readCardWith,
+  queueReads,
+  readFailedCast,
   readWholeCast,
   refreshResources,
   saveDraftNow,
@@ -629,7 +630,11 @@ class ModernLifeSimElement extends HTMLElement {
       }
       if (input.dataset?.orientFor) {
         if (input.dataset.orient === "into") {
-          const into = checkedInto(input);
+          const checked = checkedInto(input),
+            into = withFutanari(
+              checked,
+              input.checked ? checked.filter((group) => group !== input.value) : [...checked, input.value],
+            );
           return into.length ? setOrientation(input.dataset.orientFor, "into", into) : this.render();
         }
         return setOrientation(input.dataset.orientFor, input.dataset.orient, input.value);
@@ -2676,6 +2681,31 @@ Type ${picked.length} to delete them.`);
       if (action === "read-stop") {
         return stopReadingAll();
       }
+      if (action === "read-failed") {
+        return readFailedCast();
+      }
+      if (action === "bulk-romance" || action === "bulk-kink-add" || action === "bulk-kink-remove") {
+        const kink = (this.querySelector('[data-do="bulk-kink"]')?.value ?? "")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 60);
+        for (const entry of Object.values(S.draft?.cast ?? {})) {
+          const adult = entry.on ? entry.modules?.adult : null;
+          if (action === "bulk-romance" && entry.on) {
+            entry.romanceable = true;
+          } else if (adult && kink && adult.adult !== "no") {
+            const kinks = adult.intimacy_kinks ?? [],
+              has = kinks.some((one) => one.toLowerCase() === kink.toLowerCase());
+            if (action === "bulk-kink-remove") {
+              adult.intimacy_kinks = kinks.filter((one) => one.toLowerCase() !== kink.toLowerCase());
+            } else if (!has && kinks.length < 24) {
+              adult.intimacy_kinks = [...kinks, kink];
+            }
+          }
+        }
+        this.render();
+        return;
+      }
       if (action === "start") {
         return startLife();
       }
@@ -2750,7 +2780,7 @@ ${life?.name ?? id}`);
       return true;
     }
     if (action === "week-reread") {
-      readCardWith(id);
+      queueReads([id]);
       return true;
     }
     if (action === "week-cancel") {
@@ -2841,7 +2871,7 @@ ${life?.name ?? id}`);
       draft.cast[id].traitsEdit = !draft.cast[id].traitsEdit;
     } else {
       if (action === "cast-read") {
-        readCardWith(id);
+        queueReads([id]);
         return true;
       }
       if (action === "step") {
@@ -3036,6 +3066,17 @@ ${life?.name ?? id}`);
       };
       this.render();
       return;
+    } else if (action === "bulk-knows") {
+      const mates = matesOf(draft);
+      for (const [cardId, entry] of Object.entries(draft.cast)) {
+        // Housemates are at least close: the casual levels skip them.
+        if (entry.on && !(mates.includes(cardId) && ["no", "friendly", "friend"].includes(target.value))) {
+          entry.knows = target.value;
+          entry.kin = target.value === "family" ? (entry.kin ?? "relatives") : null;
+        }
+      }
+      this.render();
+      return;
     } else if (action === "kin") {
       draft.cast[id] = {
         ...draft.cast[id],
@@ -3071,7 +3112,8 @@ ${life?.name ?? id}`);
       this.render();
       return;
     } else if (action === "cast-into") {
-      const into = checkedInto(target);
+      const was = draft.cast[id]?.into ?? [],
+        into = withFutanari(checkedInto(target), was);
       // Someone is always into someone: unticking the last chip just redraws it
       draft.cast[id] = into.length
         ? {
@@ -3151,6 +3193,9 @@ ${life?.name ?? id}`);
       draft.season = target.value;
     } else if (action === "lore-book") {
       draft.loreBookId = target.value;
+    } else if (action === "read-steer") {
+      draft.readSteer = target.value;
+      return;
     } else if (action === "scenario") {
       draft.scenario = target.value;
       const counter = this.querySelector("#mls-note .count");

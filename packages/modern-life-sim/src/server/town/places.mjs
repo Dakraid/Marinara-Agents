@@ -88,6 +88,14 @@ var TOWN_PLACES = [
     locked: true,
   },
   {
+    id: "police",
+    name: "Police Station",
+    open: 0,
+    close: 24,
+    always: true,
+    about: "the town's police station, a front desk and the officers' room",
+  },
+  {
     id: "houses",
     name: "Birch Lane",
     open: 0,
@@ -224,8 +232,8 @@ var TOWN_DISTRICTS = [
   {
     id: "downtown",
     name: "Downtown",
-    places: ["office", "cafe", "hospital", "hall"],
-    about: "the town centre, office buildings, cafes and the hospital, busy streets",
+    places: ["office", "cafe", "hospital", "police", "hall"],
+    about: "the town centre, office buildings, cafes, the hospital and the police station, busy streets",
   },
   {
     id: "campus",

@@ -2,7 +2,13 @@
 import { formatCalendarDate } from "../time/clock.mjs";
 import { BOND_TIER_NAMES, RELATIONSHIP_STATUS_LABELS, bondTier, bondTierName } from "./bonds.mjs";
 import { MILESTONE_COUPLE_STATUSES } from "./milestones.mjs";
-import { PAIR_CLOSENESS_THRESHOLDS, ensureSocialNetwork, npcPairKey } from "../network/npc-pairs.mjs";
+import {
+  ensureSocialNetwork,
+  isLeadPair,
+  npcPairKey,
+  PAIR_CLOSENESS_THRESHOLDS,
+  pairWordFor,
+} from "../network/npc-pairs.mjs";
 import { gossipLinesForPerson, knownFactsAboutPlayer, npcPairsOf } from "../network/town-facts.mjs";
 import { NEWS_TAG_WEIGHTS, buildWeeklyNewsView } from "../network/week-news.mjs";
 import { characterPortrait } from "../characters/portrait-face.mjs";
@@ -92,6 +98,7 @@ function networkSheet(state, characterId) {
       ...characterPortrait(characterOf(state, pair.other), state),
       kind: knownKind(state, pair),
       detail: pair.detail,
+      ...(isLeadPair(pair) ? { role: pairWordFor(pair, pair.a === pair.other ? pair.b : pair.a) } : {}),
       close: Math.round(pair.close),
       note: pair.note,
       from: pair.from,

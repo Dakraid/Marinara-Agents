@@ -6,7 +6,7 @@ import { applyBondAction, bondKind, bondTier, bondTierName, markTraitsSeen } fro
 import { MILESTONE_COUPLE_STATUSES } from "./milestones.mjs";
 import { itemDef } from "../items/inventory.mjs";
 import { isPileSpoiled } from "../inventory/piles-and-cooking.mjs";
-import { npcPairBetween } from "../network/npc-pairs.mjs";
+import { npcPairBetween, pairWordFor } from "../network/npc-pairs.mjs";
 import { npcPairsOf } from "../network/town-facts.mjs";
 import { characterPortrait } from "../characters/portrait-face.mjs";
 import { earnMoney, housingShareDue, rentSeasonKey, spendMoney } from "../money/wallet.mjs";
@@ -562,7 +562,7 @@ function introducablePeopleOf(state, characterId) {
       id: pair.other,
       name: characterOf(state, pair.other).name,
       ...characterPortrait(characterOf(state, pair.other), state),
-      rel: pair.detail ?? pair.kind,
+      rel: pairWordFor(pair, pair.a === pair.other ? pair.b : pair.a),
       here: isCharacterHere(state, pair.other),
     }));
 }

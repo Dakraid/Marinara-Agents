@@ -36,6 +36,12 @@
     "modern-life-sim": {
       "versions": [
         {
+          "version": "0.5.0",
+          "date": "2026-10-15",
+          "notes": "- Reading cards runs several at once, up to the Agents parallel limit of the reading connection. Cards not read or that failed can be queued while a read runs, and RE-READ FAILED queues them all.\n- A \"How to read them\" box steers every card read.\n- New jobs: Student (paid, at the University) and Police officer, at the new Police Station downtown.\n- One-way relations between cast members: teacher and student, biological or adoptive parent and child, guardian and ward, owner and property.\n- Into both women and men now adds futanari as well.\n- Whole-cast changes: everyone open to romance, add or remove a kink for all, set how everyone knows you.",
+          "highlight": true
+        },
+        {
           "version": "0.4.1",
           "date": "2026-10-13",
           "notes": "- Starting skills: 5 points is a recommendation, not a limit; you can add more, up to 10 in every skill.\n- Assistant prefill and reasoning prefill in the advanced model settings, sent as the model's own opening words.\n- The basic income box and the advanced model settings at creation now match the other fields.",

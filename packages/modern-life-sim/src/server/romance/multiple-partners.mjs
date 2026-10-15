@@ -8,7 +8,7 @@ import {
   MILESTONE_COUPLE_STATUSES,
   PARTNER_PAIR_MILESTONES,
 } from "../relationships/milestones.mjs";
-import { ensureSocialNetwork, npcPairBetween, npcPairKey } from "../network/npc-pairs.mjs";
+import { ensureSocialNetwork, npcPairBetween, npcPairKey, pairBothWords } from "../network/npc-pairs.mjs";
 import { introduceNpcPair } from "../network/town-facts.mjs";
 import { MAX_PLANS, OUTING_KINDS } from "../outings/outing-rules.mjs";
 import { dateTastesFor } from "../outings/date-tastes.mjs";
@@ -1110,7 +1110,7 @@ function partnersAbout(state, scene) {
   let nameOf = (id) => characterOf(state, id)?.name ?? npcNameAside(state, id),
     pairNote = (first, second) => {
       let pair = npcPairBetween(state, first, second);
-      return pair ? ` (to each other: ${pair.detail ?? pair.kind})` : "";
+      return pair ? ` (to each other: ${pairBothWords(pair)})` : "";
     };
   if (scene.milestone === "partners-meet") {
     let ids = [scene.characterId, ...(scene.cast ?? []).filter((id) => id !== scene.characterId)];

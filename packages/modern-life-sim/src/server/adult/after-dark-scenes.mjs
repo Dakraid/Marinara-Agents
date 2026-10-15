@@ -16,7 +16,7 @@ import {
   picturePromptRule,
   settingBlock,
 } from "../scenes/scene-engine.mjs";
-import { npcPairBetween } from "../network/npc-pairs.mjs";
+import { npcPairBetween, pairBothWords } from "../network/npc-pairs.mjs";
 import { FACT_ACT_PHRASES } from "../network/town-facts.mjs";
 import { settingNoteFor } from "../cast/read-card.mjs";
 import { PLACE_ACTIVITIES, registerModulePlace } from "../town/town-layout.mjs";
@@ -166,7 +166,7 @@ function afterDarkBetweenThem(state, firstId, secondId, { club = false } = {}) {
     memories = pair ? memoriesInBudget(pair).map((memory) => `- ${memory.text}`) : [];
   return [
     pair
-      ? `They are ${pair.kind === "couple" ? "a couple" : pair.kind}${pair.note ? ` (${pair.note})` : ""}.`
+      ? `They are ${pair.kind === "couple" ? "a couple" : pairBothWords(pair)}${pair.note ? ` (${pair.note})` : ""}.`
       : club
         ? "They do not know each other: a dancer and a customer."
         : "They know each other.",

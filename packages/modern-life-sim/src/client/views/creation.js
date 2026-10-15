@@ -1,7 +1,7 @@
 // Life creation wizard steps, presets, cast picker and review
 import { SEX_PICK, escape, intoChips, likesSex } from "./common.js";
 import { weekView } from "./week.js";
-import { FAMILY_NAMES, PAIR_NAMES, newsFace, pairName } from "./people.js";
+import { FAMILY_NAMES, PAIR_NAMES, newsFace, pairName, pairRoleFor } from "./people.js";
 import { frameChoice, picturesBox, portraitChoice, samplingFields, sizeChoice } from "./settings.js";
 import { modMissing, modOn, modSection } from "./mods.js";
 import { S } from "../state.js";
@@ -835,15 +835,43 @@ function adultPrefsRow(draft, card, pick) {
         ${kinks.length < 24 ? `<input type="text" maxlength="60" placeholder="Add one, then Enter" data-do="cast-kink-add" data-id="${card.id}">` : ""}</div>
       </div>`;
 }
+// Changes for every card in the cast at once.
+function castBulkRow(setup, draft) {
+  const adultOn = draft.adding ? S.life?.modules?.adult?.on : draft.modules?.adult?.on;
+  return `<div class="card mls-cast-bulk"><span class="lbl">FOR THE WHOLE CAST</span>
+        <div class="actions">
+          <button class="mls-drop" data-do="bulk-romance">ALL OPEN TO ROMANCE</button>
+          <label>To you<select data-do="bulk-knows"><option value="" selected disabled>Set for all\u2026</option>${(
+            setup.knows ?? KNOWS_PICK
+          )
+            .filter((opt) => opt.id !== "couple")
+            .map((opt) => `<option value="${opt.id}">${escape(opt.label)}</option>`)
+            .join("")}</select></label>
+        </div>
+        ${
+          adultOn
+            ? `<div class="actions"><input type="text" maxlength="60" data-do="bulk-kink" placeholder="A kink or fetish">
+          <button class="mls-drop" data-do="bulk-kink-add">ADD TO ALL</button>
+          <button class="mls-drop" data-do="bulk-kink-remove">REMOVE FROM ALL</button></div>`
+            : ""
+        }
+      </div>`;
+}
 function castSection(setup, draft, { homes = true, add = false } = {}) {
   const chosen = chosenOf(setup, draft),
+    unreadCount = chosen.filter(
+      (member) =>
+        (member.pick.problem || !member.pick.proposed) &&
+        !member.pick.reading &&
+        !draft.readQueue?.includes(member.card.id),
+    ).length,
     memberCard = ({ card: card, pick: pick }) => `
     <div class="mls-member on">
       <span class="face">${card.avatar ? `<img src="${escape(card.avatar)}" alt="" loading="lazy">` : escape((card.name[0] ?? "?").toUpperCase())}</span>
       <div class="who"><b>${escape(card.name)}</b>${cardSub(card, setup.cards) ? `<small class="title">${escape(cardSub(card, setup.cards))}</small>` : ""}
-        ${pick.reading ? '<small class="reading">READING\u2026</small>' : pick.problem ? '<small class="failed">COULD NOT READ</small>' : pick.proposed ? `<small class="proposed">${seesArchetypes(draft, card.id) ? "READ \xB7 CHECK IT" : "READ"}</small>` : "<small>NOT READ</small>"}</div>
+        ${pick.reading ? '<small class="reading">READING\u2026</small>' : draft.readQueue?.includes(card.id) ? '<small class="reading">QUEUED</small>' : pick.problem ? '<small class="failed">COULD NOT READ</small>' : pick.proposed ? `<small class="proposed">${seesArchetypes(draft, card.id) ? "READ \xB7 CHECK IT" : "READ"}</small>` : "<small>NOT READ</small>"}</div>
       <span class="tools">
-        ${pick.reading ? `<button class="mls-drop soft" data-do="cast-cancel" data-id="${card.id}">CANCEL</button>` : `<button class="mls-drop" data-do="cast-read" data-id="${card.id}" ${draft.reading ? "disabled" : ""}>${pick.proposed ? "READ AGAIN" : "READ"}</button>`}
+        ${pick.reading || draft.readQueue?.includes(card.id) ? `<button class="mls-drop soft" data-do="cast-cancel" data-id="${card.id}">${pick.reading ? "CANCEL" : "UNQUEUE"}</button>` : `<button class="mls-drop" data-do="cast-read" data-id="${card.id}">${draft.reading ? "QUEUE" : pick.proposed ? "READ AGAIN" : "READ"}</button>`}
         <button class="mls-drop" data-do="cast-off" data-id="${card.id}">REMOVE</button>
       </span>
       <div class="fields">
@@ -869,10 +897,14 @@ function castSection(setup, draft, { homes = true, add = false } = {}) {
           <h2>THE CAST <span>${chosen.length} of up to ${castCap(setup)}</span></h2>
           <div class="card note">
             Reading a card fills in their personality, their week and how they know the others. You can skip it and set them up yourself.
+            <label class="field wide">How to read them \xB7 optional
+              <textarea data-do="read-steer" maxlength="1000" placeholder="Steer the reading: e.g. everyone is an adult, keep jobs close to the card, they all know each other\u2026">${escape(draft.readSteer ?? "")}</textarea></label>
             <div class="actions">
               ${draft.reading ? `<button class="mls-readall stop" data-do="read-stop">STOP READING \xB7 ${chosen.filter((member) => member.pick.proposed).length} / ${chosen.length}</button>` : `<button class="mls-readall" data-do="read-all" ${chosen.length ? "" : "disabled"}>READ ${chosen.length} CARD${chosen.length === 1 ? "" : "S"}</button>`}
+              ${unreadCount ? `<button class="mls-readall" data-do="read-failed">RE-READ ${unreadCount} FAILED OR UNREAD</button>` : ""}
             </div>
           </div>
+          ${chosen.length > 1 ? castBulkRow(setup, draft) : ""}
           <div class="mls-cast">
             ${add ? (setup.cards.length ? `<button class="mls-add" data-do="picker-open">+ ADD CHARACTERS<small>from your ${setup.cards.length} cards</small></button>` : '<div class="muted">There are no character cards in this Marinara.</div>') : ""}
             ${chosen.map(memberCard).join("")}
@@ -1393,7 +1425,7 @@ function inTownRow(setup, draft, card, chosen) {
       )
       .map((pair) => {
         const otherId = pair.a === card.id ? pair.b : pair.a;
-        return `<button class="mls-rel ${pair.changed ? "changed" : ""}" data-do="pair-edit" data-id="${card.id}" data-other="${otherId}"><b>${escape(nameOf(otherId))}</b> \xB7 ${escape(pairName(pair))}${pair.changed ? " <em>CHANGED</em>" : ""}</button>`;
+        return `<button class="mls-rel ${pair.changed ? "changed" : ""}" data-do="pair-edit" data-id="${card.id}" data-other="${otherId}">${pairRoleFor(pair, card.id) ? `${escape(pairName(pair, card.id))} <b>${escape(nameOf(otherId))}</b>` : `<b>${escape(nameOf(otherId))}</b> \xB7 ${escape(pairName(pair, card.id))}`}${pair.changed ? " <em>CHANGED</em>" : ""}</button>`;
       })
       .join(""),
     edit = draft.pairEdit?.card === card.id ? draft.pairEdit : null,

@@ -1,11 +1,13 @@
 // Weekly social-network LLM pass, applying changes and the weekly news view
 import { formatCalendarDate } from "../time/clock.mjs";
 import {
-  GROWING_PAIR_KINDS,
-  PAIR_CHANGE_LINE_MAX_CHARS,
   cleanPairText,
+  GROWING_PAIR_KINDS,
+  isLeadPair,
   npcPairKey,
+  PAIR_CHANGE_LINE_MAX_CHARS,
   pairKindForCloseness,
+  pairWordFor,
 } from "./npc-pairs.mjs";
 import { addFactKnowledge, describeTownFact, npcPairsOf, personKnowsFact, townFactById } from "./town-facts.mjs";
 
@@ -110,7 +112,7 @@ ${setting}`
         ...(pairs.length
           ? pairs.map(
               (pair) =>
-                `- ${pair.a} & ${pair.b} \xB7 ${pair.detail ?? pair.kind} \xB7 ${pair.hours} h \xB7 ${pair.home ? "at home (they live together)" : (pair.where ?? "around town")}${couples && pair.canTogether ? " \xB7 could get together" : ""}`,
+                `- ${pair.a} & ${pair.b} \xB7 ${isLeadPair(pair) ? `${pair.a} is ${pair.b}'s ${pairWordFor(pair, pair.b)}` : (pair.detail ?? pair.kind)} \xB7 ${pair.hours} h \xB7 ${pair.home ? "at home (they live together)" : (pair.where ?? "around town")}${couples && pair.canTogether ? " \xB7 could get together" : ""}`,
             )
           : ["- nobody"]),
         "",

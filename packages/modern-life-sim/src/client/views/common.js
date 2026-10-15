@@ -38,6 +38,12 @@ const MAP = {
     icon: "\u{1F3E5}",
     bg: "linear-gradient(135deg,#6a9aa8,#1c2e36)",
   },
+  police: {
+    r: 3,
+    icon: "\u{1F693}",
+    bg: "linear-gradient(135deg,#4a5e8a,#161d2e)",
+    tag: "WORK",
+  },
   hall: {
     r: -2,
     icon: "\u{1F492}",
@@ -286,10 +292,19 @@ const intoChips = (attrs, into) =>
     const on = intoList(into).includes(value);
     return `<label class="mls-zz ${on ? "on" : ""}"><input type="checkbox" ${attrs} value="${value}" ${on ? "checked" : ""}>${label}</label>`;
   }).join("")}</span>`;
+// Ticking both women and men adds futanari too; unticking futanari afterwards is kept.
+const withFutanari = (into, was = []) =>
+  into.includes("women") &&
+  into.includes("men") &&
+  !(was.includes("women") && was.includes("men")) &&
+  !into.includes("futanari")
+    ? [...into, "futanari"]
+    : into;
 const checkedInto = (input) =>
   [...(input.closest(".mls-into")?.querySelectorAll("input:checked") ?? [])].map((box) => box.value);
 
 export {
+  withFutanari,
   DISTRICT_LINKS,
   SEX_PICK,
   MAP,

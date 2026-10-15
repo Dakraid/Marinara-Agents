@@ -7,7 +7,7 @@ import { bondTier, hasMet, isFormerRival, markTraitsSeen, trustCushion } from ".
 import { MILESTONE_COUPLE_STATUSES } from "../relationships/milestones.mjs";
 import { kinWordFor } from "../relationships/kin.mjs";
 import { ITEM_CATALOG } from "../items/catalog.mjs";
-import { PAIR_ROMANCE_COUPLE_THRESHOLD, npcPairBetween, npcPairKey } from "../network/npc-pairs.mjs";
+import { npcPairBetween, npcPairKey, PAIR_ROMANCE_COUPLE_THRESHOLD, pairWordFor } from "../network/npc-pairs.mjs";
 import { FACT_ACT_PHRASES, personKnowsFact } from "../network/town-facts.mjs";
 import { applyNetworkWeek, crossedPathsThisWeek, possibleWeeklyTells } from "../network/week-news.mjs";
 import { townPlace } from "../town/town-layout.mjs";
@@ -560,7 +560,7 @@ function jealousAbout(state, scene) {
           : "someone told them";
   if (about.ask) {
     let pair = npcPairBetween(state, scene.characterId, about.with);
-    return `The person the player asks about: ${nameOf(about.with)}${pair ? ` (to them: ${pair.detail ?? pair.kind})` : ""}.`;
+    return `The person the player asks about: ${nameOf(about.with)}${pair ? ` (to them: ${pairWordFor(pair, scene.characterId)})` : ""}.`;
   }
   if (about.confront) {
     let pair = npcPairBetween(state, scene.characterId, about.with),

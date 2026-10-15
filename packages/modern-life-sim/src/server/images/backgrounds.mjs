@@ -141,6 +141,11 @@ var BACKGROUND_SUBJECTS = {
     tags: "grand hall interior, wedding venue, chandeliers, long banquet tables with white linen, flowers, a dance floor, elegant",
     prose: "a grand hall set for a wedding, chandeliers, long tables with white linen and flowers, and a dance floor",
   },
+  police: {
+    name: "Police Station",
+    tags: "police station interior, front desk, bulletin board, waiting chairs, officers' desks, fluorescent lights",
+    prose: "the inside of a small-town police station, the front desk, a bulletin board and the officers' desks behind",
+  },
   hospital: {
     name: "Hospital",
     tags: "hospital interior, hospital corridor, waiting room, reception desk, clean white walls",

@@ -137,6 +137,16 @@ var JOBS_BY_PLACE = {
     },
   ],
   university: [
+    // Paid for the sim's sake: a student's day at the university earns like a shift.
+    {
+      id: "student",
+      title: "Student",
+      pay: 45,
+      days: WEEKDAY_INDICES,
+      from: 9,
+      to: 15,
+      clothes: "casual clothes and a backpack",
+    },
     {
       id: "professor-1",
       title: "Professor",
@@ -154,6 +164,26 @@ var JOBS_BY_PLACE = {
       from: 13,
       to: 20,
       clothes: "a smart jacket",
+    },
+  ],
+  police: [
+    {
+      id: "police-day",
+      title: "Police officer",
+      pay: 110,
+      days: WEEKDAY_INDICES,
+      from: 7,
+      to: 15,
+      clothes: "a police uniform and a badge",
+    },
+    {
+      id: "police-night",
+      title: "Police officer",
+      pay: 120,
+      days: [3, 4, 5, 6, 0],
+      from: 22,
+      to: 6,
+      clothes: "a police uniform and a badge",
     },
   ],
   hospital: [

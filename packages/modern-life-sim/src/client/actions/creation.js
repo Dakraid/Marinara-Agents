@@ -534,43 +534,90 @@ const useTemplate = (cardId, template) =>
     entry.note = "";
   });
 const readers = new Map();
-const stopReading = (cardId) => readers.get(cardId)?.abort();
+const stopReading = (cardId) => {
+  if (S.draft?.readQueue?.includes(cardId)) {
+    S.draft.readQueue = S.draft.readQueue.filter((id) => id !== cardId);
+    notify();
+  }
+  readers.get(cardId)?.abort();
+};
 function stopReadingAll() {
   if (S.draft) {
     S.draft.stopReading = true;
+    S.draft.readQueue = [];
   }
   for (const controller of readers.values()) {
     controller.abort();
   }
-  if (S.draft && !readers.size) {
+  if (S.draft && !S.draft.readWorkers) {
     S.draft.reading = false;
     S.draft.stopReading = false;
     notify();
   }
 }
-async function readWholeCast() {
-  const draft = S.draft,
-    cardIds = Object.entries(draft.cast)
-      .filter(([, entry]) => entry.on && !entry.reading)
-      .map(([cardId]) => cardId);
-  draft.reading = true;
+// How many cards read at once: the Agents parallel limit of the connection the reads go to.
+function readLimit(draft) {
+  const connections = S.resources?.connections ?? [],
+    connection =
+      connections.find((conn) => conn.id === draft.settings?.connection) ??
+      connections.find((conn) => conn.defaultForAgents) ??
+      connections.find((conn) => conn.isDefault);
+  return Math.min(16, Math.max(1, Math.trunc(Number(connection?.maxParallelJobs)) || 1));
+}
+// Queues cards for reading; while a read runs, more cards join the same queue.
+function queueReads(cardIds) {
+  const draft = S.draft;
+  if (!draft) {
+    return;
+  }
+  draft.readQueue ??= [];
+  draft.readWorkers ??= 0;
   draft.stopReading = false;
+  for (const cardId of cardIds) {
+    const entry = draft.cast[cardId];
+    if (entry?.on && !entry.reading && !draft.readQueue.includes(cardId)) {
+      draft.readQueue.push(cardId);
+    }
+  }
+  const limit = readLimit(draft);
+  while (draft.readWorkers < limit && draft.readQueue.length) {
+    draft.readWorkers += 1;
+    void readWorker(draft);
+  }
+  draft.reading = draft.readWorkers > 0;
   notify();
+}
+async function readWorker(draft) {
   try {
-    for (const cardId of cardIds) {
-      if (draft.stopReading) {
-        break;
-      }
+    while (!draft.stopReading && draft.readQueue.length) {
+      const cardId = draft.readQueue.shift();
       if (draft.cast[cardId]?.on) {
         await readCardWith(cardId).catch(() => {});
       }
     }
   } finally {
-    draft.reading = false;
-    draft.stopReading = false;
-    notify();
+    draft.readWorkers -= 1;
+    if (!draft.readWorkers) {
+      draft.reading = false;
+      draft.stopReading = false;
+      draft.readQueue = [];
+      notify();
+    }
   }
 }
+const readWholeCast = () =>
+  queueReads(
+    Object.entries(S.draft?.cast ?? {})
+      .filter(([, entry]) => entry.on)
+      .map(([cardId]) => cardId),
+  );
+// Failed cards and cards never read, the ones a re-read can still fix.
+const readFailedCast = () =>
+  queueReads(
+    Object.entries(S.draft?.cast ?? {})
+      .filter(([, entry]) => entry.on && (entry.problem || !entry.proposed))
+      .map(([cardId]) => cardId),
+  );
 async function readCardWith(cardId) {
   const draft = S.draft;
   if (!draft?.cast[cardId]) {
@@ -596,6 +643,7 @@ async function readCardWith(cardId) {
         townName: draft.townName ?? "",
         scenario: draft.scenario ?? "",
         loreBookId: draft.loreBookId || "",
+        steer: draft.readSteer ?? "",
         others: Object.entries(draft.cast)
           .filter(([id, entry2]) => entry2.on && id !== cardId)
           .map(([id]) => ({
@@ -672,6 +720,13 @@ async function readCardWith(cardId) {
     }
     mergePeople(draft, cardId, res.proposal.people ?? []);
     entry.job = res.proposal.job?.id ?? (res.proposal.job?.out ? "out" : res.proposal.job?.home ? "home" : "none");
+    // Reads run side by side: a one-holder job another card took meanwhile goes back to none.
+    if (
+      res.proposal.job?.boss &&
+      Object.entries(draft.cast).some(([id, other]) => id !== cardId && other.on && other.job === entry.job)
+    ) {
+      entry.job = "none";
+    }
     entry.jobTitle = res.proposal.job?.home ? (res.proposal.job.title ?? "") : "";
     entry.workOutfit = res.proposal.workOutfit ?? "";
     entry.proposed = true;
@@ -704,7 +759,9 @@ export {
   presetSave,
   presetsClose,
   presetsOpen,
+  queueReads,
   readCardWith,
+  readFailedCast,
   readWholeCast,
   refreshResources,
   saveDraftNow,

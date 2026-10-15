@@ -65,7 +65,7 @@ var resolveWorkFromHome = (where) =>
       }
     : where;
 var SOCIAL_PLACES = ["cafe", "bar", "park", "restaurant", "mall", "food-court", "cinema", "arcade", "karaoke"];
-var WORKPLACE_ONLY_PLACES = ["office", "hospital"];
+var WORKPLACE_ONLY_PLACES = ["office", "hospital", "police"];
 function whereaboutsOf(character, minutes, options = {}) {
   let where = computeWhereabouts(character, minutes, options);
   return where.place && options.keepsOut?.(where.place, character.id)

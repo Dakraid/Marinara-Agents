@@ -591,6 +591,7 @@ var olderVersion = (a, b) => {
 var LIFE_DOCUMENT_KIND = "life";
 var MAX_LIVES = 20;
 var MAX_CAST = 30;
+var READ_STEER_MAX = 1000;
 var traitsCatalog = () => ({
   ...traitsEditorSchema(),
   things: Object.entries(THEIR_THING_ACTIVITIES).map(([key, thing]) => ({
@@ -2960,6 +2961,7 @@ function createService({
             couples = false,
             taken = [],
             modules = null,
+            steer = "",
           } = req.body ?? {},
           moduleFields = moduleCardFields({
             modules: modules && typeof modules == "object" ? modules : {},
@@ -3011,6 +3013,9 @@ function createService({
             couples: couples === true,
             jobs: freeJobs,
             fields: moduleFields,
+            steer: String(steer ?? "")
+              .trim()
+              .slice(0, READ_STEER_MAX),
           });
           return {
             cardId: card.id,
