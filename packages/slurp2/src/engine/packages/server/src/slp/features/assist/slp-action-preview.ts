@@ -23,6 +23,7 @@ import {
 import { SLP_STEERING_NUDGES_MAX } from "../../../../../shared/src/slp/slp-creator-steering.js";
 import { SLP_SPICE_LEVELS } from "../../../../../shared/src/slp/slp-spice.js";
 import { SLURP_PLATFORM_EVENTS_MAX } from "../../../../../shared/src/slp/slp-platform-events.js";
+import { slurpMayStartTrend } from "../discovery/slp-discovery-contract.js";
 import type { SlpActionPreview } from "../../../../../shared/src/slp/slp-stir.js";
 import type { SlpAssistOutcome } from "./slp-assist-service.js";
 import { isSlpDeskLever, previewSlpDeskLever, type SlpDeskLever } from "./slp-desk-levers.js";
@@ -278,7 +279,10 @@ async function previewOther(
     case "start-trend": {
       const trend = input as SlpActionParsed<"start-trend">;
       const label = slurpTrendLabel(trend.label);
-      const starter = trend.accountId ? await storage.getNoodlerAccountById(trend.accountId) : null;
+      const starter =
+        trend.accountId && (await slurpMayStartTrend(db, trend.accountId))
+          ? await storage.getNoodlerAccountById(trend.accountId)
+          : null;
       const trends = await readSlurpTrendList(db);
       return {
         ...(starter

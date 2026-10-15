@@ -15,7 +15,9 @@ import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-s
 import { readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ties-storage.js";
 import { slurpBeatIntents, type SlurpBeat } from "../../modules/feed/slp-post-beat.js";
 import type { SlurpContentIntent } from "../../../../../shared/src/slp/slp-content-axes.js";
+import { SLP_TREND_LEAN_MAX as SLURP_TREND_LEAN_MAX } from "../../../../../shared/src/slp/slp-trend-actions.js";
 import {
+  slurpTrendClean,
   SLURP_TREND_FOLLOW_CAP,
   slurpAddAdopter,
   slurpLiveTrends,
@@ -30,6 +32,7 @@ import {
   type SlurpTrendPost,
   type SlurpTrendSource,
 } from "../../modules/discovery/slp-trends.js";
+import { slurpIsCouplePage } from "../../modules/projects/slp-creator-couples.js";
 import type { SlurpTieCreator } from "../../modules/projects/slp-creator-ties.js";
 
 /** The world tick runs often; the posts are read at most this often. */
@@ -62,7 +65,7 @@ export async function startSlurpTrend(db: DB, input: SlurpTrendStart, at: Date):
       starterId: input.starterId ?? null,
       originPostId: input.originPostId ?? null,
       line: input.line ?? null,
-      lean: input.lean?.trim() || null,
+      lean: slurpTrendClean(input.lean, SLURP_TREND_LEAN_MAX) || null,
       spicy: input.spicy === true,
       startedAt: at.toISOString(),
       adopters: [],
@@ -296,9 +299,10 @@ export async function undoSlurpTrend(db: DB, id: string, at = new Date()): Promi
 export async function steerSlurpTrend(
   db: DB,
   id: string,
-  lean: string | null,
+  rawLean: string | null,
   at = new Date(),
 ): Promise<{ before: string | null } | undefined> {
+  const lean = slurpTrendClean(rawLean, SLURP_TREND_LEAN_MAX) || null;
   const done = await mutateSlurpTrends(db, at, (trends) => {
     const trend = trends.find((entry) => entry.id === id);
     if (!trend || slurpTrendStage(trend, at) === "dead") return null;
@@ -308,4 +312,10 @@ export async function steerSlurpTrend(
     };
   });
   return done ?? undefined;
+}
+
+/** Who may start a trend: a Creator or a page of the player's, never a couple's shared page or a fan. */
+export async function slurpMayStartTrend(db: DB, accountId: string): Promise<boolean> {
+  const account = await createSlurpStorage(db).getNoodlerAccountById(accountId);
+  return Boolean(account && account.kind !== "random_user" && !slurpIsCouplePage(account));
 }

@@ -2,6 +2,7 @@ export {
   advanceSlurpTrends,
   listSlurpTrendViews,
   planSlurpTrendBeat,
+  slurpMayStartTrend,
   startSlurpTrend,
   steerSlurpTrend,
   undoSlurpTrend,

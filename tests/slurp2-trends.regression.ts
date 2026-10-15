@@ -219,4 +219,38 @@ assert.equal(
 );
 assert.equal(SLP_TREND_ACTIONS["steer-trend"].schema.safeParse({ trendId: "t1", lean: "" }).success, true);
 assert.equal(SLP_TREND_ACTIONS["steer-trend"].schema.safeParse({ trendId: "t1", lean: "x".repeat(81) }).success, false);
+// The lean is held to the same hard noes as the label, and an origin-less trend lets its named starter post it once.
+assert.equal(slurpTrendBlocked("", ["puppies"], "Cozy night puppies"), true);
+const starterId = ids.find((id) => slurpTrendRole(id) === "early")!;
+const stirTrend = { ...trend, originPostId: null, starterId, lean: null };
+const starterJoins = Array.from({ length: 40 }, (_, sequence) => sequence).some((sequence) =>
+  slurpPickTrendJoin({
+    creator: crowd.find((entry) => entry.id === starterId)!,
+    sequence,
+    trends: [stirTrend],
+    at: at(10),
+    automaticCount: 100,
+    creators: byId,
+    tiedIds: new Set(),
+    avoid: [],
+  }),
+);
+assert.equal(starterJoins, true, "a named starter can post their own trend");
+const withOrigin = { ...stirTrend, originPostId: "p" };
+assert.equal(
+  Array.from({ length: 40 }, (_, sequence) => sequence).some((sequence) =>
+    slurpPickTrendJoin({
+      creator: crowd.find((entry) => entry.id === starterId)!,
+      sequence,
+      trends: [withOrigin],
+      at: at(10),
+      automaticCount: 100,
+      creators: byId,
+      tiedIds: new Set(),
+      avoid: [],
+    }),
+  ),
+  false,
+  "a starter with an origin post already posted it",
+);
 console.log("slurp2 trends: ok");

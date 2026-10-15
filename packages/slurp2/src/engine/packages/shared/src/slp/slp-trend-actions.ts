@@ -24,7 +24,7 @@ export const SLP_TREND_ACTIONS = {
   },
   "steer-trend": {
     summary: "Steer a trend that is going round Slurp: what the Creators who join lean into. Empty text clears it.",
-    inputs: { trendId: "The trend (from the trending list).", lean: "What posts should lean into, a few words." },
+    inputs: { trendId: "The trend (from list-world).", lean: "What posts should lean into, a few words." },
     schema: z.object({ trendId: id, lean: z.string().trim().max(SLP_TREND_LEAN_MAX) }).strict(),
   },
 } as const;

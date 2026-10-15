@@ -54,7 +54,7 @@ export type SlurpTrend = {
 const ROLES: readonly SlurpTrendRole[] = ["trendsetter", "early", "follower", "contrarian", "ignores"];
 const SOURCES: readonly SlurpTrendSource[] = ["creator", "player", "stir", "world"];
 
-const clean = (value: unknown, max: number) =>
+export const slurpTrendClean = (value: unknown, max: number) =>
   String(value ?? "")
     .replace(/\s+/gu, " ")
     .trim()
@@ -66,30 +66,30 @@ export function readSlurpTrends(raw: unknown): SlurpTrend[] {
   return list.flatMap((entry): SlurpTrend[] => {
     if (!entry || typeof entry !== "object") return [];
     const item = entry as Record<string, unknown>;
-    const id = clean(item.id, 80);
-    const label = clean(item.label, SLURP_TREND_LABEL_MAX);
+    const id = slurpTrendClean(item.id, 80);
+    const label = slurpTrendClean(item.label, SLURP_TREND_LABEL_MAX);
     const startedAt = String(item.startedAt ?? "");
     if (!id || !label || !Number.isFinite(Date.parse(startedAt))) return [];
     const source = SOURCES.includes(item.source as SlurpTrendSource) ? (item.source as SlurpTrendSource) : "creator";
-    const line = clean(item.line, 160);
+    const line = slurpTrendClean(item.line, 160);
     return [
       {
         id,
         label,
         source,
-        starterId: clean(item.starterId, 80) || null,
-        originPostId: clean(item.originPostId, 80) || null,
+        starterId: slurpTrendClean(item.starterId, 80) || null,
+        originPostId: slurpTrendClean(item.originPostId, 80) || null,
         line: line && line.split("{a}").length === 2 ? line : null,
-        lean: clean(item.lean, 80) || null,
+        lean: slurpTrendClean(item.lean, 80) || null,
         spicy: item.spicy === true,
         startedAt,
         adopters: (Array.isArray(item.adopters) ? item.adopters : []).flatMap((adopter) => {
           const own = (adopter ?? {}) as Record<string, unknown>;
-          const adopterId = clean(own.id, 80);
+          const adopterId = slurpTrendClean(own.id, 80);
           const at = String(own.at ?? "");
           if (!adopterId || !Number.isFinite(Date.parse(at))) return [];
           const role = ROLES.includes(own.role as SlurpTrendRole) ? (own.role as SlurpTrendRole) : "follower";
-          return [{ id: adopterId, at, role, postId: clean(own.postId, 80) || null }];
+          return [{ id: adopterId, at, role, postId: slurpTrendClean(own.postId, 80) || null }];
         }),
       },
     ];
@@ -129,7 +129,7 @@ export function slurpTrendMayStart(trends: readonly SlurpTrend[], label: string,
 
 /** A short public label from a post title: its first six words, no hash or quotes. */
 export function slurpTrendLabel(title: string | null | undefined): string {
-  const words = clean(title, 200)
+  const words = slurpTrendClean(title, 200)
     .replace(/[#"“”]/gu, "")
     .split(" ")
     .filter(Boolean);
@@ -274,11 +274,15 @@ export function slurpPickTrendJoin(input: {
     .flatMap((trend) => trend.adopters)
     .filter((adopter) => at.getTime() - Date.parse(adopter.at) < DAY_MS).length;
   for (const trend of slurpLiveTrends(input.trends, at)) {
-    if (trend.starterId === creator.id || trend.adopters.some((adopter) => adopter.id === creator.id)) continue;
+    if (
+      (trend.starterId === creator.id && trend.originPostId) ||
+      trend.adopters.some((adopter) => adopter.id === creator.id)
+    )
+      continue;
     const stage = slurpTrendStage(trend, at);
     const full = trend.adopters.length >= Math.max(1, Math.floor(SLURP_TREND_PEAK_SHARE * input.automaticCount));
     if (joinedToday >= dailyLimit || full) continue;
-    if (slurpTrendBlocked(creator.text, input.avoid, trend.label)) continue;
+    if (slurpTrendBlocked(creator.text, input.avoid, `${trend.label} ${trend.lean ?? ""}`)) continue;
     const ageHours = (at.getTime() - Date.parse(trend.startedAt)) / HOUR_MS;
     const reach = slurpTrendReach({
       creator,

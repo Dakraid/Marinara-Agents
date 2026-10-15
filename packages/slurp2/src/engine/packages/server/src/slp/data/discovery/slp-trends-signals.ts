@@ -39,7 +39,8 @@ export async function readSlurpTrendPosts(
       const from = Date.parse(post.createdAt);
       const until = index > 0 ? Date.parse(posts[index - 1]!.createdAt) : Number.POSITIVE_INFINITY;
       const mine = interactions.filter((entry) => entry.postId === post.id);
-      const likes = mine.filter((entry) => entry.type === "like");
+      // Post likes only; a heart on a comment is not a like of the post, as the viewer counts it.
+      const likes = mine.filter((entry) => entry.type === "like" && !entry.parentInteractionId);
       const spice = (post.metadata as Record<string, unknown> | null | undefined)?.slurpSpice;
       return {
         id: post.id,

@@ -67,7 +67,7 @@ export function SlpStirTrendFields({
           onChange={(pick) => set({ pick, lean: trends.find((trend) => trend.id === pick)?.lean ?? "" })}
           options={trends.map((trend) => ({ value: trend.id, label: trend.label }))}
         />
-        {lean}
+        {typeof form.pick === "string" && lean}
       </>
     ) : (
       <p className={cn(SLP_TYPE.meta, "text-[var(--slurp-muted)]")}>{t("ui.slurp.stir.form.trendNone")}</p>

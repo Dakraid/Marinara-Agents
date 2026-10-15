@@ -39,11 +39,16 @@ import type { SlpActionParsed, SlpStirWorld } from "../../../../../shared/src/sl
 import type { SlpCreatorSteering } from "../../../../../shared/src/slp/slp-creator-steering.js";
 import type { SlpAssistOutcome } from "./slp-assist-service.js";
 import {
+  listSlurpTrendViews,
   readSlurpTrendList,
+  slurpMayStartTrend,
   startSlurpTrend,
   steerSlurpTrend,
   undoSlurpTrend,
 } from "../discovery/slp-discovery-contract.js";
+import type { SlpStirTrends } from "../../../../../shared/src/slp/slp-action-results.js";
+import { SLP_TREND_LEAN_MAX } from "../../../../../shared/src/slp/slp-trend-actions.js";
+import { slurpTrendClean } from "../../modules/discovery/slp-trends.js";
 import { undoSlpDeskLever, type SlpDeskUndo } from "./slp-desk-levers.js";
 import { readSlurpStirDramas, undoSlurpDramaLever, type SlurpDramaUndo } from "../world/slp-world-contract.js";
 
@@ -83,7 +88,7 @@ const running = (occurrence: { status: string; endsAt: string }, at: Date) =>
   occurrence.status === "active" && occurrence.endsAt > at.toISOString();
 
 /** The ids and names every world lever takes. Reads only. */
-export async function readSlpStirWorld(db: DB, at = new Date()): Promise<SlpStirWorld> {
+export async function readSlpStirWorld(db: DB, at = new Date()): Promise<SlpStirWorld & SlpStirTrends> {
   const storage = createSlurpStorage(db);
   const [ties, settings, occurrences, accounts] = await Promise.all([
     readSlurpStirTies(db),
@@ -117,6 +122,7 @@ export async function readSlpStirWorld(db: DB, at = new Date()): Promise<SlpStir
   return {
     ...ties,
     ...(await readSlurpStirDramas(db)),
+    trends: (await listSlurpTrendViews(db, at)).map(({ id, label, lean, stage }) => ({ id, label, lean, stage })),
     events: settings.platformEvents
       .filter((event: { enabled: boolean }) => event.enabled)
       .map((event: { id: string; name: string }) => ({ id: event.id, name: event.name, running: live.has(event.id) })),
@@ -211,8 +217,7 @@ export async function runSlpSetSpice(
   db: DB,
   input: SlpActionParsed<"set-spice">,
 ): Promise<SlpAssistOutcome<{ level: string | null }> | LeverDone<{ level: string | null }>> {
-  if (!(await createSlurpStorage(db).getNoodlerAccountById(input.accountId)))
-    return { ok: false, status: 404, error: "Creator not found." };
+  if (!(await slurpMayStartTrend(db, input.accountId))) return { ok: false, status: 404, error: "Creator not found." };
   const before = (await getSlurpPostGuidance(db)).creators[input.accountId]?.level ?? "";
   const level = input.level ? SLP_SPICE_TO_EXPLICIT[input.level] : "";
   await setSlpSpiceLevel(db, input.accountId, level);
@@ -385,7 +390,7 @@ export async function runSlpSteerTrend(
   db: DB,
   input: SlpActionParsed<"steer-trend">,
 ): Promise<SlpAssistOutcome<{ trendId: string }> | LeverDone<{ trendId: string }>> {
-  const lean = input.lean || null;
+  const lean = slurpTrendClean(input.lean, SLP_TREND_LEAN_MAX) || null;
   const done = await steerSlurpTrend(db, input.trendId, lean);
   if (!done) return { ok: false, status: 404, error: "That trend is not going any more." };
   return {
