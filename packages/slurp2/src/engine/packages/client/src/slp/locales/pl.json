@@ -342,6 +342,7 @@
   "ui.slurp.discover.searchTags": "Szukaj tagów",
   "ui.slurp.discover.customTag": "Dodaj własny tag",
   "ui.slurp.discover.addTag": "Dodaj",
+  "ui.slurp.discover.tagLimitReached": "Twórca może mieć {{count}} tagów. Usuń jeden, aby dodać własny.",
   "ui.slurp.discover.minTags": "Do utworzenia wymagane są co najmniej {{count}} tagów",
   "ui.slurp.profile.discoveryProfile": "Profil odkrywania",
   "ui.slurp.profile.discoveryProfileDetail": "Pomóż właściwym osobom znaleźć tego twórcę. Sugestie AI zawsze można edytować",

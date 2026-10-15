@@ -3192,6 +3192,7 @@
   "ui.slurp.discover.searchTags": "Search tags",
   "ui.slurp.discover.customTag": "Add a custom tag",
   "ui.slurp.discover.addTag": "Add",
+  "ui.slurp.discover.tagLimitReached": "A Creator can have {{count}} tags. Remove one to add your own.",
   "ui.slurp.profile.discoveryProfile": "Discovery profile",
   "ui.slurp.profile.discoveryProfileDetail": "Help the right people find this Creator. AI suggestions are always editable",
   "ui.slurp.subscription.cancelTitle": "Cancel subscription?",
