@@ -555,7 +555,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   imageAppearanceMode: "writer",
   appearanceProfileMode: "high_confidence",
   autoPostingImagesEnabled: false,
-  autoCreatorArtworkEnabled: true,
+  autoCreatorArtworkEnabled: false,
   allowRandomUsers: false,
   dismissedAmbientProfileIds: [],
   allowProfessorMari: false,
@@ -756,6 +756,8 @@ function normalizeSlurpSettingsUncached(raw: unknown): SlurpSettings {
     rawRecord.classicPromptBlocks ?? slurpLegacyClassicPromptBlocks(rawRecord.promptBlocks);
   candidate.nightQuiet = rawRecord.nightQuiet ?? DEFAULT_SLURP_SETTINGS.nightQuiet;
   candidate.paused = rawRecord.paused === true;
+  // Settings saved before the switch existed keep their artwork; a new install starts with it off.
+  candidate.autoCreatorArtworkEnabled = rawRecord.autoCreatorArtworkEnabled ?? Object.keys(rawRecord).length > 0;
   // Repaired rather than replaced: a player who edited one type must not lose the other seven
   // because a single field went out of range. An all-disabled list re-enables built-in Regular,
   // which is the one state the tick cannot run in — there would be nobody to pick.

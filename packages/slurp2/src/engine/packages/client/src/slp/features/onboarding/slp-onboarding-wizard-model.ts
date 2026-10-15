@@ -267,13 +267,13 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
         generationConnectionId: generationConnectionId || null,
         autoPostingScheduleEnabled: autoPostingEnabled,
         autoPostingImagesEnabled: imagesEnabled,
-        // A missing avatar or banner is drawn in the background only when the player chose images here.
-        autoCreatorArtworkEnabled: imagesEnabled,
         nightQuiet,
         ...(selectionOnly
           ? {}
           : {
               onboarding: state === "completed" ? "completed" : "not_started",
+              // First run only: background avatars and banners follow the images choice made here.
+              ...(settingsQuery.data?.onboarding === "completed" ? {} : { autoCreatorArtworkEnabled: imagesEnabled }),
             }),
       });
       return true;

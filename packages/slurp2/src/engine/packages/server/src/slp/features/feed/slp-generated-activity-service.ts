@@ -55,10 +55,12 @@ export async function pickGalleryAttachmentForAccount(input: {
   account: SlpAccount;
   /** The posting account's own recent posts tell which gallery pictures it already showed. */
   postingAccountId: string;
+  /** Pictures this batch already attached, newest first: those posts are not saved yet. */
+  batchUsed?: readonly unknown[];
 }) {
   if (input.account.kind !== "character") return null;
   const recentPosts = await createSlurpStorage(input.db).listNoodlerPostsByAccount(input.postingAccountId, 50);
-  const used = recentPosts.map((post) => post.metadata?.galleryAttachmentId);
+  const used = [...(input.batchUsed ?? []), ...recentPosts.map((post) => post.metadata?.galleryAttachmentId)];
   const characterImages = await createCharacterGalleryStorage(input.db).listByCharacterId(input.account.entityId);
   const characterImage = slurpLeastRecentGalleryImage(characterImages, used);
   if (characterImage) {
@@ -109,6 +111,7 @@ export async function prepareGeneratedSlpMedia(input: {
   const activeCharacterReferenceAccounts = activeAccounts.filter((account) => account.kind === "character");
   const posts = new Map<SlpGeneratedRefresh["posts"][number], PreparedPostMedia>();
   const stagedMedia: StagedSlpPostMedia[] = [];
+  const galleryUsed: unknown[] = [];
   let remainingImagePrompts = input.settings.enableImagePrompts ? input.settings.maxImagesPerRefresh : 0;
 
   for (const generatedPost of input.generated.posts.slice(0, input.settings.maxGeneratedPostsPerRefresh)) {
@@ -171,8 +174,10 @@ export async function prepareGeneratedSlpMedia(input: {
           db: input.db,
           account,
           postingAccountId: account.id,
+          batchUsed: galleryUsed,
         });
         if (attachment) {
+          galleryUsed.unshift(attachment.metadata.galleryAttachmentId);
           prepared.imageUrl = attachment.imageUrl;
           Object.assign(prepared.metadata, attachment.metadata);
         }

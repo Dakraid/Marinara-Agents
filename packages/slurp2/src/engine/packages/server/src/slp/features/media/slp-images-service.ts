@@ -619,9 +619,9 @@ async function generateCreatorPostImageRun(
     lookMode,
     usedRewrite,
   );
-  // The name leads the look on every path, with or without the enhancer; a prompt a human approved stays as written.
-  // The player's own words ("[name] from [source]") take the name's place, on every identity.
-  const imagePrefix = input.settings.creatorImagePrefixes?.[input.account.id]?.trim() ?? "";
+  // The name, or the player's own words for it where names may show, leads the look; a human-approved prompt stays as written.
+  const ownWords = !input.suppressCreatorDetails && !input.suppressCharacterContext;
+  const imagePrefix = (ownWords && input.settings.creatorImagePrefixes?.[input.account.id]?.trim()) || "";
   const namedLook = skipInterpretation
     ? finalPromptLook
     : slurpApplyImageSubject(finalPromptLook, imagePrefix || subjectName, promptFamily);

@@ -25,8 +25,17 @@ assert.ok(
   "the switch is checked before any picture is drawn",
 );
 assert.match(settings, /autoCreatorArtworkEnabled: z\.boolean\(\)/u);
-assert.match(settings, /autoCreatorArtworkEnabled: true,/u, "an existing install keeps its artwork");
-assert.match(wizard, /autoCreatorArtworkEnabled: imagesEnabled,/u, "a new install opts in with its images choice");
+assert.match(settings, /autoCreatorArtworkEnabled: false,/u, "a new install starts with it off");
+assert.match(
+  settings,
+  /candidate\.autoCreatorArtworkEnabled = rawRecord\.autoCreatorArtworkEnabled \?\? Object\.keys\(rawRecord\)\.length > 0;/u,
+  "settings saved before the switch keep their artwork",
+);
+// Only first-run setup writes it; Add Creators and a re-run leave the player's choice alone.
+assert.match(
+  wizard,
+  /settingsQuery\.data\?\.onboarding === "completed" \? \{\} : \{ autoCreatorArtworkEnabled: imagesEnabled \}/u,
+);
 
 // --- Slurp asks for its own picture descriptions (#63) -------------------------------------------
 const captioning = read("server/src/slp/base/media/slp-post-image-context.ts");
@@ -49,9 +58,17 @@ for (const path of [
 // --- the player's own words open a Creator's picture prompt (#16) -------------------------------
 const images = read("server/src/slp/features/media/slp-images-service.ts");
 assert.match(images, /input\.settings\.creatorImagePrefixes\?\.\[input\.account\.id\]/u);
+// A commission shows the player, a banner shows no one: the prefix stays out like the name does.
+assert.match(images, /const ownWords = !input\.suppressCreatorDetails && !input\.suppressCharacterContext;/u);
+assert.match(images, /\(ownWords && input\.settings\.creatorImagePrefixes/u);
 assert.match(images, /slurpApplyImageSubject\(finalPromptLook, imagePrefix \|\| subjectName, promptFamily\)/u);
 
 // --- outfits are not rags unless the card says so (#41) ------------------------------------------
 assert.match(read("server/src/slp/features/feed/slp-post-prompt.ts"), /never worn-out, faded or shabby/u);
+
+// One batch can post twice for the same Creator before either post is saved.
+const activity = read("server/src/slp/features/feed/slp-generated-activity-service.ts");
+assert.match(activity, /\.\.\.\(input\.batchUsed \?\? \[\]\)/u);
+assert.match(activity, /galleryUsed\.unshift\(attachment\.metadata\.galleryAttachmentId\)/u);
 
 console.log("slurp2-picture-control: ok");
