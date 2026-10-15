@@ -778,14 +778,6 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
       "Fewer arm's-length selfies, and far fewer posts without a picture.",
     ],
   },
-  {
-    version: "0.2.17",
-    date: "2026-09-22",
-    notes: [
-      "Posts with several pictures have arrows and previews, and the feed shows the count.",
-      "Every writing block in Settings can be turned off or rewritten in your words.",
-    ],
-  },
 ];
 
 /** Everything newer than the acknowledged version. */

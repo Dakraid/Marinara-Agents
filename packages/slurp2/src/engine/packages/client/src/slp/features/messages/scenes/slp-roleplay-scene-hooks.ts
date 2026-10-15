@@ -86,8 +86,6 @@ export function useSlpSceneFocus() {
         if (cancelled) return;
         const store = useSlurpUIStore.getState();
         store.setViewerPersonaId(origin.personaId);
-        // Saved for every device, like a pick in the account switcher (#103).
-        void api.patch("/slurp2/settings", { viewerPersonaId: origin.personaId }).catch(() => undefined);
         store.setNavigation({ mode: "creator", view: "messages", creatorAccountId: origin.creatorAccountId });
         handled?.();
       })

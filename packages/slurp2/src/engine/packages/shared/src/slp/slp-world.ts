@@ -452,8 +452,10 @@ export type SlurpCreatorPeerReaction = {
  * strangers posting side by side, and a persona Creator heard from nobody but the crowd. Likes and
  * short comments only: no messages, tips or subscriptions between Creators.
  *
- * At most one reaction per Creator per hour, on the post the hour's seed picks. Ticks run every few
+ * About one reaction per Creator per hour, on the post the hour's seed picks. Ticks run every few
  * minutes, so a pick that already happened (`reacted` holds `actor:post`) is skipped, not replaced.
+ * ponytail: the pick is not stored, so a post published (or aging out) mid-hour can move it and
+ * allow a second reaction that hour; store the hour's pick if that ever reads as spam.
  */
 export function planSlurpCreatorPeerReactions(input: {
   actorAccountIds: readonly string[];

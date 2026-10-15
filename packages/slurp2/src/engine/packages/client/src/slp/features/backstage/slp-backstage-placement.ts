@@ -201,4 +201,5 @@ export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBac
   drama: place("stir", "stir", "all-slurp", "drama", "packs", "situations", "storylines", "friends"),
   postsPerDayCustom: internal(automation("general", "posts per day", "grows with creators")),
   onboarding: internal(place("creators", "creators", "new-creators", "setup", "onboarding")),
+  viewerPersonaId: internal(place("overview", "overview", "all-slurp", "viewer persona", "browse as")),
 };

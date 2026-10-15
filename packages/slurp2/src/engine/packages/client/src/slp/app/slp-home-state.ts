@@ -97,16 +97,18 @@ export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onL
   const storedPersonaId = useSlurpUIStore((state) => state.viewerPersonaId);
   const setStoredPersonaId = useSlurpUIStore((state) => state.setViewerPersonaId);
   // One persona browses Slurp on every device, so each shows the same inbox (#103). The pick lives
-  // in the settings: this browser follows a pick made on another device, and a pick it kept only
-  // for itself (before 0.3.46) is saved once.
+  // in the settings: this browser follows a pick made on another device, and saves any pick made
+  // here (account switcher, scene handback, or a pick kept only for this browser before 0.3.46).
   const serverPersonaId = slurpSettingsQuery.data?.viewerPersonaId;
   const seenServerPersonaId = useRef<string | null | undefined>(undefined);
   const saveViewerPersona = updateSlurpSettings.mutate;
   useEffect(() => {
-    if (serverPersonaId === undefined || seenServerPersonaId.current === serverPersonaId) return;
-    seenServerPersonaId.current = serverPersonaId;
-    if (serverPersonaId) setStoredPersonaId(serverPersonaId);
-    else if (storedPersonaId) saveViewerPersona({ viewerPersonaId: storedPersonaId });
+    if (serverPersonaId === undefined) return;
+    if (seenServerPersonaId.current !== serverPersonaId) {
+      seenServerPersonaId.current = serverPersonaId;
+      if (serverPersonaId) return setStoredPersonaId(serverPersonaId);
+    }
+    if (storedPersonaId && storedPersonaId !== serverPersonaId) saveViewerPersona({ viewerPersonaId: storedPersonaId });
   }, [saveViewerPersona, serverPersonaId, setStoredPersonaId, storedPersonaId]);
   const personas = personasQuery.data ?? [];
   const viewerPersonaId = useSlpViewerPersonaId();
@@ -162,7 +164,6 @@ export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onL
     setEditingReplyId(null);
     setEditingReplyContent("");
     setStoredPersonaId(account.entityId);
-    saveViewerPersona({ viewerPersonaId: account.entityId });
     if (mobile) setMobileDrawerOpen(false);
     else setAccountSwitcherOpen(false);
   };
