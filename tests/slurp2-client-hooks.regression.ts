@@ -368,6 +368,7 @@ const addedCalls = [
   "get /slurp2/continuity/${encodeURIComponent(creatorAccountId!)}?${query}",
   "get /slurp2/messages/threads/${encodeURIComponent(threadId!)}/requests?personaId=${encodeURIComponent(personaId!)}",
   "get /slurp2/slurp/tasks",
+  "get /slurp2/slurp/trends",
   "get /slurp2/slurp/viewer/feed?personaId=${encodeURIComponent(personaId)}&tab=all&limit=20${cursorQuery(current.nextCursor)}",
   "get /slurp2/slurp/viewer/feed?personaId=${encodedPersonaId}&tab=all&limit=20",
   "post /slurp2/slurp/accounts/${encodeURIComponent(input.accountId)}/appearance",
@@ -555,7 +556,8 @@ assert.deepEqual(
     // refreshes the list when settled (a refused apply also means the list is stale).
     useMutation: 213,
     // 0.3.28: +2 (the import and the one query of SlpMessageDeepDetails). 0.3.42: +1 (carryover reach).
-    useQuery: 285,
+    // 0.3.44: +2 (the import and the trends row query).
+    useQuery: 287,
     useInfiniteQuery: 9,
     // 0.3.35: +2 (adding a Creator refreshes the settings, which now hold the image name choice).
     invalidateQueries: 153,

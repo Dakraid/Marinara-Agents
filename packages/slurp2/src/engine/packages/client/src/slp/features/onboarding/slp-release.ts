@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.43";
+export const SLURP2_VERSION = "0.3.44";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -12,6 +12,15 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.44",
+    date: "2026-10-15",
+    notes: [
+      "Trends: a post takes off, the right Creators join in their own way, it peaks, then it fades. Not everyone joins.",
+      "Discover has a Trending on Slurp row, and trend posts carry a chip. Start or steer your own trend in Stir, or pick a ready-made one.",
+      "A Creator who starts a trend picks up followers as others join.",
+    ],
+  },
   {
     version: "0.3.43",
     date: "2026-10-15",
@@ -757,23 +766,6 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
     notes: [
       "Posts with several pictures have arrows and previews, and the feed shows the count.",
       "Every writing block in Settings can be turned off or rewritten in your words.",
-    ],
-  },
-  {
-    version: "0.2.16",
-    date: "2026-09-21",
-    notes: [
-      "Restoring a deleted post brings it back at once.",
-      "Share cards show the Creator's name, title and caption again.",
-      "Opening a post no longer shows its picture twice.",
-    ],
-  },
-  {
-    version: "0.2.15",
-    date: "2026-09-21",
-    notes: [
-      "Deleted posts leave a sparkly Restore slot for 60 seconds.",
-      "Pictures stick closer to the planned scene.",
     ],
   },
 ];

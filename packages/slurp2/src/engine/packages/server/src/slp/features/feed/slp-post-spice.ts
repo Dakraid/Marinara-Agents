@@ -140,7 +140,8 @@ export async function planSlurpPostSpice(
           recent: recentSpice(input.recentPosts),
           // Read only when the angle can be spicy; it scans other Creators' posts.
           feed:
-            postLevel !== "none" && (locked || input.teaser)
+            // A trend adoption skips the damping: being alike is its point (docs/TRENDS.md).
+            postLevel !== "none" && (locked || input.teaser) && input.beat?.anchorKind !== "trend"
               ? await listSlurpFeedSpice(db, input.account.id, input.at ?? new Date())
               : [],
           sequence: input.sequence,

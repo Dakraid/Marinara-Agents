@@ -626,6 +626,8 @@ export async function generateCreatorPost(
       ...(beat ? { slurpBeat: { type: beat.type, line: beat.line, anchor: beat.anchor } } : {}),
       // A collab, a sponsored post or a rivalry post: labels, the partner's page, the split, the fee.
       ...(beat?.tie ? { slurpTie: beat.tie } : {}),
+      // A trend this post joins: the chip, and the origin post it quotes.
+      ...(beat?.trend ? { slurpTrend: beat.trend } : {}),
       ...(pictureCast && beat?.castIds?.length ? { slurpPictureCast: beat.castIds } : {}),
       // What made it spicy, so unlocks, likes and tips can teach Slurp the player's taste.
       ...spiced.metadata,

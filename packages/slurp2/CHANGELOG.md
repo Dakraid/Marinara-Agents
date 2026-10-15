@@ -1,5 +1,11 @@
 # Slurp release notes
 
+## 0.3.44 — 2026-10-15
+
+- Added: trends. A post that takes off (shown likes; your likes, unlocks and tips count most), your own page's hits, a platform trend, or Stir "Start a trend" (ready-made trends, a starter, what to lean into) starts one. Stir "Steer a trend" changes what it leans into. The right Creators join, each at their own spice level and limits, quote the origin post, peak, then cool; some roast it, some never join. The starter gains followers.
+- Added: Discover "Trending on Slurp" row, a trend chip on posts, and trend search.
+- Changed: the invented "silly trend" daily-life moment is gone; trend posts skip the feed spice damping.
+
 ## 0.3.43 — 2026-10-15
 
 - Fixed: long DMs end at a sentence or word (up to 2400 characters), and commission quotes use the Creator's own prices.
