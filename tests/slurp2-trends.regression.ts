@@ -261,20 +261,18 @@ const split = [
   { ...trend, id: "b", label: "B two", adopters: [adopter("x3"), adopter("x4")] },
 ];
 assert.equal(
-  crowd
-    .slice(0, 200)
-    .some((entry) =>
-      slurpPickTrendJoin({
-        creator: entry,
-        sequence: 3,
-        trends: split,
-        at: at(20),
-        automaticCount: 10,
-        creators: byId,
-        tiedIds: new Set(),
-        avoid: [],
-      }),
-    ),
+  crowd.slice(0, 200).some((entry) =>
+    slurpPickTrendJoin({
+      creator: entry,
+      sequence: 3,
+      trends: split,
+      at: at(20),
+      automaticCount: 10,
+      creators: byId,
+      tiedIds: new Set(),
+      avoid: [],
+    }),
+  ),
   false,
   "4 of 10 across two trends is the limit",
 );
