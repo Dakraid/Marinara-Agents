@@ -349,6 +349,11 @@ export async function prepareNextCreatorReservePost(db: DB, at = new Date()): Pr
                 db,
                 account: source,
                 postingAccountId: selectedAccount.id,
+                // Prepared slots are not posts yet, so their pictures count as used here.
+                batchUsed: active
+                  .filter((item) => item.creatorAccountId === selectedAccount.id && item.state === "prepared")
+                  .map((item) => item.payload.metadata?.galleryAttachmentId)
+                  .reverse(),
               }).catch((error: unknown) => {
                 logger.warn(error, "[slurp] Could not attach a gallery image for %s", selectedAccount.displayName);
                 return null;

@@ -74,4 +74,11 @@ const activity = read("server/src/slp/features/feed/slp-generated-activity-servi
 assert.match(activity, /\.\.\.\(input\.batchUsed \?\? \[\]\)/u);
 assert.match(activity, /galleryUsed\.unshift\(attachment\.metadata\.galleryAttachmentId\)/u);
 
+// The reserve can prepare two slots for one Creator before either is published.
+const reserve = read("server/src/slp/features/feed/reserve/slp-reserve-operation.ts");
+assert.match(
+  reserve,
+  /batchUsed: active\s*\.filter\(\(item\) => item\.creatorAccountId === selectedAccount\.id && item\.state === "prepared"\)/u,
+);
+
 console.log("slurp2-picture-control: ok");
