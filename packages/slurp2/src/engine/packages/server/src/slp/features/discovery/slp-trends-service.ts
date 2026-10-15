@@ -254,7 +254,9 @@ export async function undoSlurpTrend(db: DB, id: string, at = new Date()): Promi
   return Boolean(
     await mutateSlurpTrends(db, at, (trends) => {
       const trend = trends.find((entry) => entry.id === id);
-      return trend && !trend.adopters.length ? { trends: trends.filter((entry) => entry.id !== id), result: true } : null;
+      return trend && !trend.adopters.length
+        ? { trends: trends.filter((entry) => entry.id !== id), result: true }
+        : null;
     }),
   );
 }
