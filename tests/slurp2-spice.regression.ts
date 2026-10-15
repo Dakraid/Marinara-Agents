@@ -193,6 +193,18 @@ for (let sequence = 0; sequence < 200; sequence += 1) {
   recent = [{ kind: angle.kind }, ...recent].slice(0, 6);
 }
 assert.ok(repeats <= 12, `the same kind twice in a row stays rare (${repeats} of 200)`);
+// No drift (#104): fed its own last 8 spicy posts, an explicit page keeps a spread of kinds. With
+// only the last three damped, the heaviest kinds (toys, partner scenes) took most of the posts.
+const kindShare = new Map<string, number>();
+recent = [];
+for (let sequence = 0; sequence < 400; sequence += 1) {
+  const angle = slurpSpiceAngle({ ...base, level: "explicit", access: "locked", teaser: false, recent, sequence })!;
+  kindShare.set(angle.kind, (kindShare.get(angle.kind) ?? 0) + 1);
+  recent = [{ kind: angle.kind }, ...recent].slice(0, 8);
+}
+const top = Math.max(...kindShare.values());
+console.log("spice kind spread over 400:", Object.fromEntries(kindShare));
+assert.ok(top <= 400 * 0.2, `no kind takes over an explicit page (${top} of 400)`);
 
 // Partners: a couple partner from the card, a collab partner, or someone unnamed.
 const couple = creator({ anchors: anchors([{ name: "Jonas", relation: "boyfriend" }]) });
@@ -478,16 +490,8 @@ for (const [path, pattern] of [
     /recordSlurpTasteSignal\(app\.db, \{ metadata: post\.metadata \}, "unlock"\)/u,
   ],
   [
-    "features/economy/slp-wallet-routes.ts",
-    /recordSlurpTasteSignal\(app\.db, \{ creatorId: creatorAccountId \}, "tip"\)/u,
-  ],
-  [
     "features/feed/slp-feed-post-routes.ts",
     /recordSlurpTasteSignal\(app\.db, \{ metadata: gated\.post\.metadata \}, parsed\.data\.type\)/u,
-  ],
-  [
-    "features/messages/slp-messages-send-routes.ts",
-    /recordSlurpTasteSignal\(app\.db, \{ creatorId: parsed\.data\.creatorAccountId \}, "tip"\)/u,
   ],
   ["features/messages/slp-messages-send-routes.ts", /"unlock"\);\n\s*\}/u],
   [
@@ -497,6 +501,9 @@ for (const [path, pattern] of [
 ] as const) {
   assert.match(server(path), pattern, `learning signal in ${path}`);
 }
+// A tip on a profile or in a chat does not credit the latest spicy post: that guess fed itself (#104).
+for (const path of ["features/economy/slp-wallet-routes.ts", "features/messages/slp-messages-send-routes.ts"])
+  assert.doesNotMatch(server(path), /recordSlurpTasteSignal\(app\.db, \{ creatorId/u, `no tip guess in ${path}`);
 const routes = server("features/creators/slp-spice-routes.ts");
 for (const route of ['app.get("/slurp/spice"', 'app.patch("/slurp/spice"', 'app.post("/slurp/spice/noticed"'])
   assert.ok(routes.includes(route), route);

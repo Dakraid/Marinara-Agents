@@ -305,7 +305,10 @@ export function slurpSpiceAngle(input: {
     );
   if (!kinds.length) return null;
   const seed = input.creator.accountId;
-  const lastKinds = input.recent.slice(0, 3).map((entry) => entry.kind);
+  // Every recent spicy post counts, not only the last three: a kind that keeps winning (toys at an
+  // explicit ceiling weigh most) halves with each repeat, so a page does not settle on one (#104).
+  const lastKind = input.recent[0]?.kind;
+  const repeats = (id: string) => input.recent.filter((entry) => entry.kind === id).length;
   const teased = locked ? kinds.find((candidate) => candidate.id === input.teasedKind) : undefined;
   const kind =
     teased ??
@@ -319,7 +322,7 @@ export function slurpSpiceAngle(input: {
           // The top of the range carries the most weight: an explicit page is mostly explicit.
           (1 + 2 * (LEVEL_INDEX(candidate.min) / Math.max(1, top))) *
           (input.creator.turnOns.some((on) => candidate.words.some((word) => shareWord(on, word))) ? 3 : 1) *
-          (lastKinds[0] === candidate.id ? 0.1 : lastKinds.includes(candidate.id) ? 0.4 : 1),
+          (lastKind === candidate.id ? 0.1 : 0.5 ** repeats(candidate.id)),
       })),
     );
   const partner: SlurpSpicePartner | null = !kind.partnered
