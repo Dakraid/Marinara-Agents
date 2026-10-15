@@ -7,6 +7,7 @@ import { inArray } from "../../../db/file-query.js";
 import { slpPostUnlocks } from "../../../db/schema/slurp.js";
 import { logger } from "../../../lib/logger.js";
 import { SLURP_TREND_ORIGIN_DAYS, type SlurpTrendPost } from "../../modules/discovery/slp-trends.js";
+import { slurpPostLikeCount } from "../../../../../shared/src/slp/slp-reach.js";
 import { createSlurpStorage } from "../slp-storage.js";
 
 const POSTS = 10;
@@ -16,6 +17,8 @@ export async function readSlurpTrendPosts(
   accountId: string,
   playerIds: ReadonlySet<string>,
   at: Date,
+  /** The Creator's reach (`slurpCreatorReach`): the silent crowd on a post scales with it. */
+  creatorReach: number,
 ): Promise<SlurpTrendPost[]> {
   try {
     const storage = createSlurpStorage(db);
@@ -43,7 +46,12 @@ export async function readSlurpTrendPosts(
         createdAt: post.createdAt,
         access: post.access,
         title: post.title,
-        likes: likes.length,
+        // What the post shows: real likes plus the silent crowd, so a trend starts from what a
+        // player sees (a viral week included), not only from the rows.
+        likes: slurpPostLikeCount(
+          { postId: post.id, createdAt: post.createdAt, creatorReach, realLikes: likes.length, accountId },
+          at,
+        ),
         replies: mine.filter((entry) => entry.type === "reply" && entry.actorAccountId !== accountId).length,
         playerLikes: likes.filter((entry) => entry.actorAccountId !== accountId && playerIds.has(entry.actorAccountId))
           .length,

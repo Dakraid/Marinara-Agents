@@ -144,6 +144,7 @@ async function main() {
       "steer-couple",
       "steer-creator",
       "steer-storyline",
+      "steer-trend",
       "suggest-collab",
       "write-post",
     ],

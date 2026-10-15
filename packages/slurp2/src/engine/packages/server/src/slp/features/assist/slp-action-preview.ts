@@ -27,7 +27,12 @@ import type { SlpActionPreview } from "../../../../../shared/src/slp/slp-stir.js
 import type { SlpAssistOutcome } from "./slp-assist-service.js";
 import { isSlpDeskLever, previewSlpDeskLever, type SlpDeskLever } from "./slp-desk-levers.js";
 import { isSlurpDramaLever, previewSlurpDramaLever, type SlurpDramaLever } from "../world/slp-world-contract.js";
-import { readSlurpTrendList, slurpTrendLabel, slurpTrendMayStart } from "../discovery/slp-discovery-contract.js";
+import {
+  readSlurpTrendList,
+  slurpTrendLabel,
+  slurpTrendMayStart,
+  slurpTrendStage,
+} from "../discovery/slp-discovery-contract.js";
 
 type Account = {
   id: string;
@@ -271,14 +276,37 @@ async function previewOther(
       };
     }
     case "start-trend": {
-      const label = slurpTrendLabel((input as SlpActionParsed<"start-trend">).label);
+      const trend = input as SlpActionParsed<"start-trend">;
+      const label = slurpTrendLabel(trend.label);
+      const starter = trend.accountId ? await storage.getNoodlerAccountById(trend.accountId) : null;
       const trends = await readSlurpTrendList(db);
       return {
+        ...(starter
+          ? { who: [{ id: starter.id, name: starter.displayName, avatarUrl: starter.avatarUrl ?? null }] }
+          : {}),
         when: "ongoing",
-        detail: { name: label },
+        detail: { name: label, ...(trend.lean ? { lean: trend.lean } : {}) },
         // Three at once is the most Slurp holds; the run refuses a fourth, or the same label twice.
-        error: label && slurpTrendMayStart(trends, label, at) ? null : "trendsFull",
+        error:
+          trend.accountId && !starter
+            ? "notFound"
+            : label && slurpTrendMayStart(trends, label, at)
+              ? null
+              : "trendsFull",
         summary: `"${label}" starts going round Slurp now. The right Creators join over the next days; some never do.`,
+      };
+    }
+    case "steer-trend": {
+      const steer = input as SlpActionParsed<"steer-trend">;
+      const trend = (await readSlurpTrendList(db)).find((entry) => entry.id === steer.trendId);
+      const live = trend && slurpTrendStage(trend, at) !== "dead";
+      return {
+        when: "nextPost",
+        detail: { name: trend?.label ?? "", lean: steer.lean },
+        error: live ? null : "noTrend",
+        summary: steer.lean
+          ? `Creators who join "${trend?.label ?? ""}" lean into: ${steer.lean}.`
+          : `"${trend?.label ?? ""}" goes back to being free.`,
       };
     }
     case "run-audience": {

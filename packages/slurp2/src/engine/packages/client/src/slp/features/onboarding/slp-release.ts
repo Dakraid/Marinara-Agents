@@ -17,7 +17,7 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
     date: "2026-10-15",
     notes: [
       "Trends: a post takes off, the right Creators join in their own way, it peaks, then it fades. Not everyone joins.",
-      "Discover has a Trending on Slurp row, and trend posts carry a chip. Start your own trend in Stir.",
+      "Discover has a Trending on Slurp row, and trend posts carry a chip. Start or steer your own trend in Stir, or pick a ready-made one.",
       "A Creator who starts a trend picks up followers as others join.",
     ],
   },

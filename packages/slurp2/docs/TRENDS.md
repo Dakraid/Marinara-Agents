@@ -1,7 +1,7 @@
 # Trends and trendsetters (0.3.44)
 
-0.3.43 damps *accidental* sameness: one Creator's spice angle steps aside when the feed is already full
-of the same thing (`listSlurpFeedSpice`). Trends add *deliberate*, bounded sameness, like a real feed:
+0.3.43 damps _accidental_ sameness: one Creator's spice angle steps aside when the feed is already full
+of the same thing (`listSlurpFeedSpice`). Trends add _deliberate_, bounded sameness, like a real feed:
 something takes off, the right people notice and join, it peaks, it tires, it dies. Not everyone joins.
 
 No extra AI call is needed for a trend to start or spread. Only the existing daily world tick may carry one
@@ -19,11 +19,11 @@ Discover row, chip) and `features/stir/` (the action card).
 ```ts
 type SlurpTrend = {
   id: string;
-  label: string;            // "Mirror selfies", at most 60 characters, from the origin post's public title
+  label: string; // "Mirror selfies", at most 60 characters, from the origin post's public title
   source: "creator" | "player" | "stir" | "world";
   starterId: string | null; // the Creator or the player's page; null for a world trend
   originPostId: string | null; // adopters quote this post (quotePostId)
-  line: string | null;      // world trends only: a `{a}` template like a shared idea
+  line: string | null; // world trends only: a `{a}` template like a shared idea
   spicy: { kind: string } | null; // the origin was a spicy post: adopters do their OWN level, see below
   startedAt: string;
   adopters: { id: string; at: string; role: SlurpTrendRole; postId: string | null }[];
@@ -33,12 +33,12 @@ type SlurpTrend = {
 The stage is **computed from age and adopters, never stored**, so a restart or a late tick cannot leave it wrong
 (`slurpTrendStage`):
 
-| Stage    | Age from `startedAt` | Who joins |
-| -------- | -------------------- | --------- |
-| rising   | under 36 h           | trendsetters, early adopters; followers from hour 18 |
-| peak     | 36 h to 72 h         | followers, contrarians |
-| tired    | 72 h to 120 h        | late followers (small chance), contrarians roast it |
-| dead     | over 120 h           | nobody; the record is dropped after 7 days |
+| Stage  | Age from `startedAt` | Who joins                                            |
+| ------ | -------------------- | ---------------------------------------------------- |
+| rising | under 36 h           | trendsetters, early adopters; followers from hour 18 |
+| peak   | 36 h to 72 h         | followers, contrarians                               |
+| tired  | 72 h to 120 h        | late followers (small chance), contrarians roast it  |
+| dead   | over 120 h           | nobody; the record is dropped after 7 days           |
 
 When adopters reach the share below, joining stops (the stage still follows age). At most **3 live trends** at once; a new one waits
 (or replaces a `dead` one). One Creator is in at most one trend per 3 days.
@@ -48,7 +48,7 @@ When adopters reach the share below, joining stops (the stage still follows age)
 Derived, deterministic, no storage: `hash(creatorId) % 100` picks a base role — trendsetter 8, early adopter 20,
 follower 40, contrarian 12, ignores 20. The trend then adjusts it: the starter is always the starter; a Creator
 whose tags/interests share nothing with the starter and who has no tie to any adopter keeps only a small
-follower chance; a trendsetter with a big following (top tenth by followers) is the one who *starts* trends.
+follower chance; a trendsetter with a big following (top tenth by followers) is the one who _starts_ trends.
 A player-run page never adopts automatically.
 
 ## Spread (who is asked, in order)
@@ -76,12 +76,15 @@ adoption only (the angle sees an empty feed), because sameness is the point; eve
 
 1. **A Creator post takes off.** Advanced on the world tick (`advanceSlurpTrends`): a public post from the last
    2 days with a score of at least `max(30, 3 × the median score of that Creator's last posts)` and at least
-   4 posts of history. Score = likes ×1 + replies ×1.5 + **player likes ×4, unlocks ×6, tips ×8** (a tip is not
+   4 posts of history. Score = shown likes ×1 (real likes plus the silent crowd, as `slurpPostLikeCount` shows them, so a viral week counts) + replies ×1.5 + **player likes ×4, unlocks ×6, tips ×8** (a tip is not
    tied to a post: it counts for the post that was newest when it came in). Code only,
    no AI: the label is the title's first 6 words. Fewer than one start per tick.
 2. **The player's own page.** The same detector reads a player-run page's posts; the starter is that page.
-3. **Stir "Start a trend"** (new action `start-trend`: `{ label }`). It makes a platform trend with no named starter; a
-   Creator as starter is a follow-up. Reversible (Undo removes the record while it has
+3. **Stir "Start a trend"** (new action `start-trend`: `{ label, accountId?, lean? }`). With a Creator it makes them the starter; without,
+   a platform trend. The form offers ten ready-made trends (one tap fills the name), a "lean into" field and an
+   optional starter. A second action, `steer-trend` `{ trendId, lean }`, changes what a running trend leans into
+   (empty clears it; Undo restores the old words). Joining Creators get "Lean into: <lean>." in their line; posts
+   already written keep their words. Reversible (Undo removes the record while it has
    no adopters). The older desk lever `seed-trend` (a nudge to a few Creators) stays as it is.
 4. **World trends.** The daily world tick prompt may return one `trend: { label, line }` (the idea list already
    says "or a light platform trend"). It starts a `world` trend if fewer than 3 are live; the line is checked

@@ -740,6 +740,7 @@ export const SLP_ACTION_META: Record<
   "new-look": { category: "life", targets: "creator", reversible: true, ai: false, refusable: false, deck: true },
   "invent-event": { category: "world", targets: "none", reversible: true, ai: false, refusable: false, deck: true },
   "start-trend": { category: "world", targets: "none", reversible: true, ai: false, refusable: false, deck: true },
+  "steer-trend": { category: "world", targets: "none", reversible: true, ai: false, refusable: false, deck: true },
   "add-to-couple": { category: "love", targets: "couple", reversible: true, ai: false, refusable: false, deck: true },
   // The Support desk's tools live on the desk and in Support threads, not in the deck.
   "grant-perk": { category: "desk", targets: "creator", reversible: true, ai: false, refusable: false, deck: false },

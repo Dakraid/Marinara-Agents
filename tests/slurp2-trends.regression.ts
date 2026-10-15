@@ -14,6 +14,7 @@ import {
   type SlurpTrend,
   type SlurpTrendPost,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/discovery/slp-trends.ts";
+import { SLP_TREND_ACTIONS } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-trend-actions.ts";
 import { parseSlurpBeat } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-post-beat.ts";
 import { normalizeSlurpSharedWorldTrend } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-shared-preseed.ts";
 import type { SlurpTieCreator } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-ties.ts";
@@ -31,6 +32,7 @@ const trend: SlurpTrend = {
   starterId: "s",
   originPostId: "p",
   line: null,
+  lean: null,
   spicy: false,
   startedAt: t0.toISOString(),
   adopters: [],
@@ -201,4 +203,20 @@ const beat = {
   trend: { id: "t1", label: "Mirror selfies", originPostId: "p" },
 };
 assert.deepEqual(parseSlurpBeat(JSON.parse(JSON.stringify(beat)))?.trend, beat.trend);
+// What the player says to lean into reaches every joining Creator, a world trend's line too.
+const leaning = { ...join("follower"), trend: { ...trend, lean: "puppies" } };
+assert.match(slurpTrendLine(leaning, null), /Lean into: puppies\./u);
+assert.match(
+  slurpTrendLine({ ...leaning, trend: { ...leaning.trend, line: "You show {a}." } }, null),
+  /^You show \{a\}\. Lean into: puppies\.$/u,
+);
+assert.equal(readSlurpTrends([{ ...trend, lean: "  puppies " }])[0]!.lean, "puppies");
+// The two Stir levers: a named starter and a lean are optional; an empty lean clears a steer.
+assert.equal(SLP_TREND_ACTIONS["start-trend"].schema.safeParse({ label: "Puppies" }).success, true);
+assert.equal(
+  SLP_TREND_ACTIONS["start-trend"].schema.safeParse({ label: "Puppies", accountId: "a", lean: "cute" }).success,
+  true,
+);
+assert.equal(SLP_TREND_ACTIONS["steer-trend"].schema.safeParse({ trendId: "t1", lean: "" }).success, true);
+assert.equal(SLP_TREND_ACTIONS["steer-trend"].schema.safeParse({ trendId: "t1", lean: "x".repeat(81) }).success, false);
 console.log("slurp2 trends: ok");

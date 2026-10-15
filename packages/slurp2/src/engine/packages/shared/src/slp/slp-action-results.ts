@@ -53,6 +53,7 @@ export type SlpActionResult = {
   "new-look": { accountId: string };
   "invent-event": { eventId: string; occurrenceId: string };
   "start-trend": { trendId: string };
+  "steer-trend": { trendId: string };
   "add-to-couple": { coupleId: string };
   "grant-perk": { accountId: string };
   "set-challenge": { accountId: string; challengeId: string };

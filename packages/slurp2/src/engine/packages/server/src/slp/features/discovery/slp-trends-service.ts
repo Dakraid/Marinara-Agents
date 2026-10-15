@@ -9,6 +9,8 @@ import { newId } from "../../../utils/id-generator.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { mutateSlurpTrends, readSlurpTrendList } from "../../data/discovery/slp-trends-storage.js";
 import { readSlurpTrendPosts } from "../../data/discovery/slp-trends-signals.js";
+import { slurpCreatorReach } from "../../../../../shared/src/slp/slp-reach.js";
+import { slurpPlatformScaleMultiplier } from "../../../../../shared/src/slp/slp-scale.js";
 import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
 import { readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ties-storage.js";
 import { slurpBeatIntents, type SlurpBeat } from "../../modules/feed/slp-post-beat.js";
@@ -44,6 +46,7 @@ export type SlurpTrendStart = {
   originPostId?: string | null;
   line?: string | null;
   spicy?: boolean;
+  lean?: string | null;
 };
 
 /** Start a trend unless three are live or the label already runs. Returns it, or null. */
@@ -59,6 +62,7 @@ export async function startSlurpTrend(db: DB, input: SlurpTrendStart, at: Date):
       starterId: input.starterId ?? null,
       originPostId: input.originPostId ?? null,
       line: input.line ?? null,
+      lean: input.lean?.trim() || null,
       spicy: input.spicy === true,
       startedAt: at.toISOString(),
       adopters: [],
@@ -81,10 +85,33 @@ export async function advanceSlurpTrends(db: DB, at = new Date()): Promise<void>
       (account) => account.kind !== "random_user",
     );
     const playerIds = new Set(accounts.filter(isPlayerPersona).map((account) => account.id));
+    const [followers, settings] = await Promise.all([
+      createSlurpPopulationStorage(db).countFollowersForCreators(accounts.map((account) => account.id)),
+      createSlurpStorage(db).getSettings(),
+    ]);
+    const scale = slurpPlatformScaleMultiplier(settings.platformScale);
     const taken = new Set(before.map((trend) => trend.originPostId));
     let best: { account: (typeof accounts)[number]; post: SlurpTrendPost } | null = null;
     for (const account of accounts) {
-      const origin = slurpTrendOrigin(await readSlurpTrendPosts(db, account.id, playerIds, at), at);
+      const origin = slurpTrendOrigin(
+        await readSlurpTrendPosts(
+          db,
+          account.id,
+          playerIds,
+          at,
+          slurpCreatorReach(
+            {
+              accountId: account.id,
+              createdAt: account.createdAt,
+              realFollowers: followers.get(account.id) ?? 0,
+              scale,
+            },
+            at,
+            settings.simulationTuning.reach,
+          ),
+        ),
+        at,
+      );
       if (!origin || taken.has(origin.id)) continue;
       if (!best || slurpTrendScore(origin) > slurpTrendScore(best.post)) best = { account, post: origin };
     }
@@ -228,6 +255,7 @@ export type SlurpTrendView = {
   source: SlurpTrendSource;
   starter: { id: string; name: string; avatarUrl: string | null } | null;
   originPostId: string | null;
+  lean: string | null;
   joined: number;
 };
 
@@ -245,6 +273,7 @@ export async function listSlurpTrendViews(db: DB, at = new Date()): Promise<Slur
         source: trend.source,
         starter: starter ? { id: starter.id, name: starter.displayName, avatarUrl: starter.avatarUrl ?? null } : null,
         originPostId: trend.originPostId,
+        lean: trend.lean,
         joined: trend.adopters.length,
       };
     }),
@@ -261,4 +290,22 @@ export async function undoSlurpTrend(db: DB, id: string, at = new Date()): Promi
         : null;
     }),
   );
+}
+
+/** Set what a live trend leans into; returns the one before (null for none), or undefined when no such live trend. */
+export async function steerSlurpTrend(
+  db: DB,
+  id: string,
+  lean: string | null,
+  at = new Date(),
+): Promise<{ before: string | null } | undefined> {
+  const done = await mutateSlurpTrends(db, at, (trends) => {
+    const trend = trends.find((entry) => entry.id === id);
+    if (!trend || slurpTrendStage(trend, at) === "dead") return null;
+    return {
+      trends: trends.map((entry) => (entry.id === id ? { ...entry, lean } : entry)),
+      result: { before: trend.lean },
+    };
+  });
+  return done ?? undefined;
 }

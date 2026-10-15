@@ -10,6 +10,7 @@ export type SlurpTrendView = {
   source: "creator" | "player" | "stir" | "world";
   starter: { id: string; name: string; avatarUrl: string | null } | null;
   originPostId: string | null;
+  lean: string | null;
   joined: number;
 };
 

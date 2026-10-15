@@ -43,6 +43,8 @@ export type SlurpTrend = {
   originPostId: string | null;
   /** World trends only: one sentence in the second person with exactly one `{a}`. */
   line: string | null;
+  /** What the player says posts lean into (Stir); added to the line every Creator who joins gets. */
+  lean: string | null;
   /** The origin was a spicy post. Adopters still use their own level and hard noes. */
   spicy: boolean;
   startedAt: string;
@@ -78,6 +80,7 @@ export function readSlurpTrends(raw: unknown): SlurpTrend[] {
         starterId: clean(item.starterId, 80) || null,
         originPostId: clean(item.originPostId, 80) || null,
         line: line && line.split("{a}").length === 2 ? line : null,
+        lean: clean(item.lean, 80) || null,
         spicy: item.spicy === true,
         startedAt,
         adopters: (Array.isArray(item.adopters) ? item.adopters : []).flatMap((adopter) => {
@@ -293,9 +296,10 @@ export function slurpPickTrendJoin(input: {
 /** What the post is told. A spicy origin says nothing about spice: the Creator's own level decides. */
 export function slurpTrendLine(join: SlurpTrendJoin, starterName: string | null): string {
   const { trend, role, stage } = join;
-  if (trend.line) return trend.line;
+  const lean = trend.lean ? ` Lean into: ${trend.lean}.` : "";
+  if (trend.line) return trend.line + lean;
   const by = starterName ? `, started by ${starterName}` : "";
-  const base = `A trend is going around Slurp: "${trend.label}"${by}.`;
+  const base = `A trend is going around Slurp: "${trend.label}"${by}.${lean}`;
   if (role === "contrarian")
     return `${base} You roast it, a bit late and in your own voice: poke at the trend, never at a person.`;
   if (role === "early" || role === "trendsetter")
