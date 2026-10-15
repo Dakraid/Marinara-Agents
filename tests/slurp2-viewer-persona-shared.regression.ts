@@ -8,7 +8,11 @@ import { slurp2Source } from "./slurp2-source";
 
 // The settings module needs the Engine's logger, so it is read, not imported.
 const settings = slurp2Source("packages/slurp2/src/engine/packages/server/src/slp/modules/settings/slp-settings.ts");
-assert.match(settings, /viewerPersonaId: z\.string\(\)\.max\(200\)\.nullable\(\),/u, "the settings keep the shared pick");
+assert.match(
+  settings,
+  /viewerPersonaId: z\.string\(\)\.max\(200\)\.nullable\(\),/u,
+  "the settings keep the shared pick",
+);
 assert.match(settings, /viewerPersonaId: null,\n\};/u, "an install that never picked has no shared pick");
 
 const homeState = slurp2Source("packages/slurp2/src/engine/packages/client/src/slp/app/slp-home-state.ts");
