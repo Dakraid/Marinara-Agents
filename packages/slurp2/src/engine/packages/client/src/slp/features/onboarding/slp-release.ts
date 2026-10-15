@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.38";
+export const SLURP2_VERSION = "0.3.42";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -13,11 +13,36 @@ export interface Slurp2ReleaseEntry {
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
   {
+    version: "0.3.42",
+    date: "2026-10-15",
+    notes: [
+      "Chats with your Creators can now hear about their storylines, love life and how well they know you on Slurp.",
+      "Lorebook entries set to At Depth now reach Slurp DMs, and a message's Deep details lists the lore it used.",
+      "Scenes started from a DM begin on the first try more often.",
+    ],
+  },
+  {
+    version: "0.3.41",
+    date: "2026-10-14",
+    notes: ["Slurp opens faster: avatars load as small pictures instead of full-size cards."],
+  },
+  {
+    version: "0.3.40",
+    date: "2026-10-14",
+    notes: [
+      "Creators are he, she or they from their gender, in dramas, chats and scenes.",
+      "A new clothing style decides whether a spicy shoot is lingerie or briefs. Auto follows gender.",
+    ],
+  },
+  {
+    version: "0.3.39",
+    date: "2026-10-14",
+    notes: ["On Android, picking a post picture opens the full file browser, so every folder is reachable."],
+  },
+  {
     version: "0.3.38",
     date: "2026-10-13",
-    notes: [
-      "A creator whose card has image tags switched on gets a button that uses those tags as her appearance for pictures.",
-    ],
+    notes: ["A creator whose card has image tags gets a button that uses them as her picture appearance."],
   },
   {
     version: "0.3.37",
@@ -754,33 +779,6 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
       "The feed opens faster and loads older posts as you scroll.",
       "Edits and deletes show at once, with no reload.",
     ],
-  },
-  {
-    version: "0.2.5",
-    date: "2026-09-21",
-    notes: [
-      "Locked posts no longer tease what you already own.",
-      "The composer offers only the post purposes that fit the audience.",
-    ],
-  },
-  {
-    version: "0.2.4",
-    date: "2026-09-21",
-    notes: [
-      "Selfies fit the moment: planned shoots are rarely selfies, ordinary days often are.",
-      "New conversations start as strangers, not friends.",
-      "Creators reply to new messages within the hour.",
-    ],
-  },
-  {
-    version: "0.2.3",
-    date: "2026-09-21",
-    notes: ["New Deep details in every post's menu: see the plan and everything behind a post."],
-  },
-  {
-    version: "0.2.2",
-    date: "2026-09-21",
-    notes: ["Every persona now sees every Creator."],
   },
 ];
 

@@ -43,6 +43,7 @@ import type {
   LtmGlobalSettings,
 } from "../../../../shared/src/features/agents/long-term-memory/schema.js";
 import {
+  errorMessage,
   invalidateLtmQueries,
   fetchSourceDetails,
   ltmScopeTargetsKey,
@@ -229,7 +230,7 @@ function ScopeTargetPicker({
       aria-selected={target.id === value}
       data-highlighted={target.id === highlightedId}
       data-ltm-scope-option={target.id}
-      className="mari-editor-action mari-editor-action--compact flex min-h-11 w-full items-center gap-2 rounded-none border-x-0 border-t-0 px-3 py-2 text-left text-xs last:border-b-0 data-[highlighted=true]:bg-[var(--secondary)] aria-selected:bg-[var(--primary)]/10"
+      className={`mari-editor-action mari-editor-action--compact flex min-h-11 w-full items-center gap-2 rounded-none border-t-0 px-3 py-2 text-left text-xs last:border-b-0 ${target.id === highlightedId ? "bg-[var(--secondary)]" : target.id === value ? "bg-[var(--primary)]/10" : ""}`}
       onMouseDown={(event) => event.preventDefault()}
       onMouseEnter={() => setHighlightedId(target.id)}
       onClick={() => choose(target)}
@@ -248,7 +249,7 @@ function ScopeTargetPicker({
     </button>
   );
   return (
-    <div ref={rootRef} className="relative min-w-0 flex-1 sm:max-w-[36rem]" data-ltm-scope-picker={testId}>
+    <div ref={rootRef} className="relative min-w-0 flex-1" data-ltm-scope-picker={testId}>
       <button
         ref={triggerRef}
         type="button"
@@ -291,9 +292,9 @@ function ScopeTargetPicker({
       </button>
       {open ? (
         <div
-          className="absolute left-0 top-full z-30 mt-2 w-full min-w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-md border border-[var(--marinara-editor-divider)] bg-[var(--card)] shadow-xl"
+          className="absolute left-0 top-full z-30 mt-2 w-full overflow-hidden rounded-md border border-[var(--marinara-editor-divider)] bg-[var(--card)] shadow-xl"
           data-ltm-scope-picker-popup
-          style={{ containerType: "inline-size" }}
+          style={{ containerType: "inline-size", minWidth: "min(20rem, calc(100vw - 2rem))" }}
         >
           <label className="relative block border-b border-[var(--marinara-editor-divider)] p-2">
             <Search
@@ -366,7 +367,8 @@ function ScopeTargetPicker({
                 aria-selected={activeKind === kind}
                 data-ltm-scope-tab={kind}
                 data-active={activeKind === kind}
-                className="mari-editor-tab min-h-11 min-w-0 rounded-md px-1 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--marinara-editor-focus-ring)]"
+                data-ltm-tab-focus
+                className="mari-editor-tab min-h-11 min-w-0 rounded-md px-1 text-xs font-semibold"
                 onClick={() => selectKind(kind, true)}
                 onKeyDown={(event) => handleTabKey(event, index)}
               >
@@ -553,7 +555,7 @@ function DestinationScopePanel({
             data-ltm-availability-action={`${kind}:current`}
             aria-pressed={selectedIds.includes(currentTarget.id)}
             disabled={disabled}
-            className="flex min-h-11 w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-[var(--secondary)]/35"
+            className="flex min-h-11 w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-[var(--secondary)]/30"
             onClick={() => toggle(currentTarget.id)}
           >
             <span className="min-w-0 flex-1 truncate font-semibold">
@@ -569,7 +571,7 @@ function DestinationScopePanel({
             categoryTargets.length > 0 && categoryTargets.every((target) => selectedIds.includes(target.id))
           }
           disabled={disabled}
-          className="flex min-h-11 w-full items-center gap-3 px-3 py-2 text-left text-sm font-semibold hover:bg-[var(--secondary)]/35"
+          className="flex min-h-11 w-full items-center gap-3 px-3 py-2 text-left text-sm font-semibold hover:bg-[var(--secondary)]/30"
           onClick={() => {
             const nextIds = [...selectedIds];
             const nextTargets = [...selectedTargets];
@@ -595,7 +597,7 @@ function DestinationScopePanel({
     <label
       key={target.id}
       data-ltm-availability-target={`${target.kind}:${target.id.split(":").slice(1).join(":")}`}
-      className="flex min-h-11 cursor-pointer items-center gap-3 px-3 py-2 text-sm hover:bg-[var(--secondary)]/35"
+      className="flex min-h-11 cursor-pointer items-center gap-3 px-3 py-2 text-sm hover:bg-[var(--secondary)]/30"
     >
       <input
         type="checkbox"
@@ -846,7 +848,7 @@ function DestinationScopePanel({
         </div>
       </details>
       {!selectedTargets.length ? (
-        <span role="alert" className="block shrink-0 text-xs text-[var(--marinara-editor-warning)]">
+        <span role="alert" className="block shrink-0 text-xs">
           {localizeUi("ui.longTermMemory.sourcesworkspace.chooseDestinationBeforeImport")}
         </span>
       ) : null}
@@ -891,9 +893,9 @@ const importStatusLabelKeys: Record<string, string> = {
   partial_success: "ui.longTermMemory.sourcesworkspace.statusPartialSuccess",
   no_suggestions_created: "ui.longTermMemory.sourcesworkspace.statusNoSuggestionsCreated",
 };
-const sourceCheckboxClass = "size-6 shrink-0 accent-[var(--marinara-editor-accent)]";
+const sourceCheckboxClass = "h-4 w-4 shrink-0 accent-[var(--primary)] [--primary:var(--marinara-editor-accent)]";
 const mobilePrimaryActionsClass =
-  "sticky bottom-0 z-10 flex flex-wrap gap-2 border-t border-[var(--border)] bg-[var(--card)] p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:static md:border-0 md:bg-transparent md:p-0";
+  "sticky bottom-0 z-10 flex flex-wrap gap-2 border-t border-[var(--border)] bg-[var(--card)] p-3";
 
 function resultTone(status: string): "neutral" | "success" | "warning" | "danger" {
   return status === "success" || status === "succeeded" || status === "created" || status === "refreshed"
@@ -913,7 +915,7 @@ function resultToneClass(status: string) {
   return tone === "success"
     ? "border border-[var(--border)] bg-[var(--marinara-editor-accent)]/15"
     : tone === "warning"
-      ? "border border-[var(--marinara-editor-warning)]/40 text-[var(--marinara-editor-warning)]"
+      ? "border"
       : tone === "danger"
         ? "border border-[var(--destructive)]/40 bg-[var(--destructive)]/10 text-[var(--destructive)]"
         : "border border-[var(--border)] bg-[var(--secondary)]";
@@ -1133,9 +1135,7 @@ function SourceOperationWorkbench({
       if (operation === "delete") setPreviewLineageNoteIds([sourceNoteId, ...memories.map((memory) => memory.id)]);
       setPreviewed(true);
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : localizeUi("ui.longTermMemory.sourceoperation.previewCouldNotLoad"),
-      );
+      setError(errorMessage(error, localizeUi("ui.longTermMemory.sourceoperation.previewCouldNotLoad")));
     } finally {
       setBusy(null);
     }
@@ -1222,7 +1222,7 @@ function SourceOperationWorkbench({
       }
       await onComplete();
     } catch (error) {
-      setError(error instanceof Error ? error.message : localizeUi("ui.longTermMemory.sourceoperation.couldNotApply"));
+      setError(errorMessage(error, localizeUi("ui.longTermMemory.sourceoperation.couldNotApply")));
     } finally {
       setBusy(null);
     }
@@ -1717,9 +1717,7 @@ export default function SourcesWorkspace({
       await invalidateLtmQueries(client, [queryKeys.settings, queryKeys.chatDefaults]);
     } catch (error) {
       setCustomAvailabilityModes(null);
-      setModesError(
-        error instanceof Error ? error.message : localizeUi("ui.longTermMemory.memoryvault.couldNotSaveAvailability"),
-      );
+      setModesError(errorMessage(error, localizeUi("ui.longTermMemory.memoryvault.couldNotSaveAvailability")));
       await settingsQuery.refetch();
     } finally {
       availabilitySavingRef.current = false;
@@ -2468,15 +2466,11 @@ export default function SourcesWorkspace({
         setImportError(
           task.status === "cancelled"
             ? localizeUi("ui.longTermMemory.sourcesworkspace.importCancelledSelectionRetained")
-            : (task.error?.message ?? localizeUi("ui.longTermMemory.sourcesworkspace.sourcesCouldNotBeImported")),
+            : task.error?.message || localizeUi("ui.longTermMemory.sourcesworkspace.sourcesCouldNotBeImported"),
         );
       }
     } catch (error) {
-      setImportError(
-        error instanceof Error
-          ? error.message
-          : localizeUi("ui.longTermMemory.sourcesworkspace.sourcesCouldNotBeImported"),
-      );
+      setImportError(errorMessage(error, localizeUi("ui.longTermMemory.sourcesworkspace.sourcesCouldNotBeImported")));
     }
   };
 
@@ -2517,15 +2511,11 @@ export default function SourcesWorkspace({
         await invalidateAfterMutation();
       } else if (task.status === "failed" || task.status === "cancelled") {
         setImportError(
-          task.error?.message ?? localizeUi("ui.longTermMemory.sourcesworkspace.sourceCouldNotBeReextracted"),
+          task.error?.message || localizeUi("ui.longTermMemory.sourcesworkspace.sourceCouldNotBeReextracted"),
         );
       }
     } catch (error) {
-      setImportError(
-        error instanceof Error
-          ? error.message
-          : localizeUi("ui.longTermMemory.sourcesworkspace.sourceCouldNotBeReextracted"),
-      );
+      setImportError(errorMessage(error, localizeUi("ui.longTermMemory.sourcesworkspace.sourceCouldNotBeReextracted")));
     }
   };
 
@@ -2784,19 +2774,13 @@ export default function SourcesWorkspace({
     </section>
   ) : null;
   const taskResultWorkbenchOpen = Boolean(visibleImportResult || restoredImportResult || reextractResultPanel);
-  const workbenchModeClass = sourceOperation
-    ? "[&>:not([data-ltm-source-operation-workbench])]:hidden"
-    : taskResultWorkbenchOpen
-      ? "[&>:not([data-ltm-source-task-result-workbench])]:hidden"
-      : "";
+  const workbenchMode = sourceOperation ? "operation" : taskResultWorkbenchOpen ? "task-result" : undefined;
 
   if (scopeTargets.isError) {
     return (
       <section data-ltm-surface="sources" className="space-y-4">
         <StatusSurface tone="danger">
-          {scopeTargets.error instanceof Error
-            ? scopeTargets.error.message
-            : localizeUi("ui.longTermMemory.sourcesworkspace.scopeTargetsCouldNotLoad")}
+          {errorMessage(scopeTargets.error, localizeUi("ui.longTermMemory.sourcesworkspace.scopeTargetsCouldNotLoad"))}
           <Button onClick={() => void scopeTargets.refetch()}>
             <RefreshCw aria-hidden="true" size="0.75rem" />
             {localizeUi("ui.longTermMemory.activityview.retry")}
@@ -2814,6 +2798,25 @@ export default function SourcesWorkspace({
       data-ltm-extraction-note-id={extractingId ?? undefined}
       className="space-y-4"
     >
+      <style>{`
+        [data-ltm-workbench-mode="operation"] > :not([data-ltm-source-operation-workbench]),
+        [data-ltm-workbench-mode="task-result"] > :not([data-ltm-source-task-result-workbench]) {
+          display: none;
+        }
+        @media (min-width: 40rem) {
+          [data-ltm-scope-picker] {
+            max-width: 36rem;
+          }
+        }
+        @media (min-width: 48rem) {
+          [data-ltm-surface="sources"] [data-ltm-source-primary-actions] {
+            position: static;
+            border-width: 0;
+            background-color: transparent;
+            padding: 0;
+          }
+        }
+      `}</style>
       <div
         className="mari-editor-tab-rail flex flex-wrap gap-1 rounded-lg border p-1"
         role="tablist"
@@ -2877,9 +2880,10 @@ export default function SourcesWorkspace({
       {!availabilityReady ? (
         <StatusSurface tone={settingsQuery.isError ? "danger" : "neutral"} busy={!settingsQuery.isError}>
           {settingsQuery.isError
-            ? settingsQuery.error instanceof Error
-              ? settingsQuery.error.message
-              : localizeUi("ui.longTermMemory.sourcesworkspace.availabilitySettingsCouldNotLoad")
+            ? errorMessage(
+                settingsQuery.error,
+                localizeUi("ui.longTermMemory.sourcesworkspace.availabilitySettingsCouldNotLoad"),
+              )
             : localizeUi("ui.longTermMemory.sourcesworkspace.loadingAvailabilitySettings")}
           {settingsQuery.isError ? (
             <Button disabled={settingsQuery.isFetching} onClick={() => void settingsQuery.refetch()}>
@@ -2915,11 +2919,12 @@ export default function SourcesWorkspace({
 
       {(source === "lorebooks" ? lorebookPreview.isError : preview.isError) ? (
         <StatusSurface tone="danger">
-          {(source === "lorebooks" ? lorebookPreview.error : preview.error) instanceof Error
-            ? (source === "lorebooks" ? lorebookPreview.error : preview.error).message
-            : source === "lorebooks"
+          {errorMessage(
+            source === "lorebooks" ? lorebookPreview.error : preview.error,
+            source === "lorebooks"
               ? localizeUi("ui.longTermMemory.sourcesworkspace.lorebooksCouldNotLoad")
-              : localizeUi("ui.longTermMemory.sourcesworkspace.sourcePreviewCouldNotLoad")}
+              : localizeUi("ui.longTermMemory.sourcesworkspace.sourcePreviewCouldNotLoad"),
+          )}
         </StatusSurface>
       ) : null}
       {importError || sourceTaskError ? (
@@ -3114,7 +3119,7 @@ export default function SourcesWorkspace({
                             setOpenLorebookEntryId(null);
                             setWorkspacePane("workbench");
                           }}
-                          className={`flex min-h-16 w-full items-center gap-3 px-3 py-2 text-left hover:bg-[var(--secondary)]/35 ${selectedLorebookId === book.id ? "bg-[var(--primary)]/10" : ""}`}
+                          className={`flex min-h-16 w-full items-center gap-3 px-3 py-2 text-left hover:bg-[var(--secondary)]/30 ${selectedLorebookId === book.id ? "bg-[var(--primary)]/10" : ""}`}
                         >
                           <BookOpen
                             aria-hidden="true"
@@ -3151,7 +3156,8 @@ export default function SourcesWorkspace({
               content: (
                 <section
                   data-ltm-lorebook-workbench={selectedLorebook?.id ?? "empty"}
-                  className={`mari-editor-panel overflow-hidden ${workbenchModeClass}`}
+                  data-ltm-workbench-mode={workbenchMode}
+                  className="mari-editor-panel overflow-hidden"
                 >
                   {sourceOperationWorkbench}
                   <div ref={setResultWorkbenchHost} className="contents" data-ltm-source-task-result-workbench />
@@ -3181,7 +3187,7 @@ export default function SourcesWorkspace({
                           </div>
                         </div>
                         {selectedLorebook.description ? (
-                          <p className="max-w-[75ch] text-xs text-[var(--muted-foreground)]">
+                          <p className="text-xs text-[var(--muted-foreground)]" style={{ maxWidth: "75ch" }}>
                             {selectedLorebook.description}
                           </p>
                         ) : null}
@@ -3288,9 +3294,10 @@ export default function SourcesWorkspace({
                                     />
                                   ) : lorebookDetails.isError ? (
                                     <StatusSurface tone="danger">
-                                      {lorebookDetails.error instanceof Error
-                                        ? lorebookDetails.error.message
-                                        : localizeUi("ui.longTermMemory.sourcesworkspace.sourcePreviewCouldNotLoad")}
+                                      {errorMessage(
+                                        lorebookDetails.error,
+                                        localizeUi("ui.longTermMemory.sourcesworkspace.sourcePreviewCouldNotLoad"),
+                                      )}
                                       <Button onClick={() => void lorebookDetails.refetch()}>
                                         {localizeUi("ui.longTermMemory.sourcesworkspace.refreshPreview")}
                                       </Button>
@@ -3300,7 +3307,8 @@ export default function SourcesWorkspace({
                                     <ClickSurface
                                       key={candidate.sourceId}
                                       role="listitem"
-                                      className="group ml-7 space-y-2"
+                                      className="group space-y-2"
+                                      style={{ marginLeft: "1.75rem" }}
                                       data-ltm-source-existing-note={candidate.existingNoteId}
                                       data-ltm-source-actions-open={
                                         openSourceActionId === candidate.existingNoteId || undefined
@@ -3685,8 +3693,9 @@ export default function SourcesWorkspace({
               label: localizeUi("ui.longTermMemory.sourcesworkspace.sourcePreview"),
               content: (
                 <section
-                  className={`mari-editor-panel overflow-hidden ${workbenchModeClass}`}
+                  className="mari-editor-panel overflow-hidden"
                   data-ltm-source-workbench
+                  data-ltm-workbench-mode={workbenchMode}
                 >
                   {sourceOperationWorkbench}
                   <div ref={setResultWorkbenchHost} className="contents" data-ltm-source-task-result-workbench />
@@ -3752,15 +3761,19 @@ export default function SourcesWorkspace({
                           />
                         ) : sourceDetails.isError ? (
                           <StatusSurface tone="danger">
-                            {sourceDetails.error instanceof Error
-                              ? sourceDetails.error.message
-                              : localizeUi("ui.longTermMemory.sourcesworkspace.sourcePreviewCouldNotLoad")}
+                            {errorMessage(
+                              sourceDetails.error,
+                              localizeUi("ui.longTermMemory.sourcesworkspace.sourcePreviewCouldNotLoad"),
+                            )}
                             <Button onClick={() => void sourceDetails.refetch()}>
                               {localizeUi("ui.longTermMemory.sourcesworkspace.refreshPreview")}
                             </Button>
                           </StatusSurface>
                         ) : focusedFlatDetail ? (
-                          <pre className="max-h-[min(60vh,48rem)] overflow-auto whitespace-pre-wrap break-words rounded-md border border-[var(--border)] bg-[var(--secondary)]/25 p-3 text-sm">
+                          <pre
+                            style={{ maxHeight: "min(60vh, 48rem)" }}
+                            className="overflow-auto whitespace-pre-wrap break-words rounded-md border border-[var(--border)] bg-[var(--secondary)]/25 p-3 text-sm"
+                          >
                             {focusedFlatDetail.content}
                           </pre>
                         ) : (
@@ -3956,7 +3969,7 @@ export default function SourcesWorkspace({
                 <article
                   key={item.sourceId}
                   data-ltm-import-outcome={item.extractionStatus}
-                  className="space-y-2 border-t border-[var(--border)] py-3 first:border-t-0"
+                  className="space-y-2 border-t border-[var(--border)] py-3"
                 >
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     <strong>{item.title}</strong>

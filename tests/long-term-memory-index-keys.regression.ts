@@ -370,6 +370,50 @@ async function main() {
       LTM_LINKED_RECALL_MIN_RELEVANCE < DEFAULT_LTM_GLOBAL_SETTINGS.longTermMemoryScoreThreshold,
     "the linked recall floor must sit above 0 and below the default threshold",
   );
+  // Issue #1362: linked recall also follows a caused_by link between two events and a
+  // thread paid_off_in link to its event, from either end, and nothing wider.
+  const { findLtmLinkedNotes } = await import(`${source}/graph.ts`);
+  const linkTypes: Record<string, string> = {
+    timeline_effect: "timeline_event",
+    timeline_cause: "timeline_event",
+    timeline_payoff: "timeline_event",
+    thread_open: "thread",
+    world_lore: "world",
+  };
+  const linkedFrom = (seed: string, links: Array<[string, string, string]>) => {
+    const nodes: Record<string, { chunkIds: string[]; outgoing: any[]; incoming: any[] }> = {};
+    for (const id of Object.keys(linkTypes)) nodes[id] = { chunkIds: [], outgoing: [], incoming: [] };
+    for (const [from, relation, to] of links) {
+      const edge = { source: from, target: to, relation };
+      nodes[from]!.outgoing.push(edge);
+      nodes[to]!.incoming.push(edge);
+    }
+    return findLtmLinkedNotes({ version: 1, nodes }, [seed], (id: string) => linkTypes[id]).map(
+      (link: { noteId: string }) => link.noteId,
+    );
+  };
+  const causedBy: Array<[string, string, string]> = [["timeline_effect", "caused_by", "timeline_cause"]];
+  assert.deepEqual(linkedFrom("timeline_effect", causedBy), ["timeline_cause"]);
+  assert.deepEqual(linkedFrom("timeline_cause", causedBy), ["timeline_effect"]);
+  const paidOff: Array<[string, string, string]> = [["thread_open", "paid_off_in", "timeline_payoff"]];
+  assert.deepEqual(linkedFrom("thread_open", paidOff), ["timeline_payoff"]);
+  assert.deepEqual(linkedFrom("timeline_payoff", paidOff), ["thread_open"]);
+  for (const links of [
+    [["timeline_effect", "triggered_by", "timeline_cause"]],
+    [["timeline_effect", "planted_in", "timeline_cause"]],
+    [["timeline_effect", "involves", "timeline_cause"]],
+    [["world_lore", "paid_off_in", "timeline_payoff"]],
+    [["world_lore", "caused_by", "timeline_cause"]],
+    [["thread_open", "paid_off_in", "world_lore"]],
+  ] as Array<Array<[string, string, string]>>) {
+    for (const seed of Object.keys(linkTypes)) {
+      assert.deepEqual(
+        linkedFrom(seed, links),
+        [],
+        `${links[0]![1]} ${links[0]![0]} -> ${links[0]![2]} must stay unfollowed from ${seed}`,
+      );
+    }
+  }
   for (const [style, weights] of Object.entries(LTM_RECALL_STYLE_WEIGHTS)) {
     assert.ok(
       weights.keywordWeight * (3 / LTM_KEYWORD_MAX_SCORE) >= DEFAULT_LTM_GLOBAL_SETTINGS.longTermMemoryScoreThreshold,
@@ -437,6 +481,111 @@ async function main() {
     (adjacentNameHit?.score ?? 0) / LTM_KEYWORD_MAX_SCORE >= 0.75,
     "a name must keep full credit beside another capitalised word",
   );
+
+  // Issue #1363: a known character name keeps full credit on a single keyword where
+  // capitalisation cannot show it: sentence start, lowercase, or a caseless script.
+  const knownNameIndex = buildLtmKeywordIndex([
+    { ...chunk("everyday-chunk", "everyday_note"), keywords: ["half"] },
+    { ...chunk("name-chunk", "name_note"), keywords: ["mira"] },
+    { ...chunk("korean-name-chunk", "korean_name_note"), keywords: ["서래"] },
+  ]);
+  const knownNames = new Set(["mira", "서래"]);
+  const keywordCredit = (query: string, names?: ReadonlySet<string>) =>
+    (searchLtmKeywordIndex(knownNameIndex, query, { topK: 10, knownNames: names })[0]?.score ?? 0) /
+    LTM_KEYWORD_MAX_SCORE;
+  for (const query of ["Mira walked in.", "i told mira already", "Then Mira walked in.", "서래가 왔다"]) {
+    assert.ok(keywordCredit(query) > 0, `${query}: the name chunk must still match`);
+    if (!/^Then/.test(query)) {
+      assert.ok(keywordCredit(query) <= 0.5, `${query}: without a known name this stays capped`);
+    }
+    assert.ok(keywordCredit(query, knownNames) >= 0.75, `${query}: a known name must keep full credit`);
+  }
+  assert.ok(
+    keywordCredit("There's half a sandwich left", knownNames) <= 0.5,
+    "a known name set must not lift an ordinary single keyword",
+  );
+
+  // Issue #1363: retrieval builds the known names from allowed character chunks only.
+  {
+    const lookupRoot = await mkdtemp(join(tmpdir(), "marinara-ltm-known-names-"));
+    try {
+      const { retrieveLongTermMemory } = await import(`${source}/retrieval.ts`);
+      const { buildLtmGraphIndex } = await import(`${source}/graph.ts`);
+      const recallChunks = [
+        { ...chunk("half-world", "half_world"), title: "Half", keywords: ["half"], text: "a world note" },
+        {
+          ...chunk("mira-character", "mira_character"),
+          title: "Mira",
+          noteType: "character" as const,
+          keywords: ["mira"],
+          text: "a character note",
+        },
+        {
+          ...chunk("half-character-elsewhere", "half_character_elsewhere"),
+          title: "Half",
+          noteType: "character" as const,
+          keywords: ["half"],
+          scope: { chatIds: ["other-chat"] },
+          text: "a character note not in scope",
+        },
+        {
+          ...chunk("seo-character", "seo_character"),
+          title: "서래",
+          noteType: "character" as const,
+          keywords: ["서래"],
+          text: "a character note",
+        },
+      ];
+      const recallIndex = {
+        version: 1 as const,
+        generatedAt: "2026-08-14T00:00:00.000Z",
+        sourceHash: "0".repeat(64),
+        metadata: buildLtmMetadataIndex(recallChunks),
+        bm25: buildLtmBm25Index(recallChunks),
+        graph: buildLtmGraphIndex([], recallChunks),
+        keywords: buildLtmKeywordIndex(recallChunks),
+        embeddings: {
+          version: 1 as const,
+          model: "unavailable",
+          dimension: null,
+          embeddedChunkCount: 0,
+          chunks: [],
+          byChunkId: {},
+        },
+      };
+      const recallScore = async (queryText: string, chunkId: string) =>
+        (
+          await retrieveLongTermMemory({
+            root: lookupRoot,
+            index: recallIndex,
+            embeddingAdapter: null,
+            queryText,
+            mode: "roleplay",
+            scope: { chatId: "chat-a", chatIds: ["chat-a"] },
+            semanticWeight: 0,
+            lexicalWeight: 0,
+            graphWeight: 0,
+            keywordWeight: 1,
+            maxChunks: 5,
+            maxTokens: 4096,
+          })
+        ).chunks.find((entry: { chunk: { id: string } }) => entry.chunk.id === chunkId)?.relevanceScore ?? 0;
+      const midSentence = await recallScore("Then Mira walked in.", "mira-character");
+      assert.ok(midSentence > 0, "the character chunk must be recalled for a mid-sentence name");
+      assert.equal(await recallScore("Mira walked in.", "mira-character"), midSentence);
+      assert.equal(await recallScore("i told mira already", "mira-character"), midSentence);
+      const koreanScore = await recallScore("서래가 왔다", "seo-character");
+      assert.ok(koreanScore >= midSentence, "a Korean character name must keep full credit");
+      // "Half" titles a world note here and a character note outside the chat, so
+      // neither the noteType filter nor the allowed filter may make it a known name.
+      assert.ok(
+        (await recallScore("There's half a sandwich left", "half-world")) < midSentence,
+        "an ordinary single keyword must stay below a known name",
+      );
+    } finally {
+      await rm(lookupRoot, { recursive: true, force: true });
+    }
+  }
 
   // Issue #1264: the BM25 reference is the eight highest-idf query terms present in
   // the index, so padding the query with lower-idf narration does not shrink a
