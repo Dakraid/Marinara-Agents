@@ -77,4 +77,10 @@ assert.match(
   /if \(relationshipOnly\)\s*return relationships \?/u,
 );
 
+// ── A Couples page is not flagged "linked source missing" (#31) ──
+assert.match(
+  server("data/creators/slp-creators-storage-3.ts"),
+  /sourceStatus: slurpIsCouplePage\(account\)\s*\? \{ state: "current" as const \}/u,
+);
+
 console.log("slurp2 bug sweep regression: pass");
