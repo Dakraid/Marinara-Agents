@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.44";
+export const SLURP2_VERSION = "0.3.45";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -12,6 +12,15 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.45",
+    date: "2026-10-15",
+    notes: [
+      "Pictures carry their style once, a fallback gallery photo changes from post to post, and outfits are no longer worn out.",
+      "You choose whether Slurp draws missing avatars and banners on its own. Each Creator can have words that always open their picture prompt.",
+      "You can write how pictures are described to the writer. By default, the description leaves out the art style.",
+    ],
+  },
   {
     version: "0.3.44",
     date: "2026-10-15",

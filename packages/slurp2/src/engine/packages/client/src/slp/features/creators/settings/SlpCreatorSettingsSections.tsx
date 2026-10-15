@@ -519,6 +519,30 @@ export function SlpCreatorImagesSection({ creator, active }: SlpCreatorSettingsS
           }}
         />
       )}
+      {settings && (
+        <Field
+          settingKey="creatorImagePrefixes"
+          label={t("ui.slurp.settings.creators.imagePrefix")}
+          detail={t("ui.slurp.settings.creators.imagePrefixDetail")}
+        >
+          {/* Saved on leaving the field; blank removes it. */}
+          <input
+            key={`${creator.id}:${settings.creatorImagePrefixes?.[creator.id] ?? ""}`}
+            type="text"
+            maxLength={300}
+            defaultValue={settings.creatorImagePrefixes?.[creator.id] ?? ""}
+            disabled={updateSettings.isPending}
+            placeholder={t("ui.slurp.settings.creators.imagePrefixPlaceholder")}
+            onBlur={(event) => {
+              const value = event.target.value.trim();
+              const { [creator.id]: previous = "", ...rest } = settings.creatorImagePrefixes ?? {};
+              if (value === previous) return;
+              updateSettings.mutate({ creatorImagePrefixes: value ? { ...rest, [creator.id]: value } : rest });
+            }}
+            className={selectClass}
+          />
+        </Field>
+      )}
       {creator.sourceAccountId && !personaBacked && settings && (
         <Field
           settingKey="characterImageInstructions"

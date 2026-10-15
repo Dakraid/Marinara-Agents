@@ -12,11 +12,7 @@ import {
   resolveConnectionImageDefaults,
   resolveImageGenerationService,
 } from "../../../services/image/image-generation-defaults.js";
-import {
-  compileImagePrompt,
-  removeCopiedPromptGuidance,
-  resolveImageStyleGuidanceText,
-} from "../../../services/image/image-prompt-compiler.js";
+import { compileImagePrompt, resolveImageStyleGuidanceText } from "../../../services/image/image-prompt-compiler.js";
 import { resolveImagePromptReviewSize } from "../../../services/image/image-prompt-review.js";
 import type { SlurpVisualBrief } from "../../base/media/slp-visual-brief.js";
 import type { SlpDeepDetailsImageRun } from "../../../../../shared/src/slp/slp-deep-details.js";
@@ -135,6 +131,7 @@ type CreatorPostImageInput = {
     | "storyImageHeight"
     | "characterImageInstructions"
     | "creatorImageNames"
+    | "creatorImagePrefixes"
     | "promptBlocks"
     | "generationConnectionId"
     | "imagePromptConnectionId"
@@ -473,14 +470,9 @@ async function generateCreatorPostImageRun(
   // fallback pictures look like someone else. selectSlpImageProviderPrompt caps it on a word
   // boundary, which is what the uncapped stack of appearance, personality and habits needed.
   const rawProviderPrompt = redactIdentity(reviewedOverride?.prompt || compiledPrompt.prompt);
-  // The rewriter gets the visual intent only. It receives appearance, personality, and image habits
-  // through the labelled `characterContext` block below, so handing it the rendered template too
-  // sent the same three values twice and asked it to "preserve the visual facts" in a personality
-  // trait list.
   const rawRewriteInput = redactIdentity(reviewedOverride?.prompt || compiledDraft?.prompt || draftPrompt);
-  // The writer gets the bare draft: the style arrives as `styleGuidance` and is compiled onto the
-  // output below, so a styled draft made it echo the profile's tags, reworded past the compiler's
-  // exact dedupe, and the picture carried the style twice (player report, NanoGPT + qwen-image).
+  // The rewriter gets the bare draft: context and style arrive labelled below and the style is compiled
+  // onto its output, so a styled draft came back reworded and the picture carried its tags twice.
   const rewriteInput = redactIdentity(draftPrompt) || rawRewriteInput;
   // Custom prompt templates may omit `userInstructions`, so restore configured instructions only
   // when the rendered prompt does not already contain them.
@@ -552,12 +544,10 @@ async function generateCreatorPostImageRun(
   // applied only when the rewrite was skipped, failed, or was rejected — which is exactly why the
   // setting looked intermittent rather than broken. The compiler dedupes against the prompt it is
   // given, so a rewrite that kept its style is not styled twice.
-  // A writer that still copied the style text gets it taken out before the style is compiled on.
-  const cleanRewrittenPrompt = rewrittenPrompt ? removeCopiedPromptGuidance(rewrittenPrompt, [styleGuidance]) : null;
-  const compiledRewrittenPrompt = cleanRewrittenPrompt
+  const compiledRewrittenPrompt = rewrittenPrompt
     ? compileSlurpImagePrompt({
         kind: "illustration",
-        prompt: cleanRewrittenPrompt,
+        prompt: rewrittenPrompt,
         styleProfiles: imageSettings.styleProfiles,
         imageDefaults,
       })
@@ -630,9 +620,11 @@ async function generateCreatorPostImageRun(
     usedRewrite,
   );
   // The name leads the look on every path, with or without the enhancer; a prompt a human approved stays as written.
+  // The player's own words ("[name] from [source]") take the name's place, on every identity.
+  const imagePrefix = input.settings.creatorImagePrefixes?.[input.account.id]?.trim() ?? "";
   const namedLook = skipInterpretation
     ? finalPromptLook
-    : slurpApplyImageSubject(finalPromptLook, subjectName, promptFamily);
+    : slurpApplyImageSubject(finalPromptLook, imagePrefix || subjectName, promptFamily);
   const ownBlock = namedLook.slice(0, namedLook.length - finalPromptBody.length);
   // Everybody else the scene names gets their own block, between the Creator's and the scene.
   const blocks = () =>

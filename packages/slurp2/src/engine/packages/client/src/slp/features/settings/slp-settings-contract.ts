@@ -78,6 +78,7 @@ export type SlurpSettings = {
   generationConnectionId: string | null;
   imageContextMode: "auto" | "imagePrompt" | "vision";
   imageContextConnectionId: string | null;
+  imageCaptionPrompt: string;
   pageConnectionId: string | null;
   imagePromptConnectionId: string | null;
   imageStyleProfileId: string | null;
@@ -107,6 +108,7 @@ export type SlurpSettings = {
   characterImageInstructions: Record<string, boolean>;
   /** Per Creator: false turns off "The image model knows this character". */
   creatorImageNames: Record<string, boolean>;
+  creatorImagePrefixes: Record<string, string>;
   promptPresets: SlurpPromptPreset[];
   promptBlocks: Record<string, SlurpPromptBlockOverride[]>;
   /** Prompt edits from before Classic generation was removed. Source of the Classic prompt preset. */

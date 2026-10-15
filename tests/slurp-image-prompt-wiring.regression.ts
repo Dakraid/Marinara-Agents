@@ -20,8 +20,7 @@ assert.match(images, /prompt: rewriteInput,/u, "the rewriter receives the draft,
 // ...and the bare draft, not the styled one: the style is passed as styleGuidance and compiled onto the
 // output, so a styled draft came back reworded and the picture carried its tags twice.
 assert.match(images, /const rewriteInput = redactIdentity\(draftPrompt\) \|\| rawRewriteInput;/u);
-assert.match(images, /removeCopiedPromptGuidance\(rewrittenPrompt, \[styleGuidance\]\)/u);
-assert.match(images, /prompt: cleanRewrittenPrompt,/u);
+
 assert.match(
   images,
   /const rawRewriteInput = redactIdentity\(reviewedOverride\?\.prompt \|\| compiledDraft\?\.prompt \|\| draftPrompt\);/u,

@@ -74,6 +74,13 @@ import { SLURP_DEFAULT_CREATOR_MESSAGING, SLURP_DM_POLICIES } from "../messages/
 import { SLURP_DEFAULT_REPLY_DELAYS } from "../messages/slp-messaging.js";
 import { NOODLER_CONTENT_HARD_MAX_LENGTH } from "../../base/prompting/slp-content-format.js";
 import { parseRecord, type SlurpAccount } from "../records/slp-storage-model.js";
+import {
+  LEGACY_GRAPHIC_SLP_CREATOR_DEFAULT_IMAGE_GENERATION_PROMPT,
+  LEGACY_SLP_CREATOR_DEFAULT_IMAGE_GENERATION_PROMPT,
+  LEGACY_SLP_CREATOR_DEFAULT_IMAGE_PROMPT_INTERPRETATION,
+  SLP_CREATOR_DEFAULT_IMAGE_GENERATION_PROMPT,
+  SLP_CREATOR_DEFAULT_IMAGE_PROMPT_INTERPRETATION,
+} from "./slp-settings-image-prompts.js";
 export const slpCreatorFanArchetypeWeightsSchema = z
   .object({
     ordinary: z.number().finite().min(0),
@@ -182,6 +189,7 @@ export const slurpSettingsSchema = z.object({
   imageContextMode: z.enum(["auto", "imagePrompt", "vision"]),
   /** Describes pictures for image context. Null uses the Creator text connection. */
   imageContextConnectionId: z.string().nullable(),
+  imageCaptionPrompt: z.string().max(4000),
   /** Builds Creator Pages (a long structured answer); null = the AI writing connection. */
   pageConnectionId: z.string().nullable().default(null),
   /** The LLM connection that enhances picture prompts; null = Slurp's text connection. */
@@ -201,7 +209,6 @@ export const slurpSettingsSchema = z.object({
   imageAppearanceMode: z.enum(["writer", "insert", "both"]),
   appearanceProfileMode: z.enum(["ask", "high_confidence", "always"]),
   autoPostingImagesEnabled: z.boolean(),
-  /** Draw a missing avatar or banner for a Hinted or Secret Creator in the background. */
   autoCreatorArtworkEnabled: z.boolean(),
   allowRandomUsers: z.boolean(),
   /** Ambient roster entity ids the user deleted; the seeder never recreates these. */
@@ -241,6 +248,7 @@ export const slurpSettingsSchema = z.object({
   characterImageInstructions: z.record(z.string(), z.boolean()),
   /** Per Creator: false turns off "The image model knows this character" (the card name in picture prompts). */
   creatorImageNames: z.record(z.string(), z.boolean()),
+  creatorImagePrefixes: z.record(z.string(), z.string().max(300)),
   /** Saved sets of generation guidance and image prompt, switched from Settings. */
   promptPresets: z
     .array(
@@ -459,21 +467,6 @@ export const LEGACY_STEAMY_SLURP_DEFAULT_GENERATION_GUIDANCE =
 export const LEGACY_EXPLICIT_SLURP_DEFAULT_GENERATION_GUIDANCE =
   "All Slurp creators and viewers are adults (18+). This is an explicit adult creator page. Sexual content is the norm here rather than the exception, and creators describe it directly and in detail when it suits them. Tease the locked posts hard and answer flirty comments in kind. Keep each creator's personality intact: a shy creator is explicit shyly, a blunt one is explicit bluntly. Ordinary posts about their day, work, and mood still appear and keep the feed believable.";
 
-export const LEGACY_SLP_CREATOR_DEFAULT_IMAGE_GENERATION_PROMPT =
-  "Create a polished social-media image for an adult Creator post. Match the creator's identity, personality, body, clothing, and established visual details. Follow the post's mood and subject. Describe the pose, expression, setting, lighting, camera angle, composition, and visible details clearly. Flirty, suggestive, sensual, or explicit imagery is allowed when it fits the post and creator, but do not force sexual content into ordinary updates. Keep the image coherent, intentional, and suitable for a public or locked Creator feed.";
-
-export const LEGACY_GRAPHIC_SLP_CREATOR_DEFAULT_IMAGE_GENERATION_PROMPT =
-  "Create a polished social-media image for an adult Creator post. Match the creator's identity, personality, body, clothing, and established visual details. Follow the post's mood and subject. Describe the pose, expression, setting, lighting, camera angle, composition, and visible details clearly. Flirty, suggestive, sensual, or explicit imagery is allowed when it fits the post and creator, but do not force sexual content into ordinary updates. When the image shows nudity or sex, always use thorough, graphic descriptions. Name the body in dirty everyday words, not clinical ones: tits, nipples, ass, pussy, clit, cock, balls, cum, wet, dripping, hard, leaking. Describe how it looks, how it sits, how it catches the light. Keep the image coherent, intentional, and suitable for a public or locked Creator feed.";
-
-export const SLP_CREATOR_DEFAULT_IMAGE_GENERATION_PROMPT =
-  "Create a provider-ready image prompt for the supplied adult Creator post. Preserve the post's subject, action, setting, mood, clothing, and established appearance. Use the Creator's personality to shape expression and presentation, not to invent a new event or sexualize an ordinary moment. Add nudity, explicit anatomy, or sexual activity only when the post or an explicit trusted instruction already requires it. Keep the image coherent, believable, and suitable for the post's public or locked access level. Use only the visual details needed for this scene.";
-
-export const LEGACY_SLP_CREATOR_DEFAULT_IMAGE_PROMPT_INTERPRETATION =
-  "Edit this image prompt into a provider-ready image prompt. Preserve the original subject, action, setting, composition, and visual style. Preserve any explicit style in the original prompt, character context, image instructions, or style guidance. Do not add realistic, photorealistic, photographic, camera, lens, or natural-lighting language unless the supplied context clearly requests that style. Do not convert an anime, cartoon, game, manga, comic, illustration, painterly, fantasy, or stylized character into a realistic image. When no style is specified, keep the prompt style-neutral. Do not invent an art style. Treat image instructions as guidance, not text to copy into the result. Return only the provider-ready image prompt.";
-
-export const SLP_CREATOR_DEFAULT_IMAGE_PROMPT_INTERPRETATION =
-  "Edit this image prompt into a concise provider-ready image prompt. Preserve the original subject, action, setting, clothing, composition, visual style, and sexual intensity. Preserve explicit style from the original prompt, character context, image instructions, or style guidance. Do not add a new event, person, pose, outfit, viewpoint, nudity, explicit anatomy, or sexual activity. Do not turn an ordinary update into a fashion shoot or erotic image. Do not add realistic, photographic, camera, lens, or natural-lighting language unless the supplied context requests it. Do not convert a stylized character into a realistic image. Treat image instructions as guidance, not text to copy. Return only the provider-ready image prompt.";
-
 /**
  * The LEGACY_* guidance constants above are every previously shipped default. An install that
  * never edited the guidance stored one of them verbatim, so it is migrated to the current default
@@ -545,6 +538,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   generationConnectionId: null,
   imageContextMode: "auto",
   imageContextConnectionId: null,
+  imageCaptionPrompt: "",
   pageConnectionId: null,
   imagePromptConnectionId: null,
   imageStyleProfileId: null,
@@ -561,7 +555,6 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   imageAppearanceMode: "writer",
   appearanceProfileMode: "high_confidence",
   autoPostingImagesEnabled: false,
-  // On for an install that predates the switch; first-run setup sets it from its own images choice.
   autoCreatorArtworkEnabled: true,
   allowRandomUsers: false,
   dismissedAmbientProfileIds: [],
@@ -576,6 +569,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   postShowMoreLength: 300,
   characterImageInstructions: {},
   creatorImageNames: {},
+  creatorImagePrefixes: {},
   promptPresets: [],
   promptBlocks: {} satisfies SlurpPromptBlockOverrides,
   classicPromptBlocks: {} satisfies SlurpPromptBlockOverrides,

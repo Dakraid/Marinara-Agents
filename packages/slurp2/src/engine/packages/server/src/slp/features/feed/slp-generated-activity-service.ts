@@ -51,18 +51,15 @@ export type PreparedGeneratedSlpMedia = {
 };
 
 export async function pickGalleryAttachmentForAccount(input: {
+  db: DB;
   account: SlpAccount;
-  chats: ReturnType<typeof createChatsStorage>;
-  gallery: ReturnType<typeof createGalleryStorage>;
-  characterGallery: ReturnType<typeof createCharacterGalleryStorage>;
   /** The posting account's own recent posts tell which gallery pictures it already showed. */
   postingAccountId: string;
-  noodle: ReturnType<typeof createSlurpStorage>;
 }) {
   if (input.account.kind !== "character") return null;
-  const recentPosts = await input.noodle.listNoodlerPostsByAccount(input.postingAccountId, 50);
+  const recentPosts = await createSlurpStorage(input.db).listNoodlerPostsByAccount(input.postingAccountId, 50);
   const used = recentPosts.map((post) => post.metadata?.galleryAttachmentId);
-  const characterImages = await input.characterGallery.listByCharacterId(input.account.entityId);
+  const characterImages = await createCharacterGalleryStorage(input.db).listByCharacterId(input.account.entityId);
   const characterImage = slurpLeastRecentGalleryImage(characterImages, used);
   if (characterImage) {
     return {
@@ -73,12 +70,12 @@ export async function pickGalleryAttachmentForAccount(input: {
       },
     };
   }
-  const chats = await input.chats.list();
+  const chats = await createChatsStorage(input.db).list();
   const chatIds = chats
     .filter((chat) => parseStringArray(chat.characterIds).includes(input.account.entityId))
     .map((chat) => chat.id)
     .slice(0, 20);
-  const chatImages = await input.gallery.listByChatIds(chatIds);
+  const chatImages = await createGalleryStorage(input.db).listByChatIds(chatIds);
   const chatImage = slurpLeastRecentGalleryImage(chatImages, used);
   if (!chatImage) return null;
   return {
@@ -171,12 +168,9 @@ export async function prepareGeneratedSlpMedia(input: {
     ) {
       try {
         const attachment = await pickGalleryAttachmentForAccount({
+          db: input.db,
           account,
-          chats: input.chats,
-          gallery: input.gallery,
-          characterGallery: input.characterGallery,
           postingAccountId: account.id,
-          noodle: createSlurpStorage(input.db),
         });
         if (attachment) {
           prepared.imageUrl = attachment.imageUrl;
