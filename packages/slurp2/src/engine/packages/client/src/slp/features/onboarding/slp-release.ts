@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.42";
+export const SLURP2_VERSION = "0.3.43";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -12,6 +12,15 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.43",
+    date: "2026-10-15",
+    notes: [
+      "Long DMs no longer stop mid-word, and Creators quote commission prices that match their price list.",
+      "Posts stay varied: no more whole-feed shower evenings, and no Creator slides into one kind of post.",
+      "Family is never paired up on its own, but you can still do it in Stir. Each feed slot posts once.",
+    ],
+  },
   {
     version: "0.3.42",
     date: "2026-10-15",
@@ -765,19 +774,6 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
     notes: [
       "Deleted posts leave a sparkly Restore slot for 60 seconds.",
       "Pictures stick closer to the planned scene.",
-    ],
-  },
-  {
-    version: "0.2.8",
-    date: "2026-09-21",
-    notes: ["The feed has a softer loading animation, and deleted posts fade out gently."],
-  },
-  {
-    version: "0.2.7",
-    date: "2026-09-21",
-    notes: [
-      "The feed opens faster and loads older posts as you scroll.",
-      "Edits and deletes show at once, with no reload.",
     ],
   },
 ];

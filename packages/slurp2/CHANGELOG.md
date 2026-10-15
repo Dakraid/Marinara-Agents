@@ -1,5 +1,16 @@
 # Slurp release notes
 
+## 0.3.43 — 2026-10-15
+
+- Fixed: long DMs end at a sentence or word (up to 2400 characters), and commission quotes use the Creator's own prices.
+- Fixed: Cancel ends a subscription to a removed Creator at once.
+- Fixed: fans react to what a picture shows, not its art style.
+- Fixed: post drift. Tips no longer teach a guessed taste, and a spicy kind or taste that other Creators posted that day steps aside, so the whole feed is not in the shower at once. Spice level is unchanged.
+- Changed: family is never paired up on its own. Cards that say they are lovers, or the player in Stir, still can.
+- Fixed: clearer "monogamous" message in Stir, with the Relationships switch on the Creator sheet.
+- Fixed: work mode no longer blurs the coin and G's face; Couples pages are not a missing source; the sign-up scene names an unreachable connection.
+- Fixed: a scheduled post goes up once, and a shared-page post waits its turn.
+
 ## 0.3.42 — 2026-10-15
 
 - Added: chats with "Carryover to chats" on also learn the character's Slurp storyline, love life, how well they know you, and the Slurp memories a chat with you may read.

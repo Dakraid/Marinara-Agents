@@ -146,17 +146,13 @@ export async function generateCreatorPost(
     fallbackConnection,
     admissionMode: input.admissionMode ?? { kind: "foreground" },
   });
+  const at = input.generatedAt ?? new Date();
   const recentPosts = await noodle.listNoodlerPostsByAccount(account.id, 8);
-  const otherCreatorSubjects = await listSlurpOtherCreatorSubjects(db, account.id, input.generatedAt ?? new Date());
+  const otherCreatorSubjects = await listSlurpOtherCreatorSubjects(db, account.id, at);
   const disclosureMode = account.settings.privacy.identityDisclosure ?? "open";
   const linkedPublicAccount = await noodle.resolveAccountSource(account as SlurpAccount);
   const scheduleContext = linkedPublicAccount
-    ? await resolveSlurpCreatorScheduleContext(
-        createCharactersStorage(db),
-        linkedPublicAccount,
-        undefined,
-        input.generatedAt ?? new Date(),
-      )
+    ? await resolveSlurpCreatorScheduleContext(createCharactersStorage(db), linkedPublicAccount, undefined, at)
     : undefined;
   // Derive the identity from the row already in hand; resolving it again would re-read it.
   const publicIdentity = await slpCreatorPublicIdentityFor(db, linkedPublicAccount);
@@ -353,6 +349,7 @@ export async function generateCreatorPost(
     variation,
     beat: plannedBeat,
     teasedKind: purpose.spiceKind,
+    at,
   });
   const { postLevel, angle: spiceAngle, beat } = spiced;
   variation = spiced.variation;

@@ -394,7 +394,9 @@ export function slurpBeatFactFromPost(post: {
   return {
     key: `beat:${post.id}`,
     subject: typeof beat?.anchor === "string" ? beat.anchor : "",
-    text: `Posted about: ${line}`,
+    // Done, not a running topic: "Posted about" read as a fact to build on and pulled the next
+    // posts back to the same chore or shower (#104).
+    text: `Already posted about this earlier in the week: ${line}`,
     audienceScope: post.access === "locked" ? "creator_private" : "creator_public",
     expiresAt: new Date(Date.parse(post.createdAt) + SLURP_BEAT_FACT_DAYS * 24 * 60 * 60 * 1000),
   };
