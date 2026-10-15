@@ -5,6 +5,8 @@ import {
   slurpPickTrendJoin,
   slurpTrendBlocked,
   slurpTrendLabel,
+  slurpTrendLine,
+  slurpTrendQuoteOf,
   slurpTrendMayStart,
   slurpTrendOrigin,
   slurpTrendRole,
@@ -12,6 +14,7 @@ import {
   type SlurpTrend,
   type SlurpTrendPost,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/discovery/slp-trends.ts";
+import { parseSlurpBeat } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-post-beat.ts";
 import { normalizeSlurpSharedWorldTrend } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-shared-preseed.ts";
 import type { SlurpTieCreator } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-ties.ts";
 
@@ -161,10 +164,37 @@ assert.equal(
   1,
 );
 // A world trend needs a label and a line with exactly one slot.
-assert.deepEqual(normalizeSlurpSharedWorldTrend({ trend: { label: "Sock puppet day", line: "You show {a} with a sock." } }), {
-  label: "Sock puppet day",
-  line: "You show {a} with a sock.",
-});
+assert.deepEqual(
+  normalizeSlurpSharedWorldTrend({ trend: { label: "Sock puppet day", line: "You show {a} with a sock." } }),
+  {
+    label: "Sock puppet day",
+    line: "You show {a} with a sock.",
+  },
+);
 assert.equal(normalizeSlurpSharedWorldTrend({ trend: { label: "x", line: "No slot." } }), null);
 assert.equal(normalizeSlurpSharedWorldTrend({ trend: null }), null);
+// The post is told who started it and how to join; a contrarian roasts the trend, not a person.
+const join = (role: "follower" | "early" | "contrarian") => ({ trend, role, stage: "peak" as const });
+assert.match(slurpTrendLine(join("follower"), "Mira"), /"Mirror selfies", started by Mira/u);
+assert.match(slurpTrendLine(join("contrarian"), null), /roast it/u);
+assert.equal(slurpTrendLine(join("follower"), "Mira"), slurpTrendLine(join("follower"), "Mira"));
+assert.equal(
+  slurpTrendLine({ ...join("follower"), trend: { ...trend, line: "You show {a}." } }, null),
+  "You show {a}.",
+);
+// The origin post is quoted from the stamp.
+assert.equal(slurpTrendQuoteOf({ slurpTrend: { id: "t1", label: "x", originPostId: "p" } }), "p");
+assert.equal(slurpTrendQuoteOf({ slurpTrend: { id: "t1", label: "x", originPostId: null } }), null);
+assert.equal(slurpTrendQuoteOf(null), null);
+// A planned slot keeps its trend: the beat survives being stored and read back.
+const beat = {
+  type: "audience_game",
+  anchorKind: "trend",
+  anchor: "Mirror selfies",
+  line: "x",
+  cast: [],
+  place: null,
+  trend: { id: "t1", label: "Mirror selfies", originPostId: "p" },
+};
+assert.deepEqual(parseSlurpBeat(JSON.parse(JSON.stringify(beat)))?.trend, beat.trend);
 console.log("slurp2 trends: ok");

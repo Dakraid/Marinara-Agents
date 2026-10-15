@@ -6,7 +6,7 @@ import type { DB } from "../../../db/connection.js";
 import { inArray } from "../../../db/file-query.js";
 import { slpPostUnlocks } from "../../../db/schema/slurp.js";
 import { logger } from "../../../lib/logger.js";
-import type { SlurpTrendPost } from "../../modules/discovery/slp-trends.js";
+import { SLURP_TREND_ORIGIN_DAYS, type SlurpTrendPost } from "../../modules/discovery/slp-trends.js";
 import { createSlurpStorage } from "../slp-storage.js";
 
 const POSTS = 10;
@@ -15,11 +15,15 @@ export async function readSlurpTrendPosts(
   db: DB,
   accountId: string,
   playerIds: ReadonlySet<string>,
+  at: Date,
 ): Promise<SlurpTrendPost[]> {
   try {
     const storage = createSlurpStorage(db);
     const posts = (await storage.listNoodlerPostsByAccount(accountId, POSTS)).filter((post) => post.access !== "draft");
-    if (!posts.length) return [];
+    // Nothing public in the last days: no trend from here, and no interactions to read.
+    const recent = (post: (typeof posts)[number]) =>
+      post.access === "public" && at.getTime() - Date.parse(post.createdAt) <= SLURP_TREND_ORIGIN_DAYS * 86_400_000;
+    if (!posts.some(recent)) return [];
     const ids = posts.map((post) => post.id);
     const [interactions, unlocks, earnings] = await Promise.all([
       storage.listNoodlerInteractions(ids),

@@ -84,7 +84,7 @@ export async function advanceSlurpTrends(db: DB, at = new Date()): Promise<void>
     const taken = new Set(before.map((trend) => trend.originPostId));
     let best: { account: (typeof accounts)[number]; post: SlurpTrendPost } | null = null;
     for (const account of accounts) {
-      const origin = slurpTrendOrigin(await readSlurpTrendPosts(db, account.id, playerIds), at);
+      const origin = slurpTrendOrigin(await readSlurpTrendPosts(db, account.id, playerIds, at), at);
       if (!origin || taken.has(origin.id)) continue;
       if (!best || slurpTrendScore(origin) > slurpTrendScore(best.post)) best = { account, post: origin };
     }
