@@ -5,7 +5,7 @@ import { eventCast } from "../events/event-cast.mjs";
 import { TRAIT_BEHAVIOURS, relationshipProfile } from "../traits/traits.mjs";
 import { bondTier, hasMet, isFormerRival, markTraitsSeen, trustCushion } from "../relationships/bonds.mjs";
 import { MILESTONE_COUPLE_STATUSES } from "../relationships/milestones.mjs";
-import { kinWordFor } from "../relationships/kin.mjs";
+import { familyPairBarsRomance, kinBarsRomance, kinWordFor } from "../relationships/kin.mjs";
 import { ITEM_CATALOG } from "../items/catalog.mjs";
 import { npcPairBetween, npcPairKey, PAIR_ROMANCE_COUPLE_THRESHOLD, pairWordFor } from "../network/npc-pairs.mjs";
 import { FACT_ACT_PHRASES, personKnowsFact } from "../network/town-facts.mjs";
@@ -187,10 +187,10 @@ function romanceBetween(state, first, second, pair) {
   let refusesRomance = (character) => (character.castRomance ?? character.romanceable) === false;
   if (
     !state.rules?.castCouples ||
-    pair.kind === "family" ||
+    familyPairBarsRomance(state, pair) ||
     refusesRomance(first) ||
     refusesRomance(second) ||
-    (state.bonds?.[first.id]?.kin && state.bonds?.[second.id]?.kin) ||
+    (kinBarsRomance(state, state.bonds?.[first.id]) && kinBarsRomance(state, state.bonds?.[second.id])) ||
     !likeEachOther(state, first.id, second.id)
   ) {
     return 0;
@@ -342,7 +342,7 @@ function standingWords(state, characterId) {
   let nameOf = (id) => characterOf(state, id)?.name ?? "someone",
     parts = [
       bond.kin
-        ? `Family: the player's ${kinWordFor(bond.kin, characterOf(state, characterId)?.gender ?? null)}; nothing romantic, ever`
+        ? `Family: the player's ${kinWordFor(bond.kin, characterOf(state, characterId)?.gender ?? null)}${kinBarsRomance(state, bond) ? "; nothing romantic, ever" : ""}`
         : ({
             married: "Married: the player's spouse",
             engaged: "Engaged to the player",
@@ -655,9 +655,6 @@ function jealousAbout(state, scene) {
 }
 function jealousOutcome(state, scene, choice, believed) {
   let about = scene.about ?? {},
-    forgiveness = forgivenessOf(bondOf(state, scene.characterId), {
-      betrayal: !!about.cheat,
-    }),
     lieBelieved = choice === "deny" && believed,
     trustDelta,
     romanceDelta;
@@ -668,8 +665,13 @@ function jealousOutcome(state, scene, choice, believed) {
   } else {
     [trustDelta, romanceDelta] = about.cheat ? [believed ? -3 : -7, -2] : [believed ? 0 : -3, -1];
   }
-  let dating = bondOf(state, scene.characterId)?.status === "dating",
-    ends = !!about.cheat && !lieBelieved && (forgiveness <= 1 || (forgiveness === 2 && !believed && !dating)),
+  // Infidelity never ends it on its own: someone who isn't the jealous kind lets it go on (open, or it excites them); anyone else stays, hurt.
+  let knobs = knobsOf(bondOf(state, scene.characterId)),
+    opens =
+      !!about.cheat &&
+      !!about.with &&
+      choice !== "deny" &&
+      ((knobs.jealousy ?? 1) === 0 || (knobs.forgiveness ?? 2) >= 3),
     withdraws = !!relationshipProfile(bondOf(state, scene.characterId)).rules.jealousyWithdraws;
   return {
     trust: trustDelta,
@@ -677,7 +679,12 @@ function jealousOutcome(state, scene, choice, believed) {
     friendship: withdraws ? romanceDelta : 0,
     believed: lieBelieved,
     lie: choice === "deny",
-    ends: ends,
+    opens: opens,
+    ...(opens
+      ? {
+          headline: "They can live with it.",
+        }
+      : {}),
   };
 }
 function hereRow(state, castIds = []) {

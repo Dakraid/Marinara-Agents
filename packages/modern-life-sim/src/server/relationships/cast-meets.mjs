@@ -15,6 +15,7 @@ import { genderOf, likeEachOther } from "../romance/romanceability.mjs";
 import { agreedFor, coupleOf, isPartner, learnYou, settledPair } from "../romance/jealousy.mjs";
 import { workingHome } from "../cast/working-now.mjs";
 import { bondOf, castInTown, characterOf, nameFor, traitsOf, whereOpts } from "../game.mjs";
+import { familyPairBarsRomance } from "../relationships/kin.mjs";
 
 var STRAY_WEEKLY = [3, 2, 1, 0.5];
 var FAITHFUL_LOW = 3;
@@ -39,7 +40,7 @@ function loverOf(game, charId, day) {
     .filter(
       (pair) =>
         (pair.romance ?? 0) > 0 &&
-        pair.kind !== "family" &&
+        !familyPairBarsRomance(game, pair) &&
         !agreedFor(game, charId, pair.other) &&
         characterOf(game, pair.other) &&
         !characterOf(game, pair.other).away &&
@@ -52,7 +53,7 @@ function loverOf(game, charId, day) {
   }
   let crushes = npcPairsOf(game, charId).filter(
     (pair) =>
-      pair.kind !== "family" &&
+      !familyPairBarsRomance(game, pair) &&
       pair.close > 0 &&
       characterOf(game, pair.other) &&
       !characterOf(game, pair.other).away &&
@@ -198,7 +199,7 @@ function planMeets(game, day) {
         if (
           !other ||
           other.away ||
-          pair.kind === "family" ||
+          familyPairBarsRomance(game, pair) ||
           pair.close <= 0 ||
           !(isUnattached(game, otherId) || faithfulDial(game, otherId) <= FAITHFUL_LOW) ||
           !isAttractedToGender(other.into, genderOf(game, charId)) ||

@@ -69,6 +69,7 @@ import {
   traitsOf,
 } from "../game.mjs";
 import { PARTY_EVENT_MILESTONES } from "./party-milestone-ids.mjs";
+import { kinBarsRomance, familyPairBarsRomance } from "../relationships/kin.mjs";
 
 function letPartyGuestsIn(state) {
   let party = state.party;
@@ -450,7 +451,7 @@ function isPartyActRomantic(state, characterId) {
     return true;
   }
   let bond = bondOf(state, characterId);
-  return !bond || bond.kin || bond.justFriends || bond.romanceable === false || isRomanceFrozen(bond)
+  return !bond || kinBarsRomance(state, bond) || bond.justFriends || bond.romanceable === false || isRomanceFrozen(bond)
     ? false
     : bondTier(bond, "romance") >= 1 && !takenBy(state, characterId);
 }
@@ -2815,7 +2816,7 @@ function ownPartyEventCandidates(state) {
         });
       } else if (
         pair?.kind !== "couple" &&
-        pair?.kind !== "family" &&
+        !familyPairBarsRomance(state, pair) &&
         !isPartner(state, first) &&
         !isPartner(state, second) &&
         romanceBetween(
@@ -2962,7 +2963,7 @@ function rollTheirPartyEvent(state) {
         });
       } else if (
         pair?.kind !== "couple" &&
-        pair?.kind !== "family" &&
+        !familyPairBarsRomance(state, pair) &&
         !isPartner(state, first) &&
         !isPartner(state, second) &&
         romanceBetween(

@@ -29,6 +29,7 @@ import {
 import { CLUB_REGULAR_ID_PREFIX, clubDarkActive } from "./after-dark.mjs";
 import { adultMarkOf, adultNameFor, intimateBondOf } from "./intimate-milestone.mjs";
 import { clubStaffList } from "./party-slip-away.mjs";
+import { kinBarsRomance } from "../relationships/kin.mjs";
 
 var clubRegularsList = (adult) => adult?.regulars ?? [];
 var clubDancersEnabled = (state, adult) => npcsOn(state) && !!adult?.on && !!adult.youAdult && !!adult.clubDancers;
@@ -120,7 +121,7 @@ function availableClubDancers(state, adult) {
           hasMet2(state, character.id) &&
           adultMarkOf(adult, character.id) === "yes",
       )
-      .filter((character) => !bondOf(state, character.id)?.kin),
+      .filter((character) => !kinBarsRomance(state, bondOf(state, character.id))),
     ...clubDancersOnTonight(state, adult).filter((dancer) => !clubNpcAwaitingSprite(state, dancer)),
   ];
 }

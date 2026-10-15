@@ -36,6 +36,12 @@
     "modern-life-sim": {
       "versions": [
         {
+          "version": "0.6.0",
+          "date": "2026-10-15",
+          "notes": "- SETTINGS · CAST: an Adult toggle for each person, before their Adult module options; switching it on opens the options.\n- New rule, Romance in the family: family ties no longer rule out romance, with you or between people in town.\n- Infidelity no longer forces a break-up. A partner who finds out stays, hurt, or, if they aren't the jealous kind, lets it go on: an open relationship, or they like knowing.\n- EDIT TRAITS sets relationship, romance and trust too.",
+          "highlight": true
+        },
+        {
           "version": "0.5.0",
           "date": "2026-10-15",
           "notes": "- Reading cards runs several at once, up to the Agents parallel limit of the reading connection. Cards not read or that failed can be queued while a read runs, and RE-READ FAILED queues them all.\n- A \"How to read them\" box steers every card read.\n- New jobs: Student (paid, at the University) and Police officer, at the new Police Station downtown.\n- One-way relations between cast members: teacher and student, biological or adoptive parent and child, guardian and ward, owner and property.\n- Into both women and men now adds futanari as well.\n- Whole-cast changes: everyone open to romance, add or remove a kink for all, set how everyone knows you.",

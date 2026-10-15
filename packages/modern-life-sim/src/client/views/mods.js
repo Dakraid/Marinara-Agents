@@ -409,24 +409,29 @@ function modCastOptions(life, person) {
       const cast = mod.people[person.id],
         openKey = `${modId}|${person.id}`,
         isOpen = !!modCastOpen[openKey],
-        head = `<span class="mls-work-row"><button class="mls-modopt-open" data-do="module-cast-open" data-id="${escape(openKey)}">${escape(cast.title)} ${isOpen ? "\u25BE" : "\u25B8"}</button></span>`;
-      if (!isOpen) {
+        castAttr = (key) => `data-mod-cast="${escape(`${modId}|${person.id}|${key}`)}"`,
+        toggle = cast.toggle
+          ? `<label class="mls-tg"><input type="checkbox" ${castAttr(cast.toggle.key)} ${cast.toggle.on ? "checked" : ""}><i></i><span><b>${escape(cast.toggle.title)}</b><small>${escape([cast.toggle.why, cast.toggle.on ? "" : cast.toggle.ask?.why].filter(Boolean).join(" "))}</small></span></label>`
+          : "",
+        head = cast.sections
+          ? `${toggle}<span class="mls-work-row"><button class="mls-modopt-open" data-do="module-cast-open" data-id="${escape(openKey)}">${escape(cast.title)} ${isOpen ? "\u25BE" : "\u25B8"}</button></span>`
+          : toggle;
+      if (!isOpen || !cast.sections) {
         return head;
       }
-      const castAttr = (key) => `data-mod-cast="${escape(`${modId}|${person.id}|${key}`)}"`,
-        sections = cast.sections
-          .map((section) =>
-            section.kind === "picks"
-              ? `<div class="mls-modopt-grid">${section.items.map((item) => `<label class="mls-modopt-f"><span class="lbl">${escape(item.title)}</span><select ${castAttr(item.key)}>${item.choices.map(([value, label]) => `<option value="${escape(value)}" ${value === item.value ? "selected" : ""}>${escape(label)}</option>`).join("")}</select></label>`).join("")}</div>`
-              : `<div class="mls-modopt-sec"><span class="lbl">${escape(section.title)}</span><div class="mls-modopt-chips">${section.items.length ? section.items.map((item) => `<span class="mls-modopt-chip ${section.bad ? "bad" : ""}">${escape(item.text)}${item.remove ? `<button data-do="module-cast-remove" data-id="${escape(`${modId}|${person.id}|${item.key}`)}" title="Take it out">\u2715</button>` : item.choices ? `<select ${castAttr(item.key)}>${item.choices.map(([value, label]) => `<option value="${escape(value)}" ${value === item.value ? "selected" : ""}>${escape(label)}</option>`).join("")}</select>` : ""}</span>`).join("") : `<small class="mls-modopt-none">${escape(section.none ?? "")}</small>`}</div></div>`,
-          )
-          .join("");
+      const sections = cast.sections
+        .map((section) =>
+          section.kind === "picks"
+            ? `<div class="mls-modopt-grid">${section.items.map((item) => `<label class="mls-modopt-f"><span class="lbl">${escape(item.title)}</span><select ${castAttr(item.key)}>${item.choices.map(([value, label]) => `<option value="${escape(value)}" ${value === item.value ? "selected" : ""}>${escape(label)}</option>`).join("")}</select></label>`).join("")}</div>`
+            : `<div class="mls-modopt-sec"><span class="lbl">${escape(section.title)}</span><div class="mls-modopt-chips">${section.items.length ? section.items.map((item) => `<span class="mls-modopt-chip ${section.bad ? "bad" : ""}">${escape(item.text)}${item.remove ? `<button data-do="module-cast-remove" data-id="${escape(`${modId}|${person.id}|${item.key}`)}" title="Take it out">\u2715</button>` : item.choices ? `<select ${castAttr(item.key)}>${item.choices.map(([value, label]) => `<option value="${escape(value)}" ${value === item.value ? "selected" : ""}>${escape(label)}</option>`).join("")}</select>` : ""}</span>`).join("") : `<small class="mls-modopt-none">${escape(section.none ?? "")}</small>`}</div></div>`,
+        )
+        .join("");
       return `${head}<div class="mls-modopt-panel">${sections}</div>`;
     })
     .join("");
 }
-const modCastToggle = (key) => {
-  modCastOpen[key] = !modCastOpen[key];
+const modCastToggle = (key, on = !modCastOpen[key]) => {
+  modCastOpen[key] = on;
 };
 const NPC_TAG = '<span class="mls-npc">NPC</span>';
 const modApps = (life) =>

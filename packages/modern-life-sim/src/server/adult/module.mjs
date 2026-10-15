@@ -279,7 +279,20 @@ var ADULT_MODULE = {
     people: Object.fromEntries(
       (life.characters ?? [])
         .filter((character) => !character.away)
-        .map((character) => [character.id, adultCastOptionsView(life, adult, character.id)]),
+        .map((character) => {
+          // The Adult toggle comes first in SETTINGS · CAST; the options follow once it is on.
+          let options = adultCastOptionsView(life, adult, character.id),
+            toggle = adultSheetAdultToggle(life, adult, character.id)[0];
+          return [
+            character.id,
+            toggle
+              ? {
+                  ...options,
+                  toggle: toggle,
+                }
+              : options,
+          ];
+        }),
     ),
   }),
   tick: (life, adult, minutes, events) => {

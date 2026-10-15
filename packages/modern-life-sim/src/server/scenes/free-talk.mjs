@@ -81,6 +81,7 @@ import {
   rememberScene,
   traitsOf,
 } from "../game.mjs";
+import { kinBarsRomance } from "../relationships/kin.mjs";
 
 var FALSE_CLAIM = {
   friendship: -1,
@@ -111,7 +112,7 @@ function freeTalkState(game, scene) {
     friendshipTier: bondTier(bond, "friendship"),
     justFriends: !!bond.justFriends,
     romanceable: bond.romanceable !== false,
-    kin: !!bond.kin,
+    kin: kinBarsRomance(game, bond),
     couple: couple
       ? {
           id: otherIn(couple, characterId),
@@ -834,7 +835,7 @@ function applyFreeActs(ctx, acts) {
             ...(bond.freeNo ?? {}),
             romance: tierRetryAt(bond, at),
           };
-          if (coupleOf(ctx.game, characterId) && !isNoFlirtBond(bond)) {
+          if (coupleOf(ctx.game, characterId) && !isNoFlirtBond(bond, ctx.game)) {
             ctx.fact("flirt");
           }
           tags.push({

@@ -1,3 +1,10 @@
+## 0.6.0 — 2026-10-15
+
+- SETTINGS · CAST: an Adult toggle for each person, before their Adult module options; switching it on opens the options.
+- New rule, Romance in the family: family ties no longer rule out romance, with you or between people in town.
+- Infidelity no longer forces a break-up. A partner who finds out stays, hurt, or, if they aren't the jealous kind, lets it go on: an open relationship, or they like knowing.
+- EDIT TRAITS sets relationship, romance and trust too.
+
 ## 0.5.0 — 2026-10-15
 
 - Reading cards runs several at once, up to the Agents parallel limit of the reading connection. Cards not read or that failed can be queued while a read runs, and RE-READ FAILED queues them all.

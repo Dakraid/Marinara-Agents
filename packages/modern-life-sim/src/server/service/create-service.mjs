@@ -28,7 +28,7 @@ import { eventCast } from "../events/event-cast.mjs";
 import { SKILL_NAMES, STARTING_SKILL_MAX, skillLevelInfo, validateStartingSkills } from "../skills/skill-levels.mjs";
 import { normalizeAttraction, normalizeGender, readCardOrientation } from "../orientation/orientation.mjs";
 import { archetypeDefaultTraits, normalizeTraits, notableTraitWords, traitsEditorSchema } from "../traits/traits.mjs";
-import { BOND_ACTIONS, bondSummary } from "../relationships/bonds.mjs";
+import { BOND_ACTIONS, BOND_AXES, bondSummary } from "../relationships/bonds.mjs";
 import { DREAM_DATE_PLACES, DREAM_DATE_TIMES } from "../relationships/special-event-catalog.mjs";
 import { MILESTONES } from "../relationships/milestones.mjs";
 import { milestoneStepCopy } from "../relationships/milestone-steps.mjs";
@@ -2959,6 +2959,7 @@ function createService({
             loreBookId = "",
             others = [],
             couples = false,
+            familyRomance = false,
             taken = [],
             modules = null,
             steer = "",
@@ -3011,6 +3012,7 @@ function createService({
             }),
             others: otherPeople,
             couples: couples === true,
+            familyRomance: familyRomance === true,
             jobs: freeJobs,
             fields: moduleFields,
             steer: String(steer ?? "")
@@ -5558,6 +5560,16 @@ function createService({
           if (!result.ok) {
             throw httpError(400, result.reason);
           }
+          // Set by hand in EDIT TRAITS: each axis 0 to 100.
+          let bondIn = req.body?.bond;
+          if (bondIn && typeof bondIn == "object") {
+            for (let axis of BOND_AXES) {
+              let value = Number(bondIn[axis]);
+              if (Number.isFinite(value)) {
+                life.bonds[characterId][axis] = Math.max(0, Math.min(100, Math.round(value)));
+              }
+            }
+          }
           return {
             saved: {
               name: result.name,
@@ -7451,8 +7463,8 @@ function createService({
       }
       if (milestone === "jealous") {
         let outcome = jealousOutcome(life, scene, choice, accepted);
-        return outcome.ends
-          ? "It is over: they end the relationship, in their own words: 2 to 4 short segments."
+        return outcome.opens
+          ? "It hurts, but they do not end it: they can live with the player seeing that person, true to who they are (an open relationship, or knowing about it even excites them). 2 to 4 short segments. Nobody breaks up."
           : choice === "deny"
             ? outcome.believed
               ? "The player denies it, and they believe it, for now: 2 to 4 short segments."
@@ -8424,6 +8436,7 @@ function createService({
         return {
           traits: traitsOf(life, req.params.character),
           thing: theirThingFor(character, life.bonds[req.params.character]),
+          bond: Object.fromEntries(BOND_AXES.map((axis) => [axis, life.bonds[req.params.character][axis] ?? 0])),
           catalog: traitsCatalog(),
         };
       }),

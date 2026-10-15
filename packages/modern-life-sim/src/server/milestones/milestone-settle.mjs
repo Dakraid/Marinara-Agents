@@ -1915,17 +1915,19 @@ var MILESTONE_SETTLERS = {
         },
       ].slice(-20);
     }
-    if (outcome.ends) {
-      events.push(brokeUpEvent(bond, character));
-      breakUpWith(
-        game,
-        bond,
-        {
-          at: at,
-          how: "cheated",
+    if (outcome.opens) {
+      bond.open = {
+        ...(bond.open ?? {}),
+        you: {
+          ...(bond.open?.you ?? {}),
+          [scene.about.with]: at,
         },
-        events,
-      );
+      };
+      events.push({
+        id: "open",
+        characterId: bond.characterId,
+        text: `${character?.name ?? "They"} can live with it: you can keep seeing ${knownName(game, scene.about.with)}.`,
+      });
     }
     scene.outcome = outcome;
     if (scene.about?.with) {

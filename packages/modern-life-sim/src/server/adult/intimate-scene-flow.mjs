@@ -58,6 +58,7 @@ import { recordPrivateDance } from "./club-dance.mjs";
 import { adultHttpError, writeIntimatePassage } from "./intimate-passage.mjs";
 import { decidePrivateDance, privateDanceReply } from "./private-dance-flow.mjs";
 import { INTIMATE_MILESTONE } from "./milestone-ids.mjs";
+import { kinBarsRomance } from "../relationships/kin.mjs";
 
 var MOMENT_PASSES_TEXT =
   "It does not happen after all: the moment passes, and they let it go, true to who they are, in their own words: 2 to 4 short segments.";
@@ -97,7 +98,7 @@ function intimacyStopReason(state, adult, scene) {
   let character = characterOf(state, scene.characterId);
   return !character || isNpc(state, character.id)
     ? ""
-    : adultMarkOf(adult, character.id) !== "yes" || bondOf(state, character.id)?.kin
+    : adultMarkOf(adult, character.id) !== "yes" || kinBarsRomance(state, bondOf(state, character.id))
       ? "them"
       : "";
 }

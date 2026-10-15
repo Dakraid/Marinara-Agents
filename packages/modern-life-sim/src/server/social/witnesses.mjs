@@ -9,6 +9,7 @@ import { knownName } from "../relationships/network-sheet.mjs";
 import { coupleOf, learnedFact, otherIn } from "../romance/jealousy.mjs";
 import { isAsleep } from "../visits/staying-over.mjs";
 import { bondOf, castInTown, characterOf, traitsOf, whereOpts } from "../game.mjs";
+import { kinBarsRomance } from "../relationships/kin.mjs";
 
 function takenBy(state, characterId) {
   let couple = coupleOf(state, characterId);
@@ -78,7 +79,7 @@ function flirtySeen(state, scene, tone) {
   }
   let bond = bondOf(state, scene.characterId);
   if (
-    bond?.kin ||
+    kinBarsRomance(state, bond) ||
     bond?.justFriends ||
     ((scene.flirtSeen = true),
     (scene.did?.exchange === scene.exchange && scene.did.logAt === scene.log.length ? scene.did.tags : []).some(

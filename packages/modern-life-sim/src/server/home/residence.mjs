@@ -231,6 +231,7 @@ var withHomeAndWork = (state, character) =>
       kin: state.bonds?.[character.id]?.kin,
       rival: isActiveRival(state.bonds?.[character.id]),
       gender: character.gender,
+      romance: !!state.rules?.familyRomance,
     }),
     home: residenceWords(state, character),
     work: jobWords(state, character),

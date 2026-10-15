@@ -141,6 +141,11 @@ const RULES = [
     "People in town can date each other or be exes, from their cards and over time.",
   ],
   ["partnersStray", "Infidelity", "Someone you are with can fall for someone else, and ask you to see other people."],
+  [
+    "familyRomance",
+    "Romance in the family",
+    "Family ties never rule out romance, with you or between people in town, siblings too.",
+  ],
   ["clothes", "Clothes", "What you wear changes with the clothes you buy, in every scene and in your picture."],
   ["keyImages", "Key images", "Big moments with someone get their own picture, kept in the GALLERY."],
   ["workOutfits", "Work outfits", "People are shown in their work clothes while they work."],
@@ -174,6 +179,7 @@ function emptyDraft() {
       multipleRelationships: false,
       castCouples: false,
       partnersStray: false,
+      familyRomance: false,
       clothes: false,
       keyImages: false,
       workOutfits: false,
@@ -964,7 +970,7 @@ function homeStep(setup, draft) {
 }
 const RULE_GROUPS = [
   ["Daily life", ["hunger"]],
-  ["Relationships", ["jealousy", "drifting", "multipleRelationships", "castCouples", "partnersStray"]],
+  ["Relationships", ["jealousy", "drifting", "multipleRelationships", "castCouples", "partnersStray", "familyRomance"]],
   ["Town", ["npcs"]],
 ];
 const PAINTING_RULES = ["clothes", "keyImages", "workOutfits", "seasonOutfits"];

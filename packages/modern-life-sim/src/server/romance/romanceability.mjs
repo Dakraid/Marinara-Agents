@@ -15,6 +15,7 @@ import { npcPairsOf } from "../network/town-facts.mjs";
 import { isPartner } from "./jealousy.mjs";
 import { bondOf, castInTown, characterOf, hasMet2, nameFor } from "../game.mjs";
 import { isModuleOn } from "../modules/module-registry.mjs";
+import { kinBarsRomance } from "../relationships/kin.mjs";
 
 var sexOf = (state, characterId) =>
   normalizeGender(characterOf(state, characterId)?.gender) ??
@@ -33,7 +34,7 @@ function syncRomance(state, characterId) {
   if (!(!bond || !character)) {
     bond.cardRomance = character.romanceable !== false;
     bond.notInto = !likesYou(state, characterId);
-    bond.romanceable = bond.cardRomance && !bond.notInto && !bond.kin;
+    bond.romanceable = bond.cardRomance && !bond.notInto && !kinBarsRomance(state, bond);
   }
 }
 function settleOrientation(state, ids = state.characters.map((id) => id.id)) {

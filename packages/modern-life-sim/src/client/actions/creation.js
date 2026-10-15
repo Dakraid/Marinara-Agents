@@ -652,6 +652,7 @@ async function readCardWith(cardId) {
           }))
           .filter((other) => other.name),
         couples: !!draft.rules.castCouples,
+        familyRomance: !!(draft.adding ? S.life?.rules : draft.rules)?.familyRomance,
         taken: [
           ...Object.entries(draft.cast)
             .filter(

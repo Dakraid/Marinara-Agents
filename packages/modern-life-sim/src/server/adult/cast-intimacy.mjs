@@ -36,6 +36,7 @@ import { INTIMATE_DAY_MINUTES, adultMarkOf, adultNameFor, consentFor, intimateBo
 import { dropAdultFactsForCharacter, intimacyConsentWithSpecial } from "./sleep-together.mjs";
 import { queueClubJealousyTalks } from "./club-jealousy.mjs";
 import { INTIMATE_MILESTONE } from "./milestone-ids.mjs";
+import { kinBarsRomance } from "../relationships/kin.mjs";
 
 function pruneStaleAdultAsks(state) {
   for (let character of state.characters ?? []) {
@@ -194,7 +195,7 @@ var trustForLimits = (state, characterId) => {
 };
 var hasSleptTogether = (adult, characterId) => (adult.bonds[characterId]?.times ?? 0) > 0;
 var canShowIntimacySheet = (state, adult, characterId) =>
-  !!adult.youAdult && adultMarkOf(adult, characterId) === "yes" && !bondOf(state, characterId)?.kin;
+  !!adult.youAdult && adultMarkOf(adult, characterId) === "yes" && !kinBarsRomance(state, bondOf(state, characterId));
 function adultSheetIntimacyFacts(state, adult, characterId) {
   if (!canShowIntimacySheet(state, adult, characterId)) {
     return [];
