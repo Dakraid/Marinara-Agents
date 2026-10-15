@@ -48,6 +48,7 @@ import {
   useUpdateCreatorInteraction,
 } from "../features/feed/slp-feed-viewer-hooks";
 import { useSlurpUnreadCount } from "../features/messages/slp-messages-hooks";
+import { useSyncViewerPersona } from "./slp-viewer-persona-sync";
 import { useSlurpSettings, useUpdateSlurpSettings } from "../features/settings/slp-settings-hooks";
 import { useActivePersona, usePersonas } from "../../hooks/use-creator-personas";
 import { useSlurpConnections } from "../base/state/slp-host-connections";
@@ -96,20 +97,7 @@ export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onL
   }, [onboardingState, setOnboardingState, slurpSettingsQuery.data?.onboarding]);
   const storedPersonaId = useSlurpUIStore((state) => state.viewerPersonaId);
   const setStoredPersonaId = useSlurpUIStore((state) => state.setViewerPersonaId);
-  // One persona browses Slurp on every device, so each shows the same inbox (#103). The pick lives
-  // in the settings: this browser follows a pick made on another device, and saves any pick made
-  // here (account switcher, scene handback, or a pick kept only for this browser before 0.3.46).
-  const serverPersonaId = slurpSettingsQuery.data?.viewerPersonaId;
-  const seenServerPersonaId = useRef<string | null | undefined>(undefined);
-  const saveViewerPersona = updateSlurpSettings.mutate;
-  useEffect(() => {
-    if (serverPersonaId === undefined) return;
-    if (seenServerPersonaId.current !== serverPersonaId) {
-      seenServerPersonaId.current = serverPersonaId;
-      if (serverPersonaId) return setStoredPersonaId(serverPersonaId);
-    }
-    if (storedPersonaId && storedPersonaId !== serverPersonaId) saveViewerPersona({ viewerPersonaId: storedPersonaId });
-  }, [saveViewerPersona, serverPersonaId, setStoredPersonaId, storedPersonaId]);
+  useSyncViewerPersona(slurpSettingsQuery.data?.viewerPersonaId, updateSlurpSettings.mutate);
   const personas = personasQuery.data ?? [];
   const viewerPersonaId = useSlpViewerPersonaId();
   const activeWalletCoins = viewerWalletsQuery.data?.[viewerPersonaId ?? ""]?.coins ?? null;

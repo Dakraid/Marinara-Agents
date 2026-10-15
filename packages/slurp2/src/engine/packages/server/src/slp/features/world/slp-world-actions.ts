@@ -397,13 +397,16 @@ export async function applySlurpCreatorPeerReactions(
         .filter((post) => post.access === "public" && post.createdAt >= input.cutoff)
         .map((post) => ({ postId: post.id, creatorAccountId: account.id })),
     );
+  const existing = await noodle.listNoodlerInteractions(posts.map((post) => post.postId)).catch((error) => {
+    logger.warn(error, "[slurp-world] Could not read Creator peer reactions");
+    return null;
+  });
+  if (!existing) return;
   const reactions = planSlurpCreatorPeerReactions({
     actorAccountIds: input.automaticCreators.map((account) => account.id),
     posts,
     reacted: new Set(
-      (await noodle.listNoodlerInteractions(posts.map((post) => post.postId)))
-        .filter((entry) => !entry.parentInteractionId)
-        .map((entry) => `${entry.actorAccountId}:${entry.postId}`),
+      existing.filter((entry) => !entry.parentInteractionId).map((entry) => `${entry.actorAccountId}:${entry.postId}`),
     ),
     hourSeed: input.until.toISOString().slice(0, 13),
   });

@@ -15,15 +15,15 @@ assert.match(
 );
 assert.match(settings, /viewerPersonaId: null,\n\};/u, "an install that never picked has no shared pick");
 
-const homeState = slurp2Source("packages/slurp2/src/engine/packages/client/src/slp/app/slp-home-state.ts");
+const homeState = slurp2Source("packages/slurp2/src/engine/packages/client/src/slp/app/slp-viewer-persona-sync.ts");
 assert.match(
   homeState,
-  /if \(serverPersonaId\) return setStoredPersonaId\(serverPersonaId\);/u,
-  "a browser follows a pick made on another device",
+  /if \(serverPersonaId && !lastSavedPersonaId\.current\) return setStoredPersonaId\(serverPersonaId\);/u,
+  "a browser follows a pick made on another device, but an older save response never replaces a newer local pick",
 );
 assert.match(
   homeState,
-  /if \(storedPersonaId && storedPersonaId !== serverPersonaId\) saveViewerPersona\(\{ viewerPersonaId: storedPersonaId \}\);/u,
+  /lastSavedPersonaId\.current = storedPersonaId;\n\s+saveViewerPersona\(\{ viewerPersonaId: storedPersonaId \}\);/u,
   "a pick made here (switcher, scene handback, older local pick) is saved for every device",
 );
 
