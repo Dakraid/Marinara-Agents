@@ -78,6 +78,13 @@ function imageSource(post: SlurpImageContextPost): string {
  * A picture is described once. `onDescribed` keeps the description, and the next call reads it
  * back instead of paying the vision model again for the same pixels.
  */
+/**
+ * How every picture reaches a prompt. A stored prompt carries style tags and a caption says "an
+ * anime illustration", so fans started reviewing the art style (#38). In the world a picture is a
+ * photo of the Creator; the label says so once per picture.
+ */
+const PICTURE_SEEN = "an ordinary photo in this world: react to what it shows, never to art style, drawing, rendering or picture quality";
+
 export async function prepareSlurpPostImageContexts(input: {
   posts: readonly SlurpImageContextPost[];
   mode: "auto" | "imagePrompt" | "vision";
@@ -97,10 +104,10 @@ export async function prepareSlurpPostImageContexts(input: {
         ? post.metadata.imageDescription.trim()
         : "";
     if (input.mode !== "vision" && prompt) {
-      contexts.set(post.id, `Intended image (stored image prompt): ${prompt}`);
+      contexts.set(post.id, `Picture, from its prompt (${PICTURE_SEEN}): ${prompt}`);
     } else if (saved) {
       // Already paid for, so even prompt-only mode may use it.
-      contexts.set(post.id, `Image description: ${saved}`);
+      contexts.set(post.id, `Picture (${PICTURE_SEEN}): ${saved}`);
     } else if (input.mode !== "imagePrompt") {
       visionPosts.push(post);
     }
@@ -133,7 +140,7 @@ export async function prepareSlurpPostImageContexts(input: {
   );
   for (const { input: image, caption } of captions) {
     if (!caption) continue;
-    contexts.set(image.filename, `Image description: ${caption}`);
+    contexts.set(image.filename, `Picture (${PICTURE_SEEN}): ${caption}`);
     const post = visionPosts.find((candidate) => candidate.id === image.filename);
     // Keeping it is a saving, not a requirement: a failed write only means describing it again.
     const onDescribed = input.onDescribed;

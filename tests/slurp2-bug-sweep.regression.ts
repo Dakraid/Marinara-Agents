@@ -38,4 +38,9 @@ assert.match(
   /const gone = current && !\(await this\.getNoodlerAccountById\(creatorAccountId, \{ includeHidden: true \}\)\);\s*if \(!expire && !gone && current/u,
 );
 
+// ── Fans react to what a picture shows, not to its art style (#38) ──
+const pictures = server("base/media/slp-post-image-context.ts");
+assert.match(pictures, /never to art style/u);
+assert.equal(pictures.match(/\$\{PICTURE_SEEN\}/gu)?.length, 3, "prompt, saved caption and new caption all carry it");
+
 console.log("slurp2 bug sweep regression: pass");
