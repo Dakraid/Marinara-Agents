@@ -3,6 +3,7 @@ import { slpCutAtBoundary } from "../packages/slurp2/src/engine/packages/server/
 import { slurpCommissionPriceRange, slurpCommissionQuote } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/economy/slp-creator-pricing";
 import { slurpCoupleFit, slurpCoupleKin } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-fit";
 import { slurpSetUpCouple } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples";
+import { slpUnreachableCode } from "../packages/slurp2/src/engine/packages/server/src/slp/base/model/slp-provider-retry";
 import { slurp2Source } from "./slurp2-source.ts";
 
 const server = (path: string) => slurp2Source(`packages/slurp2/src/engine/packages/server/src/slp/${path}`);
@@ -82,5 +83,11 @@ assert.match(
   server("data/creators/slp-creators-storage-3.ts"),
   /sourceStatus: slurpIsCouplePage\(account\)\s*\? \{ state: "current" as const \}/u,
 );
+
+// ── A model that is off gets a clear sign-up error (#74) ──
+const refused = new TypeError("fetch failed", { cause: Object.assign(new Error("connect ECONNREFUSED ::1:5001"), { code: "ECONNREFUSED" }) });
+assert.equal(slpUnreachableCode(refused), "ECONNREFUSED");
+assert.equal(slpUnreachableCode(new Error("API error 400: bad request")), null);
+assert.match(server("features/onboarding/slp-scene-routes.ts"), /Slurp could not reach the connection/u);
 
 console.log("slurp2 bug sweep regression: pass");
