@@ -107,6 +107,8 @@ export async function planSlurpPostSpice(
     beat: SlurpBeat | null;
     /** A drop delivers the kind its tease hinted at (3b). */
     teasedKind?: string | null;
+    /** When the post is written for; other Creators' spice is read around it. */
+    at?: Date;
   },
 ) {
   const spiceRead = await resolveSlurpSpiceCreator(db, input).catch((error: unknown) => {
@@ -136,7 +138,11 @@ export async function planSlurpPostSpice(
           spice: spiceRead.spice.spice,
           ...partners,
           recent: recentSpice(input.recentPosts),
-          feed: await listSlurpFeedSpice(db, input.account.id, new Date()),
+          // Read only when the angle can be spicy; it scans other Creators' posts.
+          feed:
+            postLevel !== "none" && (locked || input.teaser)
+              ? await listSlurpFeedSpice(db, input.account.id, input.at ?? new Date())
+              : [],
           sequence: input.sequence,
           teasedKind: input.teasedKind,
         })

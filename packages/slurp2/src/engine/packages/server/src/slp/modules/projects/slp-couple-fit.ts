@@ -80,11 +80,31 @@ function kinIn(self: SlurpTieCreator, other: SlurpTieCreator): boolean {
   const own = escapeRegExp(self.name.trim().split(/\s+/u)[0] ?? "");
   const kin = `${KIN_WORD}\\b(?!['\u2019]s|\\s+in\\s+arms)`;
   // "her sister Mara", "Mara, her cousin", "Mara is Ava's older stepsister", "Ava and Mara are twins".
-  const before = `\\b${kin}\\s+${name}(?![\\p{L}])`;
+  // Not someone else's relative: "Mara's sister Juniper" says nothing about Ava.
+  const before = `(?:${own}['\u2019]s\\s+|(?<!['\u2019]s\\s{1,3}))\\b${kin},?\\s+${name}(?![\\p{L}])`;
   const mine = `(?:her|his|their|my|our|ihre?|seine?|${own}['\u2019]s)\\s+(?:\\p{L}+\\s+)?`;
   const after = `(?<![\\p{L}])${name}(?:,|\\s+(?:is|was|ist))\\s+${mine}${kin}`;
-  const both = `(?<![\\p{L}])(?:\\p{L}+\\s+(?:and|und)\\s+${name}|${name}\\s+(?:and|und)\\s+\\p{L}+)\\s+(?:are|were|sind)\\s+(?:\\p{L}+\\s+)?${kin}`;
-  return new RegExp(`${before}|${after}|${both}`, "iu").test(self.text);
+  const both = `(?<![\\p{L}])(?:${own}\\s+(?:and|und)\\s+${name}|${name}\\s+(?:and|und)\\s+${own})(?![\\p{L}])\\s+(?:are|were|sind)\\s+(?:\\p{L}+\\s+)?${kin}`;
+  return new RegExp(own ? `${before}|${after}|${both}` : `${before}|${after}`, "iu").test(self.text);
+}
+/**
+ * Whether `self`'s card says the two of them are lovers although family: the other is on the card's
+ * partner list, or a sentence names the other with a partner word and no third person ("Ava and her
+ * sister Juniper are lovers", not "My sister Juniper is married to Tom").
+ */
+function familyLovers(self: SlurpTieCreator, other: SlurpTieCreator): boolean {
+  if (cardNames(self, other)) return true;
+  const first = other.name.trim().split(/\s+/u)[0];
+  if (!first || first.length < 3) return false;
+  const ours = new Set(
+    [...self.name.split(/\s+/u), ...other.name.split(/\s+/u)].map((part) => part.toLocaleLowerCase()),
+  );
+  const name = new RegExp(`(?<![\\p{L}])${escapeRegExp(first)}(?![\\p{L}])`, "iu");
+  return self.text.split(/(?<=[.!?])\s+|\n+/u).some((sentence) => {
+    if (!name.test(sentence) || !PARTNER_WORDS.test(sentence)) return false;
+    const names = sentence.match(/(?<=\s)\p{Lu}\p{Ll}+/gu) ?? [];
+    return names.every((word) => ours.has(word.toLocaleLowerCase()));
+  });
 }
 /** Whether either card says the two are family. */
 export const slurpCoupleKin = (a: SlurpTieCreator, b: SlurpTieCreator) => kinIn(a, b) || kinIn(b, a);
@@ -120,7 +140,7 @@ export function slurpCoupleMisfitOf(a: SlurpTieCreator, b: SlurpTieCreator): Slu
   );
   if (romance) return { misfit: "romance", byId: romance[0].id };
   return (
-    (cards ? null : first("family", kinIn)) ??
+    (familyLovers(a, b) || familyLovers(b, a) ? null : first("family", kinIn)) ??
     (cards ? null : first("taken", (self) => (self.cardPartners ?? []).length > 0)) ??
     first("notInto", (self) => NOT_INTO_ANYONE.test(self.text)) ??
     first("noDating", neverDates) ??

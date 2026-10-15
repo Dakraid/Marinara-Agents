@@ -81,6 +81,7 @@ for (const text of [
   "Ava and Juniper are sisters.",
   "Juniper, her cousin, visits on Sundays.",
   "Avas Schwester Juniper backt.",
+  "Her sister, Juniper, bakes.",
 ])
   assert.ok(slurpCoupleKin(ava(text), kid), text);
 for (const text of [
@@ -91,11 +92,19 @@ for (const text of [
   "Juniper works at her parent company.",
   "Ava is a single mom with a crush on Juniper.",
   "Juniper is her son's teacher.",
+  "Mara's sister Juniper sings.",
+  "Leo and Juniper are siblings.",
 ])
   assert.ok(!slurpCoupleKin(ava(text), kid), text);
 assert.ok(!slurpCoupleKin(tie("a", "Ava", { cardPeople: [{ name: "Juniper", relation: "girlfriend" }] }), kid));
 const lovers = slurpCoupleFit(ava("Ava and her sister Juniper are lovers."), kid);
 assert.ok(lovers.fits && lovers.cards, "cards that say they are lovers make the couple");
+for (const text of ["My sister Juniper is married to Tom.", "Her sister Juniper, who is dating Leo, lives nearby."])
+  assert.equal(
+    slurpCoupleFit(ava(text), kid).misfit,
+    "family",
+    `a partner of someone else is no family couple: ${text}`,
+  );
 const at = new Date("2026-10-15T12:00:00Z");
 const forced = slurpSetUpCouple([], mom, kid, { at, id: "c1" });
 assert.ok(Array.isArray(forced) && forced[0]?.forced?.misfit === "family", "the player may set them up anyway");
@@ -143,7 +152,7 @@ assert.match(
 );
 
 // #104: the spice angle sees other Creators' spicy posts, posted or prepared, and the subject list prepared ones.
-assert.match(server("features/feed/slp-post-spice.ts"), /feed: await listSlurpFeedSpice\(db, input\.account\.id/u);
+assert.match(server("features/feed/slp-post-spice.ts"), /await listSlurpFeedSpice\(db, input\.account\.id, input\.at/u);
 assert.match(server("data/feed/slp-feed-subjects-storage.ts"), /otherPreparedPosts\(db, creatorIds, at\)\)\.map/u);
 
 console.log("slurp2 bug sweep regression: pass");

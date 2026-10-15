@@ -1,6 +1,9 @@
 import type { DB } from "../../../db/connection.js";
 import { logger } from "../../../lib/logger.js";
+import { and, eq, inArray } from "../../../db/file-query.js";
+import { slpCreatorPreparedPosts } from "../../../db/schema/slurp.js";
 import { createSlurpStorage } from "../slp-storage.js";
+import { parseRecord, type SlpCreatorPreparedPostPayload } from "../../modules/records/slp-storage-model.js";
 import { slurpIsLegacyImageBrief, slurpWithoutCameraDevice } from "../../base/media/slp-image-prompt.js";
 
 const SLURP_OTHER_SUBJECTS_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -37,13 +40,19 @@ async function otherCreatorIds(db: DB, accountId: string): Promise<string[]> {
 
 /** Other Creators' prepared posts that go up within a day of `at`: written, not yet on the feed. */
 async function otherPreparedPosts(db: DB, creatorIds: readonly string[], at: Date) {
-  const ids = new Set(creatorIds);
-  return (await createSlurpStorage(db).listNoodlerPreparedPosts()).filter(
-    (item) =>
-      item.state === "prepared" &&
-      ids.has(item.creatorAccountId) &&
-      Math.abs(Date.parse(item.publishAt) - at.getTime()) <= SLURP_OTHER_SUBJECTS_WINDOW_MS,
-  );
+  if (!creatorIds.length) return [];
+  const rows = await db
+    .select()
+    .from(slpCreatorPreparedPosts)
+    .where(
+      and(
+        eq(slpCreatorPreparedPosts.state, "prepared"),
+        inArray(slpCreatorPreparedPosts.creatorAccountId, [...creatorIds]),
+      ),
+    );
+  return rows
+    .filter((row) => Math.abs(Date.parse(row.publishAt) - at.getTime()) <= SLURP_OTHER_SUBJECTS_WINDOW_MS)
+    .map((row) => ({ publishAt: row.publishAt, payload: parseRecord(row.payload) as SlpCreatorPreparedPostPayload }));
 }
 
 async function readOtherCreatorSubjects(db: DB, accountId: string, at: Date): Promise<string[]> {
