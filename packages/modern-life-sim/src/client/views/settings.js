@@ -894,6 +894,11 @@ const SETTINGS_RULES = [
     "People in town can date each other or be exes, from their cards and over time.",
   ],
   ["partnersStray", "Infidelity", "Someone you are with can fall for someone else, and ask you to see other people."],
+  [
+    "familyRomance",
+    "Romance in the family",
+    "Family ties never rule out romance, with you or between people in town, siblings too.",
+  ],
   ["npcs", "NPCs", "People who aren't in your cast, like a club's staff and its regulars. Off: only your cast."],
 ];
 const KEY_IMAGES_RULE = "Big moments with someone get their own picture, kept in the GALLERY.";
@@ -1028,6 +1033,20 @@ function castTab(life, box) {
         : ""
     }`;
 }
+const BOND_DIALS = [
+  ["friendship", "RELATIONSHIP"],
+  ["romance", "ROMANCE"],
+  ["trust", "TRUST"],
+];
+const bondDials = (traits) =>
+  `<div class="mls-trait-sub">WHERE YOU TWO STAND</div><div class="mls-dials">${BOND_DIALS.map(
+    ([axis, label]) => `<div class="mls-dial">
+      <small>${label}</small>
+      <input type="range" min="0" max="100" step="1" value="${Math.round(traits.bond[axis] ?? 0)}" data-trait="set|${traits.id}|bond|${axis}" aria-label="${label}">
+      <small></small>
+      <span class="n">${Math.round(traits.bond[axis] ?? 0)}</span>
+    </div>`,
+  ).join("")}</div>`;
 function traitsBox(life, traits) {
   const showMode = life.rules?.showArchetypes ?? "found",
     note = {
@@ -1036,6 +1055,7 @@ function traitsBox(life, traits) {
     }[showMode];
   return `<div class="mls-traits-box">
     ${note ? `<p class="mls-said">${note}</p>` : ""}
+    ${traits.bond ? bondDials(traits) : ""}
     ${traitsEditor(traits.traits, traits.catalog, `set|${traits.id}`, traits.thing ?? "")}
     ${traits.error ? `<div class="mls-said bad">${escape(traits.error)}</div>` : ""}
     <div class="row"><button class="mls-set-btn" data-do="traits-save" data-character="${traits.id}">SAVE</button>

@@ -14,6 +14,7 @@ import { isPartner } from "../romance/jealousy.mjs";
 import { isAsleep } from "../visits/staying-over.mjs";
 import { youMaySee } from "./friend-opinion.mjs";
 import { bondOf, characterOf, isCharacterHere, traitsOf } from "../game.mjs";
+import { kinBarsRomance } from "../relationships/kin.mjs";
 
 var EXTREME_LOW = 2;
 var EXTREME_HIGH = 8;
@@ -42,7 +43,7 @@ function extremesTick(game) {
       attracted =
         character &&
         isAttractedToGender(character.into, genderOf(game, "you")) &&
-        !bondOf(game, scene.characterId)?.kin;
+        !kinBarsRomance(game, bondOf(game, scene.characterId));
     for (let bond of Object.values(game.bonds ?? {})) {
       let charId = bond.characterId;
       if (

@@ -66,7 +66,7 @@ import { milestoneSceneMinutes, npcInitiativeAskFor } from "./relationships/mile
 import { normalizeBirthday, rollBirthday } from "./relationships/birthdays.mjs";
 import { judgeSceneReads, tierEventDefFor, tierRetryAt, tierStepMoment } from "./relationships/tier-steps.mjs";
 import { canAffordFavour, tierSceneMinutes } from "./relationships/favours.mjs";
-import { kinWordFor } from "./relationships/kin.mjs";
+import { kinBarsRomance, kinWordFor } from "./relationships/kin.mjs";
 import { MAX_REMEMBER_OTHERS, SCENE_KINDS } from "./scenes/scene-config.mjs";
 import { applyStartingRelation, normalizeStartingRelation } from "./relationships/starting-relations.mjs";
 import { createScene, endScene, enterDecidePhase } from "./scenes/scene-engine.mjs";
@@ -256,7 +256,15 @@ import { rivalsForYou } from "./relationships/rivals.mjs";
 import { sawIt, takenBy } from "./social/witnesses.mjs";
 import { knownName, networkSheet } from "./relationships/network-sheet.mjs";
 import { APPROACH_STAYS, approachDue, knobsOf } from "./romance/romantic-acts.mjs";
-import { genderOf, intoTick, intoView, learnInto, pictureSexOf, setOrientation } from "./romance/romanceability.mjs";
+import {
+  genderOf,
+  intoTick,
+  intoView,
+  learnInto,
+  pictureSexOf,
+  setOrientation,
+  syncRomance,
+} from "./romance/romanceability.mjs";
 import {
   agreedFor,
   heardOf,
@@ -427,6 +435,7 @@ function createGame({
           withYou: housemateIds.includes(card.id),
           you: playerGender,
           couples: couples,
+          familyRomance: rules?.familyRomance === true,
         }),
       ]),
     ),
@@ -454,6 +463,7 @@ function createGame({
       keyImages: false,
       castCouples: false,
       partnersStray: false,
+      familyRomance: false,
       workOutfits: false,
       seasonOutfits: false,
       npcs: false,
@@ -464,7 +474,7 @@ function createGame({
     log: [],
   };
 }
-function initialBondForCharacter(card, { at: at, withYou = false, you = null, couples = null }) {
+function initialBondForCharacter(card, { at: at, withYou = false, you = null, couples = null, familyRomance = false }) {
   let notInto = !isAttractedToGender(card.into, you),
     bond = createBond(card.id, {
       main: card.archetype?.main,
@@ -496,6 +506,9 @@ function initialBondForCharacter(card, { at: at, withYou = false, you = null, co
       at: at,
       kin: card.kin,
     });
+    if (familyRomance && bond.kin) {
+      bond.romanceable = bond.cardRomance && !notInto;
+    }
   }
   if (withYou && bond.status === "partners") {
     setRelationshipStatus(bond, "living", {
@@ -1643,7 +1656,7 @@ function personHereView(game, person) {
     openUp: !!game.bonds[person.id] && bondTier(game.bonds[person.id], "friendship") >= OPEN_UP_FROM_TIER,
     gift: giftInfo(game, person.id),
     onlyInto: hasMet2(game, person.id) ? (intoView(game, person.id)?.notYou ?? null) : null,
-    noFlirt: isNoFlirtBond(game.bonds[person.id]),
+    noFlirt: isNoFlirtBond(game.bonds[person.id], game),
     ...sleepState(game, person.id),
   };
 }
@@ -1964,7 +1977,7 @@ function setFace(game, characterId, crop) {
         ok: true,
       };
 }
-var isNoFlirtBond = (bond) => !!bond?.kin || !!bond?.justFriends;
+var isNoFlirtBond = (bond, state) => kinBarsRomance(state, bond) || !!bond?.justFriends;
 function setJustFriends(game, characterId, on) {
   let bond = bondOf(game, characterId);
   return !bond || !hasMet2(game, characterId)
@@ -2475,7 +2488,7 @@ function interactWith(game, characterId, action, { minutes = null, scale = 1, no
       reason: "Introduce yourself first.",
     };
   }
-  if (action === "flirt" && isNoFlirtBond(bond)) {
+  if (action === "flirt" && isNoFlirtBond(bond, game)) {
     return {
       ok: false,
       reason: bond.kin ? "They are family." : "You two agreed to stay friends.",
@@ -3474,7 +3487,7 @@ var FRIENDSHIP_TIER_PLAYER_WORDS = [
 ];
 function toPlayerWords(game, characterId) {
   let bond = bondOf(game, characterId);
-  if (bond.kin) {
+  if (bond.kin && (kinBarsRomance(game, bond) || bond.status === "single")) {
     return `the player's ${kinWordFor(bond.kin, characterOf(game, characterId)?.gender ?? null) || "relative"}: family`;
   }
   let statusWords = {
@@ -3888,6 +3901,7 @@ var BOOLEAN_RULE_KEYS = [
   "keyImages",
   "castCouples",
   "partnersStray",
+  "familyRomance",
   "workOutfits",
   "seasonOutfits",
   "npcs",
@@ -3949,7 +3963,13 @@ function setRules(game, input = {}) {
       rules[key] = input[key];
     }
   }
+  let familyChanged = !!rules.familyRomance !== !!game.rules?.familyRomance;
   game.rules = rules;
+  if (familyChanged) {
+    for (let character of game.characters ?? []) {
+      syncRomance(game, character.id);
+    }
+  }
   return {
     ok: true,
     rules: rules,
@@ -4205,6 +4225,7 @@ function addCast(game, cards = []) {
     game.bonds[card.id] = initialBondForCharacter(character, {
       at: at,
       you: normalizeGender(game.gender),
+      familyRomance: !!game.rules?.familyRomance,
     });
     game.seenSchedule[card.id] ??= {};
     logNote(game, `${card.name} moved to town`, "bond");

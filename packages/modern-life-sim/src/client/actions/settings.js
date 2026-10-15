@@ -454,6 +454,14 @@ function traitSet(path, value) {
   if (!target) {
     return;
   }
+  if (field === "bond") {
+    target.bond = {
+      ...target.bond,
+      [key]: Number(value),
+    };
+    notify();
+    return;
+  }
   if (field === "thing") {
     target.thing = value;
     if (source === "draft") {
@@ -508,6 +516,7 @@ const traitsOpen = (characterId) =>
         id: characterId,
         traits: res.traits,
         thing: res.thing,
+        bond: res.bond,
         catalog: res.catalog,
       },
     };
@@ -523,6 +532,7 @@ const traitsSave = () =>
             body: {
               traits: box.traits,
               thing: box.thing,
+              bond: box.bond,
             },
           });
           S.life = res.life;

@@ -23,6 +23,7 @@ import { INTIMATE_PICTURE_PART_NOTES } from "./intimacy-outcomes.mjs";
 import { clubTalkSceneBlocks } from "./club-jealousy.mjs";
 import { privateDanceSceneBlocks } from "./club-dance.mjs";
 import { AFTER_DARK_MILESTONE, AFTER_DARK_PEEK_MILESTONE, INTIMATE_MILESTONE } from "./milestone-ids.mjs";
+import { kinBarsRomance } from "../relationships/kin.mjs";
 
 function adultContentGuidance(state, adult, characterId, { with: withIds = [] } = {}) {
   if (consentFor(state, characterId).how === "no") {
@@ -31,7 +32,7 @@ function adultContentGuidance(state, adult, characterId, { with: withIds = [] } 
   let others = (Array.isArray(withIds) ? withIds : []).filter(
     (id) => id && id !== characterId && characterOf(state, id) && !isNpc(state, id),
   );
-  return others.some((id) => adultMarkOf(adult, id) !== "yes" || bondOf(state, id)?.kin)
+  return others.some((id) => adultMarkOf(adult, id) !== "yes" || kinBarsRomance(state, bondOf(state, id)))
     ? null
     : `Flirting, closeness and sensuality are fine between ${others.length ? `the player and ${adultNameFor(state, characterId)} (nobody else)` : "them"} if it comes naturally; anything explicit only happens in a scene of its own, never here.`;
 }

@@ -179,7 +179,7 @@ function walkInWho(game, scene) {
     seen &&
     flirtedHere(game, scene) &&
     bondOf(game, charId)?.romanceable !== false &&
-    !isNoFlirtBond(bondOf(game, charId))
+    !isNoFlirtBond(bondOf(game, charId), game)
   ) {
     return {
       id: jealousPartner.id,

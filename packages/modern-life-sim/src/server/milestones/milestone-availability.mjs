@@ -57,6 +57,7 @@ import {
   sharesYourDoor,
   traitsOf,
 } from "../game.mjs";
+import { kinBarsRomance } from "../relationships/kin.mjs";
 
 var itemNameOf = (itemId) => ITEM_CATALOG[itemId]?.name ?? "";
 var TRIANGLE_MILESTONES = ["partners-meet", "meet-ask", "her-or-me", ...PARTNER_PAIR_MILESTONES];
@@ -259,7 +260,7 @@ function blockedSpecialActions(game, charId, specials) {
 }
 var canSeeOther = (game, charId) => {
   let bond = bondOf(game, charId);
-  return !!bond && !bond.kin && !bond.justFriends && bond.romanceable !== false;
+  return !!bond && !kinBarsRomance(game, bond) && !bond.justFriends && bond.romanceable !== false;
 };
 function specialActions(game, charId) {
   let bond = bondOf(game, charId),

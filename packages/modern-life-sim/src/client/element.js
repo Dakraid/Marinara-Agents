@@ -556,6 +556,13 @@ class ModernLifeSimElement extends HTMLElement {
       }
       if (input.dataset?.modCast) {
         const [moduleId, characterId, key] = input.dataset.modCast.split("|");
+        if (input.type === "checkbox") {
+          // Turning it on opens the options that come with it.
+          if (input.checked) {
+            modCastToggle(`${moduleId}|${characterId}`, true);
+          }
+          return moduleCast(moduleId, characterId, key, input.checked);
+        }
         return moduleCast(moduleId, characterId, key, input.value);
       }
       if (input.dataset?.modSheet) {

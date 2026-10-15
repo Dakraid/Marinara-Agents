@@ -40,6 +40,7 @@ import {
   isHiddenClubNpc,
 } from "./club-dance.mjs";
 import { AFTER_DARK_MILESTONE, AFTER_DARK_PEEK_MILESTONE, INTIMATE_MILESTONE } from "./milestone-ids.mjs";
+import { kinBarsRomance } from "../relationships/kin.mjs";
 
 var SEGMENT_CHAR_MAX = 380;
 var DANCE_SEGMENT_RANGE = [4, 7];
@@ -228,7 +229,7 @@ function castPairEligibleForDark(state, adult, firstId, secondId) {
     isNpc(state, secondId) ||
     adultMarkOf(adult, firstId) !== "yes" ||
     adultMarkOf(adult, secondId) !== "yes" ||
-    (bondOf(state, firstId)?.kin && bondOf(state, secondId)?.kin) ||
+    (kinBarsRomance(state, bondOf(state, firstId)) && kinBarsRomance(state, bondOf(state, secondId))) ||
     [first, second].some((character) => (character.castRomance ?? character.romanceable) === false)
     ? false
     : likeEachOther(state, firstId, secondId) && getAlongForGroup(state, firstId, secondId);
