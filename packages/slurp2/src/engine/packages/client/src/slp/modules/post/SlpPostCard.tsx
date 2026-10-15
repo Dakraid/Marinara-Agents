@@ -444,10 +444,7 @@ export function SlpPostCard({
               {reachBadge && <SlpReachBadge badge={reachBadge} />}
             </p>
             <SlpPostPartnership partnership={post.partnership} onOpenProfile={ctx.openAuthorProfile} />
-            <SlpPostTrendChip
-              metadata={post.metadata}
-              onShowPost={(id) => slpShowPostInPlace(id) || ctx.openAuthorProfile?.(post.authorAccountId)}
-            />
+            <SlpPostTrendChip metadata={post.metadata} onShowPost={slpShowPostInPlace} />
             <SlpPostPurposeNote
               metadata={post.metadata}
               onShowPost={(id) => slpShowPostInPlace(id) || ctx.openAuthorProfile?.(post.authorAccountId)}

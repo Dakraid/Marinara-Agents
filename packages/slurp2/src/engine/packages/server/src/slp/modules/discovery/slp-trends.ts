@@ -228,14 +228,17 @@ export function slurpTrendReach(input: {
   return 1;
 }
 
-/** A card or the player's steering that rules the trend out. */
+const STOP_WORDS = new Set(["the", "and", "for", "you", "your", "with", "that", "this", "are", "our"]);
+
+/** A card or the player's steering that rules the trend out. Whole words, short ones too, no stop words. */
 export function slurpTrendBlocked(text: string, avoid: readonly string[], label: string): boolean {
-  const words = label
-    .toLocaleLowerCase()
-    .split(" ")
-    .filter((word) => word.length > 3);
-  if (!words.length) return false;
-  const mentions = (value: string) => words.some((word) => value.toLocaleLowerCase().includes(word));
+  const words = (value: string) => value.toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+  const wanted = words(label).filter((word) => word.length >= 3 && !STOP_WORDS.has(word));
+  if (!wanted.length) return false;
+  const mentions = (value: string) => {
+    const have = new Set(words(value));
+    return wanted.some((word) => have.has(word));
+  };
   if (avoid.some(mentions)) return true;
   return text.split(/(?<=[.!?])\s+|\n+/u).some((sentence) => SLURP_NEVER_PATTERN.test(sentence) && mentions(sentence));
 }
@@ -263,12 +266,15 @@ export function slurpPickTrendJoin(input: {
   const joined = input.trends.flatMap((trend) => trend.adopters.filter((adopter) => adopter.id === creator.id));
   if (joined.some((adopter) => at.getTime() - Date.parse(adopter.at) < SLURP_TREND_REST_MS)) return null;
   const dailyLimit = Math.max(1, Math.ceil(SLURP_TREND_DAILY_SHARE * input.automaticCount));
+  // The daily limit is for all trends together, not per trend.
+  const joinedToday = input.trends
+    .flatMap((trend) => trend.adopters)
+    .filter((adopter) => at.getTime() - Date.parse(adopter.at) < DAY_MS).length;
   for (const trend of slurpLiveTrends(input.trends, at)) {
     if (trend.starterId === creator.id || trend.adopters.some((adopter) => adopter.id === creator.id)) continue;
     const stage = slurpTrendStage(trend, at);
-    const today = trend.adopters.filter((adopter) => at.getTime() - Date.parse(adopter.at) < DAY_MS).length;
     const full = trend.adopters.length >= Math.max(1, Math.floor(SLURP_TREND_PEAK_SHARE * input.automaticCount));
-    if (today >= dailyLimit || full) continue;
+    if (joinedToday >= dailyLimit || full) continue;
     if (slurpTrendBlocked(creator.text, input.avoid, trend.label)) continue;
     const ageHours = (at.getTime() - Date.parse(trend.startedAt)) / HOUR_MS;
     const reach = slurpTrendReach({

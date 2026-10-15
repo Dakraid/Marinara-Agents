@@ -40,7 +40,7 @@ The stage is **computed from age and adopters, never stored**, so a restart or a
 | tired    | 72 h to 120 h        | late followers (small chance), contrarians roast it |
 | dead     | over 120 h           | nobody; the record is dropped after 7 days |
 
-Peak also ends early when adopters reach the share below. At most **3 live trends** at once; a new one waits
+When adopters reach the share below, joining stops (the stage still follows age). At most **3 live trends** at once; a new one waits
 (or replaces a `dead` one). One Creator is in at most one trend per 3 days.
 
 ## Roles
@@ -80,8 +80,8 @@ adoption only (the angle sees an empty feed), because sameness is the point; eve
    tied to a post: it counts for the post that was newest when it came in). Code only,
    no AI: the label is the title's first 6 words. Fewer than one start per tick.
 2. **The player's own page.** The same detector reads a player-run page's posts; the starter is that page.
-3. **Stir "Start a trend"** (new action `start-trend`: `{ label, accountId? }`). With a Creator it makes
-   them the starter (trendsetter); without, a platform trend. Reversible (Undo removes the record while it has
+3. **Stir "Start a trend"** (new action `start-trend`: `{ label }`). It makes a platform trend with no named starter; a
+   Creator as starter is a follow-up. Reversible (Undo removes the record while it has
    no adopters). The older desk lever `seed-trend` (a nudge to a few Creators) stays as it is.
 4. **World trends.** The daily world tick prompt may return one `trend: { label, line }` (the idea list already
    says "or a light platform trend"). It starts a `world` trend if fewer than 3 are live; the line is checked
@@ -94,9 +94,9 @@ moment is removed: a real trend is joined through the trend beat, so Slurp never
 ## UI
 
 - **Discover**: a "Trending on Slurp" row above Featured, one small card per live trend: label, stage pill
-  (Rising / Peak / Cooling), the starter's avatar, "n Creators joined". Tap sets the search to the label;
+  (Rising / Peak / Cooling), the starter's name, "n joined". Tap sets the search to the label;
   the post search also matches `metadata.slurpTrend.label`. Hidden when no trend is live. Phone first.
-- **Post card**: a chip "Trend · <label>" under the author line for adopter posts and the origin post.
+- **Post card**: a chip "Trend · <label>" under the author line for adopter posts (it opens the origin post when that is on screen).
 - **Stir**: a "Start a trend" card (label field, optional Creator), preview says who may join, no cost.
 - Locales en / de / ko / pl, new keys only.
 

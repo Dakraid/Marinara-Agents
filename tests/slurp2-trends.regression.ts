@@ -143,6 +143,10 @@ assert.equal(slurpTrendBlocked("", ["selfies"], "Mirror selfies"), true);
 assert.equal(slurpTrendBlocked("She never posts mirror selfies.", [], "Mirror selfies"), true);
 assert.equal(slurpTrendBlocked("She loves mirror selfies.", [], "Mirror selfies"), false);
 
+assert.equal(slurpTrendBlocked("", ["gym stuff"], "Gym fit check"), true, "short words count");
+assert.equal(slurpTrendBlocked("", ["your mood"], "Show your morning coffee"), false, "stop words do not");
+assert.equal(slurpTrendBlocked("", ["selfiestick"], "Mirror selfies"), false, "whole words only");
+
 // Start rules and repairs.
 assert.equal(slurpTrendMayStart([trend], "mirror selfies", t0), false, "same label");
 assert.equal(

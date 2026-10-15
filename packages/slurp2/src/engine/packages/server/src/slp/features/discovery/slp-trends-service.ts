@@ -107,11 +107,11 @@ export async function advanceSlurpTrends(db: DB, at = new Date()): Promise<void>
 }
 
 /** Every adopter brings the starter one new follower, up to a cap per trend. A failed follow costs nothing. */
-async function followStarter(db: DB, trend: SlurpTrend, at: Date): Promise<void> {
+async function followStarter(db: DB, trend: SlurpTrend, creatorId: string, at: Date): Promise<void> {
   if (!trend.starterId || trend.adopters.length >= SLURP_TREND_FOLLOW_CAP) return;
   try {
     const population = createSlurpPopulationStorage(db);
-    const fan = await population.ensure(`trend:${trend.id}:${trend.adopters.length}`, at);
+    const fan = await population.ensure(`trend:${trend.id}:${creatorId}`, at);
     await population.advanceTie(fan.id, trend.starterId, { stage: "follower", interactions: 1 });
   } catch (error) {
     logger.warn(error, "[slurp] Could not give a trend starter a follower");
@@ -191,8 +191,10 @@ export async function planSlurpTrendBeat(
     if (!join) return null;
     const type = join.role === "contrarian" ? "opinion" : "audience_game";
     if (!slurpBeatIntents(type).some((intent) => input.intents.includes(intent))) return null;
+    // ponytail: the Creator counts as joined when planned, not when the post is written; a post that then
+    // fails still counts. Record it from the publish path (with the post id) if that shows up in practice.
     if (!input.previewOnly) {
-      await followStarter(db, join.trend, input.at);
+      await followStarter(db, join.trend, input.creatorId, input.at);
       await mutateSlurpTrends(db, input.at, (current) => ({
         trends: slurpAddAdopter(current, join.trend.id, {
           id: input.creatorId,

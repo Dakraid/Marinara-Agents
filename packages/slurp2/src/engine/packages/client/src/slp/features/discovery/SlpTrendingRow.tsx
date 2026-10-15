@@ -26,7 +26,7 @@ export function SlpTrendingRow({ onPick }: { onPick: (label: string) => void }) 
             <button
               type="button"
               onClick={() => onPick(trend.label)}
-              className="flex h-full w-full flex-col gap-2 rounded-2xl border border-[var(--slurp-border,var(--border))] bg-[var(--slurp-surface,transparent)] p-3 text-start transition-colors hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+              className="flex h-full w-full flex-col gap-2 rounded-2xl border border-[var(--border)] bg-[var(--slurp-canvas,var(--background))] p-3 text-start transition-colors hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
             >
               <span className="flex items-center justify-between gap-2">
                 <TrendingUp size={16} aria-hidden="true" className="shrink-0 text-[var(--noodle-accent)]" />
