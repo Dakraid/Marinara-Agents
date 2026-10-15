@@ -27,6 +27,7 @@ import { readSlurpTieStamp } from "../../../modules/projects/slp-tie-stamp.js";
 import type { SlurpStorageContext } from "../../host/slp-storage-context.js";
 import { linkSlurpPurposePost } from "../slp-purpose-storage.js";
 import { findSlurpOpportunityBySlot, recordSlurpPromiseKept } from "../slp-opportunity-storage.js";
+import { slurpTrendQuoteOf } from "../../../modules/discovery/slp-trends.js";
 
 // One publish pass at a time: the startup reconcile and the first poll could overlap, and two
 // passes both read a row as "prepared" before either marks it published (#35).
@@ -225,7 +226,7 @@ export function createReserveStorage2(context: SlurpStorageContext) {
               imageUrl: hasMedia ? slpCreatorPostMediaUrl(postId) : galleryImageUrl,
               imagePrompt: typeof payload.imagePrompt === "string" ? payload.imagePrompt : null,
               parentPostId: null,
-              quotePostId: null,
+              quotePostId: slurpTrendQuoteOf(preparedMetadata),
               source: "generated",
               projectId: typeof payload.projectId === "string" ? payload.projectId : null,
               projectChapter: typeof payload.projectChapter === "string" ? payload.projectChapter : null,

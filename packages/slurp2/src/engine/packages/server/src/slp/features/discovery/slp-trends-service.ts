@@ -1,0 +1,234 @@
+/**
+ * Trends (`docs/TRENDS.md`): finds a post that took off, starts trends from the four starters, and lets a
+ * Creator join one when they plan an ordinary post. No model call of its own; any failure here costs the
+ * trend, never the post or the world tick.
+ */
+import type { DB } from "../../../db/connection.js";
+import { logger } from "../../../lib/logger.js";
+import { newId } from "../../../utils/id-generator.js";
+import { createSlurpStorage } from "../../data/slp-storage.js";
+import { mutateSlurpTrends, readSlurpTrendList } from "../../data/discovery/slp-trends-storage.js";
+import { readSlurpTrendPosts } from "../../data/discovery/slp-trends-signals.js";
+import { readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ties-storage.js";
+import { slurpBeatIntents, type SlurpBeat } from "../../modules/feed/slp-post-beat.js";
+import type { SlurpContentIntent } from "../../../../../shared/src/slp/slp-content-axes.js";
+import {
+  slurpAddAdopter,
+  slurpLiveTrends,
+  slurpPickTrendJoin,
+  slurpTrendLabel,
+  slurpTrendLine,
+  slurpTrendMayStart,
+  slurpTrendOrigin,
+  slurpTrendScore,
+  slurpTrendStage,
+  type SlurpTrend,
+  type SlurpTrendPost,
+  type SlurpTrendSource,
+} from "../../modules/discovery/slp-trends.js";
+import type { SlurpTieCreator } from "../../modules/projects/slp-creator-ties.js";
+
+/** The world tick runs often; the posts are read at most this often. */
+const SCAN_EVERY_MS = 30 * 60_000;
+let lastScanAt = 0;
+
+const isPlayerPersona = (account: { kind: string; sourceKind?: string | null }) =>
+  account.kind === "persona" && account.sourceKind === "persona";
+
+export type SlurpTrendStart = {
+  label: string;
+  source: SlurpTrendSource;
+  starterId?: string | null;
+  originPostId?: string | null;
+  line?: string | null;
+  spicy?: boolean;
+};
+
+/** Start a trend unless three are live or the label already runs. Returns it, or null. */
+export async function startSlurpTrend(db: DB, input: SlurpTrendStart, at: Date): Promise<SlurpTrend | null> {
+  const label = slurpTrendLabel(input.label);
+  if (!label) return null;
+  return mutateSlurpTrends(db, at, (trends) => {
+    if (!slurpTrendMayStart(trends, label, at)) return null;
+    const trend: SlurpTrend = {
+      id: newId(),
+      label,
+      source: input.source,
+      starterId: input.starterId ?? null,
+      originPostId: input.originPostId ?? null,
+      line: input.line ?? null,
+      spicy: input.spicy === true,
+      startedAt: at.toISOString(),
+      adopters: [],
+    };
+    return { trends: [trend, ...trends], result: trend };
+  });
+}
+
+/**
+ * On the world tick: the best post that took off becomes a trend, at most one per scan. A Creator's
+ * post and a player-run page's post are read the same way; only the starter's label differs.
+ */
+export async function advanceSlurpTrends(db: DB, at = new Date()): Promise<void> {
+  if (at.getTime() - lastScanAt < SCAN_EVERY_MS) return;
+  lastScanAt = at.getTime();
+  try {
+    const before = await readSlurpTrendList(db);
+    if (!slurpTrendMayStart(before, "", at)) return;
+    const accounts = (await createSlurpStorage(db).listNoodlerAccounts()).filter(
+      (account) => account.kind !== "random_user",
+    );
+    const playerIds = new Set(accounts.filter(isPlayerPersona).map((account) => account.id));
+    const taken = new Set(before.map((trend) => trend.originPostId));
+    let best: { account: (typeof accounts)[number]; post: SlurpTrendPost } | null = null;
+    for (const account of accounts) {
+      const origin = slurpTrendOrigin(await readSlurpTrendPosts(db, account.id, playerIds), at);
+      if (!origin || taken.has(origin.id)) continue;
+      if (!best || slurpTrendScore(origin) > slurpTrendScore(best.post)) best = { account, post: origin };
+    }
+    if (!best) return;
+    await startSlurpTrend(
+      db,
+      {
+        label: best.post.title ?? "",
+        // The player's own page starts a "player" trend; a Creator Slurp writes for, a "creator" one.
+        source: isPlayerPersona(best.account) ? "player" : "creator",
+        starterId: best.account.id,
+        originPostId: best.post.id,
+        spicy: best.post.spicy,
+      },
+      at,
+    );
+  } catch (error) {
+    logger.warn(error, "[slurp] Could not look for a trend; the world goes on");
+  }
+}
+
+/** The ids this Creator has a live tie with: collabs, rivalries, bonds and couples. */
+async function tiedIdsOf(db: DB, creatorId: string): Promise<Set<string>> {
+  const { ties, bonds, couples } = await readSlurpCreatorTiesDocument(db);
+  const ids = new Set<string>();
+  const link = (a: string, b: string) => {
+    if (a === creatorId) ids.add(b);
+    if (b === creatorId) ids.add(a);
+  };
+  for (const collab of ties.collabs)
+    if (collab.status !== "declined" && collab.status !== "blocked") link(collab.hostId, collab.partnerId);
+  for (const rivalry of ties.rivalries) if (rivalry.stage !== "over") link(rivalry.fromId, rivalry.toId);
+  for (const bond of bonds) if (!bond.endedAt) link(bond.aId, bond.bId);
+  for (const couple of couples)
+    if (couple.stage !== "split") for (const id of [couple.bId, ...(couple.moreIds ?? [])]) link(couple.aId, id);
+  return ids;
+}
+
+/**
+ * The trend this Creator joins with their next ordinary post, or null. Marks them an adopter unless
+ * previewing. The origin post is quoted while it is still there.
+ */
+export async function planSlurpTrendBeat(
+  db: DB,
+  input: {
+    creatorId: string;
+    creatorText: string;
+    tags: readonly string[];
+    sequence: number;
+    intents: readonly SlurpContentIntent[];
+    avoid: readonly string[];
+    at: Date;
+    previewOnly?: boolean;
+  },
+): Promise<SlurpBeat | null> {
+  try {
+    const trends = await readSlurpTrendList(db);
+    if (!slurpLiveTrends(trends, input.at).length) return null;
+    const storage = createSlurpStorage(db);
+    const accounts = await storage.listNoodlerAccounts();
+    const creator: SlurpTieCreator = {
+      id: input.creatorId,
+      name: "",
+      text: input.creatorText,
+      tags: input.tags,
+      automatic: true,
+      followers: 0,
+    };
+    const starters = new Map<string, SlurpTieCreator>();
+    for (const trend of slurpLiveTrends(trends, input.at)) {
+      const starter = trend.starterId ? accounts.find((account) => account.id === trend.starterId) : null;
+      if (starter)
+        starters.set(starter.id, {
+          id: starter.id,
+          name: starter.displayName,
+          text: starter.bio ?? "",
+          tags: starter.settings.profile.tags ?? [],
+          automatic: true,
+          followers: 0,
+        });
+    }
+    const join = slurpPickTrendJoin({
+      creator,
+      sequence: input.sequence,
+      trends,
+      at: input.at,
+      automaticCount: accounts.filter((account) => account.kind !== "random_user" && !isPlayerPersona(account)).length,
+      creators: starters,
+      tiedIds: await tiedIdsOf(db, input.creatorId),
+      avoid: input.avoid,
+    });
+    if (!join) return null;
+    const type = join.role === "contrarian" ? "opinion" : "audience_game";
+    if (!slurpBeatIntents(type).some((intent) => input.intents.includes(intent))) return null;
+    if (!input.previewOnly)
+      await mutateSlurpTrends(db, input.at, (current) => ({
+        trends: slurpAddAdopter(current, join.trend.id, {
+          id: input.creatorId,
+          at: input.at.toISOString(),
+          role: join.role,
+          postId: null,
+        }),
+        result: null,
+      }));
+    const starterName = starters.get(join.trend.starterId ?? "")?.name ?? null;
+    return {
+      type,
+      anchorKind: "trend",
+      anchor: join.trend.label,
+      line: slurpTrendLine(join, starterName).replace("{a}", "something from your own life"),
+      cast: [],
+      place: null,
+      trend: { id: join.trend.id, label: join.trend.label, originPostId: join.trend.originPostId },
+    };
+  } catch (error) {
+    logger.warn(error, "[slurp] Could not plan a trend post; this one is ordinary");
+    return null;
+  }
+}
+
+export type SlurpTrendView = {
+  id: string;
+  label: string;
+  stage: "rising" | "peak" | "tired";
+  source: SlurpTrendSource;
+  starter: { id: string; name: string; avatarUrl: string | null } | null;
+  originPostId: string | null;
+  joined: number;
+};
+
+/** The live trends for Discover. */
+export async function listSlurpTrendViews(db: DB, at = new Date()): Promise<SlurpTrendView[]> {
+  const live = slurpLiveTrends(await readSlurpTrendList(db), at);
+  const storage = createSlurpStorage(db);
+  return Promise.all(
+    live.map(async (trend) => {
+      const starter = trend.starterId ? await storage.getNoodlerAccountById(trend.starterId) : null;
+      return {
+        id: trend.id,
+        label: trend.label,
+        stage: slurpTrendStage(trend, at) as SlurpTrendView["stage"],
+        source: trend.source,
+        starter: starter ? { id: starter.id, name: starter.displayName, avatarUrl: starter.avatarUrl ?? null } : null,
+        originPostId: trend.originPostId,
+        joined: trend.adopters.length,
+      };
+    }),
+  );
+}

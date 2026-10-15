@@ -107,7 +107,10 @@ export const slurpLiveTrends = (trends: readonly SlurpTrend[], at: Date) =>
 /** Dead trends go after a week; the newest are kept first. */
 export function pruneSlurpTrends(trends: readonly SlurpTrend[], at: Date): SlurpTrend[] {
   return trends
-    .filter((trend) => at.getTime() - Date.parse(trend.startedAt) < SLURP_TREND_STAGE_HOURS.tired * HOUR_MS + SLURP_TREND_KEEP_DEAD_MS)
+    .filter(
+      (trend) =>
+        at.getTime() - Date.parse(trend.startedAt) < SLURP_TREND_STAGE_HOURS.tired * HOUR_MS + SLURP_TREND_KEEP_DEAD_MS,
+    )
     .sort((left, right) => right.startedAt.localeCompare(left.startedAt))
     .slice(0, 20);
 }
@@ -127,7 +130,11 @@ export function slurpTrendLabel(title: string | null | undefined): string {
     .replace(/[#"“”]/gu, "")
     .split(" ")
     .filter(Boolean);
-  return words.slice(0, 6).join(" ").slice(0, SLURP_TREND_LABEL_MAX).replace(/[.,;:!?…-]+$/u, "");
+  return words
+    .slice(0, 6)
+    .join(" ")
+    .slice(0, SLURP_TREND_LABEL_MAX)
+    .replace(/[.,;:!?…-]+$/u, "");
 }
 
 // ─── Taking off ─────────────────────────────────────────────────────────────────────────────────
@@ -223,7 +230,10 @@ export function slurpTrendReach(input: {
 
 /** A card or the player's steering that rules the trend out. */
 export function slurpTrendBlocked(text: string, avoid: readonly string[], label: string): boolean {
-  const words = label.toLocaleLowerCase().split(" ").filter((word) => word.length > 3);
+  const words = label
+    .toLocaleLowerCase()
+    .split(" ")
+    .filter((word) => word.length > 3);
   if (!words.length) return false;
   const mentions = (value: string) => words.some((word) => value.toLocaleLowerCase().includes(word));
   if (avoid.some(mentions)) return true;
@@ -299,4 +309,11 @@ export function slurpAddAdopter(
       ? { ...trend, adopters: [...trend.adopters, adopter] }
       : trend,
   );
+}
+
+/** The post a trend adoption quotes, read from the `slurpTrend` stamp in a post's metadata. */
+export function slurpTrendQuoteOf(metadata: Record<string, unknown> | null | undefined): string | null {
+  const stamp = metadata?.slurpTrend;
+  const id = stamp && typeof stamp === "object" ? (stamp as Record<string, unknown>).originPostId : null;
+  return typeof id === "string" && id ? id : null;
 }
