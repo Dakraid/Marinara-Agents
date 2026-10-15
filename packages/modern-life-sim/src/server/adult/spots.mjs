@@ -1,5 +1,6 @@
 // Pair tension, public spots with catch chances, ask moods and intimate scene backdrops
 import { turnedDownHurt } from "./consent.mjs";
+import { familyPairBarsRomance } from "../relationships/kin.mjs";
 
 var NO_SPARK_PAIR_KINDS = ["rivals", "ex", "family"];
 var PARTY_PAIR_CLOSE_GAIN = 6;
@@ -7,8 +8,12 @@ var PAIR_COOLDOWN_DAYS = [3, 3, 2, 1];
 var onPairCooldown = (lastDay, today, tier) =>
   lastDay != null && today - lastDay <= (PAIR_COOLDOWN_DAYS[tier] ?? PAIR_COOLDOWN_DAYS[1]);
 var GROUP_INTIMACY_CHANCE = 0.5;
-function pairTensionBelow(pair, threshold) {
-  return !pair || NO_SPARK_PAIR_KINDS.includes(pair.kind) ? false : (pair.yours?.tension ?? 0) < threshold;
+// Family only blocks a spark while the familyRomance rule is off.
+function pairTensionBelow(state, pair, threshold) {
+  return !pair ||
+    (NO_SPARK_PAIR_KINDS.includes(pair.kind) && (pair.kind !== "family" || familyPairBarsRomance(state, pair)))
+    ? false
+    : (pair.yours?.tension ?? 0) < threshold;
 }
 var PUBLIC_SPOTS = {
   cafe: {

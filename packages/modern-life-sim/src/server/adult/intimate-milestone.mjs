@@ -530,10 +530,10 @@ function markArrivedTogether(scene) {
   });
 }
 var getAlongForGroup = (state, firstId, secondId) =>
-  pairTensionBelow(npcPairBetween(state, firstId, secondId), TENSE_AT);
+  pairTensionBelow(state, npcPairBetween(state, firstId, secondId), TENSE_AT);
 var getAlongOrStrangers = (state, firstId, secondId) => {
   let pair = npcPairBetween(state, firstId, secondId);
-  return !pair || pairTensionBelow(pair, TENSE_AT);
+  return !pair || pairTensionBelow(state, pair, TENSE_AT);
 };
 var canJoinGroup = (state, characterId, otherId) =>
   otherId !== characterId &&

@@ -1,3 +1,7 @@
+## 0.6.1 — 2026-10-15
+
+- Romance in the family now reaches the Adult module too: family members can share AFTER DARK scenes, club dances and group scenes.
+
 ## 0.6.0 — 2026-10-15
 
 - SETTINGS · CAST: an Adult toggle for each person, before their Adult module options; switching it on opens the options.
