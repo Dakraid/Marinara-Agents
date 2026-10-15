@@ -29,6 +29,7 @@ var PRESET_SETUP_KEYS = [
   "birthday",
   "gender",
   "scenario",
+  "readSteer",
   "step",
   "reached",
   "frame",

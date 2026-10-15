@@ -180,7 +180,7 @@
         },
         "id": "modern-life-sim",
         "name": "Modern Life Sim",
-        "version": "0.4.1",
+        "version": "0.5.0",
         "description": "A modern life sim in its own Home tab: a town on a clock, a job, rent and needs, and a cast drawn from your character cards whose relationships grow scene by scene, with a visual-novel narrator for the scenes that matter. Install it, restart Marinara Engine when prompted, then open Home → Life Sim.",
         "engine": {
           "min": "2.4.4",
@@ -214,13 +214,13 @@
           },
           {
             "path": "client.js",
-            "sha256": "69923b73454908328eb22a1c9ee35cec88a672d4e971cfc331a5673f3de6e267",
-            "bytes": 1059851
+            "sha256": "bfd0235f4072732756cf1d43f44af3def3f1d1a6260b79aad390f967f8289d20",
+            "bytes": 1065824
           },
           {
             "path": "server.mjs",
-            "sha256": "0b3d30d4d9b3a246b2a9462b0ed44c5c25a5bb586d6f9b54a80df56809b87497",
-            "bytes": 1298015
+            "sha256": "91e0db7b434c9b307cd3855d81d51f8afbb2081ee8a30d5b92c0ca43e59aa0a0",
+            "bytes": 1300860
           },
           {
             "path": "life-sim-icon.png",
@@ -239,9 +239,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/modern-life-sim.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/modern-life-sim-0.4.1.zip",
-        "sha256": "0742faabeb3cf78ec04a405492f1ebb09ae067ccab8537bcc68de810cf3a8225",
-        "bytes": 2367918
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/modern-life-sim-0.5.0.zip",
+        "sha256": "440aa3a9798b0c023bf064b47debbf97211c23ff9564292c4fcbf3963427b469",
+        "bytes": 2376736
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/staging/packages/modern-life-sim/README.md"
     }

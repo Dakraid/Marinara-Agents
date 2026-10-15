@@ -57,6 +57,7 @@ var PLACE_SIZE = {
   arcade: "medium",
   cinema: "medium",
   hospital: "medium",
+  police: "small",
   park: "big",
   university: "big",
   mall: "big",

@@ -20,6 +20,7 @@ import {
   attractionSaid,
   normalizeAttraction,
   normalizeGender,
+  withFutanari,
 } from "../orientation/orientation.mjs";
 import {
   TRAITS_JSON_SHAPE,
@@ -32,7 +33,13 @@ import {
 import { normalizeBirthday } from "../relationships/birthdays.mjs";
 import { normalizeKinKind } from "../relationships/kin.mjs";
 import { normalizeStartingRelation } from "../relationships/starting-relations.mjs";
-import { FAMILY_PAIR_DETAILS, NPC_PAIR_KINDS, ROMANTIC_PAIR_KINDS, parseCardRelations } from "../network/npc-pairs.mjs";
+import {
+  FAMILY_PAIR_DETAILS,
+  NPC_PAIR_KINDS,
+  REVERSE_PAIR_ROLES,
+  ROMANTIC_PAIR_KINDS,
+  parseCardRelations,
+} from "../network/npc-pairs.mjs";
 import { parseDateTastes } from "../outings/date-tastes.mjs";
 import { TASTES_JSON_SHAPE, TASTES_PROMPT_RULES, parseClothesTaste, parseGiftTastes } from "../gifts/gift-tastes.mjs";
 import { ARCHETYPE_THEIR_THING, THEIR_THING_ACTIVITIES } from "../visits/home-visits.mjs";
@@ -69,7 +76,16 @@ function settingNoteFor({ townName = "", scenario = "", worldLore = null } = {})
 }
 function readCardMessages(
   card,
-  { places = [], language = DEFAULT_LANGUAGE, setting = "", others = [], couples = false, jobs = [], fields = [] } = {},
+  {
+    places = [],
+    language = DEFAULT_LANGUAGE,
+    setting = "",
+    others = [],
+    couples = false,
+    jobs = [],
+    fields = [],
+    steer = "",
+  } = {},
 ) {
   let cardText = [
       card.name ? `Name: ${card.name}` : "",
@@ -87,7 +103,14 @@ function readCardMessages(
     ).join(`
 `),
     hasStores = places.some((place) => place.inside),
-    pairKinds = NPC_PAIR_KINDS.filter((kind) => couples || !ROMANTIC_PAIR_KINDS.includes(kind)),
+    pairKinds = [
+      ...NPC_PAIR_KINDS.filter((kind) => couples || !ROMANTIC_PAIR_KINDS.includes(kind)),
+      ...Object.keys(REVERSE_PAIR_ROLES).filter((role) => !REVERSE_PAIR_ROLES[role].detail),
+    ],
+    familyDetails = [
+      ...FAMILY_PAIR_DETAILS,
+      ...Object.keys(REVERSE_PAIR_ROLES).filter((role) => REVERSE_PAIR_ROLES[role].detail),
+    ],
     otherCast = others.filter((other) => other?.id && other.id !== card.id);
   return [
     {
@@ -167,13 +190,14 @@ function readCardMessages(
         "`work` is true on EVERY block where they are working, whatever the job and wherever it is; leave it out on every other block (shopping, studying, training, going out are not work). The code alone decides where working hours go: the shift of their job, out of town, or their home. Never write a job into the week any other way.",
         "`extras` are up to four exceptions to the week above, each on one day (mon tue wed thu fri sat sun). Leave it empty when there are none.",
         "Write the week this card implies: a student is at the university, someone who works nights sleeps by day, a shut-in barely leaves home.",
-        "`job`: the town needs its jobs filled, so give them one of THE JOBS whenever one could plausibly be theirs: the one their card gives them, or else the one closest to who they are, even when the card says another job (a bookworm, at the library; a cook, at the restaurant; someone sporty, at the gym). Its id. `home` when the card says they work from home, remotely, online or freelance; then `title` is what they do, a few words in English (freelance illustrator). `out` (they work out of town) only when none of THE JOBS could be theirs at all. `none` when they have no job (a student, retired, between jobs). Never invent an id.",
+        "`job`: the town needs its jobs filled, so give them one of THE JOBS whenever one could plausibly be theirs: the one their card gives them, or else the one closest to who they are, even when the card says another job (a bookworm, at the library; a cook, at the restaurant; someone sporty, at the gym). Its id. `home` when the card says they work from home, remotely, online or freelance; then `title` is what they do, a few words in English (freelance illustrator). `out` (they work out of town) only when none of THE JOBS could be theirs at all. `none` when they have no job (retired, between jobs). A student takes the student job when THE JOBS has one. Never invent an id.",
         "With a job from THE JOBS, its shift is theirs: write the rest of their week around it (the code paints the shift). With `out` or `home`, mark their working hours with `work` (the code puts them out of town, or at home).",
         "`work_outfit`, with a job or `out`: what they wear at work, one line in English for image prompts: their own version of the job's clothes, fitting who they are. Empty with `none` or `home`.",
         ...(otherCast.length
           ? [
               "`people` is who of THE REST OF THE CAST this person has a notable relation with, only when the card says it or clearly implies it (the same story, a named sister, an ex). Usually nobody: then an empty list.",
-              `\`kind\` is exactly one of: ${pairKinds.join(", ")}. \`detail\` only for family, one of: ${FAMILY_PAIR_DETAILS.join(", ")}. \`note\` is a few words, in ${language}.`,
+              `\`kind\` is exactly one of: ${pairKinds.join(", ")}. \`detail\` only for family, one of: ${familyDetails.join(", ")}. \`note\` is a few words, in ${language}.`,
+              "Some kinds go one way and say what THIS person is to the other: teacher (they teach the other), student (the other teaches them), guardian (they are the other's guardian), ward (the other is their guardian), owner (they own the other), property (the other owns them). The family details bio-parent and adoptive-parent say this person is the other's biological or adoptive parent; child and adopted-child say they are the other's child.",
             ]
           : []),
         `\`why\`${otherCast.length ? ", `note` and each person's `note`" : " and `note`"} are prose: write them in ${language}. Everything else is ids, numbers and true/false.`,
@@ -186,6 +210,13 @@ function readCardMessages(
         setting
           ? `THE SETTING:
 ${setting}
+
+`
+          : ""
+      }${
+        steer
+          ? `THE PLAYER'S NOTES ON READING THE CARDS (follow them):
+${steer}
 
 `
           : ""
@@ -279,6 +310,9 @@ function parseReadCardAnswer(
           };
   }
   let freeJob = job?.id ? jobs.find((candidate) => candidate.id === job.id) : null;
+  if (freeJob?.boss) {
+    job.boss = true;
+  }
   if (week) {
     week = applyWorkCellsToWeek(week, workCells, {
       job: freeJob,
@@ -309,7 +343,7 @@ function parseReadCardAnswer(
     }),
     birthday: normalizeBirthday(answer?.birthday, "card"),
     gender: normalizeGender(answer?.gender),
-    into: normalizeAttraction(answer?.into),
+    into: withFutanari(normalizeAttraction(answer?.into)),
     intoSaid: attractionSaid(answer?.into),
     knows: normalizeStartingRelation(answer?.knows),
     kin: normalizeStartingRelation(answer?.knows) === "family" ? (normalizeKinKind(answer?.kin) ?? "relatives") : null,
@@ -463,7 +497,16 @@ async function writeCharacterTone(llm, card, traits) {
 async function readCharacterCard(
   llm,
   card,
-  { places = [], language = DEFAULT_LANGUAGE, setting = "", others = [], couples = false, jobs = [], fields = [] } = {},
+  {
+    places = [],
+    language = DEFAULT_LANGUAGE,
+    setting = "",
+    others = [],
+    couples = false,
+    jobs = [],
+    fields = [],
+    steer = "",
+  } = {},
 ) {
   let { json: json, model: model } = await llm.askJson(
     readCardMessages(card, {
@@ -474,6 +517,7 @@ async function readCharacterCard(
       couples: couples,
       jobs: jobs,
       fields: fields,
+      steer: steer,
     }),
     {
       maxTokens: (others.length ? 1700 : 1500) + (fields.length ? 200 : 0),

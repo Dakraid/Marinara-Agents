@@ -1,5 +1,5 @@
 // Contacts, sheet, gallery, pairs and news actions
-import { pairName } from "../views/people.js";
+import { REVERSE_ROLES, pairName, pairRoleFor } from "../views/people.js";
 import { S, act, call, notify } from "../state.js";
 import { refreshBackdrop, watchPaint } from "./phone.js";
 
@@ -197,8 +197,8 @@ function mergePeople(draft, cardId, people) {
     const pairKey = pairKeyOf(cardId, person.id),
       existing = draft.pairs[pairKey],
       pair = {
-        a: cardId,
-        b: person.id,
+        a: person.flip ? person.id : cardId,
+        b: person.flip ? cardId : person.id,
         kind: person.kind,
         detail: person.detail ?? null,
         note: person.note ?? "",
@@ -206,7 +206,7 @@ function mergePeople(draft, cardId, people) {
         by: cardId,
       };
     if (existing && existing.by !== cardId && (existing.kind !== pair.kind || existing.detail !== pair.detail)) {
-      pair.changed = `${existing.from === "hand" ? "You had set" : `${cardName(existing.by)}'s card said`} ${pairName(existing)} \xB7 ${cardName(cardId)}'s card says ${pairName(pair)}`;
+      pair.changed = `${existing.from === "hand" ? "You had set" : `${cardName(existing.by)}'s card said`} ${pairName(existing, cardId)} \xB7 ${cardName(cardId)}'s card says ${pairName(pair, cardId)}`;
     }
     draft.pairs[pairKey] = pair;
   }
@@ -225,13 +225,15 @@ const draftPairs = (draft) =>
 const pairEdit = (cardId, fromId) => {
   const draft = S.draft,
     otherId = Object.entries(draft.cast).find(([id, member]) => member.on && id !== cardId)?.[0],
-    pair = fromId ? draft.pairs?.[pairKeyOf(cardId, fromId)] : null;
+    pair = fromId ? draft.pairs?.[pairKeyOf(cardId, fromId)] : null,
+    role = pair ? pairRoleFor(pair, cardId) : null,
+    familyRole = role && pair.kind === "family";
   draft.pairEdit = {
     card: cardId,
     from: fromId || null,
     other: fromId || otherId,
-    kind: pair?.kind ?? "friends",
-    detail: pair?.detail ?? "siblings",
+    kind: (familyRole ? "family" : role) ?? pair?.kind ?? "friends",
+    detail: (familyRole ? role : pair?.detail) ?? "siblings",
   };
   notify();
 };
@@ -244,12 +246,14 @@ const pairSave = () => {
   if (edit.from && edit.from !== edit.other) {
     delete draft.pairs[pairKeyOf(edit.card, edit.from)];
   }
-  const pairKey = pairKeyOf(edit.card, edit.other);
+  const pairKey = pairKeyOf(edit.card, edit.other),
+    // "Student of N" and the like are stored from the lead's side: N is the pair's `a`.
+    reverse = REVERSE_ROLES[edit.kind] ?? (edit.kind === "family" ? REVERSE_ROLES[edit.detail] : null);
   draft.pairs[pairKey] = {
-    a: edit.card,
-    b: edit.other,
-    kind: edit.kind,
-    detail: edit.kind === "family" ? edit.detail : null,
+    a: reverse ? edit.other : edit.card,
+    b: reverse ? edit.card : edit.other,
+    kind: reverse?.kind ?? edit.kind,
+    detail: reverse ? reverse.detail : edit.kind === "family" ? edit.detail : null,
     note: draft.pairs[pairKey]?.note ?? "",
     from: "hand",
     by: "you",

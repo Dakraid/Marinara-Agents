@@ -240,6 +240,13 @@ var PLACE_ACTIVITIES = {
       minutes: 360,
     },
   ],
+  police: [
+    {
+      id: "front-desk",
+      name: "Ask at the front desk",
+      minutes: 15,
+    },
+  ],
   hospital: [
     {
       id: "cafeteria",

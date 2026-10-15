@@ -47,6 +47,11 @@ function normalizeAttraction(into) {
   let groups = attractionGroups(into);
   return groups.length ? groups : [...ATTRACTION_OPTIONS];
 }
+// Into both women and men reads as into futanari as well.
+var withFutanari = (groups) =>
+  groups.includes("women") && groups.includes("men") && !groups.includes("futanari")
+    ? ATTRACTION_OPTIONS.filter((option) => [...groups, "futanari"].includes(option))
+    : groups;
 var isAttractedToGender = (into, gender) =>
   !gender || !into || !SEX_GROUPS[gender] || normalizeAttraction(into).includes(SEX_GROUPS[gender]);
 var listPhrase = (words) =>
@@ -124,6 +129,7 @@ async function readCardOrientation(client, card) {
 }
 
 export {
+  withFutanari,
   ATTRACTION_LABELS,
   ORIENTATION_GENDER_RULE,
   ORIENTATION_INTO_RULE,

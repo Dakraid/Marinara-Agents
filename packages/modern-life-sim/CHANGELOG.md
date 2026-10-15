@@ -1,3 +1,12 @@
+## 0.5.0 — 2026-10-15
+
+- Reading cards runs several at once, up to the Agents parallel limit of the reading connection. Cards not read or that failed can be queued while a read runs, and RE-READ FAILED queues them all.
+- A "How to read them" box steers every card read.
+- New jobs: Student (paid, at the University) and Police officer, at the new Police Station downtown.
+- One-way relations between cast members: teacher and student, biological or adoptive parent and child, guardian and ward, owner and property.
+- Into both women and men now adds futanari as well.
+- Whole-cast changes: everyone open to romance, add or remove a kink for all, set how everyone knows you.
+
 ## 0.4.1 — 2026-10-13
 
 - Starting skills: 5 points is a recommendation, not a limit; you can add more, up to 10 in every skill.

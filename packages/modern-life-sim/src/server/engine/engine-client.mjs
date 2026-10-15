@@ -362,6 +362,8 @@ function createEngineClient({
           model: asText(connection?.model) || asText(connection?.modelId) || "",
           provider: asText(connection?.provider) || asText(connection?.type) || "",
           isDefault: !!connection?.isDefault,
+          defaultForAgents: !!connection?.defaultForAgents,
+          maxParallelJobs: Number(connection?.maxParallelJobs) || 1,
         }))
         .filter((connection) => connection.id && !mediaPattern.test(connection.provider));
     },

@@ -1,8 +1,54 @@
 // NPC-to-NPC relationship pairs from cards and hourly closeness growth
 import { clockFromMinutes } from "../time/clock.mjs";
 
-var NPC_PAIR_KINDS = ["acquaintances", "friends", "close", "family", "couple", "ex", "rivals"];
-var FAMILY_PAIR_DETAILS = ["siblings", "parent", "cousins", "relatives"];
+var NPC_PAIR_KINDS = [
+  "acquaintances",
+  "friends",
+  "close",
+  "family",
+  "couple",
+  "ex",
+  "rivals",
+  "teacher",
+  "guardian",
+  "owner",
+];
+var FAMILY_PAIR_DETAILS = ["siblings", "parent", "cousins", "relatives", "bio-parent", "adoptive-parent"];
+// One-way relations: the pair's `a` holds the lead role (the teacher, parent, guardian or owner) toward `b`.
+var PAIR_LEAD_WORDS = {
+  teacher: "teacher",
+  guardian: "guardian",
+  owner: "owner",
+  "bio-parent": "biological parent",
+  "adoptive-parent": "adoptive parent",
+};
+var PAIR_FOLLOW_WORDS = {
+  teacher: "student",
+  guardian: "ward",
+  owner: "property",
+  "bio-parent": "child",
+  "adoptive-parent": "adopted child",
+};
+// The follower's side of a one-way relation, as a card or a hand edit may name it.
+var REVERSE_PAIR_ROLES = {
+  student: { kind: "teacher", detail: null },
+  ward: { kind: "guardian", detail: null },
+  property: { kind: "owner", detail: null },
+  child: { kind: "family", detail: "bio-parent" },
+  "adopted-child": { kind: "family", detail: "adoptive-parent" },
+};
+var pairRole = (pair) => (pair?.kind === "family" ? pair.detail : pair?.kind);
+var isLeadPair = (pair) => !!PAIR_LEAD_WORDS[pairRole(pair)];
+// What the other person is to `viewerId`: "student" for the teacher, "teacher" for the student.
+var pairWordFor = (pair, viewerId) =>
+  isLeadPair(pair)
+    ? (pair.a === viewerId ? PAIR_FOLLOW_WORDS : PAIR_LEAD_WORDS)[pairRole(pair)]
+    : (pair?.detail ?? pair?.kind);
+// The relation as a whole, both sides: "teacher and student", or the plain kind.
+var pairBothWords = (pair) =>
+  isLeadPair(pair)
+    ? `${PAIR_LEAD_WORDS[pairRole(pair)]} and ${PAIR_FOLLOW_WORDS[pairRole(pair)]}`
+    : (pair?.detail ?? pair?.kind);
 var ROMANTIC_PAIR_KINDS = ["couple", "ex"];
 var GROWING_PAIR_KINDS = ["acquaintances", "friends", "close"];
 var PAIR_CLOSENESS_THRESHOLDS = {
@@ -18,6 +64,9 @@ var STARTING_CLOSENESS_BY_PAIR_KIND = {
   couple: 80,
   ex: 20,
   rivals: 15,
+  teacher: 40,
+  guardian: 65,
+  owner: 55,
 };
 var PAIR_NOTE_MAX_CHARS = 120;
 var PAIR_CHANGE_LINE_MAX_CHARS = 200;
@@ -32,8 +81,20 @@ var cleanPairText = (text, maxChars) =>
     .trim();
 function parsePairRelation(raw, { couples: allowCouples = false } = {}) {
   let kind = String(raw?.kind ?? "")
-    .trim()
-    .toLowerCase();
+      .trim()
+      .toLowerCase(),
+    rawDetail = String(raw?.detail ?? "")
+      .trim()
+      .toLowerCase(),
+    reverse = REVERSE_PAIR_ROLES[kind] ?? (kind === "family" ? REVERSE_PAIR_ROLES[rawDetail] : null);
+  if (reverse) {
+    return {
+      kind: reverse.kind,
+      detail: reverse.detail,
+      note: cleanPairText(raw?.note, PAIR_NOTE_MAX_CHARS),
+      flip: true,
+    };
+  }
   if (!NPC_PAIR_KINDS.includes(kind)) {
     return null;
   }
@@ -93,11 +154,15 @@ function parseNpcPairsFromCards(
       couples: allowCouples,
     });
     if (relation) {
+      let { flip: flip, ...kept } = relation;
+      if (flip) {
+        [idA, idB] = [idB, idA];
+      }
       if (!(relation.kind === "couple" && !canCouple(idA, idB))) {
         pairs[npcPairKey(idA, idB)] = {
           a: idA,
           b: idB,
-          ...relation,
+          ...kept,
           close: STARTING_CLOSENESS_BY_PAIR_KIND[relation.kind],
           from: entry.from === "hand" ? "hand" : "card",
           since: at,
@@ -301,6 +366,12 @@ function spendHourTogetherAsPair(state, first, second, place, at, hooks) {
 }
 
 export {
+  PAIR_FOLLOW_WORDS,
+  PAIR_LEAD_WORDS,
+  REVERSE_PAIR_ROLES,
+  isLeadPair,
+  pairBothWords,
+  pairWordFor,
   FAMILY_PAIR_DETAILS,
   GROWING_PAIR_KINDS,
   NPC_PAIR_KINDS,
