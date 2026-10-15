@@ -51,7 +51,7 @@ assert.match(dm, /\.\.\.\(input\.commissionPrices \? \{ commissionPrices: input\
 // ── Cancel ends a subscription to a removed Creator at once (#28) ──
 assert.match(
   server("data/economy/slp-economy-storage-1.ts"),
-  /const gone = current && !\(await this\.getNoodlerAccountById\(creatorAccountId, \{ includeHidden: true \}\)\);\s*if \(!expire && !gone && current/u,
+  /const gone = !expire && current && !\(await this\.getNoodlerAccountById\(creatorAccountId, \{ includeHidden: true \}\)\);\s*if \(!expire && !gone && current/u,
 );
 
 // ── Fans react to what a picture shows, not to its art style (#38) ──
@@ -93,13 +93,18 @@ for (const text of [
   "Ava is a single mom with a crush on Juniper.",
   "Juniper is her son's teacher.",
   "Mara's sister Juniper sings.",
+  "Mara's older sister Juniper runs a bakery.",
   "Leo and Juniper are siblings.",
 ])
   assert.ok(!slurpCoupleKin(ava(text), kid), text);
 assert.ok(!slurpCoupleKin(tie("a", "Ava", { cardPeople: [{ name: "Juniper", relation: "girlfriend" }] }), kid));
 const lovers = slurpCoupleFit(ava("Ava and her sister Juniper are lovers."), kid);
 assert.ok(lovers.fits && lovers.cards, "cards that say they are lovers make the couple");
-for (const text of ["My sister Juniper is married to Tom.", "Her sister Juniper, who is dating Leo, lives nearby."])
+for (const text of [
+  "My sister Juniper is married to Tom.",
+  "Her sister Juniper, who is dating Leo, lives nearby.",
+  "My sister Juniper has a boyfriend.",
+])
   assert.equal(
     slurpCoupleFit(ava(text), kid).misfit,
     "family",
@@ -133,6 +138,7 @@ const refused = new TypeError("fetch failed", {
 });
 assert.equal(slpUnreachableCode(refused), "ECONNREFUSED");
 assert.equal(slpUnreachableCode(new Error("API error 400: bad request")), null);
+assert.equal(slpUnreachableCode(Object.assign(new Error("getaddrinfo"), { code: "ENOTFOUND" })), "ENOTFOUND");
 assert.equal(
   slpUnreachableCode(Object.assign(new Error("socket hang up"), { code: "ECONNRESET" })),
   null,

@@ -320,7 +320,7 @@ export function createEconomyStorage1(context: SlurpStorageContext) {
       const current = wallet.subscriptions[creatorAccountId];
       // A removed Creator has nothing left to give access to, so Cancel ends it now. Waiting for the
       // paid week left an "Unavailable Creator" whose Cancel did nothing (#28).
-      const gone = current && !(await this.getNoodlerAccountById(creatorAccountId, { includeHidden: true }));
+      const gone = !expire && current && !(await this.getNoodlerAccountById(creatorAccountId, { includeHidden: true }));
       if (!expire && !gone && current && Date.parse(current.paidThroughAt) > Date.now()) {
         if (current.cancelled) return;
         await writeWallet(viewerAccountId, {

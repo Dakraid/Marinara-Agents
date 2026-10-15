@@ -43,7 +43,13 @@ export function slpTransientNetworkCode(error: unknown): SlpTransientDnsCode | n
  * Codes that mean the model server did not answer at all: it is off, or the address is wrong. Not a
  * reset or a read timeout: those also hit a cloud connection that works and only dropped the line.
  */
-const SLP_UNREACHABLE_CODES = ["ECONNREFUSED", "EHOSTUNREACH", "ENETUNREACH", "UND_ERR_CONNECT_TIMEOUT"] as const;
+const SLP_UNREACHABLE_CODES = [
+  "ECONNREFUSED",
+  "ENOTFOUND",
+  "EHOSTUNREACH",
+  "ENETUNREACH",
+  "UND_ERR_CONNECT_TIMEOUT",
+] as const;
 
 /** The code behind a call that never reached the model server, or null (#74: a local model that was off). */
 export function slpUnreachableCode(error: unknown): string | null {

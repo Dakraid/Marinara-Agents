@@ -81,7 +81,7 @@ function kinIn(self: SlurpTieCreator, other: SlurpTieCreator): boolean {
   const kin = `${KIN_WORD}\\b(?!['\u2019]s|\\s+in\\s+arms)`;
   // "her sister Mara", "Mara, her cousin", "Mara is Ava's older stepsister", "Ava and Mara are twins".
   // Not someone else's relative: "Mara's sister Juniper" says nothing about Ava.
-  const before = `(?:${own}['\u2019]s\\s+|(?<!['\u2019]s\\s{1,3}))\\b${kin},?\\s+${name}(?![\\p{L}])`;
+  const before = `(?:${own}['\u2019]s\\s+(?:\\p{L}+\\s+)?|(?<!['\u2019]s\\s{1,3}(?:\\p{L}+\\s+)?))\\b${kin},?\\s+${name}(?![\\p{L}])`;
   const mine = `(?:her|his|their|my|our|ihre?|seine?|${own}['\u2019]s)\\s+(?:\\p{L}+\\s+)?`;
   const after = `(?<![\\p{L}])${name}(?:,|\\s+(?:is|was|ist))\\s+${mine}${kin}`;
   const both = `(?<![\\p{L}])(?:${own}\\s+(?:and|und)\\s+${name}|${name}\\s+(?:and|und)\\s+${own})(?![\\p{L}])\\s+(?:are|were|sind)\\s+(?:\\p{L}+\\s+)?${kin}`;
@@ -89,9 +89,12 @@ function kinIn(self: SlurpTieCreator, other: SlurpTieCreator): boolean {
 }
 /**
  * Whether `self`'s card says the two of them are lovers although family: the other is on the card's
- * partner list, or a sentence names the other with a partner word and no third person ("Ava and her
- * sister Juniper are lovers", not "My sister Juniper is married to Tom").
+ * partner list, or a sentence names the other with a word for the two of them and no third person
+ * ("Ava and her sister Juniper are lovers", not "My sister Juniper is married to Tom" or "has a boyfriend").
  */
+// Words for the two of them together, not "has a boyfriend", which may be anyone.
+const LOVERS =
+  /\b(?:lovers?|in love|a couple|an item|(?:are|got|sleep(?:s|ing)?) together|each other|affair|sleep(?:s|ing)? with|attracted to|crush on|romantic|sexual|liebhaber\w*|verliebt|ein paar)\b/iu;
 function familyLovers(self: SlurpTieCreator, other: SlurpTieCreator): boolean {
   if (cardNames(self, other)) return true;
   const first = other.name.trim().split(/\s+/u)[0];
@@ -101,7 +104,7 @@ function familyLovers(self: SlurpTieCreator, other: SlurpTieCreator): boolean {
   );
   const name = new RegExp(`(?<![\\p{L}])${escapeRegExp(first)}(?![\\p{L}])`, "iu");
   return self.text.split(/(?<=[.!?])\s+|\n+/u).some((sentence) => {
-    if (!name.test(sentence) || !PARTNER_WORDS.test(sentence)) return false;
+    if (!name.test(sentence) || !LOVERS.test(sentence)) return false;
     const names = sentence.match(/(?<=\s)\p{Lu}\p{Ll}+/gu) ?? [];
     return names.every((word) => ours.has(word.toLocaleLowerCase()));
   });

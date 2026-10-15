@@ -68,7 +68,8 @@ async function readOtherCreatorSubjects(db: DB, accountId: string, at: Date): Pr
     access: item.payload.access === "public" ? "public" : "locked",
     title: typeof item.payload.title === "string" ? item.payload.title : null,
     imagePrompt: typeof item.payload.imagePrompt === "string" ? item.payload.imagePrompt : null,
-    createdAt: item.publishAt,
+    // Ranked as "now" at most: a post due later must not push every posted subject off the list.
+    createdAt: item.publishAt < at.toISOString() ? item.publishAt : at.toISOString(),
   }));
   return [...[...posts.values()].flat(), ...prepared]
     .filter((post) => post.access === "public" && post.title?.trim())
