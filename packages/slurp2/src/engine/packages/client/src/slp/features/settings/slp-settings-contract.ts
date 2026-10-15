@@ -194,6 +194,8 @@ export type SlurpSettings = {
   /** Backstage › Drama: level, the situations and dramas switched on, situation dials. */
   drama: SlpDramaSettings;
   onboarding: "not_started" | "in_progress" | "completed";
+  /** The persona browsing Slurp, shared by every device. Null: not picked yet. */
+  viewerPersonaId: string | null;
 };
 export type SlurpSettingsUpdate = Partial<SlurpSettings>;
 export type SlurpPromptBlockDefinition = {

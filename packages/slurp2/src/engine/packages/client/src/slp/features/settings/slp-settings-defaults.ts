@@ -170,6 +170,8 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
 export const SLURP_SETTINGS_NOT_RESET: readonly (keyof SlurpSettings)[] = [
   // "Pause all" is a switch, not a tuning: resetting a section must never pause or resume Slurp.
   "paused",
+  // Who is browsing, not a tuning (#103).
+  "viewerPersonaId",
   // Saved presets and reusable instructions are the player's own writing (R1-121).
   "promptPresets",
   "promptInstructions",

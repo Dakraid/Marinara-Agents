@@ -419,6 +419,8 @@ export const slurpSettingsSchema = z.object({
   paused: z.boolean(),
   nightQuiet: z.boolean(),
   onboarding: z.enum(["not_started", "in_progress", "completed"]),
+  /** The persona browsing Slurp, shared by every device so each shows the same inbox (#103). Null: not picked yet. */
+  viewerPersonaId: z.string().max(200).nullable(),
 });
 
 export type SlurpSettings = z.infer<typeof slurpSettingsSchema>;
@@ -653,6 +655,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   paused: false,
   nightQuiet: false,
   onboarding: "not_started",
+  viewerPersonaId: null,
 };
 
 /**
