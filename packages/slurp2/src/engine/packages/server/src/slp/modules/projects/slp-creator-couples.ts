@@ -131,7 +131,7 @@ export type SlurpCouple = {
   aftermath?: Exclude<SlpBreakupAftermath, "keep">;
 };
 
-export type SlurpCoupleForced = { misfit: Exclude<SlurpCoupleMisfit, "same" | "busy">; byId: string };
+export type SlurpCoupleForced = { misfit: Exclude<SlurpCoupleMisfit, "same" | "busy" | "family">; byId: string };
 
 export const slurpCoupleActive = (couple: SlurpCouple) => couple.stage !== "split";
 /** One other member, or null when `id` is not in it (a joined partner's "other" is the first of the pair). */
@@ -586,7 +586,7 @@ export function slurpSetUpCouple(
 ): SlurpCouple[] | SlurpCoupleError {
   if (!a.automatic && !b.automatic) return "noHost";
   const fit = slurpCoupleFit(a, b);
-  if (fit.misfit === "same") return "same";
+  if (fit.misfit === "same" || fit.misfit === "family") return fit.misfit;
   // Polyamory (0.3.5): someone already with somebody may start another couple only if they are poly.
   const paired = couples.some((c) => slurpCoupleActive(c) && slurpCoupleOther(c, a.id) && slurpCoupleOther(c, b.id));
   const blocked = (x: SlurpTieCreator) => Boolean(slurpCoupleFor(couples, x.id)) && !(input.polyamory && x.poly);
@@ -684,7 +684,7 @@ export function slurpSteerCouple(
     const b = byId.get(couple.bId);
     if (!a || !b) return "notFound";
     const fit = slurpCoupleFit(a, b);
-    if (!fit.fits && !couple.forced) return fit.misfit ?? "notInto";
+    if (fit.misfit === "family" || (!fit.fits && !couple.forced)) return fit.misfit ?? "notInto";
     if (
       couples.some(
         (entry) =>

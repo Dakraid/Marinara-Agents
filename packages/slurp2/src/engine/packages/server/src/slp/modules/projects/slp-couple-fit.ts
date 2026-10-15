@@ -15,7 +15,15 @@ const NOT_INTO_ANYONE = /\b(aromantic|asexual)\b/iu;
 const ROMANTIC =
   /\b(romantic|flirt\w*|lonely|single|looking for love|crush\w*|hopeless romantic|heart on (her|his|their) sleeve)\b/iu;
 
-export type SlurpCoupleMisfit = "taken" | "notInto" | "noDating" | "orientation" | "romance" | "same" | "busy";
+export type SlurpCoupleMisfit =
+  | "taken"
+  | "notInto"
+  | "noDating"
+  | "orientation"
+  | "romance"
+  | "same"
+  | "busy"
+  | "family";
 
 type Want = "same" | "other" | "any";
 
@@ -55,6 +63,30 @@ const textNames = (a: SlurpTieCreator, b: SlurpTieCreator) => {
   const name = new RegExp(`(?<![\\p{L}])${escapeRegExp(first)}(?![\\p{L}])`, "iu");
   return a.text.split(/(?<=[.!?])\s+|\n+/u).some((sentence) => name.test(sentence) && PARTNER_WORDS.test(sentence));
 };
+
+// Family on a card ("her mother Ruth", a lorebook "relationships" entry) is never romance (#43).
+const KIN =
+  /\b(?:mother|mom|mum|father|dad|daughter|son|sister|brother|sibling|twin|aunt|uncle|niece|nephew|cousin|(?:grand|step-?)(?:mother|father|ma|pa|mom|dad|daughter|son|sister|brother|child|parent)s?|parent|child|mutter|mama|vater|papa|tochter|sohn|schwester|bruder|tante|onkel|nichte|neffe|cousine?)\b/iu;
+const namesOther = (name: string, other: SlurpTieCreator) => {
+  const wanted = name.trim().toLocaleLowerCase();
+  return wanted === other.name.trim().toLocaleLowerCase() || firstName(wanted) === firstName(other.name);
+};
+/**
+ * Whether either card says the two are family: a card person with a family relation who is the
+ * other one, or a card sentence naming the other with a family word. A hard no, not a misfit the
+ * player can force.
+ */
+export function slurpCoupleKin(a: SlurpTieCreator, b: SlurpTieCreator): boolean {
+  const kinIn = (self: SlurpTieCreator, other: SlurpTieCreator) => {
+    if ((self.cardPeople ?? []).some((person) => KIN.test(person.relation) && namesOther(person.name, other)))
+      return true;
+    const first = other.name.trim().split(/\s+/u)[0];
+    if (!first || first.length < 3) return false;
+    const name = new RegExp(`(?<![\\p{L}])${escapeRegExp(first)}(?![\\p{L}])`, "iu");
+    return self.text.split(/(?<=[.!?])\s+|\n+/u).some((sentence) => name.test(sentence) && KIN.test(sentence));
+  };
+  return kinIn(a, b) || kinIn(b, a);
+}
 
 const neverDates = (creator: SlurpTieCreator) =>
   creator.text
@@ -102,6 +134,7 @@ export function slurpCoupleMisfitOf(a: SlurpTieCreator, b: SlurpTieCreator): Slu
 export function slurpCoupleFit(a: SlurpTieCreator, b: SlurpTieCreator): SlurpCoupleFit {
   const no = (misfit: SlurpCoupleMisfit) => ({ fits: false, misfit, chemistry: 0, cards: false });
   if (a.id === b.id) return no("same");
+  if (slurpCoupleKin(a, b)) return no("family");
   const misfit = slurpCoupleMisfitOf(a, b);
   if (misfit) return no(misfit.misfit);
   const cards = cardNames(a, b) || cardNames(b, a) || textNames(a, b) || textNames(b, a);

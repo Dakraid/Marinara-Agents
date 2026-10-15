@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { slpCutAtBoundary } from "../packages/slurp2/src/engine/packages/server/src/slp/base/prompting/slp-prompt-safety";
 import { slurpCommissionPriceRange, slurpCommissionQuote } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/economy/slp-creator-pricing";
+import { slurpCoupleFit, slurpCoupleKin } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-fit";
+import { slurpSetUpCouple } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-couples";
 import { slurp2Source } from "./slurp2-source.ts";
 
 const server = (path: string) => slurp2Source(`packages/slurp2/src/engine/packages/server/src/slp/${path}`);
@@ -42,5 +44,37 @@ assert.match(
 const pictures = server("base/media/slp-post-image-context.ts");
 assert.match(pictures, /never to art style/u);
 assert.equal(pictures.match(/\$\{PICTURE_SEEN\}/gu)?.length, 3, "prompt, saved caption and new caption all carry it");
+
+// ── Family is never a couple (#43) ──
+const tie = (id: string, name: string, extra: Record<string, unknown> = {}) => ({
+  id,
+  name,
+  text: "",
+  tags: [],
+  automatic: true,
+  followers: 0,
+  romance: { off: false, only: [] },
+  ...extra,
+});
+const mom = tie("m", "Ruth Vale", { cardPeople: [{ name: "Juniper", relation: "daughter" }] });
+const kid = tie("d", "Juniper Vale");
+assert.ok(slurpCoupleKin(mom, kid) && slurpCoupleKin(kid, mom), "a card person with a family relation");
+assert.equal(slurpCoupleFit(mom, kid).misfit, "family");
+assert.ok(slurpCoupleKin(tie("a", "Ava", { text: "Ava's older sister Juniper runs a bakery." }), kid), "a card sentence");
+assert.ok(!slurpCoupleKin(tie("a", "Ava", { text: "Ava loves Juniper's posts." }), kid));
+assert.ok(!slurpCoupleKin(tie("a", "Ava", { text: "Ava steps out with Juniper for the grand opening." }), kid));
+assert.ok(slurpCoupleKin(tie("a", "Ava", { text: "Juniper is Ava's stepsister." }), kid));
+assert.ok(!slurpCoupleKin(tie("a", "Ava", { cardPeople: [{ name: "Juniper", relation: "girlfriend" }] }), kid));
+const at = new Date("2026-10-15T12:00:00Z");
+assert.equal(slurpSetUpCouple([], mom, kid, { at, id: "c1" }), "family", "the player cannot force it either");
+assert.match(server("features/projects/slp-stir-ties.ts"), /family: \[409, /u);
+
+// ── A page the player runs can be set polyamorous (#68) ──
+const sheet = slurp2Source("packages/slurp2/src/engine/packages/client/src/slp/features/stir/SlpStirCreatorSheet.tsx");
+assert.match(sheet, /!creator\.automatic && !creator\.couplePage && \(\s*<SlpCreatorSteeringCard creatorId=\{creator\.id\} name=\{creator\.name\} relationshipOnly \/>/u);
+assert.match(
+  slurp2Source("packages/slurp2/src/engine/packages/client/src/slp/features/creators/SlpCreatorSteeringCard.tsx"),
+  /if \(relationshipOnly\)\s*return relationships \?/u,
+);
 
 console.log("slurp2 bug sweep regression: pass");
