@@ -32,4 +32,10 @@ const dm = server("features/messages/slp-message-generation-service.ts");
 assert.match(dm, /commissionPrices: supportDesk\s*\? undefined/u);
 assert.match(dm, /\.\.\.\(input\.commissionPrices \? \{ commissionPrices: input\.commissionPrices \} : \{\}\)/u);
 
+// ── Cancel ends a subscription to a removed Creator at once (#28) ──
+assert.match(
+  server("data/economy/slp-economy-storage-1.ts"),
+  /const gone = current && !\(await this\.getNoodlerAccountById\(creatorAccountId, \{ includeHidden: true \}\)\);\s*if \(!expire && !gone && current/u,
+);
+
 console.log("slurp2 bug sweep regression: pass");
