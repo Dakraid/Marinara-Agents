@@ -86,7 +86,7 @@ import { SEEN_CHANCE } from "../social/witnesses.mjs";
 import { GUESTS_MAX, WEDDING_VENUES } from "../romance/wedding.mjs";
 import { HONEYMOON_DAYS } from "../romance/wedding-morning.mjs";
 import { CLERK_DISCOUNT } from "../shop/store-counter.mjs";
-import { COLLAPSE_RULES, MAX_IN_TOWN, QUICK_PER_DAY } from "../game.mjs";
+import { COLLAPSE_RULES, MAX_IN_TOWN } from "../game.mjs";
 import { MAX_SETUP_PRESETS } from "../setup/setup-presets.mjs";
 
 var GUIDE_CATEGORIES = [
@@ -285,7 +285,6 @@ var GUIDE_VALUES = {
   gym: formatDollars(findActivityById("workout").costs),
   library: formatDollars(findActivityById("study").costs),
   borrow: formatDollars(findActivityById("borrow").costs),
-  quickPerDay: QUICK_PER_DAY === 1 ? "once" : `${QUICK_PER_DAY} times`,
   friendshipTiers: describeTierLadder("friendship"),
   coupleTiers: joinWithAnd(COUPLE_FRIENDSHIP_TIER_NAMES.map(guideTermMarker)),
   familyTiers: joinWithAnd(FAMILY_FRIENDSHIP_TIER_NAMES.slice(1).map(guideTermMarker)),
@@ -696,7 +695,7 @@ var GUIDE_ARTICLES = [
     words: "quick talk chat flirt open up",
     text: [
       "The quick options when you run into someone: \u27E6Chat\u27E7 builds friendship, \u27E6Flirt\u27E7 builds romance, and \u27E6Open up\u27E7 builds trust.",
-      "You can do each one {quickPerDay} a day with each person. For more, [[talk|sit down and talk]].",
+      "You can do each one as often as you like, but a repeat the same day counts for half, and gains stop at the daily cap. For more, [[talk|sit down and talk]].",
     ],
     see: ["bonds", "talk"],
   },
@@ -753,7 +752,7 @@ var GUIDE_ARTICLES = [
     title: "Gifts",
     words: "present gift likes dislikes loved",
     text: [
-      "You can give each person one gift a day. Everyone has one kind of thing they love, two they like and two they can't stand. A gift they love is worth the most; one they dislike hurts.",
+      "You can give each person as many gifts as you like; a second one the same day counts for half. Everyone has one kind of thing they love, two they like and two they can't stand. A gift they love is worth the most; one they dislike hurts.",
       "You'll see all of it once their trust reaches {trustingTier}; before that, you learn as you go. On their birthday, a gift counts {bdayTimes}.",
     ],
     see: ["birthdays", "shops"],

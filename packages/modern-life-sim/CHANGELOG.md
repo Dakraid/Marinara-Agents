@@ -1,3 +1,7 @@
+## 0.7.0 — 2026-10-15
+
+- Chat, Flirt, Open up and gifts are no longer once a day per person. A repeat the same day counts for half, and the daily gain cap still holds.
+
 ## 0.6.1 — 2026-10-15
 
 - Romance in the family now reaches the Adult module too: family members can share AFTER DARK scenes, club dances and group scenes.
