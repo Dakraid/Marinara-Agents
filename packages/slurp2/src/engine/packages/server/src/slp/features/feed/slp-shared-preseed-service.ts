@@ -6,6 +6,7 @@ import type { SlurpPlatformEvent } from "../../../../../shared/src/slp/slp-platf
 import {
   normalizeSlurpSharedIdeas,
   normalizeSlurpSharedWorldEvent,
+  normalizeSlurpSharedWorldTrend,
   SLURP_NICHE_REFRESH_MS,
   slurpNichePatternsPrompt,
   slurpTopicalTags,
@@ -13,6 +14,7 @@ import {
   type SlurpSharedIdea,
   type SlurpSharedWorldEvent,
 } from "../../modules/feed/slp-shared-preseed.js";
+import { startSlurpTrend } from "../discovery/slp-discovery-contract.js";
 import { completeSlurpBeatJson, type SlurpBeatContext } from "./slp-post-beat-service.js";
 
 const SHARED_KEY = "slurp2.shared-preseed";
@@ -128,6 +130,9 @@ export async function slurpSharedIdeasFor(
         });
         const event = input.worldEvents ? normalizeSlurpSharedWorldEvent(answer) : null;
         if (event) await startSlurpWideEvent(db, event, input.at);
+        // A platform trend (docs/TRENDS.md): it starts only while fewer than three trends are live.
+        const trend = normalizeSlurpSharedWorldTrend(answer);
+        if (trend) await startSlurpTrend(db, { label: trend.label, line: trend.line, source: "world" }, input.at);
       });
     }
     for (const topic of topics) {

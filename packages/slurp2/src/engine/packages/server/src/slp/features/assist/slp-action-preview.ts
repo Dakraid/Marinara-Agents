@@ -27,6 +27,7 @@ import type { SlpActionPreview } from "../../../../../shared/src/slp/slp-stir.js
 import type { SlpAssistOutcome } from "./slp-assist-service.js";
 import { isSlpDeskLever, previewSlpDeskLever, type SlpDeskLever } from "./slp-desk-levers.js";
 import { isSlurpDramaLever, previewSlurpDramaLever, type SlurpDramaLever } from "../world/slp-world-contract.js";
+import { readSlurpTrendList, slurpTrendMayStart } from "../discovery/slp-discovery-contract.js";
 
 type Account = {
   id: string;
@@ -267,6 +268,17 @@ async function previewOther(
         detail: { name: event.name, days: event.days },
         error: settings.platformEvents.length >= SLURP_PLATFORM_EVENTS_MAX ? "eventsFull" : null,
         summary: `${event.name} starts now for ${event.days} day(s); every Creator joins in their own way.`,
+      };
+    }
+    case "start-trend": {
+      const { label } = input as SlpActionParsed<"start-trend">;
+      const trends = await readSlurpTrendList(db);
+      return {
+        when: "ongoing",
+        detail: { name: label },
+        // Three at once is the most Slurp holds; the run refuses a fourth, or the same label twice.
+        error: slurpTrendMayStart(trends, label, at) ? null : "trendsFull",
+        summary: `"${label}" starts going round Slurp now. The right Creators join over the next days; some never do.`,
       };
     }
     case "run-audience": {

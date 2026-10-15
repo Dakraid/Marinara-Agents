@@ -17,6 +17,7 @@ import {
   SLP_STEERING_TEXT_MAX,
 } from "./slp-creator-steering.js";
 import { SLP_SPICE_LEVELS } from "./slp-spice.js";
+import { SLP_TREND_ACTIONS } from "./slp-trend-actions.js";
 import { SLURP_CONTENT_DELIVERIES, SLURP_CONTENT_INTENTS } from "./slp-content-axes.js";
 import {
   SLP_DESK_BADGES,
@@ -621,6 +622,7 @@ export const SLP_ACTIONS = {
       })
       .strict(),
   },
+  ...SLP_TREND_ACTIONS,
 } as const;
 
 export type SlpActionName = keyof typeof SLP_ACTIONS;
@@ -737,6 +739,7 @@ export const SLP_ACTION_META: Record<
   "set-tip-goal": { category: "work", targets: "creator", reversible: true, ai: false, refusable: false, deck: true },
   "new-look": { category: "life", targets: "creator", reversible: true, ai: false, refusable: false, deck: true },
   "invent-event": { category: "world", targets: "none", reversible: true, ai: false, refusable: false, deck: true },
+  "start-trend": { category: "world", targets: "none", reversible: true, ai: false, refusable: false, deck: true },
   "add-to-couple": { category: "love", targets: "couple", reversible: true, ai: false, refusable: false, deck: true },
   // The Support desk's tools live on the desk and in Support threads, not in the deck.
   "grant-perk": { category: "desk", targets: "creator", reversible: true, ai: false, refusable: false, deck: false },

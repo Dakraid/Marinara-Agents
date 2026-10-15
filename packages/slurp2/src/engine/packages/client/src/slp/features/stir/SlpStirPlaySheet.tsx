@@ -320,6 +320,9 @@ export function SlpStirPlaySheet({
     case "new-look":
       textField(t("ui.slurp.stir.form.lookChange"), t("ui.slurp.stir.form.lookChangePlaceholder"));
       break;
+    case "start-trend":
+      titleField(t("ui.slurp.stir.form.trendName"), t("ui.slurp.stir.form.trendNamePlaceholder"));
+      break;
     case "invent-event":
       titleField(t("ui.slurp.stir.form.eventName"), t("ui.slurp.stir.form.eventNamePlaceholder"));
       textField(t("ui.slurp.stir.form.eventWhat"), t("ui.slurp.stir.form.eventWhatPlaceholder"));

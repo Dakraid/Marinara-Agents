@@ -12,6 +12,7 @@ import {
   type SlurpTrend,
   type SlurpTrendPost,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/discovery/slp-trends.ts";
+import { normalizeSlurpSharedWorldTrend } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/feed/slp-shared-preseed.ts";
 import type { SlurpTieCreator } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-creator-ties.ts";
 
 const HOUR = 3_600_000;
@@ -159,4 +160,11 @@ assert.equal(
   })[0]!.adopters.length,
   1,
 );
+// A world trend needs a label and a line with exactly one slot.
+assert.deepEqual(normalizeSlurpSharedWorldTrend({ trend: { label: "Sock puppet day", line: "You show {a} with a sock." } }), {
+  label: "Sock puppet day",
+  line: "You show {a} with a sock.",
+});
+assert.equal(normalizeSlurpSharedWorldTrend({ trend: { label: "x", line: "No slot." } }), null);
+assert.equal(normalizeSlurpSharedWorldTrend({ trend: null }), null);
 console.log("slurp2 trends: ok");

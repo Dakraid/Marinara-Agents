@@ -9,10 +9,12 @@ import { newId } from "../../../utils/id-generator.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { mutateSlurpTrends, readSlurpTrendList } from "../../data/discovery/slp-trends-storage.js";
 import { readSlurpTrendPosts } from "../../data/discovery/slp-trends-signals.js";
+import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
 import { readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ties-storage.js";
 import { slurpBeatIntents, type SlurpBeat } from "../../modules/feed/slp-post-beat.js";
 import type { SlurpContentIntent } from "../../../../../shared/src/slp/slp-content-axes.js";
 import {
+  SLURP_TREND_FOLLOW_CAP,
   slurpAddAdopter,
   slurpLiveTrends,
   slurpPickTrendJoin,
@@ -104,6 +106,18 @@ export async function advanceSlurpTrends(db: DB, at = new Date()): Promise<void>
   }
 }
 
+/** Every adopter brings the starter one new follower, up to a cap per trend. A failed follow costs nothing. */
+async function followStarter(db: DB, trend: SlurpTrend, at: Date): Promise<void> {
+  if (!trend.starterId || trend.adopters.length >= SLURP_TREND_FOLLOW_CAP) return;
+  try {
+    const population = createSlurpPopulationStorage(db);
+    const fan = await population.ensure(`trend:${trend.id}:${trend.adopters.length}`, at);
+    await population.advanceTie(fan.id, trend.starterId, { stage: "follower", interactions: 1 });
+  } catch (error) {
+    logger.warn(error, "[slurp] Could not give a trend starter a follower");
+  }
+}
+
 /** The ids this Creator has a live tie with: collabs, rivalries, bonds and couples. */
 async function tiedIdsOf(db: DB, creatorId: string): Promise<Set<string>> {
   const { ties, bonds, couples } = await readSlurpCreatorTiesDocument(db);
@@ -177,7 +191,8 @@ export async function planSlurpTrendBeat(
     if (!join) return null;
     const type = join.role === "contrarian" ? "opinion" : "audience_game";
     if (!slurpBeatIntents(type).some((intent) => input.intents.includes(intent))) return null;
-    if (!input.previewOnly)
+    if (!input.previewOnly) {
+      await followStarter(db, join.trend, input.at);
       await mutateSlurpTrends(db, input.at, (current) => ({
         trends: slurpAddAdopter(current, join.trend.id, {
           id: input.creatorId,
@@ -187,6 +202,7 @@ export async function planSlurpTrendBeat(
         }),
         result: null,
       }));
+    }
     const starterName = starters.get(join.trend.starterId ?? "")?.name ?? null;
     return {
       type,
@@ -229,6 +245,16 @@ export async function listSlurpTrendViews(db: DB, at = new Date()): Promise<Slur
         originPostId: trend.originPostId,
         joined: trend.adopters.length,
       };
+    }),
+  );
+}
+
+/** Take a started trend away again, while nobody has joined it. */
+export async function undoSlurpTrend(db: DB, id: string, at = new Date()): Promise<boolean> {
+  return Boolean(
+    await mutateSlurpTrends(db, at, (trends) => {
+      const trend = trends.find((entry) => entry.id === id);
+      return trend && !trend.adopters.length ? { trends: trends.filter((entry) => entry.id !== id), result: true } : null;
     }),
   );
 }

@@ -68,6 +68,8 @@ assert.deepEqual(
     "new-look",
     "set-tip-goal",
     "start-storyline",
+    // 0.3.44: trends.
+    "start-trend",
     // 0.3.5: polyamory and the Slurp Support desk.
     "add-to-couple",
     "cash-favour",

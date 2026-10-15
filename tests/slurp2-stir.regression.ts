@@ -139,6 +139,8 @@ async function main() {
       "start-event",
       "start-rivalry",
       "start-storyline",
+      // 0.3.44: trends.
+      "start-trend",
       "steer-couple",
       "steer-creator",
       "steer-storyline",

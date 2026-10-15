@@ -38,6 +38,7 @@ import type { SlurpPostGuidanceEntry } from "../../modules/feed/slp-post-guidanc
 import type { SlpActionParsed, SlpStirWorld } from "../../../../../shared/src/slp/slp-actions.js";
 import type { SlpCreatorSteering } from "../../../../../shared/src/slp/slp-creator-steering.js";
 import type { SlpAssistOutcome } from "./slp-assist-service.js";
+import { startSlurpTrend, undoSlurpTrend } from "../discovery/slp-discovery-contract.js";
 import { undoSlpDeskLever, type SlpDeskUndo } from "./slp-desk-levers.js";
 import { readSlurpStirDramas, undoSlurpDramaLever, type SlurpDramaUndo } from "../world/slp-world-contract.js";
 
@@ -60,6 +61,7 @@ export type SlpActionUndo =
   | { kind: "goal"; accountId: string; before: unknown; set: unknown }
   | { kind: "look"; accountId: string; before: string | null; set: string }
   | { kind: "customEvent"; eventId: string; occurrenceId: string }
+  | { kind: "trend"; id: string }
   | {
       kind: "storyline";
       accountId: string;
@@ -356,6 +358,16 @@ export async function runSlpInventEvent(
   };
 }
 
+/** A trend the player starts (docs/TRENDS.md): the right Creators join over the next days. Undo works until one has. */
+export async function runSlpStartTrend(
+  db: DB,
+  input: SlpActionParsed<"start-trend">,
+): Promise<SlpAssistOutcome<{ trendId: string }> | LeverDone<{ trendId: string }>> {
+  const trend = await startSlurpTrend(db, { label: input.label, source: "stir" }, new Date());
+  if (!trend) return { ok: false, status: 409, error: "Slurp has enough trends going, or that one already is." };
+  return { ok: true, value: { trendId: trend.id }, undo: { kind: "trend", id: trend.id } };
+}
+
 /**
  * Take one play step back. The world may have moved on: what is gone stays gone, and a step that
  * would undo a later change answers false and stays as it is.
@@ -414,6 +426,8 @@ export async function undoSlpAction(db: DB, undo: SlpActionUndo): Promise<boolea
           : await storage.updateNoodlerAppearanceChoice(undo.accountId, "clear_override"),
       );
     }
+    case "trend":
+      return undoSlurpTrend(db, undo.id);
     case "customEvent": {
       const storage = createSlurpStorage(db);
       // Over already (or changed in Backstage since): it stays, event and all.

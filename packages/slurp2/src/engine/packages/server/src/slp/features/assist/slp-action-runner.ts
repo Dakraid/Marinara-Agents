@@ -29,6 +29,7 @@ import {
   readSlpStirWorld,
   runSlpRunAudience,
   runSlpInventEvent,
+  runSlpStartTrend,
   runSlpNewLook,
   runSlpSetSpice,
   runSlpSetTipGoal,
@@ -130,6 +131,8 @@ async function dispatch(
       return runSlpNewLook(db, input as SlpActionParsed<"new-look">);
     case "invent-event":
       return runSlpInventEvent(db, input as SlpActionParsed<"invent-event">);
+    case "start-trend":
+      return runSlpStartTrend(db, input as SlpActionParsed<"start-trend">);
     case "write-text":
       return runSlpAssistText(db, { ...(input as SlpActionParsed<"write-text">), mode: "write" });
     case "improve-text":
