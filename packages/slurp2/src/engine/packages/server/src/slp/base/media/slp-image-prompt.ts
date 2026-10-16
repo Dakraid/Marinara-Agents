@@ -267,7 +267,8 @@ const plainTag = (text: string) =>
  * hair, ryuuzaki umi, magic knight rayearth", the name and "Always in their pictures" counted as
  * present, and the identity tags stayed behind the body tags. A tag in another word order
  * ("ryuuzaki umi" for the card's "Umi Ryuuzaki") keeps the writer's order, the one a tag model
- * learned. Only whole tags move; a name inside a longer tag or a sentence, and natural prompts, stay.
+ * learned. Only whole tags move; a name inside a longer tag, a weight group or a sentence, and natural
+ * prompts, stay.
  */
 export function slurpWithoutImageSubject(
   prompt: string,
@@ -286,7 +287,8 @@ export function slurpWithoutImageSubject(
     const kept = parts.filter((part) => {
       const tag = part.trim().replace(/[.;]+$/u, "");
       const key = nameKey(tag);
-      if (!keys.has(key)) return true;
+      // A tag inside a weight group ("(1girl, umi)") stays: moving it would break the brackets.
+      if (!keys.has(key) || /[()[\]{}]/u.test(tag.replace(/\\[()]/gu, ""))) return true;
       if (!written.has(key)) written.set(key, tag);
       return false;
     });

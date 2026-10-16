@@ -777,15 +777,6 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
       "Creators look like the same person in every post.",
     ],
   },
-  {
-    version: "0.2.18",
-    date: "2026-09-22",
-    notes: [
-      "New setting for how far a Creator's pictures go; locked posts show the most.",
-      "Pictures are no longer muddy or badly lit.",
-      "Fewer arm's-length selfies, and far fewer posts without a picture.",
-    ],
-  },
 ];
 
 /** Everything newer than the acknowledged version. */

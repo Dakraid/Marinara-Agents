@@ -38,6 +38,11 @@ assert.equal(leadSubject("1girl, ryuuzaki umi, park", umi), `${umi}, 1girl, park
 assert.equal(leadSubject("1girl, ryuuzaki_umi, park", "Umi Ryuuzaki"), "ryuuzaki_umi, 1girl, park");
 assert.equal(slurpApplyImageSubject("1girl, ryuuzaki umi", "Umi Ryuuzaki", "tags"), "1girl, ryuuzaki umi");
 assert.equal(slurpApplyImageSubject("Ryuuzaki Umi fences.", "Umi Ryuuzaki"), "Ryuuzaki Umi fences.");
+// A tag inside a weight group stays, so the brackets stay balanced (review of 0.3.47).
+assert.deepEqual(slurpWithoutImageSubject("(1girl, ryuuzaki umi), park", "ryuuzaki umi", "tags"), [
+  "(1girl, ryuuzaki umi), park",
+  "ryuuzaki umi",
+]);
 // Only whole tags move; natural prompts and names inside a tag stay.
 assert.deepEqual(slurpWithoutImageSubject("1girl, ryuuzaki umi \\(cosplay\\)", "ryuuzaki umi", "tags"), [
   "1girl, ryuuzaki umi \\(cosplay\\)",
@@ -162,6 +167,8 @@ assert.match(
 // The prefix wins over the card name; the writer's copy of it moves to the front (0.3.47).
 assert.match(service, /slurpWithoutImageSubject\(writtenBody, imagePrefix \|\| subjectName, promptFamily\)/u);
 assert.match(service, /slurpApplyImageSubject\(finalPromptLook, subject, promptFamily\)/u);
+// A companion counts as in the picture from the scene only, not from the Creator's own block.
+assert.match(service, /slurpImageNamesPerson\(finalPromptBody, \[c\.name, c\.known\]\)/u);
 assert.match(service, /const finalPromptSubject = styleLead \+ ownBlock \+ people \+ finalPromptBody;/u);
 // A companion's known name follows their own switch and their own open identity.
 assert.match(
