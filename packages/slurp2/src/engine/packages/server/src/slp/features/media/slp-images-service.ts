@@ -44,6 +44,8 @@ import {
   slurpApplyImageLook,
   slurpApplyImageSubject,
   slurpImageCompanionBlocks,
+  slurpImageNamesPerson,
+  slurpWithoutImageSubject,
   slurpImageSubjectName,
   slurpSplitStyleLead,
   slurpImageIdentityContext,
@@ -608,10 +610,17 @@ async function generateCreatorPostImageRun(
     furry: Boolean(artStyle?.tag.includes("furry")),
   });
   // The look and the name go behind the style profile's own tags, in front of the scene.
-  const [styleLead, finalPromptBody] = slurpSplitStyleLead(
+  const [styleLead, writtenBody] = slurpSplitStyleLead(
     skipInterpretation ? finalPromptScene : slurpViewpointForFamily(finalPromptScene, promptFamily),
     compileStyled("").prompt,
   );
+  // The name, or the player's own words for it, leads the look only for an open identity; a reviewed prompt stays as written.
+  const ownWords = !input.suppressCreatorDetails && !input.suppressCharacterContext && input.disclosureMode === "open";
+  const imagePrefix = (ownWords && input.settings.creatorImagePrefixes?.[input.account.id]?.trim()) || "";
+  // Tags the writer put behind the body tags move to the front, where the name goes.
+  const [finalPromptBody, subject] = skipInterpretation
+    ? [writtenBody, imagePrefix || subjectName]
+    : slurpWithoutImageSubject(writtenBody, imagePrefix || subjectName, promptFamily);
   // One copy of the look: the writer's words, Slurp's insert, or the writer's plus the missing traits.
   const finalPromptLook = slurpApplyImageLook(
     finalPromptBody,
@@ -619,12 +628,9 @@ async function generateCreatorPostImageRun(
     lookMode,
     usedRewrite,
   );
-  // The name, or the player's own words for it, leads the look only for an open identity; a reviewed prompt stays as written.
-  const ownWords = !input.suppressCreatorDetails && !input.suppressCharacterContext && input.disclosureMode === "open";
-  const imagePrefix = (ownWords && input.settings.creatorImagePrefixes?.[input.account.id]?.trim()) || "";
   const namedLook = skipInterpretation
     ? finalPromptLook
-    : slurpApplyImageSubject(finalPromptLook, imagePrefix || subjectName, promptFamily);
+    : slurpApplyImageSubject(finalPromptLook, subject, promptFamily);
   const ownBlock = namedLook.slice(0, namedLook.length - finalPromptBody.length);
   // Everybody else the scene names gets their own block, between the Creator's and the scene.
   const blocks = () =>
@@ -638,9 +644,10 @@ async function generateCreatorPostImageRun(
     .filter(Boolean)
     .join("\n\n");
   // Two people only when the writer put a companion in the picture; left out, the one-person rule stands.
-  const companionNamed = companionCards.some((companion) =>
-    finalPrompt.toLocaleLowerCase().includes(companion.name.toLocaleLowerCase()),
+  const inPicture = companionCards.filter((companion) =>
+    slurpImageNamesPerson(finalPrompt, [companion.name, companion.known]),
   );
+  const companionNamed = inPicture.length > 0;
   // A reviewer who cleared the negative prompt still gets the style profile's own negatives back,
   // for the same reason the positive prompt is recompiled above.
   const baseNegativePrompt =
@@ -663,13 +670,14 @@ async function generateCreatorPostImageRun(
   const outputWidth = input.width ?? (input.story ? input.settings.storyImageWidth : input.settings.imageWidth);
   const outputHeight = input.height ?? (input.story ? input.settings.storyImageHeight : input.settings.imageHeight);
   // A companion the final prompt names brings their card picture, after the Creator's own (at most 6).
-  const companionRefs = companionCards.filter((companion) => companion.card);
+  const companionRefs = inPicture.filter((companion) => companion.card);
   if (referenceImages?.length && companionRefs.length > 0) {
     const companionResolution = await resolveIllustratorCharacterReferences({
       charactersStore: input.characters,
       chatCharacters: companionRefs.map((companion) => ({ name: companion.name, ...companion.card! })),
       persona: null,
-      requestedNames: [],
+      // Asked for by name: the Engine's own match misses a tag-order name ("ryuuzaki umi").
+      requestedNames: companionRefs.map((companion) => companion.name),
       promptText: finalPrompt,
       maxReferences: 6,
     });
