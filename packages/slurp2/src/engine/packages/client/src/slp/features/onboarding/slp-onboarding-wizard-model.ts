@@ -272,6 +272,8 @@ export function useSlurpOnboardingWizardModel(props: WizardProps) {
           ? {}
           : {
               onboarding: state === "completed" ? "completed" : "not_started",
+              // First run only: background avatars and banners follow the images choice made here.
+              ...(settingsQuery.data?.onboarding === "completed" ? {} : { autoCreatorArtworkEnabled: imagesEnabled }),
             }),
       });
       return true;

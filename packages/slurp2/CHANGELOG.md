@@ -1,5 +1,38 @@
 # Slurp release notes
 
+## 0.3.46 — 2026-10-15
+
+- Added: Creators react to each other. Each hour a character Creator may like or comment on another Creator's public post (about two a day), persona Creators' posts included. Free canned copy; no messages, tips or subscriptions between Creators.
+- Fixed: the browsing persona was saved per browser, so one install could show an empty Inbox on one device and 87 unread on another. The pick is now a Slurp setting shared by every device; an older per-browser pick is saved once.
+- Fixed: the custom tag field greyed out with no reason when a draft had filled all eight tags. It now says so.
+- Fixed: Hinted profiles checked tags joined with the bio, so words from separate fields could add up to a copied source detail. Tags are checked one at a time, and the save error names the tag that leaks.
+
+## 0.3.45 — 2026-10-15
+
+- Fixed: picture prompts carried the style profile's tags twice. The prompt writer now gets the bare draft; the style is compiled onto its result once.
+- Fixed: the gallery fallback picked the first gallery image every time. It now picks the image this Creator showed least recently.
+- Added: "Draw missing avatars and banners" in Settings › Images. Off stops background drawing; Open Creators still copy their card's pictures. On for existing installs; first-run setup sets it from its images choice.
+- Added: "Caption instructions" in Settings › Images. Blank uses a Slurp default that describes people, clothes, pose, place and text, and leaves out the art style.
+- Added: "Always in their pictures" per Creator. The text opens the Creator's part of every picture prompt, after the style tags, in place of the card name.
+- Fixed: the post writer no longer dresses Creators in worn-out, faded or shabby clothes unless the card or caption asks for it.
+
+## 0.3.44 — 2026-10-15
+
+- Added: trends. A post that takes off (shown likes; your likes, unlocks and tips count most), your own page's hits, a platform trend, or Stir "Start a trend" (ready-made trends, a starter, what to lean into) starts one. Stir "Steer a trend" changes what it leans into. The right Creators join, each at their own spice level and limits, quote the origin post, peak, then cool; some roast it, some never join. The starter gains followers.
+- Added: Discover "Trending on Slurp" row, a trend chip on posts, and trend search.
+- Changed: the invented "silly trend" daily-life moment is gone; trend posts skip the feed spice damping.
+
+## 0.3.43 — 2026-10-15
+
+- Fixed: long DMs end at a sentence or word (up to 2400 characters), and commission quotes use the Creator's own prices.
+- Fixed: Cancel ends a subscription to a removed Creator at once.
+- Fixed: fans react to what a picture shows, not its art style.
+- Fixed: post drift. Tips no longer teach a guessed taste, and a spicy kind or taste that other Creators posted that day steps aside, so the whole feed is not in the shower at once. Spice level is unchanged.
+- Changed: family is never paired up on its own. Cards that say they are lovers, or the player in Stir, still can.
+- Fixed: clearer "monogamous" message in Stir, with the Relationships switch on the Creator sheet.
+- Fixed: work mode no longer blurs the coin and G's face; Couples pages are not a missing source; the sign-up scene names an unreachable connection.
+- Fixed: a scheduled post goes up once, and a shared-page post waits its turn.
+
 ## 0.3.42 — 2026-10-15
 
 - Added: chats with "Carryover to chats" on also learn the character's Slurp storyline, love life, how well they know you, and the Slurp memories a chat with you may read.

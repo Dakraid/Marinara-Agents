@@ -131,6 +131,7 @@ type CreatorPostImageInput = {
     | "storyImageHeight"
     | "characterImageInstructions"
     | "creatorImageNames"
+    | "creatorImagePrefixes"
     | "promptBlocks"
     | "generationConnectionId"
     | "imagePromptConnectionId"
@@ -469,11 +470,10 @@ async function generateCreatorPostImageRun(
   // fallback pictures look like someone else. selectSlpImageProviderPrompt caps it on a word
   // boundary, which is what the uncapped stack of appearance, personality and habits needed.
   const rawProviderPrompt = redactIdentity(reviewedOverride?.prompt || compiledPrompt.prompt);
-  // The rewriter gets the visual intent only. It receives appearance, personality, and image habits
-  // through the labelled `characterContext` block below, so handing it the rendered template too
-  // sent the same three values twice and asked it to "preserve the visual facts" in a personality
-  // trait list.
   const rawRewriteInput = redactIdentity(reviewedOverride?.prompt || compiledDraft?.prompt || draftPrompt);
+  // The rewriter gets the bare draft: context and style arrive labelled below and the style is compiled
+  // onto its output, so a styled draft came back reworded and the picture carried its tags twice.
+  const rewriteInput = redactIdentity(draftPrompt) || rawRewriteInput;
   // Custom prompt templates may omit `userInstructions`, so restore configured instructions only
   // when the rendered prompt does not already contain them.
   const configuredImageInstructions = input.settings.imageGenerationPrompt.trim();
@@ -516,7 +516,7 @@ async function generateCreatorPostImageRun(
   const rewrittenPrompt = rewriteAttempted
     ? await rewriteSlpImagePrompt({
         db: input.db,
-        prompt: rawRewriteInput,
+        prompt: rewriteInput,
         postContent: input.postContent,
         interpretationInstruction: input.settings.imagePromptInterpretation,
         instructions: redactIdentity(imagePromptInstructions),
@@ -560,7 +560,7 @@ async function generateCreatorPostImageRun(
     run.rewrite = {
       ...run.rewrite,
       status: !rewrittenPrompt ? "failed" : rewriteViolatesPolicy ? "rejected" : "accepted",
-      input: rawRewriteInput,
+      input: rewriteInput,
       output: rewrittenPrompt ? redactIdentity(rewrittenPrompt) : null,
       reason: rewriteViolatesPolicy ? "the rewrite broke the scene's content level" : null,
     };
@@ -619,10 +619,12 @@ async function generateCreatorPostImageRun(
     lookMode,
     usedRewrite,
   );
-  // The name leads the look on every path, with or without the enhancer; a prompt a human approved stays as written.
+  // The name, or the player's own words for it, leads the look only for an open identity; a reviewed prompt stays as written.
+  const ownWords = !input.suppressCreatorDetails && !input.suppressCharacterContext && input.disclosureMode === "open";
+  const imagePrefix = (ownWords && input.settings.creatorImagePrefixes?.[input.account.id]?.trim()) || "";
   const namedLook = skipInterpretation
     ? finalPromptLook
-    : slurpApplyImageSubject(finalPromptLook, subjectName, promptFamily);
+    : slurpApplyImageSubject(finalPromptLook, imagePrefix || subjectName, promptFamily);
   const ownBlock = namedLook.slice(0, namedLook.length - finalPromptBody.length);
   // Everybody else the scene names gets their own block, between the Creator's and the scene.
   const blocks = () =>

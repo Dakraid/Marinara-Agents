@@ -47,6 +47,7 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
     "storyImageWidth",
     "storyImageHeight",
     "imageContextMode",
+    "imageCaptionPrompt",
     "imageStyleProfileId",
     "enableImageInterpretation",
     "imageGenerationUseAvatarReferences",
@@ -54,6 +55,7 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
     "imageAppearanceMode",
     "appearanceProfileMode",
     "autoPostingImagesEnabled",
+    "autoCreatorArtworkEnabled",
     "allowGalleryImageAttachments",
     "previewOpensPost",
     "previewWholePictures",
@@ -168,6 +170,8 @@ export const SLURP_SETTINGS_SECTION_KEYS: Record<SlurpResettableSection, readonl
 export const SLURP_SETTINGS_NOT_RESET: readonly (keyof SlurpSettings)[] = [
   // "Pause all" is a switch, not a tuning: resetting a section must never pause or resume Slurp.
   "paused",
+  // Who is browsing, not a tuning (#103).
+  "viewerPersonaId",
   // Saved presets and reusable instructions are the player's own writing (R1-121).
   "promptPresets",
   "promptInstructions",
@@ -190,6 +194,7 @@ export const SLURP_SETTINGS_NOT_RESET: readonly (keyof SlurpSettings)[] = [
   "discoveryTags",
   "characterImageInstructions",
   "creatorImageNames",
+  "creatorImagePrefixes",
   "onboarding",
   "audienceCharacters",
   "audienceCharacterGroupIds",

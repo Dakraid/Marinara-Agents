@@ -8,13 +8,15 @@ const testRun = (async () => {
   const vault = await readFile(ltmSourcePaths.vault, "utf8");
   const sources = await readFile(ltmSourcePaths.sourcesWorkspace, "utf8");
   const routes = await readFile(ltmSourcePaths.routes, "utf8");
-  const settings = await readFile(ltmSourcePaths.settings, "utf8");
+  const maintenance = await readFile(ltmSourcePaths.maintenance, "utf8");
 
   assert.match(api, /export const ltmScopeTargetsKey = \(chatId: string \| null \| undefined\)/u);
-  assert.match(vault, /queryKey: ltmScopeTargetsKey\(props\.chatId\)/u);
-  assert.match(sources, /queryKey: ltmScopeTargetsKey\(props\.chatId\)/u);
-  assert.match(vault, /staleTime: 30_000/u);
-  assert.match(sources, /staleTime: 30_000/u);
+  assert.match(
+    api,
+    /export const scopeTargetsQueryOptions = \(chatId: string \| null \| undefined\) => \(\{\s+queryKey: ltmScopeTargetsKey\(chatId\),\s+staleTime: 30_000,/u,
+  );
+  assert.match(vault, /useQuery\(scopeTargetsQueryOptions\(props\.chatId\)\)/u);
+  assert.match(sources, /useQuery\(scopeTargetsQueryOptions\(props\.chatId\)\)/u);
 
   const previewBlock = sources.slice(
     sources.indexOf("const preview = useInfiniteQuery({"),
@@ -60,7 +62,7 @@ const testRun = (async () => {
   assert.match(vault, /localCharacters\.isLoading && !localCharacters\.data/u);
   assert.match(vault, /localCharacters\.isError && !localCharacters\.data/u);
   assert.match(vault, /localCharacters\.refetch\(\)/u);
-  assert.equal((settings.match(/queryKeys\.localCharactersRoot/g) ?? []).length, 2);
+  assert.equal((maintenance.match(/queryKeys\.localCharactersRoot/g) ?? []).length, 2);
 
   console.log(
     "Long-Term Memory loading regression passed: scope loading stays separate from local-character discovery.",

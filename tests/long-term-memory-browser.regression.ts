@@ -3483,6 +3483,76 @@ async function main() {
       await desktopDebugPage.locator('[data-ltm-recalled-note="world_legacy_global"]').click();
       await desktopDebugPage.locator('[data-ltm-surface="vault"]').waitFor();
       await desktopDebugPage.close();
+      // #1376: Reset settings reloads the forms. The Maintenance panel stays mounted, so its
+      // result survives and its buttons stay disabled until the settings refetch resolves.
+      {
+        const resetPage = await browserContext.newPage();
+        let settingsGate: Promise<void> | null = null;
+        let releaseSettings = () => {};
+        let resetMaxChunks: number | null = null;
+        await resetPage.route("**/api/long-term-memory/settings/reset", (route) =>
+          route.fulfill({ json: { rebuild: { status: "deferred", error: "Fixture rebuild failed." } } }),
+        );
+        // Settings read after the reset serve a changed value, which the forms must show instead of the cache.
+        await resetPage.route("**/api/long-term-memory/settings", async (route) => {
+          if (resetMaxChunks === null || route.request().method() !== "GET") return route.continue();
+          if (settingsGate) await settingsGate;
+          const response = await route.fetch();
+          await route.fulfill({
+            response,
+            json: { ...(await response.json()), longTermMemoryMaxChunks: resetMaxChunks },
+          });
+        });
+        await resetPage.goto(`http://127.0.0.1:${address.port}/`);
+        await resetPage.evaluate(() => customElements.whenDefined("marinara-capability-long-term-memory"));
+        await resetPage.evaluate(`(() => {
+          const element = document.createElement("marinara-capability-long-term-memory");
+          element.setAttribute("view", "detail");
+          element.capabilityProps = { confirmAction: () => true };
+          document.body.append(element);
+        })()`);
+        await resetPage.locator('[data-ltm-navigation="desktop"] [data-ltm-destination="settings"]').click();
+        const maxChunks = resetPage.getByRole("spinbutton", { name: "Maximum recalled memories", exact: true });
+        const cachedMaxChunks = Number(await maxChunks.inputValue());
+        await resetPage.locator("#settings-tab-maintenance").click();
+        const maintenancePanel = resetPage.locator("#settings-panel-maintenance");
+        const resetButton = maintenancePanel.getByRole("button", { name: "Reset settings" });
+        settingsGate = new Promise<void>((resolve) => {
+          releaseSettings = () => resolve();
+        });
+        resetMaxChunks = cachedMaxChunks === 37 ? 38 : 37;
+        const settingsRefetch = resetPage.waitForRequest(
+          (request) => request.method() === "GET" && new URL(request.url()).pathname.endsWith("/settings"),
+        );
+        // #1377: the invalidation already refetches the active settings query, so a reset reads them once.
+        let settingsReads = 0;
+        resetPage.on("request", (request) => {
+          if (request.method() === "GET" && new URL(request.url()).pathname.endsWith("/long-term-memory/settings"))
+            settingsReads += 1;
+        });
+        await resetButton.click();
+        await settingsRefetch;
+        // Let the cleared forms re-render while the refetch is still held.
+        await resetPage.waitForTimeout(300);
+        assert.equal(await resetButton.isDisabled(), true, "Reset stays disabled until the settings refetch resolves");
+        settingsGate = null;
+        releaseSettings();
+        await maintenancePanel
+          .locator('[data-ltm-status="danger"]')
+          .filter({
+            hasText: "Memory settings reset to defaults, but the recall index rebuild failed: Fixture rebuild failed.",
+          })
+          .waitFor({ timeout: 5000 });
+        assert.equal(await resetButton.isDisabled(), false, "Reset is available again once the refetch resolves");
+        assert.equal(settingsReads, 1, "Reset reads the settings once");
+        await resetPage.locator("#settings-tab-recall").click();
+        assert.equal(
+          await maxChunks.inputValue(),
+          String(resetMaxChunks),
+          "the forms show the settings read after the reset",
+        );
+        await resetPage.close();
+      }
       await page.locator('[data-ltm-navigation="desktop"] [data-ltm-destination="vault"]').click();
       await page.evaluate((version) => {
         const element = document.createElement("marinara-capability-long-term-memory") as HTMLElement & {

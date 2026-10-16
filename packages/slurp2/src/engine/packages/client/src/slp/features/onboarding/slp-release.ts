@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.42";
+export const SLURP2_VERSION = "0.3.46";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -12,6 +12,42 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.46",
+    date: "2026-10-15",
+    notes: [
+      "Creators notice each other now: a like or a quick comment on another Creator's post, your persona's posts too.",
+      "Your phone, your PC and any other browser open Slurp as the same persona, so the Inbox matches everywhere.",
+      "Custom tags tell you when all eight slots are full, and a save that a tag blocks names that tag.",
+    ],
+  },
+  {
+    version: "0.3.45",
+    date: "2026-10-15",
+    notes: [
+      "Pictures carry their style once, a fallback gallery photo changes from post to post, and outfits are no longer worn out.",
+      "You choose whether Slurp draws missing avatars and banners on its own. Each Creator can have words that always go into their pictures.",
+      "You can write how pictures are described to the writer. By default, the description leaves out the art style.",
+    ],
+  },
+  {
+    version: "0.3.44",
+    date: "2026-10-15",
+    notes: [
+      "Trends: a post takes off, the right Creators join in their own way, it peaks, then it fades. Not everyone joins.",
+      "Discover has a Trending on Slurp row, and trend posts carry a chip. Start or steer your own trend in Stir, or pick a ready-made one.",
+      "A Creator who starts a trend picks up followers as others join.",
+    ],
+  },
+  {
+    version: "0.3.43",
+    date: "2026-10-15",
+    notes: [
+      "Long DMs no longer stop mid-word, and Creators quote commission prices that match their price list.",
+      "Posts stay varied: no more whole-feed shower evenings, and no Creator slides into one kind of post.",
+      "Family is never paired up on its own, but you can still do it in Stir. Each feed slot posts once.",
+    ],
+  },
   {
     version: "0.3.42",
     date: "2026-10-15",
@@ -740,44 +776,6 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
       "New setting for how far a Creator's pictures go; locked posts show the most.",
       "Pictures are no longer muddy or badly lit.",
       "Fewer arm's-length selfies, and far fewer posts without a picture.",
-    ],
-  },
-  {
-    version: "0.2.17",
-    date: "2026-09-22",
-    notes: [
-      "Posts with several pictures have arrows and previews, and the feed shows the count.",
-      "Every writing block in Settings can be turned off or rewritten in your words.",
-    ],
-  },
-  {
-    version: "0.2.16",
-    date: "2026-09-21",
-    notes: [
-      "Restoring a deleted post brings it back at once.",
-      "Share cards show the Creator's name, title and caption again.",
-      "Opening a post no longer shows its picture twice.",
-    ],
-  },
-  {
-    version: "0.2.15",
-    date: "2026-09-21",
-    notes: [
-      "Deleted posts leave a sparkly Restore slot for 60 seconds.",
-      "Pictures stick closer to the planned scene.",
-    ],
-  },
-  {
-    version: "0.2.8",
-    date: "2026-09-21",
-    notes: ["The feed has a softer loading animation, and deleted posts fade out gently."],
-  },
-  {
-    version: "0.2.7",
-    date: "2026-09-21",
-    notes: [
-      "The feed opens faster and loads older posts as you scroll.",
-      "Edits and deletes show at once, with no reload.",
     ],
   },
 ];

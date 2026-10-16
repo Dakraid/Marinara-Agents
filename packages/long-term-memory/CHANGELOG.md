@@ -1,9 +1,30 @@
 # Long-Term Memory changelog
 
-## 1.4.37 — 2026-10-15
+## 1.4.42 — 2026-10-16
 
 - Compact selects keep a fixed 36px height, so platform font metrics no longer make them taller than the compact layout allows.
 - Buttons keep a 44px minimum width as well as height, so short labels such as **Retry** stay full-size tap targets.
+
+## 1.4.41 — 2026-10-16
+
+- The memory extraction instructions no longer use real-looking character names in their example timeline ids, so the model can no longer mix those example names up with characters in your chat who share them. Nothing else about extraction changes.
+
+## 1.4.40 — 2026-10-16
+
+- The Long-Term Memory server modules no longer import each other in a loop. The helper that compares two lists of memory subjects moved to its own module. Recall, extraction and storage behave exactly as before.
+
+## 1.4.39 — 2026-10-16
+
+- Long-Term Memory now starts when its settings files contain a field from a newer version, for example after a failed update rolls the package back. Until now such a field stopped the package from activating, so no chat had recall or extraction, and backup export failed too. The field is now ignored and named in one warning in the server log, and saving settings keeps it in the file, so updating again restores it. This applies to the memory, extraction, agent and retention settings. Settings sent from the app are still checked strictly, a known setting with an invalid value still fails, and settings fields from older versions are still removed.
+
+## 1.4.38 — 2026-10-15
+
+- Switching between the Vault, Review, Sources and Settings screens no longer shows a brief "Loading" panel, because the screens ship in the one bundle the package already loads. Importing a backup, resetting memory settings and deleting all memory data now read each setting and the integrity report once instead of two or three times. Nothing else changes in what the screens show or how they behave. Internally the duplicated tab-key handling, scope labels, confirm dialog, availability copy and shared queries are now one copy each, and 155 unused interface strings were removed.
+
+## 1.4.37 — 2026-10-15
+
+- Reorganised the Long-Term Memory screens without changing how they work. The Vault, Review queue, Sources and Settings screens each live in their own folder, and the setup guide and the Maintenance tab are components of their own. One visible difference is that the result of a Maintenance action now appears at the top of the Maintenance tab instead of below the tab bar, so it no longer shows on the other tabs and saving settings no longer replaces it.
+- Reset settings now shows the reset values in the settings forms straight away. Before, the forms kept the values from before the reset until Memory Settings was opened again.
 
 ## 1.4.36 — 2026-10-14
 
