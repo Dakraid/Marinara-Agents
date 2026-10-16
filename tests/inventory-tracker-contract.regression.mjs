@@ -34,6 +34,12 @@ for (const packageId of ["world-state", "character-tracker", "custom-tracker", "
   assert.match(incremental, /omitted values stay unchanged/);
   assert.match(incremental, /Without that host marker, use the legacy full-array format/);
   assert.ok(legacy?.includes("Schema:"), `${packageId} retains the older Engine's output contract`);
+  if (packageId === "character-tracker") {
+    // Presence must be re-scanned each run, and tracked IDs copied so the host does not drop rows.
+    assert.match(incremental, /Scene scan \(every run, either format\)/);
+    assert.match(incremental, /exact existing characterId in removed/);
+    assert.match(incremental, /copy characterId and name exactly from current_game_state/);
+  }
 }
 assert.match(prompt, /Every existing quantity change MUST include qty, including qty:1/);
 assert.match(prompt, /Only new items may omit qty for 1/);

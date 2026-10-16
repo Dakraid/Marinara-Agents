@@ -102,6 +102,12 @@
     "character-tracker": {
       "versions": [
         {
+          "version": "1.2.0",
+          "date": "2026-10-16",
+          "notes": "- Every run now checks who is actually in the scene: new arrivals are added, characters who left are removed, and tracked characters keep their exact ID so updates are no longer dropped.",
+          "highlight": true
+        },
+        {
           "version": "1.1.1",
           "date": "2026-10-01",
           "notes": "- The description now says what it does in plain words.",
