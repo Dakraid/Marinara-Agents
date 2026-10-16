@@ -371,7 +371,7 @@
         "schemaVersion": 1,
         "id": "character-tracker",
         "name": "Character Tracker",
-        "version": "1.1.1",
+        "version": "1.2.0",
         "description": "Tracks who is in the scene and how each character looks, feels, and acts, plus stats like HP. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode.",
         "engine": {
           "min": "2.3.0",
@@ -386,8 +386,8 @@
         "files": [
           {
             "path": "agents.json",
-            "sha256": "a1449d2fb4d56d5d6133d02966c9ae132a977aa3fe922239999abf39bfffa91d",
-            "bytes": 3298
+            "sha256": "8d38274b6022eb010d675190929b367c753c1abc04c350771ce9f785c3eec2f5",
+            "bytes": 4325
           }
         ],
         "permissions": [
@@ -402,9 +402,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/character-tracker.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/character-tracker-1.1.1.zip",
-        "sha256": "828442219565f73063c1addc1af2731d3228270737bd782e7c49b24185775268",
-        "bytes": 2193
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/character-tracker-1.2.0.zip",
+        "sha256": "98a3ce5e0aca2698fcb857bfc444f3104117b07ede91c0f3f05e9beaeb37fa21",
+        "bytes": 2542
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#character-tracker"
     },
