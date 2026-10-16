@@ -669,13 +669,7 @@ async function generateCreatorPostImageRun(
   const outputWidth = input.width ?? (input.story ? input.settings.storyImageWidth : input.settings.imageWidth);
   const outputHeight = input.height ?? (input.story ? input.settings.storyImageHeight : input.settings.imageHeight);
   if (referenceImages?.length) {
-    referenceImages = await slurpCompanionReferenceImages(
-      input.characters,
-      companionCards,
-      inPicture,
-      finalPrompt,
-      referenceImages,
-    );
+    referenceImages = await slurpCompanionReferenceImages(input.characters, inPicture, finalPrompt, referenceImages);
     run.referenceImages = referenceImages.length;
   }
   run.finalPrompt = finalPrompt;

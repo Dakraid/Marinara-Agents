@@ -31,24 +31,24 @@ export type SlurpImageCompanionCard = {
 };
 
 /**
- * A companion the final prompt names brings their card picture, after the Creator's own (at most 6).
- * The ones Slurp found in the scene are asked for by name too (0.3.47, player report): the Engine's
- * own prompt match misses a tag-order name ("ryuuzaki umi" for "Umi Ryuuzaki").
+ * A companion in the picture brings their card picture, after the Creator's own (at most 6). Only the
+ * ones Slurp found in the scene, the same ones that get a look and lift the one-person rule, and asked
+ * for by name (0.3.47, player report): the Engine's own prompt match misses a tag-order name
+ * ("ryuuzaki umi" for "Umi Ryuuzaki").
  */
 export async function slurpCompanionReferenceImages(
   characters: Parameters<typeof resolveIllustratorCharacterReferences>[0]["charactersStore"],
-  companions: readonly SlurpImageCompanionCard[],
   inPicture: readonly SlurpImageCompanionCard[],
   prompt: string,
   own: string[],
 ): Promise<string[]> {
-  const refs = companions.filter((companion) => companion.card);
+  const refs = inPicture.filter((companion) => companion.card);
   if (refs.length === 0) return own;
   const resolution = await resolveIllustratorCharacterReferences({
     charactersStore: characters,
     chatCharacters: refs.map((companion) => ({ name: companion.name, ...companion.card! })),
     persona: null,
-    requestedNames: inPicture.filter((companion) => companion.card).map((companion) => companion.name),
+    requestedNames: refs.map((companion) => companion.name),
     promptText: prompt,
     maxReferences: 6,
   });

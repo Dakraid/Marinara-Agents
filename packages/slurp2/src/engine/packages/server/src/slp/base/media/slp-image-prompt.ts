@@ -247,6 +247,10 @@ export function ensureSlpImageAppearance(prompt: string, appearance: string): st
 export function slurpApplyImageSubject(prompt: string, name: string, family: SlurpPromptFamily = "natural"): string {
   const who = name.replace(/\s+/gu, " ").trim();
   if (!who) return prompt;
+  // A name tag behind other tags (the look Slurp inserted, a writer's line) moves to the front, once
+  // (0.3.47, player report and review).
+  const [rest, written] = slurpWithoutImageSubject(prompt, who, family);
+  if (rest !== prompt) return [written.toLocaleLowerCase(), rest].filter(Boolean).join(", ");
   // Danbooru-style Appearance fields write the name as a tag ("asuka_langley_soryu", "\(eva\)"):
   // that counts as present too, so a tag prompt never gets the name twice (player report 0.3.5),
   // and so does the family name first ("ryuuzaki umi" for "Umi Ryuuzaki", 0.3.47).
@@ -297,11 +301,12 @@ export function slurpWithoutImageSubject(
       : kept
           .map((part) => part.trim())
           .filter(Boolean)
-          .join(", ");
+          .join(", ") || null;
   });
   if (written.size === 0) return [prompt, name];
   return [
-    lines.filter((line) => line.trim()).join("\n"),
+    // Only a line the move emptied goes; the prompt's own blank lines stay, so it still ends the same.
+    lines.filter((line) => line !== null).join("\n"),
     wanted.map((tag) => written.get(nameKey(tag)) ?? tag).join(", "),
   ];
 }
@@ -318,24 +323,27 @@ const nameKey = (text: string) => nameWords(text).sort().join(" ");
 /**
  * Whether a picture prompt names a person (0.3.47, player report): a tag prompt writes the card name
  * as a tag, often family name first ("ryuuzaki_umi" for "Umi Ryuuzaki"), so a plain substring check
- * missed a companion the writer did put in the picture. Whole words, in any order, next to each other.
+ * missed a companion the writer did put in the picture. Whole words, in any order, next to each other
+ * inside one tag or line: "summer, rain" is not "Summer Rain".
  */
 export function slurpImageNamesPerson(prompt: string, names: readonly string[]): boolean {
-  const scene = nameWords(prompt);
+  const tags = prompt.split(/[,;|\n]/u).map(nameWords);
   return names.some((name) => {
     const want = nameKey(name);
     const size = want ? want.split(" ").length : 0;
     if (!size) return false;
-    for (let start = 0; start + size <= scene.length; start++) {
-      if (
-        scene
-          .slice(start, start + size)
-          .sort()
-          .join(" ") === want
-      )
-        return true;
-    }
-    return false;
+    return tags.some((tag) => {
+      for (let start = 0; start + size <= tag.length; start++) {
+        if (
+          tag
+            .slice(start, start + size)
+            .sort()
+            .join(" ") === want
+        )
+          return true;
+      }
+      return false;
+    });
   });
 }
 
