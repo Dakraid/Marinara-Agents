@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 1.4.41 — 2026-10-16
+
+- The memory extraction instructions no longer use real-looking character names in their example timeline ids, so the model can no longer mix those example names up with characters in your chat who share them. Nothing else about extraction changes.
+
 ## 1.4.40 — 2026-10-16
 
 - The Long-Term Memory server modules no longer import each other in a loop. The helper that compares two lists of memory subjects moved to its own module. Recall, extraction and storage behave exactly as before.
