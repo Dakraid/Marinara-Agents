@@ -1,3 +1,7 @@
+## 1.6.0 — 2026-10-16
+
+- Fill missing artwork now creates several location images at once, up to the image connection's Max Parallel Image Jobs setting. It still goes one at a time on Marinara Engine versions without that setting.
+
 ## 1.5.2 — 2026-10-07
 
 - Maps can now hold up to 5,000 locations instead of 500, so a whole world fits with its buildings, floors and rooms. Game Mode uses these larger maps on Marinara Engine versions that include the matching update; older versions skip a map over 500 locations when a game starts.

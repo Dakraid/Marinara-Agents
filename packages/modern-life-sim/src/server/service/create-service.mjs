@@ -1053,7 +1053,8 @@ function createService({
     keyImagePrefix = "key:",
     isKeyImageJobKey = (key) => String(key).startsWith(keyImagePrefix),
     paintJobs = null,
-    paintingNow = null,
+    paintingNow = new Set(),
+    isPainting = (lifeId, key) => [...paintingNow].some((job) => job.lifeId === lifeId && job.key === key),
     focusLifeId = null;
   async function loadPaintJobs() {
     if (!paintJobs) {
@@ -1085,9 +1086,7 @@ function createService({
         return (time === dayNight ? 0 : 10) + (subject2 === "town" ? 0 : subject2 === subject ? 1 : 2);
       },
       fresh = keys.filter(
-        (key) =>
-          !paintJobs.some((job) => job.lifeId === life.id && job.key === key) &&
-          !(paintingNow?.lifeId === life.id && paintingNow.key === key),
+        (key) => !paintJobs.some((job) => job.lifeId === life.id && job.key === key) && !isPainting(life.id, key),
       );
     paintJobs.push(
       ...fresh
@@ -1137,9 +1136,7 @@ function createService({
     let keys = outfitIds
       .map((outfitId) => `${outfitKeyPrefix}${outfitId}`)
       .filter(
-        (key) =>
-          !paintJobs.some((job) => job.lifeId === life.id && job.key === key) &&
-          !(paintingNow?.lifeId === life.id && paintingNow.key === key),
+        (key) => !paintJobs.some((job) => job.lifeId === life.id && job.key === key) && !isPainting(life.id, key),
       );
     if (keys.length) {
       paintJobs.push(
@@ -1153,62 +1150,81 @@ function createService({
       runPaintQueue();
     }
   }
-  let paintingRunning = false,
+  let paintWorkers = 0,
     PAINT_WAITS = "waits";
+  // Painters run in parallel up to the image connection's Max Parallel Jobs; the engine's provider lane enforces it too.
+  async function paintWorkerLimit() {
+    let life = focusLifeId ? await loadLife(focusLifeId).catch(() => null) : null,
+      connectionId = life ? imageChoice(life).connectionId : null;
+    if (!connectionId || !engineClient.imageConnections) {
+      return 1;
+    }
+    let connection = (await engineClient.imageConnections().catch(() => [])).find((item) => item.id === connectionId);
+    return Math.max(1, Math.floor(Number(connection?.maxParallelJobs) || 1));
+  }
   async function runPaintQueue() {
-    if (!(!pictures || paintingRunning || !engineClient.paint)) {
-      paintingRunning = true;
+    if (!pictures || !engineClient.paint) {
+      return;
+    }
+    let limit = await paintWorkerLimit();
+    while (paintWorkers < limit) {
+      paintWorkers++;
+      void runPaintWorker()
+        .catch((err) => serviceLogger?.warn?.(`[${ID}] painting stopped: ${err.message}`))
+        .finally(() => {
+          paintWorkers--;
+        });
+    }
+  }
+  async function runPaintWorker() {
+    for (await loadPaintJobs(); ;) {
+      let next = null;
+      for (let job of [
+        ...paintJobs.filter((job2) => isKeyImageJobKey(job2.key)),
+        ...paintJobs.filter(
+          (job2) => !isOutfitJobKey(job2.key) && !isKeyImageJobKey(job2.key) && !isSpriteJobKey(job2.key),
+        ),
+        ...paintJobs.filter((job2) => isOutfitJobKey(job2.key) || isSpriteJobKey(job2.key)),
+      ]) {
+        if (job.lifeId !== focusLifeId || paintingNow.has(job)) {
+          continue;
+        }
+        let life = await loadLife(job.lifeId).catch(() => null);
+        if (!life) {
+          job.gone = true;
+          continue;
+        }
+        if (
+          !paintingNow.has(job) &&
+          !(
+            isKeyImageJobKey(job.key) && keyImageAside(life, albumEntryById(life, job.key.slice(keyImagePrefix.length)))
+          ) &&
+          !life.look?.paused
+        ) {
+          next = job;
+          break;
+        }
+      }
+      if (
+        (paintJobs.some((job) => job.gone) &&
+          ((paintJobs = paintJobs.filter((job) => !job.gone)), await savePaintJobs()),
+        !next)
+      ) {
+        break;
+      }
+      paintingNow.add(next);
       try {
-        for (await loadPaintJobs(); ;) {
-          let next = null;
-          for (let job of [
-            ...paintJobs.filter((job2) => isKeyImageJobKey(job2.key)),
-            ...paintJobs.filter(
-              (job2) => !isOutfitJobKey(job2.key) && !isKeyImageJobKey(job2.key) && !isSpriteJobKey(job2.key),
-            ),
-            ...paintJobs.filter((job2) => isOutfitJobKey(job2.key) || isSpriteJobKey(job2.key)),
-          ]) {
-            if (job.lifeId !== focusLifeId) {
-              continue;
-            }
-            let life = await loadLife(job.lifeId).catch(() => null);
-            if (!life) {
-              job.gone = true;
-              continue;
-            }
-            if (
-              !(
-                isKeyImageJobKey(job.key) &&
-                keyImageAside(life, albumEntryById(life, job.key.slice(keyImagePrefix.length)))
-              ) &&
-              !life.look?.paused
-            ) {
-              next = job;
-              break;
-            }
-          }
-          if (
-            (paintJobs.some((job) => job.gone) &&
-              ((paintJobs = paintJobs.filter((job) => !job.gone)), await savePaintJobs()),
-            !next)
-          ) {
-            break;
-          }
-          paintingNow = next;
-          if (
-            (await paintJob(next).catch((err) =>
-              serviceLogger?.warn?.(`[${ID}] painting ${next.key}: ${err.message}`),
-            )) !== PAINT_WAITS
-          ) {
-            paintJobs = paintJobs.filter((job) => job !== next);
-          }
-          paintingNow = null;
-          await savePaintJobs();
+        if (
+          (await paintJob(next).catch((err) =>
+            serviceLogger?.warn?.(`[${ID}] painting ${next.key}: ${err.message}`),
+          )) !== PAINT_WAITS
+        ) {
+          paintJobs = paintJobs.filter((job) => job !== next);
         }
       } finally {
-        paintingRunning = false;
-        paintingNow = null;
+        paintingNow.delete(next);
       }
+      await savePaintJobs();
     }
   }
   async function paintOutfit(job) {
@@ -1282,9 +1298,7 @@ function createService({
     let keys = characterIds
       .map((id) => `${workKeyPrefix}${id}`)
       .filter(
-        (key) =>
-          !paintJobs.some((job) => job.lifeId === life.id && job.key === key) &&
-          !(paintingNow?.lifeId === life.id && paintingNow.key === key),
+        (key) => !paintJobs.some((job) => job.lifeId === life.id && job.key === key) && !isPainting(life.id, key),
       );
     if (keys.length) {
       paintJobs.push(
@@ -1397,9 +1411,7 @@ function createService({
     }
     await loadPaintJobs();
     let fresh = keys.filter(
-      (key) =>
-        !paintJobs.some((job) => job.lifeId === life.id && job.key === key) &&
-        !(paintingNow?.lifeId === life.id && paintingNow.key === key),
+      (key) => !paintJobs.some((job) => job.lifeId === life.id && job.key === key) && !isPainting(life.id, key),
     );
     if (fresh.length) {
       paintJobs.push(
@@ -1801,11 +1813,17 @@ function createService({
   function paintQueueStatus(life) {
     let keys = (paintJobs ?? []).filter((job) => job.lifeId === life.id).map((job) => job.key),
       backgroundKeys = keys.filter((key) => !isOutfitJobKey(key) && !isKeyImageJobKey(key) && !isSpriteJobKey(key)),
-      current = paintingNow?.lifeId === life.id ? paintingNow.key : null;
+      current =
+        [...paintingNow].find(
+          (job) =>
+            job.lifeId === life.id &&
+            !isOutfitJobKey(job.key) &&
+            !isKeyImageJobKey(job.key) &&
+            !isSpriteJobKey(job.key),
+        )?.key ?? null;
     return {
       pending: backgroundKeys.length,
-      painting:
-        current && !isOutfitJobKey(current) && !isKeyImageJobKey(current) && !isSpriteJobKey(current) ? current : null,
+      painting: current,
       keys: keys.filter(
         (key) => isKeyImageJobKey(key) && !keyImageAside(life, albumEntryById(life, key.slice(keyImagePrefix.length))),
       ).length,

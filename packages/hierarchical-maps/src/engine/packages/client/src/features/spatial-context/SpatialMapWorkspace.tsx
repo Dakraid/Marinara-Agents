@@ -962,6 +962,7 @@ export function SpatialMapWorkspace({
 
     const operation = artworkGenerationOperationRef.current + 1;
     artworkGenerationOperationRef.current = operation;
+    let parallelJobs = 1;
     try {
       const currentPreview = await previewGalleryImages.mutateAsync({
         items: artworkPreviewRequestItems,
@@ -973,16 +974,20 @@ export function SpatialMapWorkspace({
         toast.error("Image or Chat Settings changed. Refresh prompts before creating artwork.");
         return;
       }
+      parallelJobs = Math.max(1, Math.floor(currentPreview.connection.maxParallelJobs ?? 1));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not verify the reviewed image requests.");
       return;
     }
 
-    const generatedArtwork: Array<{
+    // Indexed by assignment so parallel results keep the location order.
+    const generatedSlots: Array<{
       assignment: (typeof missingArtworkAssignments)[number];
       imageId: string;
-    }> = [];
+    } | null> = [];
     let failedImages = 0;
+    let completedImages = 0;
+    let nextAssignment = 0;
     const reviewedItems = new globalThis.Map(artworkPreview?.items.map((item) => [item.id, item]) ?? []);
     setArtworkPreview(null);
     setArtworkPreviewSourceSignature(null);
@@ -992,37 +997,48 @@ export function SpatialMapWorkspace({
       currentName: "",
     });
 
-    for (const [index, assignment] of missingArtworkAssignments.entries()) {
-      const target = assignment.location;
-      setArtworkProgress({
-        completed: index,
-        total: missingArtworkLocations.length,
-        currentName: target.name,
-      });
-
-      let imageId: string;
-      try {
-        const reviewed = reviewedItems.get(target.id);
-        const image = await generateGalleryImage.mutateAsync({
-          prompt: reviewed?.sourcePrompt ?? defaultLocationReferencePrompt(target),
-          title: target.name,
-          mapsArtworkContext: locationArtworkContext(draft, draftHierarchyProfile, target),
-          ...(reviewed
-            ? {
-                promptOverride: reviewed.prompt,
-                negativePromptOverride: reviewed.negativePrompt,
-              }
-            : {}),
-          debugMode,
+    // Run up to the image connection's parallel limit; the Engine's provider lane enforces it too.
+    const runArtworkWorker = async () => {
+      while (nextAssignment < missingArtworkAssignments.length) {
+        const index = nextAssignment++;
+        const assignment = missingArtworkAssignments[index]!;
+        const target = assignment.location;
+        setArtworkProgress({
+          completed: completedImages,
+          total: missingArtworkLocations.length,
+          currentName: target.name,
         });
-        imageId = image.id;
-      } catch {
-        failedImages += 1;
-        continue;
-      }
 
-      generatedArtwork.push({ assignment, imageId });
-    }
+        let imageId: string;
+        try {
+          const reviewed = reviewedItems.get(target.id);
+          const image = await generateGalleryImage.mutateAsync({
+            prompt: reviewed?.sourcePrompt ?? defaultLocationReferencePrompt(target),
+            title: target.name,
+            mapsArtworkContext: locationArtworkContext(draft, draftHierarchyProfile, target),
+            ...(reviewed
+              ? {
+                  promptOverride: reviewed.prompt,
+                  negativePromptOverride: reviewed.negativePrompt,
+                }
+              : {}),
+            debugMode,
+          });
+          imageId = image.id;
+        } catch {
+          failedImages += 1;
+          continue;
+        } finally {
+          completedImages += 1;
+        }
+
+        generatedSlots[index] = { assignment, imageId };
+      }
+    };
+    await Promise.all(
+      Array.from({ length: Math.min(parallelJobs, missingArtworkAssignments.length) }, () => runArtworkWorker()),
+    );
+    const generatedArtwork = generatedSlots.filter((slot) => slot != null);
 
     if (generatedArtwork.length > 0) {
       setDraft((currentDraft) => {

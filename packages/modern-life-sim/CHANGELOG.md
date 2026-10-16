@@ -1,3 +1,7 @@
+## 0.8.0 — 2026-10-16
+
+- Backgrounds, outfits, sprites and key images now paint several at once, up to the image connection's Max Parallel Image Jobs setting (one at a time by default).
+
 ## 0.7.0 — 2026-10-15
 
 - Chat, Flirt, Open up and gifts are no longer once a day per person. A repeat the same day counts for half, and the daily gain cap still holds.

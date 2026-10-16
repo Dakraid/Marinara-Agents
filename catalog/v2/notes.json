@@ -262,6 +262,12 @@
     "hierarchical-maps": {
       "versions": [
         {
+          "version": "1.6.0",
+          "date": "2026-10-16",
+          "notes": "- Fill missing artwork now creates several location images at once, up to the image connection's Max Parallel Image Jobs setting. It still goes one at a time on Marinara Engine versions without that setting.",
+          "highlight": true
+        },
+        {
           "version": "1.5.2",
           "date": "2026-10-07",
           "notes": "- Maps can now hold up to 5,000 locations instead of 500, so a whole world fits with its buildings, floors and rooms. Game Mode uses these larger maps on Marinara Engine versions that include the matching update; older versions skip a map over 500 locations when a game starts.\n- The catalog description now says what World Maps does in plain words.\n- Movement Assessment: after each turn the agent runs a focused assessment on its configured connection, detects completed implied location changes (narrated arrivals, phrasing like \"we bed down at the inn\"), moves the pin, and records the route as prior-arrival context for the next turn. Explicit directives and game-mode tracker guidance stay authoritative. Three chat settings, all on by default: Assess implied movement, Discover unknown destinations, Remember travel route. Deterministic validation guards every assessed move.",
