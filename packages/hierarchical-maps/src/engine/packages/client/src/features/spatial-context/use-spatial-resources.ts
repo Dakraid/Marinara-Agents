@@ -53,6 +53,8 @@ export interface SpatialGalleryImagePromptPreview {
     id: string;
     name: string;
     model: string;
+    /** Requests the connection may run at once; older Engines omit it (one at a time). */
+    maxParallelJobs?: number;
     source: string;
   };
   styleProfile: {

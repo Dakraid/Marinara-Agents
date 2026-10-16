@@ -3916,7 +3916,7 @@
         },
         "id": "hierarchical-maps",
         "name": "World Maps",
-        "version": "1.5.2",
+        "version": "1.6.0",
         "description": "Adds world maps to Roleplay and Game, from whole regions down to single rooms, with art and travel between places. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay and Game modes.",
         "engine": {
           "min": "2.4.2",
@@ -3957,8 +3957,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "490dc6a6426bb3c04f4049944d3b9beb088178655211126d5d39dc74a2bac7e4",
-            "bytes": 1133017
+            "sha256": "3d25c333c9e3ba01a62357c067545367b663982e683a64eaf6503fef12fddc9d",
+            "bytes": 1133238
           }
         ],
         "permissions": [
@@ -3976,9 +3976,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/hierarchical-maps.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/hierarchical-maps-1.5.2.zip",
-        "sha256": "8142c93149c117c87980c519b664c9e10dbfd7f45077a874881804b173a0c69f",
-        "bytes": 1625072
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/hierarchical-maps-1.6.0.zip",
+        "sha256": "4aa973c7b1fb14445978ffe510cef06d93d74a02a69fda5bb07e5a9697ae379e",
+        "bytes": 1625293
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/main/docs/agents/hierarchical-maps.md"
     },

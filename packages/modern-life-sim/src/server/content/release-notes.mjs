@@ -1,6 +1,18 @@
 // Changelog entries plus module notes merge
 var RELEASE_NOTES = [
   {
+    version: "0.8.0",
+    date: "2026-10-16",
+    lines: [
+      {
+        text: "Pictures paint several at once",
+        items: [
+          "Backgrounds, outfits, sprites and key images now paint several at once, up to the image connection's Max Parallel Image Jobs setting in Marinara. It stays one at a time by default.",
+        ],
+      },
+    ],
+  },
+  {
     version: "0.7.0",
     date: "2026-10-15",
     lines: [

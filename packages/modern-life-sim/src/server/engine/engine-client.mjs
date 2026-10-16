@@ -377,6 +377,7 @@ function createEngineClient({
           provider: asText(connection?.provider) || "",
           isDefault: connection?.isDefault === true || connection?.isDefault === "true",
           bySubjects: usesNovelaiSubjectResolution(connection?.defaultParameters),
+          maxParallelJobs: Number(connection?.maxParallelJobs) || 1,
         }))
         .filter((connection) => connection.id && connection.provider === "image_generation");
     },
