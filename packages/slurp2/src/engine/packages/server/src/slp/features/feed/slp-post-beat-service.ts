@@ -31,6 +31,7 @@ import { createCharactersStorage } from "../../../services/storage/characters.st
 import type { SlurpAccount } from "../../modules/records/slp-storage-model.js";
 import { planSlurpBondBeat, planSlurpTieBeat } from "../projects/slp-projects-contract.js";
 import { planSlurpDramaBeat } from "../world/slp-world-contract.js";
+import { planSlurpTrendBeat } from "../discovery/slp-discovery-contract.js";
 import { readSlurpCanonAnchorState, slurpCanonAnchorsFor } from "../../data/creators/slp-canon-anchor-storage.js";
 import {
   normalizeSlurpCanonAnchors,
@@ -195,6 +196,18 @@ export async function planSlurpBeat(
       previewOnly: input.previewOnly,
     });
     if (drama) return drama;
+    // A trend going round Slurp that this Creator joins (docs/TRENDS.md): their own take, never a copy.
+    const trend = await planSlurpTrendBeat(db, {
+      creatorId: input.accountId,
+      creatorText: input.context.canonText,
+      tags: input.context.life?.tags ?? input.context.shared?.tags ?? [],
+      sequence: input.sequence,
+      intents: input.intents,
+      avoid: input.context.steering?.avoid ?? [],
+      at: input.at,
+      previewOnly: input.previewOnly,
+    });
+    if (trend) return trend;
     const history = await readSlurpBeatHistory(db, input.accountId, input.at);
     // A pack occasion running now (SlurpCon, a holiday, their birthday week): only one that fits them.
     const occasion = await planSlurpOccasionBeat(db, {

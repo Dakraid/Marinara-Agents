@@ -218,6 +218,36 @@
     "long-term-memory": {
       "versions": [
         {
+          "version": "1.4.40",
+          "date": "2026-10-16",
+          "notes": "- The Long-Term Memory server modules no longer import each other in a loop. The helper that compares two lists of memory subjects moved to its own module. Recall, extraction and storage behave exactly as before.",
+          "highlight": false
+        },
+        {
+          "version": "1.4.39",
+          "date": "2026-10-16",
+          "notes": "- Long-Term Memory now starts when its settings files contain a field from a newer version, for example after a failed update rolls the package back. Until now such a field stopped the package from activating, so no chat had recall or extraction, and backup export failed too. The field is now ignored and named in one warning in the server log, and saving settings keeps it in the file, so updating again restores it. This applies to the memory, extraction, agent and retention settings. Settings sent from the app are still checked strictly, a known setting with an invalid value still fails, and settings fields from older versions are still removed.",
+          "highlight": false
+        },
+        {
+          "version": "1.4.38",
+          "date": "2026-10-15",
+          "notes": "- Switching between the Vault, Review, Sources and Settings screens no longer shows a brief \"Loading\" panel, because the screens ship in the one bundle the package already loads. Importing a backup, resetting memory settings and deleting all memory data now read each setting and the integrity report once instead of two or three times. Nothing else changes in what the screens show or how they behave. Internally the duplicated tab-key handling, scope labels, confirm dialog, availability copy and shared queries are now one copy each, and 155 unused interface strings were removed.",
+          "highlight": false
+        },
+        {
+          "version": "1.4.37",
+          "date": "2026-10-15",
+          "notes": "- Reorganised the Long-Term Memory screens without changing how they work. The Vault, Review queue, Sources and Settings screens each live in their own folder, and the setup guide and the Maintenance tab are components of their own. One visible difference is that the result of a Maintenance action now appears at the top of the Maintenance tab instead of below the tab bar, so it no longer shows on the other tabs and saving settings no longer replaces it.\n- Reset settings now shows the reset values in the settings forms straight away. Before, the forms kept the values from before the reset until Memory Settings was opened again.",
+          "highlight": false
+        },
+        {
+          "version": "1.4.36",
+          "date": "2026-10-14",
+          "notes": "- Fix glued-together sentences and raw server errors in the Long-Term Memory screens. The Review summary after Apply or Discard now reads as separate complete sentences with correct spacing and punctuation, for example \"Applied 2 mutations; 1 failed. 1 blocked before Apply.\", instead of fragments run together. The Debug separators between metadata parts and the \"chunk\" label now come from the locale, so a translation can change them. When a request fails with only an HTTP status such as \"Not Found\" and no message from the server, the screens show their own localized message instead of the raw status text; a message the server does send is still shown as before. Recall, extraction and storage are unchanged.",
+          "highlight": false
+        },
+        {
           "version": "1.4.34",
           "date": "2026-10-14",
           "notes": "- Long-Term Memory now uses only styles the app already provides, so its screens look the same in the app as they were designed. Sources → Manage source no longer shows the imported-source preview under the workbench, the Review and Sources action bars sit inline on wide screens, selected Review rows and Vault notes are highlighted, tab focus rings use the editor focus colour, info popovers keep their size, and checkboxes are one size in Vault, Sources and Review. Screen readers now announce the Vault place lists as single-choice, and the arrow keys move between places.",
@@ -305,36 +335,6 @@
           "version": "1.4.20",
           "date": "2026-10-09",
           "notes": "- Polish the Debug controls: unsaved cues and inline save beside Record recall explanations, pending spinners with focus held on the action, clearer full-log export with an honest privacy warning, and a compact health line. Localize count, weight and action labels, pluralize scanned-message wording, space metadata consistently, and report timeline steps with their own Started/Succeeded/Warning/Failed/Skipped wording. Confirm that clearing the log removes every chat's debug events without touching memories or settings.",
-          "highlight": false
-        },
-        {
-          "version": "1.4.19",
-          "date": "2026-10-09",
-          "notes": "- Show extraction results and grouped candidates not kept, recall candidates added or not added with their recorded reasons and settings, and skipped apply changes in Debug. Explain recorded problems with guidance, and link pending extraction drafts to Review Queue without duplicating recovery actions.",
-          "highlight": false
-        },
-        {
-          "version": "1.4.18",
-          "date": "2026-10-08",
-          "notes": "- Open the Memory Vault and switch back to it quickly in large libraries. The place pickers worked out which chats, branches, characters and personas have memories by comparing every place with every memory on each redraw; they now look places up in an index built once, so a library of about 800 places and 180 memories redraws in milliseconds instead of most of a second.",
-          "highlight": false
-        },
-        {
-          "version": "1.4.17",
-          "date": "2026-10-08",
-          "notes": "- Make `/search` resolve the scoped chat's recall settings and prompt budget like generation, while preserving explicit request overrides.\n- Show fused rank beside relevance in Debug and remove unused cooldown behavior.",
-          "highlight": false
-        },
-        {
-          "version": "1.4.16",
-          "date": "2026-10-08",
-          "notes": "- Stop one everyday word from deciding recall alone. A single exact keyword counts for half the keyword lane unless the chat uses it as a name; two distinct keywords or a phrase still count in full.\n- Make BM25 count on real chat windows: normalize against the query's eight highest-idf indexed terms instead of every term, so narration padding no longer drives a matching memory toward zero.\n- Choose the bounded fuzzy keyword catalog by query overlap, not alphabetically, so a keyword past the first 512 in a vault can still match.\n- Rescale the recall presets by 0.7 and retune balanced so the default 0.35 threshold keeps the previous 0.5 selection. A saved threshold above 0.4 now reads as 0.4; re-check custom weights.",
-          "highlight": true
-        },
-        {
-          "version": "1.4.15",
-          "date": "2026-10-08",
-          "notes": "- Rename the Vault memory's \"View all activity\" link to \"Open debug log\" and open the Debug tab filtered to that memory, with no operation selected.\n- Match whole operations against explicit memory-id references in the loaded debug events (extraction source and produced target notes, recall selected/rejected candidates), composing with search and the existing chips. The filter is clearable and states that apply operations log change IDs, not memory IDs, so some are not shown.",
           "highlight": false
         }
       ]
@@ -658,6 +658,36 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.46",
+          "date": "2026-10-15",
+          "notes": "- Added: Creators react to each other. Each hour a character Creator may like or comment on another Creator's public post (about two a day), persona Creators' posts included. Free canned copy; no messages, tips or subscriptions between Creators.\n- Fixed: the browsing persona was saved per browser, so one install could show an empty Inbox on one device and 87 unread on another. The pick is now a Slurp setting shared by every device; an older per-browser pick is saved once.\n- Fixed: the custom tag field greyed out with no reason when a draft had filled all eight tags. It now says so.\n- Fixed: Hinted profiles checked tags joined with the bio, so words from separate fields could add up to a copied source detail. Tags are checked one at a time, and the save error names the tag that leaks.",
+          "highlight": false
+        },
+        {
+          "version": "0.3.45",
+          "date": "2026-10-15",
+          "notes": "- Fixed: picture prompts carried the style profile's tags twice. The prompt writer now gets the bare draft; the style is compiled onto its result once.\n- Fixed: the gallery fallback picked the first gallery image every time. It now picks the image this Creator showed least recently.\n- Added: \"Draw missing avatars and banners\" in Settings › Images. Off stops background drawing; Open Creators still copy their card's pictures. On for existing installs; first-run setup sets it from its images choice.\n- Added: \"Caption instructions\" in Settings › Images. Blank uses a Slurp default that describes people, clothes, pose, place and text, and leaves out the art style.\n- Added: \"Always in their pictures\" per Creator. The text opens the Creator's part of every picture prompt, after the style tags, in place of the card name.\n- Fixed: the post writer no longer dresses Creators in worn-out, faded or shabby clothes unless the card or caption asks for it.",
+          "highlight": false
+        },
+        {
+          "version": "0.3.44",
+          "date": "2026-10-15",
+          "notes": "- Added: trends. A post that takes off (shown likes; your likes, unlocks and tips count most), your own page's hits, a platform trend, or Stir \"Start a trend\" (ready-made trends, a starter, what to lean into) starts one. Stir \"Steer a trend\" changes what it leans into. The right Creators join, each at their own spice level and limits, quote the origin post, peak, then cool; some roast it, some never join. The starter gains followers.\n- Added: Discover \"Trending on Slurp\" row, a trend chip on posts, and trend search.\n- Changed: the invented \"silly trend\" daily-life moment is gone; trend posts skip the feed spice damping.",
+          "highlight": false
+        },
+        {
+          "version": "0.3.43",
+          "date": "2026-10-15",
+          "notes": "- Fixed: long DMs end at a sentence or word (up to 2400 characters), and commission quotes use the Creator's own prices.\n- Fixed: Cancel ends a subscription to a removed Creator at once.\n- Fixed: fans react to what a picture shows, not its art style.\n- Fixed: post drift. Tips no longer teach a guessed taste, and a spicy kind or taste that other Creators posted that day steps aside, so the whole feed is not in the shower at once. Spice level is unchanged.\n- Changed: family is never paired up on its own. Cards that say they are lovers, or the player in Stir, still can.\n- Fixed: clearer \"monogamous\" message in Stir, with the Relationships switch on the Creator sheet.\n- Fixed: work mode no longer blurs the coin and G's face; Couples pages are not a missing source; the sign-up scene names an unreachable connection.\n- Fixed: a scheduled post goes up once, and a shared-page post waits its turn.",
+          "highlight": false
+        },
+        {
+          "version": "0.3.42",
+          "date": "2026-10-15",
+          "notes": "- Added: chats with \"Carryover to chats\" on also learn the character's Slurp storyline, love life, how well they know you, and the Slurp memories a chat with you may read.\n- Added: Carryover settings show in how many chats with your Creators \"Include Slurp activity\" is on.\n- Fixed: a scene started from a DM runs on the connection Slurp planned it with, not the Engine's plain default.\n- Fixed: an unreadable scene plan is asked for once more before \"The scene plan got lost\" shows.\n- Fixed: \"Start the scene\" shows an error when the Engine's scene host is missing.\n- Fixed: lorebook entries set to \"At Depth\" reach Slurp DMs and posts.\n- Added: Deep details has a \"Lore\" section with the entries a reply used or had no room for.",
+          "highlight": false
+        },
+        {
           "version": "0.3.41",
           "date": "2026-10-14",
           "notes": "- Faster: Slurp shows character and persona avatars as small copies instead of the full card picture. On opening Slurp the feed downloaded about 16 MB of avatar pictures (1–2.5 MB each, shown 44 px wide), and Discover about 14 MB more; those downloads also held up the feed's other requests. The small copies are made once and kept in Slurp's own media folder.\n- Faster: the \"Report\" sheet of a post or a reply is built only when you open it. Before, every post card and reply built a closed copy, which made the feed and Creator pages slower to open.\n- Faster: the ambient background colour measures the pictures on screen only after the screen has drawn, so opening a screen no longer forces extra layout work.",
@@ -745,36 +775,6 @@
           "version": "0.3.27",
           "date": "2026-10-12",
           "notes": "- Added: \"Page style\" in a Creator's Posting settings says in plain words how they post (for example \"Polished · nearly always pictures · automatic\"). The Overview's Posting tile shows the same line. It replaces \"Posting strategy\"; the number fields are under \"Fine-tune page style\".\n- Added: \"Suggest from card\" under Page style reads the Character card and proposes a fitting page style, with a short reason and \"See exact changes\". \"Use this page style\" applies it; \"Keep current\" changes nothing. A page note you wrote is never replaced, and Use is refused if a setting changed in the meantime.\n- Changed: \"Posts without pictures\" is now \"Lean towards words\", without a percent sign: it was never a share of posts. Saved values work as before.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.26",
-          "date": "2026-10-12",
-          "notes": "- Added: Creators keep what is always true about them. When Slurp reads a card it also notes the few facts that must hold everywhere (how they communicate, senses and body, languages, firm limits, who runs a shared page), and every post, Story, chat and reply carries them, with no extra AI call. Before, a fact late in the card was missing from most requests.\n- Added: \"Always true\" in a Creator's Life details, to see and correct those facts. Life details also show with \"Model's choice\" post ideas.\n- Changed: your Life details edits stay when the card changes: what you added stays, what you removed stays out, the rest follows the card. \"Read card again\" still clears them.\n- Changed: the card reading covers more of a long card, and cards with 。！？ sentence ends or long one-line attribute lists are no longer cut off.\n- Fixed: a failed read of stored Life details could erase every Creator's details; saving now reports the error.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.25",
-          "date": "2026-10-12",
-          "notes": "- Fixed: \"Enhance image prompts\" no longer drops a usable answer from the prompt model. An answer with a line break inside the prompt, a trailing comma, or text around the JSON object was read as \"no prompt\", and the picture went out with the capped draft. An answer that is cut off still falls back.\n- Fixed: when the AI budget is Off, the \"Enhance image prompts\" row is off, or its daily limit is reached, the picture now goes out with the full draft, as with enhancing switched off. Before, each such picture logged \"Image prompt rewrite unusable\" and its draft was cut to 1,500 characters (player report).",
-          "highlight": false
-        },
-        {
-          "version": "0.3.24",
-          "date": "2026-10-11",
-          "notes": "- Changed: in a picture with a second Creator (a partner, a collab), that person now gets their own look in the picture prompt, labelled with their name and placed after the posting Creator's look. Before, their look reached only \"Enhance image prompts\", so with it off the image model had nothing to draw them from.\n- Changed: the second Creator's \"The image model knows this character\" switch now applies to pictures on somebody else's page too: their card name goes along (as a tag for tag models) when their identity is open.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.23",
-          "date": "2026-10-11",
-          "notes": "- Changed: with \"The image model knows this character\" on, the name now comes after your style profile's tags and in front of the character's look, instead of at the very start of the picture prompt. The inserted look follows the style tags too.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.22",
-          "date": "2026-10-11",
-          "notes": "- Fixed: reports are now included in backups and restores.\n- Fixed: \"Create posts now\" names the Creators it skipped or could not post for again, instead of only a count.\n- Fixed: accepting a commission twice in a row (a double tap, or a retry) no longer draws the picture twice.\n- Fixed: chat and commission responses to the fan no longer include a picture's stored file location.\n- Fixed: the settings search box in a settings section now stays reachable on a phone instead of disappearing.\n- Internal: a Slurp Support desk tick checks its throttle against the tick's own time instead of the wall clock.",
           "highlight": false
         }
       ]

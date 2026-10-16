@@ -8,7 +8,11 @@ const rewrite = read("server/src/slp/base/media/slp-image-prompt-rewrite.ts");
 const imageService = read("server/src/slp/features/media/slp-images-service.ts");
 const publicImageService = read("server/src/slp/features/media/slp-public-images-service.ts");
 const messageService = read("server/src/slp/features/messages/slp-message-generation-service.ts");
-const settings = read("server/src/slp/modules/settings/slp-settings.ts");
+// The image-prompt defaults moved beside the settings (800-line cap); read them as one.
+const settings = [
+  read("server/src/slp/modules/settings/slp-settings.ts"),
+  read("server/src/slp/modules/settings/slp-settings-image-prompts.ts"),
+].join("\n");
 const brief = read("server/src/slp/base/media/slp-visual-brief.ts");
 const briefBuilder = read("server/src/slp/modules/feed/slp-visual-brief.ts");
 const preview = read("client/src/slp/features/settings/SlpPromptPreviewInspector.tsx");

@@ -1,4 +1,5 @@
 import { deleteSlurpThreadMessageDeepDetails } from "../messages/slp-message-deep-details-storage.js";
+import { slurpIsCouplePage } from "../../modules/projects/slp-creator-couples.js";
 import { and, desc, eq, inArray, or } from "../../../db/file-query.js";
 import { deleteSlurpCreatorPlanningRows } from "../continuity/slp-continuity-storage.js";
 import { slurpCreatorStrategy } from "../../modules/creators/slp-creator-strategy.js";
@@ -355,13 +356,17 @@ export function createCreatorsStorage3(context: SlurpStorageContext) {
                   displayName: publicAccount.displayName,
                 })
               : { state: "not-applicable" as const },
-            sourceStatus: !currentSource
-              ? { state: "missing" as const }
-              : compareMinimizedCreatorSourceSnapshot(
-                  baseline ?? minimizeCreatorSourceSnapshot(currentSource, disclosureMode ?? "open"),
-                  currentSource,
-                  disclosureMode ?? "open",
-                ),
+            // A shared Couples page has no Engine character by design: its posts come from the two
+            // of them. Calling that "missing" flagged every Couples page as paused (#31).
+            sourceStatus: slurpIsCouplePage(account)
+              ? { state: "current" as const }
+              : !currentSource
+                ? { state: "missing" as const }
+                : compareMinimizedCreatorSourceSnapshot(
+                    baseline ?? minimizeCreatorSourceSnapshot(currentSource, disclosureMode ?? "open"),
+                    currentSource,
+                    disclosureMode ?? "open",
+                  ),
             publicIdentity:
               publicAccount && (disclosureMode === "open" || disclosureMode === "hinted")
                 ? { displayName: publicAccount.displayName, handle: publicAccount.handle }

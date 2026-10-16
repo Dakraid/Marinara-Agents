@@ -10,6 +10,7 @@ import { slpAccountGender, slpPronouns } from "../../../../../shared/src/slp/slp
 import { listSlurpContinuityFor } from "../../data/continuity/slp-continuity-storage.js";
 import { slurpContinuityInstruction } from "../../modules/continuity/slp-continuity-prompt.js";
 import { type APIProvider } from "@marinara-engine/shared";
+import { slurpCommissionPriceRange } from "../../modules/economy/slp-creator-pricing.js";
 import { type SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
 import { isDebugAgentsEnabled } from "../../../config/runtime-config.js";
 import { resolveSlurpCreatorMenu } from "../../data/settings/slp-post-guidance-storage.js";
@@ -109,8 +110,9 @@ import { slpScenesAvailable } from "../../base/host/slp-scene-host.js";
 import { slpSceneInviteAllowed } from "../../modules/messages/slp-roleplay-scene-rules.js";
 import { buildSlurpMessageDeepDetailsRecord } from "./slp-message-deep-details-record.js";
 
-/** A DM has more room than a comment reply, but not enough to become a monologue. */
-export const SLURP_MESSAGE_CONTENT_MAX_LENGTH = 900;
+/** A DM has more room than a comment reply. The reply is split into bubbles, so this is only a
+ *  ceiling against a runaway answer; 900 cut ordinary long replies short (#101). */
+export const SLURP_MESSAGE_CONTENT_MAX_LENGTH = 2400;
 
 /** How many turns of history the model sees. Enough to hold a thread, short enough to stay cheap. */
 const HISTORY_TURNS = 16;
@@ -166,6 +168,8 @@ export function buildSlurpMessageChat(input: {
   imageContexts?: Map<string, string>;
   /** The Creator's private content menu. See `slurp-post-guidance.ts`. */
   contentMenu?: string;
+  /** What this Creator's commissions cost, so a price named in chat matches the quote (#45). */
+  commissionPrices?: { usual: number; from: number; upTo: number };
   /** Holidays and site events running today. See `slurp-platform-events.ts`. */
   platformEvents?: string | null;
   /** A viewer request stays in the untrusted user-data message, never in trusted system guidance. */
@@ -227,9 +231,16 @@ export function buildSlurpMessageChat(input: {
         id: "boundaries",
         kind: "context" as const,
         optional: true,
-        text: input.contentMenu
-          ? "creator.contentMenu is your private content menu: what you offer and what you will not do. Stay inside it when fans ask for things, and turn down anything it rules out in your own voice. Never quote it as a list."
-          : "",
+        text: [
+          input.contentMenu
+            ? "creator.contentMenu is your private content menu: what you offer and what you will not do. Stay inside it when fans ask for things, and turn down anything it rules out in your own voice. Never quote it as a list."
+            : "",
+          input.commissionPrices
+            ? "creator.commissionPrices is what your commissions cost: about `usual` coins for an average piece, less for a quick sketch, more for a detailed scene or several people, never below `from` or above `upTo`. If you name a price before the quote, stay in that range. A price you already quoted in the conversation is the price."
+            : "",
+        ]
+          .filter(Boolean)
+          .join("\n"),
       },
       {
         id: "identity",
@@ -343,6 +354,7 @@ export function buildSlurpMessageChat(input: {
       bio: protect(input.creator.bio),
       stageVoice: protect(input.creator.settings.privacy.stagePersonality),
       ...(input.contentMenu ? { contentMenu: protect(input.contentMenu) } : {}),
+      ...(input.commissionPrices ? { commissionPrices: input.commissionPrices } : {}),
       dmPolicy: input.dmPolicy,
     },
     [support ? "slurpStaff" : "fan"]: {
@@ -530,7 +542,7 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
     (await slurp.listPostUnlocksForViewer(input.viewer.id).catch(() => [])).map((unlock) => unlock.postId),
   );
   const recentPosts = slurpDmRecentPosts(recentPostRows, unlockedPostIds, RECENT_POSTS);
-  const loreContext = await resolveSlurpLoreContext(input.db, {
+  const lore = await resolveSlurpLoreContext(input.db, {
     settings,
     texts: input.history.slice(-HISTORY_TURNS).map((message) => message.content),
     sourceCharacterContext: characterCanon,
@@ -595,6 +607,13 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
     supportDesk,
     continuityInstruction,
     contentMenu: await resolveSlurpCreatorMenu(input.db, input.creator.id).catch(() => ""),
+    // Not in Support's thread: staff do not buy commissions.
+    commissionPrices: supportDesk
+      ? undefined
+      : await createSlurpMessagesStorage(input.db)
+          .getCreatorMessaging(input.creator.id)
+          .then((pricing) => slurpCommissionPriceRange(pricing))
+          .catch(() => undefined),
     platformEvents: await resolveSlurpEventInstruction(input.db, input.creator.id, new Date()),
     imageContexts,
     openedBy: thread?.openedBy ?? null,
@@ -614,7 +633,7 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
     promptInstructions: prompts.instructions,
     scheduleContext,
     characterCanon,
-    loreContext,
+    loreContext: lore.text,
     // Their own chat lines first: a thread shows how they text, and where they repeat themselves.
     flavourBrief: await resolveSlurpCreatorFlavour(input.db, {
       account: input.creator,
@@ -646,12 +665,22 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
   // A concealed page offers no collab: the header does not name it. "us": the player's own page.
   const viewerPageId = viewerPage && !viewerPage.concealed ? viewerPageAccount?.id : undefined;
   const usPageId = viewerPage?.us ? viewerPageAccount?.id : undefined;
-  return { messages, stance, disclosureMode, publicIdentity, recentPosts, viewerPageId, usPageId, sceneInvite };
+  return {
+    messages,
+    stance,
+    disclosureMode,
+    publicIdentity,
+    recentPosts,
+    viewerPageId,
+    usPageId,
+    sceneInvite,
+    lore: lore.report,
+  };
 }
 
 export async function generateSlurpMessageReply(input: SlurpMessagePromptInput): Promise<SlurpGeneratedDmReply> {
   const built = await buildSlurpMessagePrompt(input);
-  const { messages, stance, disclosureMode, publicIdentity, recentPosts, usPageId, sceneInvite } = built;
+  const { messages, stance, disclosureMode, publicIdentity, recentPosts, usPageId, sceneInvite, lore } = built;
   const pageId = built.viewerPageId;
   const support = input.viewer.id === SLURP_SUPPORT_ACCOUNT_ID;
   const budget = (await createSlurpStorage(input.db).getSettings()).modelBudget;
@@ -761,6 +790,7 @@ export async function generateSlurpMessageReply(input: SlurpMessagePromptInput):
       messages,
       options,
       content: raw,
+      lore,
       paidBodies: recentPosts
         .filter((post) => post.access === "locked" && !post.unlockedByFan)
         .map((post) => protectCreatorGeneratedIdentity(post.content, disclosureMode, publicIdentity) ?? ""),

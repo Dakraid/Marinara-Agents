@@ -42,11 +42,8 @@ import {
 import { slurpArcPoll, slurpArcRotation, slurpProjectChapter } from "../../modules/projects/slp-arc-progress.js";
 import { slurpPurposeMetadata } from "../../modules/feed/slp-post-purpose.js";
 import { resolveSlurpCreatorScheduleContext } from "../creators/slp-creators-contract.js";
-import { createChatsStorage } from "../../../services/storage/chats.storage.js";
 import { type SlpCreatorContentFormat } from "../../base/prompting/slp-content-format.js";
 import { resolveSlurpLoreContext } from "../../data/host/slp-lore-context.js";
-import { createCharacterGalleryStorage } from "../../../services/storage/character-gallery.storage.js";
-import { createGalleryStorage } from "../../../services/storage/gallery.storage.js";
 import { pickGalleryAttachmentForAccount } from "./slp-generated-activity-service.js";
 import { protectCreatorGeneratedIdentity, type PublicIdentity } from "../../base/identity/slp-identity-protection.js";
 import { resolveCreatorCharacterCanon } from "../../data/creators/slp-source-resolve.js";
@@ -146,23 +143,19 @@ export async function generateCreatorPost(
     fallbackConnection,
     admissionMode: input.admissionMode ?? { kind: "foreground" },
   });
+  const at = input.generatedAt ?? new Date();
   const recentPosts = await noodle.listNoodlerPostsByAccount(account.id, 8);
-  const otherCreatorSubjects = await listSlurpOtherCreatorSubjects(db, account.id, input.generatedAt ?? new Date());
+  const otherCreatorSubjects = await listSlurpOtherCreatorSubjects(db, account.id, at);
   const disclosureMode = account.settings.privacy.identityDisclosure ?? "open";
   const linkedPublicAccount = await noodle.resolveAccountSource(account as SlurpAccount);
   const scheduleContext = linkedPublicAccount
-    ? await resolveSlurpCreatorScheduleContext(
-        createCharactersStorage(db),
-        linkedPublicAccount,
-        undefined,
-        input.generatedAt ?? new Date(),
-      )
+    ? await resolveSlurpCreatorScheduleContext(createCharactersStorage(db), linkedPublicAccount, undefined, at)
     : undefined;
   // Derive the identity from the row already in hand; resolving it again would re-read it.
   const publicIdentity = await slpCreatorPublicIdentityFor(db, linkedPublicAccount);
   // Read the card at post time, not the bio and voice frozen at setup. Concealed modes get the stage seed.
   const sourceCharacterContext = await resolveCreatorCharacterCanon(db, linkedPublicAccount, disclosureMode);
-  const loreContext = await resolveSlurpLoreContext(db, {
+  const { text: loreContext } = await resolveSlurpLoreContext(db, {
     settings,
     texts: recentPosts.map((post) => post.content).reverse(),
     sourceCharacterContext,
@@ -353,6 +346,7 @@ export async function generateCreatorPost(
     variation,
     beat: plannedBeat,
     teasedKind: purpose.spiceKind,
+    at,
   });
   const { postLevel, angle: spiceAngle, beat } = spiced;
   variation = spiced.variation;
@@ -629,6 +623,8 @@ export async function generateCreatorPost(
       ...(beat ? { slurpBeat: { type: beat.type, line: beat.line, anchor: beat.anchor } } : {}),
       // A collab, a sponsored post or a rivalry post: labels, the partner's page, the split, the fee.
       ...(beat?.tie ? { slurpTie: beat.tie } : {}),
+      // A trend this post joins: the chip, and the origin post it quotes.
+      ...(beat?.trend ? { slurpTrend: beat.trend } : {}),
       ...(pictureCast && beat?.castIds?.length ? { slurpPictureCast: beat.castIds } : {}),
       // What made it spicy, so unlocks, likes and tips can teach Slurp the player's taste.
       ...spiced.metadata,
@@ -772,10 +768,9 @@ export async function generateCreatorPost(
   const galleryFallback = async (): Promise<{ imageUrl?: string; metadata?: Record<string, unknown> }> => {
     if (textOnly || !settings.allowGalleryImageAttachments || linkedPublicAccount?.kind !== "character") return {};
     const attachment = await pickGalleryAttachmentForAccount({
+      db,
       account: linkedPublicAccount,
-      chats: createChatsStorage(db),
-      gallery: createGalleryStorage(db),
-      characterGallery: createCharacterGalleryStorage(db),
+      postingAccountId: account.id,
     }).catch((error: unknown) => {
       logger.warn(error, "[slurp] Could not attach a gallery image for %s", account.displayName);
       return null;

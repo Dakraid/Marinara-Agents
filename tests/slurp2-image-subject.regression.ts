@@ -114,7 +114,7 @@ assert.match(
   service,
   /input\.disclosureMode === "open" &&\s+input\.settings\.creatorImageNames\?\.\[input\.account\.id\] !== false/u,
 );
-assert.match(service, /slurpApplyImageSubject\(finalPromptLook, subjectName, promptFamily\)/u);
+assert.match(service, /slurpApplyImageSubject\(finalPromptLook, imagePrefix \|\| subjectName, promptFamily\)/u);
 assert.match(service, /const finalPromptSubject = styleLead \+ ownBlock \+ people \+ finalPromptBody;/u);
 // A companion's known name follows their own switch and their own open identity.
 assert.match(

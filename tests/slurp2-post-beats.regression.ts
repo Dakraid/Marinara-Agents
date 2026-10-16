@@ -207,7 +207,7 @@ assert.match(
     metadata: { slurpBeat: { type: "showcase", line: "You show the finished cape", anchor: "cape" } },
   };
   const fact = slurpBeatFactFromPost(post);
-  assert.equal(fact?.text, "Posted about: You show the finished cape");
+  assert.equal(fact?.text, "Already posted about this earlier in the week: You show the finished cape");
   assert.equal(fact?.audienceScope, "creator_private", "a locked post's moment stays with the Creator");
   assert.equal(fact?.expiresAt.toISOString(), "2026-10-02T10:00:00.000Z");
   assert.equal(slurpBeatFactFromPost({ ...post, metadata: {} }), null);
