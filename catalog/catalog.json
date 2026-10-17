@@ -2533,7 +2533,7 @@
         },
         "id": "long-term-memory",
         "name": "Long-Term Memory",
-        "version": "1.4.42",
+        "version": "1.4.49",
         "description": "Remembers important things from your chat summaries, characters, and lorebooks, and brings them back when they matter. Enable it per chat from Chat Settings → Agents → Long-Term Memory. In Roleplay and Game, you can also add it from Chat Settings → Agents → Misc Agents.",
         "engine": {
           "min": "2.4.1",
@@ -2565,13 +2565,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "b1aa0202747c85202758ae133082e7bc99cb7f8d066b68b0b629d52aae8d55f4",
-            "bytes": 470366
+            "sha256": "4a960da83d68d2891505629472cbdbb947997959a509dd4737a060853d028a18",
+            "bytes": 471781
           },
           {
             "path": "client.js",
-            "sha256": "6bb3ef8fca81b07e40c358fba4f51597dbccce052c474a01747337dfa277d1ca",
-            "bytes": 994693
+            "sha256": "c744744f6d095d4fd00eacc62feabcd620cb0c83f3b9412d33def85041d8a0b8",
+            "bytes": 980458
           }
         ],
         "permissions": [
@@ -2587,9 +2587,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/long-term-memory.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/long-term-memory-1.4.42.zip",
-        "sha256": "49e0138e1ebf424b5cc65b27940da0f806c03ba7b80155864813ea8307e03ea3",
-        "bytes": 1467558
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/long-term-memory-1.4.49.zip",
+        "sha256": "2dcd7d3883598b41e3ee6b38765ab1a21085533c6d689018749dda8b92241bfb",
+        "bytes": 1454738
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#long-term-memory"
     },
@@ -3211,7 +3211,7 @@
         },
         "id": "quartermaster",
         "name": "Quartermaster",
-        "version": "0.1.25",
+        "version": "0.1.28",
         "description": "An RPG character sheet and inventory for Roleplay: equip gear around your persona's portrait, save outfits, get AI art for items, and let it keep everything in step with the story. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode.",
         "engine": {
           "min": "2.4.6",
@@ -3234,18 +3234,18 @@
         "files": [
           {
             "path": "agents.json",
-            "sha256": "fcd8b64b649650c5635ff28ab6071647a67695bb6ff4a2cbbe65bfd465b7ae93",
-            "bytes": 5197
+            "sha256": "d34b7423cf36f935d8aab1bd76355a6d6bc14a97eca058fe5b4755322a0e42da",
+            "bytes": 6277
           },
           {
             "path": "client.js",
-            "sha256": "fa049362091dfca61dc55fea73240078182d1e09d993ba4777cdebca436c2ea3",
-            "bytes": 296044
+            "sha256": "acc3b1778a802799f9822aecb2077e138f8e04f5ca4a9d7802587450c1b8e43a",
+            "bytes": 306535
           },
           {
             "path": "server.mjs",
-            "sha256": "a11b890e47422ff5ba7f4b6d10a0a18d1f7695b52b0dbaebda95d4717eb2f8e5",
-            "bytes": 129363
+            "sha256": "8a6b260e52068d0654723a75f98e95c84053491c3d9e3b812a5ab97ef3f073b1",
+            "bytes": 131685
           },
           {
             "path": "icons/armor_legs.webp",
@@ -3269,18 +3269,23 @@
           },
           {
             "path": "icons/clothing_legs.webp",
-            "sha256": "ebad0f719c4d0ed7efdf0b69b01076eed74c4561c64d2e94683b3d5892e326c8",
-            "bytes": 1246
+            "sha256": "090e970a6026a114013ca30464a85fe09097621a45b255f40e66413442e83fa5",
+            "bytes": 1004
           },
           {
             "path": "icons/clothing_torso.webp",
-            "sha256": "aff20911dcb06507c87a9f6e5387d72b6e5aa67a27e8c3397da152dea1cea799",
-            "bytes": 1542
+            "sha256": "bca1d91c3beb44e70686566596476f30c3613eba766c4e8e10b40717a925cbd1",
+            "bytes": 1424
           },
           {
             "path": "icons/ears.webp",
             "sha256": "071253ea4c8f8a0b6e6e412ca3276a41d9ddd7a39fc02402d09c51493a952c30",
             "bytes": 1314
+          },
+          {
+            "path": "icons/extra_wearable.webp",
+            "sha256": "54f8ee6beacff3f9e9774a2fe0cf76d6c870de3d7f3cd51f62502a59a7214409",
+            "bytes": 1834
           },
           {
             "path": "icons/eyes.webp",
@@ -3303,9 +3308,34 @@
             "bytes": 822
           },
           {
+            "path": "icons/midlayer_legs.webp",
+            "sha256": "549c87da174d8edea1b552ecdde92b4405e12b45be290f063313e9b41e8fa1c3",
+            "bytes": 1360
+          },
+          {
+            "path": "icons/midlayer_torso.webp",
+            "sha256": "bcc2327091aaf34a071cb6218c8a4d795db585bc6724abfa6b95be4a93a1e14b",
+            "bytes": 1250
+          },
+          {
             "path": "icons/neck.webp",
             "sha256": "bfbc19de3fb432c6b6eb045309daf8fcc42a5fc741aa77b189f5a93dcc600853",
             "bytes": 1592
+          },
+          {
+            "path": "icons/outerwear_legs.webp",
+            "sha256": "b3681825e6407ce785576dcd2221c231c063437b0f744ddbd34eede280a39a57",
+            "bytes": 2672
+          },
+          {
+            "path": "icons/outerwear_torso.webp",
+            "sha256": "5754dad27bf23eccbdc79ff2eee4219b0e875f4120b8af957fd95493c8425ad8",
+            "bytes": 1478
+          },
+          {
+            "path": "icons/socks.webp",
+            "sha256": "b19dd2a31e53988aad93af103baad0dd5fd39081fd84e2591d40d92de7682f8c",
+            "bytes": 1172
           },
           {
             "path": "icons/underwear_bottom.webp",
@@ -3339,9 +3369,9 @@
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/quartermaster.png",
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/quartermaster/README.md",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/quartermaster-0.1.25.zip",
-        "sha256": "1de011e60bb102c28b8614e937b22f169effe1c8e86132484d50882d8bd6abca",
-        "bytes": 457712
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/quartermaster-0.1.28.zip",
+        "sha256": "6eb40478ea7339318e6582b66a308f11547d35100c8c766851ced50fb3679a4e",
+        "bytes": 482700
       }
     },
     {
@@ -3587,7 +3617,7 @@
         },
         "id": "slurp2",
         "name": "Slurp",
-        "version": "0.3.46",
+        "version": "0.3.47",
         "description": "A private social app for your characters. Turn characters and personas into Creators, post public or locked photos, and watch a simulated audience follow, subscribe, unlock, comment, and message them. By default, it is tuned for an adult experience. Install it, restart Marinara Engine when prompted, then open Home → Slurp.",
         "localizations": {
           "de": {
@@ -3654,13 +3684,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "1da250a8f6e4a088b77d3bd9d5fa72e33a341003df6862c5764d6798c74e02bf",
-            "bytes": 3710479
+            "sha256": "5ab1d1a073d549858f0e4fe2374cb9d35e832d199e63ff7b8e7d6f4817fa56ca",
+            "bytes": 3711517
           },
           {
             "path": "client.js",
-            "sha256": "106cdfef3cfab4aab63d27c79c73f90a1567707fb41e1a09451c3bb29dc068aa",
-            "bytes": 4936126
+            "sha256": "6eb1202d86aa7c5936cb2fa275ea514d0238cf48625261ab310289fb34c5f27c",
+            "bytes": 4939707
           },
           {
             "path": "slurp2-logo.png",
@@ -3718,9 +3748,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/slurp2.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/slurp2-0.3.46.zip",
-        "sha256": "ba80e0bc653b2dd9b6c7f9484f8bfc5ee79e0194cd890c3ceca18d4d2e219285",
-        "bytes": 9560850
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/slurp2-0.3.47.zip",
+        "sha256": "2b30377a3ee6a9e7ec8f16922976334c4fa59fc86dcadc1e265d69a99e937ea7",
+        "bytes": 9565469
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/slurp2/README.md"
     },

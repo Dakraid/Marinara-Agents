@@ -1,9 +1,42 @@
 # Long-Term Memory changelog
 
-## 1.4.42 — 2026-10-16
+## 1.4.49 — 2026-10-18
 
 - Compact selects keep a fixed 36px height, so platform font metrics no longer make them taller than the compact layout allows.
 - Buttons keep a 44px minimum width as well as height, so short labels such as **Retry** stay full-size tap targets.
+
+## 1.4.48 — 2026-10-17
+
+- The daily cleanup now also deletes invalidated drafts that nobody discarded once they are older than the audit window (30 days by default), counted from when they were invalidated. A draft is invalidated when the memory or detail it targets is deleted, so Review can only discard it. Pending drafts still stay until you review them.
+- `usage.json` stays small: it now keeps the id of each reply that injected memories for one to two days instead of 180. The id only stops a repeat of the same reply from being recorded twice, and a repeat arrives within moments.
+- The daily cleanup now clears the per-memory usage counters that versions before 1.4.42 left in `usage.json`, including in vaults that haven't injected a memory since. Permanently deleting a memory no longer rewrites `usage.json`. A retention audit window longer than 180 days no longer requires the unused `usageRetentionDays` to be raised too.
+
+## 1.4.47 — 2026-10-17
+
+- In the place dropdown, either answer to the unsaved-changes prompt now returns focus to the place button. Changing tabs during a search keeps "No memories" open. While closed, that group is a "Show N places with no memories" row that arrow keys and Enter reach like a place.
+- A chat imported with "All branches" now shows one chip in the availability editors, not one per branch, and unticking or removing it removes its branches too. Removing a chat in bulk "Remove availability" removes its branches from every selected memory. It also lists chats, characters and personas that no longer exist, so you can remove them.
+- If the shared-history lookup fails, a branch now recalls its own memories instead of none. `/search` given only a chat returns the shared memories a reply recalls. In Game and Conversation chats, only rolling summaries count toward shared-history recall. Day, week and game-session summaries don't, because each branch can write its own under the same name.
+
+## 1.4.46 — 2026-10-17
+
+- Recall now finds memories about a character or persona with a one-syllable Korean name, such as 린, when a particle such as 이, 은, 을 or 에게 follows the name. A memory that says 린이 웃었다 now comes up when you ask 린은 뭐 했지?, and 린에게, 린을 and 린 on its own match too. Other endings, such as 린아 or 린이가, still don't. This works when the vault has a character memory with that name in its title, and only in text search. Other one-syllable words still don't match across particles, so 나는 doesn't match 나를. Existing vaults rebuild their recall index once.
+
+## 1.4.45 — 2026-10-17
+
+- The place pickers no longer have a Branches tab. The Vault filter, its second "and" filter, "Find sources in", the import destination and both availability editors now share two pickers with the same four tabs: All, Chats, Characters and Personas. A chat with branches is one Chats entry, named after the chat with "All branches" under it, that covers every branch as "All branches" did before. The Vault filters now open as a search dropdown like "Find sources in", still split into places with and without memories, on a solid background. The availability editors open on All, with tabs two across on narrow screens and four across from 22rem. Memories already assigned to one branch keep that assignment: the availability editor shows it as a chip named after the chat and the branch, saving other changes keeps it, and it can still be removed there or with bulk "Remove availability". The Vault filter for a whole chat still includes them. Help text no longer mentions branches.
+
+## 1.4.44 — 2026-10-17
+
+- A new branch now recalls the memories made from the history it shares with the chat it came from. When Marinara Engine creates a branch, it copies the rolling summaries whose messages all come before the branch point. A memory saved to another branch of the same chat is now recalled in the branch too, as long as every chat summary it was made from is one of the branch's own. Memories made or updated from a summary written after the branch point, and memories from lorebooks, characters or typed in by hand, stay in the branch they were saved to. Memories never cross into another conversation. This changes recall only: where memories are saved, how they are edited and what the availability editor shows stay the same, and no stored data changes.
+
+## 1.4.43 — 2026-10-17
+
+- The Long-Term Memory server routes now live in one file per area (notes, drafts, imports, maintenance and settings) instead of one 1,600-line file. Every endpoint keeps its path, size limit and response, so nothing changes in the app.
+
+## 1.4.42 — 2026-10-16
+
+- Long-Term Memory no longer keeps finished extraction drafts forever. The daily cleanup now deletes accepted, auto-applied and superseded drafts once they are older than the audit window (30 days by default). Pending and invalidated drafts stay, so Review and Activity show the same items as before. Opening the Long-Term Memory screen and creating a new draft read fewer files as a result.
+- A reply that injects memories no longer rewrites per-memory usage counters in `usage.json`, because nothing read them. The next such reply removes the counters already stored there. Duplicate replies are still recorded only once.
 
 ## 1.4.41 — 2026-10-16
 
