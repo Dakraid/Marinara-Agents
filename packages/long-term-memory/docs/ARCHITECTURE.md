@@ -12,8 +12,30 @@ client  -> vault, review queue, sources, settings, and injection summary
 
 The server registers `long-term-memory:storage` and
 `long-term-memory:runtime` with the Engine and mounts privileged routes under
-`/api/long-term-memory`. Registration is in `server-entry.ts`; route behavior is
-in `routes.ts`.
+`/api/long-term-memory`. Registration is in `server-entry.ts`; `routes.ts`
+composes one file per area under `routes/` (notes, drafts, imports, maintenance,
+settings), with shared limits, errors and the post-mutation rebuild in
+`routes/shared.ts`.
+
+### Engine fields read directly
+
+The package reads these Engine-owned values without a declared Engine API, so
+`engine-boundary.json` cannot list them.
+`tests/long-term-memory-engine-fields.regression.ts` checks them against an
+Engine checkout and fails when one is renamed or removed. A failure means Sources
+quietly stops finding those summaries, or the built-in assistant starts appearing
+as a source and place.
+
+| Field or constant | Feeds | Engine definition |
+| --- | --- | --- |
+| `ChatMetadata.daySummaries`, `weekSummaries` | day and week conversation summaries | `packages/shared/src/types/chat.ts` |
+| `ChatMetadata.summaryEntries` | agent summary entries | `packages/shared/src/types/chat.ts` |
+| `ChatMetadata.summary` | the single legacy summary | `packages/shared/src/types/chat.ts` |
+| `ChatMetadata.gamePreviousSessionSummaries` | game session summaries | `packages/shared/src/types/chat.ts` |
+| `PROFESSOR_MARI_ID` (`__professor_mari__`) | excludes the built-in assistant from sources and places | `packages/shared/src/constants/defaults.ts` |
+
+The reads are in `interop.ts`. The long-term fix is an Engine API for chat
+summaries, which needs a higher minimum Engine version.
 
 ## Durable State
 
@@ -65,16 +87,28 @@ aligned with storage initialization and the storage and backup regression tests.
 ```text
 recent chat messages + chat settings
   -> chat mode and scope resolution
-  -> direct metadata, keyword/BM25, embedding, and graph lanes
+  -> direct metadata, keyword/BM25, and embedding lanes
   -> reciprocal-rank fusion
   -> scope/status filtering and token budgeting
+  -> linked recall: near-miss memories behind explanatory links from recalled ones
   -> serialized prompt artifact at pre-generation
   -> receipt/debug/activity accounting
 ```
 
+Recall reuses the parsed recall index while the index-state revision, the
+`recall.json` file identity and the stop words are unchanged. Each package
+mutation bumps the revision under the vault lock and `invalidateLtmVaultSnapshot`
+drops the cached index, so a mutation or repair is never served stale. The cached
+index is used only while the index state is clean. Each process's first recall
+checks the whole vault, which catches notes edited outside the package before it
+started. Notes edited outside the package while it runs, or by a second process
+on the same vault, are seen after a restart or that process's next mutation. A
+rebuild embeds only chunks whose `textHash` is new when the previous index shares
+the embedding space.
+
 The retrieval entrypoint is `retrieval.ts`; ranking and budget behavior are in
-`ranking.ts` and `budget.ts`; host injection and receipts are in
-`generation-injection.ts`.
+`ranking.ts` and `budget.ts`; the linked-recall lookup is in `graph.ts`; host
+injection and receipts are in `generation-injection.ts`.
 
 ## Embedding Source
 

@@ -4,17 +4,23 @@ import { createReadStream } from "node:fs";
 import { open, readdir, readFile, rm, stat, unlink } from "node:fs/promises";
 import { createInterface } from "node:readline";
 import { dirname, join, resolve } from "node:path";
-import { ltmRetentionConfigSchema } from "../../../../shared/src/features/agents/long-term-memory/schema.js";
+import {
+  ltmIsoTimestampSchema,
+  ltmRetentionConfigSchema,
+} from "../../../../shared/src/features/agents/long-term-memory/schema.js";
 import { DEFAULT_LTM_RETENTION_CONFIG } from "./default-config.js";
-import { fsyncPath, readJsonFile, renameWithRetry, writeJsonAtomic } from "./atomic-json.js";
+import { fsyncPath, renameWithRetry, writeJsonAtomic } from "./atomic-json.js";
 import { isEnoent } from "./ltm-utils.js";
 import { getLongTermMemoryDirectories, getLongTermMemoryRoot, safeJoin } from "./paths.js";
+import { readLtmSettingsFile } from "./settings.js";
 import { readLongTermMemoryUsage, longTermMemoryUsagePath } from "./usage.js";
 import { withLtmVaultLock } from "./vault-lock.js";
 import { pruneLtmActivityIndex } from "./activity-index.js";
 
 const lastRetentionRun = new Map<string, number>();
 const RETENTION_INTERVAL_MS = 24 * 60 * 60 * 1000;
+// Review and Activity show only pending and invalidated drafts, so drafts in these states have no reader.
+const FINISHED_DRAFT_STATUSES = new Set(["accepted", "auto_applied", "superseded"]);
 
 async function pruneEventLog(path: string, cutoff: number) {
   const tmp = `${path}.tmp-${process.pid}-${Date.now()}-${randomUUID()}`;
@@ -111,8 +117,10 @@ async function runLongTermMemoryRetentionUnsafe({
     return { ran: false, skippedPendingRecovery: true, quarantineArtifacts: 0 };
   }
 
-  const config = ltmRetentionConfigSchema.parse(
-    await readJsonFile(longTermMemoryRetentionConfigPath(root), DEFAULT_LTM_RETENTION_CONFIG),
+  const { settings: config } = await readLtmSettingsFile(
+    longTermMemoryRetentionConfigPath(root),
+    ltmRetentionConfigSchema,
+    DEFAULT_LTM_RETENTION_CONFIG,
   );
 
   const DAY_MS = 86400000;
@@ -121,12 +129,14 @@ async function runLongTermMemoryRetentionUnsafe({
   const receiptCutoff = now.getTime() - config.receiptRetentionDays * DAY_MS;
   const eventCutoff = now.getTime() - config.eventRetentionDays * DAY_MS;
   const incompleteGenCutoff = now.getTime() - config.incompleteGenerationRetentionDays * DAY_MS;
+  const finishedDraftCutoff = now.getTime() - config.auditWindowDays * DAY_MS;
 
   let quarantineArtifacts = 0;
   let usageChatsPruned = 0;
   let receiptsRemoved = 0;
   let eventsRemoved = 0;
   let incompleteReceiptsRemoved = 0;
+  let draftsRemoved = 0;
 
   // 1. Quarantine cleanup
   const quarantine = join(root, "quarantine");
@@ -223,6 +233,32 @@ async function runLongTermMemoryRetentionUnsafe({
     }
   }
 
+  // 6. Finished draft cleanup. Every draft write holds the vault lock, which retention holds too.
+  for (const entry of await readdir(dirs.drafts, { withFileTypes: true }).catch((e) => {
+    if (isEnoent(e)) return [];
+    throw e;
+  })) {
+    if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
+    const path = safeJoin(dirs.drafts, entry.name);
+    let draft;
+    try {
+      draft = JSON.parse(await readFile(path, "utf8"));
+    } catch {
+      // skip malformed draft files
+      continue;
+    }
+    // An invalid updatedAt keeps the draft: new Date(null) would read as 1970 and delete it.
+    const updatedAt = ltmIsoTimestampSchema.safeParse(draft?.updatedAt);
+    if (
+      FINISHED_DRAFT_STATUSES.has(draft?.status) &&
+      updatedAt.success &&
+      Date.parse(updatedAt.data) < finishedDraftCutoff
+    ) {
+      await rm(path, { force: true });
+      draftsRemoved++;
+    }
+  }
+
   lastRetentionRun.set(key, now.getTime());
   return {
     ran: true,
@@ -232,6 +268,7 @@ async function runLongTermMemoryRetentionUnsafe({
     receiptsRemoved,
     eventsRemoved,
     incompleteReceiptsRemoved,
+    draftsRemoved,
   };
 }
 

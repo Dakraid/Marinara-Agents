@@ -22,8 +22,7 @@ import type { DB } from "../../../db/connection.js";
 import { logger } from "../../../lib/logger.js";
 import { newId } from "../../../utils/id-generator.js";
 import { createAppSettingsStorage } from "../../../services/storage/app-settings.storage.js";
-import { createSlurpStorage } from "../../data/slp-storage.js";
-import { createSlurpMessagesStorage } from "../../data/slp-storage.js";
+import { createSlurpMessagesStorage, createSlurpStorage } from "../../data/slp-storage.js";
 import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
 import { isAmbientSlpAccount } from "../../data/audience/slp-ambient-profiles.js";
 import { trySlpOperation } from "../../base/locking/slp-operation-lock.js";
@@ -67,7 +66,7 @@ import {
 import { SLURP_POST_LANDED_REACTIONS } from "../../modules/creators/slp-creator-state.js";
 import { planSlurpWorldPulse } from "../../../../../shared/src/slp/slp-world-pulse.js";
 import { slpCreatorUnlockPriceFromMetadata } from "../../modules/economy/slp-prices.js";
-import { localDayKey, applyAction, applyPulse } from "./slp-world-actions.js";
+import { localDayKey, applyAction, applyPulse, applySlurpCreatorPeerReactions } from "./slp-world-actions.js";
 import { planSlurpCreatorCheckIn } from "./slp-creator-check-in.js";
 import {
   PULSE_KEY,
@@ -713,6 +712,7 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
           }
         }
       }
+      await applySlurpCreatorPeerReactions(db, { accounts, automaticCreators, postsByAccount, cutoff, until });
 
       // Creators writing first. The rapport model has measured silence since it shipped and nothing
       // ever read the number: somebody who used to be here every day going quiet is the most legible

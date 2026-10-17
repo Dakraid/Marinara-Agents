@@ -368,6 +368,7 @@ const addedCalls = [
   "get /slurp2/continuity/${encodeURIComponent(creatorAccountId!)}?${query}",
   "get /slurp2/messages/threads/${encodeURIComponent(threadId!)}/requests?personaId=${encodeURIComponent(personaId!)}",
   "get /slurp2/slurp/tasks",
+  "get /slurp2/slurp/trends",
   "get /slurp2/slurp/viewer/feed?personaId=${encodeURIComponent(personaId)}&tab=all&limit=20${cursorQuery(current.nextCursor)}",
   "get /slurp2/slurp/viewer/feed?personaId=${encodedPersonaId}&tab=all&limit=20",
   "post /slurp2/slurp/accounts/${encodeURIComponent(input.accountId)}/appearance",
@@ -493,6 +494,7 @@ const addedCalls = [
   "put /slurp2/slurp/accounts/${encodeURIComponent(input.accountId)}/page",
   "post /slurp2/slurp/accounts/${encodeURIComponent(accountId)}/strategy/suggest",
   "upload /slurp2/messages/threads/${encodeURIComponent(input.threadId)}/image-upload",
+  "get /slurp2/settings/carryover-reach",
 ];
 const removedCalls = [
   // The staging ads-pool GET went with the removed useSlurpAdPool hook (0.3.9).
@@ -553,10 +555,12 @@ assert.deepEqual(
     // 0.3.27 "Suggest page style": one mutation, its two error states, and the strategy save now
     // refreshes the list when settled (a refused apply also means the list is stale).
     useMutation: 213,
-    // 0.3.28: +2 (the import and the one query of SlpMessageDeepDetails).
-    useQuery: 284,
+    // 0.3.28: +2 (the import and the one query of SlpMessageDeepDetails). 0.3.42: +1 (carryover reach).
+    // 0.3.44: +2 (the import and the trends row query).
+    useQuery: 287,
     useInfiniteQuery: 9,
-    invalidateQueries: 151,
+    // 0.3.35: +2 (adding a Creator refreshes the settings, which now hold the image name choice).
+    invalidateQueries: 153,
     setQueryData: 26,
     cancelQueries: 7,
     removeQueries: 1,

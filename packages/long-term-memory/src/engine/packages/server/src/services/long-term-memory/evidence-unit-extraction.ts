@@ -82,6 +82,11 @@ function serverEnforcedLinkRules(allowedBuckets: readonly LtmEvidenceUnit["bucke
   return [
     "Every link target must resolve to sourceNote.id or a target note derived from a unit in the same response.",
     'Every non-timeline unit with claimKind "change" must link to a timeline_event associated with this source. Static units do not require timeline links. Every timeline_event must link to sourceNote.id with extracted_from.',
+    ...(allowedBuckets.includes("timeline_event")
+      ? [
+          "When one timeline_event in the response directly caused another, the later event also links to the earlier one with caused_by (target timeline_<earlier event subjectId>). Link only a cause the source states or clearly implies, never events that merely follow each other.",
+        ]
+      : []),
     ...(allowedBuckets.includes("relationship_state")
       ? [
           "A relationship_state that describes a change or includes dimensionChanges must include a caused_by link to a timeline_event in the same response. Same-response event targets use timeline_<subjectId>.",
@@ -1258,7 +1263,7 @@ export function evidenceUnitMessages(options: RunLongTermMemoryEvidenceUnitExtra
             ? "The server derives character_fact and relationship_state subjects and target note ids from subjectNames. Never choose or invent database subject keys or character/relationship target ids."
             : "Preserve the character_fact and relationship_state subjectId values from the supplied candidate units.",
           "For other streams, the compiler derives the target note id from bucket + subjectId: timeline_event -> timeline_<subjectId>, world_fact or anchor -> world_<subjectId> unless anchor sectionKey starts with tone, thread -> thread_<subjectId>, tone -> tone_<subjectId>.",
-          "For timeline_event, subjectId must name the specific event or beat, not just a person, character, place, or broad entity. Use damo_arrival or lisa_minimizing_damo instead of damo_korvak.",
+          "For timeline_event, subjectId must name the specific event or beat, not just a person, character, place, or broad entity. Use gate_arrival or hiding_the_injury instead of a bare name or pair of names.",
           "Use a source-specific subjectId derived from the source text; never target or invent an existing note id. The server resolves subject and link hints against the vault after extraction.",
           ...validationRules,
           "relationship_state dimension keys must come only from allowedRelationshipDimensions. Put professional curiosity, reputation, gossip, or attention as text/thread/world/timeline facts, not dimensions.",

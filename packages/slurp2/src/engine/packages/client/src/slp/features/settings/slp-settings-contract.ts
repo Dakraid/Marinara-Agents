@@ -78,6 +78,7 @@ export type SlurpSettings = {
   generationConnectionId: string | null;
   imageContextMode: "auto" | "imagePrompt" | "vision";
   imageContextConnectionId: string | null;
+  imageCaptionPrompt: string;
   pageConnectionId: string | null;
   imagePromptConnectionId: string | null;
   imageStyleProfileId: string | null;
@@ -90,6 +91,7 @@ export type SlurpSettings = {
   imageAppearanceMode: "writer" | "insert" | "both";
   appearanceProfileMode: "ask" | "high_confidence" | "always";
   autoPostingImagesEnabled: boolean;
+  autoCreatorArtworkEnabled: boolean;
   allowRandomUsers: boolean;
   allowProfessorMari: boolean;
   /** Characters the user put in the audience. Value is a Fan Type id, or true to derive one. */
@@ -106,6 +108,7 @@ export type SlurpSettings = {
   characterImageInstructions: Record<string, boolean>;
   /** Per Creator: false turns off "The image model knows this character". */
   creatorImageNames: Record<string, boolean>;
+  creatorImagePrefixes: Record<string, string>;
   promptPresets: SlurpPromptPreset[];
   promptBlocks: Record<string, SlurpPromptBlockOverride[]>;
   /** Prompt edits from before Classic generation was removed. Source of the Classic prompt preset. */
@@ -191,6 +194,8 @@ export type SlurpSettings = {
   /** Backstage › Drama: level, the situations and dramas switched on, situation dials. */
   drama: SlpDramaSettings;
   onboarding: "not_started" | "in_progress" | "completed";
+  /** The persona browsing Slurp, shared by every device. Null: not picked yet. */
+  viewerPersonaId: string | null;
 };
 export type SlurpSettingsUpdate = Partial<SlurpSettings>;
 export type SlurpPromptBlockDefinition = {

@@ -31,7 +31,7 @@ import { generateSlpImageWithRetry } from "../../base/media/slp-image-retry.js";
 import { rewriteSlpImagePrompt } from "../../base/media/slp-image-prompt-rewrite.js";
 import { slpImageReferencesSupported } from "../../base/media/slp-image-references.js";
 import { resolveImageAppearance } from "./slp-appearance-service.js";
-import { resolveSlurpImageCompanions } from "./slp-image-companions.js";
+import { resolveSlurpImageCompanions, slurpCompanionReferenceImages } from "./slp-image-companions.js";
 import { newSlurpImageRun, recordSlurpImageRun, slurpImageRunStyle, trackSlurpImageAttempt } from "./slp-image-run.js";
 import { type ConnectionAdmissionMode } from "../../../services/generation/connection-admission.js";
 import { characterAppearanceFromRow, characterSlpImageContextFromRow } from "./slp-public-images-service.js";
@@ -44,6 +44,8 @@ import {
   slurpApplyImageLook,
   slurpApplyImageSubject,
   slurpImageCompanionBlocks,
+  slurpImageNamesPerson,
+  slurpWithoutImageSubject,
   slurpImageSubjectName,
   slurpSplitStyleLead,
   slurpImageIdentityContext,
@@ -131,6 +133,7 @@ type CreatorPostImageInput = {
     | "storyImageHeight"
     | "characterImageInstructions"
     | "creatorImageNames"
+    | "creatorImagePrefixes"
     | "promptBlocks"
     | "generationConnectionId"
     | "imagePromptConnectionId"
@@ -469,11 +472,10 @@ async function generateCreatorPostImageRun(
   // fallback pictures look like someone else. selectSlpImageProviderPrompt caps it on a word
   // boundary, which is what the uncapped stack of appearance, personality and habits needed.
   const rawProviderPrompt = redactIdentity(reviewedOverride?.prompt || compiledPrompt.prompt);
-  // The rewriter gets the visual intent only. It receives appearance, personality, and image habits
-  // through the labelled `characterContext` block below, so handing it the rendered template too
-  // sent the same three values twice and asked it to "preserve the visual facts" in a personality
-  // trait list.
   const rawRewriteInput = redactIdentity(reviewedOverride?.prompt || compiledDraft?.prompt || draftPrompt);
+  // The rewriter gets the bare draft: context and style arrive labelled below and the style is compiled
+  // onto its output, so a styled draft came back reworded and the picture carried its tags twice.
+  const rewriteInput = redactIdentity(draftPrompt) || rawRewriteInput;
   // Custom prompt templates may omit `userInstructions`, so restore configured instructions only
   // when the rendered prompt does not already contain them.
   const configuredImageInstructions = input.settings.imageGenerationPrompt.trim();
@@ -516,7 +518,7 @@ async function generateCreatorPostImageRun(
   const rewrittenPrompt = rewriteAttempted
     ? await rewriteSlpImagePrompt({
         db: input.db,
-        prompt: rawRewriteInput,
+        prompt: rewriteInput,
         postContent: input.postContent,
         interpretationInstruction: input.settings.imagePromptInterpretation,
         instructions: redactIdentity(imagePromptInstructions),
@@ -552,16 +554,15 @@ async function generateCreatorPostImageRun(
         imageDefaults,
       })
     : null;
-  const rewriteViolatesPolicy = Boolean(
-    input.visualBrief && rewrittenPrompt && slurpVisualBriefPromptViolatesPolicy(input.visualBrief, rewrittenPrompt),
-  );
+  const known = [rawRewriteInput, characterDescription].join("\n");
+  const rewriteViolatesPolicy = slurpVisualBriefPromptViolatesPolicy(input.visualBrief, rewrittenPrompt, known);
   const acceptedRewrittenPrompt = rewriteViolatesPolicy ? null : compiledRewrittenPrompt?.prompt || rewrittenPrompt;
   let usedRewrite = Boolean(acceptedRewrittenPrompt);
   if (rewriteAttempted) {
     run.rewrite = {
       ...run.rewrite,
       status: !rewrittenPrompt ? "failed" : rewriteViolatesPolicy ? "rejected" : "accepted",
-      input: rawRewriteInput,
+      input: rewriteInput,
       output: rewrittenPrompt ? redactIdentity(rewrittenPrompt) : null,
       reason: rewriteViolatesPolicy ? "the rewrite broke the scene's content level" : null,
     };
@@ -569,10 +570,9 @@ async function generateCreatorPostImageRun(
   const finalPromptBase = redactIdentity(
     selectSlpImageProviderPrompt({
       rewrittenPrompt: acceptedRewrittenPrompt,
-      // The rendered template already holds the draft, the look, and the image habits. A prefix of
-      // the full card appearance plus the typed brief used to go first and push the scene past the
-      // length cap, so the image model received an appearance paragraph and no picture.
       rawPrompt: rawProviderPrompt,
+      fallbackPrefix: redactIdentity(stripAppearanceLabel(characterDescription)),
+      fallbackScene: rawRewriteInput,
       rewriteAttempted,
       rewriteFailure: rewriteViolatesPolicy ? "the rewrite broke the scene's content level" : rewriteFailure,
       onFallback: (reason) => {
@@ -610,10 +610,17 @@ async function generateCreatorPostImageRun(
     furry: Boolean(artStyle?.tag.includes("furry")),
   });
   // The look and the name go behind the style profile's own tags, in front of the scene.
-  const [styleLead, finalPromptBody] = slurpSplitStyleLead(
+  const [styleLead, writtenBody] = slurpSplitStyleLead(
     skipInterpretation ? finalPromptScene : slurpViewpointForFamily(finalPromptScene, promptFamily),
     compileStyled("").prompt,
   );
+  // The name, or the player's own words for it, leads the look only for an open identity; a reviewed
+  // prompt stays as written. Tags the writer put behind the body tags move to the front.
+  const ownWords = !input.suppressCreatorDetails && !input.suppressCharacterContext && input.disclosureMode === "open";
+  const imagePrefix = (ownWords && input.settings.creatorImagePrefixes?.[input.account.id]?.trim()) || "";
+  const [finalPromptBody, subject] = skipInterpretation
+    ? [writtenBody, imagePrefix || subjectName]
+    : slurpWithoutImageSubject(writtenBody, imagePrefix || subjectName, promptFamily);
   // One copy of the look: the writer's words, Slurp's insert, or the writer's plus the missing traits.
   const finalPromptLook = slurpApplyImageLook(
     finalPromptBody,
@@ -621,10 +628,9 @@ async function generateCreatorPostImageRun(
     lookMode,
     usedRewrite,
   );
-  // The name leads the look on every path, with or without the enhancer; a prompt a human approved stays as written.
   const namedLook = skipInterpretation
     ? finalPromptLook
-    : slurpApplyImageSubject(finalPromptLook, subjectName, promptFamily);
+    : slurpApplyImageSubject(finalPromptLook, subject, promptFamily);
   const ownBlock = namedLook.slice(0, namedLook.length - finalPromptBody.length);
   // Everybody else the scene names gets their own block, between the Creator's and the scene.
   const blocks = () =>
@@ -638,9 +644,9 @@ async function generateCreatorPostImageRun(
     .filter(Boolean)
     .join("\n\n");
   // Two people only when the writer put a companion in the picture; left out, the one-person rule stands.
-  const companionNamed = companionCards.some((companion) =>
-    finalPrompt.toLocaleLowerCase().includes(companion.name.toLocaleLowerCase()),
-  );
+  // The scene, not the Creator's block: a companion page of the same character is not a second person.
+  const inPicture = companionCards.filter((c) => slurpImageNamesPerson(finalPromptBody, [c.name, c.known]));
+  const companionNamed = inPicture.length > 0;
   // A reviewer who cleared the negative prompt still gets the style profile's own negatives back,
   // for the same reason the positive prompt is recompiled above.
   const baseNegativePrompt =
@@ -662,22 +668,8 @@ async function generateCreatorPostImageRun(
   // Chosen here rather than by each caller, so a scheduled or redrawn Story is a Story too (R1-052).
   const outputWidth = input.width ?? (input.story ? input.settings.storyImageWidth : input.settings.imageWidth);
   const outputHeight = input.height ?? (input.story ? input.settings.storyImageHeight : input.settings.imageHeight);
-  // A companion the final prompt names brings their card picture, after the Creator's own (at most 6).
-  const companionRefs = companionCards.filter((companion) => companion.card);
-  if (referenceImages?.length && companionRefs.length > 0) {
-    const companionResolution = await resolveIllustratorCharacterReferences({
-      charactersStore: input.characters,
-      chatCharacters: companionRefs.map((companion) => ({ name: companion.name, ...companion.card! })),
-      persona: null,
-      requestedNames: [],
-      promptText: finalPrompt,
-      maxReferences: 6,
-    });
-    const named = new Set(companionRefs.map((companion) => companion.name));
-    const extra = companionResolution.referenceImages.filter((_, index) =>
-      named.has(companionResolution.referenceNames[index] ?? ""),
-    );
-    referenceImages = Array.from(new Set([...referenceImages, ...extra])).slice(0, 6);
+  if (referenceImages?.length) {
+    referenceImages = await slurpCompanionReferenceImages(input.characters, inPicture, finalPrompt, referenceImages);
     run.referenceImages = referenceImages.length;
   }
   run.finalPrompt = finalPrompt;

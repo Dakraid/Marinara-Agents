@@ -187,8 +187,9 @@ const SLURP_SHELL_STYLES = `
   .slp-crop, .slp-crop-top { object-position: top center; }
   [data-slp-whole] .slp-crop { object-fit: contain; }
   /* "Blur pictures until tapped" (data-slp-blur on <html>, SlpHomeHost): every picture and video in
-     Slurp and its sheets stays blurred until it is tapped. */
-  [data-slp-blur] :is(marinara-capability-slurp2, [data-marinara-capability-scope="slurp2"]) :is(img, video):not([data-slp-revealed]) {
+     Slurp and its sheets stays blurred until it is tapped. Inline SVG art (the coin, G's face) is
+     interface, not a picture, and stays sharp. */
+  [data-slp-blur] :is(marinara-capability-slurp2, [data-marinara-capability-scope="slurp2"]) :is(img:not([src^="data:image/svg"]), video):not([data-slp-revealed]) {
     filter: blur(22px); cursor: pointer;
   }
   :has(> img.slp-crop[data-slp-cut])::after {

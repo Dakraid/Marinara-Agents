@@ -31,12 +31,15 @@ import { createCharactersStorage } from "../../../services/storage/characters.st
 import type { SlurpAccount } from "../../modules/records/slp-storage-model.js";
 import { planSlurpBondBeat, planSlurpTieBeat } from "../projects/slp-projects-contract.js";
 import { planSlurpDramaBeat } from "../world/slp-world-contract.js";
+import { planSlurpTrendBeat } from "../discovery/slp-discovery-contract.js";
 import { readSlurpCanonAnchorState, slurpCanonAnchorsFor } from "../../data/creators/slp-canon-anchor-storage.js";
 import {
   normalizeSlurpCanonAnchors,
   slurpBeatFactFromPost,
   slurpCanonAnchorsPrompt,
+  slurpPageAboutText,
 } from "../../modules/feed/slp-post-brief.js";
+import { protectCreatorGeneratedIdentity, type PublicIdentity } from "../../base/identity/slp-identity-protection.js";
 import {
   createSlurpContinuityFact,
   hasSlurpContinuityFact,
@@ -193,6 +196,18 @@ export async function planSlurpBeat(
       previewOnly: input.previewOnly,
     });
     if (drama) return drama;
+    // A trend going round Slurp that this Creator joins (docs/TRENDS.md): their own take, never a copy.
+    const trend = await planSlurpTrendBeat(db, {
+      creatorId: input.accountId,
+      creatorText: input.context.canonText,
+      tags: input.context.life?.tags ?? input.context.shared?.tags ?? [],
+      sequence: input.sequence,
+      intents: input.intents,
+      avoid: input.context.steering?.avoid ?? [],
+      at: input.at,
+      previewOnly: input.previewOnly,
+    });
+    if (trend) return trend;
     const history = await readSlurpBeatHistory(db, input.accountId, input.at);
     // A pack occasion running now (SlurpCon, a holiday, their birthday week): only one that fits them.
     const occasion = await planSlurpOccasionBeat(db, {
@@ -340,6 +355,21 @@ export async function resolveSlurpBeatDay(
 }
 
 /**
+ * The bio and stage voice, identity-protected like the post prompt's, as what this page is about.
+ * The beat planner and the canon-anchor routes both read it, so they key the cached reading alike.
+ */
+export function slurpAccountPageAbout(
+  account: Pick<SlpAccount, "bio" | "settings">,
+  mode: Parameters<typeof resolveCreatorCharacterCanon>[2],
+  publicIdentity: PublicIdentity | null,
+): string {
+  // A concealed Creator whose source is gone has no identity to redact with: say nothing rather than leak.
+  const protect = (value: string | undefined) =>
+    mode !== "open" && !publicIdentity ? "" : (protectCreatorGeneratedIdentity(value, mode, publicIdentity) ?? "");
+  return slurpPageAboutText(protect(account.bio), protect(account.settings.privacy.stagePersonality));
+}
+
+/**
  * Before a post is planned: the card as the cached reading sees it (more of each field than the
  * prompt carries), the last posts as facts, and where the day stands at publication.
  *
@@ -349,10 +379,11 @@ export async function resolveSlurpBeatDay(
 export async function prepareSlurpBeatRun(
   db: DB,
   input: {
-    account: Parameters<typeof slurpContinuityIdentityOf>[0] & { id: string };
+    account: Parameters<typeof slurpContinuityIdentityOf>[0] & Pick<SlpAccount, "id" | "bio" | "settings">;
     canonText: string;
     source: (Parameters<typeof resolveSlurpCreatorScheduleBlocks>[1] & Pick<SlpAccount, "kind" | "entityId">) | null;
     disclosureMode: Parameters<typeof resolveCreatorCharacterCanon>[2];
+    publicIdentity: PublicIdentity | null;
     /** The "Post ideas come from" setting is The Creator's life. */
     beats: boolean;
     /** A prompt preview: writes nothing and starts no reading. */
@@ -362,24 +393,27 @@ export async function prepareSlurpBeatRun(
     at: Date;
     publishAt?: Date | null;
   },
-): Promise<{ readingText: string; day: SlurpDayMoment | null }> {
-  const readingText = await resolveCreatorCharacterCanon(
+): Promise<{ readingText: string; planText: string; day: SlurpDayMoment | null }> {
+  const card = await resolveCreatorCharacterCanon(
     db,
     input.source,
     input.disclosureMode,
     SLP_CANON_READING_SCALE,
     // Empty starts no reading: the post's shorter text would replace a good reading with a worse one.
   ).catch(() => "");
+  const page = slurpAccountPageAbout(input.account, input.disclosureMode, input.publicIdentity);
+  const readingText = card && page ? card + page : card;
+  const planText = input.canonText + page;
   // Started here for every post, not only where a beat is planned: a directed post, an arc chapter
   // or a "Model's choice" post plans no beat, and the brief still needs what must always hold.
   if (!input.preview)
     void slurpBeatAnchorsFor(
       db,
       input.account.id,
-      { canonText: input.canonText, readingText, ...input.model },
+      { canonText: planText, readingText, ...input.model },
       input.at,
     ).catch(() => null);
-  if (!input.beats) return { readingText, day: null };
+  if (!input.beats) return { readingText, planText, day: null };
   // Beats mode keeps the last posts as facts, not quotes, so they are written before planning.
   if (!input.preview) await recordSlurpBeatFacts(db, input.account, input.recentPosts, input.at);
   const day = await resolveSlurpBeatDay(db, {
@@ -389,7 +423,7 @@ export async function prepareSlurpBeatRun(
     characters: createCharactersStorage(db),
     at: input.publishAt ?? input.at,
   });
-  return { readingText, day };
+  return { readingText, planText, day };
 }
 
 /** Everything this Creator could refer back to. A failed read means no callback, never no post. */

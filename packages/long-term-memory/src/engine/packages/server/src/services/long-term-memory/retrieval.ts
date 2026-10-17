@@ -1,3 +1,4 @@
+import { LTM_LINKED_RECALL_MIN_RELEVANCE } from "../../../../shared/src/features/agents/long-term-memory/constants.js";
 import { matchesLtmScope, isGlobalLtmScope } from "../../../../shared/src/features/agents/long-term-memory/scope.js";
 import type {
   LtmIndexLoadOutcome,
@@ -9,13 +10,13 @@ import type {
 import { applyLtmBudget } from "./budget.js";
 import { searchLtmBm25 } from "./bm25.js";
 import { embedLongTermMemoryTexts, type MemoryRecallEmbeddingOptions } from "./embedding-adapter.js";
-import { expandLtmGraph } from "./graph.js";
-import { buildStopWordSet } from "./keyword-extract.js";
+import { findLtmLinkedNotes } from "./graph.js";
+import { buildStopWordSet, normalizeKeywordTerms } from "./keyword-extract.js";
 import { LTM_KEYWORD_MAX_SCORE, searchLtmKeywordIndex } from "./keyword-index.js";
 import { getLtmMetadataMatches } from "./metadata-index.js";
 import { resolvePackageEmbeddingAdapter } from "./package-runtime.js";
 import { loadOrRebuildLongTermMemoryIndexes, type LtmRecallIndex } from "./rebuild.js";
-import { reciprocalRankFuse, type LtmRankLane } from "./ranking.js";
+import { reciprocalRankFuse, type LtmRankedCandidate, type LtmRankLane } from "./ranking.js";
 import { getLtmGlobalSettings, ltmGeneratedStopWords } from "./settings.js";
 import { withLtmVaultLock } from "./vault-lock.js";
 
@@ -48,6 +49,8 @@ export type RetrieveLongTermMemoryInput = MemoryRecallEmbeddingOptions & {
   dedupeExactText?: boolean;
   /** Preloaded recall index so callers can run several bounded queries without reloading the vault. */
   index?: LtmRecallIndex;
+  /** Notes recalled in addition to the scope match, such as a sibling branch's memories from shared summaries. */
+  inheritedNoteIds?: ReadonlySet<string>;
 };
 
 function cosine(a: number[], b: number[]) {
@@ -68,21 +71,6 @@ function hasUsableVectorIndex(
   spaceId: string,
 ) {
   return Boolean(embeddings.spaceId === spaceId && embeddings.dimension && embeddings.embeddedChunkCount > 0);
-}
-
-function pickGraphSeedNotes(
-  index: Awaited<ReturnType<typeof loadOrRebuildLongTermMemoryIndexes>>,
-  rankedHits: Array<{ chunkId: string }>,
-  limit: number,
-) {
-  return Array.from(
-    new Set(
-      rankedHits
-        .slice(0, limit)
-        .map((hit) => index.metadata.chunks[hit.chunkId]?.noteId)
-        .filter((id): id is string => Boolean(id)),
-    ),
-  );
 }
 
 export async function retrieveLongTermMemory(input: RetrieveLongTermMemoryInput) {
@@ -127,9 +115,11 @@ export async function retrieveLongTermMemory(input: RetrieveLongTermMemoryInput)
           return noteCharacterIds.length > 0 && noteCharacterIds.every((id) => exclusiveCharacterIds.includes(id));
         }
         const hasScope = !isGlobalLtmScope(input.scope) || characterIds.length > 0;
-        return matchesLtmScope(
-          { id: chunk.noteId, type: chunk.noteType, scope: chunk.scope },
-          hasScope ? { scope: input.scope, characterIds, includeGlobal: true } : { scope: {}, includeGlobal: true },
+        return (
+          matchesLtmScope(
+            { id: chunk.noteId, type: chunk.noteType, scope: chunk.scope },
+            hasScope ? { scope: input.scope, characterIds, includeGlobal: true } : { scope: {}, includeGlobal: true },
+          ) || input.inheritedNoteIds?.has(chunk.noteId)
         );
       })
       .map((chunk) => chunk.id),
@@ -170,10 +160,17 @@ export async function retrieveLongTermMemory(input: RetrieveLongTermMemoryInput)
       })),
     });
   }
-  const keywords = searchLtmKeywordIndex(index.keywords, query, {
-    allowedChunks: allowed,
-    stopWords: buildStopWordSet(triggerStopWords),
-  });
+  const stopWords = buildStopWordSet(triggerStopWords);
+  // Issue #1363: a character's title words are names wherever they appear, so a
+  // single keyword match on one keeps full credit without relying on capitalisation.
+  const knownNames = new Set(
+    Object.values(index.metadata.chunks).flatMap((chunk) =>
+      chunk.noteType === "character" && chunk.title && allowed.has(chunk.id)
+        ? normalizeKeywordTerms(chunk.title, stopWords)
+        : [],
+    ),
+  );
+  const keywords = searchLtmKeywordIndex(index.keywords, query, { allowedChunks: allowed, stopWords, knownNames });
   if ((input.keywordWeight ?? 1) > 0 && keywords.length) {
     lanes.push({
       name: "keyword",
@@ -183,20 +180,6 @@ export async function retrieveLongTermMemory(input: RetrieveLongTermMemoryInput)
         rawScore: Math.min(1, hit.score / LTM_KEYWORD_MAX_SCORE),
         reason: hit.reasons.join(","),
       })),
-    });
-  }
-  const seedNotes = Array.from(
-    new Set([...pickGraphSeedNotes(index, lexical, 5), ...pickGraphSeedNotes(index, keywords, 5)]),
-  );
-  const allowedNoteIds = new Set(
-    Array.from(allowed, (chunkId) => index.metadata.chunks[chunkId]?.noteId).filter((id): id is string => Boolean(id)),
-  );
-  const graph = expandLtmGraph(index.graph, seedNotes, { allowedNoteIds }).filter((hit) => allowed.has(hit.chunkId));
-  if ((input.graphWeight ?? 1) > 0 && graph.length) {
-    lanes.push({
-      name: "graph",
-      weight: input.graphWeight ?? 1,
-      items: graph.map((hit) => ({ chunkId: hit.chunkId, rawScore: hit.score, reason: `graph:${hit.viaNoteId}` })),
     });
   }
   let embeddingsAvailable = false;
@@ -233,7 +216,7 @@ export async function retrieveLongTermMemory(input: RetrieveLongTermMemoryInput)
   }
   const chunksById = new Map(Object.values(index.metadata.chunks).map((chunk) => [chunk.id, chunk]));
   const ranked = reciprocalRankFuse(lanes);
-  const budgeted = applyLtmBudget(ranked, chunksById, {
+  const budgetOptions = {
     maxChunks: input.maxChunks ?? 20,
     maxTokens: input.maxTokens ?? 4096,
     relevanceScoreThreshold: input.minScore,
@@ -241,7 +224,46 @@ export async function retrieveLongTermMemory(input: RetrieveLongTermMemoryInput)
     rejectedLimit: input.rejectedLimit,
     dedupeExactText: input.dedupeExactText ?? true,
     promptNormalizedEstimate: input.promptNormalizedEstimate,
-  });
+  };
+  let budgeted = applyLtmBudget(ranked, chunksById, budgetOptions);
+  if ((input.graphWeight ?? 1) > 0 && (input.minScore ?? 0) > LTM_LINKED_RECALL_MIN_RELEVANCE) {
+    // Linked recall: a memory that nearly matches the chat on its own is added through an explanatory
+    // link from a recalled memory. Recalled memories keep their places, and linked ones skip the threshold.
+    // At a threshold at or below the floor, the first pass already admitted every candidate it could.
+    const noteTypes = new Map(Array.from(chunksById.values(), (chunk) => [chunk.noteId, chunk.noteType]));
+    const rankedById = new Map(ranked.map((candidate) => [candidate.chunkId, candidate]));
+    const seedChunkIds = new Set(budgeted.chunks.map((item) => item.chunk.id));
+    const linkedCandidates: LtmRankedCandidate[] = [];
+    for (const link of findLtmLinkedNotes(
+      index.graph,
+      budgeted.chunks.map((item) => item.chunk.noteId),
+      (noteId) => noteTypes.get(noteId),
+    )) {
+      for (const chunkId of index.graph.nodes[link.noteId]?.chunkIds ?? []) {
+        const own = rankedById.get(chunkId);
+        if (!own || own.relevanceScore < LTM_LINKED_RECALL_MIN_RELEVANCE) continue;
+        linkedCandidates.push({
+          ...own,
+          linked: true,
+          lanes: [...own.lanes, "graph"],
+          reasons: [...own.reasons, `graph:${link.relation}:${link.seedNoteId}`],
+        });
+      }
+    }
+    if (linkedCandidates.length) {
+      linkedCandidates.sort((a, b) => b.score - a.score || a.chunkId.localeCompare(b.chunkId));
+      const linkedIds = new Set(linkedCandidates.map((candidate) => candidate.chunkId));
+      budgeted = applyLtmBudget(
+        [
+          ...ranked.filter((candidate) => seedChunkIds.has(candidate.chunkId)),
+          ...linkedCandidates,
+          ...ranked.filter((candidate) => !seedChunkIds.has(candidate.chunkId) && !linkedIds.has(candidate.chunkId)),
+        ],
+        chunksById,
+        budgetOptions,
+      );
+    }
+  }
   // Bounded callers reconcile note ids, so "truncated" means a ranked note was dropped from the
   // budget entirely. Dropping extra chunks of a note that is already in the window hides nothing.
   const budgetedNoteIds = new Set(budgeted.chunks.map((chunk) => chunk.chunk.noteId));

@@ -1,5 +1,67 @@
 # Long-Term Memory changelog
 
+## 1.4.45 — 2026-10-17
+
+- The place pickers no longer have a Branches tab. The Vault filter, its second "and" filter, "Find sources in", the import destination and both availability editors now share two pickers with the same four tabs: All, Chats, Characters and Personas. A chat with branches is one Chats entry, named after the chat with "All branches" under it, that covers every branch as "All branches" did before. The Vault filters now open as a search dropdown like "Find sources in", still split into places with and without memories, on a solid background. The availability editors open on All, with tabs two across on narrow screens and four across from 22rem. Memories already assigned to one branch keep that assignment: the availability editor shows it as a chip named after the chat and the branch, saving other changes keeps it, and it can still be removed there or with bulk "Remove availability". The Vault filter for a whole chat still includes them. Help text no longer mentions branches.
+
+## 1.4.44 — 2026-10-17
+
+- A new branch now recalls the memories made from the history it shares with the chat it came from. When Marinara Engine creates a branch, it copies the rolling summaries whose messages all come before the branch point. A memory saved to another branch of the same chat is now recalled in the branch too, as long as every chat summary it was made from is one of the branch's own. Memories made or updated from a summary written after the branch point, and memories from lorebooks, characters or typed in by hand, stay in the branch they were saved to. Memories never cross into another conversation. This changes recall only: where memories are saved, how they are edited and what the availability editor shows stay the same, and no stored data changes.
+
+## 1.4.43 — 2026-10-17
+
+- The Long-Term Memory server routes now live in one file per area (notes, drafts, imports, maintenance and settings) instead of one 1,600-line file. Every endpoint keeps its path, size limit and response, so nothing changes in the app.
+
+## 1.4.42 — 2026-10-16
+
+- Long-Term Memory no longer keeps finished extraction drafts forever. The daily cleanup now deletes accepted, auto-applied and superseded drafts once they are older than the audit window (30 days by default). Pending and invalidated drafts stay, so Review and Activity show the same items as before. Opening the Long-Term Memory screen and creating a new draft read fewer files as a result.
+- A reply that injects memories no longer rewrites per-memory usage counters in `usage.json`, because nothing read them. The next such reply removes the counters already stored there. Duplicate replies are still recorded only once.
+
+## 1.4.41 — 2026-10-16
+
+- The memory extraction instructions no longer use real-looking character names in their example timeline ids, so the model can no longer mix those example names up with characters in your chat who share them. Nothing else about extraction changes.
+
+## 1.4.40 — 2026-10-16
+
+- The Long-Term Memory server modules no longer import each other in a loop. The helper that compares two lists of memory subjects moved to its own module. Recall, extraction and storage behave exactly as before.
+
+## 1.4.39 — 2026-10-16
+
+- Long-Term Memory now starts when its settings files contain a field from a newer version, for example after a failed update rolls the package back. Until now such a field stopped the package from activating, so no chat had recall or extraction, and backup export failed too. The field is now ignored and named in one warning in the server log, and saving settings keeps it in the file, so updating again restores it. This applies to the memory, extraction, agent and retention settings. Settings sent from the app are still checked strictly, a known setting with an invalid value still fails, and settings fields from older versions are still removed.
+
+## 1.4.38 — 2026-10-15
+
+- Switching between the Vault, Review, Sources and Settings screens no longer shows a brief "Loading" panel, because the screens ship in the one bundle the package already loads. Importing a backup, resetting memory settings and deleting all memory data now read each setting and the integrity report once instead of two or three times. Nothing else changes in what the screens show or how they behave. Internally the duplicated tab-key handling, scope labels, confirm dialog, availability copy and shared queries are now one copy each, and 155 unused interface strings were removed.
+
+## 1.4.37 — 2026-10-15
+
+- Reorganised the Long-Term Memory screens without changing how they work. The Vault, Review queue, Sources and Settings screens each live in their own folder, and the setup guide and the Maintenance tab are components of their own. One visible difference is that the result of a Maintenance action now appears at the top of the Maintenance tab instead of below the tab bar, so it no longer shows on the other tabs and saving settings no longer replaces it.
+- Reset settings now shows the reset values in the settings forms straight away. Before, the forms kept the values from before the reset until Memory Settings was opened again.
+
+## 1.4.36 — 2026-10-14
+
+- Fix glued-together sentences and raw server errors in the Long-Term Memory screens. The Review summary after Apply or Discard now reads as separate complete sentences with correct spacing and punctuation, for example "Applied 2 mutations; 1 failed. 1 blocked before Apply.", instead of fragments run together. The Debug separators between metadata parts and the "chunk" label now come from the locale, so a translation can change them. When a request fails with only an HTTP status such as "Not Found" and no message from the server, the screens show their own localized message instead of the raw status text; a message the server does send is still shown as before. Recall, extraction and storage are unchanged.
+
+## 1.4.34 — 2026-10-14
+
+- Long-Term Memory now uses only styles the app already provides, so its screens look the same in the app as they were designed. Sources → Manage source no longer shows the imported-source preview under the workbench, the Review and Sources action bars sit inline on wide screens, selected Review rows and Vault notes are highlighted, tab focus rings use the editor focus colour, info popovers keep their size, and checkboxes are one size in Vault, Sources and Review. Screen readers now announce the Vault place lists as single-choice, and the arrow keys move between places.
+
+## 1.4.33 — 2026-10-14
+
+- A character's name now keeps full keyword credit when the chat does not capitalise it in the middle of a sentence. Until now a single keyword match counted as a name only when it was capitalised in the middle of a sentence, so a name at the start of a sentence, in lowercase, or in a script without letter case such as Korean was capped at half credit. Recall now also treats each word of a character memory's title as a name, ignoring case and common stop words. A single ordinary keyword is still capped, and nothing else changes: no new lane and no change to the threshold, text search or vector scores. Only the words of the title are matched; nicknames and aliases are not.
+
+## 1.4.32 — 2026-10-13
+
+- Make recall do less work on a large vault. A turn no longer re-reads and re-hashes every memory when nothing in the vault has changed since the last recall; the first recall after a restart still checks the whole vault, so memories you edit outside Marinara are picked up after a restart. Editing a memory re-embeds only the memories whose text changed instead of the whole vault, and the first rebuild after this update still re-embeds everything once. Extraction that applied no changes no longer rebuilds the recall index.
+
+## 1.4.31 — 2026-10-13
+
+- Extraction now asks for a `caused_by` link from an event to the event that directly caused it when both are in the same response, and linked recall follows that link in either direction, as well as a thread's `paid_off_in` link to the event that paid it off. The seed rule and the 0.2 own-relevance floor are unchanged, and a graph weight of 0 still turns linked recall off. Existing vaults gain these links only after a chat is extracted again; nothing is backfilled.
+
+## 1.4.30 — 2026-10-13
+
+- Recall can now include a memory that nearly matches the chat when a recalled memory links to it with an explanatory link: an evidence link, a thread and the event that caused or triggered it, or a relationship and the event that caused it. The linked memory must match the chat on its own at least a little (relevance 0.2), and links from memories that were not recalled add nothing. Recalled memories keep their places, and the memory cap and token budget still apply. This applies in the balanced, broad and story styles. A memory reached only through a link, with no match of its own, is no longer recalled, even at a threshold of 0. A saved `custom` graph weight now turns linked recall on or off and no longer scales a score, and the Memory Settings help text says so.
+
 ## 1.4.29 — 2026-10-12
 
 - Clean up how Long-Term Memory behaves around damaged or old data, with no change to recall scoring or extraction. Delete all data now also removes the vault copies that identity and fork repairs keep, and those copies are limited to the newest three. Extraction no longer stops for good at 10,000 rejected suggestions: the least recently seen ones make room and saved identity decisions are kept. A malformed `usage.json` or injection receipt no longer blocks activation, and one note with an unknown field no longer stops recall of the others; writes still refuse to run over a vault they cannot fully read. An out-of-date recall index is rebuilt in place instead of leaving a full copy in quarantine. Identity and fork repairs now redirect rejected suggestions to the surviving memory, as renaming a memory already did.

@@ -33,6 +33,7 @@ import { resolveImageAppearance } from "./slp-appearance-service.js";
 import {
   slurpApplyImageLook,
   slurpLookForWriter,
+  capFallbackImagePrompt,
   selectSlpImageProviderPrompt,
   slurpWithoutCameraDevice,
   stripAppearanceLabel,
@@ -358,8 +359,10 @@ export async function generateSlpPostImage(input: {
         imageDefaults,
       })
     : null;
-  const rewriteViolatesPolicy = Boolean(
-    input.visualBrief && rewrittenPrompt && slurpVisualBriefPromptViolatesPolicy(input.visualBrief, rewrittenPrompt),
+  const rewriteViolatesPolicy = slurpVisualBriefPromptViolatesPolicy(
+    input.visualBrief,
+    rewrittenPrompt,
+    [rawFinalPrompt, characterDescription].join("\n"),
   );
   const acceptedRewrittenPrompt = rewriteViolatesPolicy ? null : compiledRewrittenPrompt?.prompt || rewrittenPrompt;
   let usedRewrite = Boolean(acceptedRewrittenPrompt);
@@ -367,7 +370,9 @@ export async function generateSlpPostImage(input: {
     rewrittenPrompt: acceptedRewrittenPrompt,
     rawPrompt: rawProviderPrompt,
     fallbackPrefix: [
-      characterDescription ? `Appearance: ${stripAppearanceLabel(characterDescription)}` : "",
+      characterDescription
+        ? `Appearance: ${capFallbackImagePrompt(stripAppearanceLabel(characterDescription), 500)}`
+        : "",
       input.visualBrief ? slurpVisualBriefText(input.visualBrief) : "",
     ]
       .filter(Boolean)

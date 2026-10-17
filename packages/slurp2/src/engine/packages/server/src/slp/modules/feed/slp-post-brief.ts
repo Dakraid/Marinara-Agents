@@ -21,6 +21,20 @@ const ANCHOR_LIST_MAX = 6;
 const ANCHOR_TEXT_MAX = 60;
 const ESSENTIAL_TEXT_MAX = 140;
 
+/**
+ * What this Creator's page is about, as the beat planner reads it beside the card: the bio and stage
+ * voice the owner wrote. Already identity-protected by the caller. Empty when both are empty, so a
+ * Creator without either plans exactly as before; the anchor cache is keyed by the card plus this.
+ */
+export function slurpPageAboutText(bio: string, stageVoice: string): string {
+  const lines = [bio.trim() && `Bio: ${bio.trim()}`, stageVoice.trim() && `Stage voice: ${stageVoice.trim()}`].filter(
+    Boolean,
+  );
+  return lines.length
+    ? `\n\n# What this page is about (the Creator's own bio and stage voice)\n${lines.join("\n")}`
+    : "";
+}
+
 /** The one cached extraction per Creator. The card is data, never instructions. */
 export function slurpCanonAnchorsPrompt(canonText: string): { system: string; user: string } {
   return {
@@ -380,7 +394,9 @@ export function slurpBeatFactFromPost(post: {
   return {
     key: `beat:${post.id}`,
     subject: typeof beat?.anchor === "string" ? beat.anchor : "",
-    text: `Posted about: ${line}`,
+    // Done, not a running topic: "Posted about" read as a fact to build on and pulled the next
+    // posts back to the same chore or shower (#104).
+    text: `Already posted about this earlier in the week: ${line}`,
     audienceScope: post.access === "locked" ? "creator_private" : "creator_public",
     expiresAt: new Date(Date.parse(post.createdAt) + SLURP_BEAT_FACT_DAYS * 24 * 60 * 60 * 1000),
   };

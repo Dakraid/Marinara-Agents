@@ -1,3 +1,6 @@
+import type { APIProvider } from "@marinara-engine/shared";
+import { resolveStoredMaxTokens } from "../../../services/generation/generation-parameters.js";
+import { clampGenerationMaxOutputTokens } from "../../../services/generation/output-token-limits.js";
 import { jsonrepair } from "jsonrepair";
 import type { SlpPageStyleSuggestion } from "../../../../../shared/src/slp/slp-social.types.js";
 import type { DB } from "../../../db/connection.js";
@@ -102,7 +105,12 @@ export async function suggestSlpPageStyle(db: DB, accountId: string): Promise<Sl
     const result = await provider.chatComplete(messages, {
       model: connection.model,
       temperature: 0.7,
-      maxTokens: 4000,
+      maxTokens: clampGenerationMaxOutputTokens({
+        provider: connection.provider as APIProvider,
+        model: connection.model,
+        maxTokens: Math.max(resolveStoredMaxTokens(connection.defaultParameters, 4000), 4000),
+        maxTokensOverride: connection.maxTokensOverride,
+      }),
     });
     answer = result.content ?? "";
   } catch (error) {
