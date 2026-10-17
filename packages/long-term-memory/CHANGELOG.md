@@ -1,5 +1,15 @@
 # Long-Term Memory changelog
 
+## 1.4.47 — 2026-10-17
+
+- In the place dropdown, either answer to the unsaved-changes prompt now returns focus to the place button. Changing tabs during a search keeps "No memories" open. While closed, that group is a "Show N places with no memories" row that arrow keys and Enter reach like a place.
+- A chat imported with "All branches" now shows one chip in the availability editors, not one per branch, and unticking or removing it removes its branches too. Removing a chat in bulk "Remove availability" removes its branches from every selected memory. It also lists chats, characters and personas that no longer exist, so you can remove them.
+- If the shared-history lookup fails, a branch now recalls its own memories instead of none. `/search` given only a chat returns the shared memories a reply recalls. In Game and Conversation chats, only rolling summaries count toward shared-history recall. Day, week and game-session summaries don't, because each branch can write its own under the same name.
+
+## 1.4.46 — 2026-10-17
+
+- Recall now finds memories about a character or persona with a one-syllable Korean name, such as 린, when a particle such as 이, 은, 을 or 에게 follows the name. A memory that says 린이 웃었다 now comes up when you ask 린은 뭐 했지?, and 린에게, 린을 and 린 on its own match too. Other endings, such as 린아 or 린이가, still don't. This works when the vault has a character memory with that name in its title, and only in text search. Other one-syllable words still don't match across particles, so 나는 doesn't match 나를. Existing vaults rebuild their recall index once.
+
 ## 1.4.45 — 2026-10-17
 
 - The place pickers no longer have a Branches tab. The Vault filter, its second "and" filter, "Find sources in", the import destination and both availability editors now share two pickers with the same four tabs: All, Chats, Characters and Personas. A chat with branches is one Chats entry, named after the chat with "All branches" under it, that covers every branch as "All branches" did before. The Vault filters now open as a search dropdown like "Find sources in", still split into places with and without memories, on a solid background. The availability editors open on All, with tabs two across on narrow screens and four across from 22rem. Memories already assigned to one branch keep that assignment: the availability editor shows it as a chip named after the chat and the branch, saving other changes keeps it, and it can still be removed there or with bulk "Remove availability". The Vault filter for a whole chat still includes them. Help text no longer mentions branches.
