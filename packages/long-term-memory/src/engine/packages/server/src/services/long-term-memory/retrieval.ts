@@ -8,7 +8,7 @@ import type {
   LtmSemanticOutcome,
 } from "../../../../shared/src/features/agents/long-term-memory/schema.js";
 import { applyLtmBudget } from "./budget.js";
-import { searchLtmBm25 } from "./bm25.js";
+import { ltmHangulNameSyllables, searchLtmBm25 } from "./bm25.js";
 import { embedLongTermMemoryTexts, type MemoryRecallEmbeddingOptions } from "./embedding-adapter.js";
 import { findLtmLinkedNotes } from "./graph.js";
 import { buildStopWordSet, normalizeKeywordTerms } from "./keyword-extract.js";
@@ -49,6 +49,8 @@ export type RetrieveLongTermMemoryInput = MemoryRecallEmbeddingOptions & {
   dedupeExactText?: boolean;
   /** Preloaded recall index so callers can run several bounded queries without reloading the vault. */
   index?: LtmRecallIndex;
+  /** Notes recalled in addition to the scope match, such as a sibling branch's memories from shared summaries. */
+  inheritedNoteIds?: ReadonlySet<string>;
 };
 
 function cosine(a: number[], b: number[]) {
@@ -113,9 +115,11 @@ export async function retrieveLongTermMemory(input: RetrieveLongTermMemoryInput)
           return noteCharacterIds.length > 0 && noteCharacterIds.every((id) => exclusiveCharacterIds.includes(id));
         }
         const hasScope = !isGlobalLtmScope(input.scope) || characterIds.length > 0;
-        return matchesLtmScope(
-          { id: chunk.noteId, type: chunk.noteType, scope: chunk.scope },
-          hasScope ? { scope: input.scope, characterIds, includeGlobal: true } : { scope: {}, includeGlobal: true },
+        return (
+          matchesLtmScope(
+            { id: chunk.noteId, type: chunk.noteType, scope: chunk.scope },
+            hasScope ? { scope: input.scope, characterIds, includeGlobal: true } : { scope: {}, includeGlobal: true },
+          ) || input.inheritedNoteIds?.has(chunk.noteId)
         );
       })
       .map((chunk) => chunk.id),
@@ -143,7 +147,12 @@ export async function retrieveLongTermMemory(input: RetrieveLongTermMemoryInput)
       })),
     });
   }
-  const lexical = searchLtmBm25(index.bm25, query, { allowedChunks: allowed });
+  // Issue #1438: names come from every character chunk, not only the allowed
+  // ones, so the query folds the same one-syllable names the index was built with.
+  const lexical = searchLtmBm25(index.bm25, query, {
+    allowedChunks: allowed,
+    nameSyllables: ltmHangulNameSyllables(Object.values(index.metadata.chunks)),
+  });
   if ((input.lexicalWeight ?? 1) > 0 && lexical.length) {
     lanes.push({
       name: "bm25",

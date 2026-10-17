@@ -5,7 +5,12 @@ import type {
   LtmRecallAttemptOutcome,
 } from "../../../../shared/src/features/agents/long-term-memory/schema.js";
 import { resolveLongTermMemoryRecallSettings } from "../../../../shared/src/features/agents/long-term-memory/runtime-settings.js";
-import { resolveChatLtmScope, ltmModeForChatMode } from "./chat-scope.js";
+import {
+  inheritedBranchLtmNoteIds,
+  ltmModeForChatMode,
+  parseLtmChatMetadata,
+  resolveChatLtmScope,
+} from "./chat-scope.js";
 import { readJsonFile, writeJsonAtomic } from "./atomic-json.js";
 import {
   estimateLongTermMemoryPromptOverhead,
@@ -20,6 +25,8 @@ import { uniqueStrings } from "./ltm-utils.js";
 import { recordLongTermMemoryAttempt, recordLongTermMemoryInjection, recordLongTermMemoryZeroMatch } from "./usage.js";
 import { recordLtmDebugEvent } from "./debug-log.js";
 import { getPackagePersistence, logger, withKeyedLock } from "./package-runtime.js";
+import { summaries } from "./interop.js";
+import { LongTermMemoryStorage } from "./storage.js";
 
 export type LongTermMemoryRecallReceipt = {
   version: 1;
@@ -49,6 +56,40 @@ function parseReceipt(value: unknown): LongTermMemoryRecallReceipt | null {
 
 function metadataRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+// Issue #1433: the memories a branch shares with the other branches of its conversation through
+// copied summary entries. Day, week and game-session ids are date or sequence keys that two branches
+// can each write after the split, so only rolling summary entries, which Engine copies by id, count.
+// Unbranched chats and chats without such summaries do no extra work. A failed lookup (#1442) falls
+// back to the branch's own memories instead of failing the recall, unless the request was aborted.
+export async function branchInheritedNoteIds(
+  root: string,
+  chat: { id: string; groupId: string | null; metadata: unknown },
+  mode: LtmMode,
+  signal?: AbortSignal,
+) {
+  if (!chat.groupId) return undefined;
+  const summaryEntryIds = new Set(
+    summaries(parseLtmChatMetadata(chat.metadata), mode)
+      .filter((entry) => entry.origin !== "conversation_summary" && entry.origin !== "game_session")
+      .map((entry) => entry.id),
+  );
+  if (!summaryEntryIds.size) return undefined;
+  try {
+    // ponytail: every reply in a branched chat with summaries lists all chats and reads every note.
+    // Upgrade path: an Engine lookup of one group's chats, and reusing the cached vault notes snapshot.
+    const branchChatIds = (await getPackagePersistence().listChats())
+      .filter((other) => other.groupId === chat.groupId && other.id !== chat.id)
+      .map((other) => other.id);
+    if (!branchChatIds.length) return undefined;
+    const notes = await new LongTermMemoryStorage(root).listNotes({ skipInvalid: true });
+    return inheritedBranchLtmNoteIds({ chatId: chat.id, branchChatIds, summaryEntryIds, notes });
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    logger.warn(error, "[ltm] Shared-history lookup failed for chat %s; recalling its own memories", chat.id);
+    return undefined;
+  }
 }
 
 // Invocation-order timestamps, strictly increasing per chat, so two recalls
@@ -155,6 +196,7 @@ export async function prepareGenerationLongTermMemory(input: {
     budgetTokens > promptOverheadTokens ? budgetTokens - promptOverheadTokens : budgetTokens;
   let retrieval;
   try {
+    const inheritedNoteIds = await branchInheritedNoteIds(input.root, chat, mode, input.signal);
     retrieval = await retrieveLongTermMemory({
       root: input.root,
       mode,
@@ -173,6 +215,7 @@ export async function prepareGenerationLongTermMemory(input: {
       keywordWeight: recall.weights.keywordWeight,
       explain: recall.debugEnabled,
       rejectedLimit,
+      inheritedNoteIds,
       signal: input.signal,
     });
   } catch (error) {

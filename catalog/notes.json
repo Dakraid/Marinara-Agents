@@ -318,9 +318,51 @@
     "long-term-memory": {
       "versions": [
         {
+          "version": "1.4.49",
+          "date": "2026-10-18",
+          "notes": "- Compact selects keep a fixed 36px height, so platform font metrics no longer make them taller than the compact layout allows.\n- Buttons keep a 44px minimum width as well as height, so short labels such as **Retry** stay full-size tap targets.",
+          "highlight": false
+        },
+        {
+          "version": "1.4.48",
+          "date": "2026-10-17",
+          "notes": "- The daily cleanup now also deletes invalidated drafts that nobody discarded once they are older than the audit window (30 days by default), counted from when they were invalidated. A draft is invalidated when the memory or detail it targets is deleted, so Review can only discard it. Pending drafts still stay until you review them.\n- `usage.json` stays small: it now keeps the id of each reply that injected memories for one to two days instead of 180. The id only stops a repeat of the same reply from being recorded twice, and a repeat arrives within moments.\n- The daily cleanup now clears the per-memory usage counters that versions before 1.4.42 left in `usage.json`, including in vaults that haven't injected a memory since. Permanently deleting a memory no longer rewrites `usage.json`. A retention audit window longer than 180 days no longer requires the unused `usageRetentionDays` to be raised too.",
+          "highlight": false
+        },
+        {
+          "version": "1.4.47",
+          "date": "2026-10-17",
+          "notes": "- In the place dropdown, either answer to the unsaved-changes prompt now returns focus to the place button. Changing tabs during a search keeps \"No memories\" open. While closed, that group is a \"Show N places with no memories\" row that arrow keys and Enter reach like a place.\n- A chat imported with \"All branches\" now shows one chip in the availability editors, not one per branch, and unticking or removing it removes its branches too. Removing a chat in bulk \"Remove availability\" removes its branches from every selected memory. It also lists chats, characters and personas that no longer exist, so you can remove them.\n- If the shared-history lookup fails, a branch now recalls its own memories instead of none. `/search` given only a chat returns the shared memories a reply recalls. In Game and Conversation chats, only rolling summaries count toward shared-history recall. Day, week and game-session summaries don't, because each branch can write its own under the same name.",
+          "highlight": false
+        },
+        {
+          "version": "1.4.46",
+          "date": "2026-10-17",
+          "notes": "- Recall now finds memories about a character or persona with a one-syllable Korean name, such as 린, when a particle such as 이, 은, 을 or 에게 follows the name. A memory that says 린이 웃었다 now comes up when you ask 린은 뭐 했지?, and 린에게, 린을 and 린 on its own match too. Other endings, such as 린아 or 린이가, still don't. This works when the vault has a character memory with that name in its title, and only in text search. Other one-syllable words still don't match across particles, so 나는 doesn't match 나를. Existing vaults rebuild their recall index once.",
+          "highlight": false
+        },
+        {
+          "version": "1.4.45",
+          "date": "2026-10-17",
+          "notes": "- The place pickers no longer have a Branches tab. The Vault filter, its second \"and\" filter, \"Find sources in\", the import destination and both availability editors now share two pickers with the same four tabs: All, Chats, Characters and Personas. A chat with branches is one Chats entry, named after the chat with \"All branches\" under it, that covers every branch as \"All branches\" did before. The Vault filters now open as a search dropdown like \"Find sources in\", still split into places with and without memories, on a solid background. The availability editors open on All, with tabs two across on narrow screens and four across from 22rem. Memories already assigned to one branch keep that assignment: the availability editor shows it as a chip named after the chat and the branch, saving other changes keeps it, and it can still be removed there or with bulk \"Remove availability\". The Vault filter for a whole chat still includes them. Help text no longer mentions branches.",
+          "highlight": false
+        },
+        {
+          "version": "1.4.44",
+          "date": "2026-10-17",
+          "notes": "- A new branch now recalls the memories made from the history it shares with the chat it came from. When Marinara Engine creates a branch, it copies the rolling summaries whose messages all come before the branch point. A memory saved to another branch of the same chat is now recalled in the branch too, as long as every chat summary it was made from is one of the branch's own. Memories made or updated from a summary written after the branch point, and memories from lorebooks, characters or typed in by hand, stay in the branch they were saved to. Memories never cross into another conversation. This changes recall only: where memories are saved, how they are edited and what the availability editor shows stay the same, and no stored data changes.",
+          "highlight": false
+        },
+        {
+          "version": "1.4.43",
+          "date": "2026-10-17",
+          "notes": "- The Long-Term Memory server routes now live in one file per area (notes, drafts, imports, maintenance and settings) instead of one 1,600-line file. Every endpoint keeps its path, size limit and response, so nothing changes in the app.",
+          "highlight": false
+        },
+        {
           "version": "1.4.42",
           "date": "2026-10-16",
-          "notes": "- Compact selects keep a fixed 36px height, so platform font metrics no longer make them taller than the compact layout allows.\n- Buttons keep a 44px minimum width as well as height, so short labels such as **Retry** stay full-size tap targets.",
+          "notes": "- Long-Term Memory no longer keeps finished extraction drafts forever. The daily cleanup now deletes accepted, auto-applied and superseded drafts once they are older than the audit window (30 days by default). Pending and invalidated drafts stay, so Review and Activity show the same items as before. Opening the Long-Term Memory screen and creating a new draft read fewer files as a result.\n- A reply that injects memories no longer rewrites per-memory usage counters in `usage.json`, because nothing read them. The next such reply removes the counters already stored there. Duplicate replies are still recorded only once.",
           "highlight": false
         },
         {
@@ -393,48 +435,6 @@
           "version": "1.4.29",
           "date": "2026-10-12",
           "notes": "- Clean up how Long-Term Memory behaves around damaged or old data, with no change to recall scoring or extraction. Delete all data now also removes the vault copies that identity and fork repairs keep, and those copies are limited to the newest three. Extraction no longer stops for good at 10,000 rejected suggestions: the least recently seen ones make room and saved identity decisions are kept. A malformed `usage.json` or injection receipt no longer blocks activation, and one note with an unknown field no longer stops recall of the others; writes still refuse to run over a vault they cannot fully read. An out-of-date recall index is rebuilt in place instead of leaving a full copy in quarantine. Identity and fork repairs now redirect rejected suggestions to the surviving memory, as renaming a memory already did.",
-          "highlight": false
-        },
-        {
-          "version": "1.4.28",
-          "date": "2026-10-12",
-          "notes": "- Finish the Memory Settings → Debug details pane. Each event row shows how long ago it last logged, Result reads as counts (for example \"17 candidates found → 9 kept → 9 changes\" or \"148 indexed → 131 usable in this chat → 2 added\"), recall candidates are flat rows with a score bar marking the minimum relevance and a reason that names the limit that applied, a recall that added nothing says why, recall settings read as labelled terms, and What happened lists one sentence per step with its offset from the start. Durations over a second read in seconds or minutes, and a note says what Copy JSON includes.",
-          "highlight": false
-        },
-        {
-          "version": "1.4.27",
-          "date": "2026-10-12",
-          "notes": "- Make the open event visible in Memory Settings → Debug. The selected row keeps a background and accent bar wherever the pointer is, the active filter chip reads pressed, and muted row text stays readable on hovered and selected rows. Rows now show the outcome (\"7 of 12 kept\", \"1 added · 6 not added\", \"1 saved · 1 skipped\") instead of repeating their title, and a failed row keeps its error. A compile-evidence warning says how many candidates failed checks. Result counts use the right singular and read \"kept\"; applied changes show saved and skipped counts rather than raw IDs, and a failed apply reports none; the Details heading appears only when it has content and recall counts are no longer repeated there. The health line drops \"Log size unavailable\", the Vault \"Open debug log\" link has a 44 px target, and the recall-failed message names Memory Settings → Debug.",
-          "highlight": false
-        },
-        {
-          "version": "1.4.26",
-          "date": "2026-10-12",
-          "notes": "- Ask the embedding model for a query embedding when recall searches the vault, instead of treating the search text like an indexed memory. On Engines that pass the input type through, models that distinguish the two, such as multilingual E5 and nomic-embed-text, apply their query prefix to the search. No reindex is needed, because stored vectors were already document embeddings.",
-          "highlight": false
-        },
-        {
-          "version": "1.4.25",
-          "date": "2026-10-11",
-          "notes": "- Show which embedding source Long-Term Memory uses. The semantic search health line now names the source (for example \"Built-in local MiniLM\"), says when the saved vectors were built with a different source and will be re-embedded on the next recall or reindex, and no longer reports semantic search as available after the source changed. Memory Settings explains that the Extraction connection only drives extraction, and the vault health panel explains which connection drives recall embeddings, that the built-in model is English-only, and to use a multilingual embedding model for Korean, Japanese, Chinese or mixed-language vaults.",
-          "highlight": false
-        },
-        {
-          "version": "1.4.24",
-          "date": "2026-10-11",
-          "notes": "- Refresh the recall index when a connection or agent save changes Long-Term Memory's embedding source. The Engine rebuilds the vault for the new source during the save instead of re-embedding it inside the next chat's recall, and a source that still cannot embed the vault reports failure instead of a false success.",
-          "highlight": false
-        },
-        {
-          "version": "1.4.23",
-          "date": "2026-10-10",
-          "notes": "- Recall Korean memories that use short words or particles. Two-syllable Korean nouns such as `반지`, `서래` or `선물` are no longer dropped from keyword extraction, a query written with a particle (`반지를`) now matches the stored noun (`반지`) in both the keyword and lexical lanes, and a compound written with or without a space (`그림 선물` and `그림선물`) matches either way. Existing vaults rebuild their recall indexes once after the update.",
-          "highlight": false
-        },
-        {
-          "version": "1.4.22",
-          "date": "2026-10-10",
-          "notes": "- Resolve Korean character names written with a particle. A Hangul name followed directly by a whole particle such as `은`, `가`, `를`, `에게` or `한테` now counts as present in the source, a returned name with a trailing particle binds to the known name before the particle, and a 2-syllable name that is the tail of a known 3-syllable name goes to Review Queue instead of becoming a separate character.",
           "highlight": false
         }
       ]
@@ -624,6 +624,24 @@
     "quartermaster": {
       "versions": [
         {
+          "version": "0.1.28",
+          "date": "2026-10-17",
+          "notes": "- Build Wardrobe layers clothing properly: when two pieces of an outfit share a layer (tights and a\n  skirt over them), the outer one moves up a layer instead of being left out.\n- New artwork for the clothing layers, socks and Extra Wearable slots; the inner torso and legs\n  icons are now a shirt and leggings.",
+          "highlight": false
+        },
+        {
+          "version": "0.1.27",
+          "date": "2026-10-16",
+          "notes": "- Clothing layers on the portrait ring are now a stack of cards, so the dock stays about as wide as\n  before. Use the arrows on the card or tap a layer's tab to switch; worn layers keep their\n  highlighted outline.",
+          "highlight": false
+        },
+        {
+          "version": "0.1.26",
+          "date": "2026-10-12",
+          "notes": "- Layered clothing: torso and legs each have Inner, Mid and Outer clothing slots, so a shirt,\n  waistcoat and jacket (or tights under shorts) can be worn together. Existing clothing becomes the\n  Inner layer.\n- New Socks slot, plus three Extra Wearable slots for anything no other slot fits.\n- The tracker agent and Build Wardrobe use the new slots. If you customized the tracker prompt,\n  reset it to the default to pick them up.",
+          "highlight": true
+        },
+        {
           "version": "0.1.25",
           "date": "2026-10-11",
           "notes": "- With an Admin Secret saved, each image now loads once and is reused, instead of reloading after\n  every change in the dock.\n- An image that failed to load for a reason other than having no image tries again when the dock is\n  reopened, and changing the saved Admin Secret retries every image.",
@@ -724,24 +742,6 @@
           "date": "2026-09-11",
           "notes": "- Fixed equip-slot quick-fill only searching the Wearables tab, missing stashed wearable items.",
           "highlight": false
-        },
-        {
-          "version": "0.1.8",
-          "date": "2026-09-11",
-          "notes": "- Confirmed fix: Generate Image no longer shows a person in item images.\n- Bag column now splits into Items, Wearables, and Stored tabs.",
-          "highlight": false
-        },
-        {
-          "version": "0.1.7",
-          "date": "2026-09-09",
-          "notes": "- Attempted fix for Generate Image sending the persona's appearance into item/outfit image\n  requests instead of a clean product shot.\n- Build script now refuses to silently overwrite an already-released version's artifact.",
-          "highlight": false
-        },
-        {
-          "version": "0.1.6",
-          "date": "2026-09-08",
-          "notes": "- Added Generate Image: an AI-generated alternative to uploading, for both item images and\n  outfit portraits.\n- New Settings section to pick the image connection and edit the two prompt templates.\n- Fixed the portrait prompt leaking a raw appearance-macro token into the image request.\n- Export/import now carry the two prompt templates.",
-          "highlight": true
         }
       ]
     },
@@ -793,6 +793,12 @@
     },
     "slurp2": {
       "versions": [
+        {
+          "version": "0.3.47",
+          "date": "2026-10-16",
+          "notes": "- Fixed: in tag mode, a Creator's identity tags (\"Always in their pictures\" or the card name) stayed where the prompt writer put them, often behind the count and body tags. Whole tags now move to the front of the Creator's part, once, in the writer's spelling (#1428).\n- Fixed: \"The image model knows this character\" added the card name a second time when the writer used tag order (\"ryuuzaki umi\" for \"Umi Ryuuzaki\"). Names now match in any word order.\n- Fixed: a companion the writer named by their card or tag name got no look, no reference picture, and kept the one-person rule. Companions now match on display or card name, whole words in any order (#1429).",
+          "highlight": false
+        },
         {
           "version": "0.3.46",
           "date": "2026-10-15",
@@ -905,12 +911,6 @@
           "version": "0.3.28",
           "date": "2026-10-12",
           "notes": "- Added: Deep details for chat messages. Hold a Creator's reply (or right-click it) and choose \"Deep details\" in the Message menu to see what went into it: the chat facts the reply was built from (relationship, stance, heat, memories), the model, the full prompt and the raw answer. It opens in the same window as a post's Deep details.\n- Slurp keeps these details for the newest 50 replies of each chat. Older replies, and replies written before this update, do not offer the item. Clearing a chat removes its details.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.27",
-          "date": "2026-10-12",
-          "notes": "- Added: \"Page style\" in a Creator's Posting settings says in plain words how they post (for example \"Polished · nearly always pictures · automatic\"). The Overview's Posting tile shows the same line. It replaces \"Posting strategy\"; the number fields are under \"Fine-tune page style\".\n- Added: \"Suggest from card\" under Page style reads the Character card and proposes a fitting page style, with a short reason and \"See exact changes\". \"Use this page style\" applies it; \"Keep current\" changes nothing. A page note you wrote is never replaced, and Use is refused if a setting changed in the meantime.\n- Changed: \"Posts without pictures\" is now \"Lean towards words\", without a percent sign: it was never a share of posts. Saved values work as before.",
           "highlight": false
         }
       ]
