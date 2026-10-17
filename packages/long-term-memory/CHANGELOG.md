@@ -1,5 +1,11 @@
 # Long-Term Memory changelog
 
+## 1.4.48 — 2026-10-17
+
+- The daily cleanup now also deletes invalidated drafts that nobody discarded once they are older than the audit window (30 days by default), counted from when they were invalidated. A draft is invalidated when the memory or detail it targets is deleted, so Review can only discard it. Pending drafts still stay until you review them.
+- `usage.json` stays small: it now keeps the id of each reply that injected memories for one to two days instead of 180. The id only stops a repeat of the same reply from being recorded twice, and a repeat arrives within moments.
+- The daily cleanup now clears the per-memory usage counters that versions before 1.4.42 left in `usage.json`, including in vaults that haven't injected a memory since. Permanently deleting a memory no longer rewrites `usage.json`. A retention audit window longer than 180 days no longer requires the unused `usageRetentionDays` to be raised too.
+
 ## 1.4.47 — 2026-10-17
 
 - In the place dropdown, either answer to the unsaved-changes prompt now returns focus to the place button. Changing tabs during a search keeps "No memories" open. While closed, that group is a "Show N places with no memories" row that arrow keys and Enter reach like a place.
