@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 1.4.51 — 2026-10-18
+
+- The debug log now records a "Candidate reconciliation" entry for every extracted source, even when nothing matched. It counts the target memories (other than characters and relationships) that reused an existing memory, matched no other existing memory, were ambiguous, or were left for review because the search window was incomplete. Copy JSON shows the counts. Before, the entry was recorded only when a candidate matched or warned, so a source whose candidates all became new memories left no entry.
+
 ## 1.4.50 — 2026-10-18
 
 - The Vault and Activity rows now show the Marinara focus ring when you tab to them, and the Review freshness chip and the Vault "Edited manually" chip show their soft accent border, on every supported Marinara Engine version. Before, Engine 2.4.1 to 2.4.6 showed the browser's default focus ring on those rows, and Engine 2.4.1 to 2.4.4 showed a full-strength border on those chips.
