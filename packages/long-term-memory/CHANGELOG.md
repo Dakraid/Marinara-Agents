@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 1.4.53 — 2026-10-18
+
+- When the settings fail to reload after Reset settings or a backup import, Retry on the Memory Settings load error now loads the new settings. Before, Retry brought back the settings from before the reset or import, so a later Save could write them back. Reset settings also shows the loading message while it reloads the settings, instead of the old ones.
+
 ## 1.4.52 — 2026-10-18
 
 - A suggestion that extraction leaves out because it links to a memory the extraction could not find or did not keep now says so. Before, it said the suggestion "used the wrong memory stream". The low-overlap warning now checks the whole source, not only its start, and is no longer added to a suggestion that validation leaves out straight away.
