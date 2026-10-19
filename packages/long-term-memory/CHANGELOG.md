@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 1.4.55 — 2026-10-19
+
+- Behind-the-scenes fixes from a stricter code check; nothing you see changes. Extraction can no longer be started without knowing where your memories are stored, which would have failed. Characters who share a name now keep their other names in the same form as every other character.
+
 ## 1.4.53 — 2026-10-18
 
 - When the settings fail to reload after Reset settings or a backup import, Retry on the Memory Settings load error now loads the new settings. Before, Retry brought back the settings from before the reset or import, so a later Save could write them back. Reset settings also shows the loading message while it reloads the settings, instead of the old ones.
