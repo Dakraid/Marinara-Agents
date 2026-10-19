@@ -1,5 +1,11 @@
 # Slurp release notes
 
+## 0.3.50 — 2026-10-19
+
+- Added: tapping an ad (the button, the picture or a wall tile) opens an ad sheet with the picture, brand, product, copy and price feel, and still records the tap. The old "Opening … promotion" toast is gone.
+- Added: Settings › Fans & money › Collect has a "Daily limit on Collect" switch (`walletPayoutDailyLimit`, on by default). Off, Collect moves every whole coin of your Creator earnings at once.
+- Added: Messaging › "What fans ask for" is an editable list for the wish in a commission request (`messagesCommissionAsks`); empty keeps the built-in asks.
+
 ## 0.3.49 — 2026-10-19
 
 - Fixed: restoring a backup checks each media file more closely. Only PNG, JPEG, WebP, GIF and AVIF pictures whose file extension matches their contents come back; anything else is skipped and listed with the skipped entries (#1476).

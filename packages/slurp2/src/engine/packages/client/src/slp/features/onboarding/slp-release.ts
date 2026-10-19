@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.49";
+export const SLURP2_VERSION = "0.3.50";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -12,6 +12,15 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.50",
+    date: "2026-10-19",
+    notes: [
+      "Tap an ad and its own page opens: the picture, the brand, the product and the price feel.",
+      "Collect has a switch for its daily limit. Off, it moves all your Creator earnings at once.",
+      "You write what fans ask for in commission requests, next to their first words.",
+    ],
+  },
   {
     version: "0.3.49",
     date: "2026-10-19",
@@ -771,15 +780,6 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
     notes: [
       "Slurp screens open faster and load only what they show.",
       "Follows, subscriptions and unlocks show up at once.",
-    ],
-  },
-  {
-    version: "0.2.20",
-    date: "2026-09-22",
-    notes: [
-      "Creators have a wardrobe of full looks and rarely wear the same outfit twice.",
-      "Picture posts match their captions better.",
-      "Random posts no longer make Creators sad or broke for no reason.",
     ],
   },
 ];
