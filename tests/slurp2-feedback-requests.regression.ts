@@ -20,6 +20,12 @@ assert.match(
   /settings\.messagesCommissionOpeners,\s*settings\.messagesCommissionAsks,/u,
 );
 
+// A no-limit Collect sends the whole balance, so the route must not cap the amount.
+assert.doesNotMatch(
+  readFileSync(join(server, "features/economy/slp-wallet-routes.ts"), "utf8"),
+  /payout[\s\S]{0,300}amount: z\.number\(\)\.int\(\)\.min\(1\)\.max\(/u,
+);
+
 // ── R11: tapping an ad showed nothing ──
 // Every ad tap (the button, the picture, a wall tile) opens the ad sheet and still records the tap.
 const ad = src("features/ads/SlpInlineAd.tsx");

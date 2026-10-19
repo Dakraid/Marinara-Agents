@@ -210,7 +210,7 @@ export async function slpWalletRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
    */
   app.post("/slurp/accounts/:id/payout", async (req, reply) => {
     const parsed = z
-      .object({ personaId: z.string().trim().min(1), amount: z.number().int().min(1).max(100_000) })
+      .object({ personaId: z.string().trim().min(1), amount: z.number().int().min(1) })
       .safeParse(req.body ?? {});
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
     const viewer = await resolveViewerPersona(parsed.data.personaId);

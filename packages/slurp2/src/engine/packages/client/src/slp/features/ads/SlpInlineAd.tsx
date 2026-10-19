@@ -143,7 +143,9 @@ export function SlurpInlineAd({
         <button
           type="button"
           onClick={show}
-          aria-label={promotion.actionLabel ?? labels.actionFallback}
+          // The button below does the same; one tab stop per ad.
+          tabIndex={-1}
+          aria-hidden="true"
           className={cn(
             "relative -mx-4 mt-3 block w-[calc(100%+2rem)] overflow-hidden bg-[var(--slurp-media-stage,#17131a)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--noodle-accent)]",
             wide ? "" : "aspect-[4/5] max-h-[32rem]",
