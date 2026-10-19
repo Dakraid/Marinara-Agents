@@ -343,7 +343,7 @@ export async function resolveSlurpBeatDay(
     const scheduled = input.source
       ? await resolveSlurpCreatorScheduleBlocks(input.characters, input.source, input.at)
       : null;
-    if (scheduled) return slurpTimelineMoment(scheduled.blocks, scheduled.localNow);
+    if (scheduled) return slurpTimelineMoment(scheduled.blocks, scheduled.localNow, scheduled);
     const read = await readSlurpCanonAnchorState(db, input.accountId, input.canonText);
     // A stale routine is still their day until the card is read again.
     const routine = read.anchors?.routine;

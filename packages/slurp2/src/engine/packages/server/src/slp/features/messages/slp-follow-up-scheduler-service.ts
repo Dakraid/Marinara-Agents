@@ -5,6 +5,7 @@ import { createSlurpStorage } from "../../data/slp-storage.js";
 import {
   isFollowUpDue,
   isFollowUpLate,
+  isFollowUpPastAwayLimit,
   formatFollowUpContext,
   slurpAllowsUnsolicitedText,
   type ScheduledFollowUp,
@@ -145,7 +146,12 @@ export function startSlurpFollowUpScheduler(app: FastifyInstance, registerStop?:
                   settings,
                 )
               : { online: true, activity: null, minutesUntilOnline: 0 };
-            const availability = { ...naturalAvailability, ...details.availability };
+            const availability = {
+              ...naturalAvailability,
+              ...details.availability,
+              // Twelve hours past its first due time it no longer waits for the Creator to be free.
+              ...(isFollowUpPastAwayLimit(followUp.firstDueAt ?? followUp.scheduledAt) ? { online: true } : {}),
+            };
             const quiet = settings.nightQuiet && isCreatorNightQuietTime(new Date());
             if (coolingOff || quiet || (!availability.online && availability.minutesUntilOnline !== null)) {
               const delayMinutes = coolingOff
