@@ -286,8 +286,5 @@ reliable, an 8-section "understanding" editor, a global Simple/Full switch.
 - Coins stay in Basic. A later "coins off" option is not planned.
 - Polyamory stays in Storylines.
 - No code yet; work starts this week.
-
-## Still open
-
-- Order of slice 1 (grouping) and slice 2 (onboarding).
-- Recommended pick on the "Add extras" screen.
+- Order: slice 0 and the October fixes, then slice 1 (grouping), then slice 2 (onboarding).
+- "Add extras" preselects Storylines only. The other extensions start off for new installs.
