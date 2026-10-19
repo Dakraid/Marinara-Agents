@@ -1307,7 +1307,7 @@ export class LongTermMemoryStorage {
         if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
         const receiptPath = safeJoin(receiptsDir, entry.name);
         try {
-          const receipt = await readJsonFile(receiptPath, null);
+          const receipt = await readJsonFile<{ chunks?: unknown } | null>(receiptPath, null);
           if (!receipt || !Array.isArray(receipt.chunks)) continue;
           const filtered = receipt.chunks.filter((chunk: any) => !deleted.has(chunk.noteId));
           if (filtered.length !== receipt.chunks.length) {

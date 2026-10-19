@@ -14,6 +14,7 @@ import {
   writeFileSync,
 } from "fs";
 import { basename, dirname, extname, join } from "path";
+import type { FastifyReply } from "fastify";
 import type { SlpCreatorManagedPost } from "../../../../../shared/src/slp/slp-social.types.js";
 import { logger } from "../../../lib/logger.js";
 import { DATA_DIR } from "../../../utils/data-dir.js";
@@ -173,6 +174,64 @@ export async function resolveCreatorMediaVariant(
   }
 }
 
+/** The first bytes of a file: enough for every image signature, AVIF brands included. */
+function readFileHeader(path: string): Buffer {
+  const header = Buffer.alloc(256);
+  const fd = openSync(path, "r");
+  try {
+    return header.subarray(0, readSync(fd, header, 0, header.length, 0));
+  } finally {
+    closeSync(fd);
+  }
+}
+
+/**
+ * The image type these bytes show. The ".avif" hint only turns on AVIF brand sniffing; every other
+ * type is read from its own header. A generated BMP stays a BMP where sharp is missing
+ * (`slpCompactGeneratedImage`), so it is recognised here too.
+ */
+function slpImageTypeOfBytes(bytes: Buffer): { ext: string; mimeType: string } | null {
+  const image = isAllowedImageBuffer(bytes, ".avif");
+  if (image) return image;
+  return bytes.length >= 2 && bytes[0] === 0x42 && bytes[1] === 0x4d ? { ext: "bmp", mimeType: "image/bmp" } : null;
+}
+
+/**
+ * Send a stored Slurp picture as the image type its own bytes show, with `nosniff`, never as the type
+ * its file name suggests. A file that is not a picture is not sent at all.
+ */
+export function sendSlurpImageFile(reply: FastifyReply, absolutePath: string) {
+  let type: { ext: string; mimeType: string } | null = null;
+  try {
+    type = slpImageTypeOfBytes(readFileHeader(absolutePath));
+  } catch {
+    type = null;
+  }
+  if (!type) {
+    // Drop the headers the caller set for the picture, so the 404 is neither cached nor named as one.
+    return reply
+      .removeHeader("Content-Disposition")
+      .header("Cache-Control", "no-store")
+      .code(404)
+      .send({ error: "Not Found" });
+  }
+  // A file left by an older restore can carry another type's extension; a saved copy takes the bytes' one.
+  const disposition = reply.getHeader("Content-Disposition");
+  if (typeof disposition === "string") {
+    reply.header("Content-Disposition", disposition.replace(/\.[a-z0-9]+"$/iu, `.${type.ext}"`));
+  }
+  return (
+    reply
+      .header("X-Content-Type-Options", "nosniff")
+      .type(type.mimeType)
+      // `contentType: false` keeps the verified type above; sendFile would name one from the extension.
+      // ponytail: sendFile still writes its own Cache-Control ("public, max-age=0", revalidated by ETag)
+      // over the caller's, as it always has on these routes. Pass `cacheControl: false` once the
+      // callers' longer cache lifetimes are wanted.
+      .sendFile(basename(absolutePath), dirname(absolutePath), { contentType: false })
+  );
+}
+
 const ENGINE_AVATAR_DIR = join(DATA_DIR, "avatars");
 const ENGINE_AVATAR_EXTENSION = /\.(?:png|jpe?g|webp|gif|avif)$/iu;
 
@@ -194,14 +253,7 @@ function engineAvatarSource(fileName: string): string | null {
     const source = assertInsideDir(ENGINE_AVATAR_DIR, join(ENGINE_AVATAR_DIR, fileName));
     assertInsideDir(realpathSync(ENGINE_AVATAR_DIR), realpathSync(source));
     if (!statSync(source).isFile()) return null;
-    const header = Buffer.alloc(64);
-    const fd = openSync(source, "r");
-    try {
-      readSync(fd, header, 0, header.length, 0);
-    } finally {
-      closeSync(fd);
-    }
-    return isAllowedImageBuffer(header, extname(fileName)) ? source : null;
+    return isAllowedImageBuffer(readFileHeader(source), extname(fileName)) ? source : null;
   } catch {
     return null;
   }
@@ -403,18 +455,32 @@ export async function listCreatorMediaFiles(): Promise<Array<{ relativePath: str
   return files;
 }
 
+/** The extensions a restored picture may carry, each with the type its bytes must show. */
+const RESTORABLE_IMAGE_TYPES: Readonly<Record<string, string>> = {
+  ".png": "png",
+  ".jpg": "jpg",
+  ".jpeg": "jpg",
+  ".webp": "webp",
+  ".gif": "gif",
+  ".avif": "avif",
+};
+
 /**
  * Write one media file back from a backup archive.
  *
  * The archive stores media under `media/<accountId>/<file>`, which maps to the owned namespace
- * `<NOODLER_MEDIA_PREFIX><accountId>/<file>`. Anything that escapes that namespace, or that is not
- * an image, is refused: a backup archive is untrusted input even when this package wrote it.
+ * `<NOODLER_MEDIA_PREFIX><accountId>/<file>`. Anything that escapes that namespace, is not a PNG,
+ * JPEG, WebP, GIF or AVIF picture, or whose extension names another type than its bytes show, is
+ * refused: a backup archive is untrusted input even when this package wrote it. Slurp itself always
+ * names a picture by its bytes, so a refused file is not one it wrote; rows that name it point at no
+ * file, as they do for a picture missing from the archive.
  */
 export function restoreCreatorMediaFile(archivePath: string, data: Buffer): boolean {
   if (!archivePath.startsWith("media/")) return false;
   const absolute = resolveCreatorMediaAbsolutePath(`${NOODLER_MEDIA_PREFIX}${archivePath.slice("media/".length)}`);
   if (!absolute) return false;
-  if (!isAllowedImageBuffer(data)) return false;
+  const expected = RESTORABLE_IMAGE_TYPES[extname(absolute).toLowerCase()];
+  if (!expected || isAllowedImageBuffer(data, ".avif")?.ext !== expected) return false;
   try {
     mkdirSync(dirname(absolute), { recursive: true });
     writeFileSync(absolute, data);

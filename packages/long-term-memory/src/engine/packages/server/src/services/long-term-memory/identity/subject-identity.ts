@@ -655,7 +655,7 @@ export function buildTrustedLtmSubjectCatalog({
     if (!entry.familyId) continue;
     const key = `${entry.familyId}\u0000${entry.canonicalSlug}`;
     const list = localNameEntries.get(key) ?? [];
-    list.push(entry as TrustedLtmSubjectCatalogEntry);
+    list.push({ ...entry, aliases: [...entry.aliases] });
     localNameEntries.set(key, list);
   }
   const ambiguousLocalEntries: Record<string, TrustedLtmSubjectCatalogEntry[]> = {};
@@ -1648,7 +1648,8 @@ function preResolveBatchSubjectNames({
       name,
       aliases: [],
       canonicalSlug: slug,
-      ...(ltmScopeFamilyId(scope) ? { familyId: ltmScopeFamilyId(scope)! } : {}),
+      // A local subject exists only when scope is set.
+      ...(ltmScopeFamilyId(scope!) ? { familyId: ltmScopeFamilyId(scope!)! } : {}),
     };
     addCatalogEntry(index, entry);
     provisionalKeys.add(key);
@@ -2451,7 +2452,7 @@ function identityTargetConflict(
   unresolved: Map<string, string[]>,
   entries: TrustedLtmSubjectCatalogEntry[],
   bucket: LtmEvidenceUnit["bucket"],
-): Extract<SubjectMatch, { status: "ambiguous" }> | null {
+): (Extract<SubjectMatch, { status: "ambiguous" }> & { competingRecords: CompetingSubjectRecord[] }) | null {
   const subjects = sortSubjects(entries.map((entry) => entry.subject));
   const type = bucket === "character_fact" ? "character" : "relationship";
   const unresolvedIds = uniqueStrings(

@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.47";
+export const SLURP2_VERSION = "0.3.49";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -12,6 +12,19 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.49",
+    date: "2026-10-19",
+    notes: ["Restoring a backup brings back its pictures, AVIF ones too, and skips any file that is not one."],
+  },
+  {
+    version: "0.3.48",
+    date: "2026-10-19",
+    notes: [
+      "A Creator whose character has a Conversation Schedule now lives by it: around when it says online, away when it says busy or offline.",
+      "A message a Creator promised you no longer waits forever. Half a day late, being away no longer holds it back.",
+    ],
+  },
   {
     version: "0.3.47",
     date: "2026-10-16",
@@ -767,14 +780,6 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
       "Creators have a wardrobe of full looks and rarely wear the same outfit twice.",
       "Picture posts match their captions better.",
       "Random posts no longer make Creators sad or broke for no reason.",
-    ],
-  },
-  {
-    version: "0.2.19",
-    date: "2026-09-22",
-    notes: [
-      "Each Creator has their own look, wardrobe and regular places on their profile.",
-      "Creators look like the same person in every post.",
     ],
   },
 ];

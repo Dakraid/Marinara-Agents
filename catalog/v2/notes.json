@@ -4,6 +4,12 @@
     "beholder": {
       "versions": [
         {
+          "version": "1.3.14",
+          "date": "2026-10-19",
+          "notes": "- Clicking elsewhere in the chat no longer closes Beholder when you opened it from its shortcut. It stays open until you close it or leave the chat.",
+          "highlight": false
+        },
+        {
           "version": "1.3.13",
           "date": "2026-10-19",
           "notes": "- Closing the first-open note, or picking from the build menu, no longer closes Beholder when you opened it from its shortcut.",
@@ -109,6 +115,12 @@
     },
     "gacha-forge": {
       "versions": [
+        {
+          "version": "1.8.13",
+          "date": "2026-10-19",
+          "notes": "- Fixed: places named in Korean, or in any other non-Latin script, get their background painted. Their names used to come out empty, so the background was never made; places whose names mixed Hangul and numbers could also share one background.\n- Backgrounds already painted for a place keep showing; nothing is painted twice.\n- On a phone held sideways the game uses more of the screen, text no longer grows when you turn the phone, and Settings packs its panels tighter. Where the browser has no fullscreen (iPhone Safari), the fullscreen button is hidden instead of doing nothing.",
+          "highlight": false
+        },
         {
           "version": "1.8.12",
           "date": "2026-10-02",
@@ -224,6 +236,12 @@
     "long-term-memory": {
       "versions": [
         {
+          "version": "1.4.55",
+          "date": "2026-10-19",
+          "notes": "- Behind-the-scenes fixes from a stricter code check; nothing you see changes. Extraction can no longer be started without knowing where your memories are stored, which would have failed. Characters who share a name now keep their other names in the same form as every other character.",
+          "highlight": false
+        },
+        {
           "version": "1.4.54",
           "date": "2026-10-19",
           "notes": "- Recall is faster when a chat's memories have many keywords. The keyword search no longer builds a new pattern for every keyword on every recall, which took most of the recall time, and it no longer runs at all when the keyword weight is 0. The same memories are recalled as before.\n- A memory that shares one uncommon word with the chat is now recalled when full-text search also rates it a good match. Before, a single shared keyword that is not a name always stayed under the default threshold, so a memory such as \"Elena's violin was smashed in the storm\" was never recalled when the chat mentioned the violin. Everyday words, names, phrases and memories that share two keywords score as before.",
@@ -335,12 +353,6 @@
           "version": "1.4.36",
           "date": "2026-10-14",
           "notes": "- Fix glued-together sentences and raw server errors in the Long-Term Memory screens. The Review summary after Apply or Discard now reads as separate complete sentences with correct spacing and punctuation, for example \"Applied 2 mutations; 1 failed. 1 blocked before Apply.\", instead of fragments run together. The Debug separators between metadata parts and the \"chunk\" label now come from the locale, so a translation can change them. When a request fails with only an HTTP status such as \"Not Found\" and no message from the server, the screens show their own localized message instead of the raw status text; a message the server does send is still shown as before. Recall, extraction and storage are unchanged.",
-          "highlight": false
-        },
-        {
-          "version": "1.4.34",
-          "date": "2026-10-14",
-          "notes": "- Long-Term Memory now uses only styles the app already provides, so its screens look the same in the app as they were designed. Sources → Manage source no longer shows the imported-source preview under the workbench, the Review and Sources action bars sit inline on wide screens, selected Review rows and Vault notes are highlighted, tab focus rings use the editor focus colour, info popovers keep their size, and checkboxes are one size in Vault, Sources and Review. Screen readers now announce the Vault place lists as single-choice, and the arrow keys move between places.",
           "highlight": false
         }
       ]
@@ -664,6 +676,18 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.49",
+          "date": "2026-10-19",
+          "notes": "- Fixed: restoring a backup checks each media file more closely. Only PNG, JPEG, WebP, GIF and AVIF pictures whose file extension matches their contents come back; anything else is skipped and listed with the skipped entries (#1476).\n- Fixed: AVIF pictures in a backup were dropped on restore. They now come back like the other formats.\n- Changed: Slurp sends every stored picture (posts, messages, avatars, banners, ads) as the image type its contents show (#1476).",
+          "highlight": false
+        },
+        {
+          "version": "0.3.48",
+          "date": "2026-10-19",
+          "notes": "- Changed: Creators whose character has a Conversation Schedule now follow it. Slurp only read a bare \"06:00\" and the Engine stores ranges (\"06:00-08:00\"), so every block was dropped and availability was guessed from the last post. Ranges, including ones past midnight, are now read as the Engine reads them. Time between blocks is free time, online; a block's status decides (offline and dnd are away, online and idle answer); a block without one falls back to its activity words. The post brief's day plan reads the same ranges (#1436).\n- Fixed: a promised follow-up could be postponed forever while the Creator read as away. More than 12 hours past its first due time, it now goes out at its next check even if they are away. A fan waiting for a reply, a cool-off and night quiet still hold it (#1436).\n- Fixed: a name only matches inside one tag or line (\"summer, rain\" is not \"Summer Rain\"), and companion reference pictures come only from the companions found in the scene.",
+          "highlight": true
+        },
+        {
           "version": "0.3.47",
           "date": "2026-10-16",
           "notes": "- Fixed: in tag mode, a Creator's identity tags (\"Always in their pictures\" or the card name) stayed where the prompt writer put them, often behind the count and body tags. Whole tags now move to the front of the Creator's part, once, in the writer's spelling (#1428).\n- Fixed: \"The image model knows this character\" added the card name a second time when the writer used tag order (\"ryuuzaki umi\" for \"Umi Ryuuzaki\"). Names now match in any word order.\n- Fixed: a companion the writer named by their card or tag name got no look, no reference picture, and kept the one-person rule. Companions now match on display or card name, whole words in any order (#1429).",
@@ -769,18 +793,6 @@
           "version": "0.3.30",
           "date": "2026-10-12",
           "notes": "- Fixed: Write, Improve, the guided post and \"Draw\" gave a Creator with a hidden or hinted identity no brief at all, so the text was written \"in their voice\" with nothing about them. They now get the same brief as an open Creator, read at their own disclosure level (no backstory) and with the real name and handle replaced before it reaches the model.\n- Changed: Write, Improve and the guided post now also read the page's bio and stage voice, the way a normal post does.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.29",
-          "date": "2026-10-12",
-          "notes": "- Changed: when the image prompt rewrite gives nothing, the \"Image prompt rewrite unusable\" server warning now says why: an empty answer, an answer cut off at the token limit, an answer that is not valid JSON or has no \"prompt\" field (with a short quote of it and the model name), no text connection, a failed request, or a rewrite that broke the scene's content level. Before, every case said \"the rewrite did not run or returned nothing\".",
-          "highlight": false
-        },
-        {
-          "version": "0.3.28",
-          "date": "2026-10-12",
-          "notes": "- Added: Deep details for chat messages. Hold a Creator's reply (or right-click it) and choose \"Deep details\" in the Message menu to see what went into it: the chat facts the reply was built from (relationship, stance, heat, memories), the model, the full prompt and the raw answer. It opens in the same window as a post's Deep details.\n- Slurp keeps these details for the newest 50 replies of each chat. Older replies, and replies written before this update, do not offer the item. Clearing a chat removes its details.",
           "highlight": false
         }
       ]

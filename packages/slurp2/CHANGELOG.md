@@ -1,5 +1,17 @@
 # Slurp release notes
 
+## 0.3.49 — 2026-10-19
+
+- Fixed: restoring a backup checks each media file more closely. Only PNG, JPEG, WebP, GIF and AVIF pictures whose file extension matches their contents come back; anything else is skipped and listed with the skipped entries (#1476).
+- Fixed: AVIF pictures in a backup were dropped on restore. They now come back like the other formats.
+- Changed: Slurp sends every stored picture (posts, messages, avatars, banners, ads) as the image type its contents show (#1476).
+
+## 0.3.48 — 2026-10-19 [highlight]
+
+- Changed: Creators whose character has a Conversation Schedule now follow it. Slurp only read a bare "06:00" and the Engine stores ranges ("06:00-08:00"), so every block was dropped and availability was guessed from the last post. Ranges, including ones past midnight, are now read as the Engine reads them. Time between blocks is free time, online; a block's status decides (offline and dnd are away, online and idle answer); a block without one falls back to its activity words. The post brief's day plan reads the same ranges (#1436).
+- Fixed: a promised follow-up could be postponed forever while the Creator read as away. More than 12 hours past its first due time, it now goes out at its next check even if they are away. A fan waiting for a reply, a cool-off and night quiet still hold it (#1436).
+- Fixed: a name only matches inside one tag or line ("summer, rain" is not "Summer Rain"), and companion reference pictures come only from the companions found in the scene.
+
 ## 0.3.47 — 2026-10-16
 
 - Fixed: in tag mode, a Creator's identity tags ("Always in their pictures" or the card name) stayed where the prompt writer put them, often behind the count and body tags. Whole tags now move to the front of the Creator's part, once, in the writer's spelling (#1428).

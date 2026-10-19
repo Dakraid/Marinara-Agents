@@ -4,7 +4,7 @@ import type {
 } from "../../../../../shared/src/features/agents/long-term-memory/schema.js";
 
 export type AmbiguousLinkDiagnostic = LtmDraftReviewMutation["diagnostics"][number];
-export type AmbiguousLinkDetails = NonNullable<ReturnType<typeof ambiguousLinkDetails>>;
+export type AmbiguousLinkDetails = { linkTarget: string; linkRelation: string; candidateTargetNoteIds: string[] };
 
 export function ambiguousLinkUnresolvedChoiceValue(details: AmbiguousLinkDetails) {
   let value = `\u0000unresolved:${details.linkRelation}:${details.linkTarget}`;
@@ -12,17 +12,11 @@ export function ambiguousLinkUnresolvedChoiceValue(details: AmbiguousLinkDetails
   return value;
 }
 
-export function ambiguousLinkDetails(diagnostic: AmbiguousLinkDiagnostic) {
+export function ambiguousLinkDetails(diagnostic: AmbiguousLinkDiagnostic): AmbiguousLinkDetails | null {
   if (diagnostic.code !== "ambiguous_subject_link_target") return null;
-  const details = diagnostic.details as
-    | {
-        linkTarget?: string;
-        linkRelation?: string;
-        candidateTargetNoteIds?: string[];
-      }
-    | undefined;
+  const details = diagnostic.details as Partial<AmbiguousLinkDetails> | undefined;
   if (!details?.linkTarget || !details?.linkRelation || !details?.candidateTargetNoteIds?.length) return null;
-  return details;
+  return details as AmbiguousLinkDetails;
 }
 
 export function replaceAmbiguousLinkTarget(mutation: LtmDraftMutation, details: AmbiguousLinkDetails, target: string) {

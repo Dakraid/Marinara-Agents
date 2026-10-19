@@ -56,7 +56,7 @@ export async function projectLongTermMemoryDraftReview(
     const sourceNoteId = draft.source.sourceNoteId;
     if (!sourceNoteId) continue;
     const included = !options.sourceNoteId || sourceNoteId === options.sourceNoteId;
-    const source = included
+    const source: MutableSource | null = included
       ? (sources.get(sourceNoteId) ?? { sourceNoteId, modes: new Set(), drafts: [], targets: new Map() })
       : null;
     if (source) {

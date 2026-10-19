@@ -120,7 +120,7 @@
         "schemaVersion": 1,
         "id": "beholder",
         "name": "Beholder",
-        "version": "1.3.13",
+        "version": "1.3.14",
         "description": "Keeps track of what each character is wearing and holding, plus any injuries, so the story stays consistent. You can check it on a paper doll from the roleplay toolbar. Works with big online models, or with the free Beholder model that runs privately on your computer. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode.",
         "engine": {
           "min": "2.4.4",
@@ -147,8 +147,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "40a86b10f938a5f2cd6098f387bfbb97263537f932af0fa9cc547c332fcc0025",
-            "bytes": 449824
+            "sha256": "805fc19711e45bd5a6d337895c5185511af9cef0aa989ac20451445120f38e3e",
+            "bytes": 452061
           }
         ],
         "permissions": [
@@ -163,9 +163,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/beholder.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/beholder-1.3.13.zip",
-        "sha256": "e9c307a995005d2c50495ea2f6631068d68714681f8b83c9e711ad2ecc0d9747",
-        "bytes": 461401
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/beholder-1.3.14.zip",
+        "sha256": "9a8dc2a8c73e008f9582bd16a857963df5e23c7caa450a0b8b6712c9cf516b41",
+        "bytes": 463638
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#beholder"
     },
@@ -664,7 +664,7 @@
         },
         "id": "gacha-forge",
         "name": "Gacha Forge",
-        "version": "1.8.12",
+        "version": "1.8.13",
         "description": "A complete gacha game mode. Describe a world and Gacha Forge builds the rest: banners to pull on, a cast the model writes and paints for you, story chapters told by a visual-novel narrator, and the battles, gear and events that grow around them. Install it, restart Marinara Engine when prompted, then open Home → Gacha Forge.",
         "engine": {
           "min": "2.4.4",
@@ -953,8 +953,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "ac1c971aad07e98c4eb9b5360953f88c20985f044a98df489e0df1d4a052e5a4",
-            "bytes": 1438795
+            "sha256": "9fd81235021e9ddb5d3708f8b78130b83cfe45555a63d244b85aa31578810bd6",
+            "bytes": 1440464
           },
           {
             "path": "farm-asc.webp",
@@ -1428,8 +1428,8 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "6bd9ec1f95f5296b65e974ea723e50e59a0335efabc97b6585c0979fb6153284",
-            "bytes": 502921
+            "sha256": "defce243452149ed999f24ca2c8ae6615ba9d743ea54a7987c7194b1ae0d3fec",
+            "bytes": 503199
           },
           {
             "path": "skill-aoe_damage-dark.webp",
@@ -2186,9 +2186,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/gacha-forge.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/gacha-forge-1.8.12.zip",
-        "sha256": "83acd099d6aeedc20de1ca7e08c4be36016232f851fa6f41c74642de2baa07bf",
-        "bytes": 7841874
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/gacha-forge-1.8.13.zip",
+        "sha256": "aedf7cb6c12857f370f34d72f4555a71fa94f70f507b6d9df36607828b7cd622",
+        "bytes": 7843821
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/gacha-forge/README.md"
     },
@@ -2457,7 +2457,7 @@
         },
         "id": "long-term-memory",
         "name": "Long-Term Memory",
-        "version": "1.4.54",
+        "version": "1.4.55",
         "description": "Remembers important things from your chat summaries, characters, and lorebooks, and brings them back when they matter. Enable it per chat from Chat Settings → Agents → Long-Term Memory. In Roleplay and Game, you can also add it from Chat Settings → Agents → Misc Agents.",
         "engine": {
           "min": "2.4.1",
@@ -2489,13 +2489,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "2278bafef7947bfe418d1dd23c5f65277fe8df10a5eaff460f6632d32dcf8d47",
-            "bytes": 473562
+            "sha256": "aff7389a686ac41c9095a16683febda01be4bbd5f489c556c9af6dcece58d8f4",
+            "bytes": 473651
           },
           {
             "path": "client.js",
-            "sha256": "cf50dd6b33ff61494d507f66275205deae0cfaf0f5d8a0a908a91feb52696210",
-            "bytes": 979819
+            "sha256": "a0ec7a37be3faacf2fef342bacf63bae223e49fe848380d14f982f54dab03104",
+            "bytes": 979925
           }
         ],
         "permissions": [
@@ -2511,9 +2511,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/long-term-memory.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/long-term-memory-1.4.54.zip",
-        "sha256": "4ed6f1fa34d1ed521cac566a4662f20f6f84e41e3502eb0afb137e6c89c61b0c",
-        "bytes": 1455880
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/long-term-memory-1.4.55.zip",
+        "sha256": "79e2aa6801a5b78fdf66e3547189d2c0592b5c6a413c3198bfb33bb666c47be7",
+        "bytes": 1456075
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#long-term-memory"
     },
@@ -3429,7 +3429,7 @@
         },
         "id": "slurp2",
         "name": "Slurp",
-        "version": "0.3.47",
+        "version": "0.3.49",
         "description": "A private social app for your characters. Turn characters and personas into Creators, post public or locked photos, and watch a simulated audience follow, subscribe, unlock, comment, and message them. By default, it is tuned for an adult experience. Install it, restart Marinara Engine when prompted, then open Home → Slurp.",
         "localizations": {
           "de": {
@@ -3496,13 +3496,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "6db4e4bc4c6c83f2af1070142180cc7dbbc8210cff983141502ccb1d6cbf60e0",
-            "bytes": 3530318
+            "sha256": "66c7bac83fe2ebf131f78972c81ffdde0733cfa433cd865f498013e66d122281",
+            "bytes": 3532385
           },
           {
             "path": "client.js",
-            "sha256": "d8cae4af7e9ad086a8e3019a56ad618226676b88441455d55af7b6dfcb2d4e50",
-            "bytes": 4767231
+            "sha256": "687afcf19884efff32bef1f36eb4e5c59bc04a381020ca72440152a1299ffbc8",
+            "bytes": 4767490
           },
           {
             "path": "slurp2-logo.png",
@@ -3560,9 +3560,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/slurp2.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/slurp2-0.3.47.zip",
-        "sha256": "066909068085ba5e4de068aa7cc3b07ce72bbf3e7b9eb7436543b843faa1d55b",
-        "bytes": 9211794
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/slurp2-0.3.49.zip",
+        "sha256": "f6068ca131641c467cf880693072d9db2190d8bedd0d6d8504c906fa9625264a",
+        "bytes": 9214120
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/slurp2/README.md"
     },

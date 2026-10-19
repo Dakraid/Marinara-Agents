@@ -65,7 +65,7 @@ type PrepareOptions = {
   instruction?: string;
   operationId: string;
   signal?: AbortSignal;
-  root?: string;
+  root: string;
   chatId?: string;
   directGameMode?: boolean;
   directSourceText?: string;
@@ -220,6 +220,7 @@ export async function prepareLongTermMemorySource(options: PrepareOptions): Prom
     );
     const response = {
       summary: "Directly ingested Game Mode summary.",
+      incomplete: false,
       units: directGameUnits(options.sourceNote, sourceText, sourceHash),
     };
     const compiled = compileEvidenceUnitExtraction({
@@ -439,6 +440,8 @@ function failed(
     ? {
         ...base,
         extractionStatus: "cancelled",
+        // retryableFailure() is always true for a cancellation; this only tells the type.
+        retryable: true,
         error: { code: "cancelled", message },
         diagnostics: [...(prepared?.diagnostics ?? []), { severity: "warning", code: "cancelled", message }],
       }
@@ -463,7 +466,7 @@ export async function processLongTermMemorySourceBatch(options: {
   signal: AbortSignal;
   applyLowRisk?: boolean;
   concurrency: number;
-  root?: string;
+  root: string;
   chatId?: string;
   directGameMode?: boolean;
 }) {
@@ -541,6 +544,7 @@ export async function processLongTermMemorySourceBatch(options: {
           applyLowRisk: options.applyLowRisk,
         });
         hasAppliedMutations ||= (committed.applyResult?.appliedMutationIds.length ?? 0) > 0;
+        // extractionStatus and retryable both follow outcome.incomplete, which the union type cannot see.
         results.push({
           sourceId: item.sourceId,
           title: item.title,
@@ -557,7 +561,7 @@ export async function processLongTermMemorySourceBatch(options: {
           accounting: committed.accounting,
           appliedMutationIds: committed.applyResult?.appliedMutationIds ?? [],
           skippedMutationIds: committed.applyResult?.skippedMutationIds ?? [],
-        });
+        } as LtmImportedSourceResult);
       } catch (error) {
         results.push(
           failed(item, prepared.extractionMethod, "finalize", error, cancelled(error, options.signal), prepared),
