@@ -4,6 +4,12 @@
     "beholder": {
       "versions": [
         {
+          "version": "1.3.14",
+          "date": "2026-10-19",
+          "notes": "- Clicking elsewhere in the chat no longer closes Beholder when you opened it from its shortcut. It stays open until you close it or leave the chat.",
+          "highlight": false
+        },
+        {
           "version": "1.3.13",
           "date": "2026-10-19",
           "notes": "- Closing the first-open note, or picking from the build menu, no longer closes Beholder when you opened it from its shortcut.",
