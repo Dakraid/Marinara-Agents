@@ -676,6 +676,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.50",
+          "date": "2026-10-19",
+          "notes": "- Added: tapping an ad (the button, the picture or a wall tile) opens an ad sheet with the picture, brand, product, copy and price feel, and still records the tap. The old \"Opening … promotion\" toast is gone.\n- Added: Settings › Fans & money › Collect has a \"Daily limit on Collect\" switch (`walletPayoutDailyLimit`, on by default). Off, Collect moves every whole coin of your Creator earnings at once.\n- Added: Messaging › \"What fans ask for\" is an editable list for the wish in a commission request (`messagesCommissionAsks`); empty keeps the built-in asks.",
+          "highlight": false
+        },
+        {
           "version": "0.3.49",
           "date": "2026-10-19",
           "notes": "- Fixed: restoring a backup checks each media file more closely. Only PNG, JPEG, WebP, GIF and AVIF pictures whose file extension matches their contents come back; anything else is skipped and listed with the skipped entries (#1476).\n- Fixed: AVIF pictures in a backup were dropped on restore. They now come back like the other formats.\n- Changed: Slurp sends every stored picture (posts, messages, avatars, banners, ads) as the image type its contents show (#1476).",
@@ -787,12 +793,6 @@
           "version": "0.3.31",
           "date": "2026-10-13",
           "notes": "- Changed: the guided post (New post, and Stir's \"Draft post\") is now written by the same generator as the page's own posts, with your wish as the direction. The draft gets the bio, stage voice, brief, spice level, image directions and live events, and comes back as a title, a text and a picture of its own. Before, your wish went word for word into the picture.\n- Changed: one composer. The picture is on top, then who sees the post, then one switch for the text: \"Write it myself\" or \"Guided\". A guided draft fills the normal title, text and picture; the separate preview and its \"Edit\" step are gone. A photo you add stays, and the text is written to go with it.\n- Added: \"Add from Slurp\" on Guided: a storyline of the page, a saved idea (posting the draft uses it up) and a wardrobe look for the picture. Brand deals and collabs stay.\n- Known limit: posting a draft written for a storyline does not move the storyline to its next chapter.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.30",
-          "date": "2026-10-12",
-          "notes": "- Fixed: Write, Improve, the guided post and \"Draw\" gave a Creator with a hidden or hinted identity no brief at all, so the text was written \"in their voice\" with nothing about them. They now get the same brief as an open Creator, read at their own disclosure level (no backstory) and with the real name and handle replaced before it reaches the model.\n- Changed: Write, Improve and the guided post now also read the page's bio and stage voice, the way a normal post does.",
           "highlight": false
         }
       ]

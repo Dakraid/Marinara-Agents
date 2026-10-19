@@ -34,7 +34,7 @@ assert.match(
   /slurpSettingsQuery\.data\?\.inlineAdsEnabled !== false/u,
   "Home must honor the inline promotion setting",
 );
-assert.match(home, /ui\.slurp\.ads\.opened/u, "the inline promotion CTA must provide user feedback");
+assert.match(card, /<SlurpAdSheet /u, "the inline promotion CTA must provide user feedback");
 
 const settings = slurp2BackstageSource();
 assert.match(settings, /ui\.slurp\.settings\.inlinePromotions/u);

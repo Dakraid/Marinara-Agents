@@ -54,7 +54,7 @@ import { slpDramaSettingsSchema } from "../../../../../shared/src/slp/slp-drama.
 import { SLURP_STORY_JOB_DEFAULTS, type SlurpStoryJobWeights } from "../../../../../shared/src/slp/slp-post-purpose.js";
 import { DEFAULT_SLP_CREATOR_REPLIES_PER_24_HOURS } from "../../../../../shared/src/slp/slp-social.schema.js";
 import { SLURP_COOL_OFF_HOURS } from "../world/slp-stance.js";
-import { SLURP_CUSTOM_OPENER_MAX_LENGTH, SLURP_CUSTOM_OPENERS_MAX } from "../../../../../shared/src/slp/slp-world.js";
+import { slurpCustomLinesSchema } from "../../../../../shared/src/slp/slp-world.js";
 import {
   SLURP_DEFAULT_PLATFORM_SCALE,
   SLURP_DEFAULT_WORLD_ACTIVITY,
@@ -341,6 +341,8 @@ export const slurpSettingsSchema = z.object({
   /** Daily stipend tops the balance up to this floor. Zero disables the stipend. */
   walletStipendFloor: z.number().int().min(0).max(99_999),
   walletDayStartHour: z.number().int().min(0).max(23),
+  /** Collect moves at most a daily allowance of earnings. Off: Collect moves all of them (R5). */
+  walletPayoutDailyLimit: z.boolean(),
   walletAdReward: z.number().int().min(0).max(999),
   walletAdDailyCap: z.number().int().min(0).max(9999),
   walletEngagementReward: z.number().int().min(0).max(999),
@@ -381,14 +383,10 @@ export const slurpSettingsSchema = z.object({
   messagesCoolOffMinutes: z.number().int().min(0).max(10080),
   /** Minutes a fan thinks over a quote before answering it. 0 = the next world tick. */
   messagesQuoteAnswerMinutes: z.number().int().min(0).max(10080),
-  /** The player's own first lines for fan DMs. Empty = the built-in ones. */
-  messagesFanOpeners: z
-    .array(z.string().trim().min(1).max(SLURP_CUSTOM_OPENER_MAX_LENGTH))
-    .max(SLURP_CUSTOM_OPENERS_MAX),
-  /** The player's own first words for commission requests. Empty = the built-in ones. */
-  messagesCommissionOpeners: z
-    .array(z.string().trim().min(1).max(SLURP_CUSTOM_OPENER_MAX_LENGTH))
-    .max(SLURP_CUSTOM_OPENERS_MAX),
+  /** The player's own fan DM first lines, commission first words and asks (R7). Empty = built-in. */
+  messagesFanOpeners: slurpCustomLinesSchema,
+  messagesCommissionOpeners: slurpCustomLinesSchema,
+  messagesCommissionAsks: slurpCustomLinesSchema,
   /**
    * Creator replies to comments in any 24 hours, installation-wide (your comments and the
    * audience's share it). No "off": the audience drain runs on page loads and this is its only cap.
@@ -494,6 +492,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   pricingMaxWeeklyChangePercent: 15,
   walletStipendFloor: SLURP_DEFAULT_ECONOMY.stipendFloor,
   walletDayStartHour: SLURP_DEFAULT_ECONOMY.dayStartHour,
+  walletPayoutDailyLimit: true,
   walletAdReward: SLURP_DEFAULT_ECONOMY.adReward,
   walletAdDailyCap: SLURP_DEFAULT_ECONOMY.adDailyCap,
   walletEngagementReward: SLURP_DEFAULT_ECONOMY.engagementReward,
@@ -636,6 +635,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   messagesQuoteAnswerMinutes: 1440,
   messagesFanOpeners: [],
   messagesCommissionOpeners: [],
+  messagesCommissionAsks: [],
   creatorRepliesPerDay: DEFAULT_SLP_CREATOR_REPLIES_PER_24_HOURS,
   autopurgeEnabled: false,
   autopurgeRetentionValue: 4,
