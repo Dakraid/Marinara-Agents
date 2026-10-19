@@ -209,7 +209,10 @@ export const slpSupportDeskSettingsSchema = z.object({
   suspicionRate: z.enum(SLP_DESK_RATES).default("normal"),
   winBackDays: z.number().int().min(1).max(14).default(3),
   /** R2: the player's saved answers, one tap into the composer. Empty = the built-in ones. */
-  quickReplies: z.array(z.string().trim().min(1).max(SLP_DESK_QUICK_REPLY_MAX)).max(SLP_DESK_QUICK_REPLY_LIMIT).default([]),
+  quickReplies: z
+    .array(z.string().trim().min(1).max(SLP_DESK_QUICK_REPLY_MAX))
+    .max(SLP_DESK_QUICK_REPLY_LIMIT)
+    .default([]),
 });
 export type SlpSupportDeskSettings = z.infer<typeof slpSupportDeskSettingsSchema>;
 export const SLP_DEFAULT_SUPPORT_DESK_SETTINGS: SlpSupportDeskSettings = slpSupportDeskSettingsSchema.parse({});
