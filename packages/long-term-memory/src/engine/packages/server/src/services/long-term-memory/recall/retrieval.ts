@@ -178,7 +178,13 @@ export async function retrieveLongTermMemory(input: RetrieveLongTermMemoryInput)
   // Issue #1467: only the keyword lane reads this search, so skip it when that lane is off.
   const keywords =
     (input.keywordWeight ?? 1) > 0
-      ? searchLtmKeywordIndex(index.keywords, query, { allowedChunks: allowed, stopWords, knownNames })
+      ? searchLtmKeywordIndex(index.keywords, query, {
+          allowedChunks: allowed,
+          stopWords,
+          knownNames,
+          // Issue #1465: BM25 agreement lets one distinctive keyword past the single-keyword cap.
+          lexicalScores: new Map(lexical.map((hit) => [hit.chunkId, hit.normalizedScore])),
+        })
       : [];
   if (keywords.length) {
     lanes.push({

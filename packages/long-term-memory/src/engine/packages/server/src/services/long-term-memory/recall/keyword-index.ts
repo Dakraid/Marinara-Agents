@@ -45,6 +45,9 @@ export function buildLtmKeywordIndex(chunks: LtmMemoryChunk[]): LtmKeywordIndex 
 /** Score of a keyword hit whose normalized phrase equals the normalized query exactly. */
 export const LTM_KEYWORD_MAX_SCORE = 4;
 
+/** Issue #1465: the BM25 normalized score at which one distinctive keyword counts. */
+export const LTM_SINGLE_KEYWORD_BM25_AGREEMENT = 0.2;
+
 /**
  * Issue #1258: a keyword shared by much of the recallable vault carries little
  * signal, so a hit is scaled by an idf-like factor. A keyword unique to one chunk
@@ -121,6 +124,8 @@ export function searchLtmKeywordIndex(
     /** Issue #1363: normalized names the vault knows (character titles). Capitalisation
      * cannot flag a name at a sentence start, in lowercase, or in a caseless script. */
     knownNames?: ReadonlySet<string>;
+    /** Issue #1465: BM25 normalized score by chunk id, for the single-keyword cap. */
+    lexicalScores?: ReadonlyMap<string, number>;
   } = {},
 ) {
   const normalizedTerms = normalizeKeywordTerms(queryText, options.stopWords);
@@ -241,12 +246,16 @@ export function searchLtmKeywordIndex(
   // Issue #1264: one ordinary exact keyword must not clear the threshold alone.
   // Two or more distinct keywords, a multi-word phrase, or a name (capitalised in
   // the query, or a known character name, issue #1363) keep full credit.
+  // Issue #1465: a keyword the cap would cut is already rare in scope, so when
+  // BM25 also rates the memory a reasonable match it scores three quarters instead.
   const nameTerms = queryNameTerms(queryText);
-  for (const hit of hits.values()) {
+  const cap = LTM_KEYWORD_MAX_SCORE / 2;
+  for (const [chunkId, hit] of hits) {
     if (hit.exactTerms.size !== 1) continue;
     const [term] = hit.exactTerms;
     if (term!.includes(" ") || nameTerms.has(term!) || options.knownNames?.has(term!)) continue;
-    hit.score = Math.min(hit.score, LTM_KEYWORD_MAX_SCORE / 2);
+    const bm25Agrees = (options.lexicalScores?.get(chunkId) ?? 0) >= LTM_SINGLE_KEYWORD_BM25_AGREEMENT;
+    hit.score = hit.score >= cap && bm25Agrees ? LTM_KEYWORD_MAX_SCORE * 0.75 : Math.min(hit.score, cap);
   }
 
   return [...hits.entries()]
