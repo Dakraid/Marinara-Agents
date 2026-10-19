@@ -85,12 +85,32 @@ export async function deleteSlurpMessages(db: DB, threadId: string, ids: readonl
   });
 }
 
-/** "Write it again" could not write: the answer is owed again, so the scheduler writes it later. */
-export async function oweSlurpReplyAgain(db: DB, threadId: string): Promise<void> {
-  await db
-    .update(slurpThreads)
-    .set({ needsReply: "true", replyNotBeforeAt: null, updatedAt: now() })
-    .where(eq(slurpThreads.id, threadId));
+/** The raw rows of these messages, taken before "Write it again" removes them. */
+export async function snapshotSlurpMessages(db: DB, threadId: string, ids: readonly string[]) {
+  return db
+    .select()
+    .from(slurpMessages)
+    .where(and(eq(slurpMessages.threadId, threadId), inArray(slurpMessages.id, [...ids])));
+}
+
+/**
+ * "Write it again" could not write: the old answer comes back as it was. Queued bubbles of the failed
+ * try go, and nothing is owed, because the answer that stands was already given.
+ */
+export async function restoreSlurpMessages(
+  db: DB,
+  threadId: string,
+  rows: Awaited<ReturnType<typeof snapshotSlurpMessages>>,
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(slurpReplyBubbles).where(eq(slurpReplyBubbles.threadId, threadId));
+    for (const row of rows) await tx.insert(slurpMessages).values(row);
+    await tx
+      .update(slurpThreads)
+      .set({ needsReply: "false", replyNotBeforeAt: null })
+      .where(eq(slurpThreads.id, threadId));
+    await refreshPreview(tx as unknown as DB, threadId);
+  });
 }
 
 export async function readSlurpThreadMessage(db: DB, threadId: string, messageId: string) {

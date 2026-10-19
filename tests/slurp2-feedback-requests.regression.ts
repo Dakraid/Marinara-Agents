@@ -97,8 +97,15 @@ assert.match(
   editStorage,
   /if \(owed && gone\.includes\(String\(owed\.id\)\)\)[\s\S]*?delete\(slurpReplyBubbles\)[\s\S]*?generationEpoch/u,
 );
-// "Write it again" that could not write leaves the answer owed, never a thread without one.
-assert.match(editRoutes, /if \(outcome\.status !== "replied"\) await oweSlurpReplyAgain\(app\.db, threadId\);/u);
+// "Write it again" that could not write puts the old answer back, never a thread without one.
+assert.match(
+  editRoutes,
+  /snapshotSlurpMessages\(app\.db, threadId, answer\)[\s\S]*?deleteSlurpMessages\(app\.db, threadId, answer\)[\s\S]*?if \(outcome\.status !== "replied"\) await restoreSlurpMessages\(app\.db, threadId, oldAnswer\);/u,
+);
+assert.match(
+  editStorage,
+  /restoreSlurpMessages[\s\S]*?delete\(slurpReplyBubbles\)[\s\S]*?insert\(slurpMessages\)\.values\(row\)/u,
+);
 
 // ── R10: a DM thread as text, or a summary, to paste into a lorebook ──
 const row = (role: "viewer" | "creator", content: string, extra: Record<string, unknown> = {}) => ({

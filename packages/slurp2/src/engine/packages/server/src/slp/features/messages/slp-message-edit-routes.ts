@@ -14,8 +14,9 @@ import {
 import {
   deleteSlurpMessages,
   editSlurpMessage,
-  oweSlurpReplyAgain,
   readSlurpThreadMessage,
+  restoreSlurpMessages,
+  snapshotSlurpMessages,
 } from "../../data/messages/slp-message-edit-storage.js";
 import { createSlurpReplyQueueStorage } from "../../data/messages/slp-reply-queue-storage.js";
 import { replyToSlurpMessage } from "./slp-message-operation.js";
@@ -76,14 +77,15 @@ export async function slpMessageEditRoutes(app: FastifyInstance, messaging: SlpM
       return reply.code(409).send({ error: "They are still writing. Give it a moment." });
     const answer = slurpLastAnswer(await messages.listMessages(threadId, 40));
     if (!answer) return reply.code(409).send({ error: "There is no answer to write again." });
+    // The old answer goes only once the new one exists: a failed try puts it back.
+    const oldAnswer = await snapshotSlurpMessages(app.db, threadId, answer);
     await deleteSlurpMessages(app.db, threadId, answer);
     const triggerMessageId = await messages.latestViewerMessageId(threadId);
     const outcome = triggerMessageId
       ? await replyToSlurpMessage(app.db, { threadId, triggerMessageId, force: true })
       : ({ status: "busy" } as const);
-    // Busy, cooling, in a scene elsewhere or a failed call: the old answer is gone, so the new one is
-    // owed and the scheduler writes it when it can (never a thread left without an answer).
-    if (outcome.status !== "replied") await oweSlurpReplyAgain(app.db, threadId);
+    // Busy, cooling, no budget, AI off or a failed call: the old answer stays.
+    if (outcome.status !== "replied") await restoreSlurpMessages(app.db, threadId, oldAnswer);
     return {
       ...(await view(threadId, "viewer")),
       reply: outcome.status === "replied" ? maskForViewer(outcome.message) : null,
