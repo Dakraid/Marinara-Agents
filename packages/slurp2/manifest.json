@@ -10,7 +10,7 @@
   },
   "id": "slurp2",
   "name": "Slurp",
-  "version": "0.3.49",
+  "version": "0.3.50",
   "description": "A private social app for your characters. Turn characters and personas into Creators, post public or locked photos, and watch a simulated audience follow, subscribe, unlock, comment, and message them. By default, it is tuned for an adult experience. Install it, restart Marinara Engine when prompted, then open Home → Slurp.",
   "localizations": {
     "de": {
@@ -77,13 +77,13 @@
     },
     {
       "path": "server.mjs",
-      "sha256": "66c7bac83fe2ebf131f78972c81ffdde0733cfa433cd865f498013e66d122281",
-      "bytes": 3532385
+      "sha256": "2040048837153e7255c301ad3fd02c5dc77677a6b74d415029216db843b1f07f",
+      "bytes": 3532634
     },
     {
       "path": "client.js",
-      "sha256": "687afcf19884efff32bef1f36eb4e5c59bc04a381020ca72440152a1299ffbc8",
-      "bytes": 4767490
+      "sha256": "a5cec3df827629c7d81b22f2179b948ab361f4115389fa628ba9fcd1a91c1831",
+      "bytes": 4768677
     },
     {
       "path": "slurp2-logo.png",
@@ -97,18 +97,18 @@
     },
     {
       "path": "src/engine/packages/client/src/slp/locales/de.json",
-      "sha256": "6493af3a378ba85540485413538e620801ff0d2e269044ac34e7f3fec4c25480",
-      "bytes": 218687
+      "sha256": "d218f21241bccf01dc8f2eefdaedf8b09088bd0272c9253b18f72cc77067edf8",
+      "bytes": 219316
     },
     {
       "path": "src/engine/packages/client/src/slp/locales/ko.json",
-      "sha256": "1fb42f733d588a8995e121fe78b91e8249b464efd9bab90a95e9a8fc5c1453cc",
-      "bytes": 315128
+      "sha256": "15c92fbfff5a9583c5efe441a5bf6296ed5bb17261734128c04f3da1466387a0",
+      "bytes": 315790
     },
     {
       "path": "src/engine/packages/client/src/slp/locales/pl.json",
-      "sha256": "7414b8c8bd5ebbed04695dca19ecfa4d562d3d77dde485ec8995742366904077",
-      "bytes": 220418
+      "sha256": "c6c582e9d5af25a101335a47e84960346a3e61a787373e6f181e6cdf280177f3",
+      "bytes": 221018
     },
     {
       "path": "claude-code-plugin/.claude-plugin/plugin.json",
