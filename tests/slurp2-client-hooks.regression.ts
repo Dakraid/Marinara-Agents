@@ -571,8 +571,8 @@ assert.deepEqual(
     refetchQueries: 0,
     onMutate: 2,
     // SlpConnectionsPanel.tsx moved into the SlurpBackstagePrompts component mapping, so its one
-    // onError no longer counts as state-layer code.
-    onError: 93,
+    // onError no longer counts as state-layer code. +1: SlpDeskQuickReplies (R2) toasts a failed save.
+    onError: 94,
     onSettled: 40,
   },
   "query and mutation wiring counts match the monolith plus the later Slurp2 hooks",
