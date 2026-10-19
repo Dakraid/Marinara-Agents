@@ -123,14 +123,26 @@ again". Pace, nights, images and names are asked up to three times. A text conne
 is never required. Setup saves in four separate writes. There is no Slurp-wide heat
 question.
 
+Roles (from Opening Day, approved "Cool shit, theme it this way"): the player owns the
+Slurp, Support is staff ("Morning, boss"), characters are Creators, fans are the crowd.
+The Basic screen questions are owner decisions. The maintainer wants Duolingo-level
+animation and flow; a modal with text bubbles was rejected, and so was a paper form.
+
 Target, about six taps on the recommended path:
 
 1. G's splash and the age gate, unchanged. The age gate no longer writes `completed`.
-2. **Basic screen.** One screen, pre-filled with recommended values. Each answer changes a
-   real Slurp post card with fixed sample data:
+2. **Basic screen.** One screen, pre-filled with recommended values, with one "Use the
+   recommended setup" fast lane, "Skip to the questions" and reload-resume. It opens
+   with "Who are you: watch, run, or both" (watchers skip to the feed), the Mari unlock
+   beat (what a locked post is) and the real AI cost line. Each answer changes the real
+   Slurp feed, post, locked-post and nav components with fixed sample data (the Opening
+   Day phone was rejected because it did not look like Slurp; the real components first
+   need their live actions split out so a preview tap does nothing). Answer cards are
+   enlarged real Slurp controls, and the same controls appear on the Basic page:
    - Text connection, or "later". "Later" sets the pace to manual, as Opening Day did.
    - Pictures yes or no, and the image connection.
-   - Heat.
+   - Heat. Writes the Slurp-wide limit and the default level, and shows the public
+     step-down ("Public: tease, Locked: Flirty"). The age gate text must match it.
    - How busy.
    - Crowd.
    - Names, open or hinted.
@@ -141,7 +153,8 @@ Target, about six taps on the recommended path:
 4. **Add extras.** One card per extension, with a sentence and a real sample component
    (an inline ad, a poll, a holiday banner, a lever card, a DM-to-scene card). The
    recommended pick is preselected. Until a real gate exists, a card can only write the
-   existing flag, and it says what it turns on.
+   existing flag, and it says what it turns on. The ad sample needs the ad sheet (tap
+   opens the ad) first.
 5. **Open the doors.** This is the one write. `completed` is written last, only after the
    other parts succeed. Then the first-post queue and artwork start.
 
@@ -155,12 +168,15 @@ Support notice with "Add" and "Not now":
 Support sends at most one offer a day, and none while Slurp is paused.
 
 Opening Day (`conduct-your-welcome`) gives the stage, the reveal and the one-write
-`slpRailStamp` rule ("write only the questions the player answered"). Do not reuse its
-invented phone.
+`slpRailStamp` rule ("write only the questions the player answered", Spice first,
+answers sanitised). Its 18+ "license" chapter is an option if the age gate moves into the
+flow. Do not rebuild G's screen; the maintainer rejected a new one twice.
 
 The other cases:
 
 - **Existing installs.** They get a one-time "What's switched on" card in Backstage.
+- **Your Slurp card.** Opening Day's "Your Slurp" card (preview from settings + "Run
+  setup again") moves to the top of the Basic page, since Overview loses its switches.
 - **Run setup again.** It opens the Basic screen with the current values. It writes only
   the fields the player touched, and it never shows the age gate again.
 - **Watchers.** The watcher exit writes `completed`.
@@ -171,12 +187,18 @@ The other cases:
    - Verify the first-run finding.
    - Require a text connection, or set manual pace without one.
    - Show Spice in Backstage search.
-   - Use one save model.
+   - One save status and conflict protection for every page (not a rewrite of every
+     page to autosave).
+   - Replay the October feedback fixes from `conduct-your-welcome`, one small PR each,
+     by diff (the branch is 424 commits behind; cherry-pick conflicts). The ad sheet
+     first.
    - Fix the five accessibility problems from the settings audit.
 1. **Grouping.** Add the Basic page, one page per extension built from existing panels,
    and "More" expanders. Extension cards show a true status line read from real flags
    (for example "Ads: on, 1 in 8 posts"), and an Open link. There are no switches yet.
-   The Overview quick switches go away.
+   The Overview quick switches go away. The Messages group is the old "Messages pilot":
+   acceptance tests for it are away replies vs writes first, who can message (closed is
+   not "nobody"), what still arrives when automation is off, and the no-connection case.
 2. **Onboarding.** Add the Basic screen, the Creator step and the one write.
 3. **Real gates.** Do them in this order:
    1. Brands & ads, the first switch on a card.
@@ -198,15 +220,63 @@ For each slice: one patch bump, all regressions green, and screenshots at 390, 7
 - settings overview, creator-settings safety, messaging settings
 - stir
 
+## Rules kept from the module plan
+
+- Off still delivers what is owed (paid commissions, replies already written).
+- Availability and automation are separate controls (`messagesAwayRepliesEnabled` is
+  automation only).
+- Every control says whom it affects: all of Slurp, one Creator, or only your view. A
+  dependency ("needs an image connection") explains itself.
+- MODULE-SETUP.md's 152-key placement map is free input for slice 1.
+
+## Long-term roadmap (after the configurator)
+
+Order, each with what it waits for:
+
+1. **Your taste, their style** (after slice 1). One heat block per Creator used in
+   Content rules and the Stir sheet; one "no" list; temporary vs lasting steering chips
+   in DMs ("Spicier for this reply", "make this their usual"); Page style reaching DMs
+   and Stir; Creator premise with sample post, DM and Stir preview; facts about the
+   player stay in the player's chats. Test: two Creators, same heat and request,
+   recognisably different results.
+2. **Character cards with several characters** (after slice 2's Creator picker).
+   Detect the card type (person, group, narrator, scenario), then pick which characters
+   become Creators, then shared or narrator pages. Also fix: "Read card again" wipes
+   corrections.
+3. **Storylines engine, later PRs** (after slice 5). Flow-view editor with AI draft,
+   variants and dry run; items and inventory (gifts, coin purchases); couples,
+   rivalries and collabs as packs; signals as storyline starters.
+4. **Connected feed** (after the Storylines gate). One collab or occasion causes
+   distinct reactions, DM callbacks and a "Since you were here" summary; a recurring fan
+   cast; secrets and rumours with who-knows-what; milestones with a payoff.
+5. **Richer Stir and optional play** (after the Stir gate). Revise a preview ("slower",
+   "keep me out of it"), real scheduling ("tonight"), pause, end or revise instead of
+   Undo; Surprise me with a purpose; private request to agreed idea, delivery and
+   callback; Support desk and economy as games. Pick the next system from play, not
+   from a plan.
+6. **Engine link growth.** Decision models (optional, Engine capability; cheap yes/no
+   instead of dice or a full model call: does this comment need a reply, is a storyline
+   moment ripe, where does a scene end; always fall back to today's behaviour), Slurp
+   history into a lorebook, scene photo shoots, voice from chat history (opt-in only).
+7. **Shared image prompt helper** with Noodle (appearance overrides, character tags,
+   model-specific prompts).
+
+Not planned now: video posts, a full inventory economy before the everyday loop is
+reliable, an 8-section "understanding" editor, a global Simple/Full switch.
+
 ## Branches to salvage
 
 - `the-plot-thickens-branch-out` (0.3.29). Take STORYLINES.md, the state reader
   `slp-story-state.ts`, the Life panel and their tests, and cherry-pick them onto fresh
-  staging. Do not rebase this branch. Note: every gate must cover the classic post
-  planner, which prod uses.
+  staging. Do not rebase this branch. Its last commit (WIP, not built or tested) gives
+  plain posts a condition moment on the classic planner, which prod uses; every gate
+  must cover that planner. Check `DELETE /story/facts/<id>` ("Fact not found" in a
+  probe) before real Life panel use.
 - `conduct-your-welcome` (0.3.18). Take the October feedback fixes as small PRs: family
   and never-together, Collect limit, commission asks, comment-reply memory, DM edit,
-  delete and copy, ad sheet, B1–B3. Take the stage and the one-write rule for slice 2.
+  delete and copy, ad sheet, B1–B3, desk topics and quick replies, update a Creator's page
+  through the sign-up chat. Replay by diff on fresh staging; family is partly on staging
+  already (0.3.43). Take the stage and the one-write rule for slice 2.
   Drop MODULE-SETUP.md, the nine-home map and the ticket welcome.
 - `one-deck-to-bind-them` is already in staging. Nothing to take.
 
