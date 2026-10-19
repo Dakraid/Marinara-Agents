@@ -17,6 +17,27 @@ import {
 const client = join(import.meta.dirname, "..", "packages/slurp2/src/engine/packages/client/src/slp");
 const src = (path: string) => readFileSync(join(client, path), "utf8");
 
+// ── R2: quick replies for the Support desk ──
+const quick = readFileSync(join(client, "features/messages/SlpDeskQuickReplies.tsx"), "utf8");
+assert.match(
+  quick,
+  /const replies = saved\.length \? saved : SLP_DESK_QUICK_REPLY_KEYS\.map\(\(key\) => t\(key\)\);/u,
+  "built-ins until the player saves",
+);
+assert.match(quick, /setDraft\(reply\);/u, "one tap fills the composer; the player still sends");
+assert.match(quick, /supportDesk: \{ \.\.\.desk, quickReplies \}/u);
+assert.match(
+  src("features/messages/SlpThreadComposer.tsx"),
+  /\{asSupport && <SlpDeskQuickReplies model=\{model\} \/>\}/u,
+);
+
+for (const locale of ["en", "de", "ko", "pl"]) {
+  const keys = JSON.parse(src(`locales/${locale}.json`)) as Record<string, string>;
+  for (const number of [1, 2, 3, 4, 5])
+    assert.ok(keys[`ui.slurp.desk.quickReplyBuiltin${number}`], `${locale} built-in ${number}`);
+}
+assert.match(quick, /min-h-11 min-w-11/u, "the remove button is a 44 px target");
+
 // ── R7: the player edits what the fan wants in a commission request ──
 assert.ok(
   SLURP_COMMISSION_ASKS.some((ask) => slurpCommissionBrief("seed").includes(ask)),

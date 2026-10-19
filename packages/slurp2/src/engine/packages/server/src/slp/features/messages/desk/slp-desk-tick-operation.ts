@@ -16,6 +16,8 @@ import { updateSlurpSupportDesk } from "../../../data/creators/slp-support-desk-
 import { countSlurpDeskPublished } from "../../../data/creators/slp-support-desk-counts.js";
 import { appendSlurpDeskLine } from "../../../data/messages/slp-support-desk-thread.js";
 import { enqueueSlurpPendingText } from "../../world/slp-world-contract.js";
+import { slurpDeskSituation } from "../../../modules/messages/slp-desk-situation.js";
+import { readSlurpCreatorTiesDocument } from "../../../data/projects/slp-creator-ties-storage.js";
 import { readSlurpDeskOffer, slurpDeskOfferSummary } from "../../../modules/messages/slp-support-desk-talk.js";
 import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../../shared/src/slp/slp-support.js";
 import { slurpCreatorReach } from "../../../../../../shared/src/slp/slp-reach.js";
@@ -353,6 +355,7 @@ export async function advanceSlurpSupportDesk(db: DB, at = new Date()): Promise<
   const followers = await createSlurpPopulationStorage(db)
     .countFollowersForCreators(accounts.map((account) => account.id))
     .catch(() => new Map<string, number>());
+  const collabs = (await readSlurpCreatorTiesDocument(db).catch(() => null))?.ties.collabs ?? [];
   for (const account of accounts) {
     // Lines, coins and switches wait until the desk is written: a pass that fails writes nothing twice.
     const effects: (() => Promise<unknown>)[] = [];
@@ -373,6 +376,16 @@ export async function advanceSlurpSupportDesk(db: DB, at = new Date()): Promise<
       }
       const needsCounts =
         desk.challenges.some((entry) => entry.status === "active") || desk.contract?.status === "active";
+      // Only a Creator who may write in, with no ticket open, needs their week read.
+      const situation =
+        !yours && settings.tickets !== "off" && !desk.pausedAt && (!desk.ticket || desk.ticket.status === "resolved")
+          ? slurpDeskSituation({
+              creatorId: account.id,
+              at,
+              ledger: (await storage.getEarnings(account.id).catch(() => null))?.ledger ?? [],
+              collabs,
+            })
+          : undefined;
       const ticked = slpDeskTick(desk, {
         at,
         // The player's own Creators never catch Slurp, leave or write tickets: the player is them.
@@ -386,6 +399,7 @@ export async function advanceSlurpSupportDesk(db: DB, at = new Date()): Promise<
           : settings,
         counts: needsCounts ? await countSlurpDeskPublished(db, account.id) : { posts: 0, stories: 0 },
         rolls: [Math.random(), Math.random(), Math.random()],
+        situation,
       });
       desk = await applyEvents(later, db, account, ticked.events, ticked.desk, settings, at);
       if (settings.noticeMilestones)
