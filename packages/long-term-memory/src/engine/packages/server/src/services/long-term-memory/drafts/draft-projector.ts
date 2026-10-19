@@ -422,7 +422,7 @@ function changesForMutation(before: LtmNote | null, after: LtmNote, mutation: Lt
   if (mutation.kind === "set_keywords")
     return textChange("keywords", before?.keywords.join(", "), after.keywords.join(", "));
   if (mutation.kind === "set_status") return textChange("status", before?.status, after.status);
-  if (mutation.kind === "set_title") return textChange("title", before?.title, after.title);
+  if (mutation.kind === "set_title") return textChange("title", before?.title, after.title!);
   if (mutation.kind === "set_subjects")
     return before?.subjects && subjectsEqual(before.subjects, after.subjects)
       ? []
@@ -454,7 +454,7 @@ function textChange(
   kind: LtmProjectedChange["kind"],
   before: string | undefined,
   after: string,
-  key = kind,
+  key: string = kind,
 ): LtmProjectedChange[] {
   return before === after ? [] : [{ kind, key, ...(before ? { before } : {}), after }];
 }

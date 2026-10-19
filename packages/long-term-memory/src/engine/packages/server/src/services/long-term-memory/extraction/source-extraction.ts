@@ -48,7 +48,7 @@ import { LtmServiceError } from "../service-error.js";
 export type ExtractLongTermMemoryFromSourceNoteOptions = {
   noteId: string;
   languageModel: PackageLanguageModel;
-  root?: string;
+  root: string;
   scope?: LtmScope;
   modes?: LtmMode[];
   mode?: LtmMode;
@@ -211,7 +211,7 @@ export async function finalizeLongTermMemoryExtractionDraft(
     accounting?: LtmExtractionAccounting;
     chatId?: string;
     reviewRequired?: boolean;
-    afterWrite?: (draft: LtmExtractionDraft) => Promise<void>;
+    afterWrite?: (draft: LtmExtractionDraft) => Promise<unknown>;
   },
   options: { root?: string; overlay?: Map<string, LtmNote> } = {},
 ) {
@@ -297,7 +297,7 @@ export async function finalizeLongTermMemoryExtractionDraft(
 
 async function getExistingTypedNotes(options: {
   storage: LongTermMemoryStorage;
-  root?: string;
+  root: string;
   sourceText: string;
   sourceTitle?: string;
   scope: LtmScope;

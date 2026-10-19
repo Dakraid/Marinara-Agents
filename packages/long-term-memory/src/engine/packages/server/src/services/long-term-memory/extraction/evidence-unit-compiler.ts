@@ -86,6 +86,8 @@ export function compileLtmEvidenceUnits(options: CompileLtmEvidenceUnitsOptions)
         scope: options.scope,
         tags: target.tags,
         keywords: unitKeywords,
+        // The draft schema defaults this to [] when the draft is stored.
+        suppressedKeywords: [],
         links,
         sections,
         ...(subjects ? { subjects } : {}),

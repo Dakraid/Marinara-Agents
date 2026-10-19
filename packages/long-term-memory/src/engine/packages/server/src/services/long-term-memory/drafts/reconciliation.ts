@@ -556,7 +556,7 @@ export async function preflightLongTermMemoryDraft(
       mutationId: mutation.id,
       targetId: mutationTargetId(mutation),
       disposition,
-      status: mutationBlockers.length ? "blocked" : "ready",
+      status: mutationBlockers.length ? ("blocked" as const) : ("ready" as const),
       autoIncluded: autoIncludedIds.includes(mutation.id),
       blockers: mutationBlockers,
       conflicts,
@@ -677,7 +677,7 @@ async function applyInner(
     await assertFresh(storage, draft);
     const selectedIds = options.mutationIds ? new Set(options.mutationIds) : null;
     const unknown = options.mutationIds?.filter(
-      (mutationId) => !draft.mutations.some((mutation) => mutation.id === mutationId),
+      (mutationId) => !draft!.mutations.some((mutation) => mutation.id === mutationId),
     );
     if (unknown?.length) throw new Error(`Long-term memory draft mutation not found: ${unknown.join(", ")}`);
     const previouslyApplied = new Set(draft.appliedMutationIds ?? []);

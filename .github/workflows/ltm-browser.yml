@@ -7,6 +7,7 @@ on:
       - ".github/workflows/ltm-browser.yml"
       - "artifacts/long-term-memory-*.zip"
       - "packages/long-term-memory/**"
+      - "scripts/typecheck-packages.mjs"
       - "tests/engine-visual-styles.ts"
       - "tests/long-term-memory-*"
       - "tests/regression-helpers.ts"
@@ -79,3 +80,14 @@ jobs:
             pnpm --dir engine --filter @marinara-engine/server exec tsx "$GITHUB_WORKSPACE/tests/long-term-memory-$test.regression.ts"
           done
           node tests/long-term-memory-loading.regression.mjs
+
+      # The strict run checks the package against the Engine's own dependency types, so it needs this Engine checkout;
+      # Pull Request Checks has none and runs only the name check. tsc comes from the Agents lockfile, installed last so
+      # the regressions above resolve the package's imports exactly as before.
+      - name: Install locked Agents dependencies
+        run: npm ci
+
+      - name: Typecheck Long-Term Memory strictly
+        env:
+          MARINARA_ENGINE_ROOT: ${{ github.workspace }}/engine
+        run: node scripts/typecheck-packages.mjs long-term-memory

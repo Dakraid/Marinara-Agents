@@ -36,7 +36,7 @@ export interface StoreLtmDraftOptions extends CreateLtmExtractionDraftInput {
   outcome?: LtmExtractionOutcome;
   accounting?: LtmExtractionAccounting;
   reviewRequired?: boolean;
-  afterWrite?: (draft: LtmExtractionDraft) => Promise<void>;
+  afterWrite?: (draft: LtmExtractionDraft) => Promise<unknown>;
 }
 
 class LtmSupersessionError extends Error {
