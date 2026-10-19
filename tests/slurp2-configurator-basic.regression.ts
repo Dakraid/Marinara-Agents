@@ -70,5 +70,10 @@ assert.match(
   /section !== "overview" && target !== "basic"/u,
   "the Basic page saves at once, like Overview",
 );
+assert.match(
+  read("features/settings/slp-settings-backstage-contract.ts"),
+  /!\(key in patch\)/u,
+  "a save at once drops staged edits of the same keys",
+);
 
 console.log("slurp2 configurator Basic regression passed");

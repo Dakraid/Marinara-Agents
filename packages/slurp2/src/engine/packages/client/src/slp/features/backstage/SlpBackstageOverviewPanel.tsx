@@ -14,11 +14,11 @@ import {
   MessageCircle,
   Pause,
   Play,
-  Sparkles,
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { SlpStirGlyph } from "../../base/chrome/SlpGlyphs";
 import { SettingAnchor } from "../../modules/settings/SlpSettingsKit";
 import { slurpAudiencePresetFor } from "../../../../../shared/src/slp/slp-tuning.js";
 import type { SlpBackstagePageProps } from "./slp-backstage-contract";
@@ -142,7 +142,13 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
   const cap = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
   const tx = (key: string, defaultValue: string, values?: Record<string, unknown>) =>
     t(`ui.slurp.settings.overview.yours.${key}`, { defaultValue, ...values });
-  const extensions: { id: string; title: string; status: string; Icon: LucideIcon; open: () => void }[] = [
+  const extensions: {
+    id: string;
+    title: string;
+    status: string;
+    Icon: LucideIcon | typeof SlpStirGlyph;
+    open: () => void;
+  }[] = [
     {
       id: "basic",
       title: tx("basic", "Basic"),
@@ -183,7 +189,7 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
       id: "stir",
       title: tx("stir", "Stir"),
       status: tx("stirStatus", "Always on: the lever deck in the Stir tab"),
-      Icon: Sparkles,
+      Icon: SlpStirGlyph,
       open: () => onNavigate({ mode: "creator", view: "stir" }),
     },
     {

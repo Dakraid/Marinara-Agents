@@ -66,7 +66,13 @@ export function SlpBasicPanel(page: SlpBackstagePageProps) {
       <div className="grid items-start gap-5 lg:grid-cols-2">
         <SettingsGroup title={tx("connections", "Connections")}>
           <div className="text-sm">
-            {noText ? (
+            {!connectionsQuery.isSuccess ? (
+              <p className="text-[var(--slurp-muted)]">
+                {connectionsQuery.isError
+                  ? tx("connectionsError", "Could not load your connections.")
+                  : tx("connectionsLoading", "Checking your connections…")}
+              </p>
+            ) : noText ? (
               <p role="alert" className="flex items-start gap-2 text-[var(--slurp-warning)]">
                 <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
                 {tx(
@@ -185,7 +191,7 @@ export function SlpBasicPanel(page: SlpBackstagePageProps) {
             label={t("ui.slurp.settings.messaging.dmPolicy")}
             detail={tx(
               "dmPolicyDetail",
-              "Who can start a new chat with a Creator. Subscribers and chats already running always get through.",
+              "Who can start a new chat with a Creator who has no rule of their own. Subscribers and chats already running always get through.",
             )}
             options={DM_POLICIES.map((value) => ({
               value,
