@@ -55,12 +55,44 @@ function keywordFrequencyWeight(documentFrequency: number, totalChunks: number) 
   return Math.log(1 + totalChunks / documentFrequency) / Math.log(1 + totalChunks);
 }
 
+/** Issue #1467: compiled once. A pattern built per call took most of each recall. */
+const KEYWORD_TOKEN_CHARACTER = /[\p{L}\p{N}]/u;
+
+function isKeywordTokenCodePoint(codePoint: number | undefined) {
+  return codePoint !== undefined && KEYWORD_TOKEN_CHARACTER.test(String.fromCodePoint(codePoint));
+}
+
+/** Whether `index` falls between the two halves of a surrogate pair. */
+function splitsSurrogatePair(text: string, index: number) {
+  return index > 0 && text.codePointAt(index - 1)! > 0xffff;
+}
+
 /** Whole-token containment, so `king` does not match inside `looking`. Both
- * sides are space-joined normalized tokens; edges are non-alphanumeric.
- * Persisted keys are only length-checked, so escape before building the pattern. */
+ * sides are space-joined normalized tokens; edges are non-alphanumeric. Every
+ * occurrence is checked, so one inside a word does not hide a later whole one.
+ * Like the `u` regex this replaced, a match never starts or ends inside a
+ * surrogate pair, and a pair before it counts as one code point. */
 function containsKeywordToken(haystack: string, needle: string) {
-  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`(^|[^\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, "u").test(haystack);
+  for (let start = haystack.indexOf(needle); start !== -1; start = haystack.indexOf(needle, start + 1)) {
+    const end = start + needle.length;
+    const before =
+      start === 0
+        ? undefined
+        : splitsSurrogatePair(haystack, start - 1)
+          ? haystack.codePointAt(start - 2)
+          : haystack.charCodeAt(start - 1);
+    if (
+      !splitsSurrogatePair(haystack, start) &&
+      !splitsSurrogatePair(haystack, end) &&
+      !isKeywordTokenCodePoint(before) &&
+      !isKeywordTokenCodePoint(haystack.codePointAt(end))
+    ) {
+      return true;
+    }
+    // indexOf clamps an empty needle's start to the length, so it would never return -1.
+    if (end >= haystack.length) return false;
+  }
+  return false;
 }
 
 /** Issue #1264: names the query uses, i.e. a capitalised word that is not the

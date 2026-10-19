@@ -199,6 +199,37 @@ async function main() {
   assert.equal(phraseHit?.chunkId, "phrase-chunk", "a whole-token overlap must still trigger a fuzzy keyword hit");
   assert.ok((phraseHit?.score ?? 0) < 4, "a fuzzy keyword hit must stay below the exact-phrase score ceiling");
 
+  // Issue #1467: whole-token containment is a string scan now, not a regex per call.
+  // It must keep the regex's edges: letters and digits (astral-plane ones too)
+  // continue a token, while spaces, apostrophes and hyphens end one.
+  const fuzzyMatches = (keywords: string[], query: string) =>
+    searchLtmKeywordIndex(buildLtmKeywordIndex([{ ...chunk("edge-chunk", "edge_note"), keywords }]), query, {
+      topK: 10,
+    }).some(({ chunkId }: { chunkId: string }) => chunkId === "edge-chunk");
+  for (const [keywords, query, expected, reason] of [
+    [["bring ring"], "ring", true, "a whole occurrence after one inside a word must still match"],
+    [["agent47"], "agent", false, "a digit must continue the token"],
+    [["o'brien"], "brien", true, "an apostrophe must end a token"],
+    [["Cobalt-Moon"], "cobalt", true, "a hyphenated keyword must match its parts"],
+    [["東京都 新宿区"], "東京都", true, "a CJK word must match as a whole token"],
+    [["東京都庁舎"], "東京都", false, "a CJK word must not match inside a longer one"],
+    [["𐌰𐌱𐌲𐌳"], "𐌱𐌲𐌳", false, "an astral-plane letter before the match must continue the token"],
+    [["𐌰𐌱 𐌲𐌳𐌴"], "𐌲𐌳𐌴", true, "astral-plane letters must match as a whole token"],
+  ] as Array<[string[], string, boolean, string]>) {
+    assert.equal(fuzzyMatches(keywords, query), expected, `${keywords[0]} / ${query}: ${reason}`);
+  }
+  // A persisted key may keep a raw hyphen, and an empty one must not hang the scan.
+  const rawKeyIndex = buildLtmKeywordIndex([{ ...chunk("raw-key-chunk", "raw_key_note"), keywords: ["cobalt"] }]);
+  rawKeyIndex.byKeyword["moon-cobalt"] = ["raw-hyphen-chunk"];
+  rawKeyIndex.byKeyword[""] = ["empty-key-chunk"];
+  assert.deepEqual(
+    searchLtmKeywordIndex(rawKeyIndex, "moon cobalt", { topK: 10 })
+      .map(({ chunkId }: { chunkId: string }) => chunkId)
+      .sort(),
+    ["raw-hyphen-chunk", "raw-key-chunk"],
+    "a raw hyphen must end a token, and an empty persisted key must match nothing",
+  );
+
   const regexKeyIndex = buildLtmKeywordIndex([{ ...chunk("regex-key-chunk", "regex-key-note"), keywords: ["cobalt"] }]);
   regexKeyIndex.byKeyword["cobalt("] = ["regex-key-chunk"];
   assert.ok(
@@ -610,6 +641,44 @@ async function main() {
         rinRecall.chunks.find((entry: { chunk: { id: string } }) => entry.chunk.id === "rin-laugh")?.lanes,
         ["bm25"],
         "린은 must recall 린이 웃었다 through the bm25 lane",
+      );
+      // Issue #1467: with the keyword lane off, the keyword search must not run at
+      // all, and the selection must match the same recall over the real keyword index.
+      const unreadKeywords = {
+        version: 1 as const,
+        get byKeyword(): Record<string, string[]> {
+          throw new Error("the keyword index must not be read when the keyword weight is 0");
+        },
+        byChunkId: recallIndex.keywords.byChunkId,
+      };
+      const skippedRecall = await retrieveLongTermMemory({
+        root: lookupRoot,
+        index: { ...recallIndex, keywords: unreadKeywords },
+        embeddingAdapter: null,
+        queryText: "린은 뭐 했지?",
+        mode: "roleplay",
+        scope: { chatId: "chat-a", chatIds: ["chat-a"] },
+        semanticWeight: 0,
+        lexicalWeight: 1,
+        graphWeight: 0,
+        keywordWeight: 0,
+        maxChunks: 5,
+        maxTokens: 4096,
+      });
+      const selection = (recall: typeof rinRecall) =>
+        recall.chunks.map((entry: { chunk: { id: string }; relevanceScore: number; lanes: string[] }) => [
+          entry.chunk.id,
+          entry.relevanceScore,
+          entry.lanes.join(","),
+        ]);
+      assert.ok(
+        skippedRecall.chunks.every((entry: { lanes: string[] }) => !entry.lanes.includes("keyword")),
+        "a keyword weight of 0 must leave the keyword lane out",
+      );
+      assert.deepEqual(
+        selection(skippedRecall),
+        selection(rinRecall),
+        "skipping the keyword search must not change the selection",
       );
     } finally {
       await rm(lookupRoot, { recursive: true, force: true });

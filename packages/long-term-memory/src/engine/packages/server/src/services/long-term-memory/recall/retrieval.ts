@@ -175,8 +175,12 @@ export async function retrieveLongTermMemory(input: RetrieveLongTermMemoryInput)
         : [],
     ),
   );
-  const keywords = searchLtmKeywordIndex(index.keywords, query, { allowedChunks: allowed, stopWords, knownNames });
-  if ((input.keywordWeight ?? 1) > 0 && keywords.length) {
+  // Issue #1467: only the keyword lane reads this search, so skip it when that lane is off.
+  const keywords =
+    (input.keywordWeight ?? 1) > 0
+      ? searchLtmKeywordIndex(index.keywords, query, { allowedChunks: allowed, stopWords, knownNames })
+      : [];
+  if (keywords.length) {
     lanes.push({
       name: "keyword",
       weight: input.keywordWeight ?? 1,
