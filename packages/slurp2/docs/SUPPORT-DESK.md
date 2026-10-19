@@ -142,7 +142,7 @@ Chrome (one look shared with the sign-up scene, so onboarding and desk read as o
   `indifferent` — and stored.
 - Offer answer: returns `accept | counter | decline`, a counter in plain words, a reason in voice.
 - Ticket opener (world tick, when tickets are on): picks a topic from the Creator's real situation
-  (views dropped, wants a collab, money) and writes the first message. Only topics Support has a lever
+  (an active throttle, a collab wish, money) and writes the first message. Only topics Support has a lever
   for open tickets (no badges, pushy fans or burnout), and a topic rests 14 days per Creator.
 - Quick replies: saved answers in the desk composer, one tap to fill the draft. Built-ins until the
   player saves their own (`supportDesk.quickReplies`).
