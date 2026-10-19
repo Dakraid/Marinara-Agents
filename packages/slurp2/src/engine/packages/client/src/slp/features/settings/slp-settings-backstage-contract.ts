@@ -43,10 +43,18 @@ export function useSlpSettingsDraft({ section, target }: { section: SlpBackstage
       return true;
     }
     const keys = Object.keys(patch) as Array<keyof SlurpSettings>;
+    // "Grows" sizes postsPerDay on the server; Undo must restore the old pace, not the sized one.
+    if ("postsPerDayCustom" in patch && !keys.includes("postsPerDay")) keys.push("postsPerDay");
     const previous = savedSettings
       ? (Object.fromEntries(keys.map((key) => [key, savedSettings[key]])) as Partial<SlurpSettings>)
       : undefined;
     const changed = await save(patch);
+    // A staged edit of the same key would hide this save and write the old value back on Apply.
+    if (changed)
+      setDraftPatch(
+        (current) =>
+          Object.fromEntries(Object.entries(current).filter(([key]) => !(key in patch))) as Partial<SlurpSettings>,
+      );
     if (changed && previous) {
       toast.success(t("ui.slurp.settings.backstage.quickSaved", { defaultValue: "Quick setting updated." }), {
         action: {

@@ -129,7 +129,6 @@ export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBac
   enableLorebookContext: place("engine", "all-slurp", "lorebook context"),
   flavourFromAgents: place(
     "engine",
-    "engine",
     "all-slurp",
     "other agents",
     "long-term memory",
