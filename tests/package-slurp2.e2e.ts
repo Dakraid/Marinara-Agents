@@ -206,18 +206,20 @@ test.describe("standalone Slurp package", () => {
       await page.goto("/");
       await openSlurp(page);
       if (testInfo.project.name.includes("mobile")) {
-        // Phones go back to the settings list and open Posting from it.
+        // Phones go back to the settings list and open Basic from it.
         await page.getByRole("button", { name: "Settings", exact: true }).first().click();
         await page
           .getByRole("navigation", { name: "Settings", exact: true })
-          .getByRole("button", { name: /^Posting/u })
+          .getByRole("button", { name: /^Basic/u })
           .click();
       } else {
         await page
           .getByRole("navigation", { name: "Creator settings sections" })
-          .getByRole("button", { name: "Posting", exact: true })
+          .getByRole("button", { name: "Basic", exact: true })
           .click();
       }
+      // Posting is Basic's "How busy" page now (configurator slice 1).
+      await page.getByRole("button", { name: "More for How busy", exact: true }).click();
       await page.getByRole("button", { name: "Generate posts", exact: true }).click();
       const dialog = page.getByRole("dialog", { name: "Generate posts", exact: true });
       await dialog.getByRole("button", { name: "Generate 3", exact: true }).click();
