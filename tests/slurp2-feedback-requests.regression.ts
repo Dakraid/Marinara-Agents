@@ -43,4 +43,18 @@ for (const lang of ["en", "de", "ko", "pl"]) {
   assert.equal(strings["ui.slurp.ads.opened"], undefined, lang);
 }
 
+// ── R8: a Creator answering a comment knows the commenter from DMs ──
+const replies = readFileSync(join(server, "features/messages/slp-reply-generation-service.ts"), "utf8");
+assert.match(
+  replies,
+  /return `\$\{line\}\$\{await describeCommenterDms\(db, creatorAccountId, viewerId, viewerName\)\}`;/u,
+);
+assert.match(
+  replies,
+  /dms\.getThread\(viewerId, creatorAccountId\)[\s\S]*?describeSlurpRapport\(await dms\.rapportFor/u,
+);
+assert.match(replies, /Do not quote private DMs in public/u);
+// DM lines can name a protected identity, so the relationship line is redacted like the comment.
+assert.match(replies, /relationship: protect\(input\.relationship \?\? "no history with this creator yet"\)/u);
+
 console.log("slurp2 feedback requests regression passed");
