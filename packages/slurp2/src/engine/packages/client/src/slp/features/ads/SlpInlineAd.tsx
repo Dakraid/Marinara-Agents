@@ -236,10 +236,8 @@ function SlurpAdSheet({
           }}
         />
         <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-center gap-2">
-            <h3 className={cn(SLP_TYPE.title, "min-w-0 truncate")}>{promotion.brand}</h3>
-            <span className={slpTagClass()}>{sponsored}</span>
-          </div>
+          {/* The sheet title above already names the brand. */}
+          <span className={slpTagClass()}>{sponsored}</span>
           {promotion.product && (
             <p className="mt-0.5 text-sm font-semibold leading-5 text-[var(--slurp-text)]">
               {promotion.product}
