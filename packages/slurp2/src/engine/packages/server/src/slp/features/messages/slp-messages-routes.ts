@@ -8,6 +8,7 @@ import { slpMessagesMediaRoutes } from "./slp-messages-media-routes.js";
 import { slpMessagesSendRoutes } from "./slp-messages-send-routes.js";
 import { slpMessagesThreadRoutes } from "./slp-messages-thread-routes.js";
 import { slpMessageEditRoutes } from "./slp-message-edit-routes.js";
+import { slpThreadExportRoutes } from "./slp-thread-export-routes.js";
 import { slpMessagesRequestRoutes } from "./slp-messages-request-routes.js";
 import { slpDeskRoutes } from "./desk/slp-desk-routes.js";
 import { slpRoleplaySceneRoutes } from "./scenes/slp-roleplay-scene-routes.js";
@@ -24,6 +25,7 @@ export async function slpMessagesRoutes(
   const messaging = createSlpMessagesContext(app, dependencies, messages);
   await slpMessagesThreadRoutes(app, messaging);
   await slpMessageEditRoutes(app, messaging);
+  await slpThreadExportRoutes(app, messaging);
   await slpRoleplaySceneRoutes(app, messaging);
   await slpMessageDetailsRoutes(app, messaging);
   await slpMessageDeepDetailsRoutes(app, messaging);
