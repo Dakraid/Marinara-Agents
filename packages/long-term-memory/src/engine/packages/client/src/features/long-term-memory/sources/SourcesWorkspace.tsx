@@ -58,6 +58,7 @@ import {
   cancelLtmSourceTask,
   getLtmSourceTaskSnapshot,
   markLtmSourceTaskViewed,
+  retryableSourceIds,
   startLtmSourceTask,
   subscribeLtmSourceTask,
   type LtmSourceTaskContract,
@@ -387,7 +388,7 @@ export default function SourcesWorkspace({
     }
   };
   const scopeIndexes = useMemo(() => buildScopeIndexes(scopeTargets.data?.chats ?? []), [scopeTargets.data?.chats]);
-  const scopeTargetOptions = useMemo(() => {
+  const scopeTargetOptions = useMemo((): ScopeTarget[] => {
     const currentChatId = props.chatId ?? scopeTargets.data?.currentScope?.chatId;
     const chatTarget = (chat: ScopeTargetChat, current = false): ScopeTarget => ({
       id: `chat:${chat.id}`,
@@ -489,7 +490,7 @@ export default function SourcesWorkspace({
   const preview = useInfiniteQuery({
     queryKey: [...queryKeys.preview, "pages", source, previewScope, modeFilter, sourceQuery],
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    getNextPageParam: (lastPage: LtmInteropPreviewResponse) => lastPage.nextCursor ?? undefined,
     queryFn: ({ pageParam, signal }) =>
       request<
         LtmInteropPreviewResponse,
@@ -512,7 +513,7 @@ export default function SourcesWorkspace({
   const lorebookPreview = useInfiniteQuery({
     queryKey: [...queryKeys.lorebookPreview, "pages", previewScope, modeFilter, sourceQuery],
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    getNextPageParam: (lastPage: LtmLorebookPreviewResponse) => lastPage.nextCursor ?? undefined,
     queryFn: ({ pageParam, signal }) =>
       request<
         LtmLorebookPreviewResponse,
@@ -570,12 +571,7 @@ export default function SourcesWorkspace({
   const selectedIds = new Set(selections[selectionKey] ?? []);
   const importedSelectionKey = `${selectionKey}:imported`;
   const selectedImportedIds = new Set(selections[importedSelectionKey] ?? []);
-  const retryableIds = importResult
-    ? [
-        ...importResult.imported.filter((item) => item.retryable).map((item) => item.sourceId),
-        ...importResult.writeFailures.filter((item) => item.retryable).map((item) => item.sourceId),
-      ]
-    : [];
+  const retryableIds = importResult ? retryableSourceIds(importResult) : [];
   const retryableIdSet = new Set(retryableIds);
   const selectableRows = rows.filter((row) => row.status === "pending" || retryableIdSet.has(row.sourceId));
   const lorebookImportSelectionKey = `${selectionKey}:lorebook-import`;
@@ -833,17 +829,21 @@ export default function SourcesWorkspace({
     if (source === "lorebooks") {
       const match = allLorebooks.find((book) =>
         book.entries.some((entry) =>
-          entry.candidates.some((candidate) => candidate.existingNoteId === requestedSourceNoteId),
+          entry.candidates.some(
+            (candidate) => candidate.status === "imported" && candidate.existingNoteId === requestedSourceNoteId,
+          ),
         ),
       );
       if (!match) return;
       const entry = match.entries.find((candidate) =>
-        candidate.candidates.some((candidate) => candidate.existingNoteId === requestedSourceNoteId),
+        candidate.candidates.some(
+          (candidate) => candidate.status === "imported" && candidate.existingNoteId === requestedSourceNoteId,
+        ),
       );
       setSelectedLorebookId(match.id);
       setOpenLorebookEntryId(entry?.id ?? null);
     } else {
-      const match = rows.find((row) => row.existingNoteId === requestedSourceNoteId);
+      const match = rows.find((row) => row.status === "imported" && row.existingNoteId === requestedSourceNoteId);
       if (!match) return;
       setFocusedFlatSourceId(match.sourceId);
     }
@@ -1085,13 +1085,9 @@ export default function SourcesWorkspace({
       });
       if (task.status === "completed") {
         const result = task.result as LtmImportSourceNotesResponse;
-        const failedIds = [
-          ...result.imported.filter((item) => item.retryable).map((item) => item.sourceId),
-          ...result.writeFailures.filter((item) => item.retryable).map((item) => item.sourceId),
-        ];
         setSelections((current) => ({
           ...current,
-          [contract.selectionKey]: failedIds,
+          [contract.selectionKey]: retryableSourceIds(result),
         }));
         void invalidateAfterMutation().catch(() => undefined);
         void (contract.source === "lorebooks" ? lorebookPreview.refetch() : preview.refetch()).catch(() => undefined);
@@ -1336,15 +1332,7 @@ export default function SourcesWorkspace({
     latestSourceTask.safeResult
       ? latestSourceTask.safeResult
       : null;
-  const restoredRetryIds = restoredImportResult
-    ? Array.from(
-        new Set([
-          ...(restoredImportResult.items?.filter((item) => item.retryable).map((item) => item.sourceId) ?? []),
-          ...(restoredImportResult.writeFailures?.filter((item) => item.retryable).map((item) => item.sourceId) ?? []),
-          ...(restoredImportResult.missingSourceIds ?? []),
-        ]),
-      )
-    : [];
+  const restoredRetryIds = restoredImportResult ? retryableSourceIds(restoredImportResult) : [];
   const restoredImportResultPanel = restoredImportResult ? (
     <section
       ref={importResultRef}
@@ -1950,9 +1938,13 @@ export default function SourcesWorkspace({
                                       role="listitem"
                                       className="group space-y-2"
                                       style={{ marginLeft: "1.75rem" }}
-                                      data-ltm-source-existing-note={candidate.existingNoteId}
+                                      data-ltm-source-existing-note={
+                                        candidate.status === "imported" ? candidate.existingNoteId : undefined
+                                      }
                                       data-ltm-source-actions-open={
-                                        openSourceActionId === candidate.existingNoteId || undefined
+                                        (candidate.status === "imported" &&
+                                          openSourceActionId === candidate.existingNoteId) ||
+                                        undefined
                                       }
                                     >
                                       <p className="whitespace-pre-wrap break-words text-xs text-[var(--muted-foreground)]">

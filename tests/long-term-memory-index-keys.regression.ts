@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runRegressionToCompletion } from "./regression-helpers.ts";
-import type { LtmBudgetedChunk } from "../packages/long-term-memory/src/engine/packages/server/src/services/long-term-memory/budget.ts";
+import type { LtmBudgetedChunk } from "../packages/long-term-memory/src/engine/packages/server/src/services/long-term-memory/recall/budget.ts";
 import type { LtmMemoryChunk } from "../packages/long-term-memory/src/engine/packages/shared/src/features/agents/long-term-memory/schema.ts";
 
 const source = "../packages/long-term-memory/src/engine/packages/server/src/services/long-term-memory";
@@ -45,14 +45,13 @@ function assertOwnKeys(record: object, message: string) {
 }
 
 async function main() {
-  const { buildLtmBm25Index, ltmHangulNameSyllables, searchLtmBm25 } = await import(`${source}/bm25.ts`);
-  const { buildLtmKeywordIndex, LTM_KEYWORD_MAX_SCORE, searchLtmKeywordIndex } = await import(
-    `${source}/keyword-index.ts`
-  );
-  const { buildStopWordSet, normalizeKeywordTerms } = await import(`${source}/keyword-extract.ts`);
-  const { buildLtmMetadataIndex, getLtmMetadataMatches } = await import(`${source}/metadata-index.ts`);
-  const { parseLtmRecallIndex } = await import(`${source}/rebuild.ts`);
-  const { readLongTermMemoryUsage, recordLongTermMemoryInjection } = await import(`${source}/usage.ts`);
+  const { buildLtmBm25Index, ltmHangulNameSyllables, searchLtmBm25 } = await import(`${source}/recall/bm25.ts`);
+  const { buildLtmKeywordIndex, LTM_KEYWORD_MAX_SCORE, LTM_SINGLE_KEYWORD_BM25_AGREEMENT, searchLtmKeywordIndex } =
+    await import(`${source}/recall/keyword-index.ts`);
+  const { buildStopWordSet, normalizeKeywordTerms } = await import(`${source}/recall/keyword-extract.ts`);
+  const { buildLtmMetadataIndex, getLtmMetadataMatches } = await import(`${source}/recall/metadata-index.ts`);
+  const { parseLtmRecallIndex } = await import(`${source}/recall/rebuild.ts`);
+  const { readLongTermMemoryUsage, recordLongTermMemoryInjection } = await import(`${source}/recall/usage.ts`);
 
   const chunks = [
     chunk("constructor", "constructor"),
@@ -199,6 +198,37 @@ async function main() {
   assert.equal(phraseHit?.chunkId, "phrase-chunk", "a whole-token overlap must still trigger a fuzzy keyword hit");
   assert.ok((phraseHit?.score ?? 0) < 4, "a fuzzy keyword hit must stay below the exact-phrase score ceiling");
 
+  // Issue #1467: whole-token containment is a string scan now, not a regex per call.
+  // It must keep the regex's edges: letters and digits (astral-plane ones too)
+  // continue a token, while spaces, apostrophes and hyphens end one.
+  const fuzzyMatches = (keywords: string[], query: string) =>
+    searchLtmKeywordIndex(buildLtmKeywordIndex([{ ...chunk("edge-chunk", "edge_note"), keywords }]), query, {
+      topK: 10,
+    }).some(({ chunkId }: { chunkId: string }) => chunkId === "edge-chunk");
+  for (const [keywords, query, expected, reason] of [
+    [["bring ring"], "ring", true, "a whole occurrence after one inside a word must still match"],
+    [["agent47"], "agent", false, "a digit must continue the token"],
+    [["o'brien"], "brien", true, "an apostrophe must end a token"],
+    [["Cobalt-Moon"], "cobalt", true, "a hyphenated keyword must match its parts"],
+    [["東京都 新宿区"], "東京都", true, "a CJK word must match as a whole token"],
+    [["東京都庁舎"], "東京都", false, "a CJK word must not match inside a longer one"],
+    [["𐌰𐌱𐌲𐌳"], "𐌱𐌲𐌳", false, "an astral-plane letter before the match must continue the token"],
+    [["𐌰𐌱 𐌲𐌳𐌴"], "𐌲𐌳𐌴", true, "astral-plane letters must match as a whole token"],
+  ] as Array<[string[], string, boolean, string]>) {
+    assert.equal(fuzzyMatches(keywords, query), expected, `${keywords[0]} / ${query}: ${reason}`);
+  }
+  // A persisted key may keep a raw hyphen, and an empty one must not hang the scan.
+  const rawKeyIndex = buildLtmKeywordIndex([{ ...chunk("raw-key-chunk", "raw_key_note"), keywords: ["cobalt"] }]);
+  rawKeyIndex.byKeyword["moon-cobalt"] = ["raw-hyphen-chunk"];
+  rawKeyIndex.byKeyword[""] = ["empty-key-chunk"];
+  assert.deepEqual(
+    searchLtmKeywordIndex(rawKeyIndex, "moon cobalt", { topK: 10 })
+      .map(({ chunkId }: { chunkId: string }) => chunkId)
+      .sort(),
+    ["raw-hyphen-chunk", "raw-key-chunk"],
+    "a raw hyphen must end a token, and an empty persisted key must match nothing",
+  );
+
   const regexKeyIndex = buildLtmKeywordIndex([{ ...chunk("regex-key-chunk", "regex-key-note"), keywords: ["cobalt"] }]);
   regexKeyIndex.byKeyword["cobalt("] = ["regex-key-chunk"];
   assert.ok(
@@ -247,7 +277,7 @@ async function main() {
     "a late-alphabet in-scope keyword must survive the fuzzy catalog cap",
   );
 
-  const { reciprocalRankFuse } = await import(`${source}/ranking.ts`);
+  const { reciprocalRankFuse } = await import(`${source}/recall/ranking.ts`);
   const { LTM_LINKED_RECALL_MIN_RELEVANCE, LTM_RECALL_STYLE_WEIGHTS } =
     await import("../packages/long-term-memory/src/engine/packages/shared/src/features/agents/long-term-memory/constants.ts");
   for (const [style, weights] of Object.entries(LTM_RECALL_STYLE_WEIGHTS)) {
@@ -372,7 +402,7 @@ async function main() {
   );
   // Issue #1362: linked recall also follows a caused_by link between two events and a
   // thread paid_off_in link to its event, from either end, and nothing wider.
-  const { findLtmLinkedNotes } = await import(`${source}/graph.ts`);
+  const { findLtmLinkedNotes } = await import(`${source}/recall/graph.ts`);
   const linkTypes: Record<string, string> = {
     timeline_effect: "timeline_event",
     timeline_cause: "timeline_event",
@@ -419,6 +449,13 @@ async function main() {
       weights.keywordWeight * (3 / LTM_KEYWORD_MAX_SCORE) >= DEFAULT_LTM_GLOBAL_SETTINGS.longTermMemoryScoreThreshold,
       `${style}: two distinct keywords must clear the default threshold`,
     );
+  }
+  // Issue #1465: in every style a capped single keyword stays under the default
+  // threshold, and one lifted by BM25 agreement clears it.
+  for (const [style, weights] of Object.entries(LTM_RECALL_STYLE_WEIGHTS)) {
+    const threshold = DEFAULT_LTM_GLOBAL_SETTINGS.longTermMemoryScoreThreshold;
+    assert.ok(weights.keywordWeight * 0.5 < threshold, `${style}: a capped single keyword must stay under`);
+    assert.ok(weights.keywordWeight * 0.75 >= threshold, `${style}: a lifted single keyword must clear`);
   }
 
   // Issue #1264: one ordinary exact keyword must not clear the lane alone, while a
@@ -482,6 +519,61 @@ async function main() {
     "a name must keep full credit beside another capitalised word",
   );
 
+  // Issue #1465: a single keyword the cap would cut is already rare in scope, so
+  // BM25 agreement at the gate lifts it to three quarters of the lane. Everyday
+  // words, names and two-keyword hits score as they did without the BM25 scores.
+  const agreementIndex = buildLtmKeywordIndex([
+    { ...chunk("violin-chunk", "violin_note"), keywords: ["violin"] },
+    ...Array.from({ length: 10 }, (_, index) => ({
+      ...chunk(`door-chunk-${index}`, `door_note_${index}`),
+      keywords: ["door"],
+    })),
+    { ...chunk("name-chunk", "name_note"), keywords: ["mira"] },
+    { ...chunk("pair-chunk", "pair_note"), keywords: ["tomas", "cobalt"] },
+  ]);
+  const agreementCredit = (query: string, chunkId: string, lexicalScore?: number) =>
+    (searchLtmKeywordIndex(agreementIndex, query, {
+      topK: 20,
+      lexicalScores:
+        lexicalScore === undefined
+          ? undefined
+          : new Map(Object.keys(agreementIndex.byChunkId).map((id) => [id, lexicalScore])),
+    }).find((hit: { chunkId: string }) => hit.chunkId === chunkId)?.score ?? 0) / LTM_KEYWORD_MAX_SCORE;
+  assert.equal(LTM_SINGLE_KEYWORD_BM25_AGREEMENT, 0.2);
+  assert.equal(
+    agreementCredit("She tuned the violin", "violin-chunk", 0.25),
+    0.75,
+    "one distinctive keyword with BM25 agreement must score three quarters",
+  );
+  assert.equal(
+    agreementCredit("She tuned the violin", "violin-chunk", LTM_SINGLE_KEYWORD_BM25_AGREEMENT),
+    0.75,
+    "BM25 agreement must count from the gate itself",
+  );
+  for (const lexicalScore of [0.15, undefined]) {
+    assert.ok(
+      agreementCredit("She tuned the violin", "violin-chunk", lexicalScore) <= 0.5,
+      `one distinctive keyword must stay capped with BM25 score ${lexicalScore ?? "missing"}`,
+    );
+  }
+  const everydayCredit = agreementCredit("Shut the door", "door-chunk-0");
+  assert.ok(everydayCredit > 0 && everydayCredit < 0.5, "an everyday keyword must sit under the cap");
+  assert.equal(
+    agreementCredit("Shut the door", "door-chunk-0", 0.9),
+    everydayCredit,
+    "a keyword the cap does not cut must not be lifted, even with high BM25 agreement",
+  );
+  for (const [query, chunkId] of [
+    ["Meet   Mira at the bar", "name-chunk"],
+    ["tomas cobalt arrive", "pair-chunk"],
+  ]) {
+    assert.equal(
+      agreementCredit(query!, chunkId!, 0.9),
+      agreementCredit(query!, chunkId!),
+      `${chunkId}: names and two-keyword hits must not change with BM25 scores`,
+    );
+  }
+
   // Issue #1363: a known character name keeps full credit on a single keyword where
   // capitalisation cannot show it: sentence start, lowercase, or a caseless script.
   const knownNameIndex = buildLtmKeywordIndex([
@@ -509,8 +601,8 @@ async function main() {
   {
     const lookupRoot = await mkdtemp(join(tmpdir(), "marinara-ltm-known-names-"));
     try {
-      const { retrieveLongTermMemory } = await import(`${source}/retrieval.ts`);
-      const { buildLtmGraphIndex } = await import(`${source}/graph.ts`);
+      const { retrieveLongTermMemory } = await import(`${source}/recall/retrieval.ts`);
+      const { buildLtmGraphIndex } = await import(`${source}/recall/graph.ts`);
       const recallChunks = [
         { ...chunk("half-world", "half_world"), title: "Half", keywords: ["half"], text: "a world note" },
         {
@@ -610,6 +702,105 @@ async function main() {
         rinRecall.chunks.find((entry: { chunk: { id: string } }) => entry.chunk.id === "rin-laugh")?.lanes,
         ["bm25"],
         "린은 must recall 린이 웃었다 through the bm25 lane",
+      );
+      // Issue #1467: with the keyword lane off, the keyword search must not run at
+      // all, and the selection must match the same recall over the real keyword index.
+      const unreadKeywords = {
+        version: 1 as const,
+        get byKeyword(): Record<string, string[]> {
+          throw new Error("the keyword index must not be read when the keyword weight is 0");
+        },
+        byChunkId: recallIndex.keywords.byChunkId,
+      };
+      const skippedRecall = await retrieveLongTermMemory({
+        root: lookupRoot,
+        index: { ...recallIndex, keywords: unreadKeywords },
+        embeddingAdapter: null,
+        queryText: "린은 뭐 했지?",
+        mode: "roleplay",
+        scope: { chatId: "chat-a", chatIds: ["chat-a"] },
+        semanticWeight: 0,
+        lexicalWeight: 1,
+        graphWeight: 0,
+        keywordWeight: 0,
+        maxChunks: 5,
+        maxTokens: 4096,
+      });
+      const selection = (recall: typeof rinRecall) =>
+        recall.chunks.map((entry: { chunk: { id: string }; relevanceScore: number; lanes: string[] }) => [
+          entry.chunk.id,
+          entry.relevanceScore,
+          entry.lanes.join(","),
+        ]);
+      assert.ok(
+        skippedRecall.chunks.every((entry: { lanes: string[] }) => !entry.lanes.includes("keyword")),
+        "a keyword weight of 0 must leave the keyword lane out",
+      );
+      assert.deepEqual(
+        selection(skippedRecall),
+        selection(rinRecall),
+        "skipping the keyword search must not change the selection",
+      );
+
+      // Issue #1465 wiring: retrieval passes its BM25 scores to the keyword search,
+      // so a memory sharing one distinctive word that BM25 agrees with is recalled
+      // in the balanced style, while an everyday word stays out.
+      const violinChunks = [
+        {
+          ...chunk("violin-smashed", "violin_smashed"),
+          keywords: ["violin", "storm"],
+          text: "Elena's violin was smashed in the storm; she hasn't played since.",
+        },
+        {
+          ...chunk("violin-shop", "violin_shop"),
+          keywords: ["violin", "station"],
+          text: "A violin shop opened by the station.",
+        },
+        {
+          ...chunk("cellar-door", "cellar_door"),
+          keywords: ["door", "cellar"],
+          text: "The cellar door sticks when it's wet.",
+        },
+        ...Array.from({ length: 12 }, (_, index) => ({
+          ...chunk(`door-${index}`, `door_${index}`),
+          keywords: ["door", `room${index}`],
+          text: `The door of room ${index} creaks open.`,
+        })),
+      ];
+      const violinIndex = {
+        ...recallIndex,
+        metadata: buildLtmMetadataIndex(violinChunks),
+        bm25: buildLtmBm25Index(violinChunks),
+        graph: buildLtmGraphIndex([], violinChunks),
+        keywords: buildLtmKeywordIndex(violinChunks),
+      };
+      const violinRecall = async (keywordWeight: number) =>
+        (
+          await retrieveLongTermMemory({
+            root: lookupRoot,
+            index: violinIndex,
+            embeddingAdapter: null,
+            queryText: "Want to hear me play the violin? Shut the door first.",
+            mode: "roleplay",
+            ...LTM_RECALL_STYLE_WEIGHTS.balanced,
+            keywordWeight,
+            minScore: DEFAULT_LTM_GLOBAL_SETTINGS.longTermMemoryScoreThreshold,
+            maxChunks: 12,
+            maxTokens: 4096,
+          })
+        ).chunks.map((entry: { chunk: { id: string } }) => entry.chunk.id);
+      const balancedRecall = await violinRecall(LTM_RECALL_STYLE_WEIGHTS.balanced.keywordWeight);
+      assert.ok(
+        balancedRecall.includes("violin-smashed"),
+        "one distinctive shared keyword with BM25 agreement must clear the default threshold",
+      );
+      assert.ok(
+        !(await violinRecall(0)).includes("violin-smashed"),
+        "BM25 alone must stay under the threshold, so the keyword lane is what recalls it",
+      );
+      assert.ok(
+        balancedRecall.every((id: string) => id.startsWith("violin-")),
+        "an everyday shared keyword must stay under the default threshold",
       );
     } finally {
       await rm(lookupRoot, { recursive: true, force: true });

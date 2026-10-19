@@ -120,7 +120,7 @@
         "schemaVersion": 1,
         "id": "beholder",
         "name": "Beholder",
-        "version": "1.3.12",
+        "version": "1.3.14",
         "description": "Keeps track of what each character is wearing and holding, plus any injuries, so the story stays consistent. You can check it on a paper doll from the roleplay toolbar. Works with big online models, or with the free Beholder model that runs privately on your computer. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode.",
         "engine": {
           "min": "2.4.4",
@@ -147,8 +147,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "a9cba5a457dba49f86c61b1ba0d6845065a6236caeee66970333014142c8d0fd",
-            "bytes": 449376
+            "sha256": "805fc19711e45bd5a6d337895c5185511af9cef0aa989ac20451445120f38e3e",
+            "bytes": 452061
           }
         ],
         "permissions": [
@@ -163,9 +163,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/beholder.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/beholder-1.3.12.zip",
-        "sha256": "acf9ed156488a2f79db96c9b478604b1193de20ff611bbc2d63246ddd3f7c672",
-        "bytes": 460953
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/beholder-1.3.14.zip",
+        "sha256": "9a8dc2a8c73e008f9582bd16a857963df5e23c7caa450a0b8b6712c9cf516b41",
+        "bytes": 463638
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#beholder"
     },
@@ -740,7 +740,7 @@
         },
         "id": "gacha-forge",
         "name": "Gacha Forge",
-        "version": "1.8.12",
+        "version": "1.8.13",
         "description": "A complete gacha game mode. Describe a world and Gacha Forge builds the rest: banners to pull on, a cast the model writes and paints for you, story chapters told by a visual-novel narrator, and the battles, gear and events that grow around them. Install it, restart Marinara Engine when prompted, then open Home → Gacha Forge.",
         "engine": {
           "min": "2.4.4",
@@ -1029,8 +1029,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "ac1c971aad07e98c4eb9b5360953f88c20985f044a98df489e0df1d4a052e5a4",
-            "bytes": 1438795
+            "sha256": "9fd81235021e9ddb5d3708f8b78130b83cfe45555a63d244b85aa31578810bd6",
+            "bytes": 1440464
           },
           {
             "path": "farm-asc.webp",
@@ -1504,8 +1504,8 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "6bd9ec1f95f5296b65e974ea723e50e59a0335efabc97b6585c0979fb6153284",
-            "bytes": 502921
+            "sha256": "defce243452149ed999f24ca2c8ae6615ba9d743ea54a7987c7194b1ae0d3fec",
+            "bytes": 503199
           },
           {
             "path": "skill-aoe_damage-dark.webp",
@@ -2262,9 +2262,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/gacha-forge.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/gacha-forge-1.8.12.zip",
-        "sha256": "83acd099d6aeedc20de1ca7e08c4be36016232f851fa6f41c74642de2baa07bf",
-        "bytes": 7841874
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/gacha-forge-1.8.13.zip",
+        "sha256": "aedf7cb6c12857f370f34d72f4555a71fa94f70f507b6d9df36607828b7cd622",
+        "bytes": 7843821
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/gacha-forge/README.md"
     },
@@ -2533,7 +2533,7 @@
         },
         "id": "long-term-memory",
         "name": "Long-Term Memory",
-        "version": "1.4.49",
+        "version": "1.4.56",
         "description": "Remembers important things from your chat summaries, characters, and lorebooks, and brings them back when they matter. Enable it per chat from Chat Settings → Agents → Long-Term Memory. In Roleplay and Game, you can also add it from Chat Settings → Agents → Misc Agents.",
         "engine": {
           "min": "2.4.1",
@@ -2565,13 +2565,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "4a960da83d68d2891505629472cbdbb947997959a509dd4737a060853d028a18",
-            "bytes": 471781
+            "sha256": "aff7389a686ac41c9095a16683febda01be4bbd5f489c556c9af6dcece58d8f4",
+            "bytes": 473651
           },
           {
             "path": "client.js",
-            "sha256": "c744744f6d095d4fd00eacc62feabcd620cb0c83f3b9412d33def85041d8a0b8",
-            "bytes": 980458
+            "sha256": "f269023433c9f997295c74a27a9c7cae0db82f5c80d3138d8ce096de681e833d",
+            "bytes": 979940
           }
         ],
         "permissions": [
@@ -2587,9 +2587,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/long-term-memory.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/long-term-memory-1.4.49.zip",
-        "sha256": "2dcd7d3883598b41e3ee6b38765ab1a21085533c6d689018749dda8b92241bfb",
-        "bytes": 1454738
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/long-term-memory-1.4.56.zip",
+        "sha256": "5a87e9cf43be61df15062b5436f92c1b6d21e75efec3e6bf1e6c41cda40cee81",
+        "bytes": 1456090
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#long-term-memory"
     },
@@ -3617,7 +3617,7 @@
         },
         "id": "slurp2",
         "name": "Slurp",
-        "version": "0.3.47",
+        "version": "0.3.49",
         "description": "A private social app for your characters. Turn characters and personas into Creators, post public or locked photos, and watch a simulated audience follow, subscribe, unlock, comment, and message them. By default, it is tuned for an adult experience. Install it, restart Marinara Engine when prompted, then open Home → Slurp.",
         "localizations": {
           "de": {
@@ -3684,13 +3684,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "5ab1d1a073d549858f0e4fe2374cb9d35e832d199e63ff7b8e7d6f4817fa56ca",
-            "bytes": 3711517
+            "sha256": "2b932742d8c0e28b6e6c07da343535512d95234b5d3d9d2142a64ddb9f666e28",
+            "bytes": 3713475
           },
           {
             "path": "client.js",
-            "sha256": "6eb1202d86aa7c5936cb2fa275ea514d0238cf48625261ab310289fb34c5f27c",
-            "bytes": 4939707
+            "sha256": "57dff67057e93c3a4d1b6d06a32b87651187bda8bea735dc7ac60595935c0d05",
+            "bytes": 4950087
           },
           {
             "path": "slurp2-logo.png",
@@ -3748,9 +3748,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/slurp2.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/slurp2-0.3.47.zip",
-        "sha256": "2b30377a3ee6a9e7ec8f16922976334c4fa59fc86dcadc1e265d69a99e937ea7",
-        "bytes": 9565469
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/slurp2-0.3.49.zip",
+        "sha256": "ec0b57da21a6be9bd647d6159aff31aaf08427023272c0edab404567cb09f783",
+        "bytes": 9577807
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/slurp2/README.md"
     },

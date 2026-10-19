@@ -37,6 +37,9 @@ jobs:
       - name: Check package source names
         run: npm run typecheck:packages
 
+      - name: Test the package typecheck fails without tsc
+        run: node scripts/tests/typecheck-packages-missing-tsc.regression.mjs
+
       - name: Test package security invariants
         run: npm run test:security
 
@@ -77,10 +80,15 @@ jobs:
           node tests/pixelforge-startup.regression.mjs
 
       - name: Test Beholder client bundle contract
-        run: npx tsx tests/beholder-client-contract.regression.ts
+        run: |
+          npx tsx tests/beholder-client-contract.regression.ts
+          npx tsx tests/beholder-host-release.regression.ts
 
       - name: Test Quartermaster dialogs and inventory export
         run: node tests/quartermaster-modal-lifecycle.regression.mjs
+
+      - name: Test Gacha Forge location IDs and landscape layout
+        run: node tests/gacha-forge-location-ids.regression.mjs
 
       # Prints how much of the reference extension's interface this package actually
       # renders. It is here so the number is read from a run rather than asserted from
@@ -96,6 +104,15 @@ jobs:
 
       - name: Test Slurp unanswered follow-up control
         run: npx tsx --tsconfig tests/tsconfig.regressions.json tests/slurp2-pause-follow-ups-until-reply.regression.ts
+
+      # These read scripts/build-feature-packages.mjs, which the Noodle and Slurp browser workflow
+      # no longer triggers on. None of them needs an Engine checkout (the PR-checks job has none).
+      - name: Test Slurp builder text assertions
+        run: |
+          npx tsx --tsconfig tests/tsconfig.regressions.json tests/slurp-generation-integrations.regression.ts
+          npx tsx --tsconfig tests/tsconfig.regressions.json tests/slurp2-architecture.regression.ts
+          npx tsx --tsconfig tests/tsconfig.regressions.json tests/slurp2-slice-i.regression.ts
+          npx tsx --tsconfig tests/tsconfig.regressions.json tests/slurp2-step1-shell.regression.ts
 
       - name: Validate package localization catalogs
         run: |

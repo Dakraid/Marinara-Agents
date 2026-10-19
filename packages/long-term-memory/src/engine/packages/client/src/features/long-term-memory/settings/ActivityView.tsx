@@ -1078,7 +1078,7 @@ export default function ActivityView({
       rejectedRows.every((row) => row.rejectionReason === "score_threshold");
     // Whole labels with their values; the first four always show, the rest only when the run recorded them.
     const weights = recordDetails(recallWorkflow?.weights);
-    const recallSettings: Array<[string, string]> = recallWorkflow
+    const recallSettings: string[][] = recallWorkflow
       ? [
           [localizeUi("ui.longTermMemory.activityview.settingMemoryLimit"), recordedNumber(recallWorkflow.maxChunks)],
           [localizeUi("ui.longTermMemory.activityview.settingTokenLimit"), recordedNumber(recallWorkflow.maxTokens)],
@@ -1850,7 +1850,8 @@ export default function ActivityView({
                                   onClick={() => selectOperation(operation.operationId)}
                                   onPointerEnter={() => setHoveredOperationId(operation.operationId)}
                                   onPointerLeave={() => setHoveredOperationId(null)}
-                                  className="flex min-h-11 w-full items-start gap-2 px-3 py-2 text-left hover:bg-[var(--accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--ring)]"
+                                  data-ltm-tab-focus
+                                  className="flex min-h-11 w-full items-start gap-2 px-3 py-2 text-left hover:bg-[var(--accent)]"
                                 >
                                   <span
                                     className={
