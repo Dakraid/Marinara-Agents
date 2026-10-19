@@ -45,6 +45,9 @@ export function buildLtmKeywordIndex(chunks: LtmMemoryChunk[]): LtmKeywordIndex 
 /** Score of a keyword hit whose normalized phrase equals the normalized query exactly. */
 export const LTM_KEYWORD_MAX_SCORE = 4;
 
+/** Issue #1465: the BM25 normalized score at which one distinctive keyword counts. */
+export const LTM_SINGLE_KEYWORD_BM25_AGREEMENT = 0.2;
+
 /**
  * Issue #1258: a keyword shared by much of the recallable vault carries little
  * signal, so a hit is scaled by an idf-like factor. A keyword unique to one chunk
@@ -55,12 +58,44 @@ function keywordFrequencyWeight(documentFrequency: number, totalChunks: number) 
   return Math.log(1 + totalChunks / documentFrequency) / Math.log(1 + totalChunks);
 }
 
+/** Issue #1467: compiled once. A pattern built per call took most of each recall. */
+const KEYWORD_TOKEN_CHARACTER = /[\p{L}\p{N}]/u;
+
+function isKeywordTokenCodePoint(codePoint: number | undefined) {
+  return codePoint !== undefined && KEYWORD_TOKEN_CHARACTER.test(String.fromCodePoint(codePoint));
+}
+
+/** Whether `index` falls between the two halves of a surrogate pair. */
+function splitsSurrogatePair(text: string, index: number) {
+  return index > 0 && text.codePointAt(index - 1)! > 0xffff;
+}
+
 /** Whole-token containment, so `king` does not match inside `looking`. Both
- * sides are space-joined normalized tokens; edges are non-alphanumeric.
- * Persisted keys are only length-checked, so escape before building the pattern. */
+ * sides are space-joined normalized tokens; edges are non-alphanumeric. Every
+ * occurrence is checked, so one inside a word does not hide a later whole one.
+ * Like the `u` regex this replaced, a match never starts or ends inside a
+ * surrogate pair, and a pair before it counts as one code point. */
 function containsKeywordToken(haystack: string, needle: string) {
-  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`(^|[^\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, "u").test(haystack);
+  for (let start = haystack.indexOf(needle); start !== -1; start = haystack.indexOf(needle, start + 1)) {
+    const end = start + needle.length;
+    const before =
+      start === 0
+        ? undefined
+        : splitsSurrogatePair(haystack, start - 1)
+          ? haystack.codePointAt(start - 2)
+          : haystack.charCodeAt(start - 1);
+    if (
+      !splitsSurrogatePair(haystack, start) &&
+      !splitsSurrogatePair(haystack, end) &&
+      !isKeywordTokenCodePoint(before) &&
+      !isKeywordTokenCodePoint(haystack.codePointAt(end))
+    ) {
+      return true;
+    }
+    // indexOf clamps an empty needle's start to the length, so it would never return -1.
+    if (end >= haystack.length) return false;
+  }
+  return false;
 }
 
 /** Issue #1264: names the query uses, i.e. a capitalised word that is not the
@@ -89,6 +124,8 @@ export function searchLtmKeywordIndex(
     /** Issue #1363: normalized names the vault knows (character titles). Capitalisation
      * cannot flag a name at a sentence start, in lowercase, or in a caseless script. */
     knownNames?: ReadonlySet<string>;
+    /** Issue #1465: BM25 normalized score by chunk id, for the single-keyword cap. */
+    lexicalScores?: ReadonlyMap<string, number>;
   } = {},
 ) {
   const normalizedTerms = normalizeKeywordTerms(queryText, options.stopWords);
@@ -209,12 +246,16 @@ export function searchLtmKeywordIndex(
   // Issue #1264: one ordinary exact keyword must not clear the threshold alone.
   // Two or more distinct keywords, a multi-word phrase, or a name (capitalised in
   // the query, or a known character name, issue #1363) keep full credit.
+  // Issue #1465: a keyword the cap would cut is already rare in scope, so when
+  // BM25 also rates the memory a reasonable match it scores three quarters instead.
   const nameTerms = queryNameTerms(queryText);
-  for (const hit of hits.values()) {
+  const cap = LTM_KEYWORD_MAX_SCORE / 2;
+  for (const [chunkId, hit] of hits) {
     if (hit.exactTerms.size !== 1) continue;
     const [term] = hit.exactTerms;
     if (term!.includes(" ") || nameTerms.has(term!) || options.knownNames?.has(term!)) continue;
-    hit.score = Math.min(hit.score, LTM_KEYWORD_MAX_SCORE / 2);
+    const bm25Agrees = (options.lexicalScores?.get(chunkId) ?? 0) >= LTM_SINGLE_KEYWORD_BM25_AGREEMENT;
+    hit.score = hit.score >= cap && bm25Agrees ? LTM_KEYWORD_MAX_SCORE * 0.75 : Math.min(hit.score, cap);
   }
 
   return [...hits.entries()]
