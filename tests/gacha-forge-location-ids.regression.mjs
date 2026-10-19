@@ -119,13 +119,14 @@ const stored = {
   "달빛-숲": { name: "달빛 숲", url: "/d.png" },
   odd: { name: "달빛 숲", url: "/e.png" },
 };
+const storedBefore = structuredClone(stored);
 const places = serverFns.gsPlaces(stored);
 assert.equal(places["château-rouge"], stored["ch-teau-rouge"]);
 assert.equal(places["ch-teau-rouge"], stored["ch-teau-rouge"]);
 assert.equal(places["숲-1"], stored[1]);
 assert.equal(places["동굴-1"], undefined);
 assert.equal(places["달빛-숲"], stored["달빛-숲"], "an alias never replaces a key already filed");
-assert.equal(Object.keys(stored).length, 5, "the stored document is not changed");
+assert.deepEqual(stored, storedBefore, "the stored document is not changed");
 
 // iPhone landscape (#1461): the frame fits the visible screen, keeps clear of the notch when it
 // covers the screen, gives a short landscape screen every pixel, and keeps the type at its size.
