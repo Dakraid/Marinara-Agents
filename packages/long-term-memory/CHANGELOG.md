@@ -4,6 +4,11 @@
 
 - Behind-the-scenes fixes from a stricter code check; nothing you see changes. Extraction can no longer be started without knowing where your memories are stored, which would have failed. Characters who share a name now keep their other names in the same form as every other character.
 
+## 1.4.54 — 2026-10-19
+
+- Recall is faster when a chat's memories have many keywords. The keyword search no longer builds a new pattern for every keyword on every recall, which took most of the recall time, and it no longer runs at all when the keyword weight is 0. The same memories are recalled as before.
+- A memory that shares one uncommon word with the chat is now recalled when full-text search also rates it a good match. Before, a single shared keyword that is not a name always stayed under the default threshold, so a memory such as "Elena's violin was smashed in the storm" was never recalled when the chat mentioned the violin. Everyday words, names, phrases and memories that share two keywords score as before.
+
 ## 1.4.53 — 2026-10-18
 
 - When the settings fail to reload after Reset settings or a backup import, Retry on the Memory Settings load error now loads the new settings. Before, Retry brought back the settings from before the reset or import, so a later Save could write them back. Reset settings also shows the loading message while it reloads the settings, instead of the old ones.
