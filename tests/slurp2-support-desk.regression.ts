@@ -373,27 +373,28 @@ assert.deepEqual(slurpDeskAcceptedInput({ input: { accountId: "a" } }), { accoun
   assert.match(read("server/src/slp/features/assist/slp-action-runner.ts"), /isSlpDeskLever\(name\)/u);
 }
 
-// 9. The desk tick reads the Creator's real week (views, a collab that fell through, income) for the ticket topic.
+// 11. The desk tick reads the Creator's real week (views, a collab that fell through, income) for the ticket topic.
 {
   const day = (days: number) => new Date(at.getTime() - days * DAY).toISOString();
-  const base = { creatorId: "c1", at, posts: [], ledger: [], collabs: [] };
+  const base = { creatorId: "c1", at, ledger: [], collabs: [] };
   const quiet = slurpDeskSituation(base);
   assert.deepEqual(quiet, { viewsDown: false, hasCollabWish: false, moneyDown: false });
-  const post = (days: number, likeCount: number) => ({ createdAt: day(days), access: "public", likeCount });
-  assert.equal(
-    slurpDeskSituation({ ...base, posts: [post(1, 2), post(4, 20), post(6, 24), post(8, 22)] }).viewsDown,
-    true,
-    "a fresh post far under the usual likes",
+  // The weekly roll that buries a Creator's reach is the views signal; it is stable per Creator and week.
+  const buried = Array.from({ length: 60 }, (_, n) => `creator-${n}`).filter(
+    (id) => slurpDeskSituation({ ...base, creatorId: id }).viewsDown,
   );
-  assert.equal(
-    slurpDeskSituation({ ...base, posts: [post(1, 30), post(4, 20), post(6, 24), post(8, 22)] }).viewsDown,
-    false,
-  );
+  assert.ok(buried.length > 0 && buried.length < 30, "some Creators have a buried week, most do not");
+  assert.equal(slurpDeskSituation({ ...base, creatorId: buried[0]! }).viewsDown, true);
   const pay = (days: number, amount: number) => ({ kind: "tip", amount, at: day(days) });
   assert.equal(slurpDeskSituation({ ...base, ledger: [pay(10, 50), pay(2, 5)] }).moneyDown, true, "income halved");
   assert.equal(slurpDeskSituation({ ...base, ledger: [pay(10, 50), pay(2, 60)] }).moneyDown, false);
   const declined = { hostId: "c1", partnerId: "c2", status: "declined", answeredAt: day(3), decline: "busy" };
   assert.equal(slurpDeskSituation({ ...base, collabs: [declined] }).hasCollabWish, true);
+  assert.equal(
+    slurpDeskSituation({ ...base, creatorId: "c2", collabs: [declined] }).hasCollabWish,
+    false,
+    "the partner who said no has no wish",
+  );
   assert.equal(
     slurpDeskSituation({ ...base, collabs: [declined, { ...declined, status: "agreed", decline: null }] })
       .hasCollabWish,

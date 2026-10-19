@@ -376,14 +376,13 @@ export async function advanceSlurpSupportDesk(db: DB, at = new Date()): Promise<
       }
       const needsCounts =
         desk.challenges.some((entry) => entry.status === "active") || desk.contract?.status === "active";
-      // Only a Creator who may write in needs their week read.
+      // Only a Creator who may write in, with no ticket open, needs their week read.
       const situation =
-        !yours && settings.tickets !== "off"
+        !yours && settings.tickets !== "off" && !desk.pausedAt && (!desk.ticket || desk.ticket.status === "resolved")
           ? slurpDeskSituation({
               creatorId: account.id,
               at,
-              posts: await storage.listNoodlerPostsByAccount(account.id, 12),
-              ledger: (await storage.getEarnings(account.id)).ledger,
+              ledger: (await storage.getEarnings(account.id).catch(() => null))?.ledger ?? [],
               collabs,
             })
           : undefined;
