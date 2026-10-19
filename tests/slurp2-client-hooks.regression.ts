@@ -459,8 +459,12 @@ const addedCalls = [
   "post /slurp2/messages/creators/${encodeURIComponent(input.creatorAccountId)}/request-fan-reply",
   "post /slurp2/messages/ppv/unlock",
   "post /slurp2/messages/share-post",
+  "post /slurp2/messages/threads/${encodeURIComponent(input.threadId)}/messages/${encodeURIComponent(input.messageId)}/delete",
+  "post /slurp2/messages/threads/${encodeURIComponent(input.threadId)}/messages/${encodeURIComponent(input.messageId)}/edit",
+  "post /slurp2/messages/threads/${encodeURIComponent(input.threadId)}/regenerate",
   "post /slurp2/messages/threads/${encodeURIComponent(input.threadId)}/request-reply",
   "post /slurp2/messages/threads/${encodeURIComponent(input.threadId)}/viewer-image",
+  "post /slurp2/messages/threads/${encodeURIComponent(threadId)}/summary",
   "post /slurp2/refresh",
   "post /slurp2/slurp/accounts/${encodeURIComponent(accountId)}/page/compose",
   "post /slurp2/slurp/accounts/${encodeURIComponent(creatorId)}/wardrobe/import-preview",
@@ -554,10 +558,10 @@ assert.deepEqual(
   {
     // 0.3.27 "Suggest page style": one mutation, its two error states, and the strategy save now
     // refreshes the list when settled (a refused apply also means the list is stale).
-    useMutation: 213,
+    useMutation: 218,
     // 0.3.28: +2 (the import and the one query of SlpMessageDeepDetails). 0.3.42: +1 (carryover reach).
     // 0.3.44: +2 (the import and the trends row query).
-    useQuery: 287,
+    useQuery: 290,
     useInfiniteQuery: 9,
     // 0.3.35: +2 (adding a Creator refreshes the settings, which now hold the image name choice).
     invalidateQueries: 153,
@@ -569,7 +573,7 @@ assert.deepEqual(
     // SlpConnectionsPanel.tsx moved into the SlurpBackstagePrompts component mapping, so its one
     // onError no longer counts as state-layer code.
     onError: 93,
-    onSettled: 37,
+    onSettled: 40,
   },
   "query and mutation wiring counts match the monolith plus the later Slurp2 hooks",
 );
