@@ -1,4 +1,4 @@
-import { ArrowRight, Search } from "lucide-react";
+import { ArrowRight, ChevronLeft, Search } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -37,6 +37,20 @@ export function SlurpBackstageSubnav({
 }) {
   const { t } = useTranslation();
   const targets = SLP_BACKSTAGE_TARGETS_BY_SECTION[section];
+  // Basic's other pages are its "More for …" depth: they open from the Basic page, and only lead back.
+  if (section === "basic") {
+    if (target === "basic") return null;
+    return (
+      <button
+        type="button"
+        onClick={() => onSelect("basic")}
+        className="inline-flex min-h-11 w-fit items-center gap-1 rounded-full bg-[var(--slurp-surface-raised)] px-4 text-sm font-semibold text-[var(--slurp-muted)] ring-1 ring-inset ring-[var(--slurp-outline)] hover:text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+      >
+        <ChevronLeft size={16} className="rtl:rotate-180" aria-hidden="true" />
+        {t("ui.slurp.settings.basic.back", { defaultValue: "Back to Basic" })}
+      </button>
+    );
+  }
   if (targets.length < 2) return null;
   return (
     <nav

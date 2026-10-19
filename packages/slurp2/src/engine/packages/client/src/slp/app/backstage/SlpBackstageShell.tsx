@@ -122,7 +122,8 @@ export function SlpBackstageShell({
   // Without the side menu (Slurp narrower than 1024 px, the same container query the shell uses),
   // no section chosen yet shows the settings home list. With the menu, it shows Overview.
   const home = navigation.section === undefined;
-  const multiPage = SLP_BACKSTAGE_TARGETS_BY_SECTION[section].length > 1;
+  // The Basic page is its section's front page, so it needs no section label over its title.
+  const multiPage = SLP_BACKSTAGE_TARGETS_BY_SECTION[section].length > 1 && target !== "basic";
   const sectionLabel = t(`ui.slurp.settings.backstage.sections.${section}`, {
     defaultValue: SLP_BACKSTAGE_SECTION_LABELS[section],
   });
@@ -198,11 +199,11 @@ export function SlpBackstageShell({
                       ? t("ui.slurp.settings.saveState.error")
                       : saveState === "saved"
                         ? t("ui.slurp.settings.saveState.saved")
-                        : // Overview and Spice save each change at once; every other page stages
+                        : // Overview, Basic and Spice save each change at once; every other page stages
                           // edits until "Apply changes" (R1-129).
                           section === "spice"
                           ? t("ui.slurp.settings.autoSave")
-                          : section === "overview"
+                          : section === "overview" || target === "basic"
                             ? t("ui.slurp.settings.autoSave")
                             : t("ui.slurp.settings.stagedSave", {
                                 defaultValue: "Changes wait for Apply changes.",

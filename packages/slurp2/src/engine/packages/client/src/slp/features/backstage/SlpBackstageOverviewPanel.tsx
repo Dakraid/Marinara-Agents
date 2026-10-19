@@ -4,17 +4,21 @@ import {
   BookOpen,
   CheckCircle2,
   ChevronRight,
+  Gauge,
+  Globe2,
   HardDrive,
+  Headset,
   Image,
+  Link2,
   Megaphone,
   MessageCircle,
   Pause,
   Play,
+  Sparkles,
   UsersRound,
+  type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { nextSlurpAutopurgeRunAt } from "../../../../../shared/src/slp/slp-autopurge-time.js";
-import { Toggle } from "../../modules/settings/SlpSettingsControls";
 import { SettingAnchor } from "../../modules/settings/SlpSettingsKit";
 import { slurpAudiencePresetFor } from "../../../../../shared/src/slp/slp-tuning.js";
 import type { SlpBackstagePageProps } from "./slp-backstage-contract";
@@ -30,7 +34,7 @@ const panelClass =
 const rowClass =
   "flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-start text-sm transition-colors hover:bg-[var(--slurp-canvas)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] motion-reduce:transition-none";
 
-/** Overview: status, what needs attention, and the quick switches that save at once. */
+/** Overview: status, what needs attention, and what Basic and each extension do right now. */
 export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
   const {
     navigation,
@@ -39,7 +43,6 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
     i18n,
     settings,
     update,
-    updatePatch,
     accountsQuery,
     connectionsQuery,
     fanStatusQuery,
@@ -101,7 +104,7 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
     attention.push({
       id: "text",
       label: t("ui.slurp.settings.overview.attention.noText", { defaultValue: "No text connection is set up" }),
-      section: "models",
+      section: "basic",
       target: "connections",
     });
   }
@@ -112,7 +115,7 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
         defaultValue: "Images are on for {{count}} Creators, but no image connection exists",
         count: imageEnabledCreators.length,
       }),
-      section: "models",
+      section: "basic",
       target: "images",
     });
   }
@@ -134,6 +137,77 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
       });
     }
   }
+
+  const onOff = (value: boolean) => t(value ? "ui.slurp.settings.overview.on" : "ui.slurp.settings.overview.off");
+  const cap = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
+  const tx = (key: string, defaultValue: string, values?: Record<string, unknown>) =>
+    t(`ui.slurp.settings.overview.yours.${key}`, { defaultValue, ...values });
+  const extensions: { id: string; title: string; status: string; Icon: LucideIcon; open: () => void }[] = [
+    {
+      id: "basic",
+      title: tx("basic", "Basic"),
+      status: tx("basicStatus", "Always on: Creators, feed, pictures, Stories, fans, messages, coins"),
+      Icon: Gauge,
+      open: () => go("basic", "basic"),
+    },
+    {
+      id: "ads",
+      title: tx("ads", "Brands & ads"),
+      status: tx("adsStatus", "Ads: {{ads}} · Brand deals: {{deals}}", {
+        ads: settings.inlineAdsEnabled
+          ? t(`ui.slurp.settings.ads.frequency${cap(settings.inlineAdsFrequency)}`)
+          : onOff(false),
+        deals: t(`ui.slurp.settings.ads.dealsPace${cap(settings.brandDealsPace ?? "normal")}`),
+      }),
+      Icon: Megaphone,
+      open: () => go("ads", "ads"),
+    },
+    {
+      id: "storylines",
+      title: tx("storylines", "Storylines"),
+      status: tx("storylinesStatus", "New storylines: {{mode}} · {{count}} dramas on", {
+        mode: t(`ui.slurp.settings.arcAutoMode${cap(settings.arcAutoMode)}`),
+        count: settings.drama.enabled.length,
+      }),
+      Icon: BookOpen,
+      open: () => go("content", "storylines"),
+    },
+    {
+      id: "world",
+      title: tx("world", "Living world"),
+      status: tx("worldStatus", "{{count}} occasions on the calendar", { count: settings.platformEvents.length }),
+      Icon: Globe2,
+      open: () => go("world", "events"),
+    },
+    {
+      id: "stir",
+      title: tx("stir", "Stir"),
+      status: tx("stirStatus", "Always on: the lever deck in the Stir tab"),
+      Icon: Sparkles,
+      open: () => onNavigate({ mode: "creator", view: "stir" }),
+    },
+    {
+      id: "desk",
+      title: tx("desk", "Support desk"),
+      status: tx("deskStatus", "Creators write in: {{pace}}", {
+        pace: t(`ui.slurp.stir.settings.ticketPace.${settings.supportDesk.tickets}`),
+      }),
+      Icon: Headset,
+      open: () => go("stir", "stir"),
+    },
+    {
+      id: "engine",
+      title: tx("engine", "Engine link"),
+      status:
+        settings.carryoverModes.length > 0
+          ? tx("engineOn", "Your chats remember Slurp in {{count}} chat modes", {
+              count: settings.carryoverModes.length,
+            })
+          : tx("engineOff", "Your chats do not hear about Slurp"),
+      Icon: Link2,
+      open: () => go("engine", "engine"),
+    },
+  ];
 
   return (
     <div className="space-y-4">
@@ -261,60 +335,6 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
         </section>
       )}
 
-      <section className={panelClass} aria-labelledby="slurp-overview-quick">
-        <h2 id="slurp-overview-quick" className="text-sm font-black">
-          {t("ui.slurp.settings.overview.quick.title", { defaultValue: "Quick switches" })}
-        </h2>
-        <p className="mt-0.5 text-xs text-[var(--slurp-muted)]">
-          {t("ui.slurp.settings.overview.quick.detail", { defaultValue: "These save at once. You can undo." })}
-        </p>
-        <div className="mt-2 grid gap-x-8 sm:grid-cols-2">
-          <Toggle
-            compact
-            label={t("ui.slurp.settings.images.blurPictures")}
-            value={settings.blurPictures}
-            onChange={(value) => void update("blurPictures", value)}
-          />
-          <Toggle
-            compact
-            label={t("ui.slurp.settings.overview.quick.publishing", { defaultValue: "Automatic publishing" })}
-            value={settings.autoPostingScheduleEnabled}
-            onChange={(value) => void update("autoPostingScheduleEnabled", value)}
-          />
-          <Toggle
-            compact
-            label={t("ui.slurp.settings.overview.quick.fans", { defaultValue: "Fan activity" })}
-            value={settings.fanActivityEnabled}
-            onChange={(value) => void update("fanActivityEnabled", value)}
-          />
-          <Toggle
-            compact
-            label={t("ui.slurp.settings.inlinePromotions")}
-            value={settings.inlineAdsEnabled}
-            onChange={(value) => void update("inlineAdsEnabled", value)}
-          />
-          <Toggle
-            compact
-            label={t("ui.slurp.settings.backstage.landing.away", { defaultValue: "Replies while away" })}
-            value={settings.messagesAwayRepliesEnabled}
-            onChange={(value) => void update("messagesAwayRepliesEnabled", value)}
-          />
-          <Toggle
-            compact
-            label={t("ui.slurp.settings.overview.quick.cleanup", { defaultValue: "Automatic cleanup" })}
-            value={settings.autopurgeEnabled}
-            onChange={(enabled) => {
-              const existing = settings.autopurgeNextRunAt;
-              const nextRunAt =
-                enabled && (!existing || Date.parse(existing) <= Date.now())
-                  ? nextSlurpAutopurgeRunAt(settings)
-                  : existing;
-              void updatePatch({ autopurgeEnabled: enabled, autopurgeNextRunAt: enabled ? nextRunAt : null });
-            }}
-          />
-        </div>
-      </section>
-
       <OverviewActivity
         reserveStatus={reserveStatusQuery.data}
         reserveLoading={reserveStatusQuery.isLoading}
@@ -340,7 +360,7 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
               ? t("ui.slurp.settings.overview.quietHoursOn")
               : t("ui.slurp.settings.overview.quietHoursOff"),
           ]}
-          onClick={() => go("automation", "general")}
+          onClick={() => go("basic", "general")}
           tone="pink"
         />
         <OverviewCard
@@ -361,7 +381,7 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
             t("ui.slurp.settings.overview.imageCreators", { count: imageEnabledCreators.length }),
             imageConnections.length > 0 ? imageConnectionLabel : t("ui.slurp.settings.overview.noImageConnection"),
           ]}
-          onClick={() => go("models", "images")}
+          onClick={() => go("basic", "images")}
           tone="blue"
           healthy={imagesReady}
         />
@@ -375,44 +395,35 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
             t(`ui.slurp.settings.simulation.presets.${slurpAudiencePresetFor(settings)}`),
             t("ui.slurp.settings.overview.audienceActions"),
           ]}
-          onClick={() => go("fans", "audience")}
+          onClick={() => go("basic", "audience")}
           tone="coral"
           healthy={settings.fanActivityEnabled}
         />
-        <OverviewCard
-          icon={<BookOpen size={21} aria-hidden="true" />}
-          title={t("ui.slurp.settings.backstage.landing.planAutomation", { defaultValue: "Storylines" })}
-          status={t(
-            `ui.slurp.settings.arcAutoMode${settings.arcAutoMode === "off" ? "Off" : settings.arcAutoMode === "suggest" ? "Suggest" : "Auto"}`,
-          )}
-          details={[
-            t(
-              `ui.slurp.settings.arcPace${settings.arcPace === "slow" ? "Slow" : settings.arcPace === "fast" ? "Fast" : "Normal"}`,
-            ),
-          ]}
-          onClick={() => go("content", "storylines")}
-          tone="violet"
-        />
-        <OverviewCard
-          icon={<MessageCircle size={21} aria-hidden="true" />}
-          title={t("ui.slurp.settings.backstage.landing.away", { defaultValue: "Replies while away" })}
-          status={
-            settings.messagesAwayRepliesEnabled
-              ? t("ui.slurp.settings.overview.on")
-              : t("ui.slurp.settings.overview.off")
-          }
-          details={[
-            t("ui.slurp.settings.backstage.landing.awayValue", {
-              defaultValue: "Longest wait {{minutes}} min",
-              minutes: settings.messagesMaxReplyDelayMinutes,
-            }),
-          ]}
-          onClick={() => go("fans", "messaging")}
-          tone="pink"
-        />
       </div>
 
-      <button type="button" onClick={() => go("maintenance", "autopurge")} className={`${panelClass} ${rowClass}`}>
+      {/* Your Slurp: Basic plus each extension, with what it does right now. No switches yet:
+          an extension gets one only once its server gate exists (docs/CONFIGURATOR.md). */}
+      <section className={panelClass} aria-labelledby="slurp-overview-yours">
+        <h2 id="slurp-overview-yours" className="text-sm font-black">
+          {t("ui.slurp.settings.overview.yours.title", { defaultValue: "Your Slurp" })}
+        </h2>
+        <ul className="mt-2 space-y-0.5">
+          {extensions.map((item) => (
+            <li key={item.id}>
+              <button type="button" onClick={item.open} className={rowClass}>
+                <item.Icon size={18} className="shrink-0 text-[var(--slurp-violet)]" aria-hidden="true" />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-bold">{item.title}</span>
+                  <span className="block truncate text-xs text-[var(--slurp-muted)]">{item.status}</span>
+                </span>
+                <ChevronRight size={16} className="shrink-0 rtl:rotate-180" aria-hidden="true" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <button type="button" onClick={() => go("basic", "autopurge")} className={`${panelClass} ${rowClass}`}>
         <HardDrive size={18} className="shrink-0 text-[var(--slurp-violet)]" aria-hidden="true" />
         <span className="min-w-0 flex-1">
           <span className="block font-bold">

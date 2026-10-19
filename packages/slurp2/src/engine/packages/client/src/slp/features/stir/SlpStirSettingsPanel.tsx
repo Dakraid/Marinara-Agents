@@ -3,7 +3,6 @@ import { AdvancedGroup, Field, NumberSetting, SettingsGroup, Toggle } from "../.
 import { BackstagePageHeader } from "../../modules/settings/SlpSettingsKit";
 import { ChoiceSetting } from "../../modules/settings/SlpSettingsInputs";
 import type { SlpBackstagePageProps } from "../backstage/slp-backstage-contract";
-import { SlpDramaSettings } from "./SlpDramaSettings";
 import {
   SLP_DESK_RATES,
   SLP_DESK_TICKET_PACES,
@@ -11,7 +10,7 @@ import {
 } from "../../../../../shared/src/slp/slp-support-desk.js";
 
 /**
- * Settings › Stir: how the Slurp Support desk plays (docs/SUPPORT-DESK.md). One stored object,
+ * Settings › Support desk: how the Slurp Support desk plays (docs/SUPPORT-DESK.md). One stored object,
  * `supportDesk`; every control saves the whole object with its one field changed.
  */
 export function SlpStirSettingsPanel(page: SlpBackstagePageProps) {
@@ -101,19 +100,6 @@ export function SlpStirSettingsPanel(page: SlpBackstagePageProps) {
           />
         </SettingsGroup>
       </div>
-      <SettingsGroup title={tx("groupLove", "Love")}>
-        <Toggle
-          settingKey="polyamory"
-          label={tx("polyamory", "Polyamory")}
-          detail={tx(
-            "polyamoryDetail",
-            "A couple can grow to three or four, and a polyamorous Creator can be in more than one couple. Each Creator's style is in their steering: from their card, monogamous or polyamorous.",
-          )}
-          value={settings.polyamory}
-          onChange={(value) => update("polyamory", value)}
-        />
-      </SettingsGroup>
-      <SlpDramaSettings {...page} settingKey="drama" />
       <SettingsGroup title={tx("groupNotices", "Slurp's notices")}>
         <Toggle
           label={tx("noticeMilestones", "Milestones")}

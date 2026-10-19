@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
-import type { SlpBackstageSection } from "../../base/navigation/slp-backstage-target";
+import type { SlpBackstageSection, SlpBackstageTarget } from "../../base/navigation/slp-backstage-target";
 import type { SlurpSettings } from "./slp-settings-contract";
 import { useSlurpSettings, useSlurpSettingsDefaults, useUpdateSlurpSettings } from "./slp-settings-hooks";
 
@@ -10,7 +10,7 @@ import { useSlurpSettings, useSlurpSettingsDefaults, useUpdateSlurpSettings } fr
  * The staged settings draft behind Backstage: what is saved, what is staged for Review and apply,
  * and how a save reports itself. Backstage composes this; the settings feature owns it.
  */
-export function useSlpSettingsDraft({ section }: { section: SlpBackstageSection }) {
+export function useSlpSettingsDraft({ section, target }: { section: SlpBackstageSection; target: SlpBackstageTarget }) {
   const { t } = useTranslation();
   const settingsQuery = useSlurpSettings();
   const settingsDefaultsQuery = useSlurpSettingsDefaults();
@@ -36,9 +36,9 @@ export function useSlpSettingsDraft({ section }: { section: SlpBackstageSection 
     }
   };
 
-  /** Stages a patch for Review and apply; only Overview quick toggles save at once, with Undo. */
+  /** Stages a patch for Review and apply; only Overview and the Basic page save at once, with Undo. */
   const updatePatch = async (patch: Partial<SlurpSettings>) => {
-    if (section !== "overview") {
+    if (section !== "overview" && target !== "basic") {
       setDraftPatch((current) => ({ ...current, ...patch }));
       return true;
     }

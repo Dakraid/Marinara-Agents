@@ -87,7 +87,7 @@ export function renderSlurpHomeDestinations({
         <SlpStirTab
           personaId={viewerPersonaId}
           onOpenSettings={() =>
-            onNavigate({ mode: "creator-settings", section: "stir", target: "stir", settingKey: "drama" })
+            onNavigate({ mode: "creator-settings", section: "content", target: "drama", settingKey: "drama" })
           }
           onOpenTarget={shellProps.onOpenPulseTarget}
           onOpenSupport={(creatorAccountId) =>
