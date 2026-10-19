@@ -3,7 +3,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { cp, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, extname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 // A Slurp backup is untrusted input (#1476). Its pictures come back only as PNG, JPEG, WebP, GIF or
@@ -167,6 +167,13 @@ async function main() {
         stored(req.params["*"]),
       ),
     );
+    // The feed route names a saved post picture after the stored file's extension.
+    server.get("/named/*", (req: { params: Record<string, string> }, reply: Reply) =>
+      media.sendSlurpImageFile(
+        reply.header("Content-Disposition", `inline; filename="slurp-x${extname(req.params["*"]).toLowerCase()}"`),
+        stored(req.params["*"]),
+      ),
+    );
     const get = (path: string) => server.inject({ method: "GET", url: `/media/${path}` });
 
     const served: Array<[string, string, Buffer]> = [
@@ -199,6 +206,31 @@ async function main() {
       assert.equal(response.headers["content-disposition"], undefined, `${path}: a 404 is not named as a picture`);
       assert.equal(response.headers["cache-control"], "no-store", `${path}: a 404 is not cached as a picture`);
       assert.match(String(response.headers["content-type"]), /^application\/json/u, `${path} answers in JSON`);
+    }
+
+    // ── Saved name: its extension comes from the bytes, like the type ──
+    const named: Array<[string, string, string]> = [
+      ["a1/post.png", "image/png", "slurp-x.png"],
+      ["a1/photo-long.jpeg", "image/jpeg", "slurp-x.jpg"],
+      ["a1/modern.avif", "image/avif", "slurp-x.avif"],
+      ["a1/older-page.html", "image/png", "slurp-x.png"],
+      ["a1/older-label.png", "image/jpeg", "slurp-x.jpg"],
+      ["a1/generated.bmp", "image/bmp", "slurp-x.bmp"],
+    ];
+    for (const [path, type, fileName] of named) {
+      const response = await server.inject({ method: "GET", url: `/named/${path}` });
+      assert.equal(response.statusCode, 200, `${path} is served by name`);
+      assert.equal(response.headers["content-type"], type, `${path} is sent as ${type}`);
+      assert.equal(
+        response.headers["content-disposition"],
+        `inline; filename="${fileName}"`,
+        `${path} is saved as ${fileName}`,
+      );
+    }
+    for (const path of ["a1/older-notes.png", "a1/missing.png"]) {
+      const response = await server.inject({ method: "GET", url: `/named/${path}` });
+      assert.equal(response.statusCode, 404, `${path} is not sent by name`);
+      assert.equal(response.headers["content-disposition"], undefined, `${path}: a 404 is not named`);
     }
   } finally {
     await app?.close();

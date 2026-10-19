@@ -201,7 +201,7 @@ function slpImageTypeOfBytes(bytes: Buffer): { ext: string; mimeType: string } |
  * its file name suggests. A file that is not a picture is not sent at all.
  */
 export function sendSlurpImageFile(reply: FastifyReply, absolutePath: string) {
-  let type: { mimeType: string } | null = null;
+  let type: { ext: string; mimeType: string } | null = null;
   try {
     type = slpImageTypeOfBytes(readFileHeader(absolutePath));
   } catch {
@@ -214,6 +214,11 @@ export function sendSlurpImageFile(reply: FastifyReply, absolutePath: string) {
       .header("Cache-Control", "no-store")
       .code(404)
       .send({ error: "Not Found" });
+  }
+  // A file left by an older restore can carry another type's extension; a saved copy takes the bytes' one.
+  const disposition = reply.getHeader("Content-Disposition");
+  if (typeof disposition === "string") {
+    reply.header("Content-Disposition", disposition.replace(/\.[a-z0-9]+"$/iu, `.${type.ext}"`));
   }
   return (
     reply
