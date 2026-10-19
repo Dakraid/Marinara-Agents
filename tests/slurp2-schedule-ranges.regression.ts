@@ -6,6 +6,7 @@
 import assert from "node:assert/strict";
 import {
   resolveSlurpCreatorAvailability,
+  resolveSlurpCreatorScheduleBlocks,
   slurpCreatorAvailability,
   slurpTimelineMoment,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/creators/slp-creator-schedule-context";
@@ -101,6 +102,38 @@ assert.deepEqual(
 
 // ── The issue's own shape, end to end: no more guessing ───────────────────
 async function engineSchedule() {
+  // A day without blocks still has yesterday's night block running into it.
+  const nightOnly = {
+    getById: async () => ({
+      data: {
+        extensions: {
+          conversationSchedule: {
+            weekStart: "2026-10-19T00:00:00.000Z",
+            days: {
+              Monday: [
+                { time: "18:00-23:00", activity: "streaming", status: "online" },
+                { time: "23:00-06:30", activity: "Sleeping", status: "offline" },
+              ],
+            },
+          },
+        },
+      },
+    }),
+  };
+  const nightSource = { kind: "character", entityId: "c2", displayName: "Rin" };
+  const tuesdayNight = await resolveSlurpCreatorScheduleBlocks(nightOnly, nightSource, at(20, 1));
+  assert.deepEqual(tuesdayNight?.blocks, [], "Tuesday has no blocks of its own");
+  assert.deepEqual(
+    tuesdayNight && slurpTimelineMoment(tuesdayNight.blocks, tuesdayNight.localNow, tuesdayNight),
+    { current: "streaming", previous: "free time", queued: true },
+    "the post brief still places Tuesday 01:00 inside Monday's night",
+  );
+  assert.equal(
+    await resolveSlurpCreatorScheduleBlocks(nightOnly, nightSource, at(20, 9)),
+    null,
+    "once the night block ends, an empty day is still no schedule",
+  );
+
   const character = {
     getById: async () => ({
       data: {

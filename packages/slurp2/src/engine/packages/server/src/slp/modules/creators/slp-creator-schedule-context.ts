@@ -164,7 +164,7 @@ export type SlurpCreatorAvailability = {
   online: boolean;
   /** What the schedule says they are doing right now, for the reply prompt. */
   activity: string | null;
-  /** Minutes until the next schedule block starts. `null` when nothing is left today. */
+  /** Minutes until the next reachable stretch starts. `null` when no return time is known. */
   minutesUntilOnline: number | null;
   /** True when there is no active schedule and the status is guessed from recent posts. */
   estimated?: boolean;
@@ -378,7 +378,8 @@ export function slurpTimelineMoment(
 
 /**
  * Today's schedule blocks for a character-backed Creator, with yesterday's and tomorrow's for a
- * range that crosses midnight, or null when there is no usable schedule today.
+ * range that crosses midnight, or null when there is no usable schedule today. A day without blocks
+ * still counts while yesterday's night block runs into it.
  */
 export async function resolveSlurpCreatorScheduleBlocks(
   characters: { getById(id: string): Promise<ScheduleCharacter> },
@@ -393,7 +394,8 @@ export async function resolveSlurpCreatorScheduleBlocks(
   if (!schedule || schedule.enabled === false) return null;
   const localNow = zonedDate(now, timeZone);
   const [yesterday, today, tomorrow] = scheduleDaysAround(schedule, localNow);
-  return today?.length ? { blocks: today, yesterday: yesterday ?? [], tomorrow: tomorrow ?? [], localNow } : null;
+  if (!today?.length && segmentAt(scheduleSegments([yesterday, today, tomorrow]), localNow) === -1) return null;
+  return { blocks: today ?? [], yesterday: yesterday ?? [], tomorrow: tomorrow ?? [], localNow };
 }
 
 /**
