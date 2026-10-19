@@ -6,12 +6,24 @@
  * Money stays out of it: a tip, a paid picture or a commission step is a record of coins moving, so
  * it cannot be edited or deleted here (`slurpMessageRemovable`).
  */
-type Row = { id: string; role: "viewer" | "creator"; kind: string; price: number };
+type Row = {
+  id: string;
+  role: "viewer" | "creator";
+  kind: string;
+  price: number;
+  metadata?: Record<string, unknown>;
+};
 
 const REMOVABLE: ReadonlySet<string> = new Set(["text", "system", "post_preview", "broadcast"]);
 
-/** A message without coins attached: it may be deleted. */
-export const slurpMessageRemovable = (message: Row) => REMOVABLE.has(message.kind) && !(message.price > 0);
+/**
+ * A message without coins attached: it may be deleted. A system line that belongs to a commission
+ * (quote, payment, refund) or a scene (invite, recap) is a record, not chat, so it stays.
+ */
+export const slurpMessageRemovable = (message: Row) =>
+  REMOVABLE.has(message.kind) &&
+  !(message.price > 0) &&
+  !(message.kind === "system" && (message.metadata?.commissionId || message.metadata?.scene));
 
 /** Only plain words are edited, and only by the side that wrote them. */
 export const slurpMessageEditable = (message: Row, side: "viewer" | "creator") =>

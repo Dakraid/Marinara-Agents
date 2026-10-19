@@ -61,6 +61,12 @@ assert.equal(slurpMessageRemovable(msg("t", "viewer", "tip", 5)), false, "money 
 assert.equal(slurpMessageRemovable(msg("p", "creator", "ppv", 20)), false);
 assert.equal(slurpMessageRemovable(msg("q", "creator", "commission_quote")), false);
 assert.equal(slurpMessageRemovable(msg("x", "creator")), true);
+// A commission or scene record is a system line with no price: it still stays.
+const system = (metadata: Record<string, unknown>) => ({ ...msg("s", "creator", "system"), metadata });
+assert.equal(slurpMessageRemovable(system({ commissionId: "c1" })), false, "commission steps stay");
+assert.equal(slurpMessageRemovable(system({ scene: { id: "x" } })), false, "scene cards stay");
+assert.equal(slurpMessageRemovable(system({})), true);
+assert.equal(slurpLastAnswer([msg("1", "viewer"), system({ commissionId: "c1" })]), null);
 assert.deepEqual(slurpLastAnswer([msg("1", "viewer"), msg("2", "creator"), msg("3", "creator")]), ["2", "3"]);
 assert.equal(slurpLastAnswer([msg("1", "viewer")]), null, "no answer yet");
 assert.equal(slurpLastAnswer([msg("1", "creator")]), null, "nothing to answer");

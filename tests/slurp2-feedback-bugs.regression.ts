@@ -17,17 +17,11 @@ assert.equal(slurpReplyBubbleStale(new Date(now + 60_000).toISOString(), now), f
 assert.equal(slurpReplyBubbleStale(new Date(now - 30_000).toISOString(), now), false, "due a moment ago: next tick");
 assert.equal(slurpReplyBubbleStale(new Date(now - SLURP_REPLY_BUBBLE_STALE_MS - 1).toISOString(), now), true);
 assert.equal(slurpReplyBubbleStale("not a date", now), true, "a broken row cannot block either");
-// One rule where every caller asks (Get reply now and the away-reply loop): stale bubbles are dropped.
+// One rule where every caller asks (Get reply now and the away-reply loop): stale bubbles do not count.
+// Read-only: a paused Slurp or a stopped Engine leaves overdue bubbles that are still wanted.
 const queue = src("data/messages/slp-reply-queue-storage.ts");
-assert.match(
-  queue,
-  /async hasPending[\s\S]*?slurpReplyBubbleStale\(String\(row\.deliverAt\)\)[\s\S]*?delete\(slurpReplyBubbles\)/u,
-);
-// A bubble whose delivery keeps failing is dropped once it is stale, not retried forever.
-assert.match(
-  src("features/messages/slp-message-scheduler-service.ts"),
-  /Failed to deliver bubble[\s\S]*?if \(slurpReplyBubbleStale\(bubble\.deliverAt\)\) await replyQueue\.remove\(bubble\.id\)/u,
-);
+assert.match(queue, /async hasPending[\s\S]*?rows\.some\(\(row\) => !slurpReplyBubbleStale\(String\(row\.deliverAt\)\)\)/u);
+assert.doesNotMatch(queue, /async hasPending[\s\S]*?\.delete\(slurpReplyBubbles\)/u);
 // The reply claim is unique per thread, so stale claims of any Creator on the thread are cleared.
 assert.match(
   src("data/messages/slp-reply-storage-methods.ts"),

@@ -71,16 +71,13 @@ export function createSlurpReplyQueueStorage(db: DB) {
     async removeForThread(threadId: string): Promise<void> {
       await db.delete(slurpReplyBubbles).where(eq(slurpReplyBubbles.threadId, threadId));
     },
-    /** Bubbles still to arrive. A stuck one (long overdue) is dropped here, so it cannot block replies. */
+    /**
+     * Bubbles still to arrive. A stuck one (long overdue) does not count, so it cannot block replies.
+     * Read-only: while Slurp is paused or the Engine was down, overdue bubbles are still wanted.
+     */
     async hasPending(threadId: string): Promise<boolean> {
       const rows = await db.select().from(slurpReplyBubbles).where(eq(slurpReplyBubbles.threadId, threadId));
-      let pending = false;
-      for (const row of rows) {
-        if (slurpReplyBubbleStale(String(row.deliverAt)))
-          await db.delete(slurpReplyBubbles).where(eq(slurpReplyBubbles.id, row.id));
-        else pending = true;
-      }
-      return pending;
+      return rows.some((row) => !slurpReplyBubbleStale(String(row.deliverAt)));
     },
   };
   return tolerateMissingTables(storage, {

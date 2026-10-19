@@ -71,13 +71,18 @@ export async function slpThreadExportRoutes(app: FastifyInstance, messaging: Slp
         connection.defaultParameters,
       ),
     );
-    const result = await provider.chatComplete(slurpThreadSummaryMessages(found.text, found.names), {
-      model: connection.model,
-      temperature: 0.4,
-      // Reasoning headroom: a 300-word answer still needs room to think first.
-      maxTokens: 4096,
-    });
-    const text = String(result.content ?? "").trim();
+    let text: string;
+    try {
+      const result = await provider.chatComplete(slurpThreadSummaryMessages(found.text, found.names), {
+        model: connection.model,
+        temperature: 0.4,
+        // Reasoning headroom: a 300-word answer still needs room to think first.
+        maxTokens: 4096,
+      });
+      text = String(result.content ?? "").trim();
+    } catch {
+      return reply.code(502).send({ error: "The connection could not sum this up. Try again." });
+    }
     if (!text) return reply.code(502).send({ error: "The connection returned nothing. Try again." });
     return { text };
   });
