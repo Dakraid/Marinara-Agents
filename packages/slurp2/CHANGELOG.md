@@ -1,5 +1,11 @@
 # Slurp release notes
 
+## 0.3.49 — 2026-10-19
+
+- Fixed: restoring a backup checks each media file more closely. Only PNG, JPEG, WebP, GIF and AVIF pictures whose file extension matches their contents come back; anything else is skipped and listed with the skipped entries (#1476).
+- Fixed: AVIF pictures in a backup were dropped on restore. They now come back like the other formats.
+- Changed: Slurp sends every stored picture (posts, messages, avatars, banners, ads) as the image type its contents show (#1476).
+
 ## 0.3.48 — 2026-10-19 [highlight]
 
 - Changed: Creators whose character has a Conversation Schedule now follow it. Slurp only read a bare "06:00" and the Engine stores ranges ("06:00-08:00"), so every block was dropped and availability was guessed from the last post. Ranges, including ones past midnight, are now read as the Engine reads them. Time between blocks is free time, online; a block's status decides (offline and dnd are away, online and idle answer); a block without one falls back to its activity words. The post brief's day plan reads the same ranges (#1436).
