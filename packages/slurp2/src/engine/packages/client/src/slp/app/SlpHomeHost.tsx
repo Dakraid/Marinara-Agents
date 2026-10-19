@@ -233,7 +233,7 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
       if (postId) window.setTimeout(() => slpShowPostWhenRendered(postId), 250);
     },
     onOpenBudget: () =>
-      onNavigate({ mode: "creator-settings", section: "world", target: "audience", settingKey: "modelBudget" }),
+      onNavigate({ mode: "creator-settings", section: "basic", target: "audience", settingKey: "modelBudget" }),
     pulseStarts: {
       // The Creator picker in Backstage; its Generate is a Pulse task (task B).
       onGeneratePosts: () =>
@@ -251,7 +251,7 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
       ? {
           onOpenBudget: () => {
             dismissBudgetNote();
-            onNavigate({ mode: "creator-settings", section: "world", target: "audience", settingKey: "modelBudget" });
+            onNavigate({ mode: "creator-settings", section: "basic", target: "audience", settingKey: "modelBudget" });
           },
           onDismiss: dismissBudgetNote,
         }

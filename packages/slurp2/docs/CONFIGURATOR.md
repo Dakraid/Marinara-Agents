@@ -199,6 +199,12 @@ The other cases:
    The Overview quick switches go away. The Messages group is the old "Messages pilot":
    acceptance tests for it are away replies vs writes first, who can message (closed is
    not "nobody"), what still arrives when automation is off, and the no-connection case.
+   As built (slurpothon): "More for …" opens the full page of that part (Basic's other pages
+   have no tab row, only "Back to Basic"); it is not an inline expander, so every setting keeps
+   one anchor. The Basic page saves at once, like Overview. Heat links to the Spice page. Carryover,
+   lorebook context and agent flavour moved to the Engine link page; polyamory and drama to
+   Storylines › Drama & love. Stir has no settings page; its Overview row opens the Stir tab.
+   Hiding Creator-modal blocks waits for slice 3.
 2. **Onboarding.** Add the Basic screen, the Creator step and the one write.
 3. **Real gates.** Do them in this order:
    1. Brands & ads, the first switch on a card.
