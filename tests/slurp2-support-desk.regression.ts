@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { slurpDeskSituation } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-desk-situation.ts";
 import {
   normalizeSlpSupportDesk,
   normalizeSlpSupportDeskSettings,
@@ -370,6 +371,43 @@ assert.deepEqual(slurpDeskAcceptedInput({ input: { accountId: "a" } }), { accoun
   );
   assert.match(read("server/src/slp/workflows/slp-world-tick-workflow.ts"), /advanceSlurpSupportDesk\(app\.db\)/u);
   assert.match(read("server/src/slp/features/assist/slp-action-runner.ts"), /isSlpDeskLever\(name\)/u);
+}
+
+// 9. The desk tick reads the Creator's real week (views, a collab that fell through, income) for the ticket topic.
+{
+  const day = (days: number) => new Date(at.getTime() - days * DAY).toISOString();
+  const base = { creatorId: "c1", at, posts: [], ledger: [], collabs: [] };
+  const quiet = slurpDeskSituation(base);
+  assert.deepEqual(quiet, { viewsDown: false, hasCollabWish: false, moneyDown: false });
+  const post = (days: number, likeCount: number) => ({ createdAt: day(days), access: "public", likeCount });
+  assert.equal(
+    slurpDeskSituation({ ...base, posts: [post(1, 2), post(4, 20), post(6, 24), post(8, 22)] }).viewsDown,
+    true,
+    "a fresh post far under the usual likes",
+  );
+  assert.equal(
+    slurpDeskSituation({ ...base, posts: [post(1, 30), post(4, 20), post(6, 24), post(8, 22)] }).viewsDown,
+    false,
+  );
+  const pay = (days: number, amount: number) => ({ kind: "tip", amount, at: day(days) });
+  assert.equal(slurpDeskSituation({ ...base, ledger: [pay(10, 50), pay(2, 5)] }).moneyDown, true, "income halved");
+  assert.equal(slurpDeskSituation({ ...base, ledger: [pay(10, 50), pay(2, 60)] }).moneyDown, false);
+  const declined = { hostId: "c1", partnerId: "c2", status: "declined", answeredAt: day(3), decline: "busy" };
+  assert.equal(slurpDeskSituation({ ...base, collabs: [declined] }).hasCollabWish, true);
+  assert.equal(
+    slurpDeskSituation({ ...base, collabs: [declined, { ...declined, status: "agreed", decline: null }] })
+      .hasCollabWish,
+    false,
+    "an open collab means no wish",
+  );
+  // The signal reaches the topic: money first when only income fell, and the rest still holds.
+  const on = { ...settings, tickets: "often" as const };
+  assert.deepEqual(tick(desk(), 3, { settings: on, rolls: [0.99, 0, 0], situation: { moneyDown: true } }).events, [
+    { kind: "ticket", topic: "money" },
+  ]);
+  // The tick operation passes the real week; without it the topic is only chance.
+  assert.match(read("server/src/slp/features/messages/desk/slp-desk-tick-operation.ts"), /slurpDeskSituation\(\{/u);
+  assert.match(read("server/src/slp/features/messages/desk/slp-desk-tick-operation.ts"), /\n\s+situation,\n/u);
 }
 
 console.log("slurp2 support desk: ok");

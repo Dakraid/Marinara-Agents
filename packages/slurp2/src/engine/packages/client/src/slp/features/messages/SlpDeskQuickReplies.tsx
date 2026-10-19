@@ -5,7 +5,7 @@ import { Plus, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
-  SLP_DESK_QUICK_REPLIES,
+  SLP_DESK_QUICK_REPLY_KEYS,
   SLP_DESK_QUICK_REPLY_LIMIT,
   SLP_DESK_QUICK_REPLY_MAX,
 } from "../../../../../shared/src/slp/slp-support-desk.js";
@@ -13,7 +13,7 @@ import { errorMessage } from "../../modules/settings/slp-backstage-format";
 import type { SlurpThreadViewModel } from "./slp-thread-actions";
 
 const CHIP =
-  "flex h-9 shrink-0 items-center gap-1 rounded-full bg-[var(--slurp-surface-raised)] px-3 text-xs font-semibold text-[var(--slurp-text)] ring-1 ring-inset ring-[var(--noodle-divider)] transition-colors hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none";
+  "flex min-h-11 shrink-0 items-center gap-1 rounded-full bg-[var(--slurp-surface-raised)] px-3 text-xs font-semibold text-[var(--slurp-text)] ring-1 ring-inset ring-[var(--noodle-divider)] transition-colors hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] disabled:opacity-50 motion-reduce:transition-none";
 
 export function SlpDeskQuickReplies({ model }: { model: SlurpThreadViewModel }) {
   const { t } = useTranslation();
@@ -21,7 +21,7 @@ export function SlpDeskQuickReplies({ model }: { model: SlurpThreadViewModel }) 
   const desk = settingsQuery.data?.supportDesk;
   if (!desk) return null;
   const saved = desk.quickReplies ?? [];
-  const replies = saved.length ? saved : SLP_DESK_QUICK_REPLIES;
+  const replies = saved.length ? saved : SLP_DESK_QUICK_REPLY_KEYS.map((key) => t(key));
   const next = draft.trim();
   const save = (quickReplies: string[]) =>
     updateSlurpSettings.mutate(
@@ -63,7 +63,7 @@ export function SlpDeskQuickReplies({ model }: { model: SlurpThreadViewModel }) 
             aria-label={t("ui.slurp.desk.quickReplyRemove", { reply })}
             disabled={updateSlurpSettings.isPending}
             onClick={() => save(replies.filter((entry) => entry !== reply))}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--slurp-muted)] hover:bg-[var(--accent)] hover:text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-[var(--slurp-muted)] hover:bg-[var(--accent)] hover:text-[var(--slurp-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
           >
             <X size={12} aria-hidden="true" />
           </button>

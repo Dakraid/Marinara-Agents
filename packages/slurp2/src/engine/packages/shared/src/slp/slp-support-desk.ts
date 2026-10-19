@@ -35,6 +35,8 @@ export type SlpDeskTicketTopic = (typeof SLP_DESK_TICKET_TOPICS)[number];
  * outside the case file, and a pushy fan or being tired has no lever, so those never open a ticket.
  */
 export const SLP_DESK_OPENED_TOPICS = ["views", "collab", "money"] as const satisfies readonly SlpDeskTicketTopic[];
+/** What the Creator's week looks like, read from real data by the desk tick (`slp-desk-situation.ts`). */
+export type SlpDeskSituation = { viewsDown?: boolean; hasCollabWish?: boolean; moneyDown?: boolean };
 /** A topic rests this long per Creator after a ticket about it, so the same ask does not repeat. */
 export const SLP_DESK_TOPIC_REST_DAYS = 14;
 
@@ -178,14 +180,10 @@ export type SlpDeskRate = (typeof SLP_DESK_RATES)[number];
 
 export const SLP_DESK_QUICK_REPLY_MAX = 500;
 export const SLP_DESK_QUICK_REPLY_LIMIT = 20;
-/** Quick replies until the player saves their own; each matches a lever Support really has (R1). */
-export const SLP_DESK_QUICK_REPLIES: readonly string[] = [
-  "Thanks for writing in. I am looking into it now.",
-  "I put you on Discover for a few days. Tell me if your views pick up.",
-  "I sent a little something to your wallet. Keep it up.",
-  "I will find you someone to collab with. Give me a day or two.",
-  "Glad that is sorted. Anything else, just write.",
-];
+/** Locale keys of the quick replies shown until the player saves their own; each matches a lever Support has (R1). */
+export const SLP_DESK_QUICK_REPLY_KEYS: readonly string[] = [1, 2, 3, 4, 5].map(
+  (number) => `ui.slurp.desk.quickReplyBuiltin${number}`,
+);
 
 export const slpSupportDeskSettingsSchema = z.object({
   /** How often Creators open tickets on their own. Off by default. */
@@ -504,7 +502,7 @@ export function slpDeskTick(
     /** Uniform 0–1 numbers: [risk roll, ticket roll, ticket topic]. */
     rolls: [number, number, number];
     /** What the Creator's week looks like, to pick a ticket topic that fits. */
-    situation?: { viewsDown?: boolean; hasCollabWish?: boolean };
+    situation?: SlpDeskSituation;
   },
 ): { desk: SlpSupportDesk; events: SlpDeskTickEvent[] } {
   const { at, settings, counts, rolls } = input;
@@ -613,7 +611,7 @@ export function slpDeskTick(
  */
 export function slpDeskTicketTopic(
   desk: SlpSupportDesk,
-  situation: { viewsDown?: boolean; hasCollabWish?: boolean },
+  situation: SlpDeskSituation,
   roll: number,
   at = new Date(),
 ): SlpDeskTicketTopic | null {
@@ -626,6 +624,7 @@ export function slpDeskTicketTopic(
   if ((situation.viewsDown || (desk.throttle && slpDeskActive(desk.throttle.until, at))) && fresh("views"))
     return "views";
   if (situation.hasCollabWish && fresh("collab")) return "collab";
+  if (situation.moneyDown && fresh("money")) return "money";
   const open = SLP_DESK_OPENED_TOPICS.filter(fresh);
   return open.length ? open[Math.min(open.length - 1, Math.floor(roll * open.length))]! : null;
 }
