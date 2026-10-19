@@ -20,7 +20,10 @@ assert.equal(slurpReplyBubbleStale("not a date", now), true, "a broken row canno
 // One rule where every caller asks (Get reply now and the away-reply loop): stale bubbles do not count.
 // Read-only: a paused Slurp or a stopped Engine leaves overdue bubbles that are still wanted.
 const queue = src("data/messages/slp-reply-queue-storage.ts");
-assert.match(queue, /async hasPending[\s\S]*?rows\.some\(\(row\) => !slurpReplyBubbleStale\(String\(row\.deliverAt\)\)\)/u);
+assert.match(
+  queue,
+  /async hasPending[\s\S]*?rows\.some\(\(row\) => !slurpReplyBubbleStale\(String\(row\.deliverAt\)\)\)/u,
+);
 assert.doesNotMatch(queue, /async hasPending[\s\S]*?\.delete\(slurpReplyBubbles\)/u);
 // The reply claim is unique per thread, so stale claims of any Creator on the thread are cleared.
 assert.match(
