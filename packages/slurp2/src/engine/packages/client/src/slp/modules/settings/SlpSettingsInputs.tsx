@@ -132,7 +132,7 @@ export function ChoiceSetting<T extends string>({
               ) : (
                 <label
                   key={option.value}
-                  className={`flex min-h-10 min-w-0 items-center justify-center rounded-md px-2 text-center text-sm font-semibold transition-colors focus-within:ring-2 focus-within:ring-[var(--slurp-focus,var(--noodle-accent))] motion-reduce:transition-none flex-auto ${off ? "cursor-not-allowed" : "cursor-pointer"} ${checked ? "bg-[image:var(--slurp-nav-active)] text-[var(--slurp-text,var(--foreground))] shadow-sm ring-1 ring-inset ring-[var(--noodle-accent)]/45" : "text-[var(--slurp-muted,var(--muted-foreground))] hover:text-[var(--slurp-text,var(--foreground))]"}`}
+                  className={`flex min-h-11 min-w-0 items-center justify-center rounded-md px-2 text-center text-sm font-semibold transition-colors focus-within:ring-2 focus-within:ring-[var(--slurp-focus,var(--noodle-accent))] motion-reduce:transition-none flex-auto ${off ? "cursor-not-allowed" : "cursor-pointer"} ${checked ? "bg-[image:var(--slurp-nav-active)] text-[var(--slurp-text,var(--foreground))] shadow-sm ring-1 ring-inset ring-[var(--noodle-accent)]/45" : "text-[var(--slurp-muted,var(--muted-foreground))] hover:text-[var(--slurp-text,var(--foreground))]"}`}
                 >
                   {input}
                   <span className="truncate">{option.label}</span>

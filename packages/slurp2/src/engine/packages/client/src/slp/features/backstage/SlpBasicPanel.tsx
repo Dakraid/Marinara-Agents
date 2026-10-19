@@ -100,7 +100,6 @@ export function SlpBasicPanel(page: SlpBackstagePageProps) {
           <ChoiceSetting
             settingKey="autoPostingScheduleEnabled"
             label={tx("pace", "Posting pace")}
-            variant="cards"
             options={SLURP_PUBLISHING_PRESETS.map((preset) => ({
               value: preset,
               label: t(`ui.slurp.settings.presets.${preset}`),
@@ -121,7 +120,6 @@ export function SlpBasicPanel(page: SlpBackstagePageProps) {
         <SettingsGroup title={tx("crowd", "Crowd")}>
           <ChoiceSetting
             label={tx("crowdLabel", "How many fans show up")}
-            variant="cards"
             options={SLURP_AUDIENCE_PRESETS.map((preset) => ({
               value: preset,
               label: t(`ui.slurp.settings.simulation.presets.${preset}`),
