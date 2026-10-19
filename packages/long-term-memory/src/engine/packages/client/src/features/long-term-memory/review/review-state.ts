@@ -73,11 +73,11 @@ function mutationTarget(mutation: LtmDraftMutation) {
   return mutation.kind === "create_note" ? mutation.note.id : mutation.noteId;
 }
 
-export function noteDisplayTitle(note: LtmNote | undefined, fallback: string) {
+export function noteDisplayTitle(note: Pick<LtmNote, "title"> | undefined, fallback: string) {
   return note?.title?.trim() || fallback;
 }
 
-export function noteBody(note: LtmNote | undefined) {
+export function noteBody(note: Pick<LtmNote, "sections"> | undefined) {
   return note
     ? Object.values(note.sections)
         .map((section) => section.text.trim())

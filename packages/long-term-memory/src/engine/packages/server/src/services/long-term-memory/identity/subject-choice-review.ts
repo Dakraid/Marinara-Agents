@@ -168,7 +168,7 @@ export async function resolveLtmSubjectIdentityReview(
         scope: suggestion.scope,
       });
       const compiled = compileEvidenceUnitExtraction({
-        unitResponse: { summary: "Recover reviewed subject identities", units: targets.units },
+        unitResponse: { summary: "Recover reviewed subject identities", incomplete: false, units: targets.units },
         sourceNote,
         sourceText: getLtmSourceNoteText(sourceNote),
         sourceHash: unit.sourceHash,

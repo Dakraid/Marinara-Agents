@@ -69,7 +69,7 @@ export type CandidateReconciliationResult = {
  */
 export async function reconcileEvidenceUnitCandidates(options: {
   units: LtmEvidenceUnit[];
-  root?: string;
+  root: string;
   scope: LtmScope;
   mode?: LtmMode;
   storage: ReconciliationStorage;

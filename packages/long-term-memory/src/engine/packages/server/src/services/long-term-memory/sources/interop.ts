@@ -191,7 +191,10 @@ function conversationSummaries(metadata: Record<string, unknown>) {
     ...conversationSummaryEntries(metadata.weekSummaries, "week"),
   ].sort((left, right) => conversationDate(left.range)!.getTime() - conversationDate(right.range)!.getTime());
 }
-export function summaries(metadata: Record<string, unknown>, chatMode: LtmMode) {
+export function summaries(
+  metadata: Record<string, unknown>,
+  chatMode: LtmMode,
+): Array<{ id: string; content: string; range: string; origin: string; deterministicSourceText?: string }> {
   if (chatMode === "conversation") return conversationSummaries(metadata);
   const raw = Array.isArray(metadata.summaryEntries) ? metadata.summaryEntries.map(object) : [],
     entries = raw.flatMap((entry, index) => {
@@ -508,7 +511,7 @@ async function candidates(
     for (const book of normalizeLorebooks(await getPackageResources().listLorebooks())) result.push(...book.candidates);
   if (request.source === "chats") {
     const scopeIds = new Set(getLtmScopeChatIds(request.sourceScope));
-    const scopeGroupIds = new Set(getLtmScopeGroupIds(request.sourceScope));
+    const scopeGroupIds = new Set<string | null>(getLtmScopeGroupIds(request.sourceScope));
     const broaderScope = scopeGroupIds.size > 0 || scopeIds.size > 1;
     for (const chat of await getPackagePersistence().listChats()) {
       if (normalizeLtmChatCharacterIds(chat.characterIds).includes(PROFESSOR_MARI_CHARACTER_ID)) continue;
@@ -612,7 +615,7 @@ async function existingMatcher(storage: LongTermMemoryStorage) {
 function previewFreshness(
   note: LtmNote,
   candidateFingerprint: ReturnType<typeof candidateFingerprintForNote>,
-): LtmInteropPreviewFreshness {
+): Exclude<LtmInteropPreviewFreshness, "new"> {
   const existingFingerprint = note.extractionFingerprint;
   if (!existingFingerprint) return "extraction_incomplete";
   if (existingFingerprint.sourceHash !== candidateFingerprint.sourceHash) return "source_updated";

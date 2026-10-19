@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 1.4.55 — 2026-10-19
+
+- Behind-the-scenes fixes from a stricter code check; nothing you see changes. Extraction can no longer be started without knowing where your memories are stored, which would have failed. Characters who share a name now keep their other names in the same form as every other character.
+
 ## 1.4.54 — 2026-10-19
 
 - Recall is faster when a chat's memories have many keywords. The keyword search no longer builds a new pattern for every keyword on every recall, which took most of the recall time, and it no longer runs at all when the keyword weight is 0. The same memories are recalled as before.
