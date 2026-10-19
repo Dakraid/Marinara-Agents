@@ -4,6 +4,12 @@
     "beholder": {
       "versions": [
         {
+          "version": "1.3.13",
+          "date": "2026-10-19",
+          "notes": "- Closing the first-open note, or picking from the build menu, no longer closes Beholder when you opened it from its shortcut.",
+          "highlight": false
+        },
+        {
           "version": "1.3.12",
           "date": "2026-10-01",
           "notes": "- The description now says what it does in plain words.",

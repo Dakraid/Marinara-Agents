@@ -1,3 +1,7 @@
+## 1.3.13 — 2026-10-19
+
+- Closing the first-open note, or picking from the build menu, no longer closes Beholder when you opened it from its shortcut.
+
 ## 1.3.12 — 2026-10-01
 
 - The description now says what it does in plain words.
