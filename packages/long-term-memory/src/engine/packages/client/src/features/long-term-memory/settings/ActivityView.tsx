@@ -1078,7 +1078,7 @@ export default function ActivityView({
       rejectedRows.every((row) => row.rejectionReason === "score_threshold");
     // Whole labels with their values; the first four always show, the rest only when the run recorded them.
     const weights = recordDetails(recallWorkflow?.weights);
-    const recallSettings: Array<[string, string]> = recallWorkflow
+    const recallSettings: string[][] = recallWorkflow
       ? [
           [localizeUi("ui.longTermMemory.activityview.settingMemoryLimit"), recordedNumber(recallWorkflow.maxChunks)],
           [localizeUi("ui.longTermMemory.activityview.settingTokenLimit"), recordedNumber(recallWorkflow.maxTokens)],

@@ -229,7 +229,7 @@ function fingerprint(note: LtmNote | null) {
   return note ? JSON.stringify(note) : "";
 }
 
-function notesRequestPath(scope: LtmScope | undefined) {
+function notesRequestPath(scope: LtmScope | null | undefined) {
   return `/notes?${new URLSearchParams({
     ...(scope?.chatIds?.length ? { scopeChatIds: scope.chatIds.join(",") } : {}),
     ...(scope?.groupId ? { scopeGroupId: scope.groupId } : {}),
@@ -3037,7 +3037,7 @@ export default function MemoryVault({
                             <h4 className="mr-auto text-xs font-medium">
                               {localizeUi("ui.longTermMemory.memoryvault.memorySections")}
                             </h4>
-                            {draft.type !== "source" && !addingSection ? (
+                            {!addingSection ? (
                               <Button onClick={() => setAddingSection(true)}>
                                 <Plus aria-hidden="true" size="1rem" className="shrink-0" />
                                 {localizeUi("ui.longTermMemory.memoryvault.createNewMemoryDetail")}
