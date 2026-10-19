@@ -72,6 +72,7 @@ const namesOther = (name: string, other: SlurpTieCreator) => {
  * word elsewhere ("met Mara at her brother's wedding", "Mara is a single mom") says nothing.
  */
 function kinIn(self: SlurpTieCreator, other: SlurpTieCreator): boolean {
+  if (self.kin?.includes(other.id)) return true;
   if ((self.cardPeople ?? []).some((person) => KIN.test(person.relation) && namesOther(person.name, other)))
     return true;
   const first = other.name.trim().split(/\s+/u)[0];
