@@ -4,6 +4,11 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { slurpCommissionBrief } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/slp-world-copy.ts";
 import { SLURP_COMMISSION_ASKS } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-world.ts";
+import {
+  slurpLastAnswer,
+  slurpMessageEditable,
+  slurpMessageRemovable,
+} from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-message-edit.ts";
 
 const client = join(import.meta.dirname, "..", "packages/slurp2/src/engine/packages/client/src/slp");
 const src = (path: string) => readFileSync(join(client, path), "utf8");
@@ -42,6 +47,48 @@ for (const lang of ["en", "de", "ko", "pl"]) {
     assert.ok(strings[`ui.slurp.ads.price.${feel}`], `${lang} ${feel}`);
   assert.equal(strings["ui.slurp.ads.opened"], undefined, lang);
 }
+
+// ── R9: edit and delete DMs, and have the Creator write the last answer again ──
+const msg = (id: string, role: "viewer" | "creator", kind = "text", price = 0) => ({ id, role, kind, price });
+assert.equal(slurpMessageEditable(msg("a", "viewer"), "viewer"), true);
+assert.equal(slurpMessageEditable(msg("a", "creator"), "viewer"), false, "only your own words");
+assert.equal(slurpMessageEditable(msg("a", "creator"), "creator"), true, "the Creator's owner writes as them");
+assert.equal(slurpMessageRemovable(msg("t", "viewer", "tip", 5)), false, "money stays");
+assert.equal(slurpMessageRemovable(msg("p", "creator", "ppv", 20)), false);
+assert.equal(slurpMessageRemovable(msg("q", "creator", "commission_quote")), false);
+assert.equal(slurpMessageRemovable(msg("x", "creator")), true);
+assert.deepEqual(slurpLastAnswer([msg("1", "viewer"), msg("2", "creator"), msg("3", "creator")]), ["2", "3"]);
+assert.equal(slurpLastAnswer([msg("1", "viewer")]), null, "no answer yet");
+assert.equal(slurpLastAnswer([msg("1", "creator")]), null, "nothing to answer");
+assert.equal(slurpLastAnswer([msg("1", "viewer"), msg("2", "creator", "ppv", 9)]), null, "a paid answer stays");
+const editRoutes = readFileSync(join(server, "features/messages/slp-message-edit-routes.ts"), "utf8");
+assert.match(
+  editRoutes,
+  /hasPending\(threadId\)\)\s*return reply\.code\(409\)[\s\S]*?deleteSlurpMessages\(app\.db, threadId, answer\)[\s\S]*?force: true/u,
+);
+// Every write is locked while the thread is in a scene; the lock only wraps POST routes.
+const lock = readFileSync(join(server, "features/messages/scenes/slp-roleplay-scene-lock.ts"), "utf8");
+for (const path of [...editRoutes.matchAll(/app\.(\w+)\("([^"]+)"/gu)]) {
+  assert.equal(path[1], "post", path[2]);
+  assert.ok(lock.includes(`"${path[2]}"`), path[2]);
+}
+// Deleting removes only the claims of the deleted messages: another trigger's claim is what stops a
+// second answer to it. Deleting the fan's newest line drops the answer owed to it.
+const editStorage = readFileSync(join(server, "data/messages/slp-message-edit-storage.ts"), "utf8");
+assert.match(
+  editStorage,
+  /delete\(slurpMessageClaims\)[\s\S]*?or\(inArray\(slurpMessageClaims\.triggerMessageId, gone\), inArray\(slurpMessageClaims\.replyMessageId, gone\)\)/u,
+);
+assert.doesNotMatch(
+  editStorage,
+  /delete\(slurpMessageClaims\)\.where\(eq\(slurpMessageClaims\.threadId, threadId\)\)/u,
+);
+assert.match(
+  editStorage,
+  /if \(owed && gone\.includes\(String\(owed\.id\)\)\)[\s\S]*?delete\(slurpReplyBubbles\)[\s\S]*?generationEpoch/u,
+);
+// "Write it again" that could not write leaves the answer owed, never a thread without one.
+assert.match(editRoutes, /if \(outcome\.status !== "replied"\) await oweSlurpReplyAgain\(app\.db, threadId\);/u);
 
 // ── R8: a Creator answering a comment knows the commenter from DMs ──
 const replies = readFileSync(join(server, "features/messages/slp-reply-generation-service.ts"), "utf8");
