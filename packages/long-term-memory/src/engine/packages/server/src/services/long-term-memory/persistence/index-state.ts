@@ -47,11 +47,11 @@ function isNoteSummary(value: unknown): value is LtmNoteSummary {
   return (
     summary.version === 1 &&
     Number.isInteger(summary.total) &&
-    summary.total >= 0 &&
+    (summary.total as number) >= 0 &&
     Number.isInteger(summary.sourceNotes) &&
-    summary.sourceNotes >= 0 &&
+    (summary.sourceNotes as number) >= 0 &&
     Number.isInteger(summary.savedMemories) &&
-    summary.savedMemories >= 0 &&
+    (summary.savedMemories as number) >= 0 &&
     isCountBucket(summary.byType) &&
     isCountBucket(summary.byStatus)
   );
@@ -107,7 +107,7 @@ export async function readLtmNoteSummary(root: string) {
 export async function updateLtmNoteSummary(
   root: string,
   mutationId: string,
-  changes: Array<{ before: unknown; after: unknown }>,
+  changes: Array<{ before?: unknown; after?: unknown }>,
 ) {
   const stored = await readJsonFile<unknown>(noteSummaryPath(root), null);
   if (!isNoteSummary(stored)) return rebuildLtmNoteSummary(root);

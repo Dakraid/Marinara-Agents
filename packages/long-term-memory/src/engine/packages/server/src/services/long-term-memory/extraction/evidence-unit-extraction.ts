@@ -1399,7 +1399,7 @@ export async function runLongTermMemoryEvidenceUnitExtraction(
           completionTokens: result.usage?.completionTokens,
           completionReasoningTokens: result.usage?.completionReasoningTokens,
           totalTokens: result.usage?.totalTokens,
-        }).filter(([, count]) => count != null),
+        }).filter((entry): entry is [string, number] => entry[1] != null),
       ),
       details: {
         finishReason: result.finishReason,

@@ -37,6 +37,9 @@ jobs:
       - name: Check package source names
         run: npm run typecheck:packages
 
+      - name: Test the package typecheck fails without tsc
+        run: node scripts/tests/typecheck-packages-missing-tsc.regression.mjs
+
       - name: Test package security invariants
         run: npm run test:security
 
