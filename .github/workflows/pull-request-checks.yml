@@ -80,7 +80,9 @@ jobs:
           node tests/pixelforge-startup.regression.mjs
 
       - name: Test Beholder client bundle contract
-        run: npx tsx tests/beholder-client-contract.regression.ts
+        run: |
+          npx tsx tests/beholder-client-contract.regression.ts
+          npx tsx tests/beholder-host-release.regression.ts
 
       - name: Test Quartermaster dialogs and inventory export
         run: node tests/quartermaster-modal-lifecycle.regression.mjs
