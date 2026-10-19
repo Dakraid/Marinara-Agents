@@ -46,6 +46,9 @@ BH.onboard = {
     tip.className = "beholder-onboard";
     tip.setAttribute("role", "dialog");
     tip.setAttribute("aria-label", "About Beholder");
+    // It sits on the body, outside the panel. Unmarked, a press on it counts as a press
+    // outside the Engine's shortcut window, which closes and takes Beholder with it.
+    tip.setAttribute("data-chat-floating-panel", "");
     tip.innerHTML = `
       <div class="bh-onboard-arrow"></div>
       <div class="bh-onboard-head">
