@@ -75,16 +75,17 @@ This page replaces the Overview quick switches (one place, not two).
 
 ## Extensions
 
-| Extension        | What you get                                                                                                                                         | Owns                                                                                                                              | Real gate today                                                |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| **Brands & ads** | Inline ads, brand deals, ad pictures, brand packs                                                                                                    | `inlineAds*`, `brandDealsPace`, Ads panel, ad refresh job, `offer-brand-deal`                                                     | Almost: `inlineAdsEnabled` + `brandDealsPace`; check the lever |
-| **Storylines**   | Arcs, polls, collabs, couples, rivalries, drama, polyamory; packs such as pregnancy, Spicy Firsts, Tip War                                           | `arc*`, `projectRate`, `arcLibrary`, `contentPacks`, `drama`, `polyamory` (could move to the Creator romance block), state writer | No: projects ignore `worldActivity`; drama is off by default   |
-| **Living world** | Holidays and site events, calendar, viral trends, deeper world simulation                                                                            | `platformEvents`, `storyAutomation`, `sharedWorldEvents`, trends scan                                                             | No: trends has no flag; events have no single flag             |
-| **Stir**         | The lever deck tab, the planner, "In play", shady desk levers; sub-switch **Support desk game** (tickets, trust, suspicion, Creators leaving, perks) | Stir tab and sheet, `supportDesk`, desk tick                                                                                      | No flag                                                        |
-| **Engine link**  | Slurp in normal chats (carryover), DM to roleplay scenes, lorebook and agent flavour, later scene photo shoots                                       | `carryover*`, scenes, `enableLorebookContext`, `flavourFromAgents`                                                                | Yes: opt-in or Engine-capability gated                         |
+| Extension        | What you get                                                                                                   | Owns                                                                                    | Real gate today                                                |
+| ---------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| **Brands & ads** | Inline ads, brand deals, ad pictures, brand packs                                                              | `inlineAds*`, `brandDealsPace`, Ads panel, ad refresh job, `offer-brand-deal`           | Almost: `inlineAdsEnabled` + `brandDealsPace`; check the lever |
+| **Storylines**   | Arcs, polls, collabs, couples, rivalries, drama, polyamory; packs such as pregnancy, Spicy Firsts, Tip War     | `arc*`, `projectRate`, `arcLibrary`, `contentPacks`, `drama`, `polyamory`, state writer | No: projects ignore `worldActivity`; drama is off by default   |
+| **Living world** | Holidays and site events, calendar, viral trends, deeper world simulation                                      | `platformEvents`, `storyAutomation`, `sharedWorldEvents`, trends scan                   | No: trends has no flag; events have no single flag             |
+| **Stir**         | The lever deck tab, the planner, "In play", shady levers (rumour, throttle reach, cash favour)                 | Stir tab and sheet, lever deck                                                          | No flag                                                        |
+| **Support desk** | The management game: tickets, trust, suspicion, offers, Creators leaving, perks, notices                       | `supportDesk`, desk tick, desk composer levers                                          | No master: `tickets` is a mode, the tick always runs           |
+| **Engine link**  | Slurp in normal chats (carryover), DM to roleplay scenes, lorebook and agent flavour, later scene photo shoots | `carryover*`, scenes, `enableLorebookContext`, `flavourFromAgents`                      | Yes: opt-in or Engine-capability gated                         |
 
-The Support thread stays in Basic: it hosts the sign-up scene. Only the desk _game_ is part
-of Stir.
+The Support thread stays in Basic: it hosts the sign-up scene. Only the desk _game_ is the
+Support desk extension.
 
 Packs carry `requires: [<extension>]` (for example a brand pack needs Brands & ads). A pack whose extension is off is hidden
 and skipped. Spicy packs always obey the Basic Spice limit.
@@ -99,7 +100,7 @@ each key a home). Nothing is deleted.
 ## How a real switch works (slice 3 onward)
 
 - Flat top-level booleans: `extAds`, `extStorylines`, `extWorld`, `extStir`,
-  `extStirDesk`, `extEngineLink`. One helper `slpExtensionOn(settings, id)`, shared by
+  `extSupportDesk`, `extEngineLink`. One helper `slpExtensionOn(settings, id)`, shared by
   server and client.
 - Every action in `SLP_ACTION_META` gets an `extension` field. The action runner and
   Mari's tool list refuse actions of an off extension; the Stir deck and the composer's
@@ -180,7 +181,7 @@ The other cases:
 3. **Real gates.** Do them in this order:
    1. Brands & ads, the first switch on a card.
    2. Living world, with the trends flag.
-   3. Stir, with the desk sub-switch.
+   3. Stir and Support desk.
    4. Storylines, with `worldActivity` and both post planners.
 
    This slice also adds the `extension` field on actions, the tick-list regression and
@@ -209,11 +210,14 @@ For each slice: one patch bump, all regressions green, and screenshots at 390, 7
   Drop MODULE-SETUP.md, the nine-home map and the ticket welcome.
 - `one-deck-to-bind-them` is already in staging. Nothing to take.
 
-## Open decisions
+## Decided (2026-10-19)
 
-- Five extensions: Brands & ads, Storylines, Living world, Stir (with Support desk game),
-  Engine link. Is this the right cut?
-- Coins in Basic (recommended). A real "coins off = all free, no lock UI" is a later,
-  large job. Is that later option needed at all?
-- Polyamory: in Storylines or in the Creator romance block?
-- Order: slice 0 + 1 first, then onboarding? Or onboarding first?
+- Six extensions: Brands & ads, Storylines, Living world, Stir, Support desk, Engine link.
+- Coins stay in Basic. A later "coins off" option is not planned.
+- Polyamory stays in Storylines.
+- No code yet; work starts this week.
+
+## Still open
+
+- Order of slice 1 (grouping) and slice 2 (onboarding).
+- Recommended pick on the "Add extras" screen.
