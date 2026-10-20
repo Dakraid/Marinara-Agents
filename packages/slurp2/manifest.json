@@ -2,15 +2,15 @@
   "schemaVersion": 2,
   "capabilityApi": {
     "major": 1,
-    "minor": 66
+    "minor": 341
   },
   "builtAgainst": {
-    "engineVersion": "2.4.6",
-    "engineCommit": "5a6fafa079c921a3dc1166169f41f318549d595e"
+    "engineVersion": "2.5.0",
+    "engineCommit": "25f8df7b0a388fe36f657d69c6fcaa9f27e066ed"
   },
   "id": "slurp2",
   "name": "Slurp",
-  "version": "0.3.50",
+  "version": "0.3.51",
   "description": "A private social app for your characters. Turn characters and personas into Creators, post public or locked photos, and watch a simulated audience follow, subscribe, unlock, comment, and message them. By default, it is tuned for an adult experience. Install it, restart Marinara Engine when prompted, then open Home → Slurp.",
   "localizations": {
     "de": {
@@ -77,13 +77,13 @@
     },
     {
       "path": "server.mjs",
-      "sha256": "60d15376bf8d454b61ad60346806969ae5409f0a547fb037e8f451a88bdc0f65",
-      "bytes": 3547088
+      "sha256": "c3a63a09f40812bc168da3aa67d2b9243bb1a994abf3b75814cf017b9cbc8343",
+      "bytes": 1935416
     },
     {
       "path": "client.js",
-      "sha256": "5ef5bdbbd558fcfa761a976974aa41e546baa8e690f34a39077a72cabca043e1",
-      "bytes": 4814954
+      "sha256": "aa6dc10d724ec7d2e8b1f20646c89df844fbbf4104a70b57cb112cd7613413e1",
+      "bytes": 2806422
     },
     {
       "path": "slurp2-logo.png",
@@ -97,33 +97,18 @@
     },
     {
       "path": "src/engine/packages/client/src/slp/locales/de.json",
-      "sha256": "4e3e6def86a8ffab31f970619f73d98a040db23bfbce8ceaf0a8e6c6089cb139",
-      "bytes": 226305
+      "sha256": "b708707c66cbfdcbc3c7ba5b593e4f48e9685bd3786ca4b7db32e26172cb8a95",
+      "bytes": 225939
     },
     {
       "path": "src/engine/packages/client/src/slp/locales/ko.json",
-      "sha256": "4595eb6d41ae245b945afc649d65d390f184f42ffc39f427a7dfcae92313a9d0",
-      "bytes": 323080
+      "sha256": "86d360a9820589751aaa71e1bfddb27b63969cc8a8e565fff05443919ce6a8cb",
+      "bytes": 322659
     },
     {
       "path": "src/engine/packages/client/src/slp/locales/pl.json",
-      "sha256": "f98c62c54c419046d3a8ca570bd2f8a24608638e7d8f5e283343ee98b7db091d",
-      "bytes": 227918
-    },
-    {
-      "path": "claude-code-plugin/.claude-plugin/plugin.json",
-      "sha256": "9caabe0dc95c7e0d825533719ae3a84cccba625277ec9e39dfd69fae18880fd3",
-      "bytes": 226
-    },
-    {
-      "path": "claude-code-plugin/hooks/hooks.json",
-      "sha256": "1c169616134dd0e6b5effb616a5dd20934f0f968579e316260568e2130d9d67a",
-      "bytes": 91
-    },
-    {
-      "path": "claude-code-plugin/hooks/register.mjs",
-      "sha256": "170f85d7b4e6c96dd0ed3cca9caeb2d39e0487fabe7f40274d5e6405acd6a1af",
-      "bytes": 504
+      "sha256": "d7fdd27763cb3c8816263e829677aebd55ff7c5f08f3d9aa0b362c68aba6073a",
+      "bytes": 227527
     }
   ],
   "permissions": [

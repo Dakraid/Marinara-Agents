@@ -207,12 +207,11 @@ for (const relativePath of hierarchicalMapsOwnedSourcePaths) {
   }
 }
 
-// Must equal slurp2OwnedSourcePaths in the builder: the three slp roots and three permanent exceptions.
+// Must equal slurp2OwnedSourcePaths in the builder: the three slp roots and two permanent exceptions.
 const slurp2OwnedSourcePaths = [
   "packages/client/src/slp",
   "packages/server/src/slp",
   "packages/shared/src/slp",
-  "packages/client/src/lib/api-client.ts",
   "packages/server/src/services/garnish-ads",
   "packages/server/src/db/schema/slurp.ts",
 ];
@@ -226,11 +225,7 @@ for (const relativePath of slurp2OwnedSourcePaths) {
 // ten stale copies of package-owned files survived in sources/engine long after the split. A
 // captured copy is worse than dead weight now: the remaster's slurp2_* table names would become
 // build input for Noodle, and tests that read the snapshot would check the wrong tree.
-// api-client.ts is the one owned path that overrides a generic Engine file, so the snapshot keeps
-// the Engine's own copy of it.
-const slurp2EngineOverrides = new Set(["packages/client/src/lib/api-client.ts"]);
 for (const relativePath of ["packages/server/src/db/schema/slurp.ts", ...slurp2OwnedSourcePaths]) {
-  if (slurp2EngineOverrides.has(relativePath)) continue;
   if (existsSync(join(repoRoot, "sources/engine", relativePath))) {
     throw new Error(`Slurp source must not be captured as generic Engine material: ${relativePath}`);
   }
@@ -241,7 +236,7 @@ const longTermMemoryBoundary = await assertPackagePrivateImportBoundary({
   sourceRoot: longTermMemorySourceRoot,
   boundaryPath: join(repoRoot, "packages/long-term-memory/engine-boundary.json"),
   displayName: "Long-Term Memory",
-  capabilityApi: { major: 1, minor: 6 },
+  capabilityApi: { major: 1, minor: 341 },
 });
 for (const relativePath of [
   "packages/shared/src/features/agents/long-term-memory",
@@ -930,8 +925,8 @@ const agentOnly = publishedCatalog.packages.filter(
   (entry) => !isRulesetPackage(entry.manifest) && !entry.manifest.entrypoints.server,
 ).length;
 const features = publishedCatalog.packages.length - agentOnly - rulesets;
-if (publishedCatalog.packages.length !== 39 || agentOnly !== 24 || features !== 15 || rulesets !== 0) {
-  throw new Error(`Expected 24 agents, 15 features, and 0 rulesets, found ${agentOnly}, ${features}, and ${rulesets}`);
+if (publishedCatalog.packages.length !== 41 || agentOnly !== 26 || features !== 15 || rulesets !== 0) {
+  throw new Error(`Expected 26 agents, 15 features, and 0 rulesets, found ${agentOnly}, ${features}, and ${rulesets}`);
 }
 console.log(
   `Catalog valid: ${publishedCatalog.packages.length} packages (${agentOnly} agents, ${features} features, ${rulesets} rulesets).`,

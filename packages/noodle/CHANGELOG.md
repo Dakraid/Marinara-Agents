@@ -1,5 +1,10 @@
 # Noodle release notes
 
+## 1.5.7 — 2026-10-20
+
+- Noodle now uses Marinara Engine's own settings, dialogs, notifications, Local Model and connection queue instead of carrying copies of them. It no longer resets your Engine settings or starts a second Local Model, its background refreshes wait while a chat on the same connection is replying, and its notifications appear where you put yours. The download is smaller. It needs a Marinara Engine release after 2.5.0. On 2.5.0 and older, the version you already have keeps working. (#1478, #1487)
+- The sticker and emoji pickers no longer show the chat emoji-selection settings. Those belong to a chat, and Noodle has none.
+
 ## 1.5.6 — 2026-10-13
 
 - With a Claude (Subscription) connection, Noodle no longer makes a hidden second request to name each session, and a request now stops with an error if Claude Code turns on claude.ai connectors. With a Marinara Engine release after 2.5.0, Claude Code also no longer adds your account email, the date or this computer's details to the prompt. Engine 2.5.0's Claude Code still adds them, and the server log warns about it until you update Marinara. (#1313)

@@ -2,15 +2,15 @@
   "schemaVersion": 2,
   "capabilityApi": {
     "major": 1,
-    "minor": 6
+    "minor": 341
   },
   "builtAgainst": {
-    "engineVersion": "2.4.1",
-    "engineCommit": "c0ce4d8849e072db2bfe300bbed22aa700ce7b49"
+    "engineVersion": "2.5.0",
+    "engineCommit": "25f8df7b0a388fe36f657d69c6fcaa9f27e066ed"
   },
   "id": "long-term-memory",
   "name": "Long-Term Memory",
-  "version": "1.4.55",
+  "version": "1.4.56",
   "description": "Remembers important things from your chat summaries, characters, and lorebooks, and brings them back when they matter. Enable it per chat from Chat Settings → Agents → Long-Term Memory. In Roleplay and Game, you can also add it from Chat Settings → Agents → Misc Agents.",
   "engine": {
     "min": "2.4.1",
@@ -47,8 +47,8 @@
     },
     {
       "path": "client.js",
-      "sha256": "a0ec7a37be3faacf2fef342bacf63bae223e49fe848380d14f982f54dab03104",
-      "bytes": 979925
+      "sha256": "531778cf08df0120afdd5251b0cd170d52ba6e4c9c30b5a6c871da9bf13b4cc5",
+      "bytes": 641452
     }
   ],
   "permissions": [

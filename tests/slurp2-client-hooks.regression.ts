@@ -306,7 +306,9 @@ for (const name of EXPORTED_BEFORE) {
 const factories = [...combined.matchAll(/^export const ([A-Za-z0-9_]+Keys) = \{/gmu)].map((m) => m[1]).sort();
 assert.deepEqual(factories, ["messageKeys", "slpKeys"], "exactly two query-key factories may exist");
 const NOODLE_KEYS_BEFORE = `export const slpKeys = {
-  all: ["noodle"] as const,
+  // Slurp shares the Engine's query cache (Pasta-Devs/Marinara-Agents#1487). Its keys used to start with "noodle",
+  // which Noodle's own keys also do, so they start with the package id.
+  all: ["slurp2"] as const,
   bootstrap: () => [...slpKeys.all, "bootstrap"] as const,
   settings: () => ["slurp", "settings"] as const,
   refreshIndicator: () => [...slpKeys.all, "refresh-indicator"] as const,
@@ -628,18 +630,14 @@ for (const [name, path] of [
   assert.deepEqual(exported.get(name), [path], `${name} must live in ${path}`);
 }
 
-// 6. The generic Engine persona hook stays outside Slurp and keeps the package API-client override.
+// 6. The generic Engine persona hook stays outside Slurp, and Slurp uses the Engine's API client.
 const generic = join(clientSrc, "hooks/use-creator-personas.ts");
 assert.ok(existsSync(generic), "the generic persona hook must stay outside the slp roots");
 assert.doesNotMatch(readFileSync(generic, "utf8"), /\/slp\//u, "the generic hook must not reach into Slurp");
 assert.ok(!paths.some((path) => /creator-personas/u.test(path)), "Slurp must not fork the generic persona hook");
-const apiClient = join(clientSrc, "lib/api-client.ts");
-assert.ok(existsSync(apiClient), "the package-owned API client must stay at lib/api-client.ts");
-assert.match(
-  readFileSync(apiClient, "utf8"),
-  /apiBaseUrl|API_BASE|host/iu,
-  "the API-client host override must survive",
-);
+// The feature build stacks sources/host-client-overlay's lib/api-client.ts, which is the Engine's own client
+// (__MARINARA_HOST__.api); a package copy would carry a second ApiError class and its own rules (#1487).
+assert.ok(!existsSync(join(clientSrc, "lib/api-client.ts")), "Slurp must not carry its own API client");
 
 // 7. The Creators panel keeps its filter state and opens the shared settings modal.
 const creatorsPanel = readFileSync(join(slpRoot, "features/creators/SlpCreatorsPanel.tsx"), "utf8");
