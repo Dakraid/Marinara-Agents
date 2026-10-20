@@ -11,6 +11,9 @@
 // with the same scope and the variables the dialog panel does not set itself. What the content portals (a popover, a
 // sheet) goes to a layer opened with the dialog, styled like the package portal and stacked above the dialog, where
 // it was when the dialog lived in the package portal; the dialog's focus trap counts that layer as its own.
+//
+// Noodle and Slurp translate their screens with their own i18n instance (<I18nextProvider>). The Engine's Modal
+// translates its own labels, so it renders with the Engine's instance and the content inside it with the package's.
 import {
   createContext,
   useContext,
@@ -23,6 +26,7 @@ import {
   type ReactNode,
   type Ref,
 } from "react";
+import { I18nContext, I18nextProvider, getI18n } from "react-i18next";
 import { requireHostMember } from "../../lib/marinara-host-bridge";
 
 export interface ModalProps {
@@ -59,8 +63,11 @@ export const ModalPortalContext = createContext<Element | null>(null);
 const SCOPE_ATTRIBUTE = "data-marinara-capability-scope";
 const LAYER_ATTRIBUTE = "data-marinara-package-modal-layer";
 const ELEMENT_PREFIX = "marinara-capability-";
-// The Engine's Modal z-index. The layer opens after the dialog, so at the same index it stacks above it.
-const MODAL_LAYER_Z_INDEX = "10000";
+// One above the Engine's Modal (z-index 10000), as package popovers (10001) sat above dialogs in the package portal.
+// The layer is created before the dialog's own DOM, so an equal index would put it underneath.
+// ponytail: a dialog the Engine lifts to the omnibar layer (opened while the omnibar is open) covers this layer; read
+// the dialog's z-index if packages ever open dialogs from the omnibar.
+const MODAL_LAYER_Z_INDEX = "10001";
 // The Engine's dialog panel sets these itself (neutral-surface-styles.ts), so its content never saw the package
 // portal's values for them. ponytail: a fixed list; a token the panel starts to set needs adding here.
 const PANEL_TOKENS = new Set(
@@ -125,16 +132,26 @@ function usePackageLayer(scope: PackageScope | null, open: boolean, layerId: str
 
 export function Modal({ children, ...props }: ModalProps) {
   const container = useContext(ModalPortalContext);
+  const packageTranslation = useContext(I18nContext);
   const scope = useMemo(() => packageScope(container), [container]);
   const layerId = useId();
   const layer = usePackageLayer(scope, props.open, layerId);
-  if (!scope) return <HostModal {...props}>{children}</HostModal>;
-  const inherited = Object.fromEntries(Object.entries(scope.variables).filter(([name]) => !PANEL_TOKENS.has(name)));
-  return (
-    <HostModal {...props} focusScopePortalSelector={`[${LAYER_ATTRIBUTE}="${CSS.escape(layerId)}"]`}>
-      <div {...{ [SCOPE_ATTRIBUTE]: scope.id }} style={{ ...(inherited as CSSProperties), display: "contents" }}>
-        <ModalPortalContext.Provider value={layer ?? container}>{children}</ModalPortalContext.Provider>
-      </div>
-    </HostModal>
-  );
+  const engineI18n = getI18n();
+  const ownI18n = packageTranslation?.i18n && packageTranslation.i18n !== engineI18n ? packageTranslation : null;
+  let content = children;
+  if (ownI18n) content = <I18nContext.Provider value={ownI18n}>{content}</I18nContext.Provider>;
+  let modal;
+  if (!scope) {
+    modal = <HostModal {...props}>{content}</HostModal>;
+  } else {
+    const inherited = Object.fromEntries(Object.entries(scope.variables).filter(([name]) => !PANEL_TOKENS.has(name)));
+    modal = (
+      <HostModal {...props} focusScopePortalSelector={`[${LAYER_ATTRIBUTE}="${CSS.escape(layerId)}"]`}>
+        <div {...{ [SCOPE_ATTRIBUTE]: scope.id }} style={{ ...(inherited as CSSProperties), display: "contents" }}>
+          <ModalPortalContext.Provider value={layer ?? container}>{content}</ModalPortalContext.Provider>
+        </div>
+      </HostModal>
+    );
+  }
+  return ownI18n && engineI18n ? <I18nextProvider i18n={engineI18n}>{modal}</I18nextProvider> : modal;
 }

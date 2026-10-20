@@ -25,6 +25,7 @@ const values = new Map();
 export function createContext(defaultValue) {
   const context = { defaultValue };
   context.Provider = { context };
+  contexts.push(context);
   return context;
 }
 export function createElement(type, props, ...children) {
@@ -37,12 +38,25 @@ export const useMemo = (factory) => factory();
 export const useCallback = (callback) => callback;
 export const useId = () => ":r1:";
 export const useSyncExternalStore = (_subscribe, snapshot) => snapshot();
+const contexts = [];
+const createContextImpl = createContext;
 globalThis.__standInReact = {
   inside(element, read) {
     values.set(element.type.context, element.props.value);
     try { return read(); } finally { values.delete(element.type.context); }
   },
+  /** Runs read() with the react-i18next context (the one created with an undefined default) set to value. */
+  insideContext(value, read) {
+    const context = contexts.find((candidate) => candidate.defaultValue === undefined);
+    values.set(context, value);
+    try { return read(); } finally { values.delete(context); }
+  },
 };`,
+  "react-i18next": `
+import { createContext } from "react";
+export const I18nContext = createContext(undefined);
+export const I18nextProvider = function I18nextProvider() {};
+export const getI18n = () => globalThis.__engineI18n;`,
   "react/jsx-runtime": `
 export const jsx = (type, props) => ({ type, props });
 export const jsxs = jsx;
@@ -70,6 +84,8 @@ const createImpl = (createState) => {
 };
 export const createStore = (createState) => (createState ? createStoreImpl(createState) : createStoreImpl);
 export const create = (createState) => (createState ? createImpl(createState) : createImpl);`,
+  clsx: `export const clsx = (...values) => values.flat().filter(Boolean).join(" ");`,
+  "tailwind-merge": `export const twMerge = (value) => value;`,
   sonner: `
 export const toast = Object.assign((message) => globalThis.__toasts.push(["toast", message]), {
   error: (message) => globalThis.__toasts.push(["error", message]),
@@ -79,10 +95,10 @@ export const toast = Object.assign((message) => globalThis.__toasts.push(["toast
 const temporary = await mkdtemp(join(tmpdir(), "host-client-adapters-"));
 let builds = 0;
 /** One adapter, bundled the way a package build bundles it. */
-async function bundle(relativePath) {
+async function bundle(relativePath, sourceRoot = overlay) {
   const outfile = join(temporary, `${++builds}.mjs`);
   await esbuild.build({
-    entryPoints: [join(overlay, relativePath)],
+    entryPoints: [join(sourceRoot, relativePath)],
     bundle: true,
     format: "esm",
     platform: "neutral",
@@ -93,10 +109,13 @@ async function bundle(relativePath) {
       {
         name: "stand-ins",
         setup(build) {
-          build.onResolve({ filter: /^(react|react\/jsx-runtime|zustand|sonner)$/ }, (args) => ({
-            path: args.path,
-            namespace: "stand-in",
-          }));
+          build.onResolve(
+            { filter: /^(react|react\/jsx-runtime|react-i18next|zustand|sonner|clsx|tailwind-merge)$/ },
+            (args) => ({
+              path: args.path,
+              namespace: "stand-in",
+            }),
+          );
           build.onResolve({ filter: /^@marinara-engine\/shared$/ }, () => ({ path: "shared", namespace: "stand-in" }));
           build.onLoad({ filter: /.*/, namespace: "stand-in" }, (args) => ({
             contents: standIns[args.path] ?? "export {};",
@@ -128,6 +147,12 @@ for (const path of [
 ]) {
   bundles[path] = await bundle(path);
 }
+// World Maps reads and changes pending moves through the Engine's chat store (package-owned, not an overlay).
+const mapsTransitions = "features/spatial-context/pending-spatial-transitions.ts";
+bundles[mapsTransitions] = await bundle(
+  mapsTransitions,
+  join(repoRoot, "packages/hierarchical-maps/src/engine/packages/client/src"),
+);
 
 let loads = 0;
 /** Evaluates one adapter as a package client does, after the Engine set (or did not set) the namespace. */
@@ -382,7 +407,74 @@ for (const [label, options] of [
   assert.equal(wrapper.props["data-marinara-capability-scope"], "slurp2");
   assert.deepEqual(wrapper.props.style, { "--noodle-accent": "#ff7ec1", display: "contents" });
   assert.equal(wrapper.props.children.props.value, portal, "until the dialog's layer exists, portals use Slurp's");
+  // Inside a package's own i18n instance, the Engine's Modal translates with the Engine's and the content with the package's.
+  globalThis.__engineI18n = { name: "engine" };
+  const { module: translated } = await load("components/ui/Modal.tsx", {
+    host: hostWith({ components: { Modal: HostModal } }),
+  });
+  const packageTranslation = { i18n: { name: "noodle" } };
+  const modalWithI18n = globalThis.__standInReact.insideContext(packageTranslation, () =>
+    translated.Modal({ open: true, onClose() {}, title: "Intro", children: "hello" }),
+  );
+  assert.match(modalWithI18n.type.name, /^I18nextProvider/u, "the Engine's Modal renders with the Engine's i18n");
+  assert.equal(modalWithI18n.props.i18n, globalThis.__engineI18n);
+  assert.equal(modalWithI18n.props.children.type, HostModal);
+  const packageProvider = modalWithI18n.props.children.props.children;
+  assert.equal(packageProvider.props.value, packageTranslation, "its content keeps the package's own i18n");
+  assert.equal(packageProvider.props.children, "hello");
+  delete globalThis.__engineI18n;
   await assert.rejects(load("components/ui/Modal.tsx"), /does not provide the Modal component/u);
+}
+
+// ── World Maps: pending moves live in the Engine's chat store; the package never writes their key ─────────────────
+{
+  const draft = {
+    transition: { commandId: "command-1", destinationId: "kitchen", travelMode: "direct" },
+    destinationName: "Kitchen",
+    relation: "child",
+    status: "ready",
+  };
+  const calls = [];
+  // The Engine's spatial slice, as chat.store.ts implements it (the status setter has no review note).
+  const chat = create((set) => ({
+    pendingSpatialTransitions: new Map(),
+    setPendingSpatialTransition: (chatId, next) => {
+      calls.push(["set", chatId, next]);
+      set((state) => ({ pendingSpatialTransitions: new Map(state.pendingSpatialTransitions).set(chatId, next) }));
+    },
+    clearPendingSpatialTransition: (chatId, commandId) => {
+      calls.push(["clear", chatId, commandId]);
+      set((state) => {
+        const map = new Map(state.pendingSpatialTransitions);
+        if (!commandId || map.get(chatId)?.transition.commandId === commandId) map.delete(chatId);
+        return { pendingSpatialTransitions: map };
+      });
+    },
+  }));
+  const { module: maps, touched } = await load(mapsTransitions, { host: hostWith({ stores: { chat } }) });
+  maps.setPendingSpatialTransition("chat-1", draft);
+  assert.equal(chat.getState().pendingSpatialTransitions.get("chat-1"), draft, "the move lands in the Engine's store");
+  maps.setPendingSpatialTransition("chat-1", draft);
+  assert.equal(calls.length, 1, "the Engine's own draft handed back as a prop is not saved again");
+  assert.equal(maps.getPendingSpatialTransition("chat-1"), draft);
+  assert.equal(maps.usePendingSpatialTransition("chat-1"), draft);
+  maps.setPendingSpatialTransitionStatus("chat-1", "needs_review", " The route changed. ");
+  assert.deepEqual(calls.at(-1)[2], { ...draft, status: "needs_review", reviewMessage: "The route changed." });
+  maps.setPendingSpatialTransitionStatus("chat-1", "ready");
+  assert.equal("reviewMessage" in maps.getPendingSpatialTransition("chat-1"), false, "ready clears the review note");
+  maps.clearPendingSpatialTransition("chat-1", "another-command");
+  assert.ok(maps.getPendingSpatialTransition("chat-1"), "a different command keeps the move");
+  maps.clearPendingSpatialTransition("chat-1", "command-1");
+  assert.equal(maps.getPendingSpatialTransition("chat-1"), null, "a cleared move stays cleared");
+  assert.deepEqual(touched, [], "World Maps never reads or writes the Engine's key itself");
+
+  const saved = JSON.stringify([["chat-2", draft]]);
+  const missing = await load(mapsTransitions, { storage: { "marinara-pending-spatial-transitions": saved } });
+  assert.deepEqual(missing.module.getPendingSpatialTransition("chat-2"), draft, "an older Engine's saved moves show");
+  missing.module.setPendingSpatialTransition("chat-3", draft);
+  missing.module.clearPendingSpatialTransition("chat-2");
+  assert.deepEqual(missing.module.getPendingSpatialTransition("chat-2"), draft);
+  assert.deepEqual(writes(missing.touched), [], "and nothing is written");
 }
 
 delete globalThis.localStorage;

@@ -148,12 +148,10 @@ assert.ok(
   crop.indexOf("aria-pressed={aspect === option.value}") < crop.indexOf('type="range"'),
   "chips before the zoom slider",
 );
-assert.match(client("slp-client-entry.tsx"), /z-index: 10002;/u, "toasts (Undo) sit above the sheets");
-assert.match(
-  client("slp-client-entry.tsx"),
-  /return portal \? createPortal\(toaster, portal\) : toaster;/u,
-  "in the sheets' portal",
-);
+// Toasts (Undo) are the Engine's, which sit above the sheets: Slurp's portal stays on the Engine's Modal layer
+// (Pasta-Devs/Marinara-Agents#1487).
+assert.match(client("slp-client-entry.tsx"), /zIndex: "10000",/u, "the sheets' portal sits below the Engine's toasts");
+assert.doesNotMatch(client("slp-client-entry.tsx"), /<Toaster\b/u, "Slurp renders no toaster of its own");
 
 // ── 3. Studio: money, then fans, then goal, posts, and the storyline closed at the end ──
 // W: Studio's own-page half is the Dashboard sheet; the storyline moved to Stir (chapter moves) and
