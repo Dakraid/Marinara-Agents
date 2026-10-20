@@ -52,13 +52,20 @@ export function SlpWorldEventsPanel(page: SlpBackstagePageProps) {
   return (
     <div className="space-y-8">
       <SlpWorldSwitch {...page} trends />
-      <p className="text-xs leading-5 text-[var(--muted-foreground)]">{t("ui.slurp.settings.events.startMovedNote")}</p>
+      {/* Events start in Stir: with Stir off there is nowhere to start one by hand. */}
+      {slpExtensionOn(settings, "stir") && (
+        <p className="text-xs leading-5 text-[var(--muted-foreground)]">
+          {t("ui.slurp.settings.events.startMovedNote")}
+        </p>
+      )}
       <SettingAnchor settingKey="platformEvents">
         <SlurpPlatformEventsSettings
           events={settings.platformEvents}
           saving={updateSettings.isPending}
           onSave={(events) => update("platformEvents", events)}
-          onStartInStir={() => page.onNavigate({ mode: "creator", view: "stir" })}
+          onStartInStir={
+            slpExtensionOn(settings, "stir") ? () => page.onNavigate({ mode: "creator", view: "stir" }) : undefined
+          }
         />
       </SettingAnchor>
       <SlpWorldTimeline />

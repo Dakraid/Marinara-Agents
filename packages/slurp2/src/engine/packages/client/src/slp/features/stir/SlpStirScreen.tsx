@@ -11,7 +11,7 @@ import type { SlpPulseTarget } from "../../base/state/slp-task-store";
 import { SlpButton, SlpChip, SlpSegment } from "../../modules/chrome/SlpButton";
 import { SlpSheet } from "../../modules/chrome/SlpSheet";
 import { SlpUsesAiMark } from "../../modules/chrome/SlpAiMark";
-import { SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
+import { SlpEmptyState, SlpErrorState, SlpSkeleton } from "../../modules/chrome/SlpStateKit";
 import { SLP_CARD_STACK_CLASS } from "../../modules/post/SlpPostHelpers";
 import {
   SLP_STIR_CATEGORIES,
@@ -33,6 +33,7 @@ import { SlpYouTwo } from "./SlpYouTwo";
 import { SlpStirPlaySheet } from "./SlpStirPlaySheet";
 import { SlpStirDesk } from "./SlpStirDesk";
 import { useSlurpSettings } from "../settings/slp-settings-contract";
+import { slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
 import { SLP_STIR_DECK, SLP_STIR_DECK_ORDER, slpStirDeckOn } from "./slp-stir-deck";
 import { slpStirDeckNeed, slpStirLiveLever } from "./slp-stir-screen-model";
 import { SlpStirRecentPlays } from "./SlpStirRecentPlays";
@@ -560,6 +561,10 @@ export function SlpStirScreen({
     lastStirMode = next;
     setModeState(next);
   };
+  // One extension off: the screen shows the other, with no switch between them.
+  const stirOn = Boolean(deckSettings && slpExtensionOn(deckSettings, "stir"));
+  const deskOn = Boolean(deckSettings && slpExtensionOn(deckSettings, "supportDesk"));
+  const shown = !deskOn ? "stir" : !stirOn ? "desk" : mode;
   const [people, setPeople] = useState(false);
   // Ending a drama runs through the runner like any play: a preview, the ledger, a toast.
   const endDrama = (runId: string) =>
@@ -602,17 +607,21 @@ export function SlpStirScreen({
     <div className="@container flex h-full min-h-0 flex-col" data-slp-stir>
       <header className={cn("flex h-14 shrink-0 items-center gap-2 px-4", SLP_TOP_BAR_CLASS)}>
         <SlpStirGlyph size={22} aria-hidden="true" className="text-[var(--slurp-ink)]" />
-        <h1 className="slp-display min-w-0 flex-1 truncate text-xl leading-none">{t("ui.slurp.stir.title")}</h1>
-        <SlpSegment
-          label={t("ui.slurp.stir.mode.label")}
-          value={mode}
-          onChange={setMode}
-          options={[
-            { value: "stir", label: t("ui.slurp.stir.mode.stir") },
-            { value: "desk", label: t("ui.slurp.stir.mode.desk") },
-          ]}
-          className="shrink-0"
-        />
+        <h1 className="slp-display min-w-0 flex-1 truncate text-xl leading-none">
+          {deskOn && !stirOn ? t("ui.slurp.desk.title") : t("ui.slurp.stir.title")}
+        </h1>
+        {stirOn && deskOn && (
+          <SlpSegment
+            label={t("ui.slurp.stir.mode.label")}
+            value={mode}
+            onChange={setMode}
+            options={[
+              { value: "stir", label: t("ui.slurp.stir.mode.stir") },
+              { value: "desk", label: t("ui.slurp.stir.mode.desk") },
+            ]}
+            className="shrink-0"
+          />
+        )}
         {personaId && (
           <button
             type="button"
@@ -627,7 +636,13 @@ export function SlpStirScreen({
       </header>
       <main className={cn("min-h-0 flex-1 overflow-y-auto", SLP_PAGE_SCROLL_CLASS)}>
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-3 sm:p-5">
-          {mode === "desk" ? (
+          {deckSettings && !stirOn && !deskOn ? (
+            <SlpEmptyState
+              icon={SlpStirGlyph}
+              title={t("ui.slurp.stir.off", { defaultValue: "Stir and the Support desk are switched off" })}
+              detail={t("ui.slurp.stir.offDetail", { defaultValue: "Switch either one on in Backstage › Stir." })}
+            />
+          ) : shown === "desk" ? (
             <SlpStirDesk
               personaId={personaId}
               onOpenThread={onOpenSupport}

@@ -6554,5 +6554,12 @@
   "ui.slurp.settings.ext.world.label": "Living world",
   "ui.slurp.settings.ext.world.detail": "Holidays and site events, the calendar, Slurp-wide events and viral trends.",
   "ui.slurp.settings.ext.world.trends.label": "Viral trends",
-  "ui.slurp.settings.ext.world.trends.detail": "A post that takes off can start a trend that other Creators join."
+  "ui.slurp.settings.ext.world.trends.detail": "A post that takes off can start a trend that other Creators join.",
+  "ui.slurp.settings.ext.stir.label": "Stir",
+  "ui.slurp.settings.ext.stir.detail": "The Stir tab: the planner, the lever deck and In play.",
+  "ui.slurp.settings.ext.supportDesk.label": "Support desk",
+  "ui.slurp.settings.ext.supportDesk.detail": "The staff game: tickets, trust, suspicion, offers, perks, notices and Creators who leave.",
+  "ui.slurp.stir.off": "Stir and the Support desk are switched off",
+  "ui.slurp.stir.offDetail": "Switch either one on in Backstage › Stir.",
+  "ui.slurp.settings.overview.yours.stirOnStatus": "The lever deck and the planner in the Stir tab"
 }

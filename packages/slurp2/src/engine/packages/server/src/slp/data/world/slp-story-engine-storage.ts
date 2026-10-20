@@ -58,7 +58,7 @@ export function createStoryEngineStorage({ settingsStore }: SlurpStorageContext)
         await this.platformInfluenceStory(creatorAccountId),
       );
       // The Support desk's throttle, Discover feature and Partner badge reach the same place.
-      return target === "feed.reach" && creatorAccountId
+      return target === "feed.reach" && creatorAccountId && slpExtensionOn(settings, "supportDesk")
         ? events * slpDeskReachFactor(await readDesk(creatorAccountId), at)
         : events;
     },

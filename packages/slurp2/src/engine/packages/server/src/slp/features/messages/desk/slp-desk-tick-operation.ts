@@ -12,7 +12,7 @@ import { logger } from "../../../../lib/logger.js";
 import { newId } from "../../../../utils/id-generator.js";
 import { createSlurpMessagesStorage, createSlurpStorage } from "../../../data/slp-storage.js";
 import { createSlurpPopulationStorage } from "../../../data/audience/slp-audience-storage-funnel.js";
-import { updateSlurpSupportDesk } from "../../../data/creators/slp-support-desk-storage.js";
+import { readSlurpSupportDesk, updateSlurpSupportDesk } from "../../../data/creators/slp-support-desk-storage.js";
 import { countSlurpDeskPublished } from "../../../data/creators/slp-support-desk-counts.js";
 import { appendSlurpDeskLine } from "../../../data/messages/slp-support-desk-thread.js";
 import { enqueueSlurpPendingText } from "../../world/slp-world-contract.js";
@@ -23,6 +23,7 @@ import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../../shared/src/slp/slp-s
 import { slurpCreatorReach } from "../../../../../../shared/src/slp/slp-reach.js";
 import { slurpRunsItself } from "../../projects/slp-projects-contract.js";
 import { slurpPlatformScaleMultiplier } from "../../../../../../shared/src/slp/slp-scale.js";
+import { slpExtensionOn } from "../../../../../../shared/src/slp/slp-extensions.js";
 import { isSlurpViewerActorAccount } from "../../../modules/settings/slp-settings.js";
 import {
   SLP_DESK_STAY_AT,
@@ -348,6 +349,22 @@ export async function advanceSlurpSupportDesk(db: DB, at = new Date()): Promise<
   lastPassMs = at.getTime();
   const storage = createSlurpStorage(db);
   const allSettings = await storage.getSettings();
+  // Support desk off: no tickets, no risk, no milestones. Case files keep their state for later.
+  // ponytail: tickedAt stands still while off, so the first pass back rolls up to a week's odds at once;
+  // move tickedAt on switch-on if that burst shows.
+  if (!slpExtensionOn(allSettings, "supportDesk")) {
+    // Only the desk keeps a Creator who left away: with it off, they are back and post again.
+    for (const account of await storage.listNoodlerAccounts()) {
+      if (!(await readSlurpSupportDesk(db, account.id)).pausedAt) continue;
+      let resume = false;
+      await updateSlurpSupportDesk(db, account.id, (desk) => {
+        resume = desk.pausedAutoPosting;
+        return { ...desk, pausedAt: null, pausedAutoPosting: false };
+      });
+      if (resume) await storage.bulkUpdateCreatorProfiles([account.id], { autoPosting: true });
+    }
+    return;
+  }
   const settings = allSettings.supportDesk;
   // Milestones count the followers the profile shows (reach plus real followers), not the real ones alone.
   const reachScale = slurpPlatformScaleMultiplier(allSettings.platformScale);

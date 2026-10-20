@@ -158,6 +158,8 @@ export async function previewSlpStirSteps(
   return { cards, cant };
 }
 
+export const SLP_STIR_OFF = "Stir is switched off in Backstage.";
+
 /**
  * Plain words → a previewed plan. One model call; nothing in the world changes. The player's own
  * request never spends the AI budget (0.3.6); a Creator's DM proposal (`world`) is on the "Plans" row.
@@ -171,6 +173,7 @@ export async function planSlpStir(
 ): Promise<SlpAssistOutcome<SlpStirPlan>> {
   const storage = createSlurpStorage(db);
   const settings = await storage.getSettings();
+  if (!slpExtensionOn(settings, "stir")) return { ok: false, status: 409, error: SLP_STIR_OFF };
   if (origin === "world" && !slurpModelWorkerAllows(settings.modelBudget, "present"))
     return { ok: false, status: 409, error: "Plans need your AI connection. The cards still work." };
   const connection = await resolveSlurpTextConnection(

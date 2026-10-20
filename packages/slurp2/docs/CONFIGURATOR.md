@@ -248,6 +248,21 @@ The other cases:
    and `sharedWorldEvents`. The catch-up on open now also runs trends; one regression checks that
    both tick lists run the same systems.
 
+   As built (slurpothon), PR 3: Stir and Support desk have their switches on their Overview rows
+   and on top of the Backstage Stir page; the desk settings show under them only while the desk is
+   on. The Stir screen holds both: one off, it shows the other with no Stir/Desk switch; both off,
+   the tab is gone. Stir off: the planner answers 409 (the player's box and Support's world
+   wishes), suggestions cannot be dismissed, and the post ⋯, Projects and "Start in Stir" doors
+   hide. The ✦ sheet keeps the steering and "Talk as Support" (Basic) without the box and the
+   levers; its view stays readable. Single plays keep their per-action gate, so a Support thread's
+   plan cards still play. Support desk off: no desk tick, no case-file change from a talk, no reach
+   factor, no standing or "desk" answer in the prompt, 409 on the four desk routes and on a send
+   with a desk step, no trust chip, ticket bar, case file, Offer card or desk tools in the thread.
+   Support still talks, sends pictures and asks for a photo; the sign-up chat seeds the desk as
+   before. With no desk, Support's threads sit in the inbox and its badge. The desk's case files
+   keep their state, except that a Creator who left comes back and posts again (only the desk
+   keeps them away); the first pass after a long pause can roll up to a week's odds at once.
+
 4. **Add extras in onboarding** and the Support offers.
 5. **Storylines engine.** This is STORYLINES.md PRs 2–10, packs v2 with `requires`, and
    the pregnancy pack. Build it on the Storylines gate, so the gate is built only once.

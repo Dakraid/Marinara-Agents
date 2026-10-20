@@ -32,7 +32,7 @@ import { slpStoryRings, slpStoryStartId } from "../modules/story/slp-story-rings
 import { slurpLiveStories } from "./screens/slp-hub-view";
 import { slpShowPostWhenRendered } from "../modules/post/SlpPostPurposeNote";
 import type { SlpPulseTarget } from "../base/state/slp-task-store";
-import { slpInlineAdsOn } from "../../../../shared/src/slp/slp-extensions.js";
+import { slpExtensionOn, slpInlineAdsOn } from "../../../../shared/src/slp/slp-extensions.js";
 
 /** Slurp's own tree and its portalled sheets. */
 const SLP_SCOPE_SELECTOR = 'marinara-capability-slurp2, [data-marinara-capability-scope="slurp2"]';
@@ -222,7 +222,13 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
     onOpenSearch: goToNoodlerSearch,
     onOpenMessages: goToMessages,
     onOpenWallet: goToWallet,
-    onOpenStir: goToStir,
+    // Stir and Support desk off: no tab (the desk shares the Stir screen). Shown while settings load.
+    onOpenStir:
+      !slurpSettingsQuery.data ||
+      slpExtensionOn(slurpSettingsQuery.data, "stir") ||
+      slpExtensionOn(slurpSettingsQuery.data, "supportDesk")
+        ? goToStir
+        : undefined,
     // Pulse's tap-through (task C): the post a task made, your chat it wrote in, or the Creator.
     onOpenPulseTarget: (target: SlpPulseTarget) => {
       if ("chatCreatorId" in target) {

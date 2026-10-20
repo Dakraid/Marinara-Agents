@@ -38,7 +38,8 @@ assert.match(quick, /setDraft\(reply\);/u, "one tap fills the composer; the play
 assert.match(quick, /supportDesk: \{ \.\.\.desk, quickReplies \}/u);
 assert.match(
   src("features/messages/SlpThreadComposer.tsx"),
-  /\{asSupport && <SlpDeskQuickReplies model=\{model\} \/>\}/u,
+  // Only Support's own composer, and only while the Support desk is on (`desk` includes `asSupport`).
+  /\{desk && <SlpDeskQuickReplies model=\{model\} \/>\}/u,
 );
 
 for (const locale of ["en", "de", "ko", "pl"]) {

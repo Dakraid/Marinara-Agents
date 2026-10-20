@@ -1,3 +1,4 @@
+import { slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
 import { slpCoinPlainText } from "../../modules/coin/SlpCoin";
 import { useLayoutEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -231,7 +232,10 @@ function useSlurpThreadActions(state: SlurpThreadViewState) {
         // Slurp Support never tips; an attached tip waits in the composer for the persona.
         tip: !asSupport && composerTipAmount > 0 ? { amount: composerTipAmount, note: composerTipNote.trim() } : null,
         ...(asSupport ? { asSupport: true } : {}),
-        ...(asSupport && composerDesk
+        // A desk step left attached after the Support desk was switched off is not sent.
+        ...(asSupport &&
+        composerDesk &&
+        (!state.settingsQuery.data || slpExtensionOn(state.settingsQuery.data, "supportDesk"))
           ? {
               desk: {
                 mode: composerDesk.mode,

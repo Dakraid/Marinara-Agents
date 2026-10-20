@@ -289,7 +289,8 @@ test.describe("standalone Slurp package", () => {
     const errors = collectUnexpectedErrors(page);
     await getSlurpSettings(page);
     const settingsResponse = await page.request.patch("/api/slurp2/settings", {
-      data: { onboarding: "completed" },
+      // A fresh install starts on Basic only; the Stir tab shows once Stir is on.
+      data: { onboarding: "completed", extStir: true },
     });
     expect(settingsResponse.ok()).toBe(true);
     await page.addInitScript(() => {

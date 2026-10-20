@@ -198,18 +198,26 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
     {
       id: "stir",
       title: tx("stir", "Stir"),
-      status: tx("stirStatus", "Always on: the lever deck in the Stir tab"),
+      status: slpExtensionOn(settings, "stir")
+        ? tx("stirOnStatus", "The lever deck and the planner in the Stir tab")
+        : onOff(false),
       Icon: SlpStirGlyph,
-      open: () => onNavigate({ mode: "creator", view: "stir" }),
+      // Off, the tab is gone: the row opens the Backstage page with the switch.
+      open: () =>
+        slpExtensionOn(settings, "stir") ? onNavigate({ mode: "creator", view: "stir" }) : go("stir", "stir"),
+      toggle: { on: slpExtensionOn(settings, "stir"), set: (on) => void update("extStir", on) },
     },
     {
       id: "desk",
       title: tx("desk", "Support desk"),
-      status: tx("deskStatus", "Creators write in: {{pace}}", {
-        pace: t(`ui.slurp.stir.settings.ticketPace.${settings.supportDesk.tickets}`),
-      }),
+      status: slpExtensionOn(settings, "supportDesk")
+        ? tx("deskStatus", "Creators write in: {{pace}}", {
+            pace: t(`ui.slurp.stir.settings.ticketPace.${settings.supportDesk.tickets}`),
+          })
+        : onOff(false),
       Icon: Headset,
       open: () => go("stir", "stir"),
+      toggle: { on: slpExtensionOn(settings, "supportDesk"), set: (on) => void update("extSupportDesk", on) },
     },
     {
       id: "engine",
