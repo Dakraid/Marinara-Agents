@@ -37,13 +37,14 @@ function CrudeStrike({ children }: { children: ReactNode }) {
         viewBox="0 0 40 12"
         preserveAspectRatio="none"
         className="pointer-events-none absolute overflow-visible"
-        style={{ left: "-12%", top: "18%", width: "124%", height: "70%" }}
+        style={{ left: "-5%", top: "30%", width: "110%", height: "50%" }}
       >
         <path
           d="M1 7 C8 3 13 9 20 5 S31 8 39 4 M3 9 C12 5 22 10 37 6"
           fill="none"
-          stroke="var(--destructive)"
-          strokeWidth="2.2"
+          // A red pen, whatever the theme: the Slurp theme turns --destructive pink.
+          stroke="#e11d2e"
+          strokeWidth="1.5"
           strokeLinecap="round"
         />
       </svg>
