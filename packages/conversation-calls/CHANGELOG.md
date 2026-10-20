@@ -1,5 +1,10 @@
 # Calls release notes
 
+## 1.1.5 — 2026-10-20
+
+- Calls now uses Marinara Engine's own settings, dialogs, voice playback, Local Model, Local Whisper, haptics, Spotify and chat saving instead of carrying copies of them. It no longer resets your Engine settings, starts a second Local Model, or overwrites chat changes saved while a call runs. The download is smaller. It needs a Marinara Engine release after 2.5.0. On 2.5.0 and older, the version you already have keeps working. (#1478, #1487)
+- During a call, the connection switcher and the sticker and emoji settings change the call's chat, not another chat.
+
 ## 1.1.4 — 2026-10-13
 
 - On phones, the Chat Settings bubble no longer covers the close button in Call Chat. It hides while Call Chat is open and comes back when you close it. (#1338)

@@ -41,7 +41,7 @@ assert.match(entry, /static getDerivedStateFromError/u, "the boundary must rende
 assert.match(entry, /componentDidCatch\(error: Error, info: ErrorInfo\)/u, "the boundary must log the component stack");
 assert.match(
   entry,
-  /<SlurpErrorBoundary>[\s\S]*<SlpApp[\s\S]*<AppDialogRenderer \/>[\s\S]*<\/SlurpErrorBoundary>/u,
+  /<SlurpErrorBoundary>[\s\S]*<SlpApp[\s\S]*<\/SlurpErrorBoundary>/u,
   "the boundary must wrap the whole root tree",
 );
 

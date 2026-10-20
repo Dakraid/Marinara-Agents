@@ -5,7 +5,7 @@ import tseslint from "typescript-eslint";
 
 const maintainedSourceFiles = [
   "packages/**/src/**/*.{js,mjs,ts,tsx}",
-  "sources/claude-subscription-overlay/**/*.{mjs,ts}",
+  "sources/*-overlay/**/*.{mjs,ts,tsx}",
   "scripts/**/*.{js,mjs}",
   "tests/**/*.{js,mjs,ts,tsx}",
   "eslint.config.mjs",
