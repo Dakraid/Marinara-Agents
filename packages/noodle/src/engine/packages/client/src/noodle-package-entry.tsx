@@ -13,8 +13,9 @@ import { NoodleView } from "./components/noodle/NoodleView";
 import { NoodleLatestPostsWidget } from "./components/noodle/NoodleLatestPostsWidget";
 import { configureNoodlePackageState } from "./stores/noodle-package.store";
 
-// Noodle's queries live in the Engine's cache (keys start with "noodle"); they keep the no-retry default they had.
-queryClient.setQueryDefaults(["noodle"], { retry: false });
+// Noodle's queries live in the Engine's cache (keys start with "noodle"); they keep the defaults they had: no retry,
+// and stale at once instead of the Engine's 30 s.
+queryClient.setQueryDefaults(["noodle"], { retry: false, staleTime: 0 });
 // Noodle's own instance, inside <I18nextProvider>. Never `.use(initReactI18next)`: that would make it the Engine's
 // global instance.
 const localization = i18next.createInstance();

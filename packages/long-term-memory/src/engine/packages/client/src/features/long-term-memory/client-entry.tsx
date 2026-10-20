@@ -8,8 +8,9 @@ import { LtmLocalizationProvider, translateLtm, useLtmTranslation } from "./loca
 import type { CapabilityElement } from "./types";
 
 // Long-Term Memory's queries live in the Engine's cache (Pasta-Devs/Marinara-Agents#1487), under keys that start with
-// "long-term-memory", and keep the no-retry default they had.
-queryClient.setQueryDefaults(["long-term-memory"], { retry: false });
+// "long-term-memory", and keep the defaults they had: no retry, and stale at once (the Engine's cache keeps a query
+// fresh for 30 s, so returning to a memory place would show its old list instead of asking again).
+queryClient.setQueryDefaults(["long-term-memory"], { retry: false, staleTime: 0 });
 
 class CapabilityClientErrorBoundary extends React.Component<
   { element: CapabilityElement; children: ReactNode },
