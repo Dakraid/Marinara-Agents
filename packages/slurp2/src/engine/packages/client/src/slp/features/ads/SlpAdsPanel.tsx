@@ -36,6 +36,7 @@ export function SlpAdsPanel(page: SlpBackstagePageProps) {
     adsWorldDraft,
     setAdsWorldDraft,
     update,
+    updateNow,
     updatePatch,
     connectionsQuery,
   } = page;
@@ -50,7 +51,7 @@ export function SlpAdsPanel(page: SlpBackstagePageProps) {
           defaultValue: "Inline ads, brand deals, ad pictures and brand packs.",
         })}
         value={slpExtensionOn(settings, "ads")}
-        onChange={(value) => update("extAds", value)}
+        onChange={(value) => void updateNow("extAds", value)}
       />
     </SettingsGroup>
   );
