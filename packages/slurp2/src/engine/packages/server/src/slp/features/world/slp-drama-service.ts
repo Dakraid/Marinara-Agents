@@ -7,6 +7,7 @@
 import type { DB } from "../../../db/connection.js";
 import { logger } from "../../../lib/logger.js";
 import { newId } from "../../../utils/id-generator.js";
+import { slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
 import { randomUUID } from "node:crypto";
 import { createSlurpMessagesStorage, createSlurpStorage } from "../../data/slp-storage.js";
 import { createSlurpEventsStorage } from "../../data/notifications/slp-notification-storage.js";
@@ -243,8 +244,8 @@ function hashOf(value: string): number {
  */
 export async function advanceSlurpDrama(db: DB, at = new Date()): Promise<void> {
   const settings = await createSlurpStorage(db).getSettings();
-  // "Pause all": no drama moves while Slurp is paused.
-  if (settings.paused) return;
+  // "Pause all": no drama moves while Slurp is paused. Storylines off holds it the same way.
+  if (settings.paused || !slpExtensionOn(settings, "storylines")) return;
   const catalog = slpEnabledDrama(slpDramaCatalog(await readSlurpDramaLibrary(db)), settings.drama.enabled);
   const stored = await readSlurpDramaState(db);
   const idle =
@@ -337,6 +338,7 @@ export async function planSlurpDramaBeat(
   input: { creatorId: string; at: Date; previewOnly?: boolean },
 ): Promise<SlurpBeat | null> {
   try {
+    if (!slpExtensionOn(await createSlurpStorage(db).getSettings(), "storylines")) return null;
     const { state } = await readSlurpDramaState(db);
     const job = slpDueDramaJobs(state, input.at, "post").find((entry) => entry.actorId === input.creatorId);
     if (!job?.heat) return null;

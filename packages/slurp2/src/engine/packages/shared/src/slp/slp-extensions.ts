@@ -24,6 +24,9 @@ export function slpExtensionOn(settings: SlpExtensionSettings, id: SlpExtensionI
   return settings[SLP_EXTENSION_KEYS[id]] === true;
 }
 
+/** What a storyline route answers (409) while Storylines is off. */
+export const SLP_STORYLINES_OFF = "Storylines is switched off in Backstage.";
+
 /** Null is Basic: always on. */
 export function slpExtensionAllows(settings: SlpExtensionSettings, extension: SlpExtensionId | null): boolean {
   return extension === null || slpExtensionOn(settings, extension);
@@ -108,6 +111,11 @@ export function slpBrandDealsPace<T extends string>(settings: SlpExtensionSettin
  */
 export function slpLiveEvents<T>(settings: SlpExtensionSettings & { platformEvents: readonly T[] }): readonly T[] {
   return slpExtensionOn(settings, "world") ? settings.platformEvents : [];
+}
+
+/** Arcs that stand still while Storylines is off have no effect: no stat change, no mood, no life line. */
+export function slpArcsLive(settings: SlpExtensionSettings): boolean {
+  return slpExtensionOn(settings, "storylines");
 }
 
 /** Trends run only while Living world is on and its own "Viral trends" switch is. */

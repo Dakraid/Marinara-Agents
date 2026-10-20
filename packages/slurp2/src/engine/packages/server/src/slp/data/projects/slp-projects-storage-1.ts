@@ -47,6 +47,7 @@ import { newId, now } from "../../../utils/id-generator.js";
 import { addSlurpModifier } from "../../modules/creators/slp-creator-state.js";
 
 import type { SlurpStorageContext } from "../host/slp-storage-context.js";
+import { slpArcsLive } from "../../../../../shared/src/slp/slp-extensions.js";
 
 export function createProjectsStorage1(context: SlurpStorageContext) {
   const {
@@ -373,11 +374,10 @@ export function createProjectsStorage1(context: SlurpStorageContext) {
      * aimed at this Creator on the same stat (R1-112: growth, loyalty and earnings were never read).
      */
     async arcEffectMultiplier(creatorAccountId: string, stat: SlurpArcEffectStat): Promise<number> {
-      const arcs = slurpArcEffectMultiplier(
-        await this.listProjects(creatorAccountId),
-        stat,
-        (await this.getSettings()).arcStatEffects,
-      );
+      const settings = await this.getSettings();
+      const arcs = slpArcsLive(settings)
+        ? slurpArcEffectMultiplier(await this.listProjects(creatorAccountId), stat, settings.arcStatEffects)
+        : 1;
       const target = {
         growth: "audience.growth",
         earnings: "economy.creator-earnings",

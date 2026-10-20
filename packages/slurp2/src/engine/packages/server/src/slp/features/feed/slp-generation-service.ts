@@ -182,10 +182,10 @@ export async function generateCreatorPost(
   let variation = directed
     ? null
     : slurpPostVariation(account.id, sequence, settings.storyImagesEnabled ? settings.storyRate : "off");
-  // A project claims this post only if the rotation gives it one. Player direction stands both
-  // rotations down for the same reason: their direction is the subject, and a second one fights it.
+  // A project claims this post only if the rotation gives it one (never with Storylines off, on either
+  // planner). Player direction stands both rotations down: their direction is the subject.
   const project =
-    directed || nudge
+    directed || nudge || !slpExtensionOn(settings, "storylines")
       ? null
       : slurpPostProject(
           account.id,

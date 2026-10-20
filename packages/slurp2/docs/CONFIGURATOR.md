@@ -263,6 +263,22 @@ The other cases:
    keep their state, except that a Creator who left comes back and posts again (only the desk
    keeps them away); the first pass after a long pause can roll up to a week's odds at once.
 
+   As built (slurpothon), PR 4: Storylines has its switch on its Overview row and on top of the
+   Storylines, Plan templates and Drama & love pages. Off, the Storylines page keeps shared ideas
+   (Basic) and event automation (Living world, shown only while it is on). Off: no arc ticks or
+   starts on either branch of the world tick, collabs, rivalries and couples stand still (bonds and
+   brand deals keep their 6-hour look), the drama clock holds like "Pause all", and no arc, collab,
+   rivalry, couple or drama takes a post on either planner. Frozen arcs have no effect: no earnings,
+   growth or loyalty change, no life line in DMs, thread mood or fan comments, and no storyline card
+   on the profile. 409 on creating, directing or generating an arc or template, starting or pushing
+   a collab, "Post it now", setting up a couple, date/drama/patch-up/reunite, opening a shared page,
+   starting a drama and answering its question. Ending still works: decline, block, drop, cool a
+   rivalry, break up, move on, close a page, end a drama, edit or delete an arc. The Creator modal
+   hides its Storylines and Collaborations blocks, the thread hides a drama question, and the post
+   guide hides its Storyline chip. Partner texts are the player's own relationship and stay Basic.
+   On again: arcs whose chapter ran out move one step on the first tick; a drama job still in its
+   window goes out, expired ones drop.
+
 4. **Add extras in onboarding** and the Support offers.
 5. **Storylines engine.** This is STORYLINES.md PRs 2–10, packs v2 with `requires`, and
    the pregnancy pack. Build it on the Storylines gate, so the gate is built only once.

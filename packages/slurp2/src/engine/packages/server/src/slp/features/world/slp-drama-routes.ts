@@ -1,7 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
-import { createSlurpMessagesStorage } from "../../data/slp-storage.js";
+import { createSlurpMessagesStorage, createSlurpStorage } from "../../data/slp-storage.js";
+import { SLP_STORYLINES_OFF, slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
 import { readSlurpDramaLibrary, readSlurpDramaState } from "../../data/world/slp-drama-storage.js";
 import { slpDramaCatalog } from "../../modules/world/events/slp-drama-library.js";
 import { answerSlurpDramaChoice } from "./slp-drama-service.js";
@@ -78,6 +79,8 @@ export async function slpDramaRoutes(app: FastifyInstance, { noodle, resolveView
     if (choice.chosen !== null && choice.chosen !== undefined)
       return reply.code(409).send({ error: "You already answered." });
     if (parsed.data.option >= options.length) return reply.code(400).send({ error: "That is not one of the answers." });
+    if (!slpExtensionOn(await createSlurpStorage(app.db).getSettings(), "storylines"))
+      return reply.code(409).send({ error: SLP_STORYLINES_OFF });
     const answered = await answerSlurpDramaChoice(app.db, {
       runId: choice.runId,
       option: parsed.data.option,

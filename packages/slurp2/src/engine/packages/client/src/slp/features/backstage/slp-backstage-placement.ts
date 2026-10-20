@@ -47,8 +47,7 @@ export const SLP_BACKSTAGE_PAGE_PLACEMENT: Record<string, SlpBackstagePlacement>
 /** One searchable, canonical Backstage home for every persisted setting. */
 export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBackstagePlacement> = {
   extAds: slurp("ads", "brands", "ads", "extension", "brand deals"),
-  // ponytail: no switch on screen until each gate lands (slice 3 PRs 2-4); then drop `internal`.
-  extStorylines: internal(slurp("storylines", "storylines")),
+  extStorylines: slurp("storylines", "storylines", "extension", "arcs", "drama", "couples", "collabs"),
   extWorld: slurp("events", "living world", "extension", "events", "trends"),
   extStir: slurp("stir", "stir", "extension", "levers", "planner"),
   extSupportDesk: slurp("stir", "support desk", "extension", "tickets", "trust"),
@@ -233,13 +232,30 @@ const SLP_EXTENSION_TARGETS: Partial<Record<SlpBackstageTarget, SlpExtensionId>>
   ads: "ads",
   events: "world",
   calendar: "world",
+  arcs: "storylines",
+  drama: "storylines",
   // The Stir page holds both switches; its other settings are the Support desk's.
   stir: "supportDesk",
 };
 /** Settings an extension owns that live on another page. */
 const SLP_EXTENSION_SETTINGS: Partial<Record<keyof SlurpSettings, SlpExtensionId>> = {
   sharedWorldEvents: "world",
+  storyAutomation: "world",
   extStir: "stir",
+  // The Storylines page also holds shared ideas (Basic) and event automation (Living world).
+  projectRate: "storylines",
+  arcPace: "storylines",
+  arcAffectsMood: "storylines",
+  arcFanReactions: "storylines",
+  arcAutoMode: "storylines",
+  arcCooldownWeeks: "storylines",
+  arcSource: "storylines",
+  arcMaxConcurrentAuto: "storylines",
+  arcDirectorMode: "storylines",
+  arcPollHours: "storylines",
+  arcStatEffects: "storylines",
+  arcCrossovers: "storylines",
+  creatorCollabs: "storylines",
 };
 
 /** Search skips the settings of a switched-off extension; its own switch stays findable. */

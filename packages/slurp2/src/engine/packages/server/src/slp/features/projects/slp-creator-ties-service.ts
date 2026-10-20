@@ -73,7 +73,7 @@ import type { SlurpBeat } from "../../modules/feed/slp-post-beat.js";
 import type { SlurpContentIntent } from "../../../../../shared/src/slp/slp-content-axes.js";
 import { bookSlurpHeldSlot, readSlurpSlotTimes } from "../feed/slp-held-slots-contract.js";
 import { slurpPausedNow } from "../../data/settings/slp-pause-storage.js";
-import { slpBrandDealsPace } from "../../../../../shared/src/slp/slp-extensions.js";
+import { slpBrandDealsPace, slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
 
 type Storage = ReturnType<typeof createSlurpStorage>;
 type Account = Awaited<ReturnType<Storage["listNoodlerAccounts"]>>[number];
@@ -149,10 +149,17 @@ export async function advanceSlurpCreatorTies(db: DB, at = new Date()): Promise<
   const paired = settings.creatorCollabs.map((collab) => collab.creatorIds);
   const storylines = await slurpCouplesWorldInput(db, creators);
   const before = await readSlurpCreatorTiesDocument(db);
+  // Storylines off: collabs, rivalries and couples stand still; bonds (Basic) and brand deals move on.
+  const storylinesOn = slpExtensionOn(settings, "storylines");
   const after = await mutateSlurpCreatorTies(db, (document) => {
-    const ties = slurpAdvanceCreatorTies(document.ties, { creators, at, activity, paired, newId });
+    const ties = storylinesOn
+      ? slurpAdvanceCreatorTies(document.ties, { creators, at, activity, paired, newId })
+      : // Stamped, so bonds and deals keep their 6-hour look and turning Storylines on adds no catch-up.
+        { ...document.ties, advancedAt: at.toISOString() };
     const around = fromTies(ties, at);
-    const couples = slurpAdvanceCouples(document.couples, { creators, at, activity, newId, storylines, ...around });
+    const couples = storylinesOn
+      ? slurpAdvanceCouples(document.couples, { creators, at, activity, newId, storylines, ...around })
+      : document.couples;
     const next = {
       ties,
       couples,
@@ -351,7 +358,12 @@ export async function planSlurpTieBeat(
   },
 ): Promise<SlurpBeat | null> {
   try {
-    const { ties, deals, couples } = await readSlurpCreatorTiesDocument(db);
+    const stored = await readSlurpCreatorTiesDocument(db);
+    const { deals } = stored;
+    // Storylines off: only a brand deal takes a post; collabs, rivalries and couples wait.
+    const storylinesOn = slpExtensionOn(await createSlurpStorage(db).getSettings(), "storylines");
+    const ties = storylinesOn ? stored.ties : { ...stored.ties, collabs: [], rivalries: [] };
+    const couples = storylinesOn ? stored.couples : [];
     const ids = new Set([
       ...ties.collabs.flatMap((collab) => [collab.hostId, collab.partnerId]),
       ...ties.rivalries.flatMap((rivalry) => [rivalry.fromId, rivalry.toId]),
