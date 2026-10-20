@@ -59,8 +59,8 @@ export function ChoiceSetting<T extends string>({
   // A short segmented control sits beside its label on a wide page, like every other row; cards
   // and long labels need the width and sit under it.
   const row = variant === "segmented" && oneRow && !labelHidden;
-  const text = (
-    <div id={noteId} className="contents">
+  const text = (detail || disabledReason) && (
+    <div id={noteId} className="space-y-2">
       {detail && <p className="max-w-prose text-xs leading-5 text-[var(--muted-foreground)] text-pretty">{detail}</p>}
       {disabledReason && (
         <p className="text-xs font-semibold leading-5 text-[var(--slurp-muted,var(--muted-foreground))]">
