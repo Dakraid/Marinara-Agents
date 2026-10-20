@@ -16,6 +16,7 @@ import {
   slurpModelLacksVision,
 } from "./slp-vision.js";
 import { slpWithProviderRetry } from "../../base/model/slp-provider-retry.js";
+import { slpRequireBackgroundIdle } from "../host/slp-generation-integrations.js";
 
 type GenerationConnection = NonNullable<Awaited<ReturnType<ReturnType<typeof createConnectionsStorage>["getWithKey"]>>>;
 
@@ -45,9 +46,13 @@ export async function slurpImageCaptioning(
   textConnection: GenerationConnection,
   /** The player's caption instructions; blank uses SLURP_IMAGE_CAPTION_PROMPT. */
   prompt = "",
+  /** False inside a run that holds the text connection's background slot. */
+  bookConnection = true,
 ): Promise<ImageCaptioningRuntime> {
   const connection =
     (connectionId ? await createConnectionsStorage(db).getWithKey(connectionId) : null) ?? textConnection;
+  // The run's slot covers only its own connection: on another one, each caption waits like other background work.
+  const yieldToForeground = !bookConnection && connection.id !== textConnection.id;
   const provider = slpWithProviderRetry(
     createLLMProvider(
       connection.provider,
@@ -59,6 +64,9 @@ export async function slurpImageCaptioning(
       connection.claudeFastMode === "true",
       connection.treatAsLocalEndpoint === "true",
       connection.defaultParameters,
+      // Booked as foreground work, like the reply it describes pictures for. A caller that already holds the
+      // connection's background slot passes false: a foreground booking inside it would hold off other work.
+      bookConnection ? connection.id : undefined,
     ),
   );
   const instructions = prompt.trim() || SLURP_IMAGE_CAPTION_PROMPT;
@@ -66,6 +74,7 @@ export async function slurpImageCaptioning(
   // hardcode its one system message (the chat default), so Slurp's instructions replace it here.
   const guardedProvider = Object.assign(Object.create(provider) as typeof provider, {
     chatComplete: async (...[messages, ...rest]: Parameters<typeof provider.chatComplete>) => {
+      if (yieldToForeground) slpRequireBackgroundIdle(connection.id);
       try {
         const own = messages.map((message) =>
           message.role === "system" ? { ...message, content: instructions } : message,

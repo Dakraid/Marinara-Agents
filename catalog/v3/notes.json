@@ -86,6 +86,12 @@
     "conversation-calls": {
       "versions": [
         {
+          "version": "1.1.6",
+          "date": "2026-10-20",
+          "notes": "- Opening a call no longer changes the volume of, or mutes, a reply Marinara is reading aloud in another chat. The call's voice volume and mute apply only to the call's own voices.\n- A call in a chat that uses the Local Model now answers through Marinara's Local Model, as the chat does. Before, it stayed silent and showed no error.",
+          "highlight": false
+        },
+        {
           "version": "1.1.5",
           "date": "2026-10-20",
           "notes": "- Calls now uses Marinara Engine's own settings, dialogs, voice playback, Local Model, Local Whisper, haptics, Spotify and chat saving instead of carrying copies of them. It no longer resets your Engine settings, starts a second Local Model, or overwrites chat changes saved while a call runs. The download is smaller. It needs a Marinara Engine release after 2.5.0. On 2.5.0 and older, the version you already have keeps working. (#1478, #1487)\n- During a call, the connection switcher and the sticker and emoji settings change the call's chat, not another chat.",
@@ -286,6 +292,12 @@
     "long-term-memory": {
       "versions": [
         {
+          "version": "1.4.57",
+          "date": "2026-10-20",
+          "notes": "- Professor Mari's setup guide shows its pictures again. Marinara Engine renamed them, and the guide still asked for the old files.",
+          "highlight": false
+        },
+        {
           "version": "1.4.56",
           "date": "2026-10-20",
           "notes": "- Long-Term Memory now uses Marinara Engine's own libraries and data cache for its screens instead of carrying copies of them, so the download is smaller. It needs a Marinara Engine release after 2.5.0. On 2.5.0 and older, the version you already have keeps working. (#1487)",
@@ -398,12 +410,6 @@
           "date": "2026-10-15",
           "notes": "- Switching between the Vault, Review, Sources and Settings screens no longer shows a brief \"Loading\" panel, because the screens ship in the one bundle the package already loads. Importing a backup, resetting memory settings and deleting all memory data now read each setting and the integrity report once instead of two or three times. Nothing else changes in what the screens show or how they behave. Internally the duplicated tab-key handling, scope labels, confirm dialog, availability copy and shared queries are now one copy each, and 155 unused interface strings were removed.",
           "highlight": false
-        },
-        {
-          "version": "1.4.37",
-          "date": "2026-10-15",
-          "notes": "- Reorganised the Long-Term Memory screens without changing how they work. The Vault, Review queue, Sources and Settings screens each live in their own folder, and the setup guide and the Maintenance tab are components of their own. One visible difference is that the result of a Maintenance action now appears at the top of the Maintenance tab instead of below the tab bar, so it no longer shows on the other tabs and saving settings no longer replaces it.\n- Reset settings now shows the reset values in the settings forms straight away. Before, the forms kept the values from before the reset until Memory Settings was opened again.",
-          "highlight": false
         }
       ]
     },
@@ -449,6 +455,12 @@
     },
     "noodle": {
       "versions": [
+        {
+          "version": "1.5.8",
+          "date": "2026-10-20",
+          "notes": "- The sticker, emoji, picture and poll menus now open inside Noodle. That hides the chat emoji-selection settings, which 1.5.7 meant to hide but still showed, and the menus are no longer see-through.",
+          "highlight": false
+        },
         {
           "version": "1.5.7",
           "date": "2026-10-20",
@@ -738,6 +750,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.52",
+          "date": "2026-10-20",
+          "notes": "- Fixed: an automatic post no longer reads a Creator's card or refreshes shared ideas with the AI while one of your chats on the same connection is replying, and an automatic post no longer makes your other automatic work (Noodle's too) wait 30 seconds. A new Creator's first automatic post no longer refuses itself.\n- Fixed: Write, Improve, Draft voice, Generate schedule, the page style and \"Let <Creator> design it\", a plan you ask for, an appearance you generate and picture descriptions for replies now take their turn on your connection like your chats, so automatic work waits for them.",
+          "highlight": false
+        },
+        {
           "version": "0.3.51",
           "date": "2026-10-20",
           "notes": "- Changed: Slurp now uses Marinara Engine's own settings, dialogs, notifications, Local Model and connection queue instead of carrying copies of them. It no longer resets your Engine settings or starts a second Local Model, its background work waits while a chat on the same connection is replying, and its notifications appear where you put yours. The download is smaller. It needs a Marinara Engine release after 2.5.0. On 2.5.0 and older, the version you already have keeps working. (#1478, #1487)\n- Changed: the sticker and emoji pickers no longer show the chat emoji-selection settings. Those belong to a chat, and Slurp has none.",
@@ -849,12 +867,6 @@
           "version": "0.3.32",
           "date": "2026-10-13",
           "notes": "- Fixed: the picture writer's result was thrown away as \"broke the scene's content level\" when it only repeated a word from the Creator's own look or the draft (for example \"breasts\") on a clothed scene. A word the writer was handed in those two no longer counts as an escalation; limits and the content policy do not count as a source. (#1347)\n- Fixed: when the writer's result was unusable, a long look filled the whole length cap of the fallback prompt, so the picture got an appearance and no scene. The look now keeps a bounded share and the scene keeps the rest.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.31",
-          "date": "2026-10-13",
-          "notes": "- Changed: the guided post (New post, and Stir's \"Draft post\") is now written by the same generator as the page's own posts, with your wish as the direction. The draft gets the bio, stage voice, brief, spice level, image directions and live events, and comes back as a title, a text and a picture of its own. Before, your wish went word for word into the picture.\n- Changed: one composer. The picture is on top, then who sees the post, then one switch for the text: \"Write it myself\" or \"Guided\". A guided draft fills the normal title, text and picture; the separate preview and its \"Edit\" step are gone. A photo you add stays, and the text is written to go with it.\n- Added: \"Add from Slurp\" on Guided: a storyline of the page, a saved idea (posting the draft uses it up) and a wardrobe look for the picture. Brand deals and collabs stay.\n- Known limit: posting a draft written for a storyline does not move the storyline to its next chapter.",
           "highlight": false
         }
       ]

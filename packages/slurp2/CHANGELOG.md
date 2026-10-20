@@ -1,5 +1,10 @@
 # Slurp release notes
 
+## 0.3.52 — 2026-10-20
+
+- Fixed: an automatic post no longer reads a Creator's card or refreshes shared ideas with the AI while one of your chats on the same connection is replying, and an automatic post no longer makes your other automatic work (Noodle's too) wait 30 seconds. A new Creator's first automatic post no longer refuses itself.
+- Fixed: Write, Improve, Draft voice, Generate schedule, the page style and "Let <Creator> design it", a plan you ask for, an appearance you generate and picture descriptions for replies now take their turn on your connection like your chats, so automatic work waits for them.
+
 ## 0.3.51 — 2026-10-20
 
 - Changed: Slurp now uses Marinara Engine's own settings, dialogs, notifications, Local Model and connection queue instead of carrying copies of them. It no longer resets your Engine settings or starts a second Local Model, its background work waits while a chat on the same connection is replying, and its notifications appear where you put yours. The download is smaller. It needs a Marinara Engine release after 2.5.0. On 2.5.0 and older, the version you already have keeps working. (#1478, #1487)

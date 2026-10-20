@@ -185,6 +185,7 @@ export async function generateSlpPostImage(input: {
         account: input.account,
         connectionId: input.settings.generationConnectionId,
         mode: input.settings.appearanceProfileMode,
+        foreground: input.admissionMode?.kind === "foreground",
       })
     : "";
   let characterDescription = stageAppearance;

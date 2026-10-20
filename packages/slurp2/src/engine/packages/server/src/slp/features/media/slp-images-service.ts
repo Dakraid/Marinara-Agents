@@ -269,6 +269,7 @@ async function generateCreatorPostImageRun(
             sourceAccount: input.linkedPublicAccount,
             connectionId: input.settings.generationConnectionId,
             mode: input.settings.appearanceProfileMode,
+            foreground: input.admissionMode?.kind === "foreground",
           });
   let characterDescription = stageAppearance;
   let appearanceSource: SlpDeepDetailsImageRun["appearance"]["source"] = stageAppearance ? "stage" : "none";

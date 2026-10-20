@@ -351,6 +351,8 @@ async function generateFanActivity(input: {
       input.settings.imageContextConnectionId,
       input.connection,
       input.settings.imageCaptionPrompt,
+      // The fan activity run holds its connection's background slot (tryBackgroundConnection).
+      false,
     ),
     onDescribed: (post, description, source) =>
       createSlurpStorage(input.db).setNoodlerPostImageDescription(post.id, description, source),
