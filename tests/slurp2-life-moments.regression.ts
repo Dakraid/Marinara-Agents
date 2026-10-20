@@ -358,7 +358,7 @@ assert.match(
 );
 const agentSource = server("data/creators/slp-agent-memory-source.ts");
 assert.match(agentSource, /eq\(gameStateSnapshots\.committed, 1\)/u, "only the accepted chat state");
-assert.match(agentSource, /hostRuntime\(\)\.services\?\.get<[^>]+>\(LTM_SERVICE\)/u);
+assert.match(agentSource, /getCapabilityService<[^>]+>\(LTM_SERVICE\)/u);
 assert.doesNotMatch(agentSource, /\.(create|update|updateLatest|set|delete|insert|commit)\(/u, "read-only");
 assert.match(client("features/settings/SlpPromptsPanel.tsx"), /update\("flavourFromAgents", value\)/u);
 

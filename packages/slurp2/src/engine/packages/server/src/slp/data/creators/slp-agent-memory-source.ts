@@ -13,7 +13,7 @@ import { logger } from "../../../lib/logger.js";
 import { createChatsStorage } from "../../../services/storage/chats.storage.js";
 import { and, desc, eq } from "../../../db/file-query.js";
 import { gameStateSnapshots } from "../../../db/schema/game-state.js";
-import { hostRuntime } from "../../../lib/host-runtime.js";
+import { getCapabilityService } from "../../../services/capability-packages/capability-service-registry.service.js";
 import type { SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
 import type { SlurpLatelyLine } from "../../modules/creators/slp-creator-flavour.js";
 
@@ -94,9 +94,7 @@ type LtmStorage = { listNotes: (filter: Record<string, unknown>) => Promise<unkn
 /** Long-Term Memory's note about this character: its most important sections, first sentence each. */
 async function memoryLines(source: Pick<SlpAccount, "kind" | "entityId">): Promise<SlurpLatelyLine[]> {
   if (source.kind !== "character") return [];
-  // Long-Term Memory's service as the Engine registered it (api.runtime.services, capability API 1.341). The
-  // bundled registry Slurp used before was an empty copy, so "lately" never found a memory.
-  const service = hostRuntime().services?.get<{ storage?: LtmStorage }>(LTM_SERVICE);
+  const service = getCapabilityService<{ storage?: LtmStorage }>(LTM_SERVICE);
   if (!service?.storage?.listNotes) return [];
   const answer = await service.storage.listNotes({ type: "character", characterIds: [source.entityId] });
   const notes = (Array.isArray(answer) ? answer : list(record(answer).notes)).map(record);

@@ -281,11 +281,15 @@ try {
     );
   }
   assert.doesNotMatch(routesSource, /import\("\.\.\/services\/haptic/u, "no second Intiface client");
+  // Slurp's "lately" reads Long-Term Memory's service through the registry overlay (api.runtime.services).
   const memorySource = await readFile(
     join(root, "packages/slurp2/src/engine/packages/server/src/slp/data/creators/slp-agent-memory-source.ts"),
     "utf8",
   );
-  assert.match(memorySource, /hostRuntime\(\)\.services\?\.get</u, "Slurp reads Long-Term Memory through the Engine");
+  assert.match(
+    memorySource,
+    /from "\.\.\/\.\.\/\.\.\/services\/capability-packages\/capability-service-registry\.service\.js"/u,
+  );
 
   console.log("host runtime overlay regression passed");
 } finally {

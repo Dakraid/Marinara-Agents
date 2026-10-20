@@ -854,7 +854,7 @@ export async function activate({ app, api }) {
       api.registerService("conversation-calls:command", commandRuntime),
       api.registerService("conversation-calls:character-videos", characterVideos),
     ];
-    return () => { readinessStorage = null; for (const cleanup of cleanups.reverse()) cleanup(); unbind(); };
+    return () => { readinessStorage = null; try { for (const cleanup of cleanups.reverse()) cleanup(); } finally { unbind(); } };
   } catch (error) {
     unbind();
     throw error;
