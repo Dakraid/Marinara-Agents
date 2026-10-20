@@ -2,7 +2,7 @@
 // pure model in slp-basic-setup.ts. Support (the owner's staff) asks, big cards answer, and the stage
 // shows the real locked post card with sample data, changing with every answer. Nothing is written
 // until the player leaves it; a first run keeps its place per browser.
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation as useUiTranslation } from "react-i18next";
@@ -375,8 +375,30 @@ function BasicPreview({
     pictures && imageName ? t(`${O}preview.picturesBy`, { name: imageName }) : t(`${O}a.pictures.no`),
     textName && !noText ? t(`${O}preview.writtenBy`, { name: textName }) : null,
   ].filter(Boolean);
+  // The card is square media plus chrome, so it outgrows short stages (phones, 900 px desktops):
+  // scale it down to the stage height instead of cropping its header and the facts line.
+  const ref = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  useLayoutEffect(() => {
+    const preview = ref.current;
+    const slot = preview?.parentElement;
+    if (!preview || !slot) return;
+    const fit = () => {
+      const style = getComputedStyle(slot);
+      const room = slot.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+      setScale(Math.min(1, room / preview.offsetHeight));
+    };
+    const observer = new ResizeObserver(fit);
+    observer.observe(slot);
+    observer.observe(preview);
+    return () => observer.disconnect();
+  }, []);
   return (
-    <div className="flex w-full max-w-sm flex-col items-center gap-3 max-sm:max-w-[19rem]">
+    <div
+      ref={ref}
+      className="flex w-full max-w-sm shrink-0 flex-col items-center gap-3 max-sm:max-w-[19rem]"
+      style={scale < 1 ? { transform: `scale(${scale})` } : undefined}
+    >
       <div className="w-full overflow-hidden rounded-2xl shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)]">
         <LockedSlurpPostCard
           post={{

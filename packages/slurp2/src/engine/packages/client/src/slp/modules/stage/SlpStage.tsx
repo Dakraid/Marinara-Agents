@@ -117,7 +117,7 @@ export function SlpStage({
         {headerEnd}
       </header>
 
-      <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,52fr)_minmax(0,48fr)] md:mx-auto md:w-full md:max-w-[1120px] md:grid-cols-2 md:grid-rows-1">
+      <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,46fr)_minmax(0,54fr)] md:mx-auto md:w-full md:max-w-[1120px] md:grid-cols-2 md:grid-rows-1">
         <section className="relative grid min-h-0 place-items-center overflow-hidden [perspective:1200px]">
           <div
             key={stageKey}
