@@ -2,15 +2,15 @@
   "schemaVersion": 2,
   "capabilityApi": {
     "major": 1,
-    "minor": 66
+    "minor": 341
   },
   "builtAgainst": {
-    "engineVersion": "2.4.6",
-    "engineCommit": "5a6fafa079c921a3dc1166169f41f318549d595e"
+    "engineVersion": "2.5.0",
+    "engineCommit": "25f8df7b0a388fe36f657d69c6fcaa9f27e066ed"
   },
   "id": "slurp2",
   "name": "Slurp",
-  "version": "0.3.49",
+  "version": "0.3.51",
   "description": "A private social app for your characters. Turn characters and personas into Creators, post public or locked photos, and watch a simulated audience follow, subscribe, unlock, comment, and message them. By default, it is tuned for an adult experience. Install it, restart Marinara Engine when prompted, then open Home → Slurp.",
   "localizations": {
     "de": {
@@ -77,13 +77,13 @@
     },
     {
       "path": "server.mjs",
-      "sha256": "2b932742d8c0e28b6e6c07da343535512d95234b5d3d9d2142a64ddb9f666e28",
-      "bytes": 3713475
+      "sha256": "15324ab07408c7758d0667eb63fb855f5f000b34a484473241d6e352334fdc4c",
+      "bytes": 1935486
     },
     {
       "path": "client.js",
-      "sha256": "57dff67057e93c3a4d1b6d06a32b87651187bda8bea735dc7ac60595935c0d05",
-      "bytes": 4950087
+      "sha256": "d2fe044450732a3fc262eca249209cb30e17769a2eb15573a06c2d1b9d8f0242",
+      "bytes": 2758599
     },
     {
       "path": "slurp2-logo.png",
@@ -109,21 +109,6 @@
       "path": "src/engine/packages/client/src/slp/locales/pl.json",
       "sha256": "7414b8c8bd5ebbed04695dca19ecfa4d562d3d77dde485ec8995742366904077",
       "bytes": 220418
-    },
-    {
-      "path": "claude-code-plugin/.claude-plugin/plugin.json",
-      "sha256": "9caabe0dc95c7e0d825533719ae3a84cccba625277ec9e39dfd69fae18880fd3",
-      "bytes": 226
-    },
-    {
-      "path": "claude-code-plugin/hooks/hooks.json",
-      "sha256": "1c169616134dd0e6b5effb616a5dd20934f0f968579e316260568e2130d9d67a",
-      "bytes": 91
-    },
-    {
-      "path": "claude-code-plugin/hooks/register.mjs",
-      "sha256": "170f85d7b4e6c96dd0ed3cca9caeb2d39e0487fabe7f40274d5e6405acd6a1af",
-      "bytes": 504
     }
   ],
   "permissions": [

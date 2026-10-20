@@ -548,7 +548,8 @@ export function NoodlerPostComposer({
           className="hidden"
           onChange={handleImageFile}
         />
-        <p className={cn(SLP_TYPE.meta, "flex items-center gap-2 text-[var(--slurp-muted)]")}>
+        {/* A div, not a p: the avatar is a block element, and React (now the Engine's) reports a div inside a p. */}
+        <div className={cn(SLP_TYPE.meta, "flex items-center gap-2 text-[var(--slurp-muted)]")}>
           <Avatar
             account={{ displayName: profile.displayName, avatarUrl: profile.avatarUrl, avatarCrop: profile.avatarCrop }}
             size="xs"
@@ -556,7 +557,7 @@ export function NoodlerPostComposer({
           <span className="truncate">
             {localizeUi("ui.noodle.noodlerpostcomposer.postAs")} {profile.displayName}
           </span>
-        </p>
+        </div>
 
         {media}
         {activeTool === "draw" && (
