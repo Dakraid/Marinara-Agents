@@ -16,6 +16,16 @@
         "minor": { "type": "integer", "minimum": 0 }
       }
     },
+    "forkCapabilityApi": {
+      "description": "Dakraid fork only: fork capability API a package needs (Engine supportedForkCapabilityApi). Upstream Engines refuse this key.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["major", "minor"],
+      "properties": {
+        "major": { "type": "integer", "minimum": 10 },
+        "minor": { "type": "integer", "minimum": 0 }
+      }
+    },
     "builtAgainst": {
       "type": "object",
       "additionalProperties": false,

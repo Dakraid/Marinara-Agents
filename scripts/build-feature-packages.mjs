@@ -597,7 +597,7 @@ const features = [
   },
   {
     id: "card-editor",
-    version: "10.0.3",
+    version: "10.0.4",
     minEngineVersion: "2.4.7",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Card Editor",
@@ -614,7 +614,9 @@ const features = [
     ownedSourcePaths: cardEditorOwnedSourcePaths,
     engineBoundaryPath: join(packagesDir, "card-editor/engine-boundary.json"),
     boundaryDisplayName: "Card Editor",
-    capabilityApi: { major: 1, minor: 68 },
+    capabilityApi: { major: 1, minor: 66 },
+    // Selection action, agent panel, overlay, appendText and structured output are fork-only features.
+    forkCapabilityApi: { major: 10, minor: 0 },
     contributions: {
       selectionActions: { contexts: ["characters"] },
       agentPanel: { agentIds: ["card-editor"] },
@@ -839,7 +841,7 @@ const cardEditorBoundary = selectedFeatures.some((feature) => feature.id === "ca
       sourceRoot: cardEditorSourceRoot,
       boundaryPath: join(packagesDir, "card-editor/engine-boundary.json"),
       displayName: "Card Editor",
-      capabilityApi: { major: 1, minor: 68 },
+      capabilityApi: { major: 1, minor: 66 },
     })
   : null;
 const pokedexBoundary = selectedFeatures.some((feature) => feature.id === "pokedex")
@@ -2038,6 +2040,7 @@ for (const feature of selectedFeatures) {
     ...(feature.capabilityApi && !boundary
       ? { capabilityApi: feature.capabilityApi, builtAgainst: feature.builtAgainst }
       : {}),
+    ...(feature.forkCapabilityApi ? { forkCapabilityApi: feature.forkCapabilityApi } : {}),
     id: feature.id,
     name: feature.name,
     version,

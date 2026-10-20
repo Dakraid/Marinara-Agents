@@ -1,3 +1,7 @@
+## 10.0.4 — 2026-10-21
+
+- Declares the Engine fork's own capability track (fork capability API 10.0) for its selection action, agent panel, overlay and structured output, and upstream capability API 1.66. Upstream Engines now refuse it instead of installing a package they cannot run. Needs an Engine fork build with fork capability API 10.0.
+
 ## 10.0.3 — 2026-10-21
 
 - The selection bar button shows only its icon when the Engine names it in a tooltip (hover or long touch), matching the other bulk actions.
