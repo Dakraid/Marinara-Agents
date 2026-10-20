@@ -20,6 +20,7 @@
  */
 import {
   advanceItemStatus,
+  newItem,
   type BulkSession,
   type BulkSessionBatch,
   type CardFieldUpdate,
@@ -39,6 +40,17 @@ import {
   type LlmResolverHost,
 } from "./llm.ts";
 import type { SessionPromptMaterial, SessionStore } from "./session-store.ts";
+import { renderCharacterFields } from "../../../../shared/src/features/agents/card-editor/card-schema.ts";
+import {
+  assembleTransformPrompt,
+  parseTransformResponse,
+  phaseSettings,
+  previousOutputText,
+  splitsAllowed,
+  transformStructuredRequest,
+  transformUpdates,
+  type TransformSourceResult,
+} from "./transform.ts";
 
 export interface RunnerLogger {
   info(message: string, ...args: unknown[]): void;
@@ -177,7 +189,13 @@ function resolveBehaviorCharacter(
 function succeedItem(item: SessionItem, updates: CardFieldUpdate[], config: BulkSession["config"]) {
   // queued is unreachable through the dispatch path but legal to absorb defensively.
   const running = item.status === "queued" ? advanceItemStatus(item, "running") : item;
-  let next: SessionItem = advanceItemStatus({ ...running, updates }, "succeeded");
+  return routeSucceeded(advanceItemStatus({ ...running, updates }, "succeeded"), config);
+}
+
+/** Review routing for a succeeded item (its updates already set). */
+function routeSucceeded(succeeded: SessionItem, config: BulkSession["config"]): SessionItem {
+  const updates = succeeded.updates ?? [];
+  let next = succeeded;
   if (updates.length === 0) {
     // Auto-approved no-op (ARCH §5): nothing to review, nothing to write.
     return { ...advanceItemStatus(next, "applied"), appliedAt: new Date().toISOString() };
@@ -190,6 +208,44 @@ function succeedItem(item: SessionItem, updates: CardFieldUpdate[], config: Bulk
     return rest;
   }
   return next;
+}
+
+/**
+ * Transform success routing: several characters under split mode wait for the user's split
+ * decision; otherwise the characters stay on this one card (merge mode, a split the user turned
+ * down, or a phase that may not split). Phase 1 results are staged when phase 2 follows.
+ */
+export function settleTransformItem(
+  item: SessionItem,
+  result: TransformSourceResult,
+  config: BulkSession["config"],
+  label: string,
+) {
+  const transform = config.transform!;
+  const phase = item.phase ?? 1;
+  const running = item.status === "queued" ? advanceItemStatus(item, "running") : item;
+  const { splitReason: _previousReason, updates: _previousUpdates, ...rest } = running;
+  let characters = result.characters;
+  if (characters.length > 1 && splitsAllowed(transform, phase) && !item.forceSingle) {
+    const withResult = { ...rest, characters, ...(result.splitReason ? { splitReason: result.splitReason } : {}) };
+    return advanceItemStatus(advanceItemStatus(withResult, "succeeded"), "awaiting-split");
+  }
+  if (characters.length > 1 && item.forceSingle) {
+    const note = `The model returned ${characters.length} characters despite the single-card rule; they are stored together on this card.`;
+    characters = characters.map((character, index) =>
+      index === 0 ? { ...character, issues: [...(character.issues ?? []), note] } : character,
+    );
+  }
+  return finishTransformItem(advanceItemStatus({ ...rest, characters }, "succeeded"), config, label);
+}
+
+/** A succeeded transform item: staged for phase 2, or routed to review with its card writes. */
+export function finishTransformItem(succeeded: SessionItem, config: BulkSession["config"], label: string): SessionItem {
+  const transform = config.transform!;
+  const phase = succeeded.phase ?? 1;
+  if (phase === 1 && transform.phase2?.enabled) return advanceItemStatus(succeeded, "staged");
+  const updates = transformUpdates(succeeded, succeeded.characters ?? [], phaseSettings(transform, phase), label);
+  return routeSucceeded({ ...succeeded, updates }, config);
 }
 
 function failItem(
@@ -398,6 +454,22 @@ async function persistSuccess(
   }));
 }
 
+async function persistTransformSuccess(
+  runner: SessionRunner,
+  task: RunnerTask,
+  results: ReadonlyMap<string, TransformSourceResult>,
+): Promise<void> {
+  await runner.deps.store.updateSession(runner.sessionId, (session) => ({
+    ...session,
+    items: mapItems(session, [...results.keys()], (item) =>
+      item.status === "running" || item.status === "queued"
+        ? settleTransformItem(item, results.get(item.itemId)!, session.config, session.label)
+        : item,
+    ),
+    batches: mapBatch(session, task.batchId, "running", "done"),
+  }));
+}
+
 async function splitBatchCall(
   runner: SessionRunner,
   task: RunnerTask,
@@ -445,6 +517,8 @@ async function runPolicyLoop(
   const sessionId = runner.sessionId;
   const batched = items.length > 1;
   const characterIds = items.map((item) => item.characterId);
+  const phase = items[0]?.phase ?? 1;
+  const structured = config.transform ? transformStructuredRequest(config.transform, phase) : undefined;
   let messages = { system: prompt.system, user: prompt.user };
   let refusalAttempts = 0;
   let refusalReminderAppended = false;
@@ -457,6 +531,7 @@ async function runPolicyLoop(
     try {
       const outcome = await callLlm(languageModels, config.connectionId, messages, {
         signal: controller.signal,
+        ...(structured === undefined ? {} : { structured }),
         providerRetries: config.providerRetries,
         attemptLog: (entry) =>
           logger.info("Card Editor provider call failed", {
@@ -485,9 +560,23 @@ async function runPolicyLoop(
       return;
     }
 
-    const parsed = batched
-      ? parseBatchResponse(output, characterIds, { rebalance: config.rebalance })
-      : parseSingleResponse(output, characterIds[0]!, { rebalance: config.rebalance });
+    const transformParsed = config.transform
+      ? parseTransformResponse(
+          output,
+          items.map((item) => ({ sourceId: item.itemId, name: item.characterName })),
+          config.transform,
+          phase,
+        )
+      : null;
+    const parsed = transformParsed
+      ? {
+          ok: transformParsed.ok,
+          parseError: transformParsed.parseError,
+          results: new Map<string, CardFieldUpdate[]>(),
+        }
+      : batched
+        ? parseBatchResponse(output, characterIds, { rebalance: config.rebalance })
+        : parseSingleResponse(output, characterIds[0]!, { rebalance: config.rebalance });
 
     if (detectRefusal(output, parsed.ok)) {
       if (refusalAttempts < config.refusalRetries) {
@@ -535,6 +624,24 @@ async function runPolicyLoop(
       enqueue(
         runner,
         items.map((item) => ({ itemIds: [item.itemId] })),
+      );
+      return;
+    }
+
+    if (transformParsed) {
+      const missing = items.filter((item) => !transformParsed.results.has(item.itemId));
+      if (transformParsed.dropped.length > 0 || missing.length > 0) {
+        logger.warn("Card Editor transform response dropped entries", {
+          sessionId,
+          batchId: task.batchId,
+          dropped: transformParsed.dropped.slice(0, 20),
+          missing: missing.map((item) => item.itemId),
+        });
+      }
+      await persistTransformSuccess(runner, task, transformParsed.results);
+      enqueue(
+        runner,
+        missing.map((item) => ({ itemIds: [item.itemId] })),
       );
       return;
     }
@@ -609,8 +716,26 @@ async function runTask(runner: SessionRunner, task: RunnerTask): Promise<void> {
       ),
     }));
 
+    const transform = session.config.transform;
     const prompt =
       task.promptOverride ??
+      (transform
+        ? assembleTransformPrompt({
+            transform,
+            phase: items[0]!.phase ?? 1,
+            globalInstruction: session.config.globalInstruction,
+            targets: items.map((item) => ({
+              sourceId: item.itemId,
+              card: cardFromItem(item),
+              ...(item.note === undefined ? {} : { userNote: item.note }),
+              behaviorCharacter: resolveBehaviorCharacter(item, session.items, material, logger),
+              ...(item.forceSingle ? { forceSingle: true } : {}),
+              ...(item.previousOutput === undefined ? {} : { previousOutput: item.previousOutput }),
+            })),
+            lorebooks: material.lorebooks,
+            behaviorCharacter: material.behaviorCharacter,
+          })
+        : null) ??
       assemblePrompt({
         preset: session.config.presetId,
         ...(session.config.customTemplate === undefined ? {} : { customTemplate: session.config.customTemplate }),
@@ -727,7 +852,14 @@ export async function retryItemRun(
       throw new SessionActionError("Only failed items can be retried.", 409);
     }
     const running = advanceItemStatus(item, "running");
-    const { failure: _failure, updates: _updates, pendingOps: _pendingOps, ...rest } = running;
+    const {
+      failure: _failure,
+      updates: _updates,
+      pendingOps: _pendingOps,
+      characters: _characters,
+      splitReason: _splitReason,
+      ...rest
+    } = running;
     return {
       ...session,
       status: "active" as const,
@@ -757,22 +889,153 @@ export async function repairItemRun(
     if (!item) throw new SessionActionError("Card Editor session item not found.", 404);
     if (item.status !== "failed-parse")
       throw new SessionActionError("Only items that failed to parse can be repaired.", 409);
-    const parsed = parseSingleResponse(rawOutput, item.characterId, { rebalance: session.config.rebalance });
-    if (!parsed.ok)
-      throw new SessionActionError(parsed.parseError ?? "The response did not contain parseable updates.", 422);
     const { failure: _failure, ...running } = advanceItemStatus(item, "running");
+    let settled: SessionItem;
+    if (session.config.transform) {
+      const parsed = parseTransformResponse(
+        rawOutput,
+        [{ sourceId: item.itemId, name: item.characterName }],
+        session.config.transform,
+        item.phase ?? 1,
+      );
+      const result = parsed.results.get(item.itemId);
+      if (!parsed.ok || !result) {
+        throw new SessionActionError(parsed.parseError ?? "The response did not contain a usable result.", 422);
+      }
+      settled = settleTransformItem(running, result, session.config, session.label);
+    } else {
+      const parsed = parseSingleResponse(rawOutput, item.characterId, { rebalance: session.config.rebalance });
+      if (!parsed.ok)
+        throw new SessionActionError(parsed.parseError ?? "The response did not contain parseable updates.", 422);
+      settled = succeedItem(running, parsed.results.get(item.characterId) ?? [], session.config);
+    }
     const next = {
       ...session,
-      items: session.items.map((candidate) =>
-        candidate.itemId === itemId
-          ? succeedItem(running, parsed.results.get(item.characterId) ?? [], session.config)
-          : candidate,
-      ),
+      items: session.items.map((candidate) => (candidate.itemId === itemId ? settled : candidate)),
     };
     // A completed session already ran its drain policy, so the repaired item gets it here.
     return session.status === "completed" ? planCompletionEnforcement(next) : next;
   });
   if (!updated) throw new SessionActionError("Card Editor session not found.", 404);
+  return updated;
+}
+
+export type SplitDecision = "accept" | "retry-single" | "reject";
+
+/**
+ * The user's answer to a proposed split. accept: the source item becomes "split" and one child
+ * item per character is inserted right after it (sharing splitGroupId = the source item id);
+ * retry-single: the source re-runs alone with the single-card rule; reject: the source is skipped.
+ * `names` lets the review rename the proposed characters (same order, blanks keep the model's).
+ */
+export async function decideSplitRun(
+  deps: RunnerDeps,
+  sessionId: string,
+  itemId: string,
+  decision: SplitDecision,
+  names: readonly string[] = [],
+): Promise<BulkSession> {
+  const updated = await deps.store.updateSession(sessionId, (session) => {
+    const item = session.items.find((candidate) => candidate.itemId === itemId);
+    if (!item) throw new SessionActionError("Card Editor session item not found.", 404);
+    if (item.status !== "awaiting-split")
+      throw new SessionActionError("Only an item awaiting a split decision can be decided.", 409);
+    if (decision === "reject") {
+      return {
+        ...session,
+        items: session.items.map((candidate) => (candidate === item ? advanceItemStatus(item, "rejected") : candidate)),
+      };
+    }
+    if (decision === "retry-single") {
+      const { characters: _characters, splitReason: _splitReason, ...rest } = advanceItemStatus(item, "running");
+      return {
+        ...session,
+        status: "active" as const,
+        items: session.items.map((candidate) => (candidate === item ? { ...rest, forceSingle: true } : candidate)),
+      };
+    }
+    const characters = item.characters ?? [];
+    const origin = item.lineage ?? { originCharacterId: item.characterId, originName: item.characterName };
+    const settings = phaseSettings(session.config.transform!, item.phase ?? 1);
+    const children = characters.map((character, index) => {
+      const name = names[index]?.trim() ? names[index]!.trim().slice(0, 300) : character.name;
+      // A rename re-renders structured data so root tags and headings carry the new name.
+      const fields =
+        name !== character.name && character.data !== undefined
+          ? renderCharacterFields(settings.schema, name, character.data, settings.format)
+          : character.fields;
+      const base = newItem(item.characterId, name, {
+        ...(item.note === undefined ? {} : { note: item.note }),
+        ...(item.behaviorOverride === undefined ? {} : { behaviorOverride: item.behaviorOverride }),
+      });
+      const child: SessionItem = {
+        ...base,
+        snapshots: { ...item.snapshots },
+        ...(item.phase === undefined ? {} : { phase: item.phase }),
+        parentItemId: item.itemId,
+        characters: [{ ...character, name, fields }],
+        lineage: {
+          originCharacterId: origin.originCharacterId,
+          originName: origin.originName,
+          splitGroupId: item.itemId,
+          splitIndex: index + 1,
+          splitCount: characters.length,
+        },
+      };
+      return finishTransformItem(
+        advanceItemStatus(advanceItemStatus(child, "running"), "succeeded"),
+        session.config,
+        session.label,
+      );
+    });
+    const items = session.items.flatMap((candidate) =>
+      candidate === item ? [advanceItemStatus(item, "split"), ...children] : [candidate],
+    );
+    const next = { ...session, items };
+    // A completed session already ran its drain policy, so the new children get it here.
+    return session.status === "completed" ? planCompletionEnforcement(next) : next;
+  });
+  if (!updated) throw new SessionActionError("Card Editor session not found.", 404);
+  if (decision === "retry-single") {
+    const runner = getOrCreateRunner(deps, sessionId);
+    runner.canceled = false;
+    enqueue(runner, [{ itemIds: [itemId] }]);
+  }
+  return updated;
+}
+
+/**
+ * Phase 2: every staged phase 1 result (split children included, so 30 sources split 1→4 give 33
+ * inputs) becomes a queued phase 2 item that reprocesses the phase 1 result text. Lineage carries
+ * over; the phase 1 items stay as the record of how the run got here.
+ */
+export async function startPhase2Run(deps: RunnerDeps, sessionId: string): Promise<BulkSession> {
+  const updated = await deps.store.updateSession(sessionId, (session) => {
+    const transform = session.config.transform;
+    if (!transform?.phase2?.enabled) throw new SessionActionError("This session has no Phase 2.", 409);
+    if (session.status === "active") throw new SessionActionError("Phase 1 is still running.", 409);
+    if (session.items.some((item) => item.phase === 2)) throw new SessionActionError("Phase 2 already started.", 409);
+    if (session.items.some((item) => item.status === "awaiting-split")) {
+      throw new SessionActionError("Decide every proposed split before starting Phase 2.", 409);
+    }
+    const staged = session.items.filter((item) => item.status === "staged");
+    if (staged.length === 0) throw new SessionActionError("Phase 1 produced no results to refine.", 409);
+    const format = phaseSettings(transform, 1).format;
+    const phase2Items = staged.map((source): SessionItem => ({
+      ...newItem(source.characterId, source.characterName, {
+        ...(source.note === undefined ? {} : { note: source.note }),
+        ...(source.behaviorOverride === undefined ? {} : { behaviorOverride: source.behaviorOverride }),
+      }),
+      snapshots: { ...source.snapshots },
+      phase: 2,
+      parentItemId: source.itemId,
+      previousOutput: previousOutputText(source.characters ?? [], format),
+      lineage: source.lineage ?? { originCharacterId: source.characterId, originName: source.characterName },
+    }));
+    return { ...session, status: "active" as const, items: [...session.items, ...phase2Items] };
+  });
+  if (!updated) throw new SessionActionError("Card Editor session not found.", 404);
+  startRunner(deps, sessionId);
   return updated;
 }
 

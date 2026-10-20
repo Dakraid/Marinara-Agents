@@ -18,6 +18,11 @@ import {
   DEFAULT_BULK_SETTINGS,
   normalizeBulkSettings,
 } from "../../../../shared/src/features/agents/card-editor/schema.ts";
+import {
+  normalizeCardSchema,
+  serializeSchemaText,
+  type CardSchema,
+} from "../../../../shared/src/features/agents/card-editor/card-schema.ts";
 import type { CharacterLike, LorebookLike } from "./context.ts";
 
 export const CARD_EDITOR_PACKAGE_ID = "card-editor";
@@ -28,6 +33,9 @@ const SETTINGS_DOCUMENT_ID = "bulk-settings";
 const SETTINGS_DESCRIPTION = "Card Editor bulk settings";
 const MATERIAL_DESCRIPTION = "Card Editor bulk session prompt material";
 const SESSION_DESCRIPTION = "Card Editor bulk session";
+const SCHEMA_KIND = "card-schema";
+const SCHEMA_DESCRIPTION = "Card Editor transform schema";
+const schemaDocumentId = (id: string) => `schema:${id}`;
 
 /** Prompt material captured at dispatch (Coordinator decision 1: the server never fetches engine
  *  data, so everything a re-dispatch needs is persisted here). */
@@ -81,6 +89,10 @@ export interface SessionStore {
   deleteSession(id: string): Promise<boolean>;
   getSettings(): Promise<BulkSettings>;
   saveSettings(settings: BulkSettings): Promise<BulkSettings>;
+  /** User schemas (built-ins live in code). Stored as canonical text and re-validated on read. */
+  listSchemas(): Promise<CardSchema[]>;
+  saveSchema(schema: CardSchema): Promise<CardSchema>;
+  deleteSchema(id: string): Promise<boolean>;
 }
 
 function materialDocumentId(sessionId: string): string {
@@ -245,6 +257,58 @@ export function createSessionStore(documents: SessionDocumentStore): SessionStor
           });
       if (!saved) throw new Error("Card Editor settings changed while they were being saved. Try again.");
       return settings;
+    },
+
+    async listSchemas() {
+      const records = await documents.list(CARD_EDITOR_PACKAGE_ID, SCHEMA_KIND);
+      const schemas: CardSchema[] = [];
+      for (const record of records) {
+        try {
+          schemas.push(normalizeCardSchema(record.data));
+        } catch {
+          // A corrupt schema document is skipped rather than breaking the library.
+        }
+      }
+      return schemas.sort((a, b) => a.name.localeCompare(b.name));
+    },
+
+    async saveSchema(schema) {
+      const now = new Date().toISOString();
+      const id = schemaDocumentId(schema.id);
+      const data = { id: schema.id, name: schema.name, text: serializeSchemaText(schema.root) };
+      return enqueueWrite(id, async () => {
+        const existing = await documents.getById(CARD_EDITOR_PACKAGE_ID, id);
+        const saved = existing
+          ? await documents.update({
+              id,
+              packageId: CARD_EDITOR_PACKAGE_ID,
+              expectedRevision: existing.revision,
+              name: schema.name,
+              description: SCHEMA_DESCRIPTION,
+              data,
+              updatedAt: now,
+            })
+          : await documents.create({
+              id,
+              packageId: CARD_EDITOR_PACKAGE_ID,
+              kind: SCHEMA_KIND,
+              name: schema.name,
+              description: SCHEMA_DESCRIPTION,
+              data,
+              createdAt: now,
+              updatedAt: now,
+            });
+        if (!saved) throw new Error("The schema changed while it was being saved. Try again.");
+        return { id: schema.id, name: schema.name, root: schema.root };
+      });
+    },
+
+    async deleteSchema(schemaId) {
+      const id = schemaDocumentId(schemaId);
+      return enqueueWrite(id, async () => {
+        const record = await documents.getById(CARD_EDITOR_PACKAGE_ID, id);
+        return record ? documents.remove(CARD_EDITOR_PACKAGE_ID, id, record.revision) : false;
+      });
     },
   };
 }

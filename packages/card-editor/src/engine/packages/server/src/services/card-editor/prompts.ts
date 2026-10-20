@@ -95,7 +95,7 @@ export interface PromptTarget {
 }
 
 export interface AssemblePromptInput {
-  preset: "standard" | "strict" | "rebalance" | "xml-simple" | "xml-complex" | "custom";
+  preset: "standard" | "strict" | "rebalance" | "xml-simple" | "xml-complex" | "custom" | "transform";
   customTemplate?: string;
   globalInstruction: string;
   targets: readonly PromptTarget[];

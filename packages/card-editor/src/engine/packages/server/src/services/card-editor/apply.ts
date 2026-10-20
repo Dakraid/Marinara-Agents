@@ -35,6 +35,9 @@ export type ApplyOperation =
       nameSuffix?: string;
       stripNamePrefix?: string;
       stripNameSuffix?: string;
+      /** Split children: the copy's base name (affixes still apply) and its lineage stamp. */
+      name?: string;
+      extensions?: Record<string, unknown>;
     }
   | { op: "collectForCombine"; characterId: string; fields: Record<string, string> };
 
@@ -91,8 +94,14 @@ function isStale(item: Pick<SessionItem, "snapshots">, currentCardFields: Record
   return normalizeCardPromptText(currentCardFields[field]) !== (item.snapshots[field] ?? "");
 }
 
+/** Lineage stamp written to a split child's data.extensions.cardEditor. */
+export function lineageExtension(item: Pick<SessionItem, "lineage">, label: string): Record<string, unknown> {
+  return { cardEditor: { ...item.lineage, session: label } };
+}
+
 export function planApply(
-  item: Pick<SessionItem, "characterId" | "snapshots" | "updates">,
+  item: Pick<SessionItem, "characterId" | "snapshots" | "updates"> &
+    Partial<Pick<SessionItem, "characterName" | "lineage">>,
   currentCardFields: Record<string, string>,
   options: PlanApplyOptions,
 ): ApplyOperation[] {
@@ -100,6 +109,25 @@ export function planApply(
     (update: CardFieldUpdate) => options.includeFields === undefined || options.includeFields.includes(update.field),
   );
   if (updates.length === 0) return [];
+
+  // A split child is always a NEW card copied from its source, in every save mode except
+  // combined: the source card stays untouched even when the run edits cards in place.
+  if (item.lineage?.splitGroupId && options.saveMode !== "combined") {
+    const fields: Record<string, string> = {};
+    for (const update of updates) fields[update.field] = decodeXmlEntities(update.newText);
+    const affixes = options.saveMode === "duplicate";
+    return [
+      {
+        op: "duplicateThenPatch",
+        characterId: item.characterId,
+        fields,
+        ...(item.characterName ? { name: item.characterName } : {}),
+        extensions: lineageExtension(item, options.label),
+        ...(affixes && options.duplicatePrefix !== undefined ? { namePrefix: options.duplicatePrefix } : {}),
+        ...(affixes && options.duplicateSuffix !== undefined ? { nameSuffix: options.duplicateSuffix } : {}),
+      },
+    ];
+  }
 
   // Duplicate mode copies the CURRENT card, so staleness does not apply; the original is untouched.
   // Combined mode collects each card's produced XML (no per-item write); the session-level combine

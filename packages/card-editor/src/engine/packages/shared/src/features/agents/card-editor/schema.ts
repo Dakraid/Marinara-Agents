@@ -1,3 +1,5 @@
+import { normalizeCardSchema, type CardOutputFormat, type CardSchema } from "./card-schema.ts";
+
 export const SESSION_SCHEMA_VERSION = 1 as const;
 const BULK_EDITABLE_CARD_FIELDS = [
   "description",
@@ -28,14 +30,48 @@ export type ItemStatus =
   | "failed-refusal"
   | "failed-parse"
   | "canceled"
-  | "interrupted";
+  | "interrupted"
+  /** Transform: the source came back as several characters and waits for the user's decision. */
+  | "awaiting-split"
+  /** Transform: the source was split; its characters live on as child items. Terminal. */
+  | "split"
+  /** Transform: a phase result held as input for the next phase. Terminal for its phase. */
+  | "staged";
+
+export type MultiCharacterMode = "split" | "merge";
+export type TransformOutputMode = "structured" | "document";
+
+export interface TransformPhaseConfig {
+  schema: CardSchema;
+  format: CardOutputFormat;
+}
+
+/** Transform task settings (presetId "transform"). The schema is snapshotted at dispatch so a run
+ *  never changes when the user edits the schema library later. */
+export interface TransformConfig extends TransformPhaseConfig {
+  /** structured = the model answers schema-shaped JSON and Marinara renders the format (default);
+   *  document = the model writes each target field's document text itself (legacy method). */
+  outputMode: TransformOutputMode;
+  multiCharacter: MultiCharacterMode;
+  /** Ask the connection for provider-enforced JSON when it supports it. */
+  structuredOutput: boolean;
+  phase2?: {
+    enabled: boolean;
+    instruction: string;
+    allowSplits: boolean;
+    /** Absent = same schema and format as phase 1. */
+    override?: TransformPhaseConfig;
+  };
+}
 
 export interface BulkSessionConfig {
   mode: "individual" | "batched";
   batchSize: number;
   connectionId: string | null;
-  presetId: "standard" | "strict" | "rebalance" | "xml-simple" | "xml-complex" | "custom";
+  presetId: "standard" | "strict" | "rebalance" | "xml-simple" | "xml-complex" | "custom" | "transform";
   customTemplate?: string;
+  /** Required when presetId is "transform". */
+  transform?: TransformConfig;
   globalInstruction: string;
   behaviorCharacterId: string | null;
   globalLorebookIds: string[];
@@ -59,6 +95,24 @@ export interface CardFieldUpdate {
   oldText: string;
   newText: string;
   reason: string;
+}
+
+/** One character produced by a transform call. `fields` holds the rendered card field text. */
+export interface CharacterResult {
+  name: string;
+  fields: Record<string, string>;
+  /** Structured data as answered (structured mode only); kept for phase 2 and review. */
+  data?: unknown;
+  issues?: string[];
+}
+
+/** Where a result came from. Split children share splitGroupId (the split item's id). */
+export interface ItemLineage {
+  originCharacterId: string;
+  originName: string;
+  splitGroupId?: string;
+  splitIndex?: number;
+  splitCount?: number;
 }
 
 export interface SessionItem {
@@ -86,6 +140,16 @@ export interface SessionItem {
   /** Correlation state between planning and apply-result (the ops the client is executing).
    *  Persisted and exposed to session polling so unreported completion work can resume. */
   pendingOps?: unknown[];
+  /** Transform fields. phase absent = 1. */
+  phase?: 1 | 2;
+  parentItemId?: string;
+  /** Set by "Retry as one card": the model is told to keep the card as one character. */
+  forceSingle?: boolean;
+  characters?: CharacterResult[];
+  splitReason?: string;
+  lineage?: ItemLineage;
+  /** Phase 2 input: the phase 1 result text the model reprocesses. */
+  previousOutput?: string;
 }
 
 export interface BulkSessionBatch {
@@ -145,6 +209,9 @@ const ITEM_STATUSES = new Set<ItemStatus>([
   "failed-parse",
   "canceled",
   "interrupted",
+  "awaiting-split",
+  "split",
+  "staged",
 ]);
 const FAILED_ITEM_STATUSES = new Set<ItemStatus>(["failed-provider", "failed-refusal", "failed-parse"]);
 const IN_PROGRESS_ITEM_STATUSES = new Set<ItemStatus>(["queued", "running"]);
@@ -152,7 +219,9 @@ const EDITABLE_FIELDS = new Set<string>(BULK_EDITABLE_CARD_FIELDS);
 const TRANSITIONS: Readonly<Partial<Record<ItemStatus, readonly ItemStatus[]>>> = {
   queued: ["running"],
   running: ["succeeded", "failed-provider", "failed-refusal", "failed-parse"],
-  succeeded: ["awaiting-review", "applied", "needs-review", "duplicated"],
+  succeeded: ["awaiting-review", "applied", "needs-review", "duplicated", "awaiting-split", "staged"],
+  // Split review: accept → split (children carry on), retry as one → running, skip → rejected.
+  "awaiting-split": ["split", "running", "rejected"],
   // Verdict queue resolves held-back auto-approve items (DESIGN §3): force applies, else reject.
   // needs-review is reachable from awaiting-review when the verdict plans hold ops (stale fields);
   // duplicated is the duplicate-mode approve outcome from awaiting-review.
@@ -207,6 +276,54 @@ function boundedInteger(value: unknown, fallback: number, min: number, max: numb
   return Math.max(min, Math.min(max, Math.trunc(value)));
 }
 
+const OUTPUT_FORMATS = ["markdown", "xml", "json"] as const;
+
+function normalizePhaseConfig(value: unknown, field: string): TransformPhaseConfig {
+  const source = sourceRecord(value);
+  if (!source) throw new SchemaError(`${field} must be an object`);
+  let schema: CardSchema;
+  try {
+    schema = normalizeCardSchema(source.schema);
+  } catch (error) {
+    throw new SchemaError(`${field}.schema: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  return { schema, format: enumValue(source.format, "xml", OUTPUT_FORMATS, `${field}.format`) };
+}
+
+export function normalizeTransformConfig(value: unknown): TransformConfig {
+  const source = sourceRecord(value);
+  if (!source) throw new SchemaError("transform settings are required for the transform task");
+  const phase = normalizePhaseConfig(source, "transform");
+  let phase2: TransformConfig["phase2"];
+  if (source.phase2 !== undefined) {
+    const raw = sourceRecord(source.phase2);
+    if (!raw) throw new SchemaError("transform.phase2 must be an object");
+    if (raw.enabled !== undefined && typeof raw.enabled !== "boolean")
+      throw new SchemaError("transform.phase2.enabled must be a boolean");
+    if (raw.allowSplits !== undefined && typeof raw.allowSplits !== "boolean") {
+      throw new SchemaError("transform.phase2.allowSplits must be a boolean");
+    }
+    phase2 = {
+      enabled: raw.enabled === true,
+      instruction: stringValue(raw.instruction, "", "transform.phase2.instruction"),
+      allowSplits: raw.allowSplits === true,
+      ...(raw.override === undefined || raw.override === null
+        ? {}
+        : { override: normalizePhaseConfig(raw.override, "transform.phase2.override") }),
+    };
+  }
+  if (source.structuredOutput !== undefined && typeof source.structuredOutput !== "boolean") {
+    throw new SchemaError("transform.structuredOutput must be a boolean");
+  }
+  return {
+    ...phase,
+    outputMode: enumValue(source.outputMode, "structured", ["structured", "document"], "transform.outputMode"),
+    multiCharacter: enumValue(source.multiCharacter, "split", ["split", "merge"], "transform.multiCharacter"),
+    structuredOutput: source.structuredOutput !== false,
+    ...(phase2 === undefined ? {} : { phase2 }),
+  };
+}
+
 export function normalizeSessionConfig(input: unknown): BulkSessionConfig {
   const source = sourceRecord(input);
   if (!source) throw new SchemaError("session config must be an object");
@@ -232,18 +349,21 @@ export function normalizeSessionConfig(input: unknown): BulkSessionConfig {
   if (saveMode === "combined" && combinedCardName === undefined) {
     throw new SchemaError("combinedCardName is required when saveMode is combined");
   }
+  const presetId = enumValue(
+    source.presetId,
+    "standard",
+    ["standard", "strict", "rebalance", "xml-simple", "xml-complex", "custom", "transform"],
+    "presetId",
+  );
+  const transform = presetId === "transform" ? normalizeTransformConfig(source.transform) : undefined;
 
   return {
     mode: enumValue(source.mode, "individual", ["individual", "batched"], "mode"),
     batchSize: boundedInteger(source.batchSize, 4, 1, 16, "batchSize"),
     connectionId: nullableString(source.connectionId, "connectionId"),
-    presetId: enumValue(
-      source.presetId,
-      "standard",
-      ["standard", "strict", "rebalance", "xml-simple", "xml-complex", "custom"],
-      "presetId",
-    ),
+    presetId,
     ...(source.customTemplate === undefined ? {} : { customTemplate: source.customTemplate }),
+    ...(transform === undefined ? {} : { transform }),
     globalInstruction: stringValue(source.globalInstruction, "", "globalInstruction"),
     behaviorCharacterId: nullableString(source.behaviorCharacterId, "behaviorCharacterId"),
     globalLorebookIds: [...(globalLorebookIds as string[])],
@@ -418,6 +538,16 @@ function isCardFieldUpdate(value: unknown): value is CardFieldUpdate {
   );
 }
 
+function isCharacterResult(value: unknown): value is CharacterResult {
+  const source = sourceRecord(value);
+  return (
+    source !== null &&
+    typeof source.name === "string" &&
+    stringRecord(source.fields) &&
+    (source.issues === undefined || stringArray(source.issues))
+  );
+}
+
 function isSessionItem(value: unknown): value is SessionItem {
   const source = sourceRecord(value);
   if (
@@ -459,6 +589,26 @@ function isSessionItem(value: unknown): value is SessionItem {
     }
   }
   if (source.autoApply !== undefined && typeof source.autoApply !== "boolean") return false;
+  if (source.phase !== undefined && source.phase !== 1 && source.phase !== 2) return false;
+  if (source.forceSingle !== undefined && typeof source.forceSingle !== "boolean") return false;
+  if (
+    source.characters !== undefined &&
+    (!Array.isArray(source.characters) || !source.characters.every(isCharacterResult))
+  ) {
+    return false;
+  }
+  if (source.lineage !== undefined) {
+    const lineage = sourceRecord(source.lineage);
+    if (!lineage || typeof lineage.originCharacterId !== "string" || typeof lineage.originName !== "string")
+      return false;
+  }
+  if (
+    [source.parentItemId, source.splitReason, source.previousOutput].some(
+      (entry) => entry !== undefined && typeof entry !== "string",
+    )
+  ) {
+    return false;
+  }
   if (source.pendingOps !== undefined && !Array.isArray(source.pendingOps)) return false;
   return [source.resultCardId, source.appliedAt, source.batchId].every(
     (entry) => entry === undefined || typeof entry === "string",
@@ -504,7 +654,8 @@ function isStoredConfig(value: unknown): value is BulkSessionConfig {
       source.duplicatePrefix === normalized.duplicatePrefix &&
       source.duplicateSuffix === normalized.duplicateSuffix &&
       source.duplicateRemovePrefix === normalized.duplicateRemovePrefix &&
-      source.duplicateRemoveSuffix === normalized.duplicateRemoveSuffix
+      source.duplicateRemoveSuffix === normalized.duplicateRemoveSuffix &&
+      JSON.stringify(source.transform) === JSON.stringify(normalized.transform)
     );
   } catch {
     return false;

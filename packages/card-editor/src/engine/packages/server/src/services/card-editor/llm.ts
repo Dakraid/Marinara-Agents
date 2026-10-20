@@ -41,13 +41,21 @@ export interface LlmCallResult {
 
 /** Structural subset of the capability language-model host the executor needs. Declared locally
  *  so the module stays importable under plain-Node type stripping without engine type resolution. */
+export interface StructuredRequest {
+  name: string;
+  schema: Record<string, unknown>;
+  strict?: boolean;
+}
+
 export interface LlmResolverHost {
   resolve(connectionId?: string | null): Promise<{
     name: string;
     model: string;
+    /** Engine capability API ≥ 1.69: the tier the connection resolved to. Absent on older hosts. */
+    structuredOutput?: "json_schema" | "json_object" | "none";
     chatComplete(
       messages: readonly { role: "system" | "user"; content: string }[],
-      options?: { signal?: AbortSignal },
+      options?: { signal?: AbortSignal; structured?: StructuredRequest },
     ): Promise<{ content: string | null }>;
   }>;
 }
@@ -134,6 +142,9 @@ export async function callLlm(
   messages: LlmCallMessages,
   options: {
     signal?: AbortSignal;
+    /** Provider-enforced JSON. The host picks json_schema/json_object/none per connection and falls
+     *  back on rejection; older hosts ignore the option, leaving the prompt-only path. */
+    structured?: StructuredRequest;
     providerRetries: number;
     attemptLog?: (entry: LlmAttemptLogEntry) => void;
   },
@@ -149,9 +160,13 @@ export async function callLlm(
     try {
       attempts += 1;
       const resolved = await languageModels.resolve(connectionId ?? undefined);
+      const callOptions = {
+        ...(options.signal ? { signal: options.signal } : {}),
+        ...(options.structured && resolved.structuredOutput !== "none" ? { structured: options.structured } : {}),
+      };
       const completion = await resolved.chatComplete(
         chatMessages,
-        options.signal ? { signal: options.signal } : undefined,
+        Object.keys(callOptions).length > 0 ? callOptions : undefined,
       );
       return {
         output: completion.content ?? "",

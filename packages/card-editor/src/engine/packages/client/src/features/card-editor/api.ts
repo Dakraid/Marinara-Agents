@@ -88,8 +88,13 @@ export type ApplyOperation =
       op: "duplicateThenPatch";
       characterId: string;
       fields: Record<string, string>;
-      nameSuffix: string;
+      nameSuffix?: string;
       namePrefix?: string;
+      stripNamePrefix?: string;
+      stripNameSuffix?: string;
+      /** Split children: the copy's base name and its data.extensions lineage stamp. */
+      name?: string;
+      extensions?: Record<string, unknown>;
     }
   | { op: "collectForCombine"; characterId: string; fields: Record<string, string> };
 

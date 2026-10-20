@@ -25,12 +25,18 @@ import {
   type SessionItem,
 } from "../../../../shared/src/features/agents/card-editor/schema.ts";
 import { normalizeCardPromptText } from "../../../../shared/src/features/agents/card-editor/text.ts";
+import {
+  BUILT_IN_SCHEMAS,
+  normalizeCardSchema,
+} from "../../../../shared/src/features/agents/card-editor/card-schema.ts";
 import { planApply, planDuplicateApplied, type ApplyOperation } from "./apply.ts";
 import type { CharacterLike, LorebookLike } from "./context.ts";
 import {
   cancelSessionRun,
+  decideSplitRun,
   repairItemRun,
   retryItemRun,
+  startPhase2Run,
   startRunner,
   type RunnerDeps,
   type RunnerLogger,
@@ -503,6 +509,64 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
       }),
     );
 
+    app.post("/sessions/:id/items/:itemId/split", async (request, reply) =>
+      handle(reply, async () => {
+        const params = request.params as { id?: unknown; itemId?: unknown };
+        const session = await requireSession(params.id);
+        if (typeof params.itemId !== "string" || !params.itemId) throw badRequest("An item id is required.");
+        const body = sourceRecord(request.body);
+        if (body.decision !== "accept" && body.decision !== "retry-single" && body.decision !== "reject") {
+          throw badRequest('decision must be "accept", "retry-single" or "reject".');
+        }
+        if (body.names !== undefined && (!Array.isArray(body.names) || body.names.length > 12)) {
+          throw badRequest("names must be an array of at most 12 strings.");
+        }
+        const names = ((body.names ?? []) as unknown[]).map((name, index) =>
+          cappedString(name, `names[${index}]`, 300),
+        );
+        return toPublicSession(await decideSplitRun(deps, session.id, params.itemId, body.decision, names));
+      }),
+    );
+
+    app.post("/sessions/:id/phase2", async (request, reply) =>
+      handle(reply, async () => {
+        const session = await requireSession((request.params as { id?: unknown }).id);
+        return toPublicSession(await startPhase2Run(deps, session.id));
+      }),
+    );
+
+    app.get("/schemas", async (_request, reply) =>
+      handle(reply, async () => [...BUILT_IN_SCHEMAS, ...(await store.listSchemas())]),
+    );
+
+    app.put("/schemas/:schemaId", async (request, reply) =>
+      handle(reply, async () => {
+        const schemaId = (request.params as { schemaId?: unknown }).schemaId;
+        if (typeof schemaId !== "string" || !/^[\w-]{1,80}$/.test(schemaId))
+          throw badRequest("A schema id is required.");
+        if (BUILT_IN_SCHEMAS.some((schema) => schema.id === schemaId)) {
+          throw conflict("Built-in schemas cannot be changed; duplicate one instead.");
+        }
+        const body = sourceRecord(request.body);
+        let schema;
+        try {
+          schema = normalizeCardSchema({ ...body, id: schemaId, builtIn: false });
+        } catch (error) {
+          throw badRequest(error instanceof Error ? error.message : String(error));
+        }
+        return store.saveSchema(schema);
+      }),
+    );
+
+    app.delete("/schemas/:schemaId", async (request, reply) =>
+      handle(reply, async () => {
+        const schemaId = (request.params as { schemaId?: unknown }).schemaId;
+        if (typeof schemaId !== "string" || !schemaId) throw badRequest("A schema id is required.");
+        if (!(await store.deleteSchema(schemaId))) throw notFound("Schema not found.");
+        return reply.status(204).send();
+      }),
+    );
+
     app.post("/sessions/:id/items/:itemId/verdict", async (request, reply) =>
       handle(reply, async () => {
         const params = request.params as { id?: unknown; itemId?: unknown };
@@ -712,7 +776,11 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
           }
         }
         // Combining a subset (some items failed or were rejected) is an explicit user decision.
-        if (itemIds.length < session.items.length && body.confirmPartial !== true) {
+        // Split sources and staged phase 1 results are not cards of their own.
+        const resultCount = session.items.filter(
+          (candidate) => candidate.status !== "split" && candidate.status !== "staged",
+        ).length;
+        if (itemIds.length < resultCount && body.confirmPartial !== true) {
           throw conflict("Not every item was collected; repeat with confirmPartial to combine the subset.");
         }
         const wanted = new Set(itemIds);
