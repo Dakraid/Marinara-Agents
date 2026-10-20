@@ -224,6 +224,8 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
   // One post per collab at a time: a second tap while the first is being written is refused.
   const postingNow = new Set<string>();
   app.post("/slurp/ties/collabs/:id/post-now", async (req, reply) => {
+    // The tie beat takes no collab while off, so "Post it now" would write an ordinary post.
+    if (await storylinesOff()) return reply.code(409).send({ error: SLP_STORYLINES_OFF });
     const collabId = id(req);
     if (postingNow.has(collabId)) return reply.code(409).send({ error: "That collab is being posted already." });
     const hostId = (await readSlurpCreatorTiesDocument(app.db)).ties.collabs.find((c) => c.id === collabId)?.hostId;
@@ -358,7 +360,6 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
 
   /** Plan a date, stir some drama, patch it up, end it, or get them back together. */
   app.post("/slurp/ties/couples/:id/steer", async (req, reply) => {
-    if (await storylinesOff()) return reply.code(409).send({ error: SLP_STORYLINES_OFF });
     const parsed = z
       .object({
         steer: z.enum(["date", "drama", "patchUp", "breakUp", "reunite", "moveOn", "forget"]),
@@ -367,6 +368,9 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
       .passthrough()
       .safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
+    // Off, a couple can still end; it cannot date, fight, patch up or get back together.
+    if (["date", "drama", "patchUp", "reunite"].includes(parsed.data.steer) && (await storylinesOff()))
+      return reply.code(409).send({ error: SLP_STORYLINES_OFF });
     const creators = await loadSlurpTieCreators(app.db);
     const before = (await readSlurpCreatorTiesDocument(app.db)).couples;
     const answer = await changeCouples(req, reply, (couples, at) =>
@@ -380,9 +384,10 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
 
   /** Open their shared page (opt-in), or close it with a goodbye post. */
   app.post("/slurp/ties/couples/:id/page", async (req, reply) => {
-    if (await storylinesOff()) return reply.code(409).send({ error: SLP_STORYLINES_OFF });
     const parsed = personaSchema.extend({ open: z.boolean() }).safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
+    // Off, a shared page can close (its goodbye post too); none opens.
+    if (parsed.data.open && (await storylinesOff())) return reply.code(409).send({ error: SLP_STORYLINES_OFF });
     const viewer = await resolveViewerPersona(parsed.data.personaId);
     if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
     const outcome = parsed.data.open

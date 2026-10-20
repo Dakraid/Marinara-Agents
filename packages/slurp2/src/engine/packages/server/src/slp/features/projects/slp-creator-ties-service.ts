@@ -154,7 +154,8 @@ export async function advanceSlurpCreatorTies(db: DB, at = new Date()): Promise<
   const after = await mutateSlurpCreatorTies(db, (document) => {
     const ties = storylinesOn
       ? slurpAdvanceCreatorTies(document.ties, { creators, at, activity, paired, newId })
-      : document.ties;
+      : // Stamped, so bonds and deals keep their 6-hour look and turning Storylines on adds no catch-up.
+        { ...document.ties, advancedAt: at.toISOString() };
     const around = fromTies(ties, at);
     const couples = storylinesOn
       ? slurpAdvanceCouples(document.couples, { creators, at, activity, newId, storylines, ...around })

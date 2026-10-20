@@ -113,6 +113,11 @@ export function slpLiveEvents<T>(settings: SlpExtensionSettings & { platformEven
   return slpExtensionOn(settings, "world") ? settings.platformEvents : [];
 }
 
+/** Arcs that stand still while Storylines is off have no effect: no stat change, no mood, no life line. */
+export function slpArcsLive(settings: SlpExtensionSettings): boolean {
+  return slpExtensionOn(settings, "storylines");
+}
+
 /** Trends run only while Living world is on and its own "Viral trends" switch is. */
 export function slpTrendsOn(settings: SlpExtensionSettings & { trendsEnabled: boolean }): boolean {
   return slpExtensionOn(settings, "world") && settings.trendsEnabled;

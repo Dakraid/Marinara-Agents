@@ -49,6 +49,11 @@ assert.match(world, /maintenanceDue && slpExtensionOn\(settings, "storylines"\) 
 const ties = source("server", "features/projects/slp-creator-ties-service.ts");
 assert.match(ties, /const ties = storylinesOn\s*\? slurpAdvanceCreatorTies\(/u);
 assert.match(ties, /const couples = storylinesOn\s*\? slurpAdvanceCouples\(/u);
+assert.match(
+  ties,
+  /\{ \.\.\.document\.ties, advancedAt: at\.toISOString\(\) \}/u,
+  "bonds and deals keep their 6-hour look",
+);
 assert.match(ties, /bonds: slurpAdvanceBonds\(/u, "bonds still move");
 assert.match(ties, /deals: slurpAdvanceBrandDeals\(/u, "brand deals are Brands & ads'");
 assert.match(
@@ -67,6 +72,21 @@ assert.match(
   /"storylines"\)\)\s*return \{ ok: false, status: 409, error: SLP_STORYLINES_OFF \};/u,
 );
 
+// Frozen arcs have no effect: earnings, growth, the DM life line, thread mood, fan comments.
+for (const [side, path] of [
+  ["server", "data/host/slp-storage-context.ts"],
+  ["server", "data/projects/slp-projects-storage-1.ts"],
+  ["server", "features/creators/slp-chat-context.ts"],
+  ["server", "features/messages/slp-thread-stance.ts"],
+  ["server", "features/audience/slp-fan-activity-service.ts"],
+] as const)
+  assert.match(source(side, path), /slpArcsLive\(/u, path);
+assert.match(
+  source("client", "app/screens/slp-profile-view-model.ts"),
+  /!slpExtensionOn\(slurpSettings, "storylines"\) \? null/u,
+  "no storyline card or effects on the profile",
+);
+
 // Both planners: no arc takes the post.
 assert.match(
   source("server", "features/feed/slp-generation-service.ts"),
@@ -78,7 +98,12 @@ const gate = /if \(await storylinesOff\(\)\) return reply\.code\(409\)\.send\(\{
 const projects = source("server", "features/projects/slp-projects-routes.ts");
 assert.equal(projects.match(gate)?.length, 4, "create, director, generate, template generate");
 const tieRoutes = source("server", "features/projects/slp-creator-ties-routes.ts");
-assert.equal(tieRoutes.match(gate)?.length, 4, "collab, couple, steer, page");
+assert.equal(tieRoutes.match(gate)?.length, 3, "collab, couple, post-now");
+assert.match(
+  tieRoutes,
+  /\["date", "drama", "patchUp", "reunite"\]\.includes\(parsed\.data\.steer\) && \(await storylinesOff\(\)\)/u,
+);
+assert.match(tieRoutes, /if \(parsed\.data\.open && \(await storylinesOff\(\)\)\)/u, "a shared page can still close");
 assert.match(tieRoutes, /collabs\/:id\/push", async \(req, reply\) =>\s*\(await storylinesOff\(\)\)/u);
 assert.match(
   source("server", "features/world/slp-drama-routes.ts"),
