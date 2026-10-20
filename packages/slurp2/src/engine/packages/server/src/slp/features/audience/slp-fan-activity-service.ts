@@ -351,7 +351,7 @@ async function generateFanActivity(input: {
       input.settings.imageContextConnectionId,
       input.connection,
       input.settings.imageCaptionPrompt,
-      // The fan activity run holds the connection's background slot (tryBackgroundConnection).
+      // The fan activity run holds its connection's background slot (tryBackgroundConnection).
       false,
     ),
     onDescribed: (post, description, source) =>

@@ -27,7 +27,10 @@ const fn = (source, name) => {
 // automatic job (Noodle's too) waiting for 30 s.
 const integrations = slurp("base/host/slp-generation-integrations.ts");
 const postProvider = fn(integrations, "createSlurpPostProvider");
-const primary = postProvider.slice(postProvider.indexOf("createSlurpProvider({"), postProvider.indexOf("}) ??"));
+const primaryStart = postProvider.indexOf("createSlurpProvider({");
+const primaryEnd = postProvider.indexOf("}) ??", primaryStart);
+assert.ok(primaryStart !== -1 && primaryEnd > primaryStart, "createSlurpPostProvider's primary provider was not found");
+const primary = postProvider.slice(primaryStart, primaryEnd);
 lacks(primary, /connectionId:/u, "the post's primary provider must not book the connection itself");
 has(postProvider, /admissionMode: input\.admissionMode,/u, "the host's fallback wrapper books the run's mode");
 
@@ -35,10 +38,11 @@ has(postProvider, /admissionMode: input\.admissionMode,/u, "the host's fallback 
 // beside a player's post it is the player's foreground work.
 const beats = slurp("features/feed/slp-post-beat-service.ts");
 const beatJson = fn(beats, "completeSlurpBeatJson");
-has(beatJson, /if \(context\.background\) \{\s*const free = tryBackgroundConnection\(connection\.id, new Date\(\)\);/u);
-has(beatJson, /if \(!free\.acquired\) throw slurpBackgroundBusy\(connection\.id\);\s*free\.release\(\);/u);
+has(beatJson, /if \(context\.background\) slpRequireBackgroundIdle\(connection\.id\);/u);
 has(beatJson, /admissionMode: context\.background \? \{ kind: "none" \} : \{ kind: "foreground" \}/u);
-has(fn(beats, "slurpBackgroundBusy"), /error\.name = "BackgroundConnectionBusyError";/u);
+const idle = fn(integrations, "slpRequireBackgroundIdle");
+has(idle, /const free = tryBackgroundConnection\(connectionId, new Date\(\)\);/u);
+has(idle, /error\.name = "BackgroundConnectionBusyError";\s*throw error;\s*\}\s*free\.release\(\);/u);
 const generation = slurp("features/feed/slp-generation-service.ts");
 assert.equal(
   generation.match(/background: input\.admissionMode\?\.kind === "background"/gu)?.length,
@@ -80,6 +84,10 @@ has(
   /input\.settings\.imageCaptionPrompt,\s*\/\/[^\n]*\n\s*false,\s*\),/u,
   "fan activity holds the background slot, so its captioning books nothing",
 );
+// A caption connection other than the run's is not covered by the run's slot: each caption waits for it.
+const captioning = fn(slurp("base/media/slp-post-image-context.ts"), "slurpImageCaptioning");
+has(captioning, /const yieldToForeground = !bookConnection && connection\.id !== textConnection\.id;/u);
+has(captioning, /chatComplete: async [^\n]*\n\s*if \(yieldToForeground\) slpRequireBackgroundIdle\(connection\.id\);/u);
 for (const file of ["features/audience/slp-fan-activity-service.ts", "features/world/slp-reaction-bank-operation.ts"]) {
   assert.ok(!bookedLast(slurp(file), "connection\\.id"), `${file} holds the background slot and books nothing more`);
 }
@@ -127,8 +135,9 @@ const sprites = new Set([
 assert.ok(sprites.size >= 7, "the guide's pictures were found");
 for (const sprite of sprites) lacks(sprite, /^Mari_|\.png$/u, `${sprite} is a removed painted Mari`);
 const engineRoot = process.env.MARINARA_ENGINE_ROOT;
-const spriteDir = engineRoot ? join(resolve(engineRoot), "packages/client/public/sprites/mari") : null;
-if (spriteDir && existsSync(spriteDir)) {
+if (engineRoot) {
+  const spriteDir = join(resolve(engineRoot), "packages/client/public/sprites/mari");
+  assert.ok(existsSync(spriteDir), `MARINARA_ENGINE_ROOT has no ${spriteDir}`);
   for (const sprite of sprites)
     assert.ok(existsSync(join(spriteDir, sprite)), `the Engine has no sprites/mari/${sprite}`);
 } else {

@@ -4,8 +4,11 @@ import { logger } from "../../../lib/logger.js";
 import { parseGameJsonish } from "../../../services/game/jsonish.js";
 import { resolveStoredChatOptions } from "../../../services/generation/generation-parameters.js";
 import { clampGenerationMaxOutputTokens } from "../../../services/generation/output-token-limits.js";
-import { completeSlurpWithHost, createSlurpPostProvider } from "../../base/host/slp-generation-integrations.js";
-import { tryBackgroundConnection } from "../../../services/generation/connection-admission.js";
+import {
+  completeSlurpWithHost,
+  createSlurpPostProvider,
+  slpRequireBackgroundIdle,
+} from "../../base/host/slp-generation-integrations.js";
 import { requireModelAnswer } from "../../base/model/slp-model-answer.js";
 import { slpSamplingOptions } from "../../base/prompting/slp-sampling-options.js";
 import { listSlurpOpportunities, readSlurpBeatHistory } from "../../data/feed/slp-opportunity-storage.js";
@@ -109,11 +112,7 @@ export async function completeSlurpBeatJson(
   // for 30 s), and books nothing: holding the one background slot would refuse the post it runs beside, and a
   // foreground booking kept every other automatic job (Noodle's too) waiting for 30 s. A player's post books it as
   // their own foreground work.
-  if (context.background) {
-    const free = tryBackgroundConnection(connection.id, new Date());
-    if (!free.acquired) throw slurpBackgroundBusy(connection.id);
-    free.release();
-  }
+  if (context.background) slpRequireBackgroundIdle(connection.id);
   const provider = createSlurpPostProvider({
     connection,
     fallbackConnection: context.fallbackConnection,
@@ -142,13 +141,6 @@ export async function completeSlurpBeatJson(
     },
   );
   return parseGameJsonish(requireModelAnswer(response.content ?? "", label));
-}
-
-/** Named like the Engine's error, so `slpIsAdmissionFailure` treats it as a deferral (see slp-admission.ts). */
-function slurpBackgroundBusy(connectionId: string): Error {
-  const error = new Error(`Connection ${connectionId} is busy with other work; the reading waits for a later post.`);
-  error.name = "BackgroundConnectionBusyError";
-  return error;
 }
 
 const readingText = (context: Pick<SlurpBeatContext, "canonText" | "readingText">) =>
