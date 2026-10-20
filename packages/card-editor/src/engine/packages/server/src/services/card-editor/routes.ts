@@ -46,6 +46,8 @@ import type { SessionPromptMaterial, SessionStore } from "./session-store.ts";
 export interface CardEditorRouteDeps extends RunnerDeps {
   store: SessionStore;
   logger: RunnerLogger;
+  /** The Card Editor agent's Engine config; settings.structuredOutput is the provider JSON switch. */
+  getAgentConfig?: () => Promise<{ settings: Record<string, unknown> } | null>;
 }
 
 /** The snapshot covers every bulk-editable field so the verdict staleness check compares exactly
@@ -298,6 +300,14 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
 
     app.get("/settings", async (_request, reply) => handle(reply, async () => deps.store.getSettings()));
 
+    app.get("/agent-config", async (_request, reply) =>
+      handle(reply, async () => {
+        const agentConfig = deps.getAgentConfig ? await deps.getAgentConfig().catch(() => null) : null;
+        // null = the host cannot tell (older Engine); the dialog then shows its own toggle value.
+        return { structuredOutput: agentConfig ? agentConfig.settings.structuredOutput === true : null };
+      }),
+    );
+
     app.put("/settings", async (request, reply) =>
       handle(reply, async () => {
         const body = sourceRecord(request.body);
@@ -360,6 +370,15 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
           config = { ...config, concurrency: Math.min(16, settings.maxParallelAgents ?? 4) };
         }
         config = coerceConfigForSettings(config, settings);
+        // Provider JSON mode follows the agent's Engine switch (shared by every JSON agent); hosts
+        // without agent config keep what the dialog sent.
+        if (config.transform && deps.getAgentConfig) {
+          const agentConfig = await deps.getAgentConfig().catch(() => null);
+          config = {
+            ...config,
+            transform: { ...config.transform, structuredOutput: agentConfig?.settings.structuredOutput === true },
+          };
+        }
         const behaviorOverrideCards = Object.fromEntries(
           targets
             .filter((target) => target.behaviorOverrideCard !== undefined)

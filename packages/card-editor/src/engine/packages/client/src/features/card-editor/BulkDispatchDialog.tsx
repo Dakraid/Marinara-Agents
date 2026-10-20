@@ -6,14 +6,17 @@ import type {
   SaveMode,
 } from "../../../../shared/src/features/agents/card-editor/schema.js";
 import { computeDuplicateName } from "../../../../shared/src/features/agents/card-editor/text.ts";
+import type { CardOutputFormat, CardSchema } from "../../../../shared/src/features/agents/card-editor/card-schema.ts";
 import {
   behaviorCardMaterial,
   createSession,
+  getAgentStructuredOutput,
   getBulkSettings,
   getHostCharacter,
   getHostCharacterCard,
   getHostLorebookEntries,
   listHostLorebooks,
+  listCardSchemas,
   listLanguageConnections,
   type BulkSettings,
   type HostLorebook,
@@ -24,7 +27,9 @@ import { NumberField, RadioChoice, safeLocalStorage, useDialogFocusTrap } from "
 import { DialogTargets, type DialogTarget } from "./DialogTargets";
 import { translateCardEditor, type CardEditorLocalizationContext } from "./localization";
 import { isBundledPromptPreset, PROMPT_PRESET_TEMPLATES, type PromptPresetId } from "./presets";
+import { SchemaStudio } from "./SchemaStudio";
 import { estimateBulkCalls, loadStoredBulkConfig, normalizeBulkSessionConfig, storeBulkConfig } from "./session-config";
+import { configFromDraft, draftFromConfig, TransformSettings, type TransformDraft } from "./TransformSettings";
 
 /** Overlay dispatch prefill (unified "Process characters" entry — SPEC 2026-10-10 F5.2):
  *  initial values for exactly these fields; everything stays editable, and the remembered
@@ -36,6 +41,9 @@ export interface BulkDispatchPrefill {
   duplicatePrefix?: string;
   combinedCardName?: string;
   label?: string;
+  /** Transform task: the schema to start from and its output format. */
+  schemaId?: string;
+  format?: CardOutputFormat;
 }
 
 export function BulkDispatchDialog({
@@ -92,11 +100,39 @@ export function BulkDispatchDialog({
   const [combinedCardName, setCombinedCardName] = useState(
     prefill?.combinedCardName ?? (prefill?.label ? `${prefill.label} — Cast` : (storedConfig?.combinedCardName ?? "")),
   );
+  const [transformDraft, setTransformDraft] = useState<TransformDraft>(() => ({
+    ...draftFromConfig(storedConfig?.transform),
+    ...(prefill?.schemaId ? { schemaId: prefill.schemaId } : {}),
+    ...(prefill?.format ? { format: prefill.format } : {}),
+  }));
+  const [schemas, setSchemas] = useState<CardSchema[] | null>(null);
+  const [schemasError, setSchemasError] = useState(false);
+  const [agentStructured, setAgentStructured] = useState<boolean | null>(null);
+  const [studioOpen, setStudioOpen] = useState(false);
   const [dispatching, setDispatching] = useState(false);
   const [dispatchError, setDispatchError] = useState<string | null>(null);
   const [bulkSettings, setBulkSettings] = useState<BulkSettings | null>(null);
 
-  const dialogRef = useDialogFocusTrap(true, () => dispatching, onClose);
+  // The schema studio owns focus and Escape while it is open.
+  const dialogRef = useDialogFocusTrap(!studioOpen, () => dispatching, onClose);
+  const transform = presetId === "transform";
+
+  useEffect(() => {
+    if (!transform || schemas !== null) return undefined;
+    const controller = new AbortController();
+    listCardSchemas(controller.signal)
+      .then((list) => {
+        setSchemas(list);
+        setTransformDraft((draft) =>
+          list.some((schema) => schema.id === draft.schemaId) ? draft : { ...draft, schemaId: list[0]?.id ?? "simple" },
+        );
+      })
+      .catch(() => setSchemasError(true));
+    getAgentStructuredOutput(controller.signal)
+      .then((result) => setAgentStructured(result.structuredOutput))
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [transform, schemas]);
 
   // Snapshot: the selection at dialog-open time is the dispatch target list.
   const [initialIds] = useState(() => [...new Set(characterIds)]);
@@ -215,6 +251,7 @@ export function BulkDispatchDialog({
   const unloadableTargets = targets.some((target) => target.loadError || !target.card);
   // Combined mode produces ONE new card — a name is mandatory (schema.ts enforces it too).
   const combinedNameMissing = saveMode === "combined" && combinedCardName.trim().length === 0;
+  const transformBlocked = transform && (schemas === null || schemas.length === 0);
   // Live sample for the duplicate naming preview, computed exactly the way apply-ops will name
   // the copy (shared text.ts helper; blank affixes count as absent). The first target's name is
   // the sample base; a generic stand-in covers the loading/empty state.
@@ -282,10 +319,11 @@ export function BulkDispatchDialog({
   // with the dispatch — target cards, per-target style-override cards (ANY library character),
   // the session-level behavior character, and the global lorebooks' entries.
   const dispatch = async () => {
-    if (dispatching || targets.length === 0 || unloadableTargets || combinedNameMissing) return;
+    if (dispatching || targets.length === 0 || unloadableTargets || combinedNameMissing || transformBlocked) return;
     setDispatching(true);
     setDispatchError(null);
     const config = normalizeBulkSessionConfig({
+      ...(transform ? { transform: configFromDraft(transformDraft, schemas ?? [], agentStructured !== false) } : {}),
       mode,
       batchSize,
       connectionId,
@@ -425,6 +463,7 @@ export function BulkDispatchDialog({
                 value={presetId}
                 onChange={(event) => choosePreset(event.target.value as PromptPresetId)}
               >
+                <option value="transform">{t("cardEditor.dialog.model.presetTransform")}</option>
                 <option value="standard">{t("cardEditor.dialog.model.presetStandard")}</option>
                 <option value="strict">{t("cardEditor.dialog.model.presetStrict")}</option>
                 <option value="rebalance">{t("cardEditor.dialog.model.presetRebalance")}</option>
@@ -446,6 +485,18 @@ export function BulkDispatchDialog({
               </label>
             ) : null}
           </fieldset>
+
+          {transform ? (
+            <TransformSettings
+              localization={localization}
+              draft={transformDraft}
+              schemas={schemas}
+              schemasError={schemasError}
+              agentStructuredOutput={agentStructured}
+              onChange={(patch) => setTransformDraft((draft) => ({ ...draft, ...patch }))}
+              onEditSchemas={() => setStudioOpen(true)}
+            />
+          ) : null}
 
           <fieldset className="ce-section" data-ce-section="instructions">
             <legend className="ce-section-heading">{t("cardEditor.dialog.instructions.title")}</legend>
@@ -570,13 +621,15 @@ export function BulkDispatchDialog({
                 onChange={setConcurrency}
               />
             </div>
-            <label className="ce-choice">
-              <input type="checkbox" checked={rebalance} onChange={(event) => setRebalance(event.target.checked)} />
-              <span className="ce-choice-copy">
-                <strong>{t("cardEditor.dialog.processing.rebalance")}</strong>
-                <small>{t("cardEditor.dialog.processing.rebalanceHint")}</small>
-              </span>
-            </label>
+            {transform ? null : (
+              <label className="ce-choice">
+                <input type="checkbox" checked={rebalance} onChange={(event) => setRebalance(event.target.checked)} />
+                <span className="ce-choice-copy">
+                  <strong>{t("cardEditor.dialog.processing.rebalance")}</strong>
+                  <small>{t("cardEditor.dialog.processing.rebalanceHint")}</small>
+                </span>
+              </label>
+            )}
             <label className="ce-label" htmlFor="ce-completion-mode">
               <span className="ce-label-title">{t("cardEditor.dialog.processing.completionMode")}</span>
               <select
@@ -737,13 +790,26 @@ export function BulkDispatchDialog({
           <button
             type="button"
             className="mari-chrome-control mari-chrome-control--primary mari-chrome-control--small"
-            disabled={dispatching || targets.length === 0 || unloadableTargets || combinedNameMissing}
+            disabled={
+              dispatching || targets.length === 0 || unloadableTargets || combinedNameMissing || transformBlocked
+            }
             onClick={() => void dispatch()}
           >
             {dispatching ? t("cardEditor.dialog.dispatching") : t("cardEditor.dialog.dispatch")}
           </button>
         </div>
       </section>
+      {studioOpen ? (
+        <SchemaStudio
+          localization={localization}
+          initialSchemaId={transformDraft.schemaId}
+          onClose={() => setStudioOpen(false)}
+          onSchemasChanged={(list, selectedId) => {
+            setSchemas(list);
+            setTransformDraft((draft) => ({ ...draft, schemaId: selectedId }));
+          }}
+        />
+      ) : null}
     </div>
   );
 }

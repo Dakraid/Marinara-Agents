@@ -51,7 +51,7 @@ export interface LlmResolverHost {
   resolve(connectionId?: string | null): Promise<{
     name: string;
     model: string;
-    /** Engine capability API ≥ 1.69: the tier the connection resolved to. Absent on older hosts. */
+    /** Engine capability API ≥ 1.342: the tier the connection resolved to. Absent on older hosts. */
     structuredOutput?: "json_schema" | "json_object" | "none";
     chatComplete(
       messages: readonly { role: "system" | "user"; content: string }[],

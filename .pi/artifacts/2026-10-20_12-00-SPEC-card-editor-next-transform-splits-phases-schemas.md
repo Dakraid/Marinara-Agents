@@ -123,12 +123,35 @@ The text form is the XML template:
 - structured-output pass-through (tier `none` and switch off both fall back to the prompt path)
 - document-mode prompt
 
-## Remaining (tracked here as it lands)
+## UI (package client)
 
-- [ ] Workspace UI: enlarged three-region overlay, pipeline rail, lineage tree
-- [ ] New run dialog: transform task, schema picker, format, multi-character, Phase 2, structured output
-- [ ] Split review
-- [ ] Schema studio (builder + text)
-- [ ] Avatar studio (compositor port)
-- [ ] Engine: "Process with Card Editor" prefill moves to the transform task
-- [ ] Changelog, version, catalog rebuild
+- **Workspace** (`styles.ts`): the overlay is `min(112rem, 100%)` × `min(94dvh, 68rem)`. On phones (≤ 48rem) it becomes a full-screen sheet.
+- **Session detail** (`SessionDetail.tsx`):
+  - Pipeline totals come from `transformCounts` in `panel-status.ts` ("30 cards → 33 results"; a pending split counts as its proposed characters).
+  - A Phase 1 / Phase 2 switch, a split-pending chip, and "Start Phase 2" when `phase2Ready`.
+  - Split children are indented under their source, with a lineage chip ("2 of 4 from <origin>") and a schema-issue chip.
+  - "Review split" on `awaiting-split` rows. "Avatar studio" on transform and combined sessions.
+- **Run dialog** (`BulkDispatchDialog.tsx` + `TransformSettings.tsx`):
+  - Preset "Transform to a schema" with schema picker, "Edit schemas", Markdown/XML/JSON, multi-character mode and output mode.
+  - A provider-JSON status line read from `GET /agent-config`.
+  - Phase 2 settings: instruction, optional schema/format override, allow splits.
+  - The dialog's focus trap pauses while the schema studio is open.
+- **Split review** (`SplitReviewDialog.tsx`): source excerpt, reason, proposed characters with editable names, then Accept / Retry as one / Skip.
+- **Schema studio** (`SchemaStudio.tsx`):
+  - Library list (built-ins are read-only; "Save as new" copies them).
+  - Builder: tree, inspector for name/target/hint/attributes/max/repeat, add/move/remove.
+  - Text editor: line-numbered parse errors block saving and the switch back to the builder.
+  - Previews: Markdown, XML, JSON and JSON Schema.
+- **Avatar studio** (`AvatarStudio.tsx` + `avatar-compositor.ts`):
+  - Port of the ST compositor math: square/portrait/best-fit tiling, contain-fit zoom floor, pan/zoom by drag, wheel, pinch and keyboard, export at 512×768 ×1/×2/×4.
+  - Offsets are keyed by character id. Empty cells use a neutral fill.
+  - Uploads the PNG through `POST /api/characters/:id/avatar` to a chosen run card (combined card, split copies, duplicates, or in-place cards).
+- **Overlay prefill** also accepts `presetId: "transform"`, `schemaId` and `format`.
+- **Provider JSON:** `POST /sessions` overrides `transform.structuredOutput` with the agent's Engine switch (`settings.structuredOutput`) when the host exposes `getAgentConfig`.
+
+## Not done / known limits
+
+- There is no drag-and-drop in the schema builder; Up/Down buttons reorder elements.
+- The lineage stamp is visible in the workspace, but the Engine character library does not show it yet.
+- Batches in Phase 2 are planned like Phase 1 batches. A forced-single retry always runs on its own.
+- **Release:** 10.0.2 (fork rule: hotfix bump per package patch).

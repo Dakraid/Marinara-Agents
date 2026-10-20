@@ -372,7 +372,7 @@ export function normalizeSessionConfig(input: unknown): BulkSessionConfig {
     refusalRetries: boundedInteger(source.refusalRetries, 3, 0, 5, "refusalRetries"),
     concurrency: boundedInteger(source.concurrency, 1, 1, 16, "concurrency"),
     saveMode,
-    completionMode: enumValue(source.completionMode, "ask", ["ask", "apply", "duplicate"], "completionMode"),
+    completionMode: enumValue<CompletionMode>(source.completionMode, "ask", ["ask", "apply", "duplicate"], "completionMode"),
     ...(duplicatePrefix === undefined ? {} : { duplicatePrefix }),
     ...(duplicateSuffix === undefined ? {} : { duplicateSuffix }),
     ...(duplicateRemovePrefix === undefined ? {} : { duplicateRemovePrefix }),

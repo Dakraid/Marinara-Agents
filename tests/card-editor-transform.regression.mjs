@@ -27,6 +27,15 @@ import {
   stopAllRunners,
 } from "../packages/card-editor/src/engine/packages/server/src/services/card-editor/runner.ts";
 import { createSessionStore } from "../packages/card-editor/src/engine/packages/server/src/services/card-editor/session-store.ts";
+import {
+  cellCoverDraw,
+  cellMinScale,
+  computeLayoutCells,
+  DEFAULT_COMPOSITOR_LAYOUT,
+  normalizeOffset,
+  resolveGridShape,
+} from "../packages/card-editor/src/engine/packages/client/src/features/card-editor/avatar-compositor.ts";
+import { transformCounts } from "../packages/card-editor/src/engine/packages/client/src/features/card-editor/panel-status.ts";
 import { SINGLE_CARD_RULE } from "../packages/card-editor/src/engine/packages/server/src/services/card-editor/transform.ts";
 
 const [SIMPLE, COMPLEX] = BUILT_IN_SCHEMAS;
@@ -231,8 +240,14 @@ const results = (session) => session.items.filter((item) => !["split", "staged",
   assert.equal(waiting[0].splitReason, "Four band members.");
   assert.equal(settled.items.filter((item) => item.status === "awaiting-review").length, 29);
 
+  assert.deepEqual(
+    [transformCounts(settled).sources, transformCounts(settled).results, transformCounts(settled).splitsPending],
+    [30, 33, 1],
+    "the panel counts a pending split as its proposed characters",
+  );
   const accepted = await decideSplitRun(deps, id, waiting[0].itemId, "accept", ["Mara Voss"]);
   assert.equal(results(accepted).length, 33, "30 in → 33 out (29 + 4)");
+  assert.equal(transformCounts(accepted).results, 33);
   const children = accepted.items.filter((item) => item.parentItemId === waiting[0].itemId);
   assert.deepEqual(
     children.map((child) => child.characterName),
@@ -350,6 +365,39 @@ const results = (session) => session.items.filter((item) => !["split", "staged",
   );
   const doc = await run({ outputMode: "document" }, { count: 1, multi: [] });
   assert.match(doc.languageModels.calls[0].system, /maps each card field to its complete XML document/);
+}
+
+// ── 7. Avatar compositor math (ported from the ST Bulk Combine compositor) ──────────────────
+{
+  assert.deepEqual(resolveGridShape(4, 1), { cols: 2, rows: 2 });
+  assert.deepEqual(resolveGridShape(1, 3), { cols: 1, rows: 1 });
+  const square = computeLayoutCells({ ...DEFAULT_COMPOSITOR_LAYOUT, method: "square", gap: 0 }, 4, 100, 100);
+  assert.deepEqual(
+    square.map((cell) => [cell.x, cell.y, cell.w, cell.h]),
+    [
+      [0, 0, 50, 50],
+      [50, 0, 50, 50],
+      [0, 50, 50, 50],
+      [50, 50, 50, 50],
+    ],
+  );
+  const fixed = computeLayoutCells({ ...DEFAULT_COMPOSITOR_LAYOUT, columns: 3, gap: 10 }, 4, 320, 200);
+  assert.equal(fixed.length, 4);
+  assert.equal(fixed[3].y > 0, true, "four images in three columns wrap to a second row");
+  assert.equal(
+    computeLayoutCells({ ...DEFAULT_COMPOSITOR_LAYOUT, gap: 9999 }, 2, 10, 10).length,
+    2,
+    "a huge gap shrinks instead of erasing cells",
+  );
+  const cell = { x: 0, y: 0, w: 100, h: 100 };
+  assert.equal(cellMinScale(cell, 200, 100), 50, "a 2:1 image fits whole at half the cover zoom");
+  assert.deepEqual(cellCoverDraw(cell, 200, 100, { x: 0, y: 0, scale: 100 }), { dx: -50, dy: 0, dw: 200, dh: 100 });
+  assert.deepEqual(
+    cellCoverDraw(cell, 200, 100, { x: 0, y: 0, scale: 10 }),
+    { dx: 0, dy: 25, dw: 100, dh: 50 },
+    "zoom floors at contain fit",
+  );
+  assert.deepEqual(normalizeOffset({ x: 500, y: -500, scale: 999 }), { x: 100, y: -100, scale: 200 });
 }
 
 stopAllRunners();

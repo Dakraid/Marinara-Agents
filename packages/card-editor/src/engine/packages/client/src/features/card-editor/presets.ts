@@ -1,7 +1,7 @@
 import type { BulkSessionConfig } from "../../../../shared/src/features/agents/card-editor/schema.js";
 
 export type PromptPresetId = BulkSessionConfig["presetId"];
-export type BundledPromptPresetId = Exclude<PromptPresetId, "custom">;
+export type BundledPromptPresetId = Exclude<PromptPresetId, "custom" | "transform">;
 
 /**
  * Prompt preset template bodies for the bulk dialog's Custom prefill.
