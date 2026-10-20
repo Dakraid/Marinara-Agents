@@ -457,10 +457,11 @@ test.describe("standalone Slurp package", () => {
   test("ad settings stay usable and older ads use the tame label", async ({ page }, testInfo) => {
     const errors = collectUnexpectedErrors(page);
     await getSlurpSettings(page);
+    // A fresh install starts on Basic only; the ad settings show once Brands & ads is on.
     expect(
       (
         await page.request.patch("/api/slurp2/settings", {
-          data: { onboarding: "completed", inlineAdsImagesEnabled: false },
+          data: { onboarding: "completed", extAds: true, inlineAdsImagesEnabled: false },
         })
       ).ok(),
     ).toBe(true);
