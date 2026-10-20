@@ -206,6 +206,15 @@ The other cases:
    Storylines › Drama & love. Stir has no settings page; its Overview row opens the Stir tab.
    Hiding Creator-modal blocks waits for slice 3.
 2. **Onboarding.** Add the Basic screen, the Creator step and the one write.
+   As built (slurpothon): the age gate writes nothing and opens the first run; a reload resumes
+   it. The Basic screen is the Opening Day stage (`modules/stage`) with the real locked post card
+   as its live preview; the intro slides, the tour, the chat-bubble welcome and Customize are gone.
+   Heat starts on Suggestive. Leaving the Basic screen writes its answers (Spice, then guidance,
+   then settings, then the image default) and never `onboarding`, because the sign-up scene and
+   the picker read the connection, pace and heat; `completed` is still written last, by the watcher
+   exit or the Creator step. Per-Creator name disclosure is a small control in the picker. Not done:
+   the age gate text that matches the heat, a preview with the full post card (it needs a whole
+   post context), and "What's switched on" (waits for slice 3).
 3. **Real gates.** Do them in this order:
    1. Brands & ads, the first switch on a card.
    2. Living world, with the trends flag.

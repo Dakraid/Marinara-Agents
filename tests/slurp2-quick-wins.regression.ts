@@ -15,19 +15,18 @@ const scheduler = read("server/src/slp/features/world/slp-world-scheduler-servic
 const settings = read("server/src/slp/modules/settings/slp-settings.ts");
 void client;
 
-// 1. Fresh install: the age gate completes onboarding at once and the player lands on the empty
-// feed; the welcome questions run only from "Run setup again".
-const gate = homeState.slice(homeState.indexOf("const enterFromGate"), homeState.indexOf("const closeOnboarding"));
-assert.match(gate, /setOnboardingState\("completed"\)/u);
-assert.match(gate, /onboarding: "completed"/u);
-assert.match(gate, /onNavigate\(\{ mode: "creator", view: "hub" \}\)/u);
-assert.doesNotMatch(gate, /setOnboardingMode/u, "the gate opens no welcome questions");
+// 1. Fresh install: the age gate writes nothing and leads into the first run (the Basic screen);
+// `completed` is written at its end. The empty hub stays for a player who closes it.
+const gate = homeState.slice(
+  homeState.indexOf("const enterFromGate"),
+  homeState.indexOf("useEffect(() => {\n    if (!gateCelebrating)"),
+);
+assert.doesNotMatch(gate, /onboarding: "completed"/u, "the gate no longer completes onboarding");
+assert.match(gate, /setOnboardingState\("entered"\)/u);
+assert.match(gate, /setOnboardingMode\("first-run"\)/u, "the gate opens the first run");
 assert.match(hub, /<SlpEmptyState/u, "the hub has an empty state for the first visit");
 
-// 2. No text connection at the end of the first run: manual pace, and the finish is never blocked.
-assert.match(gate, /api\s*\.get<.*>\("\/connections"\)/u);
-assert.match(gate, /\.catch\(\(\) => false\)/u, "a failed lookup leaves the pace alone");
-assert.match(gate, /slurpActivityPresetPatch\("manual"\)/u);
+// 2. No text connection: manual pace (slpBasicStamp, see slurp2-basic-setup.regression.ts).
 
 // 3. Spice is a page of its own with no SlurpSettings key, so search lists it as a page.
 assert.match(placement, /SLP_BACKSTAGE_PAGE_PLACEMENT[\s\S]*spice: slurp\("spice"/u);

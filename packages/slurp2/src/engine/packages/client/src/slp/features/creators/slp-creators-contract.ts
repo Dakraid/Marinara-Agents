@@ -44,6 +44,8 @@ export { useDeleteCreatorStageProfile } from "./slp-creator-profile-hooks.js";
 export { useBulkCreateCreatorStageProfiles } from "./slp-creator-profile-hooks.js";
 export { useRefreshTargetedCreatorsNow } from "./slp-creator-refresh-hooks.js";
 export { useCreatorEligibleAccounts } from "./slp-creators-hooks.js";
+// The first run's Basic screen reads and sets the Slurp-wide heat.
+export { useSlurpSpice, useSlurpSpiceMutations } from "./slp-spice-hooks.js";
 
 // Settings previews a prompt block against a real Creator, so it needs the roster to choose from.
 export { useCreatorAccounts } from "./slp-creators-hooks.js";

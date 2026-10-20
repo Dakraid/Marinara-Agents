@@ -969,7 +969,7 @@ test("update sheet restores G and the alpha message", async ({ page }, testInfo)
   const errors = collectUnexpectedErrors(page);
   const sheet = page.getByRole("dialog", { name: `What's new in ${SLURP_VERSION}`, exact: true });
   await expect(sheet.getByRole("heading", { name: "Hey, I’m G." })).toBeVisible();
-  await expect(sheet.getByText("The dude responsible for all the bugs.")).toBeVisible();
+  await expect(sheet.getByText(/The dude responsible for\s*all\s*most of the bugs\./)).toBeVisible();
   await expect(sheet.getByText(/You’re testing alpha software/)).toBeVisible();
   await expect(
     sheet.getByText(
