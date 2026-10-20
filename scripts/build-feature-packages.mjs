@@ -13,7 +13,12 @@ import { assertHierarchicalMapsPrivateImportBoundary } from "./hierarchical-maps
 import { assertPackagePrivateImportBoundary } from "./package-engine-boundary.mjs";
 import { withPackageActivationGuidance } from "./catalog-package-guidance.mjs";
 import { writeEnglishPackageLocale } from "./package-locales.mjs";
-import { hostModulesPlugin, runEsbuild, sharedTreeShakingPlugin } from "./esbuild-host-plugins.mjs";
+import {
+  HOST_CAPABILITY_API,
+  hostModulesPlugin,
+  runEsbuild,
+  sharedTreeShakingPlugin,
+} from "./esbuild-host-plugins.mjs";
 import { assertClientHostGates } from "./client-host-gates.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -24,7 +29,6 @@ const engineRoot = resolve(process.env.MARINARA_ENGINE_ROOT || join(repoRoot, ".
 // shell-mode spawning would mangle arguments that contain spaces (the esbuild
 // banner). Resolution goes through the engine workspace that declares each
 // tool, so the pnpm strict layout still applies.
-const engineRequire = createRequire(pathToFileURL(join(engineRoot, "package.json")));
 const engineClientRequire = createRequire(pathToFileURL(join(engineRoot, "packages/client/package.json")));
 // esbuild honors NODE_PATH; `pnpm exec` used to provide the module paths, so
 // list every workspace node_modules a vendored source can import from (pnpm's
@@ -42,16 +46,6 @@ const engineNodePathDirs = [
 ];
 let engineNodePath = engineNodePathDirs.join(process.platform === "win32" ? ";" : ":");
 
-// esbuild's bin is a JS shim on Windows but is optimized into the NATIVE
-// executable by its postinstall on POSIX — running that under node would try
-// to parse machine code as JavaScript. Spawn it directly where it is
-// executable; only Windows needs the node indirection (review finding).
-function spawnEsbuild(args, options) {
-  const bin = engineRequire.resolve("esbuild/bin/esbuild");
-  return process.platform === "win32"
-    ? spawnSync(process.execPath, [bin, ...args], options)
-    : spawnSync(bin, args, options);
-}
 const artifactsDir = join(repoRoot, "artifacts");
 const packagesDir = join(repoRoot, "packages");
 const sourcesRoot = join(repoRoot, "sources/engine");
@@ -80,6 +74,17 @@ const sharedBundleEntry = process.env.MARINARA_ENGINE_SHARED_ROOT
   : packageSharedEntry;
 const MIN_ENGINE_VERSION = "2.3.0";
 const MAX_ENGINE_EXCLUSIVE = "4.0.0";
+// Every package built here takes the Engine's own code through its host (`__MARINARA_HOST__` and api.runtime), so each
+// one requires the capability API that provides it. That, not engine.min, gates them: an Engine without it never
+// installs these versions and keeps the one it has (Pasta-Devs/Marinara-Agents#1487).
+const [hostApiMajor, hostApiMinor] = HOST_CAPABILITY_API.split(".").map(Number);
+const PACKAGE_CAPABILITY_API = Object.freeze({ major: hostApiMajor, minor: hostApiMinor });
+// The one Engine commit every feature package is built against (MARINARA_ENGINE_ROOT). The engine-boundary.json files
+// of World Maps, Long-Term Memory and Memory Nag record the same commit.
+const PACKAGE_BUILT_AGAINST = Object.freeze({
+  engineVersion: "2.5.0",
+  engineCommit: "3ae82c539b93cbbab4d628e185fc571205975566",
+});
 const hierarchicalMapsOwnedSourcePaths = [
   "packages/server/src/routes/spatial-context.routes.ts",
   "packages/server/src/services/spatial-context",
@@ -339,10 +344,10 @@ async function removeOwnedSourceSnapshots(excludedPaths) {
 const features = [
   {
     id: "noodle",
-    version: "1.5.6",
+    version: "1.5.7",
     minEngineVersion: "2.4.6",
-    capabilityApi: { major: 1, minor: 35 },
-    builtAgainst: { engineVersion: "2.4.6", engineCommit: "2f5c8e314f8583cc274b488cfd309a2bc2a214d3" },
+    capabilityApi: PACKAGE_CAPABILITY_API,
+    builtAgainst: PACKAGE_BUILT_AGAINST,
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Noodle",
     description: "A pretend social network where your characters post, share photos, and talk about your chats.",
@@ -419,7 +424,7 @@ const features = [
   },
   {
     id: "slurp2",
-    version: "0.3.49",
+    version: "0.3.51",
     minEngineVersion: "2.4.6",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Slurp",
@@ -473,11 +478,8 @@ const features = [
     clientImport: "packages/client/src/slp/slp-client-entry.tsx",
     packageSourceRoot: slurp2SourceRoot,
     ownedSourcePaths: slurp2OwnedSourcePaths,
-    capabilityApi: { major: 1, minor: 66 },
-    builtAgainst: {
-      engineVersion: "2.4.6",
-      engineCommit: "5a6fafa079c921a3dc1166169f41f318549d595e",
-    },
+    capabilityApi: PACKAGE_CAPABILITY_API,
+    builtAgainst: PACKAGE_BUILT_AGAINST,
     libraryHidden: true,
     // `slurpcoin.svg` is deliberately not shipped: the Engine keeps SVG out of its servable
     // package-asset content types, so the route 404s it whatever the manifest declares. The coin
@@ -497,7 +499,7 @@ const features = [
   },
   {
     id: "long-term-memory",
-    version: "1.4.55",
+    version: "1.4.56",
     minEngineVersion: "2.4.1",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Long-Term Memory",
@@ -514,7 +516,7 @@ const features = [
     ownedSourcePaths: longTermMemoryOwnedSourcePaths,
     engineBoundaryPath: join(packagesDir, "long-term-memory/engine-boundary.json"),
     boundaryDisplayName: "Long-Term Memory",
-    capabilityApi: { major: 1, minor: 6 },
+    capabilityApi: PACKAGE_CAPABILITY_API,
     contributions: {
       agentDetail: { agentIds: ["long-term-memory"] },
       slots: ["chat-settings"],
@@ -522,7 +524,7 @@ const features = [
   },
   {
     id: "memory-nag",
-    version: "1.2.0",
+    version: "1.2.1",
     minEngineVersion: "2.4.4",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Memory Nag",
@@ -539,7 +541,7 @@ const features = [
     ownedSourcePaths: memoryNagOwnedSourcePaths,
     engineBoundaryPath: join(packagesDir, "memory-nag/engine-boundary.json"),
     boundaryDisplayName: "Memory Nag",
-    capabilityApi: { major: 1, minor: 14 },
+    capabilityApi: PACKAGE_CAPABILITY_API,
     agent: {
       description:
         "Remembers loose ends from your roleplay, like promises and open questions, and reminds the AI when they matter.",
@@ -577,7 +579,7 @@ const features = [
   },
   {
     id: "hierarchical-maps",
-    version: "1.5.1",
+    version: "1.5.2",
     minEngineVersion: "2.4.2",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "World Maps",
@@ -594,8 +596,10 @@ const features = [
   {
     id: "conversation-calls",
     name: "Calls",
-    version: "1.1.4",
+    version: "1.1.5",
     minEngineVersion: "2.4.1",
+    capabilityApi: PACKAGE_CAPABILITY_API,
+    builtAgainst: PACKAGE_BUILT_AGAINST,
     description: "Adds live audio and video calls with Conversation characters.",
     kind: ["agent", "conversation-calls"],
     modes: ["conversation"],
@@ -648,8 +652,10 @@ const features = [
   ].map(([id, name, description, clientName, command, aliases, playerLabel]) => ({
     id,
     name,
-    version: "1.0.5",
+    version: "1.0.6",
     maxEngineExclusive: "4.0.0",
+    capabilityApi: PACKAGE_CAPABILITY_API,
+    builtAgainst: PACKAGE_BUILT_AGAINST,
     description,
     agent: { description: withPackageActivationGuidance(id, description) },
     kind: ["agent", "turn-game"],
@@ -699,7 +705,7 @@ const longTermMemoryBoundary = selectedFeatures.some((feature) => feature.id ===
       sourceRoot: longTermMemorySourceRoot,
       boundaryPath: join(packagesDir, "long-term-memory/engine-boundary.json"),
       displayName: "Long-Term Memory",
-      capabilityApi: { major: 1, minor: 6 },
+      capabilityApi: PACKAGE_CAPABILITY_API,
     })
   : null;
 const memoryNagBoundary = selectedFeatures.some((feature) => feature.id === "memory-nag")
@@ -707,7 +713,7 @@ const memoryNagBoundary = selectedFeatures.some((feature) => feature.id === "mem
       sourceRoot: memoryNagSourceRoot,
       boundaryPath: join(packagesDir, "memory-nag/engine-boundary.json"),
       displayName: "Memory Nag",
-      capabilityApi: { major: 1, minor: 14 },
+      capabilityApi: PACKAGE_CAPABILITY_API,
     })
   : null;
 
@@ -873,30 +879,26 @@ export async function selfCheck() {
     const entry = join(temporary, "entry.mjs");
     const metafile = join(temporary, "meta.json");
     await writeFile(entry, source);
-    const result = spawnEsbuild(
-      [
-        entry,
-        "--bundle",
-        "--platform=node",
-        "--format=esm",
-        "--target=node22",
-        "--minify",
-        "--log-limit=0",
-        "--banner:js=import { createRequire as __createRequire } from 'node:module'; const require = __createRequire(import.meta.url);",
-        ...HOST_SERVER_EXTERNALS.map((name) => `--external:${name}`),
-        `--alias:@marinara-engine/shared=${sharedBundleEntry}`,
-        `--metafile=${metafile}`,
-        `--outfile=${output}`,
-      ],
-      {
-        cwd: engineRoot,
-        encoding: "utf8",
-        env: { ...process.env, NODE_PATH: engineNodePath },
+    // Only the vendored shared modules the server uses, as on the client (contract C6).
+    const result = await runEsbuild({
+      absWorkingDir: engineRoot,
+      entryPoints: [entry],
+      bundle: true,
+      platform: "node",
+      format: "esm",
+      target: "node22",
+      minify: true,
+      banner: {
+        js: "import { createRequire as __createRequire } from 'node:module'; const require = __createRequire(import.meta.url);",
       },
-    );
-    if (result.status !== 0) {
-      throw new Error(result.stderr || result.stdout || result.error?.message || `esbuild failed for ${feature.id}`);
-    }
+      external: HOST_SERVER_EXTERNALS,
+      alias: { "@marinara-engine/shared": sharedBundleEntry },
+      nodePaths: engineNodePath.split(delimiter),
+      metafile: true,
+      outfile: output,
+      plugins: [sharedTreeShakingPlugin({ roots: sharedRoots, files: [packageSharedEntry] })],
+    });
+    await writeFile(metafile, JSON.stringify(result.metafile));
     const { assertServerHostGates } = await import("./server-host-gates.mjs");
     assertServerHostGates({
       packageId: feature.id,
@@ -920,11 +922,7 @@ export async function selfCheck() {
         ]);
       }
     } else {
-      await captureEngineSources(
-        metafile,
-        prepared.buildRoot,
-        feature.id === "hierarchical-maps" ? hierarchicalMapsOwnedSourcePaths : [],
-      );
+      await captureEngineSources(metafile, prepared.buildRoot, ownedCapturePaths(feature));
     }
   } finally {
     await rm(temporary, { recursive: true, force: true });
