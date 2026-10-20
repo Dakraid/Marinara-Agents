@@ -26,6 +26,16 @@ export const CARD_EDITOR_STYLES = `
   font-size: 0.75rem;
 }
 
+.ce-selection-button[data-icon-only] {
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+.ce-selection-button[data-icon-only] .ce-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
 .ce-icon {
   width: 0.75rem;
   height: 0.75rem;

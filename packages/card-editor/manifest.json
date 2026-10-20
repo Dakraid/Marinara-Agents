@@ -10,7 +10,7 @@
   },
   "id": "card-editor",
   "name": "Card Editor",
-  "version": "10.0.2",
+  "version": "10.0.3",
   "description": "Rewrites character cards from your directives while preserving each card's voice and aligning it with referenced lore. Runs on a single card or as bulk dispatch across selected characters: edit fields, or transform cards into your own schemas as Markdown, XML or JSON, split cards that describe several characters, refine results in a second phase, and composite avatars, with verdict review and session management in its workspace. Open a character card and choose Run Card Editor, or select characters and choose Card Editor for a bulk session, to propose changes for approval.",
   "engine": {
     "min": "2.4.7",
@@ -50,8 +50,8 @@
     },
     {
       "path": "client.js",
-      "sha256": "fb9bec4998f48bec552af51ac2941334bb6fe4345f3b5f7f7a026fc7f7e6c324",
-      "bytes": 197966
+      "sha256": "adb06e26e9fba40096d36d9192a230b3f73d8b8b9c52bf29ec6c7d817d4c07f5",
+      "bytes": 198232
     }
   ],
   "permissions": [

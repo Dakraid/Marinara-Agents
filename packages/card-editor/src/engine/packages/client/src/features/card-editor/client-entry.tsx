@@ -11,6 +11,8 @@ type CapabilityProps = {
   selectedCharacterIds?: string[];
   selectionCount?: number;
   onRequestClose?: () => void;
+  /** The host bar names the action in a tooltip and wants the icon alone. */
+  iconOnly?: boolean;
   agent?: { id?: string };
   package?: { id?: string; name?: string; version?: string };
   onClose?: () => void;
@@ -28,11 +30,14 @@ function SelectionActionView({ props }: { props: CapabilityProps }) {
   const selectedCharacterIds = props.selectedCharacterIds ?? [];
   const selectionCount = props.selectionCount ?? selectedCharacterIds.length ?? 0;
   const canDispatch = selectionCount >= 1;
+  const label = t("cardEditor.action.open");
 
   return (
     <button
       type="button"
       className="mari-chrome-control ce-selection-button"
+      data-icon-only={props.iconOnly ? "" : undefined}
+      aria-label={props.iconOnly ? label : undefined}
       disabled={!canDispatch}
       onClick={() => {
         // capabilityApi 1.68: the overlay workspace hosts the whole bulk flow;
@@ -42,7 +47,7 @@ function SelectionActionView({ props }: { props: CapabilityProps }) {
       }}
     >
       <SquarePen className="ce-icon" aria-hidden="true" />
-      {t("cardEditor.action.open")}
+      {!props.iconOnly && label}
     </button>
   );
 }

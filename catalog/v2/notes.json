@@ -98,6 +98,12 @@
     "card-editor": {
       "versions": [
         {
+          "version": "10.0.3",
+          "date": "2026-10-21",
+          "notes": "- The selection bar button shows only its icon when the Engine names it in a tooltip (hover or long touch), matching the other bulk actions.",
+          "highlight": false
+        },
+        {
           "version": "10.0.2",
           "date": "2026-10-20",
           "notes": "- New **Transform to a schema** task: rebuild cards into Simple, Complex or your own schemas (new **Schema studio**) and write them as Markdown, XML or JSON. The model answers with structured fields by default; the old \"write the document\" method stays as an option.\n- A card that describes several characters can stay on one card or **split**. Every split asks first (accept, rename, retry as one card, skip); split characters become new linked cards and the source card is never changed. Batches handle splits too.\n- Optional **Phase 2** refines every Phase 1 result before anything is written.\n- **Avatar studio** composites the run's card images into one avatar.\n- Uses provider **structured output** when the agent switch is on and the connection supports it (Engine Capability API 1.342+).\n- The workspace now fills most of the screen and shows run totals and split lineage.",
