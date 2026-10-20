@@ -3,7 +3,7 @@
 // user's chats, so package background work waits while a chat is streaming. The vendored copy kept its
 // own table, which never saw the Engine's foreground work.
 import type { BaseLLMProvider } from "../llm/base-provider.js";
-import { hostIntegrations, requireHostMember, type HostProvider } from "../../lib/host-runtime.js";
+import { hostIntegrations, hostRuntime, requireHostMember, type HostProvider } from "../../lib/host-runtime.js";
 
 export const BACKGROUND_CONNECTION_IDLE_MS = 30_000;
 
@@ -37,9 +37,9 @@ const ADMISSION_ERROR_NAMES = new Set([
   "ConnectionAttemptFinalizationError",
 ]);
 
-/** The Engine's own check; by class name when the Engine has no admission member to ask. */
+/** The Engine's own check; by class name when the Engine has no admission member to ask. Never throws: it runs in catch blocks. */
 export function isConnectionAdmissionFailure(error: unknown): boolean {
-  const host = hostIntegrations().admission;
+  const host = hostRuntime().integrations?.admission;
   if (host) return host.isFailure(error);
   return error instanceof Error && ADMISSION_ERROR_NAMES.has(error.name);
 }

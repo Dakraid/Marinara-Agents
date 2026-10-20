@@ -63,7 +63,9 @@ for (const [id, hits] of Object.entries(found)) {
 for (const [id, listed] of Object.entries(baseline)) {
   for (const fingerprint of listed) {
     if (!found[id]?.includes(fingerprint)) {
-      failures.push(`${id}/server.mjs no longer contains "${fingerprint}"; remove it from ${baselinePath}`);
+      failures.push(
+        `${id}/server.mjs no longer contains "${fingerprint}"; remove it from scripts/server-singleton-baseline.json`,
+      );
     }
   }
 }
