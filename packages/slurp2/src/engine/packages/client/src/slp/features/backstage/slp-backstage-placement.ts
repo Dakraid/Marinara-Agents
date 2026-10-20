@@ -1,5 +1,10 @@
 import type { SlurpSettings } from "../settings/slp-settings-contract";
 import {
+  SLP_EXTENSION_KEYS,
+  slpExtensionOn,
+  type SlpExtensionId,
+} from "../../../../../shared/src/slp/slp-extensions.js";
+import {
   destinationForTarget,
   type SlpBackstageSection,
   type SlpBackstageTarget,
@@ -41,6 +46,13 @@ export const SLP_BACKSTAGE_PAGE_PLACEMENT: Record<string, SlpBackstagePlacement>
 
 /** One searchable, canonical Backstage home for every persisted setting. */
 export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBackstagePlacement> = {
+  extAds: slurp("ads", "brands", "ads", "extension", "brand deals"),
+  // ponytail: no switch on screen until each gate lands (slice 3 PRs 2-4); then drop `internal`.
+  extStorylines: internal(slurp("storylines", "storylines")),
+  extWorld: internal(slurp("events", "living world")),
+  extStir: internal(slurp("stir", "stir")),
+  extSupportDesk: internal(slurp("stir", "support desk")),
+  extEngineLink: internal(slurp("engine", "engine link")),
   inlineAdsEnabled: slurp("ads", "ads", "promotions", "feed"),
   inlineAdsFrequency: slurp("ads", "ad frequency", "promotions"),
   brandDealsPace: slurp("ads", "brand deals", "sponsored posts", "paid partnership"),
@@ -214,3 +226,18 @@ export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBac
   onboarding: internal(place("creators", "new-creators", "setup", "onboarding")),
   viewerPersonaId: internal(place("overview", "all-slurp", "viewer persona", "browse as")),
 };
+
+/** The pages an extension owns. Each gate adds its pages here (slice 3). */
+const SLP_EXTENSION_TARGETS: Partial<Record<SlpBackstageTarget, SlpExtensionId>> = { ads: "ads" };
+
+/** Search skips the settings of a switched-off extension; its own switch stays findable. */
+export function slpPlacementSwitchedOff(
+  key: string,
+  placement: SlpBackstagePlacement,
+  settings: Pick<SlurpSettings, (typeof SLP_EXTENSION_KEYS)[SlpExtensionId]> | undefined,
+): boolean {
+  const extension = SLP_EXTENSION_TARGETS[placement.target];
+  return Boolean(
+    settings && extension && key !== SLP_EXTENSION_KEYS[extension] && !slpExtensionOn(settings, extension),
+  );
+}

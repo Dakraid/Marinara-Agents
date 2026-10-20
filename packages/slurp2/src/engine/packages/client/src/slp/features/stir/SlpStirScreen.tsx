@@ -33,7 +33,7 @@ import { SlpYouTwo } from "./SlpYouTwo";
 import { SlpStirPlaySheet } from "./SlpStirPlaySheet";
 import { SlpStirDesk } from "./SlpStirDesk";
 import { useSlurpSettings } from "../settings/slp-settings-contract";
-import { SLP_STIR_DECK, SLP_STIR_DECK_ORDER } from "./slp-stir-deck";
+import { SLP_STIR_DECK, SLP_STIR_DECK_ORDER, slpStirDeckOn } from "./slp-stir-deck";
 import { slpStirDeckNeed, slpStirLiveLever } from "./slp-stir-screen-model";
 import { SlpStirRecentPlays } from "./SlpStirRecentPlays";
 
@@ -371,11 +371,13 @@ function StartAStory({
   const { t } = useTranslation();
   const [category, setCategory] = useState<SlpStirCategory>(() => (view?.dramas.length ? "drama" : "love"));
   // Polyamory is a Settings › Stir choice (0.3.5): off, its card stays out of the deck.
-  const polyamory = useSlurpSettings().data?.polyamory === true;
+  const settings = useSlurpSettings().data;
+  const polyamory = settings?.polyamory === true;
   // The packs are the drama cards; "start-drama" is how they play, not a card of its own.
   const cards = SLP_STIR_DECK_ORDER.filter(
     (action) =>
       SLP_STIR_DECK[action].category === category &&
+      slpStirDeckOn(action, settings) &&
       action !== "start-drama" &&
       (action !== "add-to-couple" || polyamory),
   );
@@ -546,6 +548,7 @@ export function SlpStirScreen({
   const { t } = useTranslation();
   const query = useSlurpStir(personaId);
   const view: SlpStirView | undefined = query.data;
+  const deckSettings = useSlurpSettings().data;
   const [playing, setPlaying] = useState<{ action: SlpActionName; who?: string[]; pick?: string } | null>(null);
   const [suggested, setSuggested] = useState<{ cards: SlpActionPreview[]; cant: string[]; key: number } | null>(null);
   const preview = useSlurpStirPreview();
@@ -589,7 +592,9 @@ export function SlpStirScreen({
     const ready = (view?.suggestions ?? []).filter((suggestion) => suggestion.step);
     const pick = ready[Math.floor(Math.random() * ready.length)];
     if (pick?.step) return showPreview([pick.step]);
-    const open = SLP_STIR_DECK_ORDER.filter((action) => !slpStirDeckNeed(action, view));
+    const open = SLP_STIR_DECK_ORDER.filter(
+      (action) => slpStirDeckOn(action, deckSettings) && !slpStirDeckNeed(action, view),
+    );
     const action = open[Math.floor(Math.random() * open.length)];
     if (action) setPlaying({ action });
   };

@@ -36,9 +36,12 @@ export function useSlpSettingsDraft({ section, target }: { section: SlpBackstage
     }
   };
 
-  /** Stages a patch for Review and apply; only Overview and the Basic page save at once, with Undo. */
-  const updatePatch = async (patch: Partial<SlurpSettings>) => {
-    if (section !== "overview" && target !== "basic") {
+  /**
+   * Stages a patch for Review and apply; only Overview and the Basic page save at once, with Undo.
+   * `now` saves at once on any page (extension switches: a staged Off is lost on leaving the page).
+   */
+  const updatePatch = async (patch: Partial<SlurpSettings>, now = false) => {
+    if (!now && section !== "overview" && target !== "basic") {
       setDraftPatch((current) => ({ ...current, ...patch }));
       return true;
     }
@@ -67,6 +70,8 @@ export function useSlpSettingsDraft({ section, target }: { section: SlpBackstage
   };
 
   const update = (key: keyof SlurpSettings, value: unknown) => updatePatch({ [key]: value } as Partial<SlurpSettings>);
+  const updateNow = (key: keyof SlurpSettings, value: unknown) =>
+    updatePatch({ [key]: value } as Partial<SlurpSettings>, true);
 
   const restore = async (patch: Partial<SlurpSettings>, message = "Settings saved.") => {
     setSaveState("saving");
@@ -94,6 +99,7 @@ export function useSlpSettingsDraft({ section, target }: { section: SlpBackstage
     settings,
     save,
     update,
+    updateNow,
     updatePatch,
     restore,
   };

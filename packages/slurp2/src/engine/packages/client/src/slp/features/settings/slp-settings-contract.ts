@@ -13,6 +13,13 @@ import type {
 import type { SlurpArcType } from "../projects/slp-projects-contract.js";
 
 export type SlurpSettings = {
+  /** Extension switches (shared slp-extensions.ts); read them through `slpExtensionOn`. */
+  extAds: boolean;
+  extStorylines: boolean;
+  extWorld: boolean;
+  extStir: boolean;
+  extSupportDesk: boolean;
+  extEngineLink: boolean;
   inlineAdsEnabled: boolean;
   inlineAdsFrequency: "light" | "standard" | "frequent";
   brandDealsPace: "off" | "rare" | "normal" | "often";

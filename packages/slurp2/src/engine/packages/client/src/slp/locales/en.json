@@ -6546,5 +6546,9 @@
   "ui.slurp.opening.hint.crowd.quiet": "A few regulars",
   "ui.slurp.opening.hint.crowd.realistic": "Like a real page",
   "ui.slurp.opening.hint.crowd.lively": "Busy comments",
-  "ui.slurp.opening.hint.crowd.generous": "Everyone loves everything"
+  "ui.slurp.opening.hint.crowd.generous": "Everyone loves everything",
+  "ui.slurp.settings.ext.title": "Extension",
+  "ui.slurp.settings.ext.ads.label": "Brands & ads",
+  "ui.slurp.settings.ext.ads.detail": "Inline ads, brand deals, ad pictures and brand packs.",
+  "ui.slurp.settings.ext.offNote": "Switched off: none of it runs or shows. Your settings and brands stay as they are."
 }

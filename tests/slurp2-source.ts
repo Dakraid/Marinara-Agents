@@ -307,6 +307,7 @@ export const SLURP2_SOURCE_MODULES: Record<string, readonly string[]> = {
     "packages/server/src/slp/data/host/slp-storage-mappers.ts",
     "packages/server/src/slp/modules/settings/slp-settings.ts",
     "packages/server/src/slp/modules/settings/slp-settings-image-prompts.ts",
+    "packages/server/src/slp/modules/settings/slp-settings-guidance.ts",
     "packages/server/src/slp/data/host/slp-storage-context.ts",
     "packages/server/src/slp/data/creators/slp-creators-storage-1.ts",
     "packages/server/src/slp/data/creators/slp-creators-storage-2.ts",

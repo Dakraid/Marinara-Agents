@@ -15,7 +15,12 @@ import {
   type SlpBackstageSection,
   type SlpBackstageTarget,
 } from "../../base/navigation/slp-backstage-target";
-import { SLP_BACKSTAGE_PAGE_PLACEMENT, SLP_BACKSTAGE_SETTING_PLACEMENT } from "./slp-backstage-placement";
+import {
+  SLP_BACKSTAGE_PAGE_PLACEMENT,
+  SLP_BACKSTAGE_SETTING_PLACEMENT,
+  slpPlacementSwitchedOff,
+} from "./slp-backstage-placement";
+import { useSlurpSettings } from "../settings/slp-settings-contract";
 import { SLP_BACKSTAGE_LABEL_KEYS } from "./slp-backstage-label-keys";
 
 export const humanize = (value: string) =>
@@ -94,6 +99,7 @@ export function SlurpBackstageSearch({
   const inputRef = useRef<HTMLInputElement>(null);
   // The phone settings home and the page header can both hold a search box.
   const inputId = useId();
+  const settings = useSlurpSettings().data;
   /** The label the setting shows on its page (R1-132); the key made readable only as a last resort. */
   const settingLabel = (key: keyof SlurpSettings) => {
     const labelKey = SLP_BACKSTAGE_LABEL_KEYS[key] ?? `ui.slurp.settings.${key}`;
@@ -126,6 +132,7 @@ export function SlurpBackstageSearch({
       .filter(
         ([key, placement]) =>
           !placement.internal &&
+          !slpPlacementSwitchedOff(key, placement, settings) &&
           [
             key,
             humanize(key),
@@ -142,7 +149,7 @@ export function SlurpBackstageSearch({
       .slice(0, 8);
     // labelFor only reads i18n, which re-renders this component on a language change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query]);
+  }, [query, settings]);
   useEffect(() => setActive(0), [query]);
   const choose = (index: number) => {
     const result = results[index];

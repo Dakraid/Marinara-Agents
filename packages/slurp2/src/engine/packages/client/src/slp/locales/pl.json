@@ -3031,5 +3031,9 @@
   "ui.slurp.opening.hint.crowd.quiet": "Kilku stałych bywalców",
   "ui.slurp.opening.hint.crowd.realistic": "Jak prawdziwa strona",
   "ui.slurp.opening.hint.crowd.lively": "Gęste komentarze",
-  "ui.slurp.opening.hint.crowd.generous": "Wszyscy kochają wszystko"
+  "ui.slurp.opening.hint.crowd.generous": "Wszyscy kochają wszystko",
+  "ui.slurp.settings.ext.title": "Rozszerzenie",
+  "ui.slurp.settings.ext.ads.label": "Marki i reklamy",
+  "ui.slurp.settings.ext.ads.detail": "Reklamy w feedzie, umowy z markami, grafiki reklam i paczki marek.",
+  "ui.slurp.settings.ext.offNote": "Wyłączone: nic z tego nie działa ani się nie pokazuje. Twoje ustawienia i marki zostają bez zmian."
 }

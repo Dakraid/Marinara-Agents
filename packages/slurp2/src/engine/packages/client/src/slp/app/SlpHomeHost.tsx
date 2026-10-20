@@ -32,6 +32,7 @@ import { slpStoryRings, slpStoryStartId } from "../modules/story/slp-story-rings
 import { slurpLiveStories } from "./screens/slp-hub-view";
 import { slpShowPostWhenRendered } from "../modules/post/SlpPostPurposeNote";
 import type { SlpPulseTarget } from "../base/state/slp-task-store";
+import { slpInlineAdsOn } from "../../../../shared/src/slp/slp-extensions.js";
 
 /** Slurp's own tree and its portalled sheets. */
 const SLP_SCOPE_SELECTOR = 'marinara-capability-slurp2, [data-marinara-capability-scope="slurp2"]';
@@ -513,7 +514,7 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
         onToggleSubscription={toggleCreatorSubscription}
         togglePending={toggleSubscription.isPending || toggleFollow.isPending}
         connectionCounts={connectionCountsQuery.data ?? {}}
-        inlineAdsEnabled={slurpSettingsQuery.data?.inlineAdsEnabled !== false}
+        inlineAdsEnabled={Boolean(slurpSettingsQuery.data && slpInlineAdsOn(slurpSettingsQuery.data))}
         inlineAdsFrequency={slurpSettingsQuery.data?.inlineAdsFrequency ?? "standard"}
         storyLifetimeHours={slurpSettingsQuery.data?.storyLifetimeHours ?? 72}
       />

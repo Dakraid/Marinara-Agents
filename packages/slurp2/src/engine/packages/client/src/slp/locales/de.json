@@ -2995,5 +2995,9 @@
   "ui.slurp.opening.hint.crowd.quiet": "Ein paar Stammgäste",
   "ui.slurp.opening.hint.crowd.realistic": "Wie eine echte Seite",
   "ui.slurp.opening.hint.crowd.lively": "Volle Kommentare",
-  "ui.slurp.opening.hint.crowd.generous": "Alle lieben alles"
+  "ui.slurp.opening.hint.crowd.generous": "Alle lieben alles",
+  "ui.slurp.settings.ext.title": "Erweiterung",
+  "ui.slurp.settings.ext.ads.label": "Marken & Werbung",
+  "ui.slurp.settings.ext.ads.detail": "Werbung im Feed, Markendeals, Werbebilder und Marken-Pakete.",
+  "ui.slurp.settings.ext.offNote": "Ausgeschaltet: Nichts davon läuft oder wird angezeigt. Deine Einstellungen und Marken bleiben erhalten."
 }
