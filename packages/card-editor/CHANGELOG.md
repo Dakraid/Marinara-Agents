@@ -1,3 +1,7 @@
+## 10.0.3 — 2026-10-21
+
+- The selection bar button shows only its icon when the Engine names it in a tooltip (hover or long touch), matching the other bulk actions.
+
 ## 10.0.2 — 2026-10-20
 
 - New **Transform to a schema** task: rebuild cards into Simple, Complex or your own schemas (new **Schema studio**) and write them as Markdown, XML or JSON. The model answers with structured fields by default; the old "write the document" method stays as an option.

@@ -112,6 +112,16 @@ ${l.join(`
   font-size: 0.75rem;
 }
 
+.ce-selection-button[data-icon-only] {
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+.ce-selection-button[data-icon-only] .ce-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
 .ce-icon {
   width: 0.75rem;
   height: 0.75rem;
@@ -1838,7 +1848,7 @@ marinara-capability-card-editor[view="selection-action"] {
     transition: none;
   }
 }
-`;function Ds({props:e}){let a=(r,d)=>Q(e.localization,r,d),o=e.selectedCharacterIds??[],l=(e.selectionCount??o.length??0)>=1;return i("button",{type:"button",className:"mari-chrome-control ce-selection-button",disabled:!l,onClick:()=>{Tt({dispatch:{characterIds:o}}),e.onRequestClose?.()},children:[t(Ie,{className:"ce-icon","aria-hidden":"true"}),a("cardEditor.action.open")]})}function Fs({element:e}){let a=e.capabilityProps??{},o=e.getAttribute("view");return o==="selection-action"?t(Ds,{props:a}):o==="agent-panel"?t(Lo,{localization:a.localization,agentName:a.agent?.name}):o==="overlay"?t(xo,{localization:a.localization}):null}function Os({element:e}){let[,a]=c(0);z(()=>{let s=()=>a(l=>l+1);return e.addEventListener("marinara-capability-props",s),()=>e.removeEventListener("marinara-capability-props",s)},[e]);let o=e.capabilityProps?.localization?.direction==="rtl"?"rtl":"ltr";return i("div",{dir:o,style:{display:"contents"},children:[t("style",{children:Io}),t(Fs,{element:e})]})}var at=class extends HTMLElement{constructor(){super(...arguments);Ve(this,"__root",null);Ve(this,"capabilityProps")}attributeChangedCallback(o,s,l){o==="view"&&s!==l&&this.__root&&this.render()}render(){this.__root?.render(t(Os,{element:this}))}connectedCallback(){this.__root||(this.__root=Ut(this)),this.render()}disconnectedCallback(){queueMicrotask(()=>{!this.isConnected&&this.__root&&(this.__root.unmount(),this.__root=null)})}};Ve(at,"observedAttributes",["view"]);var bo="marinara-capability-card-editor";customElements.get(bo)||customElements.define(bo,at);
+`;function Ds({props:e}){let a=(d,n)=>Q(e.localization,d,n),o=e.selectedCharacterIds??[],l=(e.selectionCount??o.length??0)>=1,r=a("cardEditor.action.open");return i("button",{type:"button",className:"mari-chrome-control ce-selection-button","data-icon-only":e.iconOnly?"":void 0,"aria-label":e.iconOnly?r:void 0,disabled:!l,onClick:()=>{Tt({dispatch:{characterIds:o}}),e.onRequestClose?.()},children:[t(Ie,{className:"ce-icon","aria-hidden":"true"}),!e.iconOnly&&r]})}function Fs({element:e}){let a=e.capabilityProps??{},o=e.getAttribute("view");return o==="selection-action"?t(Ds,{props:a}):o==="agent-panel"?t(Lo,{localization:a.localization,agentName:a.agent?.name}):o==="overlay"?t(xo,{localization:a.localization}):null}function Os({element:e}){let[,a]=c(0);z(()=>{let s=()=>a(l=>l+1);return e.addEventListener("marinara-capability-props",s),()=>e.removeEventListener("marinara-capability-props",s)},[e]);let o=e.capabilityProps?.localization?.direction==="rtl"?"rtl":"ltr";return i("div",{dir:o,style:{display:"contents"},children:[t("style",{children:Io}),t(Fs,{element:e})]})}var at=class extends HTMLElement{constructor(){super(...arguments);Ve(this,"__root",null);Ve(this,"capabilityProps")}attributeChangedCallback(o,s,l){o==="view"&&s!==l&&this.__root&&this.render()}render(){this.__root?.render(t(Os,{element:this}))}connectedCallback(){this.__root||(this.__root=Ut(this)),this.render()}disconnectedCallback(){queueMicrotask(()=>{!this.isConnected&&this.__root&&(this.__root.unmount(),this.__root=null)})}};Ve(at,"observedAttributes",["view"]);var bo="marinara-capability-card-editor";customElements.get(bo)||customElements.define(bo,at);
 /*! Bundled license information:
 
 lucide-react/dist/esm/shared/src/utils.js:
