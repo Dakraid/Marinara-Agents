@@ -127,6 +127,19 @@ jobs:
       - name: Validate catalogs, packages, artifacts, and README coverage
         run: node scripts/validate-catalog.mjs
 
+      # Package clients use the Engine's host namespace (__MARINARA_HOST__) instead of bundled copies (#1478, #1487).
+      - name: Test the Engine-owned browser storage gate
+        run: node scripts/tests/host-storage-key-gate.regression.mjs
+
+      - name: Test the host client adapters packages bundle
+        run: node tests/host-client-adapters.regression.mjs
+
+      - name: Test the host module shims and their export check
+        run: node scripts/tests/host-module-shims.regression.mjs
+
+      - name: Test the client bundle host gates
+        run: node scripts/tests/client-host-gates.regression.mjs
+
       - name: Test catalog generatedAt determinism
         run: node scripts/tests/catalog-generatedat-determinism.regression.mjs
 

@@ -1,14 +1,15 @@
 import React, { useEffect, useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "marinara:host";
 import { ChatSettings } from "./ChatSettings";
 import { LongTermMemoryDetail } from "./LongTermMemoryDetail";
 import { LtmLocalizationProvider, translateLtm, useLtmTranslation } from "./localization";
 import type { CapabilityElement } from "./types";
 
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: false } },
-});
+// Long-Term Memory's queries live in the Engine's cache (Pasta-Devs/Marinara-Agents#1487), under keys that start with
+// "long-term-memory", and keep the no-retry default they had.
+queryClient.setQueryDefaults(["long-term-memory"], { retry: false });
 
 class CapabilityClientErrorBoundary extends React.Component<
   { element: CapabilityElement; children: ReactNode },
