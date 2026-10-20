@@ -1,6 +1,7 @@
 // The answers on a stage (docs/CONFIGURATOR.md, Onboarding): big cards in the thumb zone instead of small chips.
 // A tap presses the card, lights the pick up and drops the others, then reports the pick. Props in.
 import { useState, type ReactNode } from "react";
+import { Check } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { slpPrefersReducedMotion } from "../../base/chrome/slp-motion";
 
@@ -101,6 +102,7 @@ export function SlpChoiceCards({
                 </span>
               )}
             </span>
+            {choice.toggle && lit && <Check size={20} className="ms-auto shrink-0" aria-hidden="true" />}
           </button>
         );
       })}

@@ -3810,7 +3810,7 @@
   "ui.slurp.opening.tap.back": "뒤로",
   "ui.slurp.opening.q.crowd": "팬이 얼마나 올까요?",
   "ui.slurp.opening.q.extras": "추가 기능도 넣을까요? 원하는 만큼 탭하세요.",
-  "ui.slurp.opening.say.extras": "고르지 않은 기능은 꺼진 채로 있어요. 나중에 설정에서 언제든 켜고 끌 수 있어요.",
+  "ui.slurp.opening.say.extras": "고르지 않은 기능은 꺼진 채로 있어요.",
   "ui.slurp.opening.tap.extrasDone": "완료",
   "ui.slurp.opening.a.extras.none": "지금은 추가 기능 없이",
   "ui.slurp.opening.hint.crowd.quiet": "단골 몇 명",

@@ -6547,7 +6547,7 @@
   "ui.slurp.opening.tap.back": "Back",
   "ui.slurp.opening.q.crowd": "How many fans show up?",
   "ui.slurp.opening.q.extras": "Want a few extras on top? Tap all you like.",
-  "ui.slurp.opening.say.extras": "Everything you leave out stays off. You can switch any of it on or off later in Settings.",
+  "ui.slurp.opening.say.extras": "Everything you leave out stays off.",
   "ui.slurp.opening.tap.extrasDone": "Done",
   "ui.slurp.opening.a.extras.none": "No extras for now",
   "ui.slurp.opening.hint.crowd.quiet": "A few regulars",

@@ -140,6 +140,11 @@ assert.equal(
   "world,stir",
   "a rerun starts on today's switches",
 );
+assert.equal(
+  slpBasicDefaults(ctx({ settings: { ...settings, extAds: true, extWorld: true } })).extras,
+  "ads,world",
+  "a first run on an install with switches on keeps them",
+);
 assert.deepEqual(slpBasicExtras("stir,nope,ads"), ["ads", "stir"]);
 const extraKeys = ["extAds", "extStorylines", "extWorld", "extStir", "extSupportDesk"];
 const picked = slpBasicStamp({ answers: { ...fast.answers, extras: "ads,stir" }, unlocked: true }, ctx()).settings;
@@ -164,17 +169,20 @@ assert.deepEqual(slpBasicStamp({ answers: { extras: "" }, unlocked: false }, ctx
 assert.deepEqual(slpBasicCleanState({ answers: { extras: "ads,stir" } }).answers, { extras: "ads,stir" });
 assert.deepEqual(slpBasicCleanState({ answers: { extras: "stir,ads" } }).answers, {}, "only the written form");
 assert.deepEqual(slpBasicCleanState({ answers: { extras: "" } }).answers, { extras: "" }, "none is an answer");
+assert.equal(slpBasicCleanState({ answers: {}, extrasDraft: "ads" }).extrasDraft, "ads", "a reload keeps the picks");
+assert.equal(slpBasicCleanState({ answers: {}, extrasDraft: "x" }).extrasDraft, undefined);
 const screen = slurp2Source(`packages/slurp2/src/engine/packages/client/src/slp/features/onboarding/SlpBasicSetup.tsx`);
 assert.match(screen, /toggle: true/u, "the extras cards toggle, they do not move on");
 assert.match(
   screen,
-  /if \(firstRun\) \{\s*save\(null\);\s*markSlpSwitchedOnNoteSeen\(\);/u,
-  "a new install skips the note",
+  /if \(state\.answers\.extras !== undefined\) markSlpSwitchedOnNoteSeen\(\);/u,
+  "only who saw the extras skips the note",
 );
 const overview = slurp2Source(
   "packages/slurp2/src/engine/packages/client/src/slp/features/backstage/SlpBackstageOverviewPanel.tsx",
 );
 assert.match(overview, /useState\(\(\) => !slpSwitchedOnNoteSeen\(\)\)/u, "What's switched on shows once");
+assert.match(overview, /switchedOnNote && settings\.onboarding === "completed"/u, "not before onboarding");
 assert.match(overview, /markSlpSwitchedOnNoteSeen\(\);\s*setSwitchedOnNote\(false\);/u);
 
 // 9. Wiring: the age gate opens the first run; the panel shows the Basic screen before the wizard.

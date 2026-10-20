@@ -437,7 +437,7 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
         <h2 id="slurp-overview-yours" className="text-sm font-black">
           {t("ui.slurp.settings.overview.yours.title", { defaultValue: "Your Slurp" })}
         </h2>
-        {switchedOnNote && (
+        {switchedOnNote && settings.onboarding === "completed" && (
           <div
             role="note"
             className="mt-2 flex flex-col gap-2 rounded-lg bg-[var(--slurp-canvas)] p-3 text-xs leading-5 sm:flex-row sm:items-center"

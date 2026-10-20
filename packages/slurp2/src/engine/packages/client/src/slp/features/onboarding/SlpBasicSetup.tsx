@@ -118,8 +118,6 @@ export function SlpBasicSetup({
   const [resumed] = useState(() => state !== EMPTY);
   const [history, setHistory] = useState<number | null>(null);
   const [celebrate, setCelebrate] = useState(false);
-  /** "Add extras" picks several: the picks so far, kept until "Done". */
-  const [extras, setExtras] = useState<string | null>(null);
   const update = (next: SlpBasicState) => {
     setState(next);
     if (firstRun) save(next);
@@ -204,7 +202,8 @@ export function SlpBasicSetup({
       }
       if (firstRun) {
         save(null);
-        markSlpSwitchedOnNoteSeen();
+        // Only a player who saw "Add extras" (or took the fast lane) has seen what is on.
+        if (state.answers.extras !== undefined) markSlpSwitchedOnNoteSeen();
       }
       setCelebrate(true);
       onLead(lead, stamp);
@@ -220,7 +219,7 @@ export function SlpBasicSetup({
     } else if (next === "extras") {
       // ponytail: each card says what it adds in a sentence; the sample components (an inline ad, a
       // poll, a holiday banner, a lever card) wait for the real cards' live actions to split out.
-      const picked = slpBasicExtras(extras ?? answers.extras);
+      const picked = slpBasicExtras(state.extrasDraft ?? answers.extras);
       cards = {
         choices: [
           ...SLP_BASIC_EXTRAS.map((id) => ({
@@ -238,12 +237,13 @@ export function SlpBasicSetup({
         onSelect: (id) => {
           if (id !== "done") {
             const on = picked.includes(id as (typeof picked)[number]);
-            return setExtras(
-              SLP_BASIC_EXTRAS.filter((extra) => (extra === id ? !on : picked.includes(extra))).join(","),
+            const extrasDraft = SLP_BASIC_EXTRAS.filter((extra) => (extra === id ? !on : picked.includes(extra))).join(
+              ",",
             );
+            return update({ ...state, extrasDraft });
           }
-          setExtras(null);
-          update({ ...state, answers: { ...state.answers, extras: picked.join(",") } });
+          const { extrasDraft: _draft, ...rest } = state;
+          update({ ...rest, answers: { ...state.answers, extras: picked.join(",") } });
         },
       };
     } else if (next) {

@@ -116,6 +116,8 @@ export type SlpBasicState = {
   answers: SlpBasicAnswers;
   /** The `locked` beat was played (or skipped with the fast lane). */
   unlocked: boolean;
+  /** "Add extras" picks before "Done", so a reload keeps them. */
+  extrasDraft?: string;
 };
 
 const pick = (list: readonly SlpBasicConnection[], fallback: string) =>
@@ -141,7 +143,11 @@ export function slpBasicDefaults(context: SlpBasicContext): Required<Omit<SlpBas
     imageConnection: pick(context.imageConnections, ""),
     crowd: firstRun || crowd === "custom" || crowd === "off" ? "realistic" : crowd,
     names: "open",
-    extras: (firstRun ? ["storylines"] : SLP_BASIC_EXTRAS.filter((id) => slpExtensionOn(settings, id))).join(","),
+    // An install that already has switches on keeps them, first run or not.
+    extras: (firstRun && !SLP_BASIC_EXTRAS.some((id) => slpExtensionOn(settings, id))
+      ? ["storylines"]
+      : SLP_BASIC_EXTRAS.filter((id) => slpExtensionOn(settings, id))
+    ).join(","),
   };
 }
 
@@ -264,5 +270,10 @@ export function slpBasicCleanState(raw: unknown): SlpBasicState {
         answers[question] = value;
     }
   }
-  return { answers: answers as SlpBasicAnswers, unlocked: source.unlocked === true };
+  const draft = (source as { extrasDraft?: unknown }).extrasDraft;
+  return {
+    answers: answers as SlpBasicAnswers,
+    unlocked: source.unlocked === true,
+    ...(typeof draft === "string" && slpBasicExtras(draft).join(",") === draft ? { extrasDraft: draft } : {}),
+  };
 }
