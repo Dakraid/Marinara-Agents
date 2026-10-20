@@ -60,9 +60,6 @@ jobs:
           node tests/conversation-calls-summary.regression.mjs
           node tests/calls-swarmui-video.regression.mjs
 
-      - name: Test the Claude (Subscription) provider Noodle, Slurp and Calls bundle
-        run: node --experimental-transform-types tests/claude-subscription-overlay.regression.mjs
-
       - name: Test Memory Nag recall selection
         run: npx tsx tests/memory-nag-selection.regression.ts
 
@@ -98,6 +95,14 @@ jobs:
 
       - name: Test vendored Engine drift detection
         run: node scripts/tests/vendored-engine.regression.mjs
+
+      # Calls, Noodle and Slurp reach the Engine's live services through api.runtime instead of bundling copies
+      # (sources/host-runtime-overlay). The gates fail a package server that ships a copy again.
+      - name: Test the package server host runtime and its gates
+        run: |
+          node --experimental-transform-types tests/host-runtime-overlay.regression.mjs
+          node scripts/tests/server-host-gates.regression.mjs
+          node scripts/tests/server-singleton-gate.regression.mjs
 
       - name: Test catalog lane routing and build provenance
         run: node scripts/test-catalog-lanes.mjs
