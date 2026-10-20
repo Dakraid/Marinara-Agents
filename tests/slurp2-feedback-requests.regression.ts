@@ -5,6 +5,16 @@ import { join } from "node:path";
 import { slurpCommissionBrief } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/slp-world-copy.ts";
 import { SLURP_COMMISSION_ASKS } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-world.ts";
 import {
+  slpSceneMomentFilled,
+  slpSceneUpdateState,
+} from "../packages/slurp2/src/engine/packages/client/src/slp/features/onboarding/slp-scene-draft.ts";
+import { buildSlpSceneTurnMessages } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/onboarding/slp-scene-prompt.ts";
+import { slurpCoupleFit } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-fit.ts";
+import {
+  normalizeSlpCreatorSteering,
+  slpRomanceAllows,
+} from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-creator-steering.ts";
+import {
   slurpThreadSummaryMessages,
   slurpThreadTranscript,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/messages/slp-thread-export.ts";
@@ -173,5 +183,85 @@ assert.match(
 assert.match(replies, /Do not quote private DMs in public/u);
 // DM lines can name a protected identity, so the relationship line is redacted like the comment.
 assert.match(replies, /relationship: protect\(input\.relationship \?\? "no history with this creator yet"\)/u);
+
+// ── R3 + R4: a blocked pair never becomes a couple; a family bond keeps the pair from an automatic one ──
+const free = { off: false, only: [], never: [] };
+assert.equal(slpRomanceAllows({ id: "a", romance: free }, { id: "b", romance: free }), true);
+assert.equal(slpRomanceAllows({ id: "a", romance: { ...free, never: ["b"] } }, { id: "b", romance: free }), false);
+assert.equal(slpRomanceAllows({ id: "a", romance: free }, { id: "b", romance: { ...free, never: ["a"] } }), false);
+assert.deepEqual(normalizeSlpCreatorSteering({ romance: { off: false, only: [], never: ["b", "b", ""] } }).romance, {
+  off: false,
+  only: [],
+  never: ["b"],
+});
+assert.deepEqual(normalizeSlpCreatorSteering({}).romance.never, [], "older saves read as nobody blocked");
+{
+  const person = (id: string, kin: string[] = []) =>
+    ({ id, name: id, text: "", tags: [], automatic: true, gender: null, kin }) as never;
+  assert.equal(slurpCoupleFit(person("mum", ["kid"]), person("kid", ["mum"])).misfit, "family");
+  assert.equal(slurpCoupleFit(person("mum"), person("kid")).fits, true, "no family bond, no block");
+  const lovers = { ...(person("mum", ["kid"]) as object), cardPartners: ["kid"] } as never;
+  assert.equal(
+    slurpCoupleFit(lovers, person("kid", ["mum"])).misfit,
+    "family",
+    "a family bond beats a card that says lovers",
+  );
+}
+// The tie rules read the active family bonds into `kin`.
+assert.match(
+  readFileSync(join(client, "../../../server/src/slp/features/projects/slp-creator-ties-service.ts"), "utf8"),
+  /bond\.kind === "family" && slurpBondActive\(bond\)[\s\S]*?kin: family\.flatMap/u,
+);
+
+// ── R6: an old Creator's page filled in through the role-play sign-up ──
+{
+  const page = {
+    displayName: "Riley",
+    handle: "riley",
+    bio: "Gym and cats.",
+    stagePersonality: "",
+    appearance: "Tall, red hair.",
+    wardrobe: "",
+    locations: "",
+    gender: "female" as const,
+    tags: ["gym", "cats", "cosplay"],
+  };
+  const state = slpSceneUpdateState(page, { turnOns: ["lingerie"], hardNoes: [] }, { level: "suggestive" });
+  assert.deepEqual(
+    [...state.locked].sort(),
+    ["appearance", "bio", "displayName", "gender", "handle", "spice", "tags", "turnOns"],
+    "what the page has stays (their spice too); the scene asks about the rest",
+  );
+  assert.equal(state.draft.spice, null, "saving never writes a level, so a Slurp-wide one stays Slurp-wide");
+  assert.equal(state.draft.turnOns, "lingerie");
+  const prompt = buildSlpSceneTurnMessages({
+    request: {
+      preset: "support",
+      moment: "voice",
+      action: { kind: "continue" },
+      transcript: [],
+      draft: state.draft,
+      locked: state.locked,
+      direction: "",
+      disclosureMode: "hinted",
+      updating: true,
+    },
+    newcomerCanon: "",
+    allowedTags: [],
+  })[0]!.content;
+  assert.match(prompt, /already has a live Creator page/u);
+  assert.doesNotMatch(prompt, /get the newcomer's Creator page live tonight/u);
+  // An update asks until every field of a step is there: wardrobe after the look, hard noes after turn-ons.
+  const half = { ...state.draft, appearance: "Tall.", wardrobe: "", turnOns: "x", hardNoes: "" };
+  assert.equal(slpSceneMomentFilled("look", half, false, true), false);
+  assert.equal(slpSceneMomentFilled("limits", half, false, true), false);
+  assert.equal(slpSceneMomentFilled("look", half), true, "a new sign-up moves on after the first");
+  const model = src("features/onboarding/slp-scene-model.ts");
+  // Saving an update keeps the clothing style the page has.
+  assert.match(model, /setup\.existing\?\.clothingStyle \? \{ clothingStyle: setup\.existing\.clothingStyle \}/u);
+  // No second first post and no transcript pasted into an old thread; closing early saves nothing.
+  assert.match(model, /if \(setup\.existing\) return false;/u);
+  assert.match(model, /if \(!id \|\| setup\.existing\) return false;/u);
+}
 
 console.log("slurp2 feedback requests regression passed");

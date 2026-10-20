@@ -13,7 +13,7 @@ import { createSlurpStorage } from "../../data/slp-storage.js";
 import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
 import { readSlurpCardPeople, readSlurpCreatorFitText } from "../../data/creators/slp-flavour-source.js";
 import { SLURP_PARTNER_RELATION } from "../../modules/creators/slp-spice.js";
-import { slurpAdvanceBonds, slurpBondsFor } from "../../modules/projects/slp-creator-bonds.js";
+import { slurpAdvanceBonds, slurpBondActive, slurpBondsFor } from "../../modules/projects/slp-creator-bonds.js";
 import { mutateSlurpCreatorTies, readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ties-storage.js";
 import { slurpCreatorReach } from "../../../../../shared/src/slp/slp-reach.js";
 import { slurpPlatformScaleMultiplier, slurpWorldActivityMultiplier } from "../../../../../shared/src/slp/slp-scale.js";
@@ -90,6 +90,9 @@ export async function loadSlurpTieCreators(db: DB, at = new Date()): Promise<Slu
     accounts.map((account) => account.id),
   );
   const scale = slurpPlatformScaleMultiplier(settings.platformScale);
+  const family = (await readSlurpCreatorTiesDocument(db)).bonds.filter(
+    (bond) => bond.kind === "family" && slurpBondActive(bond),
+  );
   return Promise.all(
     accounts.map(async (account: Account) => {
       const text = await readSlurpCreatorFitText(db, { account, source: await storage.resolveAccountSource(account) });
@@ -108,6 +111,9 @@ export async function loadSlurpTieCreators(db: DB, at = new Date()): Promise<Slu
           .filter((person) => SLURP_PARTNER_RELATION.test(person.relation))
           .map((person) => person.name),
         cardPeople,
+        kin: family.flatMap((bond) =>
+          bond.aId === account.id ? [bond.bId] : bond.bId === account.id ? [bond.aId] : [],
+        ),
         poly: style ? style === "poly" : SLP_POLY_CARD_WORDS.test(text),
         // An unreadable setting is no permission: fail closed (no romance) until it reads again.
         romance: steering ? steering.romance : { off: true, only: [] },
