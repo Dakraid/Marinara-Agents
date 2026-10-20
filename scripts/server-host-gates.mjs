@@ -102,13 +102,14 @@ export function classifyServerMetafile({ metafile, cwd, buildRoot, overlayRoot =
     }
     if (!absolute.startsWith(`${root}${sep}`)) continue;
     const path = relative(root, absolute).split(sep).join("/");
-    if (packageSourceRoot && existsSync(join(packageSourceRoot, path))) continue;
     const overlayFile = overlayRoot ? join(overlayRoot, path) : null;
     if (overlayFile && existsSync(overlayFile) && readFileSync(overlayFile).equals(readFileSync(absolute))) {
       result.overlay.push(path);
       continue;
     }
+    // Before the package-owned exemption: a package's own copy of a Tier A service is still a copy.
     if (TIER_A_PATHS.some((pattern) => pattern.test(path))) result.tierA.push(path);
+    else if (packageSourceRoot && existsSync(join(packageSourceRoot, path))) continue;
     else if (TIER_B_PATHS.some((pattern) => pattern.test(path))) result.tierB.push(path);
   }
   for (const list of Object.values(result)) list.sort();

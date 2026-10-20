@@ -107,6 +107,25 @@ try {
   );
   assert.deepEqual(game, ["chess: bundles zod; it must come from the Engine (or not be imported at all)"]);
 
+  // A package-owned file at a Tier A path is still a copy of the Engine's service: the package exemption never hides
+  // it. A package-owned storage module stays exempt from Tier B.
+  await write(join(buildRoot, server, "services/llm/local-sidecar.ts"), "package copy\n");
+  await write(join(packageRoot, server, "services/llm/local-sidecar.ts"), "package copy\n");
+  const packageCopy = classifyServerMetafile({
+    metafile: {
+      inputs: {
+        [input(`${server}/services/llm/local-sidecar.ts`)]: { imports: [] },
+        [input(`${server}/services/storage/noodle.storage.ts`)]: { imports: [] },
+      },
+    },
+    cwd: scratch,
+    buildRoot,
+    overlayRoot,
+    packageSourceRoot: packageRoot,
+  });
+  assert.deepEqual(packageCopy.tierA, [`${server}/services/llm/local-sidecar.ts`]);
+  assert.deepEqual(packageCopy.tierB, []);
+
   console.log("server host gates regression passed");
 } finally {
   await rm(scratch, { recursive: true, force: true });

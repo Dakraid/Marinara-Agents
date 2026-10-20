@@ -376,7 +376,7 @@ for (const [label, options] of [
   );
 
   function HostModal() {}
-  globalThis.CSS = { escape: (value) => value.replace(/:/gu, "\\:") };
+  globalThis.CSS = { escape: (value) => value.replace(/[\\:]/gu, "\\$&") };
   const { module: modal } = await load("components/ui/Modal.tsx", {
     host: hostWith({ components: { Modal: HostModal } }),
   });

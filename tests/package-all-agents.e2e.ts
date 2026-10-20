@@ -96,6 +96,8 @@ test("all agents installed: the Engine keeps its storage, React, toaster and dia
           },
         }),
       );
+      // The seed is this test's own write, not the Engine's: only writes after it count.
+      writes.splice(0);
     },
     { version, persistence: UI_PERSISTENCE },
   );

@@ -8,23 +8,7 @@
 import { createRequire } from "node:module";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-
-const HOST_MODULE_SPECIFIERS = [
-  "react",
-  "react/jsx-runtime",
-  "react-dom",
-  "react-dom/client",
-  "@tanstack/react-query",
-  "zustand",
-  "zustand/middleware",
-  "sonner",
-  "zod",
-  "i18next",
-  "react-i18next",
-  "framer-motion",
-  "tailwind-merge",
-  "clsx",
-];
+import { HOST_MODULE_SPECIFIERS } from "../scripts/esbuild-host-plugins.mjs";
 
 export async function buildPackageHostFixture(engineRoot: string): Promise<string> {
   const clientRoot = join(engineRoot, "packages/client");
