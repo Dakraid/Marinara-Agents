@@ -3042,6 +3042,8 @@
   "ui.slurp.settings.ext.world.trends.detail": "Post, który się przebije, może zacząć trend, do którego dołączą inni twórcy.",
   "ui.slurp.settings.ext.stir.label": "Stir",
   "ui.slurp.settings.ext.stir.detail": "Karta Stir: planer, talia dźwigni i „W grze”.",
+  "ui.slurp.settings.ext.storylines.label": "Wątki",
+  "ui.slurp.settings.ext.storylines.detail": "Łuki i plany, kolaboracje, rywalizacje, pary, drama i poliamoria między twórcami.",
   "ui.slurp.settings.ext.supportDesk.label": "Biuro Support",
   "ui.slurp.settings.ext.supportDesk.detail": "Gra w obsługę: zgłoszenia, zaufanie, podejrzliwość, oferty, bonusy, powiadomienia i twórcy, którzy odchodzą.",
   "ui.slurp.stir.off": "Stir i Biuro Support są wyłączone",

@@ -28,6 +28,7 @@ import {
   slurpDealReceipt,
 } from "../../modules/economy/slp-brand-deals.js";
 import { loadSlurpTieCreators, slurpRunsItself } from "./slp-creator-ties-service.js";
+import { SLP_STORYLINES_OFF, slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
 import { createGarnishAds, garnishAdBrandId, type GarnishAd, type GarnishBrand } from "../ads/slp-ads-contract.js";
 import {
   slurpCoupleActive,
@@ -91,6 +92,8 @@ const BOND_ERRORS: Record<SlurpBondError, [number, string]> = {
 export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
   const { noodle, resolveViewerPersona, creatorBelongsToViewer } = deps;
   const personaSchema = z.object({ personaId: z.string().trim().min(1) });
+  // Storylines off: no collab or couple starts or moves on; declining, blocking and cooling still work.
+  const storylinesOff = async () => !slpExtensionOn(await noodle.getSettings(), "storylines");
 
   async function view(viewer: NonNullable<Awaited<ReturnType<typeof resolveViewerPersona>>>) {
     const { pool } = createGarnishAds(app.db);
@@ -202,8 +205,10 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
     return viewer ? view(viewer) : undefined;
   });
 
-  app.post("/slurp/ties/collabs/:id/push", (req, reply) =>
-    change(req, reply, (ties, at) => slurpPushCollab(ties, id(req), at)),
+  app.post("/slurp/ties/collabs/:id/push", async (req, reply) =>
+    (await storylinesOff())
+      ? reply.code(409).send({ error: SLP_STORYLINES_OFF })
+      : change(req, reply, (ties, at) => slurpPushCollab(ties, id(req), at)),
   );
   app.post("/slurp/ties/collabs/:id/decline", (req, reply) =>
     change(req, reply, (ties, at) => slurpDeclineCollab(ties, id(req), at)),
@@ -245,6 +250,7 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
   );
 
   app.post("/slurp/ties/collabs", async (req, reply) => {
+    if (await storylinesOff()) return reply.code(409).send({ error: SLP_STORYLINES_OFF });
     const parsed = z
       .object({ aId: z.string().trim().min(1), bId: z.string().trim().min(1) })
       .passthrough()
@@ -336,6 +342,7 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
 
   /** Set two Creators up: they start flirting; against a card it happens anyway, colored by the card. */
   app.post("/slurp/ties/couples", async (req, reply) => {
+    if (await storylinesOff()) return reply.code(409).send({ error: SLP_STORYLINES_OFF });
     const parsed = z
       .object({ aId: z.string().trim().min(1), bId: z.string().trim().min(1) })
       .passthrough()
@@ -351,6 +358,7 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
 
   /** Plan a date, stir some drama, patch it up, end it, or get them back together. */
   app.post("/slurp/ties/couples/:id/steer", async (req, reply) => {
+    if (await storylinesOff()) return reply.code(409).send({ error: SLP_STORYLINES_OFF });
     const parsed = z
       .object({
         steer: z.enum(["date", "drama", "patchUp", "breakUp", "reunite", "moveOn", "forget"]),
@@ -372,6 +380,7 @@ export async function slpCreatorTiesRoutes(app: FastifyInstance, deps: SlpRouteD
 
   /** Open their shared page (opt-in), or close it with a goodbye post. */
   app.post("/slurp/ties/couples/:id/page", async (req, reply) => {
+    if (await storylinesOff()) return reply.code(409).send({ error: SLP_STORYLINES_OFF });
     const parsed = personaSchema.extend({ open: z.boolean() }).safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
     const viewer = await resolveViewerPersona(parsed.data.personaId);

@@ -128,6 +128,7 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
   const notLoaded = !threadQuery.data;
   // Support desk off: an Offer still waiting cannot be answered, so its card stays away.
   const deskOn = !model.settingsQuery.data || slpExtensionOn(model.settingsQuery.data, "supportDesk");
+  const storylinesOn = !model.settingsQuery.data || slpExtensionOn(model.settingsQuery.data, "storylines");
   const keptDeepDetails = threadQuery.data?.deepDetailIds;
   const deepDetailIds = useMemo(() => new Set(keptDeepDetails), [keptDeepDetails]);
   // Roleplay scenes (docs/SCENES.md): offered when this Engine runs them and the thread is free.
@@ -334,7 +335,7 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
                             <SlpDeskOfferCard message={entry.message} ownsCreator={ownsCreator} personaId={personaId} />
                           )}
                           {/* Drama: a Creator's question with its answers (docs/DRAMA.md). */}
-                          {readSlpDramaChoice(entry.message) && (
+                          {storylinesOn && readSlpDramaChoice(entry.message) && (
                             <SlpDramaChoiceCard message={entry.message} personaId={personaId} />
                           )}
                           {/* W: a talk with Slurp Support proposes Stir cards under the Creator's reply. */}

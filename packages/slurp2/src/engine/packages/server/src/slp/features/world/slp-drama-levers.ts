@@ -16,6 +16,7 @@ import type { SlpActionParsed, SlpStirWorld } from "../../../../../shared/src/sl
 import type { SlpActionPreview } from "../../../../../shared/src/slp/slp-stir.js";
 import { advanceSlurpDrama, loadDramaWorld } from "./slp-drama-service.js";
 import { slurpPausedNow } from "../../data/settings/slp-pause-storage.js";
+import { SLP_STORYLINES_OFF, slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
 
 export const SLURP_DRAMA_LEVERS = ["start-drama", "end-drama"] as const;
 export type SlurpDramaLever = (typeof SLURP_DRAMA_LEVERS)[number];
@@ -145,6 +146,8 @@ async function startDrama(
   at: Date,
 ): Promise<{ ok: true; value: { runId: string }; undo: SlurpDramaUndo | null } | Failure> {
   const { dramaId, leadId } = input as SlpActionParsed<"start-drama">;
+  if (!slpExtensionOn(await createSlurpStorage(db).getSettings(), "storylines"))
+    return { ok: false, status: 409, error: SLP_STORYLINES_OFF };
   // Paused, nothing would start now, and the request would wait to start later with no Undo.
   if (await slurpPausedNow(db)) return { ok: false, status: 409, error: PAUSED };
   const preview = await previewSlurpDramaLever(db, "start-drama", input, at);

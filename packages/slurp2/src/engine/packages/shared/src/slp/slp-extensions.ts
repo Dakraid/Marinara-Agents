@@ -24,6 +24,9 @@ export function slpExtensionOn(settings: SlpExtensionSettings, id: SlpExtensionI
   return settings[SLP_EXTENSION_KEYS[id]] === true;
 }
 
+/** What a storyline route answers (409) while Storylines is off. */
+export const SLP_STORYLINES_OFF = "Storylines is switched off in Backstage.";
+
 /** Null is Basic: always on. */
 export function slpExtensionAllows(settings: SlpExtensionSettings, extension: SlpExtensionId | null): boolean {
   return extension === null || slpExtensionOn(settings, extension);

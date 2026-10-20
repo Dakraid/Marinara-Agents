@@ -178,12 +178,15 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
     {
       id: "storylines",
       title: tx("storylines", "Storylines"),
-      status: tx("storylinesStatus", "New storylines: {{mode}} · {{count}} dramas on", {
-        mode: t(`ui.slurp.settings.arcAutoMode${cap(settings.arcAutoMode)}`),
-        count: settings.drama.enabled.length,
-      }),
+      status: slpExtensionOn(settings, "storylines")
+        ? tx("storylinesStatus", "New storylines: {{mode}} · {{count}} dramas on", {
+            mode: t(`ui.slurp.settings.arcAutoMode${cap(settings.arcAutoMode)}`),
+            count: settings.drama.enabled.length,
+          })
+        : onOff(false),
       Icon: BookOpen,
       open: () => go("content", "storylines"),
+      toggle: { on: slpExtensionOn(settings, "storylines"), set: (on) => void update("extStorylines", on) },
     },
     {
       id: "world",
