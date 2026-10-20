@@ -116,7 +116,7 @@ assert.equal(slpPlacementSwitchedOff("inlineAdsEnabled", ad, undefined), false);
 assert.match(source("client", "features/backstage/SlpBackstageNavigation.tsx"), /!slpPlacementSwitchedOff\(/u);
 const panel = source("client", "features/ads/SlpAdsPanel.tsx");
 assert.match(panel, /settingKey="extAds"/u);
-assert.match(panel, /ui\.slurp\.settings\.ext\.offNote/u);
+assert.match(source("client", "modules/settings/SlpExtensionSwitch.tsx"), /ui\.slurp\.settings\.ext\.offNote/u);
 assert.match(source("client", "features/backstage/SlpBackstageOverviewPanel.tsx"), /update\("extAds", /u);
 assert.match(
   source("client", "features/settings/slp-settings-defaults.ts"),

@@ -2999,5 +2999,9 @@
   "ui.slurp.settings.ext.title": "Erweiterung",
   "ui.slurp.settings.ext.ads.label": "Marken & Werbung",
   "ui.slurp.settings.ext.ads.detail": "Werbung im Feed, Markendeals, Werbebilder und Marken-Pakete.",
-  "ui.slurp.settings.ext.offNote": "Ausgeschaltet: Nichts davon läuft oder wird angezeigt. Deine Einstellungen und Marken bleiben erhalten."
+  "ui.slurp.settings.ext.offNote": "Ausgeschaltet: Nichts davon läuft oder wird angezeigt. Seine Einstellungen und Daten bleiben erhalten.",
+  "ui.slurp.settings.ext.world.label": "Lebendige Welt",
+  "ui.slurp.settings.ext.world.detail": "Feiertage und Site-Events, der Kalender, Slurp-weite Events und virale Trends.",
+  "ui.slurp.settings.ext.world.trends.label": "Virale Trends",
+  "ui.slurp.settings.ext.world.trends.detail": "Ein Post, der abgeht, kann einen Trend starten, dem andere Creator folgen."
 }

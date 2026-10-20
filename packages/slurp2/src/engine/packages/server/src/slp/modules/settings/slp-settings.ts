@@ -428,6 +428,8 @@ export const slurpSettingsSchema = z.object({
   fanTypes: slurpFanTypesSchema,
   /** Holidays and site-wide events. See `slurp-platform-events.ts`. */
   platformEvents: slurpPlatformEventsSchema,
+  /** Living world's "Viral trends" (docs/TRENDS.md); read through `slpTrendsOn`. */
+  trendsEnabled: z.boolean(),
   /** Creator pairs allowed to collab, with what each pair makes. See `slurp-project.ts`. */
   creatorCollabs: slurpCreatorCollabsSchema,
   /** Which visible text may call a model, and the hard hourly/daily budget for it. */
@@ -632,6 +634,7 @@ export const DEFAULT_SLURP_SETTINGS: SlurpSettings = {
   simulationTuning: SLURP_REALISTIC_TUNING,
   fanTypes: slurpFanTypesDefault(),
   platformEvents: slurpPlatformEventsDefault(),
+  trendsEnabled: true,
   creatorCollabs: [],
   modelBudget: slurpModelBudgetSchema.parse({}),
   supportDesk: { ...SLP_DEFAULT_SUPPORT_DESK_SETTINGS },

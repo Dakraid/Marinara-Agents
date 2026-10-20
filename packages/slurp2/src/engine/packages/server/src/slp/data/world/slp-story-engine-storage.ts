@@ -20,6 +20,7 @@ import {
 
 import { normalizeSlpSupportDesk, slpDeskReachFactor } from "../../../../../shared/src/slp/slp-support-desk.js";
 import { slurpSupportDeskKey } from "../creators/slp-support-desk-storage.js";
+import { slpExtensionOn, slpLiveEvents } from "../../../../../shared/src/slp/slp-extensions.js";
 
 export function createStoryEngineStorage({ settingsStore }: SlurpStorageContext) {
   const write = async (key: string, value: unknown) => settingsStore.set(key, JSON.stringify(value));
@@ -51,7 +52,7 @@ export function createStoryEngineStorage({ settingsStore }: SlurpStorageContext)
     async platformInfluenceMultiplier(target: SlpInfluenceTarget, creatorAccountId?: string, at = new Date()) {
       const settings = await this.getSettings();
       const events = slurpInfluenceMultiplier(
-        settings.platformEvents,
+        slpLiveEvents(settings),
         at,
         target,
         await this.platformInfluenceStory(creatorAccountId),
@@ -84,6 +85,8 @@ export function createStoryEngineStorage({ settingsStore }: SlurpStorageContext)
         this.listNoodlerAccounts(),
         this.listStoryOccurrences(),
       ]);
+      // Living world off: occurrences wait as they are (no start, no end) until it is on again.
+      if (!slpExtensionOn(settings, "world")) return existing;
       const result = reconcileSlpScheduledOccurrences({
         events: settings.platformEvents,
         occurrences: existing,

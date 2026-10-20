@@ -72,6 +72,7 @@ import { SLP_PERSONA_SWITCHER_PAGE_SIZE } from "../base/chrome/SlpChrome";
 import { toast } from "sonner";
 import { slurp2SplashPending } from "../features/onboarding/SlpSplash";
 import type { SlurpHomeProps } from "./slp-home.types";
+import { slpTrendsOn } from "../../../../shared/src/slp/slp-extensions.js";
 export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onLeave }: SlurpHomeProps) {
   const onNavigate = useSlpBackstageLeaveGuard(navigation, navigateRaw);
   const { t: localizeUi } = useUiTranslation();
@@ -527,6 +528,7 @@ export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onL
   const [sharingPost, setSharingPost] = useState<SlpPostCardModel | null>(null);
   const postCardCtx = {
     ...postCardController.ctx,
+    trendsShown: Boolean(slurpSettingsQuery.data && slpTrendsOn(slurpSettingsQuery.data)),
     generatePostImage: handleGeneratePostImage,
     generatingPostImageIds,
     gambleUnlockPost: viewerPersonaId

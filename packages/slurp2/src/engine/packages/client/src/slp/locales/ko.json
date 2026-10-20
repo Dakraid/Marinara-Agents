@@ -3813,5 +3813,9 @@
   "ui.slurp.settings.ext.title": "확장",
   "ui.slurp.settings.ext.ads.label": "브랜드 & 광고",
   "ui.slurp.settings.ext.ads.detail": "피드 광고, 브랜드 딜, 광고 이미지, 브랜드 팩.",
-  "ui.slurp.settings.ext.offNote": "꺼짐: 아무것도 실행되거나 표시되지 않아요. 설정과 브랜드는 그대로 남아요."
+  "ui.slurp.settings.ext.offNote": "꺼짐: 아무것도 실행되거나 표시되지 않아요. 설정과 데이터는 그대로 남아요.",
+  "ui.slurp.settings.ext.world.label": "살아있는 세계",
+  "ui.slurp.settings.ext.world.detail": "기념일과 사이트 이벤트, 캘린더, Slurp 전체 이벤트, 바이럴 트렌드.",
+  "ui.slurp.settings.ext.world.trends.label": "바이럴 트렌드",
+  "ui.slurp.settings.ext.world.trends.detail": "인기를 끈 게시물이 다른 크리에이터들이 참여하는 트렌드를 시작할 수 있어요."
 }

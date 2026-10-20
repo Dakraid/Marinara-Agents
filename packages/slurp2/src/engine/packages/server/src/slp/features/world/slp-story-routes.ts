@@ -23,6 +23,7 @@ import {
 import { projectSlpStoryCalendar } from "../../modules/world/events/slp-story-runtime.js";
 import { slurpContentPackSummaries } from "../../modules/world/events/slp-content-packs.js";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
+import { slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
 
 const PREVIEW_TTL_MS = 15 * 60_000;
 type StagedPreview = { expiresAt: number; preview: SlpStoryPackPreview };
@@ -220,6 +221,8 @@ export async function slpStoryRoutes(app: FastifyInstance, { noodle }: SlpRouteD
     };
   });
   app.post("/story/events/:id/start", async (req, reply) => {
+    if (!slpExtensionOn(await noodle.getSettings(), "world"))
+      return reply.code(409).send({ error: "Living world is switched off in Backstage." });
     const occurrence = await noodle.startStoryEvent((req.params as { id: string }).id);
     return occurrence ? { occurrence } : reply.code(404).send({ error: "Event not found." });
   });

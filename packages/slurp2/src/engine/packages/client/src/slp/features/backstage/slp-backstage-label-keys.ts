@@ -7,6 +7,7 @@ import type { SlurpSettings } from "../settings/slp-settings-contract";
  */
 export const SLP_BACKSTAGE_LABEL_KEYS: Partial<Record<keyof SlurpSettings, string>> = {
   extAds: "ui.slurp.settings.overview.yours.ads",
+  extWorld: "ui.slurp.settings.overview.yours.world",
   inlineAdsEnabled: "ui.slurp.settings.inlinePromotions",
   inlineAdsFrequency: "ui.slurp.settings.ads.frequency",
   brandDealsPace: "ui.slurp.settings.ads.dealsPace",
@@ -116,6 +117,7 @@ export const SLP_BACKSTAGE_LABEL_KEYS: Partial<Record<keyof SlurpSettings, strin
   fanArchetypeWeights: "ui.slurp.settings.fanTypes.audienceMix",
   fanTypes: "ui.slurp.settings.fanTypes.title",
   platformEvents: "ui.slurp.settings.events.title",
+  trendsEnabled: "ui.slurp.settings.ext.world.trends.label",
   storyAutomation: "ui.slurp.settings.strip.often",
   messagesAwayRepliesEnabled: "ui.slurp.settings.messaging.awayReplies",
   messagesPauseFollowUpsUntilReply: "ui.slurp.settings.messaging.pauseFollowUpsUntilReply",

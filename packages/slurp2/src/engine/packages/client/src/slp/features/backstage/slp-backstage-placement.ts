@@ -49,7 +49,7 @@ export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBac
   extAds: slurp("ads", "brands", "ads", "extension", "brand deals"),
   // ponytail: no switch on screen until each gate lands (slice 3 PRs 2-4); then drop `internal`.
   extStorylines: internal(slurp("storylines", "storylines")),
-  extWorld: internal(slurp("events", "living world")),
+  extWorld: slurp("events", "living world", "extension", "events", "trends"),
   extStir: internal(slurp("stir", "stir")),
   extSupportDesk: internal(slurp("stir", "support desk")),
   extEngineLink: internal(slurp("engine", "engine link")),
@@ -179,6 +179,7 @@ export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBac
   fanArchetypeWeights: slurp("audience", "fan type weights", "audience mix"),
   fanTypes: slurp("audience", "fan types", "audience personas"),
   platformEvents: slurp("events", "occasions", "holidays", "christmas", "halloween", "special dates"),
+  trendsEnabled: slurp("events", "viral trends", "trends", "trending", "trendsetters"),
   storyAutomation: slurp("storylines", "occasion automation", "suggestions", "automatic occasions", "start events"),
   messagesAwayRepliesEnabled: slurp("messaging", "away replies", "automatic messages"),
   messagesPauseFollowUpsUntilReply: slurp(
@@ -228,7 +229,13 @@ export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBac
 };
 
 /** The pages an extension owns. Each gate adds its pages here (slice 3). */
-const SLP_EXTENSION_TARGETS: Partial<Record<SlpBackstageTarget, SlpExtensionId>> = { ads: "ads" };
+const SLP_EXTENSION_TARGETS: Partial<Record<SlpBackstageTarget, SlpExtensionId>> = {
+  ads: "ads",
+  events: "world",
+  calendar: "world",
+};
+/** Settings an extension owns that live on another page. */
+const SLP_EXTENSION_SETTINGS: Partial<Record<keyof SlurpSettings, SlpExtensionId>> = { sharedWorldEvents: "world" };
 
 /** Search skips the settings of a switched-off extension; its own switch stays findable. */
 export function slpPlacementSwitchedOff(
@@ -236,7 +243,7 @@ export function slpPlacementSwitchedOff(
   placement: SlpBackstagePlacement,
   settings: Pick<SlurpSettings, (typeof SLP_EXTENSION_KEYS)[SlpExtensionId]> | undefined,
 ): boolean {
-  const extension = SLP_EXTENSION_TARGETS[placement.target];
+  const extension = SLP_EXTENSION_SETTINGS[key as keyof SlurpSettings] ?? SLP_EXTENSION_TARGETS[placement.target];
   return Boolean(
     settings && extension && key !== SLP_EXTENSION_KEYS[extension] && !slpExtensionOn(settings, extension),
   );

@@ -85,6 +85,7 @@ import { slurpCreatorStrategy, slurpStrategyInstruction } from "../../modules/cr
 import { createSlurpPostProvider } from "../../base/host/slp-generation-integrations.js";
 import { resolveSlurpWardrobeSelection, slurpWardrobePrompt } from "../../modules/feed/slp-wardrobe-selection.js";
 import type { GeneratedCreatorPostResult, PreparedCreatorPostResult } from "./slp-generation-contract.js";
+import { slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
 export type { GeneratedCreatorPostResult, PreparedCreatorPostResult } from "./slp-generation-contract.js";
 
 type GenerationConnection = NonNullable<Awaited<ReturnType<ReturnType<typeof createConnectionsStorage>["getWithKey"]>>>;
@@ -262,7 +263,10 @@ export async function generateCreatorPost(
             nudge,
             life: { account, tags: account.settings.profile.tags ?? [], rate: settings.lifeMomentRate },
             shared: settings.sharedPreseed
-              ? { tags: account.settings.profile.tags ?? [], worldEvents: settings.sharedWorldEvents }
+              ? {
+                  tags: account.settings.profile.tags ?? [],
+                  worldEvents: settings.sharedWorldEvents && slpExtensionOn(settings, "world"),
+                }
               : null,
           }
         : null,

@@ -27,6 +27,7 @@ import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-supp
 import { emptySlpAccountSettings } from "../../modules/records/slp-storage-model.js";
 import { SLURP_SUPPORT_NAME } from "../../modules/messages/slp-dm-roles.js";
 import { isSlurpSupportThread } from "../../modules/messages/slp-support.js";
+import { slpLiveEvents } from "../../../../../shared/src/slp/slp-extensions.js";
 
 type SlurpThread = NonNullable<Awaited<ReturnType<ReturnType<typeof createSlurpMessagesStorage>["getThreadById"]>>>;
 export type SlurpThreadDetails = Awaited<
@@ -52,7 +53,7 @@ export async function resolveSlurpReplyAvailability(db: DB, thread: SlurpThread,
             Math.round(
               settingsForDelays.messagesMaxReplyDelayMinutes *
                 slurpInfluenceMultiplier(
-                  settingsForDelays.platformEvents,
+                  slpLiveEvents(settingsForDelays),
                   new Date(),
                   "messages.reply-delay",
                   await slurp.platformInfluenceStory(creator.id),

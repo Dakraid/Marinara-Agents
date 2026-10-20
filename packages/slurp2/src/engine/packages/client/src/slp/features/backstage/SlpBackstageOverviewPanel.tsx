@@ -188,9 +188,12 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
     {
       id: "world",
       title: tx("world", "Living world"),
-      status: tx("worldStatus", "{{count}} occasions on the calendar", { count: settings.platformEvents.length }),
+      status: slpExtensionOn(settings, "world")
+        ? tx("worldStatus", "{{count}} occasions on the calendar", { count: settings.platformEvents.length })
+        : onOff(false),
       Icon: Globe2,
       open: () => go("world", "events"),
+      toggle: { on: slpExtensionOn(settings, "world"), set: (on) => void update("extWorld", on) },
     },
     {
       id: "stir",
