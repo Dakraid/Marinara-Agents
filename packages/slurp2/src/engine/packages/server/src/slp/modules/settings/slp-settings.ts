@@ -328,8 +328,8 @@ export const slurpSettingsSchema = z.object({
   fanRepliesPerRefresh: z.number().int().min(0).max(12),
   fanArchetypeWeights: slpCreatorFanArchetypeWeightsSchema,
   /**
-   * Wallet economy. Off by default: an existing install keeps the presentation-only prices it
-   * has always had, and nothing starts refusing an unlock because a stored balance ran dry.
+   * Wallet economy. On by default. Turn it off and unlocks stay presentation-only prices, so
+   * nothing refuses an unlock because a stored balance ran dry.
    */
   walletEnabled: z.boolean(),
   walletUnlockCost: z.number().int().min(0).max(9999),

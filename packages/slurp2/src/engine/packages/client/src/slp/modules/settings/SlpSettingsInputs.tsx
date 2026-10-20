@@ -52,24 +52,25 @@ export function ChoiceSetting<T extends string>({
   disabledReason?: string | null;
 }) {
   const name = useId();
+  const noteId = `${name}-note`;
   const off = disabled || Boolean(disabledReason);
   const oneRow =
     options.length <= SEGMENT_MAX_OPTIONS && options.every((option) => option.label.length <= SEGMENT_MAX_LABEL);
   // A short segmented control sits beside its label on a wide page, like every other row; cards
   // and long labels need the width and sit under it.
   const row = variant === "segmented" && oneRow && !labelHidden;
-  const text = (
-    <>
+  const text = (detail || disabledReason) && (
+    <div id={noteId} className="space-y-2">
       {detail && <p className="max-w-prose text-xs leading-5 text-[var(--muted-foreground)] text-pretty">{detail}</p>}
       {disabledReason && (
         <p className="text-xs font-semibold leading-5 text-[var(--slurp-muted,var(--muted-foreground))]">
           {disabledReason}
         </p>
       )}
-    </>
+    </div>
   );
   const group = (
-    <fieldset disabled={off} className="min-w-0">
+    <fieldset disabled={off} aria-describedby={detail || disabledReason ? noteId : undefined} className="min-w-0">
       <legend className={labelHidden || row ? "sr-only" : "float-left mb-2 w-full text-sm font-semibold"}>
         {label}
       </legend>
@@ -198,7 +199,7 @@ export function OverrideField({
           <input
             type="checkbox"
             role="switch"
-            aria-describedby={labelId}
+            aria-labelledby={labelId}
             disabled={disabled}
             checked={overridden}
             onChange={(event) => (event.target.checked ? onOverride() : onReset())}
