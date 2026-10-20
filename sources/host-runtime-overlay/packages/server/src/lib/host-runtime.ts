@@ -166,6 +166,15 @@ export interface HostPersistence {
     content: string,
     anchorMessageId?: string,
   ): Promise<void>;
+  /**
+   * Added to capability API 1.341 after it was first reported (Pasta-Devs/Marinara-Engine#7886), so feature-detect
+   * it. Applies a `[schedule_update]` as a temporary status on the character card; null when nothing changed.
+   */
+  updateCharacterStatus?(
+    chatId: string,
+    characterId: string,
+    update: { status?: "online" | "idle" | "dnd" | "offline"; activity?: string; duration?: string },
+  ): Promise<{ status: "online" | "idle" | "dnd" | "offline"; activity: string | null; expiresAt: string } | null>;
 }
 
 export interface HostCommandParse {

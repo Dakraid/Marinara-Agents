@@ -597,7 +597,7 @@ const features = [
   {
     id: "conversation-calls",
     name: "Calls",
-    version: "1.1.6",
+    version: "1.1.7",
     minEngineVersion: "2.4.1",
     capabilityApi: PACKAGE_CAPABILITY_API,
     builtAgainst: PACKAGE_BUILT_AGAINST,
