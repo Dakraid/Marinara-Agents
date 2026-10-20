@@ -55,6 +55,7 @@ import { useSlurpConnections } from "../base/state/slp-host-connections";
 import { showConfirmDialog } from "../../lib/app-dialogs";
 import { useSlurpUIStore } from "../base/state/slp-package-store";
 import { api } from "../../lib/api-client";
+import { slurpActivityPresetPatch } from "../modules/creator/slp-activity-presets";
 import type { SlpPostCardModel } from "../modules/post/SlpPostTypes";
 import {
   type SlpCreatorPostDraft,
@@ -593,7 +594,16 @@ export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onL
     setGateOpen(false);
     setOnboardingState("completed");
     try {
-      await updateSlurpSettings.mutateAsync({ onboarding: "completed" });
+      // No text connection yet: nothing can write the posts, so the pace starts manual (as Opening
+      // Day did). A failed lookup leaves the pace alone; it never blocks the finish.
+      const noText = await api
+        .get<Array<{ provider?: string }>>("/connections")
+        .then((list) => !list.some((connection) => connection.provider !== "image_generation"))
+        .catch(() => false);
+      await updateSlurpSettings.mutateAsync({
+        onboarding: "completed",
+        ...(noText ? slurpActivityPresetPatch("manual") : {}),
+      });
     } catch (error) {
       toast.error(errorMessage(error, localizeUi("ui.slurp.onboarding.saveError")));
     }

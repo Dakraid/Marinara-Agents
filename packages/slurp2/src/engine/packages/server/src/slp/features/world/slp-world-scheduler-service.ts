@@ -79,7 +79,9 @@ export function startSlurpWorldScheduler(app: FastifyInstance, registerStop?: (s
       // Drama rides the same clock too (docs/DRAMA.md): nothing runs until the player switches it on.
       await advanceSlurpDrama(app.db).catch((error: unknown) => logger.warn(error, "[slurp-drama] Drama tick failed"));
       // A post that took off may become a trend (docs/TRENDS.md); it never fails the tick.
-      await advanceSlurpTrends(app.db, new Date());
+      await advanceSlurpTrends(app.db, new Date()).catch((error: unknown) =>
+        logger.warn(error, "[slurp-trends] Trends tick failed"),
+      );
       // A Creator who is with the player texts like a partner, a few times a day.
       await textSlurpPartners(app.db).catch((error: unknown) => logger.warn(error, "[slurp-partner] Texts failed"));
       // After the tick, and never in a way that can fail it: the bank feeds the free comments the

@@ -15,7 +15,7 @@ import {
   type SlpBackstageSection,
   type SlpBackstageTarget,
 } from "../../base/navigation/slp-backstage-target";
-import { SLP_BACKSTAGE_SETTING_PLACEMENT } from "./slp-backstage-placement";
+import { SLP_BACKSTAGE_PAGE_PLACEMENT, SLP_BACKSTAGE_SETTING_PLACEMENT } from "./slp-backstage-placement";
 import { SLP_BACKSTAGE_LABEL_KEYS } from "./slp-backstage-label-keys";
 
 export const humanize = (value: string) =>
@@ -85,7 +85,7 @@ export function SlurpBackstageSearch({
   onSelect,
   className,
 }: {
-  onSelect: (section: SlpBackstageSection, target: SlpBackstageTarget, setting: keyof SlurpSettings) => void;
+  onSelect: (section: SlpBackstageSection, target: SlpBackstageTarget, setting?: keyof SlurpSettings) => void;
   className?: string;
 }) {
   const { t, i18n } = useTranslation();
@@ -95,10 +95,15 @@ export function SlurpBackstageSearch({
   // The phone settings home and the page header can both hold a search box.
   const inputId = useId();
   /** The label the setting shows on its page (R1-132); the key made readable only as a last resort. */
-  const labelFor = (key: keyof SlurpSettings) => {
+  const settingLabel = (key: keyof SlurpSettings) => {
     const labelKey = SLP_BACKSTAGE_LABEL_KEYS[key] ?? `ui.slurp.settings.${key}`;
     return i18n.exists(labelKey) ? t(labelKey) : humanize(key);
   };
+  /** A page entry is named like its page; a setting like the label on its page. */
+  const labelFor = (key: string) =>
+    key in SLP_BACKSTAGE_PAGE_PLACEMENT
+      ? t(`ui.slurp.settings.backstage.targets.${key}`, { defaultValue: humanize(key) })
+      : settingLabel(key as keyof SlurpSettings);
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
@@ -114,8 +119,8 @@ export function SlurpBackstageSearch({
     const needle = query.trim().toLocaleLowerCase();
     if (!needle) return [];
     return (
-      Object.entries(SLP_BACKSTAGE_SETTING_PLACEMENT) as Array<
-        [keyof SlurpSettings, (typeof SLP_BACKSTAGE_SETTING_PLACEMENT)[keyof SlurpSettings]]
+      Object.entries({ ...SLP_BACKSTAGE_SETTING_PLACEMENT, ...SLP_BACKSTAGE_PAGE_PLACEMENT }) as Array<
+        [string, (typeof SLP_BACKSTAGE_SETTING_PLACEMENT)[keyof SlurpSettings]]
       >
     )
       .filter(
@@ -142,7 +147,11 @@ export function SlurpBackstageSearch({
   const choose = (index: number) => {
     const result = results[index];
     if (!result) return;
-    onSelect(result[1].section, result[1].target, result[0]);
+    onSelect(
+      result[1].section,
+      result[1].target,
+      result[0] in SLP_BACKSTAGE_PAGE_PLACEMENT ? undefined : (result[0] as keyof SlurpSettings),
+    );
     setQuery("");
   };
   const open = query.trim().length > 0;
