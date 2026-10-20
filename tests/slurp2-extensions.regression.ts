@@ -124,4 +124,11 @@ assert.match(
   "Reset leaves switches alone",
 );
 
+// The page switch saves at once like the Overview row; a staged Off was lost on leaving the page.
+assert.match(
+  source("client", "features/settings/slp-settings-backstage-contract.ts"),
+  /if \(!now && section !== "overview"/u,
+);
+assert.match(panel, /updateNow\("extAds", value\)/u);
+
 console.log("slurp2 extensions regression passed");
