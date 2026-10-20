@@ -60,9 +60,6 @@ jobs:
           node tests/conversation-calls-summary.regression.mjs
           node tests/calls-swarmui-video.regression.mjs
 
-      - name: Test the Claude (Subscription) provider Noodle, Slurp and Calls bundle
-        run: node --experimental-transform-types tests/claude-subscription-overlay.regression.mjs
-
       - name: Test Memory Nag recall selection
         run: npx tsx tests/memory-nag-selection.regression.ts
 
@@ -99,6 +96,14 @@ jobs:
       - name: Test vendored Engine drift detection
         run: node scripts/tests/vendored-engine.regression.mjs
 
+      # Calls, Noodle and Slurp reach the Engine's live services through api.runtime instead of bundling copies
+      # (sources/host-runtime-overlay). The gates fail a package server that ships a copy again.
+      - name: Test the package server host runtime and its gates
+        run: |
+          node --experimental-transform-types tests/host-runtime-overlay.regression.mjs
+          node scripts/tests/server-host-gates.regression.mjs
+          node scripts/tests/server-singleton-gate.regression.mjs
+
       - name: Test catalog lane routing and build provenance
         run: node scripts/test-catalog-lanes.mjs
 
@@ -126,6 +131,19 @@ jobs:
 
       - name: Validate catalogs, packages, artifacts, and README coverage
         run: node scripts/validate-catalog.mjs
+
+      # Package clients use the Engine's host namespace (__MARINARA_HOST__) instead of bundled copies (#1478, #1487).
+      - name: Test the Engine-owned browser storage gate
+        run: node scripts/tests/host-storage-key-gate.regression.mjs
+
+      - name: Test the host client adapters packages bundle
+        run: node tests/host-client-adapters.regression.mjs
+
+      - name: Test the host module shims and their export check
+        run: node scripts/tests/host-module-shims.regression.mjs
+
+      - name: Test the client bundle host gates
+        run: node scripts/tests/client-host-gates.regression.mjs
 
       - name: Test catalog generatedAt determinism
         run: node scripts/tests/catalog-generatedat-determinism.regression.mjs

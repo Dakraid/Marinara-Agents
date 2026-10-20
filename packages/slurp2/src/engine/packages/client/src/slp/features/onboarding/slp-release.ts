@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.50";
+export const SLURP2_VERSION = "0.3.51";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -12,6 +12,14 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.51",
+    date: "2026-10-20",
+    notes: [
+      "Slurp now runs on Marinara's own settings, dialogs and notifications, so it no longer resets your other settings.",
+      "Its notifications show where you put Marinara's, and the download is smaller.",
+    ],
+  },
   {
     version: "0.3.50",
     date: "2026-10-19",
@@ -772,14 +780,6 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
       "Restore a deleted post while the countdown runs.",
       "Share asks which chat to send a post to, with search and New chat.",
       "Creators look like themselves in pictures by default.",
-    ],
-  },
-  {
-    version: "0.2.22",
-    date: "2026-09-22",
-    notes: [
-      "Slurp screens open faster and load only what they show.",
-      "Follows, subscriptions and unlocks show up at once.",
     ],
   },
 ];

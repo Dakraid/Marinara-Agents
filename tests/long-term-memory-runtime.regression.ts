@@ -11,10 +11,10 @@ async function main() {
   const packageManifest = JSON.parse(await readFile(join(repoRoot, "packages/long-term-memory/manifest.json"), "utf8"));
   assert.deepEqual(
     packageManifest.capabilityApi,
-    { major: 1, minor: 6 },
-    "Long-Term Memory must remain installable on the API 1.7 Engine host",
+    { major: 1, minor: 341 },
+    "Long-Term Memory takes its query client and libraries from the Engine's host (capability API 1.341)",
   );
-  assert.equal(packageManifest.engine.min, "2.4.1", "Long-Term Memory must support the API 1.7 Engine release");
+  assert.equal(packageManifest.engine.min, "2.4.1", "Long-Term Memory is gated by its capability API, not engine.min");
   process.env.NODE_PATH = [
     join(engineRoot, "packages/server/node_modules"),
     join(engineRoot, "packages/shared/node_modules"),

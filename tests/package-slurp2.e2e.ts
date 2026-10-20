@@ -713,7 +713,8 @@ test.describe("standalone Slurp package", () => {
 
       await creatorSettings.getByRole("tab", { name: "Posting", exact: true }).click();
       await expect(creatorSettings.getByText("Posting Schedule", { exact: true })).toBeVisible();
-      await creatorSettings.getByRole("button", { name: "Close dialog" }).click();
+      // The Engine's own Modal (Pasta-Devs/Marinara-Agents#1487) names its close button after the dialog.
+      await creatorSettings.getByRole("button", { name: `Close ${stageProfile.displayName}'s settings` }).click();
 
       await slurp.getByRole("button", { name: "Writing", exact: true }).click();
       await slurp.getByRole("button", { name: "Edit prompt", exact: true }).first().click();
@@ -730,8 +731,10 @@ test.describe("standalone Slurp package", () => {
         .toBe(true);
       await expect
         .poll(() =>
-          page
+          // The dialog is the Engine's Modal; its content keeps Slurp's scope and accent (sources/host-client-overlay).
+          promptDialog
             .locator('[data-marinara-capability-scope="slurp2"]')
+            .first()
             .evaluate((element) => getComputedStyle(element).getPropertyValue("--noodle-accent").trim().toLowerCase()),
         )
         .toBe("#ff7ec1");
