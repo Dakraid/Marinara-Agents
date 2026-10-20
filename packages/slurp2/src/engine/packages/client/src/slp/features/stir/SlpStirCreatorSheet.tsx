@@ -85,14 +85,14 @@ export function SlpStirCreatorSheet({
         open={Boolean(target)}
         onClose={close}
         back
-        title={name ? t("ui.slurp.stir.sheetTitle", { name }) : t("ui.slurp.stir.title")}
+        title={name ? (stirOn ? t("ui.slurp.stir.sheetTitle", { name }) : name) : t("ui.slurp.stir.title")}
       >
         <div className="space-y-4 px-2 pb-2" data-slp-stir-sheet>
           {query.isPending && <SlpSkeleton shape="card" count={2} label={t("ui.slurp.state.loading")} />}
           {query.isError && !view && (
             <SlpErrorState title={t("ui.slurp.stir.loadError")} onRetry={() => void query.refetch()} />
           )}
-          {creator && (
+          {creator && stirOn && (
             <div className="flex items-center gap-3 px-1">
               <Avatar account={{ displayName: creator.name, avatarUrl: creator.avatarUrl }} size="md" />
               <p className={cn(SLP_TYPE.meta, "min-w-0 flex-1 text-[var(--slurp-muted)]")}>

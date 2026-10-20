@@ -607,7 +607,9 @@ export function SlpStirScreen({
     <div className="@container flex h-full min-h-0 flex-col" data-slp-stir>
       <header className={cn("flex h-14 shrink-0 items-center gap-2 px-4", SLP_TOP_BAR_CLASS)}>
         <SlpStirGlyph size={22} aria-hidden="true" className="text-[var(--slurp-ink)]" />
-        <h1 className="slp-display min-w-0 flex-1 truncate text-xl leading-none">{t("ui.slurp.stir.title")}</h1>
+        <h1 className="slp-display min-w-0 flex-1 truncate text-xl leading-none">
+          {deskOn && !stirOn ? t("ui.slurp.desk.title") : t("ui.slurp.stir.title")}
+        </h1>
         {stirOn && deskOn && (
           <SlpSegment
             label={t("ui.slurp.stir.mode.label")}
