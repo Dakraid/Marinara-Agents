@@ -19,8 +19,15 @@
  * reported as clean while every undefined name in it went unmentioned. A syntax error is never
  * acceptable output, so this rule has no allowlist.
  *
- * ponytail: TS2304/TS2552, the missing-export family, relative TS2307 and all TS1xxx only. Bare specifiers are skipped because
- * the overlay installs no dependencies; widen once the merged tree typechecks against an Engine.
+ * TS2339 on the host adapter types (UIState, ChatState, ... in sources/host-client-overlay) is reported too: a member the
+ * adapters do not declare may not exist on the Engine's live store, service or API client a package now uses
+ * (Pasta-Devs/Marinara-Agents#1487). Add it to the adapter only once the Engine has it.
+ *
+ * `games` checks the six turn games' Board and Setup files, which build from sources/engine with no package sources.
+ *
+ * ponytail: TS2304/TS2552, the missing-export family, TS2339 on the host adapters, relative TS2307 and all TS1xxx only.
+ * Bare specifiers are skipped because the overlay installs no dependencies; widen once the merged tree typechecks
+ * against an Engine.
  *
  * With MARINARA_ENGINE_ROOT set to an Engine checkout with its dependencies installed, a package in STRICT_RUNS is also
  * checked with `--strict` against that Engine's node_modules, and every diagnostic fails the run. Without the Engine's
@@ -36,12 +43,40 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const engineSources = join(repoRoot, "sources/engine");
+// The overlays the feature build stacks over sources/engine (scripts/build-feature-packages.mjs OVERLAY_ROOTS).
+const OVERLAY_ROOTS = [
+  "sources/claude-subscription-overlay",
+  "sources/host-runtime-overlay",
+  "sources/host-client-overlay",
+]
+  .map((path) => join(repoRoot, path))
+  .filter((root) => existsSync(root));
+// The turn games have no package sources: their clients are these vendored files and the build's wrapper.
+const GAME_FILES = ["Chess", "EightBall", "Poker", "RockPaperScissors", "TicTacToe", "Uno"].flatMap((game) =>
+  ["Board", "Setup"].map((part) => `packages/client/src/components/chat/${game}${part}.tsx`),
+);
 const tsc = join(repoRoot, "node_modules/.bin/tsc");
 // Node globals resolve through @types/node, which the merged tree does not install.
 const IGNORED_NAMES = new Set(["setImmediate", "clearImmediate", "NodeJS"]);
 // The missing-export family. TS2305 is the member that does not exist; TS2459 and TS2724 are the
 // member that exists but was never exported; TS2300 is the same name bound twice. Each one
 // typechecks nowhere and breaks the esbuild bundle, so the gate must name them here.
+const HOST_ADAPTER_TYPES = [
+  "UIState",
+  "ChatState",
+  "AgentState",
+  "SidecarState",
+  "DialogStoreState",
+  "GalleryState",
+  "EncounterState",
+  "GameStateStore",
+  "RollingBackfillState",
+  "TTSService",
+  "HostApiClient",
+];
+const HOST_ADAPTER_MEMBER = new RegExp(
+  `error TS2339: .* on type '(?:BoundStore<)?(?:${HOST_ADAPTER_TYPES.join("|")})>?'`,
+);
 const CODES = /error (TS2304|TS2552): Cannot find name '([^']+)'|error (TS2305|TS2459|TS2724|TS2300): /;
 const MISSING_MODULE = /^(.+?)\(\d+,\d+\): error TS2307: Cannot find module '(\.{1,2}\/[^']+)'/;
 // A file that does not parse yields only TS1xxx, so these must never be filtered or allowlisted.
@@ -109,27 +144,31 @@ if (packages.length === 0) packages.push("slurp2");
 
 let failed = false;
 for (const id of packages) {
-  const packageSources = join(repoRoot, `packages/${id}/src/engine`);
-  if (!existsSync(packageSources)) throw new Error(`No package-owned source for ${id}`);
+  const packageSources = id === "games" ? null : join(repoRoot, `packages/${id}/src/engine`);
+  if (packageSources && !existsSync(packageSources)) throw new Error(`No package-owned source for ${id}`);
 
   const overlay = await mkdtemp(join(tmpdir(), `marinara-typecheck-${id}-`));
   try {
     await cp(engineSources, overlay, { recursive: true, force: true });
-    // The bundler stacks the shared Claude (Subscription) overlay here for Noodle, Slurp and Calls.
-    await cp(join(repoRoot, "sources/claude-subscription-overlay"), overlay, { recursive: true, force: true });
-    await cp(packageSources, overlay, { recursive: true, force: true });
+    // Stacked as the bundler stacks them, so package code is checked against the host adapters it is built with.
+    for (const root of OVERLAY_ROOTS) await cp(root, overlay, { recursive: true, force: true });
+    if (packageSources) await cp(packageSources, overlay, { recursive: true, force: true });
 
-    const files = execFileSync("find", ["packages", "-name", "*.ts", "-o", "-name", "*.tsx"], {
-      cwd: packageSources,
-      encoding: "utf8",
-    })
-      .split("\n")
-      .filter(Boolean);
+    const sourceFiles = (root) =>
+      existsSync(join(root, "packages"))
+        ? execFileSync("find", ["packages", "-name", "*.ts", "-o", "-name", "*.tsx"], { cwd: root, encoding: "utf8" })
+            .split("\n")
+            .filter(Boolean)
+        : [];
+    const files = packageSources ? sourceFiles(packageSources) : GAME_FILES;
+    // Ambient declarations the overlays carry (`marinara:host`) join every run.
+    const declarations = OVERLAY_ROOTS.flatMap((root) => sourceFiles(root).filter((file) => file.endsWith(".d.ts")));
 
-    const output = runTsc([...COMPILER_ARGS, ...files], overlay);
+    const output = runTsc([...COMPILER_ARGS, ...new Set([...declarations, ...files])], overlay);
 
     const lines = [...new Set(output.split("\n"))];
     const found = [
+      ...lines.filter((line) => HOST_ADAPTER_MEMBER.test(line)),
       ...lines.filter((line) => {
         if (!CODES.test(line)) return false;
         const match = CODES.exec(line);
@@ -156,8 +195,12 @@ for (const id of packages) {
         if (existsSync(modules)) await symlink(modules, join(overlay, dir, "node_modules"), "junction");
       }
       for (const run of strictRuns) {
-        const runFiles = files.filter((file) => run.roots.some((root) => file.startsWith(root)));
-        if (!runFiles.length) continue;
+        const ownFiles = files.filter((file) => run.roots.some((root) => file.startsWith(root)));
+        if (!ownFiles.length) continue;
+        const runFiles = [
+          ...declarations.filter((file) => run.roots.some((root) => file.startsWith(root))),
+          ...ownFiles,
+        ];
         const lib = run.lib.length ? ["--lib", run.lib.join(",")] : [];
         const strictOutput = runTsc([...COMPILER_ARGS, "--strict", "--types", "node", ...lib, ...runFiles], overlay);
         const errors = strictOutput.split("\n").filter((line) => /\berror TS\d+: /.test(line)).length;
@@ -166,7 +209,7 @@ for (const id of packages) {
           console.error(`${id}: ${errors} strict error(s) in ${run.name} files`);
           console.error(strictOutput.trimEnd());
         } else {
-          console.log(`${id}: no strict errors in ${runFiles.length} ${run.name} files`);
+          console.log(`${id}: no strict errors in ${ownFiles.length} ${run.name} files`);
         }
       }
     }

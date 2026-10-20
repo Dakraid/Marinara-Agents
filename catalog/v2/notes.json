@@ -1,6 +1,44 @@
 {
   "schemaVersion": 1,
   "packages": {
+    "2d-avatars": {
+      "versions": [
+        {
+          "version": "0.1.2",
+          "date": "2026-10-15",
+          "notes": "- Blink and talk pictures now ask only for the eye or mouth change, so the model keeps the same bust.",
+          "highlight": false
+        },
+        {
+          "version": "0.1.1",
+          "date": "2026-10-14",
+          "notes": "- Now in Download Agents for Engine staging testers.\n- Checked against the Engine's live faces and lip sync, and its tools for making blink and talking pictures or a mesh avatar from one of your sprites.",
+          "highlight": false
+        },
+        {
+          "version": "0.1.0",
+          "date": "2026-10-13",
+          "notes": "- First release: animated 2D avatars for characters and personas in Roleplay and Game.\n- Works with PNGTuber-style sprites (your own expression sprites, with blink and talk pictures) and mesh avatar files.\n- Ships the prompts for making blink and talk pictures and a mesh avatar from one of your sprites.",
+          "highlight": false
+        }
+      ]
+    },
+    "3d-avatars": {
+      "versions": [
+        {
+          "version": "0.1.1",
+          "date": "2026-10-14",
+          "notes": "- Now in Download Agents for Engine staging testers.\n- Checked against the Engine's live faces and lip sync.",
+          "highlight": false
+        },
+        {
+          "version": "0.1.0",
+          "date": "2026-10-13",
+          "notes": "- First release: animated 3D avatars for characters and personas in Roleplay and Game.\n- Works with VRM models (versions 0.x and 1.0), with an optional idle animation.",
+          "highlight": false
+        }
+      ]
+    },
     "beholder": {
       "versions": [
         {
@@ -135,6 +173,12 @@
     },
     "conversation-calls": {
       "versions": [
+        {
+          "version": "1.1.5",
+          "date": "2026-10-20",
+          "notes": "- Calls now uses Marinara Engine's own settings, dialogs, voice playback, Local Model, Local Whisper, haptics, Spotify and chat saving instead of carrying copies of them. It no longer resets your Engine settings, starts a second Local Model, or overwrites chat changes saved while a call runs. The download is smaller. It needs a Marinara Engine release after 2.5.0. On 2.5.0 and older, the version you already have keeps working. (#1478, #1487)\n- During a call, the connection switcher and the sticker and emoji settings change the call's chat, not another chat.",
+          "highlight": false
+        },
         {
           "version": "1.1.4",
           "date": "2026-10-13",
@@ -281,8 +325,8 @@
       "versions": [
         {
           "version": "1.6.0",
-          "date": "2026-10-16",
-          "notes": "- Fill missing artwork now creates several location images at once, up to the image connection's Max Parallel Image Jobs setting. It still goes one at a time on Marinara Engine versions without that setting.",
+          "date": "2026-10-20",
+          "notes": "- World Maps now uses Marinara Engine's own chat state, notifications and libraries instead of carrying copies of them. A pending map move you cleared no longer comes back, and its notifications appear where you put yours. The download is smaller. It needs a Marinara Engine release after 2.5.0. On 2.5.0 and older, the version you already have keeps working. (#1487)\n- Fill missing artwork now creates several location images at once, up to the image connection's Max Parallel Image Jobs setting. It still goes one at a time on Marinara Engine versions without that setting.",
           "highlight": true
         },
         {
@@ -337,8 +381,8 @@
       "versions": [
         {
           "version": "1.4.56",
-          "date": "2026-10-19",
-          "notes": "- Compact selects keep a fixed 36px height, so platform font metrics no longer make them taller than the compact layout allows.\n- Buttons keep a 44px minimum width as well as height, so short labels such as **Retry** stay full-size tap targets.",
+          "date": "2026-10-20",
+          "notes": "- Long-Term Memory now uses Marinara Engine's own libraries and data cache for its screens instead of carrying copies of them, so the download is smaller. It needs a Marinara Engine release after 2.5.0. On 2.5.0 and older, the version you already have keeps working. (#1487)",
           "highlight": false
         },
         {
@@ -486,6 +530,12 @@
     "memory-nag": {
       "versions": [
         {
+          "version": "1.2.1",
+          "date": "2026-10-20",
+          "notes": "Memory Nag now uses Marinara Engine's own libraries and data cache for its screens instead of carrying copies of them, so the download is smaller. It needs a Marinara Engine release after 2.5.0. On 2.5.0 and older, the version you already have keeps working. (#1487)",
+          "highlight": false
+        },
+        {
           "version": "1.2.0",
           "date": "2026-10-13",
           "notes": "Scans now read Roleplay whispers the way the Engine's own agents do, marked private with who they were for, so a promise made in a whisper can become a memory. A message that is only a whisper is no longer read as empty. This needs a Marinara Engine that shares whispers with Agents; older versions keep reading public messages only.",
@@ -519,6 +569,12 @@
     },
     "noodle": {
       "versions": [
+        {
+          "version": "1.5.7",
+          "date": "2026-10-20",
+          "notes": "- Noodle now uses Marinara Engine's own settings, dialogs, notifications, Local Model and connection queue instead of carrying copies of them. It no longer resets your Engine settings or starts a second Local Model, its background refreshes wait while a chat on the same connection is replying, and its notifications appear where you put yours. The download is smaller. It needs a Marinara Engine release after 2.5.0. On 2.5.0 and older, the version you already have keeps working. (#1478, #1487)\n- The sticker and emoji pickers no longer show the chat emoji-selection settings. Those belong to a chat, and Noodle has none.",
+          "highlight": false
+        },
         {
           "version": "1.5.6",
           "date": "2026-10-13",
@@ -812,6 +868,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.51",
+          "date": "2026-10-20",
+          "notes": "- Changed: Slurp now uses Marinara Engine's own settings, dialogs, notifications, Local Model and connection queue instead of carrying copies of them. It no longer resets your Engine settings or starts a second Local Model, its background work waits while a chat on the same connection is replying, and its notifications appear where you put yours. The download is smaller. It needs a Marinara Engine release after 2.5.0. On 2.5.0 and older, the version you already have keeps working. (#1478, #1487)\n- Changed: the sticker and emoji pickers no longer show the chat emoji-selection settings. Those belong to a chat, and Slurp has none.",
+          "highlight": false
+        },
+        {
           "version": "0.3.49",
           "date": "2026-10-19",
           "notes": "- Fixed: restoring a backup checks each media file more closely. Only PNG, JPEG, WebP, GIF and AVIF pictures whose file extension matches their contents come back; anything else is skipped and listed with the skipped entries (#1476).\n- Fixed: AVIF pictures in a backup were dropped on restore. They now come back like the other formats.\n- Changed: Slurp sends every stored picture (posts, messages, avatars, banners, ads) as the image type its contents show (#1476).",
@@ -923,12 +985,6 @@
           "version": "0.3.31",
           "date": "2026-10-13",
           "notes": "- Changed: the guided post (New post, and Stir's \"Draft post\") is now written by the same generator as the page's own posts, with your wish as the direction. The draft gets the bio, stage voice, brief, spice level, image directions and live events, and comes back as a title, a text and a picture of its own. Before, your wish went word for word into the picture.\n- Changed: one composer. The picture is on top, then who sees the post, then one switch for the text: \"Write it myself\" or \"Guided\". A guided draft fills the normal title, text and picture; the separate preview and its \"Edit\" step are gone. A photo you add stays, and the text is written to go with it.\n- Added: \"Add from Slurp\" on Guided: a storyline of the page, a saved idea (posting the draft uses it up) and a wardrobe look for the picture. Brand deals and collabs stay.\n- Known limit: posting a draft written for a storyline does not move the storyline to its next chapter.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.30",
-          "date": "2026-10-12",
-          "notes": "- Fixed: Write, Improve, the guided post and \"Draw\" gave a Creator with a hidden or hinted identity no brief at all, so the text was written \"in their voice\" with nothing about them. They now get the same brief as an open Creator, read at their own disclosure level (no backstory) and with the real name and handle replaced before it reaches the model.\n- Changed: Write, Improve and the guided post now also read the page's bio and stage voice, the way a normal post does.",
           "highlight": false
         }
       ]

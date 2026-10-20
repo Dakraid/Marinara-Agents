@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { compileEngineVisualStyles } from "./engine-visual-styles.ts";
+import { buildPackageHostFixture } from "./package-host-fixture.ts";
 import { runRegressionToCompletion, runWithSafeCleanup } from "./regression-helpers.ts";
 
 const repoRoot = resolve(dirname(process.argv[1] ?? process.cwd()), "..");
@@ -70,6 +71,8 @@ async function main() {
     engineRoot,
     join(repoRoot, "packages/long-term-memory/src/engine/packages/client/src/**/*.{ts,tsx}"),
   );
+  // The client takes React and React Query from the Engine's host namespace, which this bare page must provide first.
+  const hostScript = await buildPackageHostFixture(engineRoot);
   const { labelKeys, localizedLabel } = await import(
     pathToFileURL(
       join(
@@ -594,10 +597,11 @@ async function main() {
         if (url.pathname === "/")
           return send(
             200,
-            `<!doctype html><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/globals.css"><script type="module" src="/client.js"></script>`,
+            `<!doctype html><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/globals.css"><script type="module" src="/host.js"></script><script type="module" src="/client.js"></script>`,
             "text/html",
           );
         if (url.pathname === "/globals.css") return send(200, engineStyles, "text/css");
+        if (url.pathname === "/host.js") return send(200, hostScript, "application/javascript");
         if (url.pathname === "/client.js") return send(200, artifactClient, "application/javascript");
         if (request.method === "GET" && url.pathname === "/api/connections") return send(200, []);
         if (!url.pathname.startsWith("/api/long-term-memory/")) return send(404, {});

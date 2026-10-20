@@ -2,11 +2,11 @@
   "schemaVersion": 2,
   "capabilityApi": {
     "major": 1,
-    "minor": 4
+    "minor": 341
   },
   "builtAgainst": {
-    "engineVersion": "2.4.3",
-    "engineCommit": "bb551bf921c006922edac7be06dbea8fe4c999b9"
+    "engineVersion": "2.5.0",
+    "engineCommit": "25f8df7b0a388fe36f657d69c6fcaa9f27e066ed"
   },
   "id": "hierarchical-maps",
   "name": "World Maps",
@@ -46,13 +46,13 @@
     },
     {
       "path": "server.mjs",
-      "sha256": "d4818fb7a381e793a8e9fc278a4fc4beb5dd6c512a3dd7f4de16ac71bc4fe95d",
-      "bytes": 489425
+      "sha256": "fd3da31137e1a294a5801ad86cdcb828a3e64db9fae87e7627f4f78656b0ff38",
+      "bytes": 143405
     },
     {
       "path": "client.js",
-      "sha256": "3d25c333c9e3ba01a62357c067545367b663982e683a64eaf6503fef12fddc9d",
-      "bytes": 1133238
+      "sha256": "605de008dd46bc4d58a8f92b12f3396e825646ac6a071b8f62d0c4eca6474365",
+      "bytes": 442913
     }
   ],
   "permissions": [

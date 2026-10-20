@@ -1,5 +1,6 @@
-## 1.6.0 — 2026-10-16
+## 1.6.0 — 2026-10-20
 
+- World Maps now uses Marinara Engine's own chat state, notifications and libraries instead of carrying copies of them. A pending map move you cleared no longer comes back, and its notifications appear where you put yours. The download is smaller. It needs a Marinara Engine release after 2.5.0. On 2.5.0 and older, the version you already have keeps working. (#1487)
 - Fill missing artwork now creates several location images at once, up to the image connection's Max Parallel Image Jobs setting. It still goes one at a time on Marinara Engine versions without that setting.
 
 ## 1.5.2 — 2026-10-07
