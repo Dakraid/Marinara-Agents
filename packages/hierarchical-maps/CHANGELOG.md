@@ -1,3 +1,7 @@
+## 10.0.1 — 2026-10-20
+
+- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
 ## 1.6.0 — 2026-10-20
 
 - World Maps now uses Marinara Engine's own chat state, notifications and libraries instead of carrying copies of them. A pending map move you cleared no longer comes back, and its notifications appear where you put yours. The download is smaller. It needs a Marinara Engine release after 2.5.0. On 2.5.0 and older, the version you already have keeps working. (#1487)

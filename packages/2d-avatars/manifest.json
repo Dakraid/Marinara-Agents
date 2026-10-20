@@ -10,7 +10,7 @@
   },
   "id": "2d-avatars",
   "name": "2D Avatars",
-  "version": "0.1.2",
+  "version": "10.0.1",
   "description": "Shows your characters and personas as animated 2D avatars that blink, talk, and change faces with each reply. Uses your sprites or a mesh avatar file. Set up each avatar on the agent's page in Agents, then add the Agent in Chat Settings → Agents → Misc Agents for Roleplay and Game modes.",
   "engine": {
     "min": "2.5.0",

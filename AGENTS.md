@@ -11,6 +11,7 @@ This checkout is the Dakraid fork. Where this section conflicts with upstream-or
 - During development run only the minimal build, test, lint and format for what you touched (file-scoped ESLint and Prettier, the affected `tests/*.regression.*`, a rebuild of the touched package). Run the full suite (the full gate under Rebuild & validation shortcuts) once, before the final commit of all work, and fix what it finds then — not on every branch.
 - Always work with Ponytail and Caveman (full).
 - Commits use Conventional Commits and carry no `Co-Authored-By` or `Claude-Session` trailers.
+- Fork package versions live on the 10.x line (since 2026-10-20, every package started at `10.0.1`). Bump the hotfix (`10.0.1` → `10.0.2`) for every patch to a package; bump the minor (`10.0.x` → `10.1.0`) for every upstream merge that changes the package. Never go back below 10. Set the version at its source (`manifest.json` for agent-only, gacha-forge, relationship-tracker, modern-life-sim and ruleset packages; the `version:` in `scripts/build-feature-packages.mjs`; `VERSION` in the beholder, pixelforge and quartermaster builders; `SLURP2_VERSION` plus the top release entry in `slp-release.ts`), add a matching top entry to the package's `CHANGELOG.md` (a feature/minor bump requires one), then rebuild and run `node scripts/validate-catalog.mjs`. When upstream bumps a package, keep the fork on 10.x and fold upstream's changelog notes into the fork entry.
 
 ## Agent Workflow Overlay
 

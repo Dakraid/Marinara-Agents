@@ -1,5 +1,9 @@
 # Memory-nag release notes
 
+## 10.0.1 — 2026-10-20
+
+- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
 ## 1.2.1 — 2026-10-20
 
 Memory Nag now uses Marinara Engine's own libraries and data cache for its screens instead of carrying copies of them, so the download is smaller. It needs a Marinara Engine release after 2.5.0. On 2.5.0 and older, the version you already have keeps working. (#1487)

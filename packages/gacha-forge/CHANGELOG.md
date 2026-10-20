@@ -1,3 +1,7 @@
+## 10.0.1 — 2026-10-20
+
+- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
 ## 1.8.13 — 2026-10-19
 - Fixed: places named in Korean, or in any other non-Latin script, get their background painted. Their names used to come out empty, so the background was never made; places whose names mixed Hangul and numbers could also share one background.
 - Backgrounds already painted for a place keep showing; nothing is painted twice.

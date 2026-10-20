@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "persona-stats",
   "name": "Persona Stats",
-  "version": "1.0.3",
+  "version": "10.0.1",
   "description": "Tracks your persona's needs, like hunger, energy, and hygiene, as the story goes on. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode.",
   "engine": {
     "min": "2.3.0",

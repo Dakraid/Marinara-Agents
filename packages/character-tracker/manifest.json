@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "character-tracker",
   "name": "Character Tracker",
-  "version": "1.2.0",
+  "version": "10.0.1",
   "description": "Tracks who is in the scene and how each character looks, feels, and acts, plus stats like HP. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode.",
   "engine": {
     "min": "2.3.0",

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "prose-guardian",
   "name": "Prose Guardian",
-  "version": "1.0.3",
+  "version": "10.0.1",
   "description": "Removes banned words, repetition, and unwanted writing habits from AI messages without changing what they say. Add the Agent in Chat Settings → Agents → Writer Agents for Roleplay mode.",
   "engine": {
     "min": "2.3.0",

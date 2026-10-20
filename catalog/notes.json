@@ -4,6 +4,12 @@
     "2d-avatars": {
       "versions": [
         {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": true
+        },
+        {
           "version": "0.1.2",
           "date": "2026-10-15",
           "notes": "- Blink and talk pictures now ask only for the eye or mouth change, so the model keeps the same bust.",
@@ -26,6 +32,12 @@
     "3d-avatars": {
       "versions": [
         {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": true
+        },
+        {
           "version": "0.1.1",
           "date": "2026-10-14",
           "notes": "- Now in Download Agents for Engine staging testers.\n- Checked against the Engine's live faces and lip sync.",
@@ -39,8 +51,24 @@
         }
       ]
     },
+    "background": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
     "beholder": {
       "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": true
+        },
         {
           "version": "1.3.14",
           "date": "2026-10-19",
@@ -69,6 +97,12 @@
     },
     "card-editor": {
       "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": true
+        },
         {
           "version": "1.8.0",
           "date": "2026-10-13",
@@ -149,8 +183,24 @@
         }
       ]
     },
+    "card-evolution-auditor": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
     "character-tracker": {
       "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": true
+        },
         {
           "version": "1.2.0",
           "date": "2026-10-16",
@@ -171,8 +221,44 @@
         }
       ]
     },
+    "chess": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
+    "combat": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
+    "continuity": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
     "conversation-calls": {
       "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": true
+        },
         {
           "version": "1.1.5",
           "date": "2026-10-20",
@@ -232,6 +318,12 @@
     "custom-tracker": {
       "versions": [
         {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": true
+        },
+        {
           "version": "1.1.1",
           "date": "2026-10-01",
           "notes": "- The description now says what it does in plain words.",
@@ -245,8 +337,64 @@
         }
       ]
     },
+    "cyoa": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
+    "director": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
+    "echo-chamber": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
+    "eightball": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
+    "expression": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
     "gacha-forge": {
       "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": true
+        },
         {
           "version": "1.8.13",
           "date": "2026-10-19",
@@ -321,8 +469,24 @@
         }
       ]
     },
+    "haptic": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
     "hierarchical-maps": {
       "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": true
+        },
         {
           "version": "1.6.0",
           "date": "2026-10-20",
@@ -355,8 +519,34 @@
         }
       ]
     },
+    "html": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
+    "illustrator": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
     "inventory-tracker": {
       "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": true
+        },
         {
           "version": "1.2.1",
           "date": "2026-10-01",
@@ -377,8 +567,34 @@
         }
       ]
     },
+    "knowledge-retrieval": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
+    "knowledge-router": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
     "long-term-memory": {
       "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": true
+        },
         {
           "version": "1.4.56",
           "date": "2026-10-20",
@@ -492,17 +708,17 @@
           "date": "2026-10-15",
           "notes": "- Switching between the Vault, Review, Sources and Settings screens no longer shows a brief \"Loading\" panel, because the screens ship in the one bundle the package already loads. Importing a backup, resetting memory settings and deleting all memory data now read each setting and the integrity report once instead of two or three times. Nothing else changes in what the screens show or how they behave. Internally the duplicated tab-key handling, scope labels, confirm dialog, availability copy and shared queries are now one copy each, and 155 unused interface strings were removed.",
           "highlight": false
-        },
-        {
-          "version": "1.4.37",
-          "date": "2026-10-15",
-          "notes": "- Reorganised the Long-Term Memory screens without changing how they work. The Vault, Review queue, Sources and Settings screens each live in their own folder, and the setup guide and the Maintenance tab are components of their own. One visible difference is that the result of a Maintenance action now appears at the top of the Maintenance tab instead of below the tab bar, so it no longer shows on the other tabs and saving settings no longer replaces it.\n- Reset settings now shows the reset values in the settings forms straight away. Before, the forms kept the values from before the reset until Memory Settings was opened again.",
-          "highlight": false
         }
       ]
     },
     "lorebook-editor": {
       "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": true
+        },
         {
           "version": "1.0.1",
           "date": "2026-10-07",
@@ -520,6 +736,12 @@
     "lorebook-keeper": {
       "versions": [
         {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": true
+        },
+        {
           "version": "1.0.7",
           "date": "2026-10-07",
           "notes": "- Added optional descriptions for new entries and empty-description backfills while preserving existing entry and lorebook descriptions.",
@@ -529,6 +751,12 @@
     },
     "memory-nag": {
       "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": true
+        },
         {
           "version": "1.2.1",
           "date": "2026-10-20",
@@ -569,6 +797,12 @@
     },
     "noodle": {
       "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": true
+        },
         {
           "version": "1.5.7",
           "date": "2026-10-20",
@@ -685,8 +919,24 @@
         }
       ]
     },
+    "persona-stats": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
     "pokedex": {
       "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": true
+        },
         {
           "version": "0.1.0",
           "date": "2026-10-02",
@@ -695,8 +945,34 @@
         }
       ]
     },
+    "poker": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
+    "prose-guardian": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
     "quartermaster": {
       "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": true
+        },
         {
           "version": "0.1.28",
           "date": "2026-10-17",
@@ -810,17 +1086,27 @@
           "date": "2026-09-13",
           "notes": "- Rewrote the README's Features section for readability and documented several\n  previously-undocumented features.\n- Updated the in-app description to mention saved outfits, AI-generated art, and the tracker\n  agent.",
           "highlight": false
-        },
+        }
+      ]
+    },
+    "quest": {
+      "versions": [
         {
-          "version": "0.1.9",
-          "date": "2026-09-11",
-          "notes": "- Fixed equip-slot quick-fill only searching the Wearables tab, missing stashed wearable items.",
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
           "highlight": false
         }
       ]
     },
     "relationship-tracker": {
       "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": true
+        },
         {
           "version": "0.7.1",
           "date": "2026-10-14",
@@ -865,8 +1151,24 @@
         }
       ]
     },
+    "rock-paper-scissors": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
     "slurp2": {
       "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": true
+        },
         {
           "version": "0.3.51",
           "date": "2026-10-20",
@@ -980,17 +1282,57 @@
           "date": "2026-10-13",
           "notes": "- Fixed: the picture writer's result was thrown away as \"broke the scene's content level\" when it only repeated a word from the Creator's own look or the draft (for example \"breasts\") on a clothed scene. A word the writer was handed in those two no longer counts as an escalation; limits and the content policy do not count as a source. (#1347)\n- Fixed: when the writer's result was unusable, a long look filled the whole length cap of the fallback prompt, so the picture got an appearance and no scene. The look now keeps a bounded share and the scene keeps the rest.",
           "highlight": false
-        },
+        }
+      ]
+    },
+    "spotify": {
+      "versions": [
         {
-          "version": "0.3.31",
-          "date": "2026-10-13",
-          "notes": "- Changed: the guided post (New post, and Stir's \"Draft post\") is now written by the same generator as the page's own posts, with your wish as the direction. The draft gets the bio, stage voice, brief, spice level, image directions and live events, and comes back as a title, a text and a picture of its own. Before, your wish went word for word into the picture.\n- Changed: one composer. The picture is on top, then who sees the post, then one switch for the text: \"Write it myself\" or \"Guided\". A guided draft fills the normal title, text and picture; the separate preview and its \"Edit\" step are gone. A photo you add stays, and the text is written to go with it.\n- Added: \"Add from Slurp\" on Guided: a storyline of the page, a saved idea (posting the draft uses it up) and a wardrobe look for the picture. Brand deals and collabs stay.\n- Known limit: posting a draft written for a storyline does not move the storyline to its next chapter.",
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
+    "storyboard": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
+    "tic-tac-toe": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": false
+        }
+      ]
+    },
+    "uno": {
+      "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
           "highlight": false
         }
       ]
     },
     "world-state": {
       "versions": [
+        {
+          "version": "10.0.1",
+          "date": "2026-10-20",
+          "notes": "- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.",
+          "highlight": true
+        },
         {
           "version": "1.1.0",
           "date": "2026-09-14",

@@ -1,3 +1,7 @@
+## 10.0.1 — 2026-10-20
+
+- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
 ## 0.1.2 — 2026-10-15
 
 - Blink and talk pictures now ask only for the eye or mouth change, so the model keeps the same bust.

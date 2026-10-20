@@ -10,7 +10,7 @@
   },
   "id": "card-editor",
   "name": "Card Editor",
-  "version": "1.8.0",
+  "version": "10.0.1",
   "description": "Rewrites character cards from your directives while preserving each card's voice and aligning it with referenced lore. Runs on a single card or as bulk dispatch across selected characters, with verdict review, edit-and-retry, and session management in its runs panel. Open a character card and choose Run Card Editor, or select characters and choose Card Editor for a bulk session, to propose changes for approval.",
   "engine": {
     "min": "2.4.7",

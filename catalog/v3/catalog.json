@@ -15,7 +15,7 @@
         },
         "id": "2d-avatars",
         "name": "2D Avatars",
-        "version": "0.1.2",
+        "version": "10.0.1",
         "description": "Shows your characters and personas as animated 2D avatars that blink, talk, and change faces with each reply. Uses your sprites or a mesh avatar file. Set up each avatar on the agent's page in Agents, then add the Agent in Chat Settings → Agents → Misc Agents for Roleplay and Game modes.",
         "engine": {
           "min": "2.5.0",
@@ -45,8 +45,8 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/2d-avatars.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/2d-avatars-0.1.2.zip",
-        "sha256": "d643d1f6f2a86a6815192580fdb3dce746bd8d7e98d2b260f6477ad167ab0e46",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/2d-avatars-10.0.1.zip",
+        "sha256": "a9f119cf3487138e0812b6b3553d7f8126880711a40e49a9242b720aefa043f3",
         "bytes": 2166
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#2d-avatars"
@@ -64,7 +64,7 @@
         },
         "id": "3d-avatars",
         "name": "3D Avatars",
-        "version": "0.1.1",
+        "version": "10.0.1",
         "description": "Shows your characters and personas as animated 3D models that blink, talk, and change faces with each reply. Uses VRM model files. Set up each avatar on the agent's page in Agents, then add the Agent in Chat Settings → Agents → Misc Agents for Roleplay and Game modes.",
         "engine": {
           "min": "2.5.0",
@@ -94,8 +94,8 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/3d-avatars.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/3d-avatars-0.1.1.zip",
-        "sha256": "11b8622eacc3dd249ecf0a25759bd36b89ea1bae122adbc689919e6064636f69",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/3d-avatars-10.0.1.zip",
+        "sha256": "51c3c657c03273273cc8095fb6e61473556379652845657eab3b9aff68ce1d95",
         "bytes": 1033
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#3d-avatars"
@@ -113,7 +113,7 @@
         },
         "id": "eightball",
         "name": "8-Ball Pool",
-        "version": "1.0.6",
+        "version": "10.0.1",
         "description": "Play 8-Ball Pool with a Conversation character. Install to use /8ball manually in any Conversation chat. Add under Chat Settings → Agents → Commands only to let characters initiate it.",
         "engine": {
           "min": "2.3.0",
@@ -173,9 +173,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/eightball.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/eightball-1.0.6.zip",
-        "sha256": "2f116c16d4364c73a785a821d922587fea9d15ac338963bd6f66f1950bdb986c",
-        "bytes": 70309
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/eightball-10.0.1.zip",
+        "sha256": "04052f46eaadfa651e5a5703e90ca6a9f1ec339f7a45ae6aaf057d2202db005d",
+        "bytes": 70310
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#eightball"
     },
@@ -184,7 +184,7 @@
         "schemaVersion": 1,
         "id": "background",
         "name": "Background",
-        "version": "1.0.3",
+        "version": "10.0.1",
         "description": "Selects the most fitting existing background image for the current scene from your background library. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode.",
         "engine": {
           "min": "2.3.0",
@@ -215,8 +215,8 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/background.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/background-1.0.3.zip",
-        "sha256": "c81a75a054570afb6fa6abf3da0b1c9570737afafbecb1172e4f0cb2b23f9fe4",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/background-10.0.1.zip",
+        "sha256": "084aabb5eef16b990f520d98ce6b745d81f3f9cafaf60793835502693afe8f26",
         "bytes": 1433
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#background"
@@ -226,7 +226,7 @@
         "schemaVersion": 1,
         "id": "beholder",
         "name": "Beholder",
-        "version": "1.3.14",
+        "version": "10.0.1",
         "description": "Keeps track of what each character is wearing and holding, plus any injuries, so the story stays consistent. You can check it on a paper doll from the roleplay toolbar. Works with big online models, or with the free Beholder model that runs privately on your computer. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode.",
         "engine": {
           "min": "2.4.4",
@@ -253,7 +253,7 @@
           },
           {
             "path": "client.js",
-            "sha256": "805fc19711e45bd5a6d337895c5185511af9cef0aa989ac20451445120f38e3e",
+            "sha256": "912820adb95c7ffcd55c715f3de2456e3bcc31b202c85136ddcd39af3ebda361",
             "bytes": 452061
           }
         ],
@@ -269,8 +269,8 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/beholder.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/beholder-1.3.14.zip",
-        "sha256": "9a8dc2a8c73e008f9582bd16a857963df5e23c7caa450a0b8b6712c9cf516b41",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/beholder-10.0.1.zip",
+        "sha256": "2b1df2263ecad00094b2d895064bfef528aff5fa50b68a213d21a31849fe8c2f",
         "bytes": 463638
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#beholder"
@@ -288,7 +288,7 @@
         },
         "id": "conversation-calls",
         "name": "Calls",
-        "version": "1.1.5",
+        "version": "10.0.1",
         "description": "Adds live audio and video calls with Conversation characters. Add as both a Command and an Agent in Chat Settings → Agents → Commands/Calls for Conversation mode.",
         "engine": {
           "min": "2.4.1",
@@ -341,9 +341,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/conversation-calls.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/conversation-calls-1.1.5.zip",
-        "sha256": "2445d77c2dd93bf3b90ce39fbc893acaa69138258006681e2ce4a03b64197802",
-        "bytes": 588969
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/conversation-calls-10.0.1.zip",
+        "sha256": "082af84cee8dd69e5049dffa9b1ef01a6acf8203092203d72b750a112c588c49",
+        "bytes": 588970
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#conversation-calls"
     },
@@ -360,7 +360,7 @@
         },
         "id": "card-editor",
         "name": "Card Editor",
-        "version": "1.8.0",
+        "version": "10.0.1",
         "description": "Rewrites character cards from your directives while preserving each card's voice and aligning it with referenced lore. Runs on a single card or as bulk dispatch across selected characters, with verdict review, edit-and-retry, and session management in its runs panel. Open a character card and choose Run Card Editor, or select characters and choose Card Editor for a bulk session, to propose changes for approval.",
         "engine": {
           "min": "2.4.7",
@@ -417,9 +417,9 @@
       "category": "writer",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/card-editor.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/card-editor-1.8.0.zip",
-        "sha256": "888c618bd9d2b13a4b4360d09230bf9af9b3fa4540749aa9845f87e6bca64f68",
-        "bytes": 193546
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/card-editor-10.0.1.zip",
+        "sha256": "878d89f27f27b6135f7469e25b085338145eab9e2ba484a9e4f64414d515bec7",
+        "bytes": 193547
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#card-editor"
     },
@@ -428,7 +428,7 @@
         "schemaVersion": 1,
         "id": "card-evolution-auditor",
         "name": "Card Evolution Auditor",
-        "version": "1.0.3",
+        "version": "10.0.1",
         "description": "Suggests character card updates when the story changes a character, for you to approve. Add the Agent in Chat Settings → Agents → Writer Agents for Roleplay mode.",
         "engine": {
           "min": "2.3.0",
@@ -459,9 +459,9 @@
       "category": "writer",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/card-evolution-auditor.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/card-evolution-auditor-1.0.3.zip",
-        "sha256": "a650a487d8f496267b09e5175309b27825b2f418208adffa2f94cfa597c28149",
-        "bytes": 1540
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/card-evolution-auditor-10.0.1.zip",
+        "sha256": "c10eaf5471bb71b239476793f5cb3d27d83b87368e4021a36e80259a4b006991",
+        "bytes": 1541
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#card-evolution-auditor"
     },
@@ -470,7 +470,7 @@
         "schemaVersion": 1,
         "id": "character-tracker",
         "name": "Character Tracker",
-        "version": "1.2.0",
+        "version": "10.0.1",
         "description": "Tracks who is in the scene and how each character looks, feels, and acts, plus stats like HP. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode.",
         "engine": {
           "min": "2.3.0",
@@ -501,9 +501,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/character-tracker.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/character-tracker-1.2.0.zip",
-        "sha256": "98a3ce5e0aca2698fcb857bfc444f3104117b07ede91c0f3f05e9beaeb37fa21",
-        "bytes": 2542
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/character-tracker-10.0.1.zip",
+        "sha256": "3ad27cba61fd9aa155969fe17f82b3f7db9a42d922ac9d95dcb9a9e67ea91305",
+        "bytes": 2544
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#character-tracker"
     },
@@ -520,7 +520,7 @@
         },
         "id": "chess",
         "name": "Chess",
-        "version": "1.0.6",
+        "version": "10.0.1",
         "description": "Play Chess with a Conversation character. Install to use /chess manually in any Conversation chat. Add under Chat Settings → Agents → Commands only to let characters initiate it.",
         "engine": {
           "min": "2.3.0",
@@ -576,9 +576,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/chess.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/chess-1.0.6.zip",
-        "sha256": "00fc14591387da7daa2476d35d8d68a64ecfbbbe130662f5211f82a45a13f3c7",
-        "bytes": 79679
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/chess-10.0.1.zip",
+        "sha256": "48100b653364dce66065040182c3447ad22192a109d1a9e9d8198888a82c0693",
+        "bytes": 79680
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#chess"
     },
@@ -587,7 +587,7 @@
         "schemaVersion": 1,
         "id": "combat",
         "name": "Combat",
-        "version": "1.0.3",
+        "version": "10.0.1",
         "description": "Manages combat encounters, initiative, HP tracking, and turn-based actions. Add as an Agent in Chat Settings → Agents → Misc Agents for Roleplay mode.",
         "engine": {
           "min": "2.3.0",
@@ -618,9 +618,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/combat.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/combat-1.0.3.zip",
-        "sha256": "9da6690edaa65f3f54e3a16489ef9780085c630008482e33592c7b6c748f2e82",
-        "bytes": 1603
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/combat-10.0.1.zip",
+        "sha256": "b48d6a432691533ea2aab87027ffb46268d8bfb69732a8e6c7efcb1c6e372b1e",
+        "bytes": 1604
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#combat"
     },
@@ -629,7 +629,7 @@
         "schemaVersion": 1,
         "id": "continuity",
         "name": "Continuity Checker",
-        "version": "1.0.3",
+        "version": "10.0.1",
         "description": "Fixes mistakes about places, time, and physical details in AI messages without changing the story. Add the Agent in Chat Settings → Agents → Writer Agents for Roleplay mode.",
         "engine": {
           "min": "2.3.0",
@@ -660,9 +660,9 @@
       "category": "writer",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/continuity.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/continuity-1.0.3.zip",
-        "sha256": "6497e660349e9a9a5b18f1d1c0666d0284f71bdfe8ae2e8a34582b7241b6cdae",
-        "bytes": 1555
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/continuity-10.0.1.zip",
+        "sha256": "5d1328f8948e20b06857b2d1becee251b03f1ff25b5b63ef56e5ba7af2dd5917",
+        "bytes": 1556
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#continuity-checker"
     },
@@ -671,7 +671,7 @@
         "schemaVersion": 1,
         "id": "custom-tracker",
         "name": "Custom Tracker",
-        "version": "1.1.1",
+        "version": "10.0.1",
         "description": "Tracks anything you want during the roleplay, like money, counters, or flags. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode.",
         "engine": {
           "min": "2.3.0",
@@ -702,9 +702,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/custom-tracker.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/custom-tracker-1.1.1.zip",
-        "sha256": "9da6be906c6c7fc331e1d307f7203388ab6227c4b05138b71a56a747050740e9",
-        "bytes": 1728
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/custom-tracker-10.0.1.zip",
+        "sha256": "da43ecb8dced4027a8100c7d33f925d2f9be1410128fd99476d9d8b2e425293e",
+        "bytes": 1729
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#custom-tracker"
     },
@@ -713,7 +713,7 @@
         "schemaVersion": 1,
         "id": "cyoa",
         "name": "CYOA Choices",
-        "version": "1.0.4",
+        "version": "10.0.1",
         "description": "Offers a few choices after each AI message, like a Choose Your Own Adventure book. Click one to send it as your reply. Add the Agent in Chat Settings → Agents → Misc Agents for Roleplay mode.",
         "engine": {
           "min": "2.3.0",
@@ -744,9 +744,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/cyoa.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/cyoa-1.0.4.zip",
-        "sha256": "36b11d7ecfff9cb9c2266352381e24a909c6b0163cb5ec3aeffa3784a39a2c86",
-        "bytes": 1446
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/cyoa-10.0.1.zip",
+        "sha256": "aedaed84c6aa8c9b75b06f8112af0e90291a61d16234dcc324e118dbf1bb6ec9",
+        "bytes": 1447
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#cyoa-choices"
     },
@@ -755,7 +755,7 @@
         "schemaVersion": 1,
         "id": "echo-chamber",
         "name": "Echo Chamber",
-        "version": "1.0.2",
+        "version": "10.0.1",
         "description": "Simulates a live streaming-style chat reacting to your roleplay in real time. Add the Agent in Chat Settings → Agents → Misc Agents for Roleplay mode.",
         "engine": {
           "min": "2.3.0",
@@ -786,9 +786,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/echo-chamber.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/echo-chamber-1.0.2.zip",
-        "sha256": "e78f4d13e6da36deae79dd6d0f6f4396e1bad8c75935b4cb41ffee4189a93520",
-        "bytes": 2429
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/echo-chamber-10.0.1.zip",
+        "sha256": "8a38e0579531e85f60f4a0e83e614f95ffb4c84227881c2d1d34706834e87f94",
+        "bytes": 2430
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#echo-chamber"
     },
@@ -797,7 +797,7 @@
         "schemaVersion": 1,
         "id": "expression",
         "name": "Expression Engine",
-        "version": "1.0.5",
+        "version": "10.0.1",
         "description": "Changes character sprites to match how they feel. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode.",
         "engine": {
           "min": "2.3.0",
@@ -828,9 +828,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/expression.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/expression-1.0.5.zip",
-        "sha256": "7bad09b42129dad0899b305fe6023ba99e8254d30b4d69cb4a188c52aafaa6ed",
-        "bytes": 1572
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/expression-10.0.1.zip",
+        "sha256": "61288aeab8555420050415b071b4136417773d2af6249c1db3f3564e73200b38",
+        "bytes": 1573
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#expression-engine"
     },
@@ -847,7 +847,7 @@
         },
         "id": "gacha-forge",
         "name": "Gacha Forge",
-        "version": "1.8.13",
+        "version": "10.0.1",
         "description": "A complete gacha game mode. Describe a world and Gacha Forge builds the rest: banners to pull on, a cast the model writes and paints for you, story chapters told by a visual-novel narrator, and the battles, gear and events that grow around them. Install it, restart Marinara Engine when prompted, then open Home → Gacha Forge.",
         "engine": {
           "min": "2.4.4",
@@ -2369,8 +2369,8 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/gacha-forge.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/gacha-forge-1.8.13.zip",
-        "sha256": "aedf7cb6c12857f370f34d72f4555a71fa94f70f507b6d9df36607828b7cd622",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/gacha-forge-10.0.1.zip",
+        "sha256": "95533eefe4ed02165605bd2c5c3b627b300fc5068e9986003575f0a666cee0bf",
         "bytes": 7843821
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/gacha-forge/README.md"
@@ -2380,7 +2380,7 @@
         "schemaVersion": 1,
         "id": "haptic",
         "name": "Haptic Feedback",
-        "version": "1.0.4",
+        "version": "10.0.1",
         "description": "Controls connected intimate toys to match what happens in the story. Needs Intiface Central running on your computer, with your toy connected there first. Add as both a Command and an Agent in Chat Settings → Agents → Commands/Misc Agents for Conversation, Roleplay, and Game modes.",
         "engine": {
           "min": "2.4.3",
@@ -2411,9 +2411,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/haptic.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/haptic-1.0.4.zip",
-        "sha256": "8f00a3bb33d478850bbfb7be64ae485b344030cc9520c2772e2c8d18b66cf126",
-        "bytes": 1946
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/haptic-10.0.1.zip",
+        "sha256": "de688319bf20c4fea6b60d4238189e271c36a587c73b572f0548d71b8dd89185",
+        "bytes": 1947
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#haptic-feedback"
     },
@@ -2422,7 +2422,7 @@
         "schemaVersion": 1,
         "id": "illustrator",
         "name": "Illustrator",
-        "version": "1.0.4",
+        "version": "10.0.1",
         "description": "Creates images and videos, with optional automatic scene backgrounds for Roleplay location changes. Add as both a Command and an Agent in Chat Settings → Agents → Commands/Misc Agents/Illustrator for Conversation, Roleplay, and Game modes.",
         "engine": {
           "min": "2.3.3",
@@ -2453,9 +2453,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/illustrator.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/illustrator-1.0.4.zip",
-        "sha256": "d9d11c5edc32fb31206b2b43514aaa2c888697f205f1a4a33d19a2facbf3d529",
-        "bytes": 3173
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/illustrator-10.0.1.zip",
+        "sha256": "c7413708dc8588549b87b8ee8f420758238d43c1069bc481e275c259528d0c14",
+        "bytes": 3174
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#illustrator"
     },
@@ -2464,7 +2464,7 @@
         "schemaVersion": 1,
         "id": "html",
         "name": "Immersive HTML",
-        "version": "1.0.3",
+        "version": "10.0.1",
         "description": "Adds HTML/CSS/JS visual effects to AI messages. Add the Agent in Chat Settings → Agents → Misc Agents for Roleplay mode.",
         "engine": {
           "min": "2.3.0",
@@ -2495,9 +2495,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/html.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/html-1.0.3.zip",
-        "sha256": "3d4ba384cb25e051525d31f352c32f4bd4fa37d299f2b18c3091b78e5f29fbce",
-        "bytes": 1569
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/html-10.0.1.zip",
+        "sha256": "2c58c59774b67aa268b225ce46d2c93e08b593d97c037f2b71c98f100474d578",
+        "bytes": 1570
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#immersive-html"
     },
@@ -2506,7 +2506,7 @@
         "schemaVersion": 1,
         "id": "inventory-tracker",
         "name": "Inventory Tracker",
-        "version": "1.2.1",
+        "version": "10.0.1",
         "description": "Keeps track of your money, gear, and what you're carrying. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode.",
         "engine": {
           "min": "2.4.3",
@@ -2537,8 +2537,8 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/inventory-tracker.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/inventory-tracker-1.2.1.zip",
-        "sha256": "fc9fe24ed1c6e7e23d3bb75de19b6bc206d626498d1ac99595bae539521c7afc",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/inventory-tracker-10.0.1.zip",
+        "sha256": "d91e1086e50dcf640118c4f8e136d35abb634759e47f6f97fd17f56406776018",
         "bytes": 1977
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#inventory-tracker"
@@ -2548,7 +2548,7 @@
         "schemaVersion": 1,
         "id": "knowledge-retrieval",
         "name": "Knowledge Retrieval",
-        "version": "1.0.4",
+        "version": "10.0.1",
         "description": "Finds what matters for the current scene in your lorebooks and gives the AI a short summary of it. Add the Agent in Chat Settings → Agents → Writer Agents for Roleplay mode.",
         "engine": {
           "min": "2.3.0",
@@ -2579,9 +2579,9 @@
       "category": "writer",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/knowledge-retrieval.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/knowledge-retrieval-1.0.4.zip",
-        "sha256": "e0121d6ed27128ca999504cb0ed31e4e2b7557e2dcff7b9446eaeb73735d9e50",
-        "bytes": 1368
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/knowledge-retrieval-10.0.1.zip",
+        "sha256": "0e299aa9c7e4536e1d02e13142df89faae2c8edc8e8f8db707e54c68ffe2c586",
+        "bytes": 1369
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#knowledge-retrieval"
     },
@@ -2590,7 +2590,7 @@
         "schemaVersion": 1,
         "id": "knowledge-router",
         "name": "Knowledge Router",
-        "version": "1.0.4",
+        "version": "10.0.1",
         "description": "A cheaper Knowledge Retrieval: picks the lorebook entries that fit the scene and gives them to the AI as they are. Works best with big lorebooks whose entries have short descriptions. Add the Agent in Chat Settings → Agents → Writer Agents for Roleplay mode.",
         "engine": {
           "min": "2.3.0",
@@ -2621,8 +2621,8 @@
       "category": "writer",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/knowledge-router.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/knowledge-router-1.0.4.zip",
-        "sha256": "49b41722c402c91dbfe776f3e87ec8022de0a4553ea2b421d7191dde72a08921",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/knowledge-router-10.0.1.zip",
+        "sha256": "5a13d5e94c17d0dde402f6e952d04f0acbc47fe6f0fcc247ce53b6ceee582a46",
         "bytes": 1446
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#knowledge-router"
@@ -2640,7 +2640,7 @@
         },
         "id": "long-term-memory",
         "name": "Long-Term Memory",
-        "version": "1.4.56",
+        "version": "10.0.1",
         "description": "Remembers important things from your chat summaries, characters, and lorebooks, and brings them back when they matter. Enable it per chat from Chat Settings → Agents → Long-Term Memory. In Roleplay and Game, you can also add it from Chat Settings → Agents → Misc Agents.",
         "engine": {
           "min": "2.4.1",
@@ -2694,8 +2694,8 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/long-term-memory.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/long-term-memory-1.4.56.zip",
-        "sha256": "08cd89eff07d2c886daae4d5db16a50d73b1fd493225adaa8c15664ae9dde99a",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/long-term-memory-10.0.1.zip",
+        "sha256": "7736cc53425e0d6e8cf467d58ddb3c18ed14aa031198bef39892833546938ed0",
         "bytes": 1117619
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#long-term-memory"
@@ -2705,7 +2705,7 @@
         "schemaVersion": 1,
         "id": "lorebook-editor",
         "name": "Lorebook Editor",
-        "version": "1.0.1",
+        "version": "10.0.1",
         "description": "Rewrites entries in a target lorebook from a user directive while preserving continuity with referenced character cards. Open a lorebook and choose Run Lorebook Editor to propose changes for approval.",
         "engine": {
           "min": "2.3.0",
@@ -2736,9 +2736,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/lorebook-editor.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/lorebook-editor-1.0.1.zip",
-        "sha256": "91490f5468afbddc174d2429fd8c3e96a0ddb9e16d4701388cefd2fcf9c99864",
-        "bytes": 2640
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/lorebook-editor-10.0.1.zip",
+        "sha256": "e60abf437bf5a39bbd44e9a4349adbacd359407cadf1b27896d5073ec28d321f",
+        "bytes": 2641
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#lorebook-editor"
     },
@@ -2747,7 +2747,7 @@
         "schemaVersion": 1,
         "id": "lorebook-keeper",
         "name": "Lorebook Keeper",
-        "version": "1.0.7",
+        "version": "10.0.1",
         "description": "Saves important story facts, characters, places, and world changes to the chat's lorebook as you play. Add the Agent in Chat Settings → Agents → Misc Agents/Lorebook Keeper for Roleplay and Game modes.",
         "engine": {
           "min": "2.4.4",
@@ -2778,9 +2778,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/lorebook-keeper.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/lorebook-keeper-1.0.7.zip",
-        "sha256": "ed6a71808a55346d4c46f6dae09b1a973fa59e8bfe57a1848d4a2b7269a6cd44",
-        "bytes": 2345
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/lorebook-keeper-10.0.1.zip",
+        "sha256": "836d41976a81c1ad363085b7771fafbfb4a81324ab4ddc9ae93197295917ce58",
+        "bytes": 2346
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#lorebook-keeper"
     },
@@ -2797,7 +2797,7 @@
         },
         "id": "memory-nag",
         "name": "Memory Nag",
-        "version": "1.2.1",
+        "version": "10.0.1",
         "description": "Remembers loose ends from your roleplay, like promises and open questions, and reminds the AI when they matter. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode. Once active, configure it in its standalone Memory Nag section.",
         "engine": {
           "min": "2.4.4",
@@ -2848,9 +2848,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/memory-nag.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/memory-nag-1.2.1.zip",
-        "sha256": "1b26fe893e2d6d8caadd4f3f7c31c73b6e526f2b0cf8f0d42e0102dd4f245c8e",
-        "bytes": 171368
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/memory-nag-10.0.1.zip",
+        "sha256": "f88e1285d05ee5196077455bbb4417087e162b490c5158f8a30d4c6c39a2a459",
+        "bytes": 171369
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#memory-nag"
     },
@@ -2859,7 +2859,7 @@
         "schemaVersion": 1,
         "id": "spotify",
         "name": "Music DJ",
-        "version": "1.0.3",
+        "version": "10.0.1",
         "description": "Plays music that fits the mood of the story, from Spotify, YouTube, or your own Game Assets music. Enable the music player in Settings → General. Add both as a Command and an Agent in Chat Settings → Agents → Commands/Misc Agents/Music DJ for Conversation, Roleplay, and Game modes.",
         "engine": {
           "min": "2.3.0",
@@ -2890,9 +2890,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/spotify.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/spotify-1.0.3.zip",
-        "sha256": "be8dec8daeaabc8f533be670632ddd6c677d3ff7447aaf94f42ddf7e697efaaa",
-        "bytes": 2611
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/spotify-10.0.1.zip",
+        "sha256": "c7401b7f21a95db3d60386e46694ed4c71fefad73d204bab2cecbd64738c6ff6",
+        "bytes": 2612
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#music-dj"
     },
@@ -2901,7 +2901,7 @@
         "schemaVersion": 1,
         "id": "director",
         "name": "Narrative Director",
-        "version": "1.0.3",
+        "version": "10.0.1",
         "description": "Gives the story a push in a new direction when you ask for it. Add the Agent in Chat Settings → Agents → Writer Agents for Roleplay mode.",
         "engine": {
           "min": "2.3.0",
@@ -2932,8 +2932,8 @@
       "category": "writer",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/director.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/director-1.0.3.zip",
-        "sha256": "3e364ccdad2360f5663bc659c21647372b39463eeae99b81203c82174ccab838",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/director-10.0.1.zip",
+        "sha256": "24f304d3c99e8f01a92c0cb66970f1a0e6786db275fa254c5f667ddc82543169",
         "bytes": 1415
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#narrative-director"
@@ -2951,7 +2951,7 @@
         },
         "id": "noodle",
         "name": "Noodle",
-        "version": "1.5.7",
+        "version": "10.0.1",
         "description": "A pretend social network where your characters post, share photos, and talk about your chats. Install it, restart Marinara Engine when prompted, then open Home → Noodle.",
         "localizations": {
           "de": {
@@ -3061,9 +3061,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/noodle.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/noodle-1.5.7.zip",
-        "sha256": "33cab7fd2c95de2e47efbfe6b368bee1fd41ea1b02f8f7da5f6478ef89c6a704",
-        "bytes": 1474182
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/noodle-10.0.1.zip",
+        "sha256": "8f10411f1917fef86701330b259fa7f20008a84a3fc26c6eb0c6c2a2b1e9e030",
+        "bytes": 1474183
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/noodle/README.md"
     },
@@ -3072,7 +3072,7 @@
         "schemaVersion": 1,
         "id": "persona-stats",
         "name": "Persona Stats",
-        "version": "1.0.3",
+        "version": "10.0.1",
         "description": "Tracks your persona's needs, like hunger, energy, and hygiene, as the story goes on. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode.",
         "engine": {
           "min": "2.3.0",
@@ -3103,8 +3103,8 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/persona-stats.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/persona-stats-1.0.3.zip",
-        "sha256": "cfa8cdc7e69103c1c027daf9938a980cec6dc60e66c5fa1a9dcb55f1472fa07d",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/persona-stats-10.0.1.zip",
+        "sha256": "c461b08b6c2f6dc23da74706e90fac0efb28979854aeefd14991a28f3364d744",
         "bytes": 1603
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#persona-stats"
@@ -3122,7 +3122,7 @@
         },
         "id": "pokedex",
         "name": "Pokédex Scanner",
-        "version": "0.1.0",
+        "version": "10.0.1",
         "description": "Scans Pokémon on first encounter, renders a Pokédex entry card in the chat, and tracks the trainer's active harem, pregnancies, and recent encounters. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode. Once active, configure it in its standalone Pokédex Scanner section.",
         "engine": {
           "min": "2.4.6",
@@ -3173,9 +3173,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/pokedex.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/pokedex-0.1.0.zip",
-        "sha256": "7b608bf818db3d34be9441a98ad1c6c075856154e293d7b292f2ef556696388b",
-        "bytes": 59955
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/pokedex-10.0.1.zip",
+        "sha256": "4a428549524e3bebe755ff2744bfc91f9cc52b5774e84416204a95577ab80877",
+        "bytes": 59956
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#pokedex"
     },
@@ -3192,7 +3192,7 @@
         },
         "id": "poker",
         "name": "Poker",
-        "version": "1.0.6",
+        "version": "10.0.1",
         "description": "Play Texas Hold’em Poker with Conversation characters. Install to use /poker manually in any Conversation chat. Add under Chat Settings → Agents → Commands only to let characters initiate it.",
         "engine": {
           "min": "2.3.0",
@@ -3250,9 +3250,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/poker.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/poker-1.0.6.zip",
-        "sha256": "1a69e15cfee312b44cfcd6d25c81e1b4fd22863d991d4c7b5126cc19af42006f",
-        "bytes": 60405
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/poker-10.0.1.zip",
+        "sha256": "4f1276c7872e16a5ad17aad29e82cb9afc75347b7933380267af18ee9f51c889",
+        "bytes": 60406
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#poker"
     },
@@ -3261,7 +3261,7 @@
         "schemaVersion": 1,
         "id": "prose-guardian",
         "name": "Prose Guardian",
-        "version": "1.0.3",
+        "version": "10.0.1",
         "description": "Removes banned words, repetition, and unwanted writing habits from AI messages without changing what they say. Add the Agent in Chat Settings → Agents → Writer Agents for Roleplay mode.",
         "engine": {
           "min": "2.3.0",
@@ -3292,9 +3292,9 @@
       "category": "writer",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/prose-guardian.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/prose-guardian-1.0.3.zip",
-        "sha256": "3cc07250d28a1d902c1f09a00f7007e987f5e5c2bdcbaad3ead0f6ab55d867d9",
-        "bytes": 1517
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/prose-guardian-10.0.1.zip",
+        "sha256": "3e05246eceead7f43f0323de409110c6d5936e78683e73c9913d7492c1d8d3fe",
+        "bytes": 1518
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#prose-guardian"
     },
@@ -3311,7 +3311,7 @@
         },
         "id": "quartermaster",
         "name": "Quartermaster",
-        "version": "0.1.28",
+        "version": "10.0.1",
         "description": "An RPG character sheet and inventory for Roleplay: equip gear around your persona's portrait, save outfits, get AI art for items, and let it keep everything in step with the story. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode.",
         "engine": {
           "min": "2.4.6",
@@ -3339,7 +3339,7 @@
           },
           {
             "path": "client.js",
-            "sha256": "acc3b1778a802799f9822aecb2077e138f8e04f5ca4a9d7802587450c1b8e43a",
+            "sha256": "3e85914bf149117714d6b204658b57831535b87687021133950aec0585d38ea6",
             "bytes": 306535
           },
           {
@@ -3469,8 +3469,8 @@
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/quartermaster.png",
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/quartermaster/README.md",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/quartermaster-0.1.28.zip",
-        "sha256": "6eb40478ea7339318e6582b66a308f11547d35100c8c766851ced50fb3679a4e",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/quartermaster-10.0.1.zip",
+        "sha256": "120461dc21148eaf6fe7bba260394a0a15479659f5b42eab71fbf9e030e80568",
         "bytes": 482700
       }
     },
@@ -3479,7 +3479,7 @@
         "schemaVersion": 1,
         "id": "quest",
         "name": "Quest Tracker",
-        "version": "1.0.5",
+        "version": "10.0.1",
         "description": "Keeps track of your quests, their goals, and their rewards. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode.",
         "engine": {
           "min": "2.3.0",
@@ -3510,9 +3510,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/quest.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/quest-1.0.5.zip",
-        "sha256": "d14d89a105a0f235c7b813366acccbd7049eb3b1ffd5b6815b691ec97225fa8e",
-        "bytes": 3000
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/quest-10.0.1.zip",
+        "sha256": "7c4d5b3f066d16c70769b5a7eef8d945debd2be0872a9c642a84d1489f221e5a",
+        "bytes": 3001
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#quest-tracker"
     },
@@ -3529,7 +3529,7 @@
         },
         "id": "relationship-tracker",
         "name": "Relationship Tracker",
-        "version": "0.7.1",
+        "version": "10.0.1",
         "description": "Tracks how the characters and your persona feel about each other. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode.",
         "engine": {
           "min": "2.4.4",
@@ -3629,9 +3629,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/relationship-tracker.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/relationship-tracker-0.7.1.zip",
-        "sha256": "c401f92789a6c541ad220cf86e45e538075e86b6324b5ac60bd59da42ea83d52",
-        "bytes": 248153
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/relationship-tracker-10.0.1.zip",
+        "sha256": "417a2044e62fa41bdb687f6d7cf588457f030ee520be2c4218ae06234f47e9e6",
+        "bytes": 248154
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/relationship-tracker/README.md"
     },
@@ -3648,7 +3648,7 @@
         },
         "id": "rock-paper-scissors",
         "name": "Rock-Paper-Scissors",
-        "version": "1.0.6",
+        "version": "10.0.1",
         "description": "Play Rock-Paper-Scissors with a Conversation character. Install to use /rps manually in any Conversation chat. Add under Chat Settings → Agents → Commands only to let characters initiate it.",
         "engine": {
           "min": "2.3.0",
@@ -3706,9 +3706,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/rock-paper-scissors.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/rock-paper-scissors-1.0.6.zip",
-        "sha256": "30e1d4f0cf4bcafdc2b01ef71cc92eb1e80a536f6e44404cd40b8565ebc87a2e",
-        "bytes": 37676
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/rock-paper-scissors-10.0.1.zip",
+        "sha256": "6e43ccaa0188228d2445f002c5ed1e933e5a9ba4cc5b5b498245d5827c9f056d",
+        "bytes": 37677
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#rock-paper-scissors"
     },
@@ -3725,7 +3725,7 @@
         },
         "id": "slurp2",
         "name": "Slurp",
-        "version": "0.3.51",
+        "version": "10.0.1",
         "description": "A private social app for your characters. Turn characters and personas into Creators, post public or locked photos, and watch a simulated audience follow, subscribe, unlock, comment, and message them. By default, it is tuned for an adult experience. Install it, restart Marinara Engine when prompted, then open Home → Slurp.",
         "localizations": {
           "de": {
@@ -3797,7 +3797,7 @@
           },
           {
             "path": "client.js",
-            "sha256": "d2fe044450732a3fc262eca249209cb30e17769a2eb15573a06c2d1b9d8f0242",
+            "sha256": "adb45975823c0ba8455abd99b479b94545469eb3ab386a729182420f66c70439",
             "bytes": 2758599
           },
           {
@@ -3841,8 +3841,8 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/slurp2.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/slurp2-0.3.51.zip",
-        "sha256": "a8635c3b5c337fcbcecd37cbe2e7215618df0b38966aa22cc06b4b005f4d40ee",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/slurp2-10.0.1.zip",
+        "sha256": "7eea2e6f96ee6ecafd6e2657506803e68f39071c1c6c356047b76364715485b5",
         "bytes": 5606530
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/slurp2/README.md"
@@ -3852,7 +3852,7 @@
         "schemaVersion": 1,
         "id": "storyboard",
         "name": "Storyboard",
-        "version": "1.1.6",
+        "version": "10.0.1",
         "description": "Turns Game and Roleplay scenes into storyboards of still images or short animations. Add the Agent in Chat Settings → Agents → Misc Agents/Storyboard for Roleplay and Game modes.",
         "engine": {
           "min": "2.4.2",
@@ -3883,8 +3883,8 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/storyboard.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/storyboard-1.1.6.zip",
-        "sha256": "126c32600cb3d98101f01e2d74a358f47250bb11b1403f5be79cadc07247f6f6",
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/storyboard-10.0.1.zip",
+        "sha256": "1f37afc506d5edf2add6a07684010e28baa065be94471caa42bcd3132740afdd",
         "bytes": 17718
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#storyboard"
@@ -3902,7 +3902,7 @@
         },
         "id": "tic-tac-toe",
         "name": "Tic-Tac-Toe",
-        "version": "1.0.6",
+        "version": "10.0.1",
         "description": "Play Tic-Tac-Toe with a Conversation character. Install to use /tictactoe manually in any Conversation chat. Add under Chat Settings → Agents → Commands only to let characters initiate it.",
         "engine": {
           "min": "2.3.0",
@@ -3961,9 +3961,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/tic-tac-toe.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/tic-tac-toe-1.0.6.zip",
-        "sha256": "f253a5b60ef1d6369911b3ac6cb95547693c9a53dedcca8196a2461c6af7e7e0",
-        "bytes": 33455
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/tic-tac-toe-10.0.1.zip",
+        "sha256": "74374ce1fabed55fb5e6363ae9ef7983f0b72b7a2e2a4b104aabecfdbebf2d06",
+        "bytes": 33456
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#tic-tac-toe"
     },
@@ -3980,7 +3980,7 @@
         },
         "id": "uno",
         "name": "UNO",
-        "version": "1.0.6",
+        "version": "10.0.1",
         "description": "Play UNO with Conversation characters. Install to use /uno manually in any Conversation chat. Add under Chat Settings → Agents → Commands only to let characters initiate it.",
         "engine": {
           "min": "2.3.0",
@@ -4036,9 +4036,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/uno.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/uno-1.0.6.zip",
-        "sha256": "32043fce5cf75e5eb0f11e84b10714abc598a1925ed88956de8d9df2446b56a8",
-        "bytes": 59861
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/uno-10.0.1.zip",
+        "sha256": "663c9af71f06702fd8de40f36b2b447a5025c5bb1cf44fdf0081b36a7308beba",
+        "bytes": 59862
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#uno"
     },
@@ -4055,7 +4055,7 @@
         },
         "id": "hierarchical-maps",
         "name": "World Maps",
-        "version": "1.6.0",
+        "version": "10.0.1",
         "description": "Adds world maps to Roleplay and Game, from whole regions down to single rooms, with art and travel between places. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay and Game modes.",
         "engine": {
           "min": "2.4.2",
@@ -4115,9 +4115,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/hierarchical-maps.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/hierarchical-maps-1.6.0.zip",
-        "sha256": "b947e145ed14dda3d127aa7ff9643666c3a4fa298a1b0b1cff02dff659c3d0bb",
-        "bytes": 588949
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/hierarchical-maps-10.0.1.zip",
+        "sha256": "f549ec5f9b73888d114e5eaf325e0c348f87e184d552ac40084ef279b7840ed6",
+        "bytes": 588950
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/main/docs/agents/hierarchical-maps.md"
     },
@@ -4126,7 +4126,7 @@
         "schemaVersion": 1,
         "id": "world-state",
         "name": "World State",
-        "version": "1.1.0",
+        "version": "10.0.1",
         "description": "Tracks date, time, weather, location, temperature, and custom world details automatically. Add the Agent in Chat Settings → Agents → Tracker Agents for Roleplay mode.",
         "engine": {
           "min": "2.3.0",
@@ -4157,9 +4157,9 @@
       "category": "tracker",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/world-state.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/world-state-1.1.0.zip",
-        "sha256": "bedf93879675900da43eedf85320898788fd54920342070ba8dba6b24e339f49",
-        "bytes": 2004
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/world-state-10.0.1.zip",
+        "sha256": "8de8b83d00710a560471b7603a01123c2b7531554cc14466c0503b68ee36a8c7",
+        "bytes": 2006
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/agents/built-in-agents.md#world-state"
     }

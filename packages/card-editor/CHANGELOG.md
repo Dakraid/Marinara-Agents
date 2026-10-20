@@ -1,3 +1,7 @@
+## 10.0.1 — 2026-10-20
+
+- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
 ## 1.8.0 — 2026-10-13
 
 - Responses with near-miss JSON (trailing commas, output cut off before its closing brackets) are now **auto-healed** before the strict-JSON retry, so fewer cards end in failed-parse.

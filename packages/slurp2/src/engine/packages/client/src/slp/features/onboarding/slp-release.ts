@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.51";
+export const SLURP2_VERSION = "10.0.1";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -13,7 +13,7 @@ export interface Slurp2ReleaseEntry {
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
   {
-    version: "0.3.51",
+    version: "10.0.1",
     date: "2026-10-20",
     notes: [
       "Slurp now runs on Marinara's own settings, dialogs and notifications, so it no longer resets your other settings.",

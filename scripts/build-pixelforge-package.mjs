@@ -23,7 +23,7 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const packageRoot = join(repoRoot, "packages/pixelforge");
 const artifactsDir = join(repoRoot, "artifacts");
 
-const VERSION = "0.16.9";
+const VERSION = "10.0.1";
 const CAPABILITY_API = Object.freeze({ major: 1, minor: 18 });
 const ENGINE_MIN = "2.4.5"; // world-generation selections use full lore entries and explicit context checks
 const MAX_ENGINE_EXCLUSIVE = "4.0.0";

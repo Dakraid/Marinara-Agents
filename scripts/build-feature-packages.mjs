@@ -362,7 +362,7 @@ async function removeOwnedSourceSnapshots(excludedPaths) {
 const features = [
   {
     id: "noodle",
-    version: "1.5.7",
+    version: "10.0.1",
     minEngineVersion: "2.4.6",
     capabilityApi: PACKAGE_CAPABILITY_API,
     builtAgainst: PACKAGE_BUILT_AGAINST,
@@ -442,7 +442,7 @@ const features = [
   },
   {
     id: "slurp2",
-    version: "0.3.51",
+    version: "10.0.1",
     minEngineVersion: "2.4.6",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Slurp",
@@ -517,7 +517,7 @@ const features = [
   },
   {
     id: "long-term-memory",
-    version: "1.4.56",
+    version: "10.0.1",
     minEngineVersion: "2.4.1",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Long-Term Memory",
@@ -542,7 +542,7 @@ const features = [
   },
   {
     id: "memory-nag",
-    version: "1.2.1",
+    version: "10.0.1",
     minEngineVersion: "2.4.4",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Memory Nag",
@@ -597,7 +597,7 @@ const features = [
   },
   {
     id: "card-editor",
-    version: "1.8.0",
+    version: "10.0.1",
     minEngineVersion: "2.4.7",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Card Editor",
@@ -624,7 +624,7 @@ const features = [
   },
   {
     id: "pokedex",
-    version: "0.1.0",
+    version: "10.0.1",
     minEngineVersion: "2.4.6",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Pokédex Scanner",
@@ -690,7 +690,7 @@ const features = [
   },
   {
     id: "hierarchical-maps",
-    version: "1.6.0",
+    version: "10.0.1",
     minEngineVersion: "2.4.2",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "World Maps",
@@ -714,7 +714,7 @@ const features = [
   {
     id: "conversation-calls",
     name: "Calls",
-    version: "1.1.5",
+    version: "10.0.1",
     minEngineVersion: "2.4.1",
     capabilityApi: PACKAGE_CAPABILITY_API,
     builtAgainst: PACKAGE_BUILT_AGAINST,
@@ -770,7 +770,7 @@ const features = [
   ].map(([id, name, description, clientName, command, aliases, playerLabel]) => ({
     id,
     name,
-    version: "1.0.6",
+    version: "10.0.1",
     maxEngineExclusive: "4.0.0",
     capabilityApi: PACKAGE_CAPABILITY_API,
     builtAgainst: PACKAGE_BUILT_AGAINST,

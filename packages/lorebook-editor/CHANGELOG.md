@@ -1,3 +1,7 @@
+## 10.0.1 — 2026-10-20
+
+- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
 ## 1.0.1 — 2026-10-07
 - Added entry and lorebook description backfill proposals, including a focused Backfill descriptions preset that preserves existing descriptions.
 

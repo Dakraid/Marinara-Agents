@@ -1,5 +1,9 @@
 # Quartermaster changelog
 
+## 10.0.1 — 2026-10-20
+
+- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
 ## 0.1.28 — 2026-10-17
 - Build Wardrobe layers clothing properly: when two pieces of an outfit share a layer (tights and a
   skirt over them), the outer one moves up a layer instead of being left out.
