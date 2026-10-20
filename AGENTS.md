@@ -7,7 +7,8 @@ This file is a thin maintainer note for contributors using coding agents. Canoni
 This checkout is the Dakraid fork. Where this section conflicts with upstream-oriented guidance below (staging targets, issue and draft-PR ownership, CodeRabbit and approval gates), this section wins.
 
 - The fork lives on `customized`. Do all work on a feature branch cut from `customized` (`feat/…`, `fix/…`, `docs/…`) and merge it back into `customized`. Do not commit directly to `customized`.
-- Merge upstream (`Pasta-Devs/main`, see Upstream merge) into `customized` regularly. Resolve conflicts properly and keep fork behavior; when the right direction is unclear, ask the user before resolving.
+- Merge upstream (`upstream/staging`, see Upstream merge) into `customized` regularly. Resolve conflicts properly and keep fork behavior; when the right direction is unclear, ask the user before resolving.
+- `CONFLICTS.md` lists every intentional fork deviation with what must survive a merge. Read it before resolving upstream conflicts, and update its entry in the same change whenever you add or change a fork deviation.
 - During development run only the minimal build, test, lint and format for what you touched (file-scoped ESLint and Prettier, the affected `tests/*.regression.*`, a rebuild of the touched package). Run the full suite (the full gate under Rebuild & validation shortcuts) once, before the final commit of all work, and fix what it finds then — not on every branch.
 - Always work with Ponytail and Caveman (full).
 - Commits use Conventional Commits and carry no `Co-Authored-By` or `Claude-Session` trailers.
@@ -39,13 +40,13 @@ This checkout is the Dakraid fork. Where this section conflicts with upstream-or
 
 ## Upstream merge
 
-- Fetch and merge `Pasta-Devs/main` directly; never merge stale local `main`, `origin/main`, or `staging` branches.
+- Fetch and merge `upstream/staging` (Pasta-Devs) directly; never merge stale local `main`, `origin/main`, or `staging` branches.
 - Resolve generated outputs (`catalog/**`, `artifacts/*.zip`, and `packages/*/{client.js,server.mjs}`) to one side only, then rebuild from merged sources. Never hand-merge generated files. Take upstream-owned package conflicts from theirs; retain fork comment-only source patches and rebake them.
 - For vendored Engine sources, use ours as the base, fold in upstream semantic swaps, and remove imports orphaned by the merge. Manually union build/validation scripts and `README.md`; keep upstream `.github/**`; accumulate historical ZIPs rather than deleting them.
 - An ours-side catalog can hide newer upstream entries, as happened with Beholder and Gacha Forge. Regenerate each affected upstream package and restore any temporarily relaxed validator byte-for-byte afterward.
 - For a same-version collision, union both feature lines and publish above upstream's latest version; World Maps became `1.5.2`. The newest `CHANGELOG.md` entry must match that version.
 - Builders require `zip`. If the system binary is absent, the recovered Info-ZIP is `/tmp/marinara-merge-recovery/bin/zip`; prepend `/tmp/marinara-merge-recovery/bin` to `PATH`.
-- After merging, inspect manifest versions, confirm catalog totals (`42 = 25 agents + 17 features` for the 2026-10-07 merge), and require `grep -c "duplicate-applied" packages/card-editor/client.js` to return more than zero.
+- After merging, inspect manifest versions, confirm catalog totals (`44 = 27 agents + 17 features` as of 2026-10-21; upstream's total + 3 for the fork-only Card Editor, Pokédex and Lorebook Editor), and require `grep -c "duplicate-applied" packages/card-editor/client.js` to return more than zero.
 - Upstream packages may require newer shared Engine exports. World Maps lifecycle tests expect Engine 2.5.0's `CODEX_IMAGE_MODEL`; syncing the Engine fork is separate work, so those regressions may legitimately fail against an older fork.
 
 ## Rebuild & validation shortcuts
