@@ -50,8 +50,8 @@ export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBac
   // ponytail: no switch on screen until each gate lands (slice 3 PRs 2-4); then drop `internal`.
   extStorylines: internal(slurp("storylines", "storylines")),
   extWorld: slurp("events", "living world", "extension", "events", "trends"),
-  extStir: internal(slurp("stir", "stir")),
-  extSupportDesk: internal(slurp("stir", "support desk")),
+  extStir: slurp("stir", "stir", "extension", "levers", "planner"),
+  extSupportDesk: slurp("stir", "support desk", "extension", "tickets", "trust"),
   extEngineLink: internal(slurp("engine", "engine link")),
   inlineAdsEnabled: slurp("ads", "ads", "promotions", "feed"),
   inlineAdsFrequency: slurp("ads", "ad frequency", "promotions"),
@@ -233,9 +233,14 @@ const SLP_EXTENSION_TARGETS: Partial<Record<SlpBackstageTarget, SlpExtensionId>>
   ads: "ads",
   events: "world",
   calendar: "world",
+  // The Stir page holds both switches; its other settings are the Support desk's.
+  stir: "supportDesk",
 };
 /** Settings an extension owns that live on another page. */
-const SLP_EXTENSION_SETTINGS: Partial<Record<keyof SlurpSettings, SlpExtensionId>> = { sharedWorldEvents: "world" };
+const SLP_EXTENSION_SETTINGS: Partial<Record<keyof SlurpSettings, SlpExtensionId>> = {
+  sharedWorldEvents: "world",
+  extStir: "stir",
+};
 
 /** Search skips the settings of a switched-off extension; its own switch stays findable. */
 export function slpPlacementSwitchedOff(

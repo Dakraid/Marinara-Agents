@@ -3039,5 +3039,11 @@
   "ui.slurp.settings.ext.world.label": "Żywy świat",
   "ui.slurp.settings.ext.world.detail": "Święta i wydarzenia na stronie, kalendarz, wydarzenia na całym Slurpie i wiralowe trendy.",
   "ui.slurp.settings.ext.world.trends.label": "Wiralowe trendy",
-  "ui.slurp.settings.ext.world.trends.detail": "Post, który się przebije, może zacząć trend, do którego dołączą inni twórcy."
+  "ui.slurp.settings.ext.world.trends.detail": "Post, który się przebije, może zacząć trend, do którego dołączą inni twórcy.",
+  "ui.slurp.settings.ext.stir.label": "Stir",
+  "ui.slurp.settings.ext.stir.detail": "Karta Stir: planer, talia dźwigni i „W grze”.",
+  "ui.slurp.settings.ext.supportDesk.label": "Biuro Support",
+  "ui.slurp.settings.ext.supportDesk.detail": "Gra w obsługę: zgłoszenia, zaufanie, podejrzliwość, oferty, bonusy, powiadomienia i twórcy, którzy odchodzą.",
+  "ui.slurp.stir.off": "Stir i Biuro Support są wyłączone",
+  "ui.slurp.stir.offDetail": "Włącz jedno z nich w Backstage › Stir."
 }

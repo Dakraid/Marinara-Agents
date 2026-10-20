@@ -72,7 +72,7 @@ import { SLP_PERSONA_SWITCHER_PAGE_SIZE } from "../base/chrome/SlpChrome";
 import { toast } from "sonner";
 import { slurp2SplashPending } from "../features/onboarding/SlpSplash";
 import type { SlurpHomeProps } from "./slp-home.types";
-import { slpTrendsOn } from "../../../../shared/src/slp/slp-extensions.js";
+import { slpExtensionOn, slpTrendsOn } from "../../../../shared/src/slp/slp-extensions.js";
 export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onLeave }: SlurpHomeProps) {
   const onNavigate = useSlpBackstageLeaveGuard(navigation, navigateRaw);
   const { t: localizeUi } = useUiTranslation();
@@ -486,7 +486,10 @@ export function useSlurpHomeBaseState({ navigation, onNavigate: navigateRaw, onL
   });
   const postCardController = useSlpPostCardController({
     textAssist: ({ story, ...input }) => createElement(SlpTextAssist, { ...input, field: story ? "story" : "caption" }),
-    stir: (post) => openSlpStir({ creatorId: post.authorAccountId, postId: post.id }),
+    stir:
+      slurpSettingsQuery.data && slpExtensionOn(slurpSettingsQuery.data, "stir")
+        ? (post) => openSlpStir({ creatorId: post.authorAccountId, postId: post.id })
+        : undefined,
     postShowMoreLength: slurpSettingsQuery.data?.postShowMoreLength,
     postManagement: false,
     personaAccount: viewerActorAccount,

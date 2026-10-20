@@ -17,6 +17,8 @@ import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-supp
 import { SLURP_SUPPORT_PHOTO_GUIDANCE } from "../../modules/messages/slp-support.js";
 import { SLURP_SUPPORT_NAME } from "../../modules/messages/slp-dm-roles.js";
 import { markSlurpDeskSupportTurn, prepareSlurpDeskSend, slurpDeskSendSchema } from "./desk/slp-desk-send.js";
+import { SLP_DESK_OFF } from "./desk/slp-desk-routes.js";
+import { slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
 
 const sendSchema = z.object({
   personaId: z.string().trim().min(1),
@@ -139,6 +141,8 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
     const viewer = await requireViewer(parsed.data.personaId);
     if (!viewer) return reply.code(404).send({ error: "Slurp persona not found" });
     // Support's desk step: checked before anything is sent (docs/SUPPORT-DESK.md).
+    if (parsed.data.desk && !slpExtensionOn(await slurp.getSettings(), "supportDesk"))
+      return reply.code(409).send({ error: SLP_DESK_OFF });
     const deskStep = parsed.data.desk
       ? parsed.data.asSupport && !(await ownsCreator(viewer.id, parsed.data.creatorAccountId))
         ? await prepareSlurpDeskSend(app.db, {

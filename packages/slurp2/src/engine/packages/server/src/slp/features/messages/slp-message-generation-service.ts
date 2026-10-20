@@ -12,6 +12,7 @@ import { slurpContinuityInstruction } from "../../modules/continuity/slp-continu
 import { type APIProvider } from "@marinara-engine/shared";
 import { slurpCommissionPriceRange } from "../../modules/economy/slp-creator-pricing.js";
 import { type SlpAccount } from "../../../../../shared/src/slp/slp-social.types.js";
+import { slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
 import { isDebugAgentsEnabled } from "../../../config/runtime-config.js";
 import { resolveSlurpCreatorMenu } from "../../data/settings/slp-post-guidance-storage.js";
 import { resolveSlurpEventInstruction } from "../world/slp-world-contract.js";
@@ -198,6 +199,7 @@ export function buildSlurpMessageChat(input: {
     writer: "creator",
     ...parties,
     support,
+    desk: Boolean(input.supportDesk),
     viewerPage: input.viewerPage
       ? { ...input.viewerPage, name: protect(input.viewerPage.name), handle: protect(input.viewerPage.handle) }
       : null,
@@ -263,10 +265,9 @@ export function buildSlurpMessageChat(input: {
             ? "Character canon is permanent identity and relationship context. Stay consistent with it unless the conversation explicitly establishes a change."
             : "",
       },
-      // One resolved position, not one line per signal. Rapport, mood, the day, the arc,
-      // availability and the tone dial all argue in `slurp-stance.ts` and arrive here agreed. Nine
-      // separate lines describing the same person is a contradiction, and a model resolves a
-      // contradiction by averaging it away.
+      // One resolved position, not one line per signal. Rapport, mood, the day, the arc, availability and the tone dial
+      // all argue in `slurp-stance.ts` and arrive here agreed. Nine separate lines describing the same person is a
+      // contradiction, and a model resolves a contradiction by averaging it away.
       // Slurp Support is not a fan: the stance is a fan relationship, so Support's thread goes without
       // it and reads "slurpStanding" instead (docs/SUPPORT-DESK.md).
       {
@@ -428,9 +429,8 @@ export function buildSlurpMessageChat(input: {
           })),
         }
       : {}),
-    // Redacted like every neighbouring field. A Conversation Schedule activity is user-written and
-    // can name the source, so it must not be the one value that bypasses protect(). Matches the
-    // same fix in buildNoodlerPostMessages.
+    // Redacted like every neighbouring field. A Conversation Schedule activity is user-written and can name the source,
+    // so it must not be the one value that bypasses protect(). Matches the same fix in buildNoodlerPostMessages.
     scheduleContext:
       protect(input.scheduleContext) || "No active Conversation Schedule is available for this Creator today.",
     // A speaker name on every line and events as events: see `slp-dm-roles.ts`.
@@ -578,9 +578,10 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
         .then((ledger) => slurpContinuityInstruction({ ...ledger, threadId: input.threadId }))
         .catch(() => "")
     : "";
-  // Slurp Support's thread: the desk record, the Offer waiting for an answer, the ticket.
+  // Slurp Support's thread: the desk record, the Offer waiting, the ticket; none with the desk off.
+  const supportThread = input.viewer.id === SLURP_SUPPORT_ACCOUNT_ID;
   const supportDesk =
-    input.viewer.id === SLURP_SUPPORT_ACCOUNT_ID
+    supportThread && slpExtensionOn(settings, "supportDesk")
       ? slurpDeskPromptData({
           desk: await readSlurpSupportDesk(input.db, input.creator.id),
           settings: settings.supportDesk,
@@ -593,7 +594,7 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
   // scene, with no invite of hers still open and none in the last few days.
   const sceneInvite =
     slpScenesAvailable() &&
-    !supportDesk &&
+    !supportThread &&
     input.viewer.kind === "persona" &&
     !characterFanVoice &&
     !fanMember &&
@@ -608,7 +609,7 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
     continuityInstruction,
     contentMenu: await resolveSlurpCreatorMenu(input.db, input.creator.id).catch(() => ""),
     // Not in Support's thread: staff do not buy commissions.
-    commissionPrices: supportDesk
+    commissionPrices: supportThread
       ? undefined
       : await createSlurpMessagesStorage(input.db)
           .getCreatorMessaging(input.creator.id)

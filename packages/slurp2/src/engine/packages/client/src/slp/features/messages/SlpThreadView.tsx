@@ -48,6 +48,7 @@ import { slurpAwayKind } from "./slp-away-kind";
 import { formatClockTime } from "../../base/ui/slp-date-time";
 import { useRegenerateSlurpReply } from "./slp-message-action-hooks";
 import { slurpLastAnswer } from "../../../../../shared/src/slp/slp-message-edit.js";
+import { slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
 
 /**
  * A conversation is a full-screen task on phones (design language §8): it leaves the page for a
@@ -125,6 +126,8 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
   // Until the conversation has loaded there is nothing to read and no policy to send under, so the
   // composer stays away instead of offering a live input on a blank screen.
   const notLoaded = !threadQuery.data;
+  // Support desk off: an Offer still waiting cannot be answered, so its card stays away.
+  const deskOn = Boolean(model.settingsQuery.data && slpExtensionOn(model.settingsQuery.data, "supportDesk"));
   const keptDeepDetails = threadQuery.data?.deepDetailIds;
   const deepDetailIds = useMemo(() => new Set(keptDeepDetails), [keptDeepDetails]);
   // Roleplay scenes (docs/SCENES.md): offered when this Engine runs them and the thread is free.
@@ -327,7 +330,7 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
                             onWriteAgain={lastAnswer.has(entry.message.id) ? writeAgain : undefined}
                           />
                           {/* The Support desk: an Offer sits under the line that made it (docs/SUPPORT-DESK.md). */}
-                          {readSlpDeskOffer(entry.message) && (
+                          {deskOn && readSlpDeskOffer(entry.message) && (
                             <SlpDeskOfferCard message={entry.message} ownsCreator={ownsCreator} personaId={personaId} />
                           )}
                           {/* Drama: a Creator's question with its answers (docs/DRAMA.md). */}

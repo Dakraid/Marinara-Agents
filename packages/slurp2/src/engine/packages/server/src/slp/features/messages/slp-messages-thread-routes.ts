@@ -16,6 +16,7 @@ import {
 } from "../../modules/messages/slp-thread-notes.js";
 import type { FastifyInstance } from "fastify";
 import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../shared/src/slp/slp-support.js";
+import { slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
 import { SLURP_SUPPORT_NAME } from "../../modules/messages/slp-dm-roles.js";
 import { personaQuerySchema } from "../../modules/messages/slp-messages-schemas.js";
 import { listSlurpMessageDeepDetailIds } from "../../data/messages/slp-message-deep-details-storage.js";
@@ -150,6 +151,9 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
       [],
       accounts.filter((account) => !operatedCreatorAccountIds.includes(account.id)).map((account) => account.id),
     );
+    // Support desk off: Support's threads sit in the inbox, so the inbox badge counts them.
+    if (!slpExtensionOn(await slurp.getSettings(), "supportDesk"))
+      return { ...own, unread: own.unread + support.unread, deskUnread: 0 };
     return { ...own, deskUnread: support.unread };
   });
   app.get("/messages/threads", async (req, reply) => {
@@ -166,11 +170,14 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
         .filter((account) => account.sourceKind === "persona" && account.sourceEntityId === viewer.id)
         .map((account) => account.id),
     );
-    const threads = (await messages.listThreadsForViewer(viewer.id)).sort((left, right) =>
-      right.lastMessageAt.localeCompare(left.lastMessageAt),
-    );
-    const deskThreads = (await messages.listThreadsForViewer(SLURP_SUPPORT_ACCOUNT_ID)).filter(
+    const supportThreads = (await messages.listThreadsForViewer(SLURP_SUPPORT_ACCOUNT_ID)).filter(
       (thread) => !operatedIds.has(thread.creatorAccountId),
+    );
+    // Support desk off: no desk holds Support's threads, so they sit in the inbox like any other.
+    const deskOn = slpExtensionOn(await slurp.getSettings(), "supportDesk");
+    const deskThreads = deskOn ? supportThreads : [];
+    const threads = [...(await messages.listThreadsForViewer(viewer.id)), ...(deskOn ? [] : supportThreads)].sort(
+      (left, right) => right.lastMessageAt.localeCompare(left.lastMessageAt),
     );
     // Threads written *to* the Creators this persona operates. Without these the inbox showed only
     // conversations the player started, and anything a fan or the world opened was unreachable.

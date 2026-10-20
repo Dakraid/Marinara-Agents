@@ -3817,5 +3817,11 @@
   "ui.slurp.settings.ext.world.label": "살아있는 세계",
   "ui.slurp.settings.ext.world.detail": "기념일과 사이트 이벤트, 캘린더, Slurp 전체 이벤트, 바이럴 트렌드.",
   "ui.slurp.settings.ext.world.trends.label": "바이럴 트렌드",
-  "ui.slurp.settings.ext.world.trends.detail": "인기를 끈 게시물이 다른 크리에이터들이 참여하는 트렌드를 시작할 수 있어요."
+  "ui.slurp.settings.ext.world.trends.detail": "인기를 끈 게시물이 다른 크리에이터들이 참여하는 트렌드를 시작할 수 있어요.",
+  "ui.slurp.settings.ext.stir.label": "Stir",
+  "ui.slurp.settings.ext.stir.detail": "Stir 탭: 플래너, 레버 덱, 진행 중.",
+  "ui.slurp.settings.ext.supportDesk.label": "Support 데스크",
+  "ui.slurp.settings.ext.supportDesk.detail": "스태프 게임: 티켓, 신뢰, 의심, 제안, 혜택, 알림, 떠나는 크리에이터.",
+  "ui.slurp.stir.off": "Stir와 Support 데스크가 꺼져 있어요",
+  "ui.slurp.stir.offDetail": "백스테이지 › Stir에서 하나를 켜세요."
 }

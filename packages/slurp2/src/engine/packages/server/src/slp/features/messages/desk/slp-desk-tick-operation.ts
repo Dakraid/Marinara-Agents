@@ -23,6 +23,7 @@ import { SLURP_SUPPORT_ACCOUNT_ID } from "../../../../../../shared/src/slp/slp-s
 import { slurpCreatorReach } from "../../../../../../shared/src/slp/slp-reach.js";
 import { slurpRunsItself } from "../../projects/slp-projects-contract.js";
 import { slurpPlatformScaleMultiplier } from "../../../../../../shared/src/slp/slp-scale.js";
+import { slpExtensionOn } from "../../../../../../shared/src/slp/slp-extensions.js";
 import { isSlurpViewerActorAccount } from "../../../modules/settings/slp-settings.js";
 import {
   SLP_DESK_STAY_AT,
@@ -348,6 +349,10 @@ export async function advanceSlurpSupportDesk(db: DB, at = new Date()): Promise<
   lastPassMs = at.getTime();
   const storage = createSlurpStorage(db);
   const allSettings = await storage.getSettings();
+  // Support desk off: no tickets, no risk, no milestones. Case files keep their state for later.
+  // ponytail: tickedAt stands still while off, so the first pass back rolls up to a week's odds at once;
+  // move tickedAt on switch-on if that burst shows.
+  if (!slpExtensionOn(allSettings, "supportDesk")) return;
   const settings = allSettings.supportDesk;
   // Milestones count the followers the profile shows (reach plus real followers), not the real ones alone.
   const reachScale = slurpPlatformScaleMultiplier(allSettings.platformScale);

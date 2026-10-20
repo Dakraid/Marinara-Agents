@@ -16,6 +16,8 @@ import { SlpStirBox } from "./SlpStirBox";
 import { SlpStirPlanSheet } from "./SlpStirCards";
 import { SlpStirPlaySheet } from "./SlpStirPlaySheet";
 import { SLP_STIR_DECK } from "./slp-stir-deck";
+import { useSlurpSettings } from "../settings/slp-settings-contract";
+import { slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
 
 /** The quick levers on a Creator, most used first. Each opens its card with them already picked. */
 const QUICK: SlpActionName[] = [
@@ -58,6 +60,9 @@ export function SlpStirCreatorSheet({
   // time), and a "none" key would leave the play sheet with no Creators, couples or storylines.
   const query = useSlurpStir(about ? personaId : null);
   const view = query.data;
+  // Stir off: the sheet keeps the steering and the Support chat (Basic), not the box and the levers.
+  const settings = useSlurpSettings().data;
+  const stirOn = Boolean(settings && slpExtensionOn(settings, "stir"));
   const [playing, setPlaying] = useState<SlpActionName | null>(null);
   const [plan, setPlan] = useState<{
     plan: SlpStirPlan;
@@ -95,7 +100,7 @@ export function SlpStirCreatorSheet({
               </p>
             </div>
           )}
-          {creator && (
+          {creator && stirOn && (
             <SlpStirBox
               names={(view?.creators ?? []).filter((entry) => !entry.couplePage).map((entry) => entry.name)}
               about={{ id: creator.id, name: creator.name }}
@@ -104,7 +109,7 @@ export function SlpStirCreatorSheet({
               onPlan={(answer, request) => setPlan({ plan: answer, key: Date.now(), request })}
             />
           )}
-          {view && (
+          {view && stirOn && (
             <section aria-labelledby="slp-stir-quick" className="space-y-2">
               <h3 id="slp-stir-quick" className={cn(SLP_TYPE.title, "px-1")}>
                 {t("ui.slurp.stir.quick", { name })}
