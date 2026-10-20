@@ -400,8 +400,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "5ac01a61b5e2d369f53ebe77ca9b96976bb84ff18e5311a1380f30d904e01538",
-            "bytes": 197524
+            "sha256": "fb9bec4998f48bec552af51ac2941334bb6fe4345f3b5f7f7a026fc7f7e6c324",
+            "bytes": 197966
           }
         ],
         "permissions": [
@@ -418,8 +418,8 @@
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/card-editor.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/card-editor-10.0.2.zip",
-        "sha256": "f0c84a889c1e8e5fb19856a5c8416e6cf3169eb50cb1cbc03af6a5d660bb58df",
-        "bytes": 290657
+        "sha256": "f8987caa5b8b200c30383f0ed3ca24f937fae1fe639c82aaefa8370ef9c8e1f8",
+        "bytes": 291099
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#card-editor"
     },

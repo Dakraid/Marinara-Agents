@@ -139,7 +139,8 @@ export function AvatarStudio({
     }));
   };
 
-  useEffect(() => {
+  /** The highlight outline is preview-only; apply() redraws without it before exporting. */
+  const draw = (highlight: boolean) => {
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d");
     if (!canvas || !context) return;
@@ -169,7 +170,14 @@ export function AvatarStudio({
       }
       context.restore();
     });
-  });
+    const selectedCell = cells[safeCurrent];
+    if (highlight && selectedCell && shown.length > 1) {
+      context.strokeStyle = "#36cdde";
+      context.lineWidth = Math.max(3, Math.round(canvas.width / 256));
+      context.strokeRect(selectedCell.x + 1.5, selectedCell.y + 1.5, selectedCell.w - 3, selectedCell.h - 3);
+    }
+  };
+  useEffect(() => draw(true));
 
   const toCanvas = (event: { clientX: number; clientY: number }) => {
     const canvas = canvasRef.current!;
@@ -257,7 +265,10 @@ export function AvatarStudio({
     setBusy(true);
     setMessage(null);
     try {
-      await uploadHostAvatar(targetId, canvas.toDataURL("image/png"));
+      draw(false);
+      const dataUrl = canvas.toDataURL("image/png");
+      draw(true);
+      await uploadHostAvatar(targetId, dataUrl);
       setMessage({ tone: "ok", text: t("cardEditor.avatar.applied", { name: byId.get(targetId)?.name ?? targetId }) });
     } catch (cause) {
       setMessage({ tone: "error", text: cause instanceof Error ? cause.message : String(cause) });

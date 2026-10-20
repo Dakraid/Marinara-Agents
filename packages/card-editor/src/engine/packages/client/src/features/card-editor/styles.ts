@@ -870,9 +870,15 @@ marinara-capability-card-editor[view="selection-action"] {
 
 .ce-item-main {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+}
+
+/* Lineage and issue chips sit beside the name; the status chip stays at the row end. */
+.ce-item-main > .ce-item-name + .ce-chip:not(:last-child) {
+  margin-right: auto;
 }
 
 .ce-item-name {
@@ -1564,7 +1570,8 @@ marinara-capability-card-editor[view="selection-action"] {
 
 .ce-studio-pre {
   overflow: auto;
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .ce-studio-preview > .ce-caption {
@@ -1655,12 +1662,13 @@ marinara-capability-card-editor[view="selection-action"] {
 }
 
 .ce-avatar-canvas-wrap {
-  display: grid;
+  display: flex;
   min-height: 0;
-  place-items: center;
-  align-content: center;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  overflow: auto;
+  overflow: hidden;
   background: repeating-conic-gradient(
       var(--marinara-chat-chrome-input-bg) 0 25%,
       var(--marinara-chat-chrome-highlight-bg) 0 50%
@@ -1673,7 +1681,9 @@ marinara-capability-card-editor[view="selection-action"] {
   width: auto;
   max-width: 100%;
   height: auto;
-  max-height: calc(min(90dvh, 58rem) - 9rem);
+  min-height: 0;
+  max-height: 100%;
+  flex: 0 1 auto;
   border-radius: 0.4rem;
   box-shadow: 0 8px 32px rgb(0 0 0 / 35%);
   cursor: grab;
