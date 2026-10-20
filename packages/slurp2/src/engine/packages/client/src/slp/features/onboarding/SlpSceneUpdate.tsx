@@ -5,6 +5,7 @@ import { MessageCircle } from "lucide-react";
 import { useTranslation as useUiTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type { SlpIdentityDisclosure } from "../../../../../shared/src/slp/slp-social.types.js";
+import type { SlpClothingStyle } from "../../../../../shared/src/slp/slp-gender.js";
 import { SLP_SCENE_FIELDS } from "../../../../../shared/src/slp/slp-scene.js";
 import { Modal } from "../../../components/ui/Modal";
 import { getSlpAccentStyle, SLP_PINK } from "../../base/chrome/SlpChrome";
@@ -23,6 +24,7 @@ type SlpUpdatableCreator = {
   stagePersonality: string;
   appearance: string;
   wardrobe: string;
+  clothingStyle?: SlpClothingStyle;
   locations: string;
   gender: "male" | "female" | "other" | null;
   tags: readonly string[];
@@ -39,7 +41,8 @@ export function SlpSceneUpdate({ creator }: { creator: SlpUpdatableCreator }) {
   // Only from the loaded page and limits: an empty start would let the chat replace saved likes and noes.
   if (!steering) return null;
   const state = slpSceneUpdateState(creator, steering.steering, steering.spice);
-  const missing = SLP_SCENE_FIELDS.length - state.locked.length;
+  // The support chat never asks about locations (the photo shoot does), so they do not count.
+  const missing = SLP_SCENE_FIELDS.filter((field) => field !== "locations" && !state.locked.includes(field)).length;
   // The scene speaks for the Engine card the Creator came from; without it there is nobody to play.
   if (!creator.sourceAccountId || missing === 0) return null;
   const sourceAccountId = creator.sourceAccountId;
@@ -76,7 +79,7 @@ export function SlpSceneUpdate({ creator }: { creator: SlpUpdatableCreator }) {
                   avatarUrl: creator.avatarUrl,
                 },
                 disclosureMode: creator.disclosureMode ?? "hinted",
-                existing: { accountId: creator.id, state },
+                existing: { accountId: creator.id, state, clothingStyle: creator.clothingStyle },
               }}
               onBack={() => setOpen(false)}
               onQuickSetup={() => setOpen(false)}

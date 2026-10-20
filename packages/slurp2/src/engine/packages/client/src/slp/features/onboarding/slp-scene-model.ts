@@ -9,6 +9,7 @@ import {
   type SlpScenePatch,
   type SlpScenePreset,
 } from "../../../../../shared/src/slp/slp-scene.js";
+import type { SlpClothingStyle } from "../../../../../shared/src/slp/slp-gender.js";
 import type { SlpAccount, SlpIdentityDisclosure } from "../../../../../shared/src/slp/slp-social.types.js";
 import { generateClientId } from "../../../lib/utils";
 import {
@@ -55,7 +56,7 @@ export type SlpSceneSetup = {
    * R6: a Creator already on Slurp, back to fill in their page. The draft starts as their page with
    * every filled field locked; finishing saves the page and the limits, with no first post or chat.
    */
-  existing?: { accountId: string; state: SlpSceneDraftState };
+  existing?: { accountId: string; state: SlpSceneDraftState; clothingStyle?: SlpClothingStyle };
 };
 
 /**
@@ -78,7 +79,7 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
   const draftRef = useRef(draftState);
   // An update starts at the first moment the page still needs, with the filled ones done.
   const startFilled = setup.existing
-    ? moments.filter((entry) => slpSceneMomentFilled(entry, setup.existing!.state.draft))
+    ? moments.filter((entry) => slpSceneMomentFilled(entry, setup.existing!.state.draft, false, true))
     : [];
   const [moment, setMoment] = useState<SlpSceneMoment>(
     () => moments.find((entry) => !startFilled.includes(entry)) ?? moments[0],
@@ -191,9 +192,17 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
         // photo shoot waits for its photos.
         const draft = draftRef.current.draft;
         const photo = photoRef.current;
-        const finished = moment === "shoot" ? photo : result.momentDone || slpSceneMomentFilled(moment, draft, photo);
+        const finished =
+          moment === "shoot"
+            ? photo
+            : result.momentDone || slpSceneMomentFilled(moment, draft, photo, Boolean(setup.existing));
         if (finished) setDoneMoments((current) => (current.includes(moment) ? current : [...current, moment]));
-        const next = slpSceneNextMoment(setup.preset, moment, { modelDone: result.momentDone, draft, photo });
+        const next = slpSceneNextMoment(setup.preset, moment, {
+          modelDone: result.momentDone,
+          draft,
+          photo,
+          strict: Boolean(setup.existing),
+        });
         if (next && momentRef.current === moment) goTo(next);
         return true;
       } catch (reason) {
@@ -266,7 +275,12 @@ export function useSlpSceneModel(setup: SlpSceneSetup, hostLabel: string) {
     const stageProfile = slpSceneStageProfile(draftRef.current.draft, setup.disclosureMode);
     try {
       if (accountRef.current) {
-        await update.mutateAsync({ accountId: accountRef.current, ...stageProfile });
+        // An update keeps the clothing style the page has: the scene never asks about it.
+        await update.mutateAsync({
+          accountId: accountRef.current,
+          ...stageProfile,
+          ...(setup.existing?.clothingStyle ? { clothingStyle: setup.existing.clothingStyle } : {}),
+        });
         return { id: accountRef.current };
       }
       const profile = await create.mutateAsync({

@@ -4,7 +4,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { slurpCommissionBrief } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/slp-world-copy.ts";
 import { SLURP_COMMISSION_ASKS } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-world.ts";
-import { slpSceneUpdateState } from "../packages/slurp2/src/engine/packages/client/src/slp/features/onboarding/slp-scene-draft.ts";
+import {
+  slpSceneMomentFilled,
+  slpSceneUpdateState,
+} from "../packages/slurp2/src/engine/packages/client/src/slp/features/onboarding/slp-scene-draft.ts";
 import { buildSlpSceneTurnMessages } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/onboarding/slp-scene-prompt.ts";
 import { slurpCoupleFit } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-couple-fit.ts";
 import {
@@ -197,6 +200,12 @@ assert.deepEqual(normalizeSlpCreatorSteering({}).romance.never, [], "older saves
     ({ id, name: id, text: "", tags: [], automatic: true, gender: null, kin }) as never;
   assert.equal(slurpCoupleFit(person("mum", ["kid"]), person("kid", ["mum"])).misfit, "family");
   assert.equal(slurpCoupleFit(person("mum"), person("kid")).fits, true, "no family bond, no block");
+  const lovers = { ...(person("mum", ["kid"]) as object), cardPartners: ["kid"] } as never;
+  assert.equal(
+    slurpCoupleFit(lovers, person("kid", ["mum"])).misfit,
+    "family",
+    "a family bond beats a card that says lovers",
+  );
 }
 // The tie rules read the active family bonds into `kin`.
 assert.match(
@@ -242,7 +251,14 @@ assert.match(
   })[0]!.content;
   assert.match(prompt, /already has a live Creator page/u);
   assert.doesNotMatch(prompt, /get the newcomer's Creator page live tonight/u);
+  // An update asks until every field of a step is there: wardrobe after the look, hard noes after turn-ons.
+  const half = { ...state.draft, appearance: "Tall.", wardrobe: "", turnOns: "x", hardNoes: "" };
+  assert.equal(slpSceneMomentFilled("look", half, false, true), false);
+  assert.equal(slpSceneMomentFilled("limits", half, false, true), false);
+  assert.equal(slpSceneMomentFilled("look", half), true, "a new sign-up moves on after the first");
   const model = src("features/onboarding/slp-scene-model.ts");
+  // Saving an update keeps the clothing style the page has.
+  assert.match(model, /setup\.existing\?\.clothingStyle \? \{ clothingStyle: setup\.existing\.clothingStyle \}/u);
   // No second first post and no transcript pasted into an old thread; closing early saves nothing.
   assert.match(model, /if \(setup\.existing\) return false;/u);
   assert.match(model, /if \(!id \|\| setup\.existing\) return false;/u);

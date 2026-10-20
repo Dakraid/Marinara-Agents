@@ -1,5 +1,5 @@
 import type { DB } from "../../../db/connection.js";
-import { and, asc, eq, lte } from "../../../db/file-query.js";
+import { and, asc, eq, gte, lte } from "../../../db/file-query.js";
 import { slpCreatorFirstPostJobs, slpPosts } from "../../../db/schema/slurp.js";
 import { logger } from "../../../lib/logger.js";
 import { newId, now } from "../../../utils/id-generator.js";
@@ -237,9 +237,12 @@ export function createSlurpFirstPostQueue(db: DB) {
 
 /** The newest top-level post the Creator published at or after `since`, or null. */
 export async function slpLatestPostSince(db: DB, creatorAccountId: string, since: string): Promise<string | null> {
-  const rows = await db.select().from(slpPosts).where(eq(slpPosts.authorAccountId, creatorAccountId));
+  const rows = await db
+    .select()
+    .from(slpPosts)
+    .where(and(eq(slpPosts.authorAccountId, creatorAccountId), gte(slpPosts.createdAt, since)));
   const after = rows
-    .filter((row) => !row.parentPostId && String(row.createdAt) >= since)
+    .filter((row) => !row.parentPostId)
     .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
   return after[0] ? String(after[0].id) : null;
 }

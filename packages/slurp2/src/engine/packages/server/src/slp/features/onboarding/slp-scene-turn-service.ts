@@ -120,6 +120,7 @@ export async function generateSlpSceneTurn(
       disclosureMode,
       publicIdentity,
       writesHost: slpSceneWritesHost(request.preset, request.action),
+      hostName: helper?.displayName,
     });
   };
   // One more try on an unusable answer before the player sees "The reply got lost".

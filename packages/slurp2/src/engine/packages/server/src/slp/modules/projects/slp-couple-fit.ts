@@ -143,6 +143,9 @@ export function slurpCoupleMisfitOf(a: SlurpTieCreator, b: SlurpTieCreator): Slu
     ([self, other]) => self.automatic && other.automatic && !slpRomanceAllows(self, { id: other.id }),
   );
   if (romance) return { misfit: "romance", byId: romance[0].id };
+  // A family bond the player set wins over a card that says lovers: it is the player's word, not the world's.
+  const bonded = pairs.find(([self, other]) => self.automatic && self.kin?.includes(other.id));
+  if (bonded) return { misfit: "family", byId: bonded[0].id };
   return (
     (familyLovers(a, b) || familyLovers(b, a) ? null : first("family", kinIn)) ??
     (cards ? null : first("taken", (self) => (self.cardPartners ?? []).length > 0)) ??

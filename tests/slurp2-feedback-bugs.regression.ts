@@ -46,7 +46,7 @@ assert.ok(
 );
 assert.match(
   firstPosts,
-  /!row\.parentPostId && String\(row\.createdAt\) >= since/u,
+  /gte\(slpPosts\.createdAt, since\)[\s\S]*?\.filter\(\(row\) => !row\.parentPostId\)/u,
   "top-level posts since the job only",
 );
 // Pulse shows a queued or running first-post job whose post exists as done, with that post to open.
@@ -74,6 +74,8 @@ assert.deepEqual(
   null,
   "not a character",
 );
+// A line labelled with the helper's own name is the helper's, not the newcomer's.
+assert.equal(readSlpSceneTurn({ lines: [{ speaker: "Mara", text: "hi" }] }, { ...typed, hostName: "Mara" }), null);
 // A turn that also writes the host keeps the labels strict.
 assert.equal(readSlpSceneTurn({ lines: [{ speaker: "Velvet", text: "hi" }] }, { ...typed, writesHost: true }), null);
 // One more try on an unusable answer before "The reply got lost".

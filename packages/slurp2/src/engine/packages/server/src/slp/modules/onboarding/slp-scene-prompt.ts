@@ -302,12 +302,12 @@ export function sanitizeSlpScenePatch(
 }
 
 /** Labels that are never the newcomer (a narrator, the player, the model itself). */
-const SLP_SCENE_NOT_NEWCOMER = new Set(["narrator", "system", "player", "user", "you", "assistant"]);
+const SLP_SCENE_NOT_NEWCOMER = new Set(["narrator", "system", "player", "user", "you", "assistant", "support"]);
 
 /** Clean one model answer into the lines and patch the client applies. Null when nothing usable came back. */
 export function readSlpSceneTurn(
   raw: unknown,
-  context: Parameters<typeof sanitizeSlpScenePatch>[1] & { writesHost: boolean },
+  context: Parameters<typeof sanitizeSlpScenePatch>[1] & { writesHost: boolean; hostName?: string },
 ): SlpSceneTurnResponse | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const value = raw as Record<string, unknown>;
@@ -326,7 +326,10 @@ export function readSlpSceneTurn(
     const speaker =
       label === "host"
         ? "host"
-        : label === "newcomer" || (!context.writesHost && !SLP_SCENE_NOT_NEWCOMER.has(label))
+        : label === "newcomer" ||
+            (!context.writesHost &&
+              !SLP_SCENE_NOT_NEWCOMER.has(label) &&
+              label !== context.hostName?.trim().toLocaleLowerCase())
           ? "newcomer"
           : null;
     if (!speaker || (speaker === "host" && !context.writesHost)) continue;
