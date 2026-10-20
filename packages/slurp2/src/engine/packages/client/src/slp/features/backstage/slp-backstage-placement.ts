@@ -248,3 +248,12 @@ export function slpPlacementSwitchedOff(
     settings && extension && key !== SLP_EXTENSION_KEYS[extension] && !slpExtensionOn(settings, extension),
   );
 }
+
+/** A page whose extension is off shows only its switch, which saves at once. */
+export function slpTargetSwitchedOff(
+  target: SlpBackstageTarget,
+  settings: Pick<SlurpSettings, (typeof SLP_EXTENSION_KEYS)[SlpExtensionId]>,
+): boolean {
+  const extension = SLP_EXTENSION_TARGETS[target];
+  return Boolean(extension && !slpExtensionOn(settings, extension));
+}

@@ -13,6 +13,7 @@ import {
 import {
   SLP_BACKSTAGE_SETTING_PLACEMENT,
   slpPlacementSwitchedOff,
+  slpTargetSwitchedOff,
 } from "../packages/slurp2/src/engine/packages/client/src/slp/features/backstage/slp-backstage-placement";
 import { slurp2Source } from "./slurp2-source.ts";
 
@@ -146,5 +147,23 @@ assert.match(source("client", "features/ads/SlpAdsPanel.tsx"), /updateNow\("extA
 for (const key of ["extWorld", "trendsEnabled"]) {
   assert.match(eventsPanel, new RegExp(`updateNow\\("${key}", value\\)`, "u"), key);
 }
+
+// Live check: Stir suggested "Start <event> now?" with Living world off. Its one event list is gated,
+// so the live list, suggestions and planner lose events together; owed #ad posts follow Brands & ads.
+assert.match(source("server", "features/assist/slp-stir-levers.ts"), /events: slpLiveEvents\(settings\)/u);
+assert.match(
+  source("server", "features/assist/slp-stir-service.ts"),
+  /owed: document\.deals\s+\.filter\(\s*\(deal\) => slpExtensionOn\(settings, "ads"\)/u,
+);
+// A switched-off page holds only its instant switch, so the header must not say "wait for Apply".
+assert.equal(slpTargetSwitchedOff("calendar", { extAds: true, extWorld: false } as never), true);
+assert.equal(slpTargetSwitchedOff("calendar", { extAds: true, extWorld: true } as never), false);
+assert.equal(slpTargetSwitchedOff("basic", { extAds: false, extWorld: false } as never), false);
+assert.match(source("client", "app/backstage/SlpBackstageShell.tsx"), /slpTargetSwitchedOff\(target, settings\)/u);
+// The Calendar page keeps its switch while Living world is on, like the Events page.
+assert.match(
+  source("client", "features/world/SlpCalendarPanel.tsx"),
+  /<SlpWorldSwitch \{\.\.\.page\} \/>\s+<SlpCalendarBody/u,
+);
 
 console.log("slurp2 Living world regression passed");

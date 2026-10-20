@@ -48,7 +48,12 @@ export function SlpCalendarPanel(page: SlpBackstagePageProps) {
         <SlpWorldSwitch {...page} />
       </div>
     );
-  return <SlpCalendarBody {...page} />;
+  return (
+    <div className="space-y-8">
+      <SlpWorldSwitch {...page} />
+      <SlpCalendarBody {...page} />
+    </div>
+  );
 }
 
 function SlpCalendarBody(page: SlpBackstagePageProps) {
