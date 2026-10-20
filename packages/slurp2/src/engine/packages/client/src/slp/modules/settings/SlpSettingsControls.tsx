@@ -104,7 +104,7 @@ export function NumberSetting({
       {input}
       <button
         type="button"
-        aria-label="−1"
+        aria-label={label ? `${label}: −1` : "−1"}
         disabled={disabled || current <= min}
         onClick={() => nudge(-1)}
         className={`${stepButton} order-first`}
@@ -113,7 +113,7 @@ export function NumberSetting({
       </button>
       <button
         type="button"
-        aria-label="+1"
+        aria-label={label ? `${label}: +1` : "+1"}
         disabled={disabled || current >= max}
         onClick={() => nudge(1)}
         className={stepButton}
@@ -277,10 +277,7 @@ export function SectionTitle({ title, detail }: { title: string; detail: string 
  */
 export function SettingsGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section
-      className="rounded-xl bg-[var(--slurp-surface-raised,var(--background))] px-4 py-3 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] sm:px-5"
-      aria-label={title}
-    >
+    <section className="rounded-xl bg-[var(--slurp-surface-raised,var(--background))] px-4 py-3 shadow-[var(--slurp-shadow-raised),var(--slurp-highlight)] sm:px-5">
       <h3 className={cn("pb-1 pt-1", SLP_EYEBROW_CLASS)}>{title}</h3>
       <div className="divide-y divide-[var(--slurp-outline,var(--border))] [&>*]:py-3.5 [&>*:last-child]:pb-1.5">
         {children}
@@ -376,23 +373,31 @@ export function Toggle({
   disabledReason?: string | null;
 }) {
   const disabled = Boolean(disabledReason);
+  const nameId = useId();
+  const noteId = `${nameId}-note`;
   const toggle = (
     <label
       data-slurp-setting-toggle
       className={`group relative flex ${compact ? "min-h-11" : "min-h-12"} ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"} items-center justify-between gap-4 rounded-lg text-sm focus-within:ring-2 focus-within:ring-[var(--noodle-accent)] focus-within:ring-offset-4 focus-within:ring-offset-[var(--slurp-surface)]`}
     >
       <span className="min-w-0">
-        <span className="block font-semibold">{label}</span>
-        {detail && (
-          <span className="mt-0.5 block max-w-prose text-xs font-normal leading-5 text-[var(--muted-foreground)] text-pretty">
-            {detail}
-          </span>
-        )}
-        {disabledReason && <span className="mt-1 block text-xs font-semibold leading-5">{disabledReason}</span>}
+        <span id={nameId} className="block font-semibold">
+          {label}
+        </span>
+        <span id={noteId} className="contents">
+          {detail && (
+            <span className="mt-0.5 block max-w-prose text-xs font-normal leading-5 text-[var(--muted-foreground)] text-pretty">
+              {detail}
+            </span>
+          )}
+          {disabledReason && <span className="mt-1 block text-xs font-semibold leading-5">{disabledReason}</span>}
+        </span>
       </span>
       <input
         type="checkbox"
         role="switch"
+        aria-labelledby={nameId}
+        aria-describedby={detail || disabledReason ? noteId : undefined}
         disabled={disabled}
         checked={value}
         onChange={(event) => onChange(event.target.checked)}

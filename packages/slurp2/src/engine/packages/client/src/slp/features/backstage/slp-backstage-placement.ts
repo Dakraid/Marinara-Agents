@@ -31,6 +31,14 @@ const internal = (placement: SlpBackstagePlacement): SlpBackstagePlacement => ({
 const prompts = (...terms: string[]) => place("prompts", "all-slurp", ...terms);
 const maintenance = (...terms: string[]) => place("autopurge", "all-slurp", ...terms);
 
+/**
+ * Pages whose controls are not `SlurpSettings` keys (they have their own stores), so the settings
+ * table above cannot make them searchable. Search lists them as a page, with no anchor to scroll to.
+ */
+export const SLP_BACKSTAGE_PAGE_PLACEMENT: Record<string, SlpBackstagePlacement> = {
+  spice: slurp("spice", "spice", "spicy", "adult", "heat", "level", "tastes", "language"),
+};
+
 /** One searchable, canonical Backstage home for every persisted setting. */
 export const SLP_BACKSTAGE_SETTING_PLACEMENT: Record<keyof SlurpSettings, SlpBackstagePlacement> = {
   inlineAdsEnabled: slurp("ads", "ads", "promotions", "feed"),
