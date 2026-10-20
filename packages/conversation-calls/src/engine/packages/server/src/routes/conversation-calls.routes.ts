@@ -8,6 +8,7 @@ import { basename, extname, join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import {
   CONVERSATION_CALL_CHARACTER_VIDEO_CLIP_KINDS,
+  LOCAL_SIDECAR_CONNECTION_ID,
   VIDEO_GENERATION_SETTINGS_KEY,
   conversationCallIdleSchema,
   conversationCallInterruptionSchema,
@@ -35,6 +36,8 @@ import { createCustomEmojisStorage } from "../services/storage/custom-emojis.sto
 import { createPromptOverridesStorage } from "../services/storage/prompt-overrides.storage.js";
 import { createLLMProvider } from "../services/llm/provider-registry.js";
 import { withConnectionFallbackProvider } from "../services/llm/connection-fallback-provider.js";
+import { LOCAL_SIDECAR_MODEL, getLocalSidecarProvider } from "../services/llm/local-sidecar.js";
+import { withConnectionAdmissionProvider } from "../services/generation/connection-admission.js";
 import {
   transcribeCallAudio,
   type CallSpeechHost,
@@ -52,7 +55,6 @@ import {
 } from "../services/generation/conversation-context-utils.js";
 import {
   parseCharacterCommands,
-  parseDuration,
   type CharacterCommand,
   type CrossPostCommand,
   type HapticCommand,
@@ -1125,7 +1127,11 @@ async function buildCallPrompt(input: {
       }
     }
 
-    if (commandToggles.schedule_update !== false && characterIds.some((id) => schedules[id])) {
+    if (
+      commandToggles.schedule_update !== false &&
+      typeof hostRuntime().persistence.updateCharacterStatus === "function" &&
+      characterIds.some((id) => schedules[id])
+    ) {
       allowedCommands.push("schedule_update");
     }
     if (commandToggles.cross_post !== false && crossPostTargets.length > 0) allowedCommands.push("cross_post");
@@ -1359,10 +1365,29 @@ async function createCallTurns(input: {
     logDebugOverride(debugOverrideEnabled, message, ...args);
   };
   if (prompt.characters.length === 0) return { turns: [], fallbackSpeaker };
-  if (!connId) return { turns: [], fallbackSpeaker };
-  const conn = await input.connections.getWithKey(connId);
-  if (!conn) return { turns: [], fallbackSpeaker };
-  const provider = await createConversationCallProvider(input.connections, conn, "main");
+  if (!connId) {
+    logger.warn("[conversation-call] Chat %s has no connection; the call cannot answer", input.chat.id);
+    return { turns: [], fallbackSpeaker };
+  }
+  let conn: { provider: string; model: string };
+  let provider: Awaited<ReturnType<typeof createConversationCallProvider>>;
+  if (connId === LOCAL_SIDECAR_CONNECTION_ID) {
+    // The chat runs on the Local Model: the call answers through the Engine's own llama-server, as the chat does.
+    conn = { provider: "local_sidecar", model: LOCAL_SIDECAR_MODEL };
+    provider = withConnectionAdmissionProvider(getLocalSidecarProvider(), LOCAL_SIDECAR_CONNECTION_ID);
+  } else {
+    const connection = await input.connections.getWithKey(connId);
+    if (!connection) {
+      logger.warn(
+        "[conversation-call] Connection %s of chat %s was not found; the call cannot answer",
+        connId,
+        input.chat.id,
+      );
+      return { turns: [], fallbackSpeaker };
+    }
+    conn = connection;
+    provider = await createConversationCallProvider(input.connections, connection, "main");
+  }
   try {
     if (shouldLogDebug) {
       debugLog(
@@ -1407,83 +1432,38 @@ function parseCharacterDataRecord(row: CharacterRow): Record<string, unknown> {
   return parseCharacterData(row);
 }
 
+/** The Engine's `[schedule_update]` (api.runtime.persistence): a temporary status on the character card. */
+function hostCharacterStatusUpdate() {
+  const persistence = hostRuntime().persistence;
+  const update = requireHostMember("Schedule updates in calls", persistence.updateCharacterStatus);
+  return update.bind(persistence);
+}
+
 async function applyCallScheduleUpdate(input: {
-  chat: NonNullable<ChatRow>;
+  chatId: string;
   characterId: string | null;
   command: ScheduleUpdateCommand;
 }) {
-  const characterId = input.characterId;
-  if (!characterId || (!input.command.status && !input.command.activity)) return;
-  let updated = false;
-  // A patch, read and written inside the Engine's metadata queue: replacing the whole metadata from the
-  // snapshot taken before the reply dropped any change made in the meantime (another schedule, a setting).
-  await hostChatWrite("patchChatMetadata")(input.chat.id, (current) => {
-    const schedules = getEnabledConversationSchedules(current);
-    updated = updateCurrentScheduleBlock(schedules, characterId, input.command);
-    return updated ? { characterSchedules: schedules } : {};
-  });
-  if (!updated) return;
-  logger.info(
-    "[conversation-call] Schedule updated for %s: status=%s activity=%s",
-    characterId,
-    input.command.status ?? "",
-    input.command.activity ?? "",
-  );
-}
-
-/** Applies the command to the character's current block of today's schedule; false when there is none. */
-function updateCurrentScheduleBlock(
-  schedules: Record<string, unknown>,
-  characterId: string,
-  command: ScheduleUpdateCommand,
-): boolean {
-  const schedule = schedules[characterId];
-  if (!schedule || typeof schedule !== "object") return false;
-
-  const days = (schedule as Record<string, any>).days;
-  if (!days || typeof days !== "object") return false;
-  const nowDate = new Date();
-  const daysList = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-  const dayName = daysList[(nowDate.getDay() + 6) % 7]!;
-  const daySchedule: Array<{ time: string; activity: string; status: string }> = Array.isArray(days[dayName])
-    ? days[dayName]
-    : [];
-  const currentMinutes = nowDate.getHours() * 60 + nowDate.getMinutes();
-
-  for (const block of daySchedule) {
-    const [startStr, endStr] = block.time.split("-");
-    if (!startStr || !endStr) continue;
-    const [sh, sm] = startStr.split(":").map(Number);
-    const [eh, em] = endStr.split(":").map(Number);
-    const startMin = (sh ?? 0) * 60 + (sm ?? 0);
-    const endMin = (eh ?? 0) * 60 + (em ?? 0);
-    if (startMin > currentMinutes || currentMinutes >= endMin) continue;
-
-    if (command.status) block.status = command.status;
-    if (command.activity) block.activity = command.activity;
-
-    if (command.duration) {
-      const durationMin = parseDuration(command.duration);
-      if (durationMin && currentMinutes + durationMin < endMin) {
-        const splitTime = currentMinutes + durationMin;
-        const splitH = String(Math.floor(splitTime / 60)).padStart(2, "0");
-        const splitM = String(splitTime % 60).padStart(2, "0");
-        const splitAt = `${splitH}:${splitM}`;
-        block.time = `${startStr}-${splitAt}`;
-        const blockIndex = daySchedule.indexOf(block);
-        daySchedule.splice(blockIndex + 1, 0, {
-          time: `${splitAt}-${endStr}`,
-          activity: "free time",
-          status: "online",
-        });
-      }
-    }
-
-    days[dayName] = daySchedule;
-    schedules[characterId] = schedule;
-    return true;
+  const { characterId, command } = input;
+  if (!characterId || (!command.status && !command.activity)) return;
+  try {
+    // The card owns presence, as after a chat reply; the chat's schedule map is a cache the Engine refreshes.
+    const result = await hostCharacterStatusUpdate()(input.chatId, characterId, {
+      ...(command.status ? { status: command.status } : {}),
+      ...(command.activity ? { activity: command.activity } : {}),
+      ...(command.duration ? { duration: command.duration } : {}),
+    });
+    if (!result) return;
+    logger.info(
+      "[conversation-call] Status updated for %s: status=%s activity=%s until %s",
+      characterId,
+      result.status,
+      result.activity ?? "",
+      result.expiresAt,
+    );
+  } catch (error) {
+    logger.warn(error, "[conversation-call] Schedule update failed");
   }
-  return false;
 }
 
 async function applyCallMemoryCommand(input: {
@@ -2013,7 +1993,7 @@ async function executeCallConversationCommand(input: {
 
     if (command.type === "schedule_update") {
       await applyCallScheduleUpdate({
-        chat: freshChat,
+        chatId: freshChat.id,
         characterId: input.characterId,
         command: command as ScheduleUpdateCommand,
       });

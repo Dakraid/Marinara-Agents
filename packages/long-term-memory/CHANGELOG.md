@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 1.4.57 — 2026-10-20
+
+- Professor Mari's setup guide shows its pictures again. Marinara Engine renamed them, and the guide still asked for the old files.
+
 ## 1.4.56 — 2026-10-20
 
 - Long-Term Memory now uses Marinara Engine's own libraries and data cache for its screens instead of carrying copies of them, so the download is smaller. It needs a Marinara Engine release after 2.5.0. On 2.5.0 and older, the version you already have keeps working. (#1487)

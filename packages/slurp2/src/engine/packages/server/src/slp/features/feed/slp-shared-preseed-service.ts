@@ -1,5 +1,6 @@
 import type { DB } from "../../../db/connection.js";
 import { logger } from "../../../lib/logger.js";
+import { slpIsAdmissionFailure } from "../../base/host/slp-admission.js";
 import { createAppSettingsStorage } from "../../../services/storage/app-settings.storage.js";
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import type { SlurpPlatformEvent } from "../../../../../shared/src/slp/slp-platform-events.js";
@@ -61,6 +62,8 @@ function refresh(key: string, at: Date, run: () => Promise<void>): void {
   void run()
     .then(() => failedUntil.delete(key))
     .catch((error: unknown) => {
+      // A busy connection sent nothing: the next post tries again.
+      if (slpIsAdmissionFailure(error)) return;
       failedUntil.set(key, at.getTime() + FAILED_WAIT_MS);
       logger.warn(error, "[slurp] Shared idea refresh failed (%s); beats use the Creator's own decks", key);
     })

@@ -1648,8 +1648,16 @@ export function ConversationCallSurface({
   );
 
   useEffect(() => {
+    // The TTS service is the Engine's, shared with its read-aloud: change the volume of a clip only while this call is
+    // the one speaking (a call participant's id, joined or not, or this session's own id). Each call clip starts with
+    // the call's volume.
+    const activeId = ttsService.getActiveId();
+    const callSpeaking =
+      activeId !== null &&
+      (participants.some((participant) => participant.id === activeId) || activeId.startsWith(`${session.id}:`));
+    if (!callSpeaking) return;
     ttsService.setCurrentPlaybackVolume(characterVoicePlaybackVolume, characterVoicesMuted);
-  }, [characterVoicePlaybackVolume, characterVoicesMuted]);
+  }, [characterVoicePlaybackVolume, characterVoicesMuted, participants, session.id]);
 
   const toggleCharacterVoicesMuted = useCallback(() => {
     if (characterVoicesMuted) {

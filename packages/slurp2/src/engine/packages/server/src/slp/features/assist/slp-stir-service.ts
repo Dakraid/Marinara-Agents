@@ -216,6 +216,8 @@ export async function planSlpStir(
       connection.claudeFastMode === "true",
       connection.treatAsLocalEndpoint === "true",
       connection.defaultParameters,
+      // The player's own plan is foreground work on the connection; a Creator's proposal runs inside its reply.
+      origin === "player" ? connection.id : undefined,
     ),
   );
   const result = await provider.chatComplete(

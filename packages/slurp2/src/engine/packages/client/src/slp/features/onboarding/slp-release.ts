@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.51";
+export const SLURP2_VERSION = "0.3.52";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -12,6 +12,14 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.52",
+    date: "2026-10-20",
+    notes: [
+      "Slurp's automatic posts no longer talk to your AI while your own chat is replying, and no longer hold up your other automatic work afterwards.",
+      "Write, Improve, voice drafts, schedules and page designs you ask for now take their turn on your connection like your chats do.",
+    ],
+  },
   {
     version: "0.3.51",
     date: "2026-10-20",
@@ -771,15 +779,6 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
       "Tips and unlocks in progress are never refunded by mistake.",
       "Promised follow-ups arrive again, and chat drafts stay in their own chat.",
       "Enter no longer sends a half-typed word when you use an input method.",
-    ],
-  },
-  {
-    version: "0.2.23",
-    date: "2026-09-22",
-    notes: [
-      "Restore a deleted post while the countdown runs.",
-      "Share asks which chat to send a post to, with search and New chat.",
-      "Creators look like themselves in pictures by default.",
     ],
   },
 ];

@@ -181,6 +181,7 @@ export async function slpCreatorsRoutes(app: FastifyInstance, deps: SlpRouteDeps
           connectionId: settings.generationConnectionId,
           mode: settings.appearanceProfileMode,
           regenerate: parsed.data.action === "regenerate",
+          foreground: true,
         });
       } catch (error) {
         return reply.code(422).send({ error: getErrorMessage(error) });

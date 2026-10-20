@@ -104,6 +104,11 @@ jobs:
           node scripts/tests/server-host-gates.regression.mjs
           node scripts/tests/server-singleton-gate.regression.mjs
 
+      # Review fixes to the host de-duplication: Slurp's connection admission, the Calls volume and Local Model,
+      # Noodle's picker scope and Long-Term Memory's guide pictures (the picture check needs an Engine checkout).
+      - name: Test the host de-duplication review fixes
+        run: node tests/dedup-review-fixes.regression.mjs
+
       - name: Test catalog lane routing and build provenance
         run: node scripts/test-catalog-lanes.mjs
 

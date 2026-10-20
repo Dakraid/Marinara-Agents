@@ -33,6 +33,7 @@ on:
       - "scripts/vendored-engine-baseline.json"
       - "scripts/tests/vendored-engine.regression.mjs"
       - "tests/package-noodle.e2e.ts"
+      - "tests/package-noodle-picker-scope.e2e.ts"
       - "tests/package-slurp2.e2e.ts"
       - "tests/playwright.package.config.ts"
 

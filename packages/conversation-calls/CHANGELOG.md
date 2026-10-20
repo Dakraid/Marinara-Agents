@@ -1,5 +1,14 @@
 # Calls release notes
 
+## 1.1.7 — 2026-10-20
+
+- When a character changes their status or activity during a call, the change now goes on their character card, as it does after a chat reply, so it shows in every chat and lasts for the time they gave. Before, the call changed only this chat's copy of their schedule, and the change was soon lost. (#1498)
+
+## 1.1.6 — 2026-10-20
+
+- Opening a call no longer changes the volume of, or mutes, a reply Marinara is reading aloud in another chat. The call's voice volume and mute apply only to the call's own voices.
+- A call in a chat that uses the Local Model now answers through Marinara's Local Model, as the chat does. Before, it stayed silent and showed no error.
+
 ## 1.1.5 — 2026-10-20
 
 - Calls now uses Marinara Engine's own settings, dialogs, voice playback, Local Model, Local Whisper, haptics, Spotify and chat saving instead of carrying copies of them. It no longer resets your Engine settings, starts a second Local Model, or overwrites chat changes saved while a call runs. The download is smaller. It needs a Marinara Engine release after 2.5.0. On 2.5.0 and older, the version you already have keeps working. (#1478, #1487)
