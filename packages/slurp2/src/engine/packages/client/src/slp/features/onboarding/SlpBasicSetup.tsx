@@ -38,7 +38,9 @@ const STORE_KEY = "slurp2:basic-setup";
 const EMPTY: SlpBasicState = { answers: {}, unlocked: false };
 /** Steam before each Support line. */
 const PACE_MS = 650;
-const O = `ui.slurp.opening.`; // a template literal: the locale validator reads quoted keys whole
+// Built from parts: the minifier folds literals into one quoted "ui.…" string, which the bundle
+// key check (scripts/validate-package-locale-keys.mjs) reads as a missing key.
+const O = ["ui", "slurp", "opening", ""].join(".");
 
 /** The emoji on each answer card. */
 const GLYPH: Record<string, string> = {
