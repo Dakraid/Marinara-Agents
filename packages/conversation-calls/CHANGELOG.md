@@ -1,5 +1,9 @@
 # Calls release notes
 
+## 1.1.7 — 2026-10-20
+
+- When a character changes their status or activity during a call, the change now goes on their character card, as it does after a chat reply, so it shows in every chat and lasts for the time they gave. Before, the call changed only this chat's copy of their schedule, and the change was soon lost. (#1498)
+
 ## 1.1.6 — 2026-10-20
 
 - Opening a call no longer changes the volume of, or mutes, a reply Marinara is reading aloud in another chat. The call's voice volume and mute apply only to the call's own voices.

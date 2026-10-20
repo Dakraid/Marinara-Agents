@@ -117,6 +117,28 @@ has(turns, /logger\.warn\(\s*"\[conversation-call\] Connection %s of chat %s was
 has(read("packages/conversation-calls/server.mjs"), /localSidecar\(\)/u);
 lacks(read("packages/conversation-calls/server.mjs"), /Timed out waiting for the local sidecar server/u);
 
+// --- Calls: a [schedule_update] goes on the character card through the Engine (#1498) -------------------------
+// The chat's schedule map is a cache the Engine replaces on its next presence read, so the call's edit was lost.
+const scheduleUpdate = fn(routes, "applyCallScheduleUpdate");
+has(scheduleUpdate, /await hostCharacterStatusUpdate\(\)\(input\.chatId, characterId, \{/u);
+has(
+  scheduleUpdate,
+  /logger\.warn\(error, "\[conversation-call\] Schedule update failed"\);/u,
+  "an unavailable or refused update is logged, never thrown into the call's reply",
+);
+has(
+  fn(routes, "hostCharacterStatusUpdate"),
+  /requireHostMember\("Schedule updates in calls", persistence\.updateCharacterStatus\)/u,
+  "a missing member reports the feature unavailable instead of using a copy",
+);
+has(
+  routes,
+  /typeof hostRuntime\(\)\.persistence\.updateCharacterStatus === "function" &&/u,
+  "the call offers [schedule_update] only when the Engine has the member",
+);
+lacks(routes, /characterSchedules/u, "a call never writes the chat's schedule cache");
+has(read("packages/conversation-calls/server.mjs"), /updateCharacterStatus/u);
+
 // --- Noodle: popovers portal into Noodle's own element ---------------------------------------------------------
 const card = read("packages/noodle/src/engine/packages/client/src/components/noodle/NoodlePostCard.tsx");
 const popover = fn(card, "NoodleAnchoredPopover");
