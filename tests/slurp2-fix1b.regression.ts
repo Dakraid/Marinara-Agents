@@ -205,10 +205,10 @@ const readers: [string, RegExp][] = [
     "features/messages/slp-message-operation.ts",
     /"messages\.reply-delay",\s*await slurp\.platformInfluenceStory\(creator\.id\)/u,
   ],
-  ["features/audience/slp-fan-activity-operation.ts", /"audience\.activity", story\)/u],
+  ["features/audience/slp-fan-activity-operation.ts", /"audience\.activity",\s*story,?\s*\)/u],
   [
     "data/economy/slp-economy-storage-2.ts",
-    /slurpPlatformEventModifierSource\(\s*settings\.platformEvents,\s*await this\.platformInfluenceStory\(creatorAccountId\),?\s*\)/u,
+    /slurpPlatformEventModifierSource\(\s*slpLiveEvents\(settings\),\s*await this\.platformInfluenceStory\(creatorAccountId\),?\s*\)/u,
   ],
 ];
 for (const [file, pattern] of readers) assert.match(readSlurp2Source("server", file), pattern, file);

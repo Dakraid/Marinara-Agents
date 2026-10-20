@@ -63,7 +63,12 @@ export function slpActionExtension(name: SlpActionName): SlpExtensionId | null {
   return SLP_EXTENSIONS.find((id) => SLP_EXTENSION_ACTIONS[id]?.includes(name)) ?? null;
 }
 
-export function slpActionAllowed(settings: SlpExtensionSettings, name: SlpActionName): boolean {
+export function slpActionAllowed(
+  settings: SlpExtensionSettings & { trendsEnabled?: boolean },
+  name: SlpActionName,
+): boolean {
+  // "Viral trends" off inside a switched-on Living world takes the trend actions too.
+  if ((name === "start-trend" || name === "steer-trend") && settings.trendsEnabled === false) return false;
   return slpExtensionAllows(settings, slpActionExtension(name));
 }
 
@@ -94,4 +99,18 @@ export function slpInlineAdsOn(settings: SlpExtensionSettings & { inlineAdsEnabl
 /** The brand-deal pace in effect: off while Brands & ads is off. */
 export function slpBrandDealsPace<T extends string>(settings: SlpExtensionSettings & { brandDealsPace: T }): T | "off" {
   return slpExtensionOn(settings, "ads") ? settings.brandDealsPace : "off";
+}
+
+/**
+ * The platform events whose effects run: none while Living world is off. Effect readers (prompts,
+ * reach, economy, calendar beats) take this; editors keep `settings.platformEvents`, so the saved
+ * list is never lost.
+ */
+export function slpLiveEvents<T>(settings: SlpExtensionSettings & { platformEvents: readonly T[] }): readonly T[] {
+  return slpExtensionOn(settings, "world") ? settings.platformEvents : [];
+}
+
+/** Trends run only while Living world is on and its own "Viral trends" switch is. */
+export function slpTrendsOn(settings: SlpExtensionSettings & { trendsEnabled: boolean }): boolean {
+  return slpExtensionOn(settings, "world") && settings.trendsEnabled;
 }

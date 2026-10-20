@@ -16,6 +16,7 @@ import { slurpContentPacksOn } from "../../modules/world/events/slp-content-pack
 import { slurpOccasionBeat, slurpPackOccasions } from "../../modules/feed/slp-occasion-beats.js";
 import type { SlurpBeat, SlurpBeatHistory } from "../../modules/feed/slp-post-beat.js";
 import { readSlurpCouplePartner } from "../projects/slp-projects-contract.js";
+import { slpExtensionOn, slpLiveEvents } from "../../../../../shared/src/slp/slp-extensions.js";
 
 export async function planSlurpOccasionBeat(
   db: DB,
@@ -46,10 +47,11 @@ export async function planSlurpOccasionBeat(
     ]);
     const occasions = slurpPackOccasions({
       windows: slurpRunningPlatformEventWindows(
-        settings.platformEvents,
+        slpLiveEvents(settings),
         input.at,
         { id: account.id, tags: account.settings.profile.tags ?? [] },
-        occurrences,
+        // Started occasions make their own windows: Living world off, none runs.
+        slpExtensionOn(settings, "world") ? occurrences : [],
       ),
       toggles: settings.contentPacks,
       creatorAccountId: account.id,

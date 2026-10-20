@@ -566,7 +566,8 @@ assert.deepEqual(
     useQuery: 290,
     useInfiniteQuery: 9,
     // 0.3.35: +2 (adding a Creator refreshes the settings, which now hold the image name choice).
-    invalidateQueries: 153,
+    // Configurator: +1 (an extension switch drops the cached feed, trend and Stir reads).
+    invalidateQueries: 154,
     setQueryData: 26,
     cancelQueries: 7,
     removeQueries: 1,

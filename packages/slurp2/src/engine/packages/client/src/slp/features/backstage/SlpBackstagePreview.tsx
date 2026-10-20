@@ -1,5 +1,5 @@
 import { SlpCoinText } from "../../modules/coin/SlpCoin";
-import { slpInlineAdsOn } from "../../../../../shared/src/slp/slp-extensions.js";
+import { slpInlineAdsOn, slpLiveEvents } from "../../../../../shared/src/slp/slp-extensions.js";
 import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { SlpSparkleGlyph } from "../../base/chrome/SlpGlyphs";
 import { useDeferredValue, useMemo, type ReactNode } from "react";
@@ -60,7 +60,7 @@ export function outcomeSummary(
       return t(key, {
         defaultValue: "{{count}} events · {{active}} running now",
         count: settings.platformEvents.length,
-        active: slurpActivePlatformEvents(settings.platformEvents, new Date()).length,
+        active: slurpActivePlatformEvents(slpLiveEvents(settings), new Date()).length,
       });
     case "arcs":
       return t(key, {

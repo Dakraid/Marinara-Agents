@@ -40,6 +40,7 @@ import { getCreatorFanActivityStatus } from "../audience/slp-audience-contract.j
 import { slpLatestPostSince } from "../onboarding/slp-onboarding-contract.js";
 import type { FastifyInstance } from "fastify";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
+import { slpExtensionOn, slpLiveEvents } from "../../../../../shared/src/slp/slp-extensions.js";
 
 export async function slpMaintenanceRoutes(app: FastifyInstance, deps: SlpRouteDeps) {
   const { noodle } = deps;
@@ -318,14 +319,14 @@ export async function slpMaintenanceRoutes(app: FastifyInstance, deps: SlpRouteD
       fansAt: audience.nextRunAt,
       events: [
         ...occurrences
-          .filter((occurrence) => occurrence.status === "scheduled")
+          .filter((occurrence) => occurrence.status === "scheduled" && slpExtensionOn(settings, "world"))
           .map((occurrence) => ({
             id: occurrence.id,
             name: occurrence.blueprint.name,
             startsAt: occurrence.startsAt,
             accountIds: [...occurrence.participantIds],
           })),
-        ...slurpUpcomingAnnualEvents(settings.platformEvents, at).filter(
+        ...slurpUpcomingAnnualEvents(slpLiveEvents(settings), at).filter(
           (event) => !occurrences.some((occurrence) => occurrence.blueprintId === event.id),
         ),
       ],

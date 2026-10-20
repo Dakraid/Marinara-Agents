@@ -150,6 +150,7 @@ export type SlurpSettings = {
   /** Editable audience personas and their numeric behavior. */
   fanTypes: SlurpFanType[];
   platformEvents: SlurpPlatformEvent[];
+  trendsEnabled: boolean;
   creatorCollabs: { creatorIds: [string, string]; content: string }[];
   /** Creators answer while you are away. Off leaves the background reply loop asleep. */
   messagesAwayRepliesEnabled: boolean;

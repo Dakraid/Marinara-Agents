@@ -78,6 +78,7 @@ import type {
 import { normalizeSlurpSettings } from "../../modules/settings/slp-settings.js";
 import type { SlurpSettings } from "../../modules/settings/slp-settings.js";
 import { mapAccount, snapshotForAccount, mapPost, mapInteraction } from "./slp-storage-mappers.js";
+import { slpLiveEvents } from "../../../../../shared/src/slp/slp-extensions.js";
 
 export function createSlurpStorageContext(db: DB) {
   const settingsStore = createAppSettingsStorage(db);
@@ -300,7 +301,7 @@ export function createSlurpStorageContext(db: DB) {
     amount = Math.floor(
       amount *
         slurpArcEffectMultiplier(await loadProjects(creatorAccountId), "earnings", settings.arcStatEffects) *
-        slurpInfluenceMultiplier(settings.platformEvents, new Date(), "economy.creator-earnings", {
+        slurpInfluenceMultiplier(slpLiveEvents(settings), new Date(), "economy.creator-earnings", {
           occurrences,
           creator: { id: creatorAccountId },
         }),

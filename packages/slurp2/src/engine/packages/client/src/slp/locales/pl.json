@@ -3035,5 +3035,9 @@
   "ui.slurp.settings.ext.title": "Rozszerzenie",
   "ui.slurp.settings.ext.ads.label": "Marki i reklamy",
   "ui.slurp.settings.ext.ads.detail": "Reklamy w feedzie, umowy z markami, grafiki reklam i paczki marek.",
-  "ui.slurp.settings.ext.offNote": "Wyłączone: nic z tego nie działa ani się nie pokazuje. Twoje ustawienia i marki zostają bez zmian."
+  "ui.slurp.settings.ext.offNote": "Wyłączone: nic z tego nie działa ani się nie pokazuje. Jego ustawienia i dane zostają bez zmian.",
+  "ui.slurp.settings.ext.world.label": "Żywy świat",
+  "ui.slurp.settings.ext.world.detail": "Święta i wydarzenia na stronie, kalendarz, wydarzenia na całym Slurpie i wiralowe trendy.",
+  "ui.slurp.settings.ext.world.trends.label": "Wiralowe trendy",
+  "ui.slurp.settings.ext.world.trends.detail": "Post, który się przebije, może zacząć trend, do którego dołączą inni twórcy."
 }

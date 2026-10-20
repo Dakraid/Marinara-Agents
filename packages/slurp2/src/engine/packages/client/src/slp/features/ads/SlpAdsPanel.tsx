@@ -3,6 +3,7 @@ import { RotateCcw } from "lucide-react";
 import { BackstagePageHeader } from "../../modules/settings/SlpSettingsKit";
 
 import { Field, HowItWorks, SettingsGroup, Toggle } from "../../modules/settings/SlpSettingsControls";
+import { SlpExtensionSwitch } from "../../modules/settings/SlpExtensionSwitch";
 import { ChoiceSetting } from "../../modules/settings/SlpSettingsInputs";
 
 import { api } from "../../../lib/api-client";
@@ -43,28 +44,21 @@ export function SlpAdsPanel(page: SlpBackstagePageProps) {
 
   // The extension's own switch heads the page; while it is off the page is only that switch.
   const extensionSwitch = (
-    <SettingsGroup title={t("ui.slurp.settings.ext.title", { defaultValue: "Extension" })}>
-      <Toggle
-        settingKey="extAds"
-        label={t("ui.slurp.settings.ext.ads.label", { defaultValue: "Brands & ads" })}
-        detail={t("ui.slurp.settings.ext.ads.detail", {
-          defaultValue: "Inline ads, brand deals, ad pictures and brand packs.",
-        })}
-        value={slpExtensionOn(settings, "ads")}
-        onChange={(value) => void updateNow("extAds", value)}
-      />
-    </SettingsGroup>
+    <SlpExtensionSwitch
+      settingKey="extAds"
+      label={t("ui.slurp.settings.ext.ads.label", { defaultValue: "Brands & ads" })}
+      detail={t("ui.slurp.settings.ext.ads.detail", {
+        defaultValue: "Inline ads, brand deals, ad pictures and brand packs.",
+      })}
+      on={slpExtensionOn(settings, "ads")}
+      onChange={(value) => void updateNow("extAds", value)}
+    />
   );
   if (!slpExtensionOn(settings, "ads"))
     return (
       <div className="space-y-5">
         <BackstagePageHeader detail={t("ui.slurp.settings.ads.detail")} />
         {extensionSwitch}
-        <p className="text-sm text-[var(--slurp-muted)] text-pretty">
-          {t("ui.slurp.settings.ext.offNote", {
-            defaultValue: "Switched off: none of it runs or shows. Your settings and brands stay as they are.",
-          })}
-        </p>
       </div>
     );
 

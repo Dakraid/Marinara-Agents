@@ -34,6 +34,7 @@ import { readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ti
 import { slurpDealOwesPost } from "../../modules/economy/slp-brand-deals.js";
 import { buildSlpStirPlanMessages, readSlpStirPlanAnswer } from "../../modules/assist/slp-stir-plan.js";
 import { slpStirLive, slpStirSuggestions } from "../../modules/assist/slp-stir-live.js";
+import { slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
 import { SLP_STIR_CANT_INVALID, slpRunStirSteps, slpSortStirSteps } from "../../modules/assist/slp-stir-play.js";
 import {
   listSlurpBrandCatalog,
@@ -346,16 +347,18 @@ export async function readSlpStirView(
   personaId?: string,
 ): Promise<SlpStirView> {
   const storage = createSlurpStorage(db);
-  const [allAccounts, fullWorld, fullDocument, allPlays, occurrences, dismissed, allTieCreators] = await Promise.all([
-    storage.listNoodlerAccounts() as Promise<Account[]>,
-    readSlpStirWorld(db, at),
-    readSlurpCreatorTiesDocument(db),
-    readSlurpStirPlays(db),
-    storage.listStoryOccurrences(),
-    readSlurpStirDismissed(db, at),
-    // ponytail: every Creator's fit text on each Stir visit, for "they would click"; cache it if a big cast feels slow.
-    loadSlurpTieCreators(db, at),
-  ]);
+  const [allAccounts, fullWorld, fullDocument, allPlays, occurrences, dismissed, allTieCreators, settings] =
+    await Promise.all([
+      storage.listNoodlerAccounts() as Promise<Account[]>,
+      readSlpStirWorld(db, at),
+      readSlurpCreatorTiesDocument(db),
+      readSlurpStirPlays(db),
+      storage.listStoryOccurrences(),
+      readSlurpStirDismissed(db, at),
+      // ponytail: every Creator's fit text on each Stir visit, for "they would click"; cache it if a big cast feels slow.
+      loadSlurpTieCreators(db, at),
+      storage.getSettings(),
+    ]);
   const hidden = new Set(
     allAccounts.filter((account) => !slurpRunsItself(account) && !own(account)).map((account) => account.id),
   );
@@ -428,8 +431,9 @@ export async function readSlpStirView(
     collabs: document.ties.collabs.filter((collab) => world.collabs.some((open) => open.id === collab.id)),
     rivalries: world.rivalries,
     events: world.events.map((event) => ({ ...event, endsAt: endsAt.get(event.id) ?? null })),
+    // Brands & ads off: no owed #ad post to nag about.
     owed: document.deals
-      .filter((deal) => ownIds.has(deal.creatorId) && slurpDealOwesPost(deal, at))
+      .filter((deal) => slpExtensionOn(settings, "ads") && ownIds.has(deal.creatorId) && slurpDealOwesPost(deal, at))
       .map((deal) => ({ id: deal.id, creatorId: deal.creatorId, brand: deal.brand })),
     firstVisit: plays.length === 0,
     matches,

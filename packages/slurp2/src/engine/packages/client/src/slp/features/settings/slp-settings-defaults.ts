@@ -172,6 +172,8 @@ export const SLURP_SETTINGS_NOT_RESET: readonly (keyof SlurpSettings)[] = [
   "extStir",
   "extSupportDesk",
   "extEngineLink",
+  // Living world's own sub-switch, the same kind of choice.
+  "trendsEnabled",
   // "Pause all" is a switch, not a tuning: resetting a section must never pause or resume Slurp.
   "paused",
   // Who is browsing, not a tuning (#103).

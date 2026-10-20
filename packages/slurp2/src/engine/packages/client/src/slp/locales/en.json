@@ -6550,5 +6550,9 @@
   "ui.slurp.settings.ext.title": "Extension",
   "ui.slurp.settings.ext.ads.label": "Brands & ads",
   "ui.slurp.settings.ext.ads.detail": "Inline ads, brand deals, ad pictures and brand packs.",
-  "ui.slurp.settings.ext.offNote": "Switched off: none of it runs or shows. Your settings and brands stay as they are."
+  "ui.slurp.settings.ext.offNote": "Switched off: none of it runs or shows. Its settings and data stay as they are.",
+  "ui.slurp.settings.ext.world.label": "Living world",
+  "ui.slurp.settings.ext.world.detail": "Holidays and site events, the calendar, Slurp-wide events and viral trends.",
+  "ui.slurp.settings.ext.world.trends.label": "Viral trends",
+  "ui.slurp.settings.ext.world.trends.detail": "A post that takes off can start a trend that other Creators join."
 }
