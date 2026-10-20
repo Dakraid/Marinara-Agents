@@ -130,7 +130,8 @@ export function SlpStage({
         </section>
 
         <section className="flex min-h-0 flex-col px-[18px] pb-[max(0.875rem,env(safe-area-inset-bottom))] md:justify-center md:px-10 md:pb-10">
-          {actions && <div className="flex shrink-0 justify-end">{actions}</div>}
+          {/* Phones: actions sit above the cards (thumb zone), not on the transcript's scrolled-off edge. */}
+          {actions && <div className="flex shrink-0 justify-end max-md:order-1 max-md:pt-3">{actions}</div>}
           <div
             ref={talkRef}
             role="log"
@@ -180,7 +181,7 @@ export function SlpStage({
             </span>
             {labels.typing}
           </p>
-          <div className="mt-auto shrink-0 pt-3 md:mt-4">
+          <div className="mt-auto shrink-0 pt-3 max-md:order-2 md:mt-4">
             {cards && ready && (
               <SlpChoiceCards
                 key={cards.label + cards.choices.map((choice) => choice.id).join()}
