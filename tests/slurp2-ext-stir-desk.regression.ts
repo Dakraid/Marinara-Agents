@@ -63,7 +63,7 @@ assert.match(
 const tick = source("server", "features/messages/desk/slp-desk-tick-operation.ts");
 assert.match(
   tick,
-  /if \(!slpExtensionOn\(allSettings, "supportDesk"\)\) return;\n[\s\S]*const settings = allSettings\.supportDesk;/u,
+  /if \(!slpExtensionOn\(allSettings, "supportDesk"\)\) \{[\s\S]*?return;\n  \}\n[\s\S]*const settings = allSettings\.supportDesk;/u,
 );
 assert.match(
   source("server", "features/messages/desk/slp-desk-talk-operation.ts"),
@@ -92,7 +92,7 @@ assert.match(threads, /unread: own\.unread \+ support\.unread, deskUnread: 0/u);
 const host = source("client", "app/SlpHomeHost.tsx");
 assert.match(
   host,
-  /onOpenStir:\s*slurpSettingsQuery\.data &&\s*\(slpExtensionOn\(slurpSettingsQuery\.data, "stir"\) \|\| slpExtensionOn\(slurpSettingsQuery\.data, "supportDesk"\)\)\s*\?\s*goToStir\s*:\s*undefined/u,
+  /onOpenStir:\s*!slurpSettingsQuery\.data \|\|\s*slpExtensionOn\(slurpSettingsQuery\.data, "stir"\) \|\|\s*slpExtensionOn\(slurpSettingsQuery\.data, "supportDesk"\)\s*\?\s*goToStir\s*:\s*undefined/u,
 );
 assert.match(
   source("client", "app/slp-home-state.ts"),
@@ -125,5 +125,20 @@ assert.match(page, /slpExtensionOn\(settings, "supportDesk"\) && <SlpDeskSetting
 const overview = source("client", "features/backstage/SlpBackstageOverviewPanel.tsx");
 assert.match(overview, /set: \(on\) => void update\("extStir", on\)/u);
 assert.match(overview, /set: \(on\) => void update\("extSupportDesk", on\)/u);
+
+// Review fixes: a Creator who left is back with the desk off; no ticket write and no stale desk step.
+assert.match(tick, /return \{ \.\.\.desk, pausedAt: null, pausedAutoPosting: false \};/u);
+assert.match(
+  tick,
+  /if \(resume\) await storage\.bulkUpdateCreatorProfiles\(\[account\.id\], \{ autoPosting: true \}\);/u,
+);
+assert.match(
+  source("server", "features/messages/slp-messages-send-routes.ts"),
+  /if \(slpExtensionOn\(await slurp\.getSettings\(\), "supportDesk"\)\)\s*await markSlurpDeskSupportTurn/u,
+);
+assert.match(
+  source("client", "features/messages/slp-thread-actions.ts"),
+  /composerDesk &&\s*\(!state\.settingsQuery\.data \|\| slpExtensionOn\(state\.settingsQuery\.data, "supportDesk"\)\)/u,
+);
 
 console.log("slurp2 Stir and Support desk switches: ok");

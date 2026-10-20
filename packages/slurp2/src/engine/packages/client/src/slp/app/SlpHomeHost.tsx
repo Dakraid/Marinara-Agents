@@ -222,10 +222,11 @@ export function SlurpHome({ navigation, onNavigate, onLeave }: SlurpHomeProps) {
     onOpenSearch: goToNoodlerSearch,
     onOpenMessages: goToMessages,
     onOpenWallet: goToWallet,
-    // Stir and Support desk off: no tab (the desk shares the Stir screen).
+    // Stir and Support desk off: no tab (the desk shares the Stir screen). Shown while settings load.
     onOpenStir:
-      slurpSettingsQuery.data &&
-      (slpExtensionOn(slurpSettingsQuery.data, "stir") || slpExtensionOn(slurpSettingsQuery.data, "supportDesk"))
+      !slurpSettingsQuery.data ||
+      slpExtensionOn(slurpSettingsQuery.data, "stir") ||
+      slpExtensionOn(slurpSettingsQuery.data, "supportDesk")
         ? goToStir
         : undefined,
     // Pulse's tap-through (task C): the post a task made, your chat it wrote in, or the Creator.

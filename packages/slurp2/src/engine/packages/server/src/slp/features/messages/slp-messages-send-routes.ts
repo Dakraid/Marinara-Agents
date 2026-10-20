@@ -219,9 +219,10 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
             deskMove: { ...(deskStep.metadata.deskMove as Record<string, unknown>), error: moved.error },
           });
       }
-      await markSlurpDeskSupportTurn(app.db, parsed.data.creatorAccountId).catch((error: unknown) =>
-        logger.warn(error, "[slurp-desk] Could not update the ticket"),
-      );
+      if (slpExtensionOn(await slurp.getSettings(), "supportDesk"))
+        await markSlurpDeskSupportTurn(app.db, parsed.data.creatorAccountId).catch((error: unknown) =>
+          logger.warn(error, "[slurp-desk] Could not update the ticket"),
+        );
     }
     let outcome;
     let tipError: string | null = null;

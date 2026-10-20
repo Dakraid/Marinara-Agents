@@ -260,7 +260,8 @@ The other cases:
    with a desk step, no trust chip, ticket bar, case file, Offer card or desk tools in the thread.
    Support still talks, sends pictures and asks for a photo; the sign-up chat seeds the desk as
    before. With no desk, Support's threads sit in the inbox and its badge. The desk's case files
-   keep their state; the first pass after a long pause can roll up to a week's odds at once.
+   keep their state, except that a Creator who left comes back and posts again (only the desk
+   keeps them away); the first pass after a long pause can roll up to a week's odds at once.
 
 4. **Add extras in onboarding** and the Support offers.
 5. **Storylines engine.** This is STORYLINES.md PRs 2–10, packs v2 with `requires`, and

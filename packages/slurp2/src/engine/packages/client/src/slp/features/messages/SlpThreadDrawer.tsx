@@ -41,7 +41,7 @@ export function SlpThreadDrawer({ model }: { model: SlurpThreadViewModel }) {
   } = model;
   const threadId = thread?.id ?? threadIdProp;
   const settings = model.settingsQuery.data;
-  const deskOn = Boolean(settings && slpExtensionOn(settings, "supportDesk"));
+  const deskOn = !settings || slpExtensionOn(settings, "supportDesk");
   const docked = useSlpMediaQuery("(min-width: 1280px)");
   const title =
     drawerMode === "prompt"

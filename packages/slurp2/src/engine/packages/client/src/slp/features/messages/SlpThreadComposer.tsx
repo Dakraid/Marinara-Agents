@@ -76,7 +76,7 @@ export function SlpThreadComposer({ model }: { model: SlurpThreadViewModel }) {
     updateSlurpSettings,
   } = model;
   // Support desk off: Support still talks, sends pictures and asks for a photo, but plays no desk game.
-  const desk = asSupport && Boolean(settingsQuery.data && slpExtensionOn(settingsQuery.data, "supportDesk"));
+  const desk = asSupport && (!settingsQuery.data || slpExtensionOn(settingsQuery.data, "supportDesk"));
   // These tools act on a conversation that exists. In a new chat they opened an empty panel.
   const availableTabs = toolTabs.filter(
     (tab) =>

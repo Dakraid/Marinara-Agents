@@ -127,7 +127,7 @@ export function SlurpThreadView(props: SlurpThreadViewProps) {
   // composer stays away instead of offering a live input on a blank screen.
   const notLoaded = !threadQuery.data;
   // Support desk off: an Offer still waiting cannot be answered, so its card stays away.
-  const deskOn = Boolean(model.settingsQuery.data && slpExtensionOn(model.settingsQuery.data, "supportDesk"));
+  const deskOn = !model.settingsQuery.data || slpExtensionOn(model.settingsQuery.data, "supportDesk");
   const keptDeepDetails = threadQuery.data?.deepDetailIds;
   const deepDetailIds = useMemo(() => new Set(keptDeepDetails), [keptDeepDetails]);
   // Roleplay scenes (docs/SCENES.md): offered when this Engine runs them and the thread is free.
