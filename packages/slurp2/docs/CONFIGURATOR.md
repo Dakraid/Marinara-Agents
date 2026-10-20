@@ -280,6 +280,15 @@ The other cases:
    window goes out, expired ones drop.
 
 4. **Add extras in onboarding** and the Support offers.
+   As built (slurpothon), part 1: "Add extras" is the last question of the Basic screen, not a step
+   after the Creators, so it rides on the Basic screen's one write. One on/off card per switch
+   (Storylines, Brands & ads, Living world, Stir, Support desk; Engine link has no switch yet),
+   with the switch's sentence; the sample components wait for the real cards' live actions. A first
+   run (and the fast lane) preselects Storylines unless a switch is already on (an old install that
+   skipped onboarding keeps its switches); a rerun starts on today's switches and writes them only
+   when the player answers. Picks survive a reload. Installs from before the switches get a one-time
+   "What's switched on" note in the Overview's "Your Slurp" card, per browser, once onboarding is
+   completed; a first run that reached "Add extras" (or took the fast lane) marks it seen.
 5. **Storylines engine.** This is STORYLINES.md PRs 2–10, packs v2 with `requires`, and
    the pregnancy pack. Build it on the Storylines gate, so the gate is built only once.
 
