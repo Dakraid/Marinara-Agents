@@ -100,14 +100,15 @@ export function SlpStage({
           aria-valuemin={1}
           aria-valuemax={progress.total}
           aria-valuenow={progress.current}
-          className="ms-auto flex shrink-0 gap-1.5 pe-1"
+          className="ms-auto flex shrink-0 gap-1 pe-1 sm:gap-1.5"
         >
           {Array.from({ length: progress.total }, (_, index) => (
             <span
               key={index}
               className={cn(
                 "h-[5px] rounded-full transition-[width,background-color] duration-300 ease-[var(--slurp-ease)] motion-reduce:transition-none",
-                index + 1 === progress.current ? "w-7 bg-[var(--noodle-accent)]" : "w-[18px]",
+                // Narrow on phones: nine steps of full-width dots squeezed the host name to "Sl…".
+                index + 1 === progress.current ? "w-5 bg-[var(--noodle-accent)] sm:w-7" : "w-2.5 sm:w-[18px]",
                 index + 1 < progress.current && "bg-[var(--noodle-accent)]",
                 index + 1 > progress.current && "bg-[color-mix(in_srgb,var(--slurp-text)_14%,transparent)]",
               )}
