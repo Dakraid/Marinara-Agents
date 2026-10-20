@@ -63,7 +63,12 @@ export function slpActionExtension(name: SlpActionName): SlpExtensionId | null {
   return SLP_EXTENSIONS.find((id) => SLP_EXTENSION_ACTIONS[id]?.includes(name)) ?? null;
 }
 
-export function slpActionAllowed(settings: SlpExtensionSettings, name: SlpActionName): boolean {
+export function slpActionAllowed(
+  settings: SlpExtensionSettings & { trendsEnabled?: boolean },
+  name: SlpActionName,
+): boolean {
+  // "Viral trends" off inside a switched-on Living world takes the trend actions too.
+  if ((name === "start-trend" || name === "steer-trend") && settings.trendsEnabled === false) return false;
   return slpExtensionAllows(settings, slpActionExtension(name));
 }
 

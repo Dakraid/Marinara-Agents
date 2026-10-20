@@ -166,4 +166,26 @@ assert.match(
   /<SlpWorldSwitch \{\.\.\.page\} \/>\s+<SlpCalendarBody/u,
 );
 
+// Review: Viral trends off inside a switched-on Living world takes the trend actions too.
+for (const name of ["start-trend", "steer-trend"] as const) {
+  assert.equal(slpActionAllowed({ extWorld: true, trendsEnabled: false }, name), false, name);
+  assert.equal(slpActionAllowed({ extWorld: true, trendsEnabled: true }, name), true, name);
+}
+assert.equal(slpActionAllowed({ extWorld: true, trendsEnabled: false }, "start-event"), true);
+// Review: a started occasion makes its own window, so the occasion service drops occurrences too.
+assert.match(
+  source("server", "features/feed/slp-occasion-service.ts"),
+  /slpExtensionOn\(settings, "world"\) \? occurrences : \[\]/u,
+);
+// Review: activating an occurrence is the world running; ending or dismissing stays open.
+assert.match(
+  source("server", "features/world/slp-story-routes.ts"),
+  /body\.data\.status === "active" && !slpExtensionOn\(await noodle\.getSettings\(\), "world"\)/u,
+);
+// Review: a switch drops cached trends and Stir reads at once.
+assert.match(
+  source("client", "features/settings/slp-settings-hooks.ts"),
+  /key\.startsWith\("ext"\) \|\| key === "trendsEnabled"[\s\S]*?invalidateQueries\(\{ queryKey: slpKeys\.noodlerRoot\(\) \}\)/u,
+);
+
 console.log("slurp2 Living world regression passed");

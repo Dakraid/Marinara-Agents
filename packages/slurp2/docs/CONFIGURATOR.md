@@ -239,8 +239,9 @@ The other cases:
    Events and Calendar pages; the Events page also holds "Viral trends" (`trendsEnabled`, default
    on, read with Living world through `slpTrendsOn`). Off: every effect reads `slpLiveEvents`, which
    is empty, so no event colours a prompt, reach, prices, earnings, fan runs, reply delays, pack
-   occasions or the pulse; started occasions wait (the tick skips the reconcile) and the prompt
-   keeps only story facts. No Slurp-wide event starts from the shared beat, starting an event
+   occasions or the pulse; started occasions keep their dates and do not run (the reconcile skips
+   them, nor can one be started), so one whose window passed while off ends when Living world is
+   on again; the prompt keeps only story facts. No Slurp-wide event starts from the shared beat, starting an event
    answers 409, and the world actions are refused. No trend starts (every starter goes through
    `startSlurpTrend`), is scanned, joined or listed, so Discover's Trending row and the post trend
    chip hide. Crowd (`worldActivity`, `platformScale`) stays Basic. Search hides Events, Calendar

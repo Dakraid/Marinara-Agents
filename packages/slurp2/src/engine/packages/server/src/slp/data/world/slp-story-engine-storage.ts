@@ -86,6 +86,8 @@ export function createStoryEngineStorage({ settingsStore }: SlurpStorageContext)
         this.listStoryOccurrences(),
       ]);
       // Living world off: occurrences wait as they are (no start, no end) until it is on again.
+      // ponytail: their dates do not move, so a window that passes while off ends on the next pass;
+      // shift endsAt by the time spent off if players want a true pause.
       if (!slpExtensionOn(settings, "world")) return existing;
       const result = reconcileSlpScheduledOccurrences({
         events: settings.platformEvents,

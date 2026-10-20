@@ -232,6 +232,9 @@ export async function slpStoryRoutes(app: FastifyInstance, { noodle }: SlpRouteD
       .strict()
       .safeParse(req.body ?? {});
     if (!body.success) return reply.code(400).send({ error: body.error.flatten() });
+    // Ending or dismissing stays open; starting one is the world running.
+    if (body.data.status === "active" && !slpExtensionOn(await noodle.getSettings(), "world"))
+      return reply.code(409).send({ error: "Living world is switched off in Backstage." });
     const occurrence = await noodle.setStoryOccurrenceStatus((req.params as { id: string }).id, body.data.status);
     return occurrence ? { occurrence } : reply.code(404).send({ error: "Occurrence not found." });
   });
