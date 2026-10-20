@@ -6,7 +6,7 @@
   },
   "builtAgainst": {
     "engineVersion": "2.5.0",
-    "engineCommit": "3ae82c539b93cbbab4d628e185fc571205975566"
+    "engineCommit": "25f8df7b0a388fe36f657d69c6fcaa9f27e066ed"
   },
   "id": "rock-paper-scissors",
   "name": "Rock-Paper-Scissors",

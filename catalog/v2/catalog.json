@@ -109,7 +109,7 @@
         },
         "builtAgainst": {
           "engineVersion": "2.5.0",
-          "engineCommit": "3ae82c539b93cbbab4d628e185fc571205975566"
+          "engineCommit": "25f8df7b0a388fe36f657d69c6fcaa9f27e066ed"
         },
         "id": "eightball",
         "name": "8-Ball Pool",
@@ -174,7 +174,7 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/eightball.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/eightball-1.0.6.zip",
-        "sha256": "a765382d7f40506c16730fdc3d35ae9ff4beca692fd7fbf2ddd5903d4db5619d",
+        "sha256": "46c45d0866cae768594f708dd36e36ec584cd60e4fc8d5d4a466bba0b445d82e",
         "bytes": 70309
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#eightball"
@@ -284,7 +284,7 @@
         },
         "builtAgainst": {
           "engineVersion": "2.5.0",
-          "engineCommit": "3ae82c539b93cbbab4d628e185fc571205975566"
+          "engineCommit": "25f8df7b0a388fe36f657d69c6fcaa9f27e066ed"
         },
         "id": "conversation-calls",
         "name": "Calls",
@@ -342,7 +342,7 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/conversation-calls.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/conversation-calls-1.1.5.zip",
-        "sha256": "92b9b14f0a6b950e8dd8f9af12b4ab9978d3610ae12ca2d2dfe926c0353268bb",
+        "sha256": "f9c9dc6be1fd3760d2d04147c433d7745477863e597e9fb67765e4bccadebf98",
         "bytes": 575274
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#conversation-calls"
@@ -440,7 +440,7 @@
         },
         "builtAgainst": {
           "engineVersion": "2.5.0",
-          "engineCommit": "3ae82c539b93cbbab4d628e185fc571205975566"
+          "engineCommit": "25f8df7b0a388fe36f657d69c6fcaa9f27e066ed"
         },
         "id": "chess",
         "name": "Chess",
@@ -501,7 +501,7 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/chess.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/chess-1.0.6.zip",
-        "sha256": "66096869649ab5fcf91d8bfc35ce0c3899d2456a3ac4de502755647b94b15ce6",
+        "sha256": "bc7ba9d919ba73a88cf49f5d2507b5d688c15b60fd7ffa7e012e87798617d518",
         "bytes": 79677
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#chess"
@@ -2560,7 +2560,7 @@
         },
         "builtAgainst": {
           "engineVersion": "2.5.0",
-          "engineCommit": "3ae82c539b93cbbab4d628e185fc571205975566"
+          "engineCommit": "25f8df7b0a388fe36f657d69c6fcaa9f27e066ed"
         },
         "id": "long-term-memory",
         "name": "Long-Term Memory",
@@ -2619,7 +2619,7 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/long-term-memory.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/long-term-memory-1.4.56.zip",
-        "sha256": "85ec5b75f7e44ba94861b77984f90b0d87b9e08cc4b21220d7c51c11419ff48f",
+        "sha256": "5e56805c3ae853339831702f9c9304c16a60810aa2d4d574e2809a451cfacf0d",
         "bytes": 1117604
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#long-term-memory"
@@ -2675,7 +2675,7 @@
         },
         "builtAgainst": {
           "engineVersion": "2.5.0",
-          "engineCommit": "3ae82c539b93cbbab4d628e185fc571205975566"
+          "engineCommit": "25f8df7b0a388fe36f657d69c6fcaa9f27e066ed"
         },
         "id": "memory-nag",
         "name": "Memory Nag",
@@ -2731,7 +2731,7 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/memory-nag.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/memory-nag-1.2.1.zip",
-        "sha256": "046c250f6794b9357f4771aa4291813e3afcfa2f3bf96983be7ddfddd1c135d5",
+        "sha256": "1b26fe893e2d6d8caadd4f3f7c31c73b6e526f2b0cf8f0d42e0102dd4f245c8e",
         "bytes": 171368
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#memory-nag"
@@ -2829,7 +2829,7 @@
         },
         "builtAgainst": {
           "engineVersion": "2.5.0",
-          "engineCommit": "3ae82c539b93cbbab4d628e185fc571205975566"
+          "engineCommit": "25f8df7b0a388fe36f657d69c6fcaa9f27e066ed"
         },
         "id": "noodle",
         "name": "Noodle",
@@ -2944,7 +2944,7 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/noodle.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/noodle-1.5.7.zip",
-        "sha256": "b91b56147bdf432df417d9fa8b25834c0226ce778c0b15e9f13f17fdae97379d",
+        "sha256": "b0adff9ba58bb77c8f240c70e84ed3ca210f8339d45d8f68c8c468dad657abad",
         "bytes": 1294089
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/noodle/README.md"
@@ -3000,7 +3000,7 @@
         },
         "builtAgainst": {
           "engineVersion": "2.5.0",
-          "engineCommit": "3ae82c539b93cbbab4d628e185fc571205975566"
+          "engineCommit": "25f8df7b0a388fe36f657d69c6fcaa9f27e066ed"
         },
         "id": "poker",
         "name": "Poker",
@@ -3063,7 +3063,7 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/poker.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/poker-1.0.6.zip",
-        "sha256": "3cd7f2d98a6b33c2573ec4ecae19608af5e260476cf6a53b029c7a0864920769",
+        "sha256": "386efe30c0f40f05da52e62431860d459847386f0f9afa678b2892c7cd77e6c4",
         "bytes": 60405
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#poker"
@@ -3456,7 +3456,7 @@
         },
         "builtAgainst": {
           "engineVersion": "2.5.0",
-          "engineCommit": "3ae82c539b93cbbab4d628e185fc571205975566"
+          "engineCommit": "25f8df7b0a388fe36f657d69c6fcaa9f27e066ed"
         },
         "id": "rock-paper-scissors",
         "name": "Rock-Paper-Scissors",
@@ -3519,7 +3519,7 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/rock-paper-scissors.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/rock-paper-scissors-1.0.6.zip",
-        "sha256": "a29884e232d799287942dc8fb125b1d907ad18adfe7e7c87910492aea32b6bdb",
+        "sha256": "4a5f7b746fb234023028d4925676a4b0f833add94ba09494935acfef1c49697a",
         "bytes": 37676
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#rock-paper-scissors"
@@ -3533,7 +3533,7 @@
         },
         "builtAgainst": {
           "engineVersion": "2.5.0",
-          "engineCommit": "3ae82c539b93cbbab4d628e185fc571205975566"
+          "engineCommit": "25f8df7b0a388fe36f657d69c6fcaa9f27e066ed"
         },
         "id": "slurp2",
         "name": "Slurp",
@@ -3654,7 +3654,7 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/slurp2.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/slurp2-0.3.51.zip",
-        "sha256": "cb2f05f09b6e055427a4e57ed75443d123282fb6050ae6ca3720938595cf72cc",
+        "sha256": "58a63d9fb63ee441ace5d8af1b3cd03dbd9cb188a835439a76369738733dd331",
         "bytes": 5592205
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/slurp2/README.md"
@@ -3710,7 +3710,7 @@
         },
         "builtAgainst": {
           "engineVersion": "2.5.0",
-          "engineCommit": "3ae82c539b93cbbab4d628e185fc571205975566"
+          "engineCommit": "25f8df7b0a388fe36f657d69c6fcaa9f27e066ed"
         },
         "id": "tic-tac-toe",
         "name": "Tic-Tac-Toe",
@@ -3774,7 +3774,7 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/tic-tac-toe.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/tic-tac-toe-1.0.6.zip",
-        "sha256": "7ab9ad6eafb6b66dbbc409c275289bb5988e9b67d6af6271be386415908845a2",
+        "sha256": "46b214655d7c0aa764773e6e51c79fcc6b15d9dbabb4acc24c7451d543c94a69",
         "bytes": 33455
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#tic-tac-toe"
@@ -3788,7 +3788,7 @@
         },
         "builtAgainst": {
           "engineVersion": "2.5.0",
-          "engineCommit": "3ae82c539b93cbbab4d628e185fc571205975566"
+          "engineCommit": "25f8df7b0a388fe36f657d69c6fcaa9f27e066ed"
         },
         "id": "uno",
         "name": "UNO",
@@ -3849,7 +3849,7 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/uno.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/uno-1.0.6.zip",
-        "sha256": "43e8b803c10141d927c2642b7a683f56f8dda695740db18e7382f26a3c936122",
+        "sha256": "1bfa4fbfb6627af7ef2ff26b179883d61d1be2b1398bf701682e567ce75b0728",
         "bytes": 59861
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#uno"
@@ -3863,7 +3863,7 @@
         },
         "builtAgainst": {
           "engineVersion": "2.5.0",
-          "engineCommit": "3ae82c539b93cbbab4d628e185fc571205975566"
+          "engineCommit": "25f8df7b0a388fe36f657d69c6fcaa9f27e066ed"
         },
         "id": "hierarchical-maps",
         "name": "World Maps",
@@ -3928,7 +3928,7 @@
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/hierarchical-maps.png",
       "artifact": {
         "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/hierarchical-maps-1.5.2.zip",
-        "sha256": "a9f92af19ed022526d6991de730bba15c0e218fdb0a0e08ede608ffa6c7f8a7a",
+        "sha256": "29d39e66b5bab79381def6c0e23b460618dbbbf6c2a7a1e7107f458487b8c78d",
         "bytes": 574972
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Engine/blob/main/docs/agents/hierarchical-maps.md"

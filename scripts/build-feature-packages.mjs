@@ -79,11 +79,12 @@ const MAX_ENGINE_EXCLUSIVE = "4.0.0";
 // installs these versions and keeps the one it has (Pasta-Devs/Marinara-Agents#1487).
 const [hostApiMajor, hostApiMinor] = HOST_CAPABILITY_API.split(".").map(Number);
 const PACKAGE_CAPABILITY_API = Object.freeze({ major: hostApiMajor, minor: hostApiMinor });
-// The one Engine commit every feature package is built against (MARINARA_ENGINE_ROOT). The engine-boundary.json files
-// of World Maps, Long-Term Memory and Memory Nag record the same commit.
+// The one Engine commit every feature package is built against (MARINARA_ENGINE_ROOT): the first Engine staging commit
+// with the host namespace and the api.runtime members (Pasta-Devs/Marinara-Engine#7869 and #7868). The
+// engine-boundary.json files of World Maps, Long-Term Memory and Memory Nag record the same commit.
 const PACKAGE_BUILT_AGAINST = Object.freeze({
   engineVersion: "2.5.0",
-  engineCommit: "3ae82c539b93cbbab4d628e185fc571205975566",
+  engineCommit: "25f8df7b0a388fe36f657d69c6fcaa9f27e066ed",
 });
 const hierarchicalMapsOwnedSourcePaths = [
   "packages/server/src/routes/spatial-context.routes.ts",
