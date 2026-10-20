@@ -180,7 +180,7 @@ assert.match(
 // Review: activating an occurrence is the world running; ending or dismissing stays open.
 assert.match(
   source("server", "features/world/slp-story-routes.ts"),
-  /body\.data\.status === "active" && !slpExtensionOn\(await noodle\.getSettings\(\), "world"\)/u,
+  /const starting = body\.data\.status === "active";\s+if \(starting && !slpExtensionOn\(await noodle\.getSettings\(\), "world"\)\)/u,
 );
 // Review: a switch drops cached trends and Stir reads at once.
 assert.match(
