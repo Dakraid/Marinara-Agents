@@ -111,7 +111,9 @@ export async function loadSlurpTieCreators(db: DB, at = new Date()): Promise<Slu
           .filter((person) => SLURP_PARTNER_RELATION.test(person.relation))
           .map((person) => person.name),
         cardPeople,
-        kin: family.flatMap((bond) => (bond.aId === account.id ? [bond.bId] : bond.bId === account.id ? [bond.aId] : [])),
+        kin: family.flatMap((bond) =>
+          bond.aId === account.id ? [bond.bId] : bond.bId === account.id ? [bond.aId] : [],
+        ),
         poly: style ? style === "poly" : SLP_POLY_CARD_WORDS.test(text),
         // An unreadable setting is no permission: fail closed (no romance) until it reads again.
         romance: steering ? steering.romance : { off: true, only: [] },
