@@ -15,6 +15,8 @@ export type SlpChoice = {
   /** The quiet way out ("Not now", "Use the defaults"). */
   ghost?: boolean;
   ariaLabel?: string;
+  /** An on/off card in a pick-several group: a tap reports at once and keeps the others; lit is on. */
+  toggle?: boolean;
 };
 
 export type SlpChoiceLayout = "one" | "two" | "three" | "list";
@@ -45,8 +47,10 @@ export function SlpChoiceCards({
   const [chosen, setChosen] = useState<string | null>(null);
   const shape = layout ?? (choices.length === 1 ? "one" : "two");
   const row = shape === "one" || shape === "list";
-  const pick = (id: string) => {
+  const pick = (choice: SlpChoice) => {
+    const id = choice.id;
     if (chosen) return;
+    if (choice.toggle) return onSelect(id);
     if (slpPrefersReducedMotion()) return onSelect(id);
     setChosen(id);
     window.setTimeout(() => {
@@ -63,7 +67,8 @@ export function SlpChoiceCards({
             key={choice.id}
             type="button"
             aria-label={choice.ariaLabel}
-            onClick={() => pick(choice.id)}
+            aria-pressed={choice.toggle ? Boolean(choice.primary) : undefined}
+            onClick={() => pick(choice)}
             style={{ animationDelay: `${index * 45}ms` }}
             className={cn(
               "slp-choice-in flex min-h-14 min-w-0 gap-3 rounded-[18px] px-3.5 py-3 text-start transition-[transform,background-color,box-shadow,opacity] duration-150 ease-[var(--slurp-ease)] active:translate-y-[3px] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--noodle-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--slurp-surface)] motion-reduce:transition-none",

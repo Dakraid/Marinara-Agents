@@ -27,6 +27,11 @@ import {
   slurpAudiencePresetPatch,
   type SlurpAudiencePreset,
 } from "../../../../../shared/src/slp/slp-tuning.js";
+import {
+  SLP_EXTENSION_KEYS,
+  slpExtensionOn,
+  type SlpExtensionId,
+} from "../../../../../shared/src/slp/slp-extensions.js";
 import type { SlurpSettings, SlurpSettingsUpdate } from "../settings/slp-settings-contract";
 
 /** The crowd offered on the first run; "off" stays on the Basic page. */
@@ -37,6 +42,16 @@ export const SLP_BASIC_CROWDS = [
   "generous",
 ] as const satisfies readonly SlurpAudiencePreset[];
 
+/** The extensions offered at the end ("Add extras"); Engine link has no switch yet. Storylines is the pick. */
+export const SLP_BASIC_EXTRAS = [
+  "storylines",
+  "ads",
+  "world",
+  "stir",
+  "supportDesk",
+] as const satisfies readonly SlpExtensionId[];
+export type SlpBasicExtra = (typeof SLP_BASIC_EXTRAS)[number];
+
 export const SLP_BASIC_OPTIONS = {
   who: ["watch", "run", "both"],
   heat: SLP_SPICE_STEPS,
@@ -46,8 +61,11 @@ export const SLP_BASIC_OPTIONS = {
   names: ["open", "hinted"],
 } as const;
 
-/** `connection` and `imageConnection` offer the player's own connections, so they have no fixed list. */
-export type SlpBasicQuestion = keyof typeof SLP_BASIC_OPTIONS | "connection" | "imageConnection";
+/**
+ * `connection` and `imageConnection` offer the player's own connections, so they have no fixed list.
+ * `extras` picks several: its answer is the picked ids joined with commas ("" is none).
+ */
+export type SlpBasicQuestion = keyof typeof SLP_BASIC_OPTIONS | "connection" | "imageConnection" | "extras";
 
 /** Stage order. `locked` is a beat, not a question: Mari's locked post, unlocked with a tap. */
 export const SLP_BASIC_ORDER = [
@@ -60,6 +78,7 @@ export const SLP_BASIC_ORDER = [
   "imageConnection",
   "crowd",
   "names",
+  "extras",
 ] as const;
 export type SlpBasicStep = (typeof SLP_BASIC_ORDER)[number];
 
@@ -72,7 +91,12 @@ export type SlpBasicAnswers = Partial<{
   imageConnection: string;
   crowd: (typeof SLP_BASIC_CROWDS)[number];
   names: "open" | "hinted";
+  extras: string;
 }>;
+
+/** The picked extras of an `extras` answer. */
+export const slpBasicExtras = (answer: string): SlpBasicExtra[] =>
+  SLP_BASIC_EXTRAS.filter((id) => answer.split(",").includes(id));
 
 /** "Later" in the connection question: no text connection now, so the pace is manual. */
 export const SLP_BASIC_LATER = "later";
@@ -117,6 +141,7 @@ export function slpBasicDefaults(context: SlpBasicContext): Required<Omit<SlpBas
     imageConnection: pick(context.imageConnections, ""),
     crowd: firstRun || crowd === "custom" || crowd === "off" ? "realistic" : crowd,
     names: "open",
+    extras: (firstRun ? ["storylines"] : SLP_BASIC_EXTRAS.filter((id) => slpExtensionOn(settings, id))).join(","),
   };
 }
 
@@ -210,6 +235,10 @@ export function slpBasicStamp(state: SlpBasicState, context: SlpBasicContext): S
     if (context.firstRun) settings.autoCreatorArtworkEnabled = answers.pictures === "yes";
   }
   if (asked("crowd")) settings = { ...settings, ...slurpAudiencePresetPatch(answers.crowd, context.settings) };
+  if (asked("extras")) {
+    const picked = slpBasicExtras(answers.extras);
+    for (const id of SLP_BASIC_EXTRAS) settings[SLP_EXTENSION_KEYS[id]] = picked.includes(id);
+  }
   return {
     settings,
     heat: asked("heat") ? slpBasicHeat(answers.heat) : null,
@@ -230,7 +259,8 @@ export function slpBasicCleanState(raw: unknown): SlpBasicState {
     for (const [question, value] of Object.entries(source.answers)) {
       if (typeof value !== "string") continue;
       const options = (SLP_BASIC_OPTIONS as Record<string, readonly string[]>)[question];
-      if (options ? options.includes(value) : question === "connection" || question === "imageConnection")
+      const extras = question === "extras" && slpBasicExtras(value).join(",") === value;
+      if (options ? options.includes(value) : extras || question === "connection" || question === "imageConnection")
         answers[question] = value;
     }
   }

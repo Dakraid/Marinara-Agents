@@ -15,13 +15,16 @@ import type { SlpChoice, SlpChoiceLayout } from "../../modules/stage/SlpChoiceCa
 import { SlpStage, type SlpStageLine } from "../../modules/stage/SlpStage";
 import { SlurpConfetti } from "./SlpAgeGate";
 import { DEMO_PROFILE } from "./SlpOnboardingPanel";
+import { markSlpSwitchedOnNoteSeen } from "../../base/state/slp-switched-on-note";
 import { useSlpBasicContext, useSlpBasicWrite } from "./slp-basic-setup-hooks";
 import {
+  SLP_BASIC_EXTRAS,
   SLP_BASIC_LATER,
   SLP_BASIC_OPTIONS,
   SLP_BASIC_ORDER,
   slpBasicAnswers,
   slpBasicCleanState,
+  slpBasicExtras,
   slpBasicNext,
   slpBasicRecommended,
   slpBasicShows,
@@ -63,6 +66,11 @@ const GLYPH: Record<string, string> = {
   "crowd.realistic": "🙂",
   "crowd.lively": "🎉",
   "crowd.generous": "🌍",
+  "extras.storylines": "📖",
+  "extras.ads": "📣",
+  "extras.world": "🎉",
+  "extras.stir": "🥄",
+  "extras.supportDesk": "🛎️",
 };
 /** The fans on the preview card, by crowd. */
 const FANS = { quiet: 120, realistic: 412, lively: 980, generous: 1650 } as const;
@@ -110,6 +118,8 @@ export function SlpBasicSetup({
   const [resumed] = useState(() => state !== EMPTY);
   const [history, setHistory] = useState<number | null>(null);
   const [celebrate, setCelebrate] = useState(false);
+  /** "Add extras" picks several: the picks so far, kept until "Done". */
+  const [extras, setExtras] = useState<string | null>(null);
   const update = (next: SlpBasicState) => {
     setState(next);
     if (firstRun) save(next);
@@ -128,11 +138,13 @@ export function SlpBasicSetup({
     const hint = (question: SlpBasicQuestion, value: string) =>
       t(`${O}hint.${key(question)}.${value}`, { defaultValue: "" }) || undefined;
     const optionsOf = (question: SlpBasicQuestion): readonly string[] =>
-      question === "connection"
-        ? [...context.textConnections.map((entry) => entry.id), SLP_BASIC_LATER]
-        : question === "imageConnection"
-          ? context.imageConnections.map((entry) => entry.id)
-          : SLP_BASIC_OPTIONS[question];
+      question === "extras"
+        ? SLP_BASIC_EXTRAS
+        : question === "connection"
+          ? [...context.textConnections.map((entry) => entry.id), SLP_BASIC_LATER]
+          : question === "imageConnection"
+            ? context.imageConnections.map((entry) => entry.id)
+            : SLP_BASIC_OPTIONS[question];
 
     // The talk: every step already answered (question dimmed, answer as a pill), then the open one.
     const stop = next === null ? SLP_BASIC_ORDER.length : SLP_BASIC_ORDER.indexOf(next);
@@ -154,6 +166,7 @@ export function SlpBasicSetup({
       } else {
         lines.push({ id: `q-${step}`, kind: "host", text: t(`${O}q.${key(step)}`) });
         if (step === "heat") lines.push({ id: "heat-public", kind: "aside", text: t(`${O}say.heatPublic`) });
+        if (step === "extras") lines.push({ id: "extras-later", kind: "aside", text: t(`${O}say.extras`) });
       }
     };
     for (const step of answered) {
@@ -162,7 +175,8 @@ export function SlpBasicSetup({
       lines.push({
         id: `a-${step}`,
         kind: "mine",
-        text: step === "locked" ? t(`${O}tap.gotIt`) : value ? label(step, value) : t(`${O}tap.recommended`),
+        text:
+          step === "locked" ? t(`${O}tap.gotIt`) : value !== undefined ? label(step, value) : t(`${O}tap.recommended`),
       });
     }
     if (next) ask(next);
@@ -188,7 +202,10 @@ export function SlpBasicSetup({
         toast.error(t("ui.slurp.onboarding.saveError"));
         return;
       }
-      if (firstRun) save(null);
+      if (firstRun) {
+        save(null);
+        markSlpSwitchedOnNoteSeen();
+      }
       setCelebrate(true);
       onLead(lead, stamp);
     };
@@ -199,6 +216,35 @@ export function SlpBasicSetup({
         layout: "one",
         label: t(`${O}say.locked1`),
         onSelect: () => update({ ...state, unlocked: true }),
+      };
+    } else if (next === "extras") {
+      // ponytail: each card says what it adds in a sentence; the sample components (an inline ad, a
+      // poll, a holiday banner, a lever card) wait for the real cards' live actions to split out.
+      const picked = slpBasicExtras(extras ?? answers.extras);
+      cards = {
+        choices: [
+          ...SLP_BASIC_EXTRAS.map((id) => ({
+            id,
+            glyph: GLYPH[`extras.${id}`],
+            label: t(`ui.slurp.settings.ext.${id}.label`),
+            hint: t(`ui.slurp.settings.ext.${id}.detail`),
+            primary: picked.includes(id),
+            toggle: true,
+          })),
+          { id: "done", glyph: "✅", label: t(`${O}tap.extrasDone`), ghost: true },
+        ],
+        layout: "list",
+        label: t(`${O}q.extras`),
+        onSelect: (id) => {
+          if (id !== "done") {
+            const on = picked.includes(id as (typeof picked)[number]);
+            return setExtras(
+              SLP_BASIC_EXTRAS.filter((extra) => (extra === id ? !on : picked.includes(extra))).join(","),
+            );
+          }
+          setExtras(null);
+          update({ ...state, answers: { ...state.answers, extras: picked.join(",") } });
+        },
       };
     } else if (next) {
       const question = next;
@@ -346,6 +392,12 @@ function answerLabel(
     return list.find((entry) => entry.id === value)?.name ?? value;
   }
   if (question === "crowd") return t(`ui.slurp.settings.simulation.presets.${value}`);
+  if (question === "extras") {
+    const picked = slpBasicExtras(value);
+    return picked.length
+      ? picked.map((id) => t(`ui.slurp.settings.ext.${id}.label`)).join(", ")
+      : t(`${O}a.extras.none`);
+  }
   return t(`${O}a.${key(question)}.${value}`);
 }
 

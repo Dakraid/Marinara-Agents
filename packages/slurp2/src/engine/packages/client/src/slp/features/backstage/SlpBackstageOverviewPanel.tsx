@@ -17,6 +17,7 @@ import {
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { SlpStirGlyph } from "../../base/chrome/SlpGlyphs";
 import { SettingAnchor } from "../../modules/settings/SlpSettingsKit";
@@ -28,6 +29,7 @@ import { formatBytes } from "../../modules/settings/slp-backstage-format";
 import { OverviewCard, OverviewActivity } from "../../modules/settings/SlpBackstageKit";
 import { CompactSwitch } from "../../modules/settings/SlpSettingsControls";
 import { slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
+import { markSlpSwitchedOnNoteSeen, slpSwitchedOnNoteSeen } from "../../base/state/slp-switched-on-note";
 
 type AttentionItem = { id: string; label: string; section: SlpBackstageSection; target: SlpBackstageTarget };
 
@@ -38,6 +40,7 @@ const rowClass =
 
 /** Overview: status, what needs attention, and what Basic and each extension do right now. */
 export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
+  const [switchedOnNote, setSwitchedOnNote] = useState(() => !slpSwitchedOnNoteSeen());
   const {
     navigation,
     onNavigate,
@@ -428,12 +431,33 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
         />
       </div>
 
-      {/* Your Slurp: Basic plus each extension, with what it does right now. No switches yet:
-          an extension gets one only once its server gate exists (docs/CONFIGURATOR.md). */}
+      {/* Your Slurp: Basic plus each extension, with what it does right now and its switch. Installs from
+          before the switches see "What's switched on" once (docs/CONFIGURATOR.md, Existing installs). */}
       <section className={panelClass} aria-labelledby="slurp-overview-yours">
         <h2 id="slurp-overview-yours" className="text-sm font-black">
           {t("ui.slurp.settings.overview.yours.title", { defaultValue: "Your Slurp" })}
         </h2>
+        {switchedOnNote && (
+          <div
+            role="note"
+            className="mt-2 flex flex-col gap-2 rounded-lg bg-[var(--slurp-canvas)] p-3 text-xs leading-5 sm:flex-row sm:items-center"
+          >
+            <p className="min-w-0 flex-1 text-pretty">
+              <span className="block font-bold">{t("ui.slurp.settings.overview.switchedOn.title")}</span>
+              {t("ui.slurp.settings.overview.switchedOn.detail")}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                markSlpSwitchedOnNoteSeen();
+                setSwitchedOnNote(false);
+              }}
+              className="min-h-11 shrink-0 rounded-full px-4 text-sm font-bold text-[var(--slurp-violet)] ring-1 ring-inset ring-[var(--slurp-outline)] hover:bg-[var(--slurp-surface-raised)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)]"
+            >
+              {t("ui.slurp.settings.overview.switchedOn.gotIt")}
+            </button>
+          </div>
+        )}
         <ul className="mt-2 space-y-0.5">
           {extensions.map((item) => (
             <li key={item.id} className="flex items-center gap-1">
