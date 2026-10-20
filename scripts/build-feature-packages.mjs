@@ -173,12 +173,6 @@ const conversationCallsOwnedSourcePaths = [
   // Replaces the vendored host shim, which rang nothing when registered as the [call] service.
   "packages/server/src/services/generation/conversation-call-command-runtime.ts",
 ];
-// Noodle, Slurp and Calls bundle the Engine's Claude (Subscription) provider, and the vendored copy is frozen.
-// They share this package-owned overlay of it and ship the Claude Code plugin it loads beside server.mjs.
-const claudeSubscriptionOverlayRoot = join(repoRoot, "sources/claude-subscription-overlay");
-const claudeCodePluginPaths = [".claude-plugin/plugin.json", "hooks/hooks.json", "hooks/register.mjs"].map(
-  (path) => `claude-code-plugin/${path}`,
-);
 // Package clients use the Engine's stores, services and components through `__MARINARA_HOST__` (capability API 1.341):
 // every feature build stacks these adapters over the vendored modules, so no client bundles a copy that keeps its own
 // state (#1478: the UI store copy reset Engine settings; #1487). scripts/client-host-gates.mjs holds each bundle to it.
@@ -188,7 +182,6 @@ const hostClientOverlayRoot = join(repoRoot, "sources/host-client-overlay");
 const OVERLAY_ROOTS = [
   join(repoRoot, "sources/host-client-overlay"),
   join(repoRoot, "sources/host-runtime-overlay"),
-  join(repoRoot, "sources/claude-subscription-overlay"),
 ].filter((root) => existsSync(root));
 /** Every file the overlays stack, relative to a build root. */
 function stackedOverlayPaths() {
@@ -197,6 +190,43 @@ function stackedOverlayPaths() {
       .filter((entry) => entry.isFile())
       .map((entry) => relative(root, join(entry.parentPath, entry.name)).split(sep).join("/")),
   );
+}
+// Calls, Noodle and Slurp reach the Engine's live services through api.runtime instead of bundling copies of
+// them (Pasta-Devs/Marinara-Agents#1487): this overlay replaces each such vendored module at the same path.
+// The generated server entry binds api.runtime first in activate(); see bundleServer().
+const hostRuntimeOverlayRoot = join(repoRoot, "sources/host-runtime-overlay");
+const HOST_RUNTIME_FEATURES = new Set(["conversation-calls", "noodle", "slurp2"]);
+// Libraries every package server loads from the Engine's own install instead of bundling a second copy. A
+// snapshot's node_modules links to the Engine's packages/server/node_modules, and pnpm's strict layout resolves
+// only that package's direct dependencies there, so each name must be one.
+const HOST_SERVER_EXTERNALS = [
+  "@huggingface/transformers",
+  "onnxruntime-node",
+  "onnxruntime-web",
+  "sharp",
+  "pino",
+  "pino-pretty",
+  // Bundling undici gives the package a second copy whose dispatcher shape does not match the Engine's. Handing
+  // one to the other's fetch fails with "invalid onRequestStart method", which broke every outbound request.
+  "undici",
+  "zod",
+  "adm-zip",
+  "dotenv",
+  "nanoid",
+  "jsonrepair",
+];
+async function assertHostServerExternals() {
+  const manifest = JSON.parse(await readFile(join(engineRoot, "packages/server/package.json"), "utf8"));
+  const direct = new Set([
+    ...Object.keys(manifest.dependencies ?? {}),
+    ...Object.keys(manifest.optionalDependencies ?? {}),
+  ]);
+  const missing = HOST_SERVER_EXTERNALS.filter((name) => !direct.has(name));
+  if (missing.length) {
+    throw new Error(
+      `Server externals must be direct dependencies of the Engine's packages/server (${engineRoot}): ${missing.join(", ")}`,
+    );
+  }
 }
 // Release builds must bundle the current source; runtime reuse is for explicit non-release verification builds.
 const releaseBuild = process.env.MARINARA_RELEASE_BUILD !== "0";
@@ -235,8 +265,6 @@ async function prepareFeatureBuildRoot(feature) {
   const buildRoot = await mkdtemp(join(tmpdir(), `marinara-${feature.id}-source-`));
   try {
     if (fromVendoredEngine) await cp(sourceRoot, buildRoot, { recursive: true, force: true });
-    if (feature.claudeSubscription)
-      await cp(claudeSubscriptionOverlayRoot, buildRoot, { recursive: true, force: true });
     await cp(hostClientOverlayRoot, buildRoot, { recursive: true, force: true });
     if (ownRoot) await cp(ownRoot, buildRoot, { recursive: true, force: true });
   } catch (error) {
@@ -356,7 +384,6 @@ const features = [
     clientImport: "packages/client/src/noodle-package-entry.tsx",
     packageSourceRoot: noodleSourceRoot,
     ownedSourcePaths: noodleOwnedSourcePaths,
-    claudeSubscription: true,
     libraryHidden: true,
     assetPaths: ["noodle-klusek.png"],
     contributions: {
@@ -446,7 +473,6 @@ const features = [
     clientImport: "packages/client/src/slp/slp-client-entry.tsx",
     packageSourceRoot: slurp2SourceRoot,
     ownedSourcePaths: slurp2OwnedSourcePaths,
-    claudeSubscription: true,
     capabilityApi: { major: 1, minor: 66 },
     builtAgainst: {
       engineVersion: "2.4.6",
@@ -579,7 +605,6 @@ const features = [
     prefix: "/api/conversation-calls",
     packageSourceRoot: conversationCallsSourceRoot,
     ownedSourcePaths: conversationCallsOwnedSourcePaths,
-    claudeSubscription: true,
   },
   ...[
     ["uno", "UNO", "Play UNO with Conversation characters.", "Uno", "/uno", ["uno"], "Group card game"],
@@ -686,13 +711,68 @@ const memoryNagBoundary = selectedFeatures.some((feature) => feature.id === "mem
     })
   : null;
 
+/** Relative paths of every file under an overlay root, with forward slashes. */
+async function overlayFilePaths(root) {
+  const entries = await readdir(root, { recursive: true, withFileTypes: true });
+  return entries
+    .filter((entry) => entry.isFile())
+    .map((entry) => relative(root, join(entry.parentPath, entry.name)).split(sep).join("/"))
+    .sort();
+}
+
+/**
+ * Stacks sources/host-runtime-overlay over a feature's temporary build root, after its own sources. An overlay
+ * replaces vendored Engine modules only: a path the package owns is a build error, never silently replaced.
+ */
+async function stackHostRuntimeOverlay(feature, buildRoot) {
+  if (resolve(buildRoot) === resolve(sourceRoot)) {
+    throw new Error(`${feature.id}: the host runtime overlay needs a temporary build root`);
+  }
+  const paths = await overlayFilePaths(hostRuntimeOverlayRoot);
+  const owned = paths.filter(
+    (path) =>
+      (feature.ownedSourcePaths ?? []).some((ownedPath) => path === ownedPath || path.startsWith(`${ownedPath}/`)) ||
+      (feature.packageSourceRoot && existsSync(join(feature.packageSourceRoot, path))),
+  );
+  if (owned.length) {
+    throw new Error(`${feature.id}: host runtime overlay paths are package-owned: ${owned.join(", ")}`);
+  }
+  await cp(hostRuntimeOverlayRoot, buildRoot, { recursive: true, force: true });
+  return paths;
+}
+
 async function bundleServer(feature, output) {
+  await assertHostServerExternals();
   const temporary = await mkdtemp(join(tmpdir(), `marinara-feature-entry-${feature.id}-`));
   const prepared = await prepareFeatureBuildRoot(feature);
   try {
+    const hostRuntime = HOST_RUNTIME_FEATURES.has(feature.id);
+    const hostRuntimeOverlayPaths = hostRuntime ? await stackHostRuntimeOverlay(feature, prepared.buildRoot) : [];
+    const hostRuntimeModule = JSON.stringify(resolve(prepared.buildRoot, "packages/server/src/lib/host-runtime.ts"));
     const target = resolve(prepared.buildRoot, feature.serverImport || feature.engineImport);
+    // A host runtime package binds api.runtime before its own activate() runs and unbinds in its cleanup. Its
+    // privileged routes answer a missing host member with HTTP 501 (`code: "host_feature_unavailable"`).
     const source = feature.serverEntry
-      ? `export { activate, selfCheck } from ${JSON.stringify(target)};\n`
+      ? hostRuntime
+        ? `import { activate as activatePackage, selfCheck } from ${JSON.stringify(target)};
+import { bindHostRuntime, withHostFeatureErrors } from ${hostRuntimeModule};
+export { selfCheck };
+export async function activate(context) {
+  const unbind = bindHostRuntime(context.api.runtime);
+  try {
+    const api = {
+      ...context.api,
+      registerPrivilegedRoutes: (routes, options) =>
+        context.api.registerPrivilegedRoutes((router, pluginOptions) => routes(withHostFeatureErrors(router), pluginOptions), options),
+    };
+    const cleanup = await activatePackage({ ...context, api });
+    return async () => { try { if (typeof cleanup === "function") await cleanup(); } finally { unbind(); } };
+  } catch (error) {
+    unbind();
+    throw error;
+  }
+}\n`
+        : `export { activate, selfCheck } from ${JSON.stringify(target)};\n`
       : feature.id === "hierarchical-maps"
         ? `import { ${feature.serverExport} as register } from ${JSON.stringify(target)};
 import * as projection from ${JSON.stringify(resolve(prepared.buildRoot, "packages/server/src/services/spatial-context/projection.ts"))};
@@ -764,16 +844,24 @@ export async function selfCheck({ api }) {
 import * as commandRuntime from ${JSON.stringify(resolve(prepared.buildRoot, "packages/server/src/services/generation/conversation-call-command-runtime.ts"))};
 import * as characterVideos from ${JSON.stringify(resolve(prepared.buildRoot, "packages/server/src/services/conversation/call-character-videos.service.ts"))};
 import { createConversationCallsStorage } from ${JSON.stringify(resolve(prepared.buildRoot, "packages/server/src/services/storage/conversation-calls.storage.ts"))};
+import { bindHostRuntime, hostFeatureErrorHandler } from ${hostRuntimeModule};
 let readinessStorage = null;
 export async function activate({ app, api }) {
-  // runtime.integrations.speech (newer Engines) lets calls use the Speech to Text server from Connections.
-  await app.register(register, { prefix: ${JSON.stringify(feature.prefix)}, runtime: api.runtime });
-  readinessStorage = createConversationCallsStorage(app.db);
-  const cleanups = [
-    api.registerService("conversation-calls:command", commandRuntime),
-    api.registerService("conversation-calls:character-videos", characterVideos),
-  ];
-  return () => { readinessStorage = null; for (const cleanup of cleanups.reverse()) cleanup(); };
+  const unbind = bindHostRuntime(api.runtime);
+  try {
+    // The routes get their own scope, whose error handler answers a missing host member with HTTP 501.
+    const routes = async (scope, options) => { scope.setErrorHandler(hostFeatureErrorHandler); await register(scope, options); };
+    await app.register(routes, { prefix: ${JSON.stringify(feature.prefix)}, runtime: api.runtime });
+    readinessStorage = createConversationCallsStorage(app.db);
+    const cleanups = [
+      api.registerService("conversation-calls:command", commandRuntime),
+      api.registerService("conversation-calls:character-videos", characterVideos),
+    ];
+    return () => { readinessStorage = null; try { for (const cleanup of cleanups.reverse()) cleanup(); } finally { unbind(); } };
+  } catch (error) {
+    unbind();
+    throw error;
+  }
 }
 export async function selfCheck() {
   if (!readinessStorage) throw new Error("Conversation Calls storage did not initialize");
@@ -795,18 +883,7 @@ export async function selfCheck() {
         "--minify",
         "--log-limit=0",
         "--banner:js=import { createRequire as __createRequire } from 'node:module'; const require = __createRequire(import.meta.url);",
-        "--external:@huggingface/transformers",
-        "--external:onnxruntime-node",
-        "--external:onnxruntime-web",
-        "--external:sharp",
-        "--external:pino",
-        "--external:pino-pretty",
-        // Bundling undici gives the package a second copy whose dispatcher shape does not match
-        // the Engine's. Handing one to the other's fetch fails with "invalid onRequestStart
-        // method", which broke every outbound request the package made. The runtime provisions
-        // undici alongside the snapshot, so resolving to the Engine's copy is the fix.
-        "--external:undici",
-        ...(feature.id === "long-term-memory" || feature.id === "slurp2" ? ["--external:zod"] : []),
+        ...HOST_SERVER_EXTERNALS.map((name) => `--external:${name}`),
         `--alias:@marinara-engine/shared=${sharedBundleEntry}`,
         `--metafile=${metafile}`,
         `--outfile=${output}`,
@@ -820,8 +897,21 @@ export async function selfCheck() {
     if (result.status !== 0) {
       throw new Error(result.stderr || result.stdout || result.error?.message || `esbuild failed for ${feature.id}`);
     }
+    const { assertServerHostGates } = await import("./server-host-gates.mjs");
+    assertServerHostGates({
+      packageId: feature.id,
+      metafilePath: metafile,
+      cwd: engineRoot,
+      buildRoot: prepared.buildRoot,
+      overlayRoot: hostRuntime ? hostRuntimeOverlayRoot : null,
+      packageSourceRoot:
+        feature.packageSourceRoot ?? (feature.id === "hierarchical-maps" ? hierarchicalMapsSourceRoot : null),
+    });
     if (feature.ownedSourcePaths?.length) {
-      await capturePackageSources(metafile, prepared.buildRoot, ownedCapturePaths(feature));
+      await capturePackageSources(metafile, prepared.buildRoot, [
+        ...ownedCapturePaths(feature),
+        ...hostRuntimeOverlayPaths,
+      ]);
       if (feature.id === "slurp2") {
         await removeOwnedSourceSnapshots([
           "packages/client/src/localization/locales",
@@ -1767,15 +1857,7 @@ for (const feature of selectedFeatures) {
     throw new Error(`Missing package-owned client source for ${feature.id}`);
   }
   const clientBuffer = clientPath ? await readFile(clientPath) : null;
-  // The overlay provider finds this plugin beside server.mjs, so each package carries its own copy.
-  const pluginDir = join(sourceDir, "claude-code-plugin");
-  if (feature.claudeSubscription) {
-    await rm(pluginDir, { recursive: true, force: true });
-    await cp(join(claudeSubscriptionOverlayRoot, "packages/server/src/assets/claude-code-plugin"), pluginDir, {
-      recursive: true,
-    });
-  }
-  const assetPaths = [...(feature.assetPaths ?? []), ...(feature.claudeSubscription ? claudeCodePluginPaths : [])];
+  const assetPaths = feature.assetPaths ?? [];
   const assetPayloads = await Promise.all(
     assetPaths.map(async (assetPath) => {
       const assetFile = resolve(sourceDir, assetPath);
