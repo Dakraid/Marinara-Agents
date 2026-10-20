@@ -6,6 +6,7 @@ import type { SlurpSettings } from "../settings/slp-settings-contract";
  * `settingKey` / `label` pairs; the regression test checks every visible setting has one that exists.
  */
 export const SLP_BACKSTAGE_LABEL_KEYS: Partial<Record<keyof SlurpSettings, string>> = {
+  extAds: "ui.slurp.settings.overview.yours.ads",
   inlineAdsEnabled: "ui.slurp.settings.inlinePromotions",
   inlineAdsFrequency: "ui.slurp.settings.ads.frequency",
   brandDealsPace: "ui.slurp.settings.ads.dealsPace",

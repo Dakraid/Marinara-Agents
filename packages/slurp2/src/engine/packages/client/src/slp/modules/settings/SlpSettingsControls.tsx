@@ -353,6 +353,39 @@ export function Field({
   );
   return settingKey ? <SettingAnchor settingKey={settingKey}>{field}</SettingAnchor> : field;
 }
+const SWITCH_TRACK =
+  "relative h-7 w-12 shrink-0 rounded-full bg-[var(--muted-foreground)]/25 shadow-inner transition-colors after:absolute after:left-1 after:top-1 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:bg-[var(--noodle-accent)] peer-checked:after:translate-x-5 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:after:transition-none";
+
+/** Toggle's switch alone, for a row that already shows its name (Overview's extension rows). */
+export function CompactSwitch({
+  label,
+  value,
+  onChange,
+  disabled = false,
+}: {
+  label: string;
+  value: boolean;
+  onChange: (value: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <label
+      className={`relative flex min-h-11 min-w-14 shrink-0 items-center justify-center rounded-lg ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+    >
+      <input
+        type="checkbox"
+        role="switch"
+        aria-label={label}
+        disabled={disabled}
+        checked={value}
+        onChange={(event) => onChange(event.target.checked)}
+        className="peer sr-only"
+      />
+      <span aria-hidden="true" className={SWITCH_TRACK} />
+    </label>
+  );
+}
+
 export function Toggle({
   label,
   detail,
@@ -403,10 +436,7 @@ export function Toggle({
         onChange={(event) => onChange(event.target.checked)}
         className="peer sr-only"
       />
-      <span
-        aria-hidden="true"
-        className="relative h-7 w-12 shrink-0 rounded-full bg-[var(--muted-foreground)]/25 shadow-inner transition-colors after:absolute after:left-1 after:top-1 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:bg-[var(--noodle-accent)] peer-checked:after:translate-x-5 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--noodle-accent)] motion-reduce:transition-none motion-reduce:after:transition-none"
-      />
+      <span aria-hidden="true" className={SWITCH_TRACK} />
     </label>
   );
   return settingKey ? <SettingAnchor settingKey={settingKey}>{toggle}</SettingAnchor> : toggle;

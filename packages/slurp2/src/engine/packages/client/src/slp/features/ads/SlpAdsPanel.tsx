@@ -15,6 +15,7 @@ import { SlpButton } from "../../modules/chrome/SlpButton";
 
 import type { SlpBackstagePageProps } from "../backstage/slp-backstage-contract";
 import { errorMessage } from "../../modules/settings/slp-backstage-format";
+import { slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
 
 /** Ads: the inline ad settings, the ad pool and the ad editors. */
 export function SlpAdsPanel(page: SlpBackstagePageProps) {
@@ -39,9 +40,37 @@ export function SlpAdsPanel(page: SlpBackstagePageProps) {
     connectionsQuery,
   } = page;
 
+  // The extension's own switch heads the page; while it is off the page is only that switch.
+  const extensionSwitch = (
+    <SettingsGroup title={t("ui.slurp.settings.ext.title", { defaultValue: "Extension" })}>
+      <Toggle
+        settingKey="extAds"
+        label={t("ui.slurp.settings.ext.ads.label", { defaultValue: "Brands & ads" })}
+        detail={t("ui.slurp.settings.ext.ads.detail", {
+          defaultValue: "Inline ads, brand deals, ad pictures and brand packs.",
+        })}
+        value={slpExtensionOn(settings, "ads")}
+        onChange={(value) => update("extAds", value)}
+      />
+    </SettingsGroup>
+  );
+  if (!slpExtensionOn(settings, "ads"))
+    return (
+      <div className="space-y-5">
+        <BackstagePageHeader detail={t("ui.slurp.settings.ads.detail")} />
+        {extensionSwitch}
+        <p className="text-sm text-[var(--slurp-muted)] text-pretty">
+          {t("ui.slurp.settings.ext.offNote", {
+            defaultValue: "Switched off: none of it runs or shows. Your settings and brands stay as they are.",
+          })}
+        </p>
+      </div>
+    );
+
   return (
     <div className="space-y-5">
       <BackstagePageHeader detail={t("ui.slurp.settings.ads.detail")} />
+      {extensionSwitch}
       <HowItWorks label={t("ui.slurp.settings.howItWorks")}>
         <p>{t("ui.slurp.settings.ads.explainer")}</p>
         <p>{t("ui.slurp.settings.ads.explainerPool")}</p>

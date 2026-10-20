@@ -3809,5 +3809,9 @@
   "ui.slurp.opening.hint.crowd.quiet": "단골 몇 명",
   "ui.slurp.opening.hint.crowd.realistic": "실제 페이지처럼",
   "ui.slurp.opening.hint.crowd.lively": "댓글이 북적북적",
-  "ui.slurp.opening.hint.crowd.generous": "모두가 모든 걸 좋아해요"
+  "ui.slurp.opening.hint.crowd.generous": "모두가 모든 걸 좋아해요",
+  "ui.slurp.settings.ext.title": "확장",
+  "ui.slurp.settings.ext.ads.label": "브랜드 & 광고",
+  "ui.slurp.settings.ext.ads.detail": "피드 광고, 브랜드 딜, 광고 이미지, 브랜드 팩.",
+  "ui.slurp.settings.ext.offNote": "꺼짐: 아무것도 실행되거나 표시되지 않아요. 설정과 브랜드는 그대로 남아요."
 }

@@ -224,6 +224,17 @@ The other cases:
    This slice also adds the `extension` field on actions, the tick-list regression and
    the migration.
 
+   As built (slurpothon), PR 1: `shared/src/slp/slp-extensions.ts` holds the six switches and
+   the helpers. All six exist in settings and migrate; only Brands & ads has a switch so far (on
+   its Overview row and at the top of its page; off, the page shows only the switch and one
+   sentence). The migration needs no marker: settings are saved whole, so a stored key is the
+   mark, and an empty record (a fresh install) starts on Basic only. Off means no inline ads, a
+   brand-deal pace of "off", a 409 on the ad picture, lorebook-sync and generate routes, no
+   lorebook sync or banner redraw in the refresh tick, and no brand actions in Mari's list, the
+   runner, previews, the Stir deck, the planner prompt or the desk composer. Search hides the
+   page's settings but keeps the switch. Brand deals run through the Creator ties pace, not a tick
+   list, so the tick-list regression comes with Living world. Reset leaves the switches alone.
+
 4. **Add extras in onboarding** and the Support offers.
 5. **Storylines engine.** This is STORYLINES.md PRs 2–10, packs v2 with `requires`, and
    the pregnancy pack. Build it on the Storylines gate, so the gate is built only once.

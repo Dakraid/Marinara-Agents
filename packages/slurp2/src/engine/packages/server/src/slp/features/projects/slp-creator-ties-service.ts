@@ -73,6 +73,7 @@ import type { SlurpBeat } from "../../modules/feed/slp-post-beat.js";
 import type { SlurpContentIntent } from "../../../../../shared/src/slp/slp-content-axes.js";
 import { bookSlurpHeldSlot, readSlurpSlotTimes } from "../feed/slp-held-slots-contract.js";
 import { slurpPausedNow } from "../../data/settings/slp-pause-storage.js";
+import { slpBrandDealsPace } from "../../../../../shared/src/slp/slp-extensions.js";
 
 type Storage = ReturnType<typeof createSlurpStorage>;
 type Account = Awaited<ReturnType<Storage["listNoodlerAccounts"]>>[number];
@@ -140,7 +141,7 @@ export async function advanceSlurpCreatorTies(db: DB, at = new Date()): Promise<
   const storage = createSlurpStorage(db);
   const settings = await storage.getSettings();
   const creators = await loadSlurpTieCreators(db, at);
-  const pace = SLURP_DEAL_PACE[settings.brandDealsPace as SlurpDealPace] ?? 1;
+  const pace = SLURP_DEAL_PACE[slpBrandDealsPace(settings) as SlurpDealPace] ?? 1;
   // Loaded even when paced off: open offers still get answered against their product.
   const ads = await loadSlurpDealAds(db, settings);
   const spice = ads.some((ad) => ad.rating && ad.rating !== "tame") ? await loadSlurpDealSpice(db) : undefined;

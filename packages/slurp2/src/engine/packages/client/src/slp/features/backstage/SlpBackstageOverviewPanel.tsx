@@ -26,6 +26,8 @@ import type { SlpBackstageSection, SlpBackstageTarget } from "../../base/navigat
 import { formatDateTime } from "../../base/ui/slp-date-time";
 import { formatBytes } from "../../modules/settings/slp-backstage-format";
 import { OverviewCard, OverviewActivity } from "../../modules/settings/SlpBackstageKit";
+import { CompactSwitch } from "../../modules/settings/SlpSettingsControls";
+import { slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
 
 type AttentionItem = { id: string; label: string; section: SlpBackstageSection; target: SlpBackstageTarget };
 
@@ -148,6 +150,8 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
     status: string;
     Icon: LucideIcon | typeof SlpStirGlyph;
     open: () => void;
+    /** The extension's switch; only an extension whose gate is built has one (CONFIGURATOR.md). */
+    toggle?: { on: boolean; set: (on: boolean) => void };
   }[] = [
     {
       id: "basic",
@@ -159,14 +163,17 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
     {
       id: "ads",
       title: tx("ads", "Brands & ads"),
-      status: tx("adsStatus", "Ads: {{ads}} · Brand deals: {{deals}}", {
-        ads: settings.inlineAdsEnabled
-          ? t(`ui.slurp.settings.ads.frequency${cap(settings.inlineAdsFrequency)}`)
-          : onOff(false),
-        deals: t(`ui.slurp.settings.ads.dealsPace${cap(settings.brandDealsPace ?? "normal")}`),
-      }),
+      status: slpExtensionOn(settings, "ads")
+        ? tx("adsStatus", "Ads: {{ads}} · Brand deals: {{deals}}", {
+            ads: settings.inlineAdsEnabled
+              ? t(`ui.slurp.settings.ads.frequency${cap(settings.inlineAdsFrequency)}`)
+              : onOff(false),
+            deals: t(`ui.slurp.settings.ads.dealsPace${cap(settings.brandDealsPace ?? "normal")}`),
+          })
+        : onOff(false),
       Icon: Megaphone,
       open: () => go("ads", "ads"),
+      toggle: { on: slpExtensionOn(settings, "ads"), set: (on) => void update("extAds", on) },
     },
     {
       id: "storylines",
@@ -415,8 +422,8 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
         </h2>
         <ul className="mt-2 space-y-0.5">
           {extensions.map((item) => (
-            <li key={item.id}>
-              <button type="button" onClick={item.open} className={rowClass}>
+            <li key={item.id} className="flex items-center gap-1">
+              <button type="button" onClick={item.open} className={`${rowClass} min-w-0 flex-1`}>
                 <item.Icon size={18} className="shrink-0 text-[var(--slurp-violet)]" aria-hidden="true" />
                 <span className="min-w-0 flex-1">
                   <span className="block font-bold">{item.title}</span>
@@ -424,6 +431,7 @@ export function SlpBackstageOverviewPanel(page: SlpBackstagePageProps) {
                 </span>
                 <ChevronRight size={16} className="shrink-0 rtl:rotate-180" aria-hidden="true" />
               </button>
+              {item.toggle && <CompactSwitch label={item.title} value={item.toggle.on} onChange={item.toggle.set} />}
             </li>
           ))}
         </ul>

@@ -230,6 +230,7 @@ export async function planSlpStir(
         })),
       world,
       brands: catalog.brands,
+      extensions: settings,
       about: about ? { id: about.id, name: about.displayName } : null,
       post: post ? { id: post.id, caption: String((post as { content?: unknown }).content ?? "") } : null,
       recent: plays
