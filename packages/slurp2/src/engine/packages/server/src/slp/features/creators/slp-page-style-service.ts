@@ -99,6 +99,8 @@ export async function suggestSlpPageStyle(db: DB, accountId: string): Promise<Sl
         connection.claudeFastMode === "true",
         connection.treatAsLocalEndpoint === "true",
         connection.defaultParameters,
+        // Only the player's button calls this: booked as foreground work on the connection.
+        connection.id,
       ),
     );
     // Room for a reasoning model's notes, as for the Page (3000 left some answers empty).

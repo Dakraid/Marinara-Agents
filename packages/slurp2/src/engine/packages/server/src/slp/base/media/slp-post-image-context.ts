@@ -45,6 +45,8 @@ export async function slurpImageCaptioning(
   textConnection: GenerationConnection,
   /** The player's caption instructions; blank uses SLURP_IMAGE_CAPTION_PROMPT. */
   prompt = "",
+  /** False inside a run that holds the connection's background slot. */
+  bookConnection = true,
 ): Promise<ImageCaptioningRuntime> {
   const connection =
     (connectionId ? await createConnectionsStorage(db).getWithKey(connectionId) : null) ?? textConnection;
@@ -59,6 +61,9 @@ export async function slurpImageCaptioning(
       connection.claudeFastMode === "true",
       connection.treatAsLocalEndpoint === "true",
       connection.defaultParameters,
+      // Booked as foreground work, like the reply it describes pictures for. A caller that already holds the
+      // connection's background slot passes false: a foreground booking inside it would hold off other work.
+      bookConnection ? connection.id : undefined,
     ),
   );
   const instructions = prompt.trim() || SLURP_IMAGE_CAPTION_PROMPT;

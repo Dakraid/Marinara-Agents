@@ -8,6 +8,7 @@ import { basename, extname, join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import {
   CONVERSATION_CALL_CHARACTER_VIDEO_CLIP_KINDS,
+  LOCAL_SIDECAR_CONNECTION_ID,
   VIDEO_GENERATION_SETTINGS_KEY,
   conversationCallIdleSchema,
   conversationCallInterruptionSchema,
@@ -35,6 +36,8 @@ import { createCustomEmojisStorage } from "../services/storage/custom-emojis.sto
 import { createPromptOverridesStorage } from "../services/storage/prompt-overrides.storage.js";
 import { createLLMProvider } from "../services/llm/provider-registry.js";
 import { withConnectionFallbackProvider } from "../services/llm/connection-fallback-provider.js";
+import { LOCAL_SIDECAR_MODEL, getLocalSidecarProvider } from "../services/llm/local-sidecar.js";
+import { withConnectionAdmissionProvider } from "../services/generation/connection-admission.js";
 import {
   transcribeCallAudio,
   type CallSpeechHost,
@@ -1359,10 +1362,29 @@ async function createCallTurns(input: {
     logDebugOverride(debugOverrideEnabled, message, ...args);
   };
   if (prompt.characters.length === 0) return { turns: [], fallbackSpeaker };
-  if (!connId) return { turns: [], fallbackSpeaker };
-  const conn = await input.connections.getWithKey(connId);
-  if (!conn) return { turns: [], fallbackSpeaker };
-  const provider = await createConversationCallProvider(input.connections, conn, "main");
+  if (!connId) {
+    logger.warn("[conversation-call] Chat %s has no connection; the call cannot answer", input.chat.id);
+    return { turns: [], fallbackSpeaker };
+  }
+  let conn: { provider: string; model: string };
+  let provider: Awaited<ReturnType<typeof createConversationCallProvider>>;
+  if (connId === LOCAL_SIDECAR_CONNECTION_ID) {
+    // The chat runs on the Local Model: the call answers through the Engine's own llama-server, as the chat does.
+    conn = { provider: "local_sidecar", model: LOCAL_SIDECAR_MODEL };
+    provider = withConnectionAdmissionProvider(getLocalSidecarProvider(), LOCAL_SIDECAR_CONNECTION_ID);
+  } else {
+    const connection = await input.connections.getWithKey(connId);
+    if (!connection) {
+      logger.warn(
+        "[conversation-call] Connection %s of chat %s was not found; the call cannot answer",
+        connId,
+        input.chat.id,
+      );
+      return { turns: [], fallbackSpeaker };
+    }
+    conn = connection;
+    provider = await createConversationCallProvider(input.connections, connection, "main");
+  }
   try {
     if (shouldLogDebug) {
       debugLog(

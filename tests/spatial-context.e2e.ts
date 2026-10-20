@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
+import { resolve as resolvePath } from "node:path";
 import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 
 type CapturedOpenAiRequest = {
@@ -2405,8 +2406,10 @@ test("Map editor fills missing location artwork with one image per location", as
     return { started, release: releaseResponse };
   };
   const packageClientRoute = "**/api/capability-packages/hierarchical-maps/client*";
+  // The package runner starts Playwright from the repository root; Playwright loads this file as CommonJS, where
+  // import.meta is not allowed.
   const packageClientSource = await readFile(
-    new URL("../packages/hierarchical-maps/client.js", import.meta.url),
+    resolvePath(process.cwd(), "packages/hierarchical-maps/client.js"),
     "utf8",
   );
   try {

@@ -84,8 +84,10 @@ export function createSlurpPostProvider(input: {
       maxTokensOverride: input.connection.maxTokensOverride,
       claudeFastMode: input.connection.claudeFastMode === "true",
       treatAsLocalEndpoint: input.connection.treatAsLocalEndpoint === "true",
+      // No connection id here: the fallback wrapper below books the call with the run's own admission mode. An id
+      // on the primary booked every post as foreground work as well, even an automatic one, so it ran while the
+      // player's chat streamed and kept other automatic work waiting for 30 s afterwards.
       defaultParameters: input.connection.defaultParameters,
-      connectionId: input.connection.id,
     }) ??
     createLLMProvider(
       input.connection.provider,

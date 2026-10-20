@@ -11,60 +11,62 @@ const persistOnboardingStep = (step: number) => {
   } catch {}
 };
 
+// The Engine's Professor Mari poses (public/sprites/mari/<pack>/pose-<pose>.webp, Basic pack). The painted
+// Mari_*.png files these replaced are gone from the Engine, which left the guide with broken images.
 const onboardingSteps = [
   {
     labelKey: "ui.longTermMemory.longtermmemorydetail.save",
     titleKey: "ui.longTermMemory.longtermmemorydetail.fromSourceToSavedMemory",
-    mobileSprite: "Mari_wave.png",
-    desktopSprite: "Mari_wave.png",
+    mobileSprite: "basic/pose-wave.webp",
+    desktopSprite: "basic/pose-wave.webp",
     mobileFlip: false,
     alt: "",
   },
   {
     labelKey: "ui.longTermMemory.longtermmemorydetail.recall",
     titleKey: "ui.longTermMemory.longtermmemorydetail.howRecallWorks",
-    mobileSprite: "Mari_explaining.png",
-    desktopSprite: "Mari_explaining.png",
+    mobileSprite: "basic/pose-explaining.webp",
+    desktopSprite: "basic/pose-explaining.webp",
     mobileFlip: false,
     alt: "",
   },
   {
     labelKey: "ui.longTermMemory.longtermmemorydetail.activate",
     titleKey: "ui.longTermMemory.longtermmemorydetail.turnItOnForThisChat",
-    mobileSprite: "Mari_point_up_left.png",
-    desktopSprite: "Mari_point_up_left.png",
+    mobileSprite: "basic/pose-point-up.webp",
+    desktopSprite: "basic/pose-point-up.webp",
     mobileFlip: false,
     alt: "",
   },
   {
     labelKey: "ui.longTermMemory.longtermmemorydetail.import",
     titleKey: "ui.longTermMemory.longtermmemorydetail.chooseWhatToRemember",
-    mobileSprite: "Mari_point_down_left.png",
-    desktopSprite: "Mari_point_middle_left.png",
+    mobileSprite: "basic/pose-point-down.webp",
+    desktopSprite: "basic/pose-point-middle.webp",
     alt: "",
     mobileFlip: false,
   },
   {
     labelKey: "ui.longTermMemory.longtermmemorydetail.review",
     titleKey: "ui.longTermMemory.longtermmemorydetail.reviewBeforeSaving",
-    mobileSprite: "Mari_point_down_left.png",
-    desktopSprite: "Mari_point_up_left.png",
+    mobileSprite: "basic/pose-point-down.webp",
+    desktopSprite: "basic/pose-point-up.webp",
     mobileFlip: false,
     alt: "",
   },
   {
     labelKey: "ui.longTermMemory.longtermmemorydetail.check",
     titleKey: "ui.longTermMemory.longtermmemorydetail.checkWhatTheChatUsed",
-    mobileSprite: "Mari_thinking.png",
-    desktopSprite: "Mari_thinking.png",
+    mobileSprite: "basic/pose-thinking.webp",
+    desktopSprite: "basic/pose-thinking.webp",
     mobileFlip: false,
     alt: "",
   },
   {
     labelKey: "ui.longTermMemory.longtermmemorydetail.underTheHood",
     titleKey: "ui.longTermMemory.longtermmemorydetail.underTheHoodTitle",
-    mobileSprite: "Mari_thinking.png",
-    desktopSprite: "Mari_thinking.png",
+    mobileSprite: "basic/pose-thinking.webp",
+    desktopSprite: "basic/pose-thinking.webp",
     mobileFlip: false,
     alt: "",
   },
@@ -266,7 +268,7 @@ export function Onboarding({
               `}</style>
       <div className="flex items-center gap-3 border-b border-[var(--border)] px-4 py-3">
         <img
-          src="/sprites/mari/chibi-professor-mari.png"
+          src="/sprites/mari/chibi-professor-mari.webp"
           alt=""
           draggable={false}
           className="h-10 w-10 shrink-0 object-contain"

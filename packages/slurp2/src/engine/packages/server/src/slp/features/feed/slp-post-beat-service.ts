@@ -5,6 +5,7 @@ import { parseGameJsonish } from "../../../services/game/jsonish.js";
 import { resolveStoredChatOptions } from "../../../services/generation/generation-parameters.js";
 import { clampGenerationMaxOutputTokens } from "../../../services/generation/output-token-limits.js";
 import { completeSlurpWithHost, createSlurpPostProvider } from "../../base/host/slp-generation-integrations.js";
+import { tryBackgroundConnection } from "../../../services/generation/connection-admission.js";
 import { requireModelAnswer } from "../../base/model/slp-model-answer.js";
 import { slpSamplingOptions } from "../../base/prompting/slp-sampling-options.js";
 import { listSlurpOpportunities, readSlurpBeatHistory } from "../../data/feed/slp-opportunity-storage.js";
@@ -68,6 +69,8 @@ export type SlurpBeatContext = {
   readingText?: string;
   connection: SlurpBeatConnection;
   fallbackConnection: Parameters<typeof createSlurpPostProvider>[0]["fallbackConnection"];
+  /** The post run is automatic (background admission): its readings yield to the player's own work. */
+  background?: boolean;
   /** Level 1, when the shared-ideas setting is on: the Creator's tags and the Slurp-wide event toggle. */
   shared?: { tags: readonly string[]; worldEvents: boolean } | null;
   /** This post continues an active arc: its chapter is the beat. See `slurpArcBeat`. */
@@ -95,17 +98,26 @@ const SLURP_ACTIVE_BEAT_FACTS = 3;
  * own: it runs beside the post that noticed the cache was stale, and nothing waits on it.
  */
 export async function completeSlurpBeatJson(
-  context: Pick<SlurpBeatContext, "connection" | "fallbackConnection">,
+  context: Pick<SlurpBeatContext, "connection" | "fallbackConnection" | "background">,
   prompt: { system: string; user: string },
   label: string,
   /** Extractions stay close to the card; idea generation needs more range. */
   temperature = 0.2,
 ): Promise<unknown> {
   const { connection } = context;
+  // An automatic post's reading runs only while background work may use the connection (no chat streaming, none
+  // for 30 s), and books nothing: holding the one background slot would refuse the post it runs beside, and a
+  // foreground booking kept every other automatic job (Noodle's too) waiting for 30 s. A player's post books it as
+  // their own foreground work.
+  if (context.background) {
+    const free = tryBackgroundConnection(connection.id, new Date());
+    if (!free.acquired) throw slurpBackgroundBusy(connection.id);
+    free.release();
+  }
   const provider = createSlurpPostProvider({
     connection,
     fallbackConnection: context.fallbackConnection,
-    admissionMode: { kind: "none" },
+    admissionMode: context.background ? { kind: "none" } : { kind: "foreground" },
   });
   const response = await completeSlurpWithHost(
     provider,
@@ -130,6 +142,13 @@ export async function completeSlurpBeatJson(
     },
   );
   return parseGameJsonish(requireModelAnswer(response.content ?? "", label));
+}
+
+/** Named like the Engine's error, so `slpIsAdmissionFailure` treats it as a deferral (see slp-admission.ts). */
+function slurpBackgroundBusy(connectionId: string): Error {
+  const error = new Error(`Connection ${connectionId} is busy with other work; the reading waits for a later post.`);
+  error.name = "BackgroundConnectionBusyError";
+  return error;
 }
 
 const readingText = (context: Pick<SlurpBeatContext, "canonText" | "readingText">) =>
@@ -388,7 +407,7 @@ export async function prepareSlurpBeatRun(
     beats: boolean;
     /** A prompt preview: writes nothing and starts no reading. */
     preview: boolean;
-    model: Pick<SlurpBeatContext, "connection" | "fallbackConnection">;
+    model: Pick<SlurpBeatContext, "connection" | "fallbackConnection" | "background">;
     recentPosts: readonly SlpCreatorManagedPost[];
     at: Date;
     publishAt?: Date | null;
