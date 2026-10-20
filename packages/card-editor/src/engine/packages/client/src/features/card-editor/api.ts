@@ -6,6 +6,8 @@ import type {
 } from "../../../../shared/src/features/agents/card-editor/schema.js";
 
 export type { BulkSession, BulkSessionConfig, BulkSessionStats, BulkSettings };
+export type { CardSchema } from "../../../../shared/src/features/agents/card-editor/card-schema.ts";
+import type { CardSchema } from "../../../../shared/src/features/agents/card-editor/card-schema.ts";
 
 const API_BASE = "/api";
 const CARD_EDITOR_BASE = "/card-editor";
@@ -88,8 +90,13 @@ export type ApplyOperation =
       op: "duplicateThenPatch";
       characterId: string;
       fields: Record<string, string>;
-      nameSuffix: string;
+      nameSuffix?: string;
       namePrefix?: string;
+      stripNamePrefix?: string;
+      stripNameSuffix?: string;
+      /** Split children: the copy's base name and its data.extensions lineage stamp. */
+      name?: string;
+      extensions?: Record<string, unknown>;
     }
   | { op: "collectForCombine"; characterId: string; fields: Record<string, string> };
 
@@ -201,6 +208,41 @@ function itemPath(sessionId: string, itemId: string, suffix: string): string {
 
 export function createSession(body: CreateSessionRequest): Promise<BulkSession> {
   return request<BulkSession>("/sessions", "POST", body);
+}
+
+export type SplitDecision = "accept" | "retry-single" | "reject";
+
+export function decideSessionItemSplit(
+  sessionId: string,
+  itemId: string,
+  decision: SplitDecision,
+  names?: string[],
+): Promise<BulkSession> {
+  return request<BulkSession>(itemPath(sessionId, itemId, "/split"), "POST", { decision, ...(names ? { names } : {}) });
+}
+
+export function startSessionPhase2(sessionId: string): Promise<BulkSession> {
+  return request<BulkSession>(sessionPath(sessionId, "/phase2"), "POST", {});
+}
+
+export function listCardSchemas(signal?: AbortSignal): Promise<CardSchema[]> {
+  return request<CardSchema[]>("/schemas", "GET", undefined, signal);
+}
+
+export function saveCardSchema(schema: { id: string; name: string; text: string }): Promise<CardSchema> {
+  return request<CardSchema>(`/schemas/${encodeURIComponent(schema.id)}`, "PUT", {
+    name: schema.name,
+    text: schema.text,
+  });
+}
+
+export function deleteCardSchema(schemaId: string): Promise<void> {
+  return request<void>(`/schemas/${encodeURIComponent(schemaId)}`, "DELETE");
+}
+
+/** structuredOutput null = the host cannot report the agent's switch (older Engine). */
+export function getAgentStructuredOutput(signal?: AbortSignal): Promise<{ structuredOutput: boolean | null }> {
+  return request<{ structuredOutput: boolean | null }>("/agent-config", "GET", undefined, signal);
 }
 
 export function getBulkSettings(signal?: AbortSignal): Promise<BulkSettings> {
@@ -512,6 +554,14 @@ export function patchHostCharacter(
 /** Engine copy of the CURRENT card (name + " (Copy)"); the caller renames and patches the copy. */
 export function duplicateHostCharacter(characterId: string): Promise<HostCharacterRow> {
   return hostWriteRequest<HostCharacterRow>(`/characters/${encodeURIComponent(characterId)}/duplicate`, "POST");
+}
+
+/** Avatar Studio: the engine avatar route takes the image as a JSON data URL. */
+export function uploadHostAvatar(characterId: string, dataUrl: string): Promise<HostCharacterRow> {
+  return hostWriteRequest<HostCharacterRow>(`/characters/${encodeURIComponent(characterId)}/avatar`, "POST", {
+    avatar: dataUrl,
+    filename: "card-editor-composite.png",
+  });
 }
 
 /** Combined save mode: create the ONE new card holding every collected XML block. */

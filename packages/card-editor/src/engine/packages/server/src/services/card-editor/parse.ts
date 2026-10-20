@@ -69,7 +69,7 @@ function healJson(text: string): string[] {
   );
 }
 
-function extractJsonObject(raw: string): Record<string, unknown> | null {
+export function extractJsonObject(raw: string): Record<string, unknown> | null {
   const trimmed = raw.trim();
   const candidates = [trimmed, trimmed.replace(/```[a-zA-Z0-9]*[ \t]*\n?/g, "").trim()];
   for (const candidate of candidates) {

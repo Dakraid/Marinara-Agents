@@ -1,13 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { BulkSession, SessionItem } from "../../../../shared/src/features/agents/card-editor/schema.ts";
-import { cancelSession, cancelSessionItem, deleteSession, getSession, rerunSession, retrySessionItem } from "./api";
+import {
+  cancelSession,
+  cancelSessionItem,
+  deleteSession,
+  getSession,
+  rerunSession,
+  retrySessionItem,
+  startSessionPhase2,
+} from "./api";
 import {
   approveSessionItem,
   combineCollectedSession,
   duplicateAppliedSessionItems,
   executeCompletionEnforcement,
 } from "./apply-ops";
+import { AvatarStudio } from "./AvatarStudio";
 import { EditRetryDialog } from "./EditRetryDialog";
 import { FixJsonDialog } from "./FixJsonDialog";
 import { translateCardEditor, type CardEditorLocalizationContext } from "./localization";
@@ -15,10 +24,13 @@ import {
   deriveLiveStatus,
   isFailed,
   isReviewable,
+  isSplitChild,
   itemStatusLabelKey,
   itemStatusTone,
   summarizeItemChanges,
+  transformCounts,
 } from "./panel-status";
+import { SplitReviewDialog } from "./SplitReviewDialog";
 import { useVisiblePoll } from "./use-visible-poll";
 import { VerdictQueue } from "./VerdictQueue";
 
@@ -33,6 +45,20 @@ function ItemSummary({
   t: (key: string, values?: Record<string, string | number>) => string;
 }) {
   if (isFailed(item) && item.failure) return <span className="ce-item-failure">{item.failure.message}</span>;
+  if (item.status === "awaiting-split") {
+    return (
+      <span className="ce-item-result">
+        {t("cardEditor.panel.detail.splitProposed", { count: item.characters?.length ?? 0 })}
+      </span>
+    );
+  }
+  if (item.status === "split") {
+    return (
+      <span className="ce-item-result">
+        {t("cardEditor.panel.detail.splitInto", { count: item.characters?.length ?? 0 })}
+      </span>
+    );
+  }
   if (item.resultCardId) {
     return (
       <span className="ce-item-result">{t("cardEditor.panel.detail.copyCreated", { id: item.resultCardId })}</span>
@@ -45,11 +71,7 @@ function ItemSummary({
   if (!summary) return null;
   return (
     <span className="ce-item-result">
-      {t("cardEditor.panel.detail.summary", {
-        fields: summary.fields,
-        added: summary.added,
-        removed: summary.removed,
-      })}
+      {t("cardEditor.panel.detail.summary", { fields: summary.fields, added: summary.added, removed: summary.removed })}
     </span>
   );
 }
@@ -81,6 +103,9 @@ export function SessionDetail({
   const [fixJsonId, setFixJsonId] = useState<string | null>(null);
   const fixJsonShown = useRef(new Set<string>());
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [splitReviewId, setSplitReviewId] = useState<string | null>(null);
+  const [avatarOpen, setAvatarOpen] = useState(false);
+  const [phaseView, setPhaseView] = useState<1 | 2 | null>(null);
   const autoApplyAttempts = useRef(new Set<string>());
   const enforcementInFlight = useRef(false);
 
@@ -201,10 +226,7 @@ export function SessionDetail({
       const outcome = await duplicateAppliedSessionItems(session);
       if (outcome.failedCount > 0) {
         setActionError(
-          t("cardEditor.panel.detail.duplicateAppliedPartial", {
-            failed: outcome.failedCount,
-            total: eligibleCount,
-          }),
+          t("cardEditor.panel.detail.duplicateAppliedPartial", { failed: outcome.failedCount, total: eligibleCount }),
         );
       }
       return outcome.session;
@@ -247,6 +269,13 @@ export function SessionDetail({
     );
   }
 
+  const counts = session.config.transform ? transformCounts(session) : null;
+  const visiblePhase = phaseView ?? counts?.phase ?? 1;
+  const listedItems = counts ? session.items.filter((item) => (item.phase ?? 1) === visiblePhase) : session.items;
+  const splitReviewItem = splitReviewId
+    ? (session.items.find((item) => item.itemId === splitReviewId && item.status === "awaiting-split") ?? null)
+    : null;
+  const resultItemCount = session.items.filter((item) => item.status !== "split" && item.status !== "staged").length;
   const fixJsonItem = fixJsonId ? (session.items.find((item) => item.itemId === fixJsonId) ?? null) : null;
   const editRetryItem = editRetryId ? (session.items.find((item) => item.itemId === editRetryId) ?? null) : null;
   const reviewableCount = session.items.filter(isReviewable).length;
@@ -254,7 +283,7 @@ export function SessionDetail({
   const combinedMode = session.config.saveMode === "combined";
   const collectedCount = combinedMode ? session.items.filter((item) => item.status === "applied").length : 0;
   const combineAvailable = combinedMode && !session.combinedCardId && collectedCount > 0;
-  const combinePartial = combineAvailable && collectedCount < session.items.length;
+  const combinePartial = combineAvailable && collectedCount < resultItemCount;
   // Duplicate-applied housekeeping action: applied items edited the original in place, so only
   // those without a result card (and with edits worth cloning) are eligible. Combined mode's
   // output is the combined card, so the action is hidden there.
@@ -264,9 +293,9 @@ export function SessionDetail({
         (item) => item.status === "applied" && item.resultCardId === undefined && (item.updates ?? []).length > 0,
       ).length;
   const live = deriveLiveStatus(session);
-  const pageCount = Math.max(1, Math.ceil(session.items.length / PAGE_SIZE));
+  const pageCount = Math.max(1, Math.ceil(listedItems.length / PAGE_SIZE));
   const clampedPage = Math.min(page, pageCount - 1);
-  const pageItems = session.items.slice(clampedPage * PAGE_SIZE, clampedPage * PAGE_SIZE + PAGE_SIZE);
+  const pageItems = listedItems.slice(clampedPage * PAGE_SIZE, clampedPage * PAGE_SIZE + PAGE_SIZE);
 
   return (
     <section className="ce-shell ce-panel" ref={pollRef} data-card-editor-view="session-detail">
@@ -285,6 +314,43 @@ export function SessionDetail({
           {t(`cardEditor.panel.completionMode.${session.config.completionMode ?? "ask"}`)}
         </span>
       </div>
+      {counts ? (
+        <div className="ce-pipeline" role="group" aria-label={t("cardEditor.pipeline.label")}>
+          <div className="ce-pipeline-count">
+            <strong>{t("cardEditor.pipeline.count", { sources: counts.sources, results: counts.results })}</strong>
+            <span className="ce-caption">
+              {counts.splitsAccepted > 0
+                ? t("cardEditor.pipeline.splitsAccepted", { count: counts.splitsAccepted })
+                : t("cardEditor.pipeline.noSplits")}
+            </span>
+          </div>
+          {session.config.transform?.phase2?.enabled ? (
+            <div className="ce-segmented" role="radiogroup" aria-label={t("cardEditor.pipeline.phaseLabel")}>
+              {([1, 2] as const).map((phase) => (
+                <button
+                  key={phase}
+                  type="button"
+                  role="radio"
+                  className="ce-segment"
+                  aria-checked={visiblePhase === phase}
+                  disabled={phase === 2 && counts.phase === 1}
+                  onClick={() => {
+                    setPhaseView(phase);
+                    setPage(0);
+                  }}
+                >
+                  {t("cardEditor.pipeline.phase", { phase: phase })}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {counts.splitsPending > 0 ? (
+            <span className="ce-chip ce-chip--review">
+              {t("cardEditor.pipeline.splitsPending", { count: counts.splitsPending })}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
       {session.combinedCardId ? (
         <div className="ce-notice" role="status">
           <span>{t("cardEditor.panel.detail.combinedCreated", { id: session.combinedCardId })}</span>
@@ -331,10 +397,7 @@ export function SessionDetail({
           ) : combinePartial && confirmCombine ? (
             <span className="ce-confirm-strip" role="group" aria-label={t("cardEditor.panel.detail.combine")}>
               <span className="ce-caption">
-                {t("cardEditor.panel.detail.combinePartialConfirm", {
-                  count: collectedCount,
-                  total: session.items.length,
-                })}
+                {t("cardEditor.panel.detail.combinePartialConfirm", { count: collectedCount, total: resultItemCount })}
               </span>
               <button
                 type="button"
@@ -372,6 +435,31 @@ export function SessionDetail({
             onClick={() => duplicateApplied(duplicateAppliedCount)}
           >
             {t("cardEditor.panel.detail.duplicateApplied", { count: duplicateAppliedCount })}
+          </button>
+        ) : null}
+        {counts?.phase2Ready ? (
+          <button
+            type="button"
+            className="mari-chrome-control mari-chrome-control--primary mari-chrome-control--small"
+            disabled={busyKey !== null}
+            onClick={() =>
+              void runAction("phase2", async () => {
+                const updated = await startSessionPhase2(sessionId);
+                setPhaseView(2);
+                return updated;
+              })
+            }
+          >
+            {t("cardEditor.pipeline.startPhase2", { count: counts.results })}
+          </button>
+        ) : null}
+        {counts || combinedMode ? (
+          <button
+            type="button"
+            className="mari-chrome-control mari-chrome-control--small"
+            onClick={() => setAvatarOpen(true)}
+          >
+            {t("cardEditor.avatar.open")}
           </button>
         ) : null}
         {reviewableCount > 0 ? (
@@ -457,11 +545,34 @@ export function SessionDetail({
           const canEditRetry = isFailed(item) && item.failure?.renderedPrompt !== undefined;
           const canFixJson = item.status === "failed-parse" && !!item.failure?.rawOutput;
           const canCancel = item.status === "queued" && session.status === "active";
+          const canDecideSplit = item.status === "awaiting-split";
+          const child = isSplitChild(item, session.items);
+          const issueCount = (item.characters ?? []).reduce(
+            (total, character) => total + (character.issues?.length ?? 0),
+            0,
+          );
           return (
-            <li className="ce-item" key={item.itemId}>
+            <li className={`ce-item${child ? " ce-item--child" : ""}`} key={item.itemId}>
               <div className="ce-item-main">
                 {/* No engine deep link to a character editor exists for packages — name only. */}
                 <span className="ce-item-name">{item.characterName}</span>
+                {item.lineage?.splitGroupId ? (
+                  <span className="ce-chip">
+                    {t("cardEditor.panel.detail.lineage", {
+                      index: item.lineage.splitIndex ?? 1,
+                      count: item.lineage.splitCount ?? 1,
+                      origin: item.lineage.originName,
+                    })}
+                  </span>
+                ) : null}
+                {issueCount > 0 ? (
+                  <span
+                    className="ce-chip ce-chip--review"
+                    title={(item.characters ?? []).flatMap((character) => character.issues ?? []).join("\n")}
+                  >
+                    {t("cardEditor.panel.detail.issues", { count: issueCount })}
+                  </span>
+                ) : null}
                 <span className={`ce-chip ce-chip--${itemStatusTone(item.status)}`}>
                   {t(itemStatusLabelKey(item.status))}
                 </span>
@@ -477,8 +588,17 @@ export function SessionDetail({
                   </span>
                 ) : null}
               </div>
-              {canReview || canInspect || canRerun || canEditRetry || canCancel ? (
+              {canReview || canInspect || canRerun || canEditRetry || canCancel || canDecideSplit ? (
                 <div className="ce-item-actions">
+                  {canDecideSplit ? (
+                    <button
+                      type="button"
+                      className="mari-chrome-control mari-chrome-control--primary mari-chrome-control--small"
+                      onClick={() => setSplitReviewId(item.itemId)}
+                    >
+                      {t("cardEditor.panel.action.reviewSplit")}
+                    </button>
+                  ) : null}
                   {canReview ? (
                     <button
                       type="button"
@@ -583,6 +703,21 @@ export function SessionDetail({
             setFixJsonId(null);
           }}
         />
+      ) : null}
+      {splitReviewItem ? (
+        <SplitReviewDialog
+          localization={localization}
+          session={session}
+          item={splitReviewItem}
+          onClose={() => setSplitReviewId(null)}
+          onUpdated={(updated) => {
+            setSession(updated);
+            setSplitReviewId(null);
+          }}
+        />
+      ) : null}
+      {avatarOpen ? (
+        <AvatarStudio localization={localization} session={session} onClose={() => setAvatarOpen(false)} />
       ) : null}
       {editRetryItem ? (
         <EditRetryDialog

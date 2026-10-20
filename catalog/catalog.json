@@ -360,8 +360,8 @@
         },
         "id": "card-editor",
         "name": "Card Editor",
-        "version": "10.0.1",
-        "description": "Rewrites character cards from your directives while preserving each card's voice and aligning it with referenced lore. Runs on a single card or as bulk dispatch across selected characters, with verdict review, edit-and-retry, and session management in its runs panel. Open a character card and choose Run Card Editor, or select characters and choose Card Editor for a bulk session, to propose changes for approval.",
+        "version": "10.0.2",
+        "description": "Rewrites character cards from your directives while preserving each card's voice and aligning it with referenced lore. Runs on a single card or as bulk dispatch across selected characters: edit fields, or transform cards into your own schemas as Markdown, XML or JSON, split cards that describe several characters, refine results in a second phase, and composite avatars, with verdict review and session management in its workspace. Open a character card and choose Run Card Editor, or select characters and choose Card Editor for a bulk session, to propose changes for approval.",
         "engine": {
           "min": "2.4.7",
           "maxExclusive": "4.0.0"
@@ -390,18 +390,18 @@
         "files": [
           {
             "path": "agents.json",
-            "sha256": "9ff7fac9f3485bde3f9f0a8bbfecfc3f8519f5e571b668ba2c1d43d9d2001282",
-            "bytes": 9504
+            "sha256": "10f014fdc662121b0922a241bf53c4d791c2afbb7bcf04b357b6c105b98ae020",
+            "bytes": 9669
           },
           {
             "path": "server.mjs",
-            "sha256": "76fcad7b3dc7fee7103129798c259dab522e74142ce3756062bd44607b51b554",
-            "bytes": 51896
+            "sha256": "9d9dd5c559839391993f02e929660a0aa931c2170ea30e7ea9028d5de74b223e",
+            "bytes": 81170
           },
           {
             "path": "client.js",
-            "sha256": "920f74cf3fa9e3e03e3d935977064a744fdf2e992fcca34df0255aeb28ac2656",
-            "bytes": 130018
+            "sha256": "fb9bec4998f48bec552af51ac2941334bb6fe4345f3b5f7f7a026fc7f7e6c324",
+            "bytes": 197966
           }
         ],
         "permissions": [
@@ -417,9 +417,9 @@
       "category": "writer",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/card-editor.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/card-editor-10.0.1.zip",
-        "sha256": "878d89f27f27b6135f7469e25b085338145eab9e2ba484a9e4f64414d515bec7",
-        "bytes": 193547
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/card-editor-10.0.2.zip",
+        "sha256": "f8987caa5b8b200c30383f0ed3ca24f937fae1fe639c82aaefa8370ef9c8e1f8",
+        "bytes": 291099
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#card-editor"
     },

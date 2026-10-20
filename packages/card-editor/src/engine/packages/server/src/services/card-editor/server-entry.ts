@@ -25,7 +25,12 @@ let activeDocuments: SessionDocumentStore | null = null;
 export async function activate({ api }: ActivationContext) {
   const documents = api.runtime.persistence.documents;
   const store = createSessionStore(documents);
-  const deps = { store, languageModels: api.runtime.languageModels, logger: api.runtime.logger };
+  const deps = {
+    store,
+    languageModels: api.runtime.languageModels,
+    logger: api.runtime.logger,
+    getAgentConfig: () => api.runtime.getAgentConfig(),
+  };
   // SPEC F5.3: a restart strands in-flight work — mark every active session interrupted before
   // serving traffic so the runs panel reflects reality (rerun = a fresh session dispatch).
   for (const session of await store.listSessions()) {

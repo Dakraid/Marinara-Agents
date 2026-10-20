@@ -1,3 +1,12 @@
+## 10.0.2 — 2026-10-20
+
+- New **Transform to a schema** task: rebuild cards into Simple, Complex or your own schemas (new **Schema studio**) and write them as Markdown, XML or JSON. The model answers with structured fields by default; the old "write the document" method stays as an option.
+- A card that describes several characters can stay on one card or **split**. Every split asks first (accept, rename, retry as one card, skip); split characters become new linked cards and the source card is never changed. Batches handle splits too.
+- Optional **Phase 2** refines every Phase 1 result before anything is written.
+- **Avatar studio** composites the run's card images into one avatar.
+- Uses provider **structured output** when the agent switch is on and the connection supports it (Engine Capability API 1.342+).
+- The workspace now fills most of the screen and shows run totals and split lineage.
+
 ## 10.0.1 — 2026-10-20
 
 - Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.

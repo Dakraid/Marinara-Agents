@@ -25,12 +25,18 @@ import {
   type SessionItem,
 } from "../../../../shared/src/features/agents/card-editor/schema.ts";
 import { normalizeCardPromptText } from "../../../../shared/src/features/agents/card-editor/text.ts";
+import {
+  BUILT_IN_SCHEMAS,
+  normalizeCardSchema,
+} from "../../../../shared/src/features/agents/card-editor/card-schema.ts";
 import { planApply, planDuplicateApplied, type ApplyOperation } from "./apply.ts";
 import type { CharacterLike, LorebookLike } from "./context.ts";
 import {
   cancelSessionRun,
+  decideSplitRun,
   repairItemRun,
   retryItemRun,
+  startPhase2Run,
   startRunner,
   type RunnerDeps,
   type RunnerLogger,
@@ -40,6 +46,8 @@ import type { SessionPromptMaterial, SessionStore } from "./session-store.ts";
 export interface CardEditorRouteDeps extends RunnerDeps {
   store: SessionStore;
   logger: RunnerLogger;
+  /** The Card Editor agent's Engine config; settings.structuredOutput is the provider JSON switch. */
+  getAgentConfig?: () => Promise<{ settings: Record<string, unknown> } | null>;
 }
 
 /** The snapshot covers every bulk-editable field so the verdict staleness check compares exactly
@@ -292,6 +300,14 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
 
     app.get("/settings", async (_request, reply) => handle(reply, async () => deps.store.getSettings()));
 
+    app.get("/agent-config", async (_request, reply) =>
+      handle(reply, async () => {
+        const agentConfig = deps.getAgentConfig ? await deps.getAgentConfig().catch(() => null) : null;
+        // null = the host cannot tell (older Engine); the dialog then shows its own toggle value.
+        return { structuredOutput: agentConfig ? agentConfig.settings.structuredOutput === true : null };
+      }),
+    );
+
     app.put("/settings", async (request, reply) =>
       handle(reply, async () => {
         const body = sourceRecord(request.body);
@@ -354,6 +370,15 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
           config = { ...config, concurrency: Math.min(16, settings.maxParallelAgents ?? 4) };
         }
         config = coerceConfigForSettings(config, settings);
+        // Provider JSON mode follows the agent's Engine switch (shared by every JSON agent); hosts
+        // without agent config keep what the dialog sent.
+        if (config.transform && deps.getAgentConfig) {
+          const agentConfig = await deps.getAgentConfig().catch(() => null);
+          config = {
+            ...config,
+            transform: { ...config.transform, structuredOutput: agentConfig?.settings.structuredOutput === true },
+          };
+        }
         const behaviorOverrideCards = Object.fromEntries(
           targets
             .filter((target) => target.behaviorOverrideCard !== undefined)
@@ -500,6 +525,64 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
         if (typeof params.itemId !== "string" || !params.itemId) throw badRequest("An item id is required.");
         const rawOutput = cappedString(sourceRecord(request.body).rawOutput, "rawOutput", MAX_PROMPT_CHARS);
         return toPublicSession(await repairItemRun(deps, session.id, params.itemId, rawOutput));
+      }),
+    );
+
+    app.post("/sessions/:id/items/:itemId/split", async (request, reply) =>
+      handle(reply, async () => {
+        const params = request.params as { id?: unknown; itemId?: unknown };
+        const session = await requireSession(params.id);
+        if (typeof params.itemId !== "string" || !params.itemId) throw badRequest("An item id is required.");
+        const body = sourceRecord(request.body);
+        if (body.decision !== "accept" && body.decision !== "retry-single" && body.decision !== "reject") {
+          throw badRequest('decision must be "accept", "retry-single" or "reject".');
+        }
+        if (body.names !== undefined && (!Array.isArray(body.names) || body.names.length > 12)) {
+          throw badRequest("names must be an array of at most 12 strings.");
+        }
+        const names = ((body.names ?? []) as unknown[]).map((name, index) =>
+          cappedString(name, `names[${index}]`, 300),
+        );
+        return toPublicSession(await decideSplitRun(deps, session.id, params.itemId, body.decision, names));
+      }),
+    );
+
+    app.post("/sessions/:id/phase2", async (request, reply) =>
+      handle(reply, async () => {
+        const session = await requireSession((request.params as { id?: unknown }).id);
+        return toPublicSession(await startPhase2Run(deps, session.id));
+      }),
+    );
+
+    app.get("/schemas", async (_request, reply) =>
+      handle(reply, async () => [...BUILT_IN_SCHEMAS, ...(await store.listSchemas())]),
+    );
+
+    app.put("/schemas/:schemaId", async (request, reply) =>
+      handle(reply, async () => {
+        const schemaId = (request.params as { schemaId?: unknown }).schemaId;
+        if (typeof schemaId !== "string" || !/^[\w-]{1,80}$/.test(schemaId))
+          throw badRequest("A schema id is required.");
+        if (BUILT_IN_SCHEMAS.some((schema) => schema.id === schemaId)) {
+          throw conflict("Built-in schemas cannot be changed; duplicate one instead.");
+        }
+        const body = sourceRecord(request.body);
+        let schema;
+        try {
+          schema = normalizeCardSchema({ ...body, id: schemaId, builtIn: false });
+        } catch (error) {
+          throw badRequest(error instanceof Error ? error.message : String(error));
+        }
+        return store.saveSchema(schema);
+      }),
+    );
+
+    app.delete("/schemas/:schemaId", async (request, reply) =>
+      handle(reply, async () => {
+        const schemaId = (request.params as { schemaId?: unknown }).schemaId;
+        if (typeof schemaId !== "string" || !schemaId) throw badRequest("A schema id is required.");
+        if (!(await store.deleteSchema(schemaId))) throw notFound("Schema not found.");
+        return reply.status(204).send();
       }),
     );
 
@@ -712,7 +795,11 @@ export function createCardEditorRoutes(deps: CardEditorRouteDeps): FastifyPlugin
           }
         }
         // Combining a subset (some items failed or were rejected) is an explicit user decision.
-        if (itemIds.length < session.items.length && body.confirmPartial !== true) {
+        // Split sources and staged phase 1 results are not cards of their own.
+        const resultCount = session.items.filter(
+          (candidate) => candidate.status !== "split" && candidate.status !== "staged",
+        ).length;
+        if (itemIds.length < resultCount && body.confirmPartial !== true) {
           throw conflict("Not every item was collected; repeat with confirmPartial to combine the subset.");
         }
         const wanted = new Set(itemIds);

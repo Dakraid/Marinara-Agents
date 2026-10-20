@@ -55,14 +55,16 @@ async function executeOp(item: SessionItem, op: ApplyOperation, label: string): 
     return { ok: true };
   }
   // duplicateThenPatch: copy the CURRENT card, apply every configured name affix, patch the copy.
-  const duplicateOp = op as typeof op & { stripNamePrefix?: string; stripNameSuffix?: string };
+  const duplicateOp = op;
   const copy = await duplicateHostCharacter(op.characterId);
   const copyId = typeof copy?.id === "string" && copy.id ? copy.id : "";
   if (!copyId) throw new Error("The duplicate call returned no card id.");
   const copyName = parseHostCharacterName(copy);
-  const baseName = copyName.endsWith(ENGINE_COPY_SUFFIX)
-    ? copyName.slice(0, -ENGINE_COPY_SUFFIX.length)
-    : copyName || item.characterName;
+  const baseName =
+    op.name ??
+    (copyName.endsWith(ENGINE_COPY_SUFFIX)
+      ? copyName.slice(0, -ENGINE_COPY_SUFFIX.length)
+      : copyName || item.characterName);
   const data: Record<string, unknown> = {
     name: computeDuplicateName(baseName, {
       ...(duplicateOp.namePrefix === undefined ? {} : { prefix: duplicateOp.namePrefix }),
@@ -71,7 +73,7 @@ async function executeOp(item: SessionItem, op: ApplyOperation, label: string): 
       ...(duplicateOp.stripNameSuffix === undefined ? {} : { removeSuffix: duplicateOp.stripNameSuffix }),
     }),
   };
-  const extensionFields: Record<string, string> = {};
+  const extensionFields: Record<string, unknown> = { ...op.extensions };
   for (const [field, value] of Object.entries(op.fields)) {
     if (field === "backstory" || field === "appearance") extensionFields[field] = value;
     else data[field] = value;

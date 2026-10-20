@@ -444,8 +444,8 @@ assert.match(styles, /\.ce-workspace-split/u);
 assert.match(styles, /\.ce-dialog\.ce-workspace/u, "the workspace dialog has its own sizing");
 assert.match(
   styles,
-  /\.ce-dialog\.ce-workspace \{[^}]*max-height: min\(92dvh, 60rem\)/u,
-  "the workspace sizes to its content, capped at min(92dvh, 60rem)",
+  /\.ce-dialog\.ce-workspace \{[^}]*max-height: min\(94dvh, 68rem\)/u,
+  "the workspace claims most of the screen, capped at min(94dvh, 68rem)",
 );
 assert.doesNotMatch(
   styles,

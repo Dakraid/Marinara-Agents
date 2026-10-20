@@ -25,6 +25,9 @@ export const ITEM_STATUSES: readonly ItemStatus[] = [
   "failed-parse",
   "canceled",
   "interrupted",
+  "awaiting-split",
+  "split",
+  "staged",
 ];
 
 export const SESSION_STATUSES: readonly BulkSession["status"][] = ["active", "completed", "canceled", "interrupted"];
@@ -43,6 +46,9 @@ const ITEM_STATUS_KEY: Record<ItemStatus, string> = {
   "failed-parse": "cardEditor.panel.status.failedParse",
   canceled: "cardEditor.panel.status.canceled",
   interrupted: "cardEditor.panel.status.interrupted",
+  "awaiting-split": "cardEditor.panel.status.awaitingSplit",
+  split: "cardEditor.panel.status.split",
+  staged: "cardEditor.panel.status.staged",
 };
 
 export function itemStatusLabelKey(status: ItemStatus): string {
@@ -54,8 +60,8 @@ export type StatusTone = "live" | "review" | "ok" | "danger" | "muted";
 
 export function itemStatusTone(status: ItemStatus): StatusTone {
   if (status === "queued" || status === "running" || status === "succeeded") return "live";
-  if (status === "awaiting-review" || status === "needs-review") return "review";
-  if (status === "applied" || status === "duplicated") return "ok";
+  if (status === "awaiting-review" || status === "needs-review" || status === "awaiting-split") return "review";
+  if (status === "applied" || status === "duplicated" || status === "split" || status === "staged") return "ok";
   if (status === "rejected" || status === "canceled" || status === "interrupted") return "muted";
   return "danger"; // failed-*
 }
@@ -134,4 +140,49 @@ export function deriveLiveStatus(session: BulkSession): LiveStatus {
     return { kind: "queued", runningItems, queuedItems, batchIndex: 0, batchCount: 0, batchAttempts: 0 };
   }
   return { kind: "done", runningItems, queuedItems, batchIndex: 0, batchCount: 0, batchAttempts: 0 };
+}
+
+export interface TransformCounts {
+  /** Source cards the run started with. */
+  sources: number;
+  /** Cards the latest phase yields: split sources count as their children. */
+  results: number;
+  splitsPending: number;
+  splitsAccepted: number;
+  phase: 1 | 2;
+  /** Phase 2 is configured, every split is decided, phase 1 settled and phase 2 not started. */
+  phase2Ready: boolean;
+}
+
+/** Run totals for transform sessions ("30 → 33"), always derived from items and their lineage. */
+export function transformCounts(session: BulkSession): TransformCounts {
+  const phase: 1 | 2 = session.items.some((item) => item.phase === 2) ? 2 : 1;
+  const inPhase = session.items.filter((item) => (item.phase ?? 1) === phase);
+  const sources = session.items.filter((item) => (item.phase ?? 1) === 1 && item.parentItemId === undefined).length;
+  const splitsPending = inPhase.filter((item) => item.status === "awaiting-split").length;
+  return {
+    sources,
+    results: inPhase
+      .filter((item) => item.status !== "split" && item.status !== "rejected" && item.status !== "canceled")
+      .reduce((total, item) => total + (item.status === "awaiting-split" ? (item.characters?.length ?? 1) : 1), 0),
+    splitsPending,
+    splitsAccepted: inPhase.filter((item) => item.status === "split").length,
+    phase,
+    phase2Ready:
+      session.config.transform?.phase2?.enabled === true &&
+      phase === 1 &&
+      session.status !== "active" &&
+      splitsPending === 0 &&
+      session.items.some((item) => item.status === "staged"),
+  };
+}
+
+/** Child rows render under their split source. */
+export function isSplitChild(
+  item: Pick<SessionItem, "lineage" | "parentItemId" | "phase">,
+  all: readonly SessionItem[],
+): boolean {
+  if (!item.parentItemId || !item.lineage?.splitGroupId) return false;
+  const parent = all.find((candidate) => candidate.itemId === item.parentItemId);
+  return parent?.status === "split";
 }

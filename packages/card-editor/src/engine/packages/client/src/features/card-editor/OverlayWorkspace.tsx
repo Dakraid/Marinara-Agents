@@ -17,7 +17,16 @@ export type CardEditorOverlayPayload = {
   dispatch?: { characterIds?: unknown; prefill?: unknown };
 };
 
-const PREFILL_PRESET_IDS = new Set(["standard", "strict", "rebalance", "xml-simple", "xml-complex", "custom"]);
+const PREFILL_PRESET_IDS = new Set([
+  "standard",
+  "strict",
+  "rebalance",
+  "xml-simple",
+  "xml-complex",
+  "custom",
+  "transform",
+]);
+const PREFILL_FORMATS = new Set(["markdown", "xml", "json"]);
 const PREFILL_SAVE_MODES = new Set(["confirm", "auto", "duplicate", "combined"]);
 
 /**
@@ -39,6 +48,8 @@ export function parseDispatchPrefill(value: unknown): BulkDispatchPrefill | unde
     ...(str("duplicatePrefix") !== undefined ? { duplicatePrefix: str("duplicatePrefix") } : {}),
     ...(str("combinedCardName") !== undefined ? { combinedCardName: str("combinedCardName") } : {}),
     ...(str("label") !== undefined ? { label: str("label") } : {}),
+    ...(str("schemaId") !== undefined && /^[\w-]{1,80}$/.test(str("schemaId")!) ? { schemaId: str("schemaId") } : {}),
+    ...(PREFILL_FORMATS.has(str("format") ?? "") ? { format: str("format") as "markdown" | "xml" | "json" } : {}),
   };
   return Object.keys(prefill).length > 0 ? prefill : undefined;
 }

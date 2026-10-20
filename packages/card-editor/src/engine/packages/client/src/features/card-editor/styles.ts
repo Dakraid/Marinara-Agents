@@ -870,9 +870,15 @@ marinara-capability-card-editor[view="selection-action"] {
 
 .ce-item-main {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+}
+
+/* Lineage and issue chips sit beside the name; the status chip stays at the row end. */
+.ce-item-main > .ce-item-name + .ce-chip:not(:last-child) {
+  margin-right: auto;
 }
 
 .ce-item-name {
@@ -1199,10 +1205,12 @@ marinara-capability-card-editor[view="selection-action"] {
 
 /* ── Overlay workspace (capabilityApi 1.68) ── */
 
-/* The workspace sizes to its content (capped), never a forced full-height void. */
+/* Bulk runs carry schema, split and avatar tooling, so the workspace claims most of the screen;
+   it still caps on very large displays and becomes a full-screen sheet on phones. */
 .ce-dialog.ce-workspace {
-  width: min(64rem, 100%);
-  max-height: min(92dvh, 60rem);
+  width: min(112rem, 100%);
+  height: min(94dvh, 68rem);
+  max-height: min(94dvh, 68rem);
 }
 
 .ce-workspace-body {
@@ -1227,7 +1235,7 @@ marinara-capability-card-editor[view="selection-action"] {
   /* Content-sized floor so a sparse workspace doesn't collapse to a sliver. */
   min-height: 16rem;
   flex: 1;
-  grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
+  grid-template-columns: minmax(15rem, 22rem) minmax(0, 1fr);
 }
 
 .ce-workspace-rail {
@@ -1259,6 +1267,12 @@ marinara-capability-card-editor[view="selection-action"] {
 }
 
 @media (max-width: 48rem) {
+  .ce-dialog.ce-workspace {
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+  }
+
   .ce-workspace-split {
     grid-template-columns: 1fr;
   }
@@ -1266,6 +1280,476 @@ marinara-capability-card-editor[view="selection-action"] {
   /* Mobile: the detail's back button provides the return navigation. */
   .ce-workspace-rail {
     display: none;
+  }
+}
+
+/* ── Transform task: shared controls ── */
+
+.ce-inline-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ce-inline-controls > .ce-field {
+  min-width: 0;
+  flex: 1;
+}
+
+.ce-segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  border: 1px solid var(--marinara-chat-chrome-input-border);
+  border-radius: 0.5rem;
+  background: var(--marinara-chat-chrome-input-bg);
+  padding: 2px;
+}
+
+.ce-segment {
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  padding: 0.35rem 0.6rem;
+  color: var(--marinara-chat-chrome-panel-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.ce-segment:hover:not(:disabled) {
+  color: var(--marinara-chat-chrome-panel-text);
+}
+
+.ce-segment[aria-checked="true"] {
+  background: var(--marinara-chat-chrome-highlight-bg-hover);
+  box-shadow: inset 0 0 0 1px var(--marinara-chat-chrome-input-border-focus);
+  color: var(--marinara-chat-chrome-highlight-text);
+}
+
+.ce-segment:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.ce-segment:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.ce-transform-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.ce-phase2-box {
+  display: grid;
+  gap: 0.6rem;
+  border-left: 1px solid var(--marinara-chat-chrome-panel-divider);
+  padding-left: 0.75rem;
+}
+
+/* ── Session detail: pipeline totals and lineage ── */
+
+.ce-pipeline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  margin-bottom: 0.6rem;
+  border: 1px solid var(--marinara-chat-chrome-panel-divider);
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.7rem;
+}
+
+.ce-pipeline-count {
+  display: grid;
+  gap: 0.1rem;
+  margin-right: auto;
+}
+
+.ce-pipeline-count strong {
+  color: var(--marinara-chat-chrome-panel-title);
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ce-item--child {
+  position: relative;
+  margin-left: 1.25rem;
+}
+
+.ce-item--child::before {
+  position: absolute;
+  top: -0.35rem;
+  bottom: 50%;
+  left: -0.75rem;
+  width: 0.55rem;
+  border-bottom: 1px solid var(--marinara-chat-chrome-input-border-focus);
+  border-left: 1px solid var(--marinara-chat-chrome-input-border-focus);
+  border-bottom-left-radius: 0.35rem;
+  content: "";
+}
+
+/* ── Large tool dialogs (schema studio, split review, avatar studio) ── */
+
+.ce-dialog.ce-studio,
+.ce-dialog.ce-avatar-studio {
+  width: min(96rem, 100%);
+  height: min(90dvh, 58rem);
+  max-height: min(90dvh, 58rem);
+}
+
+.ce-dialog.ce-split-review {
+  width: min(72rem, 100%);
+}
+
+.ce-studio-body,
+.ce-avatar-body {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: minmax(11rem, 14rem) minmax(0, 1.1fr) minmax(0, 1fr);
+}
+
+.ce-avatar-body {
+  grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr) minmax(13rem, 17rem);
+}
+
+.ce-studio-list,
+.ce-avatar-sources {
+  display: grid;
+  align-content: start;
+  gap: 0.3rem;
+  overflow: auto;
+  border-right: 1px solid var(--marinara-chat-chrome-panel-divider);
+  padding: 0.6rem;
+}
+
+.ce-studio-list-item {
+  display: grid;
+  gap: 0.1rem;
+  border: 1px solid transparent;
+  border-radius: 0.4rem;
+  background: transparent;
+  padding: 0.45rem 0.55rem;
+  color: var(--marinara-chat-chrome-panel-text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.ce-studio-list-item small {
+  color: var(--marinara-chat-chrome-panel-muted);
+}
+
+.ce-studio-list-item[aria-pressed="true"] {
+  border-color: var(--marinara-chat-chrome-input-border-focus);
+  background: var(--marinara-chat-chrome-highlight-bg-hover);
+}
+
+.ce-studio-edit,
+.ce-studio-preview {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.ce-studio-edit {
+  border-right: 1px solid var(--marinara-chat-chrome-panel-divider);
+}
+
+.ce-studio-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--marinara-chat-chrome-panel-divider);
+  padding: 0.5rem 0.6rem;
+}
+
+.ce-studio-tree {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  padding: 0.5rem;
+}
+
+.ce-schema-tree {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ce-schema-tree .ce-schema-tree {
+  margin-top: 0.25rem;
+  padding-left: 1rem;
+}
+
+.ce-schema-node-head {
+  display: flex;
+  width: 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--marinara-chat-chrome-panel-divider);
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, var(--marinara-chat-chrome-highlight-bg) calc(var(--ce-depth, 0) * 25%), transparent);
+  padding: 0.35rem 0.5rem;
+  color: var(--marinara-chat-chrome-panel-text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.ce-schema-node-head--selected {
+  border-color: var(--marinara-chat-chrome-input-border-focus);
+  box-shadow: 0 0 0 2px var(--marinara-chat-chrome-focus-ring);
+}
+
+.ce-schema-node-head:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.ce-schema-key {
+  color: var(--marinara-chat-chrome-panel-title);
+  font-family: Consolas, Monaco, "Courier New", monospace;
+  font-size: 0.75rem;
+}
+
+.ce-schema-hint {
+  flex-basis: 100%;
+  color: var(--marinara-chat-chrome-panel-muted);
+  font-size: 0.7rem;
+}
+
+.ce-studio-inspector {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+  max-height: 45%;
+  overflow: auto;
+  border-top: 1px solid var(--marinara-chat-chrome-panel-divider);
+  padding: 0.6rem;
+}
+
+.ce-studio-wide {
+  grid-column: 1 / -1;
+}
+
+.ce-studio-node-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ce-studio-text,
+.ce-studio-pre {
+  min-height: 0;
+  flex: 1;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--marinara-chat-chrome-input-bg);
+  padding: 0.7rem;
+  color: var(--marinara-chat-chrome-panel-text);
+  font-family: Consolas, Monaco, "Courier New", monospace;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  resize: none;
+}
+
+.ce-studio-pre {
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ce-studio-preview > .ce-caption {
+  padding: 0.45rem 0.6rem;
+}
+
+.ce-studio-name {
+  margin-right: auto;
+  min-width: min(16rem, 100%);
+}
+
+/* Split review */
+
+.ce-split-body {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  overflow: hidden;
+}
+
+.ce-split-source,
+.ce-split-proposal {
+  display: grid;
+  align-content: start;
+  gap: 0.5rem;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.75rem;
+}
+
+.ce-split-source {
+  border-right: 1px solid var(--marinara-chat-chrome-panel-divider);
+}
+
+.ce-split-source-text,
+.ce-split-card-text {
+  margin: 0;
+  border-radius: 0.4rem;
+  background: var(--marinara-chat-chrome-input-bg);
+  padding: 0.6rem;
+  color: var(--marinara-chat-chrome-panel-text);
+  font-family: inherit;
+  font-size: 0.75rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ce-split-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ce-split-card {
+  display: grid;
+  align-content: start;
+  gap: 0.4rem;
+  border: 1px solid var(--marinara-chat-chrome-panel-divider);
+  border-radius: 0.5rem;
+  padding: 0.55rem;
+}
+
+.ce-split-card-text {
+  max-height: 9rem;
+  overflow: auto;
+}
+
+/* Avatar studio */
+
+.ce-avatar-source-list {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ce-avatar-source {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.ce-avatar-canvas-wrap {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  overflow: hidden;
+  background: repeating-conic-gradient(
+      var(--marinara-chat-chrome-input-bg) 0 25%,
+      var(--marinara-chat-chrome-highlight-bg) 0 50%
+    )
+    0 0 / 16px 16px;
+  padding: 0.75rem;
+}
+
+.ce-avatar-canvas {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  min-height: 0;
+  max-height: 100%;
+  flex: 0 1 auto;
+  border-radius: 0.4rem;
+  box-shadow: 0 8px 32px rgb(0 0 0 / 35%);
+  cursor: grab;
+  touch-action: none;
+}
+
+.ce-avatar-canvas:active {
+  cursor: grabbing;
+}
+
+.ce-avatar-canvas:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.ce-avatar-controls {
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  overflow: auto;
+  border-left: 1px solid var(--marinara-chat-chrome-panel-divider);
+  padding: 0.75rem;
+}
+
+.ce-avatar-controls input[type="range"] {
+  width: 100%;
+  accent-color: var(--marinara-chat-chrome-accent);
+}
+
+@media (max-width: 60rem) {
+  .ce-studio-body,
+  .ce-avatar-body,
+  .ce-split-body {
+    grid-template-columns: minmax(0, 1fr);
+    overflow: auto;
+  }
+
+  .ce-studio-list,
+  .ce-avatar-sources,
+  .ce-studio-edit,
+  .ce-split-source,
+  .ce-avatar-controls {
+    border-right: 0;
+    border-left: 0;
+    border-bottom: 1px solid var(--marinara-chat-chrome-panel-divider);
+  }
+
+  .ce-studio-tree,
+  .ce-studio-pre {
+    max-height: 22rem;
+  }
+
+  .ce-dialog.ce-studio,
+  .ce-dialog.ce-avatar-studio {
+    height: 100%;
+    max-height: 100%;
+  }
+
+  .ce-transform-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ce-segment {
+    transition: none;
   }
 }
 `;

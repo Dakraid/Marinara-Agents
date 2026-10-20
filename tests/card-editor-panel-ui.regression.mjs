@@ -64,6 +64,10 @@ const componentSources = {
   "SessionDetail.tsx": sessionDetail,
   "VerdictQueue.tsx": verdictQueue,
   "EditRetryDialog.tsx": editRetryDialog,
+  "SplitReviewDialog.tsx": read("SplitReviewDialog.tsx"),
+  "SchemaStudio.tsx": read("SchemaStudio.tsx"),
+  "AvatarStudio.tsx": read("AvatarStudio.tsx"),
+  "TransformSettings.tsx": read("TransformSettings.tsx"),
 };
 
 // ── 1. Every referenced cardEditor.* locale key exists in the English catalog ──
@@ -109,7 +113,7 @@ for (const key of [
 }
 
 // ── 2. Status-chip mapping completeness: every ItemStatus has a label key and a tone ──
-assert.equal(ITEM_STATUSES.length, 13, "the status list must cover all 13 ItemStatus values");
+assert.equal(ITEM_STATUSES.length, 16, "the status list must cover all 16 ItemStatus values");
 for (const status of ITEM_STATUSES) {
   const key = itemStatusLabelKey(status);
   assert.match(key, /^cardEditor\.panel\.status\./u);

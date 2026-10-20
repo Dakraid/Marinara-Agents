@@ -597,12 +597,12 @@ const features = [
   },
   {
     id: "card-editor",
-    version: "10.0.1",
+    version: "10.0.2",
     minEngineVersion: "2.4.7",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Card Editor",
     description:
-      "Rewrites character cards from your directives while preserving each card's voice and aligning it with referenced lore. Runs on a single card or as bulk dispatch across selected characters, with verdict review, edit-and-retry, and session management in its runs panel.",
+      "Rewrites character cards from your directives while preserving each card's voice and aligning it with referenced lore. Runs on a single card or as bulk dispatch across selected characters: edit fields, or transform cards into your own schemas as Markdown, XML or JSON, split cards that describe several characters, refine results in a second phase, and composite avatars, with verdict review and session management in its workspace.",
     category: "writer",
     kind: ["agent"],
     modes: ["roleplay"],
