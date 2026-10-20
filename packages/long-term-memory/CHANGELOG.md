@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 1.4.56 — 2026-10-20
+
+- Long-Term Memory now uses Marinara Engine's own libraries and data cache for its screens instead of carrying copies of them, so the download is smaller. It needs a Marinara Engine release after 2.5.0. On 2.5.0 and older, the version you already have keeps working. (#1487)
+
 ## 1.4.55 — 2026-10-19
 
 - Behind-the-scenes fixes from a stricter code check; nothing you see changes. Extraction can no longer be started without knowing where your memories are stored, which would have failed. Characters who share a name now keep their other names in the same form as every other character.
