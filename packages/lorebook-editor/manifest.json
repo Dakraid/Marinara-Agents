@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "lorebook-editor",
   "name": "Lorebook Editor",
-  "version": "1.0.1",
+  "version": "10.0.1",
   "description": "Rewrites entries in a target lorebook from a user directive while preserving continuity with referenced character cards. Open a lorebook and choose Run Lorebook Editor to propose changes for approval.",
   "engine": {
     "min": "2.3.0",

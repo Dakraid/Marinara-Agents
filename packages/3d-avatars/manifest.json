@@ -10,7 +10,7 @@
   },
   "id": "3d-avatars",
   "name": "3D Avatars",
-  "version": "0.1.1",
+  "version": "10.0.1",
   "description": "Shows your characters and personas as animated 3D models that blink, talk, and change faces with each reply. Uses VRM model files. Set up each avatar on the agent's page in Agents, then add the Agent in Chat Settings → Agents → Misc Agents for Roleplay and Game modes.",
   "engine": {
     "min": "2.5.0",

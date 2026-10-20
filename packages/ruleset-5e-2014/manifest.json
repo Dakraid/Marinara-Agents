@@ -10,7 +10,7 @@
   },
   "id": "ruleset-5e-2014",
   "name": "5e (SRD 5.1)",
-  "version": "0.9.1",
+  "version": "10.0.1",
   "description": "Play Game Mode by the 5e rules (SRD 5.1): ability checks, saving throws, a full character sheet with spells and class features, and 5e combat against 319 monsters, on a battle board or without positions. After installing, choose it under Rules in the Game Mode setup wizard when you create a new game.",
   "engine": {
     "min": "2.4.6",

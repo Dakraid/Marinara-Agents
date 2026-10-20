@@ -15,7 +15,7 @@
         },
         "id": "ruleset-5e-2014",
         "name": "5e (SRD 5.1)",
-        "version": "0.9.1",
+        "version": "10.0.1",
         "description": "Play Game Mode by the 5e rules (SRD 5.1): ability checks, saving throws, a full character sheet with spells and class features, and 5e combat against 319 monsters, on a battle board or without positions. After installing, choose it under Rules in the Game Mode setup wizard when you create a new game.",
         "engine": {
           "min": "2.4.6",
@@ -63,9 +63,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/ruleset-5e-2014.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/ruleset-5e-2014-0.9.1.zip",
-        "sha256": "c9b45dc9087608aebca420d65966ffbcfa7557cdf6ae382eb8da4aa91eed9365",
-        "bytes": 1389670
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/ruleset-5e-2014-10.0.1.zip",
+        "sha256": "38e2f9b31f071e4852afcea4a196901be79af84a8ad8db27e1fbab3e4e9246c1",
+        "bytes": 1389671
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Engine/blob/staging/docs/game/getting-started.md#choosing-rules"
     },
@@ -82,7 +82,7 @@
         },
         "id": "modern-life-sim",
         "name": "Modern Life Sim",
-        "version": "0.8.0",
+        "version": "10.0.1",
         "description": "A modern life sim in its own Home tab: a town on a clock, a job, rent and needs, and a cast drawn from your character cards whose relationships grow scene by scene, with a visual-novel narrator for the scenes that matter. Install it, restart Marinara Engine when prompted, then open Home → Life Sim.",
         "engine": {
           "min": "2.4.4",
@@ -141,9 +141,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/modern-life-sim.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/modern-life-sim-0.8.0.zip",
-        "sha256": "624cd58c13a22722be94ad8e75961bebc1487b372cec9be253455679686527d3",
-        "bytes": 2382101
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/modern-life-sim-10.0.1.zip",
+        "sha256": "eea263701d10a75580d5645d4f6be63e57c742ccc34a693a324b333f165cb6d4",
+        "bytes": 2382102
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/staging/packages/modern-life-sim/README.md"
     }

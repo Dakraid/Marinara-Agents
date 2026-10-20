@@ -7,7 +7,7 @@ const agents = JSON.parse(await readFile(new URL("agents.json", packageRoot), "u
 const editor = agents.find((agent) => agent.id === "lorebook-editor");
 
 assert.equal(manifest.id, "lorebook-editor");
-assert.equal(manifest.version, "1.0.1");
+assert.equal(manifest.version, "10.0.1");
 assert.deepEqual(manifest.kind, ["agent"]);
 assert.deepEqual(manifest.entrypoints, { agents: "agents.json" });
 assert.deepEqual(manifest.engine, { min: "2.3.0", maxExclusive: "4.0.0" });

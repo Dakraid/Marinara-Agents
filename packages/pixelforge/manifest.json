@@ -10,7 +10,7 @@
   },
   "id": "pixelforge",
   "name": "Pixelforge",
-  "version": "0.16.9",
+  "version": "10.0.1",
   "description": "A pixel-art RPG world for Game Mode that you walk around in. Pick a setting, like a cozy village or a sci-fi colony, then explore, talk to NPCs, and let the Game Master narrate. Install it, then choose Pixelforge as the Experience when creating a Game Mode chat.",
   "engine": {
     "min": "2.4.5",
@@ -66,7 +66,7 @@
     },
     {
       "path": "client.js",
-      "sha256": "04f224c564aa23562f6276204275503f3906819bdd828c74d0b44e7d72405a81",
+      "sha256": "06bc6255115dc0bd078d1614719fb57b5ad4fadd1acec1decb747a05ec2eb8d7",
       "bytes": 1447084
     },
     {

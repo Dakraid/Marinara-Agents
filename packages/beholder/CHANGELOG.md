@@ -1,3 +1,7 @@
+## 10.0.1 — 2026-10-20
+
+- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
 ## 1.3.14 — 2026-10-19
 
 - Clicking elsewhere in the chat no longer closes Beholder when you opened it from its shortcut. It stays open until you close it or leave the chat.

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "card-evolution-auditor",
   "name": "Card Evolution Auditor",
-  "version": "1.0.3",
+  "version": "10.0.1",
   "description": "Suggests character card updates when the story changes a character, for you to approve. Add the Agent in Chat Settings → Agents → Writer Agents for Roleplay mode.",
   "engine": {
     "min": "2.3.0",

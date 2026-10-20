@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "director",
   "name": "Narrative Director",
-  "version": "1.0.3",
+  "version": "10.0.1",
   "description": "Gives the story a push in a new direction when you ask for it. Add the Agent in Chat Settings → Agents → Writer Agents for Roleplay mode.",
   "engine": {
     "min": "2.3.0",

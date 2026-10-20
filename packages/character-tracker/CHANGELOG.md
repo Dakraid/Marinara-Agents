@@ -1,5 +1,9 @@
 # Character Tracker
 
+## 10.0.1 — 2026-10-20
+
+- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
 ## 1.2.0 — 2026-10-16
 - Every run now checks who is actually in the scene: new arrivals are added, characters who left are removed, and tracked characters keep their exact ID so updates are no longer dropped.
 

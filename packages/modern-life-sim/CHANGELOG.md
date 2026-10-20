@@ -1,3 +1,7 @@
+## 10.0.1 — 2026-10-20
+
+- Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
 ## 0.8.0 — 2026-10-16
 
 - Backgrounds, outfits, sprites and key images now paint several at once, up to the image connection's Max Parallel Image Jobs setting (one at a time by default).

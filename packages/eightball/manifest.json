@@ -10,7 +10,7 @@
   },
   "id": "eightball",
   "name": "8-Ball Pool",
-  "version": "1.0.6",
+  "version": "10.0.1",
   "description": "Play 8-Ball Pool with a Conversation character. Install to use /8ball manually in any Conversation chat. Add under Chat Settings → Agents → Commands only to let characters initiate it.",
   "engine": {
     "min": "2.3.0",
