@@ -194,7 +194,7 @@ async function main() {
   const loadArtwork = () =>
     compile(
       artworkSource,
-      "({ backfillCreatorArtwork, generateCreatorArtwork, generateArtworkImage })",
+      "({ backfillCreatorArtwork, generateCreatorArtwork, generateSlpArtworkImage })",
       artworkContext,
     );
   const creator = {
@@ -220,13 +220,13 @@ async function main() {
   assert.equal(artworkCalls, 3);
   clearFailure = true;
   assert.ok(
-    await loadArtwork().generateArtworkImage({}, "avatar", { account: creator }),
+    await loadArtwork().generateSlpArtworkImage({}, "avatar", { account: creator }),
     "cleanup cannot turn a paid success into a new retry",
   );
   artworkFailure = true;
   persistFailure = true;
   await assert.rejects(
-    loadArtwork().generateArtworkImage({}, "avatar", { account: creator }),
+    loadArtwork().generateSlpArtworkImage({}, "avatar", { account: creator }),
     (error) => error === failure,
     "a persistence failure must retain the original nonretryable error",
   );

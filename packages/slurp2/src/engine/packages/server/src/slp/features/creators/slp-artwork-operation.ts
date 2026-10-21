@@ -59,16 +59,16 @@ export function artworkCompositionGuard(kind: "avatar" | "banner") {
     : "COMPOSITION REQUIREMENT: output one continuous ultra-wide background scene only. The profile page draws its own avatar on top of this image, so a second one ruins it. Do not include a profile picture, avatar, avatar bubble, headshot, dominant face, circular or rounded crop, badge, medallion, sticker portrait, framed portrait, inset image, picture-in-picture, card, collage, social-media UI, text, logo, border, or empty placeholder intended to contain a portrait.";
 }
 
-const artworkRetryKey = (accountId: string, kind: "avatar" | "banner") =>
+const slpArtworkRetryKey = (accountId: string, kind: "avatar" | "banner") =>
   `slurp:creator-artwork-nonretryable:${accountId}:${kind}`;
 
-async function generateArtworkImage(
+async function generateSlpArtworkImage(
   db: DB,
   kind: "avatar" | "banner",
   input: Parameters<typeof generateCreatorPostImage>[0],
 ) {
   const store = createAppSettingsStorage(db);
-  const key = artworkRetryKey(input.account.id, kind);
+  const key = slpArtworkRetryKey(input.account.id, kind);
   try {
     const image = await generateCreatorPostImage(input);
     await store.remove(key).catch((error) => logger.warn(error, "[slurp] Failed to clear artwork retry brake"));
@@ -106,7 +106,7 @@ export async function generateCreatorArtwork(
       sourceReferences: input.kind === "avatar",
       composition: true,
     };
-    const image = await generateArtworkImage(db, input.kind, {
+    const image = await generateSlpArtworkImage(db, input.kind, {
       account,
       linkedPublicAccount,
       disclosureMode,
@@ -216,14 +216,15 @@ async function backfillCreatorArtwork(
     // Copying a card's pictures costs nothing; drawing new ones waits for the player's switch
     // (player report: banners appeared "or not, sometimes" with no way to stop them).
     if (!settings.autoCreatorArtworkEnabled) return "idle" as const;
-    if ((await createAppSettingsStorage(db).get(artworkRetryKey(target.id, kind))) === "true") return "idle" as const;
+    if ((await createAppSettingsStorage(db).get(slpArtworkRetryKey(target.id, kind))) === "true")
+      return "idle" as const;
     const connections = createConnectionsStorage(db);
     const mappedId = await resolveCreatorImageConnectionId(db, target.id);
     const imageConnection =
       (mappedId ? await connections.getWithKey(mappedId) : null) ?? (await connections.getDefaultForImageGeneration());
     if (!imageConnection) return "unavailable" as const;
 
-    const image = await generateArtworkImage(db, kind, {
+    const image = await generateSlpArtworkImage(db, kind, {
       account,
       linkedPublicAccount,
       disclosureMode,
