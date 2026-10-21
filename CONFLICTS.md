@@ -38,13 +38,13 @@ Marked _(inferred)_: read from code or history rather than stated in a commit or
 - **Version sources (must agree):** `packages/<id>/manifest.json` (agent-only packages, gacha-forge, relationship-tracker, modern-life-sim, ruleset-5e-2014); `version:` in `scripts/build-feature-packages.mjs` (noodle, slurp2, long-term-memory, memory-nag, card-editor, pokedex, hierarchical-maps, conversation-calls, the 6 turn games); `VERSION` in `scripts/build-{beholder,pixelforge,quartermaster}-package.mjs`; `SLURP2_VERSION` plus the top `SLURP2_RELEASES` entry in `packages/slurp2/.../onboarding/slp-release.ts`; the top `## <version>` of `packages/<id>/CHANGELOG.md` (builder-enforced, max 20 entries, 1,000 chars each).
 - **Keep on conflict:** always the 10.x value. Never take upstream `1.x`/`0.x` lines in manifests, builder maps, `VERSION`, `SLURP2_VERSION` or the CHANGELOG top.
 - **Fork-created CHANGELOGs** (add/add conflicts if upstream adds its own; union with the fork entry on top): background, card-evolution-auditor, chess, combat, continuity, cyoa, director, echo-chamber, eightball, expression, haptic, html, illustrator, knowledge-retrieval, knowledge-router, lorebook-keeper, persona-stats, poker, prose-guardian, quest, rock-paper-scissors, spotify, storyboard, tic-tac-toe, uno.
-- **Current versions:** card-editor `10.0.3`; all 46 other packages `10.0.1`.
+- **Current versions:** card-editor `10.0.4`; all 46 other packages `10.0.1`.
 
 ### Packages with fork changes beyond the version
 
 | Package           | Fork version | Kind                                               |
 | ----------------- | ------------ | -------------------------------------------------- |
-| card-editor       | 10.0.3       | fork-only feature package                          |
+| card-editor       | 10.0.4       | fork-only feature package                          |
 | lorebook-editor   | 10.0.1       | fork-only agent-only package                       |
 | pokedex           | 10.0.1       | fork-only feature package                          |
 | modern-life-sim   | 10.0.1       | source recovered into `src/`; features 0.4.0–0.8.0 |
@@ -73,6 +73,11 @@ All other packages differ only by version, CHANGELOG and Dakraid links in builde
 - **Keep on conflict:** upstream's total + 3 (card-editor, pokedex, lorebook-editor).
 - **Note:** a catalog artifact block must match the manifest version, or Engine returns 500 on `/api/capability-packages/catalog` (`746ae6ea0`). Builders need `zip` (fallback `/tmp/marinara-merge-recovery/bin` on `PATH`).
 
+### Fork capability track
+
+- **What/why:** fork-only Engine features use `forkCapabilityApi` (`{ major: 10, minor: 0 }`) in the manifest, separate from `capabilityApi`, which keeps upstream's meaning. `schemas/package-manifest.schema.json` allows the key; `scripts/build-feature-packages.mjs` emits a feature's `forkCapabilityApi`.
+- **Keep on conflict:** never raise `capabilityApi` past upstream's numbers for a fork feature; declare `forkCapabilityApi` instead.
+
 ### Vendored Engine sources (`sources/engine/**`)
 
 - **What/why:** mirrors the Engine fork's `packages/shared/dist` (155 files) plus 61 compat files; ESM markers `sources/package.json` and `sources/engine/packages/shared/package.json` (without them tsx CJS-transforms the dist and named imports break); synced `REQUEST_TIMEOUTS` and the spatial `travel` column; the `about-me-keeper` id renamed so the About Me marker never reaches a bundle.
@@ -93,12 +98,12 @@ All other packages differ only by version, CHANGELOG and Dakraid links in builde
 
 ---
 
-## 1. card-editor (fork-only feature, 10.0.3)
+## 1. card-editor (fork-only feature, 10.0.4)
 
-- **What/why:** character-card rewrite agent grown into a feature package: bulk dispatch, session runner, verdict review, overlay workspace, duplicate-applied action, bulk settings, connection-limited concurrency, combined/duplicate save modes, Fix JSON dialog, schema transforms, splits and lineage, Phase 2, avatar studio, icon-only selection action (`iconOnly` prop). Needs the Engine fork (Capability API 1.68; 1.342 for structured output; Engine ≥ 2.4.7).
+- **What/why:** character-card rewrite agent grown into a feature package: bulk dispatch, session runner, verdict review, overlay workspace, duplicate-applied action, bulk settings, connection-limited concurrency, combined/duplicate save modes, Fix JSON dialog, schema transforms, splits and lineage, Phase 2, avatar studio, icon-only selection action (`iconOnly` prop). Declares `capabilityApi` 1.66 (upstream track) and `forkCapabilityApi` 10.0 (the Engine fork's own track for these features); upstream Engines refuse the manifest key. Engine ≥ 2.4.7.
 - **Files:** `packages/card-editor/src/engine/packages/{client/src/features,server/src/services,shared/src/features/agents}/card-editor/**`, `agents.json`, `engine-boundary.json`, `locales/en.json`, `CHANGELOG.md`, `manifest.json`. Builder hooks in `scripts/build-feature-packages.mjs`: `cardEditorSourceRoot`, `cardEditorOwnedSourcePaths`, the `fromVendoredEngine` exclusions, the `features[]` entry, `cardEditorBoundary`, the generic `agentsSource` branch. Generated: `client.js`, `server.mjs`, zips, catalog entries.
 - **Keep on conflict:** the package is ours; fold upstream builder changes around the hooks. Re-stamp `engine-boundary.json` only when the Engine-fork commit moved. `duplicate-applied` must be in `client.js`. Tests match escaped bundle text.
-- **Pinned by:** `tests/card-editor-routing.regression.mjs` (version 10.0.3, capabilityApi 1.68, builtAgainst, contributions), `card-editor-{bulk,runner,transform,prompt-presets,dialog-ui,panel-ui}.regression.mjs`.
+- **Pinned by:** `tests/card-editor-routing.regression.mjs` (version 10.0.4, capabilityApi 1.66, forkCapabilityApi 10.0, builtAgainst, contributions), `card-editor-{bulk,runner,transform,prompt-presets,dialog-ui,panel-ui}.regression.mjs`.
 - **Commits:** 531720710 … 9222ee161 (about 35).
 
 ## 2. pokedex (fork-only feature, 10.0.1)
@@ -184,4 +189,4 @@ All other packages differ only by version, CHANGELOG and Dakraid links in builde
 - **New:** `card-editor-{bulk,dialog-ui,panel-ui,prompt-presets,routing,runner,transform}.regression.mjs`, `lorebook-editor-routing.regression.mjs`, `modern-life-sim-{adult,cast-reading,family-romance,jobs-money,repeat-social,sampling,sex,world-lore}.regression.mjs`.
 - **Changed (keep ours, union upstream additions):** `conversation-calls-summary`, `hierarchical-maps-lifecycle`, `inventory-tracker-contract`, `long-term-memory-lifecycle`, `lorebook-keeper-routing`, `map-canvas-geometry`, `map-location-limit`, `noodle-image-prompt-instructions`, `noodle-public-only`, `noodler-disclosure-contract`, `noodler-fictional-prices`, `noodler-generation-guidance-default`, `shared-world-refresh`, `world-maps-ui-contract`.
 - **Deleted:** `noodler-content-formats.regression.ts`.
-- **Version pins to bump with manifests:** `card-editor-routing` (10.0.3); `lorebook-editor-routing`, `lorebook-keeper-routing`, `conversation-calls-summary` (10.0.1).
+- **Version pins to bump with manifests:** `card-editor-routing` (10.0.4); `lorebook-editor-routing`, `lorebook-keeper-routing`, `conversation-calls-summary` (10.0.1).

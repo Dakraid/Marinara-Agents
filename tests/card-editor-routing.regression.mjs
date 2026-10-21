@@ -7,11 +7,13 @@ const agents = JSON.parse(await readFile(new URL("agents.json", packageRoot), "u
 const editor = agents.find((agent) => agent.id === "card-editor");
 
 assert.equal(manifest.schemaVersion, 2);
-assert.deepEqual(manifest.capabilityApi, { major: 1, minor: 68 });
+assert.deepEqual(manifest.capabilityApi, { major: 1, minor: 66 });
+// Fork-only features (selection action, agent panel, overlay, structured output) are on the fork track.
+assert.deepEqual(manifest.forkCapabilityApi, { major: 10, minor: 0 });
 assert.equal(manifest.builtAgainst.engineVersion, "2.4.8");
 assert.equal(manifest.builtAgainst.engineCommit, "74a2cf9767f5e2428fdb8eaab03380b49abc7c2e");
 assert.equal(manifest.id, "card-editor");
-assert.equal(manifest.version, "10.0.3");
+assert.equal(manifest.version, "10.0.4");
 assert.deepEqual(manifest.kind, ["agent"]);
 assert.deepEqual(manifest.entrypoints, {
   agents: "agents.json",
