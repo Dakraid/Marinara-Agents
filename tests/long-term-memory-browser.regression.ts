@@ -1770,6 +1770,8 @@ async function main() {
         await root.locator("[data-ltm-scope-picker-popup]").waitFor({ state: "detached" });
       };
       await memoryScopeTrigger.waitFor();
+      // The place reads "All" until the scope targets load.
+      await memoryScopeTrigger.getByText("Current", { exact: true }).waitFor();
       assert.match(
         await page.locator("[data-ltm-memory-scope]").innerText(),
         /^Currently viewing memories in:\s*Current\b/u,
@@ -2232,6 +2234,8 @@ async function main() {
       await bulkBranchRemoval.getByRole("button", { name: "Apply", exact: true }).click();
       assert.deepEqual((await bulkBranchRequest).postDataJSON().removeScope, { chatIds: ["memory-chat"] });
       await bulkBranchRemoval.waitFor({ state: "detached" });
+      // The open memory was part of the change, so it reloads: its summary now counts the deleted chat.
+      await page.locator("[data-ltm-availability-summary]").getByText("5 places, 1 chat modes").waitFor();
       if ((await page.locator("[data-ltm-select-mode]").innerText()).trim() === "Done")
         await page.locator("[data-ltm-select-mode]").click();
       // Bulk Remove lists a place that no longer exists, with the single editor's fallback label (#1442).
@@ -2264,6 +2268,19 @@ async function main() {
       const deletedChatRequest = page.waitForRequest(
         (request) => request.method() === "POST" && request.url().includes("/api/long-term-memory/notes/batch"),
       );
+      // Hold the response, so the memory is opened and edited while the change is still running.
+      let releaseDeletedChatBatch: (() => void) | null = null;
+      const deletedChatBatchHeld = new Promise<void>((resolve) => {
+        releaseDeletedChatBatch = resolve;
+      });
+      await page.route(
+        "**/api/long-term-memory/notes/batch",
+        async (route) => {
+          await deletedChatBatchHeld;
+          await route.continue();
+        },
+        { times: 1 },
+      );
       await bulkBranchRemoval.getByRole("button", { name: "Apply", exact: true }).click();
       assert.deepEqual((await deletedChatRequest).postDataJSON().removeScope, {
         chatIds: ["deleted-chat", "memory-chat", "memory-conversation-branch"],
@@ -2276,6 +2293,16 @@ async function main() {
       const branchPills = branchAvailability.getByRole("button", { name: /^Remove Memory Conversation - /u });
       const wholeChatPill = branchAvailability.getByRole("button", { name: "Remove Conversation A", exact: true });
       await branchCard.locator("button").first().click();
+      const branchTitle = page.locator("[data-ltm-field='title']");
+      await branchTitle.fill("Memory outside current chat, edited");
+      const noteQueriesBeforeBatch = noteQueries.length;
+      releaseDeletedChatBatch?.();
+      // When the change finishes, the row actions work again, the list reloads and the open memory keeps its unsaved
+      // title; the availability panel below shows the places after the change.
+      await branchCard.locator("[data-ltm-note-actions-desktop] button:enabled").first().waitFor();
+      assert.ok(noteQueries.length > noteQueriesBeforeBatch, "the memory list reloads after the change");
+      assert.equal(await branchTitle.inputValue(), "Memory outside current chat, edited");
+      await branchTitle.fill("Memory outside current chat");
       await page.getByRole("button", { name: "Edit availability" }).click();
       await branchAvailability.waitFor();
       assert.equal(await wholeChatPill.count(), 1);
@@ -2299,6 +2326,80 @@ async function main() {
       assert.equal(removedBranchScope.groupIds, undefined, JSON.stringify(removedBranchScope));
       assert.equal(removedBranchScope.groupId, undefined, JSON.stringify(removedBranchScope));
       assert.equal(branchAvailabilityPatches.length, 2);
+      // Hold a save, then reopen the same memory with Discard and continue while it runs.
+      let releaseBranchSave: (() => void) | null = null;
+      const branchSaveHeld = new Promise<void>((resolve) => {
+        releaseBranchSave = resolve;
+      });
+      const branchNoteRoute = `**/api/long-term-memory/notes/${outsideChatNote.id}`;
+      await page.route(branchNoteRoute, async (route) => {
+        if (route.request().method() === "PATCH") await branchSaveHeld;
+        await route.continue();
+      });
+      await branchTitle.fill("Memory outside current chat, saved");
+      await page.getByRole("button", { name: "Save", exact: true }).click();
+      await branchCard.locator("button").first().click();
+      await page.getByRole("button", { name: "Discard and continue", exact: true }).click();
+      await page.waitForFunction(
+        () =>
+          document.querySelector<HTMLInputElement>("[data-ltm-field='title']")?.value === "Memory outside current chat",
+      );
+      const noteQueriesBeforeSave = noteQueries.length;
+      releaseBranchSave?.();
+      // When the save finishes, the reopened memory shows what was saved, Save reads "Save" again and works after an
+      // edit, and the list reloads.
+      await page.waitForFunction(
+        () =>
+          document.querySelector<HTMLInputElement>("[data-ltm-field='title']")?.value ===
+          "Memory outside current chat, saved",
+      );
+      await page.getByRole("button", { name: "Save", exact: true }).waitFor();
+      await branchTitle.fill("Memory outside current chat, edited again");
+      await page.locator("button:enabled", { hasText: /^Save$/u }).waitFor();
+      assert.ok(noteQueries.length > noteQueriesBeforeSave, "the memory list reloads after the save");
+      await branchTitle.fill("Memory outside current chat, saved");
+      await page.unroute(branchNoteRoute);
+      // Escape keeps the Rename detail dialog open while the rename runs, as its disabled Cancel button does.
+      let releaseRename: (() => void) | null = null;
+      const renameHeld = new Promise<void>((resolve) => {
+        releaseRename = resolve;
+      });
+      const renameRoute = `**/api/long-term-memory/notes/${outsideChatNote.id}/sections/rename`;
+      await page.route(renameRoute, async (route) => {
+        await renameHeld;
+        await route.fulfill({
+          json: {
+            note: {
+              ...outsideChatNote,
+              sections: { background: outsideChatNote.sections.facts },
+              version: outsideChatNote.version + 1,
+            },
+            rebuild: { status: "complete" },
+          },
+        });
+      });
+      const renameDetailButton = page.getByRole("button", { name: /^Rename detail: /u }).first();
+      if (!(await renameDetailButton.isVisible())) await page.locator("[data-ltm-details-toggle]").click();
+      if (!(await renameDetailButton.isVisible())) await page.locator("summary", { hasText: "Rename details" }).click();
+      await renameDetailButton.click();
+      const renameDialog = page.locator("dialog").filter({ has: page.locator("#ltm-rename-detail-title") });
+      await renameDialog.getByLabel("New detail name").fill("background");
+      const renameRequest = page.waitForRequest(
+        (request) => request.method() === "POST" && request.url().endsWith("/sections/rename"),
+      );
+      await renameDialog.getByRole("button", { name: "Save detail name" }).click();
+      await renameRequest;
+      await page.keyboard.press("Escape");
+      assert.equal(
+        await renameDialog.evaluateAll(
+          (dialogs) => dialogs.filter((dialog) => (dialog as HTMLDialogElement).open).length,
+        ),
+        1,
+        "Escape keeps the dialog open while the rename runs",
+      );
+      releaseRename?.();
+      await renameDialog.waitFor({ state: "detached" });
+      await page.unroute(renameRoute);
       await memorySearch.fill("Scoped desktop memory");
       await page.locator('[data-ltm-navigation="desktop"] [data-ltm-destination="review"]').click();
       const recoverySource = page.locator('[data-ltm-review-source-select="source_mobile_recovery"]');
@@ -3705,6 +3806,83 @@ async function main() {
       await desktopDebugPage.locator('[data-ltm-recalled-note="world_legacy_global"]').click();
       await desktopDebugPage.locator('[data-ltm-surface="vault"]').waitFor();
       await desktopDebugPage.close();
+      // A Vault group renders at most 100 rows until Show more. Its count, the shown total and
+      // search still cover every memory in the place.
+      {
+        const capPage = await browserContext.newPage();
+        const capNotes = Array.from({ length: 250 }, (_, index) => {
+          const number = String(index).padStart(3, "0");
+          const timestamp = new Date(Date.UTC(2026, 6, 30) - index * 60_000).toISOString();
+          return {
+            id: `world_cap_${number}`,
+            title: `Capped memory ${number}`,
+            type: "world",
+            status: "active",
+            modes: ["roleplay"],
+            scope: {},
+            tags: [],
+            keywords: [],
+            links: [],
+            sections: {
+              facts: {
+                text: index === 230 ? "The lighthouse keeper hid the ledger." : `Capped memory ${number} text.`,
+                updatedAt: timestamp,
+              },
+            },
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            version: 1,
+          };
+        });
+        await capPage.route(
+          (url) => url.pathname.endsWith("/api/long-term-memory/notes"),
+          (route) =>
+            route.request().method() === "GET" && !new URL(route.request().url()).searchParams.has("ids")
+              ? route.fulfill({ json: capNotes })
+              : route.continue(),
+        );
+        await capPage.goto(`http://127.0.0.1:${address.port}/`);
+        await capPage.evaluate(() => customElements.whenDefined("marinara-capability-long-term-memory"));
+        await capPage.evaluate(`(() => {
+          const element = document.createElement("marinara-capability-long-term-memory");
+          element.setAttribute("view", "detail");
+          element.capabilityProps = { confirmAction: () => true };
+          document.body.append(element);
+        })()`);
+        await capPage.locator('[data-ltm-navigation="desktop"] [data-ltm-destination="vault"]').click();
+        const capGroupSummary = capPage.locator('[data-ltm-memory-group="world"] > summary');
+        const capRows = capPage.locator('[data-ltm-memory-group="world"] [data-ltm-note-type]');
+        await capGroupSummary.click();
+        await capRows.first().waitFor();
+        await capPage.getByText("250 shown").waitFor();
+        assert.match(await capGroupSummary.innerText(), /250/u, "the group counts every memory");
+        assert.equal(await capRows.count(), 100, "a group renders 100 rows before Show more");
+        await capPage.getByRole("button", { name: "Show 100 more" }).press("Enter");
+        await capPage.waitForFunction(
+          () => document.activeElement?.textContent?.includes("Capped memory 100") ?? false,
+          undefined,
+          { timeout: 2000 },
+        );
+        assert.equal(await capRows.count(), 200, "Show more adds the next 100 rows");
+        assert.match(
+          await capPage.evaluate(() => document.activeElement?.textContent ?? ""),
+          /Capped memory 100/u,
+          "Show more moves focus to the first row it added",
+        );
+        assert.equal(await capPage.getByRole("button", { name: "Show 50 more" }).count(), 1);
+        const capSearch = capPage.getByLabel("Search memories", { exact: true });
+        await capSearch.fill("lighthouse");
+        await capRows.filter({ hasText: "Capped memory 230" }).waitFor({ timeout: 5000 });
+        assert.equal(await capRows.count(), 1, "search covers memories beyond the cap");
+        await capSearch.fill("");
+        await capPage.getByText("250 shown").waitFor();
+        assert.equal(await capRows.count(), 100, "a new search starts again at 100 rows");
+        // Select visible covers every memory in the place, not only the rendered rows.
+        await capPage.locator("[data-ltm-select-mode]").click();
+        await capPage.getByLabel("Select visible", { exact: true }).check();
+        await capPage.locator("[data-ltm-selection-count]").filter({ hasText: "250 selected" }).waitFor();
+        await capPage.close();
+      }
       // #1376: Reset settings reloads the forms. The Maintenance panel stays mounted, so its
       // result survives and its buttons stay disabled until the settings refetch resolves.
       {
@@ -3780,7 +3958,7 @@ async function main() {
       }
       // #1452: when the settings read after Reset or Import fails, Retry on the error surface loads the
       // new settings instead of the cached ones the action replaced. An import whose integrity read
-      // alone fails still shows the settings it refetched.
+      // alone fails still shows the settings it refetched (and says the backup was imported).
       for (const failure of ["reset", "import", "import-integrity"] as const) {
         const failPage = await browserContext.newPage();
         const counts = { notes: 0, drafts: 0, rejectedSuggestions: 0 };
@@ -3842,9 +4020,26 @@ async function main() {
           .getByText(
             failure === "reset"
               ? "Memory settings reset to defaults."
-              : "Memory backup imported, but settings could not be refreshed.",
+              : failure === "import"
+                ? "Memory backup imported, but settings could not be refreshed."
+                : "Memory backup imported.",
           )
           .waitFor({ timeout: 5000 });
+        if (failure === "import-integrity") {
+          // The failed integrity read shows only its error, not the report cached before the import.
+          await maintenancePanel.getByText("Integrity check could not load.").waitFor();
+          assert.equal(
+            await maintenancePanel.getByText("Integrity check passed").count(),
+            0,
+            "a failed integrity read hides the report cached before the import",
+          );
+          // Review: the retained "healthy" reading must not sit above the load error (it shows Loading instead).
+          assert.equal(
+            await maintenancePanel.getByText("Vault healthy").count(),
+            0,
+            "a failed integrity read does not show the health reading cached before the import",
+          );
+        }
         await failPage.locator("#settings-tab-recall").click();
         assert.equal(
           await maxChunks.inputValue(),
@@ -3852,6 +4047,121 @@ async function main() {
           `${failure}: the forms show the settings read after the action`,
         );
         await failPage.close();
+      }
+      // Settings that remount after a failed reload wait for a successful read instead of filling
+      // the forms from the settings cached before the Reset, which the next Save would write back.
+      {
+        const remountPage = await browserContext.newPage();
+        let nextMaxChunks: number | null = null;
+        let failSettings = false;
+        await remountPage.route("**/api/long-term-memory/settings/reset", (route) => route.fulfill({ json: {} }));
+        await remountPage.route("**/api/long-term-memory/settings", async (route) => {
+          if (nextMaxChunks === null || route.request().method() !== "GET") return route.continue();
+          if (failSettings) return route.fulfill({ status: 500, json: { error: "Fixture settings read failed." } });
+          const response = await route.fetch();
+          await route.fulfill({
+            response,
+            json: { ...(await response.json()), longTermMemoryMaxChunks: nextMaxChunks },
+          });
+        });
+        await remountPage.goto(`http://127.0.0.1:${address.port}/`);
+        await remountPage.evaluate(() => customElements.whenDefined("marinara-capability-long-term-memory"));
+        await remountPage.evaluate(`(() => {
+          const element = document.createElement("marinara-capability-long-term-memory");
+          element.setAttribute("view", "detail");
+          element.capabilityProps = { confirmAction: () => true };
+          document.body.append(element);
+        })()`);
+        const settingsNav = remountPage.locator('[data-ltm-navigation="desktop"] [data-ltm-destination="settings"]');
+        await settingsNav.click();
+        const maxChunks = remountPage.getByRole("spinbutton", { name: "Maximum recalled memories", exact: true });
+        const cachedMaxChunks = Number(await maxChunks.inputValue());
+        await remountPage.locator("#settings-tab-maintenance").click();
+        nextMaxChunks = cachedMaxChunks === 37 ? 38 : 37;
+        failSettings = true;
+        await remountPage
+          .locator("#settings-panel-maintenance")
+          .getByRole("button", { name: "Reset settings" })
+          .click();
+        await remountPage
+          .locator('[data-ltm-status="danger"]')
+          .filter({ hasText: "Could not load memory settings." })
+          .waitFor({ timeout: 5000 });
+        await remountPage.locator('[data-ltm-navigation="desktop"] [data-ltm-destination="vault"]').click();
+        failSettings = false;
+        await settingsNav.click();
+        await maxChunks.waitFor({ timeout: 5000 });
+        assert.equal(
+          await maxChunks.inputValue(),
+          String(nextMaxChunks),
+          "Settings reopened after a failed reload show the settings read after the Reset",
+        );
+        await remountPage.close();
+      }
+      // Reset and Import hide the Maintenance panel while the forms reload. Focus then returns to
+      // the control that started the action; Import's Replace button is gone, so it lands on Choose backup.
+      {
+        const focusPage = await browserContext.newPage();
+        const counts = { notes: 0, drafts: 0, rejectedSuggestions: 0 };
+        let settingsGate: Promise<void> | null = null;
+        let releaseSettings = () => {};
+        await focusPage.route("**/api/long-term-memory/settings/reset", (route) => route.fulfill({ json: {} }));
+        await focusPage.route("**/api/long-term-memory/backup/preview", (route) =>
+          route.fulfill({ json: { incoming: counts, current: counts } }),
+        );
+        await focusPage.route("**/api/long-term-memory/backup/import", (route) => route.fulfill({ json: {} }));
+        await focusPage.route("**/api/long-term-memory/settings", async (route) => {
+          if (route.request().method() === "GET" && settingsGate) await settingsGate;
+          await route.continue();
+        });
+        await focusPage.goto(`http://127.0.0.1:${address.port}/`);
+        await focusPage.evaluate(() => customElements.whenDefined("marinara-capability-long-term-memory"));
+        await focusPage.evaluate(`(() => {
+          const element = document.createElement("marinara-capability-long-term-memory");
+          element.setAttribute("view", "detail");
+          element.capabilityProps = { confirmAction: () => true };
+          document.body.append(element);
+        })()`);
+        await focusPage.locator('[data-ltm-navigation="desktop"] [data-ltm-destination="settings"]').click();
+        await focusPage.locator("#settings-tab-maintenance").click();
+        const maintenancePanel = focusPage.locator("#settings-panel-maintenance");
+        const focusedControl = () =>
+          focusPage.evaluate(() =>
+            document.activeElement === document.body ? "body" : (document.activeElement?.textContent?.trim() ?? ""),
+          );
+        for (const action of ["reset", "import"] as const) {
+          settingsGate = new Promise<void>((resolve) => {
+            releaseSettings = () => resolve();
+          });
+          const settingsRefetch = focusPage.waitForRequest(
+            (request) => request.method() === "GET" && new URL(request.url()).pathname.endsWith("/settings"),
+          );
+          // Keyboard activation, so focus starts on the control.
+          if (action === "reset") {
+            await maintenancePanel.getByRole("button", { name: "Reset settings" }).press("Enter");
+          } else {
+            await maintenancePanel
+              .getByLabel("Choose backup", { exact: true })
+              .setInputFiles({ name: "backup.json", mimeType: "application/json", buffer: Buffer.from("{}") });
+            await maintenancePanel.getByRole("button", { name: "Replace with this backup" }).press("Enter");
+          }
+          await settingsRefetch;
+          await focusPage.waitForTimeout(300);
+          settingsGate = null;
+          releaseSettings();
+          await maintenancePanel
+            .getByText(action === "reset" ? "Memory settings reset to defaults." : "Memory backup imported.")
+            .waitFor({ timeout: 5000 });
+          await focusPage
+            .waitForFunction(() => document.activeElement !== document.body, undefined, { timeout: 2000 })
+            .catch(() => undefined);
+          assert.equal(
+            await focusedControl(),
+            action === "reset" ? "Reset settings" : "Choose backup",
+            `${action}: focus returns to the Maintenance panel after the settings reload`,
+          );
+        }
+        await focusPage.close();
       }
       await page.locator('[data-ltm-navigation="desktop"] [data-ltm-destination="vault"]').click();
       await page.evaluate((version) => {
@@ -4549,6 +4859,8 @@ async function main() {
         document.body.append(element);
       }, packageManifest.version);
       await page.locator('[data-ltm-surface="detail"]').waitFor();
+      // The pill shows "Loading status" until the status read returns; wait for the healthy reading.
+      await page.locator('[data-ltm-surface="vault-health-pill"]').waitFor({ state: "detached" });
       assert.equal(await page.locator('[data-ltm-surface="vault-health-pill"]').count(), 0);
       assert.equal(await page.locator('[data-ltm-surface="vault-health-warning"]').count(), 0);
       await page.locator('[data-ltm-control="navigation"][data-ltm-destination="review"]').first().click();
@@ -5017,10 +5329,40 @@ async function main() {
         ["world_second_mobile"],
         "Rollback must re-archive only the successfully restored active note",
       );
+      // Hold the undo again, and open one of its memories while it runs.
+      let releaseUndo: (() => void) | null = null;
+      const undoHeld = new Promise<void>((resolve) => {
+        releaseUndo = resolve;
+      });
+      await page.route(
+        "**/api/long-term-memory/notes/batch",
+        async (route) => {
+          await undoHeld;
+          await route.continue();
+        },
+        { times: 2 },
+      );
+      const batchCallsBeforeUndo = batchNotesCalls.length;
+      await undoButton.click();
+      await activeWorldCard.locator("button").first().click();
+      await page.waitForFunction(
+        () =>
+          document.querySelector<HTMLInputElement>("[data-ltm-field='title']")?.value === "Second mobile review memory",
+      );
+      releaseUndo?.();
+      // The undo still rolls back the partial restore, and Undo works again.
+      await page.locator("[data-ltm-vault-feedback] button:enabled", { hasText: "Undo" }).waitFor();
+      assert.equal(batchNotesCalls.length, batchCallsBeforeUndo + 3);
+      assert.deepEqual(batchNotesCalls.at(-1), { noteIds: ["world_second_mobile"], status: "archived" });
       batchNotesPartial = false;
 
       // 2. Complete restore sends restore batches grouped by prior status.
-      // Re-archive the two notes cleanly
+      // Re-archive the two notes cleanly, with one of them open
+      await activeWorldCard.locator("button").first().click();
+      await page.waitForFunction(
+        () =>
+          document.querySelector<HTMLInputElement>("[data-ltm-field='title']")?.value === "Second mobile review memory",
+      );
       await activeWorldCard.locator('input[type="checkbox"]').check();
       await resolvedWorldCard.locator('input[type="checkbox"]').check();
       await archiveBatch.getByRole("button", { name: "Archive" }).click();
@@ -5029,11 +5371,18 @@ async function main() {
         .getByText(/2 memories archived/u)
         .waitFor();
       const freshUndoButton = page.locator("[data-ltm-vault-feedback]").getByRole("button", { name: "Undo" });
+      // The undo reloads the open memory it restored, as the archive did.
+      await page.locator("[data-ltm-vault-feedback] button:enabled", { hasText: "Undo" }).waitFor();
+      const restoredNoteReload = page.waitForRequest(
+        (request) =>
+          request.method() === "GET" && request.url().endsWith("/long-term-memory/notes/world_second_mobile"),
+      );
       await freshUndoButton.click();
       await page
         .locator("[data-ltm-vault-feedback]")
         .getByText(/2 memories restored/u)
         .waitFor();
+      await restoredNoteReload;
       assert.equal(await page.locator("[data-ltm-vault-feedback]").getByRole("button", { name: "Undo" }).count(), 0);
       const restoreCalls = batchNotesCalls.slice(-2);
       const activeRestoreCall = restoreCalls.find((call) => call.status === "active");
@@ -5056,10 +5405,21 @@ async function main() {
         page.locator('[data-ltm-note-type="world"]').filter({ hasText: "Second mobile review memory" }),
         page.locator('[data-ltm-note-type="world"]').filter({ hasText: "Mobile recovery memory" }),
       ];
+      // Another memory is open when the deletion starts.
+      await page
+        .locator('[data-ltm-note-type="world"]')
+        .filter({ hasText: "Existing merge target" })
+        .locator("button")
+        .first()
+        .click();
       for (const card of deleteTargetCards) await card.locator('input[type="checkbox"]').check();
       const deleteMemorySearch = page.getByLabel("Search memories", { exact: true });
       await deleteMemorySearch.fill("no-delete-target-match");
-      assert.match(await page.locator("[data-ltm-selection-count]").innerText(), /2 selected, 2 hidden by filters/u);
+      // The list follows the search box a moment later, so wait for the count instead of reading it once.
+      await page
+        .locator("[data-ltm-selection-count]")
+        .filter({ hasText: /2 selected, 2 hidden by filters/u })
+        .waitFor();
       confirmDelete = false;
       lastDeleteConfirmation = null;
       await page.evaluate(() => {
@@ -5110,16 +5470,52 @@ async function main() {
           response.request().method() === "POST" &&
           response.url().endsWith("/api/long-term-memory/notes/permanent-delete"),
       );
+      // Hold the deletion, and open one of its memories while it runs.
+      let releaseDelete: (() => void) | null = null;
+      const deleteHeld = new Promise<void>((resolve) => {
+        releaseDelete = resolve;
+      });
+      await page.route(
+        "**/api/long-term-memory/notes/permanent-delete",
+        async (route) => {
+          await deleteHeld;
+          await route.continue();
+        },
+        { times: 1 },
+      );
+      const deleteRequest = page.waitForRequest(
+        (request) =>
+          request.method() === "POST" && request.url().endsWith("/api/long-term-memory/notes/permanent-delete"),
+      );
       await page.locator("[data-ltm-bulk-actions]").getByRole("button", { name: "Delete" }).click();
-      await deleteResponse;
-      assert.deepEqual(permanentDeleteCalls.at(-1), deleteTargetIds);
-
-      // A selection change while the delete-target lookup is still resolving must
-      // cancel the pending permanent delete instead of acting on the stale IDs.
+      await deleteRequest;
       await deleteMemorySearch.fill("");
+      await deleteTargetCards[0]!.waitFor({ state: "attached" });
       const worldNoteGroup = page.locator('[data-ltm-memory-group="world"]');
       if (!(await worldNoteGroup.evaluate((element) => (element as HTMLDetailsElement).open)))
         await worldNoteGroup.locator("summary").click();
+      await deleteTargetCards[1]!.locator("button").first().click();
+      await page.waitForFunction(
+        () => document.querySelector<HTMLInputElement>("[data-ltm-field='title']")?.value === "Mobile recovery memory",
+      );
+      const noteQueriesBeforeDelete = noteQueries.length;
+      releaseDelete?.();
+      await deleteResponse;
+      assert.deepEqual(permanentDeleteCalls.at(-1), deleteTargetIds);
+      // When the deletion finishes, the list reloads, the deleted memories leave the selection, and the deleted memory
+      // opened meanwhile closes with the notice that says why.
+      await deleteTargetCards[0]!.locator("[data-ltm-note-actions-desktop] button:enabled").first().waitFor();
+      assert.ok(noteQueries.length > noteQueriesBeforeDelete, "the memory list reloads after the deletion");
+      assert.equal(await deleteTargetCards[0]!.locator('input[type="checkbox"]').isChecked(), false);
+      assert.equal(await page.locator("[data-ltm-note-editor]").count(), 0);
+      assert.equal(
+        await page.locator("[data-ltm-vault-feedback]").getByText("2 memories deleted.").count(),
+        1,
+        "the notice says why the open memory closed",
+      );
+
+      // A selection change while the delete-target lookup is still resolving must
+      // cancel the pending permanent delete instead of acting on the stale IDs.
       for (const card of deleteTargetCards) await card.locator('input[type="checkbox"]').check();
       lastDeleteConfirmation = null;
       const beforeStaleDeleteCalls = permanentDeleteCalls.length;
@@ -6307,7 +6703,8 @@ async function main() {
         document.body.append(element);
       }, packageManifest.version);
       await firstRunPage.locator('[data-ltm-surface="detail"]').waitFor();
-      assert.equal(await firstRunPage.locator('[data-ltm-surface="onboarding"]').count(), 1);
+      // The guide reopens at its saved step once /status has loaded.
+      await firstRunPage.locator('[data-ltm-surface="onboarding"]').waitFor();
       await firstRunPage.getByRole("button", { name: "Show setup guide" }).click();
       await firstRunPage.locator('[data-ltm-surface="onboarding"]').waitFor();
       await firstRunContext.close();
