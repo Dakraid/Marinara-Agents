@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 1.4.76 — 2026-10-21
+
+- A few more unexpected failures no longer show their raw error text, which could include file paths. In Sources, a source that could not be saved or extracted now says "Failed to write imported source note." or "Failed to extract imported source.", followed by "Details are in the server log."; this includes the model provider rejecting the request during an import. In Review, a change that could not be checked says "Long-term memory preflight failed. Details are in the server log." An identity repair in settings whose backup could not be restored says so without the cause. The full error is written to the server log. Messages written for you, such as a model reply that was cut off, show as before.
+
 ## 1.4.75 — 2026-10-21
 
 - In the Memory Vault, opening another memory while an archive Undo, a save or a permanent delete is still running no longer leaves it half-finished: the buttons work again, the list reloads, an Undo that could only restore some memories archives them again, a memory reopened during its own save shows what was saved, and deleted memories leave the list and the selection, closing one you had opened with a message that says so. Escape no longer closes the Rename detail dialog while the rename is still running.
