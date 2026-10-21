@@ -1263,15 +1263,31 @@ function pickerShown(setup, draft) {
       .toLowerCase(),
     group = pickerGroups(setup).find((grp) => grp.id === draft.pickerGroup) ?? null,
     groupIds = group ? new Set(group.ids) : null,
+    tags = draft.pickerTags ?? [],
     matches = (card) =>
-      !query ||
-      [card.name, card.title ?? "", ...(card.tags ?? [])].some((text) => String(text).toLowerCase().includes(query));
+      (!query ||
+        [card.name, card.title ?? "", ...(card.tags ?? [])].some((text) =>
+          String(text).toLowerCase().includes(query),
+        )) &&
+      tags.every((tag) => (card.tags ?? []).includes(tag));
   return setup.cards.filter((card) => (!groupIds || groupIds.has(card.id)) && matches(card));
+}
+// Every library tag with its card count, most used first, so the filter bar leads with the useful ones.
+function pickerTags(setup) {
+  const counts = new Map();
+  for (const card of setup.cards) {
+    for (const tag of card.tags ?? []) {
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+  }
+  return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 }
 function pickerView({ resources: resources, draft: draft }) {
   const groups = pickerGroups(resources),
     group = groups.find((grp) => grp.id === draft.pickerGroup) ?? null,
     shown = pickerShown(resources, draft),
+    tags = pickerTags(resources),
+    chosenTags = draft.pickerTags ?? [],
     castCount = Object.values(draft.cast).filter((pick) => pick.on).length,
     groupButton = (id, label, count) =>
       `<button class="${(draft.pickerGroup ?? "") === id || (!group && !id) ? "on" : ""}" data-do="picker-group" data-id="${escape(id)}">${escape(label)}<small>${count}</small></button>`;
@@ -1285,6 +1301,7 @@ function pickerView({ resources: resources, draft: draft }) {
         </div>
         ${groups.length ? `<div class="mls-picker-groups">${groupButton("", "ALL", resources.cards.length)}${groups.map((grp) => groupButton(grp.id, grp.name, grp.ids.filter((id) => resources.cards.some((card) => card.id === id)).length)).join("")}</div>` : ""}
         <input type="text" data-do="picker-search" placeholder="Search your cards\u2026" value="${escape(draft.pickerQuery ?? "")}">
+        ${tags.length ? `<div class="mls-picker-groups mls-picker-tags" aria-label="Filter by tag">${tags.map(([tag, count]) => `<button class="${chosenTags.includes(tag) ? "on" : ""}" data-do="picker-tag" data-id="${escape(tag)}" aria-pressed="${chosenTags.includes(tag)}">${escape(tag)}<small>${count}</small></button>`).join("")}</div>` : ""}
         <div class="list">${pickerList({
           resources: resources,
           draft: draft,
@@ -1301,13 +1318,23 @@ function pickerList({ resources: resources, draft: draft, shown: shown }) {
           (card) => `
     <label class="pick ${draft.cast[card.id]?.on ? "on" : ""} ${full && !draft.cast[card.id]?.on ? "full" : ""}" ${full && !draft.cast[card.id]?.on ? `title="A life has room for ${castCap(resources)} people"` : ""}>
       <input type="checkbox" data-do="cast-on" data-id="${card.id}" ${draft.cast[card.id]?.on ? "checked" : ""} ${full && !draft.cast[card.id]?.on ? "disabled" : ""}>
-      <span class="face">${card.avatar ? `<img src="${escape(card.avatar)}" alt="" loading="lazy">` : escape((card.name[0] ?? "?").toUpperCase())}</span>
-      <span class="nm"><b>${escape(card.name)}</b>${cardSub(card, resources.cards) ? `<small>${escape(cardSub(card, resources.cards))}</small>` : ""}</span>
+      <span class="face">${card.avatar ? `<img src="${escape(card.avatar)}" alt="" loading="lazy">` : escape((card.name[0] ?? "?").toUpperCase())}${card.favorite ? '<i class="fav" title="Favorite">★</i>' : ""}</span>
+      <span class="nm"><b>${escape(card.name)}</b>${cardSub(card, resources.cards) ? `<small class="title">${escape(cardSub(card, resources.cards))}</small>` : ""}${cardMeta(card) ? `<small>${escape(cardMeta(card))}</small>` : ""}${
+        card.tags?.length
+          ? `<span class="tags">${card.tags
+              .slice(0, 3)
+              .map((tag) => `<span>${escape(tag)}</span>`)
+              .join("")}${card.tags.length > 3 ? `<span>+${card.tags.length - 3}</span>` : ""}</span>`
+          : ""
+      }</span>
     </label>`,
         )
         .join("")
     : '<div class="muted">No card matches that.</div>';
 }
+// The library list's metadata line: "by <creator>, v<version>".
+const cardMeta = (card) =>
+  [card.creator ? `by ${card.creator}` : "", card.version ? `v${card.version}` : ""].filter(Boolean).join(", ");
 function cardSub(card, cards = []) {
   if (card.title) {
     return card.title;
