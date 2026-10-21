@@ -37,7 +37,7 @@ import {
   SlurpCreatorArcConfig,
   SlurpResolvedArcConfig,
 } from "../../modules/projects/slp-arc-library.js";
-import { isSlurpCrossover } from "../../modules/projects/slp-project.js";
+import { isSlurpCrossover, type SlurpArcType } from "../../modules/projects/slp-project.js";
 import {
   slurpCrossoverLeave,
   slurpCrossoverStart,
@@ -424,10 +424,25 @@ export function createProjectsStorage1(context: SlurpStorageContext) {
       // A new chapter, or a storyline that just started (created active or accepted): the first
       // chapter's mood applied to nobody before (R1-071).
       const started = after.status === "active" && before.status !== "active";
-      const mood =
-        (after.chapter !== before.chapter || started) && after.status !== "complete"
-          ? slurpArcChapterMood(after, (await this.getSettings()).arcAffectsMood)
-          : null;
+      const entered = (after.chapter !== before.chapter || started) && after.status !== "complete";
+      const settings = entered ? await this.getSettings() : null;
+      const mood = settings ? slurpArcChapterMood(after, settings.arcAffectsMood) : null;
+      // The chapter's outcomes from its arc type: a condition (a bump, a new flat) or a tag it leaves.
+      // Found by label, as a fans' choice inserts branch chapters (which carry none) and shifts the
+      // index; applied on entering a chapter, never again on a resume, so a removed condition stays removed.
+      const type = settings?.arcLibrary.find((entry: SlurpArcType) => entry.id === after.typeId);
+      const outcomes =
+        type?.chapters.find(
+          (chapter: SlurpArcType["chapters"][number]) => chapter.label === after.chapters[after.chapter],
+        )?.outcomes ?? [];
+      if (outcomes.length && (after.chapter !== before.chapter || before.status !== "paused"))
+        await this.applyStoryOutcomes({
+          outcomes,
+          participants: isSlurpCrossover(after) ? after.creatorIds : [creatorAccountId],
+          sourceKind: "arc",
+          sourceId: `${after.id}:${after.chapter}`,
+          at: new Date(),
+        });
       // A crossover moves every participant: mood and events reach each of them.
       for (const id of isSlurpCrossover(after) ? after.creatorIds : [creatorAccountId]) {
         if (mood) await mutateCreatorStateNow(id, (state) => addSlurpModifier(state, mood, after.title));

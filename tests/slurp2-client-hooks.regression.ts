@@ -441,6 +441,7 @@ const addedCalls = [
   "get /slurp2/slurp/wardrobe/lorebooks",
   "get /slurp2/story/calendar?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}",
   "get /slurp2/story/timeline",
+  "delete /slurp2/story/facts/${encodeURIComponent(factId)}",
   "patch /slurp2/messages/threads/${encodeURIComponent(threadId!)}/details",
   "patch /slurp2/slurp/accounts/${encodeURIComponent(id)}/steering",
   "patch /slurp2/slurp/ads/brands/${encodeURIComponent(id)}",
@@ -562,14 +563,15 @@ assert.deepEqual(
   {
     // 0.3.27 "Suggest page style": one mutation, its two error states, and the strategy save now
     // refreshes the list when settled (a refused apply also means the list is stale).
-    useMutation: 220,
+    useMutation: 223,
     // 0.3.28: +2 (the import and the one query of SlpMessageDeepDetails). 0.3.42: +1 (carryover reach).
     // 0.3.44: +2 (the import and the trends row query).
-    useQuery: 294,
+    useQuery: 298,
     useInfiniteQuery: 9,
     // 0.3.35: +2 (adding a Creator refreshes the settings, which now hold the image name choice).
     // Configurator: +1 (an extension switch drops the cached feed, trend and Stir reads).
-    invalidateQueries: 154,
+    // Life panel: +3 useMutation, +4 useQuery, +1 invalidateQueries, +3 onError.
+    invalidateQueries: 155,
     setQueryData: 27,
     cancelQueries: 7,
     removeQueries: 1,
@@ -577,7 +579,7 @@ assert.deepEqual(
     onMutate: 2,
     // SlpConnectionsPanel.tsx moved into the SlurpBackstagePrompts component mapping, so its one
     // onError no longer counts as state-layer code. +1: SlpDeskQuickReplies (R2) toasts a failed save.
-    onError: 95,
+    onError: 98,
     onSettled: 40,
   },
   "query and mutation wiring counts match the monolith plus the later Slurp2 hooks",

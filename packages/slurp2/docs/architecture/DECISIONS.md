@@ -745,3 +745,12 @@ modules, rejected alternative, and migration consequence.
 - **Migration consequence:** reading version v3: every card is read once more. An entry the player
   edited before 0.3.26 has no base reading, so it is kept as it is on that first reading and merges
   normally afterwards.
+
+## Story state is its own feature (2026-10-21)
+
+- **Decision:** `features/storylines/` owns what is true about a Creator right now (`docs/STORYLINES.md`,
+  "State"): the per-post loader, the condition look for pictures and the Life panel routes. Feed, messages
+  and media reach it through `slp-storylines-contract.ts`. The pure reader lives in `modules/storylines/`.
+  The loader returns an empty state when the Storylines extension is off, so every reader is gated in one place.
+- **Rejected alternatives:** keeping it in `features/world` (the living world is a different extension and
+  can be off while Storylines is on); a gate at every call site.

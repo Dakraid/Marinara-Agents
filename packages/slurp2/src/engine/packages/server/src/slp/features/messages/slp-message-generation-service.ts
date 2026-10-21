@@ -16,6 +16,7 @@ import { slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js"
 import { isDebugAgentsEnabled } from "../../../config/runtime-config.js";
 import { resolveSlurpCreatorMenu } from "../../data/settings/slp-post-guidance-storage.js";
 import { resolveSlurpEventInstruction } from "../world/slp-world-contract.js";
+import { loadSlurpStoryState } from "../storylines/slp-storylines-contract.js";
 import { logDebugOverride } from "../../../lib/logger.js";
 import { resolveBaseUrl } from "../../../services/generation/connection-base-url.js";
 import { clampGenerationMaxOutputTokens } from "../../../services/generation/output-token-limits.js";
@@ -147,6 +148,7 @@ export function buildSlurpMessageChat(input: {
   continuityInstruction?: string;
   threadState?: SlurpThreadState;
   creatorState?: SlurpCreatorState;
+  rightNow?: readonly string[];
   characterCanon?: string;
   loreContext?: string; // lorebook entries matching the recent chat; "" when off or no match
   /** The flavour brief (see `slp-creator-flavour.ts`); replaces the card dump when present. */
@@ -307,7 +309,7 @@ export function buildSlurpMessageChat(input: {
         kind: "context" as const,
         optional: true,
         text: input.creatorState
-          ? "The Creator state describes current feeling, energy, sexual attention, public exposure, and intent. happeningNow lists things that are true of the Creator right now and will not be true tomorrow; let them colour the reply without becoming its subject. Let it shape behavior without replacing the supplied personality. Arousal is not permission. A sales intent is not personal intimacy. A high value never overrides a boundary, cool-off, privacy rule, or the relationship state."
+          ? "The Creator state describes current feeling, energy, sexual attention, public exposure, and intent. happeningNow lists things that are true of the Creator right now; the first ones may last for weeks, the rest will not be true tomorrow. Let them colour the reply without becoming its subject, and never contradict them. Let it shape behavior without replacing the supplied personality. Arousal is not permission. A sales intent is not personal intimacy. A high value never overrides a boundary, cool-off, privacy rule, or the relationship state."
           : "",
       },
       {
@@ -412,7 +414,7 @@ export function buildSlurpMessageChat(input: {
             intent: input.creatorState.intent,
             // Short-lived things that are true right now. They are already phrased, because the
             // model reads them as sentences rather than as another set of values to weigh.
-            happeningNow: slurpModifierLines(input.creatorState),
+            happeningNow: [...(input.rightNow ?? []).map(protect), ...slurpModifierLines(input.creatorState)],
           },
         }
       : {}),
@@ -475,14 +477,11 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
   const slurp = createSlurpStorage(input.db);
   const disclosureMode = input.creator.settings.privacy.identityDisclosure ?? "open";
   const publicIdentity = await resolveNoodlerPublicIdentity(input.db, input.creator);
-  const details = input.threadId ? await createSlurpMessagesStorage(input.db).getDetailsOverrides(input.threadId) : {};
+  const threads = createSlurpMessagesStorage(input.db);
+  const details = input.threadId ? await threads.getDetailsOverrides(input.threadId) : {};
   // Who wrote first, and whether the one writing runs a Creator page of their own: the role
   // header needs both. Only an open page is named, so a concealed page is never linked to its owner.
-  const thread = input.threadId
-    ? await createSlurpMessagesStorage(input.db)
-        .getThreadById(input.threadId)
-        .catch(() => null)
-    : null;
+  const thread = input.threadId ? await threads.getThreadById(input.threadId).catch(() => null) : null;
   const viewerPageAccount =
     input.viewer.kind === "random_user"
       ? null
@@ -616,6 +615,7 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
           .then((pricing) => slurpCommissionPriceRange(pricing))
           .catch(() => undefined),
     platformEvents: await resolveSlurpEventInstruction(input.db, input.creator.id, new Date()),
+    rightNow: (await loadSlurpStoryState(input.db, input.creator.id, new Date())).state.lines,
     imageContexts,
     openedBy: thread?.openedBy ?? null,
     requestFee: thread?.requestFeePaid ?? 0,

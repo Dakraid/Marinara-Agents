@@ -63,4 +63,5 @@ export { SlpCreatorSteeringCard } from "./SlpCreatorSteeringCard";
 // The guided post offers the page's saved ideas and wardrobe looks as things to add.
 export { useSlurpCreatorSteering, useSlurpCreatorSteeringMutations } from "./slp-steering-hooks";
 export { useSlurpWardrobe } from "./slp-wardrobe-hooks";
+export { SlpCreatorLifeCard } from "./SlpCreatorLifeCard";
 export { openSlpCreatorSettings } from "./settings/slp-creator-settings-store";
