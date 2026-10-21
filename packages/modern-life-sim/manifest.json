@@ -10,7 +10,7 @@
   },
   "id": "modern-life-sim",
   "name": "Modern Life Sim",
-  "version": "10.0.2",
+  "version": "10.0.3",
   "description": "A modern life sim in its own Home tab: a town on a clock, a job, rent and needs, and a cast drawn from your character cards whose relationships grow scene by scene, with a visual-novel narrator for the scenes that matter. Install it, restart Marinara Engine when prompted, then open Home → Life Sim.",
   "engine": {
     "min": "2.4.4",
@@ -44,8 +44,8 @@
     },
     {
       "path": "client.js",
-      "sha256": "eeb8669759396e4ff4fd6a5046a5f976b4f58467747823b9421e6a662a68148a",
-      "bytes": 1068859
+      "sha256": "352fdf756b1f00476f2947c6f26810b964b0d25edd5003527758a29207d046af",
+      "bytes": 1070390
     },
     {
       "path": "server.mjs",

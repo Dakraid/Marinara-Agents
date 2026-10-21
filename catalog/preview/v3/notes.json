@@ -4,6 +4,12 @@
     "modern-life-sim": {
       "versions": [
         {
+          "version": "10.0.3",
+          "date": "2026-10-21",
+          "notes": "- The ADD CHARACTERS picker is visible again on phones. The new tag bar stretched the dialog past the screen edge, leaving only the darkened backdrop.\n- Its search understands the character library's query syntax (`name:`, `tag:`, `-tag:`, `\"phrases\"`, `typo~`) and says when a search is not valid.",
+          "highlight": false
+        },
+        {
           "version": "10.0.2",
           "date": "2026-10-21",
           "notes": "- The ADD CHARACTERS picker filters by tag: tap tags to show only cards carrying all of them.\n- Picker rows show what the character library shows: the variant note, creator and version, a favorite star and the first tags.",

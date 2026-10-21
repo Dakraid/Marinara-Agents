@@ -1264,11 +1264,15 @@ function pickerShown(setup, draft) {
     group = pickerGroups(setup).find((grp) => grp.id === draft.pickerGroup) ?? null,
     groupIds = group ? new Set(group.ids) : null,
     tags = draft.pickerTags ?? [],
+    // The Engine's query-language answer once it has one; plain text matching until then.
+    libraryIds = query && draft.pickerMatch?.ids ? draft.pickerMatch.ids : null,
     matches = (card) =>
       (!query ||
-        [card.name, card.title ?? "", ...(card.tags ?? [])].some((text) =>
-          String(text).toLowerCase().includes(query),
-        )) &&
+        (libraryIds
+          ? libraryIds.has(card.id)
+          : [card.name, card.title ?? "", ...(card.tags ?? [])].some((text) =>
+              String(text).toLowerCase().includes(query),
+            ))) &&
       tags.every((tag) => (card.tags ?? []).includes(tag));
   return setup.cards.filter((card) => (!groupIds || groupIds.has(card.id)) && matches(card));
 }
@@ -1300,7 +1304,7 @@ function pickerView({ resources: resources, draft: draft }) {
           <button class="mls-done" data-do="picker-close">DONE</button>
         </div>
         ${groups.length ? `<div class="mls-picker-groups">${groupButton("", "ALL", resources.cards.length)}${groups.map((grp) => groupButton(grp.id, grp.name, grp.ids.filter((id) => resources.cards.some((card) => card.id === id)).length)).join("")}</div>` : ""}
-        <input type="text" data-do="picker-search" placeholder="Search your cards\u2026" value="${escape(draft.pickerQuery ?? "")}">
+        <input type="text" data-do="picker-search" placeholder="Search \u00b7 name: tag: -tag: &quot;phrase&quot;" value="${escape(draft.pickerQuery ?? "")}">
         ${tags.length ? `<div class="mls-picker-groups mls-picker-tags" aria-label="Filter by tag">${tags.map(([tag, count]) => `<button class="${chosenTags.includes(tag) ? "on" : ""}" data-do="picker-tag" data-id="${escape(tag)}" aria-pressed="${chosenTags.includes(tag)}">${escape(tag)}<small>${count}</small></button>`).join("")}</div>` : ""}
         <div class="list">${pickerList({
           resources: resources,
@@ -1312,10 +1316,16 @@ function pickerView({ resources: resources, draft: draft }) {
 }
 function pickerList({ resources: resources, draft: draft, shown: shown }) {
   const full = Object.values(draft.cast).filter((pick) => pick.on).length >= castCap(resources);
-  return shown.length
-    ? shown
-        .map(
-          (card) => `
+  const queryError =
+    draft.pickerQuery?.trim() && draft.pickerMatch?.error
+      ? `<div class="muted mls-picker-error" role="alert">Invalid search: ${escape(draft.pickerMatch.error)}</div>`
+      : "";
+  return (
+    queryError +
+    (shown.length
+      ? shown
+          .map(
+            (card) => `
     <label class="pick ${draft.cast[card.id]?.on ? "on" : ""} ${full && !draft.cast[card.id]?.on ? "full" : ""}" ${full && !draft.cast[card.id]?.on ? `title="A life has room for ${castCap(resources)} people"` : ""}>
       <input type="checkbox" data-do="cast-on" data-id="${card.id}" ${draft.cast[card.id]?.on ? "checked" : ""} ${full && !draft.cast[card.id]?.on ? "disabled" : ""}>
       <span class="face">${card.avatar ? `<img src="${escape(card.avatar)}" alt="" loading="lazy">` : escape((card.name[0] ?? "?").toUpperCase())}${card.favorite ? '<i class="fav" title="Favorite">★</i>' : ""}</span>
@@ -1328,9 +1338,10 @@ function pickerList({ resources: resources, draft: draft, shown: shown }) {
           : ""
       }</span>
     </label>`,
-        )
-        .join("")
-    : '<div class="muted">No card matches that.</div>';
+          )
+          .join("")
+      : '<div class="muted">No card matches that.</div>')
+  );
 }
 // The library list's metadata line: "by <creator>, v<version>".
 const cardMeta = (card) =>

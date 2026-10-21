@@ -1,3 +1,8 @@
+## 10.0.3 — 2026-10-21
+
+- The ADD CHARACTERS picker is visible again on phones. The new tag bar stretched the dialog past the screen edge, leaving only the darkened backdrop.
+- Its search understands the character library's query syntax (`name:`, `tag:`, `-tag:`, `"phrases"`, `typo~`) and says when a search is not valid.
+
 ## 10.0.2 — 2026-10-21
 
 - The ADD CHARACTERS picker filters by tag: tap tags to show only cards carrying all of them.
