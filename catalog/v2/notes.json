@@ -758,7 +758,7 @@
         {
           "version": "0.3.55",
           "date": "2026-10-21",
-          "notes": "- Dramas and situations run on storylines: the drama library converts on load, runs keep their ids.\n  A start's `requires` and `lacks` and a stage's `when` ways read the lead's story tags; the ending\n  reached applies its ties and sends its beat.",
+          "notes": "- Dramas and situations run on storylines: the drama library converts on load, runs keep their ids.\n  A start's `requires` and `lacks` and a stage's `when` ways read the lead's story tags; the ending\n  reached applies its ties and sends its beat. A Story Pack whose drama or situation does not convert\n  (a loop, a stage nobody reaches) is refused on import with the reason.",
           "highlight": false
         },
         {
