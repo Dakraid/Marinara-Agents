@@ -1310,6 +1310,7 @@ const STYLES = `@font-face { font-family: "Anton"; font-style: normal; font-weig
 .mls-picker-tags button { letter-spacing: 0; }
 .mls-member .who small.title { display: block; font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0; text-transform: none; }
 
+.mls-picker .list .mls-picker-error { grid-column: 1 / -1; color: var(--red); font-weight: 700; }
 .mls-picker-groups { flex: none; display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
 .mls-picker-groups button { flex: none; display: inline-flex; align-items: baseline; gap: 6px; background: #2b2b30; color: var(--paper); border: 0; padding: 5px 10px; font-weight: 900; font-size: 11px; letter-spacing: 1px; cursor: pointer; }
 .mls-picker-groups button small { font-size: 10px; color: var(--muted); font-weight: 700; }

@@ -124,7 +124,7 @@ import {
   setMotionMode,
   systemWantsLess,
 } from "./motion.js";
-import { S, cancelRunning, notify, playStart, playStop, playTouched } from "./state.js";
+import { S, cancelRunning, notify, playStart, playStop, playTouched, searchLibraryIds } from "./state.js";
 import {
   acceptWelcome,
   approachScene,
@@ -3216,6 +3216,7 @@ ${life?.name ?? id}`);
     } else if (action === "picker-search") {
       draft.pickerQuery = target.value;
       this.renderPickerList();
+      this.searchPicker(draft);
       return;
     } else if (action === "town-name") {
       draft.townName = target.value;
@@ -3670,6 +3671,29 @@ ${life?.name ?? id}`);
     if (indexCount) {
       indexCount.textContent = String(onCount);
     }
+  }
+  // Ask the Engine which cards match the query; until it answers (or if it cannot), the local filter shows.
+  searchPicker(draft) {
+    clearTimeout(this._pickerSearchTimer);
+    const query = String(draft.pickerQuery ?? "").trim();
+    if (!query) {
+      draft.pickerMatch = null;
+      return;
+    }
+    this._pickerSearchTimer = setTimeout(async () => {
+      let answer;
+      try {
+        answer = await searchLibraryIds(query);
+      } catch {
+        return;
+      }
+      if (String(draft.pickerQuery ?? "").trim() !== query) return;
+      // A half-typed query keeps the last matches and says what is wrong.
+      draft.pickerMatch = answer.error
+        ? { query: draft.pickerMatch?.query ?? "", ids: draft.pickerMatch?.ids ?? null, error: answer.error }
+        : { query, ids: answer.ids, error: "" };
+      this.renderPickerList();
+    }, 200);
   }
   renderPickerList() {
     const list = this._overlay?.querySelector(".mls-picker .list");

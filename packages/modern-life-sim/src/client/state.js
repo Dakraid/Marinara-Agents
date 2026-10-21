@@ -129,6 +129,23 @@ function adminHeaders() {
     return {};
   }
 }
+// The Engine library search speaks the character query language (name:, tag:, -tag:, "phrases", typo~ …).
+// Answers the matching card ids, or the Engine's message for a query that is not valid syntax.
+// ponytail: one page of 1000 matches; page on hasMore if a search ever needs more.
+async function searchLibraryIds(query) {
+  const res = await fetch(`/api/characters/catalog?limit=1000&search=${encodeURIComponent(query)}`, {
+    headers: { accept: "application/json", ...adminHeaders() },
+    credentials: "same-origin",
+  });
+  const body = await res.json().catch(() => null);
+  if (res.ok) {
+    return { ids: new Set((body?.items ?? []).map((card) => card?.id).filter(Boolean)) };
+  }
+  if (body?.code === "query_syntax") {
+    return { error: String(body.error ?? "invalid search") };
+  }
+  throw new Error(String(body?.error ?? res.statusText));
+}
 const openOnServer = (path) =>
   call(`${path}/open`, {
     method: "POST",
@@ -340,4 +357,5 @@ export {
   playStart,
   playStop,
   playTouched,
+  searchLibraryIds,
 };

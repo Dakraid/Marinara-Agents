@@ -35,6 +35,20 @@ assert.deepEqual(ids({}), ["a", "b", "c"], "no tag chosen shows every card");
 assert.deepEqual(ids({ pickerTags: ["noble"] }), ["a", "b"], "one tag keeps its cards");
 assert.deepEqual(ids({ pickerTags: ["noble", "mage"] }), ["a"], "several tags must all match");
 assert.deepEqual(ids({ pickerTags: ["noble"], pickerQuery: "ben" }), ["b"], "tags combine with the search");
+// The Engine's query-language answer replaces the local text match; tag chips still narrow it.
+const libraryMatch = { query: "tag:noble -name:ana", ids: new Set(["b"]), error: "" };
+assert.deepEqual(ids({ pickerQuery: "tag:noble -name:ana", pickerMatch: libraryMatch }), ["b"]);
+assert.deepEqual(
+  ids({ pickerQuery: "x", pickerMatch: { ...libraryMatch, ids: null } }),
+  [],
+  "no answer yet: text match",
+);
+const invalid = pickerList({
+  resources,
+  draft: { ...draft, pickerQuery: "tag:(", pickerMatch: { ...libraryMatch, error: "Expected a value" } },
+  shown: [],
+});
+assert.match(invalid, /role="alert">Invalid search: Expected a value/, "a syntax error says what is wrong");
 
 const view = pickerView({ resources, draft: { ...draft, pickerTags: ["noble"] } });
 assert.match(
