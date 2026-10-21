@@ -82,6 +82,7 @@ export async function generateCreatorArtwork(
     };
     const image = await generateCreatorPostImage({
       account,
+      skipCondition: true,
       linkedPublicAccount,
       disclosureMode,
       postContent: options.creatorDetails ? account.bio : "",
@@ -198,6 +199,7 @@ async function backfillCreatorArtwork(
 
     const image = await generateCreatorPostImage({
       account,
+      skipCondition: true,
       linkedPublicAccount,
       disclosureMode,
       postContent: account.bio,

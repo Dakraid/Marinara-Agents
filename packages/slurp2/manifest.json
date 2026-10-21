@@ -77,13 +77,13 @@
     },
     {
       "path": "server.mjs",
-      "sha256": "f14bc513882b8b0dfb3303adbc00cc818e697c6080964ac1aa8a6ba83a69058d",
-      "bytes": 1941125
+      "sha256": "65a51586b9406e907f1c3faff65ac0b1b61af07bb79c210c522f8f3ae3e144e5",
+      "bytes": 1947966
     },
     {
       "path": "client.js",
-      "sha256": "12fe346a616511eb37e057a9cac963f6604d20703ad6218f3dc35ab108fb863d",
-      "bytes": 2818223
+      "sha256": "a0a1c092b24e03239704ece11d76450b1ba36a1863b541fe2623e9917144549f",
+      "bytes": 2827881
     },
     {
       "path": "slurp2-logo.png",
@@ -97,18 +97,18 @@
     },
     {
       "path": "src/engine/packages/client/src/slp/locales/de.json",
-      "sha256": "ac77f02c53b8b4b6010c34cd269a78cb1f98af9f6d0e3f38feca35dffdebcc4c",
-      "bytes": 228179
+      "sha256": "ba5fb62a184d4aabeeedee4a9e126fbef330f1a164278b8ae6d4ce77660b94f6",
+      "bytes": 230395
     },
     {
       "path": "src/engine/packages/client/src/slp/locales/ko.json",
-      "sha256": "d5d8e8ec4a25ecd40e89573649b2c029c1c95b791e6a15f05f32408e783cccba",
-      "bytes": 325028
+      "sha256": "36ca8379e66ee98706b0c07cb940feff9cceb19485050f0af50c9425e19aa46c",
+      "bytes": 327305
     },
     {
       "path": "src/engine/packages/client/src/slp/locales/pl.json",
-      "sha256": "c5da977a0171af3770ebca193b27026533c5316bb57fd3201ec98b6dbe427cf0",
-      "bytes": 229763
+      "sha256": "baba1d1ac501ac3e86f3aee79b71551cc425a1ef312aa4f1296bba06bea38b9f",
+      "bytes": 231995
     }
   ],
   "permissions": [

@@ -207,7 +207,10 @@ export async function generateSlurpArc(
           .map((item) => `- Themes: ${item.storyTags.join(", ")}`),
         ...(await slurp.listStoryFacts().catch(() => []))
           .filter(
-            (fact) => fact.creatorId === creator.id && (!fact.expiresAt || Date.parse(fact.expiresAt) > Date.now()),
+            (fact) =>
+              fact.creatorId === creator.id &&
+              !fact.track &&
+              (!fact.expiresAt || Date.parse(fact.expiresAt) > Date.now()),
           )
           .map((fact) => `- Fact: ${fact.label}`),
       ].slice(0, 10),
