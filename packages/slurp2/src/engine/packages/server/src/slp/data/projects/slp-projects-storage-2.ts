@@ -89,6 +89,7 @@ export function createProjectsStorage2(context: SlurpStorageContext) {
       const projects = await this.listProjects(creatorAccountId);
       const { pace } = await this.resolveArcConfig(creatorAccountId);
       const ticked: SlurpProject[] = [];
+      let tags: ReadonlySet<string> | undefined;
       for (const project of projects) {
         // A crossover ticks once, in the list that stores it.
         if (isSlurpCrossover(project) && project.creatorIds[0] !== creatorAccountId) {
@@ -99,7 +100,7 @@ export function createProjectsStorage2(context: SlurpStorageContext) {
           ticked.push(slurpProjectChoose(project, at, await this.projectPollVotes(project)) ?? project);
           continue;
         }
-        const next = slurpProjectTick(project, at, pace);
+        const next = slurpProjectTick(project, at, pace, (tags ??= await this.storyTags(creatorAccountId, at)));
         ticked.push(next === project ? project : slurpProjectRecord(project, next, at));
       }
       const moved = ticked.filter((project, index) => project !== projects[index]);

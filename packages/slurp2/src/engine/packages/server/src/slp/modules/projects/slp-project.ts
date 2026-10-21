@@ -22,7 +22,10 @@
  */
 
 import { z } from "zod";
-import type { SlpArcBlueprint } from "../../../../../shared/src/slp/slp-story-engine.js";
+import { slpArcBlueprintSchema, type SlpArcBlueprint } from "../../../../../shared/src/slp/slp-story-engine.js";
+import { slpStorylineObjectSchema, type SlpStoryline } from "../../../../../shared/src/slp/slp-storyline.js";
+import { slpStorylineDraftFromArc } from "../../../../../shared/src/slp/slp-storyline-v1.js";
+import { slurpProjectSync } from "./slp-project-storyline.js";
 
 import { SLURP_MODIFIER_KINDS, type SlurpModifierKind } from "../creators/slp-creator-state.js";
 
@@ -274,6 +277,14 @@ export type SlurpProject = {
     string,
     { pendingProfile: SlurpArcPendingProfile | null; previousProfile: SlurpArcProfileChange | null }
   >;
+  /** The run's own storyline (docs/STORYLINES.md, PR 3); the chapter fields are its view. Null when open-ended. */
+  storyline?: SlpStoryline | null;
+  /** The stage the run is on. */
+  stage?: string | null;
+  /** The way each stage went when the run left it: a choice's winner, a `when` edge, a Director move. */
+  taken?: Record<string, string>;
+  /** The ending reached; null when the arc ran out of time or the player ended it. */
+  ending?: string | null;
   /** Read-only view field: the other participants' public display names. Never stored. */
   partnerNames?: string[];
 };
@@ -440,7 +451,7 @@ export function readSlurpProject(value: unknown): SlurpProject | null {
       endedAt: completedAt,
       postIds: [],
     });
-  return {
+  return slurpProjectSync({
     id,
     title,
     direction: clampText(raw.direction, SLURP_PROJECT_DIRECTION_MAX_LENGTH),
@@ -498,6 +509,26 @@ export function readSlurpProject(value: unknown): SlurpProject | null {
         ),
       };
     })(),
+    ...readProjectRun(raw),
+  });
+}
+
+/** The stored storyline, stage and ways taken; anything unusable is left for `slurpProjectSync` to rebuild. */
+function readProjectRun(raw: Record<string, unknown>) {
+  const storyline = slpStorylineObjectSchema.safeParse(raw.storyline);
+  const taken =
+    raw.taken && typeof raw.taken === "object" && !Array.isArray(raw.taken)
+      ? Object.fromEntries(
+          Object.entries(raw.taken as Record<string, unknown>).filter(
+            (entry): entry is [string, string] => typeof entry[1] === "string",
+          ),
+        )
+      : {};
+  return {
+    ...(storyline.success ? { storyline: storyline.data } : {}),
+    stage: typeof raw.stage === "string" ? raw.stage : null,
+    taken,
+    ending: typeof raw.ending === "string" ? raw.ending : null,
   };
 }
 
@@ -626,6 +657,7 @@ export function makeSlurpProject(
 ): SlurpProject | null {
   const timestamp = at.toISOString();
   const type = input.type ?? null;
+  const blueprint = type ? slpArcBlueprintSchema.safeParse(type) : null;
   const chapters = input.chapters?.length ? input.chapters : (type?.chapters.map((chapter) => chapter.label) ?? []);
   const matches = chapters.map((label) => type?.chapters.find((chapter) => chapter.label === label.trim()));
   const phaseDays = matches.map((match) => (match ? { min: match.minDays, max: match.maxDays } : null));
@@ -655,6 +687,8 @@ export function makeSlurpProject(
     durationDays: chapters.length || !type ? null : (input.durationDays ?? type.durationDays),
     intensity: input.intensity ?? "background",
     origin: input.origin ?? "manual",
+    // The type's stages carry its outcomes and conditions; the chapter fields above decide which run.
+    ...(blueprint?.success ? { storyline: slpStorylineDraftFromArc(blueprint.data) } : {}),
   });
 }
 

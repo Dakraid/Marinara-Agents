@@ -37,7 +37,9 @@ import {
   SlurpCreatorArcConfig,
   SlurpResolvedArcConfig,
 } from "../../modules/projects/slp-arc-library.js";
-import { isSlurpCrossover, type SlurpArcType } from "../../modules/projects/slp-project.js";
+import { isSlurpCrossover } from "../../modules/projects/slp-project.js";
+import { slurpProjectSync, slurpStageOutcomes } from "../../modules/projects/slp-project-storyline.js";
+import { slurpStoryState } from "../../modules/storylines/slp-story-state.js";
 import {
   slurpCrossoverLeave,
   slurpCrossoverStart,
@@ -281,7 +283,7 @@ export function createProjectsStorage1(context: SlurpStorageContext) {
           : current.intensity,
         updatedAt,
       };
-      const next = slurpProjectRecord(current, edited, new Date(updatedAt));
+      const next = slurpProjectRecord(current, slurpProjectSync(edited), new Date(updatedAt));
       const saved = next.intensity === "focus" ? slurpArcsWithoutFocus(projects) : projects;
       saved[index] = next;
       await writeProjects(creatorAccountId, saved);
@@ -336,7 +338,7 @@ export function createProjectsStorage1(context: SlurpStorageContext) {
       const { pace } = await this.resolveArcConfig(creatorAccountId);
       const next = slurpProjectRecord(
         current,
-        { ...slurpProjectAdvance(current, at, pace, poll), twist: "" },
+        { ...slurpProjectAdvance(current, at, pace, poll, await this.storyTags(creatorAccountId, at)), twist: "" },
         at,
         postId,
         creatorAccountId,
@@ -368,6 +370,10 @@ export function createProjectsStorage1(context: SlurpStorageContext) {
       await writeProjects(creatorAccountId, projects);
       await this.recordArcChange(creatorAccountId, current, next);
       return next;
+    },
+    /** The Creator's story tags, for a stage's `when` ways out. */
+    async storyTags(creatorAccountId: string, at = new Date()): Promise<ReadonlySet<string>> {
+      return new Set(slurpStoryState({ facts: await this.listStoryFacts(), creatorId: creatorAccountId, at }).tags);
     },
     /**
      * The running arcs' multiplier for one stat, under `arcStatEffects`, times the platform events
@@ -423,29 +429,28 @@ export function createProjectsStorage1(context: SlurpStorageContext) {
       // A chapter's mood arrives through the ordinary modifier list, so it expires like any other feeling.
       // A new chapter, or a storyline that just started (created active or accepted): the first
       // chapter's mood applied to nobody before (R1-071).
-      const started = after.status === "active" && before.status !== "active";
+      const started = after.status === "active" && before.status !== "active" && before.status !== "complete";
       const entered = (after.chapter !== before.chapter || started) && after.status !== "complete";
-      const settings = entered ? await this.getSettings() : null;
-      const mood = settings ? slurpArcChapterMood(after, settings.arcAffectsMood) : null;
-      // The chapter's outcomes from its arc type: a condition (a bump, a new flat) or a tag it leaves.
-      // Found by label, as a fans' choice inserts branch chapters (which carry none) and shifts the
-      // index; applied on entering a chapter, never again on a resume, so a removed condition stays removed.
-      const type = settings?.arcLibrary.find((entry: SlurpArcType) => entry.id === after.typeId);
+      const finished = after.status === "complete" && before.status !== "complete";
+      const moved = after.stage !== before.stage && after.status !== "complete";
+      const settings = entered || finished || moved ? await this.getSettings() : null;
+      const mood = settings && entered ? slurpArcChapterMood(after, settings.arcAffectsMood) : null;
+      // The stage left and the stage entered (or the ending reached) write their outcomes and conditions (a
+      // bump, a new flat). A resume enters nothing again, so a removed condition stays removed.
       const outcomes =
-        type?.chapters.find(
-          (chapter: SlurpArcType["chapters"][number]) => chapter.label === after.chapters[after.chapter],
-        )?.outcomes ?? [];
-      if (
-        outcomes.length &&
-        settings &&
-        slpExtensionOn(settings, "storylines") &&
-        (after.chapter !== before.chapter || before.status !== "paused")
-      )
+        after.storyline && settings && slpExtensionOn(settings, "storylines")
+          ? slurpStageOutcomes(after.storyline, {
+              leave: (moved || finished) && before.status !== "suggested" ? before.stage : null,
+              enter: moved || (started && before.status !== "paused") ? after.stage : null,
+              ending: finished ? after.ending : null,
+            })
+          : [];
+      if (outcomes.length)
         await this.applyStoryOutcomes({
           outcomes,
           participants: isSlurpCrossover(after) ? after.creatorIds : [creatorAccountId],
           sourceKind: "arc",
-          sourceId: `${after.id}:${after.chapter}`,
+          sourceId: `${after.id}:${after.stage}`,
           at: new Date(),
         });
       // A crossover moves every participant: mood and events reach each of them.
