@@ -445,7 +445,7 @@ export function createProjectsStorage1(context: SlurpStorageContext) {
       // A chapter's mood arrives through the ordinary modifier list, so it expires like any other feeling.
       // A new chapter, or a storyline that just started (created active or accepted): the first
       // chapter's mood applied to nobody before (R1-071).
-      const started = after.status === "active" && before.status !== "active" && before.status !== "complete";
+      const started = after.status === "active" && before.status !== "active";
       const entered = (after.chapter !== before.chapter || started) && after.status !== "complete";
       const finished = after.status === "complete" && before.status !== "complete";
       const moved = after.stage !== before.stage && after.status !== "complete";
