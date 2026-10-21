@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 1.4.66 — 2026-10-21
+
+- Extraction from a prose summary (a summary written as a narrative rather than under the memory-stream headings, whether from a custom summary prompt, another app's summary or a transcript recap) now keeps each narrated beat as its own timeline event, keeps a quoted line with its event when the summary presents it as memorable, and records recurring motifs and the durable register the prose states. Before, the prompt told the model to omit incidental actions and prefer a few substantial units for prose, which dropped about a third of the events and the quotes that a summary with headings kept. Summaries with headings, character cards and lorebooks are extracted as before.
+
 ## 1.4.65 — 2026-10-21
 
 - Extraction requests are about 3,100 characters (about 775 tokens) shorter. They no longer repeat the link rules three times, ask the model to copy the source's hash and evidence, or send the chat, character and persona ids. In a test with Claude Haiku the answers were also about a fifth shorter, so fewer of them run into the model's output limit. A suggested memory is no longer left out because the model sent an empty evidence list, a blank title or an empty value for an optional field. An imported character card is now described to the model as the character's sheet, so its backstory is kept as facts about the character instead of a timeline event, and its scenario no longer becomes an open thread. The model is also told to write a known character's name exactly as the Memory Vault lists it, so fewer facts from chats and cards are dropped as an unknown character when the text calls the character by a longer or different name.
