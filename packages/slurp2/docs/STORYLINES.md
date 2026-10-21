@@ -446,6 +446,16 @@ In the Creator sheet (Stir) and the Creator's settings. Phone first.
   condition and the rest do not contradict it; 6 DMs → none contradicts it, and it comes up when the
   fan asks how she is.
 
+### As built (2026-10-21, on slurpothon)
+
+Rebuilt from the old branch on the modular layout. The reader is `modules/storylines/slp-story-state.ts`;
+`features/storylines/` owns the loader, the picture look and the Life routes, behind
+`slp-storylines-contract.ts`. The loader returns an empty state while Storylines is off, and arcs write no
+conditions then, so nothing reaches a prompt. A new condition on a track sets the old one's `expiresAt`
+and keeps it on record. Tie tags also give `ex` (a split couple) and `deal` (an accepted or planned brand
+deal). Conditions never reach the arc-generation prompt as themes. The Life card sits in the Stir sheet
+and in the Creator's Storylines tab.
+
 ### Not in PR 1
 
 Storylines (PR 3), dramas and occasions writing conditions (PR 4), moment `fit` on tags (PR 5),
