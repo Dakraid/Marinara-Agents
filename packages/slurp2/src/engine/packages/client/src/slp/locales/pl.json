@@ -3053,6 +3053,13 @@
   "ui.slurp.settings.ext.storylines.detail": "Łuki i plany, kolaboracje, rywalizacje, pary, drama i poliamoria między twórcami.",
   "ui.slurp.settings.ext.supportDesk.label": "Biuro Support",
   "ui.slurp.settings.ext.supportDesk.detail": "Gra w obsługę: zgłoszenia, zaufanie, podejrzliwość, oferty, bonusy, powiadomienia i twórcy, którzy odchodzą.",
+  "ui.slurp.extrasOffer.from": "Slurp Support",
+  "ui.slurp.extrasOffer.ask.posts": "Pierwsze posty już są, szefie. Dorzucić też {{name}}?",
+  "ui.slurp.extrasOffer.ask.unlock": "Ktoś zapłacił za post! Może teraz {{name}}?",
+  "ui.slurp.extrasOffer.ask.days": "Slurp działa już od kilku dni. Dorzucić {{name}}?",
+  "ui.slurp.extrasOffer.add": "Dodaj: {{name}}",
+  "ui.slurp.extrasOffer.notNow": "Nie teraz",
+  "ui.slurp.extrasOffer.error": "Nie udało się. Spróbuj ponownie.",
   "ui.slurp.stir.off": "Stir i Biuro Support są wyłączone",
   "ui.slurp.stir.offDetail": "Włącz jedno z nich w Backstage › Stir."
 }

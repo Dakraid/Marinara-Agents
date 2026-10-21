@@ -28,6 +28,7 @@ import { slpCreatorUnlockPriceFromMetadata } from "../../modules/economy/slp-pri
 import type { FastifyInstance } from "fastify";
 import { slpCreatorPageCursorSchema, SLP_CREATOR_FEED_PAGE_SIZE } from "../../modules/requests/slp-request-schemas.js";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
+import { markSlurpExtrasReached } from "../../data/settings/slp-extras-offer-storage.js";
 
 /**
  * A subscriber row, widened for the generated audience.
@@ -358,7 +359,10 @@ export async function slpWalletRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
       return reply.code(400).send({ error: "Could not unlock this post" });
     }
     // Slurp learns the player's taste slowly from what they pay to see.
-    if (result.created) recordSlurpTasteSignal(app.db, { metadata: post.metadata }, "unlock");
+    if (result.created) {
+      recordSlurpTasteSignal(app.db, { metadata: post.metadata }, "unlock");
+      markSlurpExtrasReached(app.db, "unlock");
+    }
     // Fire and forget: the reply is a chat message, and the unlock must not wait on the model.
     if (result.created && result.chargedAmount > 0)
       void reactToSlurpPayment(app.db, {

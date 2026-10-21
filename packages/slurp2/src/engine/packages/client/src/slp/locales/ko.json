@@ -3831,6 +3831,13 @@
   "ui.slurp.settings.ext.storylines.detail": "크리에이터 사이의 아크와 계획, 콜라보, 라이벌, 커플, 드라마와 폴리아모리.",
   "ui.slurp.settings.ext.supportDesk.label": "Support 데스크",
   "ui.slurp.settings.ext.supportDesk.detail": "스태프 게임: 티켓, 신뢰, 의심, 제안, 혜택, 알림, 떠나는 크리에이터.",
+  "ui.slurp.extrasOffer.from": "Slurp Support",
+  "ui.slurp.extrasOffer.ask.posts": "첫 게시물이 올라갔어요, 보스. {{name}}도 켤까요?",
+  "ui.slurp.extrasOffer.ask.unlock": "누군가 게시물을 결제했어요! 다음은 {{name}} 어때요?",
+  "ui.slurp.extrasOffer.ask.days": "Slurp를 운영한 지 며칠 됐네요. {{name}}도 켤까요?",
+  "ui.slurp.extrasOffer.add": "{{name}} 추가",
+  "ui.slurp.extrasOffer.notNow": "나중에",
+  "ui.slurp.extrasOffer.error": "처리하지 못했어요. 다시 시도해 주세요.",
   "ui.slurp.stir.off": "Stir와 Support 데스크가 꺼져 있어요",
   "ui.slurp.stir.offDetail": "백스테이지 › Stir에서 하나를 켜세요."
 }

@@ -289,6 +289,13 @@ The other cases:
    when the player answers. Picks survive a reload. Installs from before the switches get a one-time
    "What's switched on" note in the Overview's "Your Slurp" card, per browser, once onboarding is
    completed; a first run that reached "Add extras" (or took the fast lane) marks it seen.
+   Part 2: Support's offers are a notice card on top of the feed (Slurp Support, "Add" and "Not
+   now"), not a thread line, because Support's threads are with Creators. The first generated
+   first-run post, the first paid unlock and three days after the first visit each send one offer:
+   the next extension in the order Storylines, Living world, Stir, Support desk, Brands & ads that is
+   off and not declined. At most one a day, none while paused; a pending offer stays until answered
+   and goes away when its switch is turned on elsewhere. "Not now" never offers that one again. The
+   state is one app setting (`slurp2.extrasOffer`); the rules are `shared/src/slp/slp-extras-offer.ts`.
 5. **Storylines engine.** This is STORYLINES.md PRs 2–10, packs v2 with `requires`, and
    the pregnancy pack. Build it on the Storylines gate, so the gate is built only once.
 
