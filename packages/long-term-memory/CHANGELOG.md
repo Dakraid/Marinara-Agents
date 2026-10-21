@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 1.4.65 — 2026-10-21
+
+- Extraction requests are about 3,100 characters (about 775 tokens) shorter. They no longer repeat the link rules three times, ask the model to copy the source's hash and evidence, or send the chat, character and persona ids. In a test with Claude Haiku the answers were also about a fifth shorter, so fewer of them run into the model's output limit. A suggested memory is no longer left out because the model sent an empty evidence list, a blank title or an empty value for an optional field. An imported character card is now described to the model as the character's sheet, so its backstory is kept as facts about the character instead of a timeline event, and its scenario no longer becomes an open thread. The model is also told to write a known character's name exactly as the Memory Vault lists it, so fewer facts from chats and cards are dropped as an unknown character when the text calls the character by a longer or different name.
+
 ## 1.4.64 — 2026-10-21
 
 - The Vault stays responsive in places with many memories. Each letter you type into the search now appears at once and the list follows, instead of waiting for every memory's row to be redrawn. Each type shows its first 100 memories, with a Show more button for the next 100. The counts, search, the filters and Select visible still include every memory. With 8,000 memories on a desktop, the worst letter took about 3 seconds to appear and now takes about 50 ms, the list follows in about a third of a second, and the Vault opens in about 0.7 to 1.1 seconds instead of about 1.7.
