@@ -54,4 +54,15 @@ assert.match(
   "three tags, then the overflow count",
 );
 
+// The tag bar scrolls sideways; an auto grid track would size to its full width and centre the picker off-screen.
+const styles = (await import("node:fs")).readFileSync(
+  new URL("../packages/modern-life-sim/src/client/styles.js", import.meta.url),
+  "utf8",
+);
+assert.match(
+  styles,
+  /\.mls-modal \{[^}]*grid-template-columns: minmax\(0, 1fr\)/,
+  "the modal track never outgrows the viewport",
+);
+
 console.info("modern-life-sim cast picker: ok");

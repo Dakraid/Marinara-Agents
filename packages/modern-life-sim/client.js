@@ -1279,7 +1279,9 @@
 
 .mls-overlay:empty { display: none; }
 .mls-overlay { position: fixed; inset: 0; z-index: 2147483000; background: none; min-height: 0; }
-.mls-modal { position: fixed; inset: 0; z-index: 2147483000; background: rgba(11,11,13,.86); display: grid; place-items: center; padding: 20px; }
+.mls-modal { position: fixed; inset: 0; z-index: 2147483000; background: rgba(11,11,13,.86); display: grid; place-items: center; padding: 20px;
+  /* minmax(0, 1fr): an auto track grows to the tag bar's full scroll width and pushes the picker off-screen. */
+  grid-template-columns: minmax(0, 1fr); }
 .mls-picker { background: var(--panel); border-left: 6px solid var(--red); width: min(720px, 100%); max-height: min(80vh, 640px);
   display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; box-shadow: 10px 10px 0 var(--ink); }
 .mls-picker .head { display: flex; align-items: baseline; gap: 12px; }
