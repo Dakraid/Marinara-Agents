@@ -462,6 +462,12 @@
     "noodle": {
       "versions": [
         {
+          "version": "1.5.9",
+          "date": "2026-10-21",
+          "notes": "- Image failures marked nonretryable by the Engine no longer start automatic replacement requests.",
+          "highlight": false
+        },
+        {
           "version": "1.5.8",
           "date": "2026-10-20",
           "notes": "- The sticker, emoji, picture and poll menus now open inside Noodle. That hides the chat emoji-selection settings, which 1.5.7 meant to hide but still showed, and the menus are no longer see-through.",
@@ -574,12 +580,6 @@
           "date": "2026-09-03",
           "notes": "- Fixed automatic timeline refresh when Marinara requires an admin secret on loopback.",
           "highlight": false
-        },
-        {
-          "version": "1.2.18",
-          "date": "2026-09-03",
-          "notes": "- Test the agent changelog feature with a highlighted patch release. No features were added.",
-          "highlight": true
         }
       ]
     },
@@ -756,6 +756,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.53",
+          "date": "2026-10-21",
+          "notes": "- Image failures marked nonretryable by the Engine no longer start automatic replacement requests. Slurp also stops later background retries for posts and Creator artwork, and keeps post prompts for a deliberate retry.",
+          "highlight": false
+        },
+        {
           "version": "0.3.52",
           "date": "2026-10-20",
           "notes": "- Fixed: an automatic post no longer reads a Creator's card or refreshes shared ideas with the AI while one of your chats on the same connection is replying, and an automatic post no longer makes your other automatic work (Noodle's too) wait 30 seconds. A new Creator's first automatic post no longer refuses itself.\n- Fixed: Write, Improve, Draft voice, Generate schedule, the page style and \"Let <Creator> design it\", a plan you ask for, an appearance you generate and picture descriptions for replies now take their turn on your connection like your chats, so automatic work waits for them.",
@@ -867,12 +873,6 @@
           "version": "0.3.33",
           "date": "2026-10-13",
           "notes": "- Fixed: on a reasoning model (for example GLM) the picture writer and seven other short model calls (Page design, Page style, look reading, fan voice, Stir plans, writing help) sent a small fixed output limit and ignored the max tokens set on the connection, so the model spent it all thinking and returned nothing (\"Image prompt rewrite unusable\"). They now use the connection's max tokens when it is larger than their small default. The warning also names the limit that was sent. (#1349)",
-          "highlight": false
-        },
-        {
-          "version": "0.3.32",
-          "date": "2026-10-13",
-          "notes": "- Fixed: the picture writer's result was thrown away as \"broke the scene's content level\" when it only repeated a word from the Creator's own look or the draft (for example \"breasts\") on a clothed scene. A word the writer was handed in those two no longer counts as an escalation; limits and the content policy do not count as a source. (#1347)\n- Fixed: when the writer's result was unusable, a long look filled the whole length cap of the fallback prompt, so the picture got an appearance and no scene. The look now keeps a bounded share and the scene keeps the rest.",
           "highlight": false
         }
       ]
