@@ -186,3 +186,38 @@ export function isSplitChild(
   const parent = all.find((candidate) => candidate.itemId === item.parentItemId);
   return parent?.status === "split";
 }
+
+// ── Bulk workspace ──
+
+export type RunStage = "processing" | "review" | "finish";
+
+/** Processing while cards run, Review while any card waits for a decision, Finish after that. */
+export function runStage(session: BulkSession): RunStage {
+  if (session.status === "active") return "processing";
+  return session.items.some((item) => isReviewable(item) || item.status === "awaiting-split") ? "review" : "finish";
+}
+
+export type InspectorTab = "changes" | "split" | "retry" | "json" | "summary";
+export type ItemGroup = "review" | "approved" | "split" | "failed" | "rejected" | "running";
+export const ITEM_GROUPS: readonly ItemGroup[] = ["review", "approved", "split", "failed", "rejected", "running"];
+
+/** Which status filter an item answers to in the workspace list. */
+export function itemGroup(item: SessionItem): ItemGroup {
+  if (isReviewable(item)) return "review";
+  if (item.status === "applied" || item.status === "duplicated") return "approved";
+  if (item.status === "awaiting-split" || item.status === "split") return "split";
+  if (isFailed(item)) return "failed";
+  if (item.status === "rejected" || item.status === "canceled" || item.status === "interrupted") return "rejected";
+  return "running";
+}
+
+/** The inspector tabs a card offers, most urgent first; the first one opens by default. */
+export function inspectorTabs(item: SessionItem): InspectorTab[] {
+  const tabs: InspectorTab[] = [];
+  if (item.status === "awaiting-split") tabs.push("split");
+  if (isQueueItem(item)) tabs.push("changes");
+  if (item.status === "failed-parse" && item.failure?.rawOutput) tabs.push("json");
+  if (isFailed(item) && item.failure?.renderedPrompt !== undefined) tabs.push("retry");
+  tabs.push("summary");
+  return tabs;
+}

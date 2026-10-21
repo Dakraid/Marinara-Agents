@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type HTMLAttributes, type ReactNode } from "react";
 
 export const FOCUSABLE =
   'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -31,7 +31,8 @@ export function useDialogFocusTrap(active: boolean, blocked: () => boolean, onCl
     const focusFrame = requestAnimationFrame(() => (dialog.querySelector<HTMLElement>(FOCUSABLE) ?? dialog).focus());
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        if (event.isComposing || blockedRef.current()) return;
+        // A workspace pane handles its own Escape first (capture phase) and marks the event.
+        if (event.isComposing || event.defaultPrevented || blockedRef.current()) return;
         event.preventDefault();
         onCloseRef.current();
         return;
@@ -69,6 +70,51 @@ export function useDialogFocusTrap(active: boolean, blocked: () => boolean, onCl
   }, [active]);
 
   return dialogRef;
+}
+
+/**
+ * A former dialog shown as a pane of the workspace: the same head/body/foot markup without an
+ * overlay or focus trap. Escape closes the innermost pane before the workspace sees the key
+ * (capture phase), unless it is busy; nested panes pass closeOnEscape={false} to the outer one.
+ */
+export function WorkspacePane({
+  className,
+  label,
+  busy = false,
+  closeOnEscape = true,
+  onClose,
+  children,
+  ...events
+}: {
+  className: string;
+  label: string;
+  busy?: boolean;
+  closeOnEscape?: boolean;
+  onClose: () => void;
+  children: ReactNode;
+} & Pick<HTMLAttributes<HTMLElement>, "onChangeCapture" | "onClickCapture">) {
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const busyRef = useRef(busy);
+  busyRef.current = busy;
+  useEffect(() => {
+    if (!closeOnEscape) return undefined;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.isComposing || event.defaultPrevented) return;
+      // Fields own Escape (a search closes its list first); this listener runs before React's.
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("input, textarea, select, [contenteditable]")) return;
+      event.preventDefault();
+      if (!busyRef.current) onCloseRef.current();
+    };
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => document.removeEventListener("keydown", onKeyDown, true);
+  }, [closeOnEscape]);
+  return (
+    <section className={`ce-pane ${className}`} aria-label={label} {...events}>
+      {children}
+    </section>
+  );
 }
 
 export function NumberField({

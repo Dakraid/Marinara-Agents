@@ -941,64 +941,12 @@ marinara-capability-card-editor[view="selection-action"] {
   gap: 0.35rem;
 }
 
-.ce-pager {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-}
-
 /* Verdict queue */
 
 .ce-queue {
   display: grid;
   justify-items: center;
   gap: 0.6rem;
-}
-
-.ce-queue-head {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.ce-queue-dots {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.3rem;
-}
-
-.ce-dot {
-  width: 0.625rem;
-  height: 0.625rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--muted);
-  padding: 0;
-  cursor: pointer;
-}
-
-.ce-dot--approved {
-  border-color: var(--marinara-chat-chrome-success-text, #86d39a);
-  background: var(--marinara-chat-chrome-success-text, #86d39a);
-}
-
-.ce-dot--rejected {
-  border-color: var(--marinara-chat-chrome-danger-text, #e08080);
-  background: var(--marinara-chat-chrome-danger-text, #e08080);
-}
-
-.ce-dot--current {
-  outline: 2px solid var(--ring);
-  outline-offset: 1px;
-}
-
-.ce-dot:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 1px;
 }
 
 .ce-queue-card {
@@ -1080,8 +1028,7 @@ marinara-capability-card-editor[view="selection-action"] {
 }
 
 .ce-queue-minirow:focus-visible,
-.ce-queue-expander:focus-visible,
-.ce-queue-approve-all:focus-visible {
+.ce-queue-expander:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 1px;
 }
@@ -1135,8 +1082,7 @@ marinara-capability-card-editor[view="selection-action"] {
   font-style: italic;
 }
 
-.ce-queue-expander,
-.ce-queue-approve-all {
+.ce-queue-expander {
   border: 0;
   background: transparent;
   padding: 0.15rem 0;
@@ -1149,7 +1095,6 @@ marinara-capability-card-editor[view="selection-action"] {
   text-underline-offset: 2px;
 }
 
-.ce-queue-approve-all:disabled,
 .ce-queue-expander:disabled {
   cursor: default;
   opacity: 0.6;
@@ -1232,83 +1177,660 @@ marinara-capability-card-editor[view="selection-action"] {
   }
 }
 
-/* ── Overlay workspace (capabilityApi 1.68) ── */
+/* ── Bulk workspace (capabilityApi 1.68 overlay) ──
+   One surface: header with the run's stage, a run rail, and a main pane that hosts the setup,
+   the item list and the inspector. It sits over the editor body (inline box from JS) or fills
+   most of the viewport, and becomes a full sheet with a rail/main switch on phones. */
 
-/* Bulk runs carry schema, split and avatar tooling, so the workspace claims most of the screen;
-   it still caps on very large displays and becomes a full-screen sheet on phones. */
-.ce-dialog.ce-workspace {
+.ce-workspace {
+  position: relative;
+  display: grid;
   width: min(112rem, 100%);
   height: min(94dvh, 68rem);
-  max-height: min(94dvh, 68rem);
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--marinara-chat-chrome-panel-border);
+  border-radius: 0.75rem;
+  background: var(--marinara-chat-chrome-panel-bg);
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 40%);
+  font-size: 0.75rem;
+}
+
+.ce-workspace[data-placement="editor"] {
+  position: fixed;
+  max-width: none;
+}
+
+.ce-workspace-overlay:has(.ce-workspace[data-placement="editor"])::before {
+  background: rgb(0 0 0 / 30%);
+  backdrop-filter: none;
+}
+
+.ce-workspace-head {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--marinara-chat-chrome-panel-divider);
+  padding: 0.6rem 0.75rem;
+}
+
+.ce-workspace-title {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+}
+
+.ce-workspace-title strong {
+  color: var(--marinara-chat-chrome-panel-title);
+  font-size: 0.8125rem;
+}
+
+.ce-workspace-title .ce-caption {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ce-steps {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  gap: 0.25rem;
+  list-style: none;
+}
+
+.ce-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem 0.2rem 0.25rem;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+.ce-step-dot {
+  display: grid;
+  width: 1.1rem;
+  height: 1.1rem;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--muted);
+  font-size: 0.625rem;
+}
+
+.ce-step--current {
+  border-color: var(--border);
+  background: var(--secondary);
+  color: var(--foreground);
+}
+
+.ce-step--current .ce-step-dot {
+  background: var(--ce-chroma);
+  color: var(--background);
+}
+
+.ce-workspace-switch {
+  display: none;
 }
 
 .ce-workspace-body {
-  display: flex;
-  min-height: 0;
-  flex: 1;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.ce-workspace-body > .ce-panel {
-  min-height: 0;
-  flex: 1;
-  margin-top: 0;
-  overflow: auto;
-  border: 0;
-  border-radius: 0;
-}
-
-.ce-workspace-split {
   display: grid;
-  /* Content-sized floor so a sparse workspace doesn't collapse to a sliver. */
-  min-height: 16rem;
-  flex: 1;
-  grid-template-columns: minmax(15rem, 22rem) minmax(0, 1fr);
-}
-
-.ce-workspace-rail {
-  display: grid;
-  align-content: start;
-  gap: 0.6rem;
-  overflow: auto;
-  border-right: 1px solid var(--marinara-chat-chrome-panel-divider);
-  padding: 0.75rem;
+  min-height: 0;
+  grid-template-columns: minmax(13rem, 16rem) minmax(0, 1fr);
 }
 
 .ce-workspace-main {
+  display: flex;
   min-width: 0;
-  overflow: auto;
+  min-height: 0;
+  flex-direction: column;
 }
 
-.ce-panel--workspace {
+.ce-workspace-empty {
+  display: grid;
+  flex: 1;
+  place-content: center;
+  justify-items: center;
+  gap: 0.75rem;
+}
+
+/* Run rail */
+
+.ce-rail {
   display: flex;
+  min-height: 0;
   flex-direction: column;
-  /* Panes own their padding so the rail divider spans the full height. */
+  border-right: 1px solid var(--marinara-chat-chrome-panel-divider);
+}
+
+.ce-rail-top {
+  display: grid;
+  padding: 0.75rem;
+}
+
+.ce-rail-top .mari-chrome-control {
+  justify-content: center;
+}
+
+.ce-rail-runs {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  align-content: start;
+  gap: 0.5rem;
+  overflow: auto;
+  padding: 0 0.5rem 0.5rem;
+}
+
+.ce-rail-label {
+  display: block;
+  padding: 0.25rem 0.5rem;
+  color: var(--muted-foreground);
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ce-run-row {
+  display: grid;
+  width: 100%;
+  gap: 0.25rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  padding: 0.45rem 0.55rem;
+  color: var(--foreground);
+  text-align: start;
+}
+
+.ce-run-row:hover {
+  background: var(--marinara-chat-chrome-highlight-bg-hover, var(--secondary));
+}
+
+.ce-run-row[aria-current="true"] {
+  background: var(--secondary);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.ce-run-row-label {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ce-run-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.ce-rail-foot {
+  border-top: 1px solid var(--marinara-chat-chrome-panel-divider);
+  padding: 0.5rem 0.75rem;
+}
+
+/* Panes: former dialogs, laid out inside the main pane or the inspector */
+
+.ce-pane {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.ce-pane > .ce-dialog-body {
+  flex: 1;
+}
+
+/* Setup: targets | settings | summary */
+
+.ce-setup {
+  display: grid;
+  grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr) minmax(13rem, 16rem);
+}
+
+.ce-setup-targets,
+.ce-setup-config {
+  display: grid;
+  min-height: 0;
+  align-content: start;
+  gap: 1rem;
+  overflow: auto;
+  padding: 0.75rem;
+  scrollbar-width: thin;
+}
+
+.ce-setup-targets {
+  border-right: 1px solid var(--marinara-chat-chrome-panel-divider);
+}
+
+/* Narrow targets column: name and remove on top, note and style below. */
+.ce-setup-targets .ce-target {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.ce-setup-targets .ce-target-identity {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.ce-setup-targets .ce-target-controls {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+
+.ce-setup-targets .ce-target-remove {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.ce-setup-config > .ce-studio {
+  min-height: 24rem;
+}
+
+.ce-dialog-foot.ce-setup-summary {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  overflow: auto;
+  border-top: 0;
+  border-left: 1px solid var(--marinara-chat-chrome-panel-divider);
+  padding: 0.75rem;
+}
+
+.ce-setup-summary > .mari-chrome-control--primary {
+  margin-top: auto;
+  justify-content: center;
+}
+
+.ce-summary-list {
+  display: grid;
+  margin: 0;
+  gap: 0.35rem 0.75rem;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.ce-summary-list dt {
+  color: var(--muted-foreground);
+}
+
+.ce-summary-list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  text-align: end;
+}
+
+/* Run: head, list | inspector, bulk bar */
+
+.ce-run {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.ce-run--status {
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.ce-run-head {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  border-bottom: 1px solid var(--marinara-chat-chrome-panel-divider);
+  padding: 0.6rem 0.75rem;
+}
+
+.ce-run-title {
+  display: grid;
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+
+.ce-run-notices {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem 0;
+}
+
+.ce-run-body {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: minmax(16rem, 24rem) minmax(0, 1fr);
+}
+
+.ce-run-list {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow: auto;
+  border-right: 1px solid var(--marinara-chat-chrome-panel-divider);
+  padding: 0.75rem;
+  scrollbar-width: thin;
+}
+
+.ce-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.ce-filter-chips button {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  padding: 0.15rem 0.55rem;
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+}
+
+.ce-filter-chips button[aria-pressed="true"] {
+  border-color: transparent;
+  background: var(--secondary);
+  color: var(--foreground);
+}
+
+.ce-select-all {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--muted-foreground);
+}
+
+.ce-run-list .ce-item {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  /* Long runs render every row; off-screen rows skip layout. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 3.25rem;
+}
+
+.ce-run-list .ce-item > input {
+  margin-top: 0.2rem;
+}
+
+.ce-item--selected {
+  border-color: var(--ce-chroma);
+}
+
+.ce-item-open {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  text-align: start;
+}
+
+.ce-inspector {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.ce-inspector-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.9rem 0;
+}
+
+.ce-inspector-head .ce-queue-name {
+  flex: 1;
+}
+
+.ce-inspector-tabs {
+  display: flex;
+  gap: 0.15rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--marinara-chat-chrome-panel-divider);
+  padding: 0.4rem 0.6rem 0;
+  scrollbar-width: none;
+}
+
+.ce-inspector-tabs button {
+  flex: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  padding: 0.4rem 0.6rem;
+  color: var(--muted-foreground);
+}
+
+.ce-inspector-tabs button[aria-selected="true"] {
+  border-bottom-color: var(--ce-chroma);
+  color: var(--foreground);
+}
+
+.ce-inspector-body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: auto;
+  padding: 0.75rem 0.9rem;
+}
+
+/* Inspector tabs name the card already; the panes drop their own title bar. */
+.ce-inspector-body > .ce-pane:not(.ce-avatar-studio) > .ce-dialog-head {
+  display: none;
+}
+
+.ce-inspector-body > .ce-pane > .ce-dialog-body {
   padding: 0;
 }
 
-/* The detail panel nests inside the main pane: flatten its box, keep its padding. */
-.ce-workspace-main > .ce-panel {
-  margin-top: 0;
+.ce-inspector-body .ce-queue {
+  justify-items: stretch;
+}
+
+.ce-inspector-body .ce-queue-card {
+  width: 100%;
   border: 0;
-  border-radius: 0;
+  padding: 0;
+}
+
+/* The inspector head already names the card and its status. */
+.ce-inspector-body .ce-queue-card-head {
+  display: none;
+}
+
+.ce-inspector-body .ce-queue-card:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.ce-inspector-summary {
+  display: grid;
+  align-content: start;
+  gap: 0.6rem;
+}
+
+.ce-inspector-empty {
+  margin: auto;
+}
+
+.ce-bulkbar {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+  border-top: 1px solid var(--marinara-chat-chrome-panel-divider);
+  background: var(--marinara-chat-chrome-highlight-bg, transparent);
+  padding: 0.5rem 0.75rem;
+}
+
+.ce-bulkbar-count {
+  white-space: nowrap;
+}
+
+.ce-bulkbar-actions {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.ce-mobile-only {
+  display: none;
+}
+
+@media (max-width: 64rem) {
+  .ce-steps {
+    display: none;
+  }
+
+  .ce-setup {
+    grid-template-columns: minmax(13rem, 17rem) minmax(0, 1fr);
+  }
+
+  .ce-dialog-foot.ce-setup-summary {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    border-top: 1px solid var(--marinara-chat-chrome-panel-divider);
+    border-left: 0;
+  }
+
+  .ce-setup-summary > .ce-summary-list,
+  .ce-setup-summary > .ce-section-heading {
+    display: none;
+  }
+
+  .ce-setup-summary > .mari-chrome-control--primary {
+    margin-top: 0;
+    margin-left: auto;
+  }
 }
 
 @media (max-width: 48rem) {
-  .ce-dialog.ce-workspace {
+  .ce-workspace,
+  .ce-workspace[data-placement="editor"] {
+    position: fixed;
+    inset: 0;
+    width: 100%;
     height: 100%;
-    max-height: 100%;
+    border: 0;
     border-radius: 0;
   }
 
-  .ce-workspace-split {
-    grid-template-columns: 1fr;
+  .ce-workspace {
+    grid-template-rows: auto auto minmax(0, 1fr);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  /* Mobile: the detail's back button provides the return navigation. */
-  .ce-workspace-rail {
+  .ce-workspace-head {
+    padding-top: max(0.6rem, env(safe-area-inset-top, 0px));
+  }
+
+  .ce-workspace-switch {
+    display: flex;
+    gap: 0.25rem;
+    border-bottom: 1px solid var(--marinara-chat-chrome-panel-divider);
+    padding: 0.35rem 0.6rem;
+  }
+
+  .ce-workspace-switch button {
+    flex: 1;
+    border: 0;
+    border-radius: 0.5rem;
+    background: transparent;
+    padding: 0.45rem;
+    color: var(--muted-foreground);
+  }
+
+  .ce-workspace-switch button[aria-selected="true"] {
+    background: var(--secondary);
+    color: var(--foreground);
+  }
+
+  .ce-workspace-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ce-workspace[data-pane="main"] .ce-rail,
+  .ce-workspace[data-pane="rail"] .ce-workspace-main {
     display: none;
+  }
+
+  .ce-rail {
+    border-right: 0;
+  }
+
+  .ce-setup {
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+  }
+
+  .ce-setup > * {
+    flex: none;
+  }
+
+  .ce-setup-targets,
+  .ce-setup-config {
+    overflow: visible;
+    border-right: 0;
+  }
+
+  .ce-dialog-foot.ce-setup-summary {
+    position: sticky;
+    bottom: 0;
+    overflow: visible;
+    background: var(--marinara-chat-chrome-panel-bg);
+  }
+
+  .ce-run-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ce-run-list {
+    border-right: 0;
+  }
+
+  .ce-run[data-mobile-pane="list"] .ce-inspector,
+  .ce-run[data-mobile-pane="inspector"] .ce-run-list {
+    display: none;
+  }
+
+  .ce-mobile-only {
+    display: inline-flex;
+  }
+
+  .ce-bulkbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .ce-bulkbar-actions {
+    width: 100%;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .ce-bulkbar-actions > * {
+    flex: none;
   }
 }
 

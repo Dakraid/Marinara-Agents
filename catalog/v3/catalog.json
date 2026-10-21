@@ -364,7 +364,7 @@
         },
         "id": "card-editor",
         "name": "Card Editor",
-        "version": "10.0.6",
+        "version": "10.0.7",
         "description": "Rewrites character cards from your directives while preserving each card's voice and aligning it with referenced lore. Runs on a single card or as bulk dispatch across selected characters: edit fields, or transform cards into your own schemas as Markdown, XML or JSON, split cards that describe several characters, refine results in a second phase, and composite avatars, with verdict review and session management in its workspace. Open a character card and choose Run Card Editor, or select characters and choose Card Editor for a bulk session, to propose changes for approval.",
         "engine": {
           "min": "2.4.7",
@@ -404,8 +404,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "8fe9bb939cfaf2a0eff99ead36267d45ea276e52a5f8178cafc49c6c066b39ec",
-            "bytes": 205483
+            "sha256": "355b90dbae1bb23760544d57e5cf3cf37d71fe3ed425f5a09a4437a9d98bb45c",
+            "bytes": 217715
           }
         ],
         "permissions": [
@@ -421,9 +421,9 @@
       "category": "writer",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/card-editor.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/card-editor-10.0.6.zip",
-        "sha256": "b23ead3c4aaf6afb8370f601d61acb68687b9de152c452837b04493bafe33f77",
-        "bytes": 298678
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/card-editor-10.0.7.zip",
+        "sha256": "907ed238657a29cfc6bce20b484f2efdd407eb5616829cef1cf15f5b3b8ee86a",
+        "bytes": 310910
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#card-editor"
     },

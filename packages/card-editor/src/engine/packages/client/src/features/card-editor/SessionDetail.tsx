@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import type { BulkSession, SessionItem } from "../../../../shared/src/features/agents/card-editor/schema.ts";
 import {
   cancelSession,
@@ -12,6 +12,7 @@ import {
 } from "./api";
 import {
   approveSessionItem,
+  rejectSessionItem,
   combineCollectedSession,
   duplicateAppliedSessionItems,
   executeCompletionEnforcement,
@@ -22,20 +23,24 @@ import { FixJsonDialog } from "./FixJsonDialog";
 import { translateCardEditor, type CardEditorLocalizationContext } from "./localization";
 import {
   deriveLiveStatus,
+  inspectorTabs,
   isFailed,
   isReviewable,
+  ITEM_GROUPS,
+  itemGroup,
+  runStage,
   isSplitChild,
   itemStatusLabelKey,
   itemStatusTone,
   summarizeItemChanges,
   transformCounts,
+  type InspectorTab,
+  type ItemGroup,
+  type RunStage,
 } from "./panel-status";
 import { SplitReviewDialog } from "./SplitReviewDialog";
 import { useVisiblePoll } from "./use-visible-poll";
 import { VerdictQueue } from "./VerdictQueue";
-
-/** SPEC §5 edge: sessions with 200+ cards paginate at 50 items per page. */
-const PAGE_SIZE = 50;
 
 function ItemSummary({
   item,
@@ -82,12 +87,15 @@ export function SessionDetail({
   onBack,
   onDeleted,
   onRerun,
+  onStage,
 }: {
   localization?: CardEditorLocalizationContext;
   sessionId: string;
   onBack: () => void;
   onDeleted: () => void;
   onRerun?: (sessionId: string) => void;
+  /** Tells the workspace header which stage the run is in and what it is called. */
+  onStage?: (stage: RunStage, label: string) => void;
 }) {
   const t = (key: string, values?: Record<string, string | number>) => translateCardEditor(localization, key, values);
   const [session, setSession] = useState<BulkSession | null>(null);
@@ -97,13 +105,16 @@ export function SessionDetail({
   const [autoApplyErrors, setAutoApplyErrors] = useState<Readonly<Record<string, string>>>({});
   const [enforcementProgress, setEnforcementProgress] = useState<{ done: number; total: number } | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
-  const [page, setPage] = useState(0);
-  const [queueFocus, setQueueFocus] = useState<string | null | "closed">("closed");
-  const [editRetryId, setEditRetryId] = useState<string | null>(null);
-  const [fixJsonId, setFixJsonId] = useState<string | null>(null);
+  /** The item the inspector shows; null until the list picks one. */
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [tab, setTab] = useState<InspectorTab | null>(null);
+  const [checked, setChecked] = useState<ReadonlySet<string>>(new Set());
+  const [filter, setFilter] = useState<ItemGroup | "all">("all");
+  const [query, setQuery] = useState("");
+  /** Phones show the list or the inspector, never both. */
+  const [mobilePane, setMobilePane] = useState<"list" | "inspector">("list");
   const fixJsonShown = useRef(new Set<string>());
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [splitReviewId, setSplitReviewId] = useState<string | null>(null);
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [phaseView, setPhaseView] = useState<1 | 2 | null>(null);
   const autoApplyAttempts = useRef(new Set<string>());
@@ -119,16 +130,39 @@ export function SessionDetail({
   }, [sessionId]);
   const pollRef = useVisiblePoll(refresh, 2000);
 
-  // Auto-heal and the strict-JSON retry already failed for these, so offer the manual fix once per item.
+  const selectItem = (itemId: string, nextTab: InspectorTab | null = null) => {
+    setSelectedId(itemId);
+    setTab(nextTab);
+    setAvatarOpen(false);
+    setMobilePane("inspector");
+  };
+
+  // Auto-heal and the strict-JSON retry already failed for these, so offer the manual fix once per
+  // item, without taking the inspector away from a card the user is looking at.
   useEffect(() => {
-    if (!session || fixJsonId !== null || editRetryId !== null || queueFocus !== "closed") return;
+    if (!session || selectedId !== null) return;
     const unparsed = session.items.find(
       (item) => item.status === "failed-parse" && item.failure?.rawOutput && !fixJsonShown.current.has(item.itemId),
     );
     if (!unparsed) return;
     fixJsonShown.current.add(unparsed.itemId);
-    setFixJsonId(unparsed.itemId);
-  }, [editRetryId, fixJsonId, queueFocus, session]);
+    setSelectedId(unparsed.itemId);
+    setTab("json");
+  }, [selectedId, session]);
+
+  const stage = session ? runStage(session) : null;
+  const label = session?.label ?? "";
+  useEffect(() => {
+    if (stage) onStage?.(stage, label);
+  }, [stage, label, onStage]);
+
+  // The inspector opens on the most useful card: the first one waiting for a decision.
+  useEffect(() => {
+    if (!session || selectedId !== null) return;
+    const first =
+      session.items.find((item) => isReviewable(item) || item.status === "awaiting-split") ?? session.items[0];
+    if (first) setSelectedId(first.itemId);
+  }, [selectedId, session]);
 
   // Auto-approve driver (DESIGN §3): auto-save items land in awaiting-review with autoApply —
   // the panel drives their verdict flow once per item; holds fall back to needs-review triage.
@@ -235,7 +269,7 @@ export function SessionDetail({
 
   if (loadError && !session) {
     return (
-      <section className="ce-shell ce-panel" ref={pollRef}>
+      <section className="ce-run ce-run--status" ref={pollRef}>
         <button type="button" className="mari-chrome-control ce-back-button" onClick={onBack}>
           <ChevronLeft className="ce-icon" aria-hidden="true" />
           {t("cardEditor.panel.back")}
@@ -248,7 +282,7 @@ export function SessionDetail({
   }
   if (!session) {
     return (
-      <section className="ce-shell ce-panel" ref={pollRef}>
+      <section className="ce-run ce-run--status" ref={pollRef}>
         <div className="ce-status" role="status">
           {t("cardEditor.panel.detail.loading")}
         </div>
@@ -256,30 +290,19 @@ export function SessionDetail({
     );
   }
 
-  if (queueFocus !== "closed") {
-    return (
-      <section className="ce-shell ce-panel" ref={pollRef}>
-        <VerdictQueue
-          localization={localization}
-          session={session}
-          focusItemId={queueFocus}
-          onRefresh={refresh}
-          onClose={() => setQueueFocus("closed")}
-        />
-      </section>
-    );
-  }
-
   const counts = session.config.transform ? transformCounts(session) : null;
   const visiblePhase = phaseView ?? counts?.phase ?? 1;
-  const listedItems = counts ? session.items.filter((item) => (item.phase ?? 1) === visiblePhase) : session.items;
-  const splitReviewItem = splitReviewId
-    ? (session.items.find((item) => item.itemId === splitReviewId && item.status === "awaiting-split") ?? null)
-    : null;
+  const phaseItems = counts ? session.items.filter((item) => (item.phase ?? 1) === visiblePhase) : session.items;
+  const groupCounts = new Map<ItemGroup, number>();
+  for (const item of phaseItems) groupCounts.set(itemGroup(item), (groupCounts.get(itemGroup(item)) ?? 0) + 1);
+  const needle = query.trim().toLocaleLowerCase();
+  const listedItems = phaseItems.filter(
+    (item) =>
+      (filter === "all" || itemGroup(item) === filter) &&
+      (!needle || item.characterName.toLocaleLowerCase().includes(needle)),
+  );
   const resultItemCount = session.items.filter((item) => item.status !== "split" && item.status !== "staged").length;
-  const fixJsonItem = fixJsonId ? (session.items.find((item) => item.itemId === fixJsonId) ?? null) : null;
-  const editRetryItem = editRetryId ? (session.items.find((item) => item.itemId === editRetryId) ?? null) : null;
-  const reviewableCount = session.items.filter(isReviewable).length;
+  const reviewableItems = session.items.filter(isReviewable);
   const failedCount = session.items.filter(isFailed).length;
   const combinedMode = session.config.saveMode === "combined";
   const collectedCount = combinedMode ? session.items.filter((item) => item.status === "applied").length : 0;
@@ -294,38 +317,184 @@ export function SessionDetail({
         (item) => item.status === "applied" && item.resultCardId === undefined && (item.updates ?? []).length > 0,
       ).length;
   const live = deriveLiveStatus(session);
-  const pageCount = Math.max(1, Math.ceil(listedItems.length / PAGE_SIZE));
-  const clampedPage = Math.min(page, pageCount - 1);
-  const pageItems = listedItems.slice(clampedPage * PAGE_SIZE, clampedPage * PAGE_SIZE + PAGE_SIZE);
+  const checkedItems = session.items.filter((item) => checked.has(item.itemId));
+  const checkedReviewable = checkedItems.filter(isReviewable);
+  const allListedChecked = listedItems.length > 0 && listedItems.every((item) => checked.has(item.itemId));
+  const selected = session.items.find((item) => item.itemId === selectedId) ?? null;
+  const tabs = selected ? inspectorTabs(selected) : [];
+  const activeTab = tab && tabs.includes(tab) ? tab : (tabs[0] ?? null);
+
+  const toggleChecked = (itemId: string) =>
+    setChecked((current) => {
+      const next = new Set(current);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  const decideMany = (key: string, items: readonly SessionItem[], verdict: "approve" | "reject") =>
+    void runAction(key, async () => {
+      for (const item of items) {
+        // Holds land in needs-review and stay for manual triage (DESIGN §3: skipped = undecided).
+        const outcome =
+          verdict === "approve"
+            ? await approveSessionItem(session, item, { force: false })
+            : await rejectSessionItem(session, item);
+        if (outcome.kind === "failed" || outcome.kind === "report-failed") throw new Error(outcome.message);
+      }
+      setChecked(new Set());
+    });
+  const onPaneUpdated = (updated: BulkSession) => {
+    setSession(updated);
+    setTab(null);
+  };
+
+  const liveText =
+    live.kind === "batch"
+      ? t("cardEditor.panel.live.batch", { index: live.batchIndex, count: live.batchCount }) +
+        (live.batchAttempts > 1 ? t("cardEditor.panel.live.batchRetry", { attempt: live.batchAttempts }) : "")
+      : live.kind === "items"
+        ? t("cardEditor.panel.live.items", { running: live.runningItems, total: session.stats.total })
+        : live.kind === "queued"
+          ? t("cardEditor.panel.live.queued", { count: live.queuedItems })
+          : t("cardEditor.panel.progress", { done: session.stats.done, total: session.stats.total });
+
+  const inspectorBody = avatarOpen ? (
+    <AvatarStudio localization={localization} session={session} onClose={() => setAvatarOpen(false)} />
+  ) : !selected ? (
+    <p className="ce-caption ce-inspector-empty">{t("cardEditor.workspace.pickItem")}</p>
+  ) : activeTab === "changes" ? (
+    <VerdictQueue
+      localization={localization}
+      session={session}
+      focusItemId={selected.itemId}
+      onFocusChange={setSelectedId}
+      onRefresh={refresh}
+    />
+  ) : activeTab === "split" && selected.status === "awaiting-split" ? (
+    <SplitReviewDialog
+      key={selected.itemId}
+      localization={localization}
+      session={session}
+      item={selected}
+      onClose={() => setTab("summary")}
+      onUpdated={onPaneUpdated}
+    />
+  ) : activeTab === "json" && selected.status === "failed-parse" ? (
+    <FixJsonDialog
+      key={selected.itemId}
+      localization={localization}
+      session={session}
+      item={selected}
+      onClose={() => setTab("summary")}
+      onUpdated={onPaneUpdated}
+    />
+  ) : activeTab === "retry" ? (
+    <EditRetryDialog
+      key={selected.itemId}
+      localization={localization}
+      session={session}
+      item={selected}
+      onClose={() => setTab("summary")}
+      onRetried={onPaneUpdated}
+    />
+  ) : (
+    <div className="ce-inspector-summary">
+      <ItemSummary item={selected} t={t} />
+      {autoApplyErrors[selected.itemId] ? (
+        <span className="ce-item-failure">
+          {t("cardEditor.panel.detail.autoApplyError", {
+            name: selected.characterName,
+            message: autoApplyErrors[selected.itemId]!,
+          })}
+        </span>
+      ) : null}
+      <div className="ce-item-actions">
+        {isFailed(selected) ? (
+          <button
+            type="button"
+            className="mari-chrome-control mari-chrome-control--small"
+            disabled={busyKey !== null}
+            onClick={() =>
+              void runAction(`rerun-${selected.itemId}`, () => retrySessionItem(sessionId, selected.itemId))
+            }
+          >
+            {t("cardEditor.panel.action.rerun")}
+          </button>
+        ) : null}
+        {selected.status === "queued" && session.status === "active" ? (
+          <button
+            type="button"
+            className="mari-chrome-control mari-chrome-control--small"
+            disabled={busyKey !== null}
+            onClick={() =>
+              void runAction(`cancel-${selected.itemId}`, () => cancelSessionItem(sessionId, selected.itemId))
+            }
+          >
+            {t("cardEditor.panel.action.cancelItem")}
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
 
   return (
-    <section className="ce-shell ce-panel" ref={pollRef} data-card-editor-view="session-detail">
-      <div className="ce-panel-head">
-        <button type="button" className="mari-chrome-control ce-back-button" onClick={onBack}>
-          <ChevronLeft className="ce-icon" aria-hidden="true" />
-          {t("cardEditor.panel.back")}
-        </button>
-        <strong className="ce-panel-heading">{session.label}</strong>
+    <section className="ce-run" ref={pollRef} data-card-editor-view="session-detail" data-mobile-pane={mobilePane}>
+      <header className="ce-run-head">
+        <div className="ce-run-title">
+          <strong className="ce-panel-heading">{session.label}</strong>
+          <span className="ce-caption" role="status">
+            {session.status === "active"
+              ? liveText
+              : t("cardEditor.panel.progress", { done: session.stats.done, total: session.stats.total })}
+          </span>
+        </div>
         <span
           className={`ce-chip ce-chip--${session.status === "active" ? "live" : session.status === "completed" ? "ok" : "muted"}`}
         >
           {t(`cardEditor.panel.sessionStatus.${session.status}`)}
         </span>
+        <span className="ce-chip">{t(`cardEditor.panel.saveMode.${session.config.saveMode}`)}</span>
         <span className="ce-chip">
           {t(`cardEditor.panel.completionMode.${session.config.completionMode ?? "ask"}`)}
         </span>
-      </div>
-      {counts ? (
-        <div className="ce-pipeline" role="group" aria-label={t("cardEditor.pipeline.label")}>
-          <div className="ce-pipeline-count">
-            <strong>{t("cardEditor.pipeline.count", { sources: counts.sources, results: counts.results })}</strong>
-            <span className="ce-caption">
-              {counts.splitsAccepted > 0
-                ? t("cardEditor.pipeline.splitsAccepted", { count: counts.splitsAccepted })
-                : t("cardEditor.pipeline.noSplits")}
-            </span>
-          </div>
-          {session.config.transform?.phase2?.enabled ? (
+        {counts ? (
+          <span className="ce-chip">
+            {t("cardEditor.pipeline.count", { sources: counts.sources, results: counts.results })}
+          </span>
+        ) : null}
+        {counts?.splitsPending ? (
+          <span className="ce-chip ce-chip--review">
+            {t("cardEditor.pipeline.splitsPending", { count: counts.splitsPending })}
+          </span>
+        ) : null}
+      </header>
+      {session.combinedCardId || session.status === "interrupted" || enforcementProgress || actionError ? (
+        <div className="ce-run-notices">
+          {session.combinedCardId ? (
+            <div className="ce-notice" role="status">
+              <span>{t("cardEditor.panel.detail.combinedCreated", { id: session.combinedCardId })}</span>
+            </div>
+          ) : null}
+          {session.status === "interrupted" ? (
+            <div className="ce-notice" role="status">
+              <span>{t("cardEditor.panel.interruptedNotice")}</span>
+            </div>
+          ) : null}
+          {enforcementProgress ? (
+            <p className="ce-caption ce-live-line" role="status">
+              {t("cardEditor.panel.enforcementProgress", enforcementProgress)}
+            </p>
+          ) : null}
+          {actionError ? (
+            <div className="ce-status ce-status--error" role="alert">
+              {t("cardEditor.panel.detail.actionError", { message: actionError })}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+      <div className="ce-run-body">
+        <div className="ce-run-list">
+          {session.config.transform?.phase2?.enabled && counts ? (
             <div className="ce-segmented" role="radiogroup" aria-label={t("cardEditor.pipeline.phaseLabel")}>
               {([1, 2] as const).map((phase) => (
                 <button
@@ -335,403 +504,332 @@ export function SessionDetail({
                   className="ce-segment"
                   aria-checked={visiblePhase === phase}
                   disabled={phase === 2 && counts.phase === 1}
-                  onClick={() => {
-                    setPhaseView(phase);
-                    setPage(0);
-                  }}
+                  onClick={() => setPhaseView(phase)}
                 >
                   {t("cardEditor.pipeline.phase", { phase: phase })}
                 </button>
               ))}
             </div>
           ) : null}
-          {counts.splitsPending > 0 ? (
-            <span className="ce-chip ce-chip--review">
-              {t("cardEditor.pipeline.splitsPending", { count: counts.splitsPending })}
-            </span>
+          <input
+            type="search"
+            className="mari-chrome-field ce-field"
+            value={query}
+            placeholder={t("cardEditor.workspace.filterItems")}
+            aria-label={t("cardEditor.workspace.filterItems")}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+          <div className="ce-filter-chips" role="group" aria-label={t("cardEditor.workspace.statusFilter")}>
+            <button type="button" aria-pressed={filter === "all"} onClick={() => setFilter("all")}>
+              {t("cardEditor.workspace.group.all", { count: phaseItems.length })}
+            </button>
+            {ITEM_GROUPS.filter((group) => groupCounts.has(group)).map((group) => (
+              <button key={group} type="button" aria-pressed={filter === group} onClick={() => setFilter(group)}>
+                {t(`cardEditor.workspace.group.${group}`, { count: groupCounts.get(group) ?? 0 })}
+              </button>
+            ))}
+          </div>
+          <label className="ce-select-all">
+            <input
+              type="checkbox"
+              checked={allListedChecked}
+              disabled={listedItems.length === 0}
+              onChange={() =>
+                setChecked((current) => {
+                  const next = new Set(current);
+                  for (const item of listedItems) {
+                    if (allListedChecked) next.delete(item.itemId);
+                    else next.add(item.itemId);
+                  }
+                  return next;
+                })
+              }
+            />
+            <span>{t("cardEditor.workspace.selectListed", { count: listedItems.length })}</span>
+          </label>
+          <ul className="ce-items">
+            {listedItems.map((item) => {
+              const child = isSplitChild(item, session.items);
+              const issueCount = (item.characters ?? []).reduce(
+                (total, character) => total + (character.issues?.length ?? 0),
+                0,
+              );
+              return (
+                <li
+                  className={`ce-item${child ? " ce-item--child" : ""}${item.itemId === selectedId ? " ce-item--selected" : ""}`}
+                  key={item.itemId}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked.has(item.itemId)}
+                    aria-label={t("cardEditor.workspace.selectItem", { name: item.characterName })}
+                    onChange={() => toggleChecked(item.itemId)}
+                  />
+                  <button
+                    type="button"
+                    className="ce-item-open"
+                    aria-current={item.itemId === selectedId}
+                    onClick={() => selectItem(item.itemId)}
+                  >
+                    <span className="ce-item-main">
+                      {/* No engine deep link to a character editor exists for packages — name only. */}
+                      <span className="ce-item-name">{item.characterName}</span>
+                      <span className={`ce-chip ce-chip--${itemStatusTone(item.status)}`}>
+                        {t(itemStatusLabelKey(item.status))}
+                      </span>
+                    </span>
+                    <span className="ce-item-sub">
+                      {item.lineage?.splitGroupId ? (
+                        <span className="ce-chip">
+                          {t("cardEditor.panel.detail.lineage", {
+                            index: item.lineage.splitIndex ?? 1,
+                            count: item.lineage.splitCount ?? 1,
+                            origin: item.lineage.originName,
+                          })}
+                        </span>
+                      ) : null}
+                      {issueCount > 0 ? (
+                        <span
+                          className="ce-chip ce-chip--review"
+                          title={(item.characters ?? []).flatMap((character) => character.issues ?? []).join("\n")}
+                        >
+                          {t("cardEditor.panel.detail.issues", { count: issueCount })}
+                        </span>
+                      ) : null}
+                      <ItemSummary item={item} t={t} />
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          {listedItems.length === 0 ? <p className="ce-caption">{t("cardEditor.workspace.noItems")}</p> : null}
+        </div>
+        <div className="ce-inspector">
+          {selected && !avatarOpen ? (
+            <>
+              <div className="ce-inspector-head">
+                <button
+                  type="button"
+                  className="mari-chrome-control mari-chrome-control--small ce-mobile-only"
+                  onClick={() => setMobilePane("list")}
+                >
+                  <ChevronLeft className="ce-icon" aria-hidden="true" />
+                  {t("cardEditor.workspace.items")}
+                </button>
+                <h3 className="ce-queue-name">{selected.characterName}</h3>
+                <span className={`ce-chip ce-chip--${itemStatusTone(selected.status)}`}>
+                  {t(itemStatusLabelKey(selected.status))}
+                </span>
+              </div>
+              <div className="ce-inspector-tabs" role="tablist" aria-label={selected.characterName}>
+                {tabs.map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === name}
+                    onClick={() => setTab(name)}
+                  >
+                    {t(`cardEditor.workspace.tab.${name}`)}
+                  </button>
+                ))}
+              </div>
+            </>
           ) : null}
+          <div className="ce-inspector-body" role={selected && !avatarOpen ? "tabpanel" : undefined}>
+            {inspectorBody}
+          </div>
         </div>
-      ) : null}
-      {session.combinedCardId ? (
-        <div className="ce-notice" role="status">
-          <span>{t("cardEditor.panel.detail.combinedCreated", { id: session.combinedCardId })}</span>
-        </div>
-      ) : null}
-      {session.status === "interrupted" ? (
-        <div className="ce-notice" role="status">
-          <span>{t("cardEditor.panel.interruptedNotice")}</span>
-        </div>
-      ) : null}
-      {session.status === "active" ? (
-        <p className="ce-caption" role="status">
-          {live.kind === "batch"
-            ? t("cardEditor.panel.live.batch", { index: live.batchIndex, count: live.batchCount }) +
-              (live.batchAttempts > 1 ? t("cardEditor.panel.live.batchRetry", { attempt: live.batchAttempts }) : "")
-            : live.kind === "items"
-              ? t("cardEditor.panel.live.items", { running: live.runningItems, total: session.stats.total })
-              : live.kind === "queued"
-                ? t("cardEditor.panel.live.queued", { count: live.queuedItems })
-                : t("cardEditor.panel.progress", { done: session.stats.done, total: session.stats.total })}
-        </p>
-      ) : null}
-      {enforcementProgress ? (
-        <p className="ce-caption ce-live-line" role="status">
-          {t("cardEditor.panel.enforcementProgress", enforcementProgress)}
-        </p>
-      ) : null}
-      {actionError ? (
-        <div className="ce-status ce-status--error" role="alert">
-          {t("cardEditor.panel.detail.actionError", { message: actionError })}
-        </div>
-      ) : null}
-      <div className="ce-panel-actions">
-        {combineAvailable ? (
-          combinePartial && !confirmCombine ? (
+      </div>
+      <footer className="ce-bulkbar">
+        <span className="ce-caption ce-bulkbar-count">
+          {t("cardEditor.workspace.selectedCount", { count: checkedItems.length })}
+        </span>
+        <div className="ce-bulkbar-actions">
+          {checkedReviewable.length > 0 ? (
+            <>
+              <button
+                type="button"
+                className="mari-chrome-control mari-chrome-control--primary mari-chrome-control--small"
+                disabled={busyKey !== null}
+                onClick={() => decideMany("approve-selected", checkedReviewable, "approve")}
+              >
+                {t("cardEditor.workspace.approveSelected", { count: checkedReviewable.length })}
+              </button>
+              <button
+                type="button"
+                className="mari-chrome-control mari-chrome-control--small ce-danger-button"
+                disabled={busyKey !== null}
+                onClick={() => decideMany("reject-selected", checkedReviewable, "reject")}
+              >
+                {t("cardEditor.workspace.rejectSelected", { count: checkedReviewable.length })}
+              </button>
+            </>
+          ) : null}
+          {reviewableItems.length > 0 ? (
             <button
               type="button"
               className="mari-chrome-control mari-chrome-control--small"
               disabled={busyKey !== null}
-              onClick={() => setConfirmCombine(true)}
+              onClick={() => decideMany("approve-all", reviewableItems, "approve")}
             >
-              {t("cardEditor.panel.detail.combine", { count: collectedCount })}
+              {busyKey === "approve-all"
+                ? t("cardEditor.queue.approveAllWorking")
+                : t("cardEditor.workspace.approveAll", { count: reviewableItems.length })}
             </button>
-          ) : combinePartial && confirmCombine ? (
-            <span className="ce-confirm-strip" role="group" aria-label={t("cardEditor.panel.detail.combine")}>
-              <span className="ce-caption">
-                {t("cardEditor.panel.detail.combinePartialConfirm", { count: collectedCount, total: resultItemCount })}
-              </span>
+          ) : null}
+          {combineAvailable ? (
+            combinePartial && !confirmCombine ? (
               <button
                 type="button"
                 className="mari-chrome-control mari-chrome-control--small"
                 disabled={busyKey !== null}
+                onClick={() => setConfirmCombine(true)}
+              >
+                {t("cardEditor.panel.detail.combine", { count: collectedCount })}
+              </button>
+            ) : combinePartial && confirmCombine ? (
+              <span className="ce-confirm-strip" role="group" aria-label={t("cardEditor.panel.detail.combine")}>
+                <span className="ce-caption">
+                  {t("cardEditor.panel.detail.combinePartialConfirm", {
+                    count: collectedCount,
+                    total: resultItemCount,
+                  })}
+                </span>
+                <button
+                  type="button"
+                  className="mari-chrome-control mari-chrome-control--small"
+                  disabled={busyKey !== null}
+                  onClick={combineCollected}
+                >
+                  {t("cardEditor.panel.detail.combineYes", { count: collectedCount })}
+                </button>
+                <button
+                  type="button"
+                  className="mari-chrome-control mari-chrome-control--small"
+                  disabled={busyKey !== null}
+                  onClick={() => setConfirmCombine(false)}
+                >
+                  {t("cardEditor.panel.detail.combineNo")}
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="mari-chrome-control mari-chrome-control--primary mari-chrome-control--small"
+                disabled={busyKey !== null}
                 onClick={combineCollected}
               >
-                {t("cardEditor.panel.detail.combineYes", { count: collectedCount })}
+                {t("cardEditor.panel.detail.combine", { count: collectedCount })}
+              </button>
+            )
+          ) : null}
+          {duplicateAppliedCount > 0 ? (
+            <button
+              type="button"
+              className="mari-chrome-control mari-chrome-control--small"
+              disabled={busyKey !== null}
+              onClick={() => duplicateApplied(duplicateAppliedCount)}
+            >
+              {t("cardEditor.panel.detail.duplicateApplied", { count: duplicateAppliedCount })}
+            </button>
+          ) : null}
+          {counts?.phase2Ready ? (
+            <button
+              type="button"
+              className="mari-chrome-control mari-chrome-control--primary mari-chrome-control--small"
+              disabled={busyKey !== null}
+              onClick={() =>
+                void runAction("phase2", async () => {
+                  const updated = await startSessionPhase2(sessionId);
+                  setPhaseView(2);
+                  return updated;
+                })
+              }
+            >
+              {t("cardEditor.pipeline.startPhase2", { count: counts.results })}
+            </button>
+          ) : null}
+          {failedCount > 0 ? (
+            <button
+              type="button"
+              className="mari-chrome-control mari-chrome-control--small"
+              disabled={busyKey !== null}
+              onClick={rerunAllFailed}
+            >
+              {t("cardEditor.panel.detail.rerunFailed", { count: failedCount })}
+            </button>
+          ) : null}
+          {counts || combinedMode ? (
+            <button
+              type="button"
+              className="mari-chrome-control mari-chrome-control--small"
+              aria-pressed={avatarOpen}
+              onClick={() => {
+                setAvatarOpen((open) => !open);
+                setMobilePane("inspector");
+              }}
+            >
+              {t("cardEditor.avatar.open")}
+            </button>
+          ) : null}
+          {session.status === "active" ? (
+            <button
+              type="button"
+              className="mari-chrome-control mari-chrome-control--small"
+              disabled={busyKey !== null}
+              onClick={() => void runAction("cancel-all", () => cancelSession(sessionId))}
+            >
+              {t("cardEditor.panel.detail.cancelAll")}
+            </button>
+          ) : null}
+          {session.status === "completed" || session.status === "canceled" ? (
+            <button
+              type="button"
+              className="mari-chrome-control mari-chrome-control--small"
+              disabled={busyKey !== null}
+              onClick={runAgain}
+            >
+              {t("cardEditor.panel.runAgain")}
+            </button>
+          ) : null}
+          {confirmDelete ? (
+            <span className="ce-confirm-strip" role="group" aria-label={t("cardEditor.panel.delete")}>
+              <span className="ce-caption">
+                {session.status === "active"
+                  ? t("cardEditor.panel.deleteConfirmActive")
+                  : t("cardEditor.panel.deleteConfirm")}
+              </span>
+              <button
+                type="button"
+                className="mari-chrome-control mari-chrome-control--small ce-danger-button"
+                disabled={busyKey !== null}
+                onClick={removeSession}
+              >
+                {session.status === "active" ? t("cardEditor.panel.deleteYesActive") : t("cardEditor.panel.deleteYes")}
               </button>
               <button
                 type="button"
                 className="mari-chrome-control mari-chrome-control--small"
                 disabled={busyKey !== null}
-                onClick={() => setConfirmCombine(false)}
+                onClick={() => setConfirmDelete(false)}
               >
-                {t("cardEditor.panel.detail.combineNo")}
+                {t("cardEditor.panel.deleteNo")}
               </button>
             </span>
           ) : (
             <button
               type="button"
-              className="mari-chrome-control mari-chrome-control--primary mari-chrome-control--small"
-              disabled={busyKey !== null}
-              onClick={combineCollected}
-            >
-              {t("cardEditor.panel.detail.combine", { count: collectedCount })}
-            </button>
-          )
-        ) : null}
-        {duplicateAppliedCount > 0 ? (
-          <button
-            type="button"
-            className="mari-chrome-control mari-chrome-control--small"
-            disabled={busyKey !== null}
-            onClick={() => duplicateApplied(duplicateAppliedCount)}
-          >
-            {t("cardEditor.panel.detail.duplicateApplied", { count: duplicateAppliedCount })}
-          </button>
-        ) : null}
-        {counts?.phase2Ready ? (
-          <button
-            type="button"
-            className="mari-chrome-control mari-chrome-control--primary mari-chrome-control--small"
-            disabled={busyKey !== null}
-            onClick={() =>
-              void runAction("phase2", async () => {
-                const updated = await startSessionPhase2(sessionId);
-                setPhaseView(2);
-                return updated;
-              })
-            }
-          >
-            {t("cardEditor.pipeline.startPhase2", { count: counts.results })}
-          </button>
-        ) : null}
-        {counts || combinedMode ? (
-          <button
-            type="button"
-            className="mari-chrome-control mari-chrome-control--small"
-            onClick={() => setAvatarOpen(true)}
-          >
-            {t("cardEditor.avatar.open")}
-          </button>
-        ) : null}
-        {reviewableCount > 0 ? (
-          <button
-            type="button"
-            className="mari-chrome-control mari-chrome-control--primary mari-chrome-control--small"
-            onClick={() => setQueueFocus(null)}
-          >
-            {t("cardEditor.panel.detail.reviewQueue", { count: reviewableCount })}
-          </button>
-        ) : null}
-        {session.status === "active" ? (
-          <button
-            type="button"
-            className="mari-chrome-control mari-chrome-control--small"
-            disabled={busyKey !== null}
-            onClick={() => void runAction("cancel-all", () => cancelSession(sessionId))}
-          >
-            {t("cardEditor.panel.detail.cancelAll")}
-          </button>
-        ) : null}
-        {session.status === "completed" || session.status === "canceled" ? (
-          <button
-            type="button"
-            className="mari-chrome-control mari-chrome-control--small"
-            disabled={busyKey !== null}
-            onClick={runAgain}
-          >
-            {t("cardEditor.panel.runAgain")}
-          </button>
-        ) : null}
-        {failedCount > 0 ? (
-          <button
-            type="button"
-            className="mari-chrome-control mari-chrome-control--small"
-            disabled={busyKey !== null}
-            onClick={rerunAllFailed}
-          >
-            {t("cardEditor.panel.detail.rerunFailed", { count: failedCount })}
-          </button>
-        ) : null}
-        {confirmDelete ? (
-          <span className="ce-confirm-strip" role="group" aria-label={t("cardEditor.panel.delete")}>
-            <span className="ce-caption">
-              {session.status === "active"
-                ? t("cardEditor.panel.deleteConfirmActive")
-                : t("cardEditor.panel.deleteConfirm")}
-            </span>
-            <button
-              type="button"
-              className="mari-chrome-control mari-chrome-control--small ce-danger-button"
-              disabled={busyKey !== null}
-              onClick={removeSession}
-            >
-              {session.status === "active" ? t("cardEditor.panel.deleteYesActive") : t("cardEditor.panel.deleteYes")}
-            </button>
-            <button
-              type="button"
               className="mari-chrome-control mari-chrome-control--small"
               disabled={busyKey !== null}
-              onClick={() => setConfirmDelete(false)}
+              onClick={() => setConfirmDelete(true)}
             >
-              {t("cardEditor.panel.deleteNo")}
+              {t("cardEditor.panel.detail.delete")}
             </button>
-          </span>
-        ) : (
-          <button
-            type="button"
-            className="mari-chrome-control mari-chrome-control--small"
-            disabled={busyKey !== null}
-            onClick={() => setConfirmDelete(true)}
-          >
-            {t("cardEditor.panel.detail.delete")}
-          </button>
-        )}
-      </div>
-      <ul className="ce-items">
-        {pageItems.map((item) => {
-          const canReview = isReviewable(item);
-          const canInspect =
-            (item.status === "applied" || item.status === "duplicated") && (item.updates ?? []).length > 0;
-          const canRerun = isFailed(item);
-          const canEditRetry = isFailed(item) && item.failure?.renderedPrompt !== undefined;
-          const canFixJson = item.status === "failed-parse" && !!item.failure?.rawOutput;
-          const canCancel = item.status === "queued" && session.status === "active";
-          const canDecideSplit = item.status === "awaiting-split";
-          const child = isSplitChild(item, session.items);
-          const issueCount = (item.characters ?? []).reduce(
-            (total, character) => total + (character.issues?.length ?? 0),
-            0,
-          );
-          return (
-            <li className={`ce-item${child ? " ce-item--child" : ""}`} key={item.itemId}>
-              <div className="ce-item-main">
-                {/* No engine deep link to a character editor exists for packages — name only. */}
-                <span className="ce-item-name">{item.characterName}</span>
-                {item.lineage?.splitGroupId ? (
-                  <span className="ce-chip">
-                    {t("cardEditor.panel.detail.lineage", {
-                      index: item.lineage.splitIndex ?? 1,
-                      count: item.lineage.splitCount ?? 1,
-                      origin: item.lineage.originName,
-                    })}
-                  </span>
-                ) : null}
-                {issueCount > 0 ? (
-                  <span
-                    className="ce-chip ce-chip--review"
-                    title={(item.characters ?? []).flatMap((character) => character.issues ?? []).join("\n")}
-                  >
-                    {t("cardEditor.panel.detail.issues", { count: issueCount })}
-                  </span>
-                ) : null}
-                <span className={`ce-chip ce-chip--${itemStatusTone(item.status)}`}>
-                  {t(itemStatusLabelKey(item.status))}
-                </span>
-              </div>
-              <div className="ce-item-sub">
-                <ItemSummary item={item} t={t} />
-                {autoApplyErrors[item.itemId] ? (
-                  <span className="ce-item-failure">
-                    {t("cardEditor.panel.detail.autoApplyError", {
-                      name: item.characterName,
-                      message: autoApplyErrors[item.itemId]!,
-                    })}
-                  </span>
-                ) : null}
-              </div>
-              {canReview || canInspect || canRerun || canEditRetry || canCancel || canDecideSplit ? (
-                <div className="ce-item-actions">
-                  {canDecideSplit ? (
-                    <button
-                      type="button"
-                      className="mari-chrome-control mari-chrome-control--primary mari-chrome-control--small"
-                      onClick={() => setSplitReviewId(item.itemId)}
-                    >
-                      {t("cardEditor.panel.action.reviewSplit")}
-                    </button>
-                  ) : null}
-                  {canReview ? (
-                    <button
-                      type="button"
-                      className="mari-chrome-control mari-chrome-control--small"
-                      onClick={() => setQueueFocus(item.itemId)}
-                    >
-                      {t("cardEditor.panel.action.review")}
-                    </button>
-                  ) : null}
-                  {canInspect ? (
-                    <button
-                      type="button"
-                      className="mari-chrome-control mari-chrome-control--small"
-                      onClick={() => setQueueFocus(item.itemId)}
-                    >
-                      {t("cardEditor.panel.action.inspect")}
-                    </button>
-                  ) : null}
-                  {canRerun ? (
-                    <button
-                      type="button"
-                      className="mari-chrome-control mari-chrome-control--small"
-                      disabled={busyKey !== null}
-                      onClick={() =>
-                        void runAction(`rerun-${item.itemId}`, () => retrySessionItem(sessionId, item.itemId))
-                      }
-                    >
-                      {t("cardEditor.panel.action.rerun")}
-                    </button>
-                  ) : null}
-                  {canFixJson ? (
-                    <button
-                      type="button"
-                      className="mari-chrome-control mari-chrome-control--small"
-                      disabled={busyKey !== null}
-                      onClick={() => setFixJsonId(item.itemId)}
-                    >
-                      {t("cardEditor.panel.action.fixJson")}
-                    </button>
-                  ) : null}
-                  {canEditRetry ? (
-                    <button
-                      type="button"
-                      className="mari-chrome-control mari-chrome-control--small"
-                      disabled={busyKey !== null}
-                      onClick={() => setEditRetryId(item.itemId)}
-                    >
-                      {t("cardEditor.panel.action.editRetry")}
-                    </button>
-                  ) : null}
-                  {canCancel ? (
-                    <button
-                      type="button"
-                      className="mari-chrome-control mari-chrome-control--small"
-                      disabled={busyKey !== null}
-                      onClick={() =>
-                        void runAction(`cancel-${item.itemId}`, () => cancelSessionItem(sessionId, item.itemId))
-                      }
-                    >
-                      {t("cardEditor.panel.action.cancelItem")}
-                    </button>
-                  ) : null}
-                </div>
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
-      {pageCount > 1 ? (
-        <div className="ce-pager">
-          <button
-            type="button"
-            className="mari-chrome-control mari-chrome-control--small"
-            disabled={clampedPage <= 0}
-            aria-label={t("cardEditor.panel.detail.pagePrev")}
-            onClick={() => setPage(clampedPage - 1)}
-          >
-            <ChevronLeft className="ce-icon" aria-hidden="true" />
-          </button>
-          <span className="ce-caption">
-            {t("cardEditor.panel.detail.page", { page: clampedPage + 1, pages: pageCount })}
-          </span>
-          <button
-            type="button"
-            className="mari-chrome-control mari-chrome-control--small"
-            disabled={clampedPage >= pageCount - 1}
-            aria-label={t("cardEditor.panel.detail.pageNext")}
-            onClick={() => setPage(clampedPage + 1)}
-          >
-            <ChevronRight className="ce-icon" aria-hidden="true" />
-          </button>
+          )}
         </div>
-      ) : null}
-      {fixJsonItem && fixJsonItem.status === "failed-parse" ? (
-        <FixJsonDialog
-          localization={localization}
-          session={session}
-          item={fixJsonItem}
-          onClose={() => setFixJsonId(null)}
-          onUpdated={(updated) => {
-            setSession(updated);
-            setFixJsonId(null);
-          }}
-        />
-      ) : null}
-      {splitReviewItem ? (
-        <SplitReviewDialog
-          localization={localization}
-          session={session}
-          item={splitReviewItem}
-          onClose={() => setSplitReviewId(null)}
-          onUpdated={(updated) => {
-            setSession(updated);
-            setSplitReviewId(null);
-          }}
-        />
-      ) : null}
-      {avatarOpen ? (
-        <AvatarStudio localization={localization} session={session} onClose={() => setAvatarOpen(false)} />
-      ) : null}
-      {editRetryItem ? (
-        <EditRetryDialog
-          localization={localization}
-          session={session}
-          item={editRetryItem}
-          onClose={() => setEditRetryId(null)}
-          onRetried={(updated) => {
-            setSession(updated);
-            setEditRetryId(null);
-          }}
-        />
-      ) : null}
+      </footer>
     </section>
   );
 }

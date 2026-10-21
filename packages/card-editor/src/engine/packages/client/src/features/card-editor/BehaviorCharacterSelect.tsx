@@ -32,7 +32,8 @@ export function BehaviorCharacterSelect({
   allowInherit?: boolean;
   buttonLabel: string;
   inheritLabel?: string;
-  noneLabel: string;
+  /** Omitted: no "none" choice (the setup's add-a-character search). */
+  noneLabel?: string;
 }) {
   const t = (key: string, values?: Record<string, string | number>) => translateCardEditor(localization, key, values);
   const listId = useId();
@@ -115,13 +116,17 @@ export function BehaviorCharacterSelect({
           },
         ]
       : []),
-    {
-      key: "none",
-      label: noneLabel,
-      avatarPath: null,
-      selected: selection.kind === "none",
-      select: () => pick({ kind: "none" }),
-    },
+    ...(noneLabel === undefined
+      ? []
+      : [
+          {
+            key: "none",
+            label: noneLabel,
+            avatarPath: null,
+            selected: selection.kind === "none",
+            select: () => pick({ kind: "none" }),
+          },
+        ]),
     ...options.map((option) => ({
       key: option.id,
       label: option.name,
@@ -135,7 +140,11 @@ export function BehaviorCharacterSelect({
   const active = entries[Math.min(activeIndex, Math.max(entries.length - 1, 0))];
 
   const faceLabel =
-    selection.kind === "character" ? selection.name : selection.kind === "inherit" ? (inheritLabel ?? "") : noneLabel;
+    selection.kind === "character"
+      ? selection.name
+      : selection.kind === "inherit"
+        ? (inheritLabel ?? "")
+        : (noneLabel ?? buttonLabel);
 
   const onSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Escape") {

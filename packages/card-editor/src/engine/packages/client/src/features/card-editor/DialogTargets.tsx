@@ -21,17 +21,28 @@ export function DialogTargets({
   targetsLoading,
   onUpdateTarget,
   onRemoveTarget,
+  onAddTarget,
 }: {
   localization?: CardEditorLocalizationContext;
   targets: DialogTarget[];
   targetsLoading: boolean;
   onUpdateTarget: (characterId: string, patch: Partial<DialogTarget>) => void;
   onRemoveTarget: (characterId: string) => void;
+  /** Library search that appends a card to the run. */
+  onAddTarget: (selection: { id: string; name: string; avatarPath?: string | null }) => void;
 }) {
   const t = (key: string, values?: Record<string, string | number>) => translateCardEditor(localization, key, values);
   return (
     <fieldset className="ce-section" data-ce-section="targets">
       <legend className="ce-section-heading">{t("cardEditor.dialog.targets.title", { count: targets.length })}</legend>
+      <BehaviorCharacterSelect
+        localization={localization}
+        selection={{ kind: "none" }}
+        onChange={(next) => {
+          if (next.kind === "character") onAddTarget(next);
+        }}
+        buttonLabel={t("cardEditor.dialog.targets.add")}
+      />
       {targetsLoading ? <div className="ce-status">{t("cardEditor.dialog.targets.loading")}</div> : null}
       {!targetsLoading && targets.length === 0 ? (
         <p className="ce-caption">{t("cardEditor.dialog.targets.empty")}</p>

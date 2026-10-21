@@ -14,7 +14,10 @@ import {
 } from "../packages/card-editor/src/engine/packages/client/src/features/card-editor/diff.ts";
 import {
   deriveLiveStatus,
+  inspectorTabs,
   isQueueItem,
+  itemGroup,
+  runStage,
   ITEM_STATUSES,
   itemStatusLabelKey,
   itemStatusTone,
@@ -51,6 +54,7 @@ const panelStatus = read("panel-status.ts");
 const diffSource = read("diff.ts");
 const visiblePoll = read("use-visible-poll.ts");
 const api = read("api.ts");
+const styles = read("styles.ts");
 const catalog = JSON.parse(read("locales/en.json"));
 const routesSource = readFileSync(
   new URL("../../../../server/src/services/card-editor/routes.ts", featureRoot),
@@ -325,48 +329,70 @@ assert.match(clientEntry, /view === "overlay"/u, "the overlay workspace view is 
 assert.match(workspace, /<RunsPanel/u, "the workspace hosts the real panel");
 assert.match(clientEntry, /<AgentPanelSummary/u, "the agent panel is the compact launcher/summary");
 assert.doesNotMatch(clientEntry, /RunsPanelPlaceholder/u);
-assert.match(runsPanel, /useVisiblePoll\(refresh, 2000, detailId === null\)/u, "2s polling while visible");
+assert.match(runsPanel, /useVisiblePoll\(refresh, 3000, true\)/u, "the always-visible rail polls every 3s");
+assert.match(runsPanel, /session\.id === detailId\) continue/u, "the open run's own poll drives its enforcement");
 assert.match(sessionDetail, /useVisiblePoll\(refresh, 2000\)/u, "the detail polls while visible too");
 assert.match(visiblePoll, /IntersectionObserver/u, "polling pauses when the panel is off screen");
 assert.match(visiblePoll, /visibilitychange/u, "polling pauses in hidden tabs");
 assert.match(runsPanel, /listSessions\(\)/u);
 assert.match(runsPanel, /role="progressbar"/u, "active sessions render a progress bar");
-assert.match(runsPanel, /cancelSession\(entry\.id\)/u);
-assert.match(runsPanel, /deleteSession\(entry\.id\)/u);
-assert.match(runsPanel, /cardEditor\.panel\.interruptedNotice/u, "interrupted sessions explain the rerun path");
-assert.match(runsPanel, /cardEditor\.panel\.refresh/u, "manual refresh is always available");
+// Run actions (cancel, run again, delete) live in the open run's bulk bar; the rail only selects.
+assert.match(sessionDetail, /cancelSession\(sessionId\)/u);
+assert.match(sessionDetail, /cardEditor\.panel\.interruptedNotice/u, "interrupted sessions explain the rerun path");
+assert.match(runsPanel, /cardEditor\.workspace\.newRun/u, "the rail starts a new run");
 assert.match(runsPanel, /executeCompletionEnforcement/u, "list polling auto-executes completion plans");
-assert.match(runsPanel, /cardEditor\.panel\.completionMode/u, "list rows show the completion policy chip");
 assert.match(runsPanel, /cardEditor\.panel\.enforcementProgress/u, "list rows show enforcement progress");
-assert.match(runsPanel, /rerunSession\(entry\.id\)/u, "completed/canceled list rows can run again");
 assert.match(runsPanel, /data-ce-section="bulk-settings"/u, "the runs panel exposes the bulk settings section");
 assert.match(runsPanel, /getBulkSettings\(\)/u, "bulk settings load with the panel");
 assert.match(runsPanel, /saveBulkSettings\(/u, "the save action persists panel settings");
 assert.match(runsPanel, /maxParallelAgents: maxParallel > 0 \? maxParallel : null/u, "0 maps to follow-the-connection");
 assert.match(runsPanel, /cardEditor\.panel\.settings\.disableAutoVerdicts/u, "the require-review toggle is offered");
 
+// ── 8b. Workspace list groups, inspector tabs and run stage ──
+{
+  const card = (status, extra = {}) => ({ itemId: status, status, snapshots: {}, ...extra });
+  assert.equal(itemGroup(card("awaiting-review")), "review");
+  assert.equal(itemGroup(card("needs-review")), "review");
+  assert.equal(itemGroup(card("duplicated")), "approved");
+  assert.equal(itemGroup(card("awaiting-split")), "split");
+  assert.equal(itemGroup(card("failed-parse")), "failed");
+  assert.equal(itemGroup(card("canceled")), "rejected");
+  assert.equal(itemGroup(card("queued")), "running");
+  assert.deepEqual(inspectorTabs(card("awaiting-review")), ["changes", "summary"]);
+  assert.deepEqual(inspectorTabs(card("awaiting-split")), ["split", "summary"], "a split decision opens first");
+  assert.deepEqual(
+    inspectorTabs(card("failed-parse", { failure: { rawOutput: "{", renderedPrompt: { system: "", user: "" } } })),
+    ["json", "retry", "summary"],
+    "an unparsed answer opens on its raw output, then the prompt",
+  );
+  assert.deepEqual(inspectorTabs(card("running")), ["summary"]);
+  const run = (status, items) => ({ status, items });
+  assert.equal(runStage(run("active", [card("awaiting-review")])), "processing");
+  assert.equal(runStage(run("completed", [card("applied"), card("awaiting-split")])), "review");
+  assert.equal(runStage(run("completed", [card("applied"), card("rejected")])), "finish");
+}
+
 // ── 9. Session detail structure ──
-assert.match(sessionDetail, /PAGE_SIZE = 50/u, "items paginate at 50 per page (SPEC §5: 200+ cards)");
+assert.match(
+  styles,
+  /content-visibility: auto/u,
+  "long runs list every card; off-screen rows skip layout (SPEC §5: 200+ cards)",
+);
 assert.match(sessionDetail, /item\.autoApply === true/u, "the auto-approve driver keys on the autoApply hint");
 assert.match(sessionDetail, /approveSessionItem\(session, item, \{ force: false \}\)/u, "auto-approve never forces");
-assert.match(sessionDetail, /retrySessionItem\(sessionId, item\.itemId\)/u);
-assert.match(sessionDetail, /cancelSessionItem\(sessionId, item\.itemId\)/u, "queued items cancel individually");
+assert.match(sessionDetail, /retrySessionItem\(sessionId, selected\.itemId\)/u);
+assert.match(sessionDetail, /cancelSessionItem\(sessionId, selected\.itemId\)/u, "queued items cancel individually");
 assert.match(sessionDetail, /deleteSession\(sessionId, \{ force: session\?\.status === "active" \}\)/u);
 assert.match(sessionDetail, /<VerdictQueue/u);
 assert.match(sessionDetail, /<EditRetryDialog/u);
-assert.match(sessionDetail, /item\.failure\?\.renderedPrompt !== undefined/u, "edit & retry needs the rendered prompt");
+assert.match(panelStatus, /item\.failure\?\.renderedPrompt !== undefined/u, "edit & retry needs the rendered prompt");
 assert.match(sessionDetail, /cardEditor\.panel\.detail\.rerunFailed/u, "rerun-all-failed session action");
 assert.match(
-  sessionDetail,
+  panelStatus,
   /item\.status === "applied" \|\| item\.status === "duplicated"/u,
-  "applied/duplicated items stay inspectable after the verdict",
+  "applied/duplicated items group as approved",
 );
-assert.match(sessionDetail, /cardEditor\.panel\.action\.inspect/u, "applied items expose an Inspect action");
-assert.match(
-  sessionDetail,
-  /\(item\.updates \?\? \[\]\)\.length > 0/u,
-  "inspect needs proposed updates to diff against",
-);
+assert.match(panelStatus, /if \(isQueueItem\(item\)\) tabs\.push\("changes"\)/u, "decided cards keep a Changes tab");
 assert.match(sessionDetail, /executeCompletionEnforcement/u, "detail polling auto-executes completion plans");
 assert.match(sessionDetail, /cardEditor\.panel\.completionMode/u, "detail shows the completion policy chip");
 assert.match(sessionDetail, /cardEditor\.panel\.enforcementProgress/u, "detail shows enforcement progress");
@@ -390,8 +416,9 @@ assert.match(verdictQueue, /event\.key === "r" \|\| event\.key === "R"/u, "R rej
 assert.match(verdictQueue, /event\.key === "a" \|\| event\.key === "A"/u, "A approves");
 assert.match(verdictQueue, /event\.key === "ArrowLeft"/u);
 assert.match(verdictQueue, /event\.key === "ArrowRight"/u);
-assert.match(verdictQueue, /ce-dot--\$\{verdict\}/u, "progress dots color by verdict");
-assert.match(verdictQueue, /cardEditor\.queue\.approveAll/u, "approve-all-remaining link");
+assert.match(verdictQueue, /onFocusChange\(id\)/u, "queue moves report back to the workspace list");
+assert.match(sessionDetail, /cardEditor\.workspace\.approveAll/u, "approve-all-remaining lives in the bulk bar");
+assert.match(sessionDetail, /cardEditor\.workspace\.approveSelected/u, "checked cards approve together");
 assert.match(verdictQueue, /cardEditor\.queue\.staleApply/u, "stale cards surface the §1 inline confirmation");
 assert.match(verdictQueue, /cardEditor\.queue\.staleSkip/u);
 assert.match(verdictQueue, /cardEditor\.queue\.duplicateNote/u, "duplicate mode explains the copy flow");
@@ -399,10 +426,12 @@ assert.match(verdictQueue, /tagName === "TEXTAREA"/u, "keyboard triage never fir
 assert.match(verdictQueue, /itemStatusTone\(current\.status\)/u);
 
 // ── 11. Edit & retry dialog (DESIGN §3) ──
-assert.match(editRetryDialog, /useDialogFocusTrap\(true, \(\) => retrying, onClose\)/u);
-assert.match(editRetryDialog, /ce-overlay/u);
-assert.match(editRetryDialog, /role="dialog"/u);
-assert.match(editRetryDialog, /aria-modal="true"/u);
+// Former dialogs are inspector panes of the workspace (the workspace itself is the modal).
+assert.match(editRetryDialog, /<WorkspacePane/u);
+assert.match(editRetryDialog, /closeOnEscape=\{false\}/u, "a stray Escape never discards an edited prompt");
+assert.match(workspace, /role="dialog"/u);
+assert.match(workspace, /aria-modal="true"/u);
+assert.match(workspace, /useDialogFocusTrap\(open,/u, "the workspace traps focus and closes on Escape");
 assert.match(editRetryDialog, /editRetrySessionItem\(session\.id, item\.itemId, \{ system, user \}\)/u);
 assert.match(editRetryDialog, /rendered\?\.system/u, "textareas prefill from the rendered prompt");
 assert.match(editRetryDialog, /cardEditor\.editRetry\.missing/u, "items without a retained prompt get guidance");

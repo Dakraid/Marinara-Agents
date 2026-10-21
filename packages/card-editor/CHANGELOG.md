@@ -1,3 +1,10 @@
+## 10.0.7 — 2026-10-21
+
+- The bulk Card Editor is one workspace now, laid over the character editor (a full sheet on phones). A run rail on the left, a stage bar (Setup, Processing, Review, Finish) on top.
+- Setup shows targets, settings and a run summary side by side. **New run** works without a library selection: search to add characters. The schema editor opens in place.
+- A run lists every card with status filters and name search. Pick a card to see it in the inspector: Changes, Split, Prompt & retry, Raw output or Details. No more stacked dialogs.
+- Check cards to approve or reject them together. Approve all, rerun failed, duplicate, combine, Avatar studio and delete sit in one bar.
+
 ## 10.0.6 — 2026-10-21
 
 - **Approve all** and the automatic save after a run no longer write the same card twice. Both could pick up one planned save at the same moment, which left extra copies in duplicate mode and made cards flicker between "awaiting review" and "approved".
