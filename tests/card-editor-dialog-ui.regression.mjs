@@ -300,14 +300,25 @@ assert.match(dialogTargets, /data-ce-section="targets"/u, "missing dialog sectio
 for (const section of ["model", "instructions", "processing", "saving"]) {
   assert.match(dialog, new RegExp(`data-ce-section="${section}"`, "u"), `missing dialog section ${section}`);
 }
-assert.match(dialog, /role="dialog"/u);
-assert.match(dialog, /aria-modal="true"/u);
-assert.match(dialog, /aria-label=\{t\("cardEditor\.dialog\.title"\)\}/u);
+// The dispatch form is the workspace's Setup pane; the workspace itself is the modal dialog.
+assert.match(dialog, /<WorkspacePane/u);
+assert.match(dialog, /label=\{t\("cardEditor\.dialog\.title"\)\}/u);
+assert.match(dialog, /closeOnEscape=\{!studioOpen\}/u, "the schema studio owns Escape while it is open");
+assert.match(
+  dialogControls,
+  /closest\("input, textarea, select, \[contenteditable\]"\)/u,
+  "fields keep Escape for themselves",
+);
+assert.match(dialog, /onAddTarget=\{addTarget\}/u, "a run started from the workspace adds its own cards");
 assert.match(dialogControls, /event\.key === "Escape"/u, "Esc must close the dialog");
 assert.match(dialogControls, /event\.key !== "Tab"/u, "the dialog must trap Tab focus");
 assert.match(dialogControls, /blockedRef\.current\(\)/u, "Esc stays blocked while a dispatch is in flight");
 assert.match(dialogTargets, /data-ce-autofocus/u, "initial focus lands on the first control");
-assert.match(dialog, /dispatching \|\| targets\.length === 0/u, "dispatch stays disabled without targets or in flight");
+assert.match(
+  dialog,
+  /dispatching \|\|\s*targets\.length === 0 \|\|\s*unloadableTargets \|\|\s*targetsPending/u,
+  "dispatch stays disabled without targets, while cards load, or in flight",
+);
 assert.match(dialog, /behaviorOverride: null/u, "per-target None style maps to behaviorOverride null");
 assert.match(dialog, /behaviorOverride: target\.style\.id/u, "per-target character style maps to its id");
 assert.match(
@@ -531,31 +542,38 @@ assert.match(workspaceSource, /payload\?\.dispatch\?\.prefill/u, "{dispatch.pref
 assert.match(workspaceSource, /parseDispatchPrefill/u, "the boundary re-validates prefill values");
 assert.match(workspaceSource, /PREFILL_SAVE_MODES/u, "prefill save modes are allowlisted");
 assert.match(workspaceSource, /PREFILL_PRESET_IDS/u, "prefill preset ids are allowlisted");
-assert.match(workspaceSource, /prefill=\{dispatchPrefill\}/u, "the parsed prefill reaches the dispatch dialog");
+assert.match(workspaceSource, /prefill=\{setup\.prefill\}/u, "the parsed prefill reaches the setup pane");
 assert.match(workspaceSource, /if \(!open\) return null/u, "the idle overlay renders nothing");
 assert.match(workspaceSource, /role="dialog"/u);
 assert.match(workspaceSource, /aria-modal="true"/u);
-assert.match(workspaceSource, /event\.key === "Escape"/u, "Escape closes the workspace");
+assert.match(workspaceSource, /useDialogFocusTrap\(open,/u, "Escape closes the workspace and Tab stays inside");
 assert.match(workspaceSource, /<BulkDispatchDialog/u);
-assert.match(workspaceSource, /setDetailId\(session\.id\)/u, "a dispatched session opens in the workspace");
-assert.match(workspaceSource, /splitView/u, "the workspace uses the two-pane panel layout");
-assert.match(read("RunsPanel.tsx"), /onDetailIdChange/u, "the panel detail selection is controllable by the workspace");
-assert.match(styles, /\.ce-workspace-split/u);
-assert.match(styles, /\.ce-dialog\.ce-workspace/u, "the workspace dialog has its own sizing");
 assert.match(
-  styles,
-  /\.ce-dialog\.ce-workspace \{[^}]*max-height: min\(94dvh, 68rem\)/u,
-  "the workspace claims most of the screen, capped at min(94dvh, 68rem)",
+  workspaceSource,
+  /onDispatched=\{\(session: BulkSession\) => showMain\(session\.id\)\}/u,
+  "a dispatched session opens in the workspace",
 );
-assert.doesNotMatch(
-  styles,
-  /\.ce-dialog\.ce-workspace \{[^}]*[^-]height: 92dvh/u,
-  "the workspace no longer forces a 92dvh void",
+assert.match(workspaceSource, /<RunsPanel/u, "the run rail sits beside the main pane");
+assert.match(
+  read("RunsPanel.tsx"),
+  /onSelect: \(sessionId: string\) => void/u,
+  "the workspace owns the rail selection",
 );
 assert.match(
+  workspaceSource,
+  /querySelector\("\.mari-editor-body"\)/u,
+  "the workspace lays itself over the editor body",
+);
+assert.match(styles, /\.ce-workspace \{/u, "the workspace has its own sizing");
+assert.match(
   styles,
-  /\.ce-workspace-split \{[^}]*min-height: 16rem/u,
-  "a sparse workspace keeps a modest floor instead of collapsing",
+  /\.ce-workspace \{[^}]*height: min\(94dvh, 68rem\)/u,
+  "without an editor body the workspace claims most of the screen, capped at min(94dvh, 68rem)",
+);
+assert.match(
+  styles,
+  /@media \(max-width: 48rem\)[\s\S]*\.ce-workspace-switch \{\s*display: flex/u,
+  "phones switch between rail and run",
 );
 
 // ── 10. Styling contract: scoped classes + engine chrome hooks ──

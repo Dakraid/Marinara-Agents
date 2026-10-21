@@ -18,7 +18,7 @@ import {
   type CompositorLayout,
   type CompositorOffset,
 } from "./avatar-compositor";
-import { useDialogFocusTrap } from "./dialog-controls";
+import { WorkspacePane } from "./dialog-controls";
 import { translateCardEditor, type CardEditorLocalizationContext } from "./localization";
 
 interface StudioCard {
@@ -91,7 +91,6 @@ export function AvatarStudio({
   }>({
     pointers: new Map(),
   });
-  const dialogRef = useDialogFocusTrap(true, () => busy, onClose);
 
   useEffect(() => {
     let cancelled = false;
@@ -293,216 +292,212 @@ export function AvatarStudio({
   );
 
   return (
-    <div className="ce-overlay" role="presentation" onClick={() => (!busy ? onClose() : undefined)}>
-      <section
-        ref={dialogRef}
-        className="ce-dialog ce-shell ce-avatar-studio"
-        role="dialog"
-        aria-modal="true"
-        aria-label={t("cardEditor.avatar.title")}
-        tabIndex={-1}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="ce-dialog-head">
-          <strong>{t("cardEditor.avatar.title")}</strong>
-          <button
-            type="button"
-            className="ce-dialog-close"
-            onClick={onClose}
-            disabled={busy}
-            aria-label={t("cardEditor.avatar.close")}
-          >
-            <X className="ce-icon" aria-hidden="true" />
-          </button>
-        </div>
-        <div className="ce-avatar-body">
-          <div className="ce-avatar-sources">
-            <span className="ce-label-title">{t("cardEditor.avatar.images")}</span>
-            {cards === null ? <p className="ce-caption">{t("cardEditor.avatar.loading")}</p> : null}
-            <ul className="ce-avatar-source-list">
-              {order.map((id, index) => {
-                const card = byId.get(id);
-                return (
-                  <li key={id} className="ce-avatar-source">
-                    <label className="ce-choice">
-                      <input
-                        type="checkbox"
-                        checked={included.has(id)}
-                        onChange={(event) =>
-                          setIncluded((currentIncluded) => {
-                            const next = new Set(currentIncluded);
-                            if (event.target.checked) next.add(id);
-                            else if (next.size > 1) next.delete(id);
-                            return next;
-                          })
-                        }
-                      />
-                      <span className="ce-choice-copy">
-                        <strong>{card?.name ?? id}</strong>
-                        {card && !card.image ? <small>{t("cardEditor.avatar.noImage")}</small> : null}
-                      </span>
-                    </label>
-                    <span className="ce-inline-controls">
-                      <button
-                        type="button"
-                        className="mari-chrome-control mari-chrome-control--small"
-                        disabled={index === 0}
-                        aria-label={t("cardEditor.avatar.moveUp", { name: card?.name ?? id })}
-                        onClick={() => moveSource(id, -1)}
-                      >
-                        <ArrowUp className="ce-icon" aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
-                        className="mari-chrome-control mari-chrome-control--small"
-                        disabled={index === order.length - 1}
-                        aria-label={t("cardEditor.avatar.moveDown", { name: card?.name ?? id })}
-                        onClick={() => moveSource(id, 1)}
-                      >
-                        <ArrowDown className="ce-icon" aria-hidden="true" />
-                      </button>
+    <WorkspacePane
+      className="ce-avatar-studio"
+      label={t("cardEditor.avatar.title")}
+      busy={busy}
+      closeOnEscape={false}
+      onClose={onClose}
+    >
+      <div className="ce-dialog-head">
+        <strong>{t("cardEditor.avatar.title")}</strong>
+        <button
+          type="button"
+          className="ce-dialog-close"
+          onClick={onClose}
+          disabled={busy}
+          aria-label={t("cardEditor.avatar.close")}
+        >
+          <X className="ce-icon" aria-hidden="true" />
+        </button>
+      </div>
+      <div className="ce-avatar-body">
+        <div className="ce-avatar-sources">
+          <span className="ce-label-title">{t("cardEditor.avatar.images")}</span>
+          {cards === null ? <p className="ce-caption">{t("cardEditor.avatar.loading")}</p> : null}
+          <ul className="ce-avatar-source-list">
+            {order.map((id, index) => {
+              const card = byId.get(id);
+              return (
+                <li key={id} className="ce-avatar-source">
+                  <label className="ce-choice">
+                    <input
+                      type="checkbox"
+                      checked={included.has(id)}
+                      onChange={(event) =>
+                        setIncluded((currentIncluded) => {
+                          const next = new Set(currentIncluded);
+                          if (event.target.checked) next.add(id);
+                          else if (next.size > 1) next.delete(id);
+                          return next;
+                        })
+                      }
+                    />
+                    <span className="ce-choice-copy">
+                      <strong>{card?.name ?? id}</strong>
+                      {card && !card.image ? <small>{t("cardEditor.avatar.noImage")}</small> : null}
                     </span>
-                  </li>
-                );
-              })}
-            </ul>
-            <p className="ce-caption">{t("cardEditor.avatar.sourcesHint")}</p>
+                  </label>
+                  <span className="ce-inline-controls">
+                    <button
+                      type="button"
+                      className="mari-chrome-control mari-chrome-control--small"
+                      disabled={index === 0}
+                      aria-label={t("cardEditor.avatar.moveUp", { name: card?.name ?? id })}
+                      onClick={() => moveSource(id, -1)}
+                    >
+                      <ArrowUp className="ce-icon" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      className="mari-chrome-control mari-chrome-control--small"
+                      disabled={index === order.length - 1}
+                      aria-label={t("cardEditor.avatar.moveDown", { name: card?.name ?? id })}
+                      onClick={() => moveSource(id, 1)}
+                    >
+                      <ArrowDown className="ce-icon" aria-hidden="true" />
+                    </button>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="ce-caption">{t("cardEditor.avatar.sourcesHint")}</p>
+        </div>
+        <div className="ce-avatar-canvas-wrap">
+          <canvas
+            ref={canvasRef}
+            className="ce-avatar-canvas"
+            width={size.width}
+            height={size.height}
+            tabIndex={0}
+            aria-label={t("cardEditor.avatar.canvasLabel")}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+            onWheel={onWheel}
+            onKeyDown={onKeyDown}
+          />
+          <p className="ce-caption" role="status">
+            {currentCard ? t("cardEditor.avatar.selected", { name: currentCard.name, zoom: currentScale }) : ""}
+          </p>
+        </div>
+        <div className="ce-avatar-controls">
+          <div className="ce-label">
+            <span className="ce-label-title">{t("cardEditor.avatar.layout")}</span>
+            <div className="ce-segmented" role="radiogroup" aria-label={t("cardEditor.avatar.layout")}>
+              {(["square", "portrait", "best-fit"] as const).map((method) =>
+                segment(method, layout.method, t(`cardEditor.avatar.method.${method}`), (value) =>
+                  setLayout({ ...layout, method: value }),
+                ),
+              )}
+            </div>
           </div>
-          <div className="ce-avatar-canvas-wrap">
-            <canvas
-              ref={canvasRef}
-              className="ce-avatar-canvas"
-              width={size.width}
-              height={size.height}
-              tabIndex={0}
-              aria-label={t("cardEditor.avatar.canvasLabel")}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerCancel={onPointerUp}
-              onWheel={onWheel}
-              onKeyDown={onKeyDown}
+          <div className="ce-label">
+            <span className="ce-label-title">{t("cardEditor.avatar.columns")}</span>
+            <div className="ce-segmented" role="radiogroup" aria-label={t("cardEditor.avatar.columns")}>
+              {[0, 1, 2, 3, 4].map((columns) =>
+                segment(
+                  columns,
+                  layout.columns,
+                  columns === 0 ? t("cardEditor.avatar.columnsAuto") : String(columns),
+                  (value) => setLayout({ ...layout, columns: value }),
+                ),
+              )}
+            </div>
+          </div>
+          <label className="ce-label" htmlFor="ce-avatar-gap">
+            <span className="ce-label-title">{t("cardEditor.avatar.gap", { gap: layout.gap })}</span>
+            <input
+              id="ce-avatar-gap"
+              type="range"
+              min={0}
+              max={48}
+              value={layout.gap}
+              onChange={(event) => setLayout({ ...layout, gap: Number(event.target.value) })}
             />
-            <p className="ce-caption" role="status">
-              {currentCard ? t("cardEditor.avatar.selected", { name: currentCard.name, zoom: currentScale }) : ""}
-            </p>
-          </div>
-          <div className="ce-avatar-controls">
-            <div className="ce-label">
-              <span className="ce-label-title">{t("cardEditor.avatar.layout")}</span>
-              <div className="ce-segmented" role="radiogroup" aria-label={t("cardEditor.avatar.layout")}>
-                {(["square", "portrait", "best-fit"] as const).map((method) =>
-                  segment(method, layout.method, t(`cardEditor.avatar.method.${method}`), (value) =>
-                    setLayout({ ...layout, method: value }),
-                  ),
-                )}
-              </div>
-            </div>
-            <div className="ce-label">
-              <span className="ce-label-title">{t("cardEditor.avatar.columns")}</span>
-              <div className="ce-segmented" role="radiogroup" aria-label={t("cardEditor.avatar.columns")}>
-                {[0, 1, 2, 3, 4].map((columns) =>
-                  segment(
-                    columns,
-                    layout.columns,
-                    columns === 0 ? t("cardEditor.avatar.columnsAuto") : String(columns),
-                    (value) => setLayout({ ...layout, columns: value }),
-                  ),
-                )}
-              </div>
-            </div>
-            <label className="ce-label" htmlFor="ce-avatar-gap">
-              <span className="ce-label-title">{t("cardEditor.avatar.gap", { gap: layout.gap })}</span>
-              <input
-                id="ce-avatar-gap"
-                type="range"
-                min={0}
-                max={48}
-                value={layout.gap}
-                onChange={(event) => setLayout({ ...layout, gap: Number(event.target.value) })}
-              />
-            </label>
-            <label className="ce-label" htmlFor="ce-avatar-zoom">
-              <span className="ce-label-title">{t("cardEditor.avatar.zoom", { zoom: currentScale })}</span>
-              <input
-                id="ce-avatar-zoom"
-                type="range"
-                min={floorFor(safeCurrent)}
-                max={200}
-                value={currentScale}
-                disabled={!currentCard}
-                onChange={(event) =>
-                  setOffset(safeCurrent, (offset, floor) =>
-                    normalizeOffset({ ...offset, scale: Number(event.target.value) }, floor),
-                  )
-                }
-              />
-            </label>
-            <div className="ce-label">
-              <span className="ce-label-title">{t("cardEditor.avatar.resolution")}</span>
-              <div className="ce-segmented" role="radiogroup" aria-label={t("cardEditor.avatar.resolution")}>
-                {([1, 2, 4] as const).map((resolution) =>
-                  segment(resolution, layout.resolution, `${512 * resolution}×${768 * resolution}`, (value) =>
-                    setLayout({ ...layout, resolution: value }),
-                  ),
-                )}
-              </div>
-            </div>
-            <div className="ce-inline-controls">
-              <button
-                type="button"
-                className="mari-chrome-control mari-chrome-control--small"
-                disabled={!currentCard}
-                onClick={() => setOffset(safeCurrent, () => DEFAULT_OFFSET)}
-              >
-                {t("cardEditor.avatar.resetCell")}
-              </button>
-              <button
-                type="button"
-                className="mari-chrome-control mari-chrome-control--small"
-                onClick={() => setOffsets({})}
-              >
-                {t("cardEditor.avatar.resetAll")}
-              </button>
-            </div>
-            <p className="ce-caption">{t("cardEditor.avatar.keys")}</p>
-          </div>
-        </div>
-        <div className="ce-dialog-foot">
-          {message ? (
-            <div
-              className={`ce-status${message.tone === "error" ? " ce-status--error" : ""} ce-foot-error`}
-              role={message.tone === "error" ? "alert" : "status"}
-            >
-              {message.text}
-            </div>
-          ) : null}
-          <label className="ce-label ce-studio-name" htmlFor="ce-avatar-target">
-            <span className="ce-sr-only">{t("cardEditor.avatar.target")}</span>
-            <select
-              id="ce-avatar-target"
-              className="mari-chrome-field ce-field"
-              value={targetId}
-              onChange={(event) => setTargetId(event.target.value)}
-            >
-              {targets.length === 0 ? <option value="">{t("cardEditor.avatar.noTargets")}</option> : null}
-              {targets.map((id) => (
-                <option key={id} value={id}>
-                  {t("cardEditor.avatar.targetOption", { name: byId.get(id)?.name ?? id })}
-                </option>
-              ))}
-            </select>
           </label>
-          <button
-            type="button"
-            className="mari-chrome-control mari-chrome-control--primary mari-chrome-control--small"
-            disabled={busy || !targetId || cards === null}
-            onClick={() => void apply()}
-          >
-            {busy ? t("cardEditor.avatar.applying") : t("cardEditor.avatar.apply")}
-          </button>
+          <label className="ce-label" htmlFor="ce-avatar-zoom">
+            <span className="ce-label-title">{t("cardEditor.avatar.zoom", { zoom: currentScale })}</span>
+            <input
+              id="ce-avatar-zoom"
+              type="range"
+              min={floorFor(safeCurrent)}
+              max={200}
+              value={currentScale}
+              disabled={!currentCard}
+              onChange={(event) =>
+                setOffset(safeCurrent, (offset, floor) =>
+                  normalizeOffset({ ...offset, scale: Number(event.target.value) }, floor),
+                )
+              }
+            />
+          </label>
+          <div className="ce-label">
+            <span className="ce-label-title">{t("cardEditor.avatar.resolution")}</span>
+            <div className="ce-segmented" role="radiogroup" aria-label={t("cardEditor.avatar.resolution")}>
+              {([1, 2, 4] as const).map((resolution) =>
+                segment(resolution, layout.resolution, `${512 * resolution}×${768 * resolution}`, (value) =>
+                  setLayout({ ...layout, resolution: value }),
+                ),
+              )}
+            </div>
+          </div>
+          <div className="ce-inline-controls">
+            <button
+              type="button"
+              className="mari-chrome-control mari-chrome-control--small"
+              disabled={!currentCard}
+              onClick={() => setOffset(safeCurrent, () => DEFAULT_OFFSET)}
+            >
+              {t("cardEditor.avatar.resetCell")}
+            </button>
+            <button
+              type="button"
+              className="mari-chrome-control mari-chrome-control--small"
+              onClick={() => setOffsets({})}
+            >
+              {t("cardEditor.avatar.resetAll")}
+            </button>
+          </div>
+          <p className="ce-caption">{t("cardEditor.avatar.keys")}</p>
         </div>
-      </section>
-    </div>
+      </div>
+      <div className="ce-dialog-foot">
+        {message ? (
+          <div
+            className={`ce-status${message.tone === "error" ? " ce-status--error" : ""} ce-foot-error`}
+            role={message.tone === "error" ? "alert" : "status"}
+          >
+            {message.text}
+          </div>
+        ) : null}
+        <label className="ce-label ce-studio-name" htmlFor="ce-avatar-target">
+          <span className="ce-sr-only">{t("cardEditor.avatar.target")}</span>
+          <select
+            id="ce-avatar-target"
+            className="mari-chrome-field ce-field"
+            value={targetId}
+            onChange={(event) => setTargetId(event.target.value)}
+          >
+            {targets.length === 0 ? <option value="">{t("cardEditor.avatar.noTargets")}</option> : null}
+            {targets.map((id) => (
+              <option key={id} value={id}>
+                {t("cardEditor.avatar.targetOption", { name: byId.get(id)?.name ?? id })}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          className="mari-chrome-control mari-chrome-control--primary mari-chrome-control--small"
+          disabled={busy || !targetId || cards === null}
+          onClick={() => void apply()}
+        >
+          {busy ? t("cardEditor.avatar.applying") : t("cardEditor.avatar.apply")}
+        </button>
+      </div>
+    </WorkspacePane>
   );
 }

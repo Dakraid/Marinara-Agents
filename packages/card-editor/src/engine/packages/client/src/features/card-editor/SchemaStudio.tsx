@@ -11,7 +11,7 @@ import {
   type SchemaNode,
 } from "../../../../shared/src/features/agents/card-editor/card-schema.ts";
 import { deleteCardSchema, listCardSchemas, saveCardSchema } from "./api";
-import { useDialogFocusTrap } from "./dialog-controls";
+import { WorkspacePane } from "./dialog-controls";
 import { translateCardEditor, type CardEditorLocalizationContext } from "./localization";
 
 type Path = number[];
@@ -93,7 +93,6 @@ export function SchemaStudio({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const dialogRef = useDialogFocusTrap(true, () => busy, onClose);
 
   const load = (schema: CardSchema) => {
     setSelectedId(schema.id);
@@ -265,336 +264,330 @@ export function SchemaStudio({
   };
 
   return (
-    <div className="ce-overlay" role="presentation" onClick={() => (!busy ? onClose() : undefined)}>
-      <section
-        ref={dialogRef}
-        className="ce-dialog ce-shell ce-studio"
-        role="dialog"
-        aria-modal="true"
-        aria-label={t("cardEditor.schemas.title")}
-        tabIndex={-1}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="ce-dialog-head">
-          <strong>{t("cardEditor.schemas.title")}</strong>
-          <button
-            type="button"
-            className="ce-dialog-close"
-            onClick={onClose}
-            disabled={busy}
-            aria-label={t("cardEditor.schemas.close")}
-          >
-            <X className="ce-icon" aria-hidden="true" />
-          </button>
+    <WorkspacePane
+      className="ce-studio"
+      label={t("cardEditor.schemas.title")}
+      busy={busy}
+      closeOnEscape={true}
+      onClose={onClose}
+    >
+      <div className="ce-dialog-head">
+        <strong>{t("cardEditor.schemas.title")}</strong>
+        <button
+          type="button"
+          className="ce-dialog-close"
+          onClick={onClose}
+          disabled={busy}
+          aria-label={t("cardEditor.schemas.close")}
+        >
+          <X className="ce-icon" aria-hidden="true" />
+        </button>
+      </div>
+      {loadError ? (
+        <div className="ce-status ce-status--error" role="alert">
+          {t("cardEditor.schemas.loadError")}
         </div>
-        {loadError ? (
-          <div className="ce-status ce-status--error" role="alert">
-            {t("cardEditor.schemas.loadError")}
+      ) : null}
+      <div className="ce-studio-body">
+        <nav className="ce-studio-list" aria-label={t("cardEditor.schemas.listLabel")}>
+          {(schemas ?? []).map((schema) => (
+            <button
+              key={schema.id}
+              type="button"
+              className="ce-studio-list-item"
+              aria-pressed={schema.id === selectedId}
+              onClick={() => load(schema)}
+            >
+              <strong>{schema.name}</strong>
+              <small>{schema.builtIn ? t("cardEditor.schemas.builtIn") : t("cardEditor.schemas.yours")}</small>
+            </button>
+          ))}
+        </nav>
+
+        <div className="ce-studio-edit">
+          <div className="ce-studio-bar">
+            <div className="ce-segmented" role="radiogroup" aria-label={t("cardEditor.schemas.modeLabel")}>
+              <button
+                type="button"
+                role="radio"
+                className="ce-segment"
+                aria-checked={mode === "builder"}
+                disabled={!textValid}
+                onClick={() => setMode("builder")}
+              >
+                {t("cardEditor.schemas.modeBuilder")}
+              </button>
+              <button
+                type="button"
+                role="radio"
+                className="ce-segment"
+                aria-checked={mode === "text"}
+                onClick={() => setMode("text")}
+              >
+                {t("cardEditor.schemas.modeText")}
+              </button>
+            </div>
+            <span className={`ce-caption${textValid ? "" : " ce-item-failure"}`} role="status">
+              {textValid
+                ? t("cardEditor.schemas.valid")
+                : t("cardEditor.schemas.invalid", { line: textErrors[0]!.line, message: textErrors[0]!.message })}
+            </span>
+          </div>
+          {mode === "text" ? (
+            <textarea
+              className="mari-chrome-field ce-field ce-studio-text"
+              value={text}
+              spellCheck={false}
+              aria-label={t("cardEditor.schemas.textLabel")}
+              onChange={(event) => onText(event.target.value)}
+            />
+          ) : root ? (
+            <>
+              <div className="ce-studio-tree">
+                <ul className="ce-schema-tree">{renderNode(root, [], 0)}</ul>
+              </div>
+              {selected ? (
+                <div className="ce-studio-inspector">
+                  <label className="ce-label" htmlFor="ce-node-key">
+                    <span className="ce-label-title">{t("cardEditor.schemas.nodeKey")}</span>
+                    <input
+                      id="ce-node-key"
+                      className="mari-chrome-field ce-field"
+                      value={selected.key}
+                      onChange={(event) =>
+                        editSelected((node) => ({
+                          ...node,
+                          key: event.target.value.replace(/[^\w.-]/g, "-") || "element",
+                        }))
+                      }
+                    />
+                  </label>
+                  <label className="ce-label" htmlFor="ce-node-target">
+                    <span className="ce-label-title">{t("cardEditor.schemas.nodeTarget")}</span>
+                    <select
+                      id="ce-node-target"
+                      className="mari-chrome-field ce-field"
+                      value={selected.target ?? ""}
+                      disabled={!topLevel}
+                      onChange={(event) =>
+                        editSelected((node) => {
+                          const { target: _target, ...rest } = node;
+                          return event.target.value ? { ...rest, target: event.target.value as CardSchemaField } : rest;
+                        })
+                      }
+                    >
+                      <option value="">
+                        {topLevel ? t("cardEditor.schemas.targetDefault") : t("cardEditor.schemas.targetInherit")}
+                      </option>
+                      {CARD_SCHEMA_FIELDS.filter((field) => field !== "description").map((field) => (
+                        <option key={field} value={field}>
+                          {field}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="ce-label ce-studio-wide" htmlFor="ce-node-hint">
+                    <span className="ce-label-title">{t("cardEditor.schemas.nodeHint")}</span>
+                    <input
+                      id="ce-node-hint"
+                      className="mari-chrome-field ce-field"
+                      value={selected.hint ?? ""}
+                      placeholder={t("cardEditor.schemas.nodeHintPlaceholder")}
+                      onChange={(event) =>
+                        editSelected((node) => {
+                          const { hint: _hint, ...rest } = node;
+                          const hint = event.target.value.replace(/--/g, "–");
+                          return hint ? { ...rest, hint } : rest;
+                        })
+                      }
+                    />
+                  </label>
+                  <label className="ce-label ce-studio-wide" htmlFor="ce-node-attributes">
+                    <span className="ce-label-title">{t("cardEditor.schemas.nodeAttributes")}</span>
+                    <textarea
+                      id="ce-node-attributes"
+                      className="mari-chrome-field ce-field ce-textarea"
+                      rows={2}
+                      spellCheck={false}
+                      defaultValue={attributesText(selected)}
+                      key={`${selectedPath.join(".")}:${selectedId}`}
+                      onBlur={(event) =>
+                        editSelected((node) => ({ ...node, attributes: parseAttributesText(event.target.value) }))
+                      }
+                    />
+                    <small>{t("cardEditor.schemas.nodeAttributesHint")}</small>
+                  </label>
+                  <label className="ce-label" htmlFor="ce-node-max">
+                    <span className="ce-label-title">{t("cardEditor.schemas.nodeMax")}</span>
+                    <input
+                      id="ce-node-max"
+                      type="number"
+                      min={0}
+                      className="mari-chrome-field ce-field ce-number-input"
+                      value={selected.maxLength ?? ""}
+                      disabled={selected.children.length > 0}
+                      placeholder={t("cardEditor.schemas.nodeMaxNone")}
+                      onChange={(event) =>
+                        editSelected((node) => {
+                          const { maxLength: _max, ...rest } = node;
+                          const max = Math.trunc(Number(event.target.value));
+                          return max > 0 ? { ...rest, maxLength: max } : rest;
+                        })
+                      }
+                    />
+                  </label>
+                  <label className="ce-choice">
+                    <input
+                      type="checkbox"
+                      checked={selected.repeat === true}
+                      disabled={selectedPath.length === 0}
+                      onChange={(event) =>
+                        editSelected((node) => {
+                          const { repeat: _repeat, ...rest } = node;
+                          return event.target.checked ? { ...rest, repeat: true } : rest;
+                        })
+                      }
+                    />
+                    <span className="ce-choice-copy">
+                      <strong>{t("cardEditor.schemas.nodeRepeat")}</strong>
+                    </span>
+                  </label>
+                  <div className="ce-studio-node-actions ce-studio-wide">
+                    <button
+                      type="button"
+                      className="mari-chrome-control mari-chrome-control--small"
+                      onClick={() => addChild(selectedPath)}
+                    >
+                      <Plus className="ce-icon" aria-hidden="true" />
+                      {t("cardEditor.schemas.addChild")}
+                    </button>
+                    <button
+                      type="button"
+                      className="mari-chrome-control mari-chrome-control--small"
+                      disabled={selectedPath.length === 0}
+                      aria-label={t("cardEditor.schemas.moveUp")}
+                      onClick={() => move(selectedPath, -1)}
+                    >
+                      <ArrowUp className="ce-icon" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      className="mari-chrome-control mari-chrome-control--small"
+                      disabled={selectedPath.length === 0}
+                      aria-label={t("cardEditor.schemas.moveDown")}
+                      onClick={() => move(selectedPath, 1)}
+                    >
+                      <ArrowDown className="ce-icon" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      className="mari-chrome-control mari-chrome-control--small ce-danger-button"
+                      disabled={selectedPath.length === 0}
+                      onClick={() => remove(selectedPath)}
+                    >
+                      <Trash2 className="ce-icon" aria-hidden="true" />
+                      {t("cardEditor.schemas.removeNode")}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </>
+          ) : null}
+        </div>
+
+        <div className="ce-studio-preview">
+          <div className="ce-studio-bar">
+            <div className="ce-segmented" role="radiogroup" aria-label={t("cardEditor.schemas.previewLabel")}>
+              {PREVIEWS.map((entry) => (
+                <button
+                  key={entry}
+                  type="button"
+                  role="radio"
+                  className="ce-segment"
+                  aria-checked={preview === entry}
+                  onClick={() => setPreview(entry)}
+                >
+                  {t(`cardEditor.schemas.preview.${entry}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <pre className="ce-studio-pre" tabIndex={0} aria-label={t("cardEditor.schemas.previewLabel")}>
+            {previewText}
+          </pre>
+          <p className="ce-caption">{t(`cardEditor.schemas.previewHint.${preview}`)}</p>
+        </div>
+      </div>
+      <div className="ce-dialog-foot">
+        {error ? (
+          <div className="ce-status ce-status--error ce-foot-error" role="alert">
+            {error}
           </div>
         ) : null}
-        <div className="ce-studio-body">
-          <nav className="ce-studio-list" aria-label={t("cardEditor.schemas.listLabel")}>
-            {(schemas ?? []).map((schema) => (
+        <label className="ce-label ce-studio-name" htmlFor="ce-schema-name">
+          <span className="ce-sr-only">{t("cardEditor.schemas.name")}</span>
+          <input
+            id="ce-schema-name"
+            className="mari-chrome-field ce-field"
+            value={name}
+            disabled={builtIn}
+            placeholder={t("cardEditor.schemas.name")}
+            onChange={(event) => {
+              setName(event.target.value);
+              setDirty(true);
+            }}
+          />
+        </label>
+        {!builtIn && current ? (
+          confirmDelete ? (
+            <span className="ce-confirm-strip" role="group" aria-label={t("cardEditor.schemas.delete")}>
+              <span className="ce-caption">{t("cardEditor.schemas.deleteConfirm", { name: current.name })}</span>
               <button
-                key={schema.id}
                 type="button"
-                className="ce-studio-list-item"
-                aria-pressed={schema.id === selectedId}
-                onClick={() => load(schema)}
+                className="mari-chrome-control mari-chrome-control--small ce-danger-button"
+                disabled={busy}
+                onClick={() => void removeSchema()}
               >
-                <strong>{schema.name}</strong>
-                <small>{schema.builtIn ? t("cardEditor.schemas.builtIn") : t("cardEditor.schemas.yours")}</small>
+                {t("cardEditor.schemas.deleteYes")}
               </button>
-            ))}
-          </nav>
-
-          <div className="ce-studio-edit">
-            <div className="ce-studio-bar">
-              <div className="ce-segmented" role="radiogroup" aria-label={t("cardEditor.schemas.modeLabel")}>
-                <button
-                  type="button"
-                  role="radio"
-                  className="ce-segment"
-                  aria-checked={mode === "builder"}
-                  disabled={!textValid}
-                  onClick={() => setMode("builder")}
-                >
-                  {t("cardEditor.schemas.modeBuilder")}
-                </button>
-                <button
-                  type="button"
-                  role="radio"
-                  className="ce-segment"
-                  aria-checked={mode === "text"}
-                  onClick={() => setMode("text")}
-                >
-                  {t("cardEditor.schemas.modeText")}
-                </button>
-              </div>
-              <span className={`ce-caption${textValid ? "" : " ce-item-failure"}`} role="status">
-                {textValid
-                  ? t("cardEditor.schemas.valid")
-                  : t("cardEditor.schemas.invalid", { line: textErrors[0]!.line, message: textErrors[0]!.message })}
-              </span>
-            </div>
-            {mode === "text" ? (
-              <textarea
-                className="mari-chrome-field ce-field ce-studio-text"
-                value={text}
-                spellCheck={false}
-                aria-label={t("cardEditor.schemas.textLabel")}
-                onChange={(event) => onText(event.target.value)}
-              />
-            ) : root ? (
-              <>
-                <div className="ce-studio-tree">
-                  <ul className="ce-schema-tree">{renderNode(root, [], 0)}</ul>
-                </div>
-                {selected ? (
-                  <div className="ce-studio-inspector">
-                    <label className="ce-label" htmlFor="ce-node-key">
-                      <span className="ce-label-title">{t("cardEditor.schemas.nodeKey")}</span>
-                      <input
-                        id="ce-node-key"
-                        className="mari-chrome-field ce-field"
-                        value={selected.key}
-                        onChange={(event) =>
-                          editSelected((node) => ({
-                            ...node,
-                            key: event.target.value.replace(/[^\w.-]/g, "-") || "element",
-                          }))
-                        }
-                      />
-                    </label>
-                    <label className="ce-label" htmlFor="ce-node-target">
-                      <span className="ce-label-title">{t("cardEditor.schemas.nodeTarget")}</span>
-                      <select
-                        id="ce-node-target"
-                        className="mari-chrome-field ce-field"
-                        value={selected.target ?? ""}
-                        disabled={!topLevel}
-                        onChange={(event) =>
-                          editSelected((node) => {
-                            const { target: _target, ...rest } = node;
-                            return event.target.value
-                              ? { ...rest, target: event.target.value as CardSchemaField }
-                              : rest;
-                          })
-                        }
-                      >
-                        <option value="">
-                          {topLevel ? t("cardEditor.schemas.targetDefault") : t("cardEditor.schemas.targetInherit")}
-                        </option>
-                        {CARD_SCHEMA_FIELDS.filter((field) => field !== "description").map((field) => (
-                          <option key={field} value={field}>
-                            {field}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="ce-label ce-studio-wide" htmlFor="ce-node-hint">
-                      <span className="ce-label-title">{t("cardEditor.schemas.nodeHint")}</span>
-                      <input
-                        id="ce-node-hint"
-                        className="mari-chrome-field ce-field"
-                        value={selected.hint ?? ""}
-                        placeholder={t("cardEditor.schemas.nodeHintPlaceholder")}
-                        onChange={(event) =>
-                          editSelected((node) => {
-                            const { hint: _hint, ...rest } = node;
-                            const hint = event.target.value.replace(/--/g, "–");
-                            return hint ? { ...rest, hint } : rest;
-                          })
-                        }
-                      />
-                    </label>
-                    <label className="ce-label ce-studio-wide" htmlFor="ce-node-attributes">
-                      <span className="ce-label-title">{t("cardEditor.schemas.nodeAttributes")}</span>
-                      <textarea
-                        id="ce-node-attributes"
-                        className="mari-chrome-field ce-field ce-textarea"
-                        rows={2}
-                        spellCheck={false}
-                        defaultValue={attributesText(selected)}
-                        key={`${selectedPath.join(".")}:${selectedId}`}
-                        onBlur={(event) =>
-                          editSelected((node) => ({ ...node, attributes: parseAttributesText(event.target.value) }))
-                        }
-                      />
-                      <small>{t("cardEditor.schemas.nodeAttributesHint")}</small>
-                    </label>
-                    <label className="ce-label" htmlFor="ce-node-max">
-                      <span className="ce-label-title">{t("cardEditor.schemas.nodeMax")}</span>
-                      <input
-                        id="ce-node-max"
-                        type="number"
-                        min={0}
-                        className="mari-chrome-field ce-field ce-number-input"
-                        value={selected.maxLength ?? ""}
-                        disabled={selected.children.length > 0}
-                        placeholder={t("cardEditor.schemas.nodeMaxNone")}
-                        onChange={(event) =>
-                          editSelected((node) => {
-                            const { maxLength: _max, ...rest } = node;
-                            const max = Math.trunc(Number(event.target.value));
-                            return max > 0 ? { ...rest, maxLength: max } : rest;
-                          })
-                        }
-                      />
-                    </label>
-                    <label className="ce-choice">
-                      <input
-                        type="checkbox"
-                        checked={selected.repeat === true}
-                        disabled={selectedPath.length === 0}
-                        onChange={(event) =>
-                          editSelected((node) => {
-                            const { repeat: _repeat, ...rest } = node;
-                            return event.target.checked ? { ...rest, repeat: true } : rest;
-                          })
-                        }
-                      />
-                      <span className="ce-choice-copy">
-                        <strong>{t("cardEditor.schemas.nodeRepeat")}</strong>
-                      </span>
-                    </label>
-                    <div className="ce-studio-node-actions ce-studio-wide">
-                      <button
-                        type="button"
-                        className="mari-chrome-control mari-chrome-control--small"
-                        onClick={() => addChild(selectedPath)}
-                      >
-                        <Plus className="ce-icon" aria-hidden="true" />
-                        {t("cardEditor.schemas.addChild")}
-                      </button>
-                      <button
-                        type="button"
-                        className="mari-chrome-control mari-chrome-control--small"
-                        disabled={selectedPath.length === 0}
-                        aria-label={t("cardEditor.schemas.moveUp")}
-                        onClick={() => move(selectedPath, -1)}
-                      >
-                        <ArrowUp className="ce-icon" aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
-                        className="mari-chrome-control mari-chrome-control--small"
-                        disabled={selectedPath.length === 0}
-                        aria-label={t("cardEditor.schemas.moveDown")}
-                        onClick={() => move(selectedPath, 1)}
-                      >
-                        <ArrowDown className="ce-icon" aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
-                        className="mari-chrome-control mari-chrome-control--small ce-danger-button"
-                        disabled={selectedPath.length === 0}
-                        onClick={() => remove(selectedPath)}
-                      >
-                        <Trash2 className="ce-icon" aria-hidden="true" />
-                        {t("cardEditor.schemas.removeNode")}
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-              </>
-            ) : null}
-          </div>
-
-          <div className="ce-studio-preview">
-            <div className="ce-studio-bar">
-              <div className="ce-segmented" role="radiogroup" aria-label={t("cardEditor.schemas.previewLabel")}>
-                {PREVIEWS.map((entry) => (
-                  <button
-                    key={entry}
-                    type="button"
-                    role="radio"
-                    className="ce-segment"
-                    aria-checked={preview === entry}
-                    onClick={() => setPreview(entry)}
-                  >
-                    {t(`cardEditor.schemas.preview.${entry}`)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <pre className="ce-studio-pre" tabIndex={0} aria-label={t("cardEditor.schemas.previewLabel")}>
-              {previewText}
-            </pre>
-            <p className="ce-caption">{t(`cardEditor.schemas.previewHint.${preview}`)}</p>
-          </div>
-        </div>
-        <div className="ce-dialog-foot">
-          {error ? (
-            <div className="ce-status ce-status--error ce-foot-error" role="alert">
-              {error}
-            </div>
-          ) : null}
-          <label className="ce-label ce-studio-name" htmlFor="ce-schema-name">
-            <span className="ce-sr-only">{t("cardEditor.schemas.name")}</span>
-            <input
-              id="ce-schema-name"
-              className="mari-chrome-field ce-field"
-              value={name}
-              disabled={builtIn}
-              placeholder={t("cardEditor.schemas.name")}
-              onChange={(event) => {
-                setName(event.target.value);
-                setDirty(true);
-              }}
-            />
-          </label>
-          {!builtIn && current ? (
-            confirmDelete ? (
-              <span className="ce-confirm-strip" role="group" aria-label={t("cardEditor.schemas.delete")}>
-                <span className="ce-caption">{t("cardEditor.schemas.deleteConfirm", { name: current.name })}</span>
-                <button
-                  type="button"
-                  className="mari-chrome-control mari-chrome-control--small ce-danger-button"
-                  disabled={busy}
-                  onClick={() => void removeSchema()}
-                >
-                  {t("cardEditor.schemas.deleteYes")}
-                </button>
-                <button
-                  type="button"
-                  className="mari-chrome-control mari-chrome-control--small"
-                  onClick={() => setConfirmDelete(false)}
-                >
-                  {t("cardEditor.schemas.deleteNo")}
-                </button>
-              </span>
-            ) : (
               <button
                 type="button"
                 className="mari-chrome-control mari-chrome-control--small"
-                disabled={busy}
-                onClick={() => setConfirmDelete(true)}
+                onClick={() => setConfirmDelete(false)}
               >
-                {t("cardEditor.schemas.delete")}
+                {t("cardEditor.schemas.deleteNo")}
               </button>
-            )
-          ) : null}
-          <button
-            type="button"
-            className="mari-chrome-control mari-chrome-control--small"
-            disabled={busy || !textValid || !root}
-            onClick={() => void persist(true)}
-          >
-            {t("cardEditor.schemas.duplicate")}
-          </button>
-          {!builtIn ? (
+            </span>
+          ) : (
             <button
               type="button"
-              className="mari-chrome-control mari-chrome-control--primary mari-chrome-control--small"
-              disabled={busy || !textValid || !root || !dirty}
-              onClick={() => void persist(false)}
+              className="mari-chrome-control mari-chrome-control--small"
+              disabled={busy}
+              onClick={() => setConfirmDelete(true)}
             >
-              {t("cardEditor.schemas.save")}
+              {t("cardEditor.schemas.delete")}
             </button>
-          ) : null}
-        </div>
-      </section>
-    </div>
+          )
+        ) : null}
+        <button
+          type="button"
+          className="mari-chrome-control mari-chrome-control--small"
+          disabled={busy || !textValid || !root}
+          onClick={() => void persist(true)}
+        >
+          {t("cardEditor.schemas.duplicate")}
+        </button>
+        {!builtIn ? (
+          <button
+            type="button"
+            className="mari-chrome-control mari-chrome-control--primary mari-chrome-control--small"
+            disabled={busy || !textValid || !root || !dirty}
+            onClick={() => void persist(false)}
+          >
+            {t("cardEditor.schemas.save")}
+          </button>
+        ) : null}
+      </div>
+    </WorkspacePane>
   );
 }

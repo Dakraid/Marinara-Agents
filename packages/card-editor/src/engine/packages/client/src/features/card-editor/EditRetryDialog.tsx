@@ -2,7 +2,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import type { BulkSession, SessionItem } from "../../../../shared/src/features/agents/card-editor/schema.ts";
 import { editRetrySessionItem } from "./api";
-import { useDialogFocusTrap } from "./dialog-controls";
+import { WorkspacePane } from "./dialog-controls";
 import { translateCardEditor, type CardEditorLocalizationContext } from "./localization";
 
 /**
@@ -28,7 +28,6 @@ export function EditRetryDialog({
   const [user, setUser] = useState(rendered?.user ?? "");
   const [retrying, setRetrying] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const dialogRef = useDialogFocusTrap(true, () => retrying, onClose);
 
   const retry = async () => {
     if (retrying || !rendered) return;
@@ -43,88 +42,79 @@ export function EditRetryDialog({
   };
 
   return (
-    <div
-      className="ce-overlay"
-      role="presentation"
-      onClick={() => {
-        if (!retrying) onClose();
-      }}
+    // Inspector tab: no Escape binding, so a stray Escape never discards edited text.
+    <WorkspacePane
+      className="ce-edit-retry"
+      label={t("cardEditor.editRetry.title", { name: item.characterName })}
+      busy={retrying}
+      closeOnEscape={false}
+      onClose={onClose}
     >
-      <section
-        ref={dialogRef}
-        className="ce-dialog ce-shell ce-edit-retry"
-        role="dialog"
-        aria-modal="true"
-        aria-label={t("cardEditor.editRetry.title", { name: item.characterName })}
-        tabIndex={-1}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="ce-dialog-head">
-          <strong>{t("cardEditor.editRetry.title", { name: item.characterName })}</strong>
-          <button
-            type="button"
-            className="ce-dialog-close"
-            onClick={onClose}
-            disabled={retrying}
-            aria-label={t("cardEditor.editRetry.close")}
-          >
-            <X className="ce-icon" aria-hidden="true" />
-          </button>
-        </div>
-        <div className="ce-dialog-body">
-          {rendered ? (
-            <>
-              <p className="ce-caption">{t("cardEditor.editRetry.hint")}</p>
-              <label className="ce-label" htmlFor="ce-retry-system">
-                <span className="ce-label-title">{t("cardEditor.editRetry.system")}</span>
-                <textarea
-                  id="ce-retry-system"
-                  className="mari-chrome-field ce-field ce-textarea ce-template-textarea"
-                  value={system}
-                  data-ce-autofocus
-                  onChange={(event) => setSystem(event.target.value)}
-                />
-              </label>
-              <label className="ce-label" htmlFor="ce-retry-user">
-                <span className="ce-label-title">{t("cardEditor.editRetry.user")}</span>
-                <textarea
-                  id="ce-retry-user"
-                  className="mari-chrome-field ce-field ce-textarea ce-template-textarea"
-                  value={user}
-                  onChange={(event) => setUser(event.target.value)}
-                />
-              </label>
-            </>
-          ) : (
-            <div className="ce-status" role="status">
-              {t("cardEditor.editRetry.missing")}
-            </div>
-          )}
-          {error ? (
-            <div className="ce-status ce-status--error" role="alert">
-              {t("cardEditor.editRetry.error", { message: error })}
-            </div>
-          ) : null}
-        </div>
-        <div className="ce-dialog-foot">
-          <button
-            type="button"
-            className="mari-chrome-control mari-chrome-control--small"
-            disabled={retrying}
-            onClick={onClose}
-          >
-            {t("cardEditor.editRetry.cancel")}
-          </button>
-          <button
-            type="button"
-            className="mari-chrome-control mari-chrome-control--primary mari-chrome-control--small"
-            disabled={retrying || !rendered}
-            onClick={() => void retry()}
-          >
-            {retrying ? t("cardEditor.editRetry.retrying") : t("cardEditor.editRetry.retry")}
-          </button>
-        </div>
-      </section>
-    </div>
+      <div className="ce-dialog-head">
+        <strong>{t("cardEditor.editRetry.title", { name: item.characterName })}</strong>
+        <button
+          type="button"
+          className="ce-dialog-close"
+          onClick={onClose}
+          disabled={retrying}
+          aria-label={t("cardEditor.editRetry.close")}
+        >
+          <X className="ce-icon" aria-hidden="true" />
+        </button>
+      </div>
+      <div className="ce-dialog-body">
+        {rendered ? (
+          <>
+            <p className="ce-caption">{t("cardEditor.editRetry.hint")}</p>
+            <label className="ce-label" htmlFor="ce-retry-system">
+              <span className="ce-label-title">{t("cardEditor.editRetry.system")}</span>
+              <textarea
+                id="ce-retry-system"
+                className="mari-chrome-field ce-field ce-textarea ce-template-textarea"
+                value={system}
+                data-ce-autofocus
+                onChange={(event) => setSystem(event.target.value)}
+              />
+            </label>
+            <label className="ce-label" htmlFor="ce-retry-user">
+              <span className="ce-label-title">{t("cardEditor.editRetry.user")}</span>
+              <textarea
+                id="ce-retry-user"
+                className="mari-chrome-field ce-field ce-textarea ce-template-textarea"
+                value={user}
+                onChange={(event) => setUser(event.target.value)}
+              />
+            </label>
+          </>
+        ) : (
+          <div className="ce-status" role="status">
+            {t("cardEditor.editRetry.missing")}
+          </div>
+        )}
+        {error ? (
+          <div className="ce-status ce-status--error" role="alert">
+            {t("cardEditor.editRetry.error", { message: error })}
+          </div>
+        ) : null}
+      </div>
+      <div className="ce-dialog-foot">
+        <button
+          type="button"
+          className="mari-chrome-control mari-chrome-control--small"
+          disabled={retrying}
+          onClick={onClose}
+        >
+          {t("cardEditor.editRetry.cancel")}
+        </button>
+        <button
+          type="button"
+          className="mari-chrome-control mari-chrome-control--primary mari-chrome-control--small"
+          disabled={retrying || !rendered}
+          onClick={() => void retry()}
+        >
+          {retrying ? t("cardEditor.editRetry.retrying") : t("cardEditor.editRetry.retry")}
+        </button>
+      </div>
+    </WorkspacePane>
   );
 }

@@ -131,18 +131,24 @@ export function VerdictQueue({
   localization,
   session,
   focusItemId,
+  onFocusChange,
   onRefresh,
-  onClose,
 }: {
   localization?: CardEditorLocalizationContext;
   session: BulkSession;
+  /** The item the workspace list selected; the queue follows it and reports its own moves. */
   focusItemId: string | null;
+  onFocusChange: (itemId: string) => void;
   onRefresh: () => void;
-  onClose: () => void;
 }) {
   const t = (key: string, values?: Record<string, string | number>) => translateCardEditor(localization, key, values);
   const queueItems = useMemo(() => session.items.filter(isQueueItem), [session.items]);
-  const [currentId, setCurrentId] = useState<string | null>(focusItemId);
+  const [currentId, setCurrentIdState] = useState<string | null>(focusItemId);
+  const setCurrentId = (id: string | null) => {
+    setCurrentIdState(id);
+    if (id) onFocusChange(id);
+  };
+  useEffect(() => setCurrentIdState(focusItemId), [focusItemId]);
   const [busy, setBusy] = useState(false);
   const [holds, setHolds] = useState<ApplyOperation[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -155,14 +161,6 @@ export function VerdictQueue({
   const currentIndex = queueItems.findIndex((item) => item.itemId === currentId);
   const current = currentIndex >= 0 ? queueItems[currentIndex]! : null;
   const previews = useMemo(() => (current ? buildFieldPreviews(current) : []), [current]);
-
-  // Clamp navigation when the queue membership shifts (polls, verdicts): prefer the next
-  // undecided item, then any remaining card; the empty state renders when nothing is left.
-  useEffect(() => {
-    if (current) return;
-    const next = queueItems.find(isReviewable) ?? queueItems[0] ?? null;
-    setCurrentId(next?.itemId ?? null);
-  }, [current, queueItems]);
 
   // Reset per-card view state only when a different card lands on the review slot. Focus the
   // card region so keyboard and screen-reader users keep their place in the triage flow.
@@ -241,20 +239,6 @@ export function VerdictQueue({
     setError(outcome.message);
   };
 
-  const approveAllRemaining = async () => {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    const pending = queueItems.filter(isReviewable);
-    for (const item of pending) {
-      // Holds land in needs-review and stay for manual triage (DESIGN §3: skipped = undecided).
-      await approveSessionItem(session, item, { force: false });
-    }
-    setBusy(false);
-    onRefresh();
-    setCurrentId((id) => (queueItems.some((item) => item.itemId === id && isReviewable(item)) ? id : null));
-  };
-
   // Keyboard triage (DESIGN §3): R reject, A approve, ←/→ navigate — never while typing.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -303,47 +287,9 @@ export function VerdictQueue({
     }),
     { added: 0, removed: 0 },
   );
-  const undecidedCount = queueItems.filter(isReviewable).length;
 
   return (
     <div className="ce-queue">
-      <div className="ce-queue-head">
-        <button type="button" className="mari-chrome-control ce-back-button" onClick={onClose}>
-          <ChevronLeft className="ce-icon" aria-hidden="true" />
-          {t("cardEditor.queue.close")}
-        </button>
-        <strong className="ce-panel-heading">{t("cardEditor.queue.title")}</strong>
-        <span className="ce-caption">
-          {queueItems.length === 0
-            ? ""
-            : t("cardEditor.queue.position", { index: currentIndex + 1, count: queueItems.length })}
-        </span>
-      </div>
-      {queueItems.length > 0 ? (
-        <div className="ce-queue-dots" role="group" aria-label={t("cardEditor.queue.dotsLabel")}>
-          {queueItems.map((item, index) => {
-            const verdict =
-              item.status === "applied" || item.status === "duplicated"
-                ? "approved"
-                : item.status === "rejected"
-                  ? "rejected"
-                  : "pending";
-            return (
-              <button
-                key={item.itemId}
-                type="button"
-                className={`ce-dot ce-dot--${verdict}${index === currentIndex ? " ce-dot--current" : ""}`}
-                aria-label={t("cardEditor.queue.dotLabel", {
-                  name: item.characterName,
-                  status: t(itemStatusLabelKey(item.status)),
-                })}
-                aria-current={index === currentIndex}
-                onClick={() => goTo(index)}
-              />
-            );
-          })}
-        </div>
-      ) : null}
       {!current ? (
         <div className="ce-status" role="status">
           {t("cardEditor.queue.empty")}
@@ -454,16 +400,6 @@ export function VerdictQueue({
           </footer>
         </article>
       )}
-      {undecidedCount > 0 ? (
-        <button
-          type="button"
-          className="ce-queue-approve-all"
-          disabled={busy}
-          onClick={() => void approveAllRemaining()}
-        >
-          {busy ? t("cardEditor.queue.approveAllWorking") : t("cardEditor.queue.approveAll")}
-        </button>
-      ) : null}
     </div>
   );
 }
