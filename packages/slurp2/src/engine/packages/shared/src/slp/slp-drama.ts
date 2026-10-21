@@ -160,9 +160,13 @@ const common = {
 
 /**
  * Every role a beat, choice, outcome or role condition names must exist. "crowd" is only who acts in
- * a beat and "fans" only who a post is for: `beatRoles` leaves those two out where they belong.
+ * a beat and "fans" only who a post is for: `slpDramaBeatRoles` leaves those two out where they belong.
  */
-function checkRoles(entry: { roles: SlpDramaRole[] }, named: (string | undefined)[], context: z.RefinementCtx): void {
+export function checkSlpDramaRoles(
+  entry: { roles: SlpDramaRole[] },
+  named: (string | undefined)[],
+  context: z.RefinementCtx,
+): void {
   const keys = entry.roles.map((role) => role.key);
   const known = new Set(keys);
   if (known.size !== keys.length) context.addIssue({ code: "custom", message: "role keys must be unique" });
@@ -170,7 +174,7 @@ function checkRoles(entry: { roles: SlpDramaRole[] }, named: (string | undefined
   for (const name of [...named, ...conditions])
     if (name && !known.has(name)) context.addIssue({ code: "custom", message: `unknown role "${name}"` });
 }
-const beatRoles = (beat: SlpDramaBeat) => [
+export const slpDramaBeatRoles = (beat: SlpDramaBeat) => [
   beat.role === "crowd" ? undefined : beat.role,
   beat.to,
   beat.on,
@@ -179,25 +183,29 @@ const beatRoles = (beat: SlpDramaBeat) => [
   beat.heat?.for === "fans" ? undefined : beat.heat?.for,
 ];
 
+export const slpDramaDialsSchema = z
+  .array(
+    z
+      .object({ key, options: z.array(key).min(2).max(5), default: key })
+      .strict()
+      .refine((dial) => dial.options.includes(dial.default), "a dial's default is one of its options"),
+  )
+  .max(6)
+  .default([]);
+
 export const slpSituationSchema = z
   .object({
     ...common,
-    dials: z
-      .array(
-        z
-          .object({ key, options: z.array(key).min(2).max(5), default: key })
-          .strict()
-          .refine((dial) => dial.options.includes(dial.default), "a dial's default is one of its options"),
-      )
-      .max(6)
-      .default([]),
+    dials: slpDramaDialsSchema,
     /** Small beats drawn now and then while the situation stands. `when` limits a beat to dial values. */
     deck: z.array(slpDramaBeatSchema).min(1).max(24),
     /** At most this many deck beats reach the player a day. */
     perDay: z.number().int().min(1).max(6).default(2),
   })
   .strict()
-  .superRefine((situation, context) => checkRoles(situation, situation.deck.flatMap(beatRoles), context));
+  .superRefine((situation, context) =>
+    checkSlpDramaRoles(situation, situation.deck.flatMap(slpDramaBeatRoles), context),
+  );
 export type SlpSituation = z.infer<typeof slpSituationSchema>;
 
 export const slpDramaSchema = z
@@ -231,15 +239,15 @@ export const slpDramaSchema = z
     }
     const minimum = drama.stages.reduce((sum, stage) => sum + stage.days[0], 0);
     if (minimum > drama.maxDays) issue("maxDays is shorter than the stages need");
-    checkRoles(
+    checkSlpDramaRoles(
       drama,
       [
         ...drama.stages.flatMap((stage) => [
-          ...stage.beats.flatMap(beatRoles),
+          ...stage.beats.flatMap(slpDramaBeatRoles),
           stage.choice?.role,
           ...stage.outcomes.flatMap((outcome) => outcome.between),
         ]),
-        ...beatRoles(drama.exit),
+        ...slpDramaBeatRoles(drama.exit),
       ],
       context,
     );
