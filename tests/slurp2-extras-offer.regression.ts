@@ -64,9 +64,12 @@ assert.match(
   slurp2Source(`${server}features/onboarding/slp-first-post-queue-service.ts`),
   /result\.status === "generated"\) \{\s*markSlurpExtrasReached\(db, "posts"\);/u,
 );
-assert.match(
-  slurp2Source(`${server}features/economy/slp-wallet-routes.ts`),
-  /if \(result\.created\) \{\s*recordSlurpTasteSignal\([^\n]*\n\s*markSlurpExtrasReached\(app\.db, "unlock"\);/u,
+const wallet = slurp2Source(`${server}features/economy/slp-wallet-routes.ts`);
+assert.equal(
+  wallet.match(/if \(result\.created && result\.chargedAmount > 0\) markSlurpExtrasReached\(app\.db, "unlock"\);/gu)
+    ?.length,
+  2,
+  "paid unlocks only, plain and gamble",
 );
 const routes = slurp2Source(`${server}features/settings/slp-settings-routes.ts`);
 assert.match(routes, /app\.get\("\/extras\/offer"/u);

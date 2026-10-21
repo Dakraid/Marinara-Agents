@@ -3834,7 +3834,7 @@
   "ui.slurp.extrasOffer.from": "Slurp Support",
   "ui.slurp.extrasOffer.ask.posts": "첫 게시물이 올라갔어요, 보스. {{name}}도 켤까요?",
   "ui.slurp.extrasOffer.ask.unlock": "누군가 게시물을 결제했어요! 다음은 {{name}} 어때요?",
-  "ui.slurp.extrasOffer.ask.days": "Slurp를 운영한 지 며칠 됐네요. {{name}}도 켤까요?",
+  "ui.slurp.extrasOffer.ask.days": "Slurp을 운영한 지 며칠 됐네요. {{name}}도 켤까요?",
   "ui.slurp.extrasOffer.add": "{{name}} 추가",
   "ui.slurp.extrasOffer.notNow": "나중에",
   "ui.slurp.extrasOffer.error": "처리하지 못했어요. 다시 시도해 주세요.",

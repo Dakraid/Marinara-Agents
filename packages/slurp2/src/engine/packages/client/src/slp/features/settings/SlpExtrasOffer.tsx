@@ -21,6 +21,8 @@ export function SlpExtrasOfferCard() {
     queryKey: offerKey(),
     queryFn: () => api.get<{ offer: SlpExtrasOffer | null }>("/slurp2/extras/offer"),
     staleTime: 60_000,
+    // The feed stays mounted behind the first run while its first posts are written: ask again now and then.
+    refetchInterval: 120_000,
   });
   const answer = useMutation({
     mutationFn: async ({ id, add }: { id: SlpExtrasOffer["id"]; add: boolean }) => {
