@@ -1,3 +1,7 @@
+## 10.0.6 — 2026-10-21
+
+- **Approve all** and the automatic save after a run no longer write the same card twice. Both could pick up one planned save at the same moment, which left extra copies in duplicate mode and made cards flicker between "awaiting review" and "approved".
+
 ## 10.0.5 — 2026-10-21
 
 - The Bulk Card Editor no longer closes when you click outside it, and it auto-saves as you type: settings and per-card notes come back the next time it opens, with **Start fresh** to discard them. A dispatch clears the draft.

@@ -41,6 +41,24 @@ function errorText(error: unknown): string {
 
 const ENGINE_COPY_SUFFIX = " (Copy)";
 
+/**
+ * Items whose ops this tab is executing. Duplicate ops are not idempotent: the verdict queue, the
+ * auto-approve driver and the poll-driven completion enforcement can all see the same stashed
+ * pendingOps, and running them twice writes a second copy of the card.
+ * ponytail: guards one tab only; two tabs on one session can still race until the server leases ops.
+ */
+const itemsInFlight = new Set<string>();
+
+async function withItemLock<T>(itemId: string, work: () => Promise<T>): Promise<T | null> {
+  if (itemsInFlight.has(itemId)) return null;
+  itemsInFlight.add(itemId);
+  try {
+    return await work();
+  } finally {
+    itemsInFlight.delete(itemId);
+  }
+}
+
 async function executeOp(item: SessionItem, op: ApplyOperation, label: string): Promise<Omit<ApplyOpResult, "index">> {
   // The route never plans hold ops in an "apply" response (holds force needs-confirmation first);
   // treat one as a no-op rather than failing the whole item if the contract ever drifts.
@@ -121,6 +139,15 @@ export async function approveSessionItem(
   item: SessionItem,
   options: { force: boolean },
 ): Promise<ApproveItemOutcome> {
+  const outcome = await withItemLock(item.itemId, () => approveUnlocked(session, item, options));
+  return outcome ?? { kind: "failed", message: "This card is already being saved." };
+}
+
+async function approveUnlocked(
+  session: BulkSession,
+  item: SessionItem,
+  options: { force: boolean },
+): Promise<ApproveItemOutcome> {
   try {
     const completionMode = session.status === "completed" ? (session.config.completionMode ?? "ask") : "ask";
     const writelessMode =
@@ -188,9 +215,22 @@ export async function executeCompletionEnforcement(
     const item = current.items.find((candidate) => candidate.itemId === sourceItem.itemId) ?? sourceItem;
     try {
       if (Array.isArray(item.pendingOps)) {
-        const results = await executeApplyOps(item, item.pendingOps as ApplyOperation[], { label: current.label });
-        current = await submitSessionItemApplyResult(current.id, item.itemId, results);
-        if (results.some((result) => !result.ok)) failedCount += 1;
+        // Re-read under the lock: another path may have run and reported these ops since the snapshot.
+        const resumed = await withItemLock(item.itemId, async () => {
+          const fresh = await getSession(current.id);
+          const freshItem = fresh.items.find((candidate) => candidate.itemId === item.itemId);
+          if (!freshItem || !Array.isArray(freshItem.pendingOps)) return { session: fresh, failed: false };
+          const ops = freshItem.pendingOps as ApplyOperation[];
+          const results = await executeApplyOps(freshItem, ops, { label: fresh.label });
+          return {
+            session: await submitSessionItemApplyResult(fresh.id, freshItem.itemId, results),
+            failed: results.some((result) => !result.ok),
+          };
+        });
+        if (resumed) {
+          current = resumed.session;
+          if (resumed.failed) failedCount += 1;
+        }
       } else {
         const outcome = await approveSessionItem(current, item, { force: false });
         if (outcome.kind === "applied" || outcome.kind === "apply-failed") {
@@ -283,9 +323,12 @@ export async function duplicateAppliedSessionItems(
   for (const plan of plans) {
     const item = session.items.find((candidate) => candidate.itemId === plan.itemId);
     if (!item) continue;
-    const results = await executeApplyOps(item, plan.ops, { label: session.label });
-    current = await submitSessionItemApplyResult(session.id, plan.itemId, results);
-    if (results.some((result) => !result.ok)) failedCount += 1;
+    const results = await withItemLock(item.itemId, async () => {
+      const ran = await executeApplyOps(item, plan.ops, { label: session.label });
+      current = await submitSessionItemApplyResult(session.id, plan.itemId, ran);
+      return ran;
+    });
+    if (results?.some((result) => !result.ok)) failedCount += 1;
   }
   return { session: current, failedCount };
 }
