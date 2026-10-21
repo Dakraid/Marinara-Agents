@@ -105,6 +105,8 @@ export const slpStorylineStageSchema = z
     deck: z.array(slpDramaBeatSchema).max(24).default([]),
     choice: slpDramaChoiceSchema
       .extend({
+        // An arc's fans' question may be as long as the poll allows.
+        question: z.string().trim().min(1).max(240),
         options: z
           .array(z.object({ label: z.string().trim().min(1).max(120), next: target }).strict())
           .min(2)

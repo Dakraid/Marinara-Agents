@@ -18,6 +18,7 @@ import {
 import {
   slurpProjectSync,
   slurpProjectView,
+  slurpProjectWithType,
   slurpStageOutcomes,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/projects/slp-project-storyline.ts";
 import { slpStorylineSchema } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-storyline.ts";
@@ -83,6 +84,51 @@ assert.equal(converted.stage, "c1");
 assert.deepEqual(converted.chapters, arc.chapters);
 assert.deepEqual(converted.choices, arc.choices);
 assert.equal(converted.storyline!.stages.length, 3);
+assert.equal(converted.storyline!.stages[0]!.enter.length, 0, "no library at hand: no outcomes yet");
+const upgraded = slurpProjectWithType(converted, type);
+assert.deepEqual(
+  upgraded.storyline!.stages[0]!.enter,
+  arc.storyline!.stages[0]!.enter,
+  "the library type gives them back",
+);
+assert.equal(slurpProjectWithType(arc, type), arc, "a run with its own copy is left alone");
+
+// A fans' choice can take a full arc past 12 chapters; it reads back whole.
+const twelve = makeSlurpProject(
+  "a12",
+  {
+    type: {
+      ...type,
+      chapters: [
+        type.chapters[0]!,
+        ...Array.from({ length: 11 }, (_, index) => ({ label: `Step ${index + 2}`, minDays: 1, maxDays: 1 })),
+      ],
+    } as unknown as SlurpArcType,
+  },
+  at,
+)!;
+const long = slurpProjectChoose(twelve, days(1), [3, 0])!;
+assert.equal(long.chapters.length, 13);
+const longBack = readSlurpProject(JSON.parse(JSON.stringify(long)))!;
+assert.equal(longBack.chapters.length, 13);
+assert.equal(longBack.stage, "c1-1-1");
+assert.deepEqual(longBack.taken, long.taken);
+// Too many branch stages: branches are cut, every choice stays.
+const wide = {
+  question: "Which way?".padEnd(230, "?"),
+  options: Array.from({ length: 4 }, (_, option) => ({
+    label: `Way ${option + 1}`,
+    chapters: Array.from({ length: 4 }, (_, step) => ({ label: `W${option}-${step}`, minDays: 1, maxDays: 1 })),
+  })),
+};
+const crowded = slurpProjectSync({
+  ...makeSlurpProject("w1", { title: "Wide", chapters: ["one", "two", "three"] }, at)!,
+  choices: [wide, wide, wide],
+});
+assert.equal(crowded.choices.filter(Boolean).length, 3);
+assert.ok(crowded.storyline!.stages.length <= 40);
+assert.equal(crowded.choices[0]!.question.length, 230, "a long poll question is kept");
+assert.equal(slurpProjectSync(crowded), crowded, "and stays in agreement");
 
 // --- A v2 storyline: conditions, `when` ways and endings. ---
 const baby = slpStorylineSchema.parse({

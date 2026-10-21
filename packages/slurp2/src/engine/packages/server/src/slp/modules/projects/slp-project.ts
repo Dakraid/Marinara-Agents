@@ -23,7 +23,11 @@
 
 import { z } from "zod";
 import { slpArcBlueprintSchema, type SlpArcBlueprint } from "../../../../../shared/src/slp/slp-story-engine.js";
-import { slpStorylineObjectSchema, type SlpStoryline } from "../../../../../shared/src/slp/slp-storyline.js";
+import {
+  SLP_STORYLINE_MAX_STAGES,
+  slpStorylineObjectSchema,
+  type SlpStoryline,
+} from "../../../../../shared/src/slp/slp-storyline.js";
 import { slpStorylineDraftFromArc } from "../../../../../shared/src/slp/slp-storyline-v1.js";
 import { slurpProjectSync } from "./slp-project-storyline.js";
 
@@ -350,12 +354,12 @@ export function hash(value: string): number {
 export const clampText = (value: unknown, max: number): string =>
   typeof value === "string" ? value.trim().slice(0, max) : "";
 
-const readChapters = (value: unknown): string[] =>
+const readChapters = (value: unknown, max = SLURP_PROJECT_MAX_CHAPTERS): string[] =>
   Array.isArray(value)
     ? value
         .map((entry) => clampText(entry, SLURP_PROJECT_CHAPTER_MAX_LENGTH))
         .filter(Boolean)
-        .slice(0, SLURP_PROJECT_MAX_CHAPTERS)
+        .slice(0, max)
     : [];
 
 export const readDays = (value: unknown): number =>
@@ -389,7 +393,8 @@ export function readSlurpProject(value: unknown): SlurpProject | null {
   const id = clampText(raw.id, 128);
   const title = clampText(raw.title, SLURP_PROJECT_TITLE_MAX_LENGTH);
   if (!id || !title) return null;
-  const chapters = readChapters(raw.chapters);
+  // A fans' choice can take a run past the hand-made limit; its storyline holds at most 40 stages.
+  const chapters = readChapters(raw.chapters, raw.storyline ? SLP_STORYLINE_MAX_STAGES : SLURP_PROJECT_MAX_CHAPTERS);
   const status = (SLURP_PROJECT_STATUSES as readonly string[]).includes(String(raw.status))
     ? (String(raw.status) as SlurpProjectStatus)
     : "active";

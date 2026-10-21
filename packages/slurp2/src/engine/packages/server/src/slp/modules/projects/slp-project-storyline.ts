@@ -16,8 +16,10 @@ import {
   type SlpStorylineOutcome,
   type SlpStorylineStage,
 } from "../../../../../shared/src/slp/slp-storyline.js";
+import { slpStorylineDraftFromArc } from "../../../../../shared/src/slp/slp-storyline-v1.js";
 import {
   SLP_STORY_TRACKS,
+  slpArcBlueprintSchema,
   slpStoryOutcomeSchema,
   type SlpStoryOutcome,
 } from "../../../../../shared/src/slp/slp-story-engine.js";
@@ -132,13 +134,22 @@ export function slurpProjectStorylineFrom(project: SlurpProject, content: SlpSto
   const ending = content?.endings[0]?.key ?? END.key;
   const build = (withChoices: boolean) => {
     const stages: Record<string, unknown>[] = [];
+    // Branch stages share what the chapters leave of the stage limit; a long branch is cut, as v1 did.
+    let budget = SLP_STORYLINE_MAX_STAGES - project.chapters.length;
     project.chapters.forEach((label, index) => {
       const key = `c${index + 1}`;
       const after = index + 1 < project.chapters.length ? `c${index + 2}` : ending;
       const days = project.phaseDays[index];
       const { condition, ...rest } = contentOf(content, label);
       const { mood, effects, profile } = project.reach[index] ?? {};
-      const choice = withChoices ? project.choices[index] : null;
+      const open = withChoices ? project.choices[index] : null;
+      const total = open?.options.reduce((sum, option) => sum + option.chapters.length, 0) ?? 0;
+      const per = total <= budget ? Infinity : Math.floor(budget / (open?.options.length ?? 1));
+      const choice = open && {
+        ...open,
+        options: open.options.map((option) => ({ ...option, chapters: option.chapters.slice(0, per) })),
+      };
+      budget -= choice?.options.reduce((sum, option) => sum + option.chapters.length, 0) ?? 0;
       const merged = { ...condition, mood, effects, profile };
       stages.push({
         ...rest,
@@ -152,7 +163,7 @@ export function slurpProjectStorylineFrom(project: SlurpProject, content: SlpSto
           ? {
               choice: {
                 asks: "fans",
-                question: choice.question.slice(0, 200),
+                question: choice.question,
                 default: 0,
                 options: choice.options.map((option, at) => ({
                   label: option.label,
@@ -187,9 +198,24 @@ export function slurpProjectStorylineFrom(project: SlurpProject, content: SlpSto
       ...(content?.source ? { source: content.source } : {}),
     });
   };
-  // Branches can outgrow the stage limit; a run without its open choices still runs.
+  // Anything else unusable in the fields: a run without its open choices still runs.
   const parsed = build(true);
   return parsed.success ? parsed.data : (build(false).data ?? null);
+}
+
+/**
+ * A record stored before PR 3 has no storyline copy, so it was rebuilt without its type's outcomes. With the
+ * library type at hand, rebuild it with them; anything else is returned as it is.
+ */
+export function slurpProjectWithType(project: SlurpProject, type: unknown): SlurpProject {
+  if (!project.storyline?.id.startsWith("project:")) return project;
+  const blueprint = slpArcBlueprintSchema.safeParse(type);
+  const content = blueprint.success
+    ? slpStorylineObjectSchema.safeParse(slpStorylineDraftFromArc(blueprint.data))
+    : null;
+  if (!content?.success) return project;
+  const storyline = slurpProjectStorylineFrom(project, content.data);
+  return storyline ? slurpProjectView({ ...project, storyline }) : project;
 }
 
 const canon = (value: unknown) =>

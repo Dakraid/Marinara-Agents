@@ -38,7 +38,11 @@ import {
   SlurpResolvedArcConfig,
 } from "../../modules/projects/slp-arc-library.js";
 import { isSlurpCrossover } from "../../modules/projects/slp-project.js";
-import { slurpProjectSync, slurpStageOutcomes } from "../../modules/projects/slp-project-storyline.js";
+import {
+  slurpProjectSync,
+  slurpProjectWithType,
+  slurpStageOutcomes,
+} from "../../modules/projects/slp-project-storyline.js";
 import { slurpStoryState } from "../../modules/storylines/slp-story-state.js";
 import {
   slurpCrossoverLeave,
@@ -119,7 +123,19 @@ export function createProjectsStorage1(context: SlurpStorageContext) {
     },
     /** Every project this Creator has, newest first. Paused and complete ones are included. */
     async listProjects(creatorAccountId: string): Promise<SlurpProject[]> {
-      const projects = await loadProjects(creatorAccountId);
+      const loaded = await loadProjects(creatorAccountId);
+      // Records from before PR 3 take their outcomes from the library type once more.
+      const library = loaded.some((project) => project.typeId && project.storyline?.id.startsWith("project:"))
+        ? (await this.getSettings()).arcLibrary
+        : [];
+      const projects = library.length
+        ? loaded.map((project) =>
+            slurpProjectWithType(
+              project,
+              library.find((entry: { id: string }) => entry.id === project.typeId),
+            ),
+          )
+        : loaded;
       // The other participants by public display name, never the source character behind them.
       for (const project of projects.filter(isSlurpCrossover)) {
         const names: string[] = [];
