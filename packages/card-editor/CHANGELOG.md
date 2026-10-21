@@ -1,3 +1,8 @@
+## 10.0.5 — 2026-10-21
+
+- The Bulk Card Editor no longer closes when you click outside it, and it auto-saves as you type: settings and per-card notes come back the next time it opens, with **Start fresh** to discard them. A dispatch clears the draft.
+- New **Presets** section: save every setting under a name, then load, overwrite or delete it later.
+
 ## 10.0.4 — 2026-10-21
 
 - Declares the Engine fork's own capability track (fork capability API 10.0) for its selection action, agent panel, overlay and structured output, and upstream capability API 1.66. Upstream Engines now refuse it instead of installing a package they cannot run. Needs an Engine fork build with fork capability API 10.0.
