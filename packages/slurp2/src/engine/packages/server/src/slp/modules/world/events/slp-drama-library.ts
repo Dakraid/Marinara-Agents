@@ -11,6 +11,11 @@ import {
   type SlpDrama,
   type SlpSituation,
 } from "../../../../../../shared/src/slp/slp-drama.js";
+import {
+  slpStorylineDraftFromDrama,
+  slpStorylineDraftFromSituation,
+} from "../../../../../../shared/src/slp/slp-storyline-v1.js";
+import { slpStorylineSchema, type SlpStoryline } from "../../../../../../shared/src/slp/slp-storyline.js";
 import { SLURP_BUILTIN_DRAMAS, SLURP_BUILTIN_SITUATIONS } from "./slp-drama-packs.js";
 
 export const SLP_DRAMA_LIBRARY_KEY = "slurp2.drama.library";
@@ -77,6 +82,21 @@ export function slpEnabledDrama(catalog: SlpDramaCatalog, enabled: readonly stri
     dramas: catalog.dramas.filter(
       (entry) => on.has(entry.id) && (!entry.requires || standing.has(entry.requires.situation)),
     ),
+  };
+}
+
+/** What the runtime runs: every entry as a storyline (docs/STORYLINES.md, PR 4); one that does not convert stays out. */
+export function slpDramaStorylines(catalog: { situations: readonly SlpSituation[]; dramas: readonly SlpDrama[] }): {
+  situations: SlpStoryline[];
+  dramas: SlpStoryline[];
+} {
+  const parse = (draft: unknown): SlpStoryline[] => {
+    const parsed = slpStorylineSchema.safeParse(draft);
+    return parsed.success ? [parsed.data] : [];
+  };
+  return {
+    situations: catalog.situations.flatMap((entry) => parse(slpStorylineDraftFromSituation(entry))),
+    dramas: catalog.dramas.flatMap((entry) => parse(slpStorylineDraftFromDrama(entry))),
   };
 }
 

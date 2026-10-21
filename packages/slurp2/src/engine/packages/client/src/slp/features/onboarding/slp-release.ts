@@ -1,7 +1,7 @@
 import { SLURP2_LEGACY_RELEASES } from "./slp-release-archive";
 
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.54";
+export const SLURP2_VERSION = "0.3.55";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -14,6 +14,13 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.55",
+    date: "2026-10-21",
+    notes: [
+      "Dramas and situations run on storylines too. A drama from an imported pack can ask that its lead has a partner, or is not pregnant yet, and can take a different way by what is true for her.",
+    ],
+  },
   {
     version: "0.3.54",
     date: "2026-10-21",

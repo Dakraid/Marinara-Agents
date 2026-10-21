@@ -10,8 +10,9 @@ import {
   readSlurpDramaLibrary,
   readSlurpDramaState,
 } from "../../data/world/slp-drama-storage.js";
-import { slpDramaCatalog, slpEnabledDrama } from "../../modules/world/events/slp-drama-library.js";
-import { slpDramaLeadFits, slpEndDramaRun, slpRequestDrama } from "../../modules/world/events/slp-drama-runtime.js";
+import { slpDramaCatalog, slpDramaStorylines, slpEnabledDrama } from "../../modules/world/events/slp-drama-library.js";
+import { slpDramaLeadFits } from "../../modules/world/events/slp-drama-cast.js";
+import { slpEndDramaRun, slpRequestDrama } from "../../modules/world/events/slp-drama-runtime.js";
 import type { SlpActionParsed, SlpStirWorld } from "../../../../../shared/src/slp/slp-actions.js";
 import type { SlpActionPreview } from "../../../../../shared/src/slp/slp-stir.js";
 import { advanceSlurpDrama, loadDramaWorld } from "./slp-drama-service.js";
@@ -93,7 +94,8 @@ export async function previewSlurpDramaLever(
     return result({ error: "busy", summary: `${drama.name} is already running.` });
   const world = leadId ? await loadDramaWorld(db, at) : null;
   const lead = world?.creators.find((creator) => creator.id === leadId);
-  if (world && leadId && !slpDramaLeadFits(drama, leadId, { world, busy: busyOf(state.runs), at }))
+  const storyline = slpDramaStorylines({ situations: [], dramas: [drama] }).dramas[0];
+  if (world && leadId && (!storyline || !slpDramaLeadFits(storyline, leadId, { world, busy: busyOf(state.runs), at })))
     return result({ error: "lead", summary: LEAD_NO });
   const avatar = lead
     ? ((
