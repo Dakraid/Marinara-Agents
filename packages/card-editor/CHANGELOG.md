@@ -1,3 +1,7 @@
+## 10.0.8 — 2026-10-21
+
+- Setup errors, such as a card that cannot be loaded, now show in the run summary under the settings. They used to land in a column to the right, off screen.
+
 ## 10.0.7 — 2026-10-21
 
 - The bulk Card Editor is one workspace now, laid over the character editor (a full sheet on phones). A run rail on the left, a stage bar (Setup, Processing, Review, Finish) on top.

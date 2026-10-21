@@ -1438,6 +1438,7 @@ marinara-capability-card-editor[view="selection-action"] {
   display: flex;
   min-height: 0;
   flex-direction: column;
+  flex-wrap: nowrap;
   align-items: stretch;
   justify-content: flex-start;
   overflow: auto;
@@ -1449,6 +1450,11 @@ marinara-capability-card-editor[view="selection-action"] {
 .ce-setup-summary > .mari-chrome-control--primary {
   margin-top: auto;
   justify-content: center;
+}
+
+/* In the column sidebar a 100% basis means full height; size errors to their text. */
+.ce-setup-summary > .ce-foot-error {
+  flex-basis: auto;
 }
 
 .ce-summary-list {
@@ -1718,6 +1724,10 @@ marinara-capability-card-editor[view="selection-action"] {
   .ce-setup-summary > .mari-chrome-control--primary {
     margin-top: 0;
     margin-left: auto;
+  }
+
+  .ce-setup-summary > .ce-foot-error {
+    flex-basis: 100%;
   }
 }
 
