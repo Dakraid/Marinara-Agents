@@ -62,8 +62,8 @@ export function slurpTieTags(
 ): string[] {
   const tags = new Set<string>();
   for (const couple of document.couples)
-    if (couple.stage !== "split" && [couple.aId, couple.bId, ...(couple.moreIds ?? [])].includes(creatorId))
-      tags.add("partner");
+    if ([couple.aId, couple.bId, ...(couple.moreIds ?? [])].includes(creatorId))
+      tags.add(couple.stage === "split" ? "ex" : "partner");
   for (const bond of document.bonds)
     if (!bond.endedAt && (bond.aId === creatorId || bond.bId === creatorId)) tags.add(bond.kind);
   for (const rivalry of document.ties.rivalries)

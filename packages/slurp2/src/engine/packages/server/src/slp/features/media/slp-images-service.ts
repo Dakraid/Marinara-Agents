@@ -159,7 +159,7 @@ type CreatorPostImageInput = {
   admissionMode?: ConnectionAdmissionMode;
   /** The player asked for this picture: its prompt rewrite never spends the world's AI budget (0.3.6). */
   playerAsked?: boolean;
-  /** An avatar or banner outlives a condition, so it never shows one; nor does a commission (STORYLINES.md). */
+  /** An avatar or banner outlives a condition, so it never shows one (STORYLINES.md). */
   skipCondition?: boolean;
   width?: number;
   height?: number;

@@ -275,12 +275,18 @@ export function reconcileSlpScheduledOccurrences(input: {
  * there for that Creator (docs/STORYLINES.md, "State").
  */
 export function putSlpStoryFact(facts: readonly SlpStoryFact[], fact: SlpStoryFact): SlpStoryFact[] {
+  const at = Date.parse(fact.createdAt);
+  // The old condition on the track expires now and stays on record.
+  const replaced = (item: SlpStoryFact) =>
+    Boolean(fact.track) &&
+    item.scope === "creator" &&
+    item.creatorId === fact.creatorId &&
+    item.track === fact.track &&
+    (!item.expiresAt || Date.parse(item.expiresAt) > at);
   return [
-    ...facts.filter(
-      (item) =>
-        item.id !== fact.id &&
-        !(fact.track && item.scope === "creator" && item.creatorId === fact.creatorId && item.track === fact.track),
-    ),
+    ...facts
+      .filter((item) => item.id !== fact.id)
+      .map((item) => (replaced(item) ? { ...item, expiresAt: fact.createdAt } : item)),
     fact,
   ];
 }

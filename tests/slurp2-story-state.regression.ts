@@ -5,7 +5,10 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import { applySlpStoryOutcomes } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-story-runtime.ts";
+import {
+  applySlpStoryOutcomes,
+  putSlpStoryFact,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-story-runtime.ts";
 import {
   slurpConditionBeat,
   slurpConditionCloset,
@@ -53,9 +56,12 @@ const second = applySlpStoryOutcomes({
   opportunities: [],
 });
 assert.deepEqual(
-  second.facts.map((item) => item.tag),
-  ["new-flat"],
-  "the home track keeps only the newest condition",
+  second.facts.map((item) => [item.tag, item.expiresAt]),
+  [
+    ["moving", at.toISOString()],
+    ["new-flat", null],
+  ],
+  "the home track keeps one live condition; the old one expires",
 );
 
 // --- Budget and order: body before home, at most two lines, one look; expired and other Creators out. ---
@@ -99,7 +105,10 @@ assert.ok(state.deck.every((beat) => beat.share === 0.5));
 assert.deepEqual(
   slurpTieTags(
     {
-      couples: [{ aId: "jen", bId: "sam", stage: "dating" } as never],
+      couples: [
+        { aId: "jen", bId: "sam", stage: "dating" } as never,
+        { aId: "jen", bId: "max", stage: "split" } as never,
+      ],
       bonds: [{ aId: "jen", bId: "kim", kind: "roommate", endedAt: null } as never],
       ties: { rivalries: [{ fromId: "lee", toId: "jen", stage: "over" } as never] },
       deals: [
@@ -109,7 +118,7 @@ assert.deepEqual(
     },
     "jen",
   ).sort(),
-  ["deal", "partner", "roommate"],
+  ["deal", "ex", "partner", "roommate"],
 );
 
 // --- The closet follows the condition, and never ends up empty. ---
@@ -233,7 +242,7 @@ assert.ok(
 );
 assert.match(
   server("data/projects/slp-projects-storage-1.ts"),
-  /chapter\.label === after\.chapters\[after\.chapter\][\s\S]{0,120}\?\.outcomes[\s\S]{0,200}before\.status !== "paused"\)\)\s+await this\.applyStoryOutcomes\(/u,
+  /chapter\.label === after\.chapters\[after\.chapter\][\s\S]{0,120}\?\.outcomes[\s\S]{0,200}before\.status !== "paused"\)[\s)]*await this\.applyStoryOutcomes\(/u,
   "a chapter that starts applies its outcomes, found by label (choices shift the index), never again on a resume",
 );
 for (const path of ["features/media/slp-images-service.ts", "features/media/slp-public-images-service.ts"])
@@ -293,6 +302,29 @@ assert.match(
 assert.match(
   server("features/feed/slp-generation-service.ts"),
   /storyNow: slurpStoryNow\(story\.state, account\.id, sequence, steering\?\.avoid, !\(beat \|\| directed \|\| project\)\)/u,
+);
+
+// --- Review fixes 2: a new condition expires the old one on its track and keeps it; arcs write none while
+// Storylines is off; arc generation never reads a condition as a theme. ---
+const kept = putSlpStoryFact([fact({ id: "old", track: "body" }), fact({ id: "home", track: "home" })], {
+  ...fact({ id: "new", track: "body" }),
+  createdAt: "2026-10-12T00:00:00.000Z",
+});
+assert.deepEqual(
+  kept.map((item) => [item.id, item.expiresAt]),
+  [
+    ["old", "2026-10-12T00:00:00.000Z"],
+    ["home", null],
+    ["new", null],
+  ],
+);
+assert.match(
+  server("data/projects/slp-projects-storage-1.ts"),
+  /settings &&\s+slpExtensionOn\(settings, "storylines"\)/u,
+);
+assert.match(
+  server("features/projects/slp-arc-generation-service.ts"),
+  /fact\.creatorId === creator\.id &&\s+!fact\.track/u,
 );
 
 console.log("slurp2 story state regression passed");

@@ -47,7 +47,7 @@ import { newId, now } from "../../../utils/id-generator.js";
 import { addSlurpModifier } from "../../modules/creators/slp-creator-state.js";
 
 import type { SlurpStorageContext } from "../host/slp-storage-context.js";
-import { slpArcsLive } from "../../../../../shared/src/slp/slp-extensions.js";
+import { slpArcsLive, slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
 
 export function createProjectsStorage1(context: SlurpStorageContext) {
   const {
@@ -435,7 +435,12 @@ export function createProjectsStorage1(context: SlurpStorageContext) {
         type?.chapters.find(
           (chapter: SlurpArcType["chapters"][number]) => chapter.label === after.chapters[after.chapter],
         )?.outcomes ?? [];
-      if (outcomes.length && (after.chapter !== before.chapter || before.status !== "paused"))
+      if (
+        outcomes.length &&
+        settings &&
+        slpExtensionOn(settings, "storylines") &&
+        (after.chapter !== before.chapter || before.status !== "paused")
+      )
         await this.applyStoryOutcomes({
           outcomes,
           participants: isSlurpCrossover(after) ? after.creatorIds : [creatorAccountId],
