@@ -136,6 +136,8 @@ export const slpStorylineStartSchema = z
     activation: slpEventActivationSchema.optional(),
     target: slpEventTargetSchema.optional(),
     weight: z.number().min(0.1).max(10).default(1),
+    /** Cast from the people of this running storyline (a drama inside a situation). */
+    within: id(160).optional(),
     cooldownDays: z.number().int().min(0).max(365).default(0),
     /** A life event a Creator has only once (moving, a new job). */
     once: z.boolean().default(false),
@@ -156,7 +158,8 @@ const storylineObject = z
     /** 1 to 5 roles; one role is a solo story. */
     cast: z.array(slpDramaRoleSchema).min(1).max(5),
     requires: slpStoryRequiresSchema.default({}),
-    track: z.enum(SLP_STORY_TRACKS).optional(),
+    /** A built-in track, or one its pack adds (`tracks`). */
+    track: key.optional(),
     start: slpStorylineStartSchema.default({}),
     maxDays: z.number().int().min(1).max(SLP_STORYLINE_MAX_DAYS).default(90),
     dials: slpDramaDialsSchema,
@@ -177,6 +180,8 @@ const storylineObject = z
   })
   .strict();
 
+const slpStorylineEdges = (next: z.infer<typeof nextSchema>) => (typeof next === "string" ? [{ to: next }] : next);
+
 /** The edges out of a stage, `null` where it stands. Shared with the runtime and the dry run. */
 export function slpStorylineNext(
   storyline: Pick<z.infer<typeof storylineObject>, "stages" | "endings">,
@@ -184,7 +189,7 @@ export function slpStorylineNext(
 ): { to: string; when?: { tag: string; set: boolean } }[] | null {
   const stage = storyline.stages[index]!;
   if (stage.choice) return stage.choice.options.map((option) => ({ to: option.next }));
-  if (stage.next !== undefined) return typeof stage.next === "string" ? [{ to: stage.next }] : stage.next;
+  if (stage.next !== undefined) return slpStorylineEdges(stage.next);
   if (!stage.days) return null;
   const following = storyline.stages[index + 1]?.key ?? storyline.endings[0]?.key;
   return following ? [{ to: following }] : null;
@@ -206,7 +211,13 @@ export const slpStorylineSchema = storylineObject.superRefine((storyline, contex
         issue(`stage "${stage.key}": a role choice names its role`);
     }
     if (Array.isArray(stage.next) && stage.next.at(-1)!.when) issue(`stage "${stage.key}": the last next has no when`);
-    const out = slpStorylineNext(storyline, index) ?? [];
+    const edges = slpStorylineNext(storyline, index);
+    // Only a lone stage may stand (a situation); anything else has somewhere to go, so every run ends.
+    if (!edges && !(storyline.stages.length === 1 && !storyline.endings.length && !stage.days))
+      issue(`stage "${stage.key}" has nowhere to go`);
+    // Beside a choice, `next` is the way on when the stage is skipped (too hot for the level).
+    const fallback = stage.choice && stage.next !== undefined ? slpStorylineEdges(stage.next) : [];
+    const out = [...(edges ?? []), ...fallback];
     for (const edge of out)
       if (!stageIndex.has(edge.to) && !endingKeys.has(edge.to))
         issue(`stage "${stage.key}": "${edge.to}" does not exist`);
@@ -262,11 +273,17 @@ export const slpStoryPackV2Schema = z
     name: id(100),
     description: z.string().trim().max(1000).default(""),
     author: z.string().trim().min(1).max(100).optional(),
+    /** Tracks this pack adds beside the built-in ones. */
+    tracks: z.array(key).max(6).default([]),
     storylines: z.array(slpStorylineSchema).max(SLP_STORY_PACK_MAX_ENTRIES).default([]),
   })
   .strict()
   .superRefine((pack, context) => {
     const ids = pack.storylines.map((storyline) => storyline.id);
     if (new Set(ids).size !== ids.length) context.addIssue({ code: "custom", message: "storyline ids must be unique" });
+    const tracks = new Set<string>([...SLP_STORY_TRACKS, ...pack.tracks]);
+    for (const storyline of pack.storylines)
+      if (storyline.track && !tracks.has(storyline.track))
+        context.addIssue({ code: "custom", message: `${storyline.id}: unknown track "${storyline.track}"` });
   });
 export type SlpStoryPackV2 = z.infer<typeof slpStoryPackV2Schema>;

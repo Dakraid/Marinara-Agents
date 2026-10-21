@@ -47,7 +47,8 @@ export function slpStorylineDraftFromArc(arc: SlpArcBlueprint): Draft {
     stages.push({
       key,
       label: chapter.label,
-      days: [chapter.minDays, chapter.maxDays],
+      // v1 reads a reversed pair as its low end (slp-arc-progress).
+      days: [chapter.minDays, Math.max(chapter.minDays, chapter.maxDays)],
       ...(mood || effects || profile || storyTags ? { condition: { mood, effects, profile, storyTags } } : {}),
       influences: chapter.influences,
       enter: [...chapter.outcomes, ...chapter.opportunities.map(boost)],
@@ -70,14 +71,19 @@ export function slpStorylineDraftFromArc(arc: SlpArcBlueprint): Draft {
         stages.push({
           key: `${key}-${choice + 1}-${step + 1}`,
           label: branch.label,
-          days: [branch.minDays, branch.maxDays],
+          days: [branch.minDays, Math.max(branch.minDays, branch.maxDays)],
           next: step + 1 < option.chapters.length ? `${key}-${choice + 1}-${step + 2}` : after,
         }),
       ),
     );
     longest +=
-      chapter.maxDays +
-      Math.max(0, ...branches.map((option) => option.chapters.reduce((sum, branch) => sum + branch.maxDays, 0)));
+      Math.max(chapter.minDays, chapter.maxDays) +
+      Math.max(
+        0,
+        ...branches.map((option) =>
+          option.chapters.reduce((sum, branch) => sum + Math.max(branch.minDays, branch.maxDays), 0),
+        ),
+      );
   });
   return {
     id: `arc:${arc.id}`,
@@ -141,7 +147,8 @@ export function slpStorylineDraftFromSituation(situation: SlpSituation): Draft {
     name: situation.name,
     description: situation.description,
     cast: situation.roles,
-    start: { mode: "manual" },
+    // v1 starts every enabled situation whose roles can be cast.
+    start: { mode: "auto" },
     maxDays: SLP_STORYLINE_MAX_DAYS,
     dials: situation.dials,
     perDay: situation.perDay,
@@ -159,7 +166,11 @@ export function slpStorylineDraftFromDrama(drama: SlpDrama): Draft {
     description: drama.description,
     cast: drama.roles,
     requires: drama.requires ? { tags: [drama.requires.situation] } : {},
-    start: { weight: drama.weight, cooldownDays: drama.cooldownDays },
+    start: {
+      weight: drama.weight,
+      cooldownDays: drama.cooldownDays,
+      ...(drama.requires ? { within: `situation:${drama.requires.situation}` } : {}),
+    },
     maxDays: drama.maxDays,
     stages: drama.stages.map((stage) => ({
       key: stage.key,
@@ -223,6 +234,7 @@ export function parseSlpStoryPackV2(value: unknown): { pack: SlpStoryPackV2 | nu
       name,
       description,
       ...(author ? { author } : {}),
+      tracks: [],
       storylines,
     },
     errors: [],

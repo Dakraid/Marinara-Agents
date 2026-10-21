@@ -482,17 +482,21 @@ items (PR 8). Version: one patch bump.
   `beats`, a `deck`, a `choice`, `next` (a key, or `{ to, when: { tag, set } }` entries) and `enter` /
   `leave` outcomes (story facts, boosts and ties in one union). A stage without `days`, choice or `next`
   stands: that is a situation.
-- **Validator:** keys unique, every target exists, every stage reachable, no cycle, the shortest way through
-  fits `maxDays`, roles exist.
+- **Validator:** keys unique, every target exists (also `next` beside a choice: the way on when the stage is
+  skipped), every stage reachable, no cycle, only a lone stage with no endings may stand, the longest way at
+  minimum days fits `maxDays`, roles exist, a track is built in or added by the pack (`tracks`).
 - **Converters:** `slp-storyline-v1.ts`. Ids become `arc:<id>`, `event:<id>`, `situation:<id>`,
   `drama:<id>`, with `source` naming the v1 entry. An arc chapter's fans' choice leads into its branch
   chapters, then on; chapter outcomes and opportunities become `enter`. An event is one timed stage. A
-  situation is one standing stage that sets its own id as a tag; a drama that needs it requires that tag. A
+  situation is one standing stage that starts by itself (`auto`) and sets its own id as a tag; a drama that
+  needs it requires that tag and casts from it (`start.within`). A reversed arc day pair reads as its low end. A
   drama's stage outcomes become `leave` and its exit is the ending's beat. `parseSlpStoryPackV2` reads either
   format and refuses a pack whole if one entry does not convert.
 - **Dry run:** `server/src/slp/modules/storylines/slp-storyline-dry-run.ts`, seeded stage lengths and choices,
   `when` read from the tags the run sets. Every built-in converts and ends (situations stand).
-- Nothing reads the new format yet; the runtime moves onto it in PR 3.
+- Nothing reads the new format yet; the runtime moves onto it in PR 3. For PR 3: a fans' choice is decided
+  by votes (its `default` and `timeoutDays` do not apply), and a stage waits for its choice, so its real
+  length can exceed `days`; the dry run counts only `days`.
 
 ## Later: Basic and add-ons
 

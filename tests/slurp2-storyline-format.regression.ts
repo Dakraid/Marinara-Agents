@@ -41,6 +41,7 @@ const pack = {
   version: "1",
   name: "Built-ins",
   description: "",
+  tracks: [],
   storylines: converted.storylines,
 };
 for (const summary of slpStoryPackDryRun(pack, "seed", 30)) {
@@ -101,6 +102,7 @@ const needy = SLURP_BUILTIN_DRAMAS.find((drama) => drama.requires);
 if (needy) {
   const storyline = converted.storylines.find((item) => item.id === `drama:${needy.id}`)!;
   assert.deepEqual(storyline.requires.tags, [needy.requires!.situation]);
+  assert.equal(storyline.start.within, `situation:${needy.requires!.situation}`);
   const situation = converted.storylines.find((item) => item.id === `situation:${needy.requires!.situation}`);
   assert.equal(situation?.stages[0]!.condition?.tag, needy.requires!.situation);
 }
@@ -162,6 +164,51 @@ assert.deepEqual(
   slpStorylineDryRun(branching, "x").path.map((step) => step.stage),
   ["a", "b", "c"],
 );
+
+// Review fixes: only a lone stage stands; `next` beside a choice is checked; a reversed arc pair is read as
+// its low end; situations start by themselves; a drama inside a situation casts from it; pack tracks.
+assert.ok(
+  messages({ ...base, stages: [{ key: "a", label: "A" }, base.stages[1]] }).some((message) =>
+    /"a" has nowhere to go/u.test(message),
+  ),
+);
+assert.ok(messages({ ...base, endings: [] }).some((message) => /"b" has nowhere to go/u.test(message)));
+const choice = {
+  asks: "player",
+  question: "Which?",
+  default: 0,
+  options: [
+    { label: "Done", next: "done" },
+    { label: "B", next: "b" },
+  ],
+};
+assert.ok(
+  messages({ ...base, stages: [{ key: "a", label: "A", days: [1, 2], choice, next: "nowhere" }, base.stages[1]] }).some(
+    (message) => /"nowhere" does not exist/u.test(message),
+  ),
+);
+const reversed = slpStorylinesFromV1({
+  arcs: [
+    slpArcBlueprintSchema.parse({
+      id: "odd",
+      name: "Odd",
+      description: "",
+      chapters: [{ label: "One", minDays: 5, maxDays: 2 }],
+    }),
+  ],
+  events: [],
+  situations: [],
+  dramas: [],
+});
+assert.deepEqual(reversed.errors, []);
+assert.deepEqual(reversed.storylines[0]!.stages[0]!.days, [5, 5]);
+for (const storyline of converted.storylines.filter((item) => item.source?.kind === "situation"))
+  assert.equal(storyline.start.mode, "auto", `${storyline.id} starts by itself`);
+const tracked = (track: string, tracks: string[] = []) =>
+  parseSlpStoryPackV2({ ...pack, tracks, storylines: [{ ...base, track }] });
+assert.notEqual(tracked("body").pack, null);
+assert.equal(tracked("school").pack, null, "an unknown track is refused");
+assert.notEqual(tracked("school", ["school"]).pack, null, "a pack may add a track");
 
 // --- Packs in either format. ---
 const fromV1 = parseSlpStoryPackV2(bundled[0]);

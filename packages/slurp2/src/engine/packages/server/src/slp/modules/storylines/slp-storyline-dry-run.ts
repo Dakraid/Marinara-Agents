@@ -48,6 +48,8 @@ export function slpStorylineDryRun(
     const edge = stage.choice
       ? edges[hash(`${seed}#choice#${step}`) % edges.length]!
       : (edges.find((item) => !item.when || set.has(item.when.tag) === item.when.set) ?? edges.at(-1)!);
+    // The condition holds while the stage runs, so the edge reads it; then it is gone.
+    if (stage.condition?.tag) set.delete(stage.condition.tag);
     const next = index.get(edge.to);
     if (next === undefined) return { path, ending: edge.to, days };
     at = next;
