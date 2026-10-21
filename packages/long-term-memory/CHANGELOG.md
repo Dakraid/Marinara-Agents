@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 1.4.64 — 2026-10-21
+
+- The Vault stays responsive in places with many memories. Each letter you type into the search now appears at once and the list follows, instead of waiting for every memory's row to be redrawn. Each type shows its first 100 memories, with a Show more button for the next 100. The counts, search, the filters and Select visible still include every memory. With 8,000 memories on a desktop, the worst letter took about 3 seconds to appear and now takes about 50 ms, the list follows in about a third of a second, and the Vault opens in about 0.7 to 1.1 seconds instead of about 1.7.
+
 ## 1.4.63 — 2026-10-21
 
 - When the settings fail to reload after Reset settings or a backup import, leaving Memory Settings and coming back now waits for the new settings. Before, the forms filled with the settings from before the reset or import, so the next Save wrote them back. A backup import that refreshed the settings but not the integrity check now says the backup was imported and shows only the integrity check's load error with Retry, instead of "settings could not be refreshed" and the report from before the import. After the settings reload, keyboard focus returns to Reset settings, or to Choose backup after an import, instead of the page.
