@@ -38,16 +38,16 @@ Marked _(inferred)_: read from code or history rather than stated in a commit or
 - **Version sources (must agree):** `packages/<id>/manifest.json` (agent-only packages, gacha-forge, relationship-tracker, modern-life-sim, ruleset-5e-2014); `version:` in `scripts/build-feature-packages.mjs` (noodle, slurp2, long-term-memory, memory-nag, card-editor, pokedex, hierarchical-maps, conversation-calls, the 6 turn games); `VERSION` in `scripts/build-{beholder,pixelforge,quartermaster}-package.mjs`; `SLURP2_VERSION` plus the top `SLURP2_RELEASES` entry in `packages/slurp2/.../onboarding/slp-release.ts`; the top `## <version>` of `packages/<id>/CHANGELOG.md` (builder-enforced, max 20 entries, 1,000 chars each).
 - **Keep on conflict:** always the 10.x value. Never take upstream `1.x`/`0.x` lines in manifests, builder maps, `VERSION`, `SLURP2_VERSION` or the CHANGELOG top.
 - **Fork-created CHANGELOGs** (add/add conflicts if upstream adds its own; union with the fork entry on top): background, card-evolution-auditor, chess, combat, continuity, cyoa, director, echo-chamber, eightball, expression, haptic, html, illustrator, knowledge-retrieval, knowledge-router, lorebook-keeper, persona-stats, poker, prose-guardian, quest, rock-paper-scissors, spotify, storyboard, tic-tac-toe, uno.
-- **Current versions:** card-editor `10.0.5`; modern-life-sim `10.0.2`; all 45 other packages `10.0.1`.
+- **Current versions:** card-editor `10.0.6`; modern-life-sim `10.0.3`; all 45 other packages `10.0.1`.
 
 ### Packages with fork changes beyond the version
 
 | Package           | Fork version | Kind                                               |
 | ----------------- | ------------ | -------------------------------------------------- |
-| card-editor       | 10.0.4       | fork-only feature package                          |
+| card-editor       | 10.0.6       | fork-only feature package                          |
 | lorebook-editor   | 10.0.1       | fork-only agent-only package                       |
 | pokedex           | 10.0.1       | fork-only feature package                          |
-| modern-life-sim   | 10.0.1       | source recovered into `src/`; features 0.4.0–0.8.0 |
+| modern-life-sim   | 10.0.3       | source recovered into `src/`; features 0.4.0–0.8.0 |
 | hierarchical-maps | 10.0.1       | Movement Assessment, ko locale, parallel artwork   |
 | character-tracker | 10.0.1       | prompt: scene scan                                 |
 | lorebook-keeper   | 10.0.1       | prompt: description backfill                       |

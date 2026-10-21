@@ -347,6 +347,9 @@ export interface CharacterCatalogEntry {
   id: string;
   name: string;
   avatarPath: string | null;
+  /** The card's title (comment); older Engines omit it. */
+  comment?: string;
+  tags?: string[];
 }
 
 export interface CharacterCatalogPage {

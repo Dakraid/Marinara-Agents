@@ -744,6 +744,23 @@ async function createSettledSession(configOverrides, hostCards) {
 
 {
   stopAllRunners();
+  // Overlapping enforcement passes and a stale snapshot never run the same duplicate twice: the
+  // list and detail polls (and approve-all) used to each copy the card from their own snapshot.
+  const { harness, host, sessionId } = await createSettledSession(
+    { saveMode: "confirm", completionMode: "duplicate" },
+    { "char-0": { name: "Character 0", description: "Old desc 0", extensions: {} } },
+  );
+  await withBridgedFetch(harness, host, async () => {
+    const stale = (await harness.invoke("GET", "/sessions/:id", { params: { id: sessionId } })).body;
+    await Promise.all([executeCompletionEnforcement(stale), executeCompletionEnforcement(stale)]);
+    await executeCompletionEnforcement(stale);
+    const duplicates = host.writes.filter((write) => write.kind === "duplicate");
+    assert.equal(duplicates.length, 1, "one stashed duplicate plan writes exactly one copy");
+  });
+}
+
+{
+  stopAllRunners();
   // Completed apply enforcement plans against current host fields and holds stale cards.
   const { harness, host, sessionId } = await createSettledSession(
     { saveMode: "duplicate", completionMode: "apply" },

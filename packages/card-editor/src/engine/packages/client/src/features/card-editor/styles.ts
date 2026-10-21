@@ -661,6 +661,19 @@ marinara-capability-card-editor[view="selection-action"] {
   object-fit: cover;
 }
 
+.ce-search-option-text {
+  display: grid;
+  min-width: 0;
+}
+
+.ce-search-option-meta {
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: 0.625rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .ce-search-option-name {
   min-width: 0;
   overflow: hidden;

@@ -163,7 +163,8 @@ export function SessionDetail({
     enforcementInFlight.current = true;
     void executeCompletionEnforcement(session, (done, total) => setEnforcementProgress({ done, total }))
       .then((outcome) => {
-        setSession(outcome.session);
+        // No setSession: skipped items leave the outcome on the pre-run snapshot, which would flash
+        // approved cards back to awaiting review. The refresh below reads the true state.
         if (outcome.messages.length > 0) setActionError(outcome.messages[0]!);
       })
       .finally(() => {
