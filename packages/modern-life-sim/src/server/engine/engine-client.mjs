@@ -309,6 +309,9 @@ function createEngineClient({
           avatar: asText(card?.avatarPath),
           title: asText(card?.name) ? asText(card?.comment) : "",
           tags: Array.isArray(card?.tags) ? card.tags.map(asText).filter(Boolean).slice(0, 12) : [],
+          creator: asText(card?.creator),
+          version: asText(card?.version),
+          favorite: card?.favorite === true,
           edited: asText(card?.updatedAt),
         }))
         .filter((card) => card.id);

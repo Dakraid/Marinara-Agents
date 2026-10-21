@@ -2860,6 +2860,9 @@ ${life?.name ?? id}`);
       draft.pickerOpen = false;
     } else if (action === "picker-group") {
       draft.pickerGroup = id || null;
+    } else if (action === "picker-tag") {
+      const tags = draft.pickerTags ?? [];
+      draft.pickerTags = tags.includes(id) ? tags.filter((tag) => tag !== id) : [...tags, id];
     } else if (action === "picker-close-outside") {
       if (target !== ev?.target) {
         return true;

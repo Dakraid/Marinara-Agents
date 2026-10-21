@@ -1283,13 +1283,13 @@ const STYLES = `@font-face { font-family: "Anton"; font-style: normal; font-weig
 .mls-overlay { position: fixed; inset: 0; z-index: 2147483000; background: none; min-height: 0; }
 .mls-modal { position: fixed; inset: 0; z-index: 2147483000; background: rgba(11,11,13,.86); display: grid; place-items: center; padding: 20px; }
 .mls-picker { background: var(--panel); border-left: 6px solid var(--red); width: min(720px, 100%); max-height: min(80vh, 640px);
-  display: grid; grid-template-rows: auto auto minmax(0, 1fr); gap: 10px; padding: 16px 18px; box-shadow: 10px 10px 0 var(--ink); }
+  display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; box-shadow: 10px 10px 0 var(--ink); }
 .mls-picker .head { display: flex; align-items: baseline; gap: 12px; }
 .mls-picker h3 { font-family: var(--display); font-weight: 400; font-size: 26px; letter-spacing: 1px; }
 .mls-picker .count { font-size: 12px; color: var(--muted); }
 .mls-done { margin-left: auto; font-family: var(--display); font-size: 20px; letter-spacing: 1px; background: var(--red);
   color: var(--paper); border: 0; padding: 4px 18px; cursor: pointer; }
-.mls-picker .list { overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; align-content: start; }
+.mls-picker .list { flex: 1 1 auto; min-height: 0; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; align-content: start; }
 .mls-picker .pick { display: grid; grid-template-columns: auto 38px 1fr; align-items: center; gap: 10px;
   background: #1c1c20; padding: 7px 10px; cursor: pointer; border-left: 4px solid transparent; }
 .mls-picker .pick.on { border-left-color: var(--red); background: #241a1b; }
@@ -1300,10 +1300,15 @@ const STYLES = `@font-face { font-family: "Anton"; font-style: normal; font-weig
 
 .mls-picker .pick .nm { display: grid; min-width: 0; }
 .mls-picker .pick .nm small { font-size: 11px; font-weight: 700; color: var(--muted); overflow-wrap: anywhere; }
+.mls-picker .pick .nm small.title { font-style: italic; }
+.mls-picker .pick .face { position: relative; }
+.mls-picker .pick .face .fav { position: absolute; top: 0; right: 0; font-style: normal; font-size: 11px; line-height: 1; padding: 1px 2px; background: var(--ink); color: var(--yellow); }
+.mls-picker .pick .tags { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
+.mls-picker .pick .tags span { font-size: 9px; font-weight: 900; padding: 1px 5px; background: #2b2b30; color: var(--muted); }
+.mls-picker-tags button { letter-spacing: 0; }
 .mls-member .who small.title { display: block; font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0; text-transform: none; }
 
-.mls-picker:has(.mls-picker-groups) { grid-template-rows: auto auto auto minmax(0, 1fr); }
-.mls-picker-groups { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.mls-picker-groups { flex: none; display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
 .mls-picker-groups button { flex: none; display: inline-flex; align-items: baseline; gap: 6px; background: #2b2b30; color: var(--paper); border: 0; padding: 5px 10px; font-weight: 900; font-size: 11px; letter-spacing: 1px; cursor: pointer; }
 .mls-picker-groups button small { font-size: 10px; color: var(--muted); font-weight: 700; }
 .mls-picker-groups button.on { background: var(--red); }

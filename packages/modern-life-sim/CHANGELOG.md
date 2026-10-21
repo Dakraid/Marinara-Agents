@@ -1,3 +1,8 @@
+## 10.0.2 — 2026-10-21
+
+- The ADD CHARACTERS picker filters by tag: tap tags to show only cards carrying all of them.
+- Picker rows show what the character library shows: the variant note, creator and version, a favorite star and the first tags.
+
 ## 10.0.1 — 2026-10-20
 
 - Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
