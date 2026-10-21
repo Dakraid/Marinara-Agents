@@ -354,6 +354,12 @@ export const CARD_EDITOR_STYLES = `
   gap: 0.35rem;
 }
 
+.ce-preset-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
 .ce-choice {
   display: flex;
   min-width: 0;

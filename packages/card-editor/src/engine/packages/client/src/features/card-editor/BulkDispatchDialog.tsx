@@ -22,14 +22,27 @@ import {
   type HostLorebook,
   type LanguageConnection,
 } from "./api";
-import { BehaviorCharacterSelect, type BehaviorSelection } from "./BehaviorCharacterSelect";
+import { BehaviorCharacterSelect } from "./BehaviorCharacterSelect";
 import { NumberField, RadioChoice, safeLocalStorage, useDialogFocusTrap } from "./dialog-controls";
 import { DialogTargets, type DialogTarget } from "./DialogTargets";
 import { translateCardEditor, type CardEditorLocalizationContext } from "./localization";
 import { isBundledPromptPreset, PROMPT_PRESET_TEMPLATES, type PromptPresetId } from "./presets";
 import { SchemaStudio } from "./SchemaStudio";
-import { estimateBulkCalls, loadStoredBulkConfig, normalizeBulkSessionConfig, storeBulkConfig } from "./session-config";
-import { configFromDraft, draftFromConfig, TransformSettings, type TransformDraft } from "./TransformSettings";
+import {
+  clearBulkDraft,
+  deleteBulkPreset,
+  estimateBulkCalls,
+  loadBulkDraft,
+  loadBulkPresets,
+  loadStoredBulkConfig,
+  normalizeBulkSessionConfig,
+  saveBulkPreset,
+  storeBulkConfig,
+  storeBulkDraft,
+  type BulkDraft,
+  type BulkFormState,
+} from "./session-config";
+import { configFromDraft, draftFromConfig, TransformSettings } from "./TransformSettings";
 
 /** Overlay dispatch prefill (unified "Process characters" entry — SPEC 2026-10-10 F5.2):
  *  initial values for exactly these fields; everything stays editable, and the remembered
@@ -71,40 +84,66 @@ export function BulkDispatchDialog({
 
   // Read the remembered config once (lazy initializer); corrupt entries fall back to defaults.
   const [storedConfig] = useState(() => loadStoredBulkConfig(safeLocalStorage()));
-  const [mode, setMode] = useState<"individual" | "batched">(storedConfig?.mode ?? "individual");
-  const [batchSize, setBatchSize] = useState(storedConfig?.batchSize ?? 4);
-  const [connectionId, setConnectionId] = useState<string | null>(storedConfig?.connectionId ?? null);
-  const [presetId, setPresetId] = useState<PromptPresetId>(prefill?.presetId ?? storedConfig?.presetId ?? "standard");
-  const [customTemplate, setCustomTemplate] = useState(storedConfig?.customTemplate ?? "");
-  const [globalInstruction, setGlobalInstruction] = useState(
-    prefill?.globalInstruction ?? storedConfig?.globalInstruction ?? "",
-  );
-  const [behavior, setBehavior] = useState<BehaviorSelection>({ kind: "none" });
-  const [globalLorebookIds, setGlobalLorebookIds] = useState<string[]>(storedConfig?.globalLorebookIds ?? []);
-  const [rebalance, setRebalance] = useState(storedConfig?.rebalance ?? false);
-  const [providerRetries, setProviderRetries] = useState(storedConfig?.providerRetries ?? 2);
-  const [refusalRetries, setRefusalRetries] = useState(storedConfig?.refusalRetries ?? 3);
-  const [concurrency, setConcurrency] = useState(storedConfig?.concurrency ?? 1);
-  const [completionMode, setCompletionMode] = useState<CompletionMode>(storedConfig?.completionMode ?? "ask");
-  const [saveMode, setSaveMode] = useState<SaveMode>(prefill?.saveMode ?? storedConfig?.saveMode ?? "confirm");
   // SPEC 2026-10-10 §3: the chat-name prefill is only an editable suggestion in the prefix box.
   // Append prefix and suffix both apply (the old "prefix wins" rule is gone); blank boxes are
   // omitted from the dispatch config. The suffix starts at the " (Edited)" suggestion unless a
   // remembered config overrides it; the remove affixes start empty.
-  const [duplicatePrefix, setDuplicatePrefix] = useState(
-    prefill?.duplicatePrefix ?? storedConfig?.duplicatePrefix ?? "",
-  );
-  const [duplicateSuffix, setDuplicateSuffix] = useState(storedConfig?.duplicateSuffix ?? " (Edited)");
-  const [duplicateRemovePrefix, setDuplicateRemovePrefix] = useState(storedConfig?.duplicateRemovePrefix ?? "");
-  const [duplicateRemoveSuffix, setDuplicateRemoveSuffix] = useState(storedConfig?.duplicateRemoveSuffix ?? "");
-  const [combinedCardName, setCombinedCardName] = useState(
-    prefill?.combinedCardName ?? (prefill?.label ? `${prefill.label} — Cast` : (storedConfig?.combinedCardName ?? "")),
-  );
-  const [transformDraft, setTransformDraft] = useState<TransformDraft>(() => ({
-    ...draftFromConfig(storedConfig?.transform),
-    ...(prefill?.schemaId ? { schemaId: prefill.schemaId } : {}),
-    ...(prefill?.format ? { format: prefill.format } : {}),
+  const [defaultForm] = useState<BulkFormState>(() => ({
+    mode: storedConfig?.mode ?? "individual",
+    batchSize: storedConfig?.batchSize ?? 4,
+    connectionId: storedConfig?.connectionId ?? null,
+    presetId: prefill?.presetId ?? storedConfig?.presetId ?? "standard",
+    customTemplate: storedConfig?.customTemplate ?? "",
+    globalInstruction: prefill?.globalInstruction ?? storedConfig?.globalInstruction ?? "",
+    behavior: { kind: "none" },
+    globalLorebookIds: storedConfig?.globalLorebookIds ?? [],
+    rebalance: storedConfig?.rebalance ?? false,
+    providerRetries: storedConfig?.providerRetries ?? 2,
+    refusalRetries: storedConfig?.refusalRetries ?? 3,
+    concurrency: storedConfig?.concurrency ?? 1,
+    completionMode: storedConfig?.completionMode ?? "ask",
+    saveMode: prefill?.saveMode ?? storedConfig?.saveMode ?? "confirm",
+    duplicatePrefix: prefill?.duplicatePrefix ?? storedConfig?.duplicatePrefix ?? "",
+    duplicateSuffix: storedConfig?.duplicateSuffix ?? " (Edited)",
+    duplicateRemovePrefix: storedConfig?.duplicateRemovePrefix ?? "",
+    duplicateRemoveSuffix: storedConfig?.duplicateRemoveSuffix ?? "",
+    combinedCardName:
+      prefill?.combinedCardName ??
+      (prefill?.label ? `${prefill.label} — Cast` : (storedConfig?.combinedCardName ?? "")),
+    transformDraft: {
+      ...draftFromConfig(storedConfig?.transform),
+      ...(prefill?.schemaId ? { schemaId: prefill.schemaId } : {}),
+      ...(prefill?.format ? { format: prefill.format } : {}),
+    },
   }));
+  // An unsent draft (auto-saved below) takes precedence over prefill and the remembered config: it is newer work.
+  const [restoredDraft, setRestoredDraft] = useState(() => loadBulkDraft(safeLocalStorage(), defaultForm));
+  const [initialForm] = useState(() => restoredDraft?.form ?? defaultForm);
+  const [mode, setMode] = useState(initialForm.mode);
+  const [batchSize, setBatchSize] = useState(initialForm.batchSize);
+  const [connectionId, setConnectionId] = useState(initialForm.connectionId);
+  const [presetId, setPresetId] = useState(initialForm.presetId);
+  const [customTemplate, setCustomTemplate] = useState(initialForm.customTemplate);
+  const [globalInstruction, setGlobalInstruction] = useState(initialForm.globalInstruction);
+  const [behavior, setBehavior] = useState(initialForm.behavior);
+  const [globalLorebookIds, setGlobalLorebookIds] = useState(initialForm.globalLorebookIds);
+  const [rebalance, setRebalance] = useState(initialForm.rebalance);
+  const [providerRetries, setProviderRetries] = useState(initialForm.providerRetries);
+  const [refusalRetries, setRefusalRetries] = useState(initialForm.refusalRetries);
+  const [concurrency, setConcurrency] = useState(initialForm.concurrency);
+  const [completionMode, setCompletionMode] = useState(initialForm.completionMode);
+  const [saveMode, setSaveMode] = useState(initialForm.saveMode);
+  const [duplicatePrefix, setDuplicatePrefix] = useState(initialForm.duplicatePrefix);
+  const [duplicateSuffix, setDuplicateSuffix] = useState(initialForm.duplicateSuffix);
+  const [duplicateRemovePrefix, setDuplicateRemovePrefix] = useState(initialForm.duplicateRemovePrefix);
+  const [duplicateRemoveSuffix, setDuplicateRemoveSuffix] = useState(initialForm.duplicateRemoveSuffix);
+  const [combinedCardName, setCombinedCardName] = useState(initialForm.combinedCardName);
+  const [transformDraft, setTransformDraft] = useState(initialForm.transformDraft);
+  const [presets, setPresets] = useState(() => loadBulkPresets(safeLocalStorage(), defaultForm));
+  const [presetName, setPresetName] = useState("");
+  // Only user edits start auto-saving, so merely opening and closing never leaves a draft behind.
+  const touched = useRef(restoredDraft !== null);
+  const dispatched = useRef(false);
   const [schemas, setSchemas] = useState<CardSchema[] | null>(null);
   const [schemasError, setSchemasError] = useState(false);
   const [agentStructured, setAgentStructured] = useState<boolean | null>(null);
@@ -145,26 +184,19 @@ export function BulkDispatchDialog({
       setTargets(
         results.map((result, index) => {
           const characterId = initialIds[index]!;
+          // Notes and styles come back for every target the draft knew; new targets start blank.
+          const saved = restoredDraft?.targets[characterId] ?? { note: "", style: { kind: "inherit" } };
           if (result.status === "fulfilled") {
             return {
               characterId,
               name: result.value.name,
               avatarPath: result.value.avatarPath,
               card: result.value.fields,
-              note: "",
-              style: { kind: "inherit" } as BehaviorSelection,
+              ...saved,
               loadError: false,
             };
           }
-          return {
-            characterId,
-            name: characterId,
-            avatarPath: null,
-            card: null,
-            note: "",
-            style: { kind: "inherit" } as BehaviorSelection,
-            loadError: true,
-          };
+          return { characterId, name: characterId, avatarPath: null, card: null, ...saved, loadError: true };
         }),
       );
       setTargetsLoading(false);
@@ -173,6 +205,8 @@ export function BulkDispatchDialog({
       cancelled = true;
       controller.abort();
     };
+    // The draft is read once at open; later draft changes must not reload the targets.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialIds]);
 
   useEffect(() => {
@@ -194,7 +228,7 @@ export function BulkDispatchDialog({
   // Resolve the remembered behavior character's name; a vanished card falls back to None.
   useEffect(() => {
     const remembered = storedConfig?.behaviorCharacterId;
-    if (!remembered) return undefined;
+    if (!remembered || touched.current) return undefined;
     let cancelled = false;
     getHostCharacter(remembered)
       .then((character) => {
@@ -306,7 +340,7 @@ export function BulkDispatchDialog({
   // F2 (SPEC 2026-10-09): with no remembered concurrency the field starts at the effective cap
   // once the connection list settles; a later-arriving settings cap can only lower it, which the
   // clamp above already covers. Remembered values keep clamp-down-only behavior.
-  const concurrencyRemembered = storedConfig?.concurrency !== undefined;
+  const concurrencyRemembered = restoredDraft !== null || storedConfig?.concurrency !== undefined;
   const concurrencyInitializedFromCap = useRef(false);
   useEffect(() => {
     if (concurrencyRemembered || concurrencyInitializedFromCap.current) return;
@@ -314,6 +348,79 @@ export function BulkDispatchDialog({
     concurrencyInitializedFromCap.current = true;
     setConcurrency(parallelCap);
   }, [concurrencyRemembered, connections, connectionsError, parallelCap]);
+
+  const form: BulkFormState = {
+    mode,
+    batchSize,
+    connectionId,
+    presetId,
+    customTemplate,
+    globalInstruction,
+    behavior,
+    globalLorebookIds,
+    rebalance,
+    providerRetries,
+    refusalRetries,
+    concurrency,
+    completionMode,
+    saveMode,
+    duplicatePrefix,
+    duplicateSuffix,
+    duplicateRemovePrefix,
+    duplicateRemoveSuffix,
+    combinedCardName,
+    transformDraft,
+  };
+  // Auto-save after every edit. Load-failed targets keep their notes too; they may load next time.
+  const draftJson = JSON.stringify({
+    form,
+    targets: Object.fromEntries(
+      targets.map((target) => [target.characterId, { note: target.note, style: target.style }]),
+    ),
+  });
+  useEffect(() => {
+    if (!touched.current || dispatched.current || targetsLoading) return;
+    storeBulkDraft(JSON.parse(draftJson) as BulkDraft, safeLocalStorage());
+  }, [draftJson, targetsLoading]);
+
+  const applyForm = (next: BulkFormState) => {
+    touched.current = true;
+    setMode(next.mode);
+    setBatchSize(next.batchSize);
+    setConnectionId(next.connectionId);
+    setPresetId(next.presetId);
+    setCustomTemplate(next.customTemplate);
+    setGlobalInstruction(next.globalInstruction);
+    setBehavior(next.behavior);
+    setGlobalLorebookIds(next.globalLorebookIds);
+    setRebalance(next.rebalance);
+    setProviderRetries(next.providerRetries);
+    setRefusalRetries(next.refusalRetries);
+    setConcurrency(Math.min(next.concurrency, parallelCap));
+    setCompletionMode(requireReview ? "ask" : next.completionMode);
+    setSaveMode(requireReview && next.saveMode === "auto" ? "confirm" : next.saveMode);
+    setDuplicatePrefix(next.duplicatePrefix);
+    setDuplicateSuffix(next.duplicateSuffix);
+    setDuplicateRemovePrefix(next.duplicateRemovePrefix);
+    setDuplicateRemoveSuffix(next.duplicateRemoveSuffix);
+    setCombinedCardName(next.combinedCardName);
+    setTransformDraft(next.transformDraft);
+  };
+
+  const discardDraft = () => {
+    applyForm(defaultForm);
+    setTargets((current) => current.map((target) => ({ ...target, note: "", style: { kind: "inherit" } })));
+    touched.current = false;
+    clearBulkDraft(safeLocalStorage());
+    setRestoredDraft(null);
+  };
+
+  const savePreset = () => {
+    const name = presetName.trim();
+    if (!name) return;
+    setPresets((current) => saveBulkPreset(current, { name, form }, safeLocalStorage()));
+  };
+  const selectedPreset = presets.find((preset) => preset.name === presetName.trim());
 
   // The server never fetches engine data (coordinator decision 1): every prompt input travels
   // with the dispatch — target cards, per-target style-override cards (ANY library character),
@@ -383,6 +490,8 @@ export function BulkDispatchDialog({
         ...(sessionBehaviorCard ? { behaviorCharacter: behaviorCardMaterial(sessionBehaviorCard) } : {}),
       });
       storeBulkConfig(config, safeLocalStorage());
+      dispatched.current = true;
+      clearBulkDraft(safeLocalStorage());
       onDispatched(session);
     } catch (error) {
       setDispatchError(error instanceof Error ? error.message : String(error));
@@ -391,13 +500,8 @@ export function BulkDispatchDialog({
   };
 
   return (
-    <div
-      className="ce-overlay"
-      role="presentation"
-      onClick={() => {
-        if (!dispatching) onClose();
-      }}
-    >
+    // A click outside never closes this dialog: it holds long unsent work. Close and Escape still do.
+    <div className="ce-overlay" role="presentation">
       <section
         ref={dialogRef}
         className="ce-dialog ce-shell"
@@ -405,7 +509,12 @@ export function BulkDispatchDialog({
         aria-modal="true"
         aria-label={t("cardEditor.dialog.title")}
         tabIndex={-1}
-        onClick={(event) => event.stopPropagation()}
+        onChangeCapture={() => {
+          touched.current = true;
+        }}
+        onClickCapture={(event) => {
+          if ((event.target as Element).closest("button, input, select, label")) touched.current = true;
+        }}
       >
         <div className="ce-dialog-head">
           <strong>{t("cardEditor.dialog.title")}</strong>
@@ -420,6 +529,66 @@ export function BulkDispatchDialog({
           </button>
         </div>
         <div className="ce-dialog-body">
+          {restoredDraft ? (
+            <div className="ce-status" role="status">
+              <span>{t("cardEditor.dialog.draft.restored")}</span>{" "}
+              <button type="button" className="mari-chrome-control mari-chrome-control--small" onClick={discardDraft}>
+                {t("cardEditor.dialog.draft.discard")}
+              </button>
+            </div>
+          ) : null}
+
+          <fieldset className="ce-section" data-ce-section="presets">
+            <legend className="ce-section-heading">{t("cardEditor.dialog.presets.title")}</legend>
+            <label className="ce-label" htmlFor="ce-settings-preset">
+              <span className="ce-label-title">{t("cardEditor.dialog.presets.name")}</span>
+              <input
+                id="ce-settings-preset"
+                type="text"
+                list="ce-settings-preset-list"
+                className="mari-chrome-field ce-field"
+                value={presetName}
+                placeholder={t("cardEditor.dialog.presets.namePlaceholder")}
+                onChange={(event) => setPresetName(event.target.value)}
+              />
+              <datalist id="ce-settings-preset-list">
+                {presets.map((preset) => (
+                  <option key={preset.name} value={preset.name} />
+                ))}
+              </datalist>
+              <small>{t("cardEditor.dialog.presets.hint")}</small>
+            </label>
+            <div className="ce-preset-actions">
+              <button
+                type="button"
+                className="mari-chrome-control mari-chrome-control--small"
+                disabled={!selectedPreset}
+                onClick={() => selectedPreset && applyForm(selectedPreset.form)}
+              >
+                {t("cardEditor.dialog.presets.load")}
+              </button>
+              <button
+                type="button"
+                className="mari-chrome-control mari-chrome-control--small"
+                disabled={!presetName.trim()}
+                onClick={savePreset}
+              >
+                {selectedPreset ? t("cardEditor.dialog.presets.overwrite") : t("cardEditor.dialog.presets.save")}
+              </button>
+              <button
+                type="button"
+                className="mari-chrome-control mari-chrome-control--small"
+                disabled={!selectedPreset}
+                onClick={() =>
+                  selectedPreset &&
+                  setPresets((current) => deleteBulkPreset(current, selectedPreset.name, safeLocalStorage()))
+                }
+              >
+                {t("cardEditor.dialog.presets.delete")}
+              </button>
+            </div>
+          </fieldset>
+
           <DialogTargets
             localization={localization}
             targets={targets}

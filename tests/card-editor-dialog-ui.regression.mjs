@@ -4,7 +4,15 @@ import { readFileSync } from "node:fs";
 import { normalizeSessionConfig } from "../packages/card-editor/src/engine/packages/shared/src/features/agents/card-editor/schema.ts";
 import {
   BULK_CONFIG_STORAGE_KEY,
+  BULK_DRAFT_STORAGE_KEY,
+  BULK_PRESETS_STORAGE_KEY,
+  clearBulkDraft,
+  deleteBulkPreset,
   estimateBulkCalls,
+  loadBulkDraft,
+  loadBulkPresets,
+  saveBulkPreset,
+  storeBulkDraft,
   loadStoredBulkConfig,
   normalizeBulkSessionConfig,
   storeBulkConfig,
@@ -187,6 +195,98 @@ memory.set(BULK_CONFIG_STORAGE_KEY, JSON.stringify({ batchSize: 99, mode: "batch
 assert.equal(loadStoredBulkConfig(storage)?.batchSize, 16, "stored values are clamped on read");
 assert.equal(loadStoredBulkConfig(undefined), null, "storage may be unavailable");
 
+// ── 4b. Unsent work survives a stray close: auto-saved draft, presets, no outside-click close ──
+{
+  const box = new Map();
+  const store = {
+    getItem: (key) => (box.has(key) ? box.get(key) : null),
+    setItem: (key, value) => box.set(key, value),
+    removeItem: (key) => box.delete(key),
+  };
+  const defaults = {
+    mode: "individual",
+    batchSize: 4,
+    connectionId: null,
+    presetId: "standard",
+    customTemplate: "",
+    globalInstruction: "",
+    behavior: { kind: "none" },
+    globalLorebookIds: [],
+    rebalance: false,
+    providerRetries: 2,
+    refusalRetries: 3,
+    concurrency: 1,
+    completionMode: "ask",
+    saveMode: "confirm",
+    duplicatePrefix: "",
+    duplicateSuffix: " (Edited)",
+    duplicateRemovePrefix: "",
+    duplicateRemoveSuffix: "",
+    combinedCardName: "",
+    transformDraft: { schemaId: "simple", format: "markdown", phase2Enabled: false, phase2SchemaId: null },
+  };
+  assert.equal(loadBulkDraft(store, defaults), null, "no draft until one is saved");
+  const form = {
+    ...defaults,
+    connectionId: "connection-2",
+    globalInstruction: "half-typed directive ",
+    duplicatePrefix: " ",
+    saveMode: "combined",
+    behavior: { kind: "character", id: "style-1", name: "Mira", avatarPath: null },
+    transformDraft: { ...defaults.transformDraft, phase2Enabled: true },
+  };
+  storeBulkDraft({ form, targets: { a: { note: "keep accent", style: { kind: "none" } } } }, store);
+  assert.deepEqual(
+    loadBulkDraft(store, defaults),
+    { form, targets: { a: { note: "keep accent", style: { kind: "none" } } } },
+    "a draft keeps raw, still-invalid inputs (blank affix, combined without a name) verbatim",
+  );
+  box.set(
+    BULK_DRAFT_STORAGE_KEY,
+    JSON.stringify({
+      form: { batchSize: "8", globalInstruction: "kept", behavior: { kind: "character" }, transformDraft: 5, extra: 1 },
+      targets: { a: { note: 3, style: { kind: "bogus" } }, b: "x" },
+    }),
+  );
+  assert.deepEqual(
+    loadBulkDraft(store, defaults),
+    {
+      form: { ...defaults, globalInstruction: "kept" },
+      targets: { a: { note: "", style: { kind: "inherit" } } },
+    },
+    "wrong-shaped fields fall back to defaults one by one",
+  );
+  box.set(BULK_DRAFT_STORAGE_KEY, "{not json");
+  assert.equal(loadBulkDraft(store, defaults), null, "a corrupt draft is ignored");
+  clearBulkDraft(store);
+  assert.equal(box.has(BULK_DRAFT_STORAGE_KEY), false);
+
+  let saved = saveBulkPreset([], { name: "XML pass", form }, store);
+  saved = saveBulkPreset(saved, { name: "Alpha", form: defaults }, store);
+  saved = saveBulkPreset(saved, { name: "XML pass", form: defaults }, store);
+  assert.deepEqual(
+    saved.map((preset) => preset.name),
+    ["Alpha", "XML pass"],
+    "same name overwrites; list stays sorted",
+  );
+  assert.deepEqual(loadBulkPresets(store, defaults), saved, "presets round-trip");
+  assert.deepEqual(
+    deleteBulkPreset(saved, "Alpha", store).map((preset) => preset.name),
+    ["XML pass"],
+  );
+  box.set(BULK_PRESETS_STORAGE_KEY, JSON.stringify([{ name: " " }, { form: {} }, "x", { name: "ok" }]));
+  assert.deepEqual(loadBulkPresets(store, defaults), [{ name: "ok", form: defaults }], "unnamed presets drop");
+
+  assert.doesNotMatch(
+    dialog,
+    /className="ce-overlay" role="presentation"\s+onClick/u,
+    "a click outside must not close the dialog and drop unsent work",
+  );
+  assert.match(dialog, /storeBulkDraft\(/u, "edits auto-save a draft");
+  assert.match(dialog, /clearBulkDraft\(safeLocalStorage\(\)\);\s*onDispatched/u, "a dispatch clears the draft");
+  assert.match(dialog, /restoredDraft\?\.targets\[characterId\]/u, "per-target notes come back with the draft");
+}
+
 // ── 5. Live estimate math: ceil(N / batchSize) vs N ──
 assert.deepEqual(estimateBulkCalls(12, 4), { batched: 3, individual: 12 });
 assert.deepEqual(estimateBulkCalls(10, 4), { batched: 3, individual: 10 });
@@ -248,7 +348,7 @@ assert.match(
 assert.match(dialog, /Math\.min\(current, parallelCap\)/u, "a remembered concurrency only ever clamps down");
 assert.match(
   dialog,
-  /const concurrencyRemembered = storedConfig\?\.concurrency !== undefined/u,
+  /const concurrencyRemembered = restoredDraft !== null \|\| storedConfig\?\.concurrency !== undefined/u,
   "F2: the dialog tracks whether a remembered concurrency exists",
 );
 assert.match(
