@@ -3017,6 +3017,13 @@
   "ui.slurp.settings.ext.storylines.detail": "Arcs und Pläne, Collabs, Rivalitäten, Paare, Drama und Polyamorie zwischen Creatorn.",
   "ui.slurp.settings.ext.supportDesk.label": "Support-Desk",
   "ui.slurp.settings.ext.supportDesk.detail": "Das Staff-Spiel: Tickets, Vertrauen, Misstrauen, Angebote, Perks, Hinweise und Creator, die gehen.",
+  "ui.slurp.extrasOffer.from": "Slurp Support",
+  "ui.slurp.extrasOffer.ask.posts": "Deine ersten Posts sind raus, Boss. Willst du auch {{name}}?",
+  "ui.slurp.extrasOffer.ask.unlock": "Jemand hat für einen Post bezahlt! Als Nächstes {{name}}?",
+  "ui.slurp.extrasOffer.ask.days": "Du führst Slurp jetzt seit ein paar Tagen. Willst du {{name}}?",
+  "ui.slurp.extrasOffer.add": "{{name}} dazu",
+  "ui.slurp.extrasOffer.notNow": "Jetzt nicht",
+  "ui.slurp.extrasOffer.error": "Das hat nicht geklappt. Versuch es noch einmal.",
   "ui.slurp.stir.off": "Stir und der Support-Desk sind ausgeschaltet",
   "ui.slurp.stir.offDetail": "Schalte eins davon in Backstage › Stir ein."
 }

@@ -28,6 +28,7 @@ import { slpCreatorUnlockPriceFromMetadata } from "../../modules/economy/slp-pri
 import type { FastifyInstance } from "fastify";
 import { slpCreatorPageCursorSchema, SLP_CREATOR_FEED_PAGE_SIZE } from "../../modules/requests/slp-request-schemas.js";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
+import { markSlurpExtrasReached } from "../../data/settings/slp-extras-offer-storage.js";
 
 /**
  * A subscriber row, widened for the generated audience.
@@ -360,6 +361,8 @@ export async function slpWalletRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
     // Slurp learns the player's taste slowly from what they pay to see.
     if (result.created) recordSlurpTasteSignal(app.db, { metadata: post.metadata }, "unlock");
     // Fire and forget: the reply is a chat message, and the unlock must not wait on the model.
+    // The first paid unlock (plain or gamble) can bring Support's next extras offer.
+    if (result.created && result.chargedAmount > 0) markSlurpExtrasReached(app.db, "unlock");
     if (result.created && result.chargedAmount > 0)
       void reactToSlurpPayment(app.db, {
         viewerAccountId: viewer.id,
@@ -408,6 +411,8 @@ export async function slpWalletRoutes(app: FastifyInstance, deps: SlpRouteDeps) 
       if (wallet.coins < price) return reply.code(402).send({ error: "Not enough coins", price, coins: wallet.coins });
       return reply.code(400).send({ error: "Could not unlock this post" });
     }
+    // The first paid unlock (plain or gamble) can bring Support's next extras offer.
+    if (result.created && result.chargedAmount > 0) markSlurpExtrasReached(app.db, "unlock");
     if (result.created && result.chargedAmount > 0)
       void reactToSlurpPayment(app.db, {
         viewerAccountId: viewer.id,

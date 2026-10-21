@@ -5,6 +5,7 @@ import { logger } from "../../../lib/logger.js";
 import { newId, now } from "../../../utils/id-generator.js";
 import { generateAndApplyCreatorPost } from "../feed/slp-feed-contract.js";
 import { slurpPausedNow } from "../../data/settings/slp-pause-storage.js";
+import { markSlurpExtrasReached } from "../../data/settings/slp-extras-offer-storage.js";
 
 const MAX_ATTEMPTS = 3;
 const RETRY_DELAYS_MS = [15_000, 60_000, 300_000] as const;
@@ -133,6 +134,7 @@ export function createSlurpFirstPostQueue(db: DB) {
         executionId: job.executionId,
       });
       if (result.status === "generated") {
+        markSlurpExtrasReached(db, "posts");
         await db
           .update(slpCreatorFirstPostJobs)
           .set({ status: "generated", postId: result.post.id, updatedAt: now() })

@@ -360,6 +360,8 @@ const callsBefore = readFileSync(join(import.meta.dirname, "fixtures/slurp2-clie
   .filter(Boolean);
 const mapStagingCall = (call: string) => call.replace("/slurp2/noodler/", "/slurp2/slurp/");
 const addedCalls = [
+  "get /slurp2/extras/offer",
+  "post /slurp2/extras/offer/answer",
   "get /slurp2/messages/unread-count?personaId=${encodeURIComponent(personaId!)}",
   "get /slurp2/slurp/notifications/unseen-count?personaId=${encodeURIComponent(personaId!)}",
   "get /slurp2/slurp/posts/${encodeURIComponent(postId)}/deep-details",
@@ -560,22 +562,22 @@ assert.deepEqual(
   {
     // 0.3.27 "Suggest page style": one mutation, its two error states, and the strategy save now
     // refreshes the list when settled (a refused apply also means the list is stale).
-    useMutation: 218,
+    useMutation: 220,
     // 0.3.28: +2 (the import and the one query of SlpMessageDeepDetails). 0.3.42: +1 (carryover reach).
     // 0.3.44: +2 (the import and the trends row query).
-    useQuery: 290,
+    useQuery: 294,
     useInfiniteQuery: 9,
     // 0.3.35: +2 (adding a Creator refreshes the settings, which now hold the image name choice).
     // Configurator: +1 (an extension switch drops the cached feed, trend and Stir reads).
     invalidateQueries: 154,
-    setQueryData: 26,
+    setQueryData: 27,
     cancelQueries: 7,
     removeQueries: 1,
     refetchQueries: 0,
     onMutate: 2,
     // SlpConnectionsPanel.tsx moved into the SlurpBackstagePrompts component mapping, so its one
     // onError no longer counts as state-layer code. +1: SlpDeskQuickReplies (R2) toasts a failed save.
-    onError: 94,
+    onError: 95,
     onSettled: 40,
   },
   "query and mutation wiring counts match the monolith plus the later Slurp2 hooks",
