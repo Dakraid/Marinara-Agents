@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 1.4.72 — 2026-10-21
+
+- No change in what Long-Term Memory does. Internally, the shared file that defines settings, memories, drafts and backups is split into ten files by area.
+
 ## 1.4.71 — 2026-10-21
 
 - A memory you open, or already have open, while a bulk change in the Memory Vault is running now shows the new availability once the change finishes, so saving the memory then no longer puts the old places back, and the bulk buttons no longer stay disabled. An open memory without unsaved changes also shows its new status after a bulk change and after an archive Undo, so saving it does not change the status back.
