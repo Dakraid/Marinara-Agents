@@ -1,3 +1,4 @@
+import { slpImageRetryable } from "../../../base/media/slp-image-retry.js";
 import type { DB } from "../../../../db/connection.js";
 import { slpIsBackgroundBusy, slpAdmissionRejectionCause } from "../../../base/host/slp-admission.js";
 import { recordSlurpContinuityEvent } from "../../../data/continuity/slp-continuity-storage.js";
@@ -319,7 +320,11 @@ export async function prepareNextCreatorReservePost(db: DB, at = new Date()): Pr
             } else {
               payload = {
                 ...payload,
-                metadata: { ...payload.metadata, imageGenerationFailed: true },
+                metadata: {
+                  ...payload.metadata,
+                  imageGenerationFailed: true,
+                  imageGenerationRetryable: slpImageRetryable(error),
+                },
               };
             }
           }
