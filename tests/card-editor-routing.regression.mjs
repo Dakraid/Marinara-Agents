@@ -13,7 +13,7 @@ assert.deepEqual(manifest.forkCapabilityApi, { major: 10, minor: 0 });
 assert.equal(manifest.builtAgainst.engineVersion, "2.4.8");
 assert.equal(manifest.builtAgainst.engineCommit, "74a2cf9767f5e2428fdb8eaab03380b49abc7c2e");
 assert.equal(manifest.id, "card-editor");
-assert.equal(manifest.version, "10.0.7");
+assert.equal(manifest.version, "10.0.8");
 assert.deepEqual(manifest.kind, ["agent"]);
 assert.deepEqual(manifest.entrypoints, {
   agents: "agents.json",
