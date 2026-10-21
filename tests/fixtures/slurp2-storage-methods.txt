@@ -163,6 +163,7 @@ updateProject
 deleteProject
 advanceProject
 directProject
+storyTags
 arcEffectMultiplier
 resolveArcProfile
 recordArcChange

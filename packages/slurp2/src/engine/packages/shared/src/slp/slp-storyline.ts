@@ -105,6 +105,8 @@ export const slpStorylineStageSchema = z
     deck: z.array(slpDramaBeatSchema).max(24).default([]),
     choice: slpDramaChoiceSchema
       .extend({
+        // An arc's fans' question may be as long as the poll allows.
+        question: z.string().trim().min(1).max(240),
         options: z
           .array(z.object({ label: z.string().trim().min(1).max(120), next: target }).strict())
           .min(2)
@@ -146,7 +148,8 @@ export const slpStorylineStartSchema = z
 
 export const SLP_STORYLINE_SOURCES = ["arc", "event", "situation", "drama"] as const;
 
-const storylineObject = z
+/** The storyline shape without the graph checks: a run's own copy, built by code and edited in place. */
+export const slpStorylineObjectSchema = z
   .object({
     id: id(160),
     contentId: id().optional(),
@@ -180,11 +183,12 @@ const storylineObject = z
   })
   .strict();
 
-const slpStorylineEdges = (next: z.infer<typeof nextSchema>) => (typeof next === "string" ? [{ to: next }] : next);
+export const slpStorylineEdges = (next: z.infer<typeof nextSchema>) =>
+  typeof next === "string" ? [{ to: next }] : next;
 
 /** The edges out of a stage, `null` where it stands. Shared with the runtime and the dry run. */
 export function slpStorylineNext(
-  storyline: Pick<z.infer<typeof storylineObject>, "stages" | "endings">,
+  storyline: Pick<z.infer<typeof slpStorylineObjectSchema>, "stages" | "endings">,
   index: number,
 ): { to: string; when?: { tag: string; set: boolean } }[] | null {
   const stage = storyline.stages[index]!;
@@ -195,7 +199,7 @@ export function slpStorylineNext(
   return following ? [{ to: following }] : null;
 }
 
-export const slpStorylineSchema = storylineObject.superRefine((storyline, context) => {
+export const slpStorylineSchema = slpStorylineObjectSchema.superRefine((storyline, context) => {
   const issue = (message: string) => context.addIssue({ code: "custom", message });
   const stageIndex = new Map(storyline.stages.map((stage, index) => [stage.key, index]));
   const endingKeys = new Set(storyline.endings.map((ending) => ending.key));

@@ -754,3 +754,15 @@ modules, rejected alternative, and migration consequence.
   The loader returns an empty state when the Storylines extension is off, so every reader is gated in one place.
 - **Rejected alternatives:** keeping it in `features/world` (the living world is a different extension and
   can be off while Storylines is on); a gate at every call site.
+
+## Arcs run on their storyline (2026-10-21)
+
+- **Decision:** a project keeps its run record, its screens, Director mode and crossovers, and gains its own
+  copy of a storyline (`storyline`, `stage`, `taken`, `ending`). `modules/projects/slp-project-storyline.ts`
+  makes the chapter fields (`chapters`, `chapter`, `phaseDays`, `choices`, `reach`) a view of the line the run
+  walks; `slp-arc-progress.ts` moves the run along stage edges. Every reader of the chapter fields stays as it
+  is. Chapter fields edited by hand (the editor, a record stored before this) rebuild the storyline, each stage
+  keeping its content by label.
+- **Rejected alternatives:** a new run store with a new board (the editor, Director mode and crossovers would be
+  gone until the editor PR); letting running arcs finish on the old chapter code (two runtimes at once).
+- **Consequence:** `modules/projects` stays; STORYLINES.md's "projects goes in PR 3" no longer holds.

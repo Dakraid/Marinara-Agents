@@ -242,8 +242,8 @@ assert.ok(
 );
 assert.match(
   server("data/projects/slp-projects-storage-1.ts"),
-  /chapter\.label === after\.chapters\[after\.chapter\][\s\S]{0,120}\?\.outcomes[\s\S]{0,200}before\.status !== "paused"\)[\s)]*await this\.applyStoryOutcomes\(/u,
-  "a chapter that starts applies its outcomes, found by label (choices shift the index), never again on a resume",
+  /slurpStageOutcomes\(after\.storyline[\s\S]{0,240}enter: moved \|\| \(started && before\.status !== "paused"\)[\s\S]{0,400}await this\.applyStoryOutcomes\(/u,
+  "a stage that starts applies its outcomes from the run's storyline, never again on a resume",
 );
 for (const path of ["features/media/slp-images-service.ts", "features/media/slp-public-images-service.ts"])
   assert.match(server(path), /withSlurpConditionLook\(/u, `${path} carries the condition look`);

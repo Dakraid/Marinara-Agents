@@ -498,6 +498,25 @@ items (PR 8). Version: one patch bump.
   by votes (its `default` and `timeoutDays` do not apply), and a stage waits for its choice, so its real
   length can exceed `days`; the dry run counts only `days`.
 
+## PR 3 as built (2026-10-21, on slurpothon): arcs on storylines
+
+- **Decision (player):** keep the run, swap the engine. A project stores its own storyline, the stage it is on,
+  the way each stage went (`taken`) and the ending reached. The chapter fields are a view of that line
+  (`modules/projects/slp-project-storyline.ts`), so the screens, the post brief, Stir and Deep details read
+  what they read before. `modules/projects` stays (see DECISIONS, "Arcs run on their storyline").
+- **Start:** a library arc copies its type's converted storyline; a custom arc builds one from its chapters. A
+  record stored before PR 3 converts on read. Chapter fields edited by hand rebuild the storyline, each stage
+  keeping its outcomes, condition and moments by label; a moved `chapter` only moves the stage.
+- **Moving:** days, a fans' choice (the real post poll, as before) and `when` ways read from the Creator's
+  story tags; an ending completes the run. Director `insert` puts the new stage after the current one and
+  after the branches of an open choice; `label`, `skip` and `back` work on the stage.
+- **Writing state** (Storylines on): leaving a stage applies its `leave` outcomes and removes its condition;
+  entering one sets its condition (tag, line, look, wardrobe, deck, on the storyline's track) and applies its
+  `enter` outcomes (v1 chapter outcomes and opportunities); an ending applies its outcomes.
+- **Not yet:** `requires` and the story clock wait for a start path that reads v2 storylines (PR 4); drama
+  outcomes (ties) and ending beats run in PR 4. A library edit no longer reaches a running arc's outcomes; the
+  run uses the copy it started with.
+
 ## Later: Basic and add-ons
 
 The player wants Slurp split into a basic part and add-ons that can be switched, so setup and
