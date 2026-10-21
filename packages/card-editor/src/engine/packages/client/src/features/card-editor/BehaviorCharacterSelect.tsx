@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { ChevronDown } from "lucide-react";
-import { searchHostCharacters, type CharacterCatalogEntry } from "./api";
+import { CardEditorApiError, searchHostCharacters, type CharacterCatalogEntry } from "./api";
 import { translateCardEditor, type CardEditorLocalizationContext } from "./localization";
 
 /** Per-card style choice: inherit the session style, force no style card, or pick a specific character. */
@@ -43,6 +43,8 @@ export function BehaviorCharacterSelect({
   const [options, setOptions] = useState<CharacterCatalogEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  /** The Engine's message for a search that is not valid character query syntax. */
+  const [queryError, setQueryError] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const searchSeq = useRef(0);
 
@@ -51,6 +53,7 @@ export function BehaviorCharacterSelect({
     const seq = ++searchSeq.current;
     setLoading(true);
     setLoadError(false);
+    setQueryError(null);
     const handle = setTimeout(() => {
       searchHostCharacters({ search, limit: 50, offset: 0 })
         .then((page) => {
@@ -58,10 +61,15 @@ export function BehaviorCharacterSelect({
           setOptions(Array.isArray(page?.items) ? page.items : []);
           setLoading(false);
         })
-        .catch(() => {
+        .catch((error: unknown) => {
           if (searchSeq.current !== seq) return;
-          setOptions([]);
-          setLoadError(true);
+          const code = (error instanceof CardEditorApiError ? error.payload : null) as { code?: unknown } | null;
+          // A half-typed query keeps the last results; the message says what to fix.
+          if (code?.code === "query_syntax") setQueryError((error as Error).message);
+          else {
+            setOptions([]);
+            setLoadError(true);
+          }
           setLoading(false);
         });
     }, SEARCH_DEBOUNCE_MS);
@@ -90,6 +98,8 @@ export function BehaviorCharacterSelect({
     key: string;
     label: string;
     avatarPath: string | null;
+    title?: string;
+    tags?: string[];
     selected: boolean;
     select: () => void;
   };
@@ -116,6 +126,8 @@ export function BehaviorCharacterSelect({
       key: option.id,
       label: option.name,
       avatarPath: option.avatarPath,
+      title: option.comment?.trim() || undefined,
+      tags: option.tags,
       selected: selection.kind === "character" && selection.id === option.id,
       select: () => pick({ kind: "character", id: option.id, name: option.name, avatarPath: option.avatarPath }),
     })),
@@ -188,12 +200,17 @@ export function BehaviorCharacterSelect({
             onKeyDown={onSearchKeyDown}
           />
           {loading ? <div className="ce-caption">{t("cardEditor.dialog.search.loading")}</div> : null}
+          {queryError ? (
+            <div className="ce-status ce-status--error" role="alert">
+              {t("cardEditor.dialog.search.invalid", { message: queryError })}
+            </div>
+          ) : null}
           {loadError ? (
             <div className="ce-status ce-status--error" role="alert">
               {t("cardEditor.dialog.search.error")}
             </div>
           ) : null}
-          {!loading && !loadError && options.length === 0 ? (
+          {!loading && !loadError && !queryError && options.length === 0 ? (
             <div className="ce-caption">{t("cardEditor.dialog.search.noResults")}</div>
           ) : null}
           <ul className="ce-search-options" role="listbox" id={listId} aria-label={buttonLabel}>
@@ -211,7 +228,16 @@ export function BehaviorCharacterSelect({
                   {entry.key === "inherit" || entry.key === "none" ? null : (
                     <Avatar name={entry.label} avatarPath={entry.avatarPath} />
                   )}
-                  <span className="ce-search-option-name">{entry.label}</span>
+                  <span className="ce-search-option-text">
+                    <span className="ce-search-option-name">{entry.label}</span>
+                    {entry.title ? <em className="ce-search-option-meta">{entry.title}</em> : null}
+                    {entry.tags?.length ? (
+                      <span className="ce-search-option-meta">
+                        {entry.tags.slice(0, 3).join(" · ")}
+                        {entry.tags.length > 3 ? ` +${entry.tags.length - 3}` : ""}
+                      </span>
+                    ) : null}
+                  </span>
                 </button>
               </li>
             ))}

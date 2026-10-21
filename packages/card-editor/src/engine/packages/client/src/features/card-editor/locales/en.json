@@ -34,6 +34,7 @@
   "cardEditor.dialog.search.loading": "Searching…",
   "cardEditor.dialog.search.noResults": "No characters match.",
   "cardEditor.dialog.search.error": "Characters could not be loaded.",
+  "cardEditor.dialog.search.invalid": "Invalid search: {{message}}",
   "cardEditor.dialog.model.title": "Model",
   "cardEditor.dialog.model.connection": "Connection",
   "cardEditor.dialog.model.connectionDefault": "— agent default —",
