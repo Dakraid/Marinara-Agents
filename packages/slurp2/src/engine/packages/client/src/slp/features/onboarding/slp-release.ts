@@ -1,5 +1,5 @@
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.52";
+export const SLURP2_VERSION = "0.3.53";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -12,6 +12,13 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.53",
+    date: "2026-10-21",
+    notes: [
+      "A failed picture waits for your retry when the image service says repeating it could create another paid task.",
+    ],
+  },
   {
     version: "0.3.52",
     date: "2026-10-20",

@@ -26,7 +26,7 @@ import { createConnectionsStorage } from "../../../services/storage/connections.
 import { createSlurpStorage } from "../../data/slp-storage.js";
 import { createPromptOverridesStorage } from "../../../services/storage/prompt-overrides.storage.js";
 import { loadPrompt, NOODLE_IMAGE_POST } from "../../../services/prompt-overrides/index.js";
-import { generateSlpImageWithRetry } from "../../base/media/slp-image-retry.js";
+import { generateSlpImageWithRetry, slpImageRetryable } from "../../base/media/slp-image-retry.js";
 import { rewriteSlpImagePrompt } from "../../base/media/slp-image-prompt-rewrite.js";
 import { slpImageReferencesSupported } from "../../base/media/slp-image-references.js";
 import { resolveImageAppearance } from "./slp-appearance-service.js";
@@ -585,6 +585,7 @@ export function createPublicSlpImagesService(db: DB) {
               imagePrompt: post.imagePrompt,
               metadata: {
                 imageGenerationFailed: true,
+                imageGenerationRetryable: slpImageRetryable(error),
                 imageGenerationError: getErrorMessage(error).slice(0, 500),
               },
             });

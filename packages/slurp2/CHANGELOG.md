@@ -1,5 +1,9 @@
 # Slurp release notes
 
+## 0.3.53 — 2026-10-21
+
+- Image failures marked nonretryable by the Engine no longer start automatic replacement requests. Slurp also stops later background retries for posts and Creator artwork, and keeps post prompts for a deliberate retry.
+
 ## 0.3.52 — 2026-10-20
 
 - Fixed: an automatic post no longer reads a Creator's card or refreshes shared ideas with the AI while one of your chats on the same connection is replying, and an automatic post no longer makes your other automatic work (Noodle's too) wait 30 seconds. A new Creator's first automatic post no longer refuses itself.
