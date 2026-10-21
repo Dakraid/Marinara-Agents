@@ -100,6 +100,18 @@ async function main() {
   assert.deepEqual([parsedOld.situations, parsedOld.dramas], [[], []]);
   const withDrama = parseSlpStoryPack({ ...old, id: "pack-a", situations: [partner], dramas: [rivals] });
   assert.equal(withDrama.errors.length, 0);
+  // The runtime runs storylines: a drama that loops back passes v1 but is refused, with the reason.
+  const last = rivals.stages.length - 1;
+  const loop = {
+    ...rivals,
+    id: "loop",
+    stages: rivals.stages.map((stage, index) =>
+      index === last ? { ...stage, choice: undefined, next: rivals.stages[0]!.key } : stage,
+    ),
+  };
+  const looped = parseSlpStoryPack({ ...old, id: "pack-loop", dramas: [loop] });
+  assert.equal(looped.pack, null);
+  assert.match(looped.errors.join(" "), /drama:loop: .*leads back to itself/);
   assert.ok(slpBundledStoryPacks().length > 0);
 
   // Preview → apply → library: new first, then an update of the same pack; another pack's id conflicts.

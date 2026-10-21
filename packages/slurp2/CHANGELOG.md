@@ -4,7 +4,8 @@
 
 - Dramas and situations run on storylines: the drama library converts on load, runs keep their ids.
   A start's `requires` and `lacks` and a stage's `when` ways read the lead's story tags; the ending
-  reached applies its ties and sends its beat.
+  reached applies its ties and sends its beat. A Story Pack whose drama or situation does not convert
+  (a loop, a stage nobody reaches) is refused on import with the reason.
 
 ## 0.3.54 — 2026-10-21
 

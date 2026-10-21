@@ -18,7 +18,7 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
     version: "0.3.55",
     date: "2026-10-21",
     notes: [
-      "Dramas and situations run on storylines too. A drama from an imported pack can ask that its lead has a partner, or is not pregnant yet, and can take a different way by what is true for her.",
+      "Dramas and situations now run on the same storyline engine as arcs, and play as before. A Story Pack drama that loops back or has a stage nobody reaches is refused on import, with the reason.",
     ],
   },
   {

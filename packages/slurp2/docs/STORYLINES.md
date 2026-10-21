@@ -528,6 +528,8 @@ items (PR 8). Version: one patch bump.
   stands until its choice is answered or the storyline runs out of time.
 - **`requires` / `lacks`** on a start check the lead's story tags (story state plus tie tags such as
   `partner`); Stir's lead pick checks the same. Casting moved to `slp-drama-cast.ts`.
+- **Refused, not dropped:** a v1 drama or situation that does not convert (a loop, a stage nobody
+  reaches) fails Story Pack import with the reason, and Stir's start preview says it cannot run.
 - **Not yet (PR 4b):** occasions, built-in content as v2 packs, one Packs screen; story outcomes
   (conditions) from drama stages.
 
