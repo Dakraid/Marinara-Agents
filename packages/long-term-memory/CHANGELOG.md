@@ -1,5 +1,9 @@
 # Long-Term Memory changelog
 
+## 1.4.79 — 2026-10-22
+
+- Extraction from a structured chat summary now reads a character name that starts with "Char", such as "Char Aznable", or a relationship pair whose first name starts with "Rel", as a name instead of an id when the summary writes the name out, as in "- Char Aznable | …", "character: Char Aznable", "- Rel Varga, Sayla Mass | …" or "characters: Rel Varga, Sayla Mass". The section the summary gives that character, such as Profile, now reaches their memory, those lines are saved instead of being dropped as not in the chat's roster, and a relationship that only the summary mentions is kept. The event made for a relationship's cause names the pair as the summary wrote it, as in "Rel Varga and Sayla Mass relationship changed after the hangar fire.", instead of splitting the names into words. A line that writes an id made from the name instead, such as "subject: char_aznable", is still read as an id.
+
 ## 1.4.78 — 2026-10-22
 
 - Two more places no longer show raw error text, which could include file paths. In the integrity list in memory settings, a note file or event log that cannot be read now says "Note file vault/… could not be read or validated." or "Event log could not be read.", followed by "Details are in the server log."; a note whose contents are broken still says what is wrong with it. When importing or re-extracting a source fails because the memory model or its settings could not be loaded for a server reason, Sources and Review show their usual "could not be imported" or "could not be re-extracted" message and the error goes to the server log. Messages that tell you how to fix the model setup, such as "Choose a language model connection before generating content.", show as before.

@@ -32,6 +32,7 @@ export type LtmRelationshipIdentityKey = (unit: RelationshipIdentityCandidate) =
 type RelationshipStructuredLine = {
   unit: LtmEvidenceUnit;
   causedBy?: string;
+  participantNames?: string[];
   sourceLine: string;
 };
 
@@ -500,9 +501,10 @@ function structuredSummaryHints(
     }
 
     if (section.bucket === "character_fact") {
-      const subject = characterSubject(section);
       const sectionKey = normalizeSectionKey(firstFieldValue(section, ["section", "section_key", "stream"]) ?? "", "");
-      if (subject && sectionKey) characterSections.set(subject, sectionKey);
+      for (const subject of characterSubjects(section)) {
+        if (subject && sectionKey) characterSections.set(subject, sectionKey);
+      }
       continue;
     }
 
@@ -697,6 +699,7 @@ function maybeAddStructuredRelationshipUnits({
       ? resolveStructuredCauseTarget({
           value: structured.causedBy,
           relationshipSubjectId: structured.unit.subjectId,
+          relationshipNames: structured.participantNames,
           units: next,
           existingNotes,
           generatedTimelineTargets,
@@ -756,6 +759,7 @@ function parseStructuredRelationshipLine(
   const importanceResult = extractStructuredImportance(cleaned);
   let subjectId = "";
   let explicitSubjectId = false;
+  let participantNames: string[] = [];
   const subjectNames: string[] = [];
   let importance = importanceResult.importance;
   let confidence = 0.9;
@@ -775,7 +779,8 @@ function parseStructuredRelationshipLine(
     if (!parsed) {
       const segmentIdentifier = normalizeIdentifier(segment, "");
       if (!subjectId && (index === 0 || NOTE_ID_PREFIX_PATTERN.test(segmentIdentifier))) {
-        subjectId = stripUnitSubjectPrefix("relationship_state", segmentIdentifier);
+        subjectId = structuredSubjectId("relationship_state", segment);
+        participantNames = writtenNames(segment);
         continue;
       }
       textParts.push(segment);
@@ -787,7 +792,11 @@ function parseStructuredRelationshipLine(
     if (!value) continue;
 
     if (["id", "subject", "relationship", "relationship_id"].includes(key)) {
-      subjectId = stripUnitSubjectPrefix("relationship_state", normalizeIdentifier(value, subjectId));
+      const id = structuredSubjectId("relationship_state", value);
+      if (id) {
+        subjectId = id;
+        participantNames = writtenNames(value);
+      }
       explicitSubjectId = true;
       continue;
     }
@@ -848,12 +857,11 @@ function parseStructuredRelationshipLine(
 
   const uniqueSubjectNames = uniqueStrings(subjectNames);
   if (!explicitSubjectId && uniqueSubjectNames.length > 0) {
-    subjectId = uniqueSubjectNames
-      .map((name) => normalizeIdentifier(name, ""))
-      .filter(Boolean)
-      .join("_");
+    const written = uniqueSubjectNames.filter((name) => normalizeIdentifier(name, "")).join(", ");
+    subjectId = structuredSubjectId("relationship_state", written);
+    participantNames = writtenNames(written);
   }
-  const normalizedSubject = stripUnitSubjectPrefix("relationship_state", normalizeIdentifier(subjectId, ""));
+  const normalizedSubject = normalizeIdentifier(subjectId, "");
   const text = textParts.join(" | ").replace(/\s+/g, " ").trim();
   if (!normalizedSubject || !text) return null;
 
@@ -883,6 +891,7 @@ function parseStructuredRelationshipLine(
   return {
     unit,
     ...(causedBy ? { causedBy } : {}),
+    ...(participantNames.length > 0 ? { participantNames } : {}),
     sourceLine: cleaned,
   };
 }
@@ -890,6 +899,7 @@ function parseStructuredRelationshipLine(
 function resolveStructuredCauseTarget({
   value,
   relationshipSubjectId,
+  relationshipNames,
   units,
   existingNotes,
   generatedTimelineTargets,
@@ -901,6 +911,7 @@ function resolveStructuredCauseTarget({
 }: {
   value: string;
   relationshipSubjectId: string;
+  relationshipNames?: string[];
   units: LtmEvidenceUnit[];
   existingNotes: LtmNote[];
   generatedTimelineTargets: Map<string, string>;
@@ -926,6 +937,7 @@ function resolveStructuredCauseTarget({
   const unit = structuredCauseTimelineUnit({
     cause: value,
     relationshipSubjectId,
+    relationshipNames,
     sourceNote,
     sourceHash,
     importance,
@@ -999,6 +1011,7 @@ function fuzzyTimelineTargetFromCause(value: string, candidates: TimelineTargetC
 function structuredCauseTimelineUnit({
   cause,
   relationshipSubjectId,
+  relationshipNames,
   sourceNote,
   sourceHash,
   importance,
@@ -1006,6 +1019,7 @@ function structuredCauseTimelineUnit({
 }: {
   cause: string;
   relationshipSubjectId: string;
+  relationshipNames?: string[];
   sourceNote: LtmNote;
   sourceHash: string;
   importance: LtmEvidenceUnit["importance"];
@@ -1013,7 +1027,11 @@ function structuredCauseTimelineUnit({
 }): LtmEvidenceUnit {
   const causeSubject = compactCauseIdentifier(cause, "relationship_change");
   const subjectId = normalizeIdentifier(`${relationshipSubjectId}_${causeSubject}`, relationshipSubjectId);
-  const relationshipText = relationshipSubjectId.split("_").join(" and ");
+  // Names the line writes out are used as written ("Rel Varga and Sayla Mass"). Otherwise the text comes from the id,
+  // which leaves out the note prefix it carries again when the summary wrote it twice (`rel_rel_ana_bo`).
+  const relationshipText = relationshipNames?.length
+    ? relationshipNames.join(" and ")
+    : stripUnitSubjectPrefix("relationship_state", relationshipSubjectId).split("_").join(" and ");
   const causeText = cause.trim().replace(/[.?!]\s*$/u, "");
   const text = `${relationshipText} relationship changed after ${causeText}.`;
   return {
@@ -1222,6 +1240,7 @@ function parseStructuredCharacterLine(
 
   const importanceResult = extractStructuredImportance(cleaned);
   let subjectId = "";
+  let subjectText = "";
   let subjectNames: string[] | undefined;
   let sectionKey = "";
   let importance = importanceResult.importance;
@@ -1243,6 +1262,7 @@ function parseStructuredCharacterLine(
       const segmentSection = normalizeSectionKey(segment, "");
       if (!subjectId && (index === 0 || NOTE_ID_PREFIX_PATTERN.test(segmentIdentifier))) {
         subjectId = segmentIdentifier;
+        subjectText = segment;
         continue;
       }
       if (!sectionKey && CHARACTER_STRUCTURED_SECTION_KEYS.has(segmentSection)) {
@@ -1258,6 +1278,7 @@ function parseStructuredCharacterLine(
     if (!value) continue;
 
     if (["id", "subject", "character", "character_id", "character_name", "name"].includes(key)) {
+      if (normalizeIdentifier(value, "")) subjectText = value;
       subjectId = normalizeIdentifier(value, subjectId);
       const isIdentifierOnly =
         ["id", "character_id"].includes(key) || NOTE_ID_PREFIX_PATTERN.test(subjectId) || value.includes("_");
@@ -1300,6 +1321,7 @@ function parseStructuredCharacterLine(
     const keySection = normalizeSectionKey(key, "");
     if (index === 0 && !subjectId && keyIdentifier) {
       subjectId = keyIdentifier;
+      subjectText = parsed.key;
       textParts.push(value);
       continue;
     }
@@ -1317,7 +1339,7 @@ function parseStructuredCharacterLine(
     }
   }
 
-  const normalizedSubject = stripUnitSubjectPrefix("character_fact", normalizeIdentifier(subjectId, ""));
+  const normalizedSubject = structuredSubjectId("character_fact", subjectText);
   const normalizedSection = structuredCharacterSectionKey(
     normalizeSectionKey(sectionKey, "facts"),
     textParts.join(" | "),
@@ -1544,9 +1566,15 @@ function threadSubject(section: StructuredSection) {
   return raw ? stripUnitSubjectPrefix("thread", normalizeIdentifier(raw, "")) : null;
 }
 
-function characterSubject(section: StructuredSection) {
+// Keyed by the subject id of the memory the value names, and by the value read as an id as before, which a memory
+// saved under the shorter id (`char_aznable` for "Char Aznable") still uses.
+function characterSubjects(section: StructuredSection) {
   const raw = firstFieldValue(section, ["character_id", "character", "subject", "id"]);
-  return raw ? stripUnitSubjectPrefix("character_fact", normalizeIdentifier(raw, "")) : null;
+  if (!raw) return [];
+  return [
+    structuredSubjectId("character_fact", raw),
+    stripUnitSubjectPrefix("character_fact", normalizeIdentifier(raw, "")),
+  ];
 }
 
 function relationshipIdentityKeyForSubject(subjectId: string, identityKey?: LtmRelationshipIdentityKey) {
@@ -1776,6 +1804,29 @@ function normalizeIdentifier(value: string, fallback: string) {
 function normalizeSectionKey(value: string, fallback: string) {
   const normalized = normalizeFieldKey(value).slice(0, 80).replace(/_+$/g, "");
   return /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/.test(normalized) ? normalized : fallback;
+}
+
+// A value with no space, or whose first word has an underscore (`char_mara (Mara)`), is an id and loses its note
+// prefix: `char_aznable` is `aznable`. Any other value is a name and gets the subject id identity gives its memory:
+// "Char Aznable" is `char_char_aznable`, "Mara Lee" is `mara_lee`.
+function structuredSubjectId(bucket: LtmEvidenceUnit["bucket"], value: string) {
+  const id = normalizeIdentifier(value, "");
+  if (!isWrittenName(value)) return stripUnitSubjectPrefix(bucket, id);
+  const prefix = prefixForBucket(bucket);
+  return unprefixedSubjectId(prefix, `${prefix}_${id}`);
+}
+
+function isWrittenName(value: string) {
+  return /\s/.test(value.trim()) && !/^\S*_/.test(value.trim());
+}
+
+// The names a relationship value writes out ("Rel Varga, Sayla Mass"), or none for an id.
+function writtenNames(value: string) {
+  if (!isWrittenName(value)) return [];
+  return value
+    .split(/[,;\n]|\s+and\s+/i)
+    .map((name) => name.trim())
+    .filter(Boolean);
 }
 
 function stripUnitSubjectPrefix(bucket: LtmEvidenceUnit["bucket"], subjectId: string) {
