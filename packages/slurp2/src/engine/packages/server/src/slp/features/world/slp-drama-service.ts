@@ -23,7 +23,8 @@ import {
   readSlurpDramaLibrary,
   readSlurpDramaState,
 } from "../../data/world/slp-drama-storage.js";
-import { slpDramaCatalog, slpEnabledDrama } from "../../modules/world/events/slp-drama-library.js";
+import { slpDramaCatalog, slpDramaStorylines, slpEnabledDrama } from "../../modules/world/events/slp-drama-library.js";
+import { slurpStoryState, slurpTieTags } from "../../modules/storylines/slp-story-state.js";
 import { slpDramaText } from "../../modules/world/events/slp-drama-words.js";
 import {
   slpAdvanceDrama,
@@ -53,12 +54,13 @@ export async function loadDramaWorld(
   at: Date,
 ): Promise<SlpDramaWorld & { viewerOf: Map<string, string>; tieCreators: SlurpTieCreator[] }> {
   const storage = createSlurpStorage(db);
-  const [tieCreators, accounts, spice, guidance, document] = await Promise.all([
+  const [tieCreators, accounts, spice, guidance, document, facts] = await Promise.all([
     loadSlurpTieCreators(db, at),
     storage.listNoodlerAccounts(),
     readSlurpSpice(db),
     getSlurpPostGuidance(db),
     readSlurpCreatorTiesDocument(db),
+    storage.listStoryFacts(),
   ]);
   const byId = new Map(accounts.map((account) => [account.id, account]));
   // A player's page acts for the persona behind it: DMs, coins and notifications go to that persona.
@@ -81,6 +83,7 @@ export async function loadDramaWorld(
     joinedAt: byId.get(creator.id)?.createdAt ?? at.toISOString(),
     followers: creator.followers,
     romance: creator.romance,
+    storyTags: slurpStoryState({ facts, creatorId: creator.id, tieTags: slurpTieTags(document, creator.id), at }).tags,
   }));
   const automatic = new Set(creators.filter((creator) => creator.automatic).map((creator) => creator.id));
   const relations = new Map<string, { playerId: string; relation: SlpRelationToPlayer }[]>();
@@ -261,8 +264,7 @@ export async function advanceSlurpDrama(db: DB, at = new Date()): Promise<void> 
       const result = slpAdvanceDrama(state, {
         at,
         level: settings.drama.level,
-        situations: catalog.situations,
-        dramas: catalog.dramas,
+        ...slpDramaStorylines(catalog),
         dials: settings.drama.dials,
         world,
         activity: slurpWorldActivityMultiplier(settings.worldActivity),

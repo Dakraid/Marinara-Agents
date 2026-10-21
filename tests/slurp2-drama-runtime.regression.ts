@@ -5,12 +5,15 @@
  * same world.
  */
 import assert from "node:assert/strict";
-import { slpDramaSchema, slpSituationSchema } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-drama.ts";
+import {
+  slpDramaSchema,
+  slpSituationSchema,
+  type SlpDrama,
+  type SlpSituation,
+} from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-drama.ts";
 import {
   slpAdvanceDrama,
   slpAnswerDramaChoice,
-  slpDramaCast,
-  slpDramaLeadFits,
   slpRequestDrama,
   slpDueDramaJobs,
   SLP_DRAMA_LEVEL_RULES,
@@ -20,6 +23,12 @@ import {
   type SlpDramaState,
   type SlpDramaWorld,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-drama-runtime.ts";
+import {
+  slpDramaCast,
+  slpDramaLeadFits,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-drama-cast.ts";
+import { slpStorylineSchema } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-storyline.ts";
+import { slpDramaStorylines } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-drama-library.ts";
 import { slpDramaText } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-drama-words.ts";
 import { partner, rivals } from "./slurp2-drama-fixtures";
 import { slurp2Source } from "./slurp2-source";
@@ -119,23 +128,26 @@ const open = slpDramaSchema.parse({
 });
 
 let counter = 0;
-const input = (at: number, overrides: Partial<SlpDramaInput> = {}): SlpDramaInput => ({
+/** The runtime runs storylines; these entries are written in v1 and convert as the service does. */
+type Overrides = Partial<Omit<SlpDramaInput, "situations" | "dramas">> & {
+  situations?: SlpSituation[];
+  dramas?: SlpDrama[];
+};
+const asStory = (drama: SlpDrama) => slpDramaStorylines({ situations: [], dramas: [drama] }).dramas[0]!;
+const input = (
+  at: number,
+  { situations = [situation], dramas = [rivalry, open], ...overrides }: Overrides = {},
+): SlpDramaInput => ({
   at: new Date(at),
   level: "soap",
-  situations: [situation],
-  dramas: [rivalry, open],
+  ...slpDramaStorylines({ situations, dramas }),
   dials: {},
   world: world(),
   activity: 1,
   newId: () => `id-${++counter}`,
   ...overrides,
 });
-const run = (
-  state: SlpDramaState,
-  hours: number,
-  from: number,
-  overrides: (at: number) => Partial<SlpDramaInput> = () => ({}),
-) => {
+const run = (state: SlpDramaState, hours: number, from: number, overrides: (at: number) => Overrides = () => ({})) => {
   let current = state;
   const ties: ReturnType<typeof slpAdvanceDrama>["ties"] = [];
   for (let step = 0; step < hours; step += 1) {
@@ -202,11 +214,11 @@ async function main() {
   // not on a drama that stands on a situation (its people come from the situation).
   const lead = rivalry.roles[0]!.key;
   const fits = (id: string, busy: string[] = []) =>
-    slpDramaLeadFits(rivalry, id, { world: world(), busy: new Set(busy), at: new Date(T0) });
+    slpDramaLeadFits(asStory(rivalry), id, { world: world(), busy: new Set(busy), at: new Date(T0) });
   assert.equal(fits("lena"), true);
   assert.equal(fits("me"), false, "the player's page is never cast in a Creator's role");
   assert.equal(fits("lena", ["lena"]), false);
-  assert.equal(slpDramaLeadFits(open, "mia", { world: world(), busy: new Set(), at: new Date(T0) }), false);
+  assert.equal(slpDramaLeadFits(asStory(open), "mia", { world: world(), busy: new Set(), at: new Date(T0) }), false);
   counter = 0;
   const led = slpAdvanceDrama(
     slpRequestDrama(SLP_EMPTY_DRAMA_STATE, rivalry.id, "lena"),
@@ -239,7 +251,7 @@ async function main() {
   );
 
   // The open drama, answered "no" by the player: it ends after the question, no shoot, no outcome.
-  const toAsk = (overrides: (at: number) => Partial<SlpDramaInput> = () => ({ dramas: [open] })) => {
+  const toAsk = (overrides: (at: number) => Overrides = () => ({ dramas: [open] })) => {
     counter = 0;
     let state = SLP_EMPTY_DRAMA_STATE;
     for (let hour = 0; hour < 24 * 20; hour += 1) {
@@ -505,8 +517,7 @@ async function main() {
     for (let hour = 0; hour < 24 * 90; hour += 1)
       state = slpAdvanceDrama(state, {
         ...input(T0 + hour * HOUR),
-        situations: SLURP_BUILTIN_SITUATIONS,
-        dramas: SLURP_BUILTIN_DRAMAS,
+        ...slpDramaStorylines({ situations: SLURP_BUILTIN_SITUATIONS, dramas: SLURP_BUILTIN_DRAMAS }),
         world: lived,
       }).state;
     const started = new Set(state.runs.map((entry) => entry.dramaId));
@@ -527,6 +538,36 @@ async function main() {
       "post lines read clean",
     );
   }
+
+  // A v2 storyline on the drama runtime: `requires` and `lacks` read the lead's story tags, a `when` way
+  // picks the branch, and an ending's beat goes out as the exit.
+  const family = slpStorylineSchema.parse({
+    id: "family",
+    name: "Family",
+    cast: [{ key: "her" }],
+    requires: { tags: ["partner"], lacks: ["pregnant"] },
+    stages: [
+      { key: "wait", label: "Waiting", days: [1, 1], next: [{ to: "twins", when: { tag: "twins" } }, { to: "born" }] },
+      { key: "twins", label: "Two of them", days: [1, 1], next: "born" },
+    ],
+    endings: [{ key: "born", label: "Born", beat: { role: "her", channel: "comment", on: "her", lines: ["here!"] } }],
+  });
+  const lone = (storyTags: string[]) => world([creator("mia", [], { storyTags })]);
+  const tick = (state: SlpDramaState, at: number, storyTags: string[]) =>
+    slpAdvanceDrama(state, { ...input(at, { situations: [], dramas: [] }), dramas: [family], world: lone(storyTags) })
+      .state;
+  const wanted = slpRequestDrama(SLP_EMPTY_DRAMA_STATE, "family", null);
+  assert.equal(tick(wanted, T0, []).runs.length, 0, "no partner: it does not start");
+  assert.equal(tick(wanted, T0, ["partner", "pregnant"]).runs.length, 0, "already pregnant: it does not start");
+  const begun = tick(wanted, T0, ["partner"]);
+  assert.equal(begun.runs[0]?.stage, "wait");
+  assert.equal(tick(begun, T0 + 25 * HOUR, ["partner", "twins"]).runs[0]?.stage, "twins", "a `when` way");
+  const born = tick(begun, T0 + 25 * HOUR, ["partner"]);
+  assert.equal(born.runs[0]?.ending, "done");
+  assert.ok(
+    born.jobs.some((job) => job.channel === "comment" && job.lines?.[0] === "here!"),
+    "the ending's beat",
+  );
 
   console.log("slurp2 drama runtime regression passed");
 }

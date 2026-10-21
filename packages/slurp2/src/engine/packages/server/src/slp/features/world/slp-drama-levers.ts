@@ -10,8 +10,9 @@ import {
   readSlurpDramaLibrary,
   readSlurpDramaState,
 } from "../../data/world/slp-drama-storage.js";
-import { slpDramaCatalog, slpEnabledDrama } from "../../modules/world/events/slp-drama-library.js";
-import { slpDramaLeadFits, slpEndDramaRun, slpRequestDrama } from "../../modules/world/events/slp-drama-runtime.js";
+import { slpDramaCatalog, slpDramaStorylines, slpEnabledDrama } from "../../modules/world/events/slp-drama-library.js";
+import { slpDramaLeadFits } from "../../modules/world/events/slp-drama-cast.js";
+import { slpEndDramaRun, slpRequestDrama } from "../../modules/world/events/slp-drama-runtime.js";
 import type { SlpActionParsed, SlpStirWorld } from "../../../../../shared/src/slp/slp-actions.js";
 import type { SlpActionPreview } from "../../../../../shared/src/slp/slp-stir.js";
 import { advanceSlurpDrama, loadDramaWorld } from "./slp-drama-service.js";
@@ -27,6 +28,7 @@ export type SlurpDramaUndo = { kind: "endDrama"; runId: string };
 type Failure = { ok: false; status: 404 | 409; error: string };
 
 const OFF = "Switch it on first in Settings › Stir › Drama (and its situation, if it needs one).";
+const BROKEN = "This drama cannot run: a stage leads back, or one is never reached.";
 const NOBODY = "Nobody fits the roles right now.";
 const PAUSED = "Slurp is paused (Settings › Overview). Resume it to start a drama.";
 const LEAD_NO = "They do not fit the first role of this drama right now.";
@@ -93,7 +95,9 @@ export async function previewSlurpDramaLever(
     return result({ error: "busy", summary: `${drama.name} is already running.` });
   const world = leadId ? await loadDramaWorld(db, at) : null;
   const lead = world?.creators.find((creator) => creator.id === leadId);
-  if (world && leadId && !slpDramaLeadFits(drama, leadId, { world, busy: busyOf(state.runs), at }))
+  const storyline = slpDramaStorylines({ situations: [], dramas: [drama] }).dramas[0];
+  if (!storyline) return result({ error: "off", summary: BROKEN });
+  if (world && leadId && !slpDramaLeadFits(storyline, leadId, { world, busy: busyOf(state.runs), at }))
     return result({ error: "lead", summary: LEAD_NO });
   const avatar = lead
     ? ((

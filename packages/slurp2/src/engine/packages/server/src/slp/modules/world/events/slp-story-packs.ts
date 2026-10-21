@@ -17,6 +17,7 @@ import type { SlurpPlatformEvent } from "../../../../../../shared/src/slp/slp-pl
 import { SLURP_ARC_LIBRARY_SEED } from "../../projects/slp-arc-library.js";
 import { slurpPlatformEventsDefault } from "../../../../../../shared/src/slp/slp-platform-events.js";
 import type { SlpDrama, SlpSituation } from "../../../../../../shared/src/slp/slp-drama.js";
+import { slpStorylinesFromV1 } from "../../../../../../shared/src/slp/slp-storyline-v1.js";
 import { slpDramaPreviewStatus, SLP_EMPTY_DRAMA_LIBRARY, type SlpDramaLibrary } from "./slp-drama-library.js";
 
 export type SlpStoryPackPreviewEntry = {
@@ -378,9 +379,19 @@ export function parseSlpStoryPack(value: unknown): { pack: SlpStoryPack | null; 
   const legacy = legacyArcPack(value);
   if (legacy) return { pack: legacy, errors: [] };
   const parsed = slpStoryPackSchema.safeParse(value);
-  return parsed.success
-    ? { pack: parsed.data, errors: [] }
-    : { pack: null, errors: parsed.error.issues.map((issue) => `${issue.path.join(".") || "pack"}: ${issue.message}`) };
+  if (!parsed.success)
+    return {
+      pack: null,
+      errors: parsed.error.issues.map((issue) => `${issue.path.join(".") || "pack"}: ${issue.message}`),
+    };
+  // Dramas and situations run as storylines: one the runtime could not run is refused here, with its reason.
+  const { errors } = slpStorylinesFromV1({
+    arcs: [],
+    events: [],
+    situations: parsed.data.situations ?? [],
+    dramas: parsed.data.dramas ?? [],
+  });
+  return !errors.length ? { pack: parsed.data, errors: [] } : { pack: null, errors };
 }
 
 export function previewSlpStoryPack(

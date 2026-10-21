@@ -517,6 +517,22 @@ items (PR 8). Version: one patch bump.
   outcomes (ties) and ending beats run in PR 4. A library edit no longer reaches a running arc's outcomes; the
   run uses the copy it started with.
 
+## PR 4a as built (2026-10-21, on slurpothon): dramas and situations on storylines
+
+- **One runtime, storylines in.** The drama library still stores v1 entries (the Drama screen and Story
+  Pack import read them); `slpDramaStorylines` converts each on load and the drama runtime runs the
+  storylines. A run keeps the v1 id (`slpDramaId`), so running state, cooldowns and Stir picks carry over.
+- **Read from the storyline:** the cast, `start.within` (the situation it stands in), `start.weight` and
+  `start.cooldownDays`, stage `leave` ties, `when` ways (the lead's story tags, plus the situation it
+  stands in), and endings: the one reached applies its ties and sends its beat. A stage with no days
+  stands until its choice is answered or the storyline runs out of time.
+- **`requires` / `lacks`** on a start check the lead's story tags (story state plus tie tags such as
+  `partner`); Stir's lead pick checks the same. Casting moved to `slp-drama-cast.ts`.
+- **Refused, not dropped:** a v1 drama or situation that does not convert (a loop, a stage nobody
+  reaches) fails Story Pack import with the reason, and Stir's start preview says it cannot run.
+- **Not yet (PR 4b):** occasions, built-in content as v2 packs, one Packs screen; story outcomes
+  (conditions) from drama stages.
+
 ## Later: Basic and add-ons
 
 The player wants Slurp split into a basic part and add-ons that can be switched, so setup and
