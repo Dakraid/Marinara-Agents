@@ -89,8 +89,8 @@ export function useUpdateSlurpSettings() {
     mutationFn: (patch: SlurpSettingsUpdate) => api.patch<SlurpSettings>("/slurp2/settings", patch),
     onSuccess: (settings, patch) => {
       queryClient.setQueryData(slpKeys.settings(), settings);
-      // An extension switch changes what the feed, trends and Stir may show: drop their cached reads.
-      if (Object.keys(patch).some((key) => key.startsWith("ext") || key === "trendsEnabled"))
+      // An extension or pack switch changes what the feed, trends and Stir may show: drop their cached reads.
+      if (Object.keys(patch).some((key) => key.startsWith("ext") || key === "trendsEnabled" || key === "contentPacks"))
         void queryClient.invalidateQueries({ queryKey: slpKeys.noodlerRoot() });
       return queryClient.invalidateQueries({ queryKey: slpKeys.noodlerFanStatus() });
     },
