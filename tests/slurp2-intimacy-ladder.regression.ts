@@ -103,7 +103,7 @@ assert.match(
 );
 assert.match(
   server("features/messages/slp-message-generation-service.ts"),
-  /subscribed: input\.subscribed \|\| slurpRapportOpens\(input\.rapport, "spicierTalk"\)/,
+  /subscribed: input\.subscribed \|\| input\.sexting === true \|\| slurpRapportOpens\(input\.rapport, "spicierTalk"\)/,
 );
 assert.match(
   server("features/messages/slp-message-generation-service.ts"),

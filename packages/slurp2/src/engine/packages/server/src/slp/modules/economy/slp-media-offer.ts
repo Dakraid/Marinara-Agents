@@ -48,7 +48,8 @@ export function resolveSlurpMediaOffer(input: {
   return { visibility: "free", price: 0, reason: "relationship_reward" };
 }
 
-const slurpPpvPrice = (configured: number) => Math.max(1, Math.min(9999, Math.trunc(configured || 10)));
+export const slurpPpvPrice = (configured: number | undefined) =>
+  Math.max(1, Math.min(9999, Math.trunc(configured || 10)));
 
 // Nudity or sex in a picture prompt. Only the fallback for a reply that did not say whether its
 // picture is spicy; the model's own "spicy" flag decides first.

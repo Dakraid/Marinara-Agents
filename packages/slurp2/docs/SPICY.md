@@ -1,6 +1,6 @@
 # Spicy: more adult, more OnlyFans, more fun (concept, 2026-10-22)
 
-Status: approved 2026-10-22. Built: item 8 (kink packs, 0.3.61), item 1 (intimacy ladder, 0.3.62).
+Status: approved 2026-10-22. Built: item 8 (kink packs, 0.3.61), item 1 (intimacy ladder, 0.3.62), item 2 (sexting sessions, 0.3.63).
 
 Slurp is an OnlyFans simulator. The player is a fan of AI Creators (DMs, tips, PPV, customs) and can run a
 page with fans of their own. This update makes both sides spicier and gives the player more reasons to come
@@ -71,6 +71,18 @@ The price comes from her pricing (`modules/economy/slp-creator-pricing.ts`) and 
 
 **First version.** Buy, timer, three phases, faster replies, one in-session PPV offer, end tip prompt.
 **Later.** Session extensions, voice notes, Creators who offer a session on their own.
+
+**PR 3 as built (0.3.63).** Decided 2026-10-22: anyone can buy; 20 minutes for three of her PPV pictures (the
+ladder's favourite discount applies); paid through the tip path (ledger "Sexting session"), no new wallet kind;
+one PPV picture at her full level. `modules/messages/slp-sexting.ts` holds the price, phases (first 30% warm-up,
+last 20% finish) and the prompt direction. `POST /messages/sexting` claims the session on the thread (`sexting`
+JSON column, `startSexting`) before it pays, so a second buy while one runs gets 409 and a failed payment drops
+the claim (`cancelSexting`). Not sold in Support's thread, on her own page, or with a hand-run Creator. While it
+runs, `slurpReplyPacing` answers at once, the DM prompt reads her full level (`subscribed`) and gets the phase in
+its creative direction; in the heated phase her first picture is a locked PPV at her PPV price, even for a
+subscriber (`markSextingPicture`; a partner's stays free). The header bar (`SlpSextingBar`) shows the buy button,
+the minutes left, and for 30 minutes after the end a tip prompt that opens the tip tool. The session's price is
+in the thread response (`sextingPrice`).
 
 ## 3. Spicier fan types and a top-fans board
 

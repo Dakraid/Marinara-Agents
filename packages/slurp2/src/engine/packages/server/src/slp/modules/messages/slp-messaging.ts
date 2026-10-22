@@ -314,6 +314,8 @@ export function slurpReplyPacing(input: {
    * path — which is the one case a creator page actually answers: a new person in the inbox.
    */
   firstContact?: boolean;
+  /** A paid sexting session runs: she answers right away, online or not. */
+  sexting?: boolean;
 }): SlurpReplyPacing {
   const delays = input.delays ?? SLURP_DEFAULT_REPLY_DELAYS;
   const maxDelayMs = delays.messagesMaxReplyDelayMinutes * MINUTE;
@@ -329,6 +331,16 @@ export function slurpReplyPacing(input: {
   const earned = input.rapport.score / 100 + (input.subscribed ? 0.2 : 0) + mood / 400;
   // A first message is worth answering even from somebody who has given nothing yet.
   const reach = Math.min(1, Math.max(0, input.firstContact ? Math.max(earned, 0.45) : earned));
+
+  if (input.sexting) {
+    const typingMs = calculateTypingDelay(replyLength, momentum, mood, talkativeness, "instant");
+    return {
+      mode: "instant",
+      typingMs,
+      notBeforeMs: 0,
+      debug: { reach, moodDrag, momentumBoost: momentum, decision: "sexting session" },
+    };
+  }
 
   // ONLINE PATH: Creator is actively available
   if (input.online) {

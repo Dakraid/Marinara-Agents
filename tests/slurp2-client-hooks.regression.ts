@@ -372,6 +372,8 @@ const addedCalls = [
   "get /slurp2/continuity/${encodeURIComponent(creatorAccountId!)}?${query}",
   "get /slurp2/messages/threads/${encodeURIComponent(threadId!)}/requests?personaId=${encodeURIComponent(personaId!)}",
   "get /slurp2/slurp/tasks",
+  // Paid sexting sessions (docs/SPICY.md, item 2).
+  "post /slurp2/messages/sexting",
   "get /slurp2/slurp/trends",
   "get /slurp2/slurp/viewer/feed?personaId=${encodeURIComponent(personaId)}&tab=all&limit=20${cursorQuery(current.nextCursor)}",
   "get /slurp2/slurp/viewer/feed?personaId=${encodedPersonaId}&tab=all&limit=20",
@@ -564,10 +566,12 @@ assert.deepEqual(
   {
     // 0.3.27 "Suggest page style": one mutation, its two error states, and the strategy save now
     // refreshes the list when settled (a refused apply also means the list is stale).
-    useMutation: 224,
+    // 0.3.63: +1 (useStartSlurpSexting buys a sexting session).
+    useMutation: 225,
     // 0.3.28: +2 (the import and the one query of SlpMessageDeepDetails). 0.3.42: +1 (carryover reach).
     // 0.3.44: +2 (the import and the trends row query).
-    useQuery: 299,
+    // 0.3.63: +1 (its useQueryClient).
+    useQuery: 300,
     useInfiniteQuery: 9,
     // 0.3.35: +2 (adding a Creator refreshes the settings, which now hold the image name choice).
     // Configurator: +1 (an extension switch drops the cached feed, trend and Stir reads).
@@ -581,7 +585,8 @@ assert.deepEqual(
     // SlpConnectionsPanel.tsx moved into the SlurpBackstagePrompts component mapping, so its one
     // onError no longer counts as state-layer code. +1: SlpDeskQuickReplies (R2) toasts a failed save.
     onError: 98,
-    onSettled: 40,
+    // 0.3.63: +1 (the sexting buy refreshes the thread when settled).
+    onSettled: 41,
   },
   "query and mutation wiring counts match the monolith plus the later Slurp2 hooks",
 );
@@ -594,7 +599,12 @@ const invalidatorCalls = {
 };
 assert.deepEqual(
   invalidatorCalls,
-  { invalidateSlurpMessages: 35, invalidateSlurpProjects: 5, mergeSlurpViewerShell: 4 },
+  {
+    // 0.3.63: +1 (the sexting buy).
+    invalidateSlurpMessages: 36,
+    invalidateSlurpProjects: 5,
+    mergeSlurpViewerShell: 4,
+  },
   "shared invalidation helpers must stay wired to the same call sites",
 );
 

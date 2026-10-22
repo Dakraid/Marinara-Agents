@@ -25,6 +25,7 @@ import { trySlpOperation } from "../../base/locking/slp-operation-lock.js";
 import { tryCreatorAccountOperation } from "../../base/locking/slp-account-operation-lock.js";
 import { incrementFollowUpCount } from "../../modules/messages/slp-thread-notes.js";
 import { slurpCreatorInScene } from "./scenes/slp-roleplay-scene-lock.js";
+import { slurpSextingPhase } from "../../modules/messages/slp-sexting.js";
 import { slurpRapportDoorTier } from "../../modules/messages/slp-rapport.js";
 import { saveSlurpMessageDeepDetails } from "../../data/messages/slp-message-deep-details-storage.js";
 
@@ -126,7 +127,8 @@ export function startSlurpFollowUpScheduler(app: FastifyInstance, registerStop?:
             // reply path obeys: a cool-off she started, night quiet, and her own offline schedule.
             const coolingOff = Boolean(thread.coolUntil && thread.coolUntil > new Date().toISOString());
             // In a roleplay scene: the follow-up waits a quarter hour at a time until it ends.
-            if (await slurpCreatorInScene(app.db, creator.id)) {
+            // A paid sexting session waits the same way: nothing else interrupts it.
+            if (slurpSextingPhase(thread.sexting) || (await slurpCreatorInScene(app.db, creator.id))) {
               await messages.postponeScheduledFollowUp(
                 threadRow.id,
                 followUp.id,

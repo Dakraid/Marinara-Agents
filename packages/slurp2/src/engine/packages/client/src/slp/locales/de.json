@@ -3077,5 +3077,11 @@
   "ui.slurp.rapport.door.gifts": "Ab und zu ein heißes Bild gratis",
   "ui.slurp.rapport.door.spicierTalk": "Heißere Chats, auch ohne Abo",
   "ui.slurp.rapport.doorsNone": "Noch nichts extra. Schreib, gib Trinkgeld und abonniere, um mehr zu öffnen.",
-  "ui.slurp.rapport.doorsTitle": "Für dich offen"
+  "ui.slurp.rapport.doorsTitle": "Für dich offen",
+  "ui.slurp.sexting.buy": "Sexte mit mir – 20 Min.",
+  "ui.slurp.sexting.failed": "Die Session konnte nicht starten.",
+  "ui.slurp.sexting.left": "noch {{count}} Min.",
+  "ui.slurp.sexting.over": "Session vorbei. Ein Trinkgeld für sie?",
+  "ui.slurp.sexting.running": "Sexting-Session",
+  "ui.slurp.sexting.tip": "Trinkgeld senden"
 }

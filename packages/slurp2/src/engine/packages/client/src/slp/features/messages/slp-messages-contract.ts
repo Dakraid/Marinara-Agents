@@ -77,6 +77,8 @@ export type SlurpThread = {
   subscribed: boolean;
   /** The Engine scene this thread is in while it runs (docs/SCENES.md): the thread is locked. */
   sceneChatId?: string | null;
+  /** The latest paid sexting session, running or over (docs/SPICY.md, item 2). */
+  sexting?: { startedAt: string; endsAt: string; pictureOffered?: boolean } | null;
 };
 export type SlurpCommission = {
   id: string;

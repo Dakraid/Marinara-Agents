@@ -1,5 +1,12 @@
 # Slurp release notes
 
+## 0.3.63 — 2026-10-22
+
+- Paid sexting sessions (docs/SPICY.md, item 2): "Sext with me - 20 min" in an AI Creator's thread header (`SlpSextingBar`) costs three of her PPV pictures, 15% less from favourite. It is claimed on the thread before it is paid through the tip path.
+- During a session she answers at once at her full level, the prompt walks warm-up, heated, finish (`slurpSextingGuidance`), and the heated phase sends one PPV at her price (`markSextingPicture`). After it, the header asks for a tip.
+- A Story opens in Slurp's own layer (`SlpStoryLayer`), not the Engine modal, so it has one close button.
+- Stir opens as a sheet over the current page (`SlpStirDeck`). `SlpSheet` `base` mode lets its play, plan and Pulse sheets stack on top.
+
 ## 0.3.62 — 2026-10-22
 
 - Intimacy ladder (docs/SPICY.md, item 1): rapport tiers open doors (`slurpRapportDoors`, `modules/messages/slp-rapport.ts`). Regular: her full DM level without a subscription. Favourite: one spicy chat picture in four is a free gift, customs 15% cheaper (quotes, the prompt's price range, counter floors; `commissionPricingFor`). Whale: free chat pictures at her full level.

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { ChevronRight, Clapperboard, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -534,8 +534,11 @@ export function SlpStirScreen({
   onOpenTarget,
   onOpenSupport,
   onOpenSettings,
+  sheet,
 }: {
   personaId: string | null;
+  /** The tab as a sheet over the page it was opened from; its own sheets stack on top of it. */
+  sheet?: { open: boolean; onClose: () => void };
   /** Settings › Stir › Drama, where the packs are switched on (0.3.11). */
   onOpenSettings?: () => void;
   /** A Creator's Slurp Support chat, from the Support desk (docs/SUPPORT-DESK.md). */
@@ -603,91 +606,113 @@ export function SlpStirScreen({
     const action = open[Math.floor(Math.random() * open.length)];
     if (action) setPlaying({ action });
   };
-  return (
-    <div className="@container flex h-full min-h-0 flex-col" data-slp-stir>
-      <header className={cn("flex h-14 shrink-0 items-center gap-2 px-4", SLP_TOP_BAR_CLASS)}>
-        <SlpStirGlyph size={22} aria-hidden="true" className="text-[var(--slurp-ink)]" />
-        <h1 className="slp-display min-w-0 flex-1 truncate text-xl leading-none">
-          {deskOn && !stirOn ? t("ui.slurp.desk.title") : t("ui.slurp.stir.title")}
-        </h1>
-        {stirOn && deskOn && (
-          <SlpSegment
-            label={t("ui.slurp.stir.mode.label")}
-            value={mode}
-            onChange={setMode}
-            options={[
-              { value: "stir", label: t("ui.slurp.stir.mode.stir") },
-              { value: "desk", label: t("ui.slurp.stir.mode.desk") },
-            ]}
-            className="shrink-0"
-          />
-        )}
-        {personaId && (
-          <button
-            type="button"
-            onClick={() => setPeople(true)}
-            aria-label={t("ui.slurp.people.title")}
-            title={t("ui.slurp.people.title")}
-            className="-me-2 flex size-11 shrink-0 items-center justify-center rounded-full text-[var(--slurp-ink)] hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] [&_svg]:!text-current"
-          >
-            <Users size={20} aria-hidden="true" />
-          </button>
-        )}
-      </header>
-      <main className={cn("min-h-0 flex-1 overflow-y-auto", SLP_PAGE_SCROLL_CLASS)}>
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-3 sm:p-5">
-          {deckSettings && !stirOn && !deskOn ? (
-            <SlpEmptyState
-              icon={SlpStirGlyph}
-              title={t("ui.slurp.stir.off", { defaultValue: "Stir and the Support desk are switched off" })}
-              detail={t("ui.slurp.stir.offDetail", { defaultValue: "Switch either one on in Backstage › Stir." })}
-            />
-          ) : shown === "desk" ? (
-            <SlpStirDesk
-              personaId={personaId}
-              onOpenThread={onOpenSupport}
-              onPlay={(action, who) => setPlaying({ action, who })}
-            />
-          ) : (
+  const title = deskOn && !stirOn ? t("ui.slurp.desk.title") : t("ui.slurp.stir.title");
+  const tools = (
+    <>
+      {stirOn && deskOn && (
+        <SlpSegment
+          label={t("ui.slurp.stir.mode.label")}
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: "stir", label: t("ui.slurp.stir.mode.stir") },
+            { value: "desk", label: t("ui.slurp.stir.mode.desk") },
+          ]}
+          className="shrink-0"
+        />
+      )}
+      {personaId && (
+        <button
+          type="button"
+          onClick={() => setPeople(true)}
+          aria-label={t("ui.slurp.people.title")}
+          title={t("ui.slurp.people.title")}
+          className="-me-2 flex size-11 shrink-0 items-center justify-center rounded-full text-[var(--slurp-ink)] hover:bg-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--slurp-focus)] [&_svg]:!text-current"
+        >
+          <Users size={20} aria-hidden="true" />
+        </button>
+      )}
+    </>
+  );
+  const body = (
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-3 sm:p-5">
+      {deckSettings && !stirOn && !deskOn ? (
+        <SlpEmptyState
+          icon={SlpStirGlyph}
+          title={t("ui.slurp.stir.off", { defaultValue: "Stir and the Support desk are switched off" })}
+          detail={t("ui.slurp.stir.offDetail", { defaultValue: "Switch either one on in Backstage › Stir." })}
+        />
+      ) : shown === "desk" ? (
+        <SlpStirDesk
+          personaId={personaId}
+          onOpenThread={onOpenSupport}
+          onPlay={(action, who) => setPlaying({ action, who })}
+        />
+      ) : (
+        <>
+          <StirHint />
+          <SlpStirBox names={names} personaId={personaId} />
+          {query.isPending ? (
+            <SlpSkeleton shape="card" count={2} label={t("ui.slurp.state.loading")} />
+          ) : query.isError && !view ? (
+            <SlpErrorState title={t("ui.slurp.stir.loadError")} onRetry={() => void query.refetch()} />
+          ) : view ? (
             <>
-              <StirHint />
-              <SlpStirBox names={names} personaId={personaId} />
-              {query.isPending ? (
-                <SlpSkeleton shape="card" count={2} label={t("ui.slurp.state.loading")} />
-              ) : query.isError && !view ? (
-                <SlpErrorState title={t("ui.slurp.stir.loadError")} onRetry={() => void query.refetch()} />
-              ) : view ? (
-                <>
-                  <YourRelationship view={view} />
-                  <NowShowing
-                    view={view}
-                    onSeeAll={onOpenPulse}
-                    onOpen={setPlaying}
-                    onEndDrama={endDrama}
-                    personaId={personaId}
-                  />
-                  <Suggested suggestions={view.suggestions} onPlay={playSuggestion} pending={preview.isPending} />
-                  <StartAStory
-                    key={view.dramas.length ? "packs" : "no-packs"}
-                    view={view}
-                    onPick={(action) => setPlaying({ action })}
-                    onStartDrama={(dramaId) => setPlaying({ action: "start-drama", pick: dramaId })}
-                    onOpenSettings={onOpenSettings}
-                    onSurprise={surprise}
-                  />
-                  <SlpStirRecentPlays
-                    plays={view.plays}
-                    collabs={view.playedCollabs}
-                    creators={view.creators}
-                    onOpenTarget={onOpenTarget}
-                    onOpen={setPlaying}
-                  />
-                </>
-              ) : null}
+              <YourRelationship view={view} />
+              <NowShowing
+                view={view}
+                onSeeAll={onOpenPulse}
+                onOpen={setPlaying}
+                onEndDrama={endDrama}
+                personaId={personaId}
+              />
+              <Suggested suggestions={view.suggestions} onPlay={playSuggestion} pending={preview.isPending} />
+              <StartAStory
+                key={view.dramas.length ? "packs" : "no-packs"}
+                view={view}
+                onPick={(action) => setPlaying({ action })}
+                onStartDrama={(dramaId) => setPlaying({ action: "start-drama", pick: dramaId })}
+                onOpenSettings={onOpenSettings}
+                onSurprise={surprise}
+              />
+              <SlpStirRecentPlays
+                plays={view.plays}
+                collabs={view.playedCollabs}
+                creators={view.creators}
+                onOpenTarget={onOpenTarget}
+                onOpen={setPlaying}
+              />
             </>
-          )}
-        </div>
-      </main>
+          ) : null}
+        </>
+      )}
+    </div>
+  );
+  const Root = sheet ? Fragment : "div";
+  return (
+    <Root {...(sheet ? {} : { className: "@container flex h-full min-h-0 flex-col", "data-slp-stir": true })}>
+      {sheet ? (
+        <SlpSheet
+          open={sheet.open}
+          onClose={sheet.onClose}
+          base
+          back
+          width="max-w-3xl"
+          title={title}
+          headerAccessory={<div className="flex shrink-0 items-center gap-2">{tools}</div>}
+        >
+          {body}
+        </SlpSheet>
+      ) : (
+        <>
+          <header className={cn("flex h-14 shrink-0 items-center gap-2 px-4", SLP_TOP_BAR_CLASS)}>
+            <SlpStirGlyph size={22} aria-hidden="true" className="text-[var(--slurp-ink)]" />
+            <h1 className="slp-display min-w-0 flex-1 truncate text-xl leading-none">{title}</h1>
+            {tools}
+          </header>
+          <main className={cn("min-h-0 flex-1 overflow-y-auto", SLP_PAGE_SCROLL_CLASS)}>{body}</main>
+        </>
+      )}
       {personaId && (
         <SlpSheet
           open={people}
@@ -714,6 +739,6 @@ export function SlpStirScreen({
         cant={suggested?.cant ?? []}
         origin="suggested"
       />
-    </div>
+    </Root>
   );
 }
