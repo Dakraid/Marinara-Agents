@@ -86,6 +86,8 @@ test("Forge fills every screen, toggles inside the Engine and keeps world drafts
       game._boot = "ready";
       game._guidesSeen = new Set([
         "welcome",
+        "themes",
+        "runs",
         "home",
         "chat",
         "modes",
@@ -131,6 +133,7 @@ test("Forge fills every screen, toggles inside the Engine and keeps world drafts
       else game._hudView = view === "hud" ? "home" : view === "achievements" ? "missions" : view;
       game._renderBrowser();
     }, view);
+    await expect(forge.locator("[data-guide-modal]"), `${view} has no unseen tutorial covering it`).toHaveCount(0);
     const stage = forge.locator(".gf-stage");
     await expect(stage, view).toBeVisible();
     const sizes = await forge.evaluate((node) => {
