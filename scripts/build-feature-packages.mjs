@@ -362,7 +362,7 @@ async function removeOwnedSourceSnapshots(excludedPaths) {
 const features = [
   {
     id: "noodle",
-    version: "10.0.1",
+    version: "10.1.0",
     minEngineVersion: "2.4.6",
     capabilityApi: PACKAGE_CAPABILITY_API,
     builtAgainst: PACKAGE_BUILT_AGAINST,
@@ -442,7 +442,7 @@ const features = [
   },
   {
     id: "slurp2",
-    version: "10.0.1",
+    version: "10.1.0",
     minEngineVersion: "2.4.6",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Slurp",
@@ -517,7 +517,7 @@ const features = [
   },
   {
     id: "long-term-memory",
-    version: "10.0.1",
+    version: "10.1.0",
     minEngineVersion: "2.4.1",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Long-Term Memory",
@@ -716,7 +716,7 @@ const features = [
   {
     id: "conversation-calls",
     name: "Calls",
-    version: "10.0.1",
+    version: "10.1.0",
     minEngineVersion: "2.4.1",
     capabilityApi: PACKAGE_CAPABILITY_API,
     builtAgainst: PACKAGE_BUILT_AGAINST,

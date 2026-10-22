@@ -1,8 +1,126 @@
 # Long-Term Memory changelog
 
+## 10.1.0 — 2026-10-22
+
+- Includes upstream 1.4.58 to 1.4.84. Other Agents can ask for memories about the characters they write as, and packages can no longer reach the memory vault itself, only memories a character has everywhere.
+- New "Finish cut-off answers" setting asks the model for the rest of an extraction answer cut at the output limit.
+- Many reliability fixes: names starting with "Char" or "Rel", digit-led ids, shared-memory review instead of private copies, one background recall-index rebuild, a capped Memory Vault list, a 1.5 MB debug-log trim, and no raw error text (file paths) in messages.
+
 ## 10.0.1 — 2026-10-20
 
 - Version renumbered to 10.0.1 so every package follows one fork-wide line. No behavior change.
+
+## 1.4.84 — 2026-10-22
+
+- Other Agents can now ask Long-Term Memory for memories about the characters they write as, ranked against what they are about to write. They get only memories available to that character everywhere: never memories limited to a chat or group, archived memories or suggestions, and they can't change anything. A new setting in Memory Settings, "Other Agents can read memories" (on by default), turns this off, also for Slurp's "What your other Agents know", and names the Agents that read memories lately. Each read shows in Activity as "Read by another Agent".
+
+## 1.4.83 — 2026-10-22
+
+- Other installed Agents can no longer reach the memory vault itself. The storage service Long-Term Memory shares with other packages now offers one read, the memories available to a character everywhere, which is what Slurp's flavour brief uses. Memories limited to a chat or group, imported sources, archived and game-only memories, suggestions and the vault folder stay private.
+
+## 1.4.82 — 2026-10-22
+
+- Once the debug log reaches its 2 MB limit, Long-Term Memory now trims it to the newest 1.5 MB instead of to just under 2 MB. Before, every new debug line rewrote the whole file from then on, and saves and recalls waited for each rewrite. Now the lines after a trim are added to the end of the file again. The log keeps between 1.5 and 2 MB of the newest lines.
+
+## 1.4.81 — 2026-10-22
+
+- Memory Settings has a new setting beside "Maximum output tokens", "Finish cut-off answers", off by default. With it on, when the model's extraction answer stops at the output limit, Long-Term Memory asks the model for the rest, with up to 3 extra requests for that source, each sending the source again. With it off, a source cut off this way now says that Retry will stop at the same place and names the setting.
+
+## 1.4.80 — 2026-10-22
+
+- No change in what Long-Term Memory does. Internally, the server file that matches names in chats and summaries to memories is split into four files.
+
+## 1.4.79 — 2026-10-22
+
+- Extraction from a structured chat summary now reads a character name that starts with "Char", such as "Char Aznable", or a relationship pair whose first name starts with "Rel", as a name instead of an id when the summary writes the name out, as in "- Char Aznable | …", "character: Char Aznable", "- Rel Varga, Sayla Mass | …" or "characters: Rel Varga, Sayla Mass". The section the summary gives that character, such as Profile, now reaches their memory, those lines are saved instead of being dropped as not in the chat's roster, and a relationship that only the summary mentions is kept. The event made for a relationship's cause names the pair as the summary wrote it, as in "Rel Varga and Sayla Mass relationship changed after the hangar fire.", instead of splitting the names into words. A line that writes an id made from the name instead, such as "subject: char_aznable", is still read as an id.
+
+## 1.4.78 — 2026-10-22
+
+- Two more places no longer show raw error text, which could include file paths. In the integrity list in memory settings, a note file or event log that cannot be read now says "Note file vault/… could not be read or validated." or "Event log could not be read.", followed by "Details are in the server log."; a note whose contents are broken still says what is wrong with it. When importing or re-extracting a source fails because the memory model or its settings could not be loaded for a server reason, Sources and Review show their usual "could not be imported" or "could not be re-extracted" message and the error goes to the server log. Messages that tell you how to fix the model setup, such as "Choose a language model connection before generating content.", show as before.
+
+## 1.4.77 — 2026-10-21
+
+- Extraction now saves facts about a character whose name starts with "Char", such as "Char Aznable", or a relationship whose first name starts with "Rel", to the memory chosen for them instead of a second memory under a shorter id, and no longer drops events about them as linked to a missing memory. The same holds for any chosen memory whose id repeats its prefix, such as an imported char_char_mara. A memory already saved under the shorter id keeps receiving facts only while it is linked to the character or titled with its full name; if you have two memories for one character, merge them in the app.
+
+## 1.4.76 — 2026-10-21
+
+- A few more unexpected failures no longer show their raw error text, which could include file paths. In Sources, a source that could not be saved or extracted now says "Failed to write imported source note." or "Failed to extract imported source.", followed by "Details are in the server log."; this includes the model provider rejecting the request during an import. In Review, a change that could not be checked says "Long-term memory preflight failed. Details are in the server log." An identity repair in settings whose backup could not be restored says so without the cause. The full error is written to the server log. Messages written for you, such as a model reply that was cut off, show as before.
+
+## 1.4.75 — 2026-10-21
+
+- In the Memory Vault, opening another memory while an archive Undo, a save or a permanent delete is still running no longer leaves it half-finished: the buttons work again, the list reloads, an Undo that could only restore some memories archives them again, a memory reopened during its own save shows what was saved, and deleted memories leave the list and the selection, closing one you had opened with a message that says so. Escape no longer closes the Rename detail dialog while the rename is still running.
+
+## 1.4.74 — 2026-10-21
+
+- After a recall index rebuild fails, the integrity check in Maintenance and the package status no longer show the raw error, which could include the vault's file paths. They now say that the latest index rebuild failed and to see the server log, which records the full error. A rebuild that fails while the Engine switches to a new embedding connection is now logged there too.
+
+## 1.4.73 — 2026-10-21
+
+- An extraction no longer fails as a whole when it leaves out a memory about a note whose id has a digit right after its prefix. This hit older notes with ids such as rel_96dfe1cd8f75, and new characters whose name starts with a digit, such as "2B". The left-out suggestion couldn't be saved, so nothing from that source was kept. The left-out memory now appears as a rejected suggestion, like any other.
+
+## 1.4.72 — 2026-10-21
+
+- No change in what Long-Term Memory does. Internally, the shared file that defines settings, memories, drafts and backups is split into ten files by area.
+
+## 1.4.71 — 2026-10-21
+
+- A memory you open, or already have open, while a bulk change in the Memory Vault is running now shows the new availability once the change finishes, so saving the memory then no longer puts the old places back, and the bulk buttons no longer stay disabled. An open memory without unsaved changes also shows its new status after a bulk change and after an archive Undo, so saving it does not change the status back.
+
+## 1.4.70 — 2026-10-21
+
+- When a chat adds to a memory you shared with a character or persona, Review now offers the change on that memory, with a note that accepting adds it everywhere the memory is shared. Before, extraction silently made a private copy for that chat, so the chat recalled two versions and the shared memory never changed. These changes are never applied automatically. Accepting writes only the rows you selected, plus the link and timeline event those rows need, so a change you accept on a shared memory can add that link or event too. If you reject one, the chat no longer keeps that fact as a memory (it stays in the chat summary). Memories from before 1.3.14 that picked up a character or group automatically count as shared too. A chat that already has its own copy keeps updating that copy; delete the copy to get suggestions on the shared memory instead. Memories from other chats and global memories still get a private copy, as before.
+
+## 1.4.69 — 2026-10-21
+
+- Long-Term Memory now starts after a rollback when a newer version saved a setting this version can't use: a new field inside a settings group (such as a prompt template), a new choice (such as a reasoning effort or chat mode), or a value above this version's limit. That setting uses its default, a list keeps the entries this version knows, and the server log names it once, without its value. The file usually keeps the newer value, and saving Settings or Delete all keeps it unless you change that setting. While the retention settings hold such a value, automatic cleanup of old receipts, logs and drafts pauses, so no limit you didn't choose deletes anything. It resumes when the newer version returns, or when you reset the settings or restore a backup made during the rollback, whose limits then apply. Before, activation failed. Wrong types, prompt templates too long for this version, more templates than it allows while one is active, and backups from a newer version are still refused.
+
+## 1.4.68 — 2026-10-21
+
+- Extraction no longer drops a memory that cites the chat summary or import it came from, for example as its evidence.
+
+## 1.4.67 — 2026-10-21
+
+- Applying several Review suggestions in a row, and extraction that applies memories, no longer rebuild the recall index after each one. One rebuild runs in the background a second after the last change (at most 10 seconds after the first). While it embeds, other saves and debug log entries no longer wait, unless new changes interrupt it three times in a row; it then finishes under the vault lock, as before. Recall still sees every applied memory, because it waits for that rebuild first. After you switch the embedding source, recall answers straight away from keyword matching while the vault is embedded again in the background, then uses the new embeddings; before, the first recall waited for the whole vault to be embedded again. Review no longer says the index rebuild failed after you accept a suggestion. The index status shows stale or building until it is next loaded, then failed (or stale if the embedding source could not be loaded), and the next change or recall rebuilds it.
+
+## 1.4.66 — 2026-10-21
+
+- Extraction from a prose summary (a summary written as a narrative rather than under the memory-stream headings, whether from a custom summary prompt, another app's summary or a transcript recap) now keeps each narrated beat as its own timeline event, keeps a quoted line with its event when the summary presents it as memorable, and records recurring motifs and the durable register the prose states. Before, the prompt told the model to omit incidental actions and prefer a few substantial units for prose, which dropped about a third of the events and the quotes that a summary with headings kept. Summaries with headings, character cards and lorebooks are extracted as before.
+
+## 1.4.65 — 2026-10-21
+
+- Extraction requests are about 3,100 characters (about 775 tokens) shorter. They no longer repeat the link rules three times, ask the model to copy the source's hash and evidence, or send the chat, character and persona ids. In a test with Claude Haiku the answers were also about a fifth shorter, so fewer of them run into the model's output limit. A suggested memory is no longer left out because the model sent an empty evidence list, a blank title or an empty value for an optional field. An imported character card is now described to the model as the character's sheet, so its backstory is kept as facts about the character instead of a timeline event, and its scenario no longer becomes an open thread. The model is also told to write a known character's name exactly as the Memory Vault lists it, so fewer facts from chats and cards are dropped as an unknown character when the text calls the character by a longer or different name.
+
+## 1.4.64 — 2026-10-21
+
+- The Vault stays responsive in places with many memories. Each letter you type into the search now appears at once and the list follows, instead of waiting for every memory's row to be redrawn. Each type shows its first 100 memories, with a Show more button for the next 100. The counts, search, the filters and Select visible still include every memory. With 8,000 memories on a desktop, the worst letter took about 3 seconds to appear and now takes about 50 ms, the list follows in about a third of a second, and the Vault opens in about 0.7 to 1.1 seconds instead of about 1.7.
+
+## 1.4.63 — 2026-10-21
+
+- When the settings fail to reload after Reset settings or a backup import, leaving Memory Settings and coming back now waits for the new settings. Before, the forms filled with the settings from before the reset or import, so the next Save wrote them back. A backup import that refreshed the settings but not the integrity check now says the backup was imported and shows only the integrity check's load error with Retry, instead of "settings could not be refreshed" and the report from before the import. After the settings reload, keyboard focus returns to Reset settings, or to Choose backup after an import, instead of the page.
+
+## 1.4.62 — 2026-10-21
+
+- A relationship or character change from a chat summary no longer links to the wrong event because a short event name happens to sit inside a word. A cause such as "the training" could link to an event named "rain", a change whose cause matched nothing could take an event named "art show" from the words "start showing", and a cause that named an event from the same summary in several words could lose its link when a shorter event name appeared inside one of its words. Event names now match whole words, and the last word may still be plural ("the training sessions" finds "training session").
+
+## 1.4.61 — 2026-10-21
+
+- Saving several imported or re-extracted sources into a large memory vault is faster, and recall and other memory actions wait less while it happens. Each source used to re-read and re-check every memory in the vault while it saved; now a batch reads the vault once and re-reads only the memories that changed. The same memories are matched as before.
+
+## 1.4.60 — 2026-10-21
+
+- When something unexpected goes wrong on the server, the message now names what you were doing, such as "Could not reset memory settings.", instead of the raw server error. Before, it could show a file path or a library error, or just "Internal Server Error". The full error is written to the server log. Messages written for you, such as "Every memory detail needs text.", show as before. The help text for the existing-note token budget in Memory Settings now says those memories are used to match and merge extracted details; they are not sent to the model.
+
+## 1.4.59 — 2026-10-21
+
+- A character fact that extraction adds from a structured chat summary is no longer dropped when its "because of" note is written in words, such as `caused_by: the night lesson`. The note now links to a matching event, from the same extraction or already in memory, or to none, and the fact is kept. A fact about a change still needs its event and is dropped without one. Before, the words were turned into an event id that didn't exist and the fact was dropped as linking to a memory the extraction could not find.
+
+## 1.4.58 — 2026-10-21
+
+- Long-Term Memory warnings in the server log now include the error that caused them. Before, the Engine's log dropped that error, so a warning such as a failed index rebuild gave no cause, and a warning that names a chat, draft or file showed the error's message in place of that name.
+
+## 1.4.57 — 2026-10-20
+
+- Professor Mari's setup guide shows its pictures again. Marinara Engine renamed them, and the guide still asked for the old files.
 
 ## 1.4.56 — 2026-10-20
 

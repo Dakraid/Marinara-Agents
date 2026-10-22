@@ -33,6 +33,7 @@ type GlobalForm = {
   longTermMemoryIncludeResolved: boolean;
   longTermMemoryRecallPreamble: string;
   longTermMemoryDebug: boolean;
+  longTermMemoryShareWithPackages: boolean;
   sourcesAvailabilityModes?: ("conversation" | "roleplay" | "game")[];
 };
 type ExtractionForm = Required<LtmExtractionSettingsPatch> & {
@@ -90,6 +91,7 @@ function settingsForm(settings: LtmGlobalSettings): GlobalForm {
     longTermMemoryIncludeResolved: settings.longTermMemoryIncludeResolved ?? false,
     longTermMemoryRecallPreamble: settings.longTermMemoryRecallPreamble ?? "",
     longTermMemoryDebug: settings.longTermMemoryDebug ?? false,
+    longTermMemoryShareWithPackages: settings.longTermMemoryShareWithPackages ?? true,
     ...(settings.sourcesAvailabilityModes ? { sourcesAvailabilityModes: settings.sourcesAvailabilityModes } : {}),
   };
 }
@@ -159,6 +161,7 @@ function extractionForm(settings: LtmExtractionSettingsPatch): ExtractionForm {
     promptTemplates: resolved.promptTemplates ?? [],
     activePromptTemplateIdsByMode: resolved.activePromptTemplateIdsByMode ?? {},
     aiKeywordExtraction: resolved.aiKeywordExtraction ?? false,
+    finishCutOffAnswers: resolved.finishCutOffAnswers ?? false,
     useExtractionAgentOnGameMode: resolved.useExtractionAgentOnGameMode ?? false,
     ...(resolved.systemPrompt === undefined ? {} : { systemPrompt: resolved.systemPrompt }),
     ...(resolved.activePromptTemplateId === undefined
@@ -202,6 +205,11 @@ export default function MemorySettings({
     queryKey: ["long-term-memory", "language-connections"],
     queryFn: () => requestHost<LanguageConnection[]>("/api/connections"),
   });
+  const packageReaders = useQuery({
+    queryKey: queryKeys.packageReaders,
+    queryFn: () =>
+      request<{ readers: Array<{ caller: string | null; lastReadAt: string }> }>("/settings/package-readers"),
+  });
   const availableConnections = (connections.data ?? []).filter(
     (connection) => connection.provider !== "image_generation" && connection.provider !== "video_generation",
   );
@@ -211,6 +219,9 @@ export default function MemorySettings({
   const [savedExtraction, setSavedExtraction] = useState<ExtractionForm | null>(null);
   // Reset and backup import clear the forms, which then refill only from settings fetched since
   // the action started, so a failed reload shows the error surface instead of the cached settings.
+  // `refillSince` resets when Settings remounts, so the fill effects also wait while a query is in
+  // error: react-query keeps the data cached before the failed read, and filling from it would let
+  // the next Save write the replaced settings back.
   const [refillSince, setRefillSince] = useState(0);
   const [pending, setPending] = useState("");
   const [messageState, setMessageState] = useState<{
@@ -241,17 +252,17 @@ export default function MemorySettings({
   }, [maintenanceBusy]);
 
   useEffect(() => {
-    if (!global.data || globalForm || global.dataUpdatedAt < refillSince) return;
+    if (!global.data || global.isError || globalForm || global.dataUpdatedAt < refillSince) return;
     const next = settingsForm(global.data);
     setGlobalForm(next);
     setSavedGlobal(next);
-  }, [global.data, global.dataUpdatedAt, globalForm, refillSince]);
+  }, [global.data, global.dataUpdatedAt, global.isError, globalForm, refillSince]);
   useEffect(() => {
-    if (!extraction.data || extractionFormState || extraction.dataUpdatedAt < refillSince) return;
+    if (!extraction.data || extraction.isError || extractionFormState || extraction.dataUpdatedAt < refillSince) return;
     const next = extractionForm(extraction.data);
     setExtractionFormState(next);
     setSavedExtraction(next);
-  }, [extraction.data, extraction.dataUpdatedAt, extractionFormState, refillSince]);
+  }, [extraction.data, extraction.dataUpdatedAt, extraction.isError, extractionFormState, refillSince]);
 
   const globalDirty = Boolean(globalForm && savedGlobal && !same(globalForm, savedGlobal));
   const extractionDirty = Boolean(
@@ -691,6 +702,27 @@ export default function MemorySettings({
             })
           }
         />
+        <div className="space-y-1">
+          <Toggle
+            label={localizeUi("ui.longTermMemory.memorysettings.otherAgentsCanReadMemories")}
+            help={localizeUi("ui.longTermMemory.memorysettings.otherAgentsReadOnlyMemoriesAvailableEverywhere")}
+            checked={globalForm.longTermMemoryShareWithPackages}
+            onChange={(value) => setGlobalForm({ ...globalForm, longTermMemoryShareWithPackages: value })}
+          />
+          {packageReaders.data ? (
+            <p className="text-xs text-[var(--muted-foreground)]">
+              {packageReaders.data.readers.length
+                ? localizeUi("ui.longTermMemory.memorysettings.readLatelyBy", {
+                    names: packageReaders.data.readers
+                      .map(
+                        (reader) => reader.caller ?? localizeUi("ui.longTermMemory.memorysettings.anAgentWithoutAName"),
+                      )
+                      .join(", "),
+                  })
+                : localizeUi("ui.longTermMemory.memorysettings.noOtherAgentHasReadMemoriesLately")}
+            </p>
+          ) : null}
+        </div>
       </section>
 
       <section
@@ -812,6 +844,17 @@ export default function MemorySettings({
               setExtractionFormState({
                 ...extractionFormState,
                 maxOutputTokens: value,
+              })
+            }
+          />
+          <Toggle
+            label={localizeUi("ui.longTermMemory.memorysettings.finishCutOffAnswers")}
+            help={localizeUi("ui.longTermMemory.memorysettings.whenTheModelsAnswerStopsAtTheOutputLimit")}
+            checked={extractionFormState.finishCutOffAnswers}
+            onChange={(value) =>
+              setExtractionFormState({
+                ...extractionFormState,
+                finishCutOffAnswers: value,
               })
             }
           />

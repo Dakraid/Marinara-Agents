@@ -33,7 +33,7 @@ import {
 } from "../identity/chat-scope.js";
 import { DEFAULT_LTM_IMPORTED_SOURCE_MODE } from "../../../../../shared/src/features/agents/long-term-memory/constants.js";
 import { nowIso } from "../ltm-utils.js";
-import { getPackageLanguageModels, getPackagePersistence, getPackageResources } from "../package-runtime.js";
+import { getPackagePersistence, getPackageResources, logger, resolvePackageLanguageModel } from "../package-runtime.js";
 import { processLongTermMemorySourceBatch, type ImportedSourceItem } from "../extraction/source-processing.js";
 import { getLtmExtractionConfig } from "../extraction/extraction-config.js";
 import { extractionFingerprintForLtmSourceMaterial } from "../extraction/source-hash.js";
@@ -918,19 +918,11 @@ export async function importPackageInterop(
   );
   let languageModel = null;
   if (request.extract && useExtractionAgent) {
-    try {
-      languageModel = await getPackageLanguageModels().resolveForRequest({
-        connectionId: request.connectionId ?? extractionConfig.connectionId,
-        chatConnectionId: chat?.connectionId ?? null,
-        model: request.model,
-      });
-    } catch (error) {
-      throw new LtmServiceError(
-        error instanceof Error ? error.message : "Language model configuration is invalid",
-        400,
-        "ltm_model_configuration",
-      );
-    }
+    languageModel = await resolvePackageLanguageModel({
+      connectionId: request.connectionId ?? extractionConfig.connectionId,
+      chatConnectionId: chat?.connectionId ?? null,
+      model: request.model,
+    });
   }
   throwIfAborted(signal);
   const written: ImportedSourceItem[] = [];
@@ -1007,6 +999,9 @@ export async function importPackageInterop(
         ...(row.deterministicSourceText ? { deterministicSourceText: row.deterministicSourceText } : {}),
       });
     } catch (error) {
+      // An unexpected failure's message can carry file paths or library internals, so it stays in the server log.
+      if (!(error instanceof LtmServiceError))
+        logger.error(error, "[ltm] Failed to write imported source %s", row.sourceId);
       writeFailures.push({
         sourceId: row.sourceId,
         title: row.title,
@@ -1015,7 +1010,10 @@ export async function importPackageInterop(
         retryable: true,
         error: {
           code: "source_write_failed",
-          message: error instanceof Error ? error.message : "Failed to write imported source note",
+          message:
+            error instanceof LtmServiceError
+              ? error.message
+              : "Failed to write imported source note. Details are in the server log.",
         },
       });
     }
