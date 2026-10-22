@@ -4,6 +4,14 @@ const forgeBrowserLayout = `
 .gf-arena { padding: 0; align-items: stretch; }
 .gf-stage { width: 100%; height: 100%; aspect-ratio: auto; justify-self: stretch; }
 .ob-intake, .node-list, .sel-list, .vn-dock { width: 100%; max-width: none; }
+/* Chapter artwork keeps a small icon in its header fade, with a full touch target. */
+.gf-fs-exit.gf-fs-chapter {
+  top: 50%; right: 0; transform: translateY(-50%);
+  width: 44px; height: 44px; padding: 0;
+  background: transparent; border: 0; box-shadow: none; clip-path: none;
+}
+.gf-fs-chapter svg { width: 0.9rem; height: 0.9rem; }
+.gf-fs-chapter:focus-visible { outline: 2px solid var(--coral); outline-offset: -4px; }
 /* Rotating upright must not cover the only way out of in-app fullscreen. */
 .gf-rot .gf-fs-portrait {
   position: absolute; top: 0.55rem; right: 0.55rem;
@@ -45,6 +53,12 @@ export function wireForgeBrowserFullscreen(host) {
     button.type = "button";
     button.className = "gf-fs-exit gf-fs-portrait";
     rotationNotice.append(button);
+  }
+  const chapterHeader = root.querySelector(".vn-top");
+  const chapterToggle = root.querySelector(".gf-fs-exit");
+  if (chapterHeader && chapterToggle) {
+    chapterToggle.classList.add("gf-fs-chapter");
+    if (chapterToggle.parentElement !== chapterHeader) chapterHeader.append(chapterToggle);
   }
   for (const button of root.querySelectorAll(forgeFullscreenButtons)) {
     button.onclick = () => {
