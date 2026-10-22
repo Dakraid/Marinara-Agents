@@ -33,7 +33,14 @@ const stage = ({ key, label, days, ...rest }: Stage) =>
 const tease = (line: string) => ({ role: "her", channel: "post" as const, heat: { line, for: "fans" as const } });
 /** A public post. */
 const post = (line: string) => ({ role: "her", channel: "post" as const, heat: { line } });
-const crowd = (...lines: string[]) => ({ role: "crowd" as const, channel: "comment" as const, on: "her", lines });
+const crowd = (...lines: string[]) => ({
+  role: "crowd" as const,
+  channel: "comment" as const,
+  on: "her",
+  lines,
+  // Lands on the post the stage made, not on an older one.
+  delayHours: [4, 12] as [number, number],
+});
 const addLook = (look: Look) => ({ kind: "add-look" as const, look: { ...look, suitability: "locked" as const } });
 
 function story(input: {
@@ -59,7 +66,11 @@ function story(input: {
     start: { mode: "auto", weight: input.weight ?? 0.6, cooldownDays: 45 },
     maxDays: 21,
     stages: input.stages.map((entry) =>
-      stage(entry.condition ? { ...entry, condition: { track: input.track ?? "work", ...entry.condition } } : entry),
+      stage(
+        entry.condition
+          ? { ...entry, condition: { track: input.track ?? "work", ...entry.condition, tag: input.id } }
+          : entry,
+      ),
     ),
     endings: [
       {
@@ -345,7 +356,7 @@ export const SLURP_COSPLAY_PACK = pack(
 const FEET: SlpFit = {
   level: "suggestive",
   topic: ["feet", "foot", "toes", "soles", "pedicure"],
-  hardNo: ["feet", "toes"],
+  hardNo: ["feet", "foot", "toes"],
 };
 export const SLURP_FEET_PACK = pack(
   "slurp-pack-feet",

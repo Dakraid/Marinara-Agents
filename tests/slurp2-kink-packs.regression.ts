@@ -57,6 +57,7 @@ const fits = (id: string, level: "suggestive" | "nudity" | "explicit", hardNoes:
   slurpPackFits(byId(id).fit!, { text, level, hardNoes });
 assert.ok(fits("feet-fans", "suggestive"));
 assert.ok(!fits("feet-fans", "explicit", ["feet"]), "hard-no rules her out");
+assert.ok(!fits("feet-fans", "explicit", ["foot fetish"]), "a foot hard-no rules her out");
 assert.ok(!fits("domme-era", "explicit", ["BDSM"]), "hard-no is case-blind");
 assert.ok(!fits("almost-caught", "suggestive"), "exhibition needs nudity");
 assert.ok(fits("almost-caught", "nudity"));
@@ -155,5 +156,9 @@ const dare = slurpStageOutcomes(byId("fan-dares"), { enter: "balcony" }).find(
   (outcome) => outcome.kind === "add-creator-fact",
 );
 assert.equal(dare?.kind === "add-creator-fact" && dare.track, "public");
+// Each storyline has its own condition tag, so one ending never removes another storyline's condition.
+for (const storyline of storylines)
+  for (const entry of storyline.stages)
+    if (entry.condition) assert.equal(entry.condition.tag, storyline.id, `${storyline.id}/${entry.key} tag`);
 
 console.log("slurp2 kink packs: ok");
