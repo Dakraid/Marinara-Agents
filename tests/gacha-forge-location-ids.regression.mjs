@@ -2,8 +2,11 @@
 // reads the committed bundles: it runs the shipped location-ID code (Pasta-Devs/Marinara-Agents#1460)
 // and pins the iPhone landscape layout rules (Pasta-Devs/Marinara-Agents#1461), the sideways-phone world
 // creator and the 16px touch field floor (1.8.14), and the cast and outfit theme lists keeping their place
-// when ticked (1.8.15), so a later bundle drop cannot lose a fix silently.
+// when ticked (1.8.15), so a later bundle drop cannot lose a fix silently. It also rebuilds the shipped
+// client.js and server.mjs from the last contributed bundles and the hand edits recorded in
+// bundle-patches.json.
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import vm from "node:vm";
 
@@ -314,5 +317,67 @@ const pinned = client.match(
 )?.[1];
 const released = [...changelog.matchAll(/^## (\d+\.\d+\.\d+) /gmu)].map((match) => match[1]);
 assert.ok(released.indexOf(pinned) > 0, "the previous in-game entry is pinned to an earlier release");
+
+// client.js and server.mjs are each the last bundle contributed from the package source plus the hand
+// edits made here since, recorded per file in bundle-patches.json, so the bytes the manifest certifies can
+// be rebuilt from a named revision. For each, undo every edit on the committed bundle to reach that
+// revision's bytes, then redo them all to reach the manifest's. Each side of an edit must occur exactly
+// once at its step, so the edits cannot land anywhere else. A file's patches follow its base in ascending
+// version order and none is newer than this release; the newest client.js patch (or its base, once a new
+// drop empties the list) must be this version, so the next hand edit is recorded too.
+const bundlePatches = JSON.parse(await readFile(new URL("bundle-patches.json", packageRoot), "utf8"));
+const digest = (text) => ({
+  sha256: createHash("sha256").update(text).digest("hex"),
+  bytes: Buffer.byteLength(text),
+});
+function swapOnce(text, from, to, label) {
+  const at = text.indexOf(from);
+  assert.notEqual(at, -1, `${label} must be in the bundle`);
+  assert.equal(text.indexOf(from, at + 1), -1, `${label} must occur once`);
+  return text.slice(0, at) + to + text.slice(at + from.length);
+}
+const compareVersions = (left, right) => left.localeCompare(right, "en", { numeric: true });
+assert.deepEqual(Object.keys(bundlePatches.files), ["client.js", "server.mjs"], "both bundles record their edits");
+const clientPatches = bundlePatches.files["client.js"];
+assert.equal(
+  (clientPatches.patches.at(-1) ?? clientPatches.base).version,
+  manifest.version,
+  "the newest client.js patch is this version",
+);
+for (const [path, { base, patches }] of Object.entries(bundlePatches.files)) {
+  const versions = [base, ...patches].map(({ version }) => version);
+  for (const [index, version] of versions.entries()) {
+    assert.ok(compareVersions(version, manifest.version) <= 0, `${path} ${version} is not newer than this release`);
+    if (index > 0) assert.ok(compareVersions(versions[index - 1], version) < 0, `${path} patches ascend from the base`);
+  }
+  let rebuilt = await readFile(new URL(path, packageRoot), "utf8");
+  for (const { version, edits } of patches.toReversed()) {
+    for (let index = edits.length - 1; index >= 0; index -= 1) {
+      rebuilt = swapOnce(
+        rebuilt,
+        edits[index].replace,
+        edits[index].find,
+        `${path} ${version} edit ${index + 1} as applied`,
+      );
+    }
+  }
+  assert.deepEqual(
+    digest(rebuilt),
+    { sha256: base.sha256, bytes: base.bytes },
+    `undoing every ${path} edit gives the ${base.version} bundle (${base.commit})`,
+  );
+  for (const { version, edits } of patches) {
+    for (const [index, edit] of edits.entries()) {
+      rebuilt = swapOnce(rebuilt, edit.find, edit.replace, `${path} ${version} edit ${index + 1}`);
+    }
+  }
+  const shipped = manifest.files.find((file) => file.path === path);
+  assert.ok(shipped, `${path} is a manifest payload`);
+  assert.deepEqual(
+    digest(rebuilt),
+    { sha256: shipped.sha256, bytes: shipped.bytes },
+    `the edits rebuild the ${path} the manifest certifies`,
+  );
+}
 
 process.stdout.write("Gacha Forge location ID and landscape regression passed.\n");

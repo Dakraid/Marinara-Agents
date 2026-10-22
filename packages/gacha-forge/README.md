@@ -137,6 +137,8 @@ All generation — world text, cast sheets, portraits, banner art — runs throu
 
 `client.js` and `server.mjs` are single-file esbuild bundles contributed from the package's own source tree, which is maintained outside this repository. The artifact zip, manifest hashes, and catalog entry are re-derived from the committed payload bytes by the package builder, so they cannot drift from what ships.
 
+From 1.8.13 on, `client.js` and `server.mjs` have been edited by hand here. For each, `bundle-patches.json` names the last contributed bundle (its commit, sha256 and size) and records each later edit, in order, as a find-and-replace pair; `tests/gacha-forge-location-ids.regression.mjs` undoes them on the committed bundle to reach those base bytes and redoes them to reach the manifest's hash, and fails if a new hand edit is not recorded. A new upstream drop should carry these edits, and then becomes the new base with an empty patch list.
+
 Rebuild the artifact and catalog entry from the repository root:
 
 ```bash
