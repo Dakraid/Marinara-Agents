@@ -10,23 +10,34 @@ hard-nos decide how far anybody goes.
 The user picked eight features (2026-10-22). Each section says what the player sees, what it builds on in the
 code today, and the smallest version that is still fun. "Later" lists what the first version leaves out.
 
-## 1. Intimacy ladder (per Creator and player)
+## 1. Intimacy ladder (rapport opens doors)
 
-**What the player sees.** Each Creator remembers how close she is with you. A small ladder on her profile and in
-the DM header: Stranger → Regular → Favourite → Close → Yours. Each step opens more: teasing → lingerie and
-nudes in DMs → explicit customs and sexting → private things only you get. She says when you reach a step
-("ok you're officially my favourite 🙈").
+**Decided (2026-10-22): no new score.** Slurp already has the chat stats: rapport, one 0–100 score per Creator
+and viewer (`modules/messages/slp-rapport.ts`) from subscription, loyalty, tips, unlocks, commissions,
+conversation, effort and reciprocity, with tiers stranger → acquaintance → regular → favourite → whale
+(`slurpRapportTier`, `:69`). The DM header already shows it under Details ("Where you stand", "Spent with
+them", "Rapport", "Conversation mood", strikes; `features/messages/SlpThreadHeader.tsx`). Partner and crush have
+their own floor (`SLURP_PARTNER_RAPPORT` 60, `SLURP_CRUSH_RAPPORT` 25).
 
-**How it works.** One number per Creator and player pair, stored next to her spice state
-(`data/creators/slp-spice-storage.ts`, `SlpSpiceState` in `shared/src/slp/slp-spice.ts:93`). Points come from
-what already happens: tips, PPV unlocks, customs, subscribing, replies (wallet entries `slp-wallet.ts:89`,
-payment reactions `features/economy/slp-payment-reaction.ts:40`). Points fade slowly when you go quiet. The step
-caps the DM spice level: today `slurpDmSpiceLevel` (`features/messages/slp-message-operation.ts:450-458`) picks
-the level from price, partner status and whether you asked; the ladder becomes one more input, never above the
-Creator's own spice level or past a hard-no. Partner/crush (`SLP_RELATIONS_TO_PLAYER`) start higher.
+**What changes.** Today the tiers are "presentation only ... nothing is gated on them" (`slp-rapport.ts:66`).
+The ladder makes each tier open something, within her spice level and never past a hard-no:
 
-**First version.** Score + five steps, the cap in DM spice, the header chip, the step-up line.
-**Later.** Per-step perks chosen by the Creator; ladder for NPC fans on the player's own page.
+| Tier                    | Opens                                                                      |
+| ----------------------- | -------------------------------------------------------------------------- |
+| stranger / acquaintance | flirting, teasing; paid pictures as today                                  |
+| regular                 | spicier DM talk; sexting sessions offered                                  |
+| favourite               | now and then a free spicy picture "just for you"; lower custom prices      |
+| whale                   | her most explicit level in DMs and customs; she starts sessions on her own |
+
+Opened doors stay open: the highest tier reached is kept per pair, so a quiet week never takes a feature
+away (the reason the tiers were ungated). She says when you step up ("ok you're officially my favourite 🙈"),
+one line in the thread. The step reaches the DM prompt (`slurpDmSpiceLevel`,
+`features/messages/slp-message-operation.ts:441-458`) and the picture offer (`resolveSlurpMediaOffer`, which
+already reads `rapportTier`).
+
+**First version.** Highest-tier memory, the table above in DM spice and offers, the step-up line, the opened
+doors listed in Details.
+**Later.** Per-Creator choices of what each tier opens.
 
 ## 2. Paid sexting sessions
 
@@ -87,9 +98,10 @@ scheduler `slp-world-scheduler-service.ts`). Crowd lines come from the fan voice
 the goal is new state on the show. The player sees a live screen that polls the show. Natural home:
 `features/live` (server and client).
 
-**First version.** Creators go live at random (more when trending), the live screen with chat, tips, goal and
-finish, the recap post. The player can watch and tip.
-**Later.** The player goes live on their own page; private shows; collab lives.
+**First version (decided: the player too).** Creators go live at random (more when trending); the player
+watches, chats and tips. The player can also go live on their own page: they write the narration, their fans
+chat and tip, the goal fills, and the recap post lands on their page.
+**Later.** Private shows; collab lives.
 
 ## 6. Streaks and rewards
 
@@ -120,7 +132,7 @@ give the drama hook. Natural home: `features/discovery`.
 ## 8. Kink theme packs
 
 **What the player sees.** Packs in Storylines > Packs, off by default like Family: Lingerie week, Cosplay,
-Feet, Dom/sub, Exhibition (and more later). Each brings storylines, occasions and looks that only reach
+Feet, Dom/sub, Exhibition (all five decided for the first version). Each brings storylines, occasions and looks that only reach
 Creators whose turn-ons fit and who have no hard-no against it.
 
 **How it works.** Pure pack data, built like the Family pack (`modules/world/events/slp-family-pack.ts`,
@@ -131,22 +143,15 @@ who gets them (`slurpTasteWeight`, PR 5c). Topic switches per pack already exist
 **First version.** Five packs, each 2–3 storylines + a few occasions + looks.
 **Later.** More packs, user-shared packs.
 
-## Suggested order
+## Order (decided 2026-10-22)
 
 1. **Kink theme packs** – pure data on the storyline engine, fast fun, no new systems.
-2. **Intimacy ladder** – the base the next ones read.
+2. **Intimacy ladder** (rapport opens doors) – the base the next ones read.
 3. **Paid sexting sessions** – uses the ladder.
 4. **Spicier fan types + top fans**.
 5. **Fan request board** – uses the new fan types.
-6. **Live shows** – the biggest new system; uses fan types, tips, crowd voice.
+6. **Live shows** (Creators and the player) – the biggest new system.
 7. **Streaks and rewards**.
 8. **Creator charts**.
 
 One PR per item, `merge --no-ff` into slurpothon, one patch bump each (0.3.61 onwards).
-
-## Open decisions
-
-- Order above, or a different first item.
-- Ladder: visible to the player (chip + steps), or hidden and only felt.
-- Live shows: Creators only first, or the player can go live in the first version.
-- Kink packs: which five first.
