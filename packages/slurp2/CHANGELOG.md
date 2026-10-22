@@ -6,6 +6,7 @@
 - While a session runs she answers at once (`slurpReplyPacing` `sexting`), at her full level, and the DM prompt gets the phase: warm-up, heated, finish with an afterglow line (`slurpSextingGuidance`). In the heated phase her first picture is a PPV at her PPV price and full level, once per session (`markSextingPicture`).
 - For 30 minutes after the end, the header asks for a tip and opens the tip tool.
 - A Story opens in Slurp's own full-screen layer (`SlpStoryLayer`), not inside the Engine modal, so it has one close button, not two.
+- The Stir tab opens as a sheet over the page it was opened from (`SlpStirDeck`, `useSlpStirDeck`), not as its own page. Every Stir link opens it and any other move closes it; a Support chat opened from it goes back to the feed with Stir open. `SlpSheet` has a `base` mode, so the play, plan and Pulse sheets stack on top of it instead of closing it.
 
 ## 0.3.62 — 2026-10-22
 
