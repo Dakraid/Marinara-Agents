@@ -756,6 +756,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.60",
+          "date": "2026-10-22",
+          "notes": "- Family pack (`slurp-pack-family`, off by default): four pregnancy storylines (couple partner, collab partner, the player, a father she won't name), listed in Drama and switched by the pack.\n- New tie kind `collab` (from `creatorCollabs`), stage influences on the lead (`slpDramaStageMultiplier`), turn-ons lean the lead pick, choice options with `when` dials, and the `brand-offer` outcome.\n- The child never appears in a picture or a spicy post; the loss ending sits behind the `hard` dial.",
+          "highlight": false
+        },
+        {
           "version": "0.3.59",
           "date": "2026-10-22",
           "notes": "- Pack topics switch: a topic chip off on an imported pack is a \"never\" for that pack's occasions and\n  storylines (`contentPacks[\"<pack>:<topic>\"]`).\n- The player's tastes weigh the drama start pick and the occasion moment pick (`slurpTasteWeight`).\n- Story outcomes `add-look` and `remove-look`: a storyline gives a Creator a look (source `storyline`) or takes\n  back the one it gave.",
@@ -867,12 +873,6 @@
           "version": "0.3.41",
           "date": "2026-10-14",
           "notes": "- Faster: Slurp shows character and persona avatars as small copies instead of the full card picture. On opening Slurp the feed downloaded about 16 MB of avatar pictures (1–2.5 MB each, shown 44 px wide), and Discover about 14 MB more; those downloads also held up the feed's other requests. The small copies are made once and kept in Slurp's own media folder.\n- Faster: the \"Report\" sheet of a post or a reply is built only when you open it. Before, every post card and reply built a closed copy, which made the feed and Creator pages slower to open.\n- Faster: the ambient background colour measures the pictures on screen only after the screen has drawn, so opening a screen no longer forces extra layout work.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.40",
-          "date": "2026-10-14",
-          "notes": "- Changed: Slurp follows a Creator's gender instead of calling everyone \"she\". Drama packs use the gender of whoever plays each role (\"{her:he}\" tokens), and pack names and descriptions no longer assume a woman. Post, DM and scene prompts tell the model the Creator's pronouns. A Creator without a gender is \"they\".\n- Added: a \"Clothing style\" choice in the Creator's stage profile: Auto, Feminine, Masculine or Neutral. Auto follows gender. It decides what a \"lingerie\" spice post is: lingerie for feminine, an underwear shoot with briefs for masculine, either for neutral. Male Creators no longer get bra-and-panties shoots unless their style is Feminine. The post prompt also names the style.\n- Added: a picture of a Creator whose appearance text does not say their sex starts with \"Male.\" or \"Female.\" from their gender, so the image model stops defaulting to a woman.\n- Changed: the stage profile field hints read \"he\", \"she\" or \"they\" from the gender you picked.",
           "highlight": false
         }
       ]

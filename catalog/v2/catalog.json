@@ -3537,7 +3537,7 @@
         },
         "id": "slurp2",
         "name": "Slurp",
-        "version": "0.3.59",
+        "version": "0.3.60",
         "description": "A private social app for your characters. Turn characters and personas into Creators, post public or locked photos, and watch a simulated audience follow, subscribe, unlock, comment, and message them. By default, it is tuned for an adult experience. Install it, restart Marinara Engine when prompted, then open Home → Slurp.",
         "localizations": {
           "de": {
@@ -3604,13 +3604,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "fc8d18f311f58a68c2476ec3983f900a5f99b16530c6500bedeeb216e16d0168",
-            "bytes": 1975811
+            "sha256": "d60ec71a0fe38e06c5866bec71dbb60e18f83dfd6c5ef72683872f697e76140c",
+            "bytes": 1985531
           },
           {
             "path": "client.js",
-            "sha256": "39d2313c76b613b5c07b7848ee91b89946ee6582c4bc8bfe2a3418088af73341",
-            "bytes": 2833716
+            "sha256": "91ebec9cc9f07895dd781ea3fe243de714c3cea0820e26148dc55258af1b9bc5",
+            "bytes": 2834497
           },
           {
             "path": "slurp2-logo.png",
@@ -3624,18 +3624,18 @@
           },
           {
             "path": "src/engine/packages/client/src/slp/locales/de.json",
-            "sha256": "f34acce0f40de92cb7fd32f2b02889b961434a4ce45d42431ddffb822ccf0069",
-            "bytes": 230689
+            "sha256": "cb5fa3da5cec44e9b72e7099dba86c4cd003c95f0a18b43459c357cdc3295b46",
+            "bytes": 230798
           },
           {
             "path": "src/engine/packages/client/src/slp/locales/ko.json",
-            "sha256": "1e1508fb4e24e17ebf5d9a190caf68f87074a67c2b873bd0094b3f2d1dce8d22",
-            "bytes": 327618
+            "sha256": "b877986dcd226c175a435fef6881e780540ace35063fc3709fa63feb3886ad0a",
+            "bytes": 327737
           },
           {
             "path": "src/engine/packages/client/src/slp/locales/pl.json",
-            "sha256": "7bbcf0e30ea8a1e54172044cbdaadc0e227152d950d3116d811a5f7ce4b39b27",
-            "bytes": 232287
+            "sha256": "b19f3f06df25626167889d7e5ae37933e63aa2f65da15dd094e7a7c87bf33374",
+            "bytes": 232410
           }
         ],
         "permissions": [
@@ -3653,9 +3653,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/slurp2.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/slurp2-0.3.59.zip",
-        "sha256": "2187d90e8616daf3d2465d3cfe30b71cb18d57e0edb02045907377ab4c080759",
-        "bytes": 5758333
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/slurp2-0.3.60.zip",
+        "sha256": "08fa8a08f54c1c8971c8c7a7373d156a93433cec5472548e3a645790aa0fb083",
+        "bytes": 5769185
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/slurp2/README.md"
     },
