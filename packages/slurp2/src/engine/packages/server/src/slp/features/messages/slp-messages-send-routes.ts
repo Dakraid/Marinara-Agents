@@ -487,7 +487,9 @@ export async function slpMessagesSendRoutes(app: FastifyInstance, messaging: Slp
     const session = slurpSextingStart(new Date());
     if (!(await messages.startSexting(thread.id, session)))
       return reply.code(409).send({ error: "A session is already running." });
-    const sent = await messages.tipInThread(viewer.id, creator.id, price, "Sexting session", parsed.data.requestId);
+    // The request id is scoped to this session: a stale id replayed later must not pay for a new one.
+    const requestId = parsed.data.requestId && `${parsed.data.requestId}:${session.startedAt}`;
+    const sent = await messages.tipInThread(viewer.id, creator.id, price, "Sexting session", requestId);
     if (sent.status !== "sent") {
       await messages.cancelSexting(thread.id, session.startedAt);
       if (sent.status === "insufficient_funds")

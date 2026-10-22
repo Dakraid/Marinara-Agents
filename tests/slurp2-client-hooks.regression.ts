@@ -599,8 +599,12 @@ const invalidatorCalls = {
 };
 assert.deepEqual(
   invalidatorCalls,
-  { // 0.3.63: +1 (the sexting buy).
-    invalidateSlurpMessages: 36, invalidateSlurpProjects: 5, mergeSlurpViewerShell: 4 },
+  {
+    // 0.3.63: +1 (the sexting buy).
+    invalidateSlurpMessages: 36,
+    invalidateSlurpProjects: 5,
+    mergeSlurpViewerShell: 4,
+  },
   "shared invalidation helpers must stay wired to the same call sites",
 );
 

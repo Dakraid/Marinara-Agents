@@ -452,12 +452,18 @@ export function createMessagesStorageBase(context: SlurpMessagesContext) {
       if (readSlurpSexting(rows[0]?.sexting)?.startedAt !== startedAt) return;
       await db.update(slurpThreads).set({ sexting: null }).where(eq(slurpThreads.id, threadId));
     },
-    /** Her one in-session PPV went out. */
-    async markSextingPicture(threadId: string, session: SlurpSexting): Promise<void> {
-      await db
-        .update(slurpThreads)
-        .set({ sexting: JSON.stringify({ ...session, pictureOffered: true }) })
-        .where(eq(slurpThreads.id, threadId));
+    /** Claim her one in-session PPV; false once it went out or a newer session replaced this one. */
+    async markSextingPicture(threadId: string, startedAt: string): Promise<boolean> {
+      return db.transaction(async (tx) => {
+        const current = (await tx.select().from(slurpThreads).where(eq(slurpThreads.id, threadId)))[0];
+        const session = readSlurpSexting(current?.sexting);
+        if (!session || session.startedAt !== startedAt || session.pictureOffered) return false;
+        await tx
+          .update(slurpThreads)
+          .set({ sexting: JSON.stringify({ ...session, pictureOffered: true }) })
+          .where(eq(slurpThreads.id, threadId));
+        return true;
+      });
     },
     /** The Creator's commission pricing for one fan: a favourite's customs cost less (rapport ladder). */
     async commissionPricingFor({

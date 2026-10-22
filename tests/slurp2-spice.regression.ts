@@ -500,7 +500,7 @@ const dm = server("features/messages/slp-message-generation-service.ts");
 assert.match(
   dm,
   // A subscriber, or a regular and up on the rapport ladder, gets her full DM level.
-  /chat: \{\n\s*subscribed: input\.subscribed \|\| slurpRapportOpens\(input\.rapport, "spicierTalk"\),\n\s*player: input\.viewer\.kind === "persona" && !fanVoice/u,
+  /chat: \{\n\s*subscribed: input\.subscribed \|\| input\.sexting === true \|\| slurpRapportOpens\(input\.rapport, "spicierTalk"\),\n\s*player: input\.viewer\.kind === "persona" && !fanVoice/u,
 );
 const operation = server("features/messages/slp-message-operation.ts");
 // Slice I (user): a free chat picture is a tease for everybody (a subscriber's casual one too); a paid one goes all the way.

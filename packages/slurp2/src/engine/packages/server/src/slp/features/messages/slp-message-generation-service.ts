@@ -645,7 +645,7 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
       // How far the chat goes: subscribers get the Creator's level, others the tease. The player's
       // own taste only reaches a chat with the player.
       chat: {
-        subscribed: input.subscribed || slurpRapportOpens(input.rapport, "spicierTalk"),
+        subscribed: input.subscribed || input.sexting === true || slurpRapportOpens(input.rapport, "spicierTalk"),
         player: input.viewer.kind === "persona" && !fanVoice,
         seed: `${input.creator.id}:${input.viewer.id}`,
         with: input.viewer.id === SLURP_SUPPORT_ACCOUNT_ID ? "staff" : viewerPage ? "peer" : "fan",

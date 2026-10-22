@@ -19,7 +19,8 @@ export function SlpSextingBar({ model }: { model: SlurpThreadViewModel }) {
   const { localizeUi } = model;
   const start = useStartSlurpSexting();
   const requestRef = useRef<string | null>(null);
-  const now = useSlpMinuteClock();
+  // The clock re-renders each minute; Date.now() keeps a fresh buy from reading "21 min left".
+  const now = Math.max(useSlpMinuteClock(), Date.now());
   const price = threadQuery.data?.sextingPrice;
   if (!thread || !personaId || thread.state !== "active" || price == null) return null;
   const endsAt = thread.sexting ? Date.parse(thread.sexting.endsAt) : 0;

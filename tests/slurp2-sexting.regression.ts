@@ -64,11 +64,26 @@ assert.notEqual(pacing(false).mode, "instant");
 
 // The live paths.
 const server = (path: string) => slurp2Source(`packages/slurp2/src/engine/packages/server/src/slp/${path}`);
+assert.match(
+  server("data/messages/slp-messages-storage-base.ts"),
+  /session\.startedAt !== startedAt \|\| session\.pictureOffered\) return false;/,
+  "an old reply never overwrites a newer session",
+);
+assert.match(
+  server("features/messages/slp-follow-up-scheduler-service.ts"),
+  /if \(slurpSextingPhase\(thread\.sexting\) \|\| \(await slurpCreatorInScene/,
+  "follow-ups wait out a session",
+);
 const route = server("features/messages/slp-messages-send-routes.ts");
 assert.match(
   route,
-  /startSexting\(thread\.id, session\)[\s\S]{0,200}tipInThread\(viewer\.id, creator\.id, price, "Sexting session"/,
+  /startSexting\(thread\.id, session\)[\s\S]{0,400}tipInThread\(viewer\.id, creator\.id, price, "Sexting session"/,
   "claimed before it is paid",
+);
+assert.match(
+  route,
+  /const requestId = parsed\.data\.requestId && `\$\{parsed\.data\.requestId\}:\$\{session\.startedAt\}`;/,
+  "a stale id never pays for a new session",
 );
 assert.match(
   route,
@@ -76,15 +91,17 @@ assert.match(
 );
 assert.match(route, /creator\.sourceKind === "persona" \|\| isSlurpSupportThread\(thread\)/);
 const operation = server("features/messages/slp-message-operation.ts");
-assert.equal(operation.match(/sexting: sextingPhase !== null,/g)?.length, 2, "both pacing calls");
-assert.match(operation, /subscribed: subscribed \|\| sextingPhase !== null,\n\s*dmPolicy/);
+assert.equal(operation.match(/sexting: sextingPhase !== null,/g)?.length, 3, "both pacing calls and the prompt");
+// Her level, not a fake subscription: the viewer card and the stance keep the real `subscribed`.
+assert.match(operation, /\n\s*subscribed,\n\s*sexting: sextingPhase !== null,\n\s*dmPolicy/);
 assert.match(operation, /slurpSextingGuidance\(sextingPhase, sextingPicture\)/);
 assert.match(
   operation,
-  /const sextingPpv = sextingPicture && !partner && !demanded && reply\.imageMode !== "hostile";/,
+  /const sextingPpv =\s*sextingPicture &&\s*!partner &&\s*!demanded &&\s*reply\.imageMode !== "hostile" &&\s*\(await messagesStore\.markSextingPicture\(thread\.id, thread\.sexting!\.startedAt\)\);/,
+  "claimed before the picture is drawn",
 );
 assert.match(operation, /price: slurpPpvPrice\(messaging\.ppvPrice\)/);
-assert.match(operation, /if \(sextingPpv && thread\.sexting\) await messagesStore\.markSextingPicture/);
+
 assert.match(server("features/messages/slp-messages-thread-routes.ts"), /sextingPrice:\n\s*side === "viewer"/);
 assert.equal(
   server("features/messages/slp-messages-thread-routes.ts").match(/sextingPrice:/g)?.length,

@@ -8,6 +8,7 @@ import { join } from "node:path";
 const EXPECTED = [
   // 0.3.18: edit, delete and write again a DM; copy and sum up a thread (docs/FEEDBACK-2026-10.md R9, R10).
   "GET /messages/threads/:threadId/export",
+  "POST /messages/sexting",
   "POST /messages/threads/:threadId/messages/:messageId/delete",
   "POST /messages/threads/:threadId/messages/:messageId/edit",
   "POST /messages/threads/:threadId/regenerate",
@@ -338,6 +339,8 @@ const RETAINED_OLD_PATHS = new Set([
   "GET /noodler/posts/:id/media/:position",
 ]);
 const ADDED_ROUTES = new Set([
+  // Paid sexting sessions (docs/SPICY.md, item 2).
+  "POST /messages/sexting",
   // Roleplay scenes from a DM thread (docs/SCENES.md).
   "GET /messages/threads/:threadId/scene/origin",
   "POST /messages/threads/:threadId/scene/invite/:messageId/decline",
@@ -529,7 +532,8 @@ const EXPECTED_HANDLER_COUNTS = {
   "features/feed": 39,
   "features/maintenance": 15,
   "features/media": 8,
-  "features/messages": 55,
+  // 0.3.63: +1 (the sexting session).
+  "features/messages": 56,
   "features/notifications": 4,
   "features/onboarding": 7,
   "features/projects": 31,
@@ -541,7 +545,8 @@ const EXPECTED_HANDLER_COUNTS = {
 // 0.3.4: +1 POST, +1 PUT (Creator Pages). 0.3.5: +1 GET, +3 POST (Support desk). 0.3.7: +1 POST (rewrite all).
 // 0.3.8: +1 GET, +5 POST (Drama: bonds, drama view, choice, start, end). 0.3.11: +1 POST (fan notes).
 // DM edit tools and thread export: +1 GET, +4 POST. 0.3.28: +1 GET (Deep details for a chat reply). 0.3.42: +1 GET (carryover reach). Story state (Life panel): +1 GET, +1 POST.
-const EXPECTED_METHOD_COUNTS = { DELETE: 20, GET: 91, PATCH: 20, POST: 165, PUT: 7 } as const;
+// 0.3.63: +1 POST (sexting session).
+const EXPECTED_METHOD_COUNTS = { DELETE: 20, GET: 91, PATCH: 20, POST: 166, PUT: 7 } as const;
 
 const root = join(import.meta.dirname, "../packages/slurp2/src/engine/packages/server/src/slp");
 const registration = /\bapp\.(get|post|put|patch|delete|addContentTypeParser)(?:<[^()]*?>)?\(\s*["'`]([^"'`]+)["'`]/gu;
@@ -599,7 +604,8 @@ assert.deepEqual(methodCounts, EXPECTED_METHOD_COUNTS, "HTTP method multiset cha
 // 0.3.5: +4 (the Support desk). 0.3.7: +1 (rewrite all). Roleplay scenes: +4. 0.3.17: +2 (collab drop, post now).
 // 0.3.41: +1 (Engine avatar copies).
 // DM edit tools, thread export: +5. Story state (Life panel): +2. Remove an imported pack: +1.
-assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 303);
+// 0.3.63: +1 (the sexting session).
+assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 304);
 assert.deepEqual(handlerCounts, EXPECTED_HANDLER_COUNTS, "handler count changed in a feature");
 assert.ok(foundRoutes.includes("POST /slurp/posts/:id/media"), "the renamed POST media route must remain registered");
 assert.ok(

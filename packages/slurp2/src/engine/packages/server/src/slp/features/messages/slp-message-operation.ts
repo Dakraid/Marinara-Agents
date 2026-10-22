@@ -286,7 +286,8 @@ export async function replyToSlurpMessage(
         viewer,
         history,
         rapport: thread.rapport,
-        subscribed: subscribed || sextingPhase !== null,
+        subscribed,
+        sexting: sextingPhase !== null,
         dmPolicy: messaging.dmPolicy,
         isRequest,
         mood: thread.mood,
@@ -466,7 +467,13 @@ export async function replyToSlurpMessage(
           slurpDmPictureSpicy(image) &&
           Math.random() < SLURP_RAPPORT_GIFT_CHANCE;
         // Her one in-session PPV: at her PPV price and full level, even for a subscriber.
-        const sextingPpv = sextingPicture && !partner && !demanded && reply.imageMode !== "hostile";
+        // Claimed before the picture is drawn, so two quick replies never both send it.
+        const sextingPpv =
+          sextingPicture &&
+          !partner &&
+          !demanded &&
+          reply.imageMode !== "hostile" &&
+          (await messagesStore.markSextingPicture(thread.id, thread.sexting!.startedAt));
         const offer = sextingPpv
           ? ({ visibility: "locked", price: slurpPpvPrice(messaging.ppvPrice), reason: "premium_content" } as const)
           : resolveSlurpMediaOffer({
@@ -511,7 +518,6 @@ export async function replyToSlurpMessage(
           if (!imageMessage) {
             drawn.compensate();
           } else {
-            if (sextingPpv && thread.sexting) await messagesStore.markSextingPicture(thread.id, thread.sexting);
             drawn.promote();
             await messagesStore.setMessageMedia(
               imageMessage.id,
