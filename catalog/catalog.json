@@ -288,7 +288,7 @@
         },
         "id": "conversation-calls",
         "name": "Calls",
-        "version": "10.0.1",
+        "version": "10.1.0",
         "description": "Adds live audio and video calls with Conversation characters. Add as both a Command and an Agent in Chat Settings → Agents → Commands/Calls for Conversation mode.",
         "engine": {
           "min": "2.4.1",
@@ -318,13 +318,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "fd2a90b2bfbcbb1b45e0c62b39cfd0a55dad181fe9b1344f8967197b4b53e5ff",
-            "bytes": 419328
+            "sha256": "17fd87b6ebf011acf2827dc93c99a4338e4508ee86811cb33329fc608bb82019",
+            "bytes": 419155
           },
           {
             "path": "client.js",
-            "sha256": "9576ee74838f5653cbddd0ae943ddada8cbb40c566e64eb6ae41a813dbf5daf0",
-            "bytes": 167342
+            "sha256": "9da5c5b753e3ee12b896a15cfc04545b8b517139d9a1f724b37acd3be8e53272",
+            "bytes": 169572
           }
         ],
         "permissions": [
@@ -341,9 +341,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/conversation-calls.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/conversation-calls-10.0.1.zip",
-        "sha256": "082af84cee8dd69e5049dffa9b1ef01a6acf8203092203d72b750a112c588c49",
-        "bytes": 588970
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/conversation-calls-10.1.0.zip",
+        "sha256": "daedc1853e929a01adfb5e5eabae0d0e7d8665f12178f05d82728c90028b2529",
+        "bytes": 591027
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#conversation-calls"
     },
@@ -2644,7 +2644,7 @@
         },
         "id": "long-term-memory",
         "name": "Long-Term Memory",
-        "version": "10.0.1",
+        "version": "10.1.0",
         "description": "Remembers important things from your chat summaries, characters, and lorebooks, and brings them back when they matter. Enable it per chat from Chat Settings → Agents → Long-Term Memory. In Roleplay and Game, you can also add it from Chat Settings → Agents → Misc Agents.",
         "engine": {
           "min": "2.4.1",
@@ -2676,13 +2676,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "aff7389a686ac41c9095a16683febda01be4bbd5f489c556c9af6dcece58d8f4",
-            "bytes": 473651
+            "sha256": "2a5a6b5aec812eefa196012a2ac1452d87e0d9bdcee805a21ddbc07d0b9692b8",
+            "bytes": 488930
           },
           {
             "path": "client.js",
-            "sha256": "03a778b500ce0a1f016387b2a0211df5e716193f3db9560d6a7e014456598ba1",
-            "bytes": 641467
+            "sha256": "9cd884dd138730e0057d08bcb065415443d5fb5ded699dfa1c1885ec2e8b839c",
+            "bytes": 648862
           }
         ],
         "permissions": [
@@ -2698,9 +2698,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/long-term-memory.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/long-term-memory-10.0.1.zip",
-        "sha256": "7736cc53425e0d6e8cf467d58ddb3c18ed14aa031198bef39892833546938ed0",
-        "bytes": 1117619
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/long-term-memory-10.1.0.zip",
+        "sha256": "24b610c90b0e85fcc11fae8fe065eaa91858d58f32274f60484a8f51bc7bbf01",
+        "bytes": 1140293
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents#long-term-memory"
     },
@@ -2955,7 +2955,7 @@
         },
         "id": "noodle",
         "name": "Noodle",
-        "version": "10.0.1",
+        "version": "10.1.0",
         "description": "A pretend social network where your characters post, share photos, and talk about your chats. Install it, restart Marinara Engine when prompted, then open Home → Noodle.",
         "localizations": {
           "de": {
@@ -3038,13 +3038,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "e2c1ae8621d43e5ec1c312dd481738f119b2cf2377443e9d4f7f58b646de1dbd",
-            "bytes": 724981
+            "sha256": "66d2be520c5298ca645a8ca45b27918226c401bf52946a50bbd1d648d5657962",
+            "bytes": 725041
           },
           {
             "path": "client.js",
-            "sha256": "6f21b16b05b86c311329c6404ddece38953ea6d638e070699305793ea82a5e16",
-            "bytes": 716456
+            "sha256": "e5e66658e2fbc202453609f3c6a4e142d4cb0d9762fddb51bbe7d89496b3d427",
+            "bytes": 718654
           },
           {
             "path": "noodle-klusek.png",
@@ -3065,9 +3065,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/noodle.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/noodle-10.0.1.zip",
-        "sha256": "8f10411f1917fef86701330b259fa7f20008a84a3fc26c6eb0c6c2a2b1e9e030",
-        "bytes": 1474183
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/noodle-10.1.0.zip",
+        "sha256": "08dd7c9064a19304621063be2d7437a1b41266102f7e59eacdc2f999673a3a54",
+        "bytes": 1476441
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/noodle/README.md"
     },
@@ -3729,7 +3729,7 @@
         },
         "id": "slurp2",
         "name": "Slurp",
-        "version": "10.0.1",
+        "version": "10.1.0",
         "description": "A private social app for your characters. Turn characters and personas into Creators, post public or locked photos, and watch a simulated audience follow, subscribe, unlock, comment, and message them. By default, it is tuned for an adult experience. Install it, restart Marinara Engine when prompted, then open Home → Slurp.",
         "localizations": {
           "de": {
@@ -3796,13 +3796,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "15324ab07408c7758d0667eb63fb855f5f000b34a484473241d6e352334fdc4c",
-            "bytes": 1935486
+            "sha256": "1be23db0bd8c09a8b30e35e2da7988b16eaf934aeece9ec79b41046baa55dec8",
+            "bytes": 1936776
           },
           {
             "path": "client.js",
-            "sha256": "adb45975823c0ba8455abd99b479b94545469eb3ab386a729182420f66c70439",
-            "bytes": 2758599
+            "sha256": "3178c29590cb7e1a48e41273cd30cae1771220ce49cd9f1ede9014409ac0c977",
+            "bytes": 2761302
           },
           {
             "path": "slurp2-logo.png",
@@ -3845,9 +3845,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artwork/agent-covers/slurp2.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/slurp2-10.0.1.zip",
-        "sha256": "7eea2e6f96ee6ecafd6e2657506803e68f39071c1c6c356047b76364715485b5",
-        "bytes": 5606530
+        "url": "https://raw.githubusercontent.com/Dakraid/Marinara-Agents/main/artifacts/slurp2-10.1.0.zip",
+        "sha256": "a0a34c2290290fd7cfc0b5776c4c6091afda5f256fe8fffbfb1a3a70ba546baa",
+        "bytes": 5610523
       },
       "documentationUrl": "https://github.com/Dakraid/Marinara-Agents/blob/main/packages/slurp2/README.md"
     },
