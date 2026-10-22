@@ -6,6 +6,7 @@
 import assert from "node:assert/strict";
 import {
   describeSlurpRapport,
+  describeSlurpRapportForDm,
   slurpRapportDoors,
   slurpRapportDoorTier,
   slurpRapportHigher,
@@ -47,13 +48,15 @@ assert.equal(slurpRapportKeepPeak(rapport("regular"), null).said, "stranger");
 
 // She says the step-up once: while `said` is below the peak, never for a partner.
 const stepped = slurpRapportKeepPeak(rapport("favourite"), rapport("regular", { peak: "regular", said: "regular" }));
-assert.match(describeSlurpRapport(stepped, "Sam"), /Sam just became one of your favourite fans: tell them once/);
-assert.doesNotMatch(describeSlurpRapport({ ...stepped, said: "favourite" }, "Sam"), /just became/);
+assert.match(describeSlurpRapportForDm(stepped, "Sam"), /Sam just became one of your favourite fans: tell them once/);
+assert.doesNotMatch(describeSlurpRapportForDm({ ...stepped, said: "favourite" }, "Sam"), /just became/);
 const partner = {
   ...stepped,
   contributions: [{ key: "partner" as const, detail: "you are together", weight: 0, points: 60 }],
 };
-assert.doesNotMatch(describeSlurpRapport(partner, "Sam"), /just became/);
+assert.doesNotMatch(describeSlurpRapportForDm(partner, "Sam"), /just became/);
+// Only the DM reply prompt asks for it: comments and scenes never mark it said.
+assert.doesNotMatch(describeSlurpRapport(stepped, "Sam"), /just became/);
 
 // A favourite's gift: a spicy friendly picture is free; without the gift a subscriber's spicy one is PPV.
 const offer = (gift: boolean) =>
@@ -85,7 +88,19 @@ assert.ok(
 // The doors reach the live paths.
 const server = (path: string) => slurp2Source(`packages/slurp2/src/engine/packages/server/src/slp/${path}`);
 assert.match(server("data/messages/slp-messages-storage-base.ts"), /slurpRapportKeepPeak\(/);
-assert.match(server("data/messages/slp-messages-storage-conversation.ts"), /said: slurpRapportDoorTier\(rapport\)/);
+assert.doesNotMatch(
+  server("data/messages/slp-messages-storage-conversation.ts"),
+  /said:/,
+  "openers and quotes never mark it said",
+);
+assert.match(
+  server("features/messages/slp-message-generation-service.ts"),
+  /describeSlurpRapportForDm\(input\.rapport/,
+);
+assert.match(
+  server("features/messages/commissions/slp-commissions-routes.ts"),
+  /const pricing = await messages\.commissionPricingFor\(commission\)/,
+);
 assert.match(
   server("features/messages/slp-message-generation-service.ts"),
   /subscribed: input\.subscribed \|\| slurpRapportOpens\(input\.rapport, "spicierTalk"\)/,
@@ -97,6 +112,13 @@ assert.match(
 const operation = server("features/messages/slp-message-operation.ts");
 assert.match(operation, /rapportTier: doorTier/);
 assert.match(operation, /gift,\n/);
+// The generated reply marks it said, from the same rapport its prompt read.
+assert.match(
+  operation,
+  /appendReplyBatch[\s\S]{0,400}if \(!stored\) return \{ status: "ineligible" \} as const;\n\s*\/\/ Its prompt carried any step-up line[^\n]*\n\s*if \(slurpRapportDoorTier\(thread\.rapport\) !== thread\.rapport\.said\) \{\n\s*await messagesStore\.markRapportSaid\(thread\.id, slurpRapportDoorTier\(thread\.rapport\)\)/,
+);
+assert.match(operation, /const gift =\s*reply\.imageMode !== "hostile" &&/, "no gift level for a hostile picture");
+assert.match(operation, /slurpRapportDoorTier\(thread\.rapport\) !== "whale"/, "a past whale keeps free post previews");
 assert.match(operation, /partner \|\| gift \|\| doors\.includes\("fullSpice"\)/);
 assert.match(server("features/messages/slp-messages-thread-routes.ts"), /slurpCommissionPricingFor\(/);
 assert.equal(

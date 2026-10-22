@@ -42,7 +42,7 @@ doors listed in Details.
 **PR 2 as built (0.3.62).** `slurpRapportDoors(tier)` in `modules/messages/slp-rapport.ts`; `peak` (highest tier
 reached) and `said` (highest tier she announced) ride in the thread's stored rapport JSON. `rapportFor` keeps the
 peak through every fresh score (`slurpRapportKeepPeak`; a pair from before the ladder starts at its stored tier),
-and a Creator message stores `said`. Doors, all inside her spice level:
+and a generated DM reply stores `said` (`markRapportSaid`, from the rapport its prompt read). Doors, all inside her spice level:
 
 | Door           | From      | Where                                                                                     |
 | -------------- | --------- | ----------------------------------------------------------------------------------------- |
@@ -52,7 +52,7 @@ and a Creator message stores `said`. Doors, all inside her spice level:
 | fullSpice      | whale     | free chat pictures at her full level (`slp-message-operation.ts`)                         |
 
 The step-up line is a prompt instruction ("Sam just became one of your favourite fans: tell them once"), not a
-canned message. Partners get the doors of their tier but no step-up line: a relationship names
+canned message, and only the DM reply prompt carries it (`describeSlurpRapportForDm`). Partners get the doors of their tier but no step-up line: a relationship names
 itself. Sessions ("whale: she starts
 sessions") come with item 2. Not built: per-Creator choices of what each tier opens.
 

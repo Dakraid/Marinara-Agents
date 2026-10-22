@@ -372,6 +372,10 @@ export async function replyToSlurpMessage(
         delayed: queuedBubbles.map((bubble) => ({ ...bubble, id: `${claim.claimId}:${bubble.sequence}` })),
       });
       if (!stored) return { status: "ineligible" } as const;
+      // Its prompt carried any step-up line (`describeSlurpRapportForDm`): now she has said it.
+      if (slurpRapportDoorTier(thread.rapport) !== thread.rapport.said) {
+        await messagesStore.markRapportSaid(thread.id, slurpRapportDoorTier(thread.rapport));
+      }
       // Deep details, read from the Message menu. Nobody can open an AI fan's thread, so it keeps none.
       if (reply.deepDetails && !aiFan)
         await saveSlurpMessageDeepDetails(db, {
@@ -392,7 +396,7 @@ export async function replyToSlurpMessage(
         const postAccess = reply.sharedPost.access === "locked" ? "locked" : "public";
         const previewLocked =
           postAccess === "locked" ||
-          (reply.sharedPost.access !== "public" && thread.rapport.tier !== "whale" && !subscribed);
+          (reply.sharedPost.access !== "public" && slurpRapportDoorTier(thread.rapport) !== "whale" && !subscribed);
         const sharedMetadata = (await slurp.getNoodlerPostById(reply.sharedPost.id))?.metadata as
           Record<string, unknown> | undefined;
         const sharedSize = slpStoredMediaSize(sharedMetadata?.noodlerMediaPath);
@@ -447,7 +451,11 @@ export async function replyToSlurpMessage(
         // Rapport ladder: a reached tier keeps its doors; a favourite now and then gets a spicy one free.
         const doorTier = slurpRapportDoorTier(thread.rapport);
         const doors = slurpRapportDoors(doorTier);
-        const gift = doors.includes("gifts") && slurpDmPictureSpicy(image) && Math.random() < SLURP_RAPPORT_GIFT_CHANCE;
+        const gift =
+          reply.imageMode !== "hostile" &&
+          doors.includes("gifts") &&
+          slurpDmPictureSpicy(image) &&
+          Math.random() < SLURP_RAPPORT_GIFT_CHANCE;
         const offer = resolveSlurpMediaOffer({
           intent: reply.imageMode === "hostile" ? "hostile" : "friendly",
           rapportTier: doorTier,

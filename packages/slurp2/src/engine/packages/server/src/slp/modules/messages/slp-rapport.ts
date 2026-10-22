@@ -349,14 +349,24 @@ export function describeSlurpRapport(rapport: SlurpRapport, viewerName: string):
   // A partner is not a "whale": the tier names fans, so a relationship names itself.
   const partner = slurpRapportPartner(rapport);
   const tier = partner ? (partner === "crush" ? "your crush" : "your partner") : rapport.tier;
-  const peak = slurpRapportDoorTier(rapport);
-  const stepUp =
-    !partner && SLURP_RAPPORT_TIERS.indexOf(peak) > SLURP_RAPPORT_TIERS.indexOf(rapport.said ?? peak)
-      ? STEP_UP[peak]
-      : undefined;
   return `Your history with ${viewerName}: ${tier} (${rapport.score}/100).${
     notable.length > 0 ? ` What stands out: ${notable.join("; ")}.` : ""
-  }${stepUp ? ` ${viewerName} just became ${stepUp}: tell them once in this reply, in one short line, in your own words.` : ""}`;
+  }`;
+}
+
+/** The DM reply prompt's rapport line: adds the step-up once the peak passes what she has said (`markRapportSaid`). */
+export function describeSlurpRapportForDm(rapport: SlurpRapport, viewerName: string): string {
+  const peak = slurpRapportDoorTier(rapport);
+  const stepUp =
+    !slurpRapportPartner(rapport) &&
+    SLURP_RAPPORT_TIERS.indexOf(peak) > SLURP_RAPPORT_TIERS.indexOf(rapport.said ?? peak)
+      ? STEP_UP[peak]
+      : undefined;
+  return `${describeSlurpRapport(rapport, viewerName)}${
+    stepUp
+      ? ` ${viewerName} just became ${stepUp}: tell them once in this reply, in one short line, in your own words.`
+      : ""
+  }`;
 }
 
 const CHAT_BRIDGE_TIER: Record<SlurpRapportTier, (her: string, you: string) => string> = {

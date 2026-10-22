@@ -423,6 +423,16 @@ export function createMessagesStorageBase(context: SlurpMessagesContext) {
      * Computed rather than incremented: a counter that drifts is a counter nobody can debug, and
      * the inputs are all small reads the send path already pays for.
      */
+    /** She said the step-up her reply prompt asked for (rapport ladder). Reads the raw row: no detail overrides baked in. */
+    async markRapportSaid(threadId: string, said: SlurpRapport["tier"]): Promise<void> {
+      const rows = await db.select().from(slurpThreads).where(eq(slurpThreads.id, threadId));
+      const stored = json(rows[0]?.rapport as string);
+      if (!rows[0] || stored.said === said) return;
+      await db
+        .update(slurpThreads)
+        .set({ rapport: JSON.stringify({ ...stored, said }) })
+        .where(eq(slurpThreads.id, threadId));
+    },
     /** The Creator's commission pricing for one fan: a favourite's customs cost less (rapport ladder). */
     async commissionPricingFor({
       viewerAccountId,

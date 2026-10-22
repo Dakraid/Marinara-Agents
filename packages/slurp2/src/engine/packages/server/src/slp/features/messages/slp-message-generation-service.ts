@@ -48,7 +48,7 @@ import {
   resolveSlurpCreatorAvailability,
   type SlurpCreatorAvailability,
 } from "../../modules/creators/slp-creator-schedule-context.js";
-import { describeSlurpRapport, slurpRapportOpens, type SlurpRapport } from "../../modules/messages/slp-rapport.js";
+import { describeSlurpRapportForDm, slurpRapportOpens, type SlurpRapport } from "../../modules/messages/slp-rapport.js";
 import { slurpModifierLines } from "../../modules/creators/slp-creator-state.js";
 import { type SlurpStance } from "../../modules/world/slp-stance.js";
 import { resolveSlurpThreadStance } from "./slp-thread-stance.js";
@@ -374,7 +374,7 @@ export function buildSlurpMessageChat(input: {
         : {}),
       ...(input.fanMemory ? { memory: input.fanMemory } : {}),
     },
-    relationship: support ? undefined : describeSlurpRapport(input.rapport, parties.viewer.name),
+    relationship: support ? undefined : describeSlurpRapportForDm(input.rapport, parties.viewer.name),
     ...(support && input.supportDesk ? { slurpStanding: input.supportDesk } : {}),
     ...(known
       ? {
