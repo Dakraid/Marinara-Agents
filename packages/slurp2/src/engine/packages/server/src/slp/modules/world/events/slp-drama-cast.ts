@@ -4,7 +4,9 @@
  */
 import { slpRomancePairAllowed } from "../../../../../../shared/src/slp/slp-creator-steering.js";
 import { hash } from "../../projects/slp-project.js";
-import type { SlpDramaOutcome, SlpDramaRole } from "../../../../../../shared/src/slp/slp-drama.js";
+import type { SlpDramaOutcome, SlpDramaRole, SlpFit } from "../../../../../../shared/src/slp/slp-drama.js";
+import { SLP_EXPLICIT_LEVELS } from "../../../../../../shared/src/slp/slp-spice.js";
+import { slurpPackFits } from "../../feed/slp-occasion-beats.js";
 import type {
   SlpStoryRequires,
   SlpStoryline,
@@ -29,6 +31,28 @@ export const tieOutcomes = (list: readonly SlpStorylineOutcome[]) =>
   );
 export const meets = (requires: SlpStoryRequires, tags: ReadonlySet<string>) =>
   requires.tags.every((tag) => tags.has(tag)) && !requires.lacks.some((tag) => tags.has(tag));
+
+/** A `fit` gate (docs/STORYLINES.md, PR 5) on one Creator; a gated entry whose card text is not known does not fit. */
+export const slpFitsCreator = (fit: SlpFit | undefined, creator: SlpDramaCreator | undefined): boolean =>
+  !fit ||
+  (creator?.fitText !== undefined &&
+    slurpPackFits(fit, {
+      text: creator.fitText,
+      level: SLP_EXPLICIT_LEVELS[creator.spice] ?? "none",
+      hardNoes: creator.hardNoes ?? [],
+      avoid: creator.avoid ?? [],
+    }));
+
+/** Whether a storyline has a `fit` anywhere, so the world has to read card texts for it. */
+export const slpStorylineGated = (storyline: SlpStoryline): boolean =>
+  Boolean(storyline.fit) ||
+  storyline.stages.some(
+    (stage) =>
+      stage.fit ||
+      stage.choice?.options.some((option) => option.fit) ||
+      [...stage.beats, ...stage.deck].some((beat) => beat.fit),
+  ) ||
+  storyline.endings.some((ending) => ending.beat?.fit);
 
 // ─── Casting ────────────────────────────────────────────────────────────────────────────────────
 
@@ -78,6 +102,8 @@ export function slpDramaCast(
     seed: string;
     at: Date;
     couples?: readonly (readonly [string, string])[];
+    /** The storyline's `fit`, checked on whoever takes the first role. */
+    leadFit?: SlpFit;
   },
 ): Record<string, string> | null {
   const next = { ...cast };
@@ -111,6 +137,7 @@ export function slpDramaCast(
     const taken = new Set(Object.values(current));
     const options = input.world.creators
       .filter((creator) => !taken.has(creator.id) && (role.player || !input.busy.has(creator.id)))
+      .filter((creator) => key !== roles[0]?.key || slpFitsCreator(input.leadFit, creator))
       .map((creator) => ({ creator, fit: fits(role, creator, current, input.world, playerKey) }))
       .filter((option) => {
         const as = (role: string) => (role === key ? option.creator.id : current[role]);
@@ -161,7 +188,7 @@ export function slpDramaLeadFits(
   const role = drama.cast[0]!;
   const lead = input.world.creators.find((creator) => creator.id === leadId);
   if (!lead || drama.start.within || (input.busy.has(leadId) && !role.player)) return false;
-  if (!meets(drama.requires, new Set(lead.storyTags ?? []))) return false;
+  if (!meets(drama.requires, new Set(lead.storyTags ?? [])) || !slpFitsCreator(drama.fit, lead)) return false;
   const cast = slpDramaCast(
     drama.cast,
     [role.key, ...stageRoles(drama.stages[0]!, drama.cast)],

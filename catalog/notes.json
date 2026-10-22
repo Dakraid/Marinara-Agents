@@ -756,6 +756,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.57",
+          "date": "2026-10-22",
+          "notes": "- One JSON `fit` (level, hard noes, needed words, topic words) on storylines, stages, choice options and beats; the\n  built-in content packs use it instead of code patterns.\n- The drama runtime checks it: the lead pick, skipped stages, options not offered, dropped moments.",
+          "highlight": false
+        },
+        {
           "version": "0.3.56",
           "date": "2026-10-22",
           "notes": "- Story Packs import v2 files: their storylines land in the drama library and run as dramas or standing situations.\n- Drama stage moves write story state for the lead (conditions on, then off; ending outcomes), as arcs do.",
@@ -867,12 +873,6 @@
           "version": "0.3.38",
           "date": "2026-10-13",
           "notes": "- Added: in a Creator's settings, \"Appearance for pictures\" has a new button, \"Use the card's image tags\". It shows only while the linked character or persona has the Image Appearance Override switched on and filled in, and it saves those tags as the Creator's own appearance. It asks first when that replaces an appearance you wrote. \"Use linked appearance\" (or \"Clear override\") removes it again. (#1366)",
-          "highlight": false
-        },
-        {
-          "version": "0.3.37",
-          "date": "2026-10-13",
-          "notes": "- With a Claude (Subscription) connection, Slurp no longer makes a hidden second request to name each session, and a request now stops with an error if Claude Code turns on claude.ai connectors. With a Marinara Engine release after 2.5.0, Claude Code also no longer adds your account email, the date or this computer's details to the prompt. Engine 2.5.0's Claude Code still adds them, and the server log warns about it until you update Marinara. (#1313)\n- Changed: avatar references are allowed for SpicyAPI edit models (model IDs ending in /edit) and still left out for its text-to-image models. Slurp's bundled image code cannot call SpicyAPI yet, so SpicyAPI pictures do not work in Slurp until it can. (#1337)",
           "highlight": false
         }
       ]

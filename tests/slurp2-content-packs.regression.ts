@@ -19,6 +19,7 @@ import {
   slurpBirthdayOccasion,
   slurpBirthdayOf,
   slurpOccasionBeat,
+  slurpFitPattern,
   slurpPackFits,
   slurpPackOccasions,
   type SlurpOccasion,
@@ -606,5 +607,22 @@ const copy =
     .filter(([key]) => key.startsWith("ui.slurp.packs.content"))
     .join(" ");
 assert.doesNotMatch(copy, /\b(simulat\w*|fake|AI|disclaimer|warning|consent|18\+)\b/u);
+
+// Fits are JSON word lists (PR 5): a word matches whole, `word*` its start, phrases and odd characters stay literal.
+assert.deepEqual(
+  JSON.parse(JSON.stringify(SLURP_CONTENT_PACK_LIBRARY)),
+  SLURP_CONTENT_PACK_LIBRARY,
+  "built-in packs are plain data",
+);
+const words = slurpFitPattern(["toy", "work out", "prüfung*", "c++"])!;
+assert.ok(words.test("My new TOY arrived") && words.test("time to work out") && words.test("Prüfungsphase"));
+assert.ok(!words.test("toyota") && !words.test("workout") && !words.test("cpp"));
+assert.ok(words.test("I write c++"));
+assert.equal(slurpFitPattern([]), undefined);
+const card = { text: "She studies at uni.", level: "explicit" as const, hardNoes: ["toys"] };
+assert.equal(slurpPackFits({ needs: ["uni"] }, card), true);
+assert.equal(slurpPackFits({ needs: ["college"] }, card), false);
+assert.equal(slurpPackFits({ hardNo: ["toys", "dildos"] }, card), false);
+assert.equal(slurpPackFits({ topic: ["gym"] }, { ...card, avoid: ["the gym"] }), false);
 
 console.log("slurp2 content packs: ok");

@@ -548,6 +548,20 @@ items (PR 8). Version: one patch bump.
 - **Not yet (PR 5):** occasions and built-in content packs as v2 with JSON `fit`, and one Packs list. The list waits
   for PR 5 because the built-ins then become v2 packs, so it needs only one way to switch a pack on or off.
 
+## PR 5a as built (2026-10-22, on slurpothon): JSON `fit` on every level
+
+- **One JSON gate.** `slpFitSchema` (`shared/src/slp/slp-drama.ts`): `level`, `hardNo`, `needs`, `topic`, as word
+  lists. A word matches whole, `word*` matches a word's start; phrases and odd characters stay literal, so an
+  imported pack cannot bring a regular expression. `slurpPackFits` checks it, and the built-in content packs use it.
+  The life-moment pool and the arc seed keep their code patterns until they become the _Everyday Life_ pack.
+- **Where it is checked (drama runtime).** A storyline's `fit` filters who may take the first role, so it never
+  starts on a Creator it does not fit; a stage that does not fit the lead is skipped like one nobody can be cast for;
+  an option that does not fit is not offered (the run keeps `offered`, the player's chip maps back to the real
+  option); a beat or deck moment is checked on its actor and dropped. A gated entry whose card text is not known
+  does not fit. The world reads card texts and hard noes only when a switched-on storyline has a `fit`.
+- **Not yet:** `fit` on storylines that run as arcs (they keep their arc type's fit); pack topics and taste weighting
+  come with 5b.
+
 ## Later: Basic and add-ons
 
 The player wants Slurp split into a basic part and add-ons that can be switched, so setup and

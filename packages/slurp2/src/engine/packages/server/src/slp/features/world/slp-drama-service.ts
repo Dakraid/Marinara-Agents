@@ -12,7 +12,10 @@ import { randomUUID } from "node:crypto";
 import { createSlurpMessagesStorage, createSlurpStorage } from "../../data/slp-storage.js";
 import { createSlurpEventsStorage } from "../../data/notifications/slp-notification-storage.js";
 import { createSlurpPopulationStorage } from "../../data/audience/slp-audience-storage-funnel.js";
-import { readSlurpSpice } from "../../data/creators/slp-spice-storage.js";
+import { readSlurpSpice, resolveSlurpCreatorSpice } from "../../data/creators/slp-spice-storage.js";
+import { readSlurpCreatorFitText } from "../../data/creators/slp-flavour-source.js";
+import { readSlurpCreatorSteering } from "../../data/creators/slp-steering-storage.js";
+import { slpStorylineGated } from "../../modules/world/events/slp-drama-cast.js";
 import { getSlurpPostGuidance } from "../../data/settings/slp-post-guidance-storage.js";
 import { selectSlurpExplicitLevel } from "../../modules/feed/slp-post-guidance.js";
 import { SLP_EXPLICIT_LEVELS, slpClampExplicitLevel } from "../../../../../shared/src/slp/slp-spice.js";
@@ -31,6 +34,7 @@ import {
   slpAnswerDramaChoice,
   slpDueDramaJobs,
   slpMarkDramaJob,
+  type SlpDramaCreator,
   type SlpDramaJob,
   type SlpDramaTieEffect,
   type SlpDramaWorld,
@@ -52,6 +56,8 @@ const pairKey = (kind: string, a: string, b: string) => `${kind}:${[a, b].sort()
 export async function loadDramaWorld(
   db: DB,
   at: Date,
+  /** Read card texts and hard noes, for `fit` gates. */
+  gated = false,
 ): Promise<SlpDramaWorld & { viewerOf: Map<string, string>; tieCreators: SlurpTieCreator[] }> {
   const storage = createSlurpStorage(db);
   const [tieCreators, accounts, spice, guidance, document, facts] = await Promise.all([
@@ -71,7 +77,7 @@ export async function loadDramaWorld(
         : [],
     ),
   );
-  const creators = tieCreators.map((creator) => ({
+  let creators: SlpDramaCreator[] = tieCreators.map((creator) => ({
     id: creator.id,
     name: creator.name,
     automatic: creator.automatic,
@@ -85,6 +91,23 @@ export async function loadDramaWorld(
     romance: creator.romance,
     storyTags: slurpStoryState({ facts, creatorId: creator.id, tieTags: slurpTieTags(document, creator.id), at }).tags,
   }));
+  if (gated)
+    creators = await Promise.all(
+      creators.map(async (creator) => {
+        const account = byId.get(creator.id);
+        if (!account) return creator;
+        const [fitText, spice, steering] = await Promise.all([
+          storage
+            .resolveAccountSource(account)
+            .then((source) => readSlurpCreatorFitText(db, { account, source }))
+            .catch(() => undefined),
+          resolveSlurpCreatorSpice(db, account).catch(() => undefined),
+          readSlurpCreatorSteering(db, account.id).catch(() => undefined),
+        ]);
+        if (fitText === undefined) return creator;
+        return { ...creator, fitText, hardNoes: spice?.hardNoes ?? [], avoid: steering?.avoid ?? [] };
+      }),
+    );
   const automatic = new Set(creators.filter((creator) => creator.automatic).map((creator) => creator.id));
   const relations = new Map<string, { playerId: string; relation: SlpRelationToPlayer }[]>();
   const relate = (creatorId: string, playerId: string, relation: SlpRelationToPlayer) =>
@@ -262,12 +285,14 @@ export async function advanceSlurpDrama(db: DB, at = new Date()): Promise<void> 
   if (idle && !stored.state.jobs.some((job) => job.status === "queued")) return;
   // The full world (every Creator's spice, card people, followers) only when the runtime moves.
   if (!stored.advancedAt || at.getTime() - Date.parse(stored.advancedAt) >= ADVANCE_EVERY_MS) {
-    const world = await loadDramaWorld(db, at);
+    const storylines = slpDramaStorylines(catalog);
+    const gated = [...storylines.dramas, ...storylines.situations].some(slpStorylineGated);
+    const world = await loadDramaWorld(db, at, gated);
     const effects = await mutateSlurpDramaState(db, ({ state }) => {
       const result = slpAdvanceDrama(state, {
         at,
         level: settings.drama.level,
-        ...slpDramaStorylines(catalog),
+        ...storylines,
         known: slpDramaStorylines(library).dramas,
         dials: settings.drama.dials,
         world,
