@@ -14,6 +14,7 @@ import type { SlpExplicitLevelName } from "../../../../../../shared/src/slp/slp-
 import type { SlurpBeatType } from "../../feed/slp-post-beat.js";
 import type { SlpStoryline } from "../../../../../../shared/src/slp/slp-storyline.js";
 import { SLURP_FAMILY_PACK } from "./slp-family-pack.js";
+import { SLURP_KINK_PACKS } from "./slp-kink-packs.js";
 
 export type SlurpPackLevel = Exclude<SlpExplicitLevelName, "none">;
 
@@ -482,6 +483,7 @@ export const SLURP_CONTENT_PACK_LIBRARY: readonly SlurpContentPack[] = [
     ],
   },
   SLURP_FAMILY_PACK,
+  ...SLURP_KINK_PACKS,
 ];
 
 /** The birthday moments: two days before, the day, and the day after. */

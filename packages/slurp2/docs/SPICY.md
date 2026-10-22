@@ -1,6 +1,6 @@
 # Spicy: more adult, more OnlyFans, more fun (concept, 2026-10-22)
 
-Status: concept for approval. Nothing here is built yet.
+Status: approved 2026-10-22. Built: item 8 (kink packs, 0.3.61).
 
 Slurp is an OnlyFans simulator. The player is a fan of AI Creators (DMs, tips, PPV, customs) and can run a
 page with fans of their own. This update makes both sides spicier and gives the player more reasons to come
@@ -142,6 +142,21 @@ who gets them (`slurpTasteWeight`, PR 5c). Topic switches per pack already exist
 
 **First version.** Five packs, each 2–3 storylines + a few occasions + looks.
 **Later.** More packs, user-shared packs.
+
+**PR 1 as built (0.3.61).** `modules/world/events/slp-kink-packs.ts`, five packs after Family in
+`SLURP_CONTENT_PACK_LIBRARY`, two storylines each, all `start: auto` with no track (they never block a body or
+love storyline):
+
+| Pack       | Storylines                                                                                                 | Gate                                            |
+| ---------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| Lingerie   | Lingerie week (fans vote black/red/white, finale spice 2); the lingerie brand (brand offer, earnings ×1.1) | suggestive; hard-no lingerie/underwear          |
+| Cosplay    | Fans pick the cosplay (elf/hero/maid, lewd version spice 2); con weekend (growth ×1.2)                     | suggestive; hard-no cosplay/costume             |
+| Feet       | The foot fans (earnings ×1.15, adds a "foot content" fact); heels or socks                                 | suggestive; hard-no feet/foot/toes              |
+| Dom/sub    | Her domme era (tribute earnings ×1.2, spice 2); her soft side (fans pick strict/gentle rules)              | suggestive; hard-no bdsm/dom/submissive/bondage |
+| Exhibition | Almost caught (growth ×1.3, spice 3); fan dares (balcony/changing room/beach)                              | nudity; hard-no public/outdoor/exhibition       |
+
+Endings add a locked look (the set, the costume, the leather) or a Creator fact. Occasions were left out: the
+storylines already post, and pack occasions can come with "More packs".
 
 ## Order (decided 2026-10-22)
 
