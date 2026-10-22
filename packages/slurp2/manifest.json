@@ -63,6 +63,8 @@
     },
     "assets": {
       "paths": [
+        "assets/mari/Mari_noodler_teaser_locked.webp",
+        "assets/mari/Mari_noodler_teaser_unlocked.webp",
         "src/engine/packages/client/src/slp/locales/de.json",
         "src/engine/packages/client/src/slp/locales/ko.json",
         "src/engine/packages/client/src/slp/locales/pl.json"
