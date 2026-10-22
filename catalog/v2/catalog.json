@@ -771,7 +771,7 @@
         },
         "id": "gacha-forge",
         "name": "Gacha Forge",
-        "version": "1.8.13",
+        "version": "1.8.15",
         "description": "A complete gacha game mode. Describe a world and Gacha Forge builds the rest: banners to pull on, a cast the model writes and paints for you, story chapters told by a visual-novel narrator, and the battles, gear and events that grow around them. Install it, restart Marinara Engine when prompted, then open Home → Gacha Forge.",
         "engine": {
           "min": "2.4.4",
@@ -1060,8 +1060,8 @@
           },
           {
             "path": "client.js",
-            "sha256": "9fd81235021e9ddb5d3708f8b78130b83cfe45555a63d244b85aa31578810bd6",
-            "bytes": 1440464
+            "sha256": "25a238726911cf168227aab78284ff9bde979e1d1f3b9cddfe0837516cad3e07",
+            "bytes": 1444583
           },
           {
             "path": "farm-asc.webp",
@@ -2293,9 +2293,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/gacha-forge.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/gacha-forge-1.8.13.zip",
-        "sha256": "aedf7cb6c12857f370f34d72f4555a71fa94f70f507b6d9df36607828b7cd622",
-        "bytes": 7843821
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/gacha-forge-1.8.15.zip",
+        "sha256": "2c4090174185365672bf84ab305ca1104ee2cbdb51933011edf1a970197fa292",
+        "bytes": 7847940
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents/blob/main/packages/gacha-forge/README.md"
     },
@@ -2564,7 +2564,7 @@
         },
         "id": "long-term-memory",
         "name": "Long-Term Memory",
-        "version": "1.4.82",
+        "version": "1.4.85",
         "description": "Remembers important things from your chat summaries, characters, and lorebooks, and brings them back when they matter. Enable it per chat from Chat Settings → Agents → Long-Term Memory. In Roleplay and Game, you can also add it from Chat Settings → Agents → Misc Agents.",
         "engine": {
           "min": "2.4.1",
@@ -2596,13 +2596,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "fe1656f64c5c4d5bfa57f618dfc1d1bcd970f9bec87d315d5b2bae591b7d0b12",
-            "bytes": 485710
+            "sha256": "2a5a6b5aec812eefa196012a2ac1452d87e0d9bdcee805a21ddbc07d0b9692b8",
+            "bytes": 488930
           },
           {
             "path": "client.js",
-            "sha256": "493e53ef791e7e1b212d338824819bde6782b4d808a151188619a416028d971e",
-            "bytes": 644731
+            "sha256": "fa44d9642e3d6fc7fc0d2a9b7df943962df7943fa093712968b4913bf3a306c9",
+            "bytes": 647334
           }
         ],
         "permissions": [
@@ -2618,9 +2618,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artwork/agent-covers/long-term-memory.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/long-term-memory-1.4.82.zip",
-        "sha256": "baaec3178d553a60595577926311d0369c228e7d509e75dc8c32a931a73b510a",
-        "bytes": 1132942
+        "url": "https://raw.githubusercontent.com/Pasta-Devs/Marinara-Agents/main/artifacts/long-term-memory-1.4.85.zip",
+        "sha256": "4b545c95c218489562a965f2b4d5526cfc6745146af2d7725ddd2e5437fb31c1",
+        "bytes": 1138765
       },
       "documentationUrl": "https://github.com/Pasta-Devs/Marinara-Agents#long-term-memory"
     },
