@@ -2,11 +2,10 @@
 
 ## 0.3.63 — 2026-10-22
 
-- Paid sexting sessions (docs/SPICY.md, item 2): a "Sext with me – 20 min" button in the thread header of an AI Creator's chat (`SlpSextingBar`). The price is three of her PPV pictures, 15% less from favourite (`slurpSextingPrice`, `modules/messages/slp-sexting.ts`). The session is claimed on the thread (`sexting` column) before it is paid through the tip path, so a second buy while one runs is refused and a failed payment drops the claim.
-- While a session runs she answers at once (`slurpReplyPacing` `sexting`), at her full level, and the DM prompt gets the phase: warm-up, heated, finish with an afterglow line (`slurpSextingGuidance`). In the heated phase her first picture is a PPV at her PPV price and full level, once per session (`markSextingPicture`).
-- For 30 minutes after the end, the header asks for a tip and opens the tip tool.
-- A Story opens in Slurp's own full-screen layer (`SlpStoryLayer`), not inside the Engine modal, so it has one close button, not two.
-- The Stir tab opens as a sheet over the page it was opened from (`SlpStirDeck`, `useSlpStirDeck`), not as its own page. Every Stir link opens it and any other move closes it; a Support chat opened from it goes back to the feed with Stir open. `SlpSheet` has a `base` mode, so the play, plan and Pulse sheets stack on top of it instead of closing it.
+- Paid sexting sessions (docs/SPICY.md, item 2): "Sext with me - 20 min" in an AI Creator's thread header (`SlpSextingBar`) costs three of her PPV pictures, 15% less from favourite. It is claimed on the thread before it is paid through the tip path.
+- During a session she answers at once at her full level, the prompt walks warm-up, heated, finish (`slurpSextingGuidance`), and the heated phase sends one PPV at her price (`markSextingPicture`). After it, the header asks for a tip.
+- A Story opens in Slurp's own layer (`SlpStoryLayer`), not the Engine modal, so it has one close button.
+- Stir opens as a sheet over the current page (`SlpStirDeck`). `SlpSheet` `base` mode lets its play, plan and Pulse sheets stack on top.
 
 ## 0.3.62 — 2026-10-22
 
