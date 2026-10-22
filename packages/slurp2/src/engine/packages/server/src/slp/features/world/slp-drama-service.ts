@@ -250,7 +250,8 @@ export async function advanceSlurpDrama(db: DB, at = new Date()): Promise<void> 
   const settings = await storage.getSettings();
   // "Pause all": no drama moves while Slurp is paused. Storylines off holds it the same way.
   if (settings.paused || !slpExtensionOn(settings, "storylines")) return;
-  const catalog = slpEnabledDrama(slpDramaCatalog(await readSlurpDramaLibrary(db)), settings.drama.enabled);
+  const library = slpDramaCatalog(await readSlurpDramaLibrary(db));
+  const catalog = slpEnabledDrama(library, settings.drama.enabled);
   const stored = await readSlurpDramaState(db);
   const idle =
     !catalog.dramas.length &&
@@ -267,6 +268,7 @@ export async function advanceSlurpDrama(db: DB, at = new Date()): Promise<void> 
         at,
         level: settings.drama.level,
         ...slpDramaStorylines(catalog),
+        known: slpDramaStorylines(library).dramas,
         dials: settings.drama.dials,
         world,
         activity: slurpWorldActivityMultiplier(settings.worldActivity),

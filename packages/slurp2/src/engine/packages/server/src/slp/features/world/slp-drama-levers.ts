@@ -14,11 +14,11 @@ import { slpDramaCatalog, slpDramaStorylines, slpEnabledDrama } from "../../modu
 import { slpDramaLeadFits } from "../../modules/world/events/slp-drama-cast.js";
 import {
   slpDramaId,
+  slpDramaStopOutcomes,
   slpEndDramaRun,
   slpRequestDrama,
   type SlpDramaRun,
 } from "../../modules/world/events/slp-drama-runtime.js";
-import { slurpStageOutcomes } from "../../modules/projects/slp-project-storyline.js";
 import type { SlpActionParsed, SlpStirWorld } from "../../../../../shared/src/slp/slp-actions.js";
 import type { SlpActionPreview } from "../../../../../shared/src/slp/slp-stir.js";
 import { advanceSlurpDrama, loadDramaWorld } from "./slp-drama-service.js";
@@ -159,15 +159,13 @@ async function leaveDramaStage(db: DB, run: SlpDramaRun, at: Date) {
     (entry) => slpDramaId(entry) === run.dramaId,
   );
   const creatorId = storyline && run.cast[storyline.cast[0]!.key];
-  const outcomes = storyline
-    ? slurpStageOutcomes(storyline, { leave: run.stage || null, enter: null, ending: null })
-    : [];
+  const outcomes = storyline ? slpDramaStopOutcomes(storyline, run.stage) : [];
   if (creatorId && outcomes.length)
     await createSlurpStorage(db).applyStoryOutcomes({
       outcomes,
       participants: [creatorId],
       sourceKind: "drama",
-      sourceId: `${run.id}:${run.stage}`,
+      sourceId: `${run.id}:${run.stage}:off`,
       at,
     });
 }

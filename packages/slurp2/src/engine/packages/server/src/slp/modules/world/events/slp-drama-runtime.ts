@@ -187,6 +187,8 @@ export type SlpDramaInput = {
   /** Only the switched-on entries (`slpEnabledDrama`), as storylines (`slpDramaStorylines`). */
   situations: readonly SlpStoryline[];
   dramas: readonly SlpStoryline[];
+  /** Every drama in the library, switched on or off: a run whose drama went off still takes its condition away. */
+  known?: readonly SlpStoryline[];
   dials: Readonly<Record<string, Readonly<Record<string, string>>>>;
   world: SlpDramaWorld;
   /** World activity; 0 starts nothing new (running dramas still move and end). */
@@ -200,6 +202,12 @@ const iso = (ms: number) => new Date(ms).toISOString();
 /** The id runs, cooldowns and settings use: a converted v1 entry keeps its own id. */
 export const slpDramaId = (storyline: Pick<SlpStoryline, "id" | "source">): string =>
   storyline.source?.id ?? storyline.id;
+
+/** A run stopped from outside (switched off, Stir) only takes its stage's condition away; the stage's own outcomes never ran. */
+export const slpDramaStopOutcomes = (storyline: SlpStoryline, stage: string): SlpStoryOutcome[] => {
+  const tag = storyline.stages.find((entry) => entry.key === stage)?.condition?.tag;
+  return tag ? [{ kind: "remove-creator-fact", tag }] : [];
+};
 // ─── Jobs ───────────────────────────────────────────────────────────────────────────────────────
 
 function job(
@@ -255,6 +263,7 @@ export function slpAdvanceDrama(
   const stamp = iso(now);
   const live = new Map(input.world.creators.map((creator) => [creator.id, creator]));
   const dramas = new Map(input.dramas.map((drama) => [slpDramaId(drama), drama]));
+  const known = new Map((input.known ?? []).map((drama) => [slpDramaId(drama), drama]));
   const situations = new Map(input.situations.map((situation) => [slpDramaId(situation), situation]));
   const situationKey = new Map(input.situations.map((situation) => [situation.id, slpDramaId(situation)]));
   /** The situation a drama stands in, by its run id; `start.within` names the storyline. */
@@ -290,7 +299,7 @@ export function slpAdvanceDrama(
       ending: move.ending ?? null,
     });
     if (creatorId && outcomes.length)
-      story.push({ creatorId, sourceId: `${run.id}:${move.enter ?? move.ending ?? move.leave}`, outcomes });
+      story.push({ creatorId, sourceId: `${run.id}:${move.enter ?? move.ending ?? `${move.leave}:leave`}`, outcomes });
   };
   let jobs = [...state.jobs];
   const ended = { ...state.ended };
@@ -493,7 +502,13 @@ export function slpAdvanceDrama(
   runs = runs.map((run) => {
     if (!active(run)) return run;
     const drama = dramas.get(run.dramaId);
-    if (!drama) return end(run, "off", undefined);
+    if (!drama) {
+      const off = known.get(run.dramaId);
+      const creatorId = off && run.cast[off.cast[0]!.key];
+      const outcomes = off ? slpDramaStopOutcomes(off, run.stage) : [];
+      if (creatorId && outcomes.length) story.push({ creatorId, sourceId: `${run.id}:${run.stage}:off`, outcomes });
+      return end(run, "off", undefined);
+    }
     const lead = drama.cast[0]!.key;
     const gone = run.cast[lead] && !live.has(run.cast[lead]!);
     if (gone || now - Date.parse(run.startedAt) >= drama.maxDays * DAY) {

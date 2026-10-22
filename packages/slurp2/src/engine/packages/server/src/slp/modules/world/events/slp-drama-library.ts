@@ -84,13 +84,16 @@ export function slpDramaCatalog(library: SlpDramaLibrary): SlpDramaCatalog {
 export function slpEnabledDrama(catalog: SlpDramaCatalog, enabled: readonly string[]): SlpDramaCatalog {
   const on = new Set(enabled);
   const situations = catalog.situations.filter((entry) => on.has(entry.id));
-  const standing = new Set(situations.map((entry) => entry.id));
+  const storylines = catalog.storylines.filter((entry) => on.has(entry.id));
+  const standing = new Set([...situations, ...storylines.filter(slpStorylineStands)].map((entry) => entry.id));
   return {
     situations,
     dramas: catalog.dramas.filter(
       (entry) => on.has(entry.id) && (!entry.requires || standing.has(entry.requires.situation)),
     ),
-    storylines: catalog.storylines.filter((entry) => on.has(entry.id)),
+    storylines: storylines.filter(
+      (entry) => !entry.start.within || standing.has(entry.start.within.replace(/^situation:/, "")),
+    ),
   };
 }
 
@@ -132,9 +135,12 @@ export function slpDramaPreviewStatus(
 ): SlpDramaPreviewStatus {
   const list: readonly { id: string; packId: string }[] =
     kind === "situation" ? library.situations : kind === "drama" ? library.dramas : library.storylines;
-  const builtin = (kind === "situation" ? SLURP_BUILTIN_SITUATIONS : kind === "drama" ? SLURP_BUILTIN_DRAMAS : []).some(
-    (entry) => entry.id === id,
-  );
+  // Runs, cooldowns and the enabled list share one id space, so a v2 storyline may not take a v1 or built-in id.
+  const others =
+    kind === "storyline"
+      ? [...SLURP_BUILTIN_SITUATIONS, ...SLURP_BUILTIN_DRAMAS, ...library.situations, ...library.dramas]
+      : [...(kind === "situation" ? SLURP_BUILTIN_SITUATIONS : SLURP_BUILTIN_DRAMAS), ...library.storylines];
+  const builtin = others.some((entry) => entry.id === id);
   const installed = list.find((entry) => entry.id === id);
   if (builtin || (installed && installed.packId !== packId)) return "conflict";
   return installed ? "update" : "new";
@@ -159,7 +165,14 @@ export function applySlpDramaEntries(
   for (const entry of entries) {
     if (slpDramaPreviewStatus(next, packId, entry.kind, entry.value.id) === "conflict") continue;
     // Imported entries arrive switched off in the catalog; `enabled` is the player's setting, not the pack's.
-    const stored = { ...entry.value, enabled: false, builtin: false, packId };
+    // `source` marks the Engine's own converted v1 entries; an imported storyline keeps only its own id.
+    const stored = {
+      ...entry.value,
+      ...(entry.kind === "storyline" ? { source: undefined } : {}),
+      enabled: false,
+      builtin: false,
+      packId,
+    };
     if (entry.kind === "situation")
       next.situations = [
         ...next.situations.filter((item) => item.id !== entry.value.id),
