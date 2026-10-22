@@ -82,8 +82,8 @@
     },
     {
       "path": "client.js",
-      "sha256": "91ebec9cc9f07895dd781ea3fe243de714c3cea0820e26148dc55258af1b9bc5",
-      "bytes": 2834497
+      "sha256": "7f89e66392d26c4332bb29beb2785b4ac7dce11294039e24bb571097fc0b9d99",
+      "bytes": 2834629
     },
     {
       "path": "slurp2-logo.png",
@@ -94,6 +94,21 @@
       "path": "slurp2agent.png",
       "sha256": "47805313b5ec8dbc608fec82c4d51f1f82020afe4f286a04919b59cc8ef06f37",
       "bytes": 120424
+    },
+    {
+      "path": "assets/mari/chibi-professor-mari.webp",
+      "sha256": "bdbf38adb40e9e128754d2103a0b9bc9d887c33273640dc47a8c6f5cffdba0f3",
+      "bytes": 38982
+    },
+    {
+      "path": "assets/mari/Mari_noodler_teaser_locked.webp",
+      "sha256": "e587f1fd0e9a8ba842af1f2ce8d1a1f84c0960a7737313d6081819a4a89a69da",
+      "bytes": 13598
+    },
+    {
+      "path": "assets/mari/Mari_noodler_teaser_unlocked.webp",
+      "sha256": "6349a29529b7597f16bba9ac3c83480c9b0e6c1b286c8dcdcdc7653e05e29eaf",
+      "bytes": 59402
     },
     {
       "path": "src/engine/packages/client/src/slp/locales/de.json",
