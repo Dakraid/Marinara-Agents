@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { Avatar, SLP_BAR_GLASS_CLASS } from "../../base/chrome/SlpChrome";
 import { SlpHeartGlyph } from "../../base/chrome/SlpGlyphs";
-import { SlurpRapportBadge, SlurpTierLadder } from "./SlpMessageInsights";
+import { SlurpRapportBadge, SlurpTierDoors, SlurpTierLadder } from "./SlpMessageInsights";
 import { showConfirmDialog } from "../../../lib/app-dialogs";
 import { SlpButton, SlpPrimaryButton } from "../../modules/chrome/SlpButton";
 import { SlpSheet, SlpSheetGroup, SlpSheetItem } from "../../modules/chrome/SlpSheet";
@@ -291,6 +291,7 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
               )}
             </p>
             <SlurpTierLadder tier={thread.rapport.tier} className="mt-4" />
+            {!ownsCreator && <SlurpTierDoors tier={thread.rapport.peak ?? thread.rapport.tier} />}
           </div>
         )}
       </SlpSheet>

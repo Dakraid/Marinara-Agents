@@ -3885,5 +3885,11 @@
   "ui.slurp.extrasOffer.notNow": "나중에",
   "ui.slurp.extrasOffer.error": "처리하지 못했어요. 다시 시도해 주세요.",
   "ui.slurp.stir.off": "Stir와 Support 데스크가 꺼져 있어요",
-  "ui.slurp.stir.offDetail": "백스테이지 › Stir에서 하나를 켜세요."
+  "ui.slurp.stir.offDetail": "백스테이지 › Stir에서 하나를 켜세요.",
+  "ui.slurp.rapport.door.customDiscount": "커스텀 15% 할인",
+  "ui.slurp.rapport.door.fullSpice": "무료 사진도 아낌없이",
+  "ui.slurp.rapport.door.gifts": "가끔 아찔한 사진을 무료로",
+  "ui.slurp.rapport.door.spicierTalk": "구독 없이도 더 아찔한 대화",
+  "ui.slurp.rapport.doorsNone": "아직 추가 혜택이 없어요. 대화하고, 팁을 주고, 구독해서 더 열어 보세요.",
+  "ui.slurp.rapport.doorsTitle": "나에게 열린 것"
 }

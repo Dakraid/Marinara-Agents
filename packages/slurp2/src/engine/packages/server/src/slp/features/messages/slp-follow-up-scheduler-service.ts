@@ -25,6 +25,7 @@ import { trySlpOperation } from "../../base/locking/slp-operation-lock.js";
 import { tryCreatorAccountOperation } from "../../base/locking/slp-account-operation-lock.js";
 import { incrementFollowUpCount } from "../../modules/messages/slp-thread-notes.js";
 import { slurpCreatorInScene } from "./scenes/slp-roleplay-scene-lock.js";
+import { slurpRapportDoorTier } from "../../modules/messages/slp-rapport.js";
 import { saveSlurpMessageDeepDetails } from "../../data/messages/slp-message-deep-details-storage.js";
 
 const INITIAL_DELAY_MS = 60_000; // Start after 1 minute
@@ -270,6 +271,10 @@ export function startSlurpFollowUpScheduler(app: FastifyInstance, registerStop?:
               if (!stored) {
                 await messages.cancelScheduledFollowUp(threadRow.id, followUp.id);
                 return false;
+              }
+              // Its prompt carried any step-up line, as a normal reply's does.
+              if (slurpRapportDoorTier(thread.rapport) !== thread.rapport.said) {
+                await messages.markRapportSaid(threadRow.id, slurpRapportDoorTier(thread.rapport));
               }
               if (reply.deepDetails)
                 await saveSlurpMessageDeepDetails(app.db, {

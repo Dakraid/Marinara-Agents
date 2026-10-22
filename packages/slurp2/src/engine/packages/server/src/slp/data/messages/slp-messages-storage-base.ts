@@ -1,3 +1,4 @@
+import { slurpCommissionPricingFor } from "../../modules/economy/slp-creator-pricing.js";
 import { slpOverrideRapport } from "../../../../../shared/src/slp/slp-message-details.js";
 // ──────────────────────────────────────────────
 // Storage: Slurp direct messages
@@ -57,6 +58,7 @@ import {
 import {
   emptySlurpRapportFacts,
   scoreSlurpRapport,
+  slurpRapportKeepPeak,
   type SlurpRapport,
   type SlurpRapportFacts,
 } from "../../modules/messages/slp-rapport.js";
@@ -421,6 +423,29 @@ export function createMessagesStorageBase(context: SlurpMessagesContext) {
      * Computed rather than incremented: a counter that drifts is a counter nobody can debug, and
      * the inputs are all small reads the send path already pays for.
      */
+    /** She said the step-up her reply prompt asked for (rapport ladder). Reads the raw row: no detail overrides baked in. */
+    async markRapportSaid(threadId: string, said: SlurpRapport["tier"]): Promise<void> {
+      const rows = await db.select().from(slurpThreads).where(eq(slurpThreads.id, threadId));
+      const stored = json(rows[0]?.rapport as string);
+      if (!rows[0] || stored.said === said) return;
+      await db
+        .update(slurpThreads)
+        .set({ rapport: JSON.stringify({ ...stored, said }) })
+        .where(eq(slurpThreads.id, threadId));
+    },
+    /** The Creator's commission pricing for one fan: a favourite's customs cost less (rapport ladder). */
+    async commissionPricingFor({
+      viewerAccountId,
+      creatorAccountId,
+    }: {
+      viewerAccountId: string;
+      creatorAccountId: string;
+    }) {
+      return slurpCommissionPricingFor(
+        await context.storage.getCreatorMessaging(creatorAccountId),
+        await context.storage.rapportFor(viewerAccountId, creatorAccountId),
+      );
+    },
     async rapportFor(viewerAccountId: string, creatorAccountId: string): Promise<SlurpRapport> {
       const messaging = await context.storage.getCreatorMessaging(creatorAccountId);
       const facts = await context.storage.rapportFactsFor(viewerAccountId, creatorAccountId);
@@ -445,7 +470,10 @@ export function createMessagesStorageBase(context: SlurpMessagesContext) {
           : {}),
       });
       const thread = await context.storage.getThread(viewerAccountId, creatorAccountId);
-      return thread ? slpOverrideRapport(computed, await context.storage.getDetailsOverrides(thread.id)) : computed;
+      return slurpRapportKeepPeak(
+        thread ? slpOverrideRapport(computed, await context.storage.getDetailsOverrides(thread.id)) : computed,
+        thread?.rapport,
+      );
     },
     /**
      * The facts behind one pair's rapport.

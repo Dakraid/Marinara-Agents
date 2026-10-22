@@ -117,6 +117,34 @@ export function SlurpTierLadder({ tier, className }: { tier: SlurpRapport["tier"
   );
 }
 
+// What each tier opens; mirrors `slurpRapportDoors` (server modules/messages/slp-rapport.ts).
+const SLURP_TIER_DOORS: Partial<Record<SlurpRapport["tier"], string[]>> = {
+  regular: ["spicierTalk"],
+  favourite: ["gifts", "customDiscount"],
+  whale: ["fullSpice"],
+};
+
+/** The doors the highest reached tier has opened (rapport ladder). */
+export function SlurpTierDoors({ tier }: { tier: SlurpRapport["tier"] }) {
+  const { t: localizeUi } = useUiTranslation();
+  const at = SLURP_TIERS.indexOf(tier);
+  const doors = SLURP_TIERS.slice(0, at + 1).flatMap((step) => SLURP_TIER_DOORS[step] ?? []);
+  return (
+    <div className="mt-4">
+      <p className="text-xs font-bold text-[var(--muted-foreground)]">{localizeUi("ui.slurp.rapport.doorsTitle")}</p>
+      {doors.length === 0 ? (
+        <p className="mt-1 text-sm text-[var(--muted-foreground)]">{localizeUi("ui.slurp.rapport.doorsNone")}</p>
+      ) : (
+        <ul className="mt-1 space-y-1 text-sm">
+          {doors.map((door) => (
+            <li key={door}>✓ {localizeUi(`ui.slurp.rapport.door.${door}`)}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 const ESCALATION_BLOCK_TEXT: Record<
   Exclude<NonNullable<NonNullable<SlurpFanRelationship["escalation"]>["blockedBy"]>, "top">,
   string

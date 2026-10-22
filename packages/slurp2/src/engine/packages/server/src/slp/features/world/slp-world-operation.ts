@@ -501,7 +501,7 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
       for (const commission of await messages.listAutomatedBriefCommissions()) {
         await yieldToEngine();
         automatedCreatorIds.add(commission.creatorAccountId);
-        const pricing = await messages.getCreatorMessaging(commission.creatorAccountId);
+        const pricing = await messages.commissionPricingFor(commission);
         await messages
           .quoteCommission(commission.id, slurpCommissionQuote(commission.brief, pricing))
           .catch(() => null);
@@ -509,7 +509,7 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
       // A persona Creator can let its own pricing answer the audience instead of quoting each brief.
       for (const commission of await messages.listAudienceBriefCommissions()) {
         await yieldToEngine();
-        const pricing = await messages.getCreatorMessaging(commission.creatorAccountId);
+        const pricing = await messages.commissionPricingFor(commission);
         if (!pricing.autoQuote) continue;
         await messages
           .quoteCommission(commission.id, slurpCommissionQuote(commission.brief, pricing))
@@ -546,7 +546,7 @@ export async function advanceSlurpWorld(db: DB, until = new Date()): Promise<Slu
         if (answer.kind === "counter") {
           const countered = await messages.counterCommission(commission.id, answer.price).catch(() => null);
           if (countered && automatedCreatorIds.has(commission.creatorAccountId)) {
-            const pricing = await messages.getCreatorMessaging(commission.creatorAccountId);
+            const pricing = await messages.commissionPricingFor(commission);
             await messages.answerCommissionCounter(commission.id, pricing.commissionMin).catch(() => null);
           }
           continue;

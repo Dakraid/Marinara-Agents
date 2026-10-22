@@ -3107,5 +3107,11 @@
   "ui.slurp.extrasOffer.notNow": "Nie teraz",
   "ui.slurp.extrasOffer.error": "Nie udało się. Spróbuj ponownie.",
   "ui.slurp.stir.off": "Stir i Biuro Support są wyłączone",
-  "ui.slurp.stir.offDetail": "Włącz jedno z nich w Backstage › Stir."
+  "ui.slurp.stir.offDetail": "Włącz jedno z nich w Backstage › Stir.",
+  "ui.slurp.rapport.door.customDiscount": "Customy o 15% taniej",
+  "ui.slurp.rapport.door.fullSpice": "Darmowe zdjęcia bez hamulców",
+  "ui.slurp.rapport.door.gifts": "Od czasu do czasu pikantne zdjęcie za darmo",
+  "ui.slurp.rapport.door.spicierTalk": "Pikantniejsze czaty, nawet bez subskrypcji",
+  "ui.slurp.rapport.doorsNone": "Na razie nic więcej. Pisz, dawaj napiwki i subskrybuj, aby otworzyć więcej.",
+  "ui.slurp.rapport.doorsTitle": "Otwarte dla ciebie"
 }

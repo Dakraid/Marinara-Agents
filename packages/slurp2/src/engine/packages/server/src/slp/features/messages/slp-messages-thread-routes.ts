@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { logger } from "../../../lib/logger.js";
-import { type SlurpCommissionPricing, slurpCommissionQuote } from "../../modules/economy/slp-creator-pricing.js";
+import {
+  type SlurpCommissionPricing,
+  slurpCommissionPricingFor,
+  slurpCommissionQuote,
+} from "../../modules/economy/slp-creator-pricing.js";
 import { selectSlurpAttentionCommissions } from "./slp-inbox-attention.js";
 import { activeSlurpStrikes, slurpDmPictureVerdict } from "../../modules/world/slp-stance.js";
 import { slurpAdultRiseBlock, slurpCreatorStateMediaBlock } from "../../modules/creators/slp-creator-state.js";
@@ -304,7 +308,7 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
       messaging: await messages.getCreatorMessaging(thread.creatorAccountId),
       commissions: withSuggestedQuotes(
         await messages.listCommissionsForThread(thread.id),
-        await messages.getCreatorMessaging(thread.creatorAccountId),
+        slurpCommissionPricingFor(await messages.getCreatorMessaging(thread.creatorAccountId), thread.rapport),
       ),
       relationship: await relationshipFor(thread, creator, side, presence.creatorAvailability),
       // Roleplay scenes (docs/SCENES.md): the player's own thread with an Engine character's page.

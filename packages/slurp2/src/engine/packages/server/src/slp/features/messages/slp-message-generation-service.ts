@@ -48,7 +48,7 @@ import {
   resolveSlurpCreatorAvailability,
   type SlurpCreatorAvailability,
 } from "../../modules/creators/slp-creator-schedule-context.js";
-import { describeSlurpRapport, type SlurpRapport } from "../../modules/messages/slp-rapport.js";
+import { describeSlurpRapportForDm, slurpRapportOpens, type SlurpRapport } from "../../modules/messages/slp-rapport.js";
 import { slurpModifierLines } from "../../modules/creators/slp-creator-state.js";
 import { type SlurpStance } from "../../modules/world/slp-stance.js";
 import { resolveSlurpThreadStance } from "./slp-thread-stance.js";
@@ -374,7 +374,7 @@ export function buildSlurpMessageChat(input: {
         : {}),
       ...(input.fanMemory ? { memory: input.fanMemory } : {}),
     },
-    relationship: support ? undefined : describeSlurpRapport(input.rapport, parties.viewer.name),
+    relationship: support ? undefined : describeSlurpRapportForDm(input.rapport, parties.viewer.name),
     ...(support && input.supportDesk ? { slurpStanding: input.supportDesk } : {}),
     ...(known
       ? {
@@ -611,7 +611,7 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
     commissionPrices: supportThread
       ? undefined
       : await createSlurpMessagesStorage(input.db)
-          .getCreatorMessaging(input.creator.id)
+          .commissionPricingFor({ viewerAccountId: input.viewer.id, creatorAccountId: input.creator.id })
           .then((pricing) => slurpCommissionPriceRange(pricing))
           .catch(() => undefined),
     platformEvents: await resolveSlurpEventInstruction(input.db, input.creator.id, new Date()),
@@ -645,7 +645,7 @@ export async function buildSlurpMessagePrompt(input: SlurpMessagePromptInput): P
       // How far the chat goes: subscribers get the Creator's level, others the tease. The player's
       // own taste only reaches a chat with the player.
       chat: {
-        subscribed: input.subscribed,
+        subscribed: input.subscribed || slurpRapportOpens(input.rapport, "spicierTalk"),
         player: input.viewer.kind === "persona" && !fanVoice,
         seed: `${input.creator.id}:${input.viewer.id}`,
         with: input.viewer.id === SLURP_SUPPORT_ACCOUNT_ID ? "staff" : viewerPage ? "peer" : "fan",

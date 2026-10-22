@@ -1,6 +1,6 @@
 # Spicy: more adult, more OnlyFans, more fun (concept, 2026-10-22)
 
-Status: approved 2026-10-22. Built: item 8 (kink packs, 0.3.61).
+Status: approved 2026-10-22. Built: item 8 (kink packs, 0.3.61), item 1 (intimacy ladder, 0.3.62).
 
 Slurp is an OnlyFans simulator. The player is a fan of AI Creators (DMs, tips, PPV, customs) and can run a
 page with fans of their own. This update makes both sides spicier and gives the player more reasons to come
@@ -38,6 +38,23 @@ already reads `rapportTier`).
 **First version.** Highest-tier memory, the table above in DM spice and offers, the step-up line, the opened
 doors listed in Details.
 **Later.** Per-Creator choices of what each tier opens.
+
+**PR 2 as built (0.3.62).** `slurpRapportDoors(tier)` in `modules/messages/slp-rapport.ts`; `peak` (highest tier
+reached) and `said` (highest tier she announced) ride in the thread's stored rapport JSON. `rapportFor` keeps the
+peak through every fresh score (`slurpRapportKeepPeak`; a pair from before the ladder starts at its stored tier),
+and a generated DM reply stores `said` (`markRapportSaid`, from the rapport its prompt read). Doors, all inside her spice level:
+
+| Door           | From      | Where                                                                                     |
+| -------------- | --------- | ----------------------------------------------------------------------------------------- |
+| spicierTalk    | regular   | DM flavour at her full level without a subscription (`slp-message-generation-service.ts`) |
+| gifts          | favourite | 1 in 4 spicy friendly chat pictures is free (`resolveSlurpMediaOffer` `gift`)             |
+| customDiscount | favourite | customs 15% cheaper: quotes, prompt range, counter floor (`commissionPricingFor`)         |
+| fullSpice      | whale     | free chat pictures at her full level (`slp-message-operation.ts`)                         |
+
+The step-up line is a prompt instruction ("Sam just became one of your favourite fans: tell them once"), not a
+canned message, and only the DM reply prompt carries it (`describeSlurpRapportForDm`). Partners get the doors of their tier but no step-up line: a relationship names
+itself. Sessions ("whale: she starts
+sessions") come with item 2. Not built: per-Creator choices of what each tier opens.
 
 ## 2. Paid sexting sessions
 
