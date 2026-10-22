@@ -316,7 +316,10 @@ assert.ok(!client.includes(`{version:"${bundleVersion}"`), "no older in-game ent
 const pinned = client.match(
   /oy=\[\{version:null,fixed:\[(?:"(?:[^"\\]|\\.)*",?)+\]\},\{version:"(\d+\.\d+\.\d+)",/u,
 )?.[1];
-assert.ok(released.indexOf(pinned) > released.indexOf(upstreamRelease), "the previous in-game entry is pinned to an earlier release");
+assert.ok(
+  released.indexOf(pinned) > released.indexOf(upstreamRelease),
+  "the previous in-game entry is pinned to an earlier release",
+);
 
 // client.js and server.mjs are each the last bundle contributed from the package source plus the hand
 // edits made here since, recorded per file in bundle-patches.json, so the bytes the manifest certifies can
