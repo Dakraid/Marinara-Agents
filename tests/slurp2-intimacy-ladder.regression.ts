@@ -117,6 +117,11 @@ assert.match(
   operation,
   /appendReplyBatch[\s\S]{0,400}if \(!stored\) return \{ status: "ineligible" \} as const;\n\s*\/\/ Its prompt carried any step-up line[^\n]*\n\s*if \(slurpRapportDoorTier\(thread\.rapport\) !== thread\.rapport\.said\) \{\n\s*await messagesStore\.markRapportSaid\(thread\.id, slurpRapportDoorTier\(thread\.rapport\)\)/,
 );
+assert.match(
+  server("features/messages/slp-follow-up-scheduler-service.ts"),
+  /if \(!stored\) \{[\s\S]{0,400}markRapportSaid\(threadRow\.id, slurpRapportDoorTier\(thread\.rapport\)\)/,
+  "a follow-up's step-up is marked said too",
+);
 assert.match(operation, /const gift =\s*reply\.imageMode !== "hostile" &&/, "no gift level for a hostile picture");
 assert.match(operation, /slurpRapportDoorTier\(thread\.rapport\) !== "whale"/, "a past whale keeps free post previews");
 assert.match(operation, /partner \|\| gift \|\| doors\.includes\("fullSpice"\)/);
