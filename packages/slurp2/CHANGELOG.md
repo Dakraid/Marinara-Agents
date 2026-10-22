@@ -1,5 +1,11 @@
 # Slurp release notes
 
+## 0.3.57 — 2026-10-22
+
+- One JSON `fit` (level, hard noes, needed words, topic words) on storylines, stages, choice options and beats; the
+  built-in content packs use it instead of code patterns.
+- The drama runtime checks it: the lead pick, skipped stages, options not offered, dropped moments.
+
 ## 0.3.56 — 2026-10-22
 
 - Story Packs import v2 files: their storylines land in the drama library and run as dramas or standing situations.

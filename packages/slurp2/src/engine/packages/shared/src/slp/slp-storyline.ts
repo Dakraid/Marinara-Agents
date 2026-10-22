@@ -7,6 +7,7 @@
 import { z } from "zod";
 import {
   checkSlpDramaRoles,
+  slpFitSchema,
   slpDramaBeatRoles,
   slpDramaBeatSchema,
   slpDramaChoiceSchema,
@@ -97,6 +98,8 @@ export const slpStorylineStageSchema = z
     /** How long it runs. None: it stands until a choice moves it, or for good. */
     days: z.tuple([z.number().int().min(0).max(365), z.number().int().min(0).max(365)]).optional(),
     minSpice: z.number().int().min(0).max(3).optional(),
+    /** A stage that does not fit the lead is skipped, like one nobody can be cast for. */
+    fit: slpFitSchema.optional(),
     condition: stageConditionSchema.optional(),
     influences: z.array(slpInfluenceDraftSchema).max(16).default([]),
     /** Planned: drawn once while the stage runs. */
@@ -108,7 +111,9 @@ export const slpStorylineStageSchema = z
         // An arc's fans' question may be as long as the poll allows.
         question: z.string().trim().min(1).max(240),
         options: z
-          .array(z.object({ label: z.string().trim().min(1).max(120), next: target }).strict())
+          .array(
+            z.object({ label: z.string().trim().min(1).max(120), next: target, fit: slpFitSchema.optional() }).strict(),
+          )
           .min(2)
           .max(4),
       })
@@ -158,6 +163,8 @@ export const slpStorylineObjectSchema = z
     tone: z.string().trim().max(80).default(""),
     tags,
     storyTags: tags,
+    /** A storyline that does not fit the lead never starts. */
+    fit: slpFitSchema.optional(),
     /** 1 to 5 roles; one role is a solo story. */
     cast: z.array(slpDramaRoleSchema).min(1).max(5),
     requires: slpStoryRequiresSchema.default({}),

@@ -117,7 +117,7 @@ export async function previewSlurpDramaLever(
   const { state } = await readSlurpDramaState(db);
   if (state.runs.some((run) => run.dramaId === dramaId && !run.endedAt))
     return result({ error: "busy", summary: `${drama.name} is already running.` });
-  const world = leadId ? await loadDramaWorld(db, at) : null;
+  const world = leadId ? await loadDramaWorld(db, at, true) : null;
   const lead = world?.creators.find((creator) => creator.id === leadId);
   const storyline = drama.storyline;
   if (!storyline) return result({ error: "off", summary: BROKEN });

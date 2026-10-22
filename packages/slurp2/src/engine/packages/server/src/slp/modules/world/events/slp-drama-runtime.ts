@@ -30,7 +30,7 @@ import {
   type SlpStorylineEnding,
   type SlpStorylineOutcome,
 } from "../../../../../../shared/src/slp/slp-storyline.js";
-import { couplePairs, meets, slpDramaCast, stageRoles, tieOutcomes } from "./slp-drama-cast.js";
+import { couplePairs, meets, slpDramaCast, slpFitsCreator, stageRoles, tieOutcomes } from "./slp-drama-cast.js";
 import { slurpStageOutcomes } from "../../projects/slp-project-storyline.js";
 import type { SlpStoryOutcome } from "../../../../../../shared/src/slp/slp-story-engine.js";
 
@@ -62,6 +62,9 @@ export type SlpDramaCreator = {
   romance?: { off: boolean; only: string[] };
   /** What is true for them now (story state and ties), for `requires`, `lacks` and `when`. */
   storyTags?: readonly string[];
+  /** Card text and hard noes for `fit` gates; filled only when a switched-on storyline has one. */
+  fitText?: string;
+  hardNoes?: readonly string[];
 };
 
 /** What the ties say, as the runtime needs it. */
@@ -117,6 +120,8 @@ export type SlpDramaRun = {
     /** Who is asked, and how many answers there are: an answer is checked against these. */
     asks?: "fans" | "player" | "role";
     count?: number;
+    /** The options that fit the lead, when some do not: the player's answer is an index into these. */
+    offered?: number[];
   } | null;
   log: SlpDramaLog[];
 };
@@ -329,6 +334,7 @@ export function slpAdvanceDrama(
   ) => {
     const playerIds = Object.values(run.cast).filter((id) => live.get(id)?.automatic === false);
     beats.forEach((beat, index) => {
+      if (!slpFitsCreator(beat.fit, live.get(run.cast[beat.role]!))) return;
       const made = job(beat, run, {
         dueAt: now,
         expiresAt: until,
@@ -355,7 +361,7 @@ export function slpAdvanceDrama(
       situation.cast,
       situation.cast.map((role) => role.key),
       {},
-      { world: input.world, busy: new Set(), seed: id, at: input.at },
+      { world: input.world, busy: new Set(), seed: id, at: input.at, leadFit: situation.fit },
     );
     if (cast)
       situationRuns.push({
@@ -383,8 +389,10 @@ export function slpAdvanceDrama(
       ...Object.fromEntries(situation.dials.map((dial) => [dial.key, dial.default])),
       ...input.dials[slpDramaId(situation)],
     };
-    const deck = (situation.stages[0]?.deck ?? []).filter((beat) =>
-      Object.entries(beat.when ?? {}).every(([key, value]) => dials[key] === value),
+    const deck = (situation.stages[0]?.deck ?? []).filter(
+      (beat) =>
+        Object.entries(beat.when ?? {}).every(([key, value]) => dials[key] === value) &&
+        slpFitsCreator(beat.fit, live.get(run.cast[beat.role]!)),
     );
     const beat = deck[hash(`${run.id}:${Math.floor(now / HOUR)}:pick`) % Math.max(1, deck.length)];
     if (!beat) return { ...run, day, drawn };
@@ -449,7 +457,9 @@ export function slpAdvanceDrama(
       .filter(Boolean) as SlpDramaCreator[];
     const tooHot =
       stage.minSpice !== undefined && actors.some((creator) => creator.automatic && creator.spice < stage.minSpice!);
-    if (!cast || tooHot) return enter(log(run, "skipped", key), drama, wayOn(drama, index, run.cast), depth + 1);
+    const offFit = !slpFitsCreator(stage.fit, cast ? live.get(cast[drama.cast[0]!.key]!) : undefined);
+    if (!cast || tooHot || offFit)
+      return enter(log(run, "skipped", key), drama, wayOn(drama, index, run.cast), depth + 1);
     // A stage with no days stands until its choice is answered, or until the storyline runs out of time.
     const days = stage.days
       ? stage.days[0] + (hash(`${run.id}:${key}:days`) % (stage.days[1] - stage.days[0] + 1))
@@ -461,7 +471,11 @@ export function slpAdvanceDrama(
     );
     queue(stage.beats, entered, now + Math.max(days, 1) * DAY, key);
     write(entered, drama, { leave: run.stage, enter: key });
-    if (stage.choice) {
+    const lead = live.get(cast[drama.cast[0]!.key]!);
+    const offered = (stage.choice?.options ?? []).flatMap((option, at) =>
+      slpFitsCreator(option.fit, lead) ? [at] : [],
+    );
+    if (stage.choice && offered.length) {
       const dueAt =
         stage.choice.asks === "role" ? now + ROLE_CHOICE_HOURS * HOUR : now + stage.choice.timeoutDays * DAY;
       entered = {
@@ -473,7 +487,8 @@ export function slpAdvanceDrama(
           answer: null,
           by: null,
           asks: stage.choice.asks,
-          count: stage.choice.options.length,
+          count: offered.length,
+          ...(offered.length < stage.choice.options.length ? { offered } : {}),
         },
       };
       if (stage.choice.asks === "player" && playerKey && cast[playerKey]) {
@@ -486,7 +501,7 @@ export function slpAdvanceDrama(
           toId: cast[playerKey],
           choice: {
             question: stage.choice.question,
-            options: stage.choice.options.map((option) => option.label),
+            options: offered.map((at) => stage.choice!.options[at]!.label),
             stage: key,
           },
           names: names(cast),
@@ -522,12 +537,18 @@ export function slpAdvanceDrama(
     const choice = stage.choice;
     if (choice && current.choice && current.choice.answer === null && now >= Date.parse(current.choice.dueAt)) {
       // Nobody answered in time (player), the vote closed (fans), or the role made up their mind (role).
-      const decided =
+      const picked =
         choice.asks === "player"
           ? choice.default
           : hash(`${run.id}:${stage.key}:vote`) % 3 === 0
             ? hash(`${run.id}:${stage.key}:pick`) % choice.options.length
             : choice.default;
+      // An option that does not fit the lead was never offered: the pick falls on one that was.
+      const offered = current.choice.offered;
+      const decided =
+        !offered || offered.includes(picked)
+          ? picked
+          : offered[hash(`${run.id}:${stage.key}:offered`) % offered.length]!;
       current = log(
         {
           ...current,
@@ -560,6 +581,7 @@ export function slpAdvanceDrama(
     const first = pick.stages[0]!;
     const cast = slpDramaCast(pick.cast, [pick.cast[0]!.key, ...stageRoles(first, pick.cast)], base, {
       couples: couplePairs(pick),
+      leadFit: pick.fit,
       world: input.world,
       busy: busy(),
       seed: id,
@@ -660,7 +682,7 @@ export function slpAnswerDramaChoice(
       entry === run
         ? {
             ...run,
-            choice: { ...run.choice!, answer: option, by: "player" },
+            choice: { ...run.choice!, answer: run.choice!.offered?.[option] ?? option, by: "player" },
             log: [...run.log, { at: at.toISOString(), code: "choice", detail: `#${option}` }].slice(-20),
           }
         : entry,

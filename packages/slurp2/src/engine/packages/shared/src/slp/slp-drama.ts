@@ -11,6 +11,25 @@ import { z } from "zod";
  * - every drama has `maxDays` and an `exit`; text is short
  */
 
+const fitWord = z.string().trim().min(1).max(60);
+/**
+ * A gate (docs/STORYLINES.md, PR 5), checked by `slurpPackFits`: what does not fit is skipped, never
+ * softened. Plain word lists so a pack stays JSON: a word matches whole, `word*` matches a word's start.
+ */
+export const slpFitSchema = z
+  .object({
+    /** The Creator's spice level must reach it. */
+    level: z.enum(["suggestive", "nudity", "explicit"]).optional(),
+    /** A hard no sharing a word with one of these rules it out. */
+    hardNo: z.array(fitWord).max(24).optional(),
+    /** The card, tags or anchors must say one of these. */
+    needs: z.array(fitWord).max(64).optional(),
+    /** A card "never" sentence or a leave-out topic naming one of these rules it out. */
+    topic: z.array(fitWord).max(64).optional(),
+  })
+  .strict();
+export type SlpFit = z.infer<typeof slpFitSchema>;
+
 const key = z
   .string()
   .trim()
@@ -85,6 +104,8 @@ export const slpDramaBeatSchema = z
     chance: z.number().int().min(1).max(100).optional(),
     /** Situation decks: only while the situation's dials have these values. */
     when: z.record(key, key).optional(),
+    /** Checked on the beat's actor: a moment that does not fit is dropped (a crowd beat has no Creator to fit). */
+    fit: slpFitSchema.optional(),
   })
   .strict()
   .superRefine((beat, context) => {

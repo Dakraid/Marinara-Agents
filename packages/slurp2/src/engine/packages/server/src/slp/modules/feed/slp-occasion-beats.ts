@@ -65,6 +65,24 @@ const wordsOf = (value: string) => value.toLocaleLowerCase().match(/\p{L}{3,}/gu
 const sameWord = (a: string, b: string) =>
   a === b || (a.length >= 4 && b.length >= 4 && (a.startsWith(b) || b.startsWith(a)));
 
+const fitPatterns = new Map<string, RegExp>();
+/** A fit's word list as one pattern: a word matches whole, `word*` matches a word's start; pack words stay plain text. */
+export function slurpFitPattern(words: readonly string[] | undefined): RegExp | undefined {
+  if (!words?.length) return undefined;
+  const key = words.join("\n");
+  let pattern = fitPatterns.get(key);
+  if (!pattern) {
+    const parts = words.map((word) => {
+      const stem = word.endsWith("*") ? word.slice(0, -1) : word;
+      const escaped = stem.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return word.endsWith("*") ? `${escaped}[\\p{L}\\p{N}]*` : `${escaped}(?![\\p{L}\\p{N}])`;
+    });
+    pattern = new RegExp(`(?<![\\p{L}\\p{N}])(?:${parts.join("|")})`, "iu");
+    fitPatterns.set(key, pattern);
+  }
+  return pattern;
+}
+
 /** Whether an occasion, a pack storyline or one moment fits this Creator. */
 export function slurpPackFits(
   fit: SlurpPackFit,
@@ -77,8 +95,10 @@ export function slurpPackFits(
     )
   )
     return false;
-  if (fit.topic && (creator.avoid ?? []).some((topic) => fit.topic!.test(topic))) return false;
-  return slurpLifeFits(fit, { text: creator.text, never: slurpNeverSentences(creator.text) });
+  const needs = slurpFitPattern(fit.needs);
+  const topic = slurpFitPattern(fit.topic);
+  if (topic && (creator.avoid ?? []).some((entry) => topic.test(entry))) return false;
+  return slurpLifeFits({ needs, topic }, { text: creator.text, never: slurpNeverSentences(creator.text) });
 }
 
 /**
@@ -225,7 +245,7 @@ export function slurpBirthdayOccasion(
       key: `birthday:${new Date(day).toISOString().slice(0, 10)}`,
       name: "Birthday",
       // A card that hates birthdays, or a player who wants them left out, skips the week.
-      fit: { topic: /\b(birthdays?|Geburtstag\w*)\b/iu },
+      fit: { topic: ["birthday", "birthdays", "geburtstag*"] },
       beats,
       dueAt: [startsAt, day, day + DAY_MS].slice(0, beats.length),
       endsAt,

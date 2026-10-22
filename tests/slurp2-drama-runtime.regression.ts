@@ -490,7 +490,7 @@ async function main() {
       "claimed before sent",
     );
     assert.ok(
-      src.indexOf("const world = await loadDramaWorld(db, at);") > src.indexOf("ADVANCE_EVERY_MS) {"),
+      src.indexOf("const world = await loadDramaWorld(db, at") > src.indexOf("ADVANCE_EVERY_MS) {"),
       "the world loads only to move",
     );
   }
@@ -622,6 +622,51 @@ async function main() {
       outcomes: [{ kind: "remove-creator-fact", tag: "expecting" }],
     },
   ]);
+
+  // `fit` (PR 5): a storyline that does not fit the lead never starts, a stage that does not fit is skipped,
+  // an option that does not fit is not offered and the player's answer maps back to the real option.
+  const gated = slpStorylineSchema.parse({
+    id: "gated",
+    name: "Gated",
+    cast: [{ key: "her" }],
+    fit: { needs: ["baker"] },
+    stages: [
+      { key: "a", label: "A", days: [1, 1], next: "b" },
+      { key: "b", label: "B", days: [1, 1], fit: { level: "explicit" }, next: "c" },
+      {
+        key: "c",
+        label: "C",
+        choice: {
+          asks: "player",
+          question: "Which?",
+          default: 1,
+          timeoutDays: 1,
+          options: [
+            { label: "Hot", next: "end", fit: { level: "explicit" } },
+            { label: "Soft", next: "end" },
+          ],
+        },
+      },
+    ],
+    endings: [{ key: "end", label: "End" }],
+  });
+  const gatedTick = (state: SlpDramaState, at: number, extra: Partial<SlpDramaCreator>) =>
+    slpAdvanceDrama(state, {
+      ...input(at, { situations: [], dramas: [] }),
+      dramas: [gated],
+      world: world([creator("mia", [], { spice: 1, ...extra })]),
+    }).state;
+  const gatedAsk = slpRequestDrama(SLP_EMPTY_DRAMA_STATE, "gated", null);
+  assert.equal(gatedTick(gatedAsk, T0, {}).runs.length, 0, "no card text known: a gated storyline does not start");
+  assert.equal(gatedTick(gatedAsk, T0, { fitText: "Mia paints." }).runs.length, 0, "the card lacks the word");
+  const baker = { fitText: "Mia is a baker." };
+  const gatedOn = gatedTick(gatedAsk, T0, baker);
+  assert.equal(gatedOn.runs[0]?.stage, "a");
+  const gatedC = gatedTick(gatedOn, T0 + 25 * HOUR, baker);
+  assert.equal(gatedC.runs[0]?.stage, "c", "stage b needs explicit: skipped");
+  assert.deepEqual([gatedC.runs[0]?.choice?.count, gatedC.runs[0]?.choice?.offered], [1, [1]]);
+  const gatedAnswer = slpAnswerDramaChoice(gatedC, gatedC.runs[0]!.id, 0, new Date(T0 + 26 * HOUR));
+  assert.equal(gatedAnswer?.runs[0]?.choice?.answer, 1, "chip 0 is the real option 1");
 
   console.log("slurp2 drama runtime regression passed");
 }
