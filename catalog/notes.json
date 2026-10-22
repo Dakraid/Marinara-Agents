@@ -756,6 +756,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.61",
+          "date": "2026-10-22",
+          "notes": "- Five kink theme packs, off by default (`slp-kink-packs.ts`): Lingerie, Cosplay, Feet, Dom/sub and Exhibition, two storylines each, pure pack data on the storyline engine. Fans vote between sets, costumes and dares; endings add a locked look or a Creator fact; the lingerie brand storyline makes a `brand-offer`.\n- Each storyline has a `fit` (level, hard-no words, topic words): Exhibition needs nudity, a hard-no or a \"never\" line rules a Creator out, turn-ons lean the lead pick. The spiciest stages wait on `minSpice` 2–3.",
+          "highlight": false
+        },
+        {
           "version": "0.3.60",
           "date": "2026-10-22",
           "notes": "- Family pack (`slurp-pack-family`, off by default): four pregnancy storylines (couple partner, collab partner, the player, a father she won't name), listed in Drama and switched by the pack.\n- New tie kind `collab` (from `creatorCollabs`), stage influences on the lead (`slpDramaStageMultiplier`), turn-ons lean the lead pick, choice options with `when` dials, and the `brand-offer` outcome.\n- The child never appears in a picture or a spicy post; the loss ending sits behind the `hard` dial.\n- The Basic setup demo post's teaser pictures (locked/unlocked) ship as package assets; the Engine never had them. Its Mari avatar is the Professor Mari the player picked in the Engine (appearance packs).",
@@ -867,12 +873,6 @@
           "version": "0.3.42",
           "date": "2026-10-15",
           "notes": "- Added: chats with \"Carryover to chats\" on also learn the character's Slurp storyline, love life, how well they know you, and the Slurp memories a chat with you may read.\n- Added: Carryover settings show in how many chats with your Creators \"Include Slurp activity\" is on.\n- Fixed: a scene started from a DM runs on the connection Slurp planned it with, not the Engine's plain default.\n- Fixed: an unreadable scene plan is asked for once more before \"The scene plan got lost\" shows.\n- Fixed: \"Start the scene\" shows an error when the Engine's scene host is missing.\n- Fixed: lorebook entries set to \"At Depth\" reach Slurp DMs and posts.\n- Added: Deep details has a \"Lore\" section with the entries a reply used or had no room for.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.41",
-          "date": "2026-10-14",
-          "notes": "- Faster: Slurp shows character and persona avatars as small copies instead of the full card picture. On opening Slurp the feed downloaded about 16 MB of avatar pictures (1–2.5 MB each, shown 44 px wide), and Discover about 14 MB more; those downloads also held up the feed's other requests. The small copies are made once and kept in Slurp's own media folder.\n- Faster: the \"Report\" sheet of a post or a reply is built only when you open it. Before, every post card and reply built a closed copy, which made the feed and Creator pages slower to open.\n- Faster: the ambient background colour measures the pictures on screen only after the screen has drawn, so opening a screen no longer forces extra layout work.",
           "highlight": false
         }
       ]
