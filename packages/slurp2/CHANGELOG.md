@@ -5,6 +5,7 @@
 - Paid sexting sessions (docs/SPICY.md, item 2): a "Sext with me – 20 min" button in the thread header of an AI Creator's chat (`SlpSextingBar`). The price is three of her PPV pictures, 15% less from favourite (`slurpSextingPrice`, `modules/messages/slp-sexting.ts`). The session is claimed on the thread (`sexting` column) before it is paid through the tip path, so a second buy while one runs is refused and a failed payment drops the claim.
 - While a session runs she answers at once (`slurpReplyPacing` `sexting`), at her full level, and the DM prompt gets the phase: warm-up, heated, finish with an afterglow line (`slurpSextingGuidance`). In the heated phase her first picture is a PPV at her PPV price and full level, once per session (`markSextingPicture`).
 - For 30 minutes after the end, the header asks for a tip and opens the tip tool.
+- A Story opens in Slurp's own full-screen layer (`SlpStoryLayer`), not inside the Engine modal, so it has one close button, not two.
 
 ## 0.3.62 — 2026-10-22
 

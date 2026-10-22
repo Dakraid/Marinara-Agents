@@ -21,6 +21,7 @@ export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
       "Sexting sessions: in a Creator's chat, buy 20 minutes of her for three of her PPV pictures (less for a favourite).",
       "During a session she answers right away and heats up from warm-up to a finish, with one PPV picture of what she is doing right now.",
       "When the session ends, the chat asks if you want to leave her a tip.",
+      "Stories have one close button again.",
     ],
   },
   {
