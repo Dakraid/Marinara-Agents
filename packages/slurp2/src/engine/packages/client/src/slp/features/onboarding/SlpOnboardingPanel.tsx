@@ -35,7 +35,7 @@ export const DEMO_PROFILE: SlpCreatorStageProfile = {
   handle: "professor_mari",
   displayName: "Professor Mari",
   bio: "",
-  avatarUrl: "/sprites/mari/chibi-professor-mari.png",
+  avatarUrl: "/api/capability-packages/slurp2/assets/assets/mari/chibi-professor-mari.webp",
   avatarCrop: null,
   disclosureMode: "open",
   stagePersonality: "",

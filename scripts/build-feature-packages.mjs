@@ -487,7 +487,15 @@ const features = [
     // is inlined as a data URI in SlurpCoin.tsx instead, from the same file kept as source.
     // The UI catalogs other than English are served as package assets and fetched on demand, so
     // client.js carries one language instead of four (slp-client-entry.tsx, 0.3.6).
-    assetPaths: ["slurp2-logo.png", "slurp2agent.png", ...slurp2LazyLocalePaths],
+    assetPaths: [
+      "slurp2-logo.png",
+      "slurp2agent.png",
+      // Mari's onboarding pictures ship with Slurp: the Engine renamed or never had them.
+      "assets/mari/chibi-professor-mari.webp",
+      "assets/mari/Mari_noodler_teaser_locked.webp",
+      "assets/mari/Mari_noodler_teaser_unlocked.webp",
+      ...slurp2LazyLocalePaths,
+    ],
     contributions: {
       slots: ["home-browser-tab"],
       homeBrowserTab: {

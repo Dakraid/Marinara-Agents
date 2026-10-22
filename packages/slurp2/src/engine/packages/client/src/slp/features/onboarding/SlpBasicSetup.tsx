@@ -460,7 +460,7 @@ function BasicPreview({
             access: "locked",
             createdAt: new Date().toISOString(),
             title: caption,
-            imageUrl: "/sprites/mari/Mari_noodler_teaser_locked.webp",
+            imageUrl: "/api/capability-packages/slurp2/assets/assets/mari/Mari_noodler_teaser_locked.webp",
             likeCount: Math.round(FANS[answers.crowd] / 9),
             replyCount: Math.round(FANS[answers.crowd] / 40),
           }}
@@ -479,7 +479,7 @@ function BasicPreview({
             body: t("ui.noodle.noodlerwizard.demoPost.walkthrough.body"),
             lockedTitle: caption,
             unlockedLabel: t("ui.noodle.postaccess.unlocked"),
-            unlockedImageUrl: "/sprites/mari/Mari_noodler_teaser_unlocked.webp",
+            unlockedImageUrl: "/api/capability-packages/slurp2/assets/assets/mari/Mari_noodler_teaser_unlocked.webp",
             onReveal,
           }}
         />
