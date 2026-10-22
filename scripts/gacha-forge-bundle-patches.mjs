@@ -35,6 +35,7 @@ export async function rebuildGachaBundles(packageRoot) {
     const file = new URL(path, packageRoot);
     const current = await readFile(file, "utf8");
     let original;
+    let firstError;
     // A clean checkout may contain any previously generated prefix of the ledger.
     for (let count = patches.length; count >= 0; count -= 1) {
       try {
@@ -58,11 +59,14 @@ export async function rebuildGachaBundles(packageRoot) {
           original = candidate;
           break;
         }
-      } catch {
+      } catch (error) {
         // Try the previous generated prefix; an unknown bundle must fail below.
+        firstError ??= error;
       }
     }
-    if (original === undefined) throw new Error(`Unrecognized Forge bundle ${path}; update its source baseline`);
+    if (original === undefined) {
+      throw new Error(`Unrecognized Forge bundle ${path}; update its source baseline`, { cause: firstError });
+    }
     let result = original;
     for (const { edits } of patches) {
       for (const edit of edits) result = swapGachaBundleText(result, edit.find, edit.replace);
