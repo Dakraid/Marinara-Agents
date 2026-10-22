@@ -373,7 +373,7 @@ export const slpStoryFactSchema = z
     tag,
     label: id(120),
     /** `player`: set by hand in the Life panel. */
-    sourceKind: z.enum(["arc", "event", "player"]),
+    sourceKind: z.enum(["arc", "event", "drama", "player"]),
     sourceId: id(),
     createdAt: z.string().datetime({ offset: true }),
     expiresAt: z.string().datetime({ offset: true }).nullable(),
@@ -389,7 +389,7 @@ export const slpArcOpportunityRecordSchema = z
     storyTags: z.array(tag).min(1).max(20),
     weight: z.number().min(0.1).max(10),
     consume: z.enum(["on-start", "never"]),
-    sourceKind: z.enum(["arc", "event"]),
+    sourceKind: z.enum(["arc", "event", "drama"]),
     sourceId: id(),
     createdAt: z.string().datetime({ offset: true }),
     expiresAt: z.string().datetime({ offset: true }).nullable(),

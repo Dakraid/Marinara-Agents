@@ -1,5 +1,10 @@
 # Slurp release notes
 
+## 0.3.56 — 2026-10-22
+
+- Story Packs import v2 files: their storylines land in the drama library and run as dramas or standing situations.
+- Drama stage moves write story state for the lead (conditions on, then off; ending outcomes), as arcs do.
+
 ## 0.3.55 — 2026-10-21
 
 - Dramas and situations run on storylines: the drama library converts on load, runs keep their ids.

@@ -12,7 +12,13 @@ import {
 } from "../../data/world/slp-drama-storage.js";
 import { slpDramaCatalog, slpDramaStorylines, slpEnabledDrama } from "../../modules/world/events/slp-drama-library.js";
 import { slpDramaLeadFits } from "../../modules/world/events/slp-drama-cast.js";
-import { slpEndDramaRun, slpRequestDrama } from "../../modules/world/events/slp-drama-runtime.js";
+import {
+  slpDramaId,
+  slpDramaStopOutcomes,
+  slpEndDramaRun,
+  slpRequestDrama,
+  type SlpDramaRun,
+} from "../../modules/world/events/slp-drama-runtime.js";
 import type { SlpActionParsed, SlpStirWorld } from "../../../../../shared/src/slp/slp-actions.js";
 import type { SlpActionPreview } from "../../../../../shared/src/slp/slp-stir.js";
 import { advanceSlurpDrama, loadDramaWorld } from "./slp-drama-service.js";
@@ -33,9 +39,26 @@ const NOBODY = "Nobody fits the roles right now.";
 const PAUSED = "Slurp is paused (Settings › Overview). Resume it to start a drama.";
 const LEAD_NO = "They do not fit the first role of this drama right now.";
 
+/** The dramas switched on, each with the storyline it runs as (null: a v1 entry that cannot run). */
 async function enabledDramas(db: DB) {
   const settings = await createSlurpStorage(db).getSettings();
-  return slpEnabledDrama(slpDramaCatalog(await readSlurpDramaLibrary(db)), settings.drama.enabled).dramas;
+  const catalog = slpEnabledDrama(slpDramaCatalog(await readSlurpDramaLibrary(db)), settings.drama.enabled);
+  return [
+    ...catalog.dramas.map((drama) => ({
+      id: drama.id,
+      name: drama.name,
+      description: drama.description,
+      leadRole: drama.roles[0]!.key,
+      storyline: slpDramaStorylines({ situations: [], dramas: [drama] }).dramas[0] ?? null,
+    })),
+    ...slpDramaStorylines({ situations: [], dramas: [], storylines: catalog.storylines }).dramas.map((storyline) => ({
+      id: storyline.id,
+      name: storyline.name,
+      description: storyline.description,
+      leadRole: storyline.cast[0]!.key,
+      storyline,
+    })),
+  ];
 }
 
 const busyOf = (runs: readonly { endedAt: string | null; cast: Record<string, string> }[]) =>
@@ -44,13 +67,14 @@ const busyOf = (runs: readonly { endedAt: string | null; cast: Record<string, st
 /** What Stir lists: the dramas switched on, and the ones running with who is in them. */
 export async function readSlurpStirDramas(db: DB): Promise<Pick<SlpStirWorld, "dramas" | "runs">> {
   const [dramas, { state }] = await Promise.all([enabledDramas(db), readSlurpDramaState(db)]);
-  const all = slpDramaCatalog(await readSlurpDramaLibrary(db)).dramas;
+  const catalog = slpDramaCatalog(await readSlurpDramaLibrary(db));
+  const all = [...catalog.dramas, ...catalog.storylines];
   return {
     dramas: dramas.map((drama) => ({
       id: drama.id,
       name: drama.name,
       description: drama.description,
-      leadRole: drama.roles[0]!.key,
+      leadRole: drama.leadRole,
     })),
     runs: state.runs
       .filter((run) => !run.endedAt)
@@ -95,7 +119,7 @@ export async function previewSlurpDramaLever(
     return result({ error: "busy", summary: `${drama.name} is already running.` });
   const world = leadId ? await loadDramaWorld(db, at) : null;
   const lead = world?.creators.find((creator) => creator.id === leadId);
-  const storyline = slpDramaStorylines({ situations: [], dramas: [drama] }).dramas[0];
+  const storyline = drama.storyline;
   if (!storyline) return result({ error: "off", summary: BROKEN });
   if (world && leadId && !slpDramaLeadFits(storyline, leadId, { world, busy: busyOf(state.runs), at }))
     return result({ error: "lead", summary: LEAD_NO });
@@ -129,16 +153,35 @@ export async function runSlurpDramaLever(
   }
 }
 
+/** A drama the player ends leaves its stage: the lead's condition from it goes. */
+async function leaveDramaStage(db: DB, run: SlpDramaRun, at: Date) {
+  const storyline = slpDramaStorylines(slpDramaCatalog(await readSlurpDramaLibrary(db))).dramas.find(
+    (entry) => slpDramaId(entry) === run.dramaId,
+  );
+  const creatorId = storyline && run.cast[storyline.cast[0]!.key];
+  const outcomes = storyline ? slpDramaStopOutcomes(storyline, run.stage) : [];
+  if (creatorId && outcomes.length)
+    await createSlurpStorage(db).applyStoryOutcomes({
+      outcomes,
+      participants: [creatorId],
+      sourceKind: "drama",
+      sourceId: `${run.id}:${run.stage}:off`,
+      at,
+    });
+}
+
 async function endDrama(
   db: DB,
   input: unknown,
   at: Date,
 ): Promise<{ ok: true; value: { runId: string }; undo: SlurpDramaUndo | null } | Failure> {
   const { runId } = input as SlpActionParsed<"end-drama">;
+  const run = (await readSlurpDramaState(db)).state.runs.find((entry) => entry.id === runId && !entry.endedAt);
   const ended = await mutateSlurpDramaState(db, (current) => {
     const next = slpEndDramaRun(current.state, runId, at);
     return next ? { stored: { ...current, state: next }, result: true } : null;
   });
+  if (ended && run) await leaveDramaStage(db, run, at);
   return ended
     ? { ok: true, value: { runId }, undo: null }
     : { ok: false, status: 404, error: "That drama is not running." };

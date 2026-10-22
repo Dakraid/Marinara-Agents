@@ -4,7 +4,7 @@ import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
 import { createSlurpMessagesStorage, createSlurpStorage } from "../../data/slp-storage.js";
 import { SLP_STORYLINES_OFF, slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
 import { readSlurpDramaLibrary, readSlurpDramaState } from "../../data/world/slp-drama-storage.js";
-import { slpDramaCatalog } from "../../modules/world/events/slp-drama-library.js";
+import { slpDramaCatalog, slpStorylineStands } from "../../modules/world/events/slp-drama-library.js";
 import { answerSlurpDramaChoice } from "./slp-drama-service.js";
 import { runSlurpDramaLever } from "./slp-drama-levers.js";
 
@@ -53,6 +53,16 @@ export async function slpDramaRoutes(app: FastifyInstance, { noodle, resolveView
           builtin: entry.builtin,
           dials: [],
           requires: entry.requires?.situation ?? null,
+        })),
+        // v2 entries, listed by their shape.
+        ...catalog.storylines.map((entry) => ({
+          id: entry.id,
+          kind: slpStorylineStands(entry) ? ("situation" as const) : ("drama" as const),
+          name: entry.name,
+          description: entry.description,
+          builtin: false,
+          dials: entry.dials,
+          requires: entry.start.within?.replace(/^situation:/, "") ?? null,
         })),
       ],
       runs: newest(state.runs).map((run) => ({ ...run, cast: cast(run.cast) })),

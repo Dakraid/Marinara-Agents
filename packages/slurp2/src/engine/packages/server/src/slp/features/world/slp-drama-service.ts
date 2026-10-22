@@ -246,14 +246,17 @@ function hashOf(value: string): number {
  * and on every tick what is due goes out. Nothing switched on and nothing running: nothing happens.
  */
 export async function advanceSlurpDrama(db: DB, at = new Date()): Promise<void> {
-  const settings = await createSlurpStorage(db).getSettings();
+  const storage = createSlurpStorage(db);
+  const settings = await storage.getSettings();
   // "Pause all": no drama moves while Slurp is paused. Storylines off holds it the same way.
   if (settings.paused || !slpExtensionOn(settings, "storylines")) return;
-  const catalog = slpEnabledDrama(slpDramaCatalog(await readSlurpDramaLibrary(db)), settings.drama.enabled);
+  const library = slpDramaCatalog(await readSlurpDramaLibrary(db));
+  const catalog = slpEnabledDrama(library, settings.drama.enabled);
   const stored = await readSlurpDramaState(db);
   const idle =
     !catalog.dramas.length &&
     !catalog.situations.length &&
+    !catalog.storylines.length &&
     !stored.state.runs.some((run) => !run.endedAt) &&
     !stored.state.situations.some((run) => !run.endedAt);
   if (idle && !stored.state.jobs.some((job) => job.status === "queued")) return;
@@ -265,16 +268,21 @@ export async function advanceSlurpDrama(db: DB, at = new Date()): Promise<void> 
         at,
         level: settings.drama.level,
         ...slpDramaStorylines(catalog),
+        known: slpDramaStorylines(library).dramas,
         dials: settings.drama.dials,
         world,
         activity: slurpWorldActivityMultiplier(settings.worldActivity),
         newId,
       });
-      return { stored: { state: result.state, advancedAt: at.toISOString() }, result: result.ties };
+      return { stored: { state: result.state, advancedAt: at.toISOString() }, result };
     });
     const polyamory = settings.polyamory === true;
-    await applyDramaTies(db, effects ?? [], { at, creators: world.tieCreators, polyamory }).catch((error: unknown) =>
-      logger.warn(error, "[slurp-drama] Could not apply a drama's tie outcome"),
+    for (const effect of effects?.story ?? [])
+      await storage
+        .applyStoryOutcomes({ ...effect, participants: [effect.creatorId], sourceKind: "drama", at })
+        .catch((error: unknown) => logger.warn(error, "[slurp-drama] Could not write a drama's story state"));
+    await applyDramaTies(db, effects?.ties ?? [], { at, creators: world.tieCreators, polyamory }).catch(
+      (error: unknown) => logger.warn(error, "[slurp-drama] Could not apply a drama's tie outcome"),
     );
   }
   // Everything due except post lines (the post planner takes those): questions and DMs first, so

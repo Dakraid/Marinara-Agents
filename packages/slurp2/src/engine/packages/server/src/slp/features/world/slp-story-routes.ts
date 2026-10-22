@@ -9,6 +9,7 @@ import {
   slpStoryPackSchema,
 } from "../../../../../shared/src/slp/slp-story-engine.js";
 import { slpDramaSchema, slpSituationSchema } from "../../../../../shared/src/slp/slp-drama.js";
+import { slpStorylineSchema } from "../../../../../shared/src/slp/slp-storyline.js";
 import { applySlpDramaEntries } from "../../modules/world/events/slp-drama-library.js";
 import { readSlurpDramaLibrary, writeSlurpDramaLibrary } from "../../data/world/slp-drama-storage.js";
 import {
@@ -34,7 +35,7 @@ const applySchema = z
       .array(
         z
           .object({
-            kind: z.enum(["arc", "event", "situation", "drama"]),
+            kind: z.enum(["arc", "event", "situation", "drama", "storyline"]),
             contentId: z.string().trim().min(1).max(128),
             action: z.enum(["copy", "replace", "skip"]),
             enabled: z.boolean().optional(),
@@ -127,10 +128,16 @@ export async function slpStoryRoutes(app: FastifyInstance, { noodle }: SlpRouteD
             ? slpEventBlueprintSchema
             : choice.kind === "situation"
               ? slpSituationSchema
-              : slpDramaSchema;
+              : choice.kind === "storyline"
+                ? slpStorylineSchema
+                : slpDramaSchema;
       const edited = schema.safeParse(choice.value);
       if (!edited.success) return reply.code(400).send({ error: "An edited pack entry is invalid." });
-      const contentId = ("contentId" in edited.data ? edited.data.contentId : undefined) ?? edited.data.id;
+      // A storyline's choice is its id; its own `contentId` names where it came from.
+      const contentId =
+        choice.kind === "storyline"
+          ? edited.data.id
+          : (("contentId" in edited.data ? edited.data.contentId : undefined) ?? edited.data.id);
       if (contentId !== choice.contentId)
         return reply.code(400).send({ error: "An edited pack entry does not match its choice." });
     }
@@ -142,16 +149,22 @@ export async function slpStoryRoutes(app: FastifyInstance, { noodle }: SlpRouteD
     await noodle.updateSettings({ arcLibrary: result.arcs, platformEvents: result.events });
     // Drama entries (situations, dramas) land in their own library, switched off until the player turns them on.
     const dramaChoices = parsed.data.choices.filter(
-      (choice) => choice.action !== "skip" && (choice.kind === "situation" || choice.kind === "drama"),
+      (choice) =>
+        choice.action !== "skip" &&
+        (choice.kind === "situation" || choice.kind === "drama" || choice.kind === "storyline"),
     );
     if (dramaChoices.length) {
       const entries = dramaChoices.flatMap((choice) => {
         const staged_ = staged.preview.entries.find(
           (item) => item.kind === choice.kind && item.contentId === choice.contentId,
         );
-        const parsedValue = (choice.kind === "situation" ? slpSituationSchema : slpDramaSchema).safeParse(
-          choice.value ?? staged_?.value,
-        );
+        const parsedValue = (
+          choice.kind === "situation"
+            ? slpSituationSchema
+            : choice.kind === "storyline"
+              ? slpStorylineSchema
+              : slpDramaSchema
+        ).safeParse(choice.value ?? staged_?.value);
         return parsedValue.success ? [{ kind: choice.kind, value: parsedValue.data } as never] : [];
       });
       await writeSlurpDramaLibrary(
@@ -185,6 +198,8 @@ export async function slpStoryRoutes(app: FastifyInstance, { noodle }: SlpRouteD
       drama: await readSlurpDramaLibrary(app.db).then((library) => ({
         situations: library.situations.filter((item) => body.data.situationIds.includes(item.id)),
         dramas: library.dramas.filter((item) => body.data.dramaIds.includes(item.id)),
+        // ponytail: export stays v1, so imported v2 storylines are not exported; add a v2 export when packs are shared.
+        storylines: [],
       })),
     });
   });

@@ -547,10 +547,23 @@ async function main() {
     cast: [{ key: "her" }],
     requires: { tags: ["partner"], lacks: ["pregnant"] },
     stages: [
-      { key: "wait", label: "Waiting", days: [1, 1], next: [{ to: "twins", when: { tag: "twins" } }, { to: "born" }] },
+      {
+        key: "wait",
+        label: "Waiting",
+        days: [1, 1],
+        condition: { tag: "expecting", line: "Expecting." },
+        next: [{ to: "twins", when: { tag: "twins" } }, { to: "born" }],
+      },
       { key: "twins", label: "Two of them", days: [1, 1], next: "born" },
     ],
-    endings: [{ key: "born", label: "Born", beat: { role: "her", channel: "comment", on: "her", lines: ["here!"] } }],
+    endings: [
+      {
+        key: "born",
+        label: "Born",
+        beat: { role: "her", channel: "comment", on: "her", lines: ["here!"] },
+        outcomes: [{ kind: "add-creator-fact", tag: "parent", label: "Parent" }],
+      },
+    ],
   });
   const lone = (storyTags: string[]) => world([creator("mia", [], { storyTags })]);
   const tick = (state: SlpDramaState, at: number, storyTags: string[]) =>
@@ -568,6 +581,47 @@ async function main() {
     born.jobs.some((job) => job.channel === "comment" && job.lines?.[0] === "here!"),
     "the ending's beat",
   );
+
+  // Stage moves write story state for the lead: the condition on entering, then off on the ending.
+  const move = (state: SlpDramaState, at: number) =>
+    slpAdvanceDrama(state, { ...input(at, { situations: [], dramas: [] }), dramas: [family], world: lone(["partner"]) })
+      .story;
+  const entered = move(wanted, T0);
+  assert.equal(entered[0]?.creatorId, "mia");
+  assert.deepEqual(
+    entered.flatMap((effect) =>
+      effect.outcomes.map((outcome) => [outcome.kind, "tag" in outcome ? outcome.tag : null]),
+    ),
+    [["add-creator-fact", "expecting"]],
+  );
+  assert.deepEqual(
+    move(begun, T0 + 25 * HOUR).flatMap((effect) =>
+      effect.outcomes.map((outcome) => [outcome.kind, "tag" in outcome ? outcome.tag : null]),
+    ),
+    [
+      ["remove-creator-fact", "expecting"],
+      ["add-creator-fact", "parent"],
+    ],
+  );
+
+  // Running out of time leaves the stage under its own source id, so its facts are not taken for the entry's.
+  const late = move(begun, T0 + 1000 * 24 * HOUR);
+  assert.ok(late[0]?.sourceId.endsWith(":wait:leave"), late[0]?.sourceId);
+  // A drama switched off mid-stage only takes its condition away.
+  const off = slpAdvanceDrama(begun, {
+    ...input(T0 + HOUR, { situations: [], dramas: [] }),
+    dramas: [],
+    known: [family],
+    world: lone(["partner"]),
+  });
+  assert.equal(off.state.runs[0]?.ending, "off");
+  assert.deepEqual(off.story, [
+    {
+      creatorId: "mia",
+      sourceId: `${begun.runs[0]!.id}:wait:off`,
+      outcomes: [{ kind: "remove-creator-fact", tag: "expecting" }],
+    },
+  ]);
 
   console.log("slurp2 drama runtime regression passed");
 }
