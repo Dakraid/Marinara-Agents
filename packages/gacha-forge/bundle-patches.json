@@ -11,9 +11,7 @@
       "patches": [
         {
           "version": "1.8.13",
-          "commits": [
-            "a222c867e9737e9dbbc1208a44e6cd1e5ba57435"
-          ],
+          "commits": ["a222c867e9737e9dbbc1208a44e6cd1e5ba57435"],
           "edits": [
             {
               "find": "String(t??\"\").trim().toLowerCase().replace(/[^a-z0-9]+/g,\"-\").replace(/(^-|-$)/g,\"\").slice(0,60",
@@ -51,10 +49,7 @@
         },
         {
           "version": "1.8.14",
-          "commits": [
-            "881c9000c53b85bc5bf719e870b778e8ded00ea6",
-            "9b7d0fb106e72a255db21e4e62f1c4d1524eb2fe"
-          ],
+          "commits": ["881c9000c53b85bc5bf719e870b778e8ded00ea6", "9b7d0fb106e72a255db21e4e62f1c4d1524eb2fe"],
           "edits": [
             {
               "find": "2\";f",
@@ -88,9 +83,7 @@
         },
         {
           "version": "1.8.15",
-          "commits": [
-            "52d72aaf9a1cb440a158714f4928493950c18f22"
-          ],
+          "commits": ["52d72aaf9a1cb440a158714f4928493950c18f22"],
           "edits": [
             {
               "find": "4\";",
@@ -117,6 +110,36 @@
               "replace": "l,fixed:[\"Ticking a character for your cast, or a theme for outfits, keeps the list where it was instead of jumping back to the top.\"]},{version:\"1.8.14\",fi"
             }
           ]
+        },
+        {
+          "version": "1.9.0",
+          "notes": "Builder-generated in-app fullscreen integration from maintained package source; fluid stage in every view.",
+          "edits": [
+            {
+              "find": "var ac=",
+              "replaceFrom": "src/browser-presentation.mjs"
+            },
+            {
+              "find": "_wireFullscreen(){let e=()=>{document.fullscreenElement?document.exitFullscreen?.():this.requestFullscreen?.()},s=typeof this.requestFullscreen==\"function\"&&document.fullscreenEnabled!==!1;for(let a of[\".gf-fs\",\".gf-fs-exit\",\".gf-fs-bar\"]){let r=this._root.querySelector(a);r&&(s?r.addEventListener(\"click\",e):r.remove())}s||Zo(this._root),this._wireLandscape()}",
+              "replace": "_wireFullscreen(){wireForgeBrowserFullscreen(this),this._wireLandscape()}"
+            },
+            {
+              "find": "this._apply()}static get observedAttributes()",
+              "replace": "this._apply(),syncForgeBrowserPresentation(this)}static get observedAttributes()"
+            },
+            {
+              "find": "try{!document.fullscreenElement&&this.requestFullscreen&&await this.requestFullscreen()}catch{}",
+              "replace": "this._props.browserFullscreen?.setActive(true);"
+            },
+            {
+              "find": "ds=\"1.8.15\"",
+              "replace": "ds=\"1.9.0\""
+            },
+            {
+              "find": "oy=[{version:null,fixed:",
+              "replace": "oy=[{version:null,fixed:[\"Fullscreen now fills the Engine content area while keeping its topbar, including on iPhone Safari.\",\"Every game screen uses the available width instead of fitting a fixed 16:9 frame.\"]},{version:\"1.8.15\",fixed:"
+            }
+          ]
         }
       ]
     },
@@ -130,9 +153,7 @@
       "patches": [
         {
           "version": "1.8.13",
-          "commits": [
-            "a222c867e9737e9dbbc1208a44e6cd1e5ba57435"
-          ],
+          "commits": ["a222c867e9737e9dbbc1208a44e6cd1e5ba57435"],
           "edits": [
             {
               "find": "String(e??\"\").trim().toLowerCase().replace(/[^a-z0-9]+/g,\"-\").replace(/(^-|-$)/g,\"\").slice(0,60)",
