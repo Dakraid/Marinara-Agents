@@ -3519,6 +3519,7 @@
   "ui.slurp.drama.settings.situationDetail": "계속되는 상황: 가끔 작은 순간들, 끝이 없어요.",
   "ui.slurp.drama.settings.dramas": "드라마",
   "ui.slurp.drama.settings.needs": "“{{name}}” 상황을 켜야 해요.",
+  "ui.slurp.drama.settings.fromPack": "{{name}} 팩이 켜져 있는 동안 켜집니다. 팩에서 전환하세요.",
   "ui.slurp.drama.title": "드라마",
   "ui.slurp.drama.detail": "지금 진행 중인 상황과 드라마",
   "ui.slurp.drama.intro": "드라마는 켜 두면 알아서 진행돼요 (설정 › Stir › 드라마). 여기서 누가 나오는지, 어디까지 왔는지 보고, 시작하거나 끝낼 수 있어요.",

@@ -113,7 +113,15 @@ export const slpStorylineStageSchema = z
         question: z.string().trim().min(1).max(240),
         options: z
           .array(
-            z.object({ label: z.string().trim().min(1).max(120), next: target, fit: slpFitSchema.optional() }).strict(),
+            z
+              .object({
+                label: z.string().trim().min(1).max(120),
+                next: target,
+                fit: slpFitSchema.optional(),
+                /** Offered only while the storyline's dials have these values (a hard ending off by default). */
+                when: z.record(key, key).optional(),
+              })
+              .strict(),
           )
           .min(2)
           .max(4),

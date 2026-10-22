@@ -45,7 +45,8 @@ import {
   type SlpDramaWorld,
 } from "../../modules/world/events/slp-drama-runtime.js";
 import type { SlurpBeat } from "../../modules/feed/slp-post-beat.js";
-import { loadSlurpTieCreators } from "../projects/slp-projects-contract.js";
+import { listSlurpBrandCatalog, loadSlurpTieCreators, slurpBrandDealLever } from "../projects/slp-projects-contract.js";
+import { slurpFitPattern } from "../../modules/feed/slp-occasion-beats.js";
 import { mutateSlurpCreatorTies, readSlurpCreatorTiesDocument } from "../../data/projects/slp-creator-ties-storage.js";
 import { slurpApplyDramaTie } from "../../modules/projects/slp-drama-ties.js";
 import type { SlurpTieCreator } from "../../modules/projects/slp-creator-ties.js";
@@ -65,14 +66,17 @@ export async function loadDramaWorld(
   gated = false,
 ): Promise<SlpDramaWorld & { viewerOf: Map<string, string>; tieCreators: SlurpTieCreator[] }> {
   const storage = createSlurpStorage(db);
-  const [tieCreators, accounts, spice, guidance, document, facts] = await Promise.all([
+  const [tieCreators, accounts, spice, guidance, document, facts, settings] = await Promise.all([
     loadSlurpTieCreators(db, at),
     storage.listNoodlerAccounts(),
     readSlurpSpice(db),
     getSlurpPostGuidance(db),
     readSlurpCreatorTiesDocument(db),
     storage.listStoryFacts(),
+    storage.getSettings(),
   ]);
+  // A collab pair counts as a tie (`collab`): a storyline may need it, or cast "her collab partner".
+  const collabs = settings.creatorCollabs ?? [];
   const byId = new Map(accounts.map((account) => [account.id, account]));
   // A player's page acts for the persona behind it: DMs, coins and notifications go to that persona.
   const viewerOf = new Map(
@@ -94,7 +98,15 @@ export async function loadDramaWorld(
     joinedAt: byId.get(creator.id)?.createdAt ?? at.toISOString(),
     followers: creator.followers,
     romance: creator.romance,
-    storyTags: slurpStoryState({ facts, creatorId: creator.id, tieTags: slurpTieTags(document, creator.id), at }).tags,
+    storyTags: slurpStoryState({
+      facts,
+      creatorId: creator.id,
+      tieTags: [
+        ...slurpTieTags(document, creator.id),
+        ...(collabs.some((collab) => collab.creatorIds.includes(creator.id)) ? ["collab"] : []),
+      ],
+      at,
+    }).tags,
   }));
   if (gated)
     creators = await Promise.all(
@@ -110,7 +122,13 @@ export async function loadDramaWorld(
           readSlurpCreatorSteering(db, account.id).catch(() => undefined),
         ]);
         if (fitText === undefined) return creator;
-        return { ...creator, fitText, hardNoes: spice?.hardNoes ?? [], avoid: steering?.avoid ?? [] };
+        return {
+          ...creator,
+          fitText,
+          hardNoes: spice?.hardNoes ?? [],
+          avoid: steering?.avoid ?? [],
+          turnOns: spice?.turnOns ?? [],
+        };
       }),
     );
   const automatic = new Set(creators.filter((creator) => creator.automatic).map((creator) => creator.id));
@@ -144,6 +162,7 @@ export async function loadDramaWorld(
     ] as const)
       if (automatic.has(creatorId) && viewerOf.has(playerId)) relate(creatorId, playerId, relation);
   }
+  for (const collab of collabs) ties.add(pairKey("collab", collab.creatorIds[0], collab.creatorIds[1]));
   for (const rivalry of document.ties.rivalries)
     if (rivalry.stage !== "over") ties.add(pairKey("rival", rivalry.fromId, rivalry.toId));
   return { creators, relations, ties, viewerOf, tieCreators };
@@ -314,6 +333,12 @@ export async function advanceSlurpDrama(db: DB, at = new Date()): Promise<void> 
       await storage
         .applyStoryOutcomes({ ...effect, participants: [effect.creatorId], sourceKind: "drama", at })
         .catch((error: unknown) => logger.warn(error, "[slurp-drama] Could not write a drama's story state"));
+    for (const effect of effects?.story ?? [])
+      for (const outcome of effect.outcomes)
+        if (outcome.kind === "brand-offer")
+          await offerStoryBrand(db, effect.creatorId, outcome.words).catch((error: unknown) =>
+            logger.warn(error, "[slurp-drama] Could not offer a drama's brand deal"),
+          );
     await applyDramaTies(db, effects?.ties ?? [], { at, creators: world.tieCreators, polyamory }).catch(
       (error: unknown) => logger.warn(error, "[slurp-drama] Could not apply a drama's tie outcome"),
     );
@@ -438,4 +463,22 @@ export async function answerSlurpDramaChoice(
     return { stored: current, result: taken ? ("taken" as const) : ("late" as const) };
   });
   return result ?? "late";
+}
+
+/**
+ * A `brand-offer` outcome: the first live product that fits the Creator and whose brand name, category,
+ * product or pitch matches the words gets offered, by the same lever as Stir. No such brand, nothing.
+ */
+async function offerStoryBrand(db: DB, creatorId: string, words: readonly string[]): Promise<void> {
+  const pattern = slurpFitPattern(words);
+  const catalog = await listSlurpBrandCatalog(db, creatorId);
+  if (!pattern || !catalog.adsOn) return;
+  const product = catalog.brands
+    .flatMap((brand) => brand.products.map((entry) => ({ brand, entry })))
+    .find(
+      ({ brand, entry }) =>
+        entry.fit === "fits" &&
+        pattern.test(`${brand.name} ${brand.category ?? ""} ${entry.name} ${entry.pitch ?? ""}`),
+    );
+  if (product) await slurpBrandDealLever(db, { accountId: creatorId, productId: product.entry.id }, true);
 }

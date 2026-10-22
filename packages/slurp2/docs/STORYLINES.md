@@ -607,6 +607,29 @@ items (PR 8). Version: one patch bump.
 - **Review fixes.** An upload may not use ":" in its pack id (it would read another pack's topic keys); toggle
   keys may be 170 characters long. A storyline takes back only a look it gave itself (same source label).
 
+## PR 6 as built (2026-10-22, on slurpothon): the Family pack
+
+- **Pack data.** `slurp-pack-family` (`modules/world/events/slp-family-pack.ts`) is a built-in pack, off by
+  default, with four v2 storylines and no events or arcs. Slurp is a creator platform, so each way in comes
+  from her work or her life: `family-pregnancy-couple` (needs a couple tie), `-collab` (needs a `collab` tie;
+  the collab partner is the father), `-player` (she is the player's partner or crush), `-surprise` (no cast
+  father). Each starts `auto` (rare weight, 120-day cooldown, once) or by the player's pick in Stir, and needs
+  a Creator who is not `pregnant` or `parent` yet.
+- **Pack switch.** `slpDramaEnabledIds` adds a built-in pack's storylines while the pack is on; the pack switch
+  is their only switch. Drama settings list them with "On while the pack is on" and show their dials.
+- **Business.** Stage influences (`multiply` on `audience.growth`, `economy.creator-earnings`, `feed.reach`)
+  reach the lead's numbers through `slpDramaStageMultiplier` in `platformInfluenceMultiplier`. Announcing
+  gives ×1.3 growth and ×1.1 earnings; a secret costs ×0.9 growth, then the reveal gives ×1.4. The new
+  outcome `brand-offer {words}` opens a brand deal for the first catalog product that fits her and matches a
+  word (baby, maternity, mom, …).
+- **Engine refinements.** Tie kind `collab` from `creatorCollabs` (plus the story tag `collab`); a lead role
+  leans to Creators whose turn-ons match the storyline fit (`slurpTasteWeight`); a choice option may carry
+  `when: {dial: value}`, so the scan's loss option exists only with the `hard` dial on.
+- **The hard line.** No look or moment pictures a child; the `born` ending adds the fact `parent` with the
+  line "never in a picture, never in a spicy post".
+- **Known limits:** v1 export does not include pack storylines; running brand deals do not pause; the
+  brand offer needs a matching brand in the catalog, else nothing happens.
+
 ## Later: Basic and add-ons
 
 The player wants Slurp split into a basic part and add-ons that can be switched, so setup and

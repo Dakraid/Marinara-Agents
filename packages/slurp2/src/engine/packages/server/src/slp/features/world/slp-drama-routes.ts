@@ -6,9 +6,16 @@ import { SLP_STORYLINES_OFF, slpExtensionOn } from "../../../../../shared/src/sl
 import { readSlurpDramaLibrary, readSlurpDramaState } from "../../data/world/slp-drama-storage.js";
 import { slpDramaCatalog, slpStorylineStands } from "../../modules/world/events/slp-drama-library.js";
 import { answerSlurpDramaChoice } from "./slp-drama-service.js";
+import { SLURP_CONTENT_PACK_LIBRARY } from "../../modules/world/events/slp-content-pack-library.js";
+import { slurpContentPackOn } from "../../modules/world/events/slp-content-packs.js";
 import { runSlurpDramaLever } from "./slp-drama-levers.js";
 
 const RECENT = 12;
+/** A built-in pack's storyline: its pack switch turns it on, not the drama list. */
+const packOf = (id: string, toggles: Readonly<Record<string, boolean>>) => {
+  const pack = SLURP_CONTENT_PACK_LIBRARY.find((entry) => entry.storylines?.some((storyline) => storyline.id === id));
+  return pack ? { name: pack.name, on: slurpContentPackOn(pack, toggles) } : null;
+};
 
 /**
  * Drama (`docs/DRAMA.md`) for Stir and the thread view: what can run and what runs now, with its
@@ -62,6 +69,7 @@ export async function slpDramaRoutes(app: FastifyInstance, { noodle, resolveView
           description: entry.description,
           builtin: false,
           dials: entry.dials,
+          pack: packOf(entry.id, settings.contentPacks ?? {}),
           requires: entry.start.within?.replace(/^situation:/, "") ?? null,
         })),
       ],

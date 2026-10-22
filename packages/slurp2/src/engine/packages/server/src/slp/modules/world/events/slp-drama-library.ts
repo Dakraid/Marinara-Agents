@@ -24,6 +24,8 @@ import {
 } from "../../../../../../shared/src/slp/slp-storyline.js";
 import { SLURP_BUILTIN_DRAMAS, SLURP_BUILTIN_SITUATIONS } from "./slp-drama-packs.js";
 import { slurpPackTopicOff } from "../../feed/slp-occasion-beats.js";
+import { SLURP_CONTENT_PACK_LIBRARY } from "./slp-content-pack-library.js";
+import { slurpContentPackOn } from "./slp-content-packs.js";
 
 export const SLP_DRAMA_LIBRARY_KEY = "slurp2.drama.library";
 
@@ -114,7 +116,11 @@ export function slpDramaEnabledIds(
       )
       .map((entry) => entry.id),
   );
-  return enabled.filter((id) => !off.has(id));
+  // A built-in pack's storylines run while the pack is on; the pack switch is their switch.
+  const packed = SLURP_CONTENT_PACK_LIBRARY.flatMap((pack) =>
+    slurpContentPackOn(pack, toggles) ? (pack.storylines ?? []).map((entry) => entry.id) : [],
+  );
+  return [...new Set([...enabled.filter((id) => !off.has(id)), ...packed])];
 }
 
 export type SlpDramaCatalog = { situations: SlpSituation[]; dramas: SlpDrama[]; storylines: SlpStoryline[] };
@@ -134,7 +140,10 @@ export function slpDramaCatalog(library: SlpDramaLibrary): SlpDramaCatalog {
       ...SLURP_BUILTIN_DRAMAS,
       ...library.dramas.filter((entry) => !builtinDramas.has(entry.id)).map(({ packId: _packId, ...entry }) => entry),
     ],
-    storylines: library.storylines.map(({ packId: _packId, ...entry }) => entry),
+    storylines: [
+      ...SLURP_CONTENT_PACK_LIBRARY.flatMap((pack) => pack.storylines ?? []),
+      ...library.storylines.map(({ packId: _packId, ...entry }) => entry),
+    ],
   };
 }
 
