@@ -170,6 +170,11 @@ export const OFFICIAL_PACKAGE_GUIDANCE = Object.freeze({
     activation:
       "Enable the music player in Settings → General. Add both as a Command and an Agent in Chat Settings → Agents → Commands/Misc Agents/Music DJ for Conversation, Roleplay, and Game modes.",
   },
+  // The Engine has no Chat Settings command toggle for Blackjack yet, so characters cannot start it on their own.
+  blackjack: {
+    modes: ["conversation"],
+    activation: "Install to use /blackjack in any Conversation chat, or ask to play blackjack to open the table setup.",
+  },
   poker: {
     modes: ["conversation"],
     activation:

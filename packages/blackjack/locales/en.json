@@ -1,0 +1,17 @@
+{
+  "$schema": "../../../schemas/package-localization.schema.json",
+  "_meta": {
+    "locale": "en",
+    "direction": "ltr"
+  },
+  "package": {
+    "name": "Blackjack",
+    "description": "Play Blackjack against the house with Conversation characters. Install to use /blackjack in any Conversation chat, or ask to play blackjack to open the table setup."
+  },
+  "agents": {
+    "blackjack": {
+      "name": "Blackjack",
+      "description": "Play Blackjack against the house with Conversation characters. Install to use /blackjack in any Conversation chat, or ask to play blackjack to open the table setup."
+    }
+  }
+}
