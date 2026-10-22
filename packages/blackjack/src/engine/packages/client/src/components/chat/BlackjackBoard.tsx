@@ -140,7 +140,7 @@ function ActionButton({
 // ── component ─────────────────────────────────────────────────────────────────
 
 export function BlackjackBoard({ chatId }: Props) {
-  const current = useBlackjackGameStore((s) => s.current);
+  const view = useBlackjackGameStore((s) => s.byChat[chatId] ?? null);
   const streaming = useChatStore((s) => s.isStreaming);
   const streamingChatId = useChatStore((s) => s.streamingChatId);
   const isStreaming = streaming && streamingChatId === chatId;
@@ -150,7 +150,6 @@ export function BlackjackBoard({ chatId }: Props) {
   // Keep the table query active so package server events refetch bot moves.
   useBlackjackState(chatId);
 
-  const view = current && current.chatId === chatId ? current : null;
   const disabled = isStreaming || move.isPending || resign.isPending;
   const actions = view?.yourActions ?? null;
   const minBet = actions?.minBet ?? 0;

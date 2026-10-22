@@ -25,6 +25,12 @@ interface Props {
 }
 
 const DECK_CHOICES = [1, 2, 4, 6, 8];
+/** An integer from a number field's text, held to [min, max]; blank or unreadable text falls back. */
+function clampInput(raw: string, min: number, max: number, fallback: number): number {
+  const value = Math.floor(Number(raw));
+  return raw.trim() === "" || !Number.isFinite(value) ? fallback : Math.min(max, Math.max(min, value));
+}
+
 const inputClass =
   "mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-sm text-[var(--foreground)]";
 
@@ -35,10 +41,10 @@ export function BlackjackSetup({ chatId, open, onClose }: Props) {
 
   // A game can start underneath the open modal (the user's "let's play blackjack" opens this setup while a
   // character may already be dealing). Finished games linger in the store, so a rematch's setup stays open.
-  const activeGame = useBlackjackGameStore((s) => s.current);
+  const activeGame = useBlackjackGameStore((s) => s.byChat[chatId] ?? null);
   useEffect(() => {
-    if (open && activeGame?.chatId === chatId && activeGame.status !== "finished") onClose();
-  }, [open, activeGame, chatId, onClose]);
+    if (open && activeGame && activeGame.status !== "finished") onClose();
+  }, [open, activeGame, onClose]);
 
   const chat = useMemo(() => (chats ?? []).find((c) => c.id === chatId), [chats, chatId]);
   const charIds = useMemo(() => getChatCharacterIds(chat), [chat]);
@@ -55,10 +61,11 @@ export function BlackjackSetup({ chatId, open, onClose }: Props) {
 
   const [selected, setSelected] = useState<Set<string> | null>(null);
   const [dealerCharacterId, setDealerCharacterId] = useState<string | null>(null);
-  const [startingBankroll, setStartingBankroll] = useState(DEFAULT_BLACKJACK_CONFIG.startingBankroll);
-  const [minBet, setMinBet] = useState(DEFAULT_BLACKJACK_CONFIG.minBet);
+  // Raw strings so a half-typed number survives; each is clamped to the engine's bounds on blur and on submit.
+  const [bankrollInput, setBankrollInput] = useState(String(DEFAULT_BLACKJACK_CONFIG.startingBankroll));
+  const [minBetInput, setMinBetInput] = useState(String(DEFAULT_BLACKJACK_CONFIG.minBet));
   const [decks, setDecks] = useState(DEFAULT_BLACKJACK_CONFIG.decks);
-  const [roundLimit, setRoundLimit] = useState(DEFAULT_BLACKJACK_CONFIG.roundLimit);
+  const [roundLimitInput, setRoundLimitInput] = useState(String(DEFAULT_BLACKJACK_CONFIG.roundLimit));
   const [dealerHitsSoft17, setDealerHitsSoft17] = useState(DEFAULT_BLACKJACK_CONFIG.dealerHitsSoft17);
 
   // A character dealer takes one of the seven spots and plays no hand.
@@ -81,7 +88,10 @@ export function BlackjackSetup({ chatId, open, onClose }: Props) {
   ];
   const playerCount = selectedIds.size + 1;
   const canStart = botCharacterIds.length >= 1 && !start.isPending;
+  const startingBankroll = clampInput(bankrollInput, 100, 1_000_000, DEFAULT_BLACKJACK_CONFIG.startingBankroll);
   const minBetCap = Math.max(1, Math.floor(startingBankroll / 4));
+  const minBet = clampInput(minBetInput, 1, minBetCap, Math.min(DEFAULT_BLACKJACK_CONFIG.minBet, minBetCap));
+  const roundLimit = clampInput(roundLimitInput, 0, 1000, DEFAULT_BLACKJACK_CONFIG.roundLimit);
 
   const startGame = () => {
     if (!canStart) return;
@@ -90,7 +100,7 @@ export function BlackjackSetup({ chatId, open, onClose }: Props) {
         gameType: "blackjack",
         config: {
           startingBankroll,
-          minBet: Math.min(minBet, minBetCap),
+          minBet,
           decks,
           dealerHitsSoft17,
           roundLimit,
@@ -176,12 +186,9 @@ export function BlackjackSetup({ chatId, open, onClose }: Props) {
                 type="number"
                 min={100}
                 max={1_000_000}
-                value={startingBankroll}
-                onChange={(e) =>
-                  setStartingBankroll(
-                    Math.max(100, Number(e.target.value) || DEFAULT_BLACKJACK_CONFIG.startingBankroll),
-                  )
-                }
+                value={bankrollInput}
+                onChange={(e) => setBankrollInput(e.target.value)}
+                onBlur={() => setBankrollInput(String(startingBankroll))}
                 className={inputClass}
               />
             </label>
@@ -191,8 +198,9 @@ export function BlackjackSetup({ chatId, open, onClose }: Props) {
                 type="number"
                 min={1}
                 max={minBetCap}
-                value={minBet}
-                onChange={(e) => setMinBet(Math.max(1, Number(e.target.value) || DEFAULT_BLACKJACK_CONFIG.minBet))}
+                value={minBetInput}
+                onChange={(e) => setMinBetInput(e.target.value)}
+                onBlur={() => setMinBetInput(String(minBet))}
                 className={inputClass}
               />
               <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">Up to {minBetCap}.</span>
@@ -213,8 +221,9 @@ export function BlackjackSetup({ chatId, open, onClose }: Props) {
                 type="number"
                 min={0}
                 max={1000}
-                value={roundLimit}
-                onChange={(e) => setRoundLimit(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
+                value={roundLimitInput}
+                onChange={(e) => setRoundLimitInput(e.target.value)}
+                onBlur={() => setRoundLimitInput(String(roundLimit))}
                 className={inputClass}
               />
               <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">

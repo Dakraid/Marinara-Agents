@@ -304,5 +304,26 @@ const base = fresh();
   assert.equal(base.pendingAnnouncements.length > 0, true, "draining does not mutate the input");
   assert.equal(engine.drainAnnouncements(drained.state), null);
 }
+{
+  // Many rounds that nothing drains: a house table queues nothing, a character dealer's queue stays capped.
+  const playRounds = (config) => {
+    let state = engine.setup(engine.normalizeConfig(config), SEATS, 3);
+    for (let round = 0; round < 25 && state.status !== "finished"; round++) {
+      for (let move = 0; move < 40 && state.status !== "round_over" && state.status !== "finished"; move++) {
+        const seat = engine.currentSeat(state);
+        state = play(state, seat, engine.pickFallbackMove(state, seat));
+      }
+      if (state.status === "round_over") state = play(state, "you", { type: "next_round" });
+    }
+    return state;
+  };
+  const house = playRounds({});
+  assert.ok(house.roundNumber > 3, "several rounds were played");
+  assert.deepEqual(house.pendingAnnouncements, []);
+  assert.equal(engine.publicView(house, "you").hasPendingAnnouncements, false);
+  assert.equal(engine.drainAnnouncements(house), null);
+  const dealt = playRounds({ dealerCharacterId: "mari" });
+  assert.ok(dealt.pendingAnnouncements.length > 0 && dealt.pendingAnnouncements.length <= 30);
+}
 
 console.log("blackjack engine: OK");

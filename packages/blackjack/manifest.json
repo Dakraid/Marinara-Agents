@@ -11,7 +11,7 @@
   "id": "blackjack",
   "name": "Blackjack",
   "version": "1.0.0",
-  "description": "Play Blackjack against the house with Conversation characters. Install to use /blackjack in any Conversation chat, or ask to play blackjack to open the table setup.",
+  "description": "Play Blackjack against the house with Conversation characters. Install to use /blackjack manually in any Conversation chat, or type a message like \"let's play blackjack\" to open the table setup. Characters cannot start a game on their own yet.",
   "engine": {
     "min": "2.3.0",
     "maxExclusive": "4.0.0"
@@ -42,18 +42,18 @@
   "files": [
     {
       "path": "agents.json",
-      "sha256": "37be65cf7c06adff073a4f0cd3b7502a9e156e575d0e9f563c633fda45f68925",
-      "bytes": 552
+      "sha256": "0bab18126b37a8782f05a3b3d6983587dea55f0b12ebe6d0f9b84aa0a20b1216",
+      "bytes": 633
     },
     {
       "path": "server.mjs",
-      "sha256": "1417d685867d5f7437062feeb0e30ae5675e50c0bdf64680e205643ebbf18619",
-      "bytes": 17346
+      "sha256": "a1837084f1898fd55fa1b42f1ad273972fbfa3de930cf1ecbc6cd2d5495e9b2d",
+      "bytes": 17479
     },
     {
       "path": "client.js",
-      "sha256": "251f1fc636d51fd7da42d6e556600ff4c9a2ebab57a11d0f188a32a3847fde2b",
-      "bytes": 161944
+      "sha256": "f8361662e10754b9ec6ccc1e8903084490430eada051fadbbf7d56e43271a70c",
+      "bytes": 162242
     }
   ],
   "permissions": [

@@ -129,5 +129,6 @@ export function useResignBlackjack(chatId: string) {
       useBlackjackGameStore.getState().clearBlackjack(chatId);
       qc.invalidateQueries({ queryKey: turnGameKeys.state(chatId) });
     },
+    onError: (err: unknown) => toast.error(err instanceof Error ? err.message : "Failed to end the game"),
   });
 }

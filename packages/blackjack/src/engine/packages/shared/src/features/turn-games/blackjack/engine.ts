@@ -33,11 +33,18 @@ import {
 const clone = cloneState<BlackjackState>;
 const nameOf = nameOfSeat;
 
-/** Log an event, return it with the move, and optionally queue it for the dealer to voice. */
+/**
+ * Log an event, return it with the move, and optionally queue it for the dealer to voice. Only a character dealer
+ * voices anything, so a house table queues nothing; the queue is capped like the log in case nothing drains it.
+ */
 function emit(state: BlackjackState, events: GameEvent[], event: GameEvent, announce = false): void {
   events.push(event);
   recordEvent(state, event, BLACKJACK_LOG_CAP);
-  if (announce) state.pendingAnnouncements.push(event);
+  if (!announce || !state.config.dealerCharacterId) return;
+  state.pendingAnnouncements.push(event);
+  if (state.pendingAnnouncements.length > BLACKJACK_LOG_CAP) {
+    state.pendingAnnouncements.splice(0, state.pendingAnnouncements.length - BLACKJACK_LOG_CAP);
+  }
 }
 
 function cardValue(card: Card): number {
