@@ -11,6 +11,8 @@ export type SlurpRapport = {
   score: number;
   tier: "stranger" | "acquaintance" | "regular" | "favourite" | "whale";
   contributions: SlurpRapportContribution[];
+  /** The highest tier reached; its doors stay open. */
+  peak?: SlurpRapport["tier"];
 };
 export type SlurpCreatorMessaging = {
   dmPolicy: SlurpDmPolicy;

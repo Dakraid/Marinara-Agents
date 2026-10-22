@@ -23,6 +23,7 @@ import {
 import { mapMessage, now } from "./slp-messages-storage-helpers.js";
 import { isSlurpFileUniqueConstraintError } from "../../base/host/slp-file-errors.js";
 import { int } from "./slp-messages-storage-helpers.js";
+import { slurpRapportDoorTier } from "../../modules/messages/slp-rapport.js";
 import { isUnsolicitedCreatorMessage, slurpAllowsUnsolicitedText } from "../../modules/messages/slp-follow-up.js";
 import { createSlurpPopulationStorage } from "../audience/slp-audience-storage-funnel.js";
 import type { SlurpMessage } from "./slp-messages-storage-types.js";
@@ -196,7 +197,10 @@ export function createMessagesStorageConversation(context: SlurpMessagesContext)
                     : "0",
               needsReply: quiet ? current.needsReply : input.role === "viewer" || newerViewer ? "true" : "false",
               replyNotBeforeAt: input.role === "creator" && !newerViewer ? null : current.replyNotBeforeAt,
-              rapport: JSON.stringify(rapport),
+              // Her reply carries any step-up the prompt asked her to say (`describeSlurpRapport`).
+              rapport: JSON.stringify(
+                input.role === "creator" ? { ...rapport, said: slurpRapportDoorTier(rapport) } : rapport,
+              ),
               updatedAt: timestamp,
             })
             .where(eq(slurpThreads.id, threadId));
@@ -341,7 +345,7 @@ export function createMessagesStorageConversation(context: SlurpMessagesContext)
             creatorUnread: "0",
             needsReply: "false",
             replyNotBeforeAt: null,
-            rapport: JSON.stringify(rapport),
+            rapport: JSON.stringify({ ...rapport, said: slurpRapportDoorTier(rapport) }),
             updatedAt: timestamp,
           })
           .where(eq(slurpThreads.id, threadId));

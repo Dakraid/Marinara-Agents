@@ -91,6 +91,8 @@ export function readStoredRapport(raw: Record<string, unknown>): SlurpRapport {
     score: typeof raw.score === "number" ? raw.score : 0,
     tier: (typeof raw.tier === "string" ? raw.tier : "stranger") as SlurpRapport["tier"],
     contributions: Array.isArray(raw.contributions) ? (raw.contributions as SlurpRapport["contributions"]) : [],
+    ...(typeof raw.peak === "string" ? { peak: raw.peak as SlurpRapport["tier"] } : {}),
+    ...(typeof raw.said === "string" ? { said: raw.said as SlurpRapport["tier"] } : {}),
   };
 }
 

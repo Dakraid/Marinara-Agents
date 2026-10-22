@@ -3071,5 +3071,11 @@
   "ui.slurp.extrasOffer.notNow": "Jetzt nicht",
   "ui.slurp.extrasOffer.error": "Das hat nicht geklappt. Versuch es noch einmal.",
   "ui.slurp.stir.off": "Stir und der Support-Desk sind ausgeschaltet",
-  "ui.slurp.stir.offDetail": "Schalte eins davon in Backstage › Stir ein."
+  "ui.slurp.stir.offDetail": "Schalte eins davon in Backstage › Stir ein.",
+  "ui.slurp.rapport.door.customDiscount": "Customs kosten 15 % weniger",
+  "ui.slurp.rapport.door.fullSpice": "Gratis-Bilder ohne Zurückhaltung",
+  "ui.slurp.rapport.door.gifts": "Ab und zu ein heißes Bild gratis",
+  "ui.slurp.rapport.door.spicierTalk": "Heißere Chats, auch ohne Abo",
+  "ui.slurp.rapport.doorsNone": "Noch nichts extra. Schreib, gib Trinkgeld und abonniere, um mehr zu öffnen.",
+  "ui.slurp.rapport.doorsTitle": "Für dich offen"
 }

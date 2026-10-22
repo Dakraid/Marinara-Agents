@@ -1,5 +1,11 @@
 # Slurp release notes
 
+## 0.3.62 — 2026-10-22
+
+- Intimacy ladder (docs/SPICY.md, item 1): rapport tiers open doors (`slurpRapportDoors`, `modules/messages/slp-rapport.ts`). Regular: her full DM level without a subscription. Favourite: one spicy chat picture in four is a free gift, customs 15% cheaper (quotes, the prompt's price range, counter floors; `commissionPricingFor`). Whale: free chat pictures at her full level.
+- The highest tier reached is kept per pair (`peak` in the thread's rapport JSON, seeded from the stored tier), so a quiet week never closes a door; an edited tier moves it. When the peak passes what she has said (`said`), the prompt asks her to say it once in her reply.
+- The tier sheet in a chat's Details lists the open doors (`SlurpTierDoors`, en/de/ko/pl).
+
 ## 0.3.61 — 2026-10-22
 
 - Five kink theme packs, off by default (`slp-kink-packs.ts`): Lingerie, Cosplay, Feet, Dom/sub and Exhibition, two storylines each, pure pack data on the storyline engine. Fans vote between sets, costumes and dares; endings add a locked look or a Creator fact; the lingerie brand storyline makes a `brand-offer`.

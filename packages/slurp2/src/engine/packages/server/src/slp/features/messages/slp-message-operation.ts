@@ -39,7 +39,12 @@ import {
 import { generateSlurpCommissionImage } from "./commissions/slp-commission-image-operation.js";
 import { slpStoredMediaSize, slurpMessageMediaUrl } from "../../base/media/slp-media.js";
 import { resolveSlurpMediaOffer, slurpDmPictureSpicy } from "../../modules/economy/slp-media-offer.js";
-import { slurpRapportPartner } from "../../modules/messages/slp-rapport.js";
+import {
+  SLURP_RAPPORT_GIFT_CHANCE,
+  slurpRapportDoors,
+  slurpRapportDoorTier,
+  slurpRapportPartner,
+} from "../../modules/messages/slp-rapport.js";
 import { slurpDmSpiceLevel } from "../../modules/creators/slp-spice.js";
 import { resolveSlurpExplicitLevel } from "../../data/settings/slp-post-guidance-storage.js";
 import { slurpCreatorStateCanUseMedia } from "../../modules/creators/slp-creator-state.js";
@@ -439,13 +444,18 @@ export async function replyToSlurpMessage(
         // one to somebody who has not subscribed stays a tease.
         // Her partner (or after a fight, still her partner) gets it free, as far as she goes.
         const partner = ["partner", "rocky"].includes(slurpRapportPartner(thread.rapport) ?? "");
+        // Rapport ladder: a reached tier keeps its doors; a favourite now and then gets a spicy one free.
+        const doorTier = slurpRapportDoorTier(thread.rapport);
+        const doors = slurpRapportDoors(doorTier);
+        const gift = doors.includes("gifts") && slurpDmPictureSpicy(image) && Math.random() < SLURP_RAPPORT_GIFT_CHANCE;
         const offer = resolveSlurpMediaOffer({
           intent: reply.imageMode === "hostile" ? "hostile" : "friendly",
-          rapportTier: thread.rapport.tier,
+          rapportTier: doorTier,
           subscribed,
           configuredPrice: messaging.ppvPrice,
           spicy: slurpDmPictureSpicy(image),
           partner,
+          gift,
         });
         const creatorLevel = await resolveSlurpExplicitLevel(db, thread.creatorAccountId).catch(
           () => "suggestive" as const,
@@ -454,8 +464,12 @@ export async function replyToSlurpMessage(
           ? await generateSlurpCommissionImage(db, {
               creatorAccountId: thread.creatorAccountId,
               brief: `${image.prompt}\nImage mode: ${reply.imageMode}`,
-              // A free picture stays a tease (a subscriber's casual one too); a paid one goes as far as the Creator does.
-              level: (offer.price > 0 || partner) && !demanded ? creatorLevel : slurpDmSpiceLevel(creatorLevel, false),
+              // A free picture stays a tease (a subscriber's casual one too); a paid one goes as far as the Creator does,
+              // and so does a gift or anything for a whale.
+              level:
+                (offer.price > 0 || partner || gift || doors.includes("fullSpice")) && !demanded
+                  ? creatorLevel
+                  : slurpDmSpiceLevel(creatorLevel, false),
             })
           : "unavailable";
         if (drawn !== "unavailable") {
