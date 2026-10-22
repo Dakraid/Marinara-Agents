@@ -143,6 +143,16 @@ export function useTipInSlurpThread() {
     onSettled: () => invalidateSlurpMessages(queryClient),
   });
 }
+/** Buy a sexting session in this thread (docs/SPICY.md, item 2); paid like a tip, she answers at once. */
+export function useStartSlurpSexting() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { personaId: string; threadId: string; requestId: string }) =>
+      api.post<SlurpSendResponse & { wallet: SlurpWallet }>("/slurp2/messages/sexting", input),
+    onSettled: () => invalidateSlurpMessages(queryClient),
+  });
+}
+
 export function useUnlockSlurpMessage() {
   const queryClient = useQueryClient();
   return useMutation({

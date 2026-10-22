@@ -8,6 +8,7 @@ import {
 import { selectSlurpAttentionCommissions } from "./slp-inbox-attention.js";
 import { activeSlurpStrikes, slurpDmPictureVerdict } from "../../modules/world/slp-stance.js";
 import { slurpAdultRiseBlock, slurpCreatorStateMediaBlock } from "../../modules/creators/slp-creator-state.js";
+import { slurpSextingPrice } from "../../modules/messages/slp-sexting.js";
 import { isSlurpSupportThread } from "../../modules/messages/slp-support.js";
 import { resolveSlurpThreadStance } from "./slp-thread-stance.js";
 import { describeSlurpDayVibe } from "../world/slp-world-contract.js";
@@ -306,6 +307,11 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
       counterpart,
       ...presence,
       messaging: await messages.getCreatorMessaging(thread.creatorAccountId),
+      // The session button's price; null where sessions are not sold (her own thread, Support, a hand-run Creator).
+      sextingPrice:
+        side === "viewer" && creator.sourceKind !== "persona" && !isSlurpSupportThread(thread)
+          ? slurpSextingPrice((await messages.getCreatorMessaging(thread.creatorAccountId)).ppvPrice, thread.rapport)
+          : null,
       commissions: withSuggestedQuotes(
         await messages.listCommissionsForThread(thread.id),
         slurpCommissionPricingFor(await messages.getCreatorMessaging(thread.creatorAccountId), thread.rapport),
@@ -490,6 +496,10 @@ export async function slpMessagesThreadRoutes(app: FastifyInstance, messaging: S
         !parsed.data.support &&
         thread?.state === "active" &&
         creator.sourceKind === "character",
+      sextingPrice:
+        thread && !parsed.data.support && creator.sourceKind !== "persona"
+          ? slurpSextingPrice((await messages.getCreatorMessaging(creator.id)).ppvPrice, thread.rapport)
+          : null,
     };
   });
 }

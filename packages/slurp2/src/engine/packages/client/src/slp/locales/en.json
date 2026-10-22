@@ -6629,5 +6629,11 @@
   "ui.slurp.extrasOffer.error": "That didn't go through. Try again.",
   "ui.slurp.stir.off": "Stir and the Support desk are switched off",
   "ui.slurp.stir.offDetail": "Switch either one on in Backstage › Stir.",
-  "ui.slurp.settings.overview.yours.stirOnStatus": "The lever deck and the planner in the Stir tab"
+  "ui.slurp.settings.overview.yours.stirOnStatus": "The lever deck and the planner in the Stir tab",
+  "ui.slurp.sexting.buy": "Sext with me – 20 min",
+  "ui.slurp.sexting.failed": "Could not start the session.",
+  "ui.slurp.sexting.left": "{{count}} min left",
+  "ui.slurp.sexting.over": "Session over. Leave her a tip?",
+  "ui.slurp.sexting.running": "Sexting session",
+  "ui.slurp.sexting.tip": "Send a tip"
 }

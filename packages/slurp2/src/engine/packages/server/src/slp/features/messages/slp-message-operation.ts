@@ -38,7 +38,8 @@ import {
 } from "../../modules/messages/slp-messaging.js";
 import { generateSlurpCommissionImage } from "./commissions/slp-commission-image-operation.js";
 import { slpStoredMediaSize, slurpMessageMediaUrl } from "../../base/media/slp-media.js";
-import { resolveSlurpMediaOffer, slurpDmPictureSpicy } from "../../modules/economy/slp-media-offer.js";
+import { resolveSlurpMediaOffer, slurpDmPictureSpicy, slurpPpvPrice } from "../../modules/economy/slp-media-offer.js";
+import { slurpSextingGuidance, slurpSextingPhase } from "../../modules/messages/slp-sexting.js";
 import {
   SLURP_RAPPORT_GIFT_CHANCE,
   slurpRapportDoors,
@@ -190,6 +191,9 @@ export async function replyToSlurpMessage(
   const triggerObligationCreatedAt = trigger?.createdAt ?? new Date().toISOString();
   const subscriptions = await slurp.listSubscriptionsForViewer(thread.viewerAccountId);
   const subscribed = subscriptions.some((entry) => entry.creatorAccountId === thread.creatorAccountId);
+  // A paid sexting session (docs/SPICY.md, item 2): fast replies, her full level, the phase in the prompt.
+  const sextingPhase = slurpSextingPhase(thread.sexting);
+  const sextingPicture = sextingPhase === "heated" && !thread.sexting?.pictureOffered;
 
   // The generated Conversation Schedule carries how chatty this Creator is.
   const talkativenessProfile = readTalkativenessProfile(
@@ -218,6 +222,7 @@ export async function replyToSlurpMessage(
     talkativeness: talkativenessProfile.talkativeness,
     delays: replyDelays,
     firstContact: !history.some((message) => message.role === "creator"),
+    sexting: sextingPhase !== null,
   });
   const completedReplyId = await messagesStore.getCompletedReply(thread.id, input.triggerMessageId);
   if (completedReplyId) {
@@ -281,7 +286,7 @@ export async function replyToSlurpMessage(
         viewer,
         history,
         rapport: thread.rapport,
-        subscribed,
+        subscribed: subscribed || sextingPhase !== null,
         dmPolicy: messaging.dmPolicy,
         isRequest,
         mood: thread.mood,
@@ -297,7 +302,10 @@ export async function replyToSlurpMessage(
         connection,
         availability,
         debugMode: input.debugMode,
-        generationGuidance: input.generationGuidance,
+        generationGuidance:
+          [input.generationGuidance, sextingPhase && slurpSextingGuidance(sextingPhase, sextingPicture)]
+            .filter(Boolean)
+            .join("\n\n") || undefined,
         // The scheduler only calls with `force` after `messagesAwayRepliesEnabled` admitted this
         // thread. That setting is the explicit permission for an unattended reply. Requiring the
         // separate global background-worker switch as well made the default settings contradictory:
@@ -337,6 +345,7 @@ export async function replyToSlurpMessage(
         talkativeness: talkativenessProfile.talkativeness,
         delays: replyDelays,
         firstContact: !history.some((message) => message.role === "creator"),
+        sexting: sextingPhase !== null,
       });
       const typingLeadMs = input.background ? 0 : firstPacing.typingMs;
       let stored = null;
@@ -456,15 +465,19 @@ export async function replyToSlurpMessage(
           doors.includes("gifts") &&
           slurpDmPictureSpicy(image) &&
           Math.random() < SLURP_RAPPORT_GIFT_CHANCE;
-        const offer = resolveSlurpMediaOffer({
-          intent: reply.imageMode === "hostile" ? "hostile" : "friendly",
-          rapportTier: doorTier,
-          subscribed,
-          configuredPrice: messaging.ppvPrice,
-          spicy: slurpDmPictureSpicy(image),
-          partner,
-          gift,
-        });
+        // Her one in-session PPV: at her PPV price and full level, even for a subscriber.
+        const sextingPpv = sextingPicture && !partner && !demanded && reply.imageMode !== "hostile";
+        const offer = sextingPpv
+          ? ({ visibility: "locked", price: slurpPpvPrice(messaging.ppvPrice), reason: "premium_content" } as const)
+          : resolveSlurpMediaOffer({
+              intent: reply.imageMode === "hostile" ? "hostile" : "friendly",
+              rapportTier: doorTier,
+              subscribed,
+              configuredPrice: messaging.ppvPrice,
+              spicy: slurpDmPictureSpicy(image),
+              partner,
+              gift,
+            });
         const creatorLevel = await resolveSlurpExplicitLevel(db, thread.creatorAccountId).catch(
           () => "suggestive" as const,
         );
@@ -498,6 +511,7 @@ export async function replyToSlurpMessage(
           if (!imageMessage) {
             drawn.compensate();
           } else {
+            if (sextingPpv && thread.sexting) await messagesStore.markSextingPicture(thread.id, thread.sexting);
             drawn.promote();
             await messagesStore.setMessageMedia(
               imageMessage.id,

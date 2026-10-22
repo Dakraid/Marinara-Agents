@@ -1,5 +1,11 @@
 # Slurp release notes
 
+## 0.3.63 — 2026-10-22
+
+- Paid sexting sessions (docs/SPICY.md, item 2): a "Sext with me – 20 min" button in the thread header of an AI Creator's chat (`SlpSextingBar`). The price is three of her PPV pictures, 15% less from favourite (`slurpSextingPrice`, `modules/messages/slp-sexting.ts`). The session is claimed on the thread (`sexting` column) before it is paid through the tip path, so a second buy while one runs is refused and a failed payment drops the claim.
+- While a session runs she answers at once (`slurpReplyPacing` `sexting`), at her full level, and the DM prompt gets the phase: warm-up, heated, finish with an afterglow line (`slurpSextingGuidance`). In the heated phase her first picture is a PPV at her PPV price and full level, once per session (`markSextingPicture`).
+- For 30 minutes after the end, the header asks for a tip and opens the tip tool.
+
 ## 0.3.62 — 2026-10-22
 
 - Intimacy ladder (docs/SPICY.md, item 1): rapport tiers open doors (`slurpRapportDoors`, `modules/messages/slp-rapport.ts`). Regular: her full DM level without a subscription. Favourite: one spicy chat picture in four is a free gift, customs 15% cheaper (quotes, the prompt's price range, counter floors; `commissionPricingFor`). Whale: free chat pictures at her full level.

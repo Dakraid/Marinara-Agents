@@ -1,4 +1,5 @@
 import { slurpCommissionPricingFor } from "../../modules/economy/slp-creator-pricing.js";
+import { readSlurpSexting, slurpSextingPhase, type SlurpSexting } from "../../modules/messages/slp-sexting.js";
 import { slpOverrideRapport } from "../../../../../shared/src/slp/slp-message-details.js";
 // ──────────────────────────────────────────────
 // Storage: Slurp direct messages
@@ -431,6 +432,31 @@ export function createMessagesStorageBase(context: SlurpMessagesContext) {
       await db
         .update(slurpThreads)
         .set({ rapport: JSON.stringify({ ...stored, said }) })
+        .where(eq(slurpThreads.id, threadId));
+    },
+    /** Claim a sexting session before it is paid; false while one still runs, so a double buy never pays twice. */
+    async startSexting(threadId: string, session: SlurpSexting): Promise<boolean> {
+      return db.transaction(async (tx) => {
+        const current = (await tx.select().from(slurpThreads).where(eq(slurpThreads.id, threadId)))[0];
+        if (!current || slurpSextingPhase(readSlurpSexting(current.sexting))) return false;
+        await tx
+          .update(slurpThreads)
+          .set({ sexting: JSON.stringify(session), updatedAt: now() })
+          .where(eq(slurpThreads.id, threadId));
+        return true;
+      });
+    },
+    /** Drop a claimed session whose payment failed; a newer one stays. */
+    async cancelSexting(threadId: string, startedAt: string): Promise<void> {
+      const rows = await db.select().from(slurpThreads).where(eq(slurpThreads.id, threadId));
+      if (readSlurpSexting(rows[0]?.sexting)?.startedAt !== startedAt) return;
+      await db.update(slurpThreads).set({ sexting: null }).where(eq(slurpThreads.id, threadId));
+    },
+    /** Her one in-session PPV went out. */
+    async markSextingPicture(threadId: string, session: SlurpSexting): Promise<void> {
+      await db
+        .update(slurpThreads)
+        .set({ sexting: JSON.stringify({ ...session, pictureOffered: true }) })
         .where(eq(slurpThreads.id, threadId));
     },
     /** The Creator's commission pricing for one fan: a favourite's customs cost less (rapport ladder). */

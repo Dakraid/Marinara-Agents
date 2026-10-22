@@ -7,7 +7,7 @@ import { playSlpSpendMoment } from "../../modules/sparkle/SlpSparkle";
 import { useSlurpThreadViewState, type SlurpThreadViewProps, type SlurpThreadViewState } from "./slp-thread-view-model";
 
 /** `crypto.randomUUID` exists only in a secure context; a plain-HTTP LAN Engine does not have one. */
-const newRequestId = () =>
+export const newRequestId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
 
 /**

@@ -3891,5 +3891,11 @@
   "ui.slurp.rapport.door.gifts": "가끔 아찔한 사진을 무료로",
   "ui.slurp.rapport.door.spicierTalk": "구독 없이도 더 아찔한 대화",
   "ui.slurp.rapport.doorsNone": "아직 추가 혜택이 없어요. 대화하고, 팁을 주고, 구독해서 더 열어 보세요.",
-  "ui.slurp.rapport.doorsTitle": "나에게 열린 것"
+  "ui.slurp.rapport.doorsTitle": "나에게 열린 것",
+  "ui.slurp.sexting.buy": "나랑 섹스팅 – 20분",
+  "ui.slurp.sexting.failed": "세션을 시작할 수 없어요.",
+  "ui.slurp.sexting.left": "{{count}}분 남음",
+  "ui.slurp.sexting.over": "세션이 끝났어요. 팁을 남길까요?",
+  "ui.slurp.sexting.running": "섹스팅 세션",
+  "ui.slurp.sexting.tip": "팁 보내기"
 }

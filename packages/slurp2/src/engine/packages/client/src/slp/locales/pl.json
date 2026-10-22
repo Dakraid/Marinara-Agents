@@ -3113,5 +3113,11 @@
   "ui.slurp.rapport.door.gifts": "Od czasu do czasu pikantne zdjęcie za darmo",
   "ui.slurp.rapport.door.spicierTalk": "Pikantniejsze czaty, nawet bez subskrypcji",
   "ui.slurp.rapport.doorsNone": "Na razie nic więcej. Pisz, dawaj napiwki i subskrybuj, aby otworzyć więcej.",
-  "ui.slurp.rapport.doorsTitle": "Otwarte dla ciebie"
+  "ui.slurp.rapport.doorsTitle": "Otwarte dla ciebie",
+  "ui.slurp.sexting.buy": "Sextuj ze mną – 20 min",
+  "ui.slurp.sexting.failed": "Nie udało się rozpocząć sesji.",
+  "ui.slurp.sexting.left": "Zostało {{count}} min",
+  "ui.slurp.sexting.over": "Sesja skończona. Zostawisz jej napiwek?",
+  "ui.slurp.sexting.running": "Sesja sextingu",
+  "ui.slurp.sexting.tip": "Wyślij napiwek"
 }

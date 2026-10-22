@@ -1,7 +1,7 @@
 import { SLURP2_LEGACY_RELEASES } from "./slp-release-archive";
 
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.62";
+export const SLURP2_VERSION = "0.3.63";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -14,6 +14,15 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.63",
+    date: "2026-10-22",
+    notes: [
+      "Sexting sessions: in a Creator's chat, buy 20 minutes of her for three of her PPV pictures (less for a favourite).",
+      "During a session she answers right away and heats up from warm-up to a finish, with one PPV picture of what she is doing right now.",
+      "When the session ends, the chat asks if you want to leave her a tip.",
+    ],
+  },
   {
     version: "0.3.62",
     date: "2026-10-22",

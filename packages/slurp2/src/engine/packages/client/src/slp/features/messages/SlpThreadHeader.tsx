@@ -29,6 +29,7 @@ import { CommissionRow } from "./commissions/SlpCommissions";
 import type { SlurpThreadViewModel } from "./slp-thread-actions";
 import { SlpDeskTrustChip } from "../../modules/desk/SlpDeskCaseFile";
 import { SlpDeskTicketBar } from "./SlpDeskTicketBar";
+import { SlpSextingBar } from "./SlpSextingBar";
 import { slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
 import { copySlpThread, SlpThreadSummarySheet } from "./SlpThreadExportSheet";
 
@@ -486,6 +487,7 @@ export function SlpThreadHeader({ model }: { model: SlurpThreadViewModel }) {
 
       {relationship?.desk && asSupport && deskOn && <SlpDeskTicketBar model={model} desk={relationship.desk} />}
 
+      {!ownsCreator && !asSupport && <SlpSextingBar model={model} />}
       {thread?.state === "request" && (
         <div className="mx-auto mt-3 w-full max-w-[45rem] shrink-0 px-3">
           <div className="rounded-2xl bg-[var(--slurp-tint)] px-4 py-3 shadow-[var(--slurp-highlight)]">
