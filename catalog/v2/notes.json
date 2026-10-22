@@ -174,7 +174,7 @@
         {
           "version": "1.9.1",
           "date": "2026-10-23",
-          "notes": "- Chapter fullscreen controls now use a small icon aligned with the top-right header fade, with a usable touch target and visible keyboard focus.\n\n- Visible unit portraits use eager loading and synchronous decoding on detail updates.\n- Favorite and help icons are centered; unit cards show their existing affinity symbol in the top-right corner.",
+          "notes": "- Chapter fullscreen controls now use a small icon aligned with the top-right header fade, with a usable touch target and visible keyboard focus.\n- Visible unit portraits use eager loading and synchronous decoding on detail updates.\n- Favorite and help icons are centered; unit cards show their existing affinity symbol in the top-right corner.",
           "highlight": false
         },
         {

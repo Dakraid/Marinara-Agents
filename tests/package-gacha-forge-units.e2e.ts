@@ -42,7 +42,7 @@ test("Units keep portraits loaded and center controls, with an affinity card bad
     route.fulfill({
       contentType: "image/png",
       headers: { "cache-control": "public, max-age=31536000, immutable" },
-      body: readFileSync(new URL("../artwork/agent-covers/gacha-forge.png", import.meta.url)),
+      body: readFileSync(resolve("artwork/agent-covers/gacha-forge.png")),
     }),
   );
   await page.route("**/api/gacha-forge/state", (route) =>
@@ -66,7 +66,12 @@ test("Units keep portraits loaded and center controls, with an affinity card bad
     game._artReady = true;
     game._hudView = "roster";
     game._rosterUnitId = null;
-    game._roster = [unit];
+    game._roster = Array.from({ length: 60 }, (_, index) => ({
+      ...unit,
+      id: index ? `unit-${index}` : unit.id,
+      name: index ? `Unit ${String(index).padStart(2, "0")}` : unit.name,
+      affinity: ["Fire", "Water", "Wind", "Earth", "Light", "Dark"][index % 6],
+    }));
     game._rosterState = "ready";
     game._rosterRev += 1;
     game._renderBrowser();
@@ -83,28 +88,13 @@ test("Units keep portraits loaded and center controls, with an affinity card bad
     const sample = { frames: 0, blankFrames: 0, running: true };
     (window as any).unitPortraitSample = sample;
     const frame = () => {
-      // Transitions copy the portrait into nested shadow roots. Sample those too.
-      const images: HTMLImageElement[] = [];
-      const collect = (root: ShadowRoot | Element) => {
-        images.push(...root.querySelectorAll<HTMLImageElement>(".cp-photo"));
-        for (const element of root.querySelectorAll("*")) if (element.shadowRoot) collect(element.shadowRoot);
-      };
-      collect(node.shadowRoot!);
-      const visible = images.filter((image) => {
-        const box = image.getBoundingClientRect();
-        return (
-          box.width > 0 &&
-          box.height > 0 &&
-          box.bottom > 0 &&
-          box.top < innerHeight &&
-          box.right > 0 &&
-          box.left < innerWidth &&
-          getComputedStyle(image).visibility !== "hidden"
-        );
-      });
-      if (visible.length) {
+      // Inspect the active incoming portrait; a loaded outgoing clone must not mask a blank image.
+      const image = node.shadowRoot!.querySelector<HTMLImageElement>(
+        '.gf-stage > .gf-view > .root > [data-screen="unit"] > .cp-body > .cp-id > .cp-portrait > .cp-photo',
+      );
+      if (image) {
         sample.frames += 1;
-        if (visible.every((image) => !image.complete || image.naturalWidth === 0)) sample.blankFrames += 1;
+        if (!image.complete || image.naturalWidth === 0) sample.blankFrames += 1;
       }
       if (sample.running) requestAnimationFrame(frame);
     };
@@ -155,15 +145,49 @@ test("Units keep portraits loaded and center controls, with an affinity card bad
   await forge.getByRole("button", { name: "◀ Units", exact: true }).click();
   const badge = card.getByRole("img", { name: "Fire", exact: true });
   await expect(badge).toBeVisible();
+  // Measure the resting card, after its finite entrance animations.
+  await card.evaluate(async (card) => {
+    await Promise.all(
+      card
+        .getAnimations({ subtree: true })
+        .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
+        .map((animation) => animation.finished.catch(() => {})),
+    );
+  });
   const position = await badge.evaluate((badge) => {
     const art = badge.closest(".u-art")!.getBoundingClientRect();
     const icon = badge.getBoundingClientRect();
-    return { right: art.right - icon.right, top: icon.top - art.top };
+    const stars = badge.closest(".u-art")!.querySelector(".u-stars")!.getBoundingClientRect();
+    return {
+      right: art.right - icon.right,
+      top: icon.top - art.top,
+      cornerGap: Math.abs(icon.top - stars.top),
+      width: icon.width,
+      height: icon.height,
+    };
   });
   expect(position.right).toBeGreaterThanOrEqual(0);
-  expect(position.right).toBeLessThan(15);
+  expect(position.right).toBeLessThan(position.width);
   expect(position.top).toBeGreaterThanOrEqual(0);
-  expect(position.top).toBeLessThan(15);
+  expect(position.top).toBeLessThan(position.height);
+  expect(position.cornerGap, "affinity badge aligns with the opposite rarity corner").toBeLessThanOrEqual(1);
+  const loads = await forge.evaluate((node) => {
+    const viewport = node.shadowRoot!.querySelector(".grid-scroll")!.getBoundingClientRect();
+    return Array.from(node.shadowRoot!.querySelectorAll<HTMLImageElement>(".u-photo")).map((image) => {
+      const box = image.getBoundingClientRect();
+      return {
+        visible:
+          box.bottom > viewport.top &&
+          box.top < viewport.bottom &&
+          box.right > viewport.left &&
+          box.left < viewport.right,
+        loading: image.loading,
+      };
+    });
+  });
+  expect(loads.some((image) => !image.visible)).toBe(true);
+  expect(loads.filter((image) => image.visible).every((image) => image.loading === "eager")).toBe(true);
+  expect(loads.filter((image) => !image.visible).every((image) => image.loading === "lazy")).toBe(true);
   await page.screenshot({
     animations: "disabled",
     path: testInfo.outputPath(`unit-affinity-${testInfo.project.name}.png`),

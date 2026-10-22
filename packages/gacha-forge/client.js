@@ -70,6 +70,23 @@ function wireForgeBrowserFullscreen(host) {
     sheet.textContent = forgeBrowserLayout;
     root.append(sheet);
   }
+  // Only the visible roster page loads immediately; offscreen cards keep native lazy loading.
+  const roster = root.querySelector('[data-screen="roster"] .grid-scroll');
+  if (roster) {
+    const viewport = roster.getBoundingClientRect();
+    for (const image of roster.querySelectorAll(".u-photo")) {
+      const box = image.getBoundingClientRect();
+      if (
+        box.bottom > viewport.top &&
+        box.top < viewport.bottom &&
+        box.right > viewport.left &&
+        box.left < viewport.right
+      ) {
+        image.loading = "eager";
+        image.decoding = "sync";
+      }
+    }
+  }
   const rotationNotice = root.querySelector(".gf-rot");
   if (rotationNotice && !rotationNotice.querySelector(".gf-fs-portrait")) {
     const button = document.createElement("button");
@@ -78,7 +95,7 @@ function wireForgeBrowserFullscreen(host) {
     rotationNotice.append(button);
   }
   const chapterHeader = root.querySelector(".vn-top");
-  const chapterToggle = root.querySelector(".gf-fs-exit");
+  const chapterToggle = root.querySelector(".gf-stage > .gf-fs-exit, .vn-top > .gf-fs-chapter");
   if (chapterHeader && chapterToggle) {
     chapterToggle.classList.add("gf-fs-chapter");
     if (chapterToggle.parentElement !== chapterHeader) chapterHeader.append(chapterToggle);

@@ -107,6 +107,7 @@ test("Forge fills every screen, toggles inside the Engine and keeps world drafts
         "farm-form",
         "achievements",
         "chapter",
+        "beat",
       ]);
       game._welcomeBegun = true;
       game._run = {
@@ -200,6 +201,7 @@ test("Forge fills every screen, toggles inside the Engine and keeps world drafts
   });
   const chapterToggle = forge.locator(".vn-top > .gf-fs-chapter");
   await expect(chapterToggle).toBeVisible();
+  await expect(forge.locator(".gf-fs-bar:visible, .gf-fs-exit:visible, .gf-fs:visible")).toHaveCount(1);
   const presentation = await chapterToggle.evaluate((button) => {
     const box = button.getBoundingClientRect();
     const header = button.parentElement!.getBoundingClientRect();
@@ -225,7 +227,9 @@ test("Forge fills every screen, toggles inside the Engine and keeps world drafts
   expect(presentation.right).toBeLessThanOrEqual(1);
   expect(presentation.background).toBe("rgba(0, 0, 0, 0)");
   expect(presentation.border).toBe("0px");
+  await page.keyboard.press("Tab");
   await chapterToggle.focus();
+  await expect(chapterToggle).toBeFocused();
   await expect(chapterToggle).toHaveCSS("outline-style", "solid");
   await page.keyboard.press("Enter");
   await expect(page.locator(".mari-home-browser-chrome")).toBeHidden();

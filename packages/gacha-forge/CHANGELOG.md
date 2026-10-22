@@ -1,7 +1,6 @@
 ## 1.9.1 — 2026-10-23
 
 - Chapter fullscreen controls now use a small icon aligned with the top-right header fade, with a usable touch target and visible keyboard focus.
-
 - Visible unit portraits use eager loading and synchronous decoding on detail updates.
 - Favorite and help icons are centered; unit cards show their existing affinity symbol in the top-right corner.
 
