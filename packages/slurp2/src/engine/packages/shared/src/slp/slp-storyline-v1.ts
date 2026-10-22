@@ -236,6 +236,8 @@ export function parseSlpStoryPackV2(value: unknown): { pack: SlpStoryPackV2 | nu
       ...(author ? { author } : {}),
       tracks: [],
       storylines,
+      occasions: [],
+      topics: [],
     },
     errors: [],
   };

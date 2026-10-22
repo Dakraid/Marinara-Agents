@@ -19,15 +19,17 @@ import {
   previewSlpStoryPack,
   slpBundledStoryPacks,
   type SlpStoryPackApplyChoice,
+  type SlpStoryPackInput,
   type SlpStoryPackPreview,
 } from "../../modules/world/events/slp-story-packs.js";
 import { projectSlpStoryCalendar } from "../../modules/world/events/slp-story-runtime.js";
-import { slurpContentPackSummaries } from "../../modules/world/events/slp-content-packs.js";
+import { slurpContentPackSummaries, slurpPackGate } from "../../modules/world/events/slp-content-packs.js";
 import type { SlpRouteDeps } from "../viewer/slp-viewer-contract.js";
 import { slpExtensionOn } from "../../../../../shared/src/slp/slp-extensions.js";
 
 const PREVIEW_TTL_MS = 15 * 60_000;
-type StagedPreview = { expiresAt: number; preview: SlpStoryPackPreview };
+/** `pack` is kept for an uploaded pack only: it becomes the pack's record in the Packs list on apply. */
+type StagedPreview = { expiresAt: number; preview: SlpStoryPackPreview; pack?: SlpStoryPackInput };
 
 const applySchema = z
   .object({
@@ -57,6 +59,11 @@ export async function slpStoryRoutes(app: FastifyInstance, { noodle }: SlpRouteD
   };
 
   app.get("/story-packs/bundled", async () => ({
+    // Imported packs, for the one Packs list; their on/off is the same `contentPacks` setting.
+    imported: (await readSlurpDramaLibrary(app.db)).packs.map(({ occasions, ...pack }) => ({
+      ...pack,
+      occasionCount: occasions.length,
+    })),
     packs: slpBundledStoryPacks().map(({ arcs, events, situations, dramas, ...metadata }) => ({
       ...metadata,
       arcCount: arcs.length,
@@ -80,7 +87,7 @@ export async function slpStoryRoutes(app: FastifyInstance, { noodle }: SlpRouteD
     });
     const previewId = randomUUID();
     const expiresAt = Date.now() + PREVIEW_TTL_MS;
-    previews.set(previewId, { preview, expiresAt });
+    previews.set(previewId, { preview, expiresAt, pack: parsed.pack });
     return { previewId, expiresAt: new Date(expiresAt).toISOString(), ...preview };
   });
 
@@ -153,27 +160,68 @@ export async function slpStoryRoutes(app: FastifyInstance, { noodle }: SlpRouteD
         choice.action !== "skip" &&
         (choice.kind === "situation" || choice.kind === "drama" || choice.kind === "storyline"),
     );
-    if (dramaChoices.length) {
-      const entries = dramaChoices.flatMap((choice) => {
-        const staged_ = staged.preview.entries.find(
-          (item) => item.kind === choice.kind && item.contentId === choice.contentId,
-        );
-        const parsedValue = (
-          choice.kind === "situation"
-            ? slpSituationSchema
-            : choice.kind === "storyline"
-              ? slpStorylineSchema
-              : slpDramaSchema
-        ).safeParse(choice.value ?? staged_?.value);
-        return parsedValue.success ? [{ kind: choice.kind, value: parsedValue.data } as never] : [];
-      });
-      await writeSlurpDramaLibrary(
-        app.db,
-        applySlpDramaEntries(await readSlurpDramaLibrary(app.db), staged.preview.pack.id, entries),
+    const entries = dramaChoices.flatMap((choice) => {
+      const staged_ = staged.preview.entries.find(
+        (item) => item.kind === choice.kind && item.contentId === choice.contentId,
       );
+      const parsedValue = (
+        choice.kind === "situation"
+          ? slpSituationSchema
+          : choice.kind === "storyline"
+            ? slpStorylineSchema
+            : slpDramaSchema
+      ).safeParse(choice.value ?? staged_?.value);
+      return parsedValue.success ? [{ kind: choice.kind, value: parsedValue.data } as never] : [];
+    });
+    const kept = parsed.data.choices.filter((item) => item.action !== "skip").length;
+    const pack = kept ? staged.pack : undefined;
+    if (entries.length || pack) {
+      const library = applySlpDramaEntries(await readSlurpDramaLibrary(app.db), staged.preview.pack.id, entries);
+      // An uploaded pack gets a record for the Packs list (switch, Remove) and its occasions' beats for the planner.
+      if (pack)
+        library.packs = [
+          ...library.packs.filter((item) => item.id !== pack.id),
+          {
+            id: pack.id,
+            name: pack.name,
+            version: pack.version,
+            description: pack.description,
+            ...(pack.author ? { author: pack.author } : {}),
+            topics: pack.topics ?? [],
+            occasions: pack.occasions ?? [],
+            importedAt: new Date().toISOString(),
+          },
+        ];
+      await writeSlurpDramaLibrary(app.db, library);
     }
     previews.delete((req.params as { id: string }).id);
-    return { imported: parsed.data.choices.filter((item) => item.action !== "skip").length };
+    return { imported: kept };
+  });
+
+  // Removes an imported pack (the client confirms first): its arcs, events and drama entries, its record and switch.
+  app.delete("/story-packs/:id", async (req, reply) => {
+    const id = (req.params as { id: string }).id;
+    const library = await readSlurpDramaLibrary(app.db);
+    if (!library.packs.some((pack) => pack.id === id)) return reply.code(404).send({ error: "Story pack not found." });
+    const mine = (entry: { packId: string }) => entry.packId === id;
+    const gone = new Set(
+      [...library.situations, ...library.dramas, ...library.storylines].filter(mine).map((entry) => entry.id),
+    );
+    await writeSlurpDramaLibrary(app.db, {
+      situations: library.situations.filter((entry) => !mine(entry)),
+      dramas: library.dramas.filter((entry) => !mine(entry)),
+      storylines: library.storylines.filter((entry) => !mine(entry)),
+      packs: library.packs.filter((pack) => pack.id !== id),
+    });
+    const settings = await noodle.getSettings();
+    const { [id]: _switch, ...contentPacks } = settings.contentPacks;
+    await noodle.updateSettings({
+      arcLibrary: settings.arcLibrary.filter((entry) => entry.provenance?.packId !== id),
+      platformEvents: settings.platformEvents.filter((entry) => entry.provenance?.packId !== id),
+      contentPacks,
+      drama: { ...settings.drama, enabled: settings.drama.enabled.filter((entry) => !gone.has(entry)) },
+    });
+    return reply.code(204).send();
   });
 
   app.post("/story-packs/export", async (req, reply) => {
@@ -200,6 +248,7 @@ export async function slpStoryRoutes(app: FastifyInstance, { noodle }: SlpRouteD
         dramas: library.dramas.filter((item) => body.data.dramaIds.includes(item.id)),
         // ponytail: export stays v1, so imported v2 storylines are not exported; add a v2 export when packs are shared.
         storylines: [],
+        packs: [],
       })),
     });
   });
@@ -227,7 +276,7 @@ export async function slpStoryRoutes(app: FastifyInstance, { noodle }: SlpRouteD
       from: from.toISOString(),
       to: to.toISOString(),
       items: projectSlpStoryCalendar({
-        events: settings.platformEvents,
+        events: slurpPackGate(settings.platformEvents, settings.contentPacks),
         occurrences: await noodle.listStoryOccurrences(),
         plans,
         from,

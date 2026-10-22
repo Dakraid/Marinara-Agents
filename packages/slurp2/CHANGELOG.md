@@ -1,5 +1,13 @@
 # Slurp release notes
 
+## 0.3.58 — 2026-10-22
+
+- One Packs list: imported packs get a record (name, version, topics, occasions) and a card next to the built-in
+  ones. Their switch (`contentPacks[id]`) is a gate: off stops new arcs, events, dramas and occasions of the pack;
+  each entry keeps its own switch. Remove (with a confirm) deletes the pack's entries, record and switch.
+- v2 packs take `occasions` (today's event shape plus beats and a JSON `fit`) and `topics`. Review lists an
+  occasion as an event; the planner runs its beats like a built-in pack's. Every built-in pack also reads as v2.
+
 ## 0.3.57 — 2026-10-22
 
 - One JSON `fit` (level, hard noes, needed words, topic words) on storylines, stages, choice options and beats; the

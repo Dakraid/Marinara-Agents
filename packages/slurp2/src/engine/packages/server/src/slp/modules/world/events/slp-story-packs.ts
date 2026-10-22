@@ -18,7 +18,7 @@ import { SLURP_ARC_LIBRARY_SEED } from "../../projects/slp-arc-library.js";
 import { slurpPlatformEventsDefault } from "../../../../../../shared/src/slp/slp-platform-events.js";
 import type { SlpDrama, SlpSituation } from "../../../../../../shared/src/slp/slp-drama.js";
 import { parseSlpStoryPackV2, slpStorylinesFromV1 } from "../../../../../../shared/src/slp/slp-storyline-v1.js";
-import type { SlpStoryline } from "../../../../../../shared/src/slp/slp-storyline.js";
+import type { SlpOccasion, SlpStoryline } from "../../../../../../shared/src/slp/slp-storyline.js";
 import { slpDramaPreviewStatus, SLP_EMPTY_DRAMA_LIBRARY, type SlpDramaLibrary } from "./slp-drama-library.js";
 
 export type SlpStoryPackPreviewEntry = {
@@ -374,8 +374,14 @@ function legacyArcPack(value: unknown): SlpStoryPack | null {
   );
 }
 
-/** A pack as imported: v1 entries, and a v2 file's storylines, which run as they are. */
-export type SlpStoryPackInput = SlpStoryPack & { tracks?: string[]; storylines?: SlpStoryline[] };
+/** A pack as imported: v1 entries, and a v2 file's storylines, which run as they are, and its occasions. */
+export type SlpStoryPackInput = SlpStoryPack & {
+  tracks?: string[];
+  storylines?: SlpStoryline[];
+  /** v2 occasions; their event part is also in `events`, so Review lists them as events. */
+  occasions?: SlpOccasion[];
+  topics?: string[];
+};
 
 export function parseSlpStoryPack(value: unknown): { pack: SlpStoryPackInput | null; errors: string[] } {
   const bytes = Buffer.byteLength(JSON.stringify(value));
@@ -383,20 +389,37 @@ export function parseSlpStoryPack(value: unknown): { pack: SlpStoryPackInput | n
   // The routes preview a parsed pack again, so a v2 file comes back as its v1 shell: read it as the v2 file it was.
   const shell = value && typeof value === "object" && "storylines" in value ? (value as Record<string, unknown>) : null;
   if (shell) {
-    const lists = [shell.arcs, shell.events, shell.situations, shell.dramas];
+    // The shell's events are its occasions' event parts; they come back from `occasions`.
+    const lists = [
+      shell.arcs,
+      shell.situations,
+      shell.dramas,
+      ...(Array.isArray(shell.occasions) && shell.occasions.length ? [] : [shell.events]),
+    ];
     if (lists.some((list) => Array.isArray(list) && list.length))
       return { pack: null, errors: ["A pack with storylines holds no other entries."] };
-    const { format, id, version, name, description, author, tracks, storylines } = shell;
-    value = { format, schemaVersion: 2, id, version, name, description, author, tracks, storylines };
+    const { format, id, version, name, description, author, tracks, storylines, occasions, topics } = shell;
+    value = { format, schemaVersion: 2, id, version, name, description, author, tracks, storylines, occasions, topics };
   }
   // A v2 file: its storylines land in the drama library, nothing in the arc and event lists.
   if ((value as { schemaVersion?: unknown } | null)?.schemaVersion === 2) {
     const v2 = parseSlpStoryPackV2(value);
     if (!v2.pack) return { pack: null, errors: v2.errors };
-    const { format, id, version, name, description, author, tracks, storylines } = v2.pack;
+    const { format, id, version, name, description, author, tracks, storylines, occasions, topics } = v2.pack;
     const base = { format, schemaVersion: 1, id, version, name, description, ...(author ? { author } : {}) };
+    const events = occasions.map(({ fit: _fit, beats: _beats, ...event }) => event);
     return {
-      pack: { ...base, arcs: [], events: [], situations: [], dramas: [], tracks, storylines } as SlpStoryPackInput,
+      pack: {
+        ...base,
+        arcs: [],
+        events,
+        situations: [],
+        dramas: [],
+        tracks,
+        storylines,
+        occasions,
+        topics,
+      } as SlpStoryPackInput,
       errors: [],
     };
   }

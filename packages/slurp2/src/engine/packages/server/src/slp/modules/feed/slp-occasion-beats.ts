@@ -32,10 +32,21 @@ import {
   slurpPackEventFor,
   type SlurpContentPackToggles,
 } from "../world/events/slp-content-packs.js";
-import { slurpBeatIntents, type SlurpBeat, type SlurpBeatHistory } from "./slp-post-beat.js";
+import type { SlpOccasion } from "../../../../../shared/src/slp/slp-storyline.js";
+import { SLURP_BEAT_TYPES, slurpBeatIntents, type SlurpBeat, type SlurpBeatHistory } from "./slp-post-beat.js";
 import { slurpLifeFits, slurpNeverSentences } from "./slp-life-moments.js";
 import { SLURP_SHARED_IDEA_DAILY_CAP } from "./slp-shared-preseed.js";
 import { slurpWeightedPick } from "./slp-weighted.js";
+
+/** An imported occasion's beats and fit, by its content id; a beat type the planner does not know is dropped. */
+function slurpImportedMoments(contentId: string, imported: readonly SlpOccasion[]) {
+  const occasion = imported.find((entry) => (entry.contentId ?? entry.id) === contentId);
+  if (!occasion) return null;
+  const beats = occasion.beats.filter((beat): beat is typeof beat & { type: SlurpPackBeat["type"] } =>
+    (SLURP_BEAT_TYPES as readonly string[]).includes(beat.type),
+  );
+  return { fit: occasion.fit ?? {}, beats: beats as SlurpPackBeat[] };
+}
 
 /** One occasion running for this Creator now, with when each of its moments is due. */
 export type SlurpOccasion = {
@@ -281,16 +292,20 @@ export function slurpPackOccasions(input: {
   /** `dateAt`: the event's own day (an annual event started late still has Halloween night on Oct 31). */
   windows: readonly { contentId: string; name: string; startsAt: number; endsAt: number; dateAt?: number }[];
   toggles: SlurpContentPackToggles;
+  /** Occasions of imported packs that are on (docs/STORYLINES.md, PR 5b). */
+  imported?: readonly SlpOccasion[];
   creatorAccountId: string;
   creatorText: string;
   subscribers: number;
   at: Date;
 }): SlurpOccasion[] {
   const packs = slurpContentPacksOn(input.toggles);
-  if (!packs.length) return [];
+  if (!packs.length && !input.imported?.length) return [];
   const dated = input.windows.flatMap((window) => {
     const moments =
-      slurpPackEventFor(window.contentId, input.toggles) ?? slurpPackDateBeatsFor(window.contentId, input.toggles);
+      slurpPackEventFor(window.contentId, input.toggles) ??
+      slurpPackDateBeatsFor(window.contentId, input.toggles) ??
+      slurpImportedMoments(window.contentId, input.imported ?? []);
     if (!moments?.beats.length) return [];
     const spread = slurpSpreadDueAt(window.startsAt, window.endsAt, moments.beats.length);
     return [

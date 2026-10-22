@@ -13,6 +13,7 @@ import { listSlurpOpportunities } from "../../data/feed/slp-opportunity-storage.
 import { resolveSlurpCreatorSpice } from "../../data/creators/slp-spice-storage.js";
 import { slurpCollabPartners } from "../../modules/projects/slp-project.js";
 import { slurpContentPacksOn } from "../../modules/world/events/slp-content-packs.js";
+import { readSlurpDramaLibrary } from "../../data/world/slp-drama-storage.js";
 import { slurpOccasionBeat, slurpPackOccasions } from "../../modules/feed/slp-occasion-beats.js";
 import type { SlurpBeat, SlurpBeatHistory } from "../../modules/feed/slp-post-beat.js";
 import { readSlurpCouplePartner } from "../projects/slp-projects-contract.js";
@@ -35,7 +36,10 @@ export async function planSlurpOccasionBeat(
   try {
     const noodle = createSlurpStorage(db);
     const settings = await noodle.getSettings();
-    if (!slurpContentPacksOn(settings.contentPacks).length) return null;
+    const imported = (await readSlurpDramaLibrary(db)).packs
+      .filter((pack) => settings.contentPacks[pack.id] !== false)
+      .flatMap((pack) => pack.occasions);
+    if (!slurpContentPacksOn(settings.contentPacks).length && !imported.length) return null;
     const account = await noodle.getNoodlerAccountById(input.accountId, { includeHidden: true });
     if (!account) return null;
     const [occurrences, subscriptions, fans] = await Promise.all([
@@ -54,6 +58,7 @@ export async function planSlurpOccasionBeat(
         slpExtensionOn(settings, "world") ? occurrences : [],
       ),
       toggles: settings.contentPacks,
+      imported,
       creatorAccountId: account.id,
       creatorText: input.creatorText,
       subscribers: subscriptions.length + (fans.get(account.id) ?? 0),

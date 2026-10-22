@@ -26,7 +26,12 @@ import {
   readSlurpDramaLibrary,
   readSlurpDramaState,
 } from "../../data/world/slp-drama-storage.js";
-import { slpDramaCatalog, slpDramaStorylines, slpEnabledDrama } from "../../modules/world/events/slp-drama-library.js";
+import {
+  slpDramaCatalog,
+  slpDramaEnabledIds,
+  slpDramaStorylines,
+  slpEnabledDrama,
+} from "../../modules/world/events/slp-drama-library.js";
 import { slurpStoryState, slurpTieTags } from "../../modules/storylines/slp-story-state.js";
 import { slpDramaText } from "../../modules/world/events/slp-drama-words.js";
 import {
@@ -273,8 +278,9 @@ export async function advanceSlurpDrama(db: DB, at = new Date()): Promise<void> 
   const settings = await storage.getSettings();
   // "Pause all": no drama moves while Slurp is paused. Storylines off holds it the same way.
   if (settings.paused || !slpExtensionOn(settings, "storylines")) return;
-  const library = slpDramaCatalog(await readSlurpDramaLibrary(db));
-  const catalog = slpEnabledDrama(library, settings.drama.enabled);
+  const imported = await readSlurpDramaLibrary(db);
+  const library = slpDramaCatalog(imported);
+  const catalog = slpEnabledDrama(library, slpDramaEnabledIds(imported, settings.drama.enabled, settings.contentPacks));
   const stored = await readSlurpDramaState(db);
   const idle =
     !catalog.dramas.length &&

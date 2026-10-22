@@ -26,6 +26,7 @@ import {
 import { normalizeSlpSupportDesk, slpDeskReachFactor } from "../../../../../shared/src/slp/slp-support-desk.js";
 import { slurpSupportDeskKey } from "../creators/slp-support-desk-storage.js";
 import { slpExtensionOn, slpLiveEvents } from "../../../../../shared/src/slp/slp-extensions.js";
+import { slurpPackGate } from "../../modules/world/events/slp-content-packs.js";
 
 export function createStoryEngineStorage({ settingsStore }: SlurpStorageContext) {
   const write = async (key: string, value: unknown) => settingsStore.set(key, JSON.stringify(value));
@@ -107,7 +108,7 @@ export function createStoryEngineStorage({ settingsStore }: SlurpStorageContext)
       // shift endsAt by the time spent off if players want a true pause.
       if (!slpExtensionOn(settings, "world")) return existing;
       const result = reconcileSlpScheduledOccurrences({
-        events: settings.platformEvents,
+        events: slurpPackGate(settings.platformEvents, settings.contentPacks),
         occurrences: existing,
         accounts,
         at,

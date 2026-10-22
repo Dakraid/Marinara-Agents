@@ -32,6 +32,7 @@ import {
 import { newId, now } from "../../../utils/id-generator.js";
 import { isSlurpViewerActorAccount } from "../../modules/settings/slp-settings.js";
 import type { SlurpStorageContext } from "../host/slp-storage-context.js";
+import { slurpPackGate } from "../../modules/world/events/slp-content-packs.js";
 
 export function createProjectsStorage2(context: SlurpStorageContext) {
   const {
@@ -142,7 +143,7 @@ export function createProjectsStorage2(context: SlurpStorageContext) {
           creatorAccountId,
           at,
           projects,
-          library: settings.arcLibrary,
+          library: slurpPackGate(settings.arcLibrary, settings.contentPacks),
           creatorTags: creator?.settings.profile.tags ?? [],
           lastAutoAt: await settingsStore.get(slurpArcAutoKey(creatorAccountId)),
           cooldownWeeks: config.cooldownWeeks,

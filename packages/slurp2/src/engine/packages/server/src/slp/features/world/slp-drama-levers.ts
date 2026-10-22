@@ -10,7 +10,12 @@ import {
   readSlurpDramaLibrary,
   readSlurpDramaState,
 } from "../../data/world/slp-drama-storage.js";
-import { slpDramaCatalog, slpDramaStorylines, slpEnabledDrama } from "../../modules/world/events/slp-drama-library.js";
+import {
+  slpDramaCatalog,
+  slpDramaEnabledIds,
+  slpDramaStorylines,
+  slpEnabledDrama,
+} from "../../modules/world/events/slp-drama-library.js";
 import { slpDramaLeadFits } from "../../modules/world/events/slp-drama-cast.js";
 import {
   slpDramaId,
@@ -42,7 +47,11 @@ const LEAD_NO = "They do not fit the first role of this drama right now.";
 /** The dramas switched on, each with the storyline it runs as (null: a v1 entry that cannot run). */
 async function enabledDramas(db: DB) {
   const settings = await createSlurpStorage(db).getSettings();
-  const catalog = slpEnabledDrama(slpDramaCatalog(await readSlurpDramaLibrary(db)), settings.drama.enabled);
+  const imported = await readSlurpDramaLibrary(db);
+  const catalog = slpEnabledDrama(
+    slpDramaCatalog(imported),
+    slpDramaEnabledIds(imported, settings.drama.enabled, settings.contentPacks),
+  );
   return [
     ...catalog.dramas.map((drama) => ({
       id: drama.id,
