@@ -210,15 +210,19 @@ export function slurpConditionCloset<T extends Pick<SlpWardrobeLook, "tags">>(
 
 /**
  * What one look outcome changes in a Creator's closet (docs/STORYLINES.md, PR 5c): a look to add,
- * never twice, or the look a storyline gave to take away. The player's own looks always stay.
+ * never twice, or the look this storyline gave to take away. The player's own looks always stay.
  */
 export function slurpStoryLookChange(
   outcome: SlpStoryOutcome,
   looks: readonly Pick<SlpWardrobeLook, "id" | "name" | "source">[],
+  /** The storyline's name: it only takes back a look it gave itself. */
+  label?: string,
 ): { add: SlpWardrobeLookInput } | { remove: string } | null {
   if (outcome.kind !== "add-look" && outcome.kind !== "remove-look") return null;
   const name = (outcome.kind === "add-look" ? outcome.look.name : outcome.name).toLocaleLowerCase();
-  const given = looks.find((look) => look.source.kind === "storyline" && look.name.toLocaleLowerCase() === name);
+  const given = looks.find(
+    (look) => look.source.kind === "storyline" && look.source.label === label && look.name.toLocaleLowerCase() === name,
+  );
   if (outcome.kind === "remove-look") return given ? { remove: given.id } : null;
   return given ? null : { add: outcome.look };
 }

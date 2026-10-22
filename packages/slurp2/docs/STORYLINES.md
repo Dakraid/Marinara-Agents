@@ -599,10 +599,13 @@ items (PR 8). Version: one patch bump.
   a taste never brings back an entry a hard no or "never" ruled out.
 - **Looks from outcomes.** Two story outcome kinds: `add-look` (a full wardrobe look input) and `remove-look`
   (by name). `applyStoryOutcomes` gives each participant the look with source kind `storyline` and the storyline
-  (or arc) name as the label, once; remove takes only a look a storyline gave, never the player's own. A full
+  (or arc) name as the label, once; remove takes only a look that storyline gave, never the player's own. A full
   closet skips the look. The pure decision is `slurpStoryLookChange` (`modules/storylines/slp-story-state.ts`).
 - **Known limits:** a topic switch checks the entry's own fit; stage, option and beat fits inside a pack storyline
-  do not see it. Arcs from packs have no fit yet, so topic switches do not reach them.
+  do not see it. Arcs from packs have no fit yet, so topic switches do not reach them. An occasion's event part
+  (in `platformEvents`) has no fit, so it still goes live with its own switch; only its moments stop.
+- **Review fixes.** An upload may not use ":" in its pack id (it would read another pack's topic keys); toggle
+  keys may be 170 characters long. A storyline takes back only a look it gave itself (same source label).
 
 ## Later: Basic and add-ons
 

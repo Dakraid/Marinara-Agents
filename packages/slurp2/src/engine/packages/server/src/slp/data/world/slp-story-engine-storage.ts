@@ -107,7 +107,7 @@ export function createStoryEngineStorage(context: SlurpStorageContext) {
       ]);
       for (const outcome of input.outcomes) {
         for (const creatorId of input.participants) {
-          const change = slurpStoryLookChange(outcome, await wardrobe.listWardrobeLooks(creatorId));
+          const change = slurpStoryLookChange(outcome, await wardrobe.listWardrobeLooks(creatorId), input.label);
           if (change && "remove" in change) await wardrobe.deleteWardrobeLook(creatorId, change.remove);
           // A full closet keeps what it has: the storyline goes on without the look.
           else if (change)

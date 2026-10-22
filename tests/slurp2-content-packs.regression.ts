@@ -787,12 +787,23 @@ assert.equal(
     { add: look },
     "the player's look is not the storyline's",
   );
-  assert.equal(slurpStoryLookChange({ kind: "add-look", look }, [own, given]), null, "a look is given once");
-  assert.deepEqual(slurpStoryLookChange({ kind: "remove-look", name: "APRON" }, [own, given]), { remove: "l2" });
+  assert.equal(
+    slurpStoryLookChange({ kind: "add-look", look }, [own, given], "Bread day"),
+    null,
+    "a look is given once",
+  );
+  assert.deepEqual(slurpStoryLookChange({ kind: "remove-look", name: "APRON" }, [own, given], "Bread day"), {
+    remove: "l2",
+  });
   assert.equal(
     slurpStoryLookChange({ kind: "remove-look", name: "Apron" }, [own]),
     null,
     "the player's own look stays",
+  );
+  assert.equal(
+    slurpStoryLookChange({ kind: "remove-look", name: "Apron" }, [own, given], "Other story"),
+    null,
+    "a storyline takes back only its own look",
   );
   assert.equal(slurpStoryLookChange({ kind: "remove-creator-fact", tag: "x" }, [given]), null);
 }

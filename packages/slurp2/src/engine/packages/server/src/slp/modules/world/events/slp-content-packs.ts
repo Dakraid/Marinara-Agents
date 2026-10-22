@@ -34,7 +34,7 @@ export function readSlurpContentPackToggles(raw: unknown): SlurpContentPackToggl
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
   return Object.fromEntries(
     Object.entries(raw as Record<string, unknown>).filter(
-      (entry): entry is [string, boolean] => typeof entry[1] === "boolean" && entry[0].length <= 128,
+      (entry): entry is [string, boolean] => typeof entry[1] === "boolean" && entry[0].length <= 170, // a pack id (128) or `<pack>:<topic>` (128 + 1 + 40)
     ),
   );
 }
