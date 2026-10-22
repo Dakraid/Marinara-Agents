@@ -618,13 +618,14 @@ items (PR 8). Version: one patch bump.
 - **Pack switch.** `slpDramaEnabledIds` adds a built-in pack's storylines while the pack is on; the pack switch
   is their only switch. Drama settings list them with "On while the pack is on" and show their dials.
 - **Business.** Stage influences (`multiply` on `audience.growth`, `economy.creator-earnings`, `feed.reach`)
-  reach the lead's numbers through `slpDramaStageMultiplier` in `platformInfluenceMultiplier`. Announcing
+  reach the lead's numbers through `slurpDramaStageFactor` (`data/world/slp-drama-storage.ts`), read by
+  `platformInfluenceMultiplier` and by real income (`earnCreatorIncome`); one state read when nothing runs. Announcing
   gives ×1.3 growth and ×1.1 earnings; a secret costs ×0.9 growth, then the reveal gives ×1.4. The new
   outcome `brand-offer {words}` opens a brand deal for the first catalog product that fits her and matches a
   word (baby, maternity, mom, …).
 - **Engine refinements.** Tie kind `collab` from `creatorCollabs` (plus the story tag `collab`); a lead role
   leans to Creators whose turn-ons match the storyline fit (`slurpTasteWeight`); a choice option may carry
-  `when: {dial: value}`, so the scan's loss option exists only with the `hard` dial on.
+  `when: {dial: value}`, so the scan's loss option exists only with the `hard` dial on (one scan in four).
 - **The hard line.** No look or moment pictures a child; the `born` ending adds the fact `parent` with the
   line "never in a picture, never in a spicy post".
 - **Known limits:** v1 export does not include pack storylines; running brand deals do not pause; the

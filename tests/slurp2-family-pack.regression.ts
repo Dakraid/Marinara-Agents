@@ -22,6 +22,7 @@ import {
   SLURP_FAMILY_PACK,
   SLURP_FAMILY_STORYLINES,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-family-pack.ts";
+import { slurp2Source } from "./slurp2-source.ts";
 import { slpStorylineSchema } from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-storyline.ts";
 
 const HOUR = 3_600_000;
@@ -128,8 +129,8 @@ const scan = (dials: Record<string, Record<string, string>>) => {
   }
   throw new Error("never reached the scan");
 };
-assert.equal(scan({}).count, 1, "hard off: only the fine scan");
-assert.equal(scan({ [surprise.id]: { hard: "on" } }).count, 2, "hard on: the bad news is possible");
+assert.equal(scan({}).count, 3, "hard off: only good scans");
+assert.equal(scan({ [surprise.id]: { hard: "on" } }).count, 4, "hard on: the bad news is one of four");
 
 // Business: an announced pregnancy multiplies the lead's growth, not anybody else's.
 const announced = {
@@ -138,6 +139,17 @@ const announced = {
 assert.equal(slpDramaStageMultiplier(announced, [collab], "mia", "audience.growth"), 1.3);
 assert.equal(slpDramaStageMultiplier(announced, [collab], "lena", "audience.growth"), 1);
 assert.equal(slpDramaStageMultiplier(announced, [collab], "mia", "messages.reply-delay"), 1);
+
+// Both multiplier paths read the stage factor: influences, and real income (earnCreatorIncome).
+const server = (path: string) => slurp2Source(`packages/slurp2/src/engine/packages/server/src/slp/${path}`);
+assert.match(
+  server("data/host/slp-storage-context.ts"),
+  /slurpDramaStageFactor\(settingsStore, creatorAccountId, "economy\.creator-earnings"\)/u,
+);
+assert.match(
+  server("data/world/slp-story-engine-storage.ts"),
+  /slurpDramaStageFactor\(settingsStore, creatorAccountId, target\)/u,
+);
 
 // Turn-ons lean the lead pick: a Creator into breeding takes it more often than an even share.
 const eager = creator("ivy", { turnOns: ["breeding"] });

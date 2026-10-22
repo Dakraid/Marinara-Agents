@@ -157,7 +157,11 @@ function pregnancy(father: Father): SlpStoryline {
       next: "month-6",
     }),
     stage("announced", "The announcement", [4, 6], {
-      condition: month(4, "You are four months pregnant and your fans know.", "a small pregnancy bump, about four months"),
+      condition: month(
+        4,
+        "You are four months pregnant and your fans know.",
+        "a small pregnancy bump, about four months",
+      ),
       beats: [{ role: "mom", channel: "post", heat: { line: "so. there's two of us now", for: "fans" } }],
       influences: [
         { target: "audience.growth", operation: "multiply", value: 1.3 },
@@ -179,6 +183,8 @@ function pregnancy(father: Father): SlpStoryline {
         question: "The scan",
         options: [
           { label: "Everything looks fine", next: "month-7" },
+          { label: "A small scare, then good news", next: "month-7" },
+          { label: "A strong heartbeat", next: "month-7" },
           { label: "Bad news at the scan", next: "loss", when: { hard: "on" } },
         ],
         default: 0,

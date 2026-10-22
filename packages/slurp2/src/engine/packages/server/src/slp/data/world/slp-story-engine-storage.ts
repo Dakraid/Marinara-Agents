@@ -2,14 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import type { SlurpStorageContext } from "../host/slp-storage-context.js";
 import { createWardrobeStorage } from "../creators/slp-wardrobe-storage.js";
-import { SLP_DRAMA_STATE_KEY } from "./slp-drama-storage.js";
-import {
-  SLP_DRAMA_LIBRARY_KEY,
-  readSlpDramaLibrary,
-  slpDramaCatalog,
-  slpDramaStorylines,
-} from "../../modules/world/events/slp-drama-library.js";
-import { readSlpDramaState, slpDramaStageMultiplier } from "../../modules/world/events/slp-drama-runtime.js";
+import { slurpDramaStageFactor } from "./slp-drama-storage.js";
 import { slurpStoryLookChange } from "../../modules/storylines/slp-story-state.js";
 import type {
   SlpEventOccurrence,
@@ -41,20 +34,6 @@ import { slurpPackGate } from "../../modules/world/events/slp-content-packs.js";
 export function createStoryEngineStorage(context: SlurpStorageContext) {
   const { settingsStore } = context;
   const wardrobe = createWardrobeStorage(context);
-  /** A running storyline's stage influences on its lead (PR 6); unreadable state counts as none. */
-  const dramaStages = async (creatorAccountId: string, target: SlpInfluenceTarget) => {
-    const parse = async (key: string) => {
-      try {
-        return JSON.parse((await settingsStore.get(key)) ?? "null") as unknown;
-      } catch {
-        return null;
-      }
-    };
-    const [library, stored] = await Promise.all([parse(SLP_DRAMA_LIBRARY_KEY), parse(SLP_DRAMA_STATE_KEY)]);
-    const state = readSlpDramaState((stored as { state?: unknown } | null)?.state);
-    const { situations, dramas } = slpDramaStorylines(slpDramaCatalog(readSlpDramaLibrary(library)));
-    return slpDramaStageMultiplier(state, [...situations, ...dramas], creatorAccountId, target);
-  };
   const write = async (key: string, value: unknown) => settingsStore.set(key, JSON.stringify(value));
   const readDesk = async (creatorAccountId: string) => {
     try {
@@ -85,7 +64,9 @@ export function createStoryEngineStorage(context: SlurpStorageContext) {
       const settings = await this.getSettings();
       // A running storyline's stage influences on its lead count with the events (PR 6).
       const stages =
-        creatorAccountId && slpExtensionOn(settings, "storylines") ? await dramaStages(creatorAccountId, target) : 1;
+        creatorAccountId && slpExtensionOn(settings, "storylines")
+          ? await slurpDramaStageFactor(settingsStore, creatorAccountId, target)
+          : 1;
       const events = slurpInfluenceMultiplier(
         slpLiveEvents(settings),
         at,

@@ -205,7 +205,13 @@ export function slpDramaPreviewStatus(
   // Runs, cooldowns and the enabled list share one id space, so a v2 storyline may not take a v1 or built-in id.
   const others =
     kind === "storyline"
-      ? [...SLURP_BUILTIN_SITUATIONS, ...SLURP_BUILTIN_DRAMAS, ...library.situations, ...library.dramas]
+      ? [
+          ...SLURP_BUILTIN_SITUATIONS,
+          ...SLURP_BUILTIN_DRAMAS,
+          ...SLURP_CONTENT_PACK_LIBRARY.flatMap((pack) => pack.storylines ?? []),
+          ...library.situations,
+          ...library.dramas,
+        ]
       : [...(kind === "situation" ? SLURP_BUILTIN_SITUATIONS : SLURP_BUILTIN_DRAMAS), ...library.storylines];
   const builtin = others.some((entry) => entry.id === id);
   const installed = list.find((entry) => entry.id === id);
