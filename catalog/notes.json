@@ -756,6 +756,12 @@
     "slurp2": {
       "versions": [
         {
+          "version": "0.3.62",
+          "date": "2026-10-22",
+          "notes": "- Intimacy ladder (docs/SPICY.md, item 1): rapport tiers open doors (`slurpRapportDoors`, `modules/messages/slp-rapport.ts`). Regular: her full DM level without a subscription. Favourite: one spicy chat picture in four is a free gift, customs 15% cheaper (quotes, the prompt's price range, counter floors; `commissionPricingFor`). Whale: free chat pictures at her full level.\n- The highest tier reached is kept per pair (`peak` in the thread's rapport JSON, seeded from the stored tier), so a quiet week never closes a door; an edited tier moves it. When the peak passes what she has said (`said`), the prompt asks her to say it once in her reply.\n- The tier sheet in a chat's Details lists the open doors (`SlurpTierDoors`, en/de/ko/pl).",
+          "highlight": false
+        },
+        {
           "version": "0.3.61",
           "date": "2026-10-22",
           "notes": "- Five kink theme packs, off by default (`slp-kink-packs.ts`): Lingerie, Cosplay, Feet, Dom/sub and Exhibition, two storylines each, pure pack data on the storyline engine. Fans vote between sets, costumes and dares; endings add a locked look or a Creator fact; the lingerie brand storyline makes a `brand-offer`.\n- Each storyline has a `fit` (level, hard-no words, topic words): Exhibition needs nudity, a hard-no or a \"never\" line rules a Creator out, turn-ons lean the lead pick. The spiciest stages wait on `minSpice` 2–3.",
@@ -867,12 +873,6 @@
           "version": "0.3.43",
           "date": "2026-10-15",
           "notes": "- Fixed: long DMs end at a sentence or word (up to 2400 characters), and commission quotes use the Creator's own prices.\n- Fixed: Cancel ends a subscription to a removed Creator at once.\n- Fixed: fans react to what a picture shows, not its art style.\n- Fixed: post drift. Tips no longer teach a guessed taste, and a spicy kind or taste that other Creators posted that day steps aside, so the whole feed is not in the shower at once. Spice level is unchanged.\n- Changed: family is never paired up on its own. Cards that say they are lovers, or the player in Stir, still can.\n- Fixed: clearer \"monogamous\" message in Stir, with the Relationships switch on the Creator sheet.\n- Fixed: work mode no longer blurs the coin and G's face; Couples pages are not a missing source; the sign-up scene names an unreachable connection.\n- Fixed: a scheduled post goes up once, and a shared-page post waits its turn.",
-          "highlight": false
-        },
-        {
-          "version": "0.3.42",
-          "date": "2026-10-15",
-          "notes": "- Added: chats with \"Carryover to chats\" on also learn the character's Slurp storyline, love life, how well they know you, and the Slurp memories a chat with you may read.\n- Added: Carryover settings show in how many chats with your Creators \"Include Slurp activity\" is on.\n- Fixed: a scene started from a DM runs on the connection Slurp planned it with, not the Engine's plain default.\n- Fixed: an unreadable scene plan is asked for once more before \"The scene plan got lost\" shows.\n- Fixed: \"Start the scene\" shows an error when the Engine's scene host is missing.\n- Fixed: lorebook entries set to \"At Depth\" reach Slurp DMs and posts.\n- Added: Deep details has a \"Lore\" section with the entries a reply used or had no room for.",
           "highlight": false
         }
       ]
