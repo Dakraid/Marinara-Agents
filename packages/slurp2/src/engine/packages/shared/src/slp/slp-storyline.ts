@@ -21,6 +21,7 @@ import {
   SLP_STORY_TRACKS,
   slpArcBlueprintSchema,
   slpEventActivationSchema,
+  slpEventBlueprintSchema,
   slpEventTargetSchema,
   slpInfluenceDraftSchema,
   slpStoryAutomationSchema,
@@ -275,6 +276,28 @@ export const slpStorylineSchema = slpStorylineObjectSchema.superRefine((storylin
 });
 export type SlpStoryline = z.infer<typeof slpStorylineSchema>;
 
+/** A dated pack moment: today's event shape, the beats the planner posts for it, and a JSON fit (PR 5b). */
+export const slpOccasionSchema = slpEventBlueprintSchema.extend({
+  fit: slpFitSchema.optional(),
+  beats: z
+    .array(
+      z
+        .object({
+          /** A post beat type; the planner drops one it does not know. */
+          type: z.string().trim().min(1).max(32),
+          line: z.string().trim().min(1).max(600),
+          withPartner: z.string().trim().min(1).max(600).optional(),
+          withCollab: z.string().trim().min(1).max(600).optional(),
+          level: z.enum(["suggestive", "nudity", "explicit"]).optional(),
+          atDay: z.number().min(0).max(31).optional(),
+        })
+        .strict(),
+    )
+    .max(8)
+    .default([]),
+});
+export type SlpOccasion = z.infer<typeof slpOccasionSchema>;
+
 export const slpStoryPackV2Schema = z
   .object({
     format: z.literal(SLP_STORY_PACK_FORMAT),
@@ -287,11 +310,17 @@ export const slpStoryPackV2Schema = z
     /** Tracks this pack adds beside the built-in ones. */
     tracks: z.array(key).max(6).default([]),
     storylines: z.array(slpStorylineSchema).max(SLP_STORY_PACK_MAX_ENTRIES).default([]),
+    occasions: z.array(slpOccasionSchema).max(SLP_STORY_PACK_MAX_ENTRIES).default([]),
+    /** What the pack is about, as words (for the Packs list). */
+    topics: z.array(z.string().trim().min(1).max(40)).max(8).default([]),
   })
   .strict()
   .superRefine((pack, context) => {
     const ids = pack.storylines.map((storyline) => storyline.id);
     if (new Set(ids).size !== ids.length) context.addIssue({ code: "custom", message: "storyline ids must be unique" });
+    const occasions = pack.occasions.map((occasion) => occasion.contentId ?? occasion.id);
+    if (new Set(occasions).size !== occasions.length)
+      context.addIssue({ code: "custom", message: "occasion ids must be unique" });
     const tracks = new Set<string>([...SLP_STORY_TRACKS, ...pack.tracks]);
     for (const storyline of pack.storylines)
       if (storyline.track && !tracks.has(storyline.track))

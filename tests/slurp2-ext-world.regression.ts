@@ -24,6 +24,14 @@ const source = (side: "client" | "server" | "shared", path: string) => slurp2Sou
 const events = [{ id: "e1" }];
 assert.deepEqual(slpLiveEvents({ extWorld: true, platformEvents: events }), events);
 assert.deepEqual(slpLiveEvents({ extWorld: false, platformEvents: events }), []);
+// An imported pack switched off keeps its events saved, but they have no effect (PR 5b).
+const packed = [{ id: "bread", provenance: { packId: "bakery-pack" } }, { id: "core" }];
+assert.deepEqual(
+  slpLiveEvents({ extWorld: true, platformEvents: packed, contentPacks: { "bakery-pack": false } }).map(
+    (event) => event.id,
+  ),
+  ["core"],
+);
 assert.equal(slpTrendsOn({ extWorld: true, trendsEnabled: true }), true);
 assert.equal(slpTrendsOn({ extWorld: true, trendsEnabled: false }), false);
 assert.equal(slpTrendsOn({ extWorld: false, trendsEnabled: true }), false);

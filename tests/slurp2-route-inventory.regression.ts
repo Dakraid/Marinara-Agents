@@ -314,6 +314,7 @@ const EXPECTED = [
   "PUT /slurp/accounts/:id/goal",
   "PUT /slurp/accounts/:id/stage-profile",
   "PUT /slurp/accounts/:id/subscription-price",
+  "DELETE /story-packs/:id",
   "DELETE /story/facts/:id",
   "DELETE /story/opportunities/:id",
   "GET /story-packs/bundled",
@@ -453,6 +454,7 @@ const ADDED_ROUTES = new Set([
   "POST /slurp/accounts/:id/wardrobe",
   "POST /slurp/accounts/:id/wardrobe/import",
   "POST /slurp/accounts/:id/wardrobe/import-preview",
+  "DELETE /story-packs/:id",
   "DELETE /story/facts/:id",
   "DELETE /story/opportunities/:id",
   "GET /story-packs/bundled",
@@ -533,13 +535,13 @@ const EXPECTED_HANDLER_COUNTS = {
   "features/projects": 31,
   "features/settings": 10,
   "features/storylines": 2,
-  "features/world": 15,
+  "features/world": 16,
 } as const;
 // W: +5 POST, +1 GET (Stir). R: +3 POST, +1 GET, +1 PATCH, +1 DELETE (brands).
 // 0.3.4: +1 POST, +1 PUT (Creator Pages). 0.3.5: +1 GET, +3 POST (Support desk). 0.3.7: +1 POST (rewrite all).
 // 0.3.8: +1 GET, +5 POST (Drama: bonds, drama view, choice, start, end). 0.3.11: +1 POST (fan notes).
 // DM edit tools and thread export: +1 GET, +4 POST. 0.3.28: +1 GET (Deep details for a chat reply). 0.3.42: +1 GET (carryover reach). Story state (Life panel): +1 GET, +1 POST.
-const EXPECTED_METHOD_COUNTS = { DELETE: 19, GET: 91, PATCH: 20, POST: 165, PUT: 7 } as const;
+const EXPECTED_METHOD_COUNTS = { DELETE: 20, GET: 91, PATCH: 20, POST: 165, PUT: 7 } as const;
 
 const root = join(import.meta.dirname, "../packages/slurp2/src/engine/packages/server/src/slp");
 const registration = /\bapp\.(get|post|put|patch|delete|addContentTypeParser)(?:<[^()]*?>)?\(\s*["'`]([^"'`]+)["'`]/gu;
@@ -596,8 +598,8 @@ const methodCounts = Object.fromEntries(
 assert.deepEqual(methodCounts, EXPECTED_METHOD_COUNTS, "HTTP method multiset changed from staging");
 // 0.3.5: +4 (the Support desk). 0.3.7: +1 (rewrite all). Roleplay scenes: +4. 0.3.17: +2 (collab drop, post now).
 // 0.3.41: +1 (Engine avatar copies).
-// DM edit tools, thread export: +5. Story state (Life panel): +2.
-assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 302);
+// DM edit tools, thread export: +5. Story state (Life panel): +2. Remove an imported pack: +1.
+assert.equal(foundRoutes.filter((route) => !route.startsWith("ADDCONTENTTYPEPARSER ")).length, 303);
 assert.deepEqual(handlerCounts, EXPECTED_HANDLER_COUNTS, "handler count changed in a feature");
 assert.ok(foundRoutes.includes("POST /slurp/posts/:id/media"), "the renamed POST media route must remain registered");
 assert.ok(

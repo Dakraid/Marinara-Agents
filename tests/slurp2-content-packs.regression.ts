@@ -10,7 +10,17 @@ import {
   slurpApplyContentPacks,
   slurpContentPackSummaries,
   slurpContentStoryPack,
+  slurpPackGate,
 } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-content-packs.ts";
+import { parseSlpStoryPack } from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-story-packs.ts";
+import {
+  readSlpDramaLibrary,
+  slpDramaEnabledIds,
+} from "../packages/slurp2/src/engine/packages/server/src/slp/modules/world/events/slp-drama-library.ts";
+import {
+  parseSlpStoryPackV2,
+  slpStorylinesFromV1,
+} from "../packages/slurp2/src/engine/packages/shared/src/slp/slp-storyline-v1.ts";
 import {
   SLURP_CONTENT_PACK_LIBRARY,
   type SlurpPackBeat,
@@ -157,6 +167,8 @@ assert.equal(applied.events.length, 2);
 // Toggles are read strictly: unknown packs and non-booleans are dropped.
 assert.deepEqual(readSlurpContentPackToggles({ "slurp-pack-awards": false, nope: true, "slurp-pack-seasons": "yes" }), {
   "slurp-pack-awards": false,
+  // An imported pack's switch lives in the same setting (PR 5b).
+  nope: true,
 });
 
 // Every pack is a valid portable story pack, and Backstage gets a name, a one-line "adds" and contents.
@@ -624,5 +636,103 @@ assert.equal(slurpPackFits({ needs: ["uni"] }, card), true);
 assert.equal(slurpPackFits({ needs: ["college"] }, card), false);
 assert.equal(slurpPackFits({ hardNo: ["toys", "dildos"] }, card), false);
 assert.equal(slurpPackFits({ topic: ["gym"] }, { ...card, avoid: ["the gym"] }), false);
+
+// --- PR 5b: built-ins as v2, imported packs as a gate -------------------------------------
+// Every built-in pack is also a valid v2 file: its arcs as storylines, its dated events as occasions.
+for (const pack of SLURP_CONTENT_PACK_LIBRARY) {
+  const v1 = slurpContentStoryPack(pack);
+  const { storylines, errors } = slpStorylinesFromV1({ arcs: v1.arcs, events: [], situations: [], dramas: [] });
+  assert.deepEqual(errors, [], `${pack.id} arcs convert`);
+  const v2 = parseSlpStoryPackV2({
+    format: v1.format,
+    schemaVersion: 2,
+    id: pack.id,
+    version: v1.version,
+    name: pack.name,
+    description: pack.adds,
+    storylines,
+    occasions: v1.events.map((event, index) => ({
+      ...event,
+      fit: pack.events[index]!.fit,
+      beats: pack.events[index]!.beats,
+    })),
+  });
+  assert.ok(v2.pack, `${pack.id} is a v2 pack: ${v2.errors.join("; ")}`);
+}
+// An imported v2 occasion: Review lists its event part, the second parse keeps it, the planner runs its beats.
+const bakery = parseSlpStoryPack({
+  format: "marinara-slurp-story-pack",
+  schemaVersion: 2,
+  id: "bakery-pack",
+  version: "1.0.0",
+  name: "Bakery",
+  topics: ["baking"],
+  occasions: [
+    {
+      id: "bread-day",
+      name: "Bread day",
+      activation: { kind: "annual", month: 10, day: 16, durationDays: 2 },
+      fit: { needs: ["baker"] },
+      beats: [
+        { type: "showcase", line: "Fresh loaves." },
+        { type: "hologram", line: "A type the planner does not know." },
+      ],
+    },
+  ],
+});
+assert.ok(bakery.pack, bakery.errors.join("; "));
+assert.equal(bakery.pack.events.length, 1, "an occasion's event part is an event for Review");
+assert.equal(parseSlpStoryPack(bakery.pack).pack?.occasions?.length, 1, "the routes' second parse keeps occasions");
+assert.deepEqual(parseSlpStoryPack(bakery.pack).pack?.topics, ["baking"]);
+const breadDay = slurpPackOccasions({
+  windows: [
+    { contentId: "bread-day", name: "Bread day", startsAt: Date.parse("2026-10-16"), endsAt: Date.parse("2026-10-18") },
+  ],
+  toggles: Object.fromEntries(SLURP_CONTENT_PACK_LIBRARY.map((pack) => [pack.id, false])),
+  creatorAccountId: "m",
+  creatorText: "",
+  subscribers: 0,
+  at: utc("2026-10-16"),
+  imported: bakery.pack.occasions,
+});
+assert.equal(breadDay.length, 1, "an imported occasion runs with every built-in pack off");
+assert.deepEqual(
+  breadDay[0]!.beats.map((beat) => beat.type),
+  ["showcase"],
+  "an unknown beat type is dropped",
+);
+assert.deepEqual(breadDay[0]!.fit, { needs: ["baker"] });
+// The gate: an imported pack switched off keeps its entries and their switches, but none starts.
+const gated = slurpPackGate(
+  [
+    { id: "a", provenance: { packId: "bakery-pack", contentId: "a" } },
+    { id: "b", provenance: { packId: "other", contentId: "b" } },
+    { id: "c", provenance: undefined },
+  ],
+  { "bakery-pack": false },
+);
+assert.deepEqual(
+  gated.map((entry) => entry.id),
+  ["b", "c"],
+);
+const imported = readSlpDramaLibrary({
+  situations: [],
+  dramas: [],
+  storylines: [],
+  packs: [
+    { id: "bakery-pack", name: "Bakery", version: "1.0.0", topics: ["baking", 3], occasions: bakery.pack.occasions },
+    { name: "no id" },
+  ],
+});
+assert.equal(imported.packs.length, 1, "a record without an id is dropped");
+assert.deepEqual(imported.packs[0]!.topics, ["baking"]);
+assert.equal(imported.packs[0]!.occasions.length, 1);
+assert.deepEqual(
+  slpDramaEnabledIds({ ...imported, storylines: [{ id: "s1", packId: "bakery-pack" } as never] }, ["s1", "x"], {
+    "bakery-pack": false,
+  }),
+  ["x"],
+  "a drama of a pack switched off does not run; its own switch stays",
+);
 
 console.log("slurp2 content packs: ok");

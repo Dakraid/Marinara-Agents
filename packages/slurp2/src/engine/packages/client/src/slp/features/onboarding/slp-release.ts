@@ -1,7 +1,7 @@
 import { SLURP2_LEGACY_RELEASES } from "./slp-release-archive";
 
 // The splash screen needs the shipped version and its public notes inside the client bundle.
-export const SLURP2_VERSION = "0.3.57";
+export const SLURP2_VERSION = "0.3.58";
 
 export interface Slurp2ReleaseEntry {
   version: string;
@@ -14,6 +14,13 @@ export interface Slurp2ReleaseEntry {
  * in-universe bullets per release (technical detail lives in CHANGELOG.md).
  */
 export const SLURP2_RELEASES: Slurp2ReleaseEntry[] = [
+  {
+    version: "0.3.58",
+    date: "2026-10-22",
+    notes: [
+      "Packs is one list now: the packs you imported sit next to Slurp's own, each with its own switch. Switch one off and nothing from it starts; Remove takes it out completely. Imported packs can bring their own dated moments, too.",
+    ],
+  },
   {
     version: "0.3.57",
     date: "2026-10-22",

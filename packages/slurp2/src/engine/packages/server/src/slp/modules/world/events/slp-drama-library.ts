@@ -15,7 +15,12 @@ import {
   slpStorylineDraftFromDrama,
   slpStorylineDraftFromSituation,
 } from "../../../../../../shared/src/slp/slp-storyline-v1.js";
-import { slpStorylineSchema, type SlpStoryline } from "../../../../../../shared/src/slp/slp-storyline.js";
+import {
+  slpOccasionSchema,
+  slpStorylineSchema,
+  type SlpOccasion,
+  type SlpStoryline,
+} from "../../../../../../shared/src/slp/slp-storyline.js";
 import { SLURP_BUILTIN_DRAMAS, SLURP_BUILTIN_SITUATIONS } from "./slp-drama-packs.js";
 
 export const SLP_DRAMA_LIBRARY_KEY = "slurp2.drama.library";
@@ -25,8 +30,20 @@ export type SlpDramaLibrary = {
   dramas: (SlpDrama & { packId: string })[];
   /** v2 entries, run as they are (docs/STORYLINES.md, PR 4b). */
   storylines: (SlpStoryline & { packId: string })[];
+  /** One record per imported pack (docs/STORYLINES.md, PR 5b): the Packs list, and its occasions for the planner. */
+  packs: SlpPackRecord[];
 };
-export const SLP_EMPTY_DRAMA_LIBRARY: SlpDramaLibrary = { situations: [], dramas: [], storylines: [] };
+export type SlpPackRecord = {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  author?: string;
+  topics: string[];
+  occasions: SlpOccasion[];
+  importedAt: string;
+};
+export const SLP_EMPTY_DRAMA_LIBRARY: SlpDramaLibrary = { situations: [], dramas: [], storylines: [], packs: [] };
 
 const record = (value: unknown) =>
   value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
@@ -56,7 +73,43 @@ export function readSlpDramaLibrary(raw: unknown): SlpDramaLibrary {
       const parsed = slpStorylineSchema.safeParse(rest);
       return parsed.success ? parsed.data : null;
     }),
+    packs: (Array.isArray(value?.packs) ? value.packs : []).flatMap((entry) => {
+      const pack = record(entry);
+      const text = (key: string) => (typeof pack?.[key] === "string" ? (pack[key] as string) : "");
+      if (!text("id") || !text("name")) return [];
+      const words = (Array.isArray(pack!.topics) ? pack!.topics : []).filter((word) => typeof word === "string");
+      const occasions = (Array.isArray(pack!.occasions) ? pack!.occasions : []).flatMap((occasion) => {
+        const parsed = slpOccasionSchema.safeParse(occasion);
+        return parsed.success ? [parsed.data] : [];
+      });
+      return [
+        {
+          id: text("id"),
+          name: text("name"),
+          version: text("version"),
+          description: text("description"),
+          ...(text("author") ? { author: text("author") } : {}),
+          topics: words as string[],
+          occasions,
+          importedAt: text("importedAt"),
+        },
+      ];
+    }),
   };
+}
+
+/** The `drama.enabled` list without the entries of an imported pack the player switched off (its switches stay). */
+export function slpDramaEnabledIds(
+  library: SlpDramaLibrary,
+  enabled: readonly string[],
+  toggles: Readonly<Record<string, boolean>>,
+): string[] {
+  const off = new Set(
+    [...library.situations, ...library.dramas, ...library.storylines]
+      .filter((entry) => toggles[entry.packId] === false)
+      .map((entry) => entry.id),
+  );
+  return enabled.filter((id) => !off.has(id));
 }
 
 export type SlpDramaCatalog = { situations: SlpSituation[]; dramas: SlpDrama[]; storylines: SlpStoryline[] };
@@ -161,6 +214,7 @@ export function applySlpDramaEntries(
     situations: [...library.situations],
     dramas: [...library.dramas],
     storylines: [...library.storylines],
+    packs: library.packs,
   };
   for (const entry of entries) {
     if (slpDramaPreviewStatus(next, packId, entry.kind, entry.value.id) === "conflict") continue;
