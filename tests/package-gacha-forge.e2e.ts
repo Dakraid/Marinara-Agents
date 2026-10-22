@@ -164,13 +164,19 @@ test("Forge fills every screen, toggles inside the Engine and keeps world drafts
     await expect(page.locator(".mari-home-browser-chrome"), view).toBeHidden();
     await expect(toggle()).toHaveAttribute("aria-label", "Exit fullscreen");
     if (["setup", "hud"].includes(view)) {
-      await page.screenshot({ path: testInfo.outputPath(`${view}-fullscreen-${testInfo.project.name}.png`) });
+      await page.screenshot({
+        animations: "disabled",
+        path: testInfo.outputPath(`${view}-fullscreen-${testInfo.project.name}.png`),
+      });
     }
     await toggle().click();
     await expect(page.locator(".mari-home-browser-chrome"), `${view} exits`).toBeVisible();
     if (["setup", "hud", "settings", "combat", "roster"].includes(view)) {
       await testInfo.attach(`${view}-${testInfo.project.name}.png`, {
-        body: await page.screenshot({ path: testInfo.outputPath(`${view}-${testInfo.project.name}.png`) }),
+        body: await page.screenshot({
+          animations: "disabled",
+          path: testInfo.outputPath(`${view}-${testInfo.project.name}.png`),
+        }),
         contentType: "image/png",
       });
     }
